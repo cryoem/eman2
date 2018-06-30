@@ -181,48 +181,14 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
 	parser = OptionParser(usage,version=SPARXVERSION)
-	
-	parser.add_option("--adjust_to_analytic_model",    action ="store_true",  default =False,  help="adjust power spectrum of 2-D averages to an analytic model ")
-	parser.add_option("--adjust_to_given_pw2",         action ="store_true",  default =False,  help="adjust power spectrum to 2-D averages to given 1D power spectrum")
-	parser.add_option("--B_enhance",                   action ="store_true",  default =False,  help="using B-factor to enhance 2-D averages")
-	parser.add_option("--no_adjustment",               action ="store_true",  default =False,  help="No power spectrum adjustment")
-	
-	options_list = []
-	
-	adjust_to_analytic_model = False
-	for q in sys.argv[1:]:
-		if(q[:26] == "--adjust_to_analytic_model"):
-			adjust_to_analytic_model = True
-			options_list.append(q)
-			break
-	
-	adjust_to_given_pw2 = False
-	for q in sys.argv[1:]:
-		if(q[:21] == "--adjust_to_given_pw2"):
-			adjust_to_given_pw2 = True
-			options_list.append(q)
-			break
-	
-	B_enhance = False
-	for q in sys.argv[1:]:
-		if(q[:11] == "--B_enhance"):
-			B_enhance = True
-			options_list.append(q)
-			break
-	
-	no_adjustment = False
-	for q in sys.argv[1:]:
-		if(q[:15] == "--no_adjustment"):
-			no_adjustment = True
-			options_list.append(q)
-			break
-	
-	if len(options_list) == 0:
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			print("Specify one of the following options to start: 1. adjust_to_analytic_model; 2. adjust_to_given_pw2; 3. B_enhance; 4. no_adjustment")
-	if len(options_list) > 1:
-		ERROR("The specified options are exclusive. Use only one of them to start", "sxcompute_isac_avg.py", 1, Blockdata["myid"])
-	
+	parser.add_option("--pw_adjustment", type ="string", default ='analytical_model',  \
+	   help="adjust power spectrum of 2-D averages to an analytic model. Other opions: no_adjustment; bfactor; a text file of 1D rotationally averaged PW")
+	#### Four options for --pw_adjustment: 	
+	# 1> analytical_model(default); 
+	# 2> no_adjustment;
+	# 3> bfactor;
+	# 4> adjust_to_given_pw2(user has to provide a text file that contains 1D rotationally averaged PW)
+			
 	# options in common
 	parser.add_option("--isac_dir",              type   ="string",         default ='',     help="ISAC run output directory, input directory for this command")
 	parser.add_option("--output_dir",            type   ="string",         default ='',     help="output directory where computed averages are saved")
@@ -237,19 +203,27 @@ def main():
 	parser.add_option("--navg",                  type   ="int",            default =-1,     help= "number of aveages")
 	parser.add_option("--skip_local_alignment",  action ="store_true",     default =False,  help= "skip local alignment")
 	parser.add_option("--noctf",                 action ="store_true",     default =False,  help="no ctf correction, useful for negative stained data. always ctf for cryo data")
-
-	if B_enhance:
-		parser.add_option("--B_start",   type   ="float",  default = 10.0,  help="start frequency (Angstrom) of power spectrum for B_factor estimation")
-		parser.add_option("--Bfactor",   type   ="float",  default = -1.0,  help= "User defined bactors (e.g. 45.0[A^2]). By default, the program automatically estimates B-factor. ")
+	parser.add_option("--B_start",  type   ="float",  default = 10.0,  help="start frequency (Angstrom) of power spectrum for B_factor estimation")
+	parser.add_option("--Bfactor",  type   ="float",  default = -1.0,  help= "User defined bactors (e.g. 45.0[A^2]). By default, the program automatically estimates B-factor. ")
 			
+	(options, args) = parser.parse_args(sys.argv[1:])
+	
+	adjust_to_analytic_model = False
+	adjust_to_given_pw2      = False
+	B_enhance                = False
+	no_adjustment            = False
+
+	if   options.pw_adjustment=='analytical_model':   adjust_to_analytic_model = True
+	elif options.pw_adjustment=='no_adjustment':      no_adjustment            = True
+	elif options.pw_adjustment=='bfactor':            B_enhance                = True
+	else:                                             adjust_to_given_pw2      = True 
+
 	if adjust_to_given_pw2:
-		parser.add_option("--modelpw",              type   ="string",         default ='',     help="1-D reference power spectrum")
 		checking_flag = 0
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			if not os.path.exists(options.modelpw): checking_flag = 1
+			if not os.path.exists(options.pw_adjustment): checking_flag = 1
 		checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
-		if checking_flag ==1: ERROR("User provided power spectrum does not exist", "sxcompute_isac_avg.py", 1, Blockdata["myid"])		
-	(options, args) = parser.parse_args(sys.argv[1:])
+		if checking_flag ==1: ERROR("User provided power spectrum does not exist", "sxcompute_isac_avg.py", 1, Blockdata["myid"])
 	
 	Tracker                                   = {}
 	Constants		                          = {}
@@ -265,12 +239,11 @@ def main():
 	Constants["maxit"]                        = options.maxit
 	Constants["navg"]                         = options.navg
 	
-
 	if B_enhance:
 		Constants["B_start"]   = options.B_start
 		Constants["Bfactor"]   = options.Bfactor
 	
-	if adjust_to_given_pw2: Constants["modelpw"] = options.modelpw
+	if adjust_to_given_pw2: Constants["modelpw"] = options.pw_adjustment
 	Tracker["constants"] = Constants
 	# -------------------------------------------------------------
 	#
