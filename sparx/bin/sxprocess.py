@@ -1095,6 +1095,7 @@ def main():
 			log_main.add("Mtf               :"+str(options.mtf))
 			log_main.add("Output            :"+str(options.output))
 			log_main.add("Do_adaptive_mask  :"+str(options.do_adaptive_mask))
+			log_main.add("Mask_threshold    :"+str(options.mask_threshold)+" sigma above the avg of the map to be thresholded")
 			log_main.add("Cosine_edge       :"+str(options.consine_edge))
 			log_main.add("Dilation          :"+str(options.dilation))
 			# log_main.add("randomphasesafter :"+str(options.randomphasesafter))
@@ -1179,7 +1180,7 @@ def main():
 
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
-					log_main.add("Options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
+					#log_main.add("Options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
 					from utilities import model_circle
 					cm = model_circle(map1.get_xsize()//2-1, map1.get_xsize(), map1.get_ysize(), map1.get_zsize())
 					if single_map:
@@ -1190,6 +1191,7 @@ def main():
 						st = Util.infomask((map1+map2)/2.0, cm, True)
 						del cm
 						m = Util.adaptive_mask((map1+map2)/2.0, st[0]+options.mask_threshold*st[1], options.dilation, options.consine_edge)
+					log_main.add("Actually used threhold, options.dilation, options.consine_edge %f %5.2f %5.2f"%((st[0]+options.mask_threshold*st[1]), options.dilation, options.consine_edge))
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 				else:
 					m = None
