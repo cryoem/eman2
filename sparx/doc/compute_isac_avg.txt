@@ -8,26 +8,26 @@ Beautifier: Beautify the ISAC2 2D clustering result with the original pixel size
 
 Usage in command line
 
-  sxcompute_isac_avg.py  --stack=stack_file_path  --isac_dir=isac_output_directory  --output_dir=output_directory  --no_adjustment  --adjust_to_analytic_model  --adjust_to_given_pw2  --radius=radius  --noctf  --skip_local_alignment  --modelpw=pw2_model_txt  --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --fl=cutoff_frequency  --pixel_size=pixel_size  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit --navg=navg
+  sxcompute_isac_avg.py  --stack=stack_file_path  --isac_dir=isac_output_directory  --output_dir=output_directory  --radius=radius  --noctf  --skip_local_alignment   --B_enhance  --B_start=B_start  --Bfactor=Bfactor  --fl=cutoff_frequency  --pixel_size=pixel_size  --xr=xr  --ts=ts  --fh=fh  --maxit=maxit --navg=navg
 
 \\
 ===== Typical usage =====
 
 sxcompute_isac_avg.py exists only in MPI version. 
 
-There are four choices to adjust the power spectrum of resultant average images. These choices are mutually exclusive. If multiple option flags are used in the command line, only single method will be used and the priority is in order of the list below. 
+There are four cases for option pw_adjustment to adjust the power spectrum of resultant average images. 
 
 \\ __1. Adjust to B-factor:__
-  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --B_enhance --Bfactor=40.0 --fl=0.2
+  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=Bfactor --Bfactor=40.0 --fl=0.2
 
 \\ __2. Adjust to rotational average:__
-  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --adjust_to_given_pw2 --modelpw=roo.txt
+  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=roo.txt
 
 \\ __3. Adjust to analytical model:__
-  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --adjust_to_analytic_model
+  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=analytical_model (default)
 
 \\ __4. No adjustment:__
-  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --no_adjustment
+  mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120 --pw_adjustment=no_adjustment
 
 \\
 ===== Input =====
@@ -50,8 +50,6 @@ There are four choices to adjust the power spectrum of resultant average images.
 === Advanced Parameters ===
   ; %%--%%B_start : B-factor lower limit [A]: Lower limit for B-factor estimation. Specific to adjust to B-factor method. (default 10.0)
   ; %%--%%Bfactor : Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor (e.g. 45.0[A^2]) for the enhancement. By default, the program automatically estimates B-factor. Specific to adjust to B-factor method. (default -1.0)
-
-  ; %%--%%modelpw : Reference 1D PW spectrum: A text file contains 1-D rotationally-averaged power spectrum of either PDB model or EM map sampled in the given pixel_size and in original image size (see Penczek Methods Enzymol 2010). Specific to adjust to rotational average method. (default none)
 
   ; %%--%%xr : Local search range [Pixels]: Translational search range for local alignment. (default -1.0)
   ; %%--%%ts : Local search step [Pixels]: Translational search step for local alignment. (default 1.0)
