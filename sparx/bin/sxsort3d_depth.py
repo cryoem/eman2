@@ -5114,10 +5114,7 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 						recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 						ipsi = tdir[ii]%100000
 						iang = tdir[ii]/100000
-						#for iloop in xrange(10000000):
-						#if iloop%1000==0:memory_check("before slice %d  myid  %d"%(iloop, Blockdata["myid"]))
 						r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
-						#if iloop%1000==0:memory_check("after slice %d  myid  %d"%(iloop, Blockdata["myid"]))
 			else:
 				if	prjlist[im].get_attr("chunk_id") == random_subset:
 					if nosmearing:
@@ -5473,13 +5470,6 @@ def stacksize(since=0.0):
     '''
     return _VmB('VmStk:') - since
     
-def memory_check(s="check_memory"):
-	import os
-	print(s)
-	print(s +"  memory ",  memory()/1.e9)
-	print(s +" resident  ", resident()/1.e9)
-	print(s +" stacksize ", stacksize()/1.e9)
-	
 #####==========-------------------------Functions for post processing
 
 def compute_final_map(work_dir):
@@ -5955,7 +5945,6 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		svar = sqrt(svar/float(Blockdata["nproc"]*Nloop))
 		save = save/float(Blockdata["nproc"]*Nloop)
-		print (svar, save)
 		for i in xrange(k):
 			gave[i] = gave[i]/float(Blockdata["nproc"]*Nloop)
 			gvar[i] = sqrt(gvar[i]/float(Blockdata["nproc"]*Nloop))
@@ -6099,7 +6088,6 @@ def main():
 			print("Specify one of the two options to start the program: --refinement_dir, --instack")
 	
 	if initiate_from_meridien_mode:
-		if Blockdata["myid"] == Blockdata["main_node"]: print("initiate_from_meridien_mode")
 		parser.add_option("--output_dir",                        type   ="string",        default ='',					   help="Sort3d output directory name")
 		parser.add_option("--niter_for_sorting",                 type   ="int",           default =-1,					   help="User specified iteration number of 3D refinement for sorting")
 		parser.add_option("--focus",                             type   ="string",        default ='',                     help="Focus 3D mask. File path of a binary 3D mask for focused clustering ")

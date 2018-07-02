@@ -47,7 +47,7 @@ For structures that have symmetries (e.g. c2):
   ; %%--%%no_norm : Apply normalization: Indicate if normalization should be applied or not. By default, apply normalization. (default False question reversed in GUI)
   ; %%--%%npad : Image padding factor: The number of time to pad the original images. The images will be padded to achieve the original size times this option. (default 2)
   ; %%--%%decimate : Image decimate factor: Reduce images by this factor and change the pixel size. Specify a non-zero positive float value smaller than 1.0. By default, it does not change size of images. (default 1.0)
-  ; %%--%%window : Target image size [Pixels]: Window (or clip) images using the specified size without changing pixel size. The target window size cannot be larger than the size of decimated images. By default, use the original particle image size. (default 0)
+  ; %%--%%window : Target image size [Pixels]: Window (or clip) images using the specified size without changing pixel size. It is relative to the orignal window size. The target window size cannot be larger than the orignal image size. By default, use the original particle image size. (default 0)
   ; %%--%%nvec : Number of eigenvectors: By default, no PCA will be calculated. (default 0)
   ; %%--%%VERBOSE : Verbose: Print long output which is useful for debugging. (default False)
 

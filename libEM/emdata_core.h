@@ -209,7 +209,7 @@ inline float get_value_at(int x, int y, int z) const
 /** Get the pixel density value at index i
  * @param a The index.
  */
-inline float get_value_at_index(int i)
+inline float get_value_at_index(size_t i) const
 {
         return *(rdata + i);
 }
@@ -560,7 +560,7 @@ inline void set_value_at_fast(int x, int y, int z, float v)
  * @param v The value.
  */
 
-inline void set_value_at_index(int i, float v)
+inline void set_value_at_index(size_t i, float v)
 {
         *(rdata + i) = v;
 }

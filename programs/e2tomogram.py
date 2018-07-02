@@ -6,7 +6,8 @@ import numpy as np
 from scipy.optimize import minimize
 import scipy.spatial.distance as scidist
 from EMAN2_utils import *
-from multiprocessing import Pool
+import Queue
+#from multiprocessing import Pool
 from sklearn.decomposition import PCA
 
 def main():
@@ -23,91 +24,77 @@ def main():
 
 	parser.add_pos_argument(name="tiltseries",help="Specify the tilt series you intend to reconstruct.", default="", guitype='filebox', browser="EMTiltseriesTable(withmodal=True,multiselect=True)", filecheck=False, row=0, col=0,rowspan=1, colspan=2,nosharedb=True,mode="easy")
 
-	parser.add_header(name="orblock1", help='Just a visual separation', title="Optional:", row=1, col=0, rowspan=1, colspan=2,mode="easy")
+	parser.add_header(name="orblock1", help='Just a visual separation', title="Specify either zeroid/tltstep OR rawtlt:", row=1, col=0, rowspan=1, colspan=2,mode="easy")
 
-	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. This will override any previously imported tilt angles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=3, col=0, rowspan=1, colspan=2)#,mode="easy")
+	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1,guitype='intbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=3, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
 
-	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1,guitype='intbox',row=4, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=4, col=1, rowspan=1, colspan=1)
+	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=5, col=0, rowspan=1, colspan=2,mode="easy")
 
-	#parser.add_argument("--loadparam", type=str,help="Load from existing param file", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=5, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False)
+	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None)#,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1,mode="easy")
+	
+	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--tltrange", type=str,help="Include only tilts between 'START' and 'STOP', i.e. -40.0,40.0. Default behavior is to include all tilts.", default=None, guitype='strbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k and 2k. default is 1k", default="1k",guitype='strbox',row=7, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=7, col=1, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
+	
+	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False, guitype='boolbox',row=8, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False, guitype='boolbox',row=8, col=1, rowspan=1, colspan=1,mode="easy")
+	
+	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False,guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False, mode="easy[True]", guitype="boolbox", row=9,col=1, rowspan=1, colspan=1)
 
-	parser.add_argument("--npk", type=int,help="Number of landmarks to use. Default is 40.", default=40,guitype='intbox',row=7, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.9,guitype='floatbox',row=7, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--npk", type=int,help="Number of landmarks to use. Default is 40.", default=40,guitype='intbox',row=10, col=0, rowspan=1, colspan=1, mode="easy")
+	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.9,guitype='floatbox',row=10, col=1, rowspan=1, colspan=1,mode="easy")
 
+	parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is 0.6, (-1 means not clipping at all)", default=0.6)#,guitype='floatbox',row=8, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking. Do not change this unless necessary..", default=32)#,guitype='intbox',row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks in nm.", default=-1)
 	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -5", default=-5.)
 
-	parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is 0.6, (-1 means not clipping at all)", default=0.6)
-
-	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking", default=32,guitype='intbox',row=8, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--minloss", type=float,help="Stop refinement when the loss is lower than this value.", default=1.,guitype='floatbox',row=8, col=1, rowspan=1, colspan=1)
-
-	parser.add_argument("--fidsz", type=float,help="Radius of gold fiducials in nm.", default=5.)
-	parser.add_argument("--rmgold", action="store_true",help="Remove gold fiducials.", default=False,guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
-	parser.add_argument("--nofiducial", action="store_true",help="Fiducial-less mode. This will change a few internal parameters to make it work.", default=False, guitype='boolbox',row=9, col=1, rowspan=1, colspan=1,mode="easy")
-
-	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=10, col=0, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
-
-	# parser.add_argument("--writetmp", action="store_true",help="Write intermidiate files", default=False,guitype='boolbox',row=10, col=1, rowspan=1, colspan=1,mode="easy[True]")
-	parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False)
+	parser.add_argument("--threads", type=int,help="Number of threads", default=11,guitype='intbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
 
 	# parser.add_argument("--shrink", type=float,help="Mean-shrink tilt images by this integer value. We suggest using a value that converts image dimensions to approximately 1024x1024. The default is 4.", default=4, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="easy[4]")
 
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 
-	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
+	#parser.add_argument("--savenorm", action="store_true",help="Save normalization volume from reconstruction.", default=False, guitype='boolbox',row=18, col=0, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--savenorm", action="store_true",help="Save normalization volume from reconstruction.", default=False, guitype='boolbox',row=18, col=0, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False)
-
-	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False)
-
-	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k and 2k. default is 1k", default="1k")
-
-	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0, mode="easy[3]", guitype="intbox", row=12,col=1, rowspan=1, colspan=1)
+	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-
-	#parser.add_argument("--rawtlt", type=str,help="Text file contains raw tilt angles", default=None)
-	#parser.add_argument("--tiltstep", type=float,help="Alternative to --rawtlt, if stack contains sequential tilts with fixed angle", default=2.0)
-	#parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None)
-	#parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9)
-	#parser.add_argument("--npk", type=int,help="Number of landmarks to use.", default=40)
-	#parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks in nm.", default=-1)
-	#parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -10", default=-10.)
-	#parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep for tracking.", default=.9)
-	#parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking", default=32)
-	#parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
-	#parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False)
-	#parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False)
-	#parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False)
-	#parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is 0.6, (-1 means not clipping at all)", default=0.6)
-
-	#parser.add_argument("--threads", type=int,help="Number of threads", default=12)
-	#parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1")
-	#parser.add_argument("--verbose", type=int,help="Verbose", default=0)
+	
 
 	(options, args) = parser.parse_args()
 
 	logid=E2init(sys.argv)
 	time0=time.time()
 	itnum=[int(i) for i in options.niter.split(',')]
-	#print(itnum)
 
-	inputname=args[0]
-	time0=time.time()
-
-	itnum=[int(i) for i in options.niter.split(',')]
-	print(itnum)
-
-
+	if len(args)==1:
+		inputname=args[0]
+		print("Reading tilt series {}...".format(inputname))
+	else:
+		print("Processing {} tilt series in sequence..".format(len(args)))
+		cmd=sys.argv
+		opt=' '.join([s for s in cmd if s.startswith("-")])
+		for a in args:
+			run("{} {} {}".format(cmd[0], a, opt))
+		return
+		
 	options.inputname=inputname
+
+	if options.tltrange != None:
+		try: 
+			options.tltrange = map(float,options.tltrange.split(","))
+		except:
+			print("Could not interpret --tltrange: {} \nAn example of the correct format is: -50.0,50.0".format(options.tltrange))
+			return
+	else: 
+		options.tltrange = [-90.0,90.0] # all plausible tilts
 
 	dotpos=inputname.rfind('.')
 	linepos=inputname.rfind('__')
@@ -135,10 +122,7 @@ def main():
 				exit()
 			
 		print("Temporary files will be written in {}".format(options.tmppath))
-	
-	#e=EMData(inputname, 0, True)
-	
-	
+		
 	img=EMData(inputname,0)
 	if img["nz"]>1:
 		imgs=[img.get_clip(Region(0, 0, i, img["nx"], img["ny"], 1)).copy() for i in range(img["nz"])]
@@ -213,10 +197,14 @@ def main():
 		except: pass
 		options.zeroid=zeroid=np.argmin(abs(tlts))
 	else:
-		if (options.rawtlt!=None) :
+		if (options.rawtlt!=None and len(options.rawtlt)>0) :
 			tlts=np.loadtxt(options.rawtlt)
+			
+			if len(tlts)!=len(imgs_500):
+				print("Number of tilt angles and tilt images do no match. Your inputs have {} tilt angles and {} tilt images.\nStopping reconstruction.".format(len(tlts),len(imgs_500)))
+				return
 		else: 
-			tlts=np.arange(-len(imgs_2k)*options.tiltstep/2,len(imgs_2k)*options.tiltstep/2,options.tiltstep)
+			tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
 		
 		if options.writetmp: np.savetxt(options.tmppath+"rawtilt.txt", tlts)
 		
@@ -483,7 +471,7 @@ def calc_global_trans(imgs, options, excludes=[]):
 
 #### Find tilt axis by common line
 def calc_tltax_rot(imgs, options):
-	print("Calculateing tilt axis rotation...")
+	print("Calculating tilt axis rotation...")
 
 	num=len(imgs)
 	sz=min(imgs[0]["nx"], imgs[0]["ny"])
@@ -519,7 +507,8 @@ def calc_tltax_rot(imgs, options):
 	return tltax
 
 def make_tile(args):
-	imgs, tpm, sz, pad, stepx, stepy, step=args
+	jsd, imgs, tpm, sz, pad, stepx, stepy, outz=args
+	#print("start {}, {}".format(stepx, stepy))
 	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"gauss_2"})
 	recon.setup()
 
@@ -530,9 +519,7 @@ def make_tile(args):
 			continue
 		m.process_inplace("filter.ramp")
 #		 m.process_inplace("normalize")
-		
-		m.rotate(-t[2],0,0)
-#		 m.process_inplace("mask.decayedge2d", {"width":32})
+		m.process_inplace("xform",{"alpha":-t[2]})
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
 
 		dy=pad/2-np.cos(t[3]*np.pi/180.)*pad/2
@@ -546,14 +533,15 @@ def make_tile(args):
 
 		mp=recon.preprocess_slice(m, xf)
 		recon.insert_slice(mp,xf,1)
-	threed=recon.finish(True)
-	threed.clip_inplace(Region((pad-sz)/2, (pad-sz)/2, (pad-sz)/2, sz, sz, sz))
+		
 	
-	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
-#	 full3d.insert_scaled_sum(threed, (outxy/2+stepx*step, outxy/2+stepy*step, outz/2))
-#	 threed.to_one()
-#	 full3d_mlt.insert_scaled_sum(threed, (outxy/2+stepx*step, outxy/2+stepy*step, outz/2))
-	return [stepx, stepy, threed]
+	threed=recon.finish(True)
+	threed.clip_inplace(Region((pad-sz)/2, (pad-sz)/2, (pad-outz)/2, sz, sz, outz))
+	
+	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+	jsd.put( [stepx, stepy, threed])
+	
+	return
 
 
 def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
@@ -577,22 +565,24 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 		nrange=range(num)
 	else:
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
-		
+
 	print("Using {} out of {} tilts..".format(len(nrange), num))
 
 	outxy=1024*b
-	outz=zthick=256*b
-	full3d=EMData(outxy, outxy, outz)
-	full3d_mlt=full3d.copy()
-	#tpm[:,:2]/=2/b
-	step=240*b
+	outz=zthick=outxy/4
+	full3d=[EMData(outxy, outxy, outz) for i in [0,1]]
+	#full3d_mlt=full3d.copy()
+	
+	#step=240*b #### distance between each tile
+	step=128*b #### distance between each tile
 
-	sz=260*b
-	pad=360*b
-
+	sz=step*2 #### this is the output 3D size 
+	pad=good_boxsize(sz*1.2) #### this is the padded size in fourier space
+	jsd=Queue.Queue(0)
 	jobs=[]
-	for stepx in range(-2,3):
-		for stepy in range(-2,3):
+	nstep=int(outxy/step/2)
+	for stepx in range(-nstep,nstep+1):
+		for stepy in range(-nstep+stepx%2,nstep+1,2):
 			tiles=[]
 			for i in range(num):
 				if i in nrange:
@@ -604,49 +594,43 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 				else:
 					tiles.append(EMData(1,1))
 
-			jobs.append((tiles, tpm, sz, pad, stepx, stepy, step))
+			jobs.append((jsd, tiles, tpm, sz, pad, stepx, stepy, outz))
 	
-	from multiprocessing import Pool
 	
-	pl=Pool(options.threads)
-	ret=pl.map(make_tile, jobs)
+	thrds=[threading.Thread(target=make_tile,args=([i])) for i in jobs]
+	print("now start threads...")
+	thrtolaunch=0
+	tsleep=threading.active_count()
+	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or jsd.empty()==False:
+		if thrtolaunch<len(thrds) :
+			while (threading.active_count()==options.threads ) : time.sleep(.1)
+			thrds[thrtolaunch].start()
+			thrtolaunch+=1
+		else: time.sleep(1)
 		
-	full3d=EMData(outxy, outxy, outz)
-	for r in ret:
-		sx, sy, threed=r
-		
-		full3d.insert_clip(threed,
-			(int(sx*step+outxy/2-threed["nx"]/2), int(sy*step+outxy/2-threed["nx"]/2), outz/2-threed["nz"]/2))
+		if not jsd.empty():
+			stepx, stepy, threed=jsd.get()
+			full3d[stepx%2].insert_clip(
+				threed,
+				(int(stepx*step+outxy/2-threed["nx"]/2),
+				int(stepy*step+outxy/2-threed["nx"]/2), 
+				outz/2-threed["nz"]/2))
+				
+	for t in thrds: t.join()
 	
-	threed=full3d
-	threed.process_inplace("normalize")
-	if options.clipz>0:
-		
-		p0=np.min(threed.numpy(), axis=1)
-		z0=np.min(p0, axis=1)
-		zp=np.where(z0<np.mean(z0))[0]
-		zcent=int(zp[0]+zp[-1])/2
-		zthk=int((zp[-1]-zp[0])*options.clipz)
-		zthk=np.min([zthk, zthick-zcent, zcent])-1
-		#if options.verbose:
-		print("Z axis center at {:d}, thickness {:d} pixels".format(zcent, zthk*2))
-		threed.clip_inplace(Region(0, 0, zcent-zthk, outxy, outxy, zthk*2))
-		threed["zshift"]=float(zthick/2-zcent)*scale*options.binfac
-		#for nid in range(num):
-			#tltinfo[nid]["xform.projection"].translate(0, 0, zthick/2-zcent)
-		
-	else:
-		
-		#threed.clip_inplace(Region((pad-outxy)/2, (pad-outxy)/2, 0, outxy, outxy, zthick))
-		threed["zshift"]=0
+	#full3d[0].write_image("tmp00_full.hdf")
+	#full3d[1].write_image("tmp01_full.hdf")
+	
+	full3d=full3d[0]+full3d[1]
+	full3d.div(2)
+	full3d.process_inplace("normalize")
+	
+	full3d["zshift"]=0
 	
 	apix=imgs[0]["apix_x"]
-	threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
-	pl.close()
-	#pl.terminate()
-	pl.join()
-	
-	return threed
+	full3d["apix_x"]=full3d["apix_y"]=full3d["apix_z"]=apix
+	print("Done. Now writting tomogram to disk...")
+	return full3d
 
 #### reconstruct tomogram...
 def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
@@ -660,8 +644,11 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 		errtlt=np.zeros(num)
 		nrange=range(num)
 	else:
+		for nid in range(num):
+			ytlt=ttparams[nid][3]
+			if ytlt < options.tltrange[0] or ytlt > options.tltrange[1]:
+				errtlt[nid] = np.inf # ensure this tilt is excluded if outside desired tilt range
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
-
 
 	nx=imgs[0]["nx"]
 	ny=imgs[0]["ny"]
@@ -672,10 +659,10 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 	if options.verbose:
 		print("\t Image size: {:d} x {:d}".format(nx, ny))
 		print("\tPadded volume to: {:d} x {:d} x {:d}".format(pad, pad, zthick))
-	if options.savenorm:
-		recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2","savenorm":options.tmppath+"/normvol.hdf"})
-	else:
-		recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2"})
+	#if options.savenorm:
+	#	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2","savenorm":options.tmppath+"/normvol.hdf"})
+	#else:
+	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,zthick], "mode":"gauss_2"})
 	#recon=Reconstructors.get("fourier_iter", {"size":[pad,pad,zthick]})
 	recon.setup()
 	jobs=[]
@@ -690,10 +677,12 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 
 		pxf=get_xf_pos(ttparams[nid], [0,0,0])
 
+		#if tpm[3] < options.tltrange[0] or tpm[3] > options.tltrange[1]: exclude = True
+
 		xform={"type":"xyz","ztilt":tpm[2],"ytilt":tpm[3], "xtilt":tpm[4], "tx":pxf[0], "ty":pxf[1]}
 		#tltinfo.append({"xform.projection":xform, "alignment.score":errtlt[nid]})
 		jobs.append([nid,imgs[nid],  recon, pad, xform, exclude, options])
-		
+			
 	
 	thrds=[threading.Thread(target=reconstruct,args=(i)) for i in jobs]
 	thrtolaunch=0

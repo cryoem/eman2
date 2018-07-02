@@ -723,6 +723,48 @@ The basic design of EMAN Processors: <br>\
 			static const string NAME;
 	};
 	
+	/**
+	 * This processor will take a mask and extract the values inside the mask as a new 1-D image
+	 * as well as performing the inverse operation.
+	 *@author Steve Ludtke
+	 *@date 2018/06/25
+	 *@param unpack If true, will perform the inverse operation, expecting a 1-D input
+	 *@param mask the binary mask (which must be the same size as the image input or output)
+	 */
+	class MaskPackProcessor : public Processor
+	{
+		public:
+			MaskPackProcessor() {}
+
+			string get_name() const
+			{
+				return NAME;
+			}
+
+			void process_inplace(EMData *image) { throw InvalidCallException("inplace operation not supported"); }
+			
+			virtual EMData* process(const EMData* const image);
+			
+			static Processor *NEW()
+			{
+				return new MaskPackProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Given a mask, will return a 1-D image containing values from the original image inside the mask. If unpack is set, then the inverse operation is performed.";
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("unpack", EMObject::INT, "If set, image should be 1-D and return will match the dimensions of the mask");
+				d.put("mask", EMObject::EMDATA, "The mask indicating which pixels to extract. Required");
+				return d;
+			}
+
+			static const string NAME;
+	};
 	
 
 	/** Determines the partial derivatives in the x direction
@@ -6463,8 +6505,12 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("threshold1", EMObject::FLOAT);
-			d.put("threshold2", EMObject::FLOAT);
+			d.put("threshold1", EMObject::FLOAT, "High initial threshold for seeding.");
+			d.put("threshold2", EMObject::FLOAT, "Lower secondary threshold to define boundary.");
+			d.put("nshells", EMObject::INT, "Number of 1-voxel shells to expand the mask by.");
+			d.put("nshellsgauss", EMObject::INT, "Width in voxels of a Gaussian decay at the edge of the mask.");
+			d.put("return_mask", EMObject::BOOL, "If true the result of the operation will produce the mask, not the masked volume.");
+
 			return d;
 		}
 
@@ -6472,9 +6518,6 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		{
 			return "Tries to mask out only interesting density";
 		}
-
-		static void search_nearby(float *dat, float *dat2, int nx, int ny, int nz, float thr);
-		static void fill_nearby(float *dat2, int nx, int ny, int nz);
 
 		static const string NAME;
 	};
@@ -9026,6 +9069,7 @@ correction is not possible, this will allow you to approximate the correction to
 			TypeDict d;
 			d.put("thresh", EMObject::FLOAT, "The threshold to binarize the map.");
 			d.put("nmaj", EMObject::INT, "Number of neighbors needed to set to white.");
+			d.put("return_neighbor", EMObject::BOOL, "Return number of neighbor for each pixel.");
 			return d;
 		}
 		static const string NAME;
@@ -9034,12 +9078,18 @@ correction is not possible, this will allow you to approximate the correction to
 		void process_pixel(float *pixel, const float *array, int n) const
 		{
 			float thresh=params.set_default("thresh",0);
+			bool retnb=params.set_default("return_neighbor",false);
 			int nmaj=params.set_default("nmaj",n/2+1);
+			int nb=0;
 			for (int i=0; i<n; i++){
 				if (array[i]>thresh)
-					nmaj--;
+					nb++;
+// 					nmaj--;
 			}
-			*pixel=nmaj<=0?1:0;
+			if (retnb)
+				*pixel=nb;
+			else
+				*pixel=nb>=nmaj?1:0;
 		}
 	};
 

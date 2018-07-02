@@ -201,8 +201,7 @@ class TomoEvalGUI(QtGui.QWidget):
 							else:
 								ptclcls[vname]=[1,n]
 				
-				
-				dic["basename"]=base_name(name)
+				dic["basename"]= os.path.basename(name).split(".")[0] #base_name(name)
 				dic["filename"]=name
 				dic["nbox"]=nbox
 				dic["boxcls"]=bxcls

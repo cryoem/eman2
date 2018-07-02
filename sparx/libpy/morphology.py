@@ -1665,7 +1665,12 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 # NOTE: 07/11/2017  PAP
 #       This is "exact" copy of mrk version with a switch to amplitudes (square root of PW)
 # 
-def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_mrk() in morphology.py", RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
+def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, \
+			Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, \
+			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
+			check_consistency = False, stack_mode = False, debug_mode = False, \
+			program_name = "cter_mrk() in morphology.py", \
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -2159,7 +2164,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		print("Estimating CTF parameters...")
 		if stack == None:
 			print("  Micrographs processed by main process (including percent of progress):")
-			progress_percent_step = len(namics)/100.0 # the number of micrograms for main mpi processer divided by 100
+			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
 	
 	totresi = []
 	missing_img_names = []
@@ -2174,7 +2179,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, ifi / progress_percent_step * 100)))
+				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -2343,10 +2348,10 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			crefim = Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
 			Util.Frngs(crefim, numr)
 			Util.Applyws(crefim, numr, wr)
-			
+
 			#pc = ctf2_rimg(wn,generate_ctf([defc,Cs,voltage,pixel_size,0.0,wgh]))
 			#print ccc(pc*envl, subpw, mask)
-			
+
 			bang = 0.0
 			bamp = 0.0
 			bdef = defc
@@ -2401,7 +2406,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				mask.write_image("mask.hdf")
 				exit()
 				"""
-				
+
 				astdata = [crefim, numr, wn, bdef, Cs, voltage, pixel_size, wgh, bang, mask]
 				h = 0.01
 				amp1, amp2 = bracket(fastigmatism3_pap, astdata, h)
@@ -2440,7 +2445,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				#  The looping here is blocked as one shot at amoeba is good enough.  To unlock it, remove - from bold.
 				if(bcc < -bold): bold = bcc
 				else:           break
-			
+
 			#data = [qse, mask, wn, bamp, Cs, voltage, pixel_size, wgh, bang]
 			#print " VALUE AFTER the while LOOP  ",bdef,bamp,bang,simctf2(bdef, data),fastigmatism3(bamp,astdata)
 			#temp = 0.0
@@ -2458,13 +2463,13 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			aangle[nboot]   = bang
 			#from sys import exit
 			#exit()
-		
+
 		#print " ttt ",time()-srtt
 		#from sys import exit
 		#exit()
 		ad1, ad2, ad3, ad4 = table_stat(adefocus) # return values: average, variance, minimum, maximum
 		if ad2 <= 0.0:
-			print(("    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
+			print(("    %s %s: Detected the variance less than zero (defocus statistics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
 			print(("           The program ignores this estimate..."))
 			continue
 		
@@ -2503,9 +2508,6 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				bd1 = -bd1
 				cd1 += 90.0
 			cd1 = cd1%180
-			#  TOSHIO: please avoid this style of coding at all cost.  It follows from the above paragraph that the conditions below can never be met.  So what do you have them?
-			#if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (ad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-			#if cd1 < 0.0 or cd1 >= 180: ERROR("Logical Error: Encountered unexpected astig. angle value (%f). Consult with the developer." % (cd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 			
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
 			reject_img_messages = []
@@ -2513,11 +2515,6 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				pwrot2 = rotavg_ctf( model_blank(wn, wn), ad1, Cs, voltage, pixel_size, bd1, cd1)
 			except:
 				reject_img_messages.append("    - Astigmatism amplitude (%f) is larger than defocus (%f) or defocus (%f) is negative." % (bd1, ad1, ad1))
-			
-			#  TOSHIO:  where do you get 0.3 from?  It cannot be here.  If you need something like that ask the user what acceptable minimum should be.
-			#valid_min_defocus = 0.3
-			#if ad1 < valid_min_defocus:
-			#	reject_img_messages.append("    - Defocus (%f) is smaller than valid minimum value (%f)." % (ad1, valid_min_defocus))
 			
 			if len(reject_img_messages) > 0:
 				rejected_img_names.append(img_name)
@@ -2568,23 +2565,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 				
 				# Compute defocus CV and astig. amp. CV (CV: coefficient of variation; ratio of error (SD) relative to average (mean))
-				#if ad1 < max(0.0, valid_min_defocus): ERROR("Logical Error: Encountered unexpected defocus value (%f). Consult with the developer." % (ad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				#  TOSHIO - no need to ceck, it was computed as sqrt above, so it cannot be <0
-				#if stdavad1 < 0.0: ERROR("Logical Error: Encountered unexpected defocus SD value (%f). Consult with the developer." % (stdavad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 				cvavad1 = stdavad1 / ad1 * 100 # use percentage
-				
-				if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				#  TOSHIO - no need to ceck, it was computed as sqrt above, so it cannot be <0
-				#if stdavbd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. SD value (%f). Consult with the developer." % (stdavbd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-
-
-				#  TOSHIO, I am not sure why do you need it, but I guess what you are trying to write is:
-				bd1 = max(bd1, 1.0e-15)
-				""" Please delete
-				bd1_precision = 1.0e-15  # use double precision
-				if bd1 < bd1_precision:
-					bd1 = bd1_precision
-				"""
 				
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
 				
@@ -2753,7 +2734,12 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 # NOTE: 2016/11/16 Toshio Moriya
 # Now, this function assume the MPI setup and clean up is done by caller, such as mpi_init, and mpi_finalize
 # 07/11/2017  This is power spectrum version of cter_mrk
-def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, debug_mode = False, program_name = "cter_pap() in morphology.py", RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
+def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512, \
+			pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, \
+			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
+			check_consistency = False, stack_mode = False, debug_mode = False, \
+			program_name = "cter_pap() in morphology.py", \
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -2797,7 +2783,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 	i_enum += 1; idx_cter_mode_single_mic    = i_enum  # Single Micrograph Mode - Process a single 
 	i_enum += 1; idx_cter_mode_stack         = i_enum  # Stack Mode - Process a stack (Advanced Option)
 	i_enum += 1; idx_cter_mode_counts        = i_enum
-	
+
 	cter_mode_idx = idx_cter_mode_invalid
 	cter_mode_name = None
 	if stack_mode == False:
@@ -2823,41 +2809,41 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		# (Particle) Stack Mode
 		cter_mode_idx = idx_cter_mode_stack
 		cter_mode_name = "Stack Mode"
-	
+
 	if my_mpi_proc_id == main_mpi_proc:
 		print(" ")
 		print(("----- Running with %s -----" % (cter_mode_name)))
-	
+
 	# ------------------------------------------------------------------------------------
 	# Check mode-dependent error conditions of input arguments and options if abort is necessary. All nodes do this checking
 	# ------------------------------------------------------------------------------------
 	error_message_list = [] # List of error messages. If no error is found, the length should be zero
 	if not stack_mode:
-		
+
 		# Check error conditions applicable to any of Micrograph Mode 
 		if input_image_path.find("*") == -1:
 			error_message_list.append("Input image file path (%s) for %s must be a  path pattern containing wild card (*). Please check input_image_path argument." % (input_image_path, cter_mode_name))
-		
+
 		if input_image_path[:len("bdb:")].lower() == "bdb:":
 			error_message_list.append("BDB file can not be selected as input image file path (%s) for %s. Please check input_image_path argument and convert the image format." % (input_image_path, cter_mode_name))
-		
+
 		# Check error conditions applicable to Selected Micrographs Mode 
 		if cter_mode_idx == idx_cter_mode_selected_mics:
 			if not os.path.exists(selection_list): 
 				error_message_list.append("Selection list text file specified by selection_list option (%s) for %s does not exists. Please check selection_list option." % (selection_list, cter_mode_name))
-		
+
 		if cter_mode_idx == idx_cter_mode_single_mic:
 			if not os.path.exists(os.path.join(os.path.dirname(input_image_path), os.path.basename(selection_list))): 
 				error_message_list.append("Micrograph specified by selection_list option (%s) for %s does not exist. Please check selection_list option." % (selection_list, cter_mode_name))
 			# 
 			if RUNNING_UNDER_MPI and n_mpi_procs != 1:
 				error_message_list.append("%s supports only a single processor version. Please change MPI settings." % (cter_mode_name))
-		
+
 	else: 
 		# Check error conditions
 		if input_image_path.find("*") != -1:
 			error_message_list.append("Stack file path specified by input_image_path (%s) for %s should not contain wild card (*). Please check input_image_path argument." % (input_image_path, cter_mode_name))
-		
+
 		is_not_found_input_image_file = False
 		if input_image_path[:len("bdb:")].lower() == "bdb:":
 			if not db_check_dict(input_image_path): 
@@ -2867,10 +2853,10 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				is_not_found_input_image_file = True
 		if is_not_found_input_image_file:
 			error_message_list.append("Stack file specified by input_image_path (%s) for %s does not exist. Please check input_image_path argument." % (input_image_path, cter_mode_name))
-		
+
 		if RUNNING_UNDER_MPI and n_mpi_procs != 1:
 			error_message_list.append("%s supports only a single processor version. Please change MPI settings." % (cter_mode_name))
-	
+
 	# --------------------------------------------------------------------------------
 	# check output-related error conditions (mode-independent). All nodes do this checking
 	# --------------------------------------------------------------------------------
@@ -3231,7 +3217,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		else:
 			set_start = 0
 			set_end = len(namics)
-	else: 
+	else:
 		pw2 = []
 		data = EMData.read_images(stack)
 		nima = len(data)
@@ -3240,15 +3226,15 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		wn = pw2[0].get_xsize()
 		set_start = 0
 		set_end = 1
-	
+
 	# Set up progress message
 	if my_mpi_proc_id == main_mpi_proc:
 		print(" ")
 		print("Estimating CTF parameters...")
 		if stack == None:
 			print("  Micrographs processed by main process (including percent of progress):")
-			progress_percent_step = len(namics)/100.0 # the number of micrograms for main mpi processer divided by 100
-	
+			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
+
 	totresi = []
 	missing_img_names = []
 	rejected_img_names = []
@@ -3262,7 +3248,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, ifi / progress_percent_step * 100)))
+				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -3328,7 +3314,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			roo  = np.zeros(lenroo, np.float32)
 			sroo = np.zeros(lenroo, np.float32)
 			aroo = np.zeros(lenroo, np.float32)
-			
+
 			for imi in xrange(nimi):
 				Util.add_img(qa, pw2[boot[imi]])
 				temp1 = np.array(allroo[boot[imi]])
@@ -3342,7 +3328,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			aroo /= nimi
 			roo  /= nimi
 			qa   /= nimi
-			
+
 			if f_start < 0:
 				#  Find a break point
 				bp = 1.e23
@@ -4427,7 +4413,7 @@ def defocusget_from_crf(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=10.,
 
 def make_real(t):
 	from utilities import model_blank
-	
+
 	nx = t.get_ysize()
 	ny2 = nx//2
 	q = model_blank(nx,nx)
@@ -4491,7 +4477,7 @@ def fastigmatism1(amp, data):
 	return  -bcc
 
 
-
+"""
 def fastigmatism2(amp, data):
 	
 	from morphology import ctf_rimg
@@ -4501,10 +4487,10 @@ def fastigmatism2(amp, data):
 	cnx = data[2]//2+1
 	#qt = 0.5*nx**2
 	pc = ctf_rimg(data[2], generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]) )
-	ang, sxs, sys, mirror, peak = ornq(pc, crefim, 0.0, 0.0, 1, "H", numr, cnx, cnx)
+	ang, sxs, sys, mirror, peak = ornq(pc, crefim, 0.0, 0.0, 1, "H", numr, cnx, cnx)# shold be data[0]
 	data[-1] = ang
 	return  -peak
-
+"""
 
 def fastigmatism3(amp, data):
 	from morphology import ctf2_rimg
@@ -4528,6 +4514,8 @@ def fastigmatism3(amp, data):
 	#exit()
 	data[8] = ang
 	return  -peak
+
+fastigmatism2 = fastigmatism3
 
 def fastigmatism3_pap(amp, data):
 	from morphology import ctf_rimg
@@ -4851,7 +4839,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 
 	totresi = []
 	for ifi in xrange(len(ll)):
-		#  There should be somthing here that excludes sets with too few images
+		#  There should be something here that excludes sets with too few images
 		#namics = datfilesroot+"%05d_%06d"%(ll[0][ifi],ll[1][ifi])
 		namics = datfilesroot+"%05d"%ll[ifi]
 		d = EMData.read_images( namics )
@@ -4878,7 +4866,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 	
 			#  next modified for test
 			fb[imi] = fft( prgs(volft, kb, [phi,theta,psi,-tx,-ty]) )   #fa[imi].copy()#
-			fbc[imi] = fb[imi].conjg()
+			#fbc[imi] = fb[imi].conjg()  #  THIS IS WRONG PAP 06/19/2018
 			# next is test
 			#fa[imi] = filt_ctf(fa[imi] , generate_ctf([defold, Cs, voltage, Pixel_size, 0.0, wgh, 0.9, 77.]),False) + fft(model_gauss_noise(2., nx,nx)) 
 
@@ -5164,9 +5152,12 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 ################
 # 
 # 
-def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512, pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, \
-			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, check_consistency = False, stack_mode = False, \
-			debug_mode = False, program_name = "cter_vpp() in morphology.py", vpp_options = [], RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
+def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512, 
+			pixel_size = -1.0, Cs = 2.0, voltage = 300.0, wgh = 10.0, f_start = -1.0, f_stop = -1.0, \
+			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
+			check_consistency = False, stack_mode = False, debug_mode = False, \
+			program_name = "cter_vpp() in morphology.py", vpp_options = [], \
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -5661,7 +5652,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		print("Estimating CTF parameters...")
 		if stack == None:
 			print("  Micrographs processed by main process (including percent of progress):")
-			progress_percent_step = len(namics)/100.0 # the number of micrograms for main mpi processer divided by 100
+			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
 	
 	totresi = []
 	missing_img_names = []
@@ -5673,7 +5664,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, ifi / progress_percent_step * 100)))
+				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -6282,7 +6273,8 @@ def defocusgett_vpp2(qse, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs
 	dastamp = dama[0][2]
 	astdata = [crefim, numr, wn, dpefi, Cs, voltage, Pixel_size, dphshift, dastamp, bang]
 	junk = fastigmatism3_vpp(dama[0][2], astdata)
-	dastang = astdata[8]
+	#  Corrected here PAP 06/16/2018
+	dastang = astdata[9]
 
 
 	'''
@@ -6368,7 +6360,9 @@ def fastigmatism3_vpp(amp, data):
 	ang, sxs, sys, mirror, peak = ornq_vpp(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
 	#print  ang, sxs, sys, mirror, peak
 	#print  " fastigmatism3_vpp ",round(data[3],3), data[7], amp,round(ang,2),round(peak,3)
-	data[8] = ang
+	# PAP 06/16/2018 - there seems to be a mistake here as amplitude angle should be #9 on the list
+	# So I corrected it
+	data[9] = ang
 	return  peak
 
 
