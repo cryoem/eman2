@@ -421,7 +421,7 @@ with the same name, you should specify only the .hed files (no renaming is neces
 				os.symlink(filename,newname)
 
 			if options.apix != -1:
-				run("e2proc2d.py {} {} --apix {} --inplace".format(newname, newname, options.apix))
+				run("e2proc3d.py {} {} --apix {}".format(newname, newname, options.apix))
 
 	# Import tomograms
 	if options.import_tomos:
