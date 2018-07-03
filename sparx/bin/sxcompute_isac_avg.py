@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 #
 #  08/26/2016
@@ -31,7 +30,6 @@ from   sys 	import exit
 from   time import localtime, strftime, sleep
 
 global Tracker, Blockdata
-
 
 
 # ------------------------------------------------------------------------------------
@@ -177,7 +175,7 @@ def main():
 	import sys, os, time
 	global Tracker, Blockdata
 	from global_def import ERROR
-	       
+	print('HERE')
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
 	parser = OptionParser(usage,version=SPARXVERSION)
