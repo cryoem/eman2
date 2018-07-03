@@ -67,7 +67,9 @@ def main():
 	parser.add_argument("--gainrefs",help="Specify a comma separated list of gain refereence stacks/images to import. Files will be placed in movierefs_raw. See --importation for additional options.",default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)", row=5, col=0, rowspan=1, colspan=2, mode='movies')
 
 	#parser.add_argument("--import_rawtilts",action="store_true",help="Import tilt images",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='rawtilts[True]')
-	parser.add_argument("--import_tiltseries",action="store_true",help="Import tiltseries",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='tiltseries[True]')
+	parser.add_argument("--apix",help="Specify the apix of the tiltseries you are importing.",type=float,default=-1,guitype='floatbox', row=5, col=1, rowspan=1, colspan=1,mode='tiltseries[-1]')
+
+	parser.add_argument("--import_tiltseries",action="store_true",help="Import tiltseries",default=False, guitype='boolbox', row=5, col=2, rowspan=1, colspan=1, mode='tiltseries[True]')
 	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms for segmentation and/or subtomogram averaging",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='tomos[True]')
 
 	#parser.add_pos_argument(name="tilt_angles",help="Specify a file containing tilt angles corresponding to the input tilt images.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, nosharedb=True, mode='rawtilts')
@@ -418,7 +420,8 @@ with the same name, you should specify only the .hed files (no renaming is neces
 			if options.importation == "link":
 				os.symlink(filename,newname)
 
-			# PLACE ANGLES IN METADATA
+			if options.apix != -1:
+				run("e2proc2d.py {} {} --apix {} --inplace".format(newname, newname, options.apix))
 
 	# Import tomograms
 	if options.import_tomos:
