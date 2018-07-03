@@ -412,16 +412,16 @@ with the same name, you should specify only the .hed files (no renaming is neces
 				else: newname=os.path.join(stdir,os.path.basename(filename))
 				cmd="e2proc2d.py {} {} ".format(filename, newname)
 				if options.invert: cmd+=" --mult -1 --process normalize "
+				if options.apix: cmd += " --apix {} ".format(options.apix)
 				#if options.tomoseg_auto:
 				#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process threshold.clampminmax.nsigma:nsigma=3 "
-				cmd+=options.preprocess
+				#cmd+=options.preprocess
 				run(cmd)
 				print("Done.")
 			if options.importation == "link":
 				os.symlink(filename,newname)
-
-			if options.apix != -1:
-				run("e2proc3d.py {} {} --apix {}".format(newname, newname, options.apix))
+			if (options.importation == "link" or options.importation == "move") and options.apix != -1:
+				run("e2proc3d.py {} {} --apix {} --threed2twod".format(newname, newname, options.apix))
 
 	# Import tomograms
 	if options.import_tomos:
@@ -463,7 +463,7 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					cmd+=" --mult -1 --process normalize "
 				#if options.tomoseg_auto:
 				#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process normalize --process threshold.clampminmax.nsigma:nsigma=3 "
-				cmd+=options.preprocess
+				#cmd+=options.preprocess
 				run(cmd)
 				print("Done.")
 			#shutil.copy(filename,os.path.join(tomosdir,os.path.basename(filename)))
