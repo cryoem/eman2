@@ -36,8 +36,6 @@
 #include "emobject.h"
 #include "typeconverter.h"
 
-//using namespace boost;
-
 struct EMData_pickle_suite : boost::python::pickle_suite
 {
 /*	static
