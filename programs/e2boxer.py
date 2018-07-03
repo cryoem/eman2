@@ -783,7 +783,7 @@ class boxerConvNet(QtCore.QObject):
 		else:
 			data, label=boxerConvNet.load_ptcls(bgrefs, goodrefs, sz, True)
 			nnet0=StackedConvNet_tf(kernels, sz, batchsize, meanout=False)
-			nnet0.do_training(data, label, session, shuffle=True, learnrate=1e-4, niter=10)
+			nnet0.do_training(data, label, session, shuffle=True, learnrate=1e-4, niter=20)
 			nnet0.write_output_train('trainout_pickptcl.hdf', session)
 			nnet0.save_network("nnet_pickptcls.hdf", session)
 			
@@ -792,7 +792,7 @@ class boxerConvNet(QtCore.QObject):
 		else:
 			data, label=boxerConvNet.load_ptcls(badrefs, goodrefs, sz, False)
 			nnet1=StackedConvNet_tf(kernels, sz, batchsize, meanout=True)
-			nnet1.do_training(data, label, session, shuffle=True, learnrate=1e-4, niter=10)
+			nnet1.do_training(data, label, session, shuffle=True, learnrate=1e-4, niter=20)
 			nnet1.write_output_train('trainout_classify.hdf', session)
 			nnet1.save_network("nnet_classify.hdf", session)
 		

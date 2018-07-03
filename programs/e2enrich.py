@@ -52,9 +52,12 @@ def enrich(thr,jsd,imfile,lsx,proj,nenrich,redobispec,i0,i1,verbose):
 		aliref=avg.copy()
 		sim=[]
 		for j,k in enumerate(best):
-			img=EMData(imfile,k).align("rotate_translate_tree",aliref,{"flip":1})
-			sim.append(img.cmp("frc",aliref,{"minres":80,"maxres":20}))
-			avg.add(img)
+#			img=EMData(imfile,k).align("rotate_translate_tree",aliref,{"flip":1})
+			img=EMData(imfile,k)
+			ali=img.align("rotate_translate_tree",aliref,{"flip":1})
+			ali=img.align("refine",aliref,{"xform.align2d":ali["xform.align2d"]},"frc",{"minres":80,"maxres":20})				
+			sim.append(ali.cmp("frc",aliref,{"minres":80,"maxres":20}))
+			avg.add(ali)
 		avg.mult(1.0/(nenrich+1))
 		avg["class_ptcl_src"]=imfile
 		avg["enrich_quals"]=sim
@@ -108,15 +111,17 @@ autoprocessing prior to using this program, but no other processing is required.
 
 	if options.verbose: print("Computing MSA of particle bispectra ({})".format(bispec))
 	# we start by running MSA on the full set of bispectra
-	ret=launch_childprocess("e2msa.py {bispec} enrich_basis.hdf enrich_proj.hdf  --mode pca --nomean --nbasis=12 --normproj {step}".format(bispec=bispec,step=step))
+	ret=launch_childprocess("e2msa.py {bispec} enrich_basis.hdf enrich_proj.hdf  --mode pca --nomean --nbasis=25 --normproj {step}".format(bispec=bispec,step=step))
 
-	ptcl_proj=to_numpy(EMData("enrich_proj.hdf",0)).copy()
+	tmp=EMData("enrich_proj.hdf",0)
+	ptcl_proj=to_numpy(tmp).copy()
 	lsx=LSXFile(args[0],True)
 	
 	jsd=Queue.Queue(0)
 	nstep=n//50+1		# 50 particles at a time. Arbitrary
 	thrds=[(i,jsd,args[0],lsx,ptcl_proj,options.nenrich,options.redobispec,i*50,min(len(ptcl_proj),(i+1)*50),max(0,options.verbose-1)) for i in range(nstep)]
 	
+	if options.verbose: print("Beginning reprojections")
 	# standard thread execution loop
 	thrtolaunch=0
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
