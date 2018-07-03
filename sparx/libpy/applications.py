@@ -4375,7 +4375,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
 	if an == "-1":
-		an = [-1] * lstp
+		an = [-1.0] * lstp
 	else:
 		an = get_input_from_string(an)
 
@@ -7160,7 +7160,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
 	if an == "-1":
-		an = [-1] * lstp
+		an = [-1.0] * lstp
 	else:
 		an = get_input_from_string(an)
 
@@ -7322,6 +7322,12 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
 			lastdelta = delta[N_step]
 			del vol, volft, kb
+			if(an[N_step] > 0):
+				# generate list of angles
+				from alignment import generate_list_of_reference_angles_for_search
+				list_of_reference_angles = \
+				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
+			else:  list_of_reference_angles = [[1.0,1.0]]
 			#=========================================================================
 
 			if myid == main_node:
@@ -7357,7 +7363,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 				from utilities import get_params_proj
 				#print "  IN  ",im,get_params_proj(data[im]),data[im].get_attr("previousmax")
 				peak, pixer[im], number_of_checked_refs, iref = \
-					shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo)
+					shc(data[im], refrings, list_of_reference_angles, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo)
 				#print "  OU  ",im,get_params_proj(data[im]),data[im].get_attr("previousmax")
 				if gamma > 0:
 					n1 = refrings[iref].get_attr("n1")
