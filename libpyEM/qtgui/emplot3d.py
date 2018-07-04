@@ -2554,11 +2554,6 @@ class EMPlot3DInspector(QtGui.QWidget):
 		try: self.regresswin.close()
 		except: pass
 
-class EMPlot3DModule(EMPlot3DWidget):
-	def __init__(self, application=None,winid=None):
-		EMPlot3DWidget.__init__(self, application, winid)
-		import warnings
-		warnings.warn("convert EMPlot3DModule to EMPlot3DWidget", DeprecationWarning)
 
 # This is just for testing, of course
 if __name__ == '__main__':
