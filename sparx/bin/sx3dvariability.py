@@ -78,7 +78,7 @@ def main():
 	#parser.add_option("--squ", 		type="float"   ,	    default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack of input consists of 2D variances (Default False)")
 	parser.add_option("--decimate",     type="float",           default= 1.0,               help="image decimate rate, a number less than 1. default is 1")
-	parser.add_option("--window",       type="int",             default= 0,                 help="target image size. Default value is zero.")
+	parser.add_option("--window",       type="int",             default= 0,                 help="target image size relative to original image size. Default value is zero.")
 	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
 	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
 	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
@@ -322,6 +322,8 @@ def main():
 		ny      = bcast_number_to_all(ny)
 		Tracker ={}
 		Tracker["total_stack"] = nima
+		if options.window > max(nx, ny):
+			ERROR("Window size is larger than the original image size", "sx3dvariability", 1)
 		
 		if options.decimate==1.:
 			if options.window !=0:
@@ -332,7 +334,7 @@ def main():
 				nx = int(nx*options.decimate+0.5)
 				ny = int(ny*options.decimate+0.5)
 			else:
-				nx = int(options.window)
+				nx = int(options.window*decimate+0.5)
 				ny = nx
 		Tracker["nx"]  = nx
 		Tracker["ny"]  = ny

@@ -335,7 +335,7 @@ def main():
         sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
         
    18. Subtract from images in the first stack images in the second stack and write results to the third stack.
-       If the name of the output stack is the same as the second stack, the resultswill be writteon to the second
+       If the name of the output stack is the same as the second stack, the results will be written to the second
        stack (it will be overwritten).
    
    		sxprocess.py bdb:orgstack bdb:proj/data  bdb:proj/sdata bdb:proj/odata --subtract_stack
@@ -395,17 +395,17 @@ def main():
 	parser.add_option("--fsc_adj",              action="store_true",  default=False,                 help="flag to turn on power spectrum adjustment of summed volume by their FSC (effective only in Halfset Volumes Mode)")
 	parser.add_option("--B_enhance",            type="float",         default=0.0,                   help="=0.0, apply Bfactor to enhance map with automatic estimation (valid only in Halfset Volumes Mode); >=0.0, with ad-hoc value; =-1.0, not enhance at all")
 	parser.add_option("--fl",                   type="float",         default=0.0,                   help="=0.0, low-pass filter to resolution limit; =some value, low-pass filter to some valume; =-1, not low-pass filter applied")
-	parser.add_option("--aa",                   type="float",         default=0.01,                  help="low pass filter falloff (effective only when --fl option is not -1.0)" )
+	parser.add_option("--aa",                   type="float",         default=0.01,                  help="=0.01,low pass filter falloff (effective only when --fl option is not -1.0)" )
 	parser.add_option("--mask",                 type="string",        default=None,                  help="path for input mask file")
 	parser.add_option("--output",               type="string",        default="vol_combined.hdf",    help="output file name")
 	parser.add_option("--output_dir",           type="string",        default="./",                  help="output directory name")
 	parser.add_option("--pixel_size",           type="float",         default=0.0,                   help="pixel size of the data")
-	parser.add_option("--B_start",              type="float",         default=10.0,                  help="starting frequency in Angstrom for B-factor estimation (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
-	parser.add_option("--B_stop",               type="float",         default=0.0,                   help="cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency. (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
+	parser.add_option("--B_start",              type="float",         default=10.0,                  help="=10.0 Angstrom, starting frequency in Angstrom for B-factor estimation (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
+	parser.add_option("--B_stop",               type="float",         default=0.0,                   help="=0.0, cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency. (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--do_adaptive_mask",     action="store_true",  default=False,                 help="generate adaptive mask with the given threshold")
-	parser.add_option("--mask_threshold",       type="float",         default=0.02,                  help="the threshold for adaptive_mask (effective only with --do_adaptive_mask)")
-	parser.add_option("--consine_edge",         type="float",         default=6.0,                   help="the width for cosine transition area (effective only with --do_adaptive_mask)")
-	parser.add_option("--dilation",             type="float",         default=3.0,                   help="the pixels for dilate or erosion of binary mask (effective only with --do_adaptive_mask)")
+	parser.add_option("--mask_threshold",       type="float",         default=5.0,                   help="=5.0, the threshold (number of sigmas of summed two halves over avg) for adaptive_mask (effective only with --do_adaptive_mask)")
+	parser.add_option("--consine_edge",         type="float",         default=6.0,                   help="=6.0, the width in pixels for cosine transition area (effective only with --do_adaptive_mask)")
+	parser.add_option("--dilation",             type="float",         default=6.0,                   help="=6.0, the pixels for dilate or erosion of binary mask (effective only with --do_adaptive_mask)")
 	#parser.add_option("--randomphasesafter",   type="float",         default=0.8,                   help=" set Fourier pixels random phases after FSC value ")
 	# window
 	parser.add_option("--window_stack",         action="store_true",  default=False,                 help="window stack images using a smaller window size")
@@ -1095,6 +1095,7 @@ def main():
 			log_main.add("Mtf               :"+str(options.mtf))
 			log_main.add("Output            :"+str(options.output))
 			log_main.add("Do_adaptive_mask  :"+str(options.do_adaptive_mask))
+			log_main.add("Mask_threshold    :"+str(options.mask_threshold)+" sigma above the avg of the map to be thresholded")
 			log_main.add("Cosine_edge       :"+str(options.consine_edge))
 			log_main.add("Dilation          :"+str(options.dilation))
 			# log_main.add("randomphasesafter :"+str(options.randomphasesafter))
@@ -1179,11 +1180,18 @@ def main():
 
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
-					log_main.add("Options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
+					#log_main.add("Options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
+					from utilities import model_circle
+					cm = model_circle(map1.get_xsize()//2-1, map1.get_xsize(), map1.get_ysize(), map1.get_zsize())
 					if single_map:
-						m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
+						st = Util.infomask(map1, cm, True)
+						del cm
+						m = Util.adaptive_mask(map1, st[0]+options.mask_threshold*st[1], options.dilation, options.consine_edge)
 					else:
-						m = Util.adaptive_mask((map1+map2)/2.0, options.mask_threshold, options.dilation, options.consine_edge)
+						st = Util.infomask((map1+map2)/2.0, cm, True)
+						del cm
+						m = Util.adaptive_mask((map1+map2)/2.0, st[0]+options.mask_threshold*st[1], options.dilation, options.consine_edge)
+					log_main.add("Actually used threhold, options.dilation, options.consine_edge %f %5.2f %5.2f"%((st[0]+options.mask_threshold*st[1]), options.dilation, options.consine_edge))
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 				else:
 					m = None

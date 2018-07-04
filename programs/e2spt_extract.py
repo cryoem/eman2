@@ -11,16 +11,15 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="tomograms",help="Specify tomograms from which you wish to extract boxed particles.", default="", guitype='filebox', browser="EMTomoBoxesTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=2, mode="extract")
-	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=0, rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--boxsz", type=int,help="box size in binned tomogram", default=-1, guitype='intbox',row=3, col=0,rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=3, col=1,rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--boxsz", type=int,help="box size in binned tomogram", default=-1, guitype='intbox',row=2, col=0,rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--label", type=str,help="Only extract particle with this name. Leave blank to extract all particles.", default=None, guitype='strbox',row=2, col=1, rowspan=1, colspan=1, mode="extract")
+	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=3, col=0, rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=1,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--maxtilt", type=int,help="max tilt", default=100, guitype='intbox',row=4, col=0, rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--padby", type=float,help="padding factor", default=2.0, guitype='floatbox',row=4, col=1, rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
+	parser.add_argument("--padtwod", type=float,help="padding factor", default=2.0, guitype='floatbox',row=5, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--noctf", action="store_true", default=False ,help="skip ctf correction..", guitype='boolbox',row=5, col=1, rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--label", type=str,help="Only extract particle with this name. Leave blank to extract all particles.", default=None, guitype='strbox',row=5, col=0, rowspan=1, colspan=2, mode="extract")
+	parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
