@@ -75,6 +75,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--symalimasked",type=str,default=None,help="This will translationally realign each asymmetric unit to the specified (usually masked) reference ")
 	parser.add_argument("--sym",type=str,default=None,help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
+	parser.add_argument("--skippostp", action="store_true", default=False ,help="Skip post process steps (fsc, mask and filters)")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -184,9 +185,14 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	avo.write_image(oddfile,0)
 	av.write_image(combfile,0)
 
+	#### skip post process in case we want to do this elsewhere...
+	if options.skippostp:
+		E2end(logid)
+		return
+
 	cmd="e2proc3d.py {evenfile} {path}/fsc_unmasked_{itr:02d}.txt --calcfsc={oddfile}".format(path=options.path,itr=options.iter,evenfile=evenfile,oddfile=oddfile)
 	launch_childprocess(cmd)
-
+	
 	# final volume at this point is Wiener filtered
 	launch_childprocess("e2proc3d.py {combfile} {combfile} --process=filter.wiener.byfsc:fscfile={path}/fsc_unmasked_{itr:02d}.txt:snrmult=2".format(path=options.path,itr=options.iter,combfile=combfile))
 

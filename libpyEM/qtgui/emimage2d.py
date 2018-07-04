@@ -2553,11 +2553,6 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.maxs.setValue(curmax,1)
 		#print "leave set limits", self.conts.getValue(), self.conts.getValue()
 
-class EMImage2DModule(EMImage2DWidget):
-	def __init__(self, image=None, application=get_application(),winid=None, parent=None):
-		EMImage2DWidget.__init__(self, image, application, winid, parent)
-		import warnings
-		warnings.warn("convert EMImage2DModule to EMImage2DWidget", DeprecationWarning)
 
 # This is just for testing, of course
 if __name__ == '__main__':

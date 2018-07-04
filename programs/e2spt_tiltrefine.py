@@ -23,6 +23,7 @@ def refine_ali(ids, pinfo, m, jsd, options):
 		dc["score"]=float(scr)
 		
 		jsd.put((ii, dc))
+
 def main():
 	
 	usage=" "
@@ -30,7 +31,7 @@ def main():
 
 	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
 
-	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=1, col=1, rowspan=1, colspan=1)
+	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=1, col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--maxres", type=float,help="max resolution for comparison", default=20.0, guitype='floatbox',row=2, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--iter", type=int,help="iteration", default=1, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)

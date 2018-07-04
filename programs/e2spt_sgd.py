@@ -14,7 +14,7 @@ def alifn(jsd,fsp,i,a,options):
 	b.process_inplace("xform.phaseorigin.tocorner")
 
 	# we align backwards due to symmetry
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c1","sigmathis":0.5,"sigmato":1.0},1)
+	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c1","sigmathis":1.,"sigmato":1.5},1)
 	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 	jsd.put((fsp,i,c[0]))
@@ -26,9 +26,9 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
 
-	parser.add_header(name="orblock1", help='Just a visual separation', title="** Options **", row=1, col=1, rowspan=1, colspan=1, mode="model")
+	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=1, col=1, rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument('--reference','--ref', type=str, default=None, help="""3D reference for initial model generation. No reference is used by default.""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0,rowspan=1, colspan=3, mode="model")
 
@@ -56,20 +56,7 @@ def main():
 	parser.add_argument("--applysym", action="store_true", default=False ,help="apply symmetry", guitype='boolbox',row=10, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="path of output", default=None)
-	#parser.add_argument("--ref", type=str,help="ref", default=None)
-	#parser.add_argument("--mask", type=str,help="mask file", default=None)
-	#parser.add_argument("--sym", type=str,help="symmetry", default="c1")
-	#parser.add_argument("--batchsize", type=int,help="batch size", default=12)
-	#parser.add_argument("--gaussz", type=float,help="extra gauss filter at z direction", default=-1)
-	#parser.add_argument("--niter", type=int,help="Number of iterations.", default=5)
-	# parser.add_argument("--nbatch", type=int,help="Number of batches per iteration.", default=10)
-	# parser.add_argument("--filterto", type=float,help="Fiter map to frequency after each iteration. Default is 0.02", default=.02)
-	# parser.add_argument("--mass", type=float,help="mass", default=500)
-	# parser.add_argument("--tarres", type=float,help="target resolution", default=10)
-	# parser.add_argument("--setsf", type=str,help="structure factor", default=None)
-	# parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local")
-	# parser.add_argument("--fourier", action="store_true", default=False ,help="gradient descent in fourier space")
-	#
+	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
@@ -99,12 +86,17 @@ def main():
 	fname=args[0]
 
 	refs=make_ref(fname, options)
+	
+	options.input_ptcls=fname
+	options.cmd=' '.join(sys.argv)
+	js=js_open_dict("{}/0_spt_params.json".format(options.path))
+	js.update(vars(options))
+	js.close()
 
 	num=EMUtil.get_image_count(fname)
 	batchsize=options.batchsize
 	learnrate=options.learnrate
-	#lrmult=.98
-	#print("iteration, learning rate, mean gradient")
+
 	if options.nogs:
 		idxs=[np.arange(num)]
 		eoiter=["full"]
@@ -133,8 +125,8 @@ def main():
 
 			ref=refs[ieo].copy()
 
-			tmpout=os.path.join(path,"tmpout_{:02d}_{}.hdf".format(itr, eo))
-			ref.write_image(tmpout,-1)
+			#tmpout=os.path.join(path,"tmpout_{:02d}_{}.hdf".format(itr, eo))
+			#ref.write_image(tmpout,-1)
 			cc=[]
 			for ib in range(nbatch):
 
@@ -190,7 +182,7 @@ def main():
 				if options.mask:
 					ref.process_inplace("mask.fromfile", {"filename": options.mask})
 
-				ref.write_image(tmpout,-1)
+				#ref.write_image(tmpout,-1)
 				ref.write_image(os.path.join(path,"output.hdf"), ieo)
 				sys.stdout.write('#')
 				sys.stdout.flush()

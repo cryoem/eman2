@@ -1,0 +1,75 @@
+/* JSON file to configure the project manager SPR mode */
+/* The ICON string needs to correspond to a dict key listed in the PM */
+/* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */ 
+[
+
+  {
+    "ICON": "single_image_3d",
+    "WIZARD":"/lib/pmconfig/tomoimport.json",
+    "PROGRAM": "e2import.py", 
+    "MODE": "tomos", 
+    "NAME": "Import Tomogram Files",
+    "CHILDREN": [] 
+  }, 
+  {
+    "ICON": "green_boxes",
+    "WIZARD":"/lib/pmconfig/tomoboxer.json",
+    "MODE": "boxing",
+    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
+    "PROGRAM": "e2spt_boxer.py", 
+    "NAME": "Box Tomogram Files", 
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "green_boxes",
+    "WIZARD":"/lib/pmconfig/wedge.json",
+    "PROGRAM": "e2wedge.py", 
+    "NAME": "Examine Missing Wedges", 
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "tomo_hunter",
+    "WIZARD":"/lib/pmconfig/classaverage3d.json",
+    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_classaverage",
+    "PROGRAM": "e2spt_classaverage.py",
+    "MODE": "alignment", 
+    "NAME": "Tomogram Alignment and Averaging", 
+    "NOTELEVEL": "1",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "tomo_hunter",
+    "WIZARD":"/lib/pmconfig/breaksym.json",
+    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_classaverage",
+    "PROGRAM": "e2spt_classaverage.py",
+    "MODE": "breaksym", 
+    "NAME": "Tomogram Alignment, Break Sym", 
+    "NOTELEVEL": "1",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "tomo_hunter",
+    "WIZARD":"/lib/pmconfig/symaligner.json",
+    "PROGRAM": "e2classaveragebysym.py",
+    "NAME": "Tomogram Alignment, Using Symmetry", 
+    "NOTELEVEL": "1",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "single_image_3d",
+    "MODE":"align",
+    "WIZARD":"/lib/pmconfig/symsearch.json",
+    "PROGRAM": "e2symsearch3d.py", 
+    "NAME": "Align to Symmetry Axis",
+    "NOTELEVEL": "1",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "single_image_3d",
+    "WIZARD":"/lib/pmconfig/tomores.json",
+    "PROGRAM": "e2tomoresolution.py", 
+    "NAME": "Estimate Resolution via FSC",
+    "NOTELEVEL": "1",
+    "CHILDREN": [] 
+  }
+]

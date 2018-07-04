@@ -3398,11 +3398,6 @@ class EM3DDataListCache(EMMXDataCache):
 
 	def is_3d(self): return True
 
-class EMImageMXModule(EMImageMXWidget):
-	def __init__(self, data=None,application=None,winid=None, parent=None):
-		EMImageMXWidget.__init__(self, data, application, winid, parent)
-		import warnings
-		warnings.warn("convert EMImageMXModule to EMImageMXWidget", DeprecationWarning)
 
 if __name__ == '__main__':
 	em_app = EMApp()
