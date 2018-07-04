@@ -592,6 +592,15 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 		minimum_grp_size            = minimum_grp_size_init
 		iter_previous_iter_ratio    = 0.0
 		iter_current_iter_ratio     = 0.0
+		### prepare data for sorting: three datasets are generated cdata, fdata, srdata 
+		cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms =norm_per_particle)# pay attentions to shifts!
+		del original_data
+		mpi_barrier(MPI_COMM_WORLD)
+		srdata = precalculate_shifted_data_for_recons3D(rdata, parameterstructure, Tracker["refang"], \
+	      Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
+	      Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle, Tracker["constants"]["nsmear"])
+		del rdata
+		mpi_barrier(MPI_COMM_WORLD)
 		
 		while((iter < box_niter) and (converged == 0)):
 			for indep_run_iter in xrange(2):
@@ -602,8 +611,8 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 					os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 				mpi_barrier(MPI_COMM_WORLD)
 				
-				tmp_final_list, premature =  Kmeans_minimum_group_size_orien_groups(original_data, MGSKmeans_index_file, \
-					   params, parameterstructure, norm_per_particle, minimum_grp_size, clean_volumes= True)
+				tmp_final_list, premature =  Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, \
+				     MGSKmeans_index_file, params, minimum_grp_size, clean_volumes= True)
 					   
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					write_text_row(tmp_final_list, os.path.join(iter_dir, "partition_%03d.txt"%indep_run_iter))
@@ -1086,6 +1095,10 @@ def check_3dmask(log_main):
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 	dump_tracker(Tracker["constants"]["masterdir"])
 	Tracker["shrinkage"] = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
+	if Tracker["constants"]["focus3D"]:
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			log_main.add(' ')
+			log_main.add('Sort3d is run in focus mode, and focus mask is %s'%Tracker["constants"]["focus3D"]+'\n')
 	return
 
 def import_data(log_main):
@@ -1229,7 +1242,8 @@ def shuffle_assignment(iter_assignment, number_of_groups):
 	return new_assignment
 	
 #####
-def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, paramstructure, norm_per_particle, minimum_group_size_init, clean_volumes = False):
+def Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, \
+    partids, params, minimum_group_size_init, clean_volumes = False):
 	global Tracker, Blockdata
 	import shutil
 	import numpy as np
@@ -1277,7 +1291,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 	iter_assignment          = wrap_mpi_bcast(iter_assignment, Blockdata["main_node"]) # initial assignment
 	total_stack              = len(iter_assignment)
 	Tracker["total_stack"]   = total_stack
-	nima                     = len(original_data)
+	nima                     = len(cdata)
 	image_start, image_end   = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
 	
 	Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
@@ -1304,14 +1318,14 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 		
 	compute_noise(Tracker["nxinit"])
 	mpi_barrier(MPI_COMM_WORLD)
-	cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms =norm_per_particle)# pay attentions to shifts!
-	mpi_barrier(MPI_COMM_WORLD)
+	#cdata, rdata, fdata = downsize_data_for_sorting(original_data, preshift = True, npad = 1, norms =norm_per_particle)# pay attentions to shifts!
+	#mpi_barrier(MPI_COMM_WORLD)
 	
-	srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
-	   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
-	     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle, Tracker["constants"]["nsmear"])
-	del rdata
-	mpi_barrier(MPI_COMM_WORLD)
+	#srdata = precalculate_shifted_data_for_recons3D(rdata, paramstructure, Tracker["refang"], \
+	#   Tracker["rshifts"], Tracker["delta"], Tracker["avgnorm"], Tracker["nxinit"], \
+	#     Tracker["constants"]["nnxo"], Tracker["nosmearing"], norm_per_particle, Tracker["constants"]["nsmear"])
+	#del rdata
+	#mpi_barrier(MPI_COMM_WORLD)
 	
 	last_iter_assignment = copy.copy(iter_assignment)
 	best_assignment      = copy.copy(iter_assignment)
