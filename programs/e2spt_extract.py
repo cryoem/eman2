@@ -4,7 +4,6 @@ from EMAN2 import *
 import numpy as np
 import Queue
 import threading
-from multiprocessing import pool
 
 
 def main():
