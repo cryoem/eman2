@@ -151,7 +151,7 @@ def main():
 	
 		options.output=os.path.join("particles3d", outname)
 		options.output2d=os.path.join("particles", outname)
-		options.pad=pad=good_size(options.boxsz*2*options.padby)
+		options.pad=pad=good_size(options.boxsz*2*options.padtwod)
 		
 		print("Writing {} particles to {}".format(nptcl, outname))
 		print("Box size {}, padded to {}".format(options.boxsz*2, pad))
