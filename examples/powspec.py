@@ -28,12 +28,17 @@ def main():
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage). Default is 10.0",default=None)#, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--box",type=int,help="Forced box size in grid mode.. ",default=512)#, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--oversamp",type=float,help="Oversample power spectrum. Default 1.0.",default=1.0)#, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
+	parser.add_argument("--nobgsub",action="store_true",help="Skip background subtraction",default=False)#, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getAPIX()']")
+
 	parser.add_argument("--pad",type=int,help="Exclude this many pixels around the edge of input micrograph(s) when computing power spectra.",default=64)#, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	(options, args) = parser.parse_args()
 
 	logid=E2init(sys.argv,options.ppid)
+
+	try: os.mkdir('micrographs')
+	except: pass
 
 	if options.box<64 :
 		print("Box size too small. Using larger box size of 512 pixels).")
@@ -51,7 +56,8 @@ def main():
 	oversamp = max(options.oversamp,1)
 
 	for curset,arg in enumerate(args):
-		print("{}/{}: {}".format(curset+1,arg,len(args)))
+		sys.stdout.write("\r{}/{}: {}".format(curset+1,len(args),arg))
+		sys.stdout.flush()
 		data = EMData(arg,0)
 
 		if options.apix == None:
@@ -61,15 +67,22 @@ def main():
 				sys.exit(1)
 		else: apix = options.apix
 
-		try: ctf=js_open_dict(info_name(arg,nodir=True))["ctf"][0]
+		try: 
+			ctf=js_open_dict(info_name(arg,nodir=True))["ctf"][0]
+			print("")
+			print("Using existing CTF parameters found in project metadata:")
+			print("\tDefocus: {}".format(ctf.defocus))
+			print("\tVoltage: {}".format(ctf.voltage))
+			print("\tApix: {}".format(ctf.apix))
+			print("\tCs: {}".format(ctf.cs))
+			print("\tAC: {}".format(ctf.ampcont))
 		except:
 			ctf = EMAN2Ctf()
 			ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':10.0,'voltage':200.0,'cs':4.1,'apix':apix,'dsbg':-1})
-		
-		if options.voltage!=None : ctf.voltage=options.voltage
-		if options.ac != None: ctf.ampcont = options.ac
-		if options.cs!=None : ctf.cs=options.cs
-		if options.constbfactor>0 : ctf.bfactor=options.constbfactor
+			if options.voltage!=None : ctf.voltage=options.voltage
+			if options.ac != None: ctf.ampcont = options.ac
+			if options.cs!=None : ctf.cs=options.cs
+			if options.constbfactor>0 : ctf.bfactor=options.constbfactor
 
 		ds=1.0/(apix*box*oversamp)
 		nx=data["nx"]/box-1
@@ -94,81 +107,107 @@ def main():
 		fftbg=cumulfft.process("math.nonconvex")
 		fft1d=cumulfft.calc_radial_dist(cumulfft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
 
-		# Compute 1-D curve and background
-		bg_1d=e2ctf.low_bg_curve(fft1d,ds)
-		ctf.background=bg_1d
-		ctf.dsbg=ds
+		if options.nobgsub:
+			s=np.arange(0,ds*len(fft1d),ds)
 
-		fft1d=np.asarray(fft1d)
-		ds=ctf.dsbg
-		bg_1d=list(ctf.background)
+			pwsfn = "micrographs/{}-pws.txt".format(base_name(arg))
+			try: os.remove(pwsfn)
+			except: pass
 
-		xyd=XYData()
+			with open(pwsfn,"w") as pwsf:
+				pwsf.write("# s(1/A); PWS(s)\n")
+				for i in range(len(fft1d)):
+					pwsf.write("{}\t{}\n".format(s[i],fft1d[i]))
 
-		# Find the minimum value near the origin, which we'll use as a zero (though it likely should not be)
-		mv=(fft1d[1],1)
-		fz=int(ctf.zero(0)/(ds*2))
-		for lz in xrange(1,fz):
-			mv=min(mv,(fft1d[lz],lz))
+		else:
+			# Compute 1-D curve and background
+			bg_1d=e2ctf.low_bg_curve(fft1d,ds)
+			ctf.background=bg_1d
+			ctf.dsbg=ds
 
-		xyd.insort(mv[1],mv[0])
+			fft1d=np.asarray(fft1d)
+			ds=ctf.dsbg
+			bg_1d=list(ctf.background)
 
-		# now we add all of the zero locations to our XYData object
-		for i in xrange(100):
-			z=int(ctf.zero(i)/ds)
-			if z>=len(bg_1d)-1: break
-			if fft1d[z-1]<fft1d[z] and fft1d[z-1]<fft1d[z+1]: mv=(z-1,fft1d[z-1])
-			elif fft1d[z]<fft1d[z+1] : mv=(z,fft1d[z])
-			else : mv=(z+1,fft1d[z+1])
-			xyd.insort(mv[0],mv[1])
+			xyd=XYData()
 
-		# new background is interpolated XYData
-		ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
+			# Find the minimum value near the origin, which we'll use as a zero (though it likely should not be)
+			mv=(fft1d[1],1)
+			fz=int(ctf.zero(0)/(ds*2))
+			for lz in xrange(1,fz):
+				mv=min(mv,(fft1d[lz],lz))
 
-		# if our first point (between the origin and the first 0) is too high, we readjust it once
-		bs=[fft1d[i]-ctf.background[i] for i in xrange(fz)]
-		if min(bs)<0 :
-			mv=(bs[0],fft1d[0],0)
-			for i in xrange(1,fz): mv=min(mv,(bs[i],fft1d[i],i))
-			xyd.set_x(0,mv[2])
-			xyd.set_y(0,mv[1])
-			
+			xyd.insort(mv[1],mv[0])
+
+			# now we add all of the zero locations to our XYData object
+			for i in xrange(100):
+				z=int(ctf.zero(i)/ds)
+				if z>=len(bg_1d)-1: break
+				if fft1d[z-1]<fft1d[z] and fft1d[z-1]<fft1d[z+1]: mv=(z-1,fft1d[z-1])
+				elif fft1d[z]<fft1d[z+1] : mv=(z,fft1d[z])
+				else : mv=(z+1,fft1d[z+1])
+				xyd.insort(mv[0],mv[1])
+
+			# new background is interpolated XYData
 			ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
 
-		bg1d=np.array(ctf.background)
-		r=len(ctf.background)
-		s=np.arange(0,ds*r,ds)
+			# if our first point (between the origin and the first 0) is too high, we readjust it once
+			bs=[fft1d[i]-ctf.background[i] for i in xrange(fz)]
+			if min(bs)<0 :
+				mv=(bs[0],fft1d[0],0)
+				for i in xrange(1,fz): mv=min(mv,(bs[i],fft1d[i],i))
+				xyd.set_x(0,mv[2])
+				xyd.set_y(0,mv[1])
+				
+				ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
 
-		try: bgsub=fft1d-bg1d
-		except:
-			print("Error computing bgsub on this image")
-			continue
+			bg1d=np.array(ctf.background)
+			r=len(ctf.background)
+			s=np.arange(0,ds*r,ds)
 
-		fit=np.array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
-		fit=fit*fit			# squared
+			try: bgsub=fft1d-bg1d
+			except:
+				print("Error computing bgsub on this image")
+				continue
 
-		# auto-amplitude for b-factor adjustment
-		rto,nrto=0,0
-		for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
-			if bgsub[i]>0 :
-				rto+=fit[i]
-				nrto+=fabs(bgsub[i])
-		if nrto==0 : rto=1.0
-		else : rto/=nrto
-		fit=[fit[i]/rto for i in range(len(s))]
+			fit=np.array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
+			fit=fit*fit			# squared
 
-		pwsfn = "{}-pws.txt".format(base_name(arg))
-		if "micrographs" in arg: pwsfn = "micrographs/{}".format(pwsfn)
-		
-		try: os.remove(pwsfn)
-		except: pass
+			# auto-amplitude for b-factor adjustment
+			rto,nrto=0,0
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+				if bgsub[i]>0 :
+					rto+=fit[i]
+					nrto+=fabs(bgsub[i])
+			if nrto==0 : rto=1.0
+			else : rto/=nrto
+			fit=[fit[i]/rto for i in range(len(s))]
 
-		with open(pwsfn,"w") as pwsf:
-			pwsf.write("# s(1/A); PWS-BG(s); CTF Fit(s); PWS(s); BG(s)\n")
-			for i in range(len(fft1d)):
-				pwsf.write("{}\t{}\t{}\t{}\t{}\n".format(s[i],bgsub[i],fit[i],fft1d[i],bg1d[i]))
+			pwsfn = "micrographs/{}-pws.txt".format(base_name(arg))
 
-		print("1D spectra saved to {}.".format(pwsfn))
+			try: os.remove(pwsfn)
+			except: pass
+
+			with open(pwsfn,"w") as pwsf:
+				pwsf.write("# s(1/A); PWS-BG(s); CTF Fit(s); PWS(s); BG(s)\n")
+				for i in range(len(fft1d)):
+					pwsf.write("{}\t{}\t{}\t{}\t{}\n".format(s[i],bgsub[i],fit[i],fft1d[i],bg1d[i]))
+
+	print("\nPower spectra files saved within the 'micrographs' directory.")
+
+def subtract_background(curve,zeros):
+	floc=min(zeros[0]/2,8)
+	itpx=[curve[:floc].argmin()]+list(zeros)+[len(curve)-1]
+	if itpx[0]==0: itpx = itpx[1:]
+	itpy=[min(curve[i-1:i+2]) for i in itpx]
+	itpy[0]=curve[:floc].min()
+	itpx=np.array(itpx)
+	itpy=np.array(itpy)
+	bg = np.interp(range(len(curve)),itpx,itpy)
+	ret=curve-bg
+	ret[:floc]=0
+	return ret,bg
 
 if __name__ == "__main__":
 	main()
+
