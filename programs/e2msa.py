@@ -72,7 +72,7 @@ handled this way."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--mode",type=str,help="Mode should be one of: pca, sparsepca, fastica, lda, nmf",default="pca")
+	parser.add_argument("--mode",type=str,help="Mode should be one of: pca, sparsepca, fastica, factan, lda, nmf",default="pca")
 	parser.add_argument("--nomean",action="store_true",help="Suppress writing the average image as the first output image",default=False)
 	parser.add_argument("--nbasis","-n",type=int,help="Number of basis images to generate.",default=20)
 	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask defining the pixels to include in the Eigenimages")
@@ -150,6 +150,9 @@ handled this way."""
 	if options.mode=="pca":
 		msa=skdc.PCA(n_components=options.nbasis)
 #		print(data.shape)
+		msa.fit(data)
+	elif options.mode=="factan":
+		msa=skdc.FactorAnalysis(n_components=options.nbasis)
 		msa.fit(data)
 	elif options.mode=="sparsepca":
 		msa=skdc.SparsePCA(n_components=options.nbasis)
@@ -270,7 +273,7 @@ handled this way."""
 
 	E2end(logid)
 	if options.mode not in ("pca","sparsepca","fastica") :
-		print("WARNING: While projection vectors are reliable, use of modes other than PCA or ICA may involve nonlinarities, meaning the 'Eigenimages' may not be interpretable in this way.")
+		print("WARNING: While projection vectors are reliable, use of modes other than PCA or ICA may involve nonlinarities, meaning the 'Eigenimages' may not be interpretable in the usual way.")
 
 def simmx_get(images,simmxpath,mask,step):
 	"""returns an array of transformed masked images as arrays for PCA"""

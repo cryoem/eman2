@@ -111,7 +111,7 @@ autoprocessing prior to using this program, but no other processing is required.
 
 	if options.verbose: print("Computing MSA of particle bispectra ({})".format(bispec))
 	# we start by running MSA on the full set of bispectra
-	ret=launch_childprocess("e2msa.py {bispec} enrich_basis.hdf enrich_proj.hdf  --mode pca --nomean --nbasis=25 --normproj {step}".format(bispec=bispec,step=step))
+	ret=launch_childprocess("e2msa.py {bispec} enrich_basis.hdf enrich_proj.hdf  --mode factan --nomean --nbasis=10 {step}".format(bispec=bispec,step=step))
 
 	tmp=EMData("enrich_proj.hdf",0)
 	ptcl_proj=to_numpy(tmp).copy()
