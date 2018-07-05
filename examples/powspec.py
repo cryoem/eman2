@@ -158,6 +158,7 @@ def main():
 		fit=[fit[i]/rto for i in range(len(s))]
 
 		pwsfn = "{}-pws.txt".format(base_name(arg))
+		if "micrographs" in arg: pwsfn = "micrographs/{}".format(pwsfn)
 		
 		try: os.remove(pwsfn)
 		except: pass
