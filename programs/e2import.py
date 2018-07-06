@@ -397,22 +397,28 @@ with the same name, you should specify only the .hed files (no renaming is neces
 
 	# Import tilt series
 	if options.import_tiltseries:
+		try:
+			db=js_open_dict("info/project.json")
+			if options.apix == -1: 
+				options.apix = db["global.apix"]
+				print("Using global apix: {}".format(db["global.apix"]))
+		except: pass
 
 		stdir = os.path.join(".","tiltseries")
-		if not os.access(stdir, os.R_OK):
-			os.mkdir("tiltseries")
+		if not os.access(stdir, os.R_OK) : os.mkdir("tiltseries")
 
 		for filename in args:
 			newname=os.path.join(stdir,os.path.basename(filename))
 			if options.importation == "move":
 				os.rename(filename,newname)
 			if options.importation == "copy":
+				if os.path.isfile(newname): os.remove(newname)
 				tpos=filename.rfind('.')
 				if tpos>0: newname=os.path.join(stdir,os.path.basename(filename[:tpos]+'.hdf'))
 				else: newname=os.path.join(stdir,os.path.basename(filename))
 				cmd="e2proc2d.py {} {} ".format(filename, newname)
 				if options.invert: cmd+=" --mult -1 --process normalize "
-				if options.apix: cmd += " --apix {} ".format(options.apix)
+				if options.apix != -1: cmd += " --apix {} ".format(options.apix)
 				#if options.tomoseg_auto:
 				#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process threshold.clampminmax.nsigma:nsigma=3 "
 				#cmd+=options.preprocess
