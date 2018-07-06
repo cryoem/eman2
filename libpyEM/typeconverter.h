@@ -43,8 +43,6 @@
 #include "ctf.h"
 
 #include <boost/python.hpp>
-#include <boost/python/to_python_converter.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
 #include <numpy/arrayobject.h>
 
 #include <vector>

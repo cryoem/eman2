@@ -43,9 +43,6 @@
 #include <ctime>
 #include <functional>
 
-#include <boost/unordered_map.hpp>
-#include <boost/thread.hpp>
-
 #include "imageio.h"
 
 using std::string;
