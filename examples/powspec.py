@@ -67,22 +67,24 @@ def main():
 				sys.exit(1)
 		else: apix = options.apix
 
+		noctfflag = False
 		try: 
 			ctf=js_open_dict(info_name(arg,nodir=True))["ctf"][0]
 			print("")
-			print("Using existing CTF parameters found in project metadata:")
 			print("\tDefocus: {}".format(ctf.defocus))
 			print("\tVoltage: {}".format(ctf.voltage))
 			print("\tApix: {}".format(ctf.apix))
 			print("\tCs: {}".format(ctf.cs))
 			print("\tAC: {}".format(ctf.ampcont))
 		except:
-			ctf = EMAN2Ctf()
-			ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':10.0,'voltage':200.0,'cs':4.1,'apix':apix,'dsbg':-1})
-			if options.voltage!=None : ctf.voltage=options.voltage
-			if options.ac != None: ctf.ampcont = options.ac
-			if options.cs!=None : ctf.cs=options.cs
-			if options.constbfactor>0 : ctf.bfactor=options.constbfactor
+			print("Could not find CTF parameters. Skipping background subtraction.")
+			#ctf = EMAN2Ctf()
+			#ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':10.0,'voltage':200.0,'cs':4.1,'apix':apix,'dsbg':-1})
+			#if options.voltage!=None : ctf.voltage=options.voltage
+			#if options.ac != None: ctf.ampcont = options.ac
+			#if options.cs!=None : ctf.cs=options.cs
+			#if options.constbfactor>0 : ctf.bfactor=options.constbfactor
+			noctfflag = True
 
 		ds=1.0/(apix*box*oversamp)
 		nx=data["nx"]/box-1
@@ -107,7 +109,7 @@ def main():
 		fftbg=cumulfft.process("math.nonconvex")
 		fft1d=cumulfft.calc_radial_dist(cumulfft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
 
-		if options.nobgsub:
+		if options.nobgsub or noctfflag:
 			s=np.arange(0,ds*len(fft1d),ds)
 
 			pwsfn = "micrographs/{}-pws.txt".format(base_name(arg))
@@ -194,19 +196,6 @@ def main():
 					pwsf.write("{}\t{}\t{}\t{}\t{}\n".format(s[i],bgsub[i],fit[i],fft1d[i],bg1d[i]))
 
 	print("\nPower spectra files saved within the 'micrographs' directory.")
-
-def subtract_background(curve,zeros):
-	floc=min(zeros[0]/2,8)
-	itpx=[curve[:floc].argmin()]+list(zeros)+[len(curve)-1]
-	if itpx[0]==0: itpx = itpx[1:]
-	itpy=[min(curve[i-1:i+2]) for i in itpx]
-	itpy[0]=curve[:floc].min()
-	itpx=np.array(itpx)
-	itpy=np.array(itpy)
-	bg = np.interp(range(len(curve)),itpx,itpy)
-	ret=curve-bg
-	ret[:floc]=0
-	return ret,bg
 
 if __name__ == "__main__":
 	main()
