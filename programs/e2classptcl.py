@@ -106,7 +106,7 @@ def extract_classav_vstack(inpath,classes,outpath,verbose=0):
 		if verbose>0 : print("Class %d: %d particles"%(avn,len(imgns)))
 		
 	
-	if verbose>0 : print("%d total particles written to %s"(outn,outpath))
+	if verbose>0 : print("%d total particles written to %s"%(outn,outpath))
 	
 	return outn
 
@@ -134,7 +134,7 @@ def extract_classav(inpath,classes,outpath,verbose=0):
 		if verbose>0 : print("Class %d: %d particles"%(avn,len(imgns)))
 		
 	
-	if verbose>0 : print("%d total particles written to %s"(outn,outpath))
+	if verbose>0 : print("%d total particles written to %s"%(outn,outpath))
 
 
 
