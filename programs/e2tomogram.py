@@ -38,7 +38,7 @@ def main():
 	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=6, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltrange", type=str,help="Include only tilts between 'START' and 'STOP', i.e. -40.0,40.0. Default behavior is to include all tilts.", default=None)#, guitype='strbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k and 2k. default is 1k", default="1k",guitype='comboparambox',choicelist="('1k', '2k')",row=7, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k and 2k. default is 1k", default="1k",guitype='combobox',choicelist="('1k', '2k')",row=7, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=7, col=1, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
 	
 	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False, guitype='boolbox',row=8, col=0, rowspan=1, colspan=1,mode="easy")
@@ -50,7 +50,7 @@ def main():
 	parser.add_argument("--npk", type=int,help="Number of landmarks to use. Default is 40.", default=40,guitype='intbox',row=10, col=0, rowspan=1, colspan=1, mode="easy")
 	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.9,guitype='floatbox',row=10, col=1, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is 0.6, (-1 means not clipping at all)", default=0.6)#,guitype='floatbox',row=8, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is -1, (means not clipping at all)", default=-1)#,guitype='floatbox',row=8, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking. Do not change this unless necessary..", default=32)#,guitype='intbox',row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks in nm.", default=-1)
 	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -5", default=-5.)
@@ -58,6 +58,7 @@ def main():
 	parser.add_argument("--threads", type=int,help="Number of threads", default=11,guitype='intbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
+	parser.add_argument("--correctrot", action="store_true",help="correct for global rotation and position sample flat in tomogram.", default=False,guitype='boolbox',row=11, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -165,7 +166,7 @@ def main():
 		if options.tmppath:
 			path=options.tmppath
 		else:
-			path=make_path("tomorecon")
+			options.tmppath=path=make_path("tomorecon")
 		print("Temporary files will be written in {}".format(options.tmppath))
 		
 	#### save 1k input only.
@@ -293,11 +294,11 @@ def main():
 		for m3diter in range(n_m3d):
 
 			### In the first round, position the tomogram so the features are relatively flat.
-			if niter==0:
+			if niter==0 and m3diter==1 and options.correctrot:
 				threed=make_tomogram(imgs_500, ttparams, options, errtlt=loss0)
-				rot=fix_rotation(threed) 
-				yrot+=rot
-				ttparams[:,3]+=rot
+				ttparams=fix_rotation(threed, ttparams) 
+				#yrot+=rot
+				#ttparams[:,3]+=rot
 				zeroid=options.zeroid=np.argmin(abs(ttparams[:,3]))
 				ttparams[:,3]-=ttparams[options.zeroid,3]
 			
@@ -388,22 +389,50 @@ def main():
 	E2end(logid)
 
 #### find the optimal global rotation of the tomogram so the high contrast features lies flat
-def fix_rotation(threed):
+def fix_rotation(threed, ttparams):
 
-	threed.process_inplace("math.minshrink", {"n":2})
-	threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":5})
-	thd=threed.numpy().copy()
-	prj=np.min(thd, axis=1)
-	pval=prj.flatten()
+	m=threed.copy()
+	m.process_inplace("math.minshrink",{'n':2})
+	m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":5})
+	m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
+	m.process_inplace("normalize")
+	m.process_inplace("math.meanshrink",{'n':2})
+	
+	img=m.numpy().copy()
+	pval=img.flatten()
 	thr=np.sort(pval)[int(len(pval)*.1)]
-	pts=np.array(np.where(prj<thr)).T
-	pca=PCA(1)
+	
+	pts=np.array(np.where(img<-4)).T
+	pts=pts[:,::-1]
+	pca=PCA(3)
 	pca.fit(pts);
-	c=pca.components_[0]
-	rot=(np.arctan2(c[0], c[1])*180/np.pi)
-	rot=(rot+90)%180-90.
-	print("Adjusting rotation {:.1f}..".format(rot))
-	return rot
+	c=pca.components_
+	
+	t=Transform()
+	t.set_rotation(c[2].tolist())
+	t.invert()
+	xyz=t.get_params("xyz")
+	xyz["ztilt"]=0
+	#t=Transform(xyz)
+	print(xyz)
+
+	tpm=ttparams.copy()
+	
+	tpm[:,4]=(tpm[:,4]-xyz["xtilt"])
+	tpm[:,3]=(tpm[:,3]-xyz["ytilt"])
+	
+	#thd=threed.numpy().copy()
+	#prj=np.min(thd, axis=1)
+	#pval=prj.flatten()
+	#thr=np.sort(pval)[int(len(pval)*.1)]
+	#pts=np.array(np.where(prj<thr)).T
+	#pca=PCA(1)
+	#pca.fit(pts);
+	#c=pca.components_[0]
+	#rot=(np.arctan2(c[0], c[1])*180/np.pi)
+	#rot=(rot+90)%180-90.
+	#print("Adjusting rotation {:.1f}..".format(rot))
+	return tpm
 
 #### unpack parameters. I really shouldn't need this but it is risky to remove the convertion
 def get_params(allparams, options):
