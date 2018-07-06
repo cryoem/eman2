@@ -567,7 +567,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 	t1 = time()-t
 	print("{:.1f} s".format(time()-t))
 
-	if options.align_frames and not options.realign:
+	elif options.align_frames and not options.realign:
 
 		start = time()
 
