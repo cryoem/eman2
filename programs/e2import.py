@@ -397,12 +397,12 @@ with the same name, you should specify only the .hed files (no renaming is neces
 
 	# Import tilt series
 	if options.import_tiltseries:
-		try:
-			db=js_open_dict("info/project.json")
-			if options.apix == -1: 
-				options.apix = db["global.apix"]
-				print("Using global apix: {}".format(db["global.apix"]))
-		except: pass
+		# try:
+		# 	db=js_open_dict("info/project.json")
+		# 	if options.apix == -1: 
+		# 		options.apix = db["global.apix"]
+		# 		print("Using global apix: {}".format(db["global.apix"]))
+		# except: pass
 
 		stdir = os.path.join(".","tiltseries")
 		if not os.access(stdir, os.R_OK) : os.mkdir("tiltseries")
@@ -424,11 +424,10 @@ with the same name, you should specify only the .hed files (no renaming is neces
 				#cmd+=options.preprocess
 				run(cmd)
 				print("Done.")
-			if options.importation == "link":
-				os.symlink(filename,newname)
+			if options.importation == "link": os.symlink(filename,newname)
 			if (options.importation == "link" or options.importation == "move") and options.apix != -1:
 				run("e2proc3d.py {} {} --apix {} --threed2twod".format(newname, newname, options.apix))
-
+	
 	# Import tomograms
 	if options.import_tomos:
 		tomosdir = os.path.join(".","tomograms")
