@@ -40,7 +40,6 @@
 #include <vector>
 #include <cstring>
 #include <boost/random.hpp>
-#include <boost/random/normal_distribution.hpp>
 
 #ifdef __APPLE__
 	typedef unsigned int uint;

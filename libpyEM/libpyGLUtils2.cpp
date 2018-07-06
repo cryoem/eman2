@@ -36,7 +36,6 @@
 
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
-#include <boost/cstdint.hpp>
 
 #include "glutil.h"
 #include "emdata.h"

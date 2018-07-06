@@ -32,20 +32,9 @@
 #ifndef EMDATA_PICKLE_H_
 #define EMDATA_PICKLE_H_
 
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
-#include <boost/python/back_reference.hpp>
-
 #include "emdata.h"
 #include "emobject.h"
 #include "typeconverter.h"
-
-//using namespace boost;
 
 struct EMData_pickle_suite : boost::python::pickle_suite
 {

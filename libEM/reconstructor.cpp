@@ -41,8 +41,6 @@
 #include <cstring>
 #include <fstream>
 #include <iomanip>
-#include <boost/bind.hpp>
-#include <boost/format.hpp>
 
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_fit.h>

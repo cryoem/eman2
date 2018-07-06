@@ -1301,20 +1301,5 @@ ostream& U3DWriter::write(ostream& os, const string& s )
 
 	return os;
 }
-/*
-#include <boost/python.hpp>
-using namespace boost::python;
 
-BOOST_PYTHON_MODULE(gorgon)
-{
-    class_<MarchingCubes>("MarchingCubes", init<>())
-        .def("drawMesh", &MarchingCubes::drawMesh)
-		.def("setSurfaceValue", &MarchingCubes::setSurfaceValue)
-		.def("getSurfaceValue", &MarchingCubes::getSurfaceValue)
-		.def("set_sample_density", &MarchingCubes::set_sample_density)
-		.def("getSampleDensity", &MarchingCubes::getSampleDensity)
-		.def("loadMRC", &MarchingCubes::loadMRC)
-    ;
-}
-*/
 #endif
