@@ -16,7 +16,7 @@ import subprocess
 
 def main():
 	
-	usage=" "
+	usage="This is a GUI program that allows users inspect tomograms easily. Simply run without argument in a tomogram project directory."
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ppid", type=int,help="", default=None)
 
@@ -224,7 +224,6 @@ class TomoEvalGUI(QtGui.QWidget):
 			item.setCheckState(Qt.Checked)
 	
 	def update_list(self):
-		
 		#### update file list
 		self.imglst.clear()
 		self.imglst.setRowCount(len(self.imginfo))
@@ -253,6 +252,7 @@ class TomoEvalGUI(QtGui.QWidget):
 			self.imglst.setItem(i,3, it)
 		
 	def get_id_info(self):
+		#### utility function to get the info of current selected row.
 		crow=self.imglst.currentRow()
 		idx=self.imglst.item(crow, 0).text()
 		info=self.imginfo[int(idx)]

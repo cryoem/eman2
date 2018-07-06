@@ -2,6 +2,7 @@
 # Muyuan Chen 2017-03
 from EMAN2 import *
 import numpy as np
+from EMAN2_utils import *
 
 def main():
 	
@@ -49,23 +50,8 @@ def main():
 	ref=options.reference
 
 	if options.path==None:
-		for i in range(100):
-			pname="spt_{:02d}".format(i)
-			if not os.path.isdir(pname):
-				os.mkdir(pname)
-				options.path=pname
-				break
-		else:
-			print "something is wrong..."
-			exit()
-	else:
-		try: 
-			os.mkdir(options.path)
-		except:
-			pass
-		
-	print options.path
-	
+		options.path=make_path("tomorecon")
+			
 	options.input_ptcls=ptcls
 	options.input_ref=ref
 	options.cmd=' '.join(sys.argv)
@@ -78,7 +64,7 @@ def main():
 	if options.goldcontinue==False:
 		er=EMData(ref,0)
 		if abs(1-ep["apix_x"]/er["apix_x"])>0.01:
-			print "apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"])
+			print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
 			rs=er["apix_x"]/ep["apix_x"]
 			if rs>1.:
 				run("e2proc3d.py {} {}/model_input.hdf --clip {} --scale {} --process mask.soft:outer_radius=-1".format(ref, options.path, ep["nx"], rs))
@@ -175,9 +161,8 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	ret=launch_childprocess(cmd)
-	print ret
 	return ret
 	
 	

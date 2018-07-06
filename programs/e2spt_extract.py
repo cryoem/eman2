@@ -35,10 +35,12 @@ def main():
 	
 	pfile=args[0]
 	
-	################# reading alignment info...
+	#### reading alignment info...
 	js=js_open_dict(info_name(pfile))
 	ttparams=np.array(js["tlt_params"])
+	
 	if options.noctf==False and js.has_key("defocus"):
+		#### read ctf info when exist
 		defocus=np.array(js["defocus"])
 		phase=np.array(js["phase"])
 		voltage=float(js["voltage"])
@@ -64,7 +66,7 @@ def main():
 	print("Scaling factor: {:.1f}, y-tilt: {:.1f}, z-shift: {:d}.".format(scale, options.ytilt, int(zshift)))
 	
 	
-	############## reading particle location
+	#### reading particle location from json file corresponding to the tomogram input
 	ptclpos=[]
 	nptcl=EMUtil.get_image_count(pfile)
 	e=EMData(pfile, 0, True)
@@ -91,7 +93,7 @@ def main():
 				else:
 					sz=int(np.round(options.boxsz/2.*scale))
 				towrite.append((bxs, outname, sz))
-				print("{} : {} boxes, box size {}".format(val["name"], len(bxs), int(sz))) 
+				print("{} : {} boxes, unbinned box size {}".format(val["name"], len(bxs), int(sz*2))) 
 		
 		if len(towrite)==0:
 			print("No particles. exit..")
@@ -127,7 +129,7 @@ def main():
 	
 	
 	print("Reading tilt series file: {}".format(tfile))
-	   
+	#### make sure this works on image stack or mrc volume
 	img=EMData(tfile,0)
 	if img["nz"]>1:
 		imgs=[img.get_clip(Region(0, 0, i, img["nx"], img["ny"], 1)).copy() for i in range(img["nz"])]
@@ -183,7 +185,6 @@ def main():
 			if thrtolaunch<len(thrds):
 				while (threading.active_count()==options.threads+tsleep ) : 
 					#print threading.active_count(), options.threads, tsleep, thrtolaunch, len(thrds)
-					
 					time.sleep(.1)
 				thrds[thrtolaunch].start()
 				thrtolaunch+=1
