@@ -4251,7 +4251,7 @@ void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, i
 	NX = nx;
 	NY = ny;
 	RING_LENGTH = ring_length;
-        NRING = nring;
+	NRING = nring;
 	STEP = step;
 	KX = kx;
 	KY = ky;
