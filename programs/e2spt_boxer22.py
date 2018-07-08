@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 # LAST update: May/2017 by Muyuan Chen
 # Author: Steven Ludtke  2/8/2011 (rewritten)
@@ -1624,4 +1625,4 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		return 
 if __name__ == '__main__':
 	main()
-	
+

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2018-04
 
 from EMAN2 import *
@@ -142,4 +143,4 @@ def run(cmd):
 	
 if __name__ == '__main__':
 	main()
-	
+
