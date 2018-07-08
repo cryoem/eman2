@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from __future__ import print_function
 # Muyuan Chen 2018-04
+from __future__ import print_function
 from EMAN2 import *
 import numpy as np
 import Queue
@@ -227,7 +227,7 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	

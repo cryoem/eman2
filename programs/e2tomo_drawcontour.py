@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from __future__ import print_function
 # Muyuan Chen 2017-03
+from __future__ import print_function
 from EMAN2 import *
 import numpy as np
 import weakref
@@ -41,7 +41,7 @@ def main():
 	E2end(logid)
 
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 
 class Contour(EMShape):
@@ -149,7 +149,7 @@ class Contour(EMShape):
 		if pts[ii,2]==mi: return
 		last=pts[ii,2]
 		pts=pts[pts[:,2]==last]
-		print mi, last, pts.shape
+		print(mi, last, pts.shape)
 		img=self.image.data.numpy()
 
 		vec=[]
@@ -196,8 +196,8 @@ class Contour(EMShape):
 		#print "aaaaaaaa"
 		zpos=self.image.list_idx
 		allpts=[[p[0], p[1], p[3]] for p in self.points if p[2]==zpos]
-		print np.array(self.points)
-		print "#########"
+		print(np.array(self.points))
+		print("#########")
 		cid=np.unique([p[2] for p in allpts])
 		for ci in cid:
 			pts=[[p[0], p[1]] for p in allpts if p[2]==ci]
@@ -277,7 +277,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 
 		if event.modifiers()&Qt.ControlModifier:
 			#### interpolate curve from previous slices
-			print 'new contour'
+			print('new contour')
 			self.contour.add_point([x, y], True)
 
 		elif event.modifiers()&Qt.ShiftModifier:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 #
 # Author: Jesus Galaz-Montoya 10/2017, 
@@ -34,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from __future__ import print_function
 from EMAN2 import *
 from EMAN2_utils import *
 import math
@@ -157,7 +157,7 @@ def main():
 	nptcl = EMUtil.get_image_count(options.input)
 	
 	if nptcl < 2:
-		print "\nERROR: you need more than two particles in --input to particles"
+		print("\nERROR: you need more than two particles in --input to particles")
 	
 	if not options.input:
 		parser.print_help()
@@ -168,33 +168,33 @@ def main():
 		
 		if options.subset < nptcl:
 			if options.verbose:
-				print "\taking a subset s={} smaller than the number of particles in --input n={}".format(options.subset, nptcl)
+				print("\taking a subset s={} smaller than the number of particles in --input n={}".format(options.subset, nptcl))
 			
 	options = makepath(options,'spt_refprep')
 		
 	if options.subset < 4:
-		print "ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided."""
+		print("ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided.""")
 		sys.exit()
 	
 	if options.hacref and options.subset < options.hacref * 2:
-		print """WARNING: --subset=%d wasn't large enough to accommodate gold standard
+		print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
 		refinement with two independent halves using the specified number of particles
 		for initial model generation --hacref=%d. Therefore, --hacref will be reset
-		to --subset/2.""" %( options.subset, options.hacref )				
+		to --subset/2.""" %( options.subset, options.hacref ))				
 		options.hacref = options.subset / 2			
 
 	elif options.ssaref and options.subset < options.ssaref * 2:		
-		print """WARNING: --subset=%d wasn't large enough to accommodate gold standard
+		print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
 		refinement with two independent halves using the specified number of particles
 		for initial model generation --ssaref=%d. Therefore, --ssaref will be reset
-		to --subset/2.""" %( options.subset, options.ssaref )
+		to --subset/2.""" %( options.subset, options.ssaref ))
 		options.ssaref = options.subset / 2	
 
 	elif options.btref and options.subset < options.btref * 2:			
-		print """WARNING: --subset=%d wasn't large enough to accommodate gold standard
+		print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
 		refinement with two independent halves using the specified number of particles
 		for initial model generation --btref=%d. Therefore, --btref has been reset
-		to --subset/2.""" %( options.subset, options.btref )
+		to --subset/2.""" %( options.subset, options.btref ))
 		options.btref = options.subset / 2
 		
 	refsdict = sptRefGen( options, ptclnumsdict, cmdwp )
@@ -277,7 +277,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				
 			if not method and not options.ref:
 				method = 'bt'
-				print "\n\n\nbt by default!!!!"
+				print("\n\n\nbt by default!!!!")
 				
 			#elif options.hacref:
 			if method == 'hac':
@@ -300,10 +300,10 @@ def func_refrandphase(options,klassidref,klassnum):
 	ref = EMData(options.ref,0)
 
 	if options.verbose:
-		print "\n(e2spt_classaverage)(sptRefGen) - READ reference and its types and min, max, sigma, mean stats are", options.ref, type(ref), ref['minimum'],ref['maximum'],ref['sigma'],ref['mean']
+		print("\n(e2spt_classaverage)(sptRefGen) - READ reference and its types and min, max, sigma, mean stats are", options.ref, type(ref), ref['minimum'],ref['maximum'],ref['sigma'],ref['mean'])
 
 	if not ref['maximum'] and not ref['minimum']:
-		print "(e2spt_classaverage)(sptRefGen) - ERROR: Empty/blank reference file. Exiting."
+		print("(e2spt_classaverage)(sptRefGen) - ERROR: Empty/blank reference file. Exiting.")
 		sys.exit()
 	
 	if options.apix:
@@ -326,7 +326,7 @@ def func_refrandphase(options,klassidref,klassnum):
 		ref.write_image( refrandphfile, klassnum )
 
 	if float(ref['apix_x']) <= 1.0:
-		print "\n(e2spt_classaverage)(sptRefGen) - WARNING: apix <= 1.0. This is most likely wrong. You might want to fix the reference's apix value by providing --apix or by running it through e2procheader.py"
+		print("\n(e2spt_classaverage)(sptRefGen) - WARNING: apix <= 1.0. This is most likely wrong. You might want to fix the reference's apix value by providing --apix or by running it through e2procheader.py")
 	
 	#refsdict.update({ klassnum : ref })
 			
@@ -335,7 +335,7 @@ def func_refrandphase(options,klassidref,klassnum):
 
 def func_hacref():
 	if options.verbose:
-		print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using hierarchical ascendant classification through e2spt_hac.py"
+		print("\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using hierarchical ascendant classification through e2spt_hac.py")
 
 	subsetForHacRef = 'spthacrefsubset'+ klassidref + '.hdf'
 	
@@ -356,11 +356,11 @@ def func_hacref():
 	if nptclsforref >= len(ptclnums):
 		nptclsforref =  len(ptclnums)
 
-	print "Hacreflimit is", nptclsforref
+	print("Hacreflimit is", nptclsforref)
 	if nptclsforref < 3:
-		print """ERROR: You cannot build a HAC reference with less than 3 particles.
+		print("""ERROR: You cannot build a HAC reference with less than 3 particles.
 		Either provide a larger --hacref number, a larger --subset number, or provide
-		--goldstandardoff"""
+		--goldstandardoff""")
 	
 		sys.exit()
 
@@ -389,7 +389,7 @@ def func_hacref():
 	
 	try:
 		files=glob.glob(hacrefsubdir+'*')		
-		print "files are", files
+		print("files are", files)
 		for path in files: 
 			shutil.rmtree(path)
 	except:
@@ -399,15 +399,15 @@ def func_hacref():
 	cmdhac+=' --input='+subsetForHacRef
 	
 	if options.verbose:
-		print "\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac
+		print("\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac)
 	
 	runcmd( options, cmdhac )
 
 	try:
-		print "\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path )
+		print("\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path ))
 		os.rename( hacrefsubdir, options.path + '/' + hacrefsubdir )
 	except:
-		print "\nfirst try moving hacrefsubdir %s into path %s failed" %( hacrefsubdir, options.path )
+		print("\nfirst try moving hacrefsubdir %s into path %s failed" %( hacrefsubdir, options.path ))
 		hacsubdirstem = '_'.join( hacrefsubdir.split('_')[:-1])
 
 		try:
@@ -419,10 +419,10 @@ def func_hacref():
 
 		newhacrefsubdir = hacsubdirstem + '_' + hacsubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
 		try: 
-			print "\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path )
+			print("\nmoving hacrefsubdir %s into path %s" %( hacrefsubdir, options.path ))
 			os.rename( newhacrefsubdir, options.path + '/' + hacrefsubdir )
 		except:
-			print "\nsecond and final try moving hacrefsubdir %s into path %s failed" %( newhacrefsubdir, options.path )
+			print("\nsecond and final try moving hacrefsubdir %s into path %s failed" %( newhacrefsubdir, options.path ))
 			sys.exit(1)
 
 	
@@ -440,18 +440,18 @@ def func_hacref():
 		findircurrent = os.listdir(currentdir)
 		if subsetForHacRef in findircurrent:
 			newsubsetcount = '_'.join( subsetForHacRef.split('_')[:-1]) + '_' + str( int(subsetForHacRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
-			print "\ntrying to move new subsetForHacRef into path", newsubsetcount, options.path
+			print("\ntrying to move new subsetForHacRef into path", newsubsetcount, options.path)
 			os.rename( subsetForHacRef, options.path + '/' + newsubsetcount )
 		else:
-			print "\nWARNING subsetForHacRef does not exist in current directory", subsetForHacRef
+			print("\nWARNING subsetForHacRef does not exist in current directory", subsetForHacRef)
 			
 	else:
 		os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef )
-		print "\nmoving subsetForHacRef into path", subsetForHacRef, options.path
+		print("\nmoving subsetForHacRef into path", subsetForHacRef, options.path)
 	
 	
 	if options.verbose:
-		print "\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac
+		print("\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac)
 	
 	ref = EMData( options.path + '/' + hacrefsubdir +'/final_avg.hdf', 0 )
 
@@ -476,18 +476,18 @@ def func_btref():
 	
 	
 	#from e2spt_binarytree import binaryTreeRef
-	print "\ninput is", options.input
-	print "with nimgs", EMUtil.get_image_count( options.input )
-	print "--goldstandardoff is", options.goldstandardoff
-	print "len ptclnums is", len(ptclnums)
+	print("\ninput is", options.input)
+	print("with nimgs", EMUtil.get_image_count( options.input ))
+	print("--goldstandardoff is", options.goldstandardoff)
+	print("len ptclnums is", len(ptclnums))
 	
-	print "log 2 of that is" 
-	print log( len(ptclnums), 2 )
+	print("log 2 of that is") 
+	print(log( len(ptclnums), 2 ))
 
 	niter = int(floor(log( len(ptclnums), 2 )))
-	print "and niter is", niter
+	print("and niter is", niter)
 	nseed = 2**niter
-	print "therefore nseed=2**niter is", nseed
+	print("therefore nseed=2**niter is", nseed)
 	
 	
 	#try:
@@ -518,10 +518,10 @@ def func_btref():
 	#print "with len", len(ptclnums)
 	
 	while i < nseed :
-		print "i is", i
+		print("i is", i)
 		a = EMData( options.input, ptclnums[i] )
 		a.write_image( subsetForBTRef, i )
-		print "writing image %d to file %s, which will contain the subset of particles used for BTA reference building" %(i,subsetForBTRef)
+		print("writing image %d to file %s, which will contain the subset of particles used for BTA reference building" %(i,subsetForBTRef))
 		i+=1
 
 	btelements = []
@@ -565,13 +565,13 @@ def func_btref():
 
 	
 	if options.verbose:
-		print "\n(e2spt_classaverage)(sptRefGen) - Command to generate btref is", cmdbt
+		print("\n(e2spt_classaverage)(sptRefGen) - Command to generate btref is", cmdbt)
 
 	try:
-		print "\nmoving btrefsubdir into path", btrefsubdir, options.path
+		print("\nmoving btrefsubdir into path", btrefsubdir, options.path)
 		os.rename( btrefsubdir, options.path + '/' + btrefsubdir )
 	except:
-		print "\nfirst try moving btrefsubdir %s into path %s failed" %( btrefsubdir, options.path )
+		print("\nfirst try moving btrefsubdir %s into path %s failed" %( btrefsubdir, options.path ))
 		
 		btsubdirstem = '_'.join( btrefsubdir.split('_')[:-1])
 
@@ -586,7 +586,7 @@ def func_btref():
 		try: 
 			os.rename( newbtrefsubdir, options.path + '/' + btrefsubdir )
 		except:
-			print "\nsecond and final try moving btrefsubdir %s into path %s failed" %( newbtrefsubdir, options.path )
+			print("\nsecond and final try moving btrefsubdir %s into path %s failed" %( newbtrefsubdir, options.path ))
 			sys.exit(1)
 			
 					
@@ -596,26 +596,26 @@ def func_btref():
 	
 	findir = os.listdir(options.path)
 	if subsetForBTRef in findir:
-		print "tried moving subsetForBTRef into path but failed", subsetForBTRef, options.path
+		print("tried moving subsetForBTRef into path but failed", subsetForBTRef, options.path)
 		newsubsetcount = '_'.join( subsetForBTRef.split('_')[:-1]) + '_' + str( int(subsetForBTRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subset exists, add one to the tag count at the end of the subdirectory name
 		os.rename( subsetForBTRef, options.path + '/' + newsubsetcount )
 	else:
 		os.rename( subsetForBTRef, options.path + '/' + subsetForBTRef )
-		print "\nmoving subsetForBTRef into path", subsetForBTRef, options.path
+		print("\nmoving subsetForBTRef into path", subsetForBTRef, options.path)
 					
 	
 
 	#if os.getcwd() not in options.path:
 	#	options.path = os.getcwd() + '/' + ptions.path
 
-	print "\ncmdbt is", cmdbt
+	print("\ncmdbt is", cmdbt)
 
 	#print "\nfindir are"
 	#findir=os.listdir(current)
 	#for f in findir:
 	#	print f
 
-	print "The BT reference to load is in file",  options.path+ '/' +btrefsubdir +'/final_avg.hdf'
+	print("The BT reference to load is in file",  options.path+ '/' +btrefsubdir +'/final_avg.hdf')
 	ref = EMData( options.path + '/' + btrefsubdir +'/final_avg.hdf', 0 )
 
 	refsdict.update({ klassnum : ref })
@@ -627,11 +627,11 @@ def func_btref():
 
 def func_ssaref():
 	if options.verbose:
-		print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using self symmetry alignment through e2symsearch3d.py"
+		print("\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using self symmetry alignment through e2symsearch3d.py")
 
 	if options.sym == 'c1' or options.sym == 'C1':
-		print """\n(e2spt_classaverage)(sptRefGen) - ERROR: You must provide at least c2 or higher symmetry to use
-		--ssaref"""
+		print("""\n(e2spt_classaverage)(sptRefGen) - ERROR: You must provide at least c2 or higher symmetry to use
+		--ssaref""")
 
 	subsetForSsaRef = 'sptssarefsubset'+ klassidref + '.hdf'
 	
@@ -668,18 +668,18 @@ def func_ssaref():
 		
 			
 	ssaelements = []
-	print "\nelements are", elements
+	print("\nelements are", elements)
 	for ele in elements:
 		if 'saveallpeaks' not in ele and 'fine' not in ele and 'raw' not in ele and 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'sfine' not in ele and 'procfine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreproc' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
 			ssaelements.append(ele)
-			print "appending element",ele
+			print("appending element",ele)
 
 	cmdssa = ' '.join(ssaelements)
-	print "before replacing program name, cmdssa is", cmdssa
+	print("before replacing program name, cmdssa is", cmdssa)
 
 	cmdssa = cmdssa.replace('e2spt_classaverage','e2symsearch3d')
 	if refinemulti:
-		print "should replace refinemulti"
+		print("should replace refinemulti")
 		cmdssa = cmdssa.replace('e2spt_refinemulti','e2symsearch3d')
 
 	cmdssa += ' --input=' + subsetForSsaRef 
@@ -687,20 +687,20 @@ def func_ssaref():
 	cmdssa += ' --symmetrize'
 	cmdssa += ' --average'
 	
-	print "\ncmdssa is", cmdssa
+	print("\ncmdssa is", cmdssa)
 	
 	if options.verbose:
-		print "\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa
+		print("\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa)
 
 	runcmd( options, cmdssa )
 	
 	ssarefname = 'final_avg.hdf'
 		
 	try:
-		print "\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path )
+		print("\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path ))
 		os.rename( ssarefsubdir, options.path + '/' + ssarefsubdir )
 	except:
-		print "\nfirst try moving ssarefsubdir %s into path %s failed" %( ssarefsubdir, options.path )
+		print("\nfirst try moving ssarefsubdir %s into path %s failed" %( ssarefsubdir, options.path ))
 		hacsubdirstem = '_'.join( ssarefsubdir.split('_')[:-1])
 
 		try:
@@ -711,10 +711,10 @@ def func_ssaref():
 		
 		newssarefsubdir = ssasubdirstem + '_' + ssasubdircount #if the subdirectory exists, add one to the tag count at the end of the subdirectory name
 		try: 
-			print "\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path )
+			print("\nmoving ssarefsubdir %s into path %s" %( ssarefsubdir, options.path ))
 			os.rename( newssarefsubdir, options.path + '/' + ssarefsubdir )
 		except:
-			print "\nsecond and final try moving ssarefsubdir %s into path %s failed" %( newssarefsubdir, options.path )
+			print("\nsecond and final try moving ssarefsubdir %s into path %s failed" %( newssarefsubdir, options.path ))
 			sys.exit(1)
 
 
@@ -722,16 +722,16 @@ def func_ssaref():
 
 	findir = os.listdir(options.path)
 	if subsetForSsaRef in findir:
-		print "tried moving subsetForSsaRef into path but failed", subsetForSsaRef, options.path
+		print("tried moving subsetForSsaRef into path but failed", subsetForSsaRef, options.path)
 		newsubsetcount = '_'.join( subsetForSsaRef.split('_')[:-1]) + '_' + str( int(subsetForSsaRef.split('_')[-1].split('.hdf')[0]) +1 ) +'.hdf'	#if the subdirectory exists, add one to the tag count at the end of the subdirectory name
 		os.rename( subsetForSsaRef, options.path + '/' + newsubsetcount )
 	else:
 		os.rename( subsetForSsaRef, options.path + '/' + subsetForSsaRef )
-		print "\nmoving subsetForSsaRef into path", subsetForSsaRef, options.path
+		print("\nmoving subsetForSsaRef into path", subsetForSsaRef, options.path)
 	
 	
 	if options.verbose:
-		print "\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa
+		print("\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa)
 
 	#p=subprocess.Popen( cmdssa, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	#text=p.communicate()	
