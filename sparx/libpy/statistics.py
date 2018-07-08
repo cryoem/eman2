@@ -2397,64 +2397,64 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 			c += 1
 
 	else:
-	        im = EMData()
-	        im.read_image(stack, 0)
-	        nx = im.get_xsize()
-	        ny = im.get_ysize()
-	        nz = im.get_zsize()
-	        if CTF:
-	        	ctf	    = [[] for i in xrange(N)]
-	        	ctf2	    = [[] for i in xrange(N)]
-	        	ctf_params  = im.get_attr( "ctf" )
-	        	if im.get_attr("ctf_applied")>0.0: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+		im = EMData()
+		im.read_image(stack, 0)
+		nx = im.get_xsize()
+		ny = im.get_ysize()
+		nz = im.get_zsize()
+		if CTF:
+			ctf	    = [[] for i in xrange(N)]
+			ctf2	    = [[] for i in xrange(N)]
+			ctf_params  = im.get_attr( "ctf" )
+			if im.get_attr("ctf_applied")>0.0: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
 
-	        IM = im.read_images(stack, lim)
-	        for i in xrange(N):
-	        	# 3D object
-	        	if nz > 1:
-	        		try:
-	        			phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[i])
-	        			IM[i]  = rot_shift3D(IM[i], phi, theta, psi, s3x, s3y, s3z, scale)
-	        			if mirror: IM[i].process_inplace('xform.mirror', {'axis':'x'})
-	        		except:
-	        			#ERROR('K-MEANS no 3D alignment parameters found', "k_means_open_im", 1)
-	        			#sys.exit()
+		IM = im.read_images(stack, lim)
+		for i in xrange(N):
+		# 3D object
+			if nz > 1:
+				try:
+					phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[i])
+					IM[i]  = rot_shift3D(IM[i], phi, theta, psi, s3x, s3y, s3z, scale)
+					if mirror: IM[i].process_inplace('xform.mirror', {'axis':'x'})
+				except:
+					#ERROR('K-MEANS no 3D alignment parameters found', "k_means_open_im", 1)
+					#sys.exit()
 					pass
-	        	# 2D object
-	        	elif ny > 1:
-	        		try:
-	        			alpha, sx, sy, mirror, scale = get_params2D(IM[i])
-	        			IM[i] = rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
-	        		except: 
-	        			#ERROR('K-MEANS no 2D alignment parameters found', "k_means_open_im", 1)
-	        			#sys.exit()
+			# 2D object
+			elif ny > 1:
+				try:
+					alpha, sx, sy, mirror, scale = get_params2D(IM[i])
+					IM[i] = rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
+				except: 
+					#ERROR('K-MEANS no 2D alignment parameters found', "k_means_open_im", 1)
+					#sys.exit()
 					pass
 
-	        	# obtain ctf
-	        	if CTF:
-	        		ctf_params = IM[i].get_attr( "ctf" )
-	        		ctf[i]     = ctf_1d(nx, ctf_params)
-	        		ctf2[i]    = ctf_2(nx, ctf_params)
+			# obtain ctf
+			if CTF:
+				ctf_params = IM[i].get_attr( "ctf" )
+				ctf[i]     = ctf_1d(nx, ctf_params)
+				ctf2[i]    = ctf_2(nx, ctf_params)
 
-	        	if flagnorm:
-	        		# normalize
-	        		ave, std, mi, mx = Util.infomask(IM[i], mask, True)
-	        		IM[i] -= ave
-	        		IM[i] /= std
+			if flagnorm:
+				# normalize
+				ave, std, mi, mx = Util.infomask(IM[i], mask, True)
+				IM[i] -= ave
+				IM[i] /= std
 
-	        	# apply mask
-	        	if mask != None:
-	        		if CTF: Util.mul_img(IM[i], mask)
-	        		else:	IM[i] = Util.compress_image_mask(IM[i], mask)
+			# apply mask
+			if mask != None:
+				if CTF: Util.mul_img(IM[i], mask)
+				else:	IM[i] = Util.compress_image_mask(IM[i], mask)
 
-	        	# fft
-	        	if CTF: fftip(IM[i])
+			# fft
+			if CTF: fftip(IM[i])
 
-	        	# mem the original size
-	        	if i == 0:
-	        		IM[i].set_attr('or_nx', nx)
-	        		IM[i].set_attr('or_ny', ny)
-	        		IM[i].set_attr('or_nz', nz)
+			# mem the original size
+			if i == 0:
+				IM[i].set_attr('or_nx', nx)
+				IM[i].set_attr('or_ny', ny)
+				IM[i].set_attr('or_nz', nz)
 
 	if CTF: return IM, ctf, ctf2
 	else:   return IM, None, None
@@ -6881,24 +6881,24 @@ def k_means_match_pwa(PART, lim = -1):
 
 	# find alone maximum (maximum along col and same maximum along row)
 	def max_g(mat):
-            K   = len(mat)
-            m1  = mat.argmax(axis=0)
-	    m2  = mat.argmax(axis=1)
-	    val = []
-	    for k in xrange(K):
-		    # is a max along the col and the row
-		    if m2[m1[k]] == k:
-			    val.append([mat[m1[k]][k], m1[k], k])
-	    val.sort(reverse = True)
-	    # change to flat format [l0, c0, l1, c1, ..., li, ci]
-	    res = zeros((2 * len(val)), 'int32')
-	    ct  = 0
-	    for obj in val:
-		    res[ct] = obj[1]
-		    res[ct+1] = obj[2]
-		    ct += 2
+		K   = len(mat)
+		m1  = mat.argmax(axis=0)
+		m2  = mat.argmax(axis=1)
+		val = []
+		for k in xrange(K):
+			# is a max along the col and the row
+			if m2[m1[k]] == k:
+				val.append([mat[m1[k]][k], m1[k], k])
+		val.sort(reverse = True)
+		# change to flat format [l0, c0, l1, c1, ..., li, ci]
+		res = zeros((2 * len(val)), 'int32')
+		ct  = 0
+		for obj in val:
+			res[ct] = obj[1]
+			res[ct+1] = obj[2]
+			ct += 2
 
-	    return res
+		return res
 
 	# recursive agreement
 	def agree(level, MAX, lmax, np, pos, Nmax, res):
@@ -7015,11 +7015,11 @@ def k_means_stab_pwa(PART, lim = -1):
 
 		stb  = []
 		for i in xrange(vd):
-		    if asg[i] != 0:
-			CT_t[kk] += 1
-			if asg[i] == np:
-			    CT_s[kk] += 1
-			    stb.append(i + vmin)
+			if asg[i] != 0:
+				CT_t[kk] += 1
+				if asg[i] == np:
+					CT_s[kk] += 1
+					stb.append(i + vmin)
 
 		STB_PART[kk] = deepcopy(stb)
 
@@ -10304,11 +10304,11 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 
 		stb  = []
 		for i in xrange(vd):
-		    if asg[i] != 0:
-			CT_t[kk] += 1
-			if asg[i] == np:
-			    CT_s[kk] += 1
-			    stb.append(i + vmin)
+			if asg[i] != 0:
+				CT_t[kk] += 1
+				if asg[i] == np:
+					CT_s[kk] += 1
+					stb.append(i + vmin)
 
 		STB_PART[kk] = deepcopy(stb)
 
@@ -10489,11 +10489,11 @@ def k_means_stab_getinfo(PART, match):
 
 		stb  = []
 		for i in xrange(vd):
-		    if asg[i] != 0:
-			CT_t[kk] += 1
-			if asg[i] == np:
-			    CT_s[kk] += 1
-			    stb.append(i + vmin)
+			if asg[i] != 0:
+				CT_t[kk] += 1
+				if asg[i] == np:
+					CT_s[kk] += 1
+					stb.append(i + vmin)
 
 		STB_PART[kk] = deepcopy(stb)
 
