@@ -1623,7 +1623,7 @@ def create_sxcmd_subconfig_meridien_20171120_local():
 	sxsubcmd_mpi_support = True
 	sxcmd_subconfig = SXsubcmd_config("Subset Refinement (OLD)", None, token_edit_list, sxsubcmd_mpi_support)
 
- 	return sxcmd_subconfig
+	return sxcmd_subconfig
 
 # NOTE: Toshio Moriya 2017/12/18
 # Default values of some options are different between standard refinement (fresh run & simple restart) and local refinement (stack & iteration mode)
