@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
-set -x
+set -xe
+
+MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
+
+bash "${MYDIR}/../tests/future_import_tests.sh"
 
 if [ ! -z ${TRAVIS} ];then
     source ci_support/setup_conda.sh
