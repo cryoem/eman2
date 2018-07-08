@@ -4181,7 +4181,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		else:
 			import_from_sparx_refinement == 0
 			for search_iter in xrange(selected_iter-1, 0, -1):
-				 if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%search_iter, "bckgnoise.hdf")):
+				if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%search_iter, "bckgnoise.hdf")):
 					copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%search_iter, \
 					"bckgnoise.hdf"), os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf"))
 					import_from_sparx_refinement = 1
@@ -6002,7 +6002,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 					os.mkdir(work_dir)# need check each box
 					within_generation_restart = 0
 				else: within_generation_restart = 1
- 				freq_cutoff_dict = {}
+				freq_cutoff_dict = {}
 				fout = open(os.path.join(work_dir, "freq_cutoff.json"),'w')
 				json.dump(freq_cutoff_dict, fout)
 				fout.close()
