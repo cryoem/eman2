@@ -794,21 +794,21 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				pixel_error       = 0.0
 				mirror_consistent = 0
 				pixel_error_list  = []
-			        for im in xrange(len(data)):
-			        	if CUDA:
+				for im in xrange(len(data)):
+					if CUDA:
 						alpha = all_ali_params[im*4]
 						sx = all_ali_params[im*4+1]
 						sy = all_ali_params[im*4+2]
 						mirror = all_ali_params[im*4+3]
 					else:
 						alpha, sx, sy, mirror, scale = get_params2D(data[im])
-			        	if old_ali_params[im*4+3] == mirror:
-		        			this_error = pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
-		        			pixel_error += this_error
-						pixel_error_list.append(this_error)
-						mirror_consistent += 1
-					else:
-						pixel_error_list.append(-1)
+						if old_ali_params[im*4+3] == mirror:
+							this_error = pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
+							pixel_error += this_error
+							pixel_error_list.append(this_error)
+							mirror_consistent += 1
+						else:
+							pixel_error_list.append(-1)
 				mirror_consistent = mpi_reduce(mirror_consistent, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				pixel_error       = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				pixel_error_list  = mpi_gatherv(pixel_error_list, len(data), MPI_FLOAT, recvcount, disp, MPI_FLOAT, main_node, MPI_COMM_WORLD)
@@ -6672,15 +6672,15 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			mpi_barrier(MPI_COMM_WORLD)
 			par_str = ['xform.projection', 'previousmax', 'ID']
 			if myid == main_node:
-	   			if(file_type(stack) == "bdb"):
-	        			from utilities import recv_attr_dict_bdb
-	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        		else:
-	        			from utilities import recv_attr_dict
-	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+				if(file_type(stack) == "bdb"):
+					from utilities import recv_attr_dict_bdb
+					recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+				else:
+					from utilities import recv_attr_dict
+					recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 				print_msg("Time to write header information= %d\n"%(time()-start_time))
 				start_time = time()
-	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
+			else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ali3dpsi_MPI")
 
 # =================== SHC
@@ -8458,15 +8458,15 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				par_str = ['xform.projection', 'ID', 'group']
 			else:
 				par_str = ['group', 'ID' ]
-	        	if myid == main_node:
+			if myid == main_node:
 				from utilities import file_type
-	        		if(file_type(stack) == "bdb"):
-	        			from utilities import recv_attr_dict_bdb
-	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        		else:
-	        			from utilities import recv_attr_dict
-	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        	else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
+				if(file_type(stack) == "bdb"):
+					from utilities import recv_attr_dict_bdb
+					recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+				else:
+					from utilities import recv_attr_dict
+					recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+			else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
 			if(myid == 0):
 				log.add( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 			mpi_barrier(MPI_COMM_WORLD)
@@ -9839,15 +9839,15 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 		else:
 			par_str = ["group", "ID"]
 
-	        if myid == main_node:
+		if myid == main_node:
 			from utilities import file_type
-	        	if(file_type(stack) == "bdb"):
-	        		from utilities import recv_attr_dict_bdb
-	        		recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        	else:
-	        		from utilities import recv_attr_dict
-	        		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
+			if(file_type(stack) == "bdb"):
+				from utilities import recv_attr_dict_bdb
+				recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+			else:
+				from utilities import recv_attr_dict
+				recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
 		if myid == main_node:
 			print_msg("Time to write header information= %d\n"%(time()-start_time))
 			start_time = time()
@@ -10235,15 +10235,15 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 		else:
 			par_str = ["group", "ID"]
 
-	        if myid == main_node:
+		if myid == main_node:
 			from utilities import file_type
-	        	if(file_type(stack) == "bdb"):
-	        		from utilities import recv_attr_dict_bdb
-	        		recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        	else:
-	        		from utilities import recv_attr_dict
-	        		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
+			if(file_type(stack) == "bdb"):
+				from utilities import recv_attr_dict_bdb
+				recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+			else:
+				from utilities import recv_attr_dict
+				recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
 		if myid == main_node:
 			print_msg("Time to write header information= %d\n"%(time()-start_time))
 			start_time = time()
@@ -12609,7 +12609,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 							fexp.write("\n")
 				fexp.close()
 				del t
-	        	else:
+			else:
 				nvalue = [0.0]*m*recvcount[myid]
 				t = [0.0]*m
 				for i in xrange(recvcount[myid]):
@@ -12732,12 +12732,12 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 			# del varf
 	par_str = ["xform.projection"]
 	if myid == main_node:
-	   	if(file_type(stack) == "bdb"):
-	        	from utilities import recv_attr_dict_bdb
-	        	recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        else:
-	        	from utilities import recv_attr_dict
-	        	recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 		print_msg("Time to write header information= %d\n"%(time()-start_time))
 		start_time = time()
 	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
@@ -16866,12 +16866,12 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 				print('exception at myid, i:', myid, i)
 				a = 1.0
 
-		        scales.append( a )
+			scales.append( a )
 			if(verbose == 1):
 				info.write( "i, a, ccc:  %4d %10.5f  %10.5f\n" %(i, a, curtccc) )
 				info.flush()
 
- 	   	sum_scale = sum( scales )
+		sum_scale = sum( scales )
 
 		if  MPI:
 			total_sum_scale = mpi_reduce( sum_scale, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
@@ -16887,8 +16887,8 @@ def normal_prj( prj_stack, outdir, refvol, weights, r, niter, snr, sym, verbose 
 			imgdata[i] *= s
 			pred[i] *= s
 
-    		scale_file = os.path.join(outdir, "newscale%04d_%04d.txt" % (myid, iter))
-    		drop_spider_doc( scale_file, pred )
+			scale_file = os.path.join(outdir, "newscale%04d_%04d.txt" % (myid, iter))
+			drop_spider_doc( scale_file, pred )
 
 		fsc_file = os.path.join(outdir, ( "fsc_%04d.dat" % iter ))
 		vol_file = os.path.join(outdir, ( "vol_%04d.hdf" % iter ))
@@ -17783,23 +17783,23 @@ def HAC_clustering(stack, dendoname, maskname, kind_link, kind_dist, flag_diss):
 	Dendo = {}
 	doc   = open(dendoname + '.txt', 'w')
 	for val in xrange(0, 10000):
-	    if flag_diss: th  = -(val / 1000.0)
-	    else:         th  = val / 1000.0
+		if flag_diss: th  = -(val / 1000.0)
+		else:         th  = val / 1000.0
+	
+		res = cl.getlevel(th)
 
-	    res = cl.getlevel(th)
-
-	    GP = []
-	    for gp in res:
-		OBJ = []
-		for obj in gp:
-		    OBJ.append(obj.get_attr('ID_hclus'))
+		GP = []
+		for gp in res:
+			OBJ = []
+			for obj in gp:
+				OBJ.append(obj.get_attr('ID_hclus'))
 		GP.append(OBJ)
 
-	    newk = len(GP)
-	    if newk != k:
-		k = newk
-		doc.write('%7.3f %d\n' % (th, k))
-		Dendo[k] = deepcopy(GP)
+		newk = len(GP)
+		if newk != k:
+			k = newk
+			doc.write('%7.3f %d\n' % (th, k))
+			Dendo[k] = deepcopy(GP)
 	doc.close()
 
 	import pickle
