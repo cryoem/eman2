@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 '''
 ====================
@@ -31,6 +30,7 @@ Author: Jesus Galaz - May/2017, Last update: may/2016
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
+from __future__ import print_function
 
 from optparse import OptionParser
 from EMAN2 import *
@@ -75,15 +75,15 @@ def main():
 		jsonfileopen = js_open_dict( jsonfile )
 		n=len(jsonfileopen)
 		originaln=n
-		print "\nthe number of transformations to plot is %d" %(n)
+		print("\nthe number of transformations to plot is %d" %(n))
 		if options.subset:
 			n = options.subset
-			print "\nplotting only a subset, n=%d" %(n)
+			print("\nplotting only a subset, n=%d" %(n))
 
 		for j in range(n):
 			xformslabel = 'subtomo_' + str( j ).zfill( len( str( originaln ) ) )
 			t=jsonfileopen[xformslabel][0]
-			print "\nread transform from .json file", t
+			print("\nread transform from .json file", t)
 			orientations.update( {j:t} )
 			#jsA.setval( xformslabel, [ t , score ] )
 		jsonfileopen.close()
@@ -91,10 +91,10 @@ def main():
 	elif '.hdf' in options.input:
 		n=EMUtil.get_image_count(options.input)
 		originaln=n
-		print "\nthe number of transformations to plot is %d" %(n)
+		print("\nthe number of transformations to plot is %d" %(n))
 		if options.subset:
 			n = options.subset
-			print "\nplotting only a subset, n=%d" %(n)
+			print("\nplotting only a subset, n=%d" %(n))
 
 		for j in range(n):
 			t=EMData( options.input, j, True)['xform.align3d']
@@ -122,8 +122,8 @@ def main():
 		
 		for i in orientations:
 			t = orientations[i]
-			print "\n t to get rotations and translations from transform number %d is" %(i)
-			print t
+			print("\n t to get rotations and translations from transform number %d is" %(i))
+			print(t)
 			
 			rots=t.get_rotation()
 			
@@ -150,8 +150,8 @@ def main():
 
 			if options.inversetoo:
 				ti = t.inverse()
-				print "\n t inverse to get rotations and translations from transform number %d is" %(i)
-				print ti
+				print("\n t inverse to get rotations and translations from transform number %d is" %(i))
+				print(ti)
 				
 				rotsi=ti.get_rotation()
 				
@@ -218,7 +218,7 @@ def main():
 			plotvals( options, zsi, 'z_inverse', 1.0 )
 
 	else:
-		print "\nthere's fewer than 2 transforms. no point in plotting a single (or null) value."
+		print("\nthere's fewer than 2 transforms. no point in plotting a single (or null) value.")
 		sys.exit(1)
 
 	E2end(logger)
@@ -277,7 +277,7 @@ def textwriter(options,data,tag):
 	#if options.path not in name:
 	name = options.path + '/' + tag + '.txt'
 	
-	print "I am in the text writer for this file", name
+	print("I am in the text writer for this file", name)
 	
 	f=open(name,'w')
 	lines=[]

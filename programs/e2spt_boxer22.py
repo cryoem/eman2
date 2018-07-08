@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 # LAST update: May/2017 by Muyuan Chen
 # Author: Steven Ludtke  2/8/2011 (rewritten)
@@ -36,6 +35,7 @@ from __future__ import print_function
 
 
 
+from __future__ import print_function
 from EMAN2 import *
 import numpy as np
 
@@ -53,7 +53,7 @@ from eman2_gui.valslider import ValSlider, ValBox
 
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 def main():
@@ -334,7 +334,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.setspanel.update_sets()
 	
 		self.e = None
-		print self.sets
+		print(self.sets)
 		for i in range(len(self.boxes)):
 			self.update_box(i)
 		
@@ -502,7 +502,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			try:
 				ret= int(self.boxsize[clsid])
 			except:
-				print "No box size saved for {}..".format(clsid)
+				print("No box size saved for {}..".format(clsid))
 				ret=32
 			return ret
 
@@ -591,10 +591,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		fsp=os.path.join("particles3d",self.basename)+name
 		#fspprjs=os.path.join("particles",self.basename)+name.replace('.hdf','_prjs.hdf')
-		print "Saving 3D particles to {}".format(fsp)
+		print("Saving 3D particles to {}".format(fsp))
 		#for f in [fsp, fspprjs]:
 		if os.path.isfile(fsp):
-			print "{} exist. Overwritting...".format(fsp)
+			print("{} exist. Overwritting...".format(fsp))
 			os.remove(fsp)
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
@@ -612,7 +612,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				boxsz=bs
 			else:
 				if boxsz!=bs:
-					print "Inconsistant box size in the particles to save.. Using {:d}..".format(boxsz)
+					print("Inconsistant box size in the particles to save.. Using {:d}..".format(boxsz))
 					bs=boxsz
 			
 			sz=[s/2 for s in self.datasize]
@@ -988,7 +988,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.setspanel.update_sets()
 
 	def add_helix_box(self, xf, yf, zf, xi, yi, zi):
-		print xf, yf, zf, xi, yi, zi
+		print(xf, yf, zf, xi, yi, zi)
 		if options.yshort:
 			self.helixboxes.append([xf, zf, yf, xi, zi, yi])
 		else:
@@ -1350,7 +1350,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		info.close()
 	
 	def closeEvent(self,event):
-		print "Exiting"
+		print("Exiting")
 		self.SaveJson()
 		
 		self.boxviewer.close()
@@ -1572,7 +1572,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		if not ok : return
 		name=str(name)
 		if name in self.target().sets :
-			print "Set name exists"
+			print("Set name exists")
 			return
 
 		self.target().new_set(name)
@@ -1588,7 +1588,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		name=str(name)
 		
 		if name in self.target().sets :
-			print "Set name exists"
+			print("Set name exists")
 			return
 		
 		self.target().rename_set(sels[0], name)

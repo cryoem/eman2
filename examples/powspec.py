@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
+from __future__ import print_function
 from EMAN2 import *
 import sys
 
