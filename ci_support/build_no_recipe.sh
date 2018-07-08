@@ -2,6 +2,8 @@
 
 set -xe
 
+python -m compileall -q .
+
 if [ ! -z ${TRAVIS} ];then
     source ci_support/setup_conda.sh
 
