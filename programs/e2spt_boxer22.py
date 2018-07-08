@@ -1617,12 +1617,9 @@ class EMTomoSetsPanel(QtGui.QWidget):
 				if k==self.target().currentset:
 					self.setlist.setCurrentItem(item)
 					self.initialized=True
-			
-			
-
-
-		
 		return 
+
+
 if __name__ == '__main__':
 	main()
 
