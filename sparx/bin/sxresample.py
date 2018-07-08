@@ -158,8 +158,8 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 
 	tetref = [0.0]*nrefa
 	for i in xrange(nrefa):
-	        tr = getvec( refa[i][0], refa[i][1] )
-	        for j in xrange(3):  refnormal[i][j] = tr[j]
+		tr = getvec( refa[i][0], refa[i][1] )
+		for j in xrange(3):  refnormal[i][j] = tr[j]
 		tetref[i] = refa[i][1]
 	del refa
 	vct = array([0.0]*(3*nprj),'float32')
@@ -167,14 +167,14 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		print(" will read ",myid)
 		tr = EMUtil.get_all_attributes(prjfile,'xform.projection')
 		tetprj = [0.0]*nprj
-	        for i in xrange(nprj):
+		for i in xrange(nprj):
 			temp = tr[i].get_params("spider")
 			tetprj[i] = temp["theta"]
 			if(tetprj[i] > 90.0): tetprj[i]  = 180.0 - tetprj[i] 
-	        	vct[3*i+0] = tr[i].at(2,0)
-	        	vct[3*i+1] = tr[i].at(2,1)
-	        	vct[3*i+2] = tr[i].at(2,2)
-	        del tr
+			vct[3*i+0] = tr[i].at(2,0)
+			vct[3*i+1] = tr[i].at(2,1)
+			vct[3*i+2] = tr[i].at(2,2)
+		del tr
 	else:
 		tetprj = [0.0]*nprj
 	#print "  READ ",myid
@@ -189,15 +189,15 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	assignments = [[] for i in xrange(nrefa)]
 	dspn = 1.25*delta
 	for k in xrange(nprj):
-	        best_s = -1.0
-	        best_i = -1
-	        for i in xrange( nrefa ):
+		best_s = -1.0
+		best_i = -1
+		for i in xrange( nrefa ):
 			if(abs(tetprj[k] - tetref[i]) <= dspn):
 				s = abs(refnormal[i][0]*vct[k][0] + refnormal[i][1]*vct[k][1] + refnormal[i][2]*vct[k][2])
 				if s > best_s:
 					best_s = s
 					best_i = i
-	        assignments[best_i].append(k)
+			assignments[best_i].append(k)
 	am = len(assignments[0])
 	mufur = 1.0/am
 	for i in xrange(1,len(assignments)):
@@ -298,8 +298,8 @@ def main():
 
 	if options.MPI:
 		from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
-                from mpi import mpi_init
-                sys.argv = mpi_init( len(sys.argv), sys.argv )
+		from mpi import mpi_init
+		sys.argv = mpi_init( len(sys.argv), sys.argv )
 		myid = mpi_comm_rank( MPI_COMM_WORLD )
 		ncpu = mpi_comm_size( MPI_COMM_WORLD )
 	else:
