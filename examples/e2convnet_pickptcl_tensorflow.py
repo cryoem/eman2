@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 # Muyuan Chen 2017-10
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -283,4 +284,4 @@ def run(cmd):
 	
 if __name__ == '__main__':
 	main()
-	
+
