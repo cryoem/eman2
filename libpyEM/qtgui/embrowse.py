@@ -54,7 +54,7 @@ if __name__ == '__main__':
 	em_app = EMApp()
 	app = em_app
 	browser = EMBrowser()
-	QtCore.QObject.connect(browser,QtCore.SIGNAL("done"),on_done)
+	browser.done.connect(on_done)
 	em_app.show()
 	em_app.execute()
 

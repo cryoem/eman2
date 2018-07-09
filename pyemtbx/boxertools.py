@@ -2251,8 +2251,8 @@ class Boxable:
 		args.append("--input="+tmpimage)
 		args.append("--ncls=25")
 		
-		QtCore.QObject.connect(self.process, QtCore.SIGNAL("finished(int)"), self.process_finished)
-		QtCore.QObject.connect(self.process, QtCore.SIGNAL("started()"), self.process_start)
+		self.process.finished[int].connect(self.process_finished)
+		self.process.started.connect(self.process_start)
 		print(self.process.start(program,args))
 
 	def process_start(self):
@@ -2285,7 +2285,7 @@ class Boxable:
 		self.imagemx2p = EMImage(e)
 		self.imagemx2 = self.imagemx2p.child
 		self.imagemx2.setmmode("App")
-		QtCore.QObject.connect(self.imagemx2,QtCore.SIGNAL("mousedown"),self.box_selected)
+		self.imagemx2.mousedown.connect(self.box_selected)
 		self.imagemx2p.show()
 		
 		ef = []

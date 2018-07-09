@@ -108,6 +108,7 @@ qt_color_map["gray"] = QtGui.QColor(127,127,127)
 class EMPlot3DWidget(EMGLWidget):
 	"""A QT widget for drawing 3-D plots using matplotlib
 	"""
+	selected = QtCore.pyqtSignal()
 
 	def __init__(self,application=None,winid=None,parent=None):
 
@@ -855,7 +856,7 @@ lc is the cursor selection point in plot coords"""
 
 
 
-		self.emit(QtCore.SIGNAL("selected"),self.selected)
+		self.selected.emit(self.selected)
 
 	def mousePressEvent(self, event):
 #		lc=self.scr2plot(event.x(),event.y())
@@ -1087,8 +1088,8 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 		self.table.setSortingEnabled(True)
 		gbl0.addWidget(self.table,10,0,2,2)
 
-		QtCore.QObject.connect(self.summary,QtCore.SIGNAL("clicked()"),self.printSummary)
-		QtCore.QObject.connect(self.run,QtCore.SIGNAL("clicked()"),self.runTest)
+		self.summary.clicked.connect(self.printSummary)
+		self.run.clicked.connect(self.runTest)
 
 		self.imgwin=None
 
@@ -1231,7 +1232,7 @@ class EMPlot3DRegrInsp(QtGui.QWidget):
 		self.regrb.setText("Regress")
 		gbl0.addWidget(self.regrb,8,0,1,2)
 
-		QtCore.QObject.connect(self.regrb,QtCore.SIGNAL("clicked()"),self.doRegression)
+		self.regrb.clicked.connect(self.doRegression)
 
 		self.imgwin=None
 
@@ -1387,9 +1388,9 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 		self.wbmakeset.setText("New Sets")
 		gbl0.addWidget(self.wbmakeset,14,1)
 
-		QtCore.QObject.connect(self.kmeansb,QtCore.SIGNAL("clicked()"),self.doKMeans)
-		QtCore.QObject.connect(self.threshb,QtCore.SIGNAL("clicked()"),self.doThresh)
-		QtCore.QObject.connect(self.wbmakeset,QtCore.SIGNAL("clicked()"),self.doMakeSet)
+		self.kmeansb.clicked.connect(self.doKMeans)
+		self.threshb.clicked.connect(self.doThresh)
+		self.wbmakeset.clicked.connect(self.doMakeSet)
 
 		#QtCore.QObject.connect(self.wimgfilebut,QtCore.SIGNAL("clicked()"),self.selectImgFile)
 		#QtCore.QObject.connect(self.target(),QtCore.SIGNAL("selected"),self.imgSelect)
@@ -1611,8 +1612,8 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 		from embrowser import EMBrowserWidget
 		self.browse = EMBrowserWidget(withmodal=True,multiselect=False)
 		self.browse.show()
-		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("ok"),self.setImgFile)
-		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("cancel"),self.canImgFile)
+		self.browse.ok.connect(self.setImgFile)
+		self.browse.cancel.connect(self.canImgFile)
 
 	def canImgFile(self,file=None):
 		return
@@ -2069,53 +2070,53 @@ class EMPlot3DInspector(QtGui.QWidget):
 		self.statswin=None
 		self.regresswin=None
 
-		QtCore.QObject.connect(self.showslide, QtCore.SIGNAL("valueChanged"), self.selSlide)
-		QtCore.QObject.connect(self.allbut, QtCore.SIGNAL("clicked()"), self.selAll)
-		QtCore.QObject.connect(self.nonebut, QtCore.SIGNAL("clicked()"), self.selNone)
+		self.showslide.valueChanged.connect(self.selSlide)
+		self.allbut.clicked.connect(self.selAll)
+		self.nonebut.clicked.connect(self.selNone)
 
-		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
-		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
-		QtCore.QObject.connect(self.slidez, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
-		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
-		QtCore.QObject.connect(self.slides, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
-		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
-		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlotColor)
-		QtCore.QObject.connect(self.classb,QtCore.SIGNAL("clicked()"),self.openClassWin)
+		self.slidex.valueChanged[int].connect(self.newCols)
+		self.slidey.valueChanged[int].connect(self.newCols)
+		self.slidez.valueChanged[int].connect(self.newCols)
+		self.slidec.valueChanged[int].connect(self.newCols)
+		self.slides.valueChanged[int].connect(self.newCols)
+		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.itemChanged[QListWidgetItem].connect(self.list_item_changed)
+		self.color.currentIndexChanged[QString].connect(self.updPlotColor)
+		self.classb.clicked.connect(self.openClassWin)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		self.symtog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlotHmsel)
 		#QtCore.QObject.connect(self.hmbins,QtCore.SIGNAL("clicked()"),self.updPlotHmbins)
-		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlotSymsel)
-		QtCore.QObject.connect(self.symsize,QtCore.SIGNAL("valueChanged(int)"),self.updPlotSymsize)
-		QtCore.QObject.connect(self.xlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.ylogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.zlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		self.symsel.currentIndexChanged[QString].connect(self.updPlotSymsel)
+		self.symsize.valueChanged[int].connect(self.updPlotSymsize)
+		self.xlogtog.clicked.connect(self.updPlot)
+		self.ylogtog.clicked.connect(self.updPlot)
+		self.zlogtog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.zlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.lintog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		self.lintog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.hmtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.linsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlotLinsel)
-		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlotLinwid)
-		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
-		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
-		QtCore.QObject.connect(self.zlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
-		QtCore.QObject.connect(self.stats,QtCore.SIGNAL("clicked()"),self.openStatsWin)
-		QtCore.QObject.connect(self.regress,QtCore.SIGNAL("clicked()"),self.openRegrWin)
-		QtCore.QObject.connect(self.saveb,QtCore.SIGNAL("clicked()"),self.savePlot)
-		QtCore.QObject.connect(self.pdfb,QtCore.SIGNAL("clicked()"),self.savePdf)
-		QtCore.QObject.connect(self.concatb,QtCore.SIGNAL("clicked()"),self.saveConcatPlot)
-		QtCore.QObject.connect(self.wxmin,QtCore.SIGNAL("valueChanged"),self.newLimits)
-		QtCore.QObject.connect(self.wxmax,QtCore.SIGNAL("valueChanged"),self.newLimits)
-		QtCore.QObject.connect(self.wymin,QtCore.SIGNAL("valueChanged"),self.newLimits)
-		QtCore.QObject.connect(self.wymax,QtCore.SIGNAL("valueChanged"),self.newLimits)
-		QtCore.QObject.connect(self.wzmin,QtCore.SIGNAL("valueChanged"),self.newLimits)
-		QtCore.QObject.connect(self.wzmax,QtCore.SIGNAL("valueChanged"),self.newLimits)
-		QtCore.QObject.connect(self.wcmin,QtCore.SIGNAL("valueChanged"),self.newCLimits)
-		QtCore.QObject.connect(self.wcmax,QtCore.SIGNAL("valueChanged"),self.newCLimits)
-		QtCore.QObject.connect(self.wsmin,QtCore.SIGNAL("valueChanged"),self.newSLimits)
-		QtCore.QObject.connect(self.wsmax,QtCore.SIGNAL("valueChanged"),self.newSLimits)
-		QtCore.QObject.connect(self.wrescale,QtCore.SIGNAL("clicked()"),self.autoScale)
-		QtCore.QObject.connect(self.alphaslider,QtCore.SIGNAL("valueChanged"),self.updAlpha)
+		self.linsel.currentIndexChanged[QString].connect(self.updPlotLinsel)
+		self.linwid.valueChanged[int].connect(self.updPlotLinwid)
+		self.xlabel.textChanged[QString].connect(self.updPlot)
+		self.ylabel.textChanged[QString].connect(self.updPlot)
+		self.zlabel.textChanged[QString].connect(self.updPlot)
+		self.stats.clicked.connect(self.openStatsWin)
+		self.regress.clicked.connect(self.openRegrWin)
+		self.saveb.clicked.connect(self.savePlot)
+		self.pdfb.clicked.connect(self.savePdf)
+		self.concatb.clicked.connect(self.saveConcatPlot)
+		self.wxmin.valueChanged.connect(self.newLimits)
+		self.wxmax.valueChanged.connect(self.newLimits)
+		self.wymin.valueChanged.connect(self.newLimits)
+		self.wymax.valueChanged.connect(self.newLimits)
+		self.wzmin.valueChanged.connect(self.newLimits)
+		self.wzmax.valueChanged.connect(self.newLimits)
+		self.wcmin.valueChanged.connect(self.newCLimits)
+		self.wcmax.valueChanged.connect(self.newCLimits)
+		self.wsmin.valueChanged.connect(self.newSLimits)
+		self.wsmax.valueChanged.connect(self.newSLimits)
+		self.wrescale.clicked.connect(self.autoScale)
+		self.alphaslider.valueChanged.connect(self.updAlpha)
 
 		self.newSet(0)
 		self.datachange()

@@ -55,6 +55,8 @@ from emimageutil import ImgHistogram, EMTransformPanel
 MAG_INCREMENT_FACTOR = 1.1
 
 class EMIsosurfaceModel(EM3DModel):
+	set_threshold = QtCore.pyqtSignal(float)
+
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
 
@@ -306,7 +308,7 @@ class EMIsosurfaceModel(EM3DModel):
 				self.update_data_and_texture()
 			self.get_iso_dl()
 		
-			if self.emit_events: self.emit(QtCore.SIGNAL("set_threshold"),val)
+			if self.emit_events: self.set_threshold.emit(val)
 			self.updateGL()
 	
 	def set_sample(self,val):
@@ -389,8 +391,8 @@ class EMIsoInspector(QtGui.QWidget):
 			hblbrowse.addWidget(self.mrc_browse)
 			self.vbl.addLayout(hblbrowse)
 
-			QtCore.QObject.connect(self.mrc_text, QtCore.SIGNAL("textEdited(const QString&)"), self.on_mrc_text_change) #added by Muthu
-			QtCore.QObject.connect(self.mrc_browse, QtCore.SIGNAL("clicked(bool)"), self.on_mrc_browse) # added by Muthu
+			self.mrc_text.textEdited[QString].connect(self.on_mrc_text_change) #added by Muthu
+			self.mrc_browse.clicked[bool].connect(self.on_mrc_browse) # added by Muthu
 
 		self.hbl = QtGui.QHBoxLayout()
 		self.hbl.setMargin(0)
@@ -435,31 +437,31 @@ class EMIsoInspector(QtGui.QWidget):
 		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
 		
-		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.on_threshold_slider)
-		QtCore.QObject.connect(self.contrast, QtCore.SIGNAL("valueChanged"), target.set_contrast)
-		QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), target.set_brightness)
-		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_material)
-		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.set_sample)
-		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggle_wire)
-		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggle_light)
-		QtCore.QObject.connect(self.texturetog, QtCore.SIGNAL("toggled(bool)"), self.toggle_texture)
-		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggle_cube)
-		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
-		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
+		self.thr.valueChanged.connect(self.on_threshold_slider)
+		self.contrast.valueChanged.connect(target.set_contrast)
+		self.bright.valueChanged.connect(target.set_brightness)
+		self.cbb.currentIndexChanged[QString].connect(self.set_material)
+		self.smp.valueChanged[int].connect(target.set_sample)
+		self.wiretog.toggled[bool].connect(target.toggle_wire)
+		self.lighttog.toggled[bool].connect(target.toggle_light)
+		self.texturetog.toggled[bool].connect(self.toggle_texture)
+		self.cubetog.toggled[bool].connect(target.toggle_cube)
+		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
+		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
 		
-		QtCore.QObject.connect(self.ambient_tab.r, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.ambient_tab.g, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.ambient_tab.b, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.diffuse_tab.r, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.diffuse_tab.g, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.diffuse_tab.b, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.specular_tab.r, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.specular_tab.g, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.specular_tab.b, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.emission_tab.r, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.emission_tab.g, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.emission_tab.b, QtCore.SIGNAL("valueChanged"), self.update_material)
-		QtCore.QObject.connect(self.shininess, QtCore.SIGNAL("valueChanged"), self.update_material)
+		self.ambient_tab.r.valueChanged.connect(self.update_material)
+		self.ambient_tab.g.valueChanged.connect(self.update_material)
+		self.ambient_tab.b.valueChanged.connect(self.update_material)
+		self.diffuse_tab.r.valueChanged.connect(self.update_material)
+		self.diffuse_tab.g.valueChanged.connect(self.update_material)
+		self.diffuse_tab.b.valueChanged.connect(self.update_material)
+		self.specular_tab.r.valueChanged.connect(self.update_material)
+		self.specular_tab.g.valueChanged.connect(self.update_material)
+		self.specular_tab.b.valueChanged.connect(self.update_material)
+		self.emission_tab.r.valueChanged.connect(self.update_material)
+		self.emission_tab.g.valueChanged.connect(self.update_material)
+		self.emission_tab.b.valueChanged.connect(self.update_material)
+		self.shininess.valueChanged.connect(self.update_material)
 
 
 

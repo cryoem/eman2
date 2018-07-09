@@ -88,7 +88,7 @@ def main():
 				bxs-=[e["nx"]/2, e["ny"]/2, e["nz"]/2]
 				bxs*=scale
 				bxs[:,2]-=zshift
-				outname=str(val["name"]+"__"+base_name(pfile)+".hdf")
+				outname=str(base_name(pfile)+"__"+val["name"]+".hdf")
 				if options.boxsz<0:
 					sz=int(val["boxsize"])*scale/2
 				else:

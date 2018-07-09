@@ -213,12 +213,12 @@ def maskparmgui(classes):
 
 			self.vbl.addLayout(self.hbl)
 
-			QtCore.QObject.connect(self.cmode, QtCore.SIGNAL("valueChanged"), self.newParm)
-			QtCore.QObject.connect(self.slpres, QtCore.SIGNAL("valueChanged"), self.newParm)
-			QtCore.QObject.connect(self.snmax, QtCore.SIGNAL("valueChanged"), self.newParm)
-			QtCore.QObject.connect(self.sshells, QtCore.SIGNAL("valueChanged"), self.newParm)
-			QtCore.QObject.connect(self.ssigma, QtCore.SIGNAL("valueChanged"), self.newParm)
-			QtCore.QObject.connect(self.bok,QtCore.SIGNAL("clicked(bool)"),self.close)
+			self.cmode.valueChanged.connect(self.newParm)
+			self.slpres.valueChanged.connect(self.newParm)
+			self.snmax.valueChanged.connect(self.newParm)
+			self.sshells.valueChanged.connect(self.newParm)
+			self.ssigma.valueChanged.connect(self.newParm)
+			self.bok.clicked[bool].connect(self.close)
 	
 			self.newParm()
 

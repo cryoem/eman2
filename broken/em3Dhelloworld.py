@@ -241,19 +241,19 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.vbl.addWidget(self.tabwidget)
 		self.n3_showing = False
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
-		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
-		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_x)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_y)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.set_cam_z)
-		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggle_wire)
-		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggle_light)
-		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
-		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
+		self.scale.valueChanged.connect(target.set_scale)
+		self.az.valueChanged.connect(self.slider_rotate)
+		self.alt.valueChanged.connect(self.slider_rotate)
+		self.phi.valueChanged.connect(self.slider_rotate)
+		self.cbb.currentIndexChanged[QString].connect(target.setColor)
+		self.src.currentIndexChanged[QString].connect(self.set_src)
+		self.x_trans.valueChanged[double].connect(target.set_cam_x)
+		self.y_trans.valueChanged[double].connect(target.set_cam_y)
+		self.z_trans.valueChanged[double].connect(target.set_cam_z)
+		self.wiretog.toggled[bool].connect(target.toggle_wire)
+		self.lighttog.toggled[bool].connect(target.toggle_light)
+		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
+		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
 	
 	def get_GL_tab(self):
 		self.gltab = QtGui.QWidget()
@@ -476,7 +476,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.n3.setRange(-1,1)
 			self.n3.setObjectName("n3")
 			self.vbl.addWidget(self.n3)
-			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
+			self.n3.valueChanged.connect(self.slider_rotate)
 			self.n3_showing = True
 		
 		self.current_src = self.src_map[str(val)]

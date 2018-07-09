@@ -146,13 +146,13 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.wapsarea.setWidget(self.wapsliders)
 		self.vbl1.addWidget(self.wapsarea)
 
-		QtCore.QObject.connect(self.vcell, QtCore.SIGNAL("valueChanged"), self.recompute)
-		QtCore.QObject.connect(self.vncells, QtCore.SIGNAL("valueChanged"), self.recompute)
-		QtCore.QObject.connect(self.voversamp, QtCore.SIGNAL("valueChanged"), self.recompute)
-		QtCore.QObject.connect(self.vnsin, QtCore.SIGNAL("valueChanged"), self.nsinchange)
-		QtCore.QObject.connect(self.cbshowall, QtCore.SIGNAL("stateChanged(int)"), self.recompute)
-		QtCore.QObject.connect(self.cbshifted, QtCore.SIGNAL("stateChanged(int)"), self.recompute)
-		QtCore.QObject.connect(self.cbtargfn,QtCore.SIGNAL("activated(int)"),self.newtargfn)
+		self.vcell.valueChanged.connect(self.recompute)
+		self.vncells.valueChanged.connect(self.recompute)
+		self.voversamp.valueChanged.connect(self.recompute)
+		self.vnsin.valueChanged.connect(self.nsinchange)
+		self.cbshowall.stateChanged[int].connect(self.recompute)
+		self.cbshifted.stateChanged[int].connect(self.recompute)
+		self.cbtargfn.activated[int].connect(self.newtargfn)
 
 
 		self.wamp=[]
@@ -162,11 +162,11 @@ class GUIFourierSynth(QtGui.QWidget):
 		for i in range(65):
 			self.wamp.append(ValSlider(self,(0.0,1.0),"%2d:"%i,0.0))
 			self.gblap.addWidget(self.wamp[-1],i,0)
-			QtCore.QObject.connect(self.wamp[-1], QtCore.SIGNAL("valueChanged"), self.recompute)
+			self.wamp[-1].valueChanged.connect(self.recompute)
 			
 			self.wpha.append(ValSlider(self,(-180.0,180.0),"%2d:"%i,0.0))
 			self.gblap.addWidget(self.wpha[-1],i,1)
-			QtCore.QObject.connect(self.wpha[-1], QtCore.SIGNAL("valueChanged"), self.recompute)
+			self.wpha[-1].valueChanged.connect(self.recompute)
 		
 			self.curves.append(EMData(64,1))
 		

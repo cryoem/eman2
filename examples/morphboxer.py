@@ -316,7 +316,7 @@ class MorphBoxingPanel:
 			self.clear=QtGui.QPushButton("Clear")
 			vbl.addWidget(self.auto_center_checkbox)
 			vbl.addWidget(self.clear)
-			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
+			self.clear.clicked[bool].connect(self.clear_clicked)
 		return self.widget
 	
 	def clear_clicked(self,val):
@@ -361,8 +361,8 @@ class ErasingPanel: # copied for ideas for the morph panel
 
 			vbl.addLayout(hbl)
 			vbl.addWidget(self.unerase)
-			QtCore.QObject.connect(self.erase_rad_edit,QtCore.SIGNAL("sliderReleased"),self.new_erase_radius)
-			QtCore.QObject.connect(self.unerase,QtCore.SIGNAL("clicked(bool)"),self.unerase_checked)
+			self.erase_rad_edit.sliderReleased.connect(self.new_erase_radius)
+			self.unerase.clicked[bool].connect(self.unerase_checked)
 
 		return self.widget
 

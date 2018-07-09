@@ -411,23 +411,23 @@ class EMMotion(QtGui.QMainWindow):
 
 		#self.hbl1.addStretch(5)
 
-		QtCore.QObject.connect(self.wbdrawali,QtCore.SIGNAL("clicked(bool)"),self.aliDrawMode)
-		QtCore.QObject.connect(self.wbautoali,QtCore.SIGNAL("clicked(bool)"),self.aliAutoPress)
-		QtCore.QObject.connect(self.wbresetali,QtCore.SIGNAL("clicked(bool)"),self.aliResetPress)
-		QtCore.QObject.connect(self.wbaligo,QtCore.SIGNAL("clicked(bool)"),self.aliGoPress)
-		QtCore.QObject.connect(self.wbrecalcref,QtCore.SIGNAL("clicked(bool)"),self.aliRecalcRefPress)
-		QtCore.QObject.connect(self.wbrrecalcref,QtCore.SIGNAL("clicked(bool)"),self.aliRRecalcRefPress)
-		QtCore.QObject.connect(self.wbdrawroi,QtCore.SIGNAL("clicked(bool)"),self.roiDrawMode)
-		QtCore.QObject.connect(self.wbautoroi,QtCore.SIGNAL("clicked(bool)"),self.roiAutoPress)
-		QtCore.QObject.connect(self.wbresetroi,QtCore.SIGNAL("clicked(bool)"),self.roiResetPress)
-		QtCore.QObject.connect(self.wbroigo,QtCore.SIGNAL("clicked(bool)"),self.roiGoPress)
-		QtCore.QObject.connect(self.wbcompute,QtCore.SIGNAL("clicked(bool)"),self.doCompute)
-		QtCore.QObject.connect(self.wbshowptcl,QtCore.SIGNAL("clicked(bool)"),self.showParticles)
-		QtCore.QObject.connect(self.wvbiter,QtCore.SIGNAL("valueChanged"),self.newIter)
-		QtCore.QObject.connect(self.wvsnum,QtCore.SIGNAL("valueChanged"),self.newThresh)
-		QtCore.QObject.connect(self.wbdoavg,QtCore.SIGNAL("clicked(bool)"),self.avgPress)
+		self.wbdrawali.clicked[bool].connect(self.aliDrawMode)
+		self.wbautoali.clicked[bool].connect(self.aliAutoPress)
+		self.wbresetali.clicked[bool].connect(self.aliResetPress)
+		self.wbaligo.clicked[bool].connect(self.aliGoPress)
+		self.wbrecalcref.clicked[bool].connect(self.aliRecalcRefPress)
+		self.wbrrecalcref.clicked[bool].connect(self.aliRRecalcRefPress)
+		self.wbdrawroi.clicked[bool].connect(self.roiDrawMode)
+		self.wbautoroi.clicked[bool].connect(self.roiAutoPress)
+		self.wbresetroi.clicked[bool].connect(self.roiResetPress)
+		self.wbroigo.clicked[bool].connect(self.roiGoPress)
+		self.wbcompute.clicked[bool].connect(self.doCompute)
+		self.wbshowptcl.clicked[bool].connect(self.showParticles)
+		self.wvbiter.valueChanged.connect(self.newIter)
+		self.wvsnum.valueChanged.connect(self.newThresh)
+		self.wbdoavg.clicked[bool].connect(self.avgPress)
 
-		QtCore.QObject.connect(self.mfileopen,QtCore.SIGNAL("triggered(bool)")  ,self.menuFileOpen  )
+		self.mfileopen.triggered[bool].connect(self.menuFileOpen)
 
 
 		# set up draw mode
@@ -527,8 +527,8 @@ class EMMotion(QtGui.QMainWindow):
 			return
 
 		self.dialog = embrowser.EMBrowserWidget(withmodal=True,multiselect=False)
-		QtCore.QObject.connect(self.dialog,QtCore.SIGNAL("ok"),self.gotPath)
-		QtCore.QObject.connect(self.dialog,QtCore.SIGNAL("cancel"),self.gotPath)
+		self.dialog.ok.connect(self.gotPath)
+		self.dialog.cancel.connect(self.gotPath)
 		self.dialog.show()
 	
 	def gotPath(self):

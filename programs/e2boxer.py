@@ -722,7 +722,7 @@ class boxerConvNet(QtCore.QObject):
 		boxerConvNet.bt_train=QtGui.QPushButton("Train")
 		boxerConvNet.bt_train.setToolTip("Train the network using references")
 		gridlay.addWidget(boxerConvNet.bt_train)
-		QtCore.QObject.connect(boxerConvNet.bt_train,QtCore.SIGNAL("clicked(bool)"),boxerConvNet.do_training)
+		boxerConvNet.bt_train.clicked[bool].connect(boxerConvNet.do_training)
 		#boxerConvNet.ck_train=QtGui.QCheckBox("Train from scratch")
 		#gridlay.addWidget(boxerConvNet.ck_train)
 		
@@ -1199,19 +1199,19 @@ class GUIBoxer(QtGui.QWidget):
 		#self.wplot=EMPlot2DWidget()
 		#self.wplot.setWindowTitle("e2evalimage - Plot")
 
-		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
-		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
-		self.wimage.connect(self.wimage,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
-		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.ptclmousedown)
-		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.ptclmousedrag)
-		self.wparticles.connect(self.wparticles,QtCore.SIGNAL("mx_mouseup")  ,self.ptclmouseup)
+		self.wimage.mousedown.connect(self.imgmousedown)
+		self.wimage.mousedrag.connect(self.imgmousedrag)
+		self.wimage.mouseup.connect(self.imgmouseup)
+		self.wparticles.mx_image_selected.connect(self.ptclmousedown)
+		self.wparticles.mx_mousedrag.connect(self.ptclmousedrag)
+		self.wparticles.mx_mouseup.connect(self.ptclmouseup)
 #		self.wrefs.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.refmousedown)
 #		self.wrefs.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.ptclmousedrag)
-		self.wrefs.connect(self.wrefs,QtCore.SIGNAL("mx_mouseup")  ,self.refmouseup)
+		self.wrefs.mx_mouseup.connect(self.refmouseup)
 #		self.wbadrefs.connect(self.wparticles,QtCore.SIGNAL("mx_image_selected"),self.badrefmousedown)
 #		self.wbadrefs.connect(self.wparticles,QtCore.SIGNAL("mx_mousedrag"),self.badrefmousedrag)
-		self.wbadrefs.connect(self.wbadrefs,QtCore.SIGNAL("mx_mouseup")  ,self.badrefmouseup)
-		self.wbgrefs.connect(self.wbgrefs,QtCore.SIGNAL("mx_mouseup")  ,self.bgrefmouseup)
+		self.wbadrefs.mx_mouseup.connect(self.badrefmouseup)
+		self.wbgrefs.mx_mouseup.connect(self.bgrefmouseup)
 
 		# This object is itself a widget we need to set up
 		self.gbl = QtGui.QGridLayout(self)
@@ -1230,8 +1230,7 @@ class GUIBoxer(QtGui.QWidget):
 			self.setlist.addItem(i)
 		self.gbl.addWidget(self.setlist,0,0,12,2)
 
-		self.setlist.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
-		self.setlist.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listKey)
+		self.setlist.currentRowChanged[int].connect(self.newSet)
 		
 		# Mouse Modes
 		self.mmode="manual"
@@ -1272,24 +1271,24 @@ class GUIBoxer(QtGui.QWidget):
 		self.bmbgref.setCheckable(True)
 		self.hbl0.addWidget(self.bmbgref)
 
-		QtCore.QObject.connect(self.bmmanual,QtCore.SIGNAL("clicked(bool)"),self.setMouseManual)
-		QtCore.QObject.connect(self.bmdel,QtCore.SIGNAL("clicked(bool)"),self.setMouseDel)
-		QtCore.QObject.connect(self.bmgref,QtCore.SIGNAL("clicked(bool)"),self.setMouseGoodRef)
-		QtCore.QObject.connect(self.bmbref,QtCore.SIGNAL("clicked(bool)"),self.setMouseBadRef)
-		QtCore.QObject.connect(self.bmbgref,QtCore.SIGNAL("clicked(bool)"),self.setMouseBgRef)
+		self.bmmanual.clicked[bool].connect(self.setMouseManual)
+		self.bmdel.clicked[bool].connect(self.setMouseDel)
+		self.bmgref.clicked[bool].connect(self.setMouseGoodRef)
+		self.bmbref.clicked[bool].connect(self.setMouseBadRef)
+		self.bmbgref.clicked[bool].connect(self.setMouseBgRef)
 
 		self.bfilter=QtGui.QPushButton("Filter Disp.")
 		self.bfilter.setToolTip("Filter micrograph (display only)")
 		self.bfilter.setCheckable(True)
 		self.gbl.addWidget(self.bfilter,0,4,1,1)
-		QtCore.QObject.connect(self.bfilter,QtCore.SIGNAL("clicked(bool)"),self.filterToggle)
+		self.bfilter.clicked[bool].connect(self.filterToggle)
 
 		self.binvert=QtGui.QPushButton("Invert")
 		self.binvert.setToolTip("Invert Micrograph (also output)")
 		self.binvert.setCheckable(True)
 		self.binvert.setChecked(invert_on_read)		# in truly bad form, this is a global
 		self.gbl.addWidget(self.binvert,1,4,1,1)
-		QtCore.QObject.connect(self.binvert,QtCore.SIGNAL("clicked(bool)"),self.invertToggle)
+		self.binvert.clicked[bool].connect(self.invertToggle)
 
 		# Global parameters
 		self.boxparm=QtGui.QGroupBox("Parameters",self)
@@ -1341,9 +1340,9 @@ class GUIBoxer(QtGui.QWidget):
 		self.rtclear.setToolTip("Clear all current good and bad refs")
 		self.hbl1.addWidget(self.rtclear)
 
-		QtCore.QObject.connect(self.rtload3d,QtCore.SIGNAL("clicked(bool)"),self.reftoolLoad3D)
-		QtCore.QObject.connect(self.rtload2d,QtCore.SIGNAL("clicked(bool)"),self.reftoolLoad2D)
-		QtCore.QObject.connect(self.rtclear,QtCore.SIGNAL("clicked(bool)"),self.reftoolClear)
+		self.rtload3d.clicked[bool].connect(self.reftoolLoad3D)
+		self.rtload2d.clicked[bool].connect(self.reftoolLoad2D)
+		self.rtclear.clicked[bool].connect(self.reftoolClear)
 		
 		
 		# Autoboxing Tabs
@@ -1364,15 +1363,15 @@ class GUIBoxer(QtGui.QWidget):
 		self.bbclear=QtGui.QPushButton("Clear Boxes")
 		self.bbclear.setToolTip("Clear all boxes in current micrograph")
 		self.gbl.addWidget(self.bbclear,13,2)
-		QtCore.QObject.connect(self.bbclear,QtCore.SIGNAL("clicked(bool)"),self.boxClear)
+		self.bbclear.clicked[bool].connect(self.boxClear)
 
 		self.bautoboxa = QtGui.QPushButton("Autobox All")
 		self.gbl.addWidget(self.bautoboxa,13,3)
-		QtCore.QObject.connect(self.bautoboxa,QtCore.SIGNAL("clicked(bool)"),self.doAutoBoxAll)
+		self.bautoboxa.clicked[bool].connect(self.doAutoBoxAll)
 		
 		self.bautobox = QtGui.QPushButton("Autobox")
 		self.gbl.addWidget(self.bautobox,13,4)
-		QtCore.QObject.connect(self.bautobox,QtCore.SIGNAL("clicked(bool)"),self.doAutoBox)
+		self.bautobox.clicked[bool].connect(self.doAutoBox)
 
 		self.setWindowTitle("e2boxer21 - Control Panel")
 
@@ -1842,22 +1841,6 @@ class GUIBoxer(QtGui.QWidget):
 			self.wparticles.set_data(self.particles)
 			self.__updateCount()
 
-	def listKey(self,event):
-		pass
-
-		#if event.key()>=Qt.Key_0 and event.key()<=Qt.Key_9 :
-			#q=int(event.key())-Qt.Key_0
-			#self.squality.setValue(q)
-		#elif event.key() == Qt.Key_Left:
-			#self.sdefocus.setValue(self.sdefocus.getValue()-0.03)
-		#elif event.key() == Qt.Key_Right:
-			#self.sdefocus.setValue(self.sdefocus.getValue()+0.03)
-		#elif event.key()==Qt.Key_I :
-			#self.doImport()
-		#elif event.key()==Qt.Key_U :
-			#self.unImport()
-
-		
 	def doAutoBox(self,b):
 		"""Autobox button pressed, find the right algorithm and call it"""
 		

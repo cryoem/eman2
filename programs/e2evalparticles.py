@@ -157,18 +157,18 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.vbl2.addWidget(self.wsaveorigbut)
 
 
-		QtCore.QObject.connect(self.wfilesel,QtCore.SIGNAL("itemSelectionChanged()"),self.fileUpdate)
-		QtCore.QObject.connect(self.wptclfile,QtCore.SIGNAL("currentIndexChanged(int)"),self.ptclChange)
-		QtCore.QObject.connect(self.wselallb,QtCore.SIGNAL("clicked(bool)"),self.selAllClasses)
-		QtCore.QObject.connect(self.wselnoneb,QtCore.SIGNAL("clicked(bool)"),self.selNoClasses)
-		QtCore.QObject.connect(self.wselrangeb,QtCore.SIGNAL("clicked(bool)"),self.selRangeClasses)
-		QtCore.QObject.connect(self.wselinvertb,QtCore.SIGNAL("clicked(bool)"),self.selInvertClasses)
-		QtCore.QObject.connect(self.wsel3db,QtCore.SIGNAL("clicked(bool)"),self.sel3DClasses)
-		QtCore.QObject.connect(self.wmakebut,QtCore.SIGNAL("clicked(bool)"),self.makeNewSet)
-		QtCore.QObject.connect(self.wmarkbut,QtCore.SIGNAL("clicked(bool)"),self.markBadPtcl)
-		QtCore.QObject.connect(self.wmarkgoodbut,QtCore.SIGNAL("clicked(bool)"),self.markGoodPtcl)
-		QtCore.QObject.connect(self.wsavebut,QtCore.SIGNAL("clicked(bool)"),self.savePtclNum)
-		QtCore.QObject.connect(self.wsaveorigbut,QtCore.SIGNAL("clicked(bool)"),self.saveOrigPtclNum)
+		self.wfilesel.itemSelectionChanged.connect(self.fileUpdate)
+		self.wptclfile.currentIndexChanged[int].connect(self.ptclChange)
+		self.wselallb.clicked[bool].connect(self.selAllClasses)
+		self.wselnoneb.clicked[bool].connect(self.selNoClasses)
+		self.wselrangeb.clicked[bool].connect(self.selRangeClasses)
+		self.wselinvertb.clicked[bool].connect(self.selInvertClasses)
+		self.wsel3db.clicked[bool].connect(self.sel3DClasses)
+		self.wmakebut.clicked[bool].connect(self.makeNewSet)
+		self.wmarkbut.clicked[bool].connect(self.markBadPtcl)
+		self.wmarkgoodbut.clicked[bool].connect(self.markGoodPtcl)
+		self.wsavebut.clicked[bool].connect(self.savePtclNum)
+		self.wsaveorigbut.clicked[bool].connect(self.saveOrigPtclNum)
 
 		# View windows, one for class-averages, one for good particles and one for bad particles
 		self.vclasses=None
@@ -439,8 +439,8 @@ class EMClassPtclTool(QtGui.QWidget):
 		if self.vclasses==None :
 			self.vclasses=EMImageMXWidget()
 			self.vclasses.set_mouse_mode("App")
-			QtCore.QObject.connect(self.vclasses,QtCore.SIGNAL("mx_image_selected"),self.classSelect)
-			QtCore.QObject.connect(self.vclasses,QtCore.SIGNAL("mx_image_double"),self.classDouble)
+			self.vclasses.mx_image_selected.connect(self.classSelect)
+			self.vclasses.mx_image_double.connect(self.classDouble)
 
 		self.vclasses.set_title("Classes")
 
@@ -540,7 +540,7 @@ class EMEvalPtclTool(QtGui.QMainWindow):
 
 
 		# file menu
-		QtCore.QObject.connect(self.mfile_quit,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_quit)
+		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
 
 	def menu_file_quit(self):
 		self.close()

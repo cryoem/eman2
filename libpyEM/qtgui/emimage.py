@@ -230,4 +230,3 @@ class EMWidgetFromFile(object):
 			else: widget = EMPlot2DWidget(application=application)
 			widget.set_data_from_file(filename)
 			return widget
-

@@ -1034,10 +1034,10 @@ class EMInspectorControlShape(EMItem3DInspector):
 		# Set to default, but do not run if being inherited
 		if type(self) == EMInspectorControlShape: self.updateItemControls()
 		
-		QtCore.QObject.connect(self.ambcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_ambient_color)
-		QtCore.QObject.connect(self.diffusecolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_diffuse_color)
-		QtCore.QObject.connect(self.specularcolorbox,QtCore.SIGNAL("newcolor(QColor)"),self._on_specular_color)
-		QtCore.QObject.connect(self.shininess,QtCore.SIGNAL("valueChanged"),self._on_shininess)
+		self.ambcolorbox.newcolor[QColor].connect(self._on_ambient_color)
+		self.diffusecolorbox.newcolor[QColor].connect(self._on_diffuse_color)
+		self.specularcolorbox.newcolor[QColor].connect(self._on_specular_color)
+		self.shininess.valueChanged.connect(self._on_shininess)
 		
 	def _on_ambient_color(self, color):
 		rgb = color.getRgb()
@@ -1112,7 +1112,7 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		if type(self) == EMInspectorControlScatterPlot: 
 			self.updateItemControls()
 		
-		QtCore.QObject.connect(self.pointsize,QtCore.SIGNAL("valueChanged(int)"),self.onPointSizeChanged)
+		self.pointsize.valueChanged[int].connect(self.onPointSizeChanged)
 	
 	def onPointSizeChanged(self):
 		self.item3d().setPointSize(self.pointsize.getValue())
@@ -1215,9 +1215,9 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 			self.updateMetaData()
 			
 		self.textModeBox.currentIndexChanged.connect(self.on3DTextModeChanged)
-		QtCore.QObject.connect(self.fontDepth,QtCore.SIGNAL("valueChanged(int)"),self.on3DTextDepthChanged)
-		QtCore.QObject.connect(self.fontSize,QtCore.SIGNAL("valueChanged(int)"),self.on3DTextFontChanged)
-		QtCore.QObject.connect(self.text3d,QtCore.SIGNAL("textChanged(const QString&)"),self.on3DTextChanged)
+		self.fontDepth.valueChanged[int].connect(self.on3DTextDepthChanged)
+		self.fontSize.valueChanged[int].connect(self.on3DTextFontChanged)
+		self.text3d.textChanged[QString].connect(self.on3DTextChanged)
 		
 	def on3DTextModeChanged(self):
 		textMode = str(self.textModeBox.currentText())
@@ -1370,17 +1370,17 @@ class EMInspectorControlLine(EMInspectorControlShape):
 			self.updateItemControls()
 			self.updateMetaData()
 		
-		QtCore.QObject.connect(self.leftShowArrow, QtCore.SIGNAL("stateChanged(int)"), self.redraw)
-		QtCore.QObject.connect(self.rightShowArrow, QtCore.SIGNAL("stateChanged(int)"), self.redraw)
-		QtCore.QObject.connect(self.leftArrowSize,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
-		QtCore.QObject.connect(self.leftArrowLength,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
-		QtCore.QObject.connect(self.rightArrowSize,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
-		QtCore.QObject.connect(self.rightArrowLength,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
-		QtCore.QObject.connect(self.linelength,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
-		QtCore.QObject.connect(self.linewidth,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
+		self.leftShowArrow.stateChanged[int].connect(self.redraw)
+		self.rightShowArrow.stateChanged[int].connect(self.redraw)
+		self.leftArrowSize.valueChanged[int].connect(self.redraw)
+		self.leftArrowLength.valueChanged[int].connect(self.redraw)
+		self.rightArrowSize.valueChanged[int].connect(self.redraw)
+		self.rightArrowLength.valueChanged[int].connect(self.redraw)
+		self.linelength.valueChanged[int].connect(self.redraw)
+		self.linewidth.valueChanged[int].connect(self.redraw)
 		
-		QtCore.QObject.connect(self.slice,QtCore.SIGNAL("valueChanged"),self.redraw)
-		QtCore.QObject.connect(self.stack,QtCore.SIGNAL("valueChanged"),self.redraw)
+		self.slice.valueChanged.connect(self.redraw)
+		self.stack.valueChanged.connect(self.redraw)
 	
 	def redraw(self):
 		self.item3d().setShowLeftArrow(self.leftShowArrow.isChecked())
