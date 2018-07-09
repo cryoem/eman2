@@ -777,6 +777,11 @@ lc is the cursor selection point in plot coords"""
 						self.particle_viewers.append(emimage2d.EMImage2DWidget(ptclim))
 						if len(self.particle_viewers)!=i+1 : print_exc()
 					self.particle_viewers[i].show()
+#				if len(cmts)==2
+#					p1=EMData(cmts[1],cmts[0])
+#					p2=EMData(cmts[3],cmts[2])
+#					p1.process_inplace("filter.highpass.tophat",{"cutoff_freq":0.01})
+#					p1.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1.0/30.0})
 			except:
 				self.add_shape("selpc",EMShape(("scrlabel",0,0,0,80,self.scrlim[3]-(35),comments[p],120.0,-1)))
 				y0+=18
