@@ -779,11 +779,11 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, ampcont=10.0, istart=0,
 			ctf    = ctf_2(nx, generate_ctf([dz, Cs, volt, Pixel_size, 0.0, ampcont]))
 			diff   = 0.0
 			if defocus_estimation_method == 1:
-	        		for ifreq in xrange(istart, istop, 1):
-	        			diff += (ctf[ifreq]*Res_TE[ifreq] - Res_roo[ifreq])**2
-	        	       	if diff < diff_min :
-	        		       defocus  = dz
-	        		       diff_min = diff
+				for ifreq in xrange(istart, istop, 1):
+					diff += (ctf[ifreq]*Res_TE[ifreq] - Res_roo[ifreq])**2
+					if diff < diff_min :
+						defocus  = dz
+						diff_min = diff
 			else:
 				diff  = 0.0
 				sum_a = 0.0
@@ -845,11 +845,11 @@ def defocus_guess1(Res_roo, Res_TE, volt, Cs, Pixel_size, ampcont=10.0, istart=0
 			ctf    = ctf_1d(nx, generate_ctf([dz, Cs, volt, Pixel_size, 0.0, ampcont]))
 			diff   = 0.0
 			if defocus_estimation_method == 1:
-	        		for ifreq in xrange(istart, istop, 1):
-	        			diff += (ctf[ifreq]*Res_TE[ifreq] - Res_roo[ifreq])**2
-	        	       	if diff < diff_min :
-	        		       defocus  = dz
-	        		       diff_min = diff
+				for ifreq in xrange(istart, istop, 1):
+					diff += (ctf[ifreq]*Res_TE[ifreq] - Res_roo[ifreq])**2
+					if diff < diff_min :
+						defocus  = dz
+						diff_min = diff
 			else:
 				diff  = 0.0
 				sum_a = 0.0

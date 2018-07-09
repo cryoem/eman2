@@ -81,7 +81,7 @@ def main():
 			vecs[i].write_image(output_stack, i)
 	
 	global_def.BATCH = False
-        if options.MPI:
+	if options.MPI:
 		from mpi import mpi_finalize
 		mpi_finalize()
 
