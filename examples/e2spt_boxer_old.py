@@ -994,15 +994,15 @@ def sptboxergui(options,args):
 			self.filt=0.0
 			self.mask=0.0
 
-			QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
-			QtCore.QObject.connect(self.wmask,QtCore.SIGNAL("valueChanged")  ,self.event_mask  )
-			QtCore.QObject.connect(self.wsym,QtCore.SIGNAL("editingFinished()")  ,self.event_symchange  )
-			QtCore.QObject.connect(self.wrestart,QtCore.SIGNAL("clicked(bool)")  ,self.event_restart  )
+			self.wfilt.valueChanged.connect(self.event_filter)
+			self.wmask.valueChanged.connect(self.event_mask)
+			self.wsym.editingFinished.connect(self.event_symchange)
+			self.wrestart.clicked[bool].connect(self.event_restart)
 
 
 			# The timer event handles displaying the results processed by the other thread
 			self.timer=QtCore.QTimer(self)
-			QtCore.QObject.connect(self.timer,QtCore.SIGNAL("timeout")  ,self.event_timer  )
+			self.timer.timeout.connect(self.event_timer)
 			self.timer.start(500)
 
 			# The processing is all done in the background by the other thread
@@ -1100,7 +1100,7 @@ def sptboxergui(options,args):
 			self.wfilt = ValSlider(rng=(0,50),label="Filter:",value=0.0)
 			self.gbl.addWidget(self.wfilt,2,0,1,2)
 
-			QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
+			self.wfilt.valueChanged.connect(self.event_filter)
 
 			self.gbl.setRowStretch(2,1)
 			self.gbl.setRowStretch(0,5)
@@ -1173,6 +1173,7 @@ def sptboxergui(options,args):
 
 	class EMTomoBoxer(QtGui.QMainWindow):
 		"""This class represents the EMTomoBoxer application instance.  """
+		module_closed = QtCore.pyqtSignal()
 
 		def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,shrink=1,contrast=None,center=None,mod=False,normalize=False):
 			QtGui.QWidget.__init__(self)
@@ -1274,45 +1275,45 @@ def sptboxergui(options,args):
 			self.gbl2.addWidget(self.wcoords, 0, 0, 1, 2)
 
 			# file menu
-			QtCore.QObject.connect(self.mfile_open,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_open  )
-			QtCore.QObject.connect(self.mfile_read_boxloc,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_read_boxloc  )
-			QtCore.QObject.connect(self.mfile_save_boxloc,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_boxloc  )
-			QtCore.QObject.connect(self.mfile_save_boxes,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_boxes  )
-			QtCore.QObject.connect(self.mfile_save_boxes_stack,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_boxes_stack)
-			QtCore.QObject.connect(self.mfile_quit,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_quit)
+			self.mfile_open.triggered[bool].connect(self.menu_file_open)
+			self.mfile_read_boxloc.triggered[bool].connect(self.menu_file_read_boxloc)
+			self.mfile_save_boxloc.triggered[bool].connect(self.menu_file_save_boxloc)
+			self.mfile_save_boxes.triggered[bool].connect(self.menu_file_save_boxes)
+			self.mfile_save_boxes_stack.triggered[bool].connect(self.menu_file_save_boxes_stack)
+			self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
 
 			# window menu
-			QtCore.QObject.connect(self.mwin_boxes,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_boxes  )
-			QtCore.QObject.connect(self.mwin_single,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_single  )
+			self.mwin_boxes.triggered[bool].connect(self.menu_win_boxes)
+			self.mwin_single.triggered[bool].connect(self.menu_win_single)
 	#		QtCore.QObject.connect(self.mwin_average,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_average  )
 
 			# all other widgets
-			QtCore.QObject.connect(self.wdepth,QtCore.SIGNAL("valueChanged(int)"),self.event_depth)
-			QtCore.QObject.connect(self.wnlayers,QtCore.SIGNAL("valueChanged(int)"),self.event_nlayers)
-			QtCore.QObject.connect(self.wboxsize,QtCore.SIGNAL("valueChanged"),self.event_boxsize)
-			QtCore.QObject.connect(self.wmaxmean,QtCore.SIGNAL("clicked(bool)"),self.event_projmode)
-			QtCore.QObject.connect(self.wscale,QtCore.SIGNAL("valueChanged")  ,self.event_scale  )
-			QtCore.QObject.connect(self.wfilt,QtCore.SIGNAL("valueChanged")  ,self.event_filter  )
-			QtCore.QObject.connect(self.wlocalbox,QtCore.SIGNAL("stateChanged(int)")  ,self.event_localbox  )
+			self.wdepth.valueChanged[int].connect(self.event_depth)
+			self.wnlayers.valueChanged[int].connect(self.event_nlayers)
+			self.wboxsize.valueChanged.connect(self.event_boxsize)
+			self.wmaxmean.clicked[bool].connect(self.event_projmode)
+			self.wscale.valueChanged.connect(self.event_scale)
+			self.wfilt.valueChanged.connect(self.event_filter)
+			self.wlocalbox.stateChanged[int].connect(self.event_localbox)
 
-			QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedown"),self.xy_down)
-			QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousedrag"),self.xy_drag)
-			QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mouseup"),self.xy_up  )
-			QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("mousewheel"),self.xy_wheel  )
-			QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("set_scale"),self.xy_scale)
-			QtCore.QObject.connect(self.xyview,QtCore.SIGNAL("origin_update"),self.xy_origin)
+			self.xyview.mousedown.connect(self.xy_down)
+			self.xyview.mousedrag.connect(self.xy_drag)
+			self.xyview.mouseup.connect(self.xy_up)
+			self.xyview.mousewheel.connect(self.xy_wheel)
+			self.xyview.signal_set_scale.connect(self.xy_scale)
+			self.xyview.origin_update.connect(self.xy_origin)
 
-			QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedown"),self.xz_down)
-			QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mousedrag"),self.xz_drag)
-			QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("mouseup")  ,self.xz_up  )
-			QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("set_scale"),self.xz_scale)
-			QtCore.QObject.connect(self.xzview,QtCore.SIGNAL("origin_update"),self.xz_origin)
+			self.xzview.mousedown.connect(self.xz_down)
+			self.xzview.mousedrag.connect(self.xz_drag)
+			self.xzview.mouseup.connect(self.xz_up)
+			self.xzview.signal_set_scale.connect(self.xz_scale)
+			self.xzview.origin_update.connect(self.xz_origin)
 
-			QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedown"),self.zy_down)
-			QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mousedrag"),self.zy_drag)
-			QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mouseup")  ,self.zy_up  )
-			QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("set_scale"),self.zy_scale)
-			QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("origin_update"),self.zy_origin)
+			self.zyview.mousedown.connect(self.zy_down)
+			self.zyview.mousedrag.connect(self.zy_drag)
+			self.zyview.mouseup.connect(self.zy_up)
+			self.zyview.signal_set_scale.connect(self.zy_scale)
+			self.zyview.origin_update.connect(self.zy_origin)
 
 			if datafile!=None:
 				print("\nIn ETomoBoxer, datafile is", datafile)
@@ -1336,7 +1337,7 @@ def sptboxergui(options,args):
 	#		self.averageviewer=EMAverageViewer(self)
 			#self.averageviewer.show()
 
-			QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
+			self.boxesviewer.mx_image_selected.connect(self.img_selected)
 			self.e = None
 
 		def menu_win_boxes(self) : self.boxesviewer.show()
@@ -2477,7 +2478,7 @@ def sptboxergui(options,args):
 	#		self.averageviewer.close()
 			event.accept()
 			#self.app().close_specific(self)
-			self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
+			self.module_closed.emit() # this signal is important when e2ctf is being used by a program running its own event loop
 
 		#def closeEvent(self,event):
 			#self.target().done()

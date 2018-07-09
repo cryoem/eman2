@@ -1254,6 +1254,3 @@ class EMTomoDataEntry(EMDirEntry):
 	def fillDetails(self):
 		# Maybe add code to cache results.....
 		super(EMTomoDataEntry, self).fillDetails()
-
-
-

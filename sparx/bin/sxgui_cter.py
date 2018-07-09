@@ -111,16 +111,19 @@ def main():
 
 class SXListWidget(QtGui.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
+	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 
 	def keyPressEvent(self,event):
 		if event.key() in (Qt.Key_Up,Qt.Key_Down) :
 			QtGui.QListWidget.keyPressEvent(self,event)
 			return
 		
-		self.emit(QtCore.SIGNAL("keypress"),event)
+		self.keypress.emit(event)
 
 class SXPlot2DWidget(EMPlot2DWidget):
 	
+	mouseup = QtCore.pyqtSignal()
+
 	def full_refresh(self):
 		'''
 		This function is called from resizeGL and from the inspector when somebody toggles the display of a line
@@ -136,7 +139,7 @@ class SXPlot2DWidget(EMPlot2DWidget):
 	def mouseReleaseEvent(self, event):
 		EMPlot2DWidget.mouseReleaseEvent(self,event)
 		if event.button()==Qt.LeftButton:
-			self.emit(QtCore.SIGNAL("mouseup"),event)
+			self.mouseup.emit(event)
 
 class SXGuiCter(QtGui.QWidget):
 # 	def __init__(self, cter_ctf_file = None):
@@ -563,8 +566,8 @@ class SXGuiCter(QtGui.QWidget):
 #		self.wimgmicthumb.connect(self.wimgmicthumb,QtCore.SIGNAL("mouseup")  ,self.imgmicthumbmouseup)
 #		self.wplotrotavgcoarse.connect(self.wplotrotavgcoarse,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 #		self.wplotrotavgfine.connect(self.wplotrotavgfine,QtCore.SIGNAL("mousedown"),self.plotmousedown)
-		self.whistparam.connect(self.whistparam,QtCore.SIGNAL("mouseup"),self.histparammouseup)
-		self.wplotparam.connect(self.wplotparam,QtCore.SIGNAL("mouseup"),self.plotparammouseup)
+		self.whistparam.mouseup.connect(self.histparammouseup)
+		self.wplotparam.mouseup.connect(self.plotparammouseup)
 		
 		# This object is itself a widget we need to set up
 		self.gbl = QtGui.QGridLayout(self)
@@ -915,44 +918,44 @@ class SXGuiCter(QtGui.QWidget):
 		# --------------------------------------------------------------------------------
 		# Set signal handler
 		# --------------------------------------------------------------------------------
-		QtCore.QObject.connect(self.pbopencter, QtCore.SIGNAL("clicked(bool)"),self.openCterPartres)
+		self.pbopencter.clicked[bool].connect(self.openCterPartres)
 		
-		QtCore.QObject.connect(self.cbrotavgdisplay, QtCore.SIGNAL("valueChanged"),self.newPlotDisplay)
-		QtCore.QObject.connect(self.cbmicthumbdisplay, QtCore.SIGNAL("valueChanged"),self.newMicThumbDisplay)
+		self.cbrotavgdisplay.valueChanged.connect(self.newPlotDisplay)
+		self.cbmicthumbdisplay.valueChanged.connect(self.newMicThumbDisplay)
 		
 		for idx_graph in xrange(self.n_idx_graph):
-			QtCore.QObject.connect(self.graph_map_list[idx_graph][self.idx_graph_item_widget], QtCore.SIGNAL("valueChanged"),self.updatePlotVisibility)
-		QtCore.QObject.connect(self.vbplotfixscale, QtCore.SIGNAL("valueChanged"),self.newPlotFixScale)
-		QtCore.QObject.connect(self.pbrefreshgraphs, QtCore.SIGNAL("clicked(bool)"),self.refreshGraphs)
+			self.graph_map_list[idx_graph][self.idx_graph_item_widget].valueChanged.connect(self.updatePlotVisibility)
+		self.vbplotfixscale.valueChanged.connect(self.newPlotFixScale)
+		self.pbrefreshgraphs.clicked[bool].connect(self.refreshGraphs)
 		
-		QtCore.QObject.connect(self.lbentry,QtCore.SIGNAL("currentRowChanged(int)"),self.newEntry)
+		self.lbentry.currentRowChanged[int].connect(self.newEntry)
 #		QtCore.QObject.connect(self.lbentry,QtCore.SIGNAL("keypress"),self.entryKey)
-		QtCore.QObject.connect(self.lbentry,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.updateEntrySelect)
+		self.lbentry.itemChanged[QListWidgetItem].connect(self.updateEntrySelect)
 		
-		QtCore.QObject.connect(self.ssort,QtCore.SIGNAL("currentIndexChanged(int)"),self.newSort)
-		QtCore.QObject.connect(self.cbsortoder, QtCore.SIGNAL("valueChanged"),self.newSortOrder)
-		QtCore.QObject.connect(self.cbsortselect, QtCore.SIGNAL("valueChanged"),self.newSortSelect)
-		QtCore.QObject.connect(self.pbreaplysort, QtCore.SIGNAL("clicked(bool)"),self.reapplySort)
+		self.ssort.currentIndexChanged[int].connect(self.newSort)
+		self.cbsortoder.valueChanged.connect(self.newSortOrder)
+		self.cbsortselect.valueChanged.connect(self.newSortSelect)
+		self.pbreaplysort.clicked[bool].connect(self.reapplySort)
 		
 		for idx_hist in xrange(self.n_idx_hist):
-			QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],QtCore.SIGNAL("valueChanged"),self.newThresholdLower)
-			QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper],QtCore.SIGNAL("valueChanged"),self.newThresholdUpper)
+			self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].valueChanged.connect(self.newThresholdLower)
+			self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].valueChanged.connect(self.newThresholdUpper)
 			# QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],QtCore.SIGNAL("valueChanged"),self.updateHist)
 			# QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],QtCore.SIGNAL("valueChanged"),self.updatePlotParam)
 			# QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper],QtCore.SIGNAL("valueChanged"),self.updateHist)
 			# QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper],QtCore.SIGNAL("valueChanged"),self.updatePlotParam)
 		
-		QtCore.QObject.connect(self.shist,QtCore.SIGNAL("currentIndexChanged(int)"),self.newHist)
-		QtCore.QObject.connect(self.sthresholdcontrol,QtCore.SIGNAL("currentIndexChanged(int)"),self.newThresholdControl)
-		QtCore.QObject.connect(self.cbsyncsort, QtCore.SIGNAL("valueChanged"),self.newSyncSort)
-		QtCore.QObject.connect(self.vsentryperbin, QtCore.SIGNAL("valueChanged"),self.newEntryPerBin)
-		QtCore.QObject.connect(self.pbapplyallthreshold, QtCore.SIGNAL("clicked(bool)"),self.applyAllThresholds)
+		self.shist.currentIndexChanged[int].connect(self.newHist)
+		self.sthresholdcontrol.currentIndexChanged[int].connect(self.newThresholdControl)
+		self.cbsyncsort.valueChanged.connect(self.newSyncSort)
+		self.vsentryperbin.valueChanged.connect(self.newEntryPerBin)
+		self.pbapplyallthreshold.clicked[bool].connect(self.applyAllThresholds)
 		
-		QtCore.QObject.connect(self.sthresholdset,QtCore.SIGNAL("currentIndexChanged(int)"),self.newThresholdSet)
-		QtCore.QObject.connect(self.pbsavethresholdset, QtCore.SIGNAL("clicked(bool)"),self.saveThresholdSet)
-		QtCore.QObject.connect(self.pbloadthresholdset, QtCore.SIGNAL("clicked(bool)"),self.loadThresholdSet)
+		self.sthresholdset.currentIndexChanged[int].connect(self.newThresholdSet)
+		self.pbsavethresholdset.clicked[bool].connect(self.saveThresholdSet)
+		self.pbloadthresholdset.clicked[bool].connect(self.loadThresholdSet)
 		
-		QtCore.QObject.connect(self.pbsaveselection, QtCore.SIGNAL("clicked(bool)"),self.saveSelection)
+		self.pbsaveselection.clicked[bool].connect(self.saveSelection)
 		
 		self.setWindowTitle("sxgui_cter - Control Panel")
 		
@@ -1044,7 +1047,7 @@ class SXGuiCter(QtGui.QWidget):
 #		self.errors = None # used to communicate errors back from the reprocessing thread
 		
 		self.timer=QTimer()
-		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
+		self.timer.timeout.connect(self.timeOut)
 		self.timer.start(100)
 		
 #		# Finally, read CTER partres file if necessary

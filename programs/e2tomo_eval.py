@@ -68,8 +68,8 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.imglst.setColumnWidth(1,200)
 		self.imglst_srtby=0
 		hdr=self.imglst.horizontalHeader()
-		QtCore.QObject.connect(self.imglst,QtCore.SIGNAL("cellClicked(int,int)"),self.selimg)
-		QtCore.QObject.connect(hdr,QtCore.SIGNAL("sectionPressed(int)"),self.sortlst)
+		self.imglst.cellClicked[int, int].connect(self.selimg)
+		hdr.sectionPressed[int].connect(self.sortlst)
 		
 		self.wg_thumbnail=EMImage2DWidget(parent=self)
 		self.wg_thumbnail.set_scale(1)
@@ -109,13 +109,13 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.gbl.addWidget(self.bt_plotctf, 7,2)
 		
 
-		QtCore.QObject.connect(self.bt_show2d,QtCore.SIGNAL("clicked(bool)"),self.show2d)
-		QtCore.QObject.connect(self.bt_runboxer,QtCore.SIGNAL("clicked(bool)"),self.runboxer)
-		QtCore.QObject.connect(self.bt_plotloss,QtCore.SIGNAL("clicked(bool)"),self.plot_loss)
-		QtCore.QObject.connect(self.bt_plottpm,QtCore.SIGNAL("clicked(bool)"),self.plot_tltparams)
-		QtCore.QObject.connect(self.bt_showtlts,QtCore.SIGNAL("clicked(bool)"),self.show_tlts)
-		QtCore.QObject.connect(self.bt_refresh,QtCore.SIGNAL("clicked(bool)"),self.update_files)
-		QtCore.QObject.connect(self.bt_plotctf,QtCore.SIGNAL("clicked(bool)"),self.plot_ctf)
+		self.bt_show2d.clicked[bool].connect(self.show2d)
+		self.bt_runboxer.clicked[bool].connect(self.runboxer)
+		self.bt_plotloss.clicked[bool].connect(self.plot_loss)
+		self.bt_plottpm.clicked[bool].connect(self.plot_tltparams)
+		self.bt_showtlts.clicked[bool].connect(self.show_tlts)
+		self.bt_refresh.clicked[bool].connect(self.update_files)
+		self.bt_plotctf.clicked[bool].connect(self.plot_ctf)
 		
 		self.wg_2dimage=EMImage2DWidget()
 		self.wg_2dimage.setWindowTitle("Tomo2D")
@@ -134,8 +134,8 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.wg_notes=QtGui.QTextEdit(self)
 		self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 				
-		QtCore.QObject.connect(self.setspanel,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.clickset)
-		QtCore.QObject.connect(self.wg_notes,QtCore.SIGNAL("textChanged()"),self.noteupdate)
+		self.setspanel.itemChanged[QListWidgetItem].connect(self.clickset)
+		self.wg_notes.textChanged.connect(self.noteupdate)
 		
 		self.wg_plot2d=EMPlot2DWidget()
 		

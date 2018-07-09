@@ -32,7 +32,7 @@ from __future__ import print_function
 #
 
 from PyQt4 import QtGui,QtCore
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt, QString
 from math import *
 import numpy
 from EMAN2 import *
@@ -98,14 +98,14 @@ class EMTransformPanel:
 		
 		self.current_src = "eman"
 		
-		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
-		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), self.target().set_scale)
-		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), self.target().set_cam_x)
-		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), self.target().set_cam_y)
-		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), self.target().set_cam_z)
+		self.az.valueChanged.connect(self.slider_rotate)
+		self.alt.valueChanged.connect(self.slider_rotate)
+		self.phi.valueChanged.connect(self.slider_rotate)
+		self.src.currentIndexChanged[QString].connect(self.set_src)
+		self.scale.valueChanged.connect(self.target().set_scale)
+		self.x_trans.valueChanged[float].connect(self.target().set_cam_x)
+		self.y_trans.valueChanged[float].connect(self.target().set_cam_y)
+		self.z_trans.valueChanged[float].connect(self.target().set_cam_z)
 		
 		
 	def set_defaults(self):
@@ -221,7 +221,7 @@ class EMTransformPanel:
 			self.n3.setRange(-1,1)
 			self.n3.setObjectName("n3")
 			self.parent().get_transform_layout().addWidget(self.n3)
-			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.slider_rotate)
+			self.n3.valueChanged.connect(self.slider_rotate)
 			self.n3_showing = True
 		
 		self.current_src = self.src_map[str(val)]
@@ -361,6 +361,8 @@ class EMParentWin(QtGui.QWidget,Animator):
 	
 class ImgHistogram(QtGui.QWidget):
 	""" A small fixed-size histogram widget"""
+	thresholdChanged = QtCore.pyqtSignal(float)
+
 	def __init__(self,parent):
 		QtGui.QWidget.__init__(self,parent)
 		
@@ -528,7 +530,7 @@ class ImgHistogram(QtGui.QWidget):
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
 			if (self.volume == False):
-				self.emit(QtCore.SIGNAL("thresholdChanged(float)"), self.threshold)
+				self.thresholdChanged.emit(self.threshold)
 			self.update()
 		
 		if (event.button()==Qt.LeftButton) and (self.volume):
@@ -559,7 +561,7 @@ class ImgHistogram(QtGui.QWidget):
 			x=max(min(event.x()-1,255),0)
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
-			self.emit(QtCore.SIGNAL("thresholdChanged(float)"), self.threshold)
+			self.thresholdChanged.emit(self.threshold)
 			self.update()
 		
 		if (Qt.LeftButton) and (self.volume):
@@ -604,5 +606,3 @@ class EMMetaDataTable(object):
 		
 		form = EMFormWidget(parent,params,disable_ok_cancel=True)
 		return form
-	
-	

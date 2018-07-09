@@ -1161,6 +1161,10 @@ class Camera2:
 	Then call 'position' in your main OpenGL draw function before drawing anything.
 	
 	"""
+	scale_delta = QtCore.pyqtSignal(float)
+	apply_rotation = QtCore.pyqtSignal(float)
+	apply_translation = QtCore.pyqtSignal(float)
+
 	def __init__(self,parent):
 		self.emit_events = False
 		# The magnification factor influences how the scale (zoom) is altered when a zoom event is received.
@@ -1263,7 +1267,7 @@ class Camera2:
 		
 	def scale_event(self,delta):
 		self.scale_delta(delta)
-		if self.emit_events:self.parent().emit(QtCore.SIGNAL("scale_delta"),delta)
+		if self.emit_events:self.parent().scale_delta.emit(delta)
 		
 	def scale_delta(self,delta):
 		if delta > 0:
@@ -1348,7 +1352,7 @@ class Camera2:
 			quaternion["type"] = "spin"
 			t3d.set_params(quaternion)
 			if self.emit_events: 
-				self.parent().emit(QtCore.SIGNAL("apply_rotation"),t3d)
+				self.parent().apply_rotation.emit(t3d)
 			
 			self.t3d_stack[-1] = t3d*self.t3d_stack[-1]
 		else :
@@ -1463,7 +1467,7 @@ class Camera2:
 			
 		if self.emit_events: 
 			#print "emitting applyt translation"
-			self.parent().emit(QtCore.SIGNAL("apply_translation"),v)
+			self.parent().apply_translation.emit(v)
 	
 	def motion_translateLA(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
@@ -1508,7 +1512,7 @@ class Camera2:
 			
 		if self.emit_events: 
 			#print "emitting applyt translation"
-			self.parent().emit(QtCore.SIGNAL("apply_translation"),v)
+			self.parent().apply_translation.emit(v)
 	
 	def explicit_translate(self,x,y,z):
 		
@@ -1516,7 +1520,7 @@ class Camera2:
 		self.cam_y += y
 		self.cam_z += z
 		
-		if self.emit_events: self.parent().emit(QtCore.SIGNAL("apply_translation"),(x,y,z))
+		if self.emit_events: self.parent().apply_translation.emit((x,y,z))
 			
 	def apply_translation(self,v):
 		self.cam_x += v[0]
@@ -2018,6 +2022,7 @@ def get_default_gl_colors():
 	return colors
 
 class EM3DModel(QtCore.QObject):
+	inspector_shown = QtCore.pyqtSignal()
 	FTGL = "ftgl"
 	GLUT = "glut"
 	def __init__(self, gl_widget):
@@ -2212,7 +2217,7 @@ class EM3DModel(QtCore.QObject):
 	def show(self): self.gl_widget().show()
 	def show_inspector(self,force=0): #Copied from EMGLWidget
 		if self.disable_inspector: return
-		self.emit(QtCore.SIGNAL("inspector_shown")) # debug only
+		self.inspector_shown.emit() # debug only
 		app = get_application()
 		if app == None:
 			print("can't show an inspector with having an associated application")

@@ -1005,8 +1005,8 @@ class EMPDBInspector(QtGui.QWidget):
 
 		self.setLayout(vbl)
 		
-		QtCore.QObject.connect(self.text, QtCore.SIGNAL("textEdited(const QString&)"), self.on_text_change)
-		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("clicked(bool)"), self.on_browse)
+		self.text.textEdited[QString].connect(self.on_text_change)
+		self.browse.clicked[bool].connect(self.on_browse)
 	
 	def on_text_change(self,text):
 		print("Use the Browse button to update the pdb file")

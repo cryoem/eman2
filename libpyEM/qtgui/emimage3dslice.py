@@ -479,14 +479,14 @@ class EM3DSliceInspector(QtGui.QWidget):
 		
 #		self.current_src = EULER_EMAN
 		
-		QtCore.QObject.connect(self.slice, QtCore.SIGNAL("valueChanged"), target.set_slice)
-		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), target.set_GL_contrast)
-		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), target.set_GL_brightness)
-		QtCore.QObject.connect(self.axisCombo, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setAxis)
-		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggle_cube)
-		QtCore.QObject.connect(self.defaults, QtCore.SIGNAL("clicked(bool)"), self.set_defaults)
-		QtCore.QObject.connect(self.contrast, QtCore.SIGNAL("valueChanged"), self.on_contrast_changed)
-		QtCore.QObject.connect(self.bright, QtCore.SIGNAL("valueChanged"), self.on_brightness_changed)
+		self.slice.valueChanged.connect(target.set_slice)
+		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
+		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
+		self.axisCombo.currentIndexChanged[QString].connect(target.setAxis)
+		self.cubetog.toggled[bool].connect(target.toggle_cube)
+		self.defaults.clicked[bool].connect(self.set_defaults)
+		self.contrast.valueChanged.connect(self.on_contrast_changed)
+		self.bright.valueChanged.connect(self.on_brightness_changed)
 	
 	def on_contrast_changed(self,val):
 		if self.busy: return

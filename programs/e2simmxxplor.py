@@ -188,7 +188,7 @@ class EMSimmxExplorer(EM3DSymModel):
 		if self.mx_display == None:
 			self.mx_display = EMImage2DWidget()
 #			self.mx_display = EMImageMXWidget()
-			QtCore.QObject.connect(self.mx_display,QtCore.SIGNAL("module_closed"),self.on_mx_display_closed)
+			self.mx_display.module_closed.connect(self.on_mx_display_closed)
 			resize_necessary = True
 
 		if self.frc_display == None:
@@ -337,7 +337,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.ptcl_slider.setSingleStep(1)
 		self.ptcl_slider.setValue(0)
 		layout.addWidget(self.ptcl_slider)
-		self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged(int)"), self.set_ptcl_idx)
+		self.ptcl_slider.valueChanged[int].connect(self.set_ptcl_idx)
 
 
 	def set_ptcl_idx(self,val):
@@ -358,8 +358,8 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.combo = QtGui.QComboBox(self)
 		for e in combo_entries: self.combo.addItem(e)
 
-		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(QString&)"),self.on_combo_change)
-		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(const QString&)"),self.on_combo_change)
+		self.combo.currentIndexChanged[QString].connect(self.on_combo_change)
+		self.combo.currentIndexChanged[QString].connect(self.on_combo_change)
 
 		vbl.addWidget(self.combo)
 
@@ -367,7 +367,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 
 		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
-		QtCore.QObject.connect(self.list_widget,QtCore.SIGNAL("itemClicked(QListWidgetItem *)"),self.list_widget_item_clicked)
+		self.list_widget.itemClicked[QListWidgetItem].connect(self.list_widget_item_clicked)
 
 		self.update_simmx_list(True)
 		vbl.addWidget(self.list_widget)

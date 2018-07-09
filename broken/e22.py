@@ -67,7 +67,7 @@ app = EMApp()
 EMAN2.GUIMode=True
 EMAN2.app=app
 mytimer = QtCore.QTimer()
-QtCore.QObject.connect( mytimer, QtCore.SIGNAL( 'timeout()' ), on_timer )
+mytimer.timeout.connect(on_timer)
 mytimer.start(500)
 
 app.exec_()

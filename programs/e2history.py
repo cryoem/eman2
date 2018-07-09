@@ -82,8 +82,8 @@ class HistoryForm:
 		from PyQt4 import QtGui,QtCore
 		self.form.setWindowIcon(QtGui.QIcon(get_image_directory() + "feather.png"))
 		self.form.resize(640,480)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_ok"),self.on_ok)
-		QtCore.QObject.connect(self.form,QtCore.SIGNAL("emform_cancel"),self.on_cancel)
+		self.form.emform_ok.connect(self.on_ok)
+		self.form.emform_cancel.connect(self.on_cancel)
 		
 		
 	def get_history_table(self):

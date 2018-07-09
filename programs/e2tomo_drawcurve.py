@@ -292,8 +292,8 @@ class EMDrawWindow(QtGui.QMainWindow):
 		self.imgview.shapes = {0:self.contour}
 
 
-		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("mouseup"),self.mouseup  )
-		QtCore.QObject.connect(self.imgview,QtCore.SIGNAL("keypress"),self.key_press)
+		self.imgview.mouseup.connect(self.on_mouseup)
+		self.imgview.keypress.connect(self.key_press)
 
 		glEnable(GL_POINT_SMOOTH)
 		glEnable( GL_LINE_SMOOTH );
@@ -319,7 +319,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 			self.imgview.shapechange=1
 			self.imgview.updateGL()
 
-	def mouseup(self, event):
+	def on_mouseup(self, event):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))
 		if not event.button()&Qt.LeftButton:
 			return
@@ -361,4 +361,3 @@ class EMDrawWindow(QtGui.QMainWindow):
 
 if __name__ == '__main__':
 	main()
-
