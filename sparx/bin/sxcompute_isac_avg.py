@@ -175,7 +175,6 @@ def main():
 	import sys, os, time
 	global Tracker, Blockdata
 	from global_def import ERROR
-	print('HERE')
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -236,10 +235,8 @@ def main():
 	Constants["low_pass_filter"]              = options.fl
 	Constants["maxit"]                        = options.maxit
 	Constants["navg"]                         = options.navg
-	
-	if B_enhance:
-		Constants["B_start"]   = options.B_start
-		Constants["Bfactor"]   = options.Bfactor
+	Constants["B_start"]                      = options.B_start
+	Constants["Bfactor"]                      = options.Bfactor
 	
 	if adjust_to_given_pw2: Constants["modelpw"] = options.pw_adjustment
 	Tracker["constants"] = Constants
@@ -279,16 +276,12 @@ def main():
 			masterdir ="sharpen_"+Tracker["constants"]["isac_dir"]
 			os.mkdir(masterdir)
 		else:
-			if os.path.exists(masterdir): 
-				print("%s already exists"%masterdir)
-			else: 
-				os.mkdir(masterdir)
+			if os.path.exists(masterdir): print("%s already exists"%masterdir)
+			else: os.mkdir(masterdir)
 		subdir_path = os.path.join(masterdir, "ali2d_local_params_avg")
-		if not os.path.exists(subdir_path): 
-			os.mkdir(subdir_path)
+		if not os.path.exists(subdir_path): os.mkdir(subdir_path)
 		subdir_path = os.path.join(masterdir, "params_avg")
-		if not os.path.exists(subdir_path): 
-			os.mkdir(subdir_path)
+		if not os.path.exists(subdir_path): os.mkdir(subdir_path)
 		li =len(masterdir)
 	else: li = 0
 	li                                  = mpi_bcast(li,1,MPI_INT,Blockdata["main_node"],MPI_COMM_WORLD)[0]
@@ -394,9 +387,9 @@ def main():
 	tag_sharpen_avg = 1000
 	## always apply low pass filter to B_enhanced images to suppress noise in high frequencies 
 	enforced_to_H1 = False
-	if options.B_enhance:
+	if B_enhance:
 		if Tracker["constants"]["low_pass_filter"] == -1.0: 
-			print("User does not provide low pass filter")
+			#print("User does not provide low pass filter")
 			enforced_to_H1 = True
 	if navg <Blockdata["nproc"]:#  Each CPU do one average 
 		FH_list    = [ None for im in xrange(navg)]
@@ -430,18 +423,18 @@ def main():
 					#if Tracker["constants"]["nopwadj"]: # pw adjustment, 1. analytic model 2. PDB model 3. B-facttor enhancement
 				else: FH2 = 0.0
 				FH_list[iavg] = [FH1, FH2]
-				if options.B_enhance:
+				if B_enhance:
 					new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
 					print("Process avg  %d  %f  %f   %f"%(iavg, gb, FH1, FH2))
 			
-				elif options.adjust_to_given_pw2: 
+				elif adjust_to_given_pw2: 
 					roo     = read_text_file(Tracker["constants"]["modelpw"], -1)
 					roo     = roo[0] # always put pw in the first column
 					new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], roo)
 			
-				elif options.adjust_to_analytic_model: new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], None)
+				elif adjust_to_analytic_model: new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], None)
 		
-				elif options.no_adjustment: pass
+				elif no_adjustment: pass
 		
 				print("Process avg  %d   %f   %f"%(iavg, FH1, FH2))
 				if Tracker["constants"]["low_pass_filter"] !=-1.0:
@@ -524,7 +517,7 @@ def main():
 				mlist[im]= get_im(Tracker["constants"]["orgstack"], list_dict[iavg][im])
 				set_params2D(mlist[im], params_dict[iavg][im], xform = "xform.align2d")
 			data_list[iavg] = mlist
-		print("read data done %d"%Blockdata["myid"])
+		#print("read data done %d"%Blockdata["myid"])
 		
 		#if Blockdata["myid"] == Blockdata["main_node"]: print("start to compute averages")
 		for iavg in xrange(image_start,image_end):
@@ -549,11 +542,11 @@ def main():
 			#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
 			FH_list[iavg] = [iavg, FH1, FH2]
 			
-			if options.B_enhance:
+			if B_enhance:
 				new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
 				print("Process avg  %d  %f  %f  %f"%(iavg, gb, FH1, FH2))
 				
-			elif options.adjust_to_given_pw2: 
+			elif adjust_to_given_pw2: 
 				roo = read_text_file( Tracker["constants"]["modelpw"], -1)
 				roo = roo[0] # always on the first column
 				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], roo)
@@ -563,7 +556,7 @@ def main():
 				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], None)
 				print("Process avg  %d  %f  %f"%(iavg, FH1, FH2))
 
-			elif options.no_adjustment: pass
+			elif no_adjustment: pass
 			
 				
 			if Tracker["constants"]["low_pass_filter"] != -1.0:
@@ -577,7 +570,7 @@ def main():
 				new_avg = filt_tanl(new_avg, low_pass_filter, 0.01)
 			else:# No low pass filter but if enforced
 				if enforced_to_H1: new_avg = filt_tanl(new_avg, FH1, 0.01)
-			if options.B_enhance: new_avg = fft(new_avg)
+			if B_enhance: new_avg = fft(new_avg)
 				
 			new_avg.set_attr("members",   list_dict[iavg])
 			new_avg.set_attr("n_objects", len(list_dict[iavg]))
