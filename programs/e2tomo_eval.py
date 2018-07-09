@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
+from __future__ import print_function
 from EMAN2 import *
 import os
 import numpy as np
@@ -351,12 +352,12 @@ class TomoEvalGUI(QtGui.QWidget):
 		
 		
 	def sortlst(self,col):
-		print "Sort by",self.imglst.horizontalHeaderItem(col).text()
+		print("Sort by",self.imglst.horizontalHeaderItem(col).text())
 		self.imglst_srtby=1-self.imglst_srtby
 		self.imglst.sortItems(col, self.imglst_srtby)
 		
 	def closeEvent(self,event):
-		print "Exiting"
+		print("Exiting")
 		
 		self.wg_2dimage.close()
 		self.wg_plot2d.close()
@@ -365,9 +366,9 @@ class TomoEvalGUI(QtGui.QWidget):
 		
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 if __name__ == '__main__':
 	main()
-	
+

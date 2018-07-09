@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
+from __future__ import print_function
 from EMAN2 import *
 import numpy as np
 from EMAN2_utils import *
@@ -168,4 +169,4 @@ def run(cmd):
 	
 if __name__ == '__main__':
 	main()
-	
+

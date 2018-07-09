@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
+from __future__ import print_function
 import numpy as np
 from EMAN2 import *
 import json
@@ -260,10 +261,10 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	
 if __name__ == '__main__':
 	main()
-	
+

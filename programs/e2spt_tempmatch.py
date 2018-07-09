@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 
+from __future__ import print_function
 from EMAN2 import *
 import numpy as np
 import scipy.spatial.distance as scidist
@@ -136,10 +137,10 @@ def do_match(jsd, m, o, img):
 	jsd.put(cf)
 
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	
 if __name__ == '__main__':
 	main()
-	
+

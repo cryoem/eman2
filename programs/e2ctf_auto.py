@@ -322,7 +322,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	if resample3<1.0:
 		resample2=1.0
 	maskwid3=18.0/options.apix
-	maskrad3=int(boxsize/2-maskwid2*1.2)
+	maskrad3=int(boxsize/2-maskwid3*1.2)
 
 	# for high resolution data, we still go ahead and do some masking
 	maskwid4=6.0/options.apix
@@ -336,7 +336,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		if not options.lores : print("Warning: original sampling is too large for ideal 5A resolution results. Suggest <=1.8 A/pix")
 		resample2=1.0
 	maskwid5=6.0/options.apix
-	maskrad5=int(boxsize/2-maskwid2*1.2)
+	maskrad5=int(boxsize/2-maskwid5*1.2)
 
 	if options.phaseplate : hppixels=1
 	else: hppixels=3
@@ -381,7 +381,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		print("Phase-flipped output files:\n__ctf_flip_lp20 - masked, downsampled, filtered to 20 A resolution\n__ctf_flip_lp7 - masked, downsampled, filtered to 7 A resolution\n__ctf_flip_fullres - masked, full sampling")
 
 	else :
-		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag lp12 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.07 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
+		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag lp12 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.08333 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
 			maskrad=maskrad3,maskwid=maskwid3,resamp=resample3,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
 		if options.verbose: print(com)
 		launch_childprocess(com)

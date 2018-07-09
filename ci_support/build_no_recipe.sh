@@ -2,6 +2,11 @@
 
 set -xe
 
+MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
+
+bash "${MYDIR}/../tests/future_import_tests.sh"
+python -m compileall -q .
+
 if [ ! -z ${TRAVIS} ];then
     source ci_support/setup_conda.sh
 

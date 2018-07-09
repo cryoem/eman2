@@ -162,7 +162,7 @@ def main():
 
 		elif options.program == "MotionCor2":
 			cmd = "{} -InMrc {} -OutMrc {} ".format(program,input_file,output_file)
-			if options.patch != 1 1: cmd += " -Patch {} ".format(options.patch)
+			if options.patch != "1 1": cmd += " -Patch {} ".format(options.patch)
 			if options.dark != None: cmd += " -Dark {} ".format(options.dark)
 			if options.gain != None: cmd += " -Gain {} ".format(options.gain)
 		

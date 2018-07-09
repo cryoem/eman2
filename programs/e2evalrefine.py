@@ -53,6 +53,12 @@ try:
 except:
 	print("Matplotlib not available, plotting options will not be available")
 
+# slow, but for printing results should be fine
+def safediv(a,b):
+	if b==0: return 0
+	try: return a/b
+	except: return 0
+
 #@profile
 def pqual(n,ptclincls,jsd,includeproj,verbose):
 	"""This computes particle quality for all particles in one class average over both iterations"""
@@ -614,7 +620,7 @@ def main():
 				#sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 				#fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/(cl["ptcl_repr"]+0.01),sums[2]/(1.0001-sums[2])/(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
 				sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],sums[1]/sums[0],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/(cl["ptcl_repr"]+0.01),sums[2]/(1.0001-sums[2])/(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],safediv(sums[1],sums[0]),cl["ptcl_repr"],alt,az,phi,safediv(safediv(sums[0],(1.0-sums[0])),cl["ptcl_repr"]),safediv(safediv(sums[1],(1.0-sums[1])),cl["ptcl_repr"]),safediv(safediv(sums[2],(1.0-sums[2])),cl["ptcl_repr"]),i,classes[eo],i,projections[eo]))
 
 				if options.evalclassdetail and eo==0:
 					out=open("cfsc{:04d}.txt".format(i),"w")

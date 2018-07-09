@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Muyuan Chen 2016-10
 
+from __future__ import print_function
 from EMAN2 import *
 import numpy as np
 from shutil import copyfile
@@ -39,7 +40,7 @@ def main():
 				options.path=pname
 				break
 		else:
-			print "something is wrong..."
+			print("something is wrong...")
 			exit()
 	else:
 		try: 
@@ -48,7 +49,7 @@ def main():
 			pass
 	
 	path=options.path
-	print "Working in path {}...".format(path)
+	print("Working in path {}...".format(path))
 	
 	for i,r in enumerate(refs):
 		rf="{}/init_ref_{:02d}.hdf".format(path, i)
@@ -79,8 +80,8 @@ def main():
 		
 
 		if np.sum(ks[0]!=ks[1])>0:
-			print "Something wrong..."
-			print [len(k) for k in ks]
+			print("Something wrong...")
+			print([len(k) for k in ks])
 		else:
 			keys=ks[0]
 		
@@ -92,7 +93,7 @@ def main():
 		#print "score shape:", score.shape
 		clsmx=np.argmin(score, axis=0)
 		u,c=np.unique(clsmx, return_counts=True)
-		print "Pariticles in each class: ", ', '.join(c.astype(str).tolist())
+		print("Pariticles in each class: ", ', '.join(c.astype(str).tolist()))
 		
 		np.savetxt("{}/classmx_{:02d}.txt".format(path, itr), clsmx)
 		
@@ -147,10 +148,10 @@ def main():
 	E2end(logid)
 	
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	
 if __name__ == '__main__':
 	main()
-	
+

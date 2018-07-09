@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-10
+from __future__ import print_function
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import tensorflow as tf
@@ -283,4 +284,4 @@ def run(cmd):
 	
 if __name__ == '__main__':
 	main()
-	
+

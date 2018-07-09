@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import os
 import re
 import argparse
@@ -338,3 +339,4 @@ def main():
         wrt.write(lines)
 
 main()
+

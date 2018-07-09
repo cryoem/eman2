@@ -140,13 +140,7 @@ class EMPlot2DWidget(EMGLWidget):
 
 		self.resize(640,480)
 
-		self.particle_viewer = None
-		self.particle_viewer0 = None
-		self.particle_viewer1 = None
-		self.particle_viewer2 = None
-		self.particle_viewer3 = None
-		self.particle_viewer4 = None
-		self.particle_viewer5 = None
+		self.particle_viewers = []
 
 		self.alpha = 0.5
 
@@ -176,27 +170,15 @@ class EMPlot2DWidget(EMGLWidget):
 		self.resize_event(width,height)
 
 	def closeEvent(self,event):
-		if self.particle_viewer!=None :
-			self.particle_viewer.close()
-
-		if self.particle_viewer0!=None :
-			self.particle_viewer0.close()
-		if self.particle_viewer1!=None :
-			self.particle_viewer1.close()
-		if self.particle_viewer2!=None :
-			self.particle_viewer2.close()
-		if self.particle_viewer3!=None :
-			self.particle_viewer3.close()
-		if self.particle_viewer4!=None :
-			self.particle_viewer4.close()
-		if self.particle_viewer5!=None :
-			self.particle_viewer5.close()
+		for pv in self.particle_viewers: 
+			if pv!=None : pv.closeEvent(event)
+		self.particle_viewers=[]
 
 		self.clear_gl_memory()
 		EMGLWidget.closeEvent(self, event)
 
 		if self.inspector :
-			self.inspector.closeEvent(self, event)
+			self.inspector.closeEvent(event)
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_C:
@@ -790,49 +772,16 @@ lc is the cursor selection point in plot coords"""
 					imn = int(cmts[2*i])
 					imf = cmts[2*i+1]
 					ptclim=EMData(imf,imn)
-					if i == 0:
-						if self.particle_viewer0==None :
-							self.particle_viewer0=emimage2d.EMImage2DWidget(ptclim)
-							self.particle_viewer0.show()
-						else:
-							self.particle_viewer0.set_data(ptclim)
-							self.particle_viewer0.show()
-					elif i == 1:
-						if self.particle_viewer1==None :
-							self.particle_viewer1=emimage2d.EMImage2DWidget(ptclim)
-							self.particle_viewer1.show()
-						else:
-							self.particle_viewer1.set_data(ptclim)
-							self.particle_viewer1.show()
-					elif i == 2:
-						if self.particle_viewer2==None :
-							self.particle_viewer2=emimage2d.EMImage2DWidget(ptclim)
-							self.particle_viewer2.show()
-						else:
-							self.particle_viewer2.set_data(ptclim)
-							self.particle_viewer2.show()
-					elif i == 3:
-						if self.particle_viewer3==None :
-							self.particle_viewer3=emimage2d.EMImage2DWidget(ptclim)
-							self.particle_viewer3.show()
-						else:
-							self.particle_viewer3.set_data(ptclim)
-							self.particle_viewer3.show()
-					elif i == 4:
-						if self.particle_viewer4==None :
-							self.particle_viewer4=emimage2d.EMImage2DWidget(ptclim)
-							self.particle_viewer4.show()
-						else:
-							self.particle_viewer4.set_data(ptclim)
-							self.particle_viewer4.show()
-					elif i == 5:
-						if self.particle_viewer5==None :
-							self.particle_viewer5=emimage2d.EMImage2DWidget(ptclim)
-							self.particle_viewer5.show()
-						else:
-							self.particle_viewer5.set_data(ptclim)
-							self.particle_viewer5.show()
-
+					try: self.particle_viewers[i].set_data(ptclim)
+					except: 
+						self.particle_viewers.append(emimage2d.EMImage2DWidget(ptclim))
+						if len(self.particle_viewers)!=i+1 : print_exc()
+					self.particle_viewers[i].show()
+#				if len(cmts)==2
+#					p1=EMData(cmts[1],cmts[0])
+#					p2=EMData(cmts[3],cmts[2])
+#					p1.process_inplace("filter.highpass.tophat",{"cutoff_freq":0.01})
+#					p1.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1.0/30.0})
 			except:
 				self.add_shape("selpc",EMShape(("scrlabel",0,0,0,80,self.scrlim[3]-(35),comments[p],120.0,-1)))
 				y0+=18

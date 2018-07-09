@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
+from __future__ import print_function
 from EMAN2 import *
 import numpy as np
 import Queue
@@ -276,7 +277,7 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 				e=fft1.do_ift()
 				
 				if options.dotest:
-					print tpm[3], pz, dz, defocus[nid]-dz
+					print(tpm[3], pz, dz, defocus[nid]-dz)
 			
 
 			xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4], "ztilt":tpm[2], "tx":txdf, "ty":tydf})
@@ -320,10 +321,10 @@ def get_xf_pos(tpm, pk):
 
 
 def run(cmd):
-	print cmd
+	print(cmd)
 	launch_childprocess(cmd)
 	
 	
 if __name__ == '__main__':
 	main()
-	
+

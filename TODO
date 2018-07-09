@@ -130,3 +130,4 @@ Complete
 6/15/16		Fixed problem with slice normalization in e2initialmodel. Made some initial models really streaky and awful.
 6/27/18		e2msa now uses sklearn, and provides a variety of other algorithms. The PCA routine in the Analyzer seems to be buggy in certain cases.
 6/27/18		Muyuan discovered that the initial search orientations for the 3-D Tree aligner needed to be inverted to account for symmetry properly
+6/29/18		New e2enrich.py working
