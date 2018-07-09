@@ -40,7 +40,7 @@ def main():
 
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=2,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--path", type=str,help="path", default=None)
+	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -51,8 +51,13 @@ def main():
 	ref=options.reference
 
 	if options.path==None:
-		options.path=make_path("tomorecon")
-			
+ 		# Try to assign name from set label. 
+		if "sets" in ptcls: 
+			path = ptcls.split("/")[-1].split(".")[0]
+		# Otherwise use spt_XX directory.
+		else: path = "spt"	
+		options.path = make_path(path)
+	
 	options.input_ptcls=ptcls
 	options.input_ref=ref
 	options.cmd=' '.join(sys.argv)
