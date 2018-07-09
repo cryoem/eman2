@@ -51,8 +51,13 @@ def main():
 	ref=options.reference
 
 	if options.path==None:
-		options.path=make_path("tomorecon")
-			
+ 		# Try to assign name from set label. 
+		if "sets" in ptcls: 
+			path = ptcls.split("/")[-1].split(".")[0]
+		# Otherwise use spt_XX directory.
+		else: path = "spt"	
+		options.path = make_path(path)
+	
 	options.input_ptcls=ptcls
 	options.input_ref=ref
 	options.cmd=' '.join(sys.argv)
