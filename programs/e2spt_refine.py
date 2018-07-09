@@ -40,7 +40,7 @@ def main():
 
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=2,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--path", type=str,help="path", default=None)
+	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
