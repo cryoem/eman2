@@ -92,11 +92,11 @@ def filtchange(name,value):
 
 class EMProcessorWidget(QtGui.QWidget):
 	"""A single processor with parameters"""
-	upPress = QtCore.pyqtSignal()
-	downPress = QtCore.pyqtSignal()
-	plusPress = QtCore.pyqtSignal()
-	minusPress = QtCore.pyqtSignal()
-	processorChanged = QtCore.pyqtSignal()
+	upPress = QtCore.pyqtSignal(int)
+	downPress = QtCore.pyqtSignal(int)
+	plusPress = QtCore.pyqtSignal(int)
+	minusPress = QtCore.pyqtSignal(int)
+	processorChanged = QtCore.pyqtSignal(int)
 
 	plist=dump_processors_list()
 

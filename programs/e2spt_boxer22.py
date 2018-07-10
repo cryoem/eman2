@@ -1532,7 +1532,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		self.new_set_button.clicked[bool].connect(self.new_set)
 		self.rename_set_button.clicked[bool].connect(self.rename_set)
 		self.delete_set_button.clicked[bool].connect(self.delete_set)
-		self.setlist.itemChanged[QListWidgetItem].connect(self.set_list_item_changed)
+		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.set_list_item_changed)
 		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
 
 

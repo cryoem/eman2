@@ -299,7 +299,7 @@ class ValBox(QtGui.QWidget):
 	so for virtually all purposes it could be used as a drop-in replacement.
 	"""
 	enableChanged = QtCore.pyqtSignal(int)
-	valueChanged = QtCore.pyqtSignal()
+	valueChanged = QtCore.pyqtSignal(int)
 	textChanged = QtCore.pyqtSignal()
 
 	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1):
