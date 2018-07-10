@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
@@ -36,18 +37,18 @@ from EMAN2jsondb import js_open_dict
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import QChar, QString, Qt, QModelIndex
 from PyQt4.QtGui import QAction
-from emapplication import EMApp
-from emimage2d import *
-from emimagemx import *
-from empdbitem3d import *
-from emplot2d import *
-from emhist import *
-from emplot3d import *
-from expand_string import expand_string
+from .emapplication import EMApp
+from .emimage2d import *
+from .emimagemx import *
+from .empdbitem3d import *
+from .emplot2d import *
+from .emhist import *
+from .emplot3d import *
+from .expand_string import expand_string
 from libpyUtils2 import EMUtil
-from matching import matches_pats
+from .matching import matches_pats
 from string import lower
-from valslider import StringBox
+from .valslider import StringBox
 import os
 import re
 import threading
@@ -3028,8 +3029,8 @@ class EMBrowserWidget(QtGui.QWidget) :
 		# although this looks dumb it is necessary to break Python's issue with circular imports(a major weakness of Python IMO)
 
 		global emscene3d, emdataitem3d
-		import emscene3d
-		import emdataitem3d
+		from . import emscene3d
+		from . import emdataitem3d
 
 		QtGui.QWidget.__init__(self, parent)
 

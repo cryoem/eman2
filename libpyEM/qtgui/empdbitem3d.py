@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)
@@ -33,8 +34,8 @@ from __future__ import print_function
 #
 
 from EMAN2 import *
-from emglobjects import get_default_gl_colors
-from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
+from .emglobjects import get_default_gl_colors
+from .emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
 from libpyGLUtils2 import GLUtil
 import os
 import sys
@@ -1207,8 +1208,8 @@ class EMSphereModelInspector(EMPDBItem3DInspector):
 
 if __name__ == '__main__' :
 	print("WARNING: This module is not designed to be run as a program. The browser you see is for testing purposes.")
-	from emapplication import EMApp
-	from embrowser import EMBrowserWidget
+	from .emapplication import EMApp
+	from .embrowser import EMBrowserWidget
 	app = EMApp()
 	browser = EMBrowserWidget(withmodal = False, multiselect = False)
 	browser.show()

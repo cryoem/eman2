@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 #
 # Author: David Woolford 11/10/08 (woolford@bcm.edu)
 # Copyright (c) 2000-2008 Baylor College of Medicine
@@ -32,10 +33,10 @@ from __future__ import print_function
 #
 
 
-from emsprworkflow import *
-from emform import *
-from emsave import EMFileTypeValidator
-from emapplication import error, EMErrorMessageDisplay
+from .emsprworkflow import *
+from .emform import *
+from .emsave import EMFileTypeValidator
+from .emapplication import error, EMErrorMessageDisplay
 from EMAN2db import db_open_dict
 	
 class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
@@ -361,7 +362,7 @@ class EMSubTomoDataReportTask(EMRawDataReportTask):
 		project_names = project_data.keys()
 		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
 
-		from emform import EMTomographicFileTable,EMFileTable
+		from .emform import EMTomographicFileTable,EMFileTable
 		table = EMTomographicFileTable(project_names,desc_short="Sub Tomograms",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
 		table.add_context_menu_data(context_menu_data)
@@ -385,7 +386,7 @@ class EMRefDataReportTask(EMRawDataReportTask):
 		project_names = project_data.keys()
 		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
 
-		from emform import EMTomographicFileTable,EMFileTable
+		from .emform import EMTomographicFileTable,EMFileTable
 		table = EMTomographicFileTable(project_names,name="refnames", desc_short="Sub Tomogram References",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
 		table.add_context_menu_data(context_menu_data)
@@ -409,7 +410,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		'''
 		self.report_task = EMSubTomoDataReportTask()
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
-		from emform import EMFileTable,int_lt
+		from .emform import EMFileTable,int_lt
 		return table, n
 		
 	def get_tomo_hunter_ref_table(self):
@@ -417,7 +418,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		'''
 		self.report_task = EMRefDataReportTask()
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
-		from emform import EMFileTable,int_lt
+		from .emform import EMFileTable,int_lt
 		return table, n
 		
 	def run_form(self):
@@ -587,7 +588,7 @@ class EMTomoRawDataReportTask(EMRawDataReportTask):
 		project_names = project_data.keys()
 		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
 
-		from emform import EMTomographicFileTable,EMFileTable
+		from .emform import EMTomographicFileTable,EMFileTable
 		table = EMTomographicFileTable(project_names,desc_short="Tomograms",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
 		table.add_context_menu_data(context_menu_data)
@@ -614,7 +615,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		
 		self.report_task = EMTomoRawDataReportTask()
 		table,n = self.report_task.get_raw_data_table()# now p is a EMParamTable with rows for as many files as there in the project
-		from emform import EMFileTable,int_lt
+		from .emform import EMFileTable,int_lt
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2TomoBoxerGuiTask.get_tomo_boxes_in_database,"Boxes currently stored in the EMAN2 database",int_lt))
 		
 		return table, n

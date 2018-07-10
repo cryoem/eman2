@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 #
 # Author: John Flanagan, 04/08/2011 (jfflanag@bcm.edu)
 # Edited by: Stephen Murray (scmurray@bcm.edu) May 2014
@@ -33,7 +34,7 @@ from __future__ import print_function
 #
 from EMAN2 import get_image_directory, dump_processors_list
 from PyQt4 import QtCore, QtGui
-from emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
+from .emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
 from EMAN2jsondb import js_open_dict
 from EMAN2 import *
 import os

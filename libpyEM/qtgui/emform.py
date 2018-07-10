@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: David Woolford 11/7/2008 (woolford@bcm.edu)
@@ -32,12 +33,12 @@ from __future__ import print_function
 #
 
 
-from emdatastorage import ParamDef
+from .emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
 import os
-from emselector import EMSelectorDialog
-from emapplication import get_application
+from .emselector import EMSelectorDialog
+from .emapplication import get_application
 from EMAN2 import Util, get_image_directory,file_exists,dump_aligners_list,dump_processors_list
 import EMAN2
 import weakref
@@ -107,7 +108,7 @@ class EMOrientationDistDialog(EMButtonDialog):
 		symnumber = name_map["symnumber"][0] # assume the first entry in the list is a text entry
 		if symnumber.isEnabled(): symname += str(symnumber.text())
 		
-		from emimage3dsym import EMSymChoiceDialog
+		from .emimage3dsym import EMSymChoiceDialog
 		dialog = EMSymChoiceDialog(symname)
 		result = dialog.exec_()
 		if result != None:
@@ -297,7 +298,7 @@ class EMFileTable(QtGui.QTableWidget):
 	def time_out(self):
 		if self.busy :
 			self.timer.stop()
-			from emapplication import EMErrorMessageDisplay
+			from .emapplication import EMErrorMessageDisplay
 			EMErrorMessageDisplay.run(["Disabling updates of %s for speed" %key] )
 		
 		stime=time.time()	
@@ -309,7 +310,7 @@ class EMFileTable(QtGui.QTableWidget):
 						self.animated_columns[key] = i
 						break
 				else:
-					from emapplication import EMErrorMessageDisplay
+					from .emapplication import EMErrorMessageDisplay
 					EMErrorMessageDisplay.run(["Can't animate %s" %key] )
 					self.animated_columns.pop(key)
 					self.busy = 0
@@ -327,7 +328,7 @@ class EMFileTable(QtGui.QTableWidget):
 		
 		if time.time()-stime>0.5 :
 			self.timer.stop()
-			from emapplication import EMErrorMessageDisplay
+			from .emapplication import EMErrorMessageDisplay
 			EMErrorMessageDisplay.run(["Disabling updates of %s for speed" %key] )
 		
 	
@@ -581,7 +582,7 @@ class EMFileTable(QtGui.QTableWidget):
 		@table_widget The table widget from which the entries were selected
 		'''
 		for name in list_of_names:
-			from emsave import LightEMDataSave, save_data
+			from .emsave import LightEMDataSave, save_data
 			tmp = LightEMDataSave(table_widget.convert_text(name))
 			val = save_data(tmp)
 			if val == "":
@@ -673,14 +674,14 @@ class EM2DFileTable(EMFileTable):
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
-			from emimage import EMWidgetFromFile
+			from .emimage import EMWidgetFromFile
 			self.display_module = EMWidgetFromFile(filename,get_application())
-			from emapplication import ModuleEventsManager
+			from .emapplication import ModuleEventsManager
 			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		else:
 			from EMAN2 import EMData
-			import emscene3d
-			import emdataitem3d
+			from . import emscene3d
+			from . import emdataitem3d
 			
 			data=emdataitem3d.EMDataItem3D(filename)
 			self.display_module.insertNewNode(os.path.basename(filename), data, parentnode=self.display_module)
@@ -750,9 +751,9 @@ class EM2DStackTable(EMFileTable):
 			if not file_exists(name):
 				error("File %s doesn't exist" %s, "Error")
 				continue
-			from emimagemx import EMDataListCache
+			from .emimagemx import EMDataListCache
 			tmp = EMDataListCache(table_widget.convert_text(name))
-			from emsave import save_data
+			from .emsave import save_data
 			val = save_data(tmp)
 			if val == "":
 				break
@@ -767,12 +768,12 @@ class EM2DStackTable(EMFileTable):
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
-			from emimage import EMWidgetFromFile
+			from .emimage import EMWidgetFromFile
 			self.display_module = EMWidgetFromFile(filename,get_application())
-			from emapplication import ModuleEventsManager
+			from .emapplication import ModuleEventsManager
 			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		else:
-			from emimagemx import EMLightWeightParticleCache
+			from .emimagemx import EMLightWeightParticleCache
 			self.display_module.set_data(EMLightWeightParticleCache.from_file(filename)) #  I know this looks stupid, but c'est la vie
 			self.display_module.updateGL()
 					
@@ -806,9 +807,9 @@ class EMPlotTable(EMFileTable):
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
-			from emimage import EMWidgetFromFile
+			from .emimage import EMWidgetFromFile
 			self.display_module = EMWidgetFromFile(filename,get_application())
-			from emapplication import ModuleEventsManager
+			from .emapplication import ModuleEventsManager
 			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		else:
 			self.display_module.set_data_from_file(filename,True)
@@ -864,9 +865,9 @@ class EM2DStackExamineTable(EM2DStackTable):
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if self.display_module == None:
-			from emimagemx import EMImageMXWidget
+			from .emimagemx import EMImageMXWidget
 			self.display_module = EMImageMXWidget(None,get_application())
-			from emapplication import ModuleEventsManager
+			from .emapplication import ModuleEventsManager
 			#self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		
 		self.display_module.set_data(filename,filename) #  I know this looks stupid, but c'est la vie
@@ -2123,7 +2124,7 @@ def on_cancel():
 # This is just for testing, of course
 if __name__ == '__main__':
 	
-	from emapplication import EMApp
+	from .emapplication import EMApp
 	em_app = EMApp()
 	window = EMFormWidget(params=get_example_form_params())
 	window.setWindowTitle("A test form")

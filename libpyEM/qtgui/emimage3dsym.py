@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -38,12 +39,12 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt, QString
-from emapplication import EMApp, get_application
-from emglobjects import EM3DModel, EMGLWidget, Camera, Camera2, EMViewportDepthTools2, EMGLProjectionViewMatrices, get_default_gl_colors
-from emimageutil import EMTransformPanel
+from .emapplication import EMApp, get_application
+from .emglobjects import EM3DModel, EMGLWidget, Camera, Camera2, EMViewportDepthTools2, EMGLProjectionViewMatrices, get_default_gl_colors
+from .emimageutil import EMTransformPanel
 from math import *
 from time import *
-from valslider import ValSlider
+from .valslider import ValSlider
 from weakref import WeakKeyDictionary
 import weakref
 
@@ -410,7 +411,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 	def object_picked(self,object_number):
 		resize_necessary = False
 		if self.image_display_window == None:
-			from emimage2d import EMImage2DWidget
+			from .emimage2d import EMImage2DWidget
 			self.image_display_window = EMImage2DWidget()
 			self.image_display_window.module_closed.connect(self.on_image_display_window_closed)
 			resize_necessary = True

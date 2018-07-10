@@ -371,7 +371,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 			if getlst:
 				lstinfo=lst.read(i)
 				dc=eval(lstinfo[2])
-				if dc.has_key("score"):
+				if "score" in dc:
 					score=dc.pop("score")
 				else:
 					score=2
