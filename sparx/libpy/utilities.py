@@ -145,7 +145,7 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 
 	iteration = 0
 
-	while True:
+	while 1:
 		# find the index of the best and worst vertices in the simplex
 		ssworst = 0
 		ssbest  = 0
@@ -246,7 +246,7 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 
 	iteration = 0
 
-	while True:
+	while 1:
 		# find the index of the best and worst vertices in the simplex
 		ssworst = 0
 		ssbest  = 0
@@ -474,7 +474,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 	from   utilities    import peak_search
 	from   fundamentals import fshift
 	import types
-	if isinstance(image_to_be_centered, bytes): image_to_be_centered = get_im(image_to_be_centered)
+	if type(image_to_be_centered) == bytes: image_to_be_centered = get_im(image_to_be_centered)
 	if    center_method == 0 :  return  image_to_be_centered,0.,0.
 	elif  center_method == 1 :
 		cs = image_to_be_centered.phase_cog()
@@ -709,7 +709,7 @@ def drop_image(imagename, destination, itype="h"):
 	<type> is "h" (hdf) or "s" (spider)
 	"""
 
-	if isinstance(destination, type("")):
+	if type(destination) == type(""):
 		if(itype == "h"):    imgtype = EMUtil.ImageType.IMAGE_HDF
 		elif(itype == "s"):  imgtype = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
 		else:  ERROR("unknown image type","drop_image",1)
@@ -1118,7 +1118,7 @@ def get_image(imagename, nx = 0, ny = 1, nz = 1, im = 0):
 	Usage: myimage = readImage("path/to/image")
 	or     myimage = readImage(name_of_existing_image)
 	"""
-	if isinstance(imagename, type("")):
+	if type(imagename) == type(""):
 	    e = EMData()
 	    e.read_image(imagename, im)
 	elif not imagename:
@@ -1134,7 +1134,7 @@ def get_im(stackname, im = 0):
 	Usage: myimage = get_im("path/to/stack", im)
 	   or: myimage = get_im( data, im )
 	"""
-	if isinstance(stackname, type("")):
+	if type(stackname) == type(""):
 		e = EMData()
 		e.read_image(stackname, im)
 		return  e
@@ -1255,7 +1255,7 @@ def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_hi
 		Window image to FFT-friendly size, apply Butterworth low pass filter,
 		and decimate 2D image
 	"""
-	if isinstance(img, str) :	img=get_image(img)
+	if type(img)     == str :	img=get_image(img)
 	if decimation    <= 1   :  	ERROR("Improper decimation ratio", "image_decimation", 1)
 	if frequency_low <= 0   :
 		frequency_low  = .5/decimation- .05
@@ -1690,8 +1690,8 @@ def print_list_format(m, narray = 0):
 	"""
 	flist = []
 	for i in xrange(len(m)):
-		if   isinstance(m[i], float): flist.append('%10.3g'%(m[i]))
-		elif isinstance(m[i], int) :  flist.append(  '%10d'%(m[i]))
+		if   type(m[i])  is float: flist.append('%10.3g'%(m[i]))
+		elif type(m[i])  is int :  flist.append(  '%10d'%(m[i]))
 		else				   : flist.append(  '%10s'%(m[i]))
 	if(narray > len(m)):
 		narray = 0
@@ -1718,7 +1718,7 @@ def print_list_format(m, narray = 0):
 
 def pad(image_to_be_padded, new_nx, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0):
 	import types
-	if not isinstance(background, bytes): background = str(background)
+	if type(background) != bytes: background = str(background)
 	if   background == "average"       :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "average")
 	elif background == "circumference" :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "circumference")
 	else:                                    image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz,  background  )
@@ -1828,7 +1828,7 @@ def write_text_row(data, file_name):
 	"""
 	import types
 	outf = open(file_name, "w")
-	if (isinstance(data[0], list)):
+	if (type(data[0]) == list):
 		# It is a list of lists
 		for i in xrange(len(data)):
 			for j in xrange(len(data[i])):
@@ -1907,7 +1907,7 @@ def write_text_file(data, file_name):
 
 	import types
 	outf = open(file_name, "w")
-	if (isinstance(data[0], list)):
+	if (type(data[0]) == list):
 		# It is a list of lists
 		for i in xrange(len(data[0])):
 			for j in xrange(len(data)):
@@ -1938,7 +1938,7 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 	"""
 		Substitute masked area value with image average
 	"""
-	if isinstance(image_mask_applied_file, bytes):
+	if type(image_mask_applied_file) == bytes:
 		nima = EMUtil.get_image_count(image_mask_applied_file)
 		if (nima > 1):
 			image_mask_applied = []
@@ -1948,12 +1948,12 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 				image_mask_applied.append(e)
 		else:
 			image_mask_applied = get_im(image_mask_applied_file)
-	elif  isinstance(image_mask_applied_file, list):
+	elif  type(image_mask_applied_file) == list:
 		nima =  len( image_mask_applied )
 		image_mask_applied = image_mask_applied_file
-	if isinstance(new_mask_file, bytes):
+	if type(new_mask_file) == bytes:
 		new_mask = get_im( new_mask_file )
-	elif isinstance(new_mask_file, int) or isinstance(new_mask_file, types.floatType):
+	elif type(new_mask_file) == int or type( new_mask_file ) == types.floatType:
 		if nima > 1:
 			e = image_mask_applied[0]
 			nx = e.get_xsize()
@@ -2054,7 +2054,7 @@ def estimate_3D_center(data):
 	from numpy import matrix
 	from numpy import linalg
 	import types
-	if(isinstance(data[0], list)):
+	if(type(data[0]) is list):
 		ali_params = data
 	else:
 		ali_params = []
@@ -2967,13 +2967,13 @@ def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
 	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
 	import types
 	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
-	if    isinstance(number_to_send, int):
+	if    type(number_to_send) is int:
 		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, mpi_comm)
 		return int(TMP[0])
-	elif  isinstance(number_to_send, float):
+	elif  type(number_to_send) is float:
 		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, mpi_comm)
 		return float(TMP[0])
-	elif  isinstance(number_to_send, bool):
+	elif  type(number_to_send) is bool:
 		if number_to_send: number_to_send = 1
 		else: number_to_send = 0
 		TMP = mpi_bcast(number_to_send, 1, MPI_INT, source_node, mpi_comm)
@@ -2989,8 +2989,8 @@ def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
 	if(myid == source_node):
 		n = len(list_to_send)
 		# we will also assume all elements on the list are of the same type
-		if( isinstance(list_to_send[0], int) ): tp = 0
-		elif( isinstance(list_to_send[0], float) ): tp = 1
+		if( type(list_to_send[0]) == int ): tp = 0
+		elif( type(list_to_send[0]) == float ): tp = 1
 		else: tp = 2
 	else:
 		n = 0
@@ -3025,13 +3025,13 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	ink = []
 	len_list = 0
 	for il in xrange(len(list_params)):
-		if isinstance(value[il], int):
+		if type(value[il]) is int:
 			ink.append(1)
 			len_list += 1
-		elif isinstance(value[il], float):
+		elif type(value[il]) is float:
 			ink.append(0)
 			len_list += 1
-		elif isinstance(value[il], TransType):
+		elif type(value[il]) is TransType:
 			ink.append(2)
 			len_list += 12
 	ldis = []
@@ -3097,9 +3097,9 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 	for im in xrange(image_start, image_end):
 		value = get_arb_params(data[im-image_start], list_params)
 		for il in xrange(len(value)):
-			if    isinstance(value[il], int):  nvalue.append(float(value[il]))
-			elif  isinstance(value[il], float): nvalue.append(value[il])
-			elif  isinstance(value[il], TransType):
+			if    type(value[il]) is int:  nvalue.append(float(value[il]))
+			elif  type(value[il]) is float: nvalue.append(value[il])
+			elif  type(value[il]) is TransType:
 				m = value[il].get_matrix()
 				assert (len(m)==12)
 				for f in m: nvalue.append(f)
@@ -3125,13 +3125,13 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	ISID = -1
 	for il in xrange(len(list_params)):
 		if(list_params[il] == 'ID'):  ISID = il
-		if isinstance(value[il], int):
+		if type(value[il]) is int:
 			ink.append(1)
 			len_list += 1
-		elif isinstance(value[il], float):
+		elif type(value[il]) is float:
 			ink.append(0)
 			len_list += 1
-		elif isinstance(value[il], TransType):
+		elif type(value[il]) is TransType:
 			ink.append(2)
 			len_list += 12
 	ldis = []
@@ -3456,7 +3456,7 @@ def parse_user_function(opt_string):
 	# check if option string is a string and return None if not. this
 	# will cause the user function to be set to default value
 	# "ref_ali3d" in the ali functions....
-	if not(isinstance(opt_string, str)):
+	if not(type(opt_string) is str):
 		return None
 
 	# check opt_string for format:
@@ -4074,7 +4074,7 @@ def rotation_between_anglesets(agls1, agls2):
 	import types
 
 	def ori2xyz(ori):
-		if(isinstance(ori, list)):
+		if(type(ori) == list):
 			phi, theta, psi = ori[:3]
 		else:
 			# it has to be Transformation object
@@ -5006,7 +5006,7 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 
 	out_array = None
 	if rank == root:
-		if isinstance(data, list):
+		if type(data) is list:
 			out_array = []
 			for p in xrange(procs):
 				if p == rank:
@@ -5312,7 +5312,7 @@ def if_error_then_all_processes_exit_program(error_status):
 
 	if error_status > 0:
 		if myid == 0:
-			if isinstance(error_status_info, type((1,1))):
+			if type(error_status_info) == type((1,1)):
 				if len(error_status_info) == 2:
 					frameinfo = error_status_info[1]
 					print_msg("***********************************\n")
@@ -5621,11 +5621,11 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 				if key in vars_that_will_show_only_size:
 					my_vars[key] = "%s with length: %d"%(str(type(local_vars[key])),len(local_vars[key]))
 				else:
-					if	isinstance(local_vars[key], type(set())):
+					if	type(local_vars[key]) == type(set()):
 						my_vars[key] = list(local_vars[key])
 					else:
 						my_vars[key] = local_vars[key]
-		elif isinstance(local_vars[key], dict):
+		elif type(local_vars[key]) == dict:
 			if len({type(local_vars[key][i]) for i in local_vars[key]} - set(allowed_types)) == 0:
 					my_vars[key] = local_vars[key]
 
@@ -5734,7 +5734,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	# not a real while, an if with the possibility of jumping with break
 	while mpi_comm_rank(MPI_COMM_WORLD) == 0:
 		if "file_name_of_saved_state" not in program_state_stack.__dict__:
-			if not isinstance(file_name_of_saved_state, type("")):
+			if type(file_name_of_saved_state) != type(""):
 				print("Must provide the file name of saved state as a string in the first call of the function!")
 				error_status = 1
 				break
@@ -6067,7 +6067,8 @@ def convertasi(asig,K):
 		l = []
 		for i in xrange(len(asig)):
 			if( asig[i ]== k ): l.append(i)
-		l = sorted(array(l,"int32"))
+		l = array(l,"int32")
+		l.sort()
 		p.append(l)
 	return p
 
@@ -6100,7 +6101,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	from utilities import model_circle, get_im
 	from filter import fit_tanh1
 	import os
-	if(isinstance(radi, int)):
+	if(type(radi) == int):
 		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 		else:                     mask = get_im(mask_option)
 	else:  mask = radi
@@ -6476,7 +6477,8 @@ def recons_mref(Tracker):
 	ref_list = []
 	number_of_ref_class = []
 	for igrp in xrange(number_of_groups):
-		a_group_list = sorted(particle_list[(total_data*igrp)//number_of_groups:(total_data*(igrp+1))//number_of_groups])
+		a_group_list = particle_list[(total_data*igrp)//number_of_groups:(total_data*(igrp+1))//number_of_groups]
+		a_group_list.sort()
 		Tracker["this_data_list"] = a_group_list
 		from utilities import write_text_file
 		particle_list_file = os.path.join(Tracker["this_dir"], "iclass%d.txt"%igrp)
@@ -6737,7 +6739,8 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 			nc_zero +=1
 	number_of_class = len(partition_A)
 	for index_of_class in xrange(number_of_class):
-		A = sorted(partition_A[index_of_class])
+		A = partition_A[index_of_class]
+		A.sort()
 		A= array(A,'int32')
 		numpy32_A.append(A)
 		B= partition_B[index_of_class]

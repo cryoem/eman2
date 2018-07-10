@@ -2370,7 +2370,8 @@ class EMImageInspectorMX(QtGui.QWidget):
 	def update_vals(self):
 		try:
 			self.vals.clear()
-			vn=sorted(self.target().data.get_image_header_keys())
+			vn=self.target().data.get_image_header_keys()
+			vn.sort()
 			for i in vn:
 				action=self.vals.addAction(i)
 				action.setCheckable(1)

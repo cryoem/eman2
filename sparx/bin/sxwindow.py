@@ -245,7 +245,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			break
 		
 		if not is_float(ctf_params_src):
-			assert (isinstance(ctf_params_src, str))
+			assert (type(ctf_params_src) is str)
 			# This should be string for CTER partres (CTF parameter) file
 			if error_status is None and os.path.exists(ctf_params_src) == False:
 				error_status = ("Specified CTER partres file is not found. Please check input_ctf_params_source argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
@@ -292,7 +292,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# ------------------------------------------------------------------------------------
 	if my_mpi_proc_id == main_mpi_proc:
 		# This should be string specifying pixel size [A/Pixels]
-		assert (isinstance(ctf_params_src, str))
+		assert (type(ctf_params_src) is str)
 		if is_float(ctf_params_src):
 			if options.limit_ctf:
 				print("WARNING!!! --limit_ctf option has no effects since the CTER partres file is not specified with input_ctf_params_source argument...")

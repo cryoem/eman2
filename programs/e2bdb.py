@@ -200,7 +200,8 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					slist.append(val)     
 			n = EMUtil.get_image_count(args[0])
 			good = set(range(n)) - set(slist)
-			slist = sorted([i for i in good])
+			slist = [i for i in good]
+			slist.sort()
 			del n,val,vdata,good
 			
 		if options.makevstack!=None or options.appendvstack!=None :
@@ -290,7 +291,8 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct=db_open_dict(path+db,ro=True)
 				
 				#### Dump
-				keys=sorted(dct.keys())
+				keys=dct.keys()
+				keys.sort()
 				for k in keys:
 					v=dct[k]
 					try :
@@ -313,7 +315,8 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct=db_open_dict(path+db,ro=True)
 				
 				#### Dump
-				keys=sorted(dct.keys())
+				keys=dct.keys()
+				keys.sort()
 				if len(options.step)==3 : keys=keys[:options.step[2]]
 				for k in keys[options.step[0]::options.step[1]]:
 					v=dct[k]
@@ -322,7 +325,8 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 						for i in v: print("\n\t%s"%str(i), end=' ')
 						print("")
 					elif isinstance(v,dict) :
-						ks2=sorted(v.keys())
+						ks2=v.keys()
+						ks2.sort()
 						kc=0
 						for i in ks2:
 							if kc>=2 :
@@ -373,7 +377,8 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 						for i in v: print("\n\t%s"%str(i), end=' ')
 						print("")
 					elif isinstance(v,dict) :
-						ks2=sorted(v.keys())
+						ks2=v.keys()
+						ks2.sort()
 						for i in ks2:
 							print("\n\t%s : %s"%(i,v[i]), end=' ')
 						print("")

@@ -75,7 +75,8 @@ def main():
 			print("--nbasis adjusted to ",options.nbasis)
 
 	if options.path==None:
-		paths=sorted([i for i in os.listdir(".") if "refine_" in i and len(i)==9])
+		paths=[i for i in os.listdir(".") if "refine_" in i and len(i)==9]
+		paths.sort()
 		options.path=paths[-1]
 
 	pathnum=options.path[-2:]

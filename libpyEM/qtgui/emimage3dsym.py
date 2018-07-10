@@ -1813,7 +1813,8 @@ class EMSymInspector(QtGui.QWidget):
 #		self.glbrightness.setValue(0.0)
 #		self.display_tab.vbl.addWidget(self.glbrightness)
 		
-		keys = sorted(self.target().colors.keys())
+		keys = self.target().colors.keys()
+		keys.sort()
 		self.arc_color = self.__get_combo(keys,self.target().arc_color)
 		hbl1 = QtGui.QHBoxLayout()
 		hbl1.addWidget(QtGui.QLabel("Arc Color:",self))

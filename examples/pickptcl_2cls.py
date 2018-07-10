@@ -273,7 +273,7 @@ class boxerConvNet():
 	def apply_network(micrograph, layers, shrinkfac, nx, ny):
 		sz=64
 		#### file name or EMData input
-		if isinstance(micrograph, str):
+		if type(micrograph)==str:
 			fm=EMData(micrograph)
 		else:
 			fm=micrograph.copy()

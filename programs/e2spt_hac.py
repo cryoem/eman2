@@ -444,7 +444,8 @@ def exclusive_classes(options):
 				a=EMData(options.path + '/' +i,j,True)
 				print("The average I have just appended has this multiplicity", a['spt_multiplicity'])
 				print("And comes from this file", options.path + '/' + i)
-				indxs = sorted(a['spt_ptcl_indxs'])
+				indxs = a['spt_ptcl_indxs']
+				indxs.sort()
 				averages.append({'file':options.path + '/' + i,'n':j,'multiplicity':a['spt_multiplicity'],'indxs':indxs})
 	me_classes = []
 	repeated = []
@@ -511,7 +512,7 @@ def setHACheader(options,inputfile,nptcl,roundtag,fillfactor):
 		#if 'spt_ptcl_indxs' not in a.get_attr_dict():				#spt_ptcl_indxs keeps track of what particles from the original stack went into a particular average or "new particle"
 		a['spt_ptcl_indxs']=[i]							#The raw stack should contain particles where this parameter is the particle number itself
 		#else:
-		if isinstance(a['spt_ptcl_indxs'], int):
+		if type(a['spt_ptcl_indxs']) is int:
 			a['spt_ptcl_indxs'] = [a['spt_ptcl_indxs']]			#The spt_ptcl_indxs parameter should be of type 'list', to easily 'append' new particle indexes
 		
 		particletag = roundtag + '_' + str(i).zfill(fillfactor)
@@ -1397,7 +1398,7 @@ def get_results(etc,tids,verbose):
 	numtides = len(tids)
 	
 	print("\n(e2spt_hac.py)(get_results) Entering get_results function")
-	while True:
+	while 1:
 		time.sleep(5)
 		proglist=etc.check_task(tidsleft)
 		nwait=0

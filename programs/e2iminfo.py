@@ -182,7 +182,8 @@ def main():
 			if options.header :
 #				d=EMData(imagefile,i, True) #Jesus
 				print("")
-				keys=sorted(d.get_attr_dict().keys())
+				keys=d.get_attr_dict().keys()
+				keys.sort()
 				for k in keys:
 					print("\t%s: %s"%(k,str(d[k])))
 				print("======================")

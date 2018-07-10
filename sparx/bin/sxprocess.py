@@ -1269,7 +1269,7 @@ def main():
 					"""
 					Convert spatial frequency to angstrom
 					"""
-					if( not isinstance(values, list)):  values = [values]
+					if( type(values) != list):  values = [values]
 					angstrom = [999.0]*len(values)
 					for i,q in enumerate(values):
 						if(q>0.0):  angstrom[i] = pixel_size/q

@@ -934,7 +934,7 @@ class boxerConvNet(QtCore.QObject):
 	def apply_network(micrograph, layers, shrinkfac, nx, ny, nnet_classify=None, params={}):
 		sz=64
 		#### file name or EMData input
-		if isinstance(micrograph, str):
+		if type(micrograph)==str:
 			fm=load_micrograph(micrograph)
 		else:
 			fm=micrograph.copy()

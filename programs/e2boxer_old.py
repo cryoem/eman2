@@ -1183,7 +1183,8 @@ class SwarmBoxer:
 			from PyQt4 import QtCore
 			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
 		boxes = self.target().get_boxes()
-		proximal_boxes_idxs = sorted(self.get_proximal_boxes(boxes))
+		proximal_boxes_idxs = self.get_proximal_boxes(boxes)
+		proximal_boxes_idxs.sort()
 		proximal_boxes_idxs.reverse()
 		proximal_boxes = [boxes[idx] for idx in proximal_boxes_idxs]
 
@@ -3206,7 +3207,7 @@ class CTFInspectorWidget(QtGui.QWidget):
 
 	def setData(self,data):
 		# check data type is a list and break, if not
-		if not(isinstance(data, list)):
+		if not(type(data) is list):
 			return False
 
 		# free previous and reset our data to the passed list

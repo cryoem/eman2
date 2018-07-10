@@ -340,7 +340,7 @@ class EMTaskCustomer:
 
 				k=0
 				rd={}
-				while True:
+				while 1:
 					signal.alarm(360)
 					k=recvobj(sockf)
 					if k==None: break
@@ -706,7 +706,7 @@ class EMMpiClient():
 			self.nextjob=1						# next job waiting to run
 			self.status={}						# status of each job
 
-			while True:
+			while 1:
 				# Look for a command from our controlling process
 				if select.select([self.mpifile],[],[],0)[0]:
 					com,data=load(self.mpifile)
@@ -785,7 +785,7 @@ class EMMpiClient():
 		# all other ranks handle executing jobs
 		else :
 
-			while True:
+			while 1:
 				r=mpi_iprobe(0, MPI_ANY_TAG, MPI_COMM_WORLD)		# listen for a message from rank 0, this one doesn't block
 				#if self.logfile!=None : self.logfile.write( "Listen response (%s)\n"%str(r))
 				if r:
@@ -1102,7 +1102,7 @@ def recv_broadcast(sock):
 	myuid=os.getuid()
 	curobjseq=-1
 	curpktseq=-1
-	while True:
+	while 1:
 		pkt=sock.recv(1044)		# 20 byte header + 1024 bytes of data
 		mag,uid,totlen,objseq,pktseq=unpack("<4sIIII",pkt[:20])
 		if mag !="EMAN" or uid!=myuid: continue			# not for us
@@ -1711,7 +1711,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					#if self.verbose>3 : print k,result[k]
 
 				result=open("%s/results/%07d"%(self.queue.path,data),"r")
-				while True:
+				while 1:
 					try:
 						k=load(result)
 						v=load(result)
@@ -1800,7 +1800,7 @@ class EMDCTaskClient(EMTaskClient):
 
 		n=0
 		lname=""
-		while True:
+		while 1:
 			if len(cq)==0 : continue
 #			print len(cq), " in cache list"
 			img=cq.pop()
@@ -1896,7 +1896,7 @@ class EMDCTaskClient(EMTaskClient):
 			ret=None
 			lname=""
 			nrecv=0
-			while True :
+			while 1 :
 				if nrecv==0 : signal.alarm(15)		# if we haven't gotten anything yet, only wait a little while
 				else : signal.alarm(30)				# if we've been receiving data, wait longer for more
 
@@ -2007,7 +2007,7 @@ class EMDCTaskClient(EMTaskClient):
 		n=0
 #		t0,t1,t2,t3=0,0,0,0
 		# This loop receives the data from the server, then forwards it to the next host in the chain
-		while True:
+		while 1:
 			signal.alarm(60)
 			xmit=recvstr(sockf)		# this should contain time,rint,img#,image
 

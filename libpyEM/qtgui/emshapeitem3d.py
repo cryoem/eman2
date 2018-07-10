@@ -1033,7 +1033,7 @@ class EMInspectorControlShape(EMItem3DInspector):
 		gridbox.addWidget(colorframe, 3, 0, 1, 1)
 		
 		# Set to default, but do not run if being inherited
-		if isinstance(self, EMInspectorControlShape): self.updateItemControls()
+		if type(self) == EMInspectorControlShape: self.updateItemControls()
 		
 		self.ambcolorbox.newcolor[QColor].connect(self._on_ambient_color)
 		self.diffusecolorbox.newcolor[QColor].connect(self._on_diffuse_color)
@@ -1110,7 +1110,7 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		gridbox.addWidget(scatterframe, 3, 0)
 		
 		# set to default, but run only as a base class
-		if isinstance(self, EMInspectorControlScatterPlot): 
+		if type(self) == EMInspectorControlScatterPlot: 
 			self.updateItemControls()
 		
 		self.pointsize.valueChanged[int].connect(self.onPointSizeChanged)
@@ -1211,7 +1211,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		gridbox.addWidget(text3dframe, 3, 0)
 		
 		# set to default, but run only as a base class
-		if isinstance(self, EMInspectorControl3DText): 
+		if type(self) == EMInspectorControl3DText: 
 			self.updateItemControls()
 			self.updateMetaData()
 			
@@ -1367,7 +1367,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		gridbox.addWidget(lineframe2, 3, 0)
 		
 		# set to default, but run only as a base class
-		if isinstance(self, EMInspectorControl3DText): 
+		if type(self) == EMInspectorControl3DText: 
 			self.updateItemControls()
 			self.updateMetaData()
 		

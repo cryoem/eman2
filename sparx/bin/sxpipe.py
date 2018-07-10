@@ -513,7 +513,8 @@ def isac_substack(args):
 	fullstack_img_id_list_of_isac_substack = []
 	for class_avg_id in xrange(n_class_avg):
 		fullstack_img_id_list_of_isac_class = []
-		fullstack_img_id_list_of_isac_class = sorted(get_im(args.isac_class_avgs_path, class_avg_id).get_attr("members"))
+		fullstack_img_id_list_of_isac_class = get_im(args.isac_class_avgs_path, class_avg_id).get_attr("members")
+		fullstack_img_id_list_of_isac_class.sort()
 		total_align2d_list_of_isac_class = []
 		for fullstack_img_id in fullstack_img_id_list_of_isac_class:
 			total_align2d = fullstack_total_align2d_list[fullstack_img_id]
@@ -2581,7 +2582,7 @@ def mrk_sphere_dilation(bin3d, dilation, debug = False):
 			# print_progress("MRK_DEBUG:   type(dilation_kernel_size) := {}".format(type(dilation_kernel_size)))
 		
 		assert (dilation_kernel_size % 2 == 1)
-		assert (isinstance(dilation_kernel_size, int))
+		assert (type(dilation_kernel_size) is int)
 		
 		bin3d_stats = Util.infomask(bin3d, None, False)
 		assert (bin3d.get_ndim() == 3)
@@ -2625,7 +2626,7 @@ def mrk_sphere_gauss_edge(bin3d, dilation, gauss_kernel_radius, gauss_sigma, deb
 		# print_progress("MRK_DEBUG:   type(gauss_kernel_size) := {}".format(type(gauss_kernel_size)))
 	
 	assert (gauss_kernel_size % 2 == 1)
-	assert (isinstance(gauss_kernel_size, int))
+	assert (type(gauss_kernel_size) is int)
 	
 	# dilate the volume by soft-edge width
 	sphere_dilation_start_time = time()
@@ -2910,7 +2911,7 @@ def moon_eliminator(args):
 	
 	isac_shrink_path = None
 	if not is_float(args.resample_ratio):
-		assert (isinstance(args.resample_ratio, str))
+		assert (type(args.resample_ratio) is str)
 		
 		# This should be string for the output directory path of an ISAC2 run
 		if not os.path.exists(args.resample_ratio):

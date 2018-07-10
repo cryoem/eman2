@@ -159,7 +159,8 @@ NOTE: This program should be run from the project directory, not from within the
 	else: nthreads=1
 
 	if options.allparticles:
-		args=sorted(["particles/"+i for i in os.listdir("particles") if "__ctf" not in i and i[0]!="." and ".hed" not in i ])
+		args=["particles/"+i for i in os.listdir("particles") if "__ctf" not in i and i[0]!="." and ".hed" not in i ]
+		args.sort()
 		if options.verbose : print("%d particle stacks identified"%len(args))
 
 	if options.chunk!=None:
@@ -841,7 +842,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				ctf=default_ctf		# otherwise we're stuck with the values in the file forever
 				im1["ctf"]=ctf
 				im1.write_image(stackfile,i,EMUtil.ImageType.IMAGE_UNKNOWN,True)
-		if isinstance(ctf, EMAN1Ctf) : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
+		if type(ctf)==EMAN1Ctf : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
 
 
 		if edgenorm : im1.process_inplace("normalize.edgemean")
@@ -1605,7 +1606,7 @@ returns (fg1d,bg1d)"""
 	n=2
 #	lz=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
 	lz=int(ctf.zero(0)/ds+.5)
-	while True:
+	while 1:
 #		z=int(zero(n,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
 		z=int(ctf.zero(n-1)/ds+.5)
 		if z>len(ctf.background)-2 or z-lz<2: break

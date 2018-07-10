@@ -112,8 +112,9 @@ def mode(vals):
 		try: d[i]=d[i]+1
 		except: d[i]=1
 
-	cnt=sorted([(i[1],i[0]) for i in d.items()])
+	cnt=[(i[1],i[0]) for i in d.items()]
 	
+	cnt.sort()
 	
 	try:
 		if cnt[-1][0]==cnt[-2][0] :
@@ -208,7 +209,8 @@ def main():
 		
 		if options.mode=="modeshift" :
 			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,debug=i[0]==63)
-			vec=sorted(dct.values())
+			vec=dct.values()
+			vec.sort()			# sort in order of peak height
 			vec2=vec[-len(vec)/4:]		# take the 25% strongest correlation peaks
 			
 			vec3=[(hypot(x[1],x[2]),x[0],x[1],x[2],x[3],x[4]) for x in vec2]

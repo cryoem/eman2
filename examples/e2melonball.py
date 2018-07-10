@@ -402,7 +402,8 @@ def getptcltransforms(options):
 
 	ptclts = {}
 
-	keys = sorted(jsonfileopen.keys())
+	keys = jsonfileopen.keys()
+	keys.sort()
 	#n = len(keys)
 	for j in xrange(0,n):
 		label = keys[j]

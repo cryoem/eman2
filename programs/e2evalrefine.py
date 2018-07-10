@@ -831,7 +831,8 @@ def main():
 		os.system("e2display.py --plot "+" ".join(fscs))
 
 	if options.timingbypath:
-		dl=sorted([i for i in os.listdir(".") if "refine_" in i])		# list of all refine_ directories
+		dl=[i for i in os.listdir(".") if "refine_" in i]		# list of all refine_ directories
+		dl.sort()
 
 		for d in dl:
 			try:
@@ -865,7 +866,7 @@ def main():
 
 		hist=[]
 		fin=open(".eman2log.txt","r")
-		while True:
+		while 1:
 			line=fin.readline()
 			if len(line)==0 : break
 

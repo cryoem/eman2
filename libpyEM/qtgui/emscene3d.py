@@ -1497,7 +1497,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Helper function to load a session. 
 		This is a recursive function
 		"""
-		if isinstance([], type(line)):
+		if type([]) == type(line):
 			if len(line) > 1:
 				for cline in line:
 					self._process_session_load(cline)

@@ -973,7 +973,8 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 		self.main_combo = QtGui.QComboBox()
 		start_idx = None
-		dumped_dict_keys = sorted(self.dumped_dict.keys())
+		dumped_dict_keys = self.dumped_dict.keys()
+		dumped_dict_keys.sort()
 		for i,key in enumerate(dumped_dict_keys):
 			if key == self.defaultunits:
 				start_idx = i
@@ -1620,7 +1621,8 @@ class IncorpDict:
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
-		keys = sorted(param.choices.keys())
+		keys = param.choices.keys()
+		keys.sort() # yes this is somewhat restrictive but it was my only way around something
 #		label = QtGui.QLabel(param.desc_short+":",target)
 #		label.setToolTip(param.desc_long)
 #		hbl.addWidget(label)
@@ -1828,7 +1830,8 @@ class DictParamWriter:
 	
 		# get value1
 		idx1 = self.combo1.currentIndex()
-		keys = sorted(self.param.choices.keys())
+		keys = self.param.choices.keys()
+		keys.sort() # because it was sorted above 
 		value1 = keys[idx1] # this preserves the type - overkill, well, foolproof, yes a bit more so
 		
 		# get value2
@@ -1945,7 +1948,8 @@ class DictEventHandler:
 	
 	def combo1_index_changed(self,i):
 		
-		keys = sorted(self.dict.keys())
+		keys = self.dict.keys()
+		keys.sort() # because the keys are sorted in the display
 		key = keys[i]
 		values = self.dict[key]
 		

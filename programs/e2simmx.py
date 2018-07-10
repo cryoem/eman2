@@ -267,7 +267,7 @@ class EMParallelSimMX:
 			self.tids=self.etc.send_tasks(tasks)
 			print(len(self.tids)," tasks submitted")
 #
-			while True:
+			while 1:
 				if len(self.tids) == 0: break
 				print(len(self.tids),"simmx tasks left in main loop   \r", end=' ')
 				sys.stdout.flush()

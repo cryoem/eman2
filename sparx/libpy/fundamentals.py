@@ -497,7 +497,7 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 	from filter       import filt_btwl
 	from fundamentals import smallprime, window2d
 	from utilities    import get_image
-	if isinstance(img, str):	img=get_image(img)
+	if type(img)     == str:	img=get_image(img)
 	nz       = img.get_zsize()
 	if( nz > 1):                    ERROR("This command works only for 2-D images", "image_decimate", 1)
 	if decimation    <= 1  : 	ERROR("Improper decimation ratio", "image_decimate", 1)
@@ -536,7 +536,7 @@ def resample(img, sub_rate=0.5):
 	from fundamentals import subsample
 	from utilities    import get_pixel_size, set_pixel_size
 
-	if isinstance(img, str):
+	if type(img) == str:
 		from utilities    import get_image
 		img = get_image(img)
 	nx = img.get_xsize()
@@ -608,7 +608,7 @@ def fdownsample(img, sub_rate=0.5, RetReal = True):
 	from fundamentals import fdecimate
 	from utilities    import get_pixel_size, set_pixel_size
 
-	if isinstance(img, str):
+	if type(img) == str:
 		from utilities    import get_image
 		img = get_image(img)
 	nx = img.get_xsize()
@@ -820,7 +820,7 @@ def rot_avg_image(image_to_be_averaged):
 	"""
 	import types
 	from utilities import get_im
-	if isinstance(image_to_be_averaged, bytes): image_to_be_averaged = get_im(image_to_be_averaged)
+	if type(image_to_be_averaged) is bytes: image_to_be_averaged = get_im(image_to_be_averaged)
 	return image_to_be_averaged.rotavg_i()
 
 def ro_textfile(e, filename, helpful_string=""):
@@ -1745,7 +1745,7 @@ class symclass():
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
-		if( isinstance(angles[0], list)):
+		if( type(angles[0]) is list):
 			toprocess = angles
 			lis = True
 		else:

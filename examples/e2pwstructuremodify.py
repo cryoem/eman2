@@ -370,7 +370,7 @@ def main():
 		
 		
 		thresh=options.thr
-		while True:
+		while 1:
 			maxscore=0
 			for i in range(1,naa-1):			
 				score=calc_score(ncent,i,mrcdata,3,2,1,-3)

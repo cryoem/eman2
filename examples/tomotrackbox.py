@@ -575,7 +575,7 @@ class TrackerControl(QtGui.QWidget):
 	def tilt_axis(self):
 		ntilt=self.imageparm["nz"]
 		sz=good_size(self.imageparm["nx"]/2)
-		while True:
+		while 1:
 			av=None
 			n=0
 			for i in range(ntilt):

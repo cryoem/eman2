@@ -137,7 +137,7 @@ class EMParallelProject3D:
 
 			print("Task ids are", tids)
 
-			while True:
+			while 1:
 
 				print(len(tids),"projection tasks left in main loop")
 				st_vals = self.etc.check_task(tids)

@@ -1473,7 +1473,8 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 					#print "see, p[0] is", p[0]
 					#sys.exit()
 		
-			val = sorted([ score[-1] for score in klass])
+			val = [ score[-1] for score in klass]
+			val.sort()
 			print("\nthe len of val is {}".format(len(val)))
 			#print "these are the vals", val
 			print("which shuld be the same as len(klass), see {}".format(len(klass)))

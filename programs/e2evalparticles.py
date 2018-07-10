@@ -392,7 +392,8 @@ class EMClassPtclTool(QtGui.QWidget):
 		for f in self.extrafiles:
 			self.wfilesel.addItem(f)
 
-		dbs=sorted(os.listdir("sets"))
+		dbs=os.listdir("sets")
+		dbs.sort()
 		for db in dbs:
 			self.wptclfile.addItem("sets/"+db)
 

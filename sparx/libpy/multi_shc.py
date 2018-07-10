@@ -1993,7 +1993,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 	max_iter    = int(ali3d_options.maxit)
 	center      = int(center)
 
-	if( isinstance(ref_vol, bytes) ):  vol = get_im(ref_vol)
+	if( type(ref_vol) is bytes ):  vol = get_im(ref_vol)
 	else:	vol = ref_vol
 	nx      = vol.get_xsize()
 	if last_ring < 0:	last_ring = int(nx/2) - 2
@@ -2001,7 +2001,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
-	if( isinstance(stack, bytes) ):
+	if( type(stack) is bytes ):
 		if myid == main_node:
 			if file_type(stack) == "bdb":
 				from EMAN2db import db_open_dict
@@ -2035,7 +2035,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 	list_of_particles = list_of_particles[image_start: image_end]
 	nima = len(list_of_particles)
 
-	if( isinstance(stack, bytes) ):  data = EMData.read_images(stack, list_of_particles)
+	if( type(stack) is bytes ):  data = EMData.read_images(stack, list_of_particles)
 	else:                                   data = [ stack[im] for im in list_of_particles ]
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
@@ -2245,7 +2245,7 @@ def do_volume(data, options, iter, mpi_comm):
 	snr       = options.snr
 	#=========================================================================
 	# volume reconstruction
-	if( isinstance(data, list) ):
+	if( type(data) == list ):
 		if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
 		else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=sym, snr=snr, npad=npad, mpi_comm=mpi_comm)
 	else:
@@ -2264,7 +2264,7 @@ def do_volume(data, options, iter, mpi_comm):
 			from utilities import adaptive_mask
 			mask3D = adaptive_mask(vol)
 		else:
-			if( isinstance(options.mask3D, bytes) ):  mask3D = get_im(options.mask3D)
+			if( type(options.mask3D) == bytes ):  mask3D = get_im(options.mask3D)
 			else:  mask3D = (options.mask3D).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm):
@@ -2286,12 +2286,12 @@ def do_volume(data, options, iter, mpi_comm):
 			ro = rops_table(vol)
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 			for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
-			if( isinstance(options.fl, list) ):
+			if( type(options.fl) == list ):
 				vol = fft( filt_table( filt_table(vol, options.fl), ro) )
 			else:
 				vol = fft( filt_table( filt_tanl(vol, options.fl, options.aa), ro) )
 		else:
-			if( isinstance(options.fl, list) ):
+			if( type(options.fl) == list ):
 				vol = filt_table(vol, options.fl)
 			else:
 				vol = filt_tanl(vol, options.fl, options.aa)

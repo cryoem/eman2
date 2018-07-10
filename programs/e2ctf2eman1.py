@@ -78,7 +78,8 @@ models are not completely compatible."""
 	pid = E2init(sys.argv, options.ppid)
 	
 	# Get a list of all images
-	ptcls=sorted(["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ])
+	ptcls=["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
+	ptcls.sort()
 	if len( ptcls ) < 1 :
 		parser.error( "No particles found in the particles folder" )
 	

@@ -413,7 +413,7 @@ class SymALignStrategy(Strategy):
 		
 		solns = []
 		# Hang till tasks are done
-		while True:
+		while 1:
 			time.sleep(5)
 			proglist=self.etc.check_task(tids)
 			

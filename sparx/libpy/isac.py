@@ -655,7 +655,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			l_STB_PART = mpi_recv(1, MPI_INT, main_node, i+10000, MPI_COMM_WORLD)
 			l_STB_PART = int(l_STB_PART[0])
 			STB_PART = mpi_recv(l_STB_PART, MPI_INT, main_node, i+20000, MPI_COMM_WORLD)
-			STB_PART = sorted(map(int, STB_PART))
+			STB_PART = map(int, STB_PART)
+			STB_PART.sort()
 
 			class_data = [None]*l_STB_PART
 			members_id = [0]*l_STB_PART
@@ -751,7 +752,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(isac_iter)
 
-	if isinstance(stack, type("")):
+	if type(stack) == type(""):
 		#read all data
 		alldata = EMData.read_images(stack)
 	else:
@@ -767,10 +768,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	if maskfile:
 		import  types
-		if isinstance(maskfile, bytes):  mask = get_image(maskfile)
+		if type(maskfile) is bytes:  mask = get_image(maskfile)
 		else: mask = maskfile
 	else : mask = model_circle(last_ring, nx, nx)
-	if isinstance(refim, type("")):
+	if type(refim) == type(""):
 		refi = EMData.read_images(refim)
 	else:
 		# It's safer to make a hard copy here. Although I am not sure, I believe a shallow copy
@@ -1369,7 +1370,8 @@ def match_independent_runs(data, refi, n_group, T):
 		part = []
 		for k in xrange(K):
 			lid = refi[i*K+k].get_attr('members')
-			lid = sorted(array(lid, 'int32'))
+			lid = array(lid, 'int32')
+			lid.sort()
 			part.append(lid)
 		Parts.append(part)
 
@@ -1429,14 +1431,16 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 		part = [] 
 		for k in xrange(K): 
 			lid = refi[run[irun]*K+k].get_attr('members') 
-			lid = sorted(array(lid, 'int32')) 
+			lid = array(lid, 'int32') 
+			lid.sort() 
 			part.append(lid)
 		Parts.append(part)
 
 		part = [] 
 		for k in xrange(K): 
 			lid = refi[run[(irun+1)%indep_run]*K+k].get_attr('members') 
-			lid = sorted(array(lid, 'int32')) 
+			lid = array(lid, 'int32') 
+			lid.sort() 
 			part.append(lid)
 		Parts.append(part)
 
@@ -1444,7 +1448,8 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 			part = [] 
 			for k in xrange(K): 
 				lid = refi[run[(irun+2)%indep_run]*K+k].get_attr('members') 
-				lid = sorted(array(lid, 'int32')) 
+				lid = array(lid, 'int32') 
+				lid.sort() 
 				part.append(lid)
 			Parts.append(part)
 

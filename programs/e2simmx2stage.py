@@ -144,7 +144,8 @@ def main():
 		print("Associating references with centers")
 		classes=[[] for i in centers]	# each center becomes a list to start the process
 		for i in xrange(clen):
-			quals=sorted([(ref_simmx[i,k],j) for j,k in enumerate(centers)])
+			quals=[(ref_simmx[i,k],j) for j,k in enumerate(centers)]
+			quals.sort()
 #			for j in xrange(4): classes[quals[j][1]].append(i)		# we used to associate each reference with 3 closest centers
 #			classes[quals[0][1]].append(i)							# now we just associate it with the closest one, but use multiple centers when searching
 			for j in xrange(2): classes[quals[j][1]].append(i)		# bring this idea back again with 2 closest centers
@@ -193,7 +194,8 @@ def main():
 
 	for ptcl in xrange(rlen):
 		# find the best classes from the coarse search
-		vals=sorted([(mxstg1[cls1,ptcl],cls1) for cls1 in range(clen_stg1)])
+		vals=[(mxstg1[cls1,ptcl],cls1) for cls1 in range(clen_stg1)]
+		vals.sort()
 
 		# then set the corresponding values in the best 4 stage 1 classes in the full matrix to 0
 		for j in xrange(4):

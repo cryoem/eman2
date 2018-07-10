@@ -68,7 +68,8 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if options.allparticles:
-		args=sorted(["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ])
+		args=["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
+		args.sort()
 		if options.verbose : print("%d particle stacks identified"%len(args))
 
 	# remove any files that don't have enough particles from the list

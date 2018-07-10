@@ -62,7 +62,7 @@ print("Est %d CPUs"%etc.cpu_est())
 tid=etc.send_task(task)
 print("Task submitted tid=",tid)
 
-while True:
+while 1:
 	st=etc.check_task((tid,))[0]
 	print("%d%%"%st)
 	if st==100: break

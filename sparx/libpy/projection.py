@@ -629,7 +629,7 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 	from filter       import filt_tanh
 
 	# number of projections
-	if  isinstance(stack, type("")): nprj = EMUtil.get_image_count(stack)
+	if  type(stack) == type(""): nprj = EMUtil.get_image_count(stack)
 	else:                       nprj = len(stack)
 	Prj  = []                                          # list of projections
 	Ori  = [-1] * 4 * nprj                             # orientation intial (phi, theta, psi, index) for each projection

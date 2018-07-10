@@ -154,7 +154,7 @@ def apply_rotation(angleset1, qrot):
 		angleset2 = new_ang2
 	"""
 	import types
-	if(isinstance(qrot, list)): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
+	if(type(qrot) == list): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
 	else:                             rot = qrot
 	for i in xrange(len(angleset1)):
 		T1 = Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
@@ -166,7 +166,7 @@ def apply_rotation(angleset1, qrot):
 def apply_rotation_gaps(angleset1, qrot):
 	from EMAN2 import Transform, Vec2f
 	import types
-	if(isinstance(qrot, list)): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
+	if(type(qrot) == list): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
 	else:                             rot = qrot
 	for i in xrange(len(angleset1)):
 		if(len(angleset1[i]) > 1):

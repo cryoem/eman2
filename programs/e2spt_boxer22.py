@@ -297,7 +297,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if "class_list" in info:
 			clslst=info["class_list"]
 			for k in sorted(clslst.keys()):
-				if isinstance(clslst[k], dict):
+				if type(clslst[k])==dict:
 					self.sets[int(k)]=str(clslst[k]["name"])
 					self.boxsize[int(k)]=int(clslst[k]["boxsize"])
 				else:

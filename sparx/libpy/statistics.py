@@ -55,7 +55,7 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 	from alignment    import kbt
 
 	inmem = True
-	if isinstance(data, type("")):
+	if type(data) == type(""):
 		inmem = False
 		from utilities    import get_im	
 
@@ -140,7 +140,7 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 	from morphology   import ctf_img
 
 	inmem = True
-	if isinstance(data, type("")):
+	if type(data) == type(""):
 		inmem = False
 		from utilities    import get_im	
 
@@ -471,7 +471,7 @@ def ave_var(data, mode = "a", listID=None):
 		data can be either in-core stack or a disk file
 	"""
 	from utilities import model_blank, get_im
-	if  isinstance(data, type("")): n = EMUtil.get_image_count(data)
+	if  type(data) == type(""): n = EMUtil.get_image_count(data)
 	else:                       n = len(data)
 	if listID == None:
 		listID = range(n)
@@ -766,7 +766,7 @@ def add_series(stack, i1=0 ,i2=0):
 	from utilities import model_blank, get_im
 
 	if(i2==0):
-		if  isinstance(stack, type("")): i2 = EMUtil.get_image_count(stack)-1
+		if  type(stack) == type(""): i2 = EMUtil.get_image_count(stack)-1
 		else:                       i2 = len(stack)-1
 	ave = get_im(stack, i1)
 	var = ave*ave  #pow(ave,2.0)
@@ -980,7 +980,7 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 	from fundamentals import rot_shift2D
 
 	if i2 == 0:
-		if isinstance(stack, type("")):  i2 = EMUtil.get_image_count(stack)-1
+		if type(stack) == type(""):  i2 = EMUtil.get_image_count(stack)-1
 		else:  i2 = len(stack)-1
 	nima = i2-i1+1
 
@@ -1020,7 +1020,7 @@ def aveq(stack, mode="a", i1 = 0, i2 = 0):
 	from fundamentals import rot_shift2D
 
 	if i2 == 0:
-		if isinstance(stack, type("")):  i2 = EMUtil.get_image_count(stack)-1
+		if type(stack) == type(""):  i2 = EMUtil.get_image_count(stack)-1
 		else:  i2 = len(stack)-1
 	nima = i2-i1+1
 
@@ -1077,7 +1077,7 @@ def aves_w(stack, mode="a"):
 		TE      = e.get_attr('TE')
 		snr = e.get_attr('SNR') # SNR can be either float or list
 		import types
-		if(isinstance(snr, list)):
+		if(type(snr) is list):
 			for k in xrange(len(snr)):
 				if(ctf_mul): ctf_1[k]  =snr[k]*ctf_2[k]*TE[k]*TE[k]*TE[k]
 				else:        ctf_1[k] *= snr[k]*TE[k]
@@ -1110,7 +1110,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	from  utilities    import pad, get_params2D, get_im
 	from  math 	   import sqrt
 	
-	if isinstance(input_stack, type("")):	n = EMUtil.get_image_count(input_stack)
+	if type(input_stack) == type(""):	n = EMUtil.get_image_count(input_stack)
 	else:  n = len(input_stack)
 	ima = get_im(input_stack, 0)
 	nx = ima.get_xsize()
@@ -1167,7 +1167,7 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1):
 	from  utilities    import pad, get_params2D, get_im
 	from  math 	   import sqrt
 	
-	if isinstance(input_stack, type("")):	n = EMUtil.get_image_count(input_stack)
+	if type(input_stack) == type(""):	n = EMUtil.get_image_count(input_stack)
 	else:  n = len(input_stack)
 	ima = get_im(input_stack, 0)
 	nx  = ima.get_xsize()
@@ -1230,7 +1230,7 @@ def ssnr2d(data, mask = None, mode=""):
 	from utilities    import get_params2D
 	from fundamentals import fft, rot_shift2D
 	import  types
-	if (isinstance(data, bytes)):
+	if (type(data) is bytes):
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
@@ -1247,7 +1247,7 @@ def ssnr2d(data, mask = None, mode=""):
 	var   = EMData(nx, ny, nz, False)
 
 	for i in xrange(n):
-		if (isinstance(data, bytes)):
+		if (type(data) is bytes):
 			ima = EMData()
 			ima.read_image(data, i)
 			if(mode == "a"):
@@ -1294,7 +1294,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 	from utilities    import get_params2D, pad
 	import  types
 
-	if isinstance(data, bytes):
+	if type(data) is bytes:
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
@@ -1318,7 +1318,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 	sumsq     = EMData(nx2, ny2, 1, False)
 
 	for i in xrange(n):
-		if isinstance(data, bytes):
+		if type(data) is bytes:
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
@@ -1338,7 +1338,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 
 	var       = EMData(nx2, ny2, 1, False)
 	for i in xrange(n):
-		if isinstance(data, bytes):
+		if type(data) is bytes:
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
@@ -1425,7 +1425,7 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 	from utilities    import get_params2D
 	import  types
 	
-	if isinstance(data, bytes):
+	if type(data) is bytes:
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
@@ -1447,7 +1447,7 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 	var       = EMData(nx, ny, nz, False)
 
 	for i in xrange(n):
-		if isinstance(data, bytes):
+		if type(data) is bytes:
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
@@ -1489,7 +1489,7 @@ def varf(data, mask = None, mode="a"):
 	from fundamentals import fftip, rot_shift2D
 	from utilities    import get_params2D
 	import  types
-	if (isinstance(data, bytes)):
+	if (type(data) is bytes):
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
@@ -1506,7 +1506,7 @@ def varf(data, mask = None, mode="a"):
 	var   = EMData(nx, ny, nz, False)
 
 	for i in xrange(n):
-		if (isinstance(data, bytes)):
+		if (type(data) is bytes):
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
@@ -1540,7 +1540,7 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 	from utilities    import get_arb_params, get_params2D
 	import  types
 
-	if (isinstance(data, bytes)):
+	if (type(data) is bytes):
 		n = EMUtil.get_image_count(data)
 		ima = EMData()
 		ima.read_image(data, 0, True)
@@ -1571,7 +1571,7 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 	var       = EMData(nx2, ny2, nz, False)
 
 	for i in xrange(n):
-		if (isinstance(data, bytes)):
+		if (type(data) is bytes):
 			ima = EMData()
 			ima.read_image(data, i)
 		else:
@@ -1614,7 +1614,7 @@ def varf2d(data, ave, mask = None, mode="a"):
 	from fundamentals import fft
 	import  types
 
-	if (isinstance(data, bytes)):
+	if (type(data) is bytes):
 		n = EMUtil.get_image_count(data)
 	else:
 		n = len(data)
@@ -2141,7 +2141,7 @@ def get_1dpw_table_stack(stack):
 	"""
 	from utilities import get_im
 	from EMAN2 import periodogram
-	if  isinstance(stack, type("")): nima = EMUtil.get_image_count(stack)
+	if  type(stack) == type(""): nima = EMUtil.get_image_count(stack)
 	else:                       nima = len(stack)
 	for i in xrange(nima):
 		img = get_im(stack,i)
@@ -2172,14 +2172,14 @@ def histogram(image, mask = None, nbins = 0, hmin = 0.0, hmax = 0.0):
 def im_diff(im1, im2, mask = None):
 	import types
 	from utilities import model_circle, get_im
-	if isinstance(im1, bytes) : im1 = get_im(im1)
-	if isinstance(im2, bytes) : im2 = get_im(im2)
+	if type(im1) == bytes : im1 = get_im(im1)
+	if type(im2) == bytes : im2 = get_im(im2)
 	nx = im1.get_xsize()
 	ny = im1.get_ysize()
 	nz = im1.get_zsize()
 	if mask != None :
-		if   isinstance(mask, float) or isinstance(mask, int): m = model_circle(mask, nx, ny, nz)
-		elif isinstance(mask, bytes):   m = get_im(mask)
+		if   type(mask) == float or type(mask) == int: m = model_circle(mask, nx, ny, nz)
+		elif type(mask) == bytes:   m = get_im(mask)
 		else: m = mask
 	else:
 		if   im1.get_ndim() == 3: radius = min(nx,ny,nz)//2 - 1
@@ -7138,7 +7138,8 @@ def k_means_stab_asg2part(outdir, npart):
 			part = []
 			for k in xrange(K):
 				lid = read_text_file(path.join(outdir, 'kmeans_part_%02i_grp_%03i.txt' % (n+1, k+1)), 0)
-				lid = sorted(array(lid, 'int32'))
+				lid = array(lid, 'int32')
+				lid.sort()
 				part.append(lid.copy())
 			ALL_PART.append(part)
 	else:
@@ -7149,7 +7150,8 @@ def k_means_stab_asg2part(outdir, npart):
 			for k in xrange(K):
 				im  = get_im(name, k)
 				lid = im.get_attr('members')
-				lid = sorted(array(lid, 'int32'))
+				lid = array(lid, 'int32')
+				lid.sort()
 				part.append(lid.copy())
 			ALL_PART.append(part)
 
@@ -7434,7 +7436,8 @@ def py_cluster_median(numbers):
    """
    # Sort the list and take the middle element.
    n = len(numbers)
-   copy = sorted(numbers[:]) # So that "numbers" keeps its original order
+   copy = numbers[:] # So that "numbers" keeps its original order
+   copy.sort()
    if n & 1:         # There is an odd number of elements
       return copy[n // 2]
    else:
@@ -8886,7 +8889,7 @@ def k_means_aves(images, N, K, rand_seed, outdir):
 def var_bydef(vol_stack, vol_list, info):
 	"""  var_bydef calculates variance from definition
 	"""
-	if isinstance(vol_stack, type('')):
+	if type(vol_stack)==type(''):
 	    average = EMData()
 	    average.read_image( vol_stack, vol_list[0] )
 	else:
@@ -8899,7 +8902,7 @@ def var_bydef(vol_stack, vol_list, info):
 	    info.flush()
 	for ivol in vol_list: 
 		curt = EMData()
-		if isinstance(vol_stack, type('')): curt.read_image(vol_stack, ivol )
+		if type(vol_stack)==type(''): curt.read_image(vol_stack, ivol )
 		else:                       curt = vol_stack[ivol]
 		average += curt
 		if(nimg % 50==0 and  not(info is None) ) :
@@ -8920,7 +8923,7 @@ def var_bydef(vol_stack, vol_list, info):
 		info.write( "Calculating variance:\n" )
 		info.flush()
 	for ivol in vol_list:
-		if isinstance(vol_stack, type('')):
+		if type(vol_stack)==type(''):
 			curt = EMData()
 			curt.read_image(vol_stack,ivol)
 		else:

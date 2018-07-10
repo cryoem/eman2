@@ -601,7 +601,7 @@ class EMItem3DInspector(QtGui.QTabWidget):
 		gridbox.addWidget(xformframe, 2, 0, 1, 1)
 		
 		# set to default, but run only as a base class
-		if isinstance(self, EMItem3DInspector): self.updateItemControls()
+		if type(self) == EMItem3DInspector: self.updateItemControls()
 		
 		self.tx.valueChanged[int].connect(self._on_translation)
 		self.ty.valueChanged[int].connect(self._on_translation)
