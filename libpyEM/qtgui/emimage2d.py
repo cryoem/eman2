@@ -75,7 +75,7 @@ class EMImage2DWidget(EMGLWidget):
 	mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 	mousemove = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousewheel = QtCore.pyqtSignal(QtGui.QMouseEvent)
+	mousewheel = QtCore.pyqtSignal(QtGui.QWheelEvent)
 	signal_increment_list_data = QtCore.pyqtSignal(float)
 	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 
