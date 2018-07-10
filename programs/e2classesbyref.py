@@ -113,7 +113,7 @@ def main():
 			sys.exit(1)
 		if nptclbs!=nptcl : 
 			print(nptclbs,nptcl)
-			raise Exception,"Particle bispectra file has wrong particle count"
+			raise Exception("Particle bispectra file has wrong particle count")
 	else:
 		if "even" in args[1]: bsfs=args[1].split("_even")[0]+"_bispec_even.lst"
 		elif "odd" in args[1]: bsfs=args[1].split("_odd")[0]+"_bispec_odd.lst"
