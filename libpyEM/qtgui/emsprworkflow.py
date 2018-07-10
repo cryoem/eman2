@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 #
 # Author: David Woolford 11/10/08 (woolford@bcm.edu)
 # Copyright (c) 2000-2008 Baylor College of Medicine
@@ -31,22 +32,22 @@ from __future__ import print_function
 #
 #
 
-from emform import EMFormWidget,EMParamTable,EMTableFormWidget
-from emdatastorage import ParamDef
+from .emform import EMFormWidget,EMParamTable,EMTableFormWidget
+from .emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
 from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts,db_close_dict, e2getcwd
 from EMAN2 import *
 import os
 import copy
-from emapplication import EMProgressDialog, get_application, EMErrorMessageDisplay, error
+from .emapplication import EMProgressDialog, get_application, EMErrorMessageDisplay, error
 from e2ctf import pspec_and_ctf_fit,GUIctf,write_e2ctf_output,get_gui_arg_img_sets,init_sfcurve
 import subprocess
 import weakref
 from e2history import HistoryForm
 import time
-from emsave import save_data
-from emimagemx import EMDataListCache
+from .emsave import save_data
+from .emimagemx import EMDataListCache
 import traceback
 
 USING_RELATIVE_DIRS = True # used by database infrastructure for recording file names
@@ -58,7 +59,7 @@ def workflow_path(path="",dir=None):
 	
 	if USING_RELATIVE_DIRS:
 		if dir==None: dir = e2getcwd()
-		from emselector import folderize
+		from .emselector import folderize
 		dir = folderize(dir)
 		name = path
 		if dir in name:
@@ -828,7 +829,7 @@ Note that the data cannot be filtered unless it is imported."
 		print(self.project_data_at_init)
 		project_names = data_dict.keys()
 		
-		from emform import EM2DFileTable,EMFileTable
+		from .emform import EM2DFileTable,EMFileTable
 		table = EM2DFileTable(project_names,desc_short="Raw Data Files",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list)
 		table.add_context_menu_data(context_menu_data)
@@ -842,7 +843,7 @@ Note that the data cannot be filtered unless it is imported."
 		Calls get_raw_data_table and then adds the Dimensions column
 		'''
 		table,n = self.get_raw_data_table()
-		from emform import EMFileTable
+		from .emform import EMFileTable
 		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
 		return table,n
 	
@@ -875,7 +876,7 @@ Note that the data cannot be filtered unless it is imported."
 			def __call__(self,names,table_widget):
 				if len(names) == 0: return # nothing happened
 			
-				from emform import get_table_items_in_column
+				from .emform import get_table_items_in_column
 				entries = get_table_items_in_column(table_widget,0)
 				text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
 				
@@ -939,7 +940,7 @@ Note that the data cannot be filtered unless it is imported."
 			def __call__(self,list_of_names,table_widget):
 			
 		#def add_files_from_context_menu(self,list_of_names,table_widget):
-				from emselector import EMSelectorDialog
+				from .emselector import EMSelectorDialog
 				selector = EMSelectorDialog(save_as_mode=False)
 				
 				selector.set_selection_text("Selection(s)")
@@ -950,7 +951,7 @@ Note that the data cannot be filtered unless it is imported."
 				if files != "":
 					if isinstance(files,str): files = [files]
 					
-					from emform import get_table_items_in_column
+					from .emform import get_table_items_in_column
 					entries = get_table_items_in_column(table_widget,0)
 					strentires = [str(i.text())[4:] for i in entries]
 					strfiles = [i[5+len(os.getcwd()):] for i in files]
@@ -1046,7 +1047,7 @@ project database, and gives an opportunity to apply a number of common filters t
 		self.form_db_name = "bdb:emform.filter_raw_data"
 		
 	def get_table(self,ptcl_list=[]):
-		from emform import EM2DFileTable,EMFileTable,float_lt
+		from .emform import EM2DFileTable,EMFileTable,float_lt
 		table = EM2DFileTable(ptcl_list,desc_short="Raw Data",desc_long="")
 		context_menu_data = ParticleWorkFlowTask.DataContextMenu()
 		table.add_context_menu_data(context_menu_data)
@@ -1262,7 +1263,7 @@ project database, and gives an opportunity to apply a number of common filters t
 				shrink = self.get_thumb_shrink(e.get_xsize(),e.get_ysize())
 				thumb = e.process("math.meanshrink",{"n":shrink})
 				thumb.process_inplace("normalize.edgemean")
-				from emboxerbase import set_idd_image_entry
+				from .emboxerbase import set_idd_image_entry
 				if not write_large: outname = name
 				set_idd_image_entry(outname,"image_thumb",thumb) # boxer uses the full name
 				i += 1
@@ -1310,7 +1311,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		'''
 		
 		'''
-		from emform import EM2DStackTable,EMFileTable,float_lt,int_lt
+		from .emform import EM2DStackTable,EMFileTable,float_lt,int_lt
 		if table==None: # you can hand in your own table (it's done in E2ParticleExamineTask)
 			table = EM2DStackTable(ptcl_list,desc_short="Particles",desc_long="",single_selection=single_selection)
 		if len(ptcl_list) != 0:
@@ -1364,7 +1365,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		def __call__(self,names,table_widget):
 			if len(names) == 0: return # nothing happened
 		
-			from emform import get_table_items_in_column
+			from .emform import get_table_items_in_column
 			entries = get_table_items_in_column(table_widget,0)
 			text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
 
@@ -1381,7 +1382,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			
 		def __call__(self,list_of_names,table_widget):
 		
-			from emselector import EMSelectorDialog
+			from .emselector import EMSelectorDialog
 			selector = EMSelectorDialog(save_as_mode=False)
 			
 			if self.validator != None: 
@@ -1392,7 +1393,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			if files != "":
 				if isinstance(files,str): files = [files]
 				
-				from emform import get_table_items_in_column
+				from .emform import get_table_items_in_column
 				entries = get_table_items_in_column(table_widget,0)
 				entrie_tags = [base_name(str(i.text())) for i in entries]
 				file_tags = [base_name(i) for i in files]
@@ -1543,7 +1544,7 @@ class EMParticleReportTask(ParticleWorkFlowTask):
 		
 		self.project_data_at_init = particle_data # so if the user hits cancel this can be reset
 
-		from emform import EM2DStackTable,EMFileTable,int_lt
+		from .emform import EM2DStackTable,EMFileTable,int_lt
 		table = EM2DStackTable(particle_names,desc_short="Project Particle Sets",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(self.project_list,using_file_tags=False)		# STEVE, changed from true
 		table.add_context_menu_data(context_menu_data)
@@ -1605,7 +1606,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 		data_dict = EMProjectDataDict(spr_ptcls_dict)
 		particle_data = data_dict.get_data_dict() # this is for back compatibility only - it cleans up old databases
 		
-		from emform import EM2DStackTable,EMFileTable,int_lt
+		from .emform import EM2DStackTable,EMFileTable,int_lt
 		table = EM2DStackTable([],desc_short="Particles",desc_long="")
 		context_menu_data = EMParticleImportTask.ContextMenu(spr_ptcls_dict)
 		table.add_context_menu_data(context_menu_data)
@@ -1739,7 +1740,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			def __call__(self,names,table_widget):
 				if len(names) == 0: return # nothing happened
 			
-				from emform import get_table_items_in_column
+				from .emform import get_table_items_in_column
 				entries = get_table_items_in_column(table_widget,0)
 				text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
 				
@@ -1788,7 +1789,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			def __call__(self,list_of_names,table_widget):
 			
 		#def add_files_from_context_menu(self,list_of_names,table_widget):
-				from emselector import EMSelectorDialog
+				from .emselector import EMSelectorDialog
 				selector = EMSelectorDialog(save_as_mode=False)
 				
 				selector.set_selection_text("Selection(s)")
@@ -1799,7 +1800,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				if files != "":
 					if isinstance(files,str): files = [files]
 					
-					from emform import get_table_items_in_column
+					from .emform import get_table_items_in_column
 					entries = get_table_items_in_column(table_widget,0)
 					entrie_tags = [base_name(str(i.text())) for i in entries]
 					file_tags = [base_name(i) for i in files]
@@ -1827,8 +1828,8 @@ class EMParticleCoordImportTask(WorkFlowTask):
 		
 	def get_params(self):
 		params = []
-		from emform import EMPlotTable
-		from emsave import EMCoordFileValidator
+		from .emform import EMPlotTable
+		from .emsave import EMCoordFileValidator
 		coord_table = EMPlotTable(name="coordfiles",desc_short="Coord File",desc_long="Use this tool to browse for your coordinate files")
 		context_menu_data = ParticleWorkFlowTask.DataContextMenu(EMCoordFileValidator())
 		coord_table.add_context_menu_data(context_menu_data)
@@ -2002,7 +2003,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		
 		self.report_task = EMRawDataReportTask()
 		table,n = self.report_task.get_raw_data_table()
-		from emform import EMFileTable,int_lt
+		from .emform import EMFileTable,int_lt
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database",int_lt))
 		table.add_column_data(EMFileTable.EMColumnData("Quality",E2BoxerTask.get_quality,"Quality metadata score stored in local database",int_lt))
 	
@@ -2012,7 +2013,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		'''
 		A static function for getting the number of boxes associated with each file
 		'''
-		from emboxerbase import get_database_entry
+		from .emboxerbase import get_database_entry
 		val = get_database_entry(file_name,"quality")
 		
 		if val == None: return "-"
@@ -2029,7 +2030,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		data_dict = EMProjectDataDict(spr_ptcls_dict)
 		dict = data_dict.get_data_dict() # this is to protect against back compatibility problems. This is necessary for the columns_object to operate without throwing (in unusual circumstances the user deletes the particles, and this accomodates for it)
 	
-		from emform import EMFileTable,int_lt
+		from .emform import EMFileTable,int_lt
 		table.insert_column_data(0,EMFileTable.EMColumnData("Stored Boxes",E2BoxerTask.get_boxes_in_database,"Boxes currently stored in the EMAN2 database",int_lt))
 		table.insert_column_data(1,EMFileTable.EMColumnData("Quality",E2BoxerTask.get_quality,"Quality metadata score stored in local database",int_lt))
 
@@ -2161,7 +2162,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 				if name in db and len(db[name]) > 0:
 					culled_names.append(name)
 			
-			from emform import EM2DFileTable,EMFileTable
+			from .emform import EM2DFileTable,EMFileTable
 			table = EM2DFileTable(culled_names,desc_short="Choose Autoboxer",desc_long="",single_selection=True,name="autoboxer")
 			table.add_column_data(EMFileTable.EMColumnData("Autoboxer ID",E2BoxerAutoTask.auto_boxer_id,"Autoboxer time stamp indicating last alteration"))
 			table.add_column_data(EMFileTable.EMColumnData("Mode",E2BoxerAutoTask.swarm_mode,"Swarm picking mode"))
@@ -2446,7 +2447,7 @@ Generally you don't want to work with more than ~10 at a time. To autobox, make 
 			options.running_mode = "gui"
 			options.method = "Swarm"
 			
-			from emboxerbase import EMBoxerModule
+			from .emboxerbase import EMBoxerModule
 			from e2boxer import  SwarmTool
 			self.boxer_module = EMBoxerModule(params["filenames"],params["interface_boxsize"])
 															
@@ -2711,7 +2712,7 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		'''		
 		table = self.get_project_particle_table()
 		
-		from emform import EMFileTable,float_lt,int_lt
+		from .emform import EMFileTable,float_lt,int_lt
 		self.column_data = CTFDBColumns()
 		table.add_column_data(EMFileTable.EMColumnData("Defocus",self.column_data.get_defocus,"The estimated defocus",float_lt))
 		table.add_column_data(EMFileTable.EMColumnData("B Factor",self.column_data.get_bfactor,"The estimated B factor, note this is ~4x greater than in EMAN1",float_lt))
@@ -2728,7 +2729,7 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		table,n = self.get_ctf_param_table()
 	
 		self.other_column_data = E2CTFWorkFlowTask.MoreCTFColumns()
-		from emform import EMFileTable,int_lt
+		from .emform import EMFileTable,int_lt
 		table.add_column_data(EMFileTable.EMColumnData("Phase flip",self.other_column_data.get_num_phase_flipped,"The number of phase flipped particles on disk",int_lt))
 		table.add_column_data(EMFileTable.EMColumnData("Phase flip dims",self.other_column_data.phase_flipped_dim,"The dimensions of the phase flippped particles"))
 		table.add_column_data(EMFileTable.EMColumnData("Phase flip hp",self.other_column_data.get_num_phase_flipped_hp,"The number of phase flipped high pass filtered particles on disk",int_lt))
@@ -3240,7 +3241,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 
 	def get_custom_table(self,names):
 		
-		from emform import EM2DStackTable,EMFileTable,float_lt,int_lt
+		from .emform import EM2DStackTable,EMFileTable,float_lt,int_lt
 		table = EM2DStackTable(names,desc_short="Particle Images",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(names,using_file_tags=True)
 		table.add_context_menu_data(context_menu_data)
@@ -3568,7 +3569,7 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 
 	def get_params(self):
 		params = []
-		from emform import EM2DStackExamineTable,EMFileTable,int_lt
+		from .emform import EM2DStackExamineTable,EMFileTable,int_lt
 		table = EM2DStackExamineTable(self.particle_stacks,desc_short="Particles",desc_long="",name_map=self.name_map)
 		bpc = E2ParticleExamineTask.BadParticlesColumn(self.name_map)
 		# think bpc will be devoured by the garbage collector? Think again! the table has a reference to one of bpc's functions, and this is enough to prevent death
@@ -3861,7 +3862,7 @@ class EMSetReportTask(ParticleWorkFlowTask):
 		
 		init_stacks_map = {}
 		
-		from emform import EM2DStackTable,EMFileTable,int_lt
+		from .emform import EM2DStackTable,EMFileTable,int_lt
 		table = EM2DStackTable(stack_names,desc_short="Project Particle Sets",desc_long="",enable_save=False)
 #		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_sets_dict,remove_only=True)
 #		table.add_context_menu_data(context_menu_data)
@@ -4470,7 +4471,7 @@ class E2RefFreeClassAveTool:
 		data = data_dict.get_data_dict()
 		self.project_data_at_init = data # so if the user hits cancel this can be reset
 		names = data.keys()
-		from emform import EM2DStackTable,EMFileTable,int_lt
+		from .emform import EM2DStackTable,EMFileTable,int_lt
 		table = EM2DStackTable(names,desc_short="Class Averages",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_rfca_dict)
 		table.add_context_menu_data(context_menu_data)
@@ -4603,7 +4604,7 @@ class E2InitialModelsTool:
 		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
 		init_model_names = init_model_data.keys()
 
-		from emform import EM3DFileTable,EMFileTable,float_lt
+		from .emform import EM3DFileTable,EMFileTable,float_lt
 		table = EM3DFileTable(init_model_names,name="model",desc_short="Initial Models",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_init_models_dict)
 		table.add_context_menu_data(context_menu_data)
@@ -4805,7 +4806,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 	
 	def get_last_refinement_models_table(self):
 
-		from emform import EM3DFileTable,EMFileTable
+		from .emform import EM3DFileTable,EMFileTable
 		names = self.get_rmodels_list()
 		table = EM3DFileTable(names,name="model",desc_short="Most Recent Models",desc_long="")
 
@@ -5119,7 +5120,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		else:
 			p,n = self.get_particle_selection_table(self.ptcls,None,self.single_selection,enable_ctf=False)
 			if self.usefilt_ptcls != None and len(self.usefilt_ptcls) > 0:
-				from emform import EMFileTable
+				from .emform import EMFileTable
 				self.column_data = E2RefineParticlesTask.UsefiltColumn(self.ptcls,self.usefilt_ptcls)
 				p.add_column_data(EMFileTable.EMColumnData("Usefilt data",self.column_data.get_usefilt_name,"The usefilt data"))
 				
@@ -5473,7 +5474,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		orient_options = ["Angle Based", "Number Based"]
 		porientoptions = ParamDef(name="orientopt",vartype="choice",desc_short="Method of generating orientation distribution",desc_long="Choose whether you want the orientations generating based on an angle or based on a total number of orientations desired",property=None,defaultunits=db.get("orientopt",dfl=orient_options[0]),choices=orient_options)
 		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="float",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=db.get("orientopt_entry",dfl=5),choices=[])
-		from emform import EMOrientationDistDialog
+		from .emform import EMOrientationDistDialog
 		buttondialog = EMOrientationDistDialog()
 		params.append([pprojector,porientgens])
 		
@@ -5757,7 +5758,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		orient_options = ["Angle Based", "Number Based"]
 		porientoptions = ParamDef(name="orientopt",vartype="choice",desc_short="Method of generating orientation distribution",desc_long="Choose whether you want the orientations generating based on an angle or based on a total number of orientations desired",property=None,defaultunits=db.get("orientopt",dfl=orient_options[0]),choices=orient_options)
 		porientoptionsentry  =  ParamDef(name="orientopt_entry",vartype="float",desc_short="value",desc_long="Specify the value corresponding to your choice",property=None,defaultunits=db.get("orientopt_entry",dfl=5),choices=[])
-		from emform import EMOrientationDistDialog
+		from .emform import EMOrientationDistDialog
 		buttondialog = EMOrientationDistDialog()
 		params.append([pprojector,porientgens])
 		
@@ -5801,7 +5802,7 @@ class E2RefineFromFreAlign(WorkFlowTask):
 		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
 		init_model_names = init_model_data.keys()
 
-		from emform import EM3DFileTable,EMFileTable,float_lt
+		from .emform import EM3DFileTable,EMFileTable,float_lt
 		table = EM3DFileTable(init_model_names,name="dirs",desc_short="FreAlign Dirs",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_freealign_dirs_dict)
 		table.add_context_menu_data(context_menu_data)
@@ -5853,7 +5854,7 @@ class E2RunFreAlign(WorkFlowTask):
 		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
 		init_model_names = init_model_data.keys()
 
-		from emform import EM3DFileTable,EMFileTable,float_lt
+		from .emform import EM3DFileTable,EMFileTable,float_lt
 		table = EM3DFileTable(init_model_names,name="dirs",desc_short="FreAlign Dirs",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_freealign_dirs_dict)
 		table.add_context_menu_data(context_menu_data)
@@ -5919,7 +5920,7 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
 		init_model_names = init_model_data.keys()
 
-		from emform import EM3DFileTable,EMFileTable,float_lt
+		from .emform import EM3DFileTable,EMFileTable,float_lt
 		table = EM3DFileTable(init_model_names,name="model",desc_short="Starting Models",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_freealign_models_dict)
 		table.add_context_menu_data(context_menu_data)
@@ -6633,7 +6634,7 @@ class E2ResolutionTask(WorkFlowTask):
 	
 if __name__ == '__main__':
 	
-	from emapplication import EMApp
+	from .emapplication import EMApp
 	em_app = EMApp()
 	sprinit = SPRInitTask()
 	window = sprinit.run_form() 

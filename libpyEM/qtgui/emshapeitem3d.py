@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 #
 # Author: Grant Tang (gtang@bcm.edu)
 # Author: John Flanagan (jfflanag@bcm.edu)
@@ -34,11 +35,11 @@ from __future__ import print_function
 #
 
 from EMAN2 import *
-from emglobjects import init_glut, get_default_gl_colors
-from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
+from .emglobjects import init_glut, get_default_gl_colors
+from .emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
 from libpyGLUtils2 import FTGLFontMode
 import math
-from valslider import EMQTColorWidget, ValSlider, EMSpinWidget
+from .valslider import EMQTColorWidget, ValSlider, EMSpinWidget
 
 from OpenGL.GL import *
 from OpenGL.GLU import *

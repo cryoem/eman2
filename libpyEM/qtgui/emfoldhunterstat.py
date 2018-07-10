@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 # Author: Muthu Alagappan, 07/22/09, (m.alagappan901@gmail.com)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -439,7 +440,7 @@ class E2FoldHunterStat:
 
 
 if __name__ == '__main__':
-	from emapplication import EMApp
+	from .emapplication import EMApp
 	em_app = EMApp()
 	window2 = E2FoldHunterStat()
 	print("This program is meant to be run in conjunction with e2validatemed.py in the programs directory")

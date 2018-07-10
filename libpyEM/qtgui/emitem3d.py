@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 #
 # Author: Ross Coleman (racolema@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine
@@ -35,7 +36,7 @@ from OpenGL import GL
 from PyQt4 import QtCore, QtGui
 from EMAN2 import Transform, Vec4f, Vec3f
 from libpyGLUtils2 import GLUtil
-from valslider import ValSlider, EMSpinWidget
+from .valslider import ValSlider, EMSpinWidget
 import weakref
 import math
 import numpy
