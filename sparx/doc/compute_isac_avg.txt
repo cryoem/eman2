@@ -15,7 +15,7 @@ Usage in command line
 
 sxcompute_isac_avg.py exists only in MPI version. 
 
-There are four methods to adjust the power spectrum of resultant average images. The method is specified with option pw_adjustment 
+There are four methods to adjust the power spectrum of resultant average images. The method is specified with option pw_adjustment.
 
 \\ __1. Adjust to analytical model (default method):__
   mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120
@@ -79,8 +79,10 @@ Not published yet.
 ==== Developer Notes ====
 === 2018/07/10 Toshio Moriya ===
 Reflected the interface changes.
+
 - Added Options
   ; %%--%%pw_adjustment : Power spectrum adjustment method: Specify the method for the power spectrum (PWS) adjustment of 2-D averages to enhance averages. ='analytical_model' adjusts PWS to an analytic model; ='bfactor' adjusts PWS using B-factor; ='FILE_PATH' adjusts PWS to rotationally averaged 1D power spectrum stored in the text file; ='no_adjustment' skips adjustment. (default analytical_model)
+
 - Removed Options
   ; %%--%%B_enhance : Adjust to B-factor: Adjust the power spectrum of resultant average images using B-factor to enhance averages. Specific to adjust to B-factor method. (default False)
   ; %%--%%adjust_to_given_pw2 : Adjust to rotational average: Adjust the power spectrum of resultant average images to the user-provided 1-D reference power spectrum. Specific to adjust to rotational average method. (default False)
