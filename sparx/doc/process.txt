@@ -111,7 +111,7 @@ To concatenate output files,
   - Apply low-pass filter to the volume (optional).
 \\ Options are independent of each others.
   * %%--%%do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using summed two volumes. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
-  * %%--%%mask_threshold   : =5.0 number of sigmas of summed two halves above image average to threshold map for adaptive mask. User can adjust it if the default value is too high or too low.
+  * %%--%%mask_threshold   : The number of sigmas of summed two halves above image average to threshold map for adaptive mask. User can adjust it if the default value is too high or too low.
   * %%--%%mtf              : For those high resolution maps, mtf correction would significantly enhance structural features.
   * %%--%%fsc_adj          : FSC adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed volume.
   * %%--%%B_enhance        : =0.0, program estimates B-factor from B_start (usually 10 Angstrom) to the resolution determined by FSC 0.143; >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
@@ -201,9 +201,9 @@ To concatenate output files,
   ; %%--%%pixel_size : Pixel size [A]: Pixel size of input data. (default 0.0)
   ; %%--%%mask : 3D mask file: Path to user-provided mask. (default none)
   ; %%--%%do_adaptive_mask : Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False)
-  ; %%--%%mask_threshold : Adaptive mask threshold: Density threshold for creating adaptive surface mask. Effective only with --do_adaptive_mask option. (default 0.02)
+  ; %%--%%mask_threshold : Adaptive mask threshold: Density threshold for creating adaptive surface mask. Effective only with --do_adaptive_mask option. (default 5.0)
   ; %%--%%consine_edge : Cosine edge width [Pixels]: Width of cosine transition area for soft-edge masking. Effective only with --do_adaptive_mask option. (default 6.0)
-  ; %%--%%dilation : Surface dilation size [Pixels]: Size of surface dilation or erosion. Effective only with --do_adaptive_mask option. (default 3.0) 
+  ; %%--%%dilation : Surface dilation size [Pixels]: Size of surface dilation or erosion. Effective only with --do_adaptive_mask option. (default 6.0) 
   ; %%--%%mtf : MTF file: Path to file contains the MTF (modulation transfer function) of the detector used. (default none)
   ; %%--%%fsc_adj : Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged volume before the B-factor estimation. Effective only in Halfset Volumes Mode. (default False)
   ; %%--%%B_enhance : B-factor enhancement: 0.0: program automatically estimates B-factor using power spectrum at frequencies from B_start (usually 10 Angstrom) to the resolution determined by FSC143 (valid only in Halfset Volumes Mode; Non-zero positive value: program use the given value [A^2] to enhance map); -1.0: B-factor is not applied. (default 0.0)
