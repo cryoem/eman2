@@ -929,8 +929,7 @@ class SubtomoSimTask(JSTask):
 		classoptions=self.classoptions
 		options=self.classoptions['options']
 		outname = self.classoptions['outname']
-		tiltangles = self.classoptions['tiltangles']
-		tiltangles.sort()
+		tiltangles = sorted(self.classoptions['tiltangles'])
 		
 		i = self.classoptions['ptclnum']
 		
@@ -1377,7 +1376,7 @@ def get_results(etc,tids,options):
 	results=[0]*len(tids)		# storage for results
 	ncomplete=0
 	tidsleft=tids[:]
-	while 1:
+	while True:
 		time.sleep(5)
 		proglist=etc.check_task(tidsleft)
 		nwait=0

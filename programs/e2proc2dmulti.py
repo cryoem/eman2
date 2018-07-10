@@ -91,8 +91,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.allparticles:
-		args=["bdb:particles#"+i for i in db_list_dicts("bdb:particles")]
-		args.sort()
+		args=sorted(["bdb:particles#"+i for i in db_list_dicts("bdb:particles")])
 		if options.verbose : print("%d particle files identified"%len(args))
 
 	if len(args)<1 : 

@@ -102,8 +102,7 @@ def main():
 		else:
 			print("\nWARNING: Skipping file. invalid extension={} for input file={}".format(extension,fyle))
 
-	files=list(files)
-	files.sort()
+	files=sorted(files)
 	n=len(files)
 	if n > 0:
 		print("\nfound n={} valid files".format(n))

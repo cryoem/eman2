@@ -102,8 +102,7 @@ class EMProcessorWidget(QtGui.QWidget):
 
 	# Sorted list of the stuff before the first '.'
 	cats=set([i.split(".")[0] for i in plist.keys()])
-	cats=list(cats)
-	cats.sort()
+	cats=sorted(cats)
 
 	# For some parameters we will try to assign sensible default values and ranges. This information should probably be a part
 	# of the processor objects themselves, but isn't at present.
@@ -317,8 +316,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		cat=str(self.wcat.currentText())
 		#print "catsel ",cat
 		#traceback.print_stack(limit=2)
-		scats=['.'.join(i.split('.',1)[1:]) for i in self.plist if i.split(".")[0]==cat]
-		scats.sort()
+		scats=sorted(['.'.join(i.split('.',1)[1:]) for i in self.plist if i.split(".")[0]==cat])
 		for i in xrange(len(scats)):
 			if scats[i]=="" : scats[i]="---"
 		self.wsubcat.clear()
@@ -758,7 +756,7 @@ class EMFilterTool(QtGui.QMainWindow):
 			self.busy=False
 			return		# file can't be read, must be a new set (or we'll assume that)
 
-		while 1:
+		while True:
 			l=infile.readline()
 			if l=="" : break
 			if l[:2]=="#$" :								# This indicates the start of a new processor

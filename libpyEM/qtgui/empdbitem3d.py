@@ -203,7 +203,7 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 		self.file_browse_button.clicked.connect(self.onFileBrowse)
 		self.data_checkbox.stateChanged[int].connect(self.onBBoxChange)
 		# Set to default, but run only once and not in each base class
-		if type(self) == EMPDBItem3DInspector: self.updateItemControls()
+		if isinstance(self, EMPDBItem3DInspector): self.updateItemControls()
 
 	def onFileBrowse(self):
 		#TODO: replace this with an EMAN2 browser window once we re-write it

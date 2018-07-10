@@ -68,8 +68,7 @@ def main():
 		for k in xrange(len(data)):
 			lid = data[k].get_attr('members') 
 			mem[r] += len(lid)
-			lid = array(lid, 'int32') 
-			lid.sort() 
+			lid = sorted(array(lid, 'int32')) 
 			part.append(lid.copy())
 		Parts.append(part)
 

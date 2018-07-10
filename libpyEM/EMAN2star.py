@@ -97,7 +97,7 @@ class StarFile(dict):
 		self.lines=[i for i in open(self.filename,"r") if len(i.strip())!=0 and i[0]!="#"]
 		self.lineptr=0
 		
-		while 1:
+		while True:
 			try: line=self._nextline().strip()
 			except: break
 		
@@ -120,7 +120,7 @@ class StarFile(dict):
 						self[key]=line2.strip()[1:-1]
 					elif line2[0]==";" :
 						val=[line2[1:]]
-						while 1:
+						while True:
 							try: line2=self._nextline()
 							except: raise Exception("StarFile: Error found parsing multi-line string value for %s"%key)
 							if line2[0]==';' : break
@@ -138,7 +138,7 @@ class StarFile(dict):
 				loop=[]
 				self.loops.append(loop)				# add it to the list of loops immediately then update it as we go
 				# First we read the parameter names for the loop
-				while 1:
+				while True:
 					line2=self._nextline().strip()
 					if line2[0]=="_":
 						loop.append(line2.split()[0][1:])
@@ -148,14 +148,14 @@ class StarFile(dict):
 				
 				# Now we read the actual loop data elements
 				vals=[]
-				while 1:
+				while True:
 					try: line2=self._nextline().strip()
 					except: break
 				
 					if line2[0]=="_" or line2.lower()[:5]=="loop_" : break
 					elif line2[0]==";" :
 						val=line2[0][1:]
-						while 1:
+						while True:
 							line2=self._nextline()
 							if line2[0]==";":
 								break

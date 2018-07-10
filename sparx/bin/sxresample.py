@@ -240,8 +240,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 			for l in xrange(nrefa):
 				mass = assignments[l][:]
 				shuffle(mass)
-				mass = mass[:keep]
-				mass.sort()
+				mass = sorted(mass[:keep])
 				#print  l, "  *  ",mass
 				for k in xrange(keep):
 					mults[i][mass[k]] = 1

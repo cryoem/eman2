@@ -516,8 +516,7 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 					stmp[isub] = round(stmp[isub].defocus, 4)
 				defstmp[:] = stmp[:]
 			else:  ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
-	tt = [[stmp[i],i] for i in xrange(len(stmp))]
-	tt.sort()
+	tt = sorted([[stmp[i],i] for i in xrange(len(stmp))])
 	tt.append([-1,-1])
 	st = tt[0][0]
 	sd = []
@@ -2787,8 +2786,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 
 		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
 		cod2 = list(set(cod2))
-		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
-		cod1.sort()
+		cod1 = sorted([[q/1000,i] for i,q in enumerate(cod2)])
 
 		lit = len(cod1)
 
@@ -3489,8 +3487,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
 		cod2 = list(set(cod2))
-		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
-		cod1.sort()
+		cod1 = sorted([[q/1000,i] for i,q in enumerate(cod2)])
 
 		lit = len(cod1)
 
@@ -4201,8 +4198,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 
 		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
 		cod2 = list(set(cod2))
-		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
-		cod1.sort()
+		cod1 = sorted([[q/1000,i] for i,q in enumerate(cod2)])
 
 		lit = len(cod1)
 
@@ -5193,8 +5189,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
-					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
-					cod1.sort()
+					cod1 = sorted([[q/1000,i] for i,q in enumerate(cod2)])
 
 					lit = len(cod1)
 
@@ -6237,8 +6232,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
-					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
-					cod1.sort()
+					cod1 = sorted([[q/1000,i] for i,q in enumerate(cod2)])
 
 					lit = len(cod1)
 
@@ -7254,8 +7248,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
-					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
-					cod1.sort()
+					cod1 = sorted([[q/1000,i] for i,q in enumerate(cod2)])
 
 					lit = len(cod1)
 
@@ -8559,8 +8552,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
-					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
-					cod1.sort()
+					cod1 = sorted([[q/1000,i] for i,q in enumerate(cod2)])
 
 					lit = len(cod1)
 

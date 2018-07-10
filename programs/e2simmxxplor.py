@@ -352,8 +352,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		vbl = QtGui.QVBoxLayout(self.simmx_dir_tab)
 
 		# This is the combo-box with the list of refine_* directories
-		combo_entries = [d[0] for d in self.data]
-		combo_entries.sort()
+		combo_entries = sorted([d[0] for d in self.data])
 		combo_entries.reverse()
 		self.combo = QtGui.QComboBox(self)
 		for e in combo_entries: self.combo.addItem(e)

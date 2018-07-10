@@ -1057,7 +1057,7 @@ def main():
 							keys = resumeDict.keys()
 					
 							for key in keys:
-								if type(resumeDict[key]) is not list:					 
+								if not isinstance(resumeDict[key], list):					 
 									print("""ERROR: Your sptali_ir.json file seems to be incomplete. The value for the particle key is a Transform(), but should be a list.
 									The file should contain a dictionary where there's a 'key' for each particle, containing the word 'subtomo_' followed by the particle's index 
 									(with as many digits as there are orders of magnitude in the set; for example
@@ -1437,8 +1437,7 @@ def main():
 	
 			plotName = 'spt_cccs_' + str( it ).zfill( len( str( options.iter ) )) + klassid + '.png'
 		
-			classScoresList2plot = list(classScoresList)
-			classScoresList2plot.sort()
+			classScoresList2plot = sorted(classScoresList)
 			classScoresList2plot.reverse()
 		
 			txtname = plotName.replace('.png','.txt')
@@ -1564,8 +1563,7 @@ def main():
 
 		plotName = 'spt_meanccc' + klassid + '.png'
 	
-		scores2plot = list(scores)
-		scores2plot.sort()
+		scores2plot = sorted(scores)
 		scores2plot.reverse()
 	
 		txtname = plotName.replace('.png','.txt')
@@ -2632,7 +2630,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 	tidsleft = tids[:]
 	print("before loop, in get_results, tidsleft are", tidsleft)
 	
-	while 1:
+	while True:
 		time.sleep(5)
 		proglist = etc.check_task(tidsleft)
 		nwait = 0
@@ -2986,10 +2984,10 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 		pass
 		
 	#print "In align3Dfunc fixed image and its type are" , fixedimage, type(fixedimage)
-	if type(fixedimage) is list:
+	if isinstance(fixedimage, list):
 		fixedimage=EMData(fixedimage[1],fixedimage[2])
 	
-	if type(image) is list:
+	if isinstance(image, list):
 		image=EMData(image[1],image[2])
 
 	"""

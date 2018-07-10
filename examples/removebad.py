@@ -9,8 +9,7 @@ import os
 
 minqual=int(argv[1])
 
-imgs=["micrographs/"+i for i in os.listdir("micrographs") if i[0]!="." and ".hed" not in i ]
-imgs.sort()
+imgs=sorted(["micrographs/"+i for i in os.listdir("micrographs") if i[0]!="." and ".hed" not in i ])
 
 badimgs=[]
 for im in imgs:

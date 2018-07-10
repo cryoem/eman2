@@ -628,7 +628,7 @@ class EMTomoAlignments:
 		'''
 		import time
 		n = len(task_customers)
-		while 1:
+		while True:
 			if len(task_customers) == 0: break
 			print(len(task_customers),"tomo averaging tasks left in main loop")
 			st_vals = task_customers[0].check_task(tids)

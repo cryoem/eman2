@@ -220,7 +220,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		self.data_checkbox.stateChanged[int].connect(self.onBBoxChange)
 
 		# Set to default, but run only once and not in each base class
-		if type(self) == EMDataItem3DInspector: self.updateItemControls()
+		if isinstance(self, EMDataItem3DInspector): self.updateItemControls()
 
 	def onFileBrowse(self):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
@@ -926,7 +926,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 
 		volframe.setLayout(vol_grid_layout)
 		gridbox.addWidget(volframe, 2, 0, 2, 1)
-		if type(self) == EMVolumeInspector: self.updateItemControls()
+		if isinstance(self, EMVolumeInspector): self.updateItemControls()
 
 		###
 		transp=0.85
@@ -1120,7 +1120,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		gridbox.addWidget(self.thr, 4, 0, 1, 2)
 
 		# Set to default, but run only once and not in each base class
-		if type(self) == EMIsosurfaceInspector: self.updateItemControls()
+		if isinstance(self, EMIsosurfaceInspector): self.updateItemControls()
 		self.histogram_widget.setProbe(self.item3d().isothr) # The needs to be node AFTER the data is set
 
 

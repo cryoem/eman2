@@ -601,8 +601,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 				thresh=mean+sigma*keep
 				if verbose>1 : print("mean = %f\tsigma = %f\tthresh=%f"%(mean,sigma,thresh))
 			else:						# keep an absolute fraction of the total
-				l=[i[0] for i in ptcl_info]
-				l.sort()
+				l=sorted([i[0] for i in ptcl_info])
 				try: thresh=l[int(len(l)*keep)]
 				except:
 					if verbose: print("Keeping all particles")

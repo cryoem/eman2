@@ -77,8 +77,7 @@ def main():
 
 	# If allparticles, list of files is ignored !
 	if options.allparticles:
-		args=[base_name("particles/"+i) for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
-		args.sort()
+		args=sorted([base_name("particles/"+i) for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ])
 		print("%d particle stacks identified"%len(args))
 	else :
 		# refactor the arguments in case someone gave us a full specification

@@ -213,8 +213,7 @@ def main():
 			kk+=1
 			tmpangle+=step
 	
-	ids=list(ids)
-	ids.sort()
+	ids=sorted(ids)
 	
 	filesdict = {}
 

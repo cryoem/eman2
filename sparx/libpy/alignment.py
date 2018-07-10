@@ -1633,7 +1633,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 	from types        import BooleanType
 
 	# mpi communicator can be sent by the MPI parameter
-	if type(MPI) is BooleanType:
+	if isinstance(MPI, BooleanType):
 		if MPI:
 			from mpi import MPI_COMM_WORLD
 			mpi_comm = MPI_COMM_WORLD
@@ -1644,7 +1644,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 	mode = "F"
 
 	from types import ListType
-	if(type(ref_a) is ListType):
+	if(isinstance(ref_a, ListType)):
 		# if ref_a is  list, it has to be a list of projection directions, use it
 		ref_angles = ref_a
 	else:
@@ -1732,7 +1732,7 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 	from types        import BooleanType
 
 	# mpi communicator can be sent by the MPI parameter
-	if type(MPI) is BooleanType:
+	if isinstance(MPI, BooleanType):
 		if MPI:
 			from mpi import MPI_COMM_WORLD
 			mpi_comm = MPI_COMM_WORLD
@@ -1741,7 +1741,7 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		MPI = True
 
 	from types import ListType
-	if(type(ref_a) is ListType):
+	if(isinstance(ref_a, ListType)):
 		# if ref_a is  list, it has to be a list of projection directions, use it
 		ref_angles = ref_a
 	else:
@@ -5698,7 +5698,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 
 	#  Read	template volume if provided or reconstruct it
 	if ref_vol:
-		if type(ref_vol) is bytes:
+		if isinstance(ref_vol, bytes):
 			if myid == main_node:
 				vol = get_im(ref_vol)
 				i = vol.get_xsize()

@@ -192,7 +192,7 @@ def read_chunk(stdin):
 def send_file(stdout,path):
 	"Sends a file to stdout as a set of chunks terminated with a 0 length chunk"
 	fin=open(path,"rb")
-	while 1:
+	while True:
 		data=fin.read(1000000)
 		if len(data)==0 :break
 		write_chunk(stdout,data)
@@ -204,7 +204,7 @@ def recv_file(stdin,path):
 	try :os.makedirs(os.path.dirname(path))
 	except: pass
 	out=open(path,"w")
-	while 1:
+	while True:
 		chunk=read_chunk(stdin)
 		if len(chunk)==0 or chunk==None : break
 		out.write(chunk)
@@ -281,7 +281,7 @@ def scp_client():
 	
 	stdout.write("HELO\n")
 	
-	while 1:
+	while True:
 		stdout.flush()
 		try : com=stdin.readline().strip()
 		except : break
@@ -377,7 +377,7 @@ class scp_proxy:
 			traceback.print_exc()
 			sys.exit(2)
 		
-		while 1:
+		while True:
 			ln=self.stdout.readline().strip()
 			if len(ln)==0 : 
 				print("Error running e2scp.py on the remote machine. EMAN2 installed ?")

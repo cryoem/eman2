@@ -1182,8 +1182,7 @@ class DBDict:
 
 		global MAXOPEN
 #		l=[(i.opencount,i.lasttime,i) for i in self.alldicts if i.bdb!=None]		# list of all open databases and usage,time info
-		l=[(i.lasttime,i.opencount,i) for i in self.alldicts if i.bdb!=None]		# sort by time
-		l.sort()
+		l=sorted([(i.lasttime,i.opencount,i) for i in self.alldicts if i.bdb!=None])		# sort by time
 
 		global DBDEBUG
 

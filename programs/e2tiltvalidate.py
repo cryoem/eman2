@@ -234,7 +234,7 @@ def main():
 		
 		# Farm out the work and hang till finished!
 		tids=etc.send_tasks(tasks)
-		while 1:
+		while True:
 			time.sleep(5)
 			proglist=etc.check_task(tids)
 			tids=[j for i,j in enumerate(tids) if proglist[i]!=100]		# remove any completed tasks from the list we ask about

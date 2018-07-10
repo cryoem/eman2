@@ -367,7 +367,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(isac_iter)
 
-	if type(stack) == type(""):
+	if isinstance(stack, type("")):
 		#read all data
 		print("  SHOULD NOT BE HERE")
 		sys.exit()
@@ -387,10 +387,10 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 	if maskfile:
 		import  types
-		if type(maskfile) is bytes:  mask = get_image(maskfile)
+		if isinstance(maskfile, bytes):  mask = get_image(maskfile)
 		else: mask = maskfile
 	else : mask = model_circle(last_ring, nx, nx)
-	if type(refim) == type(""):
+	if isinstance(refim, type("")):
 		refi = EMData.read_images(refim)
 	else:
 		# It's safer to make a hard copy here. Although I am not sure, I believe a shallow copy
@@ -957,8 +957,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 			good.sort()
 			#  Add currently assigned images to the overall list
 			if( os.path.exists( os.path.join(Blockdata["masterdir"], "processed_images.txt") ) ):
-				lprocessed = good + read_text_file(os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
-				lprocessed.sort()
+				lprocessed = sorted(good + read_text_file(os.path.join(Blockdata["masterdir"], "processed_images.txt" )))
 				write_text_file(lprocessed, os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
 			else:
 				write_text_file(good, os.path.join(Blockdata["masterdir"], "processed_images.txt" ))

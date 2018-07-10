@@ -102,8 +102,7 @@ def main():
 
 			masterdict.update({ angle: frames })
 
-	angles = list(angles)
-	angles.sort()
+	angles = sorted(angles)
 
 	angletag=''
 	ntilts = len(angles)
@@ -141,8 +140,7 @@ def main():
 		if options.verbose > 5:
 			print("\noutput image will be {}".format(output))
 		
-		frames = masterdict[angle]
-		frames.sort()
+		frames = sorted(masterdict[angle])
 
 		nframes = len(frames)
 		#nimgs = len(frames)

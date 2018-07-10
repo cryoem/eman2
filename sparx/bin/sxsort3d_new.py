@@ -2063,8 +2063,7 @@ def convertasi(asig, number_of_groups):
 		l = []
 		for i in xrange(len(asig)):
 			if( asig[i]== k ): l.append(i)
-		l = array(l,"int32")
-		l.sort()
+		l = sorted(array(l,"int32"))
 		p.append(l)
 	return p
 
@@ -2348,15 +2347,13 @@ def compare_two_iterations(assignment1, assignment2, number_of_groups):
 	for im in xrange(len(assignment1)):assigned_groups1[assignment1[im]].append(im)
 	res1 = []
 	for iref in xrange(number_of_groups):
-		a = np.array(assigned_groups1[iref],"int32")
-		a.sort()
+		a = sorted(np.array(assigned_groups1[iref],"int32"))
 		res1.append(a)
 	assigned_groups2 =[[] for i in xrange(number_of_groups)]
 	for im in xrange(len(assignment2)): assigned_groups2[assignment2[im]].append(im)
 	res2 = []
 	for iref in xrange(number_of_groups):
-		a = np.array(assigned_groups2[iref],"int32")
-		a.sort()
+		a = sorted(np.array(assigned_groups2[iref],"int32"))
 		res2.append(a)
 		del a
 	newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(res1, res2)

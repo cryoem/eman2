@@ -1342,8 +1342,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 					return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in xrange(0,EMUtil.get_image_count(url))]
 			else:
 				d = e.get_attr_dict()
-				keys = d.keys()
-				keys.sort() #alphabetical order
+				keys = sorted(d.keys())
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 			
 
@@ -1366,8 +1365,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 			d = e.get_attr_dict()
 				
 			if len(vals) == val_idx:
-				keys = d.keys()
-				keys.sort() #alphabetical order
+				keys = sorted(d.keys())
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 			elif len(vals) == val_idx+1:
 				val = d[vals[val_idx]]
@@ -1916,8 +1914,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 				if d["nz"] > 1: return_items = [EM3DMetaImageItem(self,str(i),url,i) for i in xrange(0,n)]
 				else: return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in xrange(0,n)]
 			else: 
-				keys = d.keys()
-				keys.sort() #alphabetical order
+				keys = sorted(d.keys())
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 		else:
 			val_idx = 1
@@ -1928,8 +1925,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 				d = db.get_header(0)
 				
 			if len(vals) == val_idx:
-				keys = d.keys()
-				keys.sort() #alphabetical order
+				keys = sorted(d.keys())
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 			elif len(vals) == val_idx+1:
 				val = d[vals[val_idx]]

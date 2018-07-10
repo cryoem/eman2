@@ -614,7 +614,7 @@ class EMMotion(QtGui.QMainWindow):
 	def waitThreads(self,thrs,lst,maxl):
 		
 		# Wait for threads to finish
-		while 1:
+		while True:
 			time.sleep(0.2)
 			self.wpbprogress.setValue(int(lst.qsize()*100/maxl))
 			QtGui.qApp.processEvents()

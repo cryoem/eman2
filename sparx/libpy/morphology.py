@@ -951,7 +951,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 			print("", flist[i], '%5d'%(defocus)) 	# screen output, give the user a general impression about estimated defoci
 			if(writetodoc[0] == "w" or writetodoc[0] != "l"):	out.write("%d\t%5d\t%s\n" % (ncount,defocus,flist[i]))
 			if(writetodoc[0] == "l"):				res.append(defocus)
-			if type(micdir) is bytes : 
+			if isinstance(micdir, bytes) : 
 				ctf_param = [defocus, Pixel_size, volt, Cs, wgh, 0, 1]
 				mic_name  = os.path.join(micdir,""+ fnam_root+ ".hdf")
 				if os.path.exists(mic_name) :

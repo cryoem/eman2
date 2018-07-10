@@ -209,7 +209,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 
 	if maskfile:
 		import	types
-		if type(maskfile) is bytes:
+		if isinstance(maskfile, bytes):
 			print_msg("Maskfile                    : %s\n\n"%(maskfile))
 			mask = get_image(maskfile)
 		else:
@@ -568,7 +568,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 
 	if maskfile:
 		import  types
-		if type(maskfile) is bytes:  
+		if isinstance(maskfile, bytes):  
 			if myid == main_node:		print_msg("Maskfile                    : %s\n\n"%(maskfile))
 			mask = get_image(maskfile)
 		else:
@@ -895,7 +895,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 		auto_stop = False
 
 	import types
-	if( type(stack) is bytes ):
+	if( isinstance(stack, bytes) ):
 		if myid == main_node:
 			total_nima = EMUtil.get_image_count(stack)
 		else:
@@ -974,7 +974,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	if maskfile:
 		import  types
-		if type(maskfile) is bytes:  
+		if isinstance(maskfile, bytes):  
 			if myid == main_node:		log.add("Maskfile                    : %s"%(maskfile))
 			mask = get_image(maskfile)
 		else:
@@ -1843,7 +1843,7 @@ def local_ali2d(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, 
 	if (last_ring == -1): last_ring=nx//2-2
 
 	if maskfile:
-		if(type(maskfile) is bytes):
+		if(isinstance(maskfile, bytes)):
 			print_msg("Maskfile                    : %s\n"%(maskfile))
 			mask = get_image(maskfile)
 		else:
@@ -2039,7 +2039,7 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 
 	if maskfile:
 		import types
-		if type(maskfile) is bytes:  mask = get_image(maskfile)
+		if isinstance(maskfile, bytes):  mask = get_image(maskfile)
 		else: mask = maskfile
 	else: mask = model_circle(last_ring, nx, nx)
 	#  references
@@ -2313,7 +2313,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 
 	if maskfile:
 		import  types
-		if type(maskfile) is bytes:  mask = get_image(maskfile)
+		if isinstance(maskfile, bytes):  mask = get_image(maskfile)
 		else: mask = maskfile
 	else : mask = model_circle(last_ring, nx, nx)
 	#  references, do them on all processors...
@@ -2590,7 +2590,7 @@ def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_
 	# prepare 2-D mask for normalization
 	if maskfile:
 		import  types
-		if(type(maskfile) is bytes):  mask2D = get_im(maskfile)
+		if(isinstance(maskfile, bytes)):  mask2D = get_im(maskfile)
 		else: mask2D = maskfile
 	else : mask2D = model_circle(last_ring, nx, nx)
 	if (first_ring > 0):
@@ -2757,7 +2757,7 @@ def ali2d_rag(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check
 	# prepare 2-D mask for normalization
 	if maskfile:
 		import  types
-		if(type(maskfile) is bytes):  mask2D = get_im(maskfile)
+		if(isinstance(maskfile, bytes)):  mask2D = get_im(maskfile)
 		else: mask2D = maskfile
 	else : mask2D = model_circle(last_ring, nx, nx)
 	if (first_ring > 0):
@@ -2937,7 +2937,7 @@ def ali2d_rac(stack, maskfile = None, ir = 1, ou = -1, rs = 1, nclass = 2, maxit
 	# prepare 2-D ask for normalization
 	if maskfile:
 		import  types
-		if(type(maskfile) is bytes):  mask2D = get_image(maskfile)
+		if(isinstance(maskfile, bytes)):  mask2D = get_image(maskfile)
 		else: mask2D = maskfile
 	else : mask2D = model_circle(last_ring,nx,nx)
 	if(first_ring > 0):
@@ -3416,7 +3416,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 
 
 	if maskfile:
-		if(type(maskfile) is bytes):
+		if(isinstance(maskfile, bytes)):
 			print_msg("Maskfile                    : %s\n\n"%(maskfile))
 			mask=get_image(maskfile)
 		else:
@@ -4218,7 +4218,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	print_msg("User function               : %s\n"%(user_func_name))
 
 	if maskfile :
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else                                  : mask3D = maskfile
 	else          :   mask3D = model_circle(last_ring, nx, nx, nx)
 	mask2D = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
@@ -4434,7 +4434,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		print_msg("User function               : %s\n"%(user_func_name))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = model_circle(last_ring, nx, nx, nx)
 
@@ -4724,7 +4724,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.
 	else:
 		an = get_input_from_string(an)
 
-	if( type(stack) is bytes ):
+	if( isinstance(stack, bytes) ):
 		if myid == main_node:
 			total_nima = EMUtil.get_image_count( stack )
 		else:
@@ -4766,7 +4766,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.
 		finfo = None
 
 	if( myid == main_node):
-		if( type(stack) is bytes ):  mask2D = get_im(stack, list_of_particles[0])
+		if( isinstance(stack, bytes) ):  mask2D = get_im(stack, list_of_particles[0])
 		else:                                   mask2D = stack[list_of_particles[0]]
 		nx = mask2D.get_xsize()
 	else:  nx = 0
@@ -4778,7 +4778,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, rangle = 0.0, rshift = 0.
 
 	data = [None]*nima
 	for im in xrange(nima):
-		if( type(stack) is bytes ):  data[im] = get_im(stack, list_of_particles[im])
+		if( isinstance(stack, bytes) ):  data[im] = get_im(stack, list_of_particles[im])
 		else:                                   data[im] = stack[list_of_particles[im]]
 	mpi_barrier(mpi_comm)
 
@@ -5682,7 +5682,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 	last_ring   = int(ou)
 	center      = int(center)
 
-	if( type(stack) is bytes ):
+	if( isinstance(stack, bytes) ):
 		if myid == main_node:
 			if(file_type(stack) == "bdb"):
 				from EMAN2db import db_open_dict
@@ -5716,7 +5716,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 		image_end   = nima
 
 	if(myid == main_node):
-		if( type(stack) is bytes ):  dataim = get_im(stack, list_of_particles[0])
+		if( isinstance(stack, bytes) ):  dataim = get_im(stack, list_of_particles[0])
 		else:                                   dataim = stack[list_of_particles[0]]
 		nx      = dataim.get_xsize()
 		if CTF :
@@ -5732,7 +5732,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 
 	dataim = [None]*nima
 	for im in xrange(nima):
-		if( type(stack) is bytes ):  dataim[im] = get_im(stack, list_of_particles[im])
+		if( isinstance(stack, bytes) ):  dataim[im] = get_im(stack, list_of_particles[im])
 		else:                                   dataim[im] = stack[list_of_particles[im]]
 		dataim[im].set_attr('ID', list_of_particles[im])
 		if CTF :
@@ -5765,7 +5765,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 
 	import  types
 	if Tracker["constants"]["mask3D"]:
-		if type(Tracker["constants"]["mask3D"]) is bytes:
+		if isinstance(Tracker["constants"]["mask3D"], bytes):
 			if myid == main_node:
 				mask3D = get_im(Tracker["constants"]["mask3D"])
 			else:
@@ -5787,7 +5787,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 
 	#  Read	template volume if provided
 	if templatevol:
-		if type(templatevol) is bytes:
+		if isinstance(templatevol, bytes):
 			if myid == main_node:
 				vol = get_im(templatevol)
 				nxm = vol.get_xsize()
@@ -6539,7 +6539,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 		print_msg("Symmetry group              : %s\n\n"%(sym))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = model_circle(last_ring, nx, nx, nx)
 
@@ -7218,7 +7218,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 		print_msg("Symmetry group              : %s\n\n"%(sym))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = model_circle(last_ring, nx, nx, nx)
 
@@ -7597,7 +7597,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 	print_msg("User function               : %s\n"%(user_func_name))
 
 	if(maskfile):
-		if(type(maskfile) is bytes):	 mask3D = get_image(maskfile)
+		if(isinstance(maskfile, bytes)):	 mask3D = get_image(maskfile)
 		else: 	                                 mask3D = maskfile
 	else        :   mask3D = model_circle(last_ring, nx, nx, nx)
 	
@@ -7881,7 +7881,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		log.add("User function                             : %s"%(user_func_name))
 
 	if(maskfile):
-		if(type(maskfile) is bytes): mask3D = get_image(maskfile)
+		if(isinstance(maskfile, bytes)): mask3D = get_image(maskfile)
 		else: 	                                mask3D = maskfile
 	else        :  mask3D = model_circle(last_ring, nx, nx, nx)
 
@@ -7890,7 +7890,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	if(first_ring > 1):  mask2D -= model_circle(first_ring, nx, nx)
 
 
-	if( type(stack) is bytes ):
+	if( isinstance(stack, bytes) ):
 		if myid == main_node:
 			total_nima = EMUtil.get_image_count( stack )
 		else:
@@ -7938,7 +7938,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	#  Here the assumption is that input are always volumes.  It should be most likely be changed so optionally these are group assignments.
 	#  Initialize Particle ID and set group number to non-existant -1
 	for im in xrange(nima):
-		if( type(stack) is bytes ):
+		if( isinstance(stack, bytes) ):
 			data[im] = get_im(stack, list_of_particles[im])
 			data[im].set_attr_dict({'ID':list_of_particles[im], 'group':-1})
 		else:
@@ -8587,7 +8587,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		log.add("User function               : %s"%(user_func_name))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else: 	                                mask3D = maskfile
 	else        :  mask3D = model_circle(last_ring, nx, nx, nx)
 
@@ -9060,7 +9060,7 @@ def Kmref2_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=
 		log.add("User function               : %s"%(user_func_name))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else: 	                                mask3D = maskfile
 	else        :  mask3D = model_circle(last_ring, nx, nx, nx)
 
@@ -9528,7 +9528,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	if(ou <= 0):  ou = nx//2-2
 	if maskfile:
 		import  types
-		if(type(maskfile) is bytes): 
+		if(isinstance(maskfile, bytes)): 
 			mask3D = get_image(maskfile)
 		else:   
 			mask3D = maskfile
@@ -9934,7 +9934,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	if(ou <= 0):  ou = nx//2-2
 	if maskfile:
 		import  types
-		if(type(maskfile) is bytes): 
+		if(isinstance(maskfile, bytes)): 
 			mask3D = get_image(maskfile)
 		else:   
 			mask3D = maskfile
@@ -10336,7 +10336,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 	
 	if maskfile:
 		import  types
-		if type(maskfile) is bytes:  mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes):  mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
@@ -10612,7 +10612,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 
 	if maskfile:
 		import  types
-		if type(maskfile) is bytes:  mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes):  mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
@@ -10972,7 +10972,7 @@ def local_ali3d_MPI_scipy_minimization(stack, outdir, maskfile, ou = -1,  delta 
 
 	if maskfile:
 		import  types
-		if type(maskfile) is bytes:  mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes):  mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
@@ -11312,7 +11312,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 	last_ring   = int(ou)
 	center      = int(center)
 
-	if( type(stack) is bytes ):
+	if( isinstance(stack, bytes) ):
 		if myid == main_node:
 			if(file_type(stack) == "bdb"):
 				from EMAN2db import db_open_dict
@@ -11353,7 +11353,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 		image_and   = nima
 
 	if(myid == main_node):
-		if( type(stack) is bytes ):  dataim = get_im(stack, list_of_particles[0])
+		if( isinstance(stack, bytes) ):  dataim = get_im(stack, list_of_particles[0])
 		else:                                   dataim = stack[list_of_particles[0]]
 		onx      = dataim.get_xsize()
 		if(shrinkage == 1.0):  nx = onx
@@ -11376,7 +11376,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 
 	dataim = [None]*nima
 	for im in xrange(nima):
-		if( type(stack) is bytes ):  dataim[im] = get_im(stack, list_of_particles[im])
+		if( isinstance(stack, bytes) ):  dataim[im] = get_im(stack, list_of_particles[im])
 		else:                                   dataim[im] = stack[list_of_particles[im]]
 		dataim[im].set_attr('ID', list_of_particles[im])
 		ctf_applied = dataim[im].get_attr_default('ctf_applied', 0)
@@ -11425,7 +11425,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 
 	import  types
 	if ali3d_options.mask3D:
-		if type(ali3d_options.mask3D) is bytes:
+		if isinstance(ali3d_options.mask3D, bytes):
 			if myid == main_node:
 				mask3D = get_im(ali3d_options.mask3D)
 			else:
@@ -11443,7 +11443,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 
 	#  Read	template volume if provided
 	if templatevol:
-		if type(templatevol) is bytes:
+		if isinstance(templatevol, bytes):
 			if myid == main_node:
 				vol = get_im(templatevol)
 				i = vol.get_xsize()
@@ -12122,7 +12122,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 		print_msg("User function                             : %s\n"%(user_func_name))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = None
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
@@ -13508,7 +13508,7 @@ def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", outp
 	import os
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","copyfromtif",1)
 	else                             : flist          = os.listdir(indir)
-	if(type(outdir)          is bytes):
+	if(isinstance(outdir, bytes)):
 		if os.path.exists(outdir) :   ERROR("Output directory exists, please change the name and restart the program","copyfromtif",1)
 		os.mkdir(outdir)	
 		import global_def
@@ -13580,7 +13580,7 @@ def copyfromtif_MPI(indir, outdir=None, input_extension="tif", film_or_CCD="f", 
 
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","copyfromtif_MPI",1,myid)
 	else                             : flist = os.listdir(indir)
-	if(type(outdir)          is bytes):
+	if(isinstance(outdir, bytes)):
 		if os.path.exists(outdir): ERROR("Output directory exists, please change the name and restart the program","copyfromtif_MPI",1,myid)
 		os.mkdir(outdir)	
 		import global_def
@@ -13859,7 +13859,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 	
 	if listagls is None:
 		angles = even_angles(delta, symmetry = symmetry, method = method, phiEqpsi = phiEqpsi)
-	elif(type(listagls) is bytes):
+	elif(isinstance(listagls, bytes)):
 		angles = read_text_row(listagls, "", "")
 	else:
 		angles = listagls
@@ -13868,7 +13868,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 	if listctfs is None:
 		# not set, so simply ignore it 
 		ctfs = None
-	elif (type(listctfs) is bytes):
+	elif (isinstance(listctfs, bytes)):
 		# a string, so assume this is a filename and try to open the file
 		try:
 			ctfs = read_text_row(listctfs, "", "")
@@ -13888,11 +13888,11 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 	else:
 		noise_level = None
 
-	if(type(volume) is bytes):
+	if(isinstance(volume, bytes)):
 		vol = EMData()
 		vol.read_image(volume)
 		if(mask):
-			if(type(mask) is bytes):
+			if(isinstance(mask, bytes)):
 				maski = EMData()
 				maski.read_image(volume)
 				Util.mul_img(vol, maski)
@@ -13916,7 +13916,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		vol = volume
 		if(mask):
 			vol = vol.copy()
-			if(type(mask) is bytes):
+			if(isinstance(mask, bytes)):
 				maski = EMData()
 				maski.read_image(volume)
 				Util.mul_img(vol, maski)
@@ -13937,7 +13937,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 			else:
 				volft, kbx,kby,kbz = prep_vol(vol)
 
-	if(type(stack) is bytes):
+	if(isinstance(stack, bytes)):
 		Disk = True
 		os.system("rm -f  "+stack)	
 	else:
@@ -14040,7 +14040,7 @@ def pw2sp(indir, outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, 
 	import types
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","pw2sp",1)
 	else				 : flist    = os.listdir(indir)
-	if(type(outdir)          is bytes):
+	if(isinstance(outdir, bytes)):
 		if os.path.exists(outdir) is True: ERROR("Output directory exists, please change the name and restart the program","pw2sp",1)
 		os.mkdir(outdir)	
 		import global_def
@@ -14259,7 +14259,7 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(paramsv[0], paramsv[1], paramsv[2], paramsv[3], paramsv[4], paramsv[5], paramsv[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
 	# print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
-	if type(vol)==type(""):
+	if isinstance(vol, type("")):
 		from utilities import write_headers
 		write_headers( vol, [e], [0])
 	else:
@@ -14310,7 +14310,7 @@ def ali_vol_n(vol, refv, ang_scale, shift_scale, radius=None, discrepancy="ccc",
 	new_params = amoeba(params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func, 1.e-5, 1.e-4, 500, data)
 
 	set_arb_params(e, [new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5]], names_params)
-	if type(vol)==type(""):
+	if isinstance(vol, type("")):
 		from utilities import write_headers
 		write_headers( vol, [e], [0])
 	else:
@@ -14425,7 +14425,7 @@ def ali_vol_M(vol, refv, ang_scale, shift_scale, mask=None, discrepancy = "ccc")
 		print("Warning: amoeba reached the max number of iterations allowed.")
 
 	set_params3D(e, [new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5], 0, 1.0])
-	if type(vol)==type(""):
+	if isinstance(vol, type("")):
 		from utilities import write_headers
 		write_headers( vol, [e], [0])
 	else:
@@ -14475,7 +14475,7 @@ def ali_vol_nopsi(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = 
 	new_params = amoeba(params, [ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func_nopsi, 1.e-5, 1.e-4, 500, data)
 
 	set_arb_params(e, [new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4]], names_params)
-	if type(vol)==type(""):
+	if isinstance(vol, type("")):
 		from utilities import write_headers
 		write_headers( vol, [e], [0])
 	else:
@@ -14511,7 +14511,7 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy = "ccc"):
 	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], new_params[0][0], new_params[0][1], new_params[0][2],0.0,0.0,0.0,1.0)
 	#print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
-	if type(vol)==type(""):
+	if isinstance(vol, type("")):
 		from utilities import write_headers
 		write_headers( vol, [e], [0])
 	else:
@@ -14546,7 +14546,7 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy = "ccc"):
 	cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale= compose_transform3(params[0], params[1], params[2], params[3], params[4], params[5], params[7], 0.0,0.0,0.0, new_params[0][0], new_params[0][1], new_params[0][2],1.0)
 	#print  " new params ", cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale, new_params[1]
 	set_params3D(e, [cphi, ctheta, cpsi, cs3x, cs3y, cs3z, 0, cscale])
-	if type(vol)==type(""):
+	if isinstance(vol, type("")):
 		from utilities import write_headers
 		write_headers( vol, [e], [0])
 	else:
@@ -14580,7 +14580,7 @@ def ali_vol_scale(vol, refv, ang_scale, shift_scale, mag_scale, radius=None, dis
 	print(" new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1])
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
 	
-	if type(vol)==type(""):
+	if isinstance(vol, type("")):
 		from utilities import write_headers
 		write_headers( vol, [e], [0])
 	else:
@@ -14615,7 +14615,7 @@ def ali_vol_only_scale(vol, refv, mag_scale, radius=None, discrepancy = "ccc"):
 	print(" new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1])
 	set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
 	
-	if type(vol) == type(""):
+	if isinstance(vol, type("")):
 		from utilities import write_headers
 		write_headers( vol, [e], [0])
 	else:
@@ -15348,7 +15348,7 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 	fring_width = float(rw)
 	if mask:
 		import  types
-		if type(mask) is bytes:
+		if isinstance(mask, bytes):
 			mask2D=get_im(mask)
 		else:
 			mask2D = mask
@@ -15436,7 +15436,7 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 
 	if mask:
 		import  types
-		if type(mask) is bytes: mask2D = get_im(mask)
+		if isinstance(mask, bytes): mask2D = get_im(mask)
 		else: mask2D = mask
 	else:
 		mask2D = None
@@ -15554,7 +15554,7 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 	from statistics import pcanalyzer
 	import types
 
-	if type(input_stacks[0]) is bytes: data_on_disk = True	 # input_stacks is a file name
+	if isinstance(input_stacks[0], bytes): data_on_disk = True	 # input_stacks is a file name
 	else:
 		data_on_disk = False # input_stacks is a list of images not a file name
 		if MPI:
@@ -15641,7 +15641,7 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False):
 	from utilities    import model_blank, model_circle, set_params2D, get_params2D
 	from fundamentals import rot_shift2D
 	dopa = True
-	if type(data) == type(""):
+	if isinstance(data, type("")):
 		inmem = False
 		from utilities    import get_im	
 	else:
@@ -15749,7 +15749,7 @@ def varimax(input_stack, imglist, output_stack, maskfile, mask_radius, verbose )
 
 	if maskfile:
 		import types
-		if type(maskfile) is bytes: mask = get_im(maskfile)
+		if isinstance(maskfile, bytes): mask = get_im(maskfile)
 		else:                                  mask = maskfile
 	else:
 		if(mask_radius < 1):  mask_radius = data.get_xsize()//2-2
@@ -18577,7 +18577,7 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 	
 	
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = model_cylinder(rmax, nx, ny, nz)
 
@@ -18811,7 +18811,7 @@ def diskali_MPI(stack, ref_vol, outdir, maskfile, dp, dphi, pixel_size, user_fun
 		sys.exit()
 	
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else:
 		if rmin > 0:
@@ -19569,7 +19569,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		print_msg("User function                             : %s\n"%(user_func_name))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = model_cylinder(rmax, nx, ny, nz)
 
@@ -19998,7 +19998,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 		print_msg("Segment height seg_ny                     : %s\n\n"%(seg_ny))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = None
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
@@ -20518,7 +20518,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 		print_msg("Segment height seg_ny                     : %s\n\n"%(seg_ny))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = None
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
@@ -21028,7 +21028,7 @@ def localhelicon_MPInew_fullrefproj(stack, ref_vol, outdir, seg_ny, maskfile, ir
 		print_msg("Segment height seg_ny                     : %s\n\n"%(seg_ny))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = None
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
@@ -21435,7 +21435,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		print_msg("Segment height seg_ny                     : %s\n\n"%(seg_ny))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = None
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
@@ -22180,7 +22180,7 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 		print_msg("User function                             : %s\n"%(user_func_name))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = get_image(maskfile)
+		if isinstance(maskfile, bytes): mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = None
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
@@ -22344,7 +22344,7 @@ def sali3d_base_old(stack, ref_vol = None, Tracker = None, mpi_comm = None, log 
 	else:
 		an = get_input_from_string(an)
 
-	if( type(stack) is bytes ):
+	if( isinstance(stack, bytes) ):
 		if myid == main_node:
 			total_nima = EMUtil.get_image_count( stack )
 		else:
@@ -22377,7 +22377,7 @@ def sali3d_base_old(stack, ref_vol = None, Tracker = None, mpi_comm = None, log 
 		finfo = None
 
 	if( myid == main_node):
-		if( type(stack) is bytes ):  mask2D = get_im(stack, list_of_particles[0])
+		if( isinstance(stack, bytes) ):  mask2D = get_im(stack, list_of_particles[0])
 		else:                                   mask2D = stack[list_of_particles[0]]
 		nx = mask2D.get_xsize()
 	else:  nx = 0
@@ -22388,7 +22388,7 @@ def sali3d_base_old(stack, ref_vol = None, Tracker = None, mpi_comm = None, log 
 
 	data = [None]*nima
 	for im in xrange(nima):
-		if( type(stack) is bytes ):  data[im] = get_im(stack, list_of_particles[im])
+		if( isinstance(stack, bytes) ):  data[im] = get_im(stack, list_of_particles[im])
 		else:                                   data[im] = stack[list_of_particles[im]]
 	mpi_barrier(mpi_comm)
 
@@ -22546,8 +22546,7 @@ def sali3d_base_old(stack, ref_vol = None, Tracker = None, mpi_comm = None, log 
 						log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images did not find better orientations"%saturatecrit)
 				if( terminate == 0 ):
 					historyofchanges.append(changes)
-					historyofchanges = historyofchanges[:3]
-					historyofchanges.sort()
+					historyofchanges = sorted(historyofchanges[:3])
 					"""  Have to think about it PAP
 					if( (historyofchanges[-1]-historyofchanges[0])/2/(historyofchanges[-1]+historyofchanges[0]) <0.05 ):
 						terminate = 1
@@ -22788,7 +22787,7 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 	last_ring   = int(ou)
 	center      = int(center)
 
-	if( type(stack) is bytes ):
+	if( isinstance(stack, bytes) ):
 		if myid == main_node:
 			if(file_type(stack) == "bdb"):
 				from EMAN2db import db_open_dict
@@ -22822,7 +22821,7 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 		image_end   = nima
 
 	if(myid == main_node):
-		if( type(stack) is bytes ):  dataim = get_im(stack, list_of_particles[0])
+		if( isinstance(stack, bytes) ):  dataim = get_im(stack, list_of_particles[0])
 		else:                                   dataim = stack[list_of_particles[0]]
 		nx      = dataim.get_xsize()
 		if CTF :
@@ -22838,7 +22837,7 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 
 	dataim = [None]*nima
 	for im in xrange(nima):
-		if( type(stack) is bytes ):  dataim[im] = get_im(stack, list_of_particles[im])
+		if( isinstance(stack, bytes) ):  dataim[im] = get_im(stack, list_of_particles[im])
 		else:                                   dataim[im] = stack[list_of_particles[im]]
 		dataim[im].set_attr('ID', list_of_particles[im])
 		if CTF :
@@ -22871,7 +22870,7 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 
 	import  types
 	if Tracker["constants"]["mask3D"]:
-		if type(Tracker["constants"]["mask3D"]) is bytes:
+		if isinstance(Tracker["constants"]["mask3D"], bytes):
 			if myid == main_node:
 				mask3D = get_im(Tracker["constants"]["mask3D"])
 			else:
@@ -22893,7 +22892,7 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 
 	#  Read	template volume if provided
 	if templatevol:
-		if type(templatevol) is bytes:
+		if isinstance(templatevol, bytes):
 			if myid == main_node:
 				vol = get_im(templatevol)
 				nxm = vol.get_xsize()
@@ -23341,7 +23340,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		log.add("shrinkage is                              : %f"%shrinkage)
 		log.add("the text file for get_shrink_data is %s"%this_data_list_file)
 	if maskfile:
-		if type(maskfile) is bytes:  mask3D = get_shrink_3dmask(Tracker["nxinit"],maskfile)
+		if isinstance(maskfile, bytes):  mask3D = get_shrink_3dmask(Tracker["nxinit"],maskfile)
 		else: 	                                mask3D = maskfile
 	else:  mask3D = model_circle(last_ring, nx, nx, nx)
 	numr       = Numrinit(first_ring, last_ring, rstep, "F")
@@ -24011,7 +24010,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		log.add("shrinkage is                              : %f"%shrinkage)
 		log.add("the particle id files for get_shrink_dat is %s"%particle_list_file) 
 	if(maskfile):
-		if(type(maskfile) is bytes): mask3D = get_shrink_3dmask(Tracker["nxinit"],maskfile) 
+		if(isinstance(maskfile, bytes)): mask3D = get_shrink_3dmask(Tracker["nxinit"],maskfile) 
 		else: 	                                mask3D = maskfile
 	else        :  mask3D = model_circle(last_ring, nx, nx, nx)
 	numr     = Numrinit(first_ring, last_ring, rstep, "F")
@@ -24891,7 +24890,7 @@ def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker)
 		log.add("shrinkage is                              : %f"%shrinkage)
 		log.add("the particle id files for get_shrink_dat is %s"%particle_list_file) 
 	if(maskfile):
-		if(type(maskfile) is bytes): mask3D = get_shrink_3dmask(Tracker["nxinit"],maskfile) 
+		if(isinstance(maskfile, bytes)): mask3D = get_shrink_3dmask(Tracker["nxinit"],maskfile) 
 		else: 	                                mask3D = maskfile
 	else        :  mask3D = model_circle(last_ring, nx, nx, nx)
 	numr     = Numrinit(first_ring, last_ring, rstep, "F")

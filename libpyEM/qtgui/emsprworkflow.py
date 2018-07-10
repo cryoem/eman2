@@ -898,8 +898,7 @@ Note that the data cannot be filtered unless it is imported."
 						EMErrorMessageDisplay.run(["%s is not in the project list" %name])
 						return
 				
-				indices = [ text_entries.index(name) for name in full_names]
-				indices.sort()
+				indices = sorted([ text_entries.index(name) for name in full_names])
 				indices.reverse()
 				for idx in indices:
 					table_widget.removeRow(idx)
@@ -1371,8 +1370,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 
 			full_names = [table_widget.convert_text(name) for name in names]
 	
-			indices = [ text_entries.index(name) for name in full_names]
-			indices.sort()
+			indices = sorted([ text_entries.index(name) for name in full_names])
 			indices.reverse()
 			for idx in indices:
 				table_widget.removeRow(idx)
@@ -1640,7 +1638,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			new_name = "bdb:particles#"+base_name(name)
 			if file_exists(new_name):
 				i = 0
-				while 1:
+				while True:
 					c_name = new_name + "_" + str(i)
 					if not file_exists(c_name):
 						new_name = c_name
@@ -1745,8 +1743,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				entries = get_table_items_in_column(table_widget,0)
 				text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
 				
-				indices = [ text_entries.index(name) for name in full_names]
-				indices.sort()
+				indices = sorted([ text_entries.index(name) for name in full_names])
 				indices.reverse()
 				for idx in indices:
 					table_widget.removeRow(idx)
@@ -3993,8 +3990,7 @@ class EMClassificationTools(ParticleWorkFlowTask):
 		psep = ParamDef(name="sep",vartype="int",desc_short="Class separation",desc_long="The number of classes a particle can contribute towards",property=None,defaultunits=db.get("sep",dfl=1),choices=[])
 		piter = ParamDef(name="classiter",vartype="int",desc_short="Averaging iterations",desc_long="The number of class averaging iterations",property=None,defaultunits=db.get("classiter",dfl=2),choices=[])
 		
-		averagers = self.get_averagers_list()
-		averagers.sort()
+		averagers = sorted(self.get_averagers_list())
 		paverager =  ParamDef("classaverager",vartype="string",desc_short="Averager",desc_long="The method used for generating class averages",property=None,defaultunits=db.get("classaverager",dfl="mean"),choices=averagers)
 		
 		pkeep = ParamDef(name="classkeep",vartype="float",desc_short="keep",desc_long="The fraction of particles to keep in each class average. If sigma based is checked this value is interpreted in standard deviations from the mean instead",property=None,defaultunits=db.get("classkeep",dfl=0.8),choices=[])
@@ -6384,8 +6380,7 @@ those used during refinement."
 		'''
 		This function is called in get_params to accrue the directory data
 		'''
-		dirs = get_prefixed_directories("refine_") + get_prefixed_directories("frealign_") + get_prefixed_directories("refinemulti_")
-		dirs.sort()
+		dirs = sorted(get_prefixed_directories("refine_") + get_prefixed_directories("frealign_") + get_prefixed_directories("refinemulti_"))
 		
 		nec_files = [ "classes_", "classify_","projections_"]
 		
@@ -6558,8 +6553,7 @@ class E2ResolutionTask(WorkFlowTask):
 		General/broad refine params
 		'''
 		# have to get the directories 
-		dirs = get_prefixed_directories("refine_") + get_prefixed_directories("frealign_") + get_prefixed_directories("refinemulti_")
-		dirs.sort()
+		dirs = sorted(get_prefixed_directories("refine_") + get_prefixed_directories("frealign_") + get_prefixed_directories("refinemulti_"))
 		
 		nec_files = ["threed_filt_","threed_mask_"]
 		

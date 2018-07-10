@@ -147,8 +147,7 @@ def main():
 		lstmap[(lst[1][i][1],lst[1][i][0])]=(1,i)
 		allnames.add(lst[0][i][1])
 	
-	allnames=list(allnames)
-	allnames.sort()
+	allnames=sorted(allnames)
 	lst=None		# free up resources
 	
 	# Move the original files out of the way in the main thread

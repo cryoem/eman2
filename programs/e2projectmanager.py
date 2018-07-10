@@ -909,7 +909,7 @@ class EMPopen(subprocess.Popen):
 		rtcom.start()
 
 	def realTimeChatter(self):
-		while 1:
+		while True:
 			if self.pmfifo:
 				#pass
 				stdout = self.pmfifo.readline()
@@ -1096,8 +1096,7 @@ class TheHelp(QtGui.QWidget):
 		helpdict =  self.helptopics[idx][1]
 		helpdoc = "<B><H3>Listed below is a list of EMAN2 <I>%s</I></H3></B><BR>"%self.helptopics[idx][0]
 
-		keys = helpdict.keys()
-		keys.sort()
+		keys = sorted(helpdict.keys())
 		for key in keys:
 			helpdoc += "<B>%s</B>"%(key)
 			eman2item = helpdict[key]
@@ -1757,7 +1756,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		if not nodb and k in self.db: return self.db[k]	# Return the default if it exists in the DB
 		default = ""
 		if 'default' in option: default = option['default']
-		if type(default) == str and "self.pm()" in default: default = eval(default)	# eval CS, apix, voltage, etc, a bit of a HACK, but it works
+		if isinstance(default, str) and "self.pm()" in default: default = eval(default)	# eval CS, apix, voltage, etc, a bit of a HACK, but it works
 		return default
 
 	def getLRange(self, option):
@@ -1778,7 +1777,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		if 'choicelist' in option:
 			choices = eval(option['choicelist'])
 			# If it is a dict, get the keys
-			if type(choices) == type({}):
+			if isinstance(choices, type({})):
 				choices = choices.keys()
 		return choices
 

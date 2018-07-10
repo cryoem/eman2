@@ -524,8 +524,7 @@ def main():
 		
 		ysf = []
 		linesf=[]
-		fscsindxs = [s for s in itermeanfscs]
-		fscsindxs.sort()
+		fscsindxs = sorted([s for s in itermeanfscs])
 		for s in fscsindxs: 
 			yf = itermeanfscs[s]
 			ysf.append( yf )

@@ -8,8 +8,7 @@ from __future__ import print_function
 import os
 from EMAN2 import *
 
-files=[i for i in os.listdir(".") if i[:3]=="cls" and i[-4:]==".lst"]
-files.sort()
+files=sorted([i for i in os.listdir(".") if i[:3]=="cls" and i[-4:]==".lst"])
 
 mx={}
 pm=0

@@ -101,7 +101,7 @@ def main():
 		a2=None
 		a=[]
 		i=0
-		while 1:
+		while True:
 			try: im=EMData(args[0]%i,0)
 			except: break
 			a.append(im)

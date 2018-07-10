@@ -182,7 +182,7 @@ def killdcclients(server,port,verbose):
 
 def rundcclients(host,port,verbose):
 	clientid=random.randint(1,2000000000)
-	while 1:
+	while True:
 		rc=subprocess.call(["e2parallel.py","realdcclient","--server="+str(host),"--port="+str(port),"--verbose="+str(verbose),"--clientid="+str(clientid)])
 		if rc : 
 			if rc==1 : print("Client exited at server request")
@@ -334,8 +334,7 @@ class TaskData(QtCore.QAbstractTableModel):
 
 	def load(self):
 		"""Updates the cached display from source"""
-		keys=self.target.keys()
-		keys.sort()
+		keys=sorted(self.target.keys())
 		keys=keys[:-2]
 		self.nrows=len(keys)
 		self.rows=[]

@@ -890,7 +890,7 @@ def get_results(etc,tids,options):
 	results=[0]*len(tids)		# storage for results
 	ncomplete=0
 	tidsleft=tids[:]
-	while 1:
+	while True:
 		time.sleep(5)
 		proglist=etc.check_task(tidsleft)
 		nwait=0
@@ -1062,7 +1062,7 @@ def sptboxergui(options,args):
 
 		def thread_process(self):
 
-			while 1:
+			while True:
 				time.sleep(5)
 
 

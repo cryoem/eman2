@@ -49,8 +49,7 @@ for i in range(n):
 out.close
 
 # Sort by size
-srt=[(j,i) for i,j in enumerate(peaks)]
-srt.sort()
+srt=sorted([(j,i) for i,j in enumerate(peaks)])
 
 # write sorted images
 n=0

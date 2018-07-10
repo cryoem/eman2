@@ -2331,8 +2331,7 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		if target.nimg == 0 :
 			self.wimnum.hide()
-			k = self.bdb.keys()
-			k.sort()
+			k = sorted(self.bdb.keys())
 			self.wimlist.addItems(k)
 			self.wimlist.show()
 			self.curim = 0
@@ -2516,8 +2515,7 @@ class EMJSONInfoPane(EMInfoPane) :
 
 		# Set up image selectors for stacks
 
-		k = self.js.keys()
-		k.sort()
+		k = sorted(self.js.keys())
 		self.wkeylist.addItems(k)
 		self.wkeylist.show()
 		self.curim = 0
@@ -3267,7 +3265,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 	def updateDetails(self) :
 		"""This is spawned as a thread to gradually fill in file details in the background"""
 
-		while 1 :
+		while True :
 			if self.updthreadexit : break
 
 			if len(self.updlist) == 0 :

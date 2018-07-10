@@ -323,7 +323,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 		im1.read_image(stackfile,i)
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
-		if type(ctf)==EMAN1Ctf : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
+		if isinstance(ctf, EMAN1Ctf) : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
 		
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :

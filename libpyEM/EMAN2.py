@@ -1921,7 +1921,7 @@ if the lst file does not exist."""
 
 				# we read the entire file, checking the length of each line
 				maxlen=0
-				while 1:
+				while True:
 					ln=self.ptr.readline().strip()
 					if len(ln)==0 : break
 					maxlen=max(maxlen,len(ln))
@@ -1933,7 +1933,7 @@ if the lst file does not exist."""
 				fmtstr="{{:<{}}}\n".format(self.linelen-1)	# string for formatting
 
 				self.ptr.seek(self.seekbase)
-				while 1:
+				while True:
 					ln=self.ptr.readline().strip()
 					if len(ln)==0 : break
 					tmpfile.write(fmtstr.format(ln))
@@ -2027,7 +2027,7 @@ it will rewrite the file with a valid line-length. """
 
 		self.ptr.seek(self.seekbase)
 		self.n=0
-		while 1:
+		while True:
 			ln=self.ptr.readline()
 			if len(ln)==0 :break
 			if len(ln)!=self.linelen :
@@ -2050,7 +2050,7 @@ line length. Used when a line must be added in the middle of the file."""
 
 		# we read the entire file, checking the length of each line
 		maxlen=minlen
-		while 1:
+		while True:
 			ln=self.ptr.readline().strip()
 			if len(ln)==0 : break
 			maxlen=max(maxlen,len(ln))
@@ -2062,7 +2062,7 @@ line length. Used when a line must be added in the middle of the file."""
 		fmtstr="{{:<{}}}\n".format(self.linelen-1)	# string for formatting
 
 		self.ptr.seek(self.seekbase)
-		while 1:
+		while True:
 			ln=self.ptr.readline().strip()
 			if len(ln)==0 : break
 			tmpfile.write(fmtstr.format(ln))
