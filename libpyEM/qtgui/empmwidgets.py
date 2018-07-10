@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 #
 # Author: John Flanagan Oct 20th 2011 (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -40,10 +41,10 @@ from EMAN2db import db_check_dict
 import sys, math, weakref
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt, QString
-from emselector import EMSelectorDialog	# This will be replaced by something more sensible in the future
+from .emselector import EMSelectorDialog	# This will be replaced by something more sensible in the future
 import re, os, glob
-from embrowser import EMBrowserWidget
-from empmtabwidgets import *
+from .embrowser import EMBrowserWidget
+from .empmtabwidgets import *
 from functools import reduce
 
 class PMComboBox(QtGui.QComboBox):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -40,11 +41,11 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from emglobjects import Camera2, get_default_gl_colors, EMViewportDepthTools2, get_RGB_tab, get_gl_lights_vector, init_glut, EM3DModel
-from emimageutil import EMTransformPanel # for EMLightsInspector
+from .emglobjects import Camera2, get_default_gl_colors, EMViewportDepthTools2, get_RGB_tab, get_gl_lights_vector, init_glut, EM3DModel
+from .emimageutil import EMTransformPanel # for EMLightsInspector
 from math import *
 from time import *
-from valslider import ValSlider
+from .valslider import ValSlider
 import weakref # for EMLightsInspector
 
 
@@ -1429,8 +1430,8 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		
 # This is just for testing, of course
 if __name__ == '__main__':
-	from emapplication import EMApp
-	from emglobjects import EM3DGLWidget
+	from .emapplication import EMApp
+	from .emglobjects import EM3DGLWidget
 	em_app = EMApp()
 	window = EM3DGLWidget()
 	em_lights = EMLights(window)

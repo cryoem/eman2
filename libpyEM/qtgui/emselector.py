@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: David Woolford (woolford@bcm.edu)
@@ -39,17 +40,17 @@ from EMAN2 import get_image_directory, get_dtag, EMData, \
 from EMAN2db import EMAN2DB, db_convert_path, db_open_dict, db_check_dict, e2getcwd
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from emapplication import ModuleEventsManager, EMApp, get_application
-from emimage2d import EMImage2DWidget
-from emimagemx import EMImageMXWidget
-from emimage3diso import EMIsosurfaceModel
-from emimage3dslice import EM3DSliceModel
-from emimage3dsym import EM3DSymModel
-from emimage3dvol import EMVolumeModel
-from emimageutil import EMTransformPanel
-from emplot2d import EMPlot2DWidget
+from .emapplication import ModuleEventsManager, EMApp, get_application
+from .emimage2d import EMImage2DWidget
+from .emimagemx import EMImageMXWidget
+from .emimage3diso import EMIsosurfaceModel
+from .emimage3dslice import EM3DSliceModel
+from .emimage3dsym import EM3DSymModel
+from .emimage3dvol import EMVolumeModel
+from .emimageutil import EMTransformPanel
+from .emplot2d import EMPlot2DWidget
 #from e2simmxxplor import EMSimmxExplorer
-from emsave import save_data
+from .emsave import save_data
 import PyQt4
 import math
 import os
@@ -139,8 +140,8 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[],use
 			
 		def item_action(self,item,target):
 			from EMAN2 import Transform
-			from emdataitem3d import EMDataItem3D, EMIsosurface
-			from emshapeitem3d import EMCube
+			from .emdataitem3d import EMDataItem3D, EMIsosurface
+			from .emshapeitem3d import EMCube
 			
 			name = os.path.basename(str(item.get_url()))
 			single_mode = target.single_preview_only()
@@ -172,10 +173,10 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[],use
 			from e2simmxxplor import EMSimmxExplorer
 
 			if self.module_type == EM3DSymModel: #TODO: get correct symmetry or switch to e2eulerxplor.py
-				from emimage3dsym import EMSymViewerWidget
+				from .emimage3dsym import EMSymViewerWidget
 				widget = EMSymViewerWidget()
 			elif self.module_type in (EMIsosurfaceModel, EMVolumeModel, EM3DSliceModel, EMSimmxExplorer):
-				from emglobjects import EM3DGLWidget
+				from .emglobjects import EM3DGLWidget
 				widget = EM3DGLWidget()
 				model = self.module_type(widget)
 				widget.set_model(model)
@@ -234,11 +235,11 @@ class EM2DStackPreviewAction(DataDisplayModuleTemplate(EMImageMXWidget,"get_2d_s
 	def multi_item_action(self,items,target):
 		single_mode = target.single_preview_only()
 		data = []
-		from emimagemx import ApplyAttribute
+		from .emimagemx import ApplyAttribute
 		for item in items:
 			data.append([item.image_path(),item.get_idx(),[ApplyAttribute("Img #",item.get_idx())]])
 		
-		from emimagemx import EMLightWeightParticleCache
+		from .emimagemx import EMLightWeightParticleCache
 		data = EMLightWeightParticleCache(data)
 		
 		if single_mode and len(self.display_modules) != 0:
@@ -754,19 +755,19 @@ class EMBrowser(EMBrowserType):
 		'''
 		self.action_delegates = {}
 		if self.usescenegraph:
-			from emscene3d import EMScene3D
+			from .emscene3d import EMScene3D
 			self.action_delegates[VIEWER_3D] = DataDisplayModuleTemplate(EMScene3D, usescenegraph=self.usescenegraph)()
 		else:
-			from emimage3d import EMImage3DWidget
+			from .emimage3d import EMImage3DWidget
 			self.action_delegates[VIEWER_3D] = DataDisplayModuleTemplate(EMImage3DWidget)()
-		from emimagemx import ApplyProcessor
+		from .emimagemx import ApplyProcessor
 		self.action_delegates[VOLUME_VIEWER] = DataDisplayModuleTemplate(EMVolumeModel,data_functors=[ApplyProcessor("normalize",{})])()
 		self.action_delegates[SLICE_VIEWER] = DataDisplayModuleTemplate(EM3DSliceModel,data_functors=[ApplyProcessor("normalize",{})])()
 		self.action_delegates[SINGLE_2D_VIEWER] = DataDisplayModuleTemplate(EMImage2DWidget)()
 		stack_action = EM2DStackPreviewAction()
 		self.action_delegates[MULTI_2D_VIEWER] = stack_action #DataDisplayModuleTemplate(EMImageMXWidget,"get_2d_stack")
 		self.action_delegates[PLOT_2D_VIEWER] = DataDisplayModuleTemplate(EMPlot2DWidget)()
-		from emplot3d import EMPlot3DWidget
+		from .emplot3d import EMPlot3DWidget
 		self.action_delegates[PLOT_3D_VIEWER] = DataDisplayModuleTemplate(EMPlot3DWidget)()
 		self.action_delegates[EULER_VIEWER] = DataDisplayModuleTemplate(EM3DSymModel)()
 		from e2simmxxplor import EMSimmxExplorer
@@ -1195,7 +1196,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 		Return is a cache that can be treated like a list of EMData objects
 		Can give speed ups
 		'''
-		from emimagemx import EMLightWeightParticleCache,EM3DDataListCache
+		from .emimagemx import EMLightWeightParticleCache,EM3DDataListCache
 		md = self.get_metadata(full_path,0)
 		if md["nz"] > 1: return EM3DDataListCache(full_path)
 		else: return EMLightWeightParticleCache.from_file(full_path)
@@ -1826,7 +1827,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 		This function is called by EM2DStackItem and EM3DImageItem
 		Return is a cache that can be treated like a list of EMData objects
 		'''
-		from emimagemx import EMLightWeightParticleCache,EM3DDataListCache
+		from .emimagemx import EMLightWeightParticleCache,EM3DDataListCache
 		md = self.get_metadata(full_path,0)
 		if md["nz"] > 1: return EM3DDataListCache(db_convert_path(full_path))
 		else: return EMLightWeightParticleCache.from_file(db_convert_path(full_path))

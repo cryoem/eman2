@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 # Author: Muthu Alagappan, m.alagappan901@gmail.com,  07/22/09
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -32,12 +33,12 @@ from __future__ import print_function
 #
 
 from EMAN2 import PDBReader, EMData
-from emapplication import EMApp, get_application
+from .emapplication import EMApp, get_application
 from PyQt4 import QtCore, QtGui
-from emimage3d import EMImage3DWidget
-from emimage3diso import EMIsosurfaceModel
-from empdbviewer import *
-from emselector import EMSelectorDialog
+from .emimage3d import EMImage3DWidget
+from .emimage3diso import EMIsosurfaceModel
+from .empdbviewer import *
+from .emselector import EMSelectorDialog
 
 
 class EMPDBValWidget(QtGui.QWidget):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
@@ -38,7 +39,7 @@ from PyQt4.QtGui import QAction, QAbstractButton, QListWidgetItem
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from valslider import ValSlider
+from .valslider import ValSlider
 from math import *
 from EMAN2 import *
 #import EMAN2db
@@ -48,7 +49,7 @@ import EMAN2
 import copy
 import sys
 import numpy
-from emimageutil import ImgHistogram, EMParentWin
+from .emimageutil import ImgHistogram, EMParentWin
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4 import QtGui
@@ -56,12 +57,12 @@ from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QTimer
 from libpyGLUtils2 import *
 
-from emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasicOpenGLObjects,init_glut
-from emapplication import EMGLWidget, get_application, EMApp
-from emanimationutil import LineAnimation
+from .emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasicOpenGLObjects,init_glut
+from .emapplication import EMGLWidget, get_application, EMApp
+from .emanimationutil import LineAnimation
 import weakref
 
-from emapplication import EMProgressDialog
+from .emapplication import EMProgressDialog
 
 
 class EMMatrixPanel:
@@ -1578,7 +1579,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			return
 
 		self.data.set_excluded_ptcls(self.deletion_manager.deleted_ptcls())
-		from emsave import save_data
+		from .emsave import save_data
 		file_name = save_data(self.data)
 		if file_name == self.file_name and file_exists(file_name): # the file we are working with was overwritten
 			self.set_data(file_name)

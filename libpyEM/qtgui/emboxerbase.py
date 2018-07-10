@@ -45,13 +45,14 @@ To see how it works just run it from the commandline:
 The EMBoxerModule is basically the epicenter of everything: functions like "add_box" and "move_box" are probably good starting
 points in terms of figuring out how to adapt this code to application specific needs
 '''
+from __future__ import absolute_import
 from optparse import OptionParser
-from emapplication import EMApp,get_application
+from .emapplication import EMApp,get_application
 from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
 from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path,get_platform,base_name
 from EMAN2db import db_open_dict,db_check_dict,db_close_dict
 from EMAN2jsondb import *
-from emsprworkflow import workflow_path
+from .emsprworkflow import workflow_path
 from EMAN2 import *
 
 import os,sys,weakref,math, json
@@ -358,7 +359,7 @@ class EMBox:
 			r,g,b = EMBox.BOX_COLORS[self.type]
 		else:
 			r,g,b = 1.0,0.42,0.71 # hot pint, apparently ;)
-		from emshape import EMShape
+		from .emshape import EMShape
 		shape = EMShape([shape_string,r,g,b,self.x-box_size/2,self.y-box_size/2,self.x+box_size/2,self.y+box_size/2,2.0,self.z_idx])
 		return shape
 
@@ -582,7 +583,7 @@ class ErasingPanel:
 
 			hbl = QtGui.QHBoxLayout()
 			hbl.addWidget(QtGui.QLabel("Erase Radius:"))
-			from valslider import ValSlider
+			from .valslider import ValSlider
 			self.erase_rad_edit = ValSlider(None,(0.0,1000.0),"")
 			self.erase_rad_edit.setValue(int(self.erase_radius))
 			self.erase_rad_edit.setEnabled(True)
@@ -680,7 +681,7 @@ class EraseTool(EMBoxingTool):
 	def get_2d_window(self): return self.target().get_2d_window()
 
 	def mouse_move(self,event):
-		from emshape import EMShape
+		from .emshape import EMShape
 		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
 		self.get_2d_window().add_eraser_shape("eraser",["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3])
 		self.get_2d_window().updateGL()
@@ -697,21 +698,21 @@ class EraseTool(EMBoxingTool):
 	def mouse_wheel(self,event):
 		from PyQt4.QtCore import Qt
 		if event.modifiers()&Qt.ShiftModifier:
-			from emshape import EMShape
+			from .emshape import EMShape
 			self.adjust_erase_rad(event.delta())
 			m= self.get_2d_window().scr_to_img((event.x(),event.y()))
 			self.get_2d_window().add_eraser_shape("eraser",["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3])
 			self.get_2d_window().updateGL()
 
 	def mouse_down(self,event) :
-		from emshape import EMShape
+		from .emshape import EMShape
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
 		#self.boxable.add_exclusion_area("circle",m[0],m[1],self.erase_radius)
 		self.get_2d_window().add_eraser_shape("eraser",["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3])
 		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius,self.erase_value)
 
 	def mouse_drag(self,event) :
-		from emshape import EMShape
+		from .emshape import EMShape
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
 		self.get_2d_window().add_eraser_shape("eraser",["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3])
 		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius,self.erase_value)
@@ -1162,7 +1163,7 @@ class EMThumbsTools:
 		@param shrink the shrink factor, should be an int
 		@return a list of very small images
 		'''
-		from emapplication import EMProgressDialog
+		from .emapplication import EMProgressDialog
 
 		if shrink == None or shrink<1.5 : shrink = EMThumbsTools.get_image_thumb_shrink(image_names[0])
 
@@ -1940,7 +1941,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 			print("\n\nThis operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n")
 			error("This operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!","Error")
 			return
-		from emsprworkflow import E2BoxerProgramOutputTask
+		from .emsprworkflow import E2BoxerProgramOutputTask
 		if self.output_task != None: return
 		from PyQt4 import QtCore
 		self.output_task = EMBoxerWriteOutputTask(self.file_names, dfl_boxsize=self.box_size, current_tool=self.current_tool)
@@ -1963,7 +1964,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 			if self.image_thumbs == None:
 				sys.exit(1)
 
-			from emimagemx import EMImageMXWidget
+			from .emimagemx import EMImageMXWidget
 			self.thumbs_window=EMImageMXWidget(application=get_application())
 
 			self.thumbs_window.set_data(self.image_thumbs,soft_delete=True)
@@ -1996,7 +1997,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 	def __init_particles_window(self):
 		if self.particles_window == None:
-			from emimagemx import EMImageMXWidget
+			from .emimagemx import EMImageMXWidget
 			self.particles_window=EMImageMXWidget(application=get_application())
 
 			self.particles_window.set_mouse_mode("App")
@@ -2126,7 +2127,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 
 	def __init_main_2d_window(self):
-		from emimage2d import EMImage2DWidget
+		from .emimage2d import EMImage2DWidget
 		if self.main_2d_window == None:
 
 			self.main_2d_window= EMImage2DWidget(application=get_application())
@@ -2161,8 +2162,8 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 		self.inspector.add_mouse_tool(event_tool)
 
-from emsprworkflow import WorkFlowTask
-from emapplication import error
+from .emsprworkflow import WorkFlowTask
+from .emapplication import error
 class EMBoxerWriteOutputTask(WorkFlowTask):
 	"""Use this form for writing boxed particles and/or coordinate files to disk."""
 	task_idle = QtCore.pyqtSignal()
@@ -2177,7 +2178,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		self.current_tool = current_tool
 
 	def get_table(self):
-		from emform import EM2DFileTable,EMFileTable,int_lt
+		from .emform import EM2DFileTable,EMFileTable,int_lt
 		table = EM2DFileTable(self.file_names,desc_short="Raw Data",desc_long="")
 		table.add_column_data(EMFileTable.EMColumnData("Stored Boxes",EMBoxerWriteOutputTask.get_num_boxes,"The number of stored boxes",int_lt))
 		table.add_column_data(EMFileTable.EMColumnData("Quality",EMBoxerWriteOutputTask.get_quality,"Quality metadata score stored in local database",int_lt))
@@ -2206,7 +2207,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 
 	def get_params(self):
 #		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
-		from emdatastorage import ParamDef
+		from .emdatastorage import ParamDef
 		db = js_open_dict(self.form_db_name)
 		is_gauss = self.current_tool == 'Gauss'
 
@@ -2303,7 +2304,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 
 	def write_output(self,input_names,output_names,box_list_function,box_size,msg="Writing Output",extra_args=[]):
 		n = len(input_names)
-		from emapplication import EMProgressDialog
+		from .emapplication import EMProgressDialog
 		progress = EMProgressDialog(msg, "Cancel", 0,n,None)
 		progress.show()
 		prog = 0

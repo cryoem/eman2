@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # and David Woolford 10/26/2007 (woolford@bcm.edu)
@@ -37,16 +38,16 @@ from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from valslider import ValSlider
+from .valslider import ValSlider
 from math import *
 from EMAN2 import *
-from emimageutil import EMTransformPanel
+from .emimageutil import EMTransformPanel
 import weakref
 from time import *
 from libpyGLUtils2 import *
 
-from emglobjects import EM3DModel, Camera2,EMViewportDepthTools, get_default_gl_colors
-from emlights import *
+from .emglobjects import EM3DModel, Camera2,EMViewportDepthTools, get_default_gl_colors
+from .emlights import *
 
 MAG_INCREMENT_FACTOR = 101.1
 
@@ -652,8 +653,8 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 #		
 # This is just for testing, of course
 if __name__ == '__main__':
-	from emapplication import EMApp
-	from emimage3d import EMImage3DWidget
+	from .emapplication import EMApp
+	from .emimage3d import EMImage3DWidget
 	em_app = EMApp()
 	window = EMImage3DWidget()
 	font_model = EM3DFontModel(window)

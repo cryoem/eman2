@@ -123,7 +123,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
-	if os.environ.has_key("CUDA_VISIBLE_DEVICES"):
+	if "CUDA_VISIBLE_DEVICES" in os.environ:
 		print("CUDA_VISIBLE_DEVICES is already set as environment variable. This will overwrite the device option...")
 	else:
 		if options.device=="gpu":
@@ -958,13 +958,13 @@ class boxerConvNet(QtCore.QObject):
 		
 		thr1=0.2
 		thr2=-5.
-		if params.has_key("threshold1"):
+		if "threshold1" in params:
 			thr1=params["threshold1"]
 		else:
 			try: thr1=boxerConvNet.threshold.getValue()
 			except: pass
 		
-		if params.has_key("threshold2"):
+		if "threshold2" in params:
 			thr2=params["threshold2"]
 		else:
 			try: thr2=boxerConvNet.threshold2.getValue()

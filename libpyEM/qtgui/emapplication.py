@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: David Woolford 10/01/2008 (woolford@bcm.edu)
@@ -35,7 +36,7 @@ from __future__ import print_function
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.QtCore import Qt
 import sys
-from emimageutil import EMParentWin
+from .emimageutil import EMParentWin
 from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end,get_platform
 import EMAN2db
 import weakref

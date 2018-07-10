@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: Steven Ludtke, 07/19/2017 (sludtke@bcm.edu)
@@ -67,15 +68,15 @@ import OpenGL.arrays.vbo as glvbo
 from math import *
 from EMAN2 import *
 import sys
-from emshape import *
+from .emshape import *
 import weakref
 from cPickle import dumps,loads
 import struct, math
 from numpy import *
-from valslider import *
+from .valslider import *
 from cStringIO import StringIO
 import re
-import emimage2d
+from . import emimage2d
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -85,8 +86,8 @@ from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 import numpy as np
 
-from emapplication import EMApp, EMGLWidget
-from emglobjects import EMOpenGLFlagsAndTools
+from .emapplication import EMApp, EMGLWidget
+from .emglobjects import EMOpenGLFlagsAndTools
 
 import traceback
 
@@ -1590,7 +1591,7 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 
 	def imgSelect(self,sel=None):
 		if self.imgwin==None :
-			from emimagemx import EMImageMXWidget
+			from .emimagemx import EMImageMXWidget
 			self.imgwin=EMImageMXWidget()
 
 		try:
@@ -1609,7 +1610,7 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 		self.imgwin.show()
 
 	def selectImgFile(self):
-		from embrowser import EMBrowserWidget
+		from .embrowser import EMBrowserWidget
 		self.browse = EMBrowserWidget(withmodal=True,multiselect=False)
 		self.browse.show()
 		self.browse.ok.connect(self.setImgFile)

@@ -83,7 +83,7 @@ def main():
 		exit()
 	
 	
-	if os.environ.has_key("CUDA_VISIBLE_DEVICES"):
+	if "CUDA_VISIBLE_DEVICES" in os.environ:
 		print("CUDA_VISIBLE_DEVICES is already set as environment variable. This will overwrite the device option...")
 	else:
 		if options.device=="gpu":

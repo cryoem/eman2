@@ -40,7 +40,7 @@ def main():
 	js=js_open_dict(info_name(pfile))
 	ttparams=np.array(js["tlt_params"])
 	
-	if options.noctf==False and js.has_key("defocus"):
+	if options.noctf==False and "defocus" in js:
 		#### read ctf info when exist
 		defocus=np.array(js["defocus"])
 		phase=np.array(js["phase"])
@@ -75,7 +75,7 @@ def main():
 		print("Reading particle location from a tomogram...")
 		js=js_open_dict(info_name(pfile))
 		towrite=[]
-		if js.has_key("class_list") and js.has_key("boxes_3d"):
+		if "class_list" in js and "boxes_3d" in js:
 			clslst=js["class_list"]
 			boxes=js["boxes_3d"]
 			for ky in clslst.keys():

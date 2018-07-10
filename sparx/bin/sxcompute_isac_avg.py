@@ -197,7 +197,7 @@ def main():
 	parser.add_option("--ts",                    type   ="float",          default =1.0,    help= "local alignment search step")
 	parser.add_option("--fh",                    type   ="float",          default =-1.,    help= "local alignment high frequencies limit")
 	parser.add_option("--maxit",                 type   ="int",            default =5,      help= "local alignment iterations")
-	parser.add_option("--navg",                  type   ="int",            default =-1,     help= "number of aveages")
+	parser.add_option("--navg",                  type   ="int",            default =2,      help= "number of aveages")
 	parser.add_option("--skip_local_alignment",  action ="store_true",     default =False,  help= "skip local alignment")
 	parser.add_option("--noctf",                 action ="store_true",     default =False,  help="no ctf correction, useful for negative stained data. always ctf for cryo data")
 	parser.add_option("--B_start",  type   ="float",  default = 10.0,  help="start frequency (Angstrom) of power spectrum for B_factor estimation")
@@ -209,6 +209,8 @@ def main():
 	adjust_to_given_pw2      = False
 	B_enhance                = False
 	no_adjustment            = False
+	# set skip_local_alignment always true
+	options.skip_local_alignment = True
 
 	if   options.pw_adjustment=='analytical_model':   adjust_to_analytic_model = True
 	elif options.pw_adjustment=='no_adjustment':      no_adjustment            = True
@@ -346,8 +348,7 @@ def main():
 	list_dict   = {}
 	#parepare params_dict
 
-	if Tracker["constants"]["navg"] <0: navg = EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf"))
-	else: navg = min(Tracker["constants"]["navg"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
+	navg = min(Tracker["constants"]["navg"]*Blockdata["nproc"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
 	
 	global_dict = {}
 	ptl_list    = []
@@ -356,7 +357,7 @@ def main():
 		for iavg in xrange(navg):
 			params_of_this_average = []
 			image   = get_im(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf"), iavg)
-			members = image.get_attr("members")
+			members = sorted(image.get_attr("members"))
 			memlist.append(members)
 			for im in xrange(len(members)):
 				abs_id =  members[im]
@@ -388,9 +389,7 @@ def main():
 	## always apply low pass filter to B_enhanced images to suppress noise in high frequencies 
 	enforced_to_H1 = False
 	if B_enhance:
-		if Tracker["constants"]["low_pass_filter"] == -1.0: 
-			#print("User does not provide low pass filter")
-			enforced_to_H1 = True
+		if Tracker["constants"]["low_pass_filter"] == -1.0: enforced_to_H1 = True
 	if navg <Blockdata["nproc"]:#  Each CPU do one average 
 		ERROR("number of nproc is larger than number of averages", "sxcompute_isac_avg.py", 1, Blockdata["myid"])
 	else:
@@ -453,7 +452,6 @@ def main():
 
 			elif no_adjustment: pass
 			
-				
 			if Tracker["constants"]["low_pass_filter"] != -1.0:
 				if Tracker["constants"]["low_pass_filter"] == 0.0: low_pass_filter = FH1
 				elif Tracker["constants"]["low_pass_filter"] == 1.0: 
@@ -472,6 +470,7 @@ def main():
 			slist[iavg]    = new_avg
 		## send to main node to write
 		mpi_barrier(MPI_COMM_WORLD)
+
 		
 		for im in xrange(navg):
 			# avg

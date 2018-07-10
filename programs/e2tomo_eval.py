@@ -155,41 +155,41 @@ class TomoEvalGUI(QtGui.QWidget):
 				bxcls={}
 				js=js_open_dict(info)
 				
-				if js.has_key("boxes_3d"):
+				if "boxes_3d" in js:
 					boxes=js["boxes_3d"]
 					nbox=len(boxes)
 					
-				if js.has_key("ali_loss"):
+				if "ali_loss" in js:
 					dic["loss"]=np.array(js["ali_loss"])
 				else:
 					dic["loss"]=[]
 				
-				if js.has_key("tlt_params"):
+				if "tlt_params" in js:
 					dic["tlt_params"]=np.array(js["tlt_params"])
 				else:
 					dic["tlt_params"]=[]
 				
-				if js.has_key("tlt_file"):
+				if "tlt_file" in js:
 					dic["tltfile"]=str(js["tlt_file"])
 				else:
 					dic["tltfile"]=""
 					
-				if js.has_key("notes"):
+				if "notes" in js:
 					dic["notes"]=str(js["notes"])
 				else:
 					dic["notes"]=""
 					
-				if js.has_key("defocus"):
+				if "defocus" in js:
 					dic["defocus"]=np.array(js["defocus"])
 				else:
 					dic["defocus"]=[]
 					
-				if js.has_key("phase"):
+				if "phase" in js:
 					dic["phase"]=np.array(js["phase"])
 				else:
 					dic["phase"]=[]
 					
-				if nbox>0 and js.has_key("class_list"):
+				if nbox>0 and "class_list" in js:
 					cls=js["class_list"]
 					for k in cls.keys():
 						vname=str(cls[k]["name"])
@@ -197,7 +197,7 @@ class TomoEvalGUI(QtGui.QWidget):
 						
 						if n>0:
 							bxcls[vname]=n
-							if ptclcls.has_key(vname):
+							if vname in ptclcls:
 								ptclcls[vname][1]+=n
 							else:
 								ptclcls[vname]=[1,n]
