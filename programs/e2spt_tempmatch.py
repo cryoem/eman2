@@ -106,7 +106,7 @@ def main():
 		print("Found {} particles".format(len(pts)))
 		js=js_open_dict(info_name(imgname))
 		n=min(options.nptcl, len(pts))
-		if js.has_key("class_list"):
+		if "class_list" in js:
 			clst=js['class_list']
 			try: kid=max([int(k) for k in clst.keys()])+1
 			except: kid=0 # In case someone manually edited the info file. Unlikely.
@@ -119,7 +119,7 @@ def main():
 		else:
 			clst[str(kid)]={"boxsize":sz*4, "name":base_name(tmpname)}
 		js["class_list"]=clst
-		if js.has_key("boxes_3d"):
+		if "boxes_3d" in js:
 			bxs=js["boxes_3d"]
 		else:
 			bxs=[]

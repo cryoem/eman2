@@ -294,7 +294,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		info=js_open_dict(self.jsonfile)
 		self.sets={}
 		self.boxsize={}
-		if info.has_key("class_list"):
+		if "class_list" in info:
 			clslst=info["class_list"]
 			for k in sorted(clslst.keys()):
 				if type(clslst[k])==dict:
@@ -312,7 +312,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.setcolors=[clr("blue"),clr("green"),clr("red"),clr("cyan"),clr("purple"),clr("orange"), clr("yellow"),clr("hotpink"),clr("gold")]
 		self.sets_visible={}
 		
-		if info.has_key("boxes_3d"):
+		if "boxes_3d" in info:
 			box=info["boxes_3d"]
 			for i,b in enumerate(box):
 				#### X-center,Y-center,Z-center,method,[score,[class #]]

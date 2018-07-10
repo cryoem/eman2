@@ -181,7 +181,7 @@ def main():
 		jsname=info_name(options.inputname)
 		print("Loading parameters from {}...".format(jsname))
 		js=js_open_dict(jsname)
-		if not js.has_key("tlt_params"):
+		if "tlt_params" not in js:
 			print("Failed to load saved parameterss. Exit.")
 			return
 		
