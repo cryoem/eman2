@@ -98,7 +98,7 @@ CTF autoprocessing after importing is complete.
 	except:
 		print("Did not find Voltage and Cs in Relion file")
 	
-	if star.has_key("rlnMicrographName") : difkey="rlnMicrographName"
+	if "rlnMicrographName" in star : difkey="rlnMicrographName"
 	else: difkey="rlnDefocusU"
 	
 	oldname=""

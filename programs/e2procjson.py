@@ -97,7 +97,7 @@ def main():
 		nf=0
 		for fsp in args:
 			js=js_open_dict(fsp)
-			if js.has_key(options.removekey):
+			if options.removekey in js:
 				nf+=1
 				v=js[options.removekey]
 				jsb[fsp]=v

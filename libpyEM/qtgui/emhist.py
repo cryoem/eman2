@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -63,12 +64,12 @@ import OpenGL.arrays.vbo as glvbo
 from math import *
 from EMAN2 import *
 import sys
-from emshape import *
+from .emshape import *
 import weakref
 from cPickle import dumps,loads
 import struct, math
 from numpy import *
-from valslider import *
+from .valslider import *
 from cStringIO import StringIO
 import re
 #import emimage2d
@@ -81,8 +82,8 @@ from matplotlib.figure import Figure
 
 import numpy as np
 
-from emapplication import EMApp, EMGLWidget
-from emglobjects import EMOpenGLFlagsAndTools
+from .emapplication import EMApp, EMGLWidget
+from .emglobjects import EMOpenGLFlagsAndTools
 
 import traceback
 

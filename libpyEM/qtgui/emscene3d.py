@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine
@@ -34,24 +35,24 @@ from __future__ import print_function
 
 from EMAN2 import *
 import copy
-from emapplication import EMGLWidget
-from emdataitem3d import *
-from emglobjects import get_default_gl_colors
-from emitem3d import EMItem3D, EMItem3DInspector
-from empdbitem3d import *
-from emshapeitem3d import *
+from .emapplication import EMGLWidget
+from .emdataitem3d import *
+from .emglobjects import get_default_gl_colors
+from .emitem3d import EMItem3D, EMItem3DInspector
+from .empdbitem3d import *
+from .emshapeitem3d import *
 from libpyGLUtils2 import GLUtil
 import math
 import os
 import pickle
-from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
+from .valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
 import weakref
 
 from OpenGL import GLU
 from OpenGL.GL import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QTreeWidgetItem
+from PyQt4.QtGui import QTreeWidgetItem, QColor
 
 
 #from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D

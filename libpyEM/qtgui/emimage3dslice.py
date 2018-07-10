@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -39,15 +40,15 @@ from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from valslider import ValSlider
+from .valslider import ValSlider
 from math import *
 from EMAN2 import *
 import sys
 import weakref
 from time import *
 
-from emglobjects import EM3DModel, EMOpenGLFlagsAndTools, Camera2, EMViewportDepthTools
-from emimageutil import ImgHistogram, EMTransformPanel
+from .emglobjects import EM3DModel, EMOpenGLFlagsAndTools, Camera2, EMViewportDepthTools
+from .emimageutil import ImgHistogram, EMTransformPanel
 
 
 MAG_INCREMENT_FACTOR = 1.1
@@ -181,7 +182,7 @@ class EM3DSliceModel(EM3DModel):
 		self.inspector.set_slice(self.zslice)
 		self.generate_current_display_list()
 		
-		from emglobjects import EM3DGLWidget
+		from .emglobjects import EM3DGLWidget
 		if isinstance(self.get_gl_widget(),EM3DGLWidget):
 			self.get_gl_widget().set_camera_defaults(self.data)
 			
@@ -595,8 +596,8 @@ class EM3DSliceInspector(QtGui.QWidget):
 		
 	
 if __name__ == '__main__':
-	from emapplication import EMApp
-	from emglobjects import EM3DGLWidget
+	from .emapplication import EMApp
+	from .emglobjects import EM3DGLWidget
 	em_app = EMApp()
 	window = EM3DGLWidget()
 	slice_model = EM3DSliceModel(window)

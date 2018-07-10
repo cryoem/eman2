@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,8 +37,8 @@ from PyQt4.QtCore import Qt, QString
 from math import *
 import numpy
 from EMAN2 import *
-from valslider import ValSlider
-from emanimationutil import Animator
+from .valslider import ValSlider
+from .emanimationutil import Animator
 import weakref
 import copy
 import sys
@@ -592,7 +593,7 @@ class EMMetaDataTable(object):
 		left = [str(k) for k in metadata.keys()]
 		right = [str(v) for v in metadata.values()]
 		
-		from emform import EMParamTable, ParamDef,EMFormWidget
+		from .emform import EMParamTable, ParamDef,EMFormWidget
 		
 		params = []
 		a = EMParamTable(name="Metadata",desc_short="",desc_long="Meta data associated with this image")

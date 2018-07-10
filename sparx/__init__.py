@@ -1,2 +1,3 @@
 from __future__ import print_function
-from libpy.sparx import *
+from __future__ import absolute_import
+from .libpy.sparx import *

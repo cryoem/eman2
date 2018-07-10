@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -39,13 +40,13 @@ from OpenGL.GLU import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import QTimer, Qt
 from e2eulerxplor import EMEulerExplorer
-from emglobjects import Camera, Camera2, EMGLWidget, EMViewportDepthTools, EMGLProjectionViewMatrices, EMOpenGLFlagsAndTools
-from emimage3diso import EMIsosurfaceModel
-from emimage3dslice import EM3DSliceModel
-from emimage3dsym import EM3DSymModel
-from emimage3dvol import EMVolumeModel
-from emimageutil import EMTransformPanel
-from emlights import EMLightsInspectorBase, EMLightsDrawer
+from .emglobjects import Camera, Camera2, EMGLWidget, EMViewportDepthTools, EMGLProjectionViewMatrices, EMOpenGLFlagsAndTools
+from .emimage3diso import EMIsosurfaceModel
+from .emimage3dslice import EM3DSliceModel
+from .emimage3dsym import EM3DSymModel
+from .emimage3dvol import EMVolumeModel
+from .emimageutil import EMTransformPanel
+from .emlights import EMLightsInspectorBase, EMLightsDrawer
 from math import *
 import weakref
 
@@ -838,7 +839,7 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 
 
 if __name__ == '__main__':
-	from emapplication import EMApp
+	from .emapplication import EMApp
 	import sys
 	em_app = EMApp()
 	window = EMImage3DWidget(application=em_app)

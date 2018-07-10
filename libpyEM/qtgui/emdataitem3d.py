@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 #
 # Author: Ross Coleman (racolema@bcm.edu)
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)
@@ -33,17 +34,17 @@ from __future__ import print_function
 #
 
 from EMAN2 import *
-from embrowser import EMBrowserWidget
-from emglobjects import EMViewportDepthTools, Camera2, get_default_gl_colors, get_RGB_tab, EM3DModel
-from emglobjects import get_default_gl_colors
-from emimageutil import ImgHistogram
-from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
-from emshapeitem3d import EMInspectorControlShape
+from .embrowser import EMBrowserWidget
+from .emglobjects import EMViewportDepthTools, Camera2, get_default_gl_colors, get_RGB_tab, EM3DModel
+from .emglobjects import get_default_gl_colors
+from .emimageutil import ImgHistogram
+from .emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
+from .emshapeitem3d import EMInspectorControlShape
 from libpyGLUtils2 import GLUtil
 import math
 import os.path
 import sys
-from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
+from .valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
 
 from OpenGL import GL
 from OpenGL.GL import *
