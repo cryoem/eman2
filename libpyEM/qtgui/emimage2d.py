@@ -1856,7 +1856,7 @@ class EMImage2DWidget(EMGLWidget):
 
 
 	def image_range_changed(self,val):
-		l_val = val-1
+		l_val = int(val-1)
 
 		if l_val == self.list_idx: return
 		else:
