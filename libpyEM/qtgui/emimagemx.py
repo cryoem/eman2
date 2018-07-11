@@ -87,8 +87,8 @@ class EMMatrixPanel:
 		[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
 		if self.ystart == None:
 			return False
-		  	# if you uncomment this code it will automatically set the scale in the main window so that the mxs stay visible
-		  	# it's not what we wanted but it's left here in case anyone wants to experiment
+			# if you uncomment this code it will automatically set the scale in the main window so that the mxs stay visible
+			# it's not what we wanted but it's left here in case anyone wants to experiment
 #			scale = self.get_min_scale(view_width,view_height,view_scale,view_data)
 #			target.scale = scale
 #			view_scale = taget.scale
