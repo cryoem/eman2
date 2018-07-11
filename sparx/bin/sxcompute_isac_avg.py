@@ -173,7 +173,7 @@ def main():
 	parser.add_option("--ts",                    type   ="float",          default =1.0,    help= "local alignment search step")
 	parser.add_option("--fh",                    type   ="float",          default =-1.0,   help= "local alignment high frequencies limit")
 	parser.add_option("--maxit",                 type   ="int",            default =5,      help= "local alignment iterations")
-	parser.add_option("--navg",                  type   ="int",            default =-1,     help= "number of aveages")
+	parser.add_option("--navg",                  type   ="int",            default =1000000,     help= "number of aveages")
 	parser.add_option("--local_alignment",       action ="store_true",     default =False,  help= "do local alignment")
 	parser.add_option("--noctf",                 action ="store_true",     default =False,  help="no ctf correction, useful for negative stained data. always ctf for cryo data")
 	parser.add_option("--B_start",  type   ="float",  default = 10.0,  help="start frequency (Angstrom) of power spectrum for B_factor estimation")
@@ -345,10 +345,8 @@ def main():
 	params_dict = {}
 	list_dict   = {}
 	#parepare params_dict
-	if Tracker["constants"]["navg"] ==-1:
-		navg = EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf"))
-	else:
-		navg = min(Tracker["constants"]["navg"]*Blockdata["nproc"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
+
+	navg = min(Tracker["constants"]["navg"]*Blockdata["nproc"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
 	
 	global_dict = {}
 	ptl_list    = []
