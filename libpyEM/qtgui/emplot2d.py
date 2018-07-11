@@ -796,7 +796,7 @@ lc is the cursor selection point in plot coords"""
 
 
 
-		#self.selected.emit(self.selected)
+		self.selected.emit(self.selected)
 
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
