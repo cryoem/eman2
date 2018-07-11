@@ -161,7 +161,7 @@ def main():
 	# 2> no_adjustment;
 	# 3> bfactor;
 	# 4> adjust_to_given_pw2(user has to provide a text file that contains 1D rotationally averaged PW)
-			
+
 	# options in common
 	parser.add_option("--isac_dir",              type   ="string",         default ='',     help="ISAC run output directory, input directory for this command")
 	parser.add_option("--output_dir",            type   ="string",         default ='',     help="output directory where computed averages are saved")

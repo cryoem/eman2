@@ -134,7 +134,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.wg_notes=QtGui.QTextEdit(self)
 		self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 				
-		self.setspanel.itemChanged[QListWidgetItem].connect(self.clickset)
+		self.setspanel.itemChanged[QtGui.QListWidgetItem].connect(self.clickset)
 		self.wg_notes.textChanged.connect(self.noteupdate)
 		
 		self.wg_plot2d=EMPlot2DWidget()
