@@ -209,6 +209,7 @@ def construct_keyword_dict():
 	keyword_dict["--ctref_oldrefdir"]             = SXkeyword_map(2, "dir")                 # --ctref_oldrefdir=refine_dir_path
 	keyword_dict["--refinement_dir"]              = SXkeyword_map(2, "dir")                 # --refinement_dir=refinemen_out_dir
 	keyword_dict["--previous_run"]                = SXkeyword_map(2, "dir")                 # --previous_run1=sort3d_run1_directory, --previous_run2=sort3d_run2_directory (need for sort3d.txt)
+	keyword_dict["--relion_project_dir"]          = SXkeyword_map(2, "dir")                 # --relion_project_dir=DIR_PATH
 	keyword_dict["--function"]                    = SXkeyword_map(2, "user_func")           # --function=user_function
 	# keyword_dict["--FL"]                        = SXkeyword_map(2, "abs_freq")            # (--FL=FL); This is ISAC2 & advanced that We do NOT supported at this point because of pixel size reduction by target radius
 	# keyword_dict["--FH"]                        = SXkeyword_map(2, "abs_freq")            # (--FH=FH); This is ISAC2 & advanced that We do NOT supported at this point because of pixel size reduction by target radius
