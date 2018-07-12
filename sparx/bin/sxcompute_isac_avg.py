@@ -33,31 +33,6 @@ global Tracker, Blockdata
 
 
 # ------------------------------------------------------------------------------------
-mpi_init(0, [])
-nproc    = mpi_comm_size(MPI_COMM_WORLD)
-myid     = mpi_comm_rank(MPI_COMM_WORLD)
-
-
-Blockdata = {}
-#  MPI stuff
-Blockdata["nproc"]              = nproc
-Blockdata["myid"]               = myid
-Blockdata["main_node"]          = 0
-Blockdata["shared_comm"]                    = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED,  0, MPI_INFO_NULL)
-Blockdata["myid_on_node"]                   = mpi_comm_rank(Blockdata["shared_comm"])
-Blockdata["no_of_processes_per_group"]      = mpi_comm_size(Blockdata["shared_comm"])
-masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
-Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
-         Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
-#  We need two nodes for processing of volumes
-Blockdata["node_volume"] = [Blockdata["no_of_groups"]-3, Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take three last nodes
-#  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
-#  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
-Blockdata["nodes"] = [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"], \
-     Blockdata["node_volume"][2]*Blockdata["no_of_processes_per_group"]]
-# End of Blockdata: sorting requires at least three nodes, and the used number of nodes be integer times of three
-global_def.BATCH = True
-global_def.MPI   = True
 
 def compute_average_ctf(mlist, radius):
 	from morphology   import ctf_img
@@ -175,6 +150,7 @@ def main():
 	import sys, os, time
 	global Tracker, Blockdata
 	from global_def import ERROR
+	
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -195,10 +171,10 @@ def main():
 	parser.add_option("--radius",                type   ="int",            default =-1,     help= "radius")
 	parser.add_option("--xr",                    type   ="float",          default =-1.0,   help= "local alignment search range")
 	parser.add_option("--ts",                    type   ="float",          default =1.0,    help= "local alignment search step")
-	parser.add_option("--fh",                    type   ="float",          default =-1.,    help= "local alignment high frequencies limit")
+	parser.add_option("--fh",                    type   ="float",          default =-1.0,   help= "local alignment high frequencies limit")
 	parser.add_option("--maxit",                 type   ="int",            default =5,      help= "local alignment iterations")
-	parser.add_option("--navg",                  type   ="int",            default =1000000,      help= "number of aveages")
-	parser.add_option("--skip_local_alignment",  action ="store_true",     default =False,  help= "skip local alignment")
+	parser.add_option("--navg",                  type   ="int",            default =1000000,     help= "number of aveages")
+	parser.add_option("--local_alignment",       action ="store_true",     default =False,  help= "do local alignment")
 	parser.add_option("--noctf",                 action ="store_true",     default =False,  help="no ctf correction, useful for negative stained data. always ctf for cryo data")
 	parser.add_option("--B_start",  type   ="float",  default = 10.0,  help="start frequency (Angstrom) of power spectrum for B_factor estimation")
 	parser.add_option("--Bfactor",  type   ="float",  default = -1.0,  help= "User defined bactors (e.g. 45.0[A^2]). By default, the program automatically estimates B-factor. ")
@@ -244,9 +220,33 @@ def main():
 	#
 	# Create and initialize Tracker dictionary with input options  # State Variables
 
+	mpi_init(0, [])
+	nproc    = mpi_comm_size(MPI_COMM_WORLD)
+	myid     = mpi_comm_rank(MPI_COMM_WORLD)
+
+
+	Blockdata = {}
+	#  MPI stuff
+	Blockdata["nproc"]              = nproc
+	Blockdata["myid"]               = myid
+	Blockdata["main_node"]          = 0
+	Blockdata["shared_comm"]                    = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED,  0, MPI_INFO_NULL)
+	Blockdata["myid_on_node"]                   = mpi_comm_rank(Blockdata["shared_comm"])
+	Blockdata["no_of_processes_per_group"]      = mpi_comm_size(Blockdata["shared_comm"])
+	masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
+	Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
+			 Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
+	#  We need two nodes for processing of volumes
+	Blockdata["node_volume"] = [Blockdata["no_of_groups"]-3, Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take three last nodes
+	#  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
+	#  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
+	Blockdata["nodes"] = [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"], \
+		 Blockdata["node_volume"][2]*Blockdata["no_of_processes_per_group"]]
+	# End of Blockdata: sorting requires at least three nodes, and the used number of nodes be integer times of three
+	global_def.BATCH = True
+	global_def.MPI   = True
 
 	#<<<---------------------->>>imported functions<<<---------------------------------------------
-
 
 	from utilities 		import get_im, bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, write_text_row
 	from utilities 		import cmdexecute
@@ -419,13 +419,13 @@ def main():
 			FH1 = get_optimistic_res(frc)
 			#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d_before_ali.txt"%iavg))
 			
-			if not options.skip_local_alignment:
+			if options.local_alignment:
 				new_average1 = within_group_refinement([mlist[kik] for kik in xrange(0,len(mlist),2)], maskfile= None, randomize= False, ir=1.0,  \
 				 ou=Tracker["constants"]["radius"], rs=1.0, xrng=[x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
-				 dst=0.0, maxit=Tracker["constants"]["maxit"], FH=max(Tracker["constants"]["FH"], FH1), FF=0.1)
+				 dst=0.0, maxit=Tracker["constants"]["maxit"], FH=max(Tracker["constants"]["FH"], FH1), FF=0.02, method="")
 				new_average2 = within_group_refinement([mlist[kik] for kik in xrange(1,len(mlist),2)], maskfile= None, randomize= False, ir=1.0, \
 				 ou= Tracker["constants"]["radius"], rs=1.0, xrng=[ x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
-				 dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.1)
+				 dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.02, method="")
 				if options.noctf: new_avg, frc, plist = compute_average_noctf(mlist, Tracker["constants"]["radius"])
 				else: new_avg, frc, plist = compute_average_ctf(mlist, Tracker["constants"]["radius"])
 				plist_dict[iavg] = plist
@@ -442,11 +442,11 @@ def main():
 				roo = read_text_file( Tracker["constants"]["modelpw"], -1)
 				roo = roo[0] # always on the first column
 				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], roo)
-				print("Processed avg  %d  %f  %f"%(iavg, FH1, FH2))
+				print("Processed avg  %d  %f  %f  "%(iavg, FH1, FH2))
 				
 			elif adjust_to_analytic_model:
 				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], None)
-				print("Processed avg  %d  %f  %f"%(iavg, FH1, FH2))
+				print("Processed avg  %d  %f  %f   "%(iavg, FH1, FH2))
 
 			elif no_adjustment: pass
 			
@@ -454,13 +454,13 @@ def main():
 				if Tracker["constants"]["low_pass_filter"] == 0.0: low_pass_filter = FH1
 				elif Tracker["constants"]["low_pass_filter"] == 1.0: 
 					low_pass_filter = FH2
-					if options.skip_local_alignment: low_pass_filter = FH1
+					if not options.local_alignment: low_pass_filter = FH1
 				else: 
 					low_pass_filter = Tracker["constants"]["low_pass_filter"]
 					if low_pass_filter >=0.45: low_pass_filter =0.45 		
-				new_avg = filt_tanl(new_avg, low_pass_filter, 0.01)
+				new_avg = filt_tanl(new_avg, low_pass_filter, 0.02)
 			else:# No low pass filter but if enforced
-				if enforced_to_H1: new_avg = filt_tanl(new_avg, FH1, 0.01)
+				if enforced_to_H1: new_avg = filt_tanl(new_avg, FH1, 0.02)
 			if B_enhance: new_avg = fft(new_avg)
 				
 			new_avg.set_attr("members",   list_dict[iavg])
@@ -486,7 +486,7 @@ def main():
 				new_avg_other_cpu.set_attr("n_objects", len(memlist[im]))
 				new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 			
-			if not options.skip_local_alignment:
+			if options.local_alignment:
 				if cpu_dict[im] == Blockdata["myid"]:
 					write_text_row(plist_dict[im], os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg", "ali2d_local_params_avg_%03d.txt"%im))
 				
@@ -510,7 +510,7 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
 	
-	if not options.skip_local_alignment:
+	if options.local_alignment:
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			ali3d_local_params = [ None for im in xrange(len(ptl_list)) ]
 			for im in xrange(len(ptl_list)):

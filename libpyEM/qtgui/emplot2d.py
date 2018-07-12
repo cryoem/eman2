@@ -763,7 +763,7 @@ lc is the cursor selection point in plot coords"""
 
 		# We select one point if it's within 5 pixels, then up to 4 more points within 3 pixels
 		self.selected=[srt[0]]
-		for i in xrange(1,5) :
+		for i in xrange(1,min(5,len(srt))) :
 			if r[srt[i]]<3 : self.selected.append(srt[i])
 
 		y0=35
@@ -796,7 +796,7 @@ lc is the cursor selection point in plot coords"""
 
 
 
-		self.selected.emit(self.selected)
+		#self.selected.emit(self.selected)
 
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
