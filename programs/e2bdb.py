@@ -124,7 +124,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		print("WARNING: Merge mode\nCombining contents of: ",", ".join(args[1:]))
 		print("into ",args[0])
 		
-		if raw_input("Proceed (y/n) :").lower() != "y" :
+		if input("Proceed (y/n) :").lower() != "y" :
 			print("Aborting")
 			sys.exit(1)
 		
@@ -469,7 +469,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				print("You are requesting to delete the following databases:")
 				for db in dbs:
 					print(db," ", end=' ')
-				if raw_input("\nAre you sure (y/n) ? ")[0].lower()!='y' :
+				if input("\nAre you sure (y/n) ? ")[0].lower()!='y' :
 					print("Aborted")
 					sys.exit(1)
 			
@@ -530,7 +530,7 @@ def db_cleanup(force=False):
 				try: print(os.popen("ps %s"%i,"r").readlines()[-1])
 				except: print(i)
 			
-			reply=raw_input("Would you like me to kill all of these jobs (YES/NO) : ")
+			reply=input("Would you like me to kill all of these jobs (YES/NO) : ")
 			if reply != "YES" : 
 				print("Not killing jobs. Please exit them manually then retry.")
 				return
