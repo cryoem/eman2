@@ -140,7 +140,7 @@ class TestTypeConverter(unittest.TestCase):
         fnum = TestUtil.get_debug_float(0)
         TestUtil.to_emobject({"float": fnum})
 
-        lnum = long(num)
+        lnum = int(num)
         TestUtil.to_emobject({"long": lnum})
 
         fl = get_list("float")
