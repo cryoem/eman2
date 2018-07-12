@@ -1063,7 +1063,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_move(event)
 
-	def module_closed(self):
+	def on_module_closed(self):
 		'''
 		Slot that is called when the main 2d window is closed
 		'''
@@ -1152,7 +1152,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.delete_ptcl(box_num)
 
-	def module_closed(self):
+	def on_module_closed(self):
 		'''
 		'''
 		self.target().particles_window_closed()
