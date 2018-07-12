@@ -1102,7 +1102,7 @@ def main():
 				#results=get_results(etc,tids,options.verbose,jsA, nptcl ,1)
 				#def get_results(etc,tids,verbose,nptcls,ref=''):
 			
-				results = filter( None, get_results(etc,tids,options.verbose, nptcl ) )
+				results = [_f for _f in get_results(etc,tids,options.verbose, nptcl ) if _f]
 			
 				#results = get_results(etc,tids,options.verbose, nptcl )
 			
@@ -2650,7 +2650,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 				
 				
 				if r[1]['final']:
-					results[ptcl] = [ filter(None,r[1]['final']) , ptcl, filter(None,r[1]['coarse']) ]					# this will be a list of (qual,Transform)
+					results[ptcl] = [ [_f for _f in r[1]['final'] if _f] , ptcl, [_f for _f in r[1]['coarse'] if _f] ]					# this will be a list of (qual,Transform)
 					
 				#print "ptcl and type are", ptcl, type(ptcl)
 				#print "results[ptcl] are", results[ptcl]
@@ -2675,7 +2675,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 	
 		if len(tidsleft)==0: break
 		
-	return filter(None,results)
+	return [_f for _f in results if _f]
 
 
 def wedgestats(volume,angle, wedgei, wedgef, options):

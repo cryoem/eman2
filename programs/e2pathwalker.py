@@ -579,7 +579,7 @@ class PathWalker(object):
 		r = [i.strip() for i in f.readlines()]
 		f.close()
 
-		score_tsp = filter(lambda i:i.startswith('COMMENT : Length'), r)
+		score_tsp = [i for i in r if i.startswith('COMMENT : Length')]
 		if score_tsp:
 			score_tsp = score_tsp[0].partition('=')[2].strip()
 			score_tsp = float(score_tsp)

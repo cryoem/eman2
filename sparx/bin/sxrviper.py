@@ -528,7 +528,7 @@ def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
 			path, dirs, files = next(os.walk(location_location))
 			# dirs = filter(lambda x:'run' in x, dirs)
 			import re
-			dirs = filter(lambda x:re.search('run\d\d\d$', x), dirs)
+			dirs = [x for x in dirs if re.search('run\d\d\d$', x)]
 			get_already_processed_viper_runs.r_permutation = range(len(dirs))
 			random.shuffle(get_already_processed_viper_runs.r_permutation)
 			print(str(get_already_processed_viper_runs.r_permutation))
@@ -698,7 +698,7 @@ output_directory: directory name into which the output files will be written.  I
 		if use_latest_master_directory:
 			all_dirs = [d for d in os.listdir(".") if os.path.isdir(d)]
 			import re; r = re.compile("^master.*$")
-			all_dirs = filter(r.match, all_dirs)
+			all_dirs = list(filter(r.match, all_dirs))
 			if len(all_dirs)>0:
 				# all_dirs = max(all_dirs, key=os.path.getctime)
 				masterdir = max(all_dirs, key=os.path.getmtime)
