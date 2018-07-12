@@ -2431,23 +2431,6 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.wrescale.setText("Rescale")
 		vbl.addWidget(self.wrescale)
 
-		xiangan_liu = False
-		if xiangan_liu:
-			hbl3 = QtGui.QHBoxLayout()
-
-			self.good_button=QtGui.QPushButton(self)
-			self.good_button.setText("Good")
-			self.good_button.setCheckable(0)
-			hbl3.addWidget(self.good_button)
-
-			self.bad_button=QtGui.QPushButton(self)
-			self.bad_button.setText("Bad")
-			self.bad_button.setCheckable(0)
-			hbl3.addWidget(self.bad_button)
-			vbl0.addLayout(hbl3)
-			self.good_button.clicked[bool].connect(self.on_good_button)
-			self.bad_button.clicked[bool].connect(self.on_bad_button)
-
 		vbl0.addLayout(hbl)
 
 		hbl2a=QtGui.QHBoxLayout()
