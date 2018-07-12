@@ -875,7 +875,6 @@ class EMLightsInspectorBase:
 		self.light_x_dir.valueChanged[float].connect(self.update_light)
 		self.light_y_dir.valueChanged[float].connect(self.update_light)
 		self.light_z_dir.valueChanged[float].connect(self.update_light)
-		self.light_manip_check.valueChanged[float].connect(self.update_light)
 		self.light_manip_check.stateChanged[int].connect(self.target().light_manipulation_toggled)
 		show_lights.stateChanged[int].connect(self.target().show_lights)
 		self.local_viewer_check.stateChanged[int].connect(self.local_viewer_checked)
