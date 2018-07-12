@@ -46,7 +46,6 @@ from .emapplication import EMProgressDialog, get_application, EMErrorMessageDisp
 from e2ctf import pspec_and_ctf_fit,GUIctf,write_e2ctf_output,get_gui_arg_img_sets,init_sfcurve
 import subprocess
 import weakref
-from e2history import HistoryForm
 import time
 from .emsave import save_data
 from .emimagemx import EMDataListCache
@@ -440,23 +439,6 @@ class WorkFlowTask(object):
 		return list(dump_averagers_list().keys())
 		
 #		cmps.append("None") I think this is necessary
-		
-class HistoryTask(WorkFlowTask,HistoryForm):
-	def __init__(self):
-		WorkFlowTask.__init__(self)
-		# don't need HistoryFrom init
-		self.wd = os.getcwd()
-		self.window_title = "History"
-	
-	def run_form(self):	
-		self.form = EMFormWidget(self.get_history_table())
-		self.form.resize(*self.preferred_size)
-		self.form.setWindowTitle(self.window_title)
-		self.form.setWindowIcon(QtGui.QIcon(get_image_directory() + "feather.png"))
-		get_application().show_specific(self.form)
-		self.form.emform_ok.connect(self.on_form_ok)
-		self.form.emform_cancel.connect(self.on_form_cancel)
-		self.form.emform_close.connect(self.on_form_close)
 		
 class ChangeDirectoryTask(WorkFlowTask):
 	def __init__(self):
