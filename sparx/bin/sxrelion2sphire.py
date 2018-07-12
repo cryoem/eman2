@@ -48,7 +48,6 @@ import os
 import sys
 from operator import itemgetter
 import shutil
-from EMAN2db import db_check_dict
 
 from optparse import OptionParser
 import global_def
@@ -61,10 +60,10 @@ from global_def import  *
 # Generate command line
 # ----------------------------------------------------------------------------------------
 def get_cmd_line():
-	cmd_line = ''
+	cmd_line = ""
 	for arg in sys.argv:
-		cmd_line += arg + '  '
-	cmd_line = 'Shell line command: ' + cmd_line
+		cmd_line += arg + "  "
+	cmd_line = "Shell line command: " + cmd_line
 	return cmd_line
 
 # ========================================================================================
@@ -77,16 +76,12 @@ def main():
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
-	usage = progname + ' input_star_file output_directory --relion_project_dir=DIR_PATH --star_section=SECTION_STRING --per_particle_ctf --outputs_root=ROOT_NAME_STRING --box_size=BOX_SIZE --create_stack --cs_save_as_hdf'
+	usage = progname + ' input_star_file output_directory --star_section=star_section --box_size=box_size --create_stack'
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option('--relion_project_dir', type='string',         default=None,      help='RELION project directory: Path to RELION project directory associated with the RELION STAR file. By default, the program assume the current directory is the RELION project directory. (default none)')
-	parser.add_option('--star_section',       type='string',         default='data_',   help='Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_)')
-	parser.add_option('--per_particle_ctf',   action='store_true',   default=False,     help='Per-particle CTF estimation: Indicate if the CTF parameters stored in the RELION STAR file is estimated by per-particle base. (default False)')
-	parser.add_option('--outputs_root',       type='string',         default='sphire',  help='Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default sphire)')
-	parser.add_option('--box_size',           type=int,              default=0,         help='Box size: Box size for particle extraction. It also controls the saved coordinates file format. If the given value is > 0, store the eman1 format. coordinate file. The coordinates of eman1 format is particle box corner associated with this box size. The coordinates of sphire format is particle center. By default, use sphire format. (default 0)')
-	parser.add_option('--create_stack',       action='store_true',   default=False,     help='Create virtual stacks: Create per-micrograph virtual stacks of particle images in BDB format. By default, the program does not generate the stack of particle images because it takes a long time and the file size is large. (default False)')
-	parser.add_option('--cs_save_as_hdf',     action='store_true',   default=False,     help='Save stack as HDF file: Save a stack file in HDF file format instead of BDB format. In this case, the stack file will contain all particle images in the input RELION STAR file. Effective only with --create_stack. (default False)')
+	parser.add_option('--star_section',  type='string',        default='data_',  help='section title in the STAR file where data should be extracted. (default \'data_\'')
+	parser.add_option('--box_size',      type=int,             default=0,        help='box size for particle extraction. It also controls the saved coordinates file format. If the given value is > 0, store the eman1 format coordinate file. The coordinates of eman1 format is particle box corner associated with this box size. The coordinates of SPHIRE format is particle center. By default, use sparx format. (default 0)')
+	parser.add_option('--create_stack',  action='store_true',  default=False,    help='create particle stack. (default False)')
 	
 	(options,args) = parser.parse_args( arglist[1:] )
 
@@ -99,35 +94,25 @@ def main():
 		print(( 'Please run "' + progname + ' -h" for detailed options'))
 		return 1
 	
-	print('# ')
-	print('# %s' % get_cmd_line())
-	print('# ')
+	print("# ")
+	print("# %s" % get_cmd_line())
+	print("# ")
 	
 	# Rename arguments and options for readability
 	file_path_relion_star    = args[0]
 	dir_path_work            = args[1]
+	str_relion_start_section = options.star_section
+	box_size                 = options.box_size
+	is_enable_create_stack   = options.create_stack
 
-	dir_path_relion_project     = options.relion_project_dir
-	str_relion_start_section    = options.star_section
-	is_per_particle_ctf         = options.per_particle_ctf
-	outputs_root                = options.outputs_root.strip()
-	box_size                    = options.box_size
-	is_enable_create_stack      = options.create_stack
-	cs_save_as_hdf              = options.cs_save_as_hdf
-	
-	if (not os.path.exists(file_path_relion_star)):
-		print(( 'ERROR!!! Input RELION STAR file ({}) is not found.'.format(file_path_relion_star)))
+	if (os.path.exists(file_path_relion_star) != True):
+		print(( 'ERROR!!! Input RELION STAR file (%s) is not found.' % file_path_relion_star))
 		sys.exit(-1)
 
-	if (os.path.exists(dir_path_work)):
-		print(( 'ERROR!!! Output directory ({}) already exists. Please delete it or use a different output directory'.format(dir_path_work)))
+	if (os.path.exists(dir_path_work) == True):
+		print(( 'ERROR!!! Output directory (%s) already exists. Please delete it or use a different output directory' % dir_path_work))
 		sys.exit(-1)
 	
-	if dir_path_relion_project is not None:
-		if not os.path.exists(dir_path_relion_project):
-			print(( 'ERROR!!! Specified RELION project directory ({}) does not exist.'.format(dir_path_relion_project)))
-			sys.exit(-1)
-
 	# ------------------------------------------------------------------------------------
 	# Constants
 	# ------------------------------------------------------------------------------------
@@ -180,31 +165,17 @@ def main():
 	relion_category_dict['chunk']   = ['Random Subset',           True, ['_rlnRandomSubset'], [], []]
 	relion_category_dict['helical'] = ['Helical Tube Extraction', True, ['_rlnHelicalTubeID', '_rlnAngleTiltPrior', '_rlnAnglePsiPrior', '_rlnHelicalTrackLength', '_rlnAnglePsiFlipRatio'], ['mic', 'window'], []]
 	
-	# SPHIRE params output files & directories related
-	dir_name_coordinates            = 'Coordinates'
-	dir_name_rebox                  = 'Rebox'
-	
-	file_name_sphire_micrographs    = '{}_micrographs.txt'.format(outputs_root)
-	file_name_sphire_cter_partres   = '{}_cter_partres.txt'.format(outputs_root)
-	# file_path_sphire_stack_ctf      = os.path.join(dir_path_work, '{}_stack_ctf.txt'.format(outputs_root))
-	# file_name_sphire_stack_proj3d   = '{}_stack_proj3d.txt'.format(outputs_root)
-	# name_pattern_sphire_stack_chunk = '{}_stack_chunk*.txt'.format(outputs_root)
-	
+	# SPHIRE params file related
+	file_name_sphire_micrographs    = 'sphire_micrographs.txt'
+	file_name_sphire_cter_partres   = 'sphire_cter_partres.txt'
+	file_name_sphire_stack_ctf      = 'sphire_stack_ctf.txt'
+	file_name_sphire_stack_proj3d   = 'sphire_stack_proj3d.txt'
+	name_pattern_sphire_stack_chunk = 'sphire_stack_chunk*.txt'
 	if is_enable_create_stack: 
-		dir_name_local_stacks       = 'Particles'
-		file_path_sphire_stack      = 'bdb:{}#{}_stack'.format(dir_path_work, outputs_root)
-		if cs_save_as_hdf:
-			file_path_sphire_stack      = os.path.join(dir_path_work, '{}_stack.hdf'.format(outputs_root))
+		file_name_sphire_stack      = 'sphire_stack.hdf'
 	
-	# For particle source (window) parameters file format
-	i_enum = -1
-	i_enum += 1; idx_ptcl_source_coord_id       = i_enum
-	i_enum += 1; idx_ptcl_source_coord_x        = i_enum
-	i_enum += 1; idx_ptcl_source_coord_y        = i_enum
-	i_enum += 1; idx_ptcl_source_resample_ratio = i_enum
-	i_enum += 1; idx_ptcl_source_filament_id    = i_enum
-	i_enum += 1; n_idx_ptcl_source              = i_enum
-
+	dir_name_coordinates            = 'Coordinates'
+	
 	# For CTER parameters file format
 	i_enum = -1
 	i_enum += 1; idx_cter_def            = i_enum # defocus [um]; index must be same as CTF object format
@@ -237,31 +208,34 @@ def main():
 	# ------------------------------------------------------------------------------------
 	# STEP 1: Prepare input/output file paths
 	# ------------------------------------------------------------------------------------
-	# # Get the original current path
-	# dir_origin = os.getcwd() # print dir_path_origin
+	# Get the original current path
+	dir_origin = os.getcwd() # print dir_path_origin
 	
 	# Create work directories
 	assert not os.path.exists(dir_path_work), '# Logical Error: The output directory should not exists at this point of code.'
 	print('# Creating work dir...')
 	os.mkdir(dir_path_work)
 	
-	# dir_path_coordinates_root = os.path.join(dir_path_work, dir_name_coordinates)
-	# assert not os.path.exists(dir_path_coordinates_root), '# Logical Error: The coordinates subdirectory in output directory should not exists at this point of code.'
-	# os.mkdir(dir_path_coordinates_root)
+	dir_path_coordinates = os.path.join(dir_path_work, dir_name_coordinates)
+	assert not os.path.exists(dir_path_coordinates), '# Logical Error: The coordinates subdirectory in output directory should not exists at this point of code.'
+	os.mkdir(dir_path_coordinates)
 		
 	# Create input and output file paths
-	# assert not os.path.exists(file_path_sphire_micrographs), '# Logical Error: Output SPHIRE micrograph selecting list file in output directory should not exists at this point of code.'
-	# assert not os.path.exists(file_path_sphire_cter_partres), '# Logical Error: Output SPHIRE CTER partres parameter file in output directory should not exists at this point of code.'
-	# assert not os.path.exists(file_path_sphire_stack_ctf), '# Logical Error: Output SPHIRE stack CTF parameters file in output directory should not exists at this point of code.'
+	file_path_sphire_micrographs = os.path.join(dir_path_work, file_name_sphire_micrographs)
+	assert not os.path.exists(file_path_sphire_micrographs), '# Logical Error: Output SPHIRE micrograph selecting list file in output directory should not exists at this point of code.'
 	
-	# file_path_sphire_stack_proj3d = os.path.join(dir_path_work, file_name_sphire_stack_proj3d)
-	# assert not os.path.exists(file_path_sphire_stack_proj3d), '# Logical Error: Output SPHIRE stack 3D projection parameter file in output directory should not exists at this point of code.'
+	file_path_sphire_cter_partres = os.path.join(dir_path_work, file_name_sphire_cter_partres)
+	assert not os.path.exists(file_path_sphire_cter_partres), '# Logical Error: Output SPHIRE CTER partres parameter file in output directory should not exists at this point of code.'
 	
-	if is_enable_create_stack:
-		if not cs_save_as_hdf:
-			assert not db_check_dict(file_path_sphire_stack, readonly=True), '# Logical Error: Output BDB stack in output directory should not exists at this point of code.'
-		else:
-			assert not os.path.exists(file_path_sphire_stack), '# Logical Error: Output stack in output directory should not exists at this point of code.'
+	file_path_sphire_stack_ctf = os.path.join(dir_path_work, file_name_sphire_stack_ctf)
+	assert not os.path.exists(file_path_sphire_stack_ctf), '# Logical Error: Output SPHIRE stack CTF parameters file in output directory should not exists at this point of code.'
+	
+	file_path_sphire_stack_proj3d = os.path.join(dir_path_work, file_name_sphire_stack_proj3d)
+	assert not os.path.exists(file_path_sphire_stack_proj3d), '# Logical Error: Output SPHIRE stack 3D projection parameter file in output directory should not exists at this point of code.'
+	
+	if is_enable_create_stack: 
+		file_path_sphire_stack = os.path.join(dir_path_work, file_name_sphire_stack)
+		assert not os.path.exists(file_path_sphire_stack), '# Logical Error: Output stack in output directory should not exists at this point of code.'
 
 	# ------------------------------------------------------------------------------------
 	# STEP 2: Convert RELION parameters to SPHIRE format
@@ -299,20 +273,17 @@ def main():
 	### # Level 2 key: coordinates = [[relion_coordinate_x, relion_coordinate_y], ... ].  Under this, store the list of coordinates as the entries
 	### # 
 	sphire_micrographs_dict={}    # For micrograph selecting list (one entry for each micrograph)
-	sphire_cter_dict={}           # For CTF parameters in CTER format (one list for each micrograph)
+	sphire_cter_dict={}           # For CTF parameters in CTER format (one entry for each micrograph)
 	sphire_coordinates_dict = {}  # For coordinate parameters (one list of entries for each micrograph)
-	sphire_proj3d_dict = {}       # For projection parameters (one list of entries for each micrograph)
 	sphire_chunk_dict = {}
-	if is_enable_create_stack and not cs_save_as_hdf:
-		sphire_imgs_dict = {}  # For particle images (one list of entries for each micrograph)
 	
 	# Open input/output files
 	assert os.path.exists(file_path_relion_star), '# Logical Error: Input RELION STAR file must exits at this point of code.'
 	file_relion_star = open(file_path_relion_star,'r')
-	# file_sphire_micrographs = open(file_path_sphire_micrographs,'w+')
-	# file_sphire_cter_partres = open(file_path_sphire_cter_partres,'w+')
-	# file_sphire_stack_ctf = open(file_path_sphire_stack_ctf,'w+')
-	# file_sphire_stack_proj3d = open(file_path_sphire_stack_proj3d,'w+')
+	file_sphire_micrographs = open(file_path_sphire_micrographs,'w+')
+	file_sphire_cter_partres = open(file_path_sphire_cter_partres,'w+')
+	file_sphire_stack_ctf = open(file_path_sphire_stack_ctf,'w+')
+	file_sphire_stack_proj3d = open(file_path_sphire_stack_proj3d,'w+')
 
 	# Loop through all lines in input RELION STAR file
 	for i_line, str_line in enumerate(file_relion_star):
@@ -397,20 +368,13 @@ def main():
 				# Micrograph must be found always.
 				assert relion_category_dict['mic'][idx_is_category_found], '# Logical Error: Micrograph information must be found any type of RELION STAR file at this point of code.'
 				relion_micrograph_name = tokens_line[relion_dict['_rlnMicrographName'][idx_col] - 1]
-				micrograph_path = relion_micrograph_name
-				micrograph_dirname, micrograph_basename = os.path.split(relion_micrograph_name)
-				adjusted_relion_micrograph_name = relion_micrograph_name
-				if dir_path_relion_project is not None:
-					adjusted_relion_micrograph_name = os.path.join(dir_path_relion_project, adjusted_relion_micrograph_name)
+				micrograph_basename = os.path.basename(relion_micrograph_name)
 				
-				if micrograph_dirname not in sphire_micrographs_dict:
-					sphire_micrographs_dict[micrograph_dirname] = {}
-				assert micrograph_dirname in sphire_micrographs_dict
-				
-				if micrograph_basename not in sphire_micrographs_dict[micrograph_dirname]:
-					sphire_micrographs_dict[micrograph_dirname][micrograph_basename] = micrograph_basename
+				if micrograph_basename not in sphire_micrographs_dict:
+					sphire_micrographs_dict[micrograph_basename] = micrograph_basename
+					file_sphire_micrographs.write('%s\n' % (micrograph_basename))
 				else:
-					assert cmp(sphire_micrographs_dict[micrograph_dirname][micrograph_basename], micrograph_basename) == 0, '# Logical Error: key of sphire_micrographs_dict %s in %s and micrograph_basename %s must be identical.' % (sphire_micrographs_dict[micrograph_dirname][micrograph_basename], micrograph_dirname, micrograph_basename)
+					assert cmp(sphire_micrographs_dict[micrograph_basename], micrograph_basename) == 0, '# Logical Error: key of sphire_micrographs_dict %s and micrograph_basename %s must be identical.' % (sphire_micrographs_dict[micrograph_basename], micrograph_basename)
 				
 				if relion_category_dict['ctf'][idx_is_category_found] == True:
 					##### Store CTF related parameters #####
@@ -473,67 +437,40 @@ def main():
 					else:
 						parx_cter_entry[idx_cter_reserved]  = 0.0
 					
-					sphire_cter_entry[idx_cter_mic_name]     = adjusted_relion_micrograph_name
+					sphire_cter_entry[idx_cter_mic_name]     = relion_micrograph_name # NOTE: Toshio Moriya 2017/11/21: In future, must support to remove the directory path of relion_micrograph_name
 					assert len(sphire_cter_entry) == n_idx_cter, '# Logical Error: The length of sphiret CTER entry %d must be always %d at this point of code.' % (len(sphire_cter_entry), n_idx_cter)
 					
-					# # Write to CTF file
-					# for idx_sphire_ctf in xrange(n_idx_sphire_ctf):
-					# 	# NOTE: Toshio Moriya 2016/04/26
-					# 	# Use the file output of header() in application.py
-					# 	# file_sphire_stack_ctf.write('%12.6f ' % sphire_cter_entry[idx_sphire_ctf])
-					# 	file_sphire_stack_ctf.write('%15.5f ' % sphire_cter_entry[idx_sphire_ctf])
-					# file_sphire_stack_ctf.write('\n')
+					# Write to CTF file
+					for idx_sphire_ctf in xrange(n_idx_sphire_ctf):
+						# NOTE: Toshio Moriya 2016/04/26
+						# Use the file output of header() in application.py
+						# file_sphire_stack_ctf.write('%12.6f ' % sphire_cter_entry[idx_sphire_ctf])
+						file_sphire_stack_ctf.write('%15.5f ' % sphire_cter_entry[idx_sphire_ctf])
+					file_sphire_stack_ctf.write('\n')
 					
-					if micrograph_dirname not in sphire_cter_dict:
-						sphire_cter_dict[micrograph_dirname] = {}
-					assert micrograph_dirname in sphire_cter_dict
-					
-					if micrograph_basename not in sphire_cter_dict[micrograph_dirname]:
-						sphire_cter_dict[micrograph_dirname][micrograph_basename] = [sphire_cter_entry]
+					# Store one CTER entry for each micrograph
+					if micrograph_basename not in sphire_cter_dict:
+						sphire_cter_dict[micrograph_basename] = sphire_cter_entry
+						for idx_cter in xrange(n_idx_cter - 1):
+							file_sphire_cter_partres.write("  %12.5g" % sphire_cter_entry[idx_cter])
+						file_sphire_cter_partres.write("  %s\n" % sphire_cter_entry[idx_cter_mic_name])  # At the end of line, write micrograph name which is string type!
 					else:
-						# Store all CTER entries (one CTER entry for each particle
-						sphire_cter_dict[micrograph_dirname][micrograph_basename].append(sphire_cter_entry)
-						
-						if not is_per_particle_ctf:
-							# Store one CTER entry for each micrograph
-							assert len(sphire_cter_dict[micrograph_dirname][micrograph_basename]) >= 1
-							assert cmp(sphire_cter_dict[micrograph_dirname][micrograph_basename][0], sphire_cter_entry) == 0, '# Logical Error: All CTF paramters value belong to the same micrograph %s must be identical.' % (micrograph_basename)
+						assert cmp(sphire_cter_dict[micrograph_basename], sphire_cter_entry) == 0, '# Logical Error: All CTF paramters value belong to the same micrograph %s must be identical.' % (micrograph_basename)
 					
 					i_sphire_stack_ctf += 1
 					
 				if relion_category_dict['window'][idx_is_category_found]:
-					relion_particle_source = tokens_line[relion_dict['_rlnImageName'][idx_col] - 1]
-					tokens_particle_source = relion_particle_source.split('@')
-					assert len(tokens_particle_source) == 2, '# Logical Error: The format of this string item %s is not as assumed.' % relion_particle_source
-					
-					relion_local_particle_id = int(tokens_particle_source[0])
-					sphire_local_particle_id = relion_local_particle_id - 1 # Local Particle ID of RELION from 1 but SPHIRE from 0 (In SPHIRE, all ID should start from 0)
-					relion_local_stack_path = tokens_particle_source[1]
-					if dir_path_relion_project is not None:
-						relion_local_stack_path = os.path.join(dir_path_relion_project, relion_local_stack_path) # Adjust the path with RELION project directory path relative to current directory 
-					
 					##### Store box coordinate related parameters #####
 					relion_coordinate_x = int(float(tokens_line[relion_dict['_rlnCoordinateX'][idx_col] - 1]))
 					relion_coordinate_y = int(float(tokens_line[relion_dict['_rlnCoordinateY'][idx_col] - 1]))
 				
 					# Standard SPA Coordinate File 
 					if relion_category_dict['helical'][idx_is_category_found] == False:
-						sphire_coordinates = [0] * n_idx_ptcl_source
-						sphire_coordinates[idx_ptcl_source_coord_id]       = sphire_local_particle_id
-						sphire_coordinates[idx_ptcl_source_coord_x]        = relion_coordinate_x
-						sphire_coordinates[idx_ptcl_source_coord_y]        = relion_coordinate_y
-						sphire_coordinates[idx_ptcl_source_resample_ratio] = 1.0
-						sphire_coordinates[idx_ptcl_source_filament_id]    = 0
-						
-						if micrograph_dirname not in sphire_coordinates_dict:
-							sphire_coordinates_dict[micrograph_dirname] = {}
-						assert micrograph_dirname in sphire_coordinates_dict
-						
 						# No conversion is necessary from RELION to SPHIRE formats
-						if micrograph_basename in sphire_coordinates_dict[micrograph_dirname]:
-							sphire_coordinates_dict[micrograph_dirname][micrograph_basename].append(sphire_coordinates)
+						if micrograph_basename in sphire_coordinates_dict.keys():
+							sphire_coordinates_dict[micrograph_basename].append([relion_coordinate_x, relion_coordinate_y])
 						else:
-							sphire_coordinates_dict[micrograph_dirname][micrograph_basename] = [sphire_coordinates]
+							sphire_coordinates_dict[micrograph_basename] = [[relion_coordinate_x, relion_coordinate_y]]
 					# Helical SPA Coordinate File
 					else:
 						assert relion_category_dict['helical'][idx_is_category_found] == True, '# Logical Error: This statment must be true at this point of code.'
@@ -550,26 +487,15 @@ def main():
 						### relion_helical_track_len = float(tokens_line[relion_dict['_rlnHelicalTrackLength'][idx_col] - 1])
 						### relion_ang_psi_flip_ratio = float(tokens_line[relion_dict['_rlnAnglePsiFlipRatio'][idx_col] - 1])
 					
-						sphire_coordinates = [0] * n_idx_ptcl_source
-						sphire_coordinates[idx_ptcl_source_coord_id]       = sphire_local_particle_id
-						sphire_coordinates[idx_ptcl_source_coord_x]        = relion_coordinate_x
-						sphire_coordinates[idx_ptcl_source_coord_y]        = relion_coordinate_y
-						sphire_coordinates[idx_ptcl_source_resample_ratio] = 1.0
-						sphire_coordinates[idx_ptcl_source_filament_id]    = sphire_filament_id
-						
-						if micrograph_dirname not in sphire_coordinates_dict:
-							sphire_coordinates_dict[micrograph_dirname] = {}
-						assert micrograph_dirname in sphire_coordinates_dict
-						
-						if micrograph_basename in sphire_coordinates_dict[micrograph_dirname]:
-							if sphire_filament_id in sphire_coordinates_dict[micrograph_dirname][micrograph_basename]:
-								sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id].append(sphire_coordinates)
+						if micrograph_basename in sphire_coordinates_dict.keys():
+							if sphire_filament_id in sphire_coordinates_dict[micrograph_basename]:
+								sphire_coordinates_dict[micrograph_basename][sphire_filament_id].append([relion_coordinate_x, relion_coordinate_y])
 							else: 
-								sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id] = [sphire_coordinates]
+								sphire_coordinates_dict[micrograph_basename][sphire_filament_id] = [[relion_coordinate_x, relion_coordinate_y]]
 						else:
 							sphire_filament_dict = {}
-							sphire_filament_dict[sphire_filament_id] = [sphire_coordinates]
-							sphire_coordinates_dict[micrograph_dirname][micrograph_basename] = sphire_filament_dict
+							sphire_filament_dict[sphire_filament_id] = [[relion_coordinate_x, relion_coordinate_y]]
+							sphire_coordinates_dict[micrograph_basename] = sphire_filament_dict
 					
 					i_sphire_stack_coordinates += 1
 					
@@ -586,17 +512,7 @@ def main():
 					
 					relion_trans3d = Transform({'phi':relion_rot, 'theta':relion_tilt, 'omega':relion_psi, 'tx':relion_tx, 'ty':relion_ty, 'type':'mrc', 'tz':0})
 					sphire_proj3d = relion_trans3d.get_params('spider')
-					# file_sphire_stack_proj3d.write('%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n' % (sphire_proj3d['phi'], sphire_proj3d['theta'], sphire_proj3d['psi'], sphire_proj3d['tx'], sphire_proj3d['ty'], relion_max_prob_dist, relion_norm_correct))
-					
-					if micrograph_dirname not in sphire_proj3d_dict:
-						sphire_proj3d_dict[micrograph_dirname] = {}
-					assert micrograph_dirname in sphire_proj3d_dict
-					
-					# No conversion is necessary from RELION to SPHIRE formats
-					if micrograph_basename in sphire_proj3d_dict[micrograph_dirname]:
-						sphire_proj3d_dict[micrograph_dirname][micrograph_basename].append(sphire_proj3d)
-					else:
-						sphire_proj3d_dict[micrograph_dirname][micrograph_basename] = [sphire_proj3d]
+					file_sphire_stack_proj3d.write('%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n' % (sphire_proj3d['phi'], sphire_proj3d['theta'], sphire_proj3d['psi'], sphire_proj3d['tx'], sphire_proj3d['ty'], relion_max_prob_dist, relion_norm_correct))
 					
 					i_sphire_stack_proj3d += 1
 					
@@ -606,27 +522,26 @@ def main():
 					relion_random_subset = int(tokens_line[relion_dict['_rlnRandomSubset'][idx_col] - 1])
 					sphire_chunk_id = relion_random_subset - 1 # Chunk ID starts from 0 in SPHIRE
 					
-					if micrograph_dirname not in sphire_chunk_dict:
-						sphire_chunk_dict[micrograph_dirname] = {}
-					assert micrograph_dirname in sphire_chunk_dict
+					sphire_chunk_key = '%1d' % sphire_chunk_id
+					if (sphire_chunk_key in sphire_chunk_dict) == False:
+						sphire_chunk_dict[sphire_chunk_key] = []
+					sphire_chunk_dict[sphire_chunk_key].append(i_relion_particle)
 					
-					if micrograph_basename in sphire_chunk_dict[micrograph_dirname]:
-						sphire_chunk_dict[micrograph_dirname][micrograph_basename].append(sphire_chunk_id)
-					else:
-						sphire_chunk_dict[micrograph_dirname][micrograph_basename] = [sphire_chunk_id]
-					
-					# sphire_chunk_key = '%1d' % sphire_chunk_id
-					# if (sphire_chunk_key in sphire_chunk_dict) == False:
-					# 	sphire_chunk_dict[micrograph_dirname][sphire_chunk_key] = []
-					# sphire_chunk_dict[micrograph_dirname][sphire_chunk_key].append(i_relion_particle)
-					
-				##### Set the header information ##### 
+				##### Create stack and set the header information ##### 
 				if is_enable_create_stack:
-					assert relion_category_dict['window'][idx_is_category_found], 'MRK_DEBUG'
-					
+					assert relion_category_dict['window'][idx_is_category_found], "MRK_DEBUG"
+						
 					# Now read image
+					relion_particle_source = tokens_line[relion_dict['_rlnImageName'][idx_col] - 1]
+					tokens_particle_source = relion_particle_source.split('@')
+					assert len(tokens_particle_source) == 2, '# Logical Error: The format of this string item %s is not as assumed.' % relion_particle_source
+
+					relion_local_particle_id = int(tokens_particle_source[0])
+					sphire_local_particle_id = relion_local_particle_id - 1 # Local Particle ID of RELION from 1 but SPHIRE from 0 (In SPHIRE, all ID should start from 0)
+					relion_local_stack_path = tokens_particle_source[1]
+
 					if not os.path.exists(relion_local_stack_path):
-						print('# WARNING!!! Image name %s specified in STAR file is not found from the current directory. Skipping STAR file entry %d...' % (relion_local_stack_path, i_relion_particle))
+						print('# WARNING!!! Image name %s specified in STAR file is not found. Skipping STAR file entry %d...' % (relion_local_stack_path, i_relion_particle))
 					else:
 						# Copy this particle image from local stack to new global stack
 						n_img_relion_local_stack = EMUtil.get_image_count(relion_local_stack_path)
@@ -637,7 +552,7 @@ def main():
 						# Now storing the extract information in the header
 						# set_params_proj(img_particle, [sphire_phi, sphire_theta, sphire_psi, sphire_s2x, sphire_s2y])
 						img_particle.set_attr('ptcl_source_relion', relion_particle_source)
-						img_particle.set_attr('ptcl_source_image', adjusted_relion_micrograph_name)
+						img_particle.set_attr('ptcl_source_image', relion_micrograph_name)
 						img_particle.set_attr('ptcl_source_coord', [relion_coordinate_x, relion_coordinate_y]) # No conversion is necessary from RELION to SPHIRE foramts
 						img_particle.set_attr('ptcl_source_coord_id', sphire_local_particle_id)
 						img_particle.set_attr('data_n', sphire_local_particle_id)  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
@@ -651,7 +566,7 @@ def main():
 						img_particle.set_attr('apix_z', 1.0)
 						
 						if relion_category_dict['helical'][idx_is_category_found] == True:
-							img_particle.set_attr('filament', '{0}{1:05d}'.format(adjusted_relion_micrograph_name, sphire_filament_id))
+							img_particle.set_attr('filament', '{0}{1:05d}'.format(relion_micrograph_name, sphire_filament_id))
 						if relion_category_dict['ctf'][idx_is_category_found] == True:
 							sphire_cter_entry_list = []
 							for idx_sphire_ctf in xrange(n_idx_sphire_ctf):
@@ -661,29 +576,12 @@ def main():
 							img_particle.set_attr('ptcl_source_apix', sphire_cter_entry[idx_cter_apix]) # Store the original pixel size
 						if relion_category_dict['proj3d'][idx_is_category_found] == True:
 							set_params_proj(img_particle, [sphire_proj3d['phi'], sphire_proj3d['theta'], sphire_proj3d['psi'], sphire_proj3d['tx'], sphire_proj3d['ty']])
-							# Add relion specific header entries
-							img_particle.set_attr('relion_max_prob_dist', relion_max_prob_dist)
-							img_particle.set_attr('relion_norm_correct', relion_norm_correct)
 						if relion_category_dict['chunk'][idx_is_category_found] == True:
 							img_particle.set_attr('chunk_id', sphire_chunk_id)
-							
 						
-						
-						if micrograph_dirname not in sphire_imgs_dict:
-							sphire_imgs_dict[micrograph_dirname] = {}
-						assert micrograph_dirname in sphire_imgs_dict
-						
-						if micrograph_basename in sphire_imgs_dict[micrograph_dirname]:
-							sphire_imgs_dict[micrograph_dirname][micrograph_basename].append(img_particle)
-						else:
-							sphire_imgs_dict[micrograph_dirname][micrograph_basename] = [img_particle]
-						
-						if cs_save_as_hdf:
-							# assert cs_save_as_hdf
-							img_particle.write_image(file_path_sphire_stack, i_sphire_stack_particle_img)
-						
+						img_particle.write_image(file_path_sphire_stack, i_sphire_stack_particle_img)
 						i_sphire_stack_particle_img += 1
-				
+
 				i_relion_particle += 1
 
 			else:
@@ -701,372 +599,106 @@ def main():
 	
 	if is_success:
 		# Store the results of counters
-		sphire_micrographs_dict_dirname_counts = len(sphire_micrographs_dict)
-		sphire_mircrograph_entry_total_counts = 0
-		for sphire_micrograph_dirname in sphire_micrographs_dict:
-			sphire_mircrograph_entry_total_counts += len(sphire_micrographs_dict[sphire_micrograph_dirname])
-		
-		sphire_cter_dict_dirname_counts = len(sphire_cter_dict)
-		sphire_cter_entry_total_counts = 0
-		for sphire_micrograph_dirname in sphire_cter_dict:
-			sphire_cter_entry_total_counts += len(sphire_cter_dict[sphire_micrograph_dirname])
-		
-		sphire_coordinates_dict_dirname_counts = len(sphire_coordinates_dict)
-		sphire_coordinates_entry_total_counts = 0
-		for sphire_micrograph_dirname in sphire_coordinates_dict:
-			sphire_coordinates_entry_total_counts += len(sphire_coordinates_dict[sphire_micrograph_dirname])
-		
-		sphire_proj3d_dict_dirname_counts = len(sphire_proj3d_dict)
-		sphire_proj3d_entry_total_counts = 0
-		for sphire_micrograph_dirname in sphire_proj3d_dict:
-			sphire_proj3d_entry_total_counts += len(sphire_proj3d_dict[sphire_micrograph_dirname])
-		
-		sphire_chunk_dict_dirname_counts = len(sphire_chunk_dict)
-		sphrie_chunk_id_total_counts = 0
-		for sphire_micrograph_dirname in sphire_chunk_dict:
-			sphrie_chunk_id_total_counts += len(sphire_chunk_dict[sphire_micrograph_dirname])
-		
-		if is_enable_create_stack:
-			sphire_imgs_dict_dirname_counts = len(sphire_imgs_dict)
-			sphire_imgs_total_counts = 0
-			for sphire_micrograph_dirname in sphire_imgs_dict:
-				sphire_imgs_total_counts += len(sphire_imgs_dict[sphire_micrograph_dirname])
-		
 		print('# ')
-		print('# Detected RELION column counts                     := {} '.format(i_relion_item_col))
-		print('# Detected RELION entry counts                      := {} '.format(i_relion_particle))
-		print('# Processed SPHIRE mircrograph directory counts     := {} '.format(sphire_micrographs_dict_dirname_counts))
-		print('# Processed SPHIRE mircrograph entry total counts   := {} '.format(sphire_mircrograph_entry_total_counts))
-		print('# Processed SPHIRE CTER directory counts            := {} '.format(sphire_cter_dict_dirname_counts))
-		print('# Processed SPHIRE CTER entry total counts          := {} '.format(sphire_cter_entry_total_counts))
-		print('# Processed SPHIRE coorinates directory counts      := {} '.format(sphire_coordinates_dict_dirname_counts))
-		print('# Processed SPHIRE coorinates entry total counts    := {} '.format(sphire_coordinates_entry_total_counts))
-		print('# Processed SPHIRE 3D projection directory counts   := {} '.format(sphire_proj3d_dict_dirname_counts))
-		print('# Processed SPHIRE 3D projection entry total counts := {} '.format(sphire_proj3d_entry_total_counts))
-		print('# Processed SPHIRE chunk directory counts           := {} '.format(sphire_chunk_dict_dirname_counts))
-		print('# Processed SPHIRE chunk ID total counts            := {} '.format(sphrie_chunk_id_total_counts))
-		if is_enable_create_stack:
-			print('# Processed SPHIRE image directory counts           := {} '.format(sphire_imgs_dict_dirname_counts))
-			print('# Processed SPHIRE image total counts               := {} '.format(sphire_imgs_total_counts))
-		print('# Processed SPHIRE stack CTF entry counts           := {} '.format(i_sphire_stack_ctf))
-		print('# Processed SPHIRE stack coorinates entry counts    := {} '.format(i_sphire_stack_coordinates))
-		print('# Processed SPHIRE stack 3D Proj. entry counts      := {} '.format(i_sphire_stack_proj3d))
-		print('# Image counts added to SPHIRE stack                := {} '.format(i_sphire_stack_particle_img))
+		print('# Detected RELION column counts                  := %d ' % (i_relion_item_col))
+		print('# Detected RELION entry counts                   := %d ' % (i_relion_particle))
+		print('# Processed SPHIRE mircrograph entry counts      := %d ' % (len(sphire_micrographs_dict)))
+		print('# Processed SPHIRE CTER entry counts             := %d ' % (len(sphire_cter_dict)))
+		print('# Processed SPHIRE stack CTF entry counts        := %d ' % (i_sphire_stack_ctf))
+		print('# Processed SPHIRE stack coorinates entry counts := %d ' % (i_sphire_stack_coordinates))
+		print('# Processed SPHIRE stack 3D Proj. entry counts   := %d ' % (i_sphire_stack_proj3d))
+		print('# Processed SPHIRE chunk ID counts               := %d ' % (len(sphire_chunk_dict)))
+		print('# Image counts added to SPHIRE stack             := %d'  % (i_sphire_stack_particle_img))
 		
 		# Warn user if number of particles in SPHIRE stack is different from RELION STAR file entries
-		if is_enable_create_stack:
+		if is_enable_create_stack :
 			if i_sphire_stack_particle_img < i_relion_particle:
 				print('# WARNING!!! The number of particles in generated stack (%d) is different from the number of entries in input RELION STAR file (%d)!!!' % (i_relion_particle, i_sphire_stack_particle_img))
 				print('#            Please check if there are all images specified by _rlnImageName in STAR file')
 			else:
 				assert i_sphire_stack_particle_img == i_relion_particle, '# The number of particles must always match at this point of code.'
-				if cs_save_as_hdf:
-					assert os.path.exists(file_path_sphire_stack), '# The SPHIRE stack must exist at this point of code.'
-					assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_sphire_stack), '# The numbers of particles should match always at this point of code' 
-		
-		print('# ')
-		print('# Saving SPHIRE parameters files ...')
-		
-		# Write micrograph name to files (micrograph selection list file)
-		for micrograph_dirname in sorted(sphire_micrographs_dict):
-			dir_path_sphire_micrographs = os.path.join(dir_path_work, micrograph_dirname)
-			if not os.path.exists(dir_path_sphire_micrographs):
-				os.mkdir(dir_path_sphire_micrographs)
-			
-			file_path_sphire_micrographs = os.path.join(dir_path_sphire_micrographs, file_name_sphire_micrographs)
-			file_sphire_micrographs = open(file_path_sphire_micrographs,'w+')
-			for micrograph_basename in sorted(sphire_micrographs_dict[micrograph_dirname]):
-				file_sphire_micrographs.write('%s\n' % (micrograph_basename))
-			file_sphire_micrographs.close()
-		
-		# Write CTER entry to files (doing here to avoid repeating open/close files in loop)
-		for micrograph_dirname in sorted(sphire_cter_dict):
-			dir_path_sphire_cter_partres = os.path.join(dir_path_work, micrograph_dirname)
-			if not os.path.exists(dir_path_sphire_cter_partres):
-				os.mkdir(dir_path_sphire_cter_partres)
-			
-			micrograph_extension = os.path.splitext(micrograph_basename)[1]
-			file_path_sphire_cter_partres = os.path.join(dir_path_sphire_cter_partres, file_name_sphire_cter_partres)
-			file_sphire_cter_partres = open(file_path_sphire_cter_partres,'w+')
-			for micrograph_basename in sorted(sphire_cter_dict[micrograph_dirname]):
-				if not is_per_particle_ctf:
-					# Save one CTER entry for each micrograph
-					assert len(sphire_cter_dict[micrograph_dirname][micrograph_basename]) >= 1 # Should be one CTER entry for each micrograph
-					sphire_cter_entry = sphire_cter_dict[micrograph_dirname][micrograph_basename][0]
-					for idx_cter in xrange(n_idx_cter - 1):
-						file_sphire_cter_partres.write('  %12.5g' % sphire_cter_entry[idx_cter])
-					file_sphire_cter_partres.write('  %s\n' % sphire_cter_entry[idx_cter_mic_name])  # At the end of line, write micrograph name which is string type!
-				# else:
-				# 	# Save CTER entry for each particles in rebox format
-				# 	# THIS IS DEBUG IMPLEMENTATION!!! (Toshio Moriya 2018/07/09)
-				# 	for sphire_cter_entry in sphire_cter_dict[micrograph_dirname][micrograph_basename]:
-				# 		for idx_cter in xrange(n_idx_cter - 1):
-				# 			file_sphire_cter_partres.write('  %12.5g' % sphire_cter_entry[idx_cter])
-				# 		file_sphire_cter_partres.write('  %s\n' % sphire_cter_entry[idx_cter_mic_name])  # At the end of line, write micrograph name which is string type!
-			file_sphire_cter_partres.close()
-		
+				assert os.path.exists(file_path_sphire_stack), '# The SPHIRE stack must exist at this point of code.'
+				assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_sphire_stack), '# The numbers of particles should match always at this point of code' 
+				
 		# Write box coordinate to files (doing here to avoid repeating open/close files in loop)
 		if box_size > 0:
 			coordinates_extension = '.box'
 		else:
 			coordinates_extension = '.txt'
 			assert box_size <= 0, '# Logical Error: Box size should be always zero or negative at this point of code.'
-		
-		for micrograph_dirname in sorted(sphire_coordinates_dict):
-			dir_path_coordinates = os.path.join(dir_path_work, micrograph_dirname, dir_name_coordinates)
-			if not os.path.exists(dir_path_coordinates):
-				os.mkdir(dir_path_coordinates)
+	
+		for micrograph_basename in sphire_coordinates_dict.keys():
+			micrograph_extension = os.path.splitext(micrograph_basename)[1]
+			file_path_coordinates = os.path.join(dir_path_coordinates, micrograph_basename.replace(micrograph_extension, coordinates_extension))
+			file_coordinates = open(file_path_coordinates,'w')
 			
-			for micrograph_basename in sorted(sphire_coordinates_dict[micrograph_dirname]):
-				micrograph_extension = os.path.splitext(micrograph_basename)[1]
-				file_path_coordinates = os.path.join(dir_path_coordinates, micrograph_basename.replace(micrograph_extension, coordinates_extension))
-				file_coordinates = open(file_path_coordinates,'w+')
-				
-				# Standard SPA Coordinate File 
-				if relion_category_dict['helical'][idx_is_category_found] == False:
-					for sphire_coordinates in sphire_coordinates_dict[micrograph_dirname][micrograph_basename]:
-						if box_size > 0:
-							# Convert coordinate from SPHIRE to eman1 foramts
-							eman1_coordinate_x = sphire_coordinates[idx_ptcl_source_coord_x] - box_size//2
-							eman1_coordinate_y = sphire_coordinates[idx_ptcl_source_coord_y] - box_size//2
-							eman1_dummy = -1 # For 5th column of EMAN1 boxer format
-							file_coordinates.write('%6d %6d %6d %6d %6d\n' % (eman1_coordinate_x, eman1_coordinate_y, box_size, box_size, eman1_dummy))
-						else:
-							file_coordinates.write('%6d %6d\n' % (sphire_coordinates[idx_ptcl_source_coord_x], sphire_coordinates[idx_ptcl_source_coord_y]))
-				else:
-					assert relion_category_dict['helical'][idx_is_category_found] == True, '# Logical Error: helical category must be found always at this point of code.'
-					file_coordinates.write('#micrograph: %s\n'%(micrograph_basename))
-					file_coordinates.write('#segment length: %.1f\n' % (box_size))
-					file_coordinates.write('#segment width: %.1f\n' % (box_size))
-					for sphire_filament_id in sorted(sphire_coordinates_dict[micrograph_dirname][micrograph_basename]):
-						# 
-						# NOTE: Toshio Moriya 2017/11/21
-						# The order of coordinates must be sorted with x-coordinates, then y-coordinates  in SPHIRE helical SPA box file
-						#
-						sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id].sort(key=itemgetter(1), reverse=False)
-						sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id].sort(key=itemgetter(0), reverse=False)
-						head_sphire_coordinates = sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id][0]
-						tail_sphire_coordinates = sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id][-1]
-						# MRK_DEBUG: file_coordinates.write('#helix: (%.1f, %.1f),(%.1f, %.1f),%.1f %d\n' % (head_sphire_coordinates[idx_ptcl_source_coord_x], head_sphire_coordinates[idx_ptcl_source_coord_y], tail_sphire_coordinates[idx_ptcl_source_coord_x], tail_sphire_coordinates[idx_ptcl_source_coord_y], box_size, sphire_filament_id))
-						file_coordinates.write('#helix: (%.1f, %.1f),(%.1f, %.1f),%.1f\n' % (head_sphire_coordinates[idx_ptcl_source_coord_x], head_sphire_coordinates[idx_ptcl_source_coord_y], tail_sphire_coordinates[idx_ptcl_source_coord_x], tail_sphire_coordinates[idx_ptcl_source_coord_y], box_size))
-						for sphire_coordinates in sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id]:
-							assert sphire_coordinates[idx_ptcl_source_filament_id] == sphire_filament_id
-							file_coordinates.write('%.1f\t%.1f\n' % (sphire_coordinates[idx_ptcl_source_coord_x], sphire_coordinates[idx_ptcl_source_coord_y]))
-				
-				file_coordinates.close()
-		
-		if not relion_category_dict['helical'][idx_is_category_found]:
-			
-			if relion_category_dict['window'][idx_is_category_found]:
-				# Write rebox parameters to files (doing here to avoid repeating open/close files in loop)
-				print('# ')
-				print('# Saving SPHIRE rebox files ...')
-				
-				rebox_extension = '.rbx'
-				assert relion_category_dict['mic'][idx_is_category_found]
-				
-				# Prepare the dummy entries in case they are not listed in relion start file
-				if not relion_category_dict['ctf'][idx_is_category_found]:
-					dummy_sphire_ctf_entry = [0.0] * n_idx_sphire_ctf
-					dummy_sphire_ctf_entry[idx_cter_def]          = 0.0
-					dummy_sphire_ctf_entry[idx_cter_cs]           = 0.0
-					dummy_sphire_ctf_entry[idx_cter_vol]          = 300.0
-					dummy_sphire_ctf_entry[idx_cter_apix]         = 1.0
-					dummy_sphire_ctf_entry[idx_cter_bfactor]      = 0.0
-					dummy_sphire_ctf_entry[idx_cter_total_ac]     = 100.0
-					dummy_sphire_ctf_entry[idx_cter_astig_amp]    = 0.0
-					dummy_sphire_ctf_entry[idx_cter_astig_ang]    = 0.0
-				if not relion_category_dict['proj3d'][idx_is_category_found]: 
-					dummy_sphire_proj3d = {}
-					dummy_sphire_proj3d['phi'] = 0.0
-					dummy_sphire_proj3d['theta'] = 0.0
-					dummy_sphire_proj3d['psi'] = 0.0
-					dummy_sphire_proj3d['tx'] = 0.0
-					dummy_sphire_proj3d['ty'] = 0.0
-				if not relion_category_dict['chunk'][idx_is_category_found]:
-					dummy_sphire_chunk_id = 0
-				
-				dummy_particle_defocus_error  = 0.0
-				dummy_particle_resample_ratio = 1.0
-				
-				for micrograph_dirname in sorted(sphire_micrographs_dict):
-					dir_path_rebox = os.path.join(dir_path_work, micrograph_dirname, dir_name_rebox)
-					if not os.path.exists(dir_path_rebox):
-						os.mkdir(dir_path_rebox)
-		
-					for micrograph_basename in sorted(sphire_micrographs_dict[micrograph_dirname]):
-						micrograph_extension = os.path.splitext(micrograph_basename)[1]
-						file_path_rebox = os.path.join(dir_path_rebox, micrograph_basename.replace(micrograph_extension, rebox_extension))
-						file_rebox = open(file_path_rebox,'w+')
-				
-						assert micrograph_dirname in sphire_coordinates_dict
-						assert micrograph_basename in sphire_coordinates_dict[micrograph_dirname]
-						sphire_coordinates_list = sphire_coordinates_dict[micrograph_dirname][micrograph_basename]
-						n_sphire_rebox_entry = len(sphire_coordinates_list)
-				
-						sphire_ctf_list = []
-						if relion_category_dict['ctf'][idx_is_category_found]:
-							assert micrograph_dirname in sphire_cter_dict
-							assert micrograph_basename in sphire_cter_dict[micrograph_dirname]
-							sphire_ctf_list = sphire_cter_dict[micrograph_dirname][micrograph_basename]
-						else:
-							# assert not relion_category_dict['ctf'][idx_is_category_found]
-							for i_sphire_rebox_entry in xrange(n_sphire_rebox_entry):
-								sphire_ctf_list.append(dummy_sphire_ctf_entry)
-						assert (n_sphire_rebox_entry == len(sphire_ctf_list))
-				
-						sphire_proj3d_list = []
-						if relion_category_dict['proj3d'][idx_is_category_found]: 
-							assert micrograph_dirname in sphire_proj3d_dict
-							assert micrograph_basename in sphire_proj3d_dict[micrograph_dirname]
-							sphire_proj3d_list = sphire_proj3d_dict[micrograph_dirname][micrograph_basename]
-						else:
-							# assert not relion_category_dict['proj3d'][idx_is_category_found]
-							for i_sphire_rebox_entry in xrange(n_sphire_rebox_entry):
-								sphire_proj3d_list.append(dummy_sphire_proj3d)
-						assert (n_sphire_rebox_entry == len(sphire_proj3d_list))
-				
-						sphire_chunk_id_list = []
-						if relion_category_dict['chunk'][idx_is_category_found]:
-							assert micrograph_dirname in sphire_chunk_dict
-							assert micrograph_basename in sphire_chunk_dict[micrograph_dirname]
-							sphire_chunk_id_list = sphire_chunk_dict[micrograph_dirname][micrograph_basename]
-						else:
-							# assert not relion_category_dict['chunk'][idx_is_category_found]
-							for i_sphire_rebox_entry in xrange(n_sphire_rebox_entry):
-								sphire_chunk_id_list.append(dummy_sphire_chunk_id)
-						assert (n_sphire_rebox_entry == len(sphire_chunk_id_list))
-				
-						# Standard SPA Coordinate File 
-						for i_sphire_rebox_entry in xrange(n_sphire_rebox_entry):
-							line = ""
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_id])          # idx_params_mic_coord_id
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])           # idx_params_mic_coord_x
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_y])           # idx_params_mic_coord_y
-							line += " {:15.5f}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_resample_ratio]) # idx_params_mic_resample_ratio
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_def])                           # idx_params_ctf_defocus
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_cs])                            # idx_params_ctf_cs
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_vol])                           # idx_params_ctf_voltage
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_apix])                          # idx_params_ctf_apix
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_bfactor])                       # idx_params_ctf_bfactor
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_total_ac])                      # idx_params_ctf_ampcont
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_amp])                     # idx_params_ctf_dfdiff
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_ang])                     # idx_params_ctf_dfang
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['phi'])                               # idx_params_proj_phi
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['theta'])                             # idx_params_proj_theta
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['psi'])                               # idx_params_proj_psi
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['tx'])                                # idx_params_proj_sx
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['ty'])                                # idx_params_proj_sy
-							line += " {:15.5f}".format(dummy_particle_defocus_error)                                                  # idx_params_defocus_error
-							line += " {:15.5f}".format(dummy_particle_resample_ratio)                                                 # idx_params_resample_ratio
-							line += " {:6d}".format(sphire_chunk_id_list[i_sphire_rebox_entry])                                       # idx_params_chunk_id NOT SUPPORTED YET (Toshio Moriya 2018/07/10)
-							line += " \n"
-							
-							file_rebox.write(line)
-							
-						file_rebox.close()
+			# Standard SPA Coordinate File 
+			if relion_category_dict['helical'][idx_is_category_found] == False:
+				for sphire_coordinates in sphire_coordinates_dict[micrograph_basename]:
+					if box_size > 0:
+						# Convert coordinate from SPHIRE to eman1 foramts
+						eman1_coordinate_x = sphire_coordinates[0] - box_size//2
+						eman1_coordinate_y = sphire_coordinates[1] - box_size//2
+						eman1_dummy = -1 # For 5th column of EMAN1 boxer format
+						file_coordinates.write('%6d %6d %6d %6d %6d\n' % (eman1_coordinate_x, eman1_coordinate_y, box_size, box_size, eman1_dummy))
+					else:
+						file_coordinates.write('%6d %6d\n' % (sphire_coordinates[0], sphire_coordinates[1]))
 			else:
-				# assert relion_category_dict['window'][idx_is_category_found]
-				# Write rebox parameters to files (doing here to avoid repeating open/close files in loop)
-				print('# ')
-				print('# Particle coodinates are not found! Skipping tos save SPHIRE rebox files ...')
-		else:
-			# assert relion_category_dict['helical'][idx_is_category_found]:
-			print('# ')
-			print('# For helical reconstruction, SPHIRE rebox files are not supported yet ...')
-			print('# Skipping tos save SPHIRE rebox files ...')
+				assert relion_category_dict['helical'][idx_is_category_found] == True, '# Logical Error: helical category must be found always at this point of code.'
+				file_coordinates.write('#micrograph: %s\n'%(micrograph_basename))
+				file_coordinates.write('#segment length: %.1f\n' % (box_size))
+				file_coordinates.write('#segment width: %.1f\n' % (box_size))
+				for sphire_filament_id in sorted(sphire_coordinates_dict[micrograph_basename]):
+					# 
+					# NOTE: Toshio Moriya 2017/11/21
+					# The order of coordinates must be sorted with x-coordinates, then y-coordinates  in SPHIRE helical SPA box file
+					#
+					sphire_coordinates_dict[micrograph_basename][sphire_filament_id].sort(key=itemgetter(1), reverse=False)
+					sphire_coordinates_dict[micrograph_basename][sphire_filament_id].sort(key=itemgetter(0), reverse=False)
+					head_sphire_coordinates = sphire_coordinates_dict[micrograph_basename][sphire_filament_id][0]
+					tail_sphire_coordinates = sphire_coordinates_dict[micrograph_basename][sphire_filament_id][-1]
+					# MRK_DEBUG: file_coordinates.write('#helix: (%.1f, %.1f),(%.1f, %.1f),%.1f %d\n' % (head_sphire_coordinates[0], head_sphire_coordinates[1], tail_sphire_coordinates[0], tail_sphire_coordinates[1], box_size, sphire_filament_id))
+					file_coordinates.write('#helix: (%.1f, %.1f),(%.1f, %.1f),%.1f\n' % (head_sphire_coordinates[0], head_sphire_coordinates[1], tail_sphire_coordinates[0], tail_sphire_coordinates[1], box_size))
+					for sphire_coordinates in sphire_coordinates_dict[micrograph_basename][sphire_filament_id]:
+						file_coordinates.write('%.1f\t%.1f\n' % (sphire_coordinates[0], sphire_coordinates[1]))
+			
+			file_coordinates.close()
 		
-		if is_enable_create_stack and not cs_save_as_hdf:
-			print('# ')
-			print('# Creating local particle stack for each micrograph...')
-			
-			for micrograph_dirname in sorted(sphire_imgs_dict):
-				dir_path_local_stacks = os.path.join(dir_path_work, micrograph_dirname, dir_name_local_stacks)
-				if not os.path.exists(dir_path_local_stacks):
-					os.mkdir(dir_path_local_stacks)
-				
-				for micrograph_basename in sorted(sphire_imgs_dict[micrograph_dirname]):
-					micrograph_baseroot = os.path.splitext(micrograph_basename)[0]
-					file_path_local_stack = 'bdb:{}#{}_ptcls'.format(dir_path_local_stacks, micrograph_baseroot)
-				
-					for sphire_img_id, sphire_img in enumerate(sphire_imgs_dict[micrograph_dirname][micrograph_basename]):
-						# Write the particle image to local stack file
-						sphire_img.write_image(file_path_local_stack, sphire_img_id)
-				
-				# # NOTE: Toshio Moriya 2018/07/09
-				# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...
-				# e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_stacks, file_path_sphire_stack)
-				# print('# ')
-				# print('# Putting local stacks together to a virtual stack...')
-				# print('#  {}'.format(e2bdb_command))
-				# # cmdexecute(e2bdb_command, printing_on_success = False)
-				# cmdexecute(e2bdb_command)
-				# 
-				# assert db_check_dict(file_path_sphire_stack, readonly=True), '# Logical Error: Output BDB stack in output directory should exist at this point of code.'
-				# assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_sphire_stack), '# The numbers of particles should match always at this point of code'
-				
-				file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(os.path.join(dir_path_work, micrograph_dirname), outputs_root)
-				e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_stacks, file_path_sphire_mic_dir_stack)
-				print('# ')
-				print('# Please execute the following command line to create single virtual stack by combining all local stacks in {} directory'.format(micrograph_dirname))
-				print('#   {}'.format(e2bdb_command))
-			
-			# # NOTE: Toshio Moriya 2018/07/10
-			# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...
-			# is_not_first = False
-			# for micrograph_dirname in sorted(sphire_imgs_dict):
-			# 	dir_path_local_stacks = os.path.join(dir_path_work, micrograph_dirname, dir_name_local_stacks)
-			# 	try: 
-			# 		os.mkdir(dir_path_local_stacks)
-			# 		assert False, "MRK_DEBUG: Unreachable code..."
-			# 	except OSError as err:
-			# 		pass
-			# 	
-			# 	e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_stacks, file_path_sphire_stack)
-			# 	print('# ')
-			# 	print('# Creating single virtual stack by combining all local stacks together...')
-			# 	print('#  {}'.format(e2bdb_command))
-			# 	# cmdexecute(e2bdb_command, printing_on_success = False)
-			# 	cmdexecute(e2bdb_command)
-			# 	
-			# 	assert db_check_dict(file_path_sphire_stack, readonly=True), '# Logical Error: Output BDB stack in output directory should exist at this point of code.'
-			# 	assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_sphire_stack), '# The numbers of particles should match always at this point of code'
-				
-		# # Write chunk parameter files (particle id list of each chunk/group) parameter files
-		# for sphire_chunk_key in sphire_chunk_dict:
-		# 	# Open the files for this chunk key
-		# 	file_name_sphire_stack_chunk = name_pattern_sphire_stack_chunk.replace('*', sphire_chunk_key)
-		# 	file_path_sphire_stack_chunk = dir_path_work + '/' + file_name_sphire_stack_chunk
-		# 	file_sphire_stack_chunk = open(file_path_sphire_stack_chunk, 'w+')
-		# 	# Write the list of particle IDs of each chunk 
-		# 	for relion_particle_id in sphire_chunk_dict[sphire_chunk_key]:
-		# 		file_sphire_stack_chunk.write('%d \n' % (relion_particle_id))
-		# 	# Close the files for this chunk key
-		# 	file_sphire_stack_chunk.close()
+		# Write chunk parameter files (particle id list of each chunk/group) parameter files
+		for sphire_chunk_key in sphire_chunk_dict:
+			# Open the files for this chunk key
+			file_name_sphire_stack_chunk = name_pattern_sphire_stack_chunk.replace('*', sphire_chunk_key)
+			file_path_sphire_stack_chunk = dir_path_work + '/' + file_name_sphire_stack_chunk
+			file_sphire_stack_chunk = open(file_path_sphire_stack_chunk, 'w+')
+			# Write the list of particle IDs of each chunk 
+			for relion_particle_id in sphire_chunk_dict[sphire_chunk_key]:
+				file_sphire_stack_chunk.write('%d \n' % (relion_particle_id))
+			# Close the files for this chunk key
+			file_sphire_stack_chunk.close()
 
 	# Close input/output files
 	file_relion_star.close()
-	# file_sphire_micrographs.close()
-	# file_sphire_cter_partres.close()
-	# file_sphire_stack_ctf.close()
-	# file_sphire_stack_proj3d.close()
+	file_sphire_micrographs.close()
+	file_sphire_cter_partres.close()
+	file_sphire_stack_ctf.close()
+	file_sphire_stack_proj3d.close()
 
 	# Remove unnecessarily generated files
-	# if not relion_category_dict['ctf'][idx_is_category_found] or len(sphire_cter_dict) == 0:
-	# 	if os.path.exists(file_path_sphire_cter_partres):
-	# 		os.remove(file_path_sphire_cter_partres)
-	# if not relion_category_dict['ctf'][idx_is_category_found] or i_sphire_stack_ctf == 0:
-	# 	if os.path.exists(file_path_sphire_stack_ctf):
-	# 		os.remove(file_path_sphire_stack_ctf)
-	# if not relion_category_dict['window'][idx_is_category_found] or i_sphire_stack_coordinates == 0:
-	# 	if os.path.exists(dir_path_coordinates):
-	# 		shutil.rmtree(dir_path_coordinates, ignore_errors=True)
-	# if not relion_category_dict['proj3d'][idx_is_category_found] or i_sphire_stack_proj3d == 0:
-	# 	if os.path.exists(file_path_sphire_stack_proj3d):
-	# 		os.remove(file_path_sphire_stack_proj3d)
+	if not relion_category_dict['ctf'][idx_is_category_found] or len(sphire_cter_dict) == 0:
+		if os.path.exists(file_path_sphire_cter_partres):
+			os.remove(file_path_sphire_cter_partres)
+	if not relion_category_dict['ctf'][idx_is_category_found] or i_sphire_stack_ctf == 0:
+		if os.path.exists(file_path_sphire_stack_ctf):
+			os.remove(file_path_sphire_stack_ctf)
+	if not relion_category_dict['window'][idx_is_category_found] or i_sphire_stack_coordinates == 0:
+		if os.path.exists(dir_path_coordinates):
+			shutil.rmtree(dir_path_coordinates, ignore_errors=True)
+	if not relion_category_dict['proj3d'][idx_is_category_found] or i_sphire_stack_proj3d == 0:
+		if os.path.exists(file_path_sphire_stack_proj3d):
+			os.remove(file_path_sphire_stack_proj3d)
 	
-	# # Restore the original current dir
-	# os.chdir(dir_origin)
+	# Restore the original current dir
+	os.chdir(dir_origin)
 
 	print('# ')
 	print('# DONE!')
