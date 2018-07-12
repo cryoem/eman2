@@ -38,7 +38,10 @@ def main():
 	for tag in tags:
 		fulltg="__{}.hdf".format(tag)
 		pts=[f for f in plist if f.endswith(fulltg)]
-		cmd="e2proclst.py {} --create sets/{}.lst".format(' '.join(pts), tag)
+		out="sets/{}.lst".format(tag)
+		try: os.remove(out)
+		except: pass
+		cmd="e2proclst.py {} --create {}".format(' '.join(pts), out)
 		run(cmd)
 	
 	print("Done")

@@ -36,7 +36,7 @@ from EMAN2 import *
 from EMAN2jsondb import js_open_dict
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import QChar, QString, Qt, QModelIndex
-from PyQt4.QtGui import QAction
+from PyQt4.QtGui import QAction,QTreeWidgetItem
 from .emapplication import EMApp
 from .emimage2d import *
 from .emimagemx import *
@@ -2906,6 +2906,7 @@ class EMStackInfoPane(EMInfoPane) :
 
 class EMInfoWin(QtGui.QWidget) :
 	"""The info window"""
+	winclosed = QtCore.pyqtSignal()
 
 	def __init__(self, parent = None) :
 		QtGui.QWidget.__init__(self, parent)
@@ -2939,7 +2940,7 @@ class EMInfoWin(QtGui.QWidget) :
 			# If we got here, then we need to make a new instance of the appropriate pane
 
 			if cls == None : print("No class ! (%s)"%str(ftype))
-			winclosed = QtCore.pyqtSignal()
+			#self.winclosed = QtCore.pyqtSignal()
 			pane = cls()
 			i = self.stack.addWidget(pane)		# add the new pane and get its index
 			pane.display(target)
