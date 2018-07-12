@@ -2236,7 +2236,7 @@ def k_means_init_asg_d2w(im, N, K):
 		SD2  = d.sum()
 		p    = d / float(SD2)
 		p    = list(map(float, p))
-		ps   = zip(p, range(N))
+		ps   = list(zip(p, range(N)))
 		ps.sort(reverse = True)
 		ind  = gauss(0, n // 6) # 6 is a cst define empirically
 		ind  = int(abs(ind))

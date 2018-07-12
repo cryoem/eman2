@@ -1959,7 +1959,7 @@ def twoD_plot(points,val1,val2,location):
 	plt.xlim([0,max(x)+max(x)*0.1])
 	plt.ylim([min(y)-min(y)*0.1,max(y)+max(y)*0.1])
 	for i in range(len(finalpoints)):
-		plt.plot(*zip(*[finalpoints[i]]),marker='o',markersize=4,color=color(ang_errors[i]))	
+		plt.plot(*list(zip(*[finalpoints[i]])),marker='o',markersize=4,color=color(ang_errors[i]))	
 	plt.savefig(plotname1,bbox_inches=0)
 	#plt.clf()
 	
@@ -2014,7 +2014,7 @@ def threeD_plot(points,location):
 
 	#ax.dist = 15
 	for i in range(len(finalpoints)):
-		ax.plot(*zip(*[finalpoints[i]]),marker='o',markersize=4, color=color(ang_errors[i]) )
+		ax.plot(*list(zip(*[finalpoints[i]])),marker='o',markersize=4, color=color(ang_errors[i]) )
 	plt.savefig(plotname1,bbox_inches=0)
 	print("\n\n**********\nI HAVE saved the plot inside 3d_plot to\n********\n\n", plotname1)
 

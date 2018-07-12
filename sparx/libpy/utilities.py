@@ -5655,7 +5655,7 @@ def print_program_start_information():
 def store_program_state(filename, state, stack):
 	import json
 	with open(filename, "w") as fp:
-		json.dump(zip(stack, state), fp, indent = 2)
+		json.dump(list(zip(stack, state)), fp, indent = 2)
 	fp.close()
 
 def restore_program_stack_and_state(file_name_of_saved_state):

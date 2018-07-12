@@ -462,7 +462,7 @@ class MovieModeAligner:
 			tf = self._transforms[i+1].get_trans_2d()
 			trans2d.append([ti[0],ti[1],tf[0]-ti[0],tf[1]-ti[1]])
 		trans2d = np.array(trans2d)
-		X,Y,U,V = zip(*trans2d)
+		X,Y,U,V = list(zip(*trans2d))
 		plt.figure()
 		ax = plt.gca()
 		ax.quiver(X,Y,U,V,angles='xy',scale_units='xy',scale=1)

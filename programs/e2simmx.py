@@ -713,7 +713,7 @@ def main():
 	cimgs=EMData.read_images(args[0],range(*crange))
 	if options.colmasks:
 		cmimgs=EMData.read_images(options.colmasks,range(*crange))
-		cimgs=zip(cimgs,cmimgs)
+		cimgs=list(zip(cimgs,cmimgs))
 	else:
 		for i in range(len(cimgs)):
 			cimgs[i]=(cimgs[i],None)
