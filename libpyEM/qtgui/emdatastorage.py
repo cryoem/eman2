@@ -590,7 +590,7 @@ class RecordDef(DictMixin) :
 			print("Warning: recname view strongly suggested")
 
 		for k,v in self.views.items():
-			if not isinstance(k,str) or not isinstance(v,basestring):
+			if not isinstance(k,str) or not isinstance(v,str):
 				raise ValueError("Views names must be strings; view defs may be unicode")
 
 		if self.private not in [0,1]:
@@ -759,7 +759,7 @@ class Record(DictMixin):
 		#print "property: %s"%pd.property
 		#print "defaultunits: %s"%pd.defaultunits
 
-		if pd.property and isinstance(value,basestring):
+		if pd.property and isinstance(value,str):
 			print("______ checking units __________")
 			value,units=re.compile("([0-9.,]+)?(.*)").search(value).groups()
 			value=float(value)
@@ -984,7 +984,7 @@ class Record(DictMixin):
 	#################################
 
 	def addcomment(self, value):
-		if not isinstance(value,basestring):
+		if not isinstance(value,str):
 			print("Warning: invalid comment")
 			return
 

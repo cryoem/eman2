@@ -461,7 +461,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break
 				assert (len(selected_mic_path_list) > 1)
-				if error_status is None and not isinstance(selected_mic_path_list[0], basestring):
+				if error_status is None and not isinstance(selected_mic_path_list[0], str):
 					error_status = ("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break
 			else:

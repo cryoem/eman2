@@ -725,7 +725,7 @@ def drop_png_image(im, trg):
 	if trg[-4:] != '.png':
 		ERROR('destination name must be png extension', 'drop_png_image', 1)
 
-	if isinstance(trg, basestring):
+	if isinstance(trg, str):
 		im['render_min'] = im['minimum']
 		im['render_max'] = im['maximum']
 		im.write_image(trg, 0)
@@ -5836,7 +5836,7 @@ def calculate_space_size(x_half_size, y_half_size, psi_half_size):
 
 def convert_json_fromunicode(data):
 	import  collections
-	if isinstance(data, basestring):
+	if isinstance(data, str):
 		return str(data)
 	elif isinstance(data, collections.Mapping):
 		return dict(map(convert_json_fromunicode, data.iteritems()))

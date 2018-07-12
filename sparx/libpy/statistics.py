@@ -2710,7 +2710,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		from random import random
 
 	if mask != None:
-		if isinstance(mask, basestring):
+		if isinstance(mask, str):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
@@ -3062,7 +3062,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		from random import random
 
 	if mask != None:
-		if isinstance(mask, basestring):
+		if isinstance(mask, str):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
@@ -3713,7 +3713,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 		from random import random
 
 	if mask != None:
-		if isinstance(mask, basestring):
+		if isinstance(mask, str):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
@@ -4161,7 +4161,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		from random import random
 
 	if mask != None:
-		if isinstance(mask, basestring):
+		if isinstance(mask, str):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	
@@ -5714,7 +5714,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 	from random import random
 
 	if mask != None:
-		if isinstance(mask, basestring):
+		if isinstance(mask, str):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
@@ -5895,7 +5895,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 	from random import random
 
 	if mask != None:
-		if isinstance(mask, basestring):
+		if isinstance(mask, str):
 			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
