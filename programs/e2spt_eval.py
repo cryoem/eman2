@@ -18,6 +18,7 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	#parser.add_argument("--path", type=str,help="path", default="")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 

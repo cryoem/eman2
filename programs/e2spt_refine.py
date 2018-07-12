@@ -29,7 +29,7 @@ def main():
 
 	parser.add_argument("--setsf", type=str,help="structure factor", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=7, col=0,rowspan=1, colspan=3, mode="model")
 
-	parser.add_argument("--pkeep", type=float,help="fraction of particles to keep", default=1., guitype='floatbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--pkeep", type=float,help="fraction of particles to keep", default=0.8, guitype='floatbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--tkeep", type=float,help="fraction of tilt to keep. only used when tltrefine is specified. default is 0.5", default=0.5, guitype='floatbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
 
@@ -51,7 +51,7 @@ def main():
 	ref=options.reference
 
 	if options.path==None: options.path = make_path("spt") 
-	
+
 	options.input_ptcls=ptcls
 	options.input_ref=ref
 	options.cmd=' '.join(sys.argv)
