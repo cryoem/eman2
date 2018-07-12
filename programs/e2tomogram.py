@@ -89,7 +89,7 @@ def main():
 
 	if options.tltrange != None:
 		try: 
-			options.tltrange = map(float,options.tltrange.split(","))
+			options.tltrange = list(map(float,options.tltrange.split(",")))
 		except:
 			print("Could not interpret --tltrange: {} \nAn example of the correct format is: -50.0,50.0".format(options.tltrange))
 			return

@@ -1761,7 +1761,7 @@ def do_two_way_comparison_over_nindepruns(log_main):#  multiple way comparison
 		if Blockdata["myid"] == Blockdata["main_node"]:res_list[ires] = tmplist[:][:]
 	res_list  = wrap_mpi_bcast(res_list, Blockdata["main_node"], MPI_COMM_WORLD)
 	scores    = mpi_reduce(scores, len(res_list), MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	scores    = map(int,scores )
+	scores    = list(map(int,scores ))
 	scores    = wrap_mpi_bcast(scores, Blockdata["main_node"], MPI_COMM_WORLD)
 	#### Score each independent run by pairwise summation
 	two_way_dict  = {}
@@ -2784,8 +2784,8 @@ def do3d_sorting_groups(particle_ID_index, partstack):
 	mpi_barrier(MPI_COMM_WORLD)
 	res_05  = mpi_reduce(res_05,  Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
 	res_143 = mpi_reduce(res_143, Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_05  = map(int, res_05)
-	res_143 = map(int, res_143)
+	res_05  = list(map(int, res_05))
+	res_143 = list(map(int, res_143))
 	if (Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["fsc143"] = res_143
 		Tracker["fsc05"]  = res_05
@@ -2960,8 +2960,8 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 	mpi_barrier(MPI_COMM_WORLD)
 	res_05         = mpi_reduce(res_05,  Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
 	res_143        = mpi_reduce(res_143, Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_05         = map(int, res_05)
-	res_143        = map(int, res_143)
+	res_05         = list(map(int, res_05))
+	res_143        = list(map(int, res_143))
 	if (Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["fsc143"] = res_143
 		Tracker["fsc05"]  = res_05
@@ -4071,8 +4071,8 @@ def do3d_sorting_groups_rec3d(iteration, masterdir, log_main):
 	mpi_barrier(MPI_COMM_WORLD)	
 	res_05   = mpi_reduce(res_05,  Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
 	res_143  = mpi_reduce(res_143, Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_05   = map(int, res_05)
-	res_143  = map(int, res_143)	
+	res_05   = list(map(int, res_05))
+	res_143  = list(map(int, res_143))	
 	if (Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["fsc143"] = res_143
 		Tracker["fsc05"]  = res_05
@@ -4902,8 +4902,8 @@ def do3d_sorting_groups_trl_smearing_iter(data, paramstructure, norm_per_particl
 	mpi_barrier(MPI_COMM_WORLD)	
 	res_05  = mpi_reduce(res_05, Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
 	res_143 = mpi_reduce(res_143,Tracker["number_of_groups"], MPI_INT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD)
-	res_05  = map(int, res_05)
-	res_143 = map(int, res_143)	
+	res_05  = list(map(int, res_05))
+	res_143 = list(map(int, res_143))	
 	if (Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["fsc143"] = res_143
 		Tracker["fsc05"]  = res_05

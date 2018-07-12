@@ -2939,7 +2939,7 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 					im = recv_EMData(i, i*l+k)
 					mem_len = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					members = mpi_recv(int(mem_len[0]), MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-					members = map(int, members)
+					members = list(map(int, members))
 					im.set_attr('members', members)
 					gathered_data.append(im)
 	else:
@@ -5046,7 +5046,7 @@ def rearrange_ranks_of_processors(mode):
 	host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, original_mpi_comm_world)
 	host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, original_mpi_comm_world)
 
-	procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
+	procs_belonging_to_one_node = list(map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a])))
 	local_rank = procs_belonging_to_one_node.index(my_rank)
 
 	local_size = host_names.count(hostname)
@@ -5150,7 +5150,7 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, mpi_comm)
 	host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, mpi_comm)
 
-	procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
+	procs_belonging_to_one_node = list(map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a])))
 	local_rank = procs_belonging_to_one_node.index(my_rank)
 
 	local_size = host_names.count(hostname)
@@ -5256,9 +5256,9 @@ def string_found_in_file(myregex, filename):
 
 def random_string(length_of_randomstring = 16):
 	import random
-	chars=map(chr, range(97, 123)) # a..z
-	chars.extend(map(chr, range(65, 91))) # A..Z
-	chars.extend(map(chr, range(48, 58))) # 0..9
+	chars=list(map(chr, range(97, 123))) # a..z
+	chars.extend(list(map(chr, range(65, 91)))) # A..Z
+	chars.extend(list(map(chr, range(48, 58)))) # 0..9
 	random_string = ""
 	for i in xrange(length_of_randomstring):
 		random_string += chars[random.randint(0,len(chars)-1)]
@@ -5839,9 +5839,9 @@ def convert_json_fromunicode(data):
 	if isinstance(data, str):
 		return str(data)
 	elif isinstance(data, collections.Mapping):
-		return dict(map(convert_json_fromunicode, iter(data.items())))
+		return dict(list(map(convert_json_fromunicode, iter(data.items()))))
 	elif isinstance(data, collections.Iterable):
-		return type(data)(map(convert_json_fromunicode, data))
+		return type(data)(list(map(convert_json_fromunicode, data)))
 	else:
 		return data
 

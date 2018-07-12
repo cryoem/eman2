@@ -83,7 +83,7 @@ directory		output directory name: into which the results will be written (if it 
 	if options.moon_elimination == "":
 		options.moon_elimination = []
 	else:
-		options.moon_elimination = map(float, options.moon_elimination.split(","))
+		options.moon_elimination = list(map(float, options.moon_elimination.split(",")))
 
 	# Making sure all required options appeared.
 	for required_option in required_option_list:

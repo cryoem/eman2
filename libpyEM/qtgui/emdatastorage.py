@@ -83,20 +83,20 @@ valid_vartypes={
 	"time":("s",timeconv),			# HH:MM:SS
 	"date":("s",dateconv),			# yyyy/mm/dd
 	"datetime":("s",datetimeconv),		# yyyy/mm/dd HH:MM:SS
-	"intlist":(None,lambda y:map(lambda x:int(x),y)),		# list of integers
-	"floatlist":(None,lambda y:map(lambda x:float(x),y)), # list of floats
-	"stringlist":(None,lambda y:map(lambda x:str(x),y)),	# list of enumerated strings
+	"intlist":(None,lambda y:[int(x) for x in y]),		# list of integers
+	"floatlist":(None,lambda y:[float(x) for x in y]), # list of floats
+	"stringlist":(None,lambda y:[str(x) for x in y]),	# list of enumerated strings
 	"url":("s",lambda x:str(x)),			# link to a generic url
 	"hdf":("s",lambda x:str(x)),			# url points to an HDF file
 	"image":("s",lambda x:str(x)),			# url points to a browser-compatible image
-	"binary":("s",lambda y:map(lambda x:str(x),y)),				# url points to an arbitrary binary... ['bdo:....','bdo:....','bdo:....']
+	"binary":("s",lambda y:[str(x) for x in y]),				# url points to an arbitrary binary... ['bdo:....','bdo:....','bdo:....']
 	"binaryimage":("s",lambda x:str(x)),		# non browser-compatible image requiring extra 'help' to display... 'bdo:....'
-	"child":("child",lambda y:map(lambda x:int(x),y)),	# link to dbid/recid of a child record
-	"link":("link",lambda y:map(lambda x:int(x),y)),		# lateral link to related record dbid/recid
+	"child":("child",lambda y:[int(x) for x in y]),	# link to dbid/recid of a child record
+	"link":("link",lambda y:[int(x) for x in y]),		# lateral link to related record dbid/recid
 	"boolean":("d",boolconv),
 	"dict":(None, lambda x:x), 
 	"user":("s",lambda x:str(x)), # ian 09.06.07
-	"userlist":(None,lambda y:map(lambda x:str(x),y))
+	"userlist":(None,lambda y:[str(x) for x in y])
 }
 
 # Valid physical property names

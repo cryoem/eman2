@@ -105,7 +105,7 @@ def main():
 		print("The parameter '--maxshift' must be greater than 0")
 		sys.exit(1)
 	
-	if options.xybadlines: options.xybadlines = [map(int,s.split(',')) for s in options.xybadlines]
+	if options.xybadlines: options.xybadlines = [list(map(int,s.split(','))) for s in options.xybadlines]
 	
 	pid=E2init(sys.argv)
 

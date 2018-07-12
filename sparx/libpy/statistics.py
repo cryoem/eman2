@@ -2235,7 +2235,7 @@ def k_means_init_asg_d2w(im, N, K):
 
 		SD2  = d.sum()
 		p    = d / float(SD2)
-		p    = map(float, p)
+		p    = list(map(float, p))
 		ps   = zip(p, range(N))
 		ps.sort(reverse = True)
 		ind  = gauss(0, n // 6) # 6 is a cst define empirically
@@ -3489,7 +3489,7 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 		mpi_send(Je, 1, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 	n_best = -1
 	if(myid == main_node):
-		je_return = map(float, je_return)
+		je_return = list(map(float, je_return))
 		#print "recived je", je_return
 		min_je= 1.0e30
 
@@ -3530,7 +3530,7 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			if n_best == main_node: r_Cls['n'] = Cls['n'] 
 			else:
 				r_Cls['n'] = mpi_recv(K, MPI_INT, n_best, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-				r_Cls['n'] = map(int, r_Cls['n'])
+				r_Cls['n'] = list(map(int, r_Cls['n']))
 
 		else:
 			if n_best == myid:
@@ -4265,9 +4265,9 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 		# [all] send assign to the others proc and the number of objects in each clusters
 		assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
-		assign = map(int, assign)     # convert array gave by MPI to list
+		assign = list(map(int, assign))     # convert array gave by MPI to list
 		Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
+		Cls['n'] = list(map(int, Cls['n'])) # convert array gave by MPI to list
 		
 		## 
 		if CTF:
@@ -4290,7 +4290,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			for k in xrange(K):
 				Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-				Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
+				Cls_ctf2[k] = list(map(float, Cls_ctf2[k]))    # convert array gave by MPI to list
 
 				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
@@ -4399,7 +4399,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			# [all] sum the number of objects in each node and broadcast
 			Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Cls['n'] = map(int, Cls['n']) # convert array gave by MPI to list
+			Cls['n'] = list(map(int, Cls['n'])) # convert array gave by MPI to list
 			
 			# [all] init average and ctf2
 			FLAG_EMPTY = 0
@@ -4437,7 +4437,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				for k in xrange(K):
 					Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 					Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-					Cls_ctf2[k] = map(float, Cls_ctf2[k]) # convert array gave by MPI to list
+					Cls_ctf2[k] = list(map(float, Cls_ctf2[k])) # convert array gave by MPI to list
 
 					reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
@@ -4568,7 +4568,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		# [all] global sum Ji and var
 		Cls['Ji'] = mpi_reduce(Cls['Ji'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		Cls['Ji'] = mpi_bcast(Cls['Ji'],  K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Cls['Ji'] = map(float, Cls['Ji'])
+		Cls['Ji'] = list(map(float, Cls['Ji']))
 		for k in xrange(K):
 			reduce_EMData_to_root(Cls['var'][k], myid, main_node)
 			
@@ -4584,7 +4584,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		# [all] global sum ji and im**2
 		Cls['Ji'] = mpi_reduce(Cls['Ji'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		Cls['Ji'] = mpi_bcast(Cls['Ji'],  K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Cls['Ji'] = map(float, Cls['Ji'])
+		Cls['Ji'] = list(map(float, Cls['Ji']))
 		
 		for k in xrange(K): reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
 		
@@ -4610,7 +4610,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		
 	# [all] gather in main_node
 	assign = mpi_reduce(assign, N, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	assign = map(int, assign) # convert array given by MPI to list
+	assign = list(map(int, assign)) # convert array given by MPI to list
 
 	# [main_node] write the result
 	if myid == main_node and CTF:
@@ -4869,7 +4869,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 		else:   ASG = None
 		mpi_barrier(MPI_COMM_WORLD)
 		ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
-		ASG = map(int, ASG)
+		ASG = list(map(int, ASG))
 		Kmeans.set_ASG(ASG)
 		Kmeans.compute_NC()
 		Kmeans.compute_AVE()
@@ -4924,7 +4924,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 			asg = Kmeans.get_asg()
 			ASG = mpi_gatherv(asg, n, MPI_INT, recvcount, disps, MPI_INT, main_node, MPI_COMM_WORLD)
 			ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
-			ASG = map(int, ASG)
+			ASG = list(map(int, ASG))
 			Kmeans.set_ASG(ASG)
 			#if myid == main_node: print 'com asg', time() - ts2, 's'
 			
@@ -4962,7 +4962,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 		ji   = Kmeans.compute_ji()
 		Ji   = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		Ji   = mpi_bcast(Ji, K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		Ji   = map(float, Ji)
+		Ji   = list(map(float, Ji))
 		crit = Kmeans.compute_criterion(Ji)
 		AVE  = Kmeans.get_AVE()
 		ASG  = Kmeans.get_ASG()
@@ -5028,7 +5028,7 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 	else:   ASG = None
 	mpi_barrier(comm)
 	ASG = mpi_bcast(ASG, N, MPI_INT, main_node, comm)
-	ASG = map(int, ASG)
+	ASG = list(map(int, ASG))
 	Kmeans.set_ASG(ASG)
 	Kmeans.compute_NC()
 	Kmeans.compute_AVE()
@@ -5080,7 +5080,7 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 		asg = Kmeans.get_asg()
 		ASG = mpi_gatherv(asg, n, MPI_INT, recvcount, disps, MPI_INT, main_node, comm)
 		ASG = mpi_bcast(ASG, N, MPI_INT, main_node, comm)
-		ASG = map(int, ASG)
+		ASG = list(map(int, ASG))
 		Kmeans.set_ASG(ASG)
 		#if myid == main_node: print 'com asg', time() - ts2, 's'
 		
@@ -5118,7 +5118,7 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 	ji   = Kmeans.compute_ji()
 	Ji   = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, comm)
 	Ji   = mpi_bcast(Ji, K, MPI_FLOAT, main_node, comm)
-	Ji   = map(float, Ji)
+	Ji   = list(map(float, Ji))
 	crit = Kmeans.compute_criterion(Ji)
 	AVE  = Kmeans.get_AVE()
 	ASG  = Kmeans.get_ASG()
@@ -5976,9 +5976,9 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 
 	# [sync] waiting assignment
 	assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
-	assign = map(int, assign)     # convert array gave by MPI to list
+	assign = list(map(int, assign))     # convert array gave by MPI to list
 	Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-	Cls['n'] = map(float, Cls['n']) # convert array gave by MPI to list
+	Cls['n'] = list(map(float, Cls['n'])) # convert array gave by MPI to list
 
 	## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
 	if CTF:
@@ -5998,7 +5998,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 		for k in xrange(K):
 			Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Cls_ctf2[k] = map(float, Cls_ctf2[k])    # convert array gave by MPI to list
+			Cls_ctf2[k] = list(map(float, Cls_ctf2[k]))    # convert array gave by MPI to list
 			reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
 			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
@@ -6708,8 +6708,8 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	[r_assign, r_cls] = k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node)
 	if myid == main_node:
 		for n in xrange( ncpu ):
-			r_cls[n]['n'] = map(int, r_cls[n]['n'] )
-			r_assign[n] = map(int, r_assign[n] )
+			r_cls[n]['n'] = list(map(int, r_cls[n]['n'] ))
+			r_assign[n] = list(map(int, r_assign[n] ))
 			k_means_headlog(stack, outdir, opt_method, N, K, 
 						      '', maskname, 1, maxit, CTF, T0, 
 						      F, rnd[n], ncpu, m)
@@ -6859,7 +6859,7 @@ def k_means_stab_H(ALL_PART):
 	stability = (float(nb_stb) / float(tot_gbl)) * 100
 
 	STB_PART = []
-	for part in ALL_PART[0]: STB_PART.append(map(int, part))
+	for part in ALL_PART[0]: STB_PART.append(list(map(int, part)))
 
 	return stability, nb_stb, STB_PART
 
@@ -7387,7 +7387,7 @@ def isc_ave_huge(ave_tiny, org_data, ave_huge):
 	K  = len(A)
 	for k in xrange(K):
 		asg = A[k].get_attr('members')
-		asg = map(int, asg)
+		asg = list(map(int, asg))
 		ave = model_blank(nx, ny)
 		for id in asg:
 			a, sx, sy, mir, sc = get_params2D(D[id])

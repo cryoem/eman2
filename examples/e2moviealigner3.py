@@ -84,7 +84,7 @@ def main(args):
 			f = EMData(fname,i)
 			if options.fixbadlines:
 				for line in options.xybadlines:
-					coords = map(int,line.split(','))
+					coords = list(map(int,line.split(',')))
 					f.process_inplace('math.xybadline',{'xloc':coords[0],'yloc':coords[1]})
 			if options.fixaxes:
 				f.process_inplace('filter.xyaxes0',{'neighbor':1,'neighbornorm':options.nnorm,'x':1,'y':1})

@@ -103,7 +103,7 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	#   and assign to them parameters from partstack
 	# So, the lengths of partids and partstack are the same.
 	#  The read data is properly distributed among MPI threads.
-	lpartids  = map(int, read_text_file(partids) )
+	lpartids  = list(map(int, read_text_file(partids) ))
 	ndata = len(lpartids)
 	partstack = read_text_row(partstack)
 	if( ndata < nproc):

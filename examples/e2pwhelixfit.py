@@ -24,7 +24,7 @@ def read_fixed(edgefile):
 	f.close()
 	
 	for fragment in fragments:
-		fragment = map(int, fragment.split())
+		fragment = list(map(int, fragment.split()))
 		for i in range(len(fragment)-1):
 			fixededges.append((fragment[i], fragment[i+1]))
 	return fixededges

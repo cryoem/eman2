@@ -179,7 +179,7 @@ class SimpleAnnealer:
         for i in range(10):
             xnew = self.variator(x)
             Es.append(self.objective(xnew))
-        T = 2*max(map(lambda E,E0=E0: abs(E-E0),Es))
+        T = 2*max(list(map(lambda E,E0=E0: abs(E-E0),Es)))
         return T
 
 class BaseAnnealer(object):

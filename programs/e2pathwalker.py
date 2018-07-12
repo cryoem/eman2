@@ -398,7 +398,7 @@ class PathWalker(object):
 		fragments = [i.strip() for i in f.readlines()]
 		f.close()
 		for fragment in fragments:
-			fragment = map(int, fragment.split())
+			fragment = list(map(int, fragment.split()))
 			for i in range(len(fragment)-1):
 				fixededges.append((fragment[i], fragment[i+1]))
 		return fixededges
@@ -584,7 +584,7 @@ class PathWalker(object):
 			score_tsp = score_tsp[0].partition('=')[2].strip()
 			score_tsp = float(score_tsp)
 
-		path = map(int, r[r.index("TOUR_SECTION")+1:r.index("-1")])
+		path = list(map(int, r[r.index("TOUR_SECTION")+1:r.index("-1")]))
 		
 		# We need to convert the TSP #'s back to atom #s
 		keyorder = sorted(self.points.keys())				
@@ -609,7 +609,7 @@ class PathWalker(object):
 		r = f.readlines()
 		f.close()
 		
-		path = [map(int, i.split()) for i in r][1:]
+		path = [list(map(int, i.split())) for i in r][1:]
 		path = reduce(operator.concat, r)
 		path = [i+1 for i in r]
 
@@ -851,7 +851,7 @@ class PathWalker(object):
 
 		print("\n=== C-a Ramachandran ===")
 		
-		points = map(self.points.get, path)
+		points = list(map(self.points.get, path))
 		# filename = filename or self.basename+".out.angles"
 
 		out=[]
