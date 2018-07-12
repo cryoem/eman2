@@ -151,7 +151,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(dict1['nx'], dict2['nx'])
         self.assertEqual(dict1['ny'], dict2['ny'])
         self.assertEqual(dict1['nz'], dict2['nz'])
-        self.assertEqual(dict1.keys(), dict2.keys())
+        self.assertEqual(list(dict1.keys()), list(dict2.keys()))
         
     def test_copy_fft(self):
         """test copy() on fft ..............................."""
@@ -2255,7 +2255,7 @@ class TestEMData(unittest.TestCase):
 
         cur_attrlist = []        
         for mydict in (d0, d1, d2):
-            for mykey in mydict.keys():
+            for mykey in list(mydict.keys()):
                 if (not ("MRC" in mykey)):
                     cur_attrlist.append(mykey + "=" + str(mydict[mykey])+"\n")        
         

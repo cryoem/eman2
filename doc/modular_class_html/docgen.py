@@ -71,7 +71,7 @@ def write_processor(processorname, output, bgcolor):
 
     typedict = processor.get_param_types()
     output.write("  <td>")
-    typekeys = typedict.keys()
+    typekeys = list(typedict.keys())
 
     for typekey in typekeys:
         output.write(typedict.get_type(typekey).lower() + " ")
@@ -91,7 +91,7 @@ def write_cmp(cmp_name, output, bgcolor):
     
     typedict = cmp.get_param_types()
     output.write("  <td>")
-    typekeys = typedict.keys()
+    typekeys = list(typedict.keys())
     
     for typekey in typekeys:
         output.write(typedict.get_type(typekey).lower() + " ")
@@ -111,7 +111,7 @@ def write_aligner(aligner_name, output, bgcolor):
     
     typedict = align.get_param_types()
     output.write("  <td>")
-    typekeys = typedict.keys()
+    typekeys = list(typedict.keys())
     
     for typekey in typekeys:
         output.write(typedict.get_type(typekey).lower() + " ")
@@ -131,7 +131,7 @@ def write_projector(projector_name, output, bgcolor):
     
     typedict = project.get_param_types()
     output.write("  <td>")
-    typekeys = typedict.keys()
+    typekeys = list(typedict.keys())
     
     for typekey in typekeys:
         output.write(typedict.get_type(typekey).lower() + " ")
@@ -151,7 +151,7 @@ def write_reconstructor(reconstructor_name, output, bgcolor):
     
     typedict = reconstruct.get_param_types()
     output.write("  <td>")
-    typekeys = typedict.keys()
+    typekeys = list(typedict.keys())
     
     for typekey in typekeys:
         output.write(typedict.get_type(typekey).lower() + " ")
@@ -171,7 +171,7 @@ def write_averager(averager_name, output, bgcolor):
 
     typedict = average.get_param_types()
     output.write("  <td>")
-    typekeys = typedict.keys()
+    typekeys = list(typedict.keys())
     
     for typekey in typekeys:
         output.write(typedict.get_type(typekey).lower() + " ")
@@ -191,7 +191,7 @@ def write_analyzer(analyzer_name, output, bgcolor):
     
     typedict = analyze.get_param_types()
     output.write("  <td>")
-    typekeys = typedict.keys()
+    typekeys = list(typedict.keys())
     
     for typekey in typekeys:
         output.write(typedict.get_type(typekey).lower() + " ")
@@ -356,7 +356,7 @@ def write_group_processors():
     gout = open("processor_groups.html", "wb")
     write_header(gout, 'Processor Group')
     processorgroups = group_processors()
-    groupnames = processorgroups.keys()
+    groupnames = list(processorgroups.keys())
     bgcolor1 = 'f0f0fa'
     bgcolor2 = 'fafaf0'
     bgcolor = bgcolor1

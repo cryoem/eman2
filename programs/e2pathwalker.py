@@ -165,7 +165,7 @@ def write_pdbs(filename, paths, points=None, bfactors=None, tree=None):
 		if tree:
 			connected = []
 			count = 0
-			for k,v in tree.items():
+			for k,v in list(tree.items()):
 				for v2 in v:
 					if (k,v2) in connected or (v2,k) in connected:
 						continue
@@ -235,7 +235,7 @@ class PathWalker(object):
 		if self.average < self.dmin:
 			self.dmin = self.average
 
-		for i in self.points.keys():
+		for i in list(self.points.keys()):
 			self.itree[i] = set()
 		
 		
@@ -243,8 +243,8 @@ class PathWalker(object):
 		#print d,w
 		#exit()
 		
-		for count1, point1 in self.points.items():
-			for count2, point2 in self.points.items():
+		for count1, point1 in list(self.points.items()):
+			for count2, point2 in list(self.points.items()):
 				#print count1,count2,
 				d, w = self.calcweight(point1, point2)
 				self.distances[(count1, count2)] = d
@@ -275,7 +275,7 @@ class PathWalker(object):
 			self.points[id2]=[0,0,0]
 			self.itree[id1]=set()
 			self.itree[id2]=set()
-			for ct, pt in self.points.items():
+			for ct, pt in list(self.points.items()):
 				self.distances[(id1,ct)]=.1
 				self.distances[(id2,ct)]=.1
 				self.weighted[(id1,ct)]=0
@@ -299,7 +299,7 @@ class PathWalker(object):
 				idn=max(self.points)+1
 				self.points[idn]=[-1,-1,-1]
 				self.itree[idn]=set()
-				for ct, pt in self.points.items():
+				for ct, pt in list(self.points.items()):
 					self.distances[(idn,ct)]=.1
 					self.distances[(ct,idn)]=.1
 					self.weighted[(idn,ct)]=0
@@ -757,14 +757,14 @@ class PathWalker(object):
 
 	def find_endpoints(self):
 		"""Return list of points that have != 2 connections as possible termini; note: circular paths may have 2 links..."""
-		return [k for k,v in self.itree.items() if len(self.itree.get(k)) == 1]
+		return [k for k,v in list(self.itree.items()) if len(self.itree.get(k)) == 1]
 
 
 
 
 	def find_branches(self):
 		"""Return points with > 2 connections"""
-		return [k for k,v in self.itree.items() if len(self.itree.get(k)) > 2]
+		return [k for k,v in list(self.itree.items()) if len(self.itree.get(k)) > 2]
 	
 	
 	
@@ -923,7 +923,7 @@ class CaRMSD(object):
 		for pos in common:
 			distances[pos] = distance(self.pdb1[pos], self.pdb2[pos])
 		
-		rmsd = math.sqrt(sum((i**2 for i in distances.values())) / len(distances))
+		rmsd = math.sqrt(sum((i**2 for i in list(distances.values()))) / len(distances))
 
 		print("Total RMSD:", rmsd)
 		

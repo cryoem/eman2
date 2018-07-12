@@ -68,7 +68,7 @@ for source in sys.argv[1:]:
 	# filter out images with low quality if requested
 	if minq>0 :
 		src2=db_open_dict("bdb:%s#e2ctf.parms"%source,ro=True)
-		for k in src2.keys():
+		for k in list(src2.keys()):
 			if src2[k][3]<minq :
 				print("%s excluded with quality %d"%(k,src2[k][3]))
 				try: del srcptcl[k]
@@ -99,21 +99,21 @@ for source in sys.argv[1:]:
 	print("Copy e2ctf.bg2d")
 	src=db_open_dict("bdb:%s#e2ctf.bg2d"%source,ro=True)
 	dest=db_open_dict("bdb:.#e2ctf.bg2d")
-	for k in src.keys(): 
+	for k in list(src.keys()): 
 		print(k)
 		dest[k]=src[k]
 
 	print("Copy e2ctf.im2d")
 	src=db_open_dict("bdb:%s#e2ctf.im2d"%source,ro=True)
 	dest=db_open_dict("bdb:.#e2ctf.im2d")
-	for k in src.keys(): 
+	for k in list(src.keys()): 
 		print(k)
 		dest[k]=src[k]
 
 	print("Copy e2ctf.parms")
 	src=db_open_dict("bdb:%s#e2ctf.parms"%source,ro=True)
 	dest=db_open_dict("bdb:.#e2ctf.parms")
-	for k in src.keys(): 
+	for k in list(src.keys()): 
 		print(k)
 		dest[k]=src[k]
 	
@@ -121,7 +121,7 @@ for source in sys.argv[1:]:
 	print("Copy bad particles lists")
 	src=db_open_dict("bdb:%s#select"%source,ro=True)
 	dest=db_open_dict("bdb:.#select")
-	for k in src.keys(): 
+	for k in list(src.keys()): 
 		print(k)
 		dest[k]=src[k]
 

@@ -52,9 +52,9 @@ def e2boxer_check(options,args):
 			db = js_open_dict("e2boxercache/swarm.json")
 			if options.autoboxer not in db:
 				s = "There is no autoboxing information present for %s." %options.autoboxer
-				if len(db.keys()) > 0:
+				if len(list(db.keys())) > 0:
 					s+= ("Choose from")
-					for k in db.keys():
+					for k in list(db.keys()):
 						try: s+=" "+str(k)+";"
 						except: pass
 				error_message.append(s)
@@ -1096,7 +1096,7 @@ class SwarmBoxer:
 
 		nearness_sq = self.proximity_threshold**2 # avoid use of sqrt
 
-		if isinstance(boxes,dict): keys = boxes.keys()
+		if isinstance(boxes,dict): keys = list(boxes.keys())
 		elif isinstance(boxes,list): keys = [i for i in range(len(boxes))]
 
 		for i,key in enumerate(keys):
@@ -2491,7 +2491,7 @@ class GaussPanel:
 		#print "calc_ctf image_name: ", image_name
 		if image_name in gbdb:
 			olddict=gbdb[image_name]
-			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
+			gbdb[image_name] = dict(list((olddict).items()) + list(ctfdict.items()) ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
 		else:
 			gbdb[image_name]=ctfdict
 
@@ -2597,7 +2597,7 @@ class GaussPanel:
 		#print "calc_ctf image_name: ", image_name
 		if image_name in gbdb:
 			olddict=gbdb[image_name]
-			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
+			gbdb[image_name] = dict(list((olddict).items()) + list(ctfdict.items()) ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
 		else:
 			gbdb[image_name]=ctfdict
 
@@ -2810,7 +2810,7 @@ class GaussBoxer:
 
 		if imgname in gbdb:
 			oldautoboxdict = gbdb[imgname]
-			gbdb[imgname] = dict(oldautoboxdict.items() + autoboxdict.items()) # resolve conflicts in favor of new autoboxdict
+			gbdb[imgname] = dict(list(oldautoboxdict.items()) + list(autoboxdict.items())) # resolve conflicts in favor of new autoboxdict
 		else:
 			gbdb[imgname] = autoboxdict
 		#######################################################

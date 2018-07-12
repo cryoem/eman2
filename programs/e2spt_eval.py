@@ -113,7 +113,7 @@ class SptEvalGUI(QtGui.QWidget):
 			
 			js=js_open_dict(jsfile)
 			dic.update(js.data)
-			for k in js.keys():
+			for k in list(js.keys()):
 				if str(k) not in self.paramlst:
 					self.paramlst[str(k)]=True
 			

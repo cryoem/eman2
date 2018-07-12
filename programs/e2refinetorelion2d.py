@@ -107,7 +107,7 @@ os.mkdir(E2RLN)
 verbosity=str(options.verbosity)
 
 header= EMData(set_name,0,True)
-h_keys=header.get_attr_dict().keys()
+h_keys=list(header.get_attr_dict().keys())
 nx,ny,nz=header['nx'],header['ny'],header['nz']
 num_images = EMUtil.get_image_count(set_name)
 mrc = False

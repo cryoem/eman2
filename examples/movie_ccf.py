@@ -135,7 +135,7 @@ while thrtolaunch<len(thds) or threading.active_count()>1:
 for th in thds: th.join()
 
 avgr=Averagers.get("minmax",{"max":0})
-avgr.add_image_list(csum2.values())
+avgr.add_image_list(list(csum2.values()))
 csum=avgr.finish()
 #csum=sum(csum2.values())
 #csum.mult(1.0/len(csum2))
@@ -194,7 +194,7 @@ t0=time()
 
 # we start with a heavy filter, optimize, then repeat for successively less filtration
 for scale in [0.02,0.04,0.07,0.1,0.5]:
-	csum3={k:csum2[k].process("filter.lowpass.gauss",{"cutoff_abs":scale}) for k in csum2.keys()}
+	csum3={k:csum2[k].process("filter.lowpass.gauss",{"cutoff_abs":scale}) for k in list(csum2.keys())}
 
 	incr=[16]*len(locs)
 	incr[-1]=incr[-2]=4	# if step is zero for last 2, it gets stuck as an outlier, so we just make the starting step smaller

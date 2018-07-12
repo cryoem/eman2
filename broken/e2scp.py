@@ -212,7 +212,7 @@ def recv_file(stdin,path):
 def send_bdb(stdout,path):
 	"Sends a BDB to stdout as a set of compressed pickled key/value pairs, terminated by a None key"
 	db=db_open_dict(path)
-	keys=db.keys()
+	keys=list(db.keys())
 	for k in keys:
 		write_obj(stdout,k)
 		write_obj(stdout,db[k])

@@ -7555,7 +7555,7 @@ class py_Cluster:
       """
       flattened_items = []
       if len(args) == 0: collection = self.__items
-      else:              collection = args[0].items()
+      else:              collection = list(args[0].items())
 
       for item in collection:
          if isinstance(item, py_Cluster):

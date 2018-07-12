@@ -546,7 +546,7 @@ class EMPlot3DWidget(EMGLWidget):
 			ax.tick_params(axis='z', labelsize="x-large")
 			canvas=FigureCanvasAgg(fig)
 
-			for i in self.axes.keys():
+			for i in list(self.axes.keys()):
 				if not self.visibility[i]: continue
 				j=self.axes[i]
 #				print j
@@ -763,7 +763,7 @@ lc is the cursor selection point in plot coords"""
 	
 		j=0
 		# we find the first displayed axis in the list
-		for ak in self.axes.keys():
+		for ak in list(self.axes.keys()):
 			if not self.visibility[ak]: continue
 			j=self.axes[ak]
 			break
@@ -940,7 +940,7 @@ lc is the cursor selection point in plot coords"""
 		if force or self.xlimits==None or self.xlimits[1]<=self.xlimits[0] :
 			xmin=1.0e38
 			xmax=-1.0e38
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 				if self.axes[k][0]>=0:
 					xmin=min(xmin,min(self.data[k][self.axes[k][0]]))
@@ -957,7 +957,7 @@ lc is the cursor selection point in plot coords"""
 		if force or self.ylimits==None or self.ylimits[1]<=self.ylimits[0] :
 			ymin=1.0e38
 			ymax=-1.0e38
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 				ymin=min(ymin,min(self.data[k][self.axes[k][1]]))
 				ymax=max(ymax,max(self.data[k][self.axes[k][1]]))
@@ -970,7 +970,7 @@ lc is the cursor selection point in plot coords"""
 		if force or self.zlimits==None or self.zlimits[1]<=self.zlimits[0] :
 			zmin=1.0e38
 			zmax=-1.0e38
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 				zmin=min(zmin,min(self.data[k][self.axes[k][2]]))
 				zmax=max(zmax,max(self.data[k][self.axes[k][2]]))
@@ -983,7 +983,7 @@ lc is the cursor selection point in plot coords"""
 		if force or self.climits==None or self.climits[1]<=self.climits[0] :
 			cmin=1.0e38
 			cmax=-1.0e38
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 				cmin=min(cmin,min(self.data[k][self.axes[k][3]]))
 				cmax=max(cmax,max(self.data[k][self.axes[k][3]]))
@@ -992,7 +992,7 @@ lc is the cursor selection point in plot coords"""
 		if force or self.slimits==None or self.slimits[1]<=self.slimits[0] :
 			smin=1.0e38
 			smax=-1.0e38
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 				smin=min(smin,min(self.data[k][self.axes[k][4]]))
 				smax=max(smax,max(self.data[k][self.axes[k][4]]))
@@ -2133,13 +2133,13 @@ class EMPlot3DInspector(QtGui.QWidget):
 		self.target().updateGL()
 
 	def selAll(self):
-		for k in self.target().visibility.keys() : self.target().visibility[k]=True
+		for k in list(self.target().visibility.keys()) : self.target().visibility[k]=True
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
 
 	def selNone(self):
-		for k in self.target().visibility.keys() : self.target().visibility[k]=False
+		for k in list(self.target().visibility.keys()) : self.target().visibility[k]=False
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
@@ -2510,7 +2510,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 
 		flags= Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)|Qt.ItemFlags(Qt.ItemIsDragEnabled)
 
-		keys=self.target().data.keys()
+		keys=list(self.target().data.keys())
 		visible = self.target().visibility
 		keys.sort()
 		parms = self.target().pparm # get the colors from this

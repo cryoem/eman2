@@ -440,7 +440,7 @@ class EMHistogramWidget(EMGLWidget):
 		GL.glPushMatrix()
 		# overcome depth issues
 		glTranslate(0,0,5)
-		for k,s in self.shapes.items():
+		for k,s in list(self.shapes.items()):
 			s.draw(self.scr2plot)
 		GL.glPopMatrix()
 		if render:
@@ -464,7 +464,7 @@ class EMHistogramWidget(EMGLWidget):
 			elif self.alignment == "edge":
 				histalign = "left"
 
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 
 				dcurr = self.data[k][self.axes[k][0]]
@@ -479,7 +479,7 @@ class EMHistogramWidget(EMGLWidget):
 					self.bins[k] = np.cumsum(self.bins[k])
 				if self.normed:
 					self.bins[k] /= np.sum(self.bins[k])
-					self.bins[k] /= len(self.axes.keys())
+					self.bins[k] /= len(list(self.axes.keys()))
 
 				if self.histtype == "bar":
 					if self.stacked and len(usedkeys) > 0:
@@ -724,7 +724,7 @@ lc is the cursor selection point in plot coords"""
 
 	def getBinCount(self,n,keys=[]):
 		if len(keys) == 0:
-			return sum([self.bins[k][n] for k in self.bins.keys()])
+			return sum([self.bins[k][n] for k in list(self.bins.keys())])
 		else:
 			return sum([self.bins[k][n] for k in keys])
 
@@ -787,7 +787,7 @@ lc is the cursor selection point in plot coords"""
 		"This autoscales, but only axes which currently have invalid settings"
 
 		if force or self.xlimits==None or self.xlimits[1]<=self.xlimits[0] :
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 				xmin=min(xmin,min(self.data[k][self.axes[k][0]]))
 				xmax=max(xmax,max(self.data[k][self.axes[k][0]]))
@@ -802,7 +802,7 @@ lc is the cursor selection point in plot coords"""
 				ymax = max(ymax,max(counts))
 				ymin = min(ymin,min(counts))
 			else:
-				for k in self.bins.keys():
+				for k in list(self.bins.keys()):
 					#print(self.bins[k])
 					ymax = max(ymax,max(self.bins[k]))
 					ymin = min(ymin,min(self.bins[k]))
@@ -1118,13 +1118,13 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.datachange()
 
 	def selAll(self):
-		for k in self.target().visibility.keys() : self.target().visibility[k]=True
+		for k in list(self.target().visibility.keys()) : self.target().visibility[k]=True
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
 
 	def selNone(self):
-		for k in self.target().visibility.keys() : self.target().visibility[k]=False
+		for k in list(self.target().visibility.keys()) : self.target().visibility[k]=False
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
@@ -1304,7 +1304,7 @@ class EMHistogramInspector(QtGui.QWidget):
 	def datachange(self):
 		self.setlist.clear()
 		flags= Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)|Qt.ItemFlags(Qt.ItemIsDragEnabled)
-		keys=self.target().data.keys()
+		keys=list(self.target().data.keys())
 		visible = self.target().visibility
 		keys.sort()
 		parms = self.target().pparm # get the colors from this

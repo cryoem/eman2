@@ -556,7 +556,7 @@ def main():
 			resumeDict = js_open_dict( options.resume )
 	
 			#print "Resume dict is", resumeDict
-			for key in resumeDict.keys():
+			for key in list(resumeDict.keys()):
 				#print "\n\nKKKKKKey is", key
 		
 				keyint = int ( key.split('_')[-1] )
@@ -598,7 +598,7 @@ def main():
 		if options.inputaliparams:
 			try:
 				inputalidict = js_open_dict( options.inputaliparams )
-				numdigits = len( inputalidict.keys()[0].split('_')[-1] )	#keys are of the form 'subtomo_XXX'; we determine how many XXX the keys have
+				numdigits = len( list(inputalidict.keys())[0].split('_')[-1] )	#keys are of the form 'subtomo_XXX'; we determine how many XXX the keys have
 			except:
 				print("ERROR: Something is wrong with the json file provided". options.inputaliparams)
 				sys.exit(1)
@@ -1048,13 +1048,13 @@ def main():
 				
 						tomoID = "subtomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
 				
-						if tomoID not in resumeDict.keys():
+						if tomoID not in list(resumeDict.keys()):
 							print("ERROR: This key is not in the file provided for --resume", tomoID)
 							sys.exit() 
 				
 		
-						if len(resumeDict.keys()) > 0:
-							keys = resumeDict.keys()
+						if len(list(resumeDict.keys())) > 0:
+							keys = list(resumeDict.keys())
 					
 							for key in keys:
 								if type(resumeDict[key]) is not list:					 

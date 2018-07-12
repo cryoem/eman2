@@ -207,7 +207,7 @@ def precache(files):
 def rerunall():
 	"""Requeues all active (incomplete) tasks"""
 	q=EMTaskQueue()
-	e=q.active.keys()
+	e=list(q.active.keys())
 	e=[i for i in e if isinstance(i,int) and q.active[i]!=None]
 	
 	for i in e: q.task_rerun(i)
@@ -217,7 +217,7 @@ def rerunall():
 def killall():
 	"""Requeues all active (incomplete) tasks"""
 	q=EMTaskQueue()
-	e=q.active.keys()
+	e=list(q.active.keys())
 	e=[i for i in e if isinstance(i,int) and q.active[i]!=None]
 	
 	for i in e: q.task_aborted(i)
@@ -334,7 +334,7 @@ class TaskData(QtCore.QAbstractTableModel):
 
 	def load(self):
 		"""Updates the cached display from source"""
-		keys=self.target.keys()
+		keys=list(self.target.keys())
 		keys.sort()
 		keys=keys[:-2]
 		self.nrows=len(keys)

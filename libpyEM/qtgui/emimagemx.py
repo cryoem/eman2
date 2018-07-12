@@ -1546,7 +1546,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if  self.max_idx == 0: return # there is no data
 
 		absloc=((vec[0]),(self.height()-(vec[1])))
-		for item in self.coords.items():
+		for item in list(self.coords.items()):
 			index = item[0]+self.img_num_offset
 			if index != 0: index %= self.max_idx
 			data = item[1]
@@ -2930,7 +2930,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		Gets the keys in the header of the first image
 		'''
 		if self.header_keys == None:
-			self.header_keys = self.get_image_header(self.cache_start).keys()
+			self.header_keys = list(self.get_image_header(self.cache_start).keys())
 		return self.header_keys
 
 	def refocus_cache(self,new_focus):
@@ -3138,14 +3138,14 @@ class EMDataListCache(EMMXDataCache):
 				for i in self.images:
 					try:
 						if self.images[i] != None:
-							self.keys = self.images[i].get_attr_dict().keys()
+							self.keys = list(self.images[i].get_attr_dict().keys())
 							break
 					except: pass
 
 			elif self.mode == EMDataListCache.LIST_MODE:
 				for i in self.images:
 					try:
-						 self.keys = i.get_attr_dict().keys()
+						 self.keys = list(i.get_attr_dict().keys())
 						 break
 					except: pass
 
@@ -3335,7 +3335,7 @@ class EM3DDataListCache(EMMXDataCache):
 
 	def get_image_header_keys(self):
 		if self.keys == None:
-			self.keys = self[0].get_attr_dict().keys()
+			self.keys = list(self[0].get_attr_dict().keys())
 
 		return self.keys
 

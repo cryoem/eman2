@@ -5610,7 +5610,7 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 	allowed_types = [type(None), bool, int, int, float, complex,
 					 str, bytes]
 
-	local_vars_keys = local_vars.keys()
+	local_vars_keys = list(local_vars.keys())
 
 	my_vars = dict()
 	for key in set(local_vars_keys) - set(exclude_list_of_vars):
@@ -5839,7 +5839,7 @@ def convert_json_fromunicode(data):
 	if isinstance(data, str):
 		return str(data)
 	elif isinstance(data, collections.Mapping):
-		return dict(map(convert_json_fromunicode, data.iteritems()))
+		return dict(map(convert_json_fromunicode, iter(data.items())))
 	elif isinstance(data, collections.Iterable):
 		return type(data)(map(convert_json_fromunicode, data))
 	else:

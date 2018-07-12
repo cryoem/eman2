@@ -103,9 +103,9 @@ def example_tsp_problem():
     np.random.shuffle(init_state)
     # create a distance matrix
     distance_matrix = {}
-    for ka, va in cities.items():
+    for ka, va in list(cities.items()):
         distance_matrix[ka] = {}
-        for kb, vb in cities.items():
+        for kb, vb in list(cities.items()):
             if kb == ka: distance_matrix[ka][kb] = 0.0
             else: distance_matrix[ka][kb] = geodesic_distance(va, vb)
     tsps = TSPSolver(init_state, distance_matrix)

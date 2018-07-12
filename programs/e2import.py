@@ -253,7 +253,7 @@ def main():
 			for filename in starfs:
 				print(("Importing from {}.star".format(base_name(filename,nodir=True))))
 				sf = StarFile(filename)
-				hdr = sf.keys()
+				hdr = list(sf.keys())
 				if len(hdr) < 3:
 					print(("Could not parse {}".format(filename)))
 					continue

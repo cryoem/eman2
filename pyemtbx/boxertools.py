@@ -2992,7 +2992,7 @@ class PawelAutoBoxer(AutoBoxer):
 		if not(dict is None):
 			# assume the dictionary uses variable names as keys, so we loop over all
 			#    keys
-			for key in dict.keys():
+			for key in list(dict.keys()):
 				try:
 					# and set our contents according to the dict
 					self.__dict__[key] = dict[key]

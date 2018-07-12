@@ -745,7 +745,7 @@ class EMBrowser(EMBrowserType):
 		pass
 	
 	def closeEvent(self,event):
-		for delegate in self.action_delegates.values():
+		for delegate in list(self.action_delegates.values()):
 			delegate.closeEvent(event)
 		EMBrowserType.closeEvent(self, event)
 	
@@ -1343,7 +1343,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 					return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in xrange(0,EMUtil.get_image_count(url))]
 			else:
 				d = e.get_attr_dict()
-				keys = d.keys()
+				keys = list(d.keys())
 				keys.sort() #alphabetical order
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 			
@@ -1367,7 +1367,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 			d = e.get_attr_dict()
 				
 			if len(vals) == val_idx:
-				keys = d.keys()
+				keys = list(d.keys())
 				keys.sort() #alphabetical order
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 			elif len(vals) == val_idx+1:
@@ -1917,7 +1917,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 				if d["nz"] > 1: return_items = [EM3DMetaImageItem(self,str(i),url,i) for i in xrange(0,n)]
 				else: return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in xrange(0,n)]
 			else: 
-				keys = d.keys()
+				keys = list(d.keys())
 				keys.sort() #alphabetical order
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 		else:
@@ -1929,7 +1929,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 				d = db.get_header(0)
 				
 			if len(vals) == val_idx:
-				keys = d.keys()
+				keys = list(d.keys())
 				keys.sort() #alphabetical order
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 			elif len(vals) == val_idx+1:
@@ -1956,7 +1956,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 			for db_key in vals[2:]:db = db[db_key]
 			
 			try:
-				for k,val in db.items():
+				for k,val in list(db.items()):
 					if isinstance(val,dict):
 						return_items.append(EMBDBDictItem(self,str(k),url,str(k)))
 					else:

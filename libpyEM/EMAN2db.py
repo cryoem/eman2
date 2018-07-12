@@ -90,13 +90,13 @@ def DB_cleanup(signum=None,stack=None):
 			try: nopen=len([i for i in DBDict.alldicts if i.bdb!=None])
 			except: nopen=0
 			print("Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,nopen,os.getpid()))
-			for i in DBDict.alldicts.keys(): print(i.name)
+			for i in list(DBDict.alldicts.keys()): print(i.name)
 		if stack!=None : traceback.print_stack(stack)
-	for d in DBDict.alldicts.keys():
+	for d in list(DBDict.alldicts.keys()):
 		d.forceclose()
 		d.lock.acquire(False)		# prevents reopening
-	for e in EMAN2DB.opendbs.values(): e.close()
-	for d in DBDict.alldicts.keys():
+	for e in list(EMAN2DB.opendbs.values()): e.close()
+	for d in list(DBDict.alldicts.keys()):
 		try : d.lock.release()	# This will (intentionally) allow the threads to fail, since the environment is now closed
 		except : pass
 	if signum in (2,15) :
@@ -123,7 +123,7 @@ def parallel_process_exit():
 	if os.access('EMAN2DB',os.R_OK):
 		# Kill any running process from e2paralle.py running on localhost. If none are running nothing happens
 		from EMAN2PAR import EMLocalTaskHandler
-		for proc in EMLocalTaskHandler.allrunning.values():
+		for proc in list(EMLocalTaskHandler.allrunning.values()):
 			proc.terminate()
 			os.kill(proc.pid,signal.SIGKILL)
 
@@ -691,7 +691,7 @@ class EMTaskQueue:
 		task.queuetime=time.time()
 
 		# map data file specifiers to ids
-		for j,k in task.data.items():
+		for j,k in list(task.data.items()):
 			try:
 				if k[0]!="cache" : continue
 			except: continue
@@ -969,7 +969,7 @@ only practical option.)
 
 	def __del__(self):
 		if not self.dbenv: return
-		for i in self.dicts.keys() : self.close_dict(i)
+		for i in list(self.dicts.keys()) : self.close_dict(i)
 		self.close()
 
 	def __getitem__(self,key):
@@ -1076,7 +1076,7 @@ class DBDict:
 			print("Error 2 updating %s. Please contact sludtke@bcm.edu."%lfile)
 			os._exit(1)
 
-		for k in tmpdb.keys():
+		for k in list(tmpdb.keys()):
 			self.bdb[k]=tmpdb[k]
 
 		tmpdb.close()
@@ -1413,7 +1413,7 @@ of these occasional errors"""
 
 	def keys(self):
 		self.realopen(self.rohint)
-		try: return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
+		try: return [loads(x) for x in list(self.bdb.keys()) if x[0]=='\x80']
 		except:
 			traceback.print_exc()
 			print("This is a serious error, which should never occur during normal usage.\n Please report it (with the error text above) to sludtke@bcm.edu. Please also read the database warning page in the Wiki.")
@@ -1421,11 +1421,11 @@ of these occasional errors"""
 
 	def values(self):
 		self.realopen(self.rohint)
-		return [self[k] for k in self.keys()]
+		return [self[k] for k in list(self.keys())]
 
 	def items(self):
 		self.realopen(self.rohint)
-		return [(k,self[k]) for k in self.keys()]
+		return [(k,self[k]) for k in list(self.keys())]
 
 	def has_key(self,key):
 		self.realopen(self.rohint)
@@ -1598,7 +1598,7 @@ of these occasional errors"""
 
 	def update(self,dict):
 		self.realopen()
-		for i,j in dict.items(): self[i]=j
+		for i,j in list(dict.items()): self[i]=j
 
 
 #def DB_cleanup():

@@ -17826,7 +17826,7 @@ def HAC_averages(stack, dendoname, avename, K):
 		print('Impossible to read dendogram structure.')
 		sys.exit()
 
-	list_k = Dendo.keys()
+	list_k = list(Dendo.keys())
 	if K not in list_k:
 		print('Dendogram does not contain the draw for K=%d' % K)
 		sys.exit()

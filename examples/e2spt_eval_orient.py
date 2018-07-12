@@ -62,7 +62,7 @@ too look for issues with preferred orientation, etc.
 	out=open(options.output,"w")
 
 	alts=[ [] for i in xrange(18)]
-	for k in db.keys():
+	for k in list(db.keys()):
 		xf=db[k][0].inverse()
 		xfd=xf.get_params("eman")
 		out.write("%1.3f,\t%1.3f,\t%1.3f,\t%1.3g\n"%(xfd["az"],xfd["alt"],xfd["phi"],float(db[k][1])))

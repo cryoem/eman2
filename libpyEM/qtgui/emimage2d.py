@@ -1293,7 +1293,7 @@ class EMImage2DWidget(EMGLWidget):
 		alpha = 1.0
 		if len(self.shapes) > 0:
 
-			for k in self.shapes.keys():
+			for k in list(self.shapes.keys()):
 				shape = self.shapes[k]
 				if not isinstance(shape,EMShape) : continue
 				glLineWidth(2)
@@ -1312,7 +1312,7 @@ class EMImage2DWidget(EMGLWidget):
 			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 
 		glPointSize(2)
-		for k,s in self.shapes.items():
+		for k,s in list(self.shapes.items()):
 			### handle boxes for 3D images
 			if s.shape[0] == "ellipse":
 				mxlen=11
@@ -1397,7 +1397,7 @@ class EMImage2DWidget(EMGLWidget):
 
 
 		# We do the scr* shapes last since they mess up the matrix
-		for k,s in self.shapes.items():
+		for k,s in list(self.shapes.items()):
 			try:
 				if s.shape[0][:3]=="scr":
 #					print "shape",s.shape
@@ -1475,7 +1475,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.set_line_animation(*animation.get_end())
 
 	def set_animation_increment(self,increment):
-		for shape in self.shapes.items():
+		for shape in list(self.shapes.items()):
 			shape[1].set_blend(increment)
 
 		self.shapechange = True
@@ -1486,7 +1486,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	def update_blend(self):
 		ret = False
-		for shape in self.shapes.items():
+		for shape in list(self.shapes.items()):
 			s = shape[1]
 			if s.isanimated:
 				v = s.incblend()

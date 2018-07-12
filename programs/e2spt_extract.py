@@ -78,7 +78,7 @@ def main():
 		if "class_list" in js and "boxes_3d" in js:
 			clslst=js["class_list"]
 			boxes=js["boxes_3d"]
-			for ky in clslst.keys():
+			for ky in list(clslst.keys()):
 				val=clslst[ky]
 				if options.label:
 					if str(val["name"])!=options.label:

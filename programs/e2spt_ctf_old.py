@@ -600,7 +600,7 @@ def main():
 		'''
 		#Once the images are organized, proceed to CTF correct them. Loop over all images.
 		'''
-		for imagestem in imagefilenames.keys():
+		for imagestem in list(imagefilenames.keys()):
 			print("\nWorking on image",pp,imagefilenames[imagestem])
 			ctf=None
 			
@@ -1491,7 +1491,7 @@ def ctfparamparser( pline ):
 
 	params = {'ampcont':ampcont,'apix':apix,'bfactor':bfactor,'cs':cs,'defocus':defocus,'voltage':voltage}
 	print("\n(e2spt_ctf.py)(ctfparamparser) The parsed parameters are")
-	for key in params.keys():
+	for key in list(params.keys()):
 		print(key + '=' + params[key]) 
 	
 	ctf = EMAN2Ctf()
@@ -2231,7 +2231,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 	angerrors = collections.OrderedDict(sorted(angerrors.items()))
 	if angerrors:
 	
-		avgangerror = sum( [  math.sqrt(angerrors[a]*angerrors[a]) for a in angerrors.keys() ] ) /len( angerrors )
+		avgangerror = sum( [  math.sqrt(angerrors[a]*angerrors[a]) for a in list(angerrors.keys()) ] ) /len( angerrors )
 		
 		a=open(options.path + '/angular_error_avg.txt','w')
 		a.writelines([str(avgangerror)+'\n'])

@@ -96,7 +96,7 @@ def main():
 		except: bvecs[N]=im
 
 	# normalize all vector sums
-	for im in bvecs.values(): 
+	for im in list(bvecs.values()): 
 		im.process_inplace("normalize.unitlen")
 
 	# Make an output image of vectors

@@ -143,16 +143,16 @@ act as a filter on the names of the algorithms."""
 		
 	if l:
 		if options.verbose>0:
-			if len(args)>1 : k=[i for i in l.keys() if args[1] in i]
-			else: k=l.keys()
+			if len(args)>1 : k=[i for i in list(l.keys()) if args[1] in i]
+			else: k=list(l.keys())
 			k.sort()
 			for i in k:
 				print("%s : %s"%(i, l[i][0]))
 				for j in range(1,len(l[i]),3): 
 					print("\t%s(%s) - %s"%(l[i][j],l[i][j+1],l[i][j+2]))
 		else :
-			if len(args)>1 : k=[i for i in l.keys() if args[1] in i]
-			else: k=l.keys()
+			if len(args)>1 : k=[i for i in list(l.keys()) if args[1] in i]
+			else: k=list(l.keys())
 			if len(k)==0 :
 				print("Empty list - no items met search criteria")
 				sys.exit(0)

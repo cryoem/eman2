@@ -466,7 +466,7 @@ def main():
 
 		# Create Thread objects
 		jsd=Queue.Queue(0)
-		thrds=[threading.Thread(target=pqual,args=(i,classptcls[i],jsd,options.includeprojs,options.verbose)) for i in classptcls.keys()]
+		thrds=[threading.Thread(target=pqual,args=(i,classptcls[i],jsd,options.includeprojs,options.verbose)) for i in list(classptcls.keys())]
 		result={}
 		thrtolaunch=0
 

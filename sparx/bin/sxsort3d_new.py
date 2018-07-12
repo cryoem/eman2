@@ -1255,12 +1255,12 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration, log):
 		
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		full_dict_list = [ None for im in xrange(Tracker["constants"]["total_stack"])]
-		for key, value in local_dict.iteritems():full_dict_list[key] = value			 
+		for key, value in local_dict.items():full_dict_list[key] = value			 
 	for icpu in xrange(Blockdata["nproc"]):
 		if Blockdata["myid"] == icpu and Blockdata["myid"] != Blockdata["main_node"]: wrap_mpi_send(local_dict, Blockdata["main_node"], MPI_COMM_WORLD)
 		elif Blockdata["myid"] != icpu and Blockdata["myid"] == Blockdata["main_node"]:
 			local_dict = wrap_mpi_recv(icpu, MPI_COMM_WORLD)
-			for key, value in local_dict.iteritems():
+			for key, value in local_dict.items():
 				full_dict_list[key] = value
 		else: pass
 		mpi_barrier(MPI_COMM_WORLD)

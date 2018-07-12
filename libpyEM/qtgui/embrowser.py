@@ -889,7 +889,7 @@ class EMJSONFileType(EMFileType) :
 		EMFileType.__init__(self, path)	# the current path this FileType is representing
 
 		self.js = js_open_dict(path)
-		self.keys = self.js.keys()
+		self.keys = list(self.js.keys())
 		self.dim = (0, 0, 0)
 
 	def __del__(self) :
@@ -937,7 +937,7 @@ class EMBdbFileType(EMFileType) :
 
 		self.nimg = len(self.bdb)
 
-		if self.nimg == 0 : self.keys = self.bdb.keys()
+		if self.nimg == 0 : self.keys = list(self.bdb.keys())
 		else : self.keys = None
 
 		if self.nimg > 0 :
@@ -2332,7 +2332,7 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		if target.nimg == 0 :
 			self.wimnum.hide()
-			k = self.bdb.keys()
+			k = list(self.bdb.keys())
 			k.sort()
 			self.wimlist.addItems(k)
 			self.wimlist.show()
@@ -2517,7 +2517,7 @@ class EMJSONInfoPane(EMInfoPane) :
 
 		# Set up image selectors for stacks
 
-		k = self.js.keys()
+		k = list(self.js.keys())
 		k.sort()
 		self.wkeylist.addItems(k)
 		self.wkeylist.show()
@@ -2594,7 +2594,7 @@ class EMJSONInfoPane(EMInfoPane) :
 		elif isinstance(trg, EMAN2Ctf) :
 			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("EMAN2Ctf", ""))))
 			subitms = []
-			for k, v in trg.to_dict().items() :
+			for k, v in list(trg.to_dict().items()) :
 				if isinstance(v, (list, tuple)) :
 					v = ["%1.3g"%i for i in v]
 					subitms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ", ".join(v)))))

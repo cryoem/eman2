@@ -252,7 +252,7 @@ def main():
 		output_3d.append({})
 		output_cls.append({})
 		### even/odd loop
-		for eoid,eo in input_eo_order.items():
+		for eoid,eo in list(input_eo_order.items()):
 
 			if it>0:
 				inputmodel=[output_3d[-2][eo][m] for m in models]

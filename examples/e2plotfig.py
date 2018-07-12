@@ -349,7 +349,7 @@ def plotdata( options, data ):
 
 		#import string
 		#markers=string.printable
-		markers = matplotlib.markers.MarkerStyle.markers.keys()
+		markers = list(matplotlib.markers.MarkerStyle.markers.keys())
 		marker=''
 
 		

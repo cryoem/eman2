@@ -2160,13 +2160,13 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration, log_main):
 		for im in xrange(len(tchunk)): all_smearing[im] = smearing_dict[tchunk[im]]
 		write_text_file(all_smearing, os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"))
 		full_dict_list = [ None for im in xrange(Tracker["constants"]["total_stack"])]
-		for key, value in local_dict.iteritems():full_dict_list[key] = value
+		for key, value in local_dict.items():full_dict_list[key] = value
 	mpi_barrier(MPI_COMM_WORLD)
 	for icpu in xrange(Blockdata["nproc"]):
 		if Blockdata["myid"] == icpu and Blockdata["myid"] != Blockdata["main_node"]: wrap_mpi_send(local_dict, Blockdata["main_node"], MPI_COMM_WORLD)
 		elif Blockdata["myid"] != icpu and Blockdata["myid"] == Blockdata["main_node"]:
 			local_dict = wrap_mpi_recv(icpu, MPI_COMM_WORLD)
-			for key, value in local_dict.iteritems():
+			for key, value in local_dict.items():
 				full_dict_list[key] = value
 		else: pass
 		mpi_barrier(MPI_COMM_WORLD)
@@ -5748,7 +5748,7 @@ def copy_results(log_file, all_gen_stat_list):
 			log_file.add( '{:^8} {:>8}   {:^24}  {:>15} {:^22} {:^5} {:^15} {:^20} '.format('Group ID', '    size','determined in generation', 'reproducibility', 'random reproducibility', ' std ', ' selection file', '       map file     '))
 			clusters  = []
 			NACC      = 0           
-			for ig1, value in Tracker["generation"].items():
+			for ig1, value in list(Tracker["generation"].items()):
 				ig = atoi('%s'%ig1)
 				for ic in xrange(value):
 					cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)

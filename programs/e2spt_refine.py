@@ -94,7 +94,7 @@ def main():
 		
 		js=js_open_dict(os.path.join(options.path, "particle_parms_{:02d}.json".format(itr)))
 		score=[]
-		for k in js.keys():
+		for k in list(js.keys()):
 			score.append(float(js[k]["score"]))
 		
 		s=""

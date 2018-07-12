@@ -191,7 +191,7 @@ class TomoEvalGUI(QtGui.QWidget):
 					
 				if nbox>0 and "class_list" in js:
 					cls=js["class_list"]
-					for k in cls.keys():
+					for k in list(cls.keys()):
 						vname=str(cls[k]["name"])
 						n=np.sum([b[-1]==int(k) for b in boxes])
 						
@@ -216,7 +216,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		
 		#### update particle type list
 		self.setspanel.clear()
-		for k in self.ptclcls.keys():
+		for k in list(self.ptclcls.keys()):
 			v=self.ptclcls[k]
 			kname="    {}\t:  {}".format(k, v[1])
 			item=QtGui.QListWidgetItem(kname)
@@ -237,7 +237,7 @@ class TomoEvalGUI(QtGui.QWidget):
 			self.imglst.setItem(i,0,it)
 			self.imglst.setItem(i,1,QtGui.QTableWidgetItem(str(info["basename"])))
 			nbox=0
-			for kname in info["boxcls"].keys():
+			for kname in list(info["boxcls"].keys()):
 				if self.ptclcls[kname][0]==1:
 					nbox+=info["boxcls"][kname]
 			it=QtGui.QTableWidgetItem()

@@ -115,7 +115,7 @@ def main():
 			print("Line of coordinates to add",line)
 			tomograms[tomogram].append(line)
 			
-		for tomogram in tomograms.keys():
+		for tomogram in list(tomograms.keys()):
 			#coordsfile = options.path + '/' + options.input.replace('.hdf','_coords.txt')
 			coordsfile = options.path + '/' + tomogram.split('.')[0] + '_coords.txt'
 

@@ -540,7 +540,7 @@ class EMBoxList:
 
 	def load_boxes_from_db(self):
 		#data = self.db[self.entry]
-		if not "boxes_rct" in self.db.keys(): 
+		if not "boxes_rct" in list(self.db.keys()): 
 			pass#data = self.db[os.path.basename(self.entry)]	# Backward compability
 		else:
 			for box in self.db["boxes_rct"]:
