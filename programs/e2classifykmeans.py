@@ -211,7 +211,7 @@ together."""
 					
 		
 	if (options.clsfiles) :
-		map(os.remove, glob.glob('cls????.lst'))
+		list(map(os.remove, glob.glob('cls????.lst')))
 		stackname=argv[1]
 		if options.original : stackname=options.original
 		for j in range(options.ncls):

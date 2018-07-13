@@ -342,7 +342,7 @@ def main():
 				relion_key = str_line.split(' ')[0]
 				assert relion_key.find('_rln') != -1, '# Logical Error: The string %s must contain _rln at this point of code.' % (str_line)
 				
-				if relion_key in relion_dict.keys():
+				if relion_key in list(relion_dict.keys()):
 					relion_dict[relion_key][idx_col] = int(i_relion_item_col)
 					print(relion_dict[relion_key][idx_title] % (relion_dict[relion_key][idx_col], relion_key))
 			
@@ -353,7 +353,7 @@ def main():
 				if i_relion_particle == 0:
 					print('# ')
 					print('# Checking RELION STAR file contents ...')
-					for category_key in relion_category_dict.keys():
+					for category_key in list(relion_category_dict.keys()):
 						for key in relion_category_dict[category_key][idx_required_key_list]:
 							if relion_dict[key][idx_col] < 0:
 								print('#     %s entry for %s is not found' % (key, relion_category_dict[category_key][idx_relion_process]))
@@ -370,7 +370,7 @@ def main():
 						is_success = False
 						break;
 						
-					for category_key in relion_category_dict.keys():
+					for category_key in list(relion_category_dict.keys()):
 						if relion_category_dict[category_key][idx_is_category_found] == True:
 							print('# ')
 							print('# Parameters associated with %s will be extracted.' % (relion_category_dict[category_key][idx_relion_process]))

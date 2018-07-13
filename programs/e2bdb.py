@@ -124,7 +124,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		print("WARNING: Merge mode\nCombining contents of: ",", ".join(args[1:]))
 		print("into ",args[0])
 		
-		if raw_input("Proceed (y/n) :").lower() != "y" :
+		if input("Proceed (y/n) :").lower() != "y" :
 			print("Aborting")
 			sys.exit(1)
 		
@@ -138,7 +138,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				continue
 			
 			indb=db_open_dict(path,True)
-			for k in indb.keys():
+			for k in list(indb.keys()):
 				outdb[k]=indb[k]
 				
 		print("Merging complete")
@@ -291,7 +291,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct=db_open_dict(path+db,ro=True)
 				
 				#### Dump
-				keys=dct.keys()
+				keys=list(dct.keys())
 				keys.sort()
 				for k in keys:
 					v=dct[k]
@@ -315,7 +315,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct=db_open_dict(path+db,ro=True)
 				
 				#### Dump
-				keys=dct.keys()
+				keys=list(dct.keys())
 				keys.sort()
 				if len(options.step)==3 : keys=keys[:options.step[2]]
 				for k in keys[options.step[0]::options.step[1]]:
@@ -325,7 +325,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 						for i in v: print("\n\t%s"%str(i), end=' ')
 						print("")
 					elif isinstance(v,dict) :
-						ks2=v.keys()
+						ks2=list(v.keys())
 						ks2.sort()
 						kc=0
 						for i in ks2:
@@ -341,7 +341,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			for db in dbs:
 				print("##### CTF -> ",db)
 				dct=db_open_dict(path+db,ro=True)
-				keys=dct.keys()
+				keys=list(dct.keys())
 				if len(options.step)==3 : keys=keys[:options.step[2]]
 				defocus=set()
 				for k in keys[options.step[0]::options.step[1]]:
@@ -367,7 +367,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct=db_open_dict(path+db,ro=True)
 				
 				#### Dump
-				keys=dct.keys()
+				keys=list(dct.keys())
 				if len(options.step)==3 : keys=keys[:options.step[2]]
 				keys.sort()
 				for k in keys[options.step[0]::options.step[1]]:
@@ -377,7 +377,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 						for i in v: print("\n\t%s"%str(i), end=' ')
 						print("")
 					elif isinstance(v,dict) :
-						ks2=v.keys()
+						ks2=list(v.keys())
 						ks2.sort()
 						for i in ks2:
 							print("\n\t%s : %s"%(i,v[i]), end=' ')
@@ -428,7 +428,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			for db in dbs:
 				dct=db_open_dict(path+db,ro=True)
 				dct.realopen()
-				keys=dct.bdb.keys()
+				keys=list(dct.bdb.keys())
 				allkvp={}
 				for k in keys:
 					s1,s2=k.split("\x80",1)		# start of a pickled string. 
@@ -439,7 +439,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 						if v in st : print("Error: value %d seen multiple times in %s (%s,%s)"%(v,db,s1,s2))
 						st.add(v)
 				print("%s : "%db, end=' ')
-				for i in allkvp.keys(): 
+				for i in list(allkvp.keys()): 
 					if options.verbose>0 : print("%s %d/%d\t"%(i,len(allkvp[i]),int(max(allkvp[i]))+1), end=' ')
 					if len(allkvp[i])!=int(max(allkvp[i])+1) : print("\nMismatch found in %s. Could be normal if file has been rewritten multiple times, but is unusual"%db)
 				if options.verbose>0 : print("")
@@ -469,7 +469,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				print("You are requesting to delete the following databases:")
 				for db in dbs:
 					print(db," ", end=' ')
-				if raw_input("\nAre you sure (y/n) ? ")[0].lower()!='y' :
+				if input("\nAre you sure (y/n) ? ")[0].lower()!='y' :
 					print("Aborted")
 					sys.exit(1)
 			
@@ -530,7 +530,7 @@ def db_cleanup(force=False):
 				try: print(os.popen("ps %s"%i,"r").readlines()[-1])
 				except: print(i)
 			
-			reply=raw_input("Would you like me to kill all of these jobs (YES/NO) : ")
+			reply=input("Would you like me to kill all of these jobs (YES/NO) : ")
 			if reply != "YES" : 
 				print("Not killing jobs. Please exit them manually then retry.")
 				return

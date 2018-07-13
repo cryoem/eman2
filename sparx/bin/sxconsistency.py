@@ -420,7 +420,7 @@ def main():
 		chunks = {}
 		chunklengths = {}
 		for i in xrange(4):
-			chunks[chr(65+i)] = map(int,read_text_file(os.path.join(outdir,options.chunk+"%01d.txt"%i)))
+			chunks[chr(65+i)] = list(map(int,read_text_file(os.path.join(outdir,options.chunk+"%01d.txt"%i))))
 			chunklengths[chr(65+i)] = len(chunks[chr(65+i)])
 
 
@@ -622,7 +622,7 @@ def main():
 		ll = 3 # this is hardwired as we have three groups.  however, I would like to keep the code general.
 		for jj in xrange(4):
 			params = [None for ii in xrange(ll)]
-			newbad = map(int, read_text_file(options.params+"%01d.txt"%jj) )
+			newbad = list(map(int, read_text_file(options.params+"%01d.txt"%jj) ))
 			nn = len(newbad)
 			for ii in xrange(ll):
 				params[ii] = read_text_row(os.path.join(outdir,bp+"%01d%01d.txt"%(jj,ii)))

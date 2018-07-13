@@ -266,7 +266,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 
 		# this object will have
 		if self.au_data != None:
-			combo_entries = self.au_data.keys()
+			combo_entries = list(self.au_data.keys())
 			combo_entries.sort()
 			combo_entries.reverse()
 
@@ -722,7 +722,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		self.au_tab.vbl = QtGui.QVBoxLayout(self.au_tab)
 
 		self.au_data = self.target().au_data
-		combo_entries = self.au_data.keys()
+		combo_entries = list(self.au_data.keys())
 		combo_entries.sort()
 		combo_entries.reverse()
 		self.combo = QtGui.QComboBox(self)

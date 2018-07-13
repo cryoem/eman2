@@ -231,7 +231,7 @@ def main():
 		print("\n(DE_translation_plotter)(main) ids before are {} type={} ".format( ids, type(ids) ))
 		print("\ndatadict is {}".format(datadict))
 
-	datadictsorted = sorted(datadict.items(), key=lambda e: e[1][0]) 
+	datadictsorted = sorted(list(datadict.items()), key=lambda e: e[1][0]) 
 	
 	if options.verbose > 9:
 		print("\n(DE_translation_plotter)(main) datadictsorted is {}".format(datadictsorted))

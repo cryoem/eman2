@@ -273,7 +273,7 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 		v.close()
 		
 		apix = float(animorph[1])
-		vecs = [map(lambda y:float(y), x.split()) for x in vecs]
+		vecs = [[float(y) for y in x.split()] for x in vecs]
 		for i, v in enumerate(vecs):
 			vecs[i] = [apix * (v[3]), apix * (v[4]), apix * (v[5]), apix * (v[0] - v[3]), apix * (v[1] - v[4]), apix * (v[2] - v[5])]
 #			vecs[i]=[apix*(v[0]+v[3])/2,apix*(v[1]+v[4])/2,apix*(v[2]+v[5])/2,apix*(v[3]-v[0]),apix*(v[4]-v[1]),apix*(v[5]-v[2])]

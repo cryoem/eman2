@@ -66,7 +66,7 @@ def main():
 		try: os.unlink("{}/avg_bandali_{:02d}.hdf".format(options.path,options.iter))
 		except: pass
 
-	sortangs=[(v["score"],v["xform.align2d"],eval(k)) for k,v in angs.items()]		# the eval() here is poor programming practice, but is the easiest way :^(
+	sortangs=[(v["score"],v["xform.align2d"],eval(k)) for k,v in list(angs.items())]		# the eval() here is poor programming practice, but is the easiest way :^(
 	N=len(sortangs)
 
 	# make a quick alignment reference

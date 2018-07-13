@@ -130,13 +130,13 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	avgs=[Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma}) for i in xrange(n)]
 
 	# filter the list of particles to include 
-	keys=angs.keys()
+	keys=list(angs.keys())
 	if options.listfile!=None :
 		keys=[i for i in keys if eval(i)[1] in plist]
-		if options.verbose : print("{}/{} particles based on list file".format(len(keys),len(angs.keys())))
+		if options.verbose : print("{}/{} particles based on list file".format(len(keys),len(list(angs.keys()))))
 	
 	keys=[k for k in keys if angs[k]["score"]<=options.simthr and inrange(options.minalt,angs[k]["xform.align3d"].get_params("eman")["alt"],options.maxalt)]
-	if options.verbose : print("{}/{} particles after filters".format(len(keys),len(angs.keys())))
+	if options.verbose : print("{}/{} particles after filters".format(len(keys),len(list(angs.keys()))))
 																		 
 
 	if options.shrinkcompare>1 :

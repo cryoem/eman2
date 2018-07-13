@@ -176,7 +176,7 @@ def main():
 		dataset.update({i:scores[i]})
 		#x.append(i)
 
-	dataset = sorted( dataset.items(), key=itemgetter(1), reverse=True )
+	dataset = sorted( list(dataset.items()), key=itemgetter(1), reverse=True )
 	
 	if options.normalizeplot:
 		#for s in scores:

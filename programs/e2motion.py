@@ -95,7 +95,7 @@ def main():
 	parms=js_open_dict("{}/0_a2d_parms.json".format(options.path))
 	
 	if options.iter not in parms :
-		try: options.iter=max([int(i) for i in parms.keys()])
+		try: options.iter=max([int(i) for i in list(parms.keys())])
 		except: options.iter=0
 		print("Iteration: ",options.iter)
 
@@ -465,7 +465,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		try: 
 			dct=js_open_dict("{}/particle_parms_{:02d}.json".format(self.path,itr))
-			self.particles=[(j["score"],j["xform.align2d"],eval(i)[0],int(eval(i)[1])) for i,j in dct.items()]
+			self.particles=[(j["score"],j["xform.align2d"],eval(i)[0],int(eval(i)[1])) for i,j in list(dct.items())]
 			self.particles.sort()
 			if len(self.particles)==0 : raise Exception
 		except:
@@ -981,7 +981,7 @@ class EMMotion(QtGui.QMainWindow):
 			c["class_ptcl_src"]=toclass[0][2]
 
 		# put the class with the most particles first
-		m=max(map(lambda i:(i["ptcl_repr"],i),classes))
+		m=max([(i["ptcl_repr"],i) for i in classes])
 		classes.remove(m[1])
 		classes.insert(0,m[1])
 

@@ -324,7 +324,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			if mem_len > 0:
 				# In members we have absolute ID
 				members = mpi_bcast(members, mem_len, MPI_INT, main_node, MPI_COMM_WORLD)
-				members = map(int, members)
+				members = list(map(int, members))
 
 				# Take out the good ones and use the remaining ones for initialization again
 				nndata = ndata-len(members)
@@ -437,7 +437,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		if myid != main_node:
 			members = [0]*n_members
 		members = mpi_bcast(members, n_members, MPI_INT, main_node, MPI_COMM_WORLD)	   # members
-		members = map(int, members)
+		members = list(map(int, members))
 
 		ndata = len(alldata)
 		nleft = ndata-n_members
@@ -606,7 +606,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			l_stable_members = mpi_recv(1, MPI_INT, node_to_run, i+30000, MPI_COMM_WORLD)
 			l_stable_members = int(l_stable_members[0])
 			stable_members = mpi_recv(l_stable_members, MPI_INT, node_to_run, i+40000, MPI_COMM_WORLD)
-			stable_members = map(int, stable_members)
+			stable_members = list(map(int, stable_members))
 			mirror_consistent_rate = mpi_recv(1, MPI_FLOAT, node_to_run, i+50000, MPI_COMM_WORLD)
 			mirror_consistent_rate = float(mirror_consistent_rate[0])
 			pix_err = mpi_recv(1, MPI_FLOAT, node_to_run, i+60000, MPI_COMM_WORLD)
@@ -655,7 +655,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			l_STB_PART = mpi_recv(1, MPI_INT, main_node, i+10000, MPI_COMM_WORLD)
 			l_STB_PART = int(l_STB_PART[0])
 			STB_PART = mpi_recv(l_STB_PART, MPI_INT, main_node, i+20000, MPI_COMM_WORLD)
-			STB_PART = map(int, STB_PART)
+			STB_PART = list(map(int, STB_PART))
 			STB_PART.sort()
 
 			class_data = [None]*l_STB_PART
@@ -960,7 +960,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			belongsto = [0]*nima
 		mpi_barrier(comm)
 		belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, comm)
-		belongsto = map(int, belongsto)
+		belongsto = list(map(int, belongsto))
 		###if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], color, myid
 
 
@@ -994,9 +994,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		sx_sum = mpi_bcast(sx_sum, numref, MPI_FLOAT, main_node, comm)
 		sy_sum = mpi_bcast(sy_sum, numref, MPI_FLOAT, main_node, comm)
 		members = mpi_bcast(members, numref, MPI_INT, main_node, comm)
-		sx_sum = map(float, sx_sum)
-		sy_sum = map(float, sy_sum)
-		members = map(int, members)
+		sx_sum = list(map(float, sx_sum))
+		sy_sum = list(map(float, sy_sum))
+		members = list(map(int, members))
 
 		for j in xrange(numref):
 			sx_sum[j] /= float(members[j])
@@ -1036,7 +1036,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		else:
 			ref_ali_params = [0.0]*(numref*4)
 		ref_ali_params = mpi_bcast(ref_ali_params, numref*4, MPI_FLOAT, main_node, comm)
-		ref_ali_params = map(float, ref_ali_params)
+		ref_ali_params = list(map(float, ref_ali_params))
 
 		for j in xrange(numref):
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)
@@ -1079,7 +1079,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				else:
 					ali_params = [0.0]*((im_end-im_start)*4)
 				ali_params = mpi_bcast(ali_params, len(ali_params), MPI_FLOAT, i, comm)
-				ali_params = map(float, ali_params)
+				ali_params = list(map(float, ali_params))
 				for im in xrange(im_start, im_end):
 					alpha = ali_params[(im-im_start)*4]
 					sx = ali_params[(im-im_start)*4+1]
@@ -1177,7 +1177,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					else:
 						ali_params = [0.0]*4
 					ali_params = mpi_bcast(ali_params, 4, MPI_FLOAT, done_on_node, comm)
-					ali_params = map(float, ali_params)
+					ali_params = list(map(float, ali_params))
 					set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
 
 			else:
@@ -1198,7 +1198,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							mem_len = mpi_recv(1, MPI_INT, done_on_node, SPARX_MPI_TAG_UNIVERSAL, comm)
 							mem_len = int(mem_len[0])
 							members = mpi_recv(mem_len, MPI_INT, done_on_node, SPARX_MPI_TAG_UNIVERSAL, comm)
-							members = map(int, members)
+							members = list(map(int, members))
 							refi[j].set_attr_dict({'members': members,'n_objects': mem_len})
 						elif myid == done_on_node:
 							members = refi[j].get_attr('members')
@@ -1550,10 +1550,10 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 	flag = [0]*size_all
 	
 	for i in xrange(size_all-size):
-		m1 = map(int, data[i].get_attr('members'))
+		m1 = list(map(int, data[i].get_attr('members')))
 		if len(m1) < 5: continue
 		for j in xrange((i/size+1)*size, size_all):
-			m2 = map(int, data[j].get_attr('members'))
+			m2 = list(map(int, data[j].get_attr('members')))
 			if len(m2) < 5: continue
 			m = set(m1).intersection(set(m2))
 			if float(len(m)) > m_th*(len(m1)+len(m2))/2:

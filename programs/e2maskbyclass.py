@@ -127,7 +127,7 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 				print("ERROR: This program is meant to be used with full resolution phase flipped particles (__ctf_flip_fullres). ",fsp," does not appear to be this type of file. You can override this behavior with --nofullresok")
 
 	if options.verbose:
-		print(sum([i.count(-1) for i in ptcls.values()])," missing particles in classes. They will be unmasked")
+		print(sum([i.count(-1) for i in list(ptcls.values())])," missing particles in classes. They will be unmasked")
 
 # 	import pprint
 # 	pprint.pprint(ptcls)

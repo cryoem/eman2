@@ -259,7 +259,7 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 		
 		alipm=[a[x,y] for a in pms]
 		alidict={"type":"2d"}
-		for i,a in simxorder.items():
+		for i,a in list(simxorder.items()):
 			alidict[a]=float(alipm[i])
 		alidict["mirror"]=int(alidict["mirror"])
 		#print x,y,alipm,alidict

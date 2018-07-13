@@ -268,7 +268,7 @@ def main():
 		options.outmode = "int8"
 
 	if options.outmode not in file_mode_map :
-		print("Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]'))
+		print("Invalid output mode, please specify one of :\n",str(list(file_mode_map.keys())).translate(None,'"[]'))
 		sys.exit(1)
 
 	no_2d_3d_options = (not (options.threed2threed or options.threed2twod or options.twod2threed))
@@ -650,7 +650,7 @@ def main():
 					# Parse the options to convert the image file name to EMData object
 					# (for both plain image file and bdb file)
 
-					for key in param_dict.keys():
+					for key in list(param_dict.keys()):
 						#print str(param_dict[key])
 
 						if str(param_dict[key]).find('bdb:') != -1 or not str(param_dict[key]).isdigit():
@@ -1158,7 +1158,7 @@ def main():
 		options.twod2threed   = opt2to3
 
 		if options.extractboxes:
-			for k in boxes.keys():
+			for k in list(boxes.keys()):
 				out=open(k+".box","w")
 				for c in boxes[k]:
 					out.write("{:1d}\t{:1d}\t{:1d}\t{:1d}\n".format(int(c[0]-boxsize/2),int(c[1]-boxsize/2),int(boxsize),int(boxsize)))

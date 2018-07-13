@@ -188,7 +188,7 @@ def main():
 				img_per_grp = mpi_recv(1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 				img_per_grp = int(img_per_grp[0])
 				temp = mpi_recv(img_per_grp, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-				proj_list.append(map(int, temp))
+				proj_list.append(list(map(int, temp)))
 				del temp
 			mpi_barrier(MPI_COMM_WORLD)
 		print("  C  ",myid,"  ",time()-st)
@@ -398,11 +398,11 @@ def main():
 					nm = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					nm = int(nm[0])
 					members = mpi_recv(nm, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-					ave.set_attr('members', map(int, members))
+					ave.set_attr('members', list(map(int, members)))
 					members = mpi_recv(nm, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-					ave.set_attr('pixerr', map(float, members))
+					ave.set_attr('pixerr', list(map(float, members)))
 					members = mpi_recv(3, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-					ave.set_attr('refprojdir', map(float, members))
+					ave.set_attr('refprojdir', list(map(float, members)))
 					ave.write_image(args[1], km)
 					km += 1
 	else:

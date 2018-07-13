@@ -8,7 +8,7 @@ from EMAN2 import *
 db=db_open_dict("bdb:e2ctf.parms",True)
 
 out=open("ctf_parms.txt","w")
-for k in db.keys():
+for k in list(db.keys()):
 	ctf=EMAN2Ctf()
 	ctf.from_string(db[k][0])
 	out.write( "%s,%1.3f,%1.1f\n"%(k,ctf.defocus,ctf.bfactor))

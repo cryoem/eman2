@@ -110,7 +110,7 @@ def main():
 	else:
 		
 		js=js_open_dict(path+"/particle_parms_{:02d}.json".format(itr))
-		k=js.keys()[0]
+		k=list(js.keys())[0]
 		src=eval(k)[0]
 		e=EMData(src, 0,True)
 		bxsz=e["nx"]
@@ -132,7 +132,7 @@ def main():
 			except:pass
 		lst=[LSXFile(m, False) for m in lname]
 		
-		n3d=len(js.keys())
+		n3d=len(list(js.keys()))
 		for ii in range(n3d):
 			e=EMData(src, ii, True)
 			fname=e["class_ptcl_src"]

@@ -169,7 +169,7 @@ def import_ctf(voltage, cs, ac, apix, verbose, version):
 							if not os.path.exists(os.getcwd() + "/info"):
 								os.mkdir(os.getcwd() + "/info")
 							jdb = js_open_dict(os.getcwd() + "/info/" + base_name(filename) + "_info.json")
-							if "ctf" in jdb.keys():
+							if "ctf" in list(jdb.keys()):
 								jdb.delete('ctf')
 							ctf = EMAN2Ctf()
 							ctf.from_dict({"defocus":e2defocus,"dfang":e2dfang,"dfdiff":e2dfdiff,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix})

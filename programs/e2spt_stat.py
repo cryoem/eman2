@@ -55,16 +55,16 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 
 	angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 	if options.mode in ("score","coverage"):
-		data=[angs[a][options.mode] for a in angs.keys()]
+		data=[angs[a][options.mode] for a in list(angs.keys())]
 	else:
-		data=[angs[a]["xform.align3d"].get_params("eman")[options.mode] for a in angs.keys()]
+		data=[angs[a]["xform.align3d"].get_params("eman")[options.mode] for a in list(angs.keys())]
 	
 
 	if options.extract:
 		out=open("{}/particle_parms_{:02d}.txt".format(options.path,options.iter),"w")
 		out.write("# num; score; ref coverage; az; alt; phi\n")
 
-		k=angs.keys()
+		k=list(angs.keys())
 		k.sort(key=lambda i:int(eval(i)[1]))
 		for i in k:
 			itm=angs[i]

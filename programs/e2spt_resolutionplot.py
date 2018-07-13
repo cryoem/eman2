@@ -542,7 +542,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 
 	N = len(fscs)
 	HSV_tuples = [(x*1.0/N, 0.5, 0.5) for x in range(N)]
-	RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
+	RGB_tuples = [colorsys.hsv_to_rgb(*x) for x in HSV_tuples]
 
 	kont=0
 	plot_name = ''

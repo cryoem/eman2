@@ -105,7 +105,7 @@ def main():
 		print("The parameter '--maxshift' must be greater than 0")
 		sys.exit(1)
 	
-	if options.xybadlines: options.xybadlines = [map(int,s.split(',')) for s in options.xybadlines]
+	if options.xybadlines: options.xybadlines = [list(map(int,s.split(','))) for s in options.xybadlines]
 	
 	pid=E2init(sys.argv)
 
@@ -462,7 +462,7 @@ class MovieModeAligner:
 			tf = self._transforms[i+1].get_trans_2d()
 			trans2d.append([ti[0],ti[1],tf[0]-ti[0],tf[1]-ti[1]])
 		trans2d = np.array(trans2d)
-		X,Y,U,V = zip(*trans2d)
+		X,Y,U,V = list(zip(*trans2d))
 		plt.figure()
 		ax = plt.gca()
 		ax.quiver(X,Y,U,V,angles='xy',scale_units='xy',scale=1)

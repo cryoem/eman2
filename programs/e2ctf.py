@@ -2784,7 +2784,7 @@ class GUIctf(QtGui.QWidget):
 			for st in self.data:
 				inten=st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)
 				inten=[(s[i],inten[i]) for i in xrange(1,len(inten)-1) if inten[i]>inten[i+1] and inten[i]>inten[i-1]]
-				ls,li=zip(*inten)	# this confusing idiom is unzipping the list
+				ls,li=list(zip(*inten))	# this confusing idiom is unzipping the list
 #				print len(ls),len(li)
 				self.guiplot.set_data((ls,li),st[0],quiet=True,linetype=-1,symtype=0,symsize=2)
 

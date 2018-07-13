@@ -174,7 +174,7 @@ def main():
 		options.outmode="int8"
 
 	if options.outmode not in file_mode_map :
-		print("Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]'))
+		print("Invalid output mode, please specify one of :\n",str(list(file_mode_map.keys())).translate(None,'"[]'))
 		sys.exit(1)
 
 	infile = args[0]
@@ -461,7 +461,7 @@ def main():
 				if not param_dict : param_dict={}
 
 				#Parse the options to convert the image file name to EMData object(for both plain image file and bdb file)
-				for key in param_dict.keys():
+				for key in list(param_dict.keys()):
 					if str(param_dict[key]).find('bdb:')!=-1 or not str(param_dict[key]).isdigit():
 						try:
 							if  os.path.is_file(param_dict[key]) :
@@ -556,7 +556,7 @@ def main():
 				if not param_dict : param_dict={}
 
 				#Parse the options to convert the image file name to EMData object(for both plain image file and bdb file)
-				for key in param_dict.keys():
+				for key in list(param_dict.keys()):
 					if str(param_dict[key]).find('bdb:')!=-1 or not str(param_dict[key]).isdigit():
 						try:
 							param_dict[key] = EMData(param_dict[key])

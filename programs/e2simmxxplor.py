@@ -470,7 +470,7 @@ def simmx_xplore_dir_data():
 			simmx+=[pfx+i for i in dl if "simmx_stg1" == i[:10] and "_even" in i]
 
 			if len(prjs)==len(simmx) : ret.append([dir,str(ptcl[0]),prjs,simmx])
-			else : print("Mismatch in :",zip(prjs,simmx))
+			else : print("Mismatch in :",list(zip(prjs,simmx)))
 
 			prjs=[pfx+i for i in dl if "projections_" in i and i[-4:]==".hdf" and "_odd" in i]
 			simmx=[pfx+i for i in dl if "simmx_" == i[:6] and "stg1_" not in i and "_odd" in i]
@@ -479,7 +479,7 @@ def simmx_xplore_dir_data():
 			simmx+=[pfx+i for i in dl if "simmx_stg1" == i[:10] and "_odd" in i]
 
 			if len(prjs)==len(simmx) : ret.append([dir,str(ptcl[1]),prjs,simmx])
-			else : print("Mismatch in :",zip(prjs,simmx))
+			else : print("Mismatch in :",list(zip(prjs,simmx)))
 
 	print(ret)
 

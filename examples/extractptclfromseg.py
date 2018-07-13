@@ -226,7 +226,7 @@ and make sure the unaligned average looks reasonable.
 		jsname=info_name(tomoname)
 		js=js_open_dict(jsname)
 		if "class_list" in js:
-			clst=[int(k) for k in js["class_list"].keys()]
+			clst=[int(k) for k in list(js["class_list"].keys())]
 			for ii in range(100):
 				if ii not in clst:
 					mytag=ii

@@ -971,7 +971,7 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 		shuffle(tlistprj)
 		nnn = len(tlistprj)
 		tlistprj = mpi_bcast(tlistprj, nnn, MPI_INT, main_node, MPI_COMM_WORLD)
-		tlistprj = map(int, tlistprj)
+		tlistprj = list(map(int, tlistprj))
 		"""
 		if(ite>1 and ite%5 == 0  and ite<140):
 			if(myid == main_node):
