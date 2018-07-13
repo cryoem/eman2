@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 # Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -45,7 +46,6 @@ To see how it works just run it from the commandline:
 The EMBoxerModule is basically the epicenter of everything: functions like "add_box" and "move_box" are probably good starting
 points in terms of figuring out how to adapt this code to application specific needs
 '''
-from __future__ import absolute_import
 from optparse import OptionParser
 from .emapplication import EMApp,get_application
 from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
