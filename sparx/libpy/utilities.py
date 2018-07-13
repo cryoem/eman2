@@ -5843,7 +5843,7 @@ def convert_json_fromunicode(data):
 	if isinstance(data, str):
 		return str(data)
 	elif isinstance(data, collections.Mapping):
-		return dict(list(map(convert_json_fromunicode, iter(data.items()))))
+		return dict(list(map(convert_json_fromunicode, iter(list(data.items())))))
 	elif isinstance(data, collections.Iterable):
 		return type(data)(list(map(convert_json_fromunicode, data)))
 	else:

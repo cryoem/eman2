@@ -41,7 +41,7 @@ def load_lines(input_file):
 def replace_tags(lines, replace_dict):
     sanity_list = []
     typo_list = []
-    for key, value in replace_dict.items():
+    for key, value in list(replace_dict.items()):
         if 'END|||' in key:
             sanity_list.append(key)
         typo_list.append(key)
@@ -59,7 +59,7 @@ def replace_tags(lines, replace_dict):
                     print('line:', idx, ' Tag typo for:', name)
                     print(line)
 
-    for key, value in replace_dict.items():
+    for key, value in list(replace_dict.items()):
         if not key in lines:
             print(key, 'not found')
         lines = lines.replace(key, value)
