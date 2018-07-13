@@ -218,7 +218,6 @@ class GUIEvalImage(QtGui.QWidget):
 		self.wfft.mousedown.connect(self.fftmousedown)
 		self.wfft.mousedrag.connect(self.fftmousedrag)
 		self.wfft.mouseup.connect(self.fftmouseup)
-		self.wplot.mousedown.connect(self.plotmousedown)
 
 		self.wimage.mmode="app"
 		self.wfft.mmode="app"
@@ -1091,10 +1090,6 @@ class GUIEvalImage(QtGui.QWidget):
 		"up"
 		#m=self.wfft.scr_to_img((event.x(),event.y()))
 
-
-	def plotmousedown(self,event) :
-		"mousedown in plot"
-#		m=self.guiim.scr_to_img((event.x(),event.y()))
 
 if __name__ == "__main__":
 	main()

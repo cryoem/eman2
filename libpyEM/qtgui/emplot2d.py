@@ -794,8 +794,6 @@ lc is the cursor selection point in plot coords"""
 		for i,p in enumerate(self.selected):
 			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+y0),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
 
-
-
 		self.selected_sg.emit()
 
 	def mousePressEvent(self, event):
