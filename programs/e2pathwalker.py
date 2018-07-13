@@ -61,7 +61,7 @@ def check_exists(outfile, overwrite=False):
 	if not os.path.exists(outfile):
 		return True
 			
-	p = input("File %s exists. Overwrite? yes/no: "%outfile)
+	p = eval(input("File %s exists. Overwrite? yes/no: "%outfile))
 	if p.lower() in ["yes", "y"]:
 		return True
 

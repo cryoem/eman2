@@ -530,7 +530,7 @@ def db_cleanup(force=False):
 				try: print(os.popen("ps %s"%i,"r").readlines()[-1])
 				except: print(i)
 			
-			reply=input("Would you like me to kill all of these jobs (YES/NO) : ")
+			reply=eval(input("Would you like me to kill all of these jobs (YES/NO) : "))
 			if reply != "YES" : 
 				print("Not killing jobs. Please exit them manually then retry.")
 				return
