@@ -235,7 +235,7 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--dd", action="store_true", help="Circular ordering without adjustment of orientations", default=False)
 	parser.add_option("--circular", action="store_true", help="Select circular ordering (first image has to be similar to the last)", default=False)
-	parser.add_option("--align", action="store_true", help="Compute all pairwise alignments and for the table of their similarities find the best chain", default=False)
+	parser.add_option("--align", action="store_true", help="Compute all pairwise alignments and from the table of image similarities find the best chain", default=False)
 	parser.add_option("--initial", type="int", default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--radius", type="int", default=-1, help="Radius of a circular mask for similarity based ordering")
 	#  import params for 2D alignment
