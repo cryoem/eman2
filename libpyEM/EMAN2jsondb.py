@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from builtins import object
 import weakref
 import json
@@ -225,7 +226,7 @@ except ImportError:
 			else : l=msvcrt.LK_NBLCK
 
 			# We try for 30 seconds before giving up
-			for i in xrange(30):
+			for i in range(30):
 				try :
 					msvcrt.locking(fileobj.fileno(), l, 1)
 					break

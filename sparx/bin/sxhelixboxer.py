@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import get_image_directory, Transform, Region, EMANVERSION, EMData, E2init, E2end, EMArgumentParser
 from EMAN2db import db_open_dict, db_check_dict, db_close_dict
 from math import *
@@ -718,7 +719,7 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, 
 			helix_particles = get_rotated_particles(micrograph, coords, px_dst, px_length, px_width, gridding, mic_name = micrograph_filename)
 		else:
 			helix_particles = get_unrotated_particles(micrograph, coords, px_dst, px_length, px_width,mic_name = micrograph_filename)
-		for ii in xrange(len(helix_particles)):
+		for ii in range(len(helix_particles)):
 			(helix_particles[ii]).set_attr("filament", micrograph_filename+"%04d"%nhelix)
 		nhelix = nhelix + 1
 		all_particles.append(helix_particles)
@@ -1008,7 +1009,7 @@ if ENABLE_GUI:
 							side = max(px_length, px_width)
 							helix_particles = get_unrotated_particles(micrograph, coords_key, px_dst, side, side, mic_name=self.micrograph_filename)
 							px_overlap = side - px_dst
-						for ii in xrange(len(helix_particles)):
+						for ii in range(len(helix_particles)):
 							(helix_particles[ii]).set_attr("filament", self.micrograph_filename+"%04d"%nhelix)
 						nhelix = nhelix + 1
 						all_particles.append(helix_particles)
@@ -2026,7 +2027,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 		flist2.sort(key=str.lower)
 		nfiles = len(flist2)
 		print_msg('Sorted file list in %s:\n'%v1)
-		for iii in xrange(nfiles):
+		for iii in range(nfiles):
 			print_msg('%s,'%flist2[iii])
 		print_msg('\n')
 		for i2, v2 in enumerate(flist2):
@@ -2054,7 +2055,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 			region,hist = hist_list(cutoffhistogram,lhist)	
 			msg = "      Histogram of cut off frequencies\n      ERROR       number of frequencies\n"
 			print_msg(msg)
-			for lhx in xrange(len(lhist)):
+			for lhx in range(len(lhist)):
 				msg = " %10.3f     %7d\n"%(region[lhx], hist[lhx])
 				print_msg(msg)
 		print_msg('The percentage of micrographs filtered by the cutoff frequency: %6f\n' % (len(cutoffhistogram)*1.0/lenmicnames))		
@@ -2118,7 +2119,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	if importctf:	
 		ctfs = read_text_row(importctf)
 		nx = True
-		for i in xrange(len(ctfs)):
+		for i in range(len(ctfs)):
 			smic = ctfs[i][-1].split('/')
 			ctfilename = (smic[-1].split('.'))[0]
 			if(ctfilename == filename):
@@ -2241,7 +2242,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 			else:
 				print_msg( "otcl_images: %s\n"%otcl_images)
 				print_msg( "ptcl_images: %s\n"%ptcl_images)
-				for j in xrange(n1):
+				for j in range(n1):
 					prj = get_im(ptcl_images, j)
 					prj = ramp(prj)
 					stat = Util.infomask( prj, mask, False )

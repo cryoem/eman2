@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from builtins import object
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_list_dicts
@@ -414,7 +415,7 @@ class scp_proxy(object):
 		self.stdin.write("listrecurse\n%s\n%s\n"%(path,basepath))
 		r=int(self.stdout.readline().strip())
 		ret=[]
-		for i in xrange(r):
+		for i in range(r):
 			ret.append(self.stdout.readline().strip())
 			
 		return ret

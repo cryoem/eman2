@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from builtins import object
 from EMAN2 import *
 import os, math

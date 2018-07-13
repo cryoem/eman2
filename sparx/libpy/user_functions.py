@@ -36,6 +36,7 @@ from __future__ import print_function
 #   from appropriate application, in this case "sxali2d_c.py ...  --function=wei_func
 # 
 
+from builtins import range
 from builtins import object
 from global_def import *
 from EMAN2_cppwrap import *
@@ -166,7 +167,7 @@ def ref_ali3dm( refdata ):
 	mask   = refdata[5]
 
 	print('filter every volume at (0.4, 0.1)')
-	for iref in xrange(numref):
+	for iref in range(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, 0.4, 0.1)
 		v *= mask
@@ -190,7 +191,7 @@ def ref_sort3d(refdata):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	print((line+theme))
 	print('filter every volume at (%f, 0.1)'%low_pass_filter)
-	for iref in xrange(numref):
+	for iref in range(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, low_pass_filter, 0.1)
 		v *= mask
@@ -212,7 +213,7 @@ def ref_ali3dm_ali_50S( refdata ):
 
 	flmin = 1.0
 	flmax = -1.0
-	for iref in xrange(numref):
+	for iref in range(numref):
 		fl, aa = fit_tanh( fscc[iref] )
 		if (fl < flmin):
 			flmin = fl
@@ -223,7 +224,7 @@ def ref_ali3dm_ali_50S( refdata ):
 		print('iref,fl,aa: ', iref, fl, aa)
 		# filter to minimum resolution
 	print('flmin,aamin:', flmin, aamin)
-	for iref in xrange(numref):
+	for iref in range(numref):
 		v = get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
 		v = filt_tanl(v, flmin, aamin)
 		
@@ -495,7 +496,7 @@ def ref_aliB_cone( ref_data ):
 	from  fundamentals  import  rops_table
 	pwem = rops_table(volf)
 	ftb = []
-	for idum in xrange(len(pwem)):
+	for idum in range(len(pwem)):
 		ftb.append(sqrt(ref_data[1][idum]/pwem[idum]))
 	from filter import filt_table
 	volf = filt_table(volf, ftb)
@@ -645,7 +646,7 @@ def minfilt( fscc ):
 	numref = len(fscc)
 	flmin = 1.0
 	flmax = -1.0
-	for iref in xrange(numref):
+	for iref in range(numref):
 		fl, aa = fit_tanh( fscc[iref] )
 		if (fl < flmin):
 			flmin = fl
@@ -685,7 +686,7 @@ def ref_ali3dm_new( refdata ):
 	print_msg(msg)
 
 	vol = []
-	for i in xrange(numref):
+	for i in range(numref):
 		vol.append(get_im( os.path.join(outdir, "vol%04d.hdf"%total_iter), i ))
 		stat = Util.infomask( vol[i], mask, False )
 		vol[i] -= stat[0]
@@ -695,17 +696,17 @@ def ref_ali3dm_new( refdata ):
 	del stat
 
 	reftab = rops_table( vol[idmin] )
-	for i in xrange(numref):
+	for i in range(numref):
 		if(i != idmin):
 			vtab = rops_table( vol[i] )
 			ftab = [None]*len(vtab)
-			for j in xrange(len(vtab)):
+			for j in range(len(vtab)):
 		        	ftab[j] = sqrt( reftab[j]/vtab[j] )
 			vol[i] = filt_table( vol[i], ftab )
 
 	if ali50S:
 		vol = ali_nvol(vol, get_im( "mask-50S.spi" ))
-	for i in xrange(numref):
+	for i in range(numref):
 		if(not (varf is None) ):   vol[i] = vol[i].filter_by_image( varf )
 		filt_tanl( vol[i], flmin, aamin ).write_image( os.path.join(outdir, "volf%04d.hdf" % total_iter), i )
 
@@ -738,7 +739,7 @@ def spruce_up_var_m( refdata ):
 	msg = "Minimum tangent filter:  cut-off frequency = %10.3f     fall-off = %10.3f\n"%(fflmin, aamin)
 	print_msg(msg)
 
-	for i in xrange(numref):
+	for i in range(numref):
 		volf = get_im( os.path.join(outdir, "vol%04d.hdf"% total_iter) , i )
 		if(not (varf is None) ):   volf = volf.filter_by_image( varf )
 		volf = filt_tanl(volf, flmin, aamin)
@@ -866,7 +867,7 @@ def temp_dovolume( ref_data ):
 		rt = read_text_file( "pwreference.txt" )
 		ro = rops_table(vol)
 		#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
-		for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
+		for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
 		vol = fft( filt_table( filt_tanl(vol, fl, aa), ro) )
 		msg = "Power spectrum adjusted\n"
 		print_msg(msg)
@@ -933,7 +934,7 @@ def dovolume( ref_data ):
 		rt = read_text_file( "pwreference.txt" )
 		ro = rops_table(vol)
 		#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
-		for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
+		for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
 		vol = fft( filt_table( filt_tanl(vol, fl, aa), ro) )
 		msg = "Power spectrum adjusted\n"
 		print_msg(msg)
@@ -1048,13 +1049,13 @@ def do_volume_mrk02(ref_data):
 			fftip(vol)
 			ro = rops_table(vol)
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
-			for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["upscale"]
+			for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["upscale"]
 			#write_text_file(rops_table(filt_table( vol, ro),1),"foo.txt")
 			if Tracker["constants"]["sausage"]:
 				ny = vol.get_ysize()
 				y = float(ny)
 				from math import exp
-				for i in xrange(len(ro)):  ro[i] *= \
+				for i in range(len(ro)):  ro[i] *= \
 				  (1.0+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.10)/0.025)**2)+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.215)/0.025)**2))
 
 			if local_filter:
@@ -1072,7 +1073,7 @@ def do_volume_mrk02(ref_data):
 				y = float(ny)
 				ro = [0.0]*(ny//2+2)
 				from math import exp
-				for i in xrange(len(ro)):  ro[i] = \
+				for i in range(len(ro)):  ro[i] = \
 				  (1.0+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.10)/0.025)**2)+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.215)/0.025)**2))
 				fftip(vol)
 				filt_table(vol, ro)

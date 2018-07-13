@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import os
 import sys
 import math
@@ -90,10 +91,10 @@ improved with time."""
 	pat.process_inplace('normalize.circlemean')
 	pat.process_inplace("mask.sharp", {"outer_radius":pat.get_xsize()/2.0})
 
-	data = [None for i in xrange(NTT)]
+	data = [None for i in range(NTT)]
 
 	tmpl=test_image(0,size=(SIZE,SIZE))
-	for i in xrange(NTT):
+	for i in range(NTT):
 		data[i]=tmpl.process("xform",{"transform":Transform({"type":"2d","alpha":uniform(0,360.0),"tx":uniform(-4.0,4.0),"ty":uniform(-4.0,4.0)})})
 		noise=test_image(1,size=(SIZE,SIZE))
 		noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
@@ -110,8 +111,8 @@ improved with time."""
 invalidate certain tests. Also note that overhead is difficult to compensate for, \
 so in most cases it is not dealt with.')
 		t1 = time.clock()
-		for fj in xrange(500):
-			for i in xrange(NTT/2):
+		for fj in range(500):
+			for i in range(NTT/2):
 				data[i].dot(data[i + NTT / 2])
 		t2 = time.clock()
 		ti = t2-t1
@@ -119,8 +120,8 @@ so in most cases it is not dealt with.')
 			( 500 * NTT / 2, SIZE, SIZE, ti, 500 * NTT / (2.0 * ti), SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)))
 
 		t1 = time.clock()
-		for fj in xrange(500):
-			for i in xrange(NTT/2):
+		for fj in range(500):
+			for i in range(NTT/2):
 				data[1].dot(data[12])
 		t2 = time.clock()
 		ti = t2-t1
@@ -128,8 +129,8 @@ so in most cases it is not dealt with.')
 			(500 * NTT / 2, SIZE, SIZE, ti, 500 * NTT / (2.0 * ti), SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)))
 
 		t1 = time.clock()
-		for fj in xrange(100):
-			for i in xrange(NTT/2):
+		for fj in range(100):
+			for i in range(NTT/2):
 				tmp=data[i].do_fft()
 		t2 = time.clock()
 		ti = t2-t1
@@ -137,8 +138,8 @@ so in most cases it is not dealt with.')
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti)))
 		
 		t1 = time.clock()
-		for fj in xrange(100):
-			for i in xrange(NTT/2):
+		for fj in range(100):
+			for i in range(NTT/2):
 				tmp=data[i].process("math.squared")
 		t2 = time.clock()
 		ti = t2-t1
@@ -146,8 +147,8 @@ so in most cases it is not dealt with.')
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti)))
 
 		t1 = time.clock()
-		for fj in xrange(100):
-			for i in xrange(NTT/2):
+		for fj in range(100):
+			for i in range(NTT/2):
 				tmp=data[i].process("math.sqrt")
 		t2 = time.clock()
 		ti = t2-t1
@@ -155,8 +156,8 @@ so in most cases it is not dealt with.')
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti)))
 	
 		t1 = time.clock()
-		for fj in xrange(100):
-			for i in xrange(NTT/2):
+		for fj in range(100):
+			for i in range(NTT/2):
 				tmp=data[i].translate(-32,-32,0)
 		t2 = time.clock()
 		ti = t2-t1
@@ -171,9 +172,9 @@ so in most cases it is not dealt with.')
 		NTT=NTT/2
 		rng=1
 	else: rng=8
-	for i in xrange(rng):
+	for i in range(rng):
 		t11 = time.clock()
-		for j in xrange(5, NTT):
+		for j in range(5, NTT):
 			if options.best:
 				tmp = data[i].align('rtf_best', data[j], {"flip":None, "maxshift":SIZE/8})
 			elif options.slow:

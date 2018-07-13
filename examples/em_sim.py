@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2017-08
+from builtins import range
 import numpy as np
 
 from OpenGL.GL import *

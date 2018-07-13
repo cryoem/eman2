@@ -12,6 +12,7 @@ from __future__ import print_function
 
 
 #import block
+from builtins import range
 from EMAN2 import *
 import pyemtbx.options
 import os

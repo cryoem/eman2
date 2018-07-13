@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-10
 from __future__ import print_function
+from builtins import range
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import tensorflow as tf
@@ -85,7 +86,7 @@ def load_ptcls(ref0, ref1, sz=64, makegaussian=True):
 				data.append(ar.flatten())
 				lbs.append(label)
 				
-	rndid=range(len(data))
+	rndid=list(range(len(data)))
 	np.random.shuffle(rndid)
 	data=[data[i] for i in rndid]
 	lbs=[lbs[i] for i in rndid]

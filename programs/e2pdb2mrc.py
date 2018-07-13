@@ -46,6 +46,7 @@ from __future__ import print_function
 # HEADER    COMPLEX(ANTIBODY/HIV-1 FRAGMENT)        10-FEB-94   1ACY      1ACY   2
 
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os

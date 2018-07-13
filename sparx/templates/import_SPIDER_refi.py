@@ -3,6 +3,7 @@ from __future__ import print_function
 
 # it is likely that the above line would have to be changed depending on python location
 
+from builtins import range
 from EMAN2 import *
 from sparx import *
 
@@ -28,7 +29,7 @@ total_high_proj = 0
 proj_out = "bdb:DONA"
 
 
-for ii in xrange(1,696+1) :
+for ii in range(1,696+1) :
 
 	proj_in = prj_home + "data%03d.ext" % ii
 
@@ -48,7 +49,7 @@ for ii in xrange(1,696+1) :
 
 	print("Converting ", proj_in, ", defocus is ", defocus, " Number of my great particles is ",len(selected_particles))
 
-	for iq in xrange(len(selected_particles)):
+	for iq in range(len(selected_particles)):
 		i = int(selected_particles[iq][0])-1
 
 		# Here one can have a problem because sometimes in trans doc two numbers

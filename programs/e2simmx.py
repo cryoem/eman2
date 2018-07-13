@@ -35,6 +35,7 @@ from __future__ import print_function
 # e2simmx.py  02/03/2007	Steven Ludtke
 # This program computes a similarity matrix between two sets of images
 
+from builtins import range
 from builtins import object
 from EMAN2 import *
 from math import *
@@ -184,7 +185,7 @@ class EMParallelSimMX(object):
 		blocks = []
 
 		current_c = 0
-		for c in xrange(0,col_div):
+		for c in range(0,col_div):
 			last_c = current_c + block_c
 			if residual_c > 0:
 				last_c += 1
@@ -192,7 +193,7 @@ class EMParallelSimMX(object):
 
 			current_r = 0
 			residual_r = self.rlen-block_r*row_div # residual left over by integer division
-			for r in xrange(0,row_div) :
+			for r in range(0,row_div) :
 				last_r = current_r + block_r
 				if residual_r > 0:
 					last_r += 1
@@ -273,7 +274,7 @@ class EMParallelSimMX(object):
 				print(len(self.tids),"simmx tasks left in main loop   \r", end=' ')
 				sys.stdout.flush()
 				st_vals = self.etc.check_task(self.tids)
-				for i in xrange(len(self.tids)-1,-1,-1):
+				for i in range(len(self.tids)-1,-1,-1):
 					st = st_vals[i]
 					if st==100:
 						tid = self.tids[i]
@@ -711,9 +712,9 @@ def main():
 	if options.verbose>0: print("Computing Similarities")
 
 	# Read all c images, then read and compare one r image at a time
-	cimgs=EMData.read_images(args[0],range(*crange))
+	cimgs=EMData.read_images(args[0],list(range(*crange)))
 	if options.colmasks:
-		cmimgs=EMData.read_images(options.colmasks,range(*crange))
+		cmimgs=EMData.read_images(options.colmasks,list(range(*crange)))
 		cimgs=list(zip(cimgs,cmimgs))
 	else:
 		for i in range(len(cimgs)):

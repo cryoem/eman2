@@ -36,6 +36,7 @@
 
 
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 import numpy as np
 

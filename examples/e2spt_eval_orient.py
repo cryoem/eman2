@@ -29,6 +29,7 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
+from builtins import range
 from EMAN2 import *
 import sys
 
@@ -61,7 +62,7 @@ too look for issues with preferred orientation, etc.
 
 	out=open(options.output,"w")
 
-	alts=[ [] for i in xrange(18)]
+	alts=[ [] for i in range(18)]
 	for k in list(db.keys()):
 		xf=db[k][0].inverse()
 		xfd=xf.get_params("eman")
@@ -75,7 +76,7 @@ too look for issues with preferred orientation, etc.
 
 	print("Altitude distribution:")
 
-	for i in xrange(18) :
+	for i in range(18) :
 		print("%d - %d: %d"%(i*10.0,(i+1)*10.0,len(alts[i])))
 
 
@@ -86,7 +87,7 @@ too look for issues with preferred orientation, etc.
 		ppz=int(min([len(a) for a in alts])*options.evendist)
 		print("Using ",ppz," particles from each 10 degree zone")
 		
-		for i in xrange(18):
+		for i in range(18):
 			alts[i].sort()
 			alts[i]=alts[i][:ppz]		# we keep the best ppz particles in each zone
 			
@@ -96,7 +97,7 @@ too look for issues with preferred orientation, etc.
 			sys.exit(1)
 #		avg=Averagers.get("mean.tomo",{"save_norm":1})
 		avg=Averagers.get("mean.tomo")
-		for i in xrange(18):
+		for i in range(18):
 			print("%d - %d"%(i*10.0,(i+1)*10.0))
 			for p in alts[i]:
 				n=int(p[1].split("_")[1])		# extract the particle number from the name saved by e2spt_classaverage

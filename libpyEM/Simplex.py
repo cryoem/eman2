@@ -23,6 +23,7 @@ from __future__ import print_function
 
 # Modified (debugged?) 7/16/2004 Michele Vallisneri (vallis@vallis.org)
 
+from builtins import range
 from builtins import object
 """ Simplex - a regression method for arbitrary nonlinear function minimization
 

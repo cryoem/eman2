@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan June 2015
+from builtins import range
 from builtins import object
 import os
 import sys
@@ -96,7 +97,7 @@ def main():
 	### Pre-train layer-wise
 	
 	if options.layer==None:
-		totrain=range(sda.n_layers)
+		totrain=list(range(sda.n_layers))
 	else:
 		totrain=[int(i) for i in options.layer.split(',')]
 	
@@ -105,10 +106,10 @@ def main():
 
 		n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
 		# go through pretraining epochs
-		for epoch in xrange(training_epochs):
+		for epoch in range(training_epochs):
 		# go through the training set
 			c = []
-			for batch_index in xrange(n_train_batches):
+			for batch_index in range(n_train_batches):
 				err=pretraining_fns[i](index=batch_index,
 					lr=learning_rate,
 					wd=options.weightdecay)
@@ -153,7 +154,7 @@ def main():
 			batch_size=100
 			test_imgs = sda.pretraining_get_result(train_set_x=train_set_x,batch_size=batch_size)
 			
-			for ni in xrange(sda.n_layers):
+			for ni in range(sda.n_layers):
 				fname="result_sda{:d}.hdf".format(ni)
 				try:os.remove(fname)
 				except: pass
@@ -570,7 +571,7 @@ class SdA(object):
 		# stochastich gradient descent on the MLP
 
 		# start-snippet-2
-		for i in xrange(self.n_layers):
+		for i in range(self.n_layers):
 			# construct the sigmoidal layer
 
 			# the size of the input is either the number of hidden units of
@@ -626,11 +627,11 @@ class SdA(object):
 		batch_end = batch_begin + batch_size
 		
 		ret_imgs=[]
-		for nl in xrange(self.n_layers):
+		for nl in range(self.n_layers):
 			da=self.dA_layers[nl]
 			result_da = da.get_result()
 			### feed forward for result
-			for li in xrange(nl):
+			for li in range(nl):
 				nda=self.dA_layers[nl-1-li]
 				result_da=nda.get_reconstructed_input(result_da)
 				

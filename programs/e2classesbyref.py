@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from math import *
 import os
 import sys
@@ -121,7 +122,7 @@ def main():
 	### initialize output files
 	
 	# class, weight, dx,dy,dalpha,flip
-	clsmx=[EMData(options.sep,nptcl,1) for i in xrange(6)]
+	clsmx=[EMData(options.sep,nptcl,1) for i in range(6)]
 	
 	# JSON style output, classes keyed by class number
 	clsinfo={}
@@ -129,7 +130,7 @@ def main():
 	# avgs
 	if options.classes!=None: 
 		options.averager=parsemodopt(options.averager)
-		avgrs=[Averagers.get(options.averager[0],options.averager[1]) for i in xrange(nref)]
+		avgrs=[Averagers.get(options.averager[0],options.averager[1]) for i in range(nref)]
 	
 	# Set up threads
 	N=nptcl
@@ -137,7 +138,7 @@ def main():
 	
 	jsd=Queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads
-	thrds=[(jsd,refs,refsbs,args[1],bsfs,options,i,i*npt,min(i*npt+npt,N)) for i in xrange(N/npt+1)]
+	thrds=[(jsd,refs,refsbs,args[1],bsfs,options,i,i*npt,min(i*npt+npt,N)) for i in range(N/npt+1)]
 	
 	# standard thread execution loop
 	thrtolaunch=0
@@ -218,7 +219,7 @@ def main():
 				ssnr=avg.calc_fourier_shell_correlation(refs[i])
 				third=len(ssnr)/3
 				ssnr=[ssnr[third]]*4+ssnr[third:third*2]+[ssnr[third*2-1]]*4	# we extend the list by replication to make the running average more natural
-				ssnr=[sum(ssnr[j-4:j+5])/9.0 for j in xrange(4,third+4)]		# smoothing by running average
+				ssnr=[sum(ssnr[j-4:j+5])/9.0 for j in range(4,third+4)]		# smoothing by running average
 				ssnr=[v/(1.0-min(v,.999999)) for v in ssnr]						# convert FSC to pseudo SSNR
 				avg["class_ssnr"]=ssnr
 				
@@ -243,7 +244,7 @@ def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 	lastdf=-999.0
 	lastdfn=-1
 	
-	for i in xrange(n0,n1):
+	for i in range(n0,n1):
 		ptcl=EMData(ptclfs,i)
 		ptclbs=EMData(ptclbsfs,i)
 		
@@ -284,7 +285,7 @@ def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 			if retali: insort(newbest,(c,b[1],b[0],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"],ptcl.process("xform",{"transform":t})))		# cls,bs_sim,tx,ty,alpha,mirror,ptcl
 			else: insort(newbest,(c,b[1],b[0],prm["tx"],prm["ty"],prm["alpha"],prm["mirror"]))		# cls,bs_sim,cls,tx,ty,alpha,mirror
 		
-		for j in xrange(options.sep):
+		for j in range(options.sep):
 			ret.append(newbest[j])
 		jsd.put((ret,grp,i==n1-1))	# third value indicates whether this is the final result from this thread
 			

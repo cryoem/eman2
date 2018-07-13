@@ -33,6 +33,7 @@ from __future__ import print_function
 
 # $Id$
 
+from builtins import range
 from EMAN2 import *
 import sys
 import os.path
@@ -109,13 +110,13 @@ def image_from_formula(n_x, n_y, n_z, formula) :
 	emd  = EMData(nx, ny, nz)
 	emdn = EMNumPy.em2numpy(emd)
 
-	for z in xrange(0, nz) :
+	for z in range(0, nz) :
 		zn = z * z1
 
-		for y in xrange(0, ny) :
+		for y in range(0, ny) :
 			yn = y * y1
 
-			for x in xrange(0, nx) :
+			for x in range(0, nx) :
 				xn = x * x1
 
 				try :
@@ -1107,7 +1108,7 @@ def main():
 								rd = d.calc_radial_dist(d["nx"],0,0.5,0)
 								d = EMData(len(rd),1,1)
 
-								for x in xrange(len(rd)): d[x] = rd[x]
+								for x in range(len(rd)): d[x] = rd[x]
 
 							if d["sigma"]==0:
 								if options.verbose > 0:

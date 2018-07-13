@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 
@@ -43,19 +44,19 @@ x = []
 from random import random, gauss
 from math import sqrt
 Kt = 3 # actual number of groups
-for i in xrange(N):
+for i in range(N):
 	if(i%Kt == 0):  x.append(gauss(0.0,1.0))
 	elif(i%Kt == 1):  x.append(gauss(1.0e-1,1.0))
 	elif(i%Kt == 2):  x.append(gauss(2.0e-1,1.0))
 
 
 print(ttime())
-for j in xrange(1,N):
-	for i in xrange(j):
+for j in range(1,N):
+	for i in range(j):
 		d.set_value_at(mono(i,j),sqrt((x[i]-x[j])**2))
 dmin = 1.0e23
 print(ttime())
-for i in xrange(100):
+for i in range(100):
 	o = Util.cluster_pairwise(d,K)
 	if(dmin > o[N+K]):
 		print(i,ttime(),o[N+K:N+K+2])

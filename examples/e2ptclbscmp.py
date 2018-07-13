@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from math import *
 import os
 import sys
@@ -87,7 +88,7 @@ def main():
 		sys.exit(0)
 
 	# get refs and bispectra
-	refsbs=[EMData.read_images(args[i]) for i in xrange(1,len(args))]
+	refsbs=[EMData.read_images(args[i]) for i in range(1,len(args))]
 	for i in range(1,len(refsbs)):
 		if len(refsbs[i])!=len(refsbs[0]) :
 			print("ERROR: {} has {} references and {} has {}".format(args[0],len(refsbs[0]),args[i],len(refsbs[i])))

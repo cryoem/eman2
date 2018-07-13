@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2017-04
+from builtins import range
 from EMAN2 import *
 import numpy as np
 from scipy.optimize import minimize
@@ -597,7 +598,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	
 	if len(errtlt)==0:
 		errtlt=np.zeros(num)
-		nrange=range(num)
+		nrange=list(range(num))
 	else:
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
 
@@ -679,7 +680,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 	#### sort tilt by loss to exclude the worst ones
 	if len(errtlt)==0:
 		errtlt=np.zeros(num)
-		nrange=range(num)
+		nrange=list(range(num))
 	else:
 		for nid in range(num):
 			ytlt=ttparams[nid][3]
@@ -871,7 +872,7 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 	#### do this slightly differently at different image size
 	lowres=(scale>1.5)
 	if len(errtlt)==0:
-		nrange=range(num)
+		nrange=list(range(num))
 	else:
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
 	bx=options.bxsz/2

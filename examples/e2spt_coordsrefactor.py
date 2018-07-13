@@ -29,6 +29,7 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
+from builtins import range
 import os
 import sys 
 import commands
@@ -165,7 +166,7 @@ def main():
 def fixlines(inlines):
 	n=len(inlines)
 	newlines=[]
-	for i in xrange(0,n):
+	for i in range(0,n):
 		inlines[i] = inlines[i].replace(", ",' ')	
 		inlines[i] = inlines[i].replace(",",' ')
 		inlines[i] = inlines[i].replace("x",'')

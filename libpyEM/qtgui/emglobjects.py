@@ -32,6 +32,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
 from builtins import object
 from EMAN2 import *
 from OpenGL import GL, GLU, GLUT

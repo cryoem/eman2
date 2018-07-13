@@ -36,6 +36,7 @@ from __future__ import print_function
 # This program is used to generate various alignment test images
 
 
+from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
 from math import *

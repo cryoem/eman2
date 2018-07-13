@@ -2,6 +2,7 @@
 from __future__ import print_function
 # average selected subset of particles
 
+from builtins import range
 from EMAN2 import *
 import time
 import os
@@ -43,7 +44,7 @@ def rotfnsym(avg,fsp,i,a,sym,masked,maxtilt,verbose):
 	xf = Transform()
 	xf.to_identity()
 	nsym=xf.get_nsym(sym)
-	for i in xrange(nsym):
+	for i in range(nsym):
 		c=b.process("xform",{"transform":xf.get_sym(sym,i)})
 		d=c.align("translational",masked)
 		avg.add_image(d)
@@ -209,7 +210,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	# this becomes the new maximum mask radius
 	act=0
 	mv=0,0
-	for i in xrange(rmax):
+	for i in range(rmax):
 		if md[i]>mv[0] : mv=md[i],i             # find the radius of the  max val in range
 		if not act and md[i]<0.9*vmax : continue
 		act=True

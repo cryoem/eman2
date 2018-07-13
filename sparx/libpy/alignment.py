@@ -29,6 +29,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from builtins import range
 from global_def import *
 
 
@@ -124,7 +125,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	mn = 0
 	nope = 0
 	mashi = cnx-ou-2
-	for im in xrange(len(data)):
+	for im in range(len(data)):
 		if CTF:
 			#Apply CTF to image
 			ctf_params = data[im].get_attr("ctf")
@@ -880,7 +881,7 @@ def Numrinit(first_ring, last_ring, skip=1, mode="F"):
 	else:                            dpi = pi
 	numr = []
 	lcirc = 1
-	for k in xrange(first_ring, last_ring+1, skip):
+	for k in range(first_ring, last_ring+1, skip):
 		numr.append(k)
 		jp = int(dpi * k+0.5)
 		ip = 2**(log2(jp)+1)  # two times oversample each ring
@@ -936,7 +937,7 @@ def ringwe(numr, mode="F"):
 	nring = len(numr)/3
 	wr=[0.0]*nring
 	maxrin = float(numr[len(numr)-1])
-	for i in xrange(0,nring): wr[i] = numr[i*3]*dpi/float(numr[2+i*3])*maxrin/float(numr[2+i*3])
+	for i in range(0,nring): wr[i] = numr[i*3]*dpi/float(numr[2+i*3])*maxrin/float(numr[2+i*3])
 	return wr
 
 def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0):
@@ -957,9 +958,9 @@ def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0):
 	lky = int(yrng[0]/step)
 	rky = int(yrng[-1]/step)
 
-	for i in xrange(-lky, rky+1):
+	for i in range(-lky, rky+1):
 		iy = i*step
-		for j in xrange(-lkx, rkx+1):
+		for j in range(-lkx, rkx+1):
 			ix = j*step
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
@@ -996,9 +997,9 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 	lky = int(yrng[0]/step)
 	rky = int(yrng[-1]/step)
 
-	for i in xrange(-lky, rky+1):
+	for i in range(-lky, rky+1):
 		iy = i*step
-		for j in xrange(-lkx, rkx+1):
+		for j in range(-lkx, rkx+1):
 			ix = j*step
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
@@ -1060,8 +1061,8 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, numr, mode, delta = 0.0):
 	lky = rky = int(yrng*istep)
 
 	peak = -1.0E23
-	for j in xrange(-lky, rky+1, istep):
-		for i in xrange(-lkx, rkx+1, istep):
+	for j in range(-lky, rky+1, istep):
+		for i in range(-lkx, rkx+1, istep):
 			if delta == 0.0: retvals = Util.Crosrng_ms(crefim, dimage[i+maxrange][j+maxrange], numr, 0.0)
 			else:            retvals = Util.Crosrng_ms_delta(crefim, dimage[i+maxrange][j+maxrange], numr, delta)
 			qn = retvals["qn"]
@@ -1095,8 +1096,8 @@ def prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step):
 	mashi = cnx -numr[-3] -2
 	nima = len(data)
 	istep = int(1.0/step)
-	dimage = [[[None for j in xrange(2*maxrangey*istep+1)] for i in xrange(2*maxrangex*istep+1)] for im in xrange(nima) ]
-	for im in xrange(nima):
+	dimage = [[[None for j in range(2*maxrangey*istep+1)] for i in range(2*maxrangex*istep+1)] for im in range(nima) ]
+	for im in range(nima):
 		sts = Util.infomask(data[im], maskfile, False)
 		data[im] -= sts[0]
 		data[im] /= sts[1]
@@ -1106,9 +1107,9 @@ def prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step):
 		#  introduce constraints on parameters to accomodate use of cs centering
 		sxi = min(max(sxi,-mashi),mashi)
 		syi = min(max(syi,-mashi),mashi)	
-		for j in xrange(-maxrangey*istep, maxrangey*istep+1):
+		for j in range(-maxrangey*istep, maxrangey*istep+1):
 			iy = j*step
-			for i in xrange(-maxrangex*istep, maxrangex*istep+1):
+			for i in range(-maxrangex*istep, maxrangex*istep+1):
 				ix = i*step
 				dimage[im][i+maxrangex][j+maxrangey] = Util.Polar2Dm(data[im], cnx+sxi+ix, cny+syi+iy, numr, mode)
 				#print ' prepref  ',j,i,j+maxrangey,i+maxrangex
@@ -1141,10 +1142,10 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	Util.multiref_peaks_ali2d(image, crefim, txrng, tyrng, step, mode, numr, cnx, cny, ccfs, ccfm)
 
 	peaks = peak_search(ccfs, 1000)
-	for i in xrange(len(peaks)):	peaks[i].append(0)
+	for i in range(len(peaks)):	peaks[i].append(0)
 
 	peakm = peak_search(ccfm, 1000)
-	for i in xrange(len(peakm)):	peakm[i].append(1)
+	for i in range(len(peakm)):	peakm[i].append(1)
 	peaks += peakm
 
 	return peaks
@@ -1342,13 +1343,13 @@ def select_k(dJe, T):
 
 	p  = [0.0] * K
 	ut = 1.0/T
-	for k in xrange(K): p[k] = dJe[k]**ut
+	for k in range(K): p[k] = dJe[k]**ut
 
 	sumq = float(sum(p))
-	for k in xrange(K): p[k] /= sumq
+	for k in range(K): p[k] /= sumq
 	#print  p
 
-	for k in xrange(1, K-1): p[k] += p[k-1]
+	for k in range(1, K-1): p[k] += p[k-1]
 	# the next line looks strange, but it assures that at least the lst element is selected
 	p[K-1] = 2.0
 
@@ -1397,16 +1398,16 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 		qt = peaks[0][0]
 		p  = [0.0] * K
 		ut = 1.0/T
-		for k in xrange(K): p[k] = (peaks[k][0]/qt)**ut
+		for k in range(K): p[k] = (peaks[k][0]/qt)**ut
 
 		sumq = float(sum(p))
 		cp  = [0.0] * K
-		for k in xrange(K):
+		for k in range(K):
 			p[k] /= sumq
 			cp[k] = p[k]
 		#print  p
 
-		for k in xrange(1, K-1): cp[k] += cp[k-1]
+		for k in range(1, K-1): cp[k] += cp[k-1]
 		# the next line looks strange, but it assures that at least the lst element is selected
 		cp[K-1] = 2.0
 
@@ -1489,25 +1490,25 @@ def sim_anneal2(peaks, Iter, T0, F, SA_stop):
 	if T > 0.0001 and Iter < SA_stop:
 	
 		dJe = [0.0]*K
-		for k in xrange(K):
+		for k in range(K):
 			dJe[k] = peaks[k][0]/peaks[0][0]
 
 		# q[k]
 		q      = [0.0] * K
 		arg    = [0.0] * K
 		maxarg = 0
-		for k in xrange(K):
+		for k in range(K):
 			arg[k] = dJe[k] / T
 			if arg[k] > maxarg: maxarg = arg[k]
 		limarg = 200
 		if maxarg > limarg:
 			sumarg = float(sum(arg))
-			for k in xrange(K): q[k] = exp(arg[k] * limarg / sumarg)
+			for k in range(K): q[k] = exp(arg[k] * limarg / sumarg)
 		else:
-			for k in xrange(K): q[k] = exp(arg[k])
+			for k in range(K): q[k] = exp(arg[k])
 
 		sumq = float(sum(q))
-		for k in xrange(K):
+		for k in range(K):
 			p[k] = q[k] / sumq
 	else:
 		p[0] = 1.0
@@ -1530,7 +1531,7 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 
 		K = len(peaks_major)
 		dJe = [0.0]*K
-		for k in xrange(K):	dJe[k] = peaks_major[k][dim+1]
+		for k in range(K):	dJe[k] = peaks_major[k][dim+1]
 		
 		select_major = select_k(dJe, T)
 		
@@ -1539,7 +1540,7 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 		#sy_m = peaks_major[select_major][7]
 		
 		neighbor = []
-		for i in xrange(len(peaks)):
+		for i in range(len(peaks)):
 			ang = peaks[i][1]
 			#sx = peaks[i][6]
 			#sy = peaks[i][7]		
@@ -1548,14 +1549,14 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 		neighbor.sort()
 
 		dJe = [0.0]*max_peak
-		for k in xrange(max_peak):   dJe[k] = peaks[neighbor[k][1]][4]
+		for k in range(max_peak):   dJe[k] = peaks[neighbor[k][1]][4]
 		select_s = neighbor[select_k(dJe, T)][1]
 			
 		#############################################################################################################
 
 		K = len(peakm_major)
 		dJe = [0.0]*K
-		for k in xrange(K): 	dJe[k] = peakm_major[k][dim+1]
+		for k in range(K): 	dJe[k] = peakm_major[k][dim+1]
 
 		select_major = select_k(dJe, T)
 				
@@ -1564,7 +1565,7 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 		#sy_m = peakm_major[select_major][7]
 		
 		neighbor = []
-		for i in xrange(len(peakm)):
+		for i in range(len(peakm)):
 			ang = peakm[i][1]
 			#sx = peakm[i][6]
 			#sy = peakm[i][7]		
@@ -1573,7 +1574,7 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 		neighbor.sort()
 
 		dJe = [0.0]*max_peak
-		for k in xrange(max_peak):   dJe[k] = peakm[neighbor[k][1]][4]
+		for k in range(max_peak):   dJe[k] = peakm[neighbor[k][1]][4]
 		select_m = neighbor[select_k(dJe, T)][1]
 
 		ps = peaks[select_s][0]
@@ -1687,13 +1688,13 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 
 	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
 
-	for i in xrange(num_ref):
+	for i in range(num_ref):
 		prjref = EMData()
 		prjref.set_size(sizex, 1, 1)
 		refrings.append(prjref)
 
 	if kbx is None:
-		for i in xrange(ref_start, ref_end):
+		for i in range(ref_start, ref_end):
 			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 			Util.Normalize_ring(cimage, numr, 0 )
@@ -1701,7 +1702,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 			Util.Applyws(cimage, numr, wr_four)
 			refrings[i] = cimage
 	else:
-		for i in xrange(ref_start, ref_end):
+		for i in range(ref_start, ref_end):
 			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], kbx, kby)
 			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 			Util.Normalize_ring(cimage, numr, 0 )
@@ -1713,7 +1714,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 		from utilities import bcast_compacted_EMData_all_to_all
 		bcast_compacted_EMData_all_to_all(refrings, myid, comm=mpi_comm)
 
-	for i in xrange(len(ref_angles)):
+	for i in range(len(ref_angles)):
 		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 
@@ -1774,13 +1775,13 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 
 	mask2D = model_circle(numr[-3], nz,nz)
 
-	for i in xrange(num_ref):
+	for i in range(num_ref):
 		prjref = EMData()
 		prjref.set_size(sizex, 1, 1)
 		refrings[i] = prjref
 		projections[i] = cimage.copy()
 
-	for i in xrange(ref_start, ref_end):
+	for i in range(ref_start, ref_end):
 		prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 		
 		st = Util.infomask(prjref, None, True)
@@ -1802,7 +1803,7 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		bcast_compacted_EMData_all_to_all(refrings, myid, comm=mpi_comm)
 
 	#dd = {'is_complex':1, 'is_fftodd':nz%2, 'is_fftpad':1}
-	for i in xrange(num_ref):
+	for i in range(num_ref):
 		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 		projections[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
@@ -1859,13 +1860,13 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 
 	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
 
-	for i in xrange(num_ref):
+	for i in range(num_ref):
 		prjref = EMData()
 		prjref.set_size(sizex, 1, 1)
 		refrings.append(prjref)
 
 	if kbx is None:
-		for i in xrange(ref_start, ref_end):
+		for i in range(ref_start, ref_end):
 			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 			Util.mul_img(prjref, segmask )
 			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
@@ -1878,13 +1879,13 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 		sys.exit()
 	if MPI:
 		from utilities import bcast_EMData_to_all
-		for i in xrange(num_ref):
-			for j in xrange(ncpu):
+		for i in range(num_ref):
+			for j in range(ncpu):
 				ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
 				if i >= ref_start and i < ref_end: rootid = j
 			bcast_EMData_to_all(refrings[i], myid, rootid)
 
-	for i in xrange(num_ref):
+	for i in range(num_ref):
 		q0 = radians(ref_angles[i][0])
 		q1 = radians(ref_angles[i][1])
 		sq1 = sin(q1)
@@ -1903,7 +1904,7 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 	from utilities		import getfvec
 
 	ref_proj_rings = []     # list of (image objects) reference projections in Fourier representation
-	for i in xrange(len(ref_angles)):
+	for i in range(len(ref_angles)):
 		#prjref = project(volref, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], last_ring)
 		prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 		cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
@@ -2001,7 +2002,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	t2 = t1
-	for zi in xrange(len(xrng)):
+	for zi in range(len(xrng)):
 		dp = t2.get_params("spider")
 		sxi = round(-dp["tx"],2)
 		syi = round(-dp["ty"],2)
@@ -2132,7 +2133,7 @@ def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles, numr, x
 	t1 = data.get_attr("xform.projection")
 	t2 = t1
 	s2x = None
-	for zi in xrange(len(xrng)):
+	for zi in range(len(xrng)):
 		ant = cos(radians(an[zi]))
 		dp = t2.get_params("spider")
 		if finfo and zi == 0:
@@ -2386,7 +2387,7 @@ def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, c
 	nang = len(refang)
 	simis = [-1.0e23]*len(data)
 	newpar = [None]*len(data)
-	for i in xrange(nang):
+	for i in range(nang):
 		###if myid == main_node:  print "  Angle :",i,time()-at
 		if kb3D:  temp = prgs(volprep, kb3D, [refang[i][0],refang[i][1],0.0, 0.0,0.0])
 		else:     temp = prgl(volprep,[ refang[i][0],refang[i][1],0.0, 0.0,0.0], 1, True)
@@ -2466,12 +2467,12 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	npsi = int(360./delta_psi)
 	nang = len(refang)
 	ndat = len(data)
-	newpar = [[i, [1.0e23,0.0], [] ] for i in xrange(ndat)]
+	newpar = [[i, [1.0e23,0.0], [] ] for i in range(ndat)]
 	#newpar = [[i, [1.0e23,1.0e23], []] for i in xrange(len(data))]
-	for i in xrange(nang):
+	for i in range(nang):
 		#if myid == main_node:  print "  Angle :",i,time()-at
 		iang = i*100000000
-		for j in xrange(npsi):
+		for j in range(npsi):
 			iangpsi = j*1000 + iang
 			psi = j*delta_psi
 			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
@@ -2479,7 +2480,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 			temp.set_attr("is_complex",0)
 			nrmref = sqrt(Util.innerproduct(temp, temp, None))
 			for kl,emimage in enumerate(data):
-				for im in xrange(len(shifts)):
+				for im in range(len(shifts)):
 					peak = Util.innerproduct(temp, emimage[im],None)
 					peak /= nrmref
 					#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
@@ -2498,7 +2499,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 					newpar[kl][1][1] += peak
 					#  Store the worst one
 					if( peak < newpar[kl][1][0]):  newpar[kl][1][0] = peak
-		for kl in xrange(ndat):
+		for kl in range(ndat):
 			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]
 
@@ -2508,7 +2509,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 	#mpi_barrier(MPI_COMM_WORLD)
 	#simis  = wrap_mpi_gatherv(simis, main_node, MPI_COMM_WORLD)
 	#newpar = wrap_mpi_gatherv(newpar, main_node, MPI_COMM_WORLD)
-	for kl in xrange(ndat):
+	for kl in range(ndat):
 		newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 		newpar[kl][-1] = newpar[kl][-1][:1]
 	mpi_barrier(MPI_COMM_WORLD)
@@ -2555,12 +2556,12 @@ def ali3D_direct_preselect(data, volprep, oldcodedparams, refang, delta_psi, shi
 	nang = len(refang)
 	lshift = len(shifts)
 	#newpar = [[i, 1.0e23, [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
-	newpar = [[i, 1.0e23, []] for i in xrange(len(data))]
+	newpar = [[i, 1.0e23, []] for i in range(len(data))]
 	#newpar = [[i, 1.0e23, [ [j, -1.0e11, [[q,-1.0e22] for q in xrange(lshift)]] for j in xrange(lentop)] ] for i in xrange(ldat)]
-	for i in xrange(nang):
+	for i in range(nang):
 		#if myid == main_node:  print "  Angle :",i,time()-at
 		iang = i*100000
-		for j in xrange(npsi):
+		for j in range(npsi):
 			iangpsi = j + iang
 			psi = j*delta_psi
 			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
@@ -2571,7 +2572,7 @@ def ali3D_direct_preselect(data, volprep, oldcodedparams, refang, delta_psi, shi
 				try:
 					junk = oldcodedparams[kl][2].index(iangpsi)
 					newpar[kl][2].append([iangpsi, -1.0, []])
-					for im in xrange(lshift):
+					for im in range(lshift):
 						peak = Util.innerproduct(temp, emimage[im])
 						peak /= nrmref
 						#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
@@ -2591,12 +2592,12 @@ def ali3D_direct_preselect(data, volprep, oldcodedparams, refang, delta_psi, shi
 						if( peak < newpar[kl][1]):  newpar[kl][1] = peak
 
 					#  Store sum of shift scores
-					newpar[kl][2][-1][1] = sum([newpar[kl][2][-1][2][im][1] for im in xrange(lshift)])
+					newpar[kl][2][-1][1] = sum([newpar[kl][2][-1][2][im][1] for im in range(lshift)])
 				except:
 					#  No valid angles
 					pass
 					
-		for kl in xrange(len(data)):
+		for kl in range(len(data)):
 			newpar[kl][2].sort(key=itemgetter(1),reverse=True)
 			newpar[kl][2] = newpar[kl][2][:min(lentop, len(newpar[kl][2]))]
 
@@ -2639,20 +2640,20 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 	from math import cos, radians
 	ac = cos(radians(an))
 	dvec = [None]*len(data)
-	for kl in xrange(len(data)):
+	for kl in range(len(data)):
 		dvec[kl] = getfvec(oldangs[kl][0], oldangs[kl][1])
 	
 
 	at = time()
 	npsi = int(360./delta_psi)
 	nang = len(refang)
-	newpar = [[i, [1.0e23,0.0], [[-1, -1.0e23] for j in xrange(lentop)]] for i in xrange(len(data))]
+	newpar = [[i, [1.0e23,0.0], [[-1, -1.0e23] for j in range(lentop)]] for i in range(len(data))]
 	#newpar = [[i, 1.0e23, []] for i in xrange(len(data))]
-	for i in xrange(nang):
+	for i in range(nang):
 		#if myid == main_node:  print "  Angle :",i,time()-at
 		iang = i*100000000
 		rdir = getfvec(refang[i][0],refang[i][1])
-		for j in xrange(npsi):
+		for j in range(npsi):
 			iangpsi = j*1000 + iang
 			psi = j*delta_psi
 			if kb3D:  temp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
@@ -2665,7 +2666,7 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 				if( qt > 180.0 ): qt = 360. - qt
 				if(qt < an):
 					if( (dvec[kl][0]*rdir[0] + dvec[kl][1]*rdir[1] + dvec[kl][2]*rdir[2]) >= ac ):
-						for im in xrange(len(shifts)):
+						for im in range(len(shifts)):
 							peak = Util.innerproduct(temp, emimage[im])
 							peak /= nrmref
 							#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
@@ -2684,7 +2685,7 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 							#  Store the worst one
 							newpar[kl][1][1] += peak
 							if( peak < newpar[kl][1][0]):  newpar[kl][1][0] = peak
-		for kl in xrange(len(data)):
+		for kl in range(len(data)):
 			newpar[kl][-1].sort(key=itemgetter(1),reverse=True)
 			newpar[kl][-1] = newpar[kl][-1][:min(lentop, len(newpar[kl][-1]))]
 
@@ -3041,7 +3042,7 @@ def proj_ali_helicon_90_local_direct(data, refrings, xrng, yrng, \
 	imn2 = sin(radians(theta))*sin(radians(phi))
 	imn3 = cos(radians(theta))
 	print('  aaaaaa  ',psi_max, psi_step, xrng, yrng, direction)
-	for i in xrange(len(refrings)):
+	for i in range(len(refrings)):
 		if( (refrings[i][0].get_attr("n1")*imn1 + refrings[i][0].get_attr("n2")*imn2 + refrings[i][0].get_attr("n3")*imn3)>=ant ):
 			print(" Matching refring  ",i,phi, theta, psi, tx, ty)
 			#  directali will do fft of the input image and 180 degs rotation, if necessary.  Eventually, this would have to be pulled up.
@@ -3317,23 +3318,23 @@ def sub_favj(ave, data, jtot, mirror, numr):
 	#print numr
 	if(mirror):
 		# for mirrored data has to be conjugated
-		for i in xrange(nring):
+		for i in range(nring):
 			numr3i = numr[2+i*3]
 			np = numr[1+i*3]-1
 			ave[np]   -= data[np]
 			ave[np+1] -= data[np+1]*cos(pi2*(jtot-1)/2.0*numr3i/maxrin)
-			for j in xrange(2, numr3i, 2):
+			for j in range(2, numr3i, 2):
 				arg = pi2*(jtot-1)*int(j/2)/maxrin
 				cs = complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
 				ave[np + j]    -= cs.real
 				ave[np + j +1] += cs.imag
 	else:
-		for i in xrange(nring):
+		for i in range(nring):
 			numr3i = numr[2+i*3]
 			np = numr[1+i*3]-1
 			ave[np]   -= data[np]
 			ave[np+1] -= data[np+1]*cos(pi2*(jtot-1)/2.0*numr3i/maxrin)
-			for j in xrange(2, numr3i, 2):
+			for j in range(2, numr3i, 2):
 				arg = pi2*(jtot-1)*int(j/2)/maxrin
 				cs = complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
 				ave[np + j]    -= cs.real
@@ -3356,23 +3357,23 @@ def update_favj(ave, data, jtot, mirror, numr):
 	#print numr
 	if(mirror):
 		# for mirrored data has to be conjugated
-		for i in xrange(nring):
+		for i in range(nring):
 			numr3i = numr[2+i*3]
 			np = numr[1+i*3]-1
 			ave[np]   += data[np]
 			ave[np+1] += data[np+1]*cos(pi2*(jtot-1)/2.0*numr3i/maxrin)
-			for j in xrange(2, numr3i, 2):
+			for j in range(2, numr3i, 2):
 				arg = pi2*(jtot-1)*int(j/2)/maxrin
 				cs = complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
 				ave[np + j]    += cs.real
 				ave[np + j +1] -= cs.imag
 	else:
-		for i in xrange(nring):
+		for i in range(nring):
 			numr3i = numr[2+i*3]
 			np = numr[1+i*3]-1
 			ave[np]   += data[np]
 			ave[np+1] += data[np+1]*cos(pi2*(jtot-1)/2.0*numr3i/maxrin)
-			for j in xrange(2, numr3i, 2):
+			for j in range(2, numr3i, 2):
 				arg = pi2*(jtot-1)*int(j/2)/maxrin
 				cs = complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
 				ave[np + j]    += cs.real
@@ -3391,7 +3392,7 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 
 	if(group > -1):
 		nima = 0
-		for im in xrange(len(data)):
+		for im in range(len(data)):
 			if(data[im].get_attr('ref_num') == group):  nima += 1
 	else:  nima = len(data)
 
@@ -3406,7 +3407,7 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 	#stuff.insert(4,data)  # current image in the gridding format
 	weights = [br]*3 # weights define initial bracketing, so one would have to figure how to set them correctly
 
-	for im in xrange(len(data)):
+	for im in range(len(data)):
 		if(group > -1):
 			if(data[im].get_attr('ref_num') != group):  continue
 		# subtract current image from the average
@@ -3571,8 +3572,8 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	from utilities import model_blank
 	#print cx,cy
 	z = model_blank(3,3)
-	for i in xrange(3):
-		for j in xrange(3):
+	for i in range(3):
+		for j in range(3):
 			z[i,j] = ccf1[i+cx-1,j+cy-1]
 	#print  ccf1[cx,cy],z[1,1]
 	XSH, YSH, PEAKV = parabl(z)
@@ -3611,7 +3612,7 @@ def multalign2dscf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 
 	totpeak = -1.0e23
 
-	for iki in xrange(len(refrings)):
+	for iki in range(len(refrings)):
 		#print  "TEMPLATE  ",iki
 		#  Find angle
 		retvals = Util.Crosrng_e(refrings[iki], cimage, numr, 0, 0.0)
@@ -3631,8 +3632,8 @@ def multalign2dscf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 
 		#print cx,cy
 		z = model_blank(3,3)
-		for i in xrange(3):
-			for j in xrange(3):
+		for i in range(3):
+			for j in range(3):
 				z[i,j] = ccf1[i+cx-1,j+cy-1]
 		#print  ccf1[cx,cy],z[1,1]
 		XSH, YSH, PEAKV = parabl(z)
@@ -3676,7 +3677,7 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 
 	totpeak = -1.0e23
 
-	for iki in xrange(len(refrings)):
+	for iki in range(len(refrings)):
 		#print  "TEMPLATE  ",iki
 		#  Find angle
 		retvals = Util.Crosrng_e(refrings[iki], cimage, numr, 0, 0.0)
@@ -3722,8 +3723,8 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 			ccf1 = ccf2
 		#print cx,cy
 		z = model_blank(3,3)
-		for i in xrange(3):
-			for j in xrange(3):
+		for i in range(3):
+			for j in range(3):
 				z[i,j] = ccf1[i+cx-1,j+cy-1]
 		#print  ccf1[cx,cy],z[1,1]
 		XSH, YSH, PEAKV = parabl(z)
@@ -3814,7 +3815,7 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	nm = 2*nk+1
 	nc = nk + 1
 	refs = [None]*nm*2
-	for i in xrange(nm):
+	for i in range(nm):
 		refs[2*i] = fft(rot_shift2D(refim, (i-nc)*psistep)*mask)
 		refs[2*i+1] = fft(rot_shift2D(refim, (i-nc)*psistep+180.0)*mask)
 	ims = fft(image)
@@ -3822,7 +3823,7 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	bang = 0.
 	bsx = 0.
 	bsy = 0.
-	for i in xrange(1,nm*2):
+	for i in range(1,nm*2):
 		c = ccf(ims, refs[i])
 		#c.write_image('rer.hdf')
 		#exit()
@@ -3836,8 +3837,8 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 			ww = model_blank(3,3)
 			ux = int(pp[1])
 			uy = int(pp[2])
-			for k in xrange(3):
-				for l in xrange(3):
+			for k in range(3):
+				for l in range(3):
 					ww[k,l] = w[k+ux-1,l+uy-1]
 			XSH, YSH, PEAKV = parabl(ww)
 			#print i,pp[-1],XSH, YSH,px+XSH, py+YSH, PEAKV
@@ -3866,7 +3867,7 @@ def align2d_direct3(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, 
 	nm = 2*nk+1
 	nc = nk + 1
 	refs = [None]*nm*2
-	for i in xrange(nm):
+	for i in range(nm):
 		temp = rot_shift2D(refim, (i-nc)*psistep)*mask
 		refs[2*i] = [fft(temp), fft(mirror(temp))]
 		temp = rot_shift2D(refim, (i-nc)*psistep+180.0)*mask
@@ -3882,7 +3883,7 @@ def align2d_direct3(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, 
 		bang = 0.
 		bsx = 0.
 		bsy = 0.
-		for i in xrange(nm*2):
+		for i in range(nm*2):
 			for mirror_flag in [0, 1]:
 				c = ccf(ims, refs[i][mirror_flag])
 				w = Util.window(c,2*xrng+1,2*yrng+1)
@@ -3895,8 +3896,8 @@ def align2d_direct3(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, 
 					ww = model_blank(3,3)
 					ux = int(pp[1])
 					uy = int(pp[2])
-					for k in xrange(3):
-						for l in xrange(3):
+					for k in range(3):
+						for l in range(3):
 							ww[k,l] = w[k+ux-1,l+uy-1]
 					XSH, YSH, PEAKV = parabl(ww)
 					#print i,pp[-1],XSH, YSH,px+XSH, py+YSH, PEAKV
@@ -3925,7 +3926,7 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	nm = 2*nk+1
 	nc = nk + 1
 	refs = [None]*nm
-	for i in xrange(nm):
+	for i in range(nm):
 		refs[i] = fft(rot_shift2D(refim, (i-nc)*psistep)*mask)
 	ims = fft(image)
 	imr = fft(rot_shift2D(image, 180.0))
@@ -3933,7 +3934,7 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	bang = 0.0
 	bsx  = 0.0
 	bsy  = 0.0
-	for i in xrange(nm):
+	for i in range(nm):
 		c = ccf(ims, refs[i])
 		w = Util.window(c,2*xrng+1,2*yrng+1)
 		pp =peak_search(w)[0]
@@ -3945,8 +3946,8 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 			ww = model_blank(3,3)
 			ux = int(pp[1])
 			uy = int(pp[2])
-			for k in xrange(3):
-				for l in xrange(3):
+			for k in range(3):
+				for l in range(3):
 					ww[k,l] = w[k+ux-1,l+uy-1]
 			XSH, YSH, PEAKV = parabl(ww)
 			#print i,pp[-1],XSH, YSH,px+XSH, py+YSH, PEAKV
@@ -3970,8 +3971,8 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 			ww = model_blank(3,3)
 			ux = int(pp[1])
 			uy = int(pp[2])
-			for k in xrange(3):
-				for l in xrange(3):
+			for k in range(3):
+				for l in range(3):
 					ww[k,l] = w[k+ux-1,l+uy-1]
 			XSH, YSH, PEAKV = parabl(ww)
 			#print i,pp[-1],XSH, YSH,px+XSH, py+YSH, PEAKV
@@ -4101,7 +4102,7 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 		ref = refs
 	except:
 		ref = [None]*nr
-		for i in xrange(nr):  ref[i] = fft(rot_shift2D(refs,(i-nc)*psistep))
+		for i in range(nr):  ref[i] = fft(rot_shift2D(refs,(i-nc)*psistep))
 
 	#  Have to add 1 as otherwise maximum on the edge of the window will not be found
 	wnx = 2*(xrng+1) + 1
@@ -4123,7 +4124,7 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 	from sys import exit
 	exit()
 	"""
-	for i in xrange(nr):
+	for i in range(nr):
 		if updown == "both" or updown == "up" :
 			c = ccf(ima,ref[i])
 			w = Util.window(c, wnx, wny)
@@ -4142,8 +4143,8 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
-				for k in xrange(3):
-					for l in xrange(3):
+				for k in range(3):
+					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
@@ -4171,8 +4172,8 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
-				for k in xrange(3):
-					for l in xrange(3):
+				for k in range(3):
+					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
@@ -4231,7 +4232,7 @@ def preparerefsgrid(refs, psimax=1.0, psistep=1.0):
 	ima,kb = prepi(refs)
 	from math import radians
 	psisteprad = radians(psistep)
-	for i in xrange(nr):
+	for i in range(nr):
 		# gridding rotation
 		ref[i] = fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
 
@@ -4266,7 +4267,7 @@ def preparerefsgrid1(refs, psimax=1.0, psistep=1.0):
 # if psimax > 0:
 # 		bnr = int(round(reduced_psiref/psistep)) - nc
 # 		enr = nr + bnr
-	for i in xrange(0,nr):
+	for i in range(0,nr):
 		# gridding rotation
 		ref[i] = fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
 
@@ -4327,7 +4328,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 		ima,kb = prepi(refs)
 		from math import radians
 		psisteprad = radians(psistep)
-		for i in xrange(nr):
+		for i in range(nr):
 			# gridding rotation
 			ref[i] = fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
 			"""
@@ -4374,14 +4375,14 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 	from sys import exit
 	exit()
 	"""
-	for i in xrange(nr):
+	for i in range(nr):
 		if updown == "both" or updown == "up" :
 			c = ccf(ima,ref[i])
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
 			#for q in p: print q
-			for iy in xrange(-rny, rny + 1):
-				for ix in xrange(-rnx, rnx + 1):
+			for iy in range(-rny, rny + 1):
+				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
 
 			pp = peak_search(w)[0]
@@ -4408,11 +4409,11 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
-				for k in xrange(3):
-					for l in xrange(3):
+				for k in range(3):
+					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
-				print(["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep))
+				print(["S %10.1f"%pp[k] for k in range(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep))
 				"""
 				if(pp[0]>ma1):
 					ma1 = pp[0]
@@ -4423,8 +4424,8 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
 		if updown == "both" or updown == "down" :
 			c = ccf(imm,ref[i])
-			for iy in xrange(-rny, rny + 1):
-				for ix in xrange(-rnx, rnx + 1):
+			for iy in range(-rny, rny + 1):
+				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
 			pp = peak_search(w)[0]
 			px = int(pp[4])
@@ -4443,11 +4444,11 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
-				for k in xrange(3):
-					for l in xrange(3):
+				for k in range(3):
+					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
-				print(["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep))
+				print(["R %10.1f"%pp[k] for k in range(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep))
 				"""
 				if(pp[0]>ma3):
 					ma3 = pp[0]
@@ -4551,14 +4552,14 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 	from sys import exit
 	exit()
 	"""
-	for i in xrange(nr):
+	for i in range(nr):
 		if updown == "both" or updown == "up" :
 			c = ccf(ima,ref[i])
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
 			#for q in p: print q
-			for iy in xrange(-rny, rny + 1):
-				for ix in xrange(-rnx, rnx + 1):
+			for iy in range(-rny, rny + 1):
+				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
 
 			pp = peak_search(w)[0]
@@ -4585,8 +4586,8 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
-				for k in xrange(3):
-					for l in xrange(3):
+				for k in range(3):
+					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
@@ -4600,8 +4601,8 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
 		if updown == "both" or updown == "down" :
 			c = ccf(imm,ref[i])
-			for iy in xrange(-rny, rny + 1):
-				for ix in xrange(-rnx, rnx + 1):
+			for iy in range(-rny, rny + 1):
+				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
 			pp = peak_search(w)[0]
 			px = int(pp[4])
@@ -4620,8 +4621,8 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
-				for k in xrange(3):
-					for l in xrange(3):
+				for k in range(3):
+					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
@@ -4764,15 +4765,15 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	"""
 	#if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23     ## do nothing for rny=0 @ming
 	
-	for i in xrange(bnr, enr):
+	for i in range(bnr, enr):
 		if updown == "up" :
 			c = ccf(ima,ref[nc+i])
 			#print "compute ccf time", time() - startc
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
 			#for q in p: print q
-			for iy in xrange(-rny, rny + 1):
-				for ix in xrange(-rnx, rnx + 1):
+			for iy in range(-rny, rny + 1):
+				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
 	
 			pp = peak_search(w)[0]
@@ -4801,8 +4802,8 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
-				for k in xrange(3):
-					for l in xrange(3):
+				for k in range(3):
+					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
@@ -4819,8 +4820,8 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 # 						oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,reduced_psiref]
 		if updown == "down" :
 			c = ccf(imm,ref[nc+i])
-			for iy in xrange(-rny, rny + 1):
-				for ix in xrange(-rnx, rnx + 1):
+			for iy in range(-rny, rny + 1):
+				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
 			pp = peak_search(w)[0]
 			px = int(pp[4])
@@ -4839,8 +4840,8 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
-				for k in xrange(3):
-					for l in xrange(3):
+				for k in range(3):
+					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
@@ -4980,18 +4981,18 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	if ( rny == 0 ) : 
 		print("rny = 0 return---------------")
 		return  0.0, 0.0, 0.0, -1.e23, ccf3dimg     ## do nothing for rny=0 @ming
-	for i in xrange(bnr, enr, 1):
+	for i in range(bnr, enr, 1):
 		if updown == "up" :
 			c = ccf(ima,ref[i])
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
 			#for q in p: print q
-			for iy in xrange(-rny, rny + 1):
-				for ix in xrange(-rnx, rnx + 1):
+			for iy in range(-rny, rny + 1):
+				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
 
-			for j in xrange(wnx):
-				for k in xrange(wny):
+			for j in range(wnx):
+				for k in range(wny):
 					ccf3dimg.set_value_at(j,k,i-bnr,w[j,k])
 
 			pp = peak_search(w)[0]
@@ -5019,8 +5020,8 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
-				for k in xrange(3):
-					for l in xrange(3):
+				for k in range(3):
+					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
@@ -5037,12 +5038,12 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 				#print "wnx, wny, pp, oma2", wnx, wny, pp, oma2	
 		if updown == "down" :
 			c = ccf(imm,ref[i])
-			for iy in xrange(-rny, rny + 1):
-				for ix in xrange(-rnx, rnx + 1):
+			for iy in range(-rny, rny + 1):
+				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
 
-			for j in xrange(wnx):
-				for k in xrange(wny):
+			for j in range(wnx):
+				for k in range(wny):
 					 ccf3dimg.set_value_at(j,k,i-bnr,w[j,k])
 
 			pp = peak_search(w)[0]
@@ -5063,8 +5064,8 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
-				for k in xrange(3):
-					for l in xrange(3):
+				for k in range(3):
+					for l in range(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
@@ -5124,7 +5125,7 @@ def alignment3Dsnake(partition, snakeknots, nsegs, initialori, ctx, psistep, ste
 	#patitions[ivol] = 2        ##only for test. should be removed later.@ming
 	pt = partition
 	nknots=[0]*pt
-	for ipt in xrange(pt):
+	for ipt in range(pt):
 		if snakeknots>1: nknots[ipt]  =  min(snakeknots-1,nsegs//2+1)   ##does not include the right end knots.
 		else: nknots[ipt]  = nsegs//2+1
 		#nknots1 = 4
@@ -5134,22 +5135,22 @@ def alignment3Dsnake(partition, snakeknots, nsegs, initialori, ctx, psistep, ste
 	###2.1 for b-spline fitting of tttt.
 	#nsegs = seg_end-seg_start
 	TCK=[] 
-	for repd in xrange(3):
+	for repd in range(3):
 		T=[0.0]      #b-spline knots.
 		U=[]	  #sampling points.	
 		AT=[]	  #values at U.	
 		W=[]				
-		for ipt in xrange(pt):
+		for ipt in range(pt):
 			T +=[0.0]*nknots[ipt]
 		U=[0.0]*nsegs
 		AT=[0.0]*nsegs
 		W=[0.0]*nsegs
 		
 		
-		for i in xrange(0,len(T)):
+		for i in range(0,len(T)):
 			T[i] = i*(nsegs-1)*1.0/(len(T)-1)
 			
-		for i in xrange(0,nsegs):
+		for i in range(0,nsegs):
 			U[i] = i
 			AT[i]= initialori[i][repd]
 			W[i] = 1.0
@@ -5157,9 +5158,9 @@ def alignment3Dsnake(partition, snakeknots, nsegs, initialori, ctx, psistep, ste
 		out_file = open("T%d.txt"%repd, "w")
 		out_file1 = open("AT%d.txt"%repd, "w")
 		out_file2 = open("W%d.txt"%repd, "w")
-		for i in xrange(len(T)):
+		for i in range(len(T)):
 			out_file.write( "%f\n" % (T[i]) )
-		for i in xrange(len(AT)):	
+		for i in range(len(AT)):	
 			out_file1.write( "%f\n" % (AT[i]) )
 			out_file2.write( "%f\n" % (W[i]) )
 		out_file.close()
@@ -5203,12 +5204,12 @@ def alignment3Dsnake(partition, snakeknots, nsegs, initialori, ctx, psistep, ste
 	#print "lambw", lambw
 	sx_sum=0.0
 	
-	u=[i for i in xrange(nsegs)]
+	u=[i for i in range(nsegs)]
 	valang = interpolate.splev(u, tckang, der=0, ext=0)
 	valx = interpolate.splev(u, tckx, der=0, ext=0)
 	valy = interpolate.splev(u, tcky, der=0, ext=0)	
-	neworient = [[0.0, 0.0, 0.0] for i in xrange(nsegs)]
-	for im in xrange(nsegs):	
+	neworient = [[0.0, 0.0, 0.0] for i in range(nsegs)]
+	for im in range(nsegs):	
 		if updown == "up" :				
 			neworient[im][0] = valang[im]*psistep
 			neworient[im][1] =  valx[im]*stepx - txref[im]
@@ -5244,11 +5245,11 @@ def flexhelicalali(params,data):
 	#print "lambw", lambw
 	sx_sum=0.0
 		
-	u=[i for i in xrange(nsegs)]
+	u=[i for i in range(nsegs)]
 	valang = interpolate.splev(u, tckang, der=0, ext=0)
 	valx = interpolate.splev(u, tckx, der=0, ext=0)
 	valy = interpolate.splev(u, tcky, der=0, ext=0)
-	for id in xrange(nsegs):
+	for id in range(nsegs):
 		nx = sccf[id].get_xsize()
 		ny = sccf[id].get_ysize()
 		na = sccf[id].get_zsize()
@@ -5328,7 +5329,7 @@ def ali_nvol(v, mask):
 	ocrit = 1.0e20
 	gogo = True
 	niter = 0
-	for l in xrange(len(v)):  set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
+	for l in range(len(v)):  set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
 	while(gogo):
 		ave,var = ave_var(v)
 		p = Util.infomask(var, mask, True)
@@ -5337,14 +5338,14 @@ def ali_nvol(v, mask):
 		niter += 1
 		ocrit = crit
 		ref = alivol_mask_getref(ave, mask)
-		for l in xrange(len(v)):
+		for l in range(len(v)):
 			ophi,otht,opsi,os3x,os3y,os3z,dum, dum = get_params3D(v[l])
 			vor = rot_shift3D(v[l], ophi,otht,opsi,os3x,os3y,os3z )
 			phi,tht,psi,s3x,s3y,s3z = alivol_mask(vor, ref, mask)
 			phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,ophi,otht,opsi,os3x,os3y,os3z,1.0)
 			set_params3D(v[l],  (phi,tht,psi,s3x,s3y,s3z,0,1.0))
 			#print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
-	for l in xrange(len(v)):
+	for l in range(len(v)):
 		ophi,otht,opsi,os3x,os3y,os3z,dum,dum = get_params3D(v[l])
 		print(l,ophi,otht,opsi,os3x,os3y,os3z)
 		v[l] = rot_shift3D( v[l], ophi,otht,opsi,os3x,os3y,os3z )
@@ -5385,7 +5386,7 @@ def ali_mvol(v, mask):
 	ocrit = 1.0e20
 	gogo = True
 	niter = 0
-	for l in xrange(len(v)):  set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
+	for l in range(len(v)):  set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
 	while(gogo):
 		ave,var = ave_var(v)
 		set_params3D( ave,   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
@@ -5395,14 +5396,14 @@ def ali_mvol(v, mask):
 		niter += 1
 		ocrit = crit
 		ave *= mask
-		for l in xrange(len(v)):
+		for l in range(len(v)):
 			ophi,otht,opsi,os3x,os3y,os3z,dum, dum = get_params3D(v[l])
 			vor = rot_shift3D(v[l], ophi,otht,opsi,os3x,os3y,os3z )
 			phi,tht,psi,s3x,s3y,s3z = alivol_m(vor, ave, mask)
 			phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,ophi,otht,opsi,os3x,os3y,os3z,1.0)
 			set_params3D(v[l],  (phi,tht,psi,s3x,s3y,s3z,0,1.0))
 			#print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
-	for l in xrange(len(v)):
+	for l in range(len(v)):
 		ophi,otht,opsi,os3x,os3y,os3z,dum,dum = get_params3D(v[l])
 		print(i,ophi,otht,opsi,os3x,os3y,os3z)
 		v[l] = rot_shift3D( v[l], ophi,otht,opsi,os3x,os3y,os3z )
@@ -5757,7 +5758,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	# alignment
 	nima = len(data)
 	params = [None]*nima
-	for im in xrange(nima):
+	for im in range(nima):
 		newsx,newsy,iref,talpha,tmirr,totpeak = multalign2d_scf(data[im], refrings, ftprojections, numr, xrng, yrng, last_ring)
 		dummy, dummy, talpha, newsx, newsy = params_2D_3D(talpha, newsx, newsy, tmirr)
 		params[im] = [talpha, newsx/shrinkage, newsy/shrinkage, iref]
@@ -5810,12 +5811,12 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 	# original_number_of_angles is the same as the number of refrings
 	
 	list_of_reference_angles = [None]*original_number_of_angles
-	for i in xrange(original_number_of_angles): 
+	for i in range(original_number_of_angles): 
 		list_of_reference_angles[i] = [input_angles[i][0],input_angles[i][1], 0]
 
 	#  add mirror related
-	list_of_reference_angles += [[0.0,0.0,0.0] for i in xrange(original_number_of_angles)]
-	for i in xrange(original_number_of_angles):
+	list_of_reference_angles += [[0.0,0.0,0.0] for i in range(original_number_of_angles)]
+	for i in range(original_number_of_angles):
 		list_of_reference_angles[i+original_number_of_angles][0] = (list_of_reference_angles[i][0]+180.0)%360.0
 		list_of_reference_angles[i+original_number_of_angles][1] = 180.0-list_of_reference_angles[i][1]
 		list_of_reference_angles[i+original_number_of_angles][2] =  list_of_reference_angles[i][2]
@@ -5823,13 +5824,13 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 	#  add symmetry related
 	if(nsym>1):	
 		number_of_angles_original_and_mirror = len(list_of_reference_angles)
-		for l in xrange(1,nsym):
-			list_of_reference_angles += [[0.0,0.0,0.0] for i in xrange(number_of_angles_original_and_mirror)]
+		for l in range(1,nsym):
+			list_of_reference_angles += [[0.0,0.0,0.0] for i in range(number_of_angles_original_and_mirror)]
 
-		for i in xrange(number_of_angles_original_and_mirror):
+		for i in range(number_of_angles_original_and_mirror):
 			t2 = Transform({"type":"spider","phi":list_of_reference_angles[i][0],"theta":list_of_reference_angles[i][1]})
 			ts = t2.get_sym_proj(sym)
-			for ll in xrange(1,nsym,1):
+			for ll in range(1,nsym,1):
 				d = ts[ll].get_params("spider")
 				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][0] = round(d["phi"],5)
 				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][1] = round(d["theta"],5)

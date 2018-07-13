@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2017-03
+from builtins import range
 import numpy as np
 from EMAN2 import *
 from EMAN2_utils import cmponetomany

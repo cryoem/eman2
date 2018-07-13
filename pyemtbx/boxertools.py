@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from builtins import object
 from time import time
 from math import ceil
@@ -3221,7 +3222,7 @@ class PawelAutoBoxer(AutoBoxer):
 		boxes = []
 		trimboxes = []
 		ccfs = []
-		for i in xrange(npeak):
+		for i in range(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
 			#print  i,peaks[3*i+0],peaks[3*i+1],peaks[3*i+2], boxsize,boxhalf
@@ -3282,7 +3283,7 @@ class PawelAutoBoxer(AutoBoxer):
 		else:
 			nima = 0
 
-		for i in xrange( len(boxable.boxes) ):
+		for i in range( len(boxable.boxes) ):
 			b = boxable.boxes[i]
 			img = b.get_box_image(normalize, norm_method)
 			img.set_attr( "Micrograph", image_name )
@@ -3302,7 +3303,7 @@ class PawelAutoBoxer(AutoBoxer):
 			f = open(file_name, "a")
 		else:
 			f = open(file_name, "w")
-		for i in xrange(len(boxable.boxes)):
+		for i in range(len(boxable.boxes)):
 			b = boxable.boxes[i]
 			f.write("Image %5d:     X corner = %5d     Y corner = %5d     size = %4d \n"%(i, b.xcorner, b.ycorner, b.xsize))
 		f.close()

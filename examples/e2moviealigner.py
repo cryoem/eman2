@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA	2111-1307 USA
 #
 
+from builtins import range
 from builtins import object
 from EMAN2 import *
 from Simplex import Simplex
@@ -185,22 +186,22 @@ class MovieModeAligner(object):
 		else: self.hdr['nimg'] = EMUtil.get_image_count(fname)
 		self.outfile = fname.rsplit(".",1)[0]+"_align.hdf"
 		self._dir = os.path.dirname(os.path.abspath(fname))
-		self.frames = [EMData(self.path,i) for i in xrange(self.hdr['nimg'])]
+		self.frames = [EMData(self.path,i) for i in range(self.hdr['nimg'])]
 		self._boxsize = boxsize
 		self._regions = {}
-		mx = xrange(1,self.hdr['nx'] / boxsize - 1,1)
-		my = xrange(1,self.hdr['ny'] / boxsize - 1,1)
-		for i in xrange(self.hdr['nimg']):
+		mx = range(1,self.hdr['nx'] / boxsize - 1,1)
+		my = range(1,self.hdr['ny'] / boxsize - 1,1)
+		for i in range(self.hdr['nimg']):
 			self._regions[i] = [Region(x*boxsize+boxsize/2,y*boxsize+boxsize/2,boxsize,boxsize) for y in my for x in mx]
 		self._nregions = len(self._regions)
 		self._origins = [r.get_origin() for r in self._regions[0]]
 		self._norigins = len(self._origins)
 		self._stacks = {}
-		for ir in xrange(self._norigins):
-			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
+		for ir in range(self._norigins):
+			self._stacks[ir] = [self._regions[i][ir] for i in range(self.hdr['nimg'])]
 		self._nstacks = len(self._stacks)
 		if transforms: self._transforms = transforms
-		else: self._transforms = [Transform({"type":"eman","tx":0.0,"ty":0.0}) for i in xrange(self.hdr['nimg'])]
+		else: self._transforms = [Transform({"type":"eman","tx":0.0,"ty":0.0}) for i in range(self.hdr['nimg'])]
 		self.optimal_transforms = self._transforms
 		self._cpsflag = False
 		self._ipsflag = False
@@ -228,7 +229,7 @@ class MovieModeAligner(object):
 			return
 		else: self._computed_objective = True
 		ips = Averagers.get('mean')
-		for i in xrange(self.hdr['nimg']):
+		for i in range(self.hdr['nimg']):
 			img = self.frames[i]
 			img_ips = Averagers.get('mean')
 			for r in self._regions[i]:
@@ -260,7 +261,7 @@ class MovieModeAligner(object):
 		is called by the _update_energy method.
 		"""
 		cps = Averagers.get('mean')
-		for s in xrange(self._nstacks):
+		for s in range(self._nstacks):
 			stack_cps = Averagers.get('mean')
 			for i,r in enumerate(self._stacks[s]):
 				stack_cps.add_image(self.frames[i].get_clip(r)) #EMData(self.path,i,False,r))
@@ -282,11 +283,11 @@ class MovieModeAligner(object):
 		"""
 		self._transforms[i] = t	 # update transform
 		newregions = [] # update regions
-		for ir in xrange(self._norigins): # update stacks
+		for ir in range(self._norigins): # update stacks
 			x = np.add(self._origins[ir][:2],t.get_trans_2d())
 			newregions.append(Region(x[0],x[1],self._boxsize,self._boxsize))
 		self._regions[i] = newregions
-		for ir in xrange(self._norigins): # update stacks
+		for ir in range(self._norigins): # update stacks
 			self._stacks[ir][i] = self._regions[i][ir]
 
 	def _update_energy(self):
@@ -336,7 +337,7 @@ class MovieModeAligner(object):
 		if options.verbose:
 			print("\n\nOptimal Frame Translations:\n")
 			ts = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
-			for s in xrange(len(ts)):
+			for s in range(len(ts)):
 				if s % 2 == 0: print(("Frame {} \t( {:.2}, {:.2} )".format((s/2)+1,ts[s],ts[s+1])))
 			print("")
 		self._optimized = True
@@ -365,7 +366,7 @@ class MovieModeAligner(object):
 		if not name: name=self.outfile
 		elif name[:-4] != '.hdf': name = name[:-4] + '.hdf'	 # force HDF
 		if not self._optimized: print("Warning: Saving non-optimal alignment. Run the optimize method to determine best frame translations.")
-		for i in xrange(self.hdr['nimg']):
+		for i in range(self.hdr['nimg']):
 			im = self.frames[i]
 			im.transform(self._transforms[i])
 			im.write_image(name,i)
@@ -430,7 +431,7 @@ class MovieModeAligner(object):
 		@param int f2avg :	number of frames to average. Default is 5.
 		"""
 		mov=[]
-		for i in xrange(f2avg+1,self.hdr['nimg']):
+		for i in range(f2avg+1,self.hdr['nimg']):
 			outim = self.frames[i]
 			im=sum(outim[i-f2avg-1:i])
 			mov.append(im)
@@ -458,7 +459,7 @@ class MovieModeAligner(object):
 		"""
 		if not fname: fname = self._dir + '/' + 'trans.png'
 		trans2d = []
-		for i in xrange(self.hdr['nimg']-1):
+		for i in range(self.hdr['nimg']-1):
 			ti = self._transforms[i].get_trans_2d()
 			tf = self._transforms[i+1].get_trans_2d()
 			trans2d.append([ti[0],ti[1],tf[0]-ti[0],tf[1]-ti[1]])
@@ -481,7 +482,7 @@ class MovieModeAligner(object):
 		"""
 		if not outfile: outfile = options.path[:-4]+'_proc.hdf'
 		nimg = EMUtil.get_image_count(options.path)
-		for i in xrange(nimg):
+		for i in range(nimg):
 			if options.verbose:
 				print("Processing frame: {}/{}	\r".format(i+1,nimg), end=' ')
 				sys.stdout.flush()
@@ -507,7 +508,7 @@ class MovieModeAligner(object):
 			sigd=dark.copy()
 			sigd.to_zero()
 			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
-			for i in xrange(0,nd):
+			for i in range(0,nd):
 				if options.verbose:
 					print("Summing dark: {}/{}	\r".format(i+1,nd), end=' ')
 					sys.stdout.flush()
@@ -539,7 +540,7 @@ class MovieModeAligner(object):
 			sigg=gain.copy()
 			sigg.to_zero()
 			a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
-			for i in xrange(0,nd):
+			for i in range(0,nd):
 				if options.verbose:
 					print("Summing gain: {}/{}	\r".format(i+1,nd), end=' ')
 					sys.stdout.flush()
@@ -591,7 +592,7 @@ class MovieModeAligner(object):
 		first = int(step[0])
 		step  = int(step[1])
 		if not outfile: outfile = options.path[:-4] + "_dgcor.hdf"
-		for i in xrange(first,last,step):
+		for i in range(first,last,step):
 			if options.verbose:
 				print("Correcting frame: {}/{}	\r".format(i+1,nd), end=' ')
 				sys.stdout.flush()
@@ -627,7 +628,7 @@ class MovieModeAligner(object):
 			mrc = False
 			nimg = EMUtil.get_image_count(path)
 		avgr=Averagers.get("mean")
-		for i in xrange(nimg):
+		for i in range(nimg):
 			if mrc:
 				r.set_origin(0,0,i)
 				avgr.add_image(EMData(path,i,False,r))

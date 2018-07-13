@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from builtins import range
 from builtins import object
 from EMAN2 import file_exists,EMData,E2init,E2progress,E2end,EMANVERSION,check_eman2_type_string,numbered_bdb,Transform,EMUtil,launch_childprocess,EMArgumentParser
 import EMAN2
@@ -305,7 +306,7 @@ class EMBootStrappedAverages(object):
 		# this loop 
 		while True:
 			couples = self.get_couples(images[0])
-			taken = range(images[0].get_xsize())
+			taken = list(range(images[0].get_xsize()))
 			
 			done = False
 			if len(couples) == 1 and len(taken) == 2: done = True
@@ -633,7 +634,7 @@ class EMTomoAlignments(object):
 			if len(task_customers) == 0: break
 			print(len(task_customers),"tomo averaging tasks left in main loop")
 			st_vals = task_customers[0].check_task(tids)
-			for i in xrange(len(task_customers)-1,-1,-1):
+			for i in range(len(task_customers)-1,-1,-1):
 				st = st_vals[i]
 				if st==100:
 					task_customer = task_customers[i]

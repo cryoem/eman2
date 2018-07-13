@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from builtins import range
 def main():
 	import os
 	import sys
@@ -229,9 +230,9 @@ def main():
 		xrp = ''
 		txsp = ''
 		
-		for i in xrange(len(xr)):
+		for i in range(len(xr)):
 			xrp += " "+str(float(xr[i])/options.apix)
-		for i in xrange(len(txs)):
+		for i in range(len(txs)):
 			txsp += " "+str(float(txs[i])/options.apix)
 
 		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
@@ -293,7 +294,7 @@ def main():
 
 			pos = []
 			lkl = -1
-			for i in xrange( len(pall) ):
+			for i in range( len(pall) ):
 				if( (pall[i])[:4] == 'ATOM'):
 					if( lkl == -1 ):  lkl = i
 					p.append( pall[i] )
@@ -303,15 +304,15 @@ def main():
 			X = zeros( (3,len(p) ), dtype=float32 )
 			X_new = zeros( (3,len(p) ), dtype=float32 )
 
-			for i in xrange( len(p) ):
+			for i in range( len(p) ):
 				element = deepcopy( p[i] )
 				X[0,i]=float(element[30:38])
 				X[1,i]=float(element[38:46])	
 				X[2,i]=float(element[46:54])
 
 			pnew = []
-			for j in xrange(-nperiod, nperiod+1):
-				for i in xrange( n ):
+			for j in range(-nperiod, nperiod+1):
+				for i in range( n ):
 					pnew.append( deepcopy(p[i]) )
 
 			dphi = radians(dphi)
@@ -321,7 +322,7 @@ def main():
 			t[0,0]  = 0.0
 			t[1,0]  = 0.0
 
-			for j in xrange(-nperiod, nperiod+1):
+			for j in range(-nperiod, nperiod+1):
 				if j != 0:
 					rd = j*dphi
 					m[0][0] =  cos(rd)
@@ -330,7 +331,7 @@ def main():
 					m[1][1] =  m[0][0]
 					t[2,0]  = j*dp
 					X_new = dot(m, X) + t
-					for i in xrange( n ):
+					for i in range( n ):
 						pnew[j*n+i] = pnew[j*n+i][:30] + "%8.3f"%( float(X_new[0,i]) )+"%8.3f"%( float(X_new[1,i]) )+"%8.3f"%( float(X_new[2,i]) ) + pnew[j*n+i][54:]
 
 

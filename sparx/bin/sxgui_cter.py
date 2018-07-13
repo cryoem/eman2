@@ -30,6 +30,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
 from OpenGL import GL,GLUT
@@ -685,7 +686,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
 		grid_row += 1
 		
-		for idx_graph in xrange(self.n_idx_graph):
+		for idx_graph in range(self.n_idx_graph):
 			temp_label=QtGui.QLabel(self.graph_map_list[idx_graph][self.idx_graph_item_label],self)
 			temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 			temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
@@ -784,7 +785,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.add_value_widget(self.idx_cter_select,0,1,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit,intonly=True,labelwidth=labelwidth,editwidth=editwidth)
 		grid_row+=1
 		
-		for idx_hist in xrange(self.n_idx_hist):
+		for idx_hist in range(self.n_idx_hist):
 			self.add_value_widget_with_threshold(idx_hist,grid_row,grid_col_1st,grid_col_2nd,grid_col_3rd,col_span_1st_label,col_span_1st_edit,labelwidth=labelwidth,editwidth=editwidth)
 			grid_row+=1
 		self.hist_map_list[0][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
@@ -846,7 +847,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,col_span_2nd_sublabel)
 		self.sthresholdcontrol=QtGui.QComboBox(self)
 		# self.sthresholdcontrol.setStyleSheet("color: rgb(255,0,0);") # NOTE: Toshio Moriya 2016/01/22 Unfortunately, this will over write the individual item color...
-		for idx_threshold_control in xrange(self.n_idx_threshold_control):
+		for idx_threshold_control in range(self.n_idx_threshold_control):
 			map_entry = self.threshold_control_map_list[idx_threshold_control]
 			self.sthresholdcontrol.addItem(map_entry[self.idx_threshold_control_item_label])
 			self.sthresholdcontrol.setItemData(idx_threshold_control, QtGui.QColor(map_entry[self.idx_threshold_control_item_color]), Qt.TextColorRole);
@@ -923,7 +924,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.cbrotavgdisplay.valueChanged.connect(self.newPlotDisplay)
 		self.cbmicthumbdisplay.valueChanged.connect(self.newMicThumbDisplay)
 		
-		for idx_graph in xrange(self.n_idx_graph):
+		for idx_graph in range(self.n_idx_graph):
 			self.graph_map_list[idx_graph][self.idx_graph_item_widget].valueChanged.connect(self.updatePlotVisibility)
 		self.vbplotfixscale.valueChanged.connect(self.newPlotFixScale)
 		self.pbrefreshgraphs.clicked[bool].connect(self.refreshGraphs)
@@ -937,7 +938,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.cbsortselect.valueChanged.connect(self.newSortSelect)
 		self.pbreaplysort.clicked[bool].connect(self.reapplySort)
 		
-		for idx_hist in xrange(self.n_idx_hist):
+		for idx_hist in range(self.n_idx_hist):
 			self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].valueChanged.connect(self.newThresholdLower)
 			self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].valueChanged.connect(self.newThresholdUpper)
 			# QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],QtCore.SIGNAL("valueChanged"),self.updateHist)
@@ -1134,7 +1135,7 @@ class SXGuiCter(QtGui.QWidget):
 		# print("MRK_DEBUG: Detected %s entries in %s" % (len(new_entry_list), file_path))
 		# print("MRK_DEBUG: Num. of Columns is %d in %s" % (len(new_entry_list[0]), file_path))
 		# print("MRK_DEBUG: ")
-		for cter_id in xrange(len(new_entry_list)):
+		for cter_id in range(len(new_entry_list)):
 			#
 			# NOTE: 2017/11/22 Toshio Moriya
 			# This CTEF file format is the latest
@@ -1270,7 +1271,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.cter_entry_list = new_entry_list
 		
 		# Set the values and ranges of thresholds
-		for idx_hist in xrange(self.n_idx_hist):
+		for idx_hist in range(self.n_idx_hist):
 			idx_cter = self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter]
 			val_min = min(self.cter_entry_list, key=lambda x:x[idx_cter])[idx_cter]
 			val_min = round(val_min, self.round_ndigits)
@@ -1356,13 +1357,13 @@ class SXGuiCter(QtGui.QWidget):
 		if os.path.exists(cter_pwrot_dir):
 			# if not self.cbrotavgdisplay.getEnabled(): # MRK_NOTE: 2017/11/22 Toshio Moriya: This method does not work as I expected
 			self.cbrotavgdisplay.setEnabled(True)
-			for idx_graph in xrange(self.n_idx_graph):
+			for idx_graph in range(self.n_idx_graph):
 				self.graph_map_list[idx_graph][self.idx_graph_item_widget].setEnabled(True)
 			self.vbplotfixscale.setEnabled(True)
 		else:
 			# if self.cbrotavgdisplay.getEnabled(): # MRK_NOTE: 2017/11/22 Toshio Moriya: This method does not work as I expected
 			self.cbrotavgdisplay.setEnabled(False)
-			for idx_graph in xrange(self.n_idx_graph):
+			for idx_graph in range(self.n_idx_graph):
 				self.graph_map_list[idx_graph][self.idx_graph_item_widget].setEnabled(False)
 			self.vbplotfixscale.setEnabled(False)
 			# Error message of this condition should be displayed at the end of this function for smooth visual presentation
@@ -1541,7 +1542,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		# Create graph for selected parameter
 		idx_cter = self.hist_map_list[self.curhist][self.idx_hist_item_idx_cter]
-		for cter_id in xrange(len(self.cter_entry_list)):
+		for cter_id in range(len(self.cter_entry_list)):
 			x_list.append(cter_id)
 			y_list.append(self.cter_entry_list[cter_id][idx_cter])
 		# self.wplotparam.set_data((x_list,y_list),"plot_param",quiet=False,color=0)
@@ -1616,7 +1617,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		# global_min = float("inf")
 		# global_max = float("-inf")
-		for idx_graph in xrange(self.n_idx_graph):
+		for idx_graph in range(self.n_idx_graph):
 			self.wplotrotavgcoarse.set_data((self.rotinf_table[self.idx_rotinf_freq],self.rotinf_table[self.graph_map_list[idx_graph][self.idx_graph_idx_rotinf]]),self.graph_map_list[idx_graph][self.idx_graph_item_name],quiet=False,color=idx_graph)
 			self.wplotrotavgfine.set_data((self.rotinf_table[self.idx_rotinf_freq],self.rotinf_table[self.graph_map_list[idx_graph][self.idx_graph_idx_rotinf]]),self.graph_map_list[idx_graph][self.idx_graph_item_name],quiet=False,color=idx_graph)
 			# val_min = min(self.rotinf_table[self.graph_map_list[idx_graph][self.idx_graph_idx_rotinf]])
@@ -1844,7 +1845,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		self.ssortedid.setValue(self.curentry,True)
 		
-		for idx_cter in xrange(self.n_idx_cter):
+		for idx_cter in range(self.n_idx_cter):
 			if self.value_map_list[idx_cter][self.idx_cter_item_widget] is not None:
 				self.value_map_list[idx_cter][self.idx_cter_item_widget].setValue(self.cter_entry_list[self.curentry][idx_cter],True)
 			# else:
@@ -1858,7 +1859,7 @@ class SXGuiCter(QtGui.QWidget):
 			# 	print("MRK_DEBUG: ")
 		
 		# Use blue (lower) & red (higher) fonts to indicate the value is not between applied threshold ranage
-		for idx_hist in xrange(self.n_idx_hist):
+		for idx_hist in range(self.n_idx_hist):
 			lower_threshold = round(self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_lower], self.round_ndigits)
 			upper_threshold = round(self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_upper], self.round_ndigits)
 			idx_cter = self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter]
@@ -2132,7 +2133,7 @@ class SXGuiCter(QtGui.QWidget):
 		# Set set the select status of all cter entries based on the threshold values
 		for cter_entry in self.cter_entry_list:
 			new_select_state = 1
-			for idx_hist in xrange(self.n_idx_hist):
+			for idx_hist in range(self.n_idx_hist):
 				threshold_lower = round(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_threshold_lower], self.round_ndigits)
 				threshold_upper = round(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_threshold_upper], self.round_ndigits)
 				self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_lower] = threshold_lower
@@ -2179,7 +2180,7 @@ class SXGuiCter(QtGui.QWidget):
 			idx_threshold_lower = self.idx_hist_item_apply_threshold_lower
 			idx_threshold_upper = self.idx_hist_item_apply_threshold_upper
 		
-		for idx_hist in xrange(self.n_idx_hist):
+		for idx_hist in range(self.n_idx_hist):
 			map_entry = self.hist_map_list[idx_hist]
 			idx_cter = map_entry[self.idx_hist_item_idx_cter]
 			param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
@@ -2299,7 +2300,7 @@ class SXGuiCter(QtGui.QWidget):
 				file_out = file_out_discard
 			# else: assert cter_entry[self.idx_cter_select] == 1, "MRK_DEBUG" # do nothing
 			
-			for idx_cter in xrange(self.n_idx_cter):
+			for idx_cter in range(self.n_idx_cter):
 				if idx_cter in idx_cter_ignore_list:
 					# Do nothing
 					continue
@@ -2533,7 +2534,7 @@ class SXGuiCter(QtGui.QWidget):
 		if self.wplotrotavgfine == None: return # it's closed/not visible
 		if self.cter_pwrot_file_path == None: return # no cter entry is selected
 		
-		for idx_graph in xrange(self.n_idx_graph):
+		for idx_graph in range(self.n_idx_graph):
 			item_widget = self.graph_map_list[idx_graph][self.idx_graph_item_widget]
 			name = self.graph_map_list[idx_graph][self.idx_graph_item_name]
 			if self.wplotrotavgcoarse.visibility[name] != item_widget.getValue():
@@ -2541,7 +2542,7 @@ class SXGuiCter(QtGui.QWidget):
 				self.wplotrotavgcoarse.full_refresh()
 				self.wplotrotavgcoarse.updateGL()
 		
-		for idx_graph in xrange(self.n_idx_graph):
+		for idx_graph in range(self.n_idx_graph):
 			item_widget = self.graph_map_list[idx_graph][self.idx_graph_item_widget]
 			name = self.graph_map_list[idx_graph][self.idx_graph_item_name]
 			if self.wplotrotavgfine.visibility[name] != item_widget.getValue():

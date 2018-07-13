@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2017-03
+from builtins import range
 from builtins import object
 from EMAN2 import *
 import numpy as np
@@ -123,7 +124,7 @@ class boxerConvNet(object):
 					lbs.append(label)
 		
 		
-		rndid=range(len(data))
+		rndid=list(range(len(data)))
 		np.random.shuffle(rndid)	
 		data=[data[i] for i in rndid]
 		lbs=[lbs[i] for i in rndid]
@@ -155,10 +156,10 @@ class boxerConvNet(object):
 		learning_rate=0.002
 		weightdecay=1e-5
 		n_train_batches = len(data) / batch_size
-		for epoch in xrange(20):
+		for epoch in range(20):
 		# go through the training set
 			c = []
-			for batch_index in xrange(n_train_batches):
+			for batch_index in range(n_train_batches):
 				err=classify(batch_index,
 					lr=learning_rate,
 					wd=weightdecay)

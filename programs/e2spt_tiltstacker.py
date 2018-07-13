@@ -27,6 +27,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 from __future__ import print_function
+from builtins import range
 from optparse import OptionParser
 from EMAN2_utils import *
 from EMAN2 import *
@@ -684,15 +685,15 @@ def organizetilts( options, intilts, raworder=False ):
 
 		tiltstoexclude = options.exclude.split(',')
 
-		indexesintiltseries = range(len(angles))
-		collectionindexes = range(len(angles))
+		indexesintiltseries = list(range(len(angles)))
+		collectionindexes = list(range(len(angles)))
 
 		print("options.bidirectional is", options.bidirectional)
 		print("indexminangle is", indexminangle)
 
 		if options.bidirectional and indexminangle != None:
-			firstrange = range(0,indexminangle+1)
-			secondrange = range(indexminangle+1,len(angles))
+			firstrange = list(range(0,indexminangle+1))
+			secondrange = list(range(indexminangle+1,len(angles)))
 
 			collectionindexes = []
 			collectionindexes = list(firstrange) + list(secondrange)
@@ -831,7 +832,7 @@ def getindxs( string ):
 			x2 = int( stringList[i][-1] ) + 1
 
 			#stringList[i] = [ str( ele ) for ele in xrange( x1, x2 ) ]
-			intList.union([ ele for ele in xrange( x1, x2 ) ])
+			intList.union([ ele for ele in range( x1, x2 ) ])
 
 	#parsedindxs = parsedindxs.union( set( list( List[i] ) ) )
 

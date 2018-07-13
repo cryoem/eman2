@@ -32,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from builtins import range
 from builtins import object
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_remove_dict
@@ -311,8 +312,8 @@ class ParticlesWindow(object):
 		
 		i = 0
 		self.totparts = []
-		for part in xrange(listlength):	
-			for lst in xrange(self.numlists):
+		for part in range(listlength):	
+			for lst in range(self.numlists):
 				self.listsofparts[lst][2][part].set_attr("tilt", self.listsofparts[lst][0])
 				self.listsofparts[lst][2][part].set_attr("PImg#", part)
 				self.totparts.append(self.listsofparts[lst][2][part])
@@ -587,7 +588,7 @@ class EMBoxList(object):
 		self.save_boxes_to_db()		# This is not the greatest way of doing things as the list should be appended, not rewritten
 	
 	def clear_boxes(self):
-		for i in xrange(len(self.boxlist)-1,-1,-1):
+		for i in range(len(self.boxlist)-1,-1,-1):
 			self.boxlist.pop(i)
 			self.shapelist.pop(i)
 			self.labellist.pop(i)

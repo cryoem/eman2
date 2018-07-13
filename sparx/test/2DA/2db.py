@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 
@@ -55,7 +56,7 @@ nangles = len(angles)
 dropSpiderDoc("angles",angles)
 ppp = []
 seed()
-for i in xrange(nangles):
+for i in range(nangles):
 	sx=3.0*random()-2  #int(5.0*random()+0.99999)-3
 	sy=3.0*random()-2
 	ppp.append([angles[i][0],angles[i][1],angles[i][2],sx,sy])
@@ -87,7 +88,7 @@ kb = kbt(nx)
 
 # read images and prepare them for gridding
 data = []
-for im in xrange(nima):
+for im in range(nima):
 	if(im>0):
 		temp = EMData()
 		temp.read_image(stack_data,im)
@@ -123,10 +124,10 @@ mode = "F"
 #precalculate rings
 numr=Numrinit(first_ring,last_ring,rstep,mode)
 wr=ringwe(numr,mode)
-for iter in xrange(20):
+for iter in range(20):
 	print(" ITERATION #",iter)
 	again = False
-	for im in xrange(nima):
+	for im in range(nima):
 		# subtract current image from the average
 		psi = data[im].get_attr('psi')
 		sx =  data[im].get_attr('sx')
@@ -167,7 +168,7 @@ for iter in xrange(20):
 	else:
 		break
 
-for im in xrange(nima):
+for im in range(nima):
 	temp.read_image(stack_data,im)
 	psi = data[im].get_attr('psi')
 	sx =  data[im].get_attr('sx')

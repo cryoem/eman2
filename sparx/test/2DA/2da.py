@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 from sys import exit
@@ -17,7 +18,7 @@ a = filt_tophatl(a,0.49)
 n = a.get_xsize()
 #a = filt_tophatb(a,0.03,0.49)
 m = model_circle(n//2-6,n,n)
-for alpha in xrange(0,91):
+for alpha in range(0,91):
 	h = rot_shift2D(rot_shift2D(a,alpha,interpolation_method = "ftgridding"), -alpha, interpolation_method="ftgridding")
 	#h = filt_tophatb(h,0.03,0.49)
 	q = rot_shift2D(rot_shift2D(a,alpha,interpolation_method = "quadratic"), -alpha, interpolation_method="quadratic")
@@ -44,7 +45,7 @@ dropImage(m*periodogram((a-g)*m),"gg.hdf")
 write_text_file([fl[1], fq[1], fg[1], f[1]], "rfl_40.txt")
 write_text_file([rot_avg_table(periodogram((a-g)*m)), rot_avg_table(periodogram((a-h)*m))], "ror.txt")
 
-for i in xrange(10):
+for i in range(10):
 	fl = i*0.05
 	fh = fl + 0.05
 	dag = square(m*filt_tophatb((a-g)*m,fl,fh))

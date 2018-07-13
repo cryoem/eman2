@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan July 2015
+from builtins import range
 from builtins import object
 import sys
 import random
@@ -451,9 +452,9 @@ def load_particles(ptcls,labelshrink,ncopy=5, rng=None):
 	
 	if ntrain<0: ntrain=len(data)
 	## randomize
-	rndid=range(ntrain)
+	rndid=list(range(ntrain))
 	rng.shuffle(rndid)	
-	rndid=rndid+range(ntrain, len(data))
+	rndid=rndid+list(range(ntrain, len(data)))
 	data=[data[i] for i in rndid]
 	label=[label[i] for i in rndid]
 	

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan July 2015
+from builtins import range
 from builtins import object
 import sys
 import random
@@ -136,12 +137,12 @@ def main():
 			
 		learning_rate=options.learnrate
 		n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
-		for epoch in xrange(options.niter):
+		for epoch in range(options.niter):
 		# go through the training set
 			c = []
 			if epoch==0:
 				print(classify(0,lr=learning_rate,wd=options.weightdecay))
-			for batch_index in xrange(n_train_batches):
+			for batch_index in range(n_train_batches):
 				err=classify(batch_index,
 					lr=learning_rate,
 					wd=options.weightdecay)
@@ -460,7 +461,7 @@ def load_particles(ptcls, options):
 				data.append(ar.flatten())
 				lbs.append(l)
 	
-	rndid=range(len(data))
+	rndid=list(range(len(data)))
 	random.shuffle(rndid)	
 	data=[data[i] for i in rndid]
 	lbs=[lbs[i] for i in rndid]

@@ -29,6 +29,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 from __future__ import print_function
+from builtins import range
 import os, sys, commands
 from EMAN2 import *
 from EMAN2_utils import *
@@ -133,7 +134,7 @@ def main():
 	files = options.input
 	files = files.split(',')
 	
-	for i in xrange(0,len(files)):
+	for i in range(0,len(files)):
 		for j in range(i+1,len(files)):
 			if files[i] == files[j]:
 				print("ERROR: You have supplied a file twice, see file[i]={}, file[j]={}".format(files[i],files[j]) )
@@ -231,7 +232,7 @@ def main():
 				
 				
 
-				xs = range(len(values))				
+				xs = list(range(len(values)))				
 					
 				for j in range(len(xs)):
 					xs[j] = int(round(xs[j] * apix))				
@@ -499,7 +500,7 @@ def calcvalues(a,options):
 		#print("\nhist={}".format(hist))
 		#print("\nbin_centers={}".format(bin_centers))
 		
-		x = range(len(values))
+		x = list(range(len(values)))
 		coeff, var_matrix = curve_fit(gauss, x, values, p0=p0)
 		print('\nfitting gaussian!')
 		# Get the fitted curve
@@ -599,7 +600,7 @@ def cylinder(a,options):
 	mask = EMData(a['nx'],a['ny'],a['nz'])
 	mask.to_one()
 	
-	for i in xrange(1,a['nx']/2):
+	for i in range(1,a['nx']/2):
 		heightout = i
 		heightin = heightout-1
 		radius = i
@@ -664,7 +665,7 @@ def direction(a,options):
 	#print "and it should be equal to y see", 'y' == options.mode
 	#print "And the range for values calculation is", rng
 	
-	for i in xrange(0,rng):
+	for i in range(0,rng):
 		#print "\nFor slice", i
 		maskslice = mask
 		#print "I will mask the image, whose dimensionality is", dimensionality

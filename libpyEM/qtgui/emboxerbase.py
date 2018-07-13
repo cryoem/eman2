@@ -34,6 +34,7 @@ from __future__ import absolute_import
 #
 
 
+from builtins import range
 from builtins import object
 '''
 This is a a really basic version of boxer that can be copied and used as the basis of developing something more advanced
@@ -1288,14 +1289,14 @@ class EMBoxList(object):
 		if start<0 and end<0:
 			start=len(self.boxes)
 		if end>=0:
-			for i in xrange(len(self.boxes)-1,end,-1):
+			for i in range(len(self.boxes)-1,end,-1):
 				#print i
 				if self.boxes[i].type in types:
 					self.boxes.pop(i)
 					self.shapes.pop(i)
 		#print 
 		if start>=0:
-			for i in xrange(start-1,-1,-1):
+			for i in range(start-1,-1,-1):
 				#print i
 				if self.boxes[i].type in types:
 					self.boxes.pop(i)
@@ -1452,7 +1453,7 @@ class EMBoxList(object):
 
 	def exclude_from_scaled_image(self,exclusion_image,subsample_rate):
 		action = False
-		for i in xrange(len(self.boxes)-1,-1,-1):
+		for i in range(len(self.boxes)-1,-1,-1):
 			box = self.boxes[i]
 			x = int(box.x/subsample_rate)
 			y = int(box.y/subsample_rate)
@@ -1877,7 +1878,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		action = False
 		rm_idxs = []
 		rm_boxes = []
-		for i in xrange(len(self.box_list)-1,-1,-1):
+		for i in range(len(self.box_list)-1,-1,-1):
 			box = self.box_list.get_box(i)
 			x = int(box.x/subsample_rate)
 			y = int(box.y/subsample_rate)

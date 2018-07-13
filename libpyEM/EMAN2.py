@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from builtins import object
 import sys
 from math import *
@@ -824,7 +825,7 @@ def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 	y=[]
 	s1=im1["sigma"]
 	s2=im2["sigma"]
-	for i in xrange(n):
+	for i in range(n):
 		if skipzero and (im1[i]==0 or im2[i]==0) : continue
 		if skipnearzero and (fabs(im1[i])<s1/10.0 or fabs(im2[i])<s2/10.0) : continue
 		x.append(im1[i])
@@ -2125,14 +2126,14 @@ corresponding to each 1/2 of the data."""
 		except: pass
 
 		oute=LSXFile(eset)
-		for i in xrange(0,n,2): oute.write(-1,i,filename)
+		for i in range(0,n,2): oute.write(-1,i,filename)
 		oute=None
 
 		try : os.unlink(oset)
 		except: pass
 
 		oute=LSXFile(oset)
-		for i in xrange(1,n,2): oute.write(-1,i,filename)
+		for i in range(1,n,2): oute.write(-1,i,filename)
 		oute=None
 
 	return (eset,oset)

@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
 from math import *
@@ -287,7 +288,7 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 		else:
 			options.models=options.models[0]
 			options.nmodels=EMUtil.get_image_count(options.models)
-			for i in xrange(options.nmodels):
+			for i in range(options.nmodels):
 				model=EMData(options.models,i)
 				model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1))
 				
@@ -554,7 +555,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
 
 		### 3-D Projections
-		models=["{path}/threed_{itrm1:02d}_{mdl:02d}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl+1) for mdl in xrange(options.nmodels)]
+		models=["{path}/threed_{itrm1:02d}_{mdl:02d}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl+1) for mdl in range(options.nmodels)]
 		
 		if (options.randclassify and it==1):
 			run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
@@ -571,7 +572,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 			av=Averagers.get("minmax",{"max":1})
 			nprj=EMUtil.get_image_count("{path}/projections_{itr:02d}.hdf".format(path=options.path,itr=it))
 			print("Mask from {} projections".format(nprj))
-			for i in xrange(nprj):
+			for i in range(nprj):
 				a=EMData("{path}/projections_{itr:02d}.hdf".format(path=options.path,itr=it),i)
 				av.add_image(a)
 			msk=av.finish()
@@ -642,7 +643,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		## 3-D Reconstruction
 		#FIXME - --lowmem removed due to some tricky bug in e2make3d
 
-		for mdl in xrange(options.nmodels):
+		for mdl in range(options.nmodels):
 			if options.breaksym : m3dsym="c1"
 			else : m3dsym=sym[mdl]
 
@@ -661,7 +662,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=options.path,itr=it,mdl=1))
 		o0=EMData("{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=1),0)
-		for mdl in xrange(1,options.nmodels):
+		for mdl in range(1,options.nmodels):
 			if options.verbose>0 : print("Aligning map ",mdl+1)
 			map2="{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=mdl+1)
 			run("e2proc3d.py {map2} {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=options.path,map2=map2,align=align))
@@ -706,7 +707,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		saxis = [x/apix for x in xaxis]
 		Util.save_data(float(saxis[1]),float(saxis[1]-saxis[0]),list(fsc[1:]),"{path}/fsc_mutual_avg_{it:02d}.txt".format(path=options.path,it=it))
 
-		models=["threed_{itr:02d}_{mdl:02d}.hdf".format(itr=it,mdl=mdl+1) for mdl in xrange(options.nmodels)]
+		models=["threed_{itr:02d}_{mdl:02d}.hdf".format(itr=it,mdl=mdl+1) for mdl in range(options.nmodels)]
 
 		# we filter the maps, to a resolution ~20% higher than the inter-map FSC, so we don't hide the relative differences
 		for ii,m in enumerate(models):

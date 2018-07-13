@@ -33,6 +33,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
 ploticon = [
     '15 14 2 1',
     'b c #000055',
@@ -1110,7 +1111,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		rngn0=int(val)
 		rngn1=int(self.nbox.getValue())
 		rngstp=int(self.stepbox.getValue())
-		rng=range(rngn0,rngn0+rngstp*rngn1,rngstp)
+		rng=list(range(rngn0,rngn0+rngstp*rngn1,rngstp))
 		for i,k in enumerate(sorted(self.target().visibility.keys())) :
 			self.target().visibility[k]=i in rng
 		self.target().full_refresh()
@@ -1136,9 +1137,9 @@ class EMHistogramInspector(QtGui.QWidget):
 			inf.close()
 		else: return
 		f = open(fname,"w")
-		for i in xrange(0,len(lines)):
+		for i in range(0,len(lines)):
 			lines[i] = lines[i].strip()
-		for i in xrange(len(lines)-1,-1,-1):
+		for i in range(len(lines)-1,-1,-1):
 			if lines[i] in names:
 				lines.pop(i)
 		for line in lines:
@@ -1153,7 +1154,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		else:
 			lines = []
 		f = open(fname,"w")
-		for i in xrange(0,len(lines)):
+		for i in range(0,len(lines)):
 			lines[i] = lines[i].strip()
 		for name in names:
 			if name not in lines:
@@ -1184,7 +1185,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		out=open(name2,"a")
 		for name in names :
 			data=self.target().data[name]
-			for i in xrange(len(data[0])):
+			for i in range(len(data[0])):
 				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
 		out=None
 		print("Wrote ",name2)
@@ -1205,7 +1206,7 @@ class EMHistogramInspector(QtGui.QWidget):
 				name2="plt_%s_%02d.txt"%(sname,i)
 				i+=1
 			out=open(name2,"w")
-			for i in xrange(len(data[0])):
+			for i in range(len(data[0])):
 				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
 			print("Wrote ",name2)
 
@@ -1365,7 +1366,7 @@ class DragListWidget(QtGui.QListWidget):
 				if len(s.strip())==0 or s[0]=="#" : continue
 				if data==None:					# first good line
 					n=len(rex.findall(s))		# count numbers on the line
-					data=[ [] for i in xrange(n)]		# initialize empty data arrays
+					data=[ [] for i in range(n)]		# initialize empty data arrays
 				# parses out each number from each line and puts it in our list of lists
 				for i,f in enumerate(rex.findall(s)):
 					try: data[i].append(float(f))
@@ -1403,9 +1404,9 @@ class DragListWidget(QtGui.QListWidget):
 		if axes[0]<0: axes=[axes[0]]
 		## create the string representation of the data set
 		sdata=StringIO()		# easier to write as if to a file
-		for y in xrange(len(data[0])):
+		for y in range(len(data[0])):
 			sdata.write("%1.8g"%data[axes[0]][y])
-			for x in xrange(1,len(axes)):
+			for x in range(1,len(axes)):
 				sdata.write("\t%1.8g"%data[axes[x]][y])
 			sdata.write("\n")
 		# start the drag operation

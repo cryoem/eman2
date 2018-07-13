@@ -16,6 +16,7 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from builtins import range
 from builtins import object
 from PyQt4.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QString, QThreadPool, QTimer
 from PyQt4 import QtCore, QtGui
@@ -242,10 +243,10 @@ class ResolutionOverviewPlot(QDialog):
             return
         # create an axis
         ax = self.figure.add_subplot(111)
-        xruns = range(1,len(resolution_0143)+1)
+        xruns = list(range(1,len(resolution_0143)+1))
 
         ax.plot(xruns, resolution_0143, "x-",label="Resolution FSC 0.143")
-        xruns = range(1, len(resolutions_05)+1)
+        xruns = list(range(1, len(resolutions_05)+1))
         ax.plot(xruns, resolutions_05, "x-", label="Resolution FSC 0.5")
 
         plt.grid()

@@ -31,6 +31,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 from __future__ import print_function
+from builtins import range
 from builtins import object
 from EMAN2_utils import *
 from EMAN2 import *
@@ -403,7 +404,7 @@ class SymALignStrategy(Strategy):
 	def execute(self):
 		Util.set_randnum_seed(Util.get_randnum_seed())
 		tasks=[]
-		for i in xrange(self.steps):
+		for i in range(self.steps):
 			az = Util.get_frand(0,360) 					# theta
 			alt  = math.degrees(math.acos(2*Util.get_frand(0,1) - 1))	# phi
 			phi = Util.get_frand(0,360)					# kappa

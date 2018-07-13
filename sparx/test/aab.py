@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 from math import pi, sin, cos
@@ -99,7 +100,7 @@ drop_image(b, "ito.hdf")
 p = power(periodogram(b),0.5)*mmx*mmy
 drop_image(p, "oto.hdf")
 d = []
-for i in xrange(mmx):
+for i in range(mmx):
 	d.append(p.get_value_at(i,mmy//2))
 del p
 write_text_file(d,'toto.txt')

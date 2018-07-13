@@ -32,6 +32,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
 from builtins import object
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt, QString

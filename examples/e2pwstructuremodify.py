@@ -4,6 +4,7 @@ from __future__ import print_function
 # Minor Modification to the pathwalking structure
 
 
+from builtins import range
 import EMAN2
 from EMAN2 import *
 import numpy as np

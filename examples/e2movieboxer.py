@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import os
 import sys
 from EMAN2 import *
@@ -79,7 +80,7 @@ indicating its position in the movie.
 			if ".hdf" in i: uniq[base_name(i,nodir=True)]=[]
 	else :
 		lsx=LSXFile(options.useset,True)
-		for i in xrange(len(lsx)): 
+		for i in range(len(lsx)): 
 			ln=lsx.read(i)
 			try: uniq[base_name(ln[1],nodir=True)].append(int(ln[0]))
 			except: uniq[base_name(ln[1],nodir=True)]=[int(ln[0])]
@@ -135,9 +136,9 @@ indicating its position in the movie.
 			print("no particles found :",u)
 			continue
 
-		if len(uniq[u])==0 : uniq[u]=xrange(nptcl)
+		if len(uniq[u])==0 : uniq[u]=range(nptcl)
 		
-		for i in xrange(n):
+		for i in range(n):
 			fm=EMData(fsp,i)
 			fm.process_inplace("normalize.edgemean")
 			for ib in uniq[u]:

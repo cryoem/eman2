@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 
@@ -50,7 +51,7 @@ kb = kbt(nx)
 # read images and prepare them for gridding
 data = []
 params = []
-for im in xrange(nima):
+for im in range(nima):
 	if(im>0):
 		temp = EMData()
 		temp.read_image(stack_data,im)
@@ -83,10 +84,10 @@ stuff.insert(2,nima)
 #stuff.insert(3,tave)  # current average
 #stuff.insert(4,data)  # current image in the gridding format
 weights = [1.75]*3  # weights define initial bracketing, so one would have to figure how to set them correctly
-for iter in xrange(20):
+for iter in range(20):
 	print(" ITERATION #",iter,a0)
 	again = False
-	for im in xrange(nima):
+	for im in range(nima):
 		# subtract current image from the average
 		psi = data[im].get_attr('psi')
 		sx =  data[im].get_attr('sx')
@@ -120,7 +121,7 @@ for iter in xrange(20):
 	# write the current average
 	dropImage(tave,"aam%04d.spi"%iter)
 
-for im in xrange(nima):
+for im in range(nima):
 	temp.read_image(stack_data,im)
 	psi = data[im].get_attr('psi')
 	sx =  data[im].get_attr('sx')

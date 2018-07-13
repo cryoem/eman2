@@ -33,6 +33,7 @@ from __future__ import absolute_import
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from builtins import range
 from builtins import object
 from EMAN2 import *
 from OpenGL import GL, GLU, GLUT
@@ -149,8 +150,8 @@ class MixedColor(object):
 		frac should be in [0,1]
 		'''
 		ifrac = 1-frac
-		r = range(4)
-		r2 = range(3)
+		r = list(range(4))
+		r2 = list(range(3))
 		ambient = [ ifrac*self.a1[i]+frac*self.a2[i] for i in r]
 		diffuse = [ ifrac*self.d1[i]+frac*self.d2[i] for i in r]
 		specular = [ ifrac*self.s1[i]+frac*self.s2[i] for i in r]
@@ -192,7 +193,7 @@ class EulerData(object):
 	def set_data(self,data):
 		self.data = data
 		self.eulers = []
-		for i in xrange(len(self.data)):
+		for i in range(len(self.data)):
 			if hasattr(self.data,"get_image_header"):
 				d = self.data.get_image_header(i)
 			else:

@@ -30,6 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from builtins import range
 from EMAN2 import *
 import time
 import os
@@ -116,7 +117,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 
 	n=-1
 	N=EMUtil.get_image_count(args[0])
-	thrds=[threading.Thread(target=alifn,args=(jsd,args[0],i,ref[i%2],options)) for i in xrange(N)]
+	thrds=[threading.Thread(target=alifn,args=(jsd,args[0],i,ref[i%2],options)) for i in range(N)]
 
 	# here we run the threads and save the results, no actual alignment done here
 	print(len(thrds)," threads")

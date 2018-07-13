@@ -4,6 +4,7 @@ from __future__ import print_function
 #### python utilities. 
 #### 2017-03
 
+from builtins import range
 import numpy as np
 import os
 from EMAN2 import *

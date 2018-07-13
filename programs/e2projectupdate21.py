@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from math import *
 import time
 import os
@@ -169,7 +170,7 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 			lst=LSXFile("{}/sets/{}.lst".format(dest,dct))
 			src=db_open_dict("bdb:sets#{}".format(dct))
 			if options.verbose>1 : print("\t",dct)
-			for i in xrange(len(src)):
+			for i in range(len(src)):
 				attr=src.get_header(i)
 				lst.write(i,attr["data_n"],"particles/{}.hdf".format(attr["data_source"].split("#")[-1].replace("_ctf","__ctf")))
 		except:
@@ -193,7 +194,7 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 				else:
 					if d=="particles" : dct2=dct.replace("_ctf","__ctf")
 					else : dct2=dct
-					for k in xrange(n):
+					for k in range(n):
 						if options.verbose>1 : 
 							print("  {}/{}  \r".format(k,n), end=' ')
 							sys.stdout.flush()

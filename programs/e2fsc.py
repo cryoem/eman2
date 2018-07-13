@@ -34,6 +34,7 @@ from __future__ import print_function
 
 
 
+from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
 from math import *
@@ -224,9 +225,9 @@ and this program should be regarded as experimental.
 	avgmask.process_inplace("mask.gaussian",{"outer_radius":3.0*d/log(8.0) })	# make it a bit wider since we are weighting anyway, this should produce smoother surfaces
 	
 	off=(nx%(lnx//overlap))/2
-	xr=xrange(off,nx-lnx,lnx//overlap)
-	yr=xrange(off,ny-lnx,lnx//overlap)
-	zr=xrange(off,nz-lnx,lnx//overlap)
+	xr=range(off,nx-lnx,lnx//overlap)
+	yr=range(off,ny-lnx,lnx//overlap)
+	zr=range(off,nz-lnx,lnx//overlap)
 	resvol=EMData(len(xr),len(yr),len(zr))
 	resvol["apix_x"]=apix*lnx//overlap
 	resvol["apix_y"]=apix*lnx//overlap

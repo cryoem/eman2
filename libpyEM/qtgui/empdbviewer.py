@@ -32,6 +32,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
 from builtins import object
 from EMAN2 import PDBReader, get_image_directory
 from libpyGLUtils2 import *

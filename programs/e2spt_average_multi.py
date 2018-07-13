@@ -2,6 +2,7 @@
 from __future__ import print_function
 # average selected subset of particles
 
+from builtins import range
 from EMAN2 import *
 import time
 import os
@@ -33,7 +34,7 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shri
 	nsym=xf.get_nsym(sym)
 	best=(1.0e50,None,None)
 	for r,ref in enumerate(shrinkrefs):
-		for i in xrange(nsym):
+		for i in range(nsym):
 			c=bs.process("xform",{"transform":xf.get_sym(sym,i)})
 			d=c.align("translational",ref)
 			score=d.cmp("fsc.tomo.auto",ref,{"sigmaimgval":wedgesigma,"sigmawithval":0.5})
@@ -127,7 +128,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	jsd=Queue.Queue(0)
 
-	avgs=[Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma}) for i in xrange(n)]
+	avgs=[Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma}) for i in range(n)]
 
 	# filter the list of particles to include 
 	keys=list(angs.keys())

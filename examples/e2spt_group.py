@@ -29,6 +29,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 from __future__ import print_function
+from builtins import range
 from EMAN2_utils import *
 from EMAN2 import *
 from operator import itemgetter	
@@ -360,7 +361,7 @@ def main():
 		
 		newscores.sort()
 		newscores.reverse()
-		x=range(len(newscores))
+		x=list(range(len(newscores)))
 	
 		plottitle = os.path.basename(options.alistack).replace('.hdf', '_prunedSCORES')
 		plt.plot(x, newscores,color='k', linewidth=2)

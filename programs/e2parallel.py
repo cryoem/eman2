@@ -35,6 +35,7 @@ from __future__ import print_function
 # e2parallel.py Steven Ludtke
 # This program implements, via various options, the parallelism system for EMAN2
 
+from builtins import range
 from builtins import object
 from EMAN2db import EMTaskQueue, EMTask
 from EMAN2 import *

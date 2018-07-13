@@ -37,6 +37,7 @@ from __future__ import absolute_import
 # You may also need to reimplemnt getArgument (which returns the argument used in calling the e2program), if the default will not work for you.
 # In addition, you'll need to add a line in the class PMGUIWidget (e2projectmanager) to instatiate the widget based on the value of 'guitype'
 
+from builtins import range
 from EMAN2db import db_check_dict
 import sys, math, weakref
 from PyQt4 import QtCore, QtGui
@@ -527,7 +528,7 @@ class PMDirectoryWidget(PMBaseWidget):
 		self.setValue(default)
 
 	def updateDirs(self):
-		for idx in xrange(self.combobox.count()):
+		for idx in range(self.combobox.count()):
 			self.combobox.removeItem(self.combobox.count()-1)
 		# This extra code allows use to have more than one type of directory
 		patterns = self.dirbasename.split("|")
@@ -784,7 +785,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		if not self.automask3dbool.isChecked(): return ""
 		value = ""
 		# concatenate things
-		for i in xrange(len(self.params)):
+		for i in range(len(self.params)):
 			value = value+","+str(self.params[i].getValue())
 		value = value[1:]
 		return value
@@ -911,7 +912,7 @@ class PMFSCTableWidget(PMTableBase):
 				# We use a running average of 5 points to compute the threshold
 				xyd=XYData()
 				xyd.read_file("{}/{}".format(directory,fscs[-1]))
-				for ii in xrange(2,xyd.get_size()-2):
+				for ii in range(2,xyd.get_size()-2):
 					v=(xyd.get_y(ii-2)+xyd.get_y(ii-1)+xyd.get_y(ii)+xyd.get_y(ii+1)+xyd.get_y(ii+2))/5.0
 					if v<0.143 : break
 				
@@ -923,7 +924,7 @@ class PMFSCTableWidget(PMTableBase):
 				# We use a running average of 5 points to compute the threshold
 				xyd=XYData()
 				xyd.read_file("{}/fsc_un{}".format(directory,fscs[-1][4:]))
-				for ii in xrange(2,xyd.get_size()-2):
+				for ii in range(2,xyd.get_size()-2):
 					v=(xyd.get_y(ii-2)+xyd.get_y(ii-1)+xyd.get_y(ii)+xyd.get_y(ii+1)+xyd.get_y(ii+2))/5.0
 					if v<0.143 : break
 				

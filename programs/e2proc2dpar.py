@@ -33,6 +33,7 @@ from __future__ import print_function
 
 # $Id$
 
+from builtins import range
 from EMAN2 import *
 import sys
 import os.path
@@ -114,7 +115,7 @@ def main():
 	
 	jsd=Queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads
-	thrds=[(jsd,args,options,i,i*npt,min(i*npt+npt,N)) for i in xrange(N/npt+1)]
+	thrds=[(jsd,args,options,i,i*npt,min(i*npt+npt,N)) for i in range(N/npt+1)]
 
 	#import pprint
 	#pprint.pprint(thrds)
@@ -151,7 +152,7 @@ def procfn(jsd,args,options,thrn,n0,n1):
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 
 	ret=[thrn,{}]
-	for n in xrange(n0, n1):
+	for n in range(n0, n1):
 		d=EMData(args[0],n)
 
 		index_d = Counter()
