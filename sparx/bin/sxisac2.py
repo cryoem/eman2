@@ -523,7 +523,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			belongsto = [0]*nima
 		mpi_barrier(comm)
 		belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, comm)
-		belongsto = map(int, belongsto)
+		belongsto = list(map(int, belongsto))
 		##if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], color, myid
 
 		#  Compute partial averages
@@ -556,9 +556,9 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		sx_sum = mpi_bcast(sx_sum, numref, MPI_FLOAT, main_node, comm)
 		sy_sum = mpi_bcast(sy_sum, numref, MPI_FLOAT, main_node, comm)
 		members = mpi_bcast(members, numref, MPI_INT, main_node, comm)
-		sx_sum = map(float, sx_sum)
-		sy_sum = map(float, sy_sum)
-		members = map(int, members)
+		sx_sum = list(map(float, sx_sum))
+		sy_sum = list(map(float, sy_sum))
+		members = list(map(int, members))
 
 		for j in xrange(numref):
 			sx_sum[j] /= float(members[j])
@@ -598,7 +598,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		else:
 			ref_ali_params = [0.0]*(numref*4)
 		ref_ali_params = mpi_bcast(ref_ali_params, numref*4, MPI_FLOAT, main_node, comm)
-		ref_ali_params = map(float, ref_ali_params)
+		ref_ali_params = list(map(float, ref_ali_params))
 
 		for j in xrange(numref):
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)
@@ -642,7 +642,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 				else:
 					ali_params = [0.0]*((im_end-im_start)*4)
 				ali_params = mpi_bcast(ali_params, len(ali_params), MPI_FLOAT, i, comm)
-				ali_params = map(float, ali_params)
+				ali_params = list(map(float, ali_params))
 				for im in xrange(im_start, im_end):
 					alpha = ali_params[(im-im_start)*4]
 					sx = ali_params[(im-im_start)*4+1]
@@ -729,7 +729,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 				else:
 					ali_params = [0.0]*4
 				ali_params = mpi_bcast(ali_params, 4, MPI_FLOAT, done_on_node, comm)
-				ali_params = map(float, ali_params)
+				ali_params = list(map(float, ali_params))
 				set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
 
 
@@ -747,7 +747,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 							mem_len = mpi_recv(1, MPI_INT, done_on_node, SPARX_MPI_TAG_UNIVERSAL, comm)
 							mem_len = int(mem_len[0])
 							members = mpi_recv(mem_len, MPI_INT, done_on_node, SPARX_MPI_TAG_UNIVERSAL, comm)
-							members = map(int, members)
+							members = list(map(int, members))
 							refi[j].set_attr_dict({'members': members,'n_objects': mem_len})
 						elif myid == done_on_node:
 							members = refi[j].get_attr('members')

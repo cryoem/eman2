@@ -61,7 +61,7 @@ def check_exists(outfile, overwrite=False):
 	if not os.path.exists(outfile):
 		return True
 			
-	p = raw_input("File %s exists. Overwrite? yes/no: "%outfile)
+	p = input("File %s exists. Overwrite? yes/no: "%outfile)
 	if p.lower() in ["yes", "y"]:
 		return True
 
@@ -165,7 +165,7 @@ def write_pdbs(filename, paths, points=None, bfactors=None, tree=None):
 		if tree:
 			connected = []
 			count = 0
-			for k,v in tree.items():
+			for k,v in list(tree.items()):
 				for v2 in v:
 					if (k,v2) in connected or (v2,k) in connected:
 						continue
@@ -235,7 +235,7 @@ class PathWalker(object):
 		if self.average < self.dmin:
 			self.dmin = self.average
 
-		for i in self.points.keys():
+		for i in list(self.points.keys()):
 			self.itree[i] = set()
 		
 		
@@ -243,8 +243,8 @@ class PathWalker(object):
 		#print d,w
 		#exit()
 		
-		for count1, point1 in self.points.items():
-			for count2, point2 in self.points.items():
+		for count1, point1 in list(self.points.items()):
+			for count2, point2 in list(self.points.items()):
 				#print count1,count2,
 				d, w = self.calcweight(point1, point2)
 				self.distances[(count1, count2)] = d
@@ -275,7 +275,7 @@ class PathWalker(object):
 			self.points[id2]=[0,0,0]
 			self.itree[id1]=set()
 			self.itree[id2]=set()
-			for ct, pt in self.points.items():
+			for ct, pt in list(self.points.items()):
 				self.distances[(id1,ct)]=.1
 				self.distances[(id2,ct)]=.1
 				self.weighted[(id1,ct)]=0
@@ -299,7 +299,7 @@ class PathWalker(object):
 				idn=max(self.points)+1
 				self.points[idn]=[-1,-1,-1]
 				self.itree[idn]=set()
-				for ct, pt in self.points.items():
+				for ct, pt in list(self.points.items()):
 					self.distances[(idn,ct)]=.1
 					self.distances[(ct,idn)]=.1
 					self.weighted[(idn,ct)]=0
@@ -398,7 +398,7 @@ class PathWalker(object):
 		fragments = [i.strip() for i in f.readlines()]
 		f.close()
 		for fragment in fragments:
-			fragment = map(int, fragment.split())
+			fragment = list(map(int, fragment.split()))
 			for i in range(len(fragment)-1):
 				fixededges.append((fragment[i], fragment[i+1]))
 		return fixededges
@@ -579,12 +579,12 @@ class PathWalker(object):
 		r = [i.strip() for i in f.readlines()]
 		f.close()
 
-		score_tsp = filter(lambda i:i.startswith('COMMENT : Length'), r)
+		score_tsp = [i for i in r if i.startswith('COMMENT : Length')]
 		if score_tsp:
 			score_tsp = score_tsp[0].partition('=')[2].strip()
 			score_tsp = float(score_tsp)
 
-		path = map(int, r[r.index("TOUR_SECTION")+1:r.index("-1")])
+		path = list(map(int, r[r.index("TOUR_SECTION")+1:r.index("-1")]))
 		
 		# We need to convert the TSP #'s back to atom #s
 		keyorder = sorted(self.points.keys())				
@@ -609,7 +609,7 @@ class PathWalker(object):
 		r = f.readlines()
 		f.close()
 		
-		path = [map(int, i.split()) for i in r][1:]
+		path = [list(map(int, i.split())) for i in r][1:]
 		path = reduce(operator.concat, r)
 		path = [i+1 for i in r]
 
@@ -757,14 +757,14 @@ class PathWalker(object):
 
 	def find_endpoints(self):
 		"""Return list of points that have != 2 connections as possible termini; note: circular paths may have 2 links..."""
-		return [k for k,v in self.itree.items() if len(self.itree.get(k)) == 1]
+		return [k for k,v in list(self.itree.items()) if len(self.itree.get(k)) == 1]
 
 
 
 
 	def find_branches(self):
 		"""Return points with > 2 connections"""
-		return [k for k,v in self.itree.items() if len(self.itree.get(k)) > 2]
+		return [k for k,v in list(self.itree.items()) if len(self.itree.get(k)) > 2]
 	
 	
 	
@@ -851,7 +851,7 @@ class PathWalker(object):
 
 		print("\n=== C-a Ramachandran ===")
 		
-		points = map(self.points.get, path)
+		points = list(map(self.points.get, path))
 		# filename = filename or self.basename+".out.angles"
 
 		out=[]
@@ -923,7 +923,7 @@ class CaRMSD(object):
 		for pos in common:
 			distances[pos] = distance(self.pdb1[pos], self.pdb2[pos])
 		
-		rmsd = math.sqrt(sum((i**2 for i in distances.values())) / len(distances))
+		rmsd = math.sqrt(sum((i**2 for i in list(distances.values()))) / len(distances))
 
 		print("Total RMSD:", rmsd)
 		

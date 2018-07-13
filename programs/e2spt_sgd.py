@@ -145,7 +145,7 @@ def main():
 						angs[(fsp,n)]=d
 				avgr=Averagers.get("mean.tomo")
 				#print(angs)
-				for ks in angs.keys():
+				for ks in list(angs.keys()):
 					d=angs[ks]
 					jspm[ks]=d
 					p=EMData(str(ks[0]), int(ks[1]))

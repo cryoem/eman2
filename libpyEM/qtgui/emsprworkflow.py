@@ -135,7 +135,7 @@ class WorkFlowTask:
 		self.display_file.emit(filename)
 		
 	def on_form_ok(self,params):
-		for k,v in params.items():
+		for k,v in list(params.items()):
 			self.write_db_entry(k,v)
 		
 		self.disconnect_form()
@@ -183,7 +183,7 @@ class WorkFlowTask:
 		else: db = None
 		
 		project_db = db_open_dict("bdb:project")
-		for k,v in dictionary.items():
+		for k,v in list(dictionary.items()):
 			if k == "blurb": continue
 			
 			if k in self.project_db_entries: project_db[k] = v
@@ -423,19 +423,19 @@ class WorkFlowTask:
 		return error_message
 	
 	def get_cmps_list(self):
-		return dump_cmps_list().keys()
+		return list(dump_cmps_list().keys())
 	
 	def get_aligners_list(self):
-		return dump_aligners_list().keys()
+		return list(dump_aligners_list().keys())
 	
 	def get_projectors_list(self):
-		return dump_projectors_list().keys()
+		return list(dump_projectors_list().keys())
 	
 	def get_orientgens_list(self):
-		return dump_orientgens_list().keys()
+		return list(dump_orientgens_list().keys())
 		
 	def get_averagers_list(self):
-		return dump_averagers_list().keys()
+		return list(dump_averagers_list().keys())
 		
 #		cmps.append("None") I think this is necessary
 		
@@ -546,7 +546,7 @@ class EMProjectDataDict:
 		@return the keys of the data dictionary
 		'''
 		dict = self.get_data_dict()
-		return dict.keys()
+		return list(dict.keys())
 		
 	def get_names(self,filt=original_data):
 		'''
@@ -555,8 +555,8 @@ class EMProjectDataDict:
 		'''
 		dict = self.get_data_dict()
 		ret = []
-		for tag,dict2 in dict.items():
-			for key,name in dict2.items():
+		for tag,dict2 in list(dict.items()):
+			for key,name in list(dict2.items()):
 				if key == filt:
 					ret.append(name)
 		return ret
@@ -690,8 +690,8 @@ class EMProjectDataDict:
 		project_db = db_open_dict(self.db_name)
 		dict = project_db.get(self.data_dict_name,dfl={})
 		rem = []
-		for name, map in dict.items():			
-			for key,image_name in map.items():
+		for name, map in list(dict.items()):			
+			for key,image_name in list(map.items()):
 				try:
 					if not file_exists(image_name) and not os.path.isdir(image_name[:image_name.rindex("/")]):
 						map.pop(key)
@@ -733,7 +733,7 @@ class EMProjectDataDict:
 		project_db = db_open_dict(self.db_name)
 		dict = project_db.get(self.data_dict_name,dfl={})
 		update = False
-		for tag,dict2 in dict.items():
+		for tag,dict2 in list(dict.items()):
 			if EMProjectDataDict.original_data not in dict2:
 				if file_exists(tag):
 					dict2[EMProjectDataDict.original_data] = tag
@@ -827,7 +827,7 @@ Note that the data cannot be filtered unless it is imported."
 		data_dict = EMProjectDataDict(self.project_list)
 		self.project_data_at_init = data_dict.get_data_dict() # so if the user hits cancel this can be reset
 		print(self.project_data_at_init)
-		project_names = data_dict.keys()
+		project_names = list(data_dict.keys())
 		
 		from .emform import EM2DFileTable,EMFileTable
 		table = EM2DFileTable(project_names,desc_short="Raw Data Files",desc_long="")
@@ -866,7 +866,7 @@ Note that the data cannot be filtered unless it is imported."
 			if not remove_only: self.context_menu["Add"] = EMRawDataReportTask.ProjectListContextMenu.AddFilesToProjectViaContext(self.project_list)
 		
 		def items(self):
-			return self.context_menu.items()
+			return list(self.context_menu.items())
 		
 		
 		class RemoveFilesFromProject:
@@ -881,7 +881,7 @@ Note that the data cannot be filtered unless it is imported."
 				text_entries = [table_widget.convert_text(str(i.text())) for i in entries]
 				
 				data_dict = EMProjectDataDict(self.project_list)
-				project_names = data_dict.keys()
+				project_names = list(data_dict.keys())
 				
 				full_names = [table_widget.convert_text(name) for name in names]
 				db_full_names = [table_widget.convert_text(name) for name in names]
@@ -914,7 +914,7 @@ Note that the data cannot be filtered unless it is imported."
 			def __call__(self,list_of_names,table_widget):
 		
 				data_dict = EMProjectDataDict(self.project_list)
-				project_names = data_dict.keys()
+				project_names = list(data_dict.keys())
 				
 				for name in list_of_names:
 					if not file_exists(name) and not os.path.isdir(name[:name.rfind("/")]):
@@ -1018,7 +1018,7 @@ class AddFilesToProjectValidator:
 			else: raise RuntimeError("Files needs to be a list")
 		
 		data_dict = EMProjectDataDict(self.project_list)
-		project_names = data_dict.keys()
+		project_names = list(data_dict.keys())
 		
 		for name in list_of_names:
 			if not file_exists(name) and not os.path.isdir(name[:name.rfind("/")]): #See if its a dir, which is ok:
@@ -1193,7 +1193,7 @@ project database, and gives an opportunity to apply a number of common filters t
 					error_message.append("File %s is not a valid EM image." %name)
 				
 		data_dict = EMProjectDataDict(spr_raw_data_dict)
-		project_names = data_dict.keys()
+		project_names = list(data_dict.keys())
 		if params["project_associate"]:
 			for name in self.output_names:
 				# this will change one day - the imported name will be altered
@@ -1359,7 +1359,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			self.context_menu["Add"] = ParticleWorkFlowTask.AddDataToTable(validator)
 		
 		def items(self):
-			return self.context_menu.items()
+			return list(self.context_menu.items())
 		
 		
 	class RemoveDataFromTable:
@@ -1673,8 +1673,8 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			return
 		else:
 			data_dict = EMProjectDataDict(spr_ptcls_dict)
-			print(params["name_map"].values())
-			data_dict.add_names(params["name_map"].values(),use_file_tag=True)
+			print(list(params["name_map"].values()))
+			data_dict.add_names(list(params["name_map"].values()),use_file_tag=True)
 		
 		self.task_idle.emit()
 		self.form.close()
@@ -1690,7 +1690,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 		get_application().processEvents()
 
 		
-		for infile,output in params["name_map"].items():
+		for infile,output in list(params["name_map"].items()):
 			#if len(input) > 3 and infile[:4] == "bdb:": 
 				#i += 1
 				#progress.setValue(i)
@@ -1734,7 +1734,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			self.context_menu["Add"] = EMParticleImportTask.ContextMenu.AddFilesViaContext(self.project_list)
 		
 		def items(self):
-			return self.context_menu.items()
+			return list(self.context_menu.items())
 		
 		
 		class RemoveFiles:
@@ -1851,7 +1851,7 @@ class EMParticleCoordImportTask(WorkFlowTask):
 #		from e2boxer import merge_boxes_as_manual_to_db
 #		merge_boxes_as_manual_to_db(params["coordfiles"])
 		pdb=db_open_dict("bdb:.#project")
-		img_list=pdb.get("global.spr_raw_data_dict",dfl={}).keys()
+		img_list=list(pdb.get("global.spr_raw_data_dict",dfl={}).keys())
 		if len(img_list)==0 :
 			print("No image files in project !!!")
 			return
@@ -2051,7 +2051,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		box_maps = {}
 		if db_check_dict(db_name):
 			e2boxer_db = db_open_dict(db_name,ro=True)
-			for name in e2boxer_db.keys():
+			for name in list(e2boxer_db.keys()):
 				d = e2boxer_db[name]
 				if not isinstance(d,dict): continue
 				if "e2boxer_image_name" not in d: # this is the test, if something else has this key then we're screwed.
@@ -2158,7 +2158,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 		
 			data_dict = EMProjectDataDict(project_list)
 			self.project_data_at_init = data_dict.get_data_dict() # so if the user hits cancel this can be reset
-			project_names = data_dict.keys()
+			project_names = list(data_dict.keys())
 			
 			culled_names = []
 			for name in project_names:
@@ -2250,7 +2250,7 @@ class E2BoxerAutoTask(E2BoxerTask):
 		else:
 			self.write_db_entries(params) # will only write filenames
 			options = EmptyObject()
-			for k,v in params.items():
+			for k,v in list(params.items()):
 				setattr(options,k,v)
 			
 			options.autoboxer = params["autoboxer"][0]
@@ -2355,7 +2355,7 @@ def recover_old_boxer_database():
 	if db_check_dict(old_boxer_database):
 		recovery_items = []
 		db = db_open_dict(old_boxer_database)
-		for key,value in db.items():
+		for key,value in list(db.items()):
 			if isinstance(key,str) and len(key) > 2 and key[-3:] == "_DD":
 				if isinstance(value,dict):
 					if "reference_boxes" in value or "auto_boxes" in value or "manual_boxes" in value:
@@ -2444,7 +2444,7 @@ Generally you don't want to work with more than ~10 at a time. To autobox, make 
 		else:
 			self.write_db_entries(params)
 			options = EmptyObject()
-			for key in params.keys():
+			for key in list(params.keys()):
 				setattr(options,key,params[key])
 			options.boxsize = params["interface_boxsize"]
 			options.running_mode = "gui"
@@ -2565,7 +2565,7 @@ class E2BoxerOutputTask(E2BoxerTask):
 		else:
 			self.write_db_entries(params)
 			options = EmptyObject()
-			for k,v in params.items():
+			for k,v in list(params.items()):
 				setattr(options,k,v)	
 			options.boxsize = params["output_boxsize"]
 			
@@ -2609,11 +2609,11 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 		if project_check:
 			project_db = db_open_dict("bdb:project")
 			project_data = project_db.get(spr_raw_data_dict,dfl={})
-			project_names = project_data.keys()
+			project_names = list(project_data.keys())
 		
 		if db_check_dict(db_name):
 			e2boxer_db = db_open_dict(db_name,ro=True)
-			for name in e2boxer_db.keys():
+			for name in list(e2boxer_db.keys()):
 				d = e2boxer_db[name]
 				if not isinstance(d,dict): continue
 				if "e2boxer_image_name" not in d: # this is the test, if something else has this key then we're screwed.
@@ -2819,7 +2819,7 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		parms_db = db_open_dict("bdb:e2ctf.parms",ro=True)
 		
 		ret = []
-		for key,data in parms_db.items():
+		for key,data in list(parms_db.items()):
 			if data == None:
 				print("error?",key)
 				continue
@@ -3307,7 +3307,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		return options
 
 	def on_form_ok(self,params):
-		for k,v in params.items():
+		for k,v in list(params.items()):
 			self.write_db_entry(k,v)
 
 		options = self.get_ctf_options(params)
@@ -3383,7 +3383,7 @@ important when manually fitting before determining a structure factor."
 
 	
 	def on_form_ok(self,params):
-		for k,v in params.items():
+		for k,v in list(params.items()):
 			self.write_db_entry(k,v)
 
 		options = self.get_default_ctf_options(params)
@@ -3481,8 +3481,8 @@ class EMPartSetOptions:
 		filter_opts = {} # key is the filter type, value is the number of images with this filter type
 		main_dict = data_dict.get_data_dict()
 
-		for name,d in main_dict.items():
-			for filt,ptcl_name in d.items():
+		for name,d in list(main_dict.items()):
+			for filt,ptcl_name in list(d.items()):
 				if self.bdb_only != False and ( len(ptcl_name) > 3 and ptcl_name[:4] != "bdb:"): 
 					continue
 				name_map[ptcl_name] = name
@@ -3496,7 +3496,7 @@ class EMPartSetOptions:
 					stacks_map[filt] = [ptcl_name]
 		
 		choices = []
-		for filt,num in filter_opts.items():
+		for filt,num in list(filter_opts.items()):
 			name = filt+" ("+str(num)+")"
 			choices.append( name )
 			stacks_name_map[name] = filt
@@ -3637,7 +3637,7 @@ class E2MakeSetChooseDataTask(E2ParticleExamineChooseDataTask):
 			choice = params["particle_set_choice"]
 			
 			name_map = {}
-			for filt_name, particles in self.particles_map.items():
+			for filt_name, particles in list(self.particles_map.items()):
 				for name in particles:
 					if name in self.name_map:
 						name_map[name] = base_name(self.name_map[name])
@@ -3712,7 +3712,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 		for name in params["filenames"]:
 			root_name = self.data_name_map[name]
 			dict = project_data[root_name]
-			for filt,name in dict.items():
+			for filt,name in list(dict.items()):
 #				f = "_"+filt.split()[0].lower()			# This produces redundant names sometimes
 				f ="_"+filt.lower().replace(" ","_")	# This doesn't
 
@@ -3722,7 +3722,7 @@ class E2MakeSetTask(E2ParticleExamineTask):
 				if f in output_stacks: output_stacks[f].append(name)
 				else: output_stacks[f] = [name]
 		
-		for f in output_stacks.keys():
+		for f in list(output_stacks.keys()):
 			test_stack_name = "bdb:sets#"+base_stack_root+f
 			if file_exists(test_stack_name):
 				EMErrorMessageDisplay.run("The %s stack already exists. Remove it, or try a different name" %test_stack_name)
@@ -3734,13 +3734,13 @@ class E2MakeSetTask(E2ParticleExamineTask):
 		progress.show()
 		n=-1
 		print(output_stacks)
-		for key,filenames in output_stacks.items():
+		for key,filenames in list(output_stacks.items()):
 			n+=1
 			if len(filenames) == 0:
 				print("Warning, there were no files in the list")
 				continue
 			if len(filenames[0]) > 3 and filenames[0][:4] == "bdb:":
-				success,cmd = self.make_v_stack(filenames,base_stack_root+key,"sets",params["exclude_bad"],progress,n,len(output_stacks.items()))
+				success,cmd = self.make_v_stack(filenames,base_stack_root+key,"sets",params["exclude_bad"],progress,n,len(list(output_stacks.items())))
 				
 			else:
 				EMErrorMessageDisplay.run("The generation of stacks for flat (non database) files is currently disabled. A particle set (%s) is being ignored" %stack_type_map[key], "Warning")
@@ -3859,7 +3859,7 @@ class EMSetReportTask(ParticleWorkFlowTask):
 	def get_project_particle_table(self):
 		data_dict = EMProjectDataDict(spr_sets_dict)
 		stack_data = data_dict.get_data_dict()
-		stack_names = stack_data.keys()
+		stack_names = list(stack_data.keys())
 		
 		self.stack_data_at_init = stack_data # so if the user hits cancel this can be reset
 		
@@ -3879,8 +3879,8 @@ class EMSetReportTask(ParticleWorkFlowTask):
 		if len(stack_names) != 0:
 			
 			filt_options = []
-			for key,value in stack_data.items():
-				for filt,name in value.items():
+			for key,value in list(stack_data.items()):
+				for filt,name in list(value.items()):
 					if filt not in filt_options:
 						filt_options.append(filt)
 			
@@ -4474,7 +4474,7 @@ class E2RefFreeClassAveTool:
 		data_dict = EMProjectDataDict(spr_rfca_dict)
 		data = data_dict.get_data_dict()
 		self.project_data_at_init = data # so if the user hits cancel this can be reset
-		names = data.keys()
+		names = list(data.keys())
 		from .emform import EM2DStackTable,EMFileTable,int_lt
 		table = EM2DStackTable(names,desc_short="Class Averages",desc_long="")
 		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_rfca_dict)
@@ -4606,7 +4606,7 @@ class E2InitialModelsTool:
 		data_dict = EMProjectDataDict(spr_init_models_dict)
 		init_model_data = data_dict.get_data_dict()
 		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
-		init_model_names = init_model_data.keys()
+		init_model_names = list(init_model_data.keys())
 
 		from .emform import EM3DFileTable,EMFileTable,float_lt
 		table = EM3DFileTable(init_model_names,name="model",desc_short="Initial Models",desc_long="")
@@ -4979,7 +4979,7 @@ class E2Make3DTools:
 		if E2Make3DTools.preprocessor_cache == None:
 			a = dump_processors_list()
 			l = ["None"]
-			for key in a.keys():
+			for key in list(a.keys()):
 				if len(key) > 5 and key[:6] == "filter":
 					vals = key.split(".")
 					if len(vals) > 1:
@@ -5804,7 +5804,7 @@ class E2RefineFromFreAlign(WorkFlowTask):
 		data_dict = EMProjectDataDict(spr_freealign_dirs_dict)
 		init_model_data = data_dict.get_data_dict()
 		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
-		init_model_names = init_model_data.keys()
+		init_model_names = list(init_model_data.keys())
 
 		from .emform import EM3DFileTable,EMFileTable,float_lt
 		table = EM3DFileTable(init_model_names,name="dirs",desc_short="FreAlign Dirs",desc_long="")
@@ -5856,7 +5856,7 @@ class E2RunFreAlign(WorkFlowTask):
 		data_dict = EMProjectDataDict(spr_freealign_dirs_dict)
 		init_model_data = data_dict.get_data_dict()
 		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
-		init_model_names = init_model_data.keys()
+		init_model_names = list(init_model_data.keys())
 
 		from .emform import EM3DFileTable,EMFileTable,float_lt
 		table = EM3DFileTable(init_model_names,name="dirs",desc_short="FreAlign Dirs",desc_long="")
@@ -5922,7 +5922,7 @@ thresh: Phase residual cutoff. Any particles with a higher phase residual will n
 		data_dict = EMProjectDataDict(spr_freealign_models_dict)
 		init_model_data = data_dict.get_data_dict()
 		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
-		init_model_names = init_model_data.keys()
+		init_model_names = list(init_model_data.keys())
 
 		from .emform import EM3DFileTable,EMFileTable,float_lt
 		table = EM3DFileTable(init_model_names,name="model",desc_short="Starting Models",desc_long="")
@@ -6066,7 +6066,7 @@ detailed refinement options."
 			
 			data_dict = EMProjectDataDict(self.filt_name)
 			db_map = data_dict.get_data_dict()
-			ptcl_keys = db_map.keys()
+			ptcl_keys = list(db_map.keys())
 
 			if usefilt_choice != "None":
 				usefilt_name = self.particles_name_map[usefilt_choice]
@@ -6228,7 +6228,7 @@ class ResolutionReportTask(ParticleWorkFlowTask):
 			db_name = "bdb:"+dir+"#convergence.results"
 			if db_check_dict(db_name):
 				db = db_open_dict(db_name,ro=True)
-				keys = db.keys()
+				keys = list(db.keys())
 				if len(keys) > 0:
 					available_dirs.append(dir)
 					

@@ -1096,7 +1096,7 @@ class TheHelp(QtGui.QWidget):
 		helpdict =  self.helptopics[idx][1]
 		helpdoc = "<B><H3>Listed below is a list of EMAN2 <I>%s</I></H3></B><BR>"%self.helptopics[idx][0]
 
-		keys = helpdict.keys()
+		keys = list(helpdict.keys())
 		keys.sort()
 		for key in keys:
 			helpdoc += "<B>%s</B>"%(key)
@@ -1517,7 +1517,7 @@ class TaskManager(QtGui.QWidget):
 		#self.list_widget.clear()
 		listitems = self.getListItems()
 		for t in self.tasks:
-			if t[1] in listitems.keys():
+			if t[1] in list(listitems.keys()):
 				listitems[t[1]].setText("%s  %s (%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]))
 				del(listitems[t[1]])
 				continue
@@ -1527,7 +1527,7 @@ class TaskManager(QtGui.QWidget):
 			listwigetitem.setProgramName(t[4])
 			self.list_widget.addItem(listwigetitem)
 		# Remove items that have stopped running
-		for item in listitems.values():
+		for item in list(listitems.values()):
 			self.list_widget.takeItem(self.list_widget.row(item))
 
 	def getListItems(self):
@@ -1805,7 +1805,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			choices = eval(option['choicelist'])
 			# If it is a dict, get the keys
 			if type(choices) == type({}):
-				choices = choices.keys()
+				choices = list(choices.keys())
 		return choices
 
 	def getPositional(self, option):
@@ -1877,7 +1877,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 
 		posargs = []
 		# now do the widgets which are not listed in the above list
-		for name,widget in widgethash.iteritems():
+		for name,widget in widgethash.items():
 			if isinstance(widget, PMHeaderWidget):
 				continue
 			if isinstance(widget, PMBoolWidget):
@@ -1929,7 +1929,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		""" Check for any error messages """
 		errormsg = ""
 		self.errorstate = False
-		for widget in self.widgethash.values():
+		for widget in list(self.widgethash.values()):
 			if widget.getErrorMessage():
 				self.errorstate = True
 				errormsg += (widget.getErrorMessage()+"<br>")

@@ -445,7 +445,7 @@ class EMSimTaskDC(JSTask):
 
 		data = {}
 		cbli=0
-		for ref_idx,ref in refs.items():
+		for ref_idx,ref in list(refs.items()):
 			if not progress_callback(int(100*(cbi+cbli/float(len(refs)))/cbn)) : break
 			cbli+=1
 			if partial!=None :
@@ -514,7 +514,7 @@ class EMSimTaskDC(JSTask):
 		min_ptcl_idx = None
 		n = float(len(ptcls))
 		i = 0
-		for ptcl_idx,ptcl in ptcls.items():
+		for ptcl_idx,ptcl in list(ptcls.items()):
 			if min_ptcl_idx == None or ptcl_idx < min_ptcl_idx:
 				min_ptcl_idx = ptcl_idx
 
@@ -540,12 +540,12 @@ class EMSimTaskDC(JSTask):
 			result_data.append(e)
 
 		min_ref_idx = None
-		for ref_idx in refs.keys():
+		for ref_idx in list(refs.keys()):
 			if min_ref_idx == None or ref_idx < min_ref_idx:
 				min_ref_idx = ref_idx
 
-		for r,dd in sim_data.items():
-			for c,data in dd.items():
+		for r,dd in list(sim_data.items()):
+			for c,data in list(dd.items()):
 				comp = data[0]
 				rc = c-min_ref_idx # this was a solution to a bug
 				rr = r-min_ptcl_idx # this was a solution to a bug
@@ -713,7 +713,7 @@ def main():
 	cimgs=EMData.read_images(args[0],range(*crange))
 	if options.colmasks:
 		cmimgs=EMData.read_images(options.colmasks,range(*crange))
-		cimgs=zip(cimgs,cmimgs)
+		cimgs=list(zip(cimgs,cmimgs))
 	else:
 		for i in range(len(cimgs)):
 			cimgs[i]=(cimgs[i],None)

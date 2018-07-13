@@ -159,7 +159,7 @@ file_mode_map={
 	"float" :EMUtil.EMDataType.EM_FLOAT  }
 
 # inverse dictionary for getting printable names
-file_mode_imap=dict([[int(v),k] for k,v in file_mode_map.items()])
+file_mode_imap=dict([[int(v),k] for k,v in list(file_mode_map.items())])
 
 file_mode_intmap={
 	1 :EMUtil.EMDataType.EM_CHAR,
@@ -627,7 +627,7 @@ def unparsemodopt(tupl):
 	try:
 		if tupl[0]==None : return ""
 		if tupl[1]==None or len(tupl[1])==0 : return str(tupl[0])
-		parm=["{}={}".format(k,v) for k,v in tupl[1].items()]
+		parm=["{}={}".format(k,v) for k,v in list(tupl[1].items())]
 		return str(tupl[0])+":"+":".join(parm)
 	except:
 		return ""

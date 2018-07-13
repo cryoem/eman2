@@ -809,7 +809,7 @@ def subtomosim(options,ptcls,outname,dimension):
 	finaloutname = outname
 	for result in results:
 		
-		key = result.keys()[0]
+		key = list(result.keys())[0]
 		
 		#if options.path not in outname:
 		#	finaloutname = options.path + '/' + outname

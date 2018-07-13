@@ -87,8 +87,8 @@ class EMMatrixPanel:
 		[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
 		if self.ystart == None:
 			return False
-		  	# if you uncomment this code it will automatically set the scale in the main window so that the mxs stay visible
-		  	# it's not what we wanted but it's left here in case anyone wants to experiment
+			# if you uncomment this code it will automatically set the scale in the main window so that the mxs stay visible
+			# it's not what we wanted but it's left here in case anyone wants to experiment
 #			scale = self.get_min_scale(view_width,view_height,view_scale,view_data)
 #			target.scale = scale
 #			view_scale = taget.scale
@@ -207,7 +207,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	setsChanged = QtCore.pyqtSignal()
 	mx_boxdeleted = QtCore.pyqtSignal(QtGui.QMouseEvent, list, bool)
-	set_scale = QtCore.pyqtSignal(float, float, bool)
+	signal_set_scale = QtCore.pyqtSignal(float, float, bool)
 	origin_update = QtCore.pyqtSignal(float, float)
 	mx_image_selected = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
 	mx_image_double = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
@@ -586,7 +586,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.deleteLater()
 
 	def get_emit_signals_and_connections(self):
-		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
+		return {"set_origin":self.set_origin,"signal_set_scale":self.set_scale,"origin_update":self.origin_update}
 
 	def get_data(self):
 		'''
@@ -941,7 +941,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.draw_scroll = True
 			self.scroll_bar.update_target_ypos()
 
-		if self.emit_events: self.set_scale.emit(self.scale, adjust, update_gl)
+		if self.emit_events: self.signal_set_scale.emit(self.scale, adjust, update_gl)
 		if update_gl: self.updateGL()
 
 	def resize_event(self, width, height):
@@ -1546,7 +1546,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if  self.max_idx == 0: return # there is no data
 
 		absloc=((vec[0]),(self.height()-(vec[1])))
-		for item in self.coords.items():
+		for item in list(self.coords.items()):
 			index = item[0]+self.img_num_offset
 			if index != 0: index %= self.max_idx
 			data = item[1]
@@ -2930,7 +2930,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		Gets the keys in the header of the first image
 		'''
 		if self.header_keys == None:
-			self.header_keys = self.get_image_header(self.cache_start).keys()
+			self.header_keys = list(self.get_image_header(self.cache_start).keys())
 		return self.header_keys
 
 	def refocus_cache(self,new_focus):
@@ -3138,14 +3138,14 @@ class EMDataListCache(EMMXDataCache):
 				for i in self.images:
 					try:
 						if self.images[i] != None:
-							self.keys = self.images[i].get_attr_dict().keys()
+							self.keys = list(self.images[i].get_attr_dict().keys())
 							break
 					except: pass
 
 			elif self.mode == EMDataListCache.LIST_MODE:
 				for i in self.images:
 					try:
-						 self.keys = i.get_attr_dict().keys()
+						 self.keys = list(i.get_attr_dict().keys())
 						 break
 					except: pass
 
@@ -3335,7 +3335,7 @@ class EM3DDataListCache(EMMXDataCache):
 
 	def get_image_header_keys(self):
 		if self.keys == None:
-			self.keys = self[0].get_attr_dict().keys()
+			self.keys = list(self[0].get_attr_dict().keys())
 
 		return self.keys
 

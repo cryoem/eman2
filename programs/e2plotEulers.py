@@ -83,7 +83,7 @@ def main():
 	theta = []
 	r = []
 	size = []
-	for euler, count in eulerhash.items():
+	for euler, count in list(eulerhash.items()):
 		eulers = euler.split()
 		theta.append(float(eulers[0]))
 		r.append(float(eulers[1]))

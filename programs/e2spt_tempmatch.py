@@ -108,7 +108,7 @@ def main():
 		n=min(options.nptcl, len(pts))
 		if "class_list" in js:
 			clst=js['class_list']
-			try: kid=max([int(k) for k in clst.keys()])+1
+			try: kid=max([int(k) for k in list(clst.keys())])+1
 			except: kid=0 # In case someone manually edited the info file. Unlikely.
 		else:
 			clst={}

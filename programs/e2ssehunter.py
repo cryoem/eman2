@@ -243,7 +243,7 @@ def find_aspect_ratio(targetMRC, patoms, apix, thr):
 		NumPoints1=numpy.array(pixels[index1],'d')
 		NumPoints1_mean=numpy.sum(NumPoints1,axis=0)/len(NumPoints1)
 		NumPoints2=NumPoints1-NumPoints1_mean
-		h = numpy.sum(map(numpy.outer,NumPoints2,NumPoints2),axis=0)
+		h = numpy.sum(list(map(numpy.outer,NumPoints2,NumPoints2)),axis=0)
 		[u1,x1,v1]=numpy.linalg.svd(h)
 		if x1.all()==0:
 			print(index1, end=' ')

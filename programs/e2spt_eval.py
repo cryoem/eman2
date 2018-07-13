@@ -18,6 +18,7 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	#parser.add_argument("--path", type=str,help="path", default="")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
@@ -112,7 +113,7 @@ class SptEvalGUI(QtGui.QWidget):
 			
 			js=js_open_dict(jsfile)
 			dic.update(js.data)
-			for k in js.keys():
+			for k in list(js.keys()):
 				if str(k) not in self.paramlst:
 					self.paramlst[str(k)]=True
 			

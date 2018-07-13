@@ -94,7 +94,7 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 """)
 
 	if not options.yes :
-		a=raw_input("Are you sure you want to proceed (enter YES) ? ")
+		a=input("Are you sure you want to proceed (enter YES) ? ")
 		if a!="YES" : sys.exit(2)
 
 
@@ -125,7 +125,7 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 		ctf=db_open_dict("bdb:.#e2ctf.parms",ro=True)
 		ctfbg=db_open_dict("bdb:.#e2ctf.bg2d",ro=True)
 		ctffg=db_open_dict("bdb:.#e2ctf.im2d",ro=True)
-		for k in ctf.keys():
+		for k in list(ctf.keys()):
 			try:
 				if options.verbose>1 : print("\t",k)
 				js=js_open_dict("{}/{}".format(dest,info_name("bdb:particles#"+k)))
@@ -149,7 +149,7 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 	if options.verbose : print("Converting Boxes")
 	boxes=db_open_dict("bdb:e2boxercache#boxes",ro=True)
 	try:
-		for k in boxes.keys():
+		for k in list(boxes.keys()):
 			try:
 				if options.verbose>1 : print("\t",k)
 				js=js_open_dict("{}/{}".format(dest,info_name(k)))

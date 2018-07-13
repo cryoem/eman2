@@ -99,7 +99,7 @@ class MovieAligner:
 			f = EMData(fname,i)
 			if options.fixbadlines:
 				for line in options.xybadlines:
-					coords = map(int,line.split(','))
+					coords = list(map(int,line.split(',')))
 					f.process_inplace('math.xybadline',{'xloc':coords[0],'yloc':coords[1]})
 			self.frames.append(f)
 		self.translations = np.zeros((self.hdr['nimg'],2))

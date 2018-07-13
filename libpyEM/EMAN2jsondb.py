@@ -154,7 +154,7 @@ def emdata_from_jsondict(dct):
 		try: del dct[k]
 		except: pass
 
-	for k in dct.keys():
+	for k in list(dct.keys()):
 		ret[k]=dct[k]
 
 	ret.update()
@@ -358,7 +358,7 @@ class JSTaskQueue:
 		task.queuetime=time.time()
 
 		# map data file specifiers to ids
-		for j,k in task.data.items():
+		for j,k in list(task.data.items()):
 			try:
 				if k[0]!="cache" : continue
 			except: continue
@@ -756,15 +756,15 @@ of the path is stored as self.normpath"""
 
 	def keys(self):
 		self.sync()
-		return self.data.keys()
+		return list(self.data.keys())
 
 	def values(self):
 		self.sync()
-		return [self.get(key) for key in self.data.keys()]		# to make sure images are read
+		return [self.get(key) for key in list(self.data.keys())]		# to make sure images are read
 
 	def items(self):
 		self.sync()
-		return [(key,self.get(key)) for key in self.data.keys()]
+		return [(key,self.get(key)) for key in list(self.data.keys())]
 
 	def has_key(self,key):
 		self.sync()
@@ -775,7 +775,7 @@ of the path is stored as self.normpath"""
 		"""Equivalent to dictionary update(). Performs JSON file update all at once, so substantially better
 performance than many individual changes."""
 
-		for k in newdict.keys(): self.setval(k,newdict[k],deferupdate=True)
+		for k in list(newdict.keys()): self.setval(k,newdict[k],deferupdate=True)
 		self.sync()
 
 	def setdefault(self,key,dfl,noupdate=False):

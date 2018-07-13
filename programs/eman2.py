@@ -63,7 +63,7 @@ try:
 	from PyQt4.QtCore import Qt
 except:
 	print(helpstring)
-	raw_input("Please press <enter> to exit")
+	input("Please press <enter> to exit")
 	exit()	
 
 app = EMApp()

@@ -101,7 +101,7 @@ class EMProcessorWidget(QtGui.QWidget):
 	plist=dump_processors_list()
 
 	# Sorted list of the stuff before the first '.'
-	cats=set([i.split(".")[0] for i in plist.keys()])
+	cats=set([i.split(".")[0] for i in list(plist.keys())])
 	cats=list(cats)
 	cats.sort()
 

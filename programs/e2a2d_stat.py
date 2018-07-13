@@ -72,7 +72,7 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 			
 		t0=time.time()
 		t1=t0
-		N=len(angs.keys())
+		N=len(list(angs.keys()))
 		for n,i in enumerate(angs.keys()):
 			if options.verbose==1 and time.time()-t1>1:
 				t1=time.time()
@@ -110,7 +110,7 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 		
 		t0=time.time()
 		t1=t0
-		N=len(angs.keys())
+		N=len(list(angs.keys()))
 		out=open("{}/particle_multicmp_{:02d}.txt".format(options.path,options.iter),"w")
 		for n,i in enumerate(angs.keys()):
 			if options.verbose==1 and time.time()-t1>1:
@@ -140,14 +140,14 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 			out.write("\n")
 	
 	if options.mode=="score":
-		if options.cmp[0]!=None : data=[angs[a]["score.alt"] for a in angs.keys()]
-		else : data=[angs[a][options.mode] for a in angs.keys()]
+		if options.cmp[0]!=None : data=[angs[a]["score.alt"] for a in list(angs.keys())]
+		else : data=[angs[a][options.mode] for a in list(angs.keys())]
 	else:
-		data=[angs[a]["xform.align2d"].get_params("2d")[options.mode] for a in angs.keys()]
+		data=[angs[a]["xform.align2d"].get_params("2d")[options.mode] for a in list(angs.keys())]
 
 	if options.extract:
 		out=open("{}/particle_parms_{:02d}.txt".format(options.path,options.iter),"w")
-		k=angs.keys()
+		k=list(angs.keys())
 		k.sort(key=lambda i:int(eval(i)[1]))
 		for i in k:
 			itm=angs[i]

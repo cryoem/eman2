@@ -700,9 +700,9 @@ def allvsall(options,preproc):
 			
 			#print "Old tagas are:\n", oldtags
 			nnn = 0
-			for refkey,refvalue in newptcls.iteritems():
+			for refkey,refvalue in newptcls.items():
 				ptcl1 = nnn
-				for particlekey,particlevalue in oldptcls.iteritems():
+				for particlekey,particlevalue in oldptcls.items():
 					
 					ptcl2 = oldtags[particlekey]
 					
@@ -1325,7 +1325,7 @@ def allvsall(options,preproc):
 		if options.verbose > 2:
 			print("These were the particles in iteration", k)
 		
-		for particlekey,particlevalue in newptcls.iteritems():
+		for particlekey,particlevalue in newptcls.items():
 			
 			if options.verbose > 2:
 				print(particlekey)
@@ -1337,7 +1337,7 @@ def allvsall(options,preproc):
 				if options.verbose > 1:
 					print("This particle from newptcls was averaged", particlekey)
 		
-		for particlekey,particlevalue in oldptcls.iteritems():
+		for particlekey,particlevalue in oldptcls.items():
 			if particlekey not in used:
 				surviving_oldptcls.update({particlekey:particlevalue})
 			else:
@@ -1365,7 +1365,7 @@ def allvsall(options,preproc):
 		#a.write_image(oldptclstack.hdf,0)					#
 		
 		gg=0
-		for particlekey,particlevalue in oldptcls.iteritems():
+		for particlekey,particlevalue in oldptcls.items():
 			allptclsRound.update({ particlekey: [particlevalue,allptclsMatrix[k][particlekey][-1]]})
 			particlevalue.write_image(options.path + '/oldptclstack.hdf',gg)
 			gg+=1

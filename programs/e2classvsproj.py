@@ -152,7 +152,7 @@ def main():
 			ali.write_image(args[2],i*2)
 			proj.write_image(args[2],i*2+1)
 			if options.savesim:
-				for prj in pps.keys():
+				for prj in list(pps.keys()):
 					xf=projs[prj]["xform.projection"]
 					out.write("{}\t{}\t{}\t{}\t{}\n".format(i,prj,xf.get_rotation("eman")["alt"],xf.get_rotation("eman")["az"],pps[prj]))
 

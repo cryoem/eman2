@@ -205,7 +205,7 @@ class EulerData:
 		# get the first header and get any items that can be cast to a float
 		header = self.data[0].get_attr_dict()
 		self.score_options = []
-		for key,value in header.items():
+		for key,value in list(header.items()):
 			try:
 				# make sure we can cast the value to a float, that way in can become the height of the cylinder
 				float(value)
@@ -1813,7 +1813,7 @@ class EMSymInspector(QtGui.QWidget):
 #		self.glbrightness.setValue(0.0)
 #		self.display_tab.vbl.addWidget(self.glbrightness)
 		
-		keys = self.target().colors.keys()
+		keys = list(self.target().colors.keys())
 		keys.sort()
 		self.arc_color = self.__get_combo(keys,self.target().arc_color)
 		hbl1 = QtGui.QHBoxLayout()

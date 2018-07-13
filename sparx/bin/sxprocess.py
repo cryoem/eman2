@@ -1296,7 +1296,7 @@ def main():
 					plot_curves.append(fsc_true)
 					plot_names.append(r'FSC halves')
 					# map fsc obtained from halves to full maps
-					plot_curves.append([fsc_true[0], map(scale_fsc, fsc_true[1])])
+					plot_curves.append([fsc_true[0], list(map(scale_fsc, fsc_true[1]))])
 					plot_names.append(r'FSC full')
 					if m is not None:
 						fsc_mask = fsc(map1*m, map2*m, 1)
@@ -1304,7 +1304,7 @@ def main():
 						plot_curves.append(fsc_mask)
 						plot_names.append(r'FSC masked halves')
 						# map fsc obtained from masked two halves to full maps
-						plot_curves.append([fsc_mask[0], map(scale_fsc, fsc_mask[1])])
+						plot_curves.append([fsc_mask[0], list(map(scale_fsc, fsc_mask[1]))])
 						plot_names.append(r'FSC masked full')
 
 					resolution_in_angstrom = freq_to_angstrom(pixel_size=options.pixel_size, values=fsc_true[0])
@@ -1393,7 +1393,7 @@ def main():
 						else:
 					"""
 					log_main.add("Adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
-					fsc_true[1] = map(scale_fsc, fsc_true[1])
+					fsc_true[1] = list(map(scale_fsc, fsc_true[1]))
 
 					## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
 					resolution_FSC143_right  = 0.0

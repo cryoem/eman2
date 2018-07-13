@@ -116,7 +116,7 @@ def main():
 				n = int(nt)
 				print("\nWARNING: more particles/coordinates n={} than transform parameters nt={}".format(n,nt))
 
-		keys = jsonfileopen.keys()
+		keys = list(jsonfileopen.keys())
 		keys.sort()
 		for j in range(n):
 			label = keys[j]

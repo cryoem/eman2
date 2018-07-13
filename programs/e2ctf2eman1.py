@@ -191,10 +191,10 @@ def loadsf( filename, ds, pssize ) :
 	if os.path.exists( filename ) :
 		sffile = open( filename, 'r' )
 		for line in sffile :
-			splitline = map( str.strip, line.split( '\t' ) )
+			splitline = list(map( str.strip, line.split( '\t' ) ))
 			if len( splitline ) > 1 :
 				if ( len( splitline[0] ) > 0 ) and ( len( splitline[1] ) > 0 ) :
-					empsf.append( map( float, splitline ) )
+					empsf.append( list(map( float, splitline )) )
 		sffile.close( )
 		empsf.sort( )
 	
@@ -563,7 +563,7 @@ def write_ctfparm( outputfile, newctflines ) :
 	if os.path.exists( outputfile ) :
 		ctffile = open( outputfile, 'r' )
 		for line in ctffile :
-			splitline = map( str.strip, line.split( '\t' ) )
+			splitline = list(map( str.strip, line.split( '\t' ) ))
 			ctflines.append( splitline )
 		ctffile.close( )
 	

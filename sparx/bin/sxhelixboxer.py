@@ -482,7 +482,7 @@ def save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph
 	out_file.write("#micrograph: " + micrograph_filepath + "\n")
 	out_file.write("#segment length: " + str(ptcl_length) + "\n")
 	out_file.write("#segment width: " + str(ptcl_width) + "\n")
-	for helix_coords in helix_particle_coords_dict.keys():
+	for helix_coords in list(helix_particle_coords_dict.keys()):
 		out_file.write("#helix: " + str(tuple(helix_coords[0:2])) + "," + str(tuple(helix_coords[2:4])) + "," + str(helix_coords[4]) + "\n")
 		particle_list = helix_particle_coords_dict[helix_coords]
 		for ptcl_center in particle_list:
@@ -969,7 +969,7 @@ if ENABLE_GUI:
 			if self.helices_groupbox.isChecked():
 				if self.helices_coords_groupbox.isChecked():
 					path = str( self.helices_coords_line_edit.text() )
-					save_helix_coords(helices_dict.keys(), path)
+					save_helix_coords(list(helices_dict.keys()), path)
 				if self.helices_images_groupbox.isChecked():
 					helix_filepath = str(self.helices_images_line_edit.text())
 					i = 0
@@ -1505,7 +1505,7 @@ if ENABLE_GUI:
 			
 			width = self.box_width
 			if self.helices_dict:
-				first_coords = self.helices_dict.keys()[0]
+				first_coords = list(self.helices_dict.keys())[0]
 				width = first_coords[4]
 			self.box_width_spinbox.setValue(width)
 		def main_image_closed(self):
@@ -1594,7 +1594,7 @@ if ENABLE_GUI:
 			#resize current boxes
 			#TODO: this is similar to part of self.mouse_up ==> make both methods call a function with common code
 			shapes = self.main_image.get_shapes() #an EMShapeDict of EMShapes
-			for box_key in shapes.keys():
+			for box_key in list(shapes.keys()):
 				old_emshape = shapes.get(box_key)
 				old_coords = old_emshape.getShape()[4:9]
 				new_coords = (old_coords[0], old_coords[1], old_coords[2], old_coords[3], width)

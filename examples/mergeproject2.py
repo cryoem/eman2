@@ -70,7 +70,7 @@ for source in sys.argv[1:]:
 	if minq>0 :
 		src2=db_open_dict("bdb:%s#e2ctf.parms"%source,ro=True)
 		goodkeys=[]
-		for k in src2.keys():
+		for k in list(src2.keys()):
 			if src2[k][3]<minq :
 				print("%s excluded with quality %d"%(k,src2[k][3]))
 				srcptcl=[i for i in srcptcl if not k in i]

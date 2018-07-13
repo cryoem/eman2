@@ -939,7 +939,7 @@ def main():
 						newreffiles.update({ reftag: newreffile } )
 					else:
 						print("there is no avg in avgs with refindx or reftag %d " %( int(refindx) ))
-						print("avgs.keys() are", avgs.keys())
+						print("avgs.keys() are", list(avgs.keys()))
 			
 				reffilesrefine = newreffiles
 			
@@ -1260,7 +1260,7 @@ def main():
 		
 			kkk = 0
 		
-			classes_sorted = sorted( classes.items(), key=itemgetter(0))
+			classes_sorted = sorted( list(classes.items()), key=itemgetter(0))
 			print("\n\nclasses sorted are", classes_sorted)
 		
 			for klass in classes_sorted:

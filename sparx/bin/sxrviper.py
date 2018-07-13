@@ -209,11 +209,11 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 	minimum_goodness_of_fit_for_both_lines = 1e20
 	optimized_split_point = -1
 	for split_point in split_point_set:
-		first_line_x = map(int, np.linspace(0,split_point,resolution)*data_set_length)
+		first_line_x = list(map(int, np.linspace(0,split_point,resolution)*data_set_length))
 		first_line_y = np.array([error_curve_func[x] for x in first_line_x])
 		first_line_z = np.poly1d( np.polyfit(first_line_x, first_line_y, degree_of_the_fitting_polynomial) )
 
-		second_line_x = map(int, np.linspace(split_point,1, resolution)*data_set_length)
+		second_line_x = list(map(int, np.linspace(split_point,1, resolution)*data_set_length))
 		second_line_y = np.array([error_curve_func[x-1] for x in second_line_x])
 		second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
 
@@ -227,13 +227,13 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 		# split_point = optimized_split_point
 		plt.plot(range(len(error_curve_func)),error_curve_func)
 
-		first_line_x = map(int, np.linspace(0,split_point,resolution)*data_set_length)
+		first_line_x = list(map(int, np.linspace(0,split_point,resolution)*data_set_length))
 		first_line_y = np.array([error_curve_func[x] for x in first_line_x])
 		first_line_z = np.poly1d( np.polyfit(first_line_x, first_line_y, degree_of_the_fitting_polynomial) )
 
 		plt.plot(first_line_x,first_line_z(first_line_x))
 
-		second_line_x = map(int, np.linspace(split_point,1, resolution)*data_set_length)
+		second_line_x = list(map(int, np.linspace(split_point,1, resolution)*data_set_length))
 		second_line_y = np.array([error_curve_func[x-1] for x in second_line_x])
 		second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
 		plt.plot(second_line_x,second_line_z(second_line_x))
@@ -251,13 +251,13 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 	split_point = optimized_split_point
 	plt.plot(range(len(error_curve_func)),error_curve_func)
 
-	first_line_x = map(int, np.linspace(0,split_point,resolution)*data_set_length)
+	first_line_x = list(map(int, np.linspace(0,split_point,resolution)*data_set_length))
 	first_line_y = np.array([error_curve_func[x] for x in first_line_x])
 	first_line_z = np.poly1d( np.polyfit(first_line_x, first_line_y, degree_of_the_fitting_polynomial) )
 
 	plt.plot(first_line_x,first_line_z(first_line_x))
 
-	second_line_x = map(int, np.linspace(split_point,1, resolution)*data_set_length)
+	second_line_x = list(map(int, np.linspace(split_point,1, resolution)*data_set_length))
 	second_line_y = np.array([error_curve_func[x-1] for x in second_line_x])
 	second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
 	plt.plot(second_line_x,second_line_z(second_line_x))
@@ -441,7 +441,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 		partstack.append(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "rotated_reduced_params.txt")
 	partids_file_name = mainoutputdir + "this_iteration_index_keep_images.txt"
 
-	lpartids = map(int, read_text_file(partids_file_name) )
+	lpartids = list(map(int, read_text_file(partids_file_name) ))
 	n_projs = len(lpartids)
 
 
@@ -528,7 +528,7 @@ def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
 			path, dirs, files = next(os.walk(location_location))
 			# dirs = filter(lambda x:'run' in x, dirs)
 			import re
-			dirs = filter(lambda x:re.search('run\d\d\d$', x), dirs)
+			dirs = [x for x in dirs if re.search('run\d\d\d$', x)]
 			get_already_processed_viper_runs.r_permutation = range(len(dirs))
 			random.shuffle(get_already_processed_viper_runs.r_permutation)
 			print(str(get_already_processed_viper_runs.r_permutation))
@@ -634,7 +634,7 @@ output_directory: directory name into which the output files will be written.  I
 	if options.moon_elimination == "":
 		options.moon_elimination = []
 	else:
-		options.moon_elimination = map(float, options.moon_elimination.split(","))
+		options.moon_elimination = list(map(float, options.moon_elimination.split(",")))
 
 	# Making sure all required options appeared.
 	for required_option in required_option_list:
@@ -698,7 +698,7 @@ output_directory: directory name into which the output files will be written.  I
 		if use_latest_master_directory:
 			all_dirs = [d for d in os.listdir(".") if os.path.isdir(d)]
 			import re; r = re.compile("^master.*$")
-			all_dirs = filter(r.match, all_dirs)
+			all_dirs = list(filter(r.match, all_dirs))
 			if len(all_dirs)>0:
 				# all_dirs = max(all_dirs, key=os.path.getctime)
 				masterdir = max(all_dirs, key=os.path.getmtime)

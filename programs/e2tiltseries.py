@@ -111,7 +111,7 @@ def main():
 				tlt_assoc[ang] = arg
 			db.close()
 
-		ordered_angles = sorted([float(a) for a in tlt_assoc.keys()])
+		ordered_angles = sorted([float(a) for a in list(tlt_assoc.keys())])
 		sorted_args = [tlt_assoc[a] for a in ordered_angles] # order args according to tilt angle parameter
 
 		for angle,infile in zip(ordered_angles,sorted_args):

@@ -168,7 +168,7 @@ class EMParallelProject3D:
 			raise NotImplementedError("The parallelism option you specified (%s) is not suppored" %self.options.parallel )
 
 	def __write_output_data(self,rslts):
-		for idx,image in rslts.items():
+		for idx,image in list(rslts.items()):
 			if not isinstance(image,EMData): continue # this is here because we get the dimensions of the database as a key (e.g. '40x40x1').
 			image["model_id"]=self.modeln
 			if self.options.append : image.write_image(self.options.outfile,-1)

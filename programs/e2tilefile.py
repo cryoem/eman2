@@ -76,7 +76,7 @@ def main():
 	if options.dump:
 		td=tile_list(args[0])
 		print(td)
-		k=td.keys()
+		k=list(td.keys())
 		k.sort()
 		for i in k: print(i,td[i])
 

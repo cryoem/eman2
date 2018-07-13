@@ -303,7 +303,7 @@ class EMFileTable(QtGui.QTableWidget):
 		
 		stime=time.time()	
 		self.busy = 1
-		for key,value in self.animated_columns.items():
+		for key,value in list(self.animated_columns.items()):
 			if value == -1:
 				for i in xrange(0,self.columnCount()):
 					if (str(self.horizontalHeaderItem(i).text())) == key:
@@ -317,7 +317,7 @@ class EMFileTable(QtGui.QTableWidget):
 					return
 				
 		
-		for key,value in self.animated_columns.items():
+		for key,value in list(self.animated_columns.items()):
 			cd = self.column_data[value-1]
 			for i in xrange(0,len(self.listed_names)):
 				
@@ -337,7 +337,7 @@ class EMFileTable(QtGui.QTableWidget):
 		Sometimes the first column displays a shortened version of the name of a file on
 		disk, but it occurs that you want to recall the full name. This function does that
 		'''
-		for key,value in self.name_conversions.items():
+		for key,value in list(self.name_conversions.items()):
 			if value == name:
 				return key
 		return None
@@ -367,7 +367,7 @@ class EMFileTable(QtGui.QTableWidget):
 		for these "action-functions"
 		'''
 		self.context_menu_refs.append(context_menu_data)
-		for key,value in context_menu_data.items():
+		for key,value in list(context_menu_data.items()):
 			self.add_context_menu_action(key,value)
 
 	def add_column_data(self,column_data):
@@ -379,7 +379,7 @@ class EMFileTable(QtGui.QTableWidget):
 			self.column_data.append(column_data)
 		else:
 			self.column_data_refs.append(column_data)
-			for key,value in column_data.column_data.items():
+			for key,value in list(column_data.column_data.items()):
 				self.column_data.append(EMFileTable.EMColumnData(key,value,""))
 	def remove_column_data(self,column_data_name):
 		'''
@@ -551,7 +551,7 @@ class EMFileTable(QtGui.QTableWidget):
 		'''
 		menu = QtGui.QMenu()
 		cmenu = self.context_menu_data
-		for k in cmenu.keys():
+		for k in list(cmenu.keys()):
 			menu.addAction(k)
 		menu.triggered[QAction].connect(self.menu_action_triggered)
 		menu.exec_(event.globalPos())
@@ -952,7 +952,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		self.strategy_output = {}
 		self.current_strategy = None
 		
-		for key in self.dumped_dict.keys():
+		for key in list(self.dumped_dict.keys()):
 			self.strategy_widget[key] = None
 		
 		self.current_widget = None
@@ -973,7 +973,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 		self.main_combo = QtGui.QComboBox()
 		start_idx = None
-		dumped_dict_keys = self.dumped_dict.keys()
+		dumped_dict_keys = list(self.dumped_dict.keys())
 		dumped_dict_keys.sort()
 		for i,key in enumerate(dumped_dict_keys):
 			if key == self.defaultunits:
@@ -1067,7 +1067,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 		result = self.current_strategy
 		
-		for key,val in d.items():
+		for key,val in list(d.items()):
 			if isinstance(val,str):
 				if len(val) > 0:
 					result += ":"+key+"="+val
@@ -1621,7 +1621,7 @@ class IncorpDict:
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
-		keys = param.choices.keys()
+		keys = list(param.choices.keys())
 		keys.sort() # yes this is somewhat restrictive but it was my only way around something
 #		label = QtGui.QLabel(param.desc_short+":",target)
 #		label.setToolTip(param.desc_long)
@@ -1830,7 +1830,7 @@ class DictParamWriter:
 	
 		# get value1
 		idx1 = self.combo1.currentIndex()
-		keys = self.param.choices.keys()
+		keys = list(self.param.choices.keys())
 		keys.sort() # because it was sorted above 
 		value1 = keys[idx1] # this preserves the type - overkill, well, foolproof, yes a bit more so
 		
@@ -1873,7 +1873,7 @@ class EMParamTableEventHandler:
 	def contextMenuEvent(self,event):
 		if hasattr(self.table_widget,"context_menu"):
 			menu = QtGui.QMenu()
-			for k in self.table_widget.context_menu.keys():
+			for k in list(self.table_widget.context_menu.keys()):
 				menu.addAction(k)
 			menu.triggered[QAction].connect(self.menu_action_triggered)
 			menu.exec_(event.globalPos())
@@ -1948,7 +1948,7 @@ class DictEventHandler:
 	
 	def combo1_index_changed(self,i):
 		
-		keys = self.dict.keys()
+		keys = list(self.dict.keys())
 		keys.sort() # because the keys are sorted in the display
 		key = keys[i]
 		values = self.dict[key]

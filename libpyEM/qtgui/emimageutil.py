@@ -590,8 +590,8 @@ class EMMetaDataTable(object):
 		'''
 		if not isinstance(metadata,dict): raise
 		
-		left = [str(k) for k in metadata.keys()]
-		right = [str(v) for v in metadata.values()]
+		left = [str(k) for k in list(metadata.keys())]
+		right = [str(v) for v in list(metadata.values())]
 		
 		from .emform import EMParamTable, ParamDef,EMFormWidget
 		

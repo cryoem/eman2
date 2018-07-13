@@ -465,7 +465,7 @@ class MainWindow(QtGui.QMainWindow):
         :return:
         '''
 
-        if root_tree_item in self.root_items_path_dictionary.values():
+        if root_tree_item in list(self.root_items_path_dictionary.values()):
             number_of_runs = root_tree_item.childCount()
             for i in range(number_of_runs):
                 child_run = root_tree_item.child(i)
@@ -477,7 +477,7 @@ class MainWindow(QtGui.QMainWindow):
         :return: List of checked QItemWidget
         """
         checked_runs = []
-        for root in self.root_items_path_dictionary.values():
+        for root in list(self.root_items_path_dictionary.values()):
             number_of_runs = root.childCount()
 
             for i in range(number_of_runs):

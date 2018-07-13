@@ -147,7 +147,7 @@ class ControlPannel(QtGui.QWidget):
 		hbl.addWidget(flabel)
 		self.processor_combobox = QtGui.QComboBox()
 		proc_data = dump_processors_list()
-		for key in proc_data.keys():
+		for key in list(proc_data.keys()):
 			if len(key) >= 5 and key[:7] == "filter.":
 				#print key
 				self.processor_combobox.addItem(key)

@@ -930,7 +930,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		self.lbentry.currentRowChanged[int].connect(self.newEntry)
 #		QtCore.QObject.connect(self.lbentry,QtCore.SIGNAL("keypress"),self.entryKey)
-		self.lbentry.itemChanged[QListWidgetItem].connect(self.updateEntrySelect)
+		self.lbentry.itemChanged.connect(self.updateEntrySelect)
 		
 		self.ssort.currentIndexChanged[int].connect(self.newSort)
 		self.cbsortoder.valueChanged.connect(self.newSortOrder)

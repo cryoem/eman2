@@ -217,7 +217,7 @@ def print_to_std_out(all):
 				except: print("Entry ",i," missing")
 				try : ah.setdefault(h["path"],[]).append(h)
 				except: continue
-			for k in ah.keys():
+			for k in list(ah.keys()):
 				print("---------- ",k)
 				for i in ah[k]:
 					if "end" in i : print(local_datetime(i["start"]),"\t   ",time_diff(i["end"]-i["start"]),"\t"," ".join(i["args"]))

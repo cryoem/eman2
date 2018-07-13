@@ -8,7 +8,7 @@ RELION to SPHIRE Conversion: Create several types of parameter text files and pe
 
 Usage in command line
 
-  sxrelion2sphire.py  input_star_file  output_directory  --relion_project_dir=DIR_PATH  --star_section=STAR_SECTION  --per_particle_ctf  --outputs_root=ROOT_NAME_STRING   --box_size=BOX_SIZE  --create_stack  --cs_save_as_hdf
+  sxrelion2sphire.py  input_star_file  output_directory  --relion_project_dir=DIR_PATH  --star_section=STAR_SECTION  --outputs_root=ROOT_NAME_STRING   --box_size=BOX_SIZE  --create_stack  --cs_save_as_hdf
 
 \\
 ===== Typical usage =====
@@ -29,7 +29,6 @@ sxrelion2sphire does not support MPI.
 
   ; %%--%%relion_project_dir : RELION project directory: Path to RELION project directory associated with the RELION STAR file. By default, the program assume the current directory is the RELION project directory. (default none)
   ; %%--%%star_section : Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_)
-  ; %%--%%per_particle_ctf : Per-particle CTF estimation: Indicate if the CTF parameters stored in the RELION STAR file is estimated by per-particle base. (default False)
   ; %%--%%outputs_root : Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default sphire)
   ; %%--%%box_size : Box size: Box size for particle extraction. It also controls the saved coordinates file format. If the given value is > 0, store the eman1 format. coordinate file. The coordinates of eman1 format is particle box corner associated with this box size. The coordinates of sphire format is particle center. By default, use sphire format. (default 0)
   ; %%--%%create_stack : Create virtual stacks: Create per-micrograph virtual stacks of particle images in BDB format. By default, the program does not generate the stack of particle images because it takes a long time and the file size is large. (default False)
@@ -105,7 +104,7 @@ NOTE: If you run [[pipeline:window:sxwindow|sxwindow]] using the coordinates fil
   - Accept arbitrary output file name (%%--%%outputs_root).
 
   - Added SPHIRE rebox file output support. The rebox file contains box coordinates, CTF parameters, and projection parameters.  
-    * This modification solves the problem associated with per-particle defocus estimation (%%--%%per_particle_ctf).
+    * This modification solves the problem associated with per-particle defocus estimation.
    
   - Add relion project directory option so that the script can be run from any directory (%%--%%relion_project_dir).
     * That is, you don't anymore need to make sure the current directory is the project folder of the RELION (where you run RELION GUI). 

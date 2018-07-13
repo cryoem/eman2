@@ -1287,7 +1287,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 
 	def housekeeping(self):
 		# if we haven't heard from a client in 5 minutes, assume it's gone
-		for k in EMDCTaskHandler.clients.keys():
+		for k in list(EMDCTaskHandler.clients.keys()):
 			if k=="maxrec" : continue
 			c=EMDCTaskHandler.clients[k]
 
@@ -1297,7 +1297,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					del EMDCTaskHandler.clients[k]
 			except: continue
 
-		for k in self.queue.active.keys():
+		for k in list(self.queue.active.keys()):
 			j=self.queue.active[k]
 			if isinstance(j,int) or j.starttime==None : continue
 			try:
@@ -1438,7 +1438,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 
 							# send a list of all clients to try to talk to
 							allclients=set()
-							for i in EMDCTaskHandler.clients.keys():
+							for i in list(EMDCTaskHandler.clients.keys()):
 								if i=="maxrec" : continue
 								allclients.add(EMDCTaskHandler.clients[i][0])
 							allclients=list(allclients)
@@ -2121,7 +2121,7 @@ class EMDCTaskClient(EMTaskClient):
 			sockf.flush()
 
 			# Translate and retrieve (if necessary) data for task
-			for k,i in task.data.items():
+			for k,i in list(task.data.items()):
 				if self.verbose>1 : print("Data translate ",k,i)
 #				try:
 				if isinstance(i,list) and len(i)>0 and i[0]=="cache" :
@@ -2192,13 +2192,13 @@ class EMDCTaskClient(EMTaskClient):
 					retry=True
 					continue
 
-				for k,v in ret.items():
+				for k,v in list(ret.items()):
 					signal.alarm(120)
 					try:
 						sendobj(sockf,k)
 						sendobj(sockf,v)
 					except :
-						print("ERROR (retrying ",task.taskid,") on : ",k, " in ",ret.items())
+						print("ERROR (retrying ",task.taskid,") on : ",k, " in ",list(ret.items()))
 						if isinstance(v,EMData) : v.write_image("error.hdf",-1)
 						time.sleep(3)
 						retry=True

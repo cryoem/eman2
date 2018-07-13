@@ -22,7 +22,7 @@ def main():
 	
 	#### load transforms from json file
 	jss=js_open_dict(filein)
-	trans=[v["xform.align3d"] for v in jss.values()]
+	trans=[v["xform.align3d"] for v in list(jss.values())]
 	
 	k=0
 	adiffs=[]
