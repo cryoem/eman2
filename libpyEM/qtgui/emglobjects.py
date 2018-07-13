@@ -32,6 +32,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import object
 from EMAN2 import *
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
@@ -54,7 +55,7 @@ def init_glut():
 		GLUT.glutInit("")
 		glut_inited = True
 
-class EMBasicOpenGLObjects:
+class EMBasicOpenGLObjects(object):
 	"""
 	This class is supposed to encapsulate basic and common objects
 	used by various other OpenGL classes in EMAN2 pyqt interfaces.
@@ -64,7 +65,7 @@ class EMBasicOpenGLObjects:
 	
 	It's implemented as a singleton
 	"""
-	class __impl:
+	class __impl(object):
 		""" Implementation of the singleton interface """
 
 		def __init__(self):
@@ -156,7 +157,7 @@ def viewport_width():
 	return view.viewport_width()
 
 
-class EMGLProjectionViewMatrices:
+class EMGLProjectionViewMatrices(object):
 	"""
 	stores a static single instance of the inverse of the projection matrix, which
 	is calculates using numpy/scipy. Other classes interface with this by calling
@@ -213,14 +214,14 @@ class EMGLProjectionViewMatrices:
 		return self.view_matrix[2] - self.view_matrix[0]
 
 
-class EMGLProjViewMatrices:
+class EMGLProjViewMatrices(object):
 	"""
 	Controls a static single instance of OpenGL projection and view(port) matrices
 	Also stores a static single instance of the inverse of the projection matrix, which
 	is calculates using numpy/scipy. Other classes interface with this by calling
 	set_update when the viewport or projection matrix has changed (i.e., a resize event)
 	"""
-	class __impl:
+	class __impl(object):
 		""" Implementation of the singleton interface """
 
 		def __init__(self):
@@ -292,7 +293,7 @@ class EMGLProjViewMatrices:
 		""" Delegate access to implementation """
 		return setattr(self.__instance, attr, value)
 
-class EMViewportDepthTools2:
+class EMViewportDepthTools2(object):
 	"""
 	This class provides important tools for EMAN2 floating widgets -
 	these are either qt widgets that get mapped as textures to
@@ -660,7 +661,7 @@ class EMViewportDepthTools2:
 
 		return (xcoord, height-ycoord)
 
-class EMViewportDepthTools:
+class EMViewportDepthTools(object):
 	"""
 	This class provides important tools for EMAN2 floating widgets -
 	these are either qt widgets that get mapped as textures to
@@ -1023,7 +1024,7 @@ class EMViewportDepthTools:
 
 		return (xcoord + width*0.5, 0.5*height-ycoord)
 
-class EMOpenGLFlagsAndTools:
+class EMOpenGLFlagsAndTools(object):
 	"""
 	This is a singleton class that encapsulates OpenGL flags and tools -
 	flags that are important to the functioning of EMAN2 user interfaces.
@@ -1037,7 +1038,7 @@ class EMOpenGLFlagsAndTools:
 	
 	All OpenGL-related Texture flags and generic operations should end up in this class.
 	"""
-	class __impl:
+	class __impl(object):
 		""" Implementation of the singleton interface """
 
 		def __init__(self):
@@ -1148,7 +1149,7 @@ class EMOpenGLFlagsAndTools:
 		return setattr(self.__instance, attr, value)
 
 
-class Camera2:
+class Camera2(object):
 	"""\brief A camera object encapsulates 6 degrees of freedom, and a scale factor
 	
 	The camera object stores x,y,z coordinates and a single transform object.
@@ -1530,7 +1531,7 @@ class Camera2:
 		
 		
 
-class Camera:
+class Camera(object):
 	"""\brief A camera object encapsulates 6 degrees of freedom, and a scale factor
 	
 	The camera object stores x,y,z coordinates and a single transform object.
@@ -1678,7 +1679,7 @@ class Camera:
 		
 		return cam
 
-class EMBrightContrastScreen:
+class EMBrightContrastScreen(object):
 	def __init__(self):
 		# this class draws a brightness/contrast screen on the zplane,
 		# on a square polygon from [0,0] to [1,1]

@@ -3,6 +3,7 @@ from __future__ import print_function
 
 # Author: James Michael Bell, jmbell@bcm.edu, 10/18/2015
 
+from builtins import object
 from EMAN2 import *
 import numpy as np
 from IPython import embed
@@ -218,7 +219,7 @@ def ccf_ordinate(f1,f2,i,fname): # Li (2012)
 	print2line("\t\t\t({},{})".format(x,y))
 	return x,y,ccf
 
-class PairwiseCoherence:
+class PairwiseCoherence(object):
 	
 	def __init__(self,fname,frames,ips,bs=512):
 		self.fname = fname
@@ -287,7 +288,7 @@ class PairwiseCoherence:
 		best_cps.do_ift().write_image('{}_best_coherent_pws.hdf'.format(self.fname[:-4]),-1)
 		return x,y,pwcc,best_cps
 
-class DirectDetectorUtil:
+class DirectDetectorUtil(object):
 	
 	@classmethod
 	def correct_frames(cls,options,fname,outfile=None):

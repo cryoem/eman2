@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import object
 import weakref
 import json
 import cPickle
@@ -119,7 +120,7 @@ def js_list_dicts(url):
 
 	return ld
 
-class tmpimg:
+class tmpimg(object):
 	def __init__(self,fsp,n):
 		self.fsp=fsp
 		self.n=n
@@ -254,7 +255,7 @@ except ImportError:
 ###  Task Management classes
 #############
 
-class JSTaskQueue:
+class JSTaskQueue(object):
 	"""This class is used to manage active and completed tasks through an
 	JSDict object. Tasks are each assigned a number unique in the local file.
 	The active task 'max' keeps increasing. When a task is complete, it is shifted to the
@@ -465,7 +466,7 @@ class JSTaskQueue:
 		del self.active[taskid]
 		JSTaskQueue.lock.release()
 
-class JSTask:
+class JSTask(object):
 	"""This class represents a task to be completed. Generally it will be subclassed. This is effectively
 	an abstract superclass to define common member variables and methods. Note that the data dictionary,
 	which contains a mix of actual data elements, and ["cache",filename,#|min,max|(list)] image references, will
@@ -532,7 +533,7 @@ def denl(s):
 	"This will replace \n with nothing in a search match"
 	return s.group(0).replace("\n","")
 
-class JSDict:
+class JSDict(object):
 	"""This class provides dict-like access to a JSON file on disk. It goes to some lengths to insure thread/process-safety, even if
 performance must be sacrificed. The only case where it may not work is when a remote filesystem which doesn't obey file-locking is used.
 Note that when opened, the entire JSON file is read into memory. For this reason (and others) it is not a good idea to store (many) images

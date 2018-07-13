@@ -33,6 +33,7 @@ from __future__ import print_function
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
+from builtins import object
 DBUG=False		# If set will dump a bunch of debugging output, normally should be False
 
 import os.path
@@ -102,7 +103,7 @@ def DCcustomer_alarm(signum=None,stack=None):
 #	if stack!=None : traceback.print_stack(stack)
 	return
 
-class EMTaskCustomer:
+class EMTaskCustomer(object):
 	"""This will communicate with the specified task server on behalf of an application needing to
 	have tasks completed"""
 	def __init__(self,target):
@@ -362,7 +363,7 @@ class EMTaskCustomer:
 				self.wait_for_server()
 				return self.get_results(taskid,False)
 
-class EMTaskHandler:
+class EMTaskHandler(object):
 	"""This is the actual server object which talks to clients and customers. It coordinates task execution
  acts as a data clearinghouse. This parent class doesn't contain any real functionality. Subclasses are always
  used for acutual servers."""
@@ -373,7 +374,7 @@ class EMTaskHandler:
 		self.queue=EMTaskHandler.queue
 #		self.queue=EMTaskQueue(path)
 
-class EMTaskClient:
+class EMTaskClient(object):
 	"""This class executes tasks on behalf of the server. This parent class implements the actual task functionality.
 Communications are handled by subclasses."""
 	def __init__(self):
@@ -486,7 +487,7 @@ accessible to the server."""
 
 #######################
 # Here we define the classes for local threaded parallelism
-class EMLocalTaskHandler():
+class EMLocalTaskHandler(object):
 	"""Local threaded Taskserver. This runs as a thread in the 'Customer' and executes tasks. Not a
 	subclass of EMTaskHandler for efficient local processing and to avoid data name translation."""
 	lock=threading.Lock()
@@ -592,7 +593,7 @@ class EMLocalTaskHandler():
 #######################
 #  Here we define the classes for MPI parallelism
 
-class EMMpiClient():
+class EMMpiClient(object):
 	"""MPI communications are a bit complicated. An instance of EMMpiTaskHandler is created by the
 	customer. This object spawns the actual MPI job by executing mpirun. This MPI job as implemented
 	in e2parallel.py will make use of the run() method of EMMpiClient for its main loop. MPI rank 0
@@ -907,7 +908,7 @@ def imgnumenum(lst):
 
 
 
-class EMMpiTaskHandler():
+class EMMpiTaskHandler(object):
 	"""MPI based task handler. This exists as a thread in the customer and handles communications with the actual
 	MPI program, which this handler spawns. We do not subclass the EMTaskHandler because we are using our own
 	file caching naming scheme here, since the MPI task is not persistent across jobs. If this handler dies,
@@ -1181,7 +1182,7 @@ def EMDCsendonecom(addr,cmd,data,clientid=0):
 
 
 import threading
-class DCThreadingMixIn:
+class DCThreadingMixIn(object):
 	"""EMAN2 Mix-in class uses threads, but sets an upper limit on simultaneous threads"""
 
 	# Decides how threads will act upon termination of the

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2017-03
+from builtins import object
 from EMAN2 import *
 import numpy as np
 import threading
@@ -38,7 +39,7 @@ def run(cmd):
 #####################
 ## Convolutional Neural Network boxer
 ##########
-class boxerConvNet():
+class boxerConvNet(object):
 	
 	
 	#### import dependencies here. try not to break the whole program..

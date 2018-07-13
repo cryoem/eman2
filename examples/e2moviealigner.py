@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA	2111-1307 USA
 #
 
+from builtins import object
 from EMAN2 import *
 from Simplex import Simplex
 #from Anneal import BaseAnnealer
@@ -161,7 +162,7 @@ def main():
 
 	E2end(pid)
 
-class MovieModeAligner:
+class MovieModeAligner(object):
 
 	"""
 	MovieModeAligner: Class to hold information for optimized alignment of DDD cameras.
@@ -676,7 +677,7 @@ class MovieModeAligner:
 		##return self.aligner.get_last_energy() 
 		#return self.aligner.get_lowest_energy()
 
-class font:
+class font(object):
 	PURPLE = '\033[95m'
 	CYAN = '\033[96m'
 	DARKCYAN = '\033[36m'

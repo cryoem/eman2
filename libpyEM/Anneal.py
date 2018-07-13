@@ -30,6 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from builtins import object
 from EMAN2 import *
 import time
 import datetime
@@ -40,6 +41,7 @@ import copy
 import pickle
 import abc
 import numpy as np
+from future.utils import with_metaclass
 
 def main():
 
@@ -118,7 +120,7 @@ def example_tsp_problem():
     for city in state:
         print(("\t"+city))
 
-class SimpleAnnealer:
+class SimpleAnnealer(object):
 
     """
     Multi-dimensional Simulated Annealing Optimization
@@ -182,7 +184,7 @@ class SimpleAnnealer:
         T = 2*max(list(map(lambda E,E0=E0: abs(E-E0),Es)))
         return T
 
-class BaseAnnealer(object):
+class BaseAnnealer(with_metaclass(abc.ABCMeta, object)):
 
     # This software is maintained by perrygeo and is available at:
     #     https://github.com/perrygeo/simanneal/blob/master/simanneal/anneal.py
@@ -193,8 +195,6 @@ class BaseAnnealer(object):
     energy and make moves on a state.  The temperature schedule for
     annealing may be provided manually or estimated automatically.
     """
-
-    __metaclass__ = abc.ABCMeta
     Tmax = 25000.0
     Tmin = 2.5
     steps = 50000

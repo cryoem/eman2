@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import object
 import sys
 from math import *
 from sys import exit
@@ -1750,7 +1751,7 @@ def get_3d_font_renderer():
 		#print "Unable to import EMFTGL. The FTGL library may not be installed. Text on 3D and some 2D viewers may not work."
 		return None
 
-class EMAbstractFactory:
+class EMAbstractFactory(object):
 	'''
 	see http://blake.bcm.edu/emanwiki/Eman2FactoriesInPython
 	'''
@@ -1766,7 +1767,7 @@ class EMAbstractFactory:
 		"""unregister a constructor"""
 		delattr(self, methodName)
 
-class EMFunctor:
+class EMFunctor(object):
 	'''
 	Taken from http://code.activestate.com/recipes/86900/
 	'''
@@ -1883,7 +1884,7 @@ def initializeCUDAdevice():
 	except:
 		pass
 
-class LSXFile:
+class LSXFile(object):
 	"""This class will manage writing entries to LSX files, which are text files with a defined record length for
 rapid access. Each line contains an image number, a filename, and an optional comment, referencing a particle
 in another actual image file. Files MUST use the Unix /n convention, not the Windows (/r/n) convention.

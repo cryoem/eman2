@@ -34,6 +34,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import object
 from EMAN2 import *
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
@@ -53,7 +54,7 @@ import weakref # for EMLightsInspector
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMLightsDrawer:
+class EMLightsDrawer(object):
 	'''
 	Base clase, works with EMLightsInspectorBase
 	'''
@@ -735,7 +736,7 @@ class EMLights(EMLightsDrawer,EM3DModel):
 			EM3DModel.mouseReleaseEvent(self, event)
 
 
-class EMLightsInspectorBase:
+class EMLightsInspectorBase(object):
 	'''
 	Inherit from this if you want its functionality
 	'''

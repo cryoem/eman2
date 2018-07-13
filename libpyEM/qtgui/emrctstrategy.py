@@ -31,9 +31,10 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 #
+from builtins import object
 import numpy, math
 
-class Strategy:
+class Strategy(object):
 	''' This is a base class for the strategy to use for pcik event hadeling'''
 	def __init__ (self, mediator):
 		self.mediator = mediator

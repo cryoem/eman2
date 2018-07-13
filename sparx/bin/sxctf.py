@@ -35,6 +35,7 @@ from __future__ import print_function
 # e2ctf.py  10/29/2008 Steven Ludtke
 # This is a program for determining CTF parameters
 
+from builtins import object
 import global_def
 from global_def import *
 
@@ -831,9 +832,9 @@ try:
 	from eman2_gui.valslider import ValSlider
 except:
 	print("Warning: PyQt4 must be installed to use the --gui option")
-	class dummy:
+	class dummy(object):
 		pass
-	class QWidget:
+	class QWidget(object):
 		"A dummy class for use when Qt not installed"
 		def __init__(self,parent):
 			print("Qt4 has not been loaded")

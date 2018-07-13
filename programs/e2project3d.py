@@ -37,6 +37,7 @@ from __future__ import print_function
 # 1. Baldwin, P.R. and Penczek, P.A. 2007. The Transform Class in SPARX and EMAN2. J. Struct. Biol. 157, 250-261.
 # 2. http://blake.bcm.edu/emanwiki/EMAN2/Symmetry
 
+from builtins import object
 import sys, math, os, random
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
@@ -49,7 +50,7 @@ MIRROR_DEBUG = True
 NO_MIRROR = False
 
 
-class EMParallelProject3D:
+class EMParallelProject3D(object):
 	def __init__(self,options,fsp,sym,start,modeln=0,logger=None):
 		'''
 		@param options the options produced by (options, args) = parser.parse_args()

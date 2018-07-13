@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA	2111-1307 USA
 #
 
+from builtins import object
 from EMAN2 import *
 import sys
 from eman2_gui.emboxerbase import *
@@ -298,7 +299,7 @@ class MorphBoxingTool(EMBoxingTool):
 		self.target().move_box(box_num, dx, dy)
 
 
-class MorphBoxingPanel:
+class MorphBoxingPanel(object):
 	
 	def __init__(self,target):
 		self.target = weakref.ref(target)
@@ -323,7 +324,7 @@ class MorphBoxingPanel:
 		self.target().clear_all()
 
 
-class ErasingPanel: # copied for ideas for the morph panel
+class ErasingPanel(object): # copied for ideas for the morph panel
 
 	def __init__(self,target,erase_radius=128):
 		self.busy = True

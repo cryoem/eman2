@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from builtins import object
 from EMAN2 import *
 from eman2_gui.emplot2d import EMPlot2DWidget
 from eman2_gui.emapplication import EMApp
@@ -76,7 +77,7 @@ def main():
 	app.exec_()
 
 # Use strategy pattern here. Any new stategy needs to inherit this
-class Strategy:
+class Strategy(object):
 	def __init__(self, jobdir, options):
 		self.jobdir = jobdir
 		self.options = options

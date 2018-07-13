@@ -35,6 +35,7 @@ from __future__ import print_function
 # e2simmx.py  02/03/2007	Steven Ludtke
 # This program computes a similarity matrix between two sets of images
 
+from builtins import object
 from EMAN2 import *
 from math import *
 import os
@@ -83,7 +84,7 @@ def opt_rectangular_subdivision(x,y,n):
 
 
 
-class EMParallelSimMX:
+class EMParallelSimMX(object):
 	def __init__(self,options,args,logger=None):
 		'''
 		@param options the options produced by (options, args) = parser.parse_args()

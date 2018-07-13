@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan June 2015
+from builtins import object
 import os
 import sys
 import time

@@ -33,6 +33,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import object
 from PyQt4.QtCore import Qt
 from PyQt4 import QtGui,QtCore
 from EMAN2 import EMData, file_exists, gimme_image_dimensions3D,get_image_directory,EMUtil,base_name,gm_time_string
@@ -40,7 +41,7 @@ from EMAN2db import db_check_dict, db_remove_dict
 import os
 # For example usage see http://blake.bcm.edu/emanwiki/EMAN2ImageFormats#SavingEMDatafromPython
 
-class EMFileTypeValidator:
+class EMFileTypeValidator(object):
 	'''
 	A basic validator class - checks to make sure the file name is valid using the file type
 	'''
@@ -68,7 +69,7 @@ class EMFileTypeValidator:
 		return 1
 	
 
-class EMCoordFileValidator:
+class EMCoordFileValidator(object):
 	'''
 	checks to make sure the file name supplied is readable as a box database, in the traditional EMAN1 sense 
 	'''
@@ -132,7 +133,7 @@ def save_data(item_object):
 	
 	return saver.get_file_name()
 
-class LightEMDataSave:
+class LightEMDataSave(object):
 	'''
 	Used for file io - never reads the image until you actually call write_image, so if the user hits cancel
 	they will not experience any time lags due to file reading (which would have then been in vain)
@@ -155,7 +156,7 @@ class LightEMDataSave:
 		a.read_image(self.file_name,self.idx,True)
 		return a.get_attr_dict()
 	
-class EMFileSaver:
+class EMFileSaver(object):
 	'''
 	Base class for file savers. This function is tightly linked to the save_data function in this
 	file.
@@ -271,7 +272,7 @@ class EMSingleImageSaveDialog(EMFileSaver):
 		'''
 		return self.file_name_used
 
-class EMSaveImageValidator:
+class EMSaveImageValidator(object):
 	'''
 	A validator class - checks to make sure the file name is valid
 	and stores an overwrite flag. Will trigger a Qt message saying the file name is invalid.
@@ -638,7 +639,7 @@ class EMTmpFileHandle(object):
 		else: return EMGeneralTmpFileHandle(file_name)
 		# okay lots of tests, now return the right one
 
-class EMTmpFileHandleBase:
+class EMTmpFileHandleBase(object):
 	'''
 	This class originally added to deal with issues that arise when users overwrite data on disk
 	using file saving dialogs. You want to write to a temporary file, and when writing is finished,

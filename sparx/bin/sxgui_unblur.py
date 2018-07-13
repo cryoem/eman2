@@ -16,6 +16,7 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from builtins import object
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from matplotlib import pylab

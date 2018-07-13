@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import object
 from EMAN2 import *
 from PyQt4 import QtCore
 from eman2_gui.emfoldhunterstat import *
@@ -39,7 +40,7 @@ from eman2_gui.empdbvaltool import EMPDBValWidget
 from eman2_gui.emplot3d import *
 import os
 
-class E2ValidateMed():
+class E2ValidateMed(object):
 	
 	def __init__(self):
 		self.em_val = None #will become the empdbvaltool module

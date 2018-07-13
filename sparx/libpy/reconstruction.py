@@ -28,6 +28,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from builtins import object
 from global_def import *
 
 def rec2D(  lines, idrange=None, snr=None ):
@@ -1980,7 +1981,7 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		return [outlist, vol_ssnr]
 
 
-class memory_store:
+class memory_store(object):
 	def __init__(self, npad):
 		self.m_npad = npad
 		self.m_imgs = []

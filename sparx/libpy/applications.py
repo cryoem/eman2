@@ -29,6 +29,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from builtins import object
 from global_def import *
 
 def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", \
@@ -17021,7 +17022,7 @@ def incvar(prefix, nfile, nprj, output, fl, fh, radccc, writelp, writestack):
 	all_var.write_image( output, 0 )
 """
 
-class file_set :
+class file_set(object) :
 
 	def __init__( self, files ):
 		nfile = len(files)

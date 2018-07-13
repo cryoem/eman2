@@ -33,6 +33,7 @@ from __future__ import print_function
 
 
 from __future__ import print_function
+from builtins import object
 from EMAN2 import *
 from sparx import *
 from logger import Logger, BaseLogger_Files
@@ -140,7 +141,7 @@ def getalldata(stack, myid, nproc):
 
 
 
-class ali3d_options:
+class ali3d_options(object):
 	ir     = 1
 	rs     = 1
 	ou     = -1

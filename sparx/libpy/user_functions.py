@@ -36,6 +36,7 @@ from __future__ import print_function
 #   from appropriate application, in this case "sxali2d_c.py ...  --function=wei_func
 # 
 
+from builtins import object
 from global_def import *
 from EMAN2_cppwrap import *
 
@@ -1444,7 +1445,7 @@ def do_volume_mrk05(ref_data):
 # Note: this is a workaround to provide backwards compatibility and to avoid rewriting all functions
 #    using user_functions. this can be removed when it is no longer necessary....
 
-class factory_class:
+class factory_class(object):
 
 	def __init__(self):
 		self.contents = {}

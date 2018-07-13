@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import object
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_list_dicts
 from math import *
@@ -363,7 +364,7 @@ def scp_client():
 			recv_bdb(stdin,path)
 			continue
 		
-class scp_proxy:
+class scp_proxy(object):
 	def __init__(self,userhost,verbose=0):
 		"""Opens a connection to the remote host and establishes the remote client. userhost should be of the form "user@host"""
 		self.verbose=verbose

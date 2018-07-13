@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import object
 from EMAN2 import *
 from EMAN2jsondb import *
 import numpy as np
@@ -41,7 +42,7 @@ import os,sys
 
 apix=0
 
-class nothing:
+class nothing(object):
 	def __init__(self,x=None,y=None,z=None,q=None):
 		return
 

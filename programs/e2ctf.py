@@ -35,6 +35,7 @@ from __future__ import print_function
 # e2ctf.py  10/29/2008 Steven Ludtke
 # This is a program for determining CTF parameters and (optionally) phase flipping images
 
+from builtins import object
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
 from optparse import OptionParser
@@ -2260,13 +2261,13 @@ try:
 	from eman2_gui.valslider import ValSlider,CheckBox
 except:
 	print("Warning: PyQt4 must be installed to use the --gui option")
-	class dummy:
+	class dummy(object):
 		pass
-	class QWidget:
+	class QWidget(object):
 		"A dummy class for use when Qt not installed"
 		def __init__(self,parent):
 			print("Qt4 has not been loaded")
-	class QListWidget:
+	class QListWidget(object):
 		"A dummy class"
 		def __init__(self,parent):
 			print("Qt4 has not been loaded")

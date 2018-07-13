@@ -33,6 +33,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import object
 from EMAN2 import get_image_directory, get_dtag, EMData, \
 	get_files_and_directories, db_open_dict, remove_file, \
 	remove_directories_from_name, Util, EMUtil, IMAGE_UNKNOWN, base_name, \
@@ -62,20 +63,20 @@ EMAN2DB = "EMAN2DB"
 
 MDS = "%" # metadata separator
 
-class EMActionDelegate:
+class EMActionDelegate(object):
 	'''
 	interface for action delegates - they are notified when the widget owning them is closed
 	'''
 	def closeEvent(self,event): pass
 	
-class EMItemAction:
+class EMItemAction(object):
 	'''
 	interface for single item actions
 	'''
 	
 	def item_action(self,item,target): raise NotImplementedException
 	
-class EMMultiItemAction:
+class EMMultiItemAction(object):
 	'''
 	interface for multiple item actions
 	'''
@@ -1082,7 +1083,7 @@ class EMListWidget(QtGui.QListWidget):
 	def get_delegate(self): return self.delegate
 	def set_delegate(self,delegate): self.delegate = delegate
 
-class EMBrowseDelegate:
+class EMBrowseDelegate(object):
 	'''
 	Base class for objects that can read urls and return lists of ListWidgetItems
 	to the EMSelector
@@ -1553,7 +1554,7 @@ class EMDataHeaderItem(EMListItem):
 	def get_url(self):
 		return self.url +MDS+str(self.key)
 
-class EMStack2DCapableMixin:
+class EMStack2DCapableMixin(object):
 	'''
 	a 2D stack capable item is something that knows how to supply
 	data to the EMImageMX set_data function.

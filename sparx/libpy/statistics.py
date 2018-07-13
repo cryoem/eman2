@@ -29,6 +29,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from builtins import object
 from global_def import *
 
 def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True):
@@ -6124,7 +6125,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 '''
 import sys
-class Munkres:
+class Munkres(object):
     """
 Calculate the Munkres solution to the classical assignment problem.
 See the module documentation for usage.
@@ -7491,7 +7492,7 @@ def py_cluster_genmatrix(list, combinfunc, symmetric=False, diagonal=None):
       row_index += 1
    return matrix
 
-class py_Cluster:
+class py_Cluster(object):
    """
    A collection of items. This is internally used to detect clustered items in
    the data so we could distinguish other collection types (lists, dicts, ...)
@@ -7664,7 +7665,7 @@ class py_Cluster:
       else:
          return [[left], [right]]
 
-class py_cluster_BaseClusterMethod:
+class py_cluster_BaseClusterMethod(object):
    """
    The base class of all clustering methods.
    """
@@ -9187,7 +9188,7 @@ def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
 	return freq2, pw_n2, a2, b2
 
 
-class def_variancer:
+class def_variancer(object):
 	def __init__(self, nx, ny, nz):
 		from utilities import model_blank
 		self.nimg = 0
@@ -9259,7 +9260,7 @@ class def_variancer:
 		return self.sum1/self.nimg
 
 
-class inc_variancer:
+class inc_variancer(object):
 	def __init__(self, nx, ny, nz):
 		import numpy
 		self.nx = nx
@@ -9555,7 +9556,7 @@ def cluster_equalsize(d, m):
 	return  groupping,cent,disp
 
 
-class pcanalyzer:
+class pcanalyzer(object):
 	def __init__(self, mask, nvec=3, incore=False, MPI=False, scratch=None):
 		import os
 		self.mask = mask.copy()
@@ -9848,7 +9849,7 @@ class pcanalyzer:
 
 
 
-class pcanalyzebck:
+class pcanalyzebck(object):
 	def __init__(self, mask, nvec, dataw, list_of_particles, dm, variance, fl, aa, MPI=False ):
 		import os
 		self.mask = mask.copy()

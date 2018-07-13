@@ -32,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from builtins import object
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_remove_dict
 from PyQt4 import QtCore
@@ -114,7 +115,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 	E2end(logid)
 	js_close_dict(EMBOXERRCT_DB)
 
-class RCTprocessor:
+class RCTprocessor(object):
 	"""
 	Class to write particles and coords including some processing options
 	"""
@@ -180,7 +181,7 @@ class RCTprocessor:
 			out = base_name(name)+self.options.suffix+".box"
 			self.names.append(out)
 			
-class RCTboxer:
+class RCTboxer(object):
 	'''
 	The is the main command and control center for the RCT particle picker.
 	This object acts as a mediator for MainWin objects and follows the mediator pattern
@@ -275,7 +276,7 @@ class RCTboxer:
 	def handle_strategy_signal(self, signal):
 		self.strategy.handle_strategy_signal(signal)
 			
-class ParticlesWindow:
+class ParticlesWindow(object):
 	def __init__(self, rctwidget):
 		self.rctwidget = rctwidget
 		self.window=EMImageMXWidget(application=self.rctwidget.parent_window)
@@ -363,7 +364,7 @@ class ParticlesWindow:
 			#self.rctwidget.control_window.on_write()
 			#self.closed = True
 			
-class MainWin:
+class MainWin(object):
 	'''
 	This is an encapulation of the main micrograph windows, tilted and untilted.
 	'''
@@ -503,7 +504,7 @@ class MainWin:
 		boxfile.close()
 			
 		
-class EMBoxList:
+class EMBoxList(object):
 	'''
 	This is a container for the EMBox objects, this class follows the compiste pattern
 	'''
@@ -644,7 +645,7 @@ class EMBoxList:
 		
 		return -1
 	
-class EMBox:
+class EMBox(object):
 	'''
 	A basic encapsulation of a box - it has a central coordinate, a type attribute which can be
 	customized for specific boxes, and a score attribute, which could be useful to a particular

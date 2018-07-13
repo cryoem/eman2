@@ -35,6 +35,7 @@ from __future__ import print_function
 # e2parallel.py Steven Ludtke
 # This program implements, via various options, the parallelism system for EMAN2
 
+from builtins import object
 from EMAN2db import EMTaskQueue, EMTask
 from EMAN2 import *
 from EMAN2PAR import *
@@ -233,7 +234,7 @@ try:
 	from PyQt4 import QtCore, QtGui
 	from PyQt4.QtCore import Qt
 except:
-	class dummy:
+	class dummy(object):
 		"A dummy class for use when Qt not installed"
 		def __init__(self,quiet=False):
 			if not quiet :

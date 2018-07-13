@@ -29,6 +29,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from builtins import object
 from global_def import *
 
 def absi(e):
@@ -1553,7 +1554,7 @@ def recmat_np(mat):
 	return  np.degrees(np.mod(phi,pi2)),np.degrees(np.mod(theta,pi2)),np.degrees(np.mod(psi,pi2))
 """
 
-class symclass():
+class symclass(object):
 	import numpy as np
 	def __init__(self, sym):
 		"""

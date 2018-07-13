@@ -31,6 +31,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 from __future__ import print_function
+from builtins import object
 from EMAN2_utils import *
 from EMAN2 import *
 import math
@@ -382,7 +383,7 @@ def makeSsaAverage( options, scores, resultsdict, it ):
 
 
 # Use strategy pattern here. Any new stategy needs to inherit this
-class Strategy:
+class Strategy(object):
 	def __init__(self, volume, sym, steps, comp, etc):
 		self.volume = volume
 		self.sym = sym

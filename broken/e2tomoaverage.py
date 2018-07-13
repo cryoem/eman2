@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from builtins import object
 from EMAN2 import file_exists,EMData,E2init,E2progress,E2end,EMANVERSION,check_eman2_type_string,numbered_bdb,Transform,EMUtil,launch_childprocess,EMArgumentParser
 import EMAN2
 from EMAN2db import EMTask,db_open_dict
@@ -115,7 +116,7 @@ def check_options(options,args):
 			
 	return error
 	
-class EMBootStrappedAverages:
+class EMBootStrappedAverages(object):
 	'''
 	This class breaks the jobs of the boot-strapped average generation procedure
 	so that they can be run in parallel. 
@@ -426,7 +427,7 @@ class EMBootStrappedAverages:
 		output_writer.process_output(results, self.images, self.current_files)
 		
 		
-class EMTomoOutputWriter:
+class EMTomoOutputWriter(object):
 	'''
 	common functionality to EMTomoAllVAll and e2tomoaverage.EMBootStrappedAverages
 	Supplies the process_output function
@@ -488,7 +489,7 @@ class EMTomoOutputWriter:
 				peak=peak+1
 				
 			out.close()
-class EMTomoAlignments:
+class EMTomoAlignments(object):
 	'''
 	A class for performing many alignments, takes care of parallel considerations automatically
 	This class is used extensively, in e2tomoallvall, e2tomoaverage, and e2tomohunter
@@ -669,7 +670,7 @@ class EMTomoAlignments:
 			
 		results["all_solns"] = all_solns
 
-class EMTomoAlignTask:
+class EMTomoAlignTask(object):
 	'''
 	A class the knows how to align two 3D volumes
 	'''

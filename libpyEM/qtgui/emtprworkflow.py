@@ -33,6 +33,7 @@ from __future__ import absolute_import
 #
 
 
+from builtins import object
 from .emsprworkflow import *
 from .emform import *
 from .emsave import EMFileTypeValidator
@@ -343,7 +344,7 @@ class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 		
 		self.write_db_entries(params)
 
-class EMTomoAlignParams:
+class EMTomoAlignParams(object):
 	'''
 	A class that get parameters commonly used by alignment based programs
 	'''

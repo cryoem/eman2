@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import object
 import atexit
 import weakref
 from cPickle import loads,dumps
@@ -601,7 +602,7 @@ EMUtil.get_all_attributes=staticmethod(db_get_all_attributes)
 ###  Task Management classes
 #############
 
-class EMTaskQueue:
+class EMTaskQueue(object):
 	"""This class is used to manage active and completed tasks through an
 	EMAN2DB object. Pass it an initialized EMAN2DB instance. Tasks are each
 	assigned a number unique in the local database. The active task 'max'
@@ -816,7 +817,7 @@ class EMTaskQueue:
 		self.active[taskid]=None
 		EMTaskQueue.lock.release()
 
-class EMTask:
+class EMTask(object):
 	"""This class represents a task to be completed. Generally it will be subclassed. This is effectively
 	an abstract superclass to define common member variables and methods. Note that the data dictionary,
 	which contains a mix of actual data elements, and ["cache",filename,#|min,max|(list)] image references, will
@@ -856,7 +857,7 @@ class EMTask:
 ### This is the 'database' object, representing a BerkeleyDB environment
 ##########
 
-class EMAN2DB:
+class EMAN2DB(object):
 	"""This class implements a local database of data and metadata for EMAN2"""
 
 	opendbs={}
@@ -1018,7 +1019,7 @@ only practical option.)
 ### This represents a 'dictionary' within a 'database', in BerkeleyDB parlance this is a B-tree (though it could also be a Hash)
 ##########
 
-class DBDict:
+class DBDict(object):
 	"""This class uses BerkeleyDB to create an object much like a persistent Python Dictionary,
 	keys and data may be arbitrary pickleable types, however, additional functionality is provided
 	for EMData objects. Specifically, if integer keys are used, set_attr and get_attr may be used

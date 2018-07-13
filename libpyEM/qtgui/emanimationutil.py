@@ -31,13 +31,14 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from builtins import object
 from time import time
 
 from PyQt4 import QtCore
 from math import sin,acos
 from EMAN2 import Vec3f, Transform
 
-class Animator:
+class Animator(object):
 	'''
 	Register Animatables with this class
 	'''
@@ -92,7 +93,7 @@ class Animator:
 		
 	def animation_done_event(self,animated): raise NotImplementedError("Inheriting classes should define this function")
 
-class Animatable:
+class Animatable(object):
 	cache_dts = None
 	def __init__(self):
 		self.time = 0		# time indicates the current time used for the basis of animation.

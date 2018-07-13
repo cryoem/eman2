@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import object
 from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict,EMArgumentParser
 from EMAN2db import db_check_dict
 from EMAN2jsondb import *
@@ -431,7 +432,7 @@ def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 	return averages
 
 
-class SwarmShrunkenImageMediator:
+class SwarmShrunkenImageMediator(object):
 	def __init__(self,template_radius,subsample_rate):
 		self.template_radius = template_radius
 		self.subsample_rate = subsample_rate
@@ -439,7 +440,7 @@ class SwarmShrunkenImageMediator:
 	def get_template_radius(self): return self.template_radius
 	def get_subsample_rate(self): return self.subsample_rate
 
-class SwarmFLCFImageMediator:
+class SwarmFLCFImageMediator(object):
 	def __init__(self,template_radius,subsample_rate,template_image):
 		self.template_radius = template_radius
 		self.subsample_rate = subsample_rate
@@ -449,7 +450,7 @@ class SwarmFLCFImageMediator:
 	def get_subsample_rate(self): return self.subsample_rate
 	def get_template_object(self): return self.template_object
 
-	class TemplateObject:
+	class TemplateObject(object):
 		def __init__(self,template_image):
 			self.template_image = template_image
 
@@ -459,7 +460,7 @@ class SwarmFLCFImageMediator:
 
 		def get_radius(self): return
 
-class SwarmBox:
+class SwarmBox(object):
 	def __init__(self,x,y,image_name,in_template=True,profile=None):
 		self.x = x
 		self.y = y
@@ -505,7 +506,7 @@ class SwarmBox:
 			self.profile = BoxingTools.get_min_delta_profile(correlation,self.peak_x,self.peak_y, mediator.get_template_radius() )
 
 
-class SwarmPanel:
+class SwarmPanel(object):
 	DB_NAME = "e2boxercache/swarm_panel.json"
 
 	def __init__(self,target,particle_diameter=128):
@@ -804,7 +805,7 @@ def compare_box_correlation(box1,box2):
 	else: return 1
 
 
-class SwarmBoxer:
+class SwarmBoxer(object):
 	THRESHOLD = "Threshold"
 	SELECTIVE = "Selective"
 	MORESELECTIVE = "More Selective"
@@ -1926,7 +1927,7 @@ def histogram1d( data, nbin, presize=0 ) :
 
 	return region,hist
 
-class GaussPanel:
+class GaussPanel(object):
 	DB_NAME = "e2boxercache/gauss_panel.json"
 	GDB_NAME = 'e2boxercache/gauss_box_DB.json' # cache for putting params related to gauss method autoboxer
 
@@ -2606,7 +2607,7 @@ class GaussPanel:
 
 
 
-class GaussBoxer:
+class GaussBoxer(object):
 
 	CACHE_MAX = 10 # Each image has its last CACHE_MAX SwarmBoxer instance stored (or retrievable) automatically
 	PROFILE_MAX = 0.8 # this is a percentage - it stops the profile trough point from going to the end

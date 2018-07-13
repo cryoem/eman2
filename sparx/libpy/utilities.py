@@ -29,6 +29,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from builtins import object
 from global_def import *
 from functools import reduce
 
@@ -1389,7 +1390,7 @@ def parse_spider_fname(mystr, *fieldvals):
 		else:
 			# no '@' at all
 			return mystr
-	class Fieldloc:
+	class Fieldloc(object):
 		"Helper class to store description of a field"
 		def __init__(self, begin, end):
 			self.begin = begin
@@ -4840,7 +4841,7 @@ while it.goToNext():
 
 """
 # ================ Iterator for list of images
-class iterImagesList:
+class iterImagesList(object):
 	images = []
 	imagesIndexes = []
 	position = -1
@@ -4870,7 +4871,7 @@ class iterImagesList:
 		return (self.position >= 0)
 
 # ================ Iterator for stack of images
-class iterImagesStack:
+class iterImagesStack(object):
 	stackName = ""
 	currentImage = None
 	imagesIndexes = []
