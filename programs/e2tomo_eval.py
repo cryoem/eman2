@@ -309,6 +309,7 @@ class TomoEvalGUI(QtGui.QWidget):
 	
 	def runboxer(self):
 		idx, info=self.get_id_info()
+		#### not doing this via launch_childprocess so the boxer wont be killed when one kill the browser...
 		subprocess.Popen(["e2spt_boxer22.py",info["filename"]] )
 
 	def clickset(self, item):

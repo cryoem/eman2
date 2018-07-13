@@ -1544,29 +1544,55 @@ class TaskManager(QtGui.QWidget):
 		self.close()
 
 	def _on_kill(self):
+		killsig=signal.SIGTERM
+		modifiers = QtGui.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			print("Shift held. Will force kill processes")
+			killsig=signal.SIGKILL
+
 		selitems = self.list_widget.selectedItems()
 		self.update_tasks()
 		for item in selitems:
+			curpid=item.getPID()
+			curppid=item.getPPID()
+			print("Killing process PID: {}, PPID: {}".format(curpid, curppid))
 			if os.name == 'posix': # Kill by this method will only work for unix/linux type OS
-				# The PID Mafia occurs below: # Kill all children and siblings
-				for task in self.tasks:
-					if item.getPPID() == task[5]:
-						print("killing self process", task[1])
-						os.kill(task[1],signal.SIGTERM)
-						self._recursivekill(task[1])
-				# kill parent (top level item)
-				if item.getPPID() > 0:
+				
+				if curppid<0:
+					#### this is a parent process. kill itself then all its children
+					os.kill(curpid,killsig)
+					self._recursivekill(curpid)
+				else:
+					#### this is a child process. kill all its siblings then parent
+					for task in self.tasks:
+						if curppid == task[5]: 
+							#### processes share the same parent
+							print("killing self process", task[1])
+							os.kill(task[1], killsig)
+							self._recursivekill(task[1], killsig)
+					## now parent
 					print("KIlling parent")
-					os.kill(item.getPPID(),signal.SIGTERM)
+					os.kill(curppid,killsig)
+					
+				## The PID Mafia occurs below: # Kill all children and siblings
+				#for task in self.tasks:
+					#if item.getPPID() == task[5]:
+						#print("killing self process", task[1])
+						#os.kill(task[1],signal.SIGTERM)
+						#self._recursivekill(task[1])
+				## kill parent (top level item)
+				#if item.getPPID() > 0:
+					#print("KIlling parent")
+					#os.kill(item.getPPID(),signal.SIGTERM)
 			else:
 				# Windows kill
 				pass
 
-	def _recursivekill(self, pid):
+	def _recursivekill(self, pid, sig=signal.SIGTERM):
 		for task in self.tasks:
 			if pid == task[5]:
 				print("Killing child process", task[1])
-				os.kill(task[1],signal.SIGTERM)
+				os.kill(task[1],sig)
 				self._recursivekill(task[1])
 
 	def hideEvent(self, event):
