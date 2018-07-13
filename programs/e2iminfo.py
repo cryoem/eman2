@@ -137,7 +137,7 @@ def main():
 			else : print("%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"]))
 
 		if options.all or options.check:
-			imgn = range(nimg)
+			imgn = list(range(nimg))
 		elif options.number >= 0:
 			imgn = [options.number]
 		elif options.header or options.stat or options.euler:

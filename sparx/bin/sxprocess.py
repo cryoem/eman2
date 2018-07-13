@@ -1244,7 +1244,7 @@ def main():
 							break
 					resolution_right = fsc[0][1]
 					idx_crit_right = 1
-					for ifreq in reversed(range(1, len(fsc[1]))):
+					for ifreq in reversed(list(range(1, len(fsc[1])))):
 						if fsc[1][ifreq] >= 0.143:
 							resolution_right = fsc[0][ifreq]
 							idx_crit_right = ifreq

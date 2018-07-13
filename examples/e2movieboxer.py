@@ -136,7 +136,7 @@ indicating its position in the movie.
 			print("no particles found :",u)
 			continue
 
-		if len(uniq[u])==0 : uniq[u]=range(nptcl)
+		if len(uniq[u])==0 : uniq[u]=list(range(nptcl))
 		
 		for i in range(n):
 			fm=EMData(fsp,i)

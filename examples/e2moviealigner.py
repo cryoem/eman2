@@ -189,8 +189,8 @@ class MovieModeAligner(object):
 		self.frames = [EMData(self.path,i) for i in range(self.hdr['nimg'])]
 		self._boxsize = boxsize
 		self._regions = {}
-		mx = range(1,self.hdr['nx'] / boxsize - 1,1)
-		my = range(1,self.hdr['ny'] / boxsize - 1,1)
+		mx = list(range(1,self.hdr['nx'] / boxsize - 1,1))
+		my = list(range(1,self.hdr['ny'] / boxsize - 1,1))
 		for i in range(self.hdr['nimg']):
 			self._regions[i] = [Region(x*boxsize+boxsize/2,y*boxsize+boxsize/2,boxsize,boxsize) for y in my for x in mx]
 		self._nregions = len(self._regions)

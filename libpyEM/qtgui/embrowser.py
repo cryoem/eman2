@@ -230,7 +230,7 @@ class EMFileType(object) :
 		brws.busy()
 
 		if self.n >= 0 : ns = [self.n]
-		else : ns = range(EMUtil.get_image_count(self.path))
+		else : ns = list(range(EMUtil.get_image_count(self.path)))
 
 		for i in ns :
 			im = EMData(self.path, i)
@@ -2584,7 +2584,7 @@ class EMJSONInfoPane(EMInfoPane) :
 		elif isinstance(trg, (list, tuple, set)) :
 			if isinstance(trg, set) : trg = sorted(trg)		# make a list temporarily
 			if len(trg) > 120 : vals = list(range(0, 50))+[-1]+list(range(len(trg)-50, len(trg)))
-			else : vals = range(len(trg))
+			else : vals = list(range(len(trg)))
 			for k in vals :
 				if k == -1 : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("...", "..."))))
 				else :

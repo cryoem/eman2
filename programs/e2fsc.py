@@ -227,9 +227,9 @@ and this program should be regarded as experimental.
 	avgmask.process_inplace("mask.gaussian",{"outer_radius":3.0*d/log(8.0) })	# make it a bit wider since we are weighting anyway, this should produce smoother surfaces
 	
 	off=(nx%(lnx//overlap))/2
-	xr=range(off,nx-lnx,lnx//overlap)
-	yr=range(off,ny-lnx,lnx//overlap)
-	zr=range(off,nz-lnx,lnx//overlap)
+	xr=list(range(off,nx-lnx,lnx//overlap))
+	yr=list(range(off,ny-lnx,lnx//overlap))
+	zr=list(range(off,nz-lnx,lnx//overlap))
 	resvol=EMData(len(xr),len(yr),len(zr))
 	resvol["apix_x"]=apix*lnx//overlap
 	resvol["apix_y"]=apix*lnx//overlap

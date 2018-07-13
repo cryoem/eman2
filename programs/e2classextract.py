@@ -125,7 +125,7 @@ e2classextract.py --orientcls refine_03/cls_result_04 --orientedparticles sets/a
 
 		nref=int(classmx[0]["maximum"])+1
 
-		if options.orientclassn==None : rng=range(nref)
+		if options.orientclassn==None : rng=list(range(nref))
 		else : rng=[int(i) for i in options.orientclassn.split(",")]
 
 		# now we loop over the classes

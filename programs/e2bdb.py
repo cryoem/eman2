@@ -215,10 +215,10 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct,keys=db_open_dict(path+db,ro=True,with_keys=True)
 				if dct==vstack : continue
 				if len(options.step)==2 :
-					if keys == None: vals = range(options.step[0],len(dct),options.step[1])
+					if keys == None: vals = list(range(options.step[0],len(dct),options.step[1]))
 					else: vals = keys[options.step[0]::options.step[1]]		# we apply --step even if we have a list of keys
 				else:
-					if keys == None: vals = range(options.step[0],options.step[2],options.step[1])
+					if keys == None: vals = list(range(options.step[0],options.step[2],options.step[1]))
 					else: vals = keys[options.step[0]:options.step[2]:options.step[1]]		# we apply --step even if we have a list of keys
 
 				if options.list !=None or options.exlist != None: vals=slist

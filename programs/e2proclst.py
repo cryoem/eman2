@@ -175,7 +175,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				
 				
 
-				indxsinclude = range(n) #by default, assume all particles in input file will be part of output lsx; otherwise, modify indexes to include according to options
+				indxsinclude = list(range(n)) #by default, assume all particles in input file will be part of output lsx; otherwise, modify indexes to include according to options
 
 				if options.range:
 					indxsinclude = eval("range({})".format(options.range))

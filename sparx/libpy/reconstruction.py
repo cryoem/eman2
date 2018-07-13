@@ -53,7 +53,7 @@ def rec2D(  lines, idrange=None, snr=None ):
 	r.setup()
 
 	if idrange is None:
-		idrange = range( len(lines) )
+		idrange = list(range( len(lines)))
 
 	t = Transform()
 	for i in idrange:
@@ -117,7 +117,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	if list_proj == []:
 		if type(stack_name) == bytes: nima = EMUtil.get_image_count(stack_name)
 		else : nima = len(stack_name)
-		list_proj = range(nima) 
+		list_proj = list(range(nima)) 
 	# read first image to determine the size to use
 	if type(stack_name) == bytes:
 		proj = EMData()
@@ -1617,7 +1617,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 	if list_proj == []:	
 		if type(stack_name) == bytes: nima = EMUtil.get_image_count(stack_name)
 		else : nima = len(stack_name)
-		list_proj = range(nima) 
+		list_proj = list(range(nima)) 
 	# read first image to determine the size to use
 	if type(stack_name) == bytes:
 		proj = EMData()

@@ -109,7 +109,7 @@ def main():
 
 	n=-1
 	N=EMUtil.get_image_count(args[0])
-	thrds=[threading.Thread(target=ali2dfn,args=(jsd,args[0],range(i,N,NTHREADS-1),ref,options)) for i in range(NTHREADS-1)]
+	thrds=[threading.Thread(target=ali2dfn,args=(jsd,args[0],list(range(i,N,NTHREADS-1)),ref,options)) for i in range(NTHREADS-1)]
 
 	# here we run the threads and save the results, no actual alignment done here
 	if options.verbose: print(len(thrds)," threads")
