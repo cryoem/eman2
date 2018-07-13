@@ -33,6 +33,8 @@ from __future__ import absolute_import
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 ploticon = [
     '15 14 2 1',
@@ -71,11 +73,11 @@ from EMAN2 import *
 import sys
 from .emshape import *
 import weakref
-from cPickle import dumps,loads
+from pickle import dumps,loads
 import struct, math
 from numpy import *
 from .valslider import *
-from cStringIO import StringIO
+from io import StringIO
 import re
 from . import emimage2d
 

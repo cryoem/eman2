@@ -31,11 +31,13 @@ from __future__ import print_function
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from builtins import object
 import weakref
 import json
-import cPickle
+import pickle
 from zlib import compress,decompress
 import os
 import os.path
@@ -908,7 +910,7 @@ def json_to_obj(jsdata):
 	"""converts a javascript object representation back to the original python object"""
 
 	if "__pickle__" in jsdata :
-		try: return cPickle.loads(str(jsdata["__pickle__"]))
+		try: return pickle.loads(str(jsdata["__pickle__"]))
 		except: return str(jsdata["__pickle__"])				# This shouldn't happen. Means a module hasn't been loaded. This is an emergency stopgap to avoid crashing
 	elif "__image__" in jsdata :							# images now stored in a separate HDF file
 		try: 
@@ -937,7 +939,7 @@ def obj_to_json(obj):
 	try:
 		return obj.to_jsondict()
 	except:
-		return {"__pickle__":cPickle.dumps(obj,0)}
+		return {"__pickle__":pickle.dumps(obj,0)}
 
 __doc__ = \
 """This module provides a dict-like wrapper for JSON files on disk, with full support for file locking and other

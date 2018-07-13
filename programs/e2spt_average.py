@@ -2,12 +2,14 @@
 from __future__ import print_function
 # average selected subset of particles
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from EMAN2 import *
 import time
 import os
 import threading
-import Queue
+import queue
 from sys import argv,exit
 
 def rotfn(avg,fsp,i,a,maxtilt,verbose):

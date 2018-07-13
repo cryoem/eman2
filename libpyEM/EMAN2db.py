@@ -31,11 +31,13 @@ from __future__ import print_function
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from builtins import object
 import atexit
 import weakref
-from cPickle import loads,dumps
+from pickle import loads,dumps
 from zlib import compress,decompress
 import os
 import os.path

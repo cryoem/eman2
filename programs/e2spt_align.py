@@ -30,12 +30,14 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from EMAN2 import *
 import time
 import os
 import threading
-import Queue
+import queue
 from sys import argv,exit
 
 def alifn(jsd,fsp,i,a,options):
@@ -113,7 +115,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 	ref[1].process_inplace("xform.phaseorigin.tocorner")
 
 	angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 
 	n=-1
 	N=EMUtil.get_image_count(args[0])

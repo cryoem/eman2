@@ -2,12 +2,14 @@
 from __future__ import print_function
 # align all particles to reference and store alignment results
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from EMAN2 import *
 import time
 import os
 import threading
-import Queue
+import queue
 from sys import argv,exit
 
 def ali2dfn(jsd,fsp,il,a,options):
@@ -103,7 +105,7 @@ def main():
 					  "ralign":unparsemodopt(options.ralign),"raligncmp":unparsemodopt(options.raligncmp),"cmp":unparsemodopt(options.cmp)}
 
 	angs={}
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 
 	n=-1
 	N=EMUtil.get_image_count(args[0])

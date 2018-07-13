@@ -32,6 +32,8 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from EMAN2 import *
 from numpy import *
@@ -41,7 +43,7 @@ import os
 from sys import argv
 from time import sleep,time,ctime
 import threading
-import Queue
+import queue
 import numpy as np
 from sklearn import linear_model
 from scipy import optimize
@@ -583,7 +585,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 
 		print("{} frames read ({} x {}). Grouped by {}.".format(nfs_read,nx,ny,options.groupby,n))
 
-		ccfs=Queue.Queue(0)
+		ccfs=queue.Queue(0)
 
 		# prepare image data (outim) by clipping and FFT'ing all tiles (this is threaded as well)
 		immx=[0]*n
@@ -614,7 +616,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 
 		# create threads
 		thds=[]
-		peak_locs=Queue.Queue(0)
+		peak_locs=queue.Queue(0)
 		i=-1
 		for ima in range(n-1):
 			for imb in range(ima+1,n):

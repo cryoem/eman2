@@ -31,6 +31,8 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 import sys
 import os
@@ -45,7 +47,7 @@ from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.valslider import *
-import Queue
+import queue
 from eman2_gui import embrowser
 
 def main():
@@ -788,7 +790,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
 		
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		self.particles_ali=[]
 		thrs=[]
 		# launch nthr threads to do the alignments
@@ -817,7 +819,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
 
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		n2use=self.wvsnum.getValue()
 		thrs=[]
 		# launch nthr threads to do the alignments

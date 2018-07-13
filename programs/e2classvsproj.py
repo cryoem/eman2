@@ -34,13 +34,15 @@ from __future__ import print_function
 
 # e2classvsproj.py  Steven Ludtke
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from EMAN2 import *
 from math import *
 import os
 import sys
 import traceback
-import Queue
+import queue
 
 def simfn(jsd,projs,fsp,i,options,verbose):
 	# Now find the best match for each particle. We could use e2simmx, but more efficient to just do it in place (though not parallel this way)
@@ -127,7 +129,7 @@ def main():
 	else:
 		E2n=E2init(sys.argv, options.ppid)
 	
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 	nptcl=EMUtil.get_image_count(args[0])
 	thrds=[threading.Thread(target=simfn,args=(jsd,projs,args[0],i,options,options.verbose)) for i in range(nptcl)]
 

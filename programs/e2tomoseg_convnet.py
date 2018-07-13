@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan July 2015
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from builtins import object
 import sys
 import random
 import numpy as np
 from EMAN2 import *
-import cPickle
+import pickle
 import time
 import threading
-from Queue import Queue
+from queue import Queue
 from multiprocessing import Array
 
 def import_theano():

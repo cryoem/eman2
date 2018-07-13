@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from EMAN2 import *
 import numpy as np
-import Queue
+import queue
 import threading
 
 def split_xf(xf):
@@ -195,7 +197,7 @@ def main():
 			pinfo.append(lst.read(i))
 		lst=None
 
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		jobs=[]
 		print("Refining {} set with {} 2D particles..".format(eo, nptcl))
 		batchsz=100

@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-04
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from EMAN2 import *
 import sys
 import numpy as np
 import threading
-import Queue
+import queue
 #from e2spt_align import alifn
 
 def alifn(jsd,fsp,i,a,options):
@@ -131,7 +133,7 @@ def main():
 			cc=[]
 			for ib in range(nbatch):
 
-				jsd=Queue.Queue(0)
+				jsd=queue.Queue(0)
 				idx=idxs[ieo].copy()
 				np.random.shuffle(idx)
 				thrds=[threading.Thread(target=alifn,args=(jsd,fname,i,ref,options)) for i in idx[:batchsize]]
@@ -241,7 +243,7 @@ def sym_search(e, sym):
 
 	s=parsesym(sym)
 	oris=s.gen_orientations("rand",{"n":ntry, "phitoo":True})
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 	thrds=[threading.Thread(target=sym_ali,args=([e, o, sym, jsd])) for o in oris]
 	for t in thrds: t.start()
 	for t in thrds: t.join()

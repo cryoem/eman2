@@ -35,6 +35,8 @@ from __future__ import print_function
 # e2bdb.py  11/13/2008 Steven Ludtke
 # This program allows manipulation and querying of the local database
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from math import *
 import time
@@ -425,7 +427,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct.close()
 			print(fmt%("TOTAL",total[0],"",human_size(total[1])))
 		elif options.check :
-			from cPickle import loads
+			from pickle import loads
 			for db in dbs:
 				dct=db_open_dict(path+db,ro=True)
 				dct.realopen()

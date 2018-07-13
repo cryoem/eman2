@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan June 2015
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from builtins import object
 import os
@@ -13,7 +15,7 @@ from EMAN2 import *
 import theano
 import theano.tensor as T
 from theano.tensor.shared_randomstreams import RandomStreams
-import cPickle
+import pickle
 
 def main():
 
@@ -75,7 +77,7 @@ def main():
 	if options.fromlast:
 		print("loading {}...".format(options.pretrainnet))
 		f = open(options.pretrainnet, 'rb')
-		sda = cPickle.load(f)
+		sda = pickle.load(f)
 		f.close()		
 		x=sda.x
 	
@@ -121,7 +123,7 @@ def main():
 			print(np.mean(c),", learning rate",learning_rate)
 	if ( training_epochs>0):
 		f = open(options.pretrainnet, 'wb')
-		cPickle.dump(sda, f, protocol=cPickle.HIGHEST_PROTOCOL)
+		pickle.dump(sda, f, protocol=pickle.HIGHEST_PROTOCOL)
 		f.close()
 			
 	

@@ -33,6 +33,8 @@ from __future__ import print_function
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from builtins import object
 DBUG=False		# If set will dump a bunch of debugging output, normally should be False
@@ -46,7 +48,7 @@ import signal
 import traceback
 import shutil
 import subprocess
-import thread,threading
+import _thread,threading
 import getpass
 import select
 
@@ -75,8 +77,8 @@ from e2tvrecon import TVReconTask
 from e2classifytree import TreeClassifyTask
 
 from e2initialmodel import InitMdlTask
-import SocketServer
-from cPickle import dumps,loads,dump,load
+import socketserver
+from pickle import dumps,loads,dump,load
 from struct import pack,unpack
 
 # If we can't import it then we probably won't be trying to use MPI
@@ -418,8 +420,8 @@ class EMTestTask(JSTask):
 #######################
 #  Here are classes for implementing xmlrpc based parallelism
 
-from SimpleXMLRPCServer import SimpleXMLRPCServer
-from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
+from xmlrpc.server import SimpleXMLRPCServer
+from xmlrpc.server import SimpleXMLRPCRequestHandler
 
 
 def runXMLRPCServer(port,verbose):
@@ -561,7 +563,7 @@ class EMLocalTaskHandler(object):
 					# This means that the task failed to execute properly
 					if p[0].returncode!=0 :
 						print("Error running task : ",p[1])
-						thread.interrupt_main()
+						_thread.interrupt_main()
 						sys.stderr.flush()
 						sys.stdout.flush()
 						os._exit(1)
@@ -1223,7 +1225,7 @@ class DCThreadingMixIn(object):
 		t.start()
 
 #class ThreadingTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer): pass
-class ThreadingTCPServer(DCThreadingMixIn, SocketServer.TCPServer): pass
+class ThreadingTCPServer(DCThreadingMixIn, socketserver.TCPServer): pass
 
 def runEMDCServer(port,verbose,killclients=False):
 	"""This will create a ThreadingTCPServer instance and execute it"""
@@ -1243,7 +1245,7 @@ def runEMDCServer(port,verbose,killclients=False):
 		server=None
 		while server==None:
 			try:
-				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+				server = socketserver.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
 		#		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
 			except :
 				print("Port in use, waiting")
@@ -1254,7 +1256,7 @@ def runEMDCServer(port,verbose,killclients=False):
 	else :
 		for port in range(9990,10000):
 			try:
-				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
+				server = socketserver.ThreadingTCPServer(("", port), EMDCTaskHandler)
 #				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
 				print("Server started on %s port %d"%(socket.gethostname(),port))
 			except:
@@ -1265,7 +1267,7 @@ def runEMDCServer(port,verbose,killclients=False):
 	if killclients : print("Client killing mode")
 	server.serve_forever()
 
-class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
+class EMDCTaskHandler(EMTaskHandler,socketserver.BaseRequestHandler):
 	"""Distributed Computing Taskserver. In this system, clients run on hosts with free cycles and request jobs
 	from the server, which runs on a host with access to the data to be processed."""
 	verbose=0
@@ -1284,7 +1286,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		self.verbose=EMDCTaskHandler.verbose
 		if self.verbose>1 : print(len(self.queue))
 		self.sockf=request.makefile()		# this turns our socket into a buffered file-like object
-		SocketServer.BaseRequestHandler.__init__(self,request,client_address,server)
+		socketserver.BaseRequestHandler.__init__(self,request,client_address,server)
 		self.client_address=client_address
 
 	def housekeeping(self):

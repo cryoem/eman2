@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2017-04
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from EMAN2 import *
 import numpy as np
 from scipy.optimize import minimize
 import scipy.spatial.distance as scidist
 from EMAN2_utils import *
-import Queue
+import queue
 from sklearn.decomposition import PCA
 
 def main():
@@ -613,7 +615,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	sz=step*2 #### this is the output 3D size 
 	
 	pad=good_boxsize(sz*1.2) #### this is the padded size in fourier space
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 	jobs=[]
 	nstep=int(outxy/step/2)
 	for stepx in range(-nstep,nstep+1):

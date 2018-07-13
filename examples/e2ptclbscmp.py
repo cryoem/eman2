@@ -32,12 +32,14 @@ from __future__ import print_function
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from math import *
 import os
 import sys
 from EMAN2 import *
-import Queue
+import queue
 from numpy import array
 
 def main():
@@ -119,7 +121,7 @@ def main():
 	
 	ptcl=EMData(args[0],options.ptcln)
 	ptclbs=EMData(bsfs,options.ptcln)
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads
 	thrds=[(jsd,refsbs,ptcl,ptclbs,options.ptcln,i) for i in range(N)]
 	

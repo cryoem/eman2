@@ -31,6 +31,8 @@ from __future__ import print_function
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from builtins import object
 import sys
@@ -40,7 +42,7 @@ import os
 import time
 import shelve
 import re
-import cPickle
+import pickle
 import zlib
 import socket
 import subprocess
@@ -120,11 +122,11 @@ def emdata_to_string(self):
 	"""This returns a compressed string representation of the EMData object, suitable for storage
 	or network communication. The EMData object is pickled, then compressed wth zlib. Restore with
 	static method from_string()."""
-	return zlib.compress(cPickle.dumps(self,-1),3)	# we use a lower compression mode for speed
+	return zlib.compress(pickle.dumps(self,-1),3)	# we use a lower compression mode for speed
 
 def emdata_from_string(s):
 	"""This will restore a serialized compressed EMData object as prepared by as_string()"""
-	return cPickle.loads(zlib.decompress(s))
+	return pickle.loads(zlib.decompress(s))
 
 EMData.from_string=emdata_from_string
 EMData.to_string=emdata_to_string
@@ -985,9 +987,9 @@ def memory_stats():
 			pass
 
 	elif platform_string == "Darwin":
-		import commands
-		status_total, output_total = commands.getstatusoutput("sysctl hw.memsize")
-		status_used, output_used = commands.getstatusoutput("sysctl hw.usermem")
+		import subprocess
+		status_total, output_total = subprocess.getstatusoutput("sysctl hw.memsize")
+		status_used, output_used = subprocess.getstatusoutput("sysctl hw.usermem")
 		total_strings = output_total.split()
 		if len(total_strings) >= 2: # try to make it future proof, the output of sysctl will have to be double checked. Let's put it in a unit test in
 			total_len = len("hw.memsize")
@@ -1040,8 +1042,8 @@ def num_cpus():
 		except:
 			return 2
 	elif platform_string == "Darwin":
-		import commands
-		status, output = commands.getstatusoutput("sysctl hw.logicalcpu")
+		import subprocess
+		status, output = subprocess.getstatusoutput("sysctl hw.logicalcpu")
 		strings = output.split()
 		cores = 1 # this has to be true or else it's a really special computer ;)
 		if len(strings) >=2:

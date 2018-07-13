@@ -2,12 +2,14 @@
 from __future__ import print_function
 # average selected subset of particles
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from EMAN2 import *
 import time
 import os
 import threading
-import Queue
+import queue
 from sys import argv,exit
 
 def rotfncompete(jsd,avgs,fsp,fspn,a,sym,refs,shrinkrefs,maxtilt,wedgesigma,shrink,maxres,simthr2,verbose):
@@ -126,7 +128,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	logid=E2init(sys.argv, options.ppid)
 
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 
 	avgs=[Averagers.get("mean.tomo",{"thresh_sigma":options.wedgesigma}) for i in range(n)]
 

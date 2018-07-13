@@ -29,8 +29,10 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
-import os, sys, commands
+import os, sys, subprocess
 from EMAN2 import *
 from EMAN2_utils import *
 import math

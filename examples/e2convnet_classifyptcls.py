@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-10
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from EMAN2 import *
 import numpy as np
 import threading
-import Queue
+import queue
 import theano
 import theano.tensor as T
 from theano.tensor.nnet import conv

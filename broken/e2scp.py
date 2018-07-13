@@ -32,6 +32,8 @@ from __future__ import print_function
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -41,7 +43,7 @@ import time
 import os
 import sys
 import re
-from cPickle import dumps,loads,dump,load
+from pickle import dumps,loads,dump,load
 from zlib import compress,decompress
 from subprocess import Popen,PIPE
 import traceback
