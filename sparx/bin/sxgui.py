@@ -550,7 +550,7 @@ class SXMenuItemBtnAreaWidget(QWidget):
 # Provides all necessary functionarity
 # tabs only provides widgets and knows how to layout them
 class SXCmdWidget(QWidget):
-	process_started = pyqtSignal()
+	### process_started = pyqtSignal()
 
 	def __init__(self, sxconst_set, sxcmd, parent = None):
 		super(SXCmdWidget, self).__init__(parent)
@@ -882,7 +882,7 @@ class SXCmdWidget(QWidget):
 
 			# Execute the generated command line
 			process = subprocess.Popen(cmd_line, shell=True)
-			self.process_started.emit(process.pid)
+			### self.process_started.emit(process.pid)
 			if self.sxcmd.is_submittable == False:
 				assert(self.sxcmd.mpi_support == False)
 				# Register to This is a GUI application
