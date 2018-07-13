@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 # Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -33,6 +34,8 @@ from __future__ import print_function
 #
 
 
+from builtins import range
+from builtins import object
 '''
 This is a a really basic version of boxer that can be copied and used as the basis of developing something more advanced
 Design is meant to be granular and logical, i.e. easy to add to.
@@ -45,7 +48,6 @@ To see how it works just run it from the commandline:
 The EMBoxerModule is basically the epicenter of everything: functions like "add_box" and "move_box" are probably good starting
 points in terms of figuring out how to adapt this code to application specific needs
 '''
-from __future__ import absolute_import
 from optparse import OptionParser
 from .emapplication import EMApp,get_application
 from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
@@ -166,7 +168,7 @@ def get_idd_image_entry(image_name,key,db_title="e2boxercache/",dfl=None):
 	try: return db[key]
 	except : return dfl
 
-class ThumbsEventHandler:
+class ThumbsEventHandler(object):
 	'''
 
 	'''
@@ -202,7 +204,7 @@ class ThumbsEventHandler:
 	def set_mouse_mode(self,name):
 		pass
 
-class ScaledExclusionImage:
+class ScaledExclusionImage(object):
 	database_name = "boxer_exclusion_image" # named it this to avoid conflicting with ExclusionImage
 	def __init__(self,image_name):
 		self.image_name = image_name
@@ -275,7 +277,7 @@ class ScaledExclusionImage:
 ScaledExclusionImageCache = Cache(ScaledExclusionImage)
 
 
-class EMBox:
+class EMBox(object):
 	'''
 	A basic encapsulation of a box - it has a central coordinate, a type attribute which can be
 	customized for specific boxes, and a score attribute, which could be useful to a particular
@@ -551,14 +553,14 @@ class EMBoxingTool(object):
 		'''
 		pass
 
-class EMUnknownBoxType:
+class EMUnknownBoxType(object):
 	'''
 	Error which is thrown when a mouse tool figures out that its operating on box that it doesn't 'own'
 	'''
 	def __init__(self,type):
 		self.type = type
 
-class ErasingPanel:
+class ErasingPanel(object):
 	def __init__(self,target,erase_radius=128):
 		self.busy = True
 		self.erase_radius = erase_radius
@@ -610,7 +612,7 @@ class ErasingPanel:
 		if self.busy: return
 		self.target().toggle_unerase(val)
 
-class ManualBoxingPanel:
+class ManualBoxingPanel(object):
 	def __init__(self,target):
 		self.target = weakref.ref(target)
 		self.widget = None
@@ -743,7 +745,7 @@ class EraseTool(EMBoxingTool):
 		box = self.target().get_box(box_num)
 		raise EMUnknownBoxType(box.type) # this causes the mouse mode to be changed
 
-class ManualBoxingTool:
+class ManualBoxingTool(object):
 	'''
 	A class that knows how to add, move and remove reference and non reference boxes
 	'''
@@ -909,7 +911,7 @@ class ManualBoxingTool:
 		self.target().move_box(box_num, dx, dy)
 	# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
-class BoxEventsHandler:
+class BoxEventsHandler(object):
 	def __init__(self, target):
 		self.target = weakref.ref(target)
 		self.box_to_tool_dict = {} # this help automatic changing from one mouse tool to another when a user selects a box of a certain type
@@ -1157,7 +1159,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		'''
 		self.target().particles_window_closed()
 
-class EMThumbsTools:
+class EMThumbsTools(object):
 
 	def gen_thumbs(image_names=[],shrink=None):
 		'''
@@ -1287,14 +1289,14 @@ class EMBoxList(object):
 		if start<0 and end<0:
 			start=len(self.boxes)
 		if end>=0:
-			for i in xrange(len(self.boxes)-1,end,-1):
+			for i in range(len(self.boxes)-1,end,-1):
 				#print i
 				if self.boxes[i].type in types:
 					self.boxes.pop(i)
 					self.shapes.pop(i)
 		#print 
 		if start>=0:
-			for i in xrange(start-1,-1,-1):
+			for i in range(start-1,-1,-1):
 				#print i
 				if self.boxes[i].type in types:
 					self.boxes.pop(i)
@@ -1451,7 +1453,7 @@ class EMBoxList(object):
 
 	def exclude_from_scaled_image(self,exclusion_image,subsample_rate):
 		action = False
-		for i in xrange(len(self.boxes)-1,-1,-1):
+		for i in range(len(self.boxes)-1,-1,-1):
 			box = self.boxes[i]
 			x = int(box.x/subsample_rate)
 			y = int(box.y/subsample_rate)
@@ -1876,7 +1878,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		action = False
 		rm_idxs = []
 		rm_boxes = []
-		for i in xrange(len(self.box_list)-1,-1,-1):
+		for i in range(len(self.box_list)-1,-1,-1):
 			box = self.box_list.get_box(i)
 			x = int(box.x/subsample_rate)
 			y = int(box.y/subsample_rate)

@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from builtins import range
 import os
 import global_def
 from   global_def     import *
@@ -94,16 +95,16 @@ def write_montage_file(stack, montage_file, N, gx, gy, bg, scale, number, begin_
 	
 	montage = model_blank(NX, NY, 1, bk)
 
-	for i in xrange(K):
+	for i in range(K):
 		col = i%N
 		row = M-1-i/N
-		for s in xrange(nx):
-			for t in xrange(ny):
+		for s in range(nx):
+			for t in range(ny):
 				v = data[i].get_value_at(s, t)
 				montage.set_value_at(col*(nx+gx)+s, row*(ny+gy)+t, v)
 		if number:
-			for s in xrange(10):
-				for t in xrange(7):
+			for s in range(10):
+				for t in range(7):
 					if font[i%10][s*7+t] == '1':
 						montage.set_value_at(col*(nx+gx)+2+t, row*(ny+gy)+2+10-s, maxn)
 	montage.write_image(montage_file)

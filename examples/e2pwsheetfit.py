@@ -3,6 +3,7 @@ from __future__ import print_function
 # Muyuan Chen 12/2014
 # Fit beta sheets using pathwalker results
 
+from builtins import range
 import EMAN2
 from EMAN2 import *
 import random
@@ -168,7 +169,7 @@ def main():
 		shtstart=topi[maxstart]+1
 		shtend=topi[maxstart]+maxnl
 
-		sht=np.array(range(shtstart,shtend))
+		sht=np.array(list(range(shtstart,shtend)))
 		print(shtstart,shtend,np.average(score[sht]),np.average(score[nonsht])+np.std(score[nonsht])*options.cutoff)
 		
 		if maxnl<options.minlen:
@@ -200,7 +201,7 @@ def main():
 				shtend+=i
 		
 		sheets[nsheet]=[shtstart,shtend]
-		sht=np.array(range(shtstart,shtend))
+		sht=np.array(list(range(shtstart,shtend)))
 		insht[sht]=1
 		#recalc the score
 		

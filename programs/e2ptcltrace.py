@@ -36,6 +36,7 @@ from __future__ import print_function
 # This program will follow particles through refinement and assess how self consistent particle orientation assignments are
 
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -127,7 +128,7 @@ def main():
 	for x,p,c in zip(cmx,proj,classes):
 		ncls=EMUtil.get_image_count(p)
 		orts = []
-		for i in xrange(ncls):
+		for i in range(ncls):
 			if options.verbose:
 				sys.stdout.write('\r{}\t{}\t{}/{}\t'.format(x,p,i+1,ncls))
 			orts.append( EMData(p,i,True)["xform.projection"] )
@@ -141,7 +142,7 @@ def main():
 	
 	with open(options.output,"w") as outf:
 	
-		for p in xrange(nptcl):
+		for p in range(nptcl):
 			isodd = p%2
 			
 			if options.verbose:
@@ -149,7 +150,7 @@ def main():
 			
 			dat = []
 			
-			for i in xrange(1,len(cls)):
+			for i in range(1,len(cls)):
 				ort1=clsort[i-1][int(cls[i-1][0][0,p])] # orientation of particle in first classmx
 				ort2=clsort[i][int(cls[i][0][0,p])]		# orientation of particle in second classmx
 

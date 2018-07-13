@@ -1,6 +1,7 @@
 #!/bin/env python
 from __future__ import print_function
 
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 
@@ -20,7 +21,7 @@ data.read_image(stack_data, 0, True)
 im = data.get_xsize()
 kb = kbt(im)
 
-for im in xrange(nima):
+for im in range(nima):
 	data = EMData()
 	data.read_image(stack_data, im)
 	sx = (random()-0.5)*10.0

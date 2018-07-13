@@ -35,6 +35,7 @@ from __future__ import print_function
 # This is a program for determining CTF parameters using the EMAN 1 model
 
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -636,7 +637,7 @@ def smooth( seq, kernel ) :
 	if ( len( kernel ) - 1 ) % 2 :
 		kernel.insert( 0, 0. )
 	maxj = int( ( len( kernel ) - 1 ) / 2 )
-	krange = range( -1 * maxj, maxj + 1 )
+	krange = list(range( -1 * maxj, maxj + 1))
 	
 	# Smooth the sequence
 	sm = [ ]

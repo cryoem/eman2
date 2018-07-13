@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan July 2015
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 import sys
 import random
 import numpy as np
 from EMAN2 import *
-import cPickle
+import pickle
 
 def import_theano():
 	global theano,T,conv,downsample
@@ -93,12 +97,12 @@ def main():
 	print("loading particles...")
 	if args[0].endswith(".pkl"):
 		f = open(args[0], 'rb')
-		particles=cPickle.load(f)
+		particles=pickle.load(f)
 		f.close()
 	else:
 		particles=load_particles(args[0],options)
 		f = open("data_training.pkl", 'wb')
-		cPickle.dump(particles, f, protocol=cPickle.HIGHEST_PROTOCOL)
+		pickle.dump(particles, f, protocol=pickle.HIGHEST_PROTOCOL)
 		f.close()
 
 	train_set_x= particles[0]
@@ -135,12 +139,12 @@ def main():
 			
 		learning_rate=options.learnrate
 		n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
-		for epoch in xrange(options.niter):
+		for epoch in range(options.niter):
 		# go through the training set
 			c = []
 			if epoch==0:
 				print(classify(0,lr=learning_rate,wd=options.weightdecay))
-			for batch_index in xrange(n_train_batches):
+			for batch_index in range(n_train_batches):
 				err=classify(batch_index,
 					lr=learning_rate,
 					wd=options.weightdecay)
@@ -153,7 +157,7 @@ def main():
 
 		print("Saving the trained net to file...")
 		f = open(options.pretrainnet, 'wb')
-		cPickle.dump(convnet, f, protocol=cPickle.HIGHEST_PROTOCOL)
+		pickle.dump(convnet, f, protocol=pickle.HIGHEST_PROTOCOL)
 		f.close()
 		
 	#######################################
@@ -226,7 +230,7 @@ def main():
 def load_model(fname):
 	print("loading model from {}...".format(fname))
 	f = open(fname, 'rb')
-	convnet = cPickle.load(f)
+	convnet = pickle.load(f)
 	f.close()
 	return convnet
 
@@ -459,7 +463,7 @@ def load_particles(ptcls, options):
 				data.append(ar.flatten())
 				lbs.append(l)
 	
-	rndid=range(len(data))
+	rndid=list(range(len(data)))
 	random.shuffle(rndid)	
 	data=[data[i] for i in rndid]
 	lbs=[lbs[i] for i in rndid]

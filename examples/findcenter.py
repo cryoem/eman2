@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from builtins import range
 from EMAN2 import *
 import numpy as np
 import os
@@ -102,7 +103,7 @@ def main():
 
 	hdr = EMData(options.path,0,True)
 	nx = hdr.get_xsize() # we assume square boxes so we won't bother with ny
-	for i in xrange(options.meanshrink):
+	for i in range(options.meanshrink):
 		nx = nx / 2
 	if nx < 8:
 		print("You're trying to shrink the image a too much. Try using a lower value for the --meanshrink parameter.")
@@ -116,11 +117,11 @@ def main():
 		kernel = np.outer(gauss1d,gauss1d)
 
 	nimgs = EMUtil.get_image_count(options.path)
-	if options.predisplay: display([EMData(options.path,i) for i in xrange(nimgs)])
+	if options.predisplay: display([EMData(options.path,i) for i in range(nimgs)])
 	if options.verbose > 2: print(("Applying a {} filter {} times to {}.".format(options.filter, options.ntimes, os.path.basename(options.path))))
 
 	if not options.nopreprocess:
-		for i in xrange(nimgs):
+		for i in range(nimgs):
 
 			if options.verbose > 5: print(("Pre-processing image {}/{}".format(i+1,nimgs)))
 
@@ -153,12 +154,12 @@ def main():
 
 			if not options.nowrite: ptcl.write_image(options.path[:-4]+'_proc.hdf',-1)
 
-		if options.postdisplay: display([EMData(options.output,i) for i in xrange(nimgs)])
+		if options.postdisplay: display([EMData(options.output,i) for i in range(nimgs)])
 
-	theta = 2*np.pi/360 * np.array(range(0, 360, options.step) + [0])
+	theta = 2*np.pi/360 * np.array(list(range(0, 360, options.step)) + [0])
 
 	with PdfPages(options.path[:-4] + '.pdf') as pdf:
-		for i in xrange(nimgs):
+		for i in range(nimgs):
 			if options.verbose > 5: print(("Centering image {}/{}".format(i+1,nimgs)))
 
 			orig = EMData(options.path,i)

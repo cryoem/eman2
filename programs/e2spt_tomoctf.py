@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
 from __future__ import print_function
+from builtins import range
 import numpy as np
 from EMAN2 import *
 import json

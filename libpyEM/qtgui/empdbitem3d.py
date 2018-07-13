@@ -33,6 +33,7 @@ from __future__ import absolute_import
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from builtins import range
 from EMAN2 import *
 from .emglobjects import get_default_gl_colors
 from .emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
@@ -1180,7 +1181,7 @@ class EMSphereModel(EMPDBItem3D):
 		if self.dl == None: #self.dl is the display list, every time a new file is added, this is changed back to None
 			self.dl=glGenLists(1)
 			glNewList(self.dl,GL_COMPILE)
-			for i in xrange(self.natoms):
+			for i in range(self.natoms):
 				glPushMatrix()
 				glTranslate(self.coords[i][0],self.coords[i][1],self.coords[i][2])
 				glScale(self.vwr[i],self.vwr[i],self.vwr[i])

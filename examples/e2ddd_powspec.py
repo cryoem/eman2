@@ -36,6 +36,7 @@ from __future__ import print_function
 # This program is used to generate various alignment test images
 
 
+from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
 from math import *
@@ -67,12 +68,12 @@ def main():
 	
 	N=0
 	clpav=[]
-	for im in xrange(n):
+	for im in range(n):
 		print(im,"/",n)
 		img=EMData(args[0],im)
 		rgn=0
-		for x in xrange(50,nx-BOXSIZE-50,BOXSIZE):
-			for y in xrange(50,ny-BOXSIZE-50,BOXSIZE):
+		for x in range(50,nx-BOXSIZE-50,BOXSIZE):
+			for y in range(50,ny-BOXSIZE-50,BOXSIZE):
 				clp=img.get_clip(Region(x,y,BOXSIZE,BOXSIZE))
 				clp.process_inplace("normalize.unitlen");
 				clpf=clp.do_fft()
@@ -91,7 +92,7 @@ def main():
 				rgn+=1
 	
 #	display(clpav,True)
-	for im in xrange(len(clpav)):
+	for im in range(len(clpav)):
 		clpav[im]=clpav[im].do_fft()
 		clpav[im].ri2inten()
 		
@@ -146,11 +147,11 @@ def main():
 	reffix=reffixf.do_ift()
 
 	
-	for i in xrange(n):
+	for i in range(n):
 		#if i==5: continue
 		img1=EMData(args[0],i)
-		for x in xrange(0,fullbox-256,256):
-			for y in xrange(0,fullbox-256,256):
+		for x in range(0,fullbox-256,256):
+			for y in range(0,fullbox-256,256):
 				clipr=reffix.get_clip(Region(x,y,256,256))
 				clip=img1.get_clip(Region(x+dx,y+dy,256,256))
 				ccf=clip.calc_ccf(clipr)
@@ -212,7 +213,7 @@ def fit_defocus(img):
 #		curve-=curve.mean()
 		curve-=0.5	# duh
 
-		zeroes=[int(ctf.zero(i)/ds) for i in xrange(15)]
+		zeroes=[int(ctf.zero(i)/ds) for i in range(15)]
 		zeroes=[i for i in zeroes if i<len(curve) and i>0]
 #		plot(zeroes)
 		onedbg=bgsub(oned,zeroes)
@@ -250,7 +251,7 @@ def bgsub(curve,zeroes):
 #	plot((range(len(curve)),curve.tolist()),(itpx,itpy))
 	itpx=np.array(itpx)
 	itpy=np.array(itpy)
-	ret=curve-np.interp(range(len(curve)),itpx,itpy)
+	ret=curve-np.interp(list(range(len(curve))),itpx,itpy)
 	ret[:floc]=0
 	return ret
 		

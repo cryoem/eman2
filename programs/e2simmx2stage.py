@@ -35,6 +35,7 @@ from __future__ import print_function
 # e2simmx2stage.py  12/01/2009	Steven Ludtke
 # This program computes a similarity matrix between two sets of images
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -114,9 +115,9 @@ def main():
 		ref_simmx=EMData(args[3],0)
 		ref_orts=EMData.read_images(args[3],(1,2,3,4))
 		centers=[0]		# start with the first (generally a top view) image regardless
-		for i in xrange(clen_stg1-1) :
+		for i in range(clen_stg1-1) :
 			best=(0,-1)
-			for j in xrange(clen):
+			for j in range(clen):
 				if j in centers : continue
 
 				#here we find the sum of the distances to this point
@@ -143,12 +144,12 @@ def main():
 		# now associate each reference with the closest center
 		print("Associating references with centers")
 		classes=[[] for i in centers]	# each center becomes a list to start the process
-		for i in xrange(clen):
+		for i in range(clen):
 			quals=[(ref_simmx[i,k],j) for j,k in enumerate(centers)]
 			quals.sort()
 #			for j in xrange(4): classes[quals[j][1]].append(i)		# we used to associate each reference with 3 closest centers
 #			classes[quals[0][1]].append(i)							# now we just associate it with the closest one, but use multiple centers when searching
-			for j in xrange(2): classes[quals[j][1]].append(i)		# bring this idea back again with 2 closest centers
+			for j in range(2): classes[quals[j][1]].append(i)		# bring this idea back again with 2 closest centers
 
 		# now generate an averaged reference for each center
 		print("Averaging each center")
@@ -192,13 +193,13 @@ def main():
 	mx=EMData(clen,rlen,1)
 	mx.add(-1.0e38)	# a large negative value to be replaced later
 
-	for ptcl in xrange(rlen):
+	for ptcl in range(rlen):
 		# find the best classes from the coarse search
 		vals=[(mxstg1[cls1,ptcl],cls1) for cls1 in range(clen_stg1)]
 		vals.sort()
 
 		# then set the corresponding values in the best 4 stage 1 classes in the full matrix to 0
-		for j in xrange(4):
+		for j in range(4):
 			for i in classes[vals[j][1]]: mx[i,ptcl]=0.0
 
 	mx.update()
@@ -207,7 +208,7 @@ def main():
 
 	mx.to_zero()
 	if options.saveali:
-		for i in xrange(1,6):
+		for i in range(1,6):
 			mx.write_image(args[2],i)		# seed alignment data with nothing
 #			mx.write_image("bdb:refine_02#simmx_00_x",i)
 

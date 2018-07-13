@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import os
 from EMAN2 import *
 from time import time
@@ -654,7 +655,7 @@ def doit(corg,options,originaldir):
 		if '-' in options.boxsizes and '.txt' not in options.boxsizes:
 			lowerend = int( options.boxsizes.split('-')[0] )
 			upperend = int( options.boxsizes.split('-')[1] ) 
-			mults=[i for i in xrange( lowerend , upperend ) ]
+			mults=[i for i in range( lowerend , upperend ) ]
 			print("Lower and upper ends of range are", lowerend, upperend)
 			print("Therefore, boxsizes are", mults)
 	
@@ -683,7 +684,7 @@ def doit(corg,options,originaldir):
 
 	elif options.extensive: 
 		mults = []
-		for i in xrange( options.lowerlimit, options.upperlimit ):
+		for i in range( options.lowerlimit, options.upperlimit ):
 			mults.append(i)
 	
 	elif options.lowerlimit and options.upperlimit:
@@ -1205,9 +1206,9 @@ def minima(sizes,vals):
 	sizesmin=[sizes[0]]
 	valsmin=[vals[0]]
 	
-	for i in xrange(0,len(vals) - 1 - 1 ):
+	for i in range(0,len(vals) - 1 - 1 ):
 		aux = 0 
-		for j in xrange(i+1,len(vals) - 1 ):
+		for j in range(i+1,len(vals) - 1 ):
 			if vals[j]< vals[i]:
 				aux=0
 				#print "Because a downstream value is lower, I will break the loop, see", vals[j],vals[i]

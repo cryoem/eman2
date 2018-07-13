@@ -29,11 +29,14 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 from EMAN2 import *
 import time
 import os
 import threading
-import Queue
+import queue
 from sys import argv,exit
 import numpy as np
 
@@ -117,7 +120,7 @@ autoprocessing prior to using this program, but no other processing is required.
 	ptcl_proj=to_numpy(tmp).copy()
 	lsx=LSXFile(args[0],True)
 	
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 	nstep=n//50+1		# 50 particles at a time. Arbitrary
 	thrds=[(i,jsd,args[0],lsx,ptcl_proj,options.nenrich,options.redobispec,i*50,min(len(ptcl_proj),(i+1)*50),max(0,options.verbose-1)) for i in range(nstep)]
 	

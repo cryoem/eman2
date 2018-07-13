@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from builtins import range
 from EMAN2 import *
 from EMAN2jsondb import *
 from os import system
@@ -220,7 +221,7 @@ def center_particles(particles, avnum, iterations):
 	if options.verbose>0: print("Centering tilted particles")
 	centeredimgs = []
 	radius = particles[0].get_attr("nx")/2 # nx = ny, always.....
-	for it in xrange(iterations):
+	for it in range(iterations):
 		ptclavgr = Averagers.get('mean')
 		# Make average
 		for img in particles:

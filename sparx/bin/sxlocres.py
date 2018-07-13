@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+from builtins import range
 import	global_def
 from	global_def import *
 from	EMAN2 import *
@@ -154,10 +155,10 @@ def main():
 		if(myid == 0):
 			if res_overall !=-1.0:
 				freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
-				for ifreq in xrange(len(resolut)):
+				for ifreq in range(len(resolut)):
 					if resolut[ifreq][0] >res_overall:
 						 break
-				for jfreq in xrange(ifreq, len(resolut)):
+				for jfreq in range(ifreq, len(resolut)):
 					resolut[jfreq][1] = 0.0	
 			freqvol.write_image(outvol)
 			
@@ -203,7 +204,7 @@ def main():
 
 		freqvol = model_blank(nn,nn,nn)
 		resolut = []
-		for i in xrange(1,lp):
+		for i in range(1,lp):
 			fl = step*i
 			fh = fl+step
 			#print(lp,i,step,fl,fh)
@@ -238,9 +239,9 @@ def main():
 			Util.mul_img(tmp3,m)
 			freq=(fl+fh)/2.0
 			bailout = True
-			for x in xrange(nn):
-				for y in xrange(nn):
-					for z in xrange(nn):
+			for x in range(nn):
+				for y in range(nn):
+					for z in range(nn):
 						if(m.get_value_at(x,y,z) > 0.5):
 							if(freqvol.get_value_at(x,y,z) == 0.0):
 								if(tmp3.get_value_at(x,y,z) < cutoff):
@@ -252,10 +253,10 @@ def main():
 		#print(len(resolut))
 		if res_overall !=-1.0:
 			freqvol += (res_overall- Util.infomask(freqvol, m, True)[0])
-			for ifreq in xrange(len(resolut)):
+			for ifreq in range(len(resolut)):
 				if resolut[ifreq][1] >res_overall:
 					 break
-			for jfreq in xrange(ifreq, len(resolut)):
+			for jfreq in range(ifreq, len(resolut)):
 				resolut[jfreq][2] = 0.0	
 		freqvol.write_image(outvol)
 		

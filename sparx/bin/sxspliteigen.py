@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import global_def
 from   global_def import *
 
@@ -62,7 +63,7 @@ def main():
 	from math import sqrt
 	nimage = EMUtil.get_image_count( args[0] )
 
-	for i in xrange(nimage) :
+	for i in range(nimage) :
 	        data = EMData()
 	        data.read_image( args[0], i )
 

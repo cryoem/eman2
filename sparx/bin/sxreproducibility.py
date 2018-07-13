@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+from builtins import range
 import os
 import global_def
 from   global_def     import *
@@ -60,12 +61,12 @@ def main():
 	Parts = []
 	mem = [0]*R
 	avg = [0]*R
-	for r in xrange(R):
+	for r in range(R):
 		data = EMData.read_images(args[r])
 		avg[r] = len(data)
 		
 		part = []
-		for k in xrange(len(data)):
+		for k in range(len(data)):
 			lid = data[k].get_attr('members') 
 			mem[r] += len(lid)
 			lid = array(lid, 'int32') 
@@ -88,14 +89,14 @@ def main():
 		print(st)
 		print(" ")
 
-	for i in xrange(len(MATCH)):
+	for i in range(len(MATCH)):
 		u = MATCH[i][0]  # u is the group in question in partition 1
 		assert len(STB_PART[u]) == CT_s[u]
 		print("Group ", end=' ') 
-		for r in xrange(R):
+		for r in range(R):
 			print("%3d "%(MATCH[i][r]), end=' ')
 		print(" matches:   group size = ", end=' ')
-		for r in xrange(R):
+		for r in range(R):
 			print(" %3d"%len(Parts[r][MATCH[i][r]]), end=' ') 
 		print("     matched size = %3d"%(CT_s[u]), end=' ')
 		if options.verbose:
@@ -103,10 +104,10 @@ def main():
 		else: print("")
 
 	print("\nNumber of averages = ", end=' ')
-	for r in xrange(R):
+	for r in range(R):
 		print("%3d"%(avg[r]), end=' ')
 	print("\nTotal number of particles = ", end=' ')
-	for r in xrange(R):
+	for r in range(R):
 		print("%3d"%(mem[r]), end=' ') 
 	print("     number of matched particles = %5d"%(sum(CT_s)))
 

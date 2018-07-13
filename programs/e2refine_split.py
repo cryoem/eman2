@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 import math
 from copy import deepcopy
@@ -110,11 +111,11 @@ def main():
 	ncls=max(int(classmx[0][0]["maximum"])+1,int(classmx[1][0]["maximum"])+1)
 
 	# Rearrange the info in classmx
-	classlists=[[] for i in xrange(ncls)]	# empty list for each class
+	classlists=[[] for i in range(ncls)]	# empty list for each class
 	
 	# This will produce a list of particles with Transforms for each class
 	for eo in (0,1):
-		for y in xrange(classmx[eo][0]["ny"]):
+		for y in range(classmx[eo][0]["ny"]):
 			ptcl=[eo,y,Transform({"type":"2d","tx":classmx[eo][2][0,y],"ty":classmx[eo][3][0,y],"alpha":classmx[eo][4][0,y],"mirror":int(classmx[eo][5][0,y])})]
 			#print ptcl, 
 			#print int(classmx[eo][0][0,y])
@@ -135,7 +136,7 @@ def main():
 	
 	# Euler angles for averages
 	projin="{}/projections_{:02d}_even.hdf".format(options.path,last_iter)
-	eulers=[EMData(projin,i,True)["xform.projection"] for i in xrange(ncls)]
+	eulers=[EMData(projin,i,True)["xform.projection"] for i in range(ncls)]
 	
 	# Prepare mask if specified
 	if options.mask!=None:
@@ -356,12 +357,12 @@ def main():
 	for i,c in enumerate(classes):
 		c[2].write_image(classout[c[-1]],i)	# class-average
 		ptcln=c[2]["class_eoidxs"]		# eofile/ptcl# pairs
-		for p in xrange(0,len(ptcln),2):
+		for p in range(0,len(ptcln),2):
 			lstout[0][-1]=lstin[ptcln[p]][ptcln[p+1]]		# wierd syntax, but the -1 here appends
 			
 		c[3].write_image(classout[c[-1]^1],i)
 		ptcln=c[3]["class_eoidxs"]		# eofile/ptcl# pairs
-		for p in xrange(0,len(ptcln),2):
+		for p in range(0,len(ptcln),2):
 			lstout[1][-1]=lstin[ptcln[p]][ptcln[p+1]]		# wierd syntax, but the -1 here appends
 
 		if options.verbose>2:

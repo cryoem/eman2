@@ -5,6 +5,7 @@ from __future__ import print_function
 # Next it aligns the particles so the longest axis is along Z, second longest, on Y, and shortest on X. It does this by computing
 # the eigenvectors of the Intertia matrix.
 
+from builtins import range
 from EMAN2 import *
 import os
 import sys
@@ -57,7 +58,7 @@ for pf in sorted(sys.argv[1:]):
 		continue
 	#print eigvv[0]
 	#print eigvv[1]
-	eig=[(1.0/eigvv[0][i],eigvv[1][:,i]) for i in xrange(3)]  # extract for sorting
+	eig=[(1.0/eigvv[0][i],eigvv[1][:,i]) for i in range(3)]  # extract for sorting
 	#eig=sorted(eig,reverse=True)		# now eig is sorted in order from major to minor axes
 	eig=sorted(eig)		# now eig is sorted in order from major to minor axes
 	T=array([eig[0][1],eig[1][1],eig[2][1]])            # reassemble sorted matrix

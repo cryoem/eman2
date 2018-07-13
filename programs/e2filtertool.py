@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from builtins import range
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from PyQt4.QtCore import QTimer
@@ -319,7 +320,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		#traceback.print_stack(limit=2)
 		scats=['.'.join(i.split('.',1)[1:]) for i in self.plist if i.split(".")[0]==cat]
 		scats.sort()
-		for i in xrange(len(scats)):
+		for i in range(len(scats)):
 			if scats[i]=="" : scats[i]="---"
 		self.wsubcat.clear()
 		self.wsubcat.addItem("")
@@ -672,9 +673,9 @@ class EMFilterTool(QtGui.QMainWindow):
 
 			if self.origdata["nz"]==1:
 				if self.nimg>20 :
-					self.origdata=EMData.read_images(data,range(0,self.nimg,self.nimg/20))		# read regularly separated images from the file totalling ~20
+					self.origdata=EMData.read_images(data,list(range(0,self.nimg,self.nimg/20)))		# read regularly separated images from the file totalling ~20
 				elif self.nimg>1 :
-					self.origdata=EMData.read_images(data,range(self.nimg))
+					self.origdata=EMData.read_images(data,list(range(self.nimg)))
 				else: self.origdata=[self.origdata]
 			else :
 				self.origdata=[self.origdata]
@@ -806,7 +807,7 @@ class EMFilterTool(QtGui.QMainWindow):
 
 		pp=[i.processorParms() for i in self.processorlist]
 
-		for i in xrange(n):
+		for i in range(n):
 			im=EMData(self.datafile,i)
 			QtGui.qApp.processEvents()
 			for p in pp: im.process_inplace(p[0],p[1])

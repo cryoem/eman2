@@ -30,6 +30,10 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 import EMAN2
 from EMAN2 import *
 import collections
@@ -38,7 +42,7 @@ import random
 import sys
 import optparse
 import os
-import commands
+import subprocess
 import sys
 import operator
 import copy
@@ -61,7 +65,7 @@ def check_exists(outfile, overwrite=False):
 	if not os.path.exists(outfile):
 		return True
 			
-	p = input("File %s exists. Overwrite? yes/no: "%outfile)
+	p = eval(input("File %s exists. Overwrite? yes/no: "%outfile))
 	if p.lower() in ["yes", "y"]:
 		return True
 

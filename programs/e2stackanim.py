@@ -36,6 +36,7 @@ from __future__ import print_function
 # This program will convert a 2D image stack into a GIF animation
 
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os

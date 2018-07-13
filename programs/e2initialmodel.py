@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from builtins import range
 from EMAN2 import *
 import random
 from math import *
@@ -140,7 +141,7 @@ def main():
 	etc.precache(pclist)		# make sure the input particles are precached on the compute nodes
 
 	tasks=[]
-	for t in xrange(options.tries):
+	for t in range(options.tries):
 		tasks.append(InitMdlTask(particles_name,len(ptcls),orts,t,sfcurve,options.iter,options.sym,mask2,options.randorient,options.verbose))
 
 	taskids=etc.send_tasks(tasks)
@@ -162,7 +163,7 @@ def main():
 				if options.verbose==1 : print("Task {} ({}) complete".format(i,taskids[i]))
 
 		# filter out completed tasks. We can't do this until after the previous loop completes
-		taskids=[taskids[i] for i in xrange(len(taskids)) if curstat[i]!=100]
+		taskids=[taskids[i] for i in range(len(taskids)) if curstat[i]!=100]
 
 
 	# Write out the final results

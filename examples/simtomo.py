@@ -4,6 +4,7 @@ from __future__ import print_function
 # with tomographic sampling. Generates a set of projections for each orientation, adds flatband noise, then reconstructs
 # from the projections.
 
+from builtins import range
 from EMAN2 import *
 
 from sys import argv

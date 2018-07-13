@@ -35,6 +35,7 @@ from __future__ import print_function
 # displaydemo.py  09/18/2009  Steven Ludtke
 
 
+from builtins import object
 from EMAN2 import *
 from math import *
 from PyQt4 import QtCore
@@ -51,7 +52,7 @@ def main():
 
 	em_app.execute()
 
-class TestControl():
+class TestControl(object):
 	def __init__(self,app):
 		# the single image display widget
 		self.im2d = EMImage2DWidget(application=app)

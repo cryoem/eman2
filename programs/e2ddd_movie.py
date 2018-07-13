@@ -32,6 +32,9 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 from EMAN2 import *
 from numpy import *
 import pprint
@@ -40,7 +43,7 @@ import os
 from sys import argv
 from time import sleep,time,ctime
 import threading
-import Queue
+import queue
 import numpy as np
 from sklearn import linear_model
 from scipy import optimize
@@ -246,7 +249,7 @@ def main():
 			sigd.to_zero()
 			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
 			print("Summing Dark Frames")
-			for i in xrange(0,nd):
+			for i in range(0,nd):
 				if options.verbose:
 					sys.stdout.write("({}/{})   \r".format(i+1,nd))
 					sys.stdout.flush()
@@ -314,7 +317,7 @@ def main():
 				sigg.to_zero()
 				a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
 				print("Summing Gain Frames")
-				for i in xrange(0,nd):
+				for i in range(0,nd):
 					if options.verbose:
 						sys.stdout.write("({}/{})   \r".format(i+1,nd))
 						sys.stdout.flush()
@@ -501,7 +504,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 	outim=[]
 	nfs = 0
 	t = time()
-	for ii in xrange(first,flast,step):
+	for ii in range(first,flast,step):
 		if options.verbose:
 			sys.stdout.write(" {}/{}   \r".format(ii-first+1,flast-first+1))
 			sys.stdout.flush()
@@ -582,7 +585,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 
 		print("{} frames read ({} x {}). Grouped by {}.".format(nfs_read,nx,ny,options.groupby,n))
 
-		ccfs=Queue.Queue(0)
+		ccfs=queue.Queue(0)
 
 		# prepare image data (outim) by clipping and FFT'ing all tiles (this is threaded as well)
 		immx=[0]*n
@@ -613,7 +616,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 
 		# create threads
 		thds=[]
-		peak_locs=Queue.Queue(0)
+		peak_locs=queue.Queue(0)
 		i=-1
 		for ima in range(n-1):
 			for imb in range(ima+1,n):
@@ -720,8 +723,8 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 		locs = traj.ravel()
 		quals=[0]*n # quality of each frame based on its correlation peak summed over all images
 		cen=options.optbox/2 #csum2[(0,1)]["nx"]/2
-		for i in xrange(n-1):
-			for j in xrange(i+1,n):
+		for i in range(n-1):
+			for j in range(i+1,n):
 				val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(float(n-fabs(i-j))/n)
 				quals[i]+=val
 				quals[j]+=val
@@ -1147,8 +1150,8 @@ def qual(locs,ccfs):
 	nrg=0.0
 	cen=ccfs[(0,1)]["nx"]/2
 	n=len(locs)/2
-	for i in xrange(n-1):
-		for j in xrange(i+1,n):
+	for i in range(n-1):
+		for j in range(i+1,n):
 			penalty = sqrt(float(n-fabs(i-j))/n)**2 # This is a recognition that we will tend to get better correlation with near neighbors in the sequence
 			locx = int(cen+locs[j*2]-locs[i*2])
 			locy = int(cen+locs[j*2+1]-locs[i*2+1])

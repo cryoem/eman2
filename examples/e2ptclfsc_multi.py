@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
 from math import *
@@ -130,7 +131,7 @@ def main():
 		# this becomes the new maximum mask radius
 		act=0
 		mv=0,0
-		for i in xrange(rmax):
+		for i in range(rmax):
 			if md[i]>mv[0] : mv=md[i],i		# find the radius of the  max val in range
 			if not act and md[i]<0.9*vmax : continue
 			act=True
@@ -161,14 +162,14 @@ def main():
 	# generate a projection for each particle so we can compare
 
 	pj = 0
-	for i in xrange(nref):
+	for i in range(nref):
 		if options.verbose>1 : print("--- Class %d/%d"%(i,nref-1))
 		
 		phi=eulers[i].get_rotation("eman")["phi"]
 		alt=eulers[i].get_rotation("eman")["alt"]
 		az=eulers[i].get_rotation("eman")["az"]
 
-		for j in xrange(nptcl):
+		for j in range(nptcl):
 			if classmx[0,j]!=i : continue	# only proceed if the particle is in this class
 			if options.verbose > 6: print("{}\t{}".format(i,j))
 
@@ -202,12 +203,12 @@ def main():
 	
 				third = len(fsc)/3
 				fsc=array(fsc[third:third*2])
-				for k in xrange(nbands): # sum the fsc into 5 range values
+				for k in range(nbands): # sum the fsc into 5 range values
 					s = sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k])
 					data.append(str(s))
 			
 			# to which model does this particle belong according to similarity at each resolution range
-			best = [np.argmax(data[k::nbands]) for k in xrange(nbands)]
+			best = [np.argmax(data[k::nbands]) for k in range(nbands)]
 			
 			# which model "wins" majority of times?
 			counts = [0,0,0,0]

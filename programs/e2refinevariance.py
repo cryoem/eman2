@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -174,7 +175,7 @@ def main():
 	nprogress=options.nmodels*2.0+1.0
 	
 	# this loops over each of the n models we create to compute the variance
-	for mod in xrange(options.nmodels) :
+	for mod in range(options.nmodels) :
 		if not options.volfiles :
 			if options.verbose : print("Class-averaging")
 			# Compute class-averages with the --resample option
@@ -274,12 +275,12 @@ def main():
 	
 	w=weight.copy()
 	# A line along Z
-	for i in xrange(0,nz): w[nx/2,ny/2,i]=1.0
+	for i in range(0,nz): w[nx/2,ny/2,i]=1.0
 
 	# replicate the line under symmetry
 	t=Transform()
 	ns=t.get_nsym(options.sym)
-	for i in xrange(ns):
+	for i in range(ns):
 		t2=t.get_sym(options.sym,i)
 		wc=w.process("xform",{"transform":t2})		# transformed version of weight
 		weight.add(wc)

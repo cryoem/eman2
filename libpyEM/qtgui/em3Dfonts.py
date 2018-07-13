@@ -33,6 +33,7 @@ from __future__ import absolute_import
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from builtins import object
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
@@ -51,7 +52,7 @@ from .emlights import *
 
 MAG_INCREMENT_FACTOR = 101.1
 
-class DynamicFonts:
+class DynamicFonts(object):
 	def __init__(self):
 		self.font_renderer = get_3d_font_renderer()
 

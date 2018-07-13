@@ -32,6 +32,8 @@ from __future__ import absolute_import
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from builtins import range
+from builtins import object
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
 from PyQt4 import QtCore, QtGui
@@ -228,7 +230,7 @@ class EMFileType(object) :
 		brws.busy()
 
 		if self.n >= 0 : ns = [self.n]
-		else : ns = xrange(EMUtil.get_image_count(self.path))
+		else : ns = list(range(EMUtil.get_image_count(self.path)))
 
 		for i in ns :
 			im = EMData(self.path, i)
@@ -333,7 +335,7 @@ class EMFileType(object) :
 		target = emscene3d.EMScene3D()
 		brws.view3d.append(target)
 
-		for n in xrange(self.nimg) :
+		for n in range(self.nimg) :
 			data = emdataitem3d.EMDataItem3D(self.path, n = n)
 			target.insertNewNode("{} #{}".format(self.path.split("/")[-1], n), data)
 			iso = emdataitem3d.EMIsosurface(data)
@@ -748,7 +750,7 @@ class EMPlotFileType(EMFileType) :
 
 		data = []
 
-		for c in xrange(self.numc) :
+		for c in range(self.numc) :
 			data.append([i[c] for i in data1])
 
 		target = EMHistogramWidget()
@@ -776,7 +778,7 @@ class EMPlotFileType(EMFileType) :
 
 		data = []
 
-		for c in xrange(self.numc) :
+		for c in range(self.numc) :
 			data.append([i[c] for i in data1])
 
 		try :
@@ -1133,7 +1135,7 @@ class EMStackFileType(EMFileType) :
 
 		try : im0 = EMData(path, 0, True)
 		except :
-			for i in xrange(1, 10) :
+			for i in range(1, 10) :
 				try : im0 = EMData(path, i, True)
 				except : continue
 				break
@@ -1658,7 +1660,7 @@ class EMDirEntry(object) :
 		if self.nimg > 0 :
 			try : tmp = EMData(self.path(), 0, True)		# try to read an image header for the file
 			except :
-				for i in xrange(1, 10) :
+				for i in range(1, 10) :
 					try : tmp = EMData(self.path(), i, True)
 					except : continue
 					break
@@ -2206,11 +2208,11 @@ class EMPlotInfoPane(EMInfoPane) :
 		else : self.plotdata.setRowCount(len(data))
 
 		self.plotdata.setColumnCount(numc)
-		self.plotdata.setVerticalHeaderLabels([str(i) for i in xrange(len(data))])
-		self.plotdata.setHorizontalHeaderLabels([str(i) for i in xrange(numc)])
+		self.plotdata.setVerticalHeaderLabels([str(i) for i in range(len(data))])
+		self.plotdata.setHorizontalHeaderLabels([str(i) for i in range(numc)])
 
-		for r in xrange(len(data)) :
-			for c in xrange(numc) :
+		for r in range(len(data)) :
+			for c in range(numc) :
 				self.plotdata.setItem(r, c, QtGui.QTableWidgetItem("%1.4g"%data[r][c]))
 
 		if len(data) == 2500 :
@@ -2581,8 +2583,8 @@ class EMJSONInfoPane(EMInfoPane) :
 				else : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(trg[k])))))
 		elif isinstance(trg, (list, tuple, set)) :
 			if isinstance(trg, set) : trg = sorted(trg)		# make a list temporarily
-			if len(trg) > 120 : vals = range(0, 50)+[-1]+range(len(trg)-50, len(trg))
-			else : vals = xrange(len(trg))
+			if len(trg) > 120 : vals = list(range(0, 50))+[-1]+list(range(len(trg)-50, len(trg)))
+			else : vals = list(range(len(trg)))
 			for k in vals :
 				if k == -1 : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("...", "..."))))
 				else :
@@ -2739,7 +2741,7 @@ class EMStackInfoPane(EMInfoPane) :
 		self.hbl2.setRowStretch(1, 1) # Jesus
 		self.hbl2.setRowStretch(2, 1) # Jesus
 
-		for i in xrange(5) :
+		for i in range(5) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
@@ -3428,7 +3430,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 		# we add the child items to the list needing updates
 
-		for i in xrange(self.curmodel.rowCount(qmi)-1, -1, -1) :
+		for i in range(self.curmodel.rowCount(qmi)-1, -1, -1) :
 			self.updlist.append(self.curmodel.index(i, 0, qmi))
 
 	def buttonMisc(self, num) :
@@ -3527,7 +3529,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 		self.close()
 
-		for i in xrange(len(self.result)) :
+		for i in range(len(self.result)) :
 			if self.result[i][:2] == "./" : self.result[i] = self.result[i][2:]
 		return self.result
 
@@ -3649,7 +3651,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 		# we add the child items to the list needing updates
 
-		for i in xrange(self.curmodel.rowCount(None)-1, -1, -1) :
+		for i in range(self.curmodel.rowCount(None)-1, -1, -1) :
 			self.updlist.append(self.curmodel.index(i, 0, None))
 
 		if not silent :

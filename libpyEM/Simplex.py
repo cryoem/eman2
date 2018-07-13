@@ -23,6 +23,8 @@ from __future__ import print_function
 
 # Modified (debugged?) 7/16/2004 Michele Vallisneri (vallis@vallis.org)
 
+from builtins import range
+from builtins import object
 """ Simplex - a regression method for arbitrary nonlinear function minimization
 
 Simplex minimizes an arbitrary nonlinear function of N variables by the
@@ -40,7 +42,7 @@ import math
 import copy
 import sys
 
-class Simplex:
+class Simplex(object):
     def __init__(self, testfunc, guess, increments, kR = -1, kE = 2, kC = 0.5, data=None):
         """Initializes the simplex.
         INPUTS

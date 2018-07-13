@@ -41,6 +41,8 @@ from __future__ import print_function
 # 
 # ========================================================================================
 
+from builtins import range
+from past.builtins import cmp
 from EMAN2 import *
 from sparx import *
 from sys import  *
@@ -82,7 +84,7 @@ def mrk_table_stat(X):
 	mi = X[0]
 	ma = X[0]
 	
-	for i in xrange(1, N):
+	for i in range(1, N):
 		av += X[i]
 		va += X[i]*X[i]
 		mi = min(mi, X[i])
@@ -641,7 +643,7 @@ def main():
 							sphire_header['filament'] = '{0}{1:05d}'.format(adjusted_relion_micrograph_name, sphire_filament_id)
 						if relion_category_dict['ctf'][idx_is_category_found]:
 							sphire_cter_entry_list = []
-							for idx_sphire_ctf in xrange(n_idx_sphire_ctf):
+							for idx_sphire_ctf in range(n_idx_sphire_ctf):
 								sphire_cter_entry_list.append(sphire_cter_entry[idx_sphire_ctf])
 							sphire_header['ctf'] = generate_ctf(sphire_cter_entry_list)
 							sphire_header['ctf_applied'] = 0
@@ -772,10 +774,10 @@ def main():
 				assert len(sphire_cter_dict[micrograph_dirname][micrograph_basename]) >= 1 # Should be one CTER entry for each micrograph
 				
 				# Compute statistics of CTF parameters for each micrograph
-				sphire_cter_table = [[] for idx_cter in xrange(n_idx_cter)]; assert(len(sphire_cter_table) == n_idx_cter)
+				sphire_cter_table = [[] for idx_cter in range(n_idx_cter)]; assert(len(sphire_cter_table) == n_idx_cter)
 				
 				for sphire_cter_entry in sphire_cter_dict[micrograph_dirname][micrograph_basename]:
-					for idx_cter in xrange(n_idx_cter):
+					for idx_cter in range(n_idx_cter):
 						sphire_cter_table[idx_cter].append(sphire_cter_entry[idx_cter])
 				
 				sphire_cter_stats = sphire_cter_dict[micrograph_dirname][micrograph_basename][0]
@@ -833,7 +835,7 @@ def main():
 				sphire_cter_stats[idx_cter_phase_shift] = avg
 				
 				# Save statistics of CTF parameters for each micrograph
-				for idx_cter in xrange(n_idx_cter - 1):
+				for idx_cter in range(n_idx_cter - 1):
 					file_sphire_cter_partres.write('  %12.5g' % sphire_cter_entry[idx_cter])
 				file_sphire_cter_partres.write('  %s\n' % sphire_cter_entry[idx_cter_mic_name])  # At the end of line, write micrograph name which is string type!
 			
@@ -945,7 +947,7 @@ def main():
 							sphire_ctf_list = sphire_cter_dict[micrograph_dirname][micrograph_basename]
 						else:
 							# assert not relion_category_dict['ctf'][idx_is_category_found]
-							for i_sphire_rebox_entry in xrange(n_sphire_rebox_entry):
+							for i_sphire_rebox_entry in range(n_sphire_rebox_entry):
 								sphire_ctf_list.append(dummy_sphire_ctf_entry)
 						assert (n_sphire_rebox_entry == len(sphire_ctf_list))
 				
@@ -956,7 +958,7 @@ def main():
 							sphire_proj3d_list = sphire_proj3d_dict[micrograph_dirname][micrograph_basename]
 						else:
 							# assert not relion_category_dict['proj3d'][idx_is_category_found]
-							for i_sphire_rebox_entry in xrange(n_sphire_rebox_entry):
+							for i_sphire_rebox_entry in range(n_sphire_rebox_entry):
 								sphire_proj3d_list.append(dummy_sphire_proj3d)
 						assert (n_sphire_rebox_entry == len(sphire_proj3d_list))
 				
@@ -967,12 +969,12 @@ def main():
 							sphire_chunk_id_list = sphire_chunk_dict[micrograph_dirname][micrograph_basename]
 						else:
 							# assert not relion_category_dict['chunk'][idx_is_category_found]
-							for i_sphire_rebox_entry in xrange(n_sphire_rebox_entry):
+							for i_sphire_rebox_entry in range(n_sphire_rebox_entry):
 								sphire_chunk_id_list.append(dummy_sphire_chunk_id)
 						assert (n_sphire_rebox_entry == len(sphire_chunk_id_list))
 				
 						# Standard SPA Coordinate File 
-						for i_sphire_rebox_entry in xrange(n_sphire_rebox_entry):
+						for i_sphire_rebox_entry in range(n_sphire_rebox_entry):
 							line = ""
 							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_id])          # idx_params_mic_coord_id
 							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])           # idx_params_mic_coord_x

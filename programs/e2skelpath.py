@@ -34,6 +34,7 @@ from __future__ import print_function
 
 # e2skelpath.py  09/01/2006  Steven Ludtke, Matt Baker
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import time
@@ -128,7 +129,7 @@ def getPoints(dejavufile, apix,originX,originY,originZ):
 def getNearest(coord, searchrange, skeleton):
 	maxdistance=10000
 	bestcoord=coord
-	searchrange=range(-searchrange,searchrange+1,1)
+	searchrange=list(range(-searchrange,searchrange+1,1))
 	for dx in searchrange:
 		for dy in searchrange:
 			for dz in searchrange:

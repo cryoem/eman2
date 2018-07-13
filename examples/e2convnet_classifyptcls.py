@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-10
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 from EMAN2 import *
 import numpy as np
 import threading
-import Queue
+import queue
 import theano
 import theano.tensor as T
 from theano.tensor.nnet import conv
@@ -172,7 +175,7 @@ def do_training(args=None):
 				data.append(ar.flatten())
 				lbs.append(label)
 	#print shrinkfac
-	rndid=range(len(data))
+	rndid=list(range(len(data)))
 	np.random.shuffle(rndid)
 	data=[data[i] for i in rndid]
 	lbs=[lbs[i] for i in rndid]
@@ -204,10 +207,10 @@ def do_training(args=None):
 	learning_rate=0.005
 	weightdecay=1e-5
 	n_train_batches = len(data) / batch_size
-	for epoch in xrange(20):
+	for epoch in range(20):
 	# go through the training set
 		c = []
-		for batch_index in xrange(n_train_batches):
+		for batch_index in range(n_train_batches):
 			err=classify(batch_index,
 				lr=learning_rate,
 				wd=weightdecay)

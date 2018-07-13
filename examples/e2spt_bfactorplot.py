@@ -31,6 +31,7 @@
 #
 #
 from __future__ import print_function
+from builtins import range
 import os
 from EMAN2 import *
 from EMAN2_utils import *
@@ -168,7 +169,7 @@ def runningavg(stack,previousavg,options,start,stop,count):
 	
 	avgr = Averagers.get( options.averager[0], options.averager[1])
 		
-	for i in xrange(start,stop,1):
+	for i in range(start,stop,1):
 		ptcl = EMData( stack, i )
 		#ptcl.process_inplace('normalize.edgemean')	
 	
@@ -363,7 +364,7 @@ def bfactorfuncgold( options ):
 		
 		h = open( options.path +'/n_vs_fsc_unsorted.txt','a' )
 
-		for thisn in xrange( 0, nfinal, options.step ):
+		for thisn in range( 0, nfinal, options.step ):
 			
 			startindx = thisn
 			stopindx = options.step*(count+1)
@@ -515,7 +516,7 @@ def bfactorfunc( options ):
 		ngroups = nfinal/options.step
 		excedent = nfinal%options.step
 		count=0
-		for thisn in xrange( 0, nfinal, options.step ):
+		for thisn in range( 0, nfinal, options.step ):
 			
 			startindx = thisn
 			stopindx = options.step*(count+1)

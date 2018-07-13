@@ -4,6 +4,7 @@ from __future__ import print_function
 #### python utilities. 
 #### 2017-03
 
+from builtins import range
 import numpy as np
 import os
 from EMAN2 import *
@@ -12,7 +13,7 @@ import sys
 from scipy.interpolate import interp1d
 
 amino_dict= {0: 'ALA', 1: 'ARG', 2: 'ASN', 3: 'ASP', 4: 'CYS', 5: 'GLU', 6: 'GLN', 7: 'GLY', 8: 'HIS', 9: 'ILE', 10: 'LEU', 11: 'LYS', 12: 'MET', 13: 'PHE', 14: 'PRO', 15: 'SER', 16: 'THR', 17: 'TRP', 18: 'TYR', 19: 'VAL', 20: 'ASX', 21:'GLX'}
-amino_dict.update(dict((v, k) for k, v in amino_dict.items()))
+amino_dict.update(dict((v, k) for k, v in list(amino_dict.items())))
 amino_dict.update({'A': 0, 'C': 4, 'E': 5, 'D': 3, 'G': 7, 'F': 13, 'I': 9, 'H': 8, 'K': 11, 'M': 12, 'L': 10, 'N': 2, 'Q': 6, 'P': 14, 'S': 15, 'R': 1, 'T': 16, 'W': 17, 'V': 19, 'Y': 18, 'X':20})
 
 def pdb2numpy(fname, readres=False, readocc=False, readbfac=False):

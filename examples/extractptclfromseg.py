@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2016-09
+from builtins import range
 from EMAN2 import *
 import numpy as np
 havescipy=True
@@ -172,8 +173,8 @@ and make sure the unaligned average looks reasonable.
 		if options.random<=0:
 			if havescipy:
 				lb, nlb=ndimage.measurements.label(img)
-				pks=np.array(ndimage.maximum_position(img,lb,range(1,nlb)))
-				pksize=np.array(ndimage.measurements.sum(img,lb,range(1,nlb)))
+				pks=np.array(ndimage.maximum_position(img,lb,list(range(1,nlb))))
+				pksize=np.array(ndimage.measurements.sum(img,lb,list(range(1,nlb))))
 				n=len(pks)
 			
 			else:

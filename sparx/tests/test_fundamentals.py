@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import unittest
 from optparse import OptionParser
 
@@ -71,33 +72,33 @@ class TestCorrelationFunctions(unittest.TestCase):
 			tx = anx
 			ty = any
 			tz = anz
-		for x in xrange(tx):
-			for y in xrange(ty):
-				for z in xrange(tz):
+		for x in range(tx):
+			for y in range(ty):
+				for z in range(tz):
 					S.set_value_at(x, y, z, A.get_value_at( (x)%anx, (y)%any, (z)%anz ))
 		if center:
 			S = cyclic_shift(S, anx/2, any/2, anz/2)
 		R = model_blank(anx, any, anz)
-		for x in xrange(anx):
-			for y in xrange(any):
-				for z in xrange(anz):
+		for x in range(anx):
+			for y in range(any):
+				for z in range(anz):
 					s = 0.0
-					for x2 in xrange(anx):
-						for y2 in xrange(any):
-							for z2 in xrange(anz):
+					for x2 in range(anx):
+						for y2 in range(any):
+							for z2 in range(anz):
 								s += S.get_value_at(x+x2, y+y2, z+z2) * B.get_value_at(x2, y2, z2)
 					R.set_value_at(x, y, z, s)
 		if lag_normalization:
 			cx = anx/2
 			cy = any/2
 			cz = anz/2
-			for x in xrange(anx):
+			for x in range(anx):
 				x_center = abs(x-cx)
 				x_lag = 1 + (x_center * 1.0) / (anx - x_center)
-				for y in xrange(any):
+				for y in range(any):
 					y_center = abs(y-cy)
 					y_lag = 1 + (y_center * 1.0) / (any - y_center)
-					for z in xrange(anz):
+					for z in range(anz):
 						z_center = abs(z-cz)
 						z_lag = 1 + (z_center * 1.0) / (anz - z_center)
 						R.set_value_at(x, y, z, R.get_value_at(x,y,z) * x_lag * y_lag * z_lag )
@@ -111,9 +112,9 @@ class TestCorrelationFunctions(unittest.TestCase):
 		self.assertEqual(nx, B.get_xsize())
 		self.assertEqual(ny, B.get_ysize())
 		self.assertEqual(nz, B.get_zsize())
-		for x in xrange(nx):
-			for y in xrange(ny):
-				for z in xrange(nz):
+		for x in range(nx):
+			for y in range(ny):
+				for z in range(nz):
 					delta = abs(A.get_value_at(x,y,z)) / 100.0 # allowed error: 1% of value
 					if delta < 0.001:
 						delta = 0.001

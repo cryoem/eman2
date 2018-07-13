@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from   EMAN2        import *
 from   sparx        import *
 import sys
@@ -64,7 +65,7 @@ cc  = [0]     * size_agls
 mir = [False] * size_agls
 
 # for each angles search the alignment of the volumes
-for n in xrange(size_agls): # another loop over Psi
+for n in range(size_agls): # another loop over Psi
     # set the value of phi, theta, and psi in the header of the volume
     im.read_image(name_vol, 0, True)
     im.set_attr_dict({'phi': agls[n][0], 'theta': agls[n][1], 'psi': 0, 's3x': 0, 's3y':0, 's3z': 0, 'scale': 1})
@@ -131,7 +132,7 @@ for n in xrange(size_agls): # another loop over Psi
 val_max  = -1e10
 best_pos = -1
 best_mir = False
-for n in xrange(size_agls):
+for n in range(size_agls):
     if cc[n] > val_max:
         val_max  = cc[n]
         best_pos = n
@@ -143,7 +144,7 @@ theta = agls[best_pos][1]
 if best_mir: name_vol = name_mir
 
 #---- search the alignment for severals values of psi ----
-psi = range(0, 360, 36)
+psi = list(range(0, 360, 36))
 cc  = -1e10
 
 for n in psi:

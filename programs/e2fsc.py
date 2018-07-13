@@ -34,6 +34,9 @@ from __future__ import print_function
 
 
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
 from math import *
@@ -41,7 +44,7 @@ import os
 import sys
 import time
 from numpy import *
-import Queue
+import queue
 
 def procthread(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,ttl):
 	for ox,x,oy,y,oz,z in vals:
@@ -224,9 +227,9 @@ and this program should be regarded as experimental.
 	avgmask.process_inplace("mask.gaussian",{"outer_radius":3.0*d/log(8.0) })	# make it a bit wider since we are weighting anyway, this should produce smoother surfaces
 	
 	off=(nx%(lnx//overlap))/2
-	xr=xrange(off,nx-lnx,lnx//overlap)
-	yr=xrange(off,ny-lnx,lnx//overlap)
-	zr=xrange(off,nz-lnx,lnx//overlap)
+	xr=list(range(off,nx-lnx,lnx//overlap))
+	yr=list(range(off,ny-lnx,lnx//overlap))
+	zr=list(range(off,nz-lnx,lnx//overlap))
 	resvol=EMData(len(xr),len(yr),len(zr))
 	resvol["apix_x"]=apix*lnx//overlap
 	resvol["apix_y"]=apix*lnx//overlap
@@ -253,7 +256,7 @@ and this program should be regarded as experimental.
 	fys=[]
 	funny=[]		# list of funny curves
 	t=time.time()
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 	thrds=[]
 	for oz,z in enumerate(zr):
 		for oy,y in enumerate(yr):

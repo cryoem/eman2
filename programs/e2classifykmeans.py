@@ -35,6 +35,7 @@ from __future__ import print_function
 ###	e2classifykmeans.py	Steven Ludtke	3/4/2006
 ### Program for classifying raw 2d or 3d data by kmeans
 
+from builtins import range
 import os
 import sys
 import random
@@ -100,7 +101,7 @@ together."""
 			data[-1].set_attr("ref_flip",d.get_value_at(3,i))
 	else: data=EMData.read_images(args[0])
 	nimg=len(data)						# we need this for the classification matrix when exclude is used
-	filen=range(len(data))				# when exclude is used, this will map to actual file image numbers
+	filen=list(range(len(data)))				# when exclude is used, this will map to actual file image numbers
 
 	if options.exclude: 
 		try:
