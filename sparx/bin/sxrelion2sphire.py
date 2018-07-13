@@ -41,6 +41,7 @@ from __future__ import print_function
 # 
 # ========================================================================================
 
+from past.builtins import cmp
 from EMAN2 import *
 from sparx import *
 from sys import  *
