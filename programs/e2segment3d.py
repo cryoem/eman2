@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 import random
 from math import *
@@ -124,14 +125,14 @@ def main():
 	if options.output!=None : seg.write_image(options.output,0)
 	if options.segout!=None :
 		max=int(seg["maximum"])
-		for i in xrange(1,max+1):
+		for i in range(1,max+1):
 			sv=seg.process("threshold.binaryrange",{"low":i-.5,"high":i+.5})
 			sv.write_image(options.segout,i-1)
 		
 	
 	# make a list of 3-tuples for the center locations
 	centers=seg["segment_centers"]
-	centers=[(centers[i],centers[i+1],centers[i+2]) for i in xrange(0,len(centers),3)]
+	centers=[(centers[i],centers[i+1],centers[i+2]) for i in range(0,len(centers),3)]
 	
 	if options.helixfile!=None:
 		for h in helix:

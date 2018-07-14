@@ -3,6 +3,7 @@ from __future__ import print_function
 # -*- coding: utf-8 -*-
 # Fit helixes using pathwalker results
 
+from builtins import range
 import EMAN2
 from EMAN2 import *
 import sys

@@ -37,6 +37,8 @@ from __future__ import print_function
 # 1. Baldwin, P.R. and Penczek, P.A. 2007. The Transform Class in SPARX and EMAN2. J. Struct. Biol. 157, 250-261.
 # 2. http://blake.bcm.edu/emanwiki/EMAN2/Symmetry
 
+from builtins import range
+from builtins import object
 import sys, math, os, random
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
@@ -49,7 +51,7 @@ MIRROR_DEBUG = True
 NO_MIRROR = False
 
 
-class EMParallelProject3D:
+class EMParallelProject3D(object):
 	def __init__(self,options,fsp,sym,start,modeln=0,logger=None):
 		'''
 		@param options the options produced by (options, args) = parser.parse_args()
@@ -111,14 +113,14 @@ class EMParallelProject3D:
 			task_customers = []
 			tids = []
 #			self.etc=EMTaskCustomer(self.options.parallel)
-			for i in xrange(0,num_tasks):
+			for i in range(0,num_tasks):
 				last = first+eulers_per_task
 				if resid_eulers > 0:
 					last +=1
 					resid_eulers -= 1
 
 				tmp_eulers = self.eulers[first:last]
-				indices = range(first,last)
+				indices = list(range(first,last))
 
 				data = {}
 				data["input"] = ("cache",self.args,0)
@@ -141,7 +143,7 @@ class EMParallelProject3D:
 
 				print(len(tids),"projection tasks left in main loop")
 				st_vals = self.etc.check_task(tids)
-				for i in xrange(len(tids)-1,-1,-1):
+				for i in range(len(tids)-1,-1,-1):
 					st = st_vals[i]
 					if st==100:
 						tid = tids[i]
@@ -210,7 +212,7 @@ class EMProject3DTaskDC(JSTask):
 		projections = {}
 		n = len(eulers)
 		progress_callback(1)
-		for i in xrange(n):
+		for i in range(n):
 			euler = eulers[i]
 			projector_opts["transform"] = euler
 			projection = threed_image.project(projector,projector_opts)

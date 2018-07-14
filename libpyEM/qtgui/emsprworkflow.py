@@ -32,6 +32,8 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
+from builtins import object
 from .emform import EMFormWidget,EMParamTable,EMTableFormWidget
 from .emdatastorage import ParamDef
 from PyQt4 import QtGui,QtCore
@@ -93,14 +95,14 @@ tpr_probes_dict = "global.tpr_probes_dict"
 tpr_ptcl_ave_dict = "global.tpr_ptcl_ave_dict"
 tpr_ptcls_ali_dict = "global.tpr_ptcls_ali_dict"
 
-class EmptyObject:
+class EmptyObject(object):
 	'''
 	This just because I need an object I can assign attributes to, and object() doesn't seem to work
 	'''
 	def __init__(self):
 		pass
 
-class WorkFlowTask:
+class WorkFlowTask(object):
 	display_file = QtCore.pyqtSignal()
 	task_idle = QtCore.pyqtSignal()
 	process_started = QtCore.pyqtSignal()
@@ -474,7 +476,7 @@ class ChangeDirectoryTask(WorkFlowTask):
 		pass
 		#self.form.close()
 
-class EMProjectDataDict:
+class EMProjectDataDict(object):
 	''' This class encapsulate the common routines used to get, add to and remove data dictionaries from the database.
 	These data dictionaries are used for storing almost all types of data in the workflow, and are persistently located
 	on disk using Berkeley DBs. The keys of these dictionaries are unique identifiers, such as the full name of a
@@ -847,7 +849,7 @@ Note that the data cannot be filtered unless it is imported."
 		table.add_column_data(EMFileTable.EMColumnData("Dimensions",EMRawDataReportTask.get_image_dimensions,"The dimensions of the file on disk"))
 		return table,n
 	
-	class ProjectAddRawDataButton:
+	class ProjectAddRawDataButton(object):
 		def __init__(self,table_widget,context_menu_data):
 			self.table_widget = weakref.ref(table_widget)
 			self.context_menu_data = context_menu_data
@@ -857,7 +859,7 @@ Note that the data cannot be filtered unless it is imported."
 			self.context_menu_data.context_menu["Add"]([],self.table_widget())
 			
 
-	class ProjectListContextMenu:
+	class ProjectListContextMenu(object):
 		def __init__(self,project_list=spr_raw_data_dict,remove_only=False,using_file_tags=False):
 			self.project_list = project_list
 			self.validator = AddFilesToProjectValidator(self.project_list)
@@ -869,7 +871,7 @@ Note that the data cannot be filtered unless it is imported."
 			return list(self.context_menu.items())
 		
 		
-		class RemoveFilesFromProject:
+		class RemoveFilesFromProject(object):
 			def __init__(self,project_list,using_file_tags=False):
 				self.project_list = project_list
 				self.using_file_tags = using_file_tags
@@ -907,7 +909,7 @@ Note that the data cannot be filtered unless it is imported."
 					
 				data_dict.remove_names(db_full_names)
 				
-		class AddFilesToProject:
+		class AddFilesToProject(object):
 			def __init__(self,project_list):
 				self.project_list = project_list
 				
@@ -931,7 +933,7 @@ Note that the data cannot be filtered unless it is imported."
 				table_widget.add_entries(list_of_names)
 				data_dict.add_names(list_of_names)
 		
-		class AddFilesToProjectViaContext:
+		class AddFilesToProjectViaContext(object):
 			task_idle = QtCore.pyqtSignal()
 
 			def __init__(self,project_list):
@@ -1004,7 +1006,7 @@ Note that the data cannot be filtered unless it is imported."
 		
 
 		
-class AddFilesToProjectValidator:
+class AddFilesToProjectValidator(object):
 	def __init__(self,project_list=spr_raw_data_dict):
 		self.project_list = project_list
 	def validate_file_name(self,list_of_names):
@@ -1220,7 +1222,7 @@ project database, and gives an opportunity to apply a number of common filters t
 		cancelled = False # if the user cancels the import then we must act
 		cancelled_writes = []
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		for j in xrange(0,len(filenames)):
+		for j in range(0,len(filenames)):
 			name = filenames[j]
 			outname = output_names[j]
 			
@@ -1340,7 +1342,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 		return table, len(ptcl_list)
 
 	
-	class AddDataButton:
+	class AddDataButton(object):
 		def __init__(self,table_widget,context_menu_data):
 			self.table_widget = weakref.ref(table_widget)
 			self.context_menu_data = context_menu_data
@@ -1350,7 +1352,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			self.context_menu_data.context_menu["Add"]([],self.table_widget())
 			
 
-	class DataContextMenu:
+	class DataContextMenu(object):
 		def __init__(self,validator=None):
 			
 			self.validator = validator
@@ -1362,7 +1364,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			return list(self.context_menu.items())
 		
 		
-	class RemoveDataFromTable:
+	class RemoveDataFromTable(object):
 		def __call__(self,names,table_widget):
 			if len(names) == 0: return # nothing happened
 		
@@ -1378,7 +1380,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			for idx in indices:
 				table_widget.removeRow(idx)
 				
-	class AddDataToTable:
+	class AddDataToTable(object):
 		def __init__(self,validator=None):
 			self.validator = validator
 			
@@ -1423,7 +1425,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 	
 	get_quality_score = staticmethod(get_quality_score)
 	
-class CTFColumns:
+class CTFColumns(object):
 	'''
 	Basically some functions with a cache - the cache is to avoid
 	re-reading stuff from disk multiple times
@@ -1715,7 +1717,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 		return True,"success"
 	
 	
-	class ProjectAddRawDataButton:
+	class ProjectAddRawDataButton(object):
 		def __init__(self,table_widget,context_menu_data):
 			self.table_widget = weakref.ref(table_widget)
 			self.context_menu_data = context_menu_data
@@ -1725,7 +1727,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			self.context_menu_data.context_menu["Add"]([],self.table_widget())
 			
 
-	class ContextMenu:
+	class ContextMenu(object):
 		def __init__(self,project_list):
 			self.project_list = project_list
 			self.validator = AddFilesToProjectValidator(self.project_list)
@@ -1737,7 +1739,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 			return list(self.context_menu.items())
 		
 		
-		class RemoveFiles:
+		class RemoveFiles(object):
 			def __init__(self): pass
 			def __call__(self,names,table_widget):
 				if len(names) == 0: return # nothing happened
@@ -1752,7 +1754,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				for idx in indices:
 					table_widget.removeRow(idx)
 					
-		class AddFiles:
+		class AddFiles(object):
 			def __init__(self,project_list):
 				self.project_list = project_list
 				
@@ -1784,7 +1786,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				table_widget.add_entries(list_of_names)
 				
 		
-		class AddFilesViaContext:
+		class AddFilesViaContext(object):
 			def __init__(self,project_list):
 				self.project_list = project_list
 				self.validator = AddFilesToProjectValidator(self.project_list)
@@ -1907,7 +1909,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 #	get_num_particles_project = staticmethod(get_num_particles_project)
 #	get_particle_dims_project = staticmethod(get_particle_dims_project)
 	
-	class ParticleColumns:
+	class ParticleColumns(object):
 		task_idle = QtCore.pyqtSignal()
 
 		def __init__(self,project_dict=spr_ptcls_dict):
@@ -2741,7 +2743,7 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 #		table.add_column_data(EMFileTable.EMColumnData("Wiener filt dims",self.other_column_data.wien_filt_dim,"The dimensions of the Wiener filtered particles"))
 		return table, n
 	
-	class MoreCTFColumns:
+	class MoreCTFColumns(object):
 		'''
 		Basically some functions with a cache - the cache is to avoid
 		re-reading stuff from disk multiple times
@@ -3458,7 +3460,7 @@ class E2CTFGuiTaskGeneral(E2CTFGuiTask):
 		return options
 
 
-class EMPartSetOptions:
+class EMPartSetOptions(object):
 	def __init__(self,data_dict_name,bdb_only=False):
 		self.data_dict_name  = data_dict_name
 		self.bdb_only = bdb_only # restricts returned options the image sets that exist only in the database
@@ -3585,7 +3587,7 @@ class E2ParticleExamineTask(E2CTFWorkFlowTask):
 
 		return params
 	
-	class BadParticlesColumn:
+	class BadParticlesColumn(object):
 		task_idle = QtCore.pyqtSignal()
 
 		def __init__(self,name_map):
@@ -3890,7 +3892,7 @@ class EMSetReportTask(ParticleWorkFlowTask):
 
 		return table
 	
-	class FilteredSetInfo:
+	class FilteredSetInfo(object):
 		task_idle = QtCore.pyqtSignal()
 
 		def __init__(self,filt):
@@ -4466,7 +4468,7 @@ class E2Refine2DChooseSetsTask(ParticleWorkFlowTask):
 		
 		self.write_db_entries(params)
 		
-class E2RefFreeClassAveTool:
+class E2RefFreeClassAveTool(object):
 	def __init__(self):
 		self.project_data_at_init = None
 	
@@ -4598,7 +4600,7 @@ class E2Refine2DWithGenericTask(E2Refine2DRunTask):
 		self.workflow_setting = workflow_setting
 			
 							
-class E2InitialModelsTool:
+class E2InitialModelsTool(object):
 	def __init__(self):
 		self.project_data_at_init = None
 		
@@ -4822,7 +4824,7 @@ class RefinementReportTask(ParticleWorkFlowTask):
 	
 	
 			
-class E2Make3DTools:
+class E2Make3DTools(object):
 	'''
 	e2eotest and e2refine tasks both need the functionality embodied here
 	'''
@@ -4907,7 +4909,7 @@ class E2Make3DTools:
 						values = vals[p[0]]
 						s = "The parameters for the %s processor are:"  %p[0]
 						
-						for i in xrange(1,len(values),3):
+						for i in range(1,len(values),3):
 							s += " " + values[i] +","
 						s = s[:-1] # get rid of the last column
 						error_message.append(s)
@@ -4932,7 +4934,7 @@ class E2Make3DTools:
 						values = vals[p[0]]
 						s = "The parameters for the %s processor are:"  %p[0]
 						
-						for i in xrange(1,len(values),3):
+						for i in range(1,len(values),3):
 							s += " " + values[i] +","
 						s = s[:-1] # get rid of the last column
 						error_message.append(s)
@@ -5010,7 +5012,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 		self.form_db_name = "bdb:emform.e2refine"
 		self.single_selection = False
 
-	class UsefiltColumn:
+	class UsefiltColumn(object):
 		task_idle = QtCore.pyqtSignal()
 
 		def __init__(self,ptcls,usefilt_ptcls):
@@ -5018,7 +5020,7 @@ class E2RefineParticlesTaskBase(EMClassificationTools, E2Make3DTools):
 				raise RuntimeError("The usefilt and raw particle lists must be the same length")
 			
 			self.filt_map = {}
-			for i in xrange(0,len(ptcls)):
+			for i in range(0,len(ptcls)):
 				self.filt_map[ptcls[i]] = usefilt_ptcls[i]
 				
 		def get_usefilt_name(self,name):
@@ -5726,7 +5728,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		params.append([pamnshells,pamngaussshells])
 	
 		syms = ["icos","oct","tet","d","c","h"]
-		for s in xrange(n1):
+		for s in range(n1):
 			psym =  ParamDef(name="symname"+str(s),vartype="string",desc_short="Model"+str(s+1)+" Symmetry",desc_long="Symmetry to be imposed during refinement",property=None,defaultunits=db.get("symname"+str(s),dfl="c"),choices=syms)
 			psymnum = ParamDef(name="symnumber"+str(s),vartype="string",desc_short="Symmetry number",desc_long="In C,D and H symmetry, this is the symmetry number",property=None,defaultunits=db.get("symnumber"+str(s),dfl="1"),choices=None)
 			params.append([psym,psymnum])

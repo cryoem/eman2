@@ -33,6 +33,8 @@ from __future__ import absolute_import
 #
 
 
+from builtins import range
+from builtins import object
 import sys
 from random import *
 import random
@@ -42,7 +44,7 @@ from numpy import *
 import time
 
 
-class E2FoldHunterStat:
+class E2FoldHunterStat(object):
 	
 	def __init__(self): pass
 

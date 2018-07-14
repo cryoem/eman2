@@ -34,6 +34,7 @@ from __future__ import print_function
 
 # comparepairs.py  08/09/2005  Steven Ludtke
 
+from builtins import range
 from EMAN2 import *
 import sys
 from math import *

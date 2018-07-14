@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from builtins import range
 '''
 ====================
 Author: Jesus Galaz - 2015, Last update: 12/July/2017
@@ -207,7 +208,7 @@ def main():
 		print("\n(DE_translation_plotter)(main) WARNING: there are these many files {}, but only these many angles, {}, given input parameters (lowestangle={}, highestangle={}, and tiltstep={}). Therfore, {} additional angles will be added to assign a different angle to each file.".format(len(ids),len(datadict),lowestangle,highestangle,step,int(math.fabs(dif))))
 		
 		tmpangle=lastangle+step
-		for ii in xrange( int(math.fabs(dif)) ):
+		for ii in range( int(math.fabs(dif)) ):
 
 			datadict.update({kk:[tmpangle]})
 			kk+=1
@@ -547,7 +548,7 @@ def plotfig(options, fig, ax, values, cpick, kplot, colorbar, colorstart, colors
 	#	maxr = int(round(math.sqrt(options.maxy*options.maxy + options.miny*options.miny)))	
 
 	n=len(values)
-	xaxis=range(n)
+	xaxis=list(range(n))
 	if altxaxis:
 		xaxis=altxaxis
 	

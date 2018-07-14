@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import global_def
 from   global_def import *
 
@@ -51,7 +52,7 @@ def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 
 	overall_start = time()
 
-	for iblock in xrange(nblock):
+	for iblock in range(nblock):
 		if iblock==nblock - 1:
 			pbeg = iblock*blocksize
 			pend = nprj
@@ -67,7 +68,7 @@ def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 			info.flush()
 
 		start_time = time()
-		for ivol in xrange(nvol):
+		for ivol in range(nvol):
 			ostore.add_tovol( fftvols[ivol], wgtvols[ivol], mults[ivol], pbeg, pend )
 		if not(info is None):
 			t = time()
@@ -82,7 +83,7 @@ def resample_finish( rectors, fftvols, wgtvols, volfile, niter, nprj, info=None 
 	from time import time
 	overall_start = time()
 	nvol = len(fftvols)
-	for ivol in xrange(nvol):
+	for ivol in range(nvol):
 		start_time = time()
 		iwrite = nvol*niter + ivol
 
@@ -104,7 +105,7 @@ def resample_prepare( prjfile, nvol, snr, CTF, npad ):
 	fftvols = [None]*nvol
 	wgtvols = [None]*nvol
 	rectors = [None]*nvol
-	for i in xrange(nvol):
+	for i in range(nvol):
 		fftvols[i] = EMData()
 		wgtvols[i] = EMData()
 		if CTF:
@@ -157,9 +158,9 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	refnormal = zeros((nrefa,3),'float32')
 
 	tetref = [0.0]*nrefa
-	for i in xrange(nrefa):
+	for i in range(nrefa):
 		tr = getvec( refa[i][0], refa[i][1] )
-		for j in xrange(3):  refnormal[i][j] = tr[j]
+		for j in range(3):  refnormal[i][j] = tr[j]
 		tetref[i] = refa[i][1]
 	del refa
 	vct = array([0.0]*(3*nprj),'float32')
@@ -167,7 +168,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		print(" will read ",myid)
 		tr = EMUtil.get_all_attributes(prjfile,'xform.projection')
 		tetprj = [0.0]*nprj
-		for i in xrange(nprj):
+		for i in range(nprj):
 			temp = tr[i].get_params("spider")
 			tetprj[i] = temp["theta"]
 			if(tetprj[i] > 90.0): tetprj[i]  = 180.0 - tetprj[i] 
@@ -186,12 +187,12 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		tetprj = bcast_list_to_all(tetprj, myid, 0)
 	#print  "  reshape  ",myid
 	vct = reshape(vct,(nprj,3))
-	assignments = [[] for i in xrange(nrefa)]
+	assignments = [[] for i in range(nrefa)]
 	dspn = 1.25*delta
-	for k in xrange(nprj):
+	for k in range(nprj):
 		best_s = -1.0
 		best_i = -1
-		for i in xrange( nrefa ):
+		for i in range( nrefa ):
 			if(abs(tetprj[k] - tetref[i]) <= dspn):
 				s = abs(refnormal[i][0]*vct[k][0] + refnormal[i][1]*vct[k][1] + refnormal[i][2]*vct[k][2])
 				if s > best_s:
@@ -200,7 +201,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 			assignments[best_i].append(k)
 	am = len(assignments[0])
 	mufur = 1.0/am
-	for i in xrange(1,len(assignments)):
+	for i in range(1,len(assignments)):
 		ti = len(assignments[i])
 		am = min(am, ti)
 		if(ti>0):  mufur += 1.0/ti
@@ -227,7 +228,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	volfile = os.path.join(outdir, "bsvol%04d.hdf" % myid)
 	from random import randint
 	niter = nvol/ncpu/nbufvol
-	for kiter in xrange(niter):
+	for kiter in range(niter):
 		if(verbose == 1):
 			finfo.write( "Iteration %d: \n" % kiter )
 			finfo.flush()
@@ -235,15 +236,15 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		iter_start = time()
 		#  the following has to be converted to resample  mults=1 means take given projection., mults=0 means omit
 
-		mults = [ [0]*nprj for i in xrange(nbufvol) ]
-		for i in xrange(nbufvol):
-			for l in xrange(nrefa):
+		mults = [ [0]*nprj for i in range(nbufvol) ]
+		for i in range(nbufvol):
+			for l in range(nrefa):
 				mass = assignments[l][:]
 				shuffle(mass)
 				mass = mass[:keep]
 				mass.sort()
 				#print  l, "  *  ",mass
-				for k in xrange(keep):
+				for k in range(keep):
 					mults[i][mass[k]] = 1
 			'''
 			lout = []

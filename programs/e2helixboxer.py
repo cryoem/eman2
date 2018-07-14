@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 #from EMAN2db import db_open_dict, db_check_dict, db_close_dict
 from EMAN2jsondb import *
@@ -654,7 +655,7 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = No
 			helix_particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width, gridding, mic_name = micrograph_filename)
 		else:
 			helix_particles = get_unrotated_particles(micrograph, coords, px_overlap, px_length, px_width,mic_name = micrograph_filename)
-		for ii in xrange(len(helix_particles)):
+		for ii in range(len(helix_particles)):
 			(helix_particles[ii]).set_attr("filament", micrograph_filename+"%04d"%nhelix)
 		nhelix = nhelix + 1
 		all_particles.append(helix_particles)
@@ -941,7 +942,7 @@ if ENABLE_GUI:
 						elif self.ptcls_no_rotation_radiobutton.isChecked():
 							side = max(px_length, px_width)
 							helix_particles = get_unrotated_particles(micrograph, coords_key, px_overlap, side, side, mic_name=self.micrograph_filename)
-						for ii in xrange(len(helix_particles)):
+						for ii in range(len(helix_particles)):
 							(helix_particles[ii]).set_attr("filament", self.micrograph_filename+"%04d"%nhelix)
 						nhelix = nhelix + 1
 						all_particles.append(helix_particles)

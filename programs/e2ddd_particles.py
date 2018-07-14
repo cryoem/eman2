@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from builtins import range
 import pprint
 from EMAN2 import *
 import sys
@@ -140,10 +141,10 @@ def main():
 	# allnames lists all files referenced in the sets. We make it a list so we can iterate sensibly
 	lstmap={}
 	allnames=set()
-	for i in xrange(len(lst[0])): 
+	for i in range(len(lst[0])): 
 		lstmap[(lst[0][i][1],lst[0][i][0])]=(0,i)
 		allnames.add(lst[0][i][1])
-	for i in xrange(len(lst[1])): 
+	for i in range(len(lst[1])): 
 		lstmap[(lst[1][i][1],lst[1][i][0])]=(1,i)
 		allnames.add(lst[0][i][1])
 	
@@ -176,7 +177,7 @@ def main():
 	### Deal with threads (spawn more instances of ourselves as separate processes)
 	if nthreads>1:
 		print("Running in parallel with ",nthreads," threads")
-		threads=[threading.Thread(target=os.system,args=[" ".join(sys.argv+["--frac={},{}".format(i,nthreads)])]) for i in xrange(nthreads)]
+		threads=[threading.Thread(target=os.system,args=[" ".join(sys.argv+["--frac={},{}".format(i,nthreads)])]) for i in range(nthreads)]
 		for t in threads: t.start()
 		for t in threads: t.join()
 		print("Parallel fitting complete")
@@ -213,11 +214,11 @@ def main():
 		#ctfim.mult(ctfflip)		# an intensity image with phase flipping!
 	
 		# loop over the particles in this frame
-		for n in xrange(movienptcl):
+		for n in range(movienptcl):
 			# read the frames for this particle, limited by --step
 			if options.step[1]<=0 : end=movienfr+options.step[1]
 			else: end=options.step[1]
-			stack=EMData.read_images(movie,range(n*movienfr+options.step[0],n*movienfr+end,options.step[2]))
+			stack=EMData.read_images(movie,list(range(n*movienfr+options.step[0],n*movienfr+end,options.step[2])))
 			if options.invert:
 				for i in stack: i.mult(-1)
 			for i in stack: 
@@ -311,7 +312,7 @@ def main():
 			# we do a little ad-hoc smoothing on the alignment vectors
 			natx=[atx[0]]
 			naty=[aty[0]]
-			for i in xrange(1,len(atx)-1):
+			for i in range(1,len(atx)-1):
 				natx.append(int((atx[i-1]+2.0*atx[i]+atx[i+1])/4.0))
 				naty.append(int((aty[i-1]+2.0*aty[i]+aty[i+1])/4.0))
 			natx.append(atx[-1])

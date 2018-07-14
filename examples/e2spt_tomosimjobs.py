@@ -30,6 +30,7 @@
 #
 #
 from __future__ import print_function
+from builtins import range
 from optparse import OptionParser
 from EMAN2 import *
 from EMAN2_utils import *
@@ -454,9 +455,9 @@ def main():
 				boxes=[]
 				currentbox = int(EMData(randstack,0,True)['nx'])
 				if boxstep < 0:
-					boxes = [ x for x in xrange( limit, currentbox + -1*boxstep, int(math.fabs( boxstep )) ) ]
+					boxes = [ x for x in range( limit, currentbox + -1*boxstep, int(math.fabs( boxstep )) ) ]
 				elif boxstep > 0:
-					boxes = [ x for x in xrange( currentbox, limit + 1*boxstep, int(math.fabs( boxstep )) ) ]
+					boxes = [ x for x in range( currentbox, limit + 1*boxstep, int(math.fabs( boxstep )) ) ]
 				
 				#print "\n\n\n\nThe boxes to use are", boxes
 				#print "Current box is", currentbox

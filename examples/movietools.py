@@ -1,12 +1,13 @@
 """some utility functions for playing with movie-mode sequences"""
 from __future__ import print_function
+from builtins import range
 import EMAN2
 from math import sqrt
 
 def readstack(n):
 	"read the data for the nth particle. Return ref,ptclframes,psref"
 	ref=EMAN2.EMData("tmp2.hdf",n*33)
-	ptcls=EMAN2.EMData.read_images("tmp2.hdf",range(n*33+1,(n+1)*33))
+	ptcls=EMAN2.EMData.read_images("tmp2.hdf",list(range(n*33+1,(n+1)*33)))
 	ctfim=ref.do_fft()
 	ctf=ref["ctf"]
 	ctf.compute_2d_complex(ctfim,EMAN2.Ctf.CtfType.CTF_POWEVAL)
@@ -18,11 +19,11 @@ def readstack(n):
 
 def seqavg(stack):
 	"return progressive averages of frames in stack"
-	return [sum(stack[:i+1])*(1.0/(sqrt(i+1.0))) for i in xrange(len(stack))]
+	return [sum(stack[:i+1])*(1.0/(sqrt(i+1.0))) for i in range(len(stack))]
 
 def runavg(stack,n):
 	"return running averages by n "
-	return [sum(stack[i:i+n])*(1.0/sqrt(n)) for i in xrange(len(stack)-n+1)]
+	return [sum(stack[i:i+n])*(1.0/sqrt(n)) for i in range(len(stack)-n+1)]
 
 def ccfs(ref,stack):
 	"compute and center CCFs between ref and each member of stack"
@@ -63,8 +64,8 @@ def localali(im1,im2,psref,maxdx):
 
 	maxdx=int(maxdx)
 	out=EMAN2.EMData(2*maxdx+1,2*maxdx+1,1)
-	for dx in xrange(-maxdx,maxdx+1):
-		for dy in xrange(-maxdx,maxdx+1):
+	for dx in range(-maxdx,maxdx+1):
+		for dy in range(-maxdx,maxdx+1):
 			av=im1+im2.process("xform.translate.int",{"trans":(dx,dy,0)})
 			av.mult(mask)	# to prevent edge effects and slightly smooth the powspec
 			avf=av.do_fft()

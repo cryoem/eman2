@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from builtins import range
 import os
 import global_def
 from   global_def     import *
@@ -87,7 +88,7 @@ def main():
 
 		if options.CTF :
 			from filter import filt_ctf
-			for im in xrange(len(class_data)):
+			for im in range(len(class_data)):
 				#  Flip phases
 				class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
 		for im in class_data:
@@ -103,7 +104,7 @@ def main():
 					set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
 		all_ali_params = []
 
-		for ii in xrange(num_ali):
+		for ii in range(num_ali):
 			ali_params = []
 			if options.verbose:
 				ALPHA = []
@@ -148,8 +149,8 @@ def main():
 		print("Average stat: %10d %20d %20.2f   %15.2f"%( len(class_data), len(stable_set), mir_stab_rate, pix_err))
 		if( len(stable_set) > 0):
 			if options.stables:
-				stab_mem = [[0,0.0,0] for j in xrange(len(stable_set))]
-				for j in xrange(len(stable_set)): stab_mem[j] = [int(stable_set[j][1]), stable_set[j][0], j]
+				stab_mem = [[0,0.0,0] for j in range(len(stable_set))]
+				for j in range(len(stable_set)): stab_mem[j] = [int(stable_set[j][1]), stable_set[j][0], j]
 				write_text_row(stab_mem, "stable_particles.txt")
 
 			stable_set_id = []

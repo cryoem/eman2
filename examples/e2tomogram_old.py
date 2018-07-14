@@ -36,6 +36,7 @@ from __future__ import print_function
 # This program is used to analyze tilt series
 
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -186,9 +187,9 @@ def main():
 		
 		# read local set of images to average for alignment
 		if i[1]>i[0] :
-			iml=EMData.read_images(args[inn],range(i[0]-options.localavg+1,i[0]+1))
+			iml=EMData.read_images(args[inn],list(range(i[0]-options.localavg+1,i[0]+1)))
 		else :
-			iml=EMData.read_images(args[inn],range(i[0],i[0]+options.localavg))
+			iml=EMData.read_images(args[inn],list(range(i[0],i[0]+options.localavg)))
 		for img in iml:
 			img.process_inplace("normalize.edgemean")
 		im1=iml[0].copy()

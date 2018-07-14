@@ -32,6 +32,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import object
 from OpenGL import GL
 from PyQt4 import QtCore, QtGui
 from EMAN2 import Transform, Vec4f, Vec3f

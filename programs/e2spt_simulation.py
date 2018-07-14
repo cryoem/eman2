@@ -30,6 +30,7 @@ Author: Jesus Galaz - 2011, Last update: 07/Nov/2017
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 from __future__ import print_function
+from builtins import range
 from optparse import OptionParser
 from EMAN2 import *
 from EMAN2_utils import *

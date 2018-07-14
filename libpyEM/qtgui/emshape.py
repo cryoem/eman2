@@ -31,6 +31,8 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
+from builtins import object
 from OpenGL import GL,GLUT
 from math import *
 from EMAN2 import get_3d_font_renderer, Util
@@ -53,7 +55,7 @@ def initCircle():
 
 def shidentity(x,y) : return x,y
 
-class EMShape:
+class EMShape(object):
 	
 	"""This class represents a geometric shape which can be used to annotate
 	the various data display widgets in EMAN2. The 'scr' shapes are in screen

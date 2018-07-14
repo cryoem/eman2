@@ -42,6 +42,7 @@ from __future__ import print_function
 
 
 
+from builtins import range
 from EMAN2 import *
 from sparx import *
 from optparse import OptionParser
@@ -163,14 +164,14 @@ map to the center of the volume."""
 	if(options.center == "a"):
 		if not options.quiet:
 			print("center of gravity at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/mass,aavg[1]/mass,aavg[2]/mass))
-		for i in xrange( len(atoms) ) :
+		for i in range( len(atoms) ) :
 			atoms[i][1] -= aavg[0]/mass
 			atoms[i][2] -= aavg[1]/mass
 			atoms[i][3] -= aavg[2]/mass
 	if(options.center == "c"):
 		if not options.quiet:
 			print("atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm))
-		for i in xrange( len(atoms) ) :
+		for i in range( len(atoms) ) :
 			atoms[i][1] -= aavg[0]/natm
 			atoms[i][2] -= aavg[1]/natm
 			atoms[i][3] -= aavg[2]/natm
@@ -178,7 +179,7 @@ map to the center of the volume."""
 	if len(spl)==3:   # substract the given vector from all coordinates
 		if not options.quiet:
 			print("vector to substract: %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(float(spl[0]),float(spl[1]),float(spl[2])))
-		for i in xrange( len(atoms) ) :
+		for i in range( len(atoms) ) :
 			atoms[i][1] -= float(spl[0])
 			atoms[i][2] -= float(spl[1])
 			atoms[i][3] -= float(spl[2])
@@ -188,7 +189,7 @@ map to the center of the volume."""
 	if(options.tr0 != "none"):
 		if not options.quiet:
 			print("Applying initial transformation to PDB coordinates... ")
-		for i in xrange(len(atoms)):
+		for i in range(len(atoms)):
 			atom_coords = Vec3f(atoms[i][1],atoms[i][2],atoms[i][3])
 			new_atom_coords = tr0*atom_coords
 			atoms[i][1] = new_atom_coords[0]
@@ -200,8 +201,8 @@ map to the center of the volume."""
 	# bounding box:
 	amin=[atoms[0][1],atoms[0][2],atoms[0][3]]
 	amax=[atoms[0][1],atoms[0][2],atoms[0][3]]
-	for i in xrange(1,len(atoms)):
-		for k in xrange(3):
+	for i in range(1,len(atoms)):
+		for k in range(3):
 			amin[k]=min(atoms[i][k+1],amin[k])
 			amax[k]=max(atoms[i][k+1],amax[k])
 
@@ -220,7 +221,7 @@ map to the center of the volume."""
 			box[1]=int(spl[1])
 			box[2]=int(spl[2])
 	except:
-		for i in xrange(3):
+		for i in range(3):
 			box[i]=int(2*max(fabs(amax[i]), fabs(amin[i]))/options.apix)
 			#  Increase the box size by 1/4.
 			box[i]+=box[i]//4
@@ -246,14 +247,14 @@ map to the center of the volume."""
 	# Calculate working dimensions
 	pixelbig = options.apix/fcbig
 	bigbox = []
-	for i in xrange(3): bigbox.append(box[i]*fcbig)
+	for i in range(3): bigbox.append(box[i]*fcbig)
 
 	# initialize the final output volume
 	outmap=EMData(bigbox[0],bigbox[1],bigbox[2], True)
 	nc = []
-	for i in xrange(3):  nc.append( bigbox[i]//2 )
+	for i in range(3):  nc.append( bigbox[i]//2 )
 	# fill in the atoms
-	for i in xrange(len(atoms)):
+	for i in range(len(atoms)):
 		#print "Adding %d '%s'"%(i,atoms[i][0])
 		if not options.quiet and i%1000==0 :
 			print('\r   %d'%i, end=' ')
@@ -261,15 +262,15 @@ map to the center of the volume."""
 		try:
 			elec = atomdefs[atoms[i][0].upper()][0]
 			#outmap[int(atoms[i][1]/pixelbig+bigbox[0]//2),int(atoms[i][2]/pixelbig+bigbox[1]//2),int(atoms[i][3]/pixelbig+bigbox[2]//2)] += elec
-			for k in xrange(2):
+			for k in range(2):
 			        pz = atoms[i][3]/pixelbig+nc[2]
 			        dz = pz - int(pz)
 			        uz = ((1-k) + (2*k-1)*dz)*elec
-			        for l in xrange(2):
+			        for l in range(2):
 			        	py = atoms[i][2]/pixelbig+nc[1]
 			        	dy = py - int(py)
 			        	uy = ((1-l) + (2*l-1)*dy)*uz
-			        	for m in xrange(2):
+			        	for m in range(2):
 			        		px = atoms[i][1]/pixelbig+nc[0]
 			        		dx = px - int(px)
 			        		outmap[int(px)+m,int(py)+l,int(pz)+k] += ((1-m) + (2*m-1)*dx)*uy

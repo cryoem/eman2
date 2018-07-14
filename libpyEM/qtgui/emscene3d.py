@@ -33,6 +33,8 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
+from builtins import object
 from EMAN2 import *
 import copy
 from .emapplication import EMGLWidget
@@ -1678,7 +1680,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	# Maybe add methods to control the lights
 
-class EMLight:
+class EMLight(object):
 	def __init__(self, light):
 		"""
 		@type light: GL_LIGHTX, where 0 =< X <= 8
@@ -1820,7 +1822,7 @@ class EMLight:
 		self.setAmbient(self.colorambient[0], self.colorambient[1], self.colorambient[2], self.colorambient[3])
 		self.setGlobalAmbient(self.colorglobalambient[0], self.colorglobalambient[1], self.colorglobalambient[2], self.colorglobalambient[3])
 		
-class EMCamera:
+class EMCamera(object):
 	"""Implmentation of the camera"""
 	def __init__(self, near, far, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
 		"""
@@ -2134,7 +2136,7 @@ class EMInspector3D(QtGui.QWidget):
 	def _recursiveupdatetreeselvis(self, item):
 		item.setSelectionStateBox()
 		item.getVisibleState()
-		for childidx in xrange(item.childCount()):
+		for childidx in range(item.childCount()):
 			self._recursiveupdatetreeselvis(item.child(childidx))
 			
 	def updateTreeSelVis(self, selecteditem=None):
@@ -2999,7 +3001,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		"""
 		Remove all children from the SG
 		"""
-		for i in xrange(self.childCount()):
+		for i in range(self.childCount()):
 			self.child(0).removeAllChildren(inspector)
 			inspector.removeTreeNode(self, 0) 
 

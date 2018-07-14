@@ -33,6 +33,8 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
+from builtins import object
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QAction, QAbstractButton, QListWidgetItem
@@ -65,7 +67,7 @@ import weakref
 from .emapplication import EMProgressDialog
 
 
-class EMMatrixPanel:
+class EMMatrixPanel(object):
 	'''
 	A class for managing the parameters of displaying a matrix panel
 	'''
@@ -1597,7 +1599,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		progress = EMProgressDialog("Writing files", "abort", 0, len(self.data),None)
 		progress.show()
-		for i in xrange(0,len(self.data)):
+		for i in range(0,len(self.data)):
 			d = self.data[i]
 			if d == None: continue # the image has been excluded
 			progress.setValue(i)
@@ -2001,7 +2003,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.scroll_bar.draw()
 		glPopMatrix()
 
-class EMGLScrollBar:
+class EMGLScrollBar(object):
 	def __init__(self,target):
 		self.min = 0
 		self.max = 0
@@ -2584,7 +2586,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.update_brightness_contrast()
 
 
-class EMMXDeletionManager:
+class EMMXDeletionManager(object):
 	'''
 	This class handles everything to do with Deleting particles
 	'''
@@ -2698,7 +2700,7 @@ class EMMXSetsPanel(QtGui.QWidget):
 
 
 
-class EMMXDataCache:
+class EMMXDataCache(object):
 	'''
 	Base class for EMMXDataCaches
 	'''
@@ -2794,14 +2796,14 @@ class EMMXDataCache:
 		'''
 		raise NotImplementedException
 
-class ApplyTransform:
+class ApplyTransform(object):
 	def __init__(self,transform):
 		self.transform = transform
 
 	def __call__(self,emdata):
 		emdata.transform(self.transform)
 
-class ApplyAttribute:
+class ApplyAttribute(object):
 	def __init__(self,attribute,value):
 		self.attribute = attribute
 		self.value = value
@@ -2809,7 +2811,7 @@ class ApplyAttribute:
 	def __call__(self,emdata):
 		emdata.set_attr(self.attribute,self.value)
 
-class ApplyProcessor:
+class ApplyProcessor(object):
 	def __init__(self,processor="",processor_args={}):
 		self.processor = processor
 		self.processor_args = processor_args
@@ -2839,7 +2841,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		'''
 
 		n = EMUtil.get_image_count(file_name)
-		data = [[file_name,i,[]] for i in xrange(n)]
+		data = [[file_name,i,[]] for i in range(n)]
 
 		return EMLightWeightParticleCache(data,len(data))
 

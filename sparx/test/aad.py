@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 
@@ -43,15 +44,15 @@ x = []
 from random import random, gauss
 from math import sqrt
 Kt = 3 # actual number of groups
-for i in xrange(N):
+for i in range(N):
 	if(i%Kt == 0):    x.append(gauss(0.0,1.0))
 	elif(i%Kt == 1):  x.append(gauss(10.0,1.0))
 	elif(i%Kt == 2):  x.append(gauss(20.0,1.0))
 
 #x[3]=x[0]
 print(ttime())
-for j in xrange(1,N):
-	for i in xrange(j):
+for j in range(1,N):
+	for i in range(j):
 		d.set_value_at(mono(i,j),sqrt((x[i]-x[j])**2))
 		if(d.get_value_at(mono(i,j)) != d.get_value_at(mono(j,i))):
 			print(i,j,d.get_value_at(mono(i,j)),d.get_value_at(mono(j,i)))
@@ -59,7 +60,7 @@ print(ttime())
 m = N/Kt
 o = cluster_equalsize(d,m)
 print(ttime())
-for k in xrange(len(o[0])):
+for k in range(len(o[0])):
 	print(k)
 	print(o[0][k])  # assignments
 print(o[1])  # objects that are centers
@@ -68,16 +69,16 @@ print(o[2])  # criterion (should be minimized) and number of tierations)
 
 dmin = 1.0e23
 print(ttime())
-for i in xrange(100):
+for i in range(100):
 	o = Util.cluster_pairwise(d,K)
 	if(dmin > o[N+K]):
 		print(i,ttime(),o[N+K:N+K+2])
 		dmin = o[N+K]
 		best = o
 print(ttime())
-for k in xrange(K):
+for k in range(K):
 	g = []
-	for i in xrange(N):
+	for i in range(N):
 		if(best[i] == float(k)):
 			g.append(i)
 	print(k,len(g))

@@ -4,6 +4,7 @@ from __future__ import print_function
 #  10/25/2015
 #  New version.
 #  
+from builtins import range
 import  os
 import  sys
 import  types
@@ -375,7 +376,7 @@ def main():
 			chunk_one = wrap_mpi_bcast(chunk_one, main_node)
 			chunk_two = wrap_mpi_bcast(chunk_two, main_node)
 		else:  ## if traces are lost, then creating new random assignment of odd, even particles
-			chunks = range(Tracker["constants"]["total_stack"])
+			chunks = list(range(Tracker["constants"]["total_stack"]))
 			shuffle(chunks)
 			chunk_one =chunks[0:Tracker["constants"]["total_stack"]//2]
 			chunk_two =chunks[Tracker["constants"]["total_stack"]//2:Tracker["constants"]["total_stack"]]
@@ -398,7 +399,7 @@ def main():
 			write_text_file(chunk_two, os.path.join(masterdir,"chunk1.txt"))
 		mpi_barrier(MPI_COMM_WORLD)
 		vols = []
-		for index in xrange(2):
+		for index in range(2):
 			data1,old_shifts1 = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"], os.path.join(masterdir,"chunk%d.txt"%index), Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 			vol1 = recons3d_4nn_ctf_MPI(myid=myid, prjlist=data1, symmetry=Tracker["constants"]["sym"], finfo=None)
 			if myid ==main_node:
@@ -456,12 +457,12 @@ def main():
 				log_main.add("this implies your two sort3d runs already achieved high reproducibale ratio. ")
 				log_main.add("Or your number_of_images_per_group is too large ")
 				log_main.add("the final reproducibility is  %f"%((Tracker["constants"]["total_stack"]-len(Tracker["this_unaccounted_list"]))/float(Tracker["constants"]["total_stack"])))
-				for i in xrange(len(stable_member_list)): write_text_file(stable_member_list[i], os.path.join(masterdir,"P2_final_class%d.txt"%i))
+				for i in range(len(stable_member_list)): write_text_file(stable_member_list[i], os.path.join(masterdir,"P2_final_class%d.txt"%i))
 				mask3d = get_im(Tracker["constants"]["mask3D"])
 			else:
 				mask3d = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 			bcast_EMData_to_all(mask3d, myid, main_node)
-			for igrp in xrange(len(stable_member_list)):
+			for igrp in range(len(stable_member_list)):
 				#name_of_class_file = os.path.join(masterdir, "P2_final_class%d.txt"%igrp)
 				data, old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], os.path.join(masterdir, "P2_final_class%d.txt"%igrp), Tracker["constants"]["partstack"], myid, main_node, nproc,preshift = True)
 				if Tracker["constants"]["CTF"]:  
@@ -515,7 +516,7 @@ def main():
 			### input list_to_be_processed
 			import copy
 			mpi_barrier(MPI_COMM_WORLD)
-			for iter_P2_run in xrange(number_of_P2_runs): # two runs such that one can obtain reproducibility
+			for iter_P2_run in range(number_of_P2_runs): # two runs such that one can obtain reproducibility
 				list_to_be_processed = left_one_from_old_two_runs[:]#Tracker["this_unaccounted_list"][:]
 				Tracker["this_unaccounted_list"] = left_one_from_old_two_runs[:]
 				if myid == main_node :    new_stable1 =  new_stable_P1[:]
@@ -562,7 +563,7 @@ def main():
 					update_full_dict(list_to_be_processed, Tracker)
 					###----
 					##### ----------------Independent runs for EQ-Kmeans  ------------------------------------
-					for indep_run in xrange(Tracker["constants"]["indep_runs"]):
+					for indep_run in range(Tracker["constants"]["indep_runs"]):
 						Tracker["this_particle_list"] = Tracker["this_indep_list"][indep_run]
 						ref_vol = recons_mref(Tracker)
 						if myid ==main_node:   log_main.add("independent run  %10d"%indep_run)
@@ -580,7 +581,7 @@ def main():
 					
 					if myid ==main_node: log_main.add("Now calculate stable volumes")
 					if myid ==main_node:
-						for igrp in xrange(len(Tracker["two_way_stable_member"])):
+						for igrp in range(len(Tracker["two_way_stable_member"])):
 							Tracker["this_data_list"]      = Tracker["two_way_stable_member"][igrp]
 							write_text_file(Tracker["this_data_list"], os.path.join(workdir,"stable_class%d.txt"%igrp))
 					Tracker["this_data_list_file"] = -1
@@ -588,7 +589,7 @@ def main():
 					###
 					number_of_ref_class = []
 					ref_vol_list = []
-					for igrp in xrange(len(Tracker["two_way_stable_member"])):
+					for igrp in range(len(Tracker["two_way_stable_member"])):
 						data, old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"], os.path.join(workdir, "stable_class%d.txt"%igrp), Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
 						volref           = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo = None)
 						ref_vol_list.append(volref)
@@ -596,7 +597,7 @@ def main():
 					if myid ==main_node:
 						log_main.add("group  %d  members %d "%(igrp,len(Tracker["this_data_list"])))	
 						#ref_vol_list=apply_low_pass_filter(ref_vol_list,Tracker)
-						for iref in xrange(len(ref_vol_list)): ref_vol_list[iref].write_image(os.path.join(workdir,"vol_stable.hdf"),iref)
+						for iref in range(len(ref_vol_list)): ref_vol_list[iref].write_image(os.path.join(workdir,"vol_stable.hdf"),iref)
 						
 					mpi_barrier(MPI_COMM_WORLD)
 					################################
@@ -615,7 +616,7 @@ def main():
 					if myid == main_node:
 						number_of_ref_class=[]
 						log_main.add(" Compute volumes of original size")
-						for igrp in xrange(Tracker["number_of_groups"]):
+						for igrp in range(Tracker["number_of_groups"]):
 							if os.path.exists( os.path.join( outdir,"Class%d.txt"%igrp ) ):
 								new_stable1.append( read_text_file( os.path.join( outdir, "Class%d.txt"%igrp ) ) )
 								log_main.add(" read Class file %d"%igrp)
@@ -628,7 +629,7 @@ def main():
 					mpi_barrier(MPI_COMM_WORLD)
 					if myid ==main_node:
 						vol_list = []
-					for igrp in xrange(Tracker["number_of_groups"]):
+					for igrp in range(Tracker["number_of_groups"]):
 						if myid ==main_node: log_main.add("start vol   %d"%igrp)
 						data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"],myid, main_node, nproc, preshift = True)
 						volref          = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry = Tracker["constants"]["sym"],finfo= None)
@@ -641,7 +642,7 @@ def main():
 					#################################
 					
 					if myid ==main_node:
-						for ivol in xrange(len(vol_list)): vol_list[ivol].write_image(os.path.join(workdir, "vol_of_Classes.hdf"),ivol)
+						for ivol in range(len(vol_list)): vol_list[ivol].write_image(os.path.join(workdir, "vol_of_Classes.hdf"),ivol)
 						filt_tanl(vol_list[ivol],Tracker["constants"]["low_pass_filter"],.1).write_image(os.path.join(workdir, "volf_of_Classes.hdf"),ivol)
 						log_main.add("number of unaccounted particles  %10d"%len(Tracker["this_unaccounted_list"]))
 						log_main.add("number of accounted particles  %10d"%len(Tracker["this_accounted_list"]))
@@ -699,7 +700,7 @@ def main():
 		
 				if myid == main_node:
 					number_of_ref_class = []
-					for igrp in xrange(Tracker["number_of_groups"]):
+					for igrp in range(Tracker["number_of_groups"]):
 						class_file = os.path.join(workdir,"final_class%d.txt"%igrp)
 						write_text_file(new_stable1[igrp],class_file)
 						log_main.add(" group %d   number of particles %d"%(igrp,len(new_stable1[igrp])))
@@ -709,7 +710,7 @@ def main():
 		
 				mpi_barrier(MPI_COMM_WORLD)
 				ref_vol_list = []
-				for igrp in xrange(Tracker["number_of_groups"]):
+				for igrp in range(Tracker["number_of_groups"]):
 					if myid ==main_node : print(" prepare reference %d"%igrp)
 					#Tracker["this_data_list_file"] = os.path.join(workdir,"final_class%d.txt"%igrp)
 					data,old_shifts                = get_shrink_data_huang(Tracker, Tracker["nxinit"],os.path.join(workdir,"final_class%d.txt"%igrp), Tracker["constants"]["partstack"], myid,main_node,nproc,preshift = True)
@@ -731,7 +732,7 @@ def main():
 				P2_partitions.append(KE_group[:][:])
 				if myid ==main_node:
 					log_main.add(" the number of groups after exhaustive Kmeans is %d"%len(KE_group))
-					for ike in xrange(len(KE_group)):log_main.add(" group   %d   number of objects %d"%(ike,len(KE_group[ike])))
+					for ike in range(len(KE_group)):log_main.add(" group   %d   number of objects %d"%(ike,len(KE_group[ike])))
 					del new_stable1
 				mpi_barrier(MPI_COMM_WORLD)
 			if myid == main_node:   log_main.add("P2 runs are done, now start two-way comparision to exclude those that are not reproduced ")
@@ -739,7 +740,7 @@ def main():
 			###### ----------------Reconstruct reproduced groups------------------------#######
 			######
 			if myid == main_node:
-				for index_of_reproduced_groups in xrange(len(reproduced_groups)):
+				for index_of_reproduced_groups in range(len(reproduced_groups)):
 					name_of_class_file = os.path.join(masterdir, "P2_final_class%d.txt"%index_of_reproduced_groups)
 					write_text_file(reproduced_groups[index_of_reproduced_groups],name_of_class_file)
 				log_main.add("-------start to reconstruct reproduced volumes individully to orignal size-----------")
@@ -748,7 +749,7 @@ def main():
 			if Tracker["constants"]["mask3D"]: mask_3d = get_shrink_3dmask(Tracker["constants"]["nnxo"],Tracker["constants"]["mask3D"])
 			else:                              mask_3d = None
 			
-			for igrp in xrange(len(reproduced_groups)):
+			for igrp in range(len(reproduced_groups)):
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],os.path.join(masterdir, "P2_final_class%d.txt"%igrp),Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 				if Tracker["constants"]["CTF"]: 

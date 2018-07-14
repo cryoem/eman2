@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -100,7 +101,7 @@ def main():
 	# getting pseudoatoms
 	if options.atoms=="none":
 		patoms = generate_pseudoatoms(targetMRC.copy(), apix, res, thr)
-		atomNumber = range(1, 1+len(patoms))
+		atomNumber = list(range(1, 1+len(patoms)))
 	else:
 		(patoms, atomNumber) = read_pseudoatoms(options.atoms)
 	
@@ -127,9 +128,9 @@ def update_map(target, location,rangemin,rangemax):
 	rmin=int(round(rangemin/2))
 	rmax=int(round(rangemax/2))+1
 	maxdistance=sqrt(3*rmin**2)
-	for x in (range(rmin,rmax)):
-		for y in (range(rmin,rmax)):
-			for z in (range(rmin,rmax)):
+	for x in (list(range(rmin,rmax))):
+		for y in (list(range(rmin,rmax))):
+			for z in (list(range(rmin,rmax))):
 				temp_value=target.get_value_at(location[0]+x,location[1]+y,location[2]+z)
 				distance=sqrt(x**2+y**2+z**2)
 				if x==0 and y==0 and z==0:

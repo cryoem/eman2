@@ -35,6 +35,7 @@ from __future__ import print_function
 # $Id$
 
 
+from builtins import range
 from EMAN2 import *
 import sys
 import os.path

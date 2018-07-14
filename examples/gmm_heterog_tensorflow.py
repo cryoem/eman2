@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2018-01
+from builtins import range
+from builtins import object
 from EMAN2 import *
 import numpy as np
 from EMAN2_utils import *

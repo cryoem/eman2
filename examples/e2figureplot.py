@@ -31,6 +31,7 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
+from builtins import range
 import os
 from EMAN2 import *
 from time import time
@@ -259,7 +260,7 @@ def curveparser(F,options):
 			todel = options.excludepoints.split('-')
 			start = todel[0]
 			end = todel[1]
-			todelvals = [i for i in xrange(start,end)]
+			todelvals = [i for i in range(start,end)]
 			todelvals.reverse()
 		
 		for i in todelvals:
@@ -428,9 +429,9 @@ def fitminima(sizes,vals,options):
 	sizesmin=[sizes[0]]
 	valsmin=[vals[0]]
 	
-	for i in xrange(0,len(vals) - 1 - 1 ):
+	for i in range(0,len(vals) - 1 - 1 ):
 		aux = 0 
-		for j in xrange(i+1,len(vals) - 1 ):
+		for j in range(i+1,len(vals) - 1 ):
 			if vals[j]< vals[i]:
 				aux=0
 				#print "Because a downstream value is lower, I will break the loop, see", vals[j],vals[i]

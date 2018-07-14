@@ -33,6 +33,8 @@ from __future__ import absolute_import
 #
 
 
+from builtins import range
+from builtins import object
 from .emsprworkflow import *
 from .emform import *
 from .emsave import EMFileTypeValidator
@@ -174,7 +176,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 						values = vals[p[0]]
 						s = "The parameters for the %s processor are:"  %p[0]
 						
-						for i in xrange(1,len(values),3):
+						for i in range(1,len(values),3):
 							s += " " + values[i] +","
 						s = s[:-1] # get rid of the last column
 						error_message.append(s)
@@ -343,7 +345,7 @@ class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 		
 		self.write_db_entries(params)
 
-class EMTomoAlignParams:
+class EMTomoAlignParams(object):
 	'''
 	A class that get parameters commonly used by alignment based programs
 	'''

@@ -31,6 +31,9 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 import sys
 import os
 import weakref
@@ -44,7 +47,7 @@ from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.valslider import *
-import Queue
+import queue
 from eman2_gui import embrowser
 
 def main():
@@ -787,7 +790,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
 		
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		self.particles_ali=[]
 		thrs=[]
 		# launch nthr threads to do the alignments
@@ -816,7 +819,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
 
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		n2use=self.wvsnum.getValue()
 		thrs=[]
 		# launch nthr threads to do the alignments
@@ -922,7 +925,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		# Find a class number in the current iteration
 		clnums=[i.split("_")[-1][:2] for i in os.listdir(self.path) if "classes_{:02d}".format(self.iter) in i]
-		for i in xrange(len(clnums)):
+		for i in range(len(clnums)):
 			try: clnums[i]=int(clnums[i])
 			except: clnums[i]=0
 		clnums.append(0)
@@ -986,10 +989,10 @@ class EMMotion(QtGui.QMainWindow):
 		classes.insert(0,m[1])
 
 		# now start from this one for the sort
-		for c in xrange(1,len(classes)-1):
+		for c in range(1,len(classes)-1):
 			self.wpbprogress.setValue(87+12*c/len(classes))
 			b=classes[c-1].cmp("frc",classes[c])
-			for c2 in xrange(c+1,len(classes)):
+			for c2 in range(c+1,len(classes)):
 				ccc=classes[c-1].cmp("frc",classes[c2])
 				if ccc<b :
 					b=ccc
@@ -1028,7 +1031,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.classes=[]
 		clssz=len(tosort)/nclasses		# particles per class
 		
-		for cl in xrange(nclasses):
+		for cl in range(nclasses):
 			avgr=Averagers.get("mean")
 			for i in tosort[cl*clssz:(cl+1)*clssz]: avgr.add_image(i[1])
 			self.classes.append(avgr.finish())

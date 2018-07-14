@@ -35,6 +35,7 @@ from __future__ import print_function
 # e2help.py  07/23/3004  Steven Ludtke
 # This program will provide a variety of EMAN2 help
 
+from builtins import range
 from EMAN2 import *
 from EMAN2_meta import EMANVERSION, FULLVERSIONSTRING
 from math import *

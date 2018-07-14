@@ -35,6 +35,7 @@ from __future__ import print_function
 # using a selected comparator
 
 
+from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
 from math import *

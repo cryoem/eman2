@@ -3,6 +3,7 @@ from __future__ import print_function
 
 # Author: Michael Bell 09/2015
 
+from builtins import range
 from EMAN2 import *
 import os
 import numpy as np
@@ -81,7 +82,7 @@ def plot_translations(options,shifts,fname=None):
 	ax=plt.gca()
 	shifts=np.asarray(shifts[1:])
 	ax.plot(shifts[:,0],shifts[:,1],c='k',alpha=0.3,zorder=0)
-	ax.scatter(shifts[:,0],shifts[:,1],c=range(len(shifts)),s=500,zorder=1)
+	ax.scatter(shifts[:,0],shifts[:,1],c=list(range(len(shifts))),s=500,zorder=1)
 	for i,s in enumerate(shifts):
 		ax.annotate(str(i+1),xy=(s[0],s[1]),xytext=(-5,-5),textcoords='offset points',color='k')
 	plt.savefig(fname)

@@ -1,6 +1,7 @@
 #!/bin/env python
 from __future__ import print_function
 
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 
@@ -18,14 +19,14 @@ fsc(a,fshift(a,-0.5,0.5), 1.0, "fsc0")
 
 
 trials = 10
-for trt in xrange(trials):
+for trt in range(trials):
 
 	im = model_gauss_noise(10.0,n,n)
 
 	im = im.replace_amplitudes(ac)
 
 	ci = -1.0
-	for i in xrange(2000):
+	for i in range(2000):
 		imn = im.replace_amplitudes(ac)
 		imn = threshold(imn*mask)
 
@@ -65,7 +66,7 @@ imd = im-a
 info(imd)
 imd.write_image("o6.hdf",1)
 
-for i in xrange(5000):
+for i in range(5000):
 	imn = im.replace_amplitudes(ac)
 	imn = threshold(imn*mask)
 

@@ -35,6 +35,8 @@ from __future__ import print_function
 # e2ctf.py  10/29/2008 Steven Ludtke
 # This is a program for determining CTF parameters and (optionally) phase flipping images
 
+from builtins import range
+from builtins import object
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
 from optparse import OptionParser
@@ -237,7 +239,7 @@ NOTE: This program should be run from the project directory, not from within the
 		print("Fitting in parallel with ",nthreads," threads")
 		chunksize=int(ceil(float(len(args))/nthreads))
 #		print " ".join(sys.argv+["--chunk={},{}".format(chunksize,0)])
-		threads=[threading.Thread(target=os.system,args=[" ".join(sys.argv+["--chunk={},{}".format(chunksize,i)])]) for i in xrange(nthreads)]
+		threads=[threading.Thread(target=os.system,args=[" ".join(sys.argv+["--chunk={},{}".format(chunksize,i)])]) for i in range(nthreads)]
 		for t in threads: t.start()
 		for t in threads: t.join()
 		print("Parallel fitting complete")
@@ -706,7 +708,7 @@ def refine_and_smoothsnr(options,strfact,debug=False):
 		# Tune the defocus to maximize high res snr
 		if debug : print("Fit Defocus")
 		best=(0,olddf[-1])
-		for df in [olddf[-1]+ddf/1000.0 for ddf in xrange(-100,101)]:
+		for df in [olddf[-1]+ddf/1000.0 for ddf in range(-100,101)]:
 			ctf.defocus=df
 			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH,strfact)		# The smoothed curve
 #			print len( ssnr),len(s)
@@ -724,7 +726,7 @@ def refine_and_smoothsnr(options,strfact,debug=False):
 		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 
 	if skipped>0 : print("Warning: %d files skipped"%skipped)
-	if len(olddf)>0 : print("Mean defocus adjustment : %1.4f um"%((sum([fabs(olddf[ii]-newdf[ii]) for ii in xrange(len(olddf))]))/len(olddf)))
+	if len(olddf)>0 : print("Mean defocus adjustment : %1.4f um"%((sum([fabs(olddf[ii]-newdf[ii]) for ii in range(len(olddf))]))/len(olddf)))
 
 
 def env_cmp(sca,envelopes):
@@ -784,13 +786,13 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 
 	if phasehp:
 		p1d=js_parms["ctf"][1]
-		for c in xrange(2,len(p1d)):
+		for c in range(2,len(p1d)):
 			if p1d[c-1]<p1d[c] : break
 		c-=1
 		trg=p1d[c-1]
 		hpfilt=[1.0 for i in range(int(ys*1.5))]
 		hpfilt[0]=0.0
-		for i in xrange(1,c):
+		for i in range(1,c):
 			try :hpfilt[i]=sqrt(trg/p1d[i])
 			except: hpfilt[i]=0.0
 
@@ -1142,8 +1144,8 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		av3.to_zero()
 		nrg=0
 		# overlapping regions
-		for y in xrange(bs/2,micro["ny"]-bs,bs/2):
-			for x in xrange(bs/2,micro["nx"]-bs,bs/2):
+		for y in range(bs/2,micro["ny"]-bs,bs/2):
+			for x in range(bs/2,micro["nx"]-bs,bs/2):
 				im1=micro.get_clip(Region(x,y,bs,bs))
 				im1.process_inplace("normalize.edgemean")
 				im1*=mask1
@@ -1172,7 +1174,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	maxpix=int(0.04/ds)               # we do this up to ~25 A
 	avsnr=0
 	avc=0
-	for i in xrange(maxpix):
+	for i in range(maxpix):
 		if av1_1d[i]>av2_1d[i] :
 			avsnr+=(av1_1d[i]-av2_1d[i])/av2_1d[i]
 			avc+=1
@@ -1183,7 +1185,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 
 	avsnr/=avc
 
-	for i in xrange(maxpix) :
+	for i in range(maxpix) :
 		if av2_1d[i]>av1_1d[i] : av2_1d[i]=av1_1d[i]/(avsnr+1)          # we set the background equal to the foreground if it's too big
 
 	#db_close_dict(stackfile)	# safe for non-bdb files
@@ -1286,7 +1288,7 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 
 	n0=int(0.05/ds)		# N at 20 A. We ignore low resolution information due to interference of structure factor
 	bg=EMData(len(av2_1d)-n0,1,1)
-	for i in xrange(n0,len(av2_1d)): bg[i-n0]=av2_1d[i]
+	for i in range(n0,len(av2_1d)): bg[i-n0]=av2_1d[i]
 
 	nvec=10
 	nxl=len(av2_1d)-n0
@@ -1298,11 +1300,11 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 	for j in range(n):
 		# converts each list of radial values into an image
 		im=EMData(nxl,1,1)
-		for i in xrange(n0,len(av2_1d)): im[i-n0]=av_1d_n[j][i]/(av1["ny"]*av1["ny"]*ratio1)
+		for i in range(n0,len(av2_1d)): im[i-n0]=av_1d_n[j][i]/(av1["ny"]*av1["ny"]*ratio1)
 #		im.write_image("presub.hdf",j)
 		im.sub(bg)
 		sm=0
-		for k in xrange(nxl*3/4,nxl): sm+=im[k]
+		for k in range(nxl*3/4,nxl): sm+=im[k]
 		sm/=nxl-nxl*3/4
 #		print sm
 		im.sub(sm)
@@ -1324,11 +1326,11 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 	dfs=[5.0,4.2,3.5,2.8,2.1,1.7,1.4,1.1,0.9,0.6]		# a nice set of overlapping defocus values for classification
 	nvec=len(dfs)
 	result=[]
-	for i in xrange(nvec):
+	for i in range(nvec):
 		ctf.defocus=dfs[i]
 		vec=ctf.compute_1d(ys*2,ds,Ctf.CtfType.CTF_AMP,None)  # note that size is not the returned size, but 2*the returned size
 		result.append(EMData(nxl,1,1))
-		for j in xrange(n0,len(av2_1d)): result[-1][j-n0]=vec[j]
+		for j in range(n0,len(av2_1d)): result[-1][j-n0]=vec[j]
 		result[-1].write_image("cvec.hdf",-1)
 
 	# project into the subspace
@@ -1372,13 +1374,13 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 	maxpix=int(apix*ys2/25.0)               # we do this up to ~80 A
 	avsnr=0
 	avc=0
-	for i in xrange(maxpix):
+	for i in range(maxpix):
 		if av1_1d[i]>av2_1d[i] :
 			avsnr+=(av1_1d[i]-av2_1d[i])/av2_1d[i]
 			avc+=1
 	avsnr/=avc
 
-	for i in xrange(maxpix) :
+	for i in range(maxpix) :
 		if av2_1d[i]>av1_1d[i] : av2_1d[i]=av1_1d[i]/(avsnr+1)          # we set the background equal to the foreground if it's too big
 
 	#db_close_dict(stackfile)	# safe for non-bdb files
@@ -1451,7 +1453,7 @@ def smooth_by_ctf(curve,ds,ctf):
 	z=max(4,z)
 
 	ret=curve[:z]
-	for i in xrange(z,len(curve)-4):
+	for i in range(z,len(curve)-4):
 		lc =curvea[i-4:i+5]			# data to be smoothed
 		lcf=array(ccurv[i-4:i+5])	# reference CTF curve
 		lcf-=lcf.mean()				# so we can do a dot product
@@ -1487,11 +1489,11 @@ def ctf_fit_bfactor(curve,ds,ctf):
 
 	risethr=0.75*max(sim[int(0.04/ds):])
 	# find the last point where the curve rises above 0.75 its max value
-	for i in xrange(len(curve)-wdw,int(0.04/ds),-1):
+	for i in range(len(curve)-wdw,int(0.04/ds),-1):
 		if sim[i]>risethr : break
 
 	# now find the first place where it falls below 0.1
-	for i in xrange(i,len(curve)-wdw):
+	for i in range(i,len(curve)-wdw):
 		if sim[i]<0.1 : break
 
 	maxres=1.0/(i*ds)
@@ -1615,7 +1617,7 @@ returns (fg1d,bg1d)"""
 		#d1=min(fg[lz]-bg[lz],fg[lz-1]-bg[lz-1],fg[lz+1]-bg[lz+1])
 		#d2=min(fg[z]-bg[z],fg[z-1]-bg[z-1],fg[z+1]-bg[z+1])
 #				print lz,d1,z,d2
-		for x in xrange(lz,z):
+		for x in range(lz,z):
 			bg[x]+=(z-x)/float(z-lz)*d1+(x-lz)/float(z-lz)*d2
 		if n==2 : lwd,lwz=d1,lz
 		lz=z
@@ -1631,7 +1633,7 @@ returns (fg1d,bg1d)"""
 
 
 	# deal with the points from where the zeroes got too close together, just to make a smooth curve
-	for x in xrange(lz,len(ctf.background)) :
+	for x in range(lz,len(ctf.background)) :
 		bg[x]+=fg[x-2:x+3].mean()-bgc[x-2:x+3].mean()
 
 	return (list(fg),list(bg))
@@ -1656,7 +1658,7 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	# coarse angular alignment
 	besta=(1.0e15,0)
 	ctf.bfactor=500
-	for ang in xrange(0,180,15):
+	for ang in range(0,180,15):
 		v=ctf_stig_cmp((ctf.defocus+ctf.dfdiff/2.0,ctf.defocus-ctf.dfdiff/2.0,ang),(bgsub,bgcp,ctf))
 		besta=min(besta,(v,ang))
 	ctf.dfang=besta[1]
@@ -1773,7 +1775,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 		print("Invalid %%AC, defaulting to 10")
 		ac=10.0
 
-	curve=[im_1d[i]-bg_1d[i] for i in xrange(len(im_1d))]
+	curve=[im_1d[i]-bg_1d[i] for i in range(len(im_1d))]
 
 	ctf=EMAN2Ctf()
 	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":150.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d,"dfdiff":0,"defang":0})
@@ -1800,8 +1802,8 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 		# second pass is +-0.1 unless the original hint range was narrower
 		if rng==1: dfhint=(max(dfhint[0],ctf.defocus-0.1),min(dfhint[1],ctf.defocus+0.1),min(dfhint[2]/2.0,0.005))
 
-		curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
-		for phase in xrange(phaserange[0],phaserange[1],5):
+		curve=[im[i]-bg[i] for i in range(len(im_1d))]
+		for phase in range(phaserange[0],phaserange[1],5):
 			for df in arange(dfhint[0],dfhint[1],dfhint[2]):
 				ctf.defocus=df
 				ctf.set_phase(phase*pi/180.0)
@@ -1828,9 +1830,9 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 		im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
 
 	if bgadj :
-		for i in xrange(len(bg)): bg_1d[i]=bg[i]		# overwrite the input background with our final adjusted curve
+		for i in range(len(bg)): bg_1d[i]=bg[i]		# overwrite the input background with our final adjusted curve
 		bglow=low_bg_curve(bg,ds)
-		for i in xrange(len(bg)): bg_1d_low[i]=bglow[i]
+		for i in range(len(bg)): bg_1d_low[i]=bglow[i]
 	ctf.background=bg_1d
 
 	ctf.snr=[snr_safe(im[i],bg[i]) for i in range(len(im_1d))]
@@ -2260,13 +2262,13 @@ try:
 	from eman2_gui.valslider import ValSlider,CheckBox
 except:
 	print("Warning: PyQt4 must be installed to use the --gui option")
-	class dummy:
+	class dummy(object):
 		pass
-	class QWidget:
+	class QWidget(object):
 		"A dummy class for use when Qt not installed"
 		def __init__(self,parent):
 			print("Qt4 has not been loaded")
-	class QListWidget:
+	class QListWidget(object):
 		"A dummy class"
 		def __init__(self,parent):
 			print("Qt4 has not been loaded")
@@ -2564,7 +2566,7 @@ class GUIctf(QtGui.QWidget):
 		from eman2_gui.emsprworkflow import E2CTFOutputTaskGeneral
 
 		n = self.setlist.count()
-		names = [str(self.setlist.item(i).text()) for i in xrange(0,n)]
+		names = [str(self.setlist.item(i).text()) for i in range(0,n)]
 
 		self.form = E2CTFOutputTaskGeneral()
 		self.form.set_names(names)
@@ -2783,7 +2785,7 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data(None,None,True,True)		# erase existing data quietly
 			for st in self.data:
 				inten=st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)
-				inten=[(s[i],inten[i]) for i in xrange(1,len(inten)-1) if inten[i]>inten[i+1] and inten[i]>inten[i-1]]
+				inten=[(s[i],inten[i]) for i in range(1,len(inten)-1) if inten[i]>inten[i+1] and inten[i]>inten[i-1]]
 				ls,li=list(zip(*inten))	# this confusing idiom is unzipping the list
 #				print len(ls),len(li)
 				self.guiplot.set_data((ls,li),st[0],quiet=True,linetype=-1,symtype=0,symsize=2)
@@ -2918,7 +2920,7 @@ class GUIctf(QtGui.QWidget):
 
 		n=EMUtil.get_image_count(self.data[val][0])
 		if n>1:
-			self.ptcldata=EMData.read_images(self.data[val][0],range(0,min(20,n)))
+			self.ptcldata=EMData.read_images(self.data[val][0],list(range(0,min(20,n))))
 			im=sum(self.ptcldata)
 			im.mult(4.0/len(self.ptcldata))	# 4 compensatess for noise averaging
 			self.ptcldata.insert(0,im)
@@ -2974,12 +2976,12 @@ class GUIctf(QtGui.QWidget):
 			fsp=self.data[self.curset][0]
 			n=EMUtil.get_image_count(fsp)
 			print("Inverting images in %s"%fsp)
-			for i in xrange(n):
+			for i in range(n):
 				img=EMData(fsp,i)
 				img.mult(-1.0)
 				img.write_image(fsp,i)
 
-			self.ptcldata=EMData.read_images(fsp,range(0,20))
+			self.ptcldata=EMData.read_images(fsp,list(range(0,20)))
 			self.guirealim.set_data(self.ptcldata)
 
 

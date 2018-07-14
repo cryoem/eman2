@@ -30,6 +30,7 @@
 #
 #
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -165,7 +166,7 @@ class MissingWedgeViewer(QtGui.QWidget):
 		self.setLayout(grid)
 		
 		# Fill combox box
-		for i in xrange(len(self.volumes)):
+		for i in range(len(self.volumes)):
 			self.volcombobox.addItem(str(i))
 			
 		#Add actions

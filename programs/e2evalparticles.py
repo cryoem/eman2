@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 
 #
+from builtins import range
 from EMAN2 import *
 from eman2_gui.emimagemx import EMImageMXWidget
 
@@ -342,7 +343,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			QtGui.QMessageBox.warning(self,"Error !","Invalid range specified. Use: min-max")
 			return
 
-		self.vclasses.subset_set(range(x0,x1))
+		self.vclasses.subset_set(list(range(x0,x1)))
 
 	def selInvertClasses(self,x):
 		"Inverts the current selection set"

@@ -30,6 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
 from __future__ import print_function
+from builtins import range
 import os, sys
 from optparse import OptionParser, SUPPRESS_HELP
 import glob
@@ -60,19 +61,19 @@ def read_sphire_coords_file(coords_path):
 
 def read_eman1_coords_file(coords_path):
 	coords_list = read_text_row(coords_path)
-	for i in xrange(len(coords_list)):
+	for i in range(len(coords_list)):
 		coords_list[i] = [(coords_list[i][0] + coords_list[i][2] // 2), (coords_list[i][1] + coords_list[i][3] // 2)]
 	return coords_list
 
 def read_eman2_coords_file(coords_path):
 	coords_list = js_open_dict(coords_path)["boxes"]
-	for i in xrange(len(coords_list)):
+	for i in range(len(coords_list)):
 		coords_list[i] = [coords_list[i][0], coords_list[i][1]]
 	return coords_list
 
 def read_spider_coords_file(coords_path):
 	coords_list = read_text_row(coords_path)
-	for i in xrange(len(coords_list)):
+	for i in range(len(coords_list)):
 		coords_list[i] = [coords_list[i][2], coords_list[i][3]]
 	return coords_list
 
@@ -1061,7 +1062,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		coords_reject_out_of_boundary_messages = []
 		
 		# Loop through coordinates
-		for coords_id in xrange(len(coords_list)):
+		for coords_id in range(len(coords_list)):
 			# Get coordinates
 			x = int(coords_list[coords_id][0])
 			y = int(coords_list[coords_id][1])
@@ -1188,7 +1189,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				cutoff_region, cutoff_counts = hist_list(abs_ctf_limit_histogram, n_bins)
 				print("Histogram of CTF limit absolute frequency used for the filtering:")
 				print("      CTF limit       counts")
-				for bin_id in xrange(n_bins):
+				for bin_id in range(n_bins):
 					print(" %14.7f     %7d" % (cutoff_region[bin_id], cutoff_counts[bin_id]))
 			else:
 				print("The number of filtered micrographs (%d) is less than the number of bins (%d). No histogram is produced." % (len(abs_ctf_limit_histogram), n_bins))

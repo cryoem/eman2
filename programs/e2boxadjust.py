@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import time
@@ -88,14 +89,14 @@ This is a typical workflow:
 	print("Classmx has info on ",nptcl," particles")
 	
 	# The files containing the particle locations
-	boxfiles=[base_name(args[i],nodir=True) for i in xrange(2,len(args))]
+	boxfiles=[base_name(args[i],nodir=True) for i in range(2,len(args))]
 	
 	# The .lst file allowing us to reference original files from the information in cls files 
 	lsx=LSXFile(args[0])
 	
 	lpfile=None
 	skipfile=True
-	for p in xrange(nptcl):
+	for p in range(nptcl):
 		# The number and file of particle N
 		pn,pfile,com = lsx[p]
 		
