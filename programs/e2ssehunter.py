@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Matthew Baker, 06/30/2009 (mbaker@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -125,8 +127,8 @@ def cross_product(a,b):
 	return cross
 
 def update_map(target, location,rangemin,rangemax):
-	rmin=int(round(rangemin/2))
-	rmax=int(round(rangemax/2))+1
+	rmin=int(round(old_div(rangemin,2)))
+	rmax=int(round(old_div(rangemax,2)))+1
 	maxdistance=sqrt(3*rmin**2)
 	for x in (list(range(rmin,rmax))):
 		for y in (list(range(rmin,rmax))):
@@ -136,7 +138,7 @@ def update_map(target, location,rangemin,rangemax):
 				if x==0 and y==0 and z==0:
 					pixel_value=0.0
 				else:
-					pixel_value=temp_value*(distance/maxdistance)
+					pixel_value=temp_value*(old_div(distance,maxdistance))
 				target.set_value_at(location[0]+x,location[1]+y,location[2]+z, pixel_value)
 				target.update()
 
@@ -144,7 +146,7 @@ def generate_pseudoatoms(target, apix, res, thr):
 	print("No psuedoatom input; generating Pseudoatoms")
 	patoms = []
 	rangemin=-1*res/apix
-	rangemax=res/apix
+	rangemax=old_div(res,apix)
 	out = open("pseudoatoms.pdb","w")
 	Max_value = target["maximum"]
 	Max_location = target.calc_max_location()
@@ -169,9 +171,9 @@ def read_pseudoatoms(pdb_filepath):
 	file=open(atoms, "r")
 	for line in file:
 		if str(line[0:6].strip())=="ATOM":
-			TempX=(float(line[30:38].strip()))/apix
-			TempY=(float(line[38:46].strip()))/apix
-			TempZ=(float(line[46:54].strip()))/apix
+			TempX=old_div((float(line[30:38].strip())),apix)
+			TempY=old_div((float(line[38:46].strip())),apix)
+			TempZ=old_div((float(line[46:54].strip())),apix)
 			patom=[TempX,TempY,TempZ]
 			patoms.append(patom)
 			atomNumber.append(int(line[6:11].strip()))
@@ -183,17 +185,17 @@ def read_pseudoatoms(pdb_filepath):
 def get_angle(patoms, origin, p1, p2):
 	v1=(patoms[p1][0]-patoms[origin][0],patoms[p1][1]-patoms[origin][1],patoms[p1][2]-patoms[origin][2])
 	lengthV1=sqrt(v1[0]**2+v1[1]**2+v1[2]**2)
-	v1n=(v1[0]/lengthV1,v1[1]/lengthV1,v1[2]/lengthV1)
+	v1n=(old_div(v1[0],lengthV1),old_div(v1[1],lengthV1),old_div(v1[2],lengthV1))
 	v2=(patoms[p2][0]-patoms[origin][0],patoms[p2][1]-patoms[origin][1],patoms[p2][2]-patoms[origin][2])
 	lengthV2=sqrt(v2[0]**2+v2[1]**2+v2[2]**2)
-	v2n=(v2[0]/lengthV2,v2[1]/lengthV2,v2[2]/lengthV2)
+	v2n=(old_div(v2[0],lengthV2),old_div(v2[1],lengthV2),old_div(v2[2],lengthV2))
 
 	dp = v1n[0]*v2n[0] + v1n[1]*v2n[1] + v1n[2]*v2n[2] #dot product
 	if dp > 1:
 		dp=1
 	if dp<-1:
 		dp=-1
-	angle=acos(dp)*(180/pi)
+	angle=acos(dp)*(old_div(180,pi))
 	if angle>90:
 		angle=180-angle
 	return angle
@@ -220,7 +222,7 @@ def get_distance_matrix(patoms, apix):
 def find_aspect_ratio(targetMRC, patoms, apix, thr):
 	### set search area
 	print("Grouping neighboring pixels")
-	kernelwidth=int(round(5.0/apix))
+	kernelwidth=int(round(old_div(5.0,apix)))
 	pixels=[]
 	for atom in patoms:
 		tempPixel=[]
@@ -242,7 +244,7 @@ def find_aspect_ratio(targetMRC, patoms, apix, thr):
 	axisMatrix=[]
 	for index1 in range(len(patoms)):
 		NumPoints1=numpy.array(pixels[index1],'d')
-		NumPoints1_mean=numpy.sum(NumPoints1,axis=0)/len(NumPoints1)
+		NumPoints1_mean=old_div(numpy.sum(NumPoints1,axis=0),len(NumPoints1))
 		NumPoints2=NumPoints1-NumPoints1_mean
 		h = numpy.sum(list(map(numpy.outer,NumPoints2,NumPoints2)),axis=0)
 		[u1,x1,v1]=numpy.linalg.svd(h)
@@ -251,12 +253,12 @@ def find_aspect_ratio(targetMRC, patoms, apix, thr):
 			print("is bad")
 			xmod=x1
 		else:
-			xmod=x1/max(x1)
+			xmod=old_div(x1,max(x1))
 			
 		if xmod[2]==0:
 			aspectratio=0
 		else:
-			aspectratio=xmod[1]/xmod[2]
+			aspectratio=old_div(xmod[1],xmod[2])
 			print(aspectratio)
 		axisMatrix.append(aspectratio)
 		
@@ -270,18 +272,18 @@ def model_pdb_helix(length):
 	q=0
 	r=0
 	outfile=open("helix.pdb","w")
-	while j<= round(length/1.54):
-		Nxcoord=cos((100*j*pi)/180)*1.6
-		Nycoord=sin((100*j*pi)/180)*1.6
+	while j<= round(old_div(length,1.54)):
+		Nxcoord=cos(old_div((100*j*pi),180))*1.6
+		Nycoord=sin(old_div((100*j*pi),180))*1.6
 		Nzcoord=j*1.52
-		CAxcoord=cos(((28+(100*j))*pi)/180)*2.3
-		CAycoord=sin(((28+(100*j))*pi)/180)*2.3
+		CAxcoord=cos(old_div(((28+(100*j))*pi),180))*2.3
+		CAycoord=sin(old_div(((28+(100*j))*pi),180))*2.3
 		CAzcoord=(j*1.54)+.83
-		Cxcoord=cos(((61+(100*j))*pi)/180)*2.0
-		Cycoord=sin(((61+(100*j))*pi)/180)*2.0
+		Cxcoord=cos(old_div(((61+(100*j))*pi),180))*2.0
+		Cycoord=sin(old_div(((61+(100*j))*pi),180))*2.0
 		Czcoord=(j*1.54)+1.7
-		Oxcoord=cos(((61+(100*j))*pi)/180)*2.0
-		Oycoord=sin(((61+(100*j))*pi)/180)*2.0
+		Oxcoord=cos(old_div(((61+(100*j))*pi),180))*2.0
+		Oycoord=sin(old_div(((61+(100*j))*pi),180))*2.0
 		Ozcoord=(j*1.54)+3.09
 		p=j*4+1
 		q=j*4+2
@@ -373,7 +375,7 @@ def helix_correlation_scores(targetMRC, patoms, apix, res, coeff, helixlength, d
 		pdbHelix=model_pdb_helix(helixlength)	
 		mrcHelix=model_mrc_helix(targetMRC.get_xsize(), apix, res, length=helixlength, points=pdbHelix, helixtype="helix_pdb")
 		if da==0.0:
-			da=2*asin(res/targetMRC.get_xsize())*(180.0/pi)
+			da=2*asin(old_div(res,targetMRC.get_xsize()))*(old_div(180.0,pi))
 			print("da not set; setting da to %f degrees"%da)
 		hhMrc=helixhunter_ccf(targetMRC, mrcHelix, da)
 	
@@ -391,7 +393,7 @@ def helix_correlation_scores(targetMRC, patoms, apix, res, coeff, helixlength, d
 			maxValue=hhvalue
 		avghhvalue=hhvalue+avghhvalue
 		coeffArray.append(hhvalue)
-	avghhvalue=avghhvalue/atomCount
+	avghhvalue=old_div(avghhvalue,atomCount)
 	print("Correlation threshold: %f"%(avghhvalue))
 	print("Correlation Maximum:   %f"%(maxValue))
 	hhMrc.write_image("hhMrc.mrc")
@@ -482,18 +484,18 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 			point1=firstpoint-1
 			pv1=(patoms[point1][0]-patoms[origin][0],patoms[point1][1]-patoms[origin][1],patoms[point1][2]-patoms[origin][2])
 			lengthPV1=sqrt(pv1[0]**2+pv1[1]**2+pv1[2]**2)
-			pv1n=(pv1[0]/lengthPV1,pv1[1]/lengthPV1,pv1[2]/lengthPV1)
+			pv1n=(old_div(pv1[0],lengthPV1),old_div(pv1[1],lengthPV1),old_div(pv1[2],lengthPV1))
 	
 			for secondpoint in cloud:
 				point2=secondpoint-1
 				if point2 != point1 and point2 != origin:
 					pv2=(patoms[point2][0]-patoms[origin][0],patoms[point2][1]-patoms[origin][1],patoms[point2][2]-patoms[origin][2])
 					lengthPV2=sqrt(pv2[0]**2+pv2[1]**2+pv2[2]**2)
-					pv2n=(pv2[0]/lengthPV2,pv2[1]/lengthPV2,pv2[2]/lengthPV2)
+					pv2n=(old_div(pv2[0],lengthPV2),old_div(pv2[1],lengthPV2),old_div(pv2[2],lengthPV2))
 					xp=cross_product(pv1,pv2)
 					lengthxp=sqrt(xp[0]**2+xp[1]**2+xp[2]**2)
 					if lengthxp>0:
-						xpn=(xp[0]/lengthxp, xp[1]/lengthxp, xp[2]/lengthxp)
+						xpn=(old_div(xp[0],lengthxp), old_div(xp[1],lengthxp), old_div(xp[2],lengthxp))
 					else:
 						xpn=(xp[0], xp[1], xp[2])
 					arrayofxp.append(xpn)
@@ -510,7 +512,7 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 						elif dpxp<-1:
 							dpxpAngle=180
 						else:
-							dpxpAngle=acos(dpxp)*(180/pi)
+							dpxpAngle=acos(dpxp)*(old_div(180,pi))
 						if dpxpAngle>90:
 							dpxpAngle=180-dpxpAngle
 	
@@ -519,7 +521,7 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 			if dpxpsum==0 and dpxpcounter==0:
 				betaAngle=0
 			else: 
-				betaAngle=dpxpsum/dpxpcounter
+				betaAngle=old_div(dpxpsum,dpxpcounter)
 		else:
 			betaAngle=90	
 	
@@ -547,7 +549,7 @@ def geometry_scores(patoms, atomNumber, targetMRC, apix, thr, coeffArray, avghhv
 			pascore=pascore+1
 		if len(cloud) > 3:
 			pascore=pascore-1
-		pseudoatomArray.append(float(pascore/4.0))	
+		pseudoatomArray.append(float(old_div(pascore,4.0)))	
 
 
 	return pseudoatomArray
@@ -582,15 +584,15 @@ def skeleton_scores(pseudoatoms, vol, threshold, helix_size, sheet_size, skeleto
 					j2 = j - y
 					k2 = k - z
 					if val == 1:
-						curve_score += 1 - (i2**2+j2**2+k2**2)/(3*MAX_DISTANCE**2)
+						curve_score += 1 - old_div((i2**2+j2**2+k2**2),(3*MAX_DISTANCE**2))
 						count += 1
 					elif val == 2:
-						surface_score += 1 - (i2**2+j2**2+k2**2)/(3*MAX_DISTANCE**2)
+						surface_score += 1 - old_div((i2**2+j2**2+k2**2),(3*MAX_DISTANCE**2))
 						count += 1
 		if count == 0:
 			score = 0
 		else:
-			score = float(curve_score - surface_score) / count
+			score = old_div(float(curve_score - surface_score), count)
 		skeletonScores.append( score )
 		
 		#Normalization
@@ -619,11 +621,11 @@ def write_composite_scores(target_volume_name, apix, patoms, atomNumber, coeffAr
 		
 		print("	  Correlation:	   %s"%(coeffArray[index4]), end=' ')
 		if coeffArray[index4] >= (0.9*avghhvalue):
-			tmpscore=(coeffArray[index4]/maxValue)
+			tmpscore=(old_div(coeffArray[index4],maxValue))
 			score=score+tmpscore*coeffwt
 			print(" (+%f)"%(tmpscore))
 		else:
-			tmpscore=(coeffArray[index4]-avghhvalue)/avghhvalue
+			tmpscore=old_div((coeffArray[index4]-avghhvalue),avghhvalue)
 			score=score+tmpscore*coeffwt
 			print(" (%f)"%(tmpscore))	
 		

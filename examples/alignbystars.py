@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -31,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from eman2_gui.emimage import *
@@ -57,7 +59,7 @@ def findstars(img,scale=1.0):
 		
 		# find the center of mass of each peak
 		cg=c.cog()[:3]
-		ret.append(((i.x+cg[0]-img.get_xsize()/2)*scale,(i.y+cg[1]-img.get_ysize()/2)*scale,i.value,cg[2]))	# x,y,peak,rad
+		ret.append(((i.x+cg[0]-old_div(img.get_xsize(),2))*scale,(i.y+cg[1]-old_div(img.get_ysize(),2))*scale,i.value,cg[2]))	# x,y,peak,rad
 	
 	return ret
 
@@ -72,7 +74,7 @@ def centerofstars(a):
 		y+=i[1]
 		s+=1
 	
-	return (x/s,y/s)
+	return (old_div(x,s),old_div(y,s))
 
 def l2pa(a):
 	"""Convert a list, as output by findstars, into a PointArray"""
@@ -100,7 +102,7 @@ def showstars(img,pa):
 	w=EMImage(img)
 #	w.setWindowTitle("EMImage (%s)"%f)
 	for i in range(len(pa)):
-		v=["circle",.2,1.,.2,pa[i][0]+img.get_xsize()/2,pa[i][1]+img.get_ysize()/2,5.0,1.0]
+		v=["circle",.2,1.,.2,pa[i][0]+old_div(img.get_xsize(),2),pa[i][1]+old_div(img.get_ysize(),2),5.0,1.0]
 		w.add_shape(i,v)
 	w.show()
 	wins.append(w)
@@ -147,7 +149,7 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 	ny=avg.get_ysize()
 	if scale!=1.0 : 
 		avg=avg.get_clip(Region(-nx*(scale-1)/2,-ny*(scale-1)/2,nx*scale,ny*scale))
-		avg.scale(1.0/scale)
+		avg.scale(old_div(1.0,scale))
 	ref=avg.copy()
 	if options.saveali : ref.write_image("ali.hed")
 	avgn=avg.copy()
@@ -161,7 +163,7 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 		img.process_inplace("normalize.edgemean",{})
 		if scale!=1.0 : 
 			img=img.get_clip(Region(-nx*(scale-1)/2,-ny*(scale-1)/2,nx*scale,ny*scale))
-			img.scale(1.0/scale)
+			img.scale(old_div(1.0,scale))
 		imgn=img.copy()
 		imgn.to_one()
 		img.rotate_translate(xf)

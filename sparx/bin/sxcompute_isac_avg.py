@@ -5,6 +5,8 @@
 #  New version of sort3D.
 #  
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import  os
 import  sys
@@ -100,7 +102,7 @@ def adjust_pw_to_model(image, pixel_size, roo):
 	c2 = 15.0
 	c3 = 0.2
 	c4 = -1.0
-	c5 = 1./5.
+	c5 = old_div(1.,5.)
 	c6 = 0.25 # six params are fitted to Yifan channel model
 	rot1 = rops_table(image)
 	fil  = [None]*len(rot1)
@@ -108,14 +110,14 @@ def adjust_pw_to_model(image, pixel_size, roo):
 		pu = []
 		for ifreq in range(len(rot1)):
 			x = float(ifreq)/float(len(rot1))/pixel_size
-			v = exp(c1+c2/(x/c3+1)**2) + exp(c4-0.5*(((x-c5)/c6**2)**2))
+			v = exp(c1+old_div(c2,(old_div(x,c3)+1)**2)) + exp(c4-0.5*((old_div((x-c5),c6**2))**2))
 			pu.append(v)
 		s =sum(pu)
-		for ifreq in range(len(rot1)): fil[ifreq] = sqrt(pu[ifreq]/(rot1[ifreq]*s))
+		for ifreq in range(len(rot1)): fil[ifreq] = sqrt(old_div(pu[ifreq],(rot1[ifreq]*s)))
 	else: # adjusted to a given 1-d rotational averaged pw2
 		if roo[0]<0.1 or roo[0]>1.: s =sum(roo)
 		else:  s=1.0
-		for ifreq in range(len(rot1)):fil[ifreq] = sqrt(roo[ifreq]/(rot1[ifreq]*s))
+		for ifreq in range(len(rot1)):fil[ifreq] = sqrt(old_div(roo[ifreq],(rot1[ifreq]*s)))
 	return filt_table(image, fil)
 	
 def get_optimistic_res(frc):
@@ -133,13 +135,13 @@ def get_optimistic_res(frc):
 	
 def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
 	guinierline = rot_avg_table(power(periodogram(avg),.5))
-	freq_max   =  1./(2.*pixel_size)
-	freq_min   =  1./B_start
+	freq_max   =  old_div(1.,(2.*pixel_size))
+	freq_min   =  old_div(1.,B_start)
 	b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, pixel_size)
 	print(ifreqmin, ifreqmax)
 	global_b = b*4. #
 	if user_defined_Bfactor < 0.0: global_b = user_defined_Bfactor
-	sigma_of_inverse = sqrt(2./global_b)
+	sigma_of_inverse = sqrt(old_div(2.,global_b))
 	avg = filt_gaussinv(fft(avg), sigma_of_inverse)
 	return avg, global_b
 
@@ -337,7 +339,7 @@ def main():
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 
 	#print(Tracker["constants"]["pixel_size"], "pixel_size")	
-	x_range = max(Tracker["constants"]["xrange"], int(1./Tracker["ini_shrink"])+1)
+	x_range = max(Tracker["constants"]["xrange"], int(old_div(1.,Tracker["ini_shrink"]))+1)
 	y_range =  x_range
 
 	if(Blockdata["myid"] == Blockdata["main_node"]): parameters = read_text_row(os.path.join(Tracker["constants"]["isac_dir"], "all_parameters.txt"))
@@ -362,7 +364,7 @@ def main():
 				abs_id =  members[im]
 				global_dict[abs_id] = [iavg, im]
 				P = combine_params2( init_dict[abs_id][0], init_dict[abs_id][1], init_dict[abs_id][2], init_dict[abs_id][3], \
-				parameters[abs_id][0], parameters[abs_id][1]/Tracker["ini_shrink"], parameters[abs_id][2]/Tracker["ini_shrink"], parameters[abs_id][3])
+				parameters[abs_id][0], old_div(parameters[abs_id][1],Tracker["ini_shrink"]), old_div(parameters[abs_id][2],Tracker["ini_shrink"]), parameters[abs_id][3])
 				if parameters[abs_id][3] ==-1: 
 					print("WARNING: Image #{0} is an unaccounted particle with invalid 2D alignment parameters and should not be the member of any classes. Please check the consitency of input dataset.".format(abs_id)) # How to check what is wrong about mirror = -1 (Toshio 2018/01/11)
 				params_of_this_average.append([P[0], P[1], P[2], P[3], 1.0])

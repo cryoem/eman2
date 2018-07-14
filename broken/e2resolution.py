@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 06/27/2007 (sludtke@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 # e2resolution.py  06/27/2007	Steven Ludtke
 # This program computes a similarity matrix between two sets of images
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict
@@ -98,7 +100,7 @@ def main():
 	maski=mask.copy()
 	maski*=-1.0
 	maski+=1.0
-	maski.process_inplace("mask.gaussian",{"outer_radius":mask.get_xsize()/6,"inner_radius":mask.get_xsize()/3})
+	maski.process_inplace("mask.gaussian",{"outer_radius":old_div(mask.get_xsize(),6),"inner_radius":old_div(mask.get_xsize(),3)})
 	maski.write_image("msk2.mrc",0)
 
 	noise=data.copy()
@@ -111,26 +113,26 @@ def main():
 	noisef=noise.do_fft()
 
 	print("compute power 1")
-	datapow=dataf.calc_radial_dist(dataf.get_ysize()/2-1,1,1,1)
+	datapow=dataf.calc_radial_dist(old_div(dataf.get_ysize(),2)-1,1,1,1)
 	print("compute power 2")
-	noisepow=noisef.calc_radial_dist(noisef.get_ysize()/2-1,1,1,1)
+	noisepow=noisef.calc_radial_dist(old_div(noisef.get_ysize(),2)-1,1,1,1)
 
 	x=list(range(1,len(datapow)+1))
 	if options.apix>0:
-		x=[i/(len(datapow)*options.apix*2.0) for i in x]
+		x=[old_div(i,(len(datapow)*options.apix*2.0)) for i in x]
 	else:
-		x=[i/(len(datapow)*data["apix_x"]*2.0) for i in x]
+		x=[old_div(i,(len(datapow)*data["apix_x"]*2.0)) for i in x]
 
 	# normalize noise near Nyquist
 	s=0
 	sn=0
 	for i in range(int(len(noisepow)*.9),len(noisepow)-1):
 		if datapow[i]<datapow[i+1] or noisepow[i]<noisepow[i+1] : continue
-		s+=datapow[i]/noisepow[i]
+		s+=old_div(datapow[i],noisepow[i])
 		sn+=1.0
 	if sn==0 :
 		print("Warning, strange normalization")
-		s=datapow[int(len(noisepow)*.9)]/noisepow[int(len(noisepow)*.9)]
+		s=old_div(datapow[int(len(noisepow)*.9)],noisepow[int(len(noisepow)*.9)])
 	else: s/=sn
 
 	noisepow=[i*s for i in noisepow]
@@ -142,11 +144,11 @@ def main():
 	# compute signal to noise ratio
 	snr=[]
 	for i in range(len(datapow)):
-		try: snr.append((datapow[i]-noisepow[i])/noisepow[i])
+		try: snr.append(old_div((datapow[i]-noisepow[i]),noisepow[i]))
 		except: snr.append(0)
 	
 	# convert to FSC
-	fsc=[i/(2.0+i) for i in snr]
+	fsc=[old_div(i,(2.0+i)) for i in snr]
 
 	out=open(args[2],"w")
 	for i in range(len(fsc)): out.write("%f\t%f\n"%(x[i],fsc[i]))

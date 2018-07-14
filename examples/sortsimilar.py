@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -36,6 +37,7 @@ from __future__ import print_function
 # This will sort projection/image pairs based on their mutual similarity
 # more similar pairs will be placed in the output file first
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -51,7 +53,7 @@ for i in range(0,n,2):
 #	l[1].process_inplace("normalize.edgemean")
 #	l[1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.08})
 #	cmps.append((l[0].cmp("phase",l[1],{})+l[0].cmp("optvariance",l[1],{"radweight":1})/l[0].get_xsize(),i))
-	cmps.append((l[0].cmp("optvariance",l[1],{"matchamp":1})/l[0].get_xsize(),i))
+	cmps.append((old_div(l[0].cmp("optvariance",l[1],{"matchamp":1}),l[0].get_xsize()),i))
 
 
 #	cmps.append((l[0].cmp("dot",l[1],{"normalize":1}),

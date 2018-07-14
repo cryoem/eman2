@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Author: Stephen Murray (scmurray@bcm.edu), 12/12/11
 # Copyright (c) 2000-2011 Baylor College of Medicine
 
@@ -12,6 +13,7 @@ from __future__ import print_function
 #****************UPDATED for RELION 1.2 RELEASE on 9/17/13******************
 
 #import block
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
@@ -216,7 +218,7 @@ for db in dblist:
 		db_set=EMData("sets/" +db,0,True)
 		if db_set.get_attr_dict().__contains__('ctf') and (EMUtil.get_image_count("sets/"+db) == num_images):
 			ctf_value=True
-			amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10				
+			amplitude_contrast = old_div(float(db_set['ctf'].to_dict()['ampcont']), 10)				
 			#defocus = db_set['ctf'].to_dict()['defocus']*1000
 			break
 print("CTF information being pulled from: " + db)
@@ -248,7 +250,7 @@ for k in range(num_ptcl):
 		call(stemp, shell=True)
 		s2 = E2RLN + "/stacks/" + base_name(old_src) + ".mrcs"
 		shutil.move(s1, s2)
-		amplitude_contrast=str(temp['ctf'].to_dict()['ampcont']/100)
+		amplitude_contrast=str(old_div(temp['ctf'].to_dict()['ampcont'],100))
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*10000)
 			for num in range(k-i):
@@ -277,7 +279,7 @@ for k in range(num_ptcl):
 		call(stemp, shell=True)
 		s2 = E2RLN + "/stacks/" + base_name(src) + ".mrcs"
 		shutil.move(s1, s2)
-		amplitude_contrast=str(temp['ctf'].to_dict()['ampcont']/100)
+		amplitude_contrast=str(old_div(temp['ctf'].to_dict()['ampcont'],100))
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*10000)
 			for num in range(k-i+1):
@@ -395,7 +397,7 @@ for option1 in optionList:
 		grey = 1
 	elif option1 == "randomizemodel":
 		if float(options.randomizemodel) != 0:
-			s1 = "e2proc3d.py " + E2RLN + "/3DRefMap.mrc " + E2RLN + "/3DRefMap.mrc --process=filter.lowpass.randomphase:apix=" + str(apix) + ":cutoff_freq=" + str(1/float(options.randomizemodel))
+			s1 = "e2proc3d.py " + E2RLN + "/3DRefMap.mrc " + E2RLN + "/3DRefMap.mrc --process=filter.lowpass.randomphase:apix=" + str(apix) + ":cutoff_freq=" + str(old_div(1,float(options.randomizemodel)))
 			call(s1,shell=True)
 	elif option1 == "pad":
 		s = s + " --pad " + str(options.pad)

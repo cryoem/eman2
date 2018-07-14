@@ -29,6 +29,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import os
 from EMAN2 import *
@@ -178,7 +180,7 @@ def main():
 		n1 = len( intensities1 )
 		n2 = len( intensities2 )
 		
-		zscore = ( means[0]-means[1] )/ np.sqrt( (stds[0]*stds[0])/n1 + (stds[1]*stds[1])/n2 )
+		zscore = old_div(( means[0]-means[1] ), np.sqrt( old_div((stds[0]*stds[0]),n1) + old_div((stds[1]*stds[1]),n2) ))
 		
 		g = open(options.path + '/MIboth_INFO.txt','w')
 		zscoreline = 'zscore=' + str(zscore)+' for ' + datafile1 + ' vs ' + datafile2 + ' \n'
@@ -248,7 +250,7 @@ def normintensities( intensitiesR, minval=0, maxval=0 ):
 	intensitiesNormalizedMax = []
 	i=0
 	for x in range(len(intensitiesNormalizedMin)):
-		intenNormMax = float(intensitiesNormalizedMin[x]) / imax
+		intenNormMax = old_div(float(intensitiesNormalizedMin[x]), imax)
 		#print "for intenNorm %d value is %f" %(i,intenNormMax)
 		intensitiesNormalizedMax.append( intenNormMax )
 		i+=1
@@ -264,11 +266,11 @@ def normintensities( intensitiesR, minval=0, maxval=0 ):
 
 def clip3D( vol, size ):
 	
-	volxc = vol['nx']/2
-	volyc = vol['ny']/2
-	volzc = vol['nz']/2
+	volxc = old_div(vol['nx'],2)
+	volyc = old_div(vol['ny'],2)
+	volzc = old_div(vol['nz'],2)
 	
-	Rvol =  Region( (2*volxc - size)/2, (2*volyc - size)/2, (2*volzc - size)/2, size , size , size)
+	Rvol =  Region( old_div((2*volxc - size),2), old_div((2*volyc - size),2), old_div((2*volzc - size),2), size , size , size)
 	vol.clip_inplace( Rvol )
 	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
 	
@@ -277,11 +279,11 @@ def clip3D( vol, size ):
 
 def clip2D( img, size ):
 	
-	imgxc = img['nx']/2
-	imgyc = img['ny']/2
+	imgxc = old_div(img['nx'],2)
+	imgyc = old_div(img['ny'],2)
 	#imgzc = img['nz']/2
 	
-	Rimg =  Region( (2*imgxc - size)/2, (2*imgyc - size)/2, 0, size , size , 1)
+	Rimg =  Region( old_div((2*imgxc - size),2), old_div((2*imgyc - size),2), 0, size , size , 1)
 	img.clip_inplace( Rimg )
 	#img.process_inplace('mask.sharp',{'outer_radius':-1})
 	
@@ -542,12 +544,12 @@ def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):
 		
 	
 	
-	cuberoot = np.power(len(intensities),1.0/3.0)
+	cuberoot = np.power(len(intensities),old_div(1.0,3.0))
 	#print "The cuberoot of n is", cuberoot
-	width = (3.5*std)/cuberoot
+	width = old_div((3.5*std),cuberoot)
 	print("Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
 	
-	calcbins = int(round( (max(intensities) - min(intensities)) / width ))
+	calcbins = int(round( old_div((max(intensities) - min(intensities)), width) ))
 	
 	if options.bins:
 		calcbins = int(round(options.bins))

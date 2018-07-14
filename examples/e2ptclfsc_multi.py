@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 4/2/2010
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
@@ -115,7 +117,7 @@ def main():
 	nx = maps[0]["nx"]
 	apix = maps[0]["apix_x"]
 	restarget = 2*apix+0.25 # maybe incorrect? could get approx target from fsc_mutual_avg_02.txt
-	automaskexpand = int(nx/20)
+	automaskexpand = int(old_div(nx,20))
 		
 	# The masks applied to the reference volumes, used for 2-D masking of particles for better power spectrum matching
 	masks=[]
@@ -123,9 +125,9 @@ def main():
 		# New version of automasking based on a more intelligent interrogation of the volume
 		vol=threed.copy()
 		
-		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.1,1.0/restarget)})		# Mask at no higher than 10 A resolution
-		md=vol.calc_radial_dist(nx/2,0,1,3)	# radial max value per shell in real space
-		rmax=int(nx/2.2)		# we demand at least 10% padding
+		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.1,old_div(1.0,restarget))})		# Mask at no higher than 10 A resolution
+		md=vol.calc_radial_dist(old_div(nx,2),0,1,3)	# radial max value per shell in real space
+		rmax=int(old_div(nx,2.2))		# we demand at least 10% padding
 		vmax=max(md[:rmax])			# max value within permitted radius
 		# this finds the first radius where the max value @ r falls below overall max/4
 		# this becomes the new maximum mask radius
@@ -201,10 +203,10 @@ def main():
 				# Particle vs projection FSC
 				fsc = ptcl.calc_fourier_shell_correlation(projc)
 	
-				third = len(fsc)/3
+				third = old_div(len(fsc),3)
 				fsc=array(fsc[third:third*2])
 				for k in range(nbands): # sum the fsc into 5 range values
-					s = sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k])
+					s = old_div(sum(fsc[rings[k]:rings[k+1]]),(rings[k+1]-rings[k]))
 					data.append(str(s))
 			
 			# to which model does this particle belong according to similarity at each resolution range

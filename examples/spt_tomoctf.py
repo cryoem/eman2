@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2017-03
+from past.utils import old_div
 from builtins import range
 import numpy as np
 from EMAN2 import *
@@ -23,16 +25,16 @@ except:
 def calc_ctf(defocus, bxsz=256, voltage=300, cs=4.7, apix=1. ,ampcnt=0.):
 
 
-	b2=bxsz/2
-	ds=1.0/(apix*bxsz)
-	ns=min(int(floor(.25/ds)),bxsz/2)
+	b2=old_div(bxsz,2)
+	ds=old_div(1.0,(apix*bxsz))
+	ns=min(int(floor(old_div(.25,ds))),old_div(bxsz,2))
 
 	ctfout=np.zeros(b2)
-	lbda = 12.2639 / np.sqrt(voltage * 1000.0 + 0.97845 * voltage * voltage)
+	lbda = old_div(12.2639, np.sqrt(voltage * 1000.0 + 0.97845 * voltage * voltage))
 
 	g1=np.pi/2.0*cs*1.0e7*pow(lbda,3.0);  
 	g2=np.pi*lbda*defocus*10000.0;		 
-	acac=np.arccos(ampcnt/100.0);				 
+	acac=np.arccos(old_div(ampcnt,100.0));				 
 
 	s=np.arange(b2, dtype=float)*ds
 	gam=-g1*(s**4)+np.asarray(np.dot(np.asmatrix(g2).T, np.matrix(s**2)))
@@ -51,7 +53,7 @@ def calc_all_scr(curve, allctf, zeros, bxsz):
 		zz=zeros[1][zeros[0]==i]
 
 		z0=zz[0]
-		z1=np.minimum(zz[-1], bxsz/4)
+		z1=np.minimum(zz[-1], old_div(bxsz,4))
 
 		if z1-z0<10: continue
 		bg=np.array([np.interp(np.arange(z0, z1), zz, p[zz]) for p in curve])
@@ -64,7 +66,7 @@ def calc_all_scr(curve, allctf, zeros, bxsz):
 
 #### function to get back the index of the allctf array from a defocus value..
 def get_ctf_index(x, defmin, defstep):
-	return np.array((np.round(x,2)-defmin)/defstep, dtype=int)
+	return np.array(old_div((np.round(x,2)-defmin),defstep), dtype=int)
 
 #### calculate the defocus value for one tilt 
 def calc_defocus_onetlt(args):
@@ -86,8 +88,8 @@ def calc_defocus_onetlt(args):
 	ang=tlts[imgi]
 	rawimg=EMData(options.alifile, 0, False, Region(0,0,imgi,options.nx,options.ny,1))
 	apix=rawimg["apix_x"]
-	centerx=rawimg["nx"]/2.
-	tilex=((np.arange(stepx+1,dtype=float))/(stepx)*(rawimg["nx"]-bxsz)).astype(int)+bxsz/2
+	centerx=old_div(rawimg["nx"],2.)
+	tilex=((np.arange(stepx+1,dtype=float))/(stepx)*(rawimg["nx"]-bxsz)).astype(int)+old_div(bxsz,2)
 	scrtlt=[]
 	
 	alldefs=np.zeros(ntry)
@@ -101,13 +103,13 @@ def calc_defocus_onetlt(args):
 			rrd=[]
 			for iy in range(stepy*2): #### make sure we actually have stepy tiles total...
 				if len(rrd)>=stepy: break
-				py=np.random.randint(rawimg["ny"]-bxsz-2)+bxsz/2-1
-				cc=rawimg.get_clip(Region(px-bxsz/2, py-bxsz/2, bxsz, bxsz))
+				py=np.random.randint(rawimg["ny"]-bxsz-2)+old_div(bxsz,2)-1
+				cc=rawimg.get_clip(Region(px-old_div(bxsz,2), py-old_div(bxsz,2), bxsz, bxsz))
 				#### throw away mostly empty tiles
 				if cc["sigma"]<rawimg["sigma"]*.5:
 					continue
 				cc.do_fft_inplace()
-				rd=np.array(cc.calc_radial_dist(bxsz/2, 0,1,0))
+				rd=np.array(cc.calc_radial_dist(old_div(bxsz,2), 0,1,0))
 				rd=np.log10(rd)
 				if np.max(rd[1:])<1: 
 					print(rd)

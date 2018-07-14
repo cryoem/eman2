@@ -1,5 +1,6 @@
 #!/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -44,7 +46,7 @@ M = 512 # image size
 alpha = 1.75
 K = 6
 N = M*2  # npad*image size
-r=M/2
+r=old_div(M,2)
 v=K/2.0/N
 # set up Kaiser Bessel windows
 kb = Util.KaiserBessel(alpha, K, r, v, N)
@@ -53,14 +55,14 @@ kb = Util.KaiserBessel(alpha, K, r, v, N)
 dx = 0.66007E-03
 x = 0.0  #-(K/2+1)
 outI0 = open('I0_'+str(alpha)+'.out', 'w')
-while x < K/2:
-    outI0.write("%g\t%g\n"%(x, kb.i0win(x/N)))
+while x < old_div(K,2):
+    outI0.write("%g\t%g\n"%(x, kb.i0win(old_div(x,N))))
     x += dx
 outI0.close()
 
 # Write out Kaisser Bessel sinh window
 outsinh = open('sinh_'+str(alpha)+'.out', 'w')
-for nu in range (M/2):
+for nu in range (old_div(M,2)):
     outsinh.write("%g\t%g\n"%(nu, kb.sinhwin(nu)))
 outsinh.close()
 
@@ -71,7 +73,7 @@ e.set_size(N, 1, 1)
 outI0img = open('I0img_'+str(alpha)+'.out', 'w')
 for ix in range(N):
     x = ix
-    if (ix > N/2):
+    if (ix > old_div(N,2)):
         x = ix - N
     val = kb.i0win(x)
     e.set_value_at(ix, 0, 0, val)
@@ -79,14 +81,14 @@ for ix in range(N):
 outI0img.close()
 # Compute and write out FFT'd I0 window
 efft = fft(e)
-dnu = 1./N
+dnu = old_div(1.,N)
 outI0fft = open('I0fft_'+str(alpha)+'.out', 'w')
-for inu in range(N/2):
+for inu in range(old_div(N,2)):
     nu = inu*dnu
     val2 = efft.get_value_at(2*inu, 0, 0)**2 + \
            efft.get_value_at(2*inu+1, 0, 0)**2
     val = sqrt(val2)
-    outI0fft.write("%g\t%g\n"%(nu, val/efft.get_value_at(0,0,0)))
+    outI0fft.write("%g\t%g\n"%(nu, old_div(val,efft.get_value_at(0,0,0))))
 outI0fft.close()
 
 # Divide I0 window by sinh window in transform space and write out results
@@ -94,7 +96,7 @@ edeconv = filt_kaisersinhinv(e, alpha)
 efilt = open('I0filt_'+str(alpha)+'.out', 'w')
 for ix in range(N):
     x = ix - N//2
-    efilt.write("%g\t%g\n"%(x, edeconv.get_value_at(ix, 0, 0)/edeconv.get_value_at(0,0,0)))
+    efilt.write("%g\t%g\n"%(x, old_div(edeconv.get_value_at(ix, 0, 0),edeconv.get_value_at(0,0,0))))
 efilt.close()
 
 # Compute and write out discrete sinh window
@@ -108,7 +110,7 @@ newft.set_size(Nft, 1, 1)
 newft.set_complex(True)
 if odd:
     newft.set_fftodd(True)
-dnu = 1./N
+dnu = old_div(1.,N)
 ftdisc = open("sinh_disc_"+str(alpha)+".out", 'w')
 for inu in range(N//2):
     nu = inu*dnu
@@ -125,5 +127,5 @@ for ix in range(N):
     if ix > N//2:
         x = ix - N
     val = backft.get_value_at(ix,0,0)
-    ftback.write("%g\t%g\n"%(x, val/backft.get_value_at(0,0,0)))
+    ftback.write("%g\t%g\n"%(x, old_div(val,backft.get_value_at(0,0,0))))
 ftback.close()

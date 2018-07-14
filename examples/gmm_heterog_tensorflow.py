@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2018-01
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -66,9 +68,9 @@ def main():
 	elif options.initpos!=None:	
 		cents=np.loadtxt(options.initpos)
 		nball=len(cents)
-		cents=cents[:,1:]-sz/2
+		cents=cents[:,1:]-old_div(sz,2)
 		## set width so model fills box
-		initw=1.5*(np.cbrt(((sz*.6)**3)/nball)/(4./3.*np.pi))**2 
+		initw=1.5*(old_div(np.cbrt(old_div(((sz*.6)**3),nball)),(4./3.*np.pi)))**2 
 
 		wts=np.zeros(len(cents))+initw
 		amp=np.ones(len(cents))
@@ -166,7 +168,7 @@ def make3d(ptcl_file, options, allconf):
 	except: pass
 	lstin=LSXFile(ptcl_file, True)
 	mvlen=np.std(allconf)
-	stepsz=mvlen/((options.nframe-1)/2.)
+	stepsz=old_div(mvlen,(old_div((options.nframe-1),2.)))
 	framepos=np.arange(-mvlen,mvlen+1e-14, stepsz)+np.mean(allconf)
 	print("Motion steps : Number of particles")
 	winsz=stepsz*.6
@@ -325,7 +327,7 @@ class GaussianModel(object):
 		ang=orient_input
 		azp=ang[:,0]+np.pi
 		altp=np.pi-ang[:,1]
-		phip=np.pi-ang[:,2]-np.pi/2
+		phip=np.pi-ang[:,2]-old_div(np.pi,2)
 
 		matrix=tf.stack([(tf.cos(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.sin(phip)),
 		(tf.cos(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.sin(phip)),
@@ -351,7 +353,7 @@ class GaussianModel(object):
 		ty=ang[:,4][:,None]
 		mirror=ang[:,3][:,None]
 
-		ballpos_rot_trans=tf.stack([ballpos_rot[:,:,0]+tx+sz/2, mirror*(ballpos_rot[:,:,1]+ty)+sz/2, ballpos_rot[:,:,2]], 0)
+		ballpos_rot_trans=tf.stack([ballpos_rot[:,:,0]+tx+old_div(sz,2), mirror*(ballpos_rot[:,:,1]+ty)+old_div(sz,2), ballpos_rot[:,:,2]], 0)
 		ballpos_rot_trans=tf.transpose(ballpos_rot_trans, [1,2,0])
 		bpos=ballpos_rot_trans[:,:, :2]
 		
@@ -363,15 +365,15 @@ class GaussianModel(object):
 		py=grid_y-bpy
 		wt=balls_wt[:, None, None]
 		amp=balls_amp[:, None, None]
-		pgauss=0.5*np.sqrt(np.pi)*amp*tf.sqrt(wt)*tf.exp(-(px**2+py**2)/wt)
+		pgauss=0.5*np.sqrt(np.pi)*amp*tf.sqrt(wt)*tf.exp(old_div(-(px**2+py**2),wt))
 		imgs=tf.reduce_sum(pgauss, axis=1)
 		
 		#### make 2D projections in Fourier space
-		bposft=(bpos-sz/2.)*np.pi
+		bposft=(bpos-old_div(sz,2.))*np.pi
 		bpxft=bposft[:,:,0][:,:, None, None]
 		bpyft=bposft[:,:,1][:,:, None, None]
-		gridxft=((grid_x-sz/2.)/sz*2.).astype(np.float32)
-		gridyft=((grid_y-sz/2.)/sz*2.).astype(np.float32)
+		gridxft=((grid_x-old_div(sz,2.))/sz*2.).astype(np.float32)
+		gridyft=((grid_y-old_div(sz,2.))/sz*2.).astype(np.float32)
 
 		gridxft=np.fft.ifftshift(gridxft)
 		gridyft=np.fft.ifftshift(gridyft)
@@ -390,11 +392,11 @@ class GaussianModel(object):
 		
 		#### compute particle-projection FRC 
 		x,y= grid_x, grid_y
-		rr=np.sqrt((x - sz/2)**2 + (y - sz/2)**2).astype(int)
+		rr=np.sqrt((x - old_div(sz,2))**2 + (y - old_div(sz,2))**2).astype(int)
 		rr=np.fft.fftshift(rr)
 		
-		rings=np.zeros((sz,sz,sz/2), dtype=np.float32) #### Fourier rings
-		for i in range(sz/2):
+		rings=np.zeros((sz,sz,old_div(sz,2)), dtype=np.float32) #### Fourier rings
+		for i in range(old_div(sz,2)):
 			rings[:,:,i]=(rr==i)
 		
 		#### normalization per ring
@@ -408,11 +410,11 @@ class GaussianModel(object):
 		nrm=tf.sqrt(nrm0)*tf.sqrt(nrm1)
 		nrm=tf.maximum(nrm, 1e-5) #### so we do not divide by 0
 		#### min/max resolution considered
-		freq=1./np.fft.fftfreq(sz, apix)[:sz/2]
+		freq=old_div(1.,np.fft.fftfreq(sz, apix)[:old_div(sz,2)])
 		fq= np.where(np.logical_and(freq<freq_bound[0], freq>freq_bound[1]))[0]
 		#### average FRC per batch
 		ccc=tf.real(imgs_cpx)*tf.real(data_cpx)+tf.imag(imgs_cpx)*tf.imag(data_cpx)
-		frc=-tf.tensordot(ccc, rings, [[1,2],[0,1]])/nrm
+		frc=old_div(-tf.tensordot(ccc, rings, [[1,2],[0,1]]),nrm)
 		self.score=score=tf.reduce_mean(frc[:,fq[0]:fq[-1]], axis=1)
 		self.loss=loss=tf.reduce_mean(score)
 		
@@ -448,7 +450,7 @@ class GaussianModel(object):
 		
 		session=self.session
 		sz=self.sz
-		bp=session.run(self.ballpos_conf)+sz/2
+		bp=session.run(self.ballpos_conf)+old_div(sz,2)
 		wt=session.run(self.balls_wt)
 		amp=session.run(self.balls_amp)
 		#print bp.shape, wt.shape
@@ -461,7 +463,7 @@ class GaussianModel(object):
 			a=amp[i]
 			d=(ind_np-p)**2
 			w=wt[i]
-			mp+=a*np.exp(-np.sum(d,axis=3)/(w))
+			mp+=a*np.exp(old_div(-np.sum(d,axis=3),(w)))
 		e=from_numpy(mp)
 		#     e.process_inplace("xform.applysym",{"sym":"d7"})
 		return e
@@ -533,12 +535,12 @@ class GaussianModel(object):
 			selid=np.arange(nball)
 		
 		ncopy=1 ### for symmetry
-		idx=np.zeros((nball/ncopy, 3), dtype=bool)
+		idx=np.zeros((old_div(nball,ncopy), 3), dtype=bool)
 		idx[selid]=1
 		idx=idx.flatten()
 		
 		#### flatten and normalize the gradients
-		grd_flatten=grds.reshape((-1, nball, 3))/mlt[None,:, None]
+		grd_flatten=old_div(grds.reshape((-1, nball, 3)),mlt[None,:, None])
 		grd_flatten=grd_flatten.reshape((-1, nball*3))
 		
 		#### now do pca
@@ -547,7 +549,7 @@ class GaussianModel(object):
 		ptmot=pca.fit_transform(grd_flatten[:,idx])
 		pc=np.zeros(nball*3/ncopy)
 		pc[idx]=pca.components_[0]
-		pc=pc.reshape((nball/ncopy, -1))
+		pc=pc.reshape((old_div(nball,ncopy), -1))
 		
 		#### set the maximum amplitude of eigen-vecot to be the maximum width
 		rr=np.sqrt(np.max(session.run(self.balls_wt)))

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+from past.utils import old_div
 from builtins import range
 import	global_def
 from	global_def import *
@@ -49,7 +51,7 @@ def makeAngRes(freqvol, nx, ny, nz, pxSize):
 			for z in range(nz):
 				#All voxels to apix/ absolute Resolution. If 0 then leave as it is.
 				qt = freqvol.get_value_at(x,y,z)
-				if(qt > 0.0): outAngResVol.set_value_at_fast(x,y,z, pxSize/qt )
+				if(qt > 0.0): outAngResVol.set_value_at_fast(x,y,z, old_div(pxSize,qt) )
 
 	return outAngResVol
 
@@ -200,7 +202,7 @@ def main():
 				break
 		"""		
 		lp = int(nn/2/options.step+0.5)
-		step = 0.5/lp
+		step = old_div(0.5,lp)
 
 		freqvol = model_blank(nn,nn,nn)
 		resolut = []
@@ -218,7 +220,7 @@ def main():
 
 			tmp3 = Util.muln_img(u,v)
 			dp = Util.infomask(tmp3,m,True)[0]
-			resolut.append([i,(fl+fh)/2.0, dp/do])
+			resolut.append([i,old_div((fl+fh),2.0), old_div(dp,do)])
 
 			tmp1 = Util.box_convolution(tmp1, nk)
 			tmp2 = Util.box_convolution(tmp2, nk)
@@ -237,7 +239,7 @@ def main():
 			Util.div_img(tmp3,tmp1)
 
 			Util.mul_img(tmp3,m)
-			freq=(fl+fh)/2.0
+			freq=old_div((fl+fh),2.0)
 			bailout = True
 			for x in range(nn):
 				for y in range(nn):

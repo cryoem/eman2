@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2015-03
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 
@@ -138,7 +140,7 @@ def interpolate(pt1,pt2):
 	#print pt1,pt2
 	ret=[]
 	for u in range(int(round(d))+1):
-		t=u/d
+		t=old_div(u,d)
 		ret.append([int(round((1-t)*i[0]+t*i[1])) for i in zip(pt1,pt2)])
 	return ret
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 03/06/2009 (sludtke@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 # e2parallel.py Steven Ludtke
 # This program implements, via various options, the parallelism system for EMAN2
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -359,7 +361,7 @@ class TaskData(QtCore.QAbstractTableModel):
 			try: 
 				if task.progtime==None or task.progtime[1]==-1 : ret = "-"
 				elif task.progtime[1]==0 : ret= "#"
-				elif task.progtime[1]<100 : ret= "#"*(1+task.progtime[1]/5)
+				elif task.progtime[1]<100 : ret= "#"*(1+old_div(task.progtime[1],5))
 				else : ret = "DONE"
 				if task.progtime[0]-time.time()>300 : ret+=" ?"
 			except: ret="?"

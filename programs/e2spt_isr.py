@@ -30,6 +30,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import os
 from EMAN2 import *
@@ -345,11 +347,11 @@ def main():
 					print("ERROR: errors and scores2d are the same")
 					sys.exit() 
 				
-				fmeanscore2d = sum(fscores2d)/len(fscores2d)
+				fmeanscore2d = old_div(sum(fscores2d),len(fscores2d))
 				fmeanscores2d[ i ][f].append( fmeanscore2d )
 				
 				if ferrors and errorswitch:
-					fmeanerror =  sum(ferrors)/len(ferrors)
+					fmeanerror =  old_div(sum(ferrors),len(ferrors))
 					fmeanerrors[ i ][f].append( fmeanerror )
 				
 				#fmeanscores2d.update( i:{ f:fmeanscore2d } )
@@ -412,7 +414,7 @@ def main():
 			#print "therefore ff in fmeanscores2d[i] is", ff 
 			iterscores2d.append( fmeanscores2d[i][ff][-1] )
 			
-		itermeanscore2d = sum(iterscores2d)/len( iterscores2d )
+		itermeanscore2d = old_div(sum(iterscores2d),len( iterscores2d ))
 		itermeanscores2d[i] = itermeanscore2d
 		
 		ys = []
@@ -438,7 +440,7 @@ def main():
 					#print "therefore ff in fmeanerrors[i] is", ff 
 					itererrors.append( fmeanerrors[i][ff][-1] )
 		
-				itermeanerror = sum(itererrors)/len( itererrors )
+				itermeanerror = old_div(sum(itererrors),len( itererrors ))
 				itermeanerrors[i] = itermeanerror
 		
 				yse = []
@@ -467,7 +469,7 @@ def main():
 				#print "therefore INITIAL ff in fmeanfscs[-1] are", ff 
 				iterfscs.append( fmeanfscs[-1][ff][-1] )
 		
-			itermeanfsc = sum(iterfscs)/len( iterfscs )
+			itermeanfsc = old_div(sum(iterfscs),len( iterfscs ))
 			itermeanfscs[-1] = itermeanfsc
 		
 		
@@ -494,7 +496,7 @@ def main():
 				#print "therefore ff in fmeanscores2d[i] is", ff 
 				iterscores3d.append( fmeanscores3d[-1][ff][-1] )
 			
-			itermeanscore3d = sum(iterscores3d)/len( iterscores3d )
+			itermeanscore3d = old_div(sum(iterscores3d),len( iterscores3d ))
 			itermeanscores3d[-1] = itermeanscore3d
 		
 			ys3 = []
@@ -520,7 +522,7 @@ def main():
 			#print "therefore ff in fmeanfscs[i] are", ff 
 			iterfscs.append( fmeanfscs[i][ff][-1] )
 		
-		itermeanfsc = sum(iterfscs)/len( iterfscs )
+		itermeanfsc = old_div(sum(iterfscs),len( iterfscs ))
 		itermeanfscs[i] = itermeanfsc
 		
 		ysf = []
@@ -550,7 +552,7 @@ def main():
 			#print "therefore ff in fmeanscores2d[i] is", ff 
 			iterscores3d.append( fmeanscores3d[i][ff][-1] )
 		
-		itermeanscore3d = sum(iterscores3d)/len( iterscores3d )
+		itermeanscore3d = old_div(sum(iterscores3d),len( iterscores3d ))
 		itermeanscores3d[i] = itermeanscore3d
 	
 		ys3 = []
@@ -676,8 +678,8 @@ def recentertilts( options, reprojections, originalseries, angles, it ):
 		score = ccf.get_value_at( maxloc[0], maxloc[1] )
 		scores2d.append( score )
 		
-		tx = -1 * ( nx/2.0 - maxloc[0])
-		ty = -1 * ( ny/2.0 - maxloc[1])
+		tx = -1 * ( old_div(nx,2.0) - maxloc[0])
+		ty = -1 * ( old_div(ny,2.0) - maxloc[1])
 		
 		dr = math.sqrt( tx*tx+ty*ty )
 		
@@ -695,7 +697,7 @@ def recentertilts( options, reprojections, originalseries, angles, it ):
 			xerror = float(tx) + float(oimg['spt_txerror'])
 			yerror = float(ty) + float(oimg['spt_tyerror'])
 			#error =  math.sqrt( xerror*xerror + yerror*yerror )/2.0
-			error = ( math.fabs(xerror) + math.fabs(yerror) )/2.0
+			error = old_div(( math.fabs(xerror) + math.fabs(yerror) ),2.0)
 			
 			if error:
 				errors.append(error)
@@ -721,9 +723,9 @@ def recentertilts( options, reprojections, originalseries, angles, it ):
 		
 		kkk+=1
 	
-	txsavg = sum(txs)/len(txs)
-	tysavg = sum(tys)/len(tys)
-	drsavg = sum(drs)/len(drs)
+	txsavg = old_div(sum(txs),len(txs))
+	tysavg = old_div(sum(tys),len(tys))
+	drsavg = old_div(sum(drs),len(drs))
 	
 	statsline = "For file: " + os.path.basename(originalseries) + ", mean tx=" + str(txsavg) + ", mean ty=" + str(txsavg) + ", mean dr=" + str(drsavg)	+ '\n'
 	
@@ -814,10 +816,10 @@ def calcWeight( angle, it, options ):
 	#if float(angle) < float(lowmostangle) or float(angle) > float(upmostangle):
 	if math.fabs( angle ) == 90.0:
 		complement = 1.0 - math.fabs( math.cos( math.radians(89.99) ) )
-		weight = math.fabs( (it+1) * math.cos( math.radians(89.99) ) / float(options.iter) ) + ( float(it)/float(options.iter)) * complement
+		weight = math.fabs( (it+1) * math.cos( math.radians(89.99) ) / float(options.iter) ) + ( old_div(float(it),float(options.iter))) * complement
 	else:
 		complement = 1.0 - math.fabs( math.cos( math.radians(angle) ) )
-		weight = math.fabs( (it+1) * math.cos( math.radians(angle) ) / float(options.iter) ) + (float(it)/float(options.iter)) * complement 
+		weight = math.fabs( (it+1) * math.cos( math.radians(angle) ) / float(options.iter) ) + (old_div(float(it),float(options.iter))) * complement 
 
 	print("Something was weighed?!!!!") #??
 	
@@ -872,11 +874,11 @@ def clip3D( vol, sizex, sizey=0, sizez=0 ):
 	if not sizez:
 		sizez=sizex
 	
-	volxc = vol['nx']/2
-	volyc = vol['ny']/2
-	volzc = vol['nz']/2
+	volxc = old_div(vol['nx'],2)
+	volyc = old_div(vol['ny'],2)
+	volzc = old_div(vol['nz'],2)
 	
-	Rvol =  Region( (2*volxc - sizex)/2, (2*volyc - sizey)/2, (2*volzc - sizez)/2, sizex , sizey , sizez)
+	Rvol =  Region( old_div((2*volxc - sizex),2), old_div((2*volyc - sizey),2), old_div((2*volzc - sizez),2), sizex , sizey , sizez)
 	vol.clip_inplace( Rvol )
 	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
 	
@@ -885,11 +887,11 @@ def clip3D( vol, sizex, sizey=0, sizez=0 ):
 
 def clip2D( img, size ):
 	
-	imgxc = img['nx']/2
-	imgyc = img['ny']/2
+	imgxc = old_div(img['nx'],2)
+	imgyc = old_div(img['ny'],2)
 	#imgzc = img['nz']/2
 	
-	Rimg =  Region( (2*imgxc - size)/2, (2*imgyc - size)/2, 0, size , size , 1)
+	Rimg =  Region( old_div((2*imgxc - size),2), old_div((2*imgyc - size),2), 0, size , size , 1)
 	img.clip_inplace( Rimg )
 	#img.process_inplace('mask.sharp',{'outer_radius':-1})
 	
@@ -1112,9 +1114,9 @@ def makevol( options, originalseriesfile, newseries, it, originalangles, origina
 	
 	rec['spt_tiltangles'] = originalangles
 
-	recxc = rec['nx']/2
-	recyc = rec['ny']/2
-	reczc = rec['nz']/2
+	recxc = old_div(rec['nx'],2)
+	recyc = old_div(rec['ny'],2)
+	reczc = old_div(rec['nz'],2)
 
 	#R2 =  Region( (2*recxc - originalsize)/2, (2*recyc - originalsize)/2, (2*reczc - originalsize)/2, originalsize , originalsize , originalsize)
 	#rec.clip_inplace( R2 )

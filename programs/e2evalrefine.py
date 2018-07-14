@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 4/2/2010
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -59,7 +61,7 @@ except:
 # slow, but for printing results should be fine
 def safediv(a,b):
 	if b==0: return 0
-	try: return a/b
+	try: return old_div(a,b)
 	except: return 0
 
 #@profile
@@ -109,10 +111,10 @@ def pqual(n,ptclincls,jsd,includeproj,verbose):
 				# Particle vs projection FSC
 				fsc = ptcl.calc_fourier_shell_correlation(projc)
 
-				third = len(fsc)/3
+				third = old_div(len(fsc),3)
 				fsc=array(fsc[third:third*2])
 #					snr=fsc/(1.0-fsc)
-				result[(truenum,it)]=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in range(4)]+[alt,az,n,defocus,ptcl["data_source"],ptcl["data_n"]]		# sum the fsc into 5 range values
+				result[(truenum,it)]=[old_div(sum(fsc[rings[k]:rings[k+1]]),(rings[k+1]-rings[k])) for k in range(4)]+[alt,az,n,defocus,ptcl["data_source"],ptcl["data_n"]]		# sum the fsc into 5 range values
 #					sums=[sum(snr[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 
 	jsd.put(result)
@@ -293,7 +295,7 @@ def main():
 
 			for angle in range(0,180,5):
 				rt=Transform({"type":"2d","alpha":angle})
-				xf=rt*Transform([1.02,0,0,0,0,1/1.02,0,0,0,0,1,0])*rt.inverse()
+				xf=rt*Transform([1.02,0,0,0,0,old_div(1,1.02),0,0,0,0,1,0])*rt.inverse()
 				esum=0
 
 				for eo in range(2):
@@ -322,7 +324,7 @@ def main():
 
 						# Particle vs projection FSC
 						fsc = ptcl.calc_fourier_shell_correlation(projc)
-						third = len(fsc)/3
+						third = old_div(len(fsc),3)
 						fsc=array(fsc[third:third*2])
 						try: esum+= sum(fsc[ring[0]:ring[1]])
 						except:
@@ -335,7 +337,7 @@ def main():
 	#					sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 	#					sums=[sum(snr[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 	#					fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(sums[0],sums[1],sums[2],sums[3],alt,az,i,defocus,j,cptcl[eo]))
-				fout.write("{}\t{}\t{}\n".format(angle,1.02,esum/(nptcl[0]+nptcl[1])))
+				fout.write("{}\t{}\t{}\n".format(angle,1.02,old_div(esum,(nptcl[0]+nptcl[1]))))
 
 			if options.verbose>1 : print("--- Class %d"%i)
 
@@ -343,9 +345,9 @@ def main():
 			print(best)
 
 			for aniso in range(0,30):
-				ai=aniso/1000.0+1.0
+				ai=old_div(aniso,1000.0)+1.0
 				rt=Transform({"type":"2d","alpha":angle})
-				xf=rt*Transform([ai,0,0,0,0,1/ai,0,0,0,0,1,0])*rt.inverse()
+				xf=rt*Transform([ai,0,0,0,0,old_div(1,ai),0,0,0,0,1,0])*rt.inverse()
 				esum=0
 
 				for eo in range(2):
@@ -374,13 +376,13 @@ def main():
 
 						# Particle vs projection FSC
 						fsc = ptcl.calc_fourier_shell_correlation(projc)
-						third = len(fsc)/3
+						third = old_div(len(fsc),3)
 						fsc=array(fsc[third:third*2])
 						esum+= sum(fsc[ring[0]:ring[1]])
 
 						best=max(best,(esum,angle,ai))
 
-				fout.write("{}\t{}\t{}\n".format(angle,ai,esum/(nptcl[0]+nptcl[1])))
+				fout.write("{}\t{}\t{}\n".format(angle,ai,old_div(esum,(nptcl[0]+nptcl[1]))))
 
 			print(best)
 
@@ -508,14 +510,14 @@ def main():
 					print(result[(j,1)])
 				except: print(" ")
 				continue
-			jj=j/2
+			jj=old_div(j,2)
 			eo=j%2
 			rmsd=sqrt((r[0]-r[8])**2+(r[1]-r[9])**2+(r[2]-r[10])**2+(r[3]-r[11])**2)
 			rmsds.append(rmsd)
 			if options.includeprojs:
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,(r[9]+r[10])/r[8],r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,old_div((r[9]+r[10]),r[8]),r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo],j,pf))
 			else:
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,(r[9]+r[10])/r[8],r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo]))
+				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(r[0],r[1],r[2],r[3],r[8],r[9],r[10],r[11],rmsd,old_div((r[9]+r[10]),r[8]),r[4],r[5],r[6],r[12],r[13],r[14],r[15],jj,cptcl[eo]))
 
 		fout.close()
 
@@ -618,25 +620,25 @@ def main():
 				
 				fsc = cl.calc_fourier_shell_correlation(pr)
 
-				third = len(fsc)/3
+				third = old_div(len(fsc),3)
 				fsc=array(fsc[third:third*2])
 				#sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
 				#fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/(cl["ptcl_repr"]+0.01),sums[2]/(1.0001-sums[2])/(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
-				sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in range(4)]		# sum the fsc into 5 range values
+				sums=[old_div(sum(fsc[rings[k]:rings[k+1]]),(rings[k+1]-rings[k])) for k in range(4)]		# sum the fsc into 5 range values
 				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],safediv(sums[1],sums[0]),cl["ptcl_repr"],alt,az,phi,safediv(safediv(sums[0],(1.0-sums[0])),cl["ptcl_repr"]),safediv(safediv(sums[1],(1.0-sums[1])),cl["ptcl_repr"]),safediv(safediv(sums[2],(1.0-sums[2])),cl["ptcl_repr"]),i,classes[eo],i,projections[eo]))
 
 				if options.evalclassdetail and eo==0:
 					out=open("cfsc{:04d}.txt".format(i),"w")
 					fsc=cl.calc_fourier_shell_correlation(pr)
-					third=len(fsc)/3
+					third=old_div(len(fsc),3)
 					ssnr=[fsc[third+1]]*5+fsc[third+1:third*2]+[fsc[third*2-1]]*4		# we extend the list by replication to make the running average more natural
 #					print(len(ssnr),third)
 					npnt=[fsc[third*2+1]]*5+fsc[third*2+1:third*3]+[fsc[-1]]*4	# number of points in each average
 					try:
-						ssnr=[sum([ssnr[k]*npnt[k] for k in range(j-4,j+5)])/sum([npnt[k] for k in range(j-4,j+5)]) for j in range(4,third+4)]			# smoothing by weighted running average
+						ssnr=[old_div(sum([ssnr[k]*npnt[k] for k in range(j-4,j+5)]),sum([npnt[k] for k in range(j-4,j+5)])) for j in range(4,third+4)]			# smoothing by weighted running average
 					except:
 						ssnr=[0,0]
-					ssnr=[v/(1.0-min(v,.999999)) for v in ssnr]							# convert FSC to pseudo SSNR
+					ssnr=[old_div(v,(1.0-min(v,.999999))) for v in ssnr]							# convert FSC to pseudo SSNR
 					for x,v in enumerate(ssnr): out.write("{}\t{}\n".format(x,v))
 					out.close()
 				
@@ -705,11 +707,11 @@ def main():
 				# find the 0.143 crossing
 				for si in range(2,len(d[0])-2):
 					if d[1][si-1]>0.143 and d[1][si]<=0.143 :
-						frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
+						frac=old_div((0.143-d[1][si]),(d[1][si-1]-d[1][si]))		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
 						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
 						try:
-							plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),
-								xytext=((lastres*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+							plt.annotate(r"{:1.1f} $\AA$".format(old_div(1.0,lastres)),xy=(lastres,0.143),
+								xytext=(old_div((lastres*4+d[0][-1]),5.0),0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
 						except: pass
 						break
 				else : lastres=0
@@ -788,12 +790,12 @@ def main():
 			mi=EMData(m,0,True)
 			
 			# insure volumes have same sampling and box-size
-			if fabs(ref["apix_x"]/mi["apix_x"]-1.0)>.001 or ref["nz"]!=mi["nz"] :
+			if fabs(old_div(ref["apix_x"],mi["apix_x"])-1.0)>.001 or ref["nz"]!=mi["nz"] :
 				if options.verbose:
 					print("{} and {} do not have the same sampling/box size. Adjusting".format(options.resolution_vsref,m))
-				sca=mi["apix_x"]/ref["apix_x"]
+				sca=old_div(mi["apix_x"],ref["apix_x"])
 				if sca>1 : cmd="e2proc3d.py {} cmp_map.hdf --fouriershrink {} --clip {},{},{} --align translational --alignref {}".format(options.resolution_vsref,sca,mi["nx"],mi["ny"],mi["nz"],m)
-				else: cmd="e2proc3d.py {} cmp_map.hdf --clip {},{},{} --scale {}  --align translational --alignref {}".format(options.resolution_vsref,mi["nx"],mi["ny"],mi["nz"],1.0/sca,m)
+				else: cmd="e2proc3d.py {} cmp_map.hdf --clip {},{},{} --scale {}  --align translational --alignref {}".format(options.resolution_vsref,mi["nx"],mi["ny"],mi["nz"],old_div(1.0,sca),m)
 				launch_childprocess(cmd)
 				if options.verbose>1 : print(cmd)
 				refname="cmp_map.hdf"
@@ -886,12 +888,12 @@ def main():
 			if hist[n][0] in ("e2refine.py","e2refine_easy.py"):
 				pl=com.find("--path=")
 				parl=com.find("--parallel=")
-				print("%s\t%1.2f hours\te2refine %s"%(difftime(ttime),ttime/3600.0,com[pl+7:].split()[0]), end=' ')
+				print("%s\t%1.2f hours\te2refine %s"%(difftime(ttime),old_div(ttime,3600.0),com[pl+7:].split()[0]), end=' ')
 				if parl>0: print(com[parl+11:].split()[0])
 				else: print(" ")
 
 			else:
-				print("\t%s\t%1.2f hours\t%s"%(difftime(ttime),ttime/3600.0,hist[n][0]))
+				print("\t%s\t%1.2f hours\t%s"%(difftime(ttime),old_div(ttime,3600.0),hist[n][0]))
 
 			n+=1
 			

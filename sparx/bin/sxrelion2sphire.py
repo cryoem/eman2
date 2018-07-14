@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # 
 #
 # Author: Toshio Moriya 03/12/2015 (toshio.moriya@mpi-dortmund.mpg.de)
@@ -41,6 +42,7 @@ from __future__ import print_function
 # 
 # ========================================================================================
 
+from past.utils import old_div
 from builtins import range
 from past.builtins import cmp
 from EMAN2 import *
@@ -90,10 +92,10 @@ def mrk_table_stat(X):
 		mi = min(mi, X[i])
 		ma = max(ma, X[i])
 	
-	avg = av/N
+	avg = old_div(av,N)
 	var = 0.0
 	if N - 1 > 0:
-		var = (va - av*av/N)/float(N - 1)
+		var = old_div((va - av*av/N),float(N - 1))
 	sd = 0.0
 	if var > 0.0:
 		sd = sqrt(var)
@@ -424,8 +426,8 @@ def main():
 					relion_defocusV = float(tokens_line[relion_dict['_rlnDefocusV'][idx_col] - 1])
 					relion_defocus_angle = float(tokens_line[relion_dict['_rlnDefocusAngle'][idx_col] - 1])
 					
-					sphire_cter_entry[idx_cter_def]       = ( relion_defocusU + relion_defocusV) / 20000   # convert format from RELION to SPHIRE
-					sphire_cter_entry[idx_cter_astig_amp] = (-relion_defocusU + relion_defocusV) / 10000   # convert format from RELION to SPHIRE
+					sphire_cter_entry[idx_cter_def]       = old_div(( relion_defocusU + relion_defocusV), 20000)   # convert format from RELION to SPHIRE
+					sphire_cter_entry[idx_cter_astig_amp] = old_div((-relion_defocusU + relion_defocusV), 10000)   # convert format from RELION to SPHIRE
 					sphire_cter_entry[idx_cter_astig_ang] = 45.0 - relion_defocus_angle # convert format from RELION to SPHIRE
 					while sphire_cter_entry[idx_cter_astig_ang] >= 180:
 						sphire_cter_entry[idx_cter_astig_ang] -= 180
@@ -461,15 +463,15 @@ def main():
 					sphire_cter_entry[idx_cter_sd_astig_ang] = 0.0
 					sphire_cter_entry[idx_cter_cv_def]       = 0.0
 					sphire_cter_entry[idx_cter_cv_astig_amp] = 0.0
-					sphire_cter_entry[idx_cter_error_def]    = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
-					sphire_cter_entry[idx_cter_error_astig]  = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
-					sphire_cter_entry[idx_cter_error_ctf]    = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_error_def]    = old_div(0.5,sphire_cter_entry[idx_cter_apix]) # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_error_astig]  = old_div(0.5,sphire_cter_entry[idx_cter_apix]) # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_error_ctf]    = old_div(0.5,sphire_cter_entry[idx_cter_apix]) # Set to Nyquist frequency
 					
 					##### Store max frequency limit related parameters ##### 
 					if relion_dict['_rlnCtfMaxResolution'][idx_col] >= 0:
 						sphire_cter_entry[idx_cter_max_freq] = float(tokens_line[relion_dict['_rlnCtfMaxResolution'][idx_col] - 1])
 					else:
-						sphire_cter_entry[idx_cter_max_freq] = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+						sphire_cter_entry[idx_cter_max_freq] = old_div(0.5,sphire_cter_entry[idx_cter_apix]) # Set to Nyquist frequency
 					
 					if relion_dict['_rlnCtfFigureOfMerit'][idx_col] >= 0:
 						sphire_cter_entry[idx_cter_reserved] = float(tokens_line[relion_dict['_rlnCtfFigureOfMerit'][idx_col] - 1])

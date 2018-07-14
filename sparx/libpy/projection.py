@@ -1,5 +1,6 @@
 #
 from __future__ import print_function
+from __future__ import division
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
@@ -29,6 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 from global_def import *
 
@@ -259,7 +261,7 @@ def prgs1d( prjft, kb, params ):
 	line = prjft.extractline(kb, nuxnew, nuynew)
 	line = fft(line)
 
-	M = line.get_xsize()/2
+	M = old_div(line.get_xsize(),2)
 	Util.cyclicshift( line, {"dx":M, "dy":0, "dz":0} )
 	line = Util.window( line, M, 1, 1, 0, 0, 0 )
 
@@ -314,7 +316,7 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 			# padd two times
 			N     = M*npad
 			# support of the window
-			kb    = Util.KaiserBessel(alpha, K, M/2, K/(2.*N), N)
+			kb    = Util.KaiserBessel(alpha, K, old_div(M,2), old_div(K,(2.*N)), N)
 			volft = vol.copy()
 			volft.divkbsinh(kb)
 			volft = volft.norm_pad(False, npad)
@@ -327,9 +329,9 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 			Ny     = My*npad
 			Nz     = Mz*npad
 			# support of the window
-			kbx    = Util.KaiserBessel(alpha, K, Mx/2, K/(2.*Nx), Nx)
-			kby    = Util.KaiserBessel(alpha, K, My/2, K/(2.*Ny), Ny)
-			kbz    = Util.KaiserBessel(alpha, K, Mz/2, K/(2.*Nz), Nz)
+			kbx    = Util.KaiserBessel(alpha, K, old_div(Mx,2), old_div(K,(2.*Nx)), Nx)
+			kby    = Util.KaiserBessel(alpha, K, old_div(My,2), old_div(K,(2.*Ny)), Ny)
+			kbz    = Util.KaiserBessel(alpha, K, old_div(Mz,2), old_div(K,(2.*Nz)), Nz)
 			volft = vol.copy()
 			volft.divkbsinh_rect(kbx,kby,kbz)
 			volft = volft.norm_pad(False, npad)
@@ -365,7 +367,7 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 	wr_four  = ringwe(numr, "F")
 	cnx = nx//2 + 1
 	cny = nx//2 + 1
-	qv = pi/180.0
+	qv = old_div(pi,180.0)
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
 
@@ -429,7 +431,7 @@ def plot_angles(agls, nx = 256):
 	# agsl: [phi, theta, psi]
 	ri = nx//2
 	rr = ri-1
-	conv = pi/180.0
+	conv = old_div(pi,180.0)
 	for i in range(len(agls)):
 		if agls[i][1] > 90.0:
 			agls[i][0] = agls[i][0] + 180.0
@@ -513,7 +515,7 @@ def cml_init_rnd(trials, rand_seed):
 		val_f   = randrange(f_min, f_max)
 		val_o   = randrange(0, 2)
 		if val_o: val_rnd = int(val_rnd * val_f)
-		else:     val_rnd = int(val_rnd / float(val_f))
+		else:     val_rnd = int(old_div(val_rnd, float(val_f)))
 		if val_rnd not in rnd:
 			rnd.append(val_rnd)
 			itrials += 1
@@ -530,7 +532,7 @@ def cml_disc(Prj, Ori, Rot, flag_weights=True):
 		for i in range(g_n_lines): weights[i]  = mw - weights[i]
 		sw = sum(weights)
 		if sw == 0:
-			weights = [6.28 / float(g_n_lines)] * g_n_lines
+			weights = [old_div(6.28, float(g_n_lines))] * g_n_lines
 		else:
 			for i in range(g_n_lines):
 				weights[i] /= sw
@@ -579,7 +581,7 @@ def cml_init_global_var(dpsi, delta, nprj, debug):
 
 	global g_anglst, g_d_psi, g_n_psi, g_i_prj, g_n_lines, g_n_prj, g_n_anglst, g_debug, g_seq
 	# TO FIX
-	v = 180.0 / float(dpsi)
+	v = old_div(180.0, float(dpsi))
 	if v != int(v):
 		v    = int(v + 0.5)
 		dpsi = 180 // v
@@ -587,7 +589,7 @@ def cml_init_global_var(dpsi, delta, nprj, debug):
 	g_anglst   = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
 	g_n_anglst = len(g_anglst)
 	g_d_psi    = dpsi
-	g_n_psi    = int(360 / dpsi)
+	g_n_psi    = int(old_div(360, dpsi))
 	g_i_prj    = -1
 	g_n_lines  = (nprj - 1) * nprj / 2
 	g_n_prj    = nprj
@@ -652,7 +654,7 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 		# normalize under the mask
 		[mean_a, sigma, imin, imax] = Util.infomask(image, mask2D, True)
 		image -= mean_a
-		Util.mul_scalar(image, 1.0/sigma)
+		Util.mul_scalar(image, old_div(1.0,sigma))
 		Util.mul_img(image, mask2D)
 
 		# sinogram
@@ -677,7 +679,7 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 			#line = filt_tanh(line, ou / float(nx), ou / float(nx))
 			# normalize this line
 			[mean_l, sigma_l, imin, imax] = Util.infomask(line, None, True)
-			line = (line - mean_l) / sigma_l
+			line = old_div((line - mean_l), sigma_l)
 			# fft
 			fftip(line)
 			# filter (cut part of coef) and create mirror line
@@ -703,9 +705,9 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	# support of the window
 	K     = 6
 	alpha = 1.75
-	r     = M / 2
+	r     = old_div(M, 2)
 	v     = K / 2.0 / N
-	kb     = Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
+	kb     = Util.KaiserBessel(alpha, K, r, old_div(K, (2. * N)), N)
 	volft  = image2D.average_circ_sub()  	# ASTA - in spider
 	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
 	volft  = volft.norm_pad(False, npad)
@@ -714,8 +716,8 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	volft.fft_shuffle()
 
 	# get line projection
-	nangle = int(180.0 / d_psi)
-	dangle = M_PI / float(nangle)
+	nangle = int(old_div(180.0, d_psi))
+	dangle = old_div(M_PI, float(nangle))
 	e = EMData()
 	e.set_size(diameter, nangle, 1)
 	offset = M - diameter // 2
@@ -743,9 +745,9 @@ def cml_sinogram_shift(image2D, diameter, shifts = [0.0, 0.0], d_psi = 1):
 	# support of the window
 	K     = 6
 	alpha = 1.75
-	r     = M / 2
+	r     = old_div(M, 2)
 	v     = K / 2.0 / N
-	kb     = Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
+	kb     = Util.KaiserBessel(alpha, K, r, old_div(K, (2. * N)), N)
 	volft  = image2D.average_circ_sub()  	# ASTA - in spider
 	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
 	volft  = volft.norm_pad(False, npad)
@@ -759,8 +761,8 @@ def cml_sinogram_shift(image2D, diameter, shifts = [0.0, 0.0], d_psi = 1):
 	volft.fft_shuffle()
 
 	# get line projection
-	nangle = int(180.0 / d_psi)
-	dangle = M_PI / float(nangle)
+	nangle = int(old_div(180.0, d_psi))
+	dangle = old_div(M_PI, float(nangle))
 	e = EMData()
 	e.set_size(diameter, nangle, 1)
 	offset = M - diameter // 2
@@ -871,7 +873,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 						for i in range(g_n_lines): weights[i]  = mw - weights[i]
 						sw = sum(weights)
 						if sw == 0:
-							weights = [6.28 / float(g_n_lines)] * g_n_lines
+							weights = [old_div(6.28, float(g_n_lines))] * g_n_lines
 						else:
 							for i in range(g_n_lines):
 								weights[i] /= sw
@@ -1033,7 +1035,7 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 						for i in range(g_n_lines): weights[i]  = mw - weights[i]
 						sw = sum(weights)
 						if sw == 0:
-							weights = [6.28 / float(g_n_lines)] * g_n_lines
+							weights = [old_div(6.28, float(g_n_lines))] * g_n_lines
 						else:
 							for i in range(g_n_lines):
 								weights[i] /= sw
@@ -1125,8 +1127,8 @@ def cml2_ori_collinearity(Ori):
 	from numpy import array, linalg, matrix, zeros, power
 
 	# ori 3d sphere map to 2d plan
-	rad2deg = 180.0 / pi
-	deg2rad = 1.0 / rad2deg
+	rad2deg = old_div(180.0, pi)
+	deg2rad = old_div(1.0, rad2deg)
 	nori    = len(Ori) // 4
 	lx, ly  = [], []
 	for n in range(nori):

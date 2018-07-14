@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2017-03
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -20,16 +22,16 @@ def make3d(aptcls, sym="c1"):
 	# insert slices into initial volume
 	recon.setup()
 	for p in aptcls:
-		p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+		p2=p.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 		p3=recon.preprocess_slice(p2,p["xform.projection"])
 		recon.insert_slice(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0))
 
 	threed=recon.finish(True)
 	threed.process_inplace("xform.applysym", {"sym":sym})
 	threed.process_inplace("xform.centerofmass")
-	threed=threed.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+	threed=threed.get_clip(Region(old_div((pad-boxsize),2),old_div((pad-boxsize),2),old_div((pad-boxsize),2),boxsize,boxsize,boxsize))
 	threed.process_inplace("normalize")
-	threed.process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
+	threed.process_inplace("mask.gaussian",{"inner_radius":old_div(boxsize,3.0),"outer_radius":old_div(boxsize,12.0)})
 
 	
 	
@@ -52,7 +54,7 @@ def do_ali_fullcov(ptcls, projs):
 	pts=[(p, None) for p in ptcls]
 	for i in range(len(projs)):
 		#sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
-		sim=cmponetomany(pts,projs[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":20}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
+		sim=cmponetomany(pts,projs[i],align=("rotate_translate_tree",{"maxshift":old_div(boxsize,5), "maxres":20}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
 		bs=min(sim)
 		
 		bss+=bs[0]
@@ -66,7 +68,7 @@ def do_ali_fullcov(ptcls, projs):
 	for i in range(len(projs)):
 		n=projs[i]["match_n"]
 		quals.append(projs[i]["match_qual"])
-		aptcls.append(ptcls[n].align("rotate_translate_tree",projs[i],{"maxshift":boxsize/5, "maxres":20},"frc",{}))
+		aptcls.append(ptcls[n].align("rotate_translate_tree",projs[i],{"maxshift":old_div(boxsize,5), "maxres":20},"frc",{}))
 		aptcls[-1].process_inplace("normalize.toimage",{"to":projs[i]})
 		#aptcls[-1].process_inplace("normalize")
 		aptcls[-1]["match_n"]=i
@@ -82,7 +84,7 @@ def do_ali(ptcls, projs):
 	pjs=[(p, None) for p in projs]
 	for i in range(len(ptcls)):
 		#sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
-		sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_tree",{"maxshift":boxsize/5, "maxres":20}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":160,"maxres":20}))
+		sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_tree",{"maxshift":old_div(boxsize,5), "maxres":20}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":160,"maxres":20}))
 		bs=min(sim)
 		
 		bss+=bs[0]
@@ -100,7 +102,7 @@ def do_ali(ptcls, projs):
 	for i in range(len(ptcls)):
 		n=ptcls[bslst[i][1]]["match_n"]
 		quals.append(ptcls[bslst[i][1]]["match_qual"])
-		aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_tree",projs[n],{"maxshift":boxsize/5, "maxres":20},"frc",{}))
+		aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_tree",projs[n],{"maxshift":old_div(boxsize,5), "maxres":20},"frc",{}))
 		aptcls[-1].process_inplace("normalize.toimage",{"to":projs[n]})
 		#aptcls[-1].process_inplace("normalize")
 		aptcls[-1].add(-aptcls[-1]["mean"])
@@ -169,7 +171,7 @@ def make_model(jsd,myid, options):
 			p.process_inplace("normalize")
 			if options.addnoise>0:
 				p.process_inplace("math.addsignoise",{"noise":options.addnoise})
-			p.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.targetres})
+			p.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.,options.targetres)})
 			#p.process_inplace("normalize.edgemean")
 			p.process_inplace("normalize")
 			
@@ -204,7 +206,7 @@ def make_model(jsd,myid, options):
 		learnrate*=lrmult
 		
 		
-		mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.targetres})
+		mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.,options.targetres)})
 		#mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
 		#mapnew.process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":map0["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
 		ddmap=mapnew-map0

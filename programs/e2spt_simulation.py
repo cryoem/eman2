@@ -30,6 +30,8 @@ Author: Jesus Galaz - 2011, Last update: 07/Nov/2017
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from optparse import OptionParser
 from EMAN2 import *
@@ -434,7 +436,7 @@ def randomizer(options, model, tag):
 
 		if options.preferredtop and not options.preferredside:
 			#paltstop = preferredalt( options, mu=180,sigma=45, nptcls=options.nptcls )
-			ntop = int(round(options.nptcls/2.0))
+			ntop = int(round(old_div(options.nptcls,2.0)))
 			nbottom = options.nptcls -ntop 
 			#palts = paltstop
 			palts = numpy.append( preferredalt( options, mu=180,sigma=45, nptcls=ntop ), preferredalt( options, mu=0,sigma=45, nptcls=nbottom ) )
@@ -445,7 +447,7 @@ def randomizer(options, model, tag):
 			palts = paltsside
 
 		if options.preferredside and options.preferedtop:
-			ntop = int(round(options.nptcls/4.0))
+			ntop = int(round(old_div(options.nptcls,4.0)))
 			nbottom = ntop
 			nside = options.nptcls -ntop -nbottom  	
 			palts = numpy.append( preferredalt( options, mu=180,sigma=45, nptcls=ntop ), preferredalt( options, mu=0,sigma=45, nptcls=nbottom ), preferredalt( options, mu=90,sigma=45, nptcls=nside ) )
@@ -664,8 +666,8 @@ def plotvals( options, vals, tag ):
 	sigmavals= numpy.std(vals)
 	meanvals = numpy.mean(vals)
 
-	cuberoot = numpy.power(len(vals),1.0/3.0)
-	width = (3.5*sigmavals)/cuberoot
+	cuberoot = numpy.power(len(vals),old_div(1.0,3.0))
+	width = old_div((3.5*sigmavals),cuberoot)
 	
 	#print "Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width
 	
@@ -684,7 +686,7 @@ def plotvals( options, vals, tag ):
 	elif 'x' in tag or 'y' in tag or 'z' in tag:
 		pass
 
-	calcbins = int(round( (maxvals - minvals ) / width ))
+	calcbins = int(round( old_div((maxvals - minvals ), width) ))
 
 	#count, bins, ignored = plt.hist(vals, 30, normed=True)
 	ignored = plt.hist(vals, calcbins)
@@ -885,7 +887,7 @@ def genangles( options ):
 		alt = lower_bound
 		upper_bound = options.tiltrange
 		nslices = options.nslices
-		tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices - 1),2)	
+		tiltstep = round(old_div(( float(upper_bound) - float(lower_bound) ), float(nslices - 1)),2)	
 	
 		lines = []
 	
@@ -955,7 +957,7 @@ class SubtomoSimTask(JSTask):
 		upper_bound = options.tiltrange
 	
 		nslices = options.nslices
-		tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices - 1),2)	
+		tiltstep = round(old_div(( float(upper_bound) - float(lower_bound) ), float(nslices - 1)),2)	
 	
 		#extraslices = 0
 		#if options.fillwedge:
@@ -976,14 +978,14 @@ class SubtomoSimTask(JSTask):
 			The center of a particle cannot be right at the edge of the tomogram; it has to be
 			at least ptcl_size/2 away from it.
 			'''
-			px = random.uniform(-1* options.gridholesize/2.0 + (apix*image['nx']/2.0)/10000, options.gridholesize/2.0 - (apix*image['nx']/2.0)/10000)			
+			px = random.uniform(-1* options.gridholesize/2.0 + old_div((apix*image['nx']/2.0),10000), old_div(options.gridholesize,2.0) - old_div((apix*image['nx']/2.0),10000))			
 			
 		pz=0
-		if options.icethickness > image['nx']/2.0:
+		if options.icethickness > old_div(image['nx'],2.0):
 			'''
 			Beware, --icethickness supplied in microns
 			'''
-			coordz = random.randint(0 + image['nx']/2, int(round(options.icethickness*10000/apix - image['nx']/2 )) )
+			coordz = random.randint(0 + old_div(image['nx'],2), int(round(options.icethickness*10000/apix - old_div(image['nx'],2) )) )
 		
 			'''
 			Calculate the particle's distance 'pz' in microns to the mid section of the tomogram in Z 
@@ -991,7 +993,7 @@ class SubtomoSimTask(JSTask):
 			a particle to this plane (above or below in the ice) will affect its defocus.
 			'''
 		
-			pz = coordz*apix/10000 - options.icethickness/2	
+			pz = coordz*apix/10000 - old_div(options.icethickness,2)	
 		
 		'''
 		Calculate coordx from px since it's shifted by half the gridholesize (the position of the tilt axis)
@@ -999,9 +1001,9 @@ class SubtomoSimTask(JSTask):
 		For coordy, generate a random coordinate afresh.
 		For coordz, generate a random coordinate within --icethickness range
 		'''
-		coordx = int( round( 10000*(px + options.gridholesize/2)/apix ))
-		coordy = random.randint(0 + image['nx']/2, int(round(options.gridholesize*10000/apix - image['nx']/2 )) )									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
-		coordz = int( round( image['nx']/2.0 ) )
+		coordx = int( round( 10000*(px + old_div(options.gridholesize,2))/apix ))
+		coordy = random.randint(0 + old_div(image['nx'],2), int(round(options.gridholesize*10000/apix - old_div(image['nx'],2) )) )									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
+		coordz = int( round( old_div(image['nx'],2.0) ) )
 		
 		if options.set2tiltaxis:
 			coordx = 0
@@ -1345,7 +1347,7 @@ def noiseit( prj_r, options, nslices, outname, i, ctffactor ):
 		noiseStackName = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_NOISE.hdf')
 		noise.write_image( noiseStackName, -1 )
 	
-	noise *= float( options.snr )/ ctffactor
+	noise *= old_div(float( options.snr ), ctffactor)
 
 	#if noise:
 	#print "I will add noise"
@@ -1354,7 +1356,7 @@ def noiseit( prj_r, options, nslices, outname, i, ctffactor ):
 	#prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 	#prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
 	
-	fractionationfactor = 61.0/nslices		#At snr = 10, simulated subtomograms look like empirical ones for +-60 deg data collection range
+	fractionationfactor = old_div(61.0,nslices)		#At snr = 10, simulated subtomograms look like empirical ones for +-60 deg data collection range
 											#using 2 deg tilt step. If 61 slices go into each subtomo, then the fractionation factor
 											#Will be 1. Otherwise, if nslices is > 61 the signal in each slice will be diluted.
 											#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 

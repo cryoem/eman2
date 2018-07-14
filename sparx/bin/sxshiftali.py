@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -34,6 +35,7 @@ from __future__ import print_function
 
 # clean up the code, make documentation
 
+from past.utils import old_div
 from builtins import range
 import os
 import global_def
@@ -236,7 +238,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		if myid == main_node:
 			if CTF:
 				tavg = Util.divn_filter(avg, ctf_2_sum)
-			else:	 tavg = Util.mult_scalar(avg, 1.0/float(nima))
+			else:	 tavg = Util.mult_scalar(avg, old_div(1.0,float(nima)))
 		else:
 			tavg = EMData(nx, ny, 1, False)                               
 
@@ -308,8 +310,8 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		if not oneDx:
 			sy_sum_total = bcast_number_to_all(sy_sum_total, source_node = main_node)
 
-		sx_ave = round(float(sx_sum_total)/nima)
-		sy_ave = round(float(sy_sum_total)/nima)
+		sx_ave = round(old_div(float(sx_sum_total),nima))
+		sy_ave = round(old_div(float(sy_sum_total),nima))
 		for im in range(len(data)): 
 			p1_x = ishift_x[im] - sx_ave
 			p1_y = ishift_y[im] - sy_ave
@@ -496,7 +498,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 			del ctf_abs_sum
 		else:
 			temp = EMData(nx, ny, 1, False)
-			tsnr = 1./snr
+			tsnr = old_div(1.,snr)
 			for i in range(0,nx+2,2):
 				for j in range(ny):
 					temp.set_value_at(i,j,tsnr)
@@ -522,7 +524,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 
 		if myid == main_node:
 			if CTF:  tavg = Util.divn_filter(avg, ctf_2_sum)
-			else:    tavg = Util.mult_scalar(avg, 1.0/float(nima))
+			else:    tavg = Util.mult_scalar(avg, old_div(1.0,float(nima)))
 		else:
 			tavg = model_blank(nx,ny)
 
@@ -640,7 +642,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 		# #print myid,sx_sum,total_nfils
 		sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 		if myid == main_node:
-			sx_sum = float(sx_sum[0])/total_nfils
+			sx_sum = old_div(float(sx_sum[0]),total_nfils)
 			print_msg("Average shift  %6.2f\n"%(sx_sum))
 		else:
 			sx_sum = 0.0
@@ -712,7 +714,7 @@ def get_multiplicity(U, u, i):
 
 def gaussian(sigma, a, mu, x):
 	from math import sqrt, pi
-	return a*exp(-(x-mu)**2/(2.0*sigma**2))*1.0/(sigma*sqrt(2*pi))
+	return a*exp(old_div(-(x-mu)**2,(2.0*sigma**2)))*1.0/(sigma*sqrt(2*pi))
 			
 if __name__ == "__main__":
 	main()

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: 
 # Copyright (c) 2012 The University of Texas - Houston Medical School
@@ -30,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from sparx import *
@@ -310,9 +312,9 @@ def main():
 					ERROR("Input stack is not prepared for symmetry, please follow instructions", "sx3dvariability", 1, myid)
 				from utilities import get_symt
 				i = len(get_symt(options.sym))
-				if((nima/i)*i != nima):
+				if((old_div(nima,i))*i != nima):
 					ERROR("The length of the input stack is incorrect for symmetry processing", "sx3dvariability", 1, myid)
-				symbaselen = nima/i
+				symbaselen = old_div(nima,i)
 			else:  symbaselen = nima
 		else:
 			nima = 0
@@ -342,7 +344,7 @@ def main():
 		Tracker["nz"]  = nx
 		
 		symbaselen     = bcast_number_to_all(symbaselen)
-		if radiuspca == -1: radiuspca = nx/2-2
+		if radiuspca == -1: radiuspca = old_div(nx,2)-2
 
 		if myid == main_node: log_main.add("%-70s:  %d\n"%("Number of projection", nima))
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
@@ -454,7 +456,7 @@ def main():
 				log_main.add("%-70s:  %.2f\n"%("Finding neighboring projections lasted [s]", time()-t2))
 				log_main.add("%-70s:  %d\n"%("Number of groups processed on the main node", len(proj_list)))
 				if options.VERBOSE:
-					log_main.add("Grouping projections took: ", (time()-t2)/60	, "[min]")
+					log_main.add("Grouping projections took: ", old_div((time()-t2),60)	, "[min]")
 					log_main.add("Number of groups on main node: ", len(proj_list))
 			mpi_barrier(MPI_COMM_WORLD)
 
@@ -528,7 +530,7 @@ def main():
 
 				if not options.no_norm:
 					#print grp_imgdata[j].get_xsize()
-					mask = model_circle(nx/2-2, nx, nx)
+					mask = model_circle(old_div(nx,2)-2, nx, nx)
 					for k in range(img_per_grp):
 						ave, std, minn, maxx = Util.infomask(grp_imgdata[k], mask, False)
 						grp_imgdata[k] -= ave
@@ -581,7 +583,7 @@ def main():
 
 				var = model_blank(nx,ny)
 				for q in grp_imgdata:  Util.add_img2( var, q )
-				Util.mul_scalar( var, 1.0/(len(grp_imgdata)-1))
+				Util.mul_scalar( var, old_div(1.0,(len(grp_imgdata)-1)))
 				# Switch to std dev
 				var = square_root(threshold(var))
 				#if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
@@ -748,7 +750,7 @@ def main():
 			if myid == main_node:
 				from fundamentals import fpol
 				res = fpol(res, int(org_nx*options.decimate+0.5),  int(org_ny*options.decimate+0.5),  int(org_nz*options.decimate+0.5))
-				res	= resample(res, 1./options.decimate)
+				res	= resample(res, old_div(1.,options.decimate))
 				set_pixel_size(res, 1.0)
 				res.write_image(os.path.join(options.output_dir, options.var3D))
 				log_main.add("%-70s:  %.2f\n"%("Reconstructing 3D variability took [s]", time()-t6))

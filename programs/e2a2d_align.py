@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # align all particles to reference and store alignment results
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -28,7 +30,7 @@ def ali2dfn(jsd,fsp,il,a,options):
 		else: 
 			sim=c.cmp(options.cmp[0],a,options.cmp[1])
 			rslt.append((i,{"xform.align2d":c["xform.align2d"],"score":sim}))
-		if il[0]==0 : frac=n/float(len(il))		# we monitor progress in the first thread
+		if il[0]==0 : frac=old_div(n,float(len(il)))		# we monitor progress in the first thread
 
 	jsd.put((fsp,rslt))
 #	if options.verbose>1 : print "{}\t{}\t{}\t{}".format(fsp,i,time.time()-t,c[0]["score"])

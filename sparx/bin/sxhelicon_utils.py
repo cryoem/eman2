@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 def main():
 	import os
@@ -193,7 +195,7 @@ def main():
 			if len(args) != 1:
 				print("Incorrect number of parameters")
 				sys.exit()
-			dpp = (float(options.dp)/options.apix)
+			dpp = (old_div(float(options.dp),options.apix))
 			rise = int(dpp)
 			if(abs(float(rise) - dpp)>1.0e-3):
 				print("  dpp has to be integer multiplicity of the pixel size")
@@ -216,8 +218,8 @@ def main():
 			consistency_params(args[0], options.consistency, options.dphi, options.dp, options.apix,phithr=options.phithr, ythr=options.ythr, THR=options.segthr)
 			sys.exit()
 
-		rminp = int((float(options.rmin)/options.apix) + 0.5)
-		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
+		rminp = int((old_div(float(options.rmin),options.apix)) + 0.5)
+		rmaxp = int((old_div(float(options.rmax),options.apix)) + 0.5)
 		
 		from utilities import get_input_from_string, get_im
 
@@ -226,18 +228,18 @@ def main():
 
 		irp = 1
 		if options.ou < 0:  oup = -1
-		else:               oup = int( (options.ou/options.apix) + 0.5)
+		else:               oup = int( (old_div(options.ou,options.apix)) + 0.5)
 		xrp = ''
 		txsp = ''
 		
 		for i in range(len(xr)):
-			xrp += " "+str(float(xr[i])/options.apix)
+			xrp += " "+str(old_div(float(xr[i]),options.apix))
 		for i in range(len(txs)):
-			txsp += " "+str(float(txs[i])/options.apix)
+			txsp += " "+str(old_div(float(txs[i]),options.apix))
 
-		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
-		nearbyp = int( (options.nearby/options.apix) + 0.5)
-		zstepp = int( (options.zstep/options.apix) + 0.5)
+		searchxshiftp = int( (old_div(options.searchxshift,options.apix)) + 0.5)
+		nearbyp = int( (old_div(options.nearby,options.apix)) + 0.5)
+		zstepp = int( (old_div(options.zstep,options.apix)) + 0.5)
 
 		if options.MPI:
 			from mpi import mpi_init, mpi_finalize

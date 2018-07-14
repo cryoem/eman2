@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: John Flanagan Oct 25th 2011 (jfflanag@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -108,7 +110,7 @@ class EvenOddReso(Strategy):
 		oddavgr = Averagers.get(self.options.averager)
 		
 		# Compute the even odd maps
-		for tomo in range(0, len(tomo_db)/2, 2):
+		for tomo in range(0, old_div(len(tomo_db),2), 2):
 			evenavgr.add_image(tomo_db[tomo*2])
 			oddavgr.add_image(tomo_db[tomo*2 + 1])
 			
@@ -128,7 +130,7 @@ class EvenOddReso(Strategy):
 		
 		fscdata = evenavg.calc_fourier_shell_correlation(oddavg)
 		
-		size = len(fscdata)/3
+		size = old_div(len(fscdata),3)
 		self.freq = fscdata[0:size]
 		self.fsc = fscdata[size:size*2]
 		self.error = fscdata[size*2:size*3]

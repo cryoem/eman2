@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -29,7 +31,7 @@ def refine_ali(ids, pinfo, m, jsd, options):
 		l=pinfo[ii]
 		e=EMData(l[1], l[0])
 		b=e["nx"]
-		e=e.get_clip(Region((b-sz)/2, (b-sz)/2, sz,sz)).process("normalize")
+		e=e.get_clip(Region(old_div((b-sz),2), old_div((b-sz),2), sz,sz)).process("normalize")
 		dc=eval(l[2])
 		try:
 			dc.pop('score')
@@ -43,7 +45,7 @@ def refine_ali(ids, pinfo, m, jsd, options):
 		if e.has_attr("ctf"):
 			ctf=e["ctf"]
 			ctf.bfactor=500 #### use a fixed b factor for now...
-			ctf.dsbg=1./(e["apix_x"]*e["nx"])
+			ctf.dsbg=old_div(1.,(e["apix_x"]*e["nx"]))
 			s=np.array(ctf.compute_1d(e["nx"], ctf.dsbg, Ctf.CtfType.CTF_INTEN ))
 			s[:np.argmax(s)]=np.max(s)
 			s=np.maximum(s, 0.001)

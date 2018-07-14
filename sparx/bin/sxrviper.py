@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -207,7 +209,7 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 
 	# split_point_set = np.linspace(0.71,.99,split_point_resolution)
 	# split_point_set = np.linspace(0.71,outlier_percentile/100.0,split_point_resolution)
-	split_point_set = np.linspace(0.8,outlier_percentile/100.0,split_point_resolution)
+	split_point_set = np.linspace(0.8,old_div(outlier_percentile,100.0),split_point_resolution)
 
 	minimum_goodness_of_fit_for_both_lines = 1e20
 	optimized_split_point = -1
@@ -300,13 +302,13 @@ def measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_o
 		return TRIPLET_WITH_ANGLE_ERROR_LESS_THAN_THRESHOLD_HAS_BEEN_FOUND
 
 	if criterion_name == "80th percentile":
-		return avg_diff_per_image[int(x1*PERCENT_THRESHOLD_X)]/y1
+		return old_div(avg_diff_per_image[int(x1*PERCENT_THRESHOLD_X)],y1)
 	elif criterion_name == "fastest increase in the last quartile":
 		for k in range(5,6):
 			avg_diff_per_image_diff = [x - avg_diff_per_image[i - k] for i, x in enumerate(avg_diff_per_image)][k:]
 			
 			avg_diff_per_image_diff_max = max(avg_diff_per_image_diff)
-			avg_diff_per_image_diff_max_normalized = max(avg_diff_per_image_diff)/y1
+			avg_diff_per_image_diff_max_normalized = old_div(max(avg_diff_per_image_diff),y1)
 			
 			if avg_diff_per_image_diff.index(avg_diff_per_image_diff_max) >= int(x1*0.75):
 				return avg_diff_per_image_diff_max_normalized
@@ -493,7 +495,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 		asa,sas = ave_var(vls)
 		# do the alignment
 		nx = asa.get_xsize()
-		radius = nx/2 - .5
+		radius = old_div(nx,2) - .5
 		st = Util.infomask(asa*asa, model_circle(radius,nx,nx,nx), True)
 		goal = st[0]
 		going = True

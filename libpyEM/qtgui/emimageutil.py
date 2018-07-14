@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -32,6 +33,7 @@ from __future__ import absolute_import
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from PyQt4 import QtGui,QtCore
@@ -392,7 +394,7 @@ class ImgHistogram(QtGui.QWidget):
 		
 		for i in self.histdata: self.norm+=float(i)*i
 		self.norm-=max(self.histdata)**2
-		self.norm=sqrt(self.norm/255)*3.0
+		self.norm=sqrt(old_div(self.norm,255))*3.0
 		self.total=sum(self.histdata)
 		if self.norm==0 : self.norm=1.0
 		if self.total==0 : self.histdata=None

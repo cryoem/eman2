@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -37,6 +38,7 @@ from __future__ import print_function
 # together, and optionally iterate. Translational alignment only.
 # makebigfromseq.py <infile> <sizexsize> <dot threshold> <darkref> <lightref> <1st image shift>
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -60,14 +62,14 @@ def fixup(i,d,l):
 def transalign(i1,i2,m1,m2):
 	c1=i1.calc_ccf(i2)
 	c2=m1.calc_ccf(m2)
-	c2.process_inplace("threshold.belowtozero",{"value":c2.get_attr("sigma")/5.0})
-	c2+=c2.get_attr("sigma")/5.0
+	c2.process_inplace("threshold.belowtozero",{"value":old_div(c2.get_attr("sigma"),5.0)})
+	c2+=old_div(c2.get_attr("sigma"),5.0)
 #	display(c2)
 	c1/=c2
 	l=list(c1.calc_max_location())
 	v=c1.get_value_at(l[0],l[1],0)
-	l[0]=i1.get_xsize()/2-l[0]
-	l[1]=i1.get_ysize()/2-l[1]
+	l[0]=old_div(i1.get_xsize(),2)-l[0]
+	l[1]=old_div(i1.get_ysize(),2)-l[1]
 #	print l,v
 	
 	i=i1.copy()
@@ -115,11 +117,11 @@ def main(argv,app=None) :
 	avg.read_image(argv[1],0)
 	mask=avg.copy()
 	fixup(avg,dark,light)
-	avg=avg.get_clip(Region(-(sz[0]-avg.get_xsize())/2-dx0,-(sz[1]-avg.get_ysize())/2-dy0,sz[0],sz[1]))
+	avg=avg.get_clip(Region(old_div(-(sz[0]-avg.get_xsize()),2)-dx0,old_div(-(sz[1]-avg.get_ysize()),2)-dy0,sz[0],sz[1]))
 	avg2=avg.copy()
 	
 	mask.to_one()
-	mask=mask.get_clip(Region(-(sz[0]-mask.get_xsize())/2,-(sz[1]-mask.get_ysize())/2,sz[0],sz[1]))
+	mask=mask.get_clip(Region(old_div(-(sz[0]-mask.get_xsize()),2),old_div(-(sz[1]-mask.get_ysize()),2),sz[0],sz[1]))
 	mask+=.0000000001
 	avgn=mask.copy()			# normalization image, start with 1 for the first image, always included
 	avgn.translate(dx0,dy0,0)
@@ -131,7 +133,7 @@ def main(argv,app=None) :
 		a=EMData()
 		a.read_image(argv[1],i)
 		fixup(a,dark,light)
-		a=a.get_clip(Region(-(sz[0]-a.get_xsize())/2,-(sz[1]-a.get_ysize())/2,sz[0],sz[1]))
+		a=a.get_clip(Region(old_div(-(sz[0]-a.get_xsize()),2),old_div(-(sz[1]-a.get_ysize()),2),sz[0],sz[1]))
 		if i%25==0: avg.write_image("avg.mrc")
 	#	b=a.align("translational",a2,{"maxshift":sz[0]/2})
 		b=transalign(a,avg,mask,avgn)
@@ -163,7 +165,7 @@ def main(argv,app=None) :
 		a=EMData()
 		a.read_image(argv[1],i)
 		fixup(a,dark,light)
-		a=a.get_clip(Region(-(sz[0]-a.get_xsize())/2,-(sz[1]-a.get_ysize())/2,sz[0],sz[1]))
+		a=a.get_clip(Region(old_div(-(sz[0]-a.get_xsize()),2),old_div(-(sz[1]-a.get_ysize()),2),sz[0],sz[1]))
 		if i%25==0: avg2.write_image("avg2i.mrc")
 	#	b=a.align("translational",avg,{"maxshift":sz[0]/2})
 		b=transalign(a,avg,mask,avgn)

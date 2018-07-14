@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # Author: Steven Ludtke, 06/16/14 (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
@@ -31,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 import os
 import sys
 from EMAN2 import *
@@ -100,7 +102,7 @@ This is normally used to change the particle box-size.
 		for b in dbb:
 			b[0]+=options.shiftxy[0]
 			b[1]+=options.shiftxy[1]
-			ptcl=micro.get_clip(Region(b[0]-box/2,b[1]-box/2,box,box))
+			ptcl=micro.get_clip(Region(b[0]-old_div(box,2),b[1]-old_div(box,2),box,box))
 #			ptcl.process_inplace("mask.zeroedgefill")
 			if options.invert : ptcl.mult(-1.0)
 			ptcl["ptcl_source_coord"]=b[:2]

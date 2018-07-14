@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 12/2014
 # Fit helixes using pathwalker results
 
+from past.utils import old_div
 from builtins import range
 import EMAN2
 from EMAN2 import *
@@ -92,7 +94,7 @@ def main():
 	for ii in range(1):
 		newhlx=0
 		hlx=atoms.fit_helix(mrc,options.lenthr,options.denthr,eg,options.dirs,options.minlen)
-		for i in range(len(hlx)/8):
+		for i in range(old_div(len(hlx),8)):
 			h=[hlx[i*8+2],hlx[i*8+3],hlx[i*8+4],hlx[i*8+5],hlx[i*8+6],hlx[i*8+7]]
 			mindist=min(np.sum((allhlx-h)*(allhlx-h),axis=1))
 			print(h,mindist)
@@ -115,7 +117,7 @@ def main():
 		l1=p2-p1
 		l2=p2-p3
 		#print l1.length(),l2.length(),i,
-		a=(l1.dot(l2))/(l1.length()*l2.length())
+		a=old_div((l1.dot(l2)),(l1.length()*l2.length()))
 		a=min(a,1)
 		a=max(a,-1)
 		#print a,

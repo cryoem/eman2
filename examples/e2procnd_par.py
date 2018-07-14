@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2016-05
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 
@@ -29,7 +31,7 @@ def main():
 	### prepare the threads
 	t={}
 	nthd=options.threads
-	step=num/nthd+1
+	step=old_div(num,nthd)+1
 	pt=outfile.rfind('.')
 	tmpfname=["{}_tmp_{:02d}{}".format(outfile[:pt], i, outfile[pt:]) for i in range(nthd)]
 	

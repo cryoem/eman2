@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 # $Id$
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -136,10 +138,10 @@ def main(args):
 			tmpimg.rotate_translate()
 			#scorem = -score + (2.0 - tmpimg->lcmp(d2))
 			imgsortm.set(i, scorem)
-			print(i, score/(csym-1), scorem/(csym-1))
+			print(i, old_div(score,(csym-1)), old_div(scorem,(csym-1)))
 		else:
 			imgsort.set(i, score)
-			print(i, score/(csym-1))
+			print(i, old_div(score,(csym-1)))
 
 	if options.mirror:
 		imgsortm.sort()

@@ -1,5 +1,6 @@
 #!/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -55,7 +57,7 @@ sy=0
 ee=model_gauss_noise(1.0,256,256)
 
 for i in range(0,400+1):
-      a=i/100.0
+      a=old_div(i,100.0)
       o = rtshg(ee,a,sx,sy)
 
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Steve Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2000-2012 Baylor College of Medicine
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from past.utils import old_div
 from builtins import range
 import os, re
 from EMAN2 import *
@@ -136,12 +138,12 @@ def main():
 	for i in args:
 		try:
 			ctf=js_one_key(info_name(i+".hdf"),"ctf")[0]
-			r1=int(floor(1.0/(200.0*ctf.dsbg)))
-			r2=int(ceil(1.0/(20.0*ctf.dsbg)))
-			r3=int(floor(1.0/(10.0*ctf.dsbg)))
-			r4=int(ceil(1.0/(4.0*ctf.dsbg)))
-			losnr=sum(ctf.snr[r1:r2])/(r2-r1)
-			hisnr=sum(ctf.snr[r3:r4])/(r4-r3)
+			r1=int(floor(old_div(1.0,(200.0*ctf.dsbg))))
+			r2=int(ceil(old_div(1.0,(20.0*ctf.dsbg))))
+			r3=int(floor(old_div(1.0,(10.0*ctf.dsbg))))
+			r4=int(ceil(old_div(1.0,(4.0*ctf.dsbg))))
+			losnr=old_div(sum(ctf.snr[r1:r2]),(r2-r1))
+			hisnr=old_div(sum(ctf.snr[r3:r4]),(r4-r3))
 			if ctf.defocus>=options.mindf and ctf.defocus<=options.maxdf and ctf.bfactor>=options.minbfactor and ctf.bfactor<=options.maxbfactor and losnr>=options.minlosnr and hisnr>=options.minhisnr : outargs.append(i)
 			if options.verbose > 1: print("{}<{}<{}   {}<{}<{}   {}>{}   {}>{}".format(options.mindf,ctf.defocus,options.maxdf,options.minbfactor,ctf.bfactor,options.maxbfactor, losnr,options.minlosnr,hisnr,options.minhisnr))
 		except:

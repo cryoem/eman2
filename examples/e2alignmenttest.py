@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: David Woolford, 9/7/2007 (woolford@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
@@ -208,14 +210,14 @@ def main():
 		
 		
 	print("#### REPORT ####")
-	print("Mean az error",az_error/options.num)
-	print("Mean dx error",dx_error/options.num)
-	print("Mean dy error",dy_error/options.num)
+	print("Mean az error",old_div(az_error,options.num))
+	print("Mean dx error",old_div(dx_error,options.num))
+	print("Mean dy error",old_div(dy_error,options.num))
 	if not options.stopflip:
 		print("Flip detection accuracy", float(options.num-flip_errors)/options.num*100,"%")
 	if options.ralign:
-		print("Mean refine az error",refine_az_error/float(options.num-flip_errors))
-		print("Mean refine dx error",refine_dx_error/float(options.num-flip_errors))
-		print("Mean refine dy error",refine_dy_error/float(options.num-flip_errors))
+		print("Mean refine az error",old_div(refine_az_error,float(options.num-flip_errors)))
+		print("Mean refine dx error",old_div(refine_dx_error,float(options.num-flip_errors)))
+		print("Mean refine dy error",old_div(refine_dy_error,float(options.num-flip_errors)))
 if __name__ == "__main__":
     main()

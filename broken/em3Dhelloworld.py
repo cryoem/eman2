@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -123,7 +125,7 @@ class EM3DHelloWorld(EM3DModel):
 			glBegin(GL_QUADS)
 			
 			n = 15.0
-			d = 2.0/(n+1)
+			d = old_div(2.0,(n+1))
 			for i in range(0,int(n)):
 				for j in range(0,int(n)):
 					

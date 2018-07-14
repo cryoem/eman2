@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -356,7 +358,7 @@ class ComputeTilts(object):
 					if tiltxform.get_rotation("eman")["alt"] < self.options.maxtiltangle:
 						bestinplane = math.fabs(tiltxform.get_rotation("eman")['az'] - (-tiltxform.get_rotation("eman")['phi'] % 360))
 						besttiltangle = tiltxform.get_rotation("eman")["alt"]
-						besttiltaxis = (tiltxform.get_rotation("eman")['az'] + (-tiltxform.get_rotation("eman")['phi'] % 360))/2.0
+						besttiltaxis = old_div((tiltxform.get_rotation("eman")['az'] + (-tiltxform.get_rotation("eman")['phi'] % 360)),2.0)
 						anglefound = True
 				#self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
 				#self.test.write("\t%f %f %f Ip %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"], bestinplane))
@@ -499,23 +501,23 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 # Compute a RGB value to represent a data range. Basically convert Hue to GSB with I=0.33 and S=1.0
 def computeRGBcolor(value, minval, maxval):
 	# Normalize from 0 to 1
-	normval = (value-minval)/(maxval-minval)
+	normval = old_div((value-minval),(maxval-minval))
 	radval = normval*2*math.pi
 	if radval < 2*math.pi/3:
 		B = 0.0
-		R = 0.33*(1 + math.cos(radval)/math.cos(math.pi/3 - radval))
+		R = 0.33*(1 + old_div(math.cos(radval),math.cos(old_div(math.pi,3) - radval)))
 		G = 1.0 - R
 		return "#%02x%02x%02x"%(255*R,255*G,255*B)
 	if radval > 2*math.pi/3 and radval < 4*math.pi/3:
 		hue = radval- 2*math.pi/3
 		R = 0.0
-		G = 0.33*(1 + math.cos(hue)/math.cos(math.pi/3 - hue))
+		G = 0.33*(1 + old_div(math.cos(hue),math.cos(old_div(math.pi,3) - hue)))
 		B = 1.0 - G
 		return "#%02x%02x%02x"%(255*R,255*G,255*B)
 	if radval > 4*math.pi/3:
 		hue = radval- 4*math.pi/3
 		G = 0
-		B = 0.33*(1 + math.cos(hue)/math.cos(math.pi/3 - hue))
+		B = 0.33*(1 + old_div(math.cos(hue),math.cos(old_div(math.pi,3) - hue)))
 		R = 1.0 - B
 		return "#%02x%02x%02x"%(255*R,255*G,255*B)
 	

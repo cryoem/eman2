@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -46,6 +47,7 @@ from __future__ import print_function
 # HEADER    COMPLEX(ANTIBODY/HIV-1 FRAGMENT)        10-FEB-94   1ACY      1ACY   2
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -249,8 +251,8 @@ def main():
 
 		infile.close()
 
-		print("%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,mass/1000))
-		print("Atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm))
+		print("%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,old_div(mass,1000)))
+		print("Atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(old_div(aavg[0],natm),old_div(aavg[1],natm),old_div(aavg[2],natm)))
 		print("Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0]))
 		print("              y: %7.2f - %7.2f"%(amin[1],amax[1]))
 		print("              z: %7.2f - %7.2f"%(amin[2],amax[2]))
@@ -271,7 +273,7 @@ def main():
 
 		if options.omit > 0.0 and options.omit < 100.0:
 			natm = pa.get_number_points()
-			nrm = int(round(natm*(options.omit/100.),0))
+			nrm = int(round(natm*(old_div(options.omit,100.)),0))
 			print(("Randomly omitting {}% ({}/{}) of atoms from output map.".format(options.omit,nrm,natm)))
 			for i in range(nrm):
 				n = np.random.randint(0,natm,dtype=int)
@@ -284,7 +286,7 @@ def main():
 
 		if options.full:
 			p = np.asmatrix(pa.get_points()).T
-			p = p.reshape(p.shape[0]/3,3)
+			p = p.reshape(old_div(p.shape[0],3),3)
 			points = []
 			for tfid in list(tfs.keys()):
 				m = np.asmatrix(tfs[tfid]) # transformation matrix
@@ -399,8 +401,8 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 	infile.close()
 
 	if not quiet:
-		print("%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,mass/1000))
-		print("atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm))
+		print("%d atoms used with a total charge of %d e- and a mass of %d kDa"%(natm,nelec,old_div(mass,1000)))
+		print("atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(old_div(aavg[0],natm),old_div(aavg[1],natm),old_div(aavg[2],natm)))
 		print("Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0]))
 		print("              y: %7.2f - %7.2f"%(amin[1],amax[1]))
 		print("              z: %7.2f - %7.2f"%(amin[2],amax[2]))
@@ -432,9 +434,9 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 				outbox[2]=int(spl[2])
 	except:
 		pad=int(2.0*res/apix)
-		outbox[0]=int((amax[0]-amin[0])/apix)+pad
-		outbox[1]=int((amax[1]-amin[1])/apix)+pad
-		outbox[2]=int((amax[2]-amin[2])/apix)+pad
+		outbox[0]=int(old_div((amax[0]-amin[0]),apix))+pad
+		outbox[1]=int(old_div((amax[1]-amin[1]),apix))+pad
+		outbox[2]=int(old_div((amax[2]-amin[2]),apix))+pad
 		outbox[0]+=outbox[0]%2
 		outbox[1]+=outbox[1]%2
 		outbox[2]+=outbox[2]%2
@@ -445,11 +447,11 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 	outmap=EMData()
 	outmap.set_size(outbox[0],outbox[1],outbox[2])
 	outmap.to_zero()
-	for i in range(len(aavg)): aavg[i] = aavg[i]/float(natm)
+	for i in range(len(aavg)): aavg[i] = old_div(aavg[i],float(natm))
 	# fill in the atom gaussians
-	xt = outbox[0]/2 - (amax[0]-amin[0])/(2*apix)
-	yt = outbox[1]/2 - (amax[1]-amin[1])/(2*apix)
-	zt = outbox[2]/2 - (amax[2]-amin[2])/(2*apix)
+	xt = old_div(outbox[0],2) - old_div((amax[0]-amin[0]),(2*apix))
+	yt = old_div(outbox[1],2) - old_div((amax[1]-amin[1]),(2*apix))
+	zt = old_div(outbox[2],2) - old_div((amax[2]-amin[2]),(2*apix))
 	for i,a in enumerate(atoms):
 		if not quiet and i%1000==0 :
 			print('\r   %d'%i, end=' ')
@@ -459,8 +461,8 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 			elec=atomdefs[a[0].translate(None,"0123456789").upper()][0]
 # This was producing different results than the "quick" mode, and did not match the statement printed above!!!
 #			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
-			if center: outmap.insert_scaled_sum(gaus,((a[1]-aavg[0])/apix+outbox[0]/2,(a[2]-aavg[1])/apix+outbox[1]/2,(a[3]-aavg[2])/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
-			else: outmap.insert_scaled_sum(gaus,(a[1]/apix+outbox[0]/2,a[2]/apix+outbox[1]/2,a[3]/apix+outbox[2]/2),res/(pi*12.0*apix),elec)
+			if center: outmap.insert_scaled_sum(gaus,(old_div((a[1]-aavg[0]),apix)+old_div(outbox[0],2),old_div((a[2]-aavg[1]),apix)+old_div(outbox[1],2),old_div((a[3]-aavg[2]),apix)+old_div(outbox[2],2)),old_div(res,(pi*12.0*apix)),elec)
+			else: outmap.insert_scaled_sum(gaus,(old_div(a[1],apix)+old_div(outbox[0],2),old_div(a[2],apix)+old_div(outbox[1],2),old_div(a[3],apix)+old_div(outbox[2],2)),old_div(res,(pi*12.0*apix)),elec)
 		except: print("Skipping %d '%s'"%(i,a[0]))
 	if not quiet: print('\r   %d\nConversion complete'%len(atoms))
 	outmap.set_attr("apix_x",apix)

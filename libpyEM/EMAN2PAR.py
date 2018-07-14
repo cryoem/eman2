@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -33,6 +34,7 @@ from __future__ import print_function
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -1091,13 +1093,13 @@ def broadcast(sock,obj):
 	global oseq
 	p=dumps(obj,-1)
 	hdr=pack("<4sIII","EMAN",os.getuid(),len(p),oseq)
-	for seq in range(1+(len(p)-1)/1024):
+	for seq in range(1+old_div((len(p)-1),1024)):
 		r=sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
 		if r<0 :
 			print("transmit fail %d"%seq)
 			r=sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
 
-	for seq in range((len(p)-1)/1024,-1,-1):
+	for seq in range(old_div((len(p)-1),1024),-1,-1):
 		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
 #	for seq in xrange(1+(len(p)-1)/1024):
 #		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))

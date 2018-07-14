@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/05/2011 (sludtke@bcm.edu)
@@ -34,6 +35,7 @@ from __future__ import print_function
 
 # $Id: e2proc2dmulti.py
 
+from past.utils import old_div
 from builtins import range
 from EMAN2db import db_list_dicts
 from EMAN2 import *
@@ -123,7 +125,7 @@ def main():
 			for i in range(nimg):
 				d.read_image(infile, i)
 				d1=d.process("mask.sharp",{"outer_radius":d["nx"]*2/7})
-				d2=d.process("mask.sharp",{"inner_radius":d["nx"]*2/7,"outer_radius":d["nx"]/2-2})
+				d2=d.process("mask.sharp",{"inner_radius":d["nx"]*2/7,"outer_radius":old_div(d["nx"],2)-2})
 				sumin+=d1["mean"]
 				sumout+=d2["mean"]
 				suminsig+=d1["sigma"]
@@ -210,7 +212,7 @@ def main():
 						sfcurve2 = dataf.calc_radial_dist(nx, x0, step)
 						for j in range(nx):
 							if sfcurve1[j] > 0 and sfcurve2[j] > 0:
-								sfcurve2[j] = sqrt(sfcurve1[j] / sfcurve2[j])
+								sfcurve2[j] = sqrt(old_div(sfcurve1[j], sfcurve2[j]))
 							else:
 								sfcurve2[j] = 0;
 
@@ -241,14 +243,14 @@ def main():
 
 				elif option1 == "clip":
 					ci = index_d[option1]
-					clipcx=nx/2
-					clipcy=ny/2
+					clipcx=old_div(nx,2)
+					clipcy=old_div(ny,2)
 					try: clipx,clipy,clipcx,clipcy = options.clip[ci].split(",")
 					except: clipx, clipy = options.clip[ci].split(",")
 					clipx, clipy = int(clipx),int(clipy)
 					clipcx, clipcy = int(clipcx),int(clipcy)
 					
-					e = d.get_clip(Region(clipcx-clipx/2, clipcy-clipy/2, clipx, clipy))
+					e = d.get_clip(Region(clipcx-old_div(clipx,2), clipcy-old_div(clipy,2), clipx, clipy))
 					try: e.set_attr("avgnimg", d.get_attr("avgnimg"))
 					except: pass
 					d = e
@@ -277,7 +279,7 @@ def main():
 					index_d[option1] += 1
 			
 				elif option1 == "selfcl":
-					scl = options.selfcl[0] / 2
+					scl = old_div(options.selfcl[0], 2)
 					sclmd = options.selfcl[1]
 					sc = EMData()
 				

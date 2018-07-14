@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # sxgui_meridien for analysing meridien outputs.
 # Copyright (C) 2017  Thorsten Wagner (thorsten.wagner@mpi-dortmund.mpg.de)
 #
@@ -16,6 +17,7 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from PyQt4.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QString, QThreadPool, QTimer
@@ -158,7 +160,7 @@ class FSCPlot(QDialog):
         for i,entry in enumerate(fscvalues):
             fsc_x = np.empty(len(entry), dtype=float)
             for fsc_value in range(len(entry)):
-                fsc_x[fsc_value] = float(fsc_value) / float(pixelsizes[i] * boxsizes[i])
+                fsc_x[fsc_value] = old_div(float(fsc_value), float(pixelsizes[i] * boxsizes[i]))
 
             ax.plot(fsc_x, entry,label=names[i])
 
@@ -306,8 +308,8 @@ class TrackerFileReader(object):
             if os.path.isfile(tracker_path):
                 pixelsize,boxsize = self.read_pixelsize_and_nnxo(tracker_path)
                 res0143, res05 = self._read_res0143_and_res05(tracker_path)
-                res0143 = float(pixelsize * boxsize) / float(res0143)
-                res05 = float(pixelsize * boxsize) / float(res05)
+                res0143 = old_div(float(pixelsize * boxsize), float(res0143))
+                res05 = old_div(float(pixelsize * boxsize), float(res05))
                 res_0143.append(res0143)
                 res_05.append(res05)
 
@@ -333,8 +335,8 @@ class MainWindow(QtGui.QMainWindow):
 
         #Center on screen
         resolution = QtGui.QDesktopWidget().screenGeometry()
-        self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
-                  (resolution.height() / 2) - (self.frameSize().height() / 2))
+        self.move((old_div(resolution.width(), 2)) - (old_div(self.frameSize().width(), 2)),
+                  (old_div(resolution.height(), 2)) - (old_div(self.frameSize().height(), 2)))
 
         """
         Setting up menu bar

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: this is a direct copy of emen2/Database/datastorage.py
@@ -32,6 +33,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from past.utils import old_div
 try:
 	from UserDict import DictMixin
 except ImportError:
@@ -237,7 +239,7 @@ valid_properties = {
 	),
 	
 "angle":("degree",
-	{"degree":1.0,"radian":180.0/pi, "mrad":0.18/pi},
+	{"degree":1.0,"radian":old_div(180.0,pi), "mrad":old_div(0.18,pi)},
 	{"deg":"degree", "degrees":"degree"}
 	),
 	
@@ -788,7 +790,7 @@ class Record(DictMixin):
 
 			try:
 				# convert units
-				value = value * ( valid_properties[pd.property][1][units] / valid_properties[pd.property][1][defaultunits] )
+				value = value * ( old_div(valid_properties[pd.property][1][units], valid_properties[pd.property][1][defaultunits]) )
 				print("newval: %s"%value)
 			except:
 				raise ValueError("Unable to convert %s = %s; skipping value"%(pd.name,value))

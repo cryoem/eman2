@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2015-08
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -61,7 +63,7 @@ def main():
 		
 	elif options.initpos!=None:
 		cents=np.loadtxt(options.initpos)
-		cents=cents[:,1:]-realsz/2
+		cents=cents[:,1:]-old_div(realsz,2)
 		wts=np.zeros(len(cents))
 		model={"center":cents, "weight":wts, "boxsz":options.sz, "sym":options.sym,"width":options.gausswidth}
 		ballrec=BallsReconstruction(model)
@@ -134,7 +136,7 @@ def make3d(ptcl_file, options, allconf):
 	except: pass
 	lstin=LSXFile(ptcl_file, True)
 	mvlen=np.std(allconf)
-	stepsz=mvlen/((options.nframe-1)/2.)
+	stepsz=old_div(mvlen,(old_div((options.nframe-1),2.)))
 	framepos=np.arange(-mvlen,mvlen+.1, stepsz)+np.mean(allconf)
 	print("Motion steps : Number of particles")
 	winsz=stepsz*.6
@@ -243,7 +245,7 @@ def calc_motion(ballrec, options, grad, glst=None):
 	get_map=theano.function([], ballrec.map3d)
 	ballrec.movvec.set_value(vec)
 	mvlen=3.
-	pp=np.arange(-mvlen,mvlen+.1, mvlen/((options.nframe-1)/2.))
+	pp=np.arange(-mvlen,mvlen+.1, old_div(mvlen,(old_div((options.nframe-1),2.))))
 	pp=pp.astype(theano.config.floatX)
 	print("Motion steps are ",pp)
 	mpsave=os.path.join(options.path,"motion_model1.hdf")
@@ -482,8 +484,8 @@ class BallsReconstruction(object):
 			
 			if sym.startswith('d'):
 				asym=[]
-				for i in range(nsym/2):	
-					a=6.28/(nsym/2)*i
+				for i in range(old_div(nsym,2)):	
+					a=6.28/(old_div(nsym,2))*i
 					asym.append(T.stacklists(
 						[ball[:,0]*T.cos(a)-ball[:,1]*T.sin(a),
 						 ball[:,0]*T.sin(a)+ball[:,1]*T.cos(a),
@@ -523,13 +525,13 @@ class BallsReconstruction(object):
 		ind=theano.shared(value=ind_np,borrow=True)
 		def make_3d(p,w,den,ind):
 			d=(ind-p)**2
-			v=w*T.exp(-T.sum(d,axis=3)/(model["width"]))
+			v=w*T.exp(old_div(-T.sum(d,axis=3),(model["width"])))
 			den+=v
 			return den
 		
 		map_3d_all,update=theano.scan(fn=make_3d,
 				outputs_info=T.zeros((sz,sz,sz)),
-				sequences=[balls+sz/2,wtss],
+				sequences=[balls+old_div(sz,2),wtss],
 				non_sequences=ind,
 				)
 		map_3d=map_3d_all[-1]
@@ -543,7 +545,7 @@ class BallsReconstruction(object):
 		self.map_update_p=[(ballzero,ballzero-map_grad_p*learnrate)]
 		
 		### make rotation matrix
-		azp=ang[2]+3.14/2
+		azp=ang[2]+old_div(3.14,2)
 		altp=3.14-ang[1]
 		phip=6.28-ang[0]
 
@@ -570,7 +572,7 @@ class BallsReconstruction(object):
 
 		mirror=ang[3]
 		newpos=T.set_subtensor(newpos[:,1], newpos[:,1]*mirror)
-		newpos=newpos+sz/2
+		newpos=newpos+old_div(sz,2)
 		#newpos[:,1]+=ty
 		
 		
@@ -584,7 +586,7 @@ class BallsReconstruction(object):
 		iy=T.arange(nballs)
 
 		def make_img(iy,r,x,y,pos, wt):
-			ret=r+ wt[iy] *T.exp((-(x-pos[iy,0])**2 -(y-pos[iy,1])**2)/(15))
+			ret=r+ wt[iy] *T.exp(old_div((-(x-pos[iy,0])**2 -(y-pos[iy,1])**2),(15)))
 			return ret
 			
 		img,update=theano.scan(fn=make_img,

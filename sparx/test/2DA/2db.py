@@ -1,5 +1,6 @@
 #!/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -111,7 +113,7 @@ print("initial ",a0)
 # do the alignment
 # IMAGES ARE SQUARES!
 #  center is in SPIDER convention
-cnx = int(nx/2)+1
+cnx = int(old_div(nx,2))+1
 cny = cnx
 
 first_ring = 1
@@ -136,7 +138,7 @@ for iter in range(20):
 		temp = rtshgkb(data[im], psi, sx, sy, kb)
 		if  mirror: temp = temp.process("mirror",{"axis":'x'})
 		#  Subtract current image from the average
-		refim = tave - temp/nima
+		refim = tave - old_div(temp,nima)
 		cimage=Util.Polar2Dmi(prepg(refim,kb),cnx,cny,numr,mode,kb)
 		Util.Frngs(cimage, numr)
 		Applyws(cimage, numr, wr)
@@ -149,7 +151,7 @@ for iter in range(20):
 		if  mn: temp = temp.process("mirror",{"axis":'x'})
 		#check whether the criterion actually increased
 		# add current image to the average
-		temp = refim + temp/nima
+		temp = refim + old_div(temp,nima)
 		# calculate the criterion
 		a1 = temp.cmp("dot", temp, {"negative":0,"mask":mask})
 		if(a1>a0):

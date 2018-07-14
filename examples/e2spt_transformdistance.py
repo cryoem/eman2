@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 from builtins import range
 '''
 ====================
@@ -196,8 +198,8 @@ def main():
 			print("The translational distance is", trans)
 			translations.append(trans)	
 	
-		avgA = sum(angularDistances)/len(angularDistances)
-		avgT = sum(translations)/len(translations)
+		avgA = old_div(sum(angularDistances),len(angularDistances))
+		avgT = old_div(sum(translations),len(translations))
 		print("The average angular and translational distances are", avgA, avgT)
 		resultsfile = options.input.replace('.hdf', '_RESULTS.txt')
 		if options.output:

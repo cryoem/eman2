@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import os, numpy, math, sys
@@ -610,7 +612,7 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0,squareplot=Fal
 		
 	if options.plotparticleradii:
 		if options.radius:
-			rad = pad/2		#this should be at the proper scale already from main function
+			rad = old_div(pad,2)		#this should be at the proper scale already from main function
 			
 			axes = pylab.axes()
 			

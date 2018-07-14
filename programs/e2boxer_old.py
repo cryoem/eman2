@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict,EMArgumentParser
@@ -274,7 +276,7 @@ def gauss_cmd_line_autobox(args,options,logid):
 			gboxer.auto_ctf(arg,ctf_params)
 		if do_autobox:
 			gboxer.auto_box_cmdline(arg,boxsize=boxsize)
-		E2progress(logid,float(i+1)/len(args))
+		E2progress(logid,old_div(float(i+1),len(args)))
 	return err
 
 def autobox(args,options,logid):
@@ -286,7 +288,7 @@ def autobox(args,options,logid):
 		boxer_vitals.current_idx=0
 		boxer.target = weakref.ref(boxer_vitals)
 		boxer.auto_box(arg, False, True, True)
-		E2progress(logid,float(i+1)/len(args))
+		E2progress(logid,old_div(float(i+1),len(args)))
 
 def write_output(args,options,logid, database="e2boxercache"):
 	params = {}
@@ -362,7 +364,7 @@ def write_output(args,options,logid, database="e2boxercache"):
 	
 	
 				progress += 1.0
-				E2progress(logid,progress/total_progress)
+				E2progress(logid,old_div(progress,total_progress))
 
 	if options.write_dbbox:
 		names = get_coord_outnames(params)
@@ -374,20 +376,20 @@ def write_output(args,options,logid, database="e2boxercache"):
 			box_list.write_coordinates(input,output,options.boxsize,options.exclude_edges,options.exclude_bad) # input is redundant but it makes output interfaces generic
 
 			progress += 1.0
-			E2progress(logid,progress/total_progress)
+			E2progress(logid,old_div(progress,total_progress))
 
 def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 
 	ptcls = []
-	mediator = SwarmShrunkenImageMediator(box_size/(2*shrink),shrink)
+	mediator = SwarmShrunkenImageMediator(old_div(box_size,(2*shrink)),shrink)
 
-	real_box_size = box_size/shrink
+	real_box_size = old_div(box_size,shrink)
 	averages = []
 	for box in ref_boxes:
 		if box.in_template == False: continue # it's excluded from the template
 
-		xc = box.x/shrink-real_box_size/2
-		yc = box.y/shrink-real_box_size/2
+		xc = old_div(box.x,shrink)-old_div(real_box_size,2)
+		yc = old_div(box.y,shrink)-old_div(real_box_size,2)
 		r = Region(xc,yc,real_box_size,real_box_size)
 		image = CoarsenedFlattenedImageCache.get_image(box.image_name,mediator)
 		particle = image.get_clip(r)
@@ -408,7 +410,7 @@ def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 	ave.process_inplace("xform.centeracf")
 	ave.process_inplace("math.rotationalaverage")
 	ave.process_inplace("normalize.edgemean")
-	ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
+	ave.process_inplace("mask.sharp",{'outer_radius':old_div(ave.get_xsize(),2)})
 	averages.append(ave)
 	averages[-1].set_attr("creation_time_stamp", gm_time_string())
 	for n in range(0,iter):
@@ -426,7 +428,7 @@ def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 		ave.process_inplace("normalize.edgemean")
 
 		# edge normalize here SL before
-		ave.process_inplace("mask.sharp",{'outer_radius':ave.get_xsize()/2})
+		ave.process_inplace("mask.sharp",{'outer_radius':old_div(ave.get_xsize(),2)})
 		averages.append(ave)
 		averages[-1].set_attr("creation_time_stamp", gm_time_string())
 
@@ -480,8 +482,8 @@ class SwarmBox(object):
 	def update_picking_data(self,mediator):
 
 		shrink = mediator.get_subsample_rate()
-		x = int(self.x/shrink)
-		y = int(self.y/shrink)
+		x = int(old_div(self.x,shrink))
+		y = int(old_div(self.y,shrink))
 		search_radius = mediator.get_template_radius()
 		correlation = FLCFImageCache.get_image(self.image_name,mediator)
 
@@ -1458,7 +1460,7 @@ class SwarmBoxer(object):
 		'''
 		Get the subsample rate advised by the SwarmBoxer, as based on self.particle_diameter and SWARM_TEMPLATE_MIN
 		'''
-		return int(math.ceil(float(self.particle_diameter)/float(SWARM_TEMPLATE_MIN)))
+		return int(math.ceil(old_div(float(self.particle_diameter),float(SWARM_TEMPLATE_MIN))))
 
 	def auto_box_clicked(self):
 		'''
@@ -1503,7 +1505,7 @@ class SwarmBoxer(object):
 
 		exclusion_image = self.target().get_exclusion_image(mark_boxes=True)
 
-		mediator = SwarmFLCFImageMediator(self.particle_diameter/(shrink*2), shrink, self.templates[-1])
+		mediator = SwarmFLCFImageMediator(old_div(self.particle_diameter,(shrink*2)), shrink, self.templates[-1])
 		if self.gui_mode: self.target().set_status_message("Getting Correlation Image",0)
 		correlation_image = FLCFImageCache.get_image(image_name,mediator)
 		if self.gui_mode: self.target().set_status_message("Correlation Image Done",1000)
@@ -1514,12 +1516,12 @@ class SwarmBoxer(object):
 			# the amount by which the exclusion is shrunken does not match the amount by which the SwarmBoxer shrinks - so we have to scale
 			# to do: test this
 			#print "shrink changed does this work?",shrink,exclusion_shrink,self.particle_diameter, SWARM_TEMPLATE_MIN,TEMPLATE_MIN
-			rescale = float(exclusion_shrink)/shrink
+			rescale = old_div(float(exclusion_shrink),shrink)
 			oldx = exclusion_image.get_xsize()
 			oldy = exclusion_image.get_ysize()
 			newx = correlation_image.get_xsize()
 			newy = correlation_image.get_ysize()
-			r = Region((oldx-newx)/2,(oldy-newy)/2,newx,newy)
+			r = Region(old_div((oldx-newx),2),old_div((oldy-newy),2),newx,newy)
 			t = Transform()
 			t.set_scale(rescale)
 			if rescale > 1.0:
@@ -1545,7 +1547,7 @@ class SwarmBoxer(object):
 		elif self.pick_mode == SwarmBoxer.SELECTIVE: mode = 1
 		elif self.pick_mode == SwarmBoxer.MORESELECTIVE: mode = 2
 
-		searchradius = self.templates[-1].get_xsize()/2
+		searchradius = old_div(self.templates[-1].get_xsize(),2)
 		correlation = FLCFImageCache.get_image(image_name,mediator)
 		# print "Correlation img is %s"%correlation
 
@@ -1583,8 +1585,8 @@ class SwarmBoxer(object):
 			box = [xx,yy,type,peak_score]
 			self.center_propagate(box,image_name,scaled_template,self.particle_diameter)
 
-			exc_x = box[0]/exclusion_shrink
-			exc_y = box[1]/exclusion_shrink
+			exc_x = old_div(box[0],exclusion_shrink)
+			exc_y = old_div(box[1],exclusion_shrink)
 			if exc_x >= exclusion_image.get_xsize() or exc_y > exclusion_image.get_ysize():
 				print("Box position (%i,%i) was outside exclusion image boundaries (%i,%i)... ignoring (email this to woolford@bcm.edu)" %(exc_x,exc_y,exclusion_image.get_xsize(),exclusion_image.get_ysize()))
 				continue
@@ -1726,12 +1728,12 @@ class SwarmBoxer(object):
 		global BigImageCache
 		image = BigImageCache.get_image_directly(image_name)
 
-		xc = box[0]-box_size/2
-		yc = box[1]-box_size/2
+		xc = box[0]-old_div(box_size,2)
+		yc = box[1]-old_div(box_size,2)
 		r = Region(xc,yc,box_size,box_size)
 		particle = image.get_clip(r)
 		ccf  = particle.calc_ccf(template)
-		trans = ccf.calc_max_location_wrap(particle.get_xsize()/2,particle.get_ysize()/2,0)
+		trans = ccf.calc_max_location_wrap(old_div(particle.get_xsize(),2),old_div(particle.get_ysize(),2),0)
 		dx = trans[0]
 		dy = trans[1]
 		return dx,dy
@@ -1914,7 +1916,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 def histogram1d( data, nbin, presize=0 ) :
 	fmax = max( data )
 	fmin = min( data )
-	binsize = (fmax - fmin)/(nbin-2*presize)
+	binsize = old_div((fmax - fmin),(nbin-2*presize))
 	start = fmin - binsize*presize
 	region = [None]*nbin
 	hist = [None]*nbin
@@ -1923,7 +1925,7 @@ def histogram1d( data, nbin, presize=0 ) :
 		hist[i] = 0
 
 	for d in data:
-		id = int( (d-start)/binsize )
+		id = int( old_div((d-start),binsize) )
 		hist[id]+=1
 
 	return region,hist
@@ -2453,7 +2455,7 @@ class GaussPanel(object):
 		# this is wrong from sxboxer. wgh should be amplitude contrast
 		#defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_cs,f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
 		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_ampcont,f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
-		self.estdef.setText(str(defocus/10000.0))
+		self.estdef.setText(str(old_div(defocus,10000.0)))
 		self.estdef.setEnabled(False)
 
 
@@ -2744,11 +2746,11 @@ class GaussBoxer(object):
 			print("using variance")
 
 		boxsize = self.target().get_box_size()
-		ccf = filt_gaussl( small_img, self.gauss_width/boxsize )
+		ccf = filt_gaussl( small_img, old_div(self.gauss_width,boxsize) )
 		del small_img
-		peaks = ccf.peak_ccf( boxsize/2-1)
+		peaks = ccf.peak_ccf( old_div(boxsize,2)-1)
 		del ccf
-		npeak = len(peaks)/3
+		npeak = old_div(len(peaks),3)
 		print("npeak: ", npeak)
 		boxes = []
 		ccfs = [] # ccfs are used to set threshold_low adn threshold_high after the particles have been picked. see set_data in CcfHistogram in sxboxer and set_params_of_gui in pawelautoboxer in boxertools.py
@@ -2915,7 +2917,7 @@ class GaussBoxer(object):
 	#############################################################################
 	# parameter access functions from pawelautoboxer class
 	def get_subsample_rate(self):
-		return self.pixel_input/self.pixel_output
+		return old_div(self.pixel_input,self.pixel_output)
 
 	def get_window_size_min(self):
 		return 15
@@ -2924,10 +2926,10 @@ class GaussBoxer(object):
 		return 0.5*self.get_subsample_rate()
 
 	def get_gaussh_param(self,modecmd=False,boxsize=128):
-		ratio = self.pixel_input/self.pixel_output
+		ratio = old_div(self.pixel_input,self.pixel_output)
 		if modecmd:
-			return ratio/boxsize
-		return ratio/self.target().get_box_size()
+			return old_div(ratio,boxsize)
+		return old_div(ratio,self.target().get_box_size())
 
 	def get_invert(self):
 		return self.invert
@@ -3003,11 +3005,11 @@ class GaussBoxer(object):
 			small_img = power(small_img, 2.0)
 			print("using variance")
 
-		ccf = filt_gaussl( small_img, self.gauss_width/boxsize )
+		ccf = filt_gaussl( small_img, old_div(self.gauss_width,boxsize) )
 		del small_img
-		peaks = ccf.peak_ccf( boxsize/2-1)
+		peaks = ccf.peak_ccf( old_div(boxsize,2)-1)
 		del ccf
-		npeak = len(peaks)/3
+		npeak = old_div(len(peaks),3)
 		print("npeak: ", npeak)
 		boxes = []
 		for i in range(npeak):
@@ -3234,8 +3236,8 @@ class CTFInspectorWidget(QtGui.QWidget):
 		h=self.height()
 		w=self.width()
 
-		hborder = ( min((h / 15.0),20.0))
-		wborder = ( min((w / 15.0),20.0))
+		hborder = ( min((old_div(h, 15.0)),20.0))
+		wborder = ( min((old_div(w, 15.0)),20.0))
 
 		# accessible height and width....
 		ah = int(h-2*hborder)
@@ -3274,7 +3276,7 @@ class CTFInspectorWidget(QtGui.QWidget):
 
 			# print "range: ",self.i_start," - ",self.i_stop
 
-			stepw = float(w-2*wborder) / float(sizew)
+			stepw = old_div(float(w-2*wborder), float(sizew))
 
 
 
@@ -3285,7 +3287,7 @@ class CTFInspectorWidget(QtGui.QWidget):
 
 
 			sizeh = float(sizeh)
-			steph = float(h-2*hborder) / float(sizeh)
+			steph = old_div(float(h-2*hborder), float(sizeh))
 
 			import math
 			from utilities import read_text_file
@@ -3299,7 +3301,7 @@ class CTFInspectorWidget(QtGui.QWidget):
 
 			sizehctf = float(sizehctf)
 
-			tickspacing = min(int(sizew/30)+1, 5)
+			tickspacing = min(int(old_div(sizew,30))+1, 5)
 
 			for list_index in range(len(self.data)):
 
@@ -3307,7 +3309,7 @@ class CTFInspectorWidget(QtGui.QWidget):
 				metrics = p.fontMetrics()
 				fw = metrics.width(str(labels[list_index]))
 				fh = metrics.height()+4
-				p.drawText(w-wborder-fw/2, hborder+(list_index)*fh, str(labels[list_index]))
+				p.drawText(w-wborder-old_div(fw,2), hborder+(list_index)*fh, str(labels[list_index]))
 
 
 				for index in range(self.i_start,self.i_stop):
@@ -3345,7 +3347,7 @@ class CTFInspectorWidget(QtGui.QWidget):
 							p.drawLine(newx, h-hborder, newx, h-hborder+5)
 							metrics = p.fontMetrics()
 							fw = metrics.width(str(index))
-							p.drawText(newx-fw/2, h-hborder+14, str(index))
+							p.drawText(newx-old_div(fw,2), h-hborder+14, str(index))
 
 		p.end()
 

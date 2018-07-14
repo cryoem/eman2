@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 9/2015 (sludtke@bcm.edu)
@@ -36,6 +37,7 @@ from __future__ import print_function
 # This program is used to generate various alignment test images
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
@@ -103,7 +105,7 @@ def main():
 		clpav[im]=None
 					
 	# incoherent power spectrum (good for CTF estimation)
-	pws.mult(1.0/N)
+	pws.mult(old_div(1.0,N))
 	pws.process_inplace("math.sqrt")
 	pws["is_intensity"]=0			# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 	pws["is_complex_ri"]=0
@@ -114,7 +116,7 @@ def main():
 	pws.do_ift().write_image("pws.hdf",0)
 
 	# coherent power spectrum (drift more observable)
-	pwsc.mult(1.0/N)
+	pwsc.mult(old_div(1.0,N))
 	pwsc[0,0]=0
 	pwsc.process_inplace("math.sqrt")
 	pwsc["is_intensity"]=0			# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
@@ -134,8 +136,8 @@ def main():
 #		except:img1=img0
 
 	img1=EMData(args[0],8)
-	dx=(img1["nx"]-fullbox)/2
-	dy=(img1["ny"]-fullbox)/2
+	dx=old_div((img1["nx"]-fullbox),2)
+	dy=old_div((img1["ny"]-fullbox),2)
 	
 	reffix=img1.get_clip(Region(dx,dy,fullbox,fullbox))
 	reffixf=reffix.do_fft()
@@ -185,8 +187,8 @@ def main():
 #	display((ccf1,ccf2),True)
 	
 def fit_defocus(img):
-	ds=1.0/(img["apix_x"]*img["ny"])
-	ns=min(int(floor(.25/ds)),img["ny"]/2)
+	ds=old_div(1.0,(img["apix_x"]*img["ny"]))
+	ns=min(int(floor(old_div(.25,ds))),old_div(img["ny"],2))
 
 	# the data curve we are trying to fit
 	oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
@@ -213,7 +215,7 @@ def fit_defocus(img):
 #		curve-=curve.mean()
 		curve-=0.5	# duh
 
-		zeroes=[int(ctf.zero(i)/ds) for i in range(15)]
+		zeroes=[int(old_div(ctf.zero(i),ds)) for i in range(15)]
 		zeroes=[i for i in zeroes if i<len(curve) and i>0]
 #		plot(zeroes)
 		onedbg=bgsub(oned,zeroes)
@@ -244,7 +246,7 @@ def fit_defocus(img):
 	return df,ctf
 
 def bgsub(curve,zeroes):
-	floc=min(zeroes[0]/2,8)
+	floc=min(old_div(zeroes[0],2),8)
 	itpx=[curve[:floc].argmin()]+list(zeroes)+[len(curve)-1]
 	itpy=[min(curve[i-1:i+2]) for i in itpx]
 	itpy[0]=curve[:floc].min()

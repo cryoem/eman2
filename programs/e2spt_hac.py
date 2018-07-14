@@ -30,6 +30,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
@@ -327,7 +329,7 @@ def main():
 			sys.exit(1)
 		else:
 			print("(e2spt_hac.py, main) - working on group", i)
-			groupsize = int( nptcl/options.groups )
+			groupsize = int( old_div(nptcl,options.groups) )
 			bottom_range = i * groupsize
 			top_range = (i+1) * groupsize
 			if i == options.groups - 1:
@@ -766,7 +768,7 @@ def allvsall(options,preproc):
 		
 		if k == 0:
 			if options.clusters and int(options.clusters) > 1:
-				numPerSet = round( float(nptcls)/float(options.clusters) )					#Cluster the particles in sets with an even number of particles
+				numPerSet = round( old_div(float(nptcls),float(options.clusters)) )					#Cluster the particles in sets with an even number of particles
 				
 				for cn in range(options.clusters):
 					clusters.update({ cn:set([]) })
@@ -1471,9 +1473,9 @@ class Align3DTaskAVSA(JSTask):
 		nptcls = EMUtil.get_image_count( classoptions['options'].input )
 		
 		if classoptions['options'].groups:
-			nptcls = ( nptcls / int(classoptions['options'].groups) ) + nptcls % int(classoptions['options'].groups)
+			nptcls = ( old_div(nptcls, int(classoptions['options'].groups)) ) + nptcls % int(classoptions['options'].groups)
 		
-		potentialcomps = ( nptcls * (nptcls - 1) )/ 2
+		potentialcomps = old_div(( nptcls * (nptcls - 1) ), 2)
 		
 		xformslabel = 'round' + str(classoptions['round']).zfill( len( str( classoptions['iters']))) + '_comparison' + str(classoptions['comparison']).zfill( len( str(potentialcomps) ) ) + '_ptclA' + str(classoptions['pAn']).zfill( len(str(nptcls))) + '_ptclB' + str(classoptions['pBn']).zfill( len(str(nptcls)))
 		
@@ -1554,7 +1556,7 @@ def plotter(xaxis,yaxis,options,name,maxX,maxY,invert=1,sort=1):
 	
 	matplotlib.pyplot.xticks( xaxis )
 	
-	stepsize = len(xaxis)/10
+	stepsize = old_div(len(xaxis),10)
 	
 	start, end = ax.get_xlim()
 

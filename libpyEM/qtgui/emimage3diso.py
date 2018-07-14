@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -34,6 +35,7 @@ from __future__ import absolute_import
 #
 #
 
+from past.utils import old_div
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt, QString
 from OpenGL import GL,GLU,GLUT
@@ -163,7 +165,7 @@ class EMIsosurfaceModel(EM3DModel):
 		glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.isocolor]["emission"])
 		glColor(self.colors[self.isocolor]["ambient"])
 		glPushMatrix()
-		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
+		glTranslate(old_div(-self.data.get_xsize(),2.0),old_div(-self.data.get_ysize(),2.0),old_div(-self.data.get_zsize(),2.0))
 		if ( self.texture ):
 			glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
 		glCallList(self.isodl)

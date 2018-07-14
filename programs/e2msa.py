@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steve Ludtke, 06/26/18 (sludtke@bcm.edu) rewrote using sklearn
@@ -36,6 +37,7 @@ from __future__ import print_function
 # Rewritten version which just does PCA, no classification
 # uses Chao Yang's new PCA implementation in Analyzer
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -226,7 +228,7 @@ handled this way."""
 			im["explvarfrac"]=float(msa.explained_variance_ratio_[i])
 			if options.verbose : print("Explained variance: ",im["explvarfrac"],"\tSingular Value: ",im["eigval"])
 		elif options.mode=="fastica":
-			im.mult(1.0/im["sigma"])	# fastica seems to produce very small vector lengths
+			im.mult(old_div(1.0,im["sigma"]))	# fastica seems to produce very small vector lengths
 		im.write_image(args[1],i+offset)
 		
 	# if requested we use the model to generate reprojections of the full set of input images
@@ -281,7 +283,7 @@ def simmx_get(images,simmxpath,mask,step):
 
 	simmx=[EMData(simmxpath,i) for i in range(5)]
 
-	n=(step[2]-step[0])/step[1]
+	n=old_div((step[2]-step[0]),step[1])
 
 	ret=EMData(int(mask["square_sum"]),n)
 	for i in range(n):
@@ -296,7 +298,7 @@ def simmx_get(images,simmxpath,mask,step):
 def normal_get(images,mask,step):
 	"""returns an array of transformed masked images as arrays for PCA"""
 
-	n=(step[2]-step[0])/step[1]
+	n=old_div((step[2]-step[0]),step[1])
 
 	ret=EMData(int(mask["square_sum"]),n)
 	for i in range(n):

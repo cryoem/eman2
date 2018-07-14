@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 10/27/2010 - rewritten almost from scratch
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import math
@@ -192,8 +194,8 @@ def main():
 						rslt[1]["average"]["class_ptcl_src"]=options.input
 						if options.decayedge:
 							nx=rslt[1]["average"]["nx"]
-							rslt[1]["average"].process_inplace("normalize.circlemean",{"radius":nx/2-nx/15})
-							rslt[1]["average"].process_inplace("mask.gaussian",{"inner_radius":nx/2-nx/15,"outer_radius":nx/20})
+							rslt[1]["average"].process_inplace("normalize.circlemean",{"radius":old_div(nx,2)-old_div(nx,15)})
+							rslt[1]["average"].process_inplace("mask.gaussian",{"inner_radius":old_div(nx,2)-old_div(nx,15),"outer_radius":old_div(nx,20)})
 							#rslt[1]["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 
 						if options.ref!=None : rslt[1]["average"]["projection_image"]=options.ref
@@ -240,7 +242,7 @@ def main():
 			if options.verbose and 100 in curstat :
 				print("%d/%d tasks remain"%(len(taskids),len(alltaskids)))
 			if 100 in curstat :
-				E2progress(logger,1.0-(float(len(taskids))/len(alltaskids)))
+				E2progress(logger,1.0-(old_div(float(len(taskids)),len(alltaskids))))
 
 			time.sleep(3)
 
@@ -257,8 +259,8 @@ def main():
 				rslt["average"]["class_ptcl_src"]=options.input
 				if options.decayedge:
 					nx=rslt["average"]["nx"]
-					rslt["average"].process_inplace("normalize.circlemean",{"radius":nx/2-nx/15})
-					rslt["average"].process_inplace("mask.gaussian",{"inner_radius":nx/2-nx/15,"outer_radius":nx/20})
+					rslt["average"].process_inplace("normalize.circlemean",{"radius":old_div(nx,2)-old_div(nx,15)})
+					rslt["average"].process_inplace("mask.gaussian",{"inner_radius":old_div(nx,2)-old_div(nx,15),"outer_radius":old_div(nx,20)})
 					#rslt["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 				if options.ref!=None : rslt["average"]["projection_image"]=options.ref
 				try:
@@ -473,14 +475,14 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 		else : avg.process_inplace("normalize.toimage",{"to":ref})
 
 		#avg["class_qual"]=avg.cmp("ccc",ref)
-		avg["class_qual"]=avg.cmp("frc",ref,{"minres":30,"maxres":10})/avg.cmp("frc",ref,{"minres":100,"maxres":30})
+		avg["class_qual"]=old_div(avg.cmp("frc",ref,{"minres":30,"maxres":10}),avg.cmp("frc",ref,{"minres":100,"maxres":30}))
 		
 		# We compute a smoothed SSNR curve by comparing to the reference. We keep overwriting ssnr to gradually produce what we're after
 		ssnr=avg.calc_fourier_shell_correlation(ref)
-		third=len(ssnr)/3
+		third=old_div(len(ssnr),3)
 		ssnr=[ssnr[third]]*4+ssnr[third:third*2]+[ssnr[third*2-1]]*4	# we extend the list by replication to make the running average more natural
-		ssnr=[sum(ssnr[i-4:i+5])/9.0 for i in range(4,third+4)]		# smoothing by running average
-		ssnr=[v/(1.0-min(v,.999999)) for v in ssnr]						# convert FSC to pseudo SSNR
+		ssnr=[old_div(sum(ssnr[i-4:i+5]),9.0) for i in range(4,third+4)]		# smoothing by running average
+		ssnr=[old_div(v,(1.0-min(v,.999999))) for v in ssnr]						# convert FSC to pseudo SSNR
 		avg["class_ssnr"]=ssnr
 
 	# set some useful attributes
@@ -550,7 +552,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 
 		# A little masking and centering
 		try:
-			gmw=max(5,ref["nx"]/16)		# gaussian mask width
+			gmw=max(5,old_div(ref["nx"],16))		# gaussian mask width
 			#ref.process_inplace("filter.highpass.gauss",{"cutoff_pixels":min(ref["nx"]/10,5)})	# highpass to reduce gradient issues
 			#ref.process_inplace("normalize.circlemean")
 			#ref2=ref.process("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
@@ -561,8 +563,8 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 			#fxf=ref2["xform.align2d"]
 			#ref.translate(fxf.get_trans())
 			ref.process_inplace(center)
-			ref.process_inplace("normalize.circlemean",{"radius":ref["nx"]/2-gmw})
-			ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
+			ref.process_inplace("normalize.circlemean",{"radius":old_div(ref["nx"],2)-gmw})
+			ref.process_inplace("mask.gaussian",{"inner_radius":old_div(ref["nx"],2)-gmw,"outer_radius":old_div(gmw,1.3)})
 			ref_orient=None
 		except:
 			traceback.print_exc()
@@ -595,7 +597,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 				mean+=sim
 				sigma+=sim**2
 			mean/=len(ptcl_info)
-			sigma=sqrt(sigma/len(ptcl_info)-mean**2)
+			sigma=sqrt(old_div(sigma,len(ptcl_info))-mean**2)
 
 			# set a threshold based on statistics and options
 			if keepsig:					# keep a relative fraction based on the standard deviation of the similarity values
@@ -634,7 +636,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		# Now align and average
 		avgr=Averagers.get(averager[0], averager[1])
 		for i in range(nimg):
-			if callback!=None and nimg%10==9 : callback(int((it+i/float(nimg))*100/(niter+2.0)))
+			if callback!=None and nimg%10==9 : callback(int((it+old_div(i,float(nimg)))*100/(niter+2.0)))
 			ptcl=get_image(images,i,normproc)					# get the particle to align
 			ali=align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp)  # align to reference
 			sim=ali.cmp(scmp[0],ref,scmp[1])			# compare similarity to reference (may use a different cmp() than the aligner)
@@ -659,12 +661,12 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		ref["class_ptcl_qual_sigma"]=sigma
 
 		# A little masking before the next iteration
-		gmw=max(5,ref["nx"]/12)		# gaussian mask width
-		ref.process_inplace("normalize.circlemean",{"radius":ref["nx"]/2-gmw})
+		gmw=max(5,old_div(ref["nx"],12))		# gaussian mask width
+		ref.process_inplace("normalize.circlemean",{"radius":old_div(ref["nx"],2)-gmw})
 		if automask :
 			ref.process_inplace("mask.auto2d",{"nmaxseed":10,"nshells":gmw-2,"nshellsgauss":gmw,"sigma":0.2})
 		else :
-			ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
+			ref.process_inplace("mask.gaussian",{"inner_radius":old_div(ref["nx"],2)-gmw,"outer_radius":old_div(gmw,1.3)})
 
 	if ref_orient!=None :
 		ref["xform.projection"]=ref_orient

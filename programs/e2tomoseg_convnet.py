@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan July 2015
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -299,7 +301,7 @@ def apply_neuralnet(options):
 			
 			for mi in range(s[1]):
 				sw=allw[wi][mi]["nx"]
-				allw[wi][mi]=allw[wi][mi].get_clip(Region((sw-enx)/2,(sw-eny)/2,enx,eny))
+				allw[wi][mi]=allw[wi][mi].get_clip(Region(old_div((sw-enx),2),old_div((sw-eny),2),enx,eny))
 				
 				allw[wi][mi].process_inplace("xform.phaseorigin.tocenter")
 				#allw[wi][mi].do_fft_inplace()
@@ -352,7 +354,7 @@ def apply_neuralnet(options):
 	
 		while not jsd.empty():
 			idx,cout=jsd.get()
-			cout=cout.get_clip(Region((cout["nx"]-enx)/2,(cout["ny"]-eny)/2 ,enx, eny))
+			cout=cout.get_clip(Region(old_div((cout["nx"]-enx),2),old_div((cout["ny"]-eny),2) ,enx, eny))
 			cout.scale(labelshrink)
 			cout.div(amplitude)
 			output.insert_clip(cout, [0,0,idx])
@@ -421,7 +423,7 @@ def do_convolve(jsd, job):
 def load_particles(ptcls,labelshrink,ncopy=5, rng=None):
 	if rng==None:
 		rng=random
-	num=EMUtil.get_image_count(ptcls)/2
+	num=old_div(EMUtil.get_image_count(ptcls),2)
 	
 	data=[]
 	label=[]
@@ -483,7 +485,7 @@ class StackedConvNet_tf(object):
 		nlayer=len(kernels)
 		sz=imgsz
 			
-		outsz=(sz/np.prod([k[2] for k in kernels]))
+		outsz=(old_div(sz,np.prod([k[2] for k in kernels])))
 
 		tf_data = tf.placeholder(tf.float32, shape=[None, sz*sz], name="tfdata")
 		if meanout:
@@ -638,7 +640,7 @@ class StackedConvNet_tf(object):
 
 		bf=1
 		for i,p in enumerate(poolsz):
-			ksize[i]=sz/bf
+			ksize[i]=old_div(sz,bf)
 			bf*=p
 			
 
@@ -660,7 +662,7 @@ class StackedConvNet_tf(object):
 			for wi in range(s[0]*s[1]):
 				e=EMData(fname,k)
 				sw=e["nx"]
-				e=e.get_clip(Region((sw-ks)/2,(sw-ks)/2,ks,ks))
+				e=e.get_clip(Region(old_div((sw-ks),2),old_div((sw-ks),2),ks,ks))
 				k+=1
 				w=e.numpy()
 				allw[wi]=w.copy()
@@ -698,15 +700,15 @@ class StackedConvNet_tf(object):
 					if np.sum(lb)>0:
 						amp.append(np.mean(oy[lb]))
 					e1=from_numpy(ot.copy())
-					e1=e1.get_clip(Region(-(sz-outsz)/2,-(sz-outsz)/2,sz,sz))
-					e1.scale(sz/outsz)
+					e1=e1.get_clip(Region(old_div(-(sz-outsz),2),old_div(-(sz-outsz),2),sz,sz))
+					e1.scale(old_div(sz,outsz))
 
 					e1.write_image(outfile, -1)
 					
 
 				e1=from_numpy(oy.copy())
-				e1=e1.get_clip(Region(-(sz-outsz)/2,-(sz-outsz)/2,sz,sz))
-				e1.scale(sz/outsz)
+				e1=e1.get_clip(Region(old_div(-(sz-outsz),2),old_div(-(sz-outsz),2),sz,sz))
+				e1.scale(old_div(sz,outsz))
 
 				e1.write_image(outfile, -1)
 

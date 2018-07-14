@@ -1,5 +1,6 @@
 #!/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from EMAN2 import *
 from sparx  import *
 
@@ -105,9 +107,9 @@ N=M*npad
 # support of the window
 K=6
 alpha=1.75
-r=M/2
+r=old_div(M,2)
 v=K/2.0/N
-kb = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
+kb = Util.KaiserBessel(alpha, K, r, old_div(K,(2.*N)), N)
 params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
 q=Processor.EMFourierFilter(line,params)
 #  remember that x is counted to zero and is divided by two in get_pixel_conv !!

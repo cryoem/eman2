@@ -36,6 +36,8 @@
 
 
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import numpy as np
@@ -363,7 +365,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.boxes=[]
 		self.curbox=-1
 
-		self.wdepth.setValue(self.datasize[2]/2)
+		self.wdepth.setValue(old_div(self.datasize[2],2))
 		if self.initialized:
 			self.update_all()
 
@@ -384,9 +386,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 	
 		if self.data!=None:
-			r=self.data.get_clip(Region(x-bs/2,y-bs/2,z-bz/2,bs,bs,bz))
+			r=self.data.get_clip(Region(x-old_div(bs,2),y-old_div(bs,2),z-old_div(bz,2),bs,bs,bz))
 		elif self.datafile!=None:
-			r=EMData(self.datafile,0,0,Region(x-bs/2,y-bs/2,z-bz/2,bs,bs,bz))
+			r=EMData(self.datafile,0,0,Region(x-old_div(bs,2),y-old_div(bs,2),z-old_div(bz,2),bs,bs,bz))
 		else: return None
 
 		if self.apix!=0 :
@@ -551,7 +553,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		f=file(fsp,"r")
 		for b in f:
-			b2=[int(float(i))/self.shrink for i in b.split()[:3]]
+			b2=[old_div(int(float(i)),self.shrink) for i in b.split()[:3]]
 			bdf=[0,0,0,"manual",0.0, self.currentset]
 			for j in range(len(b2)):
 				bdf[j]=b2[j]
@@ -618,7 +620,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					print("Inconsistant box size in the particles to save.. Using {:d}..".format(boxsz))
 					bs=boxsz
 			
-			sz=[s/2 for s in self.datasize]
+			sz=[old_div(s,2) for s in self.datasize]
 			img=self.get_cube(b[0], b[1], b[2], boxsz=bs)
 			img.process_inplace('normalize')
 			
@@ -663,8 +665,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			return
 
 		if self.curbox==-1 :
-			x=self.datasize[0]/2
-			y=self.datasize[1]/2
+			x=old_div(self.datasize[0],2)
+			y=old_div(self.datasize[1],2)
 			z=0
 		else:
 			x,y,z=self.boxes[self.curbox][:3]
@@ -677,7 +679,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			xzs=self.xzview.get_shapes()
 			for i in range(len(self.boxes)):
 				bs=self.get_boxsize(self.boxes[i][5])
-				if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2 and  self.boxes[i][5] in self.sets_visible:
+				if self.boxes[i][1]<self.cury+old_div(bs,2) and self.boxes[i][1]>self.cury-old_div(bs,2) and  self.boxes[i][5] in self.sets_visible:
 					xzs[i][0]="rect"
 				else:
 					xzs[i][0]="hidden"
@@ -686,7 +688,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			
 			for i in range(len(self.boxes)):
 				bs=self.get_boxsize(self.boxes[i][5])
-				if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2 and  self.boxes[i][5] in self.sets_visible:
+				if self.boxes[i][0]<self.curx+old_div(bs,2) and self.boxes[i][0]>self.curx-old_div(bs,2) and  self.boxes[i][5] in self.sets_visible:
 					zys[i][0]="rect"
 				else:
 					zys[i][0]="hidden"
@@ -709,7 +711,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		# yz
 		avgr=self.get_averager()
 
-		for x in range(x-self.nlayers()/2,x+(self.nlayers()+1)/2):
+		for x in range(x-old_div(self.nlayers(),2),x+old_div((self.nlayers()+1),2)):
 			slc=self.get_slice(x,0)
 			avgr.add_image(slc)
 
@@ -718,20 +720,20 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			av.process_inplace("xform.transpose")
 
 		if self.wfilt.getValue()!=0.0:
-			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.apix})
 
 		self.zyview.set_data(av)
 
 		# xz
 		avgr=self.get_averager()
 
-		for y in range(y-self.nlayers()/2,y+(self.nlayers()+1)/2):
+		for y in range(y-old_div(self.nlayers(),2),y+old_div((self.nlayers()+1),2)):
 			slc=self.get_slice(y,1)
 			avgr.add_image(slc)
 
 		av=avgr.finish()
 		if self.wfilt.getValue()!=0.0:
-			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.apix})
 
 		self.xzview.set_data(av)
 
@@ -758,10 +760,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#print "the z coord of box %d is %d" %(i,self.boxes[i][2])
 				#print "therefore the criteria to determine whether to display it is", abs(self.boxes[i][2] - zc)
 				zdist=abs(self.boxes[i][2] - zc)
-				if zdist < bs/2 and self.boxes[i][5] in self.sets_visible:
+				if zdist < old_div(bs,2) and self.boxes[i][5] in self.sets_visible:
 					#print "Which is less than half the box thus it survives"
 					xys[i][0]="circle"
-					xys[i][6]=bs/2-zdist
+					xys[i][6]=old_div(bs,2)-zdist
 				else :
 					xys[i][0]="hidden"
 					#print "Which is more than half the box and thus it dies"
@@ -775,7 +777,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			avgr=Averagers.get("mean")
 
 		slc=EMData()
-		for z in range(self.wdepth.value()-self.nlayers()/2,self.wdepth.value()+(self.nlayers()+1)/2):
+		for z in range(self.wdepth.value()-old_div(self.nlayers(),2),self.wdepth.value()+old_div((self.nlayers()+1),2)):
 			slc=self.get_slice(z,2)
 			avgr.add_image(slc)
 
@@ -785,7 +787,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		if self.wfilt.getValue()!=0.0:
 
-			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.apix})
 		if self.initialized:
 			self.xyview.set_data(av, keepcontrast=True)
 		else:
@@ -817,7 +819,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		box=self.boxes[n]
 		if box[5] not in self.sets_visible:
 			return False
-		bs=self.get_boxsize(box[5])/2
+		bs=old_div(self.get_boxsize(box[5]),2)
 		rr=(x>=0)*((box[0]-x)**2) + (y>=0)*((box[1]-y) **2) + (z>=0)*((box[2]-z)**2)
 		return rr<=bs**2
 
@@ -911,7 +913,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			box=self.boxes[n]
 		except IndexError:
 			return
-		bs2=self.get_boxsize(box[5])/2
+		bs2=old_div(self.get_boxsize(box[5]),2)
 
 		
 		color=self.setcolors[box[5]%len(self.setcolors)].getRgbF()
@@ -1026,7 +1028,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else:
 					self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
-					if self.helixboxer: self.update_helixbox(int(i/2))
+					if self.helixboxer: self.update_helixbox(int(old_div(i,2)))
 					self.update_box(i)
 				break
 		else:
@@ -1123,7 +1125,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else :
 					self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
-					if self.helixboxer: self.update_helixbox(int(i/2))
+					if self.helixboxer: self.update_helixbox(int(old_div(i,2)))
 					self.update_box(i)
 				break
 		else:
@@ -1156,14 +1158,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		dz=z-self.xzdown[2]
 		if self.helixboxer:
 			if len(self.boxes) % 2 == 0 or (self.xzdown[0] != len(self.boxes)-1):	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
-				hb = self.helixboxes[int(self.xzdown[0]/2)]
+				hb = self.helixboxes[int(old_div(self.xzdown[0],2))]
 				if self.xzdown[0] % 2 == 0:
 					hb[3] = dx+self.xzdown[3]
 					hb[5] = dz+self.xzdown[4]
 				else:
 					hb[0] = dx+self.xzdown[3]
 					hb[2] = dz+self.xzdown[4]
-				self.update_helixbox(int(self.xzdown[0]/2))
+				self.update_helixbox(int(old_div(self.xzdown[0],2)))
 			else:
 				self.firsthbclick[0] = x
 				self.firsthbclick[2] = z
@@ -1204,7 +1206,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else :
 					self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
-					if self.helixboxer: self.update_helixbox(int(i/2))
+					if self.helixboxer: self.update_helixbox(int(old_div(i,2)))
 					self.update_box(i)
 				break
 		else:
@@ -1443,7 +1445,7 @@ class EMBoxViewer(QtGui.QWidget):
 			return
 
 		if self.wfilt.getValue()>4 :
-			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']}) #JESUS
+			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.data['apix_x']}) #JESUS
 
 		xyd=self.fdata.process("misc.directional_sum",{"axis":"z"})
 		xzd=self.fdata.process("misc.directional_sum",{"axis":"y"})

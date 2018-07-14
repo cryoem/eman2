@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -34,6 +35,7 @@ from __future__ import print_function
 
 # e2skelpath.py  09/01/2006  Steven Ludtke, Matt Baker
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -75,9 +77,9 @@ def main():
 	mappoints=[getNearest(i[:3],3,skeleton) for i in dejavupoints]
 	mappoints+=[getNearest(i[3:],3,skeleton) for i in dejavupoints]	
 
-	for i in range(len(mappoints)/2):
-		print("Helix %d:  "%(i), mappoints[i+len(mappoints)/2], mappoints[i])
-		erasePairs(skeleton,mappoints[i+len(mappoints)/2],((mappoints[i],()),),i+2)		
+	for i in range(old_div(len(mappoints),2)):
+		print("Helix %d:  "%(i), mappoints[i+old_div(len(mappoints),2)], mappoints[i])
+		erasePairs(skeleton,mappoints[i+old_div(len(mappoints),2)],((mappoints[i],()),),i+2)		
 		
 		"""startpoint=mappoints[i+len(mappoints)/2]
 		endpoint=mappoints[i]
@@ -102,7 +104,7 @@ def main():
 #	skeleton.write_image("zz.mrc")
 	
 	pts=len(dejavupoints)
-	pairlist=[((i[0]%pts,i[0]/pts),(i[1]%pts,i[1]/pts),i[2],j) for i,j in pairlist]
+	pairlist=[((i[0]%pts,old_div(i[0],pts)),(i[1]%pts,old_div(i[1],pts)),i[2],j) for i,j in pairlist]
 	
 	out=open(args[2],"w")
 	for i in pairlist: 
@@ -121,7 +123,7 @@ def getPoints(dejavufile, apix,originX,originY,originZ):
 	for line in open(dejavufile,"r").readlines():
 		result = pattern.search(line)
 		if result:
-			coord=[int(originX+(float(result.group('x1'))/apix)), int(originY+(float(result.group('y1'))/apix)), int(originZ+(float(result.group('z1'))/apix)), int(originX+(float(result.group('x2'))/apix)), int(originY+(float(result.group('y2'))/apix)), int(originZ+(float(result.group('z2'))/apix))]
+			coord=[int(originX+(old_div(float(result.group('x1')),apix))), int(originY+(old_div(float(result.group('y1')),apix))), int(originZ+(old_div(float(result.group('z1')),apix))), int(originX+(old_div(float(result.group('x2')),apix))), int(originY+(old_div(float(result.group('y2')),apix))), int(originZ+(old_div(float(result.group('z2')),apix)))]
 			endpoints.append(coord)
 	return(endpoints)
 	
@@ -225,7 +227,7 @@ def erasePairs(skeleton,target,seeds,n):
 def findPath(skeleton,mappoints,seeds,it,pairs,n):
 	# Iterate over all current trace edge points
 	newseeds=[]
-	mp2=len(mappoints)/2
+	mp2=old_div(len(mappoints),2)
 	for s,p in seeds:
 		# search nearest neighbors to continue trace
 

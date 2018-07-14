@@ -6,6 +6,8 @@ from __future__ import print_function
 #  New version of sort3D.
 #  
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import  os
 import  sys
@@ -99,7 +101,7 @@ def check_mpi_settings(log):
 	current_mpi_settings_is_bad = 0
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		fsc_refinement = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
-		q = float(Tracker["constants"]["img_per_grp"])/float(Tracker["constants"]["total_stack"])
+		q = old_div(float(Tracker["constants"]["img_per_grp"]),float(Tracker["constants"]["total_stack"]))
 		for ifreq in range(len(fsc_refinement)): fsc_refinement[ifreq] = fsc_refinement[ifreq]*q/(1.-fsc_refinement[ifreq]*(1.-q))
 		res = 0.0
 		for ifreq in range(len(fsc_refinement)):
@@ -120,7 +122,7 @@ def check_mpi_settings(log):
 	try:
 		image_org_size = Tracker["constants"]["nnxo"]
 		image_in_core_size = nxinit
-		ratio = float(nxinit)/float(image_org_size)
+		ratio = old_div(float(nxinit),float(image_org_size))
 		raw_data_size = float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9
 		raw_data_size_per_node = float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9/Blockdata["no_of_groups"]
 		sorting_data_size_per_node = raw_data_size_per_node + 2.*raw_data_size_per_node*ratio**2
@@ -129,7 +131,7 @@ def check_mpi_settings(log):
 	if current_mpi_settings_is_bad == 1:ERROR("initial info is not provided", "check_mpi_settings", 1, Blockdata["myid"])
 	try:
 		mem_bytes = os.sysconf('SC_PAGE_SIZE')*os.sysconf('SC_PHYS_PAGES')# e.g. 4015976448
-		mem_gib = mem_bytes/(1024.**3) # e.g. 3.74
+		mem_gib = old_div(mem_bytes,(1024.**3)) # e.g. 3.74
 		if( Blockdata["myid"] == Blockdata["main_node"]):print(line, "system mem info: %5.1f  G"%mem_gib)
 	except:
 		mem_gib = None
@@ -170,7 +172,7 @@ def check_mpi_settings(log):
 			print(line, msg)
 			log.add(msg)
 		ERROR("In sufficient memory", "check_mpi_settings", 1, Blockdata["myid"])
-	images_per_cpu = float(Tracker["constants"]["total_stack"])/float(Blockdata["nproc"])
+	images_per_cpu = old_div(float(Tracker["constants"]["total_stack"]),float(Blockdata["nproc"]))
 	images_per_cpu_for_unaccounted_data  = Tracker["constants"]["img_per_grp"]*1.5/float(Blockdata["nproc"])
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		msg="current images per cpu:  %d "%int(images_per_cpu)
@@ -384,7 +386,7 @@ def do_EQKmeans_nways_clustering_stable_seeds(workdir, initial_partids, params, 
 				log_main.add(msg)
 				print(msg)
 				Tracker["output"].append("Generation %3d  accounted ratio  %5.3f "%(generation, len(Tracker["accounted_list"])/float(Tracker["total_stack"])*100.))
-				if len(Tracker["accounted_list"])/float(Tracker["total_stack"]) < 1./float(Tracker["number_of_groups"]): less_than_random_assignment =1
+				if old_div(len(Tracker["accounted_list"]),float(Tracker["total_stack"])) < old_div(1.,float(Tracker["number_of_groups"])): less_than_random_assignment =1
 			less_than_random_assignment = bcast_number_to_all(less_than_random_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
 			if less_than_random_assignment ==1: ERROR("accounted ratio less than accounted ratio of random assignment ", "sxsort3d.py", 1, Blockdata["myid"])
 			tmp_list   = []
@@ -548,7 +550,7 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 					if(Tracker["nxinit"] != nnn): ref_vol = fdecimate(ref_vol, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
 					stat = Util.infomask(ref_vol, mask3D, False)
 					ref_vol -= stat[0]
-					if stat[1]!=0.0:Util.mul_scalar(ref_vol, 1.0/stat[1])
+					if stat[1]!=0.0:Util.mul_scalar(ref_vol, old_div(1.0,stat[1]))
 					if Tracker["mask3D"]:ref_vol *=mask3D
 				else: ref_vol = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 				bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["main_node"])		
@@ -562,7 +564,7 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 			# pass to main_node
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				peaks =[[ 0.0 for im in range(Tracker["total_stack"])] for iref in range(number_of_groups)]
-				for im in range(len(local_peaks)): peaks[im/nima][im%nima+image_start] = local_peaks[im]
+				for im in range(len(local_peaks)): peaks[old_div(im,nima)][im%nima+image_start] = local_peaks[im]
 			else: peaks = 0		
 			if Blockdata["myid"] != Blockdata["main_node"]: wrap_mpi_send(local_peaks, Blockdata["main_node"], MPI_COMM_WORLD)
 			else:
@@ -570,7 +572,7 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 					if iproc != Blockdata["main_node"]:
 						local_peaks = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
 						iproc_nima = proc_list[iproc][1]-proc_list[iproc][0]
-						for im in range(len(local_peaks)): peaks[im/iproc_nima][im%iproc_nima+proc_list[iproc][0]] = local_peaks[im]
+						for im in range(len(local_peaks)): peaks[old_div(im,iproc_nima)][im%iproc_nima+proc_list[iproc][0]] = local_peaks[im]
 			peaks = wrap_mpi_bcast(peaks, Blockdata["main_node"], MPI_COMM_WORLD)
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				ss = 0
@@ -599,7 +601,7 @@ def EQKmeans_by_dmatrix_orien_groups(original_data, partids, ptls_in_orien_group
 			if best_score >= changed_nptls:
 				best_score = changed_nptls
 				best_assignment = copy.copy(iter_assignment)
-			if changed_nptls < stopercnt and total_iter <=10:stopercnt = changed_nptls/2. # reduce stop criterion to gain improvement in clustering
+			if changed_nptls < stopercnt and total_iter <=10:stopercnt = old_div(changed_nptls,2.) # reduce stop criterion to gain improvement in clustering
 			stopercnt = max(stopercnt, Tracker["constants"]["stop_eqkmeans_percentage"]) # But not exceed the specified number
 			iter       +=1
 			total_iter +=1
@@ -655,7 +657,7 @@ def get_shrink_data_sorting(partids, partstack, return_real = False, preshift = 
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if( Blockdata["myid"] == Blockdata["main_node"]): print(line,"get_shrink_data_sorting")
 	mask2D		= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	shrinkage 	= Tracker["nxinit"]/float(Tracker["constants"]["nnxo"])
+	shrinkage 	= old_div(Tracker["nxinit"],float(Tracker["constants"]["nnxo"]))
 	radius 		= int(Tracker["constants"]["radius"] * shrinkage +0.5)	
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		lpartids = read_text_file(partids, -1)
@@ -701,19 +703,19 @@ def get_shrink_data_sorting(partids, partstack, return_real = False, preshift = 
 		if Tracker["constants"]["CTF"]:
 			ctf_params = data[im].get_attr("ctf")
 			data[im]   = fdecimate(data[im], Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
-			ctf_params.apix = ctf_params.apix/shrinkage
+			ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 			data[im].set_attr('ctf', ctf_params)
 			data[im].set_attr('ctf_applied', 0)
 			if return_real :  data[im] = fft(data[im])
 		else:
 			ctf_params = data[im].get_attr_default("ctf", False)
 			if  ctf_params:
-				ctf_params.apix = ctf_params.apix/shrinkage
+				ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 				data[im].set_attr('ctf', ctf_params)
 				data[im].set_attr('ctf_applied', 0)
 			data[im] = fdecimate(data[im], nxinit*npad, nxinit*npad, 1, True, False)
 			apix = Tracker["constants"]["pixel_size"]
-			data[im].set_attr('apix', apix/shrinkage)
+			data[im].set_attr('apix', old_div(apix,shrinkage))
 		if not return_real:	data[im].set_attr("padffted",1)
 		data[im].set_attr("npad",npad)
 		set_params_proj(data[im],[phi, theta, psi, 0.0, 0.0])
@@ -741,7 +743,7 @@ def get_shrink_data_sorting_smearing(partids, partstack, return_real = False, pr
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if( Blockdata["myid"] == Blockdata["main_node"]): print(line,"get_shrink_data_sorting")
 	mask2D		= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	shrinkage 	= Tracker["nxinit"]/float(Tracker["constants"]["nnxo"])
+	shrinkage 	= old_div(Tracker["nxinit"],float(Tracker["constants"]["nnxo"]))
 	radius 		= int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	
 	if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -788,19 +790,19 @@ def get_shrink_data_sorting_smearing(partids, partstack, return_real = False, pr
 		if Tracker["constants"]["CTF"] :
 			ctf_params = data[im].get_attr("ctf")
 			data[im]   = fdecimate(data[im], Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
-			ctf_params.apix = ctf_params.apix/shrinkage
+			ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 			data[im].set_attr('ctf', ctf_params)
 			data[im].set_attr('ctf_applied', 0)
 			if return_real :  data[im] = fft(data[im])
 		else:
 			ctf_params = data[im].get_attr_default("ctf", False)
 			if  ctf_params:
-				ctf_params.apix = ctf_params.apix/shrinkage
+				ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 				data[im].set_attr('ctf', ctf_params)
 				data[im].set_attr('ctf_applied', 0)
 			data[im] = fdecimate(data[im], nxinit*npad, nxinit*npad, 1, True, False)
 			apix = Tracker["constants"]["pixel_size"]
-			data[im].set_attr('apix', apix/shrinkage)
+			data[im].set_attr('apix', old_div(apix,shrinkage))
 		if not return_real:	data[im].set_attr("padffted",1)
 		data[im].set_attr("npad",npad)
 		set_params_proj(data[im],[phi, theta, psi, 0.0, 0.0])
@@ -834,7 +836,7 @@ def get_data_prep_compare_rec3d(partids, partstack, return_real = False, preshif
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if( Blockdata["myid"] == Blockdata["main_node"]): print(line,"read_data in ")		
 	mask2D	  = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	shrinkage = Tracker["nxinit"]/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(Tracker["nxinit"],float(Tracker["constants"]["nnxo"]))
 	radius    = int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	if Tracker["applybckgnoise"]:
 		oneover = []
@@ -842,7 +844,7 @@ def get_data_prep_compare_rec3d(partids, partstack, return_real = False, preshif
 		for i in range(len(Blockdata["bckgnoise"])):
 			temp = [0.0]*nnx
 			for k in range(nnx):
-				if(Blockdata["bckgnoise"][i][k] > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i][k])
+				if(Blockdata["bckgnoise"][i][k] > 0.0):  temp[k] = old_div(1.0,sqrt(Blockdata["bckgnoise"][i][k]))
 			oneover.append(temp)
 		del temp
 	if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -873,7 +875,7 @@ def get_data_prep_compare_rec3d(partids, partstack, return_real = False, preshif
 			focus3d     = get_im(Tracker["focus3D"])
 			focus3d_nx  = focus3d.get_xsize()
 			if focus3d_nx != Tracker["constants"]["nnxo"]: # So the decimated focus volume can be directly used
-				focus3d = resample(focus3d, float(Tracker["constants"]["nnxo"])/float(focus3d_nx))
+				focus3d = resample(focus3d, old_div(float(Tracker["constants"]["nnxo"]),float(focus3d_nx)))
 		else: focus3d = model_blank(Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"])
 		bcast_EMData_to_all(focus3d, Blockdata["myid"], Blockdata["main_node"])
 		focus3d = prep_vol(focus3d, 1, 1)
@@ -918,7 +920,7 @@ def get_data_prep_compare_rec3d(partids, partstack, return_real = False, preshif
 			ctf_params = image.get_attr("ctf")
 			image = fdecimate(image, Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
 			cimage = fdecimate(cimage, Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
-			ctf_params.apix = ctf_params.apix/shrinkage
+			ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 			image.set_attr('ctf', ctf_params)
 			cimage.set_attr('ctf', ctf_params)
 			image.set_attr('ctf_applied', 0)
@@ -927,7 +929,7 @@ def get_data_prep_compare_rec3d(partids, partstack, return_real = False, preshif
 		else:
 			ctf_params = image.get_attr_default("ctf", False)
 			if  ctf_params:
-				ctf_params.apix = ctf_params.apix/shrinkage
+				ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 				image.set_attr('ctf', ctf_params)
 				image.set_attr('ctf_applied', 0)
 				cimage.set_attr('ctf', ctf_params)
@@ -935,8 +937,8 @@ def get_data_prep_compare_rec3d(partids, partstack, return_real = False, preshif
 			image = fdecimate(image, nxinit*npad, nxinit*npad, 1, True, False)
 			cimage = fdecimate(cimage, nxinit*npad, nxinit*npad, 1, True, False)
 			apix = Tracker["constants"]["pixel_size"]
-			image.set_attr('apix', apix/shrinkage)
-			cimage.set_attr('apix', apix/shrinkage)
+			image.set_attr('apix', old_div(apix,shrinkage))
+			cimage.set_attr('apix', old_div(apix,shrinkage))
 		cimage.set_attr("padffted",1)
 		cimage.set_attr("npad", npad)
 		if not return_real:
@@ -991,7 +993,7 @@ def get_shrink_data_final(nxinit, procid, original_data = None, oldparams = None
 	
 	mask2D  	= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	nima 		= len(original_data)
-	shrinkage 	= nxinit/float(Tracker["constants"]["nnxo"])
+	shrinkage 	= old_div(nxinit,float(Tracker["constants"]["nnxo"]))
 	#  Note these are in Fortran notation for polar searches
 	#txm = float(nxinit-(nxinit//2+1) - radius -1)
 	#txl = float(2 + radius - nxinit//2+1)
@@ -1005,7 +1007,7 @@ def get_shrink_data_final(nxinit, procid, original_data = None, oldparams = None
 		for i in range(len(Blockdata["bckgnoise"])):
 			temp = [0.0]*nnx
 			for k in range(nnx):
-				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = old_div(1.0,sqrt(Blockdata["bckgnoise"][i].get_value_at(k)))
 			oneover.append(temp)
 		del temp
 	Blockdata["accumulatepw"][procid] = [None]*nima
@@ -1050,7 +1052,7 @@ def get_shrink_data_final(nxinit, procid, original_data = None, oldparams = None
 		#if npad> 1:  data[im] = pad(data[im], Tracker["constants"]["nnxo"]*npad, Tracker["constants"]["nnxo"]*npad, 1, 0.0)
 
 		#  Apply varadj
-		if not nonorm: Util.mul_scalar(data[im], Tracker["avgvaradj"][procid]/wnorm)
+		if not nonorm: Util.mul_scalar(data[im], old_div(Tracker["avgvaradj"][procid],wnorm))
 		#  FT
 		data[im] = fft(data[im])
 		sig = Util.rotavg_fourier( data[im] )
@@ -1058,19 +1060,19 @@ def get_shrink_data_final(nxinit, procid, original_data = None, oldparams = None
 		if Tracker["constants"]["CTF"] :
 			data[im] = fdecimate(data[im], nxinit*npad, nxinit*npad, 1, False, False)
 			ctf_params = original_data[im].get_attr("ctf")
-			ctf_params.apix = ctf_params.apix/shrinkage
+			ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 			data[im].set_attr('ctf', ctf_params)
 			data[im].set_attr('ctf_applied', 0)
 			if return_real: data[im] = fft(data[im])
 		else:
 			ctf_params = original_data[im].get_attr_default("ctf", False)
 			if ctf_params:
-				ctf_params.apix = ctf_params.apix/shrinkage
+				ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 				data[im].set_attr('ctf', ctf_params)
 				data[im].set_attr('ctf_applied', 0)
 			data[im] = fdecimate(data[im], nxinit*npad, nxinit*npad, 1, True, False)
 			apix = Tracker["constants"]["pixel_size"]
-			data[im].set_attr('apix', apix/shrinkage)
+			data[im].set_attr('apix', old_div(apix,shrinkage))
 			
 		#  We have to make sure the shifts are within correct range, shrinkage or not
 		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
@@ -1283,8 +1285,8 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
 		recdata_list = [[] for im in range(len(prjlist))]	
 		rshifts_shrank = copy.deepcopy(rshifts)
 		for im in range(len(rshifts_shrank)):
-			rshifts_shrank[im][0] *= float(nxinit)/float(nnxo)
-			rshifts_shrank[im][1] *= float(nxinit)/float(nnxo)
+			rshifts_shrank[im][0] *= old_div(float(nxinit),float(nnxo))
+			rshifts_shrank[im][1] *= old_div(float(nxinit),float(nnxo))
 		nshifts = len(rshifts_shrank)
 	for im in range(len(prjlist)):
 		bckgn = prjlist[im].get_attr("bckgnoise")
@@ -1301,7 +1303,7 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
 		else:
 			avgnorm = avgnorms[prjlist[im].get_attr("chunk_id")]
 			numbor      = len(paramstructure[im][2])
-			ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in range(numbor) ]
+			ipsiandiang = [ old_div(paramstructure[im][2][i][0],1000)  for i in range(numbor) ]
 			allshifts   = [ paramstructure[im][2][i][0]%1000  for i in range(numbor) ]
 			probs       = [ paramstructure[im][2][i][1] for i in range(numbor) ]
 			tdir = list(set(ipsiandiang))
@@ -1318,12 +1320,12 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
 					if(data[lpt] == None):
 						data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 						data[lpt].set_attr("is_complex",0)
-					Util.add_img(recdata, Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
+					Util.add_img(recdata, Util.mult_scalar(data[lpt], old_div(probs[lshifts[ki]],toprab)))
 				recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1}) # preset already
 				if not upweighted:recdata = filt_table(recdata, bckgn)
 				recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct})
 				ipsi = tdir[ii]%100000
-				iang = tdir[ii]/100000
+				iang = old_div(tdir[ii],100000)
 				set_params_proj(recdata,[refang[iang][0],refang[iang][1], refang[iang][2]+ipsi*delta, 0.0, 0.0], xform = "xform.projection")
 				recdata.set_attr("wprob", toprab*avgnorm/norm_per_particle[im])
 				recdata.set_attr("group", group_id)
@@ -1351,7 +1353,7 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if( Blockdata["myid"] == Blockdata["main_node"]): print(line,"--->>>downsize_data_for_sorting starts<<<---- ")		
 	mask2D		= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	shrinkage 	= Tracker["nxinit"]/float(Tracker["constants"]["nnxo"])
+	shrinkage 	= old_div(Tracker["nxinit"],float(Tracker["constants"]["nnxo"]))
 	radius      = int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	if Tracker["applybckgnoise"]:
 		oneover = []
@@ -1359,7 +1361,7 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 		for i in range(len(Blockdata["bckgnoise"])):
 			temp = [0.0]*nnx
 			for k in range(nnx):
-				if(Blockdata["bckgnoise"][i][k] > 0.0): temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i][k])
+				if(Blockdata["bckgnoise"][i][k] > 0.0): temp[k] = old_div(1.0,sqrt(Blockdata["bckgnoise"][i][k]))
 			oneover.append(temp)
 		del temp
 	if Tracker["focus3D"]: # focus mask is applied
@@ -1367,7 +1369,7 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 			focus3d    = get_im(Tracker["focus3D"])
 			focus3d_nx = focus3d.get_xsize()
 			if focus3d_nx != Tracker["nxinit"]: # So the decimated focus volume can be directly used
-				focus3d = resample(focus3d, float(Tracker["nxinit"])/float(focus3d_nx))
+				focus3d = resample(focus3d, old_div(float(Tracker["nxinit"]),float(focus3d_nx)))
 		else: focus3d = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 		bcast_EMData_to_all(focus3d, Blockdata["myid"], Blockdata["main_node"])
 		focus3d = prep_vol(focus3d, 1, 1)
@@ -1415,7 +1417,7 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 			ctf_params = rimage.get_attr("ctf")
 			rimage      = fdecimate(rimage, Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
 			cimage     = fdecimate(cimage, Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
-			ctf_params.apix = ctf_params.apix/shrinkage
+			ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 			rimage.set_attr('ctf', ctf_params)
 			cimage.set_attr('ctf', ctf_params)
 			rimage.set_attr('ctf_applied', 0)
@@ -1424,7 +1426,7 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 		else:
 			ctf_params = rimage.get_attr_default("ctf", False)
 			if  ctf_params:
-				ctf_params.apix = ctf_params.apix/shrinkage
+				ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 				rimage.set_attr('ctf', ctf_params)
 				rimage.set_attr('ctf_applied', 0)
 				cimage.set_attr('ctf', ctf_params)
@@ -1433,8 +1435,8 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 			rimage  = fdecimate(rimage, nxinit*npad, nxinit*npad, 1, True, False)
 			cimage = fdecimate(cimage, nxinit*npad, nxinit*npad, 1, True, False)
 			apix   = Tracker["constants"]["pixel_size"]
-			rimage.set_attr('apix', apix/shrinkage)
-			cimage.set_attr('apix', apix/shrinkage)
+			rimage.set_attr('apix', old_div(apix,shrinkage))
+			cimage.set_attr('apix', old_div(apix,shrinkage))
 		
 		cimage.set_attr("padffted",1)
 		cimage.set_attr("npad", npad)
@@ -1484,7 +1486,7 @@ def downsize_data_for_rec3D(original_data, particle_size, return_real = False, n
 	nima       = len(original_data)
 	rdata      = [None]*nima
 	mask2D     = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	shrinkage  = particle_size/float(Tracker["constants"]["nnxo"])
+	shrinkage  = old_div(particle_size,float(Tracker["constants"]["nnxo"]))
 	radius     = int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	for im in range(nima):
 		image = original_data[im].copy()
@@ -1502,18 +1504,18 @@ def downsize_data_for_rec3D(original_data, particle_size, return_real = False, n
 		if Tracker["constants"]["CTF"]:
 			ctf_params = image.get_attr("ctf")
 			image = fdecimate(image, particle_size*npad, particle_size*npad, 1, False, False)
-			ctf_params.apix = ctf_params.apix/shrinkage
+			ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 			image.set_attr('ctf', ctf_params)
 			image.set_attr('ctf_applied', 0)
 		else:
 			ctf_params = image.get_attr_default("ctf", False)
 			if  ctf_params:
-				ctf_params.apix = ctf_params.apix/shrinkage
+				ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 				image.set_attr('ctf', ctf_params)
 				image.set_attr('ctf_applied', 0)
 			image = fdecimate(image, particle_size*npad, particle_size*npad, 1, True, False)
 			apix  = Tracker["constants"]["pixel_size"]
-			image.set_attr('apix', apix/shrinkage)		
+			image.set_attr('apix', old_div(apix,shrinkage))		
 		if not return_real:	
 			image.set_attr("padffted",1)
 			image.set_attr("npad", npad)
@@ -1541,8 +1543,8 @@ def compare_two_images_eucd(data, ref_vol):
 		rtemp.set_attr("is_complex",0)
 		if data[im].get_attr("is_complex") ==1: data[im].set_attr("is_complex",0)
 		if Tracker["applybckgnoise"]:
-			peaks[im] = -Util.sqed(data[im], rtemp, ctfs[im], Blockdata["unrolldata"][data[im].get_attr("particle_group")])/qt
-		else: peaks[im] = -Util.sqed(data[im], rtemp, ctfs[im], Blockdata["unrolldata"])/qt
+			peaks[im] = old_div(-Util.sqed(data[im], rtemp, ctfs[im], Blockdata["unrolldata"][data[im].get_attr("particle_group")]),qt)
+		else: peaks[im] = old_div(-Util.sqed(data[im], rtemp, ctfs[im], Blockdata["unrolldata"]),qt)
 	return peaks
 #
 def compare_two_images_cross(data, ref_vol):
@@ -1566,8 +1568,8 @@ def compare_two_images_cross(data, ref_vol):
 		if not Tracker["focus3D"]:
 			if Tracker["applybckgnoise"]:  peak = Util.innerproduct(ref, data[im], Blockdata["unrolldata"][data[im].get_attr("particle_group")])
 			else:                          peak = Util.innerproduct(ref, data[im], None)
-			peaks[im] = peak/nrmref
-		else: peaks[im] = Util.innerproduct(ref, data[im], None)/nrmref
+			peaks[im] = old_div(peak,nrmref)
+		else: peaks[im] = old_div(Util.innerproduct(ref, data[im], None),nrmref)
 	return peaks
 ###<<<---various utilities
 def clusters_to_plist(clusters, pall):
@@ -1673,7 +1675,7 @@ def resize_groups_from_stable_members_mpi(Accounted_on_disk, Unaccounted_on_disk
 		full_list = sorted(full_list)
 		total_stack = len(full_list)
 		Tracker["number_of_groups"] = number_of_groups
-		group_size = int(float(total_stack)/number_of_groups)
+		group_size = int(old_div(float(total_stack),number_of_groups))
 	else:
 		number_of_groups = 0
 		total_stack      = 0
@@ -1783,7 +1785,7 @@ def do_two_way_comparison_over_nindepruns(log_main):#  multiple way comparison
 		avg_scores = 0.0
 		for jpp in range(len(ptp)):
 			if ipp != jpp:	avg_scores += full_scores[(ipp, jpp)]
-		summed_scores[ipp]  = avg_scores/(len(ptp)-1.0)
+		summed_scores[ipp]  = old_div(avg_scores,(len(ptp)-1.0))
 		try:
 			kpp = two_way_dict[summed_scores[ipp]]
 			duplicate[summed_scores[ipp]] = ipp
@@ -2197,7 +2199,7 @@ def do_assignment_by_dmatrix_orien_group(peaks, orien_group_members, number_of_g
 			dmatrix[iref*nima+im] = peaks[iref][orien_group_members[im]]*(-1.)
 	# do dmatrix
 	dd = np.argsort(dmatrix)
-	maxasi     = nima/number_of_groups
+	maxasi     = old_div(nima,number_of_groups)
 	ngs        = number_of_groups
 	id_list    = [ [] for i in range(number_of_groups)]
 	del_row    = [ False for i in range(number_of_groups)]
@@ -2207,7 +2209,7 @@ def do_assignment_by_dmatrix_orien_group(peaks, orien_group_members, number_of_g
 		flag = True
 		while flag:
 			l =  dd[walktrough]
-			igroup  =  l/nima
+			igroup  =  old_div(l,nima)
 			iptl    =  l%nima
 			if del_row[igroup] or del_column[iptl]: walktrough +=1
 			else:  flag = False
@@ -2232,9 +2234,9 @@ def do_assignment_by_dmatrix_orien_group(peaks, orien_group_members, number_of_g
 		id_list1.append(igroup)
 		
 	id_list = [[] for i in range(number_of_groups)]
-	maxasi = nima/number_of_groups
+	maxasi = old_div(nima,number_of_groups)
 	for iref in range(maxasi*number_of_groups):
-		id_list[iref/maxasi].append(id_list1[iref])
+		id_list[old_div(iref,maxasi)].append(id_list1[iref])
 	if nima%number_of_groups !=0:
 		for iptl in range(nima%maxasi):
 			id_list[id_list1[-1]].append(id_list1[maxasi*number_of_groups+iptl])
@@ -2363,7 +2365,7 @@ def compare_two_iterations(assignment1, assignment2, number_of_groups):
 	newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(res1, res2)
 	del res1
 	del res2
-	return float(nb_tot_objs)/len(assignment1), newindeces, list_stable
+	return old_div(float(nb_tot_objs),len(assignment1)), newindeces, list_stable
 	
 def update_data_assignment(cdata, rdata, assignment, proc_list, nosmearing, myid):
 	nima = len(cdata)
@@ -3201,8 +3203,8 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		chunk_dict[chunk_two[index_of_element]] = 1
 		group_dict[chunk_two[index_of_element]] = chunk_two_group[index_of_element] 			
 	Tracker["chunk_dict"] = chunk_dict
-	Tracker["P_chunk_0"]  = len(chunk_one)/float(total_stack)
-	Tracker["P_chunk_1"]  = len(chunk_two)/float(total_stack)
+	Tracker["P_chunk_0"]  = old_div(len(chunk_one),float(total_stack))
+	Tracker["P_chunk_1"]  = old_div(len(chunk_two),float(total_stack))
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		chunk_ids = []
 		group_ids = []
@@ -3222,7 +3224,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	Tracker["total_stack"]                  = Tracker["constants"]["total_stack"]
 	Tracker["constants"]["partstack"]	    = os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt")
 	total_stack                             = Tracker["constants"]["total_stack"]
-	Tracker["currentres"]                   = float(Tracker["constants"]["fsc05"])/float(Tracker["constants"]["nxinit"])
+	Tracker["currentres"]                   = old_div(float(Tracker["constants"]["fsc05"]),float(Tracker["constants"]["nxinit"]))
 	Tracker["bckgnoise"]                    =  os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf")
 	# Now copy oldparamstruture
 	copy_oldparamstructure_from_meridien_MPI(selected_iter, log_main)
@@ -3302,12 +3304,12 @@ def get_input_from_datastack(log_main):# Case three
 	for element in chunk_two: chunk_dict[element] = 1
 	chunk_list 				= [chunk_one, chunk_two]
 	Tracker["chunk_dict"] 	= chunk_dict
-	Tracker["P_chunk_0"]   	= len(chunk_one)/float(total_stack)
-	Tracker["P_chunk_1"]   	= len(chunk_two)/float(total_stack)
+	Tracker["P_chunk_0"]   	= old_div(len(chunk_one),float(total_stack))
+	Tracker["P_chunk_1"]   	= old_div(len(chunk_two),float(total_stack))
 	
 	# Reconstruction to determine the resolution in orignal data size
 	Tracker["nxinit"]     = Tracker["constants"]["nnxo"]
-	Tracker["shrinkage"]  = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	Tracker["shrinkage"]  = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	Tracker["bckgnoise"]  =  None
 	temp = model_blank(Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"])
 	nny  =  temp.get_ysize()
@@ -3846,20 +3848,20 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		reduce_EMData_to_root(tocp, myid, Blockdata["main_node"], mpi_comm)
 		reduce_EMData_to_root(tavg, myid, Blockdata["main_node"], mpi_comm)
 		if( myid == Blockdata["main_node"]):
-			Util.mul_scalar(tavg, 1.0/float(sum(Tracker["nima_per_chunk"])))
+			Util.mul_scalar(tavg, old_div(1.0,float(sum(Tracker["nima_per_chunk"]))))
 			sig = Util.rotavg_fourier( tavg )
 			#for k in xrange(1,nv):  print("  BACKG  ",k,tsd.get_value_at(k,0)/tocp[0] ,sig[k],tsd.get_value_at(k,0)/tocp[0] - sig[k])
 			tmp1 = [0.0]*nv
 			tmp2 = [0.0]*nv
 			for i in range(ngroups):
 				for k in range(1,nv):
-					qt = tsd.get_value_at(k,i)/tocp[i] - sig[k]
-					if( qt > 0.0 ):	tmp1[k] = 2.0/qt
+					qt = old_div(tsd.get_value_at(k,i),tocp[i]) - sig[k]
+					if( qt > 0.0 ):	tmp1[k] = old_div(2.0,qt)
 				#smooth
 				tmp1[0] = tmp1[1]
 				tmp1[-1] = tmp1[-2]
 				for ism in range(0):  #2
-					for k in range(1,nv-1):  tmp2[k] = (tmp1[k-1]+tmp1[k]+tmp1[k+1])/3.0
+					for k in range(1,nv-1):  tmp2[k] = old_div((tmp1[k-1]+tmp1[k]+tmp1[k+1]),3.0)
 					for k in range(1,nv-1):  tmp1[k] = tmp2[k]
 				#  We will keep 0-element the same as first tsd.set_value_at(0,i,1.0)
 				for k in range(1,nv):tsd.set_value_at(k,i,tmp1[k])
@@ -3883,7 +3885,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 	if Blockdata["subgroup_myid"]== Blockdata["main_node"]:
 		if( procid == 0 ):
 			if not os.path.exists(os.path.join(Tracker["directory"], "tempdir")): os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	tvol, tweight, trol = recons3d_trl_struct_MPI(myid = Blockdata["subgroup_myid"], main_node = Blockdata["main_node"], prjlist = data, \
 											paramstructure = newparams, refang = refang, rshifts_shrank = [[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts], \
 											delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
@@ -4432,8 +4434,8 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 		rshifts_shrank = copy.deepcopy(Tracker["rshifts"])
 		nshifts = len(rshifts_shrank)
 		for im in range(len(rshifts_shrank)):
-			rshifts_shrank[im][0] *= float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
-			rshifts_shrank[im][1] *= float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+			rshifts_shrank[im][0] *= old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
+			rshifts_shrank[im][1] *= old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	nnx = prjlist[0].get_xsize()
 	nny = prjlist[0].get_ysize()
 	for im in range(len(prjlist)):
@@ -4451,7 +4453,7 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 					r.insert_slice(prjlist[im], Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi}), 1.0)
 				else:
 					numbor = len(paramstructure[im][2])
-					ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in range(numbor) ]
+					ipsiandiang = [ old_div(paramstructure[im][2][i][0],1000)  for i in range(numbor) ]
 					allshifts   = [ paramstructure[im][2][i][0]%1000  for i in range(numbor) ]
 					probs       = [ paramstructure[im][2][i][1] for i in range(numbor) ]
 					#  Find unique projection directions
@@ -4472,12 +4474,12 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 							if( data[lpt] == None ):
 								data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 								data[lpt].set_attr("is_complex",0)
-							Util.add_img(recdata, Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
+							Util.add_img(recdata, Util.mult_scalar(data[lpt], old_div(probs[lshifts[ki]],toprab)))
 						recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
 						if not upweighted:  recdata = filt_table(recdata, bckgn )
 						recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 						ipsi = tdir[ii]%100000
-						iang = tdir[ii]/100000
+						iang = old_div(tdir[ii],100000)
 						#for iloop in xrange(10000000):
 						#if iloop%1000==0:memory_check("before slice %d  myid  %d"%(iloop, Blockdata["myid"]))
 						r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
@@ -4492,7 +4494,7 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 						r.insert_slice(prjlist[im], Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi}), 1.0)
 					else:
 						numbor = len(paramstructure[im][2])
-						ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in range(numbor) ]
+						ipsiandiang = [ old_div(paramstructure[im][2][i][0],1000)  for i in range(numbor) ]
 						allshifts   = [ paramstructure[im][2][i][0]%1000  for i in range(numbor) ]
 						probs       = [ paramstructure[im][2][i][1] for i in range(numbor) ]
 						#  Find unique projection directions
@@ -4513,12 +4515,12 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 								if( data[lpt] == None ):
 									data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 									data[lpt].set_attr("is_complex",0)
-								Util.add_img(recdata, Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
+								Util.add_img(recdata, Util.mult_scalar(data[lpt], old_div(probs[lshifts[ki]],toprab)))
 							recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
 							if not upweighted:  recdata = filt_table(recdata, bckgn )
 							recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 							ipsi = tdir[ii]%100000
-							iang = tdir[ii]/100000
+							iang = old_div(tdir[ii],100000)
 							r.insert_slice(recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
 	#  clean stuff
 	#if not nosmearing: del recdata, tdir, ipsiandiang, allshifts, probs
@@ -4709,8 +4711,8 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
 		rshifts_shrank  = copy.deepcopy(Tracker["rshifts"])
 		nshifts = len(rshifts_shrank)
 		for im in range(nshifts):
-			rshifts_shrank[im][0] *= float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
-			rshifts_shrank[im][1] *= float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+			rshifts_shrank[im][0] *= old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
+			rshifts_shrank[im][1] *= old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	nnx = prjlist[0].get_xsize()
 	nny = prjlist[0].get_ysize()
 	nc  = 0
@@ -4728,7 +4730,7 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
 					r.insert_slice(prjlist[im], Transform({"type":"spider","phi":phi, "theta":theta, "psi":psi}), 1.0)
 				else:
 					numbor = len(paramstructure[im][2])
-					ipsiandiang = [paramstructure[im][2][i][0]/1000  for i in range(numbor)]
+					ipsiandiang = [old_div(paramstructure[im][2][i][0],1000)  for i in range(numbor)]
 					allshifts   = [paramstructure[im][2][i][0]%1000  for i in range(numbor)]
 					probs       = [paramstructure[im][2][i][1] for i in range(numbor)]
 					#  Find unique projection directions
@@ -4749,12 +4751,12 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
 							if( data[lpt] == None ):
 								data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 								data[lpt].set_attr("is_complex",0)
-							Util.add_img(recdata, Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
+							Util.add_img(recdata, Util.mult_scalar(data[lpt], old_div(probs[lshifts[ki]],toprab)))
 						recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
 						if not upweighted:  recdata = filt_table(recdata, bckgn )
 						recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 						ipsi = tdir[ii]%100000
-						iang = tdir[ii]/100000
+						iang = old_div(tdir[ii],100000)
 						r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
 			nc +=1
 	reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
@@ -4945,9 +4947,9 @@ def stacksize(since=0.0):
 def memory_check(s="check_memory"):
 	import os
 	print(s)
-	print(s +"  memory ",  memory()/1.e9)
-	print(s +" resident  ", resident()/1.e9)
-	print(s +" stacksize ", stacksize()/1.e9)
+	print(s +"  memory ",  old_div(memory(),1.e9))
+	print(s +" resident  ", old_div(resident(),1.e9))
+	print(s +" stacksize ", old_div(stacksize(),1.e9))
 	
 ####<<<----do final maps ---->>>
 def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir, masterdir, rec3d_image_size, log_main):
@@ -4967,7 +4969,7 @@ def do_final_maps(number_of_groups, minimum_size, selected_iter, refinement_dir,
 	basic_memory_per_cpu = 1.0
 	total_data_in_mem = Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["total_stack"]*4./1.e9
 	one_volume_in_mem = Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*4.*8./1.e9
-	nproc_do_final_per_node =(Tracker["constants"]["memory_per_node"] - total_data_in_mem -1.0)/(basic_memory_per_cpu + one_volume_in_mem)
+	nproc_do_final_per_node =old_div((Tracker["constants"]["memory_per_node"] - total_data_in_mem -1.0),(basic_memory_per_cpu + one_volume_in_mem))
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		msg = "total mem per node: %5.1f G"%Tracker["constants"]["memory_per_node"]
 		log_main.add(msg)
@@ -5073,7 +5075,7 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	else:      fsc_true = fsc(map1, map2, 1)
 	resolution_in_angstrom = [None]*len(fsc_true[0])
 	for ifreq in range(len(fsc_true[0])):
-		if fsc_true[0][ifreq] !=0.0: resolution_in_angstrom [ifreq] = Tracker["constants"]["pixel_size"]/fsc_true[0][ifreq]
+		if fsc_true[0][ifreq] !=0.0: resolution_in_angstrom [ifreq] = old_div(Tracker["constants"]["pixel_size"],fsc_true[0][ifreq])
 		else: resolution_in_angstrom [ifreq] = 0.0
 	fsc_true[1][0] =1.0  # always reset fsc of zero frequency as 1.0
 	for ifreq in range(len(fsc_true[0])): 
@@ -5118,8 +5120,8 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	## smooth FSC after FSC143 and set other values to zero
 	
 	for ifreq in range(nfreq143+1, len(fsc_true[1])):
-		if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
-		elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
+		if ifreq ==nfreq143+1: fsc_true[1][ifreq] = old_div((fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1]),5.)
+		elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = old_div((fsc_true[1][nfreq143-1]),5.)
 		else: fsc_true[1][ifreq] = 0.0
 	fsc_out = []
 	for ifreq in range(len(fsc_true[0])): fsc_out.append("%5d   %7.2f   %7.3f"%(ifreq, resolution_in_angstrom[ifreq],fsc_true[1][ifreq]))
@@ -5160,20 +5162,20 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 			guinierline = rot_avg_table(power(periodogram(map1),.5))
 			logguinierline = []
 			for ig in range(len(guinierline)):logguinierline.append(log(guinierline[ig]))
-			freq_min = 1./Tracker["constants"]["B_start"] # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
+			freq_min = old_div(1.,Tracker["constants"]["B_start"]) # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
 			if Tracker["constants"]["B_stop"]!=0.0: 
-				freq_max = 1./Tracker["constants"]["B_stop"]
+				freq_max = old_div(1.,Tracker["constants"]["B_stop"])
 				B_stop = Tracker["constants"]["B_stop"]
-			else: B_stop = Tracker["constants"]["pixel_size"]/(float(nfreq143)/Tracker["constants"]["nnxo"])
+			else: B_stop = old_div(Tracker["constants"]["pixel_size"],(old_div(float(nfreq143),Tracker["constants"]["nnxo"])))
 			if freq_min>= freq_max:
 				print("Your B_start is too high!")
-				freq_min = 1./(B_stop + 8.)
+				freq_min = old_div(1.,(B_stop + 8.))
 			b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, Tracker["constants"]["pixel_size"])
 			global_b = min(4.*b, 400.) # B-factor should not be too large
 			cc = pearson(junk[1],logguinierline)
-			sigma_of_inverse = sqrt(2./(global_b/Tracker["constants"]["pixel_size"]**2))		
+			sigma_of_inverse = sqrt(old_div(2.,(old_div(global_b,Tracker["constants"]["pixel_size"]**2))))		
 		else: # User provided value
-			sigma_of_inverse = sqrt(2./((abs(Tracker["constants"]["B_enhance"]))/Tracker["constants"]["pixel_size"]**2))
+			sigma_of_inverse = sqrt(old_div(2.,(old_div((abs(Tracker["constants"]["B_enhance"])),Tracker["constants"]["pixel_size"]**2))))
 			global_b = Tracker["constants"]["B_enhance"]
 		map1 = filt_gaussinv(map1, sigma_of_inverse)
 		guinierline = rot_avg_table(power(periodogram(map1),.5))
@@ -5186,15 +5188,15 @@ def merge_two_unfiltered_maps(map1_file, map2_file, cluster_ID):
 	lowpassfilter = 0.0
 	if Tracker["constants"]["postlowpassfilter"] != 0.0: # User provided low-pass filter #4.
 		if Tracker["constants"]["postlowpassfilter"] > 0.5: # Input is in Angstrom 
-			map1 = filt_tanl(map1,Tracker["constants"]["pixel_size"]/Tracker["constants"]["postlowpassfilter"], min(Tracker["constants"]["aa"],.1))
-			lowpassfilter = Tracker["constants"]["pixel_size"]/Tracker["constants"]["postlowpassfilter"]
+			map1 = filt_tanl(map1,old_div(Tracker["constants"]["pixel_size"],Tracker["constants"]["postlowpassfilter"]), min(Tracker["constants"]["aa"],.1))
+			lowpassfilter = old_div(Tracker["constants"]["pixel_size"],Tracker["constants"]["postlowpassfilter"])
 		elif Tracker["constants"]["postlowpassfilter"]>0.0 and Tracker["constants"]["postlowpassfilter"]<0.5:  # input is in absolution frequency
 			map1 = filt_tanl(map1,Tracker["constants"]["postlowpassfilter"], min(Tracker["constants"]["aa"],.1))
 			lowpassfilter = Tracker["constants"]["postlowpassfilter"]
 	else: 
 		map1 = filt_tanl(map1,resolution_FSC143, Tracker["constants"]["aa"])
 		lowpassfilter = resolution_FSC143
-	msg = "Cluster %3d  applied B_factor %10.6f  applied low_pass_filter_to  %10.6f "%(cluster_ID, global_b,  Tracker["constants"]["pixel_size"]/lowpassfilter)
+	msg = "Cluster %3d  applied B_factor %10.6f  applied low_pass_filter_to  %10.6f "%(cluster_ID, global_b,  old_div(Tracker["constants"]["pixel_size"],lowpassfilter))
 	msg +="  FSC05/FSC143  %5d/%5d   %6.3f/%6.3f"%(nfreq05, nfreq143, Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq05), \
 	    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq143))
 	print(msg)
@@ -5465,10 +5467,10 @@ def main():
 	############################################################################################	
 	###<<<------ Determine the image size ### reset nxinit simply for calculate currentres!
 	Tracker["nxinit"]     = Tracker["nxinit_refinement"]
-	Tracker["currentres"] = float(Tracker["constants"]["fsc05"])/float(Tracker["nxinit"])
+	Tracker["currentres"] = old_div(float(Tracker["constants"]["fsc05"]),float(Tracker["nxinit"]))
 	##################--------------->>>>>> shrinkage, current resolution, fuse_freq <<<<<<------------------------------------------
 	Tracker["total_stack"] = Tracker["constants"]["total_stack"]
-	Tracker["shrinkage"]   = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
+	Tracker["shrinkage"]   = old_div(float(Tracker["nxinit"]),Tracker["constants"]["nnxo"])
 	Tracker["radius"]      = Tracker["constants"]["radius"]*Tracker["shrinkage"]
 	try: fuse_freq = Tracker["fuse_freq"]
 	except: Tracker["fuse_freq"] = int(Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]+0.5)
@@ -5501,7 +5503,7 @@ def main():
 		else: ERROR("The original particle ID for sorting has wrong format", "sxsort3d.py", 1, Blockdata["main_node"])
 	else: Tracker["full_list"] = 0
 	Tracker["full_list"] = wrap_mpi_bcast(Tracker["full_list"], Blockdata["main_node"], MPI_COMM_WORLD)
-	Tracker["shrinkage"] = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
+	Tracker["shrinkage"] = old_div(float(Tracker["nxinit"]),Tracker["constants"]["nnxo"])
 	if(Blockdata["myid"] == Blockdata["main_node"]): print_dict(Tracker,"Current sorting settings")
 	Tracker["ratio"] = 0
 ### Check mpi setting
@@ -5645,7 +5647,7 @@ def main():
 				cfsc = read_text_file(os.path.join(Tracker["indep_sort3d_dir"],"fsc_driver_grp%03d_iter000.txt"%icluster), -1)
 				res05, res143 = get_res(cfsc[0])    
 				msg = "group %3d   size : %8d     FSC05    %f     FSC143   %f"%(icluster, len(sort3d_clusters[icluster]), \
-				float(res05)/float(Tracker["nxinit"]), float(res143)/float(Tracker["nxinit"]))
+				old_div(float(res05),float(Tracker["nxinit"])), old_div(float(res143),float(Tracker["nxinit"])))
 				print(line, msg)
 				log_main.add(msg)
 				Tracker["output"].append(msg)

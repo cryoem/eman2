@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Authors: James Michael Bell, 06/03/2015
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import numpy as np
@@ -104,7 +106,7 @@ def main():
 	hdr = EMData(options.path,0,True)
 	nx = hdr.get_xsize() # we assume square boxes so we won't bother with ny
 	for i in range(options.meanshrink):
-		nx = nx / 2
+		nx = old_div(nx, 2)
 	if nx < 8:
 		print("You're trying to shrink the image a too much. Try using a lower value for the --meanshrink parameter.")
 		sys.exit(1)
@@ -145,7 +147,7 @@ def main():
 					ptcl.process_inplace('threshold.belowtozero',{'minval':options.threshold})
 				if options.filter == 'bandpass':
 					apix = ptcl.get_attr('ctf').apix
-					sigma = ptcl.get_attr('sigma') / 20.0
+					sigma = old_div(ptcl.get_attr('sigma'), 20.0)
 					ptcl.process_inplace('filter.bandpass.gauss',{'apix':apix,'center':0.0,'cutoff_abs':0.005,'sigma':sigma})
 					ptcl.process_inplace('mask.soft',{'outer_radius': -0.20 * ptcl['nx']})
 
@@ -197,7 +199,7 @@ def main():
 			centered = orig.copy()
 
 			#mu = np.mean(parr.nonzero(),axis=1) # rough geometric center
-			mu = (np.max(parr.nonzero(),axis=1) + np.min(parr.nonzero(),axis=1))/2.
+			mu = old_div((np.max(parr.nonzero(),axis=1) + np.min(parr.nonzero(),axis=1)),2.)
 
 			tx = -(mu[1] - nx)
 			ty = -(mu[0] - nx)

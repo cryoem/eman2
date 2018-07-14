@@ -1,10 +1,12 @@
 
 from __future__ import print_function
+from __future__ import division
 ######################################
 #  The even case, 2D:  Part 1
 ######################################
 
 # N=6;  # This is the size of the original image
+from past.utils import old_div
 from builtins import range
 ti = EMData(N,N);
 ti.to_zero();
@@ -34,7 +36,7 @@ print(nx,ny)
 # Let's set the values of the array
 
 for ky in range(ny):
-  for kx in range(nx/2):
+  for kx in range(old_div(nx,2)):
     tiBFFT.set_value_at(2*kx  ,ky,  kx+ky*nx/2);
     tiBFFT.set_value_at(2*kx+1,ky,-(kx+ky*nx/2));
 # Now the real and complex values are negatives
@@ -106,14 +108,14 @@ tiBFFT = tiB.do_fft();
 
 #  4 values
 print(tiBFFT.get_complex_at(0,0));     #  gives real value
-print(tiBFFT.get_complex_at(0,N/2));   #  gives real value
-print(tiBFFT.get_complex_at(N/2,0));   #  gives real value
-print(tiBFFT.get_complex_at(N/2,N/2)); #  gives real value
+print(tiBFFT.get_complex_at(0,old_div(N,2)));   #  gives real value
+print(tiBFFT.get_complex_at(old_div(N,2),0));   #  gives real value
+print(tiBFFT.get_complex_at(old_div(N,2),old_div(N,2))); #  gives real value
 
 
 #  2(N/2 -1) 2 redundancies
-for kx in [0, N/2]:#    so 2 values
-  for ky in range(1,N/2): #  (N/2-1) values
+for kx in [0, old_div(N,2)]:#    so 2 values
+  for ky in range(1,old_div(N,2)): #  (N/2-1) values
     print(tiBFFT.get_complex_at(kx,ky));
     print(tiBFFT.get_complex_at(kx,-ky));# this is the cc of above line
     print('Last two values should be complex conjugates');
@@ -155,8 +157,8 @@ tiBFFT.get_complex_at(0,-1)#  1-2j
 
 
 # Let's check this completely
-for kx in [0, N/2]:#    so 2 values
-  for ky in range(1,N/2):#  (N/2-1) values
+for kx in [0, old_div(N,2)]:#    so 2 values
+  for ky in range(1,old_div(N,2)):#  (N/2-1) values
     Value= complex(kx,ky);
     tiBFFT.set_complex_at(kx,ky,Value);
     print(tiBFFT.get_complex_at(kx,ky),tiBFFT.get_complex_at(kx,-ky));# this is the cc of above line
@@ -200,7 +202,7 @@ print(nx,ny)
 # Let's set the values of the array
 
 for ky in range(ny):
-  for kx in range(nx/2):
+  for kx in range(old_div(nx,2)):
     tiBFFT.set_value_at(2*kx  ,ky,  kx+ky*nx/2);
     tiBFFT.set_value_at(2*kx+1,ky,-(kx+ky*nx/2));
 # Now the real and complex values are negatives
@@ -267,7 +269,7 @@ print(tiBFFT.get_complex_at(0,0));     #  yields real value
 
 #  (N -1)  =4 redundancies
 kx=0;
-for ky in range(1,(N+1)/2): #  (N/2-1) values
+for ky in range(1,old_div((N+1),2)): #  (N/2-1) values
     print(tiBFFT.get_complex_at(kx, ky), tiBFFT.get_complex_at(kx,-ky));
     print('Last two values should be complex conjugates');
 
@@ -311,7 +313,7 @@ tiBFFT.get_complex_at(0,-1)#  1-2j
 
 N=5;
 kx=0  
-for ky in range(1,(N+1)/2):#  (N/2-1) values
+for ky in range(1,old_div((N+1),2)):#  (N/2-1) values
     Value =complex(random(),ky);
     tiBFFT.set_complex_at(kx,ky,Value);
     print(Value, tiBFFT.get_complex_at(kx,ky),tiBFFT.get_complex_at(kx,-ky));# this is the cc of above line
@@ -319,7 +321,7 @@ for ky in range(1,(N+1)/2):#  (N/2-1) values
 
 
 kx=2
-for ky in range(1,(N+1)/2):#  (N/2-1) values
+for ky in range(1,old_div((N+1),2)):#  (N/2-1) values
     Value =complex(random(),ky);
     tiBFFT.set_complex_at(kx,ky,Value);
     print(Value, tiBFFT.get_complex_at(kx,ky),tiBFFT.get_complex_at(kx,-ky));# this is the cc of above line

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+from past.utils import old_div
 '''
 ====================
 Author: Jesus Galaz - 02/March/2013, Last update: 29/October/2014
@@ -31,6 +32,7 @@ Author: Jesus Galaz - 02/March/2013, Last update: 29/October/2014
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
+from __future__ import division
 
 from EMAN2 import *
 
@@ -195,12 +197,12 @@ def cylinder( options ):
 	if options.radius:
 		radius = options.radius
 	else:
-		radius = box/2.0
+		radius = old_div(box,2.0)
 		
 	if options.height:
 		height = options.height
 	else:
-		height = box/2.0
+		height = old_div(box,2.0)
 	
 	maskout = mask.process("testimage.cylinder",{'height':height,'radius':radius})
 	finalmask = maskout

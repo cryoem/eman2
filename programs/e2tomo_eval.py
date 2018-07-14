@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from EMAN2 import *
 import os
 import numpy as np
@@ -280,7 +282,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		print("Showing 2D for image {} : {}".format(int(idx), info["filename"]))
 		
 		self.cur_data=EMData(info["filename"])
-		self.wg_2dimage.list_idx=int(self.cur_data["nz"]/2)		
+		self.wg_2dimage.list_idx=int(old_div(self.cur_data["nz"],2))		
 		self.wg_2dimage.set_data(self.cur_data)
 		self.wg_2dimage.show()
 	
@@ -289,7 +291,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		print("Showing tilt series for image {} : {}".format(int(idx), info["filename"]))
 		
 		self.cur_tlt=EMData(info["tltfile"])
-		self.wg_tltimage.list_idx=int(self.cur_tlt["nz"]/2)		
+		self.wg_tltimage.list_idx=int(old_div(self.cur_tlt["nz"],2))		
 		self.wg_tltimage.set_data(self.cur_tlt)
 		self.wg_tltimage.show()
 	
@@ -341,7 +343,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		idx=self.imglst.item(row, 0).text()
 		info=self.imginfo[int(idx)]
 		hdr=EMData(info["filename"], 0,True)
-		iz=hdr["nz"]/2
+		iz=old_div(hdr["nz"],2)
 		e=EMData(info["filename"], 0, False, Region(0,0,iz, hdr["nx"], hdr["ny"],1))
 		
 		fac=float(hdr["nx"])/self.bt_show2d.width()*1.01

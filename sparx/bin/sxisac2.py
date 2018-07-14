@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -248,7 +250,7 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 		
 	avg_num = 0
 	Iter = 1
-	K = ndata/img_per_grp
+	K = old_div(ndata,img_per_grp)
 
 	if myid == main_node:
 		print("     We will process:  %d current images divided equally between %d groups"%(ndata, K))
@@ -413,7 +415,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 	#		lctf = len(ctm)
 
 	# IMAGES ARE SQUARES! center is in SPIDER convention
-	cnx = nx/2+1
+	cnx = old_div(nx,2)+1
 	cny = cnx
 
 	mode = "F"
@@ -511,8 +513,8 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
 			#del d
 			id_list = [[] for i in range(numref)]
-			maxasi = nima/numref
-			for i in range(maxasi*numref):   id_list[i/maxasi].append(id_list_long[i])
+			maxasi = old_div(nima,numref)
+			for i in range(maxasi*numref):   id_list[old_div(i,maxasi)].append(id_list_long[i])
 			for i in range(nima%maxasi):     id_list[id_list_long[-1]].append(id_list_long[maxasi*numref+i])
 			for iref in range(numref):       id_list[iref].sort()
 			del id_list_long
@@ -584,7 +586,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			reduce_EMData_to_root(refi[j], myid, main_node, comm)
 			if myid == main_node:
 				# Golden rule when to do within group refinement
-				Util.mul_scalar(refi[j], 1.0/float(members[j]))
+				Util.mul_scalar(refi[j], old_div(1.0,float(members[j])))
 				refi[j] = filt_tanl(refi[j], fl, FF)
 				refi[j] = fshift(refi[j], -sx_sum[j], -sy_sum[j])
 				set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
@@ -769,7 +771,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 						common += len(previous_members[j].intersection(members))
 						previous_members[j] = members
 						#print "  memebers  ",j,len(members)
-					agreement = common/float(totprevious + totcurrent - common)
+					agreement = old_div(common,float(totprevious + totcurrent - common))
 					j = agreement - previous_agreement
 					if( (agreement>0.5) and (j > 0.0) and (j < 0.05) ): terminate = 1
 					previous_agreement = agreement
@@ -806,7 +808,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		#	refi[j].set_attr_dict({'members': id_list[j], 'n_objects': i[j]})
 		#del id_list
 		i = [refi[j].get_attr("n_objects") for j in range(numref)]
-		lhist = max(12, numref/2)
+		lhist = max(12, old_div(numref,2))
 		region, histo = hist_list(i, lhist)
 		print("\n=== Histogram of group sizes ================================================")
 		for lhx in range(lhist):  print("     %10.1f     %7d"%(region[lhx], histo[lhx]))
@@ -1243,7 +1245,7 @@ def main(args):
 			del tpw
 			rpw = mpi_reduce(rpw, ntp, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if(myid == 0):
-				rpw = [float(Blockdata["total_nima"]/q) for q in rpw]
+				rpw = [float(old_div(Blockdata["total_nima"],q)) for q in rpw]
 				rpw[0] = 1.0
 				write_text_file(rpw,os.path.join(Blockdata["masterdir"], "rpw.txt"))
 			else:  rpw = []
@@ -1259,7 +1261,7 @@ def main(args):
 			params2d = [[0.0,0.0,0.0,0] for i in range(image_start, image_end)]
 		else:
 			#  We assume the target radius will be 29, and xr = 1.
-			shrink_ratio = float(target_radius)/float(radi)
+			shrink_ratio = old_div(float(target_radius),float(radi))
 
 			for im in range(len(original_images)):
 				if(shrink_ratio != 1.0):
@@ -1270,11 +1272,11 @@ def main(args):
 
 			txrm = (nx - 2*(target_radius+1))//2
 			if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
-			if(txrm/nxrsteps>0):
+			if(old_div(txrm,nxrsteps)>0):
 				tss = ""
 				txr = ""
-				while(txrm/nxrsteps>0):
-					tts=txrm/nxrsteps
+				while(old_div(txrm,nxrsteps)>0):
+					tts=old_div(txrm,nxrsteps)
 					tss += "  %d"%tts
 					txr += "  %d"%(tts*nxrsteps)
 					txrm =txrm//2
@@ -1315,7 +1317,7 @@ def main(args):
 	
 		#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  
 		#  Note images can be also padded, in which case shrink_ratio > 1.
-		shrink_ratio = float(target_radius)/float(radi)
+		shrink_ratio = old_div(float(target_radius),float(radi))
 		
 		aligned_images = EMData.read_images(Blockdata["stack"], list(range(image_start,image_end)))
 		nx = aligned_images[0].get_xsize()

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: John Flanagan, 04/08/2011 (jfflanag@bcm.edu)
 # Edited by: Stephen Murray (scmurray@bcm.edu) May 2014
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 #
+from past.utils import old_div
 from builtins import object
 import numpy, math
 
@@ -227,7 +229,7 @@ class Strategy2IMGPair(Strategy):
 		""" Must have already computed tilt angle for this to work!"""
 		if self.A != None and self.tiltangle != None:
 			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
-			tan_phi = (rotA[0,0] - rotA[1,1]*math.cos(math.radians(self.tiltangle)))/(rotA[1,0]*math.cos(math.radians(self.tiltangle)) + rotA[0,1])
+			tan_phi = old_div((rotA[0,0] - rotA[1,1]*math.cos(math.radians(self.tiltangle))),(rotA[1,0]*math.cos(math.radians(self.tiltangle)) + rotA[0,1]))
 			phi = math.atan2((rotA[0,0] - rotA[1,1]*math.cos(math.radians(self.tiltangle))),(rotA[1,0]*math.cos(math.radians(self.tiltangle)) + rotA[0,1]))
 			self.dphi = math.degrees(phi)
 			
@@ -235,7 +237,7 @@ class Strategy2IMGPair(Strategy):
 			try:
 				gamma = math.asin(sin_gamma)
 			except:
-				gamma = math.pi/2
+				gamma = old_div(math.pi,2)
 				
 			self.dgamma = math.degrees(gamma) 
 			#print rotA

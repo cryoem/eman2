@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -45,7 +47,7 @@ cmp_target=None
 tdim=None
 pdim=None
 c2alt=0
-degrad=pi/180.0
+degrad=old_div(pi,180.0)
 
 def display(img):
 	img.write_image("tmploc.mrc")
@@ -89,19 +91,19 @@ def main():
 	ny=target.get_ysize();
 	
 	if options.nopad:
-		nbx=nx/int(options.box)		# number of boxes in x	
+		nbx=old_div(nx,int(options.box))		# number of boxes in x	
 		sepx=options.box	# separation between boxes
-		nby=ny/int(options.box)
+		nby=old_div(ny,int(options.box))
 		sepy=options.box
 	else:
-		nbx=nx/int(1.5*options.box)		# number of boxes in x	
-		sepx=options.box*3/2+(nx%(options.box*3/2))/nbx-1	# separation between boxes
-		nby=ny/int(1.5*options.box)
-		sepy=options.box*3/2+(ny%int(1.5*options.box))/nby
+		nbx=old_div(nx,int(1.5*options.box))		# number of boxes in x	
+		sepx=options.box*3/2+old_div((nx%(options.box*3/2)),nbx)-1	# separation between boxes
+		nby=old_div(ny,int(1.5*options.box))
+		sepy=options.box*3/2+old_div((ny%int(1.5*options.box)),nby)
 	
 	for x in range(nbx):
 		for y in range(nby):
-			cl=target.get_clip(Region(x*sepx+(sepx-options.box)/2,y*sepy+(sepy-options.box)/2,options.box,options.box))
+			cl=target.get_clip(Region(x*sepx+old_div((sepx-options.box),2),y*sepy+old_div((sepy-options.box),2),options.box,options.box))
 			cl.process_inplace("normalize.edgemean")
 			cl.process_inplace("math.realtofft")
 			cl.process_inplace("normalize.edgemean")
@@ -109,7 +111,7 @@ def main():
 				cl*=(5.0*float(sig)/float(cl.get_attr("sigma")))
 			except:
 				pass
-			target.insert_clip(cl,(x*sepx+(sepx-options.box)/2,y*sepy+(sepy-options.box)/2,0))
+			target.insert_clip(cl,(x*sepx+old_div((sepx-options.box),2),y*sepy+old_div((sepy-options.box),2),0))
 
 	target.write_image(args[0][:-3]+"eval.mrc")
 	E2end(logid)

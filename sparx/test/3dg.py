@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -46,7 +48,7 @@ def cut_pie(a, alpha = 45.0):
 		if(j <= ny//2): jy = ny
 		else:           jy = j - ny
 		for i in range(0,nx,2):
-			ix = i/2
+			ix = old_div(i,2)
 			phi = atan2(abs(jy), ix)/pi*180
 			if(phi <45.0):
 				f.set_value_at(i, j, 0.0)
@@ -116,7 +118,7 @@ for i in range(n):
 	else: t.append( cp2 + filt_gaussl(model_gauss_noise(q*st[1], nx, ny), 0.2))
 
 rssnr, rsumsq, rvar, ssnr, sumsq, var = ssnr2d(t)
-pwi = rops_table((cp1+cp2)/2)
+pwi = rops_table(old_div((cp1+cp2),2))
 pwn = rops_table(filt_gaussl(model_gauss_noise(q*st[1], nx, ny), 0.2))
 fr = []
 ps = rot_avg_table(ssnr)
@@ -141,7 +143,7 @@ for i in range(n):
 	else: t.append( cp3 + filt_gaussl(model_gauss_noise(q*st[1], nx, ny), 0.2))
 
 rssnr, rsumsq, rvar, ssnr, sumsq, var = ssnr2d(t)
-pwi = rops_table((cp1+cp3)/2)
+pwi = rops_table(old_div((cp1+cp3),2))
 pwn = rops_table(filt_gaussl(model_gauss_noise(q*st[1], nx, ny), 0.2))
 fr = []
 ps = rot_avg_table(ssnr)

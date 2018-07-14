@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: John Flanagan Oct 20th 2011 (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -31,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
@@ -1103,7 +1105,7 @@ class TheHelp(QtGui.QWidget):
 			helpdoc += "<B>%s</B>"%(key)
 			eman2item = helpdict[key]
 			helpdoc += "<UL><LI><I>Description:</I> %s</LI>"%eman2item[0]
-			for param in range((len(eman2item)-1)/3):
+			for param in range(old_div((len(eman2item)-1),3)):
 				helpdoc += "<LI><I>Parameter:</I> &nbsp;<B>%s(</B><SPAN style='color:red;'>%s</SPAN><B>)</B>, %s</LI>"%(eman2item[param*3 +1],eman2item[param*3 +2],eman2item[param*3 +3])
 			helpdoc += "</UL>"
 

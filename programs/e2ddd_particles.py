@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/11/14 (sludtke@bcm.edu)
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 import pprint
 from EMAN2 import *
@@ -193,7 +195,7 @@ def main():
 		movie="movieparticles/{}_ptcls.hdf".format(base)
 		movieim=EMData(movie,0)
 		movienfr=movieim["movie_frames"]  # number of frames in each movie for this stack
-		movienptcl=EMUtil.get_image_count(movie)/movienfr		# number of particles in the frame
+		movienptcl=old_div(EMUtil.get_image_count(movie),movienfr)		# number of particles in the frame
 		nx=movieim["nx"]
 		
 		# get CTF info for this micrograph. First try particle based, then resort to frame if necessary
@@ -230,7 +232,7 @@ def main():
 				if options.verbose>1 : print("skipping",name,n)
 				unaliavg=sum(stack)
 				avg=unaliavg		# on failure we just use the straight average
-				try: avg=avg.get_clip(Region((nx-pnx)/2,(nx-pnx)/2,pnx,pnx))		# resize to original particle size
+				try: avg=avg.get_clip(Region(old_div((nx-pnx),2),old_div((nx-pnx),2),pnx,pnx))		# resize to original particle size
 				except: pass
 				avg.to_zero()		# let's actually clear out these bad particles
 				avg.write_image("particles/{}_ptcls.hdf".format(base),n)
@@ -241,7 +243,7 @@ def main():
 			proj=EMData(projfsp,int(cls[eo][0][0,lstn]))	# projection image for this particle
 			proj.process_inplace("normalize.edgemean")	# avoid issues when we resize
 			pnx=proj["nx"]
-			proj=proj.get_clip(Region((pnx-nx)/2,(pnx-nx)/2,nx,nx))	# same size as particle data
+			proj=proj.get_clip(Region(old_div((pnx-nx),2),old_div((pnx-nx),2),nx,nx))	# same size as particle data
 			orient=Transform({"type":"2d","tx":0,"ty":0,"alpha":cls[eo][4][0,lstn],"mirror":int(cls[eo][5][0,lstn])})		# we want the alignment reference in the middle of the box
 			proj.transform(orient)
 			projf=proj.do_fft()
@@ -256,10 +258,10 @@ def main():
 			ccfmask=unaliavg.calc_ccf(proj,fp_flag.CIRCULANT,True)
 			ccfmask.process_inplace("normalize.edgemean")
 			if options.verbose>3 : ccfmask.write_image("tst.hdf",-1)
-			ccfmask.process_inplace("mask.gaussian",{"inner_radius":nx/8,"outer_radius":nx/8})	# this limits maximum translation
+			ccfmask.process_inplace("mask.gaussian",{"inner_radius":old_div(nx,8),"outer_radius":old_div(nx,8)})	# this limits maximum translation
 			ccfmask.process_inplace("threshold.binary",{"value":ccfmask["maximum"]*.8})
 			ccfmask.process_inplace("mask.addshells",{"nshells":2})
-			ccfmask.process_inplace("mask.sharp",{"outer_radius":nx/4})	# this limits maximum translation
+			ccfmask.process_inplace("mask.sharp",{"outer_radius":old_div(nx,4)})	# this limits maximum translation
 			if options.verbose>3 : 
 				ccfmask.write_image("tst.hdf",-1)
 				unaliavg.process_inplace("normalize.edgemean")
@@ -287,10 +289,10 @@ def main():
 				ccf=im.calc_ccf(proj,fp_flag.CIRCULANT,True)
 				ccf.mult(ccfmask)
 				pk=ccf.calc_max_location()
-				dx=-(pk[0]-nx/2)
-				dy=-(pk[1]-nx/2)
+				dx=-(pk[0]-old_div(nx,2))
+				dy=-(pk[1]-old_div(nx,2))
 				if options.verbose>1 : print(base,n,i,dx,dy)
-				if dx==nx/2 or dy==nx/2 :
+				if dx==old_div(nx,2) or dy==old_div(nx,2) :
 					print(base,n, "failed")
 					bad=1
 					break
@@ -303,7 +305,7 @@ def main():
 			# If we had a failed alignment, we just write a blank image
 			if bad: 
 				avg=unaliavg		# on failure we just use the straight average
-				avg=avg.get_clip(Region((nx-pnx)/2,(nx-pnx)/2,pnx,pnx))		# resize to original particle size
+				avg=avg.get_clip(Region(old_div((nx-pnx),2),old_div((nx-pnx),2),pnx,pnx))		# resize to original particle size
 				avg.to_zero()		# let's actually clear out these bad particles
 				avg.write_image("particles/{}_ptcls.hdf".format(base),n)
 				continue
@@ -313,8 +315,8 @@ def main():
 			natx=[atx[0]]
 			naty=[aty[0]]
 			for i in range(1,len(atx)-1):
-				natx.append(int((atx[i-1]+2.0*atx[i]+atx[i+1])/4.0))
-				naty.append(int((aty[i-1]+2.0*aty[i]+aty[i+1])/4.0))
+				natx.append(int(old_div((atx[i-1]+2.0*atx[i]+atx[i+1]),4.0)))
+				naty.append(int(old_div((aty[i-1]+2.0*aty[i]+aty[i+1]),4.0)))
 			natx.append(atx[-1])
 			naty.append(aty[-1])
 #			print len(atx),len(natx),len(aty),len(naty),len(stack)
@@ -333,7 +335,7 @@ def main():
 				avg.process_inplace("normalize.edgemean")
 				avg.write_image("tst.hdf",-1)
 
-			avg=avg.get_clip(Region((nx-pnx)/2,(nx-pnx)/2,pnx,pnx))		# resize to original particle size
+			avg=avg.get_clip(Region(old_div((nx-pnx),2),old_div((nx-pnx),2),pnx,pnx))		# resize to original particle size
 			avg.process_inplace("normalize.edgemean")
 			avg["movie_tx"]=atx
 			avg["movie_ty"]=aty

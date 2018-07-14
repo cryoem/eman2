@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Authors:
 # Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 import sys
@@ -334,7 +336,7 @@ class SXLookFeelConst(object):
 		SXLookFeelConst.screen_width = sxapp.desktop().screenGeometry(monitor_index).width()
 
 		# Set size of the main window depending on the screen size
-		SXLookFeelConst.sxmain_window_height = SXLookFeelConst.screen_height / 2
+		SXLookFeelConst.sxmain_window_height = old_div(SXLookFeelConst.screen_height, 2)
 		if SXLookFeelConst.sxmain_window_height <= SXLookFeelConst.sxmain_window_min_height:
 			SXLookFeelConst.sxmain_window_height = SXLookFeelConst.sxmain_window_min_height
 
@@ -348,7 +350,7 @@ class SXLookFeelConst(object):
 		# SXLookFeelConst.sxmain_window_width =SXLookFeelConst.sxmain_window_min_width
 
 		SXLookFeelConst.sxmenu_item_btn_width = SXLookFeelConst.sxmain_window_height * 0.125
-		SXLookFeelConst.grid_distance = SXLookFeelConst.sxmenu_item_btn_width / 10
+		SXLookFeelConst.grid_distance = old_div(SXLookFeelConst.sxmenu_item_btn_width, 10)
 
 		SXLookFeelConst.sxmenu_btn_area_min_width = 2 * SXLookFeelConst.sxmenu_item_btn_width + SXLookFeelConst.grid_distance + 18
 		SXLookFeelConst.sxcmd_btn_area_min_width = 240
@@ -455,11 +457,11 @@ class SXPictogramButton(QPushButton):
 			SXPictogramButton {{background-color: rgba(0, 0, 0, 0); border: 2px solid rgba(0, 0, 0, 0); border-radius: {1}px; image: url("{0}");}}
 			SXPictogramButton:focus {{background-color: rgba(0, 0, 0, 0); border: 2px solid grey; border-radius: {1}px; image: url("{0}");}}
 			SXPictogramButton:pressed {{background-color: rgba(0, 0, 0, 0); border: 2px solid rgb(153, 153, 153); border-radius: {1}px; image: url("{0}");}}
-			""".format(pictogram_file_path, pictogram_width / 6)
+			""".format(pictogram_file_path, old_div(pictogram_width, 6))
 		self.customButtonStyleClicked = """
 			SXPictogramButton:pressed {{background-color: rgba(0, 0, 0, 0); border: 2px solid rgb(153, 153, 153); border-radius: {1}px; image: url("{0}");}}
 			SXPictogramButton {{background-color: rgba(0, 0, 0, 0); border: 2px solid rgb(220, 220, 220); border-radius: {1}px; image: url("{0}");}}
-			""".format(pictogram_file_path, pictogram_width / 6)
+			""".format(pictogram_file_path, old_div(pictogram_width, 6))
 
 		# Set style and add click event
 		self.setStyleSheet(self.customButtonStyle)
@@ -3393,7 +3395,7 @@ class SXDialogCalculator(QDialog):
 			else:
 				assert (ares >= nyquist_res)
 				sxoperand_ares.validated = ares
-				abs_freq = round(apix/ares, self.precision_abs_freq)
+				abs_freq = round(old_div(apix,ares), self.precision_abs_freq)
 				# The valid range of absolute frequency [1/Pixel] is 0.0 < abs_freq <= 0.5
 				# If both pixel size and resolution values are valid, the absolute frequency must be always valid.
 				assert (abs_freq > 0.0 or abs_freq <= 0.5)
@@ -3646,7 +3648,7 @@ class SXDialogCalculator(QDialog):
 				assert (sxoperand_apix.validated is not None)
 				apix = sxoperand_apix.validated
 				abs_freq = sxoperand_abs_freq.validated
-				ares = round(apix/abs_freq, self.precision_ares)
+				ares = round(old_div(apix,abs_freq), self.precision_ares)
 				# The valid range of resolution [A] is ares <= apix * 2.0 (Nyquist resolution)
 				# If both pixel size and absolute frequency values are valid, this must be always true.
 				assert (ares >= apix * 2.0 ) 

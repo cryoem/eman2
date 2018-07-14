@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -36,6 +37,7 @@ from __future__ import print_function
 # This program is used to analyze tilt series
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -52,16 +54,16 @@ is the alignment of the center of the image (1,0) is one box to the right
 of the center. maxrange allows calculating a limited distance from the center"""
 	sx=im1.get_xsize()
 	sy=im1.get_ysize()
-	bigpad=(padbox-box)/2			# ostensibly this is the max translation we should
+	bigpad=old_div((padbox-box),2)			# ostensibly this is the max translation we should
 									# allow, but we actually allow 2x this
-	nx=int((sx-2*bigpad)/box)*2-1	# this insures that we have a box at the origin
-	ny=int((sy-2*bigpad)/box)*2-1
-	dx=(sx-padbox)/float(nx-1)
-	dy=(sy-padbox)/float(ny-1)
+	nx=int(old_div((sx-2*bigpad),box))*2-1	# this insures that we have a box at the origin
+	ny=int(old_div((sy-2*bigpad),box))*2-1
+	dx=old_div((sx-padbox),float(nx-1))
+	dy=old_div((sy-padbox),float(ny-1))
 	ret={}
 	for y in range(ny):
 		for x in range(nx):
-			if (abs(x-nx/2-1)>maxrange or abs(y-ny/2-1)>maxrange) : continue
+			if (abs(x-old_div(nx,2)-1)>maxrange or abs(y-old_div(ny,2)-1)>maxrange) : continue
 			
 			clip2=im2.get_clip(Region(int(x*dx),int(y*dy),padbox,padbox))
 			# if there are zeroes in the clipped area we don't want to do correlations here
@@ -76,7 +78,7 @@ of the center. maxrange allows calculating a limited distance from the center"""
 			# that
 			mask=clip1.copy_head()
 			mask.to_one()
-			mask.process_inplace("mask.sharp",{"outer_radius":box/2})
+			mask.process_inplace("mask.sharp",{"outer_radius":old_div(box,2)})
 			clip1*=mask
 			clip1-=float(clip1.get_attr("mean_nonzero"))
 			clip1*=mask
@@ -91,9 +93,9 @@ of the center. maxrange allows calculating a limited distance from the center"""
 			ccf/=ccfs
 	
 			ccf.process_inplace("normalize")		# peaks relative to 1 std-dev
-			if bigpad*2>padbox/2 : ccf.process_inplace("mask.sharp",{"outer_radius":padbox/2-1})
+			if bigpad*2>old_div(padbox,2) : ccf.process_inplace("mask.sharp",{"outer_radius":old_div(padbox,2)-1})
 			else : ccf.process_inplace("mask.sharp",{"outer_radius":bigpad*2})		# max translation
-			ccf.set_value_at(int(padbox/2),int(padbox/2),0,0)		# remove 0 shift artifacts
+			ccf.set_value_at(int(old_div(padbox,2)),int(old_div(padbox,2)),0,0)		# remove 0 shift artifacts
 			
 			if (debug):
 				clip1.write_image("dbug.hed",-1)
@@ -101,7 +103,7 @@ of the center. maxrange allows calculating a limited distance from the center"""
 				ccf.write_image("dbug.hed",-1)
 			maxloc=ccf.calc_max_location()
 			
-			ret[(x-nx/2-1,y-ny/2-1)]=((float(ccf.get_attr("maximum")),x*box+bigpad/2-sx/2,y*box+bigpad/2-sy/2,maxloc[0]-padbox/2,maxloc[1]-padbox/2))
+			ret[(x-old_div(nx,2)-1,y-old_div(ny,2)-1)]=((float(ccf.get_attr("maximum")),x*box+old_div(bigpad,2)-old_div(sx,2),y*box+old_div(bigpad,2)-old_div(sy,2),maxloc[0]-old_div(padbox,2),maxloc[1]-old_div(padbox,2)))
 
 	return ret
 	
@@ -120,7 +122,7 @@ def mode(vals):
 	try:
 		if cnt[-1][0]==cnt[-2][0] :
 			vals.sort()
-			return vals[len(vals)/2]
+			return vals[old_div(len(vals),2)]
 	except:
 		pass
 		
@@ -165,7 +167,7 @@ def main():
 		for i in range(nimg):
 			a=EMData()
 			a.read_image(args[0],i)
-			b=a.get_clip(Region(rgnp[0]+a.get_xsize()/2-rgnp[2]/2,rgnp[1]+a.get_ysize()/2-rgnp[2]/2,rgnp[2],rgnp[2]))
+			b=a.get_clip(Region(rgnp[0]+old_div(a.get_xsize(),2)-old_div(rgnp[2],2),rgnp[1]+old_div(a.get_ysize(),2)-old_div(rgnp[2],2),rgnp[2],rgnp[2]))
 			b.write_image(args[1],i)
 	else:
 		# copy the file with possible format conversion
@@ -176,7 +178,7 @@ def main():
 		
 
 		
-	cmplist=[(x,x+1) for x in range(nimg/2,nimg-1)]+[(x,x-1) for x in range(nimg/2,0,-1)]
+	cmplist=[(x,x+1) for x in range(old_div(nimg,2),nimg-1)]+[(x,x-1) for x in range(old_div(nimg,2),0,-1)]
 	if options.twopass : cmplist+=cmplist
 	ii=-1
 	while ii< len(cmplist)-1:
@@ -212,11 +214,11 @@ def main():
 			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,debug=i[0]==63)
 			vec=list(dct.values())
 			vec.sort()			# sort in order of peak height
-			vec2=vec[-len(vec)/4:]		# take the 25% strongest correlation peaks
+			vec2=vec[old_div(-len(vec),4):]		# take the 25% strongest correlation peaks
 			
 			vec3=[(hypot(x[1],x[2]),x[0],x[1],x[2],x[3],x[4]) for x in vec2]
 			vec3.sort()					# sort in order of distance from center
-			vec4=vec3[:len(vec3)/2]		# take the 1/2 closest to the center
+			vec4=vec3[:old_div(len(vec3),2)]		# take the 1/2 closest to the center
 	#		vec4=vec3
 	#		for x in vec4: print x
 			
@@ -225,14 +227,14 @@ def main():
 			
 			best=(mode(dxs),mode(dys))
 		elif options.mode[:6]=="region":
-			if i[0]==nimg/2 :
+			if i[0]==old_div(nimg,2) :
 				cen=(rgnp[0],rgnp[1])
 
 			ref=im1.copy()
 			
 			mask=ref.copy_head()
 			mask.to_one()
-			mask.process_inplace("mask.sharp",{"outer_radius":rgnp[3]/2,"dx":cen[0],"dy":cen[1]})
+			mask.process_inplace("mask.sharp",{"outer_radius":old_div(rgnp[3],2),"dx":cen[0],"dy":cen[1]})
 			ref*=mask
 			ref-=float(ref.get_attr("mean_nonzero"))
 			ref*=mask
@@ -251,14 +253,14 @@ def main():
 			ccf.process_inplace("normalize")		# peaks relative to 1 std-dev
 			ccf.process_inplace("mask.onlypeaks",{"npeaks":0})
 			ccf.process_inplace("mask.sharp",{"outer_radius":options.maxshift})
-			if options.nozero : ccf.set_value_at(ccf.get_xsize()/2,ccf.get_ysize()/2,0,0)
+			if options.nozero : ccf.set_value_at(old_div(ccf.get_xsize(),2),old_div(ccf.get_ysize(),2),0,0)
 
 			if i[1] in range(72,77) : ccf.write_image("dbug.hed",-1)
 			maxloc=ccf.calc_max_location()
-			maxloc=(maxloc[0]-im1.get_xsize()/2,maxloc[1]-im1.get_ysize()/2)
+			maxloc=(maxloc[0]-old_div(im1.get_xsize(),2),maxloc[1]-old_div(im1.get_ysize(),2))
 			print(maxloc)
 			
-			out=im2.get_clip(Region(cen[0]-maxloc[0]-rgnp[2]/2+im2.get_xsize()/2,cen[1]-maxloc[1]-rgnp[2]/2+im2.get_ysize()/2,rgnp[2],rgnp[2]))
+			out=im2.get_clip(Region(cen[0]-maxloc[0]-old_div(rgnp[2],2)+old_div(im2.get_xsize(),2),cen[1]-maxloc[1]-old_div(rgnp[2],2)+old_div(im2.get_ysize(),2),rgnp[2],rgnp[2]))
 			cen=(cen[0]-maxloc[0],cen[1]-maxloc[1])
 			out.write_image(args[1],i[1])
 			print("%d.\t%d\t%d"%(i[1],cen[0],cen[1]))
@@ -272,12 +274,12 @@ def main():
 					a=dct[(x,y)]
 					b=dct[(-x,-y)]
 					if hypot(a[3]-b[3],a[4]-b[4])>7.0 : continue
-					pairs.append((x,y,(a[3]+b[3])/2.0,(a[4]+b[4])/2.0,hypot(a[3]-b[3],a[4]-b[4])))
+					pairs.append((x,y,old_div((a[3]+b[3]),2.0),old_div((a[4]+b[4]),2.0),hypot(a[3]-b[3],a[4]-b[4])))
 #					print "%d,%d\t%5.2f %5.2f\t%5.2f"%(pairs[-1][0],pairs[-1][1],pairs[-1][2],pairs[-1][3],pairs[-1][4])
 			
 			if len(pairs)==0 : 
 				print("Alignment failed on image %d (%d)"%(i[1],i[0]))
-				if (i[1]>nimg/2) : cmplist[ii]=(i[0]-1,i[1])
+				if (i[1]>old_div(nimg,2)) : cmplist[ii]=(i[0]-1,i[1])
 				else : cmplist[ii]=(i[0]+1,i[1])
 				if abs(i[0]-i[1])<5 : ii-=1
 				continue
@@ -286,20 +288,20 @@ def main():
 				sum=[0,0]
 				norm=0
 				for p in pairs:
-					sum[0]+=p[2]*(1.0/(1.0+p[4]))
-					sum[1]+=p[3]*(1.0/(1.0+p[4]))
-					norm+=(1.0/(1.0+p[4]))
-				best=(sum[0]/norm,sum[1]/norm)
+					sum[0]+=p[2]*(old_div(1.0,(1.0+p[4])))
+					sum[1]+=p[3]*(old_div(1.0,(1.0+p[4])))
+					norm+=(old_div(1.0,(1.0+p[4])))
+				best=(old_div(sum[0],norm),old_div(sum[1],norm))
 
 				# now do it again, but exclude any outliers from the average
 				sum=[0,0]
 				norm=0
 				for p in pairs:
 					if hypot(p[2]-best[0],p[3]-best[1])>5.0 :continue
-					sum[0]+=p[2]*(1.0/(1.0+p[4]))
-					sum[1]+=p[3]*(1.0/(1.0+p[4]))
-					norm+=(1.0/(1.0+p[4]))
-					best=(sum[0]/norm,sum[1]/norm)
+					sum[0]+=p[2]*(old_div(1.0,(1.0+p[4])))
+					sum[1]+=p[3]*(old_div(1.0,(1.0+p[4])))
+					norm+=(old_div(1.0,(1.0+p[4])))
+					best=(old_div(sum[0],norm),old_div(sum[1],norm))
 					
 		print("%d.\t%5.2f\t%5.2f"%(i[1],best[0],best[1]))
 		im2.rotate_translate(0,0,0,best[0],best[1],0)
@@ -322,7 +324,7 @@ def main():
 			a.read_image(args[1],i)
 			a.process_inplace("mask.dampedzeroedgefill")
 			a.process_inplace("normalize")
-			a.process_inplace("mask.gaussian",{"outer_radius":a.get_xsize()/4})
+			a.process_inplace("mask.gaussian",{"outer_radius":old_div(a.get_xsize(),4)})
 			b=a.do_fft()
 			b.process_inplace("complex.normpixels")
 			sum+=b
@@ -333,8 +335,8 @@ def main():
 		for angi in range(-90*4,90*4+1):
 				ang=angi*pi/(180.0*4.0)
 				v=0
-				for r in range(a.get_xsize()/64,a.get_xsize()/2):
-						v+=sum.get_value_at(2*int(r*cos(ang)),a.get_ysize()/2+int(r*sin(ang)))
+				for r in range(old_div(a.get_xsize(),64),old_div(a.get_xsize(),2)):
+						v+=sum.get_value_at(2*int(r*cos(ang)),old_div(a.get_ysize(),2)+int(r*sin(ang)))
 				curve.append((v,ang*180.0/pi))
 		tiltaxis=max(curve)
 	
@@ -343,7 +345,7 @@ def main():
 	for i in range(nimg):
 		a=EMData()
 		a.read_image(args[1],i)
-		a.set_rotation(options.tilt*(i-nimg/2-1)*pi/180.0,0.0,-tiltaxis[1]*pi/180.0)
+		a.set_rotation(options.tilt*(i-old_div(nimg,2)-1)*pi/180.0,0.0,-tiltaxis[1]*pi/180.0)
 		a.set_attr("ptcl_repr",1)
 		a.write_image(args[1],i)
 		

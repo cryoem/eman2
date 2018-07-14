@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/22/2010 (sludtke@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 # This recomputes the convergence plot FSC curves, which prior to 4/2010 were not being
 # computed properly
 
+from past.utils import old_div
 import sys,re
 from math import *
 from os import *
@@ -73,10 +75,10 @@ for d in dirs:
 			# compute FSC and overwrite original results
 			apix=a["apix_x"]
 			fsc = a.calc_fourier_shell_correlation(b)
-			third = len(fsc)/3
+			third = old_div(len(fsc),3)
 			xaxis = fsc[0:third]
 			fsc = fsc[third:2*third]
-			saxis = [x/apix for x in xaxis]
+			saxis = [old_div(x,apix) for x in xaxis]
 
 			db2[dictname]=[saxis[1:],fsc[1:]]
 			print("  %s (%s - %s)"%(dictname,"bdb:%s#%s"%(d,i),"bdb:%s_odd#%s"%(d[:-5],i)))
@@ -125,11 +127,11 @@ for d in dirs:
 		#print "compute"
 		apix=a["apix_x"]
 		fsc = a.calc_fourier_shell_correlation(b)
-		third = len(fsc)/3
+		third = old_div(len(fsc),3)
 		xaxis = fsc[0:third]
 		fsc = fsc[third:2*third]
 #		error = fsc[2*third:]
-		saxis = [x/apix for x in xaxis]
+		saxis = [old_div(x,apix) for x in xaxis]
 
 		#print "write"
 		db[n]=[saxis[1:],fsc[1:]]

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steve Ludtke 06/10/2013 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
@@ -335,10 +337,10 @@ in the refinement directory. You can use Info with the browser or just read the 
 			append_html("The dimensions of the particles ( {ptcl}x{ptcl} ) do not match the dimensions of initial model {n} ( {vol}x{vol}x{vol} ). I will assume A/pix is correct in the model and rescale/resize accordingly.".format(ptcl=xsize,vol=xsize3d,n=i))
 			img3 = EMData("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0,True)
 			try:
-				scale=img3["apix_x"]/apix
+				scale=old_div(img3["apix_x"],apix)
 			except:
 				print("A/pix unknown, assuming scale same as relative box size")
-				scale=float(xsize)/xsize3d
+				scale=old_div(float(xsize),xsize3d)
 			if scale>1 : cmd="e2proc3d.py {path}/threed_00_{i:02d}.hdf {path}/threed_00_{i:02d}.hdf --clip={cl},{cl},{cl} --scale={sca:1.4f}".format(path=options.path,i=i+1,cl=xsize,sca=scale)
 			else :       cmd="e2proc3d.py {path}/threed_00_{i:02d}.hdf {path}/threed_00_{i:02d}.hdf --scale={sca:1.4f} --clip={cl},{cl},{cl}".format(path=options.path,i=i+1,cl=xsize,sca=scale)
 			run(cmd)
@@ -388,7 +390,7 @@ are really required to achieve the targeted resolution, you may consider manuall
 		if options.targetres>apix*4 :
 			effbox=nx*apix*2/options.targetres
 #			astep=89.999/ceil(90.0/sqrt(4300/effbox))		# This rounds to the best angular step divisible by 90 degrees, original computation without speed
-			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/effbox)))		# This rounds to the best angular step divisible by 90 degrees
+			astep=old_div(89.99,ceil(90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,effbox)))))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.5f}:inc_mirror=0:perturb=0".format(astep)
 			if options.classiter<0 :
 				if options.targetres>12.0 :
@@ -412,7 +414,7 @@ even lead to worse structures. Based on your requested resolution and box-size, 
 
 		# target resolution between 1/2 and 3/4 Nyquist
 		elif options.targetres>apix*3 :
-			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/nx)))		# This rounds to the best angular step divisible by 90 degrees
+			astep=old_div(89.99,ceil(90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.5f}:inc_mirror=0:perturb=0".format(astep)
 			append_html("<p>Based on your requested resolution and box-size, modified by --speed,  I will use an angular sampling of {} deg. For details, please see \
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
@@ -427,7 +429,7 @@ will help avoid noise bias in early rounds, but it may be reduced at zero if con
 				options.classiter=1
 				append_html("<p>Your desired resolution is beyond 3/4 Nyquist. Regardless, we will set --classiter to 1 initially. Leaving this above 0 \
 will help avoid noise bias, but it may be reduced at zero if convergence seems to have been achieved.</p>")
-			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/nx)))		# This rounds to the best angular step divisible by 90 degrees
+			astep=old_div(89.99,ceil(90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.5f}:inc_mirror=0:perturb=0".format(astep)
 			append_html("<p>The resolution you are requesting is beyond 2/3 Nyquist. This is normally not recommended, as it represents insufficient sampling to give a good representation of your \
 reconstructed map, and resolution can be difficult to accurately assess. The reconstruction will proceed, but generally speaking your A/pix should be less than 1/3 the targeted resolution. \
@@ -565,7 +567,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 			path=options.path,mdls=" ".join(models),itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=",".join(sym),prethr=prethreshold,threads=options.threads,verbose=verbose))
 
 		progress += 1.0
-		E2progress(logid,progress/total_procs)
+		E2progress(logid,old_div(progress,total_procs))
 
 		### We may need to make our own similarity mask file for more accurate particle classification
 		if makesimmask :
@@ -597,14 +599,14 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 				shrinks1=shrinks1,shrink=shrink,prefilt=prefilt,simmask=simmask,verbose=verbose,parallel=parallel)
 			run(cmd)
 			progress += 1.0
-			E2progress(logid,progress/total_procs)
+			E2progress(logid,old_div(progress,total_procs))
 
 			### Classify
 			cmd = "e2classify.py {path}/simmx_{itr:02d}.hdf {path}/classmx_{itr:02d}.hdf -f --sep {sep} {verbose}".format(
 				path=options.path,itr=it,sep=options.sep,verbose=verbose)
 			run(cmd)
 			progress += 1.0
-			E2progress(logid,progress/total_procs)
+			E2progress(logid,old_div(progress,total_procs))
 			
 
 		#random assignment
@@ -637,7 +639,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 		run(cmd)
 		progress += 1.0
-		E2progress(logid,progress/total_procs)
+		E2progress(logid,old_div(progress,total_procs))
 		
 		
 		## 3-D Reconstruction
@@ -701,10 +703,10 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 		# so we now have an average FSC curve between map 1 and each of the others (we should probably do all vs all, but don't)
 		fm/=(options.nmodels-1.0)
-		third = len(fm)/3
+		third = old_div(len(fm),3)
 		xaxis = fm[0:third]
 		fsc = fm[third:2*third]
-		saxis = [x/apix for x in xaxis]
+		saxis = [old_div(x,apix) for x in xaxis]
 		Util.save_data(float(saxis[1]),float(saxis[1]-saxis[0]),list(fsc[1:]),"{path}/fsc_mutual_avg_{it:02d}.txt".format(path=options.path,it=it))
 
 		models=["threed_{itr:02d}_{mdl:02d}.hdf".format(itr=it,mdl=mdl+1) for mdl in range(options.nmodels)]
@@ -719,7 +721,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 		db["last_map"]=models
 
-		E2progress(logid,progress/total_procs)
+		E2progress(logid,old_div(progress,total_procs))
 
 	# try and generate an intelligent name for the split output sets
 	if options.input[:4]=="sets/" and options.input[-4:]==".lst" :

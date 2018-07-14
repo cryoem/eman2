@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 #
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import absolute_import
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from .emglobjects import get_default_gl_colors
@@ -476,7 +478,7 @@ class EMBallStickModel(EMPDBItem3D):
 		try: length = np.sqrt(dx**2 + dy**2 + dz**2)
 		except: return
 		if length == 0: return
-		alt = np.arccos(dz/length)*180.0/np.pi
+		alt = np.arccos(old_div(dz,length))*180.0/np.pi
 		phi = np.arctan2(dy,dx)*180.0/np.pi
 		glPushMatrix()
 		glTranslatef(prev[0], prev[1], prev[2] )

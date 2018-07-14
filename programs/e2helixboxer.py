@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Ross Coleman (racolema@gmail.com)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 #from EMAN2db import db_open_dict, db_check_dict, db_close_dict
@@ -179,7 +181,7 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
 	@return: the rectangular EMData helix specified by the coordinates and width
 	"""
 	rot_angle = get_helix_rotation_angle(x1, y1, x2, y2, width)
-	centroid = ( (x1+x2)/2.0,(y1+y2)/2.0 )
+	centroid = ( old_div((x1+x2),2.0),old_div((y1+y2),2.0) )
 	l_vect = (x2-x1, y2-y1)
 	length = sqrt(l_vect[0]**2+l_vect[1]**2)
 	tr = Transform()
@@ -195,7 +197,7 @@ def get_helix_rotation_angle(x1, y1, x2, y2, width):
 	l_vect = (x2-x1, y2-y1)
 	length = sqrt(l_vect[0]**2+l_vect[1]**2)
 	assert length != 0
-	l_uvect = (l_vect[0]/length, l_vect[1]/length)
+	l_uvect = (old_div(l_vect[0],length), old_div(l_vect[1],length))
 
 	#Rotate so that the length is parallel to the y-axis
 	#Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
@@ -217,14 +219,14 @@ def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
 	(x1,y1,x2,y2,w) = helix_coords
 	l_vect = (x2-x1,y2-y1)
 	helix_length = sqrt(l_vect[0]**2+l_vect[1]**2)
-	l_uvect = (l_vect[0]/helix_length, l_vect[1]/helix_length)
+	l_uvect = (old_div(l_vect[0],helix_length), old_div(l_vect[1],helix_length))
 	w_uvect = (-l_uvect[1],l_uvect[0])
 
 	assert px_length > px_overlap, "The overlap must be smaller than the particle length"
 	px_step = px_length - px_overlap
-	l = px_length/2.0 #distance from (x1, y1) on the helix axis
+	l = old_div(px_length,2.0) #distance from (x1, y1) on the helix axis
 	ptcl_coords = []
-	while l < helix_length - px_length/2.0 + px_step:
+	while l < helix_length - old_div(px_length,2.0) + px_step:
 		(x,y) = (x1 + l*l_uvect[0], y1 + l*l_uvect[1])
 		ptcl_coords.append((int(x),int(y)))
 		l += px_step
@@ -247,7 +249,7 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
 	l_vect = (x2-x1, y2-y1)
 	length = sqrt(l_vect[0]**2+l_vect[1]**2)
 	assert length != 0
-	l_uvect = (l_vect[0]/length, l_vect[1]/length)
+	l_uvect = (old_div(l_vect[0],length), old_div(l_vect[1],length))
 
 	#Rotate so that the length is parallel to the y-axis
 	#Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
@@ -274,7 +276,7 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
 		# support of the window
 		gr_K = 6
 		gr_alpha = 1.75
-		gr_r = gr_M/2
+		gr_r = old_div(gr_M,2)
 		gr_v = gr_K/2.0/gr_N
 		from EMAN2 import Util
 		gr_kb = Util.KaiserBessel(gr_alpha, gr_K, gr_r, gr_v, gr_N)
@@ -300,7 +302,7 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
 			side1 = int(round(px_width))
 			side = side1 + 20
 			from EMAN2 import Util, Processor
-			ptcl = Util.window( micrograph, side, side, 1, int (round(centroid[0] + 10 - nx/2)), int (round(centroid[1] +10 - ny/2)), 0)
+			ptcl = Util.window( micrograph, side, side, 1, int (round(centroid[0] + 10 - old_div(nx,2))), int (round(centroid[1] +10 - old_div(ny,2))), 0)
 			mean1 = ptcl.get_attr('mean')
 			ptcl = ptcl - mean1
 				# first pad it with zeros in Fourier space
@@ -352,7 +354,7 @@ def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_leng
 	rot_angle = get_helix_rotation_angle(*helix_coords)
 	tr = Transform({"type":"eman","alt":90,"phi":rot_angle}) #How to rotate a cylinder that is oriented along the z-axis to align it along the boxed helix
 	for centroid in centroids:
-		ptcl= micrograph.get_clip( Region(centroid[0]-side/2.0, centroid[1]-side/2.0, side, side) )
+		ptcl= micrograph.get_clip( Region(centroid[0]-old_div(side,2.0), centroid[1]-old_div(side,2.0), side, side) )
 		ptcl["ptcl_helix_coords"] = list(helix_coords)
 		ptcl["ptcl_source_coord"] = list(centroid)
 		ptcl["xform.projection"] = tr
@@ -379,7 +381,7 @@ def load_helix_coords(coords_filepath, specified_width=None):
 			line[i] = int(line[i])
 		if line[4] == -1:
 			w = line[2]
-			r = w / 2.0
+			r = old_div(w, 2.0)
 			datum[0] = line[0] + r
 			datum[1] = line[1] + r
 			if specified_width:
@@ -388,7 +390,7 @@ def load_helix_coords(coords_filepath, specified_width=None):
 				datum[4] = w
 		elif line[4] == -2:
 			assert line[2] == w
-			r = w / 2.0
+			r = old_div(w, 2.0)
 			datum[2] = line[0] + r
 			datum[3] = line[1] + r
 			w = None
@@ -416,7 +418,7 @@ def save_helix_coords(coords_list, output_filepath, helix_width = None):
 			width = helix_width
 		else:
 			width = coords[4]
-		r = width / 2.0
+		r = old_div(width, 2.0)
 
 		#For some reason, EMAN1 subtracts half the box width from each coordinate
 		#EMAN1 uses <cstdio> fprintf() and "%1.0f", which rounds half-integers away from zero

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu),
@@ -35,6 +36,7 @@ from __future__ import print_function
 
 # initial version of make3d
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
@@ -213,7 +215,7 @@ def main():
 	if options.start :
 		start=EMData(options.start,0)
 		if start["nx"]!=padvol[0] or start["ny"]!=padvol[1] or start["nz"]!=padvol[2] :
-			start.clip_inplace(Region((start["nx"]-padvol[0])/2,(start["ny"]-padvol[1])/2,(start["nz"]-padvol[2])/2, padvol[0],padvol[1],padvol[2]))
+			start.clip_inplace(Region(old_div((start["nx"]-padvol[0]),2),old_div((start["ny"]-padvol[1]),2),old_div((start["nz"]-padvol[2]),2), padvol[0],padvol[1],padvol[2]))
 		start.do_fft_inplace()
 
 	#########################################################
@@ -224,7 +226,7 @@ def main():
 
 	# clip to the requested final dimensions
 	if output["nx"]!=outsize[0] or output["ny"]!=outsize[1] or output["nz"]!=outsize[2] :
-		output.clip_inplace(Region((output["nx"]-outsize[0])/2,(output["ny"]-outsize[1])/2,(output["nz"]-outsize[2])/2, outsize[0],outsize[1],outsize[2]))
+		output.clip_inplace(Region(old_div((output["nx"]-outsize[0]),2),old_div((output["ny"]-outsize[1]),2),old_div((output["nz"]-outsize[2]),2), outsize[0],outsize[1],outsize[2]))
 
 	if options.apix!=None : apix=options.apix
 	output["apix_x"]=apix
@@ -380,7 +382,7 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 			ret.process_inplace(str(processorname), param_dict)
 
 	if pad[0]!=ret.get_xsize() or pad[1]!=ret.get_ysize() :
-		ret.clip_inplace(Region((ret.get_xsize()-pad[0])/2,(ret.get_ysize()-pad[1])/2, pad[0], pad[1]))
+		ret.clip_inplace(Region(old_div((ret.get_xsize()-pad[0]),2),old_div((ret.get_ysize()-pad[1]),2), pad[0], pad[1]))
 
 	return ret
 
@@ -503,10 +505,10 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					squal[i][4]["reconstruct_qual"]=-1
 					continue
 				sub=[squal[j][1] for j in range(max(0,i-10),min(i+10,len(squal)))]
-				squal[i][2]=sum(sub)/len(sub)
+				squal[i][2]=old_div(sum(sub),len(sub))
 				try:
-					squal[i][4]["reconstruct_qual"]=squal[i][1]/squal[i][2]
-					qlist.append(squal[i][1]/squal[i][2])
+					squal[i][4]["reconstruct_qual"]=old_div(squal[i][1],squal[i][2])
+					qlist.append(old_div(squal[i][1],squal[i][2]))
 				except :
 					traceback.print_exc()
 					print("##############  ",sub, squal[i], i,len(squal))
@@ -529,8 +531,8 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					if verbose>0: print("Absolute Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(sq[0],sq[-1],qcutoff,ptcl))
 			else:
 				if keepsig:
-					qmean=sum(qlist)/len(qlist)
-					qsigma=sqrt(sum([i*i for i in qlist])/len(qlist)-qmean**2)
+					qmean=old_div(sum(qlist),len(qlist))
+					qsigma=sqrt(old_div(sum([i*i for i in qlist]),len(qlist))-qmean**2)
 					qcutoff=qmean-qsigma*keep
 					if verbose>0: print("Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qmean,qsigma,qcutoff,ptcl))
 				else:

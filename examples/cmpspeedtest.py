@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 06/02/2009 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -45,5 +47,5 @@ def f(cmpname,n):
 	return time.time()-a
 
 for c,n in (("dot",100000),("sqeuclidean",100000),("frc",2000),("phase",2000),("optvariance",1000)) :
-	print("%15s\t%1.3f /sec"%(c,float(n)/f(c,n)))
+	print("%15s\t%1.3f /sec"%(c,old_div(float(n),f(c,n))))
 

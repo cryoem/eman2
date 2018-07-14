@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import absolute_import
 #
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -517,7 +519,7 @@ class EMPlot2DWidget(EMGLWidget):
 		GL.glPopMatrix()
 
 		if render:
-			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
+			fig=Figure((old_div(self.width(),72.0),old_div(self.height(),72.0)),dpi=72.0)
 			ax=fig.add_axes((.1,.1,.88,.88),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			#else : ax=fig.add_axes((.18,.18,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
@@ -649,9 +651,9 @@ class EMPlot2DWidget(EMGLWidget):
 		""" converts plot coordinates to screen coordinates """
 		try:
 			if self.axisparms[2]=="linear" : x2=(x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0]
-			else : x2=(-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])) /(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2])))
+			else : x2=old_div((-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])),(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2]))))
 			if self.axisparms[3]=="linear" :y2=self.height()-((y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1])
-			else : y2=(self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])) / (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3])))
+			else : y2=old_div((self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])), (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3]))))
 			return (x2,y2)
 		except:
 			return (0,0)
@@ -776,7 +778,7 @@ lc is the cursor selection point in plot coords"""
 			try:
 				cmts = comments[p].split(";")
 
-				for i in range(len(cmts)/2):
+				for i in range(old_div(len(cmts),2)):
 					imn = int(cmts[2*i])
 					imf = cmts[2*i+1]
 					ptclim=EMData(imf,imn)
@@ -810,7 +812,7 @@ lc is the cursor selection point in plot coords"""
 		elif event.button()==Qt.LeftButton:
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
-			try: recip="%1.2f"%(1.0/lc[0])
+			try: recip="%1.2f"%(old_div(1.0,lc[0]))
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
@@ -834,7 +836,7 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 
-			try: recip="%1.2f"%(1.0/lc[0])
+			try: recip="%1.2f"%(old_div(1.0,lc[0]))
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
@@ -893,7 +895,7 @@ lc is the cursor selection point in plot coords"""
 				xmin=min(xmin,min(self.data[k][self.axes[k][0]]))
 				xmax=max(xmax,max(self.data[k][self.axes[k][0]]))
 
-			if self.axisparms[2]!="linear" : self.xlimits=(xmin/1.1,xmax*1.1)
+			if self.axisparms[2]!="linear" : self.xlimits=(old_div(xmin,1.1),xmax*1.1)
 			else:
 				margin=(xmax-xmin)*0.025
 				self.xlimits=(xmin-margin,xmax+margin)
@@ -906,7 +908,7 @@ lc is the cursor selection point in plot coords"""
 				ymin=min(ymin,min(self.data[k][self.axes[k][1]]))
 				ymax=max(ymax,max(self.data[k][self.axes[k][1]]))
 
-			if self.axisparms[3]!="linear" : self.ylimits=(ymin/1.1,ymax*1.1)
+			if self.axisparms[3]!="linear" : self.ylimits=(old_div(ymin,1.1),ymax*1.1)
 			else:
 				margin=(ymax-ymin)*0.025
 				self.ylimits=(ymin-margin,ymax+margin)
@@ -1060,8 +1062,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		lc=self.scr2plot(event.x(),event.y())
 		self.lastcx = self.firstcx = event.x()
 		self.lastcy = self.firstcy = event.y()
-		x = self.firstcx - self.width()/2.0
-		y = self.firstcy - self.height()/2.0
+		x = self.firstcx - old_div(self.width(),2.0)
+		y = self.firstcy - old_div(self.height(),2.0)
 		if event.buttons()&Qt.MidButton:
 			filename = QtGui.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")
 			if filename: # if we cancel
@@ -1080,7 +1082,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 				data = self.data["data"]
 				self.valradius=4.0
 				cxx, cyy = self._computeXY(data[0][best], data[1][best])
-				self.add_shape("Circle",EMShape(("scrcircle",1,0,0, (self.width() / 2 + cxx), (self.height() / 2 + cyy), self.valradius, 2.0)))
+				self.add_shape("Circle",EMShape(("scrcircle",1,0,0, (old_div(self.width(), 2) + cxx), (old_div(self.height(), 2) + cyy), self.valradius, 2.0)))
 				self.updateGL()
 #				self.emit(QtCore.SIGNAL("clusterStats"), [meanAngle,meanRad,rmsdAngle,rmsdRad,pcount])
 				if event.modifiers()&Qt.ShiftModifier:
@@ -1106,7 +1108,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	def _computeXY(self, theta, rad):
 		"""return x and y given theta and rad"""
 		scaling = self.width()*(self.plotdims.x1 - self.plotdims.x0)
-		rescaledrad = rad/(2.0*self.plotlim[3]/scaling)
+		rescaledrad = old_div(rad,(2.0*self.plotlim[3]/scaling))
 		x = math.cos(theta) * rescaledrad
 		y = math.sin(theta) * rescaledrad
 		return x, y
@@ -1143,8 +1145,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			self.lastcy = event.y()
 			#If we are drawing a cluster circle, then compute its radius for use in find circumscribed particles
 			if self.clusterorigin_rad:
-				x = event.x() - self.width()/2.0
-				y = event.y() - self.height()/2.0
+				x = event.x() - old_div(self.width(),2.0)
+				y = event.y() - old_div(self.height(),2.0)
 				rad = self._computeRadius(x,y)
 				self.clusterradius = self.clusterorigin_rad**2 + rad**2 - 2*self.clusterorigin_rad*rad*math.cos(self._computeTheta(x,y) - self.clusterorigin_theta)
 
@@ -1170,19 +1172,19 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			if pcount == 0:
 				return
 			# Compute stats
-			meanAngle = math.degrees(math.atan2(sigmaAngSin/pcount,sigmaAngCos/pcount))
-			meanRad = sigmaRad/pcount
+			meanAngle = math.degrees(math.atan2(old_div(sigmaAngSin,pcount),old_div(sigmaAngCos,pcount)))
+			meanRad = old_div(sigmaRad,pcount)
 			#print "Mean Angle: %3.2f, Mean Rad: %3.2f, Num particles: %d"%(meanAngle, meanRad, pcount)
 			# Compute RMSD angle and radius
 			varAngSin = 0.0
 			varAngCos = 0.0
 			varRad = 0.0
 			for i,sa in enumerate(statsArray):
-				varAngSin += (sa[0]-sigmaAngSin/pcount)**2
-				varAngCos += (sa[1]-sigmaAngSin/pcount)**2
-				varRad += (sa[2]-sigmaRad/pcount)**2
-			rmsdAngle = math.degrees(math.atan2(math.sqrt(varAngSin/pcount),math.sqrt(varAngCos/pcount)))
-			rmsdRad = math.sqrt(varRad/pcount)
+				varAngSin += (sa[0]-old_div(sigmaAngSin,pcount))**2
+				varAngCos += (sa[1]-old_div(sigmaAngSin,pcount))**2
+				varRad += (sa[2]-old_div(sigmaRad,pcount))**2
+			rmsdAngle = math.degrees(math.atan2(math.sqrt(old_div(varAngSin,pcount)),math.sqrt(old_div(varAngCos,pcount))))
+			rmsdRad = math.sqrt(old_div(varRad,pcount))
 			#print "RMSD Angle: %3.2f, RMSD Rad %3.2f"%(rmsdAngle, rmsdRad)
 			self.clusterStats.emit([meanAngle, meanRad, rmsdAngle, rmsdRad, pcount])
 
@@ -1321,7 +1323,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 		if render:
 
-			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
+			fig=Figure((old_div(self.width(),72.0),old_div(self.height(),72.0)),dpi=72.0)
 			if self.limits :ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=False,Polar=True,xlim=self.limits[0],ylim=self.limits[1],xscale=self.axisparms[2],yscale=self.axisparms[3])
 			else : ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=True,polar=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
@@ -1443,9 +1445,9 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		""" converts plot coordinates to screen coordinates """
 		try:
 			if self.axisparms[2]=="linear" : x2=(x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0]
-			else : x2=(-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])) /(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2])))
+			else : x2=old_div((-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])),(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2]))))
 			if self.axisparms[3]=="linear" :y2=self.height()-((y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1])
-			else : y2=(self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])) / (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3])))
+			else : y2=old_div((self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])), (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3]))))
 			return (x2,y2)
 		except:
 			return (0,0)
@@ -1606,9 +1608,9 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 			except: rng = ""
 			try: iqr = q3-q1
 			except: iqr = ""
-			try: mad = (q3+q1)/2
+			try: mad = old_div((q3+q1),2)
 			except: mad = ""
-			try: skew = (mad - q2) / mad
+			try: skew = old_div((mad - q2), mad)
 			except: skew = ""
 			try: iq = np.where(np.logical_and(col>=q1, col<=q3))[0]
 			except: iq = ""
@@ -1781,11 +1783,11 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		if norm == "Standardize":
 			mu = np.mean(x,axis=0)
 			sigma = np.std(x,axis=0)
-			return (x-mu)/sigma
+			return old_div((x-mu),sigma)
 		elif norm == "Maxmin":
 			xmin = np.min(x,axis=0)
 			xmax = np.max(x,axis=0)
-			return (x-xmin)/(xmax-xmin)
+			return old_div((x-xmin),(xmax-xmin))
 		elif norm == "None":
 			return x
 
@@ -1934,7 +1936,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
 		if axnorm:
 			print("Normalize Axes")
-			datafix=[i.copy()/std(i) for i in data]
+			datafix=[old_div(i.copy(),std(i)) for i in data]
 		else: datafix=data
 
 		# build our array data into images for analysis ... this may not be the most efficient approach

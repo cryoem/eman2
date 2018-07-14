@@ -1,5 +1,6 @@
 #
 from __future__ import print_function
+from __future__ import division
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School
 #
@@ -29,6 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 from global_def import *
 
@@ -142,7 +144,7 @@ def expn(img, a = 1.0, b=0.0):
 			the output image whose pixels are given by o=ir
 			r: exponent
 	"""
-	return img.process( "math.exp", {"low": 1.0/a, "high":b})
+	return img.process( "math.exp", {"low": old_div(1.0,a), "high":b})
 
 def power(img, x = 3.0):
 	"""
@@ -264,7 +266,7 @@ def linchange(a, fct):
 	m = int(n*fctf+0.5)
 	o = [0.0]*m
 	for i in range(m):
-		x = i/fctf
+		x = old_div(i,fctf)
 		j = min(int(x), n-2)
 		dx = x-j
 		o[i] = (1.0-dx)*a[j] + dx*a[j+1]
@@ -302,7 +304,7 @@ def rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, amp = 0.0, ang = 0.0):
 	from math import sqrt,atan2,pi,sin,radians
 	defc = defocus*10000
 	astigmamp = amp*10000
-	lam = 12.398/sqrt(voltage*(1022.0+voltage))
+	lam = old_div(12.398,sqrt(voltage*(1022.0+voltage)))
 	angrad = radians(ang)
 	nx = img.get_xsize()
 	lr = [0.0]*2*(nx//2+1)
@@ -318,7 +320,7 @@ def rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, amp = 0.0, ang = 0.0):
 				if( r2 < nr2 ):
 					dfa = defc - astigmamp/2*sin(2*(atan2(y,x) + angrad))
 					try:
-						u = sqrt( dfa/defc ) * sqrt(r2)
+						u = sqrt( old_div(dfa,defc) ) * sqrt(r2)
 						iu = int(u)
 						du = u - iu
 						lr[iu]    += (1.0-du)*img.get_value_at(ix,iy)
@@ -334,7 +336,7 @@ def rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, amp = 0.0, ang = 0.0):
 				y = iy - nc
 				r2 = x*x + y*y
 				if( r2 < nr2 ):
-					s = sqrt(r2)/(nc*2*Pixel_size)
+					s = old_div(sqrt(r2),(nc*2*Pixel_size))
 					dfa = defc - astigmamp/2*sin(2*(atan2(y,x) + angrad))
 					#u = sqrt(r2)*sqrt(1.0 -  astigmamp/2./defc*sin(2*(atan2(y,x) - angrad)))
 					#print ix,iy,sqrt(r2),defc,dfa,lam,s,u
@@ -375,7 +377,7 @@ def ctf_1d(nx, ctf, sign = 1, doabs = False):
 
 	ctf_1 = []
 	scl    = 1./pixel_size/nx
-	length = int(1.41*float(nx/2)) + 1
+	length = int(1.41*float(old_div(nx,2))) + 1
 	ctf_1 = [0.0]*length
 	if doabs:
 		for i in range(length): ctf_1[i] = abs(Util.tf(dz, i*scl, voltage, cs, ampcont, bfactor, sign))
@@ -402,7 +404,7 @@ def ctf_2(nx, ctf):
 
 	ctf_2  = []
 	scl    = 1.0/pixel_size/nx
-	length = int(1.7321*float(nx/2)) + 2
+	length = int(1.7321*float(old_div(nx,2))) + 2
 	ctf_2 = [0.0]*length
 	for i in range(length):
 		ctf_val = Util.tf(dz, i*scl, voltage, cs, ampcont, b_factor)
@@ -540,16 +542,16 @@ def ctflimit(nx, defocus, cs, voltage, pix):
 	fwpix = 1./(2*pix)/n
 	
 	# Fourier cycle
-	fcycle = 1./(2*fwpix)
+	fcycle = old_div(1.,(2*fwpix))
 	#Fourier period
-	fper = 1.0/fcycle
+	fper = old_div(1.0,fcycle)
 	#print "Image size %6d,   pixel size  %7.4f  Width of Fourier pixel %7.5f   Fourier period  %8.5f "%(nx,pix,fwpix,fper)
 
 	
 	#CTF
-	lam = 12.398/np.sqrt(voltage*(1022.0+voltage))  #  All units in A
+	lam = old_div(12.398,np.sqrt(voltage*(1022.0+voltage)))  #  All units in A
 	z1 = defocus*10000.0
-	ctfper = ctfperiod(defocus, cs, lam, 1./(2*pix))
+	ctfper = ctfperiod(defocus, cs, lam, old_div(1.,(2*pix)))
 	#print " At Nyquist, the CTF period is ",ctfper
 	for ii in range(n-1,1,-1):
 		#print ii
@@ -558,8 +560,8 @@ def ctflimit(nx, defocus, cs, voltage, pix):
 		#print ii,xr,ctfper
 		if(ctfper >  fper):
 			#print  " Limiting frequency is:",xr,"  limiting resolution is:",1.0/xr
-			return  int(xr/fwpix+0.5),xr
-	return nx//2,1.0/(2*pix)
+			return  int(old_div(xr,fwpix)+0.5),xr
+	return nx//2,old_div(1.0,(2*pix))
 
 def compare_ctfs(nx, ctf1, ctf2):
 	sign = 1.0
@@ -759,7 +761,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, ampcont=10.0, istart=0,
 	from utilities import generate_ctf
 
 	if istop <= istart : 			istop=len(Res_roo)
-	step = (dz_high-dz_low)/nloop
+	step = old_div((dz_high-dz_low),nloop)
 	if step > 10000.   : 			step     =  10000.     # Angstrom
 
 	xval_e = 0.0
@@ -803,7 +805,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, ampcont=10.0, istart=0,
 		if( dz_low < 0 ): 	dz_low=0.0
 		dz_high = defocus + step*2
 		step /= 10.
-	defocus = int( defocus/round_off )*round_off
+	defocus = int( old_div(defocus,round_off) )*round_off
 	return defocus
 
 
@@ -825,7 +827,7 @@ def defocus_guess1(Res_roo, Res_TE, volt, Cs, Pixel_size, ampcont=10.0, istart=0
 	from morphology import ctf_1d
 
 	if istop <= istart : 			istop=len(Res_roo)
-	step = (dz_high-dz_low)/nloop
+	step = old_div((dz_high-dz_low),nloop)
 	if step > 10000.   : 			step     =  10000.     # Angstrom
 
 	xval_e = 0.0
@@ -869,7 +871,7 @@ def defocus_guess1(Res_roo, Res_TE, volt, Cs, Pixel_size, ampcont=10.0, istart=0
 		if( dz_low < 0 ): 	dz_low=0.0
 		dz_high = defocus + step*2
 		step /= 10.
-	defocus = int( defocus/round_off )*round_off
+	defocus = int( old_div(defocus,round_off) )*round_off
 	return defocus
 
 def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix="roo", docf="a",skip="#", micdir="no", print_screen="p"):
@@ -891,8 +893,8 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 	f_l   = f_l0
 	f_h   = f_h0
 	if(f_l <= 1 and f_l> 0)	:
-		 f_l = 1./f_l
-		 f_h = 1./f_h
+		 f_l = old_div(1.,f_l)
+		 f_h = old_div(1.,f_h)
 	if(f_h > f_l or f_l <= 0 or f_h <= 0): 
 		f_h  = 8
 		f_l  = 30
@@ -999,7 +1001,7 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 	if(myid == main_node):
 		if os.path.exists(outdir):  os.system('rm -rf '+outdir)
 		os.mkdir(outdir)
-	if(number_of_proc <= nima ):	nimage_per_node = nima/number_of_proc
+	if(number_of_proc <= nima ):	nimage_per_node = old_div(nima,number_of_proc)
 	else: 				nimage_per_node = 1 
 	image_start    = myid * nimage_per_node
 	if(myid == number_of_proc-1):  image_end = nima
@@ -1011,8 +1013,8 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 	f_l   = f_l0
 	f_h   = f_h0
 	if(f_l <= 1 and f_l> 0)	:
-		 f_l = 1./f_l
-		 f_h = 1./f_h
+		 f_l = old_div(1.,f_l)
+		 f_h = old_div(1.,f_h)
 	if(f_h > f_l or f_l <= 0 or f_h <= 0): 
 		f_h  = 8
 		f_l  = 30
@@ -1099,8 +1101,8 @@ def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 	f_l  = f_l0
 	f_h  = f_h0
 	if f_l <= 1 and f_l > 0:
-		 f_l = 1./f_l
-		 f_h = 1./f_h
+		 f_l = old_div(1.,f_l)
+		 f_h = old_div(1.,f_h)
 	if f_h > f_l or f_l <= 0 or f_h <= 0: 
 		f_h=8.  # angstrom
 		f_l=30. # angstrom 
@@ -1164,13 +1166,13 @@ def flcc(t, e):
 	ny         = e.get_ysize()		
 	n_pixelt   = t.get_xsize()*t.get_ysize()  # get total pixels in template   
 	n_pixele   = nx*ny  # get total pixels in mic
-	t          = (t-mean_t)/sigma_t # normalize the template such that the average of template is zero.
+	t          = old_div((t-mean_t),sigma_t) # normalize the template such that the average of template is zero.
 	t_pad      = Util.pad(t,    nx, ny, 1, {"background":0}, 0, 0, 0)
 	m_pad      = Util.pad(mask, nx, ny, 1, {"background":0}, 0, 0, 0) # create a mask (blank, value=1 )file and pad to size of mic   	 	
-	tmp        = ccf(e, m_pad)/n_pixele # calculate the local average
+	tmp        = old_div(ccf(e, m_pad),n_pixele) # calculate the local average
 	mic_avg_sq = tmp*tmp    # calculate average square
 	tmp        = e*e
-	mic_sq     = ccf(tmp,m_pad)/n_pixelt 	  # calculate the average of squared mic	       
+	mic_sq     = old_div(ccf(tmp,m_pad),n_pixelt) 	  # calculate the average of squared mic	       
 	tmp        = mic_sq-mic_avg_sq*n_pixelt   #  
 	mic_var    = tmp.get_pow(.5)              # Calculate the local variance of the image 
 	cc_map     = ccf(e,t_pad)
@@ -1299,14 +1301,14 @@ def imf_residuals_pu(p,y,pu,x):
 
 def residuals_simplex(args, data):
 	err      = 0.0
-	for i in range(len(data[0])):  err -= (data[0][i] - (args[0] + (args[1]/(data[1][i]/args[2]+1.0)**2)))**2
+	for i in range(len(data[0])):  err -= (data[0][i] - (args[0] + (old_div(args[1],(old_div(data[1][i],args[2])+1.0)**2))))**2
 	return err
 
 def residuals_lsq(p,y,x):
 	c1,c2,c3 = p
 	err	 = []
 	for i in range(len(y)):
-		err.append(abs(y[i] - c1-c2/(x[i]+c3)**2))
+		err.append(abs(y[i] - c1-old_div(c2,(x[i]+c3)**2)))
 	return err
 
 def residuals_lsq_peak(p,y,x,c):
@@ -1315,8 +1317,8 @@ def residuals_lsq_peak(p,y,x,c):
 	c1,c2,c3 = c
 	err	 = []
 	for i in range(len(y)):
-		tmp1 = exp(-(x[i] - d2)**2/d3)
-		tmp2 = exp(c1)*exp(c2/(x[i] + c3)**2)
+		tmp1 = exp(old_div(-(x[i] - d2)**2,d3))
+		tmp2 = exp(c1)*exp(old_div(c2,(x[i] + c3)**2))
 		err.append(abs(y[i] - tmp2 - d1*tmp1))
 	return err
 
@@ -1332,10 +1334,10 @@ def residual_1dpw2(list_1dpw2, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0
 		k = i*2+1
 		if i <= cut_off:
 			res.append(list_1dpw2[i]-background[i])
-			freq.append(i/(2*Pixel_size*len(list_1dpw2)))
+			freq.append(old_div(i,(2*Pixel_size*len(list_1dpw2))))
 		else : 
 			res.append(0.0)
-			freq.append(i/(2*Pixel_size*len(list_1dpw2)))
+			freq.append(old_div(i,(2*Pixel_size*len(list_1dpw2))))
 	return res, freq
 
 def adaptive_mask1(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
@@ -1362,7 +1364,7 @@ def adaptive_mask1(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel
 	else: 
 		# use the user-provided threshold
 		if s1[1] != 0.0:
-			s1 = [threshold, s1[0], s1[1], (threshold - s1[0])/s1[1]] 
+			s1 = [threshold, s1[0], s1[1], old_div((threshold - s1[0]),s1[1])] 
 		else:
 			s1 = [threshold, s1[0], s1[1], 0.0]
 		# new s1[3] is calculated nsigma corresponding to user-provided threshold
@@ -1471,7 +1473,7 @@ def get_shrink_3dmask(nxinit, mask_file_name):
 	if nx1 == nx2:
 		return mask3d
 	else:
-		shrinkage = float(nx2)/nx1
+		shrinkage = old_div(float(nx2),nx1)
 		mask3d    = binarize(resample(mask3d,shrinkage),0.5) #added 0.5 here to fix binarization problem
 		return mask3d
 
@@ -2165,7 +2167,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		print("Estimating CTF parameters...")
 		if stack == None:
 			print("  Micrographs processed by main process (including percent of progress):")
-			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
+			progress_percent_step = old_div((set_end - set_start),100.0) # the number of micrograms for main mpi processer divided by 100
 	
 	totresi = []
 	missing_img_names = []
@@ -2180,7 +2182,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
+				print(("    Processing %s ---> %6.2f%%" % (img_name, old_div((ifi - set_start), progress_percent_step))))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -2259,7 +2261,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				sroo += temp2**2
 			sroo[0] = sroo[1]
 			aroo[0] = aroo[1]
-			sroo = (sroo-aroo**2 / nimi) / nimi
+			sroo = old_div((sroo-old_div(aroo**2, nimi)), nimi)
 			aroo /= nimi
 			roo  /= nimi
 			qa   /= nimi
@@ -2282,7 +2284,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 						istart = i
 				#istart = 25
 				#print istart
-				f_start = istart / (pixel_size * wn)
+				f_start = old_div(istart, (pixel_size * wn))
 			"""
 			hi = hist_list(sroo,2)
 			# hi[0][1] is the threshold
@@ -2553,15 +2555,15 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 					ci = ctf_1d(wn, cq)[:ni]
 					for l in range(ni):  supe[l] +=ci[l]
 				
-				for l in range(ni):  supe[l] = (supe[l] / niter)**2
+				for l in range(ni):  supe[l] = (old_div(supe[l], niter))**2
 				
 				ib1 = 0
 				for it in range(ni - 1, 0, -1):
 					if supe[it] > 0.5:
 						ib1 = it
 						break
-				ibec = ibec / (pixel_size * wn)  #  with astigmatism
-				ib1  = ib1 / (pixel_size * wn)   #  no astigmatism
+				ibec = old_div(ibec, (pixel_size * wn))  #  with astigmatism
+				ib1  = old_div(ib1, (pixel_size * wn))   #  no astigmatism
 				#from utilities import write_text_file
 				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 				
@@ -2643,7 +2645,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				
 				ed1      = wgh            # total amplitude contrast. Here, it is also constant amplitude contrast since Volta phase shift is not estimated with this function. 
 				stdaved1 = 0.0            # dummy value for error of total amplitude contrast estimation
-				max_freq = 0.5/pixel_size # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
+				max_freq = old_div(0.5,pixel_size) # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
 				reserved = 0.0            # dummy value for reserved spot, which might be used for parameter of external programs (e.g. CTFFIND4, GCTF, and etc.)
 				# wgh                     # constant amplitude contrast provided by user (default 10%). Here, it is also total amplitude contrast since Volta phase shift is not estimated with this function.
 				phase_shift = ampcont2angle(ed1) - ampcont2angle(wgh) # Volta phase shift [deg] = total amplitude contrast phase shift [deg] (ed1) -  constant amplitude contrast phase shift [deg]; ed1 is boot strap average of total amplitude contrast [%]
@@ -2670,7 +2672,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			# create  thumbnail
 			nx = img_mic.get_xsize()
 			if nx > 512:
-				img_micthumb = resample(img_mic, 512.0/nx)
+				img_micthumb = resample(img_mic, old_div(512.0,nx))
 			else:
 				img_micthumb = img_mic
 			fou = os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root))
@@ -3234,7 +3236,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		print("Estimating CTF parameters...")
 		if stack == None:
 			print("  Micrographs processed by main process (including percent of progress):")
-			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
+			progress_percent_step = old_div((set_end - set_start),100.0) # the number of micrograms for main mpi processer divided by 100
 
 	totresi = []
 	missing_img_names = []
@@ -3249,7 +3251,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			img_name = namics[ifi]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
+				print(("    Processing %s ---> %6.2f%%" % (img_name, old_div((ifi - set_start), progress_percent_step))))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -3325,7 +3327,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				sroo += temp2**2
 			sroo[0] = sroo[1]
 			aroo[0] = aroo[1]
-			sroo = (sroo-aroo**2 / nimi) / nimi
+			sroo = old_div((sroo-old_div(aroo**2, nimi)), nimi)
 			aroo /= nimi
 			roo  /= nimi
 			qa   /= nimi
@@ -3348,7 +3350,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 						istart = i
 				#istart = 25
 				#print istart
-				f_start = istart / (pixel_size * wn)
+				f_start = old_div(istart, (pixel_size * wn))
 			"""
 			hi = hist_list(sroo,2)
 			# hi[0][1] is the threshold
@@ -3619,15 +3621,15 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 					ci = ctf_1d(wn, cq)[:ni]
 					for l in range(ni):  supe[l] +=ci[l]
 				
-				for l in range(ni):  supe[l] = (supe[l] / niter)**2
+				for l in range(ni):  supe[l] = (old_div(supe[l], niter))**2
 				
 				ib1 = 0
 				for it in range(ni - 1, 0, -1):
 					if supe[it] > 0.5:
 						ib1 = it
 						break
-				ibec = ibec / (pixel_size * wn)  #  with astigmatism
-				ib1  = ib1 / (pixel_size * wn)   #  no astigmatism
+				ibec = old_div(ibec, (pixel_size * wn))  #  with astigmatism
+				ib1  = old_div(ib1, (pixel_size * wn))   #  no astigmatism
 				#from utilities import write_text_file
 				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 				
@@ -3724,7 +3726,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				
 				ed1      = wgh            # total amplitude contrast. Here, it is also constant amplitude contrast since Volta phase shift is not estimated with this function. 
 				stdaved1 = 0.0            # dummy value for error of total amplitude contrast estimation
-				max_freq = 0.5/pixel_size # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
+				max_freq = old_div(0.5,pixel_size) # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
 				reserved = 0.0            # dummy value for reserved spot, which might be used for parameter of external programs (e.g. CTFFIND4, GCTF, and etc.)
 				# wgh                     # constant amplitude contrast provided by user (default 10%). Here, it is also total amplitude contrast since Volta phase shift is not estimated with this function.
 				phase_shift = ampcont2angle(ed1) - ampcont2angle(wgh) # Volta phase shift [deg] = total amplitude contrast phase shift [deg] (ed1) -  constant amplitude contrast phase shift [deg]; ed1 is boot strap average of total amplitude contrast [%]
@@ -3751,7 +3753,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			# create  thumbnail
 			nx = img_mic.get_xsize()
 			if nx > 512:
-				img_micthumb = resample(img_mic, 512.0/nx)
+				img_micthumb = resample(img_mic, old_div(512.0,nx))
 			else:
 				img_micthumb = img_mic
 			fou = os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root))
@@ -3809,8 +3811,8 @@ def ampcont2angle(A):
 	from math import sqrt, atan, degrees
 	if(A == 100.0):  return 90.0
 	elif(A == -100.0):  return 90.0
-	elif(A<0.0):  return degrees(atan(A/sqrt(1.0e4-A**2)))+180.0
-	else:  return degrees(atan(A/sqrt(1.0e4-A**2)))
+	elif(A<0.0):  return degrees(atan(old_div(A,sqrt(1.0e4-A**2))))+180.0
+	else:  return degrees(atan(old_div(A,sqrt(1.0e4-A**2))))
 
 def angle2ampcont(phi):
 	#  convert phase shift to amplitude contrast
@@ -3883,7 +3885,7 @@ def bracket(f, dat, h):
  
 def goldsearch_astigmatism(f, dat, a, b, tol=1.0e-3):
 	from math import log, ceil
-	nIter = int(ceil(-2.078087*log(tol/abs(b-a)))) # Eq. (10.4)
+	nIter = int(ceil(-2.078087*log(old_div(tol,abs(b-a))))) # Eq. (10.4)
 	R = 0.618033989
 	C = 1.0 - R
 	# First telescoping
@@ -3942,7 +3944,7 @@ def simpw1d(defocus, data):
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	ct = data[1]*np.array( ctf_2(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
-	return  -sum(data[0]*ct)/np.linalg.norm(ct,2)
+	return  old_div(-sum(data[0]*ct),np.linalg.norm(ct,2))
 
 
 def simpw1d_pap(defocus, data):
@@ -3957,7 +3959,7 @@ def simpw1d_pap(defocus, data):
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	ct = np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
-	return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
+	return  old_div(-sum(data[0]*ct/data[1]),np.linalg.norm(ct,2))
 
 def simpw1d_print(defocus, data):
 	import numpy as np
@@ -3971,8 +3973,8 @@ def simpw1d_print(defocus, data):
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	ct = np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
-	for i in range(len(data[0])):  print(i,i+data[8],data[0][i],ct[i],data[1][i],data[0][i]/data[1][i])
-	return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
+	for i in range(len(data[0])):  print(i,i+data[8],data[0][i],ct[i],data[1][i],old_div(data[0][i],data[1][i]))
+	return  old_div(-sum(data[0]*ct/data[1]),np.linalg.norm(ct,2))
 
 def simpw2d(defocus, data2d):
 	from utilities import generate_ctf
@@ -3996,7 +3998,7 @@ def simpw2d(defocus, data2d):
 	print  info(ct, data2d[10])
 	print q1,q2
 	'''
-	return  -q1/q2
+	return  old_div(-q1,q2)
 
 
 def simpw1dc(defocus, data):
@@ -4009,7 +4011,7 @@ def simpw1dc(defocus, data):
 	# data[1] - envelope
 	ct = data[1]*np.array( ctf_2(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
 	print(" 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2))
-	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2),ctf_2(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))
+	return  2.0-old_div(sum(data[0]*ct),np.linalg.norm(ct,2)),ctf_2(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))
 
 def simpw2dc(defocus, data2d):
 	from utilities import generate_ctf
@@ -4032,34 +4034,34 @@ def simpw2dc(defocus, data2d):
 	print  info(ct, data2d[10])
 	'''
 	print(" 2d  ",q1,q2)
-	return  2.0-q1/q2,ct
+	return  2.0-old_div(q1,q2),ct
 
 def movingaverage(data, window_size, skip = 3):
 	import numpy as np
 	ld = len(data)
-	qt = sum(data[skip:skip+4])/3.0
+	qt = old_div(sum(data[skip:skip+4]),3.0)
 	tt = type(data[0])
 	qt = np.concatenate( ( np.array([qt]*(window_size+skip), tt), data[skip:], np.tile(data[-1],(window_size)) ))
 	out = np.empty(ld, np.float32)
 	nc1 = window_size - window_size//2
 	nc2 = window_size + window_size//2 +1
 	for i in range(ld):   out[i] = sum(qt[i+nc1:i+nc2])
-	return out*np.float32(1.0/window_size)
+	return out*np.float32(old_div(1.0,window_size))
 
 def localvariance(data, window_size, skip = 3):
 	import numpy as np
 	ld = len(data)
-	qt = sum(data[skip:skip+4])/3.0
+	qt = old_div(sum(data[skip:skip+4]),3.0)
 	tt = type(data[0])
 	qt = np.concatenate( ( np.array([qt]*(window_size+skip), tt), data[skip:], np.tile(data[-1],(window_size)) ))
 	out = np.empty(ld, np.float32)
 	nc1 = window_size - window_size//2
 	nc2 = window_size + window_size//2 +1
-	qnorm = np.float32(1.0/window_size)
+	qnorm = np.float32(old_div(1.0,window_size))
 	for i in range(ld):
 		sav = sum(qt[i+nc1:i+nc2])*qnorm
 		sdv = sum(qt[i+nc1:i+nc2]**2)
-		out[i] = (qt[i] - sav)/np.sqrt(sdv*qnorm - sav*sav)
+		out[i] = old_div((qt[i] - sav),np.sqrt(sdv*qnorm - sav*sav))
 	out += min(out)
 	return out
 
@@ -4163,7 +4165,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 		qm = 1.e23
 		toto = []
 		for i in range(1000,100000,5):
-			dc = float(i)/10000.0
+			dc = old_div(float(i),10000.0)
 			qt = simpw1d(dc, data)
 			toto.append([dc,qt])
 			if(qt<qm):
@@ -4279,7 +4281,7 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 		qm = 1.e23
 		toto = []
 		for i in range(1000,100000,5):
-			dc = float(i)/10000.0
+			dc = old_div(float(i),10000.0)
 			qt = simpw1d_pap(dc, data)
 			toto.append([dc,qt])
 			if(qt<qm):
@@ -4321,10 +4323,10 @@ def defocus_guessn(roo, volt, Cs, Pixel_size, ampcont, istart, i_stop):
 	nn = len(data)
 	goal = -1.e23
 	for d in range(20000,56000,10):
-		dz = d/10000.
+		dz = old_div(d,10000.)
 		ct = np.array( ctf_2(nx, generate_ctf([dz, Cs, volt, Pixel_size, 0.0, ampcont]))[:nn], np.float32)
-		ct = (ct - sum(ct)/nn)*envelope
-		g = sum(ct[istart:]*sub[istart:])/sum(ct[istart:])
+		ct = (ct - old_div(sum(ct),nn))*envelope
+		g = old_div(sum(ct[istart:]*sub[istart:]),sum(ct[istart:]))
 		#print d,dz,g
 		if(g>goal):
 			defocus = d
@@ -4334,7 +4336,7 @@ def defocus_guessn(roo, volt, Cs, Pixel_size, ampcont, istart, i_stop):
 	#write_text_file([sub,envelope,ct,temp],"oto.txt")
 	ct = np.array( ctf_2(nx, generate_ctf([defocus, Cs, volt, Pixel_size, 0.0, ampcont]))[:nn], np.float32)
 	temp = ct
-	ct = (ct - sum(ct)/nn)*envelope
+	ct = (ct - old_div(sum(ct),nn))*envelope
 	for i in range(nn):  print(sub[i],envelope[i],ct[i],temp[i])
 	from sys import exit
 	exit()
@@ -4594,7 +4596,7 @@ def simctf2out(dz, data):
 	dout = model_blank(nx,nx)
 	dout += pc*mm
 	s = Util.infomask(normpw, data[1], True)
-	dout += ((normpw-s[0])/s[1])*(model_blank(nx,nx,1,1)-mm)*data[1]
+	dout += (old_div((normpw-s[0]),s[1]))*(model_blank(nx,nx,1,1)-mm)*data[1]
 	dout.write_image("ocou3.hdf")
 	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
 	#print " simctf2   ",amp,-bcc
@@ -4626,7 +4628,7 @@ def simpw1d_crf(defocus, data):
 	#[defocus, Cs, volt, Pixel_size, 0.0, ampcont]
 	# data[1] - envelope
 	ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
-	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2)
+	return  2.0-old_div(sum(data[0]*ct),np.linalg.norm(ct,2))
 
 def linregnp(y):
 	import numpy as np
@@ -4727,7 +4729,7 @@ def defocusgett_crf(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 		qm = 1.e23
 		toto = []
 		for i in range(1000,100000,5):
-			dc = float(i)/10000.0
+			dc = old_div(float(i),10000.0)
 			qt = simpw1d_crf(dc, data)
 			toto.append([dc,qt])
 			if(qt<qm):
@@ -4894,7 +4896,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 					if( len(crf1d) == 0 ): crf1d = [0.0]*len(temp)
 					for k in range(len(temp)):  crf1d[k] += temp[k]
 					t  = make_real( Util.muln_img(fa[imi], fbc[imi]) )
-					Util.mul_scalar(t, 1.0/(float(nx)**4))
+					Util.mul_scalar(t, old_div(1.0,(float(nx)**4)))
 					Util.add_img(qs , t)
 
 					Util.add_img(qa, periodogram(fa[imi]))
@@ -4951,7 +4953,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				#istart = 25
 				#print istart
 	
-				f_start = istart/(Pixel_size*nx)
+				f_start = old_div(istart,(Pixel_size*nx))
 				#print namics[ifi],istart,f_start
 
 
@@ -5653,7 +5655,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		print("Estimating CTF parameters...")
 		if stack == None:
 			print("  Micrographs processed by main process (including percent of progress):")
-			progress_percent_step = (set_end - set_start)/100.0 # the number of micrograms for main mpi processer divided by 100
+			progress_percent_step = old_div((set_end - set_start),100.0) # the number of micrograms for main mpi processer divided by 100
 	
 	totresi = []
 	missing_img_names = []
@@ -5665,7 +5667,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
 			
 			if my_mpi_proc_id == main_mpi_proc:
-				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
+				print(("    Processing %s ---> %6.2f%%" % (img_name, old_div((ifi - set_start), progress_percent_step))))
 			
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
@@ -5745,7 +5747,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				sroo += temp2**2
 			sroo[0] = sroo[1]
 			aroo[0] = aroo[1]
-			sroo = (sroo-aroo**2 / nimi) / nimi
+			sroo = old_div((sroo-old_div(aroo**2, nimi)), nimi)
 			aroo /= nimi
 			roo  /= nimi
 			qa   /= nimi
@@ -5766,7 +5768,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 					if tt < bp:
 						bp = tt
 						istart = i
-				f_start = istart / (pixel_size * wn)
+				f_start = old_div(istart, (pixel_size * wn))
 			"""
 			hi = hist_list(sroo,2)
 			# hi[0][1] is the threshold
@@ -5817,7 +5819,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 							dr = r - ir
 							envl.set_value_at(i, j, (1. - dr) * en[ir] + dr * en[ir + 1] )
 
-			qse = threshold((qa - bckg))/envl
+			qse = old_div(threshold((qa - bckg)),envl)
 			#print  "  fit1  ", nboot,(time()-at)/60.0
 			#at = time()
 			#(qse*mask).write_image("rs2.hdf")
@@ -5961,15 +5963,15 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 					ci = ctf_1d(wn, cq)[:ni]
 					for l in range(ni):  supe[l] +=ci[l]
 				
-				for l in range(ni):  supe[l] = (supe[l] / niter)**2
+				for l in range(ni):  supe[l] = (old_div(supe[l], niter))**2
 				
 				ib1 = 0
 				for it in range(ni - 1, 0, -1):
 					if supe[it] > 0.5:
 						ib1 = it
 						break
-				ibec = ibec / (pixel_size * wn)  #  with astigmatism
-				ib1  = ib1 / (pixel_size * wn)   #  no astigmatism
+				ibec = old_div(ibec, (pixel_size * wn))  #  with astigmatism
+				ib1  = old_div(ib1, (pixel_size * wn))   #  no astigmatism
 				#print  " error est  ",(time()-at)/60.0
 				#from utilities import write_text_file
 				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
@@ -6064,7 +6066,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 #				os.system(cmd)
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
 				
-				max_freq = 0.5/pixel_size # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
+				max_freq = old_div(0.5,pixel_size) # dummy value for maximum frequency. set to Nyquist frequency for now. let's add the implementation in near future (Toshio 2017/12/06)
 				reserved = 0.0            # dummy value for reserved spot, which might be used for parameter of external programs (e.g. CTFFIND4, GCTF, and etc.)
 				# wgh                     # constant amplitude contrast provided by user (default 10%)
 				phase_shift = ampcont2angle(ed1) - ampcont2angle(wgh) # Volta phase shift [deg] = total amplitude contrast phase shift [deg] (ed1) -  constant amplitude contrast phase shift [deg]; ed1 is boot strap average of total amplitude contrast [%]
@@ -6091,7 +6093,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			# create  thumbnail
 			nx = img_mic.get_xsize()
 			if nx > 512:
-				img_micthumb = resample(img_mic, 512.0/nx)
+				img_micthumb = resample(img_mic, old_div(512.0,nx))
 			else:
 				img_micthumb = img_mic
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
@@ -6183,7 +6185,7 @@ def defocusgett_vpp(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_start=-1.0
 	envelope = defocus_baseline_fit(roo, i_start, min(int(i_stop*1.45),nx//2-2), int(nr2), 2) - baseline
 	#  Process envelope
 	qm = np.max(envelope[5:])
-	dc = max(np.min(envelope[5:]), qm/1000.)
+	dc = max(np.min(envelope[5:]), old_div(qm,1000.))
 	for i in range(len(envelope)):
 		if(envelope[i]<dc): envelope[i] = qm
 	
@@ -6379,11 +6381,11 @@ def ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0
 	#print "ORNQ"
 	peak = -1.0E23
 
-	lkx = int(xrng[0]/step)
-	rkx = int(xrng[-1]/step)
+	lkx = int(old_div(xrng[0],step))
+	rkx = int(old_div(xrng[-1],step))
 
-	lky = int(yrng[0]/step)
-	rky = int(yrng[-1]/step)
+	lky = int(old_div(yrng[0],step))
+	rky = int(old_div(yrng[-1],step))
 
 	for i in range(-lky, rky+1):
 		iy = i*step
@@ -6512,7 +6514,7 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 		data[7] = float(a)
 		print("  fdasfdsfa  ",a)
 		for i in range(0,2000,200):
-			dc = xdefc + float(i-1000)/10000.0
+			dc = xdefc + old_div(float(i-1000),10000.0)
 			qt = simpw1d(dc, data)
 			ju1 = dc # defocus
 			ju2 = float(a) # amp contrast
@@ -6666,7 +6668,7 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 		data[7] = float(a)
 		print("  fdasfdsfa  ",a)
 		for i in range(1000,100000,5000):
-			dc = float(i)/10000.0
+			dc = old_div(float(i),10000.0)
 			qt = simpw1d(dc, data)
 			ju1 = dc # defocus
 			ju2 = float(a) # amp contrast
@@ -6674,7 +6676,7 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 			dama = amoeba([ju1,ju2,ju3], [0.002, 0.001, 0.002], fupw_vpp, 1.e-4, 1.e-4, 1, astdata)
 			data2d[7] = float(a)
 			zigi = simpw2d(dc, data2d)
-			qma = dama[-2]/42.
+			qma = old_div(dama[-2],42.)
 			print(" amoeba  %7.2f  %7.2f  %12.6g  %12.6g  %12.6g  %7.2f  %7.2f  %7.2f "%(dc,data[7],qma,zigi,qt,dama[0][0],dama[0][1],dama[0][2]), dama)
 			toto.append([dc,data[7],qt,zigi,qma])
 			if(qma<dp):

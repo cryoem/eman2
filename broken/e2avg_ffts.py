@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Mike Schmid, 02/2006  
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 # gives straight, masked weight, and fractional weighted averages.
+from past.utils import old_div
 from EMAN2 import *
 import sys
 import math
@@ -72,18 +74,18 @@ def avg_this_pixel (filename, imagedict, thr, i,j,k):
             numth=numth+1
             sumrth=sumrth+re
             sumith=sumith+im
-    rst=sumrst/num
-    ist=sumist/num
+    rst=old_div(sumrst,num)
+    ist=old_div(sumist,num)
     rth=0.
     ith=0.
     if (numth>0):
-        rth=sumrth/numth
-        ith=sumith/numth
+        rth=old_div(sumrth,numth)
+        ith=old_div(sumith,numth)
     rwt=0.
     iwt=0.
     if (suma>0):
-        rwt=sumr2/suma
-        iwt=sumi2/suma
+        rwt=old_div(sumr2,suma)
+        iwt=old_div(sumi2,suma)
 #        process (filename, imagedict[filename] )
 #        print filename, thr, i,j,k
     return (rst,ist,rth,ith,rwt,iwt)

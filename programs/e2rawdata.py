@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -86,7 +88,7 @@ def main():
 	if options.threads==1:
 		for i,arg in enumerate(args):
 			importfn(i,arg,options)
-			E2progress(logid,(i/float(len(args))))
+			E2progress(logid,(old_div(i,float(len(args)))))
 
 		E2end(logid)
 		sys.exit(0)
@@ -153,7 +155,7 @@ def importfn(i,arg,options):
 
 		import e2ctf
 		
-		ds=1.0/(options.apix*box)
+		ds=old_div(1.0,(options.apix*box))
 		ffta=None
 		nbx=0
 		for x in range(100,d["nx"]-box,box):
@@ -166,12 +168,12 @@ def importfn(i,arg,options):
 				else: ffta+=fft
 				nbx+=1
 
-		ffta.mult(1.0/(nbx*box**2))
+		ffta.mult(old_div(1.0,(nbx*box**2)))
 		ffta.process_inplace("math.sqrt")
 		ffta["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 
 		fftbg=ffta.process("math.nonconvex")
-		fft1d=ffta.calc_radial_dist(ffta.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
+		fft1d=ffta.calc_radial_dist(old_div(ffta.get_ysize(),2),0.0,1.0,1)	# note that this handles the ri2inten averages properly
 
 		# Compute 1-D curve and background
 		bg_1d=e2ctf.low_bg_curve(fft1d,ds)
@@ -187,7 +189,7 @@ def importfn(i,arg,options):
 		#ctf.background=bg_1d
 		#ctf.dsbg=ds
 		db=js_open_dict(info_name(arg,nodir=not options.usefoldername))
-		db["ctf_frame"]=[box,ctf,(box/2,box/2),set(),5,1]
+		db["ctf_frame"]=[box,ctf,(old_div(box,2),old_div(box,2)),set(),5,1]
 		db["quality"]=5
 		db.close()
 		print(info_name(arg,nodir=not options.usefoldername),ctf)
@@ -204,7 +206,7 @@ def bgAdj(ctf,fg_1d):
 
 	# Find the minimum value near the origin, which we'll use as a zero (though it likely should not be)
 	mv=(fg_1d[1],1)
-	fz=int(ctf.zero(0)/(ds*2))
+	fz=int(old_div(ctf.zero(0),(ds*2)))
 	for lz in range(1,fz):
 		mv=min(mv,(fg_1d[lz],lz))
 
@@ -212,7 +214,7 @@ def bgAdj(ctf,fg_1d):
 
 	# now we add all of the zero locations to our XYData object
 	for i in range(100):
-		z=int(ctf.zero(i)/ds)
+		z=int(old_div(ctf.zero(i),ds))
 		if z>=len(bg_1d)-1: break
 		if fg_1d[z-1]<fg_1d[z] and fg_1d[z-1]<fg_1d[z+1]: mv=(z-1,fg_1d[z-1])
 		elif fg_1d[z]<fg_1d[z+1] : mv=(z,fg_1d[z])

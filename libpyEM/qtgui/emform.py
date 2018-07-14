@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 #
 # Author: David Woolford 11/7/2008 (woolford@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import absolute_import
 #
 
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from .emdatastorage import ParamDef
@@ -1900,7 +1902,7 @@ class EMParamTableEventHandler(object):
 		#print self.table_widget.getContentsMargins()
 		
 		if cumulative_width < self.table_widget.width():
-			scale = float(self.table_widget.width())/cumulative_width
+			scale = old_div(float(self.table_widget.width()),cumulative_width)
 			for i in range(cols):
 				w = self.table_widget.columnWidth(i)
 				self.table_widget.setColumnWidth(i,w*scale)
@@ -2106,8 +2108,8 @@ def get_small_example_form_params():
 
 def get_example_table_form_params():
 	params = get_example_form_params()
-	p1 = params[0:len(params)/3]
-	p2 = params[len(params)/3:2*len(params)/3]
+	p1 = params[0:old_div(len(params),3)]
+	p2 = params[old_div(len(params),3):2*len(params)/3]
 	p3 = params[2*len(params)/3:]
 	
 	par =[]

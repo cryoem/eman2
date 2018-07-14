@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2015-03
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import numpy as np
@@ -180,7 +182,7 @@ def calc_shortest_path(path, pts, dst, d0, pval, gap=5, gdsz=1.5, ngray=5., grp=
 			continue
 		pv=pval[did]
 		minp=np.min(pv)-.01
-		thr=np.arange(minp, np.max(pv), (np.max(pv)-minp)/ngray)[::-1]
+		thr=np.arange(minp, np.max(pv), old_div((np.max(pv)-minp),ngray))[::-1]
 
 		dd0=np.zeros(len(pts))-1
 		dd1=np.zeros(len(pts))-1
@@ -226,15 +228,15 @@ def calc_shortest_path(path, pts, dst, d0, pval, gap=5, gdsz=1.5, ngray=5., grp=
 			continue
 
 		dd-=np.min(dd[dd>0])
-		dd=1-dd/(np.max(dd)+1)
+		dd=1-old_div(dd,(np.max(dd)+1))
 		dd=np.max(dd)-dd+1
 		dd[did]=-1
 		
 		#a=(dd<=np.maximum(dd0[j1], dd1[j0])) * (dd>0)
 		a=(dd==np.min(dd[dd>0]))
 		
-		mult=(float(gap)/realgap)
-		shrtpath[a]+=mult/gap
+		mult=(old_div(float(gap),realgap))
+		shrtpath[a]+=old_div(mult,gap)
 		
 		dd0[dd0>dd0[j1]]=-1
 		a=a*(dd0>0)
@@ -376,7 +378,7 @@ def main():
 	
 		
 	
-	pathint=(path/apix).astype(int)
+	pathint=(old_div(path,apix)).astype(int)
 	ival=np.mean(img[pathint[:,2], pathint[:,1], pathint[:,0]])
 	print("Average intensity value on the path is {:.2f}".format(ival))
 	if ival<thr:
@@ -398,7 +400,7 @@ def main():
 		
 		if itr>0:
 			path=pp.copy()
-			pathint=(path/apix).astype(int)
+			pathint=(old_div(path,apix)).astype(int)
 			pts=spts.copy()
 			pval=img[pts[:,2], pts[:,1], pts[:,0]]
 
@@ -550,7 +552,7 @@ def main():
 		cmpdic={}
 		for i in range(20):
 			for j in range(20):
-				cmpdic[(lkup[i], lkup[j])]=((19.-abs(i-j))/20.)
+				cmpdic[(lkup[i], lkup[j])]=(old_div((19.-abs(i-j)),20.))
 
 
 
@@ -563,7 +565,7 @@ def main():
 	ppw=pw[inv]
 	
 	if inv>0: print("Chain is reversed.", end=' ')
-	print("Match score is {}".format(ppw[0][2]/float(len(path))))
+	print("Match score is {}".format(old_div(ppw[0][2],float(len(path)))))
 
 	l=[[],[]]
 	for k in [0,1]:

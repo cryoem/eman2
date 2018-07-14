@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 #
 #  08/13/2015
 #  New version.
 #  
 
+from past.utils import old_div
 from builtins import range
 import os
 import sys
@@ -210,11 +212,11 @@ def main():
 				if Tracker["constants"]["CTF"]:
 					i = a.get_attr('ctf')
 					pixel_size = i.apix
-					fq = pixel_size/Tracker["fuse_freq"]
+					fq = old_div(pixel_size,Tracker["fuse_freq"])
 				else:
 					pixel_size = 1.0
 					#  No pixel size, fusing computed as 5 Fourier pixels
-					fq = 5.0/nnxo
+					fq = old_div(5.0,nnxo)
 					del a
 		else:
 			nnxo = 0
@@ -308,7 +310,7 @@ def main():
 		########-----------------------------------------------------------------------------
 		Tracker["total_stack"]              = total_stack
 		Tracker["constants"]["total_stack"] = total_stack
-		Tracker["shrinkage"]                = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
+		Tracker["shrinkage"]                = old_div(float(Tracker["nxinit"]),Tracker["constants"]["nnxo"])
 		Tracker["radius"]                   = Tracker["constants"]["radius"]*Tracker["shrinkage"]
 		if Tracker["constants"]["mask3D"]:
 			Tracker["mask3D"] = os.path.join(masterdir,"smask.hdf")
@@ -342,8 +344,8 @@ def main():
 		for element in chunk_two: chunk_dict[element] = 1
 		chunk_list =[chunk_one, chunk_two]
 		Tracker["chunk_dict"] = chunk_dict
-		Tracker["P_chunk0"]   = len(chunk_one)/float(total_stack)
-		Tracker["P_chunk1"]   = len(chunk_two)/float(total_stack)
+		Tracker["P_chunk0"]   = old_div(len(chunk_one),float(total_stack))
+		Tracker["P_chunk1"]   = old_div(len(chunk_two),float(total_stack))
 		### create two volumes to estimate resolution
 		if myid == main_node:
 			for index in range(2): write_text_file(chunk_list[index],os.path.join(masterdir,"chunk%01d.txt"%index))
@@ -369,9 +371,9 @@ def main():
 		Tracker["currentres"]                      = currentres
 		Tracker["falloff"]                         = falloff
 		if Tracker["constants"]["low_pass_filter"] ==-1.0:
-			Tracker["low_pass_filter"] = min(.45,low_pass/Tracker["shrinkage"]) # no better than .45
+			Tracker["low_pass_filter"] = min(.45,old_div(low_pass,Tracker["shrinkage"])) # no better than .45
 		else:
-			Tracker["low_pass_filter"] = min(.45,Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"])
+			Tracker["low_pass_filter"] = min(.45,old_div(Tracker["constants"]["low_pass_filter"],Tracker["shrinkage"]))
 		Tracker["lowpass"]             = Tracker["low_pass_filter"]
 		Tracker["falloff"]             =.1
 		Tracker["global_fsc"]          = os.path.join(masterdir, "fsc.txt")

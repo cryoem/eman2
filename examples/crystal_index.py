@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Michael Bell, 02/12/2017 (jmbell@bcm.edu).
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -110,7 +112,7 @@ def main():
 		orig.process_inplace("filter.xyaxes0",{"neighbornorm":2})
 		#orig.process_inplace("mask.gaussian",{"outer_radius":orig["nx"]/8}) # overly stringent apodization
 		#orig.process_inplace("mask.decayedge2d",{"width":nx/4}) # simple apodization
-		orig.process_inplace("mask.gaussian",{"outer_radius":orig["nx"]/8,"exponent":3.0})
+		orig.process_inplace("mask.gaussian",{"outer_radius":old_div(orig["nx"],8),"exponent":3.0})
 
 		norig = orig.numpy().copy()
 		fnorig = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(norig)))
@@ -132,19 +134,19 @@ def main():
 		tmp = peak_local_max(nimg, min_distance=np.max([a,b,c]).astype(int)) # measured minimum distance from origin to first point (rough) # 50
 		coords = []
 		for coord in tmp:
-			if np.abs(np.linalg.norm(c-nimg.shape[0]/2.)) <= (nx/2.):
+			if np.abs(np.linalg.norm(c-old_div(nimg.shape[0],2.))) <= (old_div(nx,2.)):
 				coords.append(coord)
 		coords = np.asarray(coords)
 		refined_coords = refine_peaks(coords,img,options.maxshift,options.maxshift*2.)
 
-		ds = 1/(apix*nx) # angstroms per fourier pixel
-		exper_max_radius = np.linalg.norm(refined_coords-nx/2,axis=1).max()
-		print(("Highest resolution reflection: {:.2f}A ({} pix)\n".format(1/(ds*exper_max_radius),int(round(exper_max_radius,0)))))
+		ds = old_div(1,(apix*nx)) # angstroms per fourier pixel
+		exper_max_radius = np.linalg.norm(refined_coords-old_div(nx,2),axis=1).max()
+		print(("Highest resolution reflection: {:.2f}A ({} pix)\n".format(old_div(1,(ds*exper_max_radius)),int(round(exper_max_radius,0)))))
 
 		print("DETERMINING ORIENTATION")
 		
 		resolutions = np.asarray([1000.,100.,50.,25.,20.,18.,16.,10.,8.,5.,4.,3.,2.9,2.8,2.7,2.6,2.5,2.4,2.3,2.2,2.1,2.0,1.9,1.8])
-		radii = [float(r) for r in 1/(resolutions*ds) if r <= nx/2.]
+		radii = [float(r) for r in old_div(1,(resolutions*ds)) if r <= old_div(nx,2.)]
 
 		# initial search range
 		a_mindeg = options.mindeg
@@ -158,10 +160,10 @@ def main():
 
 		count = 0
 		for r in radii:
-			ang = np.arccos(np.sqrt((r**2-options.diameter)/r**2))*180./np.pi
+			ang = np.arccos(np.sqrt(old_div((r**2-options.diameter),r**2)))*180./np.pi
 			#max_radius = r#1/np.sin(ang)**2
 			#if r > nx/2: continue
-			max_resol = 1/(r*ds)
+			max_resol = old_div(1,(r*ds))
 
 			hkl_exper = np.vstack([refined_coords[:,1],refined_coords[:,0]]).T
 			hkl_exper = (hkl_exper - np.mean(hkl_exper,axis=0))
@@ -214,7 +216,7 @@ def main():
 				if options.verbose and i % 100 == 0:
 					sys.stdout.write("\rCreating {}/{} threads".format(i+1,len(rngs)))
 
-				thd = threading.Thread(target=cost_async,args=(rngs[i],hkl_exper,hkl_ref,close,min_distance/10.,options.exper_weight,options.data_weight,i,resq))
+				thd = threading.Thread(target=cost_async,args=(rngs[i],hkl_exper,hkl_ref,close,old_div(min_distance,10.),options.exper_weight,options.data_weight,i,resq))
 				thds.append(thd)
 			t0=time.time()
 
@@ -264,19 +266,19 @@ def main():
 		for ii,soln in enumerate(solns):
 			hkl_ref = generate_lattice(nx,apix,exper_max_radius,a,b,c,alpha,beta,gamma)
 
-			refine1 = optimize.fmin(cost,soln,args=(hkl_exper,hkl_ref,close,min_distance/10.0,options.data_weight,options.exper_weight,),disp=False)
+			refine1 = optimize.fmin(cost,soln,args=(hkl_exper,hkl_ref,close,old_div(min_distance,10.0),options.data_weight,options.exper_weight,),disp=False)
 			az,alt,phi = refine1[0],refine1[1],refine1[2]
 
 			refine_apix = optimize.fmin(apix_cost,[apix],args=(az,alt,phi,hkl_exper,hkl_ref,close,16.,nx,exper_max_radius,options.data_weight,options.exper_weight,a,b,c,alpha,beta,gamma,),disp=False)
 			refine_apix = float(refine_apix[0])  #float(refine_apix.x)
 			hkl_ref = generate_lattice(nx,refine_apix,exper_max_radius,a,b,c,alpha,beta,gamma)
-			ds = 1/(refine_apix*nx) # angstroms per fourier pixel
+			ds = old_div(1,(refine_apix*nx)) # angstroms per fourier pixel
 
 			refine_close = optimize.fmin(close_cost,[close],args=(az,alt,phi,hkl_exper,hkl_ref,8.,5.0,options.data_weight,options.exper_weight,),disp=False)
 			refine_close = refine_close[0]
 			if refine_close <= 1.0: refine_close = close
 			
-			refine2 = optimize.fmin(cost,refine1,args=(hkl_exper,hkl_ref,refine_close,min_distance/10.0,options.data_weight,options.exper_weight,),disp=False) # re-refine orientation
+			refine2 = optimize.fmin(cost,refine1,args=(hkl_exper,hkl_ref,refine_close,old_div(min_distance,10.0),options.data_weight,options.exper_weight,),disp=False) # re-refine orientation
 
 			scost =  cost(refine2,hkl_exper,hkl_ref,refine_close,min_distance,options.data_weight,options.exper_weight) 
 			if scost < best_cost:
@@ -286,7 +288,7 @@ def main():
 				best_refine_close = refine_close
 
 		sys.stdout.flush()
-		ds = 1/(best_refine_apix*nx) # angstroms per fourier pixel
+		ds = old_div(1,(best_refine_apix*nx)) # angstroms per fourier pixel
 
 		print(("Refined Apix: {:.2f} -> {:.2f}".format(apix,best_refine_apix)))
 		print(("Refined thickness: {:.2f} -> {:.2f}".format(close,best_refine_close)))
@@ -298,8 +300,8 @@ def main():
 
 		if options.plot:
 			plt.imshow(nimg,origin="lower",cmap=plt.cm.Greys_r)
-			plt.scatter(hkl_exper[:,1]+nx/2,hkl_exper[:,0]+nx/2,c='b',marker='x')
-			plt.scatter(pln[:,1]+nx/2,pln[:,0]+nx/2,c='r',marker='x')
+			plt.scatter(hkl_exper[:,1]+old_div(nx,2),hkl_exper[:,0]+old_div(nx,2),c='b',marker='x')
+			plt.scatter(pln[:,1]+old_div(nx,2),pln[:,0]+old_div(nx,2),c='r',marker='x')
 			plt.axis("off")
 			plt.title("(Az, Alt, Phi) -> ({:.2f},{:.2f},{:.2f})".format(*best_orient))
 			plt.show()
@@ -308,12 +310,12 @@ def main():
 		with open("{}.sf".format(fn.split(".")[0]),"w") as sf: # create a quasi.sf file for this image
 			for nrow,row in enumerate(pln):
 				xc,yc,zc,r,h,k,l = row[:7]
-				if r > 0: resol = 1/(r*ds)
+				if r > 0: resol = old_div(1,(r*ds))
 				else: resol = "inf"
 				if nrow in range(9):
-					raw_F,raw_p = get_sf(fnorig,int(xc)+nx/2,int(yc)+nx/2,2)#,show=True)
+					raw_F,raw_p = get_sf(fnorig,int(xc)+old_div(nx,2),int(yc)+old_div(nx,2),2)#,show=True)
 				else:
-					raw_F,raw_p = get_sf(fnorig,int(xc)+nx/2,int(yc)+nx/2,2)#,show=False)
+					raw_F,raw_p = get_sf(fnorig,int(xc)+old_div(nx,2),int(yc)+old_div(nx,2),2)#,show=False)
 				try:
 					print(("{:8.1f},{:8.1f},{:8.1f}    {:6.1f}    {:6.1f}    {:4d}    {:4d}    {:4d}    {:8.2f}    {:8.2f}".format(xc,yc,zc,r,resol,int(h),int(k),int(l),raw_F,raw_p)))
 				except:
@@ -321,7 +323,7 @@ def main():
 				sf.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(h,k,l,raw_F,raw_p,r,resol))
 
 def get_sf(fft,xc,yc,nn=2):
-	reg = fft[xc-nn/2:xc+nn/2+1,yc-nn/2:yc+nn/2+1]
+	reg = fft[xc-old_div(nn,2):xc+old_div(nn,2)+1,yc-old_div(nn,2):yc+old_div(nn,2)+1]
 	amp = np.absolute(reg).max()
 	phase = np.angle(np.sum(np.real(reg).ravel()) + 1j*np.sum(np.imag(reg).ravel()),deg=True)
 	return amp,phase
@@ -330,9 +332,9 @@ def twoD_Gaussian(x_y, xo, yo, amplitude, sigma_x, sigma_y, theta, offset=0.0):
 	x, y = x_y
 	xo = float(xo)
 	yo = float(yo)
-	a = (np.cos(theta)**2)/(2*sigma_x**2) + (np.sin(theta)**2)/(2*sigma_y**2)
-	b = -(np.sin(2*theta))/(4*sigma_x**2) + (np.sin(2*theta))/(4*sigma_y**2)
-	c = (np.sin(theta)**2)/(2*sigma_x**2) + (np.cos(theta)**2)/(2*sigma_y**2)
+	a = old_div((np.cos(theta)**2),(2*sigma_x**2)) + old_div((np.sin(theta)**2),(2*sigma_y**2))
+	b = old_div(-(np.sin(2*theta)),(4*sigma_x**2)) + old_div((np.sin(2*theta)),(4*sigma_y**2))
+	c = old_div((np.sin(theta)**2),(2*sigma_x**2)) + old_div((np.cos(theta)**2),(2*sigma_y**2))
 	g = offset + amplitude*np.exp( - (a*((x-xo)**2) + 2*b*(x-xo)*(y-yo) + c*((y-yo)**2)))
 	return g.ravel()
 
@@ -342,18 +344,18 @@ def refine_peaks(coords,img,ms,bs):
 	x,y = np.meshgrid(x,y)
 	refined_coords = []
 	for (yc,xc) in coords:
-		r = Region(xc-bs/2,yc-bs/2,bs,bs)
+		r = Region(xc-old_div(bs,2),yc-old_div(bs,2),bs,bs)
 		ereg = img.get_clip(r)
 		nreg = ereg.numpy().copy()
-		bds = [(bs/2-ms,bs/2+ms),(bs/2-ms,bs/2+ms),(0,np.max(nreg)*2),(0.1,8.0),(0.1,8.0),(0.,90.)] # lower, upper bounds
-		initial_guess = [bs/2.,bs/2.,np.max(nreg),1.,1.,0.]
+		bds = [(old_div(bs,2)-ms,old_div(bs,2)+ms),(old_div(bs,2)-ms,old_div(bs,2)+ms),(0,np.max(nreg)*2),(0.1,8.0),(0.1,8.0),(0.,90.)] # lower, upper bounds
+		initial_guess = [old_div(bs,2.),old_div(bs,2.),np.max(nreg),1.,1.,0.]
 		try:
 			popt,pcov=optimize.curve_fit(twoD_Gaussian,(x,y),nreg.ravel(),p0=initial_guess,bounds=bds)
 			popt = [p for p in popt]
 		except:
 			popt = initial_guess
-		popt[0] = popt[0] + xc - bs/2
-		popt[1] = popt[1] + yc - bs/2
+		popt[0] = popt[0] + xc - old_div(bs,2)
+		popt[1] = popt[1] + yc - old_div(bs,2)
 		refined_coords.append([popt[0],popt[1]])
 
 	return np.asarray(refined_coords)
@@ -362,22 +364,22 @@ def generate_lattice(nx,apix,max_radius,a,b,c,alpha,beta,gamma):
 	# define pixel spacing relative to apix and unit cell parameters
 	const = nx*apix
 
-	astar = const/a
-	bstar = const/b
-	cstar = const/c
+	astar = old_div(const,a)
+	bstar = old_div(const,b)
+	cstar = old_div(const,c)
 
 	#create lattice coordinates
 	astars = np.arange(0,const+astar,astar,dtype=np.float)
 	bstars = np.arange(0,const+bstar,bstar,dtype=np.float)
 	cstars = np.arange(0,const+cstar,cstar,dtype=np.float)
 
-	astars -= astars[len(astars)/2] # center about origin
-	bstars -= bstars[len(bstars)/2]
-	cstars -= cstars[len(cstars)/2]
+	astars -= astars[old_div(len(astars),2)] # center about origin
+	bstars -= bstars[old_div(len(bstars),2)]
+	cstars -= cstars[old_div(len(cstars),2)]
 
-	h_inds = astars / astar
-	k_inds = bstars / bstar
-	l_inds = cstars / cstar
+	h_inds = old_div(astars, astar)
+	k_inds = old_div(bstars, bstar)
+	l_inds = old_div(cstars, cstar)
 
 	hkl_ref = np.asarray(np.meshgrid(astars,bstars,cstars)).T
 	hkl_inds = np.round(np.asarray(np.meshgrid(h_inds,k_inds,l_inds))).astype(int).T
@@ -415,7 +417,7 @@ def compare(exper,data,min_dist,w1,w2):
 		else: dist.append(m)
 		cdist[i,:] = np.inf
 		cdist[:,j] = np.inf
-	proximity = np.sum(dist)/len(dist)
+	proximity = old_div(np.sum(dist),len(dist))
 	tree_exper = scipy.spatial.cKDTree(exper[:,:2])
 	tree_data = scipy.spatial.cKDTree(data[:,:2])
 	pairs = tree_exper.query_ball_tree(tree_data,r=min_dist)
@@ -440,7 +442,7 @@ def cost_async(params,exper,ref,close,min_distance,w1,w2,i,out):
 
 def get_plane(params,ref,close=10.0): # rotate reference and return "slab" associated with orientation
 	rot = rotate(ref,params) #[az,alt,phi]
-	return rot[np.where(np.logical_and(rot[:,2] >= -1*close/2., rot[:,2] <= close/2.))]
+	return rot[np.where(np.logical_and(rot[:,2] >= -1*close/2., rot[:,2] <= old_div(close,2.)))]
 
 def rotate(cloud,params):
 	az,alt,phi=params

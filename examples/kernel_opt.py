@@ -5,11 +5,13 @@
 # to be as nearly zero as possible, while retaining significant amplitudes within as much of the 256^3 volume as possible
 # The process iterates between real and Fourier spaces, forcing appropriate values to zero in each round
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 
 targsize=7	# goal is to have an nxn kernel with 3x oversampling
-ksize=(targsize*3-1)/2
+ksize=old_div((targsize*3-1),2)
 
 kstore=EMData(ksize+1,ksize*2+1,ksize*2+1)
 
@@ -30,7 +32,7 @@ for i in range(64):
 		for y in range(-ksize,ksize+1):
 			for z in range(-ksize,ksize+1):
 				kstore[x,y+ksize,z+ksize]=fft.get_complex_at(x,y,z).real
-				print("{:7.4f}".format(kstore[x,y+ksize,z+ksize]/(256*256*256)),end="")
+				print("{:7.4f}".format(old_div(kstore[x,y+ksize,z+ksize],(256*256*256))),end="")
 			if (abs(y)<=ksize and x<=ksize) : print("")
 		if (x<=ksize) : print("\n")
 	print("------")
@@ -57,7 +59,7 @@ print("const float FourierInserter3DMode7::kernel[9][9][9] = {")
 for z in range(ksize+2):
 	for y in range(ksize+2):
 		for x in range(ksize+2):
-			print("{:7.7f},".format(kstore[x,y+ksize,z+ksize]/(256*256*256)),end="")
+			print("{:7.7f},".format(old_div(kstore[x,y+ksize,z+ksize],(256*256*256))),end="")
 		print("")
 		
 print("}")

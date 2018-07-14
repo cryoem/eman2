@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # Author: James Michael Bell, jmbell@bcm.edu, 10/18/2015
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -54,7 +56,7 @@ def main(args):
 		else: print(("Processing {}".format(fname)))
 		
 		hdr = EMData(fname,0,True)
-		if (hdr['nx'] / options.boxsize - 1) < 2 or (hdr['ny'] / options.boxsize - 1) < 2:
+		if (old_div(hdr['nx'], options.boxsize) - 1) < 2 or (old_div(hdr['ny'], options.boxsize) - 1) < 2:
 			print("You will need to use a smaller box size with your data.")
 			sys.exit(1)
 		
@@ -259,7 +261,7 @@ class PairwiseCoherence(object):
 		return cps
 
 	def maximize(self,maxshift=10,incr=1.0):
-		shifts = np.arange(-maxshift/2,maxshift/2+incr,incr)
+		shifts = np.arange(old_div(-maxshift,2),old_div(maxshift,2)+incr,incr)
 		ls = len(shifts)
 		coherence = np.zeros([ls,ls])
 		max_coh = 0.0
@@ -348,7 +350,7 @@ class DirectDetectorUtil(object):
 			sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
 			if options.fixbadlines:
 				# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0})  
+				sigd.process_inplace("threshold.binary",{"value":old_div(sigd["sigma"],10.0)})  
 				dark.mult(sigd)
 			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
 		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
@@ -375,7 +377,7 @@ class DirectDetectorUtil(object):
 			gain=a.finish()
 			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
 			# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-			if options.fixbadlines: sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})
+			if options.fixbadlines: sigg.process_inplace("threshold.binary",{"value":old_div(sigg["sigma"],10.0)})
 			if dark!=None:
 				sigd=EMData(options.dark.rsplit(".",1)[0]+"_sig.hdf",0,False)
 				sigg.mult(sigd)
@@ -383,7 +385,7 @@ class DirectDetectorUtil(object):
 			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
 		if dark!=None : gain.sub(dark)	# dark correct the gain-reference
 		# normalize so gain reference on average multiplies by 1.0
-		gain.mult(1.0/gain["mean"])
+		gain.mult(old_div(1.0,gain["mean"]))
 		# setting zero values to zero helps identify bad pixels
 		gain.process_inplace("math.reciprocal",{"zero_to":0.0})	 
 		return gain

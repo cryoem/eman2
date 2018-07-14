@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import random
@@ -120,14 +122,14 @@ def main():
       '''
       avg_vol=EMData(nx,nx,nx) # initialize the averaged volume for 9 subunits
       mean_std=0.0 # intialize mean squared deviation
-      for k in range(int (nx-dz)/2, int (nx+dz)/2): # k ranged from lower plane to upper plane ---> width of central volume
+      for k in range(old_div(int (nx-dz),2), old_div(int (nx+dz),2)): # k ranged from lower plane to upper plane ---> width of central volume
         for i in range(nx):
           for j in range(nx):
             if new_volume.get(i,j,k)!=0.0: # the voxel should not be 0.0
               sublst=[] # sublst is the list containning the 9 voxel value of the neighboring subunits
-              r=sqrt((i-nx/2-0.5)*(i-nx/2-0.5)+(j-nx/2-0.5)*(j-nx/2-0.5))  # find r, the distance to the center (nx/2-0.5,nx/2-0.5)
-              theta=180.0*atan((j-nx/2-0.5)/(i-nx/2-0.5))/pi # find the angle theta ranging from 0 to 360
-              if i<nx/2:
+              r=sqrt((i-old_div(nx,2)-0.5)*(i-old_div(nx,2)-0.5)+(j-old_div(nx,2)-0.5)*(j-old_div(nx,2)-0.5))  # find r, the distance to the center (nx/2-0.5,nx/2-0.5)
+              theta=180.0*atan(old_div((j-old_div(nx,2)-0.5),(i-old_div(nx,2)-0.5)))/pi # find the angle theta ranging from 0 to 360
+              if i<old_div(nx,2):
                 theta+=180.0 # this is very important, since atan(theta) range from -pi/2 to pi/2
               #print "r=%f\t theta=%f" %(r,theta) 
               for units in range(-4,5): #use 8 neighboring subunits from -4 to +4: -4 -3 -2 -1 0 1 2 3 4
@@ -135,8 +137,8 @@ def main():
                   sublst.append(new_volume.get(i,j,k)) # put the central subunit to the list      
                 else:
                   temp_theta=(theta+units*d_phi)*pi/180.0
-                  temp_x=int(r*cos(temp_theta)+nx/2+0.5)
-                  temp_y=int(r*sin(temp_theta)+nx/2+0.5)
+                  temp_x=int(r*cos(temp_theta)+old_div(nx,2)+0.5)
+                  temp_y=int(r*sin(temp_theta)+old_div(nx,2)+0.5)
                   temp_z=int(k+units*dz)
                   sublst.append(new_volume.get(temp_x,temp_y,temp_z))
            
@@ -161,7 +163,7 @@ def main():
     xf=Transform() # needed to run get_sym
     xf.to_identity()
    # display(avg_vol)
-    avg_vol.translate(0,0,-(nx-dz)/2+1) # translate avg_vol to the bottom just 1 voxel above
+    avg_vol.translate(0,0,old_div(-(nx-dz),2)+1) # translate avg_vol to the bottom just 1 voxel above
     #display(avg_vol)
     dcopy=avg_vol.copy() # dcopy is the copy of the averaged volume
     sym_str="h4,20,%d,%d" %(d_phi,dz) # define h-symmetry parameter string
@@ -170,7 +172,7 @@ def main():
       temp_av.transform(xf.get_sym(sym_str,i)) # dc is the h-symmetrized subunit
       dcopy.add(temp_av)
     dcopy.sub(avg_vol)  
-    dcopy.mult(1.0/4.0) # cyclic 4 symmetry, density multiplied 4, should change back
+    dcopy.mult(old_div(1.0,4.0)) # cyclic 4 symmetry, density multiplied 4, should change back
     dcopy.translate(0,0,-2) #shift downward 2 pixels
 ##################### mask the model ###################
     '''

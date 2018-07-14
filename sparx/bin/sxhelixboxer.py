@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Ross Coleman (racolema@gmail.com)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import get_image_directory, Transform, Region, EMANVERSION, EMData, E2init, E2end, EMArgumentParser
 from EMAN2db import db_open_dict, db_check_dict, db_close_dict
@@ -130,7 +132,7 @@ def main():
 		outdir = args[0]
 		tdir = options.topdir
 		if len(tdir) < 1:  tdir = None
-		if options.importctf:  cterr = [options.defocuserror/100.0, options.astigmatismerror]
+		if options.importctf:  cterr = [old_div(options.defocuserror,100.0), options.astigmatismerror]
 		else:                  cterr = None
 		options.outstacknameall = "bdb:data"  # this was disabled, to be removed later PAP
 		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, boxsize=options.boxsize, minseg=options.minseg,\
@@ -219,7 +221,7 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
 	@return: the rectangular EMData helix specified by the coordinates and width 
 	"""
 	rot_angle = get_helix_rotation_angle(x1, y1, x2, y2, width)     ## rot_angle   @ming
-	centroid = ( (x1+x2)/2.0,(y1+y2)/2.0 )
+	centroid = ( old_div((x1+x2),2.0),old_div((y1+y2),2.0) )
 	l_vect = (x2-x1, y2-y1)
 	length = sqrt(l_vect[0]**2+l_vect[1]**2)
 	tr = Transform()
@@ -237,7 +239,7 @@ def get_helix_rotation_angle(x1, y1, x2, y2, width):
 	l_vect = (x2-x1, y2-y1)
 	length = sqrt(l_vect[0]**2+l_vect[1]**2)
 	assert length != 0
-	l_uvect = (l_vect[0]/length, l_vect[1]/length)
+	l_uvect = (old_div(l_vect[0],length), old_div(l_vect[1],length))
 	
 	#Rotate so that the length is parallel to the y-axis
 	#Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
@@ -259,14 +261,14 @@ def get_particle_centroids(helix_coords, px_overlap, px_length, px_width, is_rot
 	(x1,y1,x2,y2,w) = helix_coords
 	l_vect = (x2-x1,y2-y1)
 	helix_length = sqrt(l_vect[0]**2+l_vect[1]**2)
-	l_uvect = (l_vect[0]/helix_length, l_vect[1]/helix_length)
+	l_uvect = (old_div(l_vect[0],helix_length), old_div(l_vect[1],helix_length))
 	w_uvect = (-l_uvect[1],l_uvect[0])
 	
 	assert px_length > px_overlap, "The overlap must be smaller than the segment length"
 	px_step = px_length - px_overlap
-	l = px_length/2.0 #distance from (x1, y1) on the helix axis
+	l = old_div(px_length,2.0) #distance from (x1, y1) on the helix axis
 	ptcl_coords = []
-	while l < helix_length - px_length/2.0 + px_step:
+	while l < helix_length - old_div(px_length,2.0) + px_step:
 		(x,y) = (x1 + l*l_uvect[0], y1 + l*l_uvect[1])
 		if is_rotated:
 			dst1 = ((x - x1)**2 + (y - y1)**2)**0.5
@@ -295,7 +297,7 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 	l_vect = (x2-x1, y2-y1)
 	length = sqrt(l_vect[0]**2+l_vect[1]**2)
 	assert length != 0
-	l_uvect = (l_vect[0]/length, l_vect[1]/length)
+	l_uvect = (old_div(l_vect[0],length), old_div(l_vect[1],length))
 		
 	#Rotate so that the length is parallel to the y-axis
 	#Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
@@ -384,7 +386,7 @@ def get_unrotated_particles(micrograph, helix_coords, px_dst = None, px_length =
 	rot_angle = get_helix_rotation_angle(*helix_coords)
 	#tr = Transform({"type":"eman","alt":90,"phi":rot_angle}) #How to rotate a cylinder that is oriented along the z-axis to align it along the boxed helix
 	for centroid in centroids:
-		ptcl= micrograph.get_clip( Region(centroid[0]-side/2.0, centroid[1]-side/2.0, side, side) )
+		ptcl= micrograph.get_clip( Region(centroid[0]-old_div(side,2.0), centroid[1]-old_div(side,2.0), side, side) )
 		ptcl["ptcl_helix_coords"] = tuple(helix_coords)
 		ptcl["ptcl_source_coord"] = tuple(centroid)
 		ptcl["xform.projection"]  = Transform()
@@ -411,7 +413,7 @@ def load_helix_coords(coords_filepath, specified_width=None):
 			line[i] = int(line[i])
 		if line[4] == -1:
 			w = line[2]
-			r = w / 2.0
+			r = old_div(w, 2.0)
 			datum[0] = line[0] + r
 			datum[1] = line[1] + r
 			if specified_width:
@@ -420,7 +422,7 @@ def load_helix_coords(coords_filepath, specified_width=None):
 				datum[4] = w
 		elif line[4] == -2:
 			assert line[2] == w
-			r = w / 2.0
+			r = old_div(w, 2.0)
 			datum[2] = line[0] + r
 			datum[3] = line[1] + r
 			w = None
@@ -448,7 +450,7 @@ def save_helix_coords(coords_list, output_filepath, helix_width = None):
 			width = helix_width
 		else:
 			width = coords[4]
-		r = width / 2.0
+		r = old_div(width, 2.0)
 					
 		#For some reason, EMAN1 subtracts half the box width from each coordinate
 		#EMAN1 uses <cstdio> fprintf() and "%1.0f", which rounds half-integers away from zero
@@ -710,7 +712,7 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, 
 	micrograph = EMData(micrograph_filepath)
 	if do_filt:
 		if filt_freq <= 0:
-			filt_freq = 1.0/px_length
+			filt_freq = old_div(1.0,px_length)
 		micrograph = filt_gaussh(micrograph, filt_freq)		
 	nhelix = 0
 	for coords in helices_dict:
@@ -1976,14 +1978,14 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 		print("%s must be in bdb or hdf format"%outstacknameall)
 		return
 
-	if freq < 0: freq = 1.0/boxsize
+	if freq < 0: freq = old_div(1.0,boxsize)
 		
 	if micsuffix[0] == '.': micsuffix = micsuffix[1:]
 	
 	if new_pixel_size < 0: new_pixel_size = pixel_size
 	
-	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
-	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
+	if rmax < 0:  rmaxp = int(old_div(boxsize,2) - 2)
+	else:         rmaxp = int( (old_div(rmax,new_pixel_size))  + 0.5)
 	
 	# set rmax in pixels to default if user input rmax is greater than half the box size
 	if 2*rmaxp > boxsize:
@@ -2129,8 +2131,8 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 		if nx:
 			print("Micrograph %s"%filename,"  not listed in CTER results, skipping ....")
 			return
-		if(ctfs[8]/ctfs[0] > cterr[0]):
-			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[8]/ctfs[0], filename))
+		if(old_div(ctfs[8],ctfs[0]) > cterr[0]):
+			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(old_div(ctfs[8],ctfs[0]), filename))
 			return
 		if(ctfs[10] > cterr[1] ):
 			ctfs[6] = 0.0      ##astigmatism amplitude     comment by@ming
@@ -2147,7 +2149,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 # 			Cut off frequency components higher than CTF limit 
 		q1, q2 = ctflimit(boxsize,ctfs[0],ctfs[1],ctfs[2],new_pixel_size)
 		# This is absolute frequency of the CTF limit in the scale of original micrograph
-		q1 = (ctfs[3] / new_pixel_size) * q1/float(boxsize)
+		q1 = (old_div(ctfs[3], new_pixel_size)) * q1/float(boxsize)
 		if q1 < 0.5:          #@ming
 			img = filt_tanl(img, q1, 0.01)
 			cutoffhistogram.append(q1)
@@ -2157,7 +2159,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 		# Set ctf along with new pixel size in resampled micrograph
 		# set hcoordsname to name of new coordinates file, and set micname to resampled micrograph name
 		print_msg('Resample micrograph to pixel size %f and window segments from resampled micrograph\n'%new_pixel_size)
-		resample_ratio = pixel_size/new_pixel_size
+		resample_ratio = old_div(pixel_size,new_pixel_size)
 		# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
 		nx = img.get_xsize()
 		ny = img.get_ysize()
@@ -2219,7 +2221,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	if len(a)%2 != 0:
 		print("Number of rows in helix coordinates file %s should be even!"%hcoordsname)
 		return
-	nhelices = len(a)/2
+	nhelices = old_div(len(a),2)
 	#try:      iseg = EMUtil.get_image_count(outstacknameall)
 	#except:   iseg = 0
 	if importctf:

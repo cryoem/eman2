@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # This is a simple example showing how to generate a histogram from a text file
 # specify the filename and column number with an optional number of bins, column number 0 indexed
 # Note that outliers are filtered out (>sigma*4 twice)
+from past.utils import old_div
 from EMAN2 import *
 from numpy import *
 from sys import argv,exit
@@ -76,9 +78,9 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 		for n,i in enumerate(angs.keys()):
 			if options.verbose==1 and time.time()-t1>1:
 				t1=time.time()
-				frac=n/float(N)
+				frac=old_div(n,float(N))
 				try:
-					remain=int((time.time()-t0)/frac-(time.time()-t0))	# est remaining time in sec
+					remain=int(old_div((time.time()-t0),frac)-(time.time()-t0))	# est remaining time in sec
 					print("{:6d}/{:-6d}   time remaining: {}:{:02d}     \r".format(n,N,remain//60,remain%60), end=' ')
 				except:
 					print("{:6d}/{:-6d}     \r".format(n,N), end=' ')
@@ -115,9 +117,9 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 		for n,i in enumerate(angs.keys()):
 			if options.verbose==1 and time.time()-t1>1:
 				t1=time.time()
-				frac=n/float(N)
+				frac=old_div(n,float(N))
 				try:
-					remain=int((time.time()-t0)/frac-(time.time()-t0))	# est remaining time in sec
+					remain=int(old_div((time.time()-t0),frac)-(time.time()-t0))	# est remaining time in sec
 					print("{:6d}/{:-6d}   time remaining: {}:{:02d}     \r".format(n,N,remain//60,remain%60), end=' ')
 				except:
 					print("{:6d}/{:-6d}     \r".format(n,N), end=' ')
@@ -132,9 +134,9 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 			for c in mcmps:
 				sim=img.cmp(c[0],refimg,c[1])
 				out.write("\t{}".format(sim))
-			imgf=img.process("filter.highpass.gauss",{"cutoff_freq":1.0/80}).process("filter.lowpass.gauss",{"cutoff_freq":1.0/20})
+			imgf=img.process("filter.highpass.gauss",{"cutoff_freq":old_div(1.0,80)}).process("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,20)})
 			out.write("\t{}".format(imgf.cmp("ccc",refimg)))
-			imgf=img.process("filter.highpass.gauss",{"cutoff_freq":1.0/20}).process("filter.lowpass.gauss",{"cutoff_freq":1.0/12})
+			imgf=img.process("filter.highpass.gauss",{"cutoff_freq":old_div(1.0,20)}).process("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,12)})
 			out.write("\t{}".format(imgf.cmp("ccc",refimg)))
 			
 			out.write("\n")
@@ -172,8 +174,8 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 	if options.verbose:
 		lz=len(col[col<0])
 		gz=len(col[col>0])
-		print("%1.2f (%d) less than zero"%(float(lz)/(lz+gz),lz))
-		print("%1.2f (%d) less than zero"%(float(gz)/(lz+gz),gz))
+		print("%1.2f (%d) less than zero"%(old_div(float(lz),(lz+gz)),lz))
+		print("%1.2f (%d) less than zero"%(old_div(float(gz),(lz+gz)),gz))
 
 	his=histogram(col,options.bins)
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/20/2012 (sludtke@bcm.edu)
@@ -34,6 +35,7 @@ from __future__ import print_function
 
 
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -78,8 +80,8 @@ def procthread(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,t
 	#				display(v1m)
 		
 		fsc=v1m.calc_fourier_shell_correlation(v2m)
-		fx=array(fsc[1:len(fsc)/3])/apix
-		fy=fsc[len(fsc)/3+1:len(fsc)*2/3]
+		fx=old_div(array(fsc[1:old_div(len(fsc),3)]),apix)
+		fy=fsc[old_div(len(fsc),3)+1:len(fsc)*2/3]
 		
 		# 0.5 resolution
 		if fy[0]<0.5 and fy[1]<0.5 : i,xx,res=1,fx[1],fx[1]
@@ -185,13 +187,13 @@ and this program should be regarded as experimental.
 		overlap=6
 		
 	if options.localsize==-1 : 
-		lnx=int(32/apix)
+		lnx=int(old_div(32,apix))
 		if lnx<16: lnx=16
 		lnx=(((lnx-1)//overlap)+1)*overlap
 	else: lnx=options.localsize
 	if apix*lnx/2.0<10.0 :
 		print("WARNING: Local sampling box is <10 A. Adjusting to 16 A.")
-		lnx=int(floor(32.0/apix))
+		lnx=int(floor(old_div(32.0,apix)))
 	print("Local region is %d pixels"%lnx)
 	if overlap>lnx : overlap=lnx
 	
@@ -202,8 +204,8 @@ and this program should be regarded as experimental.
 	if options.verbose: print("Computing overall FSC")
 	# overall fsc
 	fsc=v1.calc_fourier_shell_correlation(v2)
-	fx=array(fsc[0:len(fsc)/3])/apix
-	fy=fsc[len(fsc)/3:len(fsc)*2/3]
+	fx=old_div(array(fsc[0:old_div(len(fsc),3)]),apix)
+	fy=fsc[old_div(len(fsc),3):len(fsc)*2/3]
 
 	out=open("fsc.txt","w")
 	for i,x in enumerate(fx):
@@ -214,7 +216,7 @@ and this program should be regarded as experimental.
 	# Create a centered Gaussian mask with a size ~1/10th of the box size
 	cenmask=EMData(lnx,lnx,lnx)
 	cenmask.to_one()
-	cenmask.process_inplace("mask.gaussian",{"inner_radius":lnx/6,"outer_radius":lnx/6})
+	cenmask.process_inplace("mask.gaussian",{"inner_radius":old_div(lnx,6),"outer_radius":old_div(lnx,6)})
 	print("Approx feature size for assessment = %1.1f A"%(apix*lnx/2.0))
 #	cenmask.write_image("cenmask.hdf")
 	#display(cenmask)
@@ -226,7 +228,7 @@ and this program should be regarded as experimental.
 #	avgmask.process_inplace("mask.gaussian",{"outer_radius":2.0*d/log(8.0) })	# this mask is adjusted to the precise width necessary so a sum of tiled overlapping Gaussians will be flat
 	avgmask.process_inplace("mask.gaussian",{"outer_radius":3.0*d/log(8.0) })	# make it a bit wider since we are weighting anyway, this should produce smoother surfaces
 	
-	off=(nx%(lnx//overlap))/2
+	off=old_div((nx%(lnx//overlap)),2)
 	xr=list(range(off,nx-lnx,lnx//overlap))
 	yr=list(range(off,ny-lnx,lnx//overlap))
 	zr=list(range(off,nz-lnx,lnx//overlap))
@@ -300,14 +302,14 @@ and this program should be regarded as experimental.
 				if res==0 : continue
 
 
-				volfilt.insert_scaled_sum(v1m,(x+lnx/2,y+lnx/2,z+lnx/2))
-				volfilt.insert_scaled_sum(v2m,(x+lnx/2,y+lnx/2,z+lnx/2))
+				volfilt.insert_scaled_sum(v1m,(x+old_div(lnx,2),y+old_div(lnx,2),z+old_div(lnx,2)))
+				volfilt.insert_scaled_sum(v2m,(x+old_div(lnx,2),y+old_div(lnx,2),z+old_div(lnx,2)))
 				if options.outfilte!=None : 
-					volfilte.insert_scaled_sum(v1m,(x+lnx/2,y+lnx/2,z+lnx/2))
+					volfilte.insert_scaled_sum(v1m,(x+old_div(lnx,2),y+old_div(lnx,2),z+old_div(lnx,2)))
 				if options.outfilto!=None : 
-					volfilto.insert_scaled_sum(v2m,(x+lnx/2,y+lnx/2,z+lnx/2))
+					volfilto.insert_scaled_sum(v2m,(x+old_div(lnx,2),y+old_div(lnx,2),z+old_div(lnx,2)))
 					
-				volnorm.insert_scaled_sum(avgmask,(x+lnx/2,y+lnx/2,z+lnx/2))
+				volnorm.insert_scaled_sum(avgmask,(x+old_div(lnx,2),y+old_div(lnx,2),z+old_div(lnx,2)))
 			
 	if options.verbose>1: print("\nAll threads complete")
 
@@ -331,7 +333,7 @@ and this program should be regarded as experimental.
 	out=open("fsc.curves.txt","w")
 	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
 	if len(fys)>100 : 
-		step=len(fys)/100
+		step=old_div(len(fys),100)
 		print("Saving 1/%d of curves to fsc.curves.txt + %d"%(step,len(funny)))
 	else: 
 		step=1

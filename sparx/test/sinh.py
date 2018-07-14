@@ -1,5 +1,6 @@
 #!/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from EMAN2  import *
 from sparx  import *
 
@@ -42,7 +44,7 @@ M = iqwtr.get_xsize()  # image size
 alpha = 1.75
 K = 6
 N = M*2  # npad*image size
-r=M/2
+r=old_div(M,2)
 v=K/2.0/N
 
 params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH,

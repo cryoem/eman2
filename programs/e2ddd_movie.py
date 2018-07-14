@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 02/12/2013 (sludtke@bcm.edu). Updated on 08/28/16.
@@ -32,6 +33,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -262,7 +264,7 @@ def main():
 			dark=a.finish()
 			#if options.debug: sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
 			if options.fixbadpixels:
-				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+				sigd.process_inplace("threshold.binary",{"value":old_div(sigd["sigma"],10.0)}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
 				dark.mult(sigd) # mask non-varying pixels in dark reference (set to zero)
 		#if options.debug: dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
 		#else: dark.mult(1.0/99.0)
@@ -331,7 +333,7 @@ def main():
 				gain=a.finish()
 				#if options.debug: sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
 				if options.fixbadpixels:
-					sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+					sigg.process_inplace("threshold.binary",{"value":old_div(sigg["sigma"],10.0)}) # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
 					if dark!="":
 						try: sigg.mult(sigd) # set bad pixels identified in dark reference to 0 in gain reference
 						except: pass # exception: dark has only 1 frame
@@ -351,7 +353,7 @@ def main():
 			if mean_val <= 0.: mean_val=1.
 			gain.process_inplace("threshold.belowtominval",{"minval":0.01,"newval":mean_val})
 
-		gain.mult(1.0/gain["mean"])
+		gain.mult(old_div(1.0,gain["mean"]))
 
 		if options.invert_gain: gain.process_inplace("math.reciprocal",{"zero_to":0.0})
 
@@ -722,10 +724,10 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 
 		locs = traj.ravel()
 		quals=[0]*n # quality of each frame based on its correlation peak summed over all images
-		cen=options.optbox/2 #csum2[(0,1)]["nx"]/2
+		cen=old_div(options.optbox,2) #csum2[(0,1)]["nx"]/2
 		for i in range(n-1):
 			for j in range(i+1,n):
-				val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(float(n-fabs(i-j))/n)
+				val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(old_div(float(n-fabs(i-j)),n))
 				quals[i]+=val
 				quals[j]+=val
 
@@ -971,8 +973,8 @@ def split_fft(options,img,i,box,step,out):
 	
 	# img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.45})
 	
-	for dx in range(box/2,nx-box,step):
-		for dy in range(box/2,ny-box,step):
+	for dx in range(old_div(box,2),nx-box,step):
+		for dy in range(old_div(box,2),ny-box,step):
 			clp = img.get_clip(Region(dx,dy,box,box))
 
 			#clp.process_inplace("math.fft.resample",{"n":4})
@@ -1004,24 +1006,24 @@ def correlation_peak_model(x_y, xo, yo, sigma, amp):
 	if sigma <= 0: return np.ones_like(x)*np.inf
 	xo = float(xo)
 	yo = float(yo)
-	g = amp*np.exp(-(((x-xo)**2)+((y-yo)**2))/(2.*sigma**2))
+	g = amp*np.exp(old_div(-(((x-xo)**2)+((y-yo)**2)),(2.*sigma**2)))
 	return g.ravel()
 
 def fixedbg_peak_model(x_y, sigma, amp):
 	x, y = x_y
 	if sigma <= 0: return np.ones_like(x)*np.inf
-	xo = float(len(x)/2)
-	yo = float(len(y)/2)
-	g = amp*np.exp(-(((x-xo)**2)+((y-yo)**2))/(2.*sigma**2))
+	xo = float(old_div(len(x),2))
+	yo = float(old_div(len(y),2))
+	g = amp*np.exp(old_div(-(((x-xo)**2)+((y-yo)**2)),(2.*sigma**2)))
 	return g.ravel()
 
 def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2):
 	x, y = x_y
 	if sig1 <= 0 or sig2 <= 0: return np.ones_like(x)*np.inf #np.zeros_like(x)
 	#correlation_peak = correlation_peak_model((x,y),x1,y1,sig1,amp1)
-	cp = amp1*np.exp(-(((x-x1)**2+(y-y1)**2))/(2.*sig1**2))
+	cp = amp1*np.exp(old_div(-(((x-x1)**2+(y-y1)**2)),(2.*sig1**2)))
 	#fixedbg_peak = fixedbg_peak_model((x,y),sig2,amp2)
-	fp = amp2*np.exp(-(((x-len(x)/2.)**2+(y-len(y)/2.)**2))/(2.*sig2**2))
+	fp = amp2*np.exp(old_div(-(((x-old_div(len(x),2.))**2+(y-old_div(len(y),2.))**2)),(2.*sig2**2)))
 	return cp.ravel() + fp.ravel() # + noise
 
 # def edgemean(a,xc,yc):
@@ -1031,9 +1033,9 @@ def twod_bimodal(x_y,x1,y1,sig1,amp1,sig2,amp2):
 def neighbormean_origin(a): # replace origin pixel with mean of surrounding pixels
 	proc = a.copy()
 	if a.shape[0] % 2 == 0:
-		ac = proc.shape[0]/2
+		ac = old_div(proc.shape[0],2)
 		r = proc[ac-2:ac+2,ac-2:ac+2].copy()
-		rc = r.shape[0]/2
+		rc = old_div(r.shape[0],2)
 		r[rc,rc] = np.nan
 		r[rc,rc-1] = np.nan
 		r[rc-1,rc] = np.nan
@@ -1044,10 +1046,10 @@ def neighbormean_origin(a): # replace origin pixel with mean of surrounding pixe
 		proc[ac-1,ac] = nm
 		proc[ac-1,ac-1] = nm
 	else:
-		ac = proc.shape[0]/2
+		ac = old_div(proc.shape[0],2)
 		r = proc[ac-2:ac+1,ac-2:ac+1].copy()
 		plt.imshow(r)
-		rc = r.shape[0]/2
+		rc = old_div(r.shape[0],2)
 		r[rc,rc] = np.nan
 		proc[ac,ac] = np.nanmean(r)
 	return proc
@@ -1055,30 +1057,30 @@ def neighbormean_origin(a): # replace origin pixel with mean of surrounding pixe
 def find_com(ccf): # faster alternative to gaussian fitting...less robust in theory.
 	thresh = (np.ones(ccf.shape) * np.mean(ccf))+2.5*np.std(ccf)
 	m = np.greater(ccf,thresh) * 1.0
-	m = m / np.sum(m)
+	m = old_div(m, np.sum(m))
 	# marginal distributions
 	dx = np.sum(m, 1)
 	dy = np.sum(m, 0)
 	# expected values
 	cx = np.sum(dx * np.arange(ccf.shape[0]))
 	cy = np.sum(dy * np.arange(ccf.shape[1]))
-	return cx-ccf.shape[0]/2,cy-ccf.shape[1]/2
+	return cx-old_div(ccf.shape[0],2),cy-old_div(ccf.shape[1],2)
 
 def bimodal_peak_model(options,ccf):
 	nxx = ccf["nx"]
-	bs = int(nxx/4)
+	bs = int(old_div(nxx,4))
 
 	xx = np.linspace(0,bs,bs)
 	yy = np.linspace(0,bs,bs)
 	xx,yy = np.meshgrid(xx,yy)
 
-	r = Region(nxx/2-bs/2,nxx/2-bs/2,bs,bs)
+	r = Region(old_div(nxx,2)-old_div(bs,2),old_div(nxx,2)-old_div(bs,2),bs,bs)
 
 	ccfreg = ccf.get_clip(r)
 	ncc = ccfreg.numpy().copy()
 
-	x1 = int(bs/2.)
-	y1 = int(bs/2.)
+	x1 = int(old_div(bs,2.))
+	y1 = int(old_div(bs,2.))
 	a1 = ncc.mean()#.0
 	s1 = 10.0
 	a2 = ncc.max()
@@ -1091,8 +1093,8 @@ def bimodal_peak_model(options,ccf):
 		#ix,iy = ncc.shape
 		pncc = neighbormean_origin(ncc)
 		x1,y1 = find_com(pncc)
-		x1 = x1+nxx/2
-		y1 = y1+nxx/2
+		x1 = x1+old_div(nxx,2)
+		y1 = y1+old_div(nxx,2)
 		# if options.debug:
 		# 	try:
 		# 		ii = EMUtil.get_image_count("tmp.hdf")
@@ -1108,20 +1110,20 @@ def bimodal_peak_model(options,ccf):
 		# 	return None, -1
 	elif options.optccf == "ccfmax": # only useful for extremely high contrast frames
 		yc,xc = np.where(ncc==ncc.max())
-		popt = [float(xc[0]+nxx/2),float(yc[0]+nxx/2),ncc.max(),1.,0.,0.]
+		popt = [float(xc[0]+old_div(nxx,2)),float(yc[0]+old_div(nxx,2)),ncc.max(),1.,0.,0.]
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 
 	elif options.optccf == "robust":
 		initial_guess = [x1,y1,s1,a1,s2,a2]
-		bds = [(-bs/2, -bs/2, 0.6, ncc.min(), 0.6, 0.01),(bs/2, bs/2, 1000.0, ncc.max(), 2.0, ncc.max())]
+		bds = [(old_div(-bs,2), old_div(-bs,2), 0.6, ncc.min(), 0.6, 0.01),(old_div(bs,2), old_div(bs,2), 1000.0, ncc.max(), 2.0, ncc.max())]
 		try:
 			popt,pcov=optimize.curve_fit(twod_bimodal,(xx,yy),ncc.ravel(),p0=initial_guess,bounds=bds,method="dogbox",max_nfev=250,xtol=1e-3,ftol=1e-6,loss='linear')
 		except RuntimeError:
 			return None,-1
 
 		popt = [p for p in popt]
-		popt[0] = popt[0] + nxx/2 - bs/2
-		popt[1] = popt[1] + nxx/2 - bs/2
+		popt[0] = popt[0] + old_div(nxx,2) - old_div(bs,2)
+		popt[1] = popt[1] + old_div(nxx,2) - old_div(bs,2)
 		popt[2] = np.abs(popt[2])
 		return popt,ccf.sget_value_at_interp(popt[0],popt[1])
 	# elif options.optccf == "robust":
@@ -1148,11 +1150,11 @@ def qual(locs,ccfs):
 	"""computes the quality of the current alignment. Passed a dictionary of CCF images keyed by (i,j) tuple and
 	an (x0,y0,x1,y1,...)  shift array. Smaller numbers are better since that's what the simplex does"""
 	nrg=0.0
-	cen=ccfs[(0,1)]["nx"]/2
-	n=len(locs)/2
+	cen=old_div(ccfs[(0,1)]["nx"],2)
+	n=old_div(len(locs),2)
 	for i in range(n-1):
 		for j in range(i+1,n):
-			penalty = sqrt(float(n-fabs(i-j))/n)**2 # This is a recognition that we will tend to get better correlation with near neighbors in the sequence
+			penalty = sqrt(old_div(float(n-fabs(i-j)),n))**2 # This is a recognition that we will tend to get better correlation with near neighbors in the sequence
 			locx = int(cen+locs[j*2]-locs[i*2])
 			locy = int(cen+locs[j*2+1]-locs[i*2+1])
 			nrg-=ccfs[(i,j)].sget_value_at_interp(locx,locy)*penalty

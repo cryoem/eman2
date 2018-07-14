@@ -1,4 +1,6 @@
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -22,7 +24,7 @@ for i in range(40000):
 		print(a.sim_potential())
 		a.sim_printstat()
 		img=a.pdb2mrc_by_summation(160,4.52,10.,-1)
-		img.write_image("x.hdf",i/1000)
+		img.write_image("x.hdf",old_div(i,1000))
 
 #a.sim_rescale()
 a.sim_set_pot_parms(3.3,500.0,1000.0,35.9*pi/180.0,500.0,0,None)
@@ -35,7 +37,7 @@ for i in range(40000):
 		print(a.sim_potential())
 		a.sim_printstat()
 		img=a.pdb2mrc_by_summation(160,4.52,10.,-1)
-		img.write_image("x.hdf",i/1000+40)
+		img.write_image("x.hdf",old_div(i,1000)+40)
 
 # Compute all distances
 #dsts=[]

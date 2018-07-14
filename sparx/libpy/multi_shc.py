@@ -1,5 +1,7 @@
 # For some reason these programs get stuck on MPI if I change the order of programs in the file.  Strange, PAP.
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 '''
 #  I do not know why this would make sense  PAP 04/20/2017
@@ -63,7 +65,7 @@ def orient_params(params, refparams, indexes=None, symmetry_class = None):
 
 	if(symmetry_class.sym[0] == "c" and symmetry_class.nsym>1):
 		from copy import deepcopy
-		divic = 360.0/symmetry_class.nsym
+		divic = old_div(360.0,symmetry_class.nsym)
 		phi = angle_diff_sym([params[j] for j in tindexes], [refparams[j] for j in tindexes], symmetry_class.nsym)
 		out = deepcopy(params)
 		for j in range(n):
@@ -133,7 +135,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 	while(True):
 		#  extract images in common subset
 		if(symmetry_class.sym[0] == "c"):  #  c including cn symmetry
-			divic = 360.0/symmetry_class.nsym
+			divic = old_div(360.0,symmetry_class.nsym)
 			for i in subset: avg_diff_per_image[i] = 0.0
 			outp = [deepcopy(projs[0])]
 			for i in range(sc-1,-1,-1):
@@ -327,7 +329,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 	vol = ref_vol
 	nx      = vol.get_xsize()
 	if last_ring < 0:
-		last_ring = int(nx/2) - 2
+		last_ring = int(old_div(nx,2)) - 2
 
 	cnx = nx//2 + 1
 	cny = cnx
@@ -525,7 +527,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 				temp = 0
 				for i in all_pixer:
 					if i < 1.0: temp += 1
-				percent_of_pixerr_below_one = (temp * 1.0) / (total_nima * number_of_runs)
+				percent_of_pixerr_below_one = old_div((temp * 1.0), (total_nima * number_of_runs))
 				orient_and_shuffle = ( percent_of_pixerr_below_one > doga )  and ( afterGAcounter < 0 ) #  TODO - parameter ?
 				afterGAcounter -= 1
 				## if total_iter%3 == 0:  orient_and_shuffle = True
@@ -584,7 +586,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 					#  Minimal length of the subset is set to 1/3 of the number of parameters
 					#  Error threshold is set somewhat arbitrarily to 1.5 angular step of reference projections
 					#  params gets overwritten by rotated parameters,  subset is a list of indexes common
-					subset, avg_diff_per_image, params = find_common_subset([params_0, params], delta[N_step]*1.5, len(params)/3, symmetry_class)
+					subset, avg_diff_per_image, params = find_common_subset([params_0, params], delta[N_step]*1.5, old_div(len(params),3), symmetry_class)
 					params = params[1]
 					#   neither is needed
 					del subset, avg_diff_per_image
@@ -674,7 +676,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 						from math import sqrt
 						q1,q2,q3,q4 = table_stat([GA[i][0] for i in range(number_of_runs)])
 						# Terminate if variation of L2 norms less than (L2threshold*100)% of their average
-						crit = sqrt(max(q2,0.0))/q1
+						crit = old_div(sqrt(max(q2,0.0)),q1)
 						for i in range(number_of_runs):
 							log.add("L2 norm for volume %3d  = %f"%(i,GA[i][0]))
 						log.add("L2 norm std dev %f\n"%crit)
@@ -699,11 +701,11 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 						# select random pairs of solutions
 						ipl = list(range(number_of_runs))
 						shuffle(ipl)
-						for ip in range(0,2*(len(ipl)/2)+len(ipl)%2,2):
+						for ip in range(0,2*(old_div(len(ipl),2))+len(ipl)%2,2):
 							#  random reference projection:
 							itmp = randint(0,total_nima-1)
 							#print  "  nearest_many_full_k_projangles  ",total_nima,itmp,ipl,ip,len(GA[ipl[ip]][1]),GA[ipl[ip]][1][itmp],GA[ipl[ip]][1]
-							keepset = nearest_many_full_k_projangles(angles_to_normals(GA[ipl[ip]][1]), [GA[ipl[ip]][1][itmp]], howmany = total_nima/2, sym_class = symmetry_class)[0]
+							keepset = nearest_many_full_k_projangles(angles_to_normals(GA[ipl[ip]][1]), [GA[ipl[ip]][1][itmp]], howmany = old_div(total_nima,2), sym_class = symmetry_class)[0]
 							#print  "  keepset  ",total_nima,len(keepset),itmp,keepset
 							otherset = set(range(total_nima)) - set(keepset)
 							otherset = [i for i in otherset]
@@ -955,7 +957,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 
 	vol = ref_vol
 	nx      = vol.get_xsize()
-	if last_ring < 0:	last_ring = int(nx/2) - 2
+	if last_ring < 0:	last_ring = int(old_div(nx,2)) - 2
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
@@ -1027,7 +1029,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	cny = nx//2 + 1
 	wr_four  = ringwe(numr, "F")
 	from math import pi, sin, cos
-	qv = pi/180.
+	qv = old_div(pi,180.)
 	volft, kb = prep_vol(ref_vol)
 	from utilities import get_params_proj
 	for im in range(nima):
@@ -1168,7 +1170,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 				for lhx in range(lhist):
 					msg = " %10.3f     %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
-				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
+				if (max(all_pixer) < 0.5) and (old_div(sum(all_pixer),total_nima) < 0.05):
 					terminate = 1
 			terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
 			#=========================================================================
@@ -1520,7 +1522,7 @@ def mirror_and_reduce_dsym(params, indexes, symmetry_class):
 	ns = len(params[0])
 
 	#  bbdb is 360.0/nsym and indicates position of the second symmetry
-	bbdb = 360.0/symmetry_class.nsym
+	bbdb = old_div(360.0,symmetry_class.nsym)
 	symphi = 360.0/symmetry_class.nsym*2
 	#  For each set we have four positions to consider: straight, straight psi mirrored, phi+bdb, phi+bdb and psi mirrored
 	for i in range(1,sc):
@@ -1590,7 +1592,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 	#print "Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"])
 	#[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	peaks = Util.multiref_polar_ali_2d_peaklist_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+sxi, cny+syi)
-	peaks_count = len(peaks) / 5
+	peaks_count = old_div(len(peaks), 5)
 	#pixel_error = 0.0
 	peak = 0.0
 	if( peaks_count > 0 ):
@@ -1610,7 +1612,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 			sxs    = params[i][3]
 			sys    = params[i][4]
 			#mirror = 0
-			peak   = params[i][0]/ws
+			peak   = old_div(params[i][0],ws)
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 			# What that means is that one has to change the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 			angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
@@ -1710,7 +1712,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 	tyrng[1] = max(0, min(ny-cny-ou, yrng))
 		
 	peaks = Util.shc_multipeaks(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx, cny, nsoft)
-	peaks_count = len(peaks) / 7
+	peaks_count = old_div(len(peaks), 7)
 	pixel_error = 0.0
 	number_of_checked_refs = 0
 	peak = 0.0
@@ -1769,10 +1771,10 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			#print i,phi,theta,psi
 			if i == 0:
 				data.set_attr("xform.projection", t2)
-				data.set_attr("weight", params[i][0]/ws)
+				data.set_attr("weight", old_div(params[i][0],ws))
 			else:
 				data.set_attr("xform.projection" + str(i), t2)
-				data.set_attr("weight" + str(i), params[i][0]/ws)
+				data.set_attr("weight" + str(i), old_div(params[i][0],ws))
 			from pixel_error import max_3D_pixel_error
 			pixel_error += max_3D_pixel_error(t1, t2, numr[-3])
 			#  preserve params, they might be needed if peaks_count<nsoft
@@ -1818,7 +1820,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				iq6 = 6*iq
 				tempref += (tempref+tempref)
 				refvecs = [None]*3*iq3
-				dphi = 360.0/int(sym[1:])
+				dphi = old_div(360.0,int(sym[1:]))
 				for i in range(iq):
 					phi   = tempref[i].get_attr("phi")
 					theta = tempref[i].get_attr("theta")
@@ -1897,10 +1899,10 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				#print i,phi,theta,psi
 				if i == 0:
 					data.set_attr("xform.projection", t2)
-					data.set_attr("weight", params[i][0]/ws)
+					data.set_attr("weight", old_div(params[i][0],ws))
 				else:
 					data.set_attr("xform.projection" + str(i), t2)
-					data.set_attr("weight" + str(i), params[i][0]/ws)
+					data.set_attr("weight" + str(i), old_div(params[i][0],ws))
 
 		if finfo:
 			t1 = data.get_attr("xform.projection")
@@ -1997,7 +1999,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 	if( type(ref_vol) is bytes ):  vol = get_im(ref_vol)
 	else:	vol = ref_vol
 	nx      = vol.get_xsize()
-	if last_ring < 0:	last_ring = int(nx/2) - 2
+	if last_ring < 0:	last_ring = int(old_div(nx,2)) - 2
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
@@ -2137,7 +2139,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 					msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
 				log.add("____________________________________________________")
-				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
+				if (max(all_pixer) < 0.5) and (old_div(sum(all_pixer),total_nima) < 0.05):
 					terminate = 1
 					log.add("...............")
 					log.add(">>>>>>>>>>>>>>>   Will terminate due to small pixel errors")
@@ -2270,13 +2272,13 @@ def do_volume(data, options, iter, mpi_comm):
 			nxm = mask3D.get_xsize()
 			if( nx != nxm):
 				from fundamentals import rot_shift3D
-				mask3D = Util.window(rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
+				mask3D = Util.window(rot_shift3D(mask3D,scale=old_div(float(nx),float(nxm))),nx,nx,nx)
 				nxm = mask3D.get_xsize()
 				assert(nx == nxm)
 
 		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
-		Util.mul_scalar(vol, 1.0/stat[1])
+		Util.mul_scalar(vol, old_div(1.0,stat[1]))
 		vol = threshold(vol)
 		#Util.mul_img(vol, mask3D)
 		if( options.pwreference ):
@@ -2286,7 +2288,7 @@ def do_volume(data, options, iter, mpi_comm):
 			fftip(vol)
 			ro = rops_table(vol)
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
-			for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
+			for i in range(1,len(ro)):  ro[i] = (old_div(rt[i],ro[i]))**0.5
 			if( type(options.fl) == list ):
 				vol = fft( filt_table( filt_table(vol, options.fl), ro) )
 			else:
@@ -2298,7 +2300,7 @@ def do_volume(data, options, iter, mpi_comm):
 				vol = filt_tanl(vol, options.fl, options.aa)
 		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
-		Util.mul_scalar(vol, 1.0/stat[1])
+		Util.mul_scalar(vol, old_div(1.0,stat[1]))
 		vol = threshold(vol)
 		vol = filt_btwl(vol, 0.38, 0.5)
 		Util.mul_img(vol, mask3D)

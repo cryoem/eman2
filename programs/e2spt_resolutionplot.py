@@ -30,6 +30,8 @@
 #
 #
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2_utils import *
 from EMAN2 import *
@@ -340,7 +342,7 @@ def fscaverager(options,curves,outname):
 	finalsum=[0]*len(arrays[0])
 	for a in arrays:
 		finalsum+=a
-	finalavg=finalsum/len(arrays)
+	finalavg=old_div(finalsum,len(arrays))
 
 	#outavgtxt=open('fscs_avg_' + tag + '.txt','w')
 	outavgtxt=open( options.path + '/' + outname,'w')
@@ -359,13 +361,13 @@ def fscaverager(options,curves,outname):
 def calcfsc(v1,v2,fscfilename,options):
 
 	fsc = v1.calc_fourier_shell_correlation(v2)
-	third = len(fsc)/3
+	third = old_div(len(fsc),3)
 	xaxis = fsc[0:third]
 	fsc = fsc[third:2*third]
 	apix=v1['apix_x']
 	if options.apix:
 		apix=options.apix
-	saxis = [x/apix for x in xaxis]
+	saxis = [old_div(x,apix) for x in xaxis]
 	Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:], fscfilename)
 
 	f=open(fscfilename,'r')
@@ -390,7 +392,7 @@ def symmetrize(vol,options):
 		t=xf.get_sym(sym,i)
 		dc.transform(t)
 		volsym.add(dc)
-	volsym.mult(1.0/nsym)
+	volsym.mult(old_div(1.0,nsym))
 	return(volsym)
 
 
@@ -403,7 +405,7 @@ def sigmoidfit(x,values):
 
 	def sigmoid(p,x):
 		x0,y0,c,k=p
-		y = c / (1 + np.exp(-k*(x-x0))) + y0
+		y = old_div(c, (1 + np.exp(-k*(x-x0)))) + y0
 		return y
 
 	def residuals(p,x,y):
@@ -414,7 +416,7 @@ def sigmoidfit(x,values):
 		if lower>upper:
 			lower,upper=upper,lower
 		arr -= arr.min()
-		arr *= (upper-lower)/arr.max()
+		arr *= old_div((upper-lower),arr.max())
 		arr += lower
 		return arr
 
@@ -468,12 +470,12 @@ def maxima(xaxis,yaxis,smooththresh):
 		#print 'currrent value is', val
 		#print 'and next is', yaxis[i+1]
 		#print "options.smooththresh is", smooththresh
-		if val < max(yaxis[i+1:]) and 1.0/xaxis[i+1] > smooththresh:
-			val = ( val+ max(yaxis[i+1:]) )/ 2.0
+		if val < max(yaxis[i+1:]) and old_div(1.0,xaxis[i+1]) > smooththresh:
+			val = old_div(( val+ max(yaxis[i+1:]) ), 2.0)
 			print('\nNew max smoothing value is', val)
 
-		if val > min(yaxis[i+1:]) and 1.0/xaxis[i+1] < smooththresh:
-			val = val/ 2.0
+		if val > min(yaxis[i+1:]) and old_div(1.0,xaxis[i+1]) < smooththresh:
+			val = old_div(val, 2.0)
 			print('\nNew min smoothing value is', val)
 
 		#print "Therfore final val is", val
@@ -570,7 +572,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 
 				if inverse:
 					if options.maxres:
-						if 1.0/inverse > options.maxres:
+						if old_div(1.0,inverse) > options.maxres:
 							newlines.append(line)
 						else:
 							pass
@@ -597,7 +599,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 
 			element = ''
 			if inverse:
-				element = '1/' + str(int( 1.0/inverse  ))
+				element = '1/' + str(int( old_div(1.0,inverse)  ))
 			else:
 				element='0'
 			#print "Therefore, turned into a number it is", element
@@ -612,7 +614,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 		nele=len(values)
 		print("\n\nnele is", nele)
 		import math
-		factorOfTicks = int(math.ceil(nele/10.0) + 1.0)
+		factorOfTicks = int(math.ceil(old_div(nele,10.0)) + 1.0)
 
 
 		kk=0
@@ -721,19 +723,19 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 
 			fsc0p5minpixel1 = fullinfo[difs0p5min1]
 			fsc0p5minpixel2 = fullinfo[difs0p5min2]
-			fsc0p5pixel = (fsc0p5minpixel1 + fsc0p5minpixel2)/2
+			fsc0p5pixel = old_div((fsc0p5minpixel1 + fsc0p5minpixel2),2)
 			fsc0p5freq1 = inversefreqs[fsc0p5minpixel1]
 			fsc0p5freq2 = inversefreqs[fsc0p5minpixel2]
 
 			fsc0p143minpixel1 = fullinfo[difs0p143min1]
 			fsc0p143minpixel2 = fullinfo[difs0p143min2]
-			fsc0p143pixel = (fsc0p5minpixel1 + fsc0p143minpixel2)/2
+			fsc0p143pixel = old_div((fsc0p5minpixel1 + fsc0p143minpixel2),2)
 			fsc0p143freq1 = inversefreqs[fsc0p143minpixel1]
 			fsc0p143freq2 = inversefreqs[fsc0p143minpixel2]
 
-			fsc0p5freqavg = (fsc0p5freq1 + fsc0p5freq2)/2.0
+			fsc0p5freqavg = old_div((fsc0p5freq1 + fsc0p5freq2),2.0)
 
-			fsc0p143freqavg = (fsc0p143freq1 + fsc0p143freq2)/2.0
+			fsc0p143freqavg = old_div((fsc0p143freq1 + fsc0p143freq2),2.0)
 
 			fsc0p5resolution1 = ''
 			fsc0p5resolution1label=''
@@ -742,14 +744,14 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 			fsc0p143resolution1label=''
 
 			if fsc0p5pixel and apix and boxsize:
-				fsc0p5resolution1 = (float(apix) * float(boxsize)) / float(fsc0p5pixel)
+				fsc0p5resolution1 = old_div((float(apix) * float(boxsize)), float(fsc0p5pixel))
 				fsc0p5resolution1label = "%.1f" % ( fsc0p5resolution1 )
 			else:
 				print("Method 1 for resolution calculation failed (there was a division by zero somewhere, or you forgot to provide --boxsize or --apix)")
 
 
 			if fsc0p143pixel and apix and boxsize:
-				fsc0p143resolution1 = (float(apix) * float(boxsize)) / float(fsc0p143pixel)
+				fsc0p143resolution1 = old_div((float(apix) * float(boxsize)), float(fsc0p143pixel))
 				fsc0p143resolution1label = "%.1f" % ( fsc0p143resolution1 )
 
 			elif not fsc0p5pixel:
@@ -759,7 +761,7 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 			fsc0p5resolution2label=''
 
 			if fsc0p5freqavg:
-				fsc0p5resolution2 = 1/fsc0p5freqavg
+				fsc0p5resolution2 = old_div(1,fsc0p5freqavg)
 				fsc0p5resolution2label = "%.1f" % ( fsc0p5resolution2 )
 			else:
 				print("Method 2 for resolution calculation failed (there was a division by zero somewhere)")
@@ -769,13 +771,13 @@ def fscplotter(fscs,options,apix=0.0,tag='',clearplot=False):
 			fsc0p143resolution2label=''
 
 			if fsc0p143freqavg:
-				fsc0p143resolution2 = 1/fsc0p143freqavg
+				fsc0p143resolution2 = old_div(1,fsc0p143freqavg)
 				fsc0p143resolution2label = "%.1f" % ( fsc0p143resolution2 )
 
 			elif not fsc0p5resolution2:
 				print("Method 2 for resolution calculation failed (there was a division by zero somewhere)")
 
-			if sum(values)/len(values) == 1.0:
+			if old_div(sum(values),len(values)) == 1.0:
 				print("The particles you are aligning are exactly the same; cannot compute a reasonable FSC curve for a particle with itself! (but I'll plot the straight line anyway).")
 			else:
 				print("FSC0.5 resolution calculations 1 and 2 are", fsc0p5resolution1, fsc0p5resolution2)

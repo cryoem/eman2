@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # Author: Michael Bell 09/2016
 
+from past.utils import old_div
 from builtins import range
 import os
 
@@ -177,7 +179,7 @@ def main():
 			sys.exit(1)
 		frames_hictrst = load_frames(fname,first,last,step)
 		write_frames(frames_hictrst,hcname)
-		middle = int(len(frames_hictrst)/2)
+		middle = int(old_div(len(frames_hictrst),2))
 
 		hictrst_avg = average_frames(frames_hictrst)
 		hictrst_avg.write_image("{}/hictrst_avg_noali.hdf".format(bdir))
@@ -305,7 +307,7 @@ def main():
 							else:
 								if not os.path.isfile("{}/{}".format(pdir,lfn)):
 									shutil.copy2(fn,"{}/{}".format(pdir,lfn))
-							times=run("{} {} -srs 1 -ssc 1 -atm 1 -fod {}".format(pkgs[pkg],lfn,int(round(nfs/4))),cwd=pdir,shell=True,clear=True)
+							times=run("{} {} -srs 1 -ssc 1 -atm 1 -fod {}".format(pkgs[pkg],lfn,int(round(old_div(nfs,4)))),cwd=pdir,shell=True,clear=True)
 							write_runtime(bdir,pkg,dev,times,options.threads)
 					for f in os.listdir(pdir):
 						if "hictrst_Log.txt" in f: hi = os.path.join(pdir,f)
@@ -525,7 +527,7 @@ def parse_unblur(fn,middle):
             elif "Pixel size (A):" in txt:
                 apix = float(txt.split()[-1])
     trans = -1*np.asarray([[x,y] for (x,y) in zip(lines[0],lines[1])]).astype(float)
-    xf = trans / apix
+    xf = old_div(trans, apix)
     return xf[middle]-xf
 
 def parse_lmbfgs(fn,middle):
@@ -986,8 +988,8 @@ def run(cmd,shell=False,cwd=None,exe="/bin/sh",clear=False):
 	return times
 
 def fit_defocus(img):
-	ds=1.0/(img["apix_x"]*img["nx"])
-	ns=min(int(floor(.25/ds)),img["ny"]/2)
+	ds=old_div(1.0,(img["apix_x"]*img["nx"]))
+	ns=min(int(floor(old_div(.25,ds))),old_div(img["ny"],2))
 	oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
 	oned=np.log10(oned)
 	oned-=min(oned)
@@ -1006,7 +1008,7 @@ def fit_defocus(img):
 		ctf.defocus=df
 		curve=np.array(ctf.compute_1d(ns*2,ds,Ctf.CtfType.CTF_AMP)[1:])
 		curve*=curve
-		zeros=[int(ctf.zero(i)/ds) for i in range(15)]
+		zeros=[int(old_div(ctf.zero(i),ds)) for i in range(15)]
 		zeros=[i for i in zeros if i<len(curve) and i>0]
 		onedbg,bg=bgsub(oned,zeros)
 		qual=curve.dot(onedbg)
@@ -1022,7 +1024,7 @@ def fit_defocus(img):
 	return oned, bgl[a], onedbg #np.asarray(curve)
 
 def bgsub(curve,zeros):
-	floc=min(zeros[0]/2,8)
+	floc=min(old_div(zeros[0],2),8)
 	itpx=[curve[:floc].argmin()]+list(zeros)+[len(curve)-1]
 	itpy=[min(curve[i-1:i+2]) for i in itpx]
 	itpy[0]=curve[:floc].min()

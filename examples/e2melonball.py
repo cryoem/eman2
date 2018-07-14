@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # Author: Jesus Galaz-Montoya 2014 (jgalaz@gmail.com); last update Nov/17
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -29,6 +30,7 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
+from past.utils import old_div
 from builtins import range
 from EMAN2_utils import *
 from EMAN2 import *
@@ -310,9 +312,9 @@ def getbasicmask(options):
 			'''
 			Center of maskfile
 			'''
-			maskcx = mask['nx']/2.0
-			maskcy = mask['ny']/2.0
-			maskcz = mask['nz']/2.0
+			maskcx = old_div(mask['nx'],2.0)
+			maskcy = old_div(mask['ny'],2.0)
+			maskcz = old_div(mask['nz'],2.0)
 			
 			'''
 			Clip to data's boxsize
@@ -456,7 +458,7 @@ def getcenters(options,symorientations):
 	origboxsize=hdr['nx']
 	print("\norigboxsize={}".format(origboxsize))
 
-	boxcenterv = Vec3f(origboxsize/2.0,origboxsize/2.0,origboxsize/2.0)
+	boxcenterv = Vec3f(old_div(origboxsize,2.0),old_div(origboxsize,2.0),old_div(origboxsize,2.0))
 	print("\nboxcenterv={}".format(boxcenterv))
 	
 	centersmap = EMData(origboxsize,origboxsize,origboxsize)

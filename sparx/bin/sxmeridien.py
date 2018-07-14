@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 #  09/09/2016
 #  
@@ -11,6 +12,7 @@ from __future__ import print_function
 #  04/10/2017 - Enabled for one node
 #  04/18/2017 - Introduce symclass to handle angles in a unified manner
 #  01/21/2018 - Rationalize the code, particularly restart
+from past.utils import old_div
 from builtins import range
 """
 There are four ways to run the program:
@@ -294,9 +296,9 @@ def AI( fff, anger, shifter, chout = False):
 				Tracker["xr"] = range
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
-				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
+				if( Tracker["delta"] <= old_div(3.75,2.0) ):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
-					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
+					if( Tracker["delta"] <= degrees(atan(old_div(0.25,Tracker["constants"]["radius"]))) ): Tracker["state"] = "FINAL"
 					else:	Tracker["state"] = "RESTRICTED"
 				else:
 					Tracker["an"] = -1
@@ -423,9 +425,9 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 				Tracker["xr"] = range
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
-				if( Tracker["delta"] <= 3.75/2.0 or True):  #  MOVE DOWN TO RESTRICTED
+				if( Tracker["delta"] <= old_div(3.75,2.0) or True):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
-					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
+					if( Tracker["delta"] <= degrees(atan(old_div(0.25,Tracker["constants"]["radius"]))) ): Tracker["state"] = "FINAL"
 					else:	Tracker["state"] = "RESTRICTED"
 				else:
 					Tracker["an"] = -1
@@ -463,7 +465,7 @@ def params_changes( params, oldparams ):
 		shifter += (params[i][3] - oldparams[i][3] )**2 + (params[i][4] - oldparams[i][4] )**2
 		anger += get_anger(params[i][0:3], oldparams[i][0:3])  # Symmetry is in Blockdata
 
-	return round(anger/n,5), round(sqrt(shifter/2/n),5)
+	return round(old_div(anger,n),5), round(sqrt(shifter/2/n),5)
 
 def compute_search_params(acc_trans, shifter, old_range):
 	# step refer to the fine sampled step; while the range remains
@@ -472,7 +474,7 @@ def compute_search_params(acc_trans, shifter, old_range):
 	range  = min( 1.3*old_range, 5.0*shifter)
 	range  = max(range, 3.0*step) # change 1.5 to 3.0
 	if range > 8.0*step :   range /= 2.0 # change 4 to 8
-	if range > 8.0*step :   step   = range/8.0 # change 4 to 8
+	if range > 8.0*step :   step   = old_div(range,8.0) # change 4 to 8
 	#  change 4. to 8. on account of the fact that we return actual shift which is then doubled for coarse search.
 	if(range == 0.0):  step = 0.5  # change 1.0 to 0.5
 	return range, step
@@ -852,20 +854,20 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		reduce_EMData_to_root(tocp, myid, Blockdata["main_node"], mpi_comm)
 		reduce_EMData_to_root(tavg, myid, Blockdata["main_node"], mpi_comm)
 		if( myid == Blockdata["main_node"]):
-			Util.mul_scalar(tavg, 1.0/float(sum(Tracker["nima_per_chunk"])))
+			Util.mul_scalar(tavg, old_div(1.0,float(sum(Tracker["nima_per_chunk"]))))
 			sig = Util.rotavg_fourier( tavg )
 			#for k in xrange(1,nv):  print("  BACKG  ",k,tsd.get_value_at(k,0)/tocp[0] ,sig[k],tsd.get_value_at(k,0)/tocp[0] - sig[k])
 			tmp1 = [0.0]*nv
 			tmp2 = [0.0]*nv
 			for i in range(ngroups):
 				for k in range(1,nv):
-					qt = tsd.get_value_at(k,i)/tocp[i] - sig[k]
-					if( qt > 0.0 ):	tmp1[k] = 2.0/qt
+					qt = old_div(tsd.get_value_at(k,i),tocp[i]) - sig[k]
+					if( qt > 0.0 ):	tmp1[k] = old_div(2.0,qt)
 				#  smooth
 				tmp1[0] = tmp1[1]
 				tmp1[-1] = tmp1[-2]
 				for ism in range(0):  #2
-					for k in range(1,nv-1):  tmp2[k] = (tmp1[k-1]+tmp1[k]+tmp1[k+1])/3.0
+					for k in range(1,nv-1):  tmp2[k] = old_div((tmp1[k-1]+tmp1[k]+tmp1[k+1]),3.0)
 					for k in range(1,nv-1):  tmp1[k] = tmp2[k]
 				"""
 				for k in xrange(6,nv):
@@ -975,7 +977,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 	#  Preprocess the data
 	mask2D  	= model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	nima 		= len(original_data)
-	shrinkage 	= nxinit/float(Tracker["constants"]["nnxo"])
+	shrinkage 	= old_div(nxinit,float(Tracker["constants"]["nnxo"]))
 
 
 	#  Note these are in Fortran notation for polar searches
@@ -991,7 +993,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 		for i in range(len(Blockdata["bckgnoise"])):
 			temp = [0.0]*nnx
 			for k in range(nnx):
-				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = old_div(1.0,sqrt(Blockdata["bckgnoise"][i].get_value_at(k)))
 			oneover.append(temp)
 		del temp
 
@@ -1058,7 +1060,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 
 		#  Apply varadj
 		if not nonorm:
-			Util.mul_scalar(data[im], Tracker["avgvaradj"][procid]/wnorm)
+			Util.mul_scalar(data[im], old_div(Tracker["avgvaradj"][procid],wnorm))
 			#print(Tracker["avgvaradj"][procid]/wnorm)		
 
 		#  FT
@@ -1069,7 +1071,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 		if Tracker["constants"]["CTF"] :
 			data[im] = fdecimate(data[im], nxinit*npad, nxinit*npad, 1, False, False)
 			ctf_params = original_data[im].get_attr("ctf")
-			ctf_params.apix = ctf_params.apix/shrinkage
+			ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 			data[im].set_attr('ctf', ctf_params)
 			#if Tracker["applyctf"] :  #  This should be always False
 			#	data[im] = filt_ctf(data[im], ctf_params, dopad=False)
@@ -1080,12 +1082,12 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 		else:
 			ctf_params = original_data[im].get_attr_default("ctf", False)
 			if  ctf_params:
-				ctf_params.apix = ctf_params.apix/shrinkage
+				ctf_params.apix = old_div(ctf_params.apix,shrinkage)
 				data[im].set_attr('ctf', ctf_params)
 				data[im].set_attr('ctf_applied', 0)
 			data[im] = fdecimate(data[im], nxinit*npad, nxinit*npad, 1, True, False)
 			apix = Tracker["constants"]["pixel_size"]
-			data[im].set_attr('apix', apix/shrinkage)
+			data[im].set_attr('apix', old_div(apix,shrinkage))
 
 		#  We have to make sure the shifts are within correct range, shrinkage or not
 		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
@@ -1114,7 +1116,7 @@ def get_anger(angle1, angle2):
 		axes_dis = 0.0
 		for i in range(3):
 			axes_dis += lacos(A1[i][0]*A2[i][0] + A1[i][1]*A2[i][1] + A1[i][2]*A2[i][2])
-		axes_dis_min = min(axes_dis_min, axes_dis/3.0)
+		axes_dis_min = min(axes_dis_min, old_div(axes_dis,3.0))
 	return axes_dis_min
 
 def checkstep(item, keepchecking):
@@ -1158,18 +1160,18 @@ def get_refangs_and_shifts():
 	elif(Tracker["delta"] == 0.46875):  refang = read_text_row("refang0p46875.txt")
 	"""
 
-	k = int(ceil(Tracker["xr"]/Tracker["ts"]))
+	k = int(ceil(old_div(Tracker["xr"],Tracker["ts"])))
 	radi = (Tracker["xr"]+Tracker["ts"])**2
 	rshifts = []
 	for ix in range(-k,k,1):
-		six = ix*Tracker["ts"] + Tracker["ts"]/2
+		six = ix*Tracker["ts"] + old_div(Tracker["ts"],2)
 		for iy in range(-k,k,1):
-			siy = iy*Tracker["ts"] + Tracker["ts"]/2
+			siy = iy*Tracker["ts"] + old_div(Tracker["ts"],2)
 			if(six*six+siy*siy <= radi):
 				rshifts.append( [six, siy] )
 
 	ts_coarse = 2*Tracker["ts"]
-	k = int(ceil(Tracker["xr"]/ts_coarse))
+	k = int(ceil(old_div(Tracker["xr"],ts_coarse)))
 	radi = Tracker["xr"]*Tracker["xr"]
 	coarse_shifts = []
 	for ix in range(-k,k+1,1):
@@ -1184,7 +1186,7 @@ def get_refangs_and_shifts():
 def get_coarse_shifts():
 	global Tracker, Blockdata
 
-	k = int(ceil(Tracker["xr"]/Tracker["ts"]))
+	k = int(ceil(old_div(Tracker["xr"],Tracker["ts"])))
 	radi = Tracker["xr"]*Tracker["xr"]
 
 	indc = []
@@ -1302,7 +1304,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 											upweighted = False, mpi_comm = mpi_comm, \
 											target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
 	"""
-	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	tvol, tweight, trol = recons3d_trl_struct_MPI(myid = myid, main_node = Blockdata["nodes"][procid], prjlist = data, \
 											paramstructure = newparams, refang = refang, rshifts_shrank = [[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts], \
 											delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
@@ -1639,7 +1641,7 @@ def calculate_2d_params_for_centering(kwargs):
 
 		original_images = EMData.read_images(command_line_provided_stack_filename, list(range(image_start,image_end)))
 		#  We assume the target radius will be 29, and xr = 1.  
-		shrink_ratio = float(target_radius)/float(radi)
+		shrink_ratio = old_div(float(target_radius),float(radi))
 
 		for im in range(len(original_images)):
 			if(shrink_ratio != 1.0):
@@ -1650,11 +1652,11 @@ def calculate_2d_params_for_centering(kwargs):
 
 		txrm = (nx - 2*(target_radius+1))//2
 		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, Blockdata["myid"])
-		if(txrm/nxrsteps>0):
+		if(old_div(txrm,nxrsteps)>0):
 			tss = ""
 			txr = ""
-			while(txrm/nxrsteps>0):
-				tts=txrm/nxrsteps
+			while(old_div(txrm,nxrsteps)>0):
+				tts=old_div(txrm,nxrsteps)
 				tss += "  %d"%tts
 				txr += "  %d"%(tts*nxrsteps)
 				txrm =txrm//2
@@ -1811,7 +1813,7 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 	#   params.sort(key=itemgetter(2))
 	at = time()
 	if(Blockdata["myid"] == 0):  print("  ENTERING Xali buffered exhaustive CCC  ")
-	npsi = int(360./Tracker["delta"])
+	npsi = int(old_div(360.,Tracker["delta"]))
 	nang = len(refang)
 	ndat = len(data)
 
@@ -1930,8 +1932,8 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 	newpar = [[i, [1.0], [[-1,-1.0e23]] ] for i in range(ndat)]
 
 	for i in range(nang):
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,nang/5)) == 0) and (i>0)):
-			print( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(nang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,old_div(nang,5))) == 0) and (i>0)):
+			print( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(nang)*100.) + "%" +"   %10.1fmin"%(old_div((time()-at),60.)))
 
 		if(i%Blockdata["no_of_processes_per_group"] == 0 ):  #  Time to fill up the buffer
 			for itemp in range(i, min(i+Blockdata["no_of_processes_per_group"], nang)):
@@ -1944,7 +1946,7 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 						temp.set_attr("is_complex",0)
 						Util.mulclreal(temp, mask)
 						nrmref = sqrt(Util.innerproduct(temp, temp, None))
-						Util.mul_scalar(temp, 1.0/nrmref)
+						Util.mul_scalar(temp, old_div(1.0,nrmref))
 						bigbuffer.insert_clip(temp,(0,0,(itemp-i)*npsi+j))
 	
 			mpi_barrier(Blockdata["shared_comm"])
@@ -2019,21 +2021,21 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered exhaustive CCC")
 		write_text_row(coarse_angles,"coarse_angles.txt")
 
-	npsi = int(360./Tracker["delta"])
+	npsi = int(old_div(360.,Tracker["delta"]))
 	nang = len(refang)
 	ndat = len(data)
 
 	#  FINE SEARCH CONSTANTS
 	#  Fine grids are shifted by half-fine_step
 	nang = len(refang)
-	npsi = int(360./Tracker["delta"])
+	npsi = int(old_div(360.,Tracker["delta"]))
 	nshifts = len(shifts)
 	n_fine_shifts = 4
 
 	#  COARSE SEARCH CONSTANTS
 	n_coarse_ang = len(coarse_angles)
 	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_psi = int(old_div(360.,coarse_delta))
 	n_coarse_shifts = len(coarse_shifts)
 
 	#  each data holds two lists: n_coarse_shifts of coarse shifted versions and then nhifts versions of Fine shifted images
@@ -2127,7 +2129,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	#lenbigbuf = min(Blockdata["no_of_processes_per_group"],n_coarse_ang)*n_coarse_psi
 	lenbigbuf = nang*npsi
 	orgsize = lenbigbuf*size_of_one_image #  This is number of projections to be computed simultaneously times their size
-	if( Blockdata["myid"] == 0 ):  print("  BIGBUFFER  ",float(orgsize)/1.e9,"GB")
+	if( Blockdata["myid"] == 0 ):  print("  BIGBUFFER  ",old_div(float(orgsize),1.e9),"GB")
 	if( Blockdata["myid_on_node"] == 0 ): size = orgsize
 	else:  size = 0
 
@@ -2154,8 +2156,8 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	newpar = [[i, [1.0], [[-1,-1.0e23]] ] for i in range(ndat)]
 
 	for i in range(n_coarse_ang):
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,n_coarse_ang/5)) == 0) and (i>0)):
-			print( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(n_coarse_ang)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (i%(max(1,old_div(n_coarse_ang,5))) == 0) and (i>0)):
+			print( "  Angle :%7d   %5d  %5.1f"%(i,ndat,float(i)/float(n_coarse_ang)*100.) + "%" +"   %10.1fmin"%(old_div((time()-at),60.)))
 
 		if(i%Blockdata["no_of_processes_per_group"] == 0 ):  #  Time to fill up the buffer
 			for itemp in range(i, min(i+Blockdata["no_of_processes_per_group"], n_coarse_ang)):
@@ -2168,7 +2170,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 						temp.set_attr("is_complex",0)
 						Util.mulclreal(temp, mask)
 						nrmref = sqrt(Util.innerproduct(temp, temp, None))
-						Util.mul_scalar(temp, 1.0/nrmref)
+						Util.mul_scalar(temp, old_div(1.0,nrmref))
 						bigbuffer.insert_clip(temp,(0,0,(itemp-i)*npsi+j))
 
 			mpi_barrier(Blockdata["shared_comm"])
@@ -2195,7 +2197,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 
 	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
 	###if Blockdata["myid"] == Blockdata["main_node"]:  print "  Finished :",time()-at
-	if Blockdata["myid"] == Blockdata["main_node"]:   print("  COARSE SEARCHES DONE  ","   %10.1fmin"%((time()-at)/60.))
+	if Blockdata["myid"] == Blockdata["main_node"]:   print("  COARSE SEARCHES DONE  ","   %10.1fmin"%(old_div((time()-at),60.)))
 	at = time()
 	for itemp in range(0, min(Blockdata["no_of_processes_per_group"], nang)):
 		if( itemp == Blockdata["myid_on_node"]):
@@ -2205,11 +2207,11 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 				temp.set_attr("is_complex",0)
 				Util.mulclreal(temp, mask)
 				nrmref = sqrt(Util.innerproduct(temp, temp, None))
-				Util.mul_scalar(temp, 1.0/nrmref)
+				Util.mul_scalar(temp, old_div(1.0,nrmref))
 				bigbuffer.insert_clip(temp,(0,0,itemp*npsi+j))
 
 	mpi_barrier(Blockdata["shared_comm"])
-	if( Blockdata["myid"] == Blockdata["main_node"] ):   print("  REFPROJ DONE  ","   %10.1fmin"%((time()-at)/60.))
+	if( Blockdata["myid"] == Blockdata["main_node"] ):   print("  REFPROJ DONE  ","   %10.1fmin"%(old_div((time()-at),60.)))
 	at = time()
 
 	opar = []
@@ -2219,8 +2221,8 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 
 	for kl,emimage in enumerate(data):
 		hashparams = newpar[kl][2][0][0]
-		ipsiandiang	= hashparams/1000
-		oldiang = ipsiandiang/100000
+		ipsiandiang	= old_div(hashparams,1000)
+		oldiang = old_div(ipsiandiang,100000)
 		ipsi = ipsiandiang%100000
 		ishift = hashparams%1000
 		tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
@@ -2229,7 +2231,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 		for i2 in range(4):
 			iang = ltabang[0][i2]
 			for i3 in range(2):  # psi
-				itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+				itpsi = int(old_div((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0),Tracker["delta"]))
 				itpsi = (itpsi + i3)%npsi
 				pointer_location = base_ptr + (iang*n_coarse_psi + itpsi)*size_of_one_image*disp_unit
 				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
@@ -2251,7 +2253,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	del emnumpy1, emnumpy2, emnumpy3
 
 	mpi_barrier(Blockdata["shared_comm"])
-	if Blockdata["myid"] == Blockdata["main_node"]:   print("  FINE SEARCH DONE  ","   %10.1fmin"%((time()-at)/60.))
+	if Blockdata["myid"] == Blockdata["main_node"]:   print("  FINE SEARCH DONE  ","   %10.1fmin"%(old_div((time()-at),60.)))
 
 	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -2296,8 +2298,8 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 
 
 	at = time()
-	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
-	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxpolar"]),float(Tracker["constants"]["nnxo"]))
+	shrink = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
@@ -2308,7 +2310,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	#  FINE SEARCH CONSTANTS
 	#  Fine grids are shifted by half-fine_step
 	nang = len(refang)
-	npsi = int(360./Tracker["delta"])
+	npsi = int(old_div(360.,Tracker["delta"]))
 	nshifts = len(shifts)
 	n_fine_shifts = 4
 
@@ -2321,7 +2323,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	#  COARSE SEARCH CONSTANTS
 	n_coarse_ang = len(coarse_angles)
 	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_psi = int(old_div(360.,coarse_delta))
 	n_coarse_shifts = len(coarse_shifts)
 
 	coarse_shifts_shrank = [None]*n_coarse_shifts
@@ -2489,7 +2491,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 
 	mpi_barrier(Blockdata["shared_comm"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
+		print( "  Reference projections generated : %10.1fmin"%(old_div((time()-at),60.)))
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		print( "  " )
@@ -2590,7 +2592,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		"""
 		if Tracker["constants"]["CTF"] :
 			ctf_params = dataimage.get_attr("ctf")
-			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+			ctf_params.apix = old_div(ctf_params.apix,(old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))))
 			ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
 			ctfs = ctfa
 		dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
@@ -2606,12 +2608,12 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 		dataimage = fpol(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
-			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,old_div(nima,5))) == 0) and (im>0)):
+			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%(old_div((time()-at),60.)))
 
 		if( im < min(nima, 1) and procid == 0):
 			#   Search all and compare with direct to figure what keepfirst might be
-			keepfirst = (n_coarse_ang *  n_coarse_psi)/10#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
+			keepfirst = old_div((n_coarse_ang *  n_coarse_psi),10)#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
 
 			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
 					coarse_shifts_shrank,\
@@ -2624,25 +2626,25 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			for iln in range(keepfirst):
 				m = xod2[iln]
 				j = m%n_coarse_psi
-				ic = (m/n_coarse_psi)%n_coarse_ang
-				ib  = m/(n_coarse_ang*n_coarse_psi)
+				ic = (old_div(m,n_coarse_psi))%n_coarse_ang
+				ib  = old_div(m,(n_coarse_ang*n_coarse_psi))
 				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
 			# DO NOT order by angular directions to save time on reprojections.
 			pre_ipsiandiang = -1
 			for iln in range(keepfirst):
 				hashparams	= int(xod2[iln])
 				ishift		= hashparams%1000
-				ipsiandiang	= hashparams/1000
+				ipsiandiang	= old_div(hashparams,1000)
 				if(ipsiandiang != pre_ipsiandiang):
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
-					iang = ipsiandiang/100000
+					iang = old_div(ipsiandiang,100000)
 					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 					nrmref = sqrt(Util.innerproduct(temp, temp, None))
 					#Util.mul_scalar(temp, 1.0/nrmref)
 
-				xod1[iln] = Util.innerproduct(data[ishift], temp, None)/nrmref  # peak
+				xod1[iln] = old_div(Util.innerproduct(data[ishift], temp, None),nrmref)  # peak
 				##xod2[iln] = hashparams
 
 			z = np.max(xod1)
@@ -2690,26 +2692,26 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			for iln in range(Tracker["keepfirst"]):
 				m = xod2[iln]
 				j = m%n_coarse_psi
-				ic = (m/n_coarse_psi)%n_coarse_ang
-				ib  = m/(n_coarse_ang*n_coarse_psi)
+				ic = (old_div(m,n_coarse_psi))%n_coarse_ang
+				ib  = old_div(m,(n_coarse_ang*n_coarse_psi))
 				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
 			# order by angular directions to save time on reprojections.
-			ipsiandiang = xod2/1000
+			ipsiandiang = old_div(xod2,1000)
 			lina = np.argsort(ipsiandiang)
 			xod2 = xod2[lina]  # order does not matter
 			pre_ipsiandiang = -1
 			for iln in range(Tracker["keepfirst"]):
 				hashparams	= int(xod2[iln])
 				ishift		= hashparams%1000
-				ipsiandiang	= hashparams/1000
+				ipsiandiang	= old_div(hashparams,1000)
 				if(ipsiandiang != pre_ipsiandiang):
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
-					iang = ipsiandiang/100000
+					iang = old_div(ipsiandiang,100000)
 					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 					nrmref = sqrt(Util.innerproduct(temp, temp, None))
-				peak = Util.innerproduct(data[ishift], temp, None)/nrmref
+				peak = old_div(Util.innerproduct(data[ishift], temp, None),nrmref)
 				xod1[iln] = peak
 				##xod2[iln] = hashparams
 
@@ -2743,9 +2745,9 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		for iln in range(lit):
 			hashparams = int(xod2[iln])
 			ishift = hashparams%1000
-			ipsiandiang	= hashparams/1000
+			ipsiandiang	= old_div(hashparams,1000)
 			#ipsi = ipsiandiang%100000
-			iang = ipsiandiang/100000
+			iang = old_div(ipsiandiang,100000)
 			firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 			firstshifts[iln] = ishift
 		###del xod2
@@ -2771,15 +2773,15 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#lol = 0
 		for i1 in range(lit):
 			hashparams = int(xod2[i1])
-			ipsiandiang	= hashparams/1000
-			oldiang = ipsiandiang/100000
+			ipsiandiang	= old_div(hashparams,1000)
+			oldiang = old_div(ipsiandiang,100000)
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 			for i2 in range(4):
 				iang = ltabang[i1][i2]
 				for i3 in range(2):  # psi
-					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+					itpsi = int(old_div((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0),Tracker["delta"]))
 					itpsi = (itpsi + i3)%npsi
 					for i4 in range(len(tshifts)):
 						cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
@@ -2788,7 +2790,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 
 		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
 		cod2 = list(set(cod2))
-		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+		cod1 = [[old_div(q,1000),i] for i,q in enumerate(cod2)]
 		cod1.sort()
 
 		lit = len(cod1)
@@ -2811,16 +2813,16 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		prevdir = -1
 		while(iln<lit):
 			hashparams = cod2[iln]
-			ipsiandiang	= hashparams/1000
+			ipsiandiang	= old_div(hashparams,1000)
 			if(ipsiandiang != prevdir):
 				prevdir = ipsiandiang
 				ipsi = ipsiandiang%100000
-				iang = ipsiandiang/100000
+				iang = old_div(ipsiandiang,100000)
 				temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 				temp.set_attr("is_complex",0)
 				nrmref = sqrt(Util.innerproduct(temp, temp, None))
 				johi += 1
-			while( ipsiandiang == cod2[iln]/1000 ):
+			while( ipsiandiang == old_div(cod2[iln],1000) ):
 				hashparams = cod2[iln]
 				ishift = hashparams%1000
 				if( data[ishift] == None ):
@@ -2829,7 +2831,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 					data[ishift] = fshift(dataml, xx, yy)
 					data[ishift].set_attr("is_complex",0)
 
-				cod1[iln] = Util.innerproduct(data[ishift], temp, None)/nrmref
+				cod1[iln] = old_div(Util.innerproduct(data[ishift], temp, None),nrmref)
 				iln += 1
 				if(iln == lit  ):  break
 
@@ -2867,7 +2869,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		###exit()
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		print( "  Finished projection matching   %10.1fmin"%(old_div((time()-at),60.)))
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
 	###mpi_barrier(MPI_COMM_WORLD)
@@ -2976,8 +2978,8 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 
 	at = time()
-	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
-	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxpolar"]),float(Tracker["constants"]["nnxo"]))
+	shrink = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
@@ -2988,7 +2990,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	#  FINE SEARCH CONSTANTS
 	#  Fine grids are shifted by half-fine_step
 	nang = len(refang)
-	npsi = int(360./Tracker["delta"])
+	npsi = int(old_div(360.,Tracker["delta"]))
 	nshifts = len(shifts)
 	n_fine_shifts = 4
 
@@ -3001,7 +3003,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	#  COARSE SEARCH CONSTANTS
 	n_coarse_ang = len(coarse_angles)
 	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_psi = int(old_div(360.,coarse_delta))
 	n_coarse_shifts = len(coarse_shifts)
 
 	coarse_shifts_shrank = [None]*n_coarse_shifts
@@ -3009,8 +3011,8 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
 
 	ny = Tracker["nxinit"]
-	nyp2 = ny/2
-	nxth = (Tracker["nxinit"]+2)/2
+	nyp2 = old_div(ny,2)
+	nxth = old_div((Tracker["nxinit"]+2),2)
 	indx = model_blank(nxth, Tracker["nxinit"], 1, -1)
 	tfrac = model_blank(nxth, Tracker["nxinit"])
 	tcount = model_blank(nxth)
@@ -3191,7 +3193,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 	mpi_barrier(Blockdata["shared_comm"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
+		print( "  Reference projections generated : %10.1fmin"%(old_div((time()-at),60.)))
 
 	###mpi_finalize()
 	###exit()
@@ -3218,7 +3220,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		for i in range(nyb):
 			temp = [0.0]*nxb
 			for k in range(nxb):
-				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = old_div(1.0,sqrt(Blockdata["bckgnoise"][i].get_value_at(k)))
 			oneover.append(temp)
 		del temp
 
@@ -3283,7 +3285,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 		#  Apply varadj
 		if not nonorm:
-			Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
+			Util.mul_scalar(dataimage, old_div(Tracker["avgvaradj"][procid],wnorm))
 
 		###  FT
 		dataimage = fft(dataimage)
@@ -3302,7 +3304,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 		if Tracker["constants"]["CTF"] :
 			ctf_params = dataimage.get_attr("ctf")
-			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+			ctf_params.apix = old_div(ctf_params.apix,(old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))))
 			ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
 			ctfs = ctfa
 		dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
@@ -3317,12 +3319,12 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		#  This will get it to real space
 		dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
-			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,old_div(nima,5))) == 0) and (im>0)):
+			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%(old_div((time()-at),60.)))
 
 		if( im < min(nima, 1) and procid == 0):
 			#   Search all and compare with direct to figure what keepfirst might be
-			keepfirst = (n_coarse_ang *  n_coarse_psi)/10#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
+			keepfirst = old_div((n_coarse_ang *  n_coarse_psi),10)#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
 
 			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
 					coarse_shifts_shrank,\
@@ -3335,19 +3337,19 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			for iln in range(keepfirst):
 				m = xod2[iln]
 				j = m%n_coarse_psi
-				ic = (m/n_coarse_psi)%n_coarse_ang
-				ib  = m/(n_coarse_ang*n_coarse_psi)
+				ic = (old_div(m,n_coarse_psi))%n_coarse_ang
+				ib  = old_div(m,(n_coarse_ang*n_coarse_psi))
 				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
 			# DO NOT order by angular directions to save time on reprojections.
 			pre_ipsiandiang = -1
 			for iln in range(keepfirst):
 				hashparams	= int(xod2[iln])
 				ishift		= hashparams%1000
-				ipsiandiang	= hashparams/1000
+				ipsiandiang	= old_div(hashparams,1000)
 				if(ipsiandiang != pre_ipsiandiang):
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
-					iang = ipsiandiang/100000
+					iang = old_div(ipsiandiang,100000)
 					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 				xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)  # peak
@@ -3400,22 +3402,22 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			for iln in range(Tracker["keepfirst"]):
 				m = xod2[iln]
 				j = m%n_coarse_psi
-				ic = (m/n_coarse_psi)%n_coarse_ang
-				ib  = m/(n_coarse_ang*n_coarse_psi)
+				ic = (old_div(m,n_coarse_psi))%n_coarse_ang
+				ib  = old_div(m,(n_coarse_ang*n_coarse_psi))
 				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
 			# order by angular directions to save time on reprojections.
-			ipsiandiang = xod2/1000
+			ipsiandiang = old_div(xod2,1000)
 			lina = np.argsort(ipsiandiang)
 			xod2 = xod2[lina]  # order does not matter
 			pre_ipsiandiang = -1
 			for iln in range(Tracker["keepfirst"]):
 				hashparams	= int(xod2[iln])
 				ishift		= hashparams%1000
-				ipsiandiang	= hashparams/1000
+				ipsiandiang	= old_div(hashparams,1000)
 				if(ipsiandiang != pre_ipsiandiang):
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
-					iang = ipsiandiang/100000
+					iang = old_div(ipsiandiang,100000)
 					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 				peak = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
@@ -3451,9 +3453,9 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		for iln in range(lit):
 			hashparams = int(xod2[iln])
 			ishift = hashparams%1000
-			ipsiandiang	= hashparams/1000
+			ipsiandiang	= old_div(hashparams,1000)
 			#ipsi = ipsiandiang%100000
-			iang = ipsiandiang/100000
+			iang = old_div(ipsiandiang,100000)
 			firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 			firstshifts[iln] = ishift
 
@@ -3473,15 +3475,15 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		cod2 = []
 		for i1 in range(lit):
 			hashparams = int(xod2[i1])
-			ipsiandiang	= hashparams/1000
-			oldiang = ipsiandiang/100000
+			ipsiandiang	= old_div(hashparams,1000)
+			oldiang = old_div(ipsiandiang,100000)
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 			for i2 in range(4):
 				iang = ltabang[i1][i2]
 				for i3 in range(2):  # psi
-					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+					itpsi = int(old_div((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0),Tracker["delta"]))
 					itpsi = (itpsi + i3)%npsi
 					for i4 in range(len(tshifts)):
 						cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
@@ -3490,7 +3492,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
 		cod2 = list(set(cod2))
-		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+		cod1 = [[old_div(q,1000),i] for i,q in enumerate(cod2)]
 		cod1.sort()
 
 		lit = len(cod1)
@@ -3514,15 +3516,15 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		prevdir = -1
 		while(iln<lit):
 			hashparams = cod2[iln]
-			ipsiandiang	= hashparams/1000
+			ipsiandiang	= old_div(hashparams,1000)
 			if(ipsiandiang != prevdir):
 				prevdir = ipsiandiang
 				ipsi = ipsiandiang%100000
-				iang = ipsiandiang/100000
+				iang = old_div(ipsiandiang,100000)
 				temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 				temp.set_attr("is_complex",0)
 				johi += 1
-			while( ipsiandiang == cod2[iln]/1000 ):
+			while( ipsiandiang == old_div(cod2[iln],1000) ):
 				hashparams = cod2[iln]
 				ishift = hashparams%1000
 				if( data[ishift] == None ):
@@ -3585,7 +3587,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		###exit()
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		print( "  Finished projection matching   %10.1fmin"%(old_div((time()-at),60.)))
 	at = time()
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
@@ -3604,7 +3606,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	#  Compute avgvaradj
 	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
+		Tracker["avgvaradj"][procid] = old_div(float(Tracker["avgvaradj"][procid]),Tracker["nima_per_chunk"][procid])
 	else:  Tracker["avgvaradj"][procid] = 0.0
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -3629,8 +3631,8 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
 	if( Blockdata["myid"] == 0 ):
 		from math import sqrt
-		sava = float(sava)/snum
-		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
+		sava = old_div(float(sava),snum)
+		svar = sqrt(max(0.0,old_div((float(svar) - snum*sava**2),(snum -1))))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
@@ -3671,7 +3673,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		del Blockdata["newbckgnoise"]
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished sigma2   %10.1fmin"%((time()-at)/60.))
+		print( "  Finished sigma2   %10.1fmin"%(old_div((time()-at),60.)))
 	return newpar, norm_per_particle
 
 def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
@@ -3710,8 +3712,8 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 
 
 	at = time()
-	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
-	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxpolar"]),float(Tracker["constants"]["nnxo"]))
+	shrink = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
@@ -3722,7 +3724,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	#  FINE SEARCH CONSTANTS
 	#  Fine grids are shifted by half-fine_step
 	nang = len(refang)
-	npsi = int(360./Tracker["delta"])
+	npsi = int(old_div(360.,Tracker["delta"]))
 	nshifts = len(shifts)
 	n_fine_shifts = 4
 
@@ -3735,7 +3737,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	#  COARSE SEARCH CONSTANTS
 	n_coarse_ang = len(coarse_angles)
 	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_psi = int(old_div(360.,coarse_delta))
 	n_coarse_shifts = len(coarse_shifts)
 
 	coarse_shifts_shrank = [None]*n_coarse_shifts
@@ -3903,7 +3905,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 
 	mpi_barrier(Blockdata["shared_comm"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		print( "  Reference projections generated : %10.1fmin"%((time()-at)/60.))
+		print( "  Reference projections generated : %10.1fmin"%(old_div((time()-at),60.)))
 	
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		print( "  " )
@@ -3924,7 +3926,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		for i in range(len(Blockdata["bckgnoise"])):
 			temp = [0.0]*nnx
 			for k in range(nnx):
-				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = old_div(1.0,sqrt(Blockdata["bckgnoise"][i].get_value_at(k)))
 			oneover.append(temp)
 		del temp
 
@@ -3987,7 +3989,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 
 		#  Apply varadj
 		if not nonorm:
-			Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
+			Util.mul_scalar(dataimage, old_div(Tracker["avgvaradj"][procid],wnorm))
 
 		###  FT
 		dataimage = fft(dataimage)
@@ -4006,7 +4008,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 
 		if Tracker["constants"]["CTF"] :
 			ctf_params = dataimage.get_attr("ctf")
-			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+			ctf_params.apix = old_div(ctf_params.apix,(old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))))
 			ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
 			ctfs = ctfa
 		dataml = fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
@@ -4021,12 +4023,12 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		#  This will get it to real space
 		dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 
-		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
-			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,old_div(nima,5))) == 0) and (im>0)):
+			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%(old_div((time()-at),60.)))
 
 		if( im < min(nima, 1) and procid == 0):
 			#   Search all and compare with direct to figure what keepfirst might be
-			keepfirst = (n_coarse_ang *  n_coarse_psi)/10#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
+			keepfirst = old_div((n_coarse_ang *  n_coarse_psi),10)#keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
 
 			xod2 = np.asarray(Util.multiref_Crosrng_msg_stack_stepsi(dataimage, bigbuffer, \
 					coarse_shifts_shrank,\
@@ -4039,19 +4041,19 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			for iln in range(keepfirst):
 				m = xod2[iln]
 				j = m%n_coarse_psi
-				ic = (m/n_coarse_psi)%n_coarse_ang
-				ib  = m/(n_coarse_ang*n_coarse_psi)
+				ic = (old_div(m,n_coarse_psi))%n_coarse_ang
+				ib  = old_div(m,(n_coarse_ang*n_coarse_psi))
 				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
 			# DO NOT order by angular directions to save time on reprojections.
 			pre_ipsiandiang = -1
 			for iln in range(keepfirst):
 				hashparams	= int(xod2[iln])
 				ishift		= hashparams%1000
-				ipsiandiang	= hashparams/1000
+				ipsiandiang	= old_div(hashparams,1000)
 				if(ipsiandiang != pre_ipsiandiang):
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
-					iang = ipsiandiang/100000
+					iang = old_div(ipsiandiang,100000)
 					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 				xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)  # peak
@@ -4105,22 +4107,22 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			for iln in range(Tracker["keepfirst"]):
 				m = xod2[iln]
 				j = m%n_coarse_psi
-				ic = (m/n_coarse_psi)%n_coarse_ang
-				ib  = m/(n_coarse_ang*n_coarse_psi)
+				ic = (old_div(m,n_coarse_psi))%n_coarse_ang
+				ib  = old_div(m,(n_coarse_ang*n_coarse_psi))
 				xod2[iln] = j*1000 + ic*100000000 + ib #hashparams
 			# order by angular directions to save time on reprojections.
-			ipsiandiang = xod2/1000
+			ipsiandiang = old_div(xod2,1000)
 			lina = np.argsort(ipsiandiang)
 			xod2 = xod2[lina]  # order does not matter
 			pre_ipsiandiang = -1
 			for iln in range(Tracker["keepfirst"]):
 				hashparams	= int(xod2[iln])
 				ishift		= hashparams%1000
-				ipsiandiang	= hashparams/1000
+				ipsiandiang	= old_div(hashparams,1000)
 				if(ipsiandiang != pre_ipsiandiang):
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
-					iang = ipsiandiang/100000
+					iang = old_div(ipsiandiang,100000)
 					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 				peak = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
@@ -4156,9 +4158,9 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		for iln in range(lit):
 			hashparams = int(xod2[iln])
 			ishift = hashparams%1000
-			ipsiandiang	= hashparams/1000
+			ipsiandiang	= old_div(hashparams,1000)
 			#ipsi = ipsiandiang%100000
-			iang = ipsiandiang/100000
+			iang = old_div(ipsiandiang,100000)
 			firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 			firstshifts[iln] = ishift
 		###del xod2
@@ -4184,15 +4186,15 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		#lol = 0
 		for i1 in range(lit):
 			hashparams = int(xod2[i1])
-			ipsiandiang	= hashparams/1000
-			oldiang = ipsiandiang/100000
+			ipsiandiang	= old_div(hashparams,1000)
+			oldiang = old_div(ipsiandiang,100000)
 			ipsi = ipsiandiang%100000
 			ishift = hashparams%1000
 			tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
 			for i2 in range(4):
 				iang = ltabang[i1][i2]
 				for i3 in range(2):  # psi
-					itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+					itpsi = int(old_div((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0),Tracker["delta"]))
 					itpsi = (itpsi + i3)%npsi
 					for i4 in range(len(tshifts)):
 						cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
@@ -4202,7 +4204,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 
 		#if( Blockdata["myid"] == Blockdata["main_node"]): print("  THIRD1   ",len(cod2),cod2)
 		cod2 = list(set(cod2))
-		cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+		cod1 = [[old_div(q,1000),i] for i,q in enumerate(cod2)]
 		cod1.sort()
 
 		lit = len(cod1)
@@ -4225,15 +4227,15 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		prevdir = -1
 		while(iln<lit):
 			hashparams = cod2[iln]
-			ipsiandiang	= hashparams/1000
+			ipsiandiang	= old_div(hashparams,1000)
 			if(ipsiandiang != prevdir):
 				prevdir = ipsiandiang
 				ipsi = ipsiandiang%100000
-				iang = ipsiandiang/100000
+				iang = old_div(ipsiandiang,100000)
 				temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 				temp.set_attr("is_complex",0)
 				johi += 1
-			while( ipsiandiang == cod2[iln]/1000 ):
+			while( ipsiandiang == old_div(cod2[iln],1000) ):
 				hashparams = cod2[iln]
 				ishift = hashparams%1000
 				if( data[ishift] == None ):
@@ -4282,7 +4284,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		###exit()
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		print( "  Finished projection matching   %10.1fmin"%(old_div((time()-at),60.)))
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
 	###mpi_barrier(MPI_COMM_WORLD)
@@ -4300,7 +4302,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	#  Compute avgvaradj
 	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
+		Tracker["avgvaradj"][procid] = old_div(float(Tracker["avgvaradj"][procid]),Tracker["nima_per_chunk"][procid])
 	else:  Tracker["avgvaradj"][procid] = 0.0
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -4325,8 +4327,8 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
 	if( Blockdata["myid"] == 0 ):
 		from math import sqrt
-		sava = float(sava)/snum
-		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
+		sava = old_div(float(sava),snum)
+		svar = sqrt(max(0.0,old_div((float(svar) - snum*sava**2),(snum -1))))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
@@ -4352,7 +4354,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		#write_text_row([[newpar[0][2][j][0],newpar[0][2][j][1]] for j in xrange(len(newpar[0][2]))],os.path.join(Tracker["directory"], "polar%1d.txt"%procid))
-		print( "  Statistics finished : %10.1fmin"%((time()-at)/60.))
+		print( "  Statistics finished : %10.1fmin"%(old_div((time()-at),60.)))
 	return newpar, norm_per_particle
 
 # MODIFIED FROM TRUE POLAR  12/06/2017  PAP
@@ -4394,8 +4396,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered primary local polar")
 
 	at = time()
-	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
-	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxpolar"]),float(Tracker["constants"]["nnxo"]))
+	shrink = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
@@ -4406,7 +4408,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  FINE SEARCH CONSTANTS
 	nang = len(refang)
 	ac_fine = cos(radians(Tracker["an"]))
-	npsi = int(360./Tracker["delta"])
+	npsi = int(old_div(360.,Tracker["delta"]))
 	mpsi = 2
 	c_fine_psi = mpsi//2
 	nshifts = len(shifts)
@@ -4421,9 +4423,9 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  COARSE SEARCH CONSTANTS
 	n_coarse_ang = len(coarse_angles)
 	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_psi = int(old_div(360.,coarse_delta))
 	###m_coarse_psi = int((2*2*Tracker["an"])/coarse_delta + 0.5) + 1
-	m_coarse_psi = int(Tracker["an"]/Tracker["delta"] + 0.5)
+	m_coarse_psi = int(old_div(Tracker["an"],Tracker["delta"]) + 0.5)
 	c_coarse_psi = m_coarse_psi//2
 	n_coarse_shifts = len(coarse_shifts)
 
@@ -4432,8 +4434,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		coarse_shifts_shrank[ib] = [coarse_shifts[ib][0]*shrinkage,coarse_shifts[ib][1]*shrinkage]
 
 	ny = Tracker["nxinit"]
-	nyp2 = ny/2
-	nxth = (Tracker["nxinit"]+2)/2
+	nyp2 = old_div(ny,2)
+	nxth = old_div((Tracker["nxinit"]+2),2)
 	indx = model_blank(nxth, Tracker["nxinit"], 1, -1)
 	tfrac = model_blank(nxth, Tracker["nxinit"])
 	tcount = model_blank(nxth)
@@ -4584,7 +4586,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	crefim = Util.Polar2Dm(model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
 	size_of_one_image = crefim.get_xsize()
 	#  We will assume half of the memory is available.  We will do it betteer later.
-	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
+	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9)))
 	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
 	normals_set = angles_to_normals(coarse_angles)
@@ -4646,7 +4648,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			assert(number_of_cones == len(cone_angles) )
 
 			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
-			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
+			neighbors = old_div(len(conedirs),len(cone_angles))  #  Symmetry related neighbors
 			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
 			#  assign data directions to cone_angles
 			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
@@ -4740,7 +4742,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		print( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
+		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,old_div(orgsize,1.0e9)) )
 
 	#  Note these are in Fortran notation for polar searches
 	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
@@ -4753,7 +4755,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		for i in range(nyb):
 			temp = [0.0]*nxb
 			for k in range(nxb):
-				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = old_div(1.0,sqrt(Blockdata["bckgnoise"][i].get_value_at(k)))
 			oneover.append(temp)
 		del temp
 
@@ -4869,7 +4871,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 					#  Apply varadj
 					if not nonorm:
-						Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
+						Util.mul_scalar(dataimage, old_div(Tracker["avgvaradj"][procid],wnorm))
 
 					###  FT
 					dataimage = fft(dataimage)
@@ -4888,7 +4890,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 					if Tracker["constants"]["CTF"] :
 						ctf_params = dataimage.get_attr("ctf")
-						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+						ctf_params.apix = old_div(ctf_params.apix,(old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))))
 						ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
 						ctfs = ctfa
 					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
@@ -4910,8 +4912,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					lang = len(assignments_of_refangles_to_angles[im])
 					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 
-				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
-					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,old_div(nima,5))) == 0) and (lima>0)):
+					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%(old_div((time()-at),60.)))
 					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
 				lima += 1
 
@@ -4932,7 +4934,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
 
 						##'''
-						assert(len(lxod1)/3 == keepfirst)
+						assert(old_div(len(lxod1),3) == keepfirst)
 
 						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
 						#xod1.fill(1.0)
@@ -4953,11 +4955,11 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						for iln in range(keepfirst):
 							hashparams	= int(xod2[iln])
 							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
+							ipsiandiang	= old_div(hashparams,1000)
 							if(ipsiandiang != pre_ipsiandiang):
 								pre_ipsiandiang = ipsiandiang
 								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
+								iang = old_div(ipsiandiang,100000)
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								##eat += time()-junk
@@ -4999,7 +5001,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 						###print("  STARTING4    ",Blockdata["myid"],lit,keepf)
 					#  Turn into percentage of all possible
-					keepf = [int(float(keepf*100)/float(keepfirst))]
+					keepf = [int(old_div(float(keepf*100),float(keepfirst)))]
 					###mpi_barrier(MPI_COMM_WORLD)
 					###print("  STARTING5    ",Blockdata["myid"],keepf,MPI_COMM_WORLD)
 					mpi_barrier(MPI_COMM_WORLD)
@@ -5037,7 +5039,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  ")
 						##'''
-						assert( keepfirst == len(lxod1)/3 )
+						assert( keepfirst == old_div(len(lxod1),3) )
 						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
 						#xod1.fill(1.0)
 						xod2 = np.ndarray((keepfirst),dtype='int',order="C")
@@ -5053,7 +5055,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						#  Second step - find which coarse ones are significant
 
 						# order by angular directions to save time on reprojections.
-						ipsiandiang = xod2/1000
+						ipsiandiang = old_div(xod2,1000)
 						lina = np.argsort(ipsiandiang)
 						xod2 = xod2[lina]  # order does not matter
 
@@ -5061,11 +5063,11 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						for iln in range(keepfirst):
 							hashparams	= int(xod2[iln])
 							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
+							ipsiandiang	= old_div(hashparams,1000)
 							if(ipsiandiang != pre_ipsiandiang):
 								pre_ipsiandiang = ipsiandiang
 								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
+								iang = old_div(ipsiandiang,100000)
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
@@ -5120,9 +5122,9 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					for iln in range(lit):
 						hashparams = int(xod2[iln])
 						ishift = hashparams%1000
-						ipsiandiang	= hashparams/1000
+						ipsiandiang	= old_div(hashparams,1000)
 						#ipsi = ipsiandiang%100000
-						iang = ipsiandiang/100000
+						iang = old_div(ipsiandiang,100000)
 						#try:
 						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 						#except:
@@ -5173,8 +5175,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					#lol = 0
 					for i1 in range(lit):
 						hashparams = int(xod2[i1])
-						ipsiandiang	= hashparams/1000
-						oldiang = ipsiandiang/100000
+						ipsiandiang	= old_div(hashparams,1000)
+						oldiang = old_div(ipsiandiang,100000)
 						ipsi = ipsiandiang%100000
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
@@ -5182,7 +5184,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
-								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+								itpsi = int(old_div((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0),Tracker["delta"]))
 								itpsi = (itpsi + i3)%npsi
 								for i4 in range(len(tshifts)):
 									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
@@ -5194,7 +5196,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
-					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+					cod1 = [[old_div(q,1000),i] for i,q in enumerate(cod2)]
 					cod1.sort()
 
 					lit = len(cod1)
@@ -5219,17 +5221,17 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					while(iln<lit):
 						hashparams = cod2[iln]
 						#if( Blockdata["myid"] == Blockdata["main_node"]): print("  COD2   ",im,lit,iln,cod2[iln])
-						ipsiandiang	= hashparams/1000
+						ipsiandiang	= old_div(hashparams,1000)
 						if(ipsiandiang != prevdir):
 							prevdir = ipsiandiang
 							ipsi = ipsiandiang%100000
-							iang = ipsiandiang/100000
+							iang = old_div(ipsiandiang,100000)
 							##junk = time()
 							temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 							##eat += time()-junk
 							temp.set_attr("is_complex",0)
 							johi += 1
-						while( ipsiandiang == cod2[iln]/1000 ):
+						while( ipsiandiang == old_div(cod2[iln],1000) ):
 							hashparams = cod2[iln]
 							ishift = hashparams%1000
 							if( data[ishift] == None ):
@@ -5327,7 +5329,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  END OF CONES
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		print( "  Finished projection matching   %10.1fmin"%(old_div((time()-at),60.)))
 	at = time()
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
@@ -5348,7 +5350,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  Compute avgvaradj
 	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
+		Tracker["avgvaradj"][procid] = old_div(float(Tracker["avgvaradj"][procid]),Tracker["nima_per_chunk"][procid])
 	else:  Tracker["avgvaradj"][procid] = 0.0
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -5373,8 +5375,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
 	if( Blockdata["myid"] == 0 ):
 		from math import sqrt
-		sava = float(sava)/snum
-		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
+		sava = old_div(float(sava),snum)
+		svar = sqrt(max(0.0,old_div((float(svar) - snum*sava**2),(snum -1))))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
@@ -5421,7 +5423,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished sigma2   %10.1fmin"%((time()-at)/60.))
+		print( "  Finished sigma2   %10.1fmin"%(old_div((time()-at),60.)))
 	return newpar, norm_per_particle
 
 # TRUE POLAR
@@ -5463,8 +5465,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered local polar")
 
 	at = time()
-	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
-	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxpolar"]),float(Tracker["constants"]["nnxo"]))
+	shrink = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
@@ -5475,7 +5477,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  FINE SEARCH CONSTANTS
 	nang = len(refang)
 	ac_fine = cos(radians(Tracker["an"]))
-	npsi = int(360./Tracker["delta"])
+	npsi = int(old_div(360.,Tracker["delta"]))
 	mpsi = 2
 	c_fine_psi = mpsi//2
 	nshifts = len(shifts)
@@ -5490,9 +5492,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  COARSE SEARCH CONSTANTS
 	n_coarse_ang = len(coarse_angles)
 	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_psi = int(old_div(360.,coarse_delta))
 	###m_coarse_psi = int((2*2*Tracker["an"])/coarse_delta + 0.5) + 1
-	m_coarse_psi = int(Tracker["an"]/Tracker["delta"] + 0.5)
+	m_coarse_psi = int(old_div(Tracker["an"],Tracker["delta"]) + 0.5)
 	c_coarse_psi = m_coarse_psi//2
 	n_coarse_shifts = len(coarse_shifts)
 
@@ -5634,7 +5636,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	crefim = Util.Polar2Dm(model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
 	size_of_one_image = crefim.get_xsize()
 	#  We will assume half of the memory is available.  We will do it betteer later.
-	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
+	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9)))
 	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
 	normals_set = angles_to_normals(coarse_angles)
@@ -5696,7 +5698,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			assert(number_of_cones == len(cone_angles) )
 
 			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
-			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
+			neighbors = old_div(len(conedirs),len(cone_angles))  #  Symmetry related neighbors
 			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
 			#  assign data directions to cone_angles
 			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
@@ -5790,7 +5792,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		print( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
+		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,old_div(orgsize,1.0e9)) )
 
 	#  Note these are in Fortran notation for polar searches
 	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
@@ -5802,7 +5804,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		for i in range(len(Blockdata["bckgnoise"])):
 			temp = [0.0]*nnx
 			for k in range(nnx):
-				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = old_div(1.0,sqrt(Blockdata["bckgnoise"][i].get_value_at(k)))
 			oneover.append(temp)
 		del temp
 
@@ -5913,7 +5915,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 					#  Apply varadj
 					if not nonorm:
-						Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
+						Util.mul_scalar(dataimage, old_div(Tracker["avgvaradj"][procid],wnorm))
 
 					###  FT
 					dataimage = fft(dataimage)
@@ -5932,7 +5934,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 					if Tracker["constants"]["CTF"] :
 						ctf_params = dataimage.get_attr("ctf")
-						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+						ctf_params.apix = old_div(ctf_params.apix,(old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))))
 						ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
 						ctfs = ctfa
 					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
@@ -5954,8 +5956,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					lang = len(assignments_of_refangles_to_angles[im])
 					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 
-				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
-					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,old_div(nima,5))) == 0) and (lima>0)):
+					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%(old_div((time()-at),60.)))
 					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
 				lima += 1
 
@@ -5976,7 +5978,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
 
 						##'''
-						assert(len(lxod1)/3 == keepfirst)
+						assert(old_div(len(lxod1),3) == keepfirst)
 
 						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
 						#xod1.fill(1.0)
@@ -5997,11 +5999,11 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						for iln in range(keepfirst):
 							hashparams	= int(xod2[iln])
 							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
+							ipsiandiang	= old_div(hashparams,1000)
 							if(ipsiandiang != pre_ipsiandiang):
 								pre_ipsiandiang = ipsiandiang
 								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
+								iang = old_div(ipsiandiang,100000)
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								##eat += time()-junk
@@ -6043,7 +6045,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 						###print("  STARTING4    ",Blockdata["myid"],lit,keepf)
 					#  Turn into percentage of all possible
-					keepf = [int(float(keepf*100)/float(keepfirst))]
+					keepf = [int(old_div(float(keepf*100),float(keepfirst)))]
 					###mpi_barrier(MPI_COMM_WORLD)
 					###print("  STARTING5    ",Blockdata["myid"],keepf,MPI_COMM_WORLD)
 					mpi_barrier(MPI_COMM_WORLD)
@@ -6081,7 +6083,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  ")
 						##'''
-						assert( keepfirst == len(lxod1)/3 )
+						assert( keepfirst == old_div(len(lxod1),3) )
 						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
 						#xod1.fill(1.0)
 						xod2 = np.ndarray((keepfirst),dtype='int',order="C")
@@ -6097,7 +6099,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						#  Second step - find which coarse ones are significant
 
 						# order by angular directions to save time on reprojections.
-						ipsiandiang = xod2/1000
+						ipsiandiang = old_div(xod2,1000)
 						lina = np.argsort(ipsiandiang)
 						xod2 = xod2[lina]  # order does not matter
 
@@ -6105,11 +6107,11 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						for iln in range(keepfirst):
 							hashparams	= int(xod2[iln])
 							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
+							ipsiandiang	= old_div(hashparams,1000)
 							if(ipsiandiang != pre_ipsiandiang):
 								pre_ipsiandiang = ipsiandiang
 								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
+								iang = old_div(ipsiandiang,100000)
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
@@ -6164,9 +6166,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					for iln in range(lit):
 						hashparams = int(xod2[iln])
 						ishift = hashparams%1000
-						ipsiandiang	= hashparams/1000
+						ipsiandiang	= old_div(hashparams,1000)
 						#ipsi = ipsiandiang%100000
-						iang = ipsiandiang/100000
+						iang = old_div(ipsiandiang,100000)
 						#try:
 						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 						#except:
@@ -6217,8 +6219,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					#lol = 0
 					for i1 in range(lit):
 						hashparams = int(xod2[i1])
-						ipsiandiang	= hashparams/1000
-						oldiang = ipsiandiang/100000
+						ipsiandiang	= old_div(hashparams,1000)
+						oldiang = old_div(ipsiandiang,100000)
 						ipsi = ipsiandiang%100000
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
@@ -6226,7 +6228,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
-								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+								itpsi = int(old_div((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0),Tracker["delta"]))
 								itpsi = (itpsi + i3)%npsi
 								for i4 in range(len(tshifts)):
 									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
@@ -6238,7 +6240,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
-					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+					cod1 = [[old_div(q,1000),i] for i,q in enumerate(cod2)]
 					cod1.sort()
 
 					lit = len(cod1)
@@ -6262,17 +6264,17 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					while(iln<lit):
 						hashparams = cod2[iln]
 						#if( Blockdata["myid"] == Blockdata["main_node"]): print("  COD2   ",im,lit,iln,cod2[iln])
-						ipsiandiang	= hashparams/1000
+						ipsiandiang	= old_div(hashparams,1000)
 						if(ipsiandiang != prevdir):
 							prevdir = ipsiandiang
 							ipsi = ipsiandiang%100000
-							iang = ipsiandiang/100000
+							iang = old_div(ipsiandiang,100000)
 							##junk = time()
 							temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 							##eat += time()-junk
 							temp.set_attr("is_complex",0)
 							johi += 1
-						while( ipsiandiang == cod2[iln]/1000 ):
+						while( ipsiandiang == old_div(cod2[iln],1000) ):
 							hashparams = cod2[iln]
 							ishift = hashparams%1000
 							if( data[ishift] == None ):
@@ -6358,7 +6360,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  END OF CONES
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		print( "  Finished projection matching   %10.1fmin"%(old_div((time()-at),60.)))
 	at = time()
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
@@ -6379,7 +6381,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  Compute avgvaradj
 	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
+		Tracker["avgvaradj"][procid] = old_div(float(Tracker["avgvaradj"][procid]),Tracker["nima_per_chunk"][procid])
 	else:  Tracker["avgvaradj"][procid] = 0.0
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -6404,8 +6406,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	smin = mpi_reduce(smin, 1, MPI_INT, MPI_MIN, Blockdata["main_node"], MPI_COMM_WORLD)
 	if( Blockdata["myid"] == 0 ):
 		from math import sqrt
-		sava = float(sava)/snum
-		svar = sqrt(max(0.0,(float(svar) - snum*sava**2)/(snum -1)))
+		sava = old_div(float(sava),snum)
+		svar = sqrt(max(0.0,old_div((float(svar) - snum*sava**2),(snum -1))))
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line, "Smear stat  (number of images, ave, sumsq, min, max)):  %7d    %12.3g   %12.3g  %7d  %7d"%(snum,sava,svar,smin,smax))
 
@@ -6470,8 +6472,8 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered local polar ccc")
 
 	at = time()
-	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
-	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxpolar"]),float(Tracker["constants"]["nnxo"]))
+	shrink = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
@@ -6482,7 +6484,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	#  FINE SEARCH CONSTANTS
 	nang = len(refang)
 	ac_fine = cos(radians(Tracker["an"]))
-	npsi = int(360./Tracker["delta"])
+	npsi = int(old_div(360.,Tracker["delta"]))
 	mpsi = 2
 	c_fine_psi = mpsi//2
 	nshifts = len(shifts)
@@ -6497,9 +6499,9 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	#  COARSE SEARCH CONSTANTS
 	n_coarse_ang = len(coarse_angles)
 	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_psi = int(old_div(360.,coarse_delta))
 	###m_coarse_psi = int((2*2*Tracker["an"])/coarse_delta + 0.5) + 1
-	m_coarse_psi = int(Tracker["an"]/Tracker["delta"] + 0.5)
+	m_coarse_psi = int(old_div(Tracker["an"],Tracker["delta"]) + 0.5)
 	c_coarse_psi = m_coarse_psi//2
 	n_coarse_shifts = len(coarse_shifts)
 
@@ -6640,7 +6642,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	crefim = Util.Polar2Dm(model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
 	size_of_one_image = crefim.get_xsize()
 	#  We will assume half of the memory is available.  We will do it betteer later.
-	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
+	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9)))
 	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
 	normals_set = angles_to_normals(coarse_angles)
@@ -6702,7 +6704,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 			assert(number_of_cones == len(cone_angles) )
 
 			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
-			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
+			neighbors = old_div(len(conedirs),len(cone_angles))  #  Symmetry related neighbors
 			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
 			#  assign data directions to cone_angles
 			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
@@ -6801,7 +6803,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		print( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
+		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,old_div(orgsize,1.0e9)) )
 
 	#  Note these are in Fortran notation for polar searches
 	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
@@ -6813,7 +6815,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 		for i in range(len(Blockdata["bckgnoise"])):
 			temp = [0.0]*nnx
 			for k in range(nnx):
-				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = old_div(1.0,sqrt(Blockdata["bckgnoise"][i].get_value_at(k)))
 			oneover.append(temp)
 		del temp
 
@@ -6925,7 +6927,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 					#  Apply varadj
 					if not nonorm:
-						Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
+						Util.mul_scalar(dataimage, old_div(Tracker["avgvaradj"][procid],wnorm))
 
 					###  FT
 					dataimage = fft(dataimage)
@@ -6945,7 +6947,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 					if Tracker["constants"]["CTF"] :
 						ctf_params = dataimage.get_attr("ctf")
-						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+						ctf_params.apix = old_div(ctf_params.apix,(old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))))
 						ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
 						ctfs = ctfa
 					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
@@ -6967,8 +6969,8 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					lang = len(assignments_of_refangles_to_angles[im])
 					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 
-				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
-					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,old_div(nima,5))) == 0) and (lima>0)):
+					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%(old_div((time()-at),60.)))
 					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
 				lima += 1
 
@@ -6987,7 +6989,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
 
 						##'''
-						assert(len(lxod1)/3 == keepfirst)
+						assert(old_div(len(lxod1),3) == keepfirst)
 
 						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
 						#xod1.fill(1.0)
@@ -7009,11 +7011,11 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 							#print("iln", iln)
 							hashparams	= int(xod2[iln])
 							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
+							ipsiandiang	= old_div(hashparams,1000)
 							if(ipsiandiang != pre_ipsiandiang):
 								pre_ipsiandiang = ipsiandiang
 								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
+								iang = old_div(ipsiandiang,100000)
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								##eat += time()-junk
@@ -7022,7 +7024,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								nrmref = sqrt(Util.innerproduct(temp, temp, None))
 							##junk = time()
 							#xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
-							xod1[iln] = Util.innerproduct(data[ishift], temp, None)/nrmref
+							xod1[iln] = old_div(Util.innerproduct(data[ishift], temp, None),nrmref)
 							##eat += time()-junk
 							##xod2[iln] = hashparams
 
@@ -7060,7 +7062,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 						###print("  STARTING4    ",Blockdata["myid"],lit,keepf)
 					#  Turn into percentage of all possible
-					keepf = [int(float(keepf*100)/float(keepfirst))]
+					keepf = [int(old_div(float(keepf*100),float(keepfirst)))]
 					###mpi_barrier(MPI_COMM_WORLD)
 					###print("  STARTING5    ",Blockdata["myid"],keepf,MPI_COMM_WORLD)
 					mpi_barrier(MPI_COMM_WORLD)
@@ -7098,7 +7100,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
 						#if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  ")
 						##'''
-						assert( keepfirst == len(lxod1)/3 )
+						assert( keepfirst == old_div(len(lxod1),3) )
 						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
 						#xod1.fill(1.0)
 						xod2 = np.ndarray((keepfirst),dtype='int',order="C")
@@ -7114,7 +7116,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						#  Second step - find which coarse ones are significant
 
 						# order by angular directions to save time on reprojections.
-						ipsiandiang = xod2/1000
+						ipsiandiang = old_div(xod2,1000)
 						lina = np.argsort(ipsiandiang)
 						xod2 = xod2[lina]  # order does not matter
 
@@ -7122,11 +7124,11 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						for iln in range(keepfirst):
 							hashparams	= int(xod2[iln])
 							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
+							ipsiandiang	= old_div(hashparams,1000)
 							if(ipsiandiang != pre_ipsiandiang):
 								pre_ipsiandiang = ipsiandiang
 								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
+								iang = old_div(ipsiandiang,100000)
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
@@ -7181,9 +7183,9 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					for iln in range(lit):
 						hashparams = int(xod2[iln])
 						ishift = hashparams%1000
-						ipsiandiang	= hashparams/1000
+						ipsiandiang	= old_div(hashparams,1000)
 						#ipsi = ipsiandiang%100000
-						iang = ipsiandiang/100000
+						iang = old_div(ipsiandiang,100000)
 						#try:
 						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 						#except:
@@ -7234,8 +7236,8 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					#lol = 0
 					for i1 in range(lit):
 						hashparams = int(xod2[i1])
-						ipsiandiang	= hashparams/1000
-						oldiang = ipsiandiang/100000
+						ipsiandiang	= old_div(hashparams,1000)
+						oldiang = old_div(ipsiandiang,100000)
 						ipsi = ipsiandiang%100000
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
@@ -7243,7 +7245,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
-								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+								itpsi = int(old_div((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0),Tracker["delta"]))
 								itpsi = (itpsi + i3)%npsi
 								for i4 in range(len(tshifts)):
 									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
@@ -7255,7 +7257,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
-					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+					cod1 = [[old_div(q,1000),i] for i,q in enumerate(cod2)]
 					cod1.sort()
 
 					lit = len(cod1)
@@ -7279,17 +7281,17 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					while(iln<lit):
 						hashparams = cod2[iln]
 						#if( Blockdata["myid"] == Blockdata["main_node"]): print("  COD2   ",im,lit,iln,cod2[iln])
-						ipsiandiang	= hashparams/1000
+						ipsiandiang	= old_div(hashparams,1000)
 						if(ipsiandiang != prevdir):
 							prevdir = ipsiandiang
 							ipsi = ipsiandiang%100000
-							iang = ipsiandiang/100000
+							iang = old_div(ipsiandiang,100000)
 							##junk = time()
 							temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 							##eat += time()-junk
 							temp.set_attr("is_complex",0)
 							johi += 1
-						while( ipsiandiang == cod2[iln]/1000 ):
+						while( ipsiandiang == old_div(cod2[iln],1000) ):
 							hashparams = cod2[iln]
 							ishift = hashparams%1000
 							if( data[ishift] == None ):
@@ -7375,7 +7377,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	#  END OF CONES
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		print( "  Finished projection matching   %10.1fmin"%(old_div((time()-at),60.)))
 	at = time()
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
@@ -7396,7 +7398,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	#  Compute avgvaradj
 	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
+		Tracker["avgvaradj"][procid] = old_div(float(Tracker["avgvaradj"][procid]),Tracker["nima_per_chunk"][procid])
 	else:  Tracker["avgvaradj"][procid] = 0.0
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -7431,7 +7433,7 @@ def cerrs(params, ctfs, particle_groups):
 	global Tracker, Blockdata
 	from random 	import random
 
-	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	procid = 0
 	if(Blockdata["myid"] == Blockdata["nodes"][procid]):
 		ref_vol = get_im(Tracker["refvol"])
@@ -7464,7 +7466,7 @@ def cerrs(params, ctfs, particle_groups):
 		#// Get CTF for this particle
 		#   Get F1 = Proj(refvol; angles1, shifts=0)
 		F1 = prgl(ref_vol,[ phi1, theta1, psi1, 0.0, 0.0], interpolation_method = 1, return_real= False)
-		ctfs[itry].apix = ctfs[itry].apix/shrinkage
+		ctfs[itry].apix = old_div(ctfs[itry].apix,shrinkage)
 		ct = ctf_img_real(Tracker["nxinit"], ctfs[itry])
 		Util.mul_img(ct, ct)
 		ctfsbckgnoise = Util.muln_img(Util.unroll1dpw(Tracker["nxinit"], [Blockdata["bckgnoise"][i,particle_groups[itry]] for i in range(lb)]), ct)
@@ -7709,10 +7711,10 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		#  Estimated volume size
-		volume_size = (1.5*4*(2.0*Tracker["constants"]["nnxo"]+3.0)**3)/1.e9
+		volume_size = old_div((1.5*4*(2.0*Tracker["constants"]["nnxo"]+3.0)**3),1.e9)
 		#  Estimated data size
 		data_size = max(Tracker["nima_per_chunk"])*4*float(Tracker["constants"]["nnxo"]**2)/float(Blockdata["no_of_groups"])/1.0e9
-		nnprocs = min( Blockdata["no_of_processes_per_group"], int(((memory_per_node - data_size*1.2) / volume_size ) ) )
+		nnprocs = min( Blockdata["no_of_processes_per_group"], int((old_div((memory_per_node - data_size*1.2), volume_size) ) ) )
 		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(memory_per_node,volume_size,data_size,nnprocs))
 		if( (memory_per_node - data_size*1.2 - volume_size) < 0 or (nnprocs == 0)):  nogo = 1
 		else:  nogo = 0
@@ -7776,8 +7778,8 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 		print_dict(Tracker,"PROJECTION MATCHING parameters of buffered local polar")
 
 	at = time()
-	shrinkage = float(Tracker["nxpolar"])/float(Tracker["constants"]["nnxo"])
-	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxpolar"]),float(Tracker["constants"]["nnxo"]))
+	shrink = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
@@ -7788,7 +7790,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	#  FINE SEARCH CONSTANTS
 	nang = len(refang)
 	ac_fine = cos(radians(Tracker["an"]))
-	npsi = int(360./Tracker["delta"])
+	npsi = int(old_div(360.,Tracker["delta"]))
 	mpsi = 2
 	c_fine_psi = mpsi//2
 	nshifts = len(shifts)
@@ -7803,9 +7805,9 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	#  COARSE SEARCH CONSTANTS
 	n_coarse_ang = len(coarse_angles)
 	coarse_delta = 2*Tracker["delta"]
-	n_coarse_psi = int(360./coarse_delta)
+	n_coarse_psi = int(old_div(360.,coarse_delta))
 	###m_coarse_psi = int((2*2*Tracker["an"])/coarse_delta + 0.5) + 1
-	m_coarse_psi = int(Tracker["an"]/Tracker["delta"] + 0.5)
+	m_coarse_psi = int(old_div(Tracker["an"],Tracker["delta"]) + 0.5)
 	c_coarse_psi = m_coarse_psi//2
 	n_coarse_shifts = len(coarse_shifts)
 
@@ -7947,7 +7949,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	crefim = Util.Polar2Dm(model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
 	size_of_one_image = crefim.get_xsize()
 	#  We will assume half of the memory is available.  We will do it betteer later.
-	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
+	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9)))
 	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
 	normals_set = angles_to_normals(coarse_angles)
@@ -8009,7 +8011,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 			assert(number_of_cones == len(cone_angles) )
 
 			conedirs = angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
-			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
+			neighbors = old_div(len(conedirs),len(cone_angles))  #  Symmetry related neighbors
 			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
 			#  assign data directions to cone_angles
 			assignments_to_cones = assign_projdirs_f(angledirs, conedirs, neighbors)
@@ -8108,7 +8110,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
 		print( "  " )
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,orgsize/1.0e9) )
+		print(  line, "Processing data for polar onx: %3d, nx: %3d, nxpolar: %3d, CTF: %s, preshift: %s,  MEM: %6.2fGB."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["nxpolar"], Tracker["constants"]["CTF"], preshift,old_div(orgsize,1.0e9)) )
 
 	#  Note these are in Fortran notation for polar searches
 	txm    	= float(Tracker["nxpolar"]-(Tracker["nxpolar"]//2+1) - radius)
@@ -8120,7 +8122,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 		for i in range(len(Blockdata["bckgnoise"])):
 			temp = [0.0]*nnx
 			for k in range(nnx):
-				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
+				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = old_div(1.0,sqrt(Blockdata["bckgnoise"][i].get_value_at(k)))
 			oneover.append(temp)
 		del temp
 
@@ -8232,7 +8234,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 					#  Apply varadj
 					if not nonorm:
-						Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
+						Util.mul_scalar(dataimage, old_div(Tracker["avgvaradj"][procid],wnorm))
 
 					###  FT
 					dataimage = fft(dataimage)
@@ -8251,7 +8253,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 					if Tracker["constants"]["CTF"] :
 						ctf_params = dataimage.get_attr("ctf")
-						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
+						ctf_params.apix = old_div(ctf_params.apix,(old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))))
 						ctfa = ctf_img_real(Tracker["nxinit"], ctf_params)
 						ctfs = ctfa
 					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
@@ -8273,8 +8275,8 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					lang = len(assignments_of_refangles_to_angles[im])
 					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
 
-				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,nima/5)) == 0) and (lima>0)):
-					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%((time()-at)/60.))
+				if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (lima%(max(1,old_div(nima,5))) == 0) and (lima>0)):
+					print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin"%(old_div((time()-at),60.)))
 					##print( "  Number of images :%7d   %5d  %5.1f"%(lima,nima,float(lima)/float(nima)*100.) + "%" +"   %10.1fmin   %10.1fmin"%((time()-at)/60.,eat/60.0))
 				lima += 1
 
@@ -8295,7 +8297,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 								oldparams[im][2], c_coarse_psi, coarse_delta, cnx, keepfirst)
 
 						##'''
-						assert(len(lxod1)/3 == keepfirst)
+						assert(old_div(len(lxod1),3) == keepfirst)
 
 						xod1 = np.ndarray((keepfirst),dtype='f4',order="C")
 						#xod1.fill(1.0)
@@ -8317,11 +8319,11 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 							#print("iln", iln)
 							hashparams	= int(xod2[iln])
 							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
+							ipsiandiang	= old_div(hashparams,1000)
 							if(ipsiandiang != pre_ipsiandiang):
 								pre_ipsiandiang = ipsiandiang
 								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
+								iang = old_div(ipsiandiang,100000)
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								##eat += time()-junk
@@ -8330,7 +8332,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 								nrmref = sqrt(Util.innerproduct(temp, temp, None))
 							##junk = time()
 							#xod1[iln] = -Util.sqed(data[ishift], temp, ctfa, bckgnoise)
-							xod1[iln] = Util.innerproduct(data[ishift], temp, None)/nrmref
+							xod1[iln] = old_div(Util.innerproduct(data[ishift], temp, None),nrmref)
 							##eat += time()-junk
 							##xod2[iln] = hashparams
 
@@ -8419,7 +8421,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						#  Second step - find which coarse ones are significant
 
 						# order by angular directions to save time on reprojections.
-						ipsiandiang = xod2/1000
+						ipsiandiang = old_div(xod2,1000)
 						lina = np.argsort(ipsiandiang)
 						xod2 = xod2[lina]  # order does not matter
 
@@ -8427,11 +8429,11 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						for iln in range(Tracker["keepfirst"]):
 							hashparams	= int(xod2[iln])
 							ishift		= hashparams%1000
-							ipsiandiang	= hashparams/1000
+							ipsiandiang	= old_div(hashparams,1000)
 							if(ipsiandiang != pre_ipsiandiang):
 								pre_ipsiandiang = ipsiandiang
 								ipsi = ipsiandiang%100000
-								iang = ipsiandiang/100000
+								iang = old_div(ipsiandiang,100000)
 								##junk = time()
 								temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
@@ -8486,9 +8488,9 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					for iln in range(lit):
 						hashparams = int(xod2[iln])
 						ishift = hashparams%1000
-						ipsiandiang	= hashparams/1000
+						ipsiandiang	= old_div(hashparams,1000)
 						#ipsi = ipsiandiang%100000
-						iang = ipsiandiang/100000
+						iang = old_div(ipsiandiang,100000)
 						#try:
 						firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
 						#except:
@@ -8539,8 +8541,8 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					#lol = 0
 					for i1 in range(lit):
 						hashparams = int(xod2[i1])
-						ipsiandiang	= hashparams/1000
-						oldiang = ipsiandiang/100000
+						ipsiandiang	= old_div(hashparams,1000)
+						oldiang = old_div(ipsiandiang,100000)
 						ipsi = ipsiandiang%100000
 						ishift = hashparams%1000
 						tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
@@ -8548,7 +8550,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						for i2 in range(4):
 							iang = ltabang[i1][i2]
 							for i3 in range(2):  # psi
-								itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
+								itpsi = int(old_div((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0),Tracker["delta"]))
 								itpsi = (itpsi + i3)%npsi
 								for i4 in range(len(tshifts)):
 									cod2.append(iang*100000000 + itpsi*1000 + tshifts[i4])
@@ -8560,7 +8562,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 					###if( Blockdata["myid"] == 18 and lima<5):   print("  THIRD   ",len(cod2))#,cod2)
 					cod2 = list(set(cod2))
-					cod1 = [[q/1000,i] for i,q in enumerate(cod2)]
+					cod1 = [[old_div(q,1000),i] for i,q in enumerate(cod2)]
 					cod1.sort()
 
 					lit = len(cod1)
@@ -8584,17 +8586,17 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					while(iln<lit):
 						hashparams = cod2[iln]
 						#if( Blockdata["myid"] == Blockdata["main_node"]): print("  COD2   ",im,lit,iln,cod2[iln])
-						ipsiandiang	= hashparams/1000
+						ipsiandiang	= old_div(hashparams,1000)
 						if(ipsiandiang != prevdir):
 							prevdir = ipsiandiang
 							ipsi = ipsiandiang%100000
-							iang = ipsiandiang/100000
+							iang = old_div(ipsiandiang,100000)
 							##junk = time()
 							temp = prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 							##eat += time()-junk
 							temp.set_attr("is_complex",0)
 							johi += 1
-						while( ipsiandiang == cod2[iln]/1000 ):
+						while( ipsiandiang == old_div(cod2[iln],1000) ):
 							hashparams = cod2[iln]
 							ishift = hashparams%1000
 							if( data[ishift] == None ):
@@ -8682,7 +8684,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	#  END OF CONES
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		print( "  Finished projection matching   %10.1fmin"%((time()-at)/60.))
+		print( "  Finished projection matching   %10.1fmin"%(old_div((time()-at),60.)))
 	at = time()
 	#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 	#  All images were processed, now to the additional calculations
@@ -8703,7 +8705,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	#  Compute avgvaradj
 	Tracker["avgvaradj"][procid] = mpi_reduce( Tracker["avgvaradj"][procid], 1, MPI_FLOAT, MPI_SUM, Blockdata["main_node"], MPI_COMM_WORLD )
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
+		Tracker["avgvaradj"][procid] = old_div(float(Tracker["avgvaradj"][procid]),Tracker["nima_per_chunk"][procid])
 	else:  Tracker["avgvaradj"][procid] = 0.0
 	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
@@ -8746,7 +8748,7 @@ def do3d_nosmearing(procid, data, params, mpi_comm = -1):
 			if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
 			else: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 
-	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrinkage = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	tvol, tweight, trol = recons3d_trl_struct_MPI_nosmearing(myid = Blockdata["subgroup_myid"], main_node = Blockdata["nodes"][procid], prjlist = data, \
 											parameters = params, CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
 											target_size = (2*Tracker["nxinit"]+3))
@@ -8785,7 +8787,7 @@ def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF
 	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
-	shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+	shrink = old_div(float(Tracker["nxinit"]),float(Tracker["constants"]["nnxo"]))
 	for im in range(len(prjlist)):
 		ct = prjlist[im].get_attr("ctf")
 		try: bckgn = prjlist[im].get_attr("bckgnoise")
@@ -8956,8 +8958,8 @@ def rec3d_tmp(mainiteration, original_data):
 				#  Select only one best
 				hash   = newparamstructure[procid][im][2][0][0]
 				ishift = hash%1000
-				ipsi   = (hash/1000)%100000
-				iang   = hash/100000000
+				ipsi   = (old_div(hash,1000))%100000
+				iang   = old_div(hash,100000000)
 				params.append([ refang[iang][0], refang[iang][1], (refang[iang][2]+ipsi*Tracker["delta"])%360.0, rshifts[ishift][0]+oldparams[procid][im][3], rshifts[ishift][1]+oldparams[procid][im][4], newparamstructure[procid][im][-1][0][1], norm_per_particle[procid][im]*qt, norm_per_particle[procid][im]])
 			params = wrap_mpi_gatherv(params, Blockdata["main_node"], MPI_COMM_WORLD)
 			#  store params
@@ -9862,9 +9864,9 @@ def update_memory_estimation():
 		except: print(Tracker["constants"]["stack"], "does not exist")
 		image_size   = max(Tracker["nxinit"], Tracker["constants"]["nnxo"]*1./2.)
 		data_size    = total_stack*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9
-		volume_size  = (1.5*4*(2.0*image_size+3.0)**3)/1.e9
+		volume_size  = old_div((1.5*4*(2.0*image_size+3.0)**3),1.e9)
 		#nnprocs = Blockdata["no_of_processes_per_group"]
-		nnprocs = min(Blockdata["no_of_processes_per_group"], int(((Tracker["constants"]["memory_per_node"] - data_size*1.2)/volume_size)))
+		nnprocs = min(Blockdata["no_of_processes_per_group"], int((old_div((Tracker["constants"]["memory_per_node"] - data_size*1.2),volume_size))))
 		print("  MEMORY ESTIMATION.  memory per node = %6.1fGB,  volume size = %6.2fGB, data size per node = %6.2fGB, estimated number of CPUs = %d"%(Tracker["constants"]["memory_per_node"],volume_size,data_size,nnprocs))
 		memory_per_cpu_3d = data_size/Blockdata["no_of_processes_per_group"]*1.2 + volume_size
 		print("  Estimated memory consumption per CPU in reconstruction %6.2f"%memory_per_cpu_3d)
@@ -9949,7 +9951,7 @@ def update_tracker(shell_line_command):
 		Tracker["constants"]["mask3D"] 						= options_no_default_value.mask3D
 		tempdict["mask3D"] = Tracker["constants"]["mask3D"]
 	if options_no_default_value.ccfpercentage != None:
-		Tracker["constants"]["ccfpercentage"] 				= options_no_default_value.ccfpercentage/100.0
+		Tracker["constants"]["ccfpercentage"] 				= old_div(options_no_default_value.ccfpercentage,100.0)
 		tempdict["ccfpercentage"] = Tracker["constants"]["ccfpercentage"]
 	if options_no_default_value.nonorm != None:
 		Tracker["constants"]["nonorm"] 						= options_no_default_value.nonorm
@@ -9997,7 +9999,7 @@ def compare_bckgnoise(bckgnoise1, bckgnoise2):
 			c1.append(bckgnoise1.get_value_at(j,i, 0))
 			c2.append(bckgnoise2.get_value_at(j,i, 0))
 		ccsum +=pearson(c1, c2)
-	return ccsum/float(ny)
+	return old_div(ccsum,float(ny))
 # 		
 # - "Tracker" (dictionary) object
 #   Keeps the current state of option settings and dataset 
@@ -10176,7 +10178,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["states"]            			= ["INITIAL", "PRIMARY", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL"]# will add two states, CONINUATION_INITIAL, CONINUATION_PRIMARY
 			Constants["user_func"]					= options.function
 			Constants["hardmask"]          			=  True #options.hardmask
-			Constants["ccfpercentage"]     			= options.ccfpercentage/100.
+			Constants["ccfpercentage"]     			= old_div(options.ccfpercentage,100.)
 			Constants["expthreshold"]      			= -10
 			Constants["number_of_groups"]  			= -1 # number of defocus groups, to be set by assign_particles_to_groups
 			Constants["nonorm"]            			= options.nonorm
@@ -10279,7 +10281,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 			if checking_flag==0:ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
 			
-			if( options.xr/options.ts<1.0 ): ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien",1,Blockdata["myid"])
+			if( old_div(options.xr,options.ts)<1.0 ): ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien",1,Blockdata["myid"])
 			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
 				ERROR("Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"],\
 				 2*(Tracker["currentres"] + Tracker["nxstep"])),"sxmeridien",1, Blockdata["myid"])
@@ -10626,8 +10628,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 							#  Select only one best
 							hash = newparamstructure[procid][im][2][0][0]
 							ishift = hash%1000
-							ipsi = (hash/1000)%100000
-							iang  = hash/100000000
+							ipsi = (old_div(hash,1000))%100000
+							iang  = old_div(hash,100000000)
 							params.append([ refang[iang][0], refang[iang][1], (refang[iang][2]+ipsi*Tracker["delta"])%360.0, rshifts[ishift][0]+oldparams[procid][im][3], rshifts[ishift][1]+oldparams[procid][im][4], newparamstructure[procid][im][-1][0][1], norm_per_particle[procid][im]*qt, norm_per_particle[procid][im]])
 
 						mpi_barrier(MPI_COMM_WORLD)
@@ -10872,7 +10874,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 							ctfs = EMUtil.get_all_attributes(Tracker["constants"]["stack"],'ctf')
 							ctfs = [ctfs[i] for i in li]
 							particle_groups = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_0.txt") ) + read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_1.txt") )
-							npart = 500/Blockdata["nproc"] + 1
+							npart = old_div(500,Blockdata["nproc"]) + 1
 							li = list(range(len(ctfs)))
 							shuffle(li)
 							li = li[:npart*Blockdata["nproc"]]
@@ -10887,7 +10889,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						ctfs = wrap_mpi_bcast(ctfs, Blockdata["main_node"])
 						particle_groups = wrap_mpi_bcast(particle_groups, Blockdata["main_node"])
 						#print(" A ",Blockdata["myid"] ,len(params),len(ctfs),len(particle_groups),len(params)/Blockdata["nproc"])
-						npart = len(params)/Blockdata["nproc"]
+						npart = old_div(len(params),Blockdata["nproc"])
 						params = params[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
 						ctfs = [generate_ctf(ctfs[i]) for i in range(Blockdata["myid"]*npart,(Blockdata["myid"]+1)*npart)]
 						particle_groups = particle_groups[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
@@ -11049,7 +11051,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Constants["states"]            			= ["PRIMARY", "RESTRICTED", "FINAL"]
 			Constants["user_func"]					= options.function
 			Constants["hardmask"]          			=  True #options.hardmask
-			Constants["ccfpercentage"]     			= options.ccfpercentage/100.
+			Constants["ccfpercentage"]     			= old_div(options.ccfpercentage,100.)
 			Constants["expthreshold"]      			= -10
 			Constants["number_of_groups"]  			= -1 # number of defocus groups, to be set by assign_particles_to_groups
 			Constants["nonorm"]            			= options.nonorm
@@ -11151,7 +11153,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 			if checking_flag==0:ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
 			
-			if( options.xr/options.ts<1.0 ): ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien",1,Blockdata["myid"])
+			if( old_div(options.xr,options.ts)<1.0 ): ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien",1,Blockdata["myid"])
 			#HOHO
 			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
 				ERROR("Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"],\
@@ -11435,8 +11437,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 							#  Select only one best
 							hash = newparamstructure[procid][im][2][0][0]
 							ishift = hash%1000
-							ipsi = (hash/1000)%100000
-							iang  = hash/100000000
+							ipsi = (old_div(hash,1000))%100000
+							iang  = old_div(hash,100000000)
 							params.append([ refang[iang][0], refang[iang][1], (refang[iang][2]+ipsi*Tracker["delta"])%360.0, rshifts[ishift][0]+oldparams[procid][im][3], rshifts[ishift][1]+oldparams[procid][im][4], newparamstructure[procid][im][-1][0][1], norm_per_particle[procid][im]*qt, norm_per_particle[procid][im]])
 
 						mpi_barrier(MPI_COMM_WORLD)
@@ -11667,7 +11669,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 							ctfs = EMUtil.get_all_attributes(Tracker["constants"]["stack"],'ctf')
 							ctfs = [ctfs[i] for i in li]
 							particle_groups = read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_0.txt") ) + read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_1.txt") )
-							npart = 500/Blockdata["nproc"] + 1
+							npart = old_div(500,Blockdata["nproc"]) + 1
 							li = list(range(len(ctfs)))
 							shuffle(li)
 							li = li[:npart*Blockdata["nproc"]]
@@ -11682,7 +11684,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						ctfs = wrap_mpi_bcast(ctfs, Blockdata["main_node"])
 						particle_groups = wrap_mpi_bcast(particle_groups, Blockdata["main_node"])
 						#print(" A ",Blockdata["myid"] ,len(params),len(ctfs),len(particle_groups),len(params)/Blockdata["nproc"])
-						npart = len(params)/Blockdata["nproc"]
+						npart = old_div(len(params),Blockdata["nproc"])
 						params = params[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
 						ctfs = [generate_ctf(ctfs[i]) for i in range(Blockdata["myid"]*npart,(Blockdata["myid"]+1)*npart)]
 						particle_groups = particle_groups[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]

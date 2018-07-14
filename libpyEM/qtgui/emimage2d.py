@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import absolute_import
 #
 #
 
+from past.utils import old_div
 from builtins import range
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -136,7 +138,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.mouse_mode = 0         # current mouse mode as selected by the inspector
 		self.curfft=0				# current FFT mode (when starting with real images only)
 		self.mag = 1.1				# magnification factor
-		self.invmag = 1.0/self.mag	# inverse magnification factor
+		self.invmag = old_div(1.0,self.mag)	# inverse magnification factor
 
 		self.shapes={}				# dictionary of shapes to draw, see add_shapes
 		self.shapechange=1			# Set to 1 when shapes need to be redrawn
@@ -420,7 +422,7 @@ class EMImage2DWidget(EMGLWidget):
 
 
 		if isinstance(data,list) or isinstance(data,EMDataListCache) or isinstance(data,EMLightWeightParticleCache):
-			if self.list_data == None and self.list_idx > len(data): self.list_idx = len(data)/2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
+			if self.list_data == None and self.list_idx > len(data): self.list_idx = old_div(len(data),2) #otherwise we use the list idx from the previous list data, as in when being used from the emselector
 			d = data[0]
 			if d.is_complex():
 				self.list_data = []
@@ -514,8 +516,8 @@ class EMImage2DWidget(EMGLWidget):
 		if data[0] == 0 or data[1] == 0:
 			self.scale=1.0
 			return
-		scalew = float(w)/data[0]
-		scaleh = float(h)/data[1]
+		scalew = old_div(float(w),data[0])
+		scaleh = old_div(float(h),data[1])
 		if scaleh < scalew:
 			self.scale = scaleh
 		else: self.scale = scalew
@@ -533,7 +535,7 @@ class EMImage2DWidget(EMGLWidget):
 			if self.data == None: return
 			# histogram is impacted by downsampling, so we need to compensate
 			if self.scale<=0.5 :
-				down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
+				down=self.data.process("math.meanshrink",{"n":int(floor(old_div(1.0,self.scale)))})
 				mean=down["mean"]
 				sigma=down["sigma"]
 				m0=down["minimum"]
@@ -670,10 +672,10 @@ class EMImage2DWidget(EMGLWidget):
 		"""center the point on the screen"""
 		if x==None:
 			if y==None: return
-			self.set_origin(self.origin[0],y*self.scale-self.height()/2)
+			self.set_origin(self.origin[0],y*self.scale-old_div(self.height(),2))
 		elif y==None:
-			self.set_origin(x*self.scale-self.width()/2,self.origin[1])
-		else: self.set_origin(x*self.scale-self.width()/2,y*self.scale-self.height()/2)
+			self.set_origin(x*self.scale-old_div(self.width(),2),self.origin[1])
+		else: self.set_origin(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2))
 
 	def set_shapes(self,shapes):
 		self.shapes = shapes
@@ -687,7 +689,7 @@ class EMImage2DWidget(EMGLWidget):
 		if self.list_data!=None:
 			self.image_range_changed(z+1)
 			#self.setup_shapes()
-		animation = LineAnimation(self,self.origin,(x*self.scale-self.width()/2,y*self.scale-self.height()/2))
+		animation = LineAnimation(self,self.origin,(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2)))
 		self.qt_parent.register_animatable(animation)
 		return True
 
@@ -695,7 +697,7 @@ class EMImage2DWidget(EMGLWidget):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		if self.scale==newscale: return
 		try:
-			self.origin=(newscale/self.scale*(self.width()/2.0+self.origin[0])-self.width()/2.0,newscale/self.scale*(self.height()/2.0+self.origin[1])-self.height()/2.0)
+			self.origin=(newscale/self.scale*(old_div(self.width(),2.0)+self.origin[0])-old_div(self.width(),2.0),newscale/self.scale*(old_div(self.height(),2.0)+self.origin[1])-old_div(self.height(),2.0))
 			self.scale=newscale
 			if not quiet : self.signal_set_scale.emit(newscale)
 			self.updateGL()
@@ -929,8 +931,8 @@ class EMImage2DWidget(EMGLWidget):
 		wdt =  self.width()
 		hgt =  self.height()
 
-		x0  = 1 + int(self.origin[0] / self.scale)
-		y0  = 1 + int(self.origin[1] / self.scale)
+		x0  = 1 + int(old_div(self.origin[0], self.scale))
+		y0  = 1 + int(old_div(self.origin[1], self.scale))
 
 #		print "--------------------------------------------------------------"
 #		print "invert, curfft, histogram:", \
@@ -969,20 +971,20 @@ class EMImage2DWidget(EMGLWidget):
 			if self.display_fft.is_complex() == False:
 				print("error, the fft is not complex, internal error")
 				return
-			a=(3,(self.width()*3-1)/4*4+4,self.height(),self.display_fft.render_ap24(1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
+			a=(3,(self.width()*3-1)/4*4+4,self.height(),self.display_fft.render_ap24(1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),(self.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
 		elif self.curfft in (2,3) :
 #			if not self.glflags.npt_textures_unsupported():
-				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
+				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
 #			else :
 #				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,6))
 		else :
 #			if not self.glflags.npt_textures_unsupported():
 				if self.histogram==1:
-					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,34))
+					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,34))
 				elif self.histogram==2:
-					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,98))
+					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,98))
 				else :
-					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
+					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
 #			else :
 #				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,6))
 
@@ -1007,8 +1009,8 @@ class EMImage2DWidget(EMGLWidget):
 			self.setup_shapes()
 			self.shapechange=0
 
-		width = self.width()/2.0
-		height = self.height()/2.0
+		width = old_div(self.width(),2.0)
+		height = old_div(self.height(),2.0)
 
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
@@ -1057,7 +1059,7 @@ class EMImage2DWidget(EMGLWidget):
 
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,w/bpp,h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,old_div(w,bpp),h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 
 				glNewList(self.main_display_list,GL_COMPILE)
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
@@ -1094,7 +1096,7 @@ class EMImage2DWidget(EMGLWidget):
 				if self.other_tex_name != 0: glDeleteTextures(self.other_tex_name)
 
 				scale = self.scale*self.otherdatascale
-				b=GLUtil.render_amp8(self.otherdata, int(self.origin[0]/scale),int(self.origin[1]/scale),self.width(),self.height(),(self.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
+				b=GLUtil.render_amp8(self.otherdata, int(old_div(self.origin[0],scale)),int(old_div(self.origin[1],scale)),self.width(),self.height(),(self.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
 				gl_render_type = GL_LUMINANCE
 
 				if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
@@ -1152,7 +1154,7 @@ class EMImage2DWidget(EMGLWidget):
 			GL.glColor(.7,1.0,.7,1.0)
 			GL.glPushMatrix()
 			#TODO: change self.render_bitmap()'s C++ functions so this ugly hack isn't necessary.
-			GL.glTranslate(-self.scale*(int(self.origin[0]/self.scale)+0.5),-self.scale*(int(self.origin[1]/self.scale)+0.5),0.1)
+			GL.glTranslate(-self.scale*(int(old_div(self.origin[0],self.scale))+0.5),-self.scale*(int(old_div(self.origin[1],self.scale))+0.5),0.1)
 			GL.glScalef(self.scale,self.scale,1.0)
 			GL.glCallList(self.shapelist)
 			GL.glPopMatrix()
@@ -1258,13 +1260,13 @@ class EMImage2DWidget(EMGLWidget):
 		oy = self.origin[1]
 
 		# if the image is off the screen automatically center it
-		if pixel_x + ox < 0: ox = - (display_width-pixel_x)/2.0
-		if pixel_y + oy < 0: oy = - (display_height-pixel_y)/2.0
+		if pixel_x + ox < 0: ox = old_div(- (display_width-pixel_x),2.0)
+		if pixel_y + oy < 0: oy = old_div(- (display_height-pixel_y),2.0)
 
 
 		# this operation keeps the image iff it is completely visible
-		if pixel_x < display_width:	ox = - (display_width-pixel_x)/2.0
-		if pixel_y < display_width: oy =  - (display_height-pixel_y)/2.0
+		if pixel_x < display_width:	ox = old_div(- (display_width-pixel_x),2.0)
+		if pixel_y < display_width: oy =  old_div(- (display_height-pixel_y),2.0)
 
 		self.origin = (ox,oy)
 
@@ -1273,7 +1275,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.circle_dl = glGenLists(1)
 			glNewList(self.circle_dl,GL_COMPILE)
 			glBegin(GL_LINE_LOOP)
-			d2r=pi/180.0
+			d2r=old_div(pi,180.0)
 			for i in range(90): glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
 			glEnd()
 			glEndList()
@@ -1346,8 +1348,8 @@ class EMImage2DWidget(EMGLWidget):
 					x2 = s.shape[6]
 					y1 = s.shape[5]
 					y2 = s.shape[7]
-					glTranslate((x1+x2)/2.0, (y1+y2)/2.0,0)
-					glScalef((x1-x2)/2.0, (y1-y2)/2.0,1.0)
+					glTranslate(old_div((x1+x2),2.0), old_div((y1+y2),2.0),0)
+					glScalef(old_div((x1-x2),2.0), old_div((y1-y2),2.0),1.0)
 					glCallList(self.circle_dl)
 					glPopMatrix()
 				elif  s.shape[0] == "rcirclepoint":
@@ -1357,12 +1359,12 @@ class EMImage2DWidget(EMGLWidget):
 					x2 = s.shape[6]
 					y1 = s.shape[5]
 					y2 = s.shape[7]
-					glTranslate((x1+x2)/2.0, (y1+y2)/2.0,0)
-					glScalef((x1-x2)/2.0, (y1-y2)/2.0,1.0)
+					glTranslate(old_div((x1+x2),2.0), old_div((y1+y2),2.0),0)
+					glScalef(old_div((x1-x2),2.0), old_div((y1-y2),2.0),1.0)
 					glCallList(self.circle_dl)
 					glPopMatrix()
 					glBegin(GL_POINTS)
-					glVertex( (x1+x2)/2.0, (y1+y2)/2.0,0);
+					glVertex( old_div((x1+x2),2.0), old_div((y1+y2),2.0),0);
 					glEnd()
 				elif s.shape[0] == "circle":
 					GL.glPushMatrix()
@@ -1553,11 +1555,11 @@ class EMImage2DWidget(EMGLWidget):
 
 	def scr_to_img(self,v0,v1=None):
 		#TODO: origin_x and origin_y are part of the hack in self.render() and self.render_bitmap()
-		origin_x = self.scale*(int(self.origin[0]/self.scale)+0.5)
-		origin_y = self.scale*(int(self.origin[1]/self.scale)+0.5)
+		origin_x = self.scale*(int(old_div(self.origin[0],self.scale))+0.5)
+		origin_y = self.scale*(int(old_div(self.origin[1],self.scale))+0.5)
 
-		try: img_coords = ( (v0+origin_x)/self.scale, (self.height()-(v1-origin_y))/self.scale )
-		except:	img_coords = ((v0[0]+origin_x)/self.scale,(self.height()-(v0[1]-origin_y))/self.scale)
+		try: img_coords = ( old_div((v0+origin_x),self.scale), old_div((self.height()-(v1-origin_y)),self.scale) )
+		except:	img_coords = (old_div((v0[0]+origin_x),self.scale),old_div((self.height()-(v0[1]-origin_y)),self.scale))
 
 #		print "Screen:", v0, v1
 #		print "Img:", img_coords
@@ -1567,8 +1569,8 @@ class EMImage2DWidget(EMGLWidget):
 
 	def img_to_scr(self,v0,v1=None):
 		#TODO: origin_x and origin_y are part of the hack in self.render() and self.render_bitmap()
-		origin_x = self.scale*(int(self.origin[0]/self.scale)+0.5)
-		origin_y = self.scale*(int(self.origin[1]/self.scale)+0.5)
+		origin_x = self.scale*(int(old_div(self.origin[0],self.scale))+0.5)
+		origin_y = self.scale*(int(old_div(self.origin[1],self.scale))+0.5)
 
 		try: return (v0*self.scale-origin_x,self.height()-v1*self.scale+origin_y)
 		except: return (v0[0]*self.scale-origin_x,self.height()-v0[1]*self.scale+origin_y)
@@ -1602,10 +1604,10 @@ class EMImage2DWidget(EMGLWidget):
 		x,y=int(x),int(y)
 
 		self.del_shape("PROBE")
-		self.add_shape("PROBE",EMShape(("rectpoint",.5,.5,.1,x-sz/2,y-sz/2,x+(sz+1)/2,y+(sz+1)/2,2)))
+		self.add_shape("PROBE",EMShape(("rectpoint",.5,.5,.1,x-old_div(sz,2),y-old_div(sz,2),x+old_div((sz+1),2),y+old_div((sz+1),2),2)))
 		self.updateGL()
 
-		clp=self.get_data().get_clip(Region(x-sz/2,y-sz/2,sz,sz))
+		clp=self.get_data().get_clip(Region(x-old_div(sz,2),y-old_div(sz,2),sz,sz))
 		self.inspector.ptpointval.setText("Point Value: %1.3f"%(self.get_data())[x,y])
 		self.inspector.ptareaavg.setText("Area Avg: %1.3f"%clp["mean"])
 		self.inspector.ptareaavgnz.setText("Area Avg (!=0): %1.3f"%clp["mean_nonzero"])
@@ -1699,10 +1701,10 @@ class EMImage2DWidget(EMGLWidget):
 							xs=fft.get_xsize()
 							ys=fft.get_ysize()
 							x,y=int(lc[0])+1,int(lc[1])
-							if x<xs/2 : x=xs/2-x
-							else : x-=xs/2
-							if y<ys/2 : y+=ys/2
-							else: y-=ys/2
+							if x<old_div(xs,2) : x=old_div(xs,2)-x
+							else : x-=old_div(xs,2)
+							if y<old_div(ys,2) : y+=old_div(ys,2)
+							else: y-=old_div(ys,2)
 							val=fft[x,y]
 							inspector.mtshowval.setText("Value: %1.4g + %1.4g i  @(%d,%d)"%(val.real,val.imag,x,y))
 							inspector.mtshowval2.setText("       (%1.4g, %1.4g)"%(abs(val),atan2(val.imag,val.real)*57.295779513))
@@ -1754,20 +1756,20 @@ class EMImage2DWidget(EMGLWidget):
 				# The self.scale variable is updated now, so just update with that
 				if self.inspector: self.inspector.set_scale(self.scale)
 		else:
-			move_fac = 1.0/20.0
-			delta = event.delta()/120.0
+			move_fac = old_div(1.0,20.0)
+			delta = old_div(event.delta(),120.0)
 
 #			print self.origin, self.data.get_xsize(),self.data.get_ysize(),self.scale,self.width(),self.height()
 
 #			print self.origin
 			if event.orientation() & Qt.Vertical:
-				visible_vertical_pixels = self.height()/sqrt(self.scale)
+				visible_vertical_pixels = old_div(self.height(),sqrt(self.scale))
 				shift_per_delta = move_fac*visible_vertical_pixels
 #				print "there are this many visible vertical pixels",visible_vertical_pixels, "deltas", delta, "shift per delta",shift_per_delta
 #				print "shifting vertical",event.delta(),shift_per_delta
 				self.origin=(self.origin[0],self.origin[1]-delta*shift_per_delta)
 			elif event.orientation() & Qt.Horizontal:
-				visible_horizontal_pixels = self.width()/sqrt(self.scale)
+				visible_horizontal_pixels = old_div(self.width(),sqrt(self.scale))
 				shift_per_delta = move_fac*visible_horizontal_pixels
 #				print "shifting horizontal",event.delta(),shift_per_delta
 #	   	   	   	print "there are this many visible horizontal pixels",visible_horizontal_pixels, "deltas", delta, "shift per delta",shift_per_delta
@@ -2277,9 +2279,9 @@ class EMImageInspector2D(QtGui.QWidget):
 		if data==None: return
 #		print data
 		fft=data.do_fft()
-		pspec=fft.calc_radial_dist(fft["ny"]/2,0.0,1.0,1)
-		ds=1.0/(fft["ny"]*data["apix_x"])
-		s=[ds*i for i in range(fft["ny"]/2)]
+		pspec=fft.calc_radial_dist(old_div(fft["ny"],2),0.0,1.0,1)
+		ds=old_div(1.0,(fft["ny"]*data["apix_x"]))
+		s=[ds*i for i in range(old_div(fft["ny"],2))]
 
 		from .emplot2d import EMDataFnPlotter
 
@@ -2298,10 +2300,10 @@ class EMImageInspector2D(QtGui.QWidget):
 			try: fftsum.add(fft)
 			except: fftsum=fft
 
-		fftsum.mult(1.0/len(self.target().list_data))
-		pspec=fftsum.calc_radial_dist(fft["ny"]/2,0.0,1.0,1)	# note that this method knows about is_inten() image flag
-		ds=1.0/(fft["ny"]*self.target().get_data()["apix_x"])
-		s=[ds*i for i in range(fft["ny"]/2)]
+		fftsum.mult(old_div(1.0,len(self.target().list_data)))
+		pspec=fftsum.calc_radial_dist(old_div(fft["ny"],2),0.0,1.0,1)	# note that this method knows about is_inten() image flag
+		ds=old_div(1.0,(fft["ny"]*self.target().get_data()["apix_x"]))
+		s=[ds*i for i in range(old_div(fft["ny"],2))]
 
 		from .emplot2d import EMDataFnPlotter
 
@@ -2530,15 +2532,15 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def update_brightness_contrast(self):
 		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
-		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
+		c=old_div((self.mins.value-self.maxs.value),(2.0*(self.lowlim-self.highlim)))
 		brts = -b
 		conts = 1.0-c
 		self.brts.setValue(brts,1)
 		self.conts.setValue(conts,1)
 
 	def update_min_max(self):
-		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
-		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
+		x0=(old_div((self.lowlim+self.highlim),2.0)-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
+		x1=(old_div((self.lowlim+self.highlim),2.0)+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
 		self.mins.setValue(x0,1)
 		self.maxs.setValue(x1,1)
 		self.target().set_density_range(x0,x1)

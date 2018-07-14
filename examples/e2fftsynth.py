@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # Author: Steven Ludtke, 10/16/2010 (sludtke@bcm.edu)
 # Copyright (c) 2000-2010 Baylor College of Medicine
@@ -31,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
@@ -190,19 +192,19 @@ class GUIFourierSynth(QtGui.QWidget):
 			self.targfn=EMData(nx,1)
 			
 			if index==1 : 	# triangle
-				for i in range(nx/2):
+				for i in range(old_div(nx,2)):
 					self.targfn[i]=-1.0+4.0*i/nx
-				for i in range(nx/2,nx):
+				for i in range(old_div(nx,2),nx):
 					self.targfn[i]=3.0-4.0*i/nx
 			
 			elif index==2 : # square
-				for i in range(nx/4): self.targfn[i]=-1.0
-				for i in range(nx/4,nx*3/4): self.targfn[i]=1.0
+				for i in range(old_div(nx,4)): self.targfn[i]=-1.0
+				for i in range(old_div(nx,4),nx*3/4): self.targfn[i]=1.0
 				for i in range(nx*3/4,nx): self.targfn[i]=-1.0
 				
 			elif index==3 : # square impulse
 				self.targfn.to_zero()
-				for i in range(nx/4-2,nx/2-2): self.targfn[i]=1.0
+				for i in range(old_div(nx,4)-2,old_div(nx,2)-2): self.targfn[i]=1.0
 			
 			elif index==4 : # delta
 				self.targfn.to_zero()
@@ -213,8 +215,8 @@ class GUIFourierSynth(QtGui.QWidget):
 			
 			elif index==6 : # saw
 				self.targfn.to_zero()
-				for i in range(nx/4,nx/2): self.targfn[i]=4.0*(i-nx/4.0)/nx
-				for i in range(nx/2,nx*3/4): self.targfn[i]=-1+4.0*(i-nx/2.0)/nx
+				for i in range(old_div(nx,4),old_div(nx,2)): self.targfn[i]=4.0*(i-old_div(nx,4.0))/nx
+				for i in range(old_div(nx,2),nx*3/4): self.targfn[i]=-1+4.0*(i-old_div(nx,2.0))/nx
 				
 			elif index==7 : # sin
 				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)
@@ -233,7 +235,7 @@ class GUIFourierSynth(QtGui.QWidget):
 
 			elif index==12 : # double delta
 				self.targfn.to_zero()
-				self.targfn[nx/16]=4.0
+				self.targfn[old_div(nx,16)]=4.0
 				self.targfn[nx*15/16]=4.0
 
 			elif index==13 : # sin bad f
@@ -244,12 +246,12 @@ class GUIFourierSynth(QtGui.QWidget):
 			
 			elif index==15 : # square impulse
 				self.targfn.to_zero()
-				for i in range(nx/2+2,nx*3/4+2): self.targfn[i]=1.0
+				for i in range(old_div(nx,2)+2,nx*3/4+2): self.targfn[i]=1.0
 				
 			elif index==16 : # square impulse
 				self.targfn.to_zero()
-				for i in range(nx/4-2,nx/2-2): self.targfn[i]=1.0
-				for i in range(nx/2+2,nx*3/4+2): self.targfn[i]=1.0
+				for i in range(old_div(nx,4)-2,old_div(nx,2)-2): self.targfn[i]=1.0
+				for i in range(old_div(nx,2)+2,nx*3/4+2): self.targfn[i]=1.0
 
 			self.target2sliders()
 		
@@ -261,11 +263,11 @@ class GUIFourierSynth(QtGui.QWidget):
 #		cp=self.targfn.process("xform.phaseorigin.tocenter")
 		cp=self.targfn.copy()
 		fft=cp.do_fft()
-		fft[0]=fft[0]/2.0
-		fft[fft["nx"]/2-1]=fft[fft["nx"]/2-1]/2.0
+		fft[0]=old_div(fft[0],2.0)
+		fft[old_div(fft["nx"],2)-1]=old_div(fft[old_div(fft["nx"],2)-1],2.0)
 		fft.ri2ap()
 		
-		for i in range(min(fft["nx"]/2,nsin+1)):
+		for i in range(min(old_div(fft["nx"],2),nsin+1)):
 #			print fft[i]
 			amp=fft[i].real
 			if fabs(amp)<1.0e-5 : amp=0.0
@@ -296,7 +298,7 @@ class GUIFourierSynth(QtGui.QWidget):
 		oversamp=int(self.voversamp.getValue())
 		samples=int(cell*ncells*oversamp)
 		
-		self.xvals=[xn/float(oversamp) for xn in range(samples)]
+		self.xvals=[old_div(xn,float(oversamp)) for xn in range(samples)]
 		self.total.set_size(samples)
 		self.total.to_zero()
 		for i in range(nsin+1):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 import	global_def
 from	global_def 	import *
@@ -69,7 +71,7 @@ def TotalDistance(city, lccc):
 
 def reverse(city, n):
     nct = len(city)
-    nn = (1+ ((n[1]-n[0]) % nct))/2 # half the lenght of the segment to be reversed
+    nn = old_div((1+ ((n[1]-n[0]) % nct)),2) # half the lenght of the segment to be reversed
     # the segment is reversed in the following way n[0]<->n[1], n[0]+1<->n[1]-1, n[0]+2<->n[1]-2,...
     # Start at the ends of the segment and swap pairs of cities, moving towards the center.
     for j in range(nn):
@@ -107,7 +109,7 @@ def tsp(lccc):
 
 	#     ncity = 100        # Number of cities to visit
 	from math import sqrt
-	ncity = int( (1+sqrt(1+8*len(lccc)))/2 )        # Number of cities to visit
+	ncity = int( old_div((1+sqrt(1+8*len(lccc))),2) )        # Number of cities to visit
     #  sanity check
 	if( ncity*(ncity-1)/2 != len(lccc) ): return [-1]
 
@@ -159,7 +161,7 @@ def tsp(lccc):
 				de = Distance(city[n[2]], city[n[1]], lccc) + Distance(city[n[3]], city[n[0]], lccc)\
 					 - Distance(city[n[2]], city[n[0]], lccc) - Distance(city[n[3]] ,city[n[1]], lccc)
 
-				if de<0 or exp(-de/T)>rand(): # Metropolis
+				if de<0 or exp(old_div(-de,T))>rand(): # Metropolis
 					accepted += 1
 					dist += de
 					reverse(city, n)
@@ -175,7 +177,7 @@ def tsp(lccc):
 				de += Distance( city[n[0]], city[n[4]], lccc) + Distance( city[n[1]], city[n[5]], lccc) \
 						+ Distance( city[n[2]], city[n[3]], lccc)
 
-				if de<0 or exp(-de/T)>rand(): # Metropolis
+				if de<0 or exp(old_div(-de,T))>rand(): # Metropolis
 					accepted += 1
 					dist += de
 					city = transpt(city, n)
@@ -605,7 +607,7 @@ def main():
 
 			table = [0.0]*len(rops_dst)
 			for j in range( len(rops_dst) ):
-				table[j] = sqrt( rops_dst[j]/rops_src[j] )
+				table[j] = sqrt( old_div(rops_dst[j],rops_src[j]) )
 
 			if( fl > 0.0):
 				img = filt_tanl(img, fl, aa)
@@ -771,12 +773,12 @@ def main():
 		pixel   = parm_apix
 		voltage = 120.0
 		ampcont = 10.0
-		ibd     = 4096/2-boxsize
+		ibd     = old_div(4096,2)-boxsize
 		iprj    = 0
 
 		width = 240
-		xstart = 8 + boxsize/2
-		ystart = 8 + boxsize/2
+		xstart = 8 + old_div(boxsize,2)
+		ystart = 8 + old_div(boxsize,2)
 		rowlen = 17
 		from random import randint
 		params = []
@@ -855,7 +857,7 @@ def main():
 		import subprocess
 		grpfile = 'groupid%04d'%randint(1000,9999)
 		ctfpfile = 'ctfpfile%04d'%randint(1000,9999)
-		cterr = [options.defocuserror/100.0, options.astigmatismerror]
+		cterr = [old_div(options.defocuserror,100.0), options.astigmatismerror]
 		ctfs = read_text_row(options.importctf)
 		for kk in range(len(ctfs)):
 			root,name = os.path.split(ctfs[kk][-1])
@@ -886,7 +888,7 @@ def main():
 				for ll in range(len(ctfs)):
 					if(name2 == ctfs[ll][-1]):
 						#  found correct
-						if(ctfs[ll][8]/ctfs[ll][0] <= cterr[0]):
+						if(old_div(ctfs[ll][8],ctfs[ll][0]) <= cterr[0]):
 							#  acceptable defocus error
 							ctfp = ctfs[ll][:8]
 							if(ctfs[ll][10] > cterr[1] ):
@@ -1063,10 +1065,10 @@ def main():
 				if options.B_enhance ==0.0 or options.B_enhance == -1.:
 					guinierline = rot_avg_table(power(periodogram(e1),.5))
 					if options.B_stop == 0.0:
-						freq_max   =  1./(2.*options.pixel_size)
+						freq_max   =  old_div(1.,(2.*options.pixel_size))
 					else:
-						freq_max =1./options.B_stop
-					freq_min   =  1./options.B_start
+						freq_max =old_div(1.,options.B_stop)
+					freq_min   =  old_div(1.,options.B_start)
 					log_main.add("B-factor exp(-B*s^2) is estimated from %f[A] to %f[A]"%(options.B_start, 2*options.pixel_size))
 					b,junk,ifreqmin, ifreqmax =compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = b*4
@@ -1074,13 +1076,13 @@ def main():
 				else:
 					global_b = option.B_enhance
 					log_main.add( "User provided B_factor is %f"%global_b)
-				sigma_of_inverse = sqrt(2./global_b)
+				sigma_of_inverse = sqrt(old_div(2.,global_b))
 				e1 = filt_gaussinv(e1,sigma_of_inverse)
 				if options.fl > 0.0 and options.fl < 0.5:
 					log_main.add("Low-pass filter ff %   aa  %f"%(options.fl, options.aa))
 					e1 =filt_tanl(e1,options.fl, options.aa)
 				elif options.fl > 0.5:
-					e1 =filt_tanl(e1,options.fl/option.pixel_size, options.aa)
+					e1 =filt_tanl(e1,old_div(options.fl,option.pixel_size), options.aa)
 				e1.write_image(options.output)
 
 		else: # 3D case High pass filter should always come along with low-pass filter. 
@@ -1189,9 +1191,9 @@ def main():
 						del cm
 						m = Util.adaptive_mask(map1, st[0]+options.mask_threshold*st[1], options.dilation, options.consine_edge)
 					else:
-						st = Util.infomask((map1+map2)/2.0, cm, True)
+						st = Util.infomask(old_div((map1+map2),2.0), cm, True)
 						del cm
-						m = Util.adaptive_mask((map1+map2)/2.0, st[0]+options.mask_threshold*st[1], options.dilation, options.consine_edge)
+						m = Util.adaptive_mask(old_div((map1+map2),2.0), st[0]+options.mask_threshold*st[1], options.dilation, options.consine_edge)
 					log_main.add("Actually used threhold, options.dilation, options.consine_edge %f %5.2f %5.2f"%((st[0]+options.mask_threshold*st[1]), options.dilation, options.consine_edge))
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 				else:
@@ -1206,22 +1208,22 @@ def main():
 					from math import sqrt
 					def gauss_inverse(x, sigma):
 						from math import exp
-						omega = 0.5/(sigma*sigma)
+						omega = old_div(0.5,(sigma*sigma))
 						return exp(x*omega)
 					def tanhfl(x, cutoff, aa):
 						from math import pi, tanh
 						omega = cutoff
-						cnst  = pi/(2.0*omega*aa)
+						cnst  = old_div(pi,(2.0*omega*aa))
 						v1    = (cnst*(x + omega))
 						v2    = (cnst*(x - omega))
 						return 0.5*(tanh(v1) - tanh(v2))
 					from math import pi
 					N = image_size//2
-					sigma_of_inverse = sqrt(2./(B_factor/pixel_size**2))
+					sigma_of_inverse = sqrt(old_div(2.,(old_div(B_factor,pixel_size**2))))
 					values = []
-					if cutoff >0.5: cutoff = pixel_size/cutoff # always uses absolute frequencies
+					if cutoff >0.5: cutoff = old_div(pixel_size,cutoff) # always uses absolute frequencies
 					for i in range(N):
-						x = float(i)/float(N*2.)
+						x = old_div(float(i),float(N*2.))
 						values.append(tanhfl(x, cutoff, aa)*gauss_inverse(x, sigma_of_inverse))
 					index_zero = N+1
 					for i in range(N):
@@ -1273,7 +1275,7 @@ def main():
 					if( type(values) != list):  values = [values]
 					angstrom = [999.0]*len(values)
 					for i,q in enumerate(values):
-						if(q>0.0):  angstrom[i] = pixel_size/q
+						if(q>0.0):  angstrom[i] = old_div(pixel_size,q)
 					return angstrom
 
 				### for two maps
@@ -1345,13 +1347,13 @@ def main():
 
 					# Ticks
 					nyquist_resolution = resolution_in_angstrom[-1]
-					raw_x_ticks_ang = [int(round(options.pixel_size / float(entry), 0)) for entry in [0.1, 0.2, 0.3, 0.4, 0.5]]
+					raw_x_ticks_ang = [int(round(old_div(options.pixel_size, float(entry)), 0)) for entry in [0.1, 0.2, 0.3, 0.4, 0.5]]
 					x_ticks_ang = [r'$\frac{{1}}{{{0}}}$'.format(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
-					x_ticks_freq = [options.pixel_size/float(tick) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
+					x_ticks_freq = [old_div(options.pixel_size,float(tick)) for tick in raw_x_ticks_ang if tick > nyquist_resolution*1.03]
 					x_ticks_ang.insert(0, r'$0$')
 					x_ticks_freq.insert(0, 0)
 					x_ticks_ang.append(r'$\frac{{1}}{{{0}}}$'.format(round(nyquist_resolution, 2)))
-					x_ticks_freq.append(options.pixel_size/round(nyquist_resolution, 2))
+					x_ticks_freq.append(old_div(options.pixel_size,round(nyquist_resolution, 2)))
 					plt.xticks(x_ticks_freq, x_ticks_ang, size='xx-large')
 					y_ticks = [-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
 					plt.yticks(y_ticks, [r'${0}$'.format(tick) for tick in y_ticks], size='large')
@@ -1440,8 +1442,8 @@ def main():
 					for ifreq in range(len(fsc_true[0])): fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
 					## smooth FSC after FSC143 and set other values to zero
 					for ifreq in range(nfreq143+1, len(fsc_true[1])):
-						if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
-						elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
+						if ifreq ==nfreq143+1: fsc_true[1][ifreq] = old_div((fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1]),5.)
+						elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = old_div((fsc_true[1][nfreq143-1]),5.)
 						else:  fsc_true[1][ifreq] = 0.0
 					Util.add_img(map1, map2)
 					del map2
@@ -1490,8 +1492,8 @@ def main():
 						guinierline    = rot_avg_table(power(periodogram(map1),.5))
 						logguinierline = []
 						for ig in range(len(guinierline)):logguinierline.append(log(guinierline[ig]))
-						freq_min = 1./options.B_start  # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
-						if options.B_stop!=0.0: freq_max = 1./options.B_stop 
+						freq_min = old_div(1.,options.B_start)  # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
+						if options.B_stop!=0.0: freq_max = old_div(1.,options.B_stop) 
 						if freq_min>= freq_max:
 							log_main.add("B_start is too high! Decrease it and rerun the program!")
 							ERROR("B_start is too high! Decrease it and re-run the program!", "--combinemaps option", 1)
@@ -1501,11 +1503,11 @@ def main():
 						log_main.add("Similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(\
 							  ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
 						log_main.add("The slope is %6.2f[A^2]"%(round(-b,2)))
-						sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
+						sigma_of_inverse = sqrt(old_div(2.,(old_div(global_b,options.pixel_size**2))))
 					else: # User provided value
 						#log_main.add( " apply user provided B-factor to enhance map!")
 						log_main.add("User-provided B-factor is %6.2f[A^2]"%options.B_enhance)
-						sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
+						sigma_of_inverse = sqrt(old_div(2.,(old_div((abs(options.B_enhance)),options.pixel_size**2))))
 						global_b = options.B_enhance
 
 					map1 = (filt_gaussinv(map1, sigma_of_inverse))
@@ -1523,16 +1525,16 @@ def main():
 				if not single_map:
 					if options.fl !=-1.: # User provided low-pass filter #4.
 						if options.fl>0.5: # Input is in Angstrom 
-							map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
+							map1   = filt_tanl(map1,old_div(options.pixel_size,options.fl), min(options.aa,.1))
 							cutoff = options.fl
 							log_main.add("low-pass filter to user-provided %f[A]"%cutoff)
 						elif options.fl>0.0 and options.fl< 0.5:  # input is in absolution frequency
 							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
-							cutoff = options.pixel_size/options.fl
+							cutoff = old_div(options.pixel_size,options.fl)
 							log_main.add("Low-pass filter to user-provided %f[A]"%cutoff)
 						else: # low-pass filter to resolution determined by FSC0.143
 							map1   = filt_tanl(map1,resolution_FSC143, options.aa)
-							cutoff = options.pixel_size/resolution_FSC143
+							cutoff = old_div(options.pixel_size,resolution_FSC143)
 							log_main.add("Low-pass filter to FSC0.143 resolution (%f[A])!"%cutoff)
 					else:
 						### # NOTE: Toshio Moriya 2018/01/11
@@ -1550,7 +1552,7 @@ def main():
 						log_main.add("There is no low-pass filteration in single map enhancement")
 					else:
 						if options.fl>0.5: # Input is in Angstrom 
-							map1   = filt_tanl(map1, options.pixel_size/options.fl, min(options.aa,.1))
+							map1   = filt_tanl(map1, old_div(options.pixel_size,options.fl), min(options.aa,.1))
 							cutoff = options.fl
 						else:
 							"""
@@ -1572,7 +1574,7 @@ def main():
 				map1.write_image(file_path_final)
 				log_main.add("---------- >>> Summary <<<------------")
 				if not single_map:
-					log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
+					log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((old_div(options.pixel_size,resolution_FSChalf)),3), round((old_div(options.pixel_size,resolution_FSC143)),3)))
 					if dip_at_fsc: log_main.add("There is a dip in the fsc curve in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
 				if options.B_enhance !=-1:  log_main.add( "B-factor is %6.2f[A^2]"%(round((-global_b),2)))
 				else:log_main.add( "B-factor is not applied")
@@ -1593,7 +1595,7 @@ def main():
 					### log_main.add("B_factor:  %f   cutoff:   %f[A]  (%f[absolute]) aa: [absolute]:  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Falloff width is %d pixels"%\
 					###    (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
 					log_main.add("B_factor                     :  %f"%(global_b))
-					log_main.add("Low-pass filter cutoff       :  %f[A] (%f[absolute])"%(cutoff, options.pixel_size/cutoff))
+					log_main.add("Low-pass filter cutoff       :  %f[A] (%f[absolute])"%(cutoff, old_div(options.pixel_size,cutoff)))
 					log_main.add("Low-pass filter falloff      :  %f[absolute]"%(options.aa))
 					log_main.add("Max enhancement point        :  %d[pixels]"%(mindex))
 					log_main.add("Max enhancement ratio        :  %f"%(mavlue))

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke 10/05/2009 (sludtke@bcm.edu)
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 from optparse import OptionParser
 import sys
@@ -260,7 +262,7 @@ class TrackerControl(QtGui.QWidget):
 
 		self.imagefile=fsp
 
-		self.curtilt=self.imageparm["nz"]/2
+		self.curtilt=old_div(self.imageparm["nz"],2)
 		self.tiltshapes=[None for i in range(self.imageparm["nz"])]
 		self.update_tilt()
 
@@ -310,7 +312,7 @@ class TrackerControl(QtGui.QWidget):
 			dx=abs(lc[0]-self.downloc[0])
 			dy=abs(lc[1]-self.downloc[1])
 			dx=max(dx,dy)	# Make box square
-			dx=good_size(dx*2)/2	# use only good sizes
+			dx=old_div(good_size(dx*2),2)	# use only good sizes
 			dy=dx
 			s=EMShape(["rectpoint",0,.7,0,self.downloc[0]-dx,self.downloc[1]-dy,self.downloc[0]+dx,self.downloc[1]+dy,1])
 			self.im2d.add_shape("box",s)
@@ -333,7 +335,7 @@ class TrackerControl(QtGui.QWidget):
 			dx=abs(lc[0]-self.downloc[0])
 			dy=abs(lc[1]-self.downloc[1])
 			dx=max(dx,dy)	# Make box square
-			dx=good_size(dx*2)/2	# use only good sizes
+			dx=old_div(good_size(dx*2),2)	# use only good sizes
 			dy=dx
 			s=EMShape(["rectpoint",.7,.2,0,self.downloc[0]-dx,self.downloc[1]-dy,self.downloc[0]+dx,self.downloc[1]+dy,1])
 			self.im2d.del_shape("box")
@@ -365,7 +367,7 @@ class TrackerControl(QtGui.QWidget):
 		for i in range(self.imageparm["nz"]):
 			refshape=self.tiltshapes[i].getShape()
 			img=EMData(self.imagefile,0,False,Region(refshape[4],refshape[5],i,refshape[6]-refshape[4],refshape[7]-refshape[5],1))
-			img["ptcl_source_coord"]=(int((refshape[6]+refshape[4])/2.0),int((refshape[7]+refshape[5])/2.0),i)
+			img["ptcl_source_coord"]=(int(old_div((refshape[6]+refshape[4]),2.0)),int(old_div((refshape[7]+refshape[5]),2.0)),i)
 			img["ptcl_source_image"]=str(self.imagefile)
 			if self.invert : img.mult(-1.0)
 			img.process_inplace("normalize.edgemean")
@@ -414,16 +416,16 @@ class TrackerControl(QtGui.QWidget):
 		av=stack[0].copy()
 		for p in stack[1:]: av+=p
 		av.del_attr("xform.projection")
-		av.mult(1.0/(len(stack)))
-		av=av.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+		av.mult(old_div(1.0,(len(stack))))
+		av=av.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 		
 		for i,p in enumerate(stack) : 
-			p["alt"]=(i-len(stack)/2)*angstep
+			p["alt"]=(i-old_div(len(stack),2))*angstep
 		
 		# Determine a good angular step for filling Fourier space
-		fullsamp=360.0/(boxsize*pi)
-		if angstep/fullsamp>2.0 :
-			samp=1.0/(floor(angstep/fullsamp))
+		fullsamp=old_div(360.0,(boxsize*pi))
+		if old_div(angstep,fullsamp)>2.0 :
+			samp=old_div(1.0,(floor(old_div(angstep,fullsamp))))
 		else :
 			samp=angstep
 		
@@ -435,7 +437,7 @@ class TrackerControl(QtGui.QWidget):
 		
 		for ri in range(5):
 			print("Iteration ",ri)
-			for a in [i*samp for i in range(-int(90.0/samp),int(90.0/samp)+1)]:
+			for a in [i*samp for i in range(-int(old_div(90.0,samp)),int(old_div(90.0,samp))+1)]:
 				for ii in range(len(stack)-1):
 					if stack[ii]["alt"]<=a and stack[ii+1]["alt"]>a : break
 				else: ii=-1
@@ -454,8 +456,8 @@ class TrackerControl(QtGui.QWidget):
 #					print a," avg ",frac
 				else:
 					# We average slices in real space, producing a rotational 'smearing' effect
-					frac=(a-stack[ii]["alt"])/angstep
-					p=stack[ii].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*(1.0-frac)+stack[ii+1].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))*frac
+					frac=old_div((a-stack[ii]["alt"]),angstep)
+					p=stack[ii].get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))*(1.0-frac)+stack[ii+1].get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))*frac
 #					print a,ii,ii+1,stack[ii]["alt"],frac
 				
 				xf=Transform({"type":"eman","alt":a,"az":-taxis,"phi":taxis})
@@ -468,7 +470,7 @@ class TrackerControl(QtGui.QWidget):
 		
 		ret=recon.finish()
 		print("Done")
-		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+		ret=ret.get_clip(Region(old_div((pad-boxsize),2),old_div((pad-boxsize),2),old_div((pad-boxsize),2),boxsize,boxsize,boxsize))
 		ret.process_inplace("normalize.edgemean")
 #		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
 		
@@ -486,8 +488,8 @@ class TrackerControl(QtGui.QWidget):
 		av=stack[0].copy()
 		for p in stack[1:]: av+=p
 		av.del_attr("xform.projection")
-		p.mult(1.0/len(stack))
-		av=av.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+		p.mult(old_div(1.0,len(stack)))
+		av=av.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 
 		recon=Reconstructors.get("fourier", {"quiet":True,"sym":"c1","x_in":pad,"y_in":pad})
 		recon.setup()
@@ -519,7 +521,7 @@ class TrackerControl(QtGui.QWidget):
 		boxsize=stack[0]["nx"]
 		pad=good_size(int(boxsize*1.5))
 		
-		for i,p in enumerate(stack) : p["xform.projection"]=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":-taxis,"phi":taxis})
+		for i,p in enumerate(stack) : p["xform.projection"]=Transform({"type":"eman","alt":(i-old_div(len(stack),2))*angstep,"az":-taxis,"phi":taxis})
 		
 		recon=Reconstructors.get("fourier", {"sym":"c1","size":(pad,pad,pad),"mode":reconmodes[mode],"verbose":True})
 		if initmodel!=None : recon.setup(initmodel,.01)
@@ -528,7 +530,7 @@ class TrackerControl(QtGui.QWidget):
 		
 		# First pass to assess qualities and normalizations
 		for i,p in enumerate(stack):
-			p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+			p2=p.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 			p2=recon.preprocess_slice(p2,p["xform.projection"])
 			recon.insert_slice(p2,p["xform.projection"],1.0)
 			print(" %d    \r"%i)
@@ -536,7 +538,7 @@ class TrackerControl(QtGui.QWidget):
 
 		# after building the model once we can assess how well everything agrees
 		for p in stack:
-			p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+			p2=p.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 			p2=recon.preprocess_slice(p2,p["xform.projection"])
 			recon.determine_slice_agreement(p2,p["xform.projection"],1.0,True)
 			scores.append((p2["reconstruct_absqual"],p2["reconstruct_norm"]))
@@ -551,7 +553,7 @@ class TrackerControl(QtGui.QWidget):
 		if initmodel!=None : recon.setup(initmodel,.01)
 		else : recon.setup()
 
-		thr=0.7*(scores[len(scores)/2][0]+scores[len(scores)/2-1][0]+scores[len(scores)/2+1][0])/3;		# this is rather arbitrary
+		thr=0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0])/3;		# this is rather arbitrary
 		# First pass to assess qualities and normalizations
 		for i,p in enumerate(stack):
 			if scores[i][0]<thr : 
@@ -559,7 +561,7 @@ class TrackerControl(QtGui.QWidget):
 				continue
 			
 			print("%d. %1.2f \t%1.3f\t%1.3f"%(i,p["xform.projection"].get_rotation("eman")["alt"],scores[i][0],scores[i][1]))
-			p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+			p2=p.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 			p2=recon.preprocess_slice(p2,p["xform.projection"])
 			p2.mult(scores[i][1])
 			recon.insert_slice(p2,p["xform.projection"],1.0)
@@ -568,21 +570,21 @@ class TrackerControl(QtGui.QWidget):
 		
 		recon.set_param("savenorm","norm.mrc")
 		ret=recon.finish(True)
-		ret=ret.get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+		ret=ret.get_clip(Region(old_div((pad-boxsize),2),old_div((pad-boxsize),2),old_div((pad-boxsize),2),boxsize,boxsize,boxsize))
 #		print "Quality: ",qual
 		
 		return ret
 	
 	def tilt_axis(self):
 		ntilt=self.imageparm["nz"]
-		sz=good_size(self.imageparm["nx"]/2)
+		sz=good_size(old_div(self.imageparm["nx"],2))
 		while 1:
 			av=None
 			n=0
 			for i in range(ntilt):
 				refshape=self.tiltshapes[i].getShape()
-				if refshape[4]<=sz/2 or refshape[5]<=sz/2 or self.imageparm["nx"]-refshape[4]<=sz/2 or self.imageparm["ny"]-refshape[5]<=sz/2 : break
-				img=EMData(self.imagefile,0,False,Region(refshape[4]-sz/2,refshape[5]-sz/2,i,sz,sz,1))
+				if refshape[4]<=old_div(sz,2) or refshape[5]<=old_div(sz,2) or self.imageparm["nx"]-refshape[4]<=old_div(sz,2) or self.imageparm["ny"]-refshape[5]<=old_div(sz,2) : break
+				img=EMData(self.imagefile,0,False,Region(refshape[4]-old_div(sz,2),refshape[5]-old_div(sz,2),i,sz,sz,1))
 				if self.invert : img.mult(-1.0)
 				img.process_inplace("normalize.edgemean")
 				
@@ -596,16 +598,16 @@ class TrackerControl(QtGui.QWidget):
 			print("You may wish to center on a feature closer to the center of the image next time -> ",sz)
 		
 		sz2=good_size(sz+128)
-		av2=av.get_clip(Region((sz-sz2)/2,(sz-sz2)/2,sz2,sz2))
+		av2=av.get_clip(Region(old_div((sz-sz2),2),old_div((sz-sz2),2),sz2,sz2))
 		av2.process_inplace("mask.zeroedgefill")
 		av2.process_inplace("filter.flattenbackground",{"radius":64})
-		av=av2.get_clip(Region((sz2-sz)/2,(sz2-sz)/2,sz,sz))
+		av=av2.get_clip(Region(old_div((sz2-sz),2),old_div((sz2-sz),2),sz,sz))
 		av.process_inplace("normalize.edgemean")
-		av.process_inplace("mask.sharp",{"outer_radius":sz/2-1})
+		av.process_inplace("mask.sharp",{"outer_radius":old_div(sz,2)-1})
 
 #		display(av)
 		f=av.do_fft()
-		d=f.calc_az_dist(360,-90.25,0.5,10.0,sz/2-1)
+		d=f.calc_az_dist(360,-90.25,0.5,10.0,old_div(sz,2)-1)
 		d=[(i,j*0.5-90) for j,i in enumerate(d)]
 		self.btiltaxisval.setText(str(max(d)[1]))
 #		print max(d)
@@ -620,7 +622,7 @@ class TrackerControl(QtGui.QWidget):
 
 		stack=self.get_boxed_stack()
 		for i,p in enumerate(stack) : 
-			ort=Transform({"type":"eman","alt":(i-len(stack)/2)*angstep,"az":-taxis,"phi":taxis})		# is this right ?
+			ort=Transform({"type":"eman","alt":(i-old_div(len(stack),2))*angstep,"az":-taxis,"phi":taxis})		# is this right ?
 			curshape=self.tiltshapes[i].getShape()
 			
 			# Read the reference at the user specified size, then pad it a bit

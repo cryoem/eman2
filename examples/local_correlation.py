@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # This program will compute the 'local correlation' between two maps
 # maps are hardcoded as a,b below, as is the local region
+from past.utils import old_div
 from EMAN2 import *
 
 # read the images
@@ -27,7 +29,7 @@ a.mult(asq)
 a.mult(bsq)
 
 # masking, to eliminate spurious artifacts at the edges where there is almost no density
-b.process_inplace("threshold.binary",{"value":b["mean"]+b["sigma"]/4})
+b.process_inplace("threshold.binary",{"value":b["mean"]+old_div(b["sigma"],4)})
 a.mult(b)	# this is a mask of sorts
 
 a.write_image("loc_cor.hdf")

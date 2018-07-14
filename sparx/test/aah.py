@@ -1,5 +1,7 @@
 #!/bin/env python
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -16,9 +18,9 @@ def prepij(image):
 	N = M*npad
 	K = 6
 	alpha = 1.75
-	r = M/2
+	r = old_div(M,2)
 	v = K/2.0/N
-	kb = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
+	kb = Util.KaiserBessel(alpha, K, r, old_div(K,(2.*N)), N)
 	#out = rotshift2dg(image, angle*pi/180., sx, sy, kb,alpha)
 	o = image.FourInterpol(2*M, 2*M, 1, 0)
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
@@ -122,12 +124,12 @@ xold = float(nx//2)
 yold = float(ny//2)
 for i in range(-ns,ns+1):
 	for j in range(-ns,ns+1):
-		value = u.get_pixel_conv(xold+i/float(ns),yold+j/float(ns),1.0,kb)
+		value = u.get_pixel_conv(xold+old_div(i,float(ns)),yold+old_div(j,float(ns)),1.0,kb)
 		#cfc.set_value_at(i+ns,j+ns,value)
 		if(value > xma):
 			xma = value
-			im = xold+i/float(ns) - float(nx//2)
-			jm = yold+j/float(ns) - float(ny//2)
+			im = xold+old_div(i,float(ns)) - float(nx//2)
+			jm = yold+old_div(j,float(ns)) - float(ny//2)
 print("  PEAK  ",im,jm,xma)
 
 
@@ -195,12 +197,12 @@ xold = float(nx//2)
 yold = float(ny//2)
 for i in range(-ns,ns+1):
 	for j in range(-ns,ns+1):
-		value = u.get_pixel_conv(xold+i/float(ns),yold+j/float(ns),1.0,kb)
+		value = u.get_pixel_conv(xold+old_div(i,float(ns)),yold+old_div(j,float(ns)),1.0,kb)
 		#cfc.set_value_at(i+ns,j+ns,value)
 		if(value > xma):
 			xma = value
-			im = xold+i/float(ns) - float(nx//2)
-			jm = yold+j/float(ns) - float(ny//2)
+			im = xold+old_div(i,float(ns)) - float(nx//2)
+			jm = yold+old_div(j,float(ns)) - float(ny//2)
 print("  PEAK  ",im,jm,xma)
 #drop_image(cfc,"cfc.hdf")
 
@@ -281,12 +283,12 @@ cfc = model_blank(2*ns+1,2*ns+1)
 xma = -1.0e23
 for i in range(-ns,ns+1):
 	for j in range(-ns,ns+1):
-		value = product.get_pixel_conv(xold+i/float(ns),yold+j/float(ns),1.0,kb)
+		value = product.get_pixel_conv(xold+old_div(i,float(ns)),yold+old_div(j,float(ns)),1.0,kb)
 		cfc.set_value_at(i+ns,j+ns,value)
 		#print  i,j,"   ",value
 		if(value > xma):
 			xma = value
-			im = xold+i/float(ns) - float(nx//2)
-			jm = yold+j/float(ns) - float(ny//2)
+			im = xold+old_div(i,float(ns)) - float(nx//2)
+			jm = yold+old_div(j,float(ns)) - float(ny//2)
 print("  PEAK  ",im,jm,xma)
 drop_image(cfc,"cfc.hdf")

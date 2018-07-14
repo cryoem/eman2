@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2017-03
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -72,7 +74,7 @@ class boxerConvNet(object):
 		nnet_savename="nnet_pickptcls_2cls.hdf"
 		bxsz=refs0[0]["nx"]
 		sz=64
-		shrinkfac=float(bxsz)/float(sz)
+		shrinkfac=old_div(float(bxsz),float(sz))
 		
 		print("Importing dependencies...")
 		if not hasattr(boxerConvNet,'import_done'):
@@ -109,7 +111,7 @@ class boxerConvNet(object):
 			if nref<5:
 				print("Not enough references. Please box at least 5 good and 5 bad reference...")
 				return []
-			ncopy=nref_target/nref + 1
+			ncopy=old_div(nref_target,nref) + 1
 			
 			for pp in refs:
 				ptl=pp.process("math.fft.resample",{"n":shrinkfac})
@@ -138,7 +140,7 @@ class boxerConvNet(object):
 		train_set_x= theano.shared(data,borrow=True)
 		
 		#### make target output
-		img=EMData(sz/2,sz/2)
+		img=EMData(old_div(sz,2),old_div(sz,2))
 		img.process_inplace("testimage.gaussian",{'sigma':5.})
 		img.div(img["maximum"])
 		gaus=img.numpy().copy().flatten()
@@ -157,7 +159,7 @@ class boxerConvNet(object):
 		classify=convnet.get_classify_func(train_set_x,labels,batch_size)
 		learning_rate=0.002
 		weightdecay=1e-5
-		n_train_batches = len(data) / batch_size
+		n_train_batches = old_div(len(data), batch_size)
 		for epoch in range(20):
 		# go through the training set
 			c = []
@@ -198,7 +200,7 @@ class boxerConvNet(object):
 			for m in mm:
 				img=from_numpy(m)
 				nx=img["nx"]
-				img=img.get_clip(Region(-nx/2,-nx/2,nx*2,nx*2))
+				img=img.get_clip(Region(old_div(-nx,2),old_div(-nx,2),nx*2,nx*2))
 				img.scale(2.)
 				#img.process_inplace("math.fft.resample",{"n":.5})
 				img.mult(5)
@@ -211,15 +213,15 @@ class boxerConvNet(object):
 		
 		nnet_savename="nnet_pickptcls_2cls.hdf"
 		sz=64
-		shrinkfac=float(bxsz)/float(sz)
+		shrinkfac=old_div(float(bxsz),float(sz))
 		
 		if os.path.isfile(nnet_savename)==False:
 			print("Cannot find saved network, exit...")
 			return 0
 			
 		#else:
-		nx=int(micrograph["nx"]/shrinkfac)
-		ny=int(micrograph["ny"]/shrinkfac)
+		nx=int(old_div(micrograph["nx"],shrinkfac))
+		ny=int(old_div(micrograph["ny"],shrinkfac))
 		
 			
 		layers=boxerConvNet.load_network(nnet_savename, nx, ny)
@@ -262,7 +264,7 @@ class boxerConvNet(object):
 				
 				for mi in range(s[1]):
 					sw=allw[wi][mi]["nx"]
-					allw[wi][mi]=allw[wi][mi].get_clip(Region((sw-nx)/2,(sw-ny)/2,nx,ny))
+					allw[wi][mi]=allw[wi][mi].get_clip(Region(old_div((sw-nx),2),old_div((sw-ny),2),nx,ny))
 					
 					allw[wi][mi].process_inplace("xform.phaseorigin.tocenter")
 					#allw[wi][mi].do_fft_inplace()
@@ -340,7 +342,7 @@ class boxerConvNet(object):
 					thrn=2.
 			
 			threshold=final["mean"]+final["sigma"]*thrn
-			pks=final.peak_ccf(sz/4)
+			pks=final.peak_ccf(old_div(sz,4))
 			pks=np.array(pks).reshape(-1,3)
 			pks=np.hstack([pks, np.zeros((len(pks),1))+lb])
 			#print pks.shape
@@ -372,13 +374,13 @@ class boxerConvNet(object):
 		nnet_savename="nnet_pickptcls_2cls.hdf"
 		#bxsz=goodrefs[0]["nx"]
 		sz=64
-		shrinkfac=float(bxsz)/float(sz)
+		shrinkfac=old_div(float(bxsz),float(sz))
 		
 		## need the micrograph size to pad the kernels
 		fsp=filenames[0]#.split()[1]
 		hdr=EMData(fsp, 0, True)
-		nx=int(hdr["nx"]/shrinkfac)
-		ny=int(hdr["ny"]/shrinkfac)
+		nx=int(old_div(hdr["nx"],shrinkfac))
+		ny=int(old_div(hdr["ny"],shrinkfac))
 		
 		#### load network...
 		layers=boxerConvNet.load_network(nnet_savename, nx, ny)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steve Ludtke, 07/26/17 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_list_dicts
@@ -184,18 +186,18 @@ def main():
 	#run("e2msa.py %s %s --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
 	run("e2msa.py %s %s %s --nbasis %0d %s --mode %s --nomean"%(fpfile,fpbasis,inputproj,options.nbasisfp,step,msamode))
 	proc_tally += 1.0
-	if logid : E2progress(logid,proc_tally/total_procs)
+	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# reproject the particle footprints into the basis subspace
 #	run("e2basis.py project %s %s %s --oneout --mean1 --verbose=%d"%(fpbasis,fpfile,inputproj,subverbose))
 	proc_tally += 1.0
-	if logid : E2progress(logid,proc_tally/total_procs)
+	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# Classification
 	run("e2classifykmeans.py %s --original=%s --mininclass=2 --ncls=%d --clsmx=%s/classmx_00.hdf --onein --fastseed"%(inputproj,options.input,options.ncls,options.path))
 
 	proc_tally += 1.0
-	if logid : E2progress(logid,proc_tally/total_procs)
+	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# Make class averages
 	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=%d --force --bootstrap --center=%s" %(options.input,options.path,options.path,options.classiter,options.center)
@@ -205,7 +207,7 @@ def main():
 	class_postproc(options,0)
 
 	proc_tally += 1.0
-	if logid : E2progress(logid,proc_tally/total_procs)
+	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# this is the iterative refinement loop, but the default with bispectra is to not run any iterative refinement
 	for it in range(1,options.iter+1) :
@@ -215,7 +217,7 @@ def main():
 		run("e2msa.py {path}/classes_fp_{it1:02d}.hdf {path}/basis_{it:02d}.hdf {path}/basis_proj_{it:02d}.hdf --projin {fpfile} --nbasis {nbasis} --mode {mode} --nomean".format(path=options.path,it1=it-1,it=it,nbasis=options.nbasisfp,mode=msamode,fpfile=fpfile))
 		#run("e2msa.py %s/classes_fp_%02d.hdf %s/basis_%02d.hdf  --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin"%(options.path,it-1,options.path,it,options.nbasisfp,options.path))
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 		# now project original image bispectra into class-average basis space
 		#run("e2basis.py project %s/basis_%02d.hdf %s %s/basis_proj_%02d.hdf --oneout --mean1 --verbose=%d"%(options.path,it,fpfile,options.path,it,subverbose))
@@ -225,7 +227,7 @@ def main():
 		# Classification
 		run("e2classifykmeans.py %s/basis_proj_%02d.hdf --original=%s --mininclass=2 --ncls=%d --clsmx=%s/classmx_%02d.hdf --onein --fastseed"%(options.path,it,options.input,options.ncls,options.path,it))
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 
 		# Make class averages
@@ -233,7 +235,7 @@ def main():
 		cls_cmd += get_classaverage_extras(options)
 		run (cls_cmd)
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 		class_postproc(options,it)
 

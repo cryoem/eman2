@@ -1,5 +1,6 @@
 #!/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -49,7 +51,7 @@ e = EMData()
 e.read_image("tf2d0001.tfc")
 mask=model_circle(27,64,64)
 stat=Util.infomask(e,mask)
-ee=(e-stat[0])/stat[1]  #*mask
+ee=old_div((e-stat[0]),stat[1])  #*mask
 mask=model_circle(25,64,64)
 sx=0
 sy=0
@@ -59,9 +61,9 @@ line = EMData()
 for i in range(0,30+1):
   for ix in range(0,20+1):
     for iy in range(0,10+1):
-      sx=ix/20.0
-      sy=iy/10.0
-      a=i/10.0
+      sx=old_div(ix,20.0)
+      sy=old_div(iy,10.0)
+      a=old_div(i,10.0)
       o = rtshg(ee,a,sx,sy)
 
 

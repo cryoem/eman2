@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: John Flanagan May 13th 2011  
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -47,7 +49,7 @@ def main():
 	
 	unwraped3d = None
 	for z in range(map3d.get_zsize()):
-		t = Transform({"type":"eman","tz":(map3d.get_zsize()/2 - z)})
+		t = Transform({"type":"eman","tz":(old_div(map3d.get_zsize(),2) - z)})
 		slice2d = EMData(map3d.get_xsize(), map3d.get_ysize())
 		slice2d.cut_slice(map3d, t, 0)
 		polarslice = slice2d.unwrap(0,-1,180,0,0,1,0)

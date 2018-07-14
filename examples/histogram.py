@@ -1,7 +1,9 @@
 # This is a simple example showing how to generate a histogram from a text file
 from __future__ import print_function
+from __future__ import division
 # specify the filename and column number with an optional number of bins, column number 0 indexed
 # Note that outliers are filtered out (>sigma*4 twice)
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from numpy import *
@@ -37,8 +39,8 @@ col=col[abs(col-m)<s*4.0]
 lz=len(col[col<0])
 gz=len(col[col>0])
 print(argv[1])
-print("%1.2f (%d) less than zero"%(float(lz)/(lz+gz),lz))
-print("%1.2f (%d) less than zero"%(float(gz)/(lz+gz),gz))
+print("%1.2f (%d) less than zero"%(old_div(float(lz),(lz+gz)),lz))
+print("%1.2f (%d) less than zero"%(old_div(float(gz),(lz+gz)),gz))
 
 try: his=histogram(col,int(argv[3]))
 except: his=histogram(col,100)

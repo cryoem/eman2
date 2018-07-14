@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2016-03
 # Look for holes in a 3d density map
+from past.utils import old_div
 from EMAN2 import *
 import numpy as np
 import scipy.ndimage as ndimage
@@ -34,7 +36,7 @@ def main():
 	a["apix_x"]=apix
 	a["apix_y"]=apix
 	a["apix_z"]=apix
-	a.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.filter_res})
+	a.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.,options.filter_res)})
 
 	a.write_image(options.output)
 	

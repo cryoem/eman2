@@ -32,6 +32,8 @@
 #
 #
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import os
 from EMAN2 import *
@@ -165,10 +167,10 @@ def fscOddVsEven( options, filename, odd, even ):
 	apix = odd['apix_x']
 	
 	fsc = odd.calc_fourier_shell_correlation( even )
-	third = len( fsc )/3
+	third = old_div(len( fsc ),3)
 	xaxis = fsc[0:third]
 	fsc = fsc[ third:2*third ]
-	saxis = [ x/apix for x in xaxis ]
+	saxis = [ old_div(x,apix) for x in xaxis ]
 	
 	if filename:
 		fscfilename = options.path +'/' + os.path.basename(filename).replace('.hdf','_evenOddFSC.txt')

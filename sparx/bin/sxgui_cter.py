@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Toshio Moriya, 12/21/2015 (toshio.moriya@mpi-dortmund.mpg.de)
 #
@@ -30,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
@@ -1200,7 +1202,7 @@ class SXGuiCter(QtGui.QWidget):
 				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_error_def]]    # self.idx_cter_error_def 
 				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_error_astig]]  # self.idx_cter_error_astig 
 				extended_entry = extended_entry + [new_entry_list[cter_id][self.idx_old_cter_error_ctf]]    # self.idx_cter_error_ctf 
-				extended_entry = extended_entry + [0.5/new_entry_list[cter_id][self.idx_old_cter_apix]]     # self.idx_cter_max_freq. Set to Nyquist frequency.
+				extended_entry = extended_entry + [old_div(0.5,new_entry_list[cter_id][self.idx_old_cter_apix])]     # self.idx_cter_max_freq. Set to Nyquist frequency.
 				extended_entry = extended_entry + [0.0]                                                     # self.idx_cter_reserved
 				extended_entry = extended_entry + [0.0]                                                     # self.idx_cter_const_ac 
 				extended_entry = extended_entry + [total_phase_shift]                                       # self.idx_cter_phase_shift 
@@ -1464,7 +1466,7 @@ class SXGuiCter(QtGui.QWidget):
 			self.curentryperbin = 1
 			self.vsentryperbin.setValue(self.curentryperbin)
 			# self.vsentryperbin.setRange(1,len(self.cter_entry_list))
-		n_bin = len(self.cter_entry_list)/ self.curentryperbin
+		n_bin = old_div(len(self.cter_entry_list), self.curentryperbin)
 		assert len(val_list) >= n_bin, "MRK_DEBUG"
 		assert n_bin > 0, "MRK_DEBUG"
 		from statistics import hist_list
@@ -1644,11 +1646,11 @@ class SXGuiCter(QtGui.QWidget):
 			error_scr_x, error_scr_y = self.wplotrotavgcoarse.plot2scr(error_freq, 0.0)
 			self.wplotrotavgcoarse.add_shape(error_name,EMShape(("scrline",0,0,0.5,error_scr_x,self.wplotrotavgcoarse.scrlim[1],error_scr_x,self.wplotrotavgcoarse.scrlim[1]+self.wplotrotavgcoarse.scrlim[3],1)))
 			# self.wplotrotavgcoarse.set_data(([error_freq, error_freq], [global_min, global_max]),"astig_error_freq_limit",quiet=False,color=0,linetype=0)
-			self.wplotrotavgcoarse.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgcoarse.scrlim[1]+self.wplotrotavgcoarse.scrlim[3]-18,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+			self.wplotrotavgcoarse.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgcoarse.scrlim[1]+self.wplotrotavgcoarse.scrlim[3]-18,"%s %1.5g (%1.5g)"%(error_label,error_freq,old_div(1.0,error_freq)),120.0,-1)))
 			error_scr_x, error_scr_y = self.wplotrotavgfine.plot2scr(error_freq, 0.0)
 			self.wplotrotavgfine.add_shape(error_name,EMShape(("scrline",0,0,0.5,error_scr_x,self.wplotrotavgfine.scrlim[1],error_scr_x,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3],1)))
 			# self.wplotrotavgfine.set_data(([error_freq, error_freq], [global_min, global_max]),"astig_error_freq_limit",quiet=False,color=0,linetype=0)
-			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3]-18,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3]-18,"%s %1.5g (%1.5g)"%(error_label,error_freq,old_div(1.0,error_freq)),120.0,-1)))
 		
 		error_name = "error_def"
 		error_label = "Defocus Limit"
@@ -1658,11 +1660,11 @@ class SXGuiCter(QtGui.QWidget):
 			error_scr_x, error_scr_y = self.wplotrotavgcoarse.plot2scr(error_freq, 0.0)
 			self.wplotrotavgcoarse.add_shape(error_name,EMShape(("scrline",0.5,0,0,error_scr_x,self.wplotrotavgcoarse.scrlim[1],error_scr_x,self.wplotrotavgcoarse.scrlim[1]+self.wplotrotavgcoarse.scrlim[3],1)))
 			# self.wplotrotavgcoarse.set_data(([error_freq, error_freq], [global_min, global_max]),"defocus_error_freq_limit",quiet=False,color=0,linetype=0)
-			self.wplotrotavgcoarse.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgcoarse.scrlim[1]+self.wplotrotavgcoarse.scrlim[3]-36,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+			self.wplotrotavgcoarse.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgcoarse.scrlim[1]+self.wplotrotavgcoarse.scrlim[3]-36,"%s %1.5g (%1.5g)"%(error_label,error_freq,old_div(1.0,error_freq)),120.0,-1)))
 			error_scr_x, error_scr_y = self.wplotrotavgfine.plot2scr(error_freq, 0.0)
 			self.wplotrotavgfine.add_shape(error_name,EMShape(("scrline",0.5,0,0,error_scr_x,self.wplotrotavgfine.scrlim[1],error_scr_x,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3],1)))
 			# self.wplotrotavgfine.set_data(([error_freq, error_freq], [global_min, global_max]),"defocus_error_freq_limit",quiet=False,color=0,linetype=0)
-			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3]-36,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3]-36,"%s %1.5g (%1.5g)"%(error_label,error_freq,old_div(1.0,error_freq)),120.0,-1)))
 		
 		error_name = "error_ctf"
 		error_label = "CTF Limit"
@@ -1672,11 +1674,11 @@ class SXGuiCter(QtGui.QWidget):
 			error_scr_x, error_scr_y = self.wplotrotavgcoarse.plot2scr(error_freq, 0.0)
 			self.wplotrotavgcoarse.add_shape(error_name,EMShape(("scrline",0,0.5,0,error_scr_x,self.wplotrotavgcoarse.scrlim[1],error_scr_x,self.wplotrotavgcoarse.scrlim[1]+self.wplotrotavgcoarse.scrlim[3],1)))
 			# self.wplotrotavgcoarse.set_data(([error_freq, error_freq], [global_min, global_max]),"ctf_freq_limit")
-			self.wplotrotavgcoarse.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgcoarse.scrlim[1]+self.wplotrotavgcoarse.scrlim[3]-54,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+			self.wplotrotavgcoarse.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgcoarse.scrlim[1]+self.wplotrotavgcoarse.scrlim[3]-54,"%s %1.5g (%1.5g)"%(error_label,error_freq,old_div(1.0,error_freq)),120.0,-1)))
 			error_scr_x, error_scr_y = self.wplotrotavgfine.plot2scr(error_freq, 0.0)
 			self.wplotrotavgfine.add_shape(error_name,EMShape(("scrline",0,0.5,0,error_scr_x,self.wplotrotavgfine.scrlim[1],error_scr_x,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3],1)))
 			# self.wplotrotavgfine.set_data(([error_freq, error_freq], [global_min, global_max]),"ctf_freq_limit")
-			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3]-54,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),EMShape(("scrlabel",0,0,0,error_scr_x-260,self.wplotrotavgfine.scrlim[1]+self.wplotrotavgfine.scrlim[3]-54,"%s %1.5g (%1.5g)"%(error_label,error_freq,old_div(1.0,error_freq)),120.0,-1)))
 		
 		self.wplotrotavgcoarse.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
 		self.wplotrotavgfine.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
@@ -1916,7 +1918,7 @@ class SXGuiCter(QtGui.QWidget):
 		assert uncheck_counts >= 0 and uncheck_counts <= n_entry, "MRK_DEBUG"
 		
 		self.vbuncheckcounts.setValue(uncheck_counts,True)
-		self.vbuncheckratio.setValue(float(uncheck_counts)/n_entry,True)
+		self.vbuncheckratio.setValue(old_div(float(uncheck_counts),n_entry),True)
 	
 	def reapplySort(self,item = None):
 		"""Called when reapply button is clicked."""

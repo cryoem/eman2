@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 from builtins import range
 from sys import argv
 from EMAN2 import *
@@ -14,7 +16,7 @@ resulty=[]
 for i in range(2,30):
 	csum=0
 	n=0
-	for ang in arange(360.0/i,360.0,360.0/i):
+	for ang in arange(old_div(360.0,i),360.0,old_div(360.0,i)):
 		imc=img.copy()
 		imc.rotate(ang,0,0)
 #		display((imc,img))
@@ -22,8 +24,8 @@ for i in range(2,30):
 		n+=1
 		
 	resultx.append(i)
-	resulty.append(csum/n)
-	print(i,csum/n)
+	resulty.append(old_div(csum,n))
+	print(i,old_div(csum,n))
 
 
 # This is a plot of peak values vs peak location

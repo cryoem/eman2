@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
@@ -222,8 +224,8 @@ class Contour(EMShape):
 						q0=p0
 						q1=p1
 					else:
-						dz=abs(float(zpos-p0[2])/(p1[2]-p0[2]))
-						dp=1./abs((p1[2]-p0[2]))
+						dz=abs(old_div(float(zpos-p0[2]),(p1[2]-p0[2])))
+						dp=old_div(1.,abs((p1[2]-p0[2])))
 						#print dp, dz
 						d0=max(0, (dz-dp))
 						d1=min(1, (dz+dp))

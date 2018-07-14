@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Benjamin Bammes, 06/03/2008 (bammes@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 # This is a program for determining CTF parameters using the EMAN 1 model
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -207,7 +209,7 @@ def loadsf( filename, ds, pssize ) :
 			notfound = True
 			for j in range( 1, len( empsf ) ) :
 				if empsf[j][0] >= s and empsf[j-1][0] < s :
-					sf.append( ( ( empsf[j][0] - s ) * empsf[j-1][1] + ( s - empsf[j-1][0] ) * empsf[j][1] ) / ( empsf[j][0] - empsf[j-1][0] ) )
+					sf.append( old_div(( ( empsf[j][0] - s ) * empsf[j-1][1] + ( s - empsf[j-1][0] ) * empsf[j][1] ), ( empsf[j][0] - empsf[j-1][0] )) )
 					notfound = False
 					break
 			if notfound :
@@ -299,19 +301,19 @@ def getnoise( bg, ps, ds, parm_min, parm_max, s_min, s_max ) :
 	
 	# Set boundaries for computing noise curve
 	if s_min > 0. :
-		i0 = min( int( ( 1. / s_min ) / ds ), len( ps ) - 2 )
+		i0 = min( int( old_div(( old_div(1., s_min) ), ds) ), len( ps ) - 2 )
 	else :
 		i0 = 1
 	if s_max > s_min :
-		i1 = min( int( ( 1. / s_max ) / ds ), len( ps ) - 2 )
+		i1 = min( int( old_div(( old_div(1., s_max) ), ds) ), len( ps ) - 2 )
 	else :
-		i1 = min( int( 0.20 / ds ), len( ps ) - 2 )
+		i1 = min( int( old_div(0.20, ds) ), len( ps ) - 2 )
 	
 	# Set coarseness of search
 	c = 10
 	
 	# Cycle through all possible parameter values coarsely then finely
-	parm = [ ( parm_max[0] + parm_min[0] ) / 2., ( parm_max[1] + parm_min[1] ) / 2., ( parm_max[2] + parm_min[2] ) / 2., ( parm_max[3] + parm_min[3] ) / 2. ]  # Result = [ n0, n1, n2, n3 ]
+	parm = [ old_div(( parm_max[0] + parm_min[0] ), 2.), old_div(( parm_max[1] + parm_min[1] ), 2.), old_div(( parm_max[2] + parm_min[2] ), 2.), old_div(( parm_max[3] + parm_min[3] ), 2.) ]  # Result = [ n0, n1, n2, n3 ]
 	for dp in range( 3 ) :
 		sd = [ ]  # List of [ sd, n0, n1, n2, n3 ]
 		for d2 in range( int( c + 1 ) ) :
@@ -337,16 +339,16 @@ def getnoise( bg, ps, ds, parm_min, parm_max, s_min, s_max ) :
 		if len( sd ) > 0 :
 			sd.sort( )
 			parm = [ sd[0][1], sd[0][2], sd[0][3], sd[0][4] ]
-			dparm = ( parm_max[0] - parm_min[0] ) / ( 1.5 * float( c ) )
+			dparm = old_div(( parm_max[0] - parm_min[0] ), ( 1.5 * float( c ) ))
 			parm_min[0] = parm[0] - dparm
 			parm_max[0] = parm[0] + dparm
-			dparm = ( parm_max[1] - parm_min[1] ) / ( 1.5 * float( c ) )
+			dparm = old_div(( parm_max[1] - parm_min[1] ), ( 1.5 * float( c ) ))
 			parm_min[1] = parm[1] - dparm
 			parm_max[1] = parm[1] + dparm
-			dparm = ( parm_max[2] - parm_min[2] ) / ( 1.5 * float( c ) )
+			dparm = old_div(( parm_max[2] - parm_min[2] ), ( 1.5 * float( c ) ))
 			parm_min[2] = parm[2] - dparm
 			parm_max[2] = parm[2] + dparm
-			dparm = ( parm_max[3] - parm_min[3] ) / ( 1.5 * float( c ) )
+			dparm = old_div(( parm_max[3] - parm_min[3] ), ( 1.5 * float( c ) ))
 			parm_min[3] = parm[3] - dparm
 			parm_max[3] = parm[3] + dparm
 		else :
@@ -390,14 +392,14 @@ def getdefocus( f, e1ctf, ptclps, parm_min, parm_max ) :
 	# Calculate smoothed 1D power signal for entire frame
 	if hasccd :
 		ft = ccd.do_fft( )
-		ps = ft.calc_radial_dist( int( ft.get_xsize( ) / 2. ), 0., 1., True )
-		ds = 0.5 / ( e1ctf.apix * len( ps ) )
+		ps = ft.calc_radial_dist( int( old_div(ft.get_xsize( ), 2.) ), 0., 1., True )
+		ds = old_div(0.5, ( e1ctf.apix * len( ps ) ))
 		smkernel = [ ]
-		smksize = int( len( ps ) / 100. ) + 1
+		smksize = int( old_div(len( ps ), 100.) ) + 1
 		for i in range( -1 * smksize, smksize + 1 ) :
-			smkernel.append( exp( -1. * ( float( i ) / float( smksize ) ) ** 2. ) )
+			smkernel.append( exp( -1. * ( old_div(float( i ), float( smksize )) ) ** 2. ) )
 		smps = smooth( ps, smkernel )
-		ipm = min( int( 0.01 / ds ), len( ps ) )
+		ipm = min( int( old_div(0.01, ds) ), len( ps ) )
 		sig = [ ]
 		for i in range( len( smps ) ) :
 			ipm0 = max( i - ipm, 0 )
@@ -406,11 +408,11 @@ def getdefocus( f, e1ctf, ptclps, parm_min, parm_max ) :
 	
 	# Calculate smoothed 1D power signal for particles
 	smkernel = [ ]
-	smksize = int( len( ptclps ) / 100. ) + 1
+	smksize = int( old_div(len( ptclps ), 100.) ) + 1
 	for i in range( -1 * smksize, smksize + 1 ) :
-		smkernel.append( exp( -1. * ( float( i ) / float( smksize ) ) ** 2. ) )
+		smkernel.append( exp( -1. * ( old_div(float( i ), float( smksize )) ) ** 2. ) )
 	ptclsmps = smooth( ptclps, smkernel )
-	ipm = min( int( 0.01 / ds ), len( ptclps ) )
+	ipm = min( int( old_div(0.01, ds) ), len( ptclps ) )
 	sig = [ ]
 	for i in range( len( ptclsmps ) ) :
 		ipm0 = max( i - ipm, 0 )
@@ -434,8 +436,8 @@ def getdefocus( f, e1ctf, ptclps, parm_min, parm_max ) :
 			sig_use = ptclsig
 		
 		# Set boundaries for computing noise curve
-		i0 = max( int( 0.02 / ds ), 3 )
-		i1 = min( int( 0.2 / ds ), len( ps_use ) - 3 )
+		i0 = max( int( old_div(0.02, ds) ), 3 )
+		i1 = min( int( old_div(0.2, ds) ), len( ps_use ) - 3 )
 		
 		defocusvals = [ ]  # [ zeroavg, df, firstzero, secondzero ]
 		ctf.defocus = parm_min
@@ -455,7 +457,7 @@ def getdefocus( f, e1ctf, ptclps, parm_min, parm_max ) :
 					zerosum += sig_use[i]
 					zeronum += 1.
 			if zeronum > 0. :
-				defocusvals.append( [ zerosum / zeronum, ctf.defocus, firstzero, secondzero ] )
+				defocusvals.append( [ old_div(zerosum, zeronum), ctf.defocus, firstzero, secondzero ] )
 			ctf.defocus += courseness
 		if len( defocusvals ) > 0 :
 			defocusvals.sort( )
@@ -465,11 +467,11 @@ def getdefocus( f, e1ctf, ptclps, parm_min, parm_max ) :
 				for d in defocusvals :
 					if d[2] > 0 and d[3] > d[2] :
 						drange = d[3] - d[2]
-						smbetween = smooth( sig_use, [ 1. ] * int( drange / 2. ) )
+						smbetween = smooth( sig_use, [ 1. ] * int( old_div(drange, 2.) ) )
 						validdefocus = True
 						dstart = d[2] + 1
 						dstop = d[3]
-						dipthresh = ( max( smbetween[dstart:dstop] ) - max( smbetween[dstart], smbetween[dstop] ) ) / 4.
+						dipthresh = old_div(( max( smbetween[dstart:dstop] ) - max( smbetween[dstart], smbetween[dstop] ) ), 4.)
 						for i in range( dstart, dstop ) :
 							if smbetween[i-1] >= smbetween[i] and smbetween[i+1] > smbetween[i] :
 								nearestmax = smbetween[i]
@@ -517,14 +519,14 @@ def getamp( ps, sf, e1ctf, e2ctf, ds ) :
 	ctf = e2ctf.compute_1d( len( ps ) * 2, ds, Ctf.CtfType.CTF_AMP )
 	for i in range( 3, 7 ) :
 		e1bg = e1ctf.noise2 * exp( -1. * e1ctf.noise1 * ( ds * i ) - 2.467 * ( e1ctf.noise3 * ( ds * i ) ) ** 2 - e1ctf.noise0 * sqrt( ( ds * i ) ) )
-		ampval = sqrt( max( ( ps[i] - e1bg ) / max( sf[i] * ctf[i] ** 2, 0.0001 ), 0. ) )
+		ampval = sqrt( max( old_div(( ps[i] - e1bg ), max( sf[i] * ctf[i] ** 2, 0.0001 )), 0. ) )
 		if ampval > 0. and ampval < 20. :
 			amplist.append( ampval )
 	if len( amplist ) > 2 :
 		amplist.sort( )
-		return sum( amplist[1:-1] ) / len( amplist[1:-1] )
+		return old_div(sum( amplist[1:-1] ), len( amplist[1:-1] ))
 	elif len( amplist ) > 0 :
-		return sum( amplist[:] ) / len( amplist[:] )
+		return old_div(sum( amplist[:] ), len( amplist[:] ))
 	else :
 		return 0.
 
@@ -539,7 +541,7 @@ def addsnr( intsnr, ps, bg ) :
 		intsnr = [ [ 0. for i in range( 100 ) ] for j in range( len( ps ) ) ]
 	
 	# Calculate SNR
-	snr = [ ( ps[i] - bg[i] ) / max( bg[i], 0.0001 ) for i in range( len( ps ) ) ]
+	snr = [ old_div(( ps[i] - bg[i] ), max( bg[i], 0.0001 )) for i in range( len( ps ) ) ]
 	
 	# Add SNR to intsnr
 	for i in range( len( snr ) ) :
@@ -618,7 +620,7 @@ def write_snrmap( outputfile, intsnr, ds ) :
 
 	# Plot result
 	plt.figure( )
-	CS = plt.contourf( X, Y, Z, np.arange( 0., np.max( intsnr ) + np.max( intsnr ) / 20., np.max( intsnr ) / 20. ), antialiased = True )
+	CS = plt.contourf( X, Y, Z, np.arange( 0., np.max( intsnr ) + old_div(np.max( intsnr ), 20.), old_div(np.max( intsnr ), 20.) ), antialiased = True )
 	CB = plt.colorbar( CS, shrink = 0.8, format = '%i' )
 	plt.cool( )
 	plt.title( 'Image Coverage of Frequency Space' )
@@ -636,7 +638,7 @@ def smooth( seq, kernel ) :
 	# Create indices range for kernel
 	if ( len( kernel ) - 1 ) % 2 :
 		kernel.insert( 0, 0. )
-	maxj = int( ( len( kernel ) - 1 ) / 2 )
+	maxj = int( old_div(( len( kernel ) - 1 ), 2) )
 	krange = list(range( -1 * maxj, maxj + 1))
 	
 	# Smooth the sequence
@@ -648,7 +650,7 @@ def smooth( seq, kernel ) :
 			if i + j > 0 and i + j < len( seq ):
 				num += seq[i+j] * kernel[k]
 				denom += kernel[k]
-		sm.append( num / denom )
+		sm.append( old_div(num, denom) )
 	
 	# Return result
 	return sm

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke  9/14/2012 
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -483,11 +485,11 @@ class EMMotion(QtGui.QMainWindow):
 			m+=i[0]
 			s+=i[0]**2
 		m/=len(self.particles)
-		s=sqrt(s/len(self.particles)-m**2)
+		s=sqrt(old_div(s,len(self.particles))-m**2)
 		self.ptclmean=m
 		self.ptclsigma=s
 		
-		self.wvsnum.setRange(1,len(self.particles)/10)
+		self.wvsnum.setRange(1,old_div(len(self.particles),10))
 				
 		self.newThresh()
 
@@ -502,7 +504,7 @@ class EMMotion(QtGui.QMainWindow):
 			n2use=len(self.particles)
 			self.wvsnum.setValue(n2use)
 			self.wvsnum.setRange(1,n2use)
-		self.wlnptcl.setText("/{:1d}    {:1.3f} sigma, {:1.1f} %".format(len(self.particles),(self.particles[n2use-1][0]-self.ptclmean)/self.ptclsigma,100.0*float(n2use)/len(self.particles)))
+		self.wlnptcl.setText("/{:1d}    {:1.3f} sigma, {:1.1f} %".format(len(self.particles),old_div((self.particles[n2use-1][0]-self.ptclmean),self.ptclsigma),100.0*float(n2use)/len(self.particles)))
 
 	def avgPress(self,x=0):
 		if self.particles==None or len(self.particles)<3:
@@ -521,7 +523,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.setAliRef(self.aliimg)
 		
 #		self.wlnptcl.setText("{:1.3f} *sigma, {:1.1f} %".format((self.particles[n2use][0]-self.ptclmean)/self.ptclsigma,100.0*float(n2use)/len(self.particles)))
-		self.wlnptcl.setText("/{:1d}    {:1.3f} sigma, {:1.1f} %".format(len(self.particles),(self.particles[n2use][0]-self.ptclmean)/self.ptclsigma,100.0*float(n2use)/len(self.particles)))
+		self.wlnptcl.setText("/{:1d}    {:1.3f} sigma, {:1.1f} %".format(len(self.particles),old_div((self.particles[n2use][0]-self.ptclmean),self.ptclsigma),100.0*float(n2use)/len(self.particles)))
 		
 
 	def menuFileOpen(self,x):
@@ -774,8 +776,8 @@ class EMMotion(QtGui.QMainWindow):
 		rot=self.wsbalimaskrot.value()
 		
 		mask=self.alimask.process("threshold.binary",{"value":0.001})			# binarize the drawn mask
-		mask.process_inplace("math.linear",{"scale":-1.0,"shift":1.0+base/100.0})		# invert the mask (user selects the region to include, not exclude)
-		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.5/(blur+.01)})
+		mask.process_inplace("math.linear",{"scale":-1.0,"shift":1.0+old_div(base,100.0)})		# invert the mask (user selects the region to include, not exclude)
+		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":old_div(0.5,(blur+.01))})
 		
 		self.alimasked.mult(mask)
 		if rot!=0 :
@@ -891,7 +893,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		mask=self.roidrawmask.process("threshold.binary",{"value":0.001})			# binarize the drawn mask
 		mask.process_inplace("math.linear",{"scale":-1.0,"shift":1.0})		# invert the mask (user selects the region to include, not exclude)
-		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.5/(blur+.01)})
+		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":old_div(0.5,(blur+.01))})
 #		mask.process_inplace("threshold.belowtozero",{"minvalue":0.05})				# this limits the range of the mask to improve PCA performance
 	
 		self.roimask=mask
@@ -1029,7 +1031,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		# Make the class-averages
 		self.classes=[]
-		clssz=len(tosort)/nclasses		# particles per class
+		clssz=old_div(len(tosort),nclasses)		# particles per class
 		
 		for cl in range(nclasses):
 			avgr=Averagers.get("mean")

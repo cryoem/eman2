@@ -1,5 +1,6 @@
 #!/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -131,5 +133,5 @@ for i in range(0,0+1):
 	    snorm=1.0
 	  if(tnorm==0.0):
 	    tnorm=1.0
-	  out.write("%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\n" % (i, cs, ct, cg, inorm, snorm, tnorm, gnorm, inorm/snorm, inorm/tnorm, inorm/gnorm))
+	  out.write("%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\n" % (i, cs, ct, cg, inorm, snorm, tnorm, gnorm, old_div(inorm,snorm), old_div(inorm,tnorm), old_div(inorm,gnorm)))
 

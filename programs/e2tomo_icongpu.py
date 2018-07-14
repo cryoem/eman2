@@ -31,7 +31,9 @@ Author: Jesus Galaz-Montoya - 2017, Last update: Nov/2017
 '''
 
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 import sys, os
 
 from EMAN2 import *
@@ -239,7 +241,7 @@ def icongpufunc(options,alifile,cmdsfilepath):
 
 	icondir = options.path
 
-	thickness = float(outsize)/4.0
+	thickness = old_div(float(outsize),4.0)
 
 	if options.thickness:
 		thickness = float(options.thickness)
@@ -272,7 +274,7 @@ def icongpufunc(options,alifile,cmdsfilepath):
 				lines = crossVfrcfile.readlines()
 
 				if not lines: sigma=sigmanonzero=0.0
-				elif int(len(lines)) < int(nx/2.0 -1.0):
+				elif int(len(lines)) < int(old_div(nx,2.0) -1.0):
 					sigma=0.0
 					sigmanonzero=0.0
 
@@ -316,7 +318,7 @@ def icongpufunc(options,alifile,cmdsfilepath):
 	outtomogramzshortpostproc = sourcetomo
 	if options.lowpassresolution and not options.highpasspixels:
 		outtomogramzshortpostproc = sourcetomo.replace('.mrc', '_lp' + str(options.lowpassresolution) )
-		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.lowpass.tanh:cutoff_freq:' + str(1.0/options.lowpassresolution) 
+		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.lowpass.tanh:cutoff_freq:' + str(old_div(1.0,options.lowpassresolution)) 
 		runcmd(options,cmdeman2,cmdsfilepath)
 	
 	elif options.highpasspixels and not options.lowpassresolution:
@@ -326,7 +328,7 @@ def icongpufunc(options,alifile,cmdsfilepath):
 
 	elif options.lowpassresolution and options.highpasspixels:
 		outtomogramzshortpostproc = sourcetomo.replace('.mrc', '_lp' + str(int(round(options.lowpassresolution))) + '_hpp' + str(int(options.highpasspixels)) + '.mrc')
-		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.lowpass.tanh:cutoff_freq:' + str(1.0/options.lowpassresolution) + ' --process filter.highpass.gauss:cutoff_pixels:' + str(options.highpasspixels)
+		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.lowpass.tanh:cutoff_freq:' + str(old_div(1.0,options.lowpassresolution)) + ' --process filter.highpass.gauss:cutoff_pixels:' + str(options.highpasspixels)
 		runcmd(options,cmdeman2,cmdsfilepath)
 	
 	os.rename(outtomogramzshort, options.path + '/' + outtomogramzshort)
@@ -414,7 +416,7 @@ def calciterations(outsize):
 
 
 def scaleiterations(outsize,upperlimit,it2base,it3base):
-	sizefactor = float(outsize)/float(upperlimit)
+	sizefactor = old_div(float(outsize),float(upperlimit))
 	it2 = int(ceil(it2base * sizefactor))
 	it3 = int(ceil(it3base * sizefactor))
 

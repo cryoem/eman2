@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine
@@ -33,6 +34,7 @@ from __future__ import absolute_import
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -846,13 +848,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Find the selection box. Go from Volume view coords to viewport coords. sa = selection area
 		dx = self.sa_xf - self.sa_xi
 		dy = self.sa_yf - self.sa_yi
-		x = (self.sa_xi + viewport[2]/2) 
-		y = (viewport[3]/2 - self.sa_yi)
+		x = (self.sa_xi + old_div(viewport[2],2)) 
+		y = (old_div(viewport[3],2) - self.sa_yi)
 		if dx < 2 and dx > -2: dx = 2
 		if dy < 2 and dy > -2: dy = 2
 
 		# Apply selection box, and center it in the green box
-		GLU.gluPickMatrix(x + dx/2, (viewport[3]- 2*self.camera.getPseudoFovyHeight() - y) + dy/2, int(math.fabs(dx)), int(math.fabs(dy)), viewport)
+		GLU.gluPickMatrix(x + old_div(dx,2), (viewport[3]- 2*self.camera.getPseudoFovyHeight() - y) + old_div(dy,2), int(math.fabs(dx)), int(math.fabs(dy)), viewport)
 		self.camera.setProjectionMatrix()
 		
 		#drawstuff, but first we need to remove the influence of any previous xforms which ^$#*$ the selection
@@ -878,10 +880,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		volume view coords where 
 0,0) is center of the screen.
 		"""
-		self.sa_xi = xi - self.camera.getWidth()/2 - self.camera.getPseudoFovyWidth()
-		self.sa_xf = xf - self.camera.getWidth()/2 - self.camera.getPseudoFovyWidth()
-		self.sa_yi = -yi + self.camera.getHeight()/2 + self.camera.getPseudoFovyHeight()
-		self.sa_yf = -yf + self.camera.getHeight()/2 + self.camera.getPseudoFovyHeight()
+		self.sa_xi = xi - old_div(self.camera.getWidth(),2) - self.camera.getPseudoFovyWidth()
+		self.sa_xf = xf - old_div(self.camera.getWidth(),2) - self.camera.getPseudoFovyWidth()
+		self.sa_yi = -yi + old_div(self.camera.getHeight(),2) + self.camera.getPseudoFovyHeight()
+		self.sa_yf = -yf + old_div(self.camera.getHeight(),2) + self.camera.getPseudoFovyHeight()
 		self.toggle_render_selectedarea = togglearea
 		
 	def deselectArea(self):
@@ -1096,8 +1098,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def _gettransformbasedonscreen(self, event, rescale=True):
 		""" Helper function to for mousePressEvent"""
-		x = self.camera.getViewPortWidthScaling()*(event.x() - self.camera.getWidth()/2)
-		y = self.camera.getViewPortHeightScaling()*(-event.y() + self.camera.getHeight()/2)
+		x = self.camera.getViewPortWidthScaling()*(event.x() - old_div(self.camera.getWidth(),2))
+		y = self.camera.getViewPortHeightScaling()*(-event.y() + old_div(self.camera.getHeight(),2))
 		
 		if rescale:
 			return Transform({"type":"eman","tx":x,"ty":y,"scale":self.camera.getViewPortWidthScaling()})
@@ -1132,9 +1134,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			#Check to see if the cursor is in the 'virtual slider pannel'
 			try:
 				if  self.zrotate: # The lowest 5% of the screen is reserved from the Z spin virtual slider
-					self.updateMatrices([dx/self.camera.getViewPortWidthScaling(),0,0,-1], "rotate")
+					self.updateMatrices([old_div(dx,self.camera.getViewPortWidthScaling()),0,0,-1], "rotate")
 				else:
-					self.updateMatrices([magnitude/self.camera.getViewPortWidthScaling(),-dy/magnitude,-dx/magnitude,0], "rotate")
+					self.updateMatrices([old_div(magnitude,self.camera.getViewPortWidthScaling()),old_div(-dy,magnitude),old_div(-dx,magnitude),0], "rotate")
 			except ValueError: pass
 			except ZeroDivisionError: pass
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
@@ -1175,12 +1177,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.cameraNeedsanUpdate()
 			if event.delta() > 0:
 				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+(self.camera.getPseudoFovyWidth()+self.camera.getWidth())/25)
+					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
 				else:
 					self.camera.setFovy(self.camera.getFovy()+1.0)
 			else:
 				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-(self.camera.getPseudoFovyWidth()+self.camera.getWidth())/25)
+					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
 				else:
 					self.camera.setFovy(self.camera.getFovy()-1.0)
 			self.updateSG()
@@ -1841,7 +1843,7 @@ class EMCamera(object):
 		self.setCappingMode(False)
 		self.setCapColor(*(get_default_gl_colors()["bluewhite"]['ambient']))
 		self.setLinkingMode(False)
-		zclip = (self.near-self.far)/2.0	# Puts things in the center of the viewing volume
+		zclip = old_div((self.near-self.far),2.0)	# Puts things in the center of the viewing volume
 		if usingortho:
 			self.useOrtho(zclip)
 		else:
@@ -1855,7 +1857,7 @@ class EMCamera(object):
 		"""
 		if width: self.width = width
 		if height: self.height = height
-		self.aspectratio = float(self.height)/float(self.width)
+		self.aspectratio = old_div(float(self.height),float(self.width))
 		if self.usingortho:
 			self.setViewPort(-self.pseudofovy, int(-self.pseudofovy*self.aspectratio), int(self.width+2*self.getPseudoFovyWidth()), int(self.height+2*self.getPseudoFovyHeight()))
 			glMatrixMode(GL_PROJECTION)
@@ -1879,7 +1881,7 @@ class EMCamera(object):
 		"""
 		Scale in, ortho mode to the given dimensions. Scale is to width
 		"""
-		self.setPseudoFovy((self.width*self.width)/(2*dims) - (self.width/2))
+		self.setPseudoFovy(old_div((self.width*self.width),(2*dims)) - (old_div(self.width,2)))
 		
 	def setViewPort(self, x, y, vpwidth, vpheight):
 		"""Set the viewport subject to openGL constraitns """
@@ -1905,13 +1907,13 @@ class EMCamera(object):
 		"""
 		Set the orthographic projection matrix. Volume view origin (0,0) is center of screen
 		"""
-		glOrtho(-self.width/2, self.width/2, -self.height/2, self.height/2, self.near, self.far)
+		glOrtho(old_div(-self.width,2), old_div(self.width,2), old_div(-self.height,2), old_div(self.height,2), self.near, self.far)
 		
 	def setPerspectiveProjectionMatrix(self):
 		"""
 		Set the perspective projection matrix. Volume view origin (0,0) is center of screen
 		"""
-		GLU.gluPerspective(self.fovy, (float(self.width)/float(self.height)), self.near, self.far)
+		GLU.gluPerspective(self.fovy, (old_div(float(self.width),float(self.height))), self.near, self.far)
 			
 	def usePrespective(self, boundingbox, screenfraction, fovy=60.0):
 		""" 
@@ -1920,7 +1922,7 @@ class EMCamera(object):
 		Changes projection matrix to perspective
 		"""
 		self.fovy = fovy
-		self.perspective_z = -(boundingbox*2/screenfraction)/(2*math.tan(math.radians(self.fovy/2)))  + boundingbox
+		self.perspective_z = old_div(-(boundingbox*2/screenfraction),(2*math.tan(math.radians(old_div(self.fovy,2)))))  + boundingbox
 		self.usingortho = False
 		
 	def useOrtho(self, zclip):
@@ -1981,7 +1983,7 @@ class EMCamera(object):
 				self.pseudofovy = pseudofovy # negative viewport values are not acceptable
 			else:
 				# Set to max zoom
-				self.pseudofovy = (self.maxviewport[0] - self.width)/2
+				self.pseudofovy = old_div((self.maxviewport[0] - self.width),2)
 	
 	def getPseudoFovyWidth(self):
 		"""
@@ -1999,13 +2001,13 @@ class EMCamera(object):
 		"""
 		Return the scaling nesssary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
 		"""
-		return float(self.getWidth())/float(self.getWidth() + 2*self.getPseudoFovyWidth())
+		return old_div(float(self.getWidth()),float(self.getWidth() + 2*self.getPseudoFovyWidth()))
 		
 	def getViewPortHeightScaling(self):
 		"""
 		Return the scaling nesssary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
 		"""
-		return float(self.getHeight())/float(self.getHeight() + 2*self.getPseudoFovyHeight())
+		return old_div(float(self.getHeight()),float(self.getHeight() + 2*self.getPseudoFovyHeight()))
 		
 	def getHeight(self):
 		""" Get the viewport height """
@@ -2553,7 +2555,7 @@ class EMInspector3D(QtGui.QWidget):
 	def _on_cap_color(self, color):
 		rgb = color.getRgb()
 		self.scenegraph().makeCurrent()
-		self.scenegraph().camera.setCapColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
+		self.scenegraph().camera.setCapColor(old_div(float(rgb[0]),255.0), old_div(float(rgb[1]),255.0), old_div(float(rgb[2]),255.0))
 		if self.scenegraph().camera.getCappingMode(): self.updateSceneGraph()
 		
 	def _on_near(self, value, link=True):
@@ -2710,7 +2712,7 @@ class EMInspector3D(QtGui.QWidget):
 	def _on_bg_color(self, color):
 		rgb = color.getRgb()
 		self.scenegraph().makeCurrent()
-		self.scenegraph().setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
+		self.scenegraph().setClearColor(old_div(float(rgb[0]),255.0), old_div(float(rgb[1]),255.0), old_div(float(rgb[2]),255.0))
 		self.updateSceneGraph()
 		
 	def updateInspector(self):
@@ -2749,7 +2751,7 @@ class EMInspector3D(QtGui.QWidget):
 			self.hvalslider.setValue(angularposition[0], quiet=1)
 			self.vvalslider.setValue(angularposition[1], quiet=1)
 			al = self.scenegraph().firstlight.getAmbient()
-			ambient = (al[0] + al[1] + al[2])/3
+			ambient = old_div((al[0] + al[1] + al[2]),3)
 			self.ambientlighting.setValue(ambient, quiet=1)
 		# camera
 		if self.cameratab_open:
@@ -2898,15 +2900,15 @@ class EMSGNodeInspector(EMItem3DInspector):
 		# create axes
 		xaxis = EMLine(0,0,0,length,0,0,linewidth)
 		xaxis.setShowLeftArrow(False)
-		xaxis.setRightArrowLength(length/5)
+		xaxis.setRightArrowLength(old_div(length,5))
 		xaxis.setAmbientColor(1.0,0.0,0.0)
 		yaxis = EMLine(0,0,0,0,length,0,linewidth)
 		yaxis.setShowLeftArrow(False)
-		yaxis.setRightArrowLength(length/5)
+		yaxis.setRightArrowLength(old_div(length,5))
 		yaxis.setAmbientColor(0.0,1.0,0.0)
 		zaxis = EMLine(0,0,0,0,0,length,linewidth)
 		zaxis.setShowLeftArrow(False)
-		zaxis.setRightArrowLength(length/5)
+		zaxis.setRightArrowLength(old_div(length,5))
 		zaxis.setAmbientColor(0.0,0.0,1.0)
 		# Make the axes root node
 		axesnode = EMItem3D()

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import numpy as np
 from EMAN2 import *
@@ -9,7 +11,7 @@ from scipy.signal import argrelextrema
 from multiprocessing import pool, Manager
 
 def calc_ctf(defocus, bxsz=256, voltage=300, cs=4.7, apix=1. ,phase=0.):
-	ds=1.0/(apix*bxsz)
+	ds=old_div(1.0,(apix*bxsz))
 	ctf=EMAN2Ctf()
 	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":0.,"cs":cs,"ampcont":0,"apix":apix,"dfdiff":0,"defang":0})
 	ctf.set_phase(phase*np.pi/180.)
@@ -51,7 +53,7 @@ def calc_all_scr(curve, allctf, zlist, bxsz, exclude=[]):
 		z0=zz[0]
 		z1=np.minimum(zz[-1], int(bxsz/2*.7))
 
-		if z1-z0<bxsz/10: continue
+		if z1-z0<old_div(bxsz,10): continue
 
 		bg=np.array([np.interp(np.arange(z0, z1), zz, p[zz]) for p in curve])
 
@@ -64,13 +66,13 @@ def calc_all_scr(curve, allctf, zlist, bxsz, exclude=[]):
 			mx=np.max(c, axis=1)
 			m0=(mx<=0)
 			mx[m0]=1
-			mx=1./mx
+			mx=old_div(1.,mx)
 			mx[m0]=0
 			c*=mx[:, None]
 
 		bsub=bsub[:, z0:z1]
 		bsub[bsub<0]=0
-		scr=-np.dot(bsub,cf[z0:z1])/(np.sum(cf[z0:z1]))
+		scr=old_div(-np.dot(bsub,cf[z0:z1]),(np.sum(cf[z0:z1])))
 #		 scr=np.mean((bsub-cf[z0:z1])**2, axis=1)
 		allscr[i]=scr
 	return allscr
@@ -159,7 +161,7 @@ def main():
 		xrg=sz/2/np.cos(tpm[3]/180.*np.pi)*.9
 		allrd=[]
 		pzus=[]
-		xstep=xrg/float(nstep)
+		xstep=old_div(xrg,float(nstep))
 		for xpos in np.arange(-xrg, xrg+1, xstep):
 
 			pts=np.zeros((npt, 3))
@@ -169,7 +171,7 @@ def main():
 			ptsxf=np.array([get_xf_pos(tpm, p) for p in pts])
 			pz=ptsxf[:,2].copy()
 			ptsxf=ptsxf[:,:2]
-			ptsxf+=[nx/2, ny/2]
+			ptsxf+=[old_div(nx,2), old_div(ny,2)]
 			
 			ptsxf=ptsxf[np.sum((ptsxf>[nx, ny]) + (ptsxf<0), axis=1)==0, :]
 			if len(ptsxf)<npt*.8:
@@ -178,9 +180,9 @@ def main():
 			
 			rds=[]
 			for p in ptsxf:
-				tile=rawimg.get_clip(Region(p[0]-box/2, p[1]-box/2, box, box))
+				tile=rawimg.get_clip(Region(p[0]-old_div(box,2), p[1]-old_div(box,2), box, box))
 				tile.do_fft_inplace()
-				rd=np.array(tile.calc_radial_dist(box/2, 0,1,0))
+				rd=np.array(tile.calc_radial_dist(old_div(box,2), 0,1,0))
 				rd=np.log10(rd)
 				rd-=np.min(rd)
 				rd/=np.max(rd[1:])
@@ -210,7 +212,7 @@ def main():
 		allscr=[]
 		for ic, ctf in enumerate(allctf):
 			scr=calc_all_scr(allrd, ctf, zlist[ic], box, exclude)
-			idxsft=np.round(-np.array(pzus)/(defstep)).astype(int)
+			idxsft=np.round(old_div(-np.array(pzus),(defstep))).astype(int)
 			stilt=np.zeros(len(defrg))+np.inf
 			for i,df in enumerate(defrg):
 				idx=idxsft+i
@@ -222,7 +224,7 @@ def main():
 				s[outb]=np.max(s)
 				sval=s[np.isinf(s)==0]
 
-				stilt[i]=np.sum(sval)/len(s)
+				stilt[i]=old_div(np.sum(sval),len(s))
 			
 			allscr.append(stilt)
 			

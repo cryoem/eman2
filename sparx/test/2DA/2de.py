@@ -1,5 +1,6 @@
 #!/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -96,7 +98,7 @@ for iter in range(20):
 		temp = rtshgkb(data[im], psi, sx, sy, kb)
 		if  mirror: temp = temp.process("mirror",{"axis":'x'})
 		#  Subtract current image from the average
-		refim = tave - temp/nima
+		refim = tave - old_div(temp,nima)
 		stuff.append(refim)  # curent ave-1
 		stuff.append(data[im])  # curent image
 		# perform amoeba alignment
@@ -110,7 +112,7 @@ for iter in range(20):
 		temp = rtshgkb(data[im], outparams[0][0], outparams[0][1], outparams[0][2], kb)
 		if  mirror: temp = temp.process("mirror",{"axis":'x'})
 		#  Subtract current image from the average
-		tave = refim + temp/nima
+		tave = refim + old_div(temp,nima)
 		print(im,tave.cmp("dot", tave, {"negative":0,"mask":mask}),params,outparams[0],outparams[2])
 
 	# calculate total average using current alignment parameters

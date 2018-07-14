@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 from EMAN2 import *
 from numpy import *
 
@@ -15,7 +17,7 @@ ctf.ampcont=10.0
 ctf.apix=2.0
 ctf.bfactor=100.0
 
-ds=1.0/(ctf.apix*2*256)
+ds=old_div(1.0,(ctf.apix*2*256))
 s=arange(0,ds*256,ds)
 ctf.dsbg=ds
 ctf.background=[.1]*364

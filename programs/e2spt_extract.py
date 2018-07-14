@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -65,7 +67,7 @@ def main():
 	yt=0
 	#options.ytilt=ttparams[np.argmin(abs(ttparams[:,3]-yt)),3]
 	options.ytilt=0
-	scale=apix_ptcl/apix_tlt
+	scale=old_div(apix_ptcl,apix_tlt)
 
 	print("Scaling factor: {:.1f}, y-tilt: {:.1f}, z-shift: {:d}.".format(scale, options.ytilt, int(zshift)))
 	
@@ -88,7 +90,7 @@ def main():
 						continue
 						
 				bxs=np.array([[b[0], b[1], b[2]] for b in boxes if b[5]==int(ky)], dtype=float)
-				bxs-=[e["nx"]/2, e["ny"]/2, e["nz"]/2]
+				bxs-=[old_div(e["nx"],2), old_div(e["ny"],2), old_div(e["nz"],2)]
 				bxs*=scale
 				bxs[:,2]-=zshift
 				outname=str(base_name(pfile)+"__"+val["name"]+".hdf")
@@ -247,8 +249,8 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 
 			pxf=get_xf_pos(ttparams[nid], pos)
 
-			tx=m["nx"]/2 +pxf[0]
-			ty=m["ny"]/2 +pxf[1]
+			tx=old_div(m["nx"],2) +pxf[0]
+			ty=old_div(m["ny"],2) +pxf[1]
 
 			txint=int(tx)
 			tyint=int(ty)
@@ -256,7 +258,7 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 			txdf=tx-txint
 			tydf=ty-tyint
 
-			e=m.get_clip(Region(txint-pad/2, tyint-pad/2, pad, pad), fill=0)
+			e=m.get_clip(Region(txint-old_div(pad,2), tyint-old_div(pad,2), pad, pad), fill=0)
 
 			e.mult(-1)
 			e.process_inplace("normalize.edgemean")
@@ -291,13 +293,13 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 			projs.append(e)
 			
 			sz=e["nx"]
-			e0=e.get_clip(Region((sz-p3d)/2,(sz-p3d)/2,p3d,p3d))
+			e0=e.get_clip(Region(old_div((sz-p3d),2),old_div((sz-p3d),2),p3d,p3d))
 			trans=Transform({"type":"2d", "tx":-txdf, "ty":-tydf})
 			e1=recon.preprocess_slice(e0, trans)
 			recon.insert_slice(e1,xform,1)
 
 		threed=recon.finish(True)
-		threed=threed.get_clip(Region((p3d-bx)/2,(p3d-bx)/2,(p3d-bx)/2,bx,bx,bx))
+		threed=threed.get_clip(Region(old_div((p3d-bx),2),old_div((p3d-bx),2),old_div((p3d-bx),2),bx,bx,bx))
 		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
 		threed["ptcl_source_coord"]=pos.tolist()
 		threed["file_twod"]=options.output2d

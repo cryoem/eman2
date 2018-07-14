@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2016-09
+from past.utils import old_div
 from EMAN2 import *
 import numpy as np
 from e2ddd_movie import qsum 
@@ -83,7 +85,7 @@ def get_particles(pp,frameid, doinvert=-1):
 		#outim[ii].translate(int(floor(locs[ii*2]+.5)),int(floor(locs[ii*2+1]+.5)),0)
 	
 	micrograph=qsum([outim[i] for i in frameid])
-	boxsize2=boxsize/2
+	boxsize2=old_div(boxsize,2)
 
 	boxes=db["boxes"]
 	

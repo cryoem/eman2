@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Toshio Moriya 02/15/2017 (toshio.moriya@mpi-dortmund.mpg.de)
 #
@@ -32,6 +33,7 @@ from __future__ import print_function
 # Imports
 # ========================================================================================
 # Python Standard Libraries
+from past.utils import old_div
 from builtins import range
 from builtins import object
 import sys
@@ -398,8 +400,8 @@ def isac_substack(args):
 				sy1     = float(prealign2d[idx_isac_align2d_ty])
 				mirror1 = int(prealign2d[idx_isac_align2d_mirror])
 				alpha2  = float(shrunk_core_align2d[idx_isac_align2d_alpha])
-				sx2     = float(shrunk_core_align2d[idx_isac_align2d_tx])/isac_shrink_ratio # Need to apply the shrink ratio to ISAC x-shift
-				sy2     = float(shrunk_core_align2d[idx_isac_align2d_ty])/isac_shrink_ratio # Need to apply the shrink ratio to ISAC y-shift
+				sx2     = old_div(float(shrunk_core_align2d[idx_isac_align2d_tx]),isac_shrink_ratio) # Need to apply the shrink ratio to ISAC x-shift
+				sy2     = old_div(float(shrunk_core_align2d[idx_isac_align2d_ty]),isac_shrink_ratio) # Need to apply the shrink ratio to ISAC y-shift
 				mirror2 = int(shrunk_core_align2d[idx_isac_align2d_mirror])
 				isac_total_align2d = list(combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)) # return value is tuple type but we want to list! 
 				
@@ -980,7 +982,7 @@ def resample_micrographs(args):
 	if SXmpi_run.is_main_proc():
 		print(" ")
 		print("Micrographs processed by main process (including percent of progress):")
-		progress_percent_step = len(valid_mic_id_substr_list)/100.0 # the number of micrograms for main node divided by 100
+		progress_percent_step = old_div(len(valid_mic_id_substr_list),100.0) # the number of micrograms for main node divided by 100
 		
 		# Create output directory
 		# 
@@ -1018,7 +1020,7 @@ def resample_micrographs(args):
 		mic_basename = global_entry_dict[mic_id_substr][subkey_selected_mic_basename]
 		assert (mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 		if SXmpi_run.is_main_proc():
-			print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
+			print("%s ---> % 2.2f%%" % (mic_basename, old_div(mic_id_substr_idx, progress_percent_step)))
 		
 		# --------------------------------------------------------------------------------
 		# Read micrograph
@@ -2532,7 +2534,7 @@ class SXDalton(object):
 		
 		# Convert the number of voxels to molecular mass [kDa] with a given pixel size [A/Pixel]
 		vol_angstrom = vol_voxels * pow(pixel_size, 3.0)
-		vol_1_mole = vol_angstrom / pow(pow(10.0, 8.0), 3.0)
+		vol_1_mole = old_div(vol_angstrom, pow(pow(10.0, 8.0), 3.0))
 		density_1_mole = vol_1_mole * density_protein
 		mol_mass = density_1_mole * avagadro / 1000.0 # Kilodalton
 	
@@ -2549,9 +2551,9 @@ class SXDalton(object):
 		
 		# Convert molecular mass [kDa] to the number of voxels with a given pixel size [A/Pixel]
 		density_1_mole = mol_mass * 1000.0 / avagadro
-		vol_1_mole =  density_1_mole / density_protein
+		vol_1_mole =  old_div(density_1_mole, density_protein)
 		vol_angstrom =  vol_1_mole * pow(pow(10.0, 8.0), 3.0)
-		vol_voxels = vol_angstrom / pow(pixel_size, 3.0)
+		vol_voxels = old_div(vol_angstrom, pow(pixel_size, 3.0))
 		
 		return vol_voxels;
 
@@ -2968,12 +2970,12 @@ def moon_eliminator(args):
 	os.mkdir(args.output_directory)
 	
 	if args.dilation < 0.0:
-		args.dilation = args.moon_distance / 2.0
+		args.dilation = old_div(args.moon_distance, 2.0)
 		print(" ")
 		print_progress("Setting default dilation for moon eliminator to {}...".format(args.dilation))
 	
 	if args.generate_mask and args.gm_dilation < 0.0:
-		args.gm_dilation = args.gm_edge_width / 2.0
+		args.gm_dilation = old_div(args.gm_edge_width, 2.0)
 		print(" ")
 		print_progress("Setting default dilation for mask generation to {}...".format(args.gm_dilation))
 	
@@ -2993,7 +2995,7 @@ def moon_eliminator(args):
 		print_progress("Extracted parameter values")
 		print_progress("  ISAC shrink ratio    : {}".format(isac_shrink_ratio))
 		print_progress("  ISAC particle radius : {}".format(isac_radius))
-		resample_ratio = 1.0 / isac_shrink_ratio
+		resample_ratio = old_div(1.0, isac_shrink_ratio)
 	else:
 		assert (is_float(args.resample_ratio))
 		resample_ratio = float(args.resample_ratio)
@@ -3103,7 +3105,7 @@ def moon_eliminator(args):
 		assert (args.fl >= nyquist_res)
 		print(" ")
 		print_progress("Applying low-pass filter to input volume with Low-pass filter cutoff resolution {}[A] with falloff width {}[1/Pixels]...".format(args.fl, args.aa))
-		vol3d = filt_tanl(vol3d, args.pixel_size/args.fl, args.aa)
+		vol3d = filt_tanl(vol3d, old_div(args.pixel_size,args.fl), args.aa)
 	else:
 		print(" ")
 		print_progress("Low-pass filter cutoff resolution is {}[A]. The program does not apply the low-pass filter to the input volume before eliminating moons...".format(args.fl))

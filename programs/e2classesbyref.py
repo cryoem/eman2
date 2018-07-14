@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steve Ludtke, 7/5/14 
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -136,11 +138,11 @@ def main():
 	
 	# Set up threads
 	N=nptcl
-	npt=max(min(100,N/(options.threads-2)),1)
+	npt=max(min(100,old_div(N,(options.threads-2))),1)
 	
 	jsd=queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads
-	thrds=[(jsd,refs,refsbs,args[1],bsfs,options,i,i*npt,min(i*npt+npt,N)) for i in range(N/npt+1)]
+	thrds=[(jsd,refs,refsbs,args[1],bsfs,options,i,i*npt,min(i*npt+npt,N)) for i in range(old_div(N,npt)+1)]
 	
 	# standard thread execution loop
 	thrtolaunch=0
@@ -207,7 +209,7 @@ def main():
 				avg=avgr.finish()
 #				avg.process_inplace("normalize.circlemean",{"radius":avg["ny"]/2-4})
 				avg.process_inplace("normalize.toimage",{"to":refs[i],"fourieramp":1,"ignore_lowsig":0.3})
-				avg.process_inplace("mask.soft",{"outer_radius":avg["ny"]/2-4,"width":3})
+				avg.process_inplace("mask.soft",{"outer_radius":old_div(avg["ny"],2)-4,"width":3})
 #				avg.process_inplace("normalize.toimage",{"to":refs[i],"ignore_lowsig":0.75})
 				avg["class_ptcl_idxs"]=[p[0] for p in clsinfo[i]]		# particle indices
 				quals=array([p[1] for p in clsinfo[i]])
@@ -215,14 +217,14 @@ def main():
 				avg["class_ptcl_qual_sigma"]=quals.std()
 #				avg["class_qual"]=avg.cmp("frc",refs[i],{"minres":25,"maxres":10})
 #				avg["class_qual"]=avg.cmp("ccc",refs[i])	# since we are doing SNR below now, frc seems unnecessary, particularly since ccc is used in e2classaverage
-				avg["class_qual"]=avg.cmp("frc",refs[i],{"minres":30,"maxres":10})/avg.cmp("frc",refs[i],{"minres":100,"maxres":30})	# Trying something new 2/7/18. This ratio seems pretty effective at identifying bad class-averages. A bit slow, should consider writing something specifically for this
+				avg["class_qual"]=old_div(avg.cmp("frc",refs[i],{"minres":30,"maxres":10}),avg.cmp("frc",refs[i],{"minres":100,"maxres":30}))	# Trying something new 2/7/18. This ratio seems pretty effective at identifying bad class-averages. A bit slow, should consider writing something specifically for this
 				
 				# We compute a smoothed SSNR curve by comparing to the reference. We keep overwriting ssnr to gradually produce what we're after
 				ssnr=avg.calc_fourier_shell_correlation(refs[i])
-				third=len(ssnr)/3
+				third=old_div(len(ssnr),3)
 				ssnr=[ssnr[third]]*4+ssnr[third:third*2]+[ssnr[third*2-1]]*4	# we extend the list by replication to make the running average more natural
-				ssnr=[sum(ssnr[j-4:j+5])/9.0 for j in range(4,third+4)]		# smoothing by running average
-				ssnr=[v/(1.0-min(v,.999999)) for v in ssnr]						# convert FSC to pseudo SSNR
+				ssnr=[old_div(sum(ssnr[j-4:j+5]),9.0) for j in range(4,third+4)]		# smoothing by running average
+				ssnr=[old_div(v,(1.0-min(v,.999999))) for v in ssnr]						# convert FSC to pseudo SSNR
 				avg["class_ssnr"]=ssnr
 				
 				avg["class_ptcl_src"]=args[1]

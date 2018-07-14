@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -58,9 +60,9 @@ Evaluates density at C-alpha positions from a PDB model
 		if line[:4]=='ATOM':
 			if line[11:15].strip() =="CA":
 				lines.append(line)
-				x.append((float(line[30:38].strip())-inputmrc["origin_x"])/apix)
-				y.append((float(line[38:46].strip())-inputmrc["origin_y"])/apix)
-				z.append((float(line[46:54].strip())-inputmrc["origin_z"])/apix)
+				x.append(old_div((float(line[30:38].strip())-inputmrc["origin_x"]),apix))
+				y.append(old_div((float(line[38:46].strip())-inputmrc["origin_y"]),apix))
+				z.append(old_div((float(line[46:54].strip())-inputmrc["origin_z"]),apix))
 				resID.append(line[17:20].strip())
 	#do watershed where seeds are x,y,z
 	print("doing watershed")
@@ -81,7 +83,7 @@ Evaluates density at C-alpha positions from a PDB model
 				if length > max_length: max_length = length
 		
 		#print resID[index], index+1, max_length, max_length/resDefs[resID[index]]
-		score=max_length/resDefs[resID[index]]
+		score=old_div(max_length,resDefs[resID[index]])
 		outfile.write(lines[index][:60]+"%6.2f"%(score)+"\n")
 		
 		index=index+1

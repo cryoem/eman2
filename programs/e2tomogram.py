@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2017-04
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -127,7 +129,7 @@ def main():
 	
 	#### need to make sure this works for images of all sizes (2k, 4k 8k)
 	## the translation numbers used in this program are based on 2k tomograms. so binfac is the factor from the input to 2k images
-	binfac=max(1, int(np.round(imgs[0]["nx"]/2048.)))
+	binfac=max(1, int(np.round(old_div(imgs[0]["nx"],2048.))))
 	options.binfac=binfac
 	if binfac==1:
 		#### 2k or smaller input. skip 4k refinement
@@ -141,7 +143,7 @@ def main():
 			
 		else:
 			#### even larger images..
-			imgs_4k=[img.process("math.meanshrink", {"n":binfac/2}).process("normalize") for img in imgs]
+			imgs_4k=[img.process("math.meanshrink", {"n":old_div(binfac,2)}).process("normalize") for img in imgs]
 			imgs=None
 			
 	imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize") for img in imgs_2k]
@@ -475,8 +477,8 @@ def calc_global_trans(imgs, options, excludes=[]):
 
 	imgout=[0]*num
 	e0=imgs[options.zeroid].copy()
-	e0.clip_inplace(Region(e0["nx"]/2-sz/2, e0["ny"]/2-sz/2, sz,sz))
-	e0.process_inplace("mask.gaussian",{"outer_radius":sz/4})
+	e0.clip_inplace(Region(old_div(e0["nx"],2)-old_div(sz,2), old_div(e0["ny"],2)-old_div(sz,2), sz,sz))
+	e0.process_inplace("mask.gaussian",{"outer_radius":old_div(sz,4)})
 	e0["xform.align2d"]=Transform()
 	imgout[options.zeroid]=e0
 
@@ -491,8 +493,8 @@ def calc_global_trans(imgs, options, excludes=[]):
 			e0=imgout[options.zeroid+i*dr]
 			e1=imgs[nid].copy()
 			lastx=pretrans[options.zeroid+i*dr]
-			e1.clip_inplace(Region(e1["nx"]/2-sz/2-lastx[0], e1["ny"]/2-sz/2-lastx[1], sz,sz))
-			e1.process_inplace("mask.gaussian",{"outer_radius":sz/4})
+			e1.clip_inplace(Region(old_div(e1["nx"],2)-old_div(sz,2)-lastx[0], old_div(e1["ny"],2)-old_div(sz,2)-lastx[1], sz,sz))
+			e1.process_inplace("mask.gaussian",{"outer_radius":old_div(sz,4)})
 
 			e1a=e1.align("translational", e0)
 
@@ -501,8 +503,8 @@ def calc_global_trans(imgs, options, excludes=[]):
 			
 			e1=imgs[nid].copy()
 			e1.transform(xf)
-			e1.clip_inplace(Region(e1["nx"]/2-sz/2, e1["ny"]/2-sz/2, sz,sz))
-			e1.process_inplace("mask.gaussian",{"outer_radius":sz/4})
+			e1.clip_inplace(Region(old_div(e1["nx"],2)-old_div(sz,2), old_div(e1["ny"],2)-old_div(sz,2), sz,sz))
+			e1.process_inplace("mask.gaussian",{"outer_radius":old_div(sz,4)})
 
 			imgout[nid]=e1
 			ts=xf.get_trans()
@@ -530,14 +532,14 @@ def calc_tltax_rot(imgs, options):
 		imgnp.append(m)
 
 	sm=np.mean(imgnp, axis=0)
-	sm=np.abs(sm[:,sz/2:])
+	sm=np.abs(sm[:,old_div(sz,2):])
 	print(np.max(sm), np.min(sm))
 	rr=np.arange(min(sm.shape[1], sz*.25), dtype=float)
 	angs=np.arange(0., 180, .5)
 	vs=[]
 	for ang in angs:
 		a=ang/180.*np.pi
-		pts=[np.round(rr*np.sin(a)).astype(int), np.round(rr*np.cos(a)+sz/2).astype(int) ]
+		pts=[np.round(rr*np.sin(a)).astype(int), np.round(rr*np.cos(a)+old_div(sz,2)).astype(int) ]
 		v=sm[pts[1], pts[0]]
 		vs.append(np.mean(v))
 		
@@ -564,10 +566,10 @@ def make_tile(args):
 		m.process_inplace("xform",{"alpha":-t[2]})
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
 
-		dy=pad/2-np.cos(t[3]*np.pi/180.)*pad/2
+		dy=old_div(pad,2)-np.cos(t[3]*np.pi/180.)*pad/2
 		msk=EMData(pad, pad)
 		msk.to_one()
-		edge=sz/10
+		edge=old_div(sz,10)
 		msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
 		msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
 	
@@ -577,7 +579,7 @@ def make_tile(args):
 		
 	
 	threed=recon.finish(True)
-	threed.clip_inplace(Region((pad-sz)/2, (pad-sz)/2, (pad-outz)/2, sz, sz, outz))
+	threed.clip_inplace(Region(old_div((pad-sz),2), old_div((pad-sz),2), old_div((pad-outz),2), sz, sz, outz))
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
 	jsd.put( [stepx, stepy, threed])
 	
@@ -589,7 +591,7 @@ def make_tile(args):
 def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 
 	num=len(imgs)
-	scale=imgs[0]["apix_x"]/options.apix_init
+	scale=old_div(imgs[0]["apix_x"],options.apix_init)
 	if imgs[0]["nx"]<=1024*1.1:
 		b=1
 	elif imgs[0]["nx"]<=2048*1.1:
@@ -611,7 +613,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	print("Using {} out of {} tilts..".format(len(nrange), num))
 
 	outxy=1024*b
-	outz=zthick=outxy/4
+	outz=zthick=old_div(outxy,4)
 	#### we make 2 tomograms with half a box shift and average them together to compensate for boundary artifacts.
 	full3d=[EMData(outxy, outxy, outz) for i in [0,1]]
 	
@@ -631,7 +633,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 					t=tpm[i]
 					pxf=get_xf_pos(t, [stepx*step,stepy*step,0])
 					img=imgs[i]
-					m=img.get_clip(Region(img["nx"]/2-pad/2+pxf[0],img["ny"]/2-pad/2+pxf[1], pad, pad), fill=0)
+					m=img.get_clip(Region(old_div(img["nx"],2)-old_div(pad,2)+pxf[0],old_div(img["ny"],2)-old_div(pad,2)+pxf[1], pad, pad), fill=0)
 					tiles.append(m)
 				else:
 					tiles.append(EMData(1,1))
@@ -654,9 +656,9 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 			#### insert the cubes to corresponding tomograms
 			full3d[stepx%2].insert_clip(
 				threed,
-				(int(stepx*step+outxy/2-threed["nx"]/2),
-				int(stepy*step+outxy/2-threed["nx"]/2), 
-				outz/2-threed["nz"]/2))
+				(int(stepx*step+old_div(outxy,2)-old_div(threed["nx"],2)),
+				int(stepy*step+old_div(outxy,2)-old_div(threed["nx"],2)), 
+				old_div(outz,2)-old_div(threed["nz"],2)))
 				
 	for t in thrds: t.join()
 	
@@ -678,7 +680,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 #### reconstruct tomogram...
 def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 	num=len(imgs)
-	scale=imgs[0]["apix_x"]/options.apix_init
+	scale=old_div(imgs[0]["apix_x"],options.apix_init)
 	print("Making bin{:d} tomogram...".format(int(options.binfac*np.round(scale))))
 	ttparams=tltpm.copy()
 	ttparams[:,:2]/=scale
@@ -699,7 +701,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 	outxy=good_size(max(nx, ny))
 
 	pad=good_size(outxy*padr)
-	zthick=good_size(pad/2)
+	zthick=good_size(old_div(pad,2))
 	if options.verbose:
 		print("\t Image size: {:d} x {:d}".format(nx, ny))
 		print("\tPadded volume to: {:d} x {:d} x {:d}".format(pad, pad, zthick))
@@ -737,19 +739,19 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 		p0=np.min(threed.numpy(), axis=1)
 		z0=np.min(p0, axis=1)
 		zp=np.where(z0<np.mean(z0))[0]
-		zcent=int(zp[0]+zp[-1])/2
+		zcent=old_div(int(zp[0]+zp[-1]),2)
 		zthk=int((zp[-1]-zp[0])*options.clipz)
 		zthk=np.min([zthk, zthick-zcent, zcent])-1
 		#if options.verbose:
 		print("Z axis center at {:d}, thickness {:d} pixels".format(zcent, zthk*2))
-		threed.clip_inplace(Region((pad-outxy)/2, (pad-outxy)/2, zcent-zthk, outxy, outxy, zthk*2))
-		threed["zshift"]=float(zthick/2-zcent)*scale*options.binfac
+		threed.clip_inplace(Region(old_div((pad-outxy),2), old_div((pad-outxy),2), zcent-zthk, outxy, outxy, zthk*2))
+		threed["zshift"]=float(old_div(zthick,2)-zcent)*scale*options.binfac
 	#for nid in range(num):
 	#tltinfo[nid]["xform.projection"].translate(0, 0, zthick/2-zcent)
 
 	else:
 
-		threed.clip_inplace(Region((pad-outxy)/2, (pad-outxy)/2, 0, outxy, outxy, zthick))
+		threed.clip_inplace(Region(old_div((pad-outxy),2), old_div((pad-outxy),2), 0, outxy, outxy, zthick))
 		threed["zshift"]=0
 
 	apix=imgs[0]["apix_x"]
@@ -767,18 +769,18 @@ def reconstruct(nid, img, recon, pad, xform,  exclude, options):
 	#### the ramp filter and decay edge helps soften the edge artifacts
 	m.process_inplace("filter.ramp")
 	m.process_inplace("normalize")
-	m.process_inplace("mask.decayedge2d", {"width":int(pad/20)})
-	p2=m.get_clip(Region(m["nx"]/2-pad/2,m["ny"]/2-pad/2, pad, pad), fill=0)
+	m.process_inplace("mask.decayedge2d", {"width":int(old_div(pad,20))})
+	p2=m.get_clip(Region(old_div(m["nx"],2)-old_div(pad,2),old_div(m["ny"],2)-old_div(pad,2), pad, pad), fill=0)
 	#### give up on the subpixel accuracy since it does not really matter here..
 	p2.translate(-int(xform["tx"]), -int(xform["ty"]), 0)
 	p2.rotate(-xform["ztilt"],0,0)
 	xf=Transform({"type":"xyz","ytilt":xform["ytilt"],"xtilt":xform["xtilt"]})
 	
 	#### mask out the extra information on the edge of high tilt
-	dy=p2["nx"]/2-np.cos(xform["ytilt"]*np.pi/180.)*m["nx"]/2
+	dy=old_div(p2["nx"],2)-np.cos(xform["ytilt"]*np.pi/180.)*m["nx"]/2
 	msk=p2.copy()
 	msk.to_one()
-	edge=int(pad/20)
+	edge=int(old_div(pad,20))
 	msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
 	msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
 	p2.mult(msk)
@@ -793,20 +795,20 @@ def make_ali(imgs, tpm, options, outname=None):
 	if outname==None:
 		return
 	
-	scale=imgs[0]["apix_x"]/options.apix_init
+	scale=old_div(imgs[0]["apix_x"],options.apix_init)
 	ttparams=tpm.copy()
 	ttparams[:,:2]/=scale
 	
 	try:os.remove(outname)
 	except:pass
 	pad=imgs[0]["nx"]*1.
-	mskrd=min(imgs[0]["nx"],imgs[0]["ny"])/2
+	mskrd=old_div(min(imgs[0]["nx"],imgs[0]["ny"]),2)
 	for nid, im in enumerate(imgs):
 		tpm=ttparams[nid]
 
 		pxf=get_xf_pos(ttparams[nid], [0,0,0])
 		m=im.process("normalize")
-		p2=m.get_clip(Region(m["nx"]/2-pad/2,m["ny"]/2-pad/2, pad, pad), fill=0)
+		p2=m.get_clip(Region(old_div(m["nx"],2)-old_div(pad,2),old_div(m["ny"],2)-old_div(pad,2), pad, pad), fill=0)
 		po=p2.copy()
 		po.translate(-pxf[0], -pxf[1], 0)
 		po.rotate(-tpm[2],0,0)
@@ -854,7 +856,7 @@ def find_landmark(threed, options):
 		#np.random.shuffle(pts)
 		pts=pts[:options.npk]
 
-	pks=(np.array(pts)-np.array(mapnp.shape)/2.)
+	pks=(np.array(pts)-old_div(np.array(mapnp.shape),2.))
 	pks=pks[:,::-1]
 	#### mult 2 since we bin 2 in the begining.
 	scale=float(threed["apix_x"])/options.apix_init*2.
@@ -872,7 +874,7 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 	num=len(imgs)
 	npk=options.npk
 	ttparams, pks=get_params(allparams, options)
-	scale=float(imgs[0]["apix_x"])/options.apix_init
+	scale=old_div(float(imgs[0]["apix_x"]),options.apix_init)
 	ttparams[:,:2]/=scale
 	pks/=scale
 	#### do this slightly differently at different image size
@@ -881,7 +883,7 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 		nrange=list(range(num))
 	else:
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
-	bx=options.bxsz/2
+	bx=old_div(options.bxsz,2)
 	if not lowres:
 		bx=int(bx*1.5/(scale))
 		#print("scale{}, box size {}".format(scale, bx*2))
@@ -897,8 +899,8 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 
 			pxf=get_xf_pos(ttparams[nid], pks[pid])
 
-			pxf[0]+=imgs[nid]["nx"]/2
-			pxf[1]+=imgs[nid]["ny"]/2
+			pxf[0]+=old_div(imgs[nid]["nx"],2)
+			pxf[1]+=old_div(imgs[nid]["ny"],2)
 			
 			xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
 			e=imgs[nid].get_rotated_clip(xf,(pad,pad,1))
@@ -911,7 +913,7 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 			recon.insert_slice(p3,rot,1)
 		bxcr=np.round(pks[pid]).astype(int).tolist()
 		threed=recon.finish(True)
-		threed=threed.get_clip(Region((pad-bx*2)/2,(pad-bx*2)/2,(pad-bx*2)/2,bx*2,bx*2,bx*2))
+		threed=threed.get_clip(Region(old_div((pad-bx*2),2),old_div((pad-bx*2),2),old_div((pad-bx*2),2),bx*2,bx*2,bx*2))
 		threed.process_inplace("normalize")
 		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=imgs[0]["apix_x"]
 		threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
@@ -935,7 +937,7 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 		if refinepos:
 			xysft=get_center(pj1, lowres)
 			#xysft=[p[0]-bx, p[1]-bx]
-			pks[pid, 0]-=(xysft[0]+zsft[0])/2.
+			pks[pid, 0]-=old_div((xysft[0]+zsft[0]),2.)
 			pks[pid, 1]-=xysft[1]
 
 			#			 pj1.mult(-1)
@@ -957,7 +959,7 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 #### find center of landmark subtomogram. 
 def get_center(img, lowres=True):
 	e=img.copy()
-	bx=e["nx"]/2
+	bx=old_div(e["nx"],2)
 	e.mult(-1)
 	#### low resolution mode: use peak
 	if lowres:
@@ -987,7 +989,7 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 	num=options.num
 	nrange=np.hstack([np.arange(zeroid, num), np.arange(zeroid, -1, -1)])
 	ttparams, pks=get_params(allpms, options)
-	scale=float(imgs[0]["apix_x"])/options.apix_init
+	scale=old_div(float(imgs[0]["apix_x"]),options.apix_init)
 	ttparams[:,:2]/=scale
 	pks/=scale
 	prange=np.arange(options.npk)
@@ -996,7 +998,7 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 	nx=imgs[0]["nx"]
 	ny=imgs[0]["ny"]
 	fidptcls=[]
-	bx=options.bxsz/2
+	bx=old_div(options.bxsz,2)
 	apix=imgs[0]["apix_x"]
 	#### use a larger a box size at low resolution mode
 	lowres=(scale>1.5)
@@ -1013,8 +1015,8 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 		for ii,nid in enumerate(nrange):
 			#### start from center tilt and go both directions
 			pxf=get_xf_pos(ttparams[nid], pks[pid])
-			pxf[0]+=nx/2
-			pxf[1]+=ny/2
+			pxf[0]+=old_div(nx,2)
+			pxf[1]+=old_div(ny,2)
 
 			if nid!=zeroid:
 				tlast=trans[nrange[ii-1]]
@@ -1044,7 +1046,7 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 				e["pid"]=pid
 				e["nid"]=nid
 				e.write_image(outname, nid+pid*num)
-			ppos[nid]=np.array(pxf-trans[nid]-[nx/2, ny/2])
+			ppos[nid]=np.array(pxf-trans[nid]-[old_div(nx,2), old_div(ny,2)])
 
 		ptclpos.append(ppos)
 
