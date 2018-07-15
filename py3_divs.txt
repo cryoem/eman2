@@ -380,8 +380,6 @@
 ./programs/e2spt_classaverage.py:1634    nx/options.shrinkfine %2  |   nx/options.shrinkfine %2
 ./programs/e2spt_classaverage.py:1634   ny/options.shrinkfine %2  |  ny/options.shrinkfine %2
 ./programs/e2spt_classaverage.py:1634   nz/options.shrinkfine %2  |  nz/options.shrinkfine %2
-./programs/e2spt_classaverage.py:2064    3.0 * nyquist / 2.0  |   3.0 * nyquist / 2.0
-./programs/e2spt_classaverage.py:2589    apix*a['nx']/2.0  |   apix*a['nx']/2.0
 ./programs/e2spt_ctf_old.py:1048    ( coordx - old_div(framexsize,2.0) ) * apix/10000  |   ( coordx - old_div(framexsize,2.0) ) * apix/10000
 ./programs/e2spt_ctf_old.py:1071    relativecoordz * apix/10000  |   relativecoordz * apix/10000
 ./programs/e2spt_ctf_old.py:1076    relativecoordz * apix/10000  |   relativecoordz * apix/10000
@@ -392,35 +390,18 @@
 ./programs/e2spt_ctf_old.py:2095     ( list(micrographstarts)[m] + old_div(micrographwidth,2) ) * apix / 10000.00  |    ( list(micrographstarts)[m] + old_div(micrographwidth,2) ) * apix / 10000.00
 ./programs/e2spt_ctf_old.py:2101    icethickness * img['apix_x']/10000  |   icethickness * img['apix_x']/10000
 ./programs/e2spt_ctf_old.py:2107    -1*(micrographmiddle - old_div(img['nx'],2.0))*math.sin( math.radians(angle) ) * img['apix_x']/10000  |   -1*(micrographmiddle - old_div(img['nx'],2.0))*math.sin( math.radians(angle) ) * img['apix_x']/10000
-./programs/e2spt_ctf_old.py:2159    nx*apix/10000.00  |   nx*apix/10000.00
-./programs/e2spt_ctf_old.py:2177    m * nxMicrometers/2.0  |   m * nxMicrometers/2.0
 ./programs/e2spt_eval.py:75   self.size().width()/4*.9  |  self.size().width()/4*.9
 ./programs/e2spt_extract.py:98   int(val["boxsize"])*scale/2  |  int(val["boxsize"])*scale/2
 ./programs/e2spt_extract.py:100   options.boxsz/2.*scale  |  options.boxsz/2.*scale
 ./programs/e2spt_extract.py:128   ptcl["nx"]/2*scale  |  ptcl["nx"]/2*scale
 ./programs/e2spt_extract.py:130   options.boxsz/2*scale  |  options.boxsz/2*scale
-./programs/e2spt_extract.py:273   pz*apix/10000.  |  pz*apix/10000.
-./programs/e2spt_extract.py:275   phase[nid]*np.pi/180.  |  phase[nid]*np.pi/180.
 ./programs/e2spt_hac.py:963    nptcls*(nptcls-1)/2  |   nptcls*(nptcls-1)/2
-./programs/e2spt_hac.py:1120    apix*a['nx']/2.0  |   apix*a['nx']/2.0
-./programs/e2spt_isr.py:819    (it+1) * math.cos( math.radians(89.99) ) / float(options.iter)  |   (it+1) * math.cos( math.radians(89.99) ) / float(options.iter)
-./programs/e2spt_isr.py:822    (it+1) * math.cos( math.radians(angle) ) / float(options.iter)  |   (it+1) * math.cos( math.radians(angle) ) / float(options.iter)
 ./programs/e2spt_make3d.py:17   boxsize*3/2  |  boxsize*3/2
-./programs/e2spt_refinemulti.py:1640    apix*a['nx']/2.0  |   apix*a['nx']/2.0
-./programs/e2spt_resolutionplot.py:547   x*1.0/N  |  x*1.0/N
-./programs/e2spt_simulation.py:981   -1* options.gridholesize/2.0  |  -1* options.gridholesize/2.0
-./programs/e2spt_simulation.py:981   apix*image['nx']/2.0  |  apix*image['nx']/2.0
-./programs/e2spt_simulation.py:981   apix*image['nx']/2.0  |  apix*image['nx']/2.0
 ./programs/e2spt_simulation.py:988   options.icethickness*10000/apix  |  options.icethickness*10000/apix
 ./programs/e2spt_simulation.py:996    coordz*apix/10000  |   coordz*apix/10000
 ./programs/e2spt_simulation.py:1004    10000*(px + old_div(options.gridholesize,2))/apix  |   10000*(px + old_div(options.gridholesize,2))/apix
 ./programs/e2spt_simulation.py:1005   options.gridholesize*10000/apix  |  options.gridholesize*10000/apix
-./programs/e2spt_subtilt_from_imod.py:203   t/180.*np.pi  |  t/180.*np.pi
-./programs/e2spt_subtilt_from_imod.py:203   aapix/atoum*np.sin(t/180.*np.pi) * px  |  aapix/atoum*np.sin(t/180.*np.pi) * px
-./programs/e2spt_subtilt_from_imod.py:204   t/180.*np.pi  |  t/180.*np.pi
-./programs/e2spt_subtilt_from_imod.py:204   aapix/atoum*np.cos(t/180.*np.pi) * float(b[2])  |  aapix/atoum*np.cos(t/180.*np.pi) * float(b[2])
 ./programs/e2spt_subtilt_old.py:408   2 * options.boxsize / math.cos( math.radians(maxtilt+5)  )  |  2 * options.boxsize / math.cos( math.radians(maxtilt+5)  )
-./programs/e2spt_subtilt_old.py:965    -1 * icethickness/2.0  |   -1 * icethickness/2.0
 ./programs/e2spt_subtilt_old.py:1084    math.pi*theta/180  |   math.pi*theta/180
 ./programs/e2spt_tiltrefine.py:245   (s+clp)/clp/2  |  (s+clp)/clp/2
 ./programs/e2spt_tomoctf.py:17   phase*np.pi/180.  |  phase*np.pi/180.
