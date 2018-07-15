@@ -204,10 +204,8 @@
 ./libpyEM/qtgui/emscene3d.py:2897    self.item3d().camera.getViewPortHeightScaling()*self.item3d().camera.getHeight()/2  |   self.item3d().camera.getViewPortHeightScaling()*self.item3d().camera.getHeight()/2
 ./libpyEM/qtgui/emsprworkflow.py:3801   1000*(N+old_div((i+1.0),len(filenames)))/M  |  1000*(N+old_div((i+1.0),len(filenames)))/M
 ./libpyEM/qtgui/emsprworkflow.py:6215   soln/len(yaxis)*xaxis[-1]  |  soln/len(yaxis)*xaxis[-1]
-./libpyEM/qtgui/valslider.py:285   (self.value-self.rng[0])/float(self.rng[1]-self.rng[0])*4095.0  |  (self.value-self.rng[0])/float(self.rng[1]-self.rng[0])*4095.0
 ./libpyEM/qtgui/valslider.py:739   (h-4)*(value-self.rng[0])/(self.rng[1]-self.rng[0])  |  (h-4)*(value-self.rng[0])/(self.rng[1]-self.rng[0])
 ./libpyEM/qtgui/valslider.py:744   (h-y+3)*(self.rng[1]-self.rng[0])/(h-4)  |  (h-y+3)*(self.rng[1]-self.rng[0])/(h-4)
-./libpyEM/qtgui/valslider.py:1177    float(self.scenegraph().camera.getWidth())/float(size)*self.scenegraph().camera.getViewPortWidthScaling()  |   float(self.scenegraph().camera.getWidth())/float(size)*self.scenegraph().camera.getViewPortWidthScaling()
 ./libpyEM/qtgui/valslider.py:1213   -aspectratio*size/2  |  -aspectratio*size/2
 ./libpyEM/qtgui/valslider.py:1215   -aspectratio*size/2  |  -aspectratio*size/2
 ./libpyEM/qtgui/valslider.py:1217   aspectratio*size/2  |  aspectratio*size/2
@@ -223,7 +221,6 @@
 ./programs/e2classaverage.py:588   it*100/(niter+2)  |  it*100/(niter+2)
 ./programs/e2classaverage.py:639   (it+old_div(i,float(nimg)))*100/(niter+2.0)  |  (it+old_div(i,float(nimg)))*100/(niter+2.0)
 ./programs/e2classifykmeans.py:132   i*72/maxcls  |  i*72/maxcls
-./programs/e2ctf.py:801   2.0*len(p1d)/ys  |  2.0*len(p1d)/ys
 ./programs/e2ctf.py:854   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
 ./programs/e2ctf.py:854   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
 ./programs/e2ctf.py:1054   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
@@ -241,7 +238,6 @@
 ./programs/e2ctf.py:1309   nxl*3/4  |  nxl*3/4
 ./programs/e2ctf.py:1310   nxl*3/4  |  nxl*3/4
 ./programs/e2ctf.py:1413   3*xst/2  |  3*xst/2
-./programs/e2ctf.py:1820   0.9*ctf.zero(0)/ds  |  0.9*ctf.zero(0)/ds
 ./programs/e2ctf.py:1826   best[2]*pi/180  |  best[2]*pi/180
 ./programs/e2ctf.py:2142   s0*3/2  |  s0*3/2
 ./programs/e2ctf.py:2152   f*s2/s1  |  f*s2/s1
@@ -251,8 +247,6 @@
 ./programs/e2ctf2eman1.py:322    d1 * ( parm_max[1] - parm_min[1] ) / float( c )  |   d1 * ( parm_max[1] - parm_min[1] ) / float( c )
 ./programs/e2ctf2eman1.py:324    d3 * ( parm_max[3] - parm_min[3] ) / float( c )  |   d3 * ( parm_max[3] - parm_min[3] ) / float( c )
 ./programs/e2ctf2eman1.py:326    d0 * ( parm_max[0] - parm_min[0] ) / float( c )  |   d0 * ( parm_max[0] - parm_min[0] ) / float( c )
-./programs/e2ctf2eman1.py:407    100. * smps[i] * len( smps[ipm0:ipm1] ) / sum( smps[ipm0:ipm1] )  |   100. * smps[i] * len( smps[ipm0:ipm1] ) / sum( smps[ipm0:ipm1] )
-./programs/e2ctf2eman1.py:420    100. * ptclsmps[i] * len( ptclsmps[ipm0:ipm1] ) / sum( ptclsmps[ipm0:ipm1] )  |   100. * ptclsmps[i] * len( ptclsmps[ipm0:ipm1] ) / sum( ptclsmps[ipm0:ipm1] )
 ./programs/e2ctffind3util.py:185    dstep / apix * 10000  |   dstep / apix * 10000
 ./programs/e2ddd_movie.py:691    n*(n-1)/2  |   n*(n-1)/2
 ./programs/e2evalrefine.py:281   2*nx*apix/10  |  2*nx*apix/10
@@ -261,8 +255,6 @@
 ./programs/e2evalrefine.py:860   cores*(endtime-starttime)/3600  |  cores*(endtime-starttime)/3600
 ./programs/e2evalrefine.py:860   cores*(endtime-starttime)/(3600*lastiter)  |  cores*(endtime-starttime)/(3600*lastiter)
 ./programs/e2fsc.py:84   len(fsc)*2/3  |  len(fsc)*2/3
-./programs/e2fsc.py:91   (0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])  |  (0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])
-./programs/e2fsc.py:105   (0.143-fy[si])*(fx[si+1]-fx[si])/(fy[si+1]-fy[si])  |  (0.143-fy[si])*(fx[si+1]-fx[si])/(fy[si+1]-fy[si])
 ./programs/e2fsc.py:208   len(fsc)*2/3  |  len(fsc)*2/3
 ./programs/e2fsc.py:236   apix*lnx//overlap  |  apix*lnx//overlap
 ./programs/e2fsc.py:237   apix*lnx//overlap  |  apix*lnx//overlap
