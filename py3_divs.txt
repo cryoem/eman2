@@ -3,9 +3,6 @@
 ./broken/e2helical_recons.py:81   i*100/len(ptcls)  |  i*100/len(ptcls)
 ./broken/e2helical_recons.py:90   len(ptcls)*60/100.0  |  len(ptcls)*60/100.0
 ./broken/e2helical_recons.py:94   i*100*8/6/len(ptcls)  |  i*100*8/6/len(ptcls)
-./broken/e2helical_recons.py:131   180.0*atan(old_div((j-old_div(nx,2)-0.5),(i-old_div(nx,2)-0.5)))/pi  |  180.0*atan(old_div((j-old_div(nx,2)-0.5),(i-old_div(nx,2)-0.5)))/pi
-./broken/e2helical_recons.py:139   (theta+units*d_phi)*pi/180.0  |  (theta+units*d_phi)*pi/180.0
-./broken/e2helical_recons.py:159   -0.5*results[1]/results[2]  |  -0.5*results[1]/results[2]
 ./broken/e2montecarlorecon.py:207   tstep*options.numsasteps/K  |  tstep*options.numsasteps/K
 ./broken/e2tomoaverage.py:292    images[0].get_xsize()*(images[0].get_xsize()-1)/2.0  |   images[0].get_xsize()*(images[0].get_xsize()-1)/2.0
 ./examples/alignbystars.py:151   -nx*(scale-1)/2  |  -nx*(scale-1)/2
@@ -16,15 +13,12 @@
 ./examples/convnet_pickparticle.py:760    T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))  |   T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))
 ./examples/diffractsim.py:72   2*pi*x/(options.wavelen)  |  2*pi*x/(options.wavelen)
 ./examples/diffractsim.py:74   2*pi*x/(options.wavelen)  |  2*pi*x/(options.wavelen)
-./examples/e2alignmenttest.py:217    float(options.num-flip_errors)/options.num*100  |   float(options.num-flip_errors)/options.num*100
 ./examples/e2fftsynth.py:196   4.0*i/nx  |  4.0*i/nx
 ./examples/e2fftsynth.py:198   4.0*i/nx  |  4.0*i/nx
 ./examples/e2fftsynth.py:202   nx*3/4  |  nx*3/4
 ./examples/e2fftsynth.py:203   nx*3/4  |  nx*3/4
 ./examples/e2fftsynth.py:211   nx*2/5  |  nx*2/5
-./examples/e2fftsynth.py:218   4.0*(i-old_div(nx,4.0))/nx  |  4.0*(i-old_div(nx,4.0))/nx
 ./examples/e2fftsynth.py:219   nx*3/4  |  nx*3/4
-./examples/e2fftsynth.py:219   4.0*(i-old_div(nx,2.0))/nx  |  4.0*(i-old_div(nx,2.0))/nx
 ./examples/e2fftsynth.py:225   i*pi/32  |  i*pi/32
 ./examples/e2fftsynth.py:228   i*pi/29  |  i*pi/29
 ./examples/e2fftsynth.py:231   i*pi/126  |  i*pi/126
@@ -45,8 +39,6 @@
 ./examples/e2pw_pathrefine.py:427   np.arange(len(ss), dtype=float)/len(ss)*len(path)  |  np.arange(len(ss), dtype=float)/len(ss)*len(path)
 ./examples/e2pwstructuremodify.py:122    mrcp/midp/2  |   mrcp/midp/2
 ./examples/e2simrecon.py:128   pspec[i]*(1.0-fscl[i])/(fscl[i])  |  pspec[i]*(1.0-fscl[i])/(fscl[i])
-./examples/e2spt_autocenter.py:225    -1 * (old_div(eb,2.0) - maxccfpmzCside[1])/2.0  |   -1 * (old_div(eb,2.0) - maxccfpmzCside[1])/2.0
-./examples/e2spt_autocenter.py:428    -1 * (old_div(pb,2.0) - maxccfpsideC[1])/2.0  |   -1 * (old_div(pb,2.0) - maxccfpsideC[1])/2.0
 ./examples/e2spt_boxer_old.py:2105    a[0]*bs/2  |   a[0]*bs/2
 ./examples/e2spt_boxer_old.py:2105    a[1]*bs/2  |   a[1]*bs/2
 ./examples/e2spt_boxer_old.py:2105    a[2]*bs/2  |   a[2]*bs/2
@@ -89,9 +81,7 @@
 ./examples/em_sim.py:270   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
 ./examples/em_sim.py:272   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
 ./examples/em_sim.py:272   proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
-./examples/em_sim.py:393   -1j*2.*np.pi*dst/wavelen  |  -1j*2.*np.pi*dst/wavelen
 ./examples/em_sim.py:393   phaseobj[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  phaseobj[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))
-./examples/em_sim.py:428   -1j*2.*np.pi*dst/wavelen  |  -1j*2.*np.pi*dst/wavelen
 ./examples/em_sim.py:428   raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))
 ./examples/em_sim.py:443   2*np.pi/wavelen  |  2*np.pi/wavelen
 ./examples/em_sim.py:443   rr/(f*2)*(2*np.pi/wavelen)  |  rr/(f*2)*(2*np.pi/wavelen)
