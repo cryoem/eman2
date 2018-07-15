@@ -273,13 +273,8 @@
 ./programs/e2motion.py:981   20*i/len(classes)  |  20*i/len(classes)
 ./programs/e2motion.py:995   12*c/len(classes)  |  12*c/len(classes)
 ./programs/e2msa.py:135   n*nval*4/2**20  |  n*nval*4/2**20
-./programs/e2pdb2mrc.py:269   2.0*options.res/options.apix  |  2.0*options.res/options.apix
-./programs/e2pdb2mrc.py:436   2.0*res/apix  |  2.0*res/apix
-./programs/e2proc2d.py:704   d["nx"]*d["apix_x"]/150.0  |  d["nx"]*d["apix_x"]/150.0
-./programs/e2proc2d.py:705   d["nx"]*d["apix_x"]/25.0  |  d["nx"]*d["apix_x"]/25.0
 ./programs/e2proc2dmulti.py:127   d["nx"]*2/7  |  d["nx"]*2/7
 ./programs/e2proc2dmulti.py:128   d["nx"]*2/7  |  d["nx"]*2/7
-./programs/e2proc3d.py:529   360.0/pi*atan(old_div(2.0,data["nx"]))  |  360.0/pi*atan(old_div(2.0,data["nx"]))
 ./programs/e2rct.py:215    len(arlist)*recon.get_attr('ptcl_repr')/totalptcls  |   len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
 ./programs/e2refine_easy.py:487   nx*apix*2/options.targetres  |  nx*apix*2/options.targetres
 ./programs/e2refinemulti.py:391   nx*apix*2/options.targetres  |  nx*apix*2/options.targetres
@@ -335,12 +330,10 @@
 ./programs/e2spt_ctf_old.py:1862    ( old_div(nx,2.0) ) * apix / 10000  |   ( old_div(nx,2.0) ) * apix / 10000
 ./programs/e2spt_ctf_old.py:1941    ( old_div(nx,2.0) ) * apix/10000  |   ( old_div(nx,2.0) ) * apix/10000
 ./programs/e2spt_ctf_old.py:1954    options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix  |   options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix
-./programs/e2spt_ctf_old.py:2095     ( list(micrographstarts)[m] + old_div(micrographwidth,2) ) * apix / 10000.00  |    ( list(micrographstarts)[m] + old_div(micrographwidth,2) ) * apix / 10000.00
 ./programs/e2spt_ctf_old.py:2101    icethickness * img['apix_x']/10000  |   icethickness * img['apix_x']/10000
 ./programs/e2spt_ctf_old.py:2107    -1*(micrographmiddle - old_div(img['nx'],2.0))*math.sin( math.radians(angle) ) * img['apix_x']/10000  |   -1*(micrographmiddle - old_div(img['nx'],2.0))*math.sin( math.radians(angle) ) * img['apix_x']/10000
 ./programs/e2spt_eval.py:75   self.size().width()/4*.9  |  self.size().width()/4*.9
 ./programs/e2spt_extract.py:98   int(val["boxsize"])*scale/2  |  int(val["boxsize"])*scale/2
-./programs/e2spt_extract.py:100   options.boxsz/2.*scale  |  options.boxsz/2.*scale
 ./programs/e2spt_extract.py:128   ptcl["nx"]/2*scale  |  ptcl["nx"]/2*scale
 ./programs/e2spt_extract.py:130   options.boxsz/2*scale  |  options.boxsz/2*scale
 ./programs/e2spt_hac.py:963    nptcls*(nptcls-1)/2  |   nptcls*(nptcls-1)/2
@@ -354,10 +347,6 @@
 ./programs/e2spt_tiltrefine.py:245   (s+clp)/clp/2  |  (s+clp)/clp/2
 ./programs/e2spt_tomoctf.py:161   sz/2/np.cos(tpm[3]/180.*np.pi)*.9  |  sz/2/np.cos(tpm[3]/180.*np.pi)*.9
 ./programs/e2ssehunter.py:148   -1*res/apix  |  -1*res/apix
-./programs/e2ssematch.py:203   sseh[0][s1]*(tanh(fabs(sspred[p1][0]-sseh[0][s1])-6)+1)/30.0  |  sseh[0][s1]*(tanh(fabs(sspred[p1][0]-sseh[0][s1])-6)+1)/30.0
-./programs/e2ssematch.py:203   sseh[0][s2]*(tanh(fabs(sspred[p1+1][0]-sseh[0][s2])-6)+1)/30.0  |  sseh[0][s2]*(tanh(fabs(sspred[p1+1][0]-sseh[0][s2])-6)+1)/30.0
-./programs/e2symbest.py:107    2.0 * math.pi / csym  |   2.0 * math.pi / csym
-./programs/e2symbest.py:108    1.0 / csym * math.pi  |   1.0 / csym * math.pi
 ./programs/e2tiltvalidate.py:506    2*math.pi/3  |   2*math.pi/3
 ./programs/e2tiltvalidate.py:511    2*math.pi/3  |   2*math.pi/3
 ./programs/e2tiltvalidate.py:511    4*math.pi/3  |   4*math.pi/3
@@ -380,8 +369,6 @@
 ./pyemtbx/boxertools.py:379    trans[0]/2*extrasomething.get_subsample_rate()  |   trans[0]/2*extrasomething.get_subsample_rate()
 ./pyemtbx/boxertools.py:380    trans[1]/2*extrasomething.get_subsample_rate()  |   trans[1]/2*extrasomething.get_subsample_rate()
 ./pyemtbx/boxertools.py:3018   self.box_size/2/self.get_subsample_rate()  |  self.box_size/2/self.get_subsample_rate()
-./pyemtbx/boxertools.py:4007   scale*oldx/2.0  |  scale*oldx/2.0
-./pyemtbx/boxertools.py:4007   scale*oldy/2.0  |  scale*oldy/2.0
 ./rt/pyem/test_transform.py:159   fac*inv_params["tx"]/(-1*params["tx"])  |  fac*inv_params["tx"]/(-1*params["tx"])
 ./sparx/bin/sx3dvariability.py:604   i*100.0/len(proj_list)  |  i*100.0/len(proj_list)
 ./sparx/bin/sxcenter_projections.py:76   len(even_angles(x))*4.*passlastring**2*4./ mempernode  |  len(even_angles(x))*4.*passlastring**2*4./ mempernode
