@@ -232,9 +232,6 @@
 ./programs/e2evalrefine.py:860   cores*(endtime-starttime)/(3600*lastiter)  |  cores*(endtime-starttime)/(3600*lastiter)
 ./programs/e2fsc.py:84   len(fsc)*2/3  |  len(fsc)*2/3
 ./programs/e2fsc.py:208   len(fsc)*2/3  |  len(fsc)*2/3
-./programs/e2fsc.py:236   apix*lnx//overlap  |  apix*lnx//overlap
-./programs/e2fsc.py:237   apix*lnx//overlap  |  apix*lnx//overlap
-./programs/e2fsc.py:238   apix*lnx//overlap  |  apix*lnx//overlap
 ./programs/e2helixboxer.py:204    180/pi*acos( l_uvect[1] )  |   180/pi*acos( l_uvect[1] )
 ./programs/e2helixboxer.py:256    180/pi*acos( l_uvect[1] )  |   180/pi*acos( l_uvect[1] )
 ./programs/e2initialmodel.py:210   it*100/options["iter"]  |  it*100/options["iter"]
