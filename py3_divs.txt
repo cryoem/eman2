@@ -108,36 +108,19 @@
 ./examples/findcenter.py:161    2*np.pi/360 * np.array(list(range(0, 360, options.step)) + [0])  |   2*np.pi/360 * np.array(list(range(0, 360, options.step)) + [0])
 ./examples/gmm_heterog.py:377   var/np.max(var)*100  |  var/np.max(var)*100
 ./examples/gmm_heterog.py:384   var/np.max(var)*100  |  var/np.max(var)*100
-./examples/gmm_heterog.py:488   6.28/(old_div(nsym,2))*i  |  6.28/(old_div(nsym,2))*i
-./examples/gmm_heterog.py:504   6.28/(nsym)*i  |  6.28/(nsym)*i
 ./examples/gmm_heterog.py:603    T.sum(xx*zz)/T.sqrt(T.sum(xx**2))/T.sqrt(T.sum(zz**2))  |   T.sum(xx*zz)/T.sqrt(T.sum(xx**2))/T.sqrt(T.sum(zz**2))
-./examples/gmm_heterog_tensorflow.py:73   4./3.*np.pi  |  4./3.*np.pi
-./examples/gmm_heterog_tensorflow.py:247   orient[:,:3]/180.0*3.14  |  orient[:,:3]/180.0*3.14
-./examples/gmm_heterog_tensorflow.py:287   orient[:,:3]/180.0*3.14  |  orient[:,:3]/180.0*3.14
 ./examples/gmm_heterog_tensorflow.py:375   (grid_x-old_div(sz,2.))/sz*2.  |  (grid_x-old_div(sz,2.))/sz*2.
 ./examples/gmm_heterog_tensorflow.py:376   (grid_y-old_div(sz,2.))/sz*2.  |  (grid_y-old_div(sz,2.))/sz*2.
-./examples/gmm_heterog_tensorflow.py:382   -r2*wt/.4  |  -r2*wt/.4
-./examples/gmm_heterog_tensorflow.py:382   0.5*np.sqrt(np.pi)*amp*tf.sqrt(wt)*wt*tf.exp(-r2*wt/.4)  |  0.5*np.sqrt(np.pi)*amp*tf.sqrt(wt)*wt*tf.exp(-r2*wt/.4)
 ./examples/gmm_heterog_tensorflow.py:550   nball*3/ncopy  |  nball*3/ncopy
-./examples/gmm_heterog_tensorflow.py:556   pc/np.sqrt(np.max(np.sum(pc**2, 1)))*rr/8.  |  pc/np.sqrt(np.max(np.sum(pc**2, 1)))*rr/8.
-./examples/make3dpar_rawptcls.py:460   atan2(1.0,old_div(max(pad),2.0))*180./pi  |  atan2(1.0,old_div(max(pad),2.0))*180./pi
 ./examples/pickptcl_2cls.py:360   sz*sz/4  |  sz*sz/4
 ./examples/reconstruct_fill.py:54   100.0*r1[i]/n[i]  |  100.0*r1[i]/n[i]
 ./examples/reconstruct_fill.py:54   100.0*r2[i]/n[i]  |  100.0*r2[i]/n[i]
-./examples/refinetomo_buildptcls.py:39   tt/180.*np.pi  |  tt/180.*np.pi
-./examples/ringfit.py:144    35.9*pi/180.0  |   35.9*pi/180.0
 ./examples/ringfit.py:144   totlen/nowbp*.6  |  totlen/nowbp*.6
 ./examples/ringfit.py:146   2.0*pi/nowbp  |  2.0*pi/nowbp
 ./examples/ringfit.py:153   2.0*pi*i/nowbp  |  2.0*pi*i/nowbp
-./examples/ringfit.py:192    35.9*pi/180.0  |   35.9*pi/180.0
 ./examples/ringfit.py:192   totlen/nowbp*.6  |  totlen/nowbp*.6
-./examples/ringsim.py:11   35.9*pi/180.0  |  35.9*pi/180.0
-./examples/ringsim.py:16   2.0*pi*i/336.0  |  2.0*pi*i/336.0
-./examples/ringsim.py:30   35.9*pi/180.0  |  35.9*pi/180.0
 ./examples/spt_tomoctf.py:35   np.pi/2.0*cs*1.0e7*pow(lbda,3.0)  |  np.pi/2.0*cs*1.0e7*pow(lbda,3.0)
 ./examples/spt_tomoctf.py:92   (np.arange(stepx+1,dtype=float))/(stepx)*(rawimg["nx"]-bxsz)  |  (np.arange(stepx+1,dtype=float))/(stepx)*(rawimg["nx"]-bxsz)
-./examples/spt_tomoctf.py:130   ang/180.*np.pi  |  ang/180.*np.pi
-./examples/spt_tomoctf.py:130   apix/atoum*np.sin(ang/180.*np.pi)* xdif  |  apix/atoum*np.sin(ang/180.*np.pi)* xdif
 ./examples/tomotrackbox.py:556   0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0])/3  |  0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0])/3
 ./examples/tomotrackbox.py:640   self.maxshift*4/5  |  self.maxshift*4/5
 ./examples/tomotrackbox.py:678   self.maxshift*4/5  |  self.maxshift*4/5
@@ -156,7 +139,6 @@
 ./libpyEM/Anneal.py:452   60.0 * minutes * step / elapsed  |  60.0 * minutes * step / elapsed
 ./libpyEM/EMAN2_utils.py:94   np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx  |  np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx
 ./libpyEM/EMAN2_utils.py:158   np.pi/2.0*cs*1.0e7*pow(lbda,3.0)  |  np.pi/2.0*cs*1.0e7*pow(lbda,3.0)
-./libpyEM/EMAN2_utils.py:175    (old_div(wedge,2))/180.*np.pi  |   (old_div(wedge,2))/180.*np.pi
 ./libpyEM/EMAN2_utils.py:193    nx*(u-u.min())/(u.max()-u.min())  |   nx*(u-u.min())/(u.max()-u.min())
 ./libpyEM/EMAN2_utils.py:194    ny*(v-v.min())/(v.max()-v.min())  |   ny*(v-v.min())/(v.max()-v.min())
 ./libpyEM/qtgui/emanimationutil.py:118   float(i)/(self.n-1)*8  |  float(i)/(self.n-1)*8
