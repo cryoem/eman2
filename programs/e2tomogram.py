@@ -165,7 +165,7 @@ def main():
 	if options.pk_mindist<0:
 		options.pk_mindist=20
 		print("Minimum fiducial distance: {:.1f} nm".format(
-			options.pk_mindist*8*options.apix_init/10))
+			old_div(options.pk_mindist*8*options.apix_init, 10)))
 	else:
 		options.pk_mindist=options.pk_mindist*10./options.apix_init/8
 		

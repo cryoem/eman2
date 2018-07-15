@@ -13,9 +13,6 @@
 ./examples/alignbystars.py:165   -nx*(scale-1)/2  |  -nx*(scale-1)/2
 ./examples/alignbystars.py:165   -ny*(scale-1)/2  |  -ny*(scale-1)/2
 ./examples/convnet_pickparticle.py:448   options.ncopy*nptcls/num  |  options.ncopy*nptcls/num
-./examples/convnet_pickparticle.py:630   filter_shape[0] * np.prod(filter_shape[2:]) /
-			np.prod(poolsize)  |  filter_shape[0] * np.prod(filter_shape[2:]) /
-			np.prod(poolsize)
 ./examples/convnet_pickparticle.py:760    T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))  |   T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))
 ./examples/diffractsim.py:72   2*pi*x/(options.wavelen)  |  2*pi*x/(options.wavelen)
 ./examples/diffractsim.py:74   2*pi*x/(options.wavelen)  |  2*pi*x/(options.wavelen)
@@ -417,9 +414,6 @@
 ./programs/e2tiltvalidate.py:517    4*math.pi/3  |   4*math.pi/3
 ./programs/e2tiltvalidate.py:518    4*math.pi/3  |   4*math.pi/3
 ./programs/e2tomo_eval.py:78   self.size().width()/3*.9  |  self.size().width()/3*.9
-./programs/e2tomogram.py:168   
-			options.pk_mindist*8*options.apix_init/10  |  
-			options.pk_mindist*8*options.apix_init/10
 ./programs/e2tomogram.py:170   options.pk_mindist*10./options.apix_init/8  |  options.pk_mindist*10./options.apix_init/8
 ./programs/e2tomogram.py:222   -len(imgs_2k)*options.tltstep/2  |  -len(imgs_2k)*options.tltstep/2
 ./programs/e2tomogram.py:222   len(imgs_2k)*options.tltstep/2  |  len(imgs_2k)*options.tltstep/2
