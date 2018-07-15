@@ -69,7 +69,6 @@
 ./examples/e2tomoseg.py:977    a[2]*bs/2  |   a[2]*bs/2
 ./examples/e2tvrecon2d.py:474    (t_old - 1)/t_new * (u_n - u_old)  |   (t_old - 1)/t_new * (u_n - u_old)
 ./examples/em_sim.py:223   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
-./examples/em_sim.py:230   -1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen  |  -1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen
 ./examples/em_sim.py:230   np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(old_div(1,iz**2))  |  np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(old_div(1,iz**2))
 ./examples/em_sim.py:232   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
 ./examples/em_sim.py:232   raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
@@ -88,7 +87,6 @@
 ./examples/em_sim.py:692   pts/l*scale  |  pts/l*scale
 ./examples/em_sim.py:806   p0/winsz*2.  |  p0/winsz*2.
 ./examples/fftspeed.py:82   10000*(t1-t0)/reps  |  10000*(t1-t0)/reps
-./examples/findcenter.py:161    2*np.pi/360 * np.array(list(range(0, 360, options.step)) + [0])  |   2*np.pi/360 * np.array(list(range(0, 360, options.step)) + [0])
 ./examples/gmm_heterog.py:377   var/np.max(var)*100  |  var/np.max(var)*100
 ./examples/gmm_heterog.py:384   var/np.max(var)*100  |  var/np.max(var)*100
 ./examples/gmm_heterog.py:603    T.sum(xx*zz)/T.sqrt(T.sum(xx**2))/T.sqrt(T.sum(zz**2))  |   T.sum(xx*zz)/T.sqrt(T.sum(xx**2))/T.sqrt(T.sum(zz**2))
@@ -144,7 +142,6 @@
 ./libpyEM/qtgui/emimage2d.py:987   (self.width()-1)/4*4  |  (self.width()-1)/4*4
 ./libpyEM/qtgui/emimage2d.py:987   (self.width()-1)/4*4  |  (self.width()-1)/4*4
 ./libpyEM/qtgui/emimage2d.py:1099   (self.width()-1)/4*4  |  (self.width()-1)/4*4
-./libpyEM/qtgui/emimage3dsym.py:880    acos(t)*180/pi  |   acos(t)*180/pi
 ./libpyEM/qtgui/emimagemx.py:879   xys.width()*2/3  |  xys.width()*2/3
 ./libpyEM/qtgui/emimagemx.py:880   xys.height()*2/3  |  xys.height()*2/3
 ./libpyEM/qtgui/emimagemx.py:1184   (tw-1)/4*4  |  (tw-1)/4*4
@@ -156,7 +153,6 @@
 ./libpyEM/qtgui/emimageutil.py:451   j*126/self.norm  |  j*126/self.norm
 ./libpyEM/qtgui/emimageutil.py:457   self.probe[1]*126/self.norm  |  self.probe[1]*126/self.norm
 ./libpyEM/qtgui/emimageutil.py:459   self.probe[1]*126/self.norm  |  self.probe[1]*126/self.norm
-./libpyEM/qtgui/emlights.py:469    4*fac*length/pi  |   4*fac*length/pi
 ./libpyEM/qtgui/emplot2d.py:547   (self.data[i][self.axes[i][2]]-climits[0])/(climits[1]-climits[0])*255.0  |  (self.data[i][self.axes[i][2]]-climits[0])/(climits[1]-climits[0])*255.0
 ./libpyEM/qtgui/emplot2d.py:643   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]
 ./libpyEM/qtgui/emplot2d.py:644   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
@@ -216,7 +212,6 @@
 ./programs/e2ctf.py:1309   nxl*3/4  |  nxl*3/4
 ./programs/e2ctf.py:1310   nxl*3/4  |  nxl*3/4
 ./programs/e2ctf.py:1413   3*xst/2  |  3*xst/2
-./programs/e2ctf.py:1826   best[2]*pi/180  |  best[2]*pi/180
 ./programs/e2ctf.py:2142   s0*3/2  |  s0*3/2
 ./programs/e2ctf.py:2152   f*s2/s1  |  f*s2/s1
 ./programs/e2ctf.py:2868   sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])  |  sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])
@@ -229,8 +224,6 @@
 ./programs/e2evalrefine.py:860   cores*(endtime-starttime)/(3600*lastiter)  |  cores*(endtime-starttime)/(3600*lastiter)
 ./programs/e2fsc.py:84   len(fsc)*2/3  |  len(fsc)*2/3
 ./programs/e2fsc.py:208   len(fsc)*2/3  |  len(fsc)*2/3
-./programs/e2helixboxer.py:204    180/pi*acos( l_uvect[1] )  |   180/pi*acos( l_uvect[1] )
-./programs/e2helixboxer.py:256    180/pi*acos( l_uvect[1] )  |   180/pi*acos( l_uvect[1] )
 ./programs/e2initialmodel.py:210   it*100/options["iter"]  |  it*100/options["iter"]
 ./programs/e2initialmodel.py:237   len(ptcls)*7/8  |  len(ptcls)*7/8
 ./programs/e2initialmodel.py:248   boxsize*3/2  |  boxsize*3/2
@@ -291,7 +284,6 @@
 ./programs/e2spt_ctf_old.py:1085    relativecoordz * apix/10000  |   relativecoordz * apix/10000
 ./programs/e2spt_ctf_old.py:1862    ( old_div(nx,2.0) ) * apix / 10000  |   ( old_div(nx,2.0) ) * apix / 10000
 ./programs/e2spt_ctf_old.py:1941    ( old_div(nx,2.0) ) * apix/10000  |   ( old_div(nx,2.0) ) * apix/10000
-./programs/e2spt_ctf_old.py:1954    options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix  |   options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix
 ./programs/e2spt_ctf_old.py:2101    icethickness * img['apix_x']/10000  |   icethickness * img['apix_x']/10000
 ./programs/e2spt_eval.py:75   self.size().width()/4*.9  |  self.size().width()/4*.9
 ./programs/e2spt_extract.py:98   int(val["boxsize"])*scale/2  |  int(val["boxsize"])*scale/2
@@ -303,17 +295,9 @@
 ./programs/e2spt_simulation.py:996    coordz*apix/10000  |   coordz*apix/10000
 ./programs/e2spt_simulation.py:1004    10000*(px + old_div(options.gridholesize,2))/apix  |   10000*(px + old_div(options.gridholesize,2))/apix
 ./programs/e2spt_simulation.py:1005   options.gridholesize*10000/apix  |  options.gridholesize*10000/apix
-./programs/e2spt_subtilt_old.py:408   2 * options.boxsize / math.cos( math.radians(maxtilt+5)  )  |  2 * options.boxsize / math.cos( math.radians(maxtilt+5)  )
-./programs/e2spt_subtilt_old.py:1084    math.pi*theta/180  |   math.pi*theta/180
 ./programs/e2spt_tiltrefine.py:245   (s+clp)/clp/2  |  (s+clp)/clp/2
 ./programs/e2spt_tomoctf.py:161   sz/2/np.cos(tpm[3]/180.*np.pi)*.9  |  sz/2/np.cos(tpm[3]/180.*np.pi)*.9
 ./programs/e2ssehunter.py:148   -1*res/apix  |  -1*res/apix
-./programs/e2tiltvalidate.py:506    2*math.pi/3  |   2*math.pi/3
-./programs/e2tiltvalidate.py:511    2*math.pi/3  |   2*math.pi/3
-./programs/e2tiltvalidate.py:511    4*math.pi/3  |   4*math.pi/3
-./programs/e2tiltvalidate.py:512    2*math.pi/3  |   2*math.pi/3
-./programs/e2tiltvalidate.py:517    4*math.pi/3  |   4*math.pi/3
-./programs/e2tiltvalidate.py:518    4*math.pi/3  |   4*math.pi/3
 ./programs/e2tomo_eval.py:78   self.size().width()/3*.9  |  self.size().width()/3*.9
 ./programs/e2tomogram.py:222   -len(imgs_2k)*options.tltstep/2  |  -len(imgs_2k)*options.tltstep/2
 ./programs/e2tomogram.py:222   len(imgs_2k)*options.tltstep/2  |  len(imgs_2k)*options.tltstep/2
