@@ -18,7 +18,7 @@ if [ ! -z ${CIRCLECI} ];then
     source ${HOME}/miniconda2/bin/activate root
 fi
 
-conda install future -c cryoem -c defaults -c conda-forge --quiet
+conda install future -c defaults --yes --quiet
 python -m compileall -q .
 
 # Build and install eman2
