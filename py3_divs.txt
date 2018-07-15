@@ -40,10 +40,7 @@
 ./examples/e2moviealigner2.py:291   ms*((c1+1)-(i+1))/(c1+1)  |  ms*((c1+1)-(i+1))/(c1+1)
 ./examples/e2moviealigner2.py:292   ms*(i+1)/(c2+1)  |  ms*(i+1)/(c2+1)
 ./examples/e2moviealigner3.py:176    n*(n-1)/2  |   n*(n-1)/2
-./examples/e2plotfig.py:350   x*1.0/N  |  x*1.0/N
-./examples/e2ptclfsc_multi.py:150   restarget*1.5/apix  |  restarget*1.5/apix
 ./examples/e2ptclfsc_multi.py:159   2*nx*apix/res  |  2*nx*apix/res
-./examples/e2ptclzvssim.py:176   atan2(imdy[N],imdx[N])*180.0/pi  |  atan2(imdy[N],imdx[N])*180.0/pi
 ./examples/e2ptclzvssim.py:255   nsnr*2/3  |  nsnr*2/3
 ./examples/e2ptclzvssim.py:255   nsnr*2/3  |  nsnr*2/3
 ./examples/e2pw_pathrefine.py:125   np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx  |  np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx
@@ -76,25 +73,13 @@
 ./examples/e2spt_icethicknessplot.py:239    z*apix/10000  |   z*apix/10000
 ./examples/e2spt_icethicknessplot.py:242    2*options.radius * apix/10000  |   2*options.radius * apix/10000
 ./examples/e2spt_reconfromtilts.py:82   boxsize*3/2  |  boxsize*3/2
-./examples/e2spt_rotationalplot.py:427   x*1.0/N  |  x*1.0/N
-./examples/e2spt_rotationalplot.py:709    float(value) / 180.0 / (1.1)  |   float(value) / 180.0 / (1.1)
-./examples/e2spt_tomosimjobs.py:1897    float(value) / 180.0 / (1.1)  |   float(value) / 180.0 / (1.1)
-./examples/e2tomogram_old.py:336   angi*pi/(180.0*4.0)  |  angi*pi/(180.0*4.0)
-./examples/e2tomogram_old.py:340   ang*180.0/pi  |  ang*180.0/pi
-./examples/e2tomogram_old.py:348   options.tilt*(i-old_div(nimg,2)-1)*pi/180.0  |  options.tilt*(i-old_div(nimg,2)-1)*pi/180.0
-./examples/e2tomogram_old.py:348   -tiltaxis[1]*pi/180.0  |  -tiltaxis[1]*pi/180.0
 ./examples/e2tomoseg.py:977    a[0]*bs/2  |   a[0]*bs/2
 ./examples/e2tomoseg.py:977    a[1]*bs/2  |   a[1]*bs/2
 ./examples/e2tomoseg.py:977    a[2]*bs/2  |   a[2]*bs/2
 ./examples/e2tomoseg.py:977    a[0]*bs/2  |   a[0]*bs/2
 ./examples/e2tomoseg.py:977    a[1]*bs/2  |   a[1]*bs/2
 ./examples/e2tomoseg.py:977    a[2]*bs/2  |   a[2]*bs/2
-./examples/e2tvrecon2d.py:316   angle*np.pi/180.  |  angle*np.pi/180.
-./examples/e2tvrecon2d.py:316   angle*np.pi/180.  |  angle*np.pi/180.
 ./examples/e2tvrecon2d.py:474    (t_old - 1)/t_new * (u_n - u_old)  |   (t_old - 1)/t_new * (u_n - u_old)
-./examples/e2tvrecon2d.py:477    1./2 * (err**2).sum()  |   1./2 * (err**2).sum()
-./examples/e2tvrecon2d.py:556    1. / 2 * (1 + np.sqrt(1 + 4 * t**2))  |   1. / 2 * (1 + np.sqrt(1 + 4 * t**2))
-./examples/e2tvrecon2d.py:704    0.5 / im_norm * dual_gap  |   0.5 / im_norm * dual_gap
 ./examples/em_sim.py:223   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
 ./examples/em_sim.py:230   -1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen  |  -1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen
 ./examples/em_sim.py:230   np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(old_div(1,iz**2))  |  np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(old_div(1,iz**2))
@@ -117,12 +102,10 @@
 ./examples/em_sim.py:447   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
 ./examples/em_sim.py:447   proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
 ./examples/em_sim.py:542   xm/ym*ymax  |  xm/ym*ymax
-./examples/em_sim.py:684    np.pi*arc/20.  |   np.pi*arc/20.
 ./examples/em_sim.py:692   pts/l*scale  |  pts/l*scale
 ./examples/em_sim.py:806   p0/winsz*2.  |  p0/winsz*2.
 ./examples/fftspeed.py:82   10000*(t1-t0)/reps  |  10000*(t1-t0)/reps
 ./examples/findcenter.py:161    2*np.pi/360 * np.array(list(range(0, 360, options.step)) + [0])  |   2*np.pi/360 * np.array(list(range(0, 360, options.step)) + [0])
-./examples/gmm_heterog.py:288   orient[:,:3]/180.0*3.14  |  orient[:,:3]/180.0*3.14
 ./examples/gmm_heterog.py:377   var/np.max(var)*100  |  var/np.max(var)*100
 ./examples/gmm_heterog.py:384   var/np.max(var)*100  |  var/np.max(var)*100
 ./examples/gmm_heterog.py:488   6.28/(old_div(nsym,2))*i  |  6.28/(old_div(nsym,2))*i
