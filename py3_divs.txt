@@ -74,10 +74,8 @@
 ./examples/em_sim.py:230   np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(old_div(1,iz**2))  |  np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(old_div(1,iz**2))
 ./examples/em_sim.py:232   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
 ./examples/em_sim.py:232   raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
-./examples/em_sim.py:257   -phaseplate*np.pi/2.  |  -phaseplate*np.pi/2.
 ./examples/em_sim.py:263   2*np.pi/wavelen  |  2*np.pi/wavelen
 ./examples/em_sim.py:263   ((ix)**2)/(f*2)*(2*np.pi/wavelen)  |  ((ix)**2)/(f*2)*(2*np.pi/wavelen)
-./examples/em_sim.py:264   cs*(ix**4)/4.  |  cs*(ix**4)/4.
 ./examples/em_sim.py:270   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
 ./examples/em_sim.py:272   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
 ./examples/em_sim.py:272   proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
@@ -85,7 +83,6 @@
 ./examples/em_sim.py:428   raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))
 ./examples/em_sim.py:443   2*np.pi/wavelen  |  2*np.pi/wavelen
 ./examples/em_sim.py:443   rr/(f*2)*(2*np.pi/wavelen)  |  rr/(f*2)*(2*np.pi/wavelen)
-./examples/em_sim.py:444   self.cs*(rr**4)/4.  |  self.cs*(rr**4)/4.
 ./examples/em_sim.py:447   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
 ./examples/em_sim.py:447   proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
 ./examples/em_sim.py:542   xm/ym*ymax  |  xm/ym*ymax
@@ -372,7 +369,6 @@
 ./rt/pyem/test_transform.py:159   fac*inv_params["tx"]/(-1*params["tx"])  |  fac*inv_params["tx"]/(-1*params["tx"])
 ./sparx/bin/sx3dvariability.py:604   i*100.0/len(proj_list)  |  i*100.0/len(proj_list)
 ./sparx/bin/sxcenter_projections.py:76   len(even_angles(x))*4.*passlastring**2*4./ mempernode  |  len(even_angles(x))*4.*passlastring**2*4./ mempernode
-./sparx/bin/sxcenter_projections.py:86    perr/float(nn)*100.0  |   perr/float(nn)*100.0
 ./sparx/bin/sxchains.py:107    ncity*(ncity-1)/2  |   ncity*(ncity-1)/2
 ./sparx/bin/sxchains.py:270   lend*(lend-1)/2  |  lend*(lend-1)/2
 ./sparx/bin/sxchains.py:340   lend*(lend-1)/2  |  lend*(lend-1)/2
@@ -381,10 +377,6 @@
 ./sparx/bin/sxcompute_isac_avg.py:112    float(ifreq)/float(len(rot1))/pixel_size  |   float(ifreq)/float(len(rot1))/pixel_size
 ./sparx/bin/sxctf.py:334   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
 ./sparx/bin/sxctf.py:334   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
-./sparx/bin/sxctf.py:345   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
-./sparx/bin/sxctf.py:345   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
-./sparx/bin/sxctf.py:363   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
-./sparx/bin/sxctf.py:363   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
 ./sparx/bin/sxctf.py:435   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
 ./sparx/bin/sxctf.py:435   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
 ./sparx/bin/sxctf.py:436   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
