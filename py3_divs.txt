@@ -1,0 +1,1189 @@
+./broken/e2findsubunit.py:84   2.0*pi/csym  |  2.0*pi/csym
+./broken/e2helical_recons.py:42   360/reso*j  |  360/reso*j
+./broken/e2helical_recons.py:81   i*100/len(ptcls)  |  i*100/len(ptcls)
+./broken/e2helical_recons.py:90   len(ptcls)*60/100.0  |  len(ptcls)*60/100.0
+./broken/e2helical_recons.py:94   i*100*8/6/len(ptcls)  |  i*100*8/6/len(ptcls)
+./broken/e2helical_recons.py:131   180.0*atan(old_div((j-old_div(nx,2)-0.5),(i-old_div(nx,2)-0.5)))/pi  |  180.0*atan(old_div((j-old_div(nx,2)-0.5),(i-old_div(nx,2)-0.5)))/pi
+./broken/e2helical_recons.py:139   (theta+units*d_phi)*pi/180.0  |  (theta+units*d_phi)*pi/180.0
+./broken/e2helical_recons.py:159   -0.5*results[1]/results[2]  |  -0.5*results[1]/results[2]
+./broken/e2montecarlorecon.py:207   tstep*options.numsasteps/K  |  tstep*options.numsasteps/K
+./broken/e2tomoaverage.py:292    images[0].get_xsize()*(images[0].get_xsize()-1)/2.0  |   images[0].get_xsize()*(images[0].get_xsize()-1)/2.0
+./examples/alignbystars.py:151   -nx*(scale-1)/2  |  -nx*(scale-1)/2
+./examples/alignbystars.py:151   -ny*(scale-1)/2  |  -ny*(scale-1)/2
+./examples/alignbystars.py:165   -nx*(scale-1)/2  |  -nx*(scale-1)/2
+./examples/alignbystars.py:165   -ny*(scale-1)/2  |  -ny*(scale-1)/2
+./examples/breakbrick.py:121   45./180.*np.pi  |  45./180.*np.pi
+./examples/breakbrick.py:155   abs(newori-self.ball_ori)*180./np.pi  |  abs(newori-self.ball_ori)*180./np.pi
+./examples/convnet_pickparticle.py:448   options.ncopy*nptcls/num  |  options.ncopy*nptcls/num
+./examples/convnet_pickparticle.py:630   filter_shape[0] * np.prod(filter_shape[2:]) /
+			np.prod(poolsize)  |  filter_shape[0] * np.prod(filter_shape[2:]) /
+			np.prod(poolsize)
+./examples/convnet_pickparticle.py:760    T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))  |   T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))
+./examples/crystal_index.py:163    np.arccos(np.sqrt(old_div((r**2-options.diameter),r**2)))*180./np.pi  |   np.arccos(np.sqrt(old_div((r**2-options.diameter),r**2)))*180./np.pi
+./examples/crystal_index.py:445    -1*close/2.  |   -1*close/2.
+./examples/diffractsim.py:72   2*pi*x/(options.wavelen)  |  2*pi*x/(options.wavelen)
+./examples/diffractsim.py:74   2*pi*x/(options.wavelen)  |  2*pi*x/(options.wavelen)
+./examples/diffractsim.py:81   -10.0*nsrc/256.0  |  -10.0*nsrc/256.0
+./examples/diffractsim.py:82   10.0*nsrc/256.0  |  10.0*nsrc/256.0
+./examples/drawshape.py:116   np.arctan2((y-y0), (x-x0)) *180./np.pi  |  np.arctan2((y-y0), (x-x0)) *180./np.pi
+./examples/e2alignmenttest.py:217    float(options.num-flip_errors)/options.num*100  |   float(options.num-flip_errors)/options.num*100
+./examples/e2aligntest.py:91   (v[axes.find("a")]-16)*2*pi/180.0  |  (v[axes.find("a")]-16)*2*pi/180.0
+./examples/e2aligntest.py:92   (v[axes.find("q")]-16)*2*pi/180.0  |  (v[axes.find("q")]-16)*2*pi/180.0
+./examples/e2aligntest.py:93   (v[axes.find("p")]-16)*2*pi/180.0  |  (v[axes.find("p")]-16)*2*pi/180.0
+./examples/e2fftsynth.py:196   4.0*i/nx  |  4.0*i/nx
+./examples/e2fftsynth.py:198   4.0*i/nx  |  4.0*i/nx
+./examples/e2fftsynth.py:202   nx*3/4  |  nx*3/4
+./examples/e2fftsynth.py:203   nx*3/4  |  nx*3/4
+./examples/e2fftsynth.py:211   nx*2/5  |  nx*2/5
+./examples/e2fftsynth.py:218   4.0*(i-old_div(nx,4.0))/nx  |  4.0*(i-old_div(nx,4.0))/nx
+./examples/e2fftsynth.py:219   nx*3/4  |  nx*3/4
+./examples/e2fftsynth.py:219   4.0*(i-old_div(nx,2.0))/nx  |  4.0*(i-old_div(nx,2.0))/nx
+./examples/e2fftsynth.py:222   i*pi/4.0  |  i*pi/4.0
+./examples/e2fftsynth.py:225   i*pi/4.0  |  i*pi/4.0
+./examples/e2fftsynth.py:225   i*pi/32  |  i*pi/32
+./examples/e2fftsynth.py:228   i*pi/4.0  |  i*pi/4.0
+./examples/e2fftsynth.py:228   i*pi/29  |  i*pi/29
+./examples/e2fftsynth.py:231   i*pi/4.0  |  i*pi/4.0
+./examples/e2fftsynth.py:231   i*pi/126  |  i*pi/126
+./examples/e2fftsynth.py:234   i*pi/16.0  |  i*pi/16.0
+./examples/e2fftsynth.py:239   nx*15/16  |  nx*15/16
+./examples/e2fftsynth.py:242   i*pi/15.5  |  i*pi/15.5
+./examples/e2fftsynth.py:245   i*pi/19  |  i*pi/19
+./examples/e2fftsynth.py:249   nx*3/4  |  nx*3/4
+./examples/e2fftsynth.py:254   nx*3/4  |  nx*3/4
+./examples/e2fftsynth.py:274   amp*2/(fft["nx"]-2)  |  amp*2/(fft["nx"]-2)
+./examples/e2fftsynth.py:275   fft[i].imag*180.0/pi  |  fft[i].imag*180.0/pi
+./examples/e2fftsynth.py:309   cell*oversamp/float(i)  |  cell*oversamp/float(i)
+./examples/e2fftsynth.py:309   self.wpha[i].getValue()*pi/180.0  |  self.wpha[i].getValue()*pi/180.0
+./examples/e2moviealigner2.py:291   ms*((c1+1)-(i+1))/(c1+1)  |  ms*((c1+1)-(i+1))/(c1+1)
+./examples/e2moviealigner2.py:292   ms*(i+1)/(c2+1)  |  ms*(i+1)/(c2+1)
+./examples/e2moviealigner3.py:176    n*(n-1)/2  |   n*(n-1)/2
+./examples/e2plotfig.py:350   x*1.0/N  |  x*1.0/N
+./examples/e2ptclfsc_multi.py:150   restarget*1.5/apix  |  restarget*1.5/apix
+./examples/e2ptclfsc_multi.py:159   2*nx*apix/res  |  2*nx*apix/res
+./examples/e2ptclzvssim.py:176   atan2(imdy[N],imdx[N])*180.0/pi  |  atan2(imdy[N],imdx[N])*180.0/pi
+./examples/e2ptclzvssim.py:255   nsnr*2/3  |  nsnr*2/3
+./examples/e2ptclzvssim.py:255   nsnr*2/3  |  nsnr*2/3
+./examples/e2pw_pathrefine.py:125   np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx  |  np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx
+./examples/e2pw_pathrefine.py:243   dd0/dd0[j1]*realgap  |  dd0/dd0[j1]*realgap
+./examples/e2pw_pathrefine.py:427   np.arange(len(ss), dtype=float)/len(ss)*len(path)  |  np.arange(len(ss), dtype=float)/len(ss)*len(path)
+./examples/e2pwstructuremodify.py:122    mrcp/midp/2  |   mrcp/midp/2
+./examples/e2simrecon.py:128   pspec[i]*(1.0-fscl[i])/(fscl[i])  |  pspec[i]*(1.0-fscl[i])/(fscl[i])
+./examples/e2spt_autocenter.py:225    -1 * (old_div(eb,2.0) - maxccfpmzCside[1])/2.0  |   -1 * (old_div(eb,2.0) - maxccfpmzCside[1])/2.0
+./examples/e2spt_autocenter.py:428    -1 * (old_div(pb,2.0) - maxccfpsideC[1])/2.0  |   -1 * (old_div(pb,2.0) - maxccfpsideC[1])/2.0
+./examples/e2spt_boxer_old.py:2105    a[0]*bs/2  |   a[0]*bs/2
+./examples/e2spt_boxer_old.py:2105    a[1]*bs/2  |   a[1]*bs/2
+./examples/e2spt_boxer_old.py:2105    a[2]*bs/2  |   a[2]*bs/2
+./examples/e2spt_boxer_old.py:2105    a[0]*bs/2  |   a[0]*bs/2
+./examples/e2spt_boxer_old.py:2105    a[1]*bs/2  |   a[1]*bs/2
+./examples/e2spt_boxer_old.py:2105    a[2]*bs/2  |   a[2]*bs/2
+./examples/e2spt_icethicknessplot.py:160    x*apix/10  |   x*apix/10
+./examples/e2spt_icethicknessplot.py:161    y*apix/10  |   y*apix/10
+./examples/e2spt_icethicknessplot.py:162    z*apix/10  |   z*apix/10
+./examples/e2spt_icethicknessplot.py:165    2*options.radius * apix/10  |   2*options.radius * apix/10
+./examples/e2spt_icethicknessplot.py:170    x*apix/10000  |   x*apix/10000
+./examples/e2spt_icethicknessplot.py:171    y*apix/10000  |   y*apix/10000
+./examples/e2spt_icethicknessplot.py:172    z*apix/10000  |   z*apix/10000
+./examples/e2spt_icethicknessplot.py:175    2*options.radius * apix/10000  |   2*options.radius * apix/10000
+./examples/e2spt_icethicknessplot.py:226    x*apix/10  |   x*apix/10
+./examples/e2spt_icethicknessplot.py:227    y*apix/10  |   y*apix/10
+./examples/e2spt_icethicknessplot.py:228    z*apix/10  |   z*apix/10
+./examples/e2spt_icethicknessplot.py:231    2*options.radius * apix/10  |   2*options.radius * apix/10
+./examples/e2spt_icethicknessplot.py:237    x*apix/10000  |   x*apix/10000
+./examples/e2spt_icethicknessplot.py:238    y*apix/10000  |   y*apix/10000
+./examples/e2spt_icethicknessplot.py:239    z*apix/10000  |   z*apix/10000
+./examples/e2spt_icethicknessplot.py:242    2*options.radius * apix/10000  |   2*options.radius * apix/10000
+./examples/e2spt_reconfromtilts.py:82   boxsize*3/2  |  boxsize*3/2
+./examples/e2spt_rotationalplot.py:427   x*1.0/N  |  x*1.0/N
+./examples/e2spt_rotationalplot.py:709    float(value) / 180.0 / (1.1)  |   float(value) / 180.0 / (1.1)
+./examples/e2spt_tomosimjobs.py:1897    float(value) / 180.0 / (1.1)  |   float(value) / 180.0 / (1.1)
+./examples/e2tomogram_old.py:336   angi*pi/(180.0*4.0)  |  angi*pi/(180.0*4.0)
+./examples/e2tomogram_old.py:340   ang*180.0/pi  |  ang*180.0/pi
+./examples/e2tomogram_old.py:348   options.tilt*(i-old_div(nimg,2)-1)*pi/180.0  |  options.tilt*(i-old_div(nimg,2)-1)*pi/180.0
+./examples/e2tomogram_old.py:348   -tiltaxis[1]*pi/180.0  |  -tiltaxis[1]*pi/180.0
+./examples/e2tomoseg.py:977    a[0]*bs/2  |   a[0]*bs/2
+./examples/e2tomoseg.py:977    a[1]*bs/2  |   a[1]*bs/2
+./examples/e2tomoseg.py:977    a[2]*bs/2  |   a[2]*bs/2
+./examples/e2tomoseg.py:977    a[0]*bs/2  |   a[0]*bs/2
+./examples/e2tomoseg.py:977    a[1]*bs/2  |   a[1]*bs/2
+./examples/e2tomoseg.py:977    a[2]*bs/2  |   a[2]*bs/2
+./examples/e2tvrecon2d.py:316   angle*np.pi/180.  |  angle*np.pi/180.
+./examples/e2tvrecon2d.py:316   angle*np.pi/180.  |  angle*np.pi/180.
+./examples/e2tvrecon2d.py:474    (t_old - 1)/t_new * (u_n - u_old)  |   (t_old - 1)/t_new * (u_n - u_old)
+./examples/e2tvrecon2d.py:477    1./2 * (err**2).sum()  |   1./2 * (err**2).sum()
+./examples/e2tvrecon2d.py:556    1. / 2 * (1 + np.sqrt(1 + 4 * t**2))  |   1. / 2 * (1 + np.sqrt(1 + 4 * t**2))
+./examples/e2tvrecon2d.py:704    0.5 / im_norm * dual_gap  |   0.5 / im_norm * dual_gap
+./examples/em_sim.py:223   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
+./examples/em_sim.py:230   -1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen  |  -1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen
+./examples/em_sim.py:230   np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(old_div(1,iz**2))  |  np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(old_div(1,iz**2))
+./examples/em_sim.py:232   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
+./examples/em_sim.py:232   raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
+./examples/em_sim.py:257   -phaseplate*np.pi/2.  |  -phaseplate*np.pi/2.
+./examples/em_sim.py:263   2*np.pi/wavelen  |  2*np.pi/wavelen
+./examples/em_sim.py:263   ((ix)**2)/(f*2)*(2*np.pi/wavelen)  |  ((ix)**2)/(f*2)*(2*np.pi/wavelen)
+./examples/em_sim.py:264   cs*(ix**4)/4.  |  cs*(ix**4)/4.
+./examples/em_sim.py:270   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
+./examples/em_sim.py:272   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
+./examples/em_sim.py:272   proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
+./examples/em_sim.py:393   -1j*2.*np.pi*dst/wavelen  |  -1j*2.*np.pi*dst/wavelen
+./examples/em_sim.py:393   phaseobj[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  phaseobj[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))
+./examples/em_sim.py:428   -1j*2.*np.pi*dst/wavelen  |  -1j*2.*np.pi*dst/wavelen
+./examples/em_sim.py:428   raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))
+./examples/em_sim.py:443   2*np.pi/wavelen  |  2*np.pi/wavelen
+./examples/em_sim.py:443   rr/(f*2)*(2*np.pi/wavelen)  |  rr/(f*2)*(2*np.pi/wavelen)
+./examples/em_sim.py:444   self.cs*(rr**4)/4.  |  self.cs*(rr**4)/4.
+./examples/em_sim.py:447   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
+./examples/em_sim.py:447   proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
+./examples/em_sim.py:542   xm/ym*ymax  |  xm/ym*ymax
+./examples/em_sim.py:684    np.pi*arc/20.  |   np.pi*arc/20.
+./examples/em_sim.py:692   pts/l*scale  |  pts/l*scale
+./examples/em_sim.py:806   p0/winsz*2.  |  p0/winsz*2.
+./examples/fftspeed.py:82   10000*(t1-t0)/reps  |  10000*(t1-t0)/reps
+./examples/findcenter.py:161    2*np.pi/360 * np.array(list(range(0, 360, options.step)) + [0])  |   2*np.pi/360 * np.array(list(range(0, 360, options.step)) + [0])
+./examples/gmm_heterog.py:288   orient[:,:3]/180.0*3.14  |  orient[:,:3]/180.0*3.14
+./examples/gmm_heterog.py:377   var/np.max(var)*100  |  var/np.max(var)*100
+./examples/gmm_heterog.py:384   var/np.max(var)*100  |  var/np.max(var)*100
+./examples/gmm_heterog.py:488   6.28/(old_div(nsym,2))*i  |  6.28/(old_div(nsym,2))*i
+./examples/gmm_heterog.py:504   6.28/(nsym)*i  |  6.28/(nsym)*i
+./examples/gmm_heterog.py:603    T.sum(xx*zz)/T.sqrt(T.sum(xx**2))/T.sqrt(T.sum(zz**2))  |   T.sum(xx*zz)/T.sqrt(T.sum(xx**2))/T.sqrt(T.sum(zz**2))
+./examples/gmm_heterog_tensorflow.py:73   4./3.*np.pi  |  4./3.*np.pi
+./examples/gmm_heterog_tensorflow.py:247   orient[:,:3]/180.0*3.14  |  orient[:,:3]/180.0*3.14
+./examples/gmm_heterog_tensorflow.py:287   orient[:,:3]/180.0*3.14  |  orient[:,:3]/180.0*3.14
+./examples/gmm_heterog_tensorflow.py:375   (grid_x-old_div(sz,2.))/sz*2.  |  (grid_x-old_div(sz,2.))/sz*2.
+./examples/gmm_heterog_tensorflow.py:376   (grid_y-old_div(sz,2.))/sz*2.  |  (grid_y-old_div(sz,2.))/sz*2.
+./examples/gmm_heterog_tensorflow.py:382   -r2*wt/.4  |  -r2*wt/.4
+./examples/gmm_heterog_tensorflow.py:382   0.5*np.sqrt(np.pi)*amp*tf.sqrt(wt)*wt*tf.exp(-r2*wt/.4)  |  0.5*np.sqrt(np.pi)*amp*tf.sqrt(wt)*wt*tf.exp(-r2*wt/.4)
+./examples/gmm_heterog_tensorflow.py:550   nball*3/ncopy  |  nball*3/ncopy
+./examples/gmm_heterog_tensorflow.py:556   pc/np.sqrt(np.max(np.sum(pc**2, 1)))*rr/8.  |  pc/np.sqrt(np.max(np.sum(pc**2, 1)))*rr/8.
+./examples/make3dpar_rawptcls.py:460   atan2(1.0,old_div(max(pad),2.0))*180./pi  |  atan2(1.0,old_div(max(pad),2.0))*180./pi
+./examples/pickptcl_2cls.py:360   sz*sz/4  |  sz*sz/4
+./examples/reconstruct_fill.py:54   100.0*r1[i]/n[i]  |  100.0*r1[i]/n[i]
+./examples/reconstruct_fill.py:54   100.0*r2[i]/n[i]  |  100.0*r2[i]/n[i]
+./examples/refinetomo_buildptcls.py:39   tt/180.*np.pi  |  tt/180.*np.pi
+./examples/ringfit.py:144    35.9*pi/180.0  |   35.9*pi/180.0
+./examples/ringfit.py:144   totlen/nowbp*.6  |  totlen/nowbp*.6
+./examples/ringfit.py:146   2.0*pi/nowbp  |  2.0*pi/nowbp
+./examples/ringfit.py:153   2.0*pi*i/nowbp  |  2.0*pi*i/nowbp
+./examples/ringfit.py:192    35.9*pi/180.0  |   35.9*pi/180.0
+./examples/ringfit.py:192   totlen/nowbp*.6  |  totlen/nowbp*.6
+./examples/ringsim.py:11   35.9*pi/180.0  |  35.9*pi/180.0
+./examples/ringsim.py:16   2.0*pi*i/336.0  |  2.0*pi*i/336.0
+./examples/ringsim.py:30   35.9*pi/180.0  |  35.9*pi/180.0
+./examples/spt_tomoctf.py:35   np.pi/2.0*cs*1.0e7*pow(lbda,3.0)  |  np.pi/2.0*cs*1.0e7*pow(lbda,3.0)
+./examples/spt_tomoctf.py:92   (np.arange(stepx+1,dtype=float))/(stepx)*(rawimg["nx"]-bxsz)  |  (np.arange(stepx+1,dtype=float))/(stepx)*(rawimg["nx"]-bxsz)
+./examples/spt_tomoctf.py:130   ang/180.*np.pi  |  ang/180.*np.pi
+./examples/spt_tomoctf.py:130   apix/atoum*np.sin(ang/180.*np.pi)* xdif  |  apix/atoum*np.sin(ang/180.*np.pi)* xdif
+./examples/tomotrackbox.py:556   0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0])/3  |  0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0])/3
+./examples/tomotrackbox.py:640   self.maxshift*4/5  |  self.maxshift*4/5
+./examples/tomotrackbox.py:678   self.maxshift*4/5  |  self.maxshift*4/5
+./examples/tomotrackbox.py:706   self.maxshift*4/5  |  self.maxshift*4/5
+./examples/UnitTestGetComplexAt2D.py:40   ky*nx/2  |  ky*nx/2
+./examples/UnitTestGetComplexAt2D.py:41   ky*nx/2  |  ky*nx/2
+./examples/UnitTestGetComplexAt2D.py:206   ky*nx/2  |  ky*nx/2
+./examples/UnitTestGetComplexAt2D.py:207   ky*nx/2  |  ky*nx/2
+./examples/UnitTestGetComplexAt3D.py:42   ky*nx/2  |  ky*nx/2
+./examples/UnitTestGetComplexAt3D.py:42   kz*ny*nx/2  |  kz*ny*nx/2
+./examples/UnitTestGetComplexAt3D.py:43   ky*nx/2  |  ky*nx/2
+./examples/UnitTestGetComplexAt3D.py:43   kz*ny*nx/2  |  kz*ny*nx/2
+./examples/UnitTestGetComplexAt3D.py:209   ky*nx/2  |  ky*nx/2
+./examples/UnitTestGetComplexAt3D.py:210   ky*nx/2  |  ky*nx/2
+./libpyEM/Anneal.py:345   Tfactor * step / self.steps  |  Tfactor * step / self.steps
+./libpyEM/Anneal.py:452   60.0 * minutes * step / elapsed  |  60.0 * minutes * step / elapsed
+./libpyEM/EMAN2_utils.py:94   np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx  |  np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx
+./libpyEM/EMAN2_utils.py:158   np.pi/2.0*cs*1.0e7*pow(lbda,3.0)  |  np.pi/2.0*cs*1.0e7*pow(lbda,3.0)
+./libpyEM/EMAN2_utils.py:175    (old_div(wedge,2))/180.*np.pi  |   (old_div(wedge,2))/180.*np.pi
+./libpyEM/EMAN2_utils.py:193    nx*(u-u.min())/(u.max()-u.min())  |   nx*(u-u.min())/(u.max()-u.min())
+./libpyEM/EMAN2_utils.py:194    ny*(v-v.min())/(v.max()-v.min())  |   ny*(v-v.min())/(v.max()-v.min())
+./libpyEM/qtgui/emanimationutil.py:118   float(i)/(self.n-1)*8  |  float(i)/(self.n-1)*8
+./libpyEM/qtgui/emanimationutil.py:125   float(i)/(self.n-1)*pi/2  |  float(i)/(self.n-1)*pi/2
+./libpyEM/qtgui/emdataitem3d.py:944   255.0*(self.probeposition[i][0] - self.minden)/(self.maxden-self.minden)  |  255.0*(self.probeposition[i][0] - self.minden)/(self.maxden-self.minden)
+./libpyEM/qtgui/emdatastorage.py:182   (x+459.67)*5./9.  |  (x+459.67)*5./9.
+./libpyEM/qtgui/emform.py:2112   2*len(params)/3  |  2*len(params)/3
+./libpyEM/qtgui/emform.py:2113   2*len(params)/3  |  2*len(params)/3
+./libpyEM/qtgui/emglobjects.py:423    180.0*atan2(dy,dx)/pi  |   180.0*atan2(dy,dx)/pi
+./libpyEM/qtgui/emglobjects.py:591    2.0*(x1-self.wview[0])/self.wview[2]  |   2.0*(x1-self.wview[0])/self.wview[2]
+./libpyEM/qtgui/emglobjects.py:592    2.0*(y1-self.wview[1])/self.wview[3]  |   2.0*(y1-self.wview[1])/self.wview[3]
+./libpyEM/qtgui/emglobjects.py:594    2.0*(x2-self.wview[0])/self.wview[2]  |   2.0*(x2-self.wview[0])/self.wview[2]
+./libpyEM/qtgui/emglobjects.py:595    2.0*(y2-self.wview[1])/self.wview[3]  |   2.0*(y2-self.wview[1])/self.wview[3]
+./libpyEM/qtgui/emglobjects.py:638    2.0*(x-self.wview[0])/self.wview[2]  |   2.0*(x-self.wview[0])/self.wview[2]
+./libpyEM/qtgui/emglobjects.py:639    2.0*(y-self.wview[1])/self.wview[3]  |   2.0*(y-self.wview[1])/self.wview[3]
+./libpyEM/qtgui/emglobjects.py:792    180.0*atan2(dy,dx)/pi  |   180.0*atan2(dy,dx)/pi
+./libpyEM/qtgui/emglobjects.py:954    2.0*(x1-self.wview[0])/self.wview[2]  |   2.0*(x1-self.wview[0])/self.wview[2]
+./libpyEM/qtgui/emglobjects.py:955    2.0*(y1-self.wview[1])/self.wview[3]  |   2.0*(y1-self.wview[1])/self.wview[3]
+./libpyEM/qtgui/emglobjects.py:957    2.0*(x2-self.wview[0])/self.wview[2]  |   2.0*(x2-self.wview[0])/self.wview[2]
+./libpyEM/qtgui/emglobjects.py:958    2.0*(y2-self.wview[1])/self.wview[3]  |   2.0*(y2-self.wview[1])/self.wview[3]
+./libpyEM/qtgui/emglobjects.py:1001    2.0*(x-self.wview[0])/self.wview[2]  |   2.0*(x-self.wview[0])/self.wview[2]
+./libpyEM/qtgui/emglobjects.py:1002    2.0*(y-self.wview[1])/self.wview[3]  |   2.0*(y-self.wview[1])/self.wview[3]
+./libpyEM/qtgui/emglobjects.py:1349    fac*length/self.motiondull*pi  |   fac*length/self.motiondull*pi
+./libpyEM/qtgui/emglobjects.py:1367    fac*y/self.motiondull*pi  |   fac*y/self.motiondull*pi
+./libpyEM/qtgui/emglobjects.py:1369     fac*x/self.motiondull*pi  |    fac*x/self.motiondull*pi
+./libpyEM/qtgui/emglobjects.py:1646    length/8.0*pi  |   length/8.0*pi
+./libpyEM/qtgui/emglobjects.py:2277   self.fov/2.0*pi/180.0  |  self.fov/2.0*pi/180.0
+./libpyEM/qtgui/emglobjects.py:2277    2.0 * self.startz*tan(self.fov/2.0*pi/180.0)  |   2.0 * self.startz*tan(self.fov/2.0*pi/180.0)
+./libpyEM/qtgui/emglobjects.py:2283   self.fov/2.0*pi/180.0  |  self.fov/2.0*pi/180.0
+./libpyEM/qtgui/emglobjects.py:2283    -2*tan(self.fov/2.0*pi/180.0)*(depth)  |   -2*tan(self.fov/2.0*pi/180.0)*(depth)
+./libpyEM/qtgui/emhist.py:582   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]
+./libpyEM/qtgui/emhist.py:583   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
+./libpyEM/qtgui/emhist.py:584   (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]
+./libpyEM/qtgui/emhist.py:585   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
+./libpyEM/qtgui/emhist.py:592   (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]  |  (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]
+./libpyEM/qtgui/emhist.py:594   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]
+./libpyEM/qtgui/emimage2d.py:487   xys.width()*2/3  |  xys.width()*2/3
+./libpyEM/qtgui/emimage2d.py:488   xys.height()*2/3  |  xys.height()*2/3
+./libpyEM/qtgui/emimage2d.py:700   newscale/self.scale*(old_div(self.width(),2.0)+self.origin[0])  |  newscale/self.scale*(old_div(self.width(),2.0)+self.origin[0])
+./libpyEM/qtgui/emimage2d.py:700   newscale/self.scale*(old_div(self.height(),2.0)+self.origin[1])  |  newscale/self.scale*(old_div(self.height(),2.0)+self.origin[1])
+./libpyEM/qtgui/emimage2d.py:930    (self.width() * value_size - 1) / 4 * 4  |   (self.width() * value_size - 1) / 4 * 4
+./libpyEM/qtgui/emimage2d.py:974   (self.width()*3-1)/4*4  |  (self.width()*3-1)/4*4
+./libpyEM/qtgui/emimage2d.py:974   (self.width()*3-1)/4*4  |  (self.width()*3-1)/4*4
+./libpyEM/qtgui/emimage2d.py:977   (self.width()-1)/4*4  |  (self.width()-1)/4*4
+./libpyEM/qtgui/emimage2d.py:977   (self.width()-1)/4*4  |  (self.width()-1)/4*4
+./libpyEM/qtgui/emimage2d.py:983   (self.width()-1)/4*4  |  (self.width()-1)/4*4
+./libpyEM/qtgui/emimage2d.py:983   (self.width()-1)/4*4  |  (self.width()-1)/4*4
+./libpyEM/qtgui/emimage2d.py:985   (self.width()-1)/4*4  |  (self.width()-1)/4*4
+./libpyEM/qtgui/emimage2d.py:985   (self.width()-1)/4*4  |  (self.width()-1)/4*4
+./libpyEM/qtgui/emimage2d.py:987   (self.width()-1)/4*4  |  (self.width()-1)/4*4
+./libpyEM/qtgui/emimage2d.py:987   (self.width()-1)/4*4  |  (self.width()-1)/4*4
+./libpyEM/qtgui/emimage2d.py:1099   (self.width()-1)/4*4  |  (self.width()-1)/4*4
+./libpyEM/qtgui/emimage2d.py:2534   0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))  |  0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
+./libpyEM/qtgui/emimage3d.py:231   self.fov/2.0*pi/180.0  |  self.fov/2.0*pi/180.0
+./libpyEM/qtgui/emimage3d.py:231    2.0*self.startz * tan(self.fov/2.0*pi/180.0)  |   2.0*self.startz * tan(self.fov/2.0*pi/180.0)
+./libpyEM/qtgui/emimage3d.py:239   self.fov/2.0*pi/180.0  |  self.fov/2.0*pi/180.0
+./libpyEM/qtgui/emimage3d.py:239    -2*tan(self.fov/2.0*pi/180.0)*(depth)  |   -2*tan(self.fov/2.0*pi/180.0)*(depth)
+./libpyEM/qtgui/emimage3d.py:467   fov/2.0*pi/180.0  |  fov/2.0*pi/180.0
+./libpyEM/qtgui/emimage3dslice.py:200    acos(p[2])*180.0/pi  |   acos(p[2])*180.0/pi
+./libpyEM/qtgui/emimage3dsym.py:625    float(t)/float(self.arc_segments)*angle  |   float(t)/float(self.arc_segments)*angle
+./libpyEM/qtgui/emimage3dsym.py:644    acos(old_div(dz,length))*180.0/pi  |   acos(old_div(dz,length))*180.0/pi
+./libpyEM/qtgui/emimage3dsym.py:645    atan2(dy,dx)*180.0/pi  |   atan2(dy,dx)*180.0/pi
+./libpyEM/qtgui/emimage3dsym.py:792   d["alt"]*pi/180.0  |  d["alt"]*pi/180.0
+./libpyEM/qtgui/emimage3dsym.py:795   self.width_scale*(d["alt"]+5.0)/90.0  |  self.width_scale*(d["alt"]+5.0)/90.0
+./libpyEM/qtgui/emimage3dsym.py:795   self.width_scale*(d["alt"]+5.0)/90.0  |  self.width_scale*(d["alt"]+5.0)/90.0
+./libpyEM/qtgui/emimage3dsym.py:797   self.width_scale*(d["alt"]+5.0)/90.0  |  self.width_scale*(d["alt"]+5.0)/90.0
+./libpyEM/qtgui/emimage3dsym.py:797   self.width_scale*(d["alt"]+5.0)/90.0  |  self.width_scale*(d["alt"]+5.0)/90.0
+./libpyEM/qtgui/emimage3dsym.py:829   d["alt"]*2.0/pi  |  d["alt"]*2.0/pi
+./libpyEM/qtgui/emimage3dsym.py:832   self.width_scale*(d["alt"]+5.0)/90.0  |  self.width_scale*(d["alt"]+5.0)/90.0
+./libpyEM/qtgui/emimage3dsym.py:832   self.width_scale*(d["alt"]+5.0)/90.0  |  self.width_scale*(d["alt"]+5.0)/90.0
+./libpyEM/qtgui/emimage3dsym.py:834   self.width_scale*(d["alt"]+5.0)/90.0  |  self.width_scale*(d["alt"]+5.0)/90.0
+./libpyEM/qtgui/emimage3dsym.py:834   self.width_scale*(d["alt"]+5.0)/90.0  |  self.width_scale*(d["alt"]+5.0)/90.0
+./libpyEM/qtgui/emimage3dsym.py:880    acos(t)*180/pi  |   acos(t)*180/pi
+./libpyEM/qtgui/emimage3dsym.py:1184   self.fov/2.0*pi/180.0  |  self.fov/2.0*pi/180.0
+./libpyEM/qtgui/emimage3dsym.py:1184    2.0 * self.get_start_z()*tan(self.fov/2.0*pi/180.0)  |   2.0 * self.get_start_z()*tan(self.fov/2.0*pi/180.0)
+./libpyEM/qtgui/emimage3dsym.py:1190   self.fov/2.0*pi/180.0  |  self.fov/2.0*pi/180.0
+./libpyEM/qtgui/emimage3dsym.py:1190    -2*tan(self.fov/2.0*pi/180.0)*(depth)  |   -2*tan(self.fov/2.0*pi/180.0)*(depth)
+./libpyEM/qtgui/emimage3dvol.py:195    float(z)/float(self.data.get_zsize()-1)/self.texsample  |   float(z)/float(self.data.get_zsize()-1)/self.texsample
+./libpyEM/qtgui/emimage3dvol.py:212    1.0/self.zsample*self.brightness  |   1.0/self.zsample*self.brightness
+./libpyEM/qtgui/emimage3dvol.py:213    1.0/self.zsample*self.contrast  |   1.0/self.zsample*self.contrast
+./libpyEM/qtgui/emimage3dvol.py:359   self.contrast*1.0/total  |  self.contrast*1.0/total
+./libpyEM/qtgui/emimage3dvol.py:394    float(i)/float(n)/self.texsample  |   float(i)/float(n)/self.texsample
+./libpyEM/qtgui/emimage3dvol.py:410   total*1.0/self.contrast  |  total*1.0/self.contrast
+./libpyEM/qtgui/emimage3dvol.py:419    acos(p[2])*180.0/pi  |   acos(p[2])*180.0/pi
+./libpyEM/qtgui/emimage3dvol.py:474    float(i)/float(n)/self.texsample  |   float(i)/float(n)/self.texsample
+./libpyEM/qtgui/emimage3dvol.py:485   self.contrast*1.0/total  |  self.contrast*1.0/total
+./libpyEM/qtgui/emimagemx.py:879   xys.width()*2/3  |  xys.width()*2/3
+./libpyEM/qtgui/emimagemx.py:880   xys.height()*2/3  |  xys.height()*2/3
+./libpyEM/qtgui/emimagemx.py:1184   (tw-1)/4*4  |  (tw-1)/4*4
+./libpyEM/qtgui/emimagemx.py:1187   (tw-1)/4*4  |  (tw-1)/4*4
+./libpyEM/qtgui/emimagemx.py:1219    2*float(iss)/len(visible_set_data)*self.set_label_ratio  |   2*float(iss)/len(visible_set_data)*self.set_label_ratio
+./libpyEM/qtgui/emimagemx.py:1512   self.data.get_ysize()*self.scale/2  |  self.data.get_ysize()*self.scale/2
+./libpyEM/qtgui/emimagemx.py:1515   self.data.get_xsize()*self.scale/2  |  self.data.get_xsize()*self.scale/2
+./libpyEM/qtgui/emimagemx.py:1515   self.data.get_ysize()*self.scale/2  |  self.data.get_ysize()*self.scale/2
+./libpyEM/qtgui/emimagemx.py:1711    atan2(y,x)*180.0/pi  |   atan2(y,x)*180.0/pi
+./libpyEM/qtgui/emimagemx.py:2026   atan(old_div(self.arrow_height,self.arrow_width))*180.0/pi  |  atan(old_div(self.arrow_height,self.arrow_width))*180.0/pi
+./libpyEM/qtgui/emimagemx.py:2061    view_height/float(panel_height)*self.scroll_bar_height  |   view_height/float(panel_height)*self.scroll_bar_height
+./libpyEM/qtgui/emimagemx.py:2561   0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))  |  0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
+./libpyEM/qtgui/emimageutil.py:407   255.0*(value - self.minden)/(self.maxden-self.minden)  |  255.0*(value - self.minden)/(self.maxden-self.minden)
+./libpyEM/qtgui/emimageutil.py:442   j*126/self.norm  |  j*126/self.norm
+./libpyEM/qtgui/emimageutil.py:451   j*126/self.norm  |  j*126/self.norm
+./libpyEM/qtgui/emimageutil.py:457   self.probe[1]*126/self.norm  |  self.probe[1]*126/self.norm
+./libpyEM/qtgui/emimageutil.py:459   self.probe[1]*126/self.norm  |  self.probe[1]*126/self.norm
+./libpyEM/qtgui/emimageutil.py:466   100.0*float(self.probe[1])/self.total  |  100.0*float(self.probe[1])/self.total
+./libpyEM/qtgui/emimageutil.py:520    (self.upposition[self.uppresent][0]-3)/252.0*(self.maxden-self.minden)  |   (self.upposition[self.uppresent][0]-3)/252.0*(self.maxden-self.minden)
+./libpyEM/qtgui/emimageutil.py:536   self.probe[0]/255.0*(self.maxden-self.minden)  |  self.probe[0]/255.0*(self.maxden-self.minden)
+./libpyEM/qtgui/emimageutil.py:568   self.probe[0]/255.0*(self.maxden-self.minden)  |  self.probe[0]/255.0*(self.maxden-self.minden)
+./libpyEM/qtgui/emlights.py:109    float(t)/float(self.arc_t)*angle  |   float(t)/float(self.arc_t)*angle
+./libpyEM/qtgui/emlights.py:127    acos(old_div(dz,length))*180.0/pi  |   acos(old_div(dz,length))*180.0/pi
+./libpyEM/qtgui/emlights.py:128    atan2(dy,dx)*180.0/pi  |   atan2(dy,dx)*180.0/pi
+./libpyEM/qtgui/emlights.py:193    180.0*i/(n-1)  |   180.0*i/(n-1)
+./libpyEM/qtgui/emlights.py:469    4*fac*length/pi  |   4*fac*length/pi
+./libpyEM/qtgui/empdbitem3d.py:481    np.arccos(old_div(dz,length))*180.0/np.pi  |   np.arccos(old_div(dz,length))*180.0/np.pi
+./libpyEM/qtgui/empdbitem3d.py:482    np.arctan2(dy,dx)*180.0/np.pi  |   np.arctan2(dy,dx)*180.0/np.pi
+./libpyEM/qtgui/empdbviewer.py:810    acos(old_div(dz,length))*180.0/pi  |   acos(old_div(dz,length))*180.0/pi
+./libpyEM/qtgui/empdbviewer.py:811    atan2(dy,dx)*180.0/pi  |   atan2(dy,dx)*180.0/pi
+./libpyEM/qtgui/emplot2d.py:544   arange(len(self.data[i][0]))*255.0/len(self.data[i][0])  |  arange(len(self.data[i][0]))*255.0/len(self.data[i][0])
+./libpyEM/qtgui/emplot2d.py:547   (self.data[i][self.axes[i][2]]-climits[0])/(climits[1]-climits[0])*255.0  |  (self.data[i][self.axes[i][2]]-climits[0])/(climits[1]-climits[0])*255.0
+./libpyEM/qtgui/emplot2d.py:550   arange(len(self.data[i][0]))*30.0/len(self.data[i][0])  |  arange(len(self.data[i][0]))*30.0/len(self.data[i][0])
+./libpyEM/qtgui/emplot2d.py:553   (self.data[i][self.axes[i][3]]-slimits[0])*30.0/(slimits[1]-slimits[0])  |  (self.data[i][self.axes[i][3]]-slimits[0])*30.0/(slimits[1]-slimits[0])
+./libpyEM/qtgui/emplot2d.py:643   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]
+./libpyEM/qtgui/emplot2d.py:644   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
+./libpyEM/qtgui/emplot2d.py:645   (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]
+./libpyEM/qtgui/emplot2d.py:646   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
+./libpyEM/qtgui/emplot2d.py:653   (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]  |  (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]
+./libpyEM/qtgui/emplot2d.py:655   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]
+./libpyEM/qtgui/emplot2d.py:1101   2.0*self.plotlim[3]/scaling  |  2.0*self.plotlim[3]/scaling
+./libpyEM/qtgui/emplot2d.py:1111   2.0*self.plotlim[3]/scaling  |  2.0*self.plotlim[3]/scaling
+./libpyEM/qtgui/emplot2d.py:1437   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]
+./libpyEM/qtgui/emplot2d.py:1438   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
+./libpyEM/qtgui/emplot2d.py:1439   (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]
+./libpyEM/qtgui/emplot2d.py:1440   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
+./libpyEM/qtgui/emplot2d.py:1447   (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]  |  (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]
+./libpyEM/qtgui/emplot2d.py:1449   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]
+./libpyEM/qtgui/emplot2d.py:3004   i/30.*pi  |  i/30.*pi
+./libpyEM/qtgui/emplot3d.py:569   arange(len(self.data[i][0]))*255.0/len(self.data[i][0])  |  arange(len(self.data[i][0]))*255.0/len(self.data[i][0])
+./libpyEM/qtgui/emplot3d.py:572   (self.data[i][j[3]]-climits[0])/(climits[1]-climits[0])*255.0  |  (self.data[i][j[3]]-climits[0])/(climits[1]-climits[0])*255.0
+./libpyEM/qtgui/emplot3d.py:575   arange(len(self.data[i][0]))*30.0/len(self.data[i][0])  |  arange(len(self.data[i][0]))*30.0/len(self.data[i][0])
+./libpyEM/qtgui/emplot3d.py:578   (self.data[i][j[4]]-slimits[0])*30.0/(slimits[1]-slimits[0])  |  (self.data[i][j[4]]-slimits[0])*30.0/(slimits[1]-slimits[0])
+./libpyEM/qtgui/emplot3d.py:669   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]
+./libpyEM/qtgui/emplot3d.py:670   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
+./libpyEM/qtgui/emplot3d.py:671   (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]
+./libpyEM/qtgui/emplot3d.py:672   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
+./libpyEM/qtgui/emplot3d.py:679   (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]  |  (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]
+./libpyEM/qtgui/emplot3d.py:681   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]
+./libpyEM/qtgui/emplot3d.py:1014   xrng*scale/2.0  |  xrng*scale/2.0
+./libpyEM/qtgui/emplot3d.py:1014   xrng*scale/2.0  |  xrng*scale/2.0
+./libpyEM/qtgui/emplot3d.py:1018   yrng*scale/2.0  |  yrng*scale/2.0
+./libpyEM/qtgui/emplot3d.py:1018   yrng*scale/2.0  |  yrng*scale/2.0
+./libpyEM/qtgui/emplot3d.py:1022   zrng*scale/2.0  |  zrng*scale/2.0
+./libpyEM/qtgui/emplot3d.py:1022   zrng*scale/2.0  |  zrng*scale/2.0
+./libpyEM/qtgui/emplot3d.py:2566   i/30.*pi  |  i/30.*pi
+./libpyEM/qtgui/empmwidgets.py:972   soln/len(yaxis)*xaxis[-1]  |  soln/len(yaxis)*xaxis[-1]
+./libpyEM/qtgui/emscene3d.py:1925   boundingbox*2/screenfraction  |  boundingbox*2/screenfraction
+./libpyEM/qtgui/emscene3d.py:2896    -self.item3d().camera.getViewPortWidthScaling()*self.item3d().camera.getWidth()/2  |   -self.item3d().camera.getViewPortWidthScaling()*self.item3d().camera.getWidth()/2
+./libpyEM/qtgui/emscene3d.py:2897    self.item3d().camera.getViewPortHeightScaling()*self.item3d().camera.getHeight()/2  |   self.item3d().camera.getViewPortHeightScaling()*self.item3d().camera.getHeight()/2
+./libpyEM/qtgui/emshape.py:204   w_uvect[0]*width/2.0  |  w_uvect[0]*width/2.0
+./libpyEM/qtgui/emshape.py:204   w_uvect[1]*width/2.0  |  w_uvect[1]*width/2.0
+./libpyEM/qtgui/emshape.py:205   w_uvect[0]*width/2.0  |  w_uvect[0]*width/2.0
+./libpyEM/qtgui/emshape.py:205   w_uvect[1]*width/2.0  |  w_uvect[1]*width/2.0
+./libpyEM/qtgui/emshape.py:206   w_uvect[0]*width/2.0  |  w_uvect[0]*width/2.0
+./libpyEM/qtgui/emshape.py:206   w_uvect[1]*width/2.0  |  w_uvect[1]*width/2.0
+./libpyEM/qtgui/emshape.py:207   w_uvect[0]*width/2.0  |  w_uvect[0]*width/2.0
+./libpyEM/qtgui/emshape.py:207   w_uvect[1]*width/2.0  |  w_uvect[1]*width/2.0
+./libpyEM/qtgui/emshape.py:556    5*length/8.0  |   5*length/8.0
+./libpyEM/qtgui/emsprworkflow.py:3801   1000*(N+old_div((i+1.0),len(filenames)))/M  |  1000*(N+old_div((i+1.0),len(filenames)))/M
+./libpyEM/qtgui/emsprworkflow.py:6215   soln/len(yaxis)*xaxis[-1]  |  soln/len(yaxis)*xaxis[-1]
+./libpyEM/qtgui/valslider.py:285   (self.value-self.rng[0])/float(self.rng[1]-self.rng[0])*4095.0  |  (self.value-self.rng[0])/float(self.rng[1]-self.rng[0])*4095.0
+./libpyEM/qtgui/valslider.py:739   (h-4)*(value-self.rng[0])/(self.rng[1]-self.rng[0])  |  (h-4)*(value-self.rng[0])/(self.rng[1]-self.rng[0])
+./libpyEM/qtgui/valslider.py:744   (h-y+3)*(self.rng[1]-self.rng[0])/(h-4)  |  (h-y+3)*(self.rng[1]-self.rng[0])/(h-4)
+./libpyEM/qtgui/valslider.py:1177    float(self.scenegraph().camera.getWidth())/float(size)*self.scenegraph().camera.getViewPortWidthScaling()  |   float(self.scenegraph().camera.getWidth())/float(size)*self.scenegraph().camera.getViewPortWidthScaling()
+./libpyEM/qtgui/valslider.py:1213   -aspectratio*size/2  |  -aspectratio*size/2
+./libpyEM/qtgui/valslider.py:1215   -aspectratio*size/2  |  -aspectratio*size/2
+./libpyEM/qtgui/valslider.py:1217   aspectratio*size/2  |  aspectratio*size/2
+./libpyEM/qtgui/valslider.py:1219   aspectratio*size/2  |  aspectratio*size/2
+./programs/e2a2d_stat.py:133   2*nx*apix/100  |  2*nx*apix/100
+./programs/e2a2d_stat.py:133   2*nx*apix/20  |  2*nx*apix/20
+./programs/e2boxer_old.py:3325   (w-2*wborder) / sizew * (index-1-self.i_start)  |  (w-2*wborder) / sizew * (index-1-self.i_start)
+./programs/e2boxer_old.py:3327   (w-2*wborder) / sizew * (index-self.i_start)  |  (w-2*wborder) / sizew * (index-self.i_start)
+./programs/e2boxer_old.py:3331   (h-2*hborder)*ctfdata2[index-1]/sizehctf  |  (h-2*hborder)*ctfdata2[index-1]/sizehctf
+./programs/e2boxer_old.py:3333   (h-2*hborder)*self.data[list_index][index-1]/sizeh  |  (h-2*hborder)*self.data[list_index][index-1]/sizeh
+./programs/e2boxer_old.py:3336   (h-2*hborder)*ctfdata2[index]/sizehctf  |  (h-2*hborder)*ctfdata2[index]/sizehctf
+./programs/e2boxer_old.py:3338   (h-2*hborder)*self.data[list_index][index]/sizeh  |  (h-2*hborder)*self.data[list_index][index]/sizeh
+./programs/e2classaverage.py:588   it*100/(niter+2)  |  it*100/(niter+2)
+./programs/e2classaverage.py:639   (it+old_div(i,float(nimg)))*100/(niter+2.0)  |  (it+old_div(i,float(nimg)))*100/(niter+2.0)
+./programs/e2classifykmeans.py:132   i*72/maxcls  |  i*72/maxcls
+./programs/e2ctf.py:801   2.0*len(p1d)/ys  |  2.0*len(p1d)/ys
+./programs/e2ctf.py:854   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:854   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:870   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
+./programs/e2ctf.py:870   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
+./programs/e2ctf.py:912   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
+./programs/e2ctf.py:912   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
+./programs/e2ctf.py:956   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
+./programs/e2ctf.py:956   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
+./programs/e2ctf.py:1054   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1054   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1055   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1055   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1090   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1090   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1223   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1223   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1224   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1224   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1248   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1248   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./programs/e2ctf.py:1309   nxl*3/4  |  nxl*3/4
+./programs/e2ctf.py:1310   nxl*3/4  |  nxl*3/4
+./programs/e2ctf.py:1376   apix*ys2/25.0  |  apix*ys2/25.0
+./programs/e2ctf.py:1413   3*xst/2  |  3*xst/2
+./programs/e2ctf.py:1623   (z-x)/float(z-lz)*d1  |  (z-x)/float(z-lz)*d1
+./programs/e2ctf.py:1623   (x-lz)/float(z-lz)*d2  |  (x-lz)/float(z-lz)*d2
+./programs/e2ctf.py:1799   ctf.get_phase()*180.0/pi  |  ctf.get_phase()*180.0/pi
+./programs/e2ctf.py:1801   ctf.get_phase()*180.0/pi  |  ctf.get_phase()*180.0/pi
+./programs/e2ctf.py:1801   ctf.get_phase()*180.0/pi  |  ctf.get_phase()*180.0/pi
+./programs/e2ctf.py:1811   phase*pi/180.0  |  phase*pi/180.0
+./programs/e2ctf.py:1820   0.9*ctf.zero(0)/ds  |  0.9*ctf.zero(0)/ds
+./programs/e2ctf.py:1826   best[2]*pi/180  |  best[2]*pi/180
+./programs/e2ctf.py:2142   s0*3/2  |  s0*3/2
+./programs/e2ctf.py:2152   f*s2/s1  |  f*s2/s1
+./programs/e2ctf.py:2777   inten[i]*st[4]["ptcl_repr"]/((i+1.0)*pi)  |  inten[i]*st[4]["ptcl_repr"]/((i+1.0)*pi)
+./programs/e2ctf.py:2868   sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])  |  sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])
+./programs/e2ctf2eman1.py:101    100. * float( i ) / len( ptcls )  |   100. * float( i ) / len( ptcls )
+./programs/e2ctf2eman1.py:320    d2 * ( parm_max[2] - parm_min[2] ) / float( c )  |   d2 * ( parm_max[2] - parm_min[2] ) / float( c )
+./programs/e2ctf2eman1.py:322    d1 * ( parm_max[1] - parm_min[1] ) / float( c )  |   d1 * ( parm_max[1] - parm_min[1] ) / float( c )
+./programs/e2ctf2eman1.py:324    d3 * ( parm_max[3] - parm_min[3] ) / float( c )  |   d3 * ( parm_max[3] - parm_min[3] ) / float( c )
+./programs/e2ctf2eman1.py:326    d0 * ( parm_max[0] - parm_min[0] ) / float( c )  |   d0 * ( parm_max[0] - parm_min[0] ) / float( c )
+./programs/e2ctf2eman1.py:407    100. * smps[i] * len( smps[ipm0:ipm1] ) / sum( smps[ipm0:ipm1] )  |   100. * smps[i] * len( smps[ipm0:ipm1] ) / sum( smps[ipm0:ipm1] )
+./programs/e2ctf2eman1.py:420    100. * ptclsmps[i] * len( ptclsmps[ipm0:ipm1] ) / sum( ptclsmps[ipm0:ipm1] )  |   100. * ptclsmps[i] * len( ptclsmps[ipm0:ipm1] ) / sum( ptclsmps[ipm0:ipm1] )
+./programs/e2ctffind3util.py:185    dstep / apix * 10000  |   dstep / apix * 10000
+./programs/e2ddd_movie.py:691    n*(n-1)/2  |   n*(n-1)/2
+./programs/e2evalrefine.py:281   2*nx*apix/100.0  |  2*nx*apix/100.0
+./programs/e2evalrefine.py:281   2*nx*apix/10  |  2*nx*apix/10
+./programs/e2evalrefine.py:441   2*nx*apix/res  |  2*nx*apix/res
+./programs/e2evalrefine.py:604   2*nx*apix/res  |  2*nx*apix/res
+./programs/e2evalrefine.py:860   cores*(endtime-starttime)/3600  |  cores*(endtime-starttime)/3600
+./programs/e2evalrefine.py:860   cores*(endtime-starttime)/(3600*lastiter)  |  cores*(endtime-starttime)/(3600*lastiter)
+./programs/e2fsc.py:84   len(fsc)*2/3  |  len(fsc)*2/3
+./programs/e2fsc.py:91   (0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])  |  (0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])
+./programs/e2fsc.py:105   (0.143-fy[si])*(fx[si+1]-fx[si])/(fy[si+1]-fy[si])  |  (0.143-fy[si])*(fx[si+1]-fx[si])/(fy[si+1]-fy[si])
+./programs/e2fsc.py:194    apix*lnx/2.0  |   apix*lnx/2.0
+./programs/e2fsc.py:208   len(fsc)*2/3  |  len(fsc)*2/3
+./programs/e2fsc.py:220   apix*lnx/2.0  |  apix*lnx/2.0
+./programs/e2fsc.py:229   3.0*d/log(8.0)  |  3.0*d/log(8.0)
+./programs/e2fsc.py:236   apix*lnx//overlap  |  apix*lnx//overlap
+./programs/e2fsc.py:237   apix*lnx//overlap  |  apix*lnx//overlap
+./programs/e2fsc.py:238   apix*lnx//overlap  |  apix*lnx//overlap
+./programs/e2helixboxer.py:204    180/pi*acos( l_uvect[1] )  |   180/pi*acos( l_uvect[1] )
+./programs/e2helixboxer.py:256    180/pi*acos( l_uvect[1] )  |   180/pi*acos( l_uvect[1] )
+./programs/e2helixboxer.py:280    gr_K/2.0/gr_N  |   gr_K/2.0/gr_N
+./programs/e2helixboxer.py:317    -rot_angle*pi/180.0  |   -rot_angle*pi/180.0
+./programs/e2initialmodel.py:210   it*100/options["iter"]  |  it*100/options["iter"]
+./programs/e2initialmodel.py:237   len(ptcls)*7/8  |  len(ptcls)*7/8
+./programs/e2initialmodel.py:248   boxsize*3/2  |  boxsize*3/2
+./programs/e2initialmodel.py:337   boxsize*3/2  |  boxsize*3/2
+./programs/e2initialmodel_sgd.py:19   boxsize*3/2  |  boxsize*3/2
+./programs/e2initialmodel_sgd.py:142   (niter+1)*nsample/num  |  (niter+1)*nsample/num
+./programs/e2make3dpar.py:507   atan2(1.0,old_div(max(pad),2.0))*180./pi  |  atan2(1.0,old_div(max(pad),2.0))*180./pi
+./programs/e2make3dpar.py:535   elem["xform"].get_rotation("eman")["alt"]*pi/180.0  |  elem["xform"].get_rotation("eman")["alt"]*pi/180.0
+./programs/e2make3dpar.py:535   img["nx"]*(1.0-cos(elem["xform"].get_rotation("eman")["alt"]*pi/180.0))/2  |  img["nx"]*(1.0-cos(elem["xform"].get_rotation("eman")["alt"]*pi/180.0))/2
+./programs/e2motion.py:507   100.0*float(n2use)/len(self.particles)  |  100.0*float(n2use)/len(self.particles)
+./programs/e2motion.py:526   100.0*float(n2use)/len(self.particles)  |  100.0*float(n2use)/len(self.particles)
+./programs/e2motion.py:624   lst.qsize()*100/maxl  |  lst.qsize()*100/maxl
+./programs/e2motion.py:981   20*i/len(classes)  |  20*i/len(classes)
+./programs/e2motion.py:995   12*c/len(classes)  |  12*c/len(classes)
+./programs/e2msa.py:135   n*nval*4/2**20  |  n*nval*4/2**20
+./programs/e2pdb2mrc.py:269   2.0*options.res/options.apix  |  2.0*options.res/options.apix
+./programs/e2pdb2mrc.py:436   2.0*res/apix  |  2.0*res/apix
+./programs/e2proc2d.py:704   d["nx"]*d["apix_x"]/150.0  |  d["nx"]*d["apix_x"]/150.0
+./programs/e2proc2d.py:705   d["nx"]*d["apix_x"]/25.0  |  d["nx"]*d["apix_x"]/25.0
+./programs/e2proc2dmulti.py:127   d["nx"]*2/7  |  d["nx"]*2/7
+./programs/e2proc2dmulti.py:128   d["nx"]*2/7  |  d["nx"]*2/7
+./programs/e2proc3d.py:456   ny*sqrt(3.0)/2  |  ny*sqrt(3.0)/2
+./programs/e2proc3d.py:529   360.0/pi*atan(old_div(2.0,data["nx"]))  |  360.0/pi*atan(old_div(2.0,data["nx"]))
+./programs/e2proc3d.py:542   azi*astep/4.0  |  azi*astep/4.0
+./programs/e2project3d.py:227   100*(i+1)/float(n)  |  100*(i+1)/float(n)
+./programs/e2rct.py:215    len(arlist)*recon.get_attr('ptcl_repr')/totalptcls  |   len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
+./programs/e2refine_easy.py:487   nx*apix*2/options.targetres  |  nx*apix*2/options.targetres
+./programs/e2refine_easy.py:489   90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,effbox)))  |  90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,effbox)))
+./programs/e2refine_easy.py:512   apix*8.0/3.0  |  apix*8.0/3.0
+./programs/e2refine_easy.py:513   90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))  |  90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))
+./programs/e2refine_easy.py:528   90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))  |  90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))
+./programs/e2refine_easy.py:1138   1.0/lastres[1]*0.9  |  1.0/lastres[1]*0.9
+./programs/e2refine_postprocess.py:243   options.restarget*0.75/apix  |  options.restarget*0.75/apix
+./programs/e2refine_postprocess.py:262   options.restarget*1.8/apix  |  options.restarget*1.8/apix
+./programs/e2refinemulti.py:391   nx*apix*2/options.targetres  |  nx*apix*2/options.targetres
+./programs/e2refinemulti.py:393   90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,effbox)))  |  90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,effbox)))
+./programs/e2refinemulti.py:417   90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))  |  90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))
+./programs/e2refinemulti.py:432   90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))  |  90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,nx)))
+./programs/e2reliontoeman.py:88   star["rlnDetectorPixelSize"][0]/star["rlnMagnification"][0]*10000.0  |  star["rlnDetectorPixelSize"][0]/star["rlnMagnification"][0]*10000.0
+./programs/e2scannereval.py:100   options.box*3/2  |  options.box*3/2
+./programs/e2scannereval.py:100   options.box*3/2  |  options.box*3/2
+./programs/e2scannereval.py:102   options.box*3/2  |  options.box*3/2
+./programs/e2scannereval.py:111   5.0*float(sig)/float(cl.get_attr("sigma"))  |  5.0*float(sig)/float(cl.get_attr("sigma"))
+./programs/e2simmx.py:453   100*(cbi+old_div(cbli,float(len(refs))))/cbn  |  100*(cbi+old_div(cbli,float(len(refs))))/cbn
+./programs/e2simmx.py:529   100*i/n  |  100*i/n
+./programs/e2speedtest.py:122    500 * NTT / 2  |   500 * NTT / 2
+./programs/e2speedtest.py:122    500 * NTT / (2.0 * ti)  |   500 * NTT / (2.0 * ti)
+./programs/e2speedtest.py:122    SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)  |   SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)
+./programs/e2speedtest.py:131   500 * NTT / 2  |  500 * NTT / 2
+./programs/e2speedtest.py:131    500 * NTT / (2.0 * ti)  |   500 * NTT / (2.0 * ti)
+./programs/e2speedtest.py:131    SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)  |   SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)
+./programs/e2speedtest.py:140   100 * NTT / 2  |  100 * NTT / 2
+./programs/e2speedtest.py:140    100 * NTT / (2.0 * ti)  |   100 * NTT / (2.0 * ti)
+./programs/e2speedtest.py:149   100 * NTT / 2  |  100 * NTT / 2
+./programs/e2speedtest.py:149    100 * NTT / (2.0 * ti)  |   100 * NTT / (2.0 * ti)
+./programs/e2speedtest.py:158   100 * NTT / 2  |  100 * NTT / 2
+./programs/e2speedtest.py:158    100 * NTT / (2.0 * ti)  |   100 * NTT / (2.0 * ti)
+./programs/e2speedtest.py:167   100 * NTT / 2  |  100 * NTT / 2
+./programs/e2speedtest.py:167    100 * NTT / (2.0 * ti)  |   100 * NTT / (2.0 * ti)
+./programs/e2spt_binarytree.py:605    apix*a['nx']/2.0  |   apix*a['nx']/2.0
+./programs/e2spt_boxer.py:997    a[0]*bs/2  |   a[0]*bs/2
+./programs/e2spt_boxer.py:997    a[1]*bs/2  |   a[1]*bs/2
+./programs/e2spt_boxer.py:997    a[2]*bs/2  |   a[2]*bs/2
+./programs/e2spt_boxer.py:997    a[0]*bs/2  |   a[0]*bs/2
+./programs/e2spt_boxer.py:997    a[1]*bs/2  |   a[1]*bs/2
+./programs/e2spt_boxer.py:997    a[2]*bs/2  |   a[2]*bs/2
+./programs/e2spt_boxer22.py:904    a[0]*bs/2  |   a[0]*bs/2
+./programs/e2spt_boxer22.py:904    a[1]*bs/2  |   a[1]*bs/2
+./programs/e2spt_boxer22.py:904    a[2]*bs/2  |   a[2]*bs/2
+./programs/e2spt_boxer22.py:904    a[0]*bs/2  |   a[0]*bs/2
+./programs/e2spt_boxer22.py:904    a[1]*bs/2  |   a[1]*bs/2
+./programs/e2spt_boxer22.py:904    a[2]*bs/2  |   a[2]*bs/2
+./programs/e2spt_classaverage.py:1628    nx/options.shrink %2  |   nx/options.shrink %2
+./programs/e2spt_classaverage.py:1628    ny/options.shrink %2  |   ny/options.shrink %2
+./programs/e2spt_classaverage.py:1628    nz/options.shrink %2  |   nz/options.shrink %2
+./programs/e2spt_classaverage.py:1629    nx/options.shrink %2  |   nx/options.shrink %2
+./programs/e2spt_classaverage.py:1629   ny/options.shrink %2  |  ny/options.shrink %2
+./programs/e2spt_classaverage.py:1629   nz/options.shrink %2  |  nz/options.shrink %2
+./programs/e2spt_classaverage.py:1633    nx/options.shrinkfine %2  |   nx/options.shrinkfine %2
+./programs/e2spt_classaverage.py:1633    ny/options.shrinkfine %2  |   ny/options.shrinkfine %2
+./programs/e2spt_classaverage.py:1633    nz/options.shrinkfine %2  |   nz/options.shrinkfine %2
+./programs/e2spt_classaverage.py:1634    nx/options.shrinkfine %2  |   nx/options.shrinkfine %2
+./programs/e2spt_classaverage.py:1634   ny/options.shrinkfine %2  |  ny/options.shrinkfine %2
+./programs/e2spt_classaverage.py:1634   nz/options.shrinkfine %2  |  nz/options.shrinkfine %2
+./programs/e2spt_classaverage.py:2064    3.0 * nyquist / 2.0  |   3.0 * nyquist / 2.0
+./programs/e2spt_classaverage.py:2589    apix*a['nx']/2.0  |   apix*a['nx']/2.0
+./programs/e2spt_ctf_old.py:1048    ( coordx - old_div(framexsize,2.0) ) * apix/10000  |   ( coordx - old_div(framexsize,2.0) ) * apix/10000
+./programs/e2spt_ctf_old.py:1071    relativecoordz * apix/10000  |   relativecoordz * apix/10000
+./programs/e2spt_ctf_old.py:1076    relativecoordz * apix/10000  |   relativecoordz * apix/10000
+./programs/e2spt_ctf_old.py:1085    relativecoordz * apix/10000  |   relativecoordz * apix/10000
+./programs/e2spt_ctf_old.py:1862    ( old_div(nx,2.0) ) * apix / 10000  |   ( old_div(nx,2.0) ) * apix / 10000
+./programs/e2spt_ctf_old.py:1941    ( old_div(nx,2.0) ) * apix/10000  |   ( old_div(nx,2.0) ) * apix/10000
+./programs/e2spt_ctf_old.py:1954    options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix  |   options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix
+./programs/e2spt_ctf_old.py:2095     ( list(micrographstarts)[m] + old_div(micrographwidth,2) ) * apix / 10000.00  |    ( list(micrographstarts)[m] + old_div(micrographwidth,2) ) * apix / 10000.00
+./programs/e2spt_ctf_old.py:2101    icethickness * img['apix_x']/10000  |   icethickness * img['apix_x']/10000
+./programs/e2spt_ctf_old.py:2107    -1*(micrographmiddle - old_div(img['nx'],2.0))*math.sin( math.radians(angle) ) * img['apix_x']/10000  |   -1*(micrographmiddle - old_div(img['nx'],2.0))*math.sin( math.radians(angle) ) * img['apix_x']/10000
+./programs/e2spt_ctf_old.py:2159    nx*apix/10000.00  |   nx*apix/10000.00
+./programs/e2spt_ctf_old.py:2177    m * nxMicrometers/2.0  |   m * nxMicrometers/2.0
+./programs/e2spt_eval.py:75   self.size().width()/4*.9  |  self.size().width()/4*.9
+./programs/e2spt_extract.py:98   int(val["boxsize"])*scale/2  |  int(val["boxsize"])*scale/2
+./programs/e2spt_extract.py:100   options.boxsz/2.*scale  |  options.boxsz/2.*scale
+./programs/e2spt_extract.py:128   ptcl["nx"]/2*scale  |  ptcl["nx"]/2*scale
+./programs/e2spt_extract.py:130   options.boxsz/2*scale  |  options.boxsz/2*scale
+./programs/e2spt_extract.py:273   pz*apix/10000.  |  pz*apix/10000.
+./programs/e2spt_extract.py:275   phase[nid]*np.pi/180.  |  phase[nid]*np.pi/180.
+./programs/e2spt_hac.py:963    nptcls*(nptcls-1)/2  |   nptcls*(nptcls-1)/2
+./programs/e2spt_hac.py:1120    apix*a['nx']/2.0  |   apix*a['nx']/2.0
+./programs/e2spt_isr.py:819    (it+1) * math.cos( math.radians(89.99) ) / float(options.iter)  |   (it+1) * math.cos( math.radians(89.99) ) / float(options.iter)
+./programs/e2spt_isr.py:822    (it+1) * math.cos( math.radians(angle) ) / float(options.iter)  |   (it+1) * math.cos( math.radians(angle) ) / float(options.iter)
+./programs/e2spt_make3d.py:17   boxsize*3/2  |  boxsize*3/2
+./programs/e2spt_refinemulti.py:1640    apix*a['nx']/2.0  |   apix*a['nx']/2.0
+./programs/e2spt_resolutionplot.py:547   x*1.0/N  |  x*1.0/N
+./programs/e2spt_simulation.py:981   -1* options.gridholesize/2.0  |  -1* options.gridholesize/2.0
+./programs/e2spt_simulation.py:981   apix*image['nx']/2.0  |  apix*image['nx']/2.0
+./programs/e2spt_simulation.py:981   apix*image['nx']/2.0  |  apix*image['nx']/2.0
+./programs/e2spt_simulation.py:988   options.icethickness*10000/apix  |  options.icethickness*10000/apix
+./programs/e2spt_simulation.py:996    coordz*apix/10000  |   coordz*apix/10000
+./programs/e2spt_simulation.py:1004    10000*(px + old_div(options.gridholesize,2))/apix  |   10000*(px + old_div(options.gridholesize,2))/apix
+./programs/e2spt_simulation.py:1005   options.gridholesize*10000/apix  |  options.gridholesize*10000/apix
+./programs/e2spt_subtilt_from_imod.py:203   t/180.*np.pi  |  t/180.*np.pi
+./programs/e2spt_subtilt_from_imod.py:203   aapix/atoum*np.sin(t/180.*np.pi) * px  |  aapix/atoum*np.sin(t/180.*np.pi) * px
+./programs/e2spt_subtilt_from_imod.py:204   t/180.*np.pi  |  t/180.*np.pi
+./programs/e2spt_subtilt_from_imod.py:204   aapix/atoum*np.cos(t/180.*np.pi) * float(b[2])  |  aapix/atoum*np.cos(t/180.*np.pi) * float(b[2])
+./programs/e2spt_subtilt_old.py:408   2 * options.boxsize / math.cos( math.radians(maxtilt+5)  )  |  2 * options.boxsize / math.cos( math.radians(maxtilt+5)  )
+./programs/e2spt_subtilt_old.py:965    -1 * icethickness/2.0  |   -1 * icethickness/2.0
+./programs/e2spt_subtilt_old.py:1084    math.pi*theta/180  |   math.pi*theta/180
+./programs/e2spt_tiltrefine.py:245   (s+clp)/clp/2  |  (s+clp)/clp/2
+./programs/e2spt_tomoctf.py:17   phase*np.pi/180.  |  phase*np.pi/180.
+./programs/e2spt_tomoctf.py:54   bxsz/2*.7  |  bxsz/2*.7
+./programs/e2spt_tomoctf.py:119   apix/10./1000.  |  apix/10./1000.
+./programs/e2spt_tomoctf.py:161   tpm[3]/180.*np.pi  |  tpm[3]/180.*np.pi
+./programs/e2spt_tomoctf.py:161   sz/2/np.cos(tpm[3]/180.*np.pi)*.9  |  sz/2/np.cos(tpm[3]/180.*np.pi)*.9
+./programs/e2ssehunter.py:148   -1*res/apix  |  -1*res/apix
+./programs/e2ssehunter.py:362   i*100.0/N  |  i*100.0/N
+./programs/e2ssematch.py:203   sseh[0][s1]*(tanh(fabs(sspred[p1][0]-sseh[0][s1])-6)+1)/30.0  |  sseh[0][s1]*(tanh(fabs(sspred[p1][0]-sseh[0][s1])-6)+1)/30.0
+./programs/e2ssematch.py:203   sseh[0][s2]*(tanh(fabs(sspred[p1+1][0]-sseh[0][s2])-6)+1)/30.0  |  sseh[0][s2]*(tanh(fabs(sspred[p1+1][0]-sseh[0][s2])-6)+1)/30.0
+./programs/e2stackanim.py:55   im.get_attr("sigma")*3.0/contrast  |  im.get_attr("sigma")*3.0/contrast
+./programs/e2stackanim.py:56   im.get_attr("sigma")*3.0/contrast  |  im.get_attr("sigma")*3.0/contrast
+./programs/e2symbest.py:107    2.0 * math.pi / csym  |   2.0 * math.pi / csym
+./programs/e2symbest.py:108    1.0 / csym * math.pi  |   1.0 / csym * math.pi
+./programs/e2tiltvalidate.py:506    2*math.pi/3  |   2*math.pi/3
+./programs/e2tiltvalidate.py:511    2*math.pi/3  |   2*math.pi/3
+./programs/e2tiltvalidate.py:511    4*math.pi/3  |   4*math.pi/3
+./programs/e2tiltvalidate.py:512    2*math.pi/3  |   2*math.pi/3
+./programs/e2tiltvalidate.py:517    4*math.pi/3  |   4*math.pi/3
+./programs/e2tiltvalidate.py:518    4*math.pi/3  |   4*math.pi/3
+./programs/e2tomo_eval.py:78   self.size().width()/3*.9  |  self.size().width()/3*.9
+./programs/e2tomo_eval.py:349   float(hdr["nx"])/self.bt_show2d.width()*1.01  |  float(hdr["nx"])/self.bt_show2d.width()*1.01
+./programs/e2tomogram.py:168   
+			options.pk_mindist*8*options.apix_init/10  |  
+			options.pk_mindist*8*options.apix_init/10
+./programs/e2tomogram.py:170   options.pk_mindist*10./options.apix_init/8  |  options.pk_mindist*10./options.apix_init/8
+./programs/e2tomogram.py:222   -len(imgs_2k)*options.tltstep/2  |  -len(imgs_2k)*options.tltstep/2
+./programs/e2tomogram.py:222   len(imgs_2k)*options.tltstep/2  |  len(imgs_2k)*options.tltstep/2
+./programs/e2tomogram.py:285   apix/options.apix_init*options.binfac  |  apix/options.apix_init*options.binfac
+./programs/e2tomogram.py:541   ang/180.*np.pi  |  ang/180.*np.pi
+./programs/e2tomogram.py:569   t[3]*np.pi/180.  |  t[3]*np.pi/180.
+./programs/e2tomogram.py:569   np.cos(t[3]*np.pi/180.)*pad/2  |  np.cos(t[3]*np.pi/180.)*pad/2
+./programs/e2tomogram.py:626   outxy/step/2  |  outxy/step/2
+./programs/e2tomogram.py:780   xform["ytilt"]*np.pi/180.  |  xform["ytilt"]*np.pi/180.
+./programs/e2tomogram.py:780   np.cos(xform["ytilt"]*np.pi/180.)*m["nx"]/2  |  np.cos(xform["ytilt"]*np.pi/180.)*m["nx"]/2
+./programs/e2tomogram.py:862   float(threed["apix_x"])/options.apix_init*2.  |  float(threed["apix_x"])/options.apix_init*2.
+./programs/e2tomogram.py:888   bx*1.5/(scale)  |  bx*1.5/(scale)
+./programs/e2tomogram.py:1006   bx*1.5/(scale)  |  bx*1.5/(scale)
+./programs/e2tomogram.py:1075   res.x*np.pi/180.  |  res.x*np.pi/180.
+./programs/e2tomogram.py:1111    dst*options.apix_init/10.  |   dst*options.apix_init/10.
+./programs/e2tomogram.py:1124   rt*np.pi/180.  |  rt*np.pi/180.
+./programs/e2tomogram.py:1136    np.mean(errs)*options.apix_init/10.  |   np.mean(errs)*options.apix_init/10.
+./programs/e2tomoseg_buildtrainset.py:99   options.ncopy*n_neg/n_ptcl  |  options.ncopy*n_neg/n_ptcl
+./programs/e2tomoseg_buildtrainset.py:149   n/2*(1-options.validset)  |  n/2*(1-options.validset)
+./programs/e2tomoseg_buildtrainset.py:157   n/2*(1-options.validset)  |  n/2*(1-options.validset)
+./programs/e2tvrecon.py:380   angle*np.pi/180.  |  angle*np.pi/180.
+./programs/e2tvrecon.py:380   angle*np.pi/180.  |  angle*np.pi/180.
+./programs/e2tvrecon.py:542    (t_old - 1)/t_new * (u_n - u_old)  |   (t_old - 1)/t_new * (u_n - u_old)
+./programs/e2tvrecon.py:545    1./2 * (err**2).sum()  |   1./2 * (err**2).sum()
+./programs/e2tvrecon.py:621    1. / 2 * (1 + np.sqrt(1 + 4 * t**2))  |   1. / 2 * (1 + np.sqrt(1 + 4 * t**2))
+./pyemtbx/boxertools.py:379    trans[0]/2*extrasomething.get_subsample_rate()  |   trans[0]/2*extrasomething.get_subsample_rate()
+./pyemtbx/boxertools.py:380    trans[1]/2*extrasomething.get_subsample_rate()  |   trans[1]/2*extrasomething.get_subsample_rate()
+./pyemtbx/boxertools.py:3018   self.box_size/2/self.get_subsample_rate()  |  self.box_size/2/self.get_subsample_rate()
+./pyemtbx/boxertools.py:3781   0.7*(self.box_size)/float(self.get_subsample_rate())  |  0.7*(self.box_size)/float(self.get_subsample_rate())
+./pyemtbx/boxertools.py:3784   0.5*(self.box_size)/float(self.get_subsample_rate())  |  0.5*(self.box_size)/float(self.get_subsample_rate())
+./pyemtbx/boxertools.py:4007   scale*oldx/2.0  |  scale*oldx/2.0
+./pyemtbx/boxertools.py:4007   scale*oldy/2.0  |  scale*oldy/2.0
+./rt/pyem/test_transform.py:159   fac*inv_params["tx"]/(-1*params["tx"])  |  fac*inv_params["tx"]/(-1*params["tx"])
+./rt/pyem/test_transform.py:291   alpha*math.pi/180.0  |  alpha*math.pi/180.0
+./rt/pyem/test_transform.py:294   alpha*math.pi/180.0  |  alpha*math.pi/180.0
+./sparx/bin/sx3dvariability.py:604   i*100.0/len(proj_list)  |  i*100.0/len(proj_list)
+./sparx/bin/sxcenter_projections.py:76   len(even_angles(x))*4.*passlastring**2*4./ mempernode  |  len(even_angles(x))*4.*passlastring**2*4./ mempernode
+./sparx/bin/sxcenter_projections.py:86    perr/float(nn)*100.0  |   perr/float(nn)*100.0
+./sparx/bin/sxchains.py:107    ncity*(ncity-1)/2  |   ncity*(ncity-1)/2
+./sparx/bin/sxchains.py:270   lend*(lend-1)/2  |  lend*(lend-1)/2
+./sparx/bin/sxchains.py:340   lend*(lend-1)/2  |  lend*(lend-1)/2
+./sparx/bin/sxcompute_isac_avg.py:71    2.*frc[1][ifreq]/(1.+frc[1][ifreq])  |   2.*frc[1][ifreq]/(1.+frc[1][ifreq])
+./sparx/bin/sxcompute_isac_avg.py:95    2.*frc[1][ifreq]/(1.+frc[1][ifreq])  |   2.*frc[1][ifreq]/(1.+frc[1][ifreq])
+./sparx/bin/sxcompute_isac_avg.py:112    float(ifreq)/float(len(rot1))/pixel_size  |   float(ifreq)/float(len(rot1))/pixel_size
+./sparx/bin/sxctf.py:334   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./sparx/bin/sxctf.py:334   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./sparx/bin/sxctf.py:345   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
+./sparx/bin/sxctf.py:345   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
+./sparx/bin/sxctf.py:363   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
+./sparx/bin/sxctf.py:363   ys2*(oversamp-1)/2.0  |  ys2*(oversamp-1)/2.0
+./sparx/bin/sxctf.py:435   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./sparx/bin/sxctf.py:435   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./sparx/bin/sxctf.py:436   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./sparx/bin/sxctf.py:436   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./sparx/bin/sxctf.py:456   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./sparx/bin/sxctf.py:456   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
+./sparx/bin/sxctf.py:460    periodogram(im1)*pf/ratio1  |   periodogram(im1)*pf/ratio1
+./sparx/bin/sxctf.py:478    periodogram(im2)*pf/ratio2  |   periodogram(im2)*pf/ratio2
+./sparx/bin/sxctf.py:499   (pva1 - pav1*pav1*n)/(n-1)/n  |  (pva1 - pav1*pav1*n)/(n-1)/n
+./sparx/bin/sxctf.py:501   (pva2 - pav2*pav2*n)/(n-1)/n  |  (pva2 - pav2*pav2*n)/(n-1)/n
+./sparx/bin/sxctf.py:531   3*xst/2  |  3*xst/2
+./sparx/bin/sxctf.py:736    0.5*snr2max/snr1max  |   0.5*snr2max/snr1max
+./sparx/bin/sxfit_error.py:121   pwG[i]*(1.0-FSC[i])/q2  |  pwG[i]*(1.0-FSC[i])/q2
+./sparx/bin/sxfit_error.py:254   B*y**2/4  |  B*y**2/4
+./sparx/bin/sxfit_error.py:594   16/B*log(old_div((2*u0*(1+R)-1),R))  |  16/B*log(old_div((2*u0*(1+R)-1),R))
+./sparx/bin/sxfit_error.py:594    0.5*log(16/B*log(old_div((2*u0*(1+R)-1),R)))/log(2*aau)  |   0.5*log(16/B*log(old_div((2*u0*(1+R)-1),R)))/log(2*aau)
+./sparx/bin/sxfit_error.py:596   4/B*log(old_div((2*u0*(1+R)),R))  |  4/B*log(old_div((2*u0*(1+R)),R))
+./sparx/bin/sxfit_error.py:608   (u0*(1+R)-epsf)/R/epsf  |  (u0*(1+R)-epsf)/R/epsf
+./sparx/bin/sxfit_error.py:608   4/B*log((u0*(1+R)-epsf)/R/epsf)  |  4/B*log((u0*(1+R)-epsf)/R/epsf)
+./sparx/bin/sxfit_error.py:753   B*n**2/4  |  B*n**2/4
+./sparx/bin/sxfit_error.py:753    u0*(1.0+R)/(1.0+R*exp(B*n**2/4))  |   u0*(1.0+R)/(1.0+R*exp(B*n**2/4))
+./sparx/bin/sxfit_error.py:1149    red(qts['omega'])*radius*3.14159/180.  |   red(qts['omega'])*radius*3.14159/180.
+./sparx/bin/sxgui.py:344    SXLookFeelConst.screen_width * 3 / 4  |   SXLookFeelConst.screen_width * 3 / 4
+./sparx/bin/sxgui.py:345    SXLookFeelConst.screen_width * 3 / 4  |   SXLookFeelConst.screen_width * 3 / 4
+./sparx/bin/sxgui_unblur.py:2201    angleRad * 180 / numpy.pi  |   angleRad * 180 / numpy.pi
+./sparx/bin/sxgui_unblur.py:3663   
+                    100 * len(self.listChecked) / (len(self.listChecked) + len(self.listUnchecked))  |  
+                    100 * len(self.listChecked) / (len(self.listChecked) + len(self.listUnchecked))
+./sparx/bin/sxgui_unblur.py:3668   
+                    100 * len(self.listUnchecked) / (len(self.listChecked) + len(self.listUnchecked))  |  
+                    100 * len(self.listUnchecked) / (len(self.listChecked) + len(self.listUnchecked))
+./sparx/bin/sxhelixboxer.py:304    180/pi*acos( l_uvect[1] )  |   180/pi*acos( l_uvect[1] )
+./sparx/bin/sxhelixboxer.py:2063   len(cutoffhistogram)*1.0/lenmicnames  |  len(cutoffhistogram)*1.0/lenmicnames
+./sparx/bin/sxhelixboxer.py:2152    (old_div(ctfs[3], new_pixel_size)) * q1/float(boxsize)  |   (old_div(ctfs[3], new_pixel_size)) * q1/float(boxsize)
+./sparx/bin/sxlocres.py:204   nn/2/options.step  |  nn/2/options.step
+./sparx/bin/sxmeridien.py:218   0.25 * Tracker["constants"]["nnxo"]/2  |  0.25 * Tracker["constants"]["nnxo"]/2
+./sparx/bin/sxmeridien.py:277   0.25 * Tracker["constants"]["nnxo"]/2  |  0.25 * Tracker["constants"]["nnxo"]/2
+./sparx/bin/sxmeridien.py:372    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])  |   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])
+./sparx/bin/sxmeridien.py:373    \
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])  |   \
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])
+./sparx/bin/sxmeridien.py:406   0.25 * Tracker["constants"]["nnxo"]/2  |  0.25 * Tracker["constants"]["nnxo"]/2
+./sparx/bin/sxmeridien.py:468   shifter/2/n  |  shifter/2/n
+./sparx/bin/sxmeridien.py:1144   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i)  |  Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i)
+./sparx/bin/sxmeridien.py:1936   float(i)/float(nang)*100.  |  float(i)/float(nang)*100.
+./sparx/bin/sxmeridien.py:2160   float(i)/float(n_coarse_ang)*100.  |  float(i)/float(n_coarse_ang)*100.
+./sparx/bin/sxmeridien.py:2612   float(im)/float(nima)*100.  |  float(im)/float(nima)*100.
+./sparx/bin/sxmeridien.py:3323   float(im)/float(nima)*100.  |  float(im)/float(nima)*100.
+./sparx/bin/sxmeridien.py:3602    sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]  |   sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
+./sparx/bin/sxmeridien.py:3664    2.0*Blockdata["totprob"][igrp]/Blockdata["newbckgnoise"][i, igrp]  |   2.0*Blockdata["totprob"][igrp]/Blockdata["newbckgnoise"][i, igrp]
+./sparx/bin/sxmeridien.py:4027   float(im)/float(nima)*100.  |  float(im)/float(nima)*100.
+./sparx/bin/sxmeridien.py:4298    sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]  |   sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
+./sparx/bin/sxmeridien.py:4589   Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9))  |  Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9))
+./sparx/bin/sxmeridien.py:4628   n_coarse_ang/numberofrefs_inmem*1.5  |  n_coarse_ang/numberofrefs_inmem*1.5
+./sparx/bin/sxmeridien.py:4916   float(lima)/float(nima)*100.  |  float(lima)/float(nima)*100.
+./sparx/bin/sxmeridien.py:5034   keepfirst*Tracker["keepfirst"]/100  |  keepfirst*Tracker["keepfirst"]/100
+./sparx/bin/sxmeridien.py:5346    sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]  |   sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
+./sparx/bin/sxmeridien.py:5412    2.0*Blockdata["totprob"][igrp]/Blockdata["newbckgnoise"][i, igrp]  |   2.0*Blockdata["totprob"][igrp]/Blockdata["newbckgnoise"][i, igrp]
+./sparx/bin/sxmeridien.py:5639   Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9))  |  Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9))
+./sparx/bin/sxmeridien.py:5678   n_coarse_ang/numberofrefs_inmem*1.5  |  n_coarse_ang/numberofrefs_inmem*1.5
+./sparx/bin/sxmeridien.py:5960   float(lima)/float(nima)*100.  |  float(lima)/float(nima)*100.
+./sparx/bin/sxmeridien.py:6078   keepfirst*Tracker["keepfirst"]/100  |  keepfirst*Tracker["keepfirst"]/100
+./sparx/bin/sxmeridien.py:6377    sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]  |   sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
+./sparx/bin/sxmeridien.py:6645   Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9))  |  Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9))
+./sparx/bin/sxmeridien.py:6684   n_coarse_ang/numberofrefs_inmem*1.5  |  n_coarse_ang/numberofrefs_inmem*1.5
+./sparx/bin/sxmeridien.py:6973   float(lima)/float(nima)*100.  |  float(lima)/float(nima)*100.
+./sparx/bin/sxmeridien.py:7095   keepfirst*Tracker["keepfirst"]/100  |  keepfirst*Tracker["keepfirst"]/100
+./sparx/bin/sxmeridien.py:7394    sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]  |   sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
+./sparx/bin/sxmeridien.py:7716    max(Tracker["nima_per_chunk"])*4*float(Tracker["constants"]["nnxo"]**2)/float(Blockdata["no_of_groups"])/1.0e9  |   max(Tracker["nima_per_chunk"])*4*float(Tracker["constants"]["nnxo"]**2)/float(Blockdata["no_of_groups"])/1.0e9
+./sparx/bin/sxmeridien.py:7952   Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9))  |  Tracker["constants"]["memory_per_node"]/4/(old_div((size_of_one_image*disp_unit),1.0e9))
+./sparx/bin/sxmeridien.py:7991   n_coarse_ang/numberofrefs_inmem*1.5  |  n_coarse_ang/numberofrefs_inmem*1.5
+./sparx/bin/sxmeridien.py:8279   float(lima)/float(nima)*100.  |  float(lima)/float(nima)*100.
+./sparx/bin/sxmeridien.py:8701    sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]  |   sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
+./sparx/bin/sxmeridien.py:8878    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])  |   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])
+./sparx/bin/sxmeridien.py:8879    \
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])  |   \
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])
+./sparx/bin/sxmeridien.py:8955    1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]  |   1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]
+./sparx/bin/sxmeridien.py:9105   pixel_size*nnxo/Tracker["constants"]["fuse_freq"]  |  pixel_size*nnxo/Tracker["constants"]["fuse_freq"]
+./sparx/bin/sxmeridien.py:9259   Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"]  |  Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"]
+./sparx/bin/sxmeridien.py:9865    Tracker["constants"]["nnxo"]*1./2.  |   Tracker["constants"]["nnxo"]*1./2.
+./sparx/bin/sxmeridien.py:9866    total_stack*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9  |   total_stack*4*float(image_size**2)/float(Blockdata["no_of_groups"])/1.0e9
+./sparx/bin/sxmeridien.py:9871    data_size/Blockdata["no_of_processes_per_group"]*1.2  |   data_size/Blockdata["no_of_processes_per_group"]*1.2
+./sparx/bin/sxmeridien.py:9936   Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"]  |  Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"]
+./sparx/bin/sxmeridien.py:10246   pixel_size*nnxo/Tracker["constants"]["fuse_freq"]  |  pixel_size*nnxo/Tracker["constants"]["fuse_freq"]
+./sparx/bin/sxmeridien.py:10272   Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"]  |  Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"]
+./sparx/bin/sxmeridien.py:10534    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])  |   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])
+./sparx/bin/sxmeridien.py:10535    \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])  |   \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])
+./sparx/bin/sxmeridien.py:10625    1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]  |   1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]
+./sparx/bin/sxmeridien.py:10924    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])  |   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])
+./sparx/bin/sxmeridien.py:10925    \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])  |   \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])
+./sparx/bin/sxmeridien.py:11118   pixel_size*nnxo/Tracker["constants"]["fuse_freq"]  |  pixel_size*nnxo/Tracker["constants"]["fuse_freq"]
+./sparx/bin/sxmeridien.py:11145   Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"]  |  Tracker["constants"]["nnxo"]*Tracker["constants"]["pixel_size"]/Tracker["constants"]["inires"]
+./sparx/bin/sxmeridien.py:11347    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])  |   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])
+./sparx/bin/sxmeridien.py:11348    \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])  |   \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])
+./sparx/bin/sxmeridien.py:11434    1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]  |   1.0/Tracker["constants"]["nnxo"]/Tracker["constants"]["nnxo"]
+./sparx/bin/sxmeridien.py:11719    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])  |   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"])
+./sparx/bin/sxmeridien.py:11720    \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])  |   \
+								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"])
+./sparx/bin/sxpdb2em.py:227   2*max(fabs(amax[i]), fabs(amin[i]))/options.apix  |  2*max(fabs(amax[i]), fabs(amin[i]))/options.apix
+./sparx/bin/sxpipe.py:2539    density_1_mole * avagadro / 1000.0  |   density_1_mole * avagadro / 1000.0
+./sparx/bin/sxpipe.py:2553    mol_mass * 1000.0 / avagadro  |   mol_mass * 1000.0 / avagadro
+./sparx/bin/sxpipe.py:3143   computed_mol_mass_from_density/args.mol_mass * 100  |  computed_mol_mass_from_density/args.mol_mass * 100
+./sparx/bin/sxpipe.py:3145   computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100  |  computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100
+./sparx/bin/sxpipe.py:3227   computed_mol_mass_from_density/args.mol_mass * 100  |  computed_mol_mass_from_density/args.mol_mass * 100
+./sparx/bin/sxpipe.py:3229   computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100  |  computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100
+./sparx/bin/sxprocess.py:114    ncity*(ncity-1)/2  |   ncity*(ncity-1)/2
+./sparx/bin/sxprocess.py:1260    2. * x / (1 + x)  |   2. * x / (1 + x)
+./sparx/bin/sxprocess.py:1456    ig*.5/float(len(guinierline))/options.pixel_size  |   ig*.5/float(len(guinierline))/options.pixel_size
+./sparx/bin/sxprocess.py:1491    cutoff_by_fsc/(2.*len(fsc_true[0]))/options.pixel_size  |   cutoff_by_fsc/(2.*len(fsc_true[0]))/options.pixel_size
+./sparx/bin/sxrelion2sphire.py:98    av*av/N  |   av*av/N
+./sparx/bin/sxrelion2sphire.py:456    10000 * relion_det_pix_size / relion_mag  |   10000 * relion_det_pix_size / relion_mag
+./sparx/bin/sxrelion2sphire.py:791    sd / avg * 100  |   sd / avg * 100
+./sparx/bin/sxrelion2sphire.py:820    sd / avg * 100  |   sd / avg * 100
+./sparx/bin/sxresample.py:215    mufur*keep/float(nrefa)  |   mufur*keep/float(nrefa)
+./sparx/bin/sxresample.py:215    keep*nrefa/(1.0 - mufur*keep/float(nrefa))  |   keep*nrefa/(1.0 - mufur*keep/float(nrefa))
+./sparx/bin/sxresample.py:232    nvol/ncpu/nbufvol  |   nvol/ncpu/nbufvol
+./sparx/bin/sxrsort3d.py:447   Tracker["constants"]["pixel_size"]/Tracker["currentres"]/Tracker["shrinkage"]  |  Tracker["constants"]["pixel_size"]/Tracker["currentres"]/Tracker["shrinkage"]
+./sparx/bin/sxrviper.py:356    outlier_percentile * (len(error_values_and_indices) - 1)/ 100.0  |   outlier_percentile * (len(error_values_and_indices) - 1)/ 100.0
+./sparx/bin/sxshiftali.py:717    a*exp(old_div(-(x-mu)**2,(2.0*sigma**2)))*1.0/(sigma*sqrt(2*pi))  |   a*exp(old_div(-(x-mu)**2,(2.0*sigma**2)))*1.0/(sigma*sqrt(2*pi))
+./sparx/bin/sxsort3d.py:394   Tracker["constants"]["pixel_size"]/Tracker["currentres"]/Tracker["shrinkage"]  |  Tracker["constants"]["pixel_size"]/Tracker["currentres"]/Tracker["shrinkage"]
+./sparx/bin/sxsort3d.py:413   float(nc)/len(n_angles)*100  |  float(nc)/len(n_angles)*100
+./sparx/bin/sxsort3d_depth.py:730    fsc_refinement[ifreq]*q/(1.-fsc_refinement[ifreq]*(1.-q))  |   fsc_refinement[ifreq]*q/(1.-fsc_refinement[ifreq]*(1.-q))
+./sparx/bin/sxsort3d_depth.py:734    float(ifreq)/2./float(len(fsc_refinement))  |   float(ifreq)/2./float(len(fsc_refinement))
+./sparx/bin/sxsort3d_depth.py:751    float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9  |   float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9
+./sparx/bin/sxsort3d_depth.py:752    float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9/Blockdata["no_of_groups"]  |   float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9/Blockdata["no_of_groups"]
+./sparx/bin/sxsort3d_depth.py:754    (4.*image_in_core_size**3*8.)*Blockdata["no_of_processes_per_group"]/1.e9  |   (4.*image_in_core_size**3*8.)*Blockdata["no_of_processes_per_group"]/1.e9
+./sparx/bin/sxsort3d_depth.py:785     raw_data_size*(2.*ratio**2+1.)*Blockdata["no_of_processes_per_group"]/(total_memory - 5. - sys_required_mem - volume_size_per_node)  |    raw_data_size*(2.*ratio**2+1.)*Blockdata["no_of_processes_per_group"]/(total_memory - 5. - sys_required_mem - volume_size_per_node)
+./sparx/bin/sxsort3d_depth.py:790    Tracker["constants"]["img_per_grp"]*1.5/float(Blockdata["nproc"])  |   Tracker["constants"]["img_per_grp"]*1.5/float(Blockdata["nproc"])
+./sparx/bin/sxsort3d_depth.py:1097   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]  |  Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]
+./sparx/bin/sxsort3d_depth.py:1471   minimum_group_size_ratio*nima/number_of_groups  |  minimum_group_size_ratio*nima/number_of_groups
+./sparx/bin/sxsort3d_depth.py:2240    toprab*avgnorm/norm_per_particle[im]  |   toprab*avgnorm/norm_per_particle[im]
+./sparx/bin/sxsort3d_depth.py:2580    3*img_per_grp//2  |   3*img_per_grp//2
+./sparx/bin/sxsort3d_depth.py:2583   3*img_per_grp//2  |  3*img_per_grp//2
+./sparx/bin/sxsort3d_depth.py:2946    nb_tot_objs/float(total_data)*100.  |   nb_tot_objs/float(total_data)*100.
+./sparx/bin/sxsort3d_depth.py:2947    nb_tot_objs/float(total_data)*100.  |   nb_tot_objs/float(total_data)*100.
+./sparx/bin/sxsort3d_depth.py:2963    float(len(any))*100./float(len(ptp1[newindeces[index_of_any][0]]))  |   float(len(any))*100./float(len(ptp1[newindeces[index_of_any][0]]))
+./sparx/bin/sxsort3d_depth.py:2964    float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))  |   float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))
+./sparx/bin/sxsort3d_depth.py:2965    float((np.intersect1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)\
+				  /float((np.union1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)*100.  |   float((np.intersect1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)\
+				  /float((np.union1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)*100.
+./sparx/bin/sxsort3d_depth.py:3196   nb_tot_objs/float(total_data)*100.  |  nb_tot_objs/float(total_data)*100.
+./sparx/bin/sxsort3d_depth.py:3197    nb_tot_objs/float(total_data)*100.  |   nb_tot_objs/float(total_data)*100.
+./sparx/bin/sxsort3d_depth.py:3231    float(len(any))*100./float(len(ptp1[newindeces[index_of_any][0]]))  |   float(len(any))*100./float(len(ptp1[newindeces[index_of_any][0]]))
+./sparx/bin/sxsort3d_depth.py:3232    float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))  |   float(len(any))*100./float(len(ptp2[newindeces[index_of_any][1]]))
+./sparx/bin/sxsort3d_depth.py:3233    float((np.intersect1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)\
+			  /float((np.union1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)*100.  |   float((np.intersect1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)\
+			  /float((np.union1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)*100.
+./sparx/bin/sxsort3d_depth.py:3552   float(number_of_groups)/ncolor*mycolor  |  float(number_of_groups)/ncolor*mycolor
+./sparx/bin/sxsort3d_depth.py:3553   float(number_of_groups)/ncolor*(mycolor+1)  |  float(number_of_groups)/ncolor*(mycolor+1)
+./sparx/bin/sxsort3d_depth.py:4339    Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)  |   Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
+./sparx/bin/sxsort3d_depth.py:4392    Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)  |   Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
+./sparx/bin/sxsort3d_depth.py:4445   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]  |  Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]
+./sparx/bin/sxsort3d_depth.py:5134    toprab*avgnorm/norm_per_particle[im]  |   toprab*avgnorm/norm_per_particle[im]
+./sparx/bin/sxsort3d_depth.py:5173    toprab*avgnorm/norm_per_particle[im]  |   toprab*avgnorm/norm_per_particle[im]
+./sparx/bin/sxsort3d_depth.py:5408    toprab*avgnorm/norm_per_particle[im]  |   toprab*avgnorm/norm_per_particle[im]
+./sparx/bin/sxsort3d_depth.py:5877   float(len(ptp1[i1]))/tsize*100.  |  float(len(ptp1[i1]))/tsize*100.
+./sparx/bin/sxsort3d_depth.py:5878   float(len(ptp1[i1]))/tsize*100.  |  float(len(ptp1[i1]))/tsize*100.
+./sparx/bin/sxsort3d_depth.py:5884   float(len(ptp2[i1]))/tsize*100.  |  float(len(ptp2[i1]))/tsize*100.
+./sparx/bin/sxsort3d_depth.py:5885   float(len(ptp2[i1]))/tsize*100.  |  float(len(ptp2[i1]))/tsize*100.
+./sparx/bin/sxsort3d_depth.py:5925   nb_tot_objs/float(len(set(ts)))*100.  |  nb_tot_objs/float(len(set(ts)))*100.
+./sparx/bin/sxsort3d_depth.py:5928   float((np.intersect1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)\
+						  /float((np.union1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)*100.  |  float((np.intersect1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)\
+						  /float((np.union1d(new_clusters1[newindeces[j][0]], new_clusters2[newindeces[j][1]])).size)*100.
+./sparx/bin/sxsort3d_new.py:105    fsc_refinement[ifreq]*q/(1.-fsc_refinement[ifreq]*(1.-q))  |   fsc_refinement[ifreq]*q/(1.-fsc_refinement[ifreq]*(1.-q))
+./sparx/bin/sxsort3d_new.py:109    float(ifreq)/2./float(len(fsc_refinement))  |   float(ifreq)/2./float(len(fsc_refinement))
+./sparx/bin/sxsort3d_new.py:126    float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9  |   float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9
+./sparx/bin/sxsort3d_new.py:127    float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9/Blockdata["no_of_groups"]  |   float(Tracker["constants"]["total_stack"]*image_org_size*image_org_size)*4.0/1.e9/Blockdata["no_of_groups"]
+./sparx/bin/sxsort3d_new.py:129    (4.*image_in_core_size**3*8.)*Blockdata["no_of_processes_per_group"]/1.e9  |   (4.*image_in_core_size**3*8.)*Blockdata["no_of_processes_per_group"]/1.e9
+./sparx/bin/sxsort3d_new.py:168     raw_data_size*(2.*ratio**2+1.)*Blockdata["no_of_processes_per_group"]/(total_memory - 5. - sys_required_mem - volume_size_per_node)  |    raw_data_size*(2.*ratio**2+1.)*Blockdata["no_of_processes_per_group"]/(total_memory - 5. - sys_required_mem - volume_size_per_node)
+./sparx/bin/sxsort3d_new.py:176    Tracker["constants"]["img_per_grp"]*1.5/float(Blockdata["nproc"])  |   Tracker["constants"]["img_per_grp"]*1.5/float(Blockdata["nproc"])
+./sparx/bin/sxsort3d_new.py:231    2.*fsc_data[igroup][ifreq]/(1.+fsc_data[igroup][ifreq])  |   2.*fsc_data[igroup][ifreq]/(1.+fsc_data[igroup][ifreq])
+./sparx/bin/sxsort3d_new.py:331    tmp_sum*tmp_sum/(nscore+1.)  |   tmp_sum*tmp_sum/(nscore+1.)
+./sparx/bin/sxsort3d_new.py:332   1./float(Tracker["number_of_groups"])*100.  |  1./float(Tracker["number_of_groups"])*100.
+./sparx/bin/sxsort3d_new.py:336   1./float(Tracker["number_of_groups"])*100.  |  1./float(Tracker["number_of_groups"])*100.
+./sparx/bin/sxsort3d_new.py:343   1./float(Tracker["number_of_groups"])*100.  |  1./float(Tracker["number_of_groups"])*100.
+./sparx/bin/sxsort3d_new.py:381   len(Tracker["accounted_list"])/float(Tracker["total_stack"])*100.  |  len(Tracker["accounted_list"])/float(Tracker["total_stack"])*100.
+./sparx/bin/sxsort3d_new.py:388    len(Tracker["accounted_list"])/float(Tracker["total_stack"])*100.  |   len(Tracker["accounted_list"])/float(Tracker["total_stack"])*100.
+./sparx/bin/sxsort3d_new.py:1330    toprab*avgnorm/norm_per_particle[im]  |   toprab*avgnorm/norm_per_particle[im]
+./sparx/bin/sxsort3d_new.py:1655    float(tt)/float(len(plist[ip]))*100.  |   float(tt)/float(len(plist[ip]))*100.
+./sparx/bin/sxsort3d_new.py:1737   Tracker["constants"]["indep_runs"]*(Tracker["constants"]["indep_runs"]-1)/2  |  Tracker["constants"]["indep_runs"]*(Tracker["constants"]["indep_runs"]-1)/2
+./sparx/bin/sxsort3d_new.py:1738   Tracker["constants"]["indep_runs"]*(Tracker["constants"]["indep_runs"]-1)/2  |  Tracker["constants"]["indep_runs"]*(Tracker["constants"]["indep_runs"]-1)/2
+./sparx/bin/sxsort3d_new.py:1748   tt/Tracker["total_stack"]*100.  |  tt/Tracker["total_stack"]*100.
+./sparx/bin/sxsort3d_new.py:1749    tt/Tracker["total_stack"]*100  |   tt/Tracker["total_stack"]*100
+./sparx/bin/sxsort3d_new.py:1750    tt/Tracker["total_stack"]*100.0  |   tt/Tracker["total_stack"]*100.0
+./sparx/bin/sxsort3d_new.py:1845   tt/total_stack*100.  |  tt/total_stack*100.
+./sparx/bin/sxsort3d_new.py:1846    tt/total_stack*100.  |   tt/total_stack*100.
+./sparx/bin/sxsort3d_new.py:1861   tt/total_stack*100.  |  tt/total_stack*100.
+./sparx/bin/sxsort3d_new.py:1862    tt/total_stack*100.  |   tt/total_stack*100.
+./sparx/bin/sxsort3d_new.py:2393   float(number_of_groups)/ncolor*mycolor  |  float(number_of_groups)/ncolor*mycolor
+./sparx/bin/sxsort3d_new.py:2394   float(number_of_groups)/ncolor*(mycolor+1)  |  float(number_of_groups)/ncolor*(mycolor+1)
+./sparx/bin/sxsort3d_new.py:3318   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]  |  Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]
+./sparx/bin/sxsort3d_new.py:3759   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i)  |  Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(i)
+./sparx/bin/sxsort3d_new.py:4083    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_05[icluster]  |   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_05[icluster]
+./sparx/bin/sxsort3d_new.py:4084    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_143[icluster]  |   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/res_143[icluster]
+./sparx/bin/sxsort3d_new.py:4485    toprab*avgnorm/norm_per_particle[im]  |   toprab*avgnorm/norm_per_particle[im]
+./sparx/bin/sxsort3d_new.py:4524    toprab*avgnorm/norm_per_particle[im]  |   toprab*avgnorm/norm_per_particle[im]
+./sparx/bin/sxsort3d_new.py:4760    toprab*avgnorm/norm_per_particle[im]  |   toprab*avgnorm/norm_per_particle[im]
+./sparx/bin/sxsort3d_new.py:4970    Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["total_stack"]*4./1.e9  |   Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["total_stack"]*4./1.e9
+./sparx/bin/sxsort3d_new.py:4971    Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*4.*8./1.e9  |   Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"]*4.*8./1.e9
+./sparx/bin/sxsort3d_new.py:4981   minimum_size//5//Blockdata["no_of_groups"]//2  |  minimum_size//5//Blockdata["no_of_groups"]//2
+./sparx/bin/sxsort3d_new.py:5082    fsc_true[1][ifreq]*2./(1.+fsc_true[1][ifreq])  |   fsc_true[1][ifreq]*2./(1.+fsc_true[1][ifreq])
+./sparx/bin/sxsort3d_new.py:5135    ig*.5/float(len(guinierline))/Tracker["constants"]["pixel_size"]  |   ig*.5/float(len(guinierline))/Tracker["constants"]["pixel_size"]
+./sparx/bin/sxsort3d_new.py:5161    cutoff_by_fsc/(2.*len(fsc_true[0]))/Tracker["constants"]["pixel_size"]  |   cutoff_by_fsc/(2.*len(fsc_true[0]))/Tracker["constants"]["pixel_size"]
+./sparx/bin/sxsort3d_new.py:5200    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq05)  |   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq05)
+./sparx/bin/sxsort3d_new.py:5201    \
+	    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq143)  |   \
+	    Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(nfreq143)
+./sparx/bin/sxsort3d_new.py:5476   Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]  |  Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]
+./sparx/bin/sxsort3d_new.py:5580   \
+                Tracker["constants"]["pixel_size"]/Tracker["currentres"]/Tracker["shrinkage"]  |  \
+                Tracker["constants"]["pixel_size"]/Tracker["currentres"]/Tracker["shrinkage"]
+./sparx/bin/sxsort3d_new.py:5753    float(len(accounted_list))/float(total_rsort)*100.0  |   float(len(accounted_list))/float(total_rsort)*100.0
+./sparx/bin/sxsummovie.py:410   100 * (index + 1) / float(nr_files)  |  100 * (index + 1) / float(nr_files)
+./sparx/bin/sxsummovie.py:412    \
+                nr_files * sum(time_list) / float(len(time_list))  |   \
+                nr_files * sum(time_list) / float(len(time_list))
+./sparx/bin/sxunblur.py:558   100 * (index + 1) / float(nr_files)  |  100 * (index + 1) / float(nr_files)
+./sparx/bin/sxunblur.py:560    \
+            nr_files * sum(time_list) / float(len(time_list))  |   \
+            nr_files * sum(time_list) / float(len(time_list))
+./sparx/bin/sxwindow.py:1015    resample_ratio * abs_ctf_limit / float(box_size)  |   resample_ratio * abs_ctf_limit / float(box_size)
+./sparx/bin/sxwindow.py:1185   len(abs_ctf_limit_histogram) * 100.0 / len(unsliced_valid_serial_id_list)  |  len(abs_ctf_limit_histogram) * 100.0 / len(unsliced_valid_serial_id_list)
+./sparx/libpy/alignment.py:848   K/2.0/N  |  K/2.0/N
+./sparx/libpy/alignment.py:942    numr[i*3]*dpi/float(numr[2+i*3])*maxrin/float(numr[2+i*3])  |   numr[i*3]*dpi/float(numr[2+i*3])*maxrin/float(numr[2+i*3])
+./sparx/libpy/alignment.py:1377   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1378   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1391   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1392   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1424   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1425   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1444   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1445   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1458   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1459   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1471   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1472   ang*pi/180.0  |  ang*pi/180.0
+./sparx/libpy/alignment.py:1508   arg[k] * limarg / sumarg  |  arg[k] * limarg / sumarg
+./sparx/libpy/alignment.py:1549   (ang-ang_m)/2*DEG_to_RAD  |  (ang-ang_m)/2*DEG_to_RAD
+./sparx/libpy/alignment.py:1574   (ang-ang_m)/2*DEG_to_RAD  |  (ang-ang_m)/2*DEG_to_RAD
+./sparx/libpy/alignment.py:2287   an*pi/180.0  |  an*pi/180.0
+./sparx/libpy/alignment.py:3124   an*pi/180.0  |  an*pi/180.0
+./sparx/libpy/alignment.py:3327   pi2*(jtot-1)/2.0*numr3i/maxrin  |  pi2*(jtot-1)/2.0*numr3i/maxrin
+./sparx/libpy/alignment.py:3329    pi2*(jtot-1)*int(old_div(j,2))/maxrin  |   pi2*(jtot-1)*int(old_div(j,2))/maxrin
+./sparx/libpy/alignment.py:3338   pi2*(jtot-1)/2.0*numr3i/maxrin  |  pi2*(jtot-1)/2.0*numr3i/maxrin
+./sparx/libpy/alignment.py:3340    pi2*(jtot-1)*int(old_div(j,2))/maxrin  |   pi2*(jtot-1)*int(old_div(j,2))/maxrin
+./sparx/libpy/alignment.py:3366   pi2*(jtot-1)/2.0*numr3i/maxrin  |  pi2*(jtot-1)/2.0*numr3i/maxrin
+./sparx/libpy/alignment.py:3368    pi2*(jtot-1)*int(old_div(j,2))/maxrin  |   pi2*(jtot-1)*int(old_div(j,2))/maxrin
+./sparx/libpy/alignment.py:3377   pi2*(jtot-1)/2.0*numr3i/maxrin  |  pi2*(jtot-1)/2.0*numr3i/maxrin
+./sparx/libpy/alignment.py:3379    pi2*(jtot-1)*int(old_div(j,2))/maxrin  |   pi2*(jtot-1)*int(old_div(j,2))/maxrin
+./sparx/libpy/alignment.py:4071    K/2.0/N  |   K/2.0/N
+./sparx/libpy/alignment.py:4097   2*psimax/psistep  |  2*psimax/psistep
+./sparx/libpy/alignment.py:4225    K/2.0/N  |   K/2.0/N
+./sparx/libpy/alignment.py:4230   2*psimax/psistep  |  2*psimax/psistep
+./sparx/libpy/alignment.py:4253    K/2.0/N  |   K/2.0/N
+./sparx/libpy/alignment.py:4258   2*psimax/psistep  |  2*psimax/psistep
+./sparx/libpy/alignment.py:4302    K/2.0/N  |   K/2.0/N
+./sparx/libpy/alignment.py:4309   2*psimax/psistep  |  2*psimax/psistep
+./sparx/libpy/alignment.py:4515   2*psimax/psistep  |  2*psimax/psistep
+./sparx/libpy/alignment.py:4706   2*psimax/psistep  |  2*psimax/psistep
+./sparx/libpy/alignment.py:4927   2*psimax/psistep  |  2*psimax/psistep
+./sparx/libpy/alignment.py:5153    i*(nsegs-1)*1.0/(len(T)-1)  |   i*(nsegs-1)*1.0/(len(T)-1)
+./sparx/libpy/alignment.py:5339   (crit-ocrit)/(crit+ocrit)/2.0  |  (crit-ocrit)/(crit+ocrit)/2.0
+./sparx/libpy/alignment.py:5397   (crit-ocrit)/(crit+ocrit)/2.0  |  (crit-ocrit)/(crit+ocrit)/2.0
+./sparx/libpy/applications.py:410   float(mirror_consistent)/nima*100  |  float(mirror_consistent)/nima*100
+./sparx/libpy/applications.py:820   float(mirror_consistent)/nima*100  |  float(mirror_consistent)/nima*100
+./sparx/libpy/applications.py:1176   float(mirror_consistent)/total_nima*100  |  float(mirror_consistent)/total_nima*100
+./sparx/libpy/applications.py:3037   2*sq1 / float(retval['qn'])  |  2*sq1 / float(retval['qn'])
+./sparx/libpy/applications.py:3227   (FH-0.1)*Iter/float(max_iter-1)  |  (FH-0.1)*Iter/float(max_iter-1)
+./sparx/libpy/applications.py:4584    100*float(total_nima-im)/float(total_nima)  |   100*float(total_nima-im)/float(total_nima)
+./sparx/libpy/applications.py:5866    K/2.0/N  |   K/2.0/N
+./sparx/libpy/applications.py:5936    ic*nima/n_of_chunks  |   ic*nima/n_of_chunks
+./sparx/libpy/applications.py:5937    (ic+1)*nima/n_of_chunks  |   (ic+1)*nima/n_of_chunks
+./sparx/libpy/applications.py:5973   (atparams[1]-90.0)/180.0*pi  |  (atparams[1]-90.0)/180.0*pi
+./sparx/libpy/applications.py:7417    100*float(total_nima-im)/float(total_nima)  |   100*float(total_nima-im)/float(total_nima)
+./sparx/libpy/applications.py:8377    100*float(nchng)/float(total_nima)  |   100*float(nchng)/float(total_nima)
+./sparx/libpy/applications.py:8795    100*float(nchng)/float(total_nima)  |   100*float(nchng)/float(total_nima)
+./sparx/libpy/applications.py:9303    100*float(nchng)/float(total_nima)  |   100*float(nchng)/float(total_nima)
+./sparx/libpy/applications.py:9468    K/2.0/N  |   K/2.0/N
+./sparx/libpy/applications.py:9716   (tht-90.0)/180.0*pi  |  (tht-90.0)/180.0*pi
+./sparx/libpy/applications.py:9757    100*float(nchng)/float(total_nima)  |   100*float(nchng)/float(total_nima)
+./sparx/libpy/applications.py:10111   (tht-90.0)/180.0*pi  |  (tht-90.0)/180.0*pi
+./sparx/libpy/applications.py:10152    100*float(nchng)/float(total_nima)  |   100*float(nchng)/float(total_nima)
+./sparx/libpy/applications.py:10391    K/2.0/N  |   K/2.0/N
+./sparx/libpy/applications.py:10440    ic*nima/n_of_chunks  |   ic*nima/n_of_chunks
+./sparx/libpy/applications.py:10441    (ic+1)*nima/n_of_chunks  |   (ic+1)*nima/n_of_chunks
+./sparx/libpy/applications.py:10477   (atparams[1]-90.0)/180.0*pi  |  (atparams[1]-90.0)/180.0*pi
+./sparx/libpy/applications.py:10662    K/2.0/N  |   K/2.0/N
+./sparx/libpy/applications.py:10752    ic*nima/n_of_chunks  |   ic*nima/n_of_chunks
+./sparx/libpy/applications.py:10753    (ic+1)*nima/n_of_chunks  |   (ic+1)*nima/n_of_chunks
+./sparx/libpy/applications.py:10788   (atparams[1]-90.0)/180.0*pi  |  (atparams[1]-90.0)/180.0*pi
+./sparx/libpy/applications.py:11028    K/2.0/N  |   K/2.0/N
+./sparx/libpy/applications.py:11117    ic*nima/n_of_chunks  |   ic*nima/n_of_chunks
+./sparx/libpy/applications.py:11118    (ic+1)*nima/n_of_chunks  |   (ic+1)*nima/n_of_chunks
+./sparx/libpy/applications.py:11513    K/2.0/N  |   K/2.0/N
+./sparx/libpy/applications.py:11581    ic*nima/n_of_chunks  |   ic*nima/n_of_chunks
+./sparx/libpy/applications.py:11582    (ic+1)*nima/n_of_chunks  |   (ic+1)*nima/n_of_chunks
+./sparx/libpy/applications.py:11616   (atparams[1]-90.0)/180.0*pi  |  (atparams[1]-90.0)/180.0*pi
+./sparx/libpy/applications.py:11771   nx*ny/p_size/p_size  |  nx*ny/p_size/p_size
+./sparx/libpy/applications.py:11918   nx*ny/p_size/p_size  |  nx*ny/p_size/p_size
+./sparx/libpy/applications.py:12199    initial_theta*pi/180  |   initial_theta*pi/180
+./sparx/libpy/applications.py:12199    dp/2.0/pixel_size  |   dp/2.0/pixel_size
+./sparx/libpy/applications.py:12231   2*yrng[N_step]/ynumber[N_step]  |  2*yrng[N_step]/ynumber[N_step]
+./sparx/libpy/applications.py:12411   360.0/2/sn  |  360.0/2/sn
+./sparx/libpy/applications.py:12413   360.0/2/sn  |  360.0/2/sn
+./sparx/libpy/applications.py:12414   360.0/4/sn  |  360.0/4/sn
+./sparx/libpy/applications.py:12417   360.0/2/sn  |  360.0/2/sn
+./sparx/libpy/applications.py:12480    pi*float( d1['theta'] )/180.0  |   pi*float( d1['theta'] )/180.0
+./sparx/libpy/applications.py:12490    pi*float( d1['theta'] )/180.0  |   pi*float( d1['theta'] )/180.0
+./sparx/libpy/applications.py:16733   float(nima)/nproc*myid  |  float(nima)/nproc*myid
+./sparx/libpy/applications.py:16734   float(nima)/nproc*(myid+1)  |  float(nima)/nproc*(myid+1)
+./sparx/libpy/applications.py:18102   (FH-0.1)*Iter/float(max_iter-1)  |  (FH-0.1)*Iter/float(max_iter-1)
+./sparx/libpy/applications.py:18139   (FH-0.1)*Iter/float(max_iter-1)  |  (FH-0.1)*Iter/float(max_iter-1)
+./sparx/libpy/applications.py:18313   (FH-0.1)*Iter/float(max_iter-1)  |  (FH-0.1)*Iter/float(max_iter-1)
+./sparx/libpy/applications.py:18363   (FH-0.1)*Iter/float(max_iter-1)  |  (FH-0.1)*Iter/float(max_iter-1)
+./sparx/libpy/applications.py:19170     alpha*maxrin/360.  |    alpha*maxrin/360.
+./sparx/libpy/applications.py:19245   dz/q/px  |  dz/q/px
+./sparx/libpy/applications.py:19245    dz/q/px  |   dz/q/px
+./sparx/libpy/applications.py:19246   dz/q1/px  |  dz/q1/px
+./sparx/libpy/applications.py:19246    dz/q1/px  |   dz/q1/px
+./sparx/libpy/applications.py:19944    (old_div(an[i],dphi))*(old_div(dp,pixel_size))/2.0  |   (old_div(an[i],dphi))*(old_div(dp,pixel_size))/2.0
+./sparx/libpy/applications.py:20108    K/2.0/N  |   K/2.0/N
+./sparx/libpy/applications.py:20164   2*yrng[N_step]/ynumber[N_step]  |  2*yrng[N_step]/ynumber[N_step]
+./sparx/libpy/applications.py:20464    (old_div(an[i],dphi))*(old_div(dp,pixel_size))/2.0  |   (old_div(an[i],dphi))*(old_div(dp,pixel_size))/2.0
+./sparx/libpy/applications.py:20620    K/2.0/N  |   K/2.0/N
+./sparx/libpy/applications.py:20674   2*yrng[N_step]/ynumber[N_step]  |  2*yrng[N_step]/ynumber[N_step]
+./sparx/libpy/applications.py:20799   2*psi_max/psistep  |  2*psi_max/psistep
+./sparx/libpy/applications.py:20974    (old_div(an[i],dphi))*(old_div(dp,pixel_size))/2.0  |   (old_div(an[i],dphi))*(old_div(dp,pixel_size))/2.0
+./sparx/libpy/applications.py:21168   2*yrng[N_step]/ynumber[N_step]  |  2*yrng[N_step]/ynumber[N_step]
+./sparx/libpy/applications.py:21381    (old_div(an[i],dphi))*(old_div(dp,pixel_size))/2.0  |   (old_div(an[i],dphi))*(old_div(dp,pixel_size))/2.0
+./sparx/libpy/applications.py:21571   2*yrng[N_step]/ynumber[N_step]  |  2*yrng[N_step]/ynumber[N_step]
+./sparx/libpy/applications.py:21986   2*psimax/psistep  |  2*psimax/psistep
+./sparx/libpy/applications.py:22052   2*psimax/psistep  |  2*psimax/psistep
+./sparx/libpy/applications.py:22972    K/2.0/N  |   K/2.0/N
+./sparx/libpy/applications.py:23043    ic*nima/n_of_chunks  |   ic*nima/n_of_chunks
+./sparx/libpy/applications.py:23044    (ic+1)*nima/n_of_chunks  |   (ic+1)*nima/n_of_chunks
+./sparx/libpy/applications.py:23078   (atparams[1]-90.0)/180.0*pi  |  (atparams[1]-90.0)/180.0*pi
+./sparx/libpy/applications.py:23627    100*float(nchng)/float(total_nima)  |   100*float(nchng)/float(total_nima)
+./sparx/libpy/applications.py:24524    100*float(nchng)/float(total_nima)  |   100*float(nchng)/float(total_nima)
+./sparx/libpy/applications.py:25403    100*float(nchng)/float(total_nima)  |   100*float(nchng)/float(total_nima)
+./sparx/libpy/filter.py:370   K/2.0/N  |  K/2.0/N
+./sparx/libpy/filter.py:382   K/2.0/N  |  K/2.0/N
+./sparx/libpy/filter.py:394   K/2.0/N  |  K/2.0/N
+./sparx/libpy/filter.py:406   K/2.0/N  |  K/2.0/N
+./sparx/libpy/filter.py:514   2*dres[1][n-1]/(1.0+dres[1][n-1])  |  2*dres[1][n-1]/(1.0+dres[1][n-1])
+./sparx/libpy/filter.py:519   2*dres[1][i]/(1.0+dres[1][i])  |  2*dres[1][i]/(1.0+dres[1][i])
+./sparx/libpy/filter.py:532   2*dres[1][i]/(1.0+dres[1][i])  |  2*dres[1][i]/(1.0+dres[1][i])
+./sparx/libpy/filter.py:537   2*dres[1][i]/(1.0+dres[1][i])  |  2*dres[1][i]/(1.0+dres[1][i])
+./sparx/libpy/filter.py:566    2*(old_div(dres[1][i-1],(1.0+dres[1][i-1])) + old_div(dres[1][i],(1.0+dres[1][i])) + old_div(dres[1][i+1],(1.0+dres[1][i+1])))/3.0  |   2*(old_div(dres[1][i-1],(1.0+dres[1][i-1])) + old_div(dres[1][i],(1.0+dres[1][i])) + old_div(dres[1][i+1],(1.0+dres[1][i+1])))/3.0
+./sparx/libpy/filter.py:636   2.*log(old_div(eps,sqrt(a**2-1)))/log(old_div(lowf,highf))  |  2.*log(old_div(eps,sqrt(a**2-1)))/log(old_div(lowf,highf))
+./sparx/libpy/filter.py:642    2*dres[1][i]/(1.0+dres[1][i])  |   2*dres[1][i]/(1.0+dres[1][i])
+./sparx/libpy/filter.py:664     2*data[1][i]/(1.0+data[1][i])  |    2*data[1][i]/(1.0+data[1][i])
+./sparx/libpy/filter.py:666   pi*(data[0][i]+args[0])/2.0/args[1]/args[0]  |  pi*(data[0][i]+args[0])/2.0/args[1]/args[0]
+./sparx/libpy/filter.py:666   pi*(data[0][i]-args[0])/2.0/args[1]/args[0]  |  pi*(data[0][i]-args[0])/2.0/args[1]/args[0]
+./sparx/libpy/filter.py:674   2*dres[1][i]/(1.0+dres[1][i])  |  2*dres[1][i]/(1.0+dres[1][i])
+./sparx/libpy/filter.py:679   2*dres[1][i]/(1.0+dres[1][i])  |  2*dres[1][i]/(1.0+dres[1][i])
+./sparx/libpy/filter.py:721   pi*(data[0][i]+args[0])/2.0/args[1]/args[0]  |  pi*(data[0][i]+args[0])/2.0/args[1]/args[0]
+./sparx/libpy/filter.py:721   pi*(data[0][i]-args[0])/2.0/args[1]/args[0]  |  pi*(data[0][i]-args[0])/2.0/args[1]/args[0]
+./sparx/libpy/filter.py:766   pi*(x+fl)/2.0/aa/fl  |  pi*(x+fl)/2.0/aa/fl
+./sparx/libpy/filter.py:766   pi*(x-fl)/2.0/aa/fl  |  pi*(x-fl)/2.0/aa/fl
+./sparx/libpy/filter.py:791   SNR[j]*(SNR[j]+1.)*PU[j]/Pref[j]  |  SNR[j]*(SNR[j]+1.)*PU[j]/Pref[j]
+./sparx/libpy/fundamentals.py:702    K/2.0/N  |   K/2.0/N
+./sparx/libpy/fundamentals.py:750    K/2.0/N  |   K/2.0/N
+./sparx/libpy/fundamentals.py:782    K/2.0/N  |   K/2.0/N
+./sparx/libpy/fundamentals.py:930    K/2.0/N  |   K/2.0/N
+./sparx/libpy/fundamentals.py:960    K/2.0/N  |   K/2.0/N
+./sparx/libpy/fundamentals.py:1250    (wi - st[0])/st[1]*win_size  |   (wi - st[0])/st[1]*win_size
+./sparx/libpy/fundamentals.py:1576    i*360./self.nsym  |   i*360./self.nsym
+./sparx/libpy/fundamentals.py:1581   360./self.nsym*2  |  360./self.nsym*2
+./sparx/libpy/fundamentals.py:1581   360./self.nsym*2  |  360./self.nsym*2
+./sparx/libpy/fundamentals.py:1584    i*360./self.nsym*2  |   i*360./self.nsym*2
+./sparx/libpy/fundamentals.py:1586   i*360./self.nsym*2  |  i*360./self.nsym*2
+./sparx/libpy/fundamentals.py:1592   2*pi/ncap/2.0  |  2*pi/ncap/2.0
+./sparx/libpy/fundamentals.py:1605   2*pi/ncap/2.0  |  2*pi/ncap/2.0
+./sparx/libpy/fundamentals.py:1625   2*pi/ncap/2.0  |  2*pi/ncap/2.0
+./sparx/libpy/fundamentals.py:1820   360.0/self.nsym/2  |  360.0/self.nsym/2
+./sparx/libpy/fundamentals.py:1823   360.0/self.nsym/2  |  360.0/self.nsym/2
+./sparx/libpy/fundamentals.py:1892   360.0/self.nsym/2  |  360.0/self.nsym/2
+./sparx/libpy/fundamentals.py:1895   360.0/self.nsym/2  |  360.0/self.nsym/2
+./sparx/libpy/fundamentals.py:1950    delta*pi/180.0  |   delta*pi/180.0
+./sparx/libpy/fundamentals.py:1952   Deltaz*(phi2-phi1)/720.0  |  Deltaz*(phi2-phi1)/720.0
+./sparx/libpy/fundamentals.py:1960    Deltaz*k/(NumPoints-1)  |   Deltaz*k/(NumPoints-1)
+./sparx/libpy/isac.py:1562    m_th*(len(m1)+len(m2))/2  |   m_th*(len(m1)+len(m2))/2
+./sparx/libpy/morphology.py:310    [0.0]*2*(nx//2+1)  |   [0.0]*2*(nx//2+1)
+./sparx/libpy/morphology.py:311    [0.0]*2*(nx//2+1)  |   [0.0]*2*(nx//2+1)
+./sparx/libpy/morphology.py:321    astigmamp/2*sin(2*(atan2(y,x) + angrad))  |   astigmamp/2*sin(2*(atan2(y,x) + angrad))
+./sparx/libpy/morphology.py:340    astigmamp/2*sin(2*(atan2(y,x) + angrad))  |   astigmamp/2*sin(2*(atan2(y,x) + angrad))
+./sparx/libpy/morphology.py:347    sqrt( Cst*(defc - sqrt( defc**2 + Cst**2*lam**4*s**4 - 2*Cst*lam**2*s**2*dfa)))/(Cst*lam) * nc*2*Pixel_size  |   sqrt( Cst*(defc - sqrt( defc**2 + Cst**2*lam**4*s**4 - 2*Cst*lam**2*s**2*dfa)))/(Cst*lam) * nc*2*Pixel_size
+./sparx/libpy/morphology.py:379    1./pixel_size/nx  |   1./pixel_size/nx
+./sparx/libpy/morphology.py:406    1.0/pixel_size/nx  |   1.0/pixel_size/nx
+./sparx/libpy/morphology.py:542    1./(2*pix)/n  |   1./(2*pix)/n
+./sparx/libpy/morphology.py:558    ii/float(n-1)/(2*pix)  |   ii/float(n-1)/(2*pix)
+./sparx/libpy/morphology.py:594    pixel_size*nx/limi  |   pixel_size*nx/limi
+./sparx/libpy/morphology.py:630   Pixel_size*2.*len(roo)/f_start  |  Pixel_size*2.*len(roo)/f_start
+./sparx/libpy/morphology.py:632   Pixel_size*2.*len(roo)/f_stop  |  Pixel_size*2.*len(roo)/f_stop
+./sparx/libpy/morphology.py:713   Pixel_size*2.*len(roo)/f_start  |  Pixel_size*2.*len(roo)/f_start
+./sparx/libpy/morphology.py:715   Pixel_size*2.*len(roo)/f_stop  |  Pixel_size*2.*len(roo)/f_stop
+./sparx/libpy/morphology.py:744    sqrt(dis)/sqrt(pw_sum)/tfeq  |   sqrt(dis)/sqrt(pw_sum)/tfeq
+./sparx/libpy/morphology.py:1628   float(i)/(2*nr)/pixel_size  |  float(i)/(2*nr)/pixel_size
+./sparx/libpy/morphology.py:2307    float(i) / wn / pixel_size  |   float(i) / wn / pixel_size
+./sparx/libpy/morphology.py:2571    stdavad1 / ad1 * 100  |   stdavad1 / ad1 * 100
+./sparx/libpy/morphology.py:2573    stdavbd1 / bd1 * 100  |   stdavbd1 / bd1 * 100
+./sparx/libpy/morphology.py:2604   float(i)/wn/pixel_size  |  float(i)/wn/pixel_size
+./sparx/libpy/morphology.py:3372    float(i) / wn / pixel_size  |   float(i) / wn / pixel_size
+./sparx/libpy/morphology.py:3640    stdavad1 / ad1 * 100  |   stdavad1 / ad1 * 100
+./sparx/libpy/morphology.py:3655    stdavbd1 / bd1 * 100  |   stdavbd1 / bd1 * 100
+./sparx/libpy/morphology.py:3686   float(i)/wn/pixel_size  |  float(i)/wn/pixel_size
+./sparx/libpy/morphology.py:3820    tan(radians(phi))/sqrt(1.0+tan(radians(phi))**2)*100.0  |   tan(radians(phi))/sqrt(1.0+tan(radians(phi))**2)*100.0
+./sparx/libpy/morphology.py:3962   data[0]*ct/data[1]  |  data[0]*ct/data[1]
+./sparx/libpy/morphology.py:3977   data[0]*ct/data[1]  |  data[0]*ct/data[1]
+./sparx/libpy/morphology.py:4968    float(i)/nx/Pixel_size  |   float(i)/nx/Pixel_size
+./sparx/libpy/morphology.py:5130    float(i)/nx/Pixel_size  |   float(i)/nx/Pixel_size
+./sparx/libpy/morphology.py:5983    stdavad1 / ad1 * 100  |   stdavad1 / ad1 * 100
+./sparx/libpy/morphology.py:5989    stdavbd1 / bd1 * 100  |   stdavbd1 / bd1 * 100
+./sparx/libpy/morphology.py:6022   float(i)/wn/pixel_size  |  float(i)/wn/pixel_size
+./sparx/libpy/morphology.py:6067    stdavbd1 / bd1 * 100  |   stdavbd1 / bd1 * 100
+./sparx/libpy/multi_shc.py:128   qt/sc/(sc-1)/2.0  |  qt/sc/(sc-1)/2.0
+./sparx/libpy/multi_shc.py:169   sc*(sc-1)/2.0  |  sc*(sc-1)/2.0
+./sparx/libpy/multi_shc.py:182   qt/sc/(sc-1)/2.0  |  qt/sc/(sc-1)/2.0
+./sparx/libpy/multi_shc.py:1526    360.0/symmetry_class.nsym*2  |   360.0/symmetry_class.nsym*2
+./sparx/libpy/multi_shc.py:1684   an*pi/180.0  |  an*pi/180.0
+./sparx/libpy/pixel_error.py:536   avg*avg/n  |  avg*avg/n
+./sparx/libpy/pixel_error.py:575    d*d/4.*(1-old_div(sqrtP,L))  |   d*d/4.*(1-old_div(sqrtP,L))
+./sparx/libpy/pixel_error.py:812    d*d/4.*(1-old_div(sqrtP,L))  |   d*d/4.*(1-old_div(sqrtP,L))
+./sparx/libpy/pixel_error.py:1069    pixel_size/dp*idir*dphi  |   pixel_size/dp*idir*dphi
+./sparx/libpy/pixel_error.py:1218    nima2/float(len(params1))*100  |   nima2/float(len(params1))*100
+./sparx/libpy/projection.py:256    alpha/180.0*pi  |   alpha/180.0*pi
+./sparx/libpy/projection.py:594    (nprj - 1) * nprj / 2  |   (nprj - 1) * nprj / 2
+./sparx/libpy/projection.py:709    K / 2.0 / N  |   K / 2.0 / N
+./sparx/libpy/projection.py:749    K / 2.0 / N  |   K / 2.0 / N
+./sparx/libpy/reconstruction.py:555    imgsize*npad//2  |   imgsize*npad//2
+./sparx/libpy/reconstruction.py:1138    imgsize*npad//2  |   imgsize*npad//2
+./sparx/libpy/reconstruction.py:1410    toprab*avgnorm/norm_per_particle[im]  |   toprab*avgnorm/norm_per_particle[im]
+./sparx/libpy/reconstruction.py:1493    toprab*avgnorm/norm_per_particle[im]  |   toprab*avgnorm/norm_per_particle[im]
+./sparx/libpy/statistics.py:242    float(nima)*nima/(nima-1)  |   float(nima)*nima/(nima-1)
+./sparx/libpy/statistics.py:1280    sumsq/var/n  |   sumsq/var/n
+./sparx/libpy/statistics.py:1286    rsumsq[i]/rvar[i]/n  |   rsumsq[i]/rvar[i]/n
+./sparx/libpy/statistics.py:1990   max(nx,ny,nz)/2/step  |  max(nx,ny,nz)/2/step
+./sparx/libpy/statistics.py:5161   (maxv + minv) * a / 2  |  (maxv + minv) * a / 2
+./sparx/libpy/statistics.py:5457    N * m * 4 / float(ncpu)  |   N * m * 4 / float(ncpu)
+./sparx/libpy/statistics.py:5457    N * max(k) * 4 / float(ncpu)  |   N * max(k) * 4 / float(ncpu)
+./sparx/libpy/statistics.py:5459    N * max(k) * 4 / float(ncpu)  |   N * max(k) * 4 / float(ncpu)
+./sparx/libpy/statistics.py:5461    N * 4 / float(ncpu)  |   N * 4 / float(ncpu)
+./sparx/libpy/statistics.py:6935    a * (a - 1) // 2  |   a * (a - 1) // 2
+./sparx/libpy/statistics.py:6943   np * (np - 1) / 2  |  np * (np - 1) / 2
+./sparx/libpy/statistics.py:7034    100.0 * CT_s[k] / float(CT_t[k])  |   100.0 * CT_s[k] / float(CT_t[k])
+./sparx/libpy/statistics.py:7038    100.0 * sum(CT_s) / float(sum(CT_t))  |   100.0 * sum(CT_s) / float(sum(CT_t))
+./sparx/libpy/statistics.py:8194   K/2.0/N  |  K/2.0/N
+./sparx/libpy/statistics.py:9061    Sx * Sy / N  |   Sx * Sy / N
+./sparx/libpy/statistics.py:9061    Sx*Sx/N  |   Sx*Sx/N
+./sparx/libpy/statistics.py:9061    Sy*Sy/N  |   Sy*Sy/N
+./sparx/libpy/statistics.py:9077    av*av/N  |   av*av/N
+./sparx/libpy/statistics.py:9140   float(k)*0.5/nnn  |  float(k)*0.5/nnn
+./sparx/libpy/statistics.py:9144   float(k)*0.5/nnn  |  float(k)*0.5/nnn
+./sparx/libpy/statistics.py:9148   float(k)*0.5/nnn  |  float(k)*0.5/nnn
+./sparx/libpy/statistics.py:9159    float(k)*0.5/nnn  |   float(k)*0.5/nnn
+./sparx/libpy/statistics.py:9165   lo_limit*nnn/0.5  |  lo_limit*nnn/0.5
+./sparx/libpy/statistics.py:9166   hi_limit*nnn/0.5  |  hi_limit*nnn/0.5
+./sparx/libpy/statistics.py:9167   abs_limit*nnn/0.5  |  abs_limit*nnn/0.5
+./sparx/libpy/statistics.py:9188   float(x_value)*0.5/nnn  |  float(x_value)*0.5/nnn
+./sparx/libpy/statistics.py:9312    (t2 - t1*t1)*float(nimg)/float(nimg-1)  |   (t2 - t1*t1)*float(nimg)/float(nimg-1)
+./sparx/libpy/statistics.py:9380    mk*(mk-1)/2  |   mk*(mk-1)/2
+./sparx/libpy/statistics.py:9391   N*(N-1)/2  |  N*(N-1)/2
+./sparx/libpy/statistics.py:9461   N*(N-1)/2  |  N*(N-1)/2
+./sparx/libpy/statistics.py:10323    100.0 * CT_s[k] / float(CT_t[k])  |   100.0 * CT_s[k] / float(CT_t[k])
+./sparx/libpy/statistics.py:10327    100.0 * sum(CT_s) / float(sum(CT_t))  |   100.0 * sum(CT_s) / float(sum(CT_t))
+./sparx/libpy/statistics.py:10508    100.0 * CT_s[k] / float(CT_t[k])  |   100.0 * CT_s[k] / float(CT_t[k])
+./sparx/libpy/statistics.py:10512    100.0 * sum(CT_s) / float(sum(CT_t))  |   100.0 * sum(CT_s) / float(sum(CT_t))
+./sparx/libpy/user_functions.py:1029   Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])  |  Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])
+./sparx/libpy/user_functions.py:1061   i/y/Tracker["constants"]["pixel_size"]  |  i/y/Tracker["constants"]["pixel_size"]
+./sparx/libpy/user_functions.py:1061   i/y/Tracker["constants"]["pixel_size"]  |  i/y/Tracker["constants"]["pixel_size"]
+./sparx/libpy/user_functions.py:1079   i/y/Tracker["constants"]["pixel_size"]  |  i/y/Tracker["constants"]["pixel_size"]
+./sparx/libpy/user_functions.py:1079   i/y/Tracker["constants"]["pixel_size"]  |  i/y/Tracker["constants"]["pixel_size"]
+./sparx/libpy/user_functions.py:1193   Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])  |  Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])
+./sparx/libpy/user_functions.py:1317   Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])  |  Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])
+./sparx/libpy/user_functions.py:1421   Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])  |  Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])
+./sparx/libpy/utilities.py:611    phiCom*180.0/pi  |   phiCom*180.0/pi
+./sparx/libpy/utilities.py:611    thetaCom*180.0/pi  |   thetaCom*180.0/pi
+./sparx/libpy/utilities.py:824    360.0/int(symmetry_string[1:])/4  |   360.0/int(symmetry_string[1:])/4
+./sparx/libpy/utilities.py:826    360.0/int(symmetry_string[1:])/2  |   360.0/int(symmetry_string[1:])/2
+./sparx/libpy/utilities.py:827    360.0/int(symmetry_string[1:])/4  |   360.0/int(symmetry_string[1:])/4
+./sparx/libpy/utilities.py:834    360.0/2/int(symmetry_string[1:])  |   360.0/2/int(symmetry_string[1:])
+./sparx/libpy/utilities.py:836    180.0/2/int(symmetry_string[1:])  |   180.0/2/int(symmetry_string[1:])
+./sparx/libpy/utilities.py:857   359.99/cn/delta  |  359.99/cn/delta
+./sparx/libpy/utilities.py:859   359.99/2/cn/delta  |  359.99/2/cn/delta
+./sparx/libpy/utilities.py:862   359.99/2/cn/delta  |  359.99/2/cn/delta
+./sparx/libpy/utilities.py:864   359.99/4/cn/delta  |  359.99/4/cn/delta
+./sparx/libpy/utilities.py:870   359.99/cn/delta  |  359.99/cn/delta
+./sparx/libpy/utilities.py:872   359.99/2/cn/delta  |  359.99/2/cn/delta
+./sparx/libpy/utilities.py:1010   theta2*pi/180.0  |  theta2*pi/180.0
+./sparx/libpy/utilities.py:1010   theta1*pi/180.0  |  theta1*pi/180.0
+./sparx/libpy/utilities.py:1011    delta*pi/180.0  |   delta*pi/180.0
+./sparx/libpy/utilities.py:1013   Deltaz*(phi2-phi1)/720.0  |  Deltaz*(phi2-phi1)/720.0
+./sparx/libpy/utilities.py:1016   theta1*pi/180.0  |  theta1*pi/180.0
+./sparx/libpy/utilities.py:1018    Deltaz*k/(NumPoints-1)  |   Deltaz*k/(NumPoints-1)
+./sparx/libpy/utilities.py:1022    180*acos(z)/pi  |   180*acos(z)/pi
+./sparx/libpy/utilities.py:2040   length_current*Pixel_size_current/Pixel_size_interpolated  |  length_current*Pixel_size_current/Pixel_size_interpolated
+./sparx/libpy/utilities.py:2047    Pixel_size_current*float(length_current)/float(length_interpolated)  |   Pixel_size_current*float(length_current)/float(length_interpolated)
+./sparx/libpy/utilities.py:4392   diff[0]/180.0*pi  |  diff[0]/180.0*pi
+./sparx/libpy/utilities.py:4672   delta/(2*min_theta)*180.0  |  delta/(2*min_theta)*180.0
+./sparx/libpy/utilities.py:6182   P*(1.-P)/size_of_this_sampling  |  P*(1.-P)/size_of_this_sampling
+./sparx/libpy/utilities.py:6247   tt/total_stack*100.  |  tt/total_stack*100.
+./sparx/libpy/utilities.py:6248    tt/total_stack*100  |   tt/total_stack*100
+./sparx/libpy/utilities.py:6249    tt/total_stack*100.0  |   tt/total_stack*100.0
+./sparx/libpy/utilities.py:6316   1./number_of_groups*100.  |  1./number_of_groups*100.
+./sparx/libpy/utilities.py:6763   nb_tot_objs/float(total_A)*100.  |  nb_tot_objs/float(total_A)*100.
+./sparx/libpy/utilities.py:6764   nb_tot_objs/float(total_B)*100.  |  nb_tot_objs/float(total_B)*100.
+./sparx/libpy/utilities.py:7119    i/float(nbel-1)/2.0  |   i/float(nbel-1)/2.0
+./sparx/templates/import_SPIDER_refi.py:87    amp_contrast*100/sqrt(2*amp_contrast**2-2*amp_contrast+1)  |   amp_contrast*100/sqrt(2*amp_contrast**2-2*amp_contrast+1)
+./sparx/templates/sxgui_template.py:344    SXLookFeelConst.screen_width * 3 / 4  |   SXLookFeelConst.screen_width * 3 / 4
+./sparx/templates/sxgui_template.py:345    SXLookFeelConst.screen_width * 3 / 4  |   SXLookFeelConst.screen_width * 3 / 4
+./sparx/test/3dg.py:52    atan2(abs(jy), ix)/pi*180  |   atan2(abs(jy), ix)/pi*180
+./sparx/test/3dg.py:102   n*pwi[i]/pwn[i]  |  n*pwi[i]/pwn[i]
+./sparx/test/3dg.py:127   n*pwi[i]/pwn[i]  |  n*pwi[i]/pwn[i]
+./sparx/test/3dg.py:152   n*pwi[i]/pwn[i]  |  n*pwi[i]/pwn[i]
+./sparx/test/aaa.py:56   (e-stat[0])/stat[1]*mask  |  (e-stat[0])/stat[1]*mask
+./sparx/test/aaa.py:67   i*pi/180.0  |  i*pi/180.0
+./sparx/test/aaa.py:72   -i*pi/180.0  |  -i*pi/180.0
+./sparx/test/aac.py:42   N*(N-1)/2  |  N*(N-1)/2
+./sparx/test/aad.py:44   N*(N-1)/2  |  N*(N-1)/2
+./sparx/test/aaf.py:98   ib[0]*pi/180./2.  |  ib[0]*pi/180./2.
+./sparx/test/aaf.py:98   2*last_ring*abs(sin(ib[0]*pi/180./2.))  |  2*last_ring*abs(sin(ib[0]*pi/180./2.))
+./sparx/test/aaf.py:100   ib[0]*pi/180./2.  |  ib[0]*pi/180./2.
+./sparx/test/aaf.py:100   2*last_ring*abs(sin(ib[0]*pi/180./2.))  |  2*last_ring*abs(sin(ib[0]*pi/180./2.))
+./sparx/test/aah.py:22    K/2.0/N  |   K/2.0/N
+./sparx/test/aah.py:224   angle*pi/180.  |  angle*pi/180.
+./sparx/test/aah.py:232   -angle*pi/180.  |  -angle*pi/180.
+./sparx/test/kbplot2.py:50   K/2.0/N  |  K/2.0/N
+./sparx/test/polar.py:111   K/2.0/N  |  K/2.0/N
+./sparx/test/sinh.py:48   K/2.0/N  |  K/2.0/N
+./sparx/tests/test_pixel_error.py:92    GT1_alpha * pi / 180.0  |   GT1_alpha * pi / 180.0
+./sparx/tests/test_pixel_error.py:92    GT2_alpha * pi / 180.0  |   GT2_alpha * pi / 180.0
+./sparx/tests/test_pixel_error.py:93    GT1_alpha * pi / 180.0  |   GT1_alpha * pi / 180.0
+./sparx/tests/test_pixel_error.py:93    GT2_alpha * pi / 180.0  |   GT2_alpha * pi / 180.0
+./sparx/tests/test_Util.py:33   sc * (sc-1) / 2  |  sc * (sc-1) / 2
