@@ -223,10 +223,6 @@
 ./programs/e2ctf.py:2152   f*s2/s1  |  f*s2/s1
 ./programs/e2ctf.py:2777   inten[i]*st[4]["ptcl_repr"]/((i+1.0)*pi)  |  inten[i]*st[4]["ptcl_repr"]/((i+1.0)*pi)
 ./programs/e2ctf.py:2868   sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])  |  sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])
-./programs/e2ctf2eman1.py:320    d2 * ( parm_max[2] - parm_min[2] ) / float( c )  |   d2 * ( parm_max[2] - parm_min[2] ) / float( c )
-./programs/e2ctf2eman1.py:322    d1 * ( parm_max[1] - parm_min[1] ) / float( c )  |   d1 * ( parm_max[1] - parm_min[1] ) / float( c )
-./programs/e2ctf2eman1.py:324    d3 * ( parm_max[3] - parm_min[3] ) / float( c )  |   d3 * ( parm_max[3] - parm_min[3] ) / float( c )
-./programs/e2ctf2eman1.py:326    d0 * ( parm_max[0] - parm_min[0] ) / float( c )  |   d0 * ( parm_max[0] - parm_min[0] ) / float( c )
 ./programs/e2ctffind3util.py:185    dstep / apix * 10000  |   dstep / apix * 10000
 ./programs/e2ddd_movie.py:691    n*(n-1)/2  |   n*(n-1)/2
 ./programs/e2evalrefine.py:281   2*nx*apix/10  |  2*nx*apix/10
@@ -241,14 +237,12 @@
 ./programs/e2fsc.py:238   apix*lnx//overlap  |  apix*lnx//overlap
 ./programs/e2helixboxer.py:204    180/pi*acos( l_uvect[1] )  |   180/pi*acos( l_uvect[1] )
 ./programs/e2helixboxer.py:256    180/pi*acos( l_uvect[1] )  |   180/pi*acos( l_uvect[1] )
-./programs/e2helixboxer.py:280    gr_K/2.0/gr_N  |   gr_K/2.0/gr_N
 ./programs/e2initialmodel.py:210   it*100/options["iter"]  |  it*100/options["iter"]
 ./programs/e2initialmodel.py:237   len(ptcls)*7/8  |  len(ptcls)*7/8
 ./programs/e2initialmodel.py:248   boxsize*3/2  |  boxsize*3/2
 ./programs/e2initialmodel.py:337   boxsize*3/2  |  boxsize*3/2
 ./programs/e2initialmodel_sgd.py:19   boxsize*3/2  |  boxsize*3/2
 ./programs/e2initialmodel_sgd.py:142   (niter+1)*nsample/num  |  (niter+1)*nsample/num
-./programs/e2make3dpar.py:535   img["nx"]*(1.0-cos(elem["xform"].get_rotation("eman")["alt"]*pi/180.0))/2  |  img["nx"]*(1.0-cos(elem["xform"].get_rotation("eman")["alt"]*pi/180.0))/2
 ./programs/e2motion.py:624   lst.qsize()*100/maxl  |  lst.qsize()*100/maxl
 ./programs/e2motion.py:981   20*i/len(classes)  |  20*i/len(classes)
 ./programs/e2motion.py:995   12*c/len(classes)  |  12*c/len(classes)
@@ -271,14 +265,9 @@
 ./programs/e2speedtest.py:131    500 * NTT / (2.0 * ti)  |   500 * NTT / (2.0 * ti)
 ./programs/e2speedtest.py:131    SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)  |   SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)
 ./programs/e2speedtest.py:140   100 * NTT / 2  |  100 * NTT / 2
-./programs/e2speedtest.py:140    100 * NTT / (2.0 * ti)  |   100 * NTT / (2.0 * ti)
 ./programs/e2speedtest.py:149   100 * NTT / 2  |  100 * NTT / 2
-./programs/e2speedtest.py:149    100 * NTT / (2.0 * ti)  |   100 * NTT / (2.0 * ti)
 ./programs/e2speedtest.py:158   100 * NTT / 2  |  100 * NTT / 2
-./programs/e2speedtest.py:158    100 * NTT / (2.0 * ti)  |   100 * NTT / (2.0 * ti)
 ./programs/e2speedtest.py:167   100 * NTT / 2  |  100 * NTT / 2
-./programs/e2speedtest.py:167    100 * NTT / (2.0 * ti)  |   100 * NTT / (2.0 * ti)
-./programs/e2spt_binarytree.py:605    apix*a['nx']/2.0  |   apix*a['nx']/2.0
 ./programs/e2spt_boxer.py:997    a[0]*bs/2  |   a[0]*bs/2
 ./programs/e2spt_boxer.py:997    a[1]*bs/2  |   a[1]*bs/2
 ./programs/e2spt_boxer.py:997    a[2]*bs/2  |   a[2]*bs/2
@@ -334,14 +323,10 @@
 ./programs/e2tiltvalidate.py:517    4*math.pi/3  |   4*math.pi/3
 ./programs/e2tiltvalidate.py:518    4*math.pi/3  |   4*math.pi/3
 ./programs/e2tomo_eval.py:78   self.size().width()/3*.9  |  self.size().width()/3*.9
-./programs/e2tomogram.py:170   options.pk_mindist*10./options.apix_init/8  |  options.pk_mindist*10./options.apix_init/8
 ./programs/e2tomogram.py:222   -len(imgs_2k)*options.tltstep/2  |  -len(imgs_2k)*options.tltstep/2
 ./programs/e2tomogram.py:222   len(imgs_2k)*options.tltstep/2  |  len(imgs_2k)*options.tltstep/2
 ./programs/e2tomogram.py:285   apix/options.apix_init*options.binfac  |  apix/options.apix_init*options.binfac
-./programs/e2tomogram.py:569   np.cos(t[3]*np.pi/180.)*pad/2  |  np.cos(t[3]*np.pi/180.)*pad/2
 ./programs/e2tomogram.py:626   outxy/step/2  |  outxy/step/2
-./programs/e2tomogram.py:780   np.cos(xform["ytilt"]*np.pi/180.)*m["nx"]/2  |  np.cos(xform["ytilt"]*np.pi/180.)*m["nx"]/2
-./programs/e2tomogram.py:862   float(threed["apix_x"])/options.apix_init*2.  |  float(threed["apix_x"])/options.apix_init*2.
 ./programs/e2tomoseg_buildtrainset.py:99   options.ncopy*n_neg/n_ptcl  |  options.ncopy*n_neg/n_ptcl
 ./programs/e2tomoseg_buildtrainset.py:149   n/2*(1-options.validset)  |  n/2*(1-options.validset)
 ./programs/e2tomoseg_buildtrainset.py:157   n/2*(1-options.validset)  |  n/2*(1-options.validset)
