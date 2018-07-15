@@ -38,7 +38,6 @@
 ./examples/e2pw_pathrefine.py:243   dd0/dd0[j1]*realgap  |  dd0/dd0[j1]*realgap
 ./examples/e2pw_pathrefine.py:427   np.arange(len(ss), dtype=float)/len(ss)*len(path)  |  np.arange(len(ss), dtype=float)/len(ss)*len(path)
 ./examples/e2pwstructuremodify.py:122    mrcp/midp/2  |   mrcp/midp/2
-./examples/e2simrecon.py:128   pspec[i]*(1.0-fscl[i])/(fscl[i])  |  pspec[i]*(1.0-fscl[i])/(fscl[i])
 ./examples/e2spt_boxer_old.py:2105    a[0]*bs/2  |   a[0]*bs/2
 ./examples/e2spt_boxer_old.py:2105    a[1]*bs/2  |   a[1]*bs/2
 ./examples/e2spt_boxer_old.py:2105    a[2]*bs/2  |   a[2]*bs/2
@@ -199,7 +198,6 @@
 ./programs/e2boxer_old.py:3336   (h-2*hborder)*ctfdata2[index]/sizehctf  |  (h-2*hborder)*ctfdata2[index]/sizehctf
 ./programs/e2boxer_old.py:3338   (h-2*hborder)*self.data[list_index][index]/sizeh  |  (h-2*hborder)*self.data[list_index][index]/sizeh
 ./programs/e2classaverage.py:588   it*100/(niter+2)  |  it*100/(niter+2)
-./programs/e2classaverage.py:639   (it+old_div(i,float(nimg)))*100/(niter+2.0)  |  (it+old_div(i,float(nimg)))*100/(niter+2.0)
 ./programs/e2classifykmeans.py:132   i*72/maxcls  |  i*72/maxcls
 ./programs/e2ctf.py:854   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
 ./programs/e2ctf.py:854   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
@@ -221,7 +219,6 @@
 ./programs/e2ctf.py:1826   best[2]*pi/180  |  best[2]*pi/180
 ./programs/e2ctf.py:2142   s0*3/2  |  s0*3/2
 ./programs/e2ctf.py:2152   f*s2/s1  |  f*s2/s1
-./programs/e2ctf.py:2777   inten[i]*st[4]["ptcl_repr"]/((i+1.0)*pi)  |  inten[i]*st[4]["ptcl_repr"]/((i+1.0)*pi)
 ./programs/e2ctf.py:2868   sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])  |  sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])
 ./programs/e2ctffind3util.py:185    dstep / apix * 10000  |   dstep / apix * 10000
 ./programs/e2ddd_movie.py:691    n*(n-1)/2  |   n*(n-1)/2
@@ -253,7 +250,6 @@
 ./programs/e2scannereval.py:100   options.box*3/2  |  options.box*3/2
 ./programs/e2scannereval.py:100   options.box*3/2  |  options.box*3/2
 ./programs/e2scannereval.py:102   options.box*3/2  |  options.box*3/2
-./programs/e2simmx.py:453   100*(cbi+old_div(cbli,float(len(refs))))/cbn  |  100*(cbi+old_div(cbli,float(len(refs))))/cbn
 ./programs/e2simmx.py:529   100*i/n  |  100*i/n
 ./programs/e2speedtest.py:122    500 * NTT / 2  |   500 * NTT / 2
 ./programs/e2speedtest.py:122    500 * NTT / (2.0 * ti)  |   500 * NTT / (2.0 * ti)
@@ -297,7 +293,6 @@
 ./programs/e2spt_ctf_old.py:1941    ( old_div(nx,2.0) ) * apix/10000  |   ( old_div(nx,2.0) ) * apix/10000
 ./programs/e2spt_ctf_old.py:1954    options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix  |   options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix
 ./programs/e2spt_ctf_old.py:2101    icethickness * img['apix_x']/10000  |   icethickness * img['apix_x']/10000
-./programs/e2spt_ctf_old.py:2107    -1*(micrographmiddle - old_div(img['nx'],2.0))*math.sin( math.radians(angle) ) * img['apix_x']/10000  |   -1*(micrographmiddle - old_div(img['nx'],2.0))*math.sin( math.radians(angle) ) * img['apix_x']/10000
 ./programs/e2spt_eval.py:75   self.size().width()/4*.9  |  self.size().width()/4*.9
 ./programs/e2spt_extract.py:98   int(val["boxsize"])*scale/2  |  int(val["boxsize"])*scale/2
 ./programs/e2spt_extract.py:128   ptcl["nx"]/2*scale  |  ptcl["nx"]/2*scale
