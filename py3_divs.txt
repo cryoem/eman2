@@ -404,17 +404,10 @@
 ./programs/e2spt_subtilt_old.py:408   2 * options.boxsize / math.cos( math.radians(maxtilt+5)  )  |  2 * options.boxsize / math.cos( math.radians(maxtilt+5)  )
 ./programs/e2spt_subtilt_old.py:1084    math.pi*theta/180  |   math.pi*theta/180
 ./programs/e2spt_tiltrefine.py:245   (s+clp)/clp/2  |  (s+clp)/clp/2
-./programs/e2spt_tomoctf.py:17   phase*np.pi/180.  |  phase*np.pi/180.
-./programs/e2spt_tomoctf.py:54   bxsz/2*.7  |  bxsz/2*.7
-./programs/e2spt_tomoctf.py:119   apix/10./1000.  |  apix/10./1000.
-./programs/e2spt_tomoctf.py:161   tpm[3]/180.*np.pi  |  tpm[3]/180.*np.pi
 ./programs/e2spt_tomoctf.py:161   sz/2/np.cos(tpm[3]/180.*np.pi)*.9  |  sz/2/np.cos(tpm[3]/180.*np.pi)*.9
 ./programs/e2ssehunter.py:148   -1*res/apix  |  -1*res/apix
-./programs/e2ssehunter.py:362   i*100.0/N  |  i*100.0/N
 ./programs/e2ssematch.py:203   sseh[0][s1]*(tanh(fabs(sspred[p1][0]-sseh[0][s1])-6)+1)/30.0  |  sseh[0][s1]*(tanh(fabs(sspred[p1][0]-sseh[0][s1])-6)+1)/30.0
 ./programs/e2ssematch.py:203   sseh[0][s2]*(tanh(fabs(sspred[p1+1][0]-sseh[0][s2])-6)+1)/30.0  |  sseh[0][s2]*(tanh(fabs(sspred[p1+1][0]-sseh[0][s2])-6)+1)/30.0
-./programs/e2stackanim.py:55   im.get_attr("sigma")*3.0/contrast  |  im.get_attr("sigma")*3.0/contrast
-./programs/e2stackanim.py:56   im.get_attr("sigma")*3.0/contrast  |  im.get_attr("sigma")*3.0/contrast
 ./programs/e2symbest.py:107    2.0 * math.pi / csym  |   2.0 * math.pi / csym
 ./programs/e2symbest.py:108    1.0 / csym * math.pi  |   1.0 / csym * math.pi
 ./programs/e2tiltvalidate.py:506    2*math.pi/3  |   2*math.pi/3
@@ -424,7 +417,6 @@
 ./programs/e2tiltvalidate.py:517    4*math.pi/3  |   4*math.pi/3
 ./programs/e2tiltvalidate.py:518    4*math.pi/3  |   4*math.pi/3
 ./programs/e2tomo_eval.py:78   self.size().width()/3*.9  |  self.size().width()/3*.9
-./programs/e2tomo_eval.py:349   float(hdr["nx"])/self.bt_show2d.width()*1.01  |  float(hdr["nx"])/self.bt_show2d.width()*1.01
 ./programs/e2tomogram.py:168   
 			options.pk_mindist*8*options.apix_init/10  |  
 			options.pk_mindist*8*options.apix_init/10
@@ -432,19 +424,10 @@
 ./programs/e2tomogram.py:222   -len(imgs_2k)*options.tltstep/2  |  -len(imgs_2k)*options.tltstep/2
 ./programs/e2tomogram.py:222   len(imgs_2k)*options.tltstep/2  |  len(imgs_2k)*options.tltstep/2
 ./programs/e2tomogram.py:285   apix/options.apix_init*options.binfac  |  apix/options.apix_init*options.binfac
-./programs/e2tomogram.py:541   ang/180.*np.pi  |  ang/180.*np.pi
-./programs/e2tomogram.py:569   t[3]*np.pi/180.  |  t[3]*np.pi/180.
 ./programs/e2tomogram.py:569   np.cos(t[3]*np.pi/180.)*pad/2  |  np.cos(t[3]*np.pi/180.)*pad/2
 ./programs/e2tomogram.py:626   outxy/step/2  |  outxy/step/2
-./programs/e2tomogram.py:780   xform["ytilt"]*np.pi/180.  |  xform["ytilt"]*np.pi/180.
 ./programs/e2tomogram.py:780   np.cos(xform["ytilt"]*np.pi/180.)*m["nx"]/2  |  np.cos(xform["ytilt"]*np.pi/180.)*m["nx"]/2
 ./programs/e2tomogram.py:862   float(threed["apix_x"])/options.apix_init*2.  |  float(threed["apix_x"])/options.apix_init*2.
-./programs/e2tomogram.py:888   bx*1.5/(scale)  |  bx*1.5/(scale)
-./programs/e2tomogram.py:1006   bx*1.5/(scale)  |  bx*1.5/(scale)
-./programs/e2tomogram.py:1075   res.x*np.pi/180.  |  res.x*np.pi/180.
-./programs/e2tomogram.py:1111    dst*options.apix_init/10.  |   dst*options.apix_init/10.
-./programs/e2tomogram.py:1124   rt*np.pi/180.  |  rt*np.pi/180.
-./programs/e2tomogram.py:1136    np.mean(errs)*options.apix_init/10.  |   np.mean(errs)*options.apix_init/10.
 ./programs/e2tomoseg_buildtrainset.py:99   options.ncopy*n_neg/n_ptcl  |  options.ncopy*n_neg/n_ptcl
 ./programs/e2tomoseg_buildtrainset.py:149   n/2*(1-options.validset)  |  n/2*(1-options.validset)
 ./programs/e2tomoseg_buildtrainset.py:157   n/2*(1-options.validset)  |  n/2*(1-options.validset)
