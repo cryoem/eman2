@@ -431,21 +431,13 @@
 ./programs/e2tomoseg_buildtrainset.py:99   options.ncopy*n_neg/n_ptcl  |  options.ncopy*n_neg/n_ptcl
 ./programs/e2tomoseg_buildtrainset.py:149   n/2*(1-options.validset)  |  n/2*(1-options.validset)
 ./programs/e2tomoseg_buildtrainset.py:157   n/2*(1-options.validset)  |  n/2*(1-options.validset)
-./programs/e2tvrecon.py:380   angle*np.pi/180.  |  angle*np.pi/180.
-./programs/e2tvrecon.py:380   angle*np.pi/180.  |  angle*np.pi/180.
 ./programs/e2tvrecon.py:542    (t_old - 1)/t_new * (u_n - u_old)  |   (t_old - 1)/t_new * (u_n - u_old)
-./programs/e2tvrecon.py:545    1./2 * (err**2).sum()  |   1./2 * (err**2).sum()
-./programs/e2tvrecon.py:621    1. / 2 * (1 + np.sqrt(1 + 4 * t**2))  |   1. / 2 * (1 + np.sqrt(1 + 4 * t**2))
 ./pyemtbx/boxertools.py:379    trans[0]/2*extrasomething.get_subsample_rate()  |   trans[0]/2*extrasomething.get_subsample_rate()
 ./pyemtbx/boxertools.py:380    trans[1]/2*extrasomething.get_subsample_rate()  |   trans[1]/2*extrasomething.get_subsample_rate()
 ./pyemtbx/boxertools.py:3018   self.box_size/2/self.get_subsample_rate()  |  self.box_size/2/self.get_subsample_rate()
-./pyemtbx/boxertools.py:3781   0.7*(self.box_size)/float(self.get_subsample_rate())  |  0.7*(self.box_size)/float(self.get_subsample_rate())
-./pyemtbx/boxertools.py:3784   0.5*(self.box_size)/float(self.get_subsample_rate())  |  0.5*(self.box_size)/float(self.get_subsample_rate())
 ./pyemtbx/boxertools.py:4007   scale*oldx/2.0  |  scale*oldx/2.0
 ./pyemtbx/boxertools.py:4007   scale*oldy/2.0  |  scale*oldy/2.0
 ./rt/pyem/test_transform.py:159   fac*inv_params["tx"]/(-1*params["tx"])  |  fac*inv_params["tx"]/(-1*params["tx"])
-./rt/pyem/test_transform.py:291   alpha*math.pi/180.0  |  alpha*math.pi/180.0
-./rt/pyem/test_transform.py:294   alpha*math.pi/180.0  |  alpha*math.pi/180.0
 ./sparx/bin/sx3dvariability.py:604   i*100.0/len(proj_list)  |  i*100.0/len(proj_list)
 ./sparx/bin/sxcenter_projections.py:76   len(even_angles(x))*4.*passlastring**2*4./ mempernode  |  len(even_angles(x))*4.*passlastring**2*4./ mempernode
 ./sparx/bin/sxcenter_projections.py:86    perr/float(nn)*100.0  |   perr/float(nn)*100.0
