@@ -266,9 +266,9 @@
 ./programs/e2spt_extract.py:130   options.boxsz/2*scale  |  old_div(options.boxsz, 2)*scale
 ./programs/e2spt_hac.py:963    nptcls*(nptcls-1)/2  |   old_div(nptcls*(nptcls-1), 2)
 ./programs/e2spt_make3d.py:17   boxsize*3/2  |  old_div(boxsize*3, 2)
-./programs/e2spt_simulation.py:988   options.icethickness*10000/apix  |  options.icethickness*10000/apix
-./programs/e2spt_simulation.py:996    coordz*apix/10000  |   coordz*apix/10000
-./programs/e2spt_simulation.py:1004    10000*(px + old_div(options.gridholesize,2))/apix  |   10000*(px + old_div(options.gridholesize,2))/apix
+./programs/e2spt_simulation.py:988   options.icethickness*10000/apix  |  old_div(options.icethickness*10000, apix)
+./programs/e2spt_simulation.py:996    coordz*apix/10000  |   old_div(coordz*apix, 10000)
+./programs/e2spt_simulation.py:1004    10000*(px + old_div(options.gridholesize,2))/apix  |   old_div(10000*(px + old_div(options.gridholesize,2)), apix)
 ./programs/e2spt_simulation.py:1005   options.gridholesize*10000/apix  |  options.gridholesize*10000/apix
 ./programs/e2spt_tiltrefine.py:245   (s+clp)/clp/2  |  (s+clp)/clp/2
 ./programs/e2spt_tomoctf.py:161   sz/2  |  sz/2
