@@ -250,9 +250,9 @@
 ./programs/e2spt_classaverage.py:1633    nx/options.shrinkfine %2  |   old_div(nx, options.shrinkfine) %2
 ./programs/e2spt_classaverage.py:1633    ny/options.shrinkfine %2  |   old_div(ny, options.shrinkfine) %2
 ./programs/e2spt_classaverage.py:1633    nz/options.shrinkfine %2  |   old_div(nz, options.shrinkfine) %2
-./programs/e2spt_classaverage.py:1634    nx/options.shrinkfine %2  |   nx/options.shrinkfine %2
-./programs/e2spt_classaverage.py:1634   ny/options.shrinkfine %2  |  ny/options.shrinkfine %2
-./programs/e2spt_classaverage.py:1634   nz/options.shrinkfine %2  |  nz/options.shrinkfine %2
+./programs/e2spt_classaverage.py:1634    nx/options.shrinkfine %2  |   old_div(nx, options.shrinkfine) %2
+./programs/e2spt_classaverage.py:1634   ny/options.shrinkfine %2  |  old_div(ny, options.shrinkfine) %2
+./programs/e2spt_classaverage.py:1634   nz/options.shrinkfine %2  |  old_div(nz, options.shrinkfine) %2
 ./programs/e2spt_ctf_old.py:1048    ( coordx - old_div(framexsize,2.0) ) * apix/10000  |   ( coordx - old_div(framexsize,2.0) ) * apix/10000
 ./programs/e2spt_ctf_old.py:1071    relativecoordz * apix/10000  |   relativecoordz * apix/10000
 ./programs/e2spt_ctf_old.py:1076    relativecoordz * apix/10000  |   relativecoordz * apix/10000
