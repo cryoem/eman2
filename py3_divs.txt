@@ -269,9 +269,9 @@
 ./programs/e2spt_simulation.py:988   options.icethickness*10000/apix  |  old_div(options.icethickness*10000, apix)
 ./programs/e2spt_simulation.py:996    coordz*apix/10000  |   old_div(coordz*apix, 10000)
 ./programs/e2spt_simulation.py:1004    10000*(px + old_div(options.gridholesize,2))/apix  |   old_div(10000*(px + old_div(options.gridholesize,2)), apix)
-./programs/e2spt_simulation.py:1005   options.gridholesize*10000/apix  |  options.gridholesize*10000/apix
-./programs/e2spt_tiltrefine.py:245   (s+clp)/clp/2  |  (s+clp)/clp/2
-./programs/e2spt_tomoctf.py:161   sz/2  |  sz/2
+./programs/e2spt_simulation.py:1005   options.gridholesize*10000/apix  |  old_div(options.gridholesize*10000, apix)
+./programs/e2spt_tiltrefine.py:245   (s+clp)/clp/2  |  old_div(old_div((s+clp), clp), 2)
+./programs/e2spt_tomoctf.py:161   sz/2  |  old_div(sz, 2)
 ./programs/e2ssehunter.py:148   -1*res/apix  |  -1*res/apix
 ./programs/e2tomo_eval.py:78   self.size().width()/3*.9  |  self.size().width()/3*.9
 ./programs/e2tomogram.py:222   -len(imgs_2k)*options.tltstep/2  |  -len(imgs_2k)*options.tltstep/2
