@@ -125,9 +125,9 @@
 ./libpyEM/qtgui/emimagemx.py:880   xys.height()*2/3  |  old_div(xys.height()*2, 3)
 ./libpyEM/qtgui/emimagemx.py:1184   (tw-1)/4*4  |  old_div((tw-1), 4*4)
 ./libpyEM/qtgui/emimagemx.py:1187   (tw-1)/4*4  |  old_div((tw-1), 4*4)
-./libpyEM/qtgui/emimagemx.py:1512   self.data.get_ysize()*self.scale/2  |  self.data.get_ysize()*self.scale/2
-./libpyEM/qtgui/emimagemx.py:1515   self.data.get_xsize()*self.scale/2  |  self.data.get_xsize()*self.scale/2
-./libpyEM/qtgui/emimagemx.py:1515   self.data.get_ysize()*self.scale/2  |  self.data.get_ysize()*self.scale/2
+./libpyEM/qtgui/emimagemx.py:1512   self.data.get_ysize()*self.scale/2  |  old_div(self.data.get_ysize()*self.scale, 2)
+./libpyEM/qtgui/emimagemx.py:1515   self.data.get_xsize()*self.scale/2  |  old_div(self.data.get_xsize()*self.scale, 2)
+./libpyEM/qtgui/emimagemx.py:1515   self.data.get_ysize()*self.scale/2  |  old_div(self.data.get_ysize()*self.scale, 2)
 ./libpyEM/qtgui/emimageutil.py:442   j*126/self.norm  |  j*126/self.norm
 ./libpyEM/qtgui/emimageutil.py:451   j*126/self.norm  |  j*126/self.norm
 ./libpyEM/qtgui/emimageutil.py:457   self.probe[1]*126/self.norm  |  self.probe[1]*126/self.norm
