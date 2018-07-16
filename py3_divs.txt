@@ -8,15 +8,15 @@
 ./examples/alignbystars.py:165   -ny*(scale-1)/2  |  old_div(-ny*(scale-1), 2)
 ./examples/convnet_pickparticle.py:448   options.ncopy*nptcls/num  |  old_div(options.ncopy*nptcls, num)
 ./examples/convnet_pickparticle.py:760    T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))  |   T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))
-./examples/e2fftsynth.py:196   4.0*i/nx  |  4.0*i/nx
-./examples/e2fftsynth.py:198   4.0*i/nx  |  4.0*i/nx
-./examples/e2fftsynth.py:202   nx*3/4  |  nx*3/4
-./examples/e2fftsynth.py:203   nx*3/4  |  nx*3/4
-./examples/e2fftsynth.py:211   nx*2/5  |  nx*2/5
-./examples/e2fftsynth.py:219   nx*3/4  |  nx*3/4
-./examples/e2fftsynth.py:239   nx*15/16  |  nx*15/16
-./examples/e2fftsynth.py:249   nx*3/4  |  nx*3/4
-./examples/e2fftsynth.py:254   nx*3/4  |  nx*3/4
+./examples/e2fftsynth.py:196   4.0*i/nx  |  old_div(4.0*i, nx)
+./examples/e2fftsynth.py:198   4.0*i/nx  |  old_div(4.0*i, nx)
+./examples/e2fftsynth.py:202   nx*3/4  |  old_div(nx*3, 4)
+./examples/e2fftsynth.py:203   nx*3/4  |  old_div(nx*3, 4)
+./examples/e2fftsynth.py:211   nx*2/5  |  old_div(nx*2, 5)
+./examples/e2fftsynth.py:219   nx*3/4  |  old_div(nx*3, 4)
+./examples/e2fftsynth.py:239   nx*15/16  |  old_div(nx*15, 16)
+./examples/e2fftsynth.py:249   nx*3/4  |  old_div(nx*3, 4)
+./examples/e2fftsynth.py:254   nx*3/4  |  old_div(nx*3, 4)
 ./examples/e2fftsynth.py:274   amp*2/(fft["nx"]-2)  |  amp*2/(fft["nx"]-2)
 ./examples/e2fftsynth.py:309   cell*oversamp/float(i)  |  cell*oversamp/float(i)
 ./examples/e2moviealigner2.py:291   ms*((c1+1)-(i+1))/(c1+1)  |  ms*((c1+1)-(i+1))/(c1+1)
