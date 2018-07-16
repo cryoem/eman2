@@ -2876,13 +2876,23 @@ vector<Dict> RT2DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 EMData* RT2Dto3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
 
- 	vector<Dict> alis = xform_align_nbest(this_img,to,8,cmp_name,cmp_params);
-
- 	Dict t;
- 	Transform* tr = (Transform*) alis[0]["xform.align3d"];
- 	t["transform"] = tr;
- 	EMData* soln = this_img->process("xform",t);
+	int nsoln=8;
+	if (params.has_key("initxform"))
+	{
+		/// do a refine alignment
+		const vector< Transform > xfs=params["initxform"];
+		nsoln=xfs.size();
+	}
+	
+	vector<Dict> alis = xform_align_nbest(this_img,to,nsoln,cmp_name,cmp_params);
+	Transform *tr = (Transform*) alis[0]["xform.align3d"];
+	
+//  	t["transform"] = tr;
+	// seems strange to transform the 2d image so just return the original
+ 	EMData* soln = this_img->copy(); //process("xform",t);
  	soln->set_attr("xform.align3d",tr);
+ 	soln->set_attr("xform.projection",tr);
+ 	soln->set_attr("score",alis[0]["score"]);
 
 	return soln;
 }
@@ -2892,12 +2902,36 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 	if (this_img->get_zsize()!=1 || to->get_zsize()==1) throw InvalidParameterException("ERROR (RT2Dto3DTreeAligner): first image must be 2D and second 3D");
 
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT2Dto3DTreeAligner): nsoln must be >0"); // What was the user thinking?
-
+	
+	
+	int verbose = params.set_default("verbose",0);
 	int nsoln = nrsoln*2;
 	if (nrsoln<16) nsoln=32;		// we start with at least 32 solutions, but then gradually decrease with increasing scale
-
-	// !!!!!! IMPORTANT NOTE - we are inverting the order of this and to here to match convention in other aligners, to compensate
-	// the Transform is inverted before being returned
+	if (params.has_key("initxform")){// refine alignment
+		const vector< Transform > xfs=params["initxform"];
+		nsoln=xfs.size();
+	}
+	
+	vector<float> s_score(nsoln,1.0e24);
+	vector<float> s_step(nsoln*3,7.5f);
+// 	vector<float> s_coverage(nsoln,0.0f);
+	vector<Transform> s_xform(nsoln);
+	
+	int curiter=-1;
+	int sexp_start=4;
+	if (params.has_key("initxform")){
+		const vector< Transform > xfs=params["initxform"];
+		for (unsigned int i=0; i<nsoln; i++){
+			s_xform[i].set_params(xfs[i].get_params("eman"));
+		}
+		sexp_start=5;
+		curiter=0;
+	}
+	
+	
+	if (verbose>0) printf("%d solutions\n",nsoln);
+	
+	// !!!!!! IMPORTANT NOTE - we are inverting the order of this and to here to match convention in other aligners, and the transform that project the 3D image to the 2D image is returned.
 	EMData *base_this;
 	EMData *base_to;
 	if (this_img->is_complex()) base_to=this_img->copy();
@@ -2912,47 +2946,55 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		base_this->process_inplace("xform.phaseorigin.tocorner");
 	}
 
-	int verbose = params.set_default("verbose",0);
 
 
 	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_this->get_ysize()!=base_this->get_zsize()
-		|| base_to->get_xsize()!=base_to->get_ysize()+2 || base_to->get_ysize()!=base_to->get_zsize()) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images with even numbered box sizes");
+		|| base_to->get_xsize()!=base_to->get_ysize()+2 /*|| base_to->get_ysize()!=base_to->get_zsize()*/) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images with even numbered box sizes");
 
 	base_this->process_inplace("xform.fourierorigin.tocenter");		// easier to chop out Fourier subvolumes
 	base_to->process_inplace("xform.fourierorigin.tocenter");
 
-	float apix=(float)this_img->get_attr("apix_x");
+// 	float apix=(float)this_img->get_attr("apix_x");
 	int ny=this_img->get_ysize();
+	int maxshift00=(int)params.set_default("maxshift",ny/4);
+	params["boxsize"]=ny;
 
 //	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
 
-	vector<float> s_score(nsoln,0.0f);
-	vector<float> s_step(nsoln*3,7.5f);
-	vector<float> s_coverage(nsoln,0.0f);
-	vector<Transform> s_xform(nsoln);
-	if (verbose>0) printf("%d solutions\n",nsoln);
 
 
 //	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
 	string axname[] = {"az","alt","phi"};
 
 	// We start with 32^3, 64^3 ...
-	for (int sexp=4; sexp<10; sexp++) {
+	
+	for (int sexp=sexp_start; sexp<10; sexp++) {
+		curiter++;
 		int ss=pow(2.0,sexp);
 		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
 		if (ss==32) ss=48;		// 16 may be too small, but 32 takes too long...
 		if (ss>ny) ss=ny;
-		if (verbose>0) printf("\nSize %d\n",ss);
+		
+		int maxshift=maxshift00*ss/ny;
+		if (maxshift00<0) maxshift=-1;
+		if (verbose>0) printf("\nSize %d, maxshift %d\n",ss, maxshift);
+		
 
 		//ss=good_size(ny/ds);
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));		// This one is 3D
 		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,0,ss+2,ss,1));				// to is 2D
 		small_this->process_inplace("xform.fourierorigin.tocorner");					// after clipping back to canonical form
 		small_this->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",4));
-		small_this->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
+		small_this->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.375f));
+		small_this->process_inplace("xform.fourierorigin.tocenter");
+		
 		small_to->process_inplace("xform.fourierorigin.tocorner");
 		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",4));
-		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
+		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.375f));
+		
+// 		small_this->write_image("tmp_this.hdf");
+// 		small_to->write_image("tmp_to.hdf");
+
 
 		// these are cached for speed in the comparator
 		vector<float>sigmathisv=small_this->calc_radial_dist(ss/2,0,1,4);
@@ -2961,16 +3003,6 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 //			sigmathisv[i]*=sigmathisv[i]*sigmathis;
 //			sigmatov[i]*=sigmatov[i]*sigmato;
 		}
-
-		// debug out
-// 		EMData *x=small_this->do_ift();
-// 		x->process_inplace("xform.phaseorigin.tocenter");
-// 		x->write_image("dbg.hdf",(sexp-5)*2);
-// 		delete x;
-// 		x=small_to->do_ift();
-// 		x->process_inplace("xform.phaseorigin.tocenter");
-// 		x->write_image("dbg.hdf",(sexp-5)*2+1);
-// 		delete x;
 
 		// This is a solid estimate for very complete searching, 2.5 is a bit arbitrary
 		// make sure the altitude step hits 90 degrees, not absolutely necessary for this, but can't hurt
@@ -2990,7 +3022,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		}
 
 		// This is for the first loop, we do a full search in a heavily downsampled space
-		if (s_coverage[0]==0.0f) {
+		if (curiter==0) {
 			// Genrate points on a sphere in an asymmetric unit
 			if (verbose>1) printf("stage 1 - ang step %1.2f\n",astep);
 			Dict d;
@@ -3017,22 +3049,30 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 					aap["ty"]=0;
 					aap["tz"]=0;
 					t.set_params(aap);
+// 					t.invert();
+// 					aap=t.get_params("eman");
 
 					// somewhat strangely, rotations are actually much more expensive than FFTs, so we use a CCF for translation
-					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));
+					EMData *stt=small_this->project("gauss_fft", Dict("transform", EMObject(&t), "returnfft", 1));
+					
+// 					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));
 					EMData *ccf=small_to->calc_ccf(stt);
-					IntPoint ml=ccf->calc_max_location_wrap();
+					IntPoint ml=ccf->calc_max_location_wrap(maxshift,maxshift,0);
 
 					aap["tx"]=(int)ml[0];
 					aap["ty"]=(int)ml[1];
-					aap["tz"]=(int)ml[2];
+					aap["tz"]=0;//(int)ml[2];
 					t.set_params(aap);
+					
 					delete stt;
 					delete ccf;
-					stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));	// we have to do 1 slow transform here now that we have the translation
+					stt=small_this->project("gauss_fft", Dict("transform", EMObject(&t), "returnfft", 1));
+					// 					stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));
+					// we have to do 1 slow transform here now that we have the translation
 
 //					float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
-					float sim=stt->cmp("ccc.tomo.thresh",small_to);
+// 					float sim=stt->cmp("ccc.tomo.thresh",small_to);
+					float sim=stt->cmp("dot",small_to);
 //					float sim=stt->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
 //					float sim=stt->cmp("fsc.tomo.auto",small_to);
 
@@ -3040,7 +3080,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 					// If we find an existing 'best' angle within range, then we either replace it or skip
 					int worst=-1;
 					for (int i=0; i<nsoln; i++) {
-						if (s_coverage[i]==0.0) continue;	// hasn't been set yet
+						if (s_score[i]>1.0e20) continue;	// hasn't been set yet
 						Transform tdif=s_xform[i].inverse();
 						tdif=tdif*t;
 						float adif=tdif.get_rotation("spin")["omega"];
@@ -3055,7 +3095,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 						// First we find the worst solution in the list of possible best solutions, or the first
 						// solution which is currently "empty"
 						for (int i=0; i<nsoln; i++) {
-							if (s_coverage[i]==0.0) { worst=i; break; }
+							if (s_score[i]>1.0e20) { worst=i; break; }
 							if (s_score[i]<s_score[worst]) worst=i;
 						}
 					}
@@ -3064,9 +3104,8 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 					// displace it. Note that there is no sorting performed here
 					if (sim<s_score[worst]) {
 						s_score[worst]=sim;
-						s_coverage[worst]=stt->get_attr("fft_overlap");
+// 						s_coverage[worst]=1;//stt->get_attr("fft_overlap");
 						s_xform[worst]=t;
-						//printf("%f\t%f\t%d\n",s_score[worst],s_coverage[worst],worst);
 					}
 					delete stt;
 				}
@@ -3097,7 +3136,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 						// phi continues to move independently. I believe this should produce a more monotonic energy surface
 						if (axis==0) upd[axname[2]]=-s_step[i*3+axis];
 
-						int r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd);
+						int r=testort(small_this,small_to,s_score,s_xform,i,upd,maxshift);
 
 						// If we fail, we reverse direction with a slightly smaller step and try that
 						// Whether this fails or not, we move on to the next axis
@@ -3105,7 +3144,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 						else {
 							s_step[i*3+axis]*=-0.75;
 							upd[axname[axis]]=s_step[i*3+axis];
-							r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd);
+							r=testort(small_this,small_to,s_score,s_xform,i,upd,maxshift);
 							if (r) changed=1;
 						}
 						if (verbose>4) printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2],changed);
@@ -3143,7 +3182,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 			for (unsigned int j=i+1; j<nsoln; j++) {
 				if (s_score[i]>s_score[j]) {
 					float t=s_score[i]; s_score[i]=s_score[j]; s_score[j]=t;
-					t=s_coverage[i]; s_coverage[i]=s_coverage[j]; s_coverage[j]=t;
+// 					t=s_coverage[i]; s_coverage[i]=s_coverage[j]; s_coverage[j]=t;
 					Transform tt=s_xform[i]; s_xform[i]=s_xform[j]; s_xform[j]=tt;
 				}
 			}
@@ -3169,9 +3208,10 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 	for (unsigned int i = 0; i < nrsoln; ++i ) {
 		Dict d;
 		d["score"] = s_score[i];
-		d["coverage"] = s_coverage[i];
-		s_xform[i].invert();	// this is because we inverted the order of the input images above to match convention
+// 		d["coverage"] = s_coverage[i];
+// 		s_xform[i].invert();	// this is because we inverted the order of the input images above to match convention
 		d["xform.align3d"] = &s_xform[i];
+		d["xform.projection"] = &s_xform[i]; // we actually return the transform that project the 3D reference to 2D image.
 		solns.push_back(d);
 	}
 
@@ -3180,11 +3220,23 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 
 // This is just to prevent redundancy. It takes the existing solution vectors as arguments, an a proposed update for
 // vector i. It updates the vectors if the proposal makes an improvement, in which case it returns true
-bool RT2Dto3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const {
+bool RT2Dto3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &s_score, vector<Transform> &s_xform,int i,Dict &upd, int maxshift) const {
 	Transform t;
 	Dict aap=s_xform[i].get_params("eman");
-	aap["tx"]=0;
-	aap["ty"]=0;
+	
+	int ny=small_this->get_ysize();
+	if (params.has_key("initxform")){
+		// when doing refinement, search around the given position
+		const vector< Transform > xfs=params["initxform"];
+		Dict xf0=xfs[i].get_params("eman");
+		aap["tx"]=(float)xf0["tx"]*ny/(float)params["boxsize"];
+		aap["ty"]=(float)xf0["ty"]*ny/(float)params["boxsize"];
+		
+	}
+	else{
+		aap["tx"]=0;
+		aap["ty"]=0;
+	}
 	aap["tz"]=0;
 	for (Dict::const_iterator p=upd.begin(); p!=upd.end(); p++) {
 		aap[p->first]=(float)aap[p->first]+(float)p->second;
@@ -3193,18 +3245,32 @@ bool RT2Dto3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<flo
 	t.set_params(aap);
 
 	// rotate in Fourier space then use a CCF to find translation
-	EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));
+// 	EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));
+	EMData *stt=small_this->project("gauss_fft", Dict("transform", EMObject(&t), "returnfft", 1));
 	EMData *ccf=small_to->calc_ccf(stt);
-	IntPoint ml=ccf->calc_max_location_wrap();
-
-
-	aap["tx"]=(int)ml[0];
-	aap["ty"]=(int)ml[1];
-	aap["tz"]=(int)ml[2];
+	
+	
+	if (ny>=(int)params["boxsize"]-2){ // only do sub pixel for full sampled data
+		
+		Vec3f ml=ccf->calc_max_location_wrap_intp(maxshift,maxshift,0);
+		
+// 		printf("%f\t%f\t%d\n", (float)aap["tx"], (float)ml[0], maxshift);
+		aap["tx"]=(float)aap["tx"]+(float)ml[0];
+		aap["ty"]=(float)aap["ty"]+(float)ml[1];
+	}
+	else{
+		
+		IntPoint ml=ccf->calc_max_location_wrap(maxshift,maxshift,0);
+		aap["tx"]=(int)aap["tx"]+(int)ml[0];
+		aap["ty"]=(int)aap["ty"]+(int)ml[1];
+	}
+	aap["tz"]=0;
 	t.set_params(aap);
-	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));	// we have to do 1 slow transform here now that we have the translation
+	EMData *st2=small_this->project("gauss_fft", Dict("transform", EMObject(&t), "returnfft", 1));
+// 	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));	// we have to do 1 slow transform here now that we have the translation
 
-	float sim=st2->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
+// 	float sim=st2->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
+	float sim=st2->cmp("frc",small_to);
 //	float sim=st2->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 // 	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%4d %4d %4d\t%1.5g\t%1.5g %d (%d)",
 // 		float(aap["az"]),float(aap["alt"]),float(aap["phi"]),int(aap["tx"]),int(aap["ty"]),int(aap["tz"]),sim,s_score[i],int(sim<s_score[i]),ccf->get_ysize());
@@ -3213,7 +3279,7 @@ bool RT2Dto3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<flo
 	// If the score is better than before, we update this particular best value
 	if (sim<s_score[i]) {
 		s_score[i]=sim;
-		s_coverage[i]=st2->get_attr("fft_overlap");
+// 		s_coverage[i]=1;//st2->get_attr("fft_overlap");
 		s_xform[i]=t;
 //  		if (sim<-.67 && stt->get_ysize()==160) {
 //  			stt->write_image("dbug2.hdf",0);

@@ -175,19 +175,35 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 
 	f->update();
 	tmp->update();
+	
+	int returnfft=params["returnfft"];
+	EMData *ret;
+	if (returnfft==1){
+		//apperently there is something wrong with translating images in fourier space...
+// 		printf("return fft!\n");
+		Vec3f trans=t3d->get_trans();
+		ret=tmp->copy();
+		ret->process_inplace("xform.fourierorigin.tocorner");
+		ret->process_inplace("xform", Dict("tx", (float)trans[0], "ty", (float)trans[1]));
+		
+// 		if (t3d->get_mirror() ) ret->process_inplace("xform.flip",Dict("axis","x"));
+		
+	}
+	else{
 
-	tmp->process_inplace("xform.fourierorigin.tocorner");
-	EMData *ret = tmp->do_ift();
-	ret->process_inplace("xform.phaseorigin.tocenter");
+		tmp->process_inplace("xform.fourierorigin.tocorner");
+		ret = tmp->do_ift();
+		ret->process_inplace("xform.phaseorigin.tocenter");
 
-	ret->translate(t3d->get_trans());
+		ret->translate(t3d->get_trans());
 
-	if (t3d->get_mirror() ) ret->process_inplace("xform.flip",Dict("axis","x"));
+		if (t3d->get_mirror() ) ret->process_inplace("xform.flip",Dict("axis","x"));
 
-	Dict filter_d;
-	filter_d["gauss_width"] = gauss_width;
-	filter_d["ring_width"] = ret->get_xsize() / 2;
-	ret->process_inplace("math.gausskernelfix", filter_d);
+		Dict filter_d;
+		filter_d["gauss_width"] = gauss_width;
+	// 	filter_d["ring_width"] = ret->get_xsize() / 2;
+		ret->process_inplace("math.gausskernelfix", filter_d);
+	}
 
 	if( tmp )
 	{

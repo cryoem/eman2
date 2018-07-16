@@ -456,6 +456,8 @@ vector<float> EMData::calc_max_location_wrap_intp(const int maxdx, const int max
 	if (maxdz == -1) maxshiftz = get_zsize()/4;
 
 	float max_value = -FLT_MAX;
+	float is3d=(get_zsize()==1?0:1);
+	maxshiftz=maxshiftz*is3d;
 
 	IntPoint peak(0,0,0);
 
@@ -492,14 +494,17 @@ vector<float> EMData::calc_max_location_wrap_intp(const int maxdx, const int max
 		}
 	}
 	
+// 	printf("%d,%d,%d\t%f\n",peak[0], peak[1], peak[2], max_value);
 	// compute the center of mass
 	float cmx = 0.0; float cmy = 0.0f; float cmz = 0.0f;
 	float sval = 0.0f;
 	for (float x = float(peak[0])-2.0f; x <= float(peak[0])+2.0f; x++) {
 		for (float y = float(peak[1])-2.0f; y <= float(peak[1])+2.0f; y++) {
-			for (float z = float(peak[2])-2.0f; z <= float(peak[2])+2.0f; z++) {
+			for (float z = float(peak[2])-is3d*2.0f; z <= float(peak[2])+is3d*2.0f; z++) {
 				//Compute center of mass
 				float val = get_value_at_wrap(x,y,z);
+				
+// 				printf("%f,%f,%f\t%f\n",x, y, z, val);
 				cmx += x*val;
 				cmy += y*val;
 				cmz += z*val;
