@@ -243,11 +243,7 @@
 ./programs/e2scannereval.py:102   options.box*3/2  |  options.box*3/2
 ./programs/e2simmx.py:529   100*i/n  |  100*i/n
 ./programs/e2speedtest.py:122    500 * NTT / 2  |   500 * NTT / 2
-./programs/e2speedtest.py:122    500 * NTT / (2.0 * ti)  |   500 * NTT / (2.0 * ti)
-./programs/e2speedtest.py:122    SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)  |   SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)
 ./programs/e2speedtest.py:131   500 * NTT / 2  |  500 * NTT / 2
-./programs/e2speedtest.py:131    500 * NTT / (2.0 * ti)  |   500 * NTT / (2.0 * ti)
-./programs/e2speedtest.py:131    SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)  |   SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti)
 ./programs/e2speedtest.py:140   100 * NTT / 2  |  100 * NTT / 2
 ./programs/e2speedtest.py:149   100 * NTT / 2  |  100 * NTT / 2
 ./programs/e2speedtest.py:158   100 * NTT / 2  |  100 * NTT / 2
