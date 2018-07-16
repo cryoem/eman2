@@ -227,8 +227,8 @@
 ./programs/e2speedtest.py:131   500 * NTT / 2  |  old_div(500 * NTT ,  2)
 ./programs/e2speedtest.py:140   100 * NTT / 2  |  old_div(100 * NTT ,  2)
 ./programs/e2speedtest.py:149   100 * NTT / 2  |  old_div(100 * NTT ,  2)
-./programs/e2speedtest.py:158   100 * NTT / 2  |  100 * NTT / 2
-./programs/e2speedtest.py:167   100 * NTT / 2  |  100 * NTT / 2
+./programs/e2speedtest.py:158   100 * NTT / 2  |  old_div(100 * NTT ,  2)
+./programs/e2speedtest.py:167   100 * NTT / 2  |  old_div(100 * NTT ,  2)
 ./programs/e2spt_boxer.py:997    a[0]*bs/2  |   a[0]*bs/2
 ./programs/e2spt_boxer.py:997    a[1]*bs/2  |   a[1]*bs/2
 ./programs/e2spt_boxer.py:997    a[2]*bs/2  |   a[2]*bs/2
