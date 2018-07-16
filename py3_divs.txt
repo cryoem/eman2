@@ -191,9 +191,9 @@
 ./programs/e2ctf.py:1309   nxl*3/4  |  old_div(nxl*3, 4)
 ./programs/e2ctf.py:1310   nxl*3/4  |  old_div(nxl*3, 4)
 ./programs/e2ctf.py:1413   3*xst/2  |  old_div(3*xst, 2)
-./programs/e2ctf.py:2142   s0*3/2  |  s0*3/2
-./programs/e2ctf.py:2152   f*s2/s1  |  f*s2/s1
-./programs/e2ctf.py:2868   sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])  |  sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])
+./programs/e2ctf.py:2142   s0*3/2  |  old_div(s0*3, 2)
+./programs/e2ctf.py:2152   f*s2/s1  |  old_div(f*s2, s1)
+./programs/e2ctf.py:2868   sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])  |  old_div(sfact2(s[i])*fit[i]**2, max(.001,self.data[val][3][i]))
 ./programs/e2ctffind3util.py:185    dstep / apix * 10000  |   dstep / apix * 10000
 ./programs/e2ddd_movie.py:691    n*(n-1)/2  |   n*(n-1)/2
 ./programs/e2evalrefine.py:281   2*nx*apix/10  |  2*nx*apix/10
