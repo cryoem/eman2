@@ -205,9 +205,9 @@
 ./programs/e2fsc.py:208   len(fsc)*2/3  |  old_div(len(fsc)*2, 3)
 ./programs/e2initialmodel.py:210   it*100/options["iter"]  |  old_div(it*100, options[iter])
 ./programs/e2initialmodel.py:237   len(ptcls)*7/8  |  old_div(len(ptcls)*7, 8)
-./programs/e2initialmodel.py:248   boxsize*3/2  |  boxsize*3/2
-./programs/e2initialmodel.py:337   boxsize*3/2  |  boxsize*3/2
-./programs/e2initialmodel_sgd.py:19   boxsize*3/2  |  boxsize*3/2
+./programs/e2initialmodel.py:248   boxsize*3/2  |  old_div(boxsize*3, 2)
+./programs/e2initialmodel.py:337   boxsize*3/2  |  old_div(boxsize*3, 2)
+./programs/e2initialmodel_sgd.py:19   boxsize*3/2  |  old_div(boxsize*3, 2)
 ./programs/e2initialmodel_sgd.py:142   (niter+1)*nsample/num  |  (niter+1)*nsample/num
 ./programs/e2motion.py:624   lst.qsize()*100/maxl  |  lst.qsize()*100/maxl
 ./programs/e2motion.py:981   20*i/len(classes)  |  20*i/len(classes)
