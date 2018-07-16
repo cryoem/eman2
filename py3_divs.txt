@@ -274,9 +274,9 @@
 ./programs/e2spt_tomoctf.py:161   sz/2  |  old_div(sz, 2)
 ./programs/e2ssehunter.py:148   -1*res/apix  |  old_div(-1*res, apix)
 ./programs/e2tomo_eval.py:78   self.size().width()/3*.9  |  old_div(self.size().width(), 3)*.9
-./programs/e2tomogram.py:222   -len(imgs_2k)*options.tltstep/2  |  -len(imgs_2k)*options.tltstep/2
-./programs/e2tomogram.py:222   len(imgs_2k)*options.tltstep/2  |  len(imgs_2k)*options.tltstep/2
-./programs/e2tomogram.py:285   apix/options.apix_init*options.binfac  |  apix/options.apix_init*options.binfac
+./programs/e2tomogram.py:222   -len(imgs_2k)*options.tltstep/2  |  old_div(-len(imgs_2k)*options.tltstep, 2)
+./programs/e2tomogram.py:222   len(imgs_2k)*options.tltstep/2  |  old_div(len(imgs_2k)*options.tltstep, 2)
+./programs/e2tomogram.py:285   apix/options.apix_init*options.binfac  |  old_div(apix, options.apix_init)*options.binfac
 ./programs/e2tomogram.py:626   outxy/step/2  |  outxy/step/2
 ./programs/e2tomoseg_buildtrainset.py:99   options.ncopy*n_neg/n_ptcl  |  options.ncopy*n_neg/n_ptcl
 ./programs/e2tomoseg_buildtrainset.py:149   n/2*(1-options.validset)  |  n/2*(1-options.validset)
