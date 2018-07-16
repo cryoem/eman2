@@ -1,4 +1,3 @@
-./broken/e2findsubunit.py:84   2.0*pi/csym  |  2.0*pi/csym
 ./broken/e2helical_recons.py:42   360/reso*j  |  360/reso*j
 ./broken/e2helical_recons.py:81   i*100/len(ptcls)  |  i*100/len(ptcls)
 ./broken/e2helical_recons.py:94   i*100*8/6/len(ptcls)  |  i*100*8/6/len(ptcls)
@@ -9,19 +8,13 @@
 ./examples/alignbystars.py:165   -ny*(scale-1)/2  |  -ny*(scale-1)/2
 ./examples/convnet_pickparticle.py:448   options.ncopy*nptcls/num  |  options.ncopy*nptcls/num
 ./examples/convnet_pickparticle.py:760    T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))  |   T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))
-./examples/diffractsim.py:72   2*pi*x/(options.wavelen)  |  2*pi*x/(options.wavelen)
-./examples/diffractsim.py:74   2*pi*x/(options.wavelen)  |  2*pi*x/(options.wavelen)
 ./examples/e2fftsynth.py:196   4.0*i/nx  |  4.0*i/nx
 ./examples/e2fftsynth.py:198   4.0*i/nx  |  4.0*i/nx
 ./examples/e2fftsynth.py:202   nx*3/4  |  nx*3/4
 ./examples/e2fftsynth.py:203   nx*3/4  |  nx*3/4
 ./examples/e2fftsynth.py:211   nx*2/5  |  nx*2/5
 ./examples/e2fftsynth.py:219   nx*3/4  |  nx*3/4
-./examples/e2fftsynth.py:225   i*pi/32  |  i*pi/32
-./examples/e2fftsynth.py:228   i*pi/29  |  i*pi/29
-./examples/e2fftsynth.py:231   i*pi/126  |  i*pi/126
 ./examples/e2fftsynth.py:239   nx*15/16  |  nx*15/16
-./examples/e2fftsynth.py:245   i*pi/19  |  i*pi/19
 ./examples/e2fftsynth.py:249   nx*3/4  |  nx*3/4
 ./examples/e2fftsynth.py:254   nx*3/4  |  nx*3/4
 ./examples/e2fftsynth.py:274   amp*2/(fft["nx"]-2)  |  amp*2/(fft["nx"]-2)
@@ -67,20 +60,9 @@
 ./examples/e2tomoseg.py:977    a[2]*bs/2  |   a[2]*bs/2
 ./examples/e2tvrecon2d.py:474    (t_old - 1)/t_new * (u_n - u_old)  |   (t_old - 1)/t_new * (u_n - u_old)
 ./examples/em_sim.py:223   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
-./examples/em_sim.py:230   np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(old_div(1,iz**2))  |  np.exp(-1j*2*np.pi*(iz+np.zeros((sz, sz)))/wavelen)*np.mean(raw)*(old_div(1,iz**2))
-./examples/em_sim.py:232   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
-./examples/em_sim.py:232   raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  raw[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
-./examples/em_sim.py:263   2*np.pi/wavelen  |  2*np.pi/wavelen
 ./examples/em_sim.py:263   ((ix)**2)/(f*2)*(2*np.pi/wavelen)  |  ((ix)**2)/(f*2)*(2*np.pi/wavelen)
 ./examples/em_sim.py:270   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
-./examples/em_sim.py:272   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
-./examples/em_sim.py:272   proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
-./examples/em_sim.py:393   phaseobj[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  phaseobj[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))
-./examples/em_sim.py:428   raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  raw[:,:,None,None]*np.exp(-1j*2.*np.pi*dst/wavelen)*(old_div(1,dst**2))
-./examples/em_sim.py:443   2*np.pi/wavelen  |  2*np.pi/wavelen
 ./examples/em_sim.py:443   rr/(f*2)*(2*np.pi/wavelen)  |  rr/(f*2)*(2*np.pi/wavelen)
-./examples/em_sim.py:447   -1j*2*np.pi*dst/wavelen  |  -1j*2*np.pi*dst/wavelen
-./examples/em_sim.py:447   proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))  |  proj_ps[:,:,None,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
 ./examples/em_sim.py:542   xm/ym*ymax  |  xm/ym*ymax
 ./examples/em_sim.py:692   pts/l*scale  |  pts/l*scale
 ./examples/em_sim.py:806   p0/winsz*2.  |  p0/winsz*2.
