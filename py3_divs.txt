@@ -85,9 +85,9 @@
 ./examples/UnitTestGetComplexAt2D.py:206   ky*nx/2  |  old_div(ky*nx, 2)
 ./examples/UnitTestGetComplexAt2D.py:207   ky*nx/2  |  old_div(ky*nx, 2)
 ./examples/UnitTestGetComplexAt3D.py:42   ky*nx/2  |  old_div(ky*nx, 2)
-./examples/UnitTestGetComplexAt3D.py:42   kz*ny*nx/2  |  kz*ny*nx/2
-./examples/UnitTestGetComplexAt3D.py:43   ky*nx/2  |  ky*nx/2
-./examples/UnitTestGetComplexAt3D.py:43   kz*ny*nx/2  |  kz*ny*nx/2
+./examples/UnitTestGetComplexAt3D.py:42   kz*ny*nx/2  |  old_div(ky*nx, 2)
+./examples/UnitTestGetComplexAt3D.py:43   ky*nx/2  |  old_div(ky*nx, 2)
+./examples/UnitTestGetComplexAt3D.py:43   kz*ny*nx/2  |  old_div(kz*ny*nx, 2)
 ./examples/UnitTestGetComplexAt3D.py:209   ky*nx/2  |  ky*nx/2
 ./examples/UnitTestGetComplexAt3D.py:210   ky*nx/2  |  ky*nx/2
 ./libpyEM/Anneal.py:345   Tfactor * step / self.steps  |  Tfactor * step / self.steps
