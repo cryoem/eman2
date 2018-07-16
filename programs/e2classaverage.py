@@ -585,7 +585,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 	# This is really niter+1 1/2 iterations. It gets terminated 1/2 way through the final loop
 	for it in range(niter+2):
 		if verbose : print("Starting iteration %d"%it)
-		if callback!=None : callback(int(it*100/(niter+2)))
+		if callback!=None : callback(int(old_div(it*100,(niter+2))))
 
 		mean,sigma=0.0,1.0		# defaults for when similarity isn't computed
 

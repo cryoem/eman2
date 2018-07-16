@@ -212,7 +212,7 @@ def average_rcts(arlist, totalptcls):
 	avgr = Averagers.get('mean')		    
 	for recon in arlist:
 		if options.weightrecons:
-			weight = len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
+			weight = old_div(len(arlist)*recon.get_attr('ptcl_repr'),totalptcls)
 			if options.verbose>0: print("Weighting recon using %f" % weight)
 			recon.mult(weight)
 		avgr.add_image(recon)

@@ -16,7 +16,7 @@ import queue
 
 def make3d(aptcls, sym="c1"):
 	boxsize=aptcls[0]["nx"]
-	pad=good_size(boxsize*3/2)
+	pad=good_size(old_div(boxsize*3,2))
 	recon=Reconstructors.get("fourier", {"sym":sym,"size":[pad,pad,pad]})
 
 	# insert slices into initial volume
@@ -139,7 +139,7 @@ def make_model(jsd,myid, options):
 	boxsize=map0["nx"]
 	niter=options.niter
 
-	ncopy=(niter+1)*nsample/num+10
+	ncopy=old_div((niter+1)*nsample,num)+10
 	samples=np.tile(np.arange(num),(ncopy,1))
 	#print "ncopy:", ncopy
 	for i in range(len(samples)): np.random.shuffle(samples[i])

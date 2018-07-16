@@ -876,8 +876,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			x=self.data[0]["nx"]*sqrt(nimg)
 			y=self.data[0]["ny"]*sqrt(nimg)
 			xys=QtGui.QApplication.desktop().availableGeometry()
-			mx=xys.width()*2/3
-			my=xys.height()*2/3
+			mx=old_div(xys.width()*2,3)
+			my=old_div(xys.height()*2,3)
 			
 			self.resize(min(x,mx),min(y,my))
 
@@ -1181,10 +1181,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						if not excluded:
 							#print rx,ry,tw,th,self.width(),self.height(),self.origin
 							if not self.glflags.npt_textures_unsupported():
-								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,old_div((tw-1),4*4)+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 								self.texture(a,tx,ty,tw,th)
 							else:
-								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,old_div((tw-1),4*4)+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 								glRasterPos(tx,ty)
 								glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
 
@@ -1509,10 +1509,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 #		try: self.origin=(self.coords[8][0]-self.width()/2-self.origin[0],self.coords[8][1]+self.height()/2-self.origin[1])
 		if yonly :
 			try:
-				self.targetorigin=(0,self.coords[n][1]-old_div(self.height(),2)+self.data.get_ysize()*self.scale/2)
+				self.targetorigin=(0,self.coords[n][1]-old_div(self.height(),2)+old_div(self.data.get_ysize()*self.scale,2))
 			except: return
 		else:
-			try: self.targetorigin=(self.coords[n][0]-old_div(self.view_width(),2)+self.data.get_xsize()*self.scale/2,self.coords[n][1]-old_div(self.height(),2)+self.data.get_ysize()*self.scale/2)
+			try: self.targetorigin=(self.coords[n][0]-old_div(self.view_width(),2)+old_div(self.data.get_xsize()*self.scale,2),self.coords[n][1]-old_div(self.height(),2)+old_div(self.data.get_ysize()*self.scale,2))
 			except: return
 		self.targetspeed=old_div(hypot(self.targetorigin[0]-self.origin[0],self.targetorigin[1]-self.origin[1]),20.0)
 #		print n,self.origin

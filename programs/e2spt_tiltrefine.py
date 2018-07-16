@@ -242,7 +242,7 @@ def main():
 		clp=2
 		ol=abs(s)>clp
 		print("Removing {} outliers from {} particles..".format(np.sum(ol), len(s)))
-		s=(s+clp)/clp/2
+		s=old_div(old_div((s+clp),clp),2)
 		s[ol]=0
 		allscr=s
 		

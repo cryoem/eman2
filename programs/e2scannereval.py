@@ -97,9 +97,9 @@ def main():
 		sepy=options.box
 	else:
 		nbx=old_div(nx,int(1.5*options.box))		# number of boxes in x	
-		sepx=options.box*3/2+old_div((nx%(options.box*3/2)),nbx)-1	# separation between boxes
+		sepx=old_div(options.box*3,2)+old_div((nx%(old_div(options.box*3,2))),nbx)-1	# separation between boxes
 		nby=old_div(ny,int(1.5*options.box))
-		sepy=options.box*3/2+old_div((ny%int(1.5*options.box)),nby)
+		sepy=old_div(options.box*3,2)+old_div((ny%int(1.5*options.box)),nby)
 	
 	for x in range(nbx):
 		for y in range(nby):

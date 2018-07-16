@@ -96,7 +96,7 @@ def main():
 			n_neg=EMUtil.get_image_count(neg_in)
 			if options.trainset_output==None:
 				options.trainset_output=tomo_in[:-4]+"_trainset.hdf"
-			p_copy=options.ncopy*n_neg/n_ptcl
+			p_copy=old_div(options.ncopy*n_neg,n_ptcl)
 		else:
 			p_copy=options.ncopy
 		try: os.remove(options.trainset_output)
@@ -146,7 +146,7 @@ def main():
 		n=len(imgs)
 		
 		#n=EMUtil.get_image_count(options.trainset_output)
-		idx=list(range(int((old_div(ngood,2))*(1-options.validset))))+list(range((old_div(ngood,2)), int(n/2*(1-options.validset))))
+		idx=list(range(int((old_div(ngood,2))*(1-options.validset))))+list(range((old_div(ngood,2)), int(old_div(n,2)*(1-options.validset))))
 		random.shuffle(idx)
 		for i in idx:
 			imgs[i*2]["valid_set"]=0
@@ -154,7 +154,7 @@ def main():
 			imgs[i*2+1]["valid_set"]=0
 			imgs[i*2+1].write_image(options.trainset_output,-1)
 			
-		idx=list(range(int((old_div(ngood,2))*(1-options.validset)), old_div(ngood,2)))+list(range( int(n/2*(1-options.validset)), old_div(n,2)))
+		idx=list(range(int((old_div(ngood,2))*(1-options.validset)), old_div(ngood,2)))+list(range( int(old_div(n,2)*(1-options.validset)), old_div(n,2)))
 		random.shuffle(idx)
 		for i in idx:
 			imgs[i*2]["valid_set"]=1

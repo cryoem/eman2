@@ -1346,7 +1346,7 @@ class Camera2(object):
 			length = sqrt(x*x + y*y)
 			# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
 			# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
-			angle = fac*length/self.motiondull*pi
+			angle = old_div(fac*length,self.motiondull)*pi
 			
 			t3d = Transform()
 			quaternion = {}
@@ -1364,9 +1364,9 @@ class Camera2(object):
 			# if az is fixed then we rotate in alt/az space, not with quaternions
 			t3d = self.t3d_stack[-1]
 			p = t3d.get_params("eman")
-			p["alt"] = p["alt"] + fac*y/self.motiondull*pi
+			p["alt"] = p["alt"] + old_div(fac*y,self.motiondull)*pi
 			if p["alt"]<0 : p["alt"]=0
-			p["az"]  = p["az"] -  fac*x/self.motiondull*pi
+			p["az"]  = p["az"] -  old_div(fac*x,self.motiondull)*pi
 			p["phi"] = 180.0
 			t3d.set_params(p)
 			

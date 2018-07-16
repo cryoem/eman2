@@ -252,7 +252,7 @@ as not all elements are computed.
 				nsnr=len(snr)
 				# This gives integrated radial weighted SSNR over 3 resolution ranges
 #				out.write("%1.3g\t%1.3g\t%1.3g\t"%(sum(snrw[1:nsnr/8])/(nsnr/8),sum(snrw[nsnr/16:nsnr/3])/(nsnr/3-nsnr/16),sum(snrw[nsnr/3:nsnr*2/3])/(nsnr*2/3-nsnr/3)));
-				out.write("%1.3g\t%1.3g\t%1.3g # %d;%s"%(old_div(sum(snr[3:old_div(nsnr,6)]),(old_div(nsnr,6)-3)),old_div(sum(snr[old_div(nsnr,8):old_div(nsnr,3)]),(old_div(nsnr,3)-old_div(nsnr,8))),old_div(sum(snr[old_div(nsnr,3):nsnr*2/3]),(nsnr*2/3-old_div(nsnr,3))),y,options.inimgs));
+				out.write("%1.3g\t%1.3g\t%1.3g # %d;%s"%(old_div(sum(snr[3:old_div(nsnr,6)]),(old_div(nsnr,6)-3)),old_div(sum(snr[old_div(nsnr,8):old_div(nsnr,3)]),(old_div(nsnr,3)-old_div(nsnr,8))),old_div(sum(snr[old_div(nsnr,3):old_div(nsnr*2,3)]),(old_div(nsnr*2,3)-old_div(nsnr,3))),y,options.inimgs));
 				if y==0:
 					outkey.write( "%d - defocus\n"%(colh))
 					colh+=1

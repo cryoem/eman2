@@ -37,8 +37,8 @@ print(nx,ny)
 
 for ky in range(ny):
   for kx in range(old_div(nx,2)):
-    tiBFFT.set_value_at(2*kx  ,ky,  kx+ky*nx/2);
-    tiBFFT.set_value_at(2*kx+1,ky,-(kx+ky*nx/2));
+    tiBFFT.set_value_at(2*kx  ,ky,  kx+old_div(ky*nx,2));
+    tiBFFT.set_value_at(2*kx+1,ky,-(kx+old_div(ky*nx,2)));
 # Now the real and complex values are negatives
 #     of one another
 # the minimum magnitude is zero
@@ -203,8 +203,8 @@ print(nx,ny)
 
 for ky in range(ny):
   for kx in range(old_div(nx,2)):
-    tiBFFT.set_value_at(2*kx  ,ky,  kx+ky*nx/2);
-    tiBFFT.set_value_at(2*kx+1,ky,-(kx+ky*nx/2));
+    tiBFFT.set_value_at(2*kx  ,ky,  kx+old_div(ky*nx,2));
+    tiBFFT.set_value_at(2*kx+1,ky,-(kx+old_div(ky*nx,2)));
 # Now the real and complex values are negatives
 #     of one another
 # the minimum magnitude is zero

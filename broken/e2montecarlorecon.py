@@ -204,7 +204,7 @@ class SAsca(Refine):
 					else:
 						rreconstructor.insert_slice(ca, blist[canum][0],1)
 				rreconstructor.clear() # we need to do this to avoid intepolation errors building up
-			temp=options.initemp*math.pow((1-tstep*options.numsasteps/K),options.cooling) # This annealing schedule comes from Numerical Recipes, second edition, pg 554
+			temp=options.initemp*math.pow((1-old_div(tstep*options.numsasteps,K)),options.cooling) # This annealing schedule comes from Numerical Recipes, second edition, pg 554
 	# should we make the change?
 	def pseudoboltzmann(self, de, temp):
 		return de < 0 or Util.get_frand(0,1) < math.exp(old_div(-de,temp))

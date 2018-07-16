@@ -193,14 +193,14 @@ class GUIFourierSynth(QtGui.QWidget):
 			
 			if index==1 : 	# triangle
 				for i in range(old_div(nx,2)):
-					self.targfn[i]=-1.0+4.0*i/nx
+					self.targfn[i]=-1.0+old_div(4.0*i,nx)
 				for i in range(old_div(nx,2),nx):
-					self.targfn[i]=3.0-4.0*i/nx
+					self.targfn[i]=3.0-old_div(4.0*i,nx)
 			
 			elif index==2 : # square
 				for i in range(old_div(nx,4)): self.targfn[i]=-1.0
-				for i in range(old_div(nx,4),nx*3/4): self.targfn[i]=1.0
-				for i in range(nx*3/4,nx): self.targfn[i]=-1.0
+				for i in range(old_div(nx,4),old_div(nx*3,4)): self.targfn[i]=1.0
+				for i in range(old_div(nx*3,4),nx): self.targfn[i]=-1.0
 				
 			elif index==3 : # square impulse
 				self.targfn.to_zero()
@@ -208,7 +208,7 @@ class GUIFourierSynth(QtGui.QWidget):
 			
 			elif index==4 : # delta
 				self.targfn.to_zero()
-				self.targfn[nx*2/5]=1.0
+				self.targfn[old_div(nx*2,5)]=1.0
 				
 			elif index==5 : # noise
 				self.targfn.process_inplace("testimage.noise.gauss",{"seed":0})
@@ -216,7 +216,7 @@ class GUIFourierSynth(QtGui.QWidget):
 			elif index==6 : # saw
 				self.targfn.to_zero()
 				for i in range(old_div(nx,4),old_div(nx,2)): self.targfn[i]=4.0*(i-old_div(nx,4.0))/nx
-				for i in range(old_div(nx,2),nx*3/4): self.targfn[i]=-1+4.0*(i-old_div(nx,2.0))/nx
+				for i in range(old_div(nx,2),old_div(nx*3,4)): self.targfn[i]=-1+4.0*(i-old_div(nx,2.0))/nx
 				
 			elif index==7 : # sin
 				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)
@@ -236,7 +236,7 @@ class GUIFourierSynth(QtGui.QWidget):
 			elif index==12 : # double delta
 				self.targfn.to_zero()
 				self.targfn[old_div(nx,16)]=4.0
-				self.targfn[nx*15/16]=4.0
+				self.targfn[old_div(nx*15,16)]=4.0
 
 			elif index==13 : # sin bad f
 				for i in range(nx): self.targfn[i]=sin(i*pi/15.5)
@@ -246,7 +246,7 @@ class GUIFourierSynth(QtGui.QWidget):
 			
 			elif index==15 : # square impulse
 				self.targfn.to_zero()
-				for i in range(old_div(nx,2)+2,nx*3/4+2): self.targfn[i]=1.0
+				for i in range(old_div(nx,2)+2,old_div(nx*3,4)+2): self.targfn[i]=1.0
 				
 			elif index==16 : # square impulse
 				self.targfn.to_zero()
@@ -271,7 +271,7 @@ class GUIFourierSynth(QtGui.QWidget):
 #			print fft[i]
 			amp=fft[i].real
 			if fabs(amp)<1.0e-5 : amp=0.0
-			self.wamp[i].setValue(amp*2/(fft["nx"]-2),quiet=1)
+			self.wamp[i].setValue(old_div(amp*2,(fft[nx]-2)),quiet=1)
 			self.wpha[i].setValue(fft[i].imag*180.0/pi+90.0,quiet=1)
 
 
@@ -306,7 +306,7 @@ class GUIFourierSynth(QtGui.QWidget):
 			if i==0: 
 				self.curves[i].to_one()
 				if self.wpha[0].getValue()>180.0 : self.curves[i].mult(-1.0)
-			else: self.curves[i].process_inplace("testimage.sinewave",{"wavelength":cell*oversamp/float(i),"phase":self.wpha[i].getValue()*pi/180.0})
+			else: self.curves[i].process_inplace("testimage.sinewave",{"wavelength":old_div(cell*oversamp,float(i)),"phase":self.wpha[i].getValue()*pi/180.0})
 			self.curves[i].mult(self.wamp[i].getValue())
 			
 			self.total.add(self.curves[i])

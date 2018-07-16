@@ -122,7 +122,7 @@ def interp_points(pts, npt=50, pmin=0., pmax=1.):
 	pos=np.append(0,np.cumsum(np.linalg.norm(np.diff(pts, axis=0), axis=1)))
 	fun_ax=interp1d(pos, pts.T, fill_value='extrapolate')
 	mx=np.max(pos)
-	rg=np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx + pmin*mx
+	rg=old_div(np.arange(npt,dtype=float),(npt-1))*(pmax-pmin)*mx + pmin*mx
 	ax=fun_ax(rg).T
 	return ax
 
@@ -240,7 +240,7 @@ def calc_shortest_path(path, pts, dst, d0, pval, gap=5, gdsz=1.5, ngray=5., grp=
 		
 		dd0[dd0>dd0[j1]]=-1
 		a=a*(dd0>0)
-		dd0=dd0/dd0[j1]*realgap+i0
+		dd0=old_div(dd0,dd0[j1])*realgap+i0
 		order[a]+=dd0[a]
 		ordercount[a]+=1
 #		 print i0, i1,np.sum(a),np.sum(shrtpath>0), l, mxl, connect

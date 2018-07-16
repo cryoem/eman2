@@ -129,7 +129,7 @@ together."""
 	nrep=[i.get_attr("ptcl_repr") for i in centers[:options.ncls]]
 	maxcls=max(nrep)
 	for n,i in enumerate(nrep):
-		print("%d) %s (%d)"%(n,"#"*int(i*72/maxcls),i))
+		print("%d) %s (%d)"%(n,"#"*int(old_div(i*72,maxcls)),i))
 		
 	classes=[[] for i in range(options.ncls)]
 	for n,i in enumerate(data):

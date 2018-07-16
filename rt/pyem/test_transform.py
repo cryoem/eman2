@@ -156,7 +156,7 @@ class TestTransform(unittest.TestCase):
 						
 						try: self.assertAlmostEqual(old_div(inv_params["ty"],(-1*params["ty"])),1, 4)
 						except: self.assertAlmostEqual(inv_params["ty"], -1*params["ty"], 4)
-						try: self.assertAlmostEqual(fac*inv_params["tx"]/(-1*params["tx"]),1, 4)
+						try: self.assertAlmostEqual(old_div(fac*inv_params[tx],(-1*params[tx])),1, 4)
 						except: self.assertAlmostEqual(fac*inv_params["tx"],(-1*params["tx"]), 4)
 	def test_get_trans(self):
 		"""test get trans ..................................."""

@@ -688,7 +688,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 		# 	ccmean = np.mean(vals)
 		# 	ccstd = np.std(vals)
 
-		m = n*(n-1)/2
+		m = old_div(n*(n-1),2)
 		bx = np.ones(m)
 		by = np.ones(m)
 		A = np.zeros([m,n]) # coefficient matrix

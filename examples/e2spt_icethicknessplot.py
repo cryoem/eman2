@@ -157,9 +157,9 @@ def main():
 						pad = 50
 					
 				elif options.units in nunits:
-					x = x*apix/10
-					y = y*apix/10
-					z = z*apix/10
+					x = old_div(x*apix,10)
+					y = old_div(y*apix,10)
+					z = old_div(z*apix,10)
 				
 					if options.radius:
 						pad = 2*options.radius * apix/10
@@ -167,9 +167,9 @@ def main():
 						pad = 5
 					
 				elif options.units in munits:
-					x = x*apix/10000
-					y = y*apix/10000
-					z = z*apix/10000
+					x = old_div(x*apix,10000)
+					y = old_div(y*apix,10000)
+					z = old_div(z*apix,10000)
 				
 					if options.radius:
 						pad = 2*options.radius * apix/10000
@@ -223,9 +223,9 @@ def main():
 						pad = 50
 			
 				elif options.units in nunits:
-					x = x*apix/10
-					y = y*apix/10
-					z = z*apix/10
+					x = old_div(x*apix,10)
+					y = old_div(y*apix,10)
+					z = old_div(z*apix,10)
 				
 					if options.radius:
 						pad = 2*options.radius * apix/10
@@ -234,9 +234,9 @@ def main():
 					
 					
 				elif options.units in munits:
-					x = x*apix/10000
-					y = y*apix/10000
-					z = z*apix/10000
+					x = old_div(x*apix,10000)
+					y = old_div(y*apix,10000)
+					z = old_div(z*apix,10000)
 				
 					if options.radius:
 						pad = 2*options.radius * apix/10000

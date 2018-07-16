@@ -1922,7 +1922,7 @@ class EMCamera(object):
 		Changes projection matrix to perspective
 		"""
 		self.fovy = fovy
-		self.perspective_z = old_div(-(boundingbox*2/screenfraction),(2*math.tan(math.radians(old_div(self.fovy,2)))))  + boundingbox
+		self.perspective_z = old_div(-(old_div(boundingbox*2,screenfraction)),(2*math.tan(math.radians(old_div(self.fovy,2)))))  + boundingbox
 		self.usingortho = False
 		
 	def useOrtho(self, zclip):
@@ -2893,8 +2893,8 @@ class EMSGNodeInspector(EMItem3DInspector):
 		margin = 50
 		linewidth = 20
 		# define axes location
-		xi = -self.item3d().camera.getViewPortWidthScaling()*self.item3d().camera.getWidth()/2 + margin*self.item3d().camera.getViewPortWidthScaling()
-		yi = self.item3d().camera.getViewPortHeightScaling()*self.item3d().camera.getHeight()/2 - (length+margin)*self.item3d().camera.getViewPortHeightScaling()
+		xi = old_div(-self.item3d().camera.getViewPortWidthScaling()*self.item3d().camera.getWidth(),2) + margin*self.item3d().camera.getViewPortWidthScaling()
+		yi = old_div(self.item3d().camera.getViewPortHeightScaling()*self.item3d().camera.getHeight(),2) - (length+margin)*self.item3d().camera.getViewPortHeightScaling()
 		zi = 0
 		#transform=Transform({'type':'eman','tx':xi,'ty':yi,'tz':zi,'scale':self.item3d().camera.getViewPortWidthScaling()})
 		# create axes

@@ -621,7 +621,7 @@ class EMMotion(QtGui.QMainWindow):
 		# Wait for threads to finish
 		while 1:
 			time.sleep(0.2)
-			self.wpbprogress.setValue(int(lst.qsize()*100/maxl))
+			self.wpbprogress.setValue(int(old_div(lst.qsize()*100,maxl)))
 			QtGui.qApp.processEvents()
 
 			# If any threads are alive, it breaks out of the inner loop, if none are alive, the else block breaks out of the outer loop
@@ -978,7 +978,7 @@ class EMMotion(QtGui.QMainWindow):
 		fsp="{}/classes_{:02d}_{:02d}.hdf".format(self.path,self.iter,clnum)
 		print(fsp)
 		for i,c in enumerate(classes): 
-			self.wpbprogress.setValue(67+20*i/len(classes))
+			self.wpbprogress.setValue(67+old_div(20*i,len(classes)))
 			c.process_inplace("normalize.edgemean")
 			c["ptcl_repr"]=len(classlst[i])
 			c["class_ptcl_idxs"]=classlst[i]
@@ -992,7 +992,7 @@ class EMMotion(QtGui.QMainWindow):
 
 		# now start from this one for the sort
 		for c in range(1,len(classes)-1):
-			self.wpbprogress.setValue(87+12*c/len(classes))
+			self.wpbprogress.setValue(87+old_div(12*c,len(classes)))
 			b=classes[c-1].cmp("frc",classes[c])
 			for c2 in range(c+1,len(classes)):
 				ccc=classes[c-1].cmp("frc",classes[c2])

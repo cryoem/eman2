@@ -278,7 +278,7 @@ def main():
 		ptclmask.process_inplace("mask.addshells",{"nshells":nx//15})
 		ptclmask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 
-		ring=(int(2*nx*apix/100.0),int(2*nx*apix/10))
+		ring=(int(old_div(2*nx*apix,10)0.0),int(old_div(2*nx*apix,10)))
 #		fout=open("ptclsnr.txt".format(i),"w")
 		fout=open("aniso_{:02d}.txt".format(options.anisotropy),"w")
 		# generate a projection for each particle so we can compare
@@ -438,7 +438,7 @@ def main():
 		nx=ptclmask["nx"]
 		apix=threed[0]["apix_x"]
 
-		rings=[int(2*nx*apix/res) for res in (100,30,15,8,4)]
+		rings=[int(old_div(2*nx*apix,res)) for res in (100,30,15,8,4)]
 		print(("Frequency Bands: {lowest},{low},{mid},{high},{highest}".format(lowest=rings[0],low=rings[1],mid=rings[2],high=rings[3],highest=rings[4])))
 
 		# We expand the mask a bit, since we want to consider problems with "touching" particles
@@ -601,7 +601,7 @@ def main():
 		nx=timg["nx"]
 		apix=timg["apix_x"]
 
-		rings=[int(2*nx*apix/res) for res in (100,30,12,7,3)]
+		rings=[int(old_div(2*nx*apix,res)) for res in (100,30,12,7,3)]
 #		rings=[int(2*nx*apix/res) for res in (100,60,30,15,10,6,4)]
 		print(("Frequency Bands: {}".format(rings)))
 
@@ -857,7 +857,7 @@ def main():
 
 				print("{path}\t{nptcl} ptcls\t{niter} iter\t{cores} cores\t{h:02d}:{m:02d} walltime\t{cpuh:1.1f} CPU-h\t{cpuhpi:1.2f} CPU-h/it\t{bs} box\t{targ:1.1f} targetres\tspd={speed}".format(
 					path=d,niter=lastiter,cores=cores,h=int((endtime-starttime)//3600),m=int(((endtime-starttime)%3600)//60),
-					cpuh=cores*(endtime-starttime)/3600,cpuhpi=cores*(endtime-starttime)/(3600*lastiter),bs=box,targ=targetres,speed=speed,nptcl=nptcl))
+					cpuh=old_div(cores*(endtime-starttime),3600),cpuhpi=old_div(cores*(endtime-starttime),(3600*lastiter)),bs=box,targ=targetres,speed=speed,nptcl=nptcl))
 			except: 
 				if options.verbose: traceback.print_exc()
 				print("No timing for ",d)

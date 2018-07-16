@@ -79,7 +79,7 @@ for dim in range(2,4):
 		t1=time.time()
 
 		times.append((old_div((t1-t0),reps),size))
-		rslt="%d\t%1.3f\t%d"%(size,10000*(t1-t0)/reps,dim)
+		rslt="%d\t%1.3f\t%d"%(size,old_div(10000*(t1-t0),reps),dim)
 		out.write(rslt+"\n")
 		out.flush()
 		print(rslt,"\t",reps)

@@ -39,7 +39,7 @@ def main():
   print("total %d particles"%len(ptcls)) # print out how many particles in the set
   reso=90 # define projections number, more projections mean higher resolution
   #ret=EMData.read_images(update_vol1) # read in the volume set
-  orts=[Transform({"type":"eman","az":360/reso*j,"phi":0,"alt":90}) for j in range(reso)]
+  orts=[Transform({"type":"eman","az":old_div(360,reso*j),"phi":0,"alt":90}) for j in range(reso)]
    
   for cycle1 in range(100):   # the model refinement cycle
   #### the projections has to be cleared before next run
@@ -78,7 +78,7 @@ def main():
       bslst.append((best_score,i)) # bslst is the best score list of all the particles, ith particle has a best score and stored in bslst and so on for the other particle.
       n=bs.index(best_score) # find the projection number n corresponding best score of particle i.
       ptcls[i]["match_n"]=n # assign n to particle i
-      if i%30==0: print("%d, %2d%% complete!" %(i,i*100/len(ptcls)))
+      if i%30==0: print("%d, %2d%% complete!" %(i,old_div(i*100,len(ptcls))))
       ptcls[i]["match_qual"]=best_score 
       ptcls[i]["xform.projection"]=orts[n]
 
@@ -91,7 +91,7 @@ def main():
       n=ptcls[bslst[i][1]]["match_n"] # the ith best score corresponds particle bslst[i][1]
       aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"dot",{}))
       #aptcls[-1].process_inplace("xform.centerofmass",{})
-      if i%30==0: print("score=%f, %d, %2d%% complete!" %(bslst[i][0], i,i*100*8/6/len(ptcls)))
+      if i%30==0: print("score=%f, %d, %2d%% complete!" %(bslst[i][0], i,old_div(old_div(i*100*8,6),len(ptcls))))
       #aptcls[i].process_inplace("xform.centerofmass",{})
       #aptcls[i].write_image(aligned1,-1) # write out the aligned particle set
 

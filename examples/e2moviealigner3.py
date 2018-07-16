@@ -173,7 +173,7 @@ def fit_ctf(ips):
 	return ips
 
 def gen_coeff_matrix(n): # N frames
-	m = n*(n-1)/2
+	m = old_div(n*(n-1),2)
 	#A0 = np.zeros([m,n])
 	A = np.zeros([m,n])
 	for i in range(n):

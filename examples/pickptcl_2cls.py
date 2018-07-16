@@ -357,7 +357,7 @@ class boxerConvNet(object):
 				break
 			
 			mindist=np.min(np.sum((np.array(pp)-np.array(p[1:3]))**2, axis=1))
-			if mindist<sz*sz/4:
+			if mindist<old_div(sz*sz,4):
 				#print np.sqrt(mindist), p
 				continue
 			pp.append(p[1:3])

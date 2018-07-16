@@ -969,6 +969,6 @@ class PMFSCTableWidget(PMTableBase):
 				return "%.1f" %(old_div(1.0,xaxis(soln)))
 			else:
 				# interpolated frequency
-				return "%.1f" %(old_div(1.0,(soln/len(yaxis)*xaxis[-1])))
+				return "%.1f" %(old_div(1.0,(old_div(soln,len(yaxis))*xaxis[-1])))
 		except:
 			return "invalid"

@@ -95,7 +95,7 @@ def main():
 				bxs[:,2]-=zshift
 				outname=str(base_name(pfile)+"__"+val["name"]+".hdf")
 				if options.boxsz<0:
-					sz=int(val["boxsize"])*scale/2
+					sz=old_div(int(val[boxsize])*scale,2)
 				else:
 					sz=int(np.round(options.boxsz/2.*scale))
 				towrite.append((bxs, outname, sz))
@@ -125,9 +125,9 @@ def main():
 		print("Reading {} particles".format(len(ptclpos)))
 		
 		if options.boxsz<0:
-			boxsz=int(ptcl["nx"]/2*scale)
+			boxsz=int(old_div(ptcl[nx],2)*scale)
 		else:
-			boxsz=int(options.boxsz/2*scale)
+			boxsz=int(old_div(options.boxsz,2)*scale)
 		
 		
 		

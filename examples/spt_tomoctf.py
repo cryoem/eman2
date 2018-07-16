@@ -89,7 +89,7 @@ def calc_defocus_onetlt(args):
 	rawimg=EMData(options.alifile, 0, False, Region(0,0,imgi,options.nx,options.ny,1))
 	apix=rawimg["apix_x"]
 	centerx=old_div(rawimg["nx"],2.)
-	tilex=((np.arange(stepx+1,dtype=float))/(stepx)*(rawimg["nx"]-bxsz)).astype(int)+old_div(bxsz,2)
+	tilex=(old_div((np.arange(stepx+1,dtype=float)),(stepx))*(rawimg["nx"]-bxsz)).astype(int)+old_div(bxsz,2)
 	scrtlt=[]
 	
 	alldefs=np.zeros(ntry)

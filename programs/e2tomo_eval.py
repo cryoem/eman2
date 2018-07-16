@@ -75,7 +75,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		
 		self.wg_thumbnail=EMImage2DWidget(parent=self)
 		self.wg_thumbnail.set_scale(1)
-		self.wg_thumbnail_width=self.size().width()/3*.9
+		self.wg_thumbnail_width=old_div(self.size().width(),3)*.9
 		self.wg_thumbnail.resize(self.wg_thumbnail_width,self.wg_thumbnail_width)
 		#print self.wg_thumbnail_width
 		self.wg_thumbnail.setMinimumHeight(330)

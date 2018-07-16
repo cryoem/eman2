@@ -388,7 +388,7 @@ are really required to achieve the targeted resolution, you may consider manuall
 	if options.orientgen==None :
 		# target resolution worse than 1/2 Nyquist
 		if options.targetres>apix*4 :
-			effbox=nx*apix*2/options.targetres
+			effbox=old_div(nx*apix*2,options.targetres)
 #			astep=89.999/ceil(90.0/sqrt(4300/effbox))		# This rounds to the best angular step divisible by 90 degrees, original computation without speed
 			astep=old_div(89.99,ceil(90.0*9.0/((options.speed+3.0)*sqrt(old_div(4300,effbox)))))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.5f}:inc_mirror=0:perturb=0".format(astep)

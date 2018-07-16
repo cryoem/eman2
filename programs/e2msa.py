@@ -132,7 +132,7 @@ handled this way."""
 	n=(step[2]-step[0])//step[1]
 	nval=mask["square_sum"]
 #	print(args[0],n,nval)
-	if options.verbose or n*nval>500000000: print("Estimated memory usage (mb): ",n*nval*4/2**20)
+	if options.verbose or n*nval>500000000: print("Estimated memory usage (mb): ",old_div(n*nval*4,2**20))
 	
 	# Read all image data into numpy array
 	if options.simmx : data=simmx_get(args[0],options.simmx,mask,step)

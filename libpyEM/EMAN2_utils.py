@@ -91,7 +91,7 @@ def interp_points(pts, npt=50, pmin=0., pmax=1.):
     pos=np.append(0,np.cumsum(np.linalg.norm(np.diff(pts, axis=0), axis=1)))
     fun_ax=interp1d(pos, pts.T, fill_value='extrapolate')
     mx=np.max(pos)
-    rg=np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx + pmin*mx
+    rg=old_div(np.arange(npt,dtype=float),(npt-1))*(pmax-pmin)*mx + pmin*mx
     ax=fun_ax(rg).T
     return ax
 
@@ -190,8 +190,8 @@ def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 	amp = np.asarray(amp).astype(dtype)
 	phase = np.asarray(phase).astype(dtype)
 	if usedegrees: phase *= old_div(np.pi,180.)
-	uu = nx*(u-u.min())/(u.max()-u.min())-old_div(nx,2.)
-	vv = ny*(v-v.min())/(v.max()-v.min())-old_div(ny,2.)
+	uu = old_div(nx*(u-u.min()),(u.max()-u.min()))-old_div(nx,2.)
+	vv = old_div(ny*(v-v.min()),(v.max()-v.min()))-old_div(ny,2.)
 	x,y=np.indices((nx,ny))
 	xx = x-old_div(nx,2.)
 	yy = y-old_div(ny,2.)

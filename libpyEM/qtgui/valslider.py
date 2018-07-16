@@ -736,12 +736,12 @@ class RangeSlider(QtGui.QWidget):
 	def vtoy(self,value):
 		"returns the y screen coordinate corresponding to value"
 		h=self.size().height()
-		return h-int((h-4)*(value-self.rng[0])/(self.rng[1]-self.rng[0])+3)
+		return h-int(old_div((h-4)*(value-self.rng[0]),(self.rng[1]-self.rng[0]))+3)
 		
 	def ytov(self,y):
 		"returns the value corresponding to the y screen coordinate"
 		h=self.size().height()
-		return int((h-y+3)*(self.rng[1]-self.rng[0])/(h-4)+self.rng[0])
+		return int(old_div((h-y+3)*(self.rng[1]-self.rng[0]),(h-4))+self.rng[0])
 
 
 	def setRange(self,minv,maxv,quiet=False):
@@ -1210,13 +1210,13 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.0,0.0)
 		size = min(self.width, self.height)
-		glVertex(old_div(-size,2),-aspectratio*size/2,-1)
+		glVertex(old_div(-size,2),old_div(-aspectratio*size,2),-1)
 		glTexCoord2f(1.0,0.0)
-		glVertex(old_div(size,2),-aspectratio*size/2,-1)
+		glVertex(old_div(size,2),old_div(-aspectratio*size,2),-1)
 		glTexCoord2f(1.0,1.0)
-		glVertex(old_div(size,2),aspectratio*size/2,-1)
+		glVertex(old_div(size,2),old_div(aspectratio*size,2),-1)
 		glTexCoord2f(0.0,1.0)
-		glVertex(old_div(-size,2),aspectratio*size/2,-1)
+		glVertex(old_div(-size,2),old_div(aspectratio*size,2),-1)
 		glEnd()
 		glDisable(GL_TEXTURE_2D)
 		

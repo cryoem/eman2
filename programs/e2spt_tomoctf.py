@@ -158,7 +158,7 @@ def main():
 	for imgi in range(nz):
 		rawimg=imgs[imgi]
 		tpm=tltparams[imgi].copy()
-		xrg=sz/2/np.cos(tpm[3]/180.*np.pi)*.9
+		xrg=old_div(sz,2)/np.cos(tpm[3]/180.*np.pi)*.9
 		allrd=[]
 		pzus=[]
 		xstep=old_div(xrg,float(nstep))

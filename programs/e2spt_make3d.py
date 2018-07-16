@@ -14,7 +14,7 @@ import queue
 def make3d(ii, options, ptcls):
 	
 	boxsize=ptcls[0]["nx"]
-	pad=good_size(boxsize*3/2)
+	pad=good_size(old_div(boxsize*3,2))
 	recon=Reconstructors.get("fourier", {"sym":"c1","size":[pad,pad,pad]})
 	recon.setup()
 	#print "{} started. {} particles".format(ii, len(ptcls))

@@ -130,7 +130,7 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 			nx=img["nx"]
 			apix=img["apix_x"]
 			
-			out.write("{}\t{}".format(img["ctf"].defocus,sum(img["ctf"].snr[int(2*nx*apix/100):int(2*nx*apix/20)])))
+			out.write("{}\t{}".format(img["ctf"].defocus,sum(img["ctf"].snr[int(old_div(aspectratio*size,2)):int(old_div(2*nx*apix,20))])))
 			for c in mcmps:
 				sim=img.cmp(c[0],refimg,c[1])
 				out.write("\t{}".format(sim))

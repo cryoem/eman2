@@ -445,7 +445,7 @@ def load_particles(ptcls, options):
 	for l in label:
 		num=EMUtil.get_image_count(source[l])
 		if l==0:
-			nc=options.ncopy*nptcls/num
+			nc=old_div(options.ncopy*nptcls,num)
 		else:
 			nc=options.ncopy
 		for i in range(num):

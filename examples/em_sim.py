@@ -260,7 +260,7 @@ class Microscope(QtOpenGL.QGLWidget):
 					shapes.append(EMShape(("rect",.8, .5, 1, 0, vz, sz, vz, 2)))
 					
 				else: ### lens
-					ps=((ix)**2)/(f*2)*(2*np.pi/wavelen) ### phase shift
+					ps=old_div(((ix)**2),(f*2))*(2*np.pi/wavelen) ### phase shift
 					ps+=cs*(ix**4)/4.
 					proj_ps=proj*np.exp(-1j*(-ps)) ### projection after phase 
 					shapes.append(EMShape(("rect",1, .5, .5, 0, vz-2, sz, vz+2, 2)))
@@ -440,7 +440,7 @@ class Microscope(QtOpenGL.QGLWidget):
 				clip=old_div(int((1-ap)*sz),2)
 				proj_ps *= (xap*xap+yap*yap<clip**2)
 			else: ### lens
-				ps=rr/(f*2)*(2*np.pi/wavelen)  ### phase shift
+				ps=old_div(rr,(f*2))*(2*np.pi/wavelen)  ### phase shift
 				ps+=self.cs*(rr**4)/4.
 				proj_ps=proj*np.exp(-1j*(-ps)) ### projection after phase shift
 			dst = np.sqrt(ixy+zmax**2)
@@ -539,7 +539,7 @@ class Microscope(QtOpenGL.QGLWidget):
 				ym=s-old_div(d0,abs(w))
 				xm=1
 				if ym<ymax:
-					xm=xm/ym*ymax
+					xm=old_div(xm,ym)*ymax
 					ym=ymax
 
 				glColor3f( .5, 1., .2 + (si>0)*.7 );
@@ -689,7 +689,7 @@ class Microscope(QtOpenGL.QGLWidget):
 			p1=np.vstack([np.cos(t[::-1]), -np.sin(t[::-1])]).T
 			p1[:,1]-=p1[0,1]
 			pts=np.vstack([p0,p1])
-			pts=pts/l*scale
+			pts=old_div(pts,l)*scale
 			pts+=[0,y]
 			#print pts
 			glColor3f( .5, .5, 1. );
@@ -803,7 +803,7 @@ class Microscope(QtOpenGL.QGLWidget):
 	def scr_to_img(self, pp):
 		winsz=np.array(self.win_size, dtype=float)
 		p0=np.array([pp.x()-old_div(winsz[0],2.), old_div(winsz[1],2.)-pp.y()])
-		p=p0/winsz*2.
+		p=old_div(p0,winsz)*2.
 		return p
 		
 	def mousePressEvent(self, QMouseEvent):

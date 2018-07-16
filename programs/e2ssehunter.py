@@ -145,7 +145,7 @@ def update_map(target, location,rangemin,rangemax):
 def generate_pseudoatoms(target, apix, res, thr):
 	print("No psuedoatom input; generating Pseudoatoms")
 	patoms = []
-	rangemin=-1*res/apix
+	rangemin=old_div(-1*res,apix)
 	rangemax=old_div(res,apix)
 	out = open("pseudoatoms.pdb","w")
 	Max_value = target["maximum"]

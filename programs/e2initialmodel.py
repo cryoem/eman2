@@ -207,7 +207,7 @@ class InitMdlTask(JSTask):
 
 		# This is the refinement loop
 		for it in range(options["iter"]):
-			if progress != None: progress(it*100/options["iter"])
+			if progress != None: progress(old_div(it*100,options[iter]))
 			if verbose>0 : print("Iteration %d"%it)
 #			if options.savemore : threed[it].write_image("imdl.%02d.%02d.mrc"%(t,it))
 			projs=[(threed[it].project("standard",ort),None) for ort in orts]		# projections
@@ -234,7 +234,7 @@ class InitMdlTask(JSTask):
 			bslst.reverse()
 			aptcls=[]
 #			for i in range(len(ptcls)*3/4):		# We used to include 3/4 of the particles
-			for i in range(len(ptcls)*7/8):
+			for i in range(old_div(len(ptcls)*7,8)):
 				n=ptcls[bslst[i][1]]["match_n"]
 				quals.append(ptcls[bslst[i][1]]["match_qual"])
 				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n][0],{},"ccc",{}))
@@ -245,7 +245,7 @@ class InitMdlTask(JSTask):
 			bss/=len(ptcls)
 
 			# 3-D reconstruction
-			pad=good_size(boxsize*3/2)
+			pad=good_size(old_div(boxsize*3,2))
 			recon=Reconstructors.get("fourier", {"sym":options["sym"],"size":[pad,pad,pad]})
 
 			# insert slices into initial volume
@@ -334,7 +334,7 @@ def make_random_map_byort(ptcls):
 	boxsize=ptcls[0]["ny"]
 	
 	# 3-D reconstruction
-	pad=good_size(boxsize*3/2)
+	pad=good_size(old_div(boxsize*3,2))
 	recon=Reconstructors.get("fourier", {"sym":"c1","size":[pad,pad,pad]})
 
 	# insert slices into initial volume

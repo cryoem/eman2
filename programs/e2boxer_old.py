@@ -3328,14 +3328,14 @@ class CTFInspectorWidget(QtGui.QWidget):
 
 						#oldy = int(h-hborder-steph*self.data[list_index][index-1])
 						if (list_index == 2):
-							oldy=int(h-hborder-(h-2*hborder)*ctfdata2[index-1]/sizehctf)
+							oldy=int(h-hborder-old_div((h-2*hborder)*ctfdata2[index-1],sizehctf))
 						else:
-							oldy=int(h-hborder-(h-2*hborder)*self.data[list_index][index-1]/sizeh)
+							oldy=int(h-hborder-old_div((h-2*hborder)*self.data[list_index][index-1],sizeh))
 						#newy = int(h-hborder-steph*self.data[list_index][index])
 						if (list_index == 2):
-							newy=int(h-hborder-(h-2*hborder)*ctfdata2[index]/sizehctf)
+							newy=int(h-hborder-old_div((h-2*hborder)*ctfdata2[index],sizehctf))
 						else:
-							newy=int(h-hborder-(h-2*hborder)*self.data[list_index][index]/sizeh)
+							newy=int(h-hborder-old_div((h-2*hborder)*self.data[list_index][index],sizeh))
 
 						p.drawLine(oldx,oldy,newx,newy)
 

@@ -553,7 +553,7 @@ class TrackerControl(QtGui.QWidget):
 		if initmodel!=None : recon.setup(initmodel,.01)
 		else : recon.setup()
 
-		thr=0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0])/3;		# this is rather arbitrary
+		thr=old_div(0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0]),3);		# this is rather arbitrary
 		# First pass to assess qualities and normalizations
 		for i,p in enumerate(stack):
 			if scores[i][0]<thr : 
@@ -637,7 +637,7 @@ class TrackerControl(QtGui.QWidget):
 			trg.process_inplace("normalize.edgemean")
 			if self.invert : trg.mult(-1.0)
 			
-			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5})
+			aln=ref.align("translational",trg,{"intonly":1,"maxshift":old_div(self.maxshift*4,5)})
 			trans=aln["xform.align2d"].get_trans()
 			print(i,trans[0],trans[1])
 			if i>len(stack)-4 : display([ref,trg,aln])
@@ -675,7 +675,7 @@ class TrackerControl(QtGui.QWidget):
 			trg.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 			trg.process_inplace("normalize.edgemean")
 			
-			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5,"masked":1})
+			aln=ref.align("translational",trg,{"intonly":1,"maxshift":old_div(self.maxshift*4,5),"masked":1})
 			ref.write_image("dbug.hdf",-1)
 			trg.write_image("dbug.hdf",-1)
 			aln.write_image("dbug.hdf",-1)
@@ -703,7 +703,7 @@ class TrackerControl(QtGui.QWidget):
 			trg.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 			trg.process_inplace("normalize.edgemean")
 			
-			aln=ref.align("translational",trg,{"intonly":1,"maxshift":self.maxshift*4/5,"masked":1})
+			aln=ref.align("translational",trg,{"intonly":1,"maxshift":old_div(self.maxshift*4,5),"masked":1})
 			trans=aln["xform.align2d"].get_trans()
 			if i==self.curtilt+3 : display((ref,trg,aln,ref.calc_ccf(trg)))
 

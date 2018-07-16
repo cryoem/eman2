@@ -85,7 +85,7 @@ CTF autoprocessing after importing is complete.
 
 	if options.apix<=0 :
 		try:
-			options.apix=star["rlnDetectorPixelSize"][0]/star["rlnMagnification"][0]*10000.0
+			options.apix=old_div(star[rlnDetectorPixelSize][0],star[rlnMagnification][0])*10000.0
 			print("Using {} A/pix from Relion file".format(options.apix))
 		except:
 			print("A/pix not specified and not found in STAR file")

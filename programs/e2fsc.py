@@ -81,7 +81,7 @@ def procthread(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,t
 		
 		fsc=v1m.calc_fourier_shell_correlation(v2m)
 		fx=old_div(array(fsc[1:old_div(len(fsc),3)]),apix)
-		fy=fsc[old_div(len(fsc),3)+1:len(fsc)*2/3]
+		fy=fsc[old_div(len(fsc),3)+1:old_div(len(fsc)*2,3)]
 		
 		# 0.5 resolution
 		if fy[0]<0.5 and fy[1]<0.5 : i,xx,res=1,fx[1],fx[1]
@@ -205,7 +205,7 @@ and this program should be regarded as experimental.
 	# overall fsc
 	fsc=v1.calc_fourier_shell_correlation(v2)
 	fx=old_div(array(fsc[0:old_div(len(fsc),3)]),apix)
-	fy=fsc[old_div(len(fsc),3):len(fsc)*2/3]
+	fy=fsc[old_div(len(fsc),3):old_div(len(fsc)*2,3)]
 
 	out=open("fsc.txt","w")
 	for i,x in enumerate(fx):

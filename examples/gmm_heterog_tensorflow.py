@@ -372,8 +372,8 @@ class GaussianModel(object):
 		bposft=(bpos-old_div(sz,2.))*np.pi
 		bpxft=bposft[:,:,0][:,:, None, None]
 		bpyft=bposft[:,:,1][:,:, None, None]
-		gridxft=((grid_x-old_div(sz,2.))/sz*2.).astype(np.float32)
-		gridyft=((grid_y-old_div(sz,2.))/sz*2.).astype(np.float32)
+		gridxft=(old_div((grid_x-old_div(sz,2.)),sz)*2.).astype(np.float32)
+		gridyft=(old_div((grid_x-old_div(sz,2.)),sz)*2.).astype(np.float32)
 
 		gridxft=np.fft.ifftshift(gridxft)
 		gridyft=np.fft.ifftshift(gridyft)
@@ -547,7 +547,7 @@ class GaussianModel(object):
 		#### only take the first eigen-vector for now...
 		pca=PCA(1)
 		ptmot=pca.fit_transform(grd_flatten[:,idx])
-		pc=np.zeros(nball*3/ncopy)
+		pc=np.zeros(old_div(nball*3,ncopy))
 		pc[idx]=pca.components_[0]
 		pc=pc.reshape((old_div(nball,ncopy), -1))
 		

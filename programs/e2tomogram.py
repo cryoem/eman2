@@ -219,7 +219,7 @@ def main():
 				return
 		else: 
 			#### parse tilt step
-			tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
+			tlts=np.arange(old_div(-len(imgs_2k)*options.tltstep,2),old_div(len(imgs_2k)*options.tltstep,2),options.tltstep)
 		
 		if options.writetmp: np.savetxt(options.tmppath+"rawtilt.txt", tlts)
 		
@@ -282,7 +282,7 @@ def main():
 		imgs_, n_m3d, options.fidkeep, rfseq = siter
 		if n_m3d==0: continue
 		apix=float(imgs_[0]["apix_x"])
-		binx=apix/options.apix_init*options.binfac
+		binx=old_div(apix,options.apix_init)*options.binfac
 		print("\n******************************")
 		print("Iteration {}. Refining alignment on bin{:.0f} images...".format(niter, binx))
 		print("Image size {} x {}, Apix {:.2f}".format(imgs_[0]["nx"], imgs_[0]["ny"], apix))
@@ -623,7 +623,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	pad=good_boxsize(sz*1.2) #### this is the padded size in fourier space
 	jsd=queue.Queue(0)
 	jobs=[]
-	nstep=int(outxy/step/2)
+	nstep=int(old_div(old_div(outxy,step),2))
 	for stepx in range(-nstep,nstep+1):
 		#### shift y by half a tile
 		for stepy in range(-nstep+stepx%2,nstep+1,2):

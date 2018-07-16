@@ -901,7 +901,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[5]-helixbox[2]))
 		a.normalize()
 		bs = self.get_boxsize()
-		return [(helixbox[0] - a[0]*bs/2),(helixbox[1] - a[1]*bs/2),(helixbox[2] - a[2]*bs/2),(helixbox[3] + a[0]*bs/2),(helixbox[4] + a[1]*bs/2),(helixbox[5] + a[2]*bs/2)]
+		return [(helixbox[0] - old_div(a[0]*bs,2)),(helixbox[1] - old_div(a[1]*bs,2)),(helixbox[2] - old_div(a[2]*bs,2)),(helixbox[3] + old_div(a[0]*bs,2)),(helixbox[4] + old_div(a[1]*bs,2)),(helixbox[5] + old_div(a[2]*bs,2))]
 
 
 

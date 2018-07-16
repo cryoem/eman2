@@ -119,7 +119,7 @@ def get_density(mrc,posi,posb,posf):
 	if mrcp==0:
 		mrcp=10000
 		#print posi,posb,posf
-	return mrcp/midp/2
+	return old_div(old_div(mrcp,midp),2)
 
 
 def read_helix(filename):

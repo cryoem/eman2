@@ -376,8 +376,8 @@ class Box(object):
 				image = self.get_small_box_image(self.autoboxer.get_template_radius(),self.autoboxer.get_subsample_rate())
 				ccf  = image.calc_ccf(None)
 				trans = ccf.calc_max_location_wrap(-1,-1,-1)
-				dx = trans[0]/2*extrasomething.get_subsample_rate()
-				dy = trans[1]/2*extrasomething.get_subsample_rate()
+				dx = old_div(trans[0],2)*extrasomething.get_subsample_rate()
+				dy = old_div(trans[1],2)*extrasomething.get_subsample_rate()
 			else:
 				image = self.get_box_image()
 				ccf  = image.calc_ccf(None)
@@ -3015,7 +3015,7 @@ class PawelAutoBoxer(AutoBoxer):
 		return old_div(self.pixel_input,self.pixel_output)
 	
 	def get_template_radius(self):
-		return int(self.box_size/2/self.get_subsample_rate())
+		return int(old_div(old_div(self.box_size,2),self.get_subsample_rate()))
 	
 	def get_template_object(self):
 		raise Exception

@@ -579,19 +579,19 @@ class EMHistogramWidget(EMGLWidget):
 	def scr2plot(self,x,y) :
 		""" converts screen coordinates to plot coordinates """
 		try:
-			if self.axisparms[2]=="linear" : x2=(x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]+self.plotlim[0]
-			else : x2=10.0**((x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))+log10(self.plotlim[0]))
-			if self.axisparms[3]=="linear" : y2=(self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]+self.plotlim[1]
-			else : y2=10.0**((self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))+log10(self.plotlim[1]))
+			if self.axisparms[2]=="linear" : x2=old_div((x-self.scrlim[0]),self.scrlim[2])*self.plotlim[2]+self.plotlim[0]
+			else : x2=10.0**(old_div((x-self.scrlim[0]),self.scrlim[2])*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))+log10(self.plotlim[0]))
+			if self.axisparms[3]=="linear" : y2=old_div((self.height()-y-self.scrlim[1]),self.scrlim[3])*self.plotlim[3]+self.plotlim[1]
+			else : y2=10.0**(old_div((self.height()-y-self.scrlim[1]),self.scrlim[3])*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))+log10(self.plotlim[1]))
 			return (x2,y2)
 		except: return (0,0)
 
 	def plot2scr(self,x,y) :
 		""" converts plot coordinates to screen coordinates """
 		try:
-			if self.axisparms[2]=="linear" : x2=(x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0]
+			if self.axisparms[2]=="linear" : x2=old_div((x-self.plotlim[0]),self.plotlim[2])*self.scrlim[2]+self.scrlim[0]
 			else : x2=old_div((-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])),(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2]))))
-			if self.axisparms[3]=="linear" :y2=self.height()-((y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1])
+			if self.axisparms[3]=="linear" :y2=self.height()-(old_div((y-self.plotlim[1]),self.plotlim[3])*self.scrlim[3]+self.scrlim[1])
 			else : y2=old_div((self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])), (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3]))))
 			return (x2,y2)
 		except:

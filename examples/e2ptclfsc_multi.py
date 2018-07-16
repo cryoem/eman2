@@ -156,7 +156,7 @@ def main():
 		
 		masks.append(mask)
 	
-	rings=[int(2*nx*apix/res) for res in (100,30,15,8,4)]
+	rings=[int(old_div(2*nx*apix,res)) for res in (100,30,15,8,4)]
 	print(rings)
 	nbands = len(rings)-1
 

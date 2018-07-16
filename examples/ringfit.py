@@ -141,7 +141,7 @@ def process_image(imgname,imgprefix):
 		pa=PointArray()
 		pa.set_number_points(nowbp)
 		# set initial parameters
-		pa.sim_set_pot_parms(old_div(totlen,nowbp), .01, .0, 35.9*pi/180.0, 0.0, 8000.0,m,totlen/nowbp*.6,800)
+		pa.sim_set_pot_parms(old_div(totlen,nowbp), .01, .0, 35.9*pi/180.0, 0.0, 8000.0,m,old_div(totlen,nowbp)*.6,800)
 		startrange=40	# Range of random start positions
 		startphase=random.uniform(0,2.0*pi/nowbp)	# Random starting phase
 		#xsft=random.uniform(-startrange,startrange)
@@ -189,7 +189,7 @@ def process_image(imgname,imgprefix):
 					plen=old_div((nowbp*math.sin(old_div(math.pi,nowbp))),(math.pi))	# Recalculate the length penalty
 					totlen=336*3.3*plen
 					#totlen=2*336*3.3*plen
-					pa.sim_set_pot_parms(old_div(totlen,nowbp), .5, 100, 35.9*pi/180.0, 0.0, 800.0,m,totlen/nowbp*.6,10000)
+					pa.sim_set_pot_parms(old_div(totlen,nowbp), .5, 100, 35.9*pi/180.0, 0.0, 800.0,m,old_div(totlen,nowbp)*.6,10000)
 					#pa.sim_set_pot_parms(totlen/nowbp, 1, 150, 35.9*pi/180.0, 0.0, 8000.0,m,totlen/nowbp*.9,10000)
 					isstable=0
 				else:

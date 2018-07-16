@@ -374,14 +374,14 @@ def calc_grad(ballrec, options, data, orient):
 	#### variance of gradient
 	nmm=np.mean(gd_all,axis=0)**2
 	var=np.asmatrix(np.sum(nmm.reshape(npballs.shape),axis=1)).T
-	var=var/np.max(var)*100
+	var=old_div(var,np.max(var))*100
 	tosave=np.hstack([npballs, var])
 	varsave=os.path.join(options.path,"grad_amp.pdb")
 	print("Gradient amplitude per Gaussian is saved to {}.".format(varsave))
 	numpy2pdb(tosave, varsave)
 	nmm=np.std(gd_all,axis=0)
 	var=np.asmatrix(np.sum(nmm.reshape(npballs.shape),axis=1)).T
-	var=var/np.max(var)*100
+	var=old_div(var,np.max(var))*100
 	tosave=np.hstack([npballs, var])
 	varsave=os.path.join(options.path,"grad_std.pdb")
 	numpy2pdb(tosave, varsave)
@@ -600,7 +600,7 @@ class BallsReconstruction(object):
 		
 		xx=out.flatten()
 		zz=imgin.flatten()
-		L = T.sum(xx*zz)/T.sqrt(T.sum(xx**2))/T.sqrt(T.sum(zz**2))
+		L = old_div(old_div(T.sum(xx*zz),T.sqrt(T.sum(xx**2))),T.sqrt(T.sum(zz**2)))
 		cost=-L#T.mean(L)
 		grad_conf=T.grad(cost, conf)
 		self.update_conf=[(conf, conf-learnrate*grad_conf)]

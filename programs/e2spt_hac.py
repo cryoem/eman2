@@ -960,7 +960,7 @@ def allvsall(options,preproc):
 					print("""Whereas the multiplicities of the involved particles are""", multiplicity1, multiplicity2)
 					
 				
-			key = str(z).zfill( len( str( nptcls*(nptcls-1)/2 )) )
+			key = str(z).zfill( len( str( old_div(nptcls*(nptcls-1),2) )) )
 			
 			ali_info = {}
 			

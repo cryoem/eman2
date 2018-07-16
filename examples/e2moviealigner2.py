@@ -288,8 +288,8 @@ class MovieAligner(object):
 			ms = options.maxshift
 			c1 = self.static
 			c2 = self.hdr['nimg'] - self.static
-			ub1 = [round(ms*((c1+1)-(i+1))/(c1+1),1) for i in range(c1)]
-			ub2 = [round(ms*(i+1)/(c2+1),1)+1 for i in range(c2)]
+			ub1 = [round(old_div(ms*((c1+1)-(i+1)),(c1+1)),1) for i in range(c1)]
+			ub2 = [round(old_div(ms*(i+1),(c2+1)),1)+1 for i in range(c2)]
 			bounds = []
 			for bound in ub1+ub2:
 				b = int(round(bound))

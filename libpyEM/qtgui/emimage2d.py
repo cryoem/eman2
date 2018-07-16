@@ -484,8 +484,8 @@ class EMImage2DWidget(EMGLWidget):
 				x=self.data["nx"]
 				y=self.data["ny"]
 				xys=QtGui.QApplication.desktop().availableGeometry()
-				mx=xys.width()*2/3
-				my=xys.height()*2/3
+				mx=old_div((y-self.plotlim[1]),self.plotlim[3])
+				my=old_div(xys.height()*2,3)
 
 				self.resize(min(x,mx),min(y,my))
 		except: pass
@@ -697,7 +697,7 @@ class EMImage2DWidget(EMGLWidget):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		if self.scale==newscale: return
 		try:
-			self.origin=(newscale/self.scale*(old_div(self.width(),2.0)+self.origin[0])-old_div(self.width(),2.0),newscale/self.scale*(old_div(self.height(),2.0)+self.origin[1])-old_div(self.height(),2.0))
+			self.origin=(old_div(newscale,self.scale)*(old_div(self.width(),2.0)+self.origin[0])-old_div(self.width(),2.0),old_div(newscale,self.scale)*(old_div(self.height(),2.0)+self.origin[1])-old_div(self.height(),2.0))
 			self.scale=newscale
 			if not quiet : self.signal_set_scale.emit(newscale)
 			self.updateGL()
@@ -927,7 +927,7 @@ class EMImage2DWidget(EMGLWidget):
 			for p in self.disp_proc: p.process_inplace(tmp)
 			values=tmp
 
-		wid = (self.width() * value_size - 1) / 4 * 4 + 4
+		wid =  old_div((self.width() * value_size - 1) , 4) * 4+ 4
 		wdt =  self.width()
 		hgt =  self.height()
 
@@ -971,20 +971,20 @@ class EMImage2DWidget(EMGLWidget):
 			if self.display_fft.is_complex() == False:
 				print("error, the fft is not complex, internal error")
 				return
-			a=(3,(self.width()*3-1)/4*4+4,self.height(),self.display_fft.render_ap24(1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),(self.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
+			a=(3,old_div((self.width()*3-1),4)*4+4,self.height(),self.display_fft.render_ap24(1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()*3-1),4)*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
 		elif self.curfft in (2,3) :
 #			if not self.glflags.npt_textures_unsupported():
-				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
+				a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
 #			else :
 #				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,6))
 		else :
 #			if not self.glflags.npt_textures_unsupported():
 				if self.histogram==1:
-					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,34))
+					a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,34))
 				elif self.histogram==2:
-					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,98))
+					a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,98))
 				else :
-					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
+					a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
 #			else :
 #				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,6))
 
@@ -1096,7 +1096,7 @@ class EMImage2DWidget(EMGLWidget):
 				if self.other_tex_name != 0: glDeleteTextures(self.other_tex_name)
 
 				scale = self.scale*self.otherdatascale
-				b=GLUtil.render_amp8(self.otherdata, int(old_div(self.origin[0],scale)),int(old_div(self.origin[1],scale)),self.width(),self.height(),(self.width()-1)/4*4+4,scale,pixden[0],pixden[1],0,1,1,2)
+				b=GLUtil.render_amp8(self.otherdata, int(old_div(self.origin[0],scale)),int(old_div(self.origin[1],scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,scale,pixden[0],pixden[1],0,1,1,2)
 				gl_render_type = GL_LUMINANCE
 
 				if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)

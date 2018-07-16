@@ -1625,13 +1625,13 @@ def checksaneimagesize( options, stack1, stack2=''):
 				print ("while I could resize the images for you on the fly, results will be less murky if you're explicitly aware that the particles need resizing. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing 'newsize' to be an even number (e.g., 1 pixel smaller than the current boxsize). Then rerun e2spt_classaverage with the resized stack as --input.") 
 				print(sys.exit())
 			elif options.shrink:
-				if nx/options.shrink %2 or ny/options.shrink %2 or nz/options.shrink %2:
-					print(("\n(e2spt_classaverage)(checksaneimagesize) --shrink is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrink, nx/options.shrink %2 ,ny/options.shrink %2 ,nz/options.shrink %2 )))
+				if  old_div(nx, options.shrink) %2or  old_div(ny, options.shrink) %2or nz/options.shrink %2:
+					print(("\n(e2spt_classaverage)(checksaneimagesize) --shrink is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrink,  old_div(nx, options.shrink) %2, old_div(ny, options.shrink) %2, old_div(nz, options.shrink) %2)))
 					sys.exit(1)
 			
 			elif options.shrinkfine:
-				if nx/options.shrinkfine %2 or ny/options.shrinkfine %2 or nz/options.shrinkfine %2:
-					print(("\n(e2spt_classaverage)(checksaneimagesize) --shrinkfine is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrinkfine, nx/options.shrinkfine %2 ,ny/options.shrinkfine %2 ,nz/options.shrinkfine %2 )))
+				if  old_div(nx, options.shrinkfine) %2or  old_div(ny, options.shrinkfine) %2or nz/options.shrinkfine %2:
+					print(("\n(e2spt_classaverage)(checksaneimagesize) --shrinkfine is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrinkfine,  old_div(nx, options.shrinkfine) %2, old_div(ny, options.shrinkfine) %2, old_div(nz, options.shrinkfine) %2)))
 					sys.exit(1)
 		except:
 			print("(except) stack is", stack)

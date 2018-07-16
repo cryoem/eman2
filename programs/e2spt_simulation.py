@@ -985,7 +985,7 @@ class SubtomoSimTask(JSTask):
 			'''
 			Beware, --icethickness supplied in microns
 			'''
-			coordz = random.randint(0 + old_div(image['nx'],2), int(round(options.icethickness*10000/apix - old_div(image['nx'],2) )) )
+			coordz = random.randint(0 + old_div(image['nx'],2), int(round(old_div(options.icethickness*10000,apix) - old_div(image['nx'],2) )) )
 		
 			'''
 			Calculate the particle's distance 'pz' in microns to the mid section of the tomogram in Z 
@@ -993,7 +993,7 @@ class SubtomoSimTask(JSTask):
 			a particle to this plane (above or below in the ice) will affect its defocus.
 			'''
 		
-			pz = coordz*apix/10000 - old_div(options.icethickness,2)	
+			pz = old_div(coordz*apix,10000) - old_div(options.icethickness,2)	
 		
 		'''
 		Calculate coordx from px since it's shifted by half the gridholesize (the position of the tilt axis)
@@ -1001,8 +1001,8 @@ class SubtomoSimTask(JSTask):
 		For coordy, generate a random coordinate afresh.
 		For coordz, generate a random coordinate within --icethickness range
 		'''
-		coordx = int( round( 10000*(px + old_div(options.gridholesize,2))/apix ))
-		coordy = random.randint(0 + old_div(image['nx'],2), int(round(options.gridholesize*10000/apix - old_div(image['nx'],2) )) )									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
+		coordx = int( round(  old_div(10000*(px + old_div(options.gridholesize,2)), apix)))
+		coordy = random.randint(0 + old_div(image['nx'],2), int(round(old_div(options.gridholesize*10000,apix) - old_div(image['nx'],2) )) )									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
 		coordz = int( round( old_div(image['nx'],2.0) ) )
 		
 		if options.set2tiltaxis:

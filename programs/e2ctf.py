@@ -851,7 +851,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
-			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+			im1.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
 #			print -(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys
 #		print i
 		fft1=im1.do_fft()
@@ -1051,8 +1051,8 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		mask2=mask1.copy()*-1+1
 #		mask1.process_inplace("mask.decayedge2d",{"width":4})
 		mask2.process_inplace("mask.decayedge2d",{"width":4})
-		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		mask1.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
+		mask2.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
 
 		# ratio1,2 give us info about how much of the image the mask covers for normalization purposes
 		ratio1=old_div(mask1.get_attr("square_sum"),(ys*ys))	#/1.035
@@ -1087,7 +1087,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
 #			print Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys)
-			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+			im1.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
 
 		im2=im1.copy()
 
@@ -1220,8 +1220,8 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 		mask2=mask1.copy()*-1+1
 #		mask1.process_inplace("mask.decayedge2d",{"width":4})
 		mask2.process_inplace("mask.decayedge2d",{"width":4})
-		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		mask1.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
+		mask2.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
 		ratio1=old_div(mask1.get_attr("square_sum"),(ys*ys))	#/1.035
 		ratio2=old_div(mask2.get_attr("square_sum"),(ys*ys))
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
@@ -1245,7 +1245,7 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
 #			print Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys)
-			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+			im1.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
 
 		im2=im1.copy()
 
@@ -1306,8 +1306,8 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 #		im.write_image("presub.hdf",j)
 		im.sub(bg)
 		sm=0
-		for k in range(nxl*3/4,nxl): sm+=im[k]
-		sm/=nxl-nxl*3/4
+		for k in range(old_div(nxl*3,4),nxl): sm+=im[k]
+		sm/=nxl-old_div(nxl*3,4)
 #		print sm
 		im.sub(sm)
 #		im.write_image("postsub.hdf",j)
@@ -1410,7 +1410,7 @@ def bgedge2d(stackfile,width):
 		for x in range(0,xs-old_div(xst,2),xst):
 			boxl.append((x,0))
 			boxl.append((x,xs-xst))
-		for y in range(xst,xs-3*xst/2,xst):
+		for y in range(xst,xs-old_div(3*xst,2),xst):
 			boxl.append((0,y))
 			boxl.append((xs-xst,y))
 
@@ -2139,7 +2139,7 @@ def ctf_cmp_a(parms,data):
 	ctf.defocus=parms[0]
 	ctf.bfactor=parms[1]
 	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
-	s0=s0*3/2			# This should be roughlythe position of the first zero
+	s0=old_div(s0*3,2)			# This should be roughlythe position of the first zero
 	s0a=max(3,old_div(s0,4))		# This is a lower s0 which will include some of the low resolution structure factor region
 
 	# make a complete CTF curve over 0,s1 range
@@ -2149,7 +2149,7 @@ def ctf_cmp_a(parms,data):
 	# normalize (adjust amplitude)
 	s1=sum(cc[s0a:])
 	s2=sum(bs[s0a:])
-	cc=[f*s2/s1 for f in cc]
+	cc=[old_div(f*s2,s1) for f in cc]
 
 #	plot(cc,bs)
 
@@ -2865,7 +2865,7 @@ class GUIctf(QtGui.QWidget):
 		elif self.plotmode==8:
 			# SNR computed from fit and background
 			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
-			fit=[sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i]) for i in range(len(s))]		# squared * structure factor/background
+			fit=[old_div(sfact2(s[i])*fit[i]**2,max(.001,self.data[val][3][i])) for i in range(len(s))]		# squared * structure factor/background
 
 			# SNR from data
 			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)
