@@ -128,10 +128,10 @@
 ./libpyEM/qtgui/emimagemx.py:1512   self.data.get_ysize()*self.scale/2  |  old_div(self.data.get_ysize()*self.scale, 2)
 ./libpyEM/qtgui/emimagemx.py:1515   self.data.get_xsize()*self.scale/2  |  old_div(self.data.get_xsize()*self.scale, 2)
 ./libpyEM/qtgui/emimagemx.py:1515   self.data.get_ysize()*self.scale/2  |  old_div(self.data.get_ysize()*self.scale, 2)
-./libpyEM/qtgui/emimageutil.py:442   j*126/self.norm  |  j*126/self.norm
-./libpyEM/qtgui/emimageutil.py:451   j*126/self.norm  |  j*126/self.norm
-./libpyEM/qtgui/emimageutil.py:457   self.probe[1]*126/self.norm  |  self.probe[1]*126/self.norm
-./libpyEM/qtgui/emimageutil.py:459   self.probe[1]*126/self.norm  |  self.probe[1]*126/self.norm
+./libpyEM/qtgui/emimageutil.py:442   j*126/self.norm  |  old_div(j*126, self.norm)
+./libpyEM/qtgui/emimageutil.py:451   j*126/self.norm  |  old_div(j*126, self.norm)
+./libpyEM/qtgui/emimageutil.py:457   self.probe[1]*126/self.norm  |  old_div(self.probe[1]*126, self.norm)
+./libpyEM/qtgui/emimageutil.py:459   self.probe[1]*126/self.norm  |  old_div(self.probe[1]*126, self.norm)
 ./libpyEM/qtgui/emplot2d.py:547   (self.data[i][self.axes[i][2]]-climits[0])/(climits[1]-climits[0])*255.0  |  (self.data[i][self.axes[i][2]]-climits[0])/(climits[1]-climits[0])*255.0
 ./libpyEM/qtgui/emplot2d.py:643   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]
 ./libpyEM/qtgui/emplot2d.py:644   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
