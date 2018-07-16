@@ -80,11 +80,11 @@
 ./examples/tomotrackbox.py:640   self.maxshift*4/5  |  old_div(self.maxshift*4, 5)
 ./examples/tomotrackbox.py:678   self.maxshift*4/5  |  old_div(self.maxshift*4, 5)
 ./examples/tomotrackbox.py:706   self.maxshift*4/5  |  old_div(self.maxshift*4, 5)
-./examples/UnitTestGetComplexAt2D.py:40   ky*nx/2  |  ky*nx/2
-./examples/UnitTestGetComplexAt2D.py:41   ky*nx/2  |  ky*nx/2
-./examples/UnitTestGetComplexAt2D.py:206   ky*nx/2  |  ky*nx/2
-./examples/UnitTestGetComplexAt2D.py:207   ky*nx/2  |  ky*nx/2
-./examples/UnitTestGetComplexAt3D.py:42   ky*nx/2  |  ky*nx/2
+./examples/UnitTestGetComplexAt2D.py:40   ky*nx/2  |  old_div(ky*nx, 2)
+./examples/UnitTestGetComplexAt2D.py:41   ky*nx/2  |  old_div(ky*nx, 2)
+./examples/UnitTestGetComplexAt2D.py:206   ky*nx/2  |  old_div(ky*nx, 2)
+./examples/UnitTestGetComplexAt2D.py:207   ky*nx/2  |  old_div(ky*nx, 2)
+./examples/UnitTestGetComplexAt3D.py:42   ky*nx/2  |  old_div(ky*nx, 2)
 ./examples/UnitTestGetComplexAt3D.py:42   kz*ny*nx/2  |  kz*ny*nx/2
 ./examples/UnitTestGetComplexAt3D.py:43   ky*nx/2  |  ky*nx/2
 ./examples/UnitTestGetComplexAt3D.py:43   kz*ny*nx/2  |  kz*ny*nx/2
