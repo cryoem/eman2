@@ -102,9 +102,9 @@
 ./libpyEM/qtgui/emhist.py:582   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  old_div((x-self.scrlim[0]), self.scrlim[2])*self.plotlim[2]
 ./libpyEM/qtgui/emhist.py:583   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  old_div((x-self.scrlim[0]), self.scrlim[2])*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
 ./libpyEM/qtgui/emhist.py:584   (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]  |  old_div((self.height()-y-self.scrlim[1]), self.scrlim[3])*self.plotlim[3]
-./libpyEM/qtgui/emhist.py:585   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
-./libpyEM/qtgui/emhist.py:592   (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]  |  (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]
-./libpyEM/qtgui/emhist.py:594   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]
+./libpyEM/qtgui/emhist.py:585   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  old_div((self.height()-y-self.scrlim[1]), self.scrlim[3])*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
+./libpyEM/qtgui/emhist.py:592   (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]  |  old_div((x-self.plotlim[0]), self.plotlim[2])*self.scrlim[2]
+./libpyEM/qtgui/emhist.py:594   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  old_div((y-self.plotlim[1]), self.plotlim[3])*self.scrlim[3]
 ./libpyEM/qtgui/emimage2d.py:487   xys.width()*2/3  |  xys.width()*2/3
 ./libpyEM/qtgui/emimage2d.py:488   xys.height()*2/3  |  xys.height()*2/3
 ./libpyEM/qtgui/emimage2d.py:700   newscale/self.scale*(old_div(self.width(),2.0)+self.origin[0])  |  newscale/self.scale*(old_div(self.width(),2.0)+self.origin[0])
