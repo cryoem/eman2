@@ -229,18 +229,18 @@
 ./programs/e2speedtest.py:149   100 * NTT / 2  |  old_div(100 * NTT ,  2)
 ./programs/e2speedtest.py:158   100 * NTT / 2  |  old_div(100 * NTT ,  2)
 ./programs/e2speedtest.py:167   100 * NTT / 2  |  old_div(100 * NTT ,  2)
-./programs/e2spt_boxer.py:997    a[0]*bs/2  |   a[0]*bs/2
-./programs/e2spt_boxer.py:997    a[1]*bs/2  |   a[1]*bs/2
-./programs/e2spt_boxer.py:997    a[2]*bs/2  |   a[2]*bs/2
-./programs/e2spt_boxer.py:997    a[0]*bs/2  |   a[0]*bs/2
-./programs/e2spt_boxer.py:997    a[1]*bs/2  |   a[1]*bs/2
-./programs/e2spt_boxer.py:997    a[2]*bs/2  |   a[2]*bs/2
-./programs/e2spt_boxer22.py:904    a[0]*bs/2  |   a[0]*bs/2
-./programs/e2spt_boxer22.py:904    a[1]*bs/2  |   a[1]*bs/2
-./programs/e2spt_boxer22.py:904    a[2]*bs/2  |   a[2]*bs/2
-./programs/e2spt_boxer22.py:904    a[0]*bs/2  |   a[0]*bs/2
-./programs/e2spt_boxer22.py:904    a[1]*bs/2  |   a[1]*bs/2
-./programs/e2spt_boxer22.py:904    a[2]*bs/2  |   a[2]*bs/2
+./programs/e2spt_boxer.py:997    a[0]*bs/2  |   old_div(a[0]*bs, 2)
+./programs/e2spt_boxer.py:997    a[1]*bs/2  |   old_div(a[1]*bs, 2)
+./programs/e2spt_boxer.py:997    a[2]*bs/2  |   old_div(a[2]*bs, 2)
+./programs/e2spt_boxer.py:997    a[0]*bs/2  |   old_div(a[0]*bs, 2)
+./programs/e2spt_boxer.py:997    a[1]*bs/2  |   old_div(a[1]*bs, 2)
+./programs/e2spt_boxer.py:997    a[2]*bs/2  |   old_div(a[2]*bs, 2)
+./programs/e2spt_boxer22.py:904    a[0]*bs/2  |   old_div(a[0]*bs, 2)
+./programs/e2spt_boxer22.py:904    a[1]*bs/2  |   old_div(a[1]*bs, 2)
+./programs/e2spt_boxer22.py:904    a[2]*bs/2  |   old_div(a[2]*bs, 2)
+./programs/e2spt_boxer22.py:904    a[0]*bs/2  |   old_div(a[0]*bs, 2)
+./programs/e2spt_boxer22.py:904    a[1]*bs/2  |   old_div(a[1]*bs, 2)
+./programs/e2spt_boxer22.py:904    a[2]*bs/2  |   old_div(a[2]*bs, 2)
 ./programs/e2spt_classaverage.py:1628    nx/options.shrink %2  |   nx/options.shrink %2
 ./programs/e2spt_classaverage.py:1628    ny/options.shrink %2  |   ny/options.shrink %2
 ./programs/e2spt_classaverage.py:1628    nz/options.shrink %2  |   nz/options.shrink %2
