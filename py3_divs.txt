@@ -149,9 +149,9 @@
 ./libpyEM/qtgui/emplot3d.py:669   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  old_div((x-self.scrlim[0]), self.scrlim[2])*self.plotlim[2]
 ./libpyEM/qtgui/emplot3d.py:670   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  old_div((x-self.scrlim[0]), self.scrlim[2])*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
 ./libpyEM/qtgui/emplot3d.py:671   (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]  |  old_div((self.height()-y-self.scrlim[1]), self.scrlim[3])*self.plotlim[3]
-./libpyEM/qtgui/emplot3d.py:672   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
-./libpyEM/qtgui/emplot3d.py:679   (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]  |  (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]
-./libpyEM/qtgui/emplot3d.py:681   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]
+./libpyEM/qtgui/emplot3d.py:672   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  old_div((self.height()-y-self.scrlim[1]), self.scrlim[3])*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
+./libpyEM/qtgui/emplot3d.py:679   (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]  |  old_div((x-self.plotlim[0]), self.plotlim[2])*self.scrlim[2]
+./libpyEM/qtgui/emplot3d.py:681   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  old_div((y-self.plotlim[1]), self.plotlim[3])*self.scrlim[3]
 ./libpyEM/qtgui/empmwidgets.py:972   soln/len(yaxis)*xaxis[-1]  |  soln/len(yaxis)*xaxis[-1]
 ./libpyEM/qtgui/emscene3d.py:1925   boundingbox*2/screenfraction  |  boundingbox*2/screenfraction
 ./libpyEM/qtgui/emscene3d.py:2896    -self.item3d().camera.getViewPortWidthScaling()*self.item3d().camera.getWidth()/2  |   -self.item3d().camera.getViewPortWidthScaling()*self.item3d().camera.getWidth()/2
