@@ -107,9 +107,9 @@
 ./libpyEM/qtgui/emhist.py:594   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  old_div((y-self.plotlim[1]), self.plotlim[3])*self.scrlim[3]
 ./libpyEM/qtgui/emimage2d.py:487   xys.width()*2/3  |  old_div((y-self.plotlim[1]), self.plotlim[3])
 ./libpyEM/qtgui/emimage2d.py:488   xys.height()*2/3  |  old_div(xys.height()*2, 3)
-./libpyEM/qtgui/emimage2d.py:700   newscale/self.scale*(old_div(self.width(),2.0)+self.origin[0])  |  newscale/self.scale*(old_div(self.width(),2.0)+self.origin[0])
-./libpyEM/qtgui/emimage2d.py:700   newscale/self.scale*(old_div(self.height(),2.0)+self.origin[1])  |  newscale/self.scale*(old_div(self.height(),2.0)+self.origin[1])
-./libpyEM/qtgui/emimage2d.py:930    (self.width() * value_size - 1) / 4 * 4  |   (self.width() * value_size - 1) / 4 * 4
+./libpyEM/qtgui/emimage2d.py:700   newscale/self.scale*(old_div(self.width(),2.0)+self.origin[0])  |  old_div(newscale, self.scale)*(old_div(self.width(),2.0)+self.origin[0])
+./libpyEM/qtgui/emimage2d.py:700   newscale/self.scale*(old_div(self.height(),2.0)+self.origin[1])  |  old_div(newscale, self.scale)*(old_div(self.height(),2.0)+self.origin[1])
+./libpyEM/qtgui/emimage2d.py:930    (self.width() * value_size - 1) / 4 * 4  |   old_div((self.width() * value_size - 1) ,  4) * 4
 ./libpyEM/qtgui/emimage2d.py:974   (self.width()*3-1)/4*4  |  (self.width()*3-1)/4*4
 ./libpyEM/qtgui/emimage2d.py:974   (self.width()*3-1)/4*4  |  (self.width()*3-1)/4*4
 ./libpyEM/qtgui/emimage2d.py:977   (self.width()-1)/4*4  |  (self.width()-1)/4*4
