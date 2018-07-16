@@ -164,10 +164,10 @@
 ./libpyEM/qtgui/valslider.py:1215   -aspectratio*size/2  |  old_div(-aspectratio*size, 2)
 ./libpyEM/qtgui/valslider.py:1217   aspectratio*size/2  |  old_div(aspectratio*size, 2)
 ./libpyEM/qtgui/valslider.py:1219   aspectratio*size/2  |  old_div(aspectratio*size, 2)
-./programs/e2a2d_stat.py:133   2*nx*apix/100  |  2*nx*apix/100
-./programs/e2a2d_stat.py:133   2*nx*apix/20  |  2*nx*apix/20
-./programs/e2boxer_old.py:3325   (w-2*wborder) / sizew * (index-1-self.i_start)  |  (w-2*wborder) / sizew * (index-1-self.i_start)
-./programs/e2boxer_old.py:3327   (w-2*wborder) / sizew * (index-self.i_start)  |  (w-2*wborder) / sizew * (index-self.i_start)
+./programs/e2a2d_stat.py:133   2*nx*apix/100  |  old_div(aspectratio*size, 2)
+./programs/e2a2d_stat.py:133   2*nx*apix/20  |  old_div(2*nx*apix, 20)
+./programs/e2boxer_old.py:3325   (w-2*wborder) / sizew * (index-1-self.i_start)  |  old_div((w-2*wborder) ,  sizew) * (index-1-self.i_start)
+./programs/e2boxer_old.py:3327   (w-2*wborder) / sizew * (index-self.i_start)  |  old_div((w-2*wborder) ,  sizew) * (index-self.i_start)
 ./programs/e2boxer_old.py:3331   (h-2*hborder)*ctfdata2[index-1]/sizehctf  |  (h-2*hborder)*ctfdata2[index-1]/sizehctf
 ./programs/e2boxer_old.py:3333   (h-2*hborder)*self.data[list_index][index-1]/sizeh  |  (h-2*hborder)*self.data[list_index][index-1]/sizeh
 ./programs/e2boxer_old.py:3336   (h-2*hborder)*ctfdata2[index]/sizehctf  |  (h-2*hborder)*ctfdata2[index]/sizehctf
