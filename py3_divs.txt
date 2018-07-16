@@ -196,9 +196,9 @@
 ./programs/e2ctf.py:2868   sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])  |  old_div(sfact2(s[i])*fit[i]**2, max(.001,self.data[val][3][i]))
 ./programs/e2ctffind3util.py:185    dstep / apix * 10000  |   old_div(dstep ,  apix) * 10000
 ./programs/e2ddd_movie.py:691    n*(n-1)/2  |   old_div(n*(n-1), 2)
-./programs/e2evalrefine.py:281   2*nx*apix/10  |  2*nx*apix/10
-./programs/e2evalrefine.py:441   2*nx*apix/res  |  2*nx*apix/res
-./programs/e2evalrefine.py:604   2*nx*apix/res  |  2*nx*apix/res
+./programs/e2evalrefine.py:281   2*nx*apix/10  |   old_div(2*nx*apix, 10)
+./programs/e2evalrefine.py:441   2*nx*apix/res  |  old_div(2*nx*apix, res)
+./programs/e2evalrefine.py:604   2*nx*apix/res  |  old_div(2*nx*apix, res)
 ./programs/e2evalrefine.py:860   cores*(endtime-starttime)/3600  |  cores*(endtime-starttime)/3600
 ./programs/e2evalrefine.py:860   cores*(endtime-starttime)/(3600*lastiter)  |  cores*(endtime-starttime)/(3600*lastiter)
 ./programs/e2fsc.py:84   len(fsc)*2/3  |  len(fsc)*2/3
