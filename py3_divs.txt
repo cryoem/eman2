@@ -88,9 +88,9 @@
 ./examples/UnitTestGetComplexAt3D.py:42   kz*ny*nx/2  |  old_div(ky*nx, 2)
 ./examples/UnitTestGetComplexAt3D.py:43   ky*nx/2  |  old_div(ky*nx, 2)
 ./examples/UnitTestGetComplexAt3D.py:43   kz*ny*nx/2  |  old_div(kz*ny*nx, 2)
-./examples/UnitTestGetComplexAt3D.py:209   ky*nx/2  |  ky*nx/2
-./examples/UnitTestGetComplexAt3D.py:210   ky*nx/2  |  ky*nx/2
-./libpyEM/Anneal.py:345   Tfactor * step / self.steps  |  Tfactor * step / self.steps
+./examples/UnitTestGetComplexAt3D.py:209   ky*nx/2  |  old_div(ky*nx, 2)
+./examples/UnitTestGetComplexAt3D.py:210   ky*nx/2  |  old_div(ky*nx, 2)
+./libpyEM/Anneal.py:345   Tfactor * step / self.steps  |  old_div(Tfactor * step ,  self.steps)
 ./libpyEM/EMAN2_utils.py:94   np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx  |  np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx
 ./libpyEM/EMAN2_utils.py:193    nx*(u-u.min())/(u.max()-u.min())  |   nx*(u-u.min())/(u.max()-u.min())
 ./libpyEM/EMAN2_utils.py:194    ny*(v-v.min())/(v.max()-v.min())  |   ny*(v-v.min())/(v.max()-v.min())
