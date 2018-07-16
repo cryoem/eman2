@@ -257,9 +257,9 @@
 ./programs/e2spt_ctf_old.py:1071    relativecoordz * apix/10000  |   old_div(relativecoordz * apix, 10000)
 ./programs/e2spt_ctf_old.py:1076    relativecoordz * apix/10000  |   old_div(relativecoordz * apix, 10000)
 ./programs/e2spt_ctf_old.py:1085    relativecoordz * apix/10000  |   old_div(relativecoordz * apix, 10000)
-./programs/e2spt_ctf_old.py:1862    ( old_div(nx,2.0) ) * apix / 10000  |   ( old_div(nx,2.0) ) * apix / 10000
-./programs/e2spt_ctf_old.py:1941    ( old_div(nx,2.0) ) * apix/10000  |   ( old_div(nx,2.0) ) * apix/10000
-./programs/e2spt_ctf_old.py:2101    icethickness * img['apix_x']/10000  |   icethickness * img['apix_x']/10000
+./programs/e2spt_ctf_old.py:1862    ( old_div(nx,2.0) ) * apix / 10000  |   old_div(( old_div(nx,2.0) ) * apix ,  10000)
+./programs/e2spt_ctf_old.py:1941    ( old_div(nx,2.0) ) * apix/10000  |   old_div(( old_div(nx,2.0) ) * apix, 10000)
+./programs/e2spt_ctf_old.py:2101    icethickness * img['apix_x']/10000  |   old_div(icethickness * img['apix_x'], 10000)
 ./programs/e2spt_eval.py:75   self.size().width()/4*.9  |  self.size().width()/4*.9
 ./programs/e2spt_extract.py:98   int(val["boxsize"])*scale/2  |  int(val["boxsize"])*scale/2
 ./programs/e2spt_extract.py:128   ptcl["nx"]/2*scale  |  ptcl["nx"]/2*scale
