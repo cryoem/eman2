@@ -188,9 +188,9 @@
 ./programs/e2ctf.py:1224   ys2*(oversamp-1)/2  |  old_div(ys2*(oversamp-1), 2)
 ./programs/e2ctf.py:1248   ys2*(oversamp-1)/2  |  old_div(ys2*(oversamp-1), 2)
 ./programs/e2ctf.py:1248   ys2*(oversamp-1)/2  |  old_div(ys2*(oversamp-1), 2)
-./programs/e2ctf.py:1309   nxl*3/4  |  nxl*3/4
-./programs/e2ctf.py:1310   nxl*3/4  |  nxl*3/4
-./programs/e2ctf.py:1413   3*xst/2  |  3*xst/2
+./programs/e2ctf.py:1309   nxl*3/4  |  old_div(nxl*3, 4)
+./programs/e2ctf.py:1310   nxl*3/4  |  old_div(nxl*3, 4)
+./programs/e2ctf.py:1413   3*xst/2  |  old_div(3*xst, 2)
 ./programs/e2ctf.py:2142   s0*3/2  |  s0*3/2
 ./programs/e2ctf.py:2152   f*s2/s1  |  f*s2/s1
 ./programs/e2ctf.py:2868   sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])  |  sfact2(s[i])*fit[i]**2/max(.001,self.data[val][3][i])
