@@ -172,8 +172,8 @@
 ./programs/e2boxer_old.py:3333   (h-2*hborder)*self.data[list_index][index-1]/sizeh  |  old_div((h-2*hborder)*self.data[list_index][index-1], sizeh)
 ./programs/e2boxer_old.py:3336   (h-2*hborder)*ctfdata2[index]/sizehctf  |  old_div((h-2*hborder)*ctfdata2[index], sizehctf)
 ./programs/e2boxer_old.py:3338   (h-2*hborder)*self.data[list_index][index]/sizeh  |  old_div((h-2*hborder)*self.data[list_index][index], sizeh)
-./programs/e2classaverage.py:588   it*100/(niter+2)  |  it*100/(niter+2)
-./programs/e2classifykmeans.py:132   i*72/maxcls  |  i*72/maxcls
+./programs/e2classaverage.py:588   it*100/(niter+2)  |  old_div(it*100, (niter+2))
+./programs/e2classifykmeans.py:132   i*72/maxcls  |  old_div(i*72, maxcls)
 ./programs/e2ctf.py:854   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
 ./programs/e2ctf.py:854   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
 ./programs/e2ctf.py:1054   ys2*(oversamp-1)/2  |  ys2*(oversamp-1)/2
