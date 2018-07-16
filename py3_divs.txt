@@ -199,10 +199,10 @@
 ./programs/e2evalrefine.py:281   2*nx*apix/10  |   old_div(2*nx*apix, 10)
 ./programs/e2evalrefine.py:441   2*nx*apix/res  |  old_div(2*nx*apix, res)
 ./programs/e2evalrefine.py:604   2*nx*apix/res  |  old_div(2*nx*apix, res)
-./programs/e2evalrefine.py:860   cores*(endtime-starttime)/3600  |  cores*(endtime-starttime)/3600
-./programs/e2evalrefine.py:860   cores*(endtime-starttime)/(3600*lastiter)  |  cores*(endtime-starttime)/(3600*lastiter)
-./programs/e2fsc.py:84   len(fsc)*2/3  |  len(fsc)*2/3
-./programs/e2fsc.py:208   len(fsc)*2/3  |  len(fsc)*2/3
+./programs/e2evalrefine.py:860   cores*(endtime-starttime)/3600  |  old_div(cores*(endtime-starttime), 3600)
+./programs/e2evalrefine.py:860   cores*(endtime-starttime)/(3600*lastiter)  |  old_div(cores*(endtime-starttime), (3600*lastiter))
+./programs/e2fsc.py:84   len(fsc)*2/3  |   old_div(len(fsc)*2, 3)
+./programs/e2fsc.py:208   len(fsc)*2/3  |  old_div(len(fsc)*2, 3)
 ./programs/e2initialmodel.py:210   it*100/options["iter"]  |  it*100/options["iter"]
 ./programs/e2initialmodel.py:237   len(ptcls)*7/8  |  len(ptcls)*7/8
 ./programs/e2initialmodel.py:248   boxsize*3/2  |  boxsize*3/2
