@@ -60,9 +60,9 @@
 ./examples/e2tomoseg.py:977    a[2]*bs/2  |   a[2]*bs/2
 ./examples/e2tvrecon2d.py:474    (t_old - 1)/t_new * (u_n - u_old)  |   (t_old - 1)/t_new * (u_n - u_old)
 ./examples/em_sim.py:223   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
-./examples/em_sim.py:263   ((ix)**2)/(f*2)*(2*np.pi/wavelen)  |  ((ix)**2)/(f*2)*(2*np.pi/wavelen)
+./examples/em_sim.py:263   ((ix)**2)/(f*2)*  |  ((ix)**2)/(f*2)*
 ./examples/em_sim.py:270   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
-./examples/em_sim.py:443   rr/(f*2)*(2*np.pi/wavelen)  |  rr/(f*2)*(2*np.pi/wavelen)
+./examples/em_sim.py:443   rr/(f*2)*  |  rr/(f*2)*
 ./examples/em_sim.py:542   xm/ym*ymax  |  xm/ym*ymax
 ./examples/em_sim.py:692   pts/l*scale  |  pts/l*scale
 ./examples/em_sim.py:806   p0/winsz*2.  |  p0/winsz*2.
@@ -272,7 +272,7 @@
 ./programs/e2spt_simulation.py:1004    10000*(px + old_div(options.gridholesize,2))/apix  |   10000*(px + old_div(options.gridholesize,2))/apix
 ./programs/e2spt_simulation.py:1005   options.gridholesize*10000/apix  |  options.gridholesize*10000/apix
 ./programs/e2spt_tiltrefine.py:245   (s+clp)/clp/2  |  (s+clp)/clp/2
-./programs/e2spt_tomoctf.py:161   sz/2/np.cos(tpm[3]/180.*np.pi)*.9  |  sz/2/np.cos(tpm[3]/180.*np.pi)*.9
+./programs/e2spt_tomoctf.py:161   sz/2  |  sz/2
 ./programs/e2ssehunter.py:148   -1*res/apix  |  -1*res/apix
 ./programs/e2tomo_eval.py:78   self.size().width()/3*.9  |  self.size().width()/3*.9
 ./programs/e2tomogram.py:222   -len(imgs_2k)*options.tltstep/2  |  -len(imgs_2k)*options.tltstep/2
