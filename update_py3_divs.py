@@ -10,7 +10,7 @@ for l in lines:
 	file = fl[0]
 	num = int(fl[1])
 	
-	strings = ''.join(cols[1:]).split('|')
+	strings = ' '.join(cols[1:]).split('|')
 	
 	print(file, num, strings)
 	
