@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2016-08
+from builtins import range
 from EMAN2 import *
 import numpy as np
 from Simplex import Simplex

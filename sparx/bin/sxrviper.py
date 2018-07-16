@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 import global_def
 from global_def import *
 from mpi import MPI_SUM, mpi_reduce, mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier, \
@@ -42,7 +45,7 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 																		  no_of_viper_runs_analyzed_together_from_user_options - 1)
 
 	criterion_measure = [0.0] * number_of_additional_combinations_for_this_viper_iteration
-	all_n_minus_1_combinations_taken_k_minus_1_at_a_time = list(itertools.combinations(range(no_of_viper_runs_analyzed_together - 1),
+	all_n_minus_1_combinations_taken_k_minus_1_at_a_time = list(itertools.combinations(list(range(no_of_viper_runs_analyzed_together - 1)),
 																  no_of_viper_runs_analyzed_together_from_user_options - 1))
 
 	no_of_processors = mpi_comm_size(MPI_COMM_WORLD)
@@ -166,11 +169,11 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 
 	ti1, ti3, out = find_common_subset(p, 0, symmetry_class=symc)
 	u = []
-	for i in xrange(len(ti3)):
+	for i in range(len(ti3)):
 		u.append([ti3[i],i])
 	u.sort()
 	# EMAN2.display([range(len(u)),[u[i][0] for i in xrange(len(u))]])
-	plt.plot(range(len(u)),[u[i][0] for i in xrange(len(u))])
+	plt.plot(list(range(len(u))),[u[i][0] for i in range(len(u))])
 
 	# import json; f = open("error_curve%03d.json"%plot_errors_between_any_number_of_projections.counter, 'w')
 	# json.dump([u[i][0] for i in xrange(len(u))],f); f.close()
@@ -178,8 +181,8 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 	plt.ylabel('Error')
 	plt.xlabel('Image index')
 	plt.title("Sorted errors between projections")
-	import StringIO
-	which_projections = StringIO.StringIO()
+	import io
+	which_projections = io.StringIO()
 	which_projections.write("_" + "%.6f"%error_value)
 	for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
 	for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
@@ -225,7 +228,7 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 			optimized_split_point = split_point
 
 		# split_point = optimized_split_point
-		plt.plot(range(len(error_curve_func)),error_curve_func)
+		plt.plot(list(range(len(error_curve_func))),error_curve_func)
 
 		first_line_x = list(map(int, np.linspace(0,split_point,resolution)*data_set_length))
 		first_line_y = np.array([error_curve_func[x] for x in first_line_x])
@@ -238,8 +241,8 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 		second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
 		plt.plot(second_line_x,second_line_z(second_line_x))
 
-		import StringIO
-		which_projections = StringIO.StringIO()
+		import io
+		which_projections = io.StringIO()
 		which_projections.write("_" + "%.03f__%.6f"%(split_point, goodness_of_fit_for_both_lines))
 		for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
 		for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
@@ -249,7 +252,7 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 		plt.close()
 
 	split_point = optimized_split_point
-	plt.plot(range(len(error_curve_func)),error_curve_func)
+	plt.plot(list(range(len(error_curve_func))),error_curve_func)
 
 	first_line_x = list(map(int, np.linspace(0,split_point,resolution)*data_set_length))
 	first_line_y = np.array([error_curve_func[x] for x in first_line_x])
@@ -262,8 +265,8 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 	second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
 	plt.plot(second_line_x,second_line_z(second_line_x))
 
-	import StringIO
-	which_projections = StringIO.StringIO()
+	import io
+	which_projections = io.StringIO()
 	which_projections.write("_" + "%.03f"%split_point)
 	for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
 	for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
@@ -338,7 +341,7 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	subset, avg_diff_per_image, rotated_params = find_common_subset(projs, target_threshold = 0, symmetry_class = symc)
 
 	error_values_and_indices = []
-	for i in xrange(len(avg_diff_per_image)):
+	for i in range(len(avg_diff_per_image)):
 		error_values_and_indices.append([avg_diff_per_image[i], i])
 	del subset, avg_diff_per_image
 
@@ -351,7 +354,7 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 		outlier_index_threshold = outlier_percentile * (len(error_values_and_indices) - 1)/ 100.0
 	elif outlier_index_threshold_method == "angle_measure":
 		error_values = [i[0] for i in error_values_and_indices]
-		outlier_index_threshold = min(range(len(error_values)), key=lambda i: abs(error_values[i]-angle_threshold))
+		outlier_index_threshold = min(list(range(len(error_values))), key=lambda i: abs(error_values[i]-angle_threshold))
 	elif outlier_index_threshold_method == "use all images":
 		outlier_index_threshold = len(error_values_and_indices)
 
@@ -367,7 +370,7 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	reversed_sorted_index_outliers = copy.deepcopy(index_outliers)
 	reversed_sorted_index_outliers.sort(reverse=True)
 
-	for k in xrange(len(projs)):
+	for k in range(len(projs)):
 		for l in reversed_sorted_index_outliers:
 			del rotated_params[k][l]
 
@@ -529,7 +532,7 @@ def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
 			# dirs = filter(lambda x:'run' in x, dirs)
 			import re
 			dirs = [x for x in dirs if re.search('run\d\d\d$', x)]
-			get_already_processed_viper_runs.r_permutation = range(len(dirs))
+			get_already_processed_viper_runs.r_permutation = list(range(len(dirs)))
 			random.shuffle(get_already_processed_viper_runs.r_permutation)
 			print(str(get_already_processed_viper_runs.r_permutation))
 		get_already_processed_viper_runs.counter += 1
@@ -812,7 +815,7 @@ output_directory: directory name into which the output files will be written.  I
 			print("XXXXXXXXXXXXXXXXX")
 			print("Number of projections (in loop): " + str(len(all_projs)))
 			print("XXXXXXXXXXXXXXXXX")
-			subset = range(len(all_projs))
+			subset = list(range(len(all_projs)))
 		else:
 			all_projs = None
 			subset = None

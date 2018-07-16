@@ -5,6 +5,7 @@ from __future__ import print_function
 # similar to capabilities in e2ddd_movie, but without the alignment step.  This program was designed in the context of a specific project
 # and filenaming,etc would have to be tweaked for use in other projects
 
+from builtins import range
 from EMAN2 import *
 import sys
 import os
@@ -15,14 +16,14 @@ def paircmp(im1,im2):
 	nx=im1["nx"]/256-1
 	ny=im1["ny"]/256-1
 	vals=[0,0,0]
-	for x in xrange(nx):
-		for y in xrange(ny):
+	for x in range(nx):
+		for y in range(ny):
 			im1a=im1.get_clip(Region(128+x*256,128+y*256,256,256))
 			im2a=im2.get_clip(Region(128+x*256,128+y*256,256,256))
-			for i in xrange(3):
+			for i in range(3):
 				vals[i]-=im1a.cmp("frc",im2a,{"minres":rng[i],"maxres":rng[i+1]})
 
-	for i in xrange(3): vals[i]/=nx*ny
+	for i in range(3): vals[i]/=nx*ny
 	
 	return vals
 
@@ -64,7 +65,7 @@ avg=sum(stkf)
 # write the quality plot for different resolutions (80-18, 18-10 and 10-4 A)
 out=open(sys.argv[1].split("-")[0]+"_qual.txt","w")
 qlist=[]
-for i in xrange(len(stkf)):
+for i in range(len(stkf)):
 	im=stkf[i]
 	pc=paircmp(im,avg)
 	out.write("{}\t{}\t{}\t{}\n".format(i,pc[0],pc[1],pc[2]))
@@ -93,13 +94,13 @@ print("Write Output")
 avr=Averagers.get("mean")
 avr.add_image_list(stk)
 av=avr.finish()
-av["class_ptcl_idxs"]=range(len(stk))
+av["class_ptcl_idxs"]=list(range(len(stk)))
 av.write_image("micrographs/"+base_name(sys.argv[1].split("-")[0]+".mrc")+"__ali.hdf",0)
 
 avr=Averagers.get("mean")
 avr.add_image_list(stk[2:19])
 av=avr.finish()
-av["class_ptcl_idxs"]=range(2,19)
+av["class_ptcl_idxs"]=list(range(2,19))
 av.write_image("micrographs/"+base_name(sys.argv[1].split("-")[0]+".mrc")+"__218.hdf",0)
 
 

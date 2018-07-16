@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 import sys
 
@@ -137,13 +138,13 @@ def main():
 			# Find the minimum value near the origin, which we'll use as a zero (though it likely should not be)
 			mv=(fft1d[1],1)
 			fz=int(ctf.zero(0)/(ds*2))
-			for lz in xrange(1,fz):
+			for lz in range(1,fz):
 				mv=min(mv,(fft1d[lz],lz))
 
 			xyd.insort(mv[1],mv[0])
 
 			# now we add all of the zero locations to our XYData object
-			for i in xrange(100):
+			for i in range(100):
 				z=int(ctf.zero(i)/ds)
 				if z>=len(bg_1d)-1: break
 				if fft1d[z-1]<fft1d[z] and fft1d[z-1]<fft1d[z+1]: mv=(z-1,fft1d[z-1])
@@ -152,17 +153,17 @@ def main():
 				xyd.insort(mv[0],mv[1])
 
 			# new background is interpolated XYData
-			ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
+			ctf.background=[xyd.get_yatx_smooth(i,1) for i in range(len(bg_1d))]
 
 			# if our first point (between the origin and the first 0) is too high, we readjust it once
-			bs=[fft1d[i]-ctf.background[i] for i in xrange(fz)]
+			bs=[fft1d[i]-ctf.background[i] for i in range(fz)]
 			if min(bs)<0 :
 				mv=(bs[0],fft1d[0],0)
-				for i in xrange(1,fz): mv=min(mv,(bs[i],fft1d[i],i))
+				for i in range(1,fz): mv=min(mv,(bs[i],fft1d[i],i))
 				xyd.set_x(0,mv[2])
 				xyd.set_y(0,mv[1])
 				
-				ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
+				ctf.background=[xyd.get_yatx_smooth(i,1) for i in range(len(bg_1d))]
 
 			bg1d=np.array(ctf.background)
 			r=len(ctf.background)

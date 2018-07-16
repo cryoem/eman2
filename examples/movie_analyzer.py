@@ -3,6 +3,7 @@ from __future__ import print_function
 
 # Author: Michael Bell 09/2016
 
+from builtins import range
 import os
 
 if os.getenv("DISPLAY") == None:
@@ -703,9 +704,9 @@ def calc_incoherent_pws(frames,bs=2048):
 	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
 	my = np.arange(bs+50,frames[1]['ny']-bs+50,bs)
 	regions = {}
-	for i in xrange(len(frames)): regions[i] = [[x,y] for y in my for x in mx]
+	for i in range(len(frames)): regions[i] = [[x,y] for y in my for x in mx]
 	ips = Averagers.get('mean')
-	for i in xrange(len(frames)):
+	for i in range(len(frames)):
 		img = frames[i].copy()
 		frame_avg = Averagers.get('mean')
 		for r in regions[i]:
@@ -727,13 +728,13 @@ def calc_coherent_pws(frames,bs=2048):
 	mx = np.arange(bs+50,frames[0]['nx']-bs+50,bs)
 	my = np.arange(bs+50,frames[1]['ny']-bs+50,bs)
 	regions = {}
-	for i in xrange(len(frames)):
+	for i in range(len(frames)):
 		regions[i] = [[x,y] for y in my for x in mx]
 	stacks = {}
-	for ir in xrange(len(regions[0])):
-		stacks[ir] = [regions[i][ir] for i in xrange(len(frames))]
+	for ir in range(len(regions[0])):
+		stacks[ir] = [regions[i][ir] for i in range(len(frames))]
 	cps = Averagers.get('mean')
-	for s in xrange(len(stacks)):
+	for s in range(len(stacks)):
 		stack_avg = Averagers.get('mean')
 		for i,r in enumerate(stacks[s]):
 			stack_avg.add_image(frames[i].copy().get_clip(Region(r[0],r[1],bs,bs)))
@@ -1005,7 +1006,7 @@ def fit_defocus(img):
 		ctf.defocus=df
 		curve=np.array(ctf.compute_1d(ns*2,ds,Ctf.CtfType.CTF_AMP)[1:])
 		curve*=curve
-		zeros=[int(ctf.zero(i)/ds) for i in xrange(15)]
+		zeros=[int(ctf.zero(i)/ds) for i in range(15)]
 		zeros=[i for i in zeros if i<len(curve) and i>0]
 		onedbg,bg=bgsub(oned,zeros)
 		qual=curve.dot(onedbg)
@@ -1027,7 +1028,7 @@ def bgsub(curve,zeros):
 	itpy[0]=curve[:floc].min()
 	itpx=np.array(itpx)
 	itpy=np.array(itpy)
-	bg = np.interp(range(len(curve)),itpx,itpy)
+	bg = np.interp(list(range(len(curve))),itpx,itpy)
 	ret=curve-bg
 	ret[:floc]=0
 	return ret,bg

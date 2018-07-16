@@ -10,6 +10,7 @@ from __future__ import print_function
 
 
 #import block
+from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
 import pyemtbx.options

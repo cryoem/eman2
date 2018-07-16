@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 
 
+from builtins import range
 '''
 In this program, there are two ways of testing the stability of the projection.
 
@@ -150,7 +151,7 @@ def main():
 			print("  A  ",myid,"  ",time()-st)
 			proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 			proj_params = []
-			for i in xrange(nima):
+			for i in range(nima):
 				dp = proj_attr[i].get_params("spider")
 				phi, theta, psi, s2x, s2y = dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
 				proj_params.append([phi, theta, psi, s2x, s2y])
@@ -177,7 +178,7 @@ def main():
 
 		# Divide proj_list_all equally to all nodes, and becomes proj_list
 		proj_list = []
-		for i in xrange(n_grp):
+		for i in range(n_grp):
 			proc_to_stay = i%number_of_proc
 			if proc_to_stay == main_node:
 				if myid == main_node: 	proj_list.append(proj_list_all[i])
@@ -194,7 +195,7 @@ def main():
 		print("  C  ",myid,"  ",time()-st)
 		if myid == main_node:
 			# Assign the remaining groups to main_node
-			for i in xrange(n_grp, len(proj_list_all)):
+			for i in range(n_grp, len(proj_list_all)):
 				proj_list.append(proj_list_all[i])
 			del proj_list_all, angle_list, mirror_list
 
@@ -210,7 +211,7 @@ def main():
 		del refproj
 
 		ref_ang = [0.0]*(len(refprojdir)*2)
-		for i in xrange(len(refprojdir)):
+		for i in range(len(refprojdir)):
 			ref_ang[i*2]   = refprojdir[0][0]
 			ref_ang[i*2+1] = refprojdir[0][1]+i*0.1
 
@@ -226,7 +227,7 @@ def main():
 		print("  B  ",myid,"  ",time()-st)
 
 		proj_ang = [0.0]*(nima*2)
-		for i in xrange(nima):
+		for i in range(nima):
 			dp = proj_attr[i].get_params("spider")
 			proj_ang[i*2]   = dp["phi"]
 			proj_ang[i*2+1] = dp["theta"]
@@ -234,7 +235,7 @@ def main():
 		asi = Util.nearestk_to_refdir(proj_ang, ref_ang, img_per_grp)
 		del proj_ang, ref_ang
 		proj_list = []
-		for i in xrange(len(refprojdir)):
+		for i in range(len(refprojdir)):
 			proj_list.append(asi[i*img_per_grp:(i+1)*img_per_grp])
 		del asi
 		print("  D  ",myid,"  ",time()-st)
@@ -248,14 +249,14 @@ def main():
 		proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 		print("  B  ",myid,"  ",time()-st)
 		proj_params = []
-		for i in xrange(nima):
+		for i in range(nima):
 			dp = proj_attr[i].get_params("spider")
 			phi, theta, psi, s2x, s2y = dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
 			proj_params.append([phi, theta, psi, s2x, s2y])
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
 		print("  C  ",myid,"  ",time()-st)
 		from utilities import nearest_proj
-		proj_list, mirror_list = nearest_proj(proj_params, img_per_grp, range(img_begin, img_begin+1))#range(img_begin, img_end))
+		proj_list, mirror_list = nearest_proj(proj_params, img_per_grp, list(range(img_begin, img_begin+1)))#range(img_begin, img_end))
 		refprojdir = proj_params[img_begin: img_end]
 		del proj_params, mirror_list
 		print("  D  ",myid,"  ",time()-st)
@@ -277,13 +278,13 @@ def main():
 	from utilities import model_blank
 	aveList = [model_blank(nx,ny)]*len(proj_list)
 	if options.grouping == "GRP":  refprojdir = [[0.0,0.0,-1.0]]*len(proj_list)
-	for i in xrange(len(proj_list)):
+	for i in range(len(proj_list)):
 		print("  E  ",myid,"  ",time()-st)
 		class_data = EMData.read_images(stack, proj_list[i])
 		#print "  R  ",myid,"  ",time()-st
 		if options.CTF :
 			from filter import filt_ctf
-			for im in xrange(len(class_data)):  #  MEM LEAK!!
+			for im in range(len(class_data)):  #  MEM LEAK!!
 				atemp = class_data[im].copy()
 				btemp = filt_ctf(atemp, atemp.get_attr("ctf"), binary=1)
 				class_data[im] = btemp
@@ -301,13 +302,13 @@ def main():
 		#print "  F  ",myid,"  ",time()-st
 		# Here, we perform realignment num_ali times
 		all_ali_params = []
-		for j in xrange(num_ali):
+		for j in range(num_ali):
 			if( xrng[0] == 0.0 and yrng[0] == 0.0 ):
 				avet = ali2d_ras(class_data, randomize = True, ir = 1, ou = radius, rs = 1, step = 1.0, dst = 90.0, maxit = ite, check_mirror = True, FH=options.fl, FF=options.aa)
 			else:
 				avet = within_group_refinement(class_data, mask, True, 1, radius, 1, xrng, yrng, step, 90.0, ite, options.fl, options.aa)
 			ali_params = []
-			for im in xrange(len(class_data)):
+			for im in range(len(class_data)):
 				alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 				ali_params.extend( [alpha, sx, sy, mirror] )
 			all_ali_params.append(ali_params)
@@ -342,7 +343,7 @@ def main():
 				vphi = 0.0
 				vtht = 0.0
 			l = -1
-			for j in xrange(len(proj_list[i])):
+			for j in range(len(proj_list[i])):
 				#  Here it will only work if stable_set_id is sorted in the increasing number, see how l progresses
 				if j in stable_set_id:
 					l += 1
@@ -385,15 +386,15 @@ def main():
 
 	if myid == main_node:
 		km = 0
-		for i in xrange(number_of_proc):
+		for i in range(number_of_proc):
 			if i == main_node :
-				for im in xrange(len(aveList)):
+				for im in range(len(aveList)):
 					aveList[im].write_image(args[1], km)
 					km += 1
 			else:
 				nl = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 				nl = int(nl[0])
-				for im in xrange(nl):
+				for im in range(nl):
 					ave = recv_EMData(i, im+i+70000)
 					nm = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					nm = int(nm[0])
@@ -407,7 +408,7 @@ def main():
 					km += 1
 	else:
 		mpi_send(len(aveList), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-		for im in xrange(len(aveList)):
+		for im in range(len(aveList)):
 			send_EMData(aveList[im], main_node,im+myid+70000)
 			members = aveList[im].get_attr('members')
 			mpi_send(len(members), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)

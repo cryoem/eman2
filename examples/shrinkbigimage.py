@@ -36,6 +36,7 @@ from __future__ import print_function
 # this will shrink (scale down by a factor of n) an image which is too large to
 # fit into memory (such as a huge tomogram)
 
+from builtins import range
 from EMAN2 import *
 import sys
 from math import *

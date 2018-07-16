@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
 
@@ -182,26 +183,26 @@ class GUIFourierSynth(QtGui.QWidget):
 		if index==0 : 
 			self.targfn=None
 			nsin=int(self.vnsin.getValue())
-			for i in xrange(nsin): self.wamp[i].setValue(0)
+			for i in range(nsin): self.wamp[i].setValue(0)
 
 		else :
 			nx=int(self.vcell.getValue())
 			self.targfn=EMData(nx,1)
 			
 			if index==1 : 	# triangle
-				for i in xrange(nx/2):
+				for i in range(nx/2):
 					self.targfn[i]=-1.0+4.0*i/nx
-				for i in xrange(nx/2,nx):
+				for i in range(nx/2,nx):
 					self.targfn[i]=3.0-4.0*i/nx
 			
 			elif index==2 : # square
-				for i in xrange(nx/4): self.targfn[i]=-1.0
-				for i in xrange(nx/4,nx*3/4): self.targfn[i]=1.0
-				for i in xrange(nx*3/4,nx): self.targfn[i]=-1.0
+				for i in range(nx/4): self.targfn[i]=-1.0
+				for i in range(nx/4,nx*3/4): self.targfn[i]=1.0
+				for i in range(nx*3/4,nx): self.targfn[i]=-1.0
 				
 			elif index==3 : # square impulse
 				self.targfn.to_zero()
-				for i in xrange(nx/4-2,nx/2-2): self.targfn[i]=1.0
+				for i in range(nx/4-2,nx/2-2): self.targfn[i]=1.0
 			
 			elif index==4 : # delta
 				self.targfn.to_zero()
@@ -212,23 +213,23 @@ class GUIFourierSynth(QtGui.QWidget):
 			
 			elif index==6 : # saw
 				self.targfn.to_zero()
-				for i in xrange(nx/4,nx/2): self.targfn[i]=4.0*(i-nx/4.0)/nx
-				for i in xrange(nx/2,nx*3/4): self.targfn[i]=-1+4.0*(i-nx/2.0)/nx
+				for i in range(nx/4,nx/2): self.targfn[i]=4.0*(i-nx/4.0)/nx
+				for i in range(nx/2,nx*3/4): self.targfn[i]=-1+4.0*(i-nx/2.0)/nx
 				
 			elif index==7 : # sin
-				for i in xrange(nx): self.targfn[i]=sin(i*pi/4.0)
+				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)
 			
 			elif index==8 : # modulated sine
-				for i in xrange(nx): self.targfn[i]=sin(i*pi/4.0)*sin(i*pi/32)
+				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)*sin(i*pi/32)
 
 			elif index==9 : # modulated sine 2
-				for i in xrange(nx): self.targfn[i]=sin(i*pi/4.0)*sin(i*pi/29)
+				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)*sin(i*pi/29)
 
 			elif index==10 : # modulated sine 3
-				for i in xrange(nx): self.targfn[i]=sin(i*pi/4.0)*sin(i*pi/126)
+				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)*sin(i*pi/126)
 
 			elif index==11 : # sin low
-				for i in xrange(nx): self.targfn[i]=sin(i*pi/16.0)
+				for i in range(nx): self.targfn[i]=sin(i*pi/16.0)
 
 			elif index==12 : # double delta
 				self.targfn.to_zero()
@@ -236,19 +237,19 @@ class GUIFourierSynth(QtGui.QWidget):
 				self.targfn[nx*15/16]=4.0
 
 			elif index==13 : # sin bad f
-				for i in xrange(nx): self.targfn[i]=sin(i*pi/15.5)
+				for i in range(nx): self.targfn[i]=sin(i*pi/15.5)
 			
 			elif index==14 : # sin bad f2
-				for i in xrange(nx): self.targfn[i]=sin(i*pi/19)
+				for i in range(nx): self.targfn[i]=sin(i*pi/19)
 			
 			elif index==15 : # square impulse
 				self.targfn.to_zero()
-				for i in xrange(nx/2+2,nx*3/4+2): self.targfn[i]=1.0
+				for i in range(nx/2+2,nx*3/4+2): self.targfn[i]=1.0
 				
 			elif index==16 : # square impulse
 				self.targfn.to_zero()
-				for i in xrange(nx/4-2,nx/2-2): self.targfn[i]=1.0
-				for i in xrange(nx/2+2,nx*3/4+2): self.targfn[i]=1.0
+				for i in range(nx/4-2,nx/2-2): self.targfn[i]=1.0
+				for i in range(nx/2+2,nx*3/4+2): self.targfn[i]=1.0
 
 			self.target2sliders()
 		
@@ -264,7 +265,7 @@ class GUIFourierSynth(QtGui.QWidget):
 		fft[fft["nx"]/2-1]=fft[fft["nx"]/2-1]/2.0
 		fft.ri2ap()
 		
-		for i in xrange(min(fft["nx"]/2,nsin+1)):
+		for i in range(min(fft["nx"]/2,nsin+1)):
 #			print fft[i]
 			amp=fft[i].real
 			if fabs(amp)<1.0e-5 : amp=0.0

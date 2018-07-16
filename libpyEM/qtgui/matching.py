@@ -81,6 +81,7 @@ from __future__ import print_function
 
 # For internal use:
 
+from builtins import range
 def pat_match (string, pattern, str_len, pat_len) :
 	# Constants:
 
@@ -97,7 +98,7 @@ def pat_match (string, pattern, str_len, pat_len) :
 	else :
 		nchars = str_len
 
-	for ic in xrange (0, nchars) :
+	for ic in range (0, nchars) :
 		str_char = string  [ic]
 		pat_char = pattern [ic]
 
@@ -111,7 +112,7 @@ def pat_match (string, pattern, str_len, pat_len) :
 
 			match  = False
 
-			for ic_str in xrange (ic, ic_last + 1) :
+			for ic_str in range (ic, ic_last + 1) :
 				match = pat_match (string [ic_str : ], pattern [ic_pat : ],
 							str_len - ic_str, pat_len - ic_pat)
 				if match :
@@ -142,7 +143,7 @@ def pat_match (string, pattern, str_len, pat_len) :
 		else : # str_len < pat_len
 			match = True
 
-			for ic in xrange (max (str_len, 0), pat_len) :
+			for ic in range (max (str_len, 0), pat_len) :
 				pat_char = pattern [ic]
 
 				if pat_char != any_string  and  pat_char != any_char :

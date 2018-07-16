@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 from EMAN2 import *
 import numpy as np
-import Queue
+import queue
 import threading
 
 
@@ -164,7 +167,7 @@ def main():
 		try: os.remove(options.output2d)
 		except: pass
 
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		jobs=[]
 		
 		batchsz=4
@@ -174,7 +177,7 @@ def main():
 			ctf=[]
 			
 		for tid in range(0,nptcl,batchsz):
-			ids=range(tid, min(tid+batchsz, nptcl))
+			ids=list(range(tid, min(tid+batchsz, nptcl)))
 			jobs.append([jsd, ids, imgs, ttparams, ptclpos, options, ctf])
 		
 		

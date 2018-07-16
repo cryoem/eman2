@@ -31,6 +31,7 @@ Author: Jesus Galaz - whoknows-2012, Last update: 07/Nov/2017
 '''
 from __future__ import print_function
 #from optparse import OptionParser
+from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
 import sys

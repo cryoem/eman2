@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from builtins import range
 def main():
 	import os
 	import sys
@@ -110,12 +111,12 @@ def main():
 		txsp = ''
 		y_restrict2 = ''
 		
-		for i in xrange(len(xr)):
+		for i in range(len(xr)):
 			xrp += " "+str(float(xr[i])/options.apix)
-		for i in xrange(len(txs)):
+		for i in range(len(txs)):
 			txsp += " "+str(float(txs[i])/options.apix)
 		# now y_restrict has the same format as x search range .... has to change ihrsr accordingly
-		for i in xrange(len(y_restrict)):
+		for i in range(len(y_restrict)):
 			y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
 
 		if options.MPI:

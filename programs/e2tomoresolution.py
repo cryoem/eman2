@@ -33,6 +33,8 @@ from __future__ import print_function
 #
 
 
+from builtins import range
+from builtins import object
 from EMAN2 import *
 from eman2_gui.emplot2d import EMPlot2DWidget
 from eman2_gui.emapplication import EMApp
@@ -76,7 +78,7 @@ def main():
 	app.exec_()
 
 # Use strategy pattern here. Any new stategy needs to inherit this
-class Strategy:
+class Strategy(object):
 	def __init__(self, jobdir, options):
 		self.jobdir = jobdir
 		self.options = options
@@ -106,7 +108,7 @@ class EvenOddReso(Strategy):
 		oddavgr = Averagers.get(self.options.averager)
 		
 		# Compute the even odd maps
-		for tomo in xrange(0, len(tomo_db)/2, 2):
+		for tomo in range(0, len(tomo_db)/2, 2):
 			evenavgr.add_image(tomo_db[tomo*2])
 			oddavgr.add_image(tomo_db[tomo*2 + 1])
 			

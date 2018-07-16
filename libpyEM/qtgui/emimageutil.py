@@ -32,6 +32,8 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
+from builtins import object
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt, QString
 from math import *
@@ -44,7 +46,7 @@ import copy
 import sys
 import math
 
-class EMTransformPanel:
+class EMTransformPanel(object):
 	def __init__(self,target,parent):
 		self.target = weakref.ref(target)
 		self.parent = weakref.ref(parent)

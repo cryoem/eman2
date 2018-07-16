@@ -36,6 +36,7 @@ from __future__ import print_function
 # This will sort projection/image pairs based on their mutual similarity
 # more similar pairs will be placed in the output file first
 
+from builtins import range
 from EMAN2 import *
 import sys
 

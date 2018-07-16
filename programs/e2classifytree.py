@@ -36,6 +36,7 @@ from __future__ import print_function
 # This program classify particles using a binary tree
 
 
+from builtins import range
 from EMAN2 import *
 import os
 import numpy as np
@@ -117,8 +118,8 @@ def main():
 		etc=EMTaskCustomer(options.parallel)
 		tasks=[]
 		step=50
-		tt=[range(i,i+step) for i in range(0,npt-step,step)]
-		tt.append(range(tt[-1][-1]+1,npt))
+		tt=[list(range(i,i+step)) for i in range(0,npt-step,step)]
+		tt.append(list(range(tt[-1][-1]+1,npt)))
 		
 		for it in tt:
 			tasks.append(TreeClassifyTask(ptcl, it, options.nodes, options.align, options.aligncmp, options.cmp, options.ralign, options.raligncmp, cmptmp, masktmp))
@@ -212,7 +213,7 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 	dst=EMNumPy.em2numpy(simmx)
 	epms=[EMData(tmpsim,i+1) for i in range(5)]
 	pms=[EMNumPy.em2numpy(i) for i in epms]
-	ai =range(dst[0].size)		# index of each node in "nodes.hdf"
+	ai =list(range(dst[0].size))		# index of each node in "nodes.hdf"
 	big=(dst.max()+1)
 	
 

@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import global_def
 from   global_def import *
 from   optparse import OptionParser
@@ -81,14 +82,14 @@ def main():
 		prj_stack = args[0]
 		vol_stack = args[1]
 		nimage = EMUtil.get_image_count( prj_stack )
-		pid_list = range(0, nimage)
+		pid_list = list(range(0, nimage))
 	elif len(args) == 5:
 		prj_stack = args[0]
 		vol_stack = args[1]
 		begin = atoi( args[2] )
 		end   = atoi( args[3] )
 		step  = atoi( args[4] )
-		pid_list = range(begin, end, step)
+		pid_list = list(range(begin, end, step))
 	else:
 		ERROR("incomplete list of arguments","recon3d_n",1)
 		exit()

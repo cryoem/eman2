@@ -29,6 +29,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from builtins import range
 from global_def import *
 
 def filt_median(f, nx, ny, nz = 1, kernelshape = "BLOCK"):
@@ -512,7 +513,7 @@ def filt_params(dres, high = 0.95, low = 0.1):
 		# the curve never falls below preset level, most likely something's wrong; however, return reasonable values
 		#  First, find out whether it actually does fall
 		nend = 0
-		for i in xrange(n-1,1,-1):
+		for i in range(n-1,1,-1):
 			if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < low):
 				nend = i
 				break
@@ -525,12 +526,12 @@ def filt_params(dres, high = 0.95, low = 0.1):
 			n = nend +1
 	#  normal case
 	freql = 0.001 # this is in case the next loop does not work and the curve never drops below high
-	for i in xrange(1,n-1):
+	for i in range(1,n-1):
 		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < high):
 			freql = dres[0][i]
 			break
 	freqh = 0.1 # this is in case the next loop does not work and the curve never rises above low
-	for i in xrange(n-2,0,-1):
+	for i in range(n-2,0,-1):
 		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) > low):
 			freqh =min( max(dres[0][i], freql+0.1), 0.45)
 			break
@@ -556,7 +557,7 @@ def filt_from_fsc(dres, low = 0.1):
 	filtc = [0.0]*n
 	filtc[0] = 1.0
 	last = n
-	for i in xrange(1, n-1):
+	for i in range(1, n-1):
 		if dres[1][i] < 0.0:
 			qt = 0.0
 		else:
@@ -568,7 +569,7 @@ def filt_from_fsc(dres, low = 0.1):
 		else:
 			filtc[i] = qt
 	if last < n-1:
-		for i in xrange(last, min(last+4, n)):
+		for i in range(last, min(last+4, n)):
 			qt /= 1.2
 			filtc[i] = qt
 	return filtc
@@ -586,7 +587,7 @@ def filt_from_fsc2(dres, low = 0.1):
 	filtc = [0.0]*n
 	filtc[0] = 1.0
 	last = n
-	for i in xrange(1,n-1):
+	for i in range(1,n-1):
 		if(dres[1][i]<0.0):
 			qt = 0.0
 		else:
@@ -598,7 +599,7 @@ def filt_from_fsc2(dres, low = 0.1):
 		else:
 			filtc[i] = qt
 	if(last<n-1):
-		for i in xrange(last, min(last+4,n)):
+		for i in range(last, min(last+4,n)):
 			qt /= 1.2
 			filtc[i] = qt
 	return filtc
@@ -625,14 +626,14 @@ def filt_from_fsc_bwt(dres, low = 0.1):
 	eps=0.882 # copied from spider fq np command 
 	a=10.624 # copied from spider fq np command 
 	lowf=.45
-	for i in xrange(n):
+	for i in range(n):
 		if(dres[1][i]<low):
 			lowf=dres[0][i]
 			break
 	highf=lowf+.05
 	order=2.*log(eps/sqrt(a**2-1))/log(lowf/highf)
 	rad=lowf/eps**(2./order)
-	for i in xrange(n):		
+	for i in range(n):		
 		if(dres[1][i]<low): 
 			qt = 1./sqrt(1.+(dres[0][i]/rad)**order)
 		else:
@@ -657,7 +658,7 @@ def fit_tanh(dres, low = 0.1):
 		if(data[1][0] < 0.0 ):
 			data[1][0] *= -1.0
 
-		for i in xrange(len(data[0])):
+		for i in range(len(data[0])):
 			fsc =  2*data[1][i]/(1.0+data[1][i])
 			if args[0]==0 or args[1]==0: qt=0
 			else: qt  = fsc - 0.5*( tanh(pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - tanh(pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
@@ -666,13 +667,13 @@ def fit_tanh(dres, low = 0.1):
 		return v
 
 	setzero = False
-	for i in xrange(1,len(dres[0])):
+	for i in range(1,len(dres[0])):
 		if not setzero:
 			if(2*dres[1][i]/(1.0+dres[1][i]) <low):  setzero = True
 		if setzero:  dres[1][i] = 0.0
 
 	freq = -1.0
-	for i in xrange(1,len(dres[0])-1):
+	for i in range(1,len(dres[0])-1):
 		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < 0.5):
 			freq = dres[0][i-1]
 			break
@@ -712,7 +713,7 @@ def fit_tanh1(dres, low = 0.1):
 	def fit_tanh_func(args, data):
 		from math import pi, tanh
 		v = 0.0
-		for i in xrange(len(data[0])):
+		for i in range(len(data[0])):
 			fsc =  data[1][i]
 			if args[0]==0 or args[1]==0: qt=0
 			else: qt  = fsc - 0.5*( tanh(pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - tanh(pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
@@ -721,13 +722,13 @@ def fit_tanh1(dres, low = 0.1):
 		return v
 
 	setzero = False
-	for i in xrange(1,len(dres[0])):
+	for i in range(1,len(dres[0])):
 		if not setzero:
 			if(dres[1][i] <low):  setzero = True
 		if setzero:  dres[1][i] = 0.0
 
 	freq = -1.0
-	for i in xrange(1,len(dres[0])-1):
+	for i in range(1,len(dres[0])-1):
 		if ( dres[1][i] < 0.5):
 			freq = dres[0][i-1]
 			break
@@ -758,10 +759,10 @@ def tanhfilter(nx, fl, aa):
 	from math import pi, tanh
 	n = nx//2 + nx%2
 	f = [0.0]*n
-	for i in xrange(n):
+	for i in range(n):
 		x = float(i)/nx
 		f[i] = 0.5*( tanh(pi*(x+fl)/2.0/aa/fl) - tanh(pi*(x-fl)/2.0/aa/fl) )
-	return  [[float(i)/nx for i in xrange(n)],f]
+	return  [[float(i)/nx for i in range(n)],f]
 
 def filt_matched(ima, SNR, Pref):
 	""" 
@@ -783,7 +784,7 @@ def filt_matched(ima, SNR, Pref):
 	HM=[]
 	TMP1=[]
 	TMP2=[]
-	for j in xrange(len(Pref)-1):
+	for j in range(len(Pref)-1):
 		if(SNR[j]>.05): 
 			thm=SNR[j]*(SNR[j]+1.)*PU[j]/Pref[j]
 			print(thm)
@@ -814,7 +815,7 @@ def filt_vols( vols, fscs, mask3D ):
 	flmin = 1.0
 	flmax = -1.0
 	nvol = len(vols)
-	for i in xrange(nvol):
+	for i in range(nvol):
 		fl, aa = fit_tanh( fscs[i] )
 		if (fl < flmin):
 			flmin = fl
@@ -827,9 +828,9 @@ def filt_vols( vols, fscs, mask3D ):
 	volmax = filt_tanl( volmax, flmin-0.05, aamin )
 	pmax = rops_table( volmax )
 
-	for i in xrange(nvol):
+	for i in range(nvol):
 		ptab = rops_table( vols[i] )
-		for j in xrange( len(ptab) ):
+		for j in range( len(ptab) ):
 			ptab[j] = sqrt( pmax[j]/ptab[j] )
 
 		vols[i] = filt_table( vols[i], ptab )
@@ -855,9 +856,9 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 		ny = vi.get_ysize()
 		nz = vi.get_zsize()
 		#  Round all resolution numbers to two digits
-		for x in xrange(nx):
-			for y in xrange(ny):
-				for z in xrange(nz):
+		for x in range(nx):
+			for y in range(ny):
+				for z in range(nz):
 					ui.set_value_at_fast( x,y,z, round(ui.get_value_at(x,y,z), 2) )
 		dis = [nx,ny,nz]
 	else:
@@ -892,9 +893,9 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 		if(pt[0] != 0.0):
 			#print cutoff,pt[0]
 			vovo = fft( filt_tanl(vi, cutoff, falloff) )
-			for z in xrange(myid, nz, number_of_proc):
-				for x in xrange(nx):
-					for y in xrange(ny):
+			for z in range(myid, nz, number_of_proc):
+				for x in range(nx):
+					for y in range(ny):
 						if(m.get_value_at(x,y,z) > 0.5):
 							if(round(ui.get_value_at(x,y,z),2) == cutoff):
 								filteredvol.set_value_at_fast(x,y,z,vovo.get_value_at(x,y,z))

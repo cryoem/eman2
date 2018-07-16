@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 
 
+from builtins import range
 import os,sys
 from PyQt4 import QtGui,QtCore
 from eman2_gui.valslider import ValSlider
