@@ -278,7 +278,7 @@ def main():
 		ptclmask.process_inplace("mask.addshells",{"nshells":nx//15})
 		ptclmask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 
-		ring=(int(old_div(2*nx*apix,10)0.0),int(old_div(2*nx*apix,10)))
+		ring=(int(old_div(2*nx*apix,100.0)),int(old_div(2*nx*apix,10)))
 #		fout=open("ptclsnr.txt".format(i),"w")
 		fout=open("aniso_{:02d}.txt".format(options.anisotropy),"w")
 		# generate a projection for each particle so we can compare
