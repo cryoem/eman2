@@ -215,9 +215,9 @@
 ./programs/e2msa.py:135   n*nval*4/2**20  |  old_div(n*nval*4, 2**20)
 ./programs/e2proc2dmulti.py:127   d["nx"]*2/7  |  old_div(d[nx]*2, 7)
 ./programs/e2proc2dmulti.py:128   d["nx"]*2/7  |  old_div(d[nx]*2, 7)
-./programs/e2rct.py:215    len(arlist)*recon.get_attr('ptcl_repr')/totalptcls  |   len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
-./programs/e2refine_easy.py:487   nx*apix*2/options.targetres  |  nx*apix*2/options.targetres
-./programs/e2refinemulti.py:391   nx*apix*2/options.targetres  |  nx*apix*2/options.targetres
+./programs/e2rct.py:215    len(arlist)*recon.get_attr('ptcl_repr')/totalptcls  |   old_div(len(arlist)*recon.get_attr('ptcl_repr'), totalptcls)
+./programs/e2refine_easy.py:487   nx*apix*2/options.targetres  |  old_div(nx*apix*2, options.targetres)
+./programs/e2refinemulti.py:391   nx*apix*2/options.targetres  |  old_div(nx*apix*2, options.targetres)
 ./programs/e2reliontoeman.py:88   star["rlnDetectorPixelSize"][0]/star["rlnMagnification"][0]*10000.0  |  star["rlnDetectorPixelSize"][0]/star["rlnMagnification"][0]*10000.0
 ./programs/e2scannereval.py:100   options.box*3/2  |  options.box*3/2
 ./programs/e2scannereval.py:100   options.box*3/2  |  options.box*3/2
