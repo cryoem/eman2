@@ -62,9 +62,9 @@
 ./examples/em_sim.py:263   ((ix)**2)/(f*2)*  |  old_div(((ix)**2), (f*2))*
 ./examples/em_sim.py:270   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  old_div(np.arange(1, int(zmax)+1, dtype=float), int(zmax))*zmax
 ./examples/em_sim.py:443   rr/(f*2)*  |  old_div(rr, (f*2))*
-./examples/em_sim.py:542   xm/ym*ymax  |  xm/ym*ymax
-./examples/em_sim.py:692   pts/l*scale  |  pts/l*scale
-./examples/em_sim.py:806   p0/winsz*2.  |  p0/winsz*2.
+./examples/em_sim.py:542   xm/ym*ymax  |  old_div(xm, ym)*ymax
+./examples/em_sim.py:692   pts/l*scale  |  old_div(pts, l)*scale
+./examples/em_sim.py:806   p0/winsz*2.  |  old_div(p0, winsz)*2.
 ./examples/fftspeed.py:82   10000*(t1-t0)/reps  |  10000*(t1-t0)/reps
 ./examples/gmm_heterog.py:377   var/np.max(var)*100  |  var/np.max(var)*100
 ./examples/gmm_heterog.py:384   var/np.max(var)*100  |  var/np.max(var)*100
