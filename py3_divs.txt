@@ -1,13 +1,13 @@
 ./broken/e2helical_recons.py:42   360/reso*j  |  old_div(360, reso*j)
 ./broken/e2helical_recons.py:81   i*100/len(ptcls)  |  old_div(i*100,len(ptcls))
-./broken/e2helical_recons.py:94   i*100*8/6/len(ptcls)  |  i*100*8/6/len(ptcls)
+./broken/e2helical_recons.py:94   i*100*8/6/len(ptcls)  |  old_div(old_div(i*100*8, 6), len(ptcls))
 ./broken/e2montecarlorecon.py:207   tstep*options.numsasteps/K  |  old_div(tstep*options.numsasteps, K)
 ./examples/alignbystars.py:151   -nx*(scale-1)/2  |  old_div(-nx*(scale-1), 2)
 ./examples/alignbystars.py:151   -ny*(scale-1)/2  |  old_div(-ny*(scale-1), 2)
 ./examples/alignbystars.py:165   -nx*(scale-1)/2  |  old_div(-nx*(scale-1), 2)
 ./examples/alignbystars.py:165   -ny*(scale-1)/2  |  old_div(-ny*(scale-1), 2)
 ./examples/convnet_pickparticle.py:448   options.ncopy*nptcls/num  |  old_div(options.ncopy*nptcls, num)
-./examples/convnet_pickparticle.py:760    T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))  |   T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))
+./examples/convnet_pickparticle.py:760    T.sum(xin*z,axis=1)/T.sqrt(T.sum(xin**2,axis=1))/T.sqrt(T.sum(z**2,axis=1))  |   old_div(old_div(fac*x, self.motiondull), T.sqrt(T.sum(z**2,axis=1)))
 ./examples/e2fftsynth.py:196   4.0*i/nx  |  old_div(4.0*i, nx)
 ./examples/e2fftsynth.py:198   4.0*i/nx  |  old_div(4.0*i, nx)
 ./examples/e2fftsynth.py:202   nx*3/4  |  old_div(nx*3, 4)
@@ -59,9 +59,9 @@
 ./examples/e2tomoseg.py:977    a[2]*bs/2  |   old_div(a[2]*bs, 2)
 ./examples/e2tvrecon2d.py:474    (t_old - 1)/t_new * (u_n - u_old)  |   old_div((t_old - 1), t_new) * (u_n - u_old)
 ./examples/em_sim.py:223   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  old_div(np.arange(1, int(zmax)+1, dtype=float), int(zmax))*zmax
-./examples/em_sim.py:263   ((ix)**2)/(f*2)*  |  ((ix)**2)/(f*2)*
-./examples/em_sim.py:270   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
-./examples/em_sim.py:443   rr/(f*2)*  |  rr/(f*2)*
+./examples/em_sim.py:263   ((ix)**2)/(f*2)*  |  old_div(((ix)**2), (f*2))*
+./examples/em_sim.py:270   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  old_div(np.arange(1, int(zmax)+1, dtype=float), int(zmax))*zmax
+./examples/em_sim.py:443   rr/(f*2)*  |  old_div(rr, (f*2))*
 ./examples/em_sim.py:542   xm/ym*ymax  |  xm/ym*ymax
 ./examples/em_sim.py:692   pts/l*scale  |  pts/l*scale
 ./examples/em_sim.py:806   p0/winsz*2.  |  p0/winsz*2.
