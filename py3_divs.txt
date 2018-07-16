@@ -224,9 +224,9 @@
 ./programs/e2scannereval.py:102   options.box*3/2  |  old_div(options.box*3, 2)
 ./programs/e2simmx.py:529   100*i/n  |  old_div(100*i, n)
 ./programs/e2speedtest.py:122    500 * NTT / 2  |   old_div(500 * NTT ,  2)
-./programs/e2speedtest.py:131   500 * NTT / 2  |  500 * NTT / 2
-./programs/e2speedtest.py:140   100 * NTT / 2  |  100 * NTT / 2
-./programs/e2speedtest.py:149   100 * NTT / 2  |  100 * NTT / 2
+./programs/e2speedtest.py:131   500 * NTT / 2  |  old_div(500 * NTT ,  2)
+./programs/e2speedtest.py:140   100 * NTT / 2  |  old_div(100 * NTT ,  2)
+./programs/e2speedtest.py:149   100 * NTT / 2  |  old_div(100 * NTT ,  2)
 ./programs/e2speedtest.py:158   100 * NTT / 2  |  100 * NTT / 2
 ./programs/e2speedtest.py:167   100 * NTT / 2  |  100 * NTT / 2
 ./programs/e2spt_boxer.py:997    a[0]*bs/2  |   a[0]*bs/2
