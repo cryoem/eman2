@@ -212,9 +212,9 @@
 ./programs/e2motion.py:624   lst.qsize()*100/maxl  |  old_div(lst.qsize()*100, maxl)
 ./programs/e2motion.py:981   20*i/len(classes)  |  old_div(20*i, len(classes))
 ./programs/e2motion.py:995   12*c/len(classes)  |  old_div(12*c, len(classes))
-./programs/e2msa.py:135   n*nval*4/2**20  |  n*nval*4/2**20
-./programs/e2proc2dmulti.py:127   d["nx"]*2/7  |  d["nx"]*2/7
-./programs/e2proc2dmulti.py:128   d["nx"]*2/7  |  d["nx"]*2/7
+./programs/e2msa.py:135   n*nval*4/2**20  |  old_div(n*nval*4, 2**20)
+./programs/e2proc2dmulti.py:127   d["nx"]*2/7  |  old_div(d[nx]*2, 7)
+./programs/e2proc2dmulti.py:128   d["nx"]*2/7  |  old_div(d[nx]*2, 7)
 ./programs/e2rct.py:215    len(arlist)*recon.get_attr('ptcl_repr')/totalptcls  |   len(arlist)*recon.get_attr('ptcl_repr')/totalptcls
 ./programs/e2refine_easy.py:487   nx*apix*2/options.targetres  |  nx*apix*2/options.targetres
 ./programs/e2refinemulti.py:391   nx*apix*2/options.targetres  |  nx*apix*2/options.targetres
