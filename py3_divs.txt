@@ -241,9 +241,9 @@
 ./programs/e2spt_boxer22.py:904    a[0]*bs/2  |   old_div(a[0]*bs, 2)
 ./programs/e2spt_boxer22.py:904    a[1]*bs/2  |   old_div(a[1]*bs, 2)
 ./programs/e2spt_boxer22.py:904    a[2]*bs/2  |   old_div(a[2]*bs, 2)
-./programs/e2spt_classaverage.py:1628    nx/options.shrink %2  |   nx/options.shrink %2
-./programs/e2spt_classaverage.py:1628    ny/options.shrink %2  |   ny/options.shrink %2
-./programs/e2spt_classaverage.py:1628    nz/options.shrink %2  |   nz/options.shrink %2
+./programs/e2spt_classaverage.py:1628    nx/options.shrink %2  |   old_div(nx, options.shrink) %2
+./programs/e2spt_classaverage.py:1628    ny/options.shrink %2  |   old_div(ny, options.shrink) %2
+./programs/e2spt_classaverage.py:1628    nz/options.shrink %2  |   old_div(nz, options.shrink) %2
 ./programs/e2spt_classaverage.py:1629    nx/options.shrink %2  |   nx/options.shrink %2
 ./programs/e2spt_classaverage.py:1629   ny/options.shrink %2  |  ny/options.shrink %2
 ./programs/e2spt_classaverage.py:1629   nz/options.shrink %2  |  nz/options.shrink %2
