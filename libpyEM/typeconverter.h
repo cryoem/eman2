@@ -32,6 +32,7 @@
 #ifndef eman__typeconverter_h__
 #define eman__typeconverter_h__ 1
 
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #define PY_ARRAY_UNIQUE_SYMBOL PyArrayHandle
 
 #include "emobject.h"
@@ -43,14 +44,17 @@
 #include "ctf.h"
 
 #include <boost/python.hpp>
-#include <numpy/arrayobject.h>
+#include <boost/python/numpy.hpp>
+
+#include <numpy/ndarrayobject.h>
 
 #include <vector>
 #include <map>
 #include <string>
 
-
 namespace python = boost::python;
+namespace np = boost::python::numpy;
+
 using std::vector;
 using std::map;
 
@@ -59,14 +63,14 @@ using std::cout;
 using std::endl;
 
 #if PY_MAJOR_VERSION >= 3
-	#define IS_PY3K
+#define IS_PY3K
 #endif
 
 namespace EMAN {
 
-    python::numeric::array make_numeric_array(const float *const data, vector<npy_intp> dims);
-    python::numeric::array make_numeric_complex_array(const std::complex<float> *const data,
-                                                      vector<npy_intp> dims);
+	python::numeric::array make_numeric_array(const float *const data, vector<npy_intp> dims);
+	python::numeric::array make_numeric_complex_array(const std::complex<float> *const data,vector<npy_intp> dims);
+
 	class EMNumPy {
 	public:
 		/** Get an EMData image's pixel data as a numeric numpy array.
@@ -80,15 +84,15 @@ namespace EMAN {
 		 */
 		static EMData* numpy2em(const python::numeric::array& array);
 		static EMData* assign_numpy_to_emdata(const python::numeric::array& array);
-		
+
 		/** Create an EMData image from a numeric numpy array.
-		 * The destructor is necessary to set rdata data member of EMData to 0 (Null) 
-		 * This avoids that the destructor of EMData Buffer deletes the valid memory, 
+		 * The destructor is necessary to set rdata data member of EMData to 0 (Null)
+		 * This avoids that the destructor of EMData Buffer deletes the valid memory,
 		 * which allocated and owned by the other object (e.g. NumPy)
 		 * The other cleaning up of EMData Buffer will be done by EMData destructor.
 		 */
 		~EMNumPy();
-		
+
 		/** Register memory allocated and owned by a numeric numpy array to the EMData buffer.
 		 * Note: Management of this memory is responsibility of programmer.
 		 * Make sure to unregister the memory as soon as you are done using this EMData buffer.
@@ -99,24 +103,24 @@ namespace EMAN {
 		 * Therefore, the Python does not call delete on emdata_buffer upon the assignment.
 		 */
 		EMData* register_numpy_to_emdata(const python::numeric::array& array);
-		
+
 		/** Unregister memory allocated and owned by a numeric numpy array to the EMData buffer.
-		 * Make sure to pair this with register_numpy_to_emdata() 
+		 * Make sure to pair this with register_numpy_to_emdata()
 		 * and call this as soon as you are done using this EMData buffer.
 		 */
 		void unregister_numpy_from_emdata();
-		
+
 		/** the EMData buffer owned and managed by this EMNumPy class.
 		 * However, the memory buffer which emdata_buffer.rdata points should be managed by
 		 * the other object (NumPy)
 		 */
 		EMData emdata_buffer;
 	};
-    
-    template <class T>
-    struct vector_to_python : python::to_python_converter<vector<T>,
-														  vector_to_python<T> >
-    {
+
+	template <class T>
+	struct vector_to_python : python::to_python_converter<vector<T>,
+			vector_to_python<T> >
+	{
 		static PyObject* convert(vector<T> const& v)
 		{
 			python::list result;
@@ -127,7 +131,7 @@ namespace EMAN {
 
 			return python::incref(python::list(result).ptr());
 		}
-    };
+	};
 
 	template <class T>
 	struct tuple3_to_python : python::to_python_converter<T, tuple3_to_python<T> >
@@ -140,10 +144,10 @@ namespace EMAN {
 	};
 
 
-    template <class T>
-    struct map_to_python : python::to_python_converter<map<std::string, T>,
-													   map_to_python<T> >
-    {
+	template <class T>
+	struct map_to_python : python::to_python_converter<map<std::string, T>,
+			map_to_python<T> >
+	{
 		static PyObject* convert(map<std::string, T> const& d)
 		{
 			python::dict result;
@@ -155,27 +159,27 @@ namespace EMAN {
 
 			return python::incref(python::dict(result).ptr());
 		}
-    };
+	};
 
 	template <class S,class T>
 	struct map_to_python_2 : python::to_python_converter<map<S, T>,
- 													     map_to_python_2<S,T> >
-   {
-	   static PyObject* convert(map<S, T> const& d)
-	   {
-		   python::dict result;
+			map_to_python_2<S,T> >
+	{
+		static PyObject* convert(map<S, T> const& d)
+		{
+			python::dict result;
 
-		   typedef typename map<S, T>::const_iterator MI;
-		   for (MI p = d.begin(); p != d.end(); p++) {
-			   result[p->first] = p->second;
-		   }
+			typedef typename map<S, T>::const_iterator MI;
+			for (MI p = d.begin(); p != d.end(); p++) {
+				result[p->first] = p->second;
+			}
 
-		   return python::incref(python::dict(result).ptr());
-	   }
-   };
+			return python::incref(python::dict(result).ptr());
+		}
+	};
 
-    struct Dict_to_python : python::to_python_converter<Dict, Dict_to_python>
-    {
+	struct Dict_to_python : python::to_python_converter<Dict, Dict_to_python>
+	{
 		static PyObject* convert(Dict const& dd)
 		{
 			python::dict result;
@@ -187,74 +191,74 @@ namespace EMAN {
 
 			return python::incref(python::dict(result).ptr());
 		}
-    };
+	};
 
 
 	struct EMObject_to_python : python::to_python_converter<EMObject,
-                                EMObject_to_python>
+			EMObject_to_python>
 	{
 		static PyObject* convert(EMObject const& emobj);
 	};
 
-    template<std::size_t NumDims>
-    struct MArrayND_to_python : python::to_python_converter<
-        boost::multi_array_ref<float, NumDims>,
-        MArrayND_to_python<NumDims> >
-    {
-        static PyObject* convert(boost::multi_array_ref<float, NumDims> const & marray)
-        {
-            vector<npy_intp> dims;
-            const size_t * shape = marray.shape();
-            int ndim = marray.num_dimensions();
-            for (int i = ndim-1; i >= 0; i--) {
-                dims.push_back(shape[i]);
-            }
+	template<std::size_t NumDims>
+	struct MArrayND_to_python : python::to_python_converter<
+			boost::multi_array_ref<float, NumDims>,
+			MArrayND_to_python<NumDims> >
+	{
+		static PyObject* convert(boost::multi_array_ref<float, NumDims> const & marray)
+		{
+			vector<npy_intp> dims;
+			const size_t * shape = marray.shape();
+			int ndim = marray.num_dimensions();
+			for (int i = ndim-1; i >= 0; i--) {
+				dims.push_back(shape[i]);
+			}
 
-            const float * data = (const float*)marray.data();
-            python::numeric::array numarray = make_numeric_array(data, dims);
+			const float * data = (const float*)marray.data();
+			python::numeric::array numarray = make_numeric_array(data, dims);
 
-            return python::incref(numarray.ptr());
-        }
-    };
-
-
-    template<std::size_t NumDims>
-    struct MCArrayND_to_python : python::to_python_converter<
-        boost::multi_array_ref<std::complex<float>, NumDims>,
-        MCArrayND_to_python<NumDims> >
-    {
-        static PyObject* convert(boost::multi_array_ref<std::complex<float>, NumDims> const & mcarray)
-        {
-            vector<npy_intp> dims;
-            const size_t * shape = mcarray.shape();
-            int ndim = mcarray.num_dimensions();
-            for (int i = ndim-1; i >= 0; i--) {
-                dims.push_back(shape[i]);
-            }
-
-            const std::complex<float> * data = (const std::complex<float>*)mcarray.data();
-            python::numeric::array numarray = make_numeric_complex_array(data, dims);
-
-            return python::incref(numarray.ptr());
-        }
-    };
+			return python::incref(numarray.ptr());
+		}
+	};
 
 
+	template<std::size_t NumDims>
+	struct MCArrayND_to_python : python::to_python_converter<
+			boost::multi_array_ref<std::complex<float>, NumDims>,
+			MCArrayND_to_python<NumDims> >
+	{
+		static PyObject* convert(boost::multi_array_ref<std::complex<float>, NumDims> const & mcarray)
+		{
+			vector<npy_intp> dims;
+			const size_t * shape = mcarray.shape();
+			int ndim = mcarray.num_dimensions();
+			for (int i = ndim-1; i >= 0; i--) {
+				dims.push_back(shape[i]);
+			}
+
+			const std::complex<float> * data = (const std::complex<float>*)mcarray.data();
+			python::numeric::array numarray = make_numeric_complex_array(data, dims);
+
+			return python::incref(numarray.ptr());
+		}
+	};
 
 
-    template <class T>
-    struct vector_from_python
-    {
+
+
+	template <class T>
+	struct vector_from_python
+	{
 		vector_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<vector<T> >());
+			                                       python::type_id<vector<T> >());
 		}
 
 		static void* convertible(PyObject* obj_ptr)
 		{
 			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
-				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+			      || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
 				return 0;
 			}
 
@@ -263,10 +267,10 @@ namespace EMAN {
 
 
 		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage = ((python::converter::rvalue_from_python_storage<vector<T> >*)
-							 data)->storage.bytes;
+					data)->storage.bytes;
 			new (storage) vector<T>();
 
 			data->convertible = storage;
@@ -290,15 +294,15 @@ namespace EMAN {
 				result.push_back(elem_proxy());
 			}
 		}
-    };
+	};
 
-    template <class T>
-    struct map_from_python
-    {
+	template <class T>
+	struct map_from_python
+	{
 		map_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<map<std::string, T> >());
+			                                       python::type_id<map<std::string, T> >());
 		}
 
 		static void* convertible(PyObject* obj_ptr)
@@ -312,10 +316,10 @@ namespace EMAN {
 
 
 		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage = ((python::converter::rvalue_from_python_storage<map<std::string, T> >*)
-							 data)->storage.bytes;
+					data)->storage.bytes;
 			new (storage) map<std::string, T>();
 			data->convertible = storage;
 			map<std::string, T>& result = *((map<std::string, T>*) storage);
@@ -333,14 +337,14 @@ namespace EMAN {
 			}
 
 		}
-    };
+	};
 
-    struct Dict_from_python
-    {
+	struct Dict_from_python
+	{
 		Dict_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<Dict>());
+			                                       python::type_id<Dict>());
 		}
 
 		static void* convertible(PyObject* obj_ptr)
@@ -354,10 +358,10 @@ namespace EMAN {
 
 
 		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage = ((python::converter::rvalue_from_python_storage<Dict>*)
-							 data)->storage.bytes;
+					data)->storage.bytes;
 			new (storage) Dict();
 			data->convertible = storage;
 			Dict& result = *((Dict*) storage);
@@ -383,7 +387,7 @@ namespace EMAN {
 			}
 
 		}
-    };
+	};
 
 	template<class T, class T2>
 	struct tuple2_from_python
@@ -391,13 +395,13 @@ namespace EMAN {
 		tuple2_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-					python::type_id<T>());
+			                                       python::type_id<T>());
 		}
 
 		static void* convertible(PyObject* obj_ptr)
 		{
 			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
-									|| PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+			      || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
 				return 0;
 			}
 
@@ -406,7 +410,7 @@ namespace EMAN {
 
 
 		static void construct(PyObject* obj_ptr,
-								python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage = ((python::converter::rvalue_from_python_storage<T>*)
 					data)->storage.bytes;
@@ -440,17 +444,17 @@ namespace EMAN {
 
 	template<class T, class T2>
 	struct tuple3_from_python
-    {
+	{
 		tuple3_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<T>());
+			                                       python::type_id<T>());
 		}
 
 		static void* convertible(PyObject* obj_ptr)
 		{
 			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
-				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+			      || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
 				return 0;
 			}
 
@@ -459,10 +463,10 @@ namespace EMAN {
 
 
 		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage = ((python::converter::rvalue_from_python_storage<T>*)
-							 data)->storage.bytes;
+					data)->storage.bytes;
 			new (storage) T();
 
 			data->convertible = storage;
@@ -488,15 +492,15 @@ namespace EMAN {
 				i++;
 			}
 		}
-    };
+	};
 
 
-    struct emobject_array_from_python
-    {
+	struct emobject_array_from_python
+	{
 		emobject_array_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<EMObject>());
+			                                       python::type_id<EMObject>());
 		}
 
 		static void* convertible(PyObject* obj_ptr)
@@ -515,10 +519,10 @@ namespace EMAN {
 
 
 		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage = ((python::converter::rvalue_from_python_storage<EMObject>*)
-							 data)->storage.bytes;
+					data)->storage.bytes;
 			new (storage) EMObject();
 
 			data->convertible = storage;
@@ -543,8 +547,8 @@ namespace EMAN {
 				if( PyObject_TypeCheck(first_obj, &PyInt_Type) ) {
 #endif	//IS_PY3K
 					object_type = EMObject::INTARRAY;
-				   // PySequence_GetItem takes an int directly; otherwise you'd need
-				   // to DECREF the int object you pass to PyObject_GetItem as well.
+					// PySequence_GetItem takes an int directly; otherwise you'd need
+					// to DECREF the int object you pass to PyObject_GetItem as well.
 					Py_DECREF(first_obj);
 				}
 				else if( PyObject_TypeCheck(first_obj, &PyFloat_Type) ) {
@@ -552,7 +556,7 @@ namespace EMAN {
 					Py_DECREF(first_obj);
 				}
 #ifdef	IS_PY3K
-				else if( PyObject_TypeCheck(first_obj, &PyUnicode_Type) ) {
+					else if( PyObject_TypeCheck(first_obj, &PyUnicode_Type) ) {
 #else
 				else if( PyObject_TypeCheck(first_obj, &PyString_Type) ) {
 #endif	//IS_PY3K
@@ -619,16 +623,16 @@ namespace EMAN {
 				}
 			}
 		}
-    };
+	};
 
 
 
 	struct emobject_string_from_python
-    {
+	{
 		emobject_string_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<EMObject>());
+			                                       python::type_id<EMObject>());
 		}
 
 		static void* convertible(PyObject* obj_ptr)
@@ -642,16 +646,16 @@ namespace EMAN {
 		}
 
 		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage =
-				((python::converter::rvalue_from_python_storage<EMObject>*)
-				 data)->storage.bytes;
+					((python::converter::rvalue_from_python_storage<EMObject>*)
+							data)->storage.bytes;
 			new (storage) EMObject();
 
 			data->convertible = storage;
 			EMObject& result = *((EMObject*) storage);
-			
+
 			python::extract<std::string> s1(obj_ptr);
 			python::extract<std::wstring> s2(obj_ptr);
 			std::string s;
@@ -665,14 +669,14 @@ namespace EMAN {
 			}
 			result = EMObject(s);
 		}
-    };
-	
+	};
+
 	struct emobject_emdata_from_python
-    {
+	{
 		emobject_emdata_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<EMObject>());
+			                                       python::type_id<EMObject>());
 		}
 
 		static void* convertible(PyObject* obj_ptr)
@@ -685,11 +689,11 @@ namespace EMAN {
 		}
 
 		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage =
-				((python::converter::rvalue_from_python_storage<EMObject>*)
-				 data)->storage.bytes;
+					((python::converter::rvalue_from_python_storage<EMObject>*)
+							data)->storage.bytes;
 			new (storage) EMObject();
 
 			data->convertible = storage;
@@ -700,7 +704,7 @@ namespace EMAN {
 			EMData * emdata = python::extract<EMData*>(obj_ptr);
 			result = EMObject(emdata);
 		}
-    };
+	};
 
 //     struct emobject_transform3d_from_python
 //     {
@@ -734,15 +738,15 @@ namespace EMAN {
 // 		}
 //     };
 
-    struct emobject_transform_from_python
-    {
-    	emobject_transform_from_python()
-    	{
-    		python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<EMObject>());
-    	}
+	struct emobject_transform_from_python
+	{
+		emobject_transform_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+			                                       python::type_id<EMObject>());
+		}
 
-    	static void* convertible(PyObject* obj_ptr)
+		static void* convertible(PyObject* obj_ptr)
 		{
 			const char * type_name = obj_ptr->ob_type->tp_name;
 			if (type_name == 0 || strcmp(type_name, "Transform") != 0) {
@@ -752,11 +756,11 @@ namespace EMAN {
 		}
 
 		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage =
-				((python::converter::rvalue_from_python_storage<EMObject>*)
-				 data)->storage.bytes;
+					((python::converter::rvalue_from_python_storage<EMObject>*)
+							data)->storage.bytes;
 			new (storage) EMObject();
 
 			data->convertible = storage;
@@ -767,17 +771,17 @@ namespace EMAN {
 			Transform * trans = python::extract<Transform*>(obj_ptr);
 			result = EMObject(trans);
 		}
-    };
+	};
 
-    struct emobject_ctf_from_python
-    {
-    	emobject_ctf_from_python()
-    	{
-    		python::converter::registry::push_back(&convertible, &construct,
-    												python::type_id<EMObject>());
-    	}
+	struct emobject_ctf_from_python
+	{
+		emobject_ctf_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+			                                       python::type_id<EMObject>());
+		}
 
-    	static void* convertible(PyObject* obj_ptr)
+		static void* convertible(PyObject* obj_ptr)
 		{
 			const char * type_name = obj_ptr->ob_type->tp_name;
 			if (type_name == 0 || strcmp(type_name, "Ctf") != 0 ) {
@@ -786,12 +790,12 @@ namespace EMAN {
 			return obj_ptr;
 		}
 
-    	static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		static void construct(PyObject* obj_ptr,
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage =
-				((python::converter::rvalue_from_python_storage<EMObject>*)
-				 data)->storage.bytes;
+					((python::converter::rvalue_from_python_storage<EMObject>*)
+							data)->storage.bytes;
 			new (storage) EMObject();
 
 			data->convertible = storage;
@@ -799,17 +803,17 @@ namespace EMAN {
 			Ctf * ctf_ = python::extract<Ctf*>(obj_ptr);
 			result = EMObject(ctf_);
 		}
-    };
+	};
 
-    struct emobject_eman1ctf_from_python
-    {
-    	emobject_eman1ctf_from_python()
-    	{
-    		python::converter::registry::push_back(&convertible, &construct,
-    												python::type_id<EMObject>());
-    	}
+	struct emobject_eman1ctf_from_python
+	{
+		emobject_eman1ctf_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+			                                       python::type_id<EMObject>());
+		}
 
-    	static void* convertible(PyObject* obj_ptr)
+		static void* convertible(PyObject* obj_ptr)
 		{
 			const char * type_name = obj_ptr->ob_type->tp_name;
 			if (type_name == 0 || strcmp(type_name, "EMAN1Ctf") != 0  ) {
@@ -818,12 +822,12 @@ namespace EMAN {
 			return obj_ptr;
 		}
 
-    	static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		static void construct(PyObject* obj_ptr,
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage =
-				((python::converter::rvalue_from_python_storage<EMObject>*)
-				 data)->storage.bytes;
+					((python::converter::rvalue_from_python_storage<EMObject>*)
+							data)->storage.bytes;
 			new (storage) EMObject();
 
 			data->convertible = storage;
@@ -831,17 +835,17 @@ namespace EMAN {
 			Ctf * ctf_ = python::extract<EMAN1Ctf*>(obj_ptr);
 			result = EMObject(ctf_);
 		}
-    };
+	};
 
-    struct emobject_eman2ctf_from_python
-    {
-    	emobject_eman2ctf_from_python()
-    	{
-    		python::converter::registry::push_back(&convertible, &construct,
-    												python::type_id<EMObject>());
-    	}
+	struct emobject_eman2ctf_from_python
+	{
+		emobject_eman2ctf_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+			                                       python::type_id<EMObject>());
+		}
 
-    	static void* convertible(PyObject* obj_ptr)
+		static void* convertible(PyObject* obj_ptr)
 		{
 			const char * type_name = obj_ptr->ob_type->tp_name;
 			if (type_name == 0 || strcmp(type_name, "EMAN2Ctf") != 0  ) {
@@ -850,12 +854,12 @@ namespace EMAN {
 			return obj_ptr;
 		}
 
-    	static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		static void construct(PyObject* obj_ptr,
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage =
-				((python::converter::rvalue_from_python_storage<EMObject>*)
-				 data)->storage.bytes;
+					((python::converter::rvalue_from_python_storage<EMObject>*)
+							data)->storage.bytes;
 			new (storage) EMObject();
 
 			data->convertible = storage;
@@ -863,14 +867,14 @@ namespace EMAN {
 			Ctf * ctf_ = python::extract<EMAN2Ctf*>(obj_ptr);
 			result = EMObject(ctf_);
 		}
-    };
+	};
 
 	struct emobject_xydata_from_python
-    {
+	{
 		emobject_xydata_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<EMObject>());
+			                                       python::type_id<EMObject>());
 		}
 
 		static void* convertible(PyObject* obj_ptr)
@@ -883,11 +887,11 @@ namespace EMAN {
 		}
 
 		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage =
-				((python::converter::rvalue_from_python_storage<EMObject>*)
-				 data)->storage.bytes;
+					((python::converter::rvalue_from_python_storage<EMObject>*)
+							data)->storage.bytes;
 			new (storage) EMObject();
 
 			data->convertible = storage;
@@ -895,17 +899,17 @@ namespace EMAN {
 			XYData * xydata = python::extract<XYData*>(obj_ptr);
 			result = EMObject(xydata);
 		}
-    };
+	};
 
-    struct emobject_null_from_python
-    {
-    	emobject_null_from_python()
-    	{
-    		python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<EMObject>());
-    	}
+	struct emobject_null_from_python
+	{
+		emobject_null_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+			                                       python::type_id<EMObject>());
+		}
 
-    	static void* convertible(PyObject* obj_ptr)
+		static void* convertible(PyObject* obj_ptr)
 		{
 			const char * type_name = obj_ptr->ob_type->tp_name;
 
@@ -918,18 +922,18 @@ namespace EMAN {
 		}
 
 		static void construct(PyObject*,
-							  python::converter::rvalue_from_python_stage1_data* data)
+		                      python::converter::rvalue_from_python_stage1_data* data)
 		{
 			void* storage =
-				((python::converter::rvalue_from_python_storage<EMObject>*)
-				 data)->storage.bytes;
+					((python::converter::rvalue_from_python_storage<EMObject>*)
+							data)->storage.bytes;
 			new (storage) EMObject();
 
 			data->convertible = storage;
 			//EMObject& result = *((EMObject*) storage);
 		}
 
-    };
+	};
 
 }
 
