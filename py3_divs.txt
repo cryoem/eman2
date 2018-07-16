@@ -135,8 +135,8 @@
 ./libpyEM/qtgui/emplot2d.py:547   (self.data[i][self.axes[i][2]]-climits[0])/(climits[1]-climits[0])*255.0  |  old_div((self.data[i][self.axes[i][2]]-climits[0]), (climits[1]-climits[0]))*255.0
 ./libpyEM/qtgui/emplot2d.py:643   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  old_div((x-self.scrlim[0]), self.scrlim[2])*self.plotlim[2]
 ./libpyEM/qtgui/emplot2d.py:644   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  old_div((x-self.scrlim[0]), self.scrlim[2])*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
-./libpyEM/qtgui/emplot2d.py:645   (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]
-./libpyEM/qtgui/emplot2d.py:646   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
+./libpyEM/qtgui/emplot2d.py:645   (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]  |  old_div((self.height()-y-self.scrlim[1]), self.scrlim[3])*self.plotlim[3]
+./libpyEM/qtgui/emplot2d.py:646   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  old_div((self.height()-y-self.scrlim[1]), self.scrlim[3])*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
 ./libpyEM/qtgui/emplot2d.py:653   (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]  |  (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]
 ./libpyEM/qtgui/emplot2d.py:655   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]
 ./libpyEM/qtgui/emplot2d.py:1437   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]
