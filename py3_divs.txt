@@ -94,8 +94,8 @@
 ./libpyEM/EMAN2_utils.py:94   np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx  |  old_div(np.arange(npt,dtype=float), (npt-1))*(pmax-pmin)*mx
 ./libpyEM/EMAN2_utils.py:193    nx*(u-u.min())/(u.max()-u.min())  |   old_div(nx*(u-u.min()), (u.max()-u.min()))
 ./libpyEM/EMAN2_utils.py:194    ny*(v-v.min())/(v.max()-v.min())  |   old_div(ny*(v-v.min()), (v.max()-v.min()))
-./libpyEM/qtgui/emform.py:2112   2*len(params)/3  |  2*len(params)/3
-./libpyEM/qtgui/emform.py:2113   2*len(params)/3  |  2*len(params)/3
+./libpyEM/qtgui/emform.py:2112   2*len(params)/3  |  old_div(ny*(v-v.min()), (v.max()-v.min()))
+./libpyEM/qtgui/emform.py:2113   2*len(params)/3  |  old_div(2*len(params), 3)
 ./libpyEM/qtgui/emglobjects.py:1349    fac*length/self.motiondull*pi  |   fac*length/self.motiondull*pi
 ./libpyEM/qtgui/emglobjects.py:1367    fac*y/self.motiondull*pi  |   fac*y/self.motiondull*pi
 ./libpyEM/qtgui/emglobjects.py:1369     fac*x/self.motiondull*pi  |    fac*x/self.motiondull*pi
