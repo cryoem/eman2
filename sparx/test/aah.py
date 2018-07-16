@@ -1,5 +1,6 @@
 #!/bin/env python
 from __future__ import print_function
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 
@@ -119,8 +120,8 @@ ns = 200
 xma = -1.0e23
 xold = float(nx//2)
 yold = float(ny//2)
-for i in xrange(-ns,ns+1):
-	for j in xrange(-ns,ns+1):
+for i in range(-ns,ns+1):
+	for j in range(-ns,ns+1):
 		value = u.get_pixel_conv(xold+i/float(ns),yold+j/float(ns),1.0,kb)
 		#cfc.set_value_at(i+ns,j+ns,value)
 		if(value > xma):
@@ -192,8 +193,8 @@ ns = 200
 xma = -1.0e23
 xold = float(nx//2)
 yold = float(ny//2)
-for i in xrange(-ns,ns+1):
-	for j in xrange(-ns,ns+1):
+for i in range(-ns,ns+1):
+	for j in range(-ns,ns+1):
 		value = u.get_pixel_conv(xold+i/float(ns),yold+j/float(ns),1.0,kb)
 		#cfc.set_value_at(i+ns,j+ns,value)
 		if(value > xma):
@@ -266,8 +267,8 @@ xma = -1.0e23
 xold = float(nx//2)+int(a[0][4])
 yold = float(ny//2)+int(a[0][5])
 ns = 3
-for i in xrange(-ns,ns+1):
-	for j in xrange(-ns,ns+1):
+for i in range(-ns,ns+1):
+	for j in range(-ns,ns+1):
 		value = product.get_pixel_conv(xold+i,yold+j,1.0,kb)
 		#print  i,j,"   ",value
 		if(value > xma):
@@ -278,8 +279,8 @@ print("  PEAK  ",im,jm,xma)
 ns = 100
 cfc = model_blank(2*ns+1,2*ns+1)
 xma = -1.0e23
-for i in xrange(-ns,ns+1):
-	for j in xrange(-ns,ns+1):
+for i in range(-ns,ns+1):
+	for j in range(-ns,ns+1):
 		value = product.get_pixel_conv(xold+i/float(ns),yold+j/float(ns),1.0,kb)
 		cfc.set_value_at(i+ns,j+ns,value)
 		#print  i,j,"   ",value

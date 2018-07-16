@@ -32,6 +32,8 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
+from builtins import object
 from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict,EMArgumentParser
 from EMAN2db import db_check_dict
 from EMAN2jsondb import *
@@ -431,7 +433,7 @@ def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 	return averages
 
 
-class SwarmShrunkenImageMediator:
+class SwarmShrunkenImageMediator(object):
 	def __init__(self,template_radius,subsample_rate):
 		self.template_radius = template_radius
 		self.subsample_rate = subsample_rate
@@ -439,7 +441,7 @@ class SwarmShrunkenImageMediator:
 	def get_template_radius(self): return self.template_radius
 	def get_subsample_rate(self): return self.subsample_rate
 
-class SwarmFLCFImageMediator:
+class SwarmFLCFImageMediator(object):
 	def __init__(self,template_radius,subsample_rate,template_image):
 		self.template_radius = template_radius
 		self.subsample_rate = subsample_rate
@@ -449,7 +451,7 @@ class SwarmFLCFImageMediator:
 	def get_subsample_rate(self): return self.subsample_rate
 	def get_template_object(self): return self.template_object
 
-	class TemplateObject:
+	class TemplateObject(object):
 		def __init__(self,template_image):
 			self.template_image = template_image
 
@@ -459,7 +461,7 @@ class SwarmFLCFImageMediator:
 
 		def get_radius(self): return
 
-class SwarmBox:
+class SwarmBox(object):
 	def __init__(self,x,y,image_name,in_template=True,profile=None):
 		self.x = x
 		self.y = y
@@ -505,7 +507,7 @@ class SwarmBox:
 			self.profile = BoxingTools.get_min_delta_profile(correlation,self.peak_x,self.peak_y, mediator.get_template_radius() )
 
 
-class SwarmPanel:
+class SwarmPanel(object):
 	DB_NAME = "e2boxercache/swarm_panel.json"
 
 	def __init__(self,target,particle_diameter=128):
@@ -804,7 +806,7 @@ def compare_box_correlation(box1,box2):
 	else: return 1
 
 
-class SwarmBoxer:
+class SwarmBoxer(object):
 	THRESHOLD = "Threshold"
 	SELECTIVE = "Selective"
 	MORESELECTIVE = "More Selective"
@@ -1652,7 +1654,7 @@ class SwarmBoxer:
 				if len(self.profile) != len(box.profile): raise RuntimeError("This should never happen")
 
 				profile = box.profile
-				for j in xrange(0,len(self.profile)):
+				for j in range(0,len(self.profile)):
 					if profile[j] < self.profile[j]: self.profile[j] = profile[j]
 
 		if self.profile == None:
@@ -1916,7 +1918,7 @@ def histogram1d( data, nbin, presize=0 ) :
 	start = fmin - binsize*presize
 	region = [None]*nbin
 	hist = [None]*nbin
-	for i in xrange(nbin):
+	for i in range(nbin):
 		region[i] = start + (i+0.5)*binsize
 		hist[i] = 0
 
@@ -1926,7 +1928,7 @@ def histogram1d( data, nbin, presize=0 ) :
 
 	return region,hist
 
-class GaussPanel:
+class GaussPanel(object):
 	DB_NAME = "e2boxercache/gauss_panel.json"
 	GDB_NAME = 'e2boxercache/gauss_box_DB.json' # cache for putting params related to gauss method autoboxer
 
@@ -2606,7 +2608,7 @@ class GaussPanel:
 
 
 
-class GaussBoxer:
+class GaussBoxer(object):
 
 	CACHE_MAX = 10 # Each image has its last CACHE_MAX SwarmBoxer instance stored (or retrievable) automatically
 	PROFILE_MAX = 0.8 # this is a percentage - it stops the profile trough point from going to the end
@@ -2757,7 +2759,7 @@ class GaussBoxer:
 		print("invert: ", self.invert)
 		print("gauss width: ", self.gauss_width)
 		print("variance: ", self.use_variance)
-		for i in xrange(npeak):
+		for i in range(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
 
@@ -3008,7 +3010,7 @@ class GaussBoxer:
 		npeak = len(peaks)/3
 		print("npeak: ", npeak)
 		boxes = []
-		for i in xrange(npeak):
+		for i in range(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
 
@@ -3277,9 +3279,9 @@ class CTFInspectorWidget(QtGui.QWidget):
 
 
 			if ((self.i_start is not None) and (self.i_stop is not None)):
-				sizeh = max([max(self.data[i][self.i_start:self.i_stop]) for i in xrange(len(self.data)-1)])
+				sizeh = max([max(self.data[i][self.i_start:self.i_stop]) for i in range(len(self.data)-1)])
 			else:
-				sizeh = max([max(self.data[i]) for i in xrange(len(self.data)-1)])
+				sizeh = max([max(self.data[i]) for i in range(len(self.data)-1)])
 
 
 			sizeh = float(sizeh)
@@ -3299,7 +3301,7 @@ class CTFInspectorWidget(QtGui.QWidget):
 
 			tickspacing = min(int(sizew/30)+1, 5)
 
-			for list_index in xrange(len(self.data)):
+			for list_index in range(len(self.data)):
 
 				p.setPen(color[list_index])
 				metrics = p.fontMetrics()
@@ -3308,7 +3310,7 @@ class CTFInspectorWidget(QtGui.QWidget):
 				p.drawText(w-wborder-fw/2, hborder+(list_index)*fh, str(labels[list_index]))
 
 
-				for index in xrange(self.i_start,self.i_stop):
+				for index in range(self.i_start,self.i_stop):
 
 
 					p.setPen(color[list_index])

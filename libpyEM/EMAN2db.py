@@ -31,9 +31,13 @@ from __future__ import print_function
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 import atexit
 import weakref
-from cPickle import loads,dumps
+from pickle import loads,dumps
 from zlib import compress,decompress
 import os
 import os.path
@@ -459,12 +463,12 @@ def db_read_images(fsp,*parms):
 				return [db.get(keys[i]) for i in parms[0]]
 			return [db.get(i,nodata=nodata) for i in keys]
 		else :
-			if len(parms)==0 : keys=range(0,len(db))
+			if len(parms)==0 : keys=list(range(0,len(db)))
 			else : keys=parms[0]
-			if not keys or len(keys)==0 : keys=range(len(db))
+			if not keys or len(keys)==0 : keys=list(range(len(db)))
 		return [db.get(i,nodata=nodata) for i in keys]
 	if len(parms)>0 and (parms[0]==None or len(parms[0])==0) :
-		parms=(range(EMUtil.get_image_count(fsp)),)+parms[1:]
+		parms=(list(range(EMUtil.get_image_count(fsp))),)+parms[1:]
 	return EMData.read_images_c(fsp,*parms)
 
 EMData.read_images_c=staticmethod(EMData.read_images)
@@ -589,7 +593,7 @@ def db_get_all_attributes(fsp,*parms):
 				except: pass
 			return [db.get_attr(i, attr_name) for i in keys]
 		else :
-			if len(parms)==1 : keys=range(0,len(db))
+			if len(parms)==1 : keys=list(range(0,len(db)))
 			else : keys=parms[0]
 		return [db.get_attr(i, attr_name) for i in keys]
 	return EMUtil.get_all_attributes_c(fsp,*parms)
@@ -601,7 +605,7 @@ EMUtil.get_all_attributes=staticmethod(db_get_all_attributes)
 ###  Task Management classes
 #############
 
-class EMTaskQueue:
+class EMTaskQueue(object):
 	"""This class is used to manage active and completed tasks through an
 	EMAN2DB object. Pass it an initialized EMAN2DB instance. Tasks are each
 	assigned a number unique in the local database. The active task 'max'
@@ -816,7 +820,7 @@ class EMTaskQueue:
 		self.active[taskid]=None
 		EMTaskQueue.lock.release()
 
-class EMTask:
+class EMTask(object):
 	"""This class represents a task to be completed. Generally it will be subclassed. This is effectively
 	an abstract superclass to define common member variables and methods. Note that the data dictionary,
 	which contains a mix of actual data elements, and ["cache",filename,#|min,max|(list)] image references, will
@@ -856,7 +860,7 @@ class EMTask:
 ### This is the 'database' object, representing a BerkeleyDB environment
 ##########
 
-class EMAN2DB:
+class EMAN2DB(object):
 	"""This class implements a local database of data and metadata for EMAN2"""
 
 	opendbs={}
@@ -1018,7 +1022,7 @@ only practical option.)
 ### This represents a 'dictionary' within a 'database', in BerkeleyDB parlance this is a B-tree (though it could also be a Hash)
 ##########
 
-class DBDict:
+class DBDict(object):
 	"""This class uses BerkeleyDB to create an object much like a persistent Python Dictionary,
 	keys and data may be arbitrary pickleable types, however, additional functionality is provided
 	for EMData objects. Specifically, if integer keys are used, set_attr and get_attr may be used

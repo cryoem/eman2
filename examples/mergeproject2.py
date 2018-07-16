@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 import sys
 import time
@@ -83,7 +84,7 @@ for source in sys.argv[1:]:
 		# This copies the image files
 		src=db_open_dict("bdb:%s/particles#%s"%(source,f),ro=True)
 		dest=db_open_dict("bdb:particles#%s"%f)
-		for i in xrange(len(src)): dest[i]=src[i]
+		for i in range(len(src)): dest[i]=src[i]
 
 	# now copy CTF parameters
 	print("Copy e2ctf.bg2d")

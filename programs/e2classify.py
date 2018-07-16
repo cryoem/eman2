@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from math import *
 import os
 import sys
@@ -142,7 +143,7 @@ def main():
 		
 		
 	simmx=(EMData(),EMData(),EMData(),EMData(),EMData(),EMData())
-	for iptcl in xrange(nptcl):
+	for iptcl in range(nptcl):
 		simmx[0].read_image(args[0],0,False,Region(0,iptcl,nref,1))
 		if num_sim>=5 :
 			simmx[1].read_image(args[0],1,False,Region(0,iptcl,nref,1))		#tx
@@ -156,7 +157,7 @@ def main():
 		# We replace simmx[0] with a new version computed via average vectors
 		if options.simvec:
 			newmx=simmx[0].copy()
-			for i in xrange(newmx["nx"]):
+			for i in range(newmx["nx"]):
 				try: 
 #					simmx[0][i]=newmx.cmp("ccc",bvecs[i])
 					simmx[0][i]=newmx.cmp("sqeuclidean",bvecs[i],{"normto":1})
@@ -164,7 +165,7 @@ def main():
 		
 		#hmmm, this code is pretty silly, but harmless, I suppose...
 		maximum=simmx[0]["maximum"]
-		for ic in xrange(options.sep):
+		for ic in range(options.sep):
 			cls=simmx[0].calc_min_index()
 			clsmx[0][ic,iptcl]=cls
 			clsmx[1][ic,iptcl]=1.0		# weight

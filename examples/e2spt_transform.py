@@ -32,6 +32,7 @@ Author: Jesus Galaz - oct/2017, Last update: nov/2017
 '''
 from __future__ import print_function
 
+from builtins import range
 from optparse import OptionParser
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
@@ -163,7 +164,7 @@ def main():
 				if int(len(newlines)) < int(len(coordlines)):
 					dif = len(coordlines) - len(newlines)
 					print("\nlen(newlines)={} , len(coordlines)={} , dif={}".format(len(newlines),len(coordlines),dif))
-					for kk in xrange(dif):
+					for kk in range(dif):
 						indx = len(coordlines) -1*kk -1
 						print("\nWARNING: appending untranslated cooridates from --coords {}".format(coordlines[indx]))
 						newlines.append(coordlines[indx])	#if the coordinates file grew with respect to the alignment parameters file because new particles were boxed (but not aligned), this adds untranslated coordinates from the end of the original --coords file 

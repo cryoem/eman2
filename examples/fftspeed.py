@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 import sys
 import time
@@ -56,9 +57,9 @@ out=open("fftspeed.txt","w")
 	#out.write(rslt+"\n")
 	#print rslt
 
-for dim in xrange(2,4):
+for dim in range(2,4):
 	times=[]
-	for size in xrange(20,514,2):
+	for size in range(20,514,2):
 		if dim==2 : 
 			img=EMData(size,size,1)
 			reps=int(200000/size)
@@ -70,7 +71,7 @@ for dim in xrange(2,4):
 		img.process_inplace("math.addnoise",{"noise":1.0})
 	
 		t0=time.time()
-		for r in xrange(reps):
+		for r in range(reps):
 			x=img.do_fft()
 			
 		t1=time.time()

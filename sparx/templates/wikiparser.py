@@ -7,6 +7,7 @@ from __future__ import print_function
 
 # from EMAN2 import *
 # from sparx import *
+from builtins import object
 import os
 import sys
 import copy
@@ -15,7 +16,7 @@ from global_def import ERROR
 from sxgui_template import SXcmd_token, SXcmd, SXcmd_category
 
 # ========================================================================================
-class SXsubcmd_config:
+class SXsubcmd_config(object):
 	def __init__(self, label = "", short_info = None, token_edit_list = [], mpi_support = None, is_modeless = False, subset_config=""):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
@@ -28,7 +29,7 @@ class SXsubcmd_config:
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
-class SXcmd_config:
+class SXcmd_config(object):
 	def __init__(self, wiki, format, category, role, is_submittable = True, exclude_list = [], subconfig = None):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
@@ -44,7 +45,7 @@ class SXcmd_config:
 
 # ========================================================================================
 # Helper class used only in construct_token_list_from_*() functions
-class SXkeyword_map:
+class SXkeyword_map(object):
 	def __init__(self, priority, token_type):
 		if priority >= 100: ERROR("Priority should be lower than 100", "%s in %s" % (__name__, os.path.basename(__file__)))
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><

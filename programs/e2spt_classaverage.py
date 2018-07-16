@@ -34,6 +34,7 @@
 #
 
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
 from EMAN2_utils import *
@@ -788,7 +789,7 @@ def main():
 	ptclnumsdict = {}			#Each class might have a different list of particle numbers. 
 								#We store them in a master dictionary, read only once.
 	if ncls == 1: 
-		ptclnumsdict.update({ 0 : range(nptcl) })		#If there's only one class, all indexes from 0 to nptcl will be in it
+		ptclnumsdict.update({ 0 : list(range(nptcl)) })		#If there's only one class, all indexes from 0 to nptcl will be in it
 	elif ncls > 1:
 		classmx = EMData.read_images( options.classmx )
 		if options.verbose:
@@ -1432,7 +1433,7 @@ def main():
 			#classScoresList.reverse()
 			maxY = max(classScoresList) + 1
 	
-			plotX = range( len(classScoresList) )
+			plotX = list(range( len(classScoresList)))
 			maxX = max(plotX) + 1
 	
 			plotName = 'spt_cccs_' + str( it ).zfill( len( str( options.iter ) )) + klassid + '.png'
@@ -1559,7 +1560,7 @@ def main():
 
 		maxY = max(scores) + 1
 	
-		plotX = range( len(scores) )
+		plotX = list(range( len(scores)))
 		maxX = max(plotX) + 1
 
 		plotName = 'spt_meanccc' + klassid + '.png'

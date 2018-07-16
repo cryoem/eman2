@@ -30,6 +30,7 @@ Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 from __future__ import print_function
+from builtins import range
 import matplotlib
 matplotlib.use('Agg',warn=False)
 
@@ -211,7 +212,7 @@ def main():
 					xaxis = [ float(line.replace('\n','').split()[0]) for line in lines ]
 					xaxes.update({k:xaxis})
 					if not options.datay:
-						yaxis = range(len(xaxis))
+						yaxis = list(range(len(xaxis)))
 						yaxes.update({k:yaxis})
 
 						if options.normalize:
@@ -235,7 +236,7 @@ def main():
 						yaxis = normalize(yaxis)
 	
 					if not options.datax:
-						xaxis = range(len(yaxis))
+						xaxis = list(range(len(yaxis)))
 						xaxes.update({k:xaxis})
 
 						datadict.update({k:[xaxis,yaxis]})
@@ -257,7 +258,7 @@ def main():
 def fixlines(inlines):
 	n=len(inlines)
 	newlines=[]
-	for i in xrange(0,n):
+	for i in range(0,n):
 		inlines[i] = inlines[i].replace(", ",' ')	
 		inlines[i] = inlines[i].replace(",",' ')
 		inlines[i] = inlines[i].replace("x",'')

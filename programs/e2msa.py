@@ -36,6 +36,7 @@ from __future__ import print_function
 # Rewritten version which just does PCA, no classification
 # uses Chao Yang's new PCA implementation in Analyzer
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import numpy as np

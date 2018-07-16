@@ -121,7 +121,6 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.wg_2dimage.setWindowTitle("Tomo2D")
 		self.cur_data=None
 		
-		
 		self.wg_tltimage=EMImage2DWidget()
 		self.wg_tltimage.setWindowTitle("Tiltseries")
 		self.wg_tltimage.set_scale(.2)
@@ -132,15 +131,17 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.itemflags=	Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 		
 		self.wg_notes=QtGui.QTextEdit(self)
+		self.wg_notes.setText("Comments:")
+		#self.wg_notes.setStyleSheet("color: rgb(150, 150, 150);")
 		self.gbl.addWidget(self.wg_notes, 10,1,1,2)
-				
+		
 		self.setspanel.itemChanged[QtGui.QListWidgetItem].connect(self.clickset)
 		self.wg_notes.textChanged.connect(self.noteupdate)
 		
 		self.wg_plot2d=EMPlot2DWidget()
 		
 		self.update_files()
-		
+
 	def update_files(self):
 		self.imginfo=[]
 		
@@ -203,6 +204,7 @@ class TomoEvalGUI(QtGui.QWidget):
 								ptclcls[vname]=[1,n]
 				
 				dic["basename"]= os.path.basename(name).split(".")[0] #base_name(name)
+				dic["e2basename"] = base_name(name)
 				dic["filename"]=name
 				dic["nbox"]=nbox
 				dic["boxcls"]=bxcls
@@ -261,7 +263,7 @@ class TomoEvalGUI(QtGui.QWidget):
 	
 	def plot_loss(self):
 		idx, info=self.get_id_info()
-		self.wg_plot2d.set_data(info["loss"], info["basename"], replace=True)
+		self.wg_plot2d.set_data(info["loss"], info["e2basename"], replace=True)
 		self.wg_plot2d.show()
 	
 	def plot_tltparams(self):
@@ -269,8 +271,8 @@ class TomoEvalGUI(QtGui.QWidget):
 		if len(info["tlt_params"])==0: return 
 		tpm=info["tlt_params"].T
 		tpm=np.vstack([np.arange(len(tpm[0])), tpm])
-		self.wg_plot2d.set_data(tpm, info["basename"], replace=True, linetype=0,symtype=0)
-		self.wg_plot2d.setAxes(info["basename"], 4, 2)
+		self.wg_plot2d.set_data(tpm, info["e2basename"], replace=True, linetype=0,symtype=0)
+		self.wg_plot2d.setAxes(info["e2basename"], 4, 2)
 		self.wg_plot2d.show()
 		
 	def show2d(self):
@@ -302,7 +304,7 @@ class TomoEvalGUI(QtGui.QWidget):
 			if len(info["phase"])>0:
 				data=np.vstack([data, info["phase"]])
 			
-			self.wg_plot2d.set_data(data, info["basename"], replace=True, linetype=0,symtype=0)
+			self.wg_plot2d.set_data(data, info["e2basename"], replace=True, linetype=0,symtype=0)
 			self.wg_plot2d.setAxes(info["basename"], 1, 2)
 			self.wg_plot2d.show()
 			
@@ -328,7 +330,7 @@ class TomoEvalGUI(QtGui.QWidget):
 			return
 		try:	
 			info["notes"]=notes
-			infoname=info_name(info["basename"])
+			infoname=info_name(info["e2basename"])
 			js=js_open_dict(infoname)
 			js["notes"]=notes
 			js=None

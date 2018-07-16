@@ -54,7 +54,7 @@ def boolconv(x):
 # validation/conversion for text, permitting unicode
 def textconv(x):
 	try: return str(x)
-	except: return unicode(x)
+	except: return str(x)
 
 def datetimeconv(x):
 	return str(x)
@@ -387,10 +387,10 @@ class ParamDef(DictMixin) :
 		if self.vartype != None and not str(self.vartype) in valid_vartypes:
 			raise ValueError("Invalid vartype; not in valid_vartypes")
 			
-		if unicode(self.desc_short) == "":
+		if str(self.desc_short) == "":
 			raise ValueError("Short description (desc_short) required")
 
-		if unicode(self.desc_long) == "":
+		if str(self.desc_long) == "":
 			raise ValueError("Long description (desc_long) required")
 
 		if self.property != None and str(self.property) not in valid_properties:
@@ -411,7 +411,7 @@ class ParamDef(DictMixin) :
 			try:
 				list(self.choices)
 				for i in self.choices:
-					unicode(i)
+					str(i)
 			except:
 				raise ValueError("choices must be a list of strings")
 			#if isinstance(self.choices,basestring):
@@ -582,7 +582,7 @@ class RecordDef(DictMixin) :
 			raise ValueError("Invalid value for typicalchld; list of recorddefs required.")
 						
 		try: 
-			if unicode(self.mainview) == "": raise Exception
+			if str(self.mainview) == "": raise Exception
 		except:
 			raise ValueError("mainview required; must be str or unicode")
 
@@ -890,7 +890,7 @@ class Record(DictMixin):
 		"A string representation of the record"
 		ret=["%s (%s)\n"%(str(self.recid),self.rectype)]
 		for i,j in list(self.items()): 
-			ret.append(u"%12s:	%s\n"%(str(i),unicode(j)))
+			ret.append(u"%12s:	%s\n"%(str(i),str(j)))
 		return u"".join(ret)
 	
 	def __str__(self):

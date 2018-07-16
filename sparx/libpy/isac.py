@@ -29,6 +29,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from builtins import range
 from global_def import SPARX_MPI_TAG_UNIVERSAL
 
 def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
@@ -115,9 +116,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		# alldata_n stores the original index of the particle (i.e., the index before running Generation 1)  
 		alldata_n = [0]*ndata
 		if generation > 1:
-			for i in xrange(ndata): alldata_n[i] = alldata[i].get_attr('data_n')
+			for i in range(ndata): alldata_n[i] = alldata[i].get_attr('data_n')
 		else:
-			for i in xrange(ndata): alldata_n[i] = i
+			for i in range(ndata): alldata_n[i] = i
 		nx = alldata[0].get_xsize()
 	else:
 		ndata = 0
@@ -128,11 +129,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	nx = int(nx[0])
 
 	if myid != main_node:
-		alldata = [model_blank(nx, nx) for i in xrange(ndata)]
+		alldata = [model_blank(nx, nx) for i in range(ndata)]
 	mpi_barrier(MPI_COMM_WORLD)
 	data = [None]*ndata
 	tdummy = Transform({"type":"2D"})
-	for im in xrange(ndata):
+	for im in range(ndata):
 		bcast_EMData_to_all(alldata[im], myid, main_node)
 		mpi_barrier(MPI_COMM_WORLD)  # has to be here, otherwise it chokes on our cluster.  PAP
 		# This is the absolute ID, the only time we use it is
@@ -205,9 +206,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				#refi = generate_random_averages(data, K, -1)
 				###for j in xrange(len(refi)):  refi[j].write_image("refim_%d.hdf"%color, j)
 			else:
-				refi = [model_blank(nx, nx) for i in xrange(K)]
+				refi = [model_blank(nx, nx) for i in range(K)]
 
-			for i in xrange(K):
+			for i in range(K):
 				bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
 
 			# Generate inital averages
@@ -231,17 +232,17 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 						current_refim = current_refim[:K]
 					elif len(current_refim) < K:
 						defi = K - len(current_refim)
-						for i in xrange(defi):
+						for i in range(defi):
 							current_refim.append(refi[randint(0, indep_run*K-1)].copy())
 				else:
-					current_refim = [model_blank(nx, nx) for i in xrange(K)]
+					current_refim = [model_blank(nx, nx) for i in range(K)]
 
 				mpi_barrier(MPI_COMM_WORLD)	
 			else:
 				current_refim = refi
 
 			# broadcast current_refim to all nodes
-			for i in xrange(K):
+			for i in range(K):
 				bcast_EMData_to_all(current_refim[i], myid, main_node)
 			mpi_barrier(MPI_COMM_WORLD)
 
@@ -256,7 +257,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				print("     Processing of candidate averages   "+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
 				print("**********************************************************************")
 	
-			for mloop in xrange(1, match_first+1):
+			for mloop in range(1, match_first+1):
 				if myid == main_node:
 					print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 					print("     Loop %3d for 2-way matching   "%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime()))
@@ -265,7 +266,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 						maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm,
 						stability=True, stab_ali=stab_ali, iter_reali=iter_reali, thld_err=thld_err, FL=FL, FH=FH, FF=FF, dst=dst, method = alimethod)
 
-				all_ali_params = [[] for i in xrange(4)]
+				all_ali_params = [[] for i in range(4)]
 				for im in data:
 					alpha, sx, sy, mirror, scale = get_params2D(im)
 					all_ali_params[0].append(alpha)
@@ -292,8 +293,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 					if myid == main_node:
 						current_refim = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
 					else:
-						current_refim = [model_blank(nx, nx) for i in xrange(K)]
-					for k in xrange(K):
+						current_refim = [model_blank(nx, nx) for i in range(K)]
+					for k in range(K):
 						bcast_EMData_to_all(current_refim[k], myid, main_node)
 				mpi_barrier(MPI_COMM_WORLD)
 			del current_refim
@@ -310,9 +311,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 				# Because it's 2-way matching, it is possible some members are accounted for twice, we must delete the duplicate ones.   Yang 03/28/11
 				members.sort()
-				for i in xrange(len(members)-1, 0, -1):
+				for i in range(len(members)-1, 0, -1):
 					if members[i] == members[i-1]: del members[i]
-				for i in xrange(len(members)-1): assert members[i]!=members[i+1]
+				for i in range(len(members)-1): assert members[i]!=members[i+1]
 				mem_len = len(members)
 				print("In Round #%d, we found %d stable and reproducible averages, accounted for %d particles.  "%(Iter, len(matched_data), mem_len))
 			else:
@@ -330,7 +331,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				nndata = ndata-len(members)
 				newdata = [-1]*nndata
 				ll = 0
-				for i in xrange(ndata):
+				for i in range(ndata):
 					abs_id = data[i].get_attr("ID")
 					if abs_id not in members:
 						newdata[ll] = abs_id
@@ -384,11 +385,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	if(nrefim == 0):  ERROR("sxisac","Candidate averages do not exist",1,myid)
 
 	if myid != main_node:
-		refim = [model_blank(nx, nx) for i in xrange(nrefim)]
+		refim = [model_blank(nx, nx) for i in range(nrefim)]
 	mpi_barrier(MPI_COMM_WORLD)
 
 	nn = [0]*nrefim
-	for i in xrange(nrefim):
+	for i in range(nrefim):
 		bcast_EMData_to_all(refim[i], myid, main_node)						   # ref + n_objects
 		if myid == main_node: n_objects = refim[i].get_attr('n_objects')
 		else: n_objects = 0
@@ -404,7 +405,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	two_way_loop = match_second/2
 	ndata = len(alldata)
 	K = ndata/img_per_grp
-	for mloop in xrange(1, match_second+1):
+	for mloop in range(1, match_second+1):
 		if mloop <= two_way_loop:
 			wayness = 2
 		elif mloop != match_second:
@@ -427,7 +428,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				if im.get_attr('n_objects') > 1:
 					members.extend(im.get_attr('members'))
 			members.sort()
-			for i in xrange(len(members)-1, 0, -1):
+			for i in range(len(members)-1, 0, -1):
 				if members[i] == members[i-1]: del members[i]
 			n_members = len(members)
 		else:
@@ -443,7 +444,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		nleft = ndata-n_members
 		data_left = [None]*nleft
 		c = 0
-		for i in xrange(ndata):
+		for i in range(ndata):
 			if i not in members:
 				data_left[c] = alldata[i]
 				c += 1
@@ -461,9 +462,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				refim_left = generate_random_averages(data_left, K_left)
 				#for j in xrange(K_left):  refim_left[j].write_image("refim_left_%d.hdf"%color, j)
 			else:
-				refim_left = [model_blank(nx, nx) for i in xrange(K_left)]
+				refim_left = [model_blank(nx, nx) for i in range(K_left)]
 
-			for i in xrange(K_left):
+			for i in range(K_left):
 				bcast_EMData_to_all(refim_left[i], key, group_main_node, group_comm)		  # Within one SAC
 
 			# Generate initial averages for the unaccounted images
@@ -473,13 +474,13 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			if len(refim) < K:
 				# This will only happen in the first iteration, if applicable
-				for k in xrange(K_left):
+				for k in range(K_left):
 					refim.append(refim_left[k])
 				refim = refim[:K]
 			else:
 				refim = refim[:K]
 				ileft = 0
-				for k in xrange(K):
+				for k in range(K):
 					if refim[k].get_attr('n_objects') == 1:
 						refim[k] = refim_left[ileft]
 						ileft += 1
@@ -501,7 +502,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
 				stability=True, stab_ali=stab_ali, iter_reali=iter_reali, thld_err=thld_err, FL=FL, FH=FH, FF=FF, dst=dst, method = alimethod)
 
-		all_ali_params = [[] for i in xrange(4)]
+		all_ali_params = [[] for i in range(4)]
 		for im in alldata:
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			all_ali_params[0].append(alpha)
@@ -537,19 +538,19 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 					elif len(refim_all) < K:
 						defi = K - len(refim_all)
 						print("Since the number of unique 2-way matches is smaller than the number of groups (%d), we have to append %d random images."%(K, defi))
-						for i in xrange(defi):
+						for i in range(defi):
 							# put some dummy avgs here
 							temp_id = randint(0, ndata-1)
 							ave = alldata[temp_id].copy()
 							ave.set_attr_dict({"members": [temp_id], "n_objects": 1})
 							refim_all.append(ave)
-					for i in xrange(K*(indep_run-1)):
+					for i in range(K*(indep_run-1)):
 						refim_all.append(refim_all[i%K])
 				else:
 					refim_all = match_2_way(alldata, refim, indep_run, thld_grp, FH, FF, find_unique = False, wayness = wayness, suffix="_"+str(mloop) )
 			else:
-				refim_all = [model_blank(nx, nx) for i in xrange(K*indep_run)]
-			for k in xrange(K*indep_run):
+				refim_all = [model_blank(nx, nx) for i in range(K*indep_run)]
+			for k in range(K*indep_run):
 				bcast_EMData_to_all(refim_all[k], myid, main_node)
 				if myid == main_node: n_objects = refim_all[k].get_attr('n_objects')
 				else: n_objects = 0
@@ -594,14 +595,14 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	l_STB = int(l_STB[0])
 
 	if myid == main_node:
-		for i in xrange(l_STB):
+		for i in range(l_STB):
 			node_to_run = i%(number_of_proc-1)+1
 			mpi_send(len(STB_PART[i]), 1, MPI_INT, node_to_run, i+10000, MPI_COMM_WORLD)
 			mpi_send(STB_PART[i], len(STB_PART[i]), MPI_INT, node_to_run, i+20000, MPI_COMM_WORLD)
 
 		members_acc = []
 		ave_num = 0
-		for i in xrange(l_STB):
+		for i in range(l_STB):
 			node_to_run = i%(number_of_proc-1)+1
 			l_stable_members = mpi_recv(1, MPI_INT, node_to_run, i+30000, MPI_COMM_WORLD)
 			l_stable_members = int(l_stable_members[0])
@@ -624,7 +625,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			ave = recv_EMData(node_to_run, i+70000)
 			stable_members_ori = [0]*l_stable_members
-			for j in xrange(l_stable_members): stable_members_ori[j] = alldata_n[stable_members[j]]
+			for j in range(l_stable_members): stable_members_ori[j] = alldata_n[stable_members[j]]
 			ave.set_attr_dict({"members": stable_members_ori, "n_objects": l_stable_members})
 			ave.write_image("class_averages_generation_%d.hdf"%generation, ave_num)
 			mpi_send(ave_num, 1, MPI_INT, node_to_run, i+80000, MPI_COMM_WORLD)
@@ -632,11 +633,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			members_acc.extend(stable_members_ori)
 
 		members_acc.sort()
-		for i in xrange(len(members_acc)-1): assert members_acc[i] != members_acc[i+1]
+		for i in range(len(members_acc)-1): assert members_acc[i] != members_acc[i+1]
 
 		members_unacc = [0]*(ndata-len(members_acc))
 		c = 0
-		for i in xrange(ndata):
+		for i in range(ndata):
 			if alldata_n[i] in members_acc: continue
 			members_unacc[c] = alldata_n[i]
 			c += 1
@@ -649,7 +650,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print("*     End of the second phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *")
 		print("******************************************************************************************")
 	else:
-		for i in xrange(l_STB):
+		for i in range(l_STB):
 			node_to_run = i%(number_of_proc-1)+1
 			if myid != node_to_run: continue
 			l_STB_PART = mpi_recv(1, MPI_INT, main_node, i+10000, MPI_COMM_WORLD)
@@ -660,17 +661,17 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			class_data = [None]*l_STB_PART
 			members_id = [0]*l_STB_PART
-			for im in xrange(l_STB_PART):
+			for im in range(l_STB_PART):
 				class_data[im] = alldata[STB_PART[im]]
 				members_id[im] = alldata[STB_PART[im]].get_attr('ID')
-			for im in xrange(l_STB_PART-1):
+			for im in range(l_STB_PART-1):
 				assert members_id[im] != members_id[im+1]
 
-			ali_params = [[] for j in xrange(stab_ali)]
-			for ii in xrange(stab_ali):
+			ali_params = [[] for j in range(stab_ali)]
+			for ii in range(stab_ali):
 				ave = within_group_refinement(class_data, None, True, ir, ou, rs, [xr], [yr], [ts], \
 												dst, maxit, FH, FF, method = alimethod)
-				for im in xrange(l_STB_PART):
+				for im in range(l_STB_PART):
 					alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 					ali_params[ii].extend([alpha, sx, sy, mirror])
 			if ou == -1:  ou = nx/2-2
@@ -683,7 +684,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			all_sy        = [0]*l_stable_set
 			all_mirror    = [0]*l_stable_set
 			#all_scale     = [1.0]*l_stable_set
-			for j in xrange(l_stable_set): 
+			for j in range(l_stable_set): 
 				stable_set_id[j] = members_id[stable_set[j][1]]
 				all_alpha[j]     = stable_set[j][2][0]
 				all_sx[j]        = stable_set[j][2][1]
@@ -761,7 +762,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	nima = len(alldata)
 	#  Explicitly force all parameters to be zero on input
-	for im in xrange(nima):  set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
+	for im in range(nima):  set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
 		
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
@@ -779,8 +780,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		#   This is really strange.  It takes much memory without any need.  PAP 01/17/2015
 		#      However, later I made changes so refi is deleted from time to time.  All to be checked.
 		# refi = refim
-		refi = [None for i in xrange(len(refim))]
-		for i in xrange(len(refim)):  refi[i] = refim[i].copy()
+		refi = [None for i in range(len(refim))]
+		for i in range(len(refim)):  refi[i] = refim[i].copy()
 	numref = len(refi)
 
 	#  CTF stuff
@@ -824,7 +825,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		Iter += 1
 		###if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		mashi = cnx-ou-2
-		for j in xrange(numref):
+		for j in range(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
 			###if myid == main_node:
 			###	refi[j].write_image("refincoming%02d_round%02d.hdf"%(color, Iter), j)
@@ -835,12 +836,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 
 #		if CTF: ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
-		peak_list = [zeros(4*(image_end-image_start), dtype=float32) for i in xrange(numref)]
+		peak_list = [zeros(4*(image_end-image_start), dtype=float32) for i in range(numref)]
 		#  nima is the total number of images, not the one on this node, the latter is (image_end-image_start)
 		#    d matrix required by EQ-Kmeans can be huge!!  PAP 01/17/2015
 		d = zeros(numref*nima, dtype=float32)
 		# begin MPI section
-		for im in xrange(image_start, image_end):
+		for im in range(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
 			##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
@@ -859,7 +860,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 			# align current image to references
 			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
-			for iref in xrange(numref):
+			for iref in range(numref):
 				[alphan, sxn, syn, mn] = \
 				   combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
 				peak_list[iref][(im-image_start)*4+0] = alphan
@@ -943,18 +944,18 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			#  PAP 03/20/2015  added cleaning of long lists...
 			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
 			del d
-			id_list = [[] for i in xrange(numref)]
+			id_list = [[] for i in range(numref)]
 			maxasi = nima/numref
-			for i in xrange(maxasi*numref):
+			for i in range(maxasi*numref):
 				id_list[i/maxasi].append(id_list_long[i])
-			for i in xrange(nima%maxasi):
+			for i in range(nima%maxasi):
 				id_list[id_list_long[-1]].append(id_list_long[maxasi*numref+i])
-			for iref in xrange(numref):
+			for iref in range(numref):
 				id_list[iref].sort()
 			del id_list_long
 
 			belongsto = [0]*nima
-			for iref in xrange(numref):
+			for iref in range(numref):
 				for im in id_list[iref]: belongsto[im] = iref
 		else:
 			belongsto = [0]*nima
@@ -968,8 +969,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		members = [0]*numref
 		sx_sum = [0.0]*numref
 		sy_sum = [0.0]*numref
-		refi = [model_blank(nx,ny) for j in xrange(numref)]
-		for im in xrange(image_start, image_end):
+		refi = [model_blank(nx,ny) for j in range(numref)]
+		for im in range(image_start, image_end):
 			matchref = belongsto[im]
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
 			sxn = float(peak_list[matchref][(im-image_start)*4+1])
@@ -998,11 +999,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		sy_sum = list(map(float, sy_sum))
 		members = list(map(int, members))
 
-		for j in xrange(numref):
+		for j in range(numref):
 			sx_sum[j] /= float(members[j])
 			sy_sum[j] /= float(members[j])
 
-		for im in xrange(image_start, image_end):
+		for im in range(image_start, image_end):
 			matchref = belongsto[im]
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
 			sxn = float(peak_list[matchref][(im-image_start)*4+1])
@@ -1015,7 +1016,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 		del peak_list
 
-		for j in xrange(numref):
+		for j in range(numref):
 			reduce_EMData_to_root(refi[j], myid, main_node, comm)
 			if myid == main_node:
 				# Golden rule when to do within group refinement
@@ -1029,7 +1030,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			#      it has to be checked and probably a better method used PAP 01/17/2015
 			dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
 			ref_ali_params = []
-			for j in xrange(numref):
+			for j in range(numref):
 				alpha, sx, sy, mirror, scale = get_params2D(refi[j])
 				refi[j] = rot_shift2D(refi[j], alpha, sx, sy, mirror)
 				ref_ali_params.extend([alpha, sx, sy, mirror])
@@ -1038,7 +1039,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		ref_ali_params = mpi_bcast(ref_ali_params, numref*4, MPI_FLOAT, main_node, comm)
 		ref_ali_params = list(map(float, ref_ali_params))
 
-		for j in xrange(numref):
+		for j in range(numref):
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
 		###if myid == main_node:
@@ -1047,7 +1048,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		###		refi[j].write_image("refaligned%02d_round%02d.hdf"%(color, Iter), j)
 
 		# Compensate the centering to averages
-		for im in xrange(image_start, image_end):
+		for im in range(image_start, image_end):
 			matchref = belongsto[im]
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
 			alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
@@ -1069,18 +1070,18 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			###if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5]
 
 			# Broadcast the alignment parameters to all nodes
-			for i in xrange(number_of_proc):
+			for i in range(number_of_proc):
 				im_start, im_end = MPI_start_end(nima, number_of_proc, i)
 				if myid == i:
 					ali_params = []
-					for im in xrange(image_start, image_end):
+					for im in range(image_start, image_end):
 						alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
 						ali_params.extend([alpha, sx, sy, mirror])
 				else:
 					ali_params = [0.0]*((im_end-im_start)*4)
 				ali_params = mpi_bcast(ali_params, len(ali_params), MPI_FLOAT, i, comm)
 				ali_params = list(map(float, ali_params))
-				for im in xrange(im_start, im_end):
+				for im in range(im_start, im_end):
 					alpha = ali_params[(im-im_start)*4]
 					sx = ali_params[(im-im_start)*4+1]
 					sy = ali_params[(im-im_start)*4+2]
@@ -1104,9 +1105,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				###if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
 				# ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
 				if( check_stability and main_iter == max_iter ): gpixer = []
-				for j in xrange(myid, numref, number_of_proc):
+				for j in range(myid, numref, number_of_proc):
 					assign = []
-					for im in xrange(nima):
+					for im in range(nima):
 						if j == belongsto[im]:  assign.append(im)
 
 					randomize = True  # I think there is no reason not to be True
@@ -1116,12 +1117,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 					if check_stability:
 						###if my_abs_id == main_node: print "Checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
-						ali_params = [[] for qq in xrange(stab_ali)]
-						for ii in xrange(stab_ali):
+						ali_params = [[] for qq in range(stab_ali)]
+						for ii in range(stab_ali):
 							if ii > 0:  # The first one does not have to be repeated
 								dummy = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
 																dst, maxit, FH, FF, method = method)
-							for im in xrange(len(class_data)):
+							for im in range(len(class_data)):
 								alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 								ali_params[ii].extend([alpha, sx, sy, mirror])
 
@@ -1164,12 +1165,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 						lhist = 12
 						region, histo = hist_list(gpixer, lhist)
 						print("\n=== Histogram of average within-class pixel errors prior to class pruning ===")
-						for lhx in xrange(lhist):  print("     %10.3f     %7d"%(region[lhx], histo[lhx]))
+						for lhx in range(lhist):  print("     %10.3f     %7d"%(region[lhx], histo[lhx]))
 						print("=============================================================================\n")
 					del gpixer
 				mpi_barrier(comm)
 
-				for im in xrange(nima):
+				for im in range(nima):
 					done_on_node = belongsto[im]%number_of_proc
 					if myid == done_on_node:
 						alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
@@ -1186,12 +1187,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				refi = isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
 												dst, maxit, FH, FF, method, comm)
 
-			for j in xrange(numref):
+			for j in range(numref):
 				bcast_EMData_to_all(refi[j], myid, j%number_of_proc, comm)
 
 			if check_stability:
 				# In this case, we need to set the 'members' attr using stable members from the stability test
-				for j in xrange(numref):
+				for j in range(numref):
 					done_on_node = j%number_of_proc
 					if done_on_node != main_node:
 						if myid == main_node:
@@ -1223,10 +1224,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				# In this case, the attr 'members' is defined as the stable members, its setting is done
 				# in the code before
 				if outname != None:
-					for j in xrange(numref):
+					for j in range(numref):
 						refi[j].write_image(final_outname, j)
 			else:
-				for j in xrange(numref):
+				for j in range(numref):
 					refi[j].set_attr_dict({'members': id_list[j], 'n_objects': len(id_list[j])})
 					if outname != None:
 						refi[j].write_image(final_outname, j)
@@ -1366,9 +1367,9 @@ def match_independent_runs(data, refi, n_group, T):
 
 	K = len(refi)/n_group
 	Parts = []
-	for i in xrange(n_group):
+	for i in range(n_group):
 		part = []
-		for k in xrange(K):
+		for k in range(K):
 			lid = refi[i*K+k].get_attr('members')
 			lid = array(lid, 'int32')
 			lid.sort()
@@ -1389,7 +1390,7 @@ def match_independent_runs(data, refi, n_group, T):
 	#print st
 
 	cost_by_match_thresh = []
-	for i in xrange(len(CT_s)):
+	for i in range(len(CT_s)):
 		if CT_s[i] > T:
 			cost_by_match_thresh.append(CT_s[i])
 
@@ -1399,7 +1400,7 @@ def match_independent_runs(data, refi, n_group, T):
 	print(" ")
 
 	STB_PART_cleaned = []
-	for i in xrange(len(STB_PART)):
+	for i in range(len(STB_PART)):
 		if len(STB_PART[i]) > T:
 			STB_PART_cleaned.append(STB_PART[i])
 
@@ -1416,20 +1417,20 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 	from numpy	    import array
 
 	K = len(refi)/indep_run
-	run = range(indep_run)
+	run = list(range(indep_run))
 	shuffle(run)
 
 	#print run
 
 	reproducible_avgs = []
 		
-	for irun in xrange(indep_run):
+	for irun in range(indep_run):
 		filename = "ali_params_%d"%run[irun] + suffix
 		all_ali_params = read_text_row(filename)
 	
 		Parts = []
 		part = [] 
-		for k in xrange(K): 
+		for k in range(K): 
 			lid = refi[run[irun]*K+k].get_attr('members') 
 			lid = array(lid, 'int32') 
 			lid.sort() 
@@ -1437,7 +1438,7 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 		Parts.append(part)
 
 		part = [] 
-		for k in xrange(K): 
+		for k in range(K): 
 			lid = refi[run[(irun+1)%indep_run]*K+k].get_attr('members') 
 			lid = array(lid, 'int32') 
 			lid.sort() 
@@ -1446,7 +1447,7 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 
 		if wayness == 3:
 			part = [] 
-			for k in xrange(K): 
+			for k in range(K): 
 				lid = refi[run[(irun+2)%indep_run]*K+k].get_attr('members') 
 				lid = array(lid, 'int32') 
 				lid.sort() 
@@ -1457,7 +1458,7 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 		MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=thld_grp, J=50, max_branching=40, stmult=0.1, branchfunc=2)
 
 		cost_by_match_thresh = []
-		for i in xrange(len(CT_s)):
+		for i in range(len(CT_s)):
 			if CT_s[i] > thld_grp:
 				cost_by_match_thresh.append(CT_s[i])
 
@@ -1469,7 +1470,7 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 		print "  cost by match over threshold: ", cost_by_match_thresh
 		print " "
 		"""
-		for i in xrange(len(STB_PART)):
+		for i in range(len(STB_PART)):
 			if len(STB_PART[i]) > 0:
 				class_data = []
 				members_id = []
@@ -1505,9 +1506,9 @@ def generate_random_averages(data, K, rand_seed = -1):
 	if rand_seed == -1:  seed(randint(1,2000111222))
 	else:                seed(rand_seed)
 	ndata = len(data)
-	ll = range(ndata)
+	ll = list(range(ndata))
 	shuffle(ll)
-	return [data[ll[i]].copy() for i in xrange(K)]
+	return [data[ll[i]].copy() for i in range(K)]
 
 	'''
 	from alignment import align2d
@@ -1549,10 +1550,10 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 	# 3 - not matched, kept
 	flag = [0]*size_all
 	
-	for i in xrange(size_all-size):
+	for i in range(size_all-size):
 		m1 = list(map(int, data[i].get_attr('members')))
 		if len(m1) < 5: continue
-		for j in xrange((i/size+1)*size, size_all):
+		for j in range((i/size+1)*size, size_all):
 			m2 = list(map(int, data[j].get_attr('members')))
 			if len(m2) < 5: continue
 			m = set(m1).intersection(set(m2))
@@ -1570,9 +1571,9 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 
 	data_good = []
 	# Give priority to the averages that appeared more than once
-	for im in xrange(size_all):
+	for im in range(size_all):
 		if flag[im] == 1:	 data_good.append(data[im])
-	for im in xrange(size_all):
+	for im in range(size_all):
 		if flag[im] == 3:	 data_good.append(data[im])
 	
 	return data_good

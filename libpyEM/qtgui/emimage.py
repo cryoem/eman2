@@ -33,6 +33,8 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
+from builtins import object
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
@@ -207,7 +209,7 @@ class EMWidgetFromFile(object):
 				if isinstance(old,EMScene3D): widget = old
 				else: widget = EMScene3D()
 #				print n,data
-				for ii in xrange(n):
+				for ii in range(n):
 					data=EMData(filename,ii)
 					datai = EMDataItem3D(data, transform=Transform())
 					widget.insertNewNode(os.path.basename(filename), datai, parentnode=widget)

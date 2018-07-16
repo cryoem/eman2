@@ -33,6 +33,8 @@ from __future__ import absolute_import
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from builtins import range
+from builtins import object
 from EMAN2 import *
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
@@ -50,7 +52,7 @@ import weakref
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class Orientations:
+class Orientations(object):
 	def __init__(self):
 		self.prop = 5.0
 		self.sym = "c1"
@@ -70,7 +72,7 @@ class Orientations:
 		self.sym = str(val)
 		self.sym_object= Symmetries.get(self.sym)
 
-class ColumnGraphics:
+class ColumnGraphics(object):
 	def __init__(self):
 		self.small_column_color = "dark grey"
 		self.tall_column_color = "white"
@@ -123,7 +125,7 @@ class ColumnGraphics:
 	def load_basic_gl_color(self):
 		self.mixed_color.load_color_2()
 	
-class MixedColor:
+class MixedColor(object):
 	def __init__(self,color1,color2):
 		self.color1 = color1 # the color of the smallest column, for example
 		self.color2 = color2 # the color of the largeset column, for example
@@ -148,8 +150,8 @@ class MixedColor:
 		frac should be in [0,1]
 		'''
 		ifrac = 1-frac
-		r = range(4)
-		r2 = range(3)
+		r = list(range(4))
+		r2 = list(range(3))
 		ambient = [ ifrac*self.a1[i]+frac*self.a2[i] for i in r]
 		diffuse = [ ifrac*self.d1[i]+frac*self.d2[i] for i in r]
 		specular = [ ifrac*self.s1[i]+frac*self.s2[i] for i in r]
@@ -172,7 +174,7 @@ class MixedColor:
 		glMaterial(GL_FRONT,GL_SHININESS,self.h2)
 	
 
-class EulerData:
+class EulerData(object):
 	'''
 	A mixin for the EM3DSymModel - takes care of everything that needs to occur
 	if you have supplied a list of EMData objects - the EMData's must have the
@@ -191,7 +193,7 @@ class EulerData:
 	def set_data(self,data):
 		self.data = data
 		self.eulers = []
-		for i in xrange(len(self.data)):
+		for i in range(len(self.data)):
 			if hasattr(self.data,"get_image_header"):
 				d = self.data.get_image_header(i)
 			else:
@@ -1272,7 +1274,7 @@ class EMSymViewerWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.updateGL()
 
 
-class SparseSymChoicesWidgets:
+class SparseSymChoicesWidgets(object):
 	'''
 	An encapsulation of the most basic of symmetry inspector widgits
 	Used by both EMSymChoiceDialog and EMSymInspector

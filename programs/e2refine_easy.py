@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 try:
 	import matplotlib
 	matplotlib.use("AGG")
@@ -777,7 +778,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			av=Averagers.get("minmax",{"max":1})
 			nprj=EMUtil.get_image_count("{path}/projections_{itr:02d}_odd.hdf".format(path=options.path,itr=it))
 			print("Mask from {} projections".format(nprj))
-			for i in xrange(nprj):
+			for i in range(nprj):
 				a=EMData("{path}/projections_{itr:02d}_even.hdf".format(path=options.path,itr=it),i)
 				av.add_image(a)
 				a=EMData("{path}/projections_{itr:02d}_odd.hdf".format(path=options.path,itr=it),i)
@@ -1025,7 +1026,7 @@ ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 			if f==fscs[0]:
 				lastnum=num
 				# find the 0.143 crossing
-				for si in xrange(2,len(d[0])-2):
+				for si in range(2,len(d[0])-2):
 					if d[1][si-1]>0.143 and d[1][si]<=0.143 :
 						frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
 						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
@@ -1087,7 +1088,7 @@ ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 
 			# find the resolutions
 			# find the 0.143 crossing
-			for si in xrange(2,len(d[0])-2):
+			for si in range(2,len(d[0])-2):
 				if d[1][si-1]>0.143 and d[1][si]<=0.143 :
 					frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
 					lastres.append(d[0][si]*(1.0-frac)+d[0][si-1]*frac)

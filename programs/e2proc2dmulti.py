@@ -34,6 +34,7 @@ from __future__ import print_function
 
 # $Id: e2proc2dmulti.py
 
+from builtins import range
 from EMAN2db import db_list_dicts
 from EMAN2 import *
 import sys
@@ -119,7 +120,7 @@ def main():
 		if options.autoinvert:
 			sumin,sumout=0,0
 			suminsig=0
-			for i in xrange(nimg):
+			for i in range(nimg):
 				d.read_image(infile, i)
 				d1=d.process("mask.sharp",{"outer_radius":d["nx"]*2/7})
 				d2=d.process("mask.sharp",{"inner_radius":d["nx"]*2/7,"outer_radius":d["nx"]/2-2})
@@ -136,7 +137,7 @@ def main():
 		if options.verbose: print("%s : processing %d images"%(infile,nimg))
 
 		lasttime=time.time()
-		for i in xrange(nimg):
+		for i in range(nimg):
 			if options.verbose >= 1:
 				
 				if time.time()-lasttime>3 or options.verbose>2 :

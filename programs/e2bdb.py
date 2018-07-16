@@ -35,6 +35,9 @@ from __future__ import print_function
 # e2bdb.py  11/13/2008 Steven Ludtke
 # This program allows manipulation and querying of the local database
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 from math import *
 import time
 import os
@@ -181,7 +184,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			slist=[]
 			for line in vdata:
 				line=line.split()
-				for i in xrange(n):
+				for i in range(n):
 					val=int(line[i])
 					slist.append(val)     		
 			del n,val,vdata
@@ -195,7 +198,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			slist=[]
 			for line in vdata:
 				line=line.split()
-				for i in xrange(n):
+				for i in range(n):
 					val=int(line[i])
 					slist.append(val)     
 			n = EMUtil.get_image_count(args[0])
@@ -212,10 +215,10 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct,keys=db_open_dict(path+db,ro=True,with_keys=True)
 				if dct==vstack : continue
 				if len(options.step)==2 :
-					if keys == None: vals = xrange(options.step[0],len(dct),options.step[1])
+					if keys == None: vals = list(range(options.step[0],len(dct),options.step[1]))
 					else: vals = keys[options.step[0]::options.step[1]]		# we apply --step even if we have a list of keys
 				else:
-					if keys == None: vals = xrange(options.step[0],options.step[2],options.step[1])
+					if keys == None: vals = list(range(options.step[0],options.step[2],options.step[1]))
 					else: vals = keys[options.step[0]:options.step[2]:options.step[1]]		# we apply --step even if we have a list of keys
 
 				if options.list !=None or options.exlist != None: vals=slist
@@ -262,7 +265,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			IB = db_open_dict(options.restore)
 			source_old = None
 			if len(options.step)==3 : nima=min(options.step[2],nima)
-			for i in xrange(options.step[0],nima,options.step[1]):
+			for i in range(options.step[0],nima,options.step[1]):
 				source = IB.get_header(i)
 				source_path = source["source_path"]
 				ID = source["source_n"]
@@ -424,7 +427,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct.close()
 			print(fmt%("TOTAL",total[0],"",human_size(total[1])))
 		elif options.check :
-			from cPickle import loads
+			from pickle import loads
 			for db in dbs:
 				dct=db_open_dict(path+db,ro=True)
 				dct.realopen()
@@ -530,7 +533,7 @@ def db_cleanup(force=False):
 				try: print(os.popen("ps %s"%i,"r").readlines()[-1])
 				except: print(i)
 			
-			reply=input("Would you like me to kill all of these jobs (YES/NO) : ")
+			reply=eval(input("Would you like me to kill all of these jobs (YES/NO) : "))
 			if reply != "YES" : 
 				print("Not killing jobs. Please exit them manually then retry.")
 				return

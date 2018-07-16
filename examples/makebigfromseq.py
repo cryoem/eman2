@@ -37,6 +37,7 @@ from __future__ import print_function
 # together, and optionally iterate. Translational alignment only.
 # makebigfromseq.py <infile> <sizexsize> <dot threshold> <darkref> <lightref> <1st image shift>
 
+from builtins import range
 from EMAN2 import *
 import sys
 from math import *

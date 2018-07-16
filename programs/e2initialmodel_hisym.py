@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 import random
 from math import *
@@ -120,7 +121,7 @@ def main():
 	eulers=[]
 #	out=file("dbg.txt","w")
 	allbest=[]
-	for n in xrange(len(ptcls)):
+	for n in range(len(ptcls)):
 		best=(1e100,None,None,None)
 		best2=(1e100,None,None,None)
 		if options.verbose : print("Particle/average: ",n)
@@ -193,10 +194,10 @@ def main():
 	if options.verbose : print("Best map: ",used[0])
 	
 	# we add in 1/3 more of the best matching volumes
-	for n in xrange(len(allbest)/3):
+	for n in range(len(allbest)/3):
 		# Find the best match to the current sum and add it in
 		best=(1.0,None)
-		for i in xrange(len(allbest)):
+		for i in range(len(allbest)):
 			if i in used : continue
 			best=min(best,(mapcmp(cursum,allbest[i][2]),allbest[i][2],i))
 		

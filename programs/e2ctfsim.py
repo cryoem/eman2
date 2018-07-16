@@ -35,6 +35,7 @@ from __future__ import print_function
 # e2ctf.py  09/04/2014 Steven Ludtke
 # This is a program for determining CTF parameters and (optionally) phase flipping images
 
+from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
 from optparse import OptionParser
@@ -323,7 +324,7 @@ class GUIctfsim(QtGui.QWidget):
 	def update_plot(self):
 		if self.guiplot == None: return # it's closed/not visible
 
-		for d in xrange(len(self.data)):
+		for d in range(len(self.data)):
 			ctf=self.data[d][1]
 			ds=1.0/(ctf.apix*2.0*ctf.samples)
 			s=arange(0,ds*ctf.samples,ds)

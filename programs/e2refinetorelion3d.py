@@ -12,6 +12,7 @@ from __future__ import print_function
 #****************UPDATED for RELION 1.2 RELEASE on 9/17/13******************
 
 #import block
+from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
 import pyemtbx.options

@@ -33,6 +33,8 @@ from __future__ import print_function
 
 
 from __future__ import print_function
+from builtins import range
+from builtins import object
 from EMAN2 import *
 from sparx import *
 from logger import Logger, BaseLogger_Files
@@ -57,13 +59,13 @@ def subdict(d,u):
 
 def fuselowf(vs, fq):
 	n = len(vs)
-	for i in xrange(n): fftip(vs[i])
+	for i in range(n): fftip(vs[i])
 	a = vs[0].copy()
-	for i in xrange(1,n):
+	for i in range(1,n):
 		Util.add_img(a, vs[i])
 	Util.mul_scalar(a, 1.0/float(n))
 	a = filt_tophatl(a, fq)
-	for i in xrange(n):
+	for i in range(n):
 		vs[i] = fft(Util.addn_img(a, filt_tophath(vs[i], fq)))
 	return
 
@@ -76,7 +78,7 @@ def comparetwoalis(params1, params2, thresherr=1.0, radius = 1.0):
 	#  Find errors per image
 	nn = len(params1)
 	perr = 0
-	for k in xrange(nn):
+	for k in range(nn):
 		if(max_3D_pixel_error(params1[k], params2[k], r=radius) < thresherr):
 			perr += 1
 	return perr/float(nn)*100.0
@@ -118,7 +120,7 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	lpartids  = lpartids[image_start:image_end]
 	partstack = partstack[image_start:image_end]
 	data = EMData.read_images(stack, lpartids)
-	for i in xrange(len(partstack)):  set_params_proj(data[i], partstack[i])
+	for i in range(len(partstack)):  set_params_proj(data[i], partstack[i])
 	return data
 
 
@@ -135,12 +137,12 @@ def getalldata(stack, myid, nproc):
 			image_end   = 1			
 	else:
 		image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	data = EMData.read_images(stack, range(image_start, image_end))
+	data = EMData.read_images(stack, list(range(image_start, image_end)))
 	return data
 
 
 
-class ali3d_options:
+class ali3d_options(object):
 	ir     = 1
 	rs     = 1
 	ou     = -1
@@ -205,7 +207,7 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 		masks2D  = model_circle(int(last_ring*shrinkage+0.5),nx,nx) - model_circle(max(int(ali3d_options.ir*shrinkage+0.5),1),nx,nx)
 	nima = len(projdata)
 	oldshifts = [0.0,0.0]*nima
-	for im in xrange(nima):
+	for im in range(nima):
 		#data[im].set_attr('ID', list_of_particles[im])
 		ctf_applied = projdata[im].get_attr_default('ctf_applied', 0)
 		phi,theta,psi,sx,sy = get_params_proj(projdata[im])
@@ -270,7 +272,7 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 
 	#  store params
 	if(myid == main_node):
-		for im in xrange(nima):
+		for im in range(nima):
 			params[im][0] = params[im][0]/shrinkage +oldshifts[im][0]
 			params[im][1] = params[im][1]/shrinkage +oldshifts[im][1]
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -448,8 +450,8 @@ def main():
 
 
 	if( myid == main_node ):
-		write_text_file(range(total_stack), partids)
-		write_text_row([[0.0,0.0,0.0,0.0,0.0] for i in xrange(total_stack) ], partstack)
+		write_text_file(list(range(total_stack)), partids)
+		write_text_row([[0.0,0.0,0.0,0.0,0.0] for i in range(total_stack) ], partstack)
 
 	run3Dalignment(paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
 

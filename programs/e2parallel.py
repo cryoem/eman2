@@ -35,6 +35,10 @@ from __future__ import print_function
 # e2parallel.py Steven Ludtke
 # This program implements, via various options, the parallelism system for EMAN2
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 from EMAN2db import EMTaskQueue, EMTask
 from EMAN2 import *
 from EMAN2PAR import *
@@ -149,7 +153,7 @@ def runinmpi(scratchdir,verbose):
 
 def runlocaltask(taskin,taskout):
 	"""Exectues a task on the local machine. Reads the pickled task from 'taskfile'. Returns results to taskout. """
-	from cPickle import load,dump
+	from pickle import load,dump
 
 #	print "Executing %s (%s)"%(taskin,taskout)
 	from e2classaverage import ClassAvTask
@@ -233,7 +237,7 @@ try:
 	from PyQt4 import QtCore, QtGui
 	from PyQt4.QtCore import Qt
 except:
-	class dummy:
+	class dummy(object):
 		"A dummy class for use when Qt not installed"
 		def __init__(self,quiet=False):
 			if not quiet :

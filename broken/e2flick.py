@@ -34,6 +34,7 @@ from __future__ import print_function
 
 
 #from EMAN2 import *
+from builtins import range
 import sys
 import os
 #from optparse import OptionParser

@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 
@@ -60,7 +61,7 @@ ppp = []
 s2x=0
 s2y=0
 from random import random,randint
-for i in xrange(nangles):
+for i in range(nangles):
 	s2x = 4.0*randint(-1,1)
 	s2y = 4.0*randint(-1,1)
 	ppp.append([angles[i][0], angles[i][1], angles[i][2], s2x, s2y])
@@ -84,10 +85,10 @@ dropSpiderDoc("params.txt",ppp)
 del ppp
 from sys import exit
 snr = 2.0
-list_p = range(0,nangles,2)
+list_p = list(range(0,nangles,2))
 vol1   = recons3d_4nn_ctf(stack_data, list_p, snr)
 
-list_p = range(1,nangles,2)
+list_p = list(range(1,nangles,2))
 vol2   = recons3d_4nn_ctf(stack_data, list_p, snr)
 
 mask3d = model_circle(nx//2-5,nx,nx,nx)
@@ -97,5 +98,5 @@ Util.mul_img(vol2, mask3d)
 del mask3d
 fsc(vol1,vol2,0.5,"tdt.txt")
 del vol1, vol2
-volt = recons3d_4nn_ctf(stack_data, range(nangles), snr)
+volt = recons3d_4nn_ctf(stack_data, list(range(nangles)), snr)
 dropImage(volt, "volt.spi", "s")   # to be displayed in chimera

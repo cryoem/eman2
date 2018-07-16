@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2017-03
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 from EMAN2 import *
 import numpy as np
 import threading
-import Queue
+import queue
 def main():
 	
 	usage=""" Same as the ConvNet boxer in e2boxer.py, but identifies two classes of particles. Only command line options are available. Note the hyper-parameters may not be optimized...
@@ -38,7 +42,7 @@ def run(cmd):
 #####################
 ## Convolutional Neural Network boxer
 ##########
-class boxerConvNet():
+class boxerConvNet(object):
 	
 	
 	#### import dependencies here. try not to break the whole program..
@@ -122,7 +126,7 @@ class boxerConvNet():
 					lbs.append(label)
 		
 		
-		rndid=range(len(data))
+		rndid=list(range(len(data)))
 		np.random.shuffle(rndid)	
 		data=[data[i] for i in rndid]
 		lbs=[lbs[i] for i in rndid]
@@ -154,10 +158,10 @@ class boxerConvNet():
 		learning_rate=0.002
 		weightdecay=1e-5
 		n_train_batches = len(data) / batch_size
-		for epoch in xrange(20):
+		for epoch in range(20):
 		# go through the training set
 			c = []
-			for batch_index in xrange(n_train_batches):
+			for batch_index in range(n_train_batches):
 				err=classify(batch_index,
 					lr=learning_rate,
 					wd=weightdecay)
@@ -392,7 +396,7 @@ class boxerConvNet():
 			return
 		
 		#### now start autoboxing...
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		NTHREADS=max(nthreads+1,2)
 		thrds=[threading.Thread(target=autobox_worker,args=(jsd,job)) for job in jobs]
 		thrtolaunch=0

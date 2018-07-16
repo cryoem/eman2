@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 import unittest
 import testlib
@@ -60,7 +61,7 @@ class TestXYData(unittest.TestCase):
     def test_get_x(self):
         """test get_x() function ............................"""
         xy = XYData()
-        lx = range(10)
+        lx = list(range(10))
         ly = (i+100 for i in range(10))
         xy.set_xy_list(lx, ly)
         
@@ -72,20 +73,20 @@ class TestXYData(unittest.TestCase):
     def test_get_xlist(self):
         """test get_xlist() function ........................"""
         xy = XYData()
-        lx = range(10)
+        lx = list(range(10))
         ly = (i+100 for i in range(10))
         xy.set_xy_list(lx, ly)
         
         xlist = xy.get_xlist()
         ylist = xy.get_ylist()
-        for i in xrange(len(xlist)):
+        for i in range(len(xlist)):
             self.assertAlmostEqual(i, xlist[i], 3)
             self.assertAlmostEqual(100+i, ylist[i], 3)
         
     def test_read_write_file(self):
         """test read/write file ............................."""
         xy = XYData()
-        lx = range(10)
+        lx = list(range(10))
         ly = (i+100 for i in range(10))
         xy.set_xy_list(lx, ly)
         

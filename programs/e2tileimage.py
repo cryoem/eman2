@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 import sys
 
@@ -80,8 +81,8 @@ def main():
 		if options.ymax == -1: options.ymax = hdr['ny'] - options.boxsize
 		
 		t = 0
-		ys = xrange(options.ymin,options.ymax,options.ystep)
-		xs = xrange(options.xmin,options.xmax,options.xstep)
+		ys = list(range(options.ymin,options.ymax,options.ystep))
+		xs = list(range(options.xmin,options.xmax,options.xstep))
 		nt = len(ys)*len(xs)
 		for y in ys:
 			for x in xs:

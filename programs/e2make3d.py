@@ -35,6 +35,7 @@ from __future__ import print_function
 
 # initial version of make3d
 
+from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
 from copy import deepcopy
@@ -325,7 +326,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 			exit(1)
 	else :
 		tmp=EMData()
-		for i in xrange(n_input):
+		for i in range(n_input):
 			if lowmem: tmp.read_image(inputfile,i,True)
 			else : tmp=get_processed_image(inputfile,i,-1,preprocess,pad)
 
@@ -389,7 +390,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 	event that it hasn't already been read into the data array. start and startweight are optional parameters
 	to seed the reconstruction with some non-zero values."""
 
-	for it in xrange(niter) :
+	for it in range(niter) :
 		excluded=[]
 		included=[]
 		output=None		# deletes the results from the previous iteration if any
@@ -492,7 +493,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 				if verbose>0 : print("%d"%int(elem["weight"]))
 
 			# Convert absolute qualities to relative qualities by local averaging vs classes with similar numbers of particles
-			squal=sorted([[data[i]["weight"],data[i]["reconstruct_absqual"],0,i,data[i]] for i in xrange(len(data))])
+			squal=sorted([[data[i]["weight"],data[i]["reconstruct_absqual"],0,i,data[i]] for i in range(len(data))])
 
 			# compute a running average of qualities (sorted by weight), then measure each value vs. the local average
 			qlist=[]
@@ -501,7 +502,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 				if squal[i][0]==0 :
 					squal[i][4]["reconstruct_qual"]=-1
 					continue
-				sub=[squal[j][1] for j in xrange(max(0,i-10),min(i+10,len(squal)))]
+				sub=[squal[j][1] for j in range(max(0,i-10),min(i+10,len(squal)))]
 				squal[i][2]=sum(sub)/len(sub)
 				try:
 					squal[i][4]["reconstruct_qual"]=squal[i][1]/squal[i][2]
@@ -514,7 +515,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 #			plot(qlist)
 
 			# we also get some statistics on the absolute qualities in case the user doesn't want local averaging
-			sq=array(sorted([data[i]["reconstruct_absqual"] for i in xrange(len(data))]))
+			sq=array(sorted([data[i]["reconstruct_absqual"] for i in range(len(data))]))
 			aqmean=sq.mean()
 			aqsigma=sq.std()
 

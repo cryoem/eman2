@@ -82,6 +82,7 @@ from __future__ import print_function
 #
 #--------------------------------------------------------------------------*/
 
+from builtins import range
 import os
 
 def expand_string (string) :
@@ -101,7 +102,7 @@ def expand_string (string) :
 	inplen = len (string)
 	outstr = ""
 
-	for ii in xrange (0, inplen + 1) :
+	for ii in range (0, inplen + 1) :
 		if ii < inplen :
 			ch = string [ii]
 		else :

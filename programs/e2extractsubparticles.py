@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import os
 import sys
 import random
@@ -134,7 +135,7 @@ will be examined automatically to extract the corresponding particles and projec
 	xf = Transform()
 	xf.to_identity()
 	nsym=xf.get_nsym(options.sym)
-	symxfs=[xf.get_sym(options.sym,i) for i in xrange(nsym)]
+	symxfs=[xf.get_sym(options.sym,i) for i in range(nsym)]
 
 	# clean up the output file
 	try: os.unlink(options.output)
@@ -146,7 +147,7 @@ will be examined automatically to extract the corresponding particles and projec
 	# now we loop over the classes, and subtract away a projection of the reference with the exclusion mask in
 	# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
-	for i in xrange(nref):
+	for i in range(nref):
 		if options.verbose>1 : print("--- Class %d"%i)
 
 		# The first projection is unmasked, used for scaling
@@ -173,7 +174,7 @@ will be examined automatically to extract the corresponding particles and projec
 #		proj.mult(softmask)
 
 		for eo in range(2):
-			for j in xrange(nptcl[eo]):
+			for j in range(nptcl[eo]):
 				if classmx[eo][0,j]!=i : 
 					if options.debug: print("XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j]))
 					continue		# only proceed if the particle is in this class

@@ -17,7 +17,7 @@ fi
 python "${MYDIR}/test_EMAN2DIR.py"
 
 # 4. Test openmpi
-if [ $(whoami) != "root" ];then
+if [ $(whoami) != "root" ] && [ -z ${TRAVIS} ];then
     mpirun -n 4 $(which python) ${MYDIR}/../examples/mpi_test.py
 fi
 

@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import sys
 from EMAN2 import *
 from EMAN2db import db_open_dict
@@ -45,4 +46,4 @@ db=db_open_dict("bdb:%s#convergence.results"%sys.argv[1],ro=True)
 for k in list(db.keys()):
 	curve=db[k]
 	out=open("fsc_%s_%s.txt"%(sys.argv[1].rsplit("_",1)[-1],k),"w")
-	for i in xrange(len(curve[0])): out.write("%1.5f\t%1.4f\n"%(curve[0][i],curve[1][i]))
+	for i in range(len(curve[0])): out.write("%1.5f\t%1.4f\n"%(curve[0][i],curve[1][i]))

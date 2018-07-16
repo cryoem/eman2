@@ -32,6 +32,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
 import numpy as np
@@ -1815,7 +1816,7 @@ def commandline_tomoboxer(tomogram,options):
 
 	newcoordslines = []
 	failed = 0
-	for i in xrange( 0, ncoords ):
+	for i in range( 0, ncoords ):
 
 		coords = clines[i].split()
 

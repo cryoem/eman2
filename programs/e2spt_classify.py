@@ -2,6 +2,7 @@
 # Muyuan Chen 2016-10
 
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 import numpy as np
 from shutil import copyfile

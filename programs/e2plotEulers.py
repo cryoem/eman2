@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 from eman2_gui.emplot2d import EMPolarPlot2DWidget,colortypes
 from eman2_gui.emapplication import EMApp
@@ -63,7 +64,7 @@ def main():
 	
 	# We use a hash data structure to count same Eulers(could also use an array an sort it)
 	eulerhash = {}
-	for i in xrange(data[0].get_ysize()):
+	for i in range(data[0].get_ysize()):
 		# Get Eulers
 		projnum = int(data[0][i])
 		euler = projections[projnum].get_attr('xform.projection')

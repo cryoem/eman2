@@ -32,16 +32,20 @@ from __future__ import print_function
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 from EMAN2 import *
 from EMAN2jsondb import *
 import numpy as np
 import threading
-import Queue
+import queue
 import os,sys
 
 apix=0
 
-class nothing:
+class nothing(object):
 	def __init__(self,x=None,y=None,z=None,q=None):
 		return
 
@@ -76,7 +80,7 @@ def load_micrograph(filename):
 		img=EMData(filename,0)		# single image
 	else :
 		img=EMData(filename,0)		# movie stack (we assume)
-		for i in xrange(1,n):
+		for i in range(1,n):
 			im=EMData(filename,i)
 			img.add(im)
 		img.mult(1.0/n)
@@ -430,7 +434,7 @@ class boxerByRef(QtCore.QObject):
 		maxav=Averagers.get("minmax",{"max":1,"owner":owner})
 		
 		# Iterate over in-plane rotation for each ref
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		thrds=[threading.Thread(target=boxerByRef.ccftask,args=(jsd,ref,downsample,gs,microf,ri)) for ri,ref in enumerate(goodrefs)]
 
 		n=-1
@@ -530,7 +534,7 @@ class boxerByRef(QtCore.QObject):
 		mref=ref.process("mask.soft",{"outer_radius":ref["nx"]/2-4,"width":3})
 		mref.process_inplace("normalize.unitlen")
 		
-		for ang in xrange(0,360,10):
+		for ang in range(0,360,10):
 			dsref=mref.process("xform",{"transform":Transform({"type":"2d","alpha":ang})})
 			# don't downsample until after rotation
 			dsref.process_inplace("math.fft.resample",{"n":downsample})
@@ -581,7 +585,7 @@ class boxerLocal(QtCore.QObject):
 		r=goodrefs[0].process("math.fft.resample",{"n":downsample})
 		r.align("rotate_translate",r)
 		
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		thrds=[threading.Thread(target=boxerLocal.ccftask,args=(jsd,ref,downsample,microdown,ri)) for ri,ref in enumerate(goodrefs)]
 
 		n=-1
@@ -687,8 +691,8 @@ class boxerLocal(QtCore.QObject):
 		ptclmap["ortid"]=ri
 		
 		# loop over the image with enough oversampling that we should be able to find all of the particles
-		for x in xrange(0,microdown["nx"]-nxdown,nxdown//2):
-			for y in xrange(0,microdown["ny"]-nxdown,nxdown//2):
+		for x in range(0,microdown["nx"]-nxdown,nxdown//2):
+			for y in range(0,microdown["ny"]-nxdown,nxdown//2):
 				ptcl=microdown.get_clip(Region(x,y,nxdown,nxdown))
 				# initial alignment
 				ali=mref.align("rotate_translate",ptcl)
@@ -830,7 +834,7 @@ class boxerConvNet(QtCore.QObject):
 					data.append(ar.flatten())
 					lbs.append(label)
 					
-		rndid=range(len(data))
+		rndid=list(range(len(data)))
 		np.random.shuffle(rndid)
 		data=[data[i] for i in rndid]
 		lbs=[lbs[i] for i in rndid]
@@ -1079,7 +1083,7 @@ class boxerConvNet(QtCore.QObject):
 			return
 		
 		#### now start autoboxing...
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		NTHREADS=max(nthreads+1,2)
 		thrds=[threading.Thread(target=autobox_worker,args=(jsd,job)) for job in jobs]
 		thrtolaunch=0

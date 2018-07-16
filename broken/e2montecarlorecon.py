@@ -32,6 +32,8 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
+from builtins import object
 import os
 from EMAN2 import *
 import math
@@ -94,7 +96,7 @@ def main():
 	print("\n\nTrying "+str(trials)+" Monte Carlo trials")
 	besttlist = []
 	bestscore = 0.0
-	for mctrial in xrange(int(trials)):
+	for mctrial in range(int(trials)):
 		if options.verbose==1 :
 			if((mctrial % 50) == 0):
 				print("MC trial", mctrial)
@@ -152,7 +154,7 @@ def main():
 	E2end(logid)
 
 # Strategy pattern, allows other algoithms to be plugged in
-class Refine:
+class Refine(object):
 	def __init__(self, name):
 		self.name = name
 	def refinerecon(self, calist, blist, reconstructor):
@@ -170,9 +172,9 @@ class SAsca(Refine):
 
 		temp = options.initemp
 		K = options.numsasteps*options.numtemps
-		for tstep in xrange(int(options.numtemps)):
+		for tstep in range(int(options.numtemps)):
 			print("Temperature is", temp)
-			for i in xrange(int(options.numsasteps)):
+			for i in range(int(options.numsasteps)):
 				for canum, ca in enumerate(calist):
 					rreconstructor.insert_slice(ca, blist[canum][0],1)
 
@@ -222,7 +224,7 @@ class SA(Refine):
 
 		searchfract = 0.5
 		temp = options.initemp
-		for i in xrange(int(options.numsasteps)):
+		for i in range(int(options.numsasteps)):
 			energy = 0
 			newt = []
 			for canum, ca in enumerate(calist):
