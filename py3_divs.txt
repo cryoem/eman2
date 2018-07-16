@@ -157,9 +157,9 @@
 ./libpyEM/qtgui/emscene3d.py:2896    -self.item3d().camera.getViewPortWidthScaling()*self.item3d().camera.getWidth()/2  |   old_div(-self.item3d().camera.getViewPortWidthScaling()*self.item3d().camera.getWidth(), 2)
 ./libpyEM/qtgui/emscene3d.py:2897    self.item3d().camera.getViewPortHeightScaling()*self.item3d().camera.getHeight()/2  |   old_div(self.item3d().camera.getViewPortHeightScaling()*self.item3d().camera.getHeight(), 2)
 ./libpyEM/qtgui/emsprworkflow.py:3801   1000*(N+old_div((i+1.0),len(filenames)))/M  |  old_div(1000*(N+old_div((i+1.0),len(filenames))), M)
-./libpyEM/qtgui/emsprworkflow.py:6215   soln/len(yaxis)*xaxis[-1]  |  soln/len(yaxis)*xaxis[-1]
-./libpyEM/qtgui/valslider.py:739   (h-4)*(value-self.rng[0])/(self.rng[1]-self.rng[0])  |  (h-4)*(value-self.rng[0])/(self.rng[1]-self.rng[0])
-./libpyEM/qtgui/valslider.py:744   (h-y+3)*(self.rng[1]-self.rng[0])/(h-4)  |  (h-y+3)*(self.rng[1]-self.rng[0])/(h-4)
+./libpyEM/qtgui/emsprworkflow.py:6215   soln/len(yaxis)*xaxis[-1]  |  old_div(soln, len(yaxis))*xaxis[-1]
+./libpyEM/qtgui/valslider.py:739   (h-4)*(value-self.rng[0])/(self.rng[1]-self.rng[0])  |  old_div((h-4)*(value-self.rng[0]), (self.rng[1]-self.rng[0]))
+./libpyEM/qtgui/valslider.py:744   (h-y+3)*(self.rng[1]-self.rng[0])/(h-4)  |  old_div((h-y+3)*(self.rng[1]-self.rng[0]), (h-4))
 ./libpyEM/qtgui/valslider.py:1213   -aspectratio*size/2  |  -aspectratio*size/2
 ./libpyEM/qtgui/valslider.py:1215   -aspectratio*size/2  |  -aspectratio*size/2
 ./libpyEM/qtgui/valslider.py:1217   aspectratio*size/2  |  aspectratio*size/2
