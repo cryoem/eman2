@@ -16,50 +16,49 @@
 ./examples/e2fftsynth.py:219   nx*3/4  |  old_div(nx*3, 4)
 ./examples/e2fftsynth.py:239   nx*15/16  |  old_div(nx*15, 16)
 ./examples/e2fftsynth.py:249   nx*3/4  |  old_div(nx*3, 4)
-./examples/e2fftsynth.py:254   nx*3/4  |  old_div(nx*3, 4)
-./examples/e2fftsynth.py:274   amp*2/(fft["nx"]-2)  |  amp*2/(fft["nx"]-2)
-./examples/e2fftsynth.py:309   cell*oversamp/float(i)  |  cell*oversamp/float(i)
-./examples/e2moviealigner2.py:291   ms*((c1+1)-(i+1))/(c1+1)  |  ms*((c1+1)-(i+1))/(c1+1)
-./examples/e2moviealigner2.py:292   ms*(i+1)/(c2+1)  |  ms*(i+1)/(c2+1)
-./examples/e2moviealigner3.py:176    n*(n-1)/2  |   n*(n-1)/2
-./examples/e2ptclfsc_multi.py:159   2*nx*apix/res  |  2*nx*apix/res
-./examples/e2ptclzvssim.py:255   nsnr*2/3  |  nsnr*2/3
-./examples/e2ptclzvssim.py:255   nsnr*2/3  |  nsnr*2/3
-./examples/e2pw_pathrefine.py:125   np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx  |  np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx
-./examples/e2pw_pathrefine.py:243   dd0/dd0[j1]*realgap  |  dd0/dd0[j1]*realgap
-./examples/e2pw_pathrefine.py:427   np.arange(len(ss), dtype=float)/len(ss)*len(path)  |  np.arange(len(ss), dtype=float)/len(ss)*len(path)
-./examples/e2pwstructuremodify.py:122    mrcp/midp/2  |   mrcp/midp/2
-./examples/e2spt_boxer_old.py:2105    a[0]*bs/2  |   a[0]*bs/2
-./examples/e2spt_boxer_old.py:2105    a[1]*bs/2  |   a[1]*bs/2
-./examples/e2spt_boxer_old.py:2105    a[2]*bs/2  |   a[2]*bs/2
-./examples/e2spt_boxer_old.py:2105    a[0]*bs/2  |   a[0]*bs/2
-./examples/e2spt_boxer_old.py:2105    a[1]*bs/2  |   a[1]*bs/2
-./examples/e2spt_boxer_old.py:2105    a[2]*bs/2  |   a[2]*bs/2
-./examples/e2spt_icethicknessplot.py:160    x*apix/10  |   x*apix/10
-./examples/e2spt_icethicknessplot.py:161    y*apix/10  |   y*apix/10
-./examples/e2spt_icethicknessplot.py:162    z*apix/10  |   z*apix/10
-./examples/e2spt_icethicknessplot.py:165    2*options.radius * apix/10  |   2*options.radius * apix/10
-./examples/e2spt_icethicknessplot.py:170    x*apix/10000  |   x*apix/10000
-./examples/e2spt_icethicknessplot.py:171    y*apix/10000  |   y*apix/10000
-./examples/e2spt_icethicknessplot.py:172    z*apix/10000  |   z*apix/10000
-./examples/e2spt_icethicknessplot.py:175    2*options.radius * apix/10000  |   2*options.radius * apix/10000
-./examples/e2spt_icethicknessplot.py:226    x*apix/10  |   x*apix/10
-./examples/e2spt_icethicknessplot.py:227    y*apix/10  |   y*apix/10
-./examples/e2spt_icethicknessplot.py:228    z*apix/10  |   z*apix/10
-./examples/e2spt_icethicknessplot.py:231    2*options.radius * apix/10  |   2*options.radius * apix/10
-./examples/e2spt_icethicknessplot.py:237    x*apix/10000  |   x*apix/10000
-./examples/e2spt_icethicknessplot.py:238    y*apix/10000  |   y*apix/10000
-./examples/e2spt_icethicknessplot.py:239    z*apix/10000  |   z*apix/10000
-./examples/e2spt_icethicknessplot.py:242    2*options.radius * apix/10000  |   2*options.radius * apix/10000
-./examples/e2spt_reconfromtilts.py:82   boxsize*3/2  |  boxsize*3/2
-./examples/e2tomoseg.py:977    a[0]*bs/2  |   a[0]*bs/2
-./examples/e2tomoseg.py:977    a[1]*bs/2  |   a[1]*bs/2
-./examples/e2tomoseg.py:977    a[2]*bs/2  |   a[2]*bs/2
-./examples/e2tomoseg.py:977    a[0]*bs/2  |   a[0]*bs/2
-./examples/e2tomoseg.py:977    a[1]*bs/2  |   a[1]*bs/2
-./examples/e2tomoseg.py:977    a[2]*bs/2  |   a[2]*bs/2
-./examples/e2tvrecon2d.py:474    (t_old - 1)/t_new * (u_n - u_old)  |   (t_old - 1)/t_new * (u_n - u_old)
-./examples/em_sim.py:223   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
+./examples/e2fftsynth.py:274   amp*2/(fft["nx"]-2)  |  old_div(amp*2, (fft[nx]-2))
+./examples/e2fftsynth.py:309   cell*oversamp/float(i)  |  old_div(cell*oversamp, float(i))
+./examples/e2moviealigner2.py:291   ms*((c1+1)-(i+1))/(c1+1)  |  old_div(ms*((c1+1)-(i+1)), (c1+1))
+./examples/e2moviealigner2.py:292   ms*(i+1)/(c2+1)  |  old_div(ms*(i+1), (c2+1))
+./examples/e2moviealigner3.py:176    n*(n-1)/2  |   old_div(n*(n-1), 2)
+./examples/e2ptclfsc_multi.py:159   2*nx*apix/res  |  old_div(2*nx*apix, res)
+./examples/e2ptclzvssim.py:255   nsnr*2/3  |  old_div(nsnr*2, 3)
+./examples/e2ptclzvssim.py:255   nsnr*2/3  |  old_div(nsnr*2, 3)
+./examples/e2pw_pathrefine.py:125   np.arange(npt,dtype=float)/(npt-1)*(pmax-pmin)*mx  |  old_div(np.arange(npt,dtype=float), (npt-1))*(pmax-pmin)*mx
+./examples/e2pw_pathrefine.py:243   dd0/dd0[j1]*realgap  |  old_div(dd0, dd0[j1])*realgap
+./examples/e2pw_pathrefine.py:427   np.arange(len(ss), dtype=float)/len(ss)*len(path)  |  old_div(np.arange(len(ss), dtype=float), len(ss))*len(path)
+./examples/e2pwstructuremodify.py:122    mrcp/midp/2  |   old_div(old_div(mrcp, midp), 2)
+./examples/e2spt_boxer_old.py:2105    a[0]*bs/2  |   old_div(a[0]*bs, 2)
+./examples/e2spt_boxer_old.py:2105    a[1]*bs/2  |   old_div(a[1]*bs, 2)
+./examples/e2spt_boxer_old.py:2105    a[2]*bs/2  |   old_div(a[2]*bs, 2)
+./examples/e2spt_boxer_old.py:2105    a[0]*bs/2  |   old_div(a[0]*bs, 2)
+./examples/e2spt_boxer_old.py:2105    a[1]*bs/2  |   old_div(a[1]*bs, 2)
+./examples/e2spt_boxer_old.py:2105    a[2]*bs/2  |   old_div(a[2]*bs, 2)
+./examples/e2spt_icethicknessplot.py:160    x*apix/10  |   old_div(x*apix, 10)
+./examples/e2spt_icethicknessplot.py:161    y*apix/10  |   old_div(y*apix, 10)
+./examples/e2spt_icethicknessplot.py:162    z*apix/10  |   old_div(z*apix, 10)
+./examples/e2spt_icethicknessplot.py:165    2*options.radius * apix/10  |   old_div(2*options.radius * apix, 10)
+./examples/e2spt_icethicknessplot.py:170    x*apix/10000  |   old_div(x*apix, 10000)
+./examples/e2spt_icethicknessplot.py:171    y*apix/10000  |   old_div(y*apix, 10000)
+./examples/e2spt_icethicknessplot.py:172    z*apix/10000  |   old_div(z*apix, 10000)
+./examples/e2spt_icethicknessplot.py:175    2*options.radius * apix/10000  |   old_div(2*options.radius * apix, 10000)
+./examples/e2spt_icethicknessplot.py:226    x*apix/10  |   old_div(x*apix, 10)
+./examples/e2spt_icethicknessplot.py:227    y*apix/10  |   old_div(y*apix, 10)
+./examples/e2spt_icethicknessplot.py:228    z*apix/10  |   old_div(z*apix, 10)
+./examples/e2spt_icethicknessplot.py:231    2*options.radius * apix/10  |   old_div(2*options.radius * apix, 10)
+./examples/e2spt_icethicknessplot.py:237    x*apix/10000  |   old_div(x*apix, 10000)
+./examples/e2spt_icethicknessplot.py:238    y*apix/10000  |   old_div(y*apix, 10000)
+./examples/e2spt_icethicknessplot.py:239    z*apix/10000  |   old_div(z*apix, 10000)
+./examples/e2spt_icethicknessplot.py:242    2*options.radius * apix/10000  |   old_div(2*options.radius * apix, 10000)
+./examples/e2spt_reconfromtilts.py:82   boxsize*3/2  |  old_div(boxsize*3, 2)
+./examples/e2tomoseg.py:977    a[0]*bs/2  |   old_div(a[0]*bs, 2)
+./examples/e2tomoseg.py:977    a[1]*bs/2  |   old_div(a[1]*bs, 2)
+./examples/e2tomoseg.py:977    a[2]*bs/2  |   old_div(a[2]*bs, 2)
+./examples/e2tomoseg.py:977    a[0]*bs/2  |   old_div(a[0]*bs, 2)
+./examples/e2tomoseg.py:977    a[1]*bs/2  |   old_div(a[1]*bs, 2)
+./examples/e2tomoseg.py:977    a[2]*bs/2  |   old_div(a[2]*bs, 2)
+./examples/e2tvrecon2d.py:474    (t_old - 1)/t_new * (u_n - u_old)  |   old_div((t_old - 1), t_new) * (u_n - u_old)
+./examples/em_sim.py:223   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  old_div(np.arange(1, int(zmax)+1, dtype=float), int(zmax))*zmax
 ./examples/em_sim.py:263   ((ix)**2)/(f*2)*  |  ((ix)**2)/(f*2)*
 ./examples/em_sim.py:270   np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax  |  np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax
 ./examples/em_sim.py:443   rr/(f*2)*  |  rr/(f*2)*
