@@ -68,9 +68,9 @@
 ./examples/fftspeed.py:82   10000*(t1-t0)/reps  |  old_div(10000*(t1-t0), reps)
 ./examples/gmm_heterog.py:377   var/np.max(var)*100  |  old_div(var, np.max(var))*100
 ./examples/gmm_heterog.py:384   var/np.max(var)*100  |  old_div(var, np.max(var))*100
-./examples/gmm_heterog.py:603    T.sum(xx*zz)/T.sqrt(T.sum(xx**2))/T.sqrt(T.sum(zz**2))  |   T.sum(xx*zz)/T.sqrt(T.sum(xx**2))/T.sqrt(T.sum(zz**2))
-./examples/gmm_heterog_tensorflow.py:375   (grid_x-old_div(sz,2.))/sz*2.  |  (grid_x-old_div(sz,2.))/sz*2.
-./examples/gmm_heterog_tensorflow.py:376   (grid_y-old_div(sz,2.))/sz*2.  |  (grid_y-old_div(sz,2.))/sz*2.
+./examples/gmm_heterog.py:603    T.sum(xx*zz)/T.sqrt(T.sum(xx**2))/T.sqrt(T.sum(zz**2))  |   old_div(old_div(T.sum(xx*zz), T.sqrt(T.sum(xx**2))), T.sqrt(T.sum(zz**2)))
+./examples/gmm_heterog_tensorflow.py:375   (grid_x-old_div(sz,2.))/sz*2.  |  old_div((grid_x-old_div(sz,2.)), sz)*2.
+./examples/gmm_heterog_tensorflow.py:376   (grid_y-old_div(sz,2.))/sz*2.  |  old_div((grid_x-old_div(sz,2.)), sz)*2.
 ./examples/gmm_heterog_tensorflow.py:550   nball*3/ncopy  |  nball*3/ncopy
 ./examples/pickptcl_2cls.py:360   sz*sz/4  |  sz*sz/4
 ./examples/ringfit.py:144   totlen/nowbp*.6  |  totlen/nowbp*.6
