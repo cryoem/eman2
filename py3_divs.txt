@@ -76,7 +76,7 @@
 ./examples/ringfit.py:144   totlen/nowbp*.6  |  old_div(totlen, nowbp)*.6
 ./examples/ringfit.py:192   totlen/nowbp*.6  |  old_div(totlen, nowbp)*.6
 ./examples/spt_tomoctf.py:92   (np.arange(stepx+1,dtype=float))/(stepx)*(rawimg["nx"]-bxsz)  |  old_div((np.arange(stepx+1,dtype=float)), (stepx))*(rawimg["nx"]-bxsz)
-./examples/tomotrackbox.py:556   0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0])/3  |  0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0])/3
+./examples/tomotrackbox.py:556   0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0])/3  |  old_div(0.7*(scores[old_div(len(scores),2)][0]+scores[old_div(len(scores),2)-1][0]+scores[old_div(len(scores),2)+1][0]), 3)
 ./examples/tomotrackbox.py:640   self.maxshift*4/5  |  old_div(self.maxshift*4, 5)
 ./examples/tomotrackbox.py:678   self.maxshift*4/5  |  old_div(self.maxshift*4, 5)
 ./examples/tomotrackbox.py:706   self.maxshift*4/5  |  old_div(self.maxshift*4, 5)
@@ -99,9 +99,9 @@
 ./libpyEM/qtgui/emglobjects.py:1349    fac*length/self.motiondull*pi  |   old_div(fac*length, self.motiondull)*pi
 ./libpyEM/qtgui/emglobjects.py:1367    fac*y/self.motiondull*pi  |   old_div(fac*y, self.motiondull)*pi
 ./libpyEM/qtgui/emglobjects.py:1369     fac*x/self.motiondull*pi  |    old_div(fac*x, self.motiondull)*pi
-./libpyEM/qtgui/emhist.py:582   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]
-./libpyEM/qtgui/emhist.py:583   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
-./libpyEM/qtgui/emhist.py:584   (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]
+./libpyEM/qtgui/emhist.py:582   (x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]  |  old_div((x-self.scrlim[0]), self.scrlim[2])*self.plotlim[2]
+./libpyEM/qtgui/emhist.py:583   (x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))  |  old_div((x-self.scrlim[0]), self.scrlim[2])*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))
+./libpyEM/qtgui/emhist.py:584   (self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]  |  old_div((self.height()-y-self.scrlim[1]), self.scrlim[3])*self.plotlim[3]
 ./libpyEM/qtgui/emhist.py:585   (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))  |  (self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))
 ./libpyEM/qtgui/emhist.py:592   (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]  |  (x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]
 ./libpyEM/qtgui/emhist.py:594   (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]  |  (y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]
