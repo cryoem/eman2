@@ -284,5 +284,5 @@
 ./programs/e2tvrecon.py:542    (t_old - 1)/t_new * (u_n - u_old)  |   old_div((t_old - 1), t_new) * (u_n - u_old)
 ./pyemtbx/boxertools.py:379    trans[0]/2*extrasomething.get_subsample_rate()  |   old_div(trans[0], 2)*extrasomething.get_subsample_rate()
 ./pyemtbx/boxertools.py:380    trans[1]/2*extrasomething.get_subsample_rate()  |   old_div(trans[1], 2)*extrasomething.get_subsample_rate()
-./pyemtbx/boxertools.py:3018   self.box_size/2/self.get_subsample_rate()  |  self.box_size/2/self.get_subsample_rate()
-./rt/pyem/test_transform.py:159   fac*inv_params["tx"]/(-1*params["tx"])  |  fac*inv_params["tx"]/(-1*params["tx"])
+./pyemtbx/boxertools.py:3018   self.box_size/2/self.get_subsample_rate()  |  old_div(old_div(self.box_size, 2), self.get_subsample_rate())
+./rt/pyem/test_transform.py:159   fac*inv_params["tx"]/(-1*params["tx"])  |  old_div(fac*inv_params[tx], (-1*params[tx]))
