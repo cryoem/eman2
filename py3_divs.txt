@@ -203,8 +203,8 @@
 ./programs/e2evalrefine.py:860   cores*(endtime-starttime)/(3600*lastiter)  |  old_div(cores*(endtime-starttime), (3600*lastiter))
 ./programs/e2fsc.py:84   len(fsc)*2/3  |   old_div(len(fsc)*2, 3)
 ./programs/e2fsc.py:208   len(fsc)*2/3  |  old_div(len(fsc)*2, 3)
-./programs/e2initialmodel.py:210   it*100/options["iter"]  |  it*100/options["iter"]
-./programs/e2initialmodel.py:237   len(ptcls)*7/8  |  len(ptcls)*7/8
+./programs/e2initialmodel.py:210   it*100/options["iter"]  |  old_div(it*100, options[iter])
+./programs/e2initialmodel.py:237   len(ptcls)*7/8  |  old_div(len(ptcls)*7, 8)
 ./programs/e2initialmodel.py:248   boxsize*3/2  |  boxsize*3/2
 ./programs/e2initialmodel.py:337   boxsize*3/2  |  boxsize*3/2
 ./programs/e2initialmodel_sgd.py:19   boxsize*3/2  |  boxsize*3/2
