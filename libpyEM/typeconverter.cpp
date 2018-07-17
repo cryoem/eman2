@@ -109,11 +109,13 @@ EMData* EMNumPy::numpy2em(const python::numeric::array& array)
 	int ndim = PyArray_NDIM(array_ptr); //array_ptr->descr->nd;
 	char data_type = PyArray_DESCR(array_ptr)->type; //array_ptr->descr->type;
 
+	npy_intp * dims_ptr = (npy_intp*)PyArray_DIMS(array_ptr);
+
 #if defined (__LP64__) //is it a 64-bit platform?
-	long * dims_ptr = (long*) PyArray_DIMS(array_ptr); //array_ptr->dimensions;
+	//long * dims_ptr = (long*) PyArray_DIMS(array_ptr); //array_ptr->dimensions;
 	long nx=1, ny=1, nz=1;
 #else	//for 32 bit platform
-	int * dims_ptr = (int*) PyArray_DIMS(array_ptr); //->dimensions;
+	//int * dims_ptr = (int*) PyArray_DIMS(array_ptr); //->dimensions;
 	int nx=1, ny=1, nz=1;
 #endif // defined (__LP64__)
 
