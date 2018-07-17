@@ -1384,9 +1384,9 @@ def rotmatrix(phi,theta,psi):
 def mulmat(m1,m2):
 	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
 	"""
-	for i in xrange(3):
-		for j in xrange(3):
-			for k in xrange(3):
+	for i in range(3):
+		for j in range(3):
+			for k in range(3):
 				mat[i][j] += m1[i][k]*m2[k][j]
 			#mat[i][j] = round(mat[i][j],8)
 	"""
@@ -1410,13 +1410,13 @@ def recmat(mat):
 	"""
 	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
 	# limit precision
-	for i in xrange(3):
-		for j in xrange(3):
+	for i in range(3):
+		for j in range(3):
 			mat[i][j] = inmat[i][j]
 			#if(abs(inmat[i][j])<1.0e-8):  mat[i][j] = 0.0
 			#else: mat[i][j] = inmat[i][j]
-	for i in xrange(3):
-		for j in xrange(3):  print  "     %14.8f"%mat[i][j],
+	for i in range(3):
+		for j in range(3):  print  "     %14.8f"%mat[i][j],
 		print ""
 	"""
 	if(mat[2][2] == 1.0):
@@ -1506,13 +1506,13 @@ def recmat_np(mat):
 		else:  return -1
 	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
 	# limit precision
-	for i in xrange(3):
-		for j in xrange(3):
+	for i in range(3):
+		for j in range(3):
 			mat[i,j] = inmat[i,j]
 			#if(abs(inmat[i,j])<1.0e-8):  mat[i,j] = 0.0
 			#else: mat[i,j] = inmat[i,j]
-	for i in xrange(3):
-		for j in xrange(3):  print  "     %14.8f"%mat[i,j],
+	for i in range(3):
+		for j in range(3):  print  "     %14.8f"%mat[i,j],
 		print ""
 	'''
 	if(mat[2,2] == 1.0):
@@ -1611,8 +1611,8 @@ class symclass(object):
 			
 			"""
 			#  These angles were translated from eman to spider, but the do not agree with definitions of subunit above
-			for l1 in xrange(30,271,120):
-				for l2 in xrange(30,271,120):
+			for l1 in range(30,271,120):
+				for l2 in range(30,271,120):
 					self.symangles.append([float(l1),lvl1,float(l2)])
 			"""
 
@@ -1984,7 +1984,7 @@ class symclass(object):
 			theta_number = int((90.0 - theta1)/theta2)
 			#for helical, symmetry = s or scn
 			cn = int(self.sym[2:])
-			for j in xrange(theta_number,-1, -1):
+			for j in range(theta_number,-1, -1):
 
 				if( j == 0):
 					if (self.sym[1] =="c"):
@@ -2006,7 +2006,7 @@ class symclass(object):
 					elif (self.sym[1] =="d"):
 						k=int(359.99/2/cn/delta)
 
-				for i in xrange(k+1):
+				for i in range(k+1):
 						angles.append([i*delta,90.0-j*theta2,90.0])
 			"""
 		return angles
