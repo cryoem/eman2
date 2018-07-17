@@ -4101,14 +4101,14 @@ def balance_angular_distribution(params, max_occupy =-1, angstep =15., sym="c1")
 			shuffle(q)
 			q = q[:max_occupy]
 			outo += q
-			print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
+			#print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
 			#print(l,len(q),q)
 		outo.sort()
-		write_text_file(outo,"select.txt")
+		#write_text_file(outo,"select.txt")
 		return outo
 	else:
-		for l,q in enumerate(occupancy):
-			print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
+		#for l,q in enumerate(occupancy):
+		#	print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
 		return occupancy
 
 
