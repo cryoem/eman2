@@ -3450,6 +3450,17 @@ def delete_bdb(name):
 	a = db_open_dict(name)
 	db_remove_dict(name)
 
+def disable_bdb_cache():
+	import EMAN2db
+	EMAN2db.BDB_CACHE_DISABLE = True
+
+def enable_bdb_cache():
+	import EMAN2db
+	EMAN2db.BDB_CACHE_DISABLE = False
+
+
+
+###############
 
 # parse user function parses the --function option. this option
 #    can be either a single function name (i.e. --function=ali3d_e)
@@ -3480,6 +3491,10 @@ def parse_user_function(opt_string):
 		# no list format used, so we assume this is a function name
 		# defined (and referenced) in user_functions.
 		return opt_string
+
+
+###############
+#  Angular functions
 
 def getang(n):
 	"""
@@ -3704,7 +3719,7 @@ def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym_class=None
 	from utilities import getfvec, angles_to_normals
 	reference_normals = angles_to_normals(reference_ang)
 
-	if( sym_class.sym[:2] == "c1"):
+	if( sym_class == None or sym_class.sym[:2] == "c1"):
 		ref = getfvec(angles[0],angles[1])
 		assignments = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
 	else:
@@ -3737,7 +3752,7 @@ def nearestk_to_refdirs(refnormal, refdir, howmany = 1):
 
 
 
-'''
+"""
 def assign_projangles(projangles, refangles, return_asg = False):
 
 	if len(refangles) > 10000:
@@ -3770,7 +3785,7 @@ def assign_projangles(projangles, refangles, return_asg = False):
 		assignments[asg[i]].append(i)
 
 	return assignments
-'''
+"""
 
 def assign_projangles(projangles, refangles, return_asg = False):
 
@@ -3808,7 +3823,7 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 	#  projdirs - data
 	#  refdirs  - templates, each template has neighbors related copies 
 	#  output - list of lists, ofr each of refdirs/neighbors there is a list of projdirs indexes that are closest to it
-	'''
+	"""
 	qsti = [-1]*len(projdirs)
 	for i,q in enumerate(projdirs):
 		dn = -2.0
@@ -3820,7 +3835,7 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 				dn = sq
 				this = l
 		qsti[i] = this
-	'''
+	"""
 	#  Create a list that for each projdirs contains an index of the closest refdirs/neighbors
 	qsti = Util.assign_projdirs_f(projdirs, refdirs, neighbors)
 	assignments = [[] for i in range(len(refdirs)/neighbors)]
@@ -3954,7 +3969,7 @@ def cone_dirs_f( projdirs, ancordir, ant):
 	return la
 """
 
-'''
+"""
 def cone_ang_f_with_index( projangles, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -3972,7 +3987,8 @@ def cone_ang_f_with_index( projangles, phi, tht, ant ):
 			la.append(projangles[i])
 			index.append(i)
 	return la, index
-'''
+"""
+
 def cone_ang_with_index( projangles, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -4050,17 +4066,6 @@ def symmetry_neighbors(angles, symmetry):
 	#return [[ [temp[m*3*nt+l*3+i] for i in xrange(3)] for l in xrange(nt)] for m in xrange(mt) ]
 
 #def nearest_angular_direction(normals, vect, symmetry):
-
-
-###############
-
-def disable_bdb_cache():
-	import EMAN2db
-	EMAN2db.BDB_CACHE_DISABLE = True
-
-def enable_bdb_cache():
-	import EMAN2db
-	EMAN2db.BDB_CACHE_DISABLE = False
 
 def rotation_between_anglesets(agls1, agls2):
 	"""
