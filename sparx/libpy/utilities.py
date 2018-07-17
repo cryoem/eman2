@@ -29,6 +29,10 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 from global_def import *
 from functools import reduce
 
@@ -133,12 +137,12 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 
 	simplex = [0]*(nvar+1)  # set the initial simplex
 	simplex[0] = var[:]
-	for i in xrange(nvar):
+	for i in range(nvar):
 		simplex[i+1] = var[:]
 		simplex[i+1][i] += scale[i]
 
 	fvalue = []
-	for i in xrange(nsimplex):  # set the function values for the simplex
+	for i in range(nsimplex):  # set the function values for the simplex
 		fvalue.append(func(simplex[i],data=data))
 
 	# Ooze the simplex to the maximum
@@ -149,7 +153,7 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 		# find the index of the best and worst vertices in the simplex
 		ssworst = 0
 		ssbest  = 0
-		for i in xrange(nsimplex):
+		for i in range(nsimplex):
 			if fvalue[i] > fvalue[ssbest]:
 				ssbest = i
 			if fvalue[i] < fvalue[ssworst]:
@@ -157,10 +161,10 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 
 		# get the average of the nsimplex-1 best vertices in the simplex
 		pavg = [0.0]*nvar
-		for i in xrange(nsimplex):
+		for i in range(nsimplex):
 			if i != ssworst:
 				for j in range(nvar): pavg[j] += simplex[i][j]
-		for j in xrange(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
+		for j in range(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
 		simscale = 0.0
 		for i in range(nvar):
 			simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
@@ -181,25 +185,25 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 
 		# reflect the worst vertex
 		pnew = [0.0]*nvar
-		for i in xrange(nvar):
+		for i in range(nvar):
 			pnew[i] = 2.0*pavg[i] - simplex[ssworst][i]
 		fnew = func(pnew,data=data)
 		if fnew <= fvalue[ssworst]:
 			# the new vertex is worse than the worst so shrink
 			# the simplex.
-			for i in xrange(nsimplex):
+			for i in range(nsimplex):
 				if i != ssbest and i != ssworst:
-					for j in xrange(nvar):
+					for j in range(nvar):
 						simplex[i][j] = 0.5*simplex[ssbest][j] + 0.5*simplex[i][j]
 					fvalue[i] = func(simplex[i],data=data)
-			for j in xrange(nvar):
+			for j in range(nvar):
 				pnew[j] = 0.5*simplex[ssbest][j] + 0.5*simplex[ssworst][j]
 			fnew = func(pnew,data=data)
 		elif fnew >= fvalue[ssbest]:
 			# the new vertex is better than the best so expand
 			# the simplex.
 			pnew2 = [0.0]*nvar
-			for i in xrange(nvar):
+			for i in range(nvar):
 				pnew2[i] = 3.0*pavg[i] - 2.0*simplex[ssworst][i]
 			fnew2 = func(pnew2,data=data)
 			if fnew2 > fnew:
@@ -207,7 +211,7 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 				pnew = pnew2
 				fnew = fnew2
 		# replace the worst vertex with the new vertex
-		for i in xrange(nvar):
+		for i in range(nvar):
 			simplex[ssworst][i] = pnew[i]
 		fvalue[ssworst] = fnew
 		iteration += 1
@@ -232,12 +236,12 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 
 	simplex = [0]*(nvar+1)  # set the initial simplex
 	simplex[0] = var[:]
-	for i in xrange(nvar):
+	for i in range(nvar):
 		simplex[i+1] = var[:]
 		simplex[i+1][i] += scale[i]
 
 	fvalue = []
-	for i in xrange(nsimplex):  # set the function values for the simplex
+	for i in range(nsimplex):  # set the function values for the simplex
 		result, passout = func(simplex[i], data=data)
 		#print  " amoeba setting ",i,simplex[i],result, passout
 		fvalue.append([result, passout])
@@ -250,7 +254,7 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 		# find the index of the best and worst vertices in the simplex
 		ssworst = 0
 		ssbest  = 0
-		for i in xrange(nsimplex):
+		for i in range(nsimplex):
 			if fvalue[i][0] > fvalue[ssbest][0]:
 				ssbest = i
 			if fvalue[i][0] < fvalue[ssworst][0]:
@@ -258,10 +262,10 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 
 		# get the average of the nsimplex-1 best vertices in the simplex
 		pavg = [0.0]*nvar
-		for i in xrange(nsimplex):
+		for i in range(nsimplex):
 			if i != ssworst:
 				for j in range(nvar): pavg[j] += simplex[i][j]
-		for j in xrange(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
+		for j in range(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
 		simscale = 0.0
 		for i in range(nvar):
 			simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
@@ -282,26 +286,26 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 
 		# reflect the worst vertex
 		pnew = [0.0]*nvar
-		for i in xrange(nvar):
+		for i in range(nvar):
 			pnew[i] = 2.0*pavg[i] - simplex[ssworst][i]
 		fnew = func(pnew,data=data)
 		if fnew[0] <= fvalue[ssworst][0]:
 			# the new vertex is worse than the worst so shrink
 			# the simplex.
-			for i in xrange(nsimplex):
+			for i in range(nsimplex):
 				if i != ssbest and i != ssworst:
-					for j in xrange(nvar):
+					for j in range(nvar):
 						simplex[i][j] = 0.5*simplex[ssbest][j] + 0.5*simplex[i][j]
 					fvalue[i]  = func(simplex[i],data=data)
 				#### <--------->
-			for j in xrange(nvar):
+			for j in range(nvar):
 				pnew[j] = 0.5*simplex[ssbest][j] + 0.5*simplex[ssworst][j]
 			fnew = func(pnew, data=data)
 		elif fnew[0] >= fvalue[ssbest][0]:
 			# the new vertex is better than the best so expand
 			# the simplex.
 			pnew2 = [0.0]*nvar
-			for i in xrange(nvar):
+			for i in range(nvar):
 				pnew2[i] = 3.0*pavg[i] - 2.0*simplex[ssworst][i]
 			fnew2 = func(pnew2,data=data)
 			if fnew2[0] > fnew[0]:
@@ -309,7 +313,7 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 				pnew = pnew2
 				fnew = fnew2
 		# replace the worst vertex with the new vertex
-		for i in xrange(nvar):
+		for i in range(nvar):
 			simplex[ssworst][i] = pnew[i]
 		fvalue[ssworst] = fnew
 		iteration += 1
@@ -499,8 +503,8 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		n = 0
 		x=0
 		y=0
-		for i in xrange(nx):
-			for j in xrange(ny):
+		for i in range(nx):
+			for j in range(ny):
 				if c.get_value_at(i,j) == p :
 					x+=(i-cx)
 					y+=(j-cy)
@@ -696,7 +700,7 @@ def create_spider_doc(fname,spiderdoc):
 	table=[]
 	for line in lines:
 		data = line.split()
-	for i in xrange(0,nmc):
+	for i in range(0,nmc):
 		data[i] = atof(data[i])
 		table.append(data)
 	drop_spider_doc(spiderdoc ,table)
@@ -725,7 +729,7 @@ def drop_png_image(im, trg):
 	if trg[-4:] != '.png':
 		ERROR('destination name must be png extension', 'drop_png_image', 1)
 
-	if isinstance(trg, basestring):
+	if isinstance(trg, str):
 		im['render_min'] = im['minimum']
 		im['render_max'] = im['maximum']
 		im.write_image(trg, 0)
@@ -772,7 +776,7 @@ def dump_row(input, fname, ix=0, iz=0):
 	nz = image.get_zsize()
 	fout.write("# z = %d slice, x = %d row)\n" % (iz, ix))
 	line = []
-	for iy in xrange(ny):
+	for iy in range(ny):
 		fout.write("%d\t%12.5g\n" % (iy, image.get_value_at(ix,iy,iz)))
 	fout.close()
 
@@ -805,7 +809,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 			else:
 				qt = 180.0/int(symmetry_string[1:])
 			n = len(angles)
-			for i in xrange(n):
+			for i in range(n):
 				t = n-i-1
 				if(angles[t][1] == 90.0):
 					if(angles[t][0] >= qt+ant):  del angles[t]
@@ -819,7 +823,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		bade = 2*badb -ant
 		bbdb = badb + 360.0/int(symmetry_string[1:])/2 + ant
 		bbde = bbdb + 360.0/int(symmetry_string[1:])/4 - ant
-		for i in xrange(n):
+		for i in range(n):
 			t = n-i-1
 			qt = angles[t][0]
 			if((qt>=badb and qt<bade) or (qt>=bbdb and qt<bbde)):  del angles[t]
@@ -829,7 +833,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		else:
 			qt = 180.0/2/int(symmetry_string[1:])
 		n = len(angles)
-		for i in xrange(n):
+		for i in range(n):
 			t = n-i-1
 			if(angles[t][1] == 90.0):
 				if(angles[t][0] >= qt + ant ):  del angles[t]
@@ -843,7 +847,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		theta_number = int((90.0 - theta1)/theta2)
 		#for helical, symmetry = s or scn
 		cn = int(symmetry_string[2:])
-		for j in xrange(theta_number,-1, -1):
+		for j in range(theta_number,-1, -1):
 
 			if( j == 0):
 				if (symmetry_string[1] =="c"):
@@ -865,7 +869,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 				elif (symmetry_string[1] =="d"):
 					k=int(359.99/2/cn/delta)
 
-			for i in xrange(k+1):
+			for i in range(k+1):
 					angles.append([i*delta,90.0-j*theta2,90.0])
 
 	else:
@@ -999,7 +1003,7 @@ def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method
 	if (method == 'P'):
 		temp = Util.even_angles(delta, theta1, theta2, phi1, phi2)
 		#		                                              phi, theta, psi
-		for i in xrange(len(temp)/3): angles.append([temp[3*i],temp[3*i+1],temp[3*i+2]]);
+		for i in range(len(temp)/3): angles.append([temp[3*i],temp[3*i+1],temp[3*i+2]]);
 	else:              #elif (method == 'S'):
 		Deltaz  = cos(theta2*pi/180.0)-cos(theta1*pi/180.0)
 		s       = delta*pi/180.0
@@ -1008,7 +1012,7 @@ def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method
 		NumPoints   = int(NFactor*NFactor*wedgeFactor)
 		angles.append([phi1, theta1, 0.0])
 		z1 = cos(theta1*pi/180.0); 	phi=phi1            # initialize loop
-		for k in xrange(1,(NumPoints-1)):
+		for k in range(1,(NumPoints-1)):
 			z=z1 + Deltaz*k/(NumPoints-1)
 			r= sqrt(1-z*z)
 			phi = phi1+(phi + delta/r -phi1)%(abs(phi2-phi1))
@@ -1016,7 +1020,7 @@ def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method
 			angles.append([phi, 180*acos(z)/pi, 0.0])
 		#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
 	if (phiEQpsi == 'Minus'):
-		for k in xrange(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
+		for k in range(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
 	if( theta2 == 180.0 or (theta2 >180. and delta == 180.0)):  angles.append( [0.0, 180.0, 0.0] )
 
 	return angles
@@ -1033,7 +1037,7 @@ def eigen_images_get(stack, eigenstack, mask, num, avg):
 	e = EMData()
 	if(avg == 1): s = EMData()
 	nima = EMUtil.get_image_count(stack)
-	for im in xrange(nima):
+	for im in range(nima):
 		e.read_image(stack,im)
 		e *= mask
 		a.insert_image(e)
@@ -1044,7 +1048,7 @@ def eigen_images_get(stack, eigenstack, mask, num, avg):
 	eigenimg = a.analyze()
 	if(num>= EMUtil.get_image_count(eigenimg)):
 		num=EMUtil.get_image_count(eigenimg)
-	for  i in xrange(num): eigenimg.write_image(eigenstack,i)
+	for  i in range(num): eigenimg.write_image(eigenstack,i)
 
 def find_inplane_to_match(phiA,thetaA,phiB,thetaB,psiA=0,psiB=0):
 	"""Find the z rotation such that
@@ -1074,7 +1078,7 @@ def find_inplane_to_match(phiA,thetaA,phiB,thetaB,psiA=0,psiB=0):
 
 def find(vv, cmp_str, n):
 	jFoundVec= [];
-	for jFound in xrange(len(vv)):
+	for jFound in range(len(vv)):
 		if (cmp_str=='lt'):
 			if (vv[jFound]<n):
 				jFoundVec.append(jFound);
@@ -1205,10 +1209,10 @@ def get_input_from_string(str_input):
 	"""
 	from re import split
 	qq = split(" |,",str_input)
-	for i in xrange(len(qq)-1, -1, -1):
+	for i in range(len(qq)-1, -1, -1):
 		if(qq[i] == ""):  del qq[i]
 	o = []
-	for i in xrange(len(qq)):
+	for i in range(len(qq)):
 		if(qq[i].find(".") >= 0):  o.append(float(qq[i]))
 		else:  o.append(int(qq[i]))
 	return o
@@ -1389,7 +1393,7 @@ def parse_spider_fname(mystr, *fieldvals):
 		else:
 			# no '@' at all
 			return mystr
-	class Fieldloc:
+	class Fieldloc(object):
 		"Helper class to store description of a field"
 		def __init__(self, begin, end):
 			self.begin = begin
@@ -1454,7 +1458,7 @@ def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
 				print('%10s%10s%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ","Z   ", "Peak/P_max", "X-NX/2", "Y-NY/2", "Z-NZ/2"))
 				print_list_format(peaks[1:], 8)
 			else:	ERROR("Image dimension extracted in peak_search is wrong", "Util.peak_search", 1)
-		for i in xrange(nlist):
+		for i in range(nlist):
 			k=int((ndim+1)*i*2)
 			if   ndim == 1 :  p=[peaks[k+1], peaks[k+2], peaks[k+3], peaks[k+4]]
 			elif ndim == 2 :  p=[peaks[k+1], peaks[k+2], peaks[k+3], peaks[k+4], peaks[k+5], peaks[k+6]]
@@ -1491,7 +1495,7 @@ def print_row(input, ix=0, iz=0):
 	nz = image.get_zsize()
 	print("(z = %d slice, x = %d row)" % (iz, ix))
 	line = []
-	for iy in xrange(ny):
+	for iy in range(ny):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 		if ((iy + 1) % 5 == 0): line.append("\n   ")
 	line.append("\n")
@@ -1510,7 +1514,7 @@ def print_col(input, iy=0, iz=0):
 	nz = image.get_zsize()
 	print("(z = %d slice, y = %d col)" % (iz, iy))
 	line = []
-	for ix in xrange(nx):
+	for ix in range(nx):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 		if ((ix + 1) % 5 == 0): line.append("\n   ")
 	line.append("\n")
@@ -1529,10 +1533,10 @@ def print_slice(input, iz=0):
 	nz = image.get_zsize()
 	print("(z = %d slice)" % (iz))
 	line = []
-	for iy in xrange(ny):
+	for iy in range(ny):
 		line.append("Row ")
 		line.append("%4i " % iy)
-		for ix in xrange(nx):
+		for ix in range(nx):
 			line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 			if ((ix + 1) % 5 == 0):
 				line.append("\n   ")
@@ -1550,7 +1554,7 @@ def print_image(input):
 	"""
 	image=get_image(input)
 	nz = image.get_zsize()
-	for iz in xrange(nz): print_slice(input, iz)
+	for iz in range(nz): print_slice(input, iz)
 
 
 def print_image_col(input, ix=0, iz=0):
@@ -1566,7 +1570,7 @@ def print_image_col(input, ix=0, iz=0):
 	nz = image.get_zsize()
 	print("(z = %d slice, x = %d row)" % (iz, ix))
 	line = []
-	for iy in xrange(ny):
+	for iy in range(ny):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 		if ((iy + 1) % 5 == 0): line.append("\n   ")
 	line.append("\n")
@@ -1585,7 +1589,7 @@ def print_image_row(input, iy=0, iz=0):
 	nz = image.get_zsize()
 	print("(z = %d slice, y = %d col)" % (iz, iy))
 	line = []
-	for ix in xrange(nx):
+	for ix in range(nx):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 		if ((ix + 1) % 5 == 0): line.append("\n   ")
 	line.append("\n")
@@ -1604,10 +1608,10 @@ def print_image_slice(input, iz=0):
 	nz = image.get_zsize()
 	print("(z = %d slice)" % (iz))
 	line = []
-	for iy in xrange(ny-1,-1,-1):
+	for iy in range(ny-1,-1,-1):
 		line.append("Row ")
 		line.append("%4i " % iy)
-		for ix in xrange(nx):
+		for ix in range(nx):
 			line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 			if ((ix + 1) % 5 == 0):
 				line.append("\n   ")
@@ -1633,10 +1637,10 @@ def print_image_slice_3d(input, num=0,direction="z"):
 		ix=num
 		print("(x = %d slice)" % (ix))
 		line = []
-		for iz in xrange(nz-1,-1,-1):
+		for iz in range(nz-1,-1,-1):
 			line.append("Z ")
 			line.append("%4i " % iz)
-			for iy in xrange(ny):
+			for iy in range(ny):
 				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 				if ((iy + 1) % 5 == 0):
 					line.append("\n   ")
@@ -1649,10 +1653,10 @@ def print_image_slice_3d(input, num=0,direction="z"):
 		iy=num
 		print("(y = %d slice)" % (iy))
 		line = []
-		for iz in xrange(nz-1,-1,-1):
+		for iz in range(nz-1,-1,-1):
 			line.append("Z ")
 			line.append("%4i " % iz)
-			for ix in xrange(nx):
+			for ix in range(nx):
 				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 				if ((ix + 1) % 5 == 0):
 					line.append("\n   ")
@@ -1665,10 +1669,10 @@ def print_image_slice_3d(input, num=0,direction="z"):
 		iz=num
 		print("(z = %d slice)" % (iz))
 		line = []
-		for iy in xrange(ny-1,-1,-1):
+		for iy in range(ny-1,-1,-1):
 			line.append("Row ")
 			line.append("%4i " % iy)
-			for ix in xrange(nx):
+			for ix in range(nx):
 				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 				if ((ix + 1) % 5 == 0):
 					line.append("\n   ")
@@ -1689,7 +1693,7 @@ def print_list_format(m, narray = 0):
 		Or when narray is zero, int(sqrt(len(m)))*int(sqrt(len(m)))
 	"""
 	flist = []
-	for i in xrange(len(m)):
+	for i in range(len(m)):
 		if   type(m[i])  is float: flist.append('%10.3g'%(m[i]))
 		elif type(m[i])  is int :  flist.append(  '%10d'%(m[i]))
 		else				   : flist.append(  '%10s'%(m[i]))
@@ -1706,14 +1710,14 @@ def print_list_format(m, narray = 0):
 		else: 			lnum = int(len(m)/num) + 1
 	ncount = -1
 	plist  = []
-	for i in xrange(lnum):
+	for i in range(lnum):
 		qlist = ""
-		for j in xrange(num):
+		for j in range(num):
 			ncount += 1
 			if ncount <= len(m) - 1: qlist=qlist+flist[ncount]
 			else:			 break
 		plist.append(qlist)
-	for i in xrange(lnum):
+	for i in range(lnum):
 		print('%6d '%(i+1),plist[i])
 
 def pad(image_to_be_padded, new_nx, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0):
@@ -1747,7 +1751,7 @@ def read_spider_doc(fnam):
 			end  = start+6
 			line_data.append(atof(line[start:end]))
 			colNo = (len(line)-end)/12 - 1
-			for i in xrange(colNo):
+			for i in range(colNo):
 				start= end+6
 				end  = start+7
 				line_data.append(atof(line[start:end]))
@@ -1756,7 +1760,7 @@ def read_spider_doc(fnam):
 		else:												# old data format
 			if(line[5:6] == " "): ibeg = 6
 			else:  ibeg = 7
-			for irec in xrange(atoi(line[ibeg:ibeg+2])):
+			for irec in range(atoi(line[ibeg:ibeg+2])):
 			 	start= ibeg+2+irec*12
 			 	end  = ibeg+2+(irec+1)*12
 			 	line_data.append(atof(line[start:end]))
@@ -1790,7 +1794,7 @@ def read_text_row(fnam, format="", skip=";"):
 	data = []
 	while (len(strg) > 0):
 		com_line = False
-		for j in xrange(len(strg)):
+		for j in range(len(strg)):
 			if(strg[j] == skip):	com_line = True
 		if com_line == False:
 			word=split(strg)
@@ -1801,12 +1805,12 @@ def read_text_row(fnam, format="", skip=";"):
 					word = []
 					word.append(strg[0 : 5])
 					word.append(strg[6 : 7])
-					for k in xrange(key):
+					for k in range(key):
 						k_start = 7       + k*13
 						k_stop  = k_start + 13
 						word.append(strg[k_start : k_stop])
 			line=[]
-			for i in xrange(len(word)):
+			for i in range(len(word)):
 				try:  line.append(int(word[i]))
 				except:
 					try:  	line.append(float(word[i]))
@@ -1830,8 +1834,8 @@ def write_text_row(data, file_name):
 	outf = open(file_name, "w")
 	if (type(data[0]) == list):
 		# It is a list of lists
-		for i in xrange(len(data)):
-			for j in xrange(len(data[i])):
+		for i in range(len(data)):
+			for j in range(len(data[i])):
 				tpt = data[i][j]
 				qtp = type(tpt)
 				if qtp == int:		outf.write("  %12d"%tpt)
@@ -1843,7 +1847,7 @@ def write_text_row(data, file_name):
 			outf.write("\n")
 	else:
 		# Single list
-		for j in xrange(len(data)):
+		for j in range(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
 			if qtp == int :			outf.write("  %12d\n"%tpt)
@@ -1870,13 +1874,13 @@ def read_text_file(file_name, ncol = 0):
 		if ncol == -1:
 			vdata = split(line)
 			if data == []:
-				for i in xrange(len(vdata)):
+				for i in range(len(vdata)):
 					try:     data.append([int(vdata[i])])
 					except:
 						try:  	 data.append([float(vdata[i])])
 						except:  data.append([vdata[i]])
 			else:
-				for i in xrange(len(vdata)):
+				for i in range(len(vdata)):
 					try:  data[i].append(int(vdata[i]))
 					except:
 						try:  data[i].append(float(vdata[i]))
@@ -1909,8 +1913,8 @@ def write_text_file(data, file_name):
 	outf = open(file_name, "w")
 	if (type(data[0]) == list):
 		# It is a list of lists
-		for i in xrange(len(data[0])):
-			for j in xrange(len(data)):
+		for i in range(len(data[0])):
+			for j in range(len(data)):
 				tpt = data[j][i]
 				qtp = type(tpt)
 				if qtp == int:			outf.write("  %12d"%tpt)
@@ -1922,7 +1926,7 @@ def write_text_file(data, file_name):
 			outf.write("\n")
 	else:
 		# Single list
-		for j in xrange(len(data)):
+		for j in range(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
 			if qtp == int :			outf.write("  %12d\n"%tpt)
@@ -1942,7 +1946,7 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 		nima = EMUtil.get_image_count(image_mask_applied_file)
 		if (nima > 1):
 			image_mask_applied = []
-			for ima in xrange(nima):
+			for ima in range(nima):
 				e = EMData()
 				e.read_image(image_mask_applied_file, ima)
 				image_mask_applied.append(e)
@@ -1966,7 +1970,7 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 		new_mask = model_circle(new_mask_file, nx, ny, nz)
 	if  nima > 1:
 		image_in_reconstituted_mask = []
-		for i in xrange(nima):
+		for i in range(nima):
 			tmp_image = Util.reconstitute_image_mask(image_mask_applied[i], new_mask)
 			image_in_reconstituted_mask.append (tmp_image)
 			if (save_file_on_disk ):  image_in_reconstituted_mask[i].write_image(saved_file_name, i)
@@ -2041,7 +2045,7 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 		Pixel_size_interpolated = Pixel_size_current*float(length_current)/float(length_interpolated)
 	qt =Pixel_size_interpolated/Pixel_size_current
 
-	for i in xrange(length_interpolated):
+	for i in range(length_interpolated):
 		xi = float(i)*qt
 		ix = min(int(xi),lt)
 		df = xi -ix
@@ -2066,7 +2070,7 @@ def estimate_3D_center(data):
 	A = []
 	b = []
 
-	for i in xrange(N):
+	for i in range(N):
 		phi_rad   = radians(ali_params[i][0])
 		theta_rad = radians(ali_params[i][1])
 		psi_rad   = radians(ali_params[i][2])
@@ -2106,23 +2110,23 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm
 		ali_params_series.append(s2y)
 
 	if myid == main_node:
-		for proc in xrange(number_of_proc):
+		for proc in range(number_of_proc):
 			if proc != main_node:
 				image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
 				n_params = (image_end_proc - image_start_proc)*5
 				temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, mpi_comm)
-				for nn in xrange(n_params):
+				for nn in range(n_params):
 					ali_params_series.append(float(temp[nn]))
 
 		ali_params = []
 		N = len(ali_params_series)/5
-		for im in xrange(N):
+		for im in range(N):
 			ali_params.append([ali_params_series[im*5], ali_params_series[im*5+1], ali_params_series[im*5+2], ali_params_series[im*5+3], ali_params_series[im*5+4]])
 
 		A = []
 		b = []
 
-		for i in xrange(N):
+		for i in range(N):
 			phi_rad   = radians(ali_params[i][0])
 			theta_rad = radians(ali_params[i][1])
 			psi_rad   = radians(ali_params[i][2])
@@ -2151,7 +2155,7 @@ def rotate_3D_shift(data, shift3d):
 
 	t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":-shift3d[0],"ty":-shift3d[1],"tz":-shift3d[2],"mirror":0,"scale":1.0})
 
-	for i in xrange(len(data)):
+	for i in range(len(data)):
 		d = data[i].get_attr('xform.projection')
 		c = d*t
 		data[i].set_attr('xform.projection', c)
@@ -2168,7 +2172,7 @@ def set_arb_params(img, params, par_str):
 	"""
 		filling arbitary headers
 	"""
-	for i in xrange(len(par_str)): img.set_attr_dict({par_str[i]:params[i]})
+	for i in range(len(par_str)): img.set_attr_dict({par_str[i]:params[i]})
 
 def get_arb_params(img, par_str):
 
@@ -2176,7 +2180,7 @@ def get_arb_params(img, par_str):
 		reading arbitary headers
 	"""
 	params=[]
-	for i in xrange(len(par_str)): params.append(img.get_attr(par_str[i]))
+	for i in range(len(par_str)): params.append(img.get_attr(par_str[i]))
 	return params
 
 ###------------------------------------------------------------------------------------------
@@ -2250,7 +2254,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	count = (75*4+2)*(75*4)**2
 	array1d = reshape( array, (ntot,))
 	ntime = (ntot-1) /count + 1
-	for i in xrange(ntime):
+	for i in range(ntime):
 		block_begin = i*count
 		block_end   = min(block_begin + count, ntot)
 		block_size  = block_end - block_begin
@@ -2327,7 +2331,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 			if ref_start == ref_end:
 				continue
 			data = EMNumPy.em2numpy(list_of_em_objects[ref_start])  #array([], dtype = 'float32')
-			for i in xrange(ref_start+1,ref_end):
+			for i in range(ref_start+1,ref_end):
 				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects[i])])
 		else:
 			if sender_ref_start == sender_ref_end:
@@ -2341,7 +2345,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 		# print "Just sent %d float32 elements"%data.size
 
 		if myid != sender_id:
-			for i in xrange(sender_ref_start, sender_ref_end):
+			for i in range(sender_ref_start, sender_ref_end):
 				offset_ring = sender_ref_start
 				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
 				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
@@ -2412,7 +2416,7 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 	for sender_id in range(ncpu):
 		if sender_id == myid:
 			data = EMNumPy.em2numpy(list_of_em_objects[ref_start])  #array([], dtype = 'float32')
-			for i in xrange(ref_start+1,ref_end):
+			for i in range(ref_start+1,ref_end):
 				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects[i])])
 		else:
 			data = array([], dtype = 'float32')
@@ -2425,7 +2429,7 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 		# print "Just sent %d float32 elements"%data.size
 
 		if myid != sender_id:
-			for i in xrange(sender_ref_start, sender_ref_end):
+			for i in range(sender_ref_start, sender_ref_end):
 				offset_ring = sender_ref_start
 				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
 				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
@@ -2530,7 +2534,7 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 			data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])  #array([], dtype = 'float32')
 			str_to_send = str(list_of_em_objects_for_myid_process[ref_start].get_attr_dict())
 			em_dict_to_send_list = [list_of_em_objects_for_myid_process[ref_start].get_attr_dict()]
-			for i in xrange(ref_start+1,ref_end):
+			for i in range(ref_start+1,ref_end):
 				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])])
 				# str_to_send += str(list_of_em_objects_for_myid_process[i].get_attr_dict())
 				em_dict_to_send_list.append(list_of_em_objects_for_myid_process[i].get_attr_dict())
@@ -2558,7 +2562,7 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 
 		# if myid != sender_id:
 		if myid == 0:
-			for i in xrange(sender_ref_start, sender_ref_end):
+			for i in range(sender_ref_start, sender_ref_end):
 				offset_ring = sender_ref_start
 				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
 				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
@@ -2650,7 +2654,7 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	for sender_id in range(1,ncpu):
 		if sender_id == myid:
 			data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])  #array([], dtype = 'float32')
-			for i in xrange(ref_start+1,ref_end):
+			for i in range(ref_start+1,ref_end):
 				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])])
 		else:
 			data = array([], dtype = 'float32')
@@ -2670,7 +2674,7 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 
 		# if myid != sender_id:
 		if myid == 0:
-			for i in xrange(sender_ref_start, sender_ref_end):
+			for i in range(sender_ref_start, sender_ref_end):
 				offset_ring = sender_ref_start
 				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
 				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
@@ -2930,20 +2934,20 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 	gathered_data = []
 	inc = 1   # A temp measure
 	if myid == main_node:
-		for i in xrange(0, number_of_proc*inc, inc):
+		for i in range(0, number_of_proc*inc, inc):
 			if i == main_node:
-				for k in xrange(l):
+				for k in range(l):
 					gathered_data.append(data[k])
 			else:
-				for k in xrange(l):
+				for k in range(l):
 					im = recv_EMData(i, i*l+k)
 					mem_len = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					members = mpi_recv(int(mem_len[0]), MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-					members = map(int, members)
+					members = list(map(int, members))
 					im.set_attr('members', members)
 					gathered_data.append(im)
 	else:
-		for k in xrange(l):
+		for k in range(l):
 			send_EMData(data[k], main_node, myid*l+k)
 			mem = data[k].get_attr('members')
 			mpi_send(len(mem), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
@@ -3024,7 +3028,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	value = get_arb_params(data[0], list_params)
 	ink = []
 	len_list = 0
-	for il in xrange(len(list_params)):
+	for il in range(len(list_params)):
 		if type(value[il]) is int:
 			ink.append(1)
 			len_list += 1
@@ -3036,7 +3040,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			len_list += 12
 	ldis = []
 	headers = []
-	for n in xrange(number_of_proc):
+	for n in range(number_of_proc):
 		if n != main_node:
 			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
 			value = mpi_recv(len_list*(dis[1]-dis[0]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
@@ -3044,18 +3048,18 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			headers.append(value)
 			del  dis
 	del  value
-	for im in xrange(image_start, image_end):
+	for im in range(image_start, image_end):
 		data[im-image_start].write_image(stack, data[im-image_start].get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
 
-	for n in xrange(len(ldis)):
+	for n in range(len(ldis)):
 		img_begin = ldis[n][0]
 		img_end = ldis[n][1]
-		for im in xrange(img_begin, img_end):
+		for im in range(img_begin, img_end):
 			par_begin = (im-img_begin)*len_list
 			nvalue = []
 			header = headers[n]
 			ilis = 0
-			for il in xrange(len(list_params)):
+			for il in range(len(list_params)):
 				if(ink[il] == 1):
 					nvalue.append(int(header[par_begin+ilis]))
 					ilis += 1
@@ -3066,7 +3070,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 					assert ink[il]==2
 					t = Transform()
 					tmp = []
-					for iii in xrange(par_begin+ilis, par_begin+ilis+12):
+					for iii in range(par_begin+ilis, par_begin+ilis+12):
 						tmp.append(float(header[iii]))
 					t.set_matrix(tmp)
 					ilis += 12
@@ -3094,9 +3098,9 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 	TransType = type(Transform())
 	mpi_send([image_start, image_end], 2, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
 	nvalue = []
-	for im in xrange(image_start, image_end):
+	for im in range(image_start, image_end):
 		value = get_arb_params(data[im-image_start], list_params)
-		for il in xrange(len(value)):
+		for il in range(len(value)):
 			if    type(value[il]) is int:  nvalue.append(float(value[il]))
 			elif  type(value[il]) is float: nvalue.append(value[il])
 			elif  type(value[il]) is TransType:
@@ -3123,7 +3127,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	ink = []
 	len_list = 0
 	ISID = -1
-	for il in xrange(len(list_params)):
+	for il in range(len(list_params)):
 		if(list_params[il] == 'ID'):  ISID = il
 		if type(value[il]) is int:
 			ink.append(1)
@@ -3136,17 +3140,17 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 			len_list += 12
 	ldis = []
 	headers = []
-	for n in xrange(number_of_proc):
+	for n in range(number_of_proc):
 		if n != main_node:
 			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
 			img_begin = int(dis[0])
 			img_end = int(dis[1])
 			header = mpi_recv(len_list*(img_end-img_begin), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
-			for im in xrange(img_begin, img_end):
+			for im in range(img_begin, img_end):
 				par_begin = (im-img_begin)*len_list
 				nvalue = []
 				ilis = 0
-				for il in xrange(len(list_params)):
+				for il in range(len(list_params)):
 					if(ink[il] == 1):
 						nvalue.append(int(header[par_begin+ilis]))
 						ilis += 1
@@ -3157,7 +3161,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 						assert ink[il]==2
 						t = Transform()
 						tmp = []
-						for iii in xrange(par_begin+ilis, par_begin+ilis+12):
+						for iii in range(par_begin+ilis, par_begin+ilis+12):
 							tmp.append(float(header[iii]))
 						t.set_matrix(tmp)
 						ilis += 12
@@ -3166,10 +3170,10 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 					imm = im
 				else:
 					imm = nvalue[ISID]
-				for i in xrange(len(list_params)):
+				for i in range(len(list_params)):
 					if(list_params[i] != "ID"):  DB.set_attr(imm, list_params[i], nvalue[i])
 		else:
-			for n in xrange(image_start, image_end):
+			for n in range(image_start, image_end):
 				ID = data[n-image_start].get_attr_default('ID', n)
 				for param in list_params:
 					if(param != "ID"):  DB.set_attr(ID, param, data[n-image_start].get_attr(param))
@@ -3242,10 +3246,10 @@ def read_fsc( filename ):
 		items = split( line )
 		if fscc is None:
 			fscc = [None]*len(items)
-			for i in xrange( len(items) ):
+			for i in range( len(items) ):
 				fscc[i] = []
 
-		for i in xrange( len(items) ) :
+		for i in range( len(items) ) :
 			fscc[i].append( atof(items[i]) )
 
 		line = f.readline()
@@ -3446,6 +3450,17 @@ def delete_bdb(name):
 	a = db_open_dict(name)
 	db_remove_dict(name)
 
+def disable_bdb_cache():
+	import EMAN2db
+	EMAN2db.BDB_CACHE_DISABLE = True
+
+def enable_bdb_cache():
+	import EMAN2db
+	EMAN2db.BDB_CACHE_DISABLE = False
+
+
+
+###############
 
 # parse user function parses the --function option. this option
 #    can be either a single function name (i.e. --function=ali3d_e)
@@ -3476,6 +3491,10 @@ def parse_user_function(opt_string):
 		# no list format used, so we assume this is a function name
 		# defined (and referenced) in user_functions.
 		return opt_string
+
+
+###############
+#  Angular functions
 
 def getang(n):
 	"""
@@ -3568,10 +3587,10 @@ def closest_ang( vecs, vec) :
 # This is in python, it is very slow, we keep it just for comparison, use Util.assign_projangles instead
 def assign_projangles_slow(projangles, refangles):
 	refnormal = [None]*len(refangles)
-	for i in xrange(len(refangles)):
+	for i in range(len(refangles)):
 		refnormal[i] = getvec(refangles[i][0], refangles[i][1])
-	assignments = [[] for i in xrange(len(refangles))]
-	for i in xrange(len(projangles)):
+	assignments = [[] for i in range(len(refangles))]
+	for i in range(len(projangles)):
 		best_i = nearest_ang(refnormal, projangles[i][0], projangles[i][1])
 		assignments[best_i].append(i)
 	return assignments
@@ -3597,25 +3616,25 @@ def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_c
 def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 	# In both cases mirrored should be treated the same way as straight as they carry the same structural information
 	from utilities import getfvec, getvec
-	lookup = range(len(projangles))
+	lookup = list(range(len(projangles)))
 	if( sym == "c1"):
 		from utilities import getvec
 		refnormal = [None]*(len(projangles)*3)
-		for i in xrange(len(projangles)):
+		for i in range(len(projangles)):
 			ref = getvec(projangles[i][0], projangles[i][1])
-			for k in xrange(3):
+			for k in range(3):
 				refnormal[3*i+k] = ref[k]
 		# remove the reference projection from the list
 		ref = [0.0,0.0,0.0]
-		for k in xrange(3):
+		for k in range(3):
 			ref[k] = refnormal[3*whichone+k]
-		for k in xrange(3): del refnormal[3*whichone+2-k]
+		for k in range(3): del refnormal[3*whichone+2-k]
 		del lookup[whichone]
 		assignments = [-1]*howmany
-		for i in xrange(howmany):
+		for i in range(howmany):
 			k = Util.nearest_ang(refnormal, ref[0],ref[1],ref[2])
 			assignments[i] = lookup[k]
-			for l in xrange(3): del refnormal[3*k+2-l]
+			for l in range(3): del refnormal[3*k+2-l]
 			del lookup[k]
 
 	elif( sym[:1] == "d" ):
@@ -3623,9 +3642,9 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 		from EMAN2 import Transform
 		t = get_symt(sym)
 		phir = 360.0/int(sym[1:])
-		for i in xrange(len(t)):  t[i] = t[i].inverse()
+		for i in range(len(t)):  t[i] = t[i].inverse()
 		a = Transform({"type":"spider","phi":projangles[whichone][0], "theta":projangles[whichone][1]})
-		for l in xrange(len(t)):
+		for l in range(len(t)):
 			q = a*t[l]
 			q = q.get_params("spider")
 			if(q["phi"]<phir and q["theta"] <= 90.0): break
@@ -3636,12 +3655,12 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 		del tempan[whichone], lookup[whichone]
 		assignments = [-1]*howmany
 
-		for i in xrange(howmany):
+		for i in range(howmany):
 			best = -1
-			for j in xrange(len(tempan)):
+			for j in range(len(tempan)):
 				nearest = -1.
 				a = Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
-				for l in xrange(len(t)):
+				for l in range(len(t)):
 					q = a*t[l]
 					q = q.get_params("spider")
 					vecs = getfvec(q["phi"], q["theta"])
@@ -3667,12 +3686,12 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 		assignments = [-1]*howmany
 		refvec = getvec(projangles[whichone][0], projangles[whichone][1])
 
-		for i in xrange(howmany):
+		for i in range(howmany):
 			best = -1
-			for j in xrange(len(tempan)):
+			for j in range(len(tempan)):
 				nearest = -1.
 				a = Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
-				for l in xrange(len(t)):
+				for l in range(len(t)):
 					q = a*t[l]
 					q = q.get_params("spider")
 					vecs = getfvec(q["phi"], q["theta"])
@@ -3700,7 +3719,7 @@ def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym_class=None
 	from utilities import getfvec, angles_to_normals
 	reference_normals = angles_to_normals(reference_ang)
 
-	if( sym_class.sym[:2] == "c1"):
+	if( sym_class == None or sym_class.sym[:2] == "c1"):
 		ref = getfvec(angles[0],angles[1])
 		assignments = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
 	else:
@@ -3710,9 +3729,9 @@ def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym_class=None
 	return assignments
 
 def nearestk_to_refdir(refnormal, refdir, howmany = 1):
-	lookup = range(len(refnormal))
+	lookup = list(range(len(refnormal)))
 	assignments = [-1]*howmany
-	for i in xrange(howmany):
+	for i in range(howmany):
 		k = Util.nearest_ang(refnormal, refdir[0],refdir[1],refdir[2])
 		assignments[i] = lookup[k]
 		del refnormal[3*k+2], refnormal[3*k+1], refnormal[3*k+0], lookup[k]
@@ -3720,11 +3739,11 @@ def nearestk_to_refdir(refnormal, refdir, howmany = 1):
 
 
 def nearestk_to_refdirs(refnormal, refdir, howmany = 1):
-	lookup = range(len(refnormal))
+	lookup = list(range(len(refnormal)))
 	assignments = []
-	for j in xrange(len(refdir)):
+	for j in range(len(refdir)):
 		assignment = [-1]*howmany
-		for i in xrange(howmany):
+		for i in range(howmany):
 			k = Util.nearest_ang(refnormal, refdir[j][0],refdir[j][1],refdir[j][2])
 			assignment[i] = lookup[k]
 			del refnormal[3*k+2], refnormal[3*k+1], refnormal[3*k+0], lookup[k]
@@ -3733,7 +3752,7 @@ def nearestk_to_refdirs(refnormal, refdir, howmany = 1):
 
 
 
-'''
+"""
 def assign_projangles(projangles, refangles, return_asg = False):
 
 	if len(refangles) > 10000:
@@ -3766,7 +3785,7 @@ def assign_projangles(projangles, refangles, return_asg = False):
 		assignments[asg[i]].append(i)
 
 	return assignments
-'''
+"""
 
 def assign_projangles(projangles, refangles, return_asg = False):
 
@@ -3774,17 +3793,17 @@ def assign_projangles(projangles, refangles, return_asg = False):
 	nref = len(refangles)
 	proj_ang = [0.0]*(nproj*2)
 	ref_ang = [0.0]*(nref*2)
-	for i in xrange(nproj):
+	for i in range(nproj):
 		proj_ang[i*2] = projangles[i][0]
 		proj_ang[i*2+1] = projangles[i][1]
-	for i in xrange(nref):
+	for i in range(nref):
 		ref_ang[i*2] = refangles[i][0]
 		ref_ang[i*2+1] = refangles[i][1]
 
 	asg = Util.assign_projangles(proj_ang, ref_ang)
 	if return_asg: return asg
-	assignments = [[] for i in xrange(nref)]
-	for i in xrange(nproj):
+	assignments = [[] for i in range(nref)]
+	for i in range(nproj):
 		assignments[asg[i]].append(i)
 
 	return assignments
@@ -3793,8 +3812,8 @@ def assign_projangles_f(projangles, refangles, return_asg = False):
 
 	asg = Util.assign_projangles_f(projangles, refangles)
 	if return_asg: return asg
-	assignments = [[] for i in xrange(len(refangles))]
-	for i in xrange(len(projangles)):
+	assignments = [[] for i in range(len(refangles))]
+	for i in range(len(projangles)):
 		assignments[asg[i]].append(i)
 
 	return assignments
@@ -3804,7 +3823,7 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 	#  projdirs - data
 	#  refdirs  - templates, each template has neighbors related copies 
 	#  output - list of lists, ofr each of refdirs/neighbors there is a list of projdirs indexes that are closest to it
-	'''
+	"""
 	qsti = [-1]*len(projdirs)
 	for i,q in enumerate(projdirs):
 		dn = -2.0
@@ -3816,11 +3835,11 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 				dn = sq
 				this = l
 		qsti[i] = this
-	'''
+	"""
 	#  Create a list that for each projdirs contains an index of the closest refdirs/neighbors
 	qsti = Util.assign_projdirs_f(projdirs, refdirs, neighbors)
-	assignments = [[] for i in xrange(len(refdirs)/neighbors)]
-	for i in xrange(len(projdirs)):
+	assignments = [[] for i in range(len(refdirs)/neighbors)]
+	for i in range(len(projdirs)):
 		assignments[qsti[i]].append(i)
 
 	return assignments
@@ -3835,7 +3854,7 @@ def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 	la = []
 	if( symmetry == 'c1' ):
 		vec = getfvec( phi, tht )
-		for i in xrange( len(projangles) ):
+		for i in range( len(projangles) ):
 			vecs = getvec( projangles[i][0], projangles[i][1] )
 			s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
 			if s >= cone:
@@ -3844,12 +3863,12 @@ def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 		nsym = int(symmetry[1:])
 		qt = 360.0/nsym
 		dvec = 	[0.0]*nsym
-		for nsm in xrange(nsym):
+		for nsm in range(nsym):
 			dvec[nsm] = getvec(phi+nsm*qt, tht)
-		for i in xrange( len(projangles) ):
+		for i in range( len(projangles) ):
 			vecs = getfvec( projangles[i][0], projangles[i][1] )
 			qt = -2.0
-			for nsm in xrange(nsym):
+			for nsm in range(nsym):
 				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
 				if(vc > qt):  qt = vc
 			if(qt >= cone):
@@ -3858,14 +3877,14 @@ def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 		nsym = int(symmetry[1:])
 		qt = 360.0/nsym
 		dvec = 	[0.0]*2*nsym
-		for nsm in xrange(nsym):
+		for nsm in range(nsym):
 			dvec[2*nsm] = getvec(phi+nsm*qt, tht)
 			dvec[2*nsm+1] = getvec(-(phi+nsm*qt), 180.0-tht)
-		for i in xrange( len(projangles) ):
+		for i in range( len(projangles) ):
 			vecs = getfvec( projangles[i][0], projangles[i][1] )
 			qt = -2.0
 			qk = -1
-			for nsm in xrange(2*nsym):
+			for nsm in range(2*nsym):
 				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
 				if(vc > qt):
 					qt = vc
@@ -3886,7 +3905,7 @@ def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 	la = []
 	if( symmetry == 'c1' ):
 		vec = getfvec( phi, tht )
-		for i in xrange( len(projangles) ):
+		for i in range( len(projangles) ):
 			vecs = getfvec( projangles[i][0], projangles[i][1] )
 			s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
 			if s >= cone:
@@ -3895,12 +3914,12 @@ def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 		nsym = int(symmetry[1:])
 		qt = 360.0/nsym
 		dvec = 	[0.0]*nsym
-		for nsm in xrange(nsym):
+		for nsm in range(nsym):
 			dvec[nsm] = getfvec(phi+nsm*qt, tht)
-		for i in xrange( len(projangles) ):
+		for i in range( len(projangles) ):
 			vecs = getfvec( projangles[i][0], projangles[i][1] )
 			qt = -2.0
-			for nsm in xrange(nsym):
+			for nsm in range(nsym):
 				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
 				if(vc > qt):  qt = vc
 			if(qt >= cone):
@@ -3909,14 +3928,14 @@ def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 		nsym = int(symmetry[1:])
 		qt = 360.0/nsym
 		dvec = 	[0.0]*2*nsym
-		for nsm in xrange(nsym):
+		for nsm in range(nsym):
 			dvec[2*nsm] = getfvec(phi+nsm*qt, tht)
 			dvec[2*nsm+1] = getfvec(-(phi+nsm*qt), 180.0-tht)
-		for i in xrange( len(projangles) ):
+		for i in range( len(projangles) ):
 			vecs = getfvec( projangles[i][0], projangles[i][1] )
 			qt = -2.0
 			qk = -1
-			for nsm in xrange(2*nsym):
+			for nsm in range(2*nsym):
 				vc = dvec[nsm][0]*vecs[0] + dvec[nsm][1]*vecs[1] + dvec[nsm][2]*vecs[2]
 				if(vc > qt):
 					qt = vc
@@ -3950,7 +3969,7 @@ def cone_dirs_f( projdirs, ancordir, ant):
 	return la
 """
 
-'''
+"""
 def cone_ang_f_with_index( projangles, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -3968,7 +3987,8 @@ def cone_ang_f_with_index( projangles, phi, tht, ant ):
 			la.append(projangles[i])
 			index.append(i)
 	return la, index
-'''
+"""
+
 def cone_ang_with_index( projangles, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -3978,7 +3998,7 @@ def cone_ang_with_index( projangles, phi, tht, ant ):
 	cone = cos(radians(ant))
 	la = []
 	index = []
-	for i in xrange( len(projangles) ):
+	for i in range( len(projangles) ):
 		# vecs = getvec( projangles[i][0], projangles[i][1] )
 		vecs = getfvec( projangles[i][0], projangles[i][1] )
 		s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
@@ -4007,7 +4027,7 @@ def cone_vectors( normvectors, phi, tht, ant ):
 #  Wrappers for new angular functions
 def angles_to_normals(angles):
 	temp = Util.angles_to_normals(angles)
-	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(len(angles)) ]
+	return [[temp[l*3+i] for i in range(3)] for l in range(len(angles)) ]
 """
 def symmetry_related(angles, symmetry):  # replace by s.symmetry_related
 	if( (symmetry[0] == "c") or (symmetry[0] == "d") ):
@@ -4039,24 +4059,13 @@ def symmetry_neighbors(angles, symmetry):
 	#  output is [[phi0,theta0,psi0],[phi0,theta0,psi0]_SYM1,...,[phi1,theta1,psi1],[phi1,theta1,psi1]_SYM1,...]
 	temp = Util.symmetry_neighbors(angles, symmetry)
 	nt = len(temp)/3
-	return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
+	return [[temp[l*3+i] for i in range(3)] for l in range(nt) ]
 	#  We could make it a list of lists
 	#mt = len(angles)
 	#nt = len(temp)/mt/3
 	#return [[ [temp[m*3*nt+l*3+i] for i in xrange(3)] for l in xrange(nt)] for m in xrange(mt) ]
 
 #def nearest_angular_direction(normals, vect, symmetry):
-
-
-###############
-
-def disable_bdb_cache():
-	import EMAN2db
-	EMAN2db.BDB_CACHE_DISABLE = True
-
-def enable_bdb_cache():
-	import EMAN2db
-	EMAN2db.BDB_CACHE_DISABLE = False
 
 def rotation_between_anglesets(agls1, agls2):
 	"""
@@ -4107,9 +4116,9 @@ def rotation_between_anglesets(agls1, agls2):
 	Suv   = [0] * 9
 
 	nbori = len(U1)
-	for i in xrange(3):
-		for j in xrange(3):
-			for s in xrange(nbori):
+	for i in range(3):
+		for j in range(3):
+			for s in range(nbori):
 				Suv[j+3*i] += (U2[s][i] * U1[s][j])
 
 	# create matrix N
@@ -4171,8 +4180,8 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 		angleset2 = new_ang2
 
 	rot = rotation_between_anglesets(angleset1, angleset2)
-	angleset1 = rotate_params([angleset1[i] for i in xrange(len(angleset1))],[-rot[2],-rot[1],-rot[0]])
-	return [angle_between_projections_directions(angleset1[i], angleset2[i]) for i in xrange(len(angleset1))]
+	angleset1 = rotate_params([angleset1[i] for i in range(len(angleset1))],[-rot[2],-rot[1],-rot[0]])
+	return [angle_between_projections_directions(angleset1[i], angleset2[i]) for i in range(len(angleset1))]
 
 """
 Not used and possibly incorrect
@@ -4261,7 +4270,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
 		ref_ang_list = [0.0]*(len(ref_ang)*2)
-		for i in xrange(len(ref_ang)):
+		for i in range(len(ref_ang)):
 			ref_ang_list[2*i] = ref_ang[i][0]
 			ref_ang_list[2*i+1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
@@ -4280,13 +4289,13 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	angles_list = []
 	N = len(proj_ang)
 	if len(proj_ang[0]) == 3:       # determine whether it has shifts provided, make the program more robust
-		for i in xrange(N):
+		for i in range(N):
 			proj_ang[i].append(i)
 			proj_ang[i].append(True)
 			vec = getfvec(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
 			proj_ang[i].append(vec)
 	else:
-		for i in xrange(N):
+		for i in range(N):
 			proj_ang[i][3] = i
 			proj_ang[i][4] = True
 			vec = getfvec(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
@@ -4303,7 +4312,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	# If we are, we are only going to read the table and avoid calculating the distance again.
 	previous_group = -1
 	previous_zone = 5
-	for grp in xrange(N/img_per_grp):
+	for grp in range(N/img_per_grp):
 		print(grp, end=' ')
 		N_remain = N-grp*img_per_grp
 		# The idea here is that if each group has more than 100 images in average,
@@ -4345,31 +4354,31 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			proj_ang_list = [0.0]*(N_remain*2)
 			nn = 0
 			remain_index = [0]*N_remain
-			for i in xrange(N):
+			for i in range(N):
 				if proj_ang[i][4]:
 					proj_ang_list[nn*2] = proj_ang[i][0]
 					proj_ang_list[nn*2+1] = proj_ang[i][1]
 					remain_index[nn] = i
 					nn += 1
 			asg = Util.assign_projangles(proj_ang_list, ref_ang_list)
-			assignments = [[] for i in xrange(nref)]
-			for i in xrange(N_remain):
+			assignments = [[] for i in range(nref)]
+			for i in range(N_remain):
 				assignments[asg[i]].append(i)
 			# find the largest group and record the group size and group number
 			max_group_size = 0
 			max_group = -1
-			for i in xrange(nref):
+			for i in range(nref):
 				if len(assignments[i]) > max_group_size:
 					max_group_size = len(assignments[i])
 					max_group = i
 			print(max_group_size, max_group, previous_group, end=' ')
-			for i in xrange(len(assignments[max_group])):
+			for i in range(len(assignments[max_group])):
 				ind = remain_index[assignments[max_group][i]]
 				v.append(proj_ang[ind][5])
 				index.append(ind)
 		else:
 			# In this case, use all the projections available
-			for i in xrange(N):
+			for i in range(N):
 				if proj_ang[i][4]:
 					v.append(proj_ang[i][5])
 					index.append(i)
@@ -4377,32 +4386,32 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 
 		t2 = time()
 		Nn = len(index)
-		density = [[0.0, 0] for i in xrange(Nn)]
+		density = [[0.0, 0] for i in range(Nn)]
 		if max_group != previous_group:
-			diff_table = [[0.0 for i in xrange(Nn)] for j in xrange(Nn)]
-			for i in xrange(Nn-1):
-				for j in xrange(i+1, Nn):
+			diff_table = [[0.0 for i in range(Nn)] for j in range(Nn)]
+			for i in range(Nn-1):
+				for j in range(i+1, Nn):
 					diff = ang_diff(v[i], v[j])
 					q = exp(-c*(diff[0]/180.0*pi)**2)
 					diff_table[i][j] = q
 					diff_table[j][i] = q
 			diff_table_index = dict()
-			for i in xrange(Nn): diff_table_index[index[i]] = i
+			for i in range(Nn): diff_table_index[index[i]] = i
 			print(Nn, True, end=' ')
 		else:
 			print(Nn, False, end=' ')
 
 		t21 = time()
-		for i in xrange(Nn):
+		for i in range(Nn):
 			density[i][0] = sum(diff_table[diff_table_index[index[i]]])
 			density[i][1] = i
 		t22 = time()
 		density.sort(reverse=True)
 
 		t3 = time()
-		dang = [[0.0, 0] for i in xrange(Nn)]
+		dang = [[0.0, 0] for i in range(Nn)]
 		most_dense_point = density[0][1]
-		for i in xrange(Nn):
+		for i in range(Nn):
 			diff = ang_diff(v[i], v[most_dense_point])
 			dang[i][0] = diff[0]
 			dang[i][1] = i
@@ -4411,9 +4420,9 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 
 		t4 = time()
 		members = [0]*img_per_grp
-		for i in xrange(img_per_grp):
+		for i in range(img_per_grp):
 			idd = index[dang[i][1]]
-			for j in xrange(len(diff_table)):
+			for j in range(len(diff_table)):
 				diff_table[diff_table_index[idd]][j] = 0.0
 				diff_table[j][diff_table_index[idd]] = 0.0
 			members[i] = idd
@@ -4426,13 +4435,13 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 
 	if N%img_per_grp*3 >= 2*img_per_grp:
 		members = []
-		for i in xrange(N):
+		for i in range(N):
 			if proj_ang[i][4]:
 				members.append(i)
 		proj_list.append(members)
 		angles_list.append([proj_ang[members[0]][0], proj_ang[members[0]][1], 90.0])
 	elif N%img_per_grp != 0:
-		for i in xrange(N):
+		for i in range(N):
 			if proj_ang[i][4]:
 				proj_list[-1].append(i)
 	print("Total time used = ", time()-t0)
@@ -4455,14 +4464,14 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
 		ref_ang_list = [0.0]*(len(ref_ang)*2)
-		for i in xrange(len(ref_ang)):
+		for i in range(len(ref_ang)):
 			ref_ang_list[2*i] = ref_ang[i][0]
 			ref_ang_list[2*i+1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
 
 	N = len(proj_ang)
 	proj_ang_list = [0]*(N*2)
-	for i in xrange(N):
+	for i in range(N):
 		proj_ang_list[i*2] = proj_ang[i][0]
 		proj_ang_list[i*2+1] = proj_ang[i][1]
 
@@ -4483,17 +4492,17 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 	proj_list = Util.group_proj_by_phitheta(proj_ang_list, ref_ang_list, img_per_grp)
 
 	proj_list2 = proj_list[:]
-	for i in xrange(len(proj_list2)): proj_list2[i] = abs(proj_list2[i])
+	for i in range(len(proj_list2)): proj_list2[i] = abs(proj_list2[i])
 	proj_list2.sort()
 	assert N == len(proj_list2)
-	for i in xrange(N): assert i == proj_list2[i]
+	for i in range(N): assert i == proj_list2[i]
 
 	Ng = N/img_per_grp
-	proj_list_new = [[] for i in xrange(Ng)]
-	mirror_list = [[] for i in xrange(Ng)]
+	proj_list_new = [[] for i in range(Ng)]
+	mirror_list = [[] for i in range(Ng)]
 	angles_list = []
-	for i in xrange(Ng):
-		for j in xrange(img_per_grp):
+	for i in range(Ng):
+		for j in range(img_per_grp):
 			proj_list_new[i].append(abs(proj_list[i*img_per_grp+j]));
 			mirror_list[i].append(proj_list[i*img_per_grp+j] >= 0)
 		phi1 = proj_ang[proj_list_new[i][0]][0];
@@ -4505,7 +4514,7 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 	if N%img_per_grp*3 >= 2*img_per_grp:
 		proj_list_new.append([])
 		mirror_list.append([])
-		for i in xrange(Ng*img_per_grp, N):
+		for i in range(Ng*img_per_grp, N):
 			proj_list_new[-1].append(abs(proj_list[i]));
 			mirror_list[-1].append(proj_list[i] >= 0)
 		phi1 = proj_ang[proj_list_new[Ng][0]][0];
@@ -4514,7 +4523,7 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 		theta2 = proj_ang[proj_list_new[Ng][-1]][1];
 		angles_list.append([phi1, theta1, ang_diff(getfvec(phi1, theta1), getfvec(phi2, theta2))[0]]);
 	elif N%img_per_grp != 0:
-		for i in xrange(Ng*img_per_grp, N):
+		for i in range(Ng*img_per_grp, N):
 			proj_list_new[-1].append(abs(proj_list[i]))
 			mirror_list[-1].append(proj_list[i] >= 0)
 
@@ -4550,7 +4559,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
 		ref_ang_list = [0.0]*(len(ref_ang)*2)
-		for i in xrange(len(ref_ang)):
+		for i in range(len(ref_ang)):
 			ref_ang_list[2*i] = ref_ang[i][0]
 			ref_ang_list[2*i+1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
@@ -4607,14 +4616,14 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 			return mid
 
 	N = len(proj_ang)
-	if len(List) == 0: List = range(N)
+	if len(List) == 0: List = list(range(N))
 	if N < img_per_grp:
 		print("Error: image per group larger than the number of particles!")
 		exit()
-	phi_list   = [[0.0, 0] for i in xrange(N)]
-	theta_list = [[0.0, 0] for i in xrange(N)]
+	phi_list   = [[0.0, 0] for i in range(N)]
+	theta_list = [[0.0, 0] for i in range(N)]
 	vec = [None]*N
-	for i in xrange(N):
+	for i in range(N):
 		phi = proj_ang[i][0]
 		theta = proj_ang[i][1]
 		vec[i] = getfvec(phi, theta)
@@ -4630,11 +4639,11 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	phi_list.sort()
 	theta_list_l = [0.0]*N
 	phi_list_l = [0.0]*N
-	for i in xrange(N):
+	for i in range(N):
 		theta_list_l[i] = theta_list[i][0]
 		phi_list_l[i] = phi_list[i][0]
 
-	g = [[360.0, 0, 0] for i in xrange(N)]
+	g = [[360.0, 0, 0] for i in range(N)]
 	proj_list = []
 	mirror_list = []
 	neighbor   = [0]*img_per_grp
@@ -4645,7 +4654,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	S = Set()
 	T = Set()
 	#tt1 = time()
-	for i in xrange(len(List)):
+	for i in range(len(List)):
 		k = List[i]
 		#print "\nCase #%3d: Testing projection %6d"%(i, k)
 		#t1 = time()
@@ -4686,23 +4695,23 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 			#print min_phi, max_phi, min_theta, max_theta
 			#print phi_left_bound, phi_right_bound, theta_left_bound, theta_right_bound
 			if phi_left_bound < phi_right_bound:
-				for j in xrange(phi_left_bound, phi_right_bound+1):
+				for j in range(phi_left_bound, phi_right_bound+1):
 					S.add(phi_list[j][1])
 			else:
-				for j in xrange(phi_right_bound+1):
+				for j in range(phi_right_bound+1):
 					S.add(phi_list[j][1])
-				for j in xrange(phi_left_bound, N):
+				for j in range(phi_left_bound, N):
 					S.add(phi_list[j][1])
 			if theta+delta > 90.0:
 				if phi_mir_left_bound < phi_mir_right_bound:
-					for j in xrange(phi_mir_left_bound, phi_mir_right_bound+1):
+					for j in range(phi_mir_left_bound, phi_mir_right_bound+1):
 						S.add(phi_list[j][1])
 				else:
-					for j in xrange(phi_mir_right_bound+1):
+					for j in range(phi_mir_right_bound+1):
 						S.add(phi_list[j][1])
-					for j in xrange(phi_mir_left_bound, N):
+					for j in range(phi_mir_left_bound, N):
 						S.add(phi_list[j][1])
-			for j in xrange(theta_left_bound, theta_right_bound+1):
+			for j in range(theta_left_bound, theta_right_bound+1):
 				T.add(theta_list[j][1])
 			v = list(T.intersection(S))
 			S.clear()
@@ -4711,14 +4720,14 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 			delta *= 2
 			del v
 
-		for j in xrange(len(v)):
+		for j in range(len(v)):
 			d = ang_diff(vec[v[j]], vec[k])
 			g[j][0] = d[0]
 			if v[j] == k: g[j][0] = -1.  # To ensure the image itself is always included in the group
 			g[j][1] = d[1]
 			g[j][2] = v[j]
 		g[:len(v)] = sorted(g[:len(v)])
-		for j in xrange(img_per_grp):
+		for j in range(img_per_grp):
 			neighbor[j] = g[j][2]
 			dis[j] = g[j][0]
 			mirror[j] = (g[j][1] == 1)
@@ -4766,9 +4775,9 @@ def assignments_to_groups(assignments, n = -1):
 	#  n can be maximum number of groups
 	if( n == -1 ): nmax = max(assignments)
 	else:  nmax = n
-	groups = [[] for i in xrange(nmax+1)]
+	groups = [[] for i in range(nmax+1)]
 	for i,q in enumerate(assignments):  groups[q].append(i)
-	for q in xrange(len(groups)):  groups[q].sort()
+	for q in range(len(groups)):  groups[q].sort()
 	return groups
 
 
@@ -4777,7 +4786,7 @@ def groups_assignments(groups, n = -1):
 	#  n can be maximum number of elements
 	if( n == -1 ): 
 		nmax = -1
-		for q in xrange(len(groups)):  nmax = max(nmax,max(groups[q]))
+		for q in range(len(groups)):  nmax = max(nmax,max(groups[q]))
 	else:
 		nmax = n
 	assignments = [-1]*(nmax+1)
@@ -4814,7 +4823,7 @@ def chunks_distribution(chunks, procs):
 	# create heap and list with solution
 	results = []
 	heap = []
-	for p in xrange(procs):
+	for p in range(procs):
 		results.append([])
 		heappush(heap, (0, p))
 
@@ -4840,14 +4849,14 @@ while it.goToNext():
 
 """
 # ================ Iterator for list of images
-class iterImagesList:
+class iterImagesList(object):
 	images = []
 	imagesIndexes = []
 	position = -1
 	def __init__(self, list_of_images, list_of_indexes = None):
 		if list_of_indexes == None:
 			self.images = list_of_images[:]
-			self.imagesIndexes = range(len(self.images))
+			self.imagesIndexes = list(range(len(self.images)))
 		else:
 			for i in list_of_indexes:
 				self.images.append(list_of_images[i])
@@ -4870,14 +4879,14 @@ class iterImagesList:
 		return (self.position >= 0)
 
 # ================ Iterator for stack of images
-class iterImagesStack:
+class iterImagesStack(object):
 	stackName = ""
 	currentImage = None
 	imagesIndexes = []
 	position = -1
 	def __init__(self, stack_name, list_of_indexes = None):
 		if list_of_indexes == None:
-			self.imagesIndexes = range(EMUtil.get_image_count(stack_name))
+			self.imagesIndexes = list(range(EMUtil.get_image_count(stack_name)))
 		else:
 			self.imagesIndexes = list_of_indexes[:]
 		self.stackName = stack_name
@@ -4904,7 +4913,7 @@ class iterImagesStack:
 		return (self.position >= 0)
 
 
-from cPickle import dumps,loads
+from pickle import dumps,loads
 from zlib import compress,decompress
 from struct import pack,unpack
 
@@ -5008,7 +5017,7 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 	if rank == root:
 		if type(data) is list:
 			out_array = []
-			for p in xrange(procs):
+			for p in range(procs):
 				if p == rank:
 					out_array.extend(data)
 				else:
@@ -5046,7 +5055,7 @@ def rearrange_ranks_of_processors(mode):
 	host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, original_mpi_comm_world)
 	host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, original_mpi_comm_world)
 
-	procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
+	procs_belonging_to_one_node = list(map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a])))
 	local_rank = procs_belonging_to_one_node.index(my_rank)
 
 	local_size = host_names.count(hostname)
@@ -5150,7 +5159,7 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	host_names_with_rank = wrap_mpi_gatherv(host_names_with_rank, 0, mpi_comm)
 	host_names_with_rank = wrap_mpi_bcast(host_names_with_rank, 0, mpi_comm)
 
-	procs_belonging_to_one_node = map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a]))
+	procs_belonging_to_one_node = list(map(int, sorted([ a[-4:] for a in host_names_with_rank  if hostname in a])))
 	local_rank = procs_belonging_to_one_node.index(my_rank)
 
 	local_size = host_names.count(hostname)
@@ -5256,11 +5265,11 @@ def string_found_in_file(myregex, filename):
 
 def random_string(length_of_randomstring = 16):
 	import random
-	chars=map(chr, range(97, 123)) # a..z
-	chars.extend(map(chr, range(65, 91))) # A..Z
-	chars.extend(map(chr, range(48, 58))) # 0..9
+	chars=list(map(chr, list(range(97, 123)))) # a..z
+	chars.extend(list(map(chr, list(range(65, 91))))) # A..Z
+	chars.extend(list(map(chr, list(range(48, 58))))) # 0..9
 	random_string = ""
-	for i in xrange(length_of_randomstring):
+	for i in range(length_of_randomstring):
 		random_string += chars[random.randint(0,len(chars)-1)]
 	return random_string
 
@@ -5373,7 +5382,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	#txl = float(2 + radius - nxinit//2+1)
 	txm = float(nxinit-(nxinit//2+1) - radius)
 	txl = float(radius - nxinit//2+1)
-	for im in xrange(nima):
+	for im in range(nima):
 		data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
 		if im ==0:
 			if data[im].get_xsize() > Tracker["constants"]["nnxo"]:
@@ -5597,7 +5606,7 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	partstack = partstack[image_start:image_end]
 	data = EMData.read_images(stack, lpartids)
 
-	for i in xrange(len(partstack)):
+	for i in range(len(partstack)):
 		set_params_proj(data[i], partstack[i])
 	return data
 
@@ -5610,7 +5619,7 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 	allowed_types = [type(None), bool, int, int, float, complex,
 					 str, bytes]
 
-	local_vars_keys = local_vars.keys()
+	local_vars_keys = list(local_vars.keys())
 
 	my_vars = dict()
 	for key in set(local_vars_keys) - set(exclude_list_of_vars):
@@ -5655,7 +5664,7 @@ def print_program_start_information():
 def store_program_state(filename, state, stack):
 	import json
 	with open(filename, "w") as fp:
-		json.dump(zip(stack, state), fp, indent = 2)
+		json.dump(list(zip(stack, state)), fp, indent = 2)
 	fp.close()
 
 def restore_program_stack_and_state(file_name_of_saved_state):
@@ -5742,7 +5751,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 			program_state_stack.file_name_of_saved_state = os.getcwd() + os.sep + file_name_of_saved_state
 			program_state_stack.counter = 0
 			program_state_stack.track_stack = get_current_stack_info()
-			program_state_stack.track_state = [dict() for i in xrange(len(program_state_stack.track_stack))]
+			program_state_stack.track_state = [dict() for i in range(len(program_state_stack.track_stack))]
 			program_state_stack.track_state[-1] = current_state
 
 			file_name_of_saved_state_contains_information = False
@@ -5768,7 +5777,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 				program_state_stack.start_executing = START_EXECUTING_FALSE
 
 			# correct track_state to reflect track_stack
-			for i in xrange(len(current_stack)):
+			for i in range(len(current_stack)):
 				if i < len(program_state_stack.track_state):
 					if program_state_stack.track_stack[i] != current_stack[i]:
 						program_state_stack.track_state[i] = dict()
@@ -5836,12 +5845,12 @@ def calculate_space_size(x_half_size, y_half_size, psi_half_size):
 
 def convert_json_fromunicode(data):
 	import  collections
-	if isinstance(data, basestring):
+	if isinstance(data, str):
 		return str(data)
 	elif isinstance(data, collections.Mapping):
-		return dict(map(convert_json_fromunicode, data.iteritems()))
+		return dict(list(map(convert_json_fromunicode, iter(list(data.items())))))
 	elif isinstance(data, collections.Iterable):
-		return type(data)(map(convert_json_fromunicode, data))
+		return type(data)(list(map(convert_json_fromunicode, data)))
 	else:
 		return data
 
@@ -5902,7 +5911,7 @@ def mpi_exit():
 
 def get_attr_stack(data_stack,attr_string):
 	attr_value_list = []
-	for idat in xrange(len(data_stack)):
+	for idat in range(len(data_stack)):
 		attr_value = data_stack[idat].get_attr(attr_string)
 		attr_value_list.append(attr_value)
 	return attr_value_list
@@ -5910,7 +5919,7 @@ def get_attr_stack(data_stack,attr_string):
 def get_sorting_attr_stack(data_stack):
 	from utilities import get_params_proj
 	attr_value_list = []
-	for idat in xrange(len(data_stack)):
+	for idat in range(len(data_stack)):
 		group                 = data_stack[idat].get_attr("group")
 		phi,theta,psi,s2x,s2y = get_params_proj(data_stack[idat],xform = "xform.projection")
 		attr_value_list.append([group, phi, theta, psi, s2x, s2y])
@@ -5927,11 +5936,11 @@ def get_sorting_params(Tracker,data):
 	mpi_comm  = MPI_COMM_WORLD
 	if myid == main_node:
 		total_attr_value_list = []
-		for n in xrange(ndata):
+		for n in range(ndata):
 			total_attr_value_list.append([])
 	else:
 		total_attr_value_list = 0
-	for inode in xrange(nproc):
+	for inode in range(nproc):
 		attr_value_list = get_attr_stack(data,"group")
 		attr_value_list = wrap_mpi_bcast(attr_value_list,inode)
 		if myid == main_node:
@@ -5952,11 +5961,11 @@ def get_sorting_params_refine(Tracker,data,ndata):
 	mpi_comm   = MPI_COMM_WORLD
 	if myid == main_node:
 		total_attr_value_list = []
-		for n in xrange(ndata):
+		for n in range(ndata):
 			total_attr_value_list.append([])
 	else:
 		total_attr_value_list = 0
-	for inode in xrange(nproc):
+	for inode in range(nproc):
 		attr_value_list = get_sorting_attr_stack(data)
 		attr_value_list = wrap_mpi_bcast(attr_value_list,inode)
 		if myid == main_node:
@@ -5975,7 +5984,7 @@ def parsing_sorting_params(sorting_params_list):
 	return group_list, ali3d_params_list
 
 def fill_in_mpi_list(mpi_list,data_list,index_start,index_end):
-	for index in xrange(index_start, index_end):
+	for index in range(index_start, index_end):
 		mpi_list[index] = data_list[index-index_start]
 	return mpi_list
 
@@ -5983,12 +5992,12 @@ def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 	# sort out Kmref results to individual groups that has initial IDs
 	# make a dictionary
 	dict = {}
-	for iptl in xrange(len(initial_ID_list)):
+	for iptl in range(len(initial_ID_list)):
 		dict[iptl] = initial_ID_list[iptl]
 	res = []
-	for igrp in xrange(number_of_groups):
+	for igrp in range(number_of_groups):
 		class_one = []
-		for ipt in xrange(len(partition)):
+		for ipt in range(len(partition)):
 			if partition[ipt] == igrp:
 				orginal_id = dict[ipt]
 				class_one.append(orginal_id)
@@ -6012,7 +6021,7 @@ def sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file):
 	shrinkage=float(nnxo)/float(nxinit)
 	curv_orgn = read_text_file(pspcurv_nnxo_file)
 	new_curv=int(1.5*len(curv_orgn))*[0.0]
-	for index in xrange(len(curv_orgn)):
+	for index in range(len(curv_orgn)):
 		new_index = int(index/shrinkage)
 		fraction  = index/shrinkage-new_index
 		if fraction <=0:
@@ -6025,7 +6034,7 @@ def sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file):
 def get_initial_ID(part_list, full_ID_dict):
 	part_initial_id_list = []
 	#new_dict = {}
-	for iptl in xrange(len(part_list)):
+	for iptl in range(len(part_list)):
 		part_initial_id_list.append(full_ID_dict[part_list[iptl]])
 		#new_dict[iptl] = id
 	return part_initial_id_list#, new_dict
@@ -6043,12 +6052,12 @@ def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
 
 def print_upper_triangular_matrix(data_table_dict,N_indep,log_main):
 		msg =""
-		for i in xrange(N_indep):
+		for i in range(N_indep):
 			msg +="%7d"%i
 		log_main.add(msg)
-		for i in xrange(N_indep):
+		for i in range(N_indep):
 			msg ="%5d "%i
-			for j in xrange(N_indep):
+			for j in range(N_indep):
 				if i<j:
 					msg +="%5.2f "%data_table_dict[(i,j)]
 				else:
@@ -6063,9 +6072,9 @@ def print_a_line_with_timestamp(string_to_be_printed ):
 def convertasi(asig,K):
 	from numpy import array
 	p = []
-	for k in xrange(K):
+	for k in range(K):
 		l = []
-		for i in xrange(len(asig)):
+		for i in range(len(asig)):
 			if( asig[i ]== k ): l.append(i)
 		l = array(l,"int32")
 		l.sort()
@@ -6075,12 +6084,12 @@ def convertasi(asig,K):
 def prepare_ptp(data_list, K):
 	num_of_pt = len(data_list)
 	ptp=[]
-	for ipt in xrange(num_of_pt):
+	for ipt in range(num_of_pt):
 		ptp.append([])
-	for ipt in xrange(num_of_pt):
+	for ipt in range(num_of_pt):
 		nc = len(data_list[ipt])
 		asig  =[-1]*nc
-		for i in xrange(nc):
+		for i in range(nc):
 			asig[i] = data_list[ipt][i]
 		ptp[ipt] = convertasi(asig, K)
 	return ptp
@@ -6109,7 +6118,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	currentres = -1.0
 	ns = len(nfsc[1])
 	#  This is actual resolution, as computed by 2*f/(1+f)
-	for i in xrange(1,ns-1):
+	for i in range(1,ns-1):
 		if ( nfsc[1][i] < 0.333333333333333333333333):
 			currentres = nfsc[0][i-1]
 			break
@@ -6131,9 +6140,9 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 
 def partition_to_groups(alist, K):
 	res =[]
-	for igroup in xrange(K):
+	for igroup in range(K):
 		this_group =[]
-		for imeb in xrange(len(alist)):
+		for imeb in range(len(alist)):
 			if( alist[imeb] == igroup ):   this_group.append(imeb)
 		this_group.sort()
 		res.append(this_group)
@@ -6141,13 +6150,13 @@ def partition_to_groups(alist, K):
 
 def partition_independent_runs(run_list, K):
 	indep_runs_groups = {}
-	for indep in xrange(len(run_list)):
+	for indep in range(len(run_list)):
 		indep_runs_groups[indep] = partition_to_groups(run_list[indep], K)
 	return indep_runs_groups
 
 def get_outliers(total_number,plist):
 	tlist={}
-	for i in xrange(total_number):tlist[i]=i
+	for i in range(total_number):tlist[i]=i
 	for a in plist:   del tlist[a]
 	out =[]
 	for a in tlist:   out.append(a)
@@ -6155,8 +6164,8 @@ def get_outliers(total_number,plist):
 
 def merge_groups(stable_members_list):
 	alist=[]
-	for i in xrange(len(stable_members_list)):
-		for j in xrange(len(stable_members_list[i])):alist.append(stable_members_list[i][j])
+	for i in range(len(stable_members_list)):
+		for j in range(len(stable_members_list[i])):alist.append(stable_members_list[i][j])
 	return alist
 
 def save_alist(Tracker,name_of_the_text_file,alist):
@@ -6205,15 +6214,15 @@ def do_two_way_comparison(Tracker):
 		mpi_finalize()
 		exit()
 	else:
-		for iter_indep in xrange(Tracker["constants"]["indep_runs"]):  total_partition.append(Tracker["partition_dict"][iter_indep])
+		for iter_indep in range(Tracker["constants"]["indep_runs"]):  total_partition.append(Tracker["partition_dict"][iter_indep])
 		### Two-way comparision is carried out on all nodes
 		ptp = prepare_ptp(total_partition, number_of_groups)
 		indep_runs_to_groups = partition_independent_runs(total_partition, number_of_groups)
 		###### Check margin of error
 		if myid ==main_node:
 			log_main.add("--------------------------margin of error--------------------------------------------")
-		for indep in xrange(len(indep_runs_to_groups)):
-			for index_of_class in xrange(len(indep_runs_to_groups[indep])):
+		for indep in range(len(indep_runs_to_groups)):
+			for index_of_class in range(len(indep_runs_to_groups[indep])):
 				one_group_in_old_ID = get_initial_ID(indep_runs_to_groups[indep][index_of_class], Tracker["full_ID_dict"])
 				rate1, rate2, size_of_this_group = count_chunk_members(Tracker["chunk_dict"], one_group_in_old_ID)
 				error = margin_of_error(Tracker["P_chunk0"], size_of_this_group)
@@ -6227,14 +6236,14 @@ def do_two_way_comparison(Tracker):
 		avg_two_ways                = 0.0
 		avg_two_ways_square         = 0.0
 		scores                      = {}
-		for iptp in xrange(len(ptp)):
-			for jptp in xrange(len(ptp)):
+		for iptp in range(len(ptp)):
+			for jptp in range(len(ptp)):
 				newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[iptp], ptp[jptp])
 				tt = 0.0
 				if myid ==main_node and iptp<jptp:
 					aline="Two-way comparison between independent run %3d and %3d"%(iptp,jptp)
 					log_main.add(aline)
-				for m in xrange(len(list_stable)):
+				for m in range(len(list_stable)):
 					tt +=len(list_stable[m])
 				if( (myid == main_node) and (iptp<jptp) ):
 					unaccounted = total_stack-tt
@@ -6257,9 +6266,9 @@ def do_two_way_comparison(Tracker):
 		#### Score each independent run by pairwise summation
 		summed_scores = []
 		two_way_dict  = {}
-		for ipp in xrange(len(ptp)):
+		for ipp in range(len(ptp)):
 			avg_scores =0.0
-			for jpp in xrange(len(ptp)):
+			for jpp in range(len(ptp)):
 				if ipp!=jpp:
 					avg_scores += scores[(ipp,jpp)]
 			avg_rate =avg_scores/(len(ptp)-1)
@@ -6278,7 +6287,7 @@ def do_two_way_comparison(Tracker):
 		small_group_list  = []
 		if myid ==main_node:
 			log_main.add("------------------margin of error--------------------------------------------")
-		for istable in xrange(len(Tracker["two_way_stable_member"])):
+		for istable in range(len(Tracker["two_way_stable_member"])):
 			new_one_class                    = get_initial_ID(Tracker["two_way_stable_member"][istable], Tracker["full_ID_dict"])
 			rate1, rate2, size_of_this_group = count_chunk_members(Tracker["chunk_dict"], new_one_class)
 			error=margin_of_error(Tracker["P_chunk0"],size_of_this_group)
@@ -6327,7 +6336,7 @@ def select_two_runs(summed_scores,two_way_dict):
 	summed_scores.sort()
 	rate1 = summed_scores[-1]
 	rate2 = None
-	for index in xrange(2,len(summed_scores)+1):
+	for index in range(2,len(summed_scores)+1):
 		rate2 =summed_scores[-index]
 		if rate2 !=rate1:
 			break
@@ -6351,7 +6360,7 @@ def get_ali3d_params(ali3d_old_text_file,shuffled_list):
 	from utilities import read_text_row
 	ali3d_old = read_text_row(ali3d_old_text_file)
 	ali3d_new = []
-	for iptl in xrange(len(shuffled_list)):
+	for iptl in range(len(shuffled_list)):
 		ali3d_new.append(ali3d_old[shuffled_list[iptl]])
 	return ali3d_new
 
@@ -6363,14 +6372,14 @@ def counting_projections(delta, ali3d_params, image_start):
 		[phi0, theta0, psi0]=a
 		sampled_directions[(phi0,theta0)]=[]
 	from math import sqrt
-	for i in xrange(len(ali3d_params)):
+	for i in range(len(ali3d_params)):
 		[phi, theta, psi, s2x, s2y] = ali3d_params[i]
 		dis_min    = 9999.
 		this_phi   = 9999.
 		this_theta = 9999.
 		this_psi   = 9999.
 		prj1       =[phi,theta]
-		for j in xrange(len(angles)):
+		for j in range(len(angles)):
 			[phi0, theta0, psi0] = angles[j]
 			prj2 =[phi0,theta0]
 			dis = angle_between_projections_directions(prj1, prj2)
@@ -6397,7 +6406,7 @@ def unload_dict(dict_angles):
 def load_dict(dict_angle_main_node, unloaded_dict_angles):
 	for ang_proj in unloaded_dict_angles:
 		if len(ang_proj)>2:
-			for item in xrange(2,len(ang_proj)):
+			for item in range(2,len(ang_proj)):
 				dict_angle_main_node[(ang_proj[0],ang_proj[1])].append(item)
 	return dict_angle_main_node
 
@@ -6411,7 +6420,7 @@ def get_stat_proj(Tracker,delta,this_ali3d):
 	mpi_comm  = MPI_COMM_WORLD
 	if myid ==main_node:
 		ali3d_params=read_text_row(this_ali3d)
-		lpartids    = range(len(ali3d_params))
+		lpartids    = list(range(len(ali3d_params)))
 	else:
 		lpartids      = 0
 		ali3d_params  = 0
@@ -6421,7 +6430,7 @@ def get_stat_proj(Tracker,delta,this_ali3d):
 	image_start, image_end = MPI_start_end(ndata, nproc, myid)
 	ali3d_params=ali3d_params[image_start:image_end]
 	sampled=counting_projections(delta,ali3d_params,image_start)
-	for inode in xrange(nproc):
+	for inode in range(nproc):
 		if myid ==inode:
 			dlist=unload_dict(sampled)
 		else:
@@ -6445,7 +6454,7 @@ def create_random_list(Tracker):
 	else:                                  random.seed(Tracker["constants"]["seed"])
 
 	indep_list  = []
-	for irandom in xrange(Tracker["constants"]["indep_runs"]):
+	for irandom in range(Tracker["constants"]["indep_runs"]):
 		ll = copy.copy(Tracker["this_data_list"])
 		random.shuffle(ll)
 		ll = wrap_mpi_bcast(ll, main_node)
@@ -6476,7 +6485,7 @@ def recons_mref(Tracker):
 	total_data       = len(particle_list)
 	ref_list = []
 	number_of_ref_class = []
-	for igrp in xrange(number_of_groups):
+	for igrp in range(number_of_groups):
 		a_group_list = particle_list[(total_data*igrp)//number_of_groups:(total_data*(igrp+1))//number_of_groups]
 		a_group_list.sort()
 		Tracker["this_data_list"] = a_group_list
@@ -6498,7 +6507,7 @@ def recons_mref(Tracker):
 
 def apply_low_pass_filter(refvol,Tracker):
 	from filter import filt_tanl
-	for iref in xrange(len(refvol)):
+	for iref in range(len(refvol)):
 		refvol[iref]=filt_tanl(refvol[iref],Tracker["low_pass_filter"],.1)
 	return refvol
 
@@ -6506,12 +6515,12 @@ def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 	# sort out Kmref results to individual groups that has initial IDs
 	# make a dictionary
 	dict = {}
-	for iptl in xrange(len(initial_ID_list)):
+	for iptl in range(len(initial_ID_list)):
 		dict[iptl] = initial_ID_list[iptl]
 	res = []
-	for igrp in xrange(number_of_groups):
+	for igrp in range(number_of_groups):
 		class_one = []
-		for ipt in xrange(len(partition)):
+		for ipt in range(len(partition)):
 			if partition[ipt] == igrp:
 				orginal_id = dict[ipt]
 				class_one.append(orginal_id)
@@ -6534,7 +6543,7 @@ def get_complementary_elements(total_list,sub_data_list):
 	else:
 		sub_data_dict     = {}
 		complementary     = []
-		for index in xrange(len(sub_data_list)):sub_data_dict[sub_data_list[index]]=index
+		for index in range(len(sub_data_list)):sub_data_dict[sub_data_list[index]]=index
 		for any in total_list:
 			if (any in sub_data_dict) is False:complementary.append(any)
 		return complementary
@@ -6542,14 +6551,14 @@ def get_complementary_elements(total_list,sub_data_list):
 def get_complementary_elements_total(total_stack, data_list):
 	data_dict    ={}
 	complementary     = []
-	for index in xrange(len(data_list)):data_dict[data_list[index]]=index
-	for index in xrange(total_stack):
+	for index in range(len(data_list)):data_dict[data_list[index]]=index
+	for index in range(total_stack):
 		if (index in data_dict) is False:complementary.append(index)
 	return complementary
 
 def update_full_dict(leftover_list, Tracker):
 	full_dict = {}
-	for iptl in xrange(len(leftover_list)):
+	for iptl in range(len(leftover_list)):
 		full_dict[iptl]     = leftover_list[iptl]
 	Tracker["full_ID_dict"] = full_dict
 
@@ -6567,7 +6576,7 @@ def get_two_chunks_from_stack(Tracker):
 	total_chunk = EMUtil.get_all_attributes(Tracker["orgstack"],"chunk_id")
 	chunk_one = []
 	chunk_two = []
-	for index_of_total_chunk in xrange(len(total_chunk)):
+	for index_of_total_chunk in range(len(total_chunk)):
 		if total_chunk[index_of_total_chunk]==0:chunk_one.append(index_of_total_chunk)
 		else:chunk_two.append(index_of_total_chunk)
 	return chunk_one, chunk_two
@@ -6577,7 +6586,7 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 	adjusted_fsc = adjust_fsc_down(Tracker["global_fsc"],n1,n2)
 	currentres   = -1.0
 	ns           = len(adjusted_fsc)
-	for i in xrange(1,ns-1):
+	for i in range(1,ns-1):
 		if adjusted_fsc[1][i] < fsc_cutoff:
 			currentres = adjusted_fsc[0][i-1]
 			break
@@ -6643,14 +6652,14 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 	sort3d_rootdir_list = split(SORT3D_rootdirs)
 	dict1              = []
 	maximum_elements   = 0
-	for index_sort3d in xrange(len(sort3d_rootdir_list)):
+	for index_sort3d in range(len(sort3d_rootdir_list)):
 		sort3d_dir       = sort3d_rootdir_list[index_sort3d]
 		all_groups       = get_class_members(sort3d_dir)
 		dict1.append(all_groups)
 		if maximum_elements <len(all_groups):
 			maximum_elements = len(all_groups)
 	TC = ad_hoc_number + 1
-	for indep in xrange(len(dict1)):
+	for indep in range(len(dict1)):
 		alist = dict1[indep]
 		while len(alist)<maximum_elements:
 			alist.append([TC])
@@ -6659,29 +6668,29 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 		TC += 1
 	for a in dict1:   log_main.add(len(a))
 	dict = {}
-	for index_sort3d in xrange(len(sort3d_rootdir_list)):
+	for index_sort3d in range(len(sort3d_rootdir_list)):
 		sort3d_dir       = sort3d_rootdir_list[index_sort3d]
 		dict[sort3d_dir] = dict1[index_sort3d]
 	###### Conduct two-way comparison
-	for isort3d in xrange(0,1): #len(sort3d_rootdir_list)):
+	for isort3d in range(0,1): #len(sort3d_rootdir_list)):
 		li = dict[sort3d_rootdir_list[isort3d]]
 		new_li = []
-		for ili in xrange(len(li)):
+		for ili in range(len(li)):
 			li[ili].sort()
 			t= array(li[ili],'int32')
 			new_li.append(t)
 		avg_list = {}
 		total    = {}
-		for ii in xrange(len(li)):
+		for ii in range(len(li)):
 			avg_list[ii]=0.0
 			total[ii]=0.0
-		for jsort3d in xrange(len(sort3d_rootdir_list)):
+		for jsort3d in range(len(sort3d_rootdir_list)):
 			if isort3d != jsort3d:
 				new_lj = []
 				lj = dict[sort3d_rootdir_list[jsort3d]]
 				for a in lj:
 					log_main.add("the size is  %d"%len(a))
-				for jlj in xrange(len(lj)):
+				for jlj in range(len(lj)):
 					lj[jlj].sort()
 					t= array(lj[jlj],'int32')
 					new_lj.append(t)
@@ -6689,15 +6698,15 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 				newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[0],ptp[1])
 				log_main.add("*************************************************************")
 				log_main.add("the results of two P1 runs are: ")
-				for index in xrange(len(newindeces)):
+				for index in range(len(newindeces)):
 					log_main.add("  %d of %s matches  %d of %s"%(newindeces[index][0],sort3d_rootdir_list[isort3d],newindeces[index][1],sort3d_rootdir_list[jsort3d]))
-				for index in xrange(len(list_stable)):
+				for index in range(len(list_stable)):
 					log_main.add("%d   stable memebers"%len(list_stable[index]))
 				new_stable = []
-				for ilist in xrange(len(list_stable)):
+				for ilist in range(len(list_stable)):
 					if len(list_stable[ilist])!= 0:
 						new_stable.append(list_stable[ilist])
-				for istable in xrange(len(new_stable)):
+				for istable in range(len(new_stable)):
 					stable = new_stable[istable]
 					if len(stable)>0:
 						group_A =  li[newindeces[istable][0]]
@@ -6738,7 +6747,7 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 			partition_B.append([nc_zero+total_stack])
 			nc_zero +=1
 	number_of_class = len(partition_A)
-	for index_of_class in xrange(number_of_class):
+	for index_of_class in range(number_of_class):
 		A = partition_A[index_of_class]
 		A.sort()
 		A= array(A,'int32')
@@ -6756,14 +6765,14 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 	if myid == main_node:
 		log_main.add(" reproducible percentage of the first partition %f"%(nb_tot_objs/float(total_A)*100.))
 		log_main.add(" reproducible percentage of the second partition %f"%(nb_tot_objs/float(total_B)*100.))
-		for index in xrange(len(newindexes)):
+		for index in range(len(newindexes)):
 			log_main.add("%d of A match %d of B "%(newindexes[index][0],newindexes[index][1]))
-		for index in xrange(len(list_stable)):
+		for index in range(len(list_stable)):
 			log_main.add("%d number of reproduced objects are found in group %d"%(len(list_stable[index]),index))
 		log_main.add(" %d number of objects are reproduced "%nb_tot_objs)
 		log_main.add(" margin of error")
 	large_stable = []
-	for index_of_stable in xrange(len(list_stable)):
+	for index_of_stable in range(len(list_stable)):
 		rate1,rate2,size_of_this_group = count_chunk_members(Tracker["chunk_dict"], list_stable[index_of_stable])
 		if size_of_this_group>=Tracker["constants"]["smallest_group"]:
 			error                          = margin_of_error(Tracker["P_chunk0"],size_of_this_group)
@@ -6778,12 +6787,12 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 
 def get_leftover_from_stable(stable_list, N_total, smallest_group):
 	tmp_dict = {}
-	for i in xrange(N_total):
+	for i in range(N_total):
 		tmp_dict[i] = i
 	new_stable      =[]
 	for alist in stable_list:
 		if len(alist) > smallest_group:
-			for index_of_list in xrange(len(alist)):
+			for index_of_list in range(len(alist)):
 				del tmp_dict[alist[index_of_list]]
 			new_stable.append(alist)
 	leftover_list = []
@@ -6841,7 +6850,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 				log_main.add("number of classes for next round is %d"%len(new_class))
 				write_text_file(final_list, final_list_text_file)
 				number_of_ref_class = []
-				for igrp in xrange(len(new_class)):
+				for igrp in range(len(new_class)):
 					write_text_file(new_class[igrp],os.path.join(workdir,"final_class%d.txt"%igrp))
 					number_of_ref_class.append(len(new_class[igrp]))
 			else:
@@ -6852,7 +6861,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 			if  Tracker["constants"]["mask3D"]: mask3D = get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
 			else: mask3D = None
 			Tracker["number_of_ref_class"] = number_of_ref_class
-			for igrp in xrange(len(new_class)):
+			for igrp in range(len(new_class)):
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],os.path.join(workdir,"final_class%d.txt"%igrp),Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
@@ -6911,13 +6920,13 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	l2 = wrap_mpi_bcast(l2, main_node)
 	llist =[l1,l2]
 	if myid ==main_node:
-		for index in xrange(2):
+		for index in range(2):
 			partids = os.path.join(workdir,"Class_%d.txt"%index)
 			write_text_file(llist[index],partids)
 	mpi_barrier(MPI_COMM_WORLD)
 	################ create references for EQ-Kmeans
 	ref_list = []
-	for index in xrange(2):
+	for index in range(2):
 		partids = os.path.join(workdir,"Class_%d.txt"%index)
 		while not os.path.exists(partids):
 			#print  " my_id",myid
@@ -6933,7 +6942,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	mref_ali3d_EQ_Kmeans(ref_list,outdir,this_particle_text_file,Tracker)
 	res_EQ = partition_to_groups(Tracker["this_partition"],K=2)
 	new_class = []
-	for index in xrange(len(res_EQ)):
+	for index in range(len(res_EQ)):
 		new_ID = get_initial_ID(res_EQ(index), Tracker["full_ID_dict"])
 		new_class.append(new_ID)
 		if myid ==main_node:
@@ -6942,7 +6951,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	mpi_barrier(MPI_COMM_WORLD)
 	############# create references for Kmeans
 	ref_list = []
-	for index in xrange(2):
+	for index in range(2):
 		partids = os.path.join(workdir,"new_class%d.txt"%index)
 		while not os.path.exists(partids):
 			#print  " my_id",myid
@@ -6957,7 +6966,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 
 def search_lowpass(fsc):
 	fcutoff =.5
-	for i in xrange(len(fsc[1])):
+	for i in range(len(fsc[1])):
 		if fsc[1][i]<.5:
 			break
 	if i<len(fsc[1])-1:
@@ -7109,7 +7118,7 @@ def tabessel(nx, nnxo, nbel = 5000):
 	alpha = 15
 	#order = 0
 	normk = Util.bessel0(0., radius, alpha)
-	for i in xrange(nbel):
+	for i in range(nbel):
 		rr = i/float(nbel-1)/2.0
 		beltab[i] = Util.bessel0(rr, radius, alpha)/normk
 	return beltab
@@ -7132,6 +7141,6 @@ def split_chunks_bad(l, n):
 				break
 		sums[i] += e
 		c = min(sums.values())
-	for i in xrange(len(result)):
+	for i in range(len(result)):
 		result[i].sort()
 	return result

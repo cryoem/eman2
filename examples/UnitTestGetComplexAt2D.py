@@ -5,6 +5,7 @@ from __future__ import print_function
 ######################################
 
 # N=6;  # This is the size of the original image
+from builtins import range
 ti = EMData(N,N);
 ti.to_zero();
 

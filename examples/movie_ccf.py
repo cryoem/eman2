@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 from EMAN2 import *
 from sys import argv
 import sys
 import threading
-import Queue
+import queue
 from Simplex import Simplex
 from numpy import array
 from time import sleep,time
@@ -40,7 +43,7 @@ ny=data[0]["ny"]
 print("{} frames read {} x {}".format(n,nx,ny))
 
 
-ccfs=Queue.Queue(0)
+ccfs=queue.Queue(0)
 
 # CCF calculation
 def calc_ccf(N,box,step,dataa,datab,out):
@@ -135,7 +138,7 @@ while thrtolaunch<len(thds) or threading.active_count()>1:
 for th in thds: th.join()
 
 avgr=Averagers.get("minmax",{"max":0})
-avgr.add_image_list(csum2.values())
+avgr.add_image_list(list(csum2.values()))
 csum=avgr.finish()
 #csum=sum(csum2.values())
 #csum.mult(1.0/len(csum2))
@@ -178,8 +181,8 @@ def qual(locs,ccfs):
 	nrg=0.0
 	cen=ccfs[(0,1)]["nx"]/2
 	n=len(locs)/2
-	for i in xrange(n-1):
-		for j in xrange(i+1,n):
+	for i in range(n-1):
+		for j in range(i+1,n):
 #			nrg-=ccfs[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))
 			# This is a recognition that we will tend to get better correlation with near neighbors in the sequence
 			nrg-=ccfs[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(float(n-fabs(i-j))/n)
@@ -194,7 +197,7 @@ t0=time()
 
 # we start with a heavy filter, optimize, then repeat for successively less filtration
 for scale in [0.02,0.04,0.07,0.1,0.5]:
-	csum3={k:csum2[k].process("filter.lowpass.gauss",{"cutoff_abs":scale}) for k in csum2.keys()}
+	csum3={k:csum2[k].process("filter.lowpass.gauss",{"cutoff_abs":scale}) for k in list(csum2.keys())}
 
 	incr=[16]*len(locs)
 	incr[-1]=incr[-2]=4	# if step is zero for last 2, it gets stuck as an outlier, so we just make the starting step smaller
@@ -204,15 +207,15 @@ for scale in [0.02,0.04,0.07,0.1,0.5]:
 	print(locs)
 	if VERBOSE:
 		out=open("path_{:02d}.txt".format(int(1.0/scale)),"w")
-		for i in xrange(0,len(locs),2): out.write("%f\t%f\n"%(locs[i],locs[i+1]))
+		for i in range(0,len(locs),2): out.write("%f\t%f\n"%(locs[i],locs[i+1]))
 	
 
 
 # compute the quality of each frame
 quals=[0]*n			# quality of each frame based on its correlation peak summed over all images
 cen=csum2[(0,1)]["nx"]/2
-for i in xrange(n-1):
-	for j in xrange(i+1,n):
+for i in range(n-1):
+	for j in range(i+1,n):
 		val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(float(n-fabs(i-j))/n)
 		quals[i]+=val
 		quals[j]+=val

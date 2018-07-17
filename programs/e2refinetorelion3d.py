@@ -12,6 +12,7 @@ from __future__ import print_function
 #****************UPDATED for RELION 1.2 RELEASE on 9/17/13******************
 
 #import block
+from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
 import pyemtbx.options
@@ -133,7 +134,7 @@ num_images = EMUtil.get_image_count(set_name)
 s1 = "e2proc3d.py " + refmap + " " + E2RLN + "/3DRefMap.mrc --process=normalize.edgemean --verbose="+str(options.verbose)
 call(s1, shell=True)
 header = EMData(set_name,0,True)
-h_keys = header.get_attr_dict().keys()
+h_keys = list(header.get_attr_dict().keys())
 nx,ny,nz=header['nx'],header['ny'],header['nz']
 num_images = EMUtil.get_image_count(set_name)
 mrc = False

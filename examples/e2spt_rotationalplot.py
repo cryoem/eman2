@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import EMAN2
 from EMAN2 import *
 import os
@@ -422,7 +423,7 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 	import colorsys
 	N = len(values)
 	HSV_tuples = [(x*1.0/N, 0.5, 0.5) for x in range(N)]
-	RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
+	RGB_tuples = [colorsys.hsv_to_rgb(*x) for x in HSV_tuples]
 	
 	print("I have acquired azs and values and will proceed to plot.")
 	

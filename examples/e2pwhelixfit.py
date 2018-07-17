@@ -3,6 +3,7 @@ from __future__ import print_function
 # Muyuan Chen 12/2014
 # Fit helixes using pathwalker results
 
+from builtins import range
 import EMAN2
 from EMAN2 import *
 import sys
@@ -24,7 +25,7 @@ def read_fixed(edgefile):
 	f.close()
 	
 	for fragment in fragments:
-		fragment = map(int, fragment.split())
+		fragment = list(map(int, fragment.split()))
 		for i in range(len(fragment)-1):
 			fixededges.append((fragment[i], fragment[i+1]))
 	return fixededges

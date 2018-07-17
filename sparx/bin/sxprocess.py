@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import	global_def
 from	global_def 	import *
 from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
@@ -120,7 +121,7 @@ def tsp(lccc):
 
 
 	# The index table -- the order the cities are visited.
-	city = range(ncity)
+	city = list(range(ncity))
 	# Distance of the travel at the beginning
 	dist = TotalDistance(city, lccc)
 
@@ -447,7 +448,7 @@ def main():
 		outstack = args[1]
 		nima = EMUtil.get_image_count(instack)
 		from filter import filt_ctf
-		for i in xrange(nima):
+		for i in range(nima):
 			img = EMData()
 			img.read_image(instack, i)
 			try:
@@ -505,7 +506,7 @@ def main():
 
 		nima = EMUtil.get_image_count(instack)
 		from fundamentals import resample
-		for i in xrange(nima):
+		for i in range(nima):
 			resample(get_im(instack, i), sub_rate).write_image(outstack, i)
 
 	elif options.isacgroup>-1:
@@ -530,7 +531,7 @@ def main():
 		from utilities import get_im
 		nima = EMUtil.get_image_count(args[0])
 		m = []
-		for k in xrange(nima):
+		for k in range(nima):
 			m += get_im(args[0],k).get_attr("members")
 		m.sort()
 		from utilities import write_text_file
@@ -562,7 +563,7 @@ def main():
 			from EMAN2 import periodogram
 			p = model_blank(wn,wn)
 
-			for i in xrange(n):
+			for i in range(n):
 				d = get_im(args[0], i)
 				st = Util.infomask(d, None, True)
 				d -= st[0]
@@ -596,14 +597,14 @@ def main():
 
 		nimage = EMUtil.get_image_count( img_stack )
 
-		for i in xrange(nimage):
+		for i in range(nimage):
 			img = fft(get_im(img_stack, i) )
 			rops_src = rops_table(img)
 
 			assert len(rops_dst) == len(rops_src)
 
 			table = [0.0]*len(rops_dst)
-			for j in xrange( len(rops_dst) ):
+			for j in range( len(rops_dst) ):
 				table[j] = sqrt( rops_dst[j]/rops_src[j] )
 
 			if( fl > 0.0):
@@ -634,8 +635,8 @@ def main():
 			t = rops_table(window2d(im,nn,nn))
 		else:
 			t = periodogram(im)
-			t = [t[i] for i in xrange(t.get_xsize())]
-		x = range(len(t))
+			t = [t[i] for i in range(t.get_xsize())]
+		x = list(range(len(t)))
 		r = [log10(q) for q in t]
 		write_text_file([t,r,x], options.rotpw)
 
@@ -646,7 +647,7 @@ def main():
 		from utilities import read_text_row, write_text_row
 		transf = [0.0]*6
 		spl = options.transformparams.split(',')
-		for i in xrange(len(spl)):  transf[i] = float(spl[i])
+		for i in range(len(spl)):  transf[i] = float(spl[i])
 
 		write_text_row( rotate_shift_params(read_text_row(args[0]), transf)	, args[1])
 
@@ -743,7 +744,7 @@ def main():
 		modelvol = []
 		nvlms = EMUtil.get_image_count(inpstr)
 		from utilities import get_im
-		for k in xrange(nvlms):  modelvol.append(get_im(inpstr,k))
+		for k in range(nvlms):  modelvol.append(get_im(inpstr,k))
 
 		nx = modelvol[0].get_xsize()
 
@@ -751,9 +752,9 @@ def main():
 			ERROR("Requested box dimension does not match dimension of the input model.", \
 			"sxprocess - generate projections",1)
 		nvol = 10
-		volfts = [[] for k in xrange(nvlms)]
-		for k in xrange(nvlms):
-			for i in xrange(nvol):
+		volfts = [[] for k in range(nvlms)]
+		for k in range(nvlms):
+			for i in range(nvol):
 				sigma = sigma_add + random()  # 1.5-2.5
 				addon = model_gauss(sigma, boxsize, boxsize, boxsize, sigma, sigma, 38, 38, 40 )
 				scale = scale_mult * (0.5+random())
@@ -779,7 +780,7 @@ def main():
 		rowlen = 17
 		from random import randint
 		params = []
-		for idef in xrange(3, 8):
+		for idef in range(3, 8):
 
 			irow = 0
 			icol = 0
@@ -791,8 +792,8 @@ def main():
 				astangl=50.0
 				ctf = generate_ctf([defocus, Cs, voltage,  pixel, 0.0, ampcont, astampl, astangl])
 
-			for i in xrange(nangle):
-				for k in xrange(12):
+			for i in range(nangle):
+				for k in range(12):
 					dphi = 8.0*(random()-0.5)
 					dtht = 8.0*(random()-0.5)
 					psi  = 360.0*random()
@@ -856,7 +857,7 @@ def main():
 		ctfpfile = 'ctfpfile%04d'%randint(1000,9999)
 		cterr = [options.defocuserror/100.0, options.astigmatismerror]
 		ctfs = read_text_row(options.importctf)
-		for kk in xrange(len(ctfs)):
+		for kk in range(len(ctfs)):
 			root,name = os.path.split(ctfs[kk][-1])
 			ctfs[kk][-1] = name[:-4]
 		if(options.input[:4] != 'bdb:'):
@@ -869,7 +870,7 @@ def main():
 		uu = os.path.split(d)
 		uu = os.path.join(uu[0],'EMAN2DB',uu[1]+'.bdb')
 		flist = glob.glob(uu)
-		for i in xrange(len(flist)):
+		for i in range(len(flist)):
 			root,name = os.path.split(flist[i])
 			root = root[:-7]
 			name = name[:-4]
@@ -878,11 +879,11 @@ def main():
 			nn = len(sourcemic)
 			gctfp = []
 			groupid = []
-			for kk in xrange(nn):
+			for kk in range(nn):
 				junk,name2 = os.path.split(sourcemic[kk])
 				name2 = name2[:-4]
 				ctfp = [-1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-				for ll in xrange(len(ctfs)):
+				for ll in range(len(ctfs)):
 					if(name2 == ctfs[ll][-1]):
 						#  found correct
 						if(ctfs[ll][8]/ctfs[ll][0] <= cterr[0]):
@@ -918,7 +919,7 @@ def main():
 			print("Please provide names of input and output file!")
 			return
 		p = read_text_row(args[0])
-		for i in xrange(len(p)):
+		for i in range(len(p)):
 			p[i][3] /= scale
 			p[i][4] /= scale
 		write_text_row(p, args[1])
@@ -966,8 +967,8 @@ def main():
 		if nargs == 2:  mask_file_name = args[1]
 		else:           mask_file_name = "binary_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
 		mask3d = binarize(inputvol, options.bin_threshold)
-		for i in xrange(options.ne): mask3d = erosion(mask3d)
-		for i in xrange(options.nd): mask3d = dilation(mask3d)
+		for i in range(options.ne): mask3d = erosion(mask3d)
+		for i in range(options.nd): mask3d = dilation(mask3d)
 		mask3d.write_image(mask_file_name)
 		print("applied threshold value for binarization is %f" % options.bin_threshold)
 		print("finished sxprocess.py  --binary_mask")
@@ -1056,7 +1057,7 @@ def main():
 				m = None
 				log_main.add("Mask is not used")
 			log_main.add("Total number of average images is %d"%nimage)
-			for i in xrange(nimage):
+			for i in range(nimage):
 				e1 = get_im(input_path_list[0],i)
 				if m: e1 *=m
 				if options.B_enhance ==0.0 or options.B_enhance == -1.:
@@ -1219,11 +1220,11 @@ def main():
 					sigma_of_inverse = sqrt(2./(B_factor/pixel_size**2))
 					values = []
 					if cutoff >0.5: cutoff = pixel_size/cutoff # always uses absolute frequencies
-					for i in xrange(N):
+					for i in range(N):
 						x = float(i)/float(N*2.)
 						values.append(tanhfl(x, cutoff, aa)*gauss_inverse(x, sigma_of_inverse))
 					index_zero = N+1
-					for i in xrange(N):
+					for i in range(N):
 						if values[i]== 0.0:
 							index_zero = i
 							break
@@ -1236,14 +1237,14 @@ def main():
 					"""
 					resolution_left = fsc[0][len(fsc[1])-1]
 					idx_crit_left = len(fsc[1])-1
-					for ifreq in xrange(1, len(fsc[1])):
+					for ifreq in range(1, len(fsc[1])):
 						if fsc[1][ifreq] < criterion:
 							resolution_left = fsc[0][ifreq-1]
 							idx_crit_left = ifreq - 1
 							break
 					resolution_right = fsc[0][1]
 					idx_crit_right = 1
-					for ifreq in reversed(xrange(1, len(fsc[1]))):
+					for ifreq in reversed(list(range(1, len(fsc[1])))):
 						if fsc[1][ifreq] >= 0.143:
 							resolution_right = fsc[0][ifreq]
 							idx_crit_right = ifreq
@@ -1296,7 +1297,7 @@ def main():
 					plot_curves.append(fsc_true)
 					plot_names.append(r'FSC halves')
 					# map fsc obtained from halves to full maps
-					plot_curves.append([fsc_true[0], map(scale_fsc, fsc_true[1])])
+					plot_curves.append([fsc_true[0], list(map(scale_fsc, fsc_true[1]))])
 					plot_names.append(r'FSC full')
 					if m is not None:
 						fsc_mask = fsc(map1*m, map2*m, 1)
@@ -1304,7 +1305,7 @@ def main():
 						plot_curves.append(fsc_mask)
 						plot_names.append(r'FSC masked halves')
 						# map fsc obtained from masked two halves to full maps
-						plot_curves.append([fsc_mask[0], map(scale_fsc, fsc_mask[1])])
+						plot_curves.append([fsc_mask[0], list(map(scale_fsc, fsc_mask[1]))])
 						plot_names.append(r'FSC masked full')
 
 					resolution_in_angstrom = freq_to_angstrom(pixel_size=options.pixel_size, values=fsc_true[0])
@@ -1393,7 +1394,7 @@ def main():
 						else:
 					"""
 					log_main.add("Adjust FSC to the full dataset by: 2.*FSC/(FSC+1.)")
-					fsc_true[1] = map(scale_fsc, fsc_true[1])
+					fsc_true[1] = list(map(scale_fsc, fsc_true[1]))
 
 					## Determine 05/143 resolution from corrected FSC, RH correction of FSC from masked volumes
 					resolution_FSC143_right  = 0.0
@@ -1401,21 +1402,21 @@ def main():
 					#dip_at_fsc = False
 					nfreq0     = 1
 
-					for ifreq in xrange(1, len(fsc_true[1])):
+					for ifreq in range(1, len(fsc_true[1])):
 						if fsc_true[1][ifreq] < 0.0:
 							nfreq0  = ifreq - 1
 							break
 					if nfreq0 ==1: nfreq0= len(fsc_true[1]) - 1
 
 					nfreq05 = len(fsc_true[1])-1 		
-					for ifreq in xrange(1, len(fsc_true[1])):
+					for ifreq in range(1, len(fsc_true[1])):
 						if fsc_true[1][ifreq] < 0.5:
 							resolution_FSChalf = fsc_true[0][ifreq-1]
 							nfreq05 = ifreq-1
 							break
 
 					resolution_FSC143_left = fsc_true[0][len(fsc_true[1])-1]
-					for ifreq in xrange(nfreq05, len(fsc_true[1])):
+					for ifreq in range(nfreq05, len(fsc_true[1])):
 						if fsc_true[1][ifreq] < 0.143:
 							resolution_FSC143_left = fsc_true[0][ifreq-1]
 							nfreq143 = ifreq - 1
@@ -1423,7 +1424,7 @@ def main():
 
 					resolution_FSC143_right = fsc_true[0][nfreq05]
 					nfreq143_right = nfreq05
-					for ifreq in xrange(nfreq0, nfreq05, -1):
+					for ifreq in range(nfreq0, nfreq05, -1):
 						if fsc_true[1][ifreq] >= 0.143:
 							resolution_FSC143_right = fsc_true[0][ifreq]
 							nfreq143_right = ifreq
@@ -1436,9 +1437,9 @@ def main():
 					resolution_FSC143 = resolution_FSC143_right
 					nfreq143 = nfreq143_right
 
-					for ifreq in xrange(len(fsc_true[0])): fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
+					for ifreq in range(len(fsc_true[0])): fsc_true[1][ifreq] = max(fsc_true[1][ifreq], 0.0)
 					## smooth FSC after FSC143 and set other values to zero
-					for ifreq in xrange(nfreq143+1, len(fsc_true[1])):
+					for ifreq in range(nfreq143+1, len(fsc_true[1])):
 						if ifreq ==nfreq143+1: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-2] + fsc_true[1][nfreq143-1])/5.
 						elif ifreq ==nfreq143+2: fsc_true[1][ifreq] = (fsc_true[1][nfreq143-1])/5.
 						else:  fsc_true[1][ifreq] = 0.0
@@ -1449,7 +1450,7 @@ def main():
 				outtext     = [["Squaredfreq"],[ "LogOrig"]]
 				guinierline = rot_avg_table(power(periodogram(map1),.5))
 				from math import log
-				for ig in xrange(len(guinierline)):
+				for ig in range(len(guinierline)):
 					x = ig*.5/float(len(guinierline))/options.pixel_size
 					outtext[0].append("%10.6f"%(x*x))
 					outtext[1].append("%10.6f"%log(guinierline[ig]))
@@ -1463,7 +1464,7 @@ def main():
 					map1 = fft(Util.divide_mtf(fft(map1), mtf_core[1], mtf_core[0]))
 					outtext.append(["LogMTFdiv"])
 					guinierline   = rot_avg_table(power(periodogram(map1),.5))
-					for ig in xrange(len(guinierline)): outtext[-1].append("%10.6f"%log(guinierline[ig]))
+					for ig in range(len(guinierline)): outtext[-1].append("%10.6f"%log(guinierline[ig]))
 				else: log_main.add("MTF is not applied")
 
 				if options.fsc_adj and not single_map:# limit resolution #2
@@ -1471,24 +1472,24 @@ def main():
 					#log_main.add("Notice: FSC adjustment of powerspectrum will increase B-factor 2-3 times than not!")
 					#### FSC adjustment ((2.*fsc)/(1+fsc)) to the powerspectrum;
 					fil = len(fsc_true[1])*[None]
-					for i in xrange(len(fil)): fil[i] = sqrt(fsc_true[1][i]) # fsc already matched to full dataset
+					for i in range(len(fil)): fil[i] = sqrt(fsc_true[1][i]) # fsc already matched to full dataset
 					map1 = filt_table(map1,fil)
 					guinierline = rot_avg_table(power(periodogram(map1),.5))
 					outtext.append(["LogFSCadj"])
-					for ig in xrange(len(guinierline)):outtext[-1].append("%10.6f"%log(guinierline[ig]))
+					for ig in range(len(guinierline)):outtext[-1].append("%10.6f"%log(guinierline[ig]))
 				else: log_main.add("Fsc_adj is not applied")
 
 				map1 = fft(map1)
 				if options.B_enhance !=-1: #3 One specifies and then apply B-factor sharpen
 					if options.B_enhance == 0.0: # auto mode
 						cutoff_by_fsc = 0
-						for ifreq in xrange(len(fsc_true[1])):
+						for ifreq in range(len(fsc_true[1])):
 							if fsc_true[1][ifreq]<0.143: break
 						cutoff_by_fsc = float(ifreq-1)
 						freq_max      = cutoff_by_fsc/(2.*len(fsc_true[0]))/options.pixel_size
 						guinierline    = rot_avg_table(power(periodogram(map1),.5))
 						logguinierline = []
-						for ig in xrange(len(guinierline)):logguinierline.append(log(guinierline[ig]))
+						for ig in range(len(guinierline)):logguinierline.append(log(guinierline[ig]))
 						freq_min = 1./options.B_start  # given frequencies in Angstrom unit, say, B_start is 10 Angstrom, or 15  Angstrom
 						if options.B_stop!=0.0: freq_max = 1./options.B_stop 
 						if freq_min>= freq_max:
@@ -1511,7 +1512,7 @@ def main():
 					guinierline = rot_avg_table(power(periodogram(map1),.5))
 					outtext.append([" LogBfacapplied"])
 					last_non_zero = -999.0
-					for ig in xrange(len(guinierline)):
+					for ig in range(len(guinierline)):
 						if guinierline[ig]>0: 
 							outtext[-1].append("%10.6f"%log(guinierline[ig]))
 							last_non_zero = log(guinierline[ig])
@@ -1626,7 +1627,7 @@ def main():
 				else: output_stack_name = "window_"+input_file_name_root+".hdf" # Only hdf file is output.
 			nimage = EMUtil.get_image_count(inputstack)
 			from utilities import get_im
-			for i in xrange(nimage):
+			for i in range(nimage):
 				im = get_im(inputstack,i)
 				if( i == 0 ):
 					if( im.get_xsize() < options.box ):  ERROR( "New image size has to be smaller than the original image size", "sxprocess.py", 1)
@@ -1653,7 +1654,7 @@ def main():
 				else: output_stack_name = "pad_"+input_file_name_root+".hdf" # Only hdf file is output.
 			nimage = EMUtil.get_image_count(inputstack)
 			from utilities import get_im, pad
-			for i in xrange(nimage):
+			for i in range(nimage):
 				im = get_im(inputstack,i)
 				if( i == 0 ):
 					if( im.get_xsize() > options.box ):  ERROR( "New image size has to be larger than the original image size", "sxprocess.py", 1)

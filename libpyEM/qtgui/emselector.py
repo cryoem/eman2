@@ -33,6 +33,8 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
+from builtins import object
 from EMAN2 import get_image_directory, get_dtag, EMData, \
 	get_files_and_directories, db_open_dict, remove_file, \
 	remove_directories_from_name, Util, EMUtil, IMAGE_UNKNOWN, base_name, \
@@ -62,20 +64,20 @@ EMAN2DB = "EMAN2DB"
 
 MDS = "%" # metadata separator
 
-class EMActionDelegate:
+class EMActionDelegate(object):
 	'''
 	interface for action delegates - they are notified when the widget owning them is closed
 	'''
 	def closeEvent(self,event): pass
 	
-class EMItemAction:
+class EMItemAction(object):
 	'''
 	interface for single item actions
 	'''
 	
 	def item_action(self,item,target): raise NotImplementedException
 	
-class EMMultiItemAction:
+class EMMultiItemAction(object):
 	'''
 	interface for multiple item actions
 	'''
@@ -745,7 +747,7 @@ class EMBrowser(EMBrowserType):
 		pass
 	
 	def closeEvent(self,event):
-		for delegate in self.action_delegates.values():
+		for delegate in list(self.action_delegates.values()):
 			delegate.closeEvent(event)
 		EMBrowserType.closeEvent(self, event)
 	
@@ -1082,7 +1084,7 @@ class EMListWidget(QtGui.QListWidget):
 	def get_delegate(self): return self.delegate
 	def set_delegate(self,delegate): self.delegate = delegate
 
-class EMBrowseDelegate:
+class EMBrowseDelegate(object):
 	'''
 	Base class for objects that can read urls and return lists of ListWidgetItems
 	to the EMSelector
@@ -1338,12 +1340,12 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 				
 			
 				if e.get_zsize() > 1:
-					return_items = [EM3DMetaImageItem(self,str(i),url,i) for i in xrange(0,EMUtil.get_image_count(url))]
+					return_items = [EM3DMetaImageItem(self,str(i),url,i) for i in range(0,EMUtil.get_image_count(url))]
 				else:
-					return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in xrange(0,EMUtil.get_image_count(url))]
+					return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in range(0,EMUtil.get_image_count(url))]
 			else:
 				d = e.get_attr_dict()
-				keys = d.keys()
+				keys = list(d.keys())
 				keys.sort() #alphabetical order
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 			
@@ -1367,7 +1369,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 			d = e.get_attr_dict()
 				
 			if len(vals) == val_idx:
-				keys = d.keys()
+				keys = list(d.keys())
 				keys.sort() #alphabetical order
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 			elif len(vals) == val_idx+1:
@@ -1553,7 +1555,7 @@ class EMDataHeaderItem(EMListItem):
 	def get_url(self):
 		return self.url +MDS+str(self.key)
 
-class EMStack2DCapableMixin:
+class EMStack2DCapableMixin(object):
 	'''
 	a 2D stack capable item is something that knows how to supply
 	data to the EMImageMX set_data function.
@@ -1914,10 +1916,10 @@ class EMBDBDelegate(EMBrowseDelegate):
 				d = db.get_header(i)
 				if d!=None and "nz" in d : break
 			if  n > 1:
-				if d["nz"] > 1: return_items = [EM3DMetaImageItem(self,str(i),url,i) for i in xrange(0,n)]
-				else: return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in xrange(0,n)]
+				if d["nz"] > 1: return_items = [EM3DMetaImageItem(self,str(i),url,i) for i in range(0,n)]
+				else: return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in range(0,n)]
 			else: 
-				keys = d.keys()
+				keys = list(d.keys())
 				keys.sort() #alphabetical order
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 		else:
@@ -1929,7 +1931,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 				d = db.get_header(0)
 				
 			if len(vals) == val_idx:
-				keys = d.keys()
+				keys = list(d.keys())
 				keys.sort() #alphabetical order
 				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
 			elif len(vals) == val_idx+1:
@@ -1956,7 +1958,7 @@ class EMBDBDelegate(EMBrowseDelegate):
 			for db_key in vals[2:]:db = db[db_key]
 			
 			try:
-				for k,val in db.items():
+				for k,val in list(db.items()):
 					if isinstance(val,dict):
 						return_items.append(EMBDBDictItem(self,str(k),url,str(k)))
 					else:

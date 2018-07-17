@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_check_dict
 from OpenGL import GL,GLU,GLUT
@@ -165,7 +166,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 #		print vv
 #
 		# the problem with this approach is that depth testing is not part of picking
-		sb = [0 for i in xrange(0,512)]
+		sb = [0 for i in range(0,512)]
 		glSelectBuffer(512)
 		glRenderMode(GL_SELECT)
 		glInitNames()
@@ -266,7 +267,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 
 		# this object will have
 		if self.au_data != None:
-			combo_entries = self.au_data.keys()
+			combo_entries = list(self.au_data.keys())
 			combo_entries.sort()
 			combo_entries.reverse()
 
@@ -357,7 +358,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			print("Nothing in ",dir)
 			return {}
 
-		for i in xrange(1,maxnum+1):
+		for i in range(1,maxnum+1):
 			exte="_{:02d}_even.hdf".format(i)
 			exto="_{:02d}_odd.hdf".format(i)
 			data[dir].append([sadd(dir,s1,exte),sadd(dir,s2,exte),sadd(dir,s3,exte),sadd(dir,s4,exte),sadd(dir,s5,exte)])
@@ -722,7 +723,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		self.au_tab.vbl = QtGui.QVBoxLayout(self.au_tab)
 
 		self.au_data = self.target().au_data
-		combo_entries = self.au_data.keys()
+		combo_entries = list(self.au_data.keys())
 		combo_entries.sort()
 		combo_entries.reverse()
 		self.combo = QtGui.QComboBox(self)

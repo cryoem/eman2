@@ -32,6 +32,8 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
+from builtins import object
 import sys
 import os
 from subprocess import *
@@ -74,7 +76,7 @@ def translate_to_bdb_path(std_path):
 	# If necessary, compose directory path as a relative path at first
 	dir = ""
 	if len(path_tokens) > 2:
-		for idx in xrange(0, len(path_tokens) - 2):
+		for idx in range(0, len(path_tokens) - 2):
 			if idx != 0:
 				dir += "/"
 			dir += path_tokens[idx] # accrue the directory
@@ -550,7 +552,7 @@ class SXMenuItemBtnAreaWidget(QWidget):
 # Provides all necessary functionarity
 # tabs only provides widgets and knows how to layout them
 class SXCmdWidget(QWidget):
-	process_started = pyqtSignal()
+	### process_started = pyqtSignal()
 
 	def __init__(self, sxconst_set, sxcmd, parent = None):
 		super(SXCmdWidget, self).__init__(parent)
@@ -882,7 +884,7 @@ class SXCmdWidget(QWidget):
 
 			# Execute the generated command line
 			process = subprocess.Popen(cmd_line, shell=True)
-			self.process_started.emit(process.pid)
+			### self.process_started.emit(process.pid)
 			if self.sxcmd.is_submittable == False:
 				assert(self.sxcmd.mpi_support == False)
 				# Register to This is a GUI application
@@ -936,7 +938,7 @@ class SXCmdWidget(QWidget):
 					if cmd_token.type == "user_func":
 						# This type has two line edit boxes as a list of widget
 						n_widgets = 2
-						for widget_index in xrange(n_widgets):
+						for widget_index in range(n_widgets):
 							val_str = str(cmd_token.widget[widget_index].text())
 							file_out.write("<%s> %s (default %s) == %s \n" % (cmd_token.key_base, cmd_token.label[widget_index], cmd_token.default[widget_index], val_str))
 					# Then, handle the other cases
@@ -1018,7 +1020,7 @@ class SXCmdWidget(QWidget):
 						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) of file (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in, file_path_in))
 					key_base = label_in[0:item_tail]
 					# Get corresponding cmd_token
-					if key_base not in self.sxcmd.token_dict.keys():
+					if key_base not in list(self.sxcmd.token_dict.keys()):
 						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s) of file (%s). This parameter file might be incompatible with the current version. Please save the paramater file again." % (key_base, line_in, file_path_in))
 					cmd_token = self.sxcmd.token_dict[key_base]
 					if not cmd_token.is_locked: 
@@ -1628,7 +1630,7 @@ class SXCmdTab(QWidget):
 						custom_style = "QPushButton {color:gray; }"
 						if cmd_token.restore:
 							btn_name = "YES"
-						if cmd_token.type in parent.sxconst_set.dict.keys():
+						if cmd_token.type in list(parent.sxconst_set.dict.keys()):
 							custom_style = "QPushButton {color:green; }"
 							cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
 						elif cmd_token.is_required:
@@ -1663,7 +1665,7 @@ class SXCmdTab(QWidget):
 						btn_name = "%s" % cmd_token.restore
 						custom_style = "QPushButton {color:gray; }"
 						is_btn_enable = True
-						if cmd_token.type in parent.sxconst_set.dict.keys():
+						if cmd_token.type in list(parent.sxconst_set.dict.keys()):
 							custom_style = "QPushButton {color:green; }"
 							cmd_token_restore_tooltip = const_cmd_token_restore_tooltip
 						elif cmd_token.is_required:
@@ -2870,14 +2872,14 @@ class SXConstSetWidget(QWidget):
 			for sxcmd in sxcmd_category.cmd_list:
 				# Loop through all command tokens of this command
 				for cmd_token in sxcmd.token_list:
-					if not cmd_token.is_locked and cmd_token.type in self.sxconst_set.dict.keys():
+					if not cmd_token.is_locked and cmd_token.type in list(self.sxconst_set.dict.keys()):
 						sxconst = self.sxconst_set.dict[cmd_token.type]
 						cmd_token.restore = sxconst.register
 						cmd_token.restore_widget.setText("%s" % cmd_token.restore)
 						cmd_token.widget.setText(cmd_token.restore)
 						# print "MRK_DEBUG: %s, %s, %s, %s, %s, %s" % (sxcmd.name, sxcmd.subname, cmd_token.key_base, cmd_token.type, cmd_token.default, cmd_token.restore)
 					elif cmd_token.type == "abs_freq":
-						assert("apix" in self.sxconst_set.dict.keys())
+						assert("apix" in list(self.sxconst_set.dict.keys()))
 ###						print("MRK_DEBUG: ----- register_const_set() ----- ")
 ###						print("MRK_DEBUG: cmd_token.type = {}".format(cmd_token.type))
 ###						sxconst_apix = self.sxconst_set.dict["apix"]
@@ -2946,7 +2948,7 @@ class SXConstSetWidget(QWidget):
 					QMessageBox.warning(self, "Invalid Project Settings File Format", "Project settings entry should have \"%s\" closing entry key in line (%s) The format of this file might be corrupted. Please save the project settings file again." % (target_operator, line_in))
 				key = label_in[0:item_tail]
 				# Get corresponding sxconst
-				if key not in self.sxconst_set.dict.keys():
+				if key not in list(self.sxconst_set.dict.keys()):
 					QMessageBox.warning(self, "Invalid Project Settings File Format", "Invalid entry key for project settings \"%s\" is found in line (%s). This project settings file might be incompatible with the current version. Please save the project settings file again." % (key, line_in))
 				sxconst = self.sxconst_set.dict[key]
 				sxconst.widget.setText(val_str_in)

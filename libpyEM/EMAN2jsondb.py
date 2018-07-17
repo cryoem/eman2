@@ -31,9 +31,13 @@ from __future__ import print_function
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 import weakref
 import json
-import cPickle
+import pickle
 from zlib import compress,decompress
 import os
 import os.path
@@ -119,7 +123,7 @@ def js_list_dicts(url):
 
 	return ld
 
-class tmpimg:
+class tmpimg(object):
 	def __init__(self,fsp,n):
 		self.fsp=fsp
 		self.n=n
@@ -154,7 +158,7 @@ def emdata_from_jsondict(dct):
 		try: del dct[k]
 		except: pass
 
-	for k in dct.keys():
+	for k in list(dct.keys()):
 		ret[k]=dct[k]
 
 	ret.update()
@@ -224,7 +228,7 @@ except ImportError:
 			else : l=msvcrt.LK_NBLCK
 
 			# We try for 30 seconds before giving up
-			for i in xrange(30):
+			for i in range(30):
 				try :
 					msvcrt.locking(fileobj.fileno(), l, 1)
 					break
@@ -254,7 +258,7 @@ except ImportError:
 ###  Task Management classes
 #############
 
-class JSTaskQueue:
+class JSTaskQueue(object):
 	"""This class is used to manage active and completed tasks through an
 	JSDict object. Tasks are each assigned a number unique in the local file.
 	The active task 'max' keeps increasing. When a task is complete, it is shifted to the
@@ -358,7 +362,7 @@ class JSTaskQueue:
 		task.queuetime=time.time()
 
 		# map data file specifiers to ids
-		for j,k in task.data.items():
+		for j,k in list(task.data.items()):
 			try:
 				if k[0]!="cache" : continue
 			except: continue
@@ -465,7 +469,7 @@ class JSTaskQueue:
 		del self.active[taskid]
 		JSTaskQueue.lock.release()
 
-class JSTask:
+class JSTask(object):
 	"""This class represents a task to be completed. Generally it will be subclassed. This is effectively
 	an abstract superclass to define common member variables and methods. Note that the data dictionary,
 	which contains a mix of actual data elements, and ["cache",filename,#|min,max|(list)] image references, will
@@ -532,7 +536,7 @@ def denl(s):
 	"This will replace \n with nothing in a search match"
 	return s.group(0).replace("\n","")
 
-class JSDict:
+class JSDict(object):
 	"""This class provides dict-like access to a JSON file on disk. It goes to some lengths to insure thread/process-safety, even if
 performance must be sacrificed. The only case where it may not work is when a remote filesystem which doesn't obey file-locking is used.
 Note that when opened, the entire JSON file is read into memory. For this reason (and others) it is not a good idea to store (many) images
@@ -756,15 +760,15 @@ of the path is stored as self.normpath"""
 
 	def keys(self):
 		self.sync()
-		return self.data.keys()
+		return list(self.data.keys())
 
 	def values(self):
 		self.sync()
-		return [self.get(key) for key in self.data.keys()]		# to make sure images are read
+		return [self.get(key) for key in list(self.data.keys())]		# to make sure images are read
 
 	def items(self):
 		self.sync()
-		return [(key,self.get(key)) for key in self.data.keys()]
+		return [(key,self.get(key)) for key in list(self.data.keys())]
 
 	def has_key(self,key):
 		self.sync()
@@ -775,7 +779,7 @@ of the path is stored as self.normpath"""
 		"""Equivalent to dictionary update(). Performs JSON file update all at once, so substantially better
 performance than many individual changes."""
 
-		for k in newdict.keys(): self.setval(k,newdict[k],deferupdate=True)
+		for k in list(newdict.keys()): self.setval(k,newdict[k],deferupdate=True)
 		self.sync()
 
 	def setdefault(self,key,dfl,noupdate=False):
@@ -906,7 +910,7 @@ def json_to_obj(jsdata):
 	"""converts a javascript object representation back to the original python object"""
 
 	if "__pickle__" in jsdata :
-		try: return cPickle.loads(str(jsdata["__pickle__"]))
+		try: return pickle.loads(str(jsdata["__pickle__"]))
 		except: return str(jsdata["__pickle__"])				# This shouldn't happen. Means a module hasn't been loaded. This is an emergency stopgap to avoid crashing
 	elif "__image__" in jsdata :							# images now stored in a separate HDF file
 		try: 
@@ -935,7 +939,7 @@ def obj_to_json(obj):
 	try:
 		return obj.to_jsondict()
 	except:
-		return {"__pickle__":cPickle.dumps(obj,0)}
+		return {"__pickle__":pickle.dumps(obj,0)}
 
 __doc__ = \
 """This module provides a dict-like wrapper for JSON files on disk, with full support for file locking and other

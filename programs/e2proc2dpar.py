@@ -33,6 +33,9 @@ from __future__ import print_function
 
 # $Id$
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 from EMAN2 import *
 import sys
 import os.path
@@ -44,7 +47,7 @@ import datetime
 import time
 import traceback
 from collections import Counter
-import Queue
+import queue
 import threading
 
 # usage: e2proc2d.py [options] input ... input output
@@ -106,15 +109,15 @@ def main():
 	logid = E2init(sys.argv,options.ppid)
 
 	if options.outmode not in file_mode_map :
-		print("Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]'))
+		print("Invalid output mode, please specify one of :\n",str(list(file_mode_map.keys())).translate(None,'"[]'))
 		sys.exit(1)
 	
 	N=EMUtil.get_image_count(args[0])
 	npt=max(min(100,N/(options.threads-2)+1),1)
 	
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads
-	thrds=[(jsd,args,options,i,i*npt,min(i*npt+npt,N)) for i in xrange(N/npt+1)]
+	thrds=[(jsd,args,options,i,i*npt,min(i*npt+npt,N)) for i in range(N/npt+1)]
 
 	#import pprint
 	#pprint.pprint(thrds)
@@ -134,7 +137,7 @@ def main():
 		# return is [N,dict] a dict of image# keyed processed images
 		while not jsd.empty():
 			rd=jsd.get()
-			for k in rd[1].keys():
+			for k in list(rd[1].keys()):
 				writeimage(rd[1][k],args[1],k,options)
 			
 			thrds[rd[0]].join()
@@ -151,7 +154,7 @@ def procfn(jsd,args,options,thrn,n0,n1):
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 
 	ret=[thrn,{}]
-	for n in xrange(n0, n1):
+	for n in range(n0, n1):
 		d=EMData(args[0],n)
 
 		index_d = Counter()
@@ -183,7 +186,7 @@ def procfn(jsd,args,options,thrn,n0,n1):
 				# Parse the options to convert the image file name to EMData object
 				# (for both plain image file and bdb file)
 
-				for key in param_dict.keys():
+				for key in list(param_dict.keys()):
 					#print str(param_dict[key])
 
 					if str(param_dict[key]).find('bdb:') != -1 or not str(param_dict[key]).isdigit():

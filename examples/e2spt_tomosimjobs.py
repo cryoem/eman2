@@ -30,6 +30,7 @@
 #
 #
 from __future__ import print_function
+from builtins import range
 from optparse import OptionParser
 from EMAN2 import *
 from EMAN2_utils import *
@@ -454,9 +455,9 @@ def main():
 				boxes=[]
 				currentbox = int(EMData(randstack,0,True)['nx'])
 				if boxstep < 0:
-					boxes = [ x for x in xrange( limit, currentbox + -1*boxstep, int(math.fabs( boxstep )) ) ]
+					boxes = [ x for x in range( limit, currentbox + -1*boxstep, int(math.fabs( boxstep )) ) ]
 				elif boxstep > 0:
-					boxes = [ x for x in xrange( currentbox, limit + 1*boxstep, int(math.fabs( boxstep )) ) ]
+					boxes = [ x for x in range( currentbox, limit + 1*boxstep, int(math.fabs( boxstep )) ) ]
 				
 				#print "\n\n\n\nThe boxes to use are", boxes
 				#print "Current box is", currentbox
@@ -1959,7 +1960,7 @@ def twoD_plot(points,val1,val2,location):
 	plt.xlim([0,max(x)+max(x)*0.1])
 	plt.ylim([min(y)-min(y)*0.1,max(y)+max(y)*0.1])
 	for i in range(len(finalpoints)):
-		plt.plot(*zip(*[finalpoints[i]]),marker='o',markersize=4,color=color(ang_errors[i]))	
+		plt.plot(*list(zip(*[finalpoints[i]])),marker='o',markersize=4,color=color(ang_errors[i]))	
 	plt.savefig(plotname1,bbox_inches=0)
 	#plt.clf()
 	
@@ -2014,7 +2015,7 @@ def threeD_plot(points,location):
 
 	#ax.dist = 15
 	for i in range(len(finalpoints)):
-		ax.plot(*zip(*[finalpoints[i]]),marker='o',markersize=4, color=color(ang_errors[i]) )
+		ax.plot(*list(zip(*[finalpoints[i]])),marker='o',markersize=4, color=color(ang_errors[i]) )
 	plt.savefig(plotname1,bbox_inches=0)
 	print("\n\n**********\nI HAVE saved the plot inside 3d_plot to\n********\n\n", plotname1)
 

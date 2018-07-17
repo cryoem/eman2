@@ -3,6 +3,7 @@ from __future__ import print_function
 
 # This program will extract an ~equal number of particles over all orientations. 
 
+from builtins import range
 from EMAN2 import *
 from sys import argv
 import sys
@@ -24,7 +25,7 @@ odd =EMData.read_images("{}/classes_{:02d}_odd.hdf".format(argv[1],int(argv[2]))
 
 ncls=min(len(even),len(odd))
 # Number of particles in each orientation
-counts=[even[i]["ptcl_repr"]+odd[i]["ptcl_repr"] for i in xrange(ncls)]
+counts=[even[i]["ptcl_repr"]+odd[i]["ptcl_repr"] for i in range(ncls)]
 
 # This allows us to restrict the ouput to specific micrographs in addition to the orientation leveling
 if len(argv)==5 :
@@ -39,8 +40,8 @@ except:
 	pass
 
 # Exctract the aggregate list of good particles for each class
-ptcls=[[] for i in xrange(ncls)]
-for i in xrange(ncls):
+ptcls=[[] for i in range(ncls)]
+for i in range(ncls):
 	if not even[i].has_attr("class_ptcl_idxs") : lst=[]
 	elif isinstance(even[i]["class_ptcl_idxs"],int) : lst=[even[i]["class_ptcl_idxs"]]
 	else: lst=even[i]["class_ptcl_idxs"]
@@ -53,14 +54,14 @@ for i in xrange(ncls):
 	
 
 print("class particle counts range from {} - {} in {} classes".format(min(counts),max(counts),len(counts)))
-ntk=int(raw_input("How many particles to keep per orientation (at most): "))
+ntk=int(eval(input("How many particles to keep per orientation (at most): ")))
 
 # even and odd .lst files referencing original particles
 lsx=[LSXFile(even[0]["class_ptcl_src"]),LSXFile( odd[0]["class_ptcl_src"])]
 
 # This is where we actually identify which particles to keep
 outfiles={}
-for cls in xrange(ncls):
+for cls in range(ncls):
 	nk=0
 	for eo in (0,1):
 		for p in ptcls[cls][eo]:

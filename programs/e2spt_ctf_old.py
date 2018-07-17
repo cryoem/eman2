@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 import os
 from EMAN2 import *
 #from time import time
@@ -600,7 +601,7 @@ def main():
 		'''
 		#Once the images are organized, proceed to CTF correct them. Loop over all images.
 		'''
-		for imagestem in imagefilenames.keys():
+		for imagestem in list(imagefilenames.keys()):
 			print("\nWorking on image",pp,imagefilenames[imagestem])
 			ctf=None
 			
@@ -1491,7 +1492,7 @@ def ctfparamparser( pline ):
 
 	params = {'ampcont':ampcont,'apix':apix,'bfactor':bfactor,'cs':cs,'defocus':defocus,'voltage':voltage}
 	print("\n(e2spt_ctf.py)(ctfparamparser) The parsed parameters are")
-	for key in params.keys():
+	for key in list(params.keys()):
 		print(key + '=' + params[key]) 
 	
 	ctf = EMAN2Ctf()
@@ -1734,7 +1735,7 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 		Plot background subtracted curve?
 		'''
 		fz=int(ctf.zero(0)/(ds*2)) 	#jesus
-		bs =[ str(i) + ' ' + str(fft1d[i]-ctf.background[i]) for i in xrange(fz)] #jesus
+		bs =[ str(i) + ' ' + str(fft1d[i]-ctf.background[i]) for i in range(fz)] #jesus
 	
 		bsoutfile = options.path + '/angle_' + signtag + str( int(math.fabs( round(angle) ))) + '_strip' + str(currentsubmicro).zfill(len(str(nsubmicros))) + '_bs1d.txt'
 	
@@ -2045,7 +2046,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				if options.excludeedges:
 					init = 1
 			
-				for ii in xrange(init,nmicrosint):
+				for ii in range(init,nmicrosint):
 				
 					#if int(excedent)/2 < int(options.stripstep):
 					#	start = i*options.stripstep
@@ -2231,7 +2232,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 	angerrors = collections.OrderedDict(sorted(angerrors.items()))
 	if angerrors:
 	
-		avgangerror = sum( [  math.sqrt(angerrors[a]*angerrors[a]) for a in angerrors.keys() ] ) /len( angerrors )
+		avgangerror = sum( [  math.sqrt(angerrors[a]*angerrors[a]) for a in list(angerrors.keys()) ] ) /len( angerrors )
 		
 		a=open(options.path + '/angular_error_avg.txt','w')
 		a.writelines([str(avgangerror)+'\n'])
@@ -2630,13 +2631,13 @@ def bgAdj(ctf,fg_1d):
 	
 
 	
-	for lz in xrange(1,fz):
+	for lz in range(1,fz):
 		mv=min(mv,(fg_1d[lz],lz))
 
 	xyd.insort(mv[1],mv[0])
 
 	# now we add all of the zero locations to our XYData object
-	for i in xrange(100):
+	for i in range(100):
 		z=int(ctf.zero(i)/ds)
 		if z>=len(bg_1d)-1: break
 		if fg_1d[z-1]<fg_1d[z] and fg_1d[z-1]<fg_1d[z+1]: mv=(z-1,fg_1d[z-1])
@@ -2645,20 +2646,20 @@ def bgAdj(ctf,fg_1d):
 		xyd.insort(mv[0],mv[1])
 
 	# new background is interpolated XYData
-	ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
+	ctf.background=[xyd.get_yatx_smooth(i,1) for i in range(len(bg_1d))]
 
 	# if our first point (between the origin and the first 0) is too high, we readjust it once
-	bs=[fg_1d[i]-ctf.background[i] for i in xrange(fz)]
+	bs=[fg_1d[i]-ctf.background[i] for i in range(fz)]
 	
 	#print "bs first is", bs
 	
 	if min(bs)<0 :
 		mv=(bs[0],fg_1d[0],0)
-		for i in xrange(1,fz): mv=min(mv,(bs[i],fg_1d[i],i))
+		for i in range(1,fz): mv=min(mv,(bs[i],fg_1d[i],i))
 		xyd.set_x(0,mv[2])
 		xyd.set_y(0,mv[1])
 		
-		ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
+		ctf.background=[xyd.get_yatx_smooth(i,1) for i in range(len(bg_1d))]
 		
 		#bs2=[fg_1d[i]-ctf.background[i] for i in xrange(fz)]
 		#print "bs second is", bs2

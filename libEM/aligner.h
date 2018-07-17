@@ -1729,6 +1729,8 @@ namespace EMAN
 	 * @param verbose Turn this on to have useful information printed to standard out
 	 * @author Steve Ludtke
 	 * @date Feburary 2016
+	 * 
+	 * Finished by MuyuanChen, 07/2018
 	 */
 	class RT2Dto3DTreeAligner:public Aligner
 	{
@@ -1768,9 +1770,10 @@ namespace EMAN
 			{
 				TypeDict d;
 				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (no symmetry)");
+				d.put("maxshift", EMObject::INT,"maximum shift allowed");
 //				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 //				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
-// 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
+				d.put("initxform", EMObject::TRANSFORMARRAY,"An array of Transforms storing the starting positions.");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
@@ -1778,10 +1781,11 @@ namespace EMAN
 			static const string NAME;
 
 		private:
-			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const;
+			bool testort(EMData *small_this, EMData *small_to,vector<float> &s_score,vector<Transform> &s_xform,int i,Dict &upd,int maxshift) const;
 
 	};
 
+	
 	/** 3D rotational and translational alignment using a hierarchical method with gradually decreasing downsampling in Fourier space.
 	 * In theory, very fast, and without need for a "refine" aligner. Comparator is ignored. Uses an inbuilt comparison.
 	 * @param sym The symmtery to use as the basis of the spherical sampling
@@ -1981,7 +1985,7 @@ namespace EMAN
 		vector<float> multiref_ali2d(int silent);
 
 	  private:
-	        float *image_stack, *ref_image_stack, *ref_image_stack_filtered;
+		float *image_stack, *ref_image_stack, *ref_image_stack_filtered;
 		float *ccf;
 		float *ali_params, *ctf_params;
 		int NIMA, NREF, NX, NY, RING_LENGTH, NRING, OU, KX, KY, MAX_IMAGE_BATCH;

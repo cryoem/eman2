@@ -30,6 +30,7 @@ Author: Jesus Galaz - nov/2017, Last update: jan/2018
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
 from EMAN2_utils import *
@@ -117,7 +118,7 @@ def main():
 
 	boxsize = EMData(options.input,0,True)['nx']
 
-	for i in xrange(0,n):
+	for i in range(0,n):
 		img = EMData(options.input,i)
 		if options.verbose:
 			print('\naligning image {}'.format(i))

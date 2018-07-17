@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 
@@ -50,7 +51,7 @@ s2y=0
 defocus = -1
 from random import random,randint
 start =  time()
-for i in xrange(nangles):
+for i in range(nangles):
 	#s2x = 4.0*randint(-1,1)
 	#s2y = 4.0*randint(-1,1)
 	#ppp.append([angles[i][0], angles[i][1], angles[i][2], s2x, s2y])
@@ -80,7 +81,7 @@ del vol
 del volft
 start=time()
 nprojdata = EMUtil.get_image_count(stack_data)
-vol1   = recons3d_4nn(stack_data, range(nprojdata))
+vol1   = recons3d_4nn(stack_data, list(range(nprojdata)))
 print(time()-start)
 vol1.write_image("b4.hdf", 0)
 exit()
@@ -91,11 +92,11 @@ del ppp
 nprojdata = EMUtil.get_image_count(stack_data)
 snr = 1.0e20
 #vol1   = recons3d_4nn_ctf(stack_data, range(0,nprojdata,2), snr)
-vol1   = recons3d_4nn(stack_data, range(0,nprojdata,2))
+vol1   = recons3d_4nn(stack_data, list(range(0,nprojdata,2)))
 vol1.write_image("v1.hdf", 0)
 
 #vol2   = recons3d_4nn_ctf(stack_data, range(1,nprojdata,2), snr)
-vol2   = recons3d_4nn(stack_data, range(1,nprojdata,2))
+vol2   = recons3d_4nn(stack_data, list(range(1,nprojdata,2)))
 
 #mask3d = model_circle(nx//2-5,nx,nx,nx)
 
@@ -127,24 +128,24 @@ step  = 1
 dtheta= 15
 # begin a refinement loop, slowly decrease dtheta inside the loop
 snr = 1.0
-for iter in xrange(1):
+for iter in range(1):
 	print(" ITERATION #",iter)
 	#proj_ali(vol, mask3D, stack_data, first_ring, last_ring, rstep, xrng, yrng, step, dtheta)
 
 	#calculate new and improved 3D
 	#stack_data = "data.hdf"
 	nprojdata = EMUtil.get_image_count(stack_data)
-	list_p = range(nprojdata)
+	list_p = list(range(nprojdata))
 	vol = recons3d_4nn_ctf(stack_data, list_p, snr, 1, "c2")
 	vol.write_image("newvol.hdf",0)
 	del  vol
 	#exit()
 	#and now the resolution
 
-	list_p = range(0,nprojdata,2)
+	list_p = list(range(0,nprojdata,2))
 	vol1   = recons3d_4nn_ctf(stack_data, list_p, snr)
 
-	list_p = range(1,nprojdata,2)
+	list_p = list(range(1,nprojdata,2))
 	vol2   = recons3d_4nn_ctf(stack_data, list_p, snr)
 
 	mask3d = model_circle(nx//2-5,nx,nx,nx)

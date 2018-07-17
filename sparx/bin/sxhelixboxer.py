@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import get_image_directory, Transform, Region, EMANVERSION, EMData, E2init, E2end, EMArgumentParser
 from EMAN2db import db_open_dict, db_check_dict, db_close_dict
 from math import *
@@ -482,7 +483,7 @@ def save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph
 	out_file.write("#micrograph: " + micrograph_filepath + "\n")
 	out_file.write("#segment length: " + str(ptcl_length) + "\n")
 	out_file.write("#segment width: " + str(ptcl_width) + "\n")
-	for helix_coords in helix_particle_coords_dict.keys():
+	for helix_coords in list(helix_particle_coords_dict.keys()):
 		out_file.write("#helix: " + str(tuple(helix_coords[0:2])) + "," + str(tuple(helix_coords[2:4])) + "," + str(helix_coords[4]) + "\n")
 		particle_list = helix_particle_coords_dict[helix_coords]
 		for ptcl_center in particle_list:
@@ -718,7 +719,7 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, 
 			helix_particles = get_rotated_particles(micrograph, coords, px_dst, px_length, px_width, gridding, mic_name = micrograph_filename)
 		else:
 			helix_particles = get_unrotated_particles(micrograph, coords, px_dst, px_length, px_width,mic_name = micrograph_filename)
-		for ii in xrange(len(helix_particles)):
+		for ii in range(len(helix_particles)):
 			(helix_particles[ii]).set_attr("filament", micrograph_filename+"%04d"%nhelix)
 		nhelix = nhelix + 1
 		all_particles.append(helix_particles)
@@ -969,7 +970,7 @@ if ENABLE_GUI:
 			if self.helices_groupbox.isChecked():
 				if self.helices_coords_groupbox.isChecked():
 					path = str( self.helices_coords_line_edit.text() )
-					save_helix_coords(helices_dict.keys(), path)
+					save_helix_coords(list(helices_dict.keys()), path)
 				if self.helices_images_groupbox.isChecked():
 					helix_filepath = str(self.helices_images_line_edit.text())
 					i = 0
@@ -1008,7 +1009,7 @@ if ENABLE_GUI:
 							side = max(px_length, px_width)
 							helix_particles = get_unrotated_particles(micrograph, coords_key, px_dst, side, side, mic_name=self.micrograph_filename)
 							px_overlap = side - px_dst
-						for ii in xrange(len(helix_particles)):
+						for ii in range(len(helix_particles)):
 							(helix_particles[ii]).set_attr("filament", self.micrograph_filename+"%04d"%nhelix)
 						nhelix = nhelix + 1
 						all_particles.append(helix_particles)
@@ -1505,7 +1506,7 @@ if ENABLE_GUI:
 			
 			width = self.box_width
 			if self.helices_dict:
-				first_coords = self.helices_dict.keys()[0]
+				first_coords = list(self.helices_dict.keys())[0]
 				width = first_coords[4]
 			self.box_width_spinbox.setValue(width)
 		def main_image_closed(self):
@@ -1594,7 +1595,7 @@ if ENABLE_GUI:
 			#resize current boxes
 			#TODO: this is similar to part of self.mouse_up ==> make both methods call a function with common code
 			shapes = self.main_image.get_shapes() #an EMShapeDict of EMShapes
-			for box_key in shapes.keys():
+			for box_key in list(shapes.keys()):
 				old_emshape = shapes.get(box_key)
 				old_coords = old_emshape.getShape()[4:9]
 				new_coords = (old_coords[0], old_coords[1], old_coords[2], old_coords[3], width)
@@ -2026,7 +2027,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 		flist2.sort(key=str.lower)
 		nfiles = len(flist2)
 		print_msg('Sorted file list in %s:\n'%v1)
-		for iii in xrange(nfiles):
+		for iii in range(nfiles):
 			print_msg('%s,'%flist2[iii])
 		print_msg('\n')
 		for i2, v2 in enumerate(flist2):
@@ -2054,7 +2055,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 			region,hist = hist_list(cutoffhistogram,lhist)	
 			msg = "      Histogram of cut off frequencies\n      ERROR       number of frequencies\n"
 			print_msg(msg)
-			for lhx in xrange(len(lhist)):
+			for lhx in range(len(lhist)):
 				msg = " %10.3f     %7d\n"%(region[lhx], hist[lhx])
 				print_msg(msg)
 		print_msg('The percentage of micrographs filtered by the cutoff frequency: %6f\n' % (len(cutoffhistogram)*1.0/lenmicnames))		
@@ -2118,7 +2119,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	if importctf:	
 		ctfs = read_text_row(importctf)
 		nx = True
-		for i in xrange(len(ctfs)):
+		for i in range(len(ctfs)):
 			smic = ctfs[i][-1].split('/')
 			ctfilename = (smic[-1].split('.'))[0]
 			if(ctfilename == filename):
@@ -2241,7 +2242,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 			else:
 				print_msg( "otcl_images: %s\n"%otcl_images)
 				print_msg( "ptcl_images: %s\n"%ptcl_images)
-				for j in xrange(n1):
+				for j in range(n1):
 					prj = get_im(ptcl_images, j)
 					prj = ramp(prj)
 					stat = Util.infomask( prj, mask, False )

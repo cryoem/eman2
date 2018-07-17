@@ -33,6 +33,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -75,7 +76,7 @@ class EMImage2DWidget(EMGLWidget):
 	mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 	mousemove = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousewheel = QtCore.pyqtSignal(QtGui.QMouseEvent)
+	mousewheel = QtCore.pyqtSignal(QtGui.QWheelEvent)
 	signal_increment_list_data = QtCore.pyqtSignal(float)
 	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 
@@ -1293,7 +1294,7 @@ class EMImage2DWidget(EMGLWidget):
 		alpha = 1.0
 		if len(self.shapes) > 0:
 
-			for k in self.shapes.keys():
+			for k in list(self.shapes.keys()):
 				shape = self.shapes[k]
 				if not isinstance(shape,EMShape) : continue
 				glLineWidth(2)
@@ -1312,7 +1313,7 @@ class EMImage2DWidget(EMGLWidget):
 			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 
 		glPointSize(2)
-		for k,s in self.shapes.items():
+		for k,s in list(self.shapes.items()):
 			### handle boxes for 3D images
 			if s.shape[0] == "ellipse":
 				mxlen=11
@@ -1397,7 +1398,7 @@ class EMImage2DWidget(EMGLWidget):
 
 
 		# We do the scr* shapes last since they mess up the matrix
-		for k,s in self.shapes.items():
+		for k,s in list(self.shapes.items()):
 			try:
 				if s.shape[0][:3]=="scr":
 #					print "shape",s.shape
@@ -1475,7 +1476,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.set_line_animation(*animation.get_end())
 
 	def set_animation_increment(self,increment):
-		for shape in self.shapes.items():
+		for shape in list(self.shapes.items()):
 			shape[1].set_blend(increment)
 
 		self.shapechange = True
@@ -1486,7 +1487,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	def update_blend(self):
 		ret = False
-		for shape in self.shapes.items():
+		for shape in list(self.shapes.items()):
 			s = shape[1]
 			if s.isanimated:
 				v = s.incblend()
@@ -2278,7 +2279,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		fft=data.do_fft()
 		pspec=fft.calc_radial_dist(fft["ny"]/2,0.0,1.0,1)
 		ds=1.0/(fft["ny"]*data["apix_x"])
-		s=[ds*i for i in xrange(fft["ny"]/2)]
+		s=[ds*i for i in range(fft["ny"]/2)]
 
 		from .emplot2d import EMDataFnPlotter
 
@@ -2300,7 +2301,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		fftsum.mult(1.0/len(self.target().list_data))
 		pspec=fftsum.calc_radial_dist(fft["ny"]/2,0.0,1.0,1)	# note that this method knows about is_inten() image flag
 		ds=1.0/(fft["ny"]*self.target().get_data()["apix_x"])
-		s=[ds*i for i in xrange(fft["ny"]/2)]
+		s=[ds*i for i in range(fft["ny"]/2)]
 
 		from .emplot2d import EMDataFnPlotter
 

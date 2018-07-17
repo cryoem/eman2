@@ -2,11 +2,13 @@
 from __future__ import print_function
 # average selected subset of particles
 
+from future import standard_library
+standard_library.install_aliases()
 from EMAN2 import *
 import time
 import os
 import threading
-import Queue
+import queue
 from sys import argv,exit
 
 def rotfn(jsd,fsp,i,a,verbose):
@@ -76,7 +78,7 @@ alignment to the reference, projected along the Z axis.
 
 	logid=E2init(sys.argv, options.ppid)
 
-	jsd=Queue.Queue(0)
+	jsd=queue.Queue(0)
 
 
 	# Rotation and insertion are slow, so we do it with threads. 

@@ -31,6 +31,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
@@ -1096,13 +1097,13 @@ class TheHelp(QtGui.QWidget):
 		helpdict =  self.helptopics[idx][1]
 		helpdoc = "<B><H3>Listed below is a list of EMAN2 <I>%s</I></H3></B><BR>"%self.helptopics[idx][0]
 
-		keys = helpdict.keys()
+		keys = list(helpdict.keys())
 		keys.sort()
 		for key in keys:
 			helpdoc += "<B>%s</B>"%(key)
 			eman2item = helpdict[key]
 			helpdoc += "<UL><LI><I>Description:</I> %s</LI>"%eman2item[0]
-			for param in xrange((len(eman2item)-1)/3):
+			for param in range((len(eman2item)-1)/3):
 				helpdoc += "<LI><I>Parameter:</I> &nbsp;<B>%s(</B><SPAN style='color:red;'>%s</SPAN><B>)</B>, %s</LI>"%(eman2item[param*3 +1],eman2item[param*3 +2],eman2item[param*3 +3])
 			helpdoc += "</UL>"
 
@@ -1517,7 +1518,7 @@ class TaskManager(QtGui.QWidget):
 		#self.list_widget.clear()
 		listitems = self.getListItems()
 		for t in self.tasks:
-			if t[1] in listitems.keys():
+			if t[1] in list(listitems.keys()):
 				listitems[t[1]].setText("%s  %s (%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]))
 				del(listitems[t[1]])
 				continue
@@ -1527,12 +1528,12 @@ class TaskManager(QtGui.QWidget):
 			listwigetitem.setProgramName(t[4])
 			self.list_widget.addItem(listwigetitem)
 		# Remove items that have stopped running
-		for item in listitems.values():
+		for item in list(listitems.values()):
 			self.list_widget.takeItem(self.list_widget.row(item))
 
 	def getListItems(self):
 		itemdict = {}
-		for i in xrange(self.list_widget.count()):
+		for i in range(self.list_widget.count()):
 			itemdict[self.list_widget.item(i).getPID()] = self.list_widget.item(i)
 		return itemdict
 
@@ -1544,29 +1545,55 @@ class TaskManager(QtGui.QWidget):
 		self.close()
 
 	def _on_kill(self):
+		killsig=signal.SIGTERM
+		modifiers = QtGui.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			print("Shift held. Will force kill processes")
+			killsig=signal.SIGKILL
+
 		selitems = self.list_widget.selectedItems()
 		self.update_tasks()
 		for item in selitems:
+			curpid=item.getPID()
+			curppid=item.getPPID()
+			print("Killing process PID: {}, PPID: {}".format(curpid, curppid))
 			if os.name == 'posix': # Kill by this method will only work for unix/linux type OS
-				# The PID Mafia occurs below: # Kill all children and siblings
-				for task in self.tasks:
-					if item.getPPID() == task[5]:
-						print("killing self process", task[1])
-						os.kill(task[1],signal.SIGTERM)
-						self._recursivekill(task[1])
-				# kill parent (top level item)
-				if item.getPPID() > 0:
+				
+				if curppid<0:
+					#### this is a parent process. kill itself then all its children
+					os.kill(curpid,killsig)
+					self._recursivekill(curpid)
+				else:
+					#### this is a child process. kill all its siblings then parent
+					for task in self.tasks:
+						if curppid == task[5]: 
+							#### processes share the same parent
+							print("killing self process", task[1])
+							os.kill(task[1], killsig)
+							self._recursivekill(task[1], killsig)
+					## now parent
 					print("KIlling parent")
-					os.kill(item.getPPID(),signal.SIGTERM)
+					os.kill(curppid,killsig)
+					
+				## The PID Mafia occurs below: # Kill all children and siblings
+				#for task in self.tasks:
+					#if item.getPPID() == task[5]:
+						#print("killing self process", task[1])
+						#os.kill(task[1],signal.SIGTERM)
+						#self._recursivekill(task[1])
+				## kill parent (top level item)
+				#if item.getPPID() > 0:
+					#print("KIlling parent")
+					#os.kill(item.getPPID(),signal.SIGTERM)
 			else:
 				# Windows kill
 				pass
 
-	def _recursivekill(self, pid):
+	def _recursivekill(self, pid, sig=signal.SIGTERM):
 		for task in self.tasks:
 			if pid == task[5]:
 				print("Killing child process", task[1])
-				os.kill(task[1],signal.SIGTERM)
+				os.kill(task[1],sig)
 				self._recursivekill(task[1])
 
 	def hideEvent(self, event):
@@ -1779,7 +1806,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			choices = eval(option['choicelist'])
 			# If it is a dict, get the keys
 			if type(choices) == type({}):
-				choices = choices.keys()
+				choices = list(choices.keys())
 		return choices
 
 	def getPositional(self, option):
@@ -1851,7 +1878,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 
 		posargs = []
 		# now do the widgets which are not listed in the above list
-		for name,widget in widgethash.iteritems():
+		for name,widget in list(widgethash.items()):
 			if isinstance(widget, PMHeaderWidget):
 				continue
 			if isinstance(widget, PMBoolWidget):
@@ -1903,7 +1930,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		""" Check for any error messages """
 		errormsg = ""
 		self.errorstate = False
-		for widget in self.widgethash.values():
+		for widget in list(self.widgethash.values()):
 			if widget.getErrorMessage():
 				self.errorstate = True
 				errormsg += (widget.getErrorMessage()+"<br>")

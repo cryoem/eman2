@@ -11,6 +11,7 @@ from __future__ import print_function
 
 # This script will convert a relion star file to an eman2 lst file, looking specifically for the particle number in the image and the image name
 
+from builtins import range
 from EMAN2 import *
 import sys
 import os
@@ -48,7 +49,7 @@ lstfile = LSXFile(args[1])
 
 # in the below line, -1 tells it to append the line, the next value is the image number in that image, and the final value is the image name
 
-for i in range(len(starf[starf.keys()[0]])):
+for i in range(len(starf[list(starf.keys())[0]])):
 	if options.path:
 		filepath1=starf['rlnImageName'][i].split("@")[1].replace(".mrcs",".hdf").split("/")
 		filepath = options.path + "/" + filepath1[len(filepath1)-1]

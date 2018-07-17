@@ -2,10 +2,13 @@
 # Muyuan Chen 2018-04
 
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 from EMAN2 import *
 import numpy as np
 import scipy.spatial.distance as scidist
-import Queue
+import queue
 import threading
 
 def main():
@@ -56,7 +59,7 @@ def main():
 		hdr=m.get_attr_dict()
 		ccc=img.copy()*0-65535
 
-		jsd=Queue.Queue(0)
+		jsd=queue.Queue(0)
 		thrds=[threading.Thread(target=do_match,args=(jsd, m,o, img)) for o in oris]
 		thrtolaunch=0
 		tsleep=threading.active_count()
@@ -108,7 +111,7 @@ def main():
 		n=min(options.nptcl, len(pts))
 		if "class_list" in js:
 			clst=js['class_list']
-			try: kid=max([int(k) for k in clst.keys()])+1
+			try: kid=max([int(k) for k in list(clst.keys())])+1
 			except: kid=0 # In case someone manually edited the info file. Unlikely.
 		else:
 			clst={}

@@ -31,9 +31,13 @@ from __future__ import print_function
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 import atexit
 import weakref
-from cPickle import loads,dumps
+from pickle import loads,dumps
 from zlib import compress,decompress
 import os
 import os.path
@@ -90,13 +94,13 @@ def DB_cleanup(signum=None,stack=None):
 			try: nopen=len([i for i in DBDict.alldicts if i.bdb!=None])
 			except: nopen=0
 			print("Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,nopen,os.getpid()))
-			for i in DBDict.alldicts.keys(): print(i.name)
+			for i in list(DBDict.alldicts.keys()): print(i.name)
 		if stack!=None : traceback.print_stack(stack)
-	for d in DBDict.alldicts.keys():
+	for d in list(DBDict.alldicts.keys()):
 		d.forceclose()
 		d.lock.acquire(False)		# prevents reopening
-	for e in EMAN2DB.opendbs.values(): e.close()
-	for d in DBDict.alldicts.keys():
+	for e in list(EMAN2DB.opendbs.values()): e.close()
+	for d in list(DBDict.alldicts.keys()):
 		try : d.lock.release()	# This will (intentionally) allow the threads to fail, since the environment is now closed
 		except : pass
 	if signum in (2,15) :
@@ -123,7 +127,7 @@ def parallel_process_exit():
 	if os.access('EMAN2DB',os.R_OK):
 		# Kill any running process from e2paralle.py running on localhost. If none are running nothing happens
 		from EMAN2PAR import EMLocalTaskHandler
-		for proc in EMLocalTaskHandler.allrunning.values():
+		for proc in list(EMLocalTaskHandler.allrunning.values()):
 			proc.terminate()
 			os.kill(proc.pid,signal.SIGKILL)
 
@@ -459,12 +463,12 @@ def db_read_images(fsp,*parms):
 				return [db.get(keys[i]) for i in parms[0]]
 			return [db.get(i,nodata=nodata) for i in keys]
 		else :
-			if len(parms)==0 : keys=range(0,len(db))
+			if len(parms)==0 : keys=list(range(0,len(db)))
 			else : keys=parms[0]
-			if not keys or len(keys)==0 : keys=range(len(db))
+			if not keys or len(keys)==0 : keys=list(range(len(db)))
 		return [db.get(i,nodata=nodata) for i in keys]
 	if len(parms)>0 and (parms[0]==None or len(parms[0])==0) :
-		parms=(range(EMUtil.get_image_count(fsp)),)+parms[1:]
+		parms=(list(range(EMUtil.get_image_count(fsp))),)+parms[1:]
 	return EMData.read_images_c(fsp,*parms)
 
 EMData.read_images_c=staticmethod(EMData.read_images)
@@ -589,7 +593,7 @@ def db_get_all_attributes(fsp,*parms):
 				except: pass
 			return [db.get_attr(i, attr_name) for i in keys]
 		else :
-			if len(parms)==1 : keys=range(0,len(db))
+			if len(parms)==1 : keys=list(range(0,len(db)))
 			else : keys=parms[0]
 		return [db.get_attr(i, attr_name) for i in keys]
 	return EMUtil.get_all_attributes_c(fsp,*parms)
@@ -601,7 +605,7 @@ EMUtil.get_all_attributes=staticmethod(db_get_all_attributes)
 ###  Task Management classes
 #############
 
-class EMTaskQueue:
+class EMTaskQueue(object):
 	"""This class is used to manage active and completed tasks through an
 	EMAN2DB object. Pass it an initialized EMAN2DB instance. Tasks are each
 	assigned a number unique in the local database. The active task 'max'
@@ -691,7 +695,7 @@ class EMTaskQueue:
 		task.queuetime=time.time()
 
 		# map data file specifiers to ids
-		for j,k in task.data.items():
+		for j,k in list(task.data.items()):
 			try:
 				if k[0]!="cache" : continue
 			except: continue
@@ -816,7 +820,7 @@ class EMTaskQueue:
 		self.active[taskid]=None
 		EMTaskQueue.lock.release()
 
-class EMTask:
+class EMTask(object):
 	"""This class represents a task to be completed. Generally it will be subclassed. This is effectively
 	an abstract superclass to define common member variables and methods. Note that the data dictionary,
 	which contains a mix of actual data elements, and ["cache",filename,#|min,max|(list)] image references, will
@@ -856,7 +860,7 @@ class EMTask:
 ### This is the 'database' object, representing a BerkeleyDB environment
 ##########
 
-class EMAN2DB:
+class EMAN2DB(object):
 	"""This class implements a local database of data and metadata for EMAN2"""
 
 	opendbs={}
@@ -969,7 +973,7 @@ only practical option.)
 
 	def __del__(self):
 		if not self.dbenv: return
-		for i in self.dicts.keys() : self.close_dict(i)
+		for i in list(self.dicts.keys()) : self.close_dict(i)
 		self.close()
 
 	def __getitem__(self,key):
@@ -1018,7 +1022,7 @@ only practical option.)
 ### This represents a 'dictionary' within a 'database', in BerkeleyDB parlance this is a B-tree (though it could also be a Hash)
 ##########
 
-class DBDict:
+class DBDict(object):
 	"""This class uses BerkeleyDB to create an object much like a persistent Python Dictionary,
 	keys and data may be arbitrary pickleable types, however, additional functionality is provided
 	for EMData objects. Specifically, if integer keys are used, set_attr and get_attr may be used
@@ -1076,7 +1080,7 @@ class DBDict:
 			print("Error 2 updating %s. Please contact sludtke@bcm.edu."%lfile)
 			os._exit(1)
 
-		for k in tmpdb.keys():
+		for k in list(tmpdb.keys()):
 			self.bdb[k]=tmpdb[k]
 
 		tmpdb.close()
@@ -1413,7 +1417,7 @@ of these occasional errors"""
 
 	def keys(self):
 		self.realopen(self.rohint)
-		try: return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
+		try: return [loads(x) for x in list(self.bdb.keys()) if x[0]=='\x80']
 		except:
 			traceback.print_exc()
 			print("This is a serious error, which should never occur during normal usage.\n Please report it (with the error text above) to sludtke@bcm.edu. Please also read the database warning page in the Wiki.")
@@ -1421,11 +1425,11 @@ of these occasional errors"""
 
 	def values(self):
 		self.realopen(self.rohint)
-		return [self[k] for k in self.keys()]
+		return [self[k] for k in list(self.keys())]
 
 	def items(self):
 		self.realopen(self.rohint)
-		return [(k,self[k]) for k in self.keys()]
+		return [(k,self[k]) for k in list(self.keys())]
 
 	def has_key(self,key):
 		self.realopen(self.rohint)
@@ -1598,7 +1602,7 @@ of these occasional errors"""
 
 	def update(self,dict):
 		self.realopen()
-		for i,j in dict.items(): self[i]=j
+		for i,j in list(dict.items()): self[i]=j
 
 
 #def DB_cleanup():

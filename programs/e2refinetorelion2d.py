@@ -9,6 +9,7 @@ from __future__ import print_function
 # the terms of the GPL/BSD license permit us to redistribute it.
 #
 #import block
+from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
 import pyemtbx.options
@@ -107,7 +108,7 @@ os.mkdir(E2RLN)
 verbosity=str(options.verbosity)
 
 header= EMData(set_name,0,True)
-h_keys=header.get_attr_dict().keys()
+h_keys=list(header.get_attr_dict().keys())
 nx,ny,nz=header['nx'],header['ny'],header['nz']
 num_images = EMUtil.get_image_count(set_name)
 mrc = False

@@ -33,6 +33,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import object
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.QtCore import Qt
 import sys
@@ -45,7 +46,7 @@ from libpyGLUtils2 import *
 try: from PyQt4 import QtWebKit
 except: pass
 
-class ModuleEventsManager: 
+class ModuleEventsManager(object): 
 	'''
 	Coordinates events of the various modules.
 	To begin with this is only the close event, then I added the idle event
@@ -216,7 +217,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		else:
 			QtOpenGL.QGLWidget.updateGL(self)
 
-class EMInstance:
+class EMInstance(object):
 	'''
 	Holds a reference to an instance, supports a static interface
 	'''
@@ -375,7 +376,7 @@ class EMProgressDialog(QtGui.QProgressDialog):
 def error(msg,title="Almost"):
 	EMErrorMessageDisplay.run(msg,title)
 	
-class EMErrorMessageDisplay:
+class EMErrorMessageDisplay(object):
 	'''
 	Has a static error display function which is very useful
 	'''

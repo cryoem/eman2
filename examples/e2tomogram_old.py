@@ -36,6 +36,7 @@ from __future__ import print_function
 # This program is used to analyze tilt series
 
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -112,7 +113,7 @@ def mode(vals):
 		try: d[i]=d[i]+1
 		except: d[i]=1
 
-	cnt=[(i[1],i[0]) for i in d.items()]
+	cnt=[(i[1],i[0]) for i in list(d.items())]
 	
 	cnt.sort()
 	
@@ -186,9 +187,9 @@ def main():
 		
 		# read local set of images to average for alignment
 		if i[1]>i[0] :
-			iml=EMData.read_images(args[inn],range(i[0]-options.localavg+1,i[0]+1))
+			iml=EMData.read_images(args[inn],list(range(i[0]-options.localavg+1,i[0]+1)))
 		else :
-			iml=EMData.read_images(args[inn],range(i[0],i[0]+options.localavg))
+			iml=EMData.read_images(args[inn],list(range(i[0],i[0]+options.localavg)))
 		for img in iml:
 			img.process_inplace("normalize.edgemean")
 		im1=iml[0].copy()
@@ -209,7 +210,7 @@ def main():
 		
 		if options.mode=="modeshift" :
 			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,debug=i[0]==63)
-			vec=dct.values()
+			vec=list(dct.values())
 			vec.sort()			# sort in order of peak height
 			vec2=vec[-len(vec)/4:]		# take the 25% strongest correlation peaks
 			

@@ -32,6 +32,7 @@ from __future__ import absolute_import
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 #
+from builtins import range
 from EMAN2 import get_image_directory, dump_processors_list
 from PyQt4 import QtCore, QtGui
 from .emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
@@ -147,7 +148,7 @@ class ControlPannel(QtGui.QWidget):
 		hbl.addWidget(flabel)
 		self.processor_combobox = QtGui.QComboBox()
 		proc_data = dump_processors_list()
-		for key in proc_data.keys():
+		for key in list(proc_data.keys()):
 			if len(key) >= 5 and key[:7] == "filter.":
 				#print key
 				self.processor_combobox.addItem(key)
@@ -230,7 +231,7 @@ class ControlPannel(QtGui.QWidget):
 	
 	def load_filters(self, idx):
 		# remove old items
-		for i in xrange(self.filter_combobox.count()):
+		for i in range(self.filter_combobox.count()):
 			self.filter_combobox.removeItem(i)
 		# add new ones
 		# 3x3
@@ -249,25 +250,25 @@ class ControlPannel(QtGui.QWidget):
 		# 3x3 Filters
 		if self.kernel_combobox.currentIndex() == 0:
 			if self.filter_combobox.currentText() == "Lowpass Rect":
-				for i in xrange(9):
+				for i in range(9):
 					self.gridkernel[0][i].setText("1")
 		# 5x5 Filters
 		if self.kernel_combobox.currentIndex() == 1:
 			if self.filter_combobox.currentText() == "Lowpass Rect":
-				for i in xrange(25):
+				for i in range(25):
 					self.gridkernel[1][i].setText("1")	
 		# 7x7 Filters
 		if self.kernel_combobox.currentIndex() == 2:
 			if self.filter_combobox.currentText() == "Lowpass Rect":
-				for i in xrange(49):
+				for i in range(49):
 					self.gridkernel[2][i].setText("1")	
 			
 	def add_custom_kernels(self, size):
 		self.kernelwidget = QtGui.QWidget()
 		grid3 = QtGui.QGridLayout()
 		kernelwidgetidx = []
-		for i in xrange(size):
-			for j in xrange(size):
+		for i in range(size):
+			for j in range(size):
 				kw = QtGui.QLineEdit("",self)
 				kw.setFixedSize(40,25)	# This could be an issue......
 				kernelwidgetidx.append(kw)
@@ -305,7 +306,7 @@ class ControlPannel(QtGui.QWidget):
 		grid.addWidget(self.tools_stacked_widget,1,0,1,2)
 		# Add quality combobox
 		self.quality = QtGui.QComboBox()
-		for i in xrange(5): self.quality.addItem(str(i))
+		for i in range(5): self.quality.addItem(str(i))
 		# check full path then check basename
 		if self.mediator.windowlist[0].filename not in self.qualitydb:
 			self.quality.setCurrentIndex(self.qualitydb.getdefault(self.mediator.windowlist[0].filename,dfl=0))

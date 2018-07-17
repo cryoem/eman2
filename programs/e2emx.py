@@ -12,6 +12,7 @@ from __future__ import print_function
 
 
 #import block
+from builtins import range
 from EMAN2 import *
 import pyemtbx.options
 import os
@@ -289,7 +290,7 @@ for option1 in optionList:
 
 					elif item2.tag == "transformationMatrix":
 						t = Transform([float(item2.find('t11').text),float(item2.find('t12').text),float(item2.find('t13').text),float(item2.find('t14').text),float(item2.find('t21').text),float(item2.find('t22').text),float(item2.find('t23').text),float(item2.find('t24').text),float(item2.find('t31').text),float(item2.find('t32').text),float(item2.find('t33').text),float(item2.find('t34').text)])
-						if item.find('micrograph').get('fileName') in transform_dict.keys():
+						if item.find('micrograph').get('fileName') in list(transform_dict.keys()):
 							transform_dict[item.find('micrograph').get('fileName')].append(t)
 						else:
 							transform_dict[item.find('micrograph').get('fileName')] = [t]
@@ -305,7 +306,7 @@ for option1 in optionList:
 				if particle_micrograph_filename != last_part_filename:
 					micro_dict[particle_micrograph_filename]['first_index'] = int(particle) - 1
 					last_part_filename = particle_micrograph_filename
-					if 'last_index' not in micro_dict[particle_micrograph_filename].keys():
+					if 'last_index' not in list(micro_dict[particle_micrograph_filename].keys()):
 						micro_dict[particle_micrograph_filename]['last_index'] = int(particle)-1
 				else:
 					micro_dict[particle_micrograph_filename]['last_index'] = int(particle)-1
@@ -340,18 +341,18 @@ for option1 in optionList:
 			if options.verbose>0 : print("Computing particle SNRs")
 		if not os.path.exists("particles"):
 			os.mkdir("particles")
-		for item in micro_dict.keys():
+		for item in list(micro_dict.keys()):
 			print("e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index']))
 			launch_childprocess("e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index']))
 			launch_childprocess("e2ctf.py particles/{}_ptcls.hdf --voltage {} --cs {} --ac {} --apix {} --autofit --zerook --storeparm --astigmatism {} -v {}".format(base_name(item),micro_dict[item]['voltage'],micro_dict[item]['cs'],micro_dict[item]['ampcont'],micro_dict[item]['apix_x'],dfopt,options.verbose-1))
 		if twod_xform:
-			for micrograph_xform in transform_dict.keys():
+			for micrograph_xform in list(transform_dict.keys()):
 				temp_images = EMData.read_images("particles/" + base_name(micrograph_xform) + "_ptcls.hdf")
 				for i in range(len(transform_dict[micrograph_xform])):
 					temp_images[i]['xform.projection'] = transform_dict[micrograph_xform][i]
 					temp_images[i].write_image("particles/" + base_name(micrograph_xform) + "_ptcls.hdf",i)
 		elif threed_xform:
-			for micrograph_xform in transform_dict.keys():
+			for micrograph_xform in list(transform_dict.keys()):
 				temp_images = EMData.read_images("particles/" + base_name(micrograph_xform) + "_ptcls.hdf")
 				for i in range(len(transform_dict[micrograph_xform])):
 					temp_images[i]['xform.align3d'] = transform_dict[micrograph_xform][i]

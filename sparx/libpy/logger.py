@@ -1,13 +1,14 @@
 
 from __future__ import print_function
 
-class BaseLogger_Print:
+from builtins import object
+class BaseLogger_Print(object):
 	
 	def logLine(self, prefix, line):
 		print((prefix + " " + line))
 
 
-class BaseLogger_Files:
+class BaseLogger_Files(object):
 	
 # 	filename_prefix = "log_"
 # 	
@@ -23,7 +24,7 @@ class BaseLogger_Files:
 		fstr.close()
 
 
-class Logger:
+class Logger(object):
 	
 	base_logger = None
 	prefix = ""

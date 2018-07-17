@@ -34,25 +34,28 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
+from builtins import object
 from EMAN2 import *
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt, QString
+from PyQt4.QtGui import QListWidgetItem
 from .emglobjects import Camera2, get_default_gl_colors, EMViewportDepthTools2, get_RGB_tab, get_gl_lights_vector, init_glut, EM3DModel
 from .emimageutil import EMTransformPanel # for EMLightsInspector
 from math import *
 from time import *
-from .valslider import ValSlider
+from .valslider import ValSlider, CheckBox
 import weakref # for EMLightsInspector
 
 
 
 MAG_INCREMENT_FACTOR = 1.1
 
-class EMLightsDrawer:
+class EMLightsDrawer(object):
 	'''
 	Base clase, works with EMLightsInspectorBase
 	'''
@@ -734,7 +737,7 @@ class EMLights(EMLightsDrawer,EM3DModel):
 			EM3DModel.mouseReleaseEvent(self, event)
 
 
-class EMLightsInspectorBase:
+class EMLightsInspectorBase(object):
 	'''
 	Inherit from this if you want its functionality
 	'''
@@ -871,10 +874,9 @@ class EMLightsInspectorBase:
 		self.light_specular.r.valueChanged.connect(self.update_light)
 		self.light_specular.g.valueChanged.connect(self.update_light)
 		self.light_specular.b.valueChanged.connect(self.update_light)
-		self.light_x_dir.valueChanged[double].connect(self.update_light)
-		self.light_y_dir.valueChanged[double].connect(self.update_light)
-		self.light_z_dir.valueChanged[double].connect(self.update_light)
-		self.light_manip_check.valueChanged[double].connect(self.update_light)
+		self.light_x_dir.valueChanged[float].connect(self.update_light)
+		self.light_y_dir.valueChanged[float].connect(self.update_light)
+		self.light_z_dir.valueChanged[float].connect(self.update_light)
 		self.light_manip_check.stateChanged[int].connect(self.target().light_manipulation_toggled)
 		show_lights.stateChanged[int].connect(self.target().show_lights)
 		self.local_viewer_check.stateChanged[int].connect(self.local_viewer_checked)
@@ -1294,12 +1296,12 @@ class EMLightsInspectorBase:
 		
 		new_light.clicked.connect(self.new_pointsource_light)
 		self.point_light_list.itemPressed[QListWidgetItem].connect(self.point_light_list_clicked)
-		self.light_x_pos.valueChanged[double].connect(self.update_light)
-		self.light_y_pos.valueChanged[double].connect(self.update_light)
-		self.light_z_pos.valueChanged[double].connect(self.update_light)
-		self.light_ps_xdir.valueChanged[double].connect(self.update_light)
-		self.light_ps_ydir.valueChanged[double].connect(self.update_light)
-		self.light_ps_zdir.valueChanged[double].connect(self.update_light)
+		self.light_x_pos.valueChanged[float].connect(self.update_light)
+		self.light_y_pos.valueChanged[float].connect(self.update_light)
+		self.light_z_pos.valueChanged[float].connect(self.update_light)
+		self.light_ps_xdir.valueChanged[float].connect(self.update_light)
+		self.light_ps_ydir.valueChanged[float].connect(self.update_light)
+		self.light_ps_zdir.valueChanged[float].connect(self.update_light)
 		self.spot_cutoff.valueChanged.connect(self.update_light)
 		self.spot_exponent.valueChanged.connect(self.update_light)
 		self.const_atten.valueChanged.connect(self.update_light)

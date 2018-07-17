@@ -1,6 +1,7 @@
 #!/bin/env python
 from __future__ import print_function
 
+from builtins import range
 from EMAN2  import *
 from sparx  import *
 
@@ -11,13 +12,13 @@ j=0
 aiq=0.
 viq=0.
 miq = 0.0
-for k in xrange(1000):
+for k in range(1000):
 	sums = 0.
 	sums2 = 0.
 	n = 100
 	am = -1.0e23
 	qs = uniform(1.,1000.)
-	for i in xrange(n):
+	for i in range(n):
 		x = gauss(0.0,qs)
 		sums += x
 		sums2 += x**2

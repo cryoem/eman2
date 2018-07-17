@@ -33,6 +33,10 @@ from __future__ import print_function
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 DBUG=False		# If set will dump a bunch of debugging output, normally should be False
 
 import os.path
@@ -44,7 +48,7 @@ import signal
 import traceback
 import shutil
 import subprocess
-import thread,threading
+import _thread,threading
 import getpass
 import select
 
@@ -73,8 +77,8 @@ from e2tvrecon import TVReconTask
 from e2classifytree import TreeClassifyTask
 
 from e2initialmodel import InitMdlTask
-import SocketServer
-from cPickle import dumps,loads,dump,load
+import socketserver
+from pickle import dumps,loads,dump,load
 from struct import pack,unpack
 
 # If we can't import it then we probably won't be trying to use MPI
@@ -102,7 +106,7 @@ def DCcustomer_alarm(signum=None,stack=None):
 #	if stack!=None : traceback.print_stack(stack)
 	return
 
-class EMTaskCustomer:
+class EMTaskCustomer(object):
 	"""This will communicate with the specified task server on behalf of an application needing to
 	have tasks completed"""
 	def __init__(self,target):
@@ -362,7 +366,7 @@ class EMTaskCustomer:
 				self.wait_for_server()
 				return self.get_results(taskid,False)
 
-class EMTaskHandler:
+class EMTaskHandler(object):
 	"""This is the actual server object which talks to clients and customers. It coordinates task execution
  acts as a data clearinghouse. This parent class doesn't contain any real functionality. Subclasses are always
  used for acutual servers."""
@@ -373,7 +377,7 @@ class EMTaskHandler:
 		self.queue=EMTaskHandler.queue
 #		self.queue=EMTaskQueue(path)
 
-class EMTaskClient:
+class EMTaskClient(object):
 	"""This class executes tasks on behalf of the server. This parent class implements the actual task functionality.
 Communications are handled by subclasses."""
 	def __init__(self):
@@ -416,8 +420,12 @@ class EMTestTask(JSTask):
 #######################
 #  Here are classes for implementing xmlrpc based parallelism
 
-from SimpleXMLRPCServer import SimpleXMLRPCServer
-from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
+if sys.version_info >= (3, 0):
+	from xmlrpc.server import SimpleXMLRPCServer
+	from xmlrpc.server import SimpleXMLRPCRequestHandler
+else:
+	from SimpleXMLRPCServer import SimpleXMLRPCServer
+	from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 
 
 def runXMLRPCServer(port,verbose):
@@ -486,7 +494,7 @@ accessible to the server."""
 
 #######################
 # Here we define the classes for local threaded parallelism
-class EMLocalTaskHandler():
+class EMLocalTaskHandler(object):
 	"""Local threaded Taskserver. This runs as a thread in the 'Customer' and executes tasks. Not a
 	subclass of EMTaskHandler for efficient local processing and to avoid data name translation."""
 	lock=threading.Lock()
@@ -559,7 +567,7 @@ class EMLocalTaskHandler():
 					# This means that the task failed to execute properly
 					if p[0].returncode!=0 :
 						print("Error running task : ",p[1])
-						thread.interrupt_main()
+						_thread.interrupt_main()
 						sys.stderr.flush()
 						sys.stdout.flush()
 						os._exit(1)
@@ -592,7 +600,7 @@ class EMLocalTaskHandler():
 #######################
 #  Here we define the classes for MPI parallelism
 
-class EMMpiClient():
+class EMMpiClient(object):
 	"""MPI communications are a bit complicated. An instance of EMMpiTaskHandler is created by the
 	customer. This object spawns the actual MPI job by executing mpirun. This MPI job as implemented
 	in e2parallel.py will make use of the run() method of EMMpiClient for its main loop. MPI rank 0
@@ -700,7 +708,7 @@ class EMMpiClient():
 			self.mpifile.flush()
 			self.log("Said HELO back")
 
-			self.rankjobs=[-1 for i in xrange(self.nrank)]		# Each element is a rank, and indicates which job that rank is currently running (-1 if idle)
+			self.rankjobs=[-1 for i in range(self.nrank)]		# Each element is a rank, and indicates which job that rank is currently running (-1 if idle)
 			self.rankjobs[0]=-2					# this makes sure we don't try to send a job to ourself
 			self.maxjob=-1						# current highest job number waiting for execution
 			self.nextjob=1						# next job waiting to run
@@ -729,7 +737,7 @@ class EMMpiClient():
 						self.maxjob=data	# this is the highest number job currently assigned
 
 					elif com=="CHEK" :
-						for i in xrange(len(data)):
+						for i in range(len(data)):
 							if data[i] not in self.status : data[i]=-1
 							else: data[i]=self.status[data[i]]
 
@@ -890,7 +898,7 @@ def fileenum(lst):
 	"""This is a generator that takes a single (name,#), (name,(#,#,#)), or (name,min,max) specifier
 	and yields (name,#) until the numbers are exhausted"""
 	if len(lst)==3 :
-		for i in xrange(lst[1],lst[2]) : yield (lst[0],i)
+		for i in range(lst[1],lst[2]) : yield (lst[0],i)
 	elif isinstance(lst[1],int) :
 		yield lst
 	else :
@@ -899,7 +907,7 @@ def fileenum(lst):
 def imgnumenum(lst):
 	"""like fileenum, but skips the 'name' references on return"""
 	if len(lst)==3 :
-		for i in xrange(lst[1],lst[2]) : yield i
+		for i in range(lst[1],lst[2]) : yield i
 	elif isinstance(lst[1],int) :
 		yield lst[1]
 	else :
@@ -907,7 +915,7 @@ def imgnumenum(lst):
 
 
 
-class EMMpiTaskHandler():
+class EMMpiTaskHandler(object):
 	"""MPI based task handler. This exists as a thread in the customer and handles communications with the actual
 	MPI program, which this handler spawns. We do not subclass the EMTaskHandler because we are using our own
 	file caching naming scheme here, since the MPI task is not persistent across jobs. If this handler dies,
@@ -1083,13 +1091,13 @@ def broadcast(sock,obj):
 	global oseq
 	p=dumps(obj,-1)
 	hdr=pack("<4sIII","EMAN",os.getuid(),len(p),oseq)
-	for seq in xrange(1+(len(p)-1)/1024):
+	for seq in range(1+(len(p)-1)/1024):
 		r=sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
 		if r<0 :
 			print("transmit fail %d"%seq)
 			r=sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
 
-	for seq in xrange((len(p)-1)/1024,-1,-1):
+	for seq in range((len(p)-1)/1024,-1,-1):
 		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
 #	for seq in xrange(1+(len(p)-1)/1024):
 #		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
@@ -1181,7 +1189,7 @@ def EMDCsendonecom(addr,cmd,data,clientid=0):
 
 
 import threading
-class DCThreadingMixIn:
+class DCThreadingMixIn(object):
 	"""EMAN2 Mix-in class uses threads, but sets an upper limit on simultaneous threads"""
 
 	# Decides how threads will act upon termination of the
@@ -1221,7 +1229,7 @@ class DCThreadingMixIn:
 		t.start()
 
 #class ThreadingTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer): pass
-class ThreadingTCPServer(DCThreadingMixIn, SocketServer.TCPServer): pass
+class ThreadingTCPServer(DCThreadingMixIn, socketserver.TCPServer): pass
 
 def runEMDCServer(port,verbose,killclients=False):
 	"""This will create a ThreadingTCPServer instance and execute it"""
@@ -1241,7 +1249,7 @@ def runEMDCServer(port,verbose,killclients=False):
 		server=None
 		while server==None:
 			try:
-				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
+				server = socketserver.ThreadingTCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
 		#		server = SocketServer.TCPServer(("", port), EMDCTaskHandler)	# "" is the hostname and will bind to any IPV4 interface/address
 			except :
 				print("Port in use, waiting")
@@ -1252,7 +1260,7 @@ def runEMDCServer(port,verbose,killclients=False):
 	else :
 		for port in range(9990,10000):
 			try:
-				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
+				server = socketserver.ThreadingTCPServer(("", port), EMDCTaskHandler)
 #				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
 				print("Server started on %s port %d"%(socket.gethostname(),port))
 			except:
@@ -1263,7 +1271,7 @@ def runEMDCServer(port,verbose,killclients=False):
 	if killclients : print("Client killing mode")
 	server.serve_forever()
 
-class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
+class EMDCTaskHandler(EMTaskHandler,socketserver.BaseRequestHandler):
 	"""Distributed Computing Taskserver. In this system, clients run on hosts with free cycles and request jobs
 	from the server, which runs on a host with access to the data to be processed."""
 	verbose=0
@@ -1282,12 +1290,12 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		self.verbose=EMDCTaskHandler.verbose
 		if self.verbose>1 : print(len(self.queue))
 		self.sockf=request.makefile()		# this turns our socket into a buffered file-like object
-		SocketServer.BaseRequestHandler.__init__(self,request,client_address,server)
+		socketserver.BaseRequestHandler.__init__(self,request,client_address,server)
 		self.client_address=client_address
 
 	def housekeeping(self):
 		# if we haven't heard from a client in 5 minutes, assume it's gone
-		for k in EMDCTaskHandler.clients.keys():
+		for k in list(EMDCTaskHandler.clients.keys()):
 			if k=="maxrec" : continue
 			c=EMDCTaskHandler.clients[k]
 
@@ -1297,7 +1305,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					del EMDCTaskHandler.clients[k]
 			except: continue
 
-		for k in self.queue.active.keys():
+		for k in list(self.queue.active.keys()):
 			j=self.queue.active[k]
 			if isinstance(j,int) or j.starttime==None : continue
 			try:
@@ -1438,7 +1446,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 
 							# send a list of all clients to try to talk to
 							allclients=set()
-							for i in EMDCTaskHandler.clients.keys():
+							for i in list(EMDCTaskHandler.clients.keys()):
 								if i=="maxrec" : continue
 								allclients.add(EMDCTaskHandler.clients[i][0])
 							allclients=list(allclients)
@@ -1452,7 +1460,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 								name=self.queue.didtoname[i]			# get the filename back from the did
 								n=nimg = EMUtil.get_image_count(name)	# how many images to cache in this file
 								a=EMData()
-								for j in xrange(n):				# loop over images
+								for j in range(n):				# loop over images
 									a.read_image(name,j)
 									xmit=compress(dumps((i[0],i[1],j,a),-1),3)		# compressed pickled string for efficient transfer
 									sendstr(self.sockf,xmit)
@@ -2121,7 +2129,7 @@ class EMDCTaskClient(EMTaskClient):
 			sockf.flush()
 
 			# Translate and retrieve (if necessary) data for task
-			for k,i in task.data.items():
+			for k,i in list(task.data.items()):
 				if self.verbose>1 : print("Data translate ",k,i)
 #				try:
 				if isinstance(i,list) and len(i)>0 and i[0]=="cache" :
@@ -2192,13 +2200,13 @@ class EMDCTaskClient(EMTaskClient):
 					retry=True
 					continue
 
-				for k,v in ret.items():
+				for k,v in list(ret.items()):
 					signal.alarm(120)
 					try:
 						sendobj(sockf,k)
 						sendobj(sockf,v)
 					except :
-						print("ERROR (retrying ",task.taskid,") on : ",k, " in ",ret.items())
+						print("ERROR (retrying ",task.taskid,") on : ",k, " in ",list(ret.items()))
 						if isinstance(v,EMData) : v.write_image("error.hdf",-1)
 						time.sleep(3)
 						retry=True

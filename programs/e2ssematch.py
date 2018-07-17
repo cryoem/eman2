@@ -36,6 +36,7 @@ from __future__ import print_function
 # This tries to match sequence based secondary structure prediction to
 # ssehunter results, based on length and distance constraints in each case
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import time

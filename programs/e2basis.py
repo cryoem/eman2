@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 # e2basis.py  01/21/2008  Steven Ludtke
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import time
@@ -89,7 +90,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		basislist=[int(i) for i in basislist]
 		basis=EMData.read_images(args[1],basislist)
 	else:
-		if options.nbasis>1 : basis=EMData.read_images(args[1],range(options.nbasis+1))
+		if options.nbasis>1 : basis=EMData.read_images(args[1],list(range(options.nbasis+1)))
 		else :basis=EMData.read_images(args[1])
 		
 	nx=basis[0]["nx"]
@@ -188,7 +189,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 					
 				proj["isvector"]=1
 				if options.txtout: 
-					tl=["%1.5g"%proj[j] for j in xrange(proj["nx"])]
+					tl=["%1.5g"%proj[j] for j in range(proj["nx"])]
 					tout.write("\t".join(tl))
 					tout.write("\n")
 				else : proj.write_image(args[3],i)

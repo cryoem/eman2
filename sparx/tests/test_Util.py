@@ -1,5 +1,6 @@
 
 from __future__ import print_function
+from builtins import range
 import unittest
 from optparse import OptionParser
 
@@ -14,20 +15,20 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
 		n = len(projs[0])
 		sc = len(projs)
 		matrix_diff = [0]*sc
-		for i in xrange(sc):
+		for i in range(sc):
 			matrix_diff[i] = [0]*i
-		for i in xrange(sc):
-			for j in xrange(i):
+		for i in range(sc):
+			for j in range(i):
 				diff = []
-				for k in xrange(n):
+				for k in range(n):
 					
 					diff.append( angle_between_projections_directions( self.mult_transform(projs[i][k],matrix_rot[i][j]), projs[j][k] ) )
 				matrix_diff[i][j] = diff
 		avg_diff_per_image = []
-		for k in xrange(n):
+		for k in range(n):
 			avg = 0.0
-			for i in xrange(sc):
-				for j in xrange(i):
+			for i in range(sc):
+				for j in range(i):
 					avg += matrix_diff[i][j][k]
 			avg /= (sc * (sc-1) / 2)
 			avg_diff_per_image.append(avg)
@@ -37,12 +38,12 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
 		from global_def import Util
 		sc = len(projs)
 		trans_matrix = []
-		for i in xrange(sc):
-			for j in xrange(i):
+		for i in range(sc):
+			for j in range(i):
 				trans_matrix.extend(matrix_rot[i][j][0:3])
 		trans_projs = []
-		for iConf in xrange(sc):
-			for i in xrange(len(projs[0])):
+		for iConf in range(sc):
+			for i in range(len(projs[0])):
 				ttt = projs[iConf][i][0:5]
 				while len(ttt) < 5:
 					ttt.append(0.0)
@@ -67,10 +68,10 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
 	def calculate_matrix_rot(self, projs):
 		sc = len(projs)
 		matrix_rot  = [0]*sc
-		for i in xrange(sc):
+		for i in range(sc):
 			matrix_rot [i] = [0]*i
-		for i in xrange(sc):
-			for j in xrange(i):
+		for i in range(sc):
+			for j in range(i):
 				matrix_rot[i][j] = self.wrap_rotation_between_anglesets(projs[i], projs[j])
 		return matrix_rot
 
@@ -86,7 +87,7 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
 		results = self.internal_calculate_avg_diff_Util(params, matrix_rot)
 		control = self.internal_calculate_avg_diff(params, matrix_rot)
 		self.assertEqual(len(results), len(control))
-		for i in xrange(len(results)):
+		for i in range(len(results)):
 			self.assertAlmostEquals( results[i], control[i], delta=1.0 )
 
 	def test_four_configurations(self):
@@ -102,7 +103,7 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
 		results = self.internal_calculate_avg_diff_Util(params, matrix_rot)
 		control = self.internal_calculate_avg_diff(params, matrix_rot)
 		self.assertEqual(len(results), len(control))
-		for i in xrange(len(results)):
+		for i in range(len(results)):
 			self.assertAlmostEquals( results[i], control[i], delta=1.0 )
 
 

@@ -33,6 +33,9 @@ from __future__ import absolute_import
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 ploticon = [
     '15 14 2 1',
     'b c #000055',
@@ -72,11 +75,11 @@ from EMAN2 import *
 import sys
 from .emshape import *
 import weakref
-from cPickle import dumps,loads
+from pickle import dumps,loads
 import struct, math
 from numpy import *
 from .valslider import *
-from cStringIO import StringIO
+from io import StringIO
 import re
 from . import emimage2d
 
@@ -110,7 +113,7 @@ qt_color_map["gray"] = QtGui.QColor(127,127,127)
 class EMPlot2DWidget(EMGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
-	selected = QtCore.pyqtSignal()
+	selected_sg = QtCore.pyqtSignal()
 	mousedown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 
 	def __init__(self,application=None,winid=None,parent=None):
@@ -507,7 +510,7 @@ class EMPlot2DWidget(EMGLWidget):
 		GL.glPushMatrix()
 		# overcome depth issues
 		glTranslate(0,0,5)
-		for k,s in self.shapes.items():
+		for k,s in list(self.shapes.items()):
 #			print k,s
 			s.draw(self.scr2plot)
 
@@ -523,7 +526,7 @@ class EMPlot2DWidget(EMGLWidget):
 			ax.tick_params(axis='y', labelsize="x-large")
 			canvas=FigureCanvasAgg(fig)
 
-			for i in self.axes.keys():
+			for i in list(self.axes.keys()):
 				if not self.visibility[i]: continue
 				j=self.axes[i]
 #				print j
@@ -736,7 +739,7 @@ lc is the cursor selection point in plot coords"""
 
 		j=0
 		# we find the first displayed axis in the list
-		for ak in self.axes.keys():
+		for ak in list(self.axes.keys()):
 			if not self.visibility[ak]: continue
 			j=self.axes[ak]
 			break
@@ -763,7 +766,7 @@ lc is the cursor selection point in plot coords"""
 
 		# We select one point if it's within 5 pixels, then up to 4 more points within 3 pixels
 		self.selected=[srt[0]]
-		for i in xrange(1,5) :
+		for i in range(1,min(5,len(srt))) :
 			if r[srt[i]]<3 : self.selected.append(srt[i])
 
 		y0=35
@@ -773,7 +776,7 @@ lc is the cursor selection point in plot coords"""
 			try:
 				cmts = comments[p].split(";")
 
-				for i in xrange(len(cmts)/2):
+				for i in range(len(cmts)/2):
 					imn = int(cmts[2*i])
 					imf = cmts[2*i+1]
 					ptclim=EMData(imf,imn)
@@ -794,9 +797,7 @@ lc is the cursor selection point in plot coords"""
 		for i,p in enumerate(self.selected):
 			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+y0),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
 
-
-
-		#self.selected.emit(self.selected)
+		self.selected_sg.emit()
 
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
@@ -887,7 +888,7 @@ lc is the cursor selection point in plot coords"""
 		if force or self.xlimits==None or self.xlimits[1]<=self.xlimits[0] :
 			xmin=1.0e38
 			xmax=-1.0e38
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 				xmin=min(xmin,min(self.data[k][self.axes[k][0]]))
 				xmax=max(xmax,max(self.data[k][self.axes[k][0]]))
@@ -900,7 +901,7 @@ lc is the cursor selection point in plot coords"""
 		if force or self.ylimits==None or self.ylimits[1]<=self.ylimits[0] :
 			ymin=1.0e38
 			ymax=-1.0e38
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 				ymin=min(ymin,min(self.data[k][self.axes[k][1]]))
 				ymax=max(ymax,max(self.data[k][self.axes[k][1]]))
@@ -913,7 +914,7 @@ lc is the cursor selection point in plot coords"""
 		if force or self.climits==None or self.climits[1]<=self.climits[0] :
 			cmin=1.0e38
 			cmax=-1.0e38
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 				cmin=min(cmin,min(self.data[k][self.axes[k][2]]))
 				cmax=max(cmax,max(self.data[k][self.axes[k][2]]))
@@ -922,7 +923,7 @@ lc is the cursor selection point in plot coords"""
 		if force or self.slimits==None or self.slimits[1]<=self.slimits[0] :
 			smin=1.0e38
 			smax=-1.0e38
-			for k in self.axes.keys():
+			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 				smin=min(smin,min(self.data[k][self.axes[k][3]]))
 				smax=max(smax,max(self.data[k][self.axes[k][3]]))
@@ -1157,7 +1158,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			statsArray = []
 			data = self.data["data"]
 			# Compute mean angle and radius
-			for i in xrange(len(data[0])):
+			for i in range(len(data[0])):
 				dist = data[1][i]**2 + self.clusterorigin_rad**2 - 2*data[1][i]*self.clusterorigin_rad*math.cos(data[0][i] - self.clusterorigin_theta)
 				if dist < self.clusterradius:
 					# We need to compute mean of angle
@@ -1312,7 +1313,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		GL.glPushMatrix()
 		# overcome depth issues
 		glTranslate(0,0,5)
-		for k,s in self.shapes.items():
+		for k,s in list(self.shapes.items()):
 #			print k,s
 			s.draw(self.scr2plot)
 
@@ -1329,7 +1330,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			if not self.xticklabels: ax.set_xticklabels([])
 			canvas=FigureCanvasAgg(fig)
 
-			for i in self.axes.keys():
+			for i in list(self.axes.keys()):
 				if not self.visibility[i]: continue
 				j=self.axes[i]
 				theta=self.data[i][self.axes[i][0]]
@@ -1357,7 +1358,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 				ax.set_rmax(self.pparm[i][7])
 
 			if self.datap:
-				for i in xrange(len(theta)):
+				for i in range(len(theta)):
 					ax.annotate(" "+str(self.datap[i]),(theta[i],r[i]),color=self.datalabelscolor,weight='bold',horizontalalignment='left')
 
 			canvas.draw()
@@ -1894,7 +1895,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				QtGui.QMessageBox.warning(self,"Error", "No filenames stored in {}".format(name))
 				return
 
-			for r in xrange(len(comments)):
+			for r in range(len(comments)):
 				try: imn,imf=comments[r].split(";")[:2]
 				except:
 					QtGui.QMessageBox.warning(self,"Error", "Invalid filename {} in {}, line {}".format(comments[r],name,r))
@@ -1921,7 +1922,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		nrow=len(data[0])
 
 		if axes=="all":
-			axes=range(ncol)
+			axes=list(range(ncol))
 		else:
 			try:
 				axes=[int(i) for i in axes.split(",")]
@@ -1955,7 +1956,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		resultc=[[] for j in range(nseg)]							# nseg lists of comments
 		for r in range(nrow):
 			s=imdata[r]["class_id"]
-			for c in xrange(ncol):
+			for c in range(ncol):
 				results[s][c].append(data[c][r])
 			if comments!=None: resultc[s].append(comments[r])
 
@@ -1979,7 +1980,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		nrow=len(data[0])
 
 		if axes == "all":
-			axes=range(ncol)
+			axes=list(range(ncol))
 		else:
 			try:
 				axes=[int(i) for i in axes.split(",")]
@@ -2045,7 +2046,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		resultc=[[] for j in range(nseg)]							# nseg lists of comments
 		for r in range(nrow):
 			s=imdata[r]["class_id"]
-			for c in xrange(ncol):
+			for c in range(ncol):
 				results[s][c].append(data[c][r])
 			if comments!=None: resultc[s].append(comments[r])
 
@@ -2128,7 +2129,7 @@ class DragListWidget(QtGui.QListWidget):
 
 				if data==None:					# first good line
 					n=len(rex.findall(s))		# count numbers on the line
-					data=[ [] for i in xrange(n)]		# initialize empty data arrays
+					data=[ [] for i in range(n)]		# initialize empty data arrays
 
 				# parses out each number from each line and puts it in our list of lists
 				for i,f in enumerate(rex.findall(s)):
@@ -2178,9 +2179,9 @@ class DragListWidget(QtGui.QListWidget):
 
 		# create the string representation of the data set
 		sdata=StringIO()		# easier to write as if to a file
-		for y in xrange(len(data[0])):
+		for y in range(len(data[0])):
 			sdata.write("%1.8g"%data[axes[0]][y])
-			for x in xrange(1,len(axes)):
+			for x in range(1,len(axes)):
 				sdata.write("\t%1.8g"%data[axes[x]][y])
 			sdata.write("\n")
 
@@ -2430,23 +2431,6 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.wrescale.setText("Rescale")
 		vbl.addWidget(self.wrescale)
 
-		xiangan_liu = False
-		if xiangan_liu:
-			hbl3 = QtGui.QHBoxLayout()
-
-			self.good_button=QtGui.QPushButton(self)
-			self.good_button.setText("Good")
-			self.good_button.setCheckable(0)
-			hbl3.addWidget(self.good_button)
-
-			self.bad_button=QtGui.QPushButton(self)
-			self.bad_button.setText("Bad")
-			self.bad_button.setCheckable(0)
-			hbl3.addWidget(self.bad_button)
-			vbl0.addLayout(hbl3)
-			self.good_button.clicked[bool].connect(self.on_good_button)
-			self.bad_button.clicked[bool].connect(self.on_bad_button)
-
 		vbl0.addLayout(hbl)
 
 		hbl2a=QtGui.QHBoxLayout()
@@ -2574,7 +2558,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		rngn0=int(val)
 		rngn1=int(self.nbox.getValue())
 		rngstp=int(self.stepbox.getValue())
-		rng=range(rngn0,rngn0+rngstp*rngn1,rngstp)
+		rng=list(range(rngn0,rngn0+rngstp*rngn1,rngstp))
 		for i,k in enumerate(sorted(self.target().visibility.keys())) :
 			self.target().visibility[k]=i in rng
 		self.target().full_refresh()
@@ -2585,13 +2569,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.target().updateGL()
 
 	def selAll(self):
-		for k in self.target().visibility.keys() : self.target().visibility[k]=True
+		for k in list(self.target().visibility.keys()) : self.target().visibility[k]=True
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
 
 	def selNone(self):
-		for k in self.target().visibility.keys() : self.target().visibility[k]=False
+		for k in list(self.target().visibility.keys()) : self.target().visibility[k]=False
 		self.target().full_refresh()
 		self.target().updateGL()
 		self.datachange()
@@ -2632,10 +2616,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		f = open(fname,"w")
 
-		for i in xrange(0,len(lines)):
+		for i in range(0,len(lines)):
 			lines[i] = lines[i].strip()
 
-		for i in xrange(len(lines)-1,-1,-1):
+		for i in range(len(lines)-1,-1,-1):
 			if lines[i] in names:
 				lines.pop(i)
 
@@ -2655,7 +2639,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 			lines = []
 		f = open(fname,"w")
 
-		for i in xrange(0,len(lines)):
+		for i in range(0,len(lines)):
 			lines[i] = lines[i].strip()
 
 		for name in names:
@@ -2705,7 +2689,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		for name in names :
 			data=self.target().data[name]
 
-			for i in xrange(len(data[0])):
+			for i in range(len(data[0])):
 				out.write("%g\t%g\n"%(data[xcol][i],data[ycol][i]))
 
 		out=None
@@ -2732,7 +2716,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 			out=open(name2,"w")
 			xcol=self.slidex.value()
 			ycol=self.slidey.value()
-			for i in xrange(len(data[0])):
+			for i in range(len(data[0])):
 				out.write("%g\t%g\n"%(data[xcol][i],data[ycol][i]))
 
 			print("Wrote ",name2)
@@ -2950,7 +2934,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		flags= Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)|Qt.ItemFlags(Qt.ItemIsDragEnabled)
 
-		keys=self.target().data.keys()
+		keys=list(self.target().data.keys())
 		visible = self.target().visibility
 		keys.sort()
 		parms = self.target().pparm # get the colors from this

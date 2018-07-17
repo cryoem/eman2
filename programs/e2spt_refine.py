@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 import numpy as np
 from EMAN2_utils import *
@@ -29,7 +30,7 @@ def main():
 
 	parser.add_argument("--setsf", type=str,help="structure factor", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=7, col=0,rowspan=1, colspan=3, mode="model")
 
-	parser.add_argument("--pkeep", type=float,help="fraction of particles to keep", default=1., guitype='floatbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--pkeep", type=float,help="fraction of particles to keep", default=0.8, guitype='floatbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--tkeep", type=float,help="fraction of tilt to keep. only used when tltrefine is specified. default is 0.5", default=0.5, guitype='floatbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
 
@@ -40,7 +41,7 @@ def main():
 
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=2,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -50,14 +51,8 @@ def main():
 
 	ref=options.reference
 
-	if options.path==None:
- 		# Try to assign name from set label. 
-		if "sets" in ptcls: 
-			path = ptcls.split("/")[-1].split(".")[0]
-		# Otherwise use spt_XX directory.
-		else: path = "spt"	
-		options.path = make_path(path)
-	
+	if options.path==None: options.path = make_path("spt") 
+
 	options.input_ptcls=ptcls
 	options.input_ref=ref
 	options.cmd=' '.join(sys.argv)
@@ -100,7 +95,7 @@ def main():
 		
 		js=js_open_dict(os.path.join(options.path, "particle_parms_{:02d}.json".format(itr)))
 		score=[]
-		for k in js.keys():
+		for k in list(js.keys()):
 			score.append(float(js[k]["score"]))
 		
 		s=""

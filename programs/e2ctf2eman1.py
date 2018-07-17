@@ -35,6 +35,7 @@ from __future__ import print_function
 # This is a program for determining CTF parameters using the EMAN 1 model
 
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -191,10 +192,10 @@ def loadsf( filename, ds, pssize ) :
 	if os.path.exists( filename ) :
 		sffile = open( filename, 'r' )
 		for line in sffile :
-			splitline = map( str.strip, line.split( '\t' ) )
+			splitline = list(map( str.strip, line.split( '\t' ) ))
 			if len( splitline ) > 1 :
 				if ( len( splitline[0] ) > 0 ) and ( len( splitline[1] ) > 0 ) :
-					empsf.append( map( float, splitline ) )
+					empsf.append( list(map( float, splitline )) )
 		sffile.close( )
 		empsf.sort( )
 	
@@ -563,7 +564,7 @@ def write_ctfparm( outputfile, newctflines ) :
 	if os.path.exists( outputfile ) :
 		ctffile = open( outputfile, 'r' )
 		for line in ctffile :
-			splitline = map( str.strip, line.split( '\t' ) )
+			splitline = list(map( str.strip, line.split( '\t' ) ))
 			ctflines.append( splitline )
 		ctffile.close( )
 	
@@ -636,7 +637,7 @@ def smooth( seq, kernel ) :
 	if ( len( kernel ) - 1 ) % 2 :
 		kernel.insert( 0, 0. )
 	maxj = int( ( len( kernel ) - 1 ) / 2 )
-	krange = range( -1 * maxj, maxj + 1 )
+	krange = list(range( -1 * maxj, maxj + 1))
 	
 	# Smooth the sequence
 	sm = [ ]

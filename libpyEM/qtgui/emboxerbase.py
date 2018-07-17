@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 
 # Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -33,6 +34,8 @@ from __future__ import print_function
 #
 
 
+from builtins import range
+from builtins import object
 '''
 This is a a really basic version of boxer that can be copied and used as the basis of developing something more advanced
 Design is meant to be granular and logical, i.e. easy to add to.
@@ -45,7 +48,6 @@ To see how it works just run it from the commandline:
 The EMBoxerModule is basically the epicenter of everything: functions like "add_box" and "move_box" are probably good starting
 points in terms of figuring out how to adapt this code to application specific needs
 '''
-from __future__ import absolute_import
 from optparse import OptionParser
 from .emapplication import EMApp,get_application
 from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
@@ -57,6 +59,8 @@ from EMAN2 import *
 
 import os,sys,weakref,math, json
 from PyQt4 import QtCore
+from PyQt4.QtCore import QString
+from PyQt4.QtGui import QAbstractButton
 
 
 TEMPLATE_MIN = 30
@@ -164,7 +168,7 @@ def get_idd_image_entry(image_name,key,db_title="e2boxercache/",dfl=None):
 	try: return db[key]
 	except : return dfl
 
-class ThumbsEventHandler:
+class ThumbsEventHandler(object):
 	'''
 
 	'''
@@ -200,7 +204,7 @@ class ThumbsEventHandler:
 	def set_mouse_mode(self,name):
 		pass
 
-class ScaledExclusionImage:
+class ScaledExclusionImage(object):
 	database_name = "boxer_exclusion_image" # named it this to avoid conflicting with ExclusionImage
 	def __init__(self,image_name):
 		self.image_name = image_name
@@ -273,7 +277,7 @@ class ScaledExclusionImage:
 ScaledExclusionImageCache = Cache(ScaledExclusionImage)
 
 
-class EMBox:
+class EMBox(object):
 	'''
 	A basic encapsulation of a box - it has a central coordinate, a type attribute which can be
 	customized for specific boxes, and a score attribute, which could be useful to a particular
@@ -549,14 +553,14 @@ class EMBoxingTool(object):
 		'''
 		pass
 
-class EMUnknownBoxType:
+class EMUnknownBoxType(object):
 	'''
 	Error which is thrown when a mouse tool figures out that its operating on box that it doesn't 'own'
 	'''
 	def __init__(self,type):
 		self.type = type
 
-class ErasingPanel:
+class ErasingPanel(object):
 	def __init__(self,target,erase_radius=128):
 		self.busy = True
 		self.erase_radius = erase_radius
@@ -608,7 +612,7 @@ class ErasingPanel:
 		if self.busy: return
 		self.target().toggle_unerase(val)
 
-class ManualBoxingPanel:
+class ManualBoxingPanel(object):
 	def __init__(self,target):
 		self.target = weakref.ref(target)
 		self.widget = None
@@ -741,7 +745,7 @@ class EraseTool(EMBoxingTool):
 		box = self.target().get_box(box_num)
 		raise EMUnknownBoxType(box.type) # this causes the mouse mode to be changed
 
-class ManualBoxingTool:
+class ManualBoxingTool(object):
 	'''
 	A class that knows how to add, move and remove reference and non reference boxes
 	'''
@@ -907,7 +911,7 @@ class ManualBoxingTool:
 		self.target().move_box(box_num, dx, dy)
 	# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
-class BoxEventsHandler:
+class BoxEventsHandler(object):
 	def __init__(self, target):
 		self.target = weakref.ref(target)
 		self.box_to_tool_dict = {} # this help automatic changing from one mouse tool to another when a user selects a box of a certain type
@@ -980,12 +984,12 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		@param rm_boxes a list of EMBox objects
 		'''
 		name_box_map = {}
-		for name,handler in self.mouse_handlers.items():
+		for name,handler in list(self.mouse_handlers.items()):
 			name_box_map[name] = handler.get_unique_box_types()
 
 		rm_box_map = {}
 		for box in rm_boxes:
-			for name,box_types in name_box_map.items():
+			for name,box_types in list(name_box_map.items()):
 				if box.type in box_types:
 					if name in rm_box_map:
 						rm_box_map[name].append(box)
@@ -993,7 +997,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 						rm_box_map[name] = [box]
 
 
-		for name,boxes in rm_box_map.items():
+		for name,boxes in list(rm_box_map.items()):
 			self.mouse_handlers[name].boxes_erased(boxes)
 
 	def mouse_down(self,event) :
@@ -1061,7 +1065,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.mouse_move(event)
 
-	def module_closed(self):
+	def on_module_closed(self):
 		'''
 		Slot that is called when the main 2d window is closed
 		'''
@@ -1150,12 +1154,12 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 			self.change_event_handler(self.box_to_tool_dict[data.type])
 			self.mouse_handler.delete_ptcl(box_num)
 
-	def module_closed(self):
+	def on_module_closed(self):
 		'''
 		'''
 		self.target().particles_window_closed()
 
-class EMThumbsTools:
+class EMThumbsTools(object):
 
 	def gen_thumbs(image_names=[],shrink=None):
 		'''
@@ -1285,14 +1289,14 @@ class EMBoxList(object):
 		if start<0 and end<0:
 			start=len(self.boxes)
 		if end>=0:
-			for i in xrange(len(self.boxes)-1,end,-1):
+			for i in range(len(self.boxes)-1,end,-1):
 				#print i
 				if self.boxes[i].type in types:
 					self.boxes.pop(i)
 					self.shapes.pop(i)
 		#print 
 		if start>=0:
-			for i in xrange(start-1,-1,-1):
+			for i in range(start-1,-1,-1):
 				#print i
 				if self.boxes[i].type in types:
 					self.boxes.pop(i)
@@ -1449,7 +1453,7 @@ class EMBoxList(object):
 
 	def exclude_from_scaled_image(self,exclusion_image,subsample_rate):
 		action = False
-		for i in xrange(len(self.boxes)-1,-1,-1):
+		for i in range(len(self.boxes)-1,-1,-1):
 			box = self.boxes[i]
 			x = int(box.x/subsample_rate)
 			y = int(box.y/subsample_rate)
@@ -1874,7 +1878,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		action = False
 		rm_idxs = []
 		rm_boxes = []
-		for i in xrange(len(self.box_list)-1,-1,-1):
+		for i in range(len(self.box_list)-1,-1,-1):
 			box = self.box_list.get_box(i)
 			x = int(box.x/subsample_rate)
 			y = int(box.y/subsample_rate)
@@ -1910,7 +1914,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 			self.main_2d_window.add_eraser_shape("None",None)
 			self.main_2d_window.updateGL()
 
-		for mouse_handler in self.signal_slot_handlers.values():
+		for mouse_handler in list(self.signal_slot_handlers.values()):
 			mouse_handler.set_mouse_mode(mode)
 
 
@@ -1918,7 +1922,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		self.current_tool = mode
 		self.inspector.set_tool_mode(mode)
 
-		for mouse_handler in self.signal_slot_handlers.values():
+		for mouse_handler in list(self.signal_slot_handlers.values()):
 			mouse_handler.set_mouse_mode(mode)
 
 
@@ -1971,7 +1975,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 			self.thumbs_window.set_mouse_mode("App")
 			self.thumbs_window.setWindowTitle("Thumbnails")
 			self.signal_slot_handlers["thumbs_window"] = ThumbsEventHandler(self,self.thumbs_window)
-			for tool in self.tools.values():
+			for tool in list(self.tools.values()):
 				self.signal_slot_handlers["thumbs_window"].add_mouse_handler(tool)
 
 			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
@@ -2003,7 +2007,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 			self.particles_window.set_mouse_mode("App")
 			self.particles_window.setWindowTitle("Particles")
 			self.signal_slot_handlers["particles_window"] = ParticlesWindowEventHandler(self,self.particles_window)
-			for tool in self.tools.values():
+			for tool in list(self.tools.values()):
 				self.signal_slot_handlers["particles_window"].add_mouse_handler(tool)
 
 	def particles_window_closed(self):
@@ -2121,7 +2125,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 			self.load_default_status_msg()
 
-		for name, mouse_handler in self.tools.items():
+		for name, mouse_handler in list(self.tools.items()):
 			mouse_handler.set_current_file(file_name,name==self.current_tool)
 
 		get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
@@ -2135,7 +2139,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 			self.main_2d_window.set_mouse_mode(0)
 
 			self.signal_slot_handlers["2d_window"] = Main2DWindowEventHandler(self,self.main_2d_window)
-			for tool in self.tools.values():
+			for tool in list(self.tools.values()):
 				self.signal_slot_handlers["2d_window"].add_mouse_handler(tool)
 
 			get_application().show_specific(self.main_2d_window)
@@ -2157,7 +2161,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if self.current_tool == None: self.current_tool = name
 		self.tools[name] = event_tool
 
-		for mouse_handler in self.signal_slot_handlers.values():
+		for mouse_handler in list(self.signal_slot_handlers.values()):
 			mouse_handler.add_mouse_handler(event_tool)
 
 		self.inspector.add_mouse_tool(event_tool)
@@ -2458,7 +2462,7 @@ class EMBoxerInspector(QtGui.QWidget):
 
 		viewhbl2 = QtGui.QHBoxLayout()
 		self.boxformats = QtGui.QComboBox(self)
-		for val in EMBoxerInspector.PTCL_SHAPE_MAP.keys():
+		for val in list(EMBoxerInspector.PTCL_SHAPE_MAP.keys()):
 			self.boxformats.addItem(val)
 
 		viewhbl2.addWidget(self.boxformats)

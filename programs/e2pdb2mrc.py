@@ -46,6 +46,7 @@ from __future__ import print_function
 # HEADER    COMPLEX(ANTIBODY/HIV-1 FRAGMENT)        10-FEB-94   1ACY      1ACY   2
 
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -153,7 +154,7 @@ def main():
 					rz = float(line[30:40])
 					t = float(line[40:55])
 					row = np.array([rx,ry,rz,t])
-					if tfid in tfs.keys():
+					if tfid in list(tfs.keys()):
 						tfs[tfid][rowid] = row
 					else:
 						tfs[tfid] = np.zeros((3,4))
@@ -285,7 +286,7 @@ def main():
 			p = np.asmatrix(pa.get_points()).T
 			p = p.reshape(p.shape[0]/3,3)
 			points = []
-			for tfid in tfs.keys():
+			for tfid in list(tfs.keys()):
 				m = np.asmatrix(tfs[tfid]) # transformation matrix
 				tfd = np.dot(p,m[:,:3].T)+m[:,3].T
 				bfs = np.asmatrix(np.ones(tfd.shape[0])).T # should probably fill with real bfactors

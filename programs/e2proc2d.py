@@ -33,6 +33,7 @@ from __future__ import print_function
 
 # $Id$
 
+from builtins import range
 from EMAN2 import *
 import sys
 import os.path
@@ -109,13 +110,13 @@ def image_from_formula(n_x, n_y, n_z, formula) :
 	emd  = EMData(nx, ny, nz)
 	emdn = EMNumPy.em2numpy(emd)
 
-	for z in xrange(0, nz) :
+	for z in range(0, nz) :
 		zn = z * z1
 
-		for y in xrange(0, ny) :
+		for y in range(0, ny) :
 			yn = y * y1
 
-			for x in xrange(0, nx) :
+			for x in range(0, nx) :
 				xn = x * x1
 
 				try :
@@ -268,7 +269,7 @@ def main():
 		options.outmode = "int8"
 
 	if options.outmode not in file_mode_map :
-		print("Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]'))
+		print("Invalid output mode, please specify one of :\n",str(list(file_mode_map.keys())).translate(None,'"[]'))
 		sys.exit(1)
 
 	no_2d_3d_options = (not (options.threed2threed or options.threed2twod or options.twod2threed))
@@ -650,7 +651,7 @@ def main():
 					# Parse the options to convert the image file name to EMData object
 					# (for both plain image file and bdb file)
 
-					for key in param_dict.keys():
+					for key in list(param_dict.keys()):
 						#print str(param_dict[key])
 
 						if str(param_dict[key]).find('bdb:') != -1 or not str(param_dict[key]).isdigit():
@@ -1107,7 +1108,7 @@ def main():
 								rd = d.calc_radial_dist(d["nx"],0,0.5,0)
 								d = EMData(len(rd),1,1)
 
-								for x in xrange(len(rd)): d[x] = rd[x]
+								for x in range(len(rd)): d[x] = rd[x]
 
 							if d["sigma"]==0:
 								if options.verbose > 0:
@@ -1158,7 +1159,7 @@ def main():
 		options.twod2threed   = opt2to3
 
 		if options.extractboxes:
-			for k in boxes.keys():
+			for k in list(boxes.keys()):
 				out=open(k+".box","w")
 				for c in boxes[k]:
 					out.write("{:1d}\t{:1d}\t{:1d}\t{:1d}\n".format(int(c[0]-boxsize/2),int(c[1]-boxsize/2),int(boxsize),int(boxsize)))

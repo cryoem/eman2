@@ -23,7 +23,7 @@ for im in badimgs:
 	print(im)
 
 print(len(badimgs)," identified. Are you sure you want to delete (y/n)? ", end=' ')
-ans=raw_input()
+ans=eval(input())
 
 if len(ans)==0 or ans[0].lower()=="y" :
 	for im in badimgs:

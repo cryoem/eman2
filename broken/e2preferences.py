@@ -106,7 +106,7 @@ class EMPreferencesTask(WorkFlowTask):
 		HOMEDB.open_dict("e2tomoboxer_preferences")
 		db_tomo = HOMEDB.e2tomoboxer_preferences
 		tmp_db = None
-		for key,value in params.items():
+		for key,value in list(params.items()):
 			if key in self.__tomoboxer_entries:
 				tmp_db = db_tomo
 			elif key in self.__display_entries:

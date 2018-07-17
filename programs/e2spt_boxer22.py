@@ -36,6 +36,7 @@
 
 
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 import numpy as np
 
@@ -321,7 +322,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					bdf[j]=b[j]
 				
 				
-				if bdf[5] not in self.sets.keys():
+				if bdf[5] not in list(self.sets.keys()):
 					clsi=int(bdf[5])
 					self.sets[clsi]="particles_{:02d}".format(clsi)
 				
@@ -331,7 +332,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		info.close()
 		if len(self.sets)==0:
 			self.new_set("particles_00")
-		self.sets_visible[self.sets.keys()[0]]=0
+		self.sets_visible[list(self.sets.keys())[0]]=0
 		self.currentset=sorted(self.sets.keys())[0]
 		self.setspanel.update_sets()
 	
@@ -1325,7 +1326,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	
 	def save_set(self):
 		
-		self.save_boxes(self.sets_visible.keys())
+		self.save_boxes(list(self.sets_visible.keys()))
 		return
 	
 	
@@ -1343,7 +1344,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		info=js_open_dict(self.jsonfile)
 		info["boxes_3d"]=self.boxes
 		clslst={}
-		for key in self.sets.keys():
+		for key in list(self.sets.keys()):
 			clslst[int(key)]={
 				"name":self.sets[key],
 				"boxsize":self.boxsize[key],

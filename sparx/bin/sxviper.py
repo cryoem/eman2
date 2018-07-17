@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+from builtins import range
 import sys
 import os
 
@@ -83,7 +84,7 @@ directory		output directory name: into which the results will be written (if it 
 	if options.moon_elimination == "":
 		options.moon_elimination = []
 	else:
-		options.moon_elimination = map(float, options.moon_elimination.split(","))
+		options.moon_elimination = list(map(float, options.moon_elimination.split(",")))
 
 	# Making sure all required options appeared.
 	for required_option in required_option_list:
@@ -112,7 +113,7 @@ directory		output directory name: into which the results will be written (if it 
 	
 	if mpi_rank == 0:
 		all_projs = EMData.read_images(args[0])
-		subset = range(len(all_projs))
+		subset = list(range(len(all_projs)))
 		# if mpi_size > len(all_projs):
 		# 	ERROR('Number of processes supplied by --np needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
 		# 	mpi_finalize()

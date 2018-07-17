@@ -30,6 +30,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 from __future__ import print_function
+from builtins import range
 from sys import argv
 import os
 from EMAN2 import *
@@ -601,9 +602,9 @@ def main():
 			
 			for i in range( ncls):
 
-				ptclist = [j for j in xrange(groupsize*i, groupsize*(i+1))]	
+				ptclist = [j for j in range(groupsize*i, groupsize*(i+1))]	
 				if i == ncls - 1:
-					ptclist = [j for j in xrange(groupsize*i, nptcls) ]
+					ptclist = [j for j in range(groupsize*i, nptcls) ]
 					#ptclnumsdict.update( { i: ptclist } )
 			
 				ptclnumsdict.update( { i: ptclist  } )
@@ -808,9 +809,9 @@ def main():
 			groupsize = nptcls / ncls
 		
 			for ii in range(ncls):
-				ptclist = [jj for jj in xrange(groupsize*ii, groupsize*(ii+1))]	
+				ptclist = [jj for jj in range(groupsize*ii, groupsize*(ii+1))]	
 				if ii == ncls - 1:
-					ptclist = [j for j in xrange(groupsize*ii, nptcls) ]
+					ptclist = [j for j in range(groupsize*ii, nptcls) ]
 			
 			
 				#ptclnumsdict.update( { i: ptclist } )
@@ -939,7 +940,7 @@ def main():
 						newreffiles.update({ reftag: newreffile } )
 					else:
 						print("there is no avg in avgs with refindx or reftag %d " %( int(refindx) ))
-						print("avgs.keys() are", avgs.keys())
+						print("avgs.keys() are", list(avgs.keys()))
 			
 				reffilesrefine = newreffiles
 			
@@ -1260,7 +1261,7 @@ def main():
 		
 			kkk = 0
 		
-			classes_sorted = sorted( classes.items(), key=itemgetter(0))
+			classes_sorted = sorted( list(classes.items()), key=itemgetter(0))
 			print("\n\nclasses sorted are", classes_sorted)
 		
 			for klass in classes_sorted:

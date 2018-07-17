@@ -35,6 +35,7 @@
 #
 # todo: lp, hp, tlp vs apix
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
 import sys
@@ -174,7 +175,7 @@ def main():
 		options.outmode="int8"
 
 	if options.outmode not in file_mode_map :
-		print("Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]'))
+		print("Invalid output mode, please specify one of :\n",str(list(file_mode_map.keys())).translate(None,'"[]'))
 		sys.exit(1)
 
 	infile = args[0]
@@ -204,12 +205,12 @@ def main():
 		out=EMData(nnx,nny,nnz)
 		out.to_zero()
 		ltime=0
-		for z in xrange(0,nz,shrink):
+		for z in range(0,nz,shrink):
 			if time()-ltime>0.5 :
 				print("  %d/%d\r"%(z,nz), end=' ')
 				sys.stdout.flush()
 				ltime=time()
-			for y in xrange(0,ny,4*shrink):
+			for y in range(0,ny,4*shrink):
 				tmp=EMData(infile,0,False,Region(0,y,z,nx,4*shrink,shrink))
 				tmp.process_inplace("math.meanshrink",{"n":shrink})
 				out.insert_clip(tmp,(0,y/shrink,z/shrink))
@@ -250,7 +251,7 @@ def main():
 			tmp.write_image(outfile,0,IMAGE_UNKNOWN,False,None,EM_UCHAR)
 
 			# Write the output volume slice by slice
-			for z in xrange(ny):
+			for z in range(ny):
 				slice=EMData(infile,0,False,Region(0,z,0,nx,1,nz))
 				slice.write_image(outfile,0,IMAGE_UNKNOWN,False,Region(0,0,ny-z-1,nx,nz,1),EM_UCHAR)
 
@@ -262,7 +263,7 @@ def main():
 			tmp.write_image(outfile,0,IMAGE_UNKNOWN,False,None,EM_UCHAR)
 
 			# write the output volume slice by slice
-			for z in xrange(ny):
+			for z in range(ny):
 				slice=EMData(infile,0,False,Region(0,0,z,nx,nz,1))
 				slice.write_image(outfile,0,IMAGE_UNKNOWN,False,Region(0,0,z,nx,nz,1),EM_UCHAR)
 
@@ -295,7 +296,7 @@ def main():
 
 		out=open(outfile,"w")
 		out.write("# {} mode {}".format(infile,options.calcradial))
-		for l in xrange(len(curves[0])):
+		for l in range(len(curves[0])):
 			out.write("\n{}".format(l))
 			for c in curves:
 				out.write("\t{}".format(c[l]))
@@ -450,7 +451,7 @@ def main():
 				xy = XYData()
 				xy.read_file(tf)
 				ny=data["ny"]
-				filt=[xy.get_yatx_smooth(i/(apix*ny),1) for i in xrange(int(ceil(ny*sqrt(3.0)/2)))]
+				filt=[xy.get_yatx_smooth(i/(apix*ny),1) for i in range(int(ceil(ny*sqrt(3.0)/2)))]
 				if options.verbose>1 : print(filt)
 				data.process_inplace("filter.radialtable",{"table":filt})	
 
@@ -461,7 +462,7 @@ def main():
 				if not param_dict : param_dict={}
 
 				#Parse the options to convert the image file name to EMData object(for both plain image file and bdb file)
-				for key in param_dict.keys():
+				for key in list(param_dict.keys()):
 					if str(param_dict[key]).find('bdb:')!=-1 or not str(param_dict[key]).isdigit():
 						try:
 							if  os.path.is_file(param_dict[key]) :
@@ -491,8 +492,8 @@ def main():
 				dsr.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})
 
 				# coarse search on downsampled/filtered data
-				for it in xrange(3):
-					for z in xrange(best[1]-dzmax,best[1]+dzmax+1):
+				for it in range(3):
+					for z in range(best[1]-dzmax,best[1]+dzmax+1):
 						zimg=dsd.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":best[2]})})
 						best=min(best,(dsr.cmp("ccc",zimg),z,best[2],zimg))
 					if options.verbose>1: print(best[:3])
@@ -507,7 +508,7 @@ def main():
 				best=(1000.0,best[1]*2,best[2],zimg)
 
 				# now we do a fine search only in the neighborhood on the original data
-				for z in xrange(best[1]-3,best[1]+4):
+				for z in range(best[1]-3,best[1]+4):
 					for phi in arange(best[2]-dang*3.0,best[2]+dang*3.5,dang):
 						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":phi})})
 						best=min(best,(zalignref.cmp("ccc",zimg),z,best[2],zimg))
@@ -527,7 +528,7 @@ def main():
 				nstep=int(angrange/astep)
 
 				best=(1e23,0)
-				for azi in xrange(nstep):
+				for azi in range(nstep):
 					az=azi*astep
 					datad=data.process("xform",{"transform":Transform({"type":"eman","alt":180.0,"az":az})})	# rotate 180, then about z
 					c=data.cmp("ccc",datad)
@@ -535,7 +536,7 @@ def main():
 					if options.verbose: print(azi,az,c,best)
 
 				bcen=best[1]
-				for azi in xrange(-4,5):
+				for azi in range(-4,5):
 					az=bcen+azi*astep/4.0
 					datad=data.process("xform",{"transform":Transform({"type":"eman","alt":180.0,"az":az})})	# rotate 180, then about z
 					c=data.cmp("ccc",datad)
@@ -556,7 +557,7 @@ def main():
 				if not param_dict : param_dict={}
 
 				#Parse the options to convert the image file name to EMData object(for both plain image file and bdb file)
-				for key in param_dict.keys():
+				for key in list(param_dict.keys()):
 					if str(param_dict[key]).find('bdb:')!=-1 or not str(param_dict[key]).isdigit():
 						try:
 							param_dict[key] = EMData(param_dict[key])
@@ -803,7 +804,7 @@ def parse_infile(infile, first, last, step, apix=None):
 			print("the image is a 3D stack - I will process images from %d to %d" % (first, last))
 			data = []
 			
-			for i in xrange(first, last+1, step):
+			for i in range(first, last+1, step):
 				d = EMData(infile,i,True)	# header only
 
 				if not first - last:

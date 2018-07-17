@@ -30,6 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+from builtins import range
 from EMAN2 import *
 from sparx import *
 from global_def import SPARX_MPI_TAG_UNIVERSAL
@@ -158,7 +159,7 @@ def main():
 		ks = len(ts)
 		angsa = [None]*na
 		
-		for k in xrange(ks):
+		for k in range(ks):
 			#Qfile = "Q%1d"%k
 			if options.output_dir!="./": Qfile = os.path.join(options.output_dir,"Q%1d"%k)
 			else: Qfile = os.path.join(options.output_dir, "Q%1d"%k)
@@ -168,7 +169,7 @@ def main():
 			junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:"+Qfile)
 			#DB = db_open_dict("bdb:Q%1d"%k)
 			DB = db_open_dict("bdb:"+Qfile)
-			for i in xrange(na):
+			for i in range(na):
 				ut = qt[i]*ts[k]
 				DB.set_attr(i, "xform.projection", ut)
 				#bt = ut.get_params("spider")
@@ -241,7 +242,7 @@ def main():
 			img  = get_image(stack, 0)
 			nx   = img.get_xsize()
 			ny   = img.get_ysize()
-			if int(options.decimate*min(nx, ny)+0.5)< options.window:keepgoing = 0
+			if(min(nx, ny) < options.window):   keepgoing = 0
 		keepgoing = bcast_number_to_all(keepgoing, main_node, MPI_COMM_WORLD)
 		if keepgoing == 0: ERROR("The target window size cannot be larger than the size of decimated image", "sx3dvariability", 1, myid)
 
@@ -334,12 +335,12 @@ def main():
 				nx = int(nx*options.decimate+0.5)
 				ny = int(ny*options.decimate+0.5)
 			else:
-				nx = int(options.window*decimate+0.5)
+				nx = int(options.window*options.decimate+0.5)
 				ny = nx
 		Tracker["nx"]  = nx
 		Tracker["ny"]  = ny
 		Tracker["nz"]  = nx
-		
+
 		symbaselen     = bcast_number_to_all(symbaselen)
 		if radiuspca == -1: radiuspca = nx/2-2
 
@@ -383,7 +384,7 @@ def main():
 			#varList   = EMData.read_images(stack, range(img_begin, img_end))
 			varList    = []
 			this_image = EMData()
-			for index_of_particle in xrange(img_begin,img_end):
+			for index_of_particle in range(img_begin,img_end):
 				this_image.read_image(stack,index_of_particle)
 				#varList.append(image_decimate_window_xform_ctf(this_image, options.decimate, options.window,options.CTF))
 				varList.append(window2d(resample(this_image, options.decimate), nx, ny))
@@ -405,7 +406,7 @@ def main():
 				aveList     = []
 				tab = EMUtil.get_all_attributes(stack, 'xform.projection')
 				
-				for i in xrange(nima):
+				for i in range(nima):
 					t     = tab[i].get_params('spider')
 					phi   = t['phi']
 					theta = t['theta']
@@ -423,17 +424,17 @@ def main():
 				proj_angles.sort()
 			proj_angles_list = [0.0]*(nima*4)
 			if myid == main_node:
-				for i in xrange(nima):
+				for i in range(nima):
 					proj_angles_list[i*4]   = proj_angles[i][1]
 					proj_angles_list[i*4+1] = proj_angles[i][2]
 					proj_angles_list[i*4+2] = proj_angles[i][3]
 					proj_angles_list[i*4+3] = proj_angles[i][4]
 			proj_angles_list = bcast_list_to_all(proj_angles_list, myid, main_node)
 			proj_angles      = []
-			for i in xrange(nima):
+			for i in range(nima):
 				proj_angles.append([proj_angles_list[i*4], proj_angles_list[i*4+1], proj_angles_list[i*4+2], int(proj_angles_list[i*4+3])])
 			del proj_angles_list
-			proj_list, mirror_list = nearest_proj(proj_angles, img_per_grp, range(img_begin, img_end))
+			proj_list, mirror_list = nearest_proj(proj_angles, img_per_grp, list(range(img_begin, img_end)))
 
 			all_proj = Set()
 			for im in proj_list:
@@ -446,7 +447,7 @@ def main():
 				print("On node %2d, number of images needed to be read = %5d"%(myid, len(all_proj)))
 
 			index = {}
-			for i in xrange(len(all_proj)): index[all_proj[i]] = i
+			for i in range(len(all_proj)): index[all_proj[i]] = i
 			mpi_barrier(MPI_COMM_WORLD)
 
 			if myid == main_node:
@@ -466,7 +467,7 @@ def main():
 			aveList = []
 			varList = []				
 			if nvec > 0:
-				eigList = [[] for i in xrange(nvec)]
+				eigList = [[] for i in range(nvec)]
 
 			if options.VERBOSE: 	print("Begin to read images on processor %d"%(myid)) # all nodes info
 			ttt = time()
@@ -474,7 +475,7 @@ def main():
 			imgdata = []
 			
 			#if myid==0: print(get_im(stack, 0).get_attr_dict())
-			for index_of_proj in xrange(len(all_proj)):
+			for index_of_proj in range(len(all_proj)):
 				#img     = EMData()
 				#img.read_image(stack, all_proj[index_of_proj])
 				#dmg = image_decimate_window_xform_ctf(get_im(stack, all_proj[index_of_proj]), options.decimate, options.window, options.CTF)
@@ -504,14 +505,14 @@ def main():
 			'''
 			from applications import prepare_2d_forPCA
 			from utilities    import model_blank
-			for i in xrange(len(proj_list)):
+			for i in range(len(proj_list)):
 				ki = proj_angles[proj_list[i][0]][3]
 				if ki >= symbaselen:  continue
 				mi = index[ki]
 				phiM, thetaM, psiM, s2xM, s2yM = get_params_proj(imgdata[mi])
 
 				grp_imgdata = []
-				for j in xrange(img_per_grp):
+				for j in range(img_per_grp):
 					mj = index[proj_angles[proj_list[i][j]][3]]
 					phi, theta, psi, s2x, s2y = get_params_proj(imgdata[mj])
 					alpha, sx, sy, mirror = params_3D_2D_NEW(phi, theta, psi, s2x, s2y, mirror_list[i][j])
@@ -528,7 +529,7 @@ def main():
 				if not options.no_norm:
 					#print grp_imgdata[j].get_xsize()
 					mask = model_circle(nx/2-2, nx, nx)
-					for k in xrange(img_per_grp):
+					for k in range(img_per_grp):
 						ave, std, minn, maxx = Util.infomask(grp_imgdata[k], mask, False)
 						grp_imgdata[k] -= ave
 						grp_imgdata[k] /= std
@@ -540,12 +541,12 @@ def main():
 					ny2 = 2*ny
 					if options.CTF:
 						from utilities import pad
-						for k in xrange(img_per_grp):
+						for k in range(img_per_grp):
 							grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa) ),nx,ny)
 							#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
 							#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
 					else:
-						for k in xrange(img_per_grp):
+						for k in range(img_per_grp):
 							grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
 							#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
 							#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
@@ -556,7 +557,7 @@ def main():
 					ny2 = 2*ny
 					if options.CTF:
 						from utilities import pad
-						for k in xrange(img_per_grp):
+						for k in range(img_per_grp):
 							grp_imgdata[k] = window2d( fft( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1) ) , nx,ny)
 							#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
 							#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
@@ -601,7 +602,7 @@ def main():
 					print("%5.2f%% done on processor %d"%(i*100.0/len(proj_list), myid))
 				if nvec > 0:
 					eig = pca(input_stacks=grp_imgdata, subavg="", mask_radius=radiuspca, nvec=nvec, incore=True, shuffle=False, genbuf=True)
-					for k in xrange(nvec):
+					for k in range(nvec):
 						set_params_proj(eig[k], [phiM, thetaM, 0.0, 0.0, 0.0])
 						eigList[k].append(eig[k])
 					"""
@@ -617,15 +618,15 @@ def main():
 				from fundamentals import fpol
 				if myid == main_node:
 					km = 0
-					for i in xrange(number_of_proc):
+					for i in range(number_of_proc):
 						if i == main_node :
-							for im in xrange(len(aveList)):
+							for im in range(len(aveList)):
 								aveList[im].write_image(os.path.join(options.output_dir, options.ave2D), km)
 								km += 1
 						else:
 							nl = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 							nl = int(nl[0])
-							for im in xrange(nl):
+							for im in range(nl):
 								ave = recv_EMData(i, im+i+70000)
 								"""
 								nm = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
@@ -642,7 +643,7 @@ def main():
 								km += 1
 				else:
 					mpi_send(len(aveList), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-					for im in xrange(len(aveList)):
+					for im in range(len(aveList)):
 						send_EMData(aveList[im], main_node,im+myid+70000)
 						"""
 						members = aveList[im].get_attr('members')
@@ -669,7 +670,7 @@ def main():
 			del ave, var, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList
 
 			if nvec > 0:
-				for k in xrange(nvec):
+				for k in range(nvec):
 					if options.VERBOSE and myid == main_node:log_main.add("Reconstruction eigenvolumes", k)
 					cont = True
 					ITER = 0
@@ -687,7 +688,7 @@ def main():
 						del eig3D
 						cont = False
 						icont = 0
-						for l in xrange(len(eigList[k])):
+						for l in range(len(eigList[k])):
 							phi, theta, psi, s2x, s2y = get_params_proj(eigList[k][l])
 							proj = prgs(eig3Df, kb, [phi, theta, psi, s2x, s2y])
 							cl = ccc(proj, eigList[k][l], mask2d)
@@ -716,23 +717,23 @@ def main():
 				from fundamentals import fpol 
 				if myid == main_node:
 					km = 0
-					for i in xrange(number_of_proc):
+					for i in range(number_of_proc):
 						if i == main_node :
-							for im in xrange(len(varList)):
+							for im in range(len(varList)):
 								tmpvol=fpol(varList[im], Tracker["nx"], Tracker["nx"],1)
 								tmpvol.write_image(os.path.join(options.output_dir, options.var2D), km)
 								km += 1
 						else:
 							nl = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 							nl = int(nl[0])
-							for im in xrange(nl):
+							for im in range(nl):
 								ave = recv_EMData(i, im+i+70000)
 								tmpvol=fpol(ave, Tracker["nx"], Tracker["nx"],1)
 								tmpvol.write_image(os.path.join(options.output_dir, options.var2D), km)
 								km += 1
 				else:
 					mpi_send(len(varList), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-					for im in xrange(len(varList)):
+					for im in range(len(varList)):
 						send_EMData(varList[im], main_node, im+myid+70000)#  What with the attributes??
 			mpi_barrier(MPI_COMM_WORLD)
 

@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from builtins import range
 import os, re
 from EMAN2 import *
 import numpy as np
@@ -111,7 +112,7 @@ def main():
 				tlt_assoc[ang] = arg
 			db.close()
 
-		ordered_angles = sorted([float(a) for a in tlt_assoc.keys()])
+		ordered_angles = sorted([float(a) for a in list(tlt_assoc.keys())])
 		sorted_args = [tlt_assoc[a] for a in ordered_angles] # order args according to tilt angle parameter
 
 		for angle,infile in zip(ordered_angles,sorted_args):
@@ -121,7 +122,7 @@ def main():
 				if nimg==1: print(infile)
 				else: print(infile,nimg)
 
-			for i in xrange(nimg):
+			for i in range(nimg):
 
 				img=EMData(infile,i)
 				img["tilt_angle"] = angle

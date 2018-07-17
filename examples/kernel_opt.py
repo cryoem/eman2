@@ -5,6 +5,7 @@
 # to be as nearly zero as possible, while retaining significant amplitudes within as much of the 256^3 volume as possible
 # The process iterates between real and Fourier spaces, forcing appropriate values to zero in each round
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 
 targsize=7	# goal is to have an nxn kernel with 3x oversampling

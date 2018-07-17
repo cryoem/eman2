@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from builtins import range
 import os, shutil, glob
 from EMAN2 import *
 from EMAN2star import StarFile
@@ -132,7 +133,7 @@ def main():
 
 		imgnum=0
 		lastdf=-1.0
-		for i in xrange(n):
+		for i in range(n):
 			img=EMData(args[0],i)
 			ctf=img["ctf"]
 			img.del_attr("ctf")
@@ -253,7 +254,7 @@ def main():
 			for filename in starfs:
 				print(("Importing from {}.star".format(base_name(filename,nodir=True))))
 				sf = StarFile(filename)
-				hdr = sf.keys()
+				hdr = list(sf.keys())
 				if len(hdr) < 3:
 					print(("Could not parse {}".format(filename)))
 					continue

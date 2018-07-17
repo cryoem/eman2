@@ -53,7 +53,7 @@ def avg_this_pixel (filename, imagedict, thr, i,j,k):
 #    suma2=0.
     num=0
     numth=0
-    for filename in imagedict.keys():
+    for filename in list(imagedict.keys()):
 #        print filename, i,j,k
         re= imagedict[filename].get_value_at(i,j,k)
         im= imagedict[filename].get_value_at(i+1,j,k)

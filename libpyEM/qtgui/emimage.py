@@ -33,6 +33,8 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
+from builtins import object
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
@@ -46,7 +48,7 @@ def image_update():
 	from .emimage2d import EMImage2DWidget
 	from .emimagemx import EMImageMXWidget
 	from .emimage3d import EMImage3DWidget
-	for i in EMImage2DWidget.allim.keys():
+	for i in list(EMImage2DWidget.allim.keys()):
 		try:
 			if i.isVisible() and i.data["changecount"] !=i.image_change_count:
 				i.force_fft_redo()
@@ -54,14 +56,14 @@ def image_update():
 				i.updateGL()
 		except: pass
 	
-	for i in EMImageMXWidget.allim.keys():
+	for i in list(EMImageMXWidget.allim.keys()):
 		try:
 			if i.isVisible() and i.data[0]["changecount"]!=i.image_change_count:
 				i.force_display_update()
 				i.updateGL()
 		except: pass
 		
-	for i in EMImage3DWidget.allim.keys():
+	for i in list(EMImage3DWidget.allim.keys()):
 		try:
 			if i.isVisible() and i.data["changecount"]!=i.image_change_count:
 				i.updateGL()
@@ -207,7 +209,7 @@ class EMWidgetFromFile(object):
 				if isinstance(old,EMScene3D): widget = old
 				else: widget = EMScene3D()
 #				print n,data
-				for ii in xrange(n):
+				for ii in range(n):
 					data=EMData(filename,ii)
 					datai = EMDataItem3D(data, transform=Transform())
 					widget.insertNewNode(os.path.basename(filename), datai, parentnode=widget)

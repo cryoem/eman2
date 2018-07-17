@@ -33,6 +33,8 @@ from __future__ import absolute_import
 #
 
 
+from builtins import range
+from builtins import object
 from .emsprworkflow import *
 from .emform import *
 from .emsave import EMFileTypeValidator
@@ -141,7 +143,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		if E2TomoFilterParticlesTask.preprocessor_cache == None:
 			a = dump_processors_list()
 			l = ["None"]
-			for key in a.keys():
+			for key in list(a.keys()):
 				if len(key) > 5 and key[:6] == "filter":
 					vals = key.split(".")
 					if len(vals) > 1:
@@ -174,7 +176,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 						values = vals[p[0]]
 						s = "The parameters for the %s processor are:"  %p[0]
 						
-						for i in xrange(1,len(values),3):
+						for i in range(1,len(values),3):
 							s += " " + values[i] +","
 						s = s[:-1] # get rid of the last column
 						error_message.append(s)
@@ -233,8 +235,8 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 #		db_map = project_db.get(name)
 		previous_sets = []
 		
-		for root_name,dict in db_map.items():
-			for filt,name in dict.items():
+		for root_name,dict in list(db_map.items()):
+			for filt,name in list(dict.items()):
 				if 	previous_sets.count(filt) == 0:
 					previous_sets.append(filt)
 					
@@ -343,7 +345,7 @@ class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 		
 		self.write_db_entries(params)
 
-class EMTomoAlignParams:
+class EMTomoAlignParams(object):
 	'''
 	A class that get parameters commonly used by alignment based programs
 	'''
@@ -359,7 +361,7 @@ class EMSubTomoDataReportTask(EMRawDataReportTask):
 		'''
 		data_dict = EMProjectDataDict(self.project_list)
 		project_data = data_dict.get_data_dict()
-		project_names = project_data.keys()
+		project_names = list(project_data.keys())
 		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
 
 		from .emform import EMTomographicFileTable,EMFileTable
@@ -383,7 +385,7 @@ class EMRefDataReportTask(EMRawDataReportTask):
 		'''
 		data_dict = EMProjectDataDict(self.project_list)
 		project_data = data_dict.get_data_dict()
-		project_names = project_data.keys()
+		project_names = list(project_data.keys())
 		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
 
 		from .emform import EMTomographicFileTable,EMFileTable
@@ -451,7 +453,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		
 		proc_data = dump_processors_list()
 		masks = {}
-		for key in proc_data.keys():
+		for key in list(proc_data.keys()):
 			if len(key) >= 5 and key[:5] == "mask.":
 				masks[key] = proc_data[key]
 		masks["None"] = ["Choose this to stop masking from occuring"]
@@ -460,7 +462,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		params.append([pmask, pmaskparams])
 		
 		filters = {}
-		for key in proc_data.keys():
+		for key in list(proc_data.keys()):
 			if len(key) >= 7 and key[:7] == "filter.":
 				filters[key] = proc_data[key]
 		filters["None"] = ["Choose this to stop filtering from occuring"]
@@ -470,7 +472,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 
 		ali_data = dump_aligners_list()
 		caligners = {}
-		for key in ali_data.keys():
+		for key in list(ali_data.keys()):
 			if len(key) >= 19 and key[:19] == "rotate_translate_3d":
 				caligners[key] = ali_data[key]
 		pali = ParamDef("aligner3D",vartype="string",desc_short="Aligner3D",desc_long="The 3D course aligner",property=None,defaultunits=db.get("aligner3D",dfl="rotate_translate_3d"),choices=caligners)
@@ -478,7 +480,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		params.append([pali, paliparams])
 		
 		craligners = {}
-		for key in ali_data.keys():
+		for key in list(ali_data.keys()):
 			if len(key) >= 9 and key[:9] == "refine_3d":
 				craligners[key] = ali_data[key]
 		prali = ParamDef("raligner3D",vartype="string",desc_short="RAligner3D",desc_long="The 3D refine aligner",property=None,defaultunits=db.get("raligner3D",dfl="refine_3d_grid"),choices=craligners)
@@ -585,7 +587,7 @@ class EMTomoRawDataReportTask(EMRawDataReportTask):
 		'''
 		data_dict = EMProjectDataDict(self.project_list)
 		project_data = data_dict.get_data_dict()
-		project_names = project_data.keys()
+		project_names = list(project_data.keys())
 		self.project_data_at_init = project_data # so if the user hits cancel this can be reset
 
 		from .emform import EMTomographicFileTable,EMFileTable

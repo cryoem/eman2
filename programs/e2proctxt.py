@@ -31,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -87,7 +88,7 @@ Simple manipulations of text files conatining multi-column data, as would be use
 				print("Error: {} has {} rows and {} has {}".format(args[i],len(data_sets[i]),args[i+1],len(data_sets[i])))
 				sys.exit(1)
 			
-			for row in xrange(len(data_sets[i+1])): 
+			for row in range(len(data_sets[i+1])): 
 				data_sets[0][row].extend(data_sets[i+1][row])
 
 		out=open(options.merge,"w")

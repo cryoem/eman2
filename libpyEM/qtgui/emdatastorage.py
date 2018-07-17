@@ -54,7 +54,7 @@ def boolconv(x):
 # validation/conversion for text, permitting unicode
 def textconv(x):
 	try: return str(x)
-	except: return unicode(x)
+	except: return str(x)
 
 def datetimeconv(x):
 	return str(x)
@@ -83,20 +83,20 @@ valid_vartypes={
 	"time":("s",timeconv),			# HH:MM:SS
 	"date":("s",dateconv),			# yyyy/mm/dd
 	"datetime":("s",datetimeconv),		# yyyy/mm/dd HH:MM:SS
-	"intlist":(None,lambda y:map(lambda x:int(x),y)),		# list of integers
-	"floatlist":(None,lambda y:map(lambda x:float(x),y)), # list of floats
-	"stringlist":(None,lambda y:map(lambda x:str(x),y)),	# list of enumerated strings
+	"intlist":(None,lambda y:[int(x) for x in y]),		# list of integers
+	"floatlist":(None,lambda y:[float(x) for x in y]), # list of floats
+	"stringlist":(None,lambda y:[str(x) for x in y]),	# list of enumerated strings
 	"url":("s",lambda x:str(x)),			# link to a generic url
 	"hdf":("s",lambda x:str(x)),			# url points to an HDF file
 	"image":("s",lambda x:str(x)),			# url points to a browser-compatible image
-	"binary":("s",lambda y:map(lambda x:str(x),y)),				# url points to an arbitrary binary... ['bdo:....','bdo:....','bdo:....']
+	"binary":("s",lambda y:[str(x) for x in y]),				# url points to an arbitrary binary... ['bdo:....','bdo:....','bdo:....']
 	"binaryimage":("s",lambda x:str(x)),		# non browser-compatible image requiring extra 'help' to display... 'bdo:....'
-	"child":("child",lambda y:map(lambda x:int(x),y)),	# link to dbid/recid of a child record
-	"link":("link",lambda y:map(lambda x:int(x),y)),		# lateral link to related record dbid/recid
+	"child":("child",lambda y:[int(x) for x in y]),	# link to dbid/recid of a child record
+	"link":("link",lambda y:[int(x) for x in y]),		# lateral link to related record dbid/recid
 	"boolean":("d",boolconv),
 	"dict":(None, lambda x:x), 
 	"user":("s",lambda x:str(x)), # ian 09.06.07
-	"userlist":(None,lambda y:map(lambda x:str(x),y))
+	"userlist":(None,lambda y:[str(x) for x in y])
 }
 
 # Valid physical property names
@@ -387,10 +387,10 @@ class ParamDef(DictMixin) :
 		if self.vartype != None and not str(self.vartype) in valid_vartypes:
 			raise ValueError("Invalid vartype; not in valid_vartypes")
 			
-		if unicode(self.desc_short) == "":
+		if str(self.desc_short) == "":
 			raise ValueError("Short description (desc_short) required")
 
-		if unicode(self.desc_long) == "":
+		if str(self.desc_long) == "":
 			raise ValueError("Long description (desc_long) required")
 
 		if self.property != None and str(self.property) not in valid_properties:
@@ -399,10 +399,10 @@ class ParamDef(DictMixin) :
 
 		if self.defaultunits != None:
 			a=[]
-			for q in valid_properties.values():
+			for q in list(valid_properties.values()):
 				# ian
-				a.extend(q[1].keys()) 
-				a.extend(q[2].keys())
+				a.extend(list(q[1].keys())) 
+				a.extend(list(q[2].keys()))
 			if not str(self.defaultunits) in a and str(self.defaultunits) != '':
 				#raise ValueError,"Invalid defaultunits; not in valid_properties"
 				print("Warning: Invalid defaultunits; not in valid_properties")
@@ -411,7 +411,7 @@ class ParamDef(DictMixin) :
 			try:
 				list(self.choices)
 				for i in self.choices:
-					unicode(i)
+					str(i)
 			except:
 				raise ValueError("choices must be a list of strings")
 			#if isinstance(self.choices,basestring):
@@ -498,7 +498,7 @@ class RecordDef(DictMixin) :
 	def stringparams(self):
 		"""returns the params for this recorddef as an indented printable string"""
 		r=["{"]
-		for k,v in self.params.items():
+		for k,v in list(self.params.items()):
 			r.append("\n\t%s: %s"%(k,str(v)))
 		return "".join(r)+" }\n"
 	
@@ -530,7 +530,7 @@ class RecordDef(DictMixin) :
 	def findparams(self):
 		"""This will update the list of params by parsing the views"""
 		t,d=parseparmvalues(self.mainview)
-		for i in self.views.values():
+		for i in list(self.views.values()):
 			t2,d2=parseparmvalues(i)
 			for j in t2:
 				# ian: fix for: empty default value in a view unsets default value specified in mainview
@@ -551,7 +551,7 @@ class RecordDef(DictMixin) :
 		
 		
 	def fromdict(self,d):
-		for k,v in d.items():
+		for k,v in list(d.items()):
 			self.__setattr__(k,v)
 		self.validate()
 
@@ -582,15 +582,15 @@ class RecordDef(DictMixin) :
 			raise ValueError("Invalid value for typicalchld; list of recorddefs required.")
 						
 		try: 
-			if unicode(self.mainview) == "": raise Exception
+			if str(self.mainview) == "": raise Exception
 		except:
 			raise ValueError("mainview required; must be str or unicode")
 
 		if "recname" not in dict(self.views):
 			print("Warning: recname view strongly suggested")
 
-		for k,v in self.views.items():
-			if not isinstance(k,str) or not isinstance(v,basestring):
+		for k,v in list(self.views.items()):
+			if not isinstance(k,str) or not isinstance(v,str):
 				raise ValueError("Views names must be strings; view defs may be unicode")
 
 		if self.private not in [0,1]:
@@ -759,7 +759,7 @@ class Record(DictMixin):
 		#print "property: %s"%pd.property
 		#print "defaultunits: %s"%pd.defaultunits
 
-		if pd.property and isinstance(value,basestring):
+		if pd.property and isinstance(value,str):
 			print("______ checking units __________")
 			value,units=re.compile("([0-9.,]+)?(.*)").search(value).groups()
 			value=float(value)
@@ -774,10 +774,10 @@ class Record(DictMixin):
 			if pd.defaultunits != None:
 				defaultunits=pd.defaultunits
 
-			if units in valid_properties[pd.property][1].keys():
+			if units in list(valid_properties[pd.property][1].keys()):
 				pass
 
-			elif units in valid_properties[pd.property][2].keys():
+			elif units in list(valid_properties[pd.property][2].keys()):
 				units=valid_properties[pd.property][2][units]
 
 			elif units == "":
@@ -812,9 +812,9 @@ class Record(DictMixin):
 		
 		
 	def validate_params(self):
-		if self.__params.keys():
-			pds=self.__context.db.getparamdefs(self.__params.keys())
-			for i,pd in pds.items():
+		if list(self.__params.keys()):
+			pds=self.__context.db.getparamdefs(list(self.__params.keys()))
+			for i,pd in list(pds.items()):
 				self.validate_param(self[i],pd)
 
 
@@ -823,7 +823,7 @@ class Record(DictMixin):
 		print("===== changed params =====")
 
 		cp = set()
-		for k in self.keys():
+		for k in list(self.keys()):
 			if k not in (self.param_special-set(["comments"])) and self[k] != self.__oparams.get(k,None):
 
 				if k == "comments":
@@ -889,8 +889,8 @@ class Record(DictMixin):
 	def __unicode__(self):
 		"A string representation of the record"
 		ret=["%s (%s)\n"%(str(self.recid),self.rectype)]
-		for i,j in self.items(): 
-			ret.append(u"%12s:	%s\n"%(str(i),unicode(j)))
+		for i,j in list(self.items()): 
+			ret.append(u"%12s:	%s\n"%(str(i),str(j)))
 		return u"".join(ret)
 	
 	def __str__(self):
@@ -973,7 +973,7 @@ class Record(DictMixin):
 		return tuple(self.__params.keys())+tuple(self.param_special)
 		
 	def has_key(self,key):
-		if str(key).strip().lower() in self.keys(): return True
+		if str(key).strip().lower() in list(self.keys()): return True
 		return False
 	
 	def get(self, key, default=None):
@@ -984,7 +984,7 @@ class Record(DictMixin):
 	#################################
 
 	def addcomment(self, value):
-		if not isinstance(value,basestring):
+		if not isinstance(value,str):
 			print("Warning: invalid comment")
 			return
 
@@ -998,13 +998,13 @@ class Record(DictMixin):
 		self.__comments.append((self.__context.user,time.strftime("%Y/%m/%d %H:%M:%S"),value))	# store the comment string itself		
 
 		# now update the values of any embedded params
-		for i,j in d.items():
+		for i,j in list(d.items()):
 			self.__setitem__(i,j)
 
 
 	def getparamkeys(self):
 		"""Returns parameter keys without special values like owner, creator, etc."""
-		return self.__params.keys()		
+		return list(self.__params.keys())		
 		
 
 	# ian: hard coded groups here need to be in sync with the various check*ctx methods.
@@ -1055,7 +1055,7 @@ class Record(DictMixin):
 		if "comments" in d:
 			self.__comments=d["comments"]
 			del d["comments"]
-		for k,v in d.items():
+		for k,v in list(d.items()):
 			#print "setting %s = %s"%(k,v)
 			self[k]=v
 		# generally there will be no context set at this point; validation is short form

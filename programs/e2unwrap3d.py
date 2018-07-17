@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 import sys
 
@@ -45,7 +46,7 @@ def main():
 	map3d.read_image(sys.argv[1])
 	
 	unwraped3d = None
-	for z in xrange(map3d.get_zsize()):
+	for z in range(map3d.get_zsize()):
 		t = Transform({"type":"eman","tz":(map3d.get_zsize()/2 - z)})
 		slice2d = EMData(map3d.get_xsize(), map3d.get_ysize())
 		slice2d.cut_slice(map3d, t, 0)

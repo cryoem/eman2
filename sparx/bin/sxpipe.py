@@ -32,6 +32,8 @@ from __future__ import print_function
 # Imports
 # ========================================================================================
 # Python Standard Libraries
+from builtins import range
+from builtins import object
 import sys
 import os
 import argparse
@@ -383,7 +385,7 @@ def isac_substack(args):
 		# For each entry (2D alignment parameters of particle image), register sxcaled back and combined 2D alignment parameters of this ISAC run to the lists
 		print(" ")
 		print_progress("Registering scaled back and combined 2D alignment parameters of this ISAC run...")
-		for fullstack_img_id in xrange(n_fullstack_img):
+		for fullstack_img_id in range(n_fullstack_img):
 			prealign2d = fullstack_prealign2d_list[fullstack_img_id]
 			if len(prealign2d) != n_idx_isac_align2d:
 				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(prealign2d), fullstack_img_id, fullstack_prealign2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
@@ -440,7 +442,7 @@ def isac_substack(args):
 		# For each entry (2D alignment parameters of accounted particle image), register 2D alignment parameters of this Beautifier run to the lists
 		print(" ")
 		print_progress("Registering 2D alignment parameters of this Beautifier run...")
-		for accounted_img_id in xrange(n_accounted_img):
+		for accounted_img_id in range(n_accounted_img):
 			local_total_param2d = accounted_local_total_align2d_list[accounted_img_id]
 			if len(local_total_param2d) != n_idx_beautifier_align2d:
 				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(local_total_param2d), accounted_img_id, accounted_local_total_align2d_path, n_idx_beautifier_align2d), subcommand_name) # action=1 - fatal error, exit
@@ -511,7 +513,7 @@ def isac_substack(args):
 	print(" ")
 	print_progress("Detected {} ISAC class averages in {}".format(n_class_avg, args.isac_class_avgs_path))
 	fullstack_img_id_list_of_isac_substack = []
-	for class_avg_id in xrange(n_class_avg):
+	for class_avg_id in range(n_class_avg):
 		fullstack_img_id_list_of_isac_class = []
 		fullstack_img_id_list_of_isac_class = get_im(args.isac_class_avgs_path, class_avg_id).get_attr("members")
 		fullstack_img_id_list_of_isac_class.sort()
@@ -549,7 +551,7 @@ def isac_substack(args):
 	print(" ")
 	print_progress("Converting 2D alignment parameters of all members listed in ISAC class averages to 2D alignment parameters header entry format...")
 	isac_substack_total_header_align2d_list = []
-	for isac_substack_img_id in xrange(n_isac_substack_img):
+	for isac_substack_img_id in range(n_isac_substack_img):
 		fullstack_img_id = fullstack_img_id_list_of_isac_substack[isac_substack_img_id]
 		# Get 2D alignment parameters associated with this particle and conver to 3D alignment parameters
 		total_align2d = fullstack_total_align2d_list[fullstack_img_id]
@@ -799,7 +801,7 @@ def resample_micrographs(args):
 					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break
 				assert (len(selected_mic_path_list) > 1)
-				if error_status is None and not isinstance(selected_mic_path_list[0], basestring):
+				if error_status is None and not isinstance(selected_mic_path_list[0], str):
 					error_status = ("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break
 			else:
@@ -1927,7 +1929,7 @@ def restacking(args):
 		if len(selected_mic_path_list) == 0:
 			ERROR("No micrograph entries are found in the selection list file. Please check the micrograph selecting list and restart the program.", subcommand_name) # action=1 - fatal error, exit
 		assert (len(selected_mic_path_list) > 0)
-		if not isinstance(selected_mic_path_list[0], basestring):
+		if not isinstance(selected_mic_path_list[0], str):
 			ERROR("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check the micrograph selecting list and restart the program.", subcommand_name) # action=1 - fatal error, exit
 		
 		assert (len(selected_mic_path_list) > 0)
@@ -1975,7 +1977,7 @@ def restacking(args):
 	missing_ctf_params_counter = 0
 	missing_proj_params_counter = 0
 	img = EMData()
-	for img_id in xrange(n_img):
+	for img_id in range(n_img):
 		# Load images 
 		# img = get_im(args.input_bdb_stack_path, img_id)
 		img.read_image(args.input_bdb_stack_path, img_id, True)

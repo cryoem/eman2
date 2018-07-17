@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+from builtins import range
 import os
 import re
 import argparse
@@ -40,7 +41,7 @@ def load_lines(input_file):
 def replace_tags(lines, replace_dict):
     sanity_list = []
     typo_list = []
-    for key, value in replace_dict.iteritems():
+    for key, value in list(replace_dict.items()):
         if 'END|||' in key:
             sanity_list.append(key)
         typo_list.append(key)
@@ -58,7 +59,7 @@ def replace_tags(lines, replace_dict):
                     print('line:', idx, ' Tag typo for:', name)
                     print(line)
 
-    for key, value in replace_dict.iteritems():
+    for key, value in list(replace_dict.items()):
         if not key in lines:
             print(key, 'not found')
         lines = lines.replace(key, value)
@@ -157,7 +158,7 @@ def replaces(lines):
     lines = lines.replace(r'&', r'\&')
     lines = lines.replace(r'\*', r'*')
     lines = lines.replace(r'A^2', r'A\textasciicircum2')
-    for i in reversed(range(2, 30)):
+    for i in reversed(list(range(2, 30))):
         dashes = ['-' for i in range(i)]
         lines = lines.replace(r''.join(dashes), r'\texttt{{{0}}}'.format('{}'.join(dashes)))
     lines = lines.replace(r'\labelitemi{\texttt{-{}-}}', r'\labelitemi{--}')

@@ -33,6 +33,8 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
+from builtins import object
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QAction, QAbstractButton, QListWidgetItem
@@ -65,7 +67,7 @@ import weakref
 from .emapplication import EMProgressDialog
 
 
-class EMMatrixPanel:
+class EMMatrixPanel(object):
 	'''
 	A class for managing the parameters of displaying a matrix panel
 	'''
@@ -87,8 +89,8 @@ class EMMatrixPanel:
 		[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
 		if self.ystart == None:
 			return False
-		  	# if you uncomment this code it will automatically set the scale in the main window so that the mxs stay visible
-		  	# it's not what we wanted but it's left here in case anyone wants to experiment
+			# if you uncomment this code it will automatically set the scale in the main window so that the mxs stay visible
+			# it's not what we wanted but it's left here in case anyone wants to experiment
 #			scale = self.get_min_scale(view_width,view_height,view_scale,view_data)
 #			target.scale = scale
 #			view_scale = taget.scale
@@ -207,7 +209,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	setsChanged = QtCore.pyqtSignal()
 	mx_boxdeleted = QtCore.pyqtSignal(QtGui.QMouseEvent, list, bool)
-	set_scale = QtCore.pyqtSignal(float, float, bool)
+	signal_set_scale = QtCore.pyqtSignal(float, float, bool)
 	origin_update = QtCore.pyqtSignal(float, float)
 	mx_image_selected = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
 	mx_image_double = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
@@ -586,7 +588,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.deleteLater()
 
 	def get_emit_signals_and_connections(self):
-		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
+		return {"set_origin":self.set_origin,"signal_set_scale":self.set_scale,"origin_update":self.origin_update}
 
 	def get_data(self):
 		'''
@@ -668,12 +670,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def get_img_num_offset(self):
 		return self.img_num_offset
 
-	def set_draw_background(self,bool):
-		self.draw_background = bool
+	def set_draw_background(self,state):
+		self.draw_background = state
 		self.force_display_update()# empty display lists causes an automatic regeneration of the display list
 
-	def set_use_display_list(self,bool):
-		self.use_display_list = bool
+	def set_use_display_list(self,state):
+		self.use_display_list = state
 
 	def set_max_idx(self,n):
 		self.force_display_update()# empty display lists causes an automatic regeneration of the display list
@@ -941,7 +943,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.draw_scroll = True
 			self.scroll_bar.update_target_ypos()
 
-		if self.emit_events: self.set_scale.emit(self.scale, adjust, update_gl)
+		if self.emit_events: self.signal_set_scale.emit(self.scale, adjust, update_gl)
 		if update_gl: self.updateGL()
 
 	def resize_event(self, width, height):
@@ -1546,7 +1548,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if  self.max_idx == 0: return # there is no data
 
 		absloc=((vec[0]),(self.height()-(vec[1])))
-		for item in self.coords.items():
+		for item in list(self.coords.items()):
 			index = item[0]+self.img_num_offset
 			if index != 0: index %= self.max_idx
 			data = item[1]
@@ -1597,7 +1599,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		progress = EMProgressDialog("Writing files", "abort", 0, len(self.data),None)
 		progress.show()
-		for i in xrange(0,len(self.data)):
+		for i in range(0,len(self.data)):
 			d = self.data[i]
 			if d == None: continue # the image has been excluded
 			progress.setValue(i)
@@ -2001,7 +2003,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.scroll_bar.draw()
 		glPopMatrix()
 
-class EMGLScrollBar:
+class EMGLScrollBar(object):
 	def __init__(self,target):
 		self.min = 0
 		self.max = 0
@@ -2412,8 +2414,8 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.xyz.deleteLater()
 			self.xyz = None
 
-	def animation_clicked(self,bool):
-		self.target().animation_enabled = bool
+	def animation_clicked(self,state):
+		self.target().animation_enabled = state
 
 	def get_image_manip_page(self):
 		self.impage = QtGui.QWidget()
@@ -2584,7 +2586,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.update_brightness_contrast()
 
 
-class EMMXDeletionManager:
+class EMMXDeletionManager(object):
 	'''
 	This class handles everything to do with Deleting particles
 	'''
@@ -2698,7 +2700,7 @@ class EMMXSetsPanel(QtGui.QWidget):
 
 
 
-class EMMXDataCache:
+class EMMXDataCache(object):
 	'''
 	Base class for EMMXDataCaches
 	'''
@@ -2794,14 +2796,14 @@ class EMMXDataCache:
 		'''
 		raise NotImplementedException
 
-class ApplyTransform:
+class ApplyTransform(object):
 	def __init__(self,transform):
 		self.transform = transform
 
 	def __call__(self,emdata):
 		emdata.transform(self.transform)
 
-class ApplyAttribute:
+class ApplyAttribute(object):
 	def __init__(self,attribute,value):
 		self.attribute = attribute
 		self.value = value
@@ -2809,7 +2811,7 @@ class ApplyAttribute:
 	def __call__(self,emdata):
 		emdata.set_attr(self.attribute,self.value)
 
-class ApplyProcessor:
+class ApplyProcessor(object):
 	def __init__(self,processor="",processor_args={}):
 		self.processor = processor
 		self.processor_args = processor_args
@@ -2839,7 +2841,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		'''
 
 		n = EMUtil.get_image_count(file_name)
-		data = [[file_name,i,[]] for i in xrange(n)]
+		data = [[file_name,i,[]] for i in range(n)]
 
 		return EMLightWeightParticleCache(data,len(data))
 
@@ -2930,7 +2932,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		Gets the keys in the header of the first image
 		'''
 		if self.header_keys == None:
-			self.header_keys = self.get_image_header(self.cache_start).keys()
+			self.header_keys = list(self.get_image_header(self.cache_start).keys())
 		return self.header_keys
 
 	def refocus_cache(self,new_focus):
@@ -3138,14 +3140,14 @@ class EMDataListCache(EMMXDataCache):
 				for i in self.images:
 					try:
 						if self.images[i] != None:
-							self.keys = self.images[i].get_attr_dict().keys()
+							self.keys = list(self.images[i].get_attr_dict().keys())
 							break
 					except: pass
 
 			elif self.mode == EMDataListCache.LIST_MODE:
 				for i in self.images:
 					try:
-						 self.keys = i.get_attr_dict().keys()
+						 self.keys = list(i.get_attr_dict().keys())
 						 break
 					except: pass
 
@@ -3335,7 +3337,7 @@ class EM3DDataListCache(EMMXDataCache):
 
 	def get_image_header_keys(self):
 		if self.keys == None:
-			self.keys = self[0].get_attr_dict().keys()
+			self.keys = list(self[0].get_attr_dict().keys())
 
 		return self.keys
 

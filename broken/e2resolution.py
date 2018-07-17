@@ -35,6 +35,7 @@ from __future__ import print_function
 # e2resolution.py  06/27/2007	Steven Ludtke
 # This program computes a similarity matrix between two sets of images
 
+from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict
 from optparse import OptionParser
@@ -114,7 +115,7 @@ def main():
 	print("compute power 2")
 	noisepow=noisef.calc_radial_dist(noisef.get_ysize()/2-1,1,1,1)
 
-	x=range(1,len(datapow)+1)
+	x=list(range(1,len(datapow)+1))
 	if options.apix>0:
 		x=[i/(len(datapow)*options.apix*2.0) for i in x]
 	else:

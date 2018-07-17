@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 from sys import argv,exit
 
@@ -21,7 +22,7 @@ for i in il:
 	if "boxes" in db :
 		tdb+=1
 		boxes=db["boxes"]
-		for j in xrange(len(boxes)):
+		for j in range(len(boxes)):
 			boxes[j][0]*=sfac
 			boxes[j][1]*=sfac
 		db["boxes"]=boxes

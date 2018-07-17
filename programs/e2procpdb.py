@@ -21,6 +21,7 @@ from __future__ import print_function
 #P [chains=<chainltr>]	eg - "ABO", for extracting a portion of a complex
 #D Simple program for manipulating PDB filess in the EMAN convention
 
+from builtins import range
 from EMAN2 import *
 from math import *
 import os
@@ -195,9 +196,9 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 	for i in lines:
 		if (i[:6] == 'HEADER') : title = i[10:72].strip()
 		if (i[:5] == 'HELIX') :
-			helixlist.extend(range(int(i[21:25]), int(i[33:37]) + 1))
+			helixlist.extend(list(range(int(i[21:25]), int(i[33:37]) + 1)))
 		if (i[:5] == 'SHEET') :
-			sheetlist.extend(range(int(i[22:26]), int(i[33:37]) + 1))
+			sheetlist.extend(list(range(int(i[22:26]), int(i[33:37]) + 1)))
 		if ((i[:4] == 'ATOM' or i[:6] == 'HETATM') and (not chains or (i[21] in chains))) :
 			a = i[12:14].strip()
 			res = int(i[22:26].strip())
@@ -273,7 +274,7 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 		v.close()
 		
 		apix = float(animorph[1])
-		vecs = [map(lambda y:float(y), x.split()) for x in vecs]
+		vecs = [[float(y) for y in x.split()] for x in vecs]
 		for i, v in enumerate(vecs):
 			vecs[i] = [apix * (v[3]), apix * (v[4]), apix * (v[5]), apix * (v[0] - v[3]), apix * (v[1] - v[4]), apix * (v[2] - v[5])]
 #			vecs[i]=[apix*(v[0]+v[3])/2,apix*(v[1]+v[4])/2,apix*(v[2]+v[5])/2,apix*(v[3]-v[0]),apix*(v[4]-v[1]),apix*(v[5]-v[2])]

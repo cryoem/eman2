@@ -31,9 +31,12 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 import re, os
 from EMAN2 import *
-import Queue
+import queue
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -108,7 +111,7 @@ def main():
 	if options.defocusmax!=None : opts+="--defocusmax {} ".format(options.defocusmax)
 	
 	blk=len(args)//options.threads+1
-	thrds=[threading.Thread(target=launch_childprocess,args=["e2rawdata.py "+opts+" ".join(args[i*blk:(i+1)*blk])]) for i in xrange(options.threads)]
+	thrds=[threading.Thread(target=launch_childprocess,args=["e2rawdata.py "+opts+" ".join(args[i*blk:(i+1)*blk])]) for i in range(options.threads)]
 
 	print("Launching ",options.threads," subprocesses")
 	for t in thrds:
@@ -202,13 +205,13 @@ def bgAdj(ctf,fg_1d):
 	# Find the minimum value near the origin, which we'll use as a zero (though it likely should not be)
 	mv=(fg_1d[1],1)
 	fz=int(ctf.zero(0)/(ds*2))
-	for lz in xrange(1,fz):
+	for lz in range(1,fz):
 		mv=min(mv,(fg_1d[lz],lz))
 
 	xyd.insort(mv[1],mv[0])
 
 	# now we add all of the zero locations to our XYData object
-	for i in xrange(100):
+	for i in range(100):
 		z=int(ctf.zero(i)/ds)
 		if z>=len(bg_1d)-1: break
 		if fg_1d[z-1]<fg_1d[z] and fg_1d[z-1]<fg_1d[z+1]: mv=(z-1,fg_1d[z-1])
@@ -217,17 +220,17 @@ def bgAdj(ctf,fg_1d):
 		xyd.insort(mv[0],mv[1])
 
 	# new background is interpolated XYData
-	ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
+	ctf.background=[xyd.get_yatx_smooth(i,1) for i in range(len(bg_1d))]
 
 	# if our first point (between the origin and the first 0) is too high, we readjust it once
-	bs=[fg_1d[i]-ctf.background[i] for i in xrange(fz)]
+	bs=[fg_1d[i]-ctf.background[i] for i in range(fz)]
 	if min(bs)<0 :
 		mv=(bs[0],fg_1d[0],0)
-		for i in xrange(1,fz): mv=min(mv,(bs[i],fg_1d[i],i))
+		for i in range(1,fz): mv=min(mv,(bs[i],fg_1d[i],i))
 		xyd.set_x(0,mv[2])
 		xyd.set_y(0,mv[1])
 		
-		ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
+		ctf.background=[xyd.get_yatx_smooth(i,1) for i in range(len(bg_1d))]
 
 
 if __name__ == "__main__":

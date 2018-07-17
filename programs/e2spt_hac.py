@@ -30,6 +30,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 from __future__ import print_function
+from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
 import os
@@ -363,7 +364,7 @@ def main():
 			print("\nOOOOOOOOOOOO options.groups={}, therefore, groupPATH={}".format(options.groups,groupPATH))
 			#sys.exit(1)
 			mm = 0
-			for jj in xrange(bottom_range,top_range):
+			for jj in range(bottom_range,top_range):
 				if mm == 0:
 					print("I am rewritting the spt_ptcl_indxs header parameter for every particle in the stack")
 				a = EMData(entirestack,jj)
@@ -458,7 +459,7 @@ def exclusive_classes(options):
 		if int(averages[i]['multiplicity']) >= int(options.exclusive_class_min):	
 			print("I've found a candidate with the min number of members in the average!", averages[i]['multiplicity'])
 			candidates+=1
-			for j in xrange(i+1,len(averages)):	
+			for j in range(i+1,len(averages)):	
 				if averages[i] not in repeated:
 					#print "I'm comparing these candidates", averages[i], averages[j]			
 					for k in averages[i]['indxs']:
@@ -658,7 +659,7 @@ def allvsall(options,preproc):
 		NOTE: In the first round all the particles are "new"
 		'''
 		
-		newptclsmap = list(enumerate([range(i,nnew) for i in range(1,nnew)]))
+		newptclsmap = list(enumerate([list(range(i,nnew)) for i in range(1,nnew)]))
 		
 		jj=0									#Counter to track the number of comparisons (also the number of tasks to parallelize)
 		roundtag = 'round' + str(k).zfill(fillfactor) + '_'			#The round tag needs to change as the iterations/rounds progress
@@ -700,9 +701,9 @@ def allvsall(options,preproc):
 			
 			#print "Old tagas are:\n", oldtags
 			nnn = 0
-			for refkey,refvalue in newptcls.iteritems():
+			for refkey,refvalue in list(newptcls.items()):
 				ptcl1 = nnn
-				for particlekey,particlevalue in oldptcls.iteritems():
+				for particlekey,particlevalue in list(oldptcls.items()):
 					
 					ptcl2 = oldtags[particlekey]
 					
@@ -1325,7 +1326,7 @@ def allvsall(options,preproc):
 		if options.verbose > 2:
 			print("These were the particles in iteration", k)
 		
-		for particlekey,particlevalue in newptcls.iteritems():
+		for particlekey,particlevalue in list(newptcls.items()):
 			
 			if options.verbose > 2:
 				print(particlekey)
@@ -1337,7 +1338,7 @@ def allvsall(options,preproc):
 				if options.verbose > 1:
 					print("This particle from newptcls was averaged", particlekey)
 		
-		for particlekey,particlevalue in oldptcls.iteritems():
+		for particlekey,particlevalue in list(oldptcls.items()):
 			if particlekey not in used:
 				surviving_oldptcls.update({particlekey:particlevalue})
 			else:
@@ -1365,7 +1366,7 @@ def allvsall(options,preproc):
 		#a.write_image(oldptclstack.hdf,0)					#
 		
 		gg=0
-		for particlekey,particlevalue in oldptcls.iteritems():
+		for particlekey,particlevalue in list(oldptcls.items()):
 			allptclsRound.update({ particlekey: [particlevalue,allptclsMatrix[k][particlekey][-1]]})
 			particlevalue.write_image(options.path + '/oldptclstack.hdf',gg)
 			gg+=1

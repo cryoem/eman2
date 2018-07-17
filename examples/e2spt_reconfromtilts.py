@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2017-03
+from builtins import range
 from EMAN2 import *
 import numpy as np
 
@@ -21,7 +22,7 @@ def main():
 	
 	sptpath=os.path.dirname(options.json)
 	js=js_open_dict(options.json)
-	print("Read alignment of {:d} 3D particles.".format(len(js.keys())))
+	print("Read alignment of {:d} 3D particles.".format(len(list(js.keys()))))
 	ks=[eval(str(s)) for s in sorted(js.keys())]
 	
 	### lists in dictionaries in dictionaries.....
@@ -48,7 +49,7 @@ def main():
 	
 	lst=[LSXFile(m, False) for m in lname]
 	
-	pnames=ptclnames.keys()
+	pnames=list(ptclnames.keys())
 	for pname in pnames:
 		modelids=sorted(ptclnames[pname].keys())
 		num=EMUtil.get_image_count(pname)

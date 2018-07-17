@@ -2,6 +2,7 @@
 from __future__ import print_function
 # Muyuan Chen 2016-10
 # Muyuan Chen mostly rewrite 2017-03
+from builtins import range
 from EMAN2 import *
 import numpy as np
 

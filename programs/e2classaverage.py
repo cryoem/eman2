@@ -33,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from builtins import range
 from EMAN2 import *
 import math
 from copy import deepcopy
@@ -156,7 +157,7 @@ def main():
 	# prepare tasks
 	tasks=[]
 	if ncls>1:
-		if options.oneclass==None : clslst=range(ncls)
+		if options.oneclass==None : clslst=list(range(ncls))
 		else : clslst=[options.oneclass]
 
 		for cl in clslst:
@@ -169,11 +170,11 @@ def main():
 			  options.automask,options.saveali,options.setsfref,options.verbose,cl,options.center))
 
 	else:
-		ptcls=range(nptcl)
+		ptcls=list(range(nptcl))
 		if options.resample : ptcls=[random.choice(ptcls) for i in ptcls]
 		if options.odd : ptcls=[i for i in ptcls if i%2==1]
 		if options.even: ptcls=[i for i in ptcls if i%2==0]
-		tasks.append(ClassAvTask(options.input,range(nptcl),options.usefilt,options.ref,options.iter,options.normproc,options.prefilt,
+		tasks.append(ClassAvTask(options.input,list(range(nptcl)),options.usefilt,options.ref,options.iter,options.normproc,options.prefilt,
 			  options.align,options.aligncmp,options.ralign,options.raligncmp,options.averager,options.cmp,options.keep,options.keepsig,
 			  options.automask,options.saveali,options.setsfref,options.verbose,0,options.center))
 
@@ -478,7 +479,7 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 		ssnr=avg.calc_fourier_shell_correlation(ref)
 		third=len(ssnr)/3
 		ssnr=[ssnr[third]]*4+ssnr[third:third*2]+[ssnr[third*2-1]]*4	# we extend the list by replication to make the running average more natural
-		ssnr=[sum(ssnr[i-4:i+5])/9.0 for i in xrange(4,third+4)]		# smoothing by running average
+		ssnr=[sum(ssnr[i-4:i+5])/9.0 for i in range(4,third+4)]		# smoothing by running average
 		ssnr=[v/(1.0-min(v,.999999)) for v in ssnr]						# convert FSC to pseudo SSNR
 		avg["class_ssnr"]=ssnr
 

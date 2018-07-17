@@ -32,6 +32,10 @@ from __future__ import print_function
 #
 #
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_list_dicts
 from math import *
@@ -39,7 +43,7 @@ import time
 import os
 import sys
 import re
-from cPickle import dumps,loads,dump,load
+from pickle import dumps,loads,dump,load
 from zlib import compress,decompress
 from subprocess import Popen,PIPE
 import traceback
@@ -212,7 +216,7 @@ def recv_file(stdin,path):
 def send_bdb(stdout,path):
 	"Sends a BDB to stdout as a set of compressed pickled key/value pairs, terminated by a None key"
 	db=db_open_dict(path)
-	keys=db.keys()
+	keys=list(db.keys())
 	for k in keys:
 		write_obj(stdout,k)
 		write_obj(stdout,db[k])
@@ -363,7 +367,7 @@ def scp_client():
 			recv_bdb(stdin,path)
 			continue
 		
-class scp_proxy:
+class scp_proxy(object):
 	def __init__(self,userhost,verbose=0):
 		"""Opens a connection to the remote host and establishes the remote client. userhost should be of the form "user@host"""
 		self.verbose=verbose
@@ -413,7 +417,7 @@ class scp_proxy:
 		self.stdin.write("listrecurse\n%s\n%s\n"%(path,basepath))
 		r=int(self.stdout.readline().strip())
 		ret=[]
-		for i in xrange(r):
+		for i in range(r):
 			ret.append(self.stdout.readline().strip())
 			
 		return ret

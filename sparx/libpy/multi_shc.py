@@ -1,5 +1,6 @@
 # For some reason these programs get stuck on MPI if I change the order of programs in the file.  Strange, PAP.
 from __future__ import print_function
+from builtins import range
 '''
 #  I do not know why this would make sense  PAP 04/20/2017
 def generate_uneven_projections_directions(count, half_sphere=False, output_filename=None, 
@@ -57,7 +58,7 @@ def orient_params(params, refparams, indexes=None, symmetry_class = None):
 	from EMAN2 import Transform
 
 	n = len(params)
-	if( indexes == None ): tindexes = range(n)
+	if( indexes == None ): tindexes = list(range(n))
 	else:  tindexes = indexes
 
 	if(symmetry_class.sym[0] == "c" and symmetry_class.nsym>1):
@@ -65,22 +66,22 @@ def orient_params(params, refparams, indexes=None, symmetry_class = None):
 		divic = 360.0/symmetry_class.nsym
 		phi = angle_diff_sym([params[j] for j in tindexes], [refparams[j] for j in tindexes], symmetry_class.nsym)
 		out = deepcopy(params)
-		for j in xrange(n):
+		for j in range(n):
 			out[j][0] = (out[j][0]+phi)%divic
 		# mirror checking
 		psi_diff = angle_diff( [out[j][2] for j in tindexes], [refparams[j][2] for j in tindexes] )
 		if(abs(psi_diff-180.0) <90.0):
-			for j in xrange(n):
+			for j in range(n):
 				# apply mirror
 				out[j][2] = (out[j][2] + 180.0) % 360.0
 	elif(symmetry_class.sym[0] == "c"):
 		t1,t2,t3 = rotation_between_anglesets([params[j] for j in tindexes], [refparams[j] for j in tindexes])
-		out = rotate_params([params[i][:3] for i in xrange(n)],[-t3,-t2,-t1])
-		out = [out[i]+params[i][3:]  for i in xrange(n)]  # reattach shifts
+		out = rotate_params([params[i][:3] for i in range(n)],[-t3,-t2,-t1])
+		out = [out[i]+params[i][3:]  for i in range(n)]  # reattach shifts
 		# mirror checking
 		psi_diff = angle_diff( [out[j][2] for j in tindexes], [refparams[j][2] for j in tindexes] )
 		if(abs(psi_diff-180.0) <90.0):
-			for j in xrange(n):
+			for j in range(n):
 				# apply mirror
 				out[j][2] = (out[j][2] + 180.0) % 360.0
 	"""
@@ -105,7 +106,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 	n  = len(projs[0])
 	sc = len(projs)
 
-	subset = range(n)
+	subset = list(range(n))
 
 	minimal_subset_size = min( minimal_subset_size, n)
 
@@ -116,8 +117,8 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 		outp = deepcopy(projs)
 		for i in subset:
 			qt = 0.0
-			for k in xrange(sc-1):
-				for l in xrange(k+1,sc):
+			for k in range(sc-1):
+				for l in range(k+1,sc):
 					neisym = symmetry_class.symmetry_neighbors([outp[l][i][:3]])
 					dmin = 180.0
 					for q in neisym: dmin = min(dmin, getang3(q, outp[k][i]))
@@ -135,16 +136,16 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 			divic = 360.0/symmetry_class.nsym
 			for i in subset: avg_diff_per_image[i] = 0.0
 			outp = [deepcopy(projs[0])]
-			for i in xrange(sc-1,-1,-1):
+			for i in range(sc-1,-1,-1):
 				tv = angles_to_normals(projs[i])
 
-				for j in xrange(i+1,sc):
+				for j in range(i+1,sc):
 					out = orient_params(projs[j], projs[i], subset, symmetry_class = symmetry_class)
 					if(symmetry_class.nsym > 1):
 						# for k in xrange(n):
 						for k in subset:
 							mind = 1.0e23
-							for l in xrange(symmetry_class.nsym):
+							for l in range(symmetry_class.nsym):
 								u1,u2,u3 = getfvec(out[k][0] + l*divic, out[k][1])
 								qt = lacos(tv[k][0]*u1+tv[k][1]*u2+tv[k][2]*u3)
 								mind = min(mind, qt)
@@ -170,8 +171,8 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 
 			for i in subset:
 				qt = 0.0
-				for k in xrange(sc-1):
-					for l in xrange(k+1,sc):
+				for k in range(sc-1):
+					for l in range(k+1,sc):
 						neisym = symmetry_class.symmetry_neighbors([outp[l][i][:3]])
 						dmin = 180.0
 						for q in neisym: dmin = min(dmin, getang3(q,outp[k][i]))
@@ -185,11 +186,11 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 		else:  # o, t, i
 			from pixel_error import angle_diff
 			outp = deepcopy(projs)
-			for l in xrange(1,sc):
+			for l in range(1,sc):
 				psi_diff = angle_diff( [outp[l][j][2] for j in subset], [outp[0][j][2] for j in subset] )
 				#  adjust psi if necessary
 				if(abs(psi_diff-180.0) <90.0):
-					for j in xrange(n):
+					for j in range(n):
 						# apply mirror
 						outp[l][j][2] = (outp[l][j][2] + 180.0)%360.0
 
@@ -334,7 +335,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
 	if myid == main_node:
-		list_of_particles = range(len(stack))
+		list_of_particles = list(range(len(stack)))
 		total_nima = len(list_of_particles)
 	else:
 		list_of_particles = None
@@ -347,7 +348,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 	#print "  image_start, image_end  ", myid,image_start, image_end
 
 	data = [ stack[im] for im in list_of_particles ]
-	for im in xrange(nima):
+	for im in range(nima):
 		data[im].set_attr('ID', list_of_particles[im])
 		ctf_applied = data[im].get_attr_default('ctf_applied', 0)
 		if CTF and ctf_applied == 0:
@@ -362,13 +363,13 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 
 	# initialize GA data structure [ [L2, [params]], ...]
 	if myid == main_node:
-		GA = [ [0.0, [[0.0,0.,0.0,0.0,0.0] for j in xrange(total_nima)]] for i in xrange(number_of_runs)]
+		GA = [ [0.0, [[0.0,0.,0.0,0.0,0.0] for j in range(total_nima)]] for i in range(number_of_runs)]
 		noimprovement = 0
 		firstcheck    = True
 
 	orient_and_shuffle = False
 	# do the projection matching
-	for N_step in xrange(lstp):  # At this point there is just one value here, it cannot loop.
+	for N_step in range(lstp):  # At this point there is just one value here, it cannot loop.
 		if myid == 0:  afterGAcounter = 0
 		terminate = False
 		Iter = 0
@@ -400,8 +401,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 			#  It has to be here
 			if orient_and_shuffle:
 				# adjust params to references, calculate psi, calculate previousmax
-				vecs = [[refrings[lr].get_attr("n1"), refrings[lr].get_attr("n2"), refrings[lr].get_attr("n3")] for lr in xrange(len(refrings))]
-				for im in xrange(nima):
+				vecs = [[refrings[lr].get_attr("n1"), refrings[lr].get_attr("n2"), refrings[lr].get_attr("n3")] for lr in range(len(refrings))]
+				for im in range(nima):
 					#  For testing purposes make sure that directions did not change
 					t1,t2,t3,t4,t5 = get_params_proj( data[im] )
 					from utilities import nearest_fang
@@ -439,7 +440,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 			if mpi_subrank == 0:
 				pixer = []
 				number_of_checked_refs = 0
-				proj_ids_to_process = range(nima)
+				proj_ids_to_process = list(range(nima))
 				shuffle(proj_ids_to_process)
 			while True:
 				# --------- broadcast projections ids
@@ -473,7 +474,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 				# -------- merge results
 				if mpi_subrank == 0:
 					used_refs = set()
-					for i in xrange(len(vector_assigned_refs)):
+					for i in range(len(vector_assigned_refs)):
 						ir = vector_assigned_refs[i]
 						if ir in used_refs:
 							# reference is already used - cancel all changes
@@ -495,7 +496,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 				# ------- delete used references
 				for ir in used_refs:  del refrings[ir]
 				# ------- set projections parameters
-				for i in xrange(len(vector_previousmax)):
+				for i in range(len(vector_previousmax)):
 					data[proj_ids[i]].set_attr("previousmax", vector_previousmax[i])
 					data[proj_ids[i]].set_attr("xform.projection", vector_xformprojs[i])
 			#=========================================================================
@@ -518,7 +519,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 				lhist = 20
 				region, histo = hist_list(all_pixer, lhist)
 				log.add("= Pixel error        Number of images in all runs")
-				for lhx in xrange(lhist):
+				for lhx in range(lhist):
 					msg = " %10.3f                  %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
 				temp = 0
@@ -603,7 +604,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 
 				#temp = [None]*nima
 				#for i in xrange(nima): temp[i] = data[i].get_attr("xform.projection")
-				for i in xrange(nima):  set_params_proj(data[i], params[i])
+				for i in range(nima):  set_params_proj(data[i], params[i])
 				vol = do_volume(data[image_start:image_end], ali3d_options, 0, mpi_subcomm)
 				#for i in xrange(nima): data[i].set_attr("xform.projection",temp[i])
 				#del temp
@@ -642,10 +643,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 					#  after GA move do 3 iterations to give the program a chance to improve mutated structures.
 					#all_params = shuffle_configurations(all_params)
 
-					for i in xrange(number_of_runs):
+					for i in range(number_of_runs):
 						log.add("L2 incoming norm for volume %3d  = %f"%(i,all_L2s[i]))
 
-					for i in xrange(number_of_runs):
+					for i in range(number_of_runs):
 						GA.append([all_L2s[i],deepcopy(all_params[i])])
 					#  check whether this move will improve anything
 					all_L2s.sort(reverse=True)
@@ -665,16 +666,16 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 						GA.sort(reverse=True)
 						GA = GA[:number_of_runs]
 						if( symmetry_class.sym[0] == "d"  and   GA[0][0]>0.0 ):
-							for i in xrange(1,len(GA)):
-								mirror_and_reduce_dsym([GA[0][1],GA[i][1]], range(len(GA[0][1])), symmetry_class)
+							for i in range(1,len(GA)):
+								mirror_and_reduce_dsym([GA[0][1],GA[i][1]], list(range(len(GA[0][1]))), symmetry_class)
 
 						#  ---  Stopping criterion
 						from statistics import table_stat
 						from math import sqrt
-						q1,q2,q3,q4 = table_stat([GA[i][0] for i in xrange(number_of_runs)])
+						q1,q2,q3,q4 = table_stat([GA[i][0] for i in range(number_of_runs)])
 						# Terminate if variation of L2 norms less than (L2threshold*100)% of their average
 						crit = sqrt(max(q2,0.0))/q1
-						for i in xrange(number_of_runs):
+						for i in range(number_of_runs):
 							log.add("L2 norm for volume %3d  = %f"%(i,GA[i][0]))
 						log.add("L2 norm std dev %f\n"%crit)
 						crit = crit < L2threshold
@@ -683,7 +684,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 							terminate   = False
 							log.add("Insufficient initial variability, reseeding!\n")
 							all_params = [[[random()*360.0,random()*180.0,random()*360.0,0.0,0.0]\
-											 for j in xrange(total_nima)] for i in xrange(number_of_runs)]
+											 for j in range(total_nima)] for i in range(number_of_runs)]
 						else:  	terminate = Iter > max_iter or crit
 
 						firstcheck = False
@@ -696,9 +697,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 						from utilities import nearest_many_full_k_projangles, angles_to_normals
 						from random import random, randint, shuffle
 						# select random pairs of solutions
-						ipl = range(number_of_runs)
+						ipl = list(range(number_of_runs))
 						shuffle(ipl)
-						for ip in xrange(0,2*(len(ipl)/2)+len(ipl)%2,2):
+						for ip in range(0,2*(len(ipl)/2)+len(ipl)%2,2):
 							#  random reference projection:
 							itmp = randint(0,total_nima-1)
 							#print  "  nearest_many_full_k_projangles  ",total_nima,itmp,ipl,ip,len(GA[ipl[ip]][1]),GA[ipl[ip]][1][itmp],GA[ipl[ip]][1]
@@ -738,11 +739,11 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 						#ipl = range(total_nima)
 						#shuffle(ipl)
 						#ipl = ipl[:total_nima//2]
-						for i in xrange(keepset):
+						for i in range(keepset):
 							all_params[0][i][2] += 180.0
 							#  Always reseed the last ones
 							all_params[-1-i] = [[random()*360.0,random()*180.0,random()*360.0,0.0,0.0]\
-										 for j in xrange(total_nima)]
+										 for j in range(total_nima)]
 
 				terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
 				if not terminate:
@@ -751,7 +752,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 
 					# Send params back
 					if myid == 0:
-						for i in xrange(number_of_runs):
+						for i in range(number_of_runs):
 							sr = mpi_subroots[i]
 							if sr == myid:
 								params = all_params[i]
@@ -762,7 +763,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 							params = wrap_mpi_recv(0, mpi_comm)
 
 					params = wrap_mpi_bcast(params, 0, mpi_subcomm)
-					for i in xrange(nima):
+					for i in range(nima):
 						set_params_proj(data[i], params[i])
 					"""
 					#=========================================================================
@@ -960,7 +961,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
 	if myid == main_node:
-		list_of_particles = range(len(stack))
+		list_of_particles = list(range(len(stack)))
 		total_nima = len(list_of_particles)
 	else:
 		list_of_particles = None
@@ -994,7 +995,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	nima = len(list_of_particles)
 
 	data = [ stack[im] for im in list_of_particles ]
-	for im in xrange(nima):
+	for im in range(nima):
 		data[im].set_attr('ID', list_of_particles[im])
 		ctf_applied = data[im].get_attr_default('ctf_applied', 0)
 		if CTF and ctf_applied == 0:
@@ -1029,7 +1030,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	qv = pi/180.
 	volft, kb = prep_vol(ref_vol)
 	from utilities import get_params_proj
-	for im in xrange(nima):
+	for im in range(nima):
 		phi,theta,psi,tx,ty = get_params_proj(data[im])
 		refrings = prgs(volft, kb, [phi,theta,psi, 0.0, 0.0])
 		refrings = Util.Polar2Dm(refrings, cnx, cny, numr, "F")
@@ -1110,7 +1111,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	cs = [0.0]*3
 	total_iter = 0
 	# do the projection matching
-	for N_step in xrange(lstp):
+	for N_step in range(lstp):
 		
 		terminate = 0
 		Iter = 0
@@ -1143,7 +1144,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 			#=========================================================================
 			# alignment
 			number_of_checked_refs = 0
-			for im in xrange(nima):
+			for im in range(nima):
 				#peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], number_of_runs=number_of_runs)
 				# previousmax is set in shc
 				peak, pixer[im], checked_refs, iref = shc(data[im], refrings, [[1.0,1.0]], numr, xrng[N_step], yrng[N_step], step[N_step], sym = "nomirror") # cannot use 'an' here
@@ -1164,7 +1165,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 				lhist = 20
 				region, histo = hist_list(all_pixer, lhist)
 				log.add("=========================")
-				for lhx in xrange(lhist):
+				for lhx in range(lhist):
 					msg = " %10.3f     %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
 				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
@@ -1423,7 +1424,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		"""
 		temp = []
 		from utilities import get_params_proj
-		for i in xrange(n_projs):
+		for i in range(n_projs):
 			set_params_proj( projections[i], out_params[i] )
 		write_text_row(out_params, log.prefix + "refparams2.txt")
 		"""
@@ -1522,11 +1523,11 @@ def mirror_and_reduce_dsym(params, indexes, symmetry_class):
 	bbdb = 360.0/symmetry_class.nsym
 	symphi = 360.0/symmetry_class.nsym*2
 	#  For each set we have four positions to consider: straight, straight psi mirrored, phi+bdb, phi+bdb and psi mirrored
-	for i in xrange(1,sc):
+	for i in range(1,sc):
 		psi_diff = angle_diff( [params[i][j][2] for j in indexes], [params[0][j][2] for j in indexes] )
 		#  adjust psi if necessary
 		if(abs(psi_diff-180.0) <90.0):
-			for j in xrange(ns):
+			for j in range(ns):
 				# apply mirror
 				params[i][j][2] = (params[i][j][2] + 180.0)%360.0
 		# Check which one of the two possible symmetry positions is closer
@@ -1546,7 +1547,7 @@ def mirror_and_reduce_dsym(params, indexes, symmetry_class):
 			per2 += dmin
 
 		if(per2<per1):
-			for j in xrange(ns):
+			for j in range(ns):
 				temp = symmetry_class.reduce_anglesets([params[i][j][0]+bbdb,params[i][j][1],params[i][j][2]] )
 				params[i][j] = [temp[0],temp[1],temp[2],params[i][j][3],params[i][j][4]]
 
@@ -1596,14 +1597,14 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 		if( nsoft == -1 ):  nsoft = peaks_count
 		params = [None]*peaks_count
 		#                                              peak         iref      ang  sxs  sys 
-		for i in xrange(peaks_count):  params[i] = [ peaks[i*5+0], int(peaks[i*5+4]), peaks[i*5+1], peaks[i*5+2], peaks[i*5+3]]
+		for i in range(peaks_count):  params[i] = [ peaks[i*5+0], int(peaks[i*5+4]), peaks[i*5+1], peaks[i*5+2], peaks[i*5+3]]
 		params.sort(reverse=True)
 		if(peaks_count < nsoft ):
-			for i in xrange(peaks_count,nsoft,1): params.insert(0,params[0])
+			for i in range(peaks_count,nsoft,1): params.insert(0,params[0])
 			peaks_count = nsoft
 		elif( peaks_count > nsoft ):  peaks_count = min(peaks_count, nsoft)
-		ws = sum([params[i][0] for i in xrange(peaks_count)])
-		for i in xrange(peaks_count):
+		ws = sum([params[i][0] for i in range(peaks_count)])
+		for i in range(peaks_count):
 			iref   = params[i][1]
 			ang    = params[i][2]
 			sxs    = params[i][3]
@@ -1716,26 +1717,26 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 	if( peaks_count > 0 ):
 		params = [None]*peaks_count
 		#                                              peak         iref                  ang        sxs           sys           mir           checked references
-		for i in xrange(peaks_count):  params[i] = [ peaks[i*7+5], int(peaks[i*7+4]), peaks[i*7+0], peaks[i*7+1], peaks[i*7+2], int(peaks[i*7+3]), int(peaks[i*7+6])]
+		for i in range(peaks_count):  params[i] = [ peaks[i*7+5], int(peaks[i*7+4]), peaks[i*7+0], peaks[i*7+1], peaks[i*7+2], int(peaks[i*7+3]), int(peaks[i*7+6])]
 		#  Make sure nothing is repeated
 		if(peaks_count>1):
-			taken = [params[k][1] for k in xrange(peaks_count)]
+			taken = [params[k][1] for k in range(peaks_count)]
 			from utilities import findall
 			i = 0
 			while(i<peaks_count):
 				ll = findall(taken[i], taken)
 				if(len(ll) > 1):
 					print("  PROBLEM, found the same orientation more than once !  ")
-					for k in xrange(len(params)):  print(params[k])
+					for k in range(len(params)):  print(params[k])
 					ll.sort(reverse=True)
-					for k in xrange(0,len(ll)-1):
+					for k in range(0,len(ll)-1):
 						del params[k]
 						peaks_count -= 1
-					taken = [params[k][1] for k in xrange(peaks_count)]
+					taken = [params[k][1] for k in range(peaks_count)]
 				i+=1
 		params.sort(reverse=True)
-		ws = sum([params[i][0] for i in xrange(peaks_count)])  # peaks could be stretched
-		for i in xrange(peaks_count):
+		ws = sum([params[i][0] for i in range(peaks_count)])  # peaks could be stretched
+		for i in range(peaks_count):
 			ang    = params[i][2]
 			sxs    = params[i][3]
 			sys    = params[i][4]
@@ -1784,11 +1785,11 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 		#  Allow matching to bsoft>nsoft, but still keep nsoft.  This should allow elongated neighborhood
 		bsoft = 2*nsoft
 		if(peaks_count<nsoft):
-			tempref = [refrings[i] for i in xrange(len(refrings))]
-			taken   = [params[i][6] for i in xrange(peaks_count)]
+			tempref = [refrings[i] for i in range(len(refrings))]
+			taken   = [params[i][6] for i in range(peaks_count)]
 			taken.sort(reverse=True)
 			if(len(taken) > 1):
-				for k in xrange(1,len(taken)):
+				for k in range(1,len(taken)):
 					dod = []
 					if( taken[k] == taken[k-1] ):
 						print("  PROBLEM 2, entries duplicated  ",taken)
@@ -1797,7 +1798,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 					for k in dod:  del taken[k]
 			#  delete taken
 			try:
-				for i in xrange(peaks_count):  del  tempref[taken[i]]
+				for i in range(peaks_count):  del  tempref[taken[i]]
 			except:
 				print("  failed deleting tempref ")
 				print(i,peaks_count,nsoft)
@@ -1818,7 +1819,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				tempref += (tempref+tempref)
 				refvecs = [None]*3*iq3
 				dphi = 360.0/int(sym[1:])
-				for i in xrange(iq):
+				for i in range(iq):
 					phi   = tempref[i].get_attr("phi")
 					theta = tempref[i].get_attr("theta")
 					n1,n2,n3 = getfvec(phi-dphi,theta)
@@ -1829,7 +1830,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 					refvecs[3*i+0+iq6] = n1
 					refvecs[3*i+1+iq6] = n2
 					refvecs[3*i+2+iq6] = n3
-				for i in xrange(iq,2*iq):
+				for i in range(iq,2*iq):
 					n1 = tempref[i].get_attr("n1")
 					n2 = tempref[i].get_attr("n2")
 					n3 = tempref[i].get_attr("n3")
@@ -1838,7 +1839,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 					refvecs[3*i+2] = n3
 			else: 
 				refvecs = [None]*3*len(tempref)
-				for i in xrange(len(tempref)):
+				for i in range(len(tempref)):
 					n1 = tempref[i].get_attr("n1")
 					n2 = tempref[i].get_attr("n2")
 					n3 = tempref[i].get_attr("n3")
@@ -1866,7 +1867,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			#	print "  IS MIRRORED  ",dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
 			pws = proj_ali_incore_multi(tdata, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, bsoft-peaks_count, sym=sym)
 			#  Can there be a problem with (0,0) direction??  PAP  05/25/2014
-			for i in xrange(bsoft-peaks_count):
+			for i in range(bsoft-peaks_count):
 				if i == 0:    t1 = tdata.get_attr("xform.projection")
 				else:         t1 = tdata.get_attr("xform.projection" + str(i))
 				d = t1.get_params("spider")
@@ -1888,8 +1889,8 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				params.append([w,  phi, theta, psi, s2x, s2y])
 			#  From now on process nsfot largest
 			params.sort(reverse=True)
-			ws = sum([params[i][0] for i in xrange(nsoft)])  # peaks could be stretched
-			for i in xrange(nsoft):
+			ws = sum([params[i][0] for i in range(nsoft)])  # peaks could be stretched
+			for i in range(nsoft):
 				#print  "  ADDITIONAL SOFT ASSIGNMENT  ",i,peaks_count,params[i][1],params[i][1],params[i][2],params[i][0]/ws
 				t2 = Transform({"type":"spider","phi":params[i][1],"theta":params[i][2],"psi":params[i][3]})
 				t2.set_trans(Vec2f(-params[i][4], -params[i][5]))
@@ -2013,7 +2014,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			# 	if active[im]:  list_of_particles.append(im)
 			# del active
 			nima = EMUtil.get_image_count(stack)
-			list_of_particles = range(nima)
+			list_of_particles = list(range(nima))
 			
 			total_nima = len(list_of_particles)
 		else:
@@ -2022,7 +2023,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 
 	else:
 		if myid == main_node:
-			list_of_particles = range(len(stack))
+			list_of_particles = list(range(len(stack)))
 			total_nima = len(list_of_particles)
 		else:
 			list_of_particles = None
@@ -2037,7 +2038,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 
 	if( type(stack) is bytes ):  data = EMData.read_images(stack, list_of_particles)
 	else:                                   data = [ stack[im] for im in list_of_particles ]
-	for im in xrange(nima):
+	for im in range(nima):
 		data[im].set_attr('ID', list_of_particles[im])
 		ctf_applied = data[im].get_attr_default('ctf_applied', 0)
 		if CTF and ctf_applied == 0:
@@ -2052,7 +2053,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 	cs = [0.0]*3
 	total_iter = 0
 	# do the projection matching
-	for N_step in xrange(lstp):
+	for N_step in range(lstp):
 
 		terminate = 0
 		Iter = 0
@@ -2081,7 +2082,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			#=========================================================================
 			if total_iter == 1:
 				# adjust params to references, calculate psi+shifts, calculate previousmax
-				for im in xrange(nima):
+				for im in range(nima):
 					previousmax = data[im].get_attr_default("previousmax", -1.0e23)
 					if(previousmax == -1.0e23):
 						peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],10.0, sym=sym)
@@ -2098,7 +2099,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			# alignment
 			#number_of_checked_refs = 0
 			par_r = [0]*max(2,(nsoft+1))
-			for im in xrange(nima):
+			for im in range(nima):
 				ERROR("shc_multi","Needs corrections")
 				peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step],\
 																			an[N_step], nsoft, sym)
@@ -2124,7 +2125,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			if myid == main_node:
 				#total_checked_refs = sum(total_checked_refs)
 				log.add("=========== Number of better peaks found ==============")
-				for lhx in xrange(nsoft+1):
+				for lhx in range(nsoft+1):
 					msg = "            %5d     %7d"%(lhx, par_r[lhx])
 					log.add(msg)
 				log.add("_______________________________________________________")
@@ -2132,7 +2133,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 				lhist = 20
 				region, histo = hist_list(all_pixer, lhist)
 				log.add("=========== Histogram of pixel errors ==============")
-				for lhx in xrange(lhist):
+				for lhx in range(lhist):
 					msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
 				log.add("____________________________________________________")
@@ -2285,7 +2286,7 @@ def do_volume(data, options, iter, mpi_comm):
 			fftip(vol)
 			ro = rops_table(vol)
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
-			for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
+			for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
 			if( type(options.fl) == list ):
 				vol = fft( filt_table( filt_table(vol, options.fl), ro) )
 			else:

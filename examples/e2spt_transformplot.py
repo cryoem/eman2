@@ -32,6 +32,7 @@ Author: Jesus Galaz - May/2017, Last update: may/2016
 '''
 from __future__ import print_function
 
+from builtins import range
 from optparse import OptionParser
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses

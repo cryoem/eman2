@@ -34,6 +34,7 @@ from __future__ import absolute_import
 #
 #
 
+from builtins import range
 from EMAN2 import *
 from .emglobjects import init_glut, get_default_gl_colors
 from .emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
@@ -220,7 +221,7 @@ class EMRuler(EMShapeBase):
 			self.direction = [0.0,0.0,0.0]
 		self.rsinO = self.barwidth*math.sin(angle)
 		self.rcosO = self.barwidth*math.cos(angle)
-		self.smallbars = [[i*self.direction[0],i*self.direction[1]] for i in xrange(0,int(self.pixlen),int(2*self.barwidth))]
+		self.smallbars = [[i*self.direction[0],i*self.direction[1]] for i in range(0,int(self.pixlen),int(2*self.barwidth))]
 		
 	def renderShape(self):        
 		# Material properties of the box
@@ -464,7 +465,7 @@ class EMScatterPlot3D(EMShapeBase):
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
 		
-		for i in xrange(len(self.data[0])):
+		for i in range(len(self.data[0])):
 			glPushMatrix()
 			
 			glTranslatef(self.data[0][i],self.data[1][i],self.data[2][i])

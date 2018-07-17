@@ -30,6 +30,7 @@ Author: Jesus Galaz - 2011, Last update: 07/Nov/2017
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 from __future__ import print_function
+from builtins import range
 from optparse import OptionParser
 from EMAN2 import *
 from EMAN2_utils import *
@@ -809,7 +810,7 @@ def subtomosim(options,ptcls,outname,dimension):
 	finaloutname = outname
 	for result in results:
 		
-		key = result.keys()[0]
+		key = list(result.keys())[0]
 		
 		#if options.path not in outname:
 		#	finaloutname = options.path + '/' + outname

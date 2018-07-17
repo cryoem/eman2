@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # Muyuan Chen 2015-03
+from builtins import range
 from EMAN2 import *
 
 def main():
@@ -42,7 +43,7 @@ def main():
 		#imodinfo -a aaaa > ascii2.txt
 		
 		### check if it is binary file
-		textchars = bytearray([7,8,9,10,12,13,27]) + bytearray(range(0x20, 0x100))
+		textchars = bytearray([7,8,9,10,12,13,27]) + bytearray(list(range(0x20, 0x100)))
 		is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
 		if is_binary_string(open(imodfile, 'rb').read(1024)):
 			print("Binary file detected. Converting to ascii file...")

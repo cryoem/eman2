@@ -34,6 +34,7 @@ from __future__ import print_function
 
 # clean up the code, make documentation
 
+from builtins import range
 import os
 import global_def
 from   global_def     import *
@@ -156,7 +157,7 @@ def main():
 			newstack = args[1]
 			mask = get_im(args[2])
 			nima = EMUtil.get_image_count(stack)
-			for im in xrange(nima):
+			for im in range(nima):
 				prj = get_im(stack,im)
 				alpha, sx, sy, mirror, scale = get_params2D(prj)
 				prj = cyclic_shift(prj, int(sx))
@@ -180,7 +181,7 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 	seed(rand_seed)
 	Util.set_randnum_seed(rand_seed)
 	angles =[]
-	for i in xrange(3):
+	for i in range(3):
 		angles.append( [0.0+60.0*i, 90.0-i*5, 0.0, 0.0, 0.0] )
 
 	nangle   = len(angles)
@@ -195,7 +196,7 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 	xstart = 0
 	ystart = 0
 
-	for idef in xrange(3,6):
+	for idef in range(3,6):
 		mic = model_blank(2048, 2048)
 		#defocus = idef*0.2
 		defocus = idef*0.6     ##@ming
@@ -205,7 +206,7 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 			from utilities import generate_ctf
 			ctf = generate_ctf([defocus,2,200,1.84,0.0,ampcont,defocus*0.2,80])   ##@ming   the range of astigmatism amplitude is between 10 percent and 22 percent. 20 percent is a good choice.
 		i = idef - 4
-		for k in xrange(1):
+		for k in range(1):
 			psi  = 90 + 10*i			
 			proj = prgs(volfts, kbz, [angles[idef-3][0], angles[idef-3][1], psi, 0.0, 0.0], kbx, kby)
 			proj = Util.window(proj, 320, nz)		

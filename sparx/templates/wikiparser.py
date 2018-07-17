@@ -7,6 +7,7 @@ from __future__ import print_function
 
 # from EMAN2 import *
 # from sparx import *
+from builtins import object
 import os
 import sys
 import copy
@@ -15,7 +16,7 @@ from global_def import ERROR
 from sxgui_template import SXcmd_token, SXcmd, SXcmd_category
 
 # ========================================================================================
-class SXsubcmd_config:
+class SXsubcmd_config(object):
 	def __init__(self, label = "", short_info = None, token_edit_list = [], mpi_support = None, is_modeless = False, subset_config=""):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
@@ -28,7 +29,7 @@ class SXsubcmd_config:
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 
 # ========================================================================================
-class SXcmd_config:
+class SXcmd_config(object):
 	def __init__(self, wiki, format, category, role, is_submittable = True, exclude_list = [], subconfig = None):
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
@@ -44,7 +45,7 @@ class SXcmd_config:
 
 # ========================================================================================
 # Helper class used only in construct_token_list_from_*() functions
-class SXkeyword_map:
+class SXkeyword_map(object):
 	def __init__(self, priority, token_type):
 		if priority >= 100: ERROR("Priority should be lower than 100", "%s in %s" % (__name__, os.path.basename(__file__)))
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -541,7 +542,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 							token.key_prefix = key[0:len(key) - len(token.key_base)]
 							# Try to set the special type base on the keyword dictionary
 							best_keyword_map = SXkeyword_map(99, "")
-							for keyword in keyword_dict.keys():
+							for keyword in list(keyword_dict.keys()):
 								if key.find(keyword) != -1:
 									# command token contains keyword
 									keyword_map = keyword_dict[keyword]
@@ -577,7 +578,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 							continue
 						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 						# check consistency between 'usage in command line' and this
-						if key_base not in sxcmd.token_dict.keys(): ERROR("Wiki Format Error: Key base (%s) is missing from 'usage in command line' in '= Usage ='." % key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+						if key_base not in list(sxcmd.token_dict.keys()): ERROR("Wiki Format Error: Key base (%s) is missing from 'usage in command line' in '= Usage ='." % key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 						# Get the reference to the command token object associated with this key base name
 						token = sxcmd.token_dict[key_base]
 						if token.key_base != key_base: ERROR("Logical Error: Registered command token with wrong key base name into the dictionary.", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -934,7 +935,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 						token.key_prefix = key[0:len(key) - len(token.key_base)]
 						# Try to set the special type base on the keyword dictionary
 						best_keyword_map = SXkeyword_map(99, "")
-						for keyword in keyword_dict.keys():
+						for keyword in list(keyword_dict.keys()):
 							if key.find(keyword) != -1:
 								# command token contains keyword
 								keyword_map = keyword_dict[keyword]
@@ -1042,7 +1043,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	if current_state != state_done: ERROR("Wiki Format Error: parser could not extract all information necessary (current state %d). Please check if the Wiki format has all required sections." % (current_state), "%s in %s" % (__name__, os.path.basename(__file__)))
 
-	for sxcmd_token_key_base in sxcmd.token_dict.keys():
+	for sxcmd_token_key_base in list(sxcmd.token_dict.keys()):
 		# Make sure there are no extra arguments or options in command token dictionary compared with command token list.
 		is_found = False
 		for sxcmd_token in sxcmd.token_list:
@@ -1060,7 +1061,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	for sxcmd_token in sxcmd.token_list:
 		# Make sure there are no extra arguments or options in command token list compared with command token dictionary.
-		if sxcmd_token.key_base not in sxcmd.token_dict.keys(): ERROR("Logical Error: Registered key base name in the command token list is not registered as key base name in the command token dictionary.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if sxcmd_token.key_base not in list(sxcmd.token_dict.keys()): ERROR("Logical Error: Registered key base name in the command token list is not registered as key base name in the command token dictionary.", "%s in %s" % (__name__, os.path.basename(__file__)))
 		# Make sure there are no extra arguments or options in command token list compared with usage token list extracted from "usage in command line" of "====== Usage ======".
 		is_found = False
 		for usage_token in usage_token_list:
@@ -1071,7 +1072,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	for usage_token in usage_token_list:
 		# Make sure there are no extra arguments or options in usage token list extracted from "usage in command line" of "====== Usage ======" compared with command token dictionary. 
-		if usage_token.key_base not in sxcmd.token_dict.keys(): ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token dictionary extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+		if usage_token.key_base not in list(sxcmd.token_dict.keys()): ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token dictionary extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 		# Make sure there are no extra arguments or options in usage token list extracted from "usage in command line" of "====== Usage ======" compared with command token list. 
 		is_found = False
 		for sxcmd_token in sxcmd.token_list:
@@ -1141,7 +1142,7 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 	# Using the first entry in token edit list as command mode token of this subset,
 	# get mode token from sxcmd (having a fullset of tokens)
 	mode_token_edit = sxsubcmd_config.token_edit_list[0]
-	if mode_token_edit.key_base not in fullset_token_dict.keys(): ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Key (%s) should exists." % (mode_token_edit.key_base), "%s in %s" % (__name__, os.path.basename(__file__)))
+	if mode_token_edit.key_base not in list(fullset_token_dict.keys()): ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Key (%s) should exists." % (mode_token_edit.key_base), "%s in %s" % (__name__, os.path.basename(__file__)))
 	mode_token = fullset_token_dict[mode_token_edit.key_base]
 
 	# Create mode name of this subset, append key base of mode token to mode_name of this command
@@ -1181,7 +1182,7 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 		if token_edit.key_base == "": ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Invalid empty string Key (%s)." % (token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
 		
 		token = None
-		if token_edit.key_base not in fullset_token_dict.keys():
+		if token_edit.key_base not in list(fullset_token_dict.keys()):
 			# token key base is not found in fullset. This must be an argument to be added
 			if token_edit.key_prefix is None: ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Prefix (%s) for Key (%s) should NOT be None." % (token_edit.key_prefix, token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
 			if token_edit.key_prefix != "": ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Key (%s) should be argument (Prefix (%s) should be empty string)." % (token_edit.key_base, token_edit.key_prefix) , "%s in %s" % (__name__, os.path.basename(__file__)))
