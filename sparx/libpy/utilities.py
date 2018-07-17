@@ -4053,6 +4053,64 @@ def symmetry_related_normals(angles, symmetry):
 		neighbors.append(p.get_matrix()[8:11])
 	return neighbors
 """
+def balance_angular_distribution(params, max_occupy =-1, angstep =15., sym="c1"):
+	from fundamentals import symclass
+	smc  = symclass(sym)
+	eah  = smc.even_angles(angstep, inc_mirror=0)
+	leah = len(eah)
+	u = []
+	for q in eah:
+		#print("q",q)
+		m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
+		#print("m",m)
+		itst = len(u)
+		for c in m:
+			#print("c",c)
+			if smc.is_in_subunit(c[0],c[1],1) :
+				#print(" is in 1")
+				if not smc.is_in_subunit(c[0],c[1],0) :
+					#print("  outside")
+					u.append(c)
+					break
+		if(len(u) != itst+1):
+			u.append(q)  #  This is for exceptions that cannot be easily handled
+			"""
+			print(q)
+			print(m)
+			ERROR("balance angles","Fill up upper",1)
+			"""
+	seaf = []
+	for q in eah+u:  seaf += smc.symmetry_related(q)
+
+	lseaf = 2*leah
+
+	seaf = angles_to_normals(seaf)
+
+	occupancy = [[] for i in range(leah)]
+
+	for i,q in enumerate(params):
+		l = nearest_fang(seaf,q[0],q[1])
+		l = l%lseaf
+		if(l>=leah):  l = l-leah
+		occupancy[l].append(i)
+
+	if(max_occupy > 0):
+		outo = []
+		from random import shuffle
+		for l,q in enumerate(occupancy):
+			shuffle(q)
+			q = q[:max_occupy]
+			outo += q
+			#print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
+			#print(l,len(q),q)
+		outo.sort()
+		#write_text_file(outo,"select.txt")
+		return outo
+	else:
+		#for l,q in enumerate(occupancy):
+		#	print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
+		return occupancy
+
 
 def symmetry_neighbors(angles, symmetry):
 	#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
