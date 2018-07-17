@@ -1913,6 +1913,10 @@ class symclass():
 		from math      import pi, sqrt, cos, acos, tan, sin, radians, degrees
 		from utilities import even_angles_cd
 		angles = []
+		phi2_org = phi2
+		if(phi2_org < 0.0):  phi2_org = self.brackets[1][0] - 1.0e-7 # exclude right border of unit
+		theta2_org = theta2
+		if(theta2_org < 0.0): theta2_org = self.brackets[1][3]
 		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta),1)
 		if(phi1 < 0.0):  phi1 = 0.0
 		if(phi2 < 0.0):  phi2 = self.brackets[inc_mirror][0] - 1.0e-7 # exclude right border of unit
@@ -1936,20 +1940,21 @@ class symclass():
 					if(theta==0.0 or theta==180.0): detphi = 2*phi2
 					else:  detphi = delta/sin(radians(theta))
 					while(phi<phi2):
-						if is_platonic_sym:
-							if(self.is_in_subunit(phi, theta, inc_mirror)): 	angles.append([phi, theta, 0.0])
+						if(self.is_in_subunit(phi, theta, inc_mirror)): 	angles.append([phi, theta, 0.0])
 						else:  	angles.append([phi, theta, 0.0])
 						phi += detphi
 					theta += delta
 			else:
-				Deltaz  = cos(radians(theta2))-cos(radians(theta1))
+				# I have to use original phi2 and theta2 to compute Deltaz and wedgeFactor as otherwise
+				# points for include mirror differ from do not include mirror.
+				Deltaz  = cos(radians(theta2_org))-cos(radians(theta1))
 				s       = delta*pi/180.0
 				NFactor = 3.6/s
-				wedgeFactor = abs(Deltaz*(phi2-phi1)/720.0)
+				wedgeFactor = abs(Deltaz*(phi2_org-phi1)/720.0)
 				NumPoints   = int(NFactor*NFactor*wedgeFactor)
 				angles.append([phi1, theta1, 0.0])
 				# initialize loop
-				phistep = phi2-phi1
+				phistep = phi2_org-phi1
 				z1 = cos(radians(theta1))
 				phi = phi1
 				for k in xrange(1, NumPoints-1):
@@ -1957,8 +1962,8 @@ class symclass():
 					r = sqrt(1.0-z*z)
 					phi = phi1+(phi + delta/r - phi1)%phistep
 					theta = degrees(acos(z))
-					if is_platonic_sym:
-						if(not self.is_in_subunit(phi, theta, inc_mirror)): continue
+					if(theta>180.0):  break
+					if(not self.is_in_subunit(phi, theta, inc_mirror)): continue
 					angles.append([phi, theta, 0.0])
 				#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
 			if (phiEqpsi == 'Minus'):
