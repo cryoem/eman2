@@ -83,8 +83,8 @@ def main():
 
 	parser.add_argument("--imod_rotflipgain",  default = 0, type=int, help="A value of 1 flips upsidedown, 2 flips left and right.",guitype='intbox', row=4, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--mc2_rotgain",  default = None, type=int, choices=[0,1,2,3], help="Rotates the gain 90 degress counter clockwise X times",,guitype='combobox', choicelist='["0","90","180","270"]', row=1, col=0, rowspan=1, colspan=1, mode="tomo,spr")
-	parser.add_argument("--mc2_flipgain",  default = None, type=int, choices=[0,1,2], help="A value of 1 flips upsidedown, 2 flips left and right.",guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--mc2_rotgain",  default = 0, type=int, choices=[0,1,2,3], help="Rotates the gain 90 degress counter clockwise X times",guitype='combobox', choicelist='["0","1","2","3"]', row=1, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--mc2_flipgain",  default = 0, type=int, choices=[0,1,2], help="A value of 1 flips upsidedown, 2 flips left and right.",guitype='combobox',  choicelist='["0","1","2"]', row=4, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 
 	parser.add_argument("--defect_file",  default = None, type=str, help="Specify the camera defects file.", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=5, col=0,rowspan=1, colspan=2, mode="tomo,spr")
 
@@ -185,46 +185,43 @@ def main():
 		print("WORK IN PROGRESS.")
 		# adam's preprocessing code
 
-		# 	cmd = "{} ".format(program)
 
-		# 	if ext == "tif": cmd += " -InTiff {} ".format(input_file) # TIFF handling
-		# 	else: cmd += " -InMrc {} ".format(input_file)
+		if ext == "tif": cmdopts += " -InTiff {} ".format(input_file) # TIFF handling
+		else: cmdopts += " -InMrc {} ".format(input_file)
 
-		# 	output_file = input_file.split(".")[0]+"_ali.mrc"
-		# 	cmd += " -OutMrc {} ".format(output_file)
+		output_file = input_file.split(".")[0]+"_ali.mrc"
+		cmd += " -OutMrc {} ".format(output_file)
 
-		# 	if options.patch != None: cmd += " -Patch {} ".format(options.patch)
-		# 	if options.dark != None: cmd += " -Dark {} ".format(options.dark)
-		# 	if options.gain != None: cmd += " -Gain {} ".format(options.gain)
-		# 	if options.flipgain != None: cmd+=" -FlipGain {}".format(options.flipgain)
-		# 	if options.rotgain != None: cmd+=" -RotGain {}".format(options.rotgain)
-		# 	if options.binby != None: cmd+=" -FtBin {}".format(options.binby)
-		# 	if options.first != None: cmd+=" -Throw {}".format(options.first)
-		# 	if options.last != None: cmd+=" -Trunc {}".format(options.last)
-		# 	if options.group != None: cmd+=" -Group {}".format(options.group)
-		# 	if options.align != None: cmd+=" -Align {}".format(options.group)
-		# 	if options.defect_file != None: cmd+=" -DefectFile {}".format(options.defects)
+		if options.patch != None: cmd += " -Patch {} ".format(options.patch)
+		if options.dark != None: cmd += " -Dark {} ".format(options.dark)
+		if options.gain != None: cmd += " -Gain {} ".format(options.gain)
+		if options.mc2_flipgain != None: cmd+=" -FlipGain {}".format(options.flipgain)
+		if options.mc2_rotgain != None: cmd+=" -RotGain {}".format(options.rotgain)
+		if options.binby != None: cmd+=" -FtBin {}".format(options.binby)
+		if options.first != None: cmd+=" -Throw {}".format(options.first)
+		if options.last != None: cmd+=" -Trunc {}".format(options.last)
+		if options.group != None: cmd+=" -Group {}".format(options.group)
+		if options.align != None: cmd+=" -Align {}".format(options.group)
+		if options.defect_file != None: cmd+=" -DefectFile {}".format(options.defects)
 
-
-
-		# if options.mdoc != None:
-		# 	output = "{}/{}_ali.mrc".format(outdir,bname)
-		# 	if len(args) == 0:
-		# 		cmd = "{} -mdoc {} -output {}".format(program,options.mdoc,output)
-		# 	elif len(args) == 1:
-		# 		cmd = "{} -mdoc {} -path {} -output {}".format(program,options.mdoc,args[0],output)
-		# 	else:
-		# 		inputs = " ".join(args)
-		# 		cmd = "{} -input {} -mdoc {} -output {}".format(program,inputs,options.mdoc,output)
-		# 	run(cmd)
-		# else:
-		# 	for arg in args:
-		# 		output = "{}/{}_ali.mrc".format(outdir,arg.split(".")[0])
-		# 		cmd = "{} -input {} -output {} {}".format(program,arg,output,cmdopts)
-		# 		run(cmd)
+		if options.mdoc != None:
+			output = "{}/{}_ali.mrc".format(outdir,bname)
+			if len(args) == 0:
+				cmd = "{} -mdoc {} -output {}".format(program,options.mdoc,output)
+			elif len(args) == 1:
+				cmd = "{} -mdoc {} -path {} -output {}".format(program,options.mdoc,args[0],output)
+			else:
+				inputs = " ".join(args)
+				cmd = "{} -input {} -mdoc {} -output {}".format(program,inputs,options.mdoc,output)
+			run(cmd)
+		else:
+			for arg in args:
+				output = "{}/{}_ali.mrc".format(outdir,arg.split(".")[0])
+				cmd = "{} -input {} -output {} {}".format(program,arg,output,cmdopts)
+				run(cmd)
 
 
-		# 	run(cmd,shell=True)
+			run(cmd,shell=True)
 
 		# adam's postprocessing code
 
