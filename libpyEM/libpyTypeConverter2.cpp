@@ -34,6 +34,7 @@
 
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
+#include <boost/python/numpy.hpp>
 
 // Includes ====================================================================
 #include <typeconverter.h>
