@@ -113,8 +113,12 @@ def main():
 	
 	(options, args) = parser.parse_args()
 
-	if len(args) == 0 and options.mdoc == None:
-		print("ERROR: No movies privided. When running IMOD alignframes, you must specify movie files, an MDOC file via the --mdoc option, or a directory containing DDD movies to be aligned.")
+	if len(args) == 0:
+		print("ERROR: No inputs privided. You must specify movie files or a directory containing DDD movies to be aligned.")
+		sys.exit(1)
+
+	if options.tomo and options.mdoc == None:
+		print("ERROR: You must specify an mdoc/idoc file via the --mdoc option when processing raw tilt movies for tomography.")
 		sys.exit(1)
 
 	if options.mdoc != None:
@@ -165,14 +169,15 @@ def main():
 		print("Could not locate {}. Please check that the program is installed and available within your PATH environment variable.".format(options.program.replace("_"," ")))
 		sys.exit(1)
 
-	if not os.path.isdir(args[0]):
-		bname,ext = os.path.basename(args[0]).split(".")
-		if ext not in  ["mrc","mrcs","tif"]:
-			print("{} cannot parse .{} format files. Please check that files are MRC or TIF format.".format(program,ext))
-			sys.exit(1)
-	else:
-		ext = None
-		bname = os.path.basename(args[0])
+	ext = None
+	if len(args) > 0:
+		if not os.path.isdir(args[0]) and options.mdoc == None:
+			bname,ext = os.path.basename(args[0]).split(".")
+			if ext not in  ["mrc","mrcs","tif"]:
+				print("{} cannot parse .{} format files. Please check that files are MRC or TIF format.".format(program,ext))
+				sys.exit(1)
+		else:
+			bname = os.path.basename(args[0])
 
 	options.tiltseries_name
 
@@ -206,9 +211,9 @@ def main():
 				output = "{}/{}.mrc".format(options.tiltseries_name)
 			else:
 				output = "{}/{}.mrc".format(outdir,mdoc_bname)
-			if len(args) == 0:
-				cmd = "{} -mdoc {} -output {}".format(program,options.mdoc,output)
-			elif len(args) == 1:
+			#if len(args) == 0:
+				#cmd = "{} -m and os.path.isdir(args[0])doc {} -output {}".format(program,options.mdoc,output)
+			if len(args) == 1 and os.path.isdir(args[0]):
 				cmd = "{} -mdoc {} -path {} -output {}".format(program,options.mdoc,args[0],output)
 			else:
 				inputs = " ".join(args)
@@ -216,6 +221,7 @@ def main():
 			run(cmd,verbose=options.verbose)
 		else:
 			for arg in args:
+				bname = os.path.basename(bname).split(".")[0]
 				if options.tomo and options.tiltseries_name != "":
 					output = "{}/{}.mrc".format(options.tiltseries_name)
 				else:
@@ -309,7 +315,7 @@ def main():
 					cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,output,cmdopts)
 				run(cmd,verbose=options.verbose)
 
-	print("DONE")
+	#print("DONE")
 
 
 
