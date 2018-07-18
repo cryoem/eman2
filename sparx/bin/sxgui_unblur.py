@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from __future__ import division
 # sxgui_unblur for analyzing drift parameters made by Unblur and MotionCor2
 # Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 #

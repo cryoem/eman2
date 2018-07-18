@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from __future__ import print_function
-from __future__ import division
 # 
 #
 # Author: Toshio Moriya 03/12/2015 (toshio.moriya@mpi-dortmund.mpg.de)

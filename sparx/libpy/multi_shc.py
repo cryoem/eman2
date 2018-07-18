@@ -1,6 +1,5 @@
 # For some reason these programs get stuck on MPI if I change the order of programs in the file.  Strange, PAP.
 from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 '''
