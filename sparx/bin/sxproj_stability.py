@@ -32,7 +32,6 @@ from __future__ import print_function
 #
 
 
-from past.utils import old_div
 from builtins import range
 '''
 In this program, there are two ways of testing the stability of the projection.
@@ -143,7 +142,7 @@ def main():
 	nima = bcast_number_to_all(nima)
 	nx   = bcast_number_to_all(nx)
 	ny   = bcast_number_to_all(ny)
-	if radius == -1: radius = old_div(nx,2)-2
+	if radius == -1: radius = nx/2-2
 	mask = model_circle(radius, nx, nx)
 
 	st = time()
@@ -175,7 +174,7 @@ def main():
 
 		# Number of groups, actually there could be one or two more groups, since the size of the remaining group varies
 		# we will simply assign them to main node.
-		n_grp = old_div(nima,img_per_grp)-1
+		n_grp = nima/img_per_grp-1
 
 		# Divide proj_list_all equally to all nodes, and becomes proj_list
 		proj_list = []
@@ -368,10 +367,10 @@ def main():
 				if options.grouping == "GRP":
 					aphi /= l
 					atht /= l
-					vphi = old_div((vphi - l*aphi*aphi),l)
-					vtht = old_div((vtht - l*atht*atht),l)
+					vphi = (vphi - l*aphi*aphi)/l
+					vtht = (vtht - l*atht*atht)/l
 					from math import sqrt
-					refprojdir[i] = [aphi, atht, old_div((sqrt(max(vphi,0.0))+sqrt(max(vtht,0.0))),2.0)]
+					refprojdir[i] = [aphi, atht, (sqrt(max(vphi,0.0))+sqrt(max(vtht,0.0)))/2.0]
 
 			# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION
 			aveList[i].set_attr('members', members)

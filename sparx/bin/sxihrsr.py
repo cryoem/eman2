@@ -33,7 +33,6 @@ from __future__ import print_function
 #
 
 
-from past.utils import old_div
 from builtins import range
 def main():
 	import os
@@ -96,8 +95,8 @@ def main():
 			print("Please enter pixel size")
 			sys.exit()
 
-		rminp = int((old_div(float(options.rmin),options.apix)) + 0.5)
-		rmaxp = int((old_div(float(options.rmax),options.apix)) + 0.5)
+		rminp = int((float(options.rmin)/options.apix) + 0.5)
+		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
 		
 		from utilities import get_input_from_string, get_im
 
@@ -107,18 +106,18 @@ def main():
 
 		irp = 1
 		if options.ou < 0:  oup = -1
-		else:               oup = int( (old_div(options.ou,options.apix)) + 0.5)
+		else:               oup = int( (options.ou/options.apix) + 0.5)
 		xrp = ''
 		txsp = ''
 		y_restrict2 = ''
 		
 		for i in range(len(xr)):
-			xrp += " "+str(old_div(float(xr[i]),options.apix))
+			xrp += " "+str(float(xr[i])/options.apix)
 		for i in range(len(txs)):
-			txsp += " "+str(old_div(float(txs[i]),options.apix))
+			txsp += " "+str(float(txs[i])/options.apix)
 		# now y_restrict has the same format as x search range .... has to change ihrsr accordingly
 		for i in range(len(y_restrict)):
-			y_restrict2 += " "+str(old_div(float(y_restrict[i]),options.apix))
+			y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
 
 		if options.MPI:
 			from mpi import mpi_init, mpi_finalize

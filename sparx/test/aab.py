@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -88,7 +87,7 @@ print_col(kernel,n//2)
 #a = model_gauss_noise(1.0,mx,my)
 a = model_circle(0.5,mx,my)
  
-scale = old_div(fc,0.5)
+scale = fc/0.5
 print(ttime())
 #b = rsconvolution(a,kernel)
 b = a.downsample(sb, scale)

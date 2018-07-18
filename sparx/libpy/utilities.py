@@ -29,7 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -165,16 +164,16 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 		for i in range(nsimplex):
 			if i != ssworst:
 				for j in range(nvar): pavg[j] += simplex[i][j]
-		for j in range(nvar): pavg[j] = old_div(pavg[j],nvar) # nvar is nsimplex-1
+		for j in range(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
 		simscale = 0.0
 		for i in range(nvar):
-			simscale += old_div(abs(pavg[i]-simplex[ssworst][i]),scale[i])
-		simscale = old_div(simscale,nvar)
+			simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
+		simscale = simscale/nvar
 
 		# find the range of the function values
-		fscale = old_div((abs(fvalue[ssbest])+abs(fvalue[ssworst])),2.0)
+		fscale = (abs(fvalue[ssbest])+abs(fvalue[ssworst]))/2.0
 		if fscale != 0.0:
-			frange = old_div(abs(fvalue[ssbest]-fvalue[ssworst]),fscale)
+			frange = abs(fvalue[ssbest]-fvalue[ssworst])/fscale
 		else:
 			frange = 0.0  # all the fvalues are zero in this case
 
@@ -266,16 +265,16 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 		for i in range(nsimplex):
 			if i != ssworst:
 				for j in range(nvar): pavg[j] += simplex[i][j]
-		for j in range(nvar): pavg[j] = old_div(pavg[j],nvar) # nvar is nsimplex-1
+		for j in range(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
 		simscale = 0.0
 		for i in range(nvar):
-			simscale += old_div(abs(pavg[i]-simplex[ssworst][i]),scale[i])
-		simscale = old_div(simscale,nvar)
+			simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
+		simscale = simscale/nvar
 
 		# find the range of the function values
-		fscale = old_div((abs(fvalue[ssbest][0])+abs(fvalue[ssworst][0])),2.0)
+		fscale = (abs(fvalue[ssbest][0])+abs(fvalue[ssworst][0]))/2.0
 		if fscale != 0.0:
-			frange = old_div(abs(fvalue[ssbest][0]-fvalue[ssworst][0]),fscale)
+			frange = abs(fvalue[ssbest][0]-fvalue[ssworst][0])/fscale
 		else:
 			frange = 0.0  # all the fvalues are zero in this case
 
@@ -494,7 +493,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		from utilities    import model_blank
 		from EMAN2        import rsconvolution
 		p = Util.infomask(image_to_be_centered,None,True)
-		cc = binarize(rsconvolution(binarize(image_to_be_centered,p[0]+p[1]),model_blank(5,5,1,old_div(1.0,(5.0*5.0)))),0.5)
+		cc = binarize(rsconvolution(binarize(image_to_be_centered,p[0]+p[1]),model_blank(5,5,1,1.0/(5.0*5.0))),0.5)
 		c = ccf(cc, self_defined_reference)
 		p = Util.infomask(c,None,True)[3]
 		nx = c.get_xsize()
@@ -510,8 +509,8 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 					x+=(i-cx)
 					y+=(j-cy)
 					n+=1
-		shiftx = old_div(x,n)
-		shifty = old_div(y,n)
+		shiftx = x/n
+		shifty = y/n
 		if searching_range > 0 :
 			if(abs(shiftx) > searching_range):  shiftx=0
 			if(abs(shifty) > searching_range):  shifty=0
@@ -579,7 +578,7 @@ def common_line_in3D(phiA,thetaA,phiB,thetaB):
 
 	from math import pi, sqrt, cos, sin, asin, atan2
 
-	piOver=old_div(pi,180.0);
+	piOver=pi/180.0;
 	ph1 = phiA*piOver;
 	th1 = thetaA*piOver;
 	ph2 = phiB*piOver;
@@ -603,7 +602,7 @@ def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	if nz<0: nx=-nx; ny=-ny; nz=-nz;
 
 	#thetaCom = asin(nz/sqrt(norm))
-	phiCom    = asin(old_div(nz,sqrt(norm)))
+	phiCom    = asin(nz/sqrt(norm))
 	#phiCom   = atan2(ny,nx)
 	thetaCom  = atan2(ny, nx)
 
@@ -801,14 +800,14 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 	symmetry_string = split(symmetry)[0]
 	if(symmetry_string[0]  == "c"):
 		if(phi2 == 359.99):
-			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, old_div(phi2,int(symmetry_string[1:]))+ant, method, phiEqpsi)
+			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2/int(symmetry_string[1:])+ant, method, phiEqpsi)
 		else:
 			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2+ant, method, phiEqpsi)
 		if(int(symmetry_string[1:]) > 1):
 			if( int(symmetry_string[1:])%2 ==0):
-				qt = old_div(360.0,int(symmetry_string[1:]))
+				qt = 360.0/int(symmetry_string[1:])
 			else:
-				qt = old_div(180.0,int(symmetry_string[1:]))
+				qt = 180.0/int(symmetry_string[1:])
 			n = len(angles)
 			for i in range(n):
 				t = n-i-1
@@ -816,7 +815,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 					if(angles[t][0] >= qt+ant):  del angles[t]
 	elif(symmetry_string[0]  == "d"):
 		if(phi2 == 359.99):
-			angles = even_angles_cd(delta, theta1, theta2, phi1, old_div(360.0,int(symmetry_string[1:])), method, phiEqpsi)
+			angles = even_angles_cd(delta, theta1, theta2, phi1, 360.0/int(symmetry_string[1:]), method, phiEqpsi)
 		else:
 			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2, method, phiEqpsi)
 		n = len(angles)
@@ -845,7 +844,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		if theta1 > 90.0:
 			ERROR('theta1 must be less than 90.0 for helical symmetry', 'even_angles', 1)
 		if theta1 == 0.0: theta1 =90.0
-		theta_number = int(old_div((90.0 - theta1),theta2))
+		theta_number = int((90.0 - theta1)/theta2)
 		#for helical, symmetry = s or scn
 		cn = int(symmetry_string[2:])
 		for j in range(theta_number,-1, -1):
@@ -1004,11 +1003,11 @@ def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method
 	if (method == 'P'):
 		temp = Util.even_angles(delta, theta1, theta2, phi1, phi2)
 		#		                                              phi, theta, psi
-		for i in range(old_div(len(temp),3)): angles.append([temp[3*i],temp[3*i+1],temp[3*i+2]]);
+		for i in range(len(temp)/3): angles.append([temp[3*i],temp[3*i+1],temp[3*i+2]]);
 	else:              #elif (method == 'S'):
 		Deltaz  = cos(theta2*pi/180.0)-cos(theta1*pi/180.0)
 		s       = delta*pi/180.0
-		NFactor = old_div(3.6,s)
+		NFactor = 3.6/s
 		wedgeFactor = abs(Deltaz*(phi2-phi1)/720.0)
 		NumPoints   = int(NFactor*NFactor*wedgeFactor)
 		angles.append([phi1, theta1, 0.0])
@@ -1016,7 +1015,7 @@ def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method
 		for k in range(1,(NumPoints-1)):
 			z=z1 + Deltaz*k/(NumPoints-1)
 			r= sqrt(1-z*z)
-			phi = phi1+(phi + old_div(delta,r) -phi1)%(abs(phi2-phi1))
+			phi = phi1+(phi + delta/r -phi1)%(abs(phi2-phi1))
 			#[k, phi,180*acos(z)/pi, 0]
 			angles.append([phi, 180*acos(z)/pi, 0.0])
 		#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
@@ -1045,7 +1044,7 @@ def eigen_images_get(stack, eigenstack, mask, num, avg):
 		if( avg==1):
 			if(im==0): s  = a
 			else:      s += a
-	if(avg == 1): a -= old_div(s,nima)
+	if(avg == 1): a -= s/nima
 	eigenimg = a.analyze()
 	if(num>= EMUtil.get_image_count(eigenimg)):
 		num=EMUtil.get_image_count(eigenimg)
@@ -1263,12 +1262,12 @@ def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_hi
 	if type(img)     == str :	img=get_image(img)
 	if decimation    <= 1   :  	ERROR("Improper decimation ratio", "image_decimation", 1)
 	if frequency_low <= 0   :
-		frequency_low  = old_div(.5,decimation)- .05
+		frequency_low  = .5/decimation- .05
 		if frequency_low <= 0: ERROR("Butterworth passband frequency is too low", "image_decimation", 1)
-		frequency_high = old_div(.5,decimation)+ .05
+		frequency_high = .5/decimation+ .05
 	if fit_to_fft :
-		nx_d = old_div((img.get_xsize()),int(decimation))
-		ny_d = old_div((img.get_ysize()),int(decimation))
+		nx_d = (img.get_xsize())/int(decimation)
+		ny_d = (img.get_ysize())/int(decimation)
 		nx_fft_d = smallprime(int(nx_d))
 		ny_fft_d = smallprime(int(ny_d))
 		nx_fft_m = nx_fft_d*int(decimation)
@@ -1445,7 +1444,7 @@ def parse_spider_fname(mystr, *fieldvals):
 def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
 	peaks    = e.peak_search(npeak, invert)
 	ndim     = peaks[0]
-	nlist    = int(old_div((len(peaks)-1),((ndim+1)*2)))
+	nlist    = int((len(peaks)-1)/((ndim+1)*2))
 	if(nlist > 0):
 		outpeaks = []
 		if(print_screen):
@@ -1470,16 +1469,16 @@ def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
 		#ERROR("peak search fails to find any peaks, returns image center as a default peak position","peak_search",0)
 		if  ndim == 1 :
 			nx = e.get_xsize()
-			outpeaks = [[1.0, float(old_div(nx,2)), 1.0, 0.0]]
+			outpeaks = [[1.0, float(nx/2), 1.0, 0.0]]
 		elif ndim == 2 :
 			nx = e.get_xsize()
 			ny = e.get_ysize()
-			outpeaks = [[1.0, float(old_div(nx,2)), float(old_div(ny,2)), 1.0, 0.0, 0.0]]
+			outpeaks = [[1.0, float(nx/2), float(ny/2), 1.0, 0.0, 0.0]]
 		elif ndim == 3 :
 			nx = e.get_xsize()
 			ny = e.get_ysize()
 			nz = e.get_ysize()
-			outpeaks = [[1.0, float(old_div(nx,2)), float(old_div(ny,2)), float(old_div(nz,2)), 1.0, 0.0, 0.0, 0.0]]
+			outpeaks = [[1.0, float(nx/2), float(ny/2), float(nz/2), 1.0, 0.0, 0.0, 0.0]]
 	return outpeaks
 
 ####--------------------------------------------------------------------------------------------------#########
@@ -1703,12 +1702,12 @@ def print_list_format(m, narray = 0):
 		ERROR("improper input narray number, use default value", "print_list_foramt",0)
 	if(narray == 0 ):
 		num = int(sqrt(len(m)))
-		if( len(m) % num != 0): lnum = int(old_div(len(m),num)) + 1
-		else: 			lnum = int(old_div(len(m),num))
+		if( len(m) % num != 0): lnum = int(len(m)/num) + 1
+		else: 			lnum = int(len(m)/num)
 	else:
 		num = narray
-		if( len(m) % num == 0): lnum = int(old_div(len(m),num))
-		else: 			lnum = int(old_div(len(m),num)) + 1
+		if( len(m) % num == 0): lnum = int(len(m)/num)
+		else: 			lnum = int(len(m)/num) + 1
 	ncount = -1
 	plist  = []
 	for i in range(lnum):
@@ -1751,7 +1750,7 @@ def read_spider_doc(fnam):
 			start= end+3
 			end  = start+6
 			line_data.append(atof(line[start:end]))
-			colNo = old_div((len(line)-end),12) - 1
+			colNo = (len(line)-end)/12 - 1
 			for i in range(colNo):
 				start= end+6
 				end  = start+7
@@ -2044,7 +2043,7 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 	if  Pixel_size_current == 0.:
 		Pixel_size_current = 1.
 		Pixel_size_interpolated = Pixel_size_current*float(length_current)/float(length_interpolated)
-	qt =old_div(Pixel_size_interpolated,Pixel_size_current)
+	qt =Pixel_size_interpolated/Pixel_size_current
 
 	for i in range(length_interpolated):
 		xi = float(i)*qt
@@ -2120,7 +2119,7 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm
 					ali_params_series.append(float(temp[nn]))
 
 		ali_params = []
-		N = old_div(len(ali_params_series),5)
+		N = len(ali_params_series)/5
 		for im in range(N):
 			ali_params.append([ali_params_series[im*5], ali_params_series[im*5+1], ali_params_series[im*5+2], ali_params_series[im*5+3], ali_params_series[im*5+4]])
 
@@ -2206,16 +2205,16 @@ def running_time(start_time):
 	from utilities import print_msg
 	from time import time
 	time_run = int(time() - start_time)
-	time_h   = old_div(time_run, 3600)
-	time_m   = old_div((time_run % 3600), 60)
+	time_h   = time_run / 3600
+	time_m   = (time_run % 3600) / 60
 	time_s   = (time_run % 3600) % 60
 	print_msg('\nRunning time is: %s h %s min %s s\n\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
 
 def running_time_txt(start_time):
 	from time import time
 	time_run = int(time() - start_time)
-	time_h   = old_div(time_run, 3600)
-	time_m   = old_div((time_run % 3600), 60)
+	time_h   = time_run / 3600
+	time_m   = (time_run % 3600) / 60
 	time_s   = (time_run % 3600) % 60
 	return 'Running time is: %s h %s min %s s' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0'))
 
@@ -2254,7 +2253,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	for i in n: ntot *= i
 	count = (75*4+2)*(75*4)**2
 	array1d = reshape( array, (ntot,))
-	ntime = old_div((ntot-1),count) + 1
+	ntime = (ntot-1) /count + 1
 	for i in range(ntime):
 		block_begin = i*count
 		block_end   = min(block_begin + count, ntot)
@@ -2885,7 +2884,7 @@ def recv_EMData(src, tag, comm=-1):
 	img = EMNumPy.numpy2em(img_data)
 	img.set_complex(is_complex)
 	img.set_ri(is_ri)
-	img.set_attr_dict({"changecount":int(img_head[5]),  "is_complex_x":int(img_head[6]),  "is_complex_ri":int(img_head[7]),  "apix_x":old_div(int(img_head[8]),10000.0),  "apix_y":old_div(int(img_head[9]),10000.0),  "apix_z":old_div(int(img_head[10]),10000.0)})
+	img.set_attr_dict({"changecount":int(img_head[5]),  "is_complex_x":int(img_head[6]),  "is_complex_ri":int(img_head[7]),  "apix_x":int(img_head[8])/10000.0,  "apix_y":int(img_head[9])/10000.0,  "apix_z":int(img_head[10])/10000.0})
 	return img
 
 	'''
@@ -3198,7 +3197,7 @@ def print_begin_msg(program_name, onscreen=False):
 	t = 100
 	stars = '*'*t
 	string = "Beginning of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
-	s = old_div((t-len(string)),2)
+	s = (t-len(string))/2
 	spacing = ' '*s
 	if onscreen:
 		print(stars)
@@ -3214,7 +3213,7 @@ def print_end_msg(program_name, onscreen=False):
 	t = 100
 	stars = '*'*t
 	string = "End of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
-	s = old_div((t-len(string)),2)
+	s = (t-len(string))/2
 	spacing = ' '*s
 	if onscreen:
 		print(stars)
@@ -3451,17 +3450,6 @@ def delete_bdb(name):
 	a = db_open_dict(name)
 	db_remove_dict(name)
 
-def disable_bdb_cache():
-	import EMAN2db
-	EMAN2db.BDB_CACHE_DISABLE = True
-
-def enable_bdb_cache():
-	import EMAN2db
-	EMAN2db.BDB_CACHE_DISABLE = False
-
-
-
-###############
 
 # parse user function parses the --function option. this option
 #    can be either a single function name (i.e. --function=ali3d_e)
@@ -3492,10 +3480,6 @@ def parse_user_function(opt_string):
 		# no list format used, so we assume this is a function name
 		# defined (and referenced) in user_functions.
 		return opt_string
-
-
-###############
-#  Angular functions
 
 def getang(n):
 	"""
@@ -3642,7 +3626,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 		from utilities import get_symt, getvec
 		from EMAN2 import Transform
 		t = get_symt(sym)
-		phir = old_div(360.0,int(sym[1:]))
+		phir = 360.0/int(sym[1:])
 		for i in range(len(t)):  t[i] = t[i].inverse()
 		a = Transform({"type":"spider","phi":projangles[whichone][0], "theta":projangles[whichone][1]})
 		for l in range(len(t)):
@@ -3720,7 +3704,7 @@ def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym_class=None
 	from utilities import getfvec, angles_to_normals
 	reference_normals = angles_to_normals(reference_ang)
 
-	if( sym_class == None or sym_class.sym[:2] == "c1"):
+	if( sym_class.sym[:2] == "c1"):
 		ref = getfvec(angles[0],angles[1])
 		assignments = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
 	else:
@@ -3753,7 +3737,7 @@ def nearestk_to_refdirs(refnormal, refdir, howmany = 1):
 
 
 
-"""
+'''
 def assign_projangles(projangles, refangles, return_asg = False):
 
 	if len(refangles) > 10000:
@@ -3786,7 +3770,7 @@ def assign_projangles(projangles, refangles, return_asg = False):
 		assignments[asg[i]].append(i)
 
 	return assignments
-"""
+'''
 
 def assign_projangles(projangles, refangles, return_asg = False):
 
@@ -3824,7 +3808,7 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 	#  projdirs - data
 	#  refdirs  - templates, each template has neighbors related copies 
 	#  output - list of lists, ofr each of refdirs/neighbors there is a list of projdirs indexes that are closest to it
-	"""
+	'''
 	qsti = [-1]*len(projdirs)
 	for i,q in enumerate(projdirs):
 		dn = -2.0
@@ -3836,10 +3820,10 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 				dn = sq
 				this = l
 		qsti[i] = this
-	"""
+	'''
 	#  Create a list that for each projdirs contains an index of the closest refdirs/neighbors
 	qsti = Util.assign_projdirs_f(projdirs, refdirs, neighbors)
-	assignments = [[] for i in range(old_div(len(refdirs),neighbors))]
+	assignments = [[] for i in range(len(refdirs)/neighbors)]
 	for i in range(len(projdirs)):
 		assignments[qsti[i]].append(i)
 
@@ -3862,7 +3846,7 @@ def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 				la.append(projangles[i])
 	elif( symmetry[:1] == "c" ):
 		nsym = int(symmetry[1:])
-		qt = old_div(360.0,nsym)
+		qt = 360.0/nsym
 		dvec = 	[0.0]*nsym
 		for nsm in range(nsym):
 			dvec[nsm] = getvec(phi+nsm*qt, tht)
@@ -3876,7 +3860,7 @@ def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 				la.append(projangles[i])
 	elif( symmetry[:1] == "d" ):
 		nsym = int(symmetry[1:])
-		qt = old_div(360.0,nsym)
+		qt = 360.0/nsym
 		dvec = 	[0.0]*2*nsym
 		for nsm in range(nsym):
 			dvec[2*nsm] = getvec(phi+nsm*qt, tht)
@@ -3913,7 +3897,7 @@ def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 				la.append(projangles[i])
 	elif( symmetry[:1] == "c" ):
 		nsym = int(symmetry[1:])
-		qt = old_div(360.0,nsym)
+		qt = 360.0/nsym
 		dvec = 	[0.0]*nsym
 		for nsm in range(nsym):
 			dvec[nsm] = getfvec(phi+nsm*qt, tht)
@@ -3927,7 +3911,7 @@ def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
 				la.append(projangles[i])
 	elif( symmetry[:1] == "d" ):
 		nsym = int(symmetry[1:])
-		qt = old_div(360.0,nsym)
+		qt = 360.0/nsym
 		dvec = 	[0.0]*2*nsym
 		for nsm in range(nsym):
 			dvec[2*nsm] = getfvec(phi+nsm*qt, tht)
@@ -3970,7 +3954,7 @@ def cone_dirs_f( projdirs, ancordir, ant):
 	return la
 """
 
-"""
+'''
 def cone_ang_f_with_index( projangles, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -3988,8 +3972,7 @@ def cone_ang_f_with_index( projangles, phi, tht, ant ):
 			la.append(projangles[i])
 			index.append(i)
 	return la, index
-"""
-
+'''
 def cone_ang_with_index( projangles, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -4054,70 +4037,12 @@ def symmetry_related_normals(angles, symmetry):
 		neighbors.append(p.get_matrix()[8:11])
 	return neighbors
 """
-def balance_angular_distribution(params, max_occupy =-1, angstep =15., sym="c1"):
-	from fundamentals import symclass
-	smc  = symclass(sym)
-	eah  = smc.even_angles(angstep, inc_mirror=0)
-	leah = len(eah)
-	u = []
-	for q in eah:
-		#print("q",q)
-		m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
-		#print("m",m)
-		itst = len(u)
-		for c in m:
-			#print("c",c)
-			if smc.is_in_subunit(c[0],c[1],1) :
-				#print(" is in 1")
-				if not smc.is_in_subunit(c[0],c[1],0) :
-					#print("  outside")
-					u.append(c)
-					break
-		if(len(u) != itst+1):
-			u.append(q)  #  This is for exceptions that cannot be easily handled
-			"""
-			print(q)
-			print(m)
-			ERROR("balance angles","Fill up upper",1)
-			"""
-	seaf = []
-	for q in eah+u:  seaf += smc.symmetry_related(q)
-
-	lseaf = 2*leah
-
-	seaf = angles_to_normals(seaf)
-
-	occupancy = [[] for i in range(leah)]
-
-	for i,q in enumerate(params):
-		l = nearest_fang(seaf,q[0],q[1])
-		l = l%lseaf
-		if(l>=leah):  l = l-leah
-		occupancy[l].append(i)
-
-	if(max_occupy > 0):
-		outo = []
-		from random import shuffle
-		for l,q in enumerate(occupancy):
-			shuffle(q)
-			q = q[:max_occupy]
-			outo += q
-			#print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
-			#print(l,len(q),q)
-		outo.sort()
-		#write_text_file(outo,"select.txt")
-		return outo
-	else:
-		#for l,q in enumerate(occupancy):
-		#	print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
-		return occupancy
-
 
 def symmetry_neighbors(angles, symmetry):
 	#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
 	#  output is [[phi0,theta0,psi0],[phi0,theta0,psi0]_SYM1,...,[phi1,theta1,psi1],[phi1,theta1,psi1]_SYM1,...]
 	temp = Util.symmetry_neighbors(angles, symmetry)
-	nt = old_div(len(temp),3)
+	nt = len(temp)/3
 	return [[temp[l*3+i] for i in range(3)] for l in range(nt) ]
 	#  We could make it a list of lists
 	#mt = len(angles)
@@ -4125,6 +4050,17 @@ def symmetry_neighbors(angles, symmetry):
 	#return [[ [temp[m*3*nt+l*3+i] for i in xrange(3)] for l in xrange(nt)] for m in xrange(mt) ]
 
 #def nearest_angular_direction(normals, vect, symmetry):
+
+
+###############
+
+def disable_bdb_cache():
+	import EMAN2db
+	EMAN2db.BDB_CACHE_DISABLE = True
+
+def enable_bdb_cache():
+	import EMAN2db
+	EMAN2db.BDB_CACHE_DISABLE = False
 
 def rotation_between_anglesets(agls1, agls2):
 	"""
@@ -4371,7 +4307,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	# If we are, we are only going to read the table and avoid calculating the distance again.
 	previous_group = -1
 	previous_zone = 5
-	for grp in range(old_div(N,img_per_grp)):
+	for grp in range(N/img_per_grp):
 		print(grp, end=' ')
 		N_remain = N-grp*img_per_grp
 		# The idea here is that if each group has more than 100 images in average,
@@ -4556,7 +4492,7 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 	assert N == len(proj_list2)
 	for i in range(N): assert i == proj_list2[i]
 
-	Ng = old_div(N,img_per_grp)
+	Ng = N/img_per_grp
 	proj_list_new = [[] for i in range(Ng)]
 	mirror_list = [[] for i in range(Ng)]
 	angles_list = []
@@ -4628,7 +4564,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		begin = 0
 		end = N-1
 		while begin <= end:
-			mid = old_div((begin+end),2)
+			mid = (begin+end)/2
 			if a[mid] == x: return mid
 			if a[mid] < x: begin = mid+1
 			else: end = mid-1
@@ -4648,7 +4584,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 			begin = 0
 			end = N-2
 			while end >= begin:
-				mid = old_div((begin+end),2)
+				mid = (begin+end)/2
 				if x > a[mid] and x < a[mid+1]: break;
 				if x < a[mid]: end = mid-1
 				else: begin = mid+1
@@ -4668,7 +4604,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 			begin = 0
 			end = N-2
 			while end >= begin:
-				mid = old_div((begin+end),2)
+				mid = (begin+end)/2
 				if x > a[mid] and x < a[mid+1]: break;
 				if x < a[mid]: end = mid-1
 				else: begin = mid+1
@@ -5120,7 +5056,7 @@ def rearrange_ranks_of_processors(mode):
 	local_size = host_names.count(hostname)
 	
 	no_of_processes_per_group = local_size
-	no_of_groups = old_div(mpi_size,local_size)
+	no_of_groups = mpi_size/local_size
 	
 	if my_rank == 0:
 		host_names = sorted(set(host_names))
@@ -5179,7 +5115,7 @@ def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank
 
 	group_infos = wrap_mpi_bcast(group_infos, main_node, mpi_comm)
 
-	number_of_groups = old_div(len(group_infos),2)
+	number_of_groups = len(group_infos)/2
 
 	for i in range(number_of_groups):
 		if my_rank in group_infos[2*i+1]:
@@ -5225,7 +5161,7 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	# local_rank = my_rank % local_size 
 
 	no_of_processes_per_group = local_size
-	no_of_groups = old_div(mpi_size,local_size)
+	no_of_groups = mpi_size/local_size
 
 	if my_rank == 0:
 			host_names = sorted(set(host_names))
@@ -5233,7 +5169,7 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	host_dict = {host_names[i]: i for i in range(len(host_names))}
 
 	# color = host_dict[hostname]
-	color = old_div(my_rank, no_of_processes_per_group)
+	color = my_rank / no_of_processes_per_group
 	key = local_rank
 
 	# shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
@@ -5254,8 +5190,8 @@ def wrap_mpi_split(comm, no_of_groups):
 	nproc = mpi_comm_size(comm)
 	myid = mpi_comm_rank(comm)
 
-	no_of_proc_per_group = old_div(nproc, no_of_groups)
-	color = old_div(myid, no_of_proc_per_group)
+	no_of_proc_per_group = nproc / no_of_groups
+	color = myid / no_of_proc_per_group
 	key = myid % no_of_proc_per_group
 
 	return mpi_comm_split(comm, color, key)
@@ -5434,7 +5370,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	nima = image_end - image_start
 	oldshifts = [[0.0,0.0]]#*nima
 	data = [None]*nima
-	shrinkage = old_div(nxinit,float(Tracker["constants"]["nnxo"]))
+	shrinkage = nxinit/float(Tracker["constants"]["nnxo"])
 	radius = int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	#  Note these are in Fortran notation for polar searches
 	#txm = float(nxinit-(nxinit//2+1) - radius -1)
@@ -6077,12 +6013,12 @@ def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
 #### Used in the main programm
 
 def sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file):
-	shrinkage=old_div(float(nnxo),float(nxinit))
+	shrinkage=float(nnxo)/float(nxinit)
 	curv_orgn = read_text_file(pspcurv_nnxo_file)
 	new_curv=int(1.5*len(curv_orgn))*[0.0]
 	for index in range(len(curv_orgn)):
-		new_index = int(old_div(index,shrinkage))
-		fraction  = old_div(index,shrinkage)-new_index
+		new_index = int(index/shrinkage)
+		fraction  = index/shrinkage-new_index
 		if fraction <=0:
 			new_curv[new_index] +=curv_orgn[index]
 		else:
@@ -6330,7 +6266,7 @@ def do_two_way_comparison(Tracker):
 			for jpp in range(len(ptp)):
 				if ipp!=jpp:
 					avg_scores += scores[(ipp,jpp)]
-			avg_rate =old_div(avg_scores,(len(ptp)-1))
+			avg_rate =avg_scores/(len(ptp)-1)
 			summed_scores.append(avg_rate)
 			two_way_dict[avg_rate] =ipp
 		#### Select two independent runs that have the first two highest scores
@@ -6373,8 +6309,8 @@ def do_two_way_comparison(Tracker):
 			log_main.add(" Selected indepedent runs      %5d and  %5d"%(run1,run2))
 			log_main.add(" Their pair-wise averaged rates are %5.2f  and %5.2f "%(rate1,rate2))
 		from math import sqrt
-		avg_two_ways        = old_div(avg_two_ways,total_pop)
-		two_ways_std        = sqrt(old_div(avg_two_ways_square,total_pop)-avg_two_ways**2)
+		avg_two_ways        = avg_two_ways/total_pop
+		two_ways_std        = sqrt(avg_two_ways_square/total_pop-avg_two_ways**2)
 		net_rate            = avg_two_ways-1./number_of_groups*100.
 		Tracker["net_rate"] = net_rate
 		if myid == main_node:
@@ -6521,7 +6457,7 @@ def create_random_list(Tracker):
 	Tracker["this_indep_list"] = indep_list
 
 def get_number_of_groups(total_particles,number_of_images_per_group, round_off=.2):
-	number_of_groups=old_div(float(total_particles),number_of_images_per_group)
+	number_of_groups=float(total_particles)/number_of_images_per_group
 	if number_of_groups - int(number_of_groups)<round_off:
 		number_of_groups = int(number_of_groups)
 	else:
@@ -6588,7 +6524,7 @@ def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 
 def get_number_of_groups(total_particles,number_of_images_per_group):
 	# soft partition groups
-	number_of_groups=old_div(float(total_particles),number_of_images_per_group)
+	number_of_groups=float(total_particles)/number_of_images_per_group
 	if number_of_groups - int(number_of_groups)<.4:
 		number_of_groups = int(number_of_groups)
 	else:
@@ -6629,7 +6565,7 @@ def count_chunk_members(chunk_dict, one_class):
 		else:                  N_chunk1 += 1
 	n = len(one_class)
 	if n <=1:  return 0.0, 0.0, n
-	else: return  old_div(float(N_chunk0),n), old_div(float(N_chunk1),n), n
+	else: return  float(N_chunk0)/n, float(N_chunk1)/n, n
 
 def get_two_chunks_from_stack(Tracker):
 	total_chunk = EMUtil.get_all_attributes(Tracker["orgstack"],"chunk_id")
@@ -6641,7 +6577,7 @@ def get_two_chunks_from_stack(Tracker):
 	return chunk_one, chunk_two
 
 def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
-	fsc_cutoff   = old_div(1.0,3.0)
+	fsc_cutoff   = 1.0/3.0
 	adjusted_fsc = adjust_fsc_down(Tracker["global_fsc"],n1,n2)
 	currentres   = -1.0
 	ns           = len(adjusted_fsc)
@@ -6695,7 +6631,7 @@ def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
 
 def get_number_of_groups(total_particles,number_of_images_per_group):
 	#minimum_number_of_members = 1000
-	number_of_groups   =  old_div(float(total_particles),number_of_images_per_group)
+	number_of_groups   =  float(total_particles)/number_of_images_per_group
 	if number_of_groups - int(number_of_groups)<.4:number_of_groups = int(number_of_groups)
 	else:number_of_groups = int(number_of_groups)+1
 	return number_of_groups
@@ -7179,7 +7115,7 @@ def tabessel(nx, nnxo, nbel = 5000):
 	normk = Util.bessel0(0., radius, alpha)
 	for i in range(nbel):
 		rr = i/float(nbel-1)/2.0
-		beltab[i] = old_div(Util.bessel0(rr, radius, alpha),normk)
+		beltab[i] = Util.bessel0(rr, radius, alpha)/normk
 	return beltab
 
 ####

@@ -32,7 +32,6 @@ from __future__ import print_function
 #
 #
 
-from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -62,7 +61,7 @@ if os.path.exists(stack2):  os.system('rm  '+stack2)
 sx=0
 sy=0
 
-ast = old_div(720,nangles)
+ast = 720/nangles
 apsi=-ast
 for i in range(nangles):
 	apsi += ast

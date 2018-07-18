@@ -29,7 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from past.utils import old_div
 from builtins import range
 from global_def import *
 
@@ -365,7 +364,7 @@ def filt_kaisersinh(e, alpha):
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
-	r=old_div(M,2)
+	r=M/2
 	v=K/2.0/N
 	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH,
@@ -377,7 +376,7 @@ def filt_kaisersinhp(e, alpha):
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
-	r=old_div(M,2)
+	r=M/2
 	v=K/2.0/N
 	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH,
@@ -389,7 +388,7 @@ def filt_kaisersinhinv(e, alpha):
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
-	r=old_div(M,2)
+	r=M/2
 	v=K/2.0/N
 	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE,
@@ -401,7 +400,7 @@ def filt_kaisersinhinvp(e, alpha):
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
-	r=old_div(M,2)
+	r=M/2
 	v=K/2.0/N
 	from EMAN2 import Processor
 	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE,
@@ -562,7 +561,7 @@ def filt_from_fsc(dres, low = 0.1):
 		if dres[1][i] < 0.0:
 			qt = 0.0
 		else:
-			qt = 2*(old_div(dres[1][i-1],(1.0+dres[1][i-1])) + old_div(dres[1][i],(1.0+dres[1][i])) + old_div(dres[1][i+1],(1.0+dres[1][i+1])))/3.0
+			qt = 2*(dres[1][i-1]/(1.0+dres[1][i-1]) + dres[1][i]/(1.0+dres[1][i]) + dres[1][i+1]/(1.0+dres[1][i+1]))/3.0
 		if qt < low:
 			filtc[i] = low
 			last = i
@@ -592,7 +591,7 @@ def filt_from_fsc2(dres, low = 0.1):
 		if(dres[1][i]<0.0):
 			qt = 0.0
 		else:
-			qt = old_div((old_div(dres[1][i-1],(1.0+dres[1][i-1])) + old_div(dres[1][i],(1.0+dres[1][i])) + old_div(dres[1][i+1],(1.0+dres[1][i+1]))),3.0)
+			qt = (dres[1][i-1]/(1.0+dres[1][i-1]) + dres[1][i]/(1.0+dres[1][i]) + dres[1][i+1]/(1.0+dres[1][i+1]))/3.0
 		if ( qt < low ):
 			filtc[i] = low
 			last = i
@@ -632,11 +631,11 @@ def filt_from_fsc_bwt(dres, low = 0.1):
 			lowf=dres[0][i]
 			break
 	highf=lowf+.05
-	order=2.*log(old_div(eps,sqrt(a**2-1)))/log(old_div(lowf,highf))
-	rad=old_div(lowf,eps**(old_div(2.,order)))
+	order=2.*log(eps/sqrt(a**2-1))/log(lowf/highf)
+	rad=lowf/eps**(2./order)
 	for i in range(n):		
 		if(dres[1][i]<low): 
-			qt = old_div(1.,sqrt(1.+(old_div(dres[0][i],rad))**order))
+			qt = 1./sqrt(1.+(dres[0][i]/rad)**order)
 		else:
 			qt = 2*dres[1][i]/(1.0+dres[1][i])
 		filtc[i] = qt
@@ -761,9 +760,9 @@ def tanhfilter(nx, fl, aa):
 	n = nx//2 + nx%2
 	f = [0.0]*n
 	for i in range(n):
-		x = old_div(float(i),nx)
+		x = float(i)/nx
 		f[i] = 0.5*( tanh(pi*(x+fl)/2.0/aa/fl) - tanh(pi*(x-fl)/2.0/aa/fl) )
-	return  [[old_div(float(i),nx) for i in range(n)],f]
+	return  [[float(i)/nx for i in range(n)],f]
 
 def filt_matched(ima, SNR, Pref):
 	""" 
@@ -791,7 +790,7 @@ def filt_matched(ima, SNR, Pref):
 			print(thm)
 			hm=sqrt(thm)
 			deno=(SNR[j]+1)*(ctf_2[j]*Pn2[j]*TE[j]**2+Pn1[j])+ctf_2[j]*PU[j]*TE[j]**2
-			xval=old_div(hm,deno) 
+			xval=hm/deno 
 		else: 
 			hm=0.0
 			xval=0.0
@@ -832,7 +831,7 @@ def filt_vols( vols, fscs, mask3D ):
 	for i in range(nvol):
 		ptab = rops_table( vols[i] )
 		for j in range( len(ptab) ):
-			ptab[j] = sqrt( old_div(pmax[j],ptab[j]) )
+			ptab[j] = sqrt( pmax[j]/ptab[j] )
 
 		vols[i] = filt_table( vols[i], ptab )
 		#stat = Util.infomask( vols[i], mask3D, False )

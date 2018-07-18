@@ -29,7 +29,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from past.utils import old_div
 from builtins import range
 from builtins import object
 from global_def import *
@@ -506,9 +505,9 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 	if decimation    <= 1  : 	ERROR("Improper decimation ratio", "image_decimate", 1)
 	if(decimation    == 1.0): 	return  img.copy()
 	if frequency_low <= 0  :	
-		frequency_low     = old_div(0.5,decimation)-0.02
+		frequency_low     = 0.5/decimation-0.02
 		if frequency_low <= 0 : ERROR("Butterworth pass-band frequency is too low","image_decimation",1)			
-		frequency_high    = min(old_div(0.5,decimation) + 0.02, 0.499)
+		frequency_high    = min(0.5/decimation + 0.02, 0.499)
 	if fit_to_fft:
 		nx       = img.get_xsize()
 		ny       = img.get_ysize()
@@ -697,7 +696,7 @@ def prepi(image, RetReal = True):
 	# support of the window
 	K = 6
 	alpha = 1.75
-	r = old_div(M,2)
+	r = M/2
 	v = K/2.0/N
 	kb = Util.KaiserBessel(alpha, K, r, v, N)
 	# first pad it with zeros in Fourier space
@@ -745,7 +744,7 @@ def prepi3D(image):
 	# support of the window:
 	K = 6
 	alpha = 1.75
-	r = old_div(M,2)
+	r = M/2
 	v = K/2.0/N
 	kb = Util.KaiserBessel(alpha, K, r, v, N)
 	# pad with zeros in Fourier space:
@@ -777,7 +776,7 @@ def prepg(image, kb):
 	# support of the window
 	K = 6
 	alpha = 1.75
-	r = old_div(M,2)
+	r = M/2
 	v = K/2.0/N
 	# first pad it with zeros in Fourier space
 	o = image.FourInterpol(2*M,2*M,1,0)
@@ -925,7 +924,7 @@ def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	alpha = 1.75
 	K = 6
 	N = M*2  # npad*image size
-	r = old_div(M,2)
+	r = M/2
 	v = K/2.0/N
 	# first pad it with zeros in Fourier space
 	o = image.FourInterpol(N,N,1,0)
@@ -955,7 +954,7 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	N = nx*npad
 	K = 6
 	alpha = 1.75
-	r = old_div(nx,2)
+	r = nx/2
 	v = K/2.0/N
 	kb = Util.KaiserBessel(alpha, K, r, v, N)
 
@@ -1132,9 +1131,9 @@ def smallprime(arbit_num, numprime=3):
 		x62 = arbit_num-i+1
 		for k in range(1,arbit_num+1): # fake loop try to divide the arbit_num
 			for j in range(0,numprime):
-				x71 = primelist[j]*int(old_div(x62,primelist[j]))
+				x71 = primelist[j]*int(x62/primelist[j])
 				if(x71 == x62):
-					x62 = old_div(x62,primelist[j])
+					x62 = x62/primelist[j]
 					if(x62 == 1):
 						nicenum = arbit_num-i+1
 						return nicenum
@@ -1154,24 +1153,24 @@ def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	ny = img.get_ysize()
 	nx_fft = smallprime(nx)
 	ny_fft = smallprime(ny)
-	x_gaussian_hi = old_div(1.,win_size)
+	x_gaussian_hi = 1./win_size
 	from filter    import filt_gaussh
 	e_fil = filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
-	x38 = old_div(100,(100-overlp_x)) # normalization of % of the overlap in x 
-	x39 = old_div(100,(100-overlp_y)) # normalization of % of the overlap in y
-	x26 = int(x38*(old_div((nx-2*edge_x),win_size)-1)+1)  # number of pieces horizontal dim.(X)
-	x29 = int(x39*(old_div((ny-2*edge_y),win_size)-1)+1)  # number of pieces vertical dim.(Y)
+	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
+	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
+	x26 = int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
+	x29 = int(x39*((ny-2*edge_y)/win_size-1)+1)  # number of pieces vertical dim.(Y)
 	iz = 0	
 	pw2 = EMData()
 	for iy in range(1, x29+1):	
-		x21 = (old_div(win_size,x39))*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
+		x21 = (win_size/x39)*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
 		for ix in  range(1, x26+1):			 
-			x22 = (old_div(win_size,x38))*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
+			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
 			wi  = window2d(e_fil, win_size, win_size, "l", x22, x21)
 			iz  = iz+1
 			if (iz == 1): pw2  = periodogram(ramp(wi))
 			else:         pw2 += periodogram(ramp(wi))
-	return  old_div(pw2,float(iz))
+	return  pw2/float(iz)
 
 def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256):
 	""" 
@@ -1188,13 +1187,13 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 	ny_fft = smallprime(num2)
 	img1 = window2d(img,nx_fft,ny_fft,"l",edge_x,edge_y)
 	if(num_bnd == -1):
-		num_bnd = int(old_div(nx_fft,win_s))
+		num_bnd = int(nx_fft/win_s)
 		win_x   = int(win_s)
 	else:
-		win_x = int(old_div(nx_fft,num_bnd))
+		win_x = int(nx_fft/num_bnd)
 		win_x = int(smallprime(win_x))
 	win_y = win_x
-	x_gaussian_hi = old_div(1.,win_x)
+	x_gaussian_hi = 1./win_x
 	del img
 	from filter import filt_gaussh
 	from utilities import drop_image, rot_image
@@ -1203,15 +1202,15 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 	e_fil = filt_gaussh(img2, x_gaussian_hi)
 	del img1
 	del img2
-	x39 = old_div(100,(100-overlp_y)) # normalization of % of the overlap in y
-	x29 = int(x39*(old_div((ny),win_y)-1)+1)  # number of pieces vertical dim.(Y)
+	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
+	x29 = int(x39*((ny)/win_y-1)+1)  # number of pieces vertical dim.(Y)
 	pw2 = EMData()
 	pw2_band = []
 	for ix in  range(1, num_bnd+1):
 		x22 = (win_x)*(ix-1)# x-direction it should start from 0 if edge_x =0
 		iz=0
 		for iy in range(1, x29+1):	
-			x21 = (old_div(win_y,x39))*(iy-1) #  y-direction it should start from 0 if edge_y=0	      			 
+			x21 = (win_y/x39)*(iy-1) #  y-direction it should start from 0 if edge_y=0	      			 
 			wi = window2d(e_fil,win_x, win_y,"l",x22, x21)
 			iz = iz+1
 			if (iz == 1): pw2  = periodogram(ramp(wi))
@@ -1232,18 +1231,18 @@ def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	ny = img.get_ysize()
 	nx_fft = smallprime(nx)
 	ny_fft = smallprime(ny)
-	x_gaussian_hi = old_div(1.,win_size)
+	x_gaussian_hi = 1./win_size
 	from filter    import filt_gaussh
 	e_fil = filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
-	x38 = old_div(100,(100-overlp_x)) # normalization of % of the overlap in x 
-	x39 = old_div(100,(100-overlp_y)) # normalization of % of the overlap in y
-	x26 = int(x38*(old_div((nx-2*edge_x),win_size)-1)+1)  # number of pieces horizontal dim.(X)
-	x29 = int(x39*(old_div((ny-2*edge_y),win_size)-1)+1)  # number of pieces vertical dim.(Y)
+	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
+	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
+	x26 = int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
+	x29 = int(x39*((ny-2*edge_y)/win_size-1)+1)  # number of pieces vertical dim.(Y)
 	pw2 = []
 	for iy in range(1, x29+1):	
-		x21 = (old_div(win_size,x39))*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
+		x21 = (win_size/x39)*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
 		for ix in  range(1, x26+1):			 
-			x22 = (old_div(win_size,x38))*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
+			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
 			wi  = ramp( window2d(e_fil, win_size, win_size, "l", x22, x21) )
 			st = Util.infomask(wi, None, True)
 			wi = (wi - st[0])/st[1]*win_size
@@ -1296,7 +1295,7 @@ def bracket(f,x1,h):
  
 def goldsearch(f,a,b,tol=1.0e-9):
 	from math import log, ceil
-	nIter = int(ceil(-2.078087*log(old_div(tol,abs(b-a)))))
+	nIter = int(ceil(-2.078087*log(tol/abs(b-a))))
 	R = 0.618033989
 	C = 1.0 - R
 	# First telescoping
@@ -1385,9 +1384,9 @@ def rotmatrix(phi,theta,psi):
 def mulmat(m1,m2):
 	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
 	"""
-	for i in range(3):
-		for j in range(3):
-			for k in range(3):
+	for i in xrange(3):
+		for j in xrange(3):
+			for k in xrange(3):
 				mat[i][j] += m1[i][k]*m2[k][j]
 			#mat[i][j] = round(mat[i][j],8)
 	"""
@@ -1411,13 +1410,13 @@ def recmat(mat):
 	"""
 	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
 	# limit precision
-	for i in range(3):
-		for j in range(3):
+	for i in xrange(3):
+		for j in xrange(3):
 			mat[i][j] = inmat[i][j]
 			#if(abs(inmat[i][j])<1.0e-8):  mat[i][j] = 0.0
 			#else: mat[i][j] = inmat[i][j]
-	for i in range(3):
-		for j in range(3):  print  "     %14.8f"%mat[i][j],
+	for i in xrange(3):
+		for j in xrange(3):  print  "     %14.8f"%mat[i][j],
 		print ""
 	"""
 	if(mat[2][2] == 1.0):
@@ -1507,13 +1506,13 @@ def recmat_np(mat):
 		else:  return -1
 	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
 	# limit precision
-	for i in range(3):
-		for j in range(3):
+	for i in xrange(3):
+		for j in xrange(3):
 			mat[i,j] = inmat[i,j]
 			#if(abs(inmat[i,j])<1.0e-8):  mat[i,j] = 0.0
 			#else: mat[i,j] = inmat[i,j]
-	for i in range(3):
-		for j in range(3):  print  "     %14.8f"%mat[i,j],
+	for i in xrange(3):
+		for j in xrange(3):  print  "     %14.8f"%mat[i,j],
 		print ""
 	'''
 	if(mat[2,2] == 1.0):
@@ -1569,7 +1568,7 @@ class symclass(object):
 		if(self.sym[0] == "c"):
 			self.nsym = int(self.sym[1:])
 			if(self.nsym<1):  ERROR("For Cn symmetry, we need n>0","symclass",1)
-			self.brackets = [[old_div(360.,self.nsym),90.0,old_div(360.,self.nsym),90.0],[old_div(360.,self.nsym),180.0,old_div(360.,self.nsym),180.0]]
+			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym,180.0,360./self.nsym,180.0]]
 			self.symangles = []
 			for i in range(self.nsym):
 				self.symangles.append([0.0, 0.0, i*360./self.nsym])
@@ -1577,20 +1576,20 @@ class symclass(object):
 		elif(self.sym[0] == "d"):
 			self.nsym = 2*int(self.sym[1:])
 			if(self.nsym<1):  ERROR("For Dn symmetry, we need n>0","symclass",1)
-			self.brackets = [[old_div(360.,self.nsym),90.0,old_div(360.,self.nsym),90.0],[360./self.nsym*2,90.0,360./self.nsym*2,90.0]]
+			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym*2,90.0,360./self.nsym*2,90.0]]
 			self.symangles = []
-			for i in range(old_div(self.nsym,2)):
+			for i in range(self.nsym/2):
 				self.symangles.append([0.0, 0.0, i*360./self.nsym*2])
-			for i in range(old_div(self.nsym,2)):
+			for i in range(self.nsym/2):
 				self.symangles.append([0.0, 180.0, (i*360./self.nsym*2+180.0*(int(self.sym[1:])%2))%360.0])
 
 		elif(self.sym[:3] == "oct"):
 			self.nsym = 24
 			ncap = 4
-			cap_sig = old_div(360.0,ncap)  # also called platonic_params["az_max"]
-			alpha = degrees(acos(old_div(1.0,(sqrt(3.0)*tan(2*pi/ncap/2.0))))) # also platonic_params["alt_max"]
-			theta = degrees(0.5*acos( old_div(cos(radians(cap_sig)),(1.0-cos(radians(cap_sig)))) ))  #  also platonic_params["theta_c_on_two"]
-			self.brackets = [[old_div(180.,ncap),theta,cap_sig,alpha],[old_div(360.,ncap),theta,cap_sig,alpha]]
+			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
+			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
+			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
+			self.brackets = [[180./ncap,theta,cap_sig,alpha],[360./ncap,theta,cap_sig,alpha]]
 			self.symangles = [[0.0,0.0,float(i)] for i in range(0,271,90)]
 			for i in range(0,271,90):
 				for j in range(0,271,90):
@@ -1600,11 +1599,11 @@ class symclass(object):
 		elif(self.sym[:3] == "tet"):
 			self.nsym = 12
 			ncap = 3
-			cap_sig = old_div(360.0,ncap)  # also called platonic_params["az_max"]
-			alpha = degrees(acos(old_div(1.0,(sqrt(3.0)*tan(2*pi/ncap/2.0))))) # also platonic_params["alt_max"]
-			theta = degrees(0.5*acos( old_div(cos(radians(cap_sig)),(1.0-cos(radians(cap_sig)))) ))  #  also platonic_params["theta_c_on_two"]
-			self.brackets = [[old_div(360.0,ncap),theta,cap_sig,alpha],[old_div(360.0,ncap),theta,cap_sig,alpha]]
-			lvl1 = degrees(acos(old_div(-1.0,3.0))) # There  are 3 faces at this angle
+			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
+			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
+			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
+			self.brackets = [[360.0/ncap,theta,cap_sig,alpha],[360.0/ncap,theta,cap_sig,alpha]]
+			lvl1 = degrees(acos(-1.0/3.0)) # There  are 3 faces at this angle
 			self.symangles = [ [0.,0.,0.], [0., 0., 120.], [0., 0., 240.]]
 			for l1 in range(0,241,120):
 				for l2 in range(60,301,120):
@@ -1612,17 +1611,17 @@ class symclass(object):
 			
 			"""
 			#  These angles were translated from eman to spider, but the do not agree with definitions of subunit above
-			for l1 in range(30,271,120):
-				for l2 in range(30,271,120):
+			for l1 in xrange(30,271,120):
+				for l2 in xrange(30,271,120):
 					self.symangles.append([float(l1),lvl1,float(l2)])
 			"""
 
 		elif(self.sym[:4] == "icos"):
 			self.nsym = 60
 			ncap = 5
-			cap_sig = old_div(360.0,ncap)  # also called platonic_params["az_max"]
-			alpha = degrees(acos(old_div(1.0,(sqrt(3.0)*tan(2*pi/ncap/2.0))))) # also platonic_params["alt_max"]
-			theta = degrees(0.5*acos( old_div(cos(radians(cap_sig)),(1.0-cos(radians(cap_sig)))) ))  #  also platonic_params["theta_c_on_two"]
+			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
+			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
+			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
 			self.brackets = [[36.,theta,cap_sig,alpha],[72.,theta,cap_sig,alpha]]
 			lvl1= degrees(atan(2.0))  #there are 5 pentagons with centers at this height (angle)
 			lvl2 = 180.0 - lvl1      #there are 5 pentagons with centers at this height (angle)
@@ -1649,19 +1648,19 @@ class symclass(object):
 			else:  return False
 		elif( self.sym[0] == "d" and (self.nsym//2)%2 == 1 ):
 			if(theta<=self.brackets[inc_mirror][1]):
-				phib = old_div(360.0,self.nsym)
+				phib = 360.0/self.nsym
 				if( phi>=0.0 and phi<self.brackets[1][0] ):
 					if(inc_mirror==1):  return True
-					elif( (phi>= 0.0 and phi<old_div(phib,2)) or (phi>= phib and phi<(phib+old_div(phib,2))) ): return True
+					elif( (phi>= 0.0 and phi<phib/2) or (phi>= phib and phi<(phib+phib/2)) ): return True
 			return False
 			
 		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
 			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
 				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
 				baldwin_lower_alt_bound = \
-				old_div((old_div(sin(radians(old_div(self.brackets[inc_mirror][2],2.0)-tmphi)),tan(radians(self.brackets[inc_mirror][1]))) + \
-					old_div(sin(radians(tmphi)),tan(radians(self.brackets[inc_mirror][3])))),sin(radians(old_div(self.brackets[inc_mirror][2],2.0))))
-				baldwin_lower_alt_bound = degrees(atan(old_div(1.0,baldwin_lower_alt_bound)))
+				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
+					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
+				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound))
 				#print(  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta)
 				if(baldwin_lower_alt_bound>theta): return True
 				else: return False
@@ -1672,18 +1671,18 @@ class symclass(object):
 			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
 				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
 				baldwin_lower_alt_bound = \
-				old_div((old_div(sin(radians(old_div(self.brackets[inc_mirror][2],2.0)-tmphi)),tan(radians(self.brackets[inc_mirror][1]))) + \
-					old_div(sin(radians(tmphi)),tan(radians(self.brackets[inc_mirror][3])))),sin(radians(old_div(self.brackets[inc_mirror][2],2.0))))
-				baldwin_lower_alt_bound = degrees(atan(old_div(1.0,baldwin_lower_alt_bound)))
+				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
+					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
+				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound))
 				#print(  "  baldwin_lower_alt_bound ",phi,theta,baldwin_lower_alt_bound,self.brackets[inc_mirror])
 				if(baldwin_lower_alt_bound>theta):
 					if( inc_mirror == 1 ):
 						return True
 					else:
 						baldwin_upper_alt_bound = \
-						old_div((old_div(sin(radians(old_div(self.brackets[inc_mirror][2],2.0)-tmphi)),tan(radians(self.brackets[inc_mirror][1]))) + \
-							old_div(sin(radians(tmphi)),tan(radians(old_div(self.brackets[inc_mirror][3],2.0))))),sin(radians(old_div(self.brackets[inc_mirror][2],2.0))))
-						baldwin_upper_alt_bound = degrees(atan(old_div(1.0,baldwin_upper_alt_bound)))
+						(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
+							sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3]/2.0)))/sin(radians(self.brackets[inc_mirror][2]/2.0))
+						baldwin_upper_alt_bound = degrees(atan(1.0/baldwin_upper_alt_bound))
 						#print(  "  baldwin_upper_alt_bound ",phi,theta,baldwin_upper_alt_bound,self.brackets[inc_mirror])
 						if(baldwin_upper_alt_bound<theta): return False
 						else:  return True
@@ -1696,12 +1695,12 @@ class symclass(object):
 	def symmetry_related(self, angles):
 		redang = [angles[:]]
 		if(self.sym[0] == "c"):
-			qt = old_div(360.0,self.nsym)
+			qt = 360.0/self.nsym
 			for l in range(1,self.nsym):
 				redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
 		elif(self.sym[0] == "d"):
-			nsm = old_div(self.nsym,2)
-			qt = old_div(360.0,nsm)
+			nsm = self.nsym/2
+			qt = 360.0/nsm
 			for l in range(1,nsm):
 				redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
 			for l in range(nsm,self.nsym):
@@ -1722,7 +1721,7 @@ class symclass(object):
 		#  output is [[phi0,theta0,0],[phi0,theta0,0]_SYM1,...,[phi1,theta1,],[phi1,theta1,]_SYM1,...]
 		if( self.sym[0] == "c" or self.sym[0] == "d" ):
 			temp = Util.symmetry_neighbors(angles, self.sym)
-			nt = old_div(len(temp),3)
+			nt = len(temp)/3
 			return [[temp[l*3],temp[l*3+1],0.0] for l in range(nt) ]
 		#  Note symmetry neighbors below refer to the particular order 
 		#   in which this class generates symmetry matrices
@@ -1746,8 +1745,8 @@ class symclass(object):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		import types
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
-		if(self.sym[0] == "c"): qs = old_div(360.0,self.nsym)
-		elif(self.sym[0] == "d"): qs = old_div(720.0,self.nsym)
+		if(self.sym[0] == "c"): qs = 360.0/self.nsym
+		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
 		if( type(angles[0]) is list):
 			toprocess = angles
 			lis = True
@@ -1812,15 +1811,15 @@ class symclass(object):
 				if(self.sym[0] == "d"):
 					if( inc_mirror == 0 ):
 						if((self.nsym//2)%2 == 0):
-							if(phi>=old_div(qs,2)):
+							if(phi>=qs/2):
 								phi = qs-phi
 								psi = (360.0-psi)%360.0
 						else:
-							if(phi>=360.0/self.nsym/2 and phi<old_div(360.0,self.nsym)):
-								phi = old_div(360.0,self.nsym)-phi
+							if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym):
+								phi = 360.0/self.nsym-phi
 								psi = 360.0 - psi
-							elif(phi>=old_div(360.0,self.nsym)+360.0/self.nsym/2 and phi<old_div(720.0,self.nsym)):
-								phi = old_div(720.0,self.nsym)-phi+old_div(360.0,self.nsym)
+							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
+								phi = 720.0/self.nsym-phi+360.0/self.nsym
 								psi = (360.0-psi)%360.0
 
 			redang.append([phi, theta, psi])
@@ -1831,8 +1830,8 @@ class symclass(object):
 	def reduce_angles(self, phiin, thetain, psiin, inc_mirror=1):
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
-		if(self.sym[0] == "c"): qs = old_div(360.0,self.nsym)
-		elif(self.sym[0] == "d"): qs = old_div(720.0,self.nsym)
+		if(self.sym[0] == "c"): qs = 360.0/self.nsym
+		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
 		if is_platonic_sym:
 			if(not self.is_in_subunit(phiin, thetain, 1)):
 				mat = rotmatrix(phiin,thetain,psiin)
@@ -1884,15 +1883,15 @@ class symclass(object):
 			if(self.sym[0] == "d"):
 				if( inc_mirror == 0 ):
 					if((self.nsym//2)%2 == 0):
-						if(phi>=old_div(qs,2)):
+						if(phi>=qs/2):
 							phi = qs-phi
 							psi = 360.0 - psi
 					else:
-						if(phi>=360.0/self.nsym/2 and phi<old_div(360.0,self.nsym)):
-							phi = old_div(360.0,self.nsym)-phi
+						if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym):
+							phi = 360.0/self.nsym-phi
 							psi = 360.0 - psi
-						elif(phi>=old_div(360.0,self.nsym)+360.0/self.nsym/2 and phi<old_div(720.0,self.nsym)):
-							phi = old_div(720.0,self.nsym)-phi+old_div(360.0,self.nsym)
+						elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
+							phi = 720.0/self.nsym-phi+360.0/self.nsym
 							psi = 360.0 - psi
 
 		return phi, theta, psi
@@ -1916,10 +1915,6 @@ class symclass(object):
 		from math      import pi, sqrt, cos, acos, tan, sin, radians, degrees
 		from utilities import even_angles_cd
 		angles = []
-		phi2_org = phi2
-		if(phi2_org < 0.0):  phi2_org = self.brackets[1][0] - 1.0e-7 # exclude right border of unit
-		theta2_org = theta2
-		if(theta2_org < 0.0): theta2_org = self.brackets[1][3]
 		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta),1)
 		if(phi1 < 0.0):  phi1 = 0.0
 		if(phi2 < 0.0):  phi2 = self.brackets[inc_mirror][0] - 1.0e-7 # exclude right border of unit
@@ -1941,32 +1936,31 @@ class symclass(object):
 				while(theta <= theta2):
 					phi = phi1
 					if(theta==0.0 or theta==180.0): detphi = 2*phi2
-					else:  detphi = old_div(delta,sin(radians(theta)))
+					else:  detphi = delta/sin(radians(theta))
 					while(phi<phi2):
-						if(self.is_in_subunit(phi, theta, inc_mirror)): 	angles.append([phi, theta, 0.0])
+						if is_platonic_sym:
+							if(self.is_in_subunit(phi, theta, inc_mirror)): 	angles.append([phi, theta, 0.0])
 						else:  	angles.append([phi, theta, 0.0])
 						phi += detphi
 					theta += delta
 			else:
-				# I have to use original phi2 and theta2 to compute Deltaz and wedgeFactor as otherwise
-				# points for include mirror differ from do not include mirror.
-				Deltaz  = cos(radians(theta2_org))-cos(radians(theta1))
+				Deltaz  = cos(radians(theta2))-cos(radians(theta1))
 				s       = delta*pi/180.0
 				NFactor = 3.6/s
-				wedgeFactor = abs(Deltaz*(phi2_org-phi1)/720.0)
+				wedgeFactor = abs(Deltaz*(phi2-phi1)/720.0)
 				NumPoints   = int(NFactor*NFactor*wedgeFactor)
 				angles.append([phi1, theta1, 0.0])
 				# initialize loop
-				phistep = phi2_org-phi1
+				phistep = phi2-phi1
 				z1 = cos(radians(theta1))
 				phi = phi1
 				for k in range(1, NumPoints-1):
 					z = z1 + Deltaz*k/(NumPoints-1)
 					r = sqrt(1.0-z*z)
-					phi = phi1+(phi + old_div(delta,r) - phi1)%phistep
+					phi = phi1+(phi + delta/r - phi1)%phistep
 					theta = degrees(acos(z))
-					if(theta>180.0):  break
-					if(not self.is_in_subunit(phi, theta, inc_mirror)): continue
+					if is_platonic_sym:
+						if(not self.is_in_subunit(phi, theta, inc_mirror)): continue
 					angles.append([phi, theta, 0.0])
 				#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
 			if (phiEqpsi == 'Minus'):
@@ -1985,7 +1979,7 @@ class symclass(object):
 			theta_number = int((90.0 - theta1)/theta2)
 			#for helical, symmetry = s or scn
 			cn = int(self.sym[2:])
-			for j in range(theta_number,-1, -1):
+			for j in xrange(theta_number,-1, -1):
 
 				if( j == 0):
 					if (self.sym[1] =="c"):
@@ -2007,7 +2001,7 @@ class symclass(object):
 					elif (self.sym[1] =="d"):
 						k=int(359.99/2/cn/delta)
 
-				for i in range(k+1):
+				for i in xrange(k+1):
 						angles.append([i*delta,90.0-j*theta2,90.0])
 			"""
 		return angles

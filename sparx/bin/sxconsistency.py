@@ -33,7 +33,6 @@ from __future__ import print_function
 
 #  VERSION 2  09/25/2014
 
-from past.utils import old_div
 from builtins import range
 from   EMAN2 import *
 from   sparx import *
@@ -93,13 +92,13 @@ def average2dtransform(data, return_avg_pixel_error=False):
 
 	# Get ave transform params
 	H = Transform({"type":"2D"})
-	H.set_matrix([old_div(sum_cosa,sqrtP), old_div(sum_sina,sqrtP), 0.0, sx, old_div(-sum_sina,sqrtP), old_div(sum_cosa,sqrtP), 0.0, sy, 0.0, 0.0, 1.0, 0.0])
+	H.set_matrix([sum_cosa/sqrtP, sum_sina/sqrtP, 0.0, sx, -sum_sina/sqrtP, sum_cosa/sqrtP, 0.0, sy, 0.0, 0.0, 1.0, 0.0])
 	dd = H.get_params("2D")
 
 	H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":0,"scale":1.0})
 	dd = H.get_params("2D")
 	if return_avg_pixel_error:
-		return old_div(sum(sqr_pixel_error),N)
+		return sum(sqr_pixel_error)/N
 	else:
 		return [dd[ "alpha" ], dd[ "tx" ], dd[ "ty" ]]
 
@@ -300,7 +299,7 @@ def average_trans(params):
 			nphi   = 0.0
 			ntheta = 0.0
 		else:
-			ntheta = degrees(acos(old_div(nas[2],nom)))%360.0
+			ntheta = degrees(acos(nas[2]/nom))%360.0
 			if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
 			else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
 
@@ -397,7 +396,7 @@ def main():
 					#print  ll,rw[0][j], rw[2][j]
 					break
 			if isame: thesame += 1
-		qt = old_div(float(thesame),nn)
+		qt = float(thesame)/nn
 		print("Proportion of the same orientations ",qt)
 		write_text_file([qt], os.path.join(outdir,howmanythesame) )
 
@@ -408,7 +407,7 @@ def main():
 		radius = options.ou
 		thresherr = options.thresherr  #for chc5 1, for ribo 4#4.0
 		sym = int(options.sym[1:])
-		qsym = old_div(360.0,sym)
+		qsym = 360.0/sym
 
 		blocks = ['A','B','C','D']
 		params = {}
@@ -487,7 +486,7 @@ def main():
 					nphi   = 0.0
 					ntheta = 0.0
 				else:
-					ntheta = degrees(acos(old_div(nas[2],nom)))%360.0
+					ntheta = degrees(acos(nas[2]/nom))%360.0
 					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
 					else:                       nphi   = degrees(atan2( nas[1], nas[0] ))%qsym
 
@@ -619,7 +618,7 @@ def main():
 		radius = options.ou
 		thresherr = options.thresherr
 		sym = int(options.sym[1:])
-		qsym = old_div(360.0,sym)
+		qsym = 360.0/sym
 		#params = [[None for i in xrange(3)] for j in xrange(4)]
 		ll = 3 # this is hardwired as we have three groups.  however, I would like to keep the code general.
 		for jj in range(4):
@@ -671,7 +670,7 @@ def main():
 					nphi   = 0.0
 					ntheta = 0.0
 				else:
-					ntheta = degrees(acos(old_div(nas[2],nom)))%360.0
+					ntheta = degrees(acos(nas[2]/nom))%360.0
 					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
 					else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
 
@@ -709,7 +708,7 @@ def main():
 		radius = options.ou
 		thresherr = options.thresherr
 		sym = int(options.sym[1:])
-		qsym = old_div(360.0,sym)
+		qsym = 360.0/sym
 		#params = [[None for i in xrange(3)] for j in xrange(4)]
 		ll = 3 # this is hardwired as we have three groups.  however, I would like to keep the code general.
 		for jj in range(1):
@@ -762,7 +761,7 @@ def main():
 					nphi   = 0.0
 					ntheta = 0.0
 				else:
-					ntheta = degrees(acos(old_div(nas[2],nom)))%360.0
+					ntheta = degrees(acos(nas[2]/nom))%360.0
 					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
 					else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
 

@@ -32,7 +32,6 @@ from __future__ import print_function
 #
 
 
-from past.utils import old_div
 from builtins import range
 import numpy
 from numpy import linalg as LA
@@ -64,22 +63,22 @@ def mean_var_skew(data):
 		sum2=sum2+data[i]**2
 		sum3=sum3+data[i]**3
 		
-	ave1=old_div(sum1,nsize)
-	ave2=old_div(sum2,nsize)
-	ave3=old_div(sum3,nsize)
+	ave1=sum1/nsize
+	ave2=sum2/nsize
+	ave3=sum3/nsize
 	var = ave2-ave1**2
-	skew = old_div((ave3-3*ave1*var-ave1**3),var**1.5)
+	skew = (ave3-3*ave1*var-ave1**3)/var**1.5
 
 	return ave1, var, skew
 
 
 def shift_gamma(F, gr):
 	L = len(F)
-	ds = old_div(0.5,(L-1))
+	ds = 0.5/(L-1)
 	fg = [0.0]*L
 	for i in range(L):
 		sp = 0.5*(2*i*ds)**gr
-		ip = old_div(sp,ds); i1 = int(floor(ip))
+		ip = sp/ds; i1 = int(floor(ip))
 		if i1<L-1:
 			fg[i] = F[i1]*(i1+1.0-ip)+F[i1+1]*(ip-i1)
 		else:
@@ -90,12 +89,12 @@ def shift_gamma(F, gr):
 def create_CCFR_filter(pwu, pwp, fcrf, sg):
 	# tpu := Re(T)/|P||U| (with T = |P|^2 or |P| or Gaussian):
 	tpu = []; m=0.0
-	csg = old_div(0.5,sg**2)
+	csg = 0.5/sg**2
 	lp = min(len(fcrf),len(pwp))
 	for i in range(lp):
 		#z = sqrt(pwp[i]/pwu[i])                 # T = |P|^2
 		#z = 1.0/sqrt(pwu[i])                    # T = |P|
-		z = old_div(exp(-i**2*csg),sqrt(pwp[i]*pwu[i]))   # T = Gaussian
+		z = exp(-i**2*csg)/sqrt(pwp[i]*pwu[i])   # T = Gaussian
 		if z>m: m=z
 		tpu.append(z)
 	for i in range(lp):
@@ -132,7 +131,7 @@ def map_adjustment(volg, FSC):
 
 def norm_factor_noise(nx, ny, nz):
 	pw = rops_table(model_gauss_noise(1.0, nx, ny, nz))
-	start = old_div(len(pw),10)
+	start = len(pw)/10
 	# old way:
 	#oofactor = sqrt(sum(pw[start:])/len(pw[start:]))
 	# new way, more accurate:
@@ -140,8 +139,8 @@ def norm_factor_noise(nx, ny, nz):
 	for i in range(start,len(pw)):
 		s1 += pw[i]*i**2
 		s2 += i**2
-	oofactor = sqrt(old_div(s1,s2))
-	return old_div(1.0,oofactor)
+	oofactor = sqrt(s1/s2)
+	return 1.0/oofactor
 
 
 def create_noisy_map(vol, sigma_noise, filt, factor_noise):
@@ -234,7 +233,7 @@ def sfg(R,B,t,nu,gamma):
 	# integral(sqrt(FSC_{nu,gamma}))-t
 	np = 100   # intervals for integration
 	sf = 0.0
-	ds = old_div(0.5,float(np))
+	ds = 0.5/float(np)
 	for i in range(np+1):
 		sf += fff(R,B,nu,gamma,i*ds)
 	sf *= ds
@@ -250,7 +249,7 @@ def fff(R,B,nu,gamma,s):
 	else:
 		u = 1.0-0.5*(2*(1-v))**nu
 	y = 0.5*u
-	fs = sqrt(old_div((1.0+R),(1.0+R*exp(B*y**2/4))))
+	fs = sqrt((1.0+R)/(1.0+R*exp(B*y**2/4)))
 	if fs<=0.5:
 		u = 0.5*(2*fs)**nu
 	else:
@@ -268,7 +267,7 @@ def minfind(R,B,gamma,fcr):
 	jmax = 40      # max number of iterations
 	acc = 0.001    # desired accuracy
 	for j in range(jmax):
-		dx = old_div((nu2-nu1),float(np))
+		dx = (nu2-nu1)/float(np)
 		mf = integ2(R,B,nu1,gamma,fcr)
 		mi = 0
 		for i in range(1,np+1):
@@ -284,7 +283,7 @@ def minfind(R,B,gamma,fcr):
 			nu1 = nu1+dx*(mi-1)
 			nu2 = nu1+dx*2
 		if nu2-nu1<acc:
-			return old_div((nu1+nu2),2.0)
+			return (nu1+nu2)/2.0
 
 	print("Error: max number of iterations reached.")
 	mpi_finalize()
@@ -294,7 +293,7 @@ def minfind(R,B,gamma,fcr):
 def integ2(R,B,nu,gamma,fcr):
 	# computes int[(sqrt(FSC_{nu,gamma}-fcr)^2]
 	np = len(fcr)
-	ds = old_div(0.5,float(np-1))
+	ds = 0.5/float(np-1)
 	sf = 0.0
 	for i in range(np):
 		sf += (fff(R,B,nu,gamma,i*ds)-fcr[i])**2
@@ -349,7 +348,7 @@ def fillholes(f,t):
 		while i<lf-1:
 			for j in range(i+1,lf):    # j=right endpoint
 				if fp[j]==1:
-					slope = old_div((f[j]-f[i]),float(j-i))
+					slope = (f[j]-f[i])/float(j-i)
 					for k in range(i+1,j+1):
 						fm[k] = slope*(k-i) + f[i]
 					j1 = j
@@ -493,7 +492,7 @@ def fitfcr(fcr1, R, B):
 
 	# find parameters nu,gamma to fit sqrt(FSC_{nu,gamma}) to the fcr curve:
 	sfp = 0.0     # integral of max(fcr2,0) -- could also be some variation
-	ds = old_div(0.5,float(lf-1))
+	ds = 0.5/float(lf-1)
 	for i in range(lf):
 		if fcr2[i]>0.0:
 			sfp += fcr2[i]
@@ -515,10 +514,10 @@ def fitfcr(fcr1, R, B):
 	# extrapolate fcrf to 0 after first drop below 0.1:
 	for i in range(lf):
 		if fcrf[i]<0.1:
-			k0 = int(old_div(fcrf[i],(fcrf[i]-fcrf[i+1]))+i)
+			k0 = int(fcrf[i]/(fcrf[i]-fcrf[i+1])+i)
 			if k0>lf-1:
 				k0 = lf-1
-				slope = old_div(fcrf[i+1],float(i+1-k0))
+				slope = fcrf[i+1]/float(i+1-k0)
 			else:
 				slope = fcrf[i+1]-fcrf[i]
 			for k in range(i+2,k0+1):
@@ -533,7 +532,7 @@ def fitfcr(fcr1, R, B):
 def red(angle):
 	# reduces angle to the interval [-180,180]
 	from math import floor
-	return angle-360*floor(old_div((angle+180),360))
+	return angle-360*floor((angle+180)/360)
 
 
 
@@ -589,11 +588,11 @@ pix = options.pix
 
 if options.res>0.0:
 	resol = options.res
-	aau = old_div(pix,resol)
-	gamres = 0.5*log(16/B*log(old_div((2*u0*(1+R)-1),R)))/log(2*aau)
+	aau = pix/resol
+	gamres = 0.5*log(16/B*log((2*u0*(1+R)-1)/R))/log(2*aau)
 else:
-	aau = sqrt(4/B*log(old_div((2*u0*(1+R)),R)))
-	resol = round(old_div(pix,aau),1)
+	aau = sqrt(4/B*log((2*u0*(1+R))/R))
+	resol = round(pix/aau,1)
 	gamres = 1.0
 
 #nover = options.nover
@@ -656,7 +655,7 @@ shift_bracket = 5.0
 
 # number of positions in the random initial shake:
 # for the noise-free map:
-nt1 = old_div(20,ncpu)
+nt1 = 20/ncpu
 if nt1<1: nt1=1
 # for the noise-corrupted maps:
 nt2 = 10
@@ -713,14 +712,14 @@ radius *= nover
 mask_rad = 1.3*radius
 
 # box size to window images (so that it's a multiple of nover):
-nbox = 2*int(old_div(mask_rad,nover)+1)*nover
+nbox = 2*int(mask_rad/nover+1)*nover
 
 # to prevent the window from going out of the boundary of the whole map:
-if old_div((nx-nbox),2) <= abs(s[3]):
+if (nx-nbox)/2 <= abs(s[3]):
 	nbox = int(nx-2*abs(s[3])-1)
-if old_div((ny-nbox),2) <= abs(s[4]):
+if (ny-nbox)/2 <= abs(s[4]):
 	nbox = int(ny-2*abs(s[4])-1)
-if old_div((nz-nbox),2) <= abs(s[5]):
+if (nz-nbox)/2 <= abs(s[5]):
 	nbox = int(nz-2*abs(s[5])-1)
 if nbox%2 ==0: nbox=nbox-1
 
@@ -745,7 +744,7 @@ if nover>1:
 sf0 = nx0//2
 sf1 = sf0*nover+1
 FSC = [0.0]*sf1
-dn = old_div(0.5,float(sf0))
+dn = 0.5/float(sf0)
 for j in range(sf1):
 	if j<=sf0:
 		n = j*dn
@@ -762,8 +761,8 @@ if fsc_rapid_fall:
 		if j<=j1: ff = 1.0
 		elif j>=j2: ff = 0.0
 		else:
-			x = float(j2-j1)*(old_div(1.0,(j2-j))-old_div(1.0,(j-j1)))
-			ff = old_div(1.0,(1.0+exp(x)))
+			x = float(j2-j1)*(1.0/(j2-j)-1.0/(j-j1))
+			ff = 1.0/(1.0+exp(x))
 		FSC[j] *= ff
 
 # shift FSC to simulate desired resolution:
@@ -954,9 +953,9 @@ for i in range(nt1):
 
 if(init_median):
 	ccparlist0.sort()
-	bccc = ccparlist0[old_div(nt1,2)][0]    # or (nt1-1)/2
+	bccc = ccparlist0[nt1/2][0]    # or (nt1-1)/2
 	for j in range(lpar):
-		bparams[j] = ccparlist0[old_div(nt1,2)][j+1]    # or (nt1-1)/2
+		bparams[j] = ccparlist0[nt1/2][j+1]    # or (nt1-1)/2
 
 mpi_barrier(MPI_COMM_WORLD)
 
@@ -984,9 +983,9 @@ mpi_barrier(MPI_COMM_WORLD)
 if myid == main_node:
 	if(init_median):
 		ccparlist.sort()
-		bccc = ccparlist[old_div(ncpu,2)][0]    # or (ncpu-1)/2
+		bccc = ccparlist[ncpu/2][0]    # or (ncpu-1)/2
 		for j in range(lpar):
-			bparams[j] = ccparlist[old_div(ncpu,2)][j+1]    # or (ncpu-1)/2
+			bparams[j] = ccparlist[ncpu/2][j+1]    # or (ncpu-1)/2
 		
 	print()
 	if(init_median):
@@ -1160,8 +1159,8 @@ for cycle in range(max_cycles):
 
 	if myid == main_node:
 		for j in range(lpar+1):
-			bp_mean[j] = old_div(bp_mean[j],N)
-			bp_sigma[j] = sqrt(old_div((bp_sigma[j]- N*bp_mean[j]**2),(N-1)))
+			bp_mean[j] = bp_mean[j]/N
+			bp_sigma[j] = sqrt((bp_sigma[j]- N*bp_mean[j]**2)/(N-1))
 			sigmas[cycle][j] = bp_sigma[j]
 
 		if cycle>rave:
@@ -1170,9 +1169,9 @@ for cycle in range(max_cycles):
 				ss = 0.0
 				for k in range(cycle-rave,cycle+1):
 					ss += sigmas[k][j]
-				devj = old_div(abs(sigmas[cycle][j]-sigmas[cycle-rave-1][j]),ss)
+				devj = abs(sigmas[cycle][j]-sigmas[cycle-rave-1][j])/ss
 				if devj > maxdev: maxdev = devj
-				bp_sigma[j] = old_div(ss,float(rave+1))    # replacing by running average
+				bp_sigma[j] = ss/float(rave+1)    # replacing by running average
 			if maxdev<sigma_max_change:
 				to_break = 1
 			else:
@@ -1215,7 +1214,7 @@ if myid == main_node:
 		for i in range(N):
 			parlist[i] = parmat[i][j]
 		parlist.sort()
-		median[j] = parlist[old_div(N,2)]
+		median[j] = parlist[N/2]
 		parlist_filt = []
 		for i in range(N):
 			if(parlist[i]>median[j]-3*bp_sigma[j] and parlist[i]<median[j]+3*bp_sigma[j]):
@@ -1226,8 +1225,8 @@ if myid == main_node:
 		bp = ess_p(parlist_filt,0.95)
 
 		# center and width of distrib:
-		cp[j] = old_div((ap+bp),2.0)
-		wp[j] = old_div((bp-ap),2.0)
+		cp[j] = (ap+bp)/2.0
+		wp[j] = (bp-ap)/2.0
 	
 		# compute stats without outliers:
 		ave,var,skew = mean_var_skew(parlist_filt)
@@ -1300,11 +1299,11 @@ if myid == main_node:
 		for j in range(lpar):
 			params[j] = parmat_filt[i][j]
 		# project motion onto surface of ellipsoid:
-		krot =   sqrt((old_div((params[0]-cp[0]),wp[0]))**2 + (old_div((params[1]-cp[1]),wp[1]))**2 + (old_div((params[2]-cp[2]),wp[2]))**2)
-		kshift = sqrt((old_div((params[3]-cp[3]),wp[3]))**2 + (old_div((params[4]-cp[4]),wp[4]))**2 + (old_div((params[5]-cp[5]),wp[5]))**2)
-		bp_delta[0] = old_div((params[0]-cp[0]),krot);   bp_delta[1] = old_div((params[1]-cp[1]),krot);
-		bp_delta[2] = old_div((params[2]-cp[2]),krot);   bp_delta[3] = old_div((params[3]-cp[3]),kshift);
-		bp_delta[4] = old_div((params[4]-cp[4]),kshift); bp_delta[5] = old_div((params[5]-cp[5]),kshift);
+		krot =   sqrt(((params[0]-cp[0])/wp[0])**2 + ((params[1]-cp[1])/wp[1])**2 + ((params[2]-cp[2])/wp[2])**2)
+		kshift = sqrt(((params[3]-cp[3])/wp[3])**2 + ((params[4]-cp[4])/wp[4])**2 + ((params[5]-cp[5])/wp[5])**2)
+		bp_delta[0] = (params[0]-cp[0])/krot;   bp_delta[1] = (params[1]-cp[1])/krot;
+		bp_delta[2] = (params[2]-cp[2])/krot;   bp_delta[3] = (params[3]-cp[3])/kshift;
+		bp_delta[4] = (params[4]-cp[4])/kshift; bp_delta[5] = (params[5]-cp[5])/kshift;
 
 		# loop over both signs of each delta to generate 64 points on the ellipsoid:
 		for s0 in [-1,1]:

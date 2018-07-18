@@ -31,7 +31,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
-from past.utils import old_div
 import os
 import sys
 from optparse import OptionParser
@@ -162,11 +161,11 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	
 	if options.f_start >0.0: 
 		if options.f_start <=0.5: ERROR("f_start should be in Angstrom","sxcter", 1) # exclude abs frequencies and spatial frequencies
-		else: freq_start = old_div(1.,options.f_start)
+		else: freq_start = 1./options.f_start
 		
 	if options.f_stop >0.0:
 		if options.f_stop  <=0.5: ERROR("f_stop should be in Angstrom","sxcter", 1) # exclude abs frequencies and spatial frequencies
-		else: freq_stop = old_div(1.,options.f_stop)
+		else: freq_stop = 1./options.f_stop
 
 	while True:
 		# --------------------------------------------------------------------------------

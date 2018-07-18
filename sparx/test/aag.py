@@ -1,7 +1,6 @@
 #!/bin/env python
 from __future__ import print_function
 
-from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -24,12 +23,12 @@ for k in range(1000):
 		sums += x
 		sums2 += x**2
 		if(x>=am): am = x
-	a=sqrt(old_div((sums2-old_div(sums**2,n)),(n-1.0)))
-	iq = old_div((am-old_div(sums,n)),a)
+	a=sqrt((sums2-sums**2/n)/(n-1.0))
+	iq = (am-sums/n)/a
 	print(iq)
 	aiq += iq
 	viq += iq*iq
 	if(iq >= miq):
 		miq = iq
 
-print(old_div(aiq,1000.) ,sqrt(old_div((viq-old_div(aiq**2,1000.)),(1000.-1.0))), miq)
+print(aiq/1000. ,sqrt((viq-aiq**2/1000.)/(1000.-1.0)), miq)

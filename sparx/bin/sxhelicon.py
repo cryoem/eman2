@@ -33,7 +33,6 @@ from __future__ import print_function
 #
 
 
-from past.utils import old_div
 def main():
 	import os
 	import sys
@@ -100,17 +99,17 @@ def main():
 			dp   = options.dp
 			dphi = options.dphi
 		
-		rminp = int((old_div(float(options.rmin),options.apix)) + 0.5)
-		rmaxp = int((old_div(float(options.rmax),options.apix)) + 0.5)
+		rminp = int((float(options.rmin)/options.apix) + 0.5)
+		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
 
 		from utilities import get_input_from_string, get_im
 
-		searchxshiftp = int( (old_div(options.searchxshift,options.apix)) + 0.5)
-		xwobblep = int( (old_div(options.xwobble,options.apix)) + 0.5)
-		ywobble = old_div(options.ywobble,options.apix)
+		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
+		xwobblep = int( (options.xwobble/options.apix) + 0.5)
+		ywobble = options.ywobble/options.apix
 		if( options.ystep <= 0.0 ):  ystep = 1.0
-		else:                        ystep = old_div(options.ystep,options.apix)
-		if( old_div(dp,2.0) < ywobble):
+		else:                        ystep = options.ystep/options.apix
+		if( dp/2.0 < ywobble):
 			ERROR('ywobble has to be smaller than dp/2.', 'sxhelicon')
 			sys.exit()
 

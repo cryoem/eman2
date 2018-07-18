@@ -32,7 +32,6 @@ from __future__ import print_function
 #
 #
 
-from past.utils import old_div
 from builtins import range
 import global_def
 from   global_def import *
@@ -49,7 +48,7 @@ def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 	blocksize = 250
 	nvol = len(fftvols)
 	nprj = len(mults[0])
-	nblock = old_div((nprj-1),blocksize) + 1
+	nblock = (nprj-1)/blocksize + 1
 
 	overall_start = time()
 
@@ -201,11 +200,11 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 					best_i = i
 			assignments[best_i].append(k)
 	am = len(assignments[0])
-	mufur = old_div(1.0,am)
+	mufur = 1.0/am
 	for i in range(1,len(assignments)):
 		ti = len(assignments[i])
 		am = min(am, ti)
-		if(ti>0):  mufur += old_div(1.0,ti)
+		if(ti>0):  mufur += 1.0/ti
 
 	del tetprj,tetref
 

@@ -32,7 +32,6 @@ from __future__ import print_function
 #
 #
 
-from past.utils import old_div
 from builtins import range
 from EMAN2  import *
 from sparx  import *
@@ -58,7 +57,7 @@ for j in range(1,N):
 		if(d.get_value_at(mono(i,j)) != d.get_value_at(mono(j,i))):
 			print(i,j,d.get_value_at(mono(i,j)),d.get_value_at(mono(j,i)))
 print(ttime())
-m = old_div(N,Kt)
+m = N/Kt
 o = cluster_equalsize(d,m)
 print(ttime())
 for k in range(len(o[0])):

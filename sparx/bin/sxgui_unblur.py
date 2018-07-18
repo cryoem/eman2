@@ -16,7 +16,6 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from past.utils import old_div
 from builtins import range
 from builtins import object
 from PyQt4 import QtCore, QtGui
@@ -2190,7 +2189,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                     if 0 <= fltAbsProduct < 0.000001:
                         angleCos = 1
                     else:
-                        angleCos = old_div(fltPointProduct, fltAbsProduct)
+                        angleCos = fltPointProduct / fltAbsProduct
                     if angleCos > 1:
                         angleCos = 1
                     elif angleCos < -1:
@@ -2232,7 +2231,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             entry[self.dOverall] = round(varOverallDrift, 6)
             entry[self.dMax] = round(varMaximum, 6)
             entry[self.dFrame] = round(
-                old_div(varOverallDrift, (self.idxLastFrame - self.idxFirstFrame)), 6
+                varOverallDrift / (self.idxLastFrame - self.idxFirstFrame), 6
                 )
 
         return True
@@ -2557,7 +2556,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 if self.varAnalyzeOne:
                     intBins = 3
                 else:
-                    intBins = int(old_div(self.lsFiles.count(), 3))
+                    intBins = int(self.lsFiles.count() / 3)
                 arrBins = numpy.linspace(
                     numpy.min(self.arrData[strName]),
                     numpy.max(self.arrData[strName]) + 0.0001,
@@ -2614,7 +2613,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         if self.varAnalyzeOne:
             intBins = 3
         else:
-            intBins = int(old_div(self.lsFiles.count(), 3))
+            intBins = int(self.lsFiles.count() / 3)
 
         # Special case, if there is no angle available
         if self.idxFirstFrame == self.idxLastFrame - 1 and \
@@ -3337,8 +3336,8 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             arrY = numpy.zeros(self.intFrames - 1)
             for number in arrX:
                 arrY[int(number - 1)] = \
-                    old_div(numpy.sum(self.arrData['frame{:d}'.format(int(number))]), \
-                    int(self.lsFiles.count()))
+                    numpy.sum(self.arrData['frame{:d}'.format(int(number))]) / \
+                    int(self.lsFiles.count())
             strTitle = r'Average drift per Frame'
             strXLabel = r'Frame'
             strYLabel = r'Average Drift / Angstrom'
@@ -3472,20 +3471,20 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             # Else calculate the entrys
             else:
                 fltOverallDrift = \
-                    old_div(numpy.sum(arrChecked[self.dOverall]), \
-                    len(self.listChecked))
+                    numpy.sum(arrChecked[self.dOverall]) / \
+                    len(self.listChecked)
                 fltFrameDrift = \
-                    old_div(numpy.sum(arrChecked[self.dFrame]), \
-                    len(self.listChecked))
+                    numpy.sum(arrChecked[self.dFrame]) / \
+                    len(self.listChecked)
                 fltEndToEndDrift = \
-                    old_div(numpy.sum(arrChecked[self.dEnd]), \
-                    len(self.listChecked))
+                    numpy.sum(arrChecked[self.dEnd]) / \
+                    len(self.listChecked)
                 fltMaxDistance = \
-                    old_div(numpy.sum(arrChecked[self.dMax]), \
-                    len(self.listChecked))
+                    numpy.sum(arrChecked[self.dMax]) / \
+                    len(self.listChecked)
                 fltMaxDistanceZero = \
-                    old_div(numpy.sum(arrChecked[self.dMaxFirst]), \
-                    len(self.listChecked))
+                    numpy.sum(arrChecked[self.dMaxFirst]) / \
+                    len(self.listChecked)
 
             # Fill the widgets
             self.leAllMicNumber.setText(

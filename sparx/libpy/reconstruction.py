@@ -28,7 +28,6 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
-from past.utils import old_div
 from builtins import range
 from builtins import object
 from global_def import *
@@ -142,17 +141,17 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 		r = Reconstructors.get("nn4", params)
 	else:
 		if ( xysize != -1 and zsize != -1):
-			rx = old_div(float(xysize),size)
-			ry = old_div(float(xysize),size)
-			rz = old_div(float(zsize),size)
+			rx = float(xysize)/size
+			ry = float(xysize)/size
+			rz = float(zsize)/size
 		elif( xysize != -1):
-			rx = old_div(float(xysize),size)
-			ry = old_div(float(xysize),size)
+			rx = float(xysize)/size
+			ry = float(xysize)/size
 			rz = 1.0
 		else:
 			rx = 1.0
 			ry = 1.0
-			rz = old_div(float(zsize),size)
+			rz = float(zsize)/size
 
 		if snr is None:
 			params["sizeprojection"] = size
@@ -221,17 +220,17 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 		r = Reconstructors.get( "nn4", params )
 	else:
 		if ( xysize != -1 and zsize != -1):
-			rx = old_div(float(xysize),imgsize)
-			ry = old_div(float(xysize),imgsize)
-			rz = old_div(float(zsize),imgsize)
+			rx = float(xysize)/imgsize
+			ry = float(xysize)/imgsize
+			rz = float(zsize)/imgsize
 		elif( xysize != -1):
-			rx = old_div(float(xysize),imgsize)
-			ry = old_div(float(xysize),imgsize)
+			rx = float(xysize)/imgsize
+			ry = float(xysize)/imgsize
 			rz = 1.0
 		else:
 			rx = 1.0
 			ry = 1.0
-			rz = old_div(float(zsize),imgsize)
+			rz = float(zsize)/imgsize
 		params = {"sizeprojection":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol,"weight":weight,"xratio":rx,"yratio":ry,"zratio":rz}
 		r = Reconstructors.get( "nn4_rect", params )
 	r.setup()
@@ -592,17 +591,17 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 		r = Reconstructors.get( "nn4_ctfw", params )
 	else:
 		if ( xysize != -1 and zsize != -1):
-			rx = old_div(float(xysize),imgsize)
-			ry = old_div(float(xysize),imgsize)
-			rz = old_div(float(zsize),imgsize)
+			rx = float(xysize)/imgsize
+			ry = float(xysize)/imgsize
+			rz = float(zsize)/imgsize
 		elif( xysize != -1):
-			rx = old_div(float(xysize),imgsize)
-			ry = old_div(float(xysize),imgsize)
+			rx = float(xysize)/imgsize
+			ry = float(xysize)/imgsize
 			rz = 1.0
 		else:
 			rx = 1.0
 			ry = 1.0
-			rz = old_div(float(zsize),imgsize)
+			rz = float(zsize)/imgsize
 		#  There is an error here with sizeprojection  PAP 10/22/2014
 		params = {"size":sizeprojection, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight,"xratio":rx,"yratio":ry,"zratio":rz}
 		r = Reconstructors.get( "nn4_ctf_rect", params )
@@ -625,7 +624,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 	while prjlist.goToNext():
 		prj = prjlist.image()
 		try:
-			stmp = old_div(nnx,0)
+			stmp = nnx/0
 			stmp = prj.get_attr("ptcl_source_image")
 		except:
 			try:
@@ -1385,7 +1384,7 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 		#  [ipsi+iang], [ishift], [probability]
 		#  Number of orientations for a given image
 		numbor = len(paramstructure[im][2])
-		ipsiandiang = [ old_div(paramstructure[im][2][i][0],1000)  for i in range(numbor) ]
+		ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in range(numbor) ]
 		allshifts   = [ paramstructure[im][2][i][0]%1000  for i in range(numbor) ]
 		probs       = [ paramstructure[im][2][i][1] for i in range(numbor) ]
 		#  Find unique projection directions
@@ -1397,15 +1396,15 @@ def recons3d_4nnstruct_MPI(myid, main_node, prjlist, paramstructure, refang, del
 			lshifts = findall(tdir[ii], ipsiandiang)
 			toprab  = 0.0
 			for ki in range(len(lshifts)):  toprab += probs[lshifts[ki]]
-			recdata = Util.mult_scalar(prjlist[im][allshifts[lshifts[0]]], old_div(probs[lshifts[0]],toprab))
+			recdata = Util.mult_scalar(prjlist[im][allshifts[lshifts[0]]], probs[lshifts[0]]/toprab)
 			recdata.set_attr_dict({"padffted":1, "is_complex":0})
 			for ki in range(1,len(lshifts)):
-				Util.add_img(recdata, Util.mult_scalar(prjlist[im][allshifts[lshifts[ki]]], old_div(probs[lshifts[ki]],toprab)))
+				Util.add_img(recdata, Util.mult_scalar(prjlist[im][allshifts[lshifts[ki]]], probs[lshifts[ki]]/toprab))
 			recdata.set_attr_dict({"padffted":1, "is_complex":1})
 			if not upweighted:  recdata = filt_table(recdata, bckgn )
 			recdata.set_attr("bckgnoise", bckgn )
 			ipsi = tdir[ii]%100000
-			iang = old_div(tdir[ii],100000)
+			iang = tdir[ii]/100000
 			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
 	#  clean stuff
 	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
@@ -1462,7 +1461,7 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 		#  [ipsi+iang], [ishift], [probability]
 		#  Number of orientations for a given image
 		numbor = len(paramstructure[im][2])
-		ipsiandiang = [ old_div(paramstructure[im][2][i][0],1000)  for i in range(numbor) ]
+		ipsiandiang = [ paramstructure[im][2][i][0]/1000  for i in range(numbor) ]
 		allshifts   = [ paramstructure[im][2][i][0]%1000  for i in range(numbor) ]
 		probs       = [ paramstructure[im][2][i][1] for i in range(numbor) ]
 		#  Find unique projection directions
@@ -1483,12 +1482,12 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 				if( data[lpt] == None ):
 					data[lpt] = fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 					data[lpt].set_attr("is_complex",0)
-				Util.add_img(recdata, Util.mult_scalar(data[lpt], old_div(probs[lshifts[ki]],toprab)))
+				Util.add_img(recdata, Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
 			recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
 			if not upweighted:  recdata = filt_table(recdata, bckgn )
 			recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 			ipsi = tdir[ii]%100000
-			iang = old_div(tdir[ii],100000)
+			iang = tdir[ii]/100000
 			r.insert_slice( recdata, Transform({"type":"spider","phi":refang[iang][0],"theta":refang[iang][1],"psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])
 	#  clean stuff
 	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
@@ -1644,17 +1643,17 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 		r = Reconstructors.get("nn4_ctf", params)
 	else:
 		if ( xysize != -1 and zsize != -1):
-			rx = old_div(float(xysize),size)
-			ry = old_div(float(xysize),size)
-			rz = old_div(float(zsize),size)
+			rx = float(xysize)/size
+			ry = float(xysize)/size
+			rz = float(zsize)/size
 		elif( xysize != -1):
-			rx = old_div(float(xysize),size)
-			ry = old_div(float(xysize),size)
+			rx = float(xysize)/size
+			ry = float(xysize)/size
 			rz = 1.0
 		else:
 			rx = 1.0
 			ry = 1.0
-			rz = old_div(float(zsize),size)
+			rz = float(zsize)/size
 
 		params["sizeprojection"] = size
 		params["xratio"] = rx
@@ -1734,17 +1733,17 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 		r = Reconstructors.get( "nn4_ctf", params )
 	else:
 		if ( xysize != -1 and zsize != -1):
-			rx = old_div(float(xysize),imgsize)
-			ry = old_div(float(xysize),imgsize)
-			rz = old_div(float(zsize),imgsize)
+			rx = float(xysize)/imgsize
+			ry = float(xysize)/imgsize
+			rz = float(zsize)/imgsize
 		elif( xysize != -1):
-			rx = old_div(float(xysize),imgsize)
-			ry = old_div(float(xysize),imgsize)
+			rx = float(xysize)/imgsize
+			ry = float(xysize)/imgsize
 			rz = 1.0
 		else:
 			rx = 1.0
 			ry = 1.0
-			rz = old_div(float(zsize),imgsize)
+			rz = float(zsize)/imgsize
 		#  There is an error here with sizeprojection  PAP 10/22/2014
 		params = {"size":sizeprojection, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight,"xratio":rx,"yratio":ry,"zratio":rz}
 		r = Reconstructors.get( "nn4_ctf_rect", params )
@@ -1884,13 +1883,13 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	dummy = r.finish(True)
 	outlist = [[] for i in range(6)]
 	nn = SSNR.get_xsize()
-	for i in range(1,nn): outlist[0].append(old_div((float(i)-0.5),(float(nn-1)*2)))
+	for i in range(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
 	for i in range(1,nn):
 		if(SSNR(i,1,0) > 0.0):
-			outlist[1].append(max(0.0,(old_div(SSNR(i,0,0),SSNR(i,1,0))-1.)))      # SSNR
+			outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))      # SSNR
 		else:
 			outlist[1].append(0.0)
-	for i in range(1,nn): outlist[2].append(old_div(SSNR(i,1,0),SSNR(i,2,0)))	          # variance
+	for i in range(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	          # variance
 	for i in range(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
 	for i in range(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 	for i in range(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
@@ -1966,15 +1965,15 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		dummy = r.finish(True)		
 		outlist = [[] for i in range(6)]
 		nn = SSNR.get_xsize()
-		for i in range(1,nn): outlist[0].append(old_div((float(i)-0.5),(float(nn-1)*2)))
+		for i in range(1,nn): outlist[0].append((float(i)-0.5)/(float(nn-1)*2))
 		for i in range(1,nn):
 			if SSNR(i,1,0) > 0.0:
-				outlist[1].append(max(0.0,(old_div(SSNR(i,0,0),SSNR(i,1,0))-1.)))     # SSNR
+				outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))     # SSNR
 			else:
 				outlist[1].append(0.0)
 		for i in range(1,nn): 
 			if SSNR(i,2,0) > 0.0:
-				outlist[2].append(old_div(SSNR(i,1,0),SSNR(i,2,0)))	          # variance
+				outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	          # variance
 			else:
 				outlist[2].append(0.0)
 		for i in range(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
@@ -2152,7 +2151,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_
 			Util.add_img( a, e2D.backproject("chao", chao_params) )
 			if use_weights:
 				proj3Dsphere = sphere3D.project("chao", chao_params)
-				Util.mul_scalar( proj3Dsphere, old_div(1.0, Util.infomask(proj3Dsphere, None, True)[3]) )
+				Util.mul_scalar( proj3Dsphere, 1.0 / Util.infomask(proj3Dsphere, None, True)[3] )
 				Util.mul_img( proj, proj3Dsphere )
 			data.append(proj)
 		projections_angles.append(angles)
@@ -2174,13 +2173,13 @@ def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_
 				time_start = clock()
 				w = solution.project("chao", chao_params)
 				time_projection += clock() - time_start
-				p = old_div(projections_data[i][j], threshold_to_minval(w, min_allowed_divisor))
+				p = projections_data[i][j] / threshold_to_minval(w, min_allowed_divisor)
 				time_start = clock()
 				q += p.backproject("chao", chao_params)
 				time_backprojection += clock() - time_start
 		Util.div_img( q, a )
 		Util.mul_img( q, solution ) # q <- new solution  
-		avg_absolute_voxel_change = old_div(q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}), sphere3D_volume)
+		avg_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / sphere3D_volume
 		if avg_absolute_voxel_change > prev_avg_absolute_voxel_change:
 			#print "Finish and return last good solution"
 			break
@@ -2268,7 +2267,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 			Util.add_img( a, e2D.backproject("chao", chao_params) )
 			if use_weights:
 				proj3Dsphere = sphere3D.project("chao", chao_params)
-				Util.mul_scalar( proj3Dsphere, old_div(1.0, Util.infomask(proj3Dsphere, None, True)[3]) )
+				Util.mul_scalar( proj3Dsphere, 1.0 / Util.infomask(proj3Dsphere, None, True)[3] )
 				Util.mul_img( proj, proj3Dsphere )
 			data.append(proj)
 		projections_angles.append(angles)
@@ -2297,7 +2296,7 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 				time_start = clock()
 				w = solution.project("chao", chao_params)
 				time_projection += clock() - time_start
-				p = old_div(projections_data[i][j], threshold_to_minval(w, min_allowed_divisor))
+				p = projections_data[i][j] / threshold_to_minval(w, min_allowed_divisor)
 				time_start = clock()
 				q += p.backproject("chao", chao_params)
 				time_backprojection += clock() - time_start
@@ -2307,8 +2306,8 @@ def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, 
 		# ----------------------
 		Util.div_img( q, a )
 		Util.mul_img( q, solution ) # q <- new solution  
-		norm_absolute_voxel_change = old_div(q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}), q.cmp("lod",model_blank(nx,nx,nx),{"mask":sphere3D,"negative":0,"normalize":0}))
-		norm_squared_voxel_change  = old_div(q.cmp("sqEuclidean",solution,{"mask":sphere3D}), q.cmp("sqEuclidean",model_blank(nx,nx,nx),{"mask":sphere3D}))
+		norm_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / q.cmp("lod",model_blank(nx,nx,nx),{"mask":sphere3D,"negative":0,"normalize":0})
+		norm_squared_voxel_change  = q.cmp("sqEuclidean",solution,{"mask":sphere3D}) / q.cmp("sqEuclidean",model_blank(nx,nx,nx),{"mask":sphere3D})
 		if norm_absolute_voxel_change > prev_avg_absolute_voxel_change:
 			if mpi_r == 0: print("Finish and return last good solution")
 			break
@@ -2422,7 +2421,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 			grad  = bvol - pxvol
 
 		rnorm = sqrt(grad.cmp("dot",grad,{"mask":mask3d,"negative":0}))
-		print('iter = %3d,  rnorm = %6.3f,  rnorm/bnorm = %6.3f' % (iter,rnorm,old_div(rnorm,bnorm)))
+		print('iter = %3d,  rnorm = %6.3f,  rnorm/bnorm = %6.3f' % (iter,rnorm,rnorm/bnorm))
 		if (rnorm < tol or rnorm > old_rnorm): break
 		old_rnorm = rnorm
 		xvol = xvol + lam*grad

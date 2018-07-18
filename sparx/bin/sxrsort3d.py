@@ -4,7 +4,6 @@ from __future__ import print_function
 #  10/25/2015
 #  New version.
 #  
-from past.utils import old_div
 from builtins import range
 import  os
 import  sys
@@ -223,11 +222,11 @@ def main():
 				if Tracker["constants"]["CTF"]:
 					i = a.get_attr('ctf')
 					pixel_size = i.apix
-					fq = old_div(pixel_size,Tracker["fuse_freq"])
+					fq = pixel_size/Tracker["fuse_freq"]
 				else:
 					pixel_size = 1.0
 					#  No pixel size, fusing computed as 5 Fourier pixels
-					fq = old_div(5.0,nnxo)
+					fq = 5.0/nnxo
 					del a
 		else:
 			nnxo = 0
@@ -317,7 +316,7 @@ def main():
 		"""
 		#Tracker["total_stack"]             = total_stack
 		Tracker["constants"]["total_stack"] = total_stack
-		Tracker["shrinkage"]                = old_div(float(Tracker["nxinit"]),Tracker["constants"]["nnxo"])
+		Tracker["shrinkage"]                = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
 		#####------------------------------------------------------------------------------
 		if Tracker["constants"]["mask3D"]:
 			Tracker["mask3D"] = os.path.join(masterdir,"smask.hdf")
@@ -392,8 +391,8 @@ def main():
 		Tracker["chunk_dict"] = {}
 		for element in chunk_one: Tracker["chunk_dict"][element] = 0
 		for element in chunk_two: Tracker["chunk_dict"][element] = 1
-		Tracker["P_chunk0"]   = old_div(len(chunk_one),float(Tracker["constants"]["total_stack"]))
-		Tracker["P_chunk1"]   = old_div(len(chunk_two),float(Tracker["constants"]["total_stack"]))
+		Tracker["P_chunk0"]   = len(chunk_one)/float(Tracker["constants"]["total_stack"])
+		Tracker["P_chunk1"]   = len(chunk_two)/float(Tracker["constants"]["total_stack"])
 		### create two volumes to estimate resolution
 		if myid == main_node:
 			write_text_file(chunk_one, os.path.join(masterdir,"chunk0.txt"))
@@ -427,7 +426,7 @@ def main():
 		if Tracker["constants"]["low_pass_filter"] == -1.0:
 			Tracker["low_pass_filter"] = low_pass*Tracker["shrinkage"]
 		else:
-			Tracker["low_pass_filter"] = old_div(Tracker["constants"]["low_pass_filter"],Tracker["shrinkage"])
+			Tracker["low_pass_filter"] = Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"]
 		Tracker["lowpass"]             = Tracker["low_pass_filter"]
 		Tracker["falloff"]             = 0.1
 		Tracker["global_fsc"]          = os.path.join(masterdir,"fsc.txt")
@@ -457,7 +456,7 @@ def main():
 				log_main.add("the unaccounted ones are no sufficient for a simple two-group run, output results!")
 				log_main.add("this implies your two sort3d runs already achieved high reproducibale ratio. ")
 				log_main.add("Or your number_of_images_per_group is too large ")
-				log_main.add("the final reproducibility is  %f"%(old_div((Tracker["constants"]["total_stack"]-len(Tracker["this_unaccounted_list"])),float(Tracker["constants"]["total_stack"]))))
+				log_main.add("the final reproducibility is  %f"%((Tracker["constants"]["total_stack"]-len(Tracker["this_unaccounted_list"]))/float(Tracker["constants"]["total_stack"])))
 				for i in range(len(stable_member_list)): write_text_file(stable_member_list[i], os.path.join(masterdir,"P2_final_class%d.txt"%i))
 				mask3d = get_im(Tracker["constants"]["mask3D"])
 			else:
@@ -496,7 +495,7 @@ def main():
 					refdata[2]         = Tracker["constants"]["myid"]
 					refdata[3]         = Tracker["constants"]["nproc"]
 					volref             = user_func(refdata)
-					cutoff = old_div(Tracker["constants"]["pixel_size"],lowpass)
+					cutoff = Tracker["constants"]["pixel_size"]/lowpass
 					log_main.add("%d vol low pass filer %f   %f  cut to  %f Angstrom"%(igrp,Tracker["lowpass"],Tracker["falloff"],cutoff))
 					volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))
 			mpi_barrier(MPI_COMM_WORLD)			
@@ -784,7 +783,7 @@ def main():
 					refdata[2] = Tracker["constants"]["myid"]
 					refdata[3] = Tracker["constants"]["nproc"]
 					volref     = user_func(refdata)
-					cutoff     = old_div(Tracker["constants"]["pixel_size"],lowpass)
+					cutoff     = Tracker["constants"]["pixel_size"]/lowpass
 					log_main.add("%d vol low pass filer %f   %f  cut to  %f Angstrom"%(igrp,Tracker["lowpass"],Tracker["falloff"],cutoff))
 					volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))
 		if myid==main_node:   log_main.add(" sxsort3d_P2 finishes. ")

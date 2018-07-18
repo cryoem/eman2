@@ -35,7 +35,6 @@ from __future__ import print_function
 # e2ctf.py  10/29/2008 Steven Ludtke
 # This is a program for determining CTF parameters
 
-from past.utils import old_div
 from builtins import range
 from builtins import object
 import global_def
@@ -236,7 +235,7 @@ def write_e2ctf_output(options):
 			ctf=EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
-			if logid : E2progress(logid,old_div(float(i+1),len(options.filenames)))
+			if logid : E2progress(logid,float(i+1)/len(options.filenames))
 			
 			
 	
@@ -255,7 +254,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		apix=options.apix
 		if apix<=0 : apix=EMData(filename,0,1)["apix_x"] 
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
-		ds=old_div(1.0,(apix*im_2d.get_ysize()))
+		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 
 		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
@@ -271,7 +270,7 @@ def pspec_and_ctf_fit(options,debug=False):
 			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
 			
 		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d))
-		if logid : E2progress(logid,old_div(float(i+1),len(options.filenames)))
+		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 		
 	project_db = db_open_dict("bdb:project")
 	project_db["global.microscope_voltage"] = options.voltage
@@ -433,8 +432,8 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		#mask2.process_inplace("mask.decayedge2d",{"width":4})
 		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-		ratio1=old_div(mask1.get_attr("square_sum"),(ys*ys))	#/1.035
-		ratio2=old_div(mask2.get_attr("square_sum"),(ys*ys))
+		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
+		ratio2=mask2.get_attr("square_sum")/(ys*ys)
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
 		print("  RATIOS  ", ratio1, ratio2,"    ",radius)
 		#mask1.write_image("mask1.hdf",0)
@@ -443,7 +442,7 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	pva1 = model_blank(ys2,ys2)
 	pav2 = model_blank(ys2,ys2)
 	pva2 = model_blank(ys2,ys2)
-	pf = old_div(float(ys2*ys2)**2,4.0)
+	pf = float(ys2*ys2)**2/4.0
 	fofo = []
 	for i in range(n):
 		im1 = EMData()
@@ -492,8 +491,8 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	av2.set_complex(1)
 	av2.set_attr("is_intensity", 1)
 
-	av1_1d=av1.calc_radial_dist(old_div(av1.get_ysize(),2),0.0,1.0,1)
-	av2_1d=av2.calc_radial_dist(old_div(av2.get_ysize(),2),0.0,1.0,1)
+	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
+	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
 	pav1 /= n
 	pva1 = square_root((pva1 - pav1*pav1*n)/(n-1)/n)
 	pav2 /= n
@@ -520,11 +519,11 @@ def bgedge2d(stackfile,width):
 		im=EMData(stackfile,i)
 		
 		xs=im.get_xsize()		# x size of image
-		xst=int(floor(old_div(xs,ceil(old_div(xs,width)))))	# step to use so we cover xs with width sized blocks
+		xst=int(floor(xs/ceil(xs/width)))	# step to use so we cover xs with width sized blocks
 		
 		# Build a list of all boxes around the edge
 		boxl=[]
-		for x in range(0,xs-old_div(xst,2),xst): 
+		for x in range(0,xs-xst/2,xst): 
 			boxl.append((x,0))
 			boxl.append((x,xs-xst))
 		for y in range(xst,xs-3*xst/2,xst):
@@ -548,7 +547,7 @@ def bgedge2d(stackfile,width):
 def smooth_bg(curve,ds):
 	"""Smooths a background curve by doing a running average of the log of the curve, ignoring the first few points"""
 	
-	first=int(old_div(.02,ds))	# start at 1/50 1/A
+	first=int(.02/ds)	# start at 1/50 1/A
 	if first<2 : first=2
 
 	return curve[:first]+[pow(curve[i-1]*curve[i]*curve[i+1],.33333) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
@@ -570,14 +569,14 @@ def least_square(data,dolog=0):
 	denom=sum*sum_xx-sum_x*sum_x
 	if denom==0 : denom=.00001
 	
-	m=old_div((sum*sum_xy-sum_x*sum_y),denom)
-	b=old_div((sum_xx*sum_y-sum_x*sum_xy),denom)
+	m=(sum*sum_xy-sum_x*sum_y)/denom
+	b=(sum_xx*sum_y-sum_x*sum_xy)/denom
 	
 	return(m,b)
 
 def snr_safe(s,n) :
 	if s<=0 or n<=0 : return 0.0
-	return old_div(s,n)-1.0
+	return s/n-1.0
 
 def sfact_(ss):
 	"""This will return a curve shaped something like the structure factor of a typical protein. It is not designed to be
@@ -637,7 +636,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	global debug
 	
 	ys = im_2d.get_ysize()
-	ds = old_div(1.0,(apix*ys))
+	ds = 1.0/(apix*ys)
 	
 	ctf=EMAN2Ctf()
 	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":0.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
@@ -649,17 +648,17 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	dfbest1=(0,-1.0e20)
 	for dfi in range(5,128):			# loop over defocus
 		ac=10
-		df=old_div(dfi,20.0)
+		df=dfi/20.0
 		ctf.defocus=df
 		ctf.ampcont=ac
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		st=old_div(.04,ds)
+		st=.04/ds
 		norm=0
 		for fz in range(len(cc)): 
 			if cc[fz]<0 : break
 	
 		tot,totr=0,0
-		for s in range(int(st),old_div(ys,2)): 
+		for s in range(int(st),ys/2): 
 			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
 			totr+=cc[s]**4
 		#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
@@ -680,17 +679,17 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 
 	dfbest=dfbest1
 	for dfi in range(-10,10):			# loop over defocus
-		df=old_div(dfi,100.0)+dfbest1[0]
+		df=dfi/100.0+dfbest1[0]
 		ctf.defocus=df
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		st=old_div(.04,ds)
+		st=.04/ds
 		norm=0
 		for fz in range(len(cc)): 
 			#norm+=cc[fz]**2
 			if cc[fz]<0 : break
 
 		tot,totr=0,0
-		for s in range(int(st),old_div(ys,2)): 
+		for s in range(int(st),ys/2): 
 			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
 			totr+=cc[s]**4
 
@@ -710,10 +709,10 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		for x in range(1,len(bg2)-1) : 
 			if cc[x]*cc[x+1]<0 :
 				# we search +-1 point from the zero for the minimum
-				cur=(x,min(old_div(im_1d[x],bg_1d[x]),old_div(im_1d[x-1],bg_1d[x-1]),old_div(im_1d[x+1],bg_1d[x+1])))
+				cur=(x,min(im_1d[x]/bg_1d[x],im_1d[x-1]/bg_1d[x-1],im_1d[x+1]/bg_1d[x+1]))
 				# once we have a pair of zeros we adjust the background values between
 				for xx in range(last[0],cur[0]):
-					w=old_div((xx-last[0]),float(cur[0]-last[0]))
+					w=(xx-last[0])/float(cur[0]-last[0])
 					bg_1d[xx]=bg2[xx]*(cur[1]*w+last[1]*(1.0-w))
 #					print xx,"\t",(cur[1]*w+last[1]*(1.0-w)) #,"\t",cur[1],last[1]
 				last=cur
@@ -731,7 +730,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 			if snr[x]>snr[x+1] and snr[x+1]<snr[x+2] : break	# we find the first minimum
 
 		snr1max=max(snr[1:x])				# find the intensity of the first peak
-		snr2max=max(snr[x+2:old_div(len(snr),2)])		# find the next highest snr peak
+		snr2max=max(snr[x+2:len(snr)/2])		# find the next highest snr peak
 		qtmp = 0.5*snr2max/snr1max
 		for xx in range(1,x+1): snr[xx] *= qtmp		# scale the initial peak to 50% of the next highest peak
 
@@ -748,8 +747,8 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	# This is a quick hack and not very efficiently coded
 	bfs=[0.0,50.0,100.0,200.0,400.0,600.0,800.0,1200.0,1800.0,2500.0,4000.0]
 	best=(0,0)
-	s0=int(old_div(.05,ds))+1
-	s1=min(int(old_div(0.14,ds)),len(bg_1d)-1)
+	s0=int(.05/ds)+1
+	s1=min(int(0.14/ds),len(bg_1d)-1)
 	print("  FREQ RANGE",s0,s1)
 	for b in range(1,len(bfs)-1):
 		ctf.bfactor=bfs[b]
@@ -764,7 +763,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 			a1 += fabs(im_1d[s]-bg_1d[s])
 		if a1==0 : a1=1.0
 		a0/=a1
-		cc=[old_div(i,a0) for i in cc]
+		cc=[i/a0 for i in cc]
 
 		er=0
 		# compute the error
@@ -777,7 +776,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	bb=best[1]
 	best=(best[0],bfs[best[1]])
 	for b in range(20):
-		ctf.bfactor=bfs[bb-1]*(1.0-old_div(b,20.0))+bfs[bb+1]*(old_div(b,20.0))
+		ctf.bfactor=bfs[bb-1]*(1.0-b/20.0)+bfs[bb+1]*(b/20.0)
 		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
 		sf = sfact([i*ds for i in range(len(cc))], "ribosome","original")
 		cc=[sf[i]*cc[i]**2 for i in range(len(cc))]
@@ -788,7 +787,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 			a1+=fabs(im_1d[s]-bg_1d[s])
 		if a1==0 : a1=1.0
 		a0/=a1
-		cc=[old_div(i,a0) for i in cc]
+		cc=[i/a0 for i in cc]
 		
 		er=0
 		# compute the error
@@ -1055,7 +1054,7 @@ class GUIctf(QtGui.QWidget):
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(old_div(.04,ds))+1,min(int(old_div(0.15,ds)),len(s)-1)): 
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
 				if bgsub[i]>0 : 
 					#rto+=fit[i]**2/fabs(bgsub[i])
 					#nrto+=fit[i]
@@ -1065,7 +1064,7 @@ class GUIctf(QtGui.QWidget):
 					nrto+=fabs(bgsub[i])
 			if nrto==0 : rto=1.0
 			else : rto/=nrto
-			fit=[old_div(fit[i],rto) for i in range(len(s))]
+			fit=[fit[i]/rto for i in range(len(s))]
 
 			self.guiplot.set_data((s,fit),"fit")
 			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
