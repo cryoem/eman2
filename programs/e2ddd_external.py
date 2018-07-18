@@ -101,7 +101,7 @@ def main():
 	parser.add_argument("--first",  default = "", type=int, help="The index of the leading frame to include in alignment.",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 	parser.add_argument("--last",  default = "", type=int, help="The index of the last frame to include in alignment.", guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--mc2_patch",  default = "5 5", type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '5 5'",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--mc2_patch",  default = "", type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '5 5'",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 
 	parser.add_argument("--tiltseries_name",  default = "", type=str, help="Specify the name of the output tiltseries. A .mrc extension will be appended to the filename provided.",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo")
 
@@ -139,8 +139,6 @@ def main():
 		program = which("alignframes")
 
 	if options.program == "motioncor2":
-
-		if options.mc2_patch == "": options.mc2_patch = "1 1"
 
 		try: patchx,patchy = map(int,options.patch.split())
 		except:
@@ -229,7 +227,7 @@ def main():
 		if options.group != "": cmd+=" -Group {}".format(options.group)
 		if options.binby != "": cmd+=" -FtBin {}".format(options.binby)
 
-		if options.mc2_patch != "1 1": cmd += " -Patch {} ".format(options.mc2_patch)
+		if options.mc2_patch != "": cmd += " -Patch {} ".format(options.mc2_patch)
 
 		if options.mdoc != None:
 
@@ -271,6 +269,7 @@ def main():
 		# adam's postprocessing code
 
 	print("DONE")
+
 
 
 def run(cmd,shell=False,cwd=None,verbose=0):
