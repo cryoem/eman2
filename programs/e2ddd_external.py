@@ -101,7 +101,9 @@ def main():
 	parser.add_argument("--first",  default = "", type=int, help="The index of the leading frame to include in alignment.",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 	parser.add_argument("--last",  default = "", type=int, help="The index of the last frame to include in alignment.", guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--mc2_patch",  default = "1 1", type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '1 1'",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--mc2_patch",  default = "5 5", type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '5 5'",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+
+	parser.add_argument("--tiltseries_name",  default = "", type=str, help="Specify the name of the output tiltseries. A .mrc extension will be appended to the filename provided.",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo")
 
 	parser.add_argument("--tomo", default=False, action="store_true", help="If checked, aligned frames will be placed in a tiltseries located in the 'tiltseries' directory. Otherwise, aligned sums will populate the 'micrographs' directory.",guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="tomo[True]")
 
@@ -126,16 +128,19 @@ def main():
 
 	if options.program == "imod_alignframes":
 
-		if options.first == None and options.last != None:
+		if options.first == "" and options.last != "":
 			print("ERROR: In order to specify the last frame, you must also specify the first frame you wish to include using the --frst option.")
 			sys.exit(1)
-		if options.first != None and options.last == None:
+
+		if options.first != "" and options.last == "":
 			print("ERROR: In order to specify the first frame, you must also specify the last frame you wish to include using the --last option.")
 			sys.exit(1)
 
 		program = which("alignframes")
 
 	if options.program == "motioncor2":
+
+		if options.mc2_patch == "": options.mc2_patch = "1 1"
 
 		try: patchx,patchy = map(int,options.patch.split())
 		except:
@@ -161,6 +166,9 @@ def main():
 		ext = None
 		bname = os.path.basename(args[0])
 
+
+	options.tiltseries_name
+
 	cmdopts = ""
 
 	if options.tomo: outdir = "tiltseries"
@@ -179,14 +187,18 @@ def main():
 		
 		if options.defect_file != None: cmdopts+=" -defect {} ".format(options.defects)
 		
-		if options.groupby != None: cmdopts+=" -group {} ".format(options.groupby)
-		if options.binby != None: cmdopts+=" -binning {} -1 ".format(options.binby)
+		if options.groupby != "": cmdopts+=" -group {} ".format(options.groupby)
+		if options.binby != "": cmdopts+=" -binning {} -1 ".format(options.binby)
 
-		if options.first != None and options.last != None:
+		if options.first != "" and options.last != "":
 			cmdopts+=" -frames {} {} ".format(options.first,options.last)
 
 		if options.mdoc != None:
-			output = "{}/{}_ali.mrc".format(outdir,bname)
+
+			if options.tomo and options.tiltseries_name != "":
+				output = "{}/{}.mrc".format(options.tiltseries_name)
+			else:
+				output = "{}/{}_ali.mrc".format(outdir,bname)
 			if len(args) == 0:
 				cmd = "{} -mdoc {} -output {}".format(program,options.mdoc,output)
 			elif len(args) == 1:
@@ -194,30 +206,30 @@ def main():
 			else:
 				inputs = " ".join(args)
 				cmd = "{} -input {} -mdoc {} -output {}".format(program,inputs,options.mdoc,output)
-			run(cmd)
+			run(cmd,verbose=options.verbose)
 		else:
 			for arg in args:
 				output = "{}/{}_ali.mrc".format(outdir,bname)
 				cmd = "{} -input {} -output {} {}".format(program,arg,output,cmdopts)
-				run(cmd)
+				run(cmd,verbose=options.verbose)
 
 	elif options.program == "ucsf_motioncor2":
 
 		if options.dark != None: cmd += " -Dark {} ".format(options.dark)
 		if options.gain != None: cmd += " -Gain {} ".format(options.gain)
 
-		if options.mc2_flipgain != None: cmd+=" -FlipGain {}".format(options.mc2_flipgain)
-		if options.mc2_rotgain != None: cmd+=" -RotGain {}".format(options.mc2_rotgain)
+		if options.mc2_flipgain != 0: cmd+=" -FlipGain {}".format(options.mc2_flipgain)
+		if options.mc2_rotgain != 0: cmd+=" -RotGain {}".format(options.mc2_rotgain)
 
 		if options.defect_file != None: cmd+=" -DefectFile {}".format(options.defects)
 
-		if options.first != None: cmd+=" -Throw {}".format(options.first)
-		if options.last != None: cmd+=" -Trunc {}".format(options.last)
+		if options.first != "": cmd+=" -Throw {}".format(options.first)
+		if options.last != "": cmd+=" -Trunc {}".format(options.last)
 
-		if options.group != None: cmd+=" -Group {}".format(options.group)
-		if options.binby != None: cmd+=" -FtBin {}".format(options.binby)
+		if options.group != "": cmd+=" -Group {}".format(options.group)
+		if options.binby != "": cmd+=" -FtBin {}".format(options.binby)
 
-		if options.patch != None: cmd += " -Patch {} ".format(options.patch)
+		if options.mc2_patch != "1 1": cmd += " -Patch {} ".format(options.mc2_patch)
 
 		if options.mdoc != None:
 
@@ -231,26 +243,38 @@ def main():
 			else:
 				# How to handle this case? Should the first case be handled with the same approach as the multi-file case if an mdoc is provided?
 				cmd = ""
-			run(cmd)
+			run(cmd,verbose=options.verbose)
 
 			# adam's mdoc postprocessing code
 
 		else:
-			for arg in args:
-				output = "{}/{}_ali.mrc".format(outdir,bname)
-				if ext == "tif":
-					cmd = "{} -InTiff {} -OutMrc {} {}".format(program,arg,output,cmdopts)
-				else:
-					cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,output,cmdopts)
-				run(cmd)
 
-		# adam's non-mdoc postprocessing code
+			try: os.mkdir("tmp")
+			except: pass
+
+			for idx,arg in enumerate(args):
+				tmpout = "tmp/{}_ali.mrc".format(outdir,bname)
+				if ext == "tif":
+					cmd = "{} -InTiff {} -OutMrc {} {}".format(program,arg,tmpout,cmdopts)
+				else:
+					cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,tmpout,cmdopts)
+				run(cmd,verbose=options.verbose)
+
+				aligned = EMData(tmpout)
+				output = "{}/{}_ali.mrc".format(outdir,bname)
+				aligned.write_image(output,idx)
+
+				os.remove(tmpout)
+
+				# adam's non-mdoc postprocessing code
+
+		# adam's postprocessing code
 
 	print("DONE")
 
 
-def run(cmd,shell=False,cwd=None):
-	print(cmd)
+def run(cmd,shell=False,cwd=None,verbose=0):
+	if verbose > 0: print(cmd)
 	if cwd == None: cwd = os.getcwd()
 	if shell == False: cmd = cmd.split()
 	p = subprocess.Popen(cmd, shell=shell, cwd=cwd,stderr=subprocess.PIPE)
