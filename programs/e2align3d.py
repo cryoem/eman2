@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: John Flanagan, 10/08/2010 (jfflanag@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from EMAN2 import *
 import sys, os
 	
@@ -138,7 +140,7 @@ def main():
 	if options.shrink > 1:
 		sfixed = fixed.process('math.medianshrink', {'n':options.shrink})
 		smoving = moving.process('math.medianshrink', {'n':options.shrink})
-		options.search = options.search/options.shrink		# must adjust the search range
+		options.search = old_div(options.search,options.shrink)		# must adjust the search range
 	else:
 		sfixed = fixed
 		smoving = moving

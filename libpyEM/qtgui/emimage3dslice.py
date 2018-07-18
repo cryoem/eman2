@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import absolute_import
 
 
 
+from past.utils import old_div
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt, QString
 from OpenGL import GL,GLU,GLUT
@@ -142,7 +144,7 @@ class EM3DSliceModel(EM3DModel):
 #		self.data.add(-min)
 #		self.data.mult(1/(max-min))
 		self.bright = -min
-		if max != min:	self.contrast = 1.0/(max-min)
+		if max != min:	self.contrast = old_div(1.0,(max-min))
 		else: self.contrast = 1
 		
 	def set_data(self,data,fact=1.0):
@@ -169,12 +171,12 @@ class EM3DSliceModel(EM3DModel):
 		hist = self.data.calc_hist(256,0,1.0,self.bright,self.contrast)
 		self.inspector.set_hist(hist,0,1.0) 
 		
-		self.slice = data.get_zsize()/2
-		self.zslice = data.get_zsize()/2-1
+		self.slice = old_div(data.get_zsize(),2)
+		self.zslice = old_div(data.get_zsize(),2)-1
 		if self.zslice < 0: self.zslice = 0
-		self.yslice = data.get_ysize()/2-1
+		self.yslice = old_div(data.get_ysize(),2)-1
 		if self.yslice < 0: self.yslice = 0
-		self.xslice = data.get_xsize()/2-1
+		self.xslice = old_div(data.get_xsize(),2)-1
 		if self.xslice < 0: self.xslice = 0
 		self.trackslice = self.xslice
 		self.axis = 'z'
@@ -198,7 +200,7 @@ class EM3DSliceModel(EM3DModel):
 			alt = acos(p[2])*180.0/pi
 		
 		phi = atan2(p[0],p[1])
-		phi *= 180.0/pi
+		phi *= old_div(180.0,pi)
 		
 		return [Transform({"type":"eman","alt":alt,"phi":phi}),alt,phi]
 			
@@ -245,7 +247,7 @@ class EM3DSliceModel(EM3DModel):
 		
 		[t,alt,phi] = self.get_eman_transform(v)
 			
-		nn = float(self.slice)/float(n)
+		nn = old_div(float(self.slice),float(n))
 		trans = (nn-0.5)*v
 		t.set_trans(n*trans)
 	
@@ -332,7 +334,7 @@ class EM3DSliceModel(EM3DModel):
 		glStencilFunc(GL_EQUAL,self.rank,0)
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
 		glPushMatrix()
-		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
+		glTranslate(old_div(-self.data.get_xsize(),2.0),old_div(-self.data.get_ysize(),2.0),old_div(-self.data.get_zsize(),2.0))
 		glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
 		glCallList(self.tex_dl)
 		glPopMatrix()
@@ -423,7 +425,7 @@ class EM3DSliceModel(EM3DModel):
 		
 		point = Vec3f(0,0,1)
 		
-		point *= 1.0/self.vdtools.getCurrentScale()
+		point *= old_div(1.0,self.vdtools.getCurrentScale())
 		
 		point = point*t3d
 		

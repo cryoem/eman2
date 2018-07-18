@@ -30,6 +30,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
@@ -492,18 +494,18 @@ def binaryTreeRef(options, optionsUnparsed, nptclForRef, nseed, etc):
 		
 		if nptclsinInfile > 1:
 		
-			for j in range(0,nseed/(2**i),2):
+			for j in range(0,old_div(nseed,(2**i)),2):
 
 				#Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
 				if options.parallel:
 					#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 					#	options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkfine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
 				
-					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair #%d at level %d"%(j/2,i),options,transform,0)
+					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],old_div(j,2),"Seed Tree pair #%d at level %d"%(old_div(j,2),i),options,transform,0)
 					tasks.append(task)
 				else:
 					#print "No parallelism specified"
-					result=align3Dfunc(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair #%d at level %d"%(j/2,i),options,transform,0)
+					result=align3Dfunc(["cache",infile,j],["cache",infile,j+1],old_div(j,2),"Seed Tree pair #%d at level %d"%(old_div(j,2),i),options,transform,0)
 					results.append(result['final'])
 			'''		
 			#Start the alignments for this level

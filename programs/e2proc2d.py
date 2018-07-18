@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import print_function
 
 # $Id$
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -103,9 +105,9 @@ def image_from_formula(n_x, n_y, n_z, formula) :
 	ny = int(n_y)
 	nz = int(n_z)
 
-	x1 = 1.0 / max(nx-1, 1)
-	y1 = 1.0 / max(ny-1, 1)
-	z1 = 1.0 / max(nz-1, 1)
+	x1 = old_div(1.0, max(nx-1, 1))
+	y1 = old_div(1.0, max(ny-1, 1))
+	z1 = old_div(1.0, max(nz-1, 1))
 
 	emd  = EMData(nx, ny, nz)
 	emdn = EMNumPy.em2numpy(emd)
@@ -701,16 +703,16 @@ def main():
 
 					lopix = int(d["nx"]*d["apix_x"]/150.0)
 					hipix = int(d["nx"]*d["apix_x"]/25.0)
-					if hipix>d["ny"]/2-6 : hipix=d["ny"]/2-6	# if A/pix is very large, this makes sure we get at least some info
+					if hipix>old_div(d["ny"],2)-6 : hipix=old_div(d["ny"],2)-6	# if A/pix is very large, this makes sure we get at least some info
 
-					if lopix == hipix : lopix,hipix = 3,d["nx"]/5	# in case the A/pix value is drastically out of range
+					if lopix == hipix : lopix,hipix = 3,old_div(d["nx"],5)	# in case the A/pix value is drastically out of range
 
-					r = f.calc_radial_dist(d["ny"]/2,0,1.0,1)
-					lo = sum(r[lopix:hipix])/(hipix-lopix)
-					hi = sum(r[hipix+1:-1])/(len(r)-hipix-2)
+					r = f.calc_radial_dist(old_div(d["ny"],2),0,1.0,1)
+					lo = old_div(sum(r[lopix:hipix]),(hipix-lopix))
+					hi = old_div(sum(r[hipix+1:-1]),(len(r)-hipix-2))
 
 #					print lopix, hipix, lo, hi
-					d["eval_contrast_lowres"] = lo/hi
+					d["eval_contrast_lowres"] = old_div(lo,hi)
 	#				print lopix,hipix,lo,hi,lo/hi
 
 				elif option1 == "norefs" and d["ptcl_repr"] <= 0:
@@ -729,7 +731,7 @@ def main():
 
 						for j in range(nx):
 							if sfcurve1[j] > 0 and sfcurve2[j] > 0:
-								sfcurve2[j] = sqrt(sfcurve1[j] / sfcurve2[j])
+								sfcurve2[j] = sqrt(old_div(sfcurve1[j], sfcurve2[j]))
 							else:
 								sfcurve2[j] = 0;
 
@@ -755,7 +757,7 @@ def main():
 						sys.exit(1)
 						
 					rt=Transform({"type":"2d","alpha":angle})
-					xf=rt*Transform([amount,0,0,0,0,1/amount,0,0,0,0,1,0])*rt.inverse()
+					xf=rt*Transform([amount,0,0,0,0,old_div(1,amount),0,0,0,0,1,0])*rt.inverse()
 					d.transform(xf)
 
 					index_d[option1] += 1
@@ -787,8 +789,8 @@ def main():
 
 				elif option1 == "clip":
 					ci = index_d[option1]
-					clipcx = nx/2
-					clipcy = ny/2
+					clipcx = old_div(nx,2)
+					clipcy = old_div(ny,2)
 
 					try: clipx,clipy,clipcx,clipcy = options.clip[ci].split(",")
 					except: clipx, clipy = options.clip[ci].split(",")
@@ -796,7 +798,7 @@ def main():
 					clipx, clipy = int(clipx),int(clipy)
 					clipcx, clipcy = int(clipcx),int(clipcy)
 
-					e = d.get_clip(Region(clipcx-clipx/2, clipcy-clipy/2, clipx, clipy))
+					e = d.get_clip(Region(clipcx-old_div(clipx,2), clipcy-old_div(clipy,2), clipx, clipy))
 
 					try: e.set_attr("avgnimg", d.get_attr("avgnimg"))
 					except: pass
@@ -856,7 +858,7 @@ def main():
 					d.process_inplace("xform",{"transform":xform})
 
 				elif option1 == "selfcl":
-					scl = options.selfcl[0] / 2
+					scl = old_div(options.selfcl[0], 2)
 					sclmd = options.selfcl[1]
 					sc = EMData()
 
@@ -905,11 +907,11 @@ def main():
 				elif option1 == "calcsf":
 					sfout = options.calcsf
 					dataf = d.do_fft()
-					curve = dataf.calc_radial_dist(ny/2, 0, 1.0,True)
-					curve=[i/(dataf["nx"]*dataf["ny"]*dataf["nz"]) for i in curve]
+					curve = dataf.calc_radial_dist(old_div(ny,2), 0, 1.0,True)
+					curve=[old_div(i,(dataf["nx"]*dataf["ny"]*dataf["nz"])) for i in curve]
 					outfile2 = sfout
 
-					sf_dx = 1.0 / (d["apix_x"] * ny)
+					sf_dx = old_div(1.0, (d["apix_x"] * ny))
 					Util.save_data(0, sf_dx, curve, outfile2)
 
 				elif option1 == "interlv":
@@ -1137,13 +1139,13 @@ def main():
 			else : avg.write_image(outfile,-1)
 
 		if options.fftavg:
-			fftavg.mult(1.0 / sqrt(n1 - n0 + 1))
+			fftavg.mult(old_div(1.0, sqrt(n1 - n0 + 1)))
 			fftavg.write_image(options.fftavg, 0)
 
 			curve = fftavg.calc_radial_dist(ny, 0, 0.5,1)
 			outfile2 = options.fftavg+".txt"
 
-			sf_dx = 1.0 / (apix * 2.0 * ny)
+			sf_dx = old_div(1.0, (apix * 2.0 * ny))
 			Util.save_data(0, sf_dx, curve, outfile2)
 
 		try:
@@ -1162,7 +1164,7 @@ def main():
 			for k in list(boxes.keys()):
 				out=open(k+".box","w")
 				for c in boxes[k]:
-					out.write("{:1d}\t{:1d}\t{:1d}\t{:1d}\n".format(int(c[0]-boxsize/2),int(c[1]-boxsize/2),int(boxsize),int(boxsize)))
+					out.write("{:1d}\t{:1d}\t{:1d}\t{:1d}\n".format(int(c[0]-old_div(boxsize,2)),int(c[1]-old_div(boxsize,2)),int(boxsize),int(boxsize)))
 
 	E2end(logid)
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #====================
 #Author: Jesus Galaz-Montoya January/21/2016 , Last update: January/21/2016
@@ -30,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 
+from past.utils import old_div
 from optparse import OptionParser
 
 from EMAN2 import *
@@ -213,14 +215,14 @@ def main():
 		nyquist = 2.0 * apix
 		print("\n(e2spt_preproc)(main) therefore nyquist resolution is", nyquist)
 		print()
-		lowpassres = nyquist/options.lowpassfrac
+		lowpassres = old_div(nyquist,options.lowpassfrac)
 		
-		options.lowpassfrac = 1.0/(lowpassres)
+		options.lowpassfrac = old_div(1.0,(lowpassres))
 		if float(options.shrink) > 1.0:
 			options.lowpassfrac /= float(options.shrink)
 			
 			print("there's shrinking", options.shrink)
-			lowpassres = nyquist/options.lowpassfrac
+			lowpassres = old_div(nyquist,options.lowpassfrac)
 
 		print("\n(e2spt_preproc)(main) and final lowpass frequency is", options.lowpassfrac)
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Edited by: Stephen Murray (scmurray@bcm.edu) May 2014
@@ -32,6 +33,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -169,7 +171,7 @@ class RCTprocessor(object):
 				output = output.replace(".box","") + "_" + tiltbox_list.db['boxes_rct'][0][2] + ".box"
 				boxfile = open(output, 'w')
 				for i,box in enumerate(tiltbox_list.boxlist):
-					boxfile.write("%d\t%d\t%d\t%d\t-1\n" % (int(box.x - self.options.boxsize/2),int(box.y - self.options.boxsize/2),self.options.boxsize,self.options.boxsize))
+					boxfile.write("%d\t%d\t%d\t%d\t-1\n" % (int(box.x - old_div(self.options.boxsize,2)),int(box.y - old_div(self.options.boxsize,2)),self.options.boxsize,self.options.boxsize))
 				boxfile.close()
 		print("Done writing box files!")
 
@@ -336,7 +338,7 @@ class ParticlesWindow(object):
 	
 	def box_moved(self,event,scale):
 		winidx = self.moving_box_data[2] % self.numlists
-		ppidx = int(self.moving_box_data[2]/self.numlists)
+		ppidx = int(old_div(self.moving_box_data[2],self.numlists))
 		if self.moving_box_data:
 			dx = 0.2*(event.x() - self.moving_box_data[0])
 			dy = 0.2*(self.moving_box_data[1] - event.y())
@@ -351,7 +353,7 @@ class ParticlesWindow(object):
 		if lc == None or lc[0] == None: return
 		
 		#delete all particle pairs
-		ppidx = int(lc[0]/self.numlists)
+		ppidx = int(old_div(lc[0],self.numlists))
 		for i,window in enumerate(self.rctwidget.windowlist):
 			window.boxes.remove_box(ppidx,self.rctwidget.boxsize)
 			window.update_mainwin()
@@ -501,7 +503,7 @@ class MainWin(object):
 	def write_boxes(self,out_file_name,box_size):
 		boxfile = open(out_file_name, 'w')
 		for i,box in enumerate(self.boxes.boxlist):
-			boxfile.write("%d\t%d\t%d\t%d\t-1\n" % (int(box.x - box_size/2),int(box.y - box_size/2),box_size,box_size))
+			boxfile.write("%d\t%d\t%d\t%d\t-1\n" % (int(box.x - old_div(box_size,2)),int(box.y - old_div(box_size,2)),box_size,box_size))
 		boxfile.close()
 			
 		
@@ -682,7 +684,7 @@ class EMBox(object):
 		if self.image == None or self.image.get_xsize() != box_size or self.image.get_ysize() != box_size:
 			global BigImageCache
 			data=BigImageCache.get_object(image_name).get_image(use_alternate=True) # use alternate is a red herring
-			r = Region(self.x-box_size/2,self.y-box_size/2,box_size,box_size)
+			r = Region(self.x-old_div(box_size,2),self.y-old_div(box_size,2),box_size,box_size)
 			self.image = data.get_clip(r)
 			if norm != None:
 				self.image.process_inplace(norm)
@@ -702,17 +704,17 @@ class EMBox(object):
 			r,g,b = EMBox.BOX_COLORS[self.type]
 		else:
 			r,g,b = 1.0,0.42,0.71 # hot pink, apparently ;)
-		shape = EMShape([shape_string,r,g,b,self.x-box_size/2,self.y-box_size/2,self.x+box_size/2,self.y+box_size/2,2.0])
+		shape = EMShape([shape_string,r,g,b,self.x-old_div(box_size,2),self.y-old_div(box_size,2),self.x+old_div(box_size,2),self.y+old_div(box_size,2),2.0])
 		return shape
 	
 	def reset_image(self): self.image = None
 	
 	def get_label(self, text, size, box_size):
-		label = EMShape(["label",1,1,1,self.x-box_size/2,self.y+box_size/2+10,str(text),size,2.0])
+		label = EMShape(["label",1,1,1,self.x-old_div(box_size,2),self.y+old_div(box_size,2)+10,str(text),size,2.0])
 		return label
 		
 	def collision(self,x,y,box_size):
-		if x-box_size/2 < self.x and x+box_size/2 > self.x and y-box_size/2 < self.y and y+box_size/2 > self.y: return True
+		if x-old_div(box_size,2) < self.x and x+old_div(box_size,2) > self.x and y-old_div(box_size,2) < self.y and y+old_div(box_size,2) > self.y: return True
 		else: return False
 	
 if __name__ == "__main__":

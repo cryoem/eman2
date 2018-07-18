@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 # Author: Muthu Alagappan, m.alagappan901@gmail.com, 07/22/09
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -32,6 +33,7 @@ from __future__ import absolute_import
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import PDBReader, get_image_directory
@@ -805,7 +807,7 @@ class EMPDBModel(EM3DModel):
 		except: return
 		if length == 0: return
 
-		alt = acos(dz/length)*180.0/pi
+		alt = acos(old_div(dz,length))*180.0/pi
 		phi = atan2(dy,dx)*180.0/pi
 		
 		glPushMatrix()

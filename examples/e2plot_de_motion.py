@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 '''
 ====================
@@ -117,7 +119,7 @@ def main():
 			elif anglesin[0] > 0:
 				options.lowestangle = anglesin[-1]
 				options.highestangle = anglesin[0]
-			options.tiltstep = int(round( ( math.fabs(anglesin[0]) + math.fabs(anglesin[-1]) )/len(anglesin) ))
+			options.tiltstep = int(round( old_div(( math.fabs(anglesin[0]) + math.fabs(anglesin[-1]) ),len(anglesin)) ))
 
 	from EMAN2_utils import makepath
 	options = makepath(options)

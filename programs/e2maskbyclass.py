@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Author: Steven Ludtke, 09/04/2017 (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
 #
@@ -29,6 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -106,7 +108,7 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 
 	# Make a mask for each class-average
 	for c in classes: c.process_inplace("filter.lowpass.gauss",{"cutoff_freq":parm[0]})
-	masks=[c.process("mask.auto2d",{"nmaxseed":parm[1],"nshells":parm[2],"radius":nx/10,"return_mask":1,"sigma":parm[3]}) for c in classes]
+	masks=[c.process("mask.auto2d",{"nmaxseed":parm[1],"nshells":parm[2],"radius":old_div(nx,10),"return_mask":1,"sigma":parm[3]}) for c in classes]
 	for i in masks: i.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.03})
 
 	# Find all of the particles
@@ -235,7 +237,7 @@ def maskparmgui(classes):
 			self.masked=[i.process("filter.lowpass.gauss",{"cutoff_freq":self.slpres.value}) for i in self.classes]
 			nx=self.masked[0]["nx"]
 			for i,im in enumerate(self.masked):
-				im.process_inplace("mask.auto2d",{"nmaxseed":int(self.snmax.value),"nshells":int(self.sshells.value),"radius":nx/10,"return_mask":1,"sigma":self.ssigma.value})
+				im.process_inplace("mask.auto2d",{"nmaxseed":int(self.snmax.value),"nshells":int(self.sshells.value),"radius":old_div(nx,10),"return_mask":1,"sigma":self.ssigma.value})
 				im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.03})
 				im.mult(self.classes[i])
 				

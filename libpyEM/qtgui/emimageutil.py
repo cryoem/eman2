@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -32,6 +33,7 @@ from __future__ import absolute_import
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from PyQt4 import QtGui,QtCore
@@ -392,7 +394,7 @@ class ImgHistogram(QtGui.QWidget):
 		
 		for i in self.histdata: self.norm+=float(i)*i
 		self.norm-=max(self.histdata)**2
-		self.norm=sqrt(self.norm/255)*3.0
+		self.norm=sqrt(old_div(self.norm,255))*3.0
 		self.total=sum(self.histdata)
 		if self.norm==0 : self.norm=1.0
 		if self.total==0 : self.histdata=None
@@ -437,7 +439,7 @@ class ImgHistogram(QtGui.QWidget):
 		p.eraseRect(0,0,self.width(),self.height())
 		p.setPen(Qt.darkGray)
 		for i,j in enumerate(self.histdata):
-			p.drawLine(i,127,i,127-j*126/self.norm)
+			p.drawLine(i,127,i,127-old_div(j*126,self.norm))
 		
 		if self.histdata is None: return
 		p=QtGui.QPainter()
@@ -446,15 +448,15 @@ class ImgHistogram(QtGui.QWidget):
 		p.eraseRect(0,0,self.width(),self.height())
 		p.setPen(Qt.darkGray)
 		for i,j in enumerate(self.histdata):
-			p.drawLine(i,127,i,127-j*126/self.norm)
+			p.drawLine(i,127,i,127-old_div(j*126,self.norm))
 
 		# If the user has dragged, we need to show a value
 
 		if (self.probe) and (self.volume == False):
 			p.setPen(Qt.blue)
-			p.drawLine(self.probe[0]+1,0,self.probe[0]+1,127-self.probe[1]*126/self.norm)
+			p.drawLine(self.probe[0]+1,0,self.probe[0]+1,127-old_div(self.probe[1]*126,self.norm))
 			p.setPen(Qt.red)
-			p.drawLine(self.probe[0]+1,127,self.probe[0]+1,127-self.probe[1]*126/self.norm)
+			p.drawLine(self.probe[0]+1,127,self.probe[0]+1,127-old_div(self.probe[1]*126,self.norm))
 			p.setFont(self.font)
 			#p.drawText(200,20,"x=%d"%(self.probe[0]))
 			#p.drawText(200,36,"%1.2f"%self.threshold)

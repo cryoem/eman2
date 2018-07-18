@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # Author: Michael Bell 09/2015
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import os
@@ -75,7 +77,7 @@ def main():
 def make_rand_unit_vector(dims=2):
 	vec = [np.random.normal(0, 1) for i in range(dims)]
 	mag = sum(x**2 for x in vec) ** .5
-	return [x/mag for x in vec]
+	return [old_div(x,mag) for x in vec]
 
 def plot_translations(options,shifts,fname=None):
 	plt.figure()

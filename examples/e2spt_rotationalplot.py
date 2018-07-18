@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Jesus Galaz, 04/28/2012 - Last update 05/March/2013
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 import EMAN2
 from EMAN2 import *
@@ -414,7 +416,7 @@ def symmetrize(vol,options):
 		t=xf.get_sym(sym,i)
 		dc.transform(t)
 		volsym.add(dc)
-	volsym.mult(1.0/nsym)	
+	volsym.mult(old_div(1.0,nsym))	
 	return(volsym)
 	
 	
@@ -454,7 +456,7 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			
 			
 			for k in range(len(values[ele])):
-				values[ele][k] = values[ele][k] / maxv2
+				values[ele][k] = old_div(values[ele][k], maxv2)
 				
 			#print "after norm they are", min(values[ele]), max(values[ele])		
 			#print "Len of azs and values is", len(azs), len(values)
@@ -721,7 +723,7 @@ def twoD_plot(plotname,values,options):
 	print("The step in az is", options.daz)
 	widths = [widthx,widthy]
 	#markerwidth = max(widths)
-	markerwidth = sum(widths)/2
+	markerwidth = old_div(sum(widths),2)
 	print("marker width is the average of the two", markerwidth)
 	
 	for ele in values:

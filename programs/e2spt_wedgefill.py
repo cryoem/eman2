@@ -30,6 +30,8 @@ Author: Steven Ludkte - 2016, Last update: May/2017 (Jesus)
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from sys import argv,stdout,exit
@@ -106,7 +108,7 @@ def main():
 			inputhdr=EMData(options.input,0,True)
 			fill=EMData(inputhdr['nx'],inputhdr['ny'],inputhdr['nz'])
 			fill.to_one()
-			radius = min(inputhdr['nx'],inputhdr['ny'],inputhdr['nz'])/2 -4
+			radius = old_div(min(inputhdr['nx'],inputhdr['ny'],inputhdr['nz']),2) -4
 			fill.process_inplace('mask.soft',{'outer_radius':radius})
 
 			options.matchto = True

@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # 01/13/2014		Steven Ludtke
 # This program tries to fit a closed loop of blobs to DNA-minicircle density pattern using
 # a simple distance, angle, dihedral potential with a closed linear chain of balls
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -96,7 +98,7 @@ def process_image(imgname,imgprefix):
 		mx=dot(tp,p)
 		### align the polygon 
 		eigvv=LA.eig(mx)		# a 3-vector with eigenvalues and a 3x3 with the vectors
-		eig=[(1.0/eigvv[0][i],eigvv[1][:,i]) for i in range(3)]  # extract for sorting
+		eig=[(old_div(1.0,eigvv[0][i]),eigvv[1][:,i]) for i in range(3)]  # extract for sorting
 		eig=sorted(eig)		# now eig is sorted in order from major to minor axes
 		et=matrix([[eig[0][1][0],eig[0][1][1],eig[0][1][2]],[eig[1][1][0],eig[1][1][1],eig[1][1][2]],[eig[2][1][0],eig[2][1][1],eig[2][1][2]]])
 		
@@ -118,7 +120,7 @@ def process_image(imgname,imgprefix):
 			area+=(p1[1]*p2[2]-p2[1]*p1[2])
 			#print area
 
-		area=abs(area/2)
+		area=abs(old_div(area,2))
 		#print area
 		
 		pmax=argmax(abs(pl),axis=0)
@@ -132,7 +134,7 @@ def process_image(imgname,imgprefix):
 			p2=pl[n2]
 			t=linalg.norm(p1[0]-p2[0])
 			d+=t
-		d=d/10
+		d=old_div(d,10)
 		#shp=append(shp.A1,d)
 		shp=append(shp.A1,totalen)
 		shp=append(shp,area)
@@ -162,7 +164,7 @@ def process_image(imgname,imgprefix):
 		
 		# Compute the eigenvalues/vectors
 		eigvv=LA.eig(mx)		# a 3-vector with eigenvalues and a 3x3 with the vectors
-		eig=[(1.0/eigvv[0][i],eigvv[1][:,i]) for i in range(3)]  # extract for sorting
+		eig=[(old_div(1.0,eigvv[0][i]),eigvv[1][:,i]) for i in range(3)]  # extract for sorting
 		eig=sorted(eig)		# now eig is sorted in order from major to minor axes
 		#T=array([eig[0][1],eig[1][1],eig[2][1]])            # reassemble sorted matrix
 
@@ -178,9 +180,9 @@ def process_image(imgname,imgprefix):
 		shp=an.analyze()[0]
 		#shp=EMNumPy.em2numpy(shp)
 		
-		print(shp[0],shp[1],shp[2],shp[3],shp[2]/shp[1],shp[1]/shp[0])
+		print(shp[0],shp[1],shp[2],shp[3],old_div(shp[2],shp[1]),old_div(shp[1],shp[0]))
 		for i in range(4):
-			shp[i]=sqrt(shp[i]/finalimg["mean"])*finalimg["apix_x"]
+			shp[i]=sqrt(old_div(shp[i],finalimg["mean"]))*finalimg["apix_x"]
 		
 		return shp
 		

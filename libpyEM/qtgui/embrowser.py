@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import absolute_import
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -1727,9 +1729,9 @@ def humansize(val) :
 	try : val = int(val)
 	except : return val
 
-	if val > 1000000000 : return "%d g"%(val/1000000000)
-	elif val > 1000000 : return "%d m"%(val/1000000)
-	elif val > 1000 : return "%d k"%(val/1000)
+	if val > 1000000000 : return "%d g"%(old_div(val,1000000000))
+	elif val > 1000000 : return "%d m"%(old_div(val,1000000))
+	elif val > 1000 : return "%d k"%(old_div(val,1000))
 	return str(val)
 
 #---------------------------------------------------------------------------

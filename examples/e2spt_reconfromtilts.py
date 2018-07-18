@@ -79,7 +79,7 @@ def main():
 	
 	e=EMData(pname, 0, True)
 	boxsize=e["nx"]
-	pad=good_size(boxsize*3/2)
+	pad=good_size(old_div(boxsize*3,2))
 	apix=e["apix_x"]
 	
 	oname=[os.path.join(sptpath, "map_from_ali_{}.hdf".format(eo)) for eo in ["even", "odd"]]

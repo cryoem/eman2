@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 #
 # Author: John Flanagan Dec 1st 2011 (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -34,6 +35,7 @@ from __future__ import absolute_import
 
 # These classes are subclasses of EMBrowserWidget to provide additonal models to represent various types of files in the GUI.
 
+from past.utils import old_div
 from EMAN2 import *
 import os
 import re
@@ -522,12 +524,12 @@ class EMCTFParticlesEntry(EMDirEntry):
 				else : self.defocus = "%.3f (%.3f, %.1f)" % (ctf.defocus,ctf.dfdiff,ctf.dfang)
 				self.bfactor = "%.3f" % ctf.bfactor
 				self.sampling = str(len(ctf.snr))
-				s0=max(2,int(1.0/(200.0*ctf.dsbg)))
-				s1=max(2,int(1.0/(20.0*ctf.dsbg)))
-				s2=int(1.0/(10.0*ctf.dsbg))
-				s3=int(1.0/(4.0*ctf.dsbg))
-				self.snr = "%.3f" %  (sum(ctf.snr[s0:s1])/(s1-s0))
-				self.snrhi = "%.3f" %  (sum(ctf.snr[s2:s3])/(s3-s2))
+				s0=max(2,int(old_div(1.0,(200.0*ctf.dsbg))))
+				s1=max(2,int(old_div(1.0,(20.0*ctf.dsbg))))
+				s2=int(old_div(1.0,(10.0*ctf.dsbg)))
+				s3=int(old_div(1.0,(4.0*ctf.dsbg)))
+				self.snr = "%.3f" %  (old_div(sum(ctf.snr[s0:s1]),(s1-s0)))
+				self.snrhi = "%.3f" %  (old_div(sum(ctf.snr[s2:s3]),(s3-s2)))
 			except:
 				self.defocus="-"
 				self.bfactor="-"

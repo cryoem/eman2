@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 01/03/07 (sludtke@bcm.edu)
@@ -36,6 +37,7 @@ from __future__ import print_function
 # This program will convert a 2D image stack into a GIF animation
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -91,7 +93,7 @@ def main():
 		news=(int(olds[0]*options.scale),int(olds[1]*options.scale))
 		for i in range(ntk+1):
 			if options.scale<1.0: a[i].scale(options.scale)
-			a[i]=a[i].get_clip(Region((olds[0]-news[0])/2.0,(olds[1]-news[1])/2.0,news[0],news[1]))
+			a[i]=a[i].get_clip(Region(old_div((olds[0]-news[0]),2.0),old_div((olds[1]-news[1]),2.0),news[0],news[1]))
 			if options.scale>1.0: a[i].scale(options.scale)
 
 	if options.pingpong :

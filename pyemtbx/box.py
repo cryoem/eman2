@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -30,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from past.utils import old_div
 from bisect import bisect_left,bisect_right
 from math import *
 
@@ -54,10 +56,10 @@ good_box_sizes=[4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48, 56, 60, 64, 72, 80, 84
 def good_boxsize(val,larger=True):
 	"This will find the next largest 'good' boxsize"
 	if larger:
-		if val > 16384: return int(2**ceil(log(val)/log(2.0)))
+		if val > 16384: return int(2**ceil(old_div(log(val),log(2.0))))
 		return good_box_sizes[bisect_left(good_box_sizes,val)]
 	
-	if val>16384: return int(2**floor(log(val)/log(2.0)))
+	if val>16384: return int(2**floor(old_div(log(val),log(2.0))))
 	return good_box_sizes[bisect_right(good_box_sizes,val)-1]
 
     

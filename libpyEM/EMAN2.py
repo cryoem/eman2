@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -31,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -829,7 +831,7 @@ def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 	s2=im2["sigma"]
 	for i in range(n):
 		if skipzero and (im1[i]==0 or im2[i]==0) : continue
-		if skipnearzero and (fabs(im1[i])<s1/10.0 or fabs(im2[i])<s2/10.0) : continue
+		if skipnearzero and (fabs(im1[i])<old_div(s1,10.0) or fabs(im2[i])<old_div(s2,10.0)) : continue
 		x.append(im1[i])
 		y.append(im2[i])
 
@@ -854,7 +856,7 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 		import matplotlib
 		matplotlib.use('Agg')
 		import pylab
-		pylab.figure(figsize=(size[0]/72.0,size[1]/72.0),dpi=72)
+		pylab.figure(figsize=(old_div(size[0],72.0),old_div(size[1],72.0)),dpi=72)
 		if isinstance(data,EMData) :
 			a=[]
 			for i in range(data.get_xsize()):
@@ -979,10 +981,10 @@ def memory_stats():
 			a = f.readlines()
 			mt = a[0].split()
 			if mt[0] == "MemTotal:":
-				mem_total = float(mt[1])/1000000.0
+				mem_total = old_div(float(mt[1]),1000000.0)
 			ma = a[1].split()
 			if ma[0] == "MemFree:":
-				mem_avail = float(ma[1])/1000000.0
+				mem_avail = old_div(float(ma[1]),1000000.0)
 		except:
 			pass
 
@@ -995,7 +997,7 @@ def memory_stats():
 			total_len = len("hw.memsize")
 			if total_strings[0][:total_len] == "hw.memsize":
 				try:
-					mem_total = float(total_strings[1])/1000000000.0 # on Mac the output value is in bytes, not kilobytes (as in Linux)
+					mem_total = old_div(float(total_strings[1]),1000000000.0) # on Mac the output value is in bytes, not kilobytes (as in Linux)
 				except:pass # mem_total is just -1
 
 		used_strings = output_used.split()
@@ -1004,7 +1006,7 @@ def memory_stats():
 			used_len = len("hw.usermem")
 			if used_strings[0][:used_len] == "hw.usermem":
 				try:
-					mem_used = float(used_strings[1])/1000000000.0 # on Mac the output value is in bytes, not kilobytes (as in Linux)
+					mem_used = old_div(float(used_strings[1]),1000000000.0) # on Mac the output value is in bytes, not kilobytes (as in Linux)
 				except:pass # mem_used is just -1
 
 		if mem_used != -1 and mem_total != -1:
@@ -1193,11 +1195,11 @@ def timestamp_diff(t1,t2):
 def difftime(secs):
 	"""Returns a string representation of a time difference in seconds as a Dd hh:mm:ss style string"""
 
-	d=int(floor(secs/86400))
+	d=int(floor(old_div(secs,86400)))
 	secs-=d*86400
-	h=int(floor(secs/3600))
+	h=int(floor(old_div(secs,3600)))
 	secs-=h*3600
-	m=int(floor(secs/60))
+	m=int(floor(old_div(secs,60)))
 	secs=int(secs-m*60)
 
 	if d>0 : return "%dd %2d:%02d:%02d"%(d,h,m,secs)
@@ -1572,7 +1574,7 @@ number of subimages"""
 
 	for x in range(n_array[0]):
 		for y in range(n_array[1]):
-			out.insert_clip(subim,(size[0]/2+int((x-n_array[0]/2.0)*subim.get_xsize()),size[1]/2+int((y-n_array[1]/2.0)*subim.get_ysize())))
+			out.insert_clip(subim,(old_div(size[0],2)+int((x-old_div(n_array[0],2.0))*subim.get_xsize()),old_div(size[1],2)+int((y-old_div(n_array[1],2.0))*subim.get_ysize())))
 
 	return out
 
@@ -1596,9 +1598,9 @@ def test_image(type=0,size=(128,128)):
 	elif type==1 :
 		ret.process_inplace("testimage.noise.gauss")
 	elif type==2:
-		ret.process_inplace("testimage.squarecube",{"edge_length":size[0]/2})
+		ret.process_inplace("testimage.squarecube",{"edge_length":old_div(size[0],2)})
 	elif type==3:
-		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":size[0]/2})
+		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":old_div(size[0],2)})
 	elif type==4:
 		ret.process_inplace("testimage.scurve")
 		t = EMData()
@@ -1621,7 +1623,7 @@ def test_image(type=0,size=(128,128)):
 	elif type==8:
 		ret.process_inplace("testimage.scurve")
 		t = Transform({"type":"2d","alpha":Util.get_frand(0,360)})
-		s = int(size[0]/10)
+		s = int(old_div(size[0],10))
 		t.set_trans(Util.get_irand(-s,s),Util.get_irand(-s,s))
 		t.set_mirror(Util.get_irand(0,1))
 		ret.transform(t)
@@ -1633,7 +1635,7 @@ def test_image(type=0,size=(128,128)):
 	elif type==10:
 		ret.process_inplace("testimage.scurve")
 		t = Transform({"type":"2d","alpha":Util.get_frand(0,360)})
-		s = int(size[0]/10)
+		s = int(old_div(size[0],10))
 		t.set_trans(Util.get_irand(-s,s),Util.get_irand(-s,s))
 		#t.set_mirror(Util.get_irand(0,1))
 		ret.transform(t)
@@ -1670,23 +1672,23 @@ def test_image_3d(type=0,size=(128,128,128)):
 	elif type==1:
 		tmp = EMData()
 		tmp.set_size(*size)
-		tmp.process_inplace("testimage.sphericalwave",{"wavelength":size[0]/7.0,"phase":0})
+		tmp.process_inplace("testimage.sphericalwave",{"wavelength":old_div(size[0],7.0),"phase":0})
 
 		a = tmp.copy()
-		a.translate(size[0]/7.0,size[1]/7.0,0)
-		ret.process_inplace("testimage.sphericalwave",{"wavelength":size[0]/11.0,"phase":0})
+		a.translate(old_div(size[0],7.0),old_div(size[1],7.0),0)
+		ret.process_inplace("testimage.sphericalwave",{"wavelength":old_div(size[0],11.0),"phase":0})
 		ret.add(a)
 
 		a = tmp.copy()
-		a.translate(-size[0]/7.0,size[1]/7.0,0)
+		a.translate(old_div(-size[0],7.0),old_div(size[1],7.0),0)
 		ret.add(a)
 
 		a = tmp.copy()
-		a.translate(-size[0]/7.0,-size[1]/7.0,0)
+		a.translate(old_div(-size[0],7.0),old_div(-size[1],7.0),0)
 		ret.add(a)
 
 		a = tmp.copy()
-		a.translate(size[0]/7.0,-size[1]/7.0,0)
+		a.translate(old_div(size[0],7.0),old_div(-size[1],7.0),0)
 		ret.add(a)
 
 		ret.process_inplace("normalize")
@@ -1694,43 +1696,43 @@ def test_image_3d(type=0,size=(128,128,128)):
 	elif type==2:
 		ret.process_inplace("testimage.tomo.objects")
 	elif type==3:
-		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":size[0]/2})
+		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":old_div(size[0],2)})
 	elif type==4:
 		ret.process_inplace("testimage.circlesphere",{"radius":int(size[0]*.375)})
 	elif type==5:
 
 		t = Transform({"type":"eman","az":60,"alt":30})
-		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/3,"b":size[1]/5,"c":size[2]/4,"transform":t})
+		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],3),"b":old_div(size[1],5),"c":old_div(size[2],4),"transform":t})
 
 		t = Transform({"type":"eman","az":-45})
 		t.set_trans(0,0,0)
-		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/2,"b":size[1]/16,"c":size[2]/16,"transform":t,"fill":0})
+		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],2),"b":old_div(size[1],16),"c":old_div(size[2],16),"transform":t,"fill":0})
 
-		t.set_trans(0,0,size[2]/6)
-		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/2,"b":size[1]/16,"c":size[2]/16,"transform":t,"fill":0})
+		t.set_trans(0,0,old_div(size[2],6))
+		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],2),"b":old_div(size[1],16),"c":old_div(size[2],16),"transform":t,"fill":0})
 
-		t.set_trans(0,0,-size[2]/6)
-		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/2,"b":size[1]/16,"c":size[2]/16,"transform":t,"fill":0})
-
-		t = Transform({"type":"eman","alt":-45})
-		t.set_trans(-size[0]/8,size[1]/4,0)
-		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/16,"b":size[1]/2,"c":size[2]/16,"transform":t,"fill":0})
+		t.set_trans(0,0,old_div(-size[2],6))
+		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],2),"b":old_div(size[1],16),"c":old_div(size[2],16),"transform":t,"fill":0})
 
 		t = Transform({"type":"eman","alt":-45})
-		t.set_trans(size[0]/8,-size[1]/3.5)
-		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/16,"b":size[1]/2,"c":size[2]/16,"transform":t,"fill":0})
+		t.set_trans(old_div(-size[0],8),old_div(size[1],4),0)
+		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],16),"b":old_div(size[1],2),"c":old_div(size[2],16),"transform":t,"fill":0})
+
+		t = Transform({"type":"eman","alt":-45})
+		t.set_trans(old_div(size[0],8),old_div(-size[1],3.5))
+		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],16),"b":old_div(size[1],2),"c":old_div(size[2],16),"transform":t,"fill":0})
 
 	elif type==6 :
 		ret.process_inplace("testimage.noise.gauss")
 
 	elif type==7:
-		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/6,"b":size[0]/5,"c":size[0]/3})
+		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],6),"b":old_div(size[0],5),"c":old_div(size[0],3)})
 
 	elif type==8:
-		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/6,"b":size[0]/6,"c":size[0]/3})
+		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],6),"b":old_div(size[0],6),"c":old_div(size[0],3)})
 
 	elif type==9:
-		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/3,"b":size[0]/3,"c":size[0]/6})
+		ret.process_inplace("testimage.ellipsoid",{"a":old_div(size[0],3),"b":old_div(size[0],3),"c":old_div(size[0],6)})
 
 	return ret
 

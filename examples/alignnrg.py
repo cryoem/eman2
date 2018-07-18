@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # This computes the local energy surface for 2-D alignment of a particle vs a class-average
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from sys import argv,exit,stdout
@@ -110,7 +112,7 @@ for ta in arange(da-5,da+5,0.01):
 
 outf=open("nrg.txt","w")
 for i in range(len(out1[0])):
-	outf.write("%d\t%f\t%f\t%f\n"%(i-len(out1[0])/2,out1[0][i],out1[1][i],out1[2][i]))
+	outf.write("%d\t%f\t%f\t%f\n"%(i-old_div(len(out1[0]),2),out1[0][i],out1[1][i],out1[2][i]))
 outf.close()
 
 plot(out1[0],out1[1],out1[2])

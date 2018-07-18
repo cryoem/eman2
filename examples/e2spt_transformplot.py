@@ -31,7 +31,9 @@ Author: Jesus Galaz - May/2017, Last update: may/2016
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 from builtins import range
 from optparse import OptionParser
 from EMAN2 import *
@@ -233,8 +235,8 @@ def plotvals( options, vals, tag, binwidth=0 ):
 	sigmavals= numpy.std(vals)
 	meanvals = numpy.mean(vals)
 
-	cuberoot = numpy.power(len(vals),1.0/3.0)
-	width = (3.5*sigmavals)/cuberoot
+	cuberoot = numpy.power(len(vals),old_div(1.0,3.0))
+	width = old_div((3.5*sigmavals),cuberoot)
 
 	if binwidth:
 		width=binwidth
@@ -256,7 +258,7 @@ def plotvals( options, vals, tag, binwidth=0 ):
 	elif 'x' in tag or 'y' in tag or 'z' in tag:
 		pass
 
-	calcbins = int(round( (maxvals - minvals ) / width ))
+	calcbins = int(round( old_div((maxvals - minvals ), width) ))
 
 	#count, bins, ignored = plt.hist(vals, 30, normed=True)
 	ignored = plt.hist(vals, calcbins)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # 
 # Copyright (c) 2001 Vivake Gupta (v@omniscia.org).  All rights reserved.
 # 
@@ -23,6 +24,7 @@ from __future__ import print_function
 
 # Modified (debugged?) 7/16/2004 Michele Vallisneri (vallis@vallis.org)
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 """ Simplex - a regression method for arbitrary nonlinear function minimization
@@ -132,14 +134,14 @@ class Simplex(object):
             S = 0.0
             for vertex in range(0, self.numvars + 1):
                 S = S + self.errors[vertex]
-            F2 = S / (self.numvars + 1)
+            F2 = old_div(S, (self.numvars + 1))
 
             #   compute the std deviation of the merit figures (ugly)
 
             S1 = 0.0
             for vertex in range(0, self.numvars + 1):
                 S1 = S1 + (self.errors[vertex] - F2)**2
-            T = math.sqrt(S1 / self.numvars)
+            T = math.sqrt(old_div(S1, self.numvars))
             
             # Optionally, print progress information
 
@@ -166,7 +168,7 @@ class Simplex(object):
                         if vertex == self.highest:
                             continue
                         S = S + self.simplex[vertex][x]
-                    self.simplex[self.numvars + 1][x] = S / self.numvars
+                    self.simplex[self.numvars + 1][x] = old_div(S, self.numvars)
 
                 # reflect the simplex across the centroid
                 # store reflected point in elem. N + 2 (and self.guess)

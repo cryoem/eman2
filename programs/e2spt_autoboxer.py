@@ -31,6 +31,8 @@
 #
 #
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import os
 from EMAN2 import *
@@ -987,7 +989,7 @@ def templategen( options ):
 		if options.boxsize:
 			boxsize = options.boxsize
 		
-		radius = int(boxsize)/4 
+		radius = old_div(int(boxsize),4) 
 		
 		cmd = "cd " + options.path + " && e2spt_classaverage.py --path=genref --input=../" + options.ptclstack + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=.0333 --lowpassfine=filter.lowpass.gauss:cutoff_freq=.05 --search " + str( radius ) + " --radius " + str( radius ) + " --precision=2 --parallel" + options.parllel + " --savesteps --saveali --normproc=normalize.edgemean"
 		if options.verbose:
@@ -1069,11 +1071,11 @@ def gencylinder( options ):
 	mask = EMData( box, box, box)
 	mask.to_one()
 	
-	radius = int(box)/2
+	radius = old_div(int(box),2)
 	if 'radius' in params:
 		radius = int(params['radius'])
 		
-	height = int(box)/2	
+	height = old_div(int(box),2)	
 	if 'height' in params:
 		height = int(params['height'])
 	
@@ -1087,11 +1089,11 @@ def gencylinder( options ):
 		
 		if heightinner > height:
 			print("\nWARNING: heightinner %d > height %d; therefore, heightinner will be defaulted to height/2" %( heightinner, height ))
-			heightinner = height/2
+			heightinner = old_div(height,2)
 			
 		if radiusinner > radius:
 			print("\nWARNING: radiusinner %d > radius %d; therefore, heightinner will be defaulted to radius/2" %( radiusinner, radius ))
-			radiusinner=radius/2
+			radiusinner=old_div(radius,2)
 			
 		maskin = mask.process("testimage.cylinder",{'height':options.heightinner,'radius':options.radiusinner})
 		finalmask = maskout - maskin
@@ -1151,14 +1153,14 @@ def tomosubblocks( options, boxsize ):
 	cubesize = tomoz
 	cubevol = cubesize*cubesize*cubesize
 
-	ncubes = int( tomovol / cubevol )
+	ncubes = int( old_div(tomovol, cubevol) )
 	
 	if options.verbose:
 		print("\nThe volume of the tomogram is", tomovol)
 		print("The volume of the subregions is", cubevol)
 		print("Therefore, in principle, you could divide the tomogram into at least %d cubes wiht a sidelength of %d" %( ncubes, cubesize ))
 	
-	zc = cubesize/2	#the center in z never changes
+	zc = old_div(cubesize,2)	#the center in z never changes
 		
 	'''
 	The tomogram ought to be divided into cubes, which will be cubes with side length equal to the 
@@ -1188,29 +1190,29 @@ def tomosubblocks( options, boxsize ):
 	the last cube from the far most edge (this might overlap greatly with the penultimate
 	cube depending on the specific tomogram, but will be accounted for later
 	'''
-	nxs = tomox/(cubesize - boxsize/2)
+	nxs = old_div(tomox,(cubesize - old_div(boxsize,2)))
 	print("nxs",nxs)
-	xcenters = [ cubesize/2 + i*(cubesize - boxsize/2 ) for i in range( nxs ) ] 
+	xcenters = [ old_div(cubesize,2) + i*(cubesize - old_div(boxsize,2) ) for i in range( nxs ) ] 
 	
-	lastx = xcenters[-1]+cubesize/2
+	lastx = xcenters[-1]+old_div(cubesize,2)
 	unscannedx = tomox-lastx
 	print("unscannedx",unscannedx)
-	if unscannedx > boxsize/2:
-		lastxc = tomox - cubesize/2
+	if unscannedx > old_div(boxsize,2):
+		lastxc = tomox - old_div(cubesize,2)
 
 		if lastxc not in xcenters:
 			xcenters += [lastxc]
 
 	print("xcenters",xcenters)
-	nys = tomoy/(cubesize - boxsize/2)
+	nys = old_div(tomoy,(cubesize - old_div(boxsize,2)))
 	print("nys",nys)
-	ycenters = [ cubesize/2 + i*(cubesize - boxsize/2 ) for i in range( nys ) ] 
+	ycenters = [ old_div(cubesize,2) + i*(cubesize - old_div(boxsize,2) ) for i in range( nys ) ] 
 	
-	lasty = ycenters[-1]+cubesize/2
+	lasty = ycenters[-1]+old_div(cubesize,2)
 	unscannedy = tomoy-lasty
 	print("unscannedy",unscannedy)
-	if unscannedy > boxsize/2:
-		lastyc = tomoy - cubesize/2
+	if unscannedy > old_div(boxsize,2):
+		lastyc = tomoy - old_div(cubesize,2)
 		print("lastyc",lastyc)
 		if lastyc not in ycenters:
 			
@@ -1249,13 +1251,13 @@ def scanchunks( options, centers, templateindx ):
 	template = EMData( options.template, templateindx )
 	templatesphavg = EMData( options.template.replace('.hdf','_sph.hdf', 0 ) )
 	
-	radius = templatesphavg['nx']/4	#assuming the particle/template is in a box of 2x its diameter, 4x its radius
+	radius = old_div(templatesphavg['nx'],4)	#assuming the particle/template is in a box of 2x its diameter, 4x its radius
 	if options.ptclradius:
 		radius = options.ptclradius
 	elif options.boxsize:
-		radius = options.boxsize/4.0
+		radius = old_div(options.boxsize,4.0)
 	
-	ptclvol = (4.0/3.0)* math.pi *math.pow(options.ptclradius,3)
+	ptclvol = (old_div(4.0,3.0))* math.pi *math.pow(options.ptclradius,3)
 	
 	tomohdr = EMData( options.tomogram, 0 )
 	tomoz = tomohdr['nz']
@@ -1263,9 +1265,9 @@ def scanchunks( options, centers, templateindx ):
 	cubesize = tomoz
 	cubevol = cubesize * cubesize * cubesize
 	
-	nptclsmax = int( cubevol/ptclvol )
+	nptclsmax = int( old_div(cubevol,ptclvol) )
 	if options.dilutionfactor:
-		nptcls = nptclsmax/options.dilutionfactor
+		nptcls = old_div(nptclsmax,options.dilutionfactor)
 	
 	print("\nat maximum concentration, %d particles would fit in each subregion; given dilution factor %d, the estimate is %d" %(nptcls, options.dilutionfactor, nptcls))
 	
@@ -1291,15 +1293,15 @@ def scanchunks( options, centers, templateindx ):
 	tomox = tomohdr['nx']
 	tomoy = tomohdr['ny']
 	tomoz = tomohdr['nz']
-	tomoxc = tomohdr['nx']/2
-	tomoyc = tomohdr['ny']/2
-	tomozc = tomohdr['nz']/2
+	tomoxc = old_div(tomohdr['nx'],2)
+	tomoyc = old_div(tomohdr['ny'],2)
+	tomozc = old_div(tomohdr['nz'],2)
 	
 	templatesphavg.process_inplace('xform.scale',{'scale':1,'clip':cubesize})
 	
 	print("\ntemplate resized", templatesphavg['nx'],templatesphavg['ny'],templatesphavg['nz'])
 	
-	zc = tomoz/2
+	zc = old_div(tomoz,2)
 	
 	results=[]
 	
@@ -1418,7 +1420,7 @@ def scanchunks( options, centers, templateindx ):
 			'''
 			edgeminval = radius
 			exgemaxval = cubesize - radius
-			if xc == cubesize/2 or yc == cubesize/2 or xc == tomox - cubesize/2 or yc == tomoy - cubesize/2:
+			if xc == old_div(cubesize,2) or yc == old_div(cubesize,2) or xc == tomox - old_div(cubesize,2) or yc == tomoy - old_div(cubesize,2):
 				edgeminval = 2 * radius
 				edgemaxval = cubesize - 2*radius
 			
@@ -1519,9 +1521,9 @@ def scanchunks( options, centers, templateindx ):
 				so that the same maximum (and anything within radius distance) won't be 
 				picked as iterations progress.
 				'''
-				maskx = locmaxX - cubesize/2
-				masky = locmaxY - cubesize/2
-				maskz = locmaxZ - cubesize/2
+				maskx = locmaxX - old_div(cubesize,2)
+				masky = locmaxY - old_div(cubesize,2)
+				maskz = locmaxZ - old_div(cubesize,2)
 
 				#maskx = (cubesize - locmaxX)
 				#masky = (cubesize - locmaxY)
@@ -1549,7 +1551,7 @@ def rmsdpruner( datar, options ):
 	data = list(datar)     #list of lists with per particle info [ [score1,x1,y1,z1], [score2,x2,y2,z2],...,[scoren,xn,yn,zn] ]
 	print("\nin rmsdpruner data length is", len(data))
     #perform all-vs-all comparisons with two nested loops
-	numcomp = (len(data)*(len(data)-1))/2
+	numcomp = old_div((len(data)*(len(data)-1)),2)
 	print("which will require %d comparisons\n" %(numcomp))
 	cn=0
 	ntoremove = 0
@@ -1571,7 +1573,7 @@ def rmsdpruner( datar, options ):
 			print("evector",evector)
 			
             #compute the angle and rmsd between the two particle vectors
-			angle = float( numpy.degrees( numpy.arccos( numpy.dot(dvector,evector) / ( numpy.dot(evector,evector) * numpy.dot(dvector,dvector) ) )) )
+			angle = float( numpy.degrees( numpy.arccos( old_div(numpy.dot(dvector,evector), ( numpy.dot(evector,evector) * numpy.dot(dvector,dvector) )) )) )
 			rmsd = float( numpy.linalg.norm(dvector - evector) )
 			print("rmsd is", rmsd)
 			print("ptclradius, diameters",options.ptclradius,options.ptclradius*2.0)
@@ -1629,12 +1631,12 @@ def plothistogram(  options, scores ):
 		print("ERROR: std=0, which means all intensity values are the same.")
 		sys.exit()
 	
-	cuberoot = numpy.power(len(scores),1.0/3.0)
+	cuberoot = numpy.power(len(scores),old_div(1.0,3.0))
 	#print "The cuberoot of n is", cuberoot
-	width = (3.5*std)/cuberoot
+	width = old_div((3.5*std),cuberoot)
 	print("\naccording to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
 	
-	calcbins = (max(scores) - min(scores)) / width
+	calcbins = old_div((max(scores) - min(scores)), width)
 	
 	if options.nbins:
 		calcbins = options.nbins
@@ -1897,7 +1899,7 @@ def pruner(data,tag,mean_maxs,sigma_maxs,mean_mins,sigma_mins):
 c:function to extract subtomogram from --tomogram based on x,y,z coordinates and a defined boxsize
 '''
 def getbox( options, x, y, z, size ):
-	r = Region( (2*x - size)/2,(2*y- size)/2, (2*z-size)/2, size, size, size )
+	r = Region( old_div((2*x - size),2),old_div((2*y- size),2), old_div((2*z-size),2), size, size, size )
 	img = EMData()
 	img.read_image(options.tomogram,0,False,r)
 
@@ -2077,7 +2079,7 @@ def prjpruner( options, data ):
 		y=d[2]
 		z=d[3]
 		#print "The actual coordinates used for extraction are", x, y, z
-		r = Region((2*x- options.boxsize)/2,(2*y-options.boxsize)/2, (2*z-options.boxsize)/2, options.boxsize, options.boxsize, options.boxsize)
+		r = Region(old_div((2*x- options.boxsize),2),old_div((2*y-options.boxsize),2), old_div((2*z-options.boxsize),2), options.boxsize, options.boxsize, options.boxsize)
 		e = EMData()
 		e.read_image(options.tomogram,0,False,r)
 	
@@ -2139,8 +2141,8 @@ def prjpruner( options, data ):
 	
 		#print "\nThe peak is at", locmaxX, locmaxY
 	
-		transx = bxf/2 - locmaxX
-		transy = bxf/2 - locmaxY
+		transx = old_div(bxf,2) - locmaxX
+		transy = old_div(bxf,2) - locmaxY
 	
 		#print "\nAnd the proposed translations are", transx,transy
 	
@@ -2169,7 +2171,7 @@ def prjpruner( options, data ):
 		locmaxXside = locmaxside[0]
 		locmaxZside = locmaxside[1]
 	
-		transz = bxf/2 - locmaxZside
+		transz = old_div(bxf,2) - locmaxZside
 		#print "Transz is", transz
 		z=z-transz
 	
@@ -2190,7 +2192,7 @@ def prjpruner( options, data ):
 		
 			newdata.append( [newccf,x,y,z] )
 	
-			r = Region((2*x- options.boxsize)/2,(2*y-options.boxsize)/2, (2*z-options.boxsize)/2, options.boxsize, options.boxsize, options.boxsize)
+			r = Region(old_div((2*x- options.boxsize),2),old_div((2*y-options.boxsize),2), old_div((2*z-options.boxsize),2), options.boxsize, options.boxsize, options.boxsize)
 			e = EMData()
 			e.read_image(options.tomogram,0,False,r)
 	
@@ -2254,7 +2256,7 @@ def prjpruner( options, data ):
 		x=d[1]
 		y=d[2]
 		z=d[3]
-		r = Region((2*x- options.boxsize)/2,(2*y-options.boxsize)/2, (2*z-options.boxsize)/2, options.boxsize, options.boxsize, options.boxsize)
+		r = Region(old_div((2*x- options.boxsize),2),old_div((2*y-options.boxsize),2), old_div((2*z-options.boxsize),2), options.boxsize, options.boxsize, options.boxsize)
 		e = EMData()
 		e.read_image(options.tomogram,0,False,r)
 	
@@ -2282,8 +2284,8 @@ def prjpruner( options, data ):
 		maxccfpmxC=ccfpmxC.calc_max_location()
 		maxccfpmyC=ccfpmyC.calc_max_location()
 	
-		xt=(eb/2.0 - maxccfpmxC[0])/2.0
-		yt=(eb/2.0 - maxccfpmyC[1])/2.0
+		xt=old_div((old_div(eb,2.0) - maxccfpmxC[0]),2.0)
+		yt=old_div((old_div(eb,2.0) - maxccfpmyC[1]),2.0)
 
 		pfix=pprj.copy()
 		pfix.translate( xt, yt, 0)
@@ -2312,7 +2314,7 @@ def prjpruner( options, data ):
 		maxccfpmzCside=ccfpmzCside.calc_max_location()
 	
 		#xtside=(eb/2.0 - maxccfpmxCside[0])/2.0
-		ztside=(eb/2.0 - maxccfpmzCside[1])/2.0
+		ztside=old_div((old_div(eb,2.0) - maxccfpmzCside[1]),2.0)
 		#print "zt side is", ztside
 		pfixside=pprjside.copy()
 		pfixside.translate( 0, 0, ztside)
@@ -2320,7 +2322,7 @@ def prjpruner( options, data ):
 		#newx=x+xt
 		newz=z-ztside
 	
-		if math.fabs(xt) <= eb/8.0 and math.fabs(yt) <= eb/8.0 :
+		if math.fabs(xt) <= old_div(eb,8.0) and math.fabs(yt) <= old_div(eb,8.0) :
 			#newestcoords=(newx,newy,newz)
 		
 			newestccf = ccfpmy['maximum']
@@ -2335,7 +2337,7 @@ def prjpruner( options, data ):
 			#scoreset.add(newcoefftuple)
 			#newestdata.append( [newestccf,newestcoords] )
 		
-			r = Region((2*newx- options.boxsize)/2,(2*newy-options.boxsize)/2, (2*newz-options.boxsize)/2, options.boxsize, options.boxsize, options.boxsize)
+			r = Region(old_div((2*newx- options.boxsize),2),old_div((2*newy-options.boxsize),2), old_div((2*newz-options.boxsize),2), options.boxsize, options.boxsize, options.boxsize)
 			e = EMData()
 			e.read_image(options.tomogram,0,False,r)
 	

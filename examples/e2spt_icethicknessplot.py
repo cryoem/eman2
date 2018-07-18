@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import os, numpy, math, sys
@@ -155,9 +157,9 @@ def main():
 						pad = 50
 					
 				elif options.units in nunits:
-					x = x*apix/10
-					y = y*apix/10
-					z = z*apix/10
+					x = old_div(x*apix,10)
+					y = old_div(y*apix,10)
+					z = old_div(z*apix,10)
 				
 					if options.radius:
 						pad = 2*options.radius * apix/10
@@ -165,9 +167,9 @@ def main():
 						pad = 5
 					
 				elif options.units in munits:
-					x = x*apix/10000
-					y = y*apix/10000
-					z = z*apix/10000
+					x = old_div(x*apix,10000)
+					y = old_div(y*apix,10000)
+					z = old_div(z*apix,10000)
 				
 					if options.radius:
 						pad = 2*options.radius * apix/10000
@@ -221,9 +223,9 @@ def main():
 						pad = 50
 			
 				elif options.units in nunits:
-					x = x*apix/10
-					y = y*apix/10
-					z = z*apix/10
+					x = old_div(x*apix,10)
+					y = old_div(y*apix,10)
+					z = old_div(z*apix,10)
 				
 					if options.radius:
 						pad = 2*options.radius * apix/10
@@ -232,9 +234,9 @@ def main():
 					
 					
 				elif options.units in munits:
-					x = x*apix/10000
-					y = y*apix/10000
-					z = z*apix/10000
+					x = old_div(x*apix,10000)
+					y = old_div(y*apix,10000)
+					z = old_div(z*apix,10000)
 				
 					if options.radius:
 						pad = 2*options.radius * apix/10000
@@ -610,7 +612,7 @@ def plotter(options,xaxis,yaxis,xaxislabel,yaxislabel,title,pad=0,squareplot=Fal
 		
 	if options.plotparticleradii:
 		if options.radius:
-			rad = pad/2		#this should be at the proper scale already from main function
+			rad = old_div(pad,2)		#this should be at the proper scale already from main function
 			
 			axes = pylab.axes()
 			

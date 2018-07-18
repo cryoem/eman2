@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # This is a simple example showing how to generate a histogram from a text file
 # specify the filename and column number with an optional number of bins, column number 0 indexed
 # Note that outliers are filtered out (>sigma*4 twice)
+from past.utils import old_div
 from EMAN2 import *
 from numpy import *
 from sys import argv,exit
@@ -86,8 +88,8 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 	if options.verbose:
 		lz=len(col[col<0])
 		gz=len(col[col>0])
-		print("%1.2f (%d) less than zero"%(float(lz)/(lz+gz),lz))
-		print("%1.2f (%d) less than zero"%(float(gz)/(lz+gz),gz))
+		print("%1.2f (%d) less than zero"%(old_div(float(lz),(lz+gz)),lz))
+		print("%1.2f (%d) less than zero"%(old_div(float(gz),(lz+gz)),gz))
 
 	his=histogram(col,options.bins)
 

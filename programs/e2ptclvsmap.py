@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 10/31/14 (sludtke@bcm.edu)
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -98,11 +100,11 @@ gold-standard refinement."""
 			img1 = EMData(options.input,0,True)
 			img3 = EMData(options.model,0,True)
 			try:
-				scale=img3["apix_x"]/img1["apix_x"]
+				scale=old_div(img3["apix_x"],img1["apix_x"])
 				print("Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale))
 			except:
 				print("A/pix unknown, assuming scale same as relative box size")
-				scale=float(xsize)/xsize3d
+				scale=old_div(float(xsize),xsize3d)
 			if scale>1 : cmd="e2proc3d.py %s %s/scaled_model.hdf --clip=%d,%d,%d --scale=%1.5f"%(options.model,options.path,xsize,xsize,xsize,scale)
 			else :       cmd="e2proc3d.py %s %s/scaled_model.hdf --scale=%1.5f --clip=%d,%d,%d"%(options.model,options.path,scale,xsize,xsize,xsize)
 			run(cmd)
@@ -163,7 +165,7 @@ gold-standard refinement."""
 			# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 			ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,iptcl],"mirror":int(cmxmirror[0,iptcl]),"tx":cmxtx[0,iptcl],"ty":cmxty[0,iptcl]})
 			ptclx=ptcl.process("xform",{"transform":ptclxf})
-			ptclx.process_inplace("mask.sharp",{"outer_radius":ptcl["ny"]/2.5})
+			ptclx.process_inplace("mask.sharp",{"outer_radius":old_div(ptcl["ny"],2.5)})
 			c=ptclx.cmp("optsub",ref,{"maxres":18.0})
 			if options.filterout : ptclx=ref.process("math.sub.optimal",{"return_subim":1,"ref":ptclx})
 

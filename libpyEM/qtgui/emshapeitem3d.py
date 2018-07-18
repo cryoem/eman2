@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 #
 # Author: Grant Tang (gtang@bcm.edu)
 # Author: John Flanagan (jfflanag@bcm.edu)
@@ -34,6 +35,7 @@ from __future__ import absolute_import
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from .emglobjects import init_glut, get_default_gl_colors
@@ -216,7 +218,7 @@ class EMRuler(EMShapeBase):
 		# Compute bars using parametric equations, and vector
 		angle = -math.atan2((y2-y1),(x2-x1))
 		if self.getLength() > 0:
-			self.direction = [(x2-x1)/self.getLength(), (y2-y1)/self.getLength(), (z2-z1)/self.getLength()]
+			self.direction = [old_div((x2-x1),self.getLength()), old_div((y2-y1),self.getLength()), old_div((z2-z1),self.getLength())]
 		else:
 			self.direction = [0.0,0.0,0.0]
 		self.rsinO = self.barwidth*math.sin(angle)
@@ -244,8 +246,8 @@ class EMRuler(EMShapeBase):
 		glVertex3f(self.xf+self.rsinO, self.yf+self.rcosO, self.zf)
 		glVertex3f(self.xf-self.rsinO, self.yf-self.rcosO, self.zf)
 		for i in self.smallbars:
-			glVertex3f(self.xi+i[0]+self.rsinO/2.0, self.yi+i[1]+self.rcosO/2.0, self.zf)
-			glVertex3f(self.xi+i[0]-self.rsinO/2.0, self.yi+i[1]-self.rcosO/2.0, self.zf)
+			glVertex3f(self.xi+i[0]+old_div(self.rsinO,2.0), self.yi+i[1]+old_div(self.rcosO,2.0), self.zf)
+			glVertex3f(self.xi+i[0]-old_div(self.rsinO,2.0), self.yi+i[1]-old_div(self.rcosO,2.0), self.zf)
 		glEnd()	# Done Drawing The Cube
 		
 class EMCube(EMShapeBase):
@@ -286,12 +288,12 @@ class EMCube(EMShapeBase):
 	def setSize(self, size):
 		self.size = size
 		self.boundingboxsize = str(round(size, 2))+u'\u00B3'
-		self.xi = -size/2
-		self.yi = -size/2
-		self.zi = -size/2
-		self.xf = size/2
-		self.yf = size/2
-		self.zf = size/2
+		self.xi = old_div(-size,2)
+		self.yi = old_div(-size,2)
+		self.zi = old_div(-size,2)
+		self.xf = old_div(size,2)
+		self.yf = old_div(size,2)
+		self.zf = old_div(size,2)
 		if self.item_inspector: self.item_inspector.updateMetaData()
 		
 	def getEvalString(self):
@@ -544,7 +546,7 @@ class EMCylinder(EMShapeBase):
 		gluQuadricDrawStyle(quadratic, GLU_FILL)
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
-		glTranslatef( 0,0,-self.height/2)
+		glTranslatef( 0,0,old_div(-self.height,2))
 		gluCylinder(quadratic,self.radius,self.radius,self.height,self.slices,self.stacks)
 		gluQuadricOrientation(quadratic,GLU_INSIDE)
 		gluDisk( quadratic, 0.0, self.radius, self.slices, 1)
@@ -618,8 +620,8 @@ class EMLine(EMShapeBase):
 		self.y2 = y2
 		self.z2 = z2
 		self.width = width
-		self.slices = int(width/2)
-		self.stacks = int(width/2)
+		self.slices = int(old_div(width,2))
+		self.stacks = int(old_div(width,2))
 		
 		#arrow size
 		dx = self.x1 - self.x2
@@ -628,9 +630,9 @@ class EMLine(EMShapeBase):
 		self.length = math.sqrt(dx*dx + dy*dy + dz*dz)	#cylinder length
 		if comparrows: 
 			self.leftArrowSize = self.width
-			self.leftArrowLength = self.length/10.0
+			self.leftArrowLength = old_div(self.length,10.0)
 			self.rightArrowSize = self.width
-			self.rightArrowLength = self.length/10.0
+			self.rightArrowLength = old_div(self.length,10.0)
 		self.boundingboxsize = 'length='+str(round(self.length, 2))+', width='+str(round(self.width, 2))
 		
 		if self.item_inspector: self.item_inspector.updateMetaData()	
@@ -644,7 +646,7 @@ class EMLine(EMShapeBase):
 		if slices>0:
 			self.slices = int(slices)
 		else:
-			self.slices = int(self.width/2)
+			self.slices = int(old_div(self.width,2))
 	
 	def setWidth(self, width):
 		self.width = width
@@ -653,7 +655,7 @@ class EMLine(EMShapeBase):
 		if stacks>0:
 			self.stacks = int(stacks)
 		else:
-			self.stacks = int(self.width/2)
+			self.stacks = int(old_div(self.width,2))
 	
 	def getEvalString(self):
 		return "EMLine(%s, %s, %s, %s, %s, %s, %s)"%(self.x1, self.y1, self.z1, self.x2, self.y2,self.z2, self.width)
@@ -707,7 +709,7 @@ class EMLine(EMShapeBase):
 		self.setWidth(dictionary["LINEPARS"][8])	
 			
 	def renderShape(self):
-		r2d = 180.0/math.pi
+		r2d = old_div(180.0,math.pi)
 				
 		glPushMatrix()
 		glTranslatef(self.x1, self.y1, self.z1)
@@ -725,7 +727,7 @@ class EMLine(EMShapeBase):
 		if vz == 0:
 			ax = r2d*math.atan2(vy, vx) # Find trig, John F
 		else:
-			ax = r2d*math.acos(vz/self.length)
+			ax = r2d*math.acos(old_div(vz,self.length))
 			if vz<=0: ax = -ax
 
 		if vz==0:
@@ -746,7 +748,7 @@ class EMLine(EMShapeBase):
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
 		#glTranslatef( 0,0,-self.length/2)			# Do we want the line to be centered on the origin?
-		gluCylinder(quadratic,self.width/2,self.width/2,self.length,self.slices,self.stacks)
+		gluCylinder(quadratic,old_div(self.width,2),old_div(self.width,2),self.length,self.slices,self.stacks)
 		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
 		glTranslatef( 0,0,-self.leftArrowLength)
 		if self.showLeftArrow:
@@ -828,7 +830,7 @@ class EMCone(EMShapeBase):
 		gluQuadricDrawStyle(quadratic, GLU_FILL)
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
-		glTranslatef( 0,0,-self.height/2)
+		glTranslatef( 0,0,old_div(-self.height,2))
 		gluCylinder(quadratic,0,self.radius,self.height,self.slices,self.stacks)
 		glPushMatrix()
 		glTranslatef( 0,0,self.height)
@@ -953,7 +955,7 @@ class EM3DText(EMShapeBase):
 		
 		#make 3D text rotate at the center
 		tvar = self.font_renderer.bounding_box(self.renderString)
-		glTranslate((tvar[0]-tvar[3])/2,(tvar[1]-tvar[4])/2,-(tvar[2]-tvar[5])/2)
+		glTranslate(old_div((tvar[0]-tvar[3]),2),old_div((tvar[1]-tvar[4]),2),old_div(-(tvar[2]-tvar[5]),2))
 		
 		self.font_renderer.render_string(self.renderString)
 		glPopMatrix()
@@ -1045,19 +1047,19 @@ class EMInspectorControlShape(EMItem3DInspector):
 	def _on_ambient_color(self, color):
 		rgb = color.getRgb()
 		if self.item3d():
-			self.item3d().setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+			self.item3d().setAmbientColor((old_div(float(rgb[0]),255.0)),(old_div(float(rgb[1]),255.0)),(old_div(float(rgb[2]),255.0)))
 			self.inspector().updateSceneGraph()
 		
 	def _on_diffuse_color(self, color):
 		rgb = color.getRgb()
 		if self.item3d():
-			self.item3d().setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+			self.item3d().setDiffuseColor((old_div(float(rgb[0]),255.0)),(old_div(float(rgb[1]),255.0)),(old_div(float(rgb[2]),255.0)))
 			self.inspector().updateSceneGraph()
 		
 	def _on_specular_color(self, color):
 		rgb = color.getRgb()
 		if self.item3d():	
-			self.item3d().setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+			self.item3d().setSpecularColor((old_div(float(rgb[0]),255.0)),(old_div(float(rgb[1]),255.0)),(old_div(float(rgb[2]),255.0)))
 			self.inspector().updateSceneGraph()
 		
 	def _on_shininess(self, shininess):

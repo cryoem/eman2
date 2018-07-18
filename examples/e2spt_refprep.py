@@ -34,6 +34,8 @@
 #
 
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from EMAN2 import *
 from EMAN2_utils import *
 import math
@@ -181,21 +183,21 @@ def main():
 		refinement with two independent halves using the specified number of particles
 		for initial model generation --hacref=%d. Therefore, --hacref will be reset
 		to --subset/2.""" %( options.subset, options.hacref ))				
-		options.hacref = options.subset / 2			
+		options.hacref = old_div(options.subset, 2)			
 
 	elif options.ssaref and options.subset < options.ssaref * 2:		
 		print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
 		refinement with two independent halves using the specified number of particles
 		for initial model generation --ssaref=%d. Therefore, --ssaref will be reset
 		to --subset/2.""" %( options.subset, options.ssaref ))
-		options.ssaref = options.subset / 2	
+		options.ssaref = old_div(options.subset, 2)	
 
 	elif options.btref and options.subset < options.btref * 2:			
 		print("""WARNING: --subset=%d wasn't large enough to accommodate gold standard
 		refinement with two independent halves using the specified number of particles
 		for initial model generation --btref=%d. Therefore, --btref has been reset
 		to --subset/2.""" %( options.subset, options.btref ))
-		options.btref = options.subset / 2
+		options.btref = old_div(options.subset, 2)
 		
 	refsdict = sptRefGen( options, ptclnumsdict, cmdwp )
 		
@@ -312,7 +314,7 @@ def func_refrandphase(options,klassidref,klassnum):
 		ref['apix_z'] = options.apix
 	
 	if int(options.refrandphase) > 0:
-		filterfreq =  1.0/float( options.refrandphase )
+		filterfreq =  old_div(1.0,float( options.refrandphase ))
 		ref.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":filterfreq,"apix":ref['apix_x']})
 				
 		refrandphfile = options.path + '/' + os.path.basename( options.ref ).replace('.hdf','_randPH' + klassidref +'.hdf')

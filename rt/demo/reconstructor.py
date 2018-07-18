@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from EMAN2 import *
 import math
 
@@ -45,7 +47,7 @@ r = Reconstructors.get("back_projection")
 r.set_params({"size":100, "weight":1})
 r.setup()
 r.insert_slice(e1, Transform(EULER_EMAN, 0,0,0))
-r.insert_slice(e2, Transform(EULER_EMAN, math.pi/2,0,0))
+r.insert_slice(e2, Transform(EULER_EMAN, old_div(math.pi,2),0,0))
 
 result = r.finish()
 result.write_image("reconstructor.mrc")

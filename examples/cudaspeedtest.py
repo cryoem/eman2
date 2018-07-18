@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: David Woolford March 2nd 2009
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 import EMAN2
 from EMAN2 import *
@@ -67,7 +69,7 @@ def test_main():
 		for i in test_range:
 			a[i%2].process_inplace("math.rotate.180")
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])
 	
 	
 	print("ri2ap / ap2ri")
@@ -103,9 +105,9 @@ def test_main():
 			car+=time()
 
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
-		print("RIAP\t",cra/gra,"\t",cra,"\t",gra)
-		print("APRI\t",car/gar,"\t",car,"\t",gar)
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print("RIAP\t",old_div(cra,gra),"\t",cra,"\t",gra)
+		print("APRI\t",old_div(car,gar),"\t",car,"\t",gar)
 		print("~overhead \t\t",cpu_times[-1]-(cra+car),"\t",gpu_times[-1]-(gra+gar))
 		
 	print("\nthreshold.binary.fourier")
@@ -125,7 +127,7 @@ def test_main():
 		for i in test_range:
 			b=a[i%2].process("threshold.binary.fourier",{"value":1})
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 	
 	print("Testing Fourier correlation (2D) NO TEXTURE")
 	print("Dims","\t", "GPU speedup")
@@ -144,7 +146,7 @@ def test_main():
 		for i in test_range:
 			c = a.calc_ccf(b,fp_flag.CIRCULANT,0)
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 		
 	print("Testing Fourier correlation (2D) TEXTURE")
 	print("Dims","\t", "GPU speedup")
@@ -163,7 +165,7 @@ def test_main():
 		for i in test_range:
 			c = a.calc_ccf(b,fp_flag.CIRCULANT,1)
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 	
 	test_range = list(range(10))
 	print("Testing Fourier correlation (3D) NO TEXTURE")
@@ -183,7 +185,7 @@ def test_main():
 		for i in test_range:
 			c = a.calc_ccf(b,fp_flag.CIRCULANT,1)
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 		
 	print("Testing Fourier correlation (3D) TEXTURE")
 	print("Dims","\t", "GPU speedup")
@@ -202,7 +204,7 @@ def test_main():
 		for i in test_range:
 			c = a.calc_ccf(b,fp_flag.CIRCULANT,1)
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 	
 	
 	
@@ -273,7 +275,7 @@ def test_main():
 		for i in test_range:
 			b = a[i%2].process("xform",{"transform":tr})
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])
 		
 	print("Testing transform (3D)")
 	for dims in test_dims_3d:
@@ -293,7 +295,7 @@ def test_main():
 		for i in range(10):
 			b = a[i%2].process("xform",{"transform":tr})
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])
 	
 	print("Testing calc_ccfx")
 	print("Dims","\t", "GPU speedup")
@@ -317,7 +319,7 @@ def test_main():
 			#b.print_this()
 			#c.print_this()
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])
 	
 	print("Testing calc_ccfx column sum")
 	print("Dims","\t", "GPU speedup")
@@ -335,7 +337,7 @@ def test_main():
 			c = a[i%2].calc_ccfx(a[i%2])
 
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])
 	
 	print("Testing get_clip, lose edge pixels")
 	print("Dims","\t", "GPU speedup")
@@ -354,7 +356,7 @@ def test_main():
 			b = a[i%2].get_clip(r)
 			
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])
 		
 	
 	
@@ -374,7 +376,7 @@ def test_main():
 		for i in test_range:
 			a.process_inplace("xform.phaseorigin.tocenter")
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])
 	
 	
 	print("Testing make rotational footprint")
@@ -394,7 +396,7 @@ def test_main():
 		for i in test_range:
 			c = a[i%2].make_rotational_footprint_e1()
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])
 	
 	print("Testing unwrap")
 	print("Dims","\t", "GPU speedup")
@@ -413,7 +415,7 @@ def test_main():
 		for i in test_range:
 			c = a.unwrap()
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])
 	
 	print("Testing pixel multiplication by a constant (3D)")
 	print("Dims","\t", "GPU speedup")
@@ -432,7 +434,7 @@ def test_main():
 			a.mult(2.0)
 			a.mult(0.5)
 		cpu_time = time()-t
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 	
 	print("Testing pixel multiplication by a constant (2D)")
 	print("Dims","\t", "GPU speedup")
@@ -451,7 +453,7 @@ def test_main():
 			a.mult(2.0)
 			a.mult(0.5)
 		cpu_time = time()-t
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 
 	print("Testing FFT (2D)")
 	print("Dims","\t", "GPU speedup")
@@ -469,7 +471,7 @@ def test_main():
 			#a = aa.copy()
 			b = a.do_fft()
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 		
 	print("Testing IFT (2D)")
 	print("Dims","\t", "GPU speedup")
@@ -487,7 +489,7 @@ def test_main():
 		for i in test_range:
 			c = b.do_ift()
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 
 	print("Testing FFT/IFT (2D)")
 	print("Dims","\t", "GPU speedup")
@@ -507,7 +509,7 @@ def test_main():
 			b = a.do_fft()
 			c = b.do_ift()
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 
 		
 	#print "Testing Fourier correlation (2D) NO TEXTURE - 853x1272"
@@ -566,7 +568,7 @@ def test_main():
 		for i in test_range:
 			p = a.project("standard",trans)
 		cpu_times.append(time()-t)
-		print(dims,"\t", cpu_times[-1]/gpu_times[-1],'\t',cpu_times[-1],'\t',gpu_times[-1])	
+		print(dims,"\t", old_div(cpu_times[-1],gpu_times[-1]),'\t',cpu_times[-1],'\t',gpu_times[-1])	
 
 if __name__ == '__main__':
 	if EMUtil.cuda_available(): test_main()

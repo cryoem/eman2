@@ -30,6 +30,8 @@
 #
 #
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -89,8 +91,8 @@ def main():
 				a.write_image(stack,i)
 		
 		if options.averagestats:
-			meanavg = sum(means)/len(means)
-			sigmaavg = sum(sigmas)/len(sigmas)
+			meanavg = old_div(sum(means),len(means))
+			sigmaavg = old_div(sum(sigmas),len(sigmas))
 			
 			print("The average mean and sigma for the wedges in the stack are", meanavg, sigmaavg)
 			for i in range(n):
@@ -245,7 +247,7 @@ class MissingWedgeViewer(QtGui.QWidget):
 		#self.addData(vfft,"wedge")
 		#self.addData(wedge,"wedegy")
 		
-		wedge.process_inplace('xform',{'transform':Transform({'type':'eman','tx':wedge.get_xsize()/2, 'ty':wedge.get_ysize()/2,'tz':wedge.get_zsize()/2})})
+		wedge.process_inplace('xform',{'transform':Transform({'type':'eman','tx':old_div(wedge.get_xsize(),2), 'ty':old_div(wedge.get_ysize(),2),'tz':old_div(wedge.get_zsize(),2)})})
 		w2 = wedge.process('xform.mirror',{'axis':'x'}) + wedge
 		wholewedge = w2.process('xform.mirror',{'axis':'y'}) + w2
 		self.wedgedata = self.addData(wholewedge,"Computed Wedge", [0.0625,0.8555,0.9453])

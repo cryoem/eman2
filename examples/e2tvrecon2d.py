@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # 
 # Author: James Michael Bell, 2014 (jmbell@bcm.edu)
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 2111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import os
@@ -294,16 +296,16 @@ def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, of
 	if l_det is None:
 		l_det = l_x
 	X, Y = _generate_center_coordinates(subpix*l_x)
-	X *= 1./subpix
-	Y *= 1./subpix
+	X *= old_div(1.,subpix)
+	Y *= old_div(1.,subpix)
 	Xbig, Ybig = _generate_center_coordinates(l_det)
-	Xbig *= (l_x - 2*offset) / float(l_det)
+	Xbig *= old_div((l_x - 2*offset), float(l_det))
 	orig = Xbig.min()
 	labels = None
 	if subpix > 1:
 		# Block-group subpixels
 		Xlab, Ylab = np.mgrid[:subpix * l_x, :subpix * l_x]
-		labels = (l_x * (Xlab / subpix) + Ylab / subpix).ravel()
+		labels = (l_x * (old_div(Xlab, subpix)) + old_div(Ylab, subpix)).ravel()
 	if n_dir is None:
 		n_dir = l_x
 	weights, data_inds, detector_inds = [], [], []
@@ -313,7 +315,7 @@ def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, of
 		# rotate data pixels centers
 		Xrot = np.cos(angle*np.pi/180.) * X - np.sin(angle*np.pi/180.) * Y
 		# compute linear interpolation weights
-		inds, dat_inds, w = _weights_fast(Xrot, dx=(l_x - 2*offset)/float(l_det), orig=orig, labels=labels)
+		inds, dat_inds, w = _weights_fast(Xrot, dx=old_div((l_x - 2*offset),float(l_det)), orig=orig, labels=labels)
 		# crop projections outside the detector
 		mask = np.logical_and(inds >= 0, inds < l_det)
 		weights.append(w[mask])
@@ -342,7 +344,7 @@ def _generate_center_coordinates(l_x):
 	"""
 	l_x = float(l_x)
 	X, Y = np.mgrid[:l_x, :l_x]
-	center = l_x / 2.
+	center = old_div(l_x, 2.)
 	X += 0.5 - center
 	Y += 0.5 - center
 	return X, Y
@@ -355,8 +357,8 @@ def _weights_fast(x, dx=1, orig=0, labels=None):
 	starting at `orig`.
 	"""
 	x = np.ravel(x)
-	floor_x = np.floor((x - orig) / dx).astype(np.int32)
-	alpha = ((x - orig - floor_x * dx) / dx).astype(np.float32)
+	floor_x = np.floor(old_div((x - orig), dx)).astype(np.int32)
+	alpha = (old_div((x - orig - floor_x * dx), dx)).astype(np.float32)
 	inds = np.hstack((floor_x, floor_x + 1))
 	weights = np.hstack((1 - alpha, alpha))
 	data_inds = np.arange(x.size, dtype=np.int32)
@@ -450,7 +452,7 @@ def fista_tv(options, angles, y, beta, niter, H, verbose=0, mask=None):
 	Ht = sparse.csr_matrix(H.transpose())
 	x0 = np.zeros(n_pix)[:, np.newaxis]
 	res, energies = [], []
-	gamma = .9/ (l * n_angles)
+	gamma = old_div(.9, (l * n_angles))
 	x = x0
 	u_old = np.zeros((l, l))
 	t_old = 1
@@ -467,7 +469,7 @@ def fista_tv(options, angles, y, beta, niter, H, verbose=0, mask=None):
 		else:
 			tmp2d = tmp.reshape((l, l))
 		u_n = tv_denoise_fista(tmp2d, weight=beta*gamma, eps=eps)
-		t_new = (1 + np.sqrt(1 + 4 * t_old**2))/2.
+		t_new = old_div((1 + np.sqrt(1 + 4 * t_old**2)),2.)
 		t_old = t_new
 		x = u_n + (t_old - 1)/t_new * (u_n - u_old)
 		u_old = u_n
@@ -548,11 +550,11 @@ def tv_denoise_fista(im, weight=50, eps=5.e-5, n_iter_max=200, check_gap_frequen
 	while i < n_iter_max:
 		error = weight * div(grad_aux) - im
 		grad_tmp = gradient(error)
-		grad_tmp *= 1./ (8 * weight)
+		grad_tmp *= old_div(1., (8 * weight))
 		grad_aux += grad_tmp
 		grad_tmp = _projector_on_dual(grad_aux)
 		t_new = 1. / 2 * (1 + np.sqrt(1 + 4 * t**2))
-		t_factor = (t - 1) / t_new
+		t_factor = old_div((t - 1), t_new)
 		grad_aux = (1 + t_factor) * grad_tmp - t_factor * grad_im
 		grad_im = grad_tmp
 		t = t_new

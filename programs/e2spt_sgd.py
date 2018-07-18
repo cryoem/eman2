@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-04
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -229,7 +231,7 @@ def main():
 			rs=fsc[fsc[:,1]<0.3, 0]
 			if len(rs)>0: rs=rs[0]
 			else: rs=options.filterto
-			print("Resolution (FSC<0.3) is ~{:.1f} A".format(1./rs))
+			print("Resolution (FSC<0.3) is ~{:.1f} A".format(old_div(1.,rs)))
 			filterto=min(rs, options.filterto)
 
 	#ref.write_image(os.path.join(path,"output.hdf"))
@@ -263,7 +265,7 @@ def sym_search(e, sym):
 	return a
 
 def sym_ali(e,o,sym,jsd):
-	s=e["nx"]/4
+	s=old_div(e["nx"],4)
 	a=e.align("symalignquat", e, {"sym":sym, "xform.align3d":o,"maxshift":s}, "ccc.tomo.thresh")
 	jsd.put(a)
 
@@ -305,7 +307,7 @@ def make_ref(fname, options):
 
 			if ep["apix_x"]!=er["apix_x"]:
 				if i==0: print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
-				rs=er["apix_x"]/ep["apix_x"]
+				rs=old_div(er["apix_x"],ep["apix_x"])
 
 				if rs>1.:
 					run("e2proc3d.py {} {}/ref.hdf --clip {} --scale {} {}".format(options.reference, options.path, ep["nx"], rs, pp))

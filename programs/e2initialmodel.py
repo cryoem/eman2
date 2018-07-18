@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 11/30/2008 (ludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import random
@@ -205,7 +207,7 @@ class InitMdlTask(JSTask):
 
 		# This is the refinement loop
 		for it in range(options["iter"]):
-			if progress != None: progress(it*100/options["iter"])
+			if progress != None: progress(old_div(it*100,options[iter]))
 			if verbose>0 : print("Iteration %d"%it)
 #			if options.savemore : threed[it].write_image("imdl.%02d.%02d.mrc"%(t,it))
 			projs=[(threed[it].project("standard",ort),None) for ort in orts]		# projections
@@ -217,7 +219,7 @@ class InitMdlTask(JSTask):
 			bslst=[]
 			quals=[]
 			for i in range(len(ptcls)):
-				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
+				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{"maxshift":old_div(boxsize,5)}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
 				bs=min(sim)
 #				print bs[0]
 				bss+=bs[0]
@@ -232,7 +234,7 @@ class InitMdlTask(JSTask):
 			bslst.reverse()
 			aptcls=[]
 #			for i in range(len(ptcls)*3/4):		# We used to include 3/4 of the particles
-			for i in range(len(ptcls)*7/8):
+			for i in range(old_div(len(ptcls)*7,8)):
 				n=ptcls[bslst[i][1]]["match_n"]
 				quals.append(ptcls[bslst[i][1]]["match_qual"])
 				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n][0],{},"ccc",{}))
@@ -243,13 +245,13 @@ class InitMdlTask(JSTask):
 			bss/=len(ptcls)
 
 			# 3-D reconstruction
-			pad=good_size(boxsize*3/2)
+			pad=good_size(old_div(boxsize*3,2))
 			recon=Reconstructors.get("fourier", {"sym":options["sym"],"size":[pad,pad,pad]})
 
 			# insert slices into initial volume
 			recon.setup()
 			for p in aptcls:
-				p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+				p2=p.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 				p3=recon.preprocess_slice(p2,p["xform.projection"])
 				recon.insert_slice(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0))
 
@@ -281,11 +283,11 @@ class InitMdlTask(JSTask):
 			if verbose>1 : print("Iter %d \t %1.4g (%1.4g)"%(it,bss,qual))
 
 			threed[-1].process_inplace("xform.centerofmass")
-			threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+			threed[-1]=threed[-1].get_clip(Region(old_div((pad-boxsize),2),old_div((pad-boxsize),2),old_div((pad-boxsize),2),boxsize,boxsize,boxsize))
 			threed[-1].process_inplace("normalize.edgemean")
-			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
+			threed[-1].process_inplace("mask.gaussian",{"inner_radius":old_div(boxsize,3.0),"outer_radius":old_div(boxsize,12.0)})
 			threed[-1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":threed[-1]["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
+			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":old_div(boxsize,6),"threshold":threed[-1]["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":old_div(boxsize,20),"nshellsgauss":old_div(boxsize,20)})
 			if mask2!=None:threed[-1].mult(mask2)
 			threed[-1]["apix_x"]=apix
 			threed[-1]["apix_y"]=apix
@@ -322,7 +324,7 @@ def make_random_map(boxsize,sfcurve=None):
 	ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 	ret.process_inplace("xform.centerofmass",{})
 #	ret.process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
-	ret.process_inplace("mask.gaussian.nonuniform",{"radius_x":boxsize/random.uniform(2.0,5.0),"radius_y":boxsize/random.uniform(2.0,5.0),"radius_z":boxsize/random.uniform(2.0,5.0)})
+	ret.process_inplace("mask.gaussian.nonuniform",{"radius_x":old_div(boxsize,random.uniform(2.0,5.0)),"radius_y":old_div(boxsize,random.uniform(2.0,5.0)),"radius_z":old_div(boxsize,random.uniform(2.0,5.0))})
 
 	return ret
 
@@ -332,19 +334,19 @@ def make_random_map_byort(ptcls):
 	boxsize=ptcls[0]["ny"]
 	
 	# 3-D reconstruction
-	pad=good_size(boxsize*3/2)
+	pad=good_size(old_div(boxsize*3,2))
 	recon=Reconstructors.get("fourier", {"sym":"c1","size":[pad,pad,pad]})
 
 	# insert slices into initial volume
 	recon.setup()
 	for p in ptcls:
-		p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+		p2=p.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 		p3=recon.preprocess_slice(p2,Transform())
 #		recon.insert_slice(p3,Transform({"type":"spin","n1":random.uniform(-1.0,1.0),"n2":random.uniform(-1.0,1.0),"n3":random.uniform(-1.0,1.0),"omega":random.uniform(0,360.0)}),p.get_attr_default("ptcl_repr",1.0))
 		recon.insert_slice(p3,Transform({"type":"spin","n1":random.uniform(-1.0,1.0),"n2":random.uniform(-1.0,1.0),"n3":random.uniform(-1.0,1.0),"omega":random.uniform(0,360.0)}),1.0)
 
 	ret=recon.finish(True)
-	ret.clip_inplace(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
+	ret.clip_inplace(Region(old_div((pad-boxsize),2),old_div((pad-boxsize),2),old_div((pad-boxsize),2),boxsize,boxsize,boxsize))
 	ret.process_inplace("normalize.edgemean")
 	return ret
 
@@ -360,7 +362,7 @@ def apply_sym(data,sym):
 		dc=ref.copy()
 		dc.transform(xf.get_sym(sym,i))
 		data.add(dc)
-	data.mult(1.0/nsym)
+	data.mult(old_div(1.0,nsym))
 
 
 if __name__ == "__main__":

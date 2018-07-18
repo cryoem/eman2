@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steve Ludtke, 2/1/2011 (stevel@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 # using a selected comparator
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
@@ -63,8 +65,8 @@ def main():
 	(options, args) = parser.parse_args()
 
 	cmpopt=parsemodopt(options.cmp)
-	nxy=int(options.xy0/options.dxy)*2+1
-	nz=int(360.0/options.dalpha)-1
+	nxy=int(old_div(options.xy0,options.dxy))*2+1
+	nz=int(old_div(360.0,options.dalpha))-1
 
 	im1=EMData(args[0],int(args[1]))
 	im2=EMData(args[2],int(args[3]))

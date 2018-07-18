@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -158,9 +160,9 @@ def main():
 		clsmx[i].set_size(1,ysize)
 		for j in range(clsmx[i].get_ysize()):
 			if(j%2==0): #even
-				clsmx[i].set_value_at(0,j,clsmx_even[i].get_value_at(0,j/2))
+				clsmx[i].set_value_at(0,j,clsmx_even[i].get_value_at(0,old_div(j,2)))
 			else: #odd
-				clsmx[i].set_value_at(0,j,clsmx_odd[i].get_value_at(0,(j-1)/2))
+				clsmx[i].set_value_at(0,j,clsmx_odd[i].get_value_at(0,old_div((j-1),2)))
 			
 		
 		clsmx[i].write_image("%s/classify.hdf"%(options.output),i)
@@ -187,7 +189,7 @@ def main():
 			if ( launch_childprocess(get_classaverage_cmd(options)) != 0 ):
 				print("Failed to execute %s" %get_classaverage_cmd(options))
 				sys.exit(1)
-			E2progress(logid,(mod*2.0+1)/nprogress)
+			E2progress(logid,old_div((mod*2.0+1),nprogress))
 			
 			# deal with shrink3d
 			if options.shrink3d : 
@@ -205,7 +207,7 @@ def main():
 			if ( launch_childprocess(get_make3d_cmd(options)) != 0 ):
 				print("Failed to execute %s" %get_make3d_cmd(options))
 				sys.exit(1)
-			E2progress(logid,(mod*2.0+2.0)/nprogress)
+			E2progress(logid,old_div((mod*2.0+2.0),nprogress))
 
 			# enforce symmetry
 			if options.sym.lower()!="c1" :
@@ -242,7 +244,7 @@ def main():
 
 
 		if options.reslimit>0 :
-			cur_map.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1.0/options.reslimit})
+			cur_map.process_inplace("filter.lowpass.tophat",{"cutoff_freq":old_div(1.0,options.reslimit)})
 		cur_map.process_inplace("normalize.edgemean")
 		cur_map.mult(mask)
 	
@@ -258,11 +260,11 @@ def main():
 		
 	# Ok, all done, now compute the mean and standard deviation. The mean map should look nearly identical to
 	# the original results from the same iteration
-	mean_map.mult(1.0/options.nmodels)
+	mean_map.mult(old_div(1.0,options.nmodels))
 	mean_map.write_image("%s/threed_mean.hdf"%(options.output),0)
 	
 	# Now compute the variance from the two maps
-	sqr_map.mult(1.0/options.nmodels)			# pixels are mean of x^2
+	sqr_map.mult(old_div(1.0,options.nmodels))			# pixels are mean of x^2
 	mean_map.process_inplace("math.squared")	
 	sqr_map.sub(mean_map)						
 	
@@ -275,7 +277,7 @@ def main():
 	
 	w=weight.copy()
 	# A line along Z
-	for i in range(0,nz): w[nx/2,ny/2,i]=1.0
+	for i in range(0,nz): w[old_div(nx,2),old_div(ny,2),i]=1.0
 
 	# replicate the line under symmetry
 	t=Transform()
@@ -289,13 +291,13 @@ def main():
 
 	# This filters the duplication map similarly to the actual map, approximating the exaggeration in variance
 	if options.m3dpostprocess :
-		tv=weight[nx/2,ny/2,nz/4]
+		tv=weight[old_div(nx,2),old_div(ny,2),old_div(nz,4)]
 		(processorname, param_dict) = parsemodopt(options.m3dpostprocess)
 		weight.process_inplace(processorname, param_dict)
 	
 		# Now this is a bit tricky to argue. Along the axis we have n-fold redundancy, so that will define our normalization
 		# so, we  a point 1/2 way up the Z axis to its value before filtration. 1/2 way up Z is to deal with things like icosahedral symmetry reasonably
-		if weight[nx/2,ny/2,nz/4]>1.0 : rescale=(tv-1.0)/(weight[nx/2,ny/2,nz/4]-1.0)
+		if weight[old_div(nx,2),old_div(ny,2),old_div(nz,4)]>1.0 : rescale=old_div((tv-1.0),(weight[old_div(nx,2),old_div(ny,2),old_div(nz,4)]-1.0))
 		else : rescale=1.0
 #		print rescale
 		
@@ -314,7 +316,7 @@ def main():
 	# Finally write the result
 	sqr_map.write_image("%s/threed_variance.hdf"%(options.output),0)
 	
-	E2progress(logid,nprogress/nprogress)
+	E2progress(logid,old_div(nprogress,nprogress))
 	
 	E2end(logid)
 

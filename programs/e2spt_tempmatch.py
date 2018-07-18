@@ -2,6 +2,8 @@
 # Muyuan Chen 2018-04
 
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -89,7 +91,7 @@ def main():
 		pts=[]
 		vthr=np.mean(ccf)+np.std(ccf)*options.vthr
 		
-		dthr=options.dthr/4
+		dthr=old_div(options.dthr,4)
 		scr=[]
 		#print vthr,cc.shape
 		for i in range(len(asrt)):

@@ -1,7 +1,9 @@
 # proj_complete_test.py		Steven Ludtke	6/2013
 from __future__ import print_function
+from __future__ import division
 # this program will generate various numbers of projections and then test completeness in Fourier space during reconstruction with a specified reconstructor
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 
@@ -21,7 +23,7 @@ sym_object=parsesym("c1")
 #nslices=[16,32,64,128,256,512,1024,2048,4096]
 angs=[4,5,6,9,10,12,15,18,20,24,30,36,45]
 for da in angs:
-	eulers = sym_object.gen_orientations("eman",{"delta":90.0/da,"perturb":True})
+	eulers = sym_object.gen_orientations("eman",{"delta":old_div(90.0,da),"perturb":True})
 	sl=len(eulers)
 	
 	recon.setup()
@@ -33,22 +35,22 @@ for da in angs:
 	final=recon.finish(True)
 
 	img=EMData("test.hdf",0)
-	os.rename ("test.hdf","test.{:1.1f}.hdf".format(90.0/da))
+	os.rename ("test.hdf","test.{:1.1f}.hdf".format(old_div(90.0,da)))
 	
-	r1=[0]*(size/2)
-	r2=[0]*(size/2)
-	n=[0]*(size/2)
-	for z in range(-size/2,size/2):
-		for y in range(-size/2,size/2):
-			for x in range(size/2+1):
+	r1=[0]*(old_div(size,2))
+	r2=[0]*(old_div(size,2))
+	n=[0]*(old_div(size,2))
+	for z in range(old_div(-size,2),old_div(size,2)):
+		for y in range(old_div(-size,2),old_div(size,2)):
+			for x in range(old_div(size,2)+1):
 				r=int(sqrt(x*x+y*y+z*z))
-				if r>=size/2 : continue
+				if r>=old_div(size,2) : continue
 				n[r]+=1
-				if img[x,y+size/2,z+size/2]>0.5 : r1[r]+=1
-				if img[x,y+size/2,z+size/2]>1.5 : r2[r]+=1
+				if img[x,y+old_div(size,2),z+old_div(size,2)]>0.5 : r1[r]+=1
+				if img[x,y+old_div(size,2),z+old_div(size,2)]>1.5 : r2[r]+=1
 				
 	out=open("fill_ptrb_%04d.txt"%sl,"w")
-	for i in range(size/2):
+	for i in range(old_div(size,2)):
 		out.write("%d\t%1.2f\t%1.2f\n"%(i,100.0*r1[i]/n[i],100.0*r2[i]/n[i]))
 	out=None
 				

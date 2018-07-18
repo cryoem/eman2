@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2017-03
+from past.utils import old_div
 from EMAN2 import *
 import numpy as np
 import weakref
@@ -103,9 +105,9 @@ class EMDrawWindow(QtGui.QMainWindow):
 			if self.options.fromedge:
 				dx=x-self.origin[0]
 				dy=y-self.origin[1]
-				r=np.sqrt((dx)**2+(dy)**2)/2.
-				x0=x-dx/2.
-				y0=y-dy/2.
+				r=old_div(np.sqrt((dx)**2+(dy)**2),2.)
+				x0=x-old_div(dx,2.)
+				y0=y-old_div(dy,2.)
 			else:
 				x0=self.shape[1]
 				y0=self.shape[2]

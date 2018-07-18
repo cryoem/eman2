@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 11/13/2008 (sludtke@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 # e2bdb.py  11/13/2008 Steven Ludtke
 # This program allows manipulation and querying of the local database
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -456,9 +458,9 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 
 		elif not options.makevstack and not options.appendvstack :
 			# Nicely formatted 'ls' style display
-			cols=int(floor(80.0/(maxname+3)))
-			width=80/cols
-			rows=int(ceil(float(len(dbs))/cols))
+			cols=int(floor(old_div(80.0,(maxname+3))))
+			width=old_div(80,cols)
+			rows=int(ceil(old_div(float(len(dbs)),cols)))
 			
 			fmt="%%-%ds"%width
 			for r in range(rows):
@@ -568,9 +570,9 @@ A serious error occured in the database cache. This normally happens if you try 
 	
 
 def human_size(size):
-	if size>1000000000: return "%1.2f gb"%(size/1000000000)
-	elif size>1000000: return "%1.2f mb"%(size/1000000)
-	else: return "%1.2f kb"%(size/1000)
+	if size>1000000000: return "%1.2f gb"%(old_div(size,1000000000))
+	elif size>1000000: return "%1.2f mb"%(old_div(size,1000000))
+	else: return "%1.2f kb"%(old_div(size,1000))
 	return str(size)
 			
 if __name__ == "__main__":

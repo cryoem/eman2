@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2016-08
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import numpy as np
@@ -79,13 +81,13 @@ def main():
 	np3d=e3d.numpy().copy()
 	mapft=get_fft(np3d)
 	sz=mapft.shape[0]
-	sli=np.indices((sz,sz))-sz/2
+	sli=np.indices((sz,sz))-old_div(sz,2)
 	sli=np.stack([sli[0], sli[1], np.zeros_like(sli[0])])
 	
 	x,y= np.indices((sz,sz))
-	rr=np.sqrt((x - sz/2)**2 + (y - sz/2)**2).astype(int)
-	rings=np.zeros((sz,sz,sz/2))
-	for i in range(sz/2):
+	rr=np.sqrt((x - old_div(sz,2))**2 + (y - old_div(sz,2))**2).astype(int)
+	rings=np.zeros((sz,sz,old_div(sz,2)))
+	for i in range(old_div(sz,2)):
 		rings[:,:,i]=(rr==i)
 
 	
@@ -229,7 +231,7 @@ def refine_align(job,ret):
 	imgs=[]
 	for i in curidx:
 		e=EMData(ptclfile,i)
-		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/30.})
+		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,30.)})
 		e.process_inplace("normalize")
 		imgs.append(e)
 	# score=0
@@ -246,7 +248,7 @@ def refine_align(job,ret):
 			#pp= e3d.project("standard", tr)
 			
 			surf= np.tensordot(np.asarray(tr.get_matrix_4x4()).reshape(4,4)[:3,:3], sli, axes=(0,0))
-			ind=(surf+sz/2).astype(int)
+			ind=(surf+old_div(sz,2)).astype(int)
 			ind=np.clip(ind,0, sz-1)
 			imft=mapft[ind[2], ind[1], ind[0]]
 			v=tr.transform(vv)

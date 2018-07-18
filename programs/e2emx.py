@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #********************************************************************************
 # Author: Stephen Murray (scmurray@bcm.edu), 6/12/13
 # Copyright (c) 2000-2013 Baylor College of Medicine
@@ -12,6 +13,7 @@ from __future__ import print_function
 
 
 #import block
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import pyemtbx.options
@@ -193,10 +195,10 @@ for option1 in optionList:
 						temp_dict['cs']=cs
 					elif item2.tag == "defocusU":
 						defocus1 = item2.text # in nm
-						temp_dict['defocusU']=float (defocus1) /1000.0
+						temp_dict['defocusU']=old_div(float (defocus1),1000.0)
 					elif item2.tag == "defocusV":
 						defocus2 = item2.text # in nm
-						temp_dict['defocusV']=float(defocus2) /1000.0
+						temp_dict['defocusV']=old_div(float(defocus2),1000.0)
 					elif item2.tag == "defocusUAngle":
 						defocus_angle = item2.text # in degrees (0->180)
 						temp_dict['dfang']=defocus_angle
@@ -218,7 +220,7 @@ for option1 in optionList:
 						print("Unknown tag: " + item2.tag)
 				micro_dict[micrograph_filename] = temp_dict
 				ctf=EMAN2Ctf()
-				ctf.from_dict({"defocus":(float(defocus1)+float(defocus2))/2000,"dfang":float(defocus_angle),"dfdiff":abs(float(defocus1)-float(defocus2))/1000,"voltage":float(voltage),"cs":float(cs),"ampcont":float(ampcont),"apix":float(apix_x)})
+				ctf.from_dict({"defocus":old_div((float(defocus1)+float(defocus2)),2000),"dfang":float(defocus_angle),"dfdiff":old_div(abs(float(defocus1)-float(defocus2)),1000),"voltage":float(voltage),"cs":float(cs),"ampcont":float(ampcont),"apix":float(apix_x)})
 				jdb = js_open_dict(info_name(micrograph_filename))
 				jdb['ctf_frame']=[512,ctf,(256,256),tuple(),5,1]
 				jdb.setval("ctf_frame",jdb['ctf_frame'],deferupdate=True)
@@ -237,10 +239,10 @@ for option1 in optionList:
 						print("Unknown tag: " + particle_attrib)
 				for item2 in item:
 					if item2.tag == "defocusU":
-						temp_dict['defocusU'] = float(item2.text) / 1000 # in nm
+						temp_dict['defocusU'] = old_div(float(item2.text), 1000) # in nm
 						foundU = True
 					elif item2.tag == "defocusV":
-						temp_dict['defocusV'] = float(item2.text) /1000 # in nm
+						temp_dict['defocusV'] = old_div(float(item2.text),1000) # in nm
 						foundV = True
 					elif item2.tag == "defocusUAngle":
 						temp_dict['defocusUAngle'] = item2.text # in degrees (0->180)
@@ -316,7 +318,7 @@ for option1 in optionList:
 				else:
 					apix_x=micro_dict[particle_micrograph_filename]['apix_x']
 				ctf=EMAN2Ctf()
-				ctf.from_dict({"defocus":(float(defocus1)+float(defocus2))/2000,"dfang":float(defocus_angle),"dfdiff":abs(float(defocus1)-float(defocus2))/1000,"voltage":float(voltage),"cs":float(cs),"ampcont":float(ampcont),"apix":float(apix_x)})
+				ctf.from_dict({"defocus":old_div((float(defocus1)+float(defocus2)),2000),"dfang":float(defocus_angle),"dfdiff":old_div(abs(float(defocus1)-float(defocus2)),1000),"voltage":float(voltage),"cs":float(cs),"ampcont":float(ampcont),"apix":float(apix_x)})
 				jdb = js_open_dict(info_name(particle_micrograph_filename))
 				jdb['ctf']=[512,ctf,(256,256),tuple(),5,1]
 				jdb.setval("ctf",jdb['ctf'],deferupdate=True)

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import numpy as np
@@ -64,9 +66,9 @@ def main():
 	
 	if options.goldcontinue==False:
 		er=EMData(ref,0)
-		if abs(1-ep["apix_x"]/er["apix_x"])>0.01:
+		if abs(1-old_div(ep["apix_x"],er["apix_x"]))>0.01:
 			print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
-			rs=er["apix_x"]/ep["apix_x"]
+			rs=old_div(er["apix_x"],ep["apix_x"])
 			if rs>1.:
 				run("e2proc3d.py {} {}/model_input.hdf --clip {} --scale {} --process mask.soft:outer_radius=-1".format(ref, options.path, ep["nx"], rs))
 			else:
@@ -132,7 +134,7 @@ def main():
 		
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
-		rs=1./fsc[fsc[:,1]<0.3, 0][0]
+		rs=old_div(1.,fsc[fsc[:,1]<0.3, 0][0])
 		print("Resolution (FSC<0.3) is ~{:.1f} A".format(rs))
 		
 		if options.tltrefine:# and itr%2==0:

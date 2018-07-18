@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 #
 # Author: Ross Coleman (racolema@bcm.edu)
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import absolute_import
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from .embrowser import EMBrowserWidget
@@ -312,7 +314,7 @@ class EMSliceItem3D(EMItem3D):
 		max = data.get_attr("maximum")
 		self.brightness = -min
 		if max != min:
-			self.contrast = 1.0/(max-min)
+			self.contrast = old_div(1.0,(max-min))
 		else:
 			self.contrast = 1
 
@@ -381,8 +383,8 @@ class EMSliceItem3D(EMItem3D):
 		nz = data["nz"]
 		interior_diagonal = math.sqrt(nx**2+ny**2+nz**2) #A square with sides this big could hold any slice from the volume
 		#The interior diagonal is usually too big, and OpenGL textures work best with powers of 2 so let's get the next smaller power of 2
-		diag = 2**(int(math.floor( math.log(interior_diagonal)/math.log(2) ))) #next smaller power of 2
-		diag2 = diag/2
+		diag = 2**(int(math.floor( old_div(math.log(interior_diagonal),math.log(2)) ))) #next smaller power of 2
+		diag2 = old_div(diag,2)
 
 		glPushAttrib( GL_ALL_ATTRIB_BITS )
 		GL.glDisable(GL.GL_LIGHTING)
@@ -472,7 +474,7 @@ class EMSliceItem3D(EMItem3D):
 			GL.glMatrixMode(GL.GL_TEXTURE)
 			GL.glLoadIdentity()
 			GL.glTranslatef(0.5, 0.5, 0.5) #Put the origin at the center of the 3D texture
-			GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords the same as data coords
+			GL.glScalef(old_div(1.0,nx), old_div(1.0,ny), old_div(1.0,nz)) #Scale to make the texture coords the same as data coords
 			GLUtil.glMultMatrix(self.transform) #Make texture coords the same as EMSliceItem3D coords
 			GL.glMatrixMode(GL.GL_MODELVIEW)
 
@@ -574,9 +576,9 @@ class EMSliceInspector(EMInspectorControlShape):
 		(nx, ny, nz) = self.item3d().getParent().getBoundingBoxDimensions()
 		range = (0, nx)
 		plane = str(self.constrained_plane_combobox.currentText())
-		if plane == "XY": range = (-nz/2.0, nz/2.0)
-		elif plane == "YZ": range = (-nx/2.0, nx/2.0)
-		elif plane == "ZX": range = (-ny/2.0, ny/2.0)
+		if plane == "XY": range = (old_div(-nz,2.0), old_div(nz,2.0))
+		elif plane == "YZ": range = (old_div(-nx,2.0), old_div(nx,2.0))
+		elif plane == "ZX": range = (old_div(-ny,2.0), old_div(ny,2.0))
 		self.constrained_slider.setRange(*range)
 		self.onConstraintSlider()
 
@@ -688,7 +690,7 @@ class EMVolumeItem3D(EMItem3D):
 		self.sigma  = data.get_attr("sigma")
 
 		if self.isothr: #there was data previously
-			normalized_threshold = (self.isothr - self.mean)/self.sigma
+			normalized_threshold = old_div((self.isothr - self.mean),self.sigma)
 		else:
 			normalized_threshold = 3.0
 
@@ -755,7 +757,7 @@ class EMVolumeItem3D(EMItem3D):
 
 		self.brightness = 0 #-main
 		if max != min:
-			self.contrast = 1.0/(max - min)
+			self.contrast = old_div(1.0,(max - min))
 		else:
 			self.contrast = 1
 
@@ -774,7 +776,7 @@ class EMVolumeItem3D(EMItem3D):
 		self.force_texture_update = False
 		(nx, ny, nz) = self.getParent().getBoundingBoxDimensions()
 		interior_diagonal = math.sqrt(nx**2+ny**2+nz**2) #A square with sides this big could hold any slice from the volume
-		diag2 = interior_diagonal/2
+		diag2 = old_div(interior_diagonal,2)
 
 		quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
 		transform_std_coords = self.getTransformStdCoord()
@@ -814,7 +816,7 @@ class EMVolumeItem3D(EMItem3D):
 		GL.glMatrixMode(GL.GL_TEXTURE)
 		GL.glLoadIdentity()
 		GL.glTranslatef(0.5, 0.5, 0.5) #Put the origin at the center of the 3D texture
-		GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords the same as data coords
+		GL.glScalef(old_div(1.0,nx), old_div(1.0,ny), old_div(1.0,nz)) #Scale to make the texture coords the same as data coords
 
 		transf = Transform(transform_std_coords) # Get a copy, not a reference, in case we need to use original later
 		transf.set_trans((0,0,0)) #Removing translation
@@ -932,7 +934,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 
 		###
 		transp=0.85
-		self.probeposition=[[self.item3d().isothr,0],[(self.item3d().isothr+self.item3d().maxden)/2,transp],[self.item3d().maxden,transp]]
+		self.probeposition=[[self.item3d().isothr,0],[old_div((self.item3d().isothr+self.item3d().maxden),2),transp],[self.item3d().maxden,transp]]
 		self.probepresent=0;
 
 		levelvalue =  self.probeposition[self.probepresent][0]
@@ -1022,9 +1024,9 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 			self.cmapmin.setValue(self.item3d().cmapmin, quiet=1)
 			self.cmapmax.setValue(self.item3d().cmapmax, quiet=1)
 			cmrange = colormapdata.get_attr('maximum') - colormapdata.get_attr('minimum')
-			self.cmapmin.setIncrement(cmrange/50.0)
-			self.cmapmax.setIncrement(cmrange/50.0)
-			rounding = int(math.ceil(math.fabs(math.log(cmrange/2.0)))+1)
+			self.cmapmin.setIncrement(old_div(cmrange,50.0))
+			self.cmapmax.setIncrement(old_div(cmrange,50.0))
+			rounding = int(math.ceil(math.fabs(math.log(old_div(cmrange,2.0))))+1)
 			#print rounding
 			self.cmapmin.setRounding(rounding)
 			self.cmapmax.setRounding(rounding)
@@ -1288,7 +1290,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 
 		#This computes initial threshold. Steven Murray does seem to have much success with this though.
 		if self.isothr!=None: #there was data previously
-			normalized_threshold = (self.isothr - self.mean)/self.sigma
+			normalized_threshold = old_div((self.isothr - self.mean),self.sigma)
 		else:
 			normalized_threshold = 4.0
 
@@ -1304,11 +1306,11 @@ class EMIsosurface(EMItem3D,EM3DModel):
 
 		self.force_update = True
 		self.isorender = MarchingCubes(data)
-		self.outerrad = data.get_xsize()/2.0
+		self.outerrad = old_div(data.get_xsize(),2.0)
 
-		self.dxsize=data.get_xsize()/2.0
-		self.dysize=data.get_ysize()/2.0
-		self.dzsize=data.get_zsize()/2.0
+		self.dxsize=old_div(data.get_xsize(),2.0)
+		self.dysize=old_div(data.get_ysize(),2.0)
+		self.dzsize=old_div(data.get_zsize(),2.0)
 
 		if ( self.texture ): self.gen_texture()
 		if self.item_inspector: self.getItemInspector().updateItemControls() # The idea is to use lazy evaluation for the item inspectors. Forcing inspector creation too early causes bugs!
@@ -1511,8 +1513,8 @@ class EMIsosurface(EMItem3D,EM3DModel):
 				glPushMatrix()
 				glLoadIdentity()
 
-				x = float(scenegraph.camera.getWidth()/2.0)
-				y = float(scenegraph.camera.getHeight()/2.0)
+				x = float(old_div(scenegraph.camera.getWidth(),2.0))
+				y = float(old_div(scenegraph.camera.getHeight(),2.0))
 				z = -float(scenegraph.camera.getClipNear() + 0.5)
 
 				glBegin(GL_QUADS)
@@ -1626,7 +1628,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		glColor(self.ambient)
 
 		glPushMatrix()
-		glTranslate(-self.parent.data.get_xsize()/2.0,-self.parent.data.get_ysize()/2.0,-self.parent.data.get_zsize()/2.0)
+		glTranslate(old_div(-self.parent.data.get_xsize(),2.0),old_div(-self.parent.data.get_ysize(),2.0),old_div(-self.parent.data.get_zsize(),2.0))
 		if ( self.texture ):
 			glScalef(self.parent.data.get_xsize(),self.parent.data.get_ysize(),self.parent.data.get_zsize())
 

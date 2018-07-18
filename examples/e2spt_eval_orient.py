@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Steven Ludtke, March 2015
 # Copyright (c) 2015- Baylor College of Medicine
@@ -29,6 +30,7 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -69,7 +71,7 @@ too look for issues with preferred orientation, etc.
 		out.write("%1.3f,\t%1.3f,\t%1.3f,\t%1.3g\n"%(xfd["az"],xfd["alt"],xfd["phi"],float(db[k][1])))
 		
 		try:
-			an=int(floor(xfd["alt"]/10.0001))
+			an=int(floor(old_div(xfd["alt"],10.0001)))
 			alts[an].append((db[k][1],k))
 		except: pass
 	

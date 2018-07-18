@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 # Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -34,6 +35,7 @@ from __future__ import absolute_import
 #
 
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 '''
@@ -228,8 +230,8 @@ class ScaledExclusionImage(object):
 		If they match current parameters than nothing happens - the correct image is already cached
 		'''
 		nx,ny,nz = gimme_image_dimensions3D(self.image_name)
-		xsize = int(nx/shrink)
-		ysize = int(ny/shrink)
+		xsize = int(old_div(nx,shrink))
+		ysize = int(old_div(ny,shrink))
 		if self.image == None:
 			self.image = EMData(xsize,ysize)
 			self.image.to_zero()
@@ -237,21 +239,21 @@ class ScaledExclusionImage(object):
 		else:
 			# if the image already exists then we must retain the information in it by scaling and resizing it
 			old_shrink = self.get_shrink()
-			oldxsize = int(nx/old_shrink)
-			oldysize = int(ny/old_shrink)
-			r = Region( (oldxsize-xsize)/2, (oldysize-ysize)/2,xsize,ysize )
+			oldxsize = int(old_div(nx,old_shrink))
+			oldysize = int(old_div(ny,old_shrink))
+			r = Region( old_div((oldxsize-xsize),2), old_div((oldysize-ysize),2),xsize,ysize )
 			#print "clipping to",(oldxsize-xsize)/2, (oldysize-ysize)/2,xsize,ysize
-			scale = float(xsize)/float(oldxsize)
+			scale = old_div(float(xsize),float(oldxsize))
 
 			# the order in which you clip and scale is dependent on whether or not scale is > 1
 			if scale > 1:
 				# if it's greater than one than clip (enlargen the image) first
 				self.image.clip_inplace(r)
 				# then scale the pixels
-				self.image.scale(float(xsize)/float(oldxsize))
+				self.image.scale(old_div(float(xsize),float(oldxsize)))
 			else:
 				# if it's less than one scale first so that we retain the maximum amount of the pixel information
-				self.image.scale(float(xsize)/float(oldxsize))
+				self.image.scale(old_div(float(xsize),float(oldxsize)))
 				self.image.clip_inplace(r)
 
 			self.image.set_attr("shrink",int(shrink))
@@ -343,9 +345,9 @@ class EMBox(object):
 			data=BigImageCache.get_object(image_name).get_image(use_alternate=True,norm=norm) # use alternate is a red herring
 			nz=data.get_attr("nz")
 			if nz>1:
-				r = Region(self.x-box_size/2,self.y-box_size/2,self.z_idx,box_size,box_size,1)
+				r = Region(self.x-old_div(box_size,2),self.y-old_div(box_size,2),self.z_idx,box_size,box_size,1)
 			else:
-				r = Region(self.x-box_size/2,self.y-box_size/2,box_size,box_size)
+				r = Region(self.x-old_div(box_size,2),self.y-old_div(box_size,2),box_size,box_size)
 			self.image = data.get_clip(r)
 			if norm != None and str(norm) != "None":
 				self.image.process_inplace(norm)
@@ -364,12 +366,12 @@ class EMBox(object):
 		else:
 			r,g,b = 1.0,0.42,0.71 # hot pint, apparently ;)
 		from .emshape import EMShape
-		shape = EMShape([shape_string,r,g,b,self.x-box_size/2,self.y-box_size/2,self.x+box_size/2,self.y+box_size/2,2.0,self.z_idx])
+		shape = EMShape([shape_string,r,g,b,self.x-old_div(box_size,2),self.y-old_div(box_size,2),self.x+old_div(box_size,2),self.y+old_div(box_size,2),2.0,self.z_idx])
 		return shape
 
 	def collision(self,x,y,box_size,z_idx=0):
 
-		if z_idx==self.z_idx and x-box_size/2 < self.x and x+box_size/2 > self.x and y-box_size/2 < self.y and y+box_size/2 > self.y: return True
+		if z_idx==self.z_idx and x-old_div(box_size,2) < self.x and x+old_div(box_size,2) > self.x and y-old_div(box_size,2) < self.y and y+old_div(box_size,2) > self.y: return True
 		else: return False
 
 
@@ -891,12 +893,12 @@ class ManualBoxingTool(object):
 		global BigImageCache
 		image = BigImageCache.get_image_directly(image_name)
 
-		xc = box[0]-box_size/2
-		yc = box[1]-box_size/2
+		xc = box[0]-old_div(box_size,2)
+		yc = box[1]-old_div(box_size,2)
 		r = Region(xc,yc,box_size,box_size)
 		particle = image.get_clip(r)
 		ccf  = particle.calc_ccf(template)
-		trans = ccf.calc_max_location_wrap(particle.get_xsize()/2,particle.get_ysize()/2,0)
+		trans = ccf.calc_max_location_wrap(old_div(particle.get_xsize(),2),old_div(particle.get_ysize(),2),0)
 		dx = trans[0]
 		dy = trans[1]
 		return dx,dy
@@ -1455,8 +1457,8 @@ class EMBoxList(object):
 		action = False
 		for i in range(len(self.boxes)-1,-1,-1):
 			box = self.boxes[i]
-			x = int(box.x/subsample_rate)
-			y = int(box.y/subsample_rate)
+			x = int(old_div(box.x,subsample_rate))
+			y = int(old_div(box.y,subsample_rate))
 			if exclusion_image.get(x,y):
 				self.pop(i)
 				action = True
@@ -1489,7 +1491,7 @@ class EMBoxList(object):
 		j=0
 		for i,box in enumerate(self.boxes):
 			if noedges :
-				if box[0]-box_size/2<0 or box[1]-box_size/2<0 or box[0]+box_size/2>=xsize or box[1]+box_size/2>=ysize : continue
+				if box[0]-old_div(box_size,2)<0 or box[1]-old_div(box_size,2)<0 or box[0]+old_div(box_size,2)>=xsize or box[1]+old_div(box_size,2)>=ysize : continue
 			if doexclude:
 				if box.type=="exclude":
 					print(box)
@@ -1523,13 +1525,13 @@ class EMBoxList(object):
 			# Write .box file
 			for box in self.boxes:
 				if noedges :
-					if box[0]-box_size/2<0 or box[1]-box_size/2<0 or box[0]+box_size/2>=xsize or box[1]+box_size/2>=ysize : continue
+					if box[0]-old_div(box_size,2)<0 or box[1]-old_div(box_size,2)<0 or box[0]+old_div(box_size,2)>=xsize or box[1]+old_div(box_size,2)>=ysize : continue
 				
 				if doexclude:
 					if box.type=="exclude":
 						continue
-				xc = box.x-box_size/2
-				yc = box.y-box_size/2
+				xc = box.x-old_div(box_size,2)
+				yc = box.y-old_div(box_size,2)
 				f.write(str(int(xc))+'\t'+str(int(yc))+'\t'+str(box_size)+'\t'+str(box_size)+'\n')
 		f.close()
 
@@ -1565,7 +1567,7 @@ class EMBoxerModuleVitals(object):
 		'''
 
 		'''
-		return int(math.ceil(float(self.box_size)/float(TEMPLATE_MIN)))
+		return int(math.ceil(old_div(float(self.box_size),float(TEMPLATE_MIN))))
 
 	def get_box_type(self, box_number):
 		'''
@@ -1641,11 +1643,11 @@ class EMBoxerModuleVitals(object):
 		exclusion_image = self.get_exclusion_image()
 		if exclusion_image != None:
 			sr = self.get_subsample_rate()
-			xx,yy = int(x/sr),int(y/sr)
+			xx,yy = int(old_div(x,sr)),int(old_div(y,sr))
 			if force or exclusion_image.get(xx,yy):
 				from EMAN2 import BoxingTools
 				global BinaryCircleImageCache
-				mask = BinaryCircleImageCache.get_image_directly(int(self.box_size/(2*sr)))
+				mask = BinaryCircleImageCache.get_image_directly(int(old_div(self.box_size,(2*sr))))
 				BoxingTools.set_region(self.get_exclusion_image(),mask,xx,yy,val)
 				set_idd_image_entry(self.current_file(),ScaledExclusionImage.database_name,self.get_exclusion_image())
 				if self.main_2d_window:
@@ -1700,18 +1702,18 @@ class EMBoxerModuleVitals(object):
 			if len(boxes) > 0:
 				sr = self.get_subsample_rate()
 				global BinaryCircleImageCache
-				mask = BinaryCircleImageCache.get_image_directly(int(self.box_size/(2*sr)))
+				mask = BinaryCircleImageCache.get_image_directly(int(old_div(self.box_size,(2*sr))))
 				for box in self.box_list.get_boxes():
-					x,y = int(box.x/sr),int(box.y/sr)
+					x,y = int(old_div(box.x,sr)),int(old_div(box.y,sr))
 					from EMAN2 import BoxingTools
 					BoxingTools.set_region(image,mask,x,y,0.1) # 0.1 is also the value set by the eraser - all that matters is that it's zon_zero
 			return image
 
 	def exclusion_area_added(self, typeofexclusion, x, y, radius, val):
-		xx = int(x/self.get_subsample_rate())
-		yy = int(y/self.get_subsample_rate())
+		xx = int(old_div(x,self.get_subsample_rate()))
+		yy = int(old_div(y,self.get_subsample_rate()))
 
-		rr = int(radius/self.get_subsample_rate())
+		rr = int(old_div(radius,self.get_subsample_rate()))
 		global BinaryCircleImageCache
 		mask = BinaryCircleImageCache.get_image_directly(rr)
 
@@ -1880,8 +1882,8 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		rm_boxes = []
 		for i in range(len(self.box_list)-1,-1,-1):
 			box = self.box_list.get_box(i)
-			x = int(box.x/subsample_rate)
-			y = int(box.y/subsample_rate)
+			x = int(old_div(box.x,subsample_rate))
+			y = int(old_div(box.y,subsample_rate))
 			if exclusion_image.get(x,y):
 				rm_idxs.append(i)
 				rm_boxes.append(box)

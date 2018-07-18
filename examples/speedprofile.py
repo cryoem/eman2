@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 01/06/2010 (sludtke@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 # this program will run speedtests for all possible box sizes over a range
 # and measure the relative program performance, it takes a LOOONG time to run
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -50,7 +52,7 @@ def init(SIZE=96,NTT=100):
 		data[i].transform(Transform({"type":"2d","alpha":random.uniform(0,360.0),"tx":random.uniform(-5.0,5.0),"ty":random.uniform(-5.0,5.0)}))
 		data[i].add(test_image(1,size=(SIZE,SIZE)))
 		data[i].process_inplace('normalize.circlemean')
-		data[i].process_inplace('mask.sharp', {'outer_radius':data[i].get_xsize()/2})
+		data[i].process_inplace('mask.sharp', {'outer_radius':old_div(data[i].get_xsize(),2)})
 
 	return data
 
@@ -64,7 +66,7 @@ def catime(SIZE=96,NTT=100):
 		x=x.align("refine",ref,{"maxshift":6.0},"dot",{"normalize":0})
 #		y=x.cmp("phase",ref)
 
-	return (time.time()-start)/NTT
+	return old_div((time.time()-start),NTT)
 
 print("establishing baseline")
 base=catime(SIZE=32,NTT=10000)
@@ -72,8 +74,8 @@ base=catime(SIZE=32,NTT=10000)
 print("testing")
 out=open("profile.txt","w")
 for i in range(32,1024):
-	t=catime(i,16000/i)
-	print("%d\t%1.2f\t%1.3f"%(i,t/base,t))
-	out.write("%d\t%1.3f\n"%(i,t/base))
+	t=catime(i,old_div(16000,i))
+	print("%d\t%1.2f\t%1.3f"%(i,old_div(t,base),t))
+	out.write("%d\t%1.3f\n"%(i,old_div(t,base)))
 	out.flush()
 

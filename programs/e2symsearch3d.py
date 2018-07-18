@@ -31,6 +31,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2_utils import *
@@ -272,7 +274,7 @@ def refComp( options, outputstack, ref2compare, resultsdict, mirrortag ):
 		
 		ref2compare = makeSsaAverage( options, scores, resultsdict, it )
 		
-		meanscore = sum(scores)/len(scores)
+		meanscore = old_div(sum(scores),len(scores))
 						
 		if it == options.avgiter -1:
 			print("Final mean score is", meanscore)
@@ -338,8 +340,8 @@ def makeSsaAverage( options, scores, resultsdict, it ):
 		val = sum(vals)
 		val2 = sum(vals2)
 
-		mean = val/len( scores )
-		sig = sqrt(val2/len( scores )-mean*mean )
+		mean = old_div(val,len( scores ))
+		sig = sqrt(old_div(val2,len( scores ))-mean*mean )
 		thresh = mean+sig* options.keep
 		if options.verbose: 
 			print("\nKeep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig))	

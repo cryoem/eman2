@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import absolute_import
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -118,7 +120,7 @@ class ColumnGraphics(object):
 		if self.interval == 0:
 			frac = 1.0
 		else:
-			frac = (value-self.min_score)/self.interval
+			frac = old_div((value-self.min_score),self.interval)
 		
 		self.mixed_color.load_gl_color(frac)
 		
@@ -242,7 +244,7 @@ class EulerData(object):
 		mn = min(l)
 		mx = max(l)
 		diff = float(mx-mn)
-		if diff != 0: n = [ (val-mn)/(diff) for val in l ]
+		if diff != 0: n = [ old_div((val-mn),(diff)) for val in l ]
 		else: n = [1 for val in l]
 		return n
 	
@@ -507,7 +509,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 #				t.append([triangles[0][0],p1, triangles[0][2]])
 #				triangles = t
 			else:
-				p = (triangles[0][2]+triangles[0][1])/2.0
+				p = old_div((triangles[0][2]+triangles[0][1]),2.0)
 				a = p.normalize()
 				t = []
 				t.append([triangles[0][0],triangles[0][1],p])
@@ -623,7 +625,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 				timeangle = float(t)/float(self.arc_segments)*angle
 				p1Copy = self.radius*Vec3f(p1[0],p1[1],p1[2]*(1.0-self.flatten))
 				p2Copy = self.radius*Vec3f(p2[0],p2[1],p2[2]*(1.0-self.flatten))
-				next = (sin(angle-timeangle)*p1Copy + sin(timeangle)*p2Copy)/sinangle
+				next = old_div((sin(angle-timeangle)*p1Copy + sin(timeangle)*p2Copy),sinangle)
 				
 				self.cylinder_to_from(next,prev,self.arc_width_scale)
 				prev = Vec3f(next[0],next[1],next[2])
@@ -639,7 +641,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		
 		if length == 0: return
 		
-		alt = acos(dz/length)*180.0/pi
+		alt = acos(old_div(dz,length))*180.0/pi
 		phi = atan2(dy,dx)*180.0/pi
 		
 		glPushMatrix()
@@ -1254,7 +1256,7 @@ class EMSymViewerWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		glViewport(0,0,self.width(),self.height())
 		
 		# maintain the aspect ratio of the window we have
-		self.aspect = float(self.width())/float(self.height())
+		self.aspect = old_div(float(self.width()),float(self.height()))
 		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steve Ludtke, 1/18/2008 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_list_dicts
@@ -130,7 +132,7 @@ def main():
 	if options.maxshift<0 :
 		tmp=EMData()
 		tmp.read_image(options.input,0)
-		options.maxshift=tmp.get_xsize()/3
+		options.maxshift=old_div(tmp.get_xsize(),3)
 
 	if options.parallel :
 		parstr="--parallel="+options.parallel
@@ -193,27 +195,27 @@ def main():
 		if n>nmax:
 			print("Making subset of ~%d particles for initial averages"%nmax)
 			options.input=options.path+"/input_subset.hdf"
-			run("e2proc2d.py %s %s --step=0,%d"%(options.input2,options.input,int(n/nmax)))
+			run("e2proc2d.py %s %s --step=0,%d"%(options.input2,options.input,int(old_div(n,nmax))))
 
 		# make footprint images (rotational/translational invariants)
 		fpfile=options.path+"/input_fp.hdf"
 		#run("e2proc2d.py %s %s --fp --verbose=%d --inplace %s"%(options.input,fpfile,subverbose,parstr)) # parallel doesn't work in e2proc2d.py as of November 28 2008 - d.woolford
 		run("e2proc2d.py %s %s --fp=0 --verbose=%d --inplace"%(options.input,fpfile,subverbose))
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 		# MSA on the footprints
 		fpbasis=options.path+"/input_fp_basis.hdf"
 		run("e2msa.py %s %s --normalize --nbasis=%0d "%(fpfile,fpbasis,options.nbasisfp))
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 #			run("e2msa.py %s %s --nbasis=%0d --varimax"%(fpfile,fpbasis,options.nbasisfp))
 
 		# reproject the particle footprints into the basis subspace
 		inputproj=options.path+"/input_fp_basis_proj.hdf"
 		run("e2basis.py project %s %s %s --oneout --mean1 --verbose=%d %s"%(fpbasis,fpfile,inputproj,subverbose,options.normproj))
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 		# classify the subspace vectors
 #		try: db_remove_dict(path+"#classmx_00")
 #		except: pass
@@ -221,7 +223,7 @@ def main():
 		run("e2classifykmeans.py %s --original=%s --mininclass=2 --ncls=%d --clsmx=%s/classmx_00.hdf --minchange=%d --onein %s %s"%(inputproj,options.input,min(50,options.ncls),options.path,options.minchange,excludestr,fastseed))
 
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 		# make class-averages
 		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
 
@@ -231,7 +233,7 @@ def main():
 		#run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=%s:maxshift=%d --averager=%s -vf --bootstrap --keep=%f --cmp=%s --aligncmp=%s --normproc=%s"%(options.input,options.path,options.path,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc))
 		run (cls_cmd)
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 		options.input=options.input2
 
@@ -247,11 +249,11 @@ def main():
 		# however we don't want things off-center, so we do a final recentering
 		#run("e2proc2d.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --inplace --process xform.center"%(options.path,it,options.path,it))
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 		# Compute a classification basis set
 		run("e2msa.py %s/allrefs_%02d.hdf %s/basis_%02d.hdf --normalize --nbasis=%d "%(options.path,it,options.path,it,options.nbasisfp))
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 #		run("e2msa.py allrefs.%02d.hdf basis.%02d.hdf --nbasis=%d --varimax"%(it,it,options.nbasisfp))
 
 		# extract the most different references for alignment
@@ -269,7 +271,7 @@ def main():
 		run("e2stacksort.py %s/allrefs_%02d.hdf %s/tmp.hdf --byheader=eval_contrast_lowres --reverse"%(options.path,it,options.path))
 
 		# number of 'best' particles to select from
-		ncheck=options.ncls/3
+		ncheck=old_div(options.ncls,3)
 		ncheck=max(ncheck,options.naliref+2)
 
        	# now extract most different refs. ninput eliminates ~2/3 particles with lowest 'quality' from consideration
@@ -278,7 +280,7 @@ def main():
 		run("e2stacksort.py %s/tmp.hdf %s/tmp2.hdf --reverse --ninput=%d --nsort=%d --simcmp=ccc"%(options.path,options.path,ncheck,options.naliref))
 		run("e2stacksort.py %s/tmp2.hdf %s/aliref_%02d.hdf --simalign rotate_translate_tree:maxres=10 --useali"%(options.path,options.path,it))		# previous alignment may not have been best for reduced number
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 		# We use e2simmx to compute the optimal particle orientations
 		# ERROR e2simmxy doesn't support parallel
 		#e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr,parstr) # e2simmx doesn't do parallel
@@ -288,7 +290,7 @@ def main():
 		if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 		run(e2simmxcmd)
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 		# e2basis projectrot here
 		inputproj=options.path+"/input_%02d_proj.hdf"%it
@@ -297,7 +299,7 @@ def main():
 		# classify the subspace vectors
 		run("e2classifykmeans.py %s --original=%s --mininclass=2 --ncls=%d --clsmx=%s/classmx_%02d.hdf --minchange=%d --oneinali %s %s"%(inputproj,options.input,options.ncls,options.path,it,options.minchange,excludestr,fastseed))
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 		# make class-averages
 		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --force --center %s --iter=%d " %(options.input,options.path,it,options.path,it,options.center,options.classiter)
@@ -306,7 +308,7 @@ def main():
 		run(cls_cmd)
 
 		proc_tally += 1.0
-		if logid : E2progress(logid,proc_tally/total_procs)
+		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 		options.initial=options.path+"/classes_%02d.hdf"%it
 

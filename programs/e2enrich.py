@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Author: Steven Ludtke, 06/28/2018 (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
 #
@@ -29,6 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -61,7 +63,7 @@ def enrich(thr,jsd,imfile,lsx,proj,nenrich,redobispec,i0,i1,verbose):
 			ali=img.align("refine",aliref,{"xform.align2d":ali["xform.align2d"]},"frc",{"minres":80,"maxres":20})				
 			sim.append(ali.cmp("frc",aliref,{"minres":80,"maxres":20}))
 			avg.add(ali)
-		avg.mult(1.0/(nenrich+1))
+		avg.mult(old_div(1.0,(nenrich+1)))
 		avg["class_ptcl_src"]=imfile
 		avg["enrich_quals"]=sim
 		avg["class_ptcl_idxs"]=[i]+best

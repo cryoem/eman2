@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-10
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -50,7 +52,7 @@ def classify_on(fname):
 	e0=EMData(fname,0)
 	bxsz=e0["nx"]
 	sz=64
-	shrinkfac=float(bxsz)/float(sz)
+	shrinkfac=old_div(float(bxsz),float(sz))
 	convnet=load_model(nnet_savename)
 	
 	nbatch=n//tstsz+1
@@ -121,7 +123,7 @@ def do_training(args=None):
 	nnet_savename="nnet_classify.hdf"
 	bxsz=goodrefs[0]["nx"]
 	sz=64
-	shrinkfac=float(bxsz)/float(sz)
+	shrinkfac=old_div(float(bxsz),float(sz))
 	
 	print("Setting up model ...")
 	rng = np.random.RandomState(123)
@@ -158,7 +160,7 @@ def do_training(args=None):
 		if nref<5:
 			print("Not enough references. Please box at least 5 good and 5 bad reference...")
 			return []
-		ncopy=nref_target/nref + 1
+		ncopy=old_div(nref_target,nref) + 1
 		
 		for pp in refs:
 			ptl=pp.process("math.fft.resample",{"n":shrinkfac})
@@ -206,7 +208,7 @@ def do_training(args=None):
 	classify=get_classify_func(convnet, train_set_x,labels,batch_size)
 	learning_rate=0.005
 	weightdecay=1e-5
-	n_train_batches = len(data) / batch_size
+	n_train_batches = old_div(len(data), batch_size)
 	for epoch in range(20):
 	# go through the training set
 		c = []
@@ -246,7 +248,7 @@ def do_training(args=None):
 		for m in mm:
 			img=from_numpy(m)
 			nx=img["nx"]
-			img=img.get_clip(Region(-nx/2,-nx/2,nx*2,nx*2))
+			img=img.get_clip(Region(old_div(-nx,2),old_div(-nx,2),nx*2,nx*2))
 			img.scale(2.)
 			#img.process_inplace("math.fft.resample",{"n":.5})
 			#img.mult(5)

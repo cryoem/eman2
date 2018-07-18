@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2016-09
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import numpy as np
@@ -58,7 +60,7 @@ def main():
 		imft=np.abs(get_fft(np.sum(img,axis=1)))
 		tltsum= np.mean(imft[rotpts[:,:,1], rotpts[:,:,0]], axis=1)
 		# tltsum[1:-1]=tltsum[
-		thr= tltsum[len(tltsum)/2]/2
+		thr= old_div(tltsum[old_div(len(tltsum),2)],2)
 		pp=np.array(find_peaks(tltsum,3,thr))
 		ph=tltsum[pp]
 		pks=deg[pp]
