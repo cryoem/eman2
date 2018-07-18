@@ -11,7 +11,7 @@
         "ICON": "single_image",
         "MODE": "spr",
         "PROGRAM": "e2ddd_external.py",
-        "NAME": "Movie alignment",
+        "NAME": "Process DDD movies",
         "CHILDREN": []
       },
       {
