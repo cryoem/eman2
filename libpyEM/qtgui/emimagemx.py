@@ -672,12 +672,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def get_img_num_offset(self):
 		return self.img_num_offset
 
-	def set_draw_background(self,bool):
-		self.draw_background = bool
+	def set_draw_background(self,state):
+		self.draw_background = state
 		self.force_display_update()# empty display lists causes an automatic regeneration of the display list
 
-	def set_use_display_list(self,bool):
-		self.use_display_list = bool
+	def set_use_display_list(self,state):
+		self.use_display_list = state
 
 	def set_max_idx(self,n):
 		self.force_display_update()# empty display lists causes an automatic regeneration of the display list
@@ -2416,8 +2416,8 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.xyz.deleteLater()
 			self.xyz = None
 
-	def animation_clicked(self,bool):
-		self.target().animation_enabled = bool
+	def animation_clicked(self,state):
+		self.target().animation_enabled = state
 
 	def get_image_manip_page(self):
 		self.impage = QtGui.QWidget()

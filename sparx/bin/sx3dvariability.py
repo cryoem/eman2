@@ -244,7 +244,7 @@ def main():
 			img  = get_image(stack, 0)
 			nx   = img.get_xsize()
 			ny   = img.get_ysize()
-			if int(options.decimate*min(nx, ny)+0.5)< options.window:keepgoing = 0
+			if(min(nx, ny) < options.window):   keepgoing = 0
 		keepgoing = bcast_number_to_all(keepgoing, main_node, MPI_COMM_WORLD)
 		if keepgoing == 0: ERROR("The target window size cannot be larger than the size of decimated image", "sx3dvariability", 1, myid)
 
@@ -337,12 +337,12 @@ def main():
 				nx = int(nx*options.decimate+0.5)
 				ny = int(ny*options.decimate+0.5)
 			else:
-				nx = int(options.window*decimate+0.5)
+				nx = int(options.window*options.decimate+0.5)
 				ny = nx
 		Tracker["nx"]  = nx
 		Tracker["ny"]  = ny
 		Tracker["nz"]  = nx
-		
+
 		symbaselen     = bcast_number_to_all(symbaselen)
 		if radiuspca == -1: radiuspca = old_div(nx,2)-2
 
