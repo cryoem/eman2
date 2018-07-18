@@ -63,9 +63,11 @@ def main():
 	This program is a wrapper for various DDD alignment routines including:
 		alignframes (IMOD)
 		motioncor2 (UCSF)
-		e2ddd_movie.py (EMAN2)
+
 	Note, this is a simple script that mainly uses default alignment parameters for each
-	external program. Programs must be installed and accessible via the PATH 
+	external program. It is mainly intended to make some external ddd alignment routines
+	available from the EMAN2 GUI for streamlined processing. In order for this program to
+	run, the alignment routine you wish to use must be installed and accessible via the PATH 
 	environment variable. To customize alignment, you will need to run these programs 
 	from the command line independently and import the aligned averages/tiltseries into 
 	your EMAN2 project.
@@ -73,10 +75,10 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="movies",help="List the movies you intend to align. If a directory is specified, this program will attempt to process frames within the specified directory using a provided mdoc file.", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, mode="tomo,spr")
+	parser.add_pos_argument(name="input",help="List the movies you intend to align. If a directory is specified, this program will attempt to process frames within the specified directory using a provided mdoc file.", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, mode="tomo,spr")
 
 	parser.add_argument("--program",  default = "imod_alignframes", choices=["imod_alignframes","ucsf_motioncor2"], type=str, help="Use this external program to align frames. Choose between imod_alignframes and ucsf_motioncor2. Note, programs must be accessible from your PATH environment variable.",guitype='combobox', choicelist='["imod_alignframes","ucsf_motioncor2"]', row=1, col=0, rowspan=1, colspan=1, mode="tomo,spr")
-	parser.add_argument("--device",  default = "GPU", type=str, choices=["CPU","GPU"], help="When possible, use this device to process movie frames. Default is GPU.",guitype='combobox', choicelist='["GPU","CPU"]', row=1, col=1, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--device",  default = "gpu", type=str, choices=["cpu","gpu"], help="When possible, use this device to process movie frames. Default is gpu.",guitype='combobox', choicelist='["gpu","cpu"]', row=1, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=0, rowspan=1, colspan=2, mode="tomo,spr")
 
@@ -90,14 +92,14 @@ def main():
 	parser.add_argument("--mc2_rotgain",  default = 0, type=int, choices=[0,1,2,3], help="Rotates the gain 90 degress counter clockwise X times. Rotation is applied before flipping.",guitype='combobox', choicelist='["0","1","2","3"]', row=7, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 	parser.add_argument("--mc2_flipgain",  default = 0, type=int, choices=[0,1,2], help="A value of 1 flips gain image vertically, 2 flips gain image horizontally. Default is 0.",guitype='combobox',  choicelist='["0","1","2"]', row=7, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--imod_rotflipgain",  default = 0, type=int, help="Rotates the gain 90 degress counter clockwise X times. If value is greater than 3, gain image is flipped about the y axis before rotation.",guitype='intbox', row=8, col=0, rowspan=1, colspan=1, mode="tomo,spr")
-	parser.add_argument("--device_num",  default = "0", type=str, help="When possible, use this device to process movie frames. Default is GPU.",guitype='strbox', row=8, col=1, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--imod_rotflipgain",  default = 0, type=int, choices=[0,1,2,3,4,5,6,7], help="Rotates the gain 90 degress counter clockwise X times. If value is greater than 3, gain image is flipped about the y axis before rotation.",guitype='combobox', choicelist='["0","1","2","3","4","5","6","7"]', row=8, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--device_num",  default = "0", type=str, help="When possible, use this device to process movie frames. Default is GPU.",guitype="intbox", row=8, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--binby",  default = None, type=int, help="The degree of binning for final image. Default is 1, i.e. no binning. Note that this option takes only integer values.",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode="tomo,spr")
-	parser.add_argument("--groupby",  default = None, type=int, help="Before alignment, sum raw frames in groups of X to increase signal to noise ratio.",guitype='intbox', row=9, col=1, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--binby",  default = "", type=int, help="The degree of binning for final image. Default is 1, i.e. no binning. Note that this option takes only integer values.",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--groupby",  default = "", type=int, help="Before alignment, sum raw frames in groups of X to increase signal to noise ratio.",guitype='intbox', row=9, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--first",  default = None, type=int, help="The index of the leading frame to include in alignment.",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="tomo,spr")
-	parser.add_argument("--last",  default = None, type=int, help="The index of the last frame to include in alignment.", guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--first",  default = "", type=int, help="The index of the leading frame to include in alignment.",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--last",  default = "", type=int, help="The index of the last frame to include in alignment.", guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
 	parser.add_argument("--mc2_patch",  default = "1 1", type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '1 1'",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 
@@ -105,6 +107,7 @@ def main():
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	
 	(options, args) = parser.parse_args()
 
 	if len(args) == 0 and options.mdoc == None:
@@ -115,7 +118,7 @@ def main():
 		print("ERROR: No movies privided. When running motioncor2, you must specify movie files for alignment.")
 		sys.exit(1)
 
-	if options.device == "GPU":
+	if options.device == "gpu":
 		try: devices = map(int,options.device_num.split())
 		except:
 			print("ERROR: Cannot interpret device number. Please specify the ID of the GPU you wish to use, i.e. an integer >= 0.")
@@ -139,8 +142,8 @@ def main():
 			print("ERROR: Could not interpret --patch for use with MotionCor2. Please input integer values in the form: 'X,Y'")
 			sys.exit(1)
 
-		if device == "CPU":
-			print("ERROR: Cannot use --device CPU with MotionCor2. This program requires 1+ GPU.")
+		if device == "cpu":
+			print("ERROR: Cannot use --device cpu with MotionCor2. This program requires >= 1 gpu.")
 			sys.exit(1)
 
 		program = which("MotionCor2")
@@ -149,25 +152,26 @@ def main():
 		print("Could not locate {}. Please check that the program is installed and available within your PATH environment variable.".format(options.program.replace("_"," ")))
 		sys.exit(1)
 
-	if args[0].split(".")[-1] not in [".mrc",".mrcs"]:
-		print("Input files must be in .mrc format. Please reformat these files and try again.")
-		sys.exit(1)
+	if not os.path.isdir(args[0]):
+		bname,ext = os.path.basename(args[0]).split(".")
+		if ext not in  ["mrc","mrcs","tif"]:
+			print("{} cannot parse .{} format files. Please check that files are MRC or TIF format.".format(program,ext))
+			sys.exit(1)
+	else:
+		ext = None
+		bname = os.path.basename(args[0])
 
 	cmdopts = ""
-
-	bname,ext = os.path.basename(input_file).split(".")
-
-	if ext not in ["mrc","mrcs","tif"]:
-		# This probably isn't a good strategy.
-		print("{} cannot parse .{} format files. Please check that files are MRC or TIF format.".format(program,ext))
-		sys.exit(1)
 
 	if options.tomo: outdir = "tiltseries"
 	else: outdir = "micrographs"
 
+	try: os.mkdir(outdir)
+	except: pass
+
 	if options.program == "imod_alignframes":
 
-		if options.device == "GPU": cmdopts += " -gpu {} ".format(options.device_num)
+		if options.device == "gpu": cmdopts += " -gpu {} ".format(options.device_num)
 
 		if options.dark != None: cmdopts += " -dark {} ".format(options.dark)
 		if options.gain != None: cmdopts += " -gain {} ".format(options.gain)
@@ -246,6 +250,7 @@ def main():
 
 
 def run(cmd,shell=False,cwd=None):
+	print(cmd)
 	if cwd == None: cwd = os.getcwd()
 	if shell == False: cmd = cmd.split()
 	p = subprocess.Popen(cmd, shell=shell, cwd=cwd,stderr=subprocess.PIPE)
