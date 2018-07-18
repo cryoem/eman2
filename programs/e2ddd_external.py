@@ -96,17 +96,17 @@ def main():
 	parser.add_argument("--imod_rotflipgain",  default = 0, type=int, choices=[0,1,2,3,4,5,6,7], help="Rotates the gain 90 degress counter clockwise X times. If value is greater than 3, gain image is flipped about the y axis before rotation.",guitype='combobox', choicelist='["0","1","2","3","4","5","6","7"]', row=8, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 	parser.add_argument("--device_num",  default = "0", type=str, help="When possible, use this device to process movie frames. Default is GPU.",guitype="intbox", row=8, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--binby",  default = "", type=int, help="The degree of binning for final image. Default is 1, i.e. no binning. Note that this option takes only integer values.",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode="tomo,spr")
-	parser.add_argument("--groupby",  default = "", type=int, help="Before alignment, sum raw frames in groups of X to increase signal to noise ratio.",guitype='intbox', row=9, col=1, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--binby",  default = None, type=int, help="The degree of binning for final image. Default is 1, i.e. no binning. Note that this option takes only integer values.",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--groupby",  default = None, type=int, help="Before alignment, sum raw frames in groups of X to increase signal to noise ratio.",guitype='intbox', row=9, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--first",  default = "", type=int, help="The index of the leading frame to include in alignment.",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="tomo,spr")
-	parser.add_argument("--last",  default = "", type=int, help="The index of the last frame to include in alignment.", guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--first",  default = None, type=int, help="The index of the leading frame to include in alignment.",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--last",  default = None, type=int, help="The index of the last frame to include in alignment.", guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
 	parser.add_argument("--mc2_patch",  default = "", type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '5 5'",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--tiltseries_name",  default = "", type=str, help="Specify the name of the output tiltseries. A .mrc extension will be appended to the filename provided.",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo")
-
 	parser.add_argument("--tomo", default=False, action="store_true", help="If checked, aligned frames will be placed in a tiltseries located in the 'tiltseries' directory. Otherwise, aligned sums will populate the 'micrographs' directory.",guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="tomo[True]")
+
+	parser.add_argument("--tiltseries_name",  default = "", type=str, help="Specify the name of the output tiltseries. A .mrc extension will be appended to the filename provided.",guitype='strbox', row=12, col=0, rowspan=1, colspan=2, mode="tomo")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -118,7 +118,9 @@ def main():
 		sys.exit(1)
 
 	if options.mdoc != None:
-		mdoc_bname,mdoc_ext = os.path.basename(options.mdoc).split(".")
+		mdoc_ext = options.mdoc.split(".")[-1]
+		mdoc_bname = os.path.basename(options.mdoc).split(".")[0] # good for cases where we have .mrc.mdoc.
+		#mdoc_bname,mdoc_ext = os.path.basename(options.mdoc).split(".")
 		if mdoc_ext not in ["mdoc", "idoc"]:
 			print("ERROR: The specified mdoc file does not have a .mdoc/.idoc extension.")
 			print("Please provide a valid mdoc/idoc file with the proper extension.")
@@ -192,10 +194,10 @@ def main():
 		
 		if options.defect_file != None: cmdopts+=" -defect {} ".format(options.defects)
 		
-		if options.groupby != "": cmdopts+=" -group {} ".format(options.groupby)
-		if options.binby != "": cmdopts+=" -binning {} -1 ".format(options.binby)
+		if options.groupby != None: cmdopts+=" -group {} ".format(options.groupby)
+		if options.binby != None: cmdopts+=" -binning {} -1 ".format(options.binby)
 
-		if options.first != "" and options.last != "":
+		if options.first != None and options.last != None:
 			cmdopts+=" -frames {} {} ".format(options.first,options.last)
 
 		if options.mdoc != None:
@@ -203,7 +205,7 @@ def main():
 			if options.tomo and options.tiltseries_name != "":
 				output = "{}/{}.mrc".format(options.tiltseries_name)
 			else:
-				output = "{}/{}_ali.mrc".format(outdir,mdoc_basename)
+				output = "{}/{}_ali.mrc".format(outdir,mdoc_bname)
 			if len(args) == 0:
 				cmd = "{} -mdoc {} -output {}".format(program,options.mdoc,output)
 			elif len(args) == 1:
@@ -231,18 +233,18 @@ def main():
 
 		if options.defect_file != None: cmd+=" -DefectFile {}".format(options.defects)
 
-		if options.first != "": cmd+=" -Throw {}".format(options.first)
-		if options.last != "": cmd+=" -Trunc {}".format(options.last)
+		if options.first != None: cmd+=" -Throw {}".format(options.first)
+		if options.last != None: cmd+=" -Trunc {}".format(options.last)
 
-		if options.group != "": cmd+=" -Group {}".format(options.group)
-		if options.binby != "": cmd+=" -FtBin {}".format(options.binby)
+		if options.group != None: cmd+=" -Group {}".format(options.group)
+		if options.binby != None: cmd+=" -FtBin {}".format(options.binby)
 
 		if options.mc2_patch != "": cmd += " -Patch {} ".format(options.mc2_patch)
 
 		if options.mdoc != None:
 			if options.tiltseries_name != "":
 				tiltname = "{}/{}.mrc".format(outdir,options.tiltseries_name)
-			else: tiltname="{}/{}_ali.mrc".format(outdir,mdoc_basename)
+			else: tiltname="{}/{}_ali.mrc".format(outdir,mdoc_bname)
 
 			info=[]
 			zval=-1
