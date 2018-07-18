@@ -205,7 +205,7 @@ def main():
 			if options.tomo and options.tiltseries_name != "":
 				output = "{}/{}.mrc".format(options.tiltseries_name)
 			else:
-				output = "{}/{}_ali.mrc".format(outdir,mdoc_bname)
+				output = "{}/{}.mrc".format(outdir,mdoc_bname)
 			if len(args) == 0:
 				cmd = "{} -mdoc {} -output {}".format(program,options.mdoc,output)
 			elif len(args) == 1:
@@ -244,7 +244,7 @@ def main():
 		if options.mdoc != None:
 			if options.tiltseries_name != "":
 				tiltname = "{}/{}.mrc".format(outdir,options.tiltseries_name)
-			else: tiltname="{}/{}_ali.mrc".format(outdir,mdoc_bname)
+			else: tiltname="{}/{}.mrc".format(outdir,mdoc_bname)
 
 			info=[]
 			zval=-1
