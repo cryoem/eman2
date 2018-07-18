@@ -118,7 +118,9 @@ def main():
 		sys.exit(1)
 
 	if options.tomo and options.mdoc == None:
-		print("ERROR: You must specify an mdoc/idoc file via the --mdoc option when processing raw tilt movies for tomography.")
+		print("""ERROR: You must specify an mdoc/idoc file via the --mdoc option when processing raw tilt movies for tomography. 
+			If no mdoc/idoc files are available, images can be aligned without the --tomo option, in which case they will be 
+			written to micrographs. From there, you can generate a tiltseries via the EMAN2 GUI or the program e2buildstacks.py.""")
 		sys.exit(1)
 
 	if options.mdoc != None:
@@ -126,8 +128,8 @@ def main():
 		mdoc_bname = os.path.basename(options.mdoc).split(".")[0] # good for cases where we have .mrc.mdoc.
 		#mdoc_bname,mdoc_ext = os.path.basename(options.mdoc).split(".")
 		if mdoc_ext not in ["mdoc", "idoc"]:
-			print("ERROR: The specified mdoc file does not have a .mdoc/.idoc extension.")
-			print("Please provide a valid mdoc/idoc file with the proper extension.")
+			print("""ERROR: The specified mdoc file does not have a .mdoc/.idoc extension. 
+				Please provide a valid mdoc/idoc file with the proper extension.""")
 			sys.exit(1)
 
 	if len(args) == 0 and options.program == "ucsf_motioncor2":
@@ -301,8 +303,8 @@ def main():
 						this = "{}/{}".format(args[0],f)
 						if os.path.exists(this): dirargs.append(this)
 				if len(dirargs) == 0:
-					print("Could not find any .mrc or .tif extension files in {}".format(args[0]))
-					print("Please try another directory or specify individual files you wish to align.")
+					print("""Could not find any .mrc or .tif extension files in {}. Please try 
+						another directory or specify individual files you wish to align.""".format(args[0]))
 					sys.exit(1)
 				args = dirargs
 
@@ -314,10 +316,6 @@ def main():
 				else:
 					cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,output,cmdopts)
 				run(cmd,verbose=options.verbose)
-
-	#print("DONE")
-
-
 
 def run(cmd,shell=False,cwd=None,verbose=0):
 	if verbose > 0: print(cmd)
