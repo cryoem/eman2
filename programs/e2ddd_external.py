@@ -39,6 +39,7 @@ import os
 from sys import argv
 import shutil
 import subprocess
+import shlex
 
 def which(program):
 	# found at https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
@@ -116,6 +117,13 @@ def main():
 		print("ERROR: No movies privided. When running IMOD alignframes, you must specify movie files, an MDOC file via the --mdoc option, or a directory containing DDD movies to be aligned.")
 		sys.exit(1)
 
+	if options.mdoc != None:
+		mdoc_bname,mdoc_ext = os.path.basename(options.mdoc).split(".")
+		if mdoc_ext not in ["mdoc", "idoc"]:
+			print("ERROR: The specified mdoc file does not have a .mdoc/.idoc extension.")
+			print("Please provide a valid mdoc/idoc file with the proper extension.")
+			sys.exit(1)
+
 	if len(args) == 0 and options.program == "ucsf_motioncor2":
 		print("ERROR: No movies privided. When running motioncor2, you must specify movie files for alignment.")
 		sys.exit(1)
@@ -164,7 +172,6 @@ def main():
 		ext = None
 		bname = os.path.basename(args[0])
 
-
 	options.tiltseries_name
 
 	cmdopts = ""
@@ -196,7 +203,7 @@ def main():
 			if options.tomo and options.tiltseries_name != "":
 				output = "{}/{}.mrc".format(options.tiltseries_name)
 			else:
-				output = "{}/{}_ali.mrc".format(outdir,bname)
+				output = "{}/{}_ali.mrc".format(outdir,mdoc_basename)
 			if len(args) == 0:
 				cmd = "{} -mdoc {} -output {}".format(program,options.mdoc,output)
 			elif len(args) == 1:
@@ -207,7 +214,10 @@ def main():
 			run(cmd,verbose=options.verbose)
 		else:
 			for arg in args:
-				output = "{}/{}_ali.mrc".format(outdir,bname)
+				if options.tomo and options.tiltseries_name != "":
+					output = "{}/{}.mrc".format(options.tiltseries_name)
+				else:
+					output = "{}/{}_ali.mrc".format(outdir,bname)
 				cmd = "{} -input {} -output {} {}".format(program,arg,output,cmdopts)
 				run(cmd,verbose=options.verbose)
 
@@ -230,43 +240,72 @@ def main():
 		if options.mc2_patch != "": cmd += " -Patch {} ".format(options.mc2_patch)
 
 		if options.mdoc != None:
+			if options.tiltseries_name != "":
+				tiltname = "{}/{}.mrc".format(outdir,options.tiltseries_name)
+			else: tiltname="{}/{}_ali.mrc".format(outdir,mdoc_basename)
 
-			# adam's mdoc preprocessing code
+			info=[]
+			zval=-1
+			print("DOC: {}".format(options.mdoc))
+			with open(options.mdoc) as docf:
+				for l in docf.readlines():
+					p = l.strip()
+					if "ZValue" in p:
+						zval+=1
+					elif p != "":
+						x,y = p.split("=")[:2]
+						x = x.strip()
+						if x == "TiltAngle": ang=float(y)
+						elif x == "SubFramePath":
+							name,ext = y.split('\\')[-1].split(".")
+							if os.path.exists("{}/{}.{}".format(args[0],name,ext)):
+								info.append([ang,name,ext])
+							else:
+								print("WARNING: {}.{} was not found in {}".format(name,ext,args[0]))
 
-			output = "-OutMrc {}/{}_ali.mrc".format(outdir,bname)
-			if len(args) == 1:
-				if ext == "tif": infile = "-InTiff {}".format(args[0])
-				else: infile = "-InMrc {}".format(args[0])
+			sortedlist=sorted(info, key=lambda x: x[0])
+
+			if options.verbose > 0:
+				print("File order:")
+				for i in sortedlist:
+					print("{}\t-\t{}\t{}".format(i[0],i[1],i[2]))
+				
+			print("\nWriting tilt series to:   {}".format(tiltname))
+
+			for idx,i in enumerate(sortedlist):
+				if i[2].lower()=="mrc": infile="-InMrc {}.{} ".format(i[1],i[2])
+				if i[2].lower()=="tif": infile+="-InTif {}.{} ".format(i[1],i[2])
+				outfile="tmp/{}_ali.mrc".format(i[1])
+				output = "-OutMrc {}".format(outfile)
 				cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
-			else:
-				# How to handle this case? Should the first case be handled with the same approach as the multi-file case if an mdoc is provided?
-				cmd = ""
-			run(cmd,verbose=options.verbose)
-
-			# adam's mdoc postprocessing code
-
-		else:
-
-			try: os.mkdir("tmp")
-			except: pass
-
-			for idx,arg in enumerate(args):
-				tmpout = "tmp/{}_ali.mrc".format(outdir,bname)
-				if ext == "tif":
-					cmd = "{} -InTiff {} -OutMrc {} {}".format(program,arg,tmpout,cmdopts)
-				else:
-					cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,tmpout,cmdopts)
+			
 				run(cmd,verbose=options.verbose)
 
-				aligned = EMData(tmpout)
-				output = "{}/{}_ali.mrc".format(outdir,bname)
-				aligned.write_image(output,idx)
+				ali = EMData(outfile)
+				ali.write_image(tiltname,idx)
+				os.remove(outfile)				
+		else:
+			
+			if os.path.isdir(args[0]):
+				dirargs = []
+				for f in f in os.listdir(args[0]):
+					if ".mrc" in f or ".tif" in f:
+						this = "{}/{}".format(args[0],f)
+						if os.path.exists(this): dirargs.append(this)
+				if len(dirargs) == 0:
+					print("Could not find any .mrc or .tif extension files in {}".format(args[0]))
+					print("Please try another directory or specify individual files you wish to align.")
+					sys.exit(1)
+				args = dirargs
 
-				os.remove(tmpout)
-
-				# adam's non-mdoc postprocessing code
-
-		# adam's postprocessing code
+			for idx,arg in enumerate(args):
+				bname,ext = os.path.basename(arg).split(".")
+				output = "micrographs/{}_ali.mrc".format(bname)
+				if ext == "tif":
+					cmd = "{} -InTiff {} -OutMrc {} {}".format(program,arg,output,cmdopts)
+				else:
+					cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,output,cmdopts)
+				run(cmd,verbose=options.verbose)
 
 	print("DONE")
 
@@ -279,6 +318,7 @@ def run(cmd,shell=False,cwd=None,verbose=0):
 	p = subprocess.Popen(cmd, shell=shell, cwd=cwd,stderr=subprocess.PIPE)
 	_,err=p.communicate()
 	return
+
 
 if __name__ == "__main__":
 	main()
