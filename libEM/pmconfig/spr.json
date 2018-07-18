@@ -9,8 +9,8 @@
     "CHILDREN": [
      {
         "ICON": "single_image",
-        "MODE": "align",
-        "PROGRAM": "e2ddd_movie.py",
+        "MODE": "spr",
+        "PROGRAM": "e2ddd_external.py",
         "NAME": "Movie alignment",
         "CHILDREN": []
       },
