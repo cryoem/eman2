@@ -85,13 +85,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		EMLightsDrawer.__init__(self)
 		EMGLProjectionViewMatrices.__init__(self)
 		
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(True)
-		fmt.setStencil(True)
-		fmt.setSampleBuffers(True)
-		self.setFormat(fmt)
-		
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.d = 0

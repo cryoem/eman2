@@ -116,10 +116,7 @@ class EMPlot2DWidget(EMGLWidget):
 
 	def __init__(self,application=None,winid=None,parent=None):
 
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
 		EMGLWidget.__init__(self, parent=parent, winid=winid)
-		self.setFormat(fmt)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 
 		self.axes={}
@@ -955,10 +952,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	clusterStats = QtCore.pyqtSignal(list)
 
 	def __init__(self,application=None,winid=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
 		EMGLWidget.__init__(self, winid=winid)
-		self.setFormat(fmt)
 		self.resize(640,480)
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 
