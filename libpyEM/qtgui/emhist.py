@@ -116,10 +116,7 @@ class EMHistogramWidget(EMGLWidget):
 	"""
 
 	def __init__(self,application=None,winid=None,parent=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
 		EMGLWidget.__init__(self, parent=parent, winid=winid)
-		self.setFormat(fmt)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.axes={}
 		self.pparm={}			# nbins,color,histtype,orient,align,alpha,width,norm,cumul,logy,stacked

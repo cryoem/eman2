@@ -85,12 +85,7 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		#fmt.setSampleBuffers(True)
-		fmt.setDepth(1)
 		EMGLWidget.__init__(self,parent)
-		self.setFormat(fmt)
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
