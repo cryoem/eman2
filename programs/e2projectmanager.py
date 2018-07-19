@@ -1214,7 +1214,7 @@ class NoteBook(QtGui.QWidget):
 		self.boldbutton.stateChanged[bool].connect(self._fontchange)
 		self.italicbutton.stateChanged[bool].connect(self._fontchange)
 		self.underlinebutton.stateChanged[bool].connect(self._fontchange)
-		self.fontcolor.newcolor[QColor].connect(self._fontchange)
+		self.fontcolor.newcolor[QtGui.QColor].connect(self._fontchange)
 
 		return tbwidget
 
