@@ -2222,12 +2222,6 @@ class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		EMGLWidget.__init__(self)
 		EMGLProjectionViewMatrices.__init__(self)
 		
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		fmt.setSampleBuffers(True)
-		self.setFormat(fmt)
-		
 		self.fov = 30.0 # field of view angle used by gluPerspective
 		self.startz = 1.0
 		self.endz = 500.0

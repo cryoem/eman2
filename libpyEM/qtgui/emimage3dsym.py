@@ -1154,13 +1154,8 @@ class EMSymViewerWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	allim=WeakKeyDictionary()
 	def __init__(self, sym="c1", filename=None):
 		EMSymViewerWidget.allim[self]=0
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(1)
-		fmt.setSampleBuffers(True)
 		
 		EMGLWidget.__init__(self)
-		self.setFormat(fmt)
 		EMGLProjectionViewMatrices.__init__(self)
 
 		self.filename = filename
