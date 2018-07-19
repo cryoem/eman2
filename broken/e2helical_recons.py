@@ -39,7 +39,7 @@ def main():
   print("total %d particles"%len(ptcls)) # print out how many particles in the set
   reso=90 # define projections number, more projections mean higher resolution
   #ret=EMData.read_images(update_vol1) # read in the volume set
-  orts=[Transform({"type":"eman","az":old_div(360,reso*j),"phi":0,"alt":90}) for j in range(reso)]
+  orts=[Transform({"type":"eman","az":360//reso*j,"phi":0,"alt":90}) for j in range(reso)]
    
   for cycle1 in range(100):   # the model refinement cycle
   #### the projections has to be cleared before next run
