@@ -537,7 +537,7 @@ class CheckBox(QtGui.QWidget):
 	"""A QCheckBox with a label
 	"""
 	enableChanged = QtCore.pyqtSignal(int)
-	valueChanged = QtCore.pyqtSignal()
+	valueChanged = QtCore.pyqtSignal(bool)
 
 	def __init__(self, parent=None, label=None, value="",labelwidth=30,showenable=-1):
 		#if not parent: raise Exception,"ValSliders must have parents"
