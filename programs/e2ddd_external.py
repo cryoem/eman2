@@ -40,22 +40,23 @@ from sys import argv
 import shutil
 import subprocess
 import shlex
+import distutils.spawn
 
-def which(program):
-	# found at https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-	def is_exe(fpath) :
-		return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-	fpath, fname = os.path.split(program)
-	if fpath:
-		if is_exe(program): return program
-	else:
-		for path in os.environ["PATH"].split(os.pathsep):
-			for f in os.listdir(path):
-				if program in f:
-					exe_file = os.path.join(path, f)
-					if is_exe(exe_file): return exe_file
-	return None
+# def which(program):
+# 	# found at https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+# 	def is_exe(fpath) :
+# 		return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+# 	print(fpath)
+# 	fpath, fname = os.path.split(program)
+# 	if fpath:
+# 		if is_exe(program): return program
+# 	else:
+# 		for path in os.environ["PATH"].split(os.pathsep):
+# 			for f in os.listdir(path):
+# 				if program in f:
+# 					exe_file = os.path.join(path, f)
+# 					if is_exe(exe_file): return exe_file
+# 	return None
 
 def main():
 
@@ -102,7 +103,7 @@ def main():
 	parser.add_argument("--first",  default = None, type=int, help="The index of the leading frame to include in alignment.",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 	parser.add_argument("--last",  default = None, type=int, help="The index of the last frame to include in alignment.", guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--mc2_patch",  default = "", type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '5 5'",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--mc2_patch",  default = "", type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '0 0'",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 
 	parser.add_argument("--tomo", default=False, action="store_true", help="If checked, aligned frames will be placed in a tiltseries located in the 'tiltseries' directory. Otherwise, aligned sums will populate the 'micrographs' directory.",guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="tomo[True]")
 
@@ -152,23 +153,25 @@ def main():
 			print("ERROR: In order to specify the first frame, you must also specify the last frame you wish to include using the --last option.")
 			sys.exit(1)
 
-		program = which("alignframes")
+		program = distutils.spawn.find_executable("alignframes")
 
-	if options.program == "motioncor2":
+	if options.program == "ucsf_motioncor2":
 
-		try: patchx,patchy = map(int,options.patch.split())
-		except:
-			print("ERROR: Could not interpret --patch for use with MotionCor2. Please input integer values in the form: 'X,Y'")
-			sys.exit(1)
+		if options.mc2_patch!="":
+			try: patchx,patchy = map(int,options.mc2_patch.split())
+			except:
+				print("ERROR: Could not interpret --mc2_patch for use with MotionCor2. Please input integer values in the form: 'X,Y'")
+				sys.exit(1)
 
-		if device == "cpu":
+		if options.device == "cpu":
 			print("ERROR: Cannot use --device cpu with MotionCor2. This program requires >= 1 gpu.")
 			sys.exit(1)
 
-		program = which("MotionCor2")
-
+		program = distutils.spawn.find_executable("MotionCor2")
+		
+	
 	if program == None:
-		print("Could not locate {}. Please check that the program is installed and available within your PATH environment variable.".format(options.program.replace("_"," ")))
+		print("Could not locate '{}'. Please check that the program is installed and available within your PATH environment variable as '{}'.".format(options.program.split("_")[1],options.program.split("_")[1]))
 		sys.exit(1)
 
 	ext = None
@@ -233,26 +236,29 @@ def main():
 
 	elif options.program == "ucsf_motioncor2":
 
-		if options.dark != None: cmd += " -Dark {} ".format(options.dark)
-		if options.gain != None: cmd += " -Gain {} ".format(options.gain)
+		if options.dark != None: cmdopts += " -Dark {} ".format(options.dark)
+		if options.gain != None: cmdopts += " -Gain {} ".format(options.gain)
 
-		if options.mc2_flipgain != 0: cmd+=" -FlipGain {}".format(options.mc2_flipgain)
-		if options.mc2_rotgain != 0: cmd+=" -RotGain {}".format(options.mc2_rotgain)
+		if options.mc2_flipgain != 0: cmdopts+=" -FlipGain {}".format(options.mc2_flipgain)
+		if options.mc2_rotgain != 0: cmdopts+=" -RotGain {}".format(options.mc2_rotgain)
 
-		if options.defect_file != None: cmd+=" -DefectFile {}".format(options.defects)
+		if options.defect_file != None: cmdopts+=" -DefectFile {}".format(options.defect_file)
 
-		if options.first != None: cmd+=" -Throw {}".format(options.first)
-		if options.last != None: cmd+=" -Trunc {}".format(options.last)
+		if options.first != None: cmdopts+=" -Throw {}".format(options.first)
+		if options.last != None: cmdopts+=" -Trunc {}".format(options.last)
 
-		if options.group != None: cmd+=" -Group {}".format(options.group)
-		if options.binby != None: cmd+=" -FtBin {}".format(options.binby)
+		if options.groupby != None: cmdopts+=" -Group {}".format(options.groupby)
+		if options.binby != None: cmdopts+=" -FtBin {}".format(options.binby)
 
-		if options.mc2_patch != "": cmd += " -Patch {} ".format(options.mc2_patch)
+		if options.mc2_patch != "": cmdopts += " -Patch {} ".format(options.mc2_patch)
 
 		if options.mdoc != None:
+			if not os.path.isdir(args[0]):
+				print("ERROR: The input must be a directory containing the raw files referenced in the mdoc.")
+
 			if options.tiltseries_name != "":
-				tiltname = "{}/{}.mrc".format(outdir,options.tiltseries_name)
-			else: tiltname="{}/{}.mrc".format(outdir,mdoc_bname)
+				tiltname = "{}/{}.hdf".format(outdir,options.tiltseries_name)
+			else: tiltname="{}/{}.hdf".format(outdir,mdoc_bname)
 
 			info=[]
 			zval=-1
@@ -283,12 +289,14 @@ def main():
 			print("\nWriting tilt series to:   {}".format(tiltname))
 
 			for idx,i in enumerate(sortedlist):
-				if i[2].lower()=="mrc": infile="-InMrc {}.{} ".format(i[1],i[2])
-				if i[2].lower()=="tif": infile+="-InTif {}.{} ".format(i[1],i[2])
+				if i[2].lower()=="mrc": infile="-InMrc {}/{}.{} ".format(args[0],i[1],i[2])
+				if i[2].lower()=="tif": infile="-InTiff {}/{}.{} ".format(args[0],i[1],i[2])
 				outfile="tmp/{}_ali.mrc".format(i[1])
+				if not os.path.isdir("tmp"):
+					os.mkdir("tmp")
 				output = "-OutMrc {}".format(outfile)
 				cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
-			
+				print(cmd)
 				run(cmd,verbose=options.verbose)
 
 				ali = EMData(outfile)
