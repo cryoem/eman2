@@ -39,7 +39,6 @@ import os
 from sys import argv
 import shutil
 import subprocess
-import shlex
 import distutils.spawn
 
 # def which(program):
@@ -84,7 +83,7 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=0, rowspan=1, colspan=2, mode="tomo,spr")
 
-	parser.add_argument("--mdoc", default = None, type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '1 1'",guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=3, col=0,rowspan=1, colspan=2, mode="tomo")
+	parser.add_argument("--mdoc", default = None, type=str, help="When an mdoc or idoc is provided, the raw files are automatically found within the input directory",guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=3, col=0,rowspan=1, colspan=2, mode="tomo")
 
 	parser.add_argument("--dark",  default = None, type=str, help="Use this dark reference.",guitype='filebox',  browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=4, col=0,rowspan=1, colspan=2, mode="tomo,spr")
 	parser.add_argument("--gain",  default = None, type=str, help="Use this gain reference.",guitype='filebox',  browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=5, col=0,rowspan=1, colspan=2, mode="tomo,spr")
@@ -245,7 +244,6 @@ def main():
 		if options.defect_file != None: cmdopts+=" -DefectFile {}".format(options.defect_file)
 
 		if options.first != None: cmdopts+=" -Throw {}".format(options.first)
-		if options.last != None: cmdopts+=" -Trunc {}".format(options.last)
 
 		if options.groupby != None: cmdopts+=" -Group {}".format(options.groupby)
 		if options.binby != None: cmdopts+=" -FtBin {}".format(options.binby)
@@ -253,9 +251,10 @@ def main():
 		if options.mc2_patch != "": cmdopts += " -Patch {} ".format(options.mc2_patch)
 
 		if options.mdoc != None:
-			if not os.path.isdir(args[0]):
-				print("ERROR: The input must be a directory containing the raw files referenced in the mdoc.")
 
+			if not os.path.isdir(args[0]):
+				print("ERROR: When providing an mdoc, the input option must be a directory containing the raw files referenced in the mdoc.")
+				sys.exit(1)
 			if options.tiltseries_name != "":
 				tiltname = "{}/{}.hdf".format(outdir,options.tiltseries_name)
 			else: tiltname="{}/{}.hdf".format(outdir,mdoc_bname)
@@ -279,6 +278,11 @@ def main():
 							else:
 								print("WARNING: {}.{} was not found in {}".format(name,ext,args[0]))
 
+			if options.last != None:
+				numframes=EMUtil.get_image_count("{}/{}.{}".format(args[0],info[0][1],info[0][2]))
+				lastframe=numframes-options.last-1
+				cmdopts+=" -Trunc {}".format(lastframe)
+			
 			sortedlist=sorted(info, key=lambda x: x[0])
 
 			if options.verbose > 0:
@@ -296,7 +300,6 @@ def main():
 					os.mkdir("tmp")
 				output = "-OutMrc {}".format(outfile)
 				cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
-				print(cmd)
 				run(cmd,verbose=options.verbose)
 
 				ali = EMData(outfile)
