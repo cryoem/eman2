@@ -4053,7 +4053,8 @@ def symmetry_related_normals(angles, symmetry):
 		neighbors.append(p.get_matrix()[8:11])
 	return neighbors
 """
-def balance_angular_distribution(params, max_occupy =-1, angstep =15., sym="c1"):
+
+def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c1"):
 	from fundamentals import symclass
 	smc  = symclass(sym)
 	eah  = smc.even_angles(angstep, inc_mirror=0)
