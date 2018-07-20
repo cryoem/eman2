@@ -1,10 +1,12 @@
 # 12/26/2013	Steven Ludtke
 from __future__ import print_function
+from __future__ import division
 # This script is designed to quantitatively analyze DNA minicircles. Could be used for any other small objects as well
 # It first filters and normalizes the data to try to isolate the particles under consideration
 # Next it aligns the particles so the longest axis is along Z, second longest, on Y, and shortest on X. It does this by computing
 # the eigenvectors of the Intertia matrix.
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import os
@@ -58,7 +60,7 @@ for pf in sorted(sys.argv[1:]):
 		continue
 	#print eigvv[0]
 	#print eigvv[1]
-	eig=[(1.0/eigvv[0][i],eigvv[1][:,i]) for i in range(3)]  # extract for sorting
+	eig=[(old_div(1.0,eigvv[0][i]),eigvv[1][:,i]) for i in range(3)]  # extract for sorting
 	#eig=sorted(eig,reverse=True)		# now eig is sorted in order from major to minor axes
 	eig=sorted(eig)		# now eig is sorted in order from major to minor axes
 	T=array([eig[0][1],eig[1][1],eig[2][1]])            # reassemble sorted matrix
@@ -83,7 +85,7 @@ for pf in sorted(sys.argv[1:]):
 	p2.process_inplace("normalize.edgemean")
 	p2.transform(comxf)		# center
 	p2.transform(T)			# reorient
-	p2.process_inplace("mask.sharp",{"outer_radius":p2["nx"]/2-1})
+	p2.process_inplace("mask.sharp",{"outer_radius":old_div(p2["nx"],2)-1})
 	p2.write_image("xf/orig_"+dr+".hdf",drn)
 
 	# now the shape is aligned to Z/Y/X so the greatest axial extent should be along Z
@@ -92,6 +94,6 @@ for pf in sorted(sys.argv[1:]):
 	shp=an.analyze()[0]
 	
 	# Z/Y - should always be >1, Y/X, Z/X
-	out.write("%1.3g\t%1.3g\t%1.3g\t# %s\n"%(shp[2]/shp[1],shp[1]/shp[0],shp[2]/shp[0],pf.split("/")[-1]))
-	print("%1.3g\t%1.3g\t%1.3g\t# %s"%(shp[2]/shp[1],shp[1]/shp[0],shp[2]/shp[0],pf))
+	out.write("%1.3g\t%1.3g\t%1.3g\t# %s\n"%(old_div(shp[2],shp[1]),old_div(shp[1],shp[0]),old_div(shp[2],shp[0]),pf.split("/")[-1]))
+	print("%1.3g\t%1.3g\t%1.3g\t# %s"%(old_div(shp[2],shp[1]),old_div(shp[1],shp[0]),old_div(shp[2],shp[0]),pf))
 	

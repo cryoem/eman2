@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: James Michael Bell 08/06/2015
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA	2111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 
@@ -70,7 +72,7 @@ def main():
 			if iter == 0: bavg=Averagers.get('mean')
 			aavg=Averagers.get('mean')
 			for i in range(nfs):
-				r = Region(box[0]-boxsize/2,box[1]-boxsize/2,boxsize,boxsize)
+				r = Region(box[0]-old_div(boxsize,2),box[1]-old_div(boxsize,2),boxsize,boxsize)
 				d = EMData(options.dddmovie,i,False,r)
 				d.process_inplace('normalize.edgemean')
 				if iter == 0: bavg.add_image(d)

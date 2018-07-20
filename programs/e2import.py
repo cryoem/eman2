@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 import os, shutil, glob
 from EMAN2 import *
@@ -199,7 +201,7 @@ def main():
 					if line[0]=="#" : continue
 					fields = line.split()
 					if len(fields)<4 : continue		# skip lines that don't work
-					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'manual'])
+					boxlist.append([float(fields[0])+old_div(float(fields[3]),2), float(fields[1])+old_div(float(fields[3]),2), 'manual'])
 
 				js=js_open_dict(info_name(filename,nodir=True))
 				js["boxes"]=boxlist
@@ -231,7 +233,7 @@ def main():
 					if line[0]=="#" : continue
 					fields = line.split()
 					if len(fields)<4 : continue		# skip lines that don't work
-					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'tilted'])
+					boxlist.append([float(fields[0])+old_div(float(fields[3]),2), float(fields[1])+old_div(float(fields[3]),2), 'tilted'])
 				js_open_dict(info_name(filename,nodir=True))["boxes_rct"]=boxlist
 
 		elif options.box_type == 'untiltedboxes':
@@ -242,7 +244,7 @@ def main():
 					if line[0]=="#" : continue
 					fields = line.split()
 					if len(fields)<4 : continue		# skip lines that don't work
-					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'untilted'])
+					boxlist.append([float(fields[0])+old_div(float(fields[3]),2), float(fields[1])+old_div(float(fields[3]),2), 'untilted'])
 				js_open_dict(info_name(filename,nodir=True))["boxes_rct"]=boxlist
 
 		elif options.box_type == 'relion_star':
@@ -316,7 +318,7 @@ with the same name, you should specify only the .hed files (no renaming is neces
 			sys.exit(1)
 
 		for i,fsp in enumerate(args):
-			E2progress(logid,float(i)/len(args))
+			E2progress(logid,old_div(float(i),len(args)))
 			if EMData(fsp,0,True)["nz"]>1 :
 				run("e2proc2d.py {} particles/{}.hdf --threed2twod --inplace".format(fsp,base_name(fsp)))
 			else: run("e2proc2d.py {} particles/{}.hdf --inplace".format(fsp,base_name(fsp)))
@@ -453,9 +455,9 @@ with the same name, you should specify only the .hed files (no renaming is neces
 				
 				# shrink, and clip from the origin to give us a good box size. Done from origin so segmentation results will be positioned well for scaling
 				if options.shrink>1:
-					nx=good_size(hdr["nx"]/options.shrink)*options.shrink
-					ny=good_size(hdr["ny"]/options.shrink)*options.shrink
-					nz=good_size(hdr["nz"]/options.shrink)*options.shrink
+					nx=good_size(old_div(hdr["nx"],options.shrink))*options.shrink
+					ny=good_size(old_div(hdr["ny"],options.shrink))*options.shrink
+					nz=good_size(old_div(hdr["nz"],options.shrink))*options.shrink
 #					cmd+="--clip {},{},{},{},{},{} --meanshrink {:d} ".format(nx,ny,nz,nx/2,ny/2,nz/2,options.shrink)
 					cmd+="--clip {},{},{} --meanshrink {:d} ".format(nx,ny,nz,options.shrink)		# no origin shift. If result is scaled up and clipped to original size this may work better
 				else:

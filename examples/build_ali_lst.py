@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2016-05
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import numpy as np
@@ -37,7 +39,7 @@ def main():
 				repname= srcname[:tail+2]+options.replace+srcname[-4:]
 			e1=EMData(repname, 0, True)
 			apix1=e1["apix_x"]
-			options.szmult=apix0/apix1
+			options.szmult=old_div(apix0,apix1)
 			
 	
 	eo=["even","odd"]

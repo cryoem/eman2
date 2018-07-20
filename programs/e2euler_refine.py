@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/14/2016 (sludtke@bcm.edu),
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
@@ -168,7 +170,7 @@ def initialize_data(inputfile,inputmodel,no_weights):
 
 		try: elem["quality"]=float(tmp["class_qual"])
 		except:
-			try: elem["quality"]=1.0/(elem["weight"]+.00001)
+			try: elem["quality"]=old_div(1.0,(elem["weight"]+.00001))
 			except: elem["quality"]=1.0
 		elem["filename"]=inputfile
 		elem["filenum"]=i

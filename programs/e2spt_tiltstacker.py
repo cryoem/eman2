@@ -27,6 +27,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from optparse import OptionParser
 from EMAN2_utils import *
@@ -241,10 +243,10 @@ def main():
 			cmdClip = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --clip=' + clipx + ',' + clipy
 
 			if shiftx:
-				xcenter = int( round( nx/2.0 + float(shiftx)))
+				xcenter = int( round( old_div(nx,2.0) + float(shiftx)))
 				cmdClip += ',' + str(xcenter)
 			if shifty:
-				ycenter = int( round( ny/2.0 + float(shifty)))
+				ycenter = int( round( old_div(ny,2.0) + float(shifty)))
 				cmdClip += ',' + str(ycenter)
 
 			runcmd(options,cmdClip)

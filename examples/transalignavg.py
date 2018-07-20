@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -37,6 +38,7 @@ from __future__ import print_function
 # together, and optionally iterate. Translational alignment only.
 # transalignavg.py <infile> <dot threshold> <iterations> <background> <gamma>
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -79,7 +81,7 @@ for i in range(1,n):
 	
 	a=aa.process("filter.lowpass.gauss",{"cutoff_abs":.1})
 	
-	b=a.align("rotate_translate",ref0,{"nozero":1,"maxshift":nx/2},"dot",{"negative":1})
+	b=a.align("rotate_translate",ref0,{"nozero":1,"maxshift":old_div(nx,2)},"dot",{"negative":1})
 #	b=a.align("translational",ref0,{"nozero":1,"maxshift":nx/2},"dot",{"negative":1})
 #	b.set_attr("rotational",0.0)
 	dot=b.cmp("dot",ref0,{"negative":0,"normalize":1})

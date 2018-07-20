@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 from builtins import range
 '''
 ====================
@@ -167,7 +169,7 @@ def main():
 			if options.shrink:
 				nyquist = ap['apix_x'] * 2.0
 				shnyquist = nyquist * options.shrink
-				ap.process_inplace('filter.lowpass.tanh',{'cutoff_freq':1.0/shnyquist})
+				ap.process_inplace('filter.lowpass.tanh',{'cutoff_freq':old_div(1.0,shnyquist)})
 				ap.process_inplace('math.fft.resample',{'n':options.shrink})
 				
 			nx=ap['nx']
@@ -188,7 +190,7 @@ def main():
 			if options.onlymidz or options.onlymidy or options.onlymidx:
 				
 				if options.onlymidz:	
-					rmid = Region(0, 0, nz/2, nx, ny, 1)
+					rmid = Region(0, 0, old_div(nz,2), nx, ny, 1)
 					print("The region for the orthogonal z slice is", rmid)
 					
 					slicestag += 'z'
@@ -196,7 +198,7 @@ def main():
 						slicestag = '_SLICEmidz'			
 										
 				elif options.onlymidx:
-					rmid = Region(nx/2, 0, 0, 1, ny, nz)
+					rmid = Region(old_div(nx,2), 0, 0, 1, ny, nz)
 					print("The region for the orthogonal x slice is", rmid)
 
 					#slicemidx=a.get_clip(rmidx)
@@ -210,7 +212,7 @@ def main():
 					#ap.transform( Tx )
 		
 				elif options.onlymidy:
-					rmid = Region(0, ny/2, 0, nx, 1, nz)
+					rmid = Region(0, old_div(ny,2), 0, nx, 1, nz)
 					print("The region for the orthogonal y slice is", rmid)
 		
 					#slicemidy=a.get_clip(rmidy)
@@ -233,15 +235,15 @@ def main():
 				if options.shrink:
 					nyquist = app['apix_x'] * 2.0
 					shnyquist = nyquist * options.shrink
-					app.process_inplace('filter.lowpass.tanh',{'cutoff_freq':1.0/shnyquist})
+					app.process_inplace('filter.lowpass.tanh',{'cutoff_freq':old_div(1.0,shnyquist)})
 					app.process_inplace('math.meanshrink',{'n':options.shrink})
 				
 				#regions={}
 				if not options.orthogonaloff:
 					print("Generating orthogonal slices")
-					rmidz = Region(0, 0, nz/2, nx, ny, 1)
-					rmidx = Region(nx/2, 0, 0, 1, ny, nz)
-					rmidy = Region(0, ny/2, 0, nx, 1, nz)
+					rmidz = Region(0, 0, old_div(nz,2), nx, ny, 1)
+					rmidx = Region(old_div(nx,2), 0, 0, 1, ny, nz)
+					rmidy = Region(0, old_div(ny,2), 0, nx, 1, nz)
 					#tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
 
 					regions={0:rmidz,1:rmidx,2:rmidy}

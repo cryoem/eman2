@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Liwei Peng, 01/30/2005 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 import EMAN2
 from EMAN2 import *
@@ -1450,11 +1452,11 @@ class TestEMData(unittest.TestCase):
         
         self.assertEqual(type(array).__name__, 'ndarray')
         self.assertEqual(array.dtype, "complex64")
-        self.assertEqual(array.shape, (ny, nx2/2))
+        self.assertEqual(array.shape, (ny, old_div(nx2,2)))
 
         for i in range(ny):
             for j in range(0, nx2, 2):
-                c1 = array[i][j/2]
+                c1 = array[i][old_div(j,2)]
                 testlib.assertfloat(self, fft.get_value_at(j,i), c1.real)
                 testlib.assertfloat(self, fft.get_value_at(j+1,i), c1.imag)
 
@@ -1462,7 +1464,7 @@ class TestEMData(unittest.TestCase):
         e *= 2
         for i in range(ny):
             for j in range(0, nx2, 2):
-                c1 = array[i][j/2]
+                c1 = array[i][old_div(j,2)]
                 testlib.assertfloat(self, fft.get_value_at(j,i), c1.real)
                 testlib.assertfloat(self, fft.get_value_at(j+1,i), c1.imag)
 
@@ -1470,7 +1472,7 @@ class TestEMData(unittest.TestCase):
         array *= 2
         for i in range(ny):
             for j in range(0, nx2, 2):
-                c1 = array[i][j/2]
+                c1 = array[i][old_div(j,2)]
                 testlib.assertfloat(self, fft.get_value_at(j,i), c1.real)
                 testlib.assertfloat(self, fft.get_value_at(j+1,i), c1.imag)
 
@@ -1493,12 +1495,12 @@ class TestEMData(unittest.TestCase):
         array = fft.get_3dcview()
         self.assertEqual(type(array).__name__, 'ndarray')
         self.assertEqual(array.dtype, "complex64")
-        self.assertEqual(array.shape, (nz, ny, nx2/2))
+        self.assertEqual(array.shape, (nz, ny, old_div(nx2,2)))
 
         for i in range(nz):
             for j in range(ny):
                 for k in range(0,nx2,2):
-                    c1 = array[i][j][k/2]
+                    c1 = array[i][j][old_div(k,2)]
                     testlib.assertfloat(self, fft.get_value_at(k,j,i), c1.real)
                     testlib.assertfloat(self, fft.get_value_at(k+1,j,i), c1.imag)
 
@@ -1506,7 +1508,7 @@ class TestEMData(unittest.TestCase):
         for i in range(nz):
             for j in range(ny):
                 for k in range(0,nx2,2):
-                    c1 = array[i][j][k/2]
+                    c1 = array[i][j][old_div(k,2)]
                     testlib.assertfloat(self, fft.get_value_at(k,j,i), c1.real)
                     testlib.assertfloat(self, fft.get_value_at(k+1,j,i), c1.imag)
 
@@ -1516,7 +1518,7 @@ class TestEMData(unittest.TestCase):
         for i in range(nz):
             for j in range(ny):
                 for k in range(0,nx2,2):
-                    c1 = array[i][j][k/2]
+                    c1 = array[i][j][old_div(k,2)]
                     testlib.assertfloat(self, fft.get_value_at(k,j,i), c1.real)
                     testlib.assertfloat(self, fft.get_value_at(k+1,j,i), c1.imag)
 
@@ -2217,7 +2219,7 @@ class TestEMData(unittest.TestCase):
         volume = EMData()
         volume.read_image(infile)
         pi = math.pi
-        t3d = Transform({"type":"eman", "az":pi/3, "alt":pi/5, "phi":1})
+        t3d = Transform({"type":"eman", "az":old_div(pi,3), "alt":old_div(pi,5), "phi":1})
         proj = volume.project("standard", { "transform" : t3d})
         proj = volume.project("standard", t3d)
         self.assertEqual(proj.get_xsize(), n)
@@ -2297,15 +2299,15 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.read_image(infile)
 
-        region1 = Region(nx/4, ny/4, nx/2, ny/2)
+        region1 = Region(old_div(nx,4), old_div(ny,4), old_div(nx,2), old_div(ny,2))
         outfile1 = filebase + "_out1.mrc"
         e2 = e.get_clip(region1)
         e2.write_image(outfile1)
 
-        self.assertEqual(e2.get_xsize(), nx/2)
-        self.assertEqual(e2.get_ysize(), ny/2)
+        self.assertEqual(e2.get_xsize(), old_div(nx,2))
+        self.assertEqual(e2.get_ysize(), old_div(ny,2))
         
-        region2 = Region(-nx/4, -ny/4, 2*nx, 2*ny)
+        region2 = Region(old_div(-nx,4), old_div(-ny,4), 2*nx, 2*ny)
         outfile2 = filebase + "_out2.mrc"
         e3 = e.get_clip(region2)
         e3.write_image(outfile2)
@@ -2554,12 +2556,12 @@ class TestEMData(unittest.TestCase):
                     self.assertAlmostEqual(2.0 * d[z][y][x], d88[z][y][x], 3)
             
         #test division
-        e9 = e / 5.0
+        e9 = old_div(e, 5.0)
         d9 = e9.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
-                    self.assertAlmostEqual(d[z][y][x]/5.0, d9[z][y][x], 3)
+                    self.assertAlmostEqual(old_div(d[z][y][x],5.0), d9[z][y][x], 3)
         
         if(IS_TEST_EXCEPTION):
             #image must be the same size
@@ -2592,12 +2594,12 @@ class TestEMData(unittest.TestCase):
                     self.assertEqual(exception_type(runtime_err), "InvalidValueException")
             
         #test division
-        e99 = 0.005 / e
+        e99 = old_div(0.005, e)
         d99 = e99.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
-                    self.assertAlmostEqual(0.005/d[z][y][x], d99[z][y][x], 2)
+                    self.assertAlmostEqual(old_div(0.005,d[z][y][x]), d99[z][y][x], 2)
 
     def test_stat_locations(self):
         """test locational stats ............................"""

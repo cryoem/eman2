@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Jesus Galaz, 11/01/2012; last update 31/oct/2015
 # Copyright (c) 2011 Baylor College of Medicine
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 import os
 from EMAN2 import *
@@ -371,7 +373,7 @@ def main():
 		
 		if options.subtiltsdir or options.coords:
 			
-			radius = ptclnx/2.0
+			radius = old_div(ptclnx,2.0)
 			
 			if options.radius:
 				radius = options.radius
@@ -1043,7 +1045,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			For negative tilt angles (clockwise) the defocuses increases (the particle is more defocused)for px right of the tilt axis while
 			defocus decreases (more overfocused, less defocused) for particles left of the tilt axis.
 			'''
-			px = ( coordx - framexsize/2.0 ) * apix/10000
+			px = ( coordx - old_div(framexsize,2.0) ) * apix/10000
 			if px < 0:
 				print("\npx (in microns) is left of the tilt axis", px)
 			elif px > 0:
@@ -1078,7 +1080,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 				pass
 
 			else:														#assume the defocus signal comes from the middle
-				middle = ( maxz + minz ) / 2.0
+				middle = old_div(( maxz + minz ), 2.0)
 				relativecoordz = coordz - middle 
 				pz = relativecoordz * apix/10000
 				#pz = ( coordz - icethickness/2.0 ) * apix/10000
@@ -1128,7 +1130,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 		rec = reconstruct3d( options, phfimgs, apix )
 		
 		if defocuserrors:
-			defocuserrorsAvg=sum(defocuserrors)/len(defocuserrors)
+			defocuserrorsAvg=old_div(sum(defocuserrors),len(defocuserrors))
 			rec['spt_avgDefocusError']=defocuserrorsAvg
 			
 			globalAvgDefErrors.append(defocuserrorsAvg)
@@ -1151,7 +1153,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 	
 	lines=[]	
 	if globalAvgDefErrors:
-		globalAvgDefError=sum(globalAvgDefErrors)/len(globalAvgDefErrors)
+		globalAvgDefError=old_div(sum(globalAvgDefErrors),len(globalAvgDefErrors))
 		lines.append('Global average error = '+str(globalAvgDefError)+'\n')
 		for error in globalAvgDefErrors:
 			line = str(error)+'\n'
@@ -1251,10 +1253,10 @@ def reconstruct3d( options, phfimgs, apix ):
 
 def clip2D( img, size ):
 	
-	imgxc = img['nx']/2
-	imgyc = img['ny']/2
+	imgxc = old_div(img['nx'],2)
+	imgyc = old_div(img['ny'],2)
 	
-	Rimg =  Region( (2*imgxc - size)/2, (2*imgyc - size)/2, 0, size , size , 1)
+	Rimg =  Region( old_div((2*imgxc - size),2), old_div((2*imgyc - size),2), 0, size , size , 1)
 	img.clip_inplace( Rimg )
 	
 	return img
@@ -1268,11 +1270,11 @@ def clip3D( vol, sizex, sizey=0, sizez=0 ):
 	if not sizez:
 		sizez=sizex
 	
-	volxc = vol['nx']/2
-	volyc = vol['ny']/2
-	volzc = vol['nz']/2
+	volxc = old_div(vol['nx'],2)
+	volyc = old_div(vol['ny'],2)
+	volzc = old_div(vol['nz'],2)
 	
-	Rvol =  Region( (2*volxc - sizex)/2, (2*volyc - sizey)/2, (2*volzc - sizez)/2, sizex , sizey , sizez)
+	Rvol =  Region( old_div((2*volxc - sizex),2), old_div((2*volyc - sizey),2), old_div((2*volzc - sizez),2), sizex , sizey , sizez)
 	vol.clip_inplace( Rvol )
 	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
 	
@@ -1457,8 +1459,8 @@ def getangles( options ):
 
 def padder(options,img,sizex,sizey):
 	
-	xc = img['nx']/2
-	yc = img['ny']/2
+	xc = old_div(img['nx'],2)
+	yc = old_div(img['ny'],2)
 	
 	print("\nThe center of the image to pad is at", xc,yc)
 	
@@ -1473,7 +1475,7 @@ def padder(options,img,sizex,sizey):
 	#	factor = int(side/8)*8 + 8
 	#	print "\nKKKKKK\nKKKKKKK\nKKKKKKK The box has been changed to the closest (and larger) power of 2, see", side
 			
-	r = Region((2*xc - sizex)/2,(2*yc - sizey)/2, sizex, sizey)
+	r = Region(old_div((2*xc - sizex),2),old_div((2*yc - sizey),2), sizex, sizey)
 	
 	print("Therefore,region is",r)
 	imgp = img.get_clip(r)
@@ -1622,7 +1624,7 @@ def tilerfft(options, angle, imgt, currentstrip, nstrips, start, end, step, save
 	if nbx > options.mintiles:
 	
 		if fftcumulative:
-			fftcumulative.mult(1.0/(nbx*options.tilesize**2))
+			fftcumulative.mult(old_div(1.0,(nbx*options.tilesize**2)))
 			fftcumulative.process_inplace("math.sqrt")
 			fftcumulative["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 	
@@ -1678,7 +1680,7 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 
 	
 	fftbg = ffta.process("math.nonconvex")
-	fft1d = ffta.calc_radial_dist(ffta.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
+	fft1d = ffta.calc_radial_dist(old_div(ffta.get_ysize(),2),0.0,1.0,1)	# note that this handles the ri2inten averages properly
 	
 	#print "fft1d is", fft1d, type(fft1d)
 	
@@ -1701,7 +1703,7 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 	ctf = None
 	try:
 		# Compute 1-D curve and background
-		ds = 1.0/( options.apix * options.tilesize )
+		ds = old_div(1.0,( options.apix * options.tilesize ))
 		bg_1d = e2ctf.low_bg_curve(fft1d,ds)
 		
 		#initial fit, background adjustment, refine fit, final background adjustment
@@ -1734,7 +1736,7 @@ def fitdefocus( ffta, angle, apix, options, nsubmicros, currentsubmicro, defocus
 		'''
 		Plot background subtracted curve?
 		'''
-		fz=int(ctf.zero(0)/(ds*2)) 	#jesus
+		fz=int(old_div(ctf.zero(0),(ds*2))) 	#jesus
 		bs =[ str(i) + ' ' + str(fft1d[i]-ctf.background[i]) for i in range(fz)] #jesus
 	
 		bsoutfile = options.path + '/angle_' + signtag + str( int(math.fabs( round(angle) ))) + '_strip' + str(currentsubmicro).zfill(len(str(nsubmicros))) + '_bs1d.txt'
@@ -1857,15 +1859,15 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			#ffta, angle, apix, options, nsubmicros, currentsubmicro, defocusmin, defocusmax, defocusstep, x=0 ):
 			globaldefocus = fitdefocus( fftg, angle, apix, options, 1, 0, defocusmin, defocusmax, defocusstep, 0)
 		
-			globalmiddle = ( nx/2.0 ) * apix / 10000	#convert to micrometers, so x and y axis are in the same units
+			globalmiddle = ( old_div(nx,2.0) ) * apix / 10000	#convert to micrometers, so x and y axis are in the same units
 			
 			
 			
 			
 			#get central region of 3 tile width
-			r = Region( img['nx']/2 - options.tilesize - int(ceil(options.tilesize/2.0)), 0, 3*options.tilesize, img['ny'])
+			r = Region( old_div(img['nx'],2) - options.tilesize - int(ceil(old_div(options.tilesize,2.0))), 0, 3*options.tilesize, img['ny'])
 			
-			r = Region( img['nx']/2 - options.tilesize, 0, 2*options.tilesize, img['ny'])
+			r = Region( old_div(img['nx'],2) - options.tilesize, 0, 2*options.tilesize, img['ny'])
 
 			
 			fixcenter = 0
@@ -1895,7 +1897,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				defocuserror = globaldefocus-centerdefocus
 			
 				if defocuserror:
-					averagedefocus = (globaldefocus+centerdefocus)/2.0
+					averagedefocus = old_div((globaldefocus+centerdefocus),2.0)
 					globaldefocus = averagedefocus
 					
 					#defocusmin = averagedefocus - defocuswiggle/2.0
@@ -1922,7 +1924,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 		
 		xs = []
 		imgdefocuses = []
-		micrographmiddle = img['nx']/2
+		micrographmiddle = old_div(img['nx'],2)
 		
 		#do not strip-fit if an image is bad
 		if imgindx not in skip:
@@ -1936,7 +1938,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			'''#
 			#Position of the tilt axis in micrometers
 			#'''
-			pxta = ( nx/2.0 ) * apix/10000
+			pxta = ( old_div(nx,2.0) ) * apix/10000
 		
 			'''#
 			#Find the distance dx100dz away from the tilt axis, across which the vertical distance 
@@ -1944,7 +1946,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			#'''
 		
 			#deltata = pxta
-			dx100dz = nx/2.0						#at zero degrees dzx100 is half the micrograph size, since there should be no defocus variation due to tilt
+			dx100dz = old_div(nx,2.0)						#at zero degrees dzx100 is half the micrograph size, since there should be no defocus variation due to tilt
 			if math.fabs( angle ) > 0.5:
 		
 				#defocusvariationlimit is in micrometers. it is the variation in defocus to tolerate across a strip due to tilt and still consider the defocus "constant"
@@ -1952,12 +1954,12 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				dx100dz = math.fabs( options.defocusvariationlimit / numpy.sin( math.radians( angle ) ) * 10000/apix )	#calculate strip half-width in pixels
 			
 				if icethickness:
-					depthdefocus = math.fabs( icethickness / numpy.cos( math.radians( angle ) ) )	#icethickness, in pixels, will contribute to defocus variation with tilt, in addition to the tilting itself
+					depthdefocus = math.fabs( old_div(icethickness, numpy.cos( math.radians( angle ) )) )	#icethickness, in pixels, will contribute to defocus variation with tilt, in addition to the tilting itself
 				
 					dx100dz += depthdefocus				
 						
-				if dx100dz > nx/2.0:
-					dx100dz = nx/2.0
+				if dx100dz > old_div(nx,2.0):
+					dx100dz = old_div(nx,2.0)
 		
 			'''#
 			#submicrograph width (the region at "equal/constant defocus" to tile) will be twice dx100dz  
@@ -1988,7 +1990,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 			largest odd number of micrographs that fit in the whole image and treat the rest 
 			as excedent. 
 			#'''
-			nmicros = nx/micrographwidth
+			nmicros = old_div(nx,micrographwidth)
 			nmicrosint = int( math.floor( nmicros ) )	
 			if not nmicrosint % 2:
 				nmicrosint -= 1
@@ -2025,10 +2027,10 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 						elif iz == nmicrosint + 1:				#last submicrograph starting point; range goes from 0 to microsint + 2 at most, without including the upper bound
 							start = nx - micrographwidth
 						else:
-							start = (iz-1)*micrographwidth + excedent/2
+							start = (iz-1)*micrographwidth + old_div(excedent,2)
 						
 					else:
-						start = (iz)*micrographwidth + excedent/2		#Don't bother with edge micrographs if aux is 0
+						start = (iz)*micrographwidth + old_div(excedent,2)		#Don't bother with edge micrographs if aux is 0
 					
 					print("withOUT adjuststart, start to append is", start)
 				
@@ -2038,7 +2040,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					micrographstarts.append( int(start) )
 				
 			else:
-				nmicrosint = int( math.floor( ( nx - options.tilesize ) / options.stripstep ) )
+				nmicrosint = int( math.floor( old_div(( nx - options.tilesize ), options.stripstep) ) )
 			
 				excedentnew = nx - options.tilesize * nmicrosint
 			
@@ -2090,7 +2092,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 				#fft( micrographstarts[m], micrographstarts[m] + micrographwidth - options.tilesize + 1, options.stripstep ):
 	
 				
-				micrographmiddle =  ( list(micrographstarts)[m] + micrographwidth/2 ) * apix / 10000.00 #xaxis in micrometers too
+				micrographmiddle =  ( list(micrographstarts)[m] + old_div(micrographwidth,2) ) * apix / 10000.00 #xaxis in micrometers too
 
 				stripdefocus = None
 				if fftc:
@@ -2098,11 +2100,11 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					if icethickness and options.coords:
 						icethicknessm = icethickness * img['apix_x']/10000
 					
-						defocuswiggley = math.fabs( icethicknessm / math.cos( math.radians(angle) ))
+						defocuswiggley = math.fabs( old_div(icethicknessm, math.cos( math.radians(angle) )))
 						if defocuserror:
 							defocuswiggley += defocuserror
 						
-						defocuswigglex = 2*math.fabs( -1*(micrographmiddle - img['nx']/2.0)*math.sin( math.radians(angle) ) * img['apix_x']/10000)
+						defocuswigglex = 2*math.fabs( -1*(micrographmiddle - old_div(img['nx'],2.0))*math.sin( math.radians(angle) ) * img['apix_x']/10000)
 						
 						defocuswiggle = defocuswigglex + defocuswiggley
 						
@@ -2137,7 +2139,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					print("\nappended (good) micrographmiddle is", micrographmiddle)	
 				else:
 					print("\nappending to failed results")
-					faileddefs.append( (defocusmin+defocusmax)/2 )
+					faileddefs.append( old_div((defocusmin+defocusmax),2) )
 					failedmids.append( micrographmiddle )
 			
 			#xs = numpy.array( [i*options.stripstep + options.tilesize/2.0 for i in range(len(imgdefocuses))] )
@@ -2201,8 +2203,8 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 					defocuscalc = globaldefocus
 					middef = imgdefocuses[0]
 					if len(imgdefocuses) > 2:
-						middef = imgdefocuses[len(imgdefocuses)/2]
-						defocuscalc = (globaldefocus+middef)/2.0
+						middef = imgdefocuses[old_div(len(imgdefocuses),2)]
+						defocuscalc = old_div((globaldefocus+middef),2.0)
 					
 					
 										
@@ -2232,7 +2234,7 @@ def sptctffit( options, apix, imagefilenames, angles, icethickness ):
 	angerrors = collections.OrderedDict(sorted(angerrors.items()))
 	if angerrors:
 	
-		avgangerror = sum( [  math.sqrt(angerrors[a]*angerrors[a]) for a in list(angerrors.keys()) ] ) /len( angerrors )
+		avgangerror = old_div(sum( [  math.sqrt(angerrors[a]*angerrors[a]) for a in list(angerrors.keys()) ] ),len( angerrors ))
 		
 		a=open(options.path + '/angular_error_avg.txt','w')
 		a.writelines([str(avgangerror)+'\n'])
@@ -2383,7 +2385,7 @@ def sptctfplotter( options, nx, xdata, ydata, maxangle, angle, angleindx, nangle
 	'''
 	
 	
-	yavg = sum( ydata )/len(ydata)
+	yavg = old_div(sum( ydata ),len(ydata))
 	miny = yavg
 	maxy = yavg
 	
@@ -2487,11 +2489,11 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 	sizeploty=15.0
 	
 	if sizerangex > sizerangey:
-		proportionfactor = sizerangey/sizerangex
+		proportionfactor = old_div(sizerangey,sizerangex)
 		sizeploty =  int( round( sizeploty*proportionfactor ) )
 		
 	elif sizerangey > sizerangex:
-		proportionfactor = sizerangex/sizerangey
+		proportionfactor = old_div(sizerangex,sizerangey)
 		sizeplotx = int( round( sizeplotx*proportionfactor ) )
 	print("\nsizerangex=%f, sizerangey=%f, proportionfactor=%f therefore sizeplotx=%d, sizeploty=%d" %(sizerangex,sizerangey,proportionfactor,sizeplotx,sizeploty))
 		
@@ -2527,7 +2529,7 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 	maxy = max(yaxis)
 	miny = min(yaxis)
 	yrange = maxy - miny
-	extray = yrange/20
+	extray = old_div(yrange,20)
 	
 	#if options.yrange:
 	#	ylim1 = int( options.yrange.split(',')[0] )
@@ -2539,14 +2541,14 @@ def generalplotter( options, xaxis, yaxis, xlabel, ylabel, plotname, title, flip
 	maxx = max(xaxis)
 	minx = min(xaxis)
 	xrange = maxx - minx
-	extrax = xrange/20
+	extrax = old_div(xrange,20)
 	
 	
 	if 'pixels' in xlabel or 'pixels' in ylabel:
 		if options.radius:
 			extray = extrax = options.radius * 2
 		elif ptclnx:
-			extray = extrax = int(ptclnx/2)
+			extray = extrax = int(old_div(ptclnx,2))
 		
 			
 	print("\nmax y is", maxy)
@@ -2626,7 +2628,7 @@ def bgAdj(ctf,fg_1d):
 
 	# Find the minimum value near the origin, which we'll use as a zero (though it likely should not be)
 	mv=(fg_1d[1],1)
-	fz=int(ctf.zero(0)/(ds*2))
+	fz=int(old_div(ctf.zero(0),(ds*2)))
 	
 	
 
@@ -2638,7 +2640,7 @@ def bgAdj(ctf,fg_1d):
 
 	# now we add all of the zero locations to our XYData object
 	for i in range(100):
-		z=int(ctf.zero(i)/ds)
+		z=int(old_div(ctf.zero(i),ds))
 		if z>=len(bg_1d)-1: break
 		if fg_1d[z-1]<fg_1d[z] and fg_1d[z-1]<fg_1d[z+1]: mv=(z-1,fg_1d[z-1])
 		elif fg_1d[z]<fg_1d[z+1] : mv=(z,fg_1d[z])

@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # Author: Jesus Galaz, 03/20112
 # Copyright (c) 2011 Baylor College of Medicine
@@ -29,6 +30,7 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import math
@@ -121,7 +123,7 @@ def main():
 		if options.preprocess:
 			average.process_inplace(options.preprocess[0],options.preprocess[1])
 	else:
-		average = sum(ptcls)/len(ptcls)
+		average = old_div(sum(ptcls),len(ptcls))
 	
 	average.process_inplace(options.normproc[0],options.normproc[1])
 
@@ -133,7 +135,7 @@ def main():
 		variance = variance + (p-average)*(p-average)
 		print("I have added this particle to the variance",k)
 		k+=1	
-	variance = variance/len(ptcls)
+	variance = old_div(variance,len(ptcls))
 	
 	print("I have calculated the variance")
 	

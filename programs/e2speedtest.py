@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 import os
 import sys
@@ -89,7 +91,7 @@ improved with time."""
 
 	pat=test_image(size=(SIZE,SIZE))
 	pat.process_inplace('normalize.circlemean')
-	pat.process_inplace("mask.sharp", {"outer_radius":pat.get_xsize()/2.0})
+	pat.process_inplace("mask.sharp", {"outer_radius":old_div(pat.get_xsize(),2.0)})
 
 	data = [None for i in range(NTT)]
 
@@ -101,7 +103,7 @@ improved with time."""
 		noise.mult(.2)
 		data[i].add(noise)
 		data[i].process_inplace('normalize.circlemean')
-		data[i].process_inplace('mask.sharp', {'outer_radius':data[i].get_xsize()/2})
+		data[i].process_inplace('mask.sharp', {'outer_radius':old_div(data[i].get_xsize(),2)})
 
 #		 if i < 5 :
 #			 data[i].write_image('speed.hed', i, EMUtil.ImageType.IMAGE_IMAGIC)
@@ -112,8 +114,8 @@ invalidate certain tests. Also note that overhead is difficult to compensate for
 so in most cases it is not dealt with.')
 		t1 = time.clock()
 		for fj in range(500):
-			for i in range(NTT/2):
-				data[i].dot(data[i + NTT / 2])
+			for i in range(old_div(NTT,2)):
+				data[i].dot(data[i + old_div(NTT, 2)])
 		t2 = time.clock()
 		ti = t2-t1
 		print('Baseline 1: %d, %d x %d dot()s in %1.1f sec	%1.1f/sec-> ~%1.2f mflops' % \
@@ -121,7 +123,7 @@ so in most cases it is not dealt with.')
 
 		t1 = time.clock()
 		for fj in range(500):
-			for i in range(NTT/2):
+			for i in range(old_div(NTT,2)):
 				data[1].dot(data[12])
 		t2 = time.clock()
 		ti = t2-t1
@@ -130,7 +132,7 @@ so in most cases it is not dealt with.')
 
 		t1 = time.clock()
 		for fj in range(100):
-			for i in range(NTT/2):
+			for i in range(old_div(NTT,2)):
 				tmp=data[i].do_fft()
 		t2 = time.clock()
 		ti = t2-t1
@@ -139,7 +141,7 @@ so in most cases it is not dealt with.')
 		
 		t1 = time.clock()
 		for fj in range(100):
-			for i in range(NTT/2):
+			for i in range(old_div(NTT,2)):
 				tmp=data[i].process("math.squared")
 		t2 = time.clock()
 		ti = t2-t1
@@ -148,7 +150,7 @@ so in most cases it is not dealt with.')
 
 		t1 = time.clock()
 		for fj in range(100):
-			for i in range(NTT/2):
+			for i in range(old_div(NTT,2)):
 				tmp=data[i].process("math.sqrt")
 		t2 = time.clock()
 		ti = t2-t1
@@ -157,7 +159,7 @@ so in most cases it is not dealt with.')
 	
 		t1 = time.clock()
 		for fj in range(100):
-			for i in range(NTT/2):
+			for i in range(old_div(NTT,2)):
 				tmp=data[i].translate(-32,-32,0)
 		t2 = time.clock()
 		ti = t2-t1
@@ -169,16 +171,16 @@ so in most cases it is not dealt with.')
 	tms=[]
 	t1 = time.clock()
 	if options.short:
-		NTT=NTT/2
+		NTT=old_div(NTT,2)
 		rng=1
 	else: rng=8
 	for i in range(rng):
 		t11 = time.clock()
 		for j in range(5, NTT):
 			if options.best:
-				tmp = data[i].align('rtf_best', data[j], {"flip":None, "maxshift":SIZE/8})
+				tmp = data[i].align('rtf_best', data[j], {"flip":None, "maxshift":old_div(SIZE,8)})
 			elif options.slow:
-				tmp = data[i].align('rtf_slow', data[j], {"flip":None, "maxshift":SIZE/8})
+				tmp = data[i].align('rtf_slow', data[j], {"flip":None, "maxshift":old_div(SIZE,8)})
 			elif options.old:
 				tmp = data[i].align('rotate_translate_flip', data[j], {})
 				data[i].del_attr("xform.align2d")
@@ -205,7 +207,7 @@ so in most cases it is not dealt with.')
 		print('An Intel Xeon X5675 3.07Ghz SF ----------------------------------')
 		print('An Intel Core i7-3960X 3.3Ghz SF --------------------------------')
 
-	if not options.short: print('\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0)))
+	if not options.short: print('\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (old_div(2.3,tms.mean()),old_div(2.3,tms.mean())-old_div(2.3,(tms.mean()+tms.std())),old_div(tms.mean(),(NTT-5.0)),old_div(tms.std(),(NTT-5.0))))
 	
 	try:
 		for l in open("/proc/cpuinfo","r"):
@@ -215,9 +217,9 @@ so in most cases it is not dealt with.')
 		
 	out=open("speedtest_result.txt","a")
 	if options.simpleout :
-		out.write("{}\t{}\n".format(SIZE,2.3/tms.mean()))
+		out.write("{}\t{}\n".format(SIZE,old_div(2.3,tms.mean())))
 	else:
-		out.write("speed: {}\tsize: {}\tOS: {}\tCPU: {}\n".format(2.3/tms.mean(),SIZE,get_platform(),cpu))
+		out.write("speed: {}\tsize: {}\tOS: {}\tCPU: {}\n".format(old_div(2.3,tms.mean()),SIZE,get_platform(),cpu))
 #	print '\nThis represents %1.2f (RTFAlign+Refine)/sec\n' % (5.0 * (NTT - 5.0) / ti)
 
 if __name__ == "__main__":

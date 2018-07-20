@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # align all particles to reference and store alignment results
 # Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
@@ -30,6 +31,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -104,8 +106,8 @@ This program will take an input stack of subtomograms and a reference volume, an
 		ref.append(EMData(reffile,0))
 
 		if options.goldstandard>0 :
-			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
-			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
 			ref[0].write_image("{}/align_ref.hdf".format(options.path),0)
 			ref[1].write_image("{}/align_ref.hdf".format(options.path),1)
 

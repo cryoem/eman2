@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 '''
 ====================
 Author: Jesus Galaz - 02/March/2013, Last update: 29/October/2014
@@ -195,12 +197,12 @@ def cylinder( options ):
 	if options.radius:
 		radius = options.radius
 	else:
-		radius = box/2.0
+		radius = old_div(box,2.0)
 		
 	if options.height:
 		height = options.height
 	else:
-		height = box/2.0
+		height = old_div(box,2.0)
 	
 	maskout = mask.process("testimage.cylinder",{'height':height,'radius':radius})
 	finalmask = maskout

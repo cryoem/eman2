@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -88,15 +90,15 @@ def main():
 			#if options.constbfactor>0 : ctf.bfactor=options.constbfactor
 			noctfflag = True
 
-		ds=1.0/(apix*box*oversamp)
-		nx=data["nx"]/box-1
+		ds=old_div(1.0,(apix*box*oversamp))
+		nx=old_div(data["nx"],box)-1
 		cumulfft=EMData(box,box)
 		cumulfft.do_fft_inplace()
 		nbx=0
 		for ix,x in enumerate(range(nx)):
-			for iy,y in enumerate(range(data["ny"]/box-1)):
+			for iy,y in enumerate(range(old_div(data["ny"],box)-1)):
 				# read the data and make the FFT
-				clip=data.get_clip(Region(x*box+box/2,y*box+box/2,box,box))
+				clip=data.get_clip(Region(x*box+old_div(box,2),y*box+old_div(box,2),box,box))
 				clip.process_inplace("normalize.edgemean")
 				if oversamp>1 : clip=clip.get_clip(Region(0,0,box*oversamp,box*oversamp))		# since we aren't using phases, doesn't matter if we center it or not
 				fft=clip.do_fft()
@@ -104,12 +106,12 @@ def main():
 				cumulfft+=fft
 				nbx+=1
 
-		cumulfft.mult(1.0/(nbx*box**2))
+		cumulfft.mult(old_div(1.0,(nbx*box**2)))
 		cumulfft.process_inplace("math.sqrt")
 		cumulfft["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 
 		fftbg=cumulfft.process("math.nonconvex")
-		fft1d=cumulfft.calc_radial_dist(cumulfft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
+		fft1d=cumulfft.calc_radial_dist(old_div(cumulfft.get_ysize(),2),0.0,1.0,1)	# note that this handles the ri2inten averages properly
 
 		if options.nobgsub or noctfflag:
 			s=np.arange(0,ds*len(fft1d),ds)
@@ -137,7 +139,7 @@ def main():
 
 			# Find the minimum value near the origin, which we'll use as a zero (though it likely should not be)
 			mv=(fft1d[1],1)
-			fz=int(ctf.zero(0)/(ds*2))
+			fz=int(old_div(ctf.zero(0),(ds*2)))
 			for lz in range(1,fz):
 				mv=min(mv,(fft1d[lz],lz))
 
@@ -145,7 +147,7 @@ def main():
 
 			# now we add all of the zero locations to our XYData object
 			for i in range(100):
-				z=int(ctf.zero(i)/ds)
+				z=int(old_div(ctf.zero(i),ds))
 				if z>=len(bg_1d)-1: break
 				if fft1d[z-1]<fft1d[z] and fft1d[z-1]<fft1d[z+1]: mv=(z-1,fft1d[z-1])
 				elif fft1d[z]<fft1d[z+1] : mv=(z,fft1d[z])
@@ -179,13 +181,13 @@ def main():
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+			for i in range(int(old_div(.04,ds))+1,min(int(old_div(0.15,ds)),len(s)-1)):
 				if bgsub[i]>0 :
 					rto+=fit[i]
 					nrto+=fabs(bgsub[i])
 			if nrto==0 : rto=1.0
 			else : rto/=nrto
-			fit=[fit[i]/rto for i in range(len(s))]
+			fit=[old_div(fit[i],rto) for i in range(len(s))]
 
 			pwsfn = "micrographs/{}-pws.txt".format(base_name(arg))
 

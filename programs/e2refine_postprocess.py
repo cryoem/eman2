@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steve Ludtke 06/20/2013 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
@@ -83,7 +85,7 @@ def main():
 	if options.m3dpostprocess==None or len(options.m3dpostprocess.strip())==0 : m3dpostproc=""
 	else : m3dpostproc="--process "+options.m3dpostprocess
 
-	lpfilt=1.15/max(10.0,options.restarget)	# low-pass for alignment
+	lpfilt=old_div(1.15,max(10.0,options.restarget))	# low-pass for alignment
 
 	### Post-processing ###
 	### Even/Odd Alignment
@@ -156,7 +158,7 @@ def main():
 		try:
 			noisecutoff=calc_noise_cutoff(unmaskedfsc, options.ncmult)
 			print("Performing amplitude correction via 'flattening'")
-			print("noise cutoff: {:1.2f}".format(1.0/noisecutoff))
+			print("noise cutoff: {:1.2f}".format(old_div(1.0,noisecutoff)))
 			ampcorrect="--process=filter.lowpass.autob:cutoff_abs=1.0:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
 		except:
 			print("Could not compute noise cutoff from the unmasked FSC.")
@@ -169,7 +171,7 @@ def main():
 		print("NOT performing amplitude correction")
 		ampcorrect = ""
 
-	maxfreq=1.0/options.restarget
+	maxfreq=old_div(1.0,options.restarget)
 	wiener = "--process=filter.wiener.byfsc:fscfile={path}fsc_unmasked_{itr:02d}.txt:snrmult=2:maxfreq={maxfreq}".format(path=path, itr=options.iter, maxfreq=maxfreq)
 	massnorm = "--process=normalize.bymass:thr=1:mass={mass}".format(mass=options.mass)
 
@@ -213,10 +215,10 @@ def main():
 
 		# New version of automasking based on a more intelligent interrogation of the volume
 		vol=EMData("{path}tmp.hdf".format(path=path),0)
-		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.08,1.0/(options.restarget*1.5))})		# Mask at no higher than 10 A resolution
-		md=vol.calc_radial_dist(nx/2,0,1,3)	# radial max value per shell in real space
+		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.08,old_div(1.0,(options.restarget*1.5)))})		# Mask at no higher than 10 A resolution
+		md=vol.calc_radial_dist(old_div(nx,2),0,1,3)	# radial max value per shell in real space
 
-		rmax=int(nx/2.2)		# we demand at least 10% padding
+		rmax=int(old_div(nx,2.2))		# we demand at least 10% padding
 		vmax=max(md[:rmax])			# max value within permitted radius
 
 		# this finds the first radius where the max value @ r falls below overall max/4
@@ -249,7 +251,7 @@ def main():
 
 
 		# Soften mask this way instead of with nshellsgauss
-		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*1.5)})
+		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,(options.restarget*1.5))})
 
 		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 
@@ -261,7 +263,7 @@ def main():
 		#mask=vol.process("mask.auto3d",{"threshold":vmax*.25,"radius":0,"nshells":int(options.restarget*1.2/apix),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
 
 		## Soften mask this way instead of with nshellsgauss
-		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*1.5)})
+		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,(options.restarget*1.5))})
 
 		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 
@@ -322,30 +324,30 @@ def main():
 		noisecutoff=calc_noise_cutoff("{path}fsc_masked_{itr:02d}.txt".format(path=path,itr=options.iter),options.ncmult)
 	except:
 		print("WARNING: no resolution determined from FSC at 0.143, using 1/restarget for tophat cutoff")
-		noisecutoff=1.0/options.restarget
+		noisecutoff=old_div(1.0,options.restarget)
 
 	# readjust 'flatten' for new fsc
 	if options.ampcorrect == "flatten":
 		try:
 			ampcorrect="--process=filter.lowpass.autob:noisecutoff={}:interpolate=1:bfactor=0.0".format(noisecutoff)
-			print("new noise cutoff: {:1.2f}".format(1.0/noisecutoff))
+			print("new noise cutoff: {:1.2f}".format(old_div(1.0,noisecutoff)))
 		except: pass
 
 
 
 	if options.tophat!=None:
 		# _unmasked volumes are NOT tophat filtered
-		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.lowpass.tophat:cutoff_abs=0.5".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,noisecutoff=noisecutoff))
-		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.lowpass.tophat:cutoff_abs=0.5".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,noisecutoff=noisecutoff))
+		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.lowpass.tophat:cutoff_abs=0.5".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
+		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.lowpass.tophat:cutoff_abs=0.5".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
 
 		if options.tophat=="global" :
 			# Technically snrmult should be 1 here, but we use 2 to help speed convergence
 			cmd="e2proc3d.py {path}tmp_even.hdf {evenfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
-			evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,postproc=m3dpostproc,noisecutoff=noisecutoff)
+			evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc,noisecutoff=noisecutoff)
 			run(cmd)
 
 			cmd="e2proc3d.py {path}tmp_odd.hdf {oddfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
-			oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,postproc=m3dpostproc,noisecutoff=noisecutoff)
+			oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc,noisecutoff=noisecutoff)
 			run(cmd)
 
 			### Refilter/mask
@@ -359,7 +361,7 @@ def main():
 			else: symopt="--sym {}".format(options.sym)
 
 			run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {symopt} {postproc}".format(
-				combfile=combfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=1.0/options.restarget,noisecutoff=noisecutoff))
+				combfile=combfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
 		elif options.tophat=="local":
 			# compute local resolution and locally filter averaged volume
 			cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} -v 1".format(path=path,itr=options.iter,threads=options.threads)
@@ -379,16 +381,16 @@ def main():
 			sys.exit(1)
 	else:
 		# _unmasked volumes are filtered
-		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget))
-		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget))
+		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
+		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
 
 		# Technically snrmult should be 1 here, but we use 2 to help speed convergence
 		cmd="e2proc3d.py {path}tmp_even.hdf {evenfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
-		evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,postproc=m3dpostproc)
+		evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
 		run(cmd)
 
 		cmd="e2proc3d.py {path}tmp_odd.hdf {oddfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
-		oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=1.0/options.restarget,postproc=m3dpostproc)
+		oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
 		run(cmd)
 
 		### Refilter/mask
@@ -402,7 +404,7 @@ def main():
 		else: symopt="--sym {}".format(options.sym)
 
 		run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {symopt} {postproc}".format(
-			combfile=combfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=1.0/options.restarget))
+			combfile=combfile,path=path,itr=options.iter,mass=options.mass,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
 
 	try:
 		os.unlink("{path}tmp_even.hdf".format(path=path))

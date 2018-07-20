@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # This program is designed to take an aligned movie stack and extract the best quality frames and average them together. This is
 # similar to capabilities in e2ddd_movie, but without the alignment step.  This program was designed in the context of a specific project
 # and filenaming,etc would have to be tweaked for use in other projects
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -13,8 +15,8 @@ import numpy as np
 
 rng=[80,18,10,4]
 def paircmp(im1,im2):
-	nx=im1["nx"]/256-1
-	ny=im1["ny"]/256-1
+	nx=old_div(im1["nx"],256)-1
+	ny=old_div(im1["ny"],256)-1
 	vals=[0,0,0]
 	for x in range(nx):
 		for y in range(ny):

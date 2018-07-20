@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steve Ludtke 04/16/14 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
@@ -83,7 +85,7 @@ CTF autoprocessing after importing is complete.
 
 	if options.apix<=0 :
 		try:
-			options.apix=star["rlnDetectorPixelSize"][0]/star["rlnMagnification"][0]*10000.0
+			options.apix=old_div(star[rlnDetectorPixelSize][0],star[rlnMagnification][0])*10000.0
 			print("Using {} A/pix from Relion file".format(options.apix))
 		except:
 			print("A/pix not specified and not found in STAR file")
@@ -129,7 +131,7 @@ CTF autoprocessing after importing is complete.
 			dfv=star["rlnDefocusV"][i]
 			dfang=star["rlnDefocusAngle"][i]
 			ctf=EMAN2Ctf()
-			ctf.from_dict({"defocus":(dfu+dfv)/20000.0,"dfang":dfang,"dfdiff":(dfu-dfv)/10000.0,"voltage":star["rlnVoltage"][i],"cs":max(star["rlnSphericalAberration"][i],0.0001),"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
+			ctf.from_dict({"defocus":old_div((dfu+dfv),20000.0),"dfang":dfang,"dfdiff":old_div((dfu-dfv),10000.0),"voltage":star["rlnVoltage"][i],"cs":max(star["rlnSphericalAberration"][i],0.0001),"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
 			jdb["ctf_frame"]=[512,ctf,(256,256),tuple(),5,1]
 		
 		# copy the image

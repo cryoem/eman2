@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 08/28/2006 (sludtke@bcm.edu)
@@ -36,6 +37,7 @@ from __future__ import print_function
 # This tries to match sequence based secondary structure prediction to
 # ssehunter results, based on length and distance constraints in each case
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -79,7 +81,7 @@ def ssematch2(ssehfsp,sspredfsp,options):
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
 	
-	for i in sseh[0]: print("%d "%int(i/1.5), end=' ')
+	for i in sseh[0]: print("%d "%int(old_div(i,1.5)), end=' ')
 	print()
 	
 	skel=readconnect(options.skelpath,len(sseh[0]))
@@ -94,7 +96,7 @@ def ssematch2(ssehfsp,sspredfsp,options):
 # 		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
 	
 	print("%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0])))
-	for i in sspred: print("%4d "%int(i[0]/1.5), end=' ')
+	for i in sspred: print("%4d "%int(old_div(i[0],1.5)), end=' ')
 	print("")
 
 	
@@ -105,7 +107,7 @@ def ssematch(ssehfsp,sspredfsp,options):
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
 	
-	for i in sseh[0]: print("%d "%int(i/1.5), end=' ')
+	for i in sseh[0]: print("%d "%int(old_div(i,1.5)), end=' ')
 	print()
 	
 	skel=readconnect(options.skelpath,len(sseh[0]))
@@ -120,7 +122,7 @@ def ssematch(ssehfsp,sspredfsp,options):
 #		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
 	
 	print("%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0])))
-	for i in sspred: print("%4d "%int(i[0]/1.5), end=' ')
+	for i in sspred: print("%4d "%int(old_div(i[0],1.5)), end=' ')
 	print("")
 	
 	# get lists of possible pairwise assignments and quality assessment for each
@@ -154,7 +156,7 @@ def recursesoln(pairqual,tot,soln,ends,all,maxbad):
 		
 	# if we get here, we're done
 	if len(soln)==len(pairqual)+1:
-		v=sum(tot)/len(tot)
+		v=old_div(sum(tot),len(tot))
 		try:
 			if v<min(all)[0]: 
 				print(v,soln,"\n",ends)

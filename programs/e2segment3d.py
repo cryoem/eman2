@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 02/02/2010 (ludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import random
@@ -155,14 +157,14 @@ def main():
 		apix=volume["apix_x"]
 		for i in centers:
 			for j in i:
-				c.append((j-sz/2.0))
+				c.append((j-old_div(sz,2.0)))
 			c.append(0)
 		p.set_from(c)
 		#embed()
 		p2=PointArray()
 		p2.set_from(p,sym)
 		n=p2.get_number_points()
-		centers=[p2.get_vector_at(i)+sz/2.0 for i in range(n)]
+		centers=[p2.get_vector_at(i)+old_div(sz,2.0) for i in range(n)]
 
 		
 	# write output
@@ -194,7 +196,7 @@ def write_pdb_markers(filename,centers,apix_x,apix_y,apix_z,sx,sy,sz):
 	try: 
 		out=open(filename,"w")
 		for j,c in enumerate(centers) :
-			out.write("ATOM  %5d  CA  ALA  %4d    %8.3f%8.3f%8.3f  1.00%6.2f      S_00  0 \n"%(j,j,(c[0]-sx/2)*apix_x,(c[1]-sy/2)*apix_y,(c[2]-sz/2)*apix_z,1.0))
+			out.write("ATOM  %5d  CA  ALA  %4d    %8.3f%8.3f%8.3f  1.00%6.2f      S_00  0 \n"%(j,j,(c[0]-old_div(sx,2))*apix_x,(c[1]-old_div(sy,2))*apix_y,(c[2]-old_div(sz,2))*apix_z,1.0))
 		out.close()
 	except:
 		traceback.print_exc()
@@ -214,7 +216,7 @@ def read_helix(filename,sx,sy,sz,ax,ay,az):
 			cn=int(atline[22:30].strip())
 			if cn>=atomid[0] and cn<=atomid[1]:
 				if atline[13:15]=="CA":
-					pos = (float(atline[30:38].strip())/ax+sx/2, float(atline[38:46].strip())/ay+sy/2, float(atline[46:54].strip())/az+sz/2)#,nhlx)
+					pos = (old_div(float(atline[30:38].strip()),ax)+old_div(sx,2), old_div(float(atline[38:46].strip()),ay)+old_div(sy,2), old_div(float(atline[46:54].strip()),az)+old_div(sz,2))#,nhlx)
 					points.append( pos)
 		nhlx+=1
 	

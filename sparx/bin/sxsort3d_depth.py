@@ -1296,8 +1296,7 @@ def Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, \
 	image_start, image_end   = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
 	
 	Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
-	angle_step                      = get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
-	ptls_in_orien_groups            = get_orien_assignment_mpi(angle_step, partids, params, log_main)
+	angle_step, ptls_in_orien_groups = get_angle_step_and_orien_groups_mpi(params, partids)
 	minimum_group_size              = max(minimum_group_size_init, Tracker["number_of_groups"]*len(ptls_in_orien_groups))
 	minimum_group_size_ratio        = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]), 0.95)
 		
@@ -1336,7 +1335,7 @@ def Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, \
 	partial_rec3d        = False
 	
 	while total_iter < max_iter:
-		ptls_in_orien_groups = get_orien_assignment_mpi(angle_step, partids, params, log_main)
+		ptls_in_orien_groups,  = get_orien_assignment_mpi(params, partids)
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			msg = "Iteration %d particle assignment changed ratio  %f "%(total_iter, changed_nptls)
 			log_main.add(msg)
@@ -3500,6 +3499,113 @@ def get_angle_step_from_number_of_orien_groups(orien_groups):
 	del sym_class
 	return angle_step
 	
+def parti_oriens(params, angstep, smc, lower_bound, upper_bound):
+	ntot = len(params)
+	eah  = smc.even_angles(angstep, inc_mirror=0)
+	leah = len(eah)
+	u    = []
+	for q in eah:
+		m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
+		itst = len(u)
+		for c in m:
+			if smc.is_in_subunit(c[0],c[1],1) :
+				if not smc.is_in_subunit(c[0],c[1],0) :
+					u.append(c)
+					break
+		if(len(u) != itst+1):
+			u.append(q)  #  This is for exceptions that cannot be easily handled
+	seaf = []
+	for q in eah+u:  seaf += smc.symmetry_related(q)
+	lseaf = 2*leah
+	seaf = angles_to_normals(seaf)
+	occupancy = [[] for i in range(leah)]
+	for i,q in enumerate(params):
+		l = nearest_fang(seaf,q[0],q[1])
+		l = l%lseaf
+		if(l>=leah):  l = l-leah
+		occupancy[l].append(i)
+	nc  =  0
+	nc1 =  0
+	nc2 =  0
+	tnc =  0
+	tnc1 = 0
+	tnc2 = 0
+	lgroups  = []
+	for l,q in enumerate(occupancy):
+		if len(q)>upper_bound:
+			nc1  +=1
+			tnc1 +=len(q)
+			lgroups.append(q)
+		elif len(q)<lower_bound:
+			nc2  +=1
+			tnc2 +=len(q)
+		else:
+			nc  +=1
+			tnc +=len(q)
+	s  = tnc/float(ntot)*100.
+	s1 = tnc1/float(ntot)*100.
+	s2 = tnc2/float(ntot)*100.
+	#print('angle step', angstep)
+	#print("qualified ",nc, tnc, s)
+	#print("high ",nc1, tnc1, s1)
+	#print("low  ",nc2, tnc2, s2)
+	return occupancy, eah, [s, s1, s2]
+
+def get_angle_step_and_orien_groups_mpi(params, partids):
+	global Tracker, Blockdata
+	from applications import MPI_start_end
+	from utilities    import wrap_mpi_recv, wrap_mpi_bcast, wrap_mpi_send, bcast_number_to_all
+	from utilities    import read_text_row, read_text_file
+	from fundamentals import symclass
+	if Blockdata["main_node"] == Blockdata["myid"]:
+		params  = read_text_row(params)
+		partids = read_text_file(partids, -1)
+		if len(partids) == 1: partids = partids[0]
+		else:                 partids = partids[1]
+		subparams = []
+		for im in range(len(partids)): 
+			subparams.append(params[partids[im]])
+		params[:] = subparams[:]
+	else: params= 0
+	params = wrap_mpi_bcast(params, Blockdata["main_node"], MPI_COMM_WORLD)
+	smc       = symclass("c2")
+	nstep     = Blockdata["nproc"]
+	increment = (15./smc.nsym - 2.0)/nstep
+	angstep   = 15./Blockdata["symclass"].nsym - Blockdata["myid"]*increment
+	occu,eah, score   = parti_oriens(params, angstep, smc, 200, 2000)
+	mpi_barrier(MPI_COMM_WORLD)
+	
+	best_percentage_id = 0
+	if Blockdata["main_node"] != Blockdata["myid"]: 
+		wrap_mpi_send(score, Blockdata["main_node"], MPI_COMM_WORLD)
+	else:
+		for iproc in range(Blockdata["nproc"]):
+			if iproc != Blockdata["main_node"]:
+				dummy = wrap_mpi_recv(Blockdata["nproc"], MPI_COMM_WORLD)
+				if dummy[2]> dummy[2]:
+					score[:] = dummy[:]
+					best_percentage_id = iproc
+	best_percentage_id = bcast_number_to_all(best_percentage_id, Blockdata["main_node"], MPI_COMM_WORLD)
+	if Blockdata["myid"] == best_percentage_id:
+		ptls_in_orien_groups = []
+		reassign_list        = []
+		for l,q in enumerate(occu):
+			if len(q)<lower_bound: reassign_list +=q
+			else:      ptls_in_orien_groups.append(q)
+		import random
+		from   random import shuffle
+		shuffle(reassign_list)
+		for a in reassign_list:
+			im = random.randint(0, len(ptls_in_orien_groups) - 1)
+			ptls_in_orien_groups[im].append(a)
+		del reassign_list
+	else: 
+		ptls_in_orien_groups = 0
+		angstep              = 0
+	ptls_in_orien_groups = wrap_mpi_bcast(ptls_in_orien_groups, best_percentage_id, MPI_COMM_WORLD)
+	angstep = bcast_number_to_all(angstep, best_percentage_id, MPI_COMM_WORLD)
+	return angstep, ptls_in_orien_groups
+	
 ##### ================= orientation groups	
 def compare_two_iterations(assignment1, assignment2, number_of_groups):
 	# compare two assignments during clustering, either iteratively or independently
@@ -4120,6 +4226,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			niter_refinement = 0
 			while os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%niter_refinement)) and os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"],"main%03d"%niter_refinement, "Tracker_%03d.json"%niter_refinement)):
 				niter_refinement +=1
+				print(niter_refinement)
 			niter_refinement -=1
 			if niter_refinement !=0:
 				fout = open(os.path.join(Tracker["constants"]["refinement_dir"],"main%03d"%niter_refinement, "Tracker_%03d.json"%niter_refinement),'r')
@@ -4137,6 +4244,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			except:	import_from_sparx_refinement = 0
 	else: selected_iter = -1
 	selected_iter = bcast_number_to_all(selected_iter, Blockdata["main_node"], MPI_COMM_WORLD)
+	print('HERE ', selected_iter, import_from_sparx_refinement)
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:
 		ERROR("The best solution is not found","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
@@ -6235,7 +6343,8 @@ def main():
 			Tracker["constants"]["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
 		except: pass
 		
-		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
+		
+		#get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 		create_subgroup()
@@ -6409,7 +6518,7 @@ def main():
 		Blockdata["symclass"]                      = symclass(Tracker["constants"]["symmetry"])
 		Tracker["constants"]["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
 		
-		get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
+		#get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 		create_subgroup()

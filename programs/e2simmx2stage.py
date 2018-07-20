@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 12/01/2009 (sludtke@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 # e2simmx2stage.py  12/01/2009	Steven Ludtke
 # This program computes a similarity matrix between two sets of images
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -164,7 +166,7 @@ def main():
 	#			tmp.write_image("testing/rcls.%03d.hdf"%ii,-1)
 				avg.add(tmp)
 
-			avg.mult(1.0/len(i))
+			avg.mult(old_div(1.0,len(i)))
 			avg["class_ptcl_idxs"]=i
 			avg["class_ptcl_src"]=args[0]
 			avg.write_image(args[4],ii)

@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # -*- coding: utf-8 -*-
 # Fit helixes using pathwalker results
 
+from past.utils import old_div
 from builtins import range
 import EMAN2
 from EMAN2 import *
@@ -85,7 +87,7 @@ def main():
 
 	hlx=atoms.fit_helix(mrc,options.lenthr,options.denthr,eg,options.dirs)
 	
-	for i in range(len(hlx)/8):
+	for i in range(old_div(len(hlx),8)):
 		print(hlx[i*8],hlx[i*8+1])
 	
 	

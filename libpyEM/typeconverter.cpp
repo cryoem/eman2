@@ -109,11 +109,13 @@ EMData* EMNumPy::numpy2em(const python::numeric::array& array)
 	int ndim = PyArray_NDIM(array_ptr); //array_ptr->descr->nd;
 	char data_type = PyArray_DESCR(array_ptr)->type; //array_ptr->descr->type;
 
+	npy_intp * dims_ptr = (npy_intp*)PyArray_DIMS(array_ptr);
+
 #if defined (__LP64__) //is it a 64-bit platform?
-	long * dims_ptr = (long*) PyArray_DIMS(array_ptr); //array_ptr->dimensions;
+	//long * dims_ptr = (long*) PyArray_DIMS(array_ptr); //array_ptr->dimensions;
 	long nx=1, ny=1, nz=1;
 #else	//for 32 bit platform
-	int * dims_ptr = (int*)array_ptr->dimensions;
+	//int * dims_ptr = (int*) PyArray_DIMS(array_ptr); //->dimensions;
 	int nx=1, ny=1, nz=1;
 #endif // defined (__LP64__)
 
@@ -143,7 +145,7 @@ EMData* EMNumPy::numpy2em(const python::numeric::array& array)
 		image = new EMData((float*)temparray, nx, ny, nz);
 	}
 	else {
-		PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, 'f');
+		//PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, 'f');
 		void* array_data2 = PyArray_DATA(array_ptr); //array_ptr2->data;
 		memcpy(temparray, array_data2, (size_t)nx*ny*nz*sizeof(float));
 		image = new EMData((float*)temparray, nx, ny, nz);
@@ -166,7 +168,7 @@ EMData* EMNumPy::assign_numpy_to_emdata(const python::numeric::array& array)
 	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
 //	Py_INCREF(array_ptr);	//this is for letting EMData take the ownership of the data array
 	int ndim = PyArray_NDIM(array_ptr); //array_ptr->nd;
-	char data_type = PyArray_DESCR(array_ptr)->type; //array_ptr->descr->type;
+	//char data_type = PyArray_DESCR(array_ptr)->type; //array_ptr->descr->type;
 
 	npy_intp * dims_ptr = (npy_intp*)PyArray_DIMS(array_ptr);
 
@@ -221,7 +223,7 @@ EMData* EMNumPy::register_numpy_to_emdata(const python::numeric::array& array)
 	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
 //	Py_INCREF(array_ptr);	//this is for letting EMData take the ownership of the data array
 	int ndim = PyArray_NDIM(array_ptr); //->nd;
-	char data_type = PyArray_DESCR(array_ptr)->type; //array_ptr->descr->type;
+	//char data_type = PyArray_DESCR(array_ptr)->type; //array_ptr->descr->type;
 
 	npy_intp *dims_ptr = (npy_intp*)PyArray_DIMS(array_ptr);
 

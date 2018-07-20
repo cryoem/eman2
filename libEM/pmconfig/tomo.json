@@ -9,15 +9,8 @@
     "CHILDREN": [
       {
         "ICON": "multiple_images",
-        "MODE": "refs",
-        "PROGRAM": "e2ddd_movie.py",
-        "NAME": "Import DDD references",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "multiple_images",
         "MODE": "tomo",
-        "PROGRAM": "e2ddd_movie.py",
+        "PROGRAM": "e2ddd_external.py",
         "NAME": "Process DDD movies",
         "CHILDREN": []
       },

@@ -29,6 +29,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -189,7 +191,7 @@ def main():
 					
 					maxv = max(values)
 					for v in range(len(values)):	
-						values[v] = values[v]/maxv	
+						values[v] = old_div(values[v],maxv)	
 					print("Therefore, max={}".format(max(values)))
 				
 				id=i.replace('.',suffix + '.')
@@ -482,7 +484,7 @@ def calcvalues(a,options):
 	x=[]
 	if options.mode == 'sphere':
 		print("I will calculate the radial density")
-		values = a.calc_radial_dist(a['nx']/2, 0, 1, 1)
+		values = a.calc_radial_dist(old_div(a['nx'],2), 0, 1, 1)
 		#return(values)
 	
 	elif options.mode == 'cylinder':
@@ -518,7 +520,7 @@ def calcvalues(a,options):
 # Define model function to be used to fit to the data above:
 def gauss(x, *p):
 	A, mu, sigma = p
-	return A*np.exp(-(x-mu)**2/(2.*sigma**2))
+	return A*np.exp(old_div(-(x-mu)**2,(2.*sigma**2)))
 
 
 def preprocRadPlot( a, options):
@@ -602,7 +604,7 @@ def cylinder(a,options):
 	mask = EMData(a['nx'],a['ny'],a['nz'])
 	mask.to_one()
 	
-	for i in range(1,a['nx']/2):
+	for i in range(1,old_div(a['nx'],2)):
 		heightout = i
 		heightin = heightout-1
 		radius = i

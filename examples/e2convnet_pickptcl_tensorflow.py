@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-10
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -59,7 +61,7 @@ def load_ptcls(ref0, ref1, sz=64, makegaussian=True):
 
 	nref_target=500
 	bxsz=ref0[0]["nx"]
-	shrinkfac=float(bxsz)/float(sz)
+	shrinkfac=old_div(float(bxsz),float(sz))
 
 	data=[] ### particles in flattened numpy array
 	lbs=[]  ### labels in flattened numpy array
@@ -68,7 +70,7 @@ def load_ptcls(ref0, ref1, sz=64, makegaussian=True):
 		nref=len(refs)
 		if nref<5:
 			print("Not enough references. Please box at least 5 good and 5 background reference...")
-		ncopy=nref_target/nref + 1
+		ncopy=old_div(nref_target,nref) + 1
 
 		for pp in refs:
 			ptl=pp.process("math.fft.resample",{"n":shrinkfac})
@@ -100,7 +102,7 @@ def load_ptcls(ref0, ref1, sz=64, makegaussian=True):
 	
 	if makegaussian:
 		#### make target output
-		img=EMData(sz/2,sz/2)
+		img=EMData(old_div(sz,2),old_div(sz,2))
 		img.process_inplace("testimage.gaussian",{'sigma':5.})
 		img.div(img["maximum"])
 		gaus=img.numpy().copy().flatten()
@@ -186,8 +188,8 @@ def write_output_train(convnet,outfile, session, ncopy=10):
 			e0.write_image(outfile, -1)
 
 			e1=from_numpy(oy.copy())
-			e1=e1.get_clip(Region(-(sz-outsz)/2,-(sz-outsz)/2,sz,sz))
-			e1.scale(sz/outsz)
+			e1=e1.get_clip(Region(old_div(-(sz-outsz),2),old_div(-(sz-outsz),2),sz,sz))
+			e1.scale(old_div(sz,outsz))
 
 			e1.write_image(outfile, -1)
 
@@ -196,7 +198,7 @@ def tf_build_cnn(kernels, imgsz=64, batchsz=10, meanout=False):
 	
 	convnet = type('convnet', (), {})() ### an empty object
 	nlayer=len(kernels)
-	outsz=(imgsz/np.prod([k[2] for k in kernels]))
+	outsz=(old_div(imgsz,np.prod([k[2] for k in kernels])))
 	tf_data = tf.placeholder(tf.float32, shape=[None, imgsz*imgsz], name="tfdata")
 	if meanout:
 		tf_label = tf.placeholder(tf.float32, shape=[None], name="tflabel")

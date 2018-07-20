@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: David Woolford, 09/12/2007 (woolford@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 # this was added by d.woolford. It is envisaged that a variety of timing tests will be added to this script to generate useful
 # data for benchmarking purposes.
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -74,8 +76,8 @@ def precision_test():
 	err_az = 0
 	
 	for i in range(0,1):
-		for dx in range(-n/4+1,n/4-1):
-			for dy in range(-n/4+1,n/4-1):
+		for dx in range(old_div(-n,4)+1,old_div(n,4)-1):
+			for dy in range(old_div(-n,4)+1,old_div(n,4)-1):
 				for az in range(0,181,5):
 					t3d = Transform({'type':'eman', 'az':az, 'alt':alt, 'phi':phi})
 					t3d.set_trans(dx,dy)
@@ -89,7 +91,7 @@ def precision_test():
 					
 					e3.transform(t3d)
 					
-					e5 = e4.align('rotate_translate', e3, {'maxshift':n/2})
+					e5 = e4.align('rotate_translate', e3, {'maxshift':old_div(n,2)})
 					
 					soln_dx = e5.get_attr("align.dx")
 					soln_dy = e5.get_attr("align.dy")

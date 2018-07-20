@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Muyuan Chen, April 2015
@@ -36,6 +37,7 @@ from __future__ import print_function
 # This program classify particles using a binary tree
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import os
@@ -147,7 +149,7 @@ def main():
 			
 			taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
 			if haveprogress: print("{:d}/{:d} finished".format(nfinished,npt))
-			E2progress(E2n, 0.5 + float(nfinished)/npt)
+			E2progress(E2n, 0.5 + old_div(float(nfinished),npt))
 			
 		for i in range(nnod):
 			ndtmp=EMData(options.nodes,i,True)

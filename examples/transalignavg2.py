@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 12/20/2011 (sludtke@bcm.edu)
@@ -36,6 +37,7 @@ from __future__ import print_function
 # together, and optionally iterate. Translational alignment only.
 # transalignavg2.py <infile> ...
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import sys
@@ -55,10 +57,10 @@ for i in range(2):
 		im=EMData(fsp,0)
 		im.process_inplace("normalize.edgemean")
 		if im["nx"]!=nx or im["ny"]!=ny :
-			im=im.get_clip(Region(-(nx-im["nx"])/2,-(ny-im["ny"])/2,nx,ny))
+			im=im.get_clip(Region(old_div(-(nx-im["nx"]),2),old_div(-(ny-im["ny"]),2),nx,ny))
 	
 		im.write_image("seq.hdf",-1)
-		ima=im.align("translational",ref0,{"nozero":1,"maxshift":ref0["nx"]/4.0},"ccc",{})
+		ima=im.align("translational",ref0,{"nozero":1,"maxshift":old_div(ref0["nx"],4.0)},"ccc",{})
 		ima.write_image("seq.hdf",-1)
 		print(fsp,ima["xform.align2d"],ima.cmp("ccc",ref0))
 		ima.process_inplace("normalize.toimage",{"to":ref0,"ignore_zero":1})

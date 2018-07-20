@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -31,6 +32,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -124,7 +126,7 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 	"""build_tiles(img,tilefile,tilesize)
 	This will construct a new tile file from a source image.
 	options may include : pspec """
-	levels=ceil(log(max(img.get_xsize(),img.get_ysize())/tilesize)/log(2.0))
+	levels=ceil(old_div(log(old_div(max(img.get_xsize(),img.get_ysize()),tilesize)),log(2.0)))
 	
 	tf=open(tilefile,"w")
 	
@@ -141,17 +143,17 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 				i.set_attr("render_min",rmin)
 				i.set_attr("render_max",rmax)
 				i.set_attr("jpeg_quality",70)
-				fsp="tmpimg.%d.%03d.%03d.jpg"%(l,x/tilesize,y/tilesize)
+				fsp="tmpimg.%d.%03d.%03d.jpg"%(l,old_div(x,tilesize),old_div(y,tilesize))
 				i.write_image(fsp)
 				sz=os.stat(fsp).st_size
-				tile_dict[(l,x/tilesize,y/tilesize)]=(pos,sz)
+				tile_dict[(l,old_div(x,tilesize),old_div(y,tilesize))]=(pos,sz)
 				pos+=sz
 		img2.process_inplace("math.meanshrink",{"n":2})
 	
 	# This will produce 2 power spectrum images in the tile file
 	# with scale factors -1 and -2
 	if "pspec" in options :
-		nx,ny=img.get_xsize()/512,img.get_ysize()/512
+		nx,ny=old_div(img.get_xsize(),512),old_div(img.get_ysize(),512)
 		a=EMData()
 		a.set_size(512,512)
 		if (ny>2 and nx>2) :
@@ -182,7 +184,7 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 			import pylab
 			manager = pylab.get_current_fig_manager()
 			apix=options["pspec"]
-			dx=1.0/(2.0*apix*256.0)
+			dx=old_div(1.0,(2.0*apix*256.0))
 			x=pylab.arange(dx,dx*255.9,dx)
 			y=a.calc_radial_dist(255,1,1,0)	# radial power spectrum (log)
 			pylab.figure(figsize=(8,6),dpi=96)
@@ -208,7 +210,7 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 	for l in range(int(levels)):
 		for x in range(0,xs,tilesize):
 			for y in range(0,ys,tilesize):
-				fsp="tmpimg.%d.%03d.%03d.jpg"%(l,x/tilesize,y/tilesize)
+				fsp="tmpimg.%d.%03d.%03d.jpg"%(l,old_div(x,tilesize),old_div(y,tilesize))
 				a=open(fsp,"r")
 				b=a.read()
 				a.close()

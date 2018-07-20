@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan Chen 2015-03-24
 # pick rna particles
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import json
@@ -77,7 +79,7 @@ def main():
 	print(len(cnts))
 	box=[]
 	for i in range(0,len(cnts),2):
-		box.append([cnts[i]/1,cnts[i+1]/1,"manual"])
+		box.append([old_div(cnts[i],1),old_div(cnts[i+1],1),"manual"])
 	jn={}
 	jn["boxes"]=box
 	#print jn

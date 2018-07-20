@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # Author: Michael Bell 09/2015
 
+from past.utils import old_div
 from EMAN2 import *
 import numpy as np
 import os
@@ -59,7 +61,7 @@ def main():
 	if xb != zb or yb != zb or xb != yb:
 		if options.verbose: print("Making structure's rectangular box larger and cubic to ensure quality projections")
 		ns=max(xb,yb,zb)
-		n=int(ns/2)
+		n=int(old_div(ns,2))
 		clip='{}_{}.hdf'.format(base,ns)
 		os.system('e2proc3d.py {} {} --clip {},{},{},{},{},{}'.format(fname,clip,ns,ns,ns,n,n,n))
 		struct=EMData(clip)
@@ -85,8 +87,8 @@ def main():
 	edg = 1.5
 	if options.grid:
 		coords = []
-		for i in np.linspace(xb,xt-edg*xb,(xt-edg*xb)/xb):
-			for j in np.linspace(yb,yt-edg*yb,(yt-edg*yb)/yb):
+		for i in np.linspace(xb,xt-edg*xb,old_div((xt-edg*xb),xb)):
+			for j in np.linspace(yb,yt-edg*yb,old_div((yt-edg*yb),yb)):
 				coords.append([i,j])
 				if i != j:
 					coords.append([j,i])

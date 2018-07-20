@@ -1,5 +1,7 @@
 """some utility functions for playing with movie-mode sequences"""
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import EMAN2
 from math import sqrt
@@ -19,16 +21,16 @@ def readstack(n):
 
 def seqavg(stack):
 	"return progressive averages of frames in stack"
-	return [sum(stack[:i+1])*(1.0/(sqrt(i+1.0))) for i in range(len(stack))]
+	return [sum(stack[:i+1])*(old_div(1.0,(sqrt(i+1.0)))) for i in range(len(stack))]
 
 def runavg(stack,n):
 	"return running averages by n "
-	return [sum(stack[i:i+n])*(1.0/sqrt(n)) for i in range(len(stack)-n+1)]
+	return [sum(stack[i:i+n])*(old_div(1.0,sqrt(n))) for i in range(len(stack)-n+1)]
 
 def ccfs(ref,stack):
 	"compute and center CCFs between ref and each member of stack"
 	ret=[i.calc_ccf(ref) for i in stack]
-	f=ref["nx"]/4
+	f=old_div(ref["nx"],4)
 	for i in ret: i.process_inplace("xform.phaseorigin.tocenter")
 	ret=[i.get_clip(EMAN2.Region(f,f,f*2,f*2)) for i in ret]
 
@@ -39,8 +41,8 @@ def powspec(img):
 	if not img.is_complex() :
 		img=img.do_fft()
 
-	ps=img.calc_radial_dist(img["ny"]/2,0,1,True)
-	ps=[i/img["nx"]**2 for i in ps]
+	ps=img.calc_radial_dist(old_div(img["ny"],2),0,1,True)
+	ps=[old_div(i,img["nx"]**2) for i in ps]
 
 	return ps
 
@@ -49,7 +51,7 @@ def peaks(stack):
 
 	nx=stack[0]["nx"]
 	pk=[i.calc_max_location() for i in stack]
-	pk=[(i[0]-nx/2,i[1]-nx/2) for i in pk]
+	pk=[(i[0]-old_div(nx,2),i[1]-old_div(nx,2)) for i in pk]
 	return pk
 
 def localali(im1,im2,psref,maxdx):
@@ -59,7 +61,7 @@ def localali(im1,im2,psref,maxdx):
 	nx=im1["nx"]
 	mask=EMAN2.EMData(nx,nx,1)
 	mask.to_one()
-	mask.process_inplace("mask.gaussian",{"inner_radius":nx/4,"outer_radius":nx/12})
+	mask.process_inplace("mask.gaussian",{"inner_radius":old_div(nx,4),"outer_radius":old_div(nx,12)})
 #	EMAN2.display(mask)
 
 	maxdx=int(maxdx)
@@ -107,8 +109,8 @@ def stackaliloccor(ref,stack):
 		ccf=im.calc_ccf(reff,EMAN2.fp_flag.CIRCULANT,True)
 		ccf.mult(ccfmask)
 		pk=ccf.calc_max_location()
-		dx=-(pk[0]-nx/2)
-		dy=-(pk[1]-ny/2)
+		dx=-(pk[0]-old_div(nx,2))
+		dy=-(pk[1]-old_div(ny,2))
 		print(i,dx,dy)
 
 		try: avg.add(im.process("xform.translate.int",{"trans":(dx,dy)}))

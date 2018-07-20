@@ -37,126 +37,305 @@ from EMAN2 import *
 import sys
 import os
 from sys import argv
+import shutil
+import subprocess
+import distutils.spawn
 
-def which(program):
-	# found at https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-	def is_exe(fpath) : return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-	fpath, fname = os.path.split(program)
-	if fpath:
-		if is_exe(program): return program
-	else:
-		for path in os.environ["PATH"].split(os.pathsep):
-			for f in os.listdir(path):
-				if program in f:
-					exe_file = os.path.join(path, f)
-					if is_exe(exe_file): return exe_file
-	return None
+# def which(program):
+# 	# found at https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+# 	def is_exe(fpath) :
+# 		return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+# 	print(fpath)
+# 	fpath, fname = os.path.split(program)
+# 	if fpath:
+# 		if is_exe(program): return program
+# 	else:
+# 		for path in os.environ["PATH"].split(os.pathsep):
+# 			for f in os.listdir(path):
+# 				if program in f:
+# 					exe_file = os.path.join(path, f)
+# 					if is_exe(exe_file): return exe_file
+# 	return None
 
 def main():
 
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <ddd_movie_stacks>
-	This program is a wrapper for various external DDD alignment routines including:
-		MotionCor2
+	This program is a wrapper for various DDD alignment routines including:
 		alignframes (IMOD)
-	Note, this is a simple script that uses the default alignment parameters for these
-	external programs. Programs must be installed and accessible via the PATH 
+		motioncor2 (UCSF)
+
+	Note, this is a simple script that mainly uses default alignment parameters for each
+	external program. It is mainly intended to make some external ddd alignment routines
+	available from the EMAN2 GUI for streamlined processing. In order for this program to
+	run, the alignment routine you wish to use must be installed and accessible via the PATH 
 	environment variable. To customize alignment, you will need to run these programs 
-	from the command line independently and import the aligned averages into your project.
+	from the command line independently and import the aligned averages/tiltseries into 
+	your EMAN2 project.
 	"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="movies",help="List the movies to align.", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode="movie")
-	parser.add_header(name="orblock1", help='Just a visual separation', title="OR", row=1, col=0, rowspan=1, colspan=1, mode="tomo")
-	parser.add_argument("--directory",  default = None, type=str, help="Specify a directory containing movies to be processed serially.",  guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=5, col=0,rowspan=1, colspan=2, mode="movie")
+	parser.add_pos_argument(name="input",help="List the movies you intend to align. If a directory is specified, this program will attempt to process frames within the specified directory using a provided mdoc file.", default="", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, mode="tomo,spr")
 
-	parser.add_argument("--program",  default = "IMOD_alignframes", choices=["IMOD_alignframes","MotionCor2"], type=str, help="Use this external program to align frames. Choose between IMOD_alignframes and MotionCor2. Note, programs must be accessible from your PATH environment variable.",guitype='combobox', choicelist='["IMOD_alignframes","MotionCor2"]', row=1, col=1, rowspan=1, colspan=1, mode="movie")
-	parser.add_argument("--device",  default = "GPU", type=str, choices=["CPU","GPU"], help="When possible, use this device to process movie frames. Default is GPU.",guitype='combobox', choicelist='["GPU","CPU"]', row=1, col=0, rowspan=1, colspan=1, mode="movie")
+	parser.add_argument("--program",  default = "imod_alignframes", choices=["imod_alignframes","ucsf_motioncor2"], type=str, help="Use this external program to align frames. Choose between imod_alignframes and ucsf_motioncor2. Note, programs must be accessible from your PATH environment variable.",guitype='combobox', choicelist='["imod_alignframes","ucsf_motioncor2"]', row=1, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--device",  default = "gpu", type=str, choices=["cpu","gpu"], help="When possible, use this device to process movie frames. Default is gpu.",guitype='combobox', choicelist='["gpu","cpu"]', row=1, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=1, col=0, rowspan=1, colspan=1, mode="tomo")
+	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=0, rowspan=1, colspan=2, mode="tomo,spr")
 
-	parser.add_argument("--dark",  default = None, type=str, help="Use this dark reference.",guitype='filebox',  browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=2, col=0,rowspan=1, colspan=2, mode="movie")
-	parser.add_argument("--gain",  default = None, type=str, help="Use this gain reference.",guitype='filebox',  browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=3, col=0,rowspan=1, colspan=2, mode="movie")
+	parser.add_argument("--mdoc", default = None, type=str, help="When an mdoc or idoc is provided, the raw files are automatically found within the input directory",guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=3, col=0,rowspan=1, colspan=2, mode="tomo")
 
-	parser.add_argument("--rotgain",  default = None, type=int, choices=[0,90,180,270], help="Rotates the gain 90 degress counter clockwise X times",guitype='strbox', row=4, col=0, rowspan=1, colspan=1, mode="movie")
-	parser.add_argument("--flipgain",  default = None, type=bool, help="A value of 1 flips upsidedown, 2 flips left and right.",guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="movie")
+	parser.add_argument("--dark",  default = None, type=str, help="Use this dark reference.",guitype='filebox',  browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=4, col=0,rowspan=1, colspan=2, mode="tomo,spr")
+	parser.add_argument("--gain",  default = None, type=str, help="Use this gain reference.",guitype='filebox',  browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=5, col=0,rowspan=1, colspan=2, mode="tomo,spr")
 
-	parser.add_argument("--binby",  default = None, type=int, help="The degree of binning for final image.",guitype='strbox', row=4, col=0, rowspan=1, colspan=1, mode="movie")
-	parser.add_argument("--groupby",  default = None, type=int, help="Before alignment, sum raw frames in groups of X to increase signal to noise ratio.",guitype='strbox', row=4, col=0, rowspan=1, colspan=1, mode="movie")
+	parser.add_argument("--defect_file",  default = None, type=str, help="Specify the camera defects file.", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=6, col=0,rowspan=1, colspan=2, mode="tomo,spr")
 
-	parser.add_argument("--first",  default = 0, type=int, help="The index of the leading frame to include in alignment.",guitype='strbox', row=4, col=0, rowspan=1, colspan=1, mode="movie")
-	parser.add_argument("--last",  default = None, type=int, help="The index of the last frame to include in alignment.", guitype='strbox', row=4, col=0, rowspan=1, colspan=1, mode="movie")
+	parser.add_argument("--mc2_rotgain",  default = 0, type=int, choices=[0,1,2,3], help="Rotates the gain 90 degress counter clockwise X times. Rotation is applied before flipping.",guitype='combobox', choicelist='["0","1","2","3"]', row=7, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--mc2_flipgain",  default = 0, type=int, choices=[0,1,2], help="A value of 1 flips gain image vertically, 2 flips gain image horizontally. Default is 0.",guitype='combobox',  choicelist='["0","1","2"]', row=7, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--mc2_patch",  default = "1 1", type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '1 1'",guitype='strbox', row=4, col=0, rowspan=1, colspan=1, mode="movie")
+	parser.add_argument("--imod_rotflipgain",  default = 0, type=int, choices=[0,1,2,3,4,5,6,7], help="Rotates the gain 90 degress counter clockwise X times. If value is greater than 3, gain image is flipped about the y axis before rotation.",guitype='combobox', choicelist='["0","1","2","3","4","5","6","7"]', row=8, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--device_num",  default = "0", type=str, help="When possible, use this device to process movie frames. Default is GPU.",guitype="intbox", row=8, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--mdoc", default = None, type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '1 1'",guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=5, col=0,rowspan=1, colspan=2, mode="movie")
-	parser.add_argument("--defect_file",  default = None, type=str, help="Specify the camera defects file.", guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=5, col=0,rowspan=1, colspan=2, mode="movie")
+	parser.add_argument("--binby",  default = None, type=int, help="The degree of binning for final image. Default is 1, i.e. no binning. Note that this option takes only integer values.",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--groupby",  default = None, type=int, help="Before alignment, sum raw frames in groups of X to increase signal to noise ratio.",guitype='intbox', row=9, col=1, rowspan=1, colspan=1, mode="tomo,spr")
+
+	parser.add_argument("--first",  default = None, type=int, help="The index of the leading frame to include in alignment.",guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--last",  default = None, type=int, help="The index of the last frame to include in alignment.", guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode="tomo,spr")
+
+	parser.add_argument("--mc2_patch",  default = "", type=str, help="Use this many patches with MotionCor2. Format is 'X Y'. Default is: '0 0'",guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+
+	parser.add_argument("--tomo", default=False, action="store_true", help="If checked, aligned frames will be placed in a tiltseries located in the 'tiltseries' directory. Otherwise, aligned sums will populate the 'micrographs' directory.",guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="tomo[True]")
+
+	parser.add_argument("--tiltseries_name",  default = "", type=str, help="Specify the name of the output tiltseries. A .mrc extension will be appended to the filename provided.",guitype='strbox', row=12, col=0, rowspan=1, colspan=2, mode="tomo")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	
 	(options, args) = parser.parse_args()
 
-	device = options.device
-	
-	if options.program.lower() in alignframesopts:
-		program = which("alignframes")
-	
-	if options.program.lower() in motioncoropts:
-		try: patchx,patchy = options.patch.split(" ")
+	if len(args) == 0:
+		print("ERROR: No inputs privided. You must specify movie files or a directory containing DDD movies to be aligned.")
+		sys.exit(1)
+
+	if options.tomo and options.mdoc == None:
+		print("""ERROR: You must specify an mdoc/idoc file via the --mdoc option when processing raw tilt movies for tomography. 
+			If no mdoc/idoc files are available, images can be aligned without the --tomo option, in which case they will be 
+			written to micrographs. From there, you can generate a tiltseries via the EMAN2 GUI or the program e2buildstacks.py.""")
+		sys.exit(1)
+
+	if options.mdoc != None:
+		mdoc_ext = options.mdoc.split(".")[-1]
+		mdoc_bname = os.path.basename(options.mdoc).split(".")[0] # good for cases where we have .mrc.mdoc.
+		#mdoc_bname,mdoc_ext = os.path.basename(options.mdoc).split(".")
+		if mdoc_ext not in ["mdoc", "idoc"]:
+			print("""ERROR: The specified mdoc file does not have a .mdoc/.idoc extension. 
+				Please provide a valid mdoc/idoc file with the proper extension.""")
+			sys.exit(1)
+
+	if len(args) == 0 and options.program == "ucsf_motioncor2":
+		print("ERROR: No movies privided. When running motioncor2, you must specify movie files for alignment.")
+		sys.exit(1)
+
+	if options.device == "gpu":
+		try: devices = map(int,options.device_num.split())
 		except:
-			print("Could not interpret --patch for use with MotionCor2. Please input integer values in the form: 'X,Y'")
+			print("ERROR: Cannot interpret device number. Please specify the ID of the GPU you wish to use, i.e. an integer >= 0.")
 			sys.exit(1)
-		if device == "CPU":
-			print("INPUT ERROR: Cannot use --device CPU with MotionCor2. This program requires 1+ GPU.")
-			sys.exit(1)
-		program = which("MotionCor2")
 
+	if options.program == "imod_alignframes":
+
+		if options.first == "" and options.last != "":
+			print("ERROR: In order to specify the last frame, you must also specify the first frame you wish to include using the --frst option.")
+			sys.exit(1)
+
+		if options.first != "" and options.last == "":
+			print("ERROR: In order to specify the first frame, you must also specify the last frame you wish to include using the --last option.")
+			sys.exit(1)
+
+		program = distutils.spawn.find_executable("alignframes")
+
+	if options.program == "ucsf_motioncor2":
+
+		if options.mc2_patch!="":
+			try: patchx,patchy = map(int,options.mc2_patch.split())
+			except:
+				print("ERROR: Could not interpret --mc2_patch for use with MotionCor2. Please input integer values in the form: 'X,Y'")
+				sys.exit(1)
+
+		if options.device == "cpu":
+			print("ERROR: Cannot use --device cpu with MotionCor2. This program requires >= 1 gpu.")
+			sys.exit(1)
+
+		program = distutils.spawn.find_executable("MotionCor2")
+		
+	
 	if program == None:
-		print("Could not locate {}. Please check that the program is installed and available within your PATH environment variable.".format(options.program.replace("_"," ")))
+		print("Could not locate '{}'. Please check that the program is installed and available within your PATH environment variable as '{}'.".format(options.program.split("_")[1],options.program.split("_")[1]))
 		sys.exit(1)
 
-	if args[0].split(".")[-1] not in [".mrc",".mrcs"]:
-		print("Input files must be in .mrc format. Please reformat these files and try again.")
-		sys.exit(1)
+	ext = None
+	if len(args) > 0:
+		if not os.path.isdir(args[0]) and options.mdoc == None:
+			bname,ext = os.path.basename(args[0]).split(".")
+			if ext not in  ["mrc","mrcs","tif"]:
+				print("{} cannot parse .{} format files. Please check that files are MRC or TIF format.".format(program,ext))
+				sys.exit(1)
+		else:
+			bname = os.path.basename(args[0])
 
-	for input_file in sorted(args):
+	options.tiltseries_name
 
-		output_file = input_file.split(".")[0]+"_ali.mrc"
+	cmdopts = ""
 
-		if options.program == "IMOD_alignframes":
-			cmd = "alignframes -input {} -output {}".format(input_file,output_file)
-			if device == "GPU": cmd += " -gpu 0 "
-			if options.dark != None: cmd += " -dark {} ".format(options.dark)
-			if options.gain != None: cmd += " -gain {} ".format(options.gain)
-			#-Serial?
+	if options.tomo: outdir = "tiltseries"
+	else: outdir = "micrographs"
 
-		elif options.program == "MotionCor2":
+	try: os.mkdir(outdir)
+	except: pass
 
-			if options.serial_dir:
-				outupt_template = "micrographs/{}".format(input_file.split(".")[0]+"_ali")
-				cmd = "{} -InMrc {} -OutMrc {} ".format(program,options.serial_dir,outupt_template)
+	if options.program == "imod_alignframes":
+
+		if options.device == "gpu": cmdopts += " -gpu {} ".format(options.device_num)
+
+		if options.dark != None: cmdopts += " -dark {} ".format(options.dark)
+		if options.gain != None: cmdopts += " -gain {} ".format(options.gain)
+		if options.imod_rotflipgain != 0: cmdopts += " -rotation {} ".format(options.imod_rotflipgain)
+		
+		if options.defect_file != None: cmdopts+=" -defect {} ".format(options.defects)
+		
+		if options.groupby != None: cmdopts+=" -group {} ".format(options.groupby)
+		if options.binby != None: cmdopts+=" -binning {} -1 ".format(options.binby)
+
+		if options.first != None and options.last != None:
+			cmdopts+=" -frames {} {} ".format(options.first,options.last)
+
+		if options.mdoc != None:
+
+			if options.tomo and options.tiltseries_name != "":
+				output = "{}/{}.mrc".format(options.tiltseries_name)
 			else:
-				cmd = "{} -InMrc {} -OutMrc {} ".format(program,input_file,output_file)
-			if options.patch != None: cmd += " -Patch {} ".format(options.patch)
-			if options.dark != None: cmd += " -Dark {} ".format(options.dark)
-			if options.gain != None: cmd += " -Gain {} ".format(options.gain)
-			if options.flipgain != None: cmd+=" -FlipGain {}".format(options.flipgain)
-			if options.rotgain != None: cmd+=" -RotGain {}".format(options.rotgain)
-			if options.binby != None: cmd+=" -FtBin {}".format(options.binby)
-			if options.first != None: cmd+=" -Throw {}".format(options.first)
-			if options.last != None: cmd+=" -Trunc {}".format(options.last)
-			if options.group != None: cmd+=" -Group {}".format(options.group)
-			if options.align != None: cmd+=" -Align {}".format(options.group)
-			if options.defect_file != None: cmd+=" -DefectFile {}".format(options.defects)
-			if options.serial_dir != None: cmd+=" -Serial 1 "
+				output = "{}/{}.mrc".format(outdir,mdoc_bname)
+			#if len(args) == 0:
+				#cmd = "{} -m and os.path.isdir(args[0])doc {} -output {}".format(program,options.mdoc,output)
+			if len(args) == 1 and os.path.isdir(args[0]):
+				cmd = "{} -mdoc {} -path {} -output {}".format(program,options.mdoc,args[0],output)
+			else:
+				inputs = " ".join(args)
+				cmd = "{} -input {} -mdoc {} -output {}".format(program,inputs,options.mdoc,output)
+			run(cmd,verbose=options.verbose)
+		else:
+			for arg in args:
+				bname = os.path.basename(bname).split(".")[0]
+				if options.tomo and options.tiltseries_name != "":
+					output = "{}/{}.mrc".format(options.tiltseries_name)
+				else:
+					output = "{}/{}_ali.mrc".format(outdir,bname)
+				cmd = "{} -input {} -output {} {}".format(program,arg,output,cmdopts)
+				run(cmd,verbose=options.verbose)
 
-		run(cmd,shell=True)
+	elif options.program == "ucsf_motioncor2":
 
-def run(cmd,shell=False,cwd=None,exe="/bin/sh"):
+		if options.dark != None: cmdopts += " -Dark {} ".format(options.dark)
+		if options.gain != None: cmdopts += " -Gain {} ".format(options.gain)
+
+		if options.mc2_flipgain != 0: cmdopts+=" -FlipGain {}".format(options.mc2_flipgain)
+		if options.mc2_rotgain != 0: cmdopts+=" -RotGain {}".format(options.mc2_rotgain)
+
+		if options.defect_file != None: cmdopts+=" -DefectFile {}".format(options.defect_file)
+
+		if options.first != None: cmdopts+=" -Throw {}".format(options.first)
+
+		if options.groupby != None: cmdopts+=" -Group {}".format(options.groupby)
+		if options.binby != None: cmdopts+=" -FtBin {}".format(options.binby)
+
+		if options.mc2_patch != "": cmdopts += " -Patch {} ".format(options.mc2_patch)
+
+		if options.mdoc != None:
+
+			if not os.path.isdir(args[0]):
+				print("ERROR: When providing an mdoc, the input option must be a directory containing the raw files referenced in the mdoc.")
+				sys.exit(1)
+			if options.tiltseries_name != "":
+				tiltname = "{}/{}.hdf".format(outdir,options.tiltseries_name)
+			else: tiltname="{}/{}.hdf".format(outdir,mdoc_bname)
+
+			info=[]
+			zval=-1
+			print("DOC: {}".format(options.mdoc))
+			with open(options.mdoc) as docf:
+				for l in docf.readlines():
+					p = l.strip()
+					if "ZValue" in p:
+						zval+=1
+					elif p != "":
+						x,y = p.split("=")[:2]
+						x = x.strip()
+						if x == "TiltAngle": ang=float(y)
+						elif x == "SubFramePath":
+							name,ext = y.split('\\')[-1].split(".")
+							if os.path.exists("{}/{}.{}".format(args[0],name,ext)):
+								info.append([ang,name,ext])
+							else:
+								print("WARNING: {}.{} was not found in {}".format(name,ext,args[0]))
+
+			if options.last != None:
+				numframes=EMUtil.get_image_count("{}/{}.{}".format(args[0],info[0][1],info[0][2]))
+				lastframe=numframes-options.last-1
+				cmdopts+=" -Trunc {}".format(lastframe)
+			
+			sortedlist=sorted(info, key=lambda x: x[0])
+
+			if options.verbose > 0:
+				print("File order:")
+				for i in sortedlist:
+					print("{}\t-\t{}\t{}".format(i[0],i[1],i[2]))
+				
+			print("\nWriting tilt series to:   {}".format(tiltname))
+
+			for idx,i in enumerate(sortedlist):
+				if i[2].lower()=="mrc": infile="-InMrc {}/{}.{} ".format(args[0],i[1],i[2])
+				if i[2].lower()=="tif": infile="-InTiff {}/{}.{} ".format(args[0],i[1],i[2])
+				outfile="tmp/{}_ali.mrc".format(i[1])
+				if not os.path.isdir("tmp"):
+					os.mkdir("tmp")
+				output = "-OutMrc {}".format(outfile)
+				cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
+				run(cmd,verbose=options.verbose)
+
+				ali = EMData(outfile)
+				ali.write_image(tiltname,idx)
+				os.remove(outfile)				
+		else:
+			
+			if os.path.isdir(args[0]):
+				dirargs = []
+				for f in f in os.listdir(args[0]):
+					if ".mrc" in f or ".tif" in f:
+						this = "{}/{}".format(args[0],f)
+						if os.path.exists(this): dirargs.append(this)
+				if len(dirargs) == 0:
+					print("""Could not find any .mrc or .tif extension files in {}. Please try 
+						another directory or specify individual files you wish to align.""".format(args[0]))
+					sys.exit(1)
+				args = dirargs
+
+			for idx,arg in enumerate(args):
+				bname,ext = os.path.basename(arg).split(".")
+				output = "micrographs/{}_ali.mrc".format(bname)
+				if ext == "tif":
+					cmd = "{} -InTiff {} -OutMrc {} {}".format(program,arg,output,cmdopts)
+				else:
+					cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,output,cmdopts)
+				run(cmd,verbose=options.verbose)
+
+def run(cmd,shell=False,cwd=None,verbose=0):
+	if verbose > 0: print(cmd)
 	if cwd == None: cwd = os.getcwd()
 	if shell == False: cmd = cmd.split()
-	p = psutil.Popen("/usr/bin/time -p "+cmd, shell=shell, cwd=cwd, executable=exe,stderr=subprocess.PIPE) 
+	p = subprocess.Popen(cmd, shell=shell, cwd=cwd,stderr=subprocess.PIPE)
 	_,err=p.communicate()
 	return
+
+
+if __name__ == "__main__":
+	main()

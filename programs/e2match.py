@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Jesus G. Galaz 9/1/2010 - Last Update July/08/2015 
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -274,7 +276,7 @@ def main():
 			scaleup = 0
 			scaledown = 0
 	
-			scalefactor = float( targetApix )/float(img2processApix)
+			scalefactor = old_div(float( targetApix ),float(img2processApix))
 	
 			
 			if float(scalefactor) < 1.0:
@@ -343,7 +345,7 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	if options.verbose:
 		print("\n(e2match)(preciseshrink) I've read the apix of the particles in img2process, which is", img2processApix)
 
-	meanshrinkfactor = float( targetApix )/float(img2processApix)
+	meanshrinkfactor = old_div(float( targetApix ),float(img2processApix))
 	#meanshrinkfactor_int = int(round(meanshrinkfactor))
 
 	meanshrinkfactor_int = int(round(meanshrinkfactor))
@@ -380,7 +382,7 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	scaleup = 0
 	scaledown = 0
 	
-	scalefactor = float( targetApix )/float(img2processApix)
+	scalefactor = old_div(float( targetApix ),float(img2processApix))
 	
 	
 	if float(scalefactor) < 1.0:
@@ -389,7 +391,7 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 		scaledown = 1
 	
 	
-	scalefactor = round(float( img2processApix ),4)/round(float( targetApix),4)
+	scalefactor = old_div(round(float( img2processApix ),4),round(float( targetApix),4))
 
 	print("\n\n\n(e2match)(preciseshrink) the finer scale factor to apply is", scalefactor)
 	
@@ -517,16 +519,16 @@ def refpostprocessing( options, img2processEd ):
 			img2processBox = img2processHdr['nx']
 			img2processApix = round(img2processHdr['apix_x'],4)
 	
-			resfac = 1.0/float(options.sharpfiltres)
+			resfac = old_div(1.0,float(options.sharpfiltres))
 			npixels = int(round(float( ref_box * ref_apix * res_fac )))
 
-			actual_res = float(ref_box * ref_apix) / npixels
+			actual_res = old_div(float(ref_box * ref_apix), npixels)
 	
 			if options.verbose:
 				print("The sharp lowpass filter will be actually applied at this resolution", actual_res)
-				print("Becuase these many pixels in Fourier space will be zeroed out", img2processBox/2 - npixels)
+				print("Becuase these many pixels in Fourier space will be zeroed out", old_div(img2processBox,2) - npixels)
 	
-			ref_table = [1.0] * npixels + [0.0] * (( img2processBox/2) - npixels )
+			ref_table = [1.0] * npixels + [0.0] * (( old_div(img2processBox,2)) - npixels )
 	
 			ref.process_inplace("filter.radialtable",{"table":ref_table})
 

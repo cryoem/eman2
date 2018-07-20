@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 07/28/2011 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
@@ -455,7 +457,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=1.0/(apix*parms[0]*parms[5])
+		ds=old_div(1.0,(apix*parms[0]*parms[5]))
 		ctf=parms[1]
 		bg1d=array(ctf.background)
 		r=len(ctf.background)
@@ -474,16 +476,16 @@ class GUIEvalImage(QtGui.QWidget):
 			for i in range(1,15):
 				if ctf.dfdiff>0 :
 					d=ctf.defocus
-					ctf.defocus=d-ctf.dfdiff/2
-					z1=ctf.zero(i-1)/ctf.dsbg
-					ctf.defocus=d+ctf.dfdiff/2
-					z2=ctf.zero(i-1)/ctf.dsbg
+					ctf.defocus=d-old_div(ctf.dfdiff,2)
+					z1=old_div(ctf.zero(i-1),ctf.dsbg)
+					ctf.defocus=d+old_div(ctf.dfdiff,2)
+					z2=old_div(ctf.zero(i-1),ctf.dsbg)
 					ctf.defocus=d
 					if z2>len(s) : break
 					shp["z%d"%i]=EMShape(("ellipse",0,0,.75,r,r,z2,z1,ctf.dfang,1.0))
 				else:
 	#				z=zero(i,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ctf.dsbg
-					z=ctf.zero(i-1)/ctf.dsbg
+					z=old_div(ctf.zero(i-1),ctf.dsbg)
 					if z>len(s) : break
 					shp["z%d"%i]=EMShape(("circle",0,0,.75,r,r,z,1.0))
 
@@ -495,18 +497,18 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wfft.del_shapes()
 			if self.ringrad==0: self.ringrad=1.0
 			self.wfft.add_shape("ring",EMShape(("circle",0.2,1.0,0.2,r,r,self.ringrad,1.0)))
-			self.wfft.add_shape("ringlbl",EMShape(("scrlabel",0.2,1.0,0.2,10,10,"r=%d pix -> 1/%1.2f 1/A (%1.4f)"%(self.ringrad,1.0/(self.ringrad*ds),self.ringrad*ds),24.0,2.0)))
+			self.wfft.add_shape("ringlbl",EMShape(("scrlabel",0.2,1.0,0.2,10,10,"r=%d pix -> 1/%1.2f 1/A (%1.4f)"%(self.ringrad,old_div(1.0,(self.ringrad*ds)),self.ringrad*ds),24.0,2.0)))
 			self.wfft.updateGL()
 		# 2-D Crystal mode
 		elif self.f2danmode==2 :
 			shp={}
 			for a in range(-5,6):
 				for b in range(-5,6):
-					shp["m%d%d"%(a,b)]=EMShape(("circle",1.0,0.0,0.0,a*self.xpos1[0]+b*self.xpos2[0]+self.fft["nx"]/2-1,a*self.xpos1[1]+b*self.xpos2[1]+self.fft["ny"]/2,3,1.0))
+					shp["m%d%d"%(a,b)]=EMShape(("circle",1.0,0.0,0.0,a*self.xpos1[0]+b*self.xpos2[0]+old_div(self.fft["nx"],2)-1,a*self.xpos1[1]+b*self.xpos2[1]+old_div(self.fft["ny"],2),3,1.0))
 
 			self.wfft.del_shapes()
 			self.wfft.add_shapes(shp)
-			self.wfft.add_shape("xtllbl",EMShape(("scrlabel",1.0,0.3,0.3,10,10,"Unit Cell: %1.2f,%1.2f"%(1.0/(hypot(*self.xpos1)*ds),1.0/(hypot(*self.xpos2)*ds)),60.0,2.0)))
+			self.wfft.add_shape("xtllbl",EMShape(("scrlabel",1.0,0.3,0.3,10,10,"Unit Cell: %1.2f,%1.2f"%(old_div(1.0,(hypot(*self.xpos1)*ds)),old_div(1.0,(hypot(*self.xpos2)*ds))),60.0,2.0)))
 #			except: pass
 			self.wfft.updateGL()
 		else:
@@ -527,13 +529,13 @@ class GUIEvalImage(QtGui.QWidget):
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+			for i in range(int(old_div(.04,ds))+1,min(int(old_div(0.15,ds)),len(s)-1)):
 				if bgsub[i]>0 :
 					rto+=fit[i]
 					nrto+=fabs(bgsub[i])
 			if nrto==0 : rto=1.0
 			else : rto/=nrto
-			fit=[fit[i]/rto for i in range(len(s))]
+			fit=[old_div(fit[i],rto) for i in range(len(s))]
 
 #			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 
@@ -561,7 +563,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+			for i in range(int(old_div(.04,ds))+1,min(int(old_div(0.15,ds)),len(s)-1)):
 				if bgsub[i]>0 :
 					rto+=fit[i]
 					nrto+=fabs(bgsub[i])
@@ -602,8 +604,8 @@ class GUIEvalImage(QtGui.QWidget):
 			#self.wplot.set_data((s,fit),"fit",color=1)
 			#self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
 		if self.plotmode==4:
-			if min(bg1d)<=0.0 : bg1d+=min(bg1d)+max(bg1d)/10000.0
-			ssnr=(self.fft1d-bg1d)/bg1d
+			if min(bg1d)<=0.0 : bg1d+=min(bg1d)+old_div(max(bg1d),10000.0)
+			ssnr=old_div((self.fft1d-bg1d),bg1d)
 			self.wplot.set_data((s,ssnr),"SSNR",quiet=True,color=0,linetype=0)
 
 			#fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
@@ -645,7 +647,7 @@ class GUIEvalImage(QtGui.QWidget):
 	def doRefit(self):
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=1.0/(apix*parms[0]*parms[5])
+		ds=old_div(1.0,(apix*parms[0]*parms[5]))
 		astig=int(self.castig.getValue())
 		phasep=int(self.cphasep.getValue())
 
@@ -804,7 +806,7 @@ class GUIEvalImage(QtGui.QWidget):
 		apix=self.sapix.getValue()
 		if len(parms)==5 : parms.append(1)		# for old projects where there was no oversampling specification
 		else: parms[5]=max(1,int(parms[5]))
-		ds=1.0/(apix*parms[0]*parms[5])
+		ds=old_div(1.0,(apix*parms[0]*parms[5]))
 
 		# Mode where user drags the box around the parent image
 		if self.calcmode==0:
@@ -817,21 +819,21 @@ class GUIEvalImage(QtGui.QWidget):
 				clip=clip.get_clip(Region(0,0,parms[0]*parms[5],parms[0]*parms[5]))		# since we aren't using phases, doesn't matter if we center it or not
 			self.fft=clip.do_fft()
 #			self.fft.mult(1.0/parms[0]**2)
-			self.fft.mult(1.0/parms[0])
+			self.fft.mult(old_div(1.0,parms[0]))
 
 		# mode where user selects/deselcts tiled image set
 		elif self.calcmode==1:
 			# update the box display on the image
-			nx=self.data["nx"]/parms[0]-1
+			nx=old_div(self.data["nx"],parms[0])-1
 			self.fft=None
 			nbx=0
 			for x in range(nx):
-				for y in range(self.data["ny"]/parms[0]-1):
+				for y in range(old_div(self.data["ny"],parms[0])-1):
 					# User deselected this one
 					if int(x+y*nx) in parms[3] : continue
 
 					# read the data and make the FFT
-					clip=self.data.get_clip(Region(x*parms[0]+parms[0]/2,y*parms[0]+parms[0]/2,parms[0],parms[0]))
+					clip=self.data.get_clip(Region(x*parms[0]+old_div(parms[0],2),y*parms[0]+old_div(parms[0],2),parms[0],parms[0]))
 					clip.process_inplace("normalize.edgemean")
 					if parms[5]>1 :
 						clip=clip.get_clip(Region(0,0,parms[0]*parms[5],parms[0]*parms[5]))		# since we aren't using phases, doesn't matter if we center it or not
@@ -842,16 +844,16 @@ class GUIEvalImage(QtGui.QWidget):
 					else: self.fft+=fft
 					nbx+=1
 
-			self.fft.mult(1.0/(nbx*parms[0]**2))
+			self.fft.mult(old_div(1.0,(nbx*parms[0]**2)))
 			self.fft.process_inplace("math.sqrt")
 			self.fft["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 #			self.fft.mult(1.0/(nbx*parms[0]**2))
 
 		self.fftbg=self.fft.process("math.nonconvex")
-		self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
+		self.fft1d=self.fft.calc_radial_dist(old_div(self.fft.get_ysize(),2),0.0,1.0,1)	# note that this handles the ri2inten averages properly
 		if self.plotmode==2 or self.plotmode==3:
-			self.fft1dang=array(self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,4,self.sang45.getValue()*.017453292,1))	# This form generates 4 sequential power spectra representing angular ranges
-			self.fft1dang=self.fft1dang.reshape((4,self.fft.get_ysize()/2))
+			self.fft1dang=array(self.fft.calc_radial_dist(old_div(self.fft.get_ysize(),2),0.0,1.0,4,self.sang45.getValue()*.017453292,1))	# This form generates 4 sequential power spectra representing angular ranges
+			self.fft1dang=self.fft1dang.reshape((4,old_div(self.fft.get_ysize(),2)))
 		else:
 			self.fft1dang=None
 
@@ -885,7 +887,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.busy=True
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=1.0/(apix*parms[0]*parms[5])
+		ds=old_div(1.0,(apix*parms[0]*parms[5]))
 
 
 		# Fitting not done yet. Need to make 2D background somehow
@@ -912,10 +914,10 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wimage.updateGL()
 		elif self.calcmode==1:
 			# update the box display on the image
-			nx=self.data["nx"]/parms[0]-1
+			nx=old_div(self.data["nx"],parms[0])-1
 			shp={}
 			for x in range(nx):
-				for y in range(self.data["ny"]/parms[0]-1):
+				for y in range(old_div(self.data["ny"],parms[0])-1):
 					# User deselected this one
 					if int(x+y*nx) in parms[3] : continue
 
@@ -979,7 +981,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 			# Find the minimum value near the origin, which we'll use as a zero (though it likely should not be)
 			mv=(self.fft1d[1],1)
-			fz=int(ctf.zero(0)/(ds*2))
+			fz=int(old_div(ctf.zero(0),(ds*2)))
 			for lz in range(1,fz):
 				mv=min(mv,(self.fft1d[lz],lz))
 
@@ -988,7 +990,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 			# now we add all of the zero locations to our XYData object
 			for i in range(100):
-				z=int(ctf.zero(i)/ds)
+				z=int(old_div(ctf.zero(i),ds))
 				if z>=len(bg_1d)-1: break
 				if self.fft1d[z-1]<self.fft1d[z] and self.fft1d[z-1]<self.fft1d[z+1]: mv=(z-1,self.fft1d[z-1])
 				elif self.fft1d[z]<self.fft1d[z+1] : mv=(z,self.fft1d[z])
@@ -1030,7 +1032,7 @@ class GUIEvalImage(QtGui.QWidget):
 		if self.calcmode==0:
 			m=self.wimage.scr_to_img((event.x(),event.y()))
 			parms=self.parms[self.curset]
-			parms[2]=(m[0]-parms[0]/2,m[1]-parms[0]/2)
+			parms[2]=(m[0]-old_div(parms[0],2),m[1]-old_div(parms[0],2))
 			self.recalc()
 			self.needredisp=True
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
@@ -1039,7 +1041,7 @@ class GUIEvalImage(QtGui.QWidget):
 		if self.calcmode==0:
 			m=self.wimage.scr_to_img((event.x(),event.y()))
 			parms=self.parms[self.curset]
-			parms[2]=(m[0]-parms[0]/2,m[1]-parms[0]/2)
+			parms[2]=(m[0]-old_div(parms[0],2),m[1]-old_div(parms[0],2))
 			self.needredisp=True
 			self.recalc()
 
@@ -1051,8 +1053,8 @@ class GUIEvalImage(QtGui.QWidget):
 		m=self.wimage.scr_to_img((event.x(),event.y()))
 		if self.calcmode==1:
 			parms=self.parms[self.curset]
-			nx=self.data["nx"]/parms[0]-1
-			grid=int((m[0]-parms[0]/2)/parms[0])+int((m[1]-parms[0]/2)/parms[0])*nx
+			nx=old_div(self.data["nx"],parms[0])-1
+			grid=int(old_div((m[0]-old_div(parms[0],2)),parms[0]))+int(old_div((m[1]-old_div(parms[0],2)),parms[0]))*nx
 			if grid in parms[3] : parms[3].remove(grid)
 			else: parms[3].add(grid)
 			self.needredisp=True
@@ -1063,11 +1065,11 @@ class GUIEvalImage(QtGui.QWidget):
 		#m=self.wfft.scr_to_img((event.x(),event.y()))
 
 		if self.f2danmode==1:
-			self.ringrad=hypot(m[0]-self.fft["nx"]/2,m[1]-self.fft["ny"]/2)
+			self.ringrad=hypot(m[0]-old_div(self.fft["nx"],2),m[1]-old_div(self.fft["ny"],2))
 			self.needredisp=True
 		elif self.f2danmode==2:
-			if (event.modifiers()&Qt.ControlModifier): self.xpos2=((m[0]-self.fft["nx"]/2)/3.0,(m[1]-self.fft["ny"]/2)/3.0)
-			else: self.xpos1=((m[0]-self.fft["nx"]/2)/3.0,(m[1]-self.fft["ny"]/2)/3.0)
+			if (event.modifiers()&Qt.ControlModifier): self.xpos2=(old_div((m[0]-old_div(self.fft["nx"],2)),3.0),old_div((m[1]-old_div(self.fft["ny"],2)),3.0))
+			else: self.xpos1=(old_div((m[0]-old_div(self.fft["nx"],2)),3.0),old_div((m[1]-old_div(self.fft["ny"],2)),3.0))
 			self.needredisp=True
 
 
@@ -1077,11 +1079,11 @@ class GUIEvalImage(QtGui.QWidget):
 		#m=self.wfft.scr_to_img((event.x(),event.y()))
 
 		if self.f2danmode==1:
-			self.ringrad=hypot(m[0]-self.fft["nx"]/2,m[1]-self.fft["ny"]/2)
+			self.ringrad=hypot(m[0]-old_div(self.fft["nx"],2),m[1]-old_div(self.fft["ny"],2))
 			self.needredisp=True
 		elif self.f2danmode==2:
-			if (event.modifiers()&Qt.ControlModifier): self.xpos2=((m[0]-self.fft["nx"]/2)/3.0,(m[1]-self.fft["ny"]/2)/3.0)
-			else: self.xpos1=((m[0]-self.fft["nx"]/2)/3.0,(m[1]-self.fft["ny"]/2)/3.0)
+			if (event.modifiers()&Qt.ControlModifier): self.xpos2=(old_div((m[0]-old_div(self.fft["nx"],2)),3.0),old_div((m[1]-old_div(self.fft["ny"],2)),3.0))
+			else: self.xpos1=(old_div((m[0]-old_div(self.fft["nx"],2)),3.0),old_div((m[1]-old_div(self.fft["ny"],2)),3.0))
 			self.needredisp=True
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:

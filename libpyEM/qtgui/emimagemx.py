@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
 
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import absolute_import
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -96,7 +98,7 @@ class EMMatrixPanel(object):
 #			view_scale = taget.scale
 #			[self.ystart,self.visiblerows,self.visiblecols] = self.visible_row_col(view_width,view_height,view_scale,view_data,y)
 		xsep = view_width - self.visiblecols*(rendered_image_width+self.min_sep)
-		self.xoffset = xsep/2
+		self.xoffset = xsep//2
 
 		self.height = ceil(len(view_data)/float(self.visiblecols))*(rendered_image_height+self.min_sep) + self.min_sep
 		self.max_y = self.height - view_height # adjusted height is the maximum value for current y!
@@ -118,13 +120,13 @@ class EMMatrixPanel(object):
 
 		yoff = 0
 		if y < 0:
-			ybelow = floor(-y/(h+2))
+			ybelow = floor(-y//(h+2))
 			yoff = ybelow*(h+2)+y
 			visiblerows = int(ceil(float(view_height-yoff)/(h+2)))
 		else: visiblerows = int(ceil(float(view_height-y)/(h+2)))
 
 		maxrow = int(ceil(float(len(view_data))/visiblecols))
-		rowstart =-y/(h+2)
+		rowstart =-y//(h+2)
 		if rowstart < 0: rowstart = 0
 		elif rowstart > 0:
 			rowstart = int(rowstart)
@@ -350,7 +352,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 
-		glLightfv(GL_LIGHT0, GL_POSITION, [width/2,height/2,100.,1.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [width//2,height//2,100.,1.])
 
 		self.set_projection_view_update()
 		try: self.resize_event(width,height)
@@ -706,7 +708,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				hfac = 1
 			else :
 				w=self.matrix_panel.visiblecols*(self.data.get_xsize()+2)
-				hfac = len(self.data)/self.matrix_panel.visiblecols+1
+				hfac = olen(self.data)//self.matrix_panel.visiblecols+1
 			hfac *= self.data.get_ysize()
 			if hfac > 512: hfac = 512
 			if w > 512: w = 512
@@ -816,7 +818,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if d["nx"]*d["ny"]*d["nz"]>1000000: nrep=5
 		elif d["nx"]*d["ny"]*d["nz"]>100000 : nrep=16
 		else: nrep=64
-		stp = max(len(self.data)/nrep, 1)
+		stp = max(len(self.data)//nrep, 1)
 
 		for i in range(0, len(self.data), stp) : # we check ~32 images randomly spaced in the set
 			d=self.data[i]
@@ -874,8 +876,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			x=self.data[0]["nx"]*sqrt(nimg)
 			y=self.data[0]["ny"]*sqrt(nimg)
 			xys=QtGui.QApplication.desktop().availableGeometry()
-			mx=xys.width()*2/3
-			my=xys.height()*2/3
+			mx=xys.width()*2//3
+			my=xys.height()*2//3
 			
 			self.resize(min(x,mx),min(y,my))
 
@@ -1179,10 +1181,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						if not excluded:
 							#print rx,ry,tw,th,self.width(),self.height(),self.origin
 							if not self.glflags.npt_textures_unsupported():
-								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 								self.texture(a,tx,ty,tw,th)
 							else:
-								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 								glRasterPos(tx,ty)
 								glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
 
@@ -1507,10 +1509,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 #		try: self.origin=(self.coords[8][0]-self.width()/2-self.origin[0],self.coords[8][1]+self.height()/2-self.origin[1])
 		if yonly :
 			try:
-				self.targetorigin=(0,self.coords[n][1]-self.height()/2+self.data.get_ysize()*self.scale/2)
+				self.targetorigin=(0,self.coords[n][1]-self.height()//2+self.data.get_ysize()*self.scale/2)
 			except: return
 		else:
-			try: self.targetorigin=(self.coords[n][0]-self.view_width()/2+self.data.get_xsize()*self.scale/2,self.coords[n][1]-self.height()/2+self.data.get_ysize()*self.scale/2)
+			try: self.targetorigin=(self.coords[n][0]-self.view_width()//2+self.data.get_xsize()*self.scale/2,self.coords[n][1]-self.height()//2+self.data.get_ysize()*self.scale/2)
 			except: return
 		self.targetspeed=hypot(self.targetorigin[0]-self.origin[0],self.targetorigin[1]-self.origin[1])/20.0
 #		print n,self.origin
@@ -1702,8 +1704,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			if xians_stuff:
 				if lc[0] != None:
 					image = self.get_box_image(lc[0])
-					cx = image.get_xsize()/2
-					cy = image.get_ysize()/2
+					cx = image.get_xsize()//2
+					cy = image.get_ysize()//2
 					x = lc[1]-cx
 					y = lc[2]-cy
 					angle = atan2(y,x)*180.0/pi
@@ -2017,7 +2019,7 @@ class EMGLScrollBar(object):
 		self.arrow_button_height = 12
 		self.arrow_part_offset = .5
 		self.arrow_part_thickness = 1
-		self.arrow_width = (self.width/2-self.arrow_part_offset)
+		self.arrow_width = (self.width//2-self.arrow_part_offset)
 		self.arrow_height = (self.arrow_button_height-2*self.arrow_part_offset)
 		self.arrow_part_length = sqrt(self.arrow_width**2 +self.arrow_height**2)
 
@@ -2061,7 +2063,7 @@ class EMGLScrollBar(object):
 
 		adjusted_scroll_bar_height = self.scroll_bar_height - self.scroll_bit_height
 
-		self.scroll_bit_position_ratio = (-float(current_y)/adjusted_height)
+		self.scroll_bit_position_ratio = (-float(current_y)//adjusted_height)
 		self.scroll_bit_position = self.scroll_bit_position_ratio *adjusted_scroll_bar_height
 
 		return True
@@ -2118,7 +2120,7 @@ class EMGLScrollBar(object):
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
 		glVertex(self.width-self.arrow_part_offset,self.arrow_part_offset,0)
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
-		glVertex(self.width/2,self.arrow_button_height-self.arrow_part_offset,0)
+		glVertex(self.width//2,self.arrow_button_height-self.arrow_part_offset,0)
 		glEnd()
 		glPopMatrix()
 
@@ -2127,7 +2129,7 @@ class EMGLScrollBar(object):
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
 		glVertex(self.arrow_part_offset,self.arrow_button_height-self.arrow_part_offset,0)
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
-		glVertex(self.width/2,self.arrow_part_offset,0)
+		glVertex(self.width//2,self.arrow_part_offset,0)
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
 		glVertex(self.width-self.arrow_part_offset,self.arrow_button_height-self.arrow_part_offset,0)
 		glEnd()
@@ -2940,7 +2942,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		Called internally to refocus the cache on a new focal point.
 		@param new_focus the value at which the current cache failed - i.e. the first value that was beyond the current cache limits
 		'''
-		new_cache_start = new_focus-self.cache_max/2
+		new_cache_start = new_focus-self.cache_max//2
 		# Don't let cache start go negative; it will break.
 		if new_cache_start < 0:
 			new_cache_start = 0
@@ -3060,7 +3062,7 @@ class EMDataListCache(EMMXDataCache):
 				self.cache_size = self.max_idx
 			else:
 				self.cache_size = cache_size
-			self.start_idx = start_idx - self.cache_size/2
+			self.start_idx = start_idx - self.cache_size//2
 			if self.start_idx < 0: self.start_idx = 0
 
 			self.__refresh_cache()
@@ -3190,7 +3192,7 @@ class EMDataListCache(EMMXDataCache):
 		if self.mode != EMDataListCache.LIST_MODE:
 			if cache_size > self.max_idx: self.cache_size = self.max_idx
 			else: self.cache_size = cache_size
-			self.start_idx = self.start_idx - self.cache_size/2
+			self.start_idx = self.start_idx - self.cache_size//2
 			if refresh: self.__refresh_cache()
 		else:
 			if self.cache_size != self.max_idx:
@@ -3246,7 +3248,7 @@ class EMDataListCache(EMMXDataCache):
 		try:
 			return self.images[i]
 		except:
-			self.start_idx = i - self.cache_size/2
+			self.start_idx = i - self.cache_size//2
 			if self.start_idx < 0: self.start_idx = 0
 			#if self.start_idx < 0:
 				#self.start_idx = self.start_idx % self.max_idx
@@ -3329,7 +3331,7 @@ class EM3DDataListCache(EMMXDataCache):
 
 	def get_image_header(self,idx):
 		if self.header ==None:
-			image = self[self.nz/2]
+			image = self[self.nz//2]
 			self.header = image.get_attr_dict()
 
 		return self.header

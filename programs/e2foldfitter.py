@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -47,7 +49,7 @@ pdim=None
 tdim2=None
 pdim2=None
 sfac=None
-degrad=pi/180.0
+degrad=old_div(pi,180.0)
 ncmp=0
 
 def compare(vec,empty):	 # I add an empty argument just because the Simplex.py wants two input... -Muyuan
@@ -58,7 +60,7 @@ def compare(vec,empty):	 # I add an empty argument just because the Simplex.py w
 #	print vec,pdim
 #	print "\n%6.3f %6.3f %6.3f    %5.1f %5.1f %5.1f"%(vec[0],vec[1],vec[2],vec[3],vec[4],vec[5])
 	t = Transform()
-	t.set_pre_trans((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2))
+	t.set_pre_trans((vec[3]+old_div(tdim[0],2),vec[4]+old_div(tdim[1],2),vec[5]+old_div(tdim[2],2)))
 	#t.set_trans((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2))
 	t.set_rotation({'type':'eman', 'az':vec[0], 'alt':vec[1], 'phi':vec[2]})
 	#t.set_trans((0,0,0))
@@ -79,7 +81,7 @@ def compares(vec,empty):
 	global cmp_probe,cmp_target,sfac
 	
 	t = Transform()
-	t.set_pre_trans((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2))
+	t.set_pre_trans((old_div(vec[3],float(sfac))+old_div(tdim2[0],2),old_div(vec[4],float(sfac))+old_div(tdim2[1],2),old_div(vec[5],float(sfac))+old_div(tdim2[2],2)))
 	#t.set_trans((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2))
 	t.set_rotation({'type':'eman', 'az':vec[0], 'alt':vec[1], 'phi':vec[2]})
 	#t.set_trans((0,0,0))
@@ -167,7 +169,7 @@ both box sizes should be multiples of 8."""
 			#print lines[q+l][17:-1].split('-')
 			t=[float(i) for i in (lines[q+l][17:-1].split(' - '))]
 			#print t
-			cent.append((t[0]+t[1])/2)
+			cent.append(old_div((t[0]+t[1]),2))
 		
 		probefilename="probe.mrc"
 	else:
@@ -188,7 +190,7 @@ both box sizes should be multiples of 8."""
 	# we'll have to reread the files if we want to recover the unscaled images
 #	sfac=int(floor(min(pdim)/10.0))
 	if options.shrink>0 : sfac=options.shrink
-	else : sfac=int(floor(min(pdim)/12.0))
+	else : sfac=int(floor(old_div(min(pdim),12.0)))
 	print("Shrink by %d"%sfac)
 	target.process_inplace("math.meanshrink",{"n":sfac})
 	probe.process_inplace("math.meanshrink",{"n":sfac})
@@ -197,7 +199,7 @@ both box sizes should be multiples of 8."""
 #	print (pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]
 	probe.process_inplace("normalize.edgemean")
 
-	probeclip=probe.get_clip(Region((pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]))
+	probeclip=probe.get_clip(Region(old_div((pdim2[0]-tdim2[0]),2),old_div((pdim2[1]-tdim2[1]),2),old_div((pdim2[2]-tdim2[2]),2),tdim2[0],tdim2[1],tdim2[2]))
 	#roughang=[(0,0)]
 
 	#roughang=[(0,0),(45,0),(45,90),(45,180),(45,270),(90,0),(90,60),(90,120),(90,180),(90,240),(90,300),(135,0),(135,90),(135,180),(135,270),(180,0)]
@@ -208,7 +210,7 @@ both box sizes should be multiples of 8."""
 #	Log.logger().set_level(Log.LogLevel.DEBUG_LOG)
 	
 	print("Searching for candidate locations in reduced map")
-	edge=max(pdim2)/2		# technically this should be max(pdim), but generally there is some padding in the probe model, and this is relatively harmless
+	edge=old_div(max(pdim2),2)		# technically this should be max(pdim), but generally there is some padding in the probe model, and this is relatively harmless
 	print("edge ",edge)
 	best=[]
 	sum=probeclip.copy_head()
@@ -228,7 +230,7 @@ both box sizes should be multiples of 8."""
 			#ccf.write_image('ccf.%0d%0d%0d.mrc'%(a1,a2,a3))
 			vec=ccf.calc_highest_locations(mean+sig)
 			
-			for v in vec: best.append([v.value,a1,a2,a3,v.x-tdim2[0]/2,v.y-tdim2[1]/2,v.z-tdim2[2]/2,0])
+			for v in vec: best.append([v.value,a1,a2,a3,v.x-old_div(tdim2[0],2),v.y-old_div(tdim2[1],2),v.z-old_div(tdim2[2],2),0])
 
 #			print a1,a2,a3,mean+sig,float(ccf.get_attr("max")),len(vec)
 	
@@ -238,7 +240,7 @@ both box sizes should be multiples of 8."""
 	
 	if len(best)<1:
 		cm=target.calc_center_of_mass(0)
-		best.append([0,0,0,0,cm[0]-tdim2[0]/2,cm[1]-tdim2[1]/2,cm[2]-tdim2[2]/2,0])
+		best.append([0,0,0,0,cm[0]-old_div(tdim2[0],2),cm[1]-old_div(tdim2[1],2),cm[2]-old_div(tdim2[2],2),0])
 	print(len(best)," possible candidates")
 
 	# this is designed to eliminate angular redundancies in peak location
@@ -338,7 +340,7 @@ both box sizes should be multiples of 8."""
 		
 		t=Transform()
 		#t.set_pre_trans((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),b[0],b[1],b[2],(0,0,0))
-		t.set_pre_trans((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2))
+		t.set_pre_trans((b[3]+old_div(tdim[0],2),b[4]+old_div(tdim[1],2),b[5]+old_div(tdim[2],2)))
 		t.set_rotation({'type':'eman', 'az':b[0], 'alt':b[1], 'phi':b[2]})
 		#t.set_trans((0,0,0))
 		#t.set_trans((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2))
@@ -347,8 +349,8 @@ both box sizes should be multiples of 8."""
 		t=Transform()
 		s.set_rotation({'type':'eman', 'az':b[0], 'alt':b[1], 'phi':b[2]})
 		s.set_trans((b[3],b[4],b[5]))
-		print((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2)
-		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
+		print(old_div((pdim[0]-tdim[0]),2),old_div((pdim[1]-tdim[1]),2),old_div((pdim[2]-tdim[2]),2))
+		pc=probe.get_clip(Region(old_div((pdim[0]-tdim[0]),2),old_div((pdim[1]-tdim[1]),2),old_div((pdim[2]-tdim[2]),2),tdim[0],tdim[1],tdim[2]))
 		pc.transform(s)
 		shx=shy=shz=0
 		try:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -33,6 +34,7 @@ from __future__ import print_function
 #
 
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
@@ -117,13 +119,13 @@ Simulates the effects of a 3D reconstruction by including noise and rotational u
 	recon=EMData("nonoise.hdf")
 	reconf=recon.do_fft()
 
-	ds=1.0/(options.apix*nz)
+	ds=old_div(1.0,(options.apix*nz))
 	pspec=reconf.calc_radial_dist(int(nz*1.8),0,1,1)
 #	pspec=reconf.calc_radial_dist(len(fsc),fsc.get_x(0)/ds,(fsc.get_x(1)-fsc.get_x(0))/ds,1)
 #	print pspec
 	fscl=[min(max(fsc.get_yatx(i*ds),.001),0.9999) for i in range(len(pspec))]
 #	print fscl
-	noise=[sqrt(pspec[i]*(1.0-fscl[i])/(fscl[i]))/(4000.0) for i in range(len(pspec))]
+	noise=[old_div(sqrt(pspec[i]*(1.0-fscl[i])/(fscl[i])),(4000.0)) for i in range(len(pspec))]
 	print(noise)
 
 	noisemap=EMData(nz,nz,nz)

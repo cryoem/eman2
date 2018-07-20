@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 10/18/2014 (sludtke@bcm.edu)
@@ -34,6 +35,7 @@ from __future__ import print_function
 
 
 
+from past.utils import old_div
 from EMAN2 import *
 from optparse import OptionParser
 from math import *
@@ -79,13 +81,13 @@ n SNR(20-200) SNR(4-10) quality defocus SNR1*SNR2
 		db=js_open_dict(inf)
 		try: ctf=db["ctf"][0]
 		except: continue
-		r1=int(floor(1.0/(200.0*ctf.dsbg)))
-		r2=int(ceil(1.0/(20.0*ctf.dsbg)))
-		r3=int(floor(1.0/(10.0*ctf.dsbg)))
-		r4=int(ceil(1.0/(4.0*ctf.dsbg)))
-		losnr=sum(ctf.snr[r1:r2])/(r2-r1)
-		medsnr=sum(ctf.snr[r2:r3])/(r3-r2)
-		hisnr=sum(ctf.snr[r3:r4])/(r4-r3)
+		r1=int(floor(old_div(1.0,(200.0*ctf.dsbg))))
+		r2=int(ceil(old_div(1.0,(20.0*ctf.dsbg))))
+		r3=int(floor(old_div(1.0,(10.0*ctf.dsbg))))
+		r4=int(ceil(old_div(1.0,(4.0*ctf.dsbg))))
+		losnr=old_div(sum(ctf.snr[r1:r2]),(r2-r1))
+		medsnr=old_div(sum(ctf.snr[r2:r3]),(r3-r2))
+		hisnr=old_div(sum(ctf.snr[r3:r4]),(r4-r3))
 		qual=db["quality"]
 
 		out.write("{:5d}\t{:6.4f}\t{:6.4f}\t{:1d}\t{:6.4f}\t{:7.5f}\t{:6.4f}\t{:6.1f}\t{:6.4f}\n".format(i,losnr,hisnr,qual,ctf.defocus,sqrt(losnr*hisnr),ctf.dfdiff,ctf.dfang,medsnr))

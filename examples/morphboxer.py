@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Authors: James Michael Bell, 06/03/2015
@@ -31,6 +32,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA	2111-1307 USA
 #
 
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -280,12 +282,12 @@ class MorphBoxingTool(EMBoxingTool):
 		"""
 		global BigImageCache
 		image = BigImageCache.get_image_directly(image_name)
-		xc = box[0]-box_size/2
-		yc = box[1]-box_size/2
+		xc = box[0]-old_div(box_size,2)
+		yc = box[1]-old_div(box_size,2)
 		r = Region(xc,yc,box_size,box_size)
 		particle = image.get_clip(r)
 		ccf  = particle.calc_ccf(template)
-		trans = ccf.calc_max_location_wrap(particle.get_xsize()/2,particle.get_ysize()/2,0)
+		trans = ccf.calc_max_location_wrap(old_div(particle.get_xsize(),2),old_div(particle.get_ysize(),2),0)
 		dx = trans[0]
 		dy = trans[1]
 		return dx,dy

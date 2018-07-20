@@ -28,6 +28,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
@@ -165,7 +167,7 @@ def main():
 				y = coords[1]
 				z = coords[2]					
 			
-				r = Region((2*x-box)/2,(2*y-box)/2, (2*z-box)/2, box, box, box)		#Define extraction region based on boxsize
+				r = Region(old_div((2*x-box),2),old_div((2*y-box),2), old_div((2*z-box),2), box, box, box)		#Define extraction region based on boxsize
 			
 				a = EMData()
 				a.read_image(tomogram,0,False,r)									#Actually 'read'/extract particle data

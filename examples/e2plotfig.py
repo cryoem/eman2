@@ -30,6 +30,8 @@ Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import matplotlib
 matplotlib.use('Agg',warn=False)
@@ -280,7 +282,7 @@ def fixlines(inlines):
 
 def normalize(data):
 	dminusmin = [d-min(data) for d in data]
-	dminusminovermax = [d/max(dminusmin) for d in dminusmin]
+	dminusminovermax = [old_div(d,max(dminusmin)) for d in dminusmin]
 
 	return dminusminovermax
 
@@ -523,9 +525,9 @@ def calcbins(options,data):
 		print("ERROR: std={}, which means all data values are the same.".format(std))
 		sys.exit()
 		
-	cuberoot = np.power(len(data),1.0/3.0)
+	cuberoot = np.power(len(data),old_div(1.0,3.0))
 	#print "The cuberoot of n is", cuberoot
-	width = (3.5*std)/cuberoot
+	width = old_div((3.5*std),cuberoot)
 	print("Therefore, according to Scott's normal reference rule, width = (3.5*std)/cuberoot(n), the width of the histogram bins will be", width)
 
 	if options.binwidth:
@@ -537,7 +539,7 @@ def calcbins(options,data):
 			print("\n\n\nWARNING!!!: --binwidth ignored since --nbins supersedes it.")
 		nbins = int(round(options.nbins))
 	else:
-		nbins = int(round( (max(data) - min(data)) / width ))
+		nbins = int(round( old_div((max(data) - min(data)), width) ))
 	
 	print("\nAnd the number of bins n = ( max(data) - min(data) ) / width will thus be", nbins)
 	nbins = int(round(nbins))

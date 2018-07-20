@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Author: Stephen Murray (scmurray@bcm.edu), 12/05/11
 # Copyright (c) 2000-2011 Baylor Colelge of Medicine
 
@@ -9,6 +10,7 @@ from __future__ import print_function
 # the terms of the GPL/BSD license permit us to redistribute it.
 #
 #import block
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict
@@ -187,7 +189,7 @@ for db in dblist:
 		db_set=EMData("sets/" +db,0,True)
 		if db_set.get_attr_dict().__contains__('ctf') and (EMUtil.get_image_count("sets/"+db) == num_images):
 			ctf_value=True
-			amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10
+			amplitude_contrast = old_div(float(db_set['ctf'].to_dict()['ampcont']), 10)
 			break
 
 if options.verbosity == 0 :

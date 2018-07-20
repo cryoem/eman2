@@ -34,8 +34,7 @@
 
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
-#include <boost/cstdint.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/python/numpy.hpp>
 
 // Includes ====================================================================
 #include <typeconverter.h>

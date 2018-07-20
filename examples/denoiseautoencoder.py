@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # Muyuan June 2015
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -61,7 +63,7 @@ def main():
 	
 	ptl=EMData(args[0],0)
 	shape=[ptl["nx"],ptl["ny"],ptl["nz"]]
-	shape=[i/options.shrink for i in shape]
+	shape=[old_div(i,options.shrink) for i in shape]
 	#print shape
 	# compute number of minibatches 
 	
@@ -106,7 +108,7 @@ def main():
 	for i in totrain:
 		learning_rate=options.learnrate
 
-		n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
+		n_train_batches = old_div(train_set_x.get_value(borrow=True).shape[0], batch_size)
 		# go through pretraining epochs
 		for epoch in range(training_epochs):
 		# go through the training set
@@ -325,8 +327,8 @@ class dA(object):
 			#print np.sqrt(6. / (n_hidden + n_visible))
 			initial_W = np.asarray(
 				numpy_rng.uniform(
-					low=-1*np.sqrt(6. / (n_hidden + n_visible)) ,
-					high=1*np.sqrt(6. / (n_hidden + n_visible)),
+					low=-1*np.sqrt(old_div(6., (n_hidden + n_visible))) ,
+					high=1*np.sqrt(old_div(6., (n_hidden + n_visible))),
 					size=(n_visible, n_hidden)
 				),
 				dtype=theano.config.floatX
@@ -478,8 +480,8 @@ class HiddenLayer(object):
 		if W is None:
 			W_values = np.asarray(
 				rng.uniform(
-					low=-np.sqrt(6. / (n_in + n_out)),
-					high=np.sqrt(6. / (n_in + n_out)),
+					low=-np.sqrt(old_div(6., (n_in + n_out))),
+					high=np.sqrt(old_div(6., (n_in + n_out))),
 					size=(n_in, n_out)
 				),
 				dtype=theano.config.floatX

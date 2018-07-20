@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 # Muyuan Chen 2016-01
 #
@@ -29,6 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -375,7 +377,7 @@ def main():
 				if options.symcopy:
 					for i in range(npt):
 						c=np.asarray(corr[i])
-						cls=np.argmin(c.reshape(len(corr[i])/len(models),len(models)),1)
+						cls=np.argmin(c.reshape(old_div(len(corr[i]),len(models)),len(models)),1)
 						#### the class it belongs to
 						v=cmxcls[0,i] 
 						#### index of the class of each asym-unit
@@ -389,7 +391,7 @@ def main():
 					clso=np.argmin(corr,1)
 					cls=clso%len(models)
 					clsm=clso//len(models)
-					print(eo,[float(sum(cls==k))/float(npt) for k in models])
+					print(eo,[old_div(float(sum(cls==k)),float(npt)) for k in models])
 					for i in range(npt):
 						v=cmxcls[0,i]
 						if options.breaksym:

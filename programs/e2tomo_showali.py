@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
@@ -63,7 +65,7 @@ def run(cmd):
 	launch_childprocess(cmd)
 
 def get_circle(p,r):
-	t=np.arange(0, np.pi*2, np.pi/10)
+	t=np.arange(0, np.pi*2, old_div(np.pi,10))
 	pts=r*np.vstack([np.cos(t), np.sin(t)]).T
 	pts+=p
 	return pts
@@ -84,15 +86,15 @@ class Boxes(EMShape):
 		mi=self.image.list_idx
 		xf=self.xfs[mi]
 		#print(mi,xf)
-		dx=self.image.data["nx"]/2
-		dy=self.image.data["ny"]/2
+		dx=old_div(self.image.data["nx"],2)
+		dy=old_div(self.image.data["ny"],2)
 		ps=[]
 		glColor3f( 1., 1., 1. );
 		glPointSize(3)
 		for pid, p in enumerate(self.pks):
 			pt=[p[0], p[1], p[2]]
 			ptx=xf.transform(pt)
-			ptx=[i/2 for i in ptx]
+			ptx=[old_div(i,2) for i in ptx]
 			ptx=[ptx[0]+dx, ptx[1]+dy]
 			#print(ptx[0]+dx, ptx[1]+dy)
 			ps.append(ptx)
@@ -123,7 +125,7 @@ class Boxes(EMShape):
 		glPointSize(5)
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glVertexPointerf([ps[i] for i in range(0,len(ps),2)])
-		glDrawArrays(GL_POINTS, 0, len(ps)/2)
+		glDrawArrays(GL_POINTS, 0, old_div(len(ps),2))
 
 		return
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -59,14 +61,14 @@ def calc_ccf(N,box,step,dataa,datab,out):
 # preprocess regions by normalizing and doing FFT
 def split_fft(img,i,box,step,out):
 	lst=[]
-	for dx in range(box/2,nx-box,step):
-		for dy in range(box/2,ny-box,step):
+	for dx in range(old_div(box,2),nx-box,step):
+		for dy in range(old_div(box,2),ny-box,step):
 			lst.append(img.get_clip(Region(dx,dy,box,box)).process("normalize.edgemean").do_fft())
 	out.put((i,lst))
 
 def calcfsc(map1,map2):
 	fsc=map1.calc_fourier_shell_correlation(map2)
-	third=len(fsc)/3
+	third=old_div(len(fsc),3)
 	xaxis=fsc[0:third]
 	fsc=fsc[third:2*third]
 
@@ -179,13 +181,13 @@ def qual(locs,ccfs):
 	an (x0,y0,x1,y1,...)  shift array. Smaller numbers are better since that's what the simplex does"""
 
 	nrg=0.0
-	cen=ccfs[(0,1)]["nx"]/2
-	n=len(locs)/2
+	cen=old_div(ccfs[(0,1)]["nx"],2)
+	n=old_div(len(locs),2)
 	for i in range(n-1):
 		for j in range(i+1,n):
 #			nrg-=ccfs[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))
 			# This is a recognition that we will tend to get better correlation with near neighbors in the sequence
-			nrg-=ccfs[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(float(n-fabs(i-j))/n)
+			nrg-=ccfs[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(old_div(float(n-fabs(i-j)),n))
 
 #	print nrg
 	return nrg
@@ -202,21 +204,21 @@ for scale in [0.02,0.04,0.07,0.1,0.5]:
 	incr=[16]*len(locs)
 	incr[-1]=incr[-2]=4	# if step is zero for last 2, it gets stuck as an outlier, so we just make the starting step smaller
 	simp=Simplex(qual,locs,incr,data=csum3)
-	locs=simp.minimize(maxiters=int(100/scale),epsilon=.01)[0]
-	locs=[int(floor(i*10+.5))/10.0 for i in locs]
+	locs=simp.minimize(maxiters=int(old_div(100,scale)),epsilon=.01)[0]
+	locs=[old_div(int(floor(i*10+.5)),10.0) for i in locs]
 	print(locs)
 	if VERBOSE:
-		out=open("path_{:02d}.txt".format(int(1.0/scale)),"w")
+		out=open("path_{:02d}.txt".format(int(old_div(1.0,scale))),"w")
 		for i in range(0,len(locs),2): out.write("%f\t%f\n"%(locs[i],locs[i+1]))
 	
 
 
 # compute the quality of each frame
 quals=[0]*n			# quality of each frame based on its correlation peak summed over all images
-cen=csum2[(0,1)]["nx"]/2
+cen=old_div(csum2[(0,1)]["nx"],2)
 for i in range(n-1):
 	for j in range(i+1,n):
-		val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(float(n-fabs(i-j))/n)
+		val=csum2[(i,j)].sget_value_at_interp(int(cen+locs[j*2]-locs[i*2]),int(cen+locs[j*2+1]-locs[i*2+1]))*sqrt(old_div(float(n-fabs(i-j)),n))
 		quals[i]+=val
 		quals[j]+=val
 

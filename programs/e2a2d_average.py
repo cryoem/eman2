@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 # average particles together based on existing alignments
 
+from past.utils import old_div
 from EMAN2 import *
 import time
 import os
@@ -95,9 +97,9 @@ def main():
 	for i,t in enumerate(sorted(sortangs)):
 		if options.verbose==1 and time.time()-t1>1:
 			t1=time.time()
-			frac=i/float(N)
+			frac=old_div(i,float(N))
 			try:
-				remain=int((time.time()-t0)/frac-(time.time()-t0))	# est remaining time in sec
+				remain=int(old_div((time.time()-t0),frac)-(time.time()-t0))	# est remaining time in sec
 				print("{:6d}/{:-6d}   time remaining: {}:{:02d}     \r".format(i,N,remain//60,remain%60))
 			except:
 				print("{:6d}/{:-6d}     \r".format(i,N))

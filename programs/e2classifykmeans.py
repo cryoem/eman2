@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -35,6 +36,7 @@ from __future__ import print_function
 ###	e2classifykmeans.py	Steven Ludtke	3/4/2006
 ### Program for classifying raw 2d or 3d data by kmeans
 
+from past.utils import old_div
 from builtins import range
 import os
 import sys
@@ -115,7 +117,7 @@ together."""
 
 	print(len(data)," images to classify.")
 
-	if options.minchange<=0 : options.minchange=len(data)/(options.ncls*25)+1
+	if options.minchange<=0 : options.minchange=old_div(len(data),(options.ncls*25))+1
 	if options.fastseed : slowseed=0
 	else : slowseed=1
 	an=Analyzers.get("kmeans")
@@ -127,7 +129,7 @@ together."""
 	nrep=[i.get_attr("ptcl_repr") for i in centers[:options.ncls]]
 	maxcls=max(nrep)
 	for n,i in enumerate(nrep):
-		print("%d) %s (%d)"%(n,"#"*int(i*72/maxcls),i))
+		print("%d) %s (%d)"%(n,"#"*int(old_div(i*72,maxcls)),i))
 		
 	classes=[[] for i in range(options.ncls)]
 	for n,i in enumerate(data):

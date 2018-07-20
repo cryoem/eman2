@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Liwei Peng, 01/30/2005 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from testlib import *
@@ -279,7 +281,7 @@ class TestTypeConverter(unittest.TestCase):
         ny = e.get_ysize()
 
         a = EMNumPy.em2numpy(e)
-        n = ny/2
+        n = old_div(ny,2)
 
         for i in range(nx):
             self.assertEqual(e.get_value_at(i, n), a[n][i])

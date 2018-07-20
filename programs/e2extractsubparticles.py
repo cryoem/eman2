@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 08/26/14 (sludtke@bcm.edu)
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 import os
 import sys
@@ -216,9 +218,9 @@ will be examined automatically to extract the corresponding particles and projec
 						ptcl3.mult(projm[k])
 #					projm[k].write_image(options.output,-1)
 #					ptcl3.write_image(options.output,-1)
-					ptcl3.translate(-maskctr[k][0]+ptcl3["nx"]/2,-maskctr[k][1]+ptcl3["ny"]/2,0)
+					ptcl3.translate(-maskctr[k][0]+old_div(ptcl3["nx"],2),-maskctr[k][1]+old_div(ptcl3["ny"],2),0)
 					if options.newbox>3 : 
-						ptcl4=ptcl3.get_clip(Region((ptcl3["nx"]-options.newbox)/2,(ptcl3["ny"]-options.newbox)/2,options.newbox,options.newbox))
+						ptcl4=ptcl3.get_clip(Region(old_div((ptcl3["nx"]-options.newbox),2),old_div((ptcl3["ny"]-options.newbox),2),options.newbox,options.newbox))
 						ptcl4.write_image(options.output,-1)
 					else: ptcl3.write_image(options.output,-1)
 #					print ptcl.cmp("optsub",projc[0])

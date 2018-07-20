@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Author: Steven Ludtke, 10/11/15 
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 #
 
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 import math
@@ -192,7 +194,7 @@ def main():
 		if options.verbose and 100 in curstat :
 			print("%d/%d tasks remain"%(len(taskids),len(alltaskids)))
 		if 100 in curstat :
-			E2progress(logger,1.0-(float(len(taskids))/len(alltaskids)))
+			E2progress(logger,1.0-(old_div(float(len(taskids)),len(alltaskids))))
 
 	if options.verbose : print("Completed all tasks\nGrouping consistent averages")
 
@@ -208,11 +210,11 @@ def main():
 	for r in recon: r.setup()
 	
 	# We insert the first class-average (with the most particles) randomly into reconstructor 1 or 2
-	p2=classes[0][2].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+	p2=classes[0][2].get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 	p3=recon[0].preprocess_slice(p2,classes[0][1])
 	recon[0].insert_slice(p3,classes[0][1],classes[0][2].get_attr_default("ptcl_repr",1.0))
 
-	p2=classes[0][3].get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+	p2=classes[0][3].get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 	p3=recon[1].preprocess_slice(p2,classes[0][1])
 	recon[1].insert_slice(p3,classes[0][1],classes[0][3].get_attr_default("ptcl_repr",1.0))
 	
@@ -233,12 +235,12 @@ def main():
 #		print "ROT:\t",ali2["xform.align2d"].get_params("2d"),"\t",ali3["xform.align2d"].get_params("2d")
 		
 		# note that ali2 and c[2] are the same except for a final alignment
-		a2=ali2.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))		# first class-average
+		a2=ali2.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))		# first class-average
 		a3=recon[0].preprocess_slice(a2,classes[0][1])
 		a3n=c[2].get_attr_default("ptcl_repr",1.0)
 		
 		# similarly ali3 and c[3] are the same
-		b2=ali3.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
+		b2=ali3.get_clip(Region(old_div(-(pad-boxsize),2),old_div(-(pad-boxsize),2),pad,pad))
 		b3=recon[1].preprocess_slice(b2,classes[0][1])						# I don't believe it matters if we use recon[0] or 1 here, but haven't checked
 		b3n=c[3].get_attr_default("ptcl_repr",1.0)
 		
@@ -335,7 +337,7 @@ def main():
 	threedout="{}/threed_{:02d}{}_split.hdf".format(options.path,last_iter,msk)
 	threedout2="{}/threed_{:02d}{}_split_filt_bas{}.hdf".format(options.path,last_iter,msk,options.usebasis)
 	setout=["sets/split_{}{}_bas{}_0.lst".format(pathnum,msk,options.usebasis),"sets/split_{}{}_bas{}_1.lst".format(pathnum,msk,options.usebasis)]
-	split=[r.finish(True).get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize)) for r in recon]
+	split=[r.finish(True).get_clip(Region(old_div((pad-boxsize),2),old_div((pad-boxsize),2),old_div((pad-boxsize),2),boxsize,boxsize,boxsize)) for r in recon]
 	split[0]["apix_x"]=apix
 	split[0]["apix_y"]=apix
 	split[0]["apix_z"]=apix
@@ -380,10 +382,10 @@ def main():
 		pass
 
 	if os.path.exists("strucfac.txt"):
-		launch_childprocess("e2proc3d.py {} {} --setsf strucfac.txt --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
+		launch_childprocess("e2proc3d.py {} {} --setsf strucfac.txt --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,old_div(1.0,targetres)))
 	else:
 		print("Missing structure factor, cannot filter properly")
-		launch_childprocess("e2proc3d.py {} {} --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,1.0/targetres))
+		launch_childprocess("e2proc3d.py {} {} --process filter.wiener.byfsc:fscfile={}/fsc_masked_{:02d}.txt:snrmult=2:sscale=1.1:maxfreq={} --process mask.soft:outer_radius=-9:width=4".format(threedout,threedout2,options.path,last_iter,old_div(1.0,targetres)))
 
 	E2end(logger)
 
@@ -470,7 +472,7 @@ class ClassSplitTask(JSTask):
 		dots=[p[5].cmp("ccc",basis[self.options["usebasis"]]) for p in ptcls]	# NOTE: basis number is passed in as an option, may not be #1 or #3 (default)
 		if len(dots)==0:
 			return {"failed":True}
-		dota=sum(dots)/len(dots)
+		dota=old_div(sum(dots),len(dots))
 		
 #		print "average"
 		# we will just use the sign of the dot product to split
