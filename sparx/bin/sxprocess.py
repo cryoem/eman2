@@ -340,6 +340,14 @@ def main():
        stack (it will be overwritten).
    
    		sxprocess.py bdb:orgstack bdb:proj/data  bdb:proj/sdata bdb:proj/odata --subtract_stack
+        
+   19. Balance angular distribution. Input ASCII file with 3D orientation parameters, compute a histogram
+       of ditribution of angles using user-provided angular step, retain a subset of randomly select
+       projection direction per angular bin using user-provided threshold, write the list of the all
+       retained projection directions.  (In order to create a substack with retained images, use e2bdb.py
+       with options makevstack and list).
+   
+   		sxprocess.py --balance_angular_distribution  params.txt select.txt --max_occupy = 100 --angstep = 15 --symmetry=d3
 
 """
 
@@ -428,11 +436,11 @@ def main():
 	parser.add_option('--subtract_stack',       action="store_true",  default=False,                 help='Subtract from images in the first stack images in the second stack')	
 	parser.add_option("--normalize",            action="store_true",  default=False,                 help="Flag to normalize data")
 
-	'''
-	parser.add_option('--maxres',               type='float',         default=-1.0,                  help='Maximum resolution in absolute unit for image difference measurement')	
-	parser.add_option('--maxresaa',             type='float',         default=0.02,                  help='Low pass filter falloff for maxium resolution')
-	parser.add_option('--comparison_radius',    type='float',         default=-1.0,                  help='Particle radius in pixel for comparion particles with their projections')
-	'''
+	
+	# Options for balance_angular distribution
+	parser.add_option('--balance_angular_distribution', action="store_true",  default=False,         help='balance an angular distribution')
+	parser.add_option('--max_occupy',			type='int',           default=1,                     help='maximum number of angular orientations per reference angle (default 1)')
+	parser.add_option('--angstep',				type='float',         default=15.0,                  help='angular step of reference angles (number of bins of angular hstogram (default 15.0)')
 
 	(options, args) = parser.parse_args()
 
@@ -1735,6 +1743,10 @@ def main():
 						pass
 
 					ssimage.write_image(result_stack, im)
+
+	elif options.balance_angular_distribution:
+		from utilities  import balance_angular_distribution, read_text_row, write_text_file
+		write_text_file(balance_angular_distribution(read_text_row(args[0]), options.max_occupy, options.angstep, options.symmetry),args[1])
 
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
