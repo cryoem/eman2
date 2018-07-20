@@ -2992,17 +2992,6 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",4));
 		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.375f));
 		
-// 		small_this->write_image("tmp_this.hdf");
-// 		small_to->write_image("tmp_to.hdf");
-
-
-		// these are cached for speed in the comparator
-		vector<float>sigmathisv=small_this->calc_radial_dist(ss/2,0,1,4);
-		vector<float>sigmatov=small_to->calc_radial_dist(ss/2,0,1,4);
-		for (int i=0; i<ss/2; i++) {
-//			sigmathisv[i]*=sigmathisv[i]*sigmathis;
-//			sigmatov[i]*=sigmatov[i]*sigmato;
-		}
 
 		// This is a solid estimate for very complete searching, 2.5 is a bit arbitrary
 		// make sure the altitude step hits 90 degrees, not absolutely necessary for this, but can't hurt
@@ -3270,7 +3259,14 @@ bool RT2Dto3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<flo
 // 	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));	// we have to do 1 slow transform here now that we have the translation
 
 // 	float sim=st2->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
-	float sim=st2->cmp("frc",small_to);
+	float sim;
+	if (ny>=(int)params["boxsize"]-2){
+		sim=st2->cmp("frc",small_to,Dict("snrweight", 1));
+	}
+	else{
+		
+		sim=st2->cmp("frc",small_to);
+	}
 //	float sim=st2->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 // 	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%4d %4d %4d\t%1.5g\t%1.5g %d (%d)",
 // 		float(aap["az"]),float(aap["alt"]),float(aap["phi"]),int(aap["tx"]),int(aap["ty"]),int(aap["tz"]),sim,s_score[i],int(sim<s_score[i]),ccf->get_ysize());

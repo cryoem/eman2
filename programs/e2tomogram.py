@@ -241,7 +241,7 @@ def main():
 			tltax=calc_tltax_rot(img_tali, options)
 			options.tltax=tltax
 		else:
-			tltax=options.tltax
+			tltax=-options.tltax
 		print("tilt axis:  {:.2f}".format(tltax))
 		
 		#### this is the matrix that save the alignment parameters

@@ -22,6 +22,7 @@ def main():
 	parser.add_argument("--maxtilt", type=int,help="max tilt", default=100, guitype='intbox',row=4, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--padtwod", type=float,help="padding factor", default=2.0, guitype='floatbox',row=5, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--noctf", action="store_true", default=False ,help="skip ctf correction..", guitype='boolbox',row=5, col=1, rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--wiener", action="store_true", default=False ,help="wiener filter the particles using ctf information..", guitype='boolbox',row=6, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
@@ -231,7 +232,7 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 		defocus, phase, voltage, cs=ctfinfo
 		ctf=EMAN2Ctf()
 		ctf.from_dict({
-			"defocus":1.0, "voltage":voltage, "bfactor":0., "cs":cs,"ampcont":0, "apix":apix})
+			"defocus":1.0, "voltage":voltage, "bfactor":50., "cs":cs,"ampcont":0, "apix":apix})
 	
 	for pid in ids:
 		
@@ -277,8 +278,18 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 				flipim=fft1.copy()
 				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
 				fft1.mult(flipim)
-				e=fft1.do_ift()
+				if options.wiener:
+					ctf.dsbg=1./(e["apix_x"]*e["nx"])
+					s=np.array(ctf.compute_1d(e["nx"], ctf.dsbg, Ctf.CtfType.CTF_INTEN ))
+					s[:np.argmax(s)]=np.max(s)
+					s=np.maximum(s, 0.0001)
+					ctf.snr=s.tolist()
+					flt=fft1.copy_head()
+					ctf.compute_2d_complex(flt,Ctf.CtfType.CTF_WIENER_FILTER)
+					fft1.mult(flt)
 				
+				e=fft1.do_ift()
+				e["ctf"]=ctf
 				if options.dotest:
 					print(tpm[3], pz, dz, defocus[nid]-dz)
 			

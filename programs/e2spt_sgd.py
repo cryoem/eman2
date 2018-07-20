@@ -127,6 +127,7 @@ def main():
 			print("Iteration {}, {}:".format(itr, eo))
 
 			ref=refs[ieo].copy()
+			ref0=ref.copy()
 
 			#tmpout=os.path.join(path,"tmpout_{:02d}_{}.hdf".format(itr, eo))
 			#ref.write_image(tmpout,-1)
@@ -136,7 +137,7 @@ def main():
 				jsd=queue.Queue(0)
 				idx=idxs[ieo].copy()
 				np.random.shuffle(idx)
-				thrds=[threading.Thread(target=alifn,args=(jsd,fname,i,ref,options)) for i in idx[:batchsize]]
+				thrds=[threading.Thread(target=alifn,args=(jsd,fname,i,ref0,options)) for i in idx[:batchsize]]
 				#thrds=[threading.Thread(target=alifn,args=(jsd,fname,i,ref,options)) for i in idx[ib*batchsize:(ib+1)*batchsize]]
 				for t in thrds:
 					t.start()
@@ -155,6 +156,10 @@ def main():
 					p.transform(d["xform.align3d"])
 					avgr.add_image(p)
 				avg=avgr.finish()
+				#if options.setsf:
+					#sf=XYData()
+					#sf.read_file(options.setsf)
+					#avg.process_inplace("filter.setstrucfac",{"apix":avg["apix_x"],"strucfac":sf})
 				avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":filterto})
 				if options.gaussz>0:
 					avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":options.gaussz})
@@ -183,10 +188,11 @@ def main():
 				if options.reference==None:
 					ref.process_inplace("xform.centerofmass")
 				if options.mask:
-					ref.process_inplace("mask.fromfile", {"filename": options.mask})
+					ref0=ref.copy()
+					ref0.process_inplace("mask.fromfile", {"filename": options.mask})
 
 				#ref.write_image(tmpout,-1)
-				ref.write_image(os.path.join(path,"output.hdf"), ieo)
+				ref0.write_image(os.path.join(path,"output.hdf"), ieo)
 				sys.stdout.write('#')
 				sys.stdout.flush()
 
