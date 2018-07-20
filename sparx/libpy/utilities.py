@@ -4056,6 +4056,8 @@ def symmetry_related_normals(angles, symmetry):
 
 def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c1"):
 	from fundamentals import symclass
+	from utilities import nearest_fang, angles_to_normals
+
 	smc  = symclass(sym)
 	eah  = smc.even_angles(angstep, inc_mirror=0)
 	leah = len(eah)
@@ -4102,7 +4104,7 @@ def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c
 			shuffle(q)
 			q = q[:max_occupy]
 			outo += q
-			#print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
+			print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
 			#print(l,len(q),q)
 		outo.sort()
 		#write_text_file(outo,"select.txt")
