@@ -1282,7 +1282,7 @@ def Kmeans_minimum_group_size_orien_groups(original_data, partids, params, param
 	
 	Tracker["min_orien_group_size"]  = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
 	angle_step                      = get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
-	ptls_in_orien_groups            = get_orien_assignment_mpi(angle_step, partids, params, log_main)
+	ptls_in_orien_groups            = get_angle_step_and_orien_groups_mpi(params, partids, angle_step)
 	
 	minimum_group_size               = max(minimum_group_size_init, Tracker["number_of_groups"]*len(ptls_in_orien_groups))
 	minimum_group_size_ratio         = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]), 0.95)
