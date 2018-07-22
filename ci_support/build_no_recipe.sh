@@ -33,6 +33,10 @@ else
     CPU_COUNT=2
 fi
 
+if [ "$(uname -s)" == "Darwin" ];then
+    export EMAN_TEST_SKIP=1
+fi
+
 build_dir="../build_eman"
 src_dir=${PWD}
 
