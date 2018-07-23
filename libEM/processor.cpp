@@ -4569,6 +4569,23 @@ void NormalizeRowProcessor::process_inplace(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
+	if params.has_key("unitlen") {
+		for (int y = 0; y < ny; y++) {
+			double row_len = 0;
+			for (int x = 0; x < nx; x++) {
+				row_len += pow(rdata[x + y * nx],2.0);
+			}
+			row_len=sqrt(row_len);
+			if (row_len==0) row_len=1.0;
+
+			for (int x = 0; x < nx; x++) {
+				rdata[x + y * nx] /= (float)row_len;
+			}
+		}
+		image->update();
+		return;
+	}
+	
 	for (int y = 0; y < ny; y++) {
 		double row_sum = 0;
 		for (int x = 0; x < nx; x++) {
@@ -12845,8 +12862,8 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		int rfp=(int)params.set_default("rfp",4);
 		const int minr=5;
 		int rsize=cimage->get_ysize()/4-minr-2;
-		EMData *ret2=new EMData(nky*2,rsize*rfp,1);
-		EMData *line=new EMData(rsize*2+2,1,1);	// one complex line
+		EMData *ret2=new EMData(nky*2,rsize*rfp*2,1);
+		EMData *line=new EMData(rsize*2,1,1);	// one complex line
 		line->set_complex(1);
 		line->set_ri(1);
 		line->set_fftpad(1);	//correct?
@@ -12855,7 +12872,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			float ofs=M_PI/float(nky*2);
 			float dx=cos(M_PI*angi/float(nky)+ofs);
 			float dy=sin(M_PI*angi/float(nky)+ofs);
-			for (int r2=minr; r2<rsize+minr; r2++) {
+			for (int r2=minr; r2<rfp+minr; r2++) {
 				float kx=dx*r2;
 				float ky=dy*r2;
 				for (int r=minr; r<rsize+minr; r++) {				// this is y
@@ -12870,8 +12887,9 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 // 				lreal->process_inplace("normalize");
 // 				for (int i=0; i<rsize; i++) ret2->set_value_at(angi,i+(r2-4)*rsize,lreal->get_value_at(i,0));
 //				lreal->process_inplace("normalize");
-				printf("%d %d %d\n",rsize,angi,r2-minr);
-				for (int i=0; i<rsize; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize,line->get_value_at(i,0));
+//				printf("%d %d %d %d\n",rsize,angi,r2-minr,line->get_xsize());
+				line->mult(1.0f/float(line->get_attr("sigma")));	// adjust intensities, but don't shift 0
+				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,line->get_value_at(i,0));
 //				delete lreal;
 			}
 		}
