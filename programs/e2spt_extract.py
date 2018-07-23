@@ -58,7 +58,7 @@ def main():
 		phase=[]
 		
 	tfile=str(js["tlt_file"])
-	
+	options.tltfile=tfile
 	ptcl=EMData(pfile, 0, True)
 	img=EMData(tfile,0, True)
 	apix_ptcl=ptcl["apix_x"]
@@ -298,6 +298,8 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 
 			xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4], "ztilt":tpm[2], "tx":txdf, "ty":tydf})
 			e["xform.projection"]=xform
+			e["ptcl_source_coord"]=[txint, tyint]
+			e["ptcl_source_src"]=options.tltfile
 			e["model_id"]=pid
 			e["tilt_id"]=nid
 			e["file_threed"]=options.output

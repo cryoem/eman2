@@ -50,10 +50,15 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	ptcls=args[0]
-
 	ref=options.reference
 
 	if options.path==None: options.path = make_path("spt") 
+	
+	#### make a list file if the particles are not in a lst
+	if not ptcls.endswith(".lst"):
+		ptcllst="{}/input_ptcls.lst".format(options.path)
+		run("e2proclst.py {} --create {}".format(ptcls, ptcllst))
+		ptcls=ptcllst
 
 	options.input_ptcls=ptcls
 	options.input_ref=ref
