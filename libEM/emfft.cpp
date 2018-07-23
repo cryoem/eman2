@@ -236,7 +236,9 @@ int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 {//cout<<"doing fftw3"<<endl;
 #ifdef FFTW_PLAN_CACHING
 	bool ip = ( complex_data == real_data );
+	int mrt = Util::MUTEX_LOCK(&fft_mutex);
 	fftwf_plan plan = plan_cache.get_plan(1,n,1,1,EMAN2_REAL_2_COMPLEX,ip,(fftwf_complex *) complex_data, real_data);
+	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
 	// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be reused
 	fftwf_execute_dft_r2c(plan, real_data,(fftwf_complex *) complex_data);
 #else
@@ -257,7 +259,9 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 {
 #ifdef FFTW_PLAN_CACHING
 	bool ip = ( complex_data == real_data );
+	int mrt = Util::MUTEX_LOCK(&fft_mutex);
 	fftwf_plan plan = plan_cache.get_plan(1,n,1,1,EMAN2_COMPLEX_2_REAL,ip,(fftwf_complex *) complex_data, real_data);
+	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
 	// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be reused
 	fftwf_execute_dft_c2r(plan, (fftwf_complex *) complex_data, real_data);
 #else
@@ -352,7 +356,9 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 		{
 #ifdef FFTW_PLAN_CACHING
 			bool ip = ( complex_data == real_data );
+			int mrt = Util::MUTEX_LOCK(&fft_mutex);
 			fftwf_plan plan = plan_cache.get_plan(rank,nx,ny,nz,EMAN2_REAL_2_COMPLEX,ip,(fftwf_complex *) complex_data, real_data);
+			mrt = Util::MUTEX_UNLOCK(&fft_mutex);
 			// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be re-used
 			fftwf_execute_dft_r2c(plan, real_data,(fftwf_complex *) complex_data );
 #else
@@ -397,7 +403,9 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 		{
 #ifdef FFTW_PLAN_CACHING
 			bool ip = ( complex_data == real_data );
+			int mrt = Util::MUTEX_LOCK(&fft_mutex);
 			fftwf_plan plan = plan_cache.get_plan(rank,nx,ny,nz,EMAN2_COMPLEX_2_REAL,ip,(fftwf_complex *) complex_data, real_data);
+			mrt = Util::MUTEX_UNLOCK(&fft_mutex);
 			// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be re-used
 			fftwf_execute_dft_c2r(plan, (fftwf_complex *) complex_data, real_data);
 #else
