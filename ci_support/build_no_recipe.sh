@@ -33,6 +33,10 @@ else
     CPU_COUNT=2
 fi
 
+if [ "$(uname -s)" == "Darwin" ];then
+    export EMAN_TEST_SKIP=1
+fi
+
 build_dir="../build_eman"
 src_dir=${PWD}
 
@@ -45,4 +49,5 @@ make -j${CPU_COUNT}
 make install
 
 # Run tests
-bash ${src_dir}/tests/run_tests.sh
+cd "${src_dir}"
+bash tests/run_tests.sh
