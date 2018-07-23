@@ -42,10 +42,12 @@ test:
     - openmpi              # [not win]
     - eman-deps=11.2
     - future
+    - nose
   
   source_files:
     - examples/mpi_test.py
     - tests/
+    - rt/pyem/
 
   commands:
     - bash tests/run_tests.sh                                # [not win]
