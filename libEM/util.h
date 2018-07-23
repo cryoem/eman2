@@ -533,6 +533,22 @@ namespace EMAN
 			return (1-t) * (1-u) * p1 + t * (1-u) * p2 + (1-t) * u * p3 + t * u * p4;
 		}
 
+		/** Calculate bilinear interpolation.
+		 * @param[in] p1 The first number. corresponding to (x0,y0).
+		 * @param[in] p2 The second number. corresponding to (x1,y0).
+		 * @param[in] p3 The third number. corresponding to (x1,y1).
+		 * @param[in] p4 The fourth number. corresponding to (x0,y1).
+		 * @param[in]  t t
+		 * @param[in]  u u
+		 * @return The bilinear interpolation value.
+		 */
+		static inline std::complex<float> bilinear_interpolate_cmplx(std::complex<float> p1, std::complex<float> p2, std::complex<float> p3,
+			 std::complex<float> p4, float t, float u)
+		{
+			return (1.0f-t) * (1.0f-u) * p1 + t * (1.0f-u) * p2 + (1.0f-t) * u * p3 + t * u * p4;
+		}
+
+		
 		/** Calculate trilinear interpolation.
 		 *
 		 * @param[in] p1 The first number. corresponding to (x0,y0,z0).
