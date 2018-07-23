@@ -347,7 +347,7 @@ def main():
        retained projection directions.  (In order to create a substack with retained images, use e2bdb.py
        with options makevstack and list).
    
-   		sxprocess.py --balance_angular_distribution  params.txt select.txt --max_occupy = 100 --angstep = 15 --symmetry=d3
+   		sxprocess.py --balance_angular_distribution  params.txt select.txt --max_occupy=100 --angstep=15 --symmetry=d3
 
 """
 
