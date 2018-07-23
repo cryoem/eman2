@@ -1730,8 +1730,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def __app_mode_mouse_up(self,event):
 		if self.downbutton==Qt.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
+			if lc!=None:
 
-			self.mx_mouseup.emit(event, lc)
+				self.mx_mouseup.emit(event, lc)
 
 			# disabled by stevel 2/17/2011 for external application flexibility
 			#if  not event.modifiers()&Qt.ShiftModifier:

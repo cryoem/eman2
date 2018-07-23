@@ -2924,8 +2924,11 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		for (unsigned int i=0; i<nsoln; i++){
 			s_xform[i].set_params(xfs[i].get_params("eman"));
 		}
-		sexp_start=5;
+		sexp_start=6;
 		curiter=0;
+		for (int i=0; i<nsoln*3; i++) {
+			s_step[i]/=8.0;
+		}
 	}
 	
 	
@@ -3026,12 +3029,12 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
 //			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems
 			for (unsigned int it=0; it<transforms.size(); it++) {
-				Transform t = transforms[it];
 				if (verbose>2) {
 					printf("  %d/%lu \r",it,transforms.size());
 					fflush(stdout);
 				}
 				for (float phi=0; phi<360.0; phi+=astep) {
+					Transform t = transforms[it];
 					Dict aap=t.get_params("eman");
 					aap["phi"]=phi;
 					aap["tx"]=0;
@@ -3428,12 +3431,13 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
 //			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems
 			for (unsigned int it=0; it<transforms.size(); it++) {
-				Transform t = transforms[it];
+				
 				if (verbose>2) {
 					printf("  %d/%lu \r",it,transforms.size());
 					fflush(stdout);
 				}
 				for (float phi=0; phi<360.0; phi+=astep) {
+					Transform t = transforms[it];
 					Dict aap=t.get_params("eman");
 					aap["phi"]=phi;
 					aap["tx"]=0;
@@ -3464,6 +3468,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					// We want to make sure our starting points are somewhat separated from each other, so we replace any angles too close to an existing angle
 					// If we find an existing 'best' angle within range, then we either replace it or skip
 					int worst=-1;
+					float worstv=1.0e20;
 					for (int i=0; i<nsoln; i++) {
 						if (s_coverage[i]==0.0) continue;	// hasn't been set yet
 						Transform tdif=s_xform[i].inverse();
@@ -3481,7 +3486,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						// solution which is currently "empty"
 						for (int i=0; i<nsoln; i++) {
 							if (s_coverage[i]==0.0) { worst=i; break; }
-							if (s_score[i]<s_score[worst]) worst=i;
+							if (s_score[i]<worstv) {worst=i; worstv=s_score[i];}
 						}
 					}
 
@@ -3497,7 +3502,10 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				}
 			}
 			if (verbose>2) printf("\n");
-
+// 			for (int i=0; i<nsoln; i++) {
+// 				Dict d=s_xform[i].get_params("eman");
+// 				printf("%d, %f, %f, %f, %f\n",i,(float)d["alt"], (float)d["az"], (float)d["phi"], s_score[i]);
+// 			}
 
 		}
 		// Once we have our initial list of best locations, we just refine each possibility individually
