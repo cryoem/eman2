@@ -4569,7 +4569,7 @@ void NormalizeRowProcessor::process_inplace(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
-	if params.has_key("unitlen") {
+	if (params.has_key("unitlen")) {
 		for (int y = 0; y < ny; y++) {
 			double row_len = 0;
 			for (int x = 0; x < nx; x++) {

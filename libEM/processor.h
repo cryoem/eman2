@@ -5782,6 +5782,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		{
 			TypeDict d;
 			d.put("unitlen",EMObject::BOOL, "Adjusts the length of the 'row vector' to be 1.0 without adjusting the mean");
+			return d;
 		}
 			
 		string get_desc() const
