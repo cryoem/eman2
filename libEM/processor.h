@@ -5778,9 +5778,16 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 			return new NormalizeRowProcessor();
 		}
 
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("unitlen",EMObject::BOOL, "Adjusts the length of the 'row vector' to be 1.0 without adjusting the mean");
+			return d;
+		}
+			
 		string get_desc() const
 		{
-			return "normalizes each row in the image individually";
+			return "Modifies each row in the image individually. Default behavior is to divide each value by the mean value of the row, as long as the mean>0.";
 		}
 
 		static const string NAME;
