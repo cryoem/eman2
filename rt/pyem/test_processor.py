@@ -40,6 +40,7 @@ import unittest,os,sys
 import testlib
 from pyemtbx.exceptions import *
 import numpy
+import platform
 from optparse import OptionParser
 
 IS_TEST_EXCEPTION = False
@@ -2041,7 +2042,7 @@ class TestProcessor(unittest.TestCase):
             except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
-if "EMAN_TEST_SKIP" in os.environ:
+if "EMAN_TEST_SKIP" in os.environ or platform.system() == "Windows":
     TestProcessor.broken = True
 
 def test_main():
