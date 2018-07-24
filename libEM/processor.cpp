@@ -12862,16 +12862,17 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		int rfp=(int)params.set_default("rfp",4);
 		const int minr=5;
 		int rsize=cimage->get_ysize()/4-minr-2;
-		EMData *ret2=new EMData(nky*2,rsize*rfp*2,1);
+		int nang=Util::calc_best_fft_size(int(M_PI*cimage->get_ysize()));
+		EMData *ret2=new EMData(nang,rsize*rfp*2,1);
 		EMData *line=new EMData(rsize*2,1,1);	// one complex line
 		line->set_complex(1);
 		line->set_ri(1);
 		line->set_fftpad(1);	//correct?
 
-		for (int angi=0; angi<nky*2; angi++) {		// this is x
-			float ofs=M_PI/float(nky*2);
-			float dx=cos(M_PI*angi/float(nky)+ofs);
-			float dy=sin(M_PI*angi/float(nky)+ofs);
+		for (int angi=0; angi<nang; angi++) {		// this is x
+			float ofs=M_PI/float(nang);
+			float dx=cos(2.0*M_PI*angi/float(nang)+ofs);
+			float dy=sin(2.0*M_PI*angi/float(nang)+ofs);
 			for (int r2=minr; r2<rfp+minr; r2++) {
 				float kx=dx*r2;
 				float ky=dy*r2;
