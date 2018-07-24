@@ -11,62 +11,116 @@ import numpy as np
 import queue
 import threading
 
-def split_xf(xf):
-	dc=xf.get_params('eman')
-	xf3d=Transform({"type":"eman","alt":dc["alt"], "az":dc["az"]})
+
+def alifn(jsd,ii, info,a,options):
+	#### deal with mirror
+	dic=[]
+	alignpm={"verbose":0,"sym":options.sym}
+	if options.maxshift>=0:
+		alignpm["maxshift"]=options.maxshift
 	
-	xf2d=Transform({"type":"2d","alpha":dc["phi"], "tx":dc["tx"], "ty":dc["ty"]})
-	return xf3d, xf2d
-
-def merge_xf(xf3d, xf2d):
-	dc2=xf2d.get_params('eman')
-	dc3=xf3d.get_params('eman')
-	xf=Transform({"type":"eman","alt":dc3["alt"], "az":dc3["az"], "phi":dc2["phi"], "tx":dc2["tx"], "ty":dc2["ty"]})
+	#print(ii, info)
+	if len(options.refinefrom)>0:
+		
+		nxf=options.refinentry
+		astep=options.refineastep
+		xfs=[]
+		initxf=eval(info[-1])
+		
+		for i in range(nxf):
+			d={"type":"eman","tx":initxf["tx"], "ty":initxf["ty"]}
+			for ky in ["alt", "az", "phi"]:
+				d[ky]=initxf[ky]+(i>0)*np.random.randn()*astep
+				xfs.append(Transform(d))
+				
+		alignpm["initxform"]=xfs
+		if options.maxshift<0:
+			alignpm["maxshift"]=10
 	
-	return xf
+	if options.incmirror==1:
+		mriter=[False, True]
+	else:
+		mriter=[False]
+		
+	for mirror in mriter:
+		
+		b=EMData(info[1],info[0])
+		if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
+			b=b.get_clip(Region((b["nx"]-a["ny"])/2, (b["ny"]-a["ny"])/2, a["ny"],a["ny"]))
+			
+		if mirror:
+			b.process_inplace("xform.flip", {"axis":'x'})
+			
+		b=b.do_fft()
+		b.process_inplace("xform.phaseorigin.tocorner")
+		#print(alignpm)
+		c=b.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
+		dic.append(c[0])
+		#print(mirror,c)
+		
+	bestmr=np.argmin([d["score"] for d in dic])
+	xf=dic[bestmr]["xform.align3d"]
+	xf.set_mirror(bestmr)
+	c={"xform.align3d":xf, "score":dic[bestmr]["score"]}
+	
+	jsd.put((ii,c))
 
-def refine_ali(ids, pinfo, m, jsd, options):
-	sz=m["nx"]
-	for ii in ids:
-		l=pinfo[ii]
-		e=EMData(l[1], l[0])
-		b=e["nx"]
-		e=e.get_clip(Region(old_div((b-sz),2), old_div((b-sz),2), sz,sz)).process("normalize")
-		dc=eval(l[2])
-		try:
-			dc.pop('score')
-		except:
-			pass
+#def split_xf(xf):
+	#dc=xf.get_params('eman')
+	#xf3d=Transform({"type":"eman","alt":dc["alt"], "az":dc["az"]})
+	
+	#xf2d=Transform({"type":"2d","alpha":dc["phi"], "tx":dc["tx"], "ty":dc["ty"]})
+	#return xf3d, xf2d
+
+#def merge_xf(xf3d, xf2d):
+	#dc2=xf2d.get_params('eman')
+	#dc3=xf3d.get_params('eman')
+	#xf=Transform({"type":"eman","alt":dc3["alt"], "az":dc3["az"], "phi":dc2["phi"], "tx":dc2["tx"], "ty":dc2["ty"]})
+	
+	#return xf
+
+#def refine_ali(ids, pinfo, m, jsd, options):
+	#sz=m["nx"]
+	#for ii in ids:
+		#l=pinfo[ii]
+		#e=EMData(l[1], l[0])
+		#b=e["nx"]
+		#e=e.get_clip(Region(old_div((b-sz),2), old_div((b-sz),2), sz,sz)).process("normalize")
+		#dc=eval(l[2])
+		#try:
+			#dc.pop('score')
+		#except:
+			#pass
 		
-		xf=Transform(dc)
-		pj=m.project("standard", xf).process("normalize.edgemean")
+		#xf=Transform(dc)
+		#pj=m.project("standard", xf).process("normalize.edgemean")
 		
-		#### do snr weighting if ctf info present
-		if e.has_attr("ctf"):
-			ctf=e["ctf"]
-			ctf.bfactor=500 #### use a fixed b factor for now...
-			ctf.dsbg=old_div(1.,(e["apix_x"]*e["nx"]))
-			s=np.array(ctf.compute_1d(e["nx"], ctf.dsbg, Ctf.CtfType.CTF_INTEN ))
-			s[:np.argmax(s)]=np.max(s)
-			s=np.maximum(s, 0.001)
-			ctf.snr=s.tolist()
-			e["ctf"]=ctf
-			eali=e.align("refine", pj, {"maxshift":8, "maxiter":50}, "frc", {"snrweight":1, "maxres":options.maxres, "minres":500})
-		else:
-			#print("missing ctf...")
-			eali=e.align("refine", pj, {"maxshift":8, "maxiter":50}, "frc", {"minres":500, "maxres":options.maxres})
-		al=eali["xform.align2d"]
+		##### do snr weighting if ctf info present
+		#if e.has_attr("ctf"):
+			#ctf=e["ctf"]
+			#ctf.bfactor=500 #### use a fixed b factor for now...
+			#ctf.dsbg=old_div(1.,(e["apix_x"]*e["nx"]))
+			#s=np.array(ctf.compute_1d(e["nx"], ctf.dsbg, Ctf.CtfType.CTF_INTEN ))
+			#s[:np.argmax(s)]=np.max(s)
+			#s=np.maximum(s, 0.001)
+			#ctf.snr=s.tolist()
+			#e["ctf"]=ctf
+			#eali=e.align("refine", pj, {"maxshift":8, "maxiter":50}, "frc", {"snrweight":1, "maxres":options.maxres, "minres":500})
+		#else:
+			##print("missing ctf...")
+			#eali=e.align("refine", pj, {"maxshift":8, "maxiter":50}, "frc", {"minres":500, "maxres":options.maxres})
+		#al=eali["xform.align2d"]
 		
-		x0,x1=split_xf(xf)
-		x1=al.inverse()*x1
-		xf1=merge_xf(x0, x1)
+		#x0,x1=split_xf(xf)
+		#x1=al.inverse()*x1
+		#xf1=merge_xf(x0, x1)
 	
 
 
-		scr=eali.cmp("frc", pj, {"maxres":options.maxres})
-		dc=xf1.get_params("eman")
-		dc["score"]=float(scr)
-		jsd.put((ii, dc))
+		#scr=eali.cmp("frc", pj, {"maxres":options.maxres})
+		#dc=xf1.get_params("eman")
+		#dc["score"]=float(scr)
+		#jsd.put((ii, dc))
 		
 def main():
 	
@@ -202,12 +256,13 @@ def main():
 		jsd=queue.Queue(0)
 		jobs=[]
 		print("Refining {} set with {} 2D particles..".format(eo, nptcl))
-		batchsz=100
-		for tid in range(0,nptcl,batchsz):
-			ids=list(range(tid, min(tid+batchsz, nptcl)))
-			jobs.append([ids, pinfo, m, jsd, options])
+		thrds=[threading.Thread(target=alifn,args=([jsd, i, info, m, options])) for i,info in enumerate(pinfo)]
+		#batchsz=100
+		#for tid in range(0,nptcl,batchsz):
+			#ids=list(range(tid, min(tid+batchsz, nptcl)))
+			#jobs.append([ids, pinfo, m, jsd, options])
 
-		thrds=[threading.Thread(target=refine_ali,args=(i)) for i in jobs]
+		#thrds=[threading.Thread(target=refine_ali,args=(i)) for i in jobs]
 		thrtolaunch=0
 		tsleep=threading.active_count()
 
@@ -225,9 +280,11 @@ def main():
 			while not jsd.empty():
 				ii, dc=jsd.get()
 				dics[ii]=dc
+				#print(dc)
 				ndone+=1
-				if ndone%2000==0:
-					print("\t{}/{} finished.".format(ndone, nptcl))
+				#if ndone%1000==0:
+				print("\t{}/{} finished.".format(ndone, nptcl), end='\r')
+				sys.stdout.flush()
 
 		for t in thrds: t.join()
 		#np.savetxt("tmpout1.txt", dics, fmt='%s')

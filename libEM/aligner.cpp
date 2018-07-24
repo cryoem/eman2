@@ -3071,6 +3071,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 					// We want to make sure our starting points are somewhat separated from each other, so we replace any angles too close to an existing angle
 					// If we find an existing 'best' angle within range, then we either replace it or skip
 					int worst=-1;
+					float worstv=1.0e20;
 					for (int i=0; i<nsoln; i++) {
 						if (s_score[i]>1.0e20) continue;	// hasn't been set yet
 						Transform tdif=s_xform[i].inverse();
@@ -3088,7 +3089,8 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 						// solution which is currently "empty"
 						for (int i=0; i<nsoln; i++) {
 							if (s_score[i]>1.0e20) { worst=i; break; }
-							if (s_score[i]<s_score[worst]) worst=i;
+							if (s_score[i]<worstv) {worst=i; worstv=s_score[i];}
+// 							if (s_score[i]<s_score[worst]) worst=i;
 						}
 					}
 
