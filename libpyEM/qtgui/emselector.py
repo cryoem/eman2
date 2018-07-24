@@ -466,11 +466,11 @@ def EMSelectorBaseTemplate(Type):
 			
 			self.list_widget_data.append(None)
 			
-			list_widget.itemDoubleClicked[QListWidgetItem].connect(self.list_widget_dclicked)
+			list_widget.itemDoubleClicked[QtGui.QListWidgetItem].connect(self.list_widget_dclicked)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"),self.list_widget_clicked)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentRowChanged (int)"),self.list_widget_row_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("paintEvent (int)"),self.list_widget_row_changed)
-			list_widget.itemEntered[QListWidgetItem].connect(self.list_widget_item_entered)
+			list_widget.itemEntered[QtGui.QListWidgetItem].connect(self.list_widget_item_entered)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
 			#\QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
