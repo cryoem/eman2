@@ -4573,7 +4573,7 @@ void NormalizeRowProcessor::process_inplace(EMData * image)
 		for (int y = 0; y < ny; y++) {
 			double row_len = 0;
 			for (int x = 0; x < nx; x++) {
-				row_len += pow(rdata[x + y * nx],2.0);
+				row_len += pow((double)rdata[x + y * nx],2.0);
 			}
 			row_len=sqrt(row_len);
 			if (row_len==0) row_len=1.0;
