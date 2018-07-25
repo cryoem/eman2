@@ -2928,7 +2928,7 @@ EMData* Util::Polar2DFT(EMData* image, int ring_length, int nb, int ne)  {
 		float ang = static_cast<float>(x * dfi);
 		vsin[x] = sin(ang);
 		vcos[x] = cos(ang+QUADPI);
-		printf("trigtab   %d      %f  %f\n",x,vsin[x],vcos[x]);
+		//printf("trigtab   %d      %f  %f\n",x,vsin[x],vcos[x]);
 	}
 
 	float* xim  = image->get_data();
@@ -2941,8 +2941,8 @@ EMData* Util::Polar2DFT(EMData* image, int ring_length, int nb, int ne)  {
 			rings[(inr-nb)*2*ring_length + 2*it+1] = bilinear_cmplx_inline(xnew,ynew,nx,xim,1);
 			rings[(inr-nb)*2*ring_length + 2*it + ring_length]   = rings[(inr-nb)*2*ring_length + 2*it];
 			rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length] = -rings[(inr-nb)*2*ring_length + 2*it+1];
-			printf("   %d   %d    %f  %f     %f  %f    %f  %f\n",it,inr,xnew,ynew,rings[(inr-nb)*2*ring_length + 2*it],rings[(inr-nb)*2*ring_length + 2*it+1],
-			rings[(inr-nb)*2*ring_length + 2*it + ring_length],rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length]);
+			//printf("   %d   %d    %f  %f     %f  %f    %f  %f\n",it,inr,xnew,ynew,rings[(inr-nb)*2*ring_length + 2*it],rings[(inr-nb)*2*ring_length + 2*it+1],
+			//rings[(inr-nb)*2*ring_length + 2*it + ring_length],rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length]);
 		}
 	}
 	return out;
@@ -3680,15 +3680,24 @@ void  Util::fftr_d(double *xcmplx, int nv)
 
 
 EMData* Util::FCrngs(EMData* rings) {
+	// We implicitly assume ring length are even.
 	int ring_length = rings->get_xsize();
 	int nring = rings->get_ysize();
+	int unique_length = ring_length/2+2;
 	float* circ = rings->get_data();
-	EMData* out = rings->copy_head();
+	EMData* out = new EMData();
+	out->set_size(unique_length, nring, 1);
+	out->set_complex(true);
+	out->set_attr("is_fftodd", 0);
 	float* dout = out->get_data();
+	float* temp = (float *)malloc(ring_length*sizeof(float));
 
-	for(int i=0; i<nring; i++)
-		EMfft::complex_to_complex_1d(&circ[i*ring_length],&dout[i*ring_length],ring_length);
+	for(unsigned int i=0; i<nring; i++)  {
+		EMfft::complex_to_complex_1d(&circ[i*ring_length],temp,ring_length);
+		for(unsigned int j=0; j<unique_length; ++j)  dout[i*unique_length + j] = temp[j];
+	}
 
+	delete temp;
 	out->update();
 	EXITFUNC;
 	return out;
@@ -28681,7 +28690,7 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 		 throw ImageFormatException("Only Fourier image allowed");
 	}
 	int nx = img->get_xsize(),ny = img->get_ysize(),nz = img->get_zsize();
-	EMData *rimg    = new EMData();
+	EMData *rimg = new EMData();
 	rimg->set_size(nx, ny, nz);
 	rimg->set_complex(true);
 	rimg->to_zero();
