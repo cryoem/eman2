@@ -545,6 +545,33 @@ class FakeKaiserBessel : public KaiserBessel {
 		}
 
 
+		static inline float bilinear_cmplx_inline(float xold, float yold, int nsam, float* xim, int real_imag)
+		{
+		/*
+		c  purpose: linear interpolation. real part of a complex centered 2D FT
+		   Optimized for speed, circular closer removed, checking of ranges removed
+		  limit should be set to nsam*nrow-2.
+		  real_imag = 0 interpolate real part
+		            = 1 interpolate imag part
+		*/
+			int		ixold, iyold;
+			float	xdif, ydif;
+			ixold	= (int) xold;
+			iyold 	= (int) yold;
+			ydif	= yold - iyold;
+			xdif	= xold - ixold;
+
+			int ind1 = iyold*nsam + ixold + real_imag;
+			int ind2 = ind1 + 2;
+			int ind3 = ind1 + nsam;
+			int ind4 = ind3 + 2;
+printf("bilinear  %f  %f   %d  %d  %d  %d\n",xold,yold,ind1,ind2,ind3,ind4);
+			return xim[ind1] + ydif* (xim[ind3] - xim[ind1]) +
+					   xdif* (xim[ind2] - xim[ind1] +
+					   ydif* (xim[ind4] - xim[ind2] - xim[ind3] + xim[ind1]) );
+		}
+
+
 		/** Quadratic interpolation (3D)
 		 * @param r
 		 * @param s
@@ -579,6 +606,7 @@ class FakeKaiserBessel : public KaiserBessel {
                              float *circ, int lcirc, int nring, char mode);*/
 	static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
 	static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode);
+	static EMData* Polar2DFT(EMData* image, int ring_length, int nb, int ne);
 	/*static void alrq_ms(float *xim, int	 nsam, int  nrow, float cns2, float cnr2,
 			    int  *numr, float *circ, int lcirc, int  nring, char  mode);*/
 	static void alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
@@ -593,6 +621,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void  fftc_q(float  *br, float  *bi, int ln, int ks);
 	static void  fftc_d(double *br, double *bi, int ln, int ks);
 
+	/** This function conducts the Single Precision Fourier Transform for a set of complex rings */
+	static EMData* FCrngs(EMData* rings);
 	/** This function conducts the Single Precision Fourier Transform for a set of rings */
 	static void  Frngs(EMData* circ, vector<int> numr);
 
