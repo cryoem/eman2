@@ -565,7 +565,7 @@ class FakeKaiserBessel : public KaiserBessel {
 			int ind2 = ind1 + 2;
 			int ind3 = ind1 + nsam;
 			int ind4 = ind3 + 2;
-printf("bilinear  %f  %f   %d  %d  %d  %d\n",xold,yold,ind1,ind2,ind3,ind4);
+//printf("bilinear  %f  %f   %d  %d  %d  %d\n",xold,yold,ind1,ind2,ind3,ind4);
 			return xim[ind1] + ydif* (xim[ind3] - xim[ind1]) +
 					   xdif* (xim[ind2] - xim[ind1] +
 					   ydif* (xim[ind4] - xim[ind2] - xim[ind3] + xim[ind1]) );
