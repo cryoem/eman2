@@ -12862,6 +12862,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		int rfp=(int)params.set_default("rfp",4);
 		const int minr=5;
 		int rsize=cimage->get_ysize()/4-minr-2;
+		if (rsize>nky) rsize=nky;
 		int nang=Util::calc_best_fft_size(int(M_PI*cimage->get_ysize()));
 		EMData *ret2=new EMData(nang,rsize*rfp*2,1);
 		EMData *line=new EMData(rsize*2,1,1);	// one complex line

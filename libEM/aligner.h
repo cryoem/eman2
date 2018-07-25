@@ -323,6 +323,46 @@ namespace EMAN
 		static const string NAME;
 	};
 
+	/** rotational alignment using bispectral invariants
+        */
+	class RotationalAlignerBispec:public Aligner
+	{
+	  public:
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "dot", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs rotational alignment using bispectral invariants";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotationalAlignerBispec();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("zscore", EMObject::INT,"Either 0 or 1. If set, will convert per-radius CCF curves into Z-score significnace curves before averaging. In theory this should produce better results by focusing on radii with more alignment information. (default=false)");
+			d.put("maxshift", EMObject::INT,"This is provided for compatibility with other aligners. It does absolutely nothing here, as there is an implicit maxshift=0.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+	
 	/** rotational alignment using the iterative method (in this case we only do one iteration b/c we are not doing a translation.
 	* The advantage of this over the 'regular' rotational alinger is that this is done in real space and does not use invariants.
 	 * @param r1 inner ring
@@ -348,7 +388,7 @@ namespace EMAN
 
 		virtual string get_desc() const
 		{
-			return "Performs rotational alignment using the SPIDER method";
+			return "Performs rotational alignment using the SPIDER method of iterating between rotational and translational alingment in real-space";
 		}
 
 		static Aligner *NEW()
@@ -445,6 +485,52 @@ namespace EMAN
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
 			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+	/** rotational, translational alignment
+	 * @param maxshift Maximum translation in pixels
+	 * @param nozero Zero translation not permitted (useful for CCD images)
+	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
+	*/
+	class RotateTranslateAlignerBispec:public Aligner
+	{
+	  public:
+		  virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "sqeuclidean", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs rotational and translational alignment using bispectral invariants.";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotateTranslateAlignerBispec();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			//d.put("usedot", EMObject::INT);
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
+			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
+//			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
+			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
+//			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
 

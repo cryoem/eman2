@@ -1,4 +1,3 @@
-from __future__ import print_function
 from EMAN2 import *
 from sys import argv
 
@@ -13,7 +12,7 @@ try: size=int(argv[5])
 except: size=32
 
 b=a[0].process("math.bispectrum.slice",{"rfp":rfp,"size":size})
-#b.process_inplace("normalize.rows",{"unitlen":1})
+#b.process_inplace("normalize.rows",{"unitlen":1})		# in testing, normalizing rows is definitely a bad thing
 #display(b)
 
 c=a[1].process("math.bispectrum.slice",{"rfp":rfp,"size":size})
@@ -21,7 +20,10 @@ c=a[1].process("math.bispectrum.slice",{"rfp":rfp,"size":size})
 
 a.append(a[1].process("xform.flip",{"axis":"x"}))
 cf=a[2].process("math.bispectrum.slice",{"rfp":rfp,"size":size})
+#cf.process_inplace("normalize.rows",{"unitlen":1})
 
+#cc=b.calc_ccfx(c,0,-1,1,0,1)		# z score scaling also seems to work poorly
+#ccf=b.calc_ccfx(cf,0,-1,1,0,1)
 cc=b.calc_ccfx(c,0,-1,1)
 ccf=b.calc_ccfx(cf,0,-1,1)
 display((cc,ccf),1)
