@@ -316,13 +316,7 @@ find_package(Nosetests)
 if(NOT WIN32)
 	add_test(NAME nose-tests
 			COMMAND ${NOSETESTS_EXECUTABLE} -vv --exe -m "^test_*" -e "^test_image_" -e "test_main" -e "test_result" -e "test_boxing" -a \!broken
-					${CMAKE_SOURCE_DIR}/rt/pyem/ --with-coverage --cover-html --cover-html-dir=covnose --cover-erase
-					--cover-package=EMAN2
-					--cover-package=EMAN2_cppwrap
-					--cover-package=EMAN2_meta
-					--cover-package=EMAN2db
-					--cover-package=EMAN2jsondb
-					--cover-package=pyemtbx
+					${CMAKE_SOURCE_DIR}/rt/pyem/ 
 			)
 else()
 	set(test_methods-win
