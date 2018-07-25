@@ -11,5 +11,5 @@ nosetests -vv --exe -m "^test_*" ^
                     -e "test_main" ^
                     -e "test_result" ^
                     -e "test_boxing" ^
-                    -a \!broken ^
-                    %SRC_DIR%\rt\pyem
+                    -a "!broken" ^
+                    rt\pyem
