@@ -1497,7 +1497,7 @@ def print_row(input, ix=0, iz=0):
 	line = []
 	for iy in range(ny):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-		if ((iy + 1) % 5 == 0): line.append("\n   ")
+		if ((iy + 1) % 10 == 0): line.append("\n")
 	line.append("\n")
 	print("".join(line))
 
@@ -1516,7 +1516,7 @@ def print_col(input, iy=0, iz=0):
 	line = []
 	for ix in range(nx):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-		if ((ix + 1) % 5 == 0): line.append("\n   ")
+		if ((ix + 1) % 10 == 0): line.append("\n")
 	line.append("\n")
 	print("".join(line))
 
@@ -1538,11 +1538,11 @@ def print_slice(input, iz=0):
 		line.append("%4i " % iy)
 		for ix in range(nx):
 			line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-			if ((ix + 1) % 5 == 0):
-				line.append("\n   ")
-				line.append("      ")
-			line.append("\n")
-			if(nx%5 != 0): line.append("\n")
+			if ((ix + 1) % 10 == 0):
+				line.append("\n")
+				line.append("         ")
+		line.append("\n")
+		if(nx%5 != 0): line.append("\n")
 	print("".join(line))
 
 def print_image(input):
@@ -1572,7 +1572,7 @@ def print_image_col(input, ix=0, iz=0):
 	line = []
 	for iy in range(ny):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-		if ((iy + 1) % 5 == 0): line.append("\n   ")
+		if ((iy + 1) % 10 == 0): line.append("\n")
 	line.append("\n")
 	print("".join(line))
 
@@ -1591,7 +1591,7 @@ def print_image_row(input, iy=0, iz=0):
 	line = []
 	for ix in range(nx):
 		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
-		if ((ix + 1) % 5 == 0): line.append("\n   ")
+		if ((ix + 1) % 10 == 0): line.append("\n")
 	line.append("\n")
 	print("".join(line))
 
