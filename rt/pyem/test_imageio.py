@@ -41,6 +41,7 @@ import os
 import sys
 import testlib
 import os
+import platform
 from pyemtbx.exceptions import *
 from optparse import OptionParser
 from EMAN2 import remove_file
@@ -1309,8 +1310,9 @@ class TestImageIO(unittest.TestCase):
 		TestUtil.make_image_file(mrc3d, IMAGE_MRC, EM_FLOAT, 32,32,12)		
 		self.region_read_write_test(IMAGE_MRC, mrc2d)
 		self.region_read_write_test(IMAGE_MRC, mrc3d)
-		os.unlink(mrc2d)
-		os.unlink(mrc3d)
+		if platform.system() != "Windows":
+			os.unlink(mrc2d)
+			os.unlink(mrc3d)
 
 	#regional I/O should be work for Imagic4D, need to test this back later.
 	def no_test_imagicio_region(self):
