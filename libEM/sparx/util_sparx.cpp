@@ -72,7 +72,8 @@ using std::complex;
 
 
 #define    QUADPI      		    3.141592653589793238462643383279502884197
-#define    PI2                      2*QUADPI
+#define    PI2                  QUADPI/2.0
+#define    TWOPI                2*QUADPI
 
 #define deg_rad  QUADPI/180.0
 #define rad_deg  180.0/QUADPI
@@ -6720,7 +6721,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 		}
 	} else {
 		cout<<"warning in Util.cml_weights"<<endl;
-		double val = PI2/float(nline);
+		double val = TWOPI/float(nline);
 		for(int i=0; i<nline; i++)  weights[i]=val;
 	}
 
