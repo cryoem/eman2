@@ -1,6 +1,6 @@
+from __future__ import print_function
 from EMAN2 import *
 from sys import argv
-from __future__ import print_function
 
 # <file> <im1 #> <im2 #> [rfp=4 [size=32]]
 
