@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
 
 #
 # Authors: James Michael Bell, 06/03/2015
@@ -32,6 +33,7 @@ from __future__ import print_function
 #
 
 from __future__ import print_function
+from __future__ import division
 from builtins import range
 from EMAN2 import *
 import sys
