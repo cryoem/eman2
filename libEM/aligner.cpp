@@ -396,7 +396,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 EMData * RotationalAlignerBispec::align(EMData * this_img, EMData *to, const string& cmp_name, const Dict& cmp_params) const {
 	// Make translationally invariant rotational footprints
 	EMData* this_img_bispec, * to_bispec;
-	int rfp = params.set_default("rfpn",8);
+	int rfp = params.set_default("rfpn",4);
 	int size = params.set_default("size",32);
 	this_img_bispec=this_img->process("math.bispectrum.slice",Dict("rfp",rfp,"size",size));
 	to_bispec=to->process("math.bispectrum.slice",Dict("rfp",rfp,"size",size));
@@ -827,7 +827,7 @@ EMData *RotateTranslateAlignerBispec::align(EMData * this_img, EMData *to, const
 
 	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
 	int zscore = params.set_default("zscore",0);
-	int rfp = params.set_default("rfpn",8);
+	int rfp = params.set_default("rfpn",4);
 	int size = params.set_default("size",32);
 	EMData *rot_align  =  this_img->align("rotational_bispec", to,Dict("rfpn",rfp,"size",size));
 	Transform * tmp = rot_align->get_attr("xform.align2d");
