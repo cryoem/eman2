@@ -467,6 +467,15 @@ float sget_value_at(int x, int y) const;
 float sget_value_at(size_t i) const;
 
 
+/** Gets bilinear interpolated complex values
+ *
+ * @param x The x coordinate (float).
+ * @param y The y coordinate (float).
+ * @return The complex value at coordinates (x,y).
+ */
+std::complex<float> get_complex_at_interp(float x, float y) const;
+
+
 /** Get pixel density value at interpolation of (x,y).
  * The validity of x, y is checked.2D image only.
  *

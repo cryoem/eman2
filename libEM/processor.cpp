@@ -4569,6 +4569,23 @@ void NormalizeRowProcessor::process_inplace(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
+	if (params.has_key("unitlen")) {
+		for (int y = 0; y < ny; y++) {
+			double row_len = 0;
+			for (int x = 0; x < nx; x++) {
+				row_len += pow((double)rdata[x + y * nx],2.0);
+			}
+			row_len=sqrt(row_len);
+			if (row_len==0) row_len=1.0;
+
+			for (int x = 0; x < nx; x++) {
+				rdata[x + y * nx] /= (float)row_len;
+			}
+		}
+		image->update();
+		return;
+	}
+	
 	for (int y = 0; y < ny; y++) {
 		double row_sum = 0;
 		for (int x = 0; x < nx; x++) {
@@ -12682,6 +12699,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	int nkx=nky+1;
 	if (nky<4 || nky>=cimage->get_ysize()/2) nky=cimage->get_ysize()/8;
 	if (nkx<5 || nky>=cimage->get_xsize()/2) nkx=cimage->get_xsize()/8+1;
+	if (image->get_xsize()<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
 
 	EMData* ret=new EMData(nkx*2,nky*2,1);
 	ret->set_complex(1);
@@ -12838,6 +12856,49 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		delete cimage;
 		return ret2;
         }
+	// In this mode we are making a translational invariant with information we can use for rotational alignment
+	else if (params.has_key("rfp")) {
+		if (cimage->get_ysize()/2<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
+		int rfp=(int)params.set_default("rfp",4);
+		const int minr=5;
+		int rsize=cimage->get_ysize()/4-minr-2;
+		int nang=Util::calc_best_fft_size(int(M_PI*cimage->get_ysize()));
+		EMData *ret2=new EMData(nang,rsize*rfp*2,1);
+		EMData *line=new EMData(rsize*2,1,1);	// one complex line
+		line->set_complex(1);
+		line->set_ri(1);
+		line->set_fftpad(1);	//correct?
+
+		for (int angi=0; angi<nang; angi++) {		// this is x
+			float ofs=M_PI/float(nang);
+			float dx=cos(2.0*M_PI*angi/float(nang)+ofs);
+			float dy=sin(2.0*M_PI*angi/float(nang)+ofs);
+			for (int r2=minr; r2<rfp+minr; r2++) {
+				float kx=dx*r2;
+				float ky=dy*r2;
+				for (int r=minr; r<rsize+minr; r++) {				// this is y
+					float jx=dx*r;
+					float jy=dy*r;
+					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at(kx,ky);
+					complex<double> v3 = (complex<double>)cimage->get_complex_at(jx+kx,jy+ky);
+					line->set_complex_at(r-minr,0,0,complex<float>(v1*v2*std::conj(v3)));
+				}
+// 				EMData *lreal=line->do_ift();
+// 				lreal->process_inplace("normalize");
+// 				for (int i=0; i<rsize; i++) ret2->set_value_at(angi,i+(r2-4)*rsize,lreal->get_value_at(i,0));
+//				lreal->process_inplace("normalize");
+//				printf("%d %d %d %d\n",rsize,angi,r2-minr,line->get_xsize());
+				line->mult(1.0f/float(line->get_attr("sigma")));	// adjust intensities, but don't shift 0
+				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,line->get_value_at(i,0));
+//				delete lreal;
+			}
+		}
+		delete ret;
+		delete line;
+		delete cimage;
+		return ret2;
+	}
 	// angular integrate mode, produces the simplest rotational invariant, ignoring rotational correlations
 	else if (params.has_key("k")) {
 		int k=(int)params.set_default("k",1);

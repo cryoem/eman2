@@ -1050,44 +1050,15 @@ Dict Util::get_stats_cstyle( const vector<float>& data )
 int Util::calc_best_fft_size(int low)
 {
 	Assert(low >= 0);
-
-	//array containing valid sizes <1024 for speed
-	static char *valid = NULL;
-
-	if (!valid) {
-		valid = (char *) calloc(4096, 1);
-
-		for (float i2 = 1; i2 < 12.0; i2 += 1.0) {
-
-			float f1 = pow((float) 2.0, i2);
-			for (float i3 = 0; i3 < 8.0; i3 += 1.0) {
-
-				float f2 = pow((float) 3.0, i3);
-				for (float i5 = 0; i5 < 6.0; i5 += 1.0) {
-
-					float f3 = pow((float) 5.0, i5);
-					for (float i7 = 0; i7 < 5.0; i7 += 1.0) {
-
-						float f = f1 * f2 * f3 * pow((float) 7.0, i7);
-						if (f <= 4095.0) {
-							int n = (int) f;
-							valid[n] = 1;
-						}
-					}
-				}
-			}
-		}
+	if (low>16384) return 16384;		// I suppose we could throw an exception...
+	
+	int i=0;
+	while (i<277) {
+		if (good_fft_sizes[i]>=low) return good_fft_sizes[i];
+		i++;
 	}
-
-	for (int i = low; i < 4096; i++) {
-		if (valid[i]) {
-			return i;
-		}
-	}
-
-	LOGERR("Sorry, can only find good fft sizes up to 4096 right now.");
-
-	return 1;
+	
+	return 16384;
 }
 
 // This takes a 1-D curve and makes it non-convex, by iteratively constraining each point to be

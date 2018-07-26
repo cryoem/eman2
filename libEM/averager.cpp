@@ -1404,8 +1404,8 @@ EMData * CtfWtFiltAverager::finish()
 	for (int i=third; i<third*2; i++) {
 		if (fsc[i]>=.9999) fsc[i]=.9999;
 		if (fsc[i]<.001) fsc[i]=.001;
-		float snr=fsc[i]/(1.0-fsc[i]);
-		fsc[i]=snr*snr/(snr*snr+1.0);
+		float snr=2.0*fsc[i]/(1.0-fsc[i]);		// convert the FSC to SNR and multiply by 2
+		fsc[i]=snr/(snr+1.0);					// to give us the FSC of the combined average, which is also a Wiener filter (depending on whether SNR is squared)
 	}
 	
 	
