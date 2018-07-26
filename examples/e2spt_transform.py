@@ -31,6 +31,7 @@ Author: Jesus Galaz - oct/2017, Last update: nov/2017
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 from __future__ import print_function
+from __future__ import division
 
 from builtins import range
 from optparse import OptionParser
