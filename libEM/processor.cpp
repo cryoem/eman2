@@ -12860,7 +12860,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	else if (params.has_key("rfp")) {
 //		if (cimage->get_ysize()/2<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
 		int rfp=(int)params.set_default("rfp",4);
-		const int minr=4;
+		const int minr=4;		// lowest frequency considered in the calculation (in pixels)
 		int rsize=cimage->get_ysize()/4-minr-2;
 		if (rsize>nky) rsize=nky;
 		int nang=Util::calc_best_fft_size(int(M_PI*cimage->get_ysize()));
@@ -12875,15 +12875,34 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			float dx=cos(2.0*M_PI*angi/float(nang)+ofs);
 			float dy=sin(2.0*M_PI*angi/float(nang)+ofs);
 			line->to_zero();
+			
+			// new invariant approach Steve 7/26/18
+			for (int dr=0; dr<rfp; dr++)
+// 				for (int r=minr; r<rsize+minr; r++) {
+// 					float jx=dx*r;
+// 					float jy=dy*r;
+// 					float kx=dx*(r+dr);
+// 					float ky=dy*(r+dr);
+// 					
+// 					pwr=float(r+dr)/float(r);
+// 					
+//  					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
+//  					complex<double> v2 = (complex<double>)cimage->get_complex_at(kx,ky);
+//  					complex<double> v3 = (complex<double>)cimage->get_complex_at(jx+kx,jy+ky);
+//  					line->set_complex_at(r,0,0,complex<float>(v1*v2*std::conj(v3)));
+			
+			// original bispectrum approach
 			for (int r2=minr; r2<rfp+minr; r2++) {
 				float kx=dx*r2;
 				float ky=dy*r2;
 				for (int r=minr; r<rsize+minr; r++) {				// this is y
 					float jx=dx*r;
 					float jy=dy*r;
-					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
-					complex<double> v2 = (complex<double>)cimage->get_complex_at(kx,ky);
-					complex<double> v3 = (complex<double>)cimage->get_complex_at(jx+kx,jy+ky);
+					
+					// original bispectrum
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(kx,ky);
+					complex<double> v3 = (complex<double>)cimage->get_complex_at_interp(jx+kx,jy+ky);
 					line->set_complex_at(r,0,0,complex<float>(v1*v2*std::conj(v3)));
 				}
 				
@@ -12892,13 +12911,13 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 				line->mult(1.0f/float(line->get_attr("sigma")));	// adjust intensities, but don't shift 0
 
 				// pseudo real-space
-				EMData *lreal=line->do_ift();
-				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,lreal->get_value_at(i,0));
-				delete lreal;
+// 				EMData *lreal=line->do_ift();
+// 				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,lreal->get_value_at(i,0));
+// 				delete lreal;
 
 				// stay in Fourier space
 				// real/imaginary
-//				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,line->get_value_at(i,0));
+				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,line->get_value_at(i+minr*2,0));
 
 				// Amp/phase separation
 // 				for (int i=0; i<rsize*2; i+=2) {

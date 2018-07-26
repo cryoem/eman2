@@ -909,10 +909,10 @@ std::complex<float> EMData::get_complex_at_interp(float xx, float yy) const
 	int x = static_cast < int >(Util::fast_floor(xx));
 	int y = static_cast < int >(Util::fast_floor(yy));
 
-	std::complex<float> p1 = get_value_at(x, y);
-	std::complex<float> p2 = get_value_at(x + 1, y);
-	std::complex<float> p3 = get_value_at(x, y + 1);
-	std::complex<float> p4 = get_value_at(x + 1, y + 1);
+	std::complex<float> p1 = get_complex_at(x, y);
+	std::complex<float> p2 = get_complex_at(x + 1, y);
+	std::complex<float> p3 = get_complex_at(x, y + 1);
+	std::complex<float> p4 = get_complex_at(x + 1, y + 1);
 
 	return Util::bilinear_interpolate_cmplx(p1, p2, p3, p4, xx - x, yy - y);
 }
