@@ -354,8 +354,9 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("zscore", EMObject::INT,"Either 0 or 1. If set, will convert per-radius CCF curves into Z-score significnace curves before averaging. In theory this should produce better results by focusing on radii with more alignment information. (default=false)");
 			d.put("maxshift", EMObject::INT,"This is provided for compatibility with other aligners. It does absolutely nothing here, as there is an implicit maxshift=0.");
+			d.put("size", EMObject::INT,"Passed as the size parameter to the bispectrum calculation");
+			d.put("rfpn", EMObject::INT,"Passed as the rfp parameter to the bispectrum calculation");
 			return d;
 		}
 
@@ -530,7 +531,10 @@ namespace EMAN
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 //			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
-			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
+			d.put("size", EMObject::INT,"Passed as the size parameter to the bispectrum calculation");
+			d.put("rfpn", EMObject::INT,"Passed as the rfp parameter to the bispectrum calculation");
+			
+//			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
 
