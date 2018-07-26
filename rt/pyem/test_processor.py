@@ -891,7 +891,7 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('eman1.filter.median')
         
-    if "EMAN_TEST_SKIP" in os.environ:
+    if platform.system() == "Darwin":
         test_eman1_filter_median.broken = True
     
     def test_math_localsigma(self):
@@ -2042,7 +2042,7 @@ class TestProcessor(unittest.TestCase):
             except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
-if "EMAN_TEST_SKIP" in os.environ or platform.system() == "Windows":
+if platform.system() == "Darwin" or platform.system() == "Windows":
     TestProcessor.broken = True
 
 def test_main():

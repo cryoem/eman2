@@ -33,10 +33,6 @@ requirements:
         - {{ req }}
         {% endfor %}
     
-build:
-  script_env:
-   - EMAN_TEST_SKIP  # [osx]
-
 test:
   requires:
     - openmpi              # [not win]
