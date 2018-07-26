@@ -530,7 +530,7 @@ namespace EMAN
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 //			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
-//			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
+			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
 
@@ -932,6 +932,7 @@ namespace EMAN
 			d.put("usedot", EMObject::INT);
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
+			d.put("usebispec", EMObject::INT,"Uses rotate_translate_bispec for subalignments and ignore rfp_mode.");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
 			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;

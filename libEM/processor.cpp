@@ -12699,7 +12699,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	int nkx=nky+1;
 	if (nky<4 || nky>=cimage->get_ysize()/2) nky=cimage->get_ysize()/8;
 	if (nkx<5 || nky>=cimage->get_xsize()/2) nkx=cimage->get_xsize()/8+1;
-	if (image->get_xsize()<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
+	//if (image->get_xsize()<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
 
 	EMData* ret=new EMData(nkx*2,nky*2,1);
 	ret->set_complex(1);
@@ -12858,14 +12858,14 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
         }
 	// In this mode we are making a translational invariant with information we can use for rotational alignment
 	else if (params.has_key("rfp")) {
-		if (cimage->get_ysize()/2<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
+//		if (cimage->get_ysize()/2<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
 		int rfp=(int)params.set_default("rfp",4);
-		const int minr=5;
+		const int minr=4;
 		int rsize=cimage->get_ysize()/4-minr-2;
 		if (rsize>nky) rsize=nky;
 		int nang=Util::calc_best_fft_size(int(M_PI*cimage->get_ysize()));
 		EMData *ret2=new EMData(nang,rsize*rfp*2,1);
-		EMData *line=new EMData(rsize*2,1,1);	// one complex line
+		EMData *line=new EMData(minr*2+rsize*2,1,1);	// one complex line
 		line->set_complex(1);
 		line->set_ri(1);
 		line->set_fftpad(1);	//correct?
@@ -12874,6 +12874,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			float ofs=M_PI/float(nang);
 			float dx=cos(2.0*M_PI*angi/float(nang)+ofs);
 			float dy=sin(2.0*M_PI*angi/float(nang)+ofs);
+			line->to_zero();
 			for (int r2=minr; r2<rfp+minr; r2++) {
 				float kx=dx*r2;
 				float ky=dy*r2;
@@ -12883,16 +12884,40 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx,jy);
 					complex<double> v2 = (complex<double>)cimage->get_complex_at(kx,ky);
 					complex<double> v3 = (complex<double>)cimage->get_complex_at(jx+kx,jy+ky);
-					line->set_complex_at(r-minr,0,0,complex<float>(v1*v2*std::conj(v3)));
+					line->set_complex_at(r,0,0,complex<float>(v1*v2*std::conj(v3)));
 				}
-// 				EMData *lreal=line->do_ift();
-// 				lreal->process_inplace("normalize");
-// 				for (int i=0; i<rsize; i++) ret2->set_value_at(angi,i+(r2-4)*rsize,lreal->get_value_at(i,0));
-//				lreal->process_inplace("normalize");
-//				printf("%d %d %d %d\n",rsize,angi,r2-minr,line->get_xsize());
+				
+				// Tried a bunch of different ways of representing the bispectral invariants, but the
+				// pseudo real-space inverse seems to perform the best in testing on various targets
 				line->mult(1.0f/float(line->get_attr("sigma")));	// adjust intensities, but don't shift 0
-				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,line->get_value_at(i,0));
-//				delete lreal;
+
+				// pseudo real-space
+				EMData *lreal=line->do_ift();
+				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,lreal->get_value_at(i,0));
+				delete lreal;
+
+				// stay in Fourier space
+				// real/imaginary
+//				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,line->get_value_at(i,0));
+
+				// Amp/phase separation
+// 				for (int i=0; i<rsize*2; i+=2) {
+// 					complex<float> v(line->get_value_at(i,0),line->get_value_at(i+1,0));
+// 					ret2->set_value_at(angi,i+  (r2-minr)*rsize*2,std::abs(v));
+// 					ret2->set_value_at(angi,i+1+(r2-minr)*rsize*2,std::arg(v));
+// 				}
+				
+// 				// R/I with cube root
+// 				for (int i=0; i<rsize*2; i+=2) {
+// 					complex<float> v(line->get_value_at(i,0),line->get_value_at(i+1,0));
+// 					v=pow(v,0.3333333f);
+// 					ret2->set_value_at(angi,i+  (r2-minr)*rsize*2,std::real(v));
+// 					ret2->set_value_at(angi,i+1+(r2-minr)*rsize*2,std::imag(v));
+// 				}
+
+				
+				
+//				printf("%d %d %d %d\n",rsize,angi,r2-minr,line->get_xsize());
 			}
 		}
 		delete ret;

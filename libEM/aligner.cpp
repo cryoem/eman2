@@ -396,8 +396,8 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 EMData * RotationalAlignerBispec::align(EMData * this_img, EMData *to, const string& cmp_name, const Dict& cmp_params) const {
 	// Make translationally invariant rotational footprints
 	EMData* this_img_bispec, * to_bispec;
-	this_img_bispec=this_img->process("math.bispectrum.slice",Dict("rfp",4,"size",64));
-	to_bispec=to->process("math.bispectrum.slice",Dict("rfp",4,"size",64));
+	this_img_bispec=this_img->process("math.bispectrum.slice",Dict("rfp",8,"size",64));
+	to_bispec=to->process("math.bispectrum.slice",Dict("rfp",8,"size",64));
 	int this_img_rfp_nx = this_img_bispec->get_xsize();
 
 	// Do row-wise correlation, returning a sum.
@@ -869,11 +869,6 @@ EMData *RotateTranslateScaleAligner::align(EMData * this_img, EMData *to,
 EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 										  const string & cmp_name, const Dict& cmp_params) const
 {
-	// Get the non flipped rotational, tranlsationally aligned image
-	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",2),"useflcf",params.set_default("useflcf",0),"zscore",params.set_default("zscore",0));
-	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
-
-	// Do the same alignment, but using the flipped version of the image
 	EMData *flipped = params.set_default("flip", (EMData *) 0);
 	bool delete_flag = false;
 	if (flipped == 0) {
@@ -881,12 +876,34 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 		delete_flag = true;
 	}
 
-	EMData * rot_trans_align_flip = this_img->align("rotate_translate", flipped, rt_params, cmp_name, cmp_params);
-	Transform * t = rot_trans_align_flip->get_attr("xform.align2d");
-	t->set_mirror(true);
-	rot_trans_align_flip->set_attr("xform.align2d",t);
-	delete t;
+	EMData *rot_trans_align_flip=0;
+	EMData *rot_trans_align=0;
+	
+	if (params.set_default("usebispec",0)) {
+		// Get the non flipped rotational, tranlsationally aligned image
+		Dict rt_params("maxshift", params["maxshift"], "useflcf",params.set_default("useflcf",0),"zscore",params.set_default("zscore",0));
+		rot_trans_align = this_img->align("rotate_translate_bispec",to,rt_params,cmp_name, cmp_params);
 
+		// Do the same alignment, but using the flipped version of the image
+		rot_trans_align_flip = this_img->align("rotate_translate_bispec", flipped, rt_params, cmp_name, cmp_params);
+		Transform * t = rot_trans_align_flip->get_attr("xform.align2d");
+		t->set_mirror(true);
+		rot_trans_align_flip->set_attr("xform.align2d",t);
+		delete t;		
+	}
+	else {
+		// Get the non flipped rotational, tranlsationally aligned image
+		Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",2),"useflcf",params.set_default("useflcf",0),"zscore",params.set_default("zscore",0));
+		rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
+
+		// Do the same alignment, but using the flipped version of the image
+		rot_trans_align_flip = this_img->align("rotate_translate", flipped, rt_params, cmp_name, cmp_params);
+		Transform * t = rot_trans_align_flip->get_attr("xform.align2d");
+		t->set_mirror(true);
+		rot_trans_align_flip->set_attr("xform.align2d",t);
+		delete t;
+	}
+		
 	// Now finally decide on what is the best answer
 	float cmp1 = rot_trans_align->cmp(cmp_name, to, cmp_params);
 	float cmp2 = rot_trans_align_flip->cmp(cmp_name, flipped, cmp_params);
