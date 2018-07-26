@@ -714,8 +714,9 @@ The basic design of EMAN Processors: <br>\
 				d.put("jkx", EMObject::INT, "Jx+Kx location of the slice in Fourier pixels");
 				d.put("jky", EMObject::INT, "Jy+Ky location of the slice in Fourier pixels");
 				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
-				d.put("fp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant.");
-				d.put("ffp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant. Fourier real component.");
+				d.put("rfp", EMObject::INT, "Returns a non square 2-D image containing rotational invariants organized such that X=azimuth. Used for rotational alignment.");
+				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n rotationally integrated planes. R&T invariant.");
+				d.put("ffp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant. This is normally further processed with CTF info to produce fp equivalent.");
 				d.put("size", EMObject::INT, "If specified, will determine the size (x/y) of the real-space bispectrum image. If not set, a size is selected automatically");
 				return d;
 			}
@@ -5777,9 +5778,16 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 			return new NormalizeRowProcessor();
 		}
 
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("unitlen",EMObject::BOOL, "Adjusts the length of the 'row vector' to be 1.0 without adjusting the mean");
+			return d;
+		}
+			
 		string get_desc() const
 		{
-			return "normalizes each row in the image individually";
+			return "Modifies each row in the image individually. Default behavior is to divide each value by the mean value of the row, as long as the mean>0.";
 		}
 
 		static const string NAME;

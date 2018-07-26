@@ -21,10 +21,6 @@ python -m compileall -q .
 
 export CPU_COUNT=2
 
-if [ "$(uname -s)" == "Darwin" ];then
-    export EMAN_TEST_SKIP=1
-fi
-
 conda info -a
 conda list
 conda render recipes/eman

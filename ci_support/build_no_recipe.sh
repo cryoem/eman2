@@ -45,4 +45,5 @@ make -j${CPU_COUNT}
 make install
 
 # Run tests
-bash ${src_dir}/tests/run_tests.sh
+cd "${src_dir}"
+bash tests/run_tests.sh

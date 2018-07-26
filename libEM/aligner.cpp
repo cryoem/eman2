@@ -58,9 +58,11 @@ using namespace EMAN;
 
 const string TranslationalAligner::NAME = "translational";
 const string RotationalAligner::NAME = "rotational";
+const string RotationalAlignerBispec::NAME = "rotational_bispec";
 const string RotationalAlignerIterative::NAME = "rotational_iterative";
 const string RotatePrecenterAligner::NAME = "rotate_precenter";
 const string RotateTranslateAligner::NAME = "rotate_translate";
+const string RotateTranslateAlignerBispec::NAME = "rotate_translate_bispec";
 const string RotateTranslateScaleAligner::NAME = "rotate_translate_scale";
 const string RotateTranslateAlignerIterative::NAME = "rotate_translate_iterative";
 const string RotateTranslateScaleAlignerIterative::NAME = "rotate_trans_scale_iter";
@@ -95,9 +97,11 @@ template <> Factory < Aligner >::Factory()
 {
 	force_add<TranslationalAligner>();
 	force_add<RotationalAligner>();
+	force_add<RotationalAlignerBispec>();
 	force_add<RotationalAlignerIterative>();
 	force_add<RotatePrecenterAligner>();
 	force_add<RotateTranslateAligner>();
+	force_add<RotateTranslateAlignerBispec>();
 	force_add<RotateTranslateScaleAligner>();
 	force_add<RotateTranslateAlignerIterative>();
 	force_add<RotateTranslateScaleAlignerIterative>();
@@ -388,6 +392,44 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	}
 	return cf;
 }
+
+EMData * RotationalAlignerBispec::align(EMData * this_img, EMData *to, const string& cmp_name, const Dict& cmp_params) const {
+	// Make translationally invariant rotational footprints
+	EMData* this_img_bispec, * to_bispec;
+	int rfp = params.set_default("rfpn",8);
+	int size = params.set_default("size",32);
+	this_img_bispec=this_img->process("math.bispectrum.slice",Dict("rfp",rfp,"size",size));
+	to_bispec=to->process("math.bispectrum.slice",Dict("rfp",rfp,"size",size));
+	int this_img_rfp_nx = this_img_bispec->get_xsize();
+
+	// Do row-wise correlation, returning a sum.
+	EMData *cf = this_img_bispec->calc_ccfx(to_bispec, 0, this_img->get_ysize(),false,false,false);
+
+	// Delete them, they're no longer needed
+	delete this_img_bispec;
+	delete to_bispec;
+
+	// Now solve the rotational alignment by finding the max in the column sum
+	float *data = cf->get_data();
+
+	float peak = 0;
+	int peak_index = 0;
+	Util::find_max(data, this_img_rfp_nx, &peak, &peak_index);
+
+	delete cf;
+
+	float rot_angle = (float) (peak_index * 360.0f / this_img_rfp_nx);
+
+	// Return the result
+	Transform tmp(Dict("type","2d","alpha",rot_angle));
+	cf=this_img->process("xform",Dict("transform",(Transform*)&tmp));
+//	Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
+//	Dict d("type","2d","alpha",rot_angle);
+//	t->set_rotation(d);
+	cf->set_attr("xform.align2d",&tmp);
+	return cf;
+}
+
 
 EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, int rfp_mode,int zscore) {
 
@@ -780,6 +822,38 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
+EMData *RotateTranslateAlignerBispec::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
+{
+
+	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
+	int zscore = params.set_default("zscore",0);
+	int rfp = params.set_default("rfpn",8);
+	int size = params.set_default("size",32);
+	EMData *rot_align  =  this_img->align("rotational_bispec", to,Dict("rfpn",rfp,"size",size));
+	Transform * tmp = rot_align->get_attr("xform.align2d");
+	Dict rot = tmp->get_rotation("2d");
+	float rotate_angle_solution = rot["alpha"];
+	delete tmp;
+
+	Dict trans_params;
+	trans_params["intonly"]  = false;
+	trans_params["maxshift"] = params.set_default("maxshift", -1);
+	trans_params["useflcf"] = params.set_default("useflcf",0);
+	trans_params["nozero"]   = params.set_default("nozero",false);
+	EMData* rot_trans = rot_align->align("translational", to, trans_params, cmp_name, cmp_params);
+	delete rot_align;
+
+	Transform* t = rot_trans->get_attr("xform.align2d");
+	t->set_rotation(Dict("type","2d","alpha",rotate_angle_solution));
+	delete rot_trans;
+	
+	EMData *result=this_img->process("xform",Dict("transform",t));		// final object only has one interpolation
+	result->set_attr("xform.align2d",t);
+	delete t;
+
+	return result;
+}
+
 
 EMData *RotateTranslateScaleAligner::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
@@ -789,21 +863,14 @@ EMData *RotateTranslateScaleAligner::align(EMData * this_img, EMData *to,
 	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
 	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",2);
 	basealigner_params["useflcf"] = params.set_default("useflcf",0);
-	basealigner_params["zscore"] = params.set_default("zscore",0);
 
 	//return the correct results
 	return align_using_base(this_img, to, cmp_name, cmp_params);
 
 }
 
-EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
-										  const string & cmp_name, const Dict& cmp_params) const
+EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
-	// Get the non flipped rotational, tranlsationally aligned image
-	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",2),"useflcf",params.set_default("useflcf",0),"zscore",params.set_default("zscore",0));
-	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
-
-	// Do the same alignment, but using the flipped version of the image
 	EMData *flipped = params.set_default("flip", (EMData *) 0);
 	bool delete_flag = false;
 	if (flipped == 0) {
@@ -811,12 +878,34 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 		delete_flag = true;
 	}
 
-	EMData * rot_trans_align_flip = this_img->align("rotate_translate", flipped, rt_params, cmp_name, cmp_params);
-	Transform * t = rot_trans_align_flip->get_attr("xform.align2d");
-	t->set_mirror(true);
-	rot_trans_align_flip->set_attr("xform.align2d",t);
-	delete t;
+	EMData *rot_trans_align_flip=0;
+	EMData *rot_trans_align=0;
+	
+	if (params.set_default("usebispec",0)) {
+		// Get the non flipped rotational, tranlsationally aligned image
+		Dict rt_params("maxshift", params["maxshift"], "useflcf",params.set_default("useflcf",0));
+		rot_trans_align = this_img->align("rotate_translate_bispec",to,rt_params,cmp_name, cmp_params);
 
+		// Do the same alignment, but using the flipped version of the image
+		rot_trans_align_flip = this_img->align("rotate_translate_bispec", flipped, rt_params, cmp_name, cmp_params);
+		Transform * t = rot_trans_align_flip->get_attr("xform.align2d");
+		t->set_mirror(true);
+		rot_trans_align_flip->set_attr("xform.align2d",t);
+		delete t;		
+	}
+	else {
+		// Get the non flipped rotational, tranlsationally aligned image
+		Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",2),"useflcf",params.set_default("useflcf",0),"zscore",params.set_default("zscore",0));
+		rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
+
+		// Do the same alignment, but using the flipped version of the image
+		rot_trans_align_flip = this_img->align("rotate_translate", flipped, rt_params, cmp_name, cmp_params);
+		Transform * t = rot_trans_align_flip->get_attr("xform.align2d");
+		t->set_mirror(true);
+		rot_trans_align_flip->set_attr("xform.align2d",t);
+		delete t;
+	}
+		
 	// Now finally decide on what is the best answer
 	float cmp1 = rot_trans_align->cmp(cmp_name, to, cmp_params);
 	float cmp2 = rot_trans_align_flip->cmp(cmp_name, flipped, cmp_params);
@@ -2924,8 +3013,11 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		for (unsigned int i=0; i<nsoln; i++){
 			s_xform[i].set_params(xfs[i].get_params("eman"));
 		}
-		sexp_start=5;
+		sexp_start=6;
 		curiter=0;
+		for (int i=0; i<nsoln*3; i++) {
+			s_step[i]/=8.0;
+		}
 	}
 	
 	
@@ -3026,12 +3118,12 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
 //			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems
 			for (unsigned int it=0; it<transforms.size(); it++) {
-				Transform t = transforms[it];
 				if (verbose>2) {
 					printf("  %d/%lu \r",it,transforms.size());
 					fflush(stdout);
 				}
 				for (float phi=0; phi<360.0; phi+=astep) {
+					Transform t = transforms[it];
 					Dict aap=t.get_params("eman");
 					aap["phi"]=phi;
 					aap["tx"]=0;
@@ -3068,6 +3160,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 					// We want to make sure our starting points are somewhat separated from each other, so we replace any angles too close to an existing angle
 					// If we find an existing 'best' angle within range, then we either replace it or skip
 					int worst=-1;
+					float worstv=1.0e20;
 					for (int i=0; i<nsoln; i++) {
 						if (s_score[i]>1.0e20) continue;	// hasn't been set yet
 						Transform tdif=s_xform[i].inverse();
@@ -3085,7 +3178,8 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 						// solution which is currently "empty"
 						for (int i=0; i<nsoln; i++) {
 							if (s_score[i]>1.0e20) { worst=i; break; }
-							if (s_score[i]<s_score[worst]) worst=i;
+							if (s_score[i]<worstv) {worst=i; worstv=s_score[i];}
+// 							if (s_score[i]<s_score[worst]) worst=i;
 						}
 					}
 
@@ -3428,12 +3522,13 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
 //			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems
 			for (unsigned int it=0; it<transforms.size(); it++) {
-				Transform t = transforms[it];
+				
 				if (verbose>2) {
 					printf("  %d/%lu \r",it,transforms.size());
 					fflush(stdout);
 				}
 				for (float phi=0; phi<360.0; phi+=astep) {
+					Transform t = transforms[it];
 					Dict aap=t.get_params("eman");
 					aap["phi"]=phi;
 					aap["tx"]=0;
@@ -3464,6 +3559,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					// We want to make sure our starting points are somewhat separated from each other, so we replace any angles too close to an existing angle
 					// If we find an existing 'best' angle within range, then we either replace it or skip
 					int worst=-1;
+					float worstv=1.0e20;
 					for (int i=0; i<nsoln; i++) {
 						if (s_coverage[i]==0.0) continue;	// hasn't been set yet
 						Transform tdif=s_xform[i].inverse();
@@ -3481,7 +3577,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						// solution which is currently "empty"
 						for (int i=0; i<nsoln; i++) {
 							if (s_coverage[i]==0.0) { worst=i; break; }
-							if (s_score[i]<s_score[worst]) worst=i;
+							if (s_score[i]<worstv) {worst=i; worstv=s_score[i];}
 						}
 					}
 
@@ -3497,7 +3593,10 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				}
 			}
 			if (verbose>2) printf("\n");
-
+// 			for (int i=0; i<nsoln; i++) {
+// 				Dict d=s_xform[i].get_params("eman");
+// 				printf("%d, %f, %f, %f, %f\n",i,(float)d["alt"], (float)d["az"], (float)d["phi"], s_score[i]);
+// 			}
 
 		}
 		// Once we have our initial list of best locations, we just refine each possibility individually

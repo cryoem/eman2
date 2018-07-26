@@ -62,12 +62,23 @@ using namespace EMAN;
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <cmath>
+#include "emfft.h"
 #include <fftw3.h>
 #include <limits.h>
 #include <float.h>
 //#include <omp.h>
 using namespace std;
 using std::complex;
+
+
+#define    QUADPI      		    3.141592653589793238462643383279502884197
+#define    PI2                      2*QUADPI
+
+#define deg_rad  QUADPI/180.0
+#define rad_deg  180.0/QUADPI
+
+
+
 
 /* Subroutine */ 
 int circum_(double *, double *, double *, double *, int *);
@@ -2584,7 +2595,6 @@ c
 
 	ns2 = nsam/2+1;
 	nr2 = nrow/2+1;
-	dpi = 2.0*atan(1.0);
 
 	for (i=1;i<=nring;i++) {
 		// radius of the ring
@@ -2595,7 +2605,7 @@ c
 		else                             lt = l/4;
 
 		nsim	       = lt-1;
-		dfi	       = dpi/(nsim+1);
+		dfi	           = PI2/(nsim+1);
 		kcirc	       = numr(2,i);
 		xold	       = 0.0f;
 		yold	       = static_cast<float>(inr);
@@ -2663,8 +2673,8 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 
 	maxPoints = maxPoints /div - 1;
 
-	double dpi = 2*atan(1.0), dfi;
-	dfi = dpi / (maxPoints +1);
+	double dfi;
+	dfi = PI2 / (maxPoints +1);
 //	Table for sin & cos
 	vector<float> vsin(maxPoints);
 	vector<float> vcos(maxPoints);
@@ -2886,6 +2896,59 @@ c  purpose: linear interpolation
 			   ydif* (xim[ind4] - xim[ind2] - xim[ind3] + xim[ind1]) );
 }
 
+/*
+ * 07/24/2018
+ * Resample 2D FT into polar coordinates, all rings the same length 
+ * Optimized:
+ * 	*Sin and Cos functions are tabulated for the largest ring
+ * 	*Bilinear interpolation
+ * Due to Friedel symmetry we sample over half Fourier plane and fill out
+ * second half of rings by complex conjugates of the first half.
+*/
+EMData* Util::Polar2DFT(EMData* image, int ring_length, int nb, int ne)  {
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nc = ny/2;
+	
+	int limit = nx*ny - 2; // As required by bilinear_inline function
+
+	int lcirc = ne-nb+1;
+	float xnew, ynew;
+	
+	EMData* out = new EMData();
+	out->set_size(2*ring_length, lcirc); // ring_length complex numbers, or 2*ring_length real ones
+
+	float dfi;
+	dfi = PI2 / ring_length;
+//	Table for sin & cos
+	vector<float> vsin(ring_length/2);
+	vector<float> vcos(ring_length/2);
+	for (int x = 0; x < ring_length/2; x++) {
+		float ang = static_cast<float>(x * dfi);
+		vsin[x] = sin(ang);
+		vcos[x] = cos(ang+QUADPI);
+		//printf("trigtab   %d      %f  %f\n",x,vsin[x],vcos[x]);
+	}
+
+	float* xim  = image->get_data();
+	float* rings = out->get_data();
+	for (unsigned int it = 0; it < ring_length/2; it++) {
+		for (unsigned int inr = nb; inr <= ne; inr++) {
+			xnew    = vsin[it] * inr;
+			ynew    = vcos[it] * inr + nc;
+			rings[(inr-nb)*2*ring_length + 2*it]   = bilinear_cmplx_inline(xnew,ynew,nx,xim,0);
+			rings[(inr-nb)*2*ring_length + 2*it+1] = bilinear_cmplx_inline(xnew,ynew,nx,xim,1);
+			rings[(inr-nb)*2*ring_length + 2*it + ring_length]   = rings[(inr-nb)*2*ring_length + 2*it];
+			rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length] = -rings[(inr-nb)*2*ring_length + 2*it+1];
+			//printf("   %d   %d    %f  %f     %f  %f    %f  %f\n",it,inr,xnew,ynew,rings[(inr-nb)*2*ring_length + 2*it],rings[(inr-nb)*2*ring_length + 2*it+1],
+			//rings[(inr-nb)*2*ring_length + 2*it + ring_length],rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length]);
+		}
+	}
+	return out;
+}
+
+
 void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
              int  *numr, float *circ, int , int  nring, char  mode) {
 	double dpi, dfi;
@@ -2895,7 +2958,6 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 	//     cns2 and cnr2 are predefined centers
 	//     no need to set to zero, all elements are defined
 
-	dpi = 2*atan(1.0);
 	for (it=1; it<=nring; it++) {
 		// radius of the ring
 		inr = numr(1,it);
@@ -2905,7 +2967,7 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 		else				  lt = l / 4;
 
 		nsim  = lt - 1;
-		dfi   = dpi / (nsim+1);
+		dfi   = PI2 / (nsim+1);
 		kcirc = numr(2,it);
 
 
@@ -3050,7 +3112,6 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 	//     cns2 and cnr2 are predefined centers
 	//     no need to set to zero, all elements are defined
 
-	dpi = 2*atan(1.0);
 	for (it=1;it<=nring;it++) {
 		// radius of the ring
 		inr = numr(1,it);
@@ -3061,7 +3122,7 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 		else                               lt = l / 4;
 
 		nsim  = lt - 1;
-		dfi   = dpi / (nsim+1);
+		dfi   = PI2 / (nsim+1);
 		kcirc = numr(2,it);
 		xold  = 0.0f;
 		yold  = static_cast<float>(inr);
@@ -3617,6 +3678,30 @@ void  Util::fftr_d(double *xcmplx, int nv)
 #undef  br
 #undef  bi
 
+
+EMData* Util::FCrngs(EMData* rings) {
+	// We implicitly assume ring length are even.
+	int ring_length = rings->get_xsize();
+	int nring = rings->get_ysize();
+	int unique_length = ring_length/2+2;
+	float* circ = rings->get_data();
+	EMData* out = new EMData();
+	out->set_size(unique_length, nring, 1);
+	out->set_complex(true);
+	out->set_attr("is_fftodd", 0);
+	float* dout = out->get_data();
+	float* temp = (float *)malloc(ring_length*sizeof(float));
+
+	for(unsigned int i=0; i<nring; i++)  {
+		EMfft::complex_to_complex_1d(&circ[i*ring_length],temp,ring_length);
+		for(unsigned int j=0; j<unique_length; ++j)  dout[i*unique_length + j] = temp[j];
+	}
+
+	delete temp;
+	out->update();
+	EXITFUNC;
+	return out;
+}
 
 void Util::Frngs(EMData* circp, vector<int> numr){
 	int nring = numr.size()/3;
@@ -6147,7 +6232,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 	int counter = 0;
 	for (int ib = 0; ib < n_coarse_shifts; ib++) {
 	//cout<<" coarse_shifts "<<ib<<"  "<<coarse_shifts_shrank[ib][0]<<"  "<<coarse_shifts_shrank[ib][1]<<"  "<<endl;
-		/*EMData* cimage = dataimage->copy();
+*/		/*EMData* cimage = dataimage->copy();
 		cimage->process_inplace("filter.shift", Dict("x_shift", coarse_shifts_shrank[ib][0], "y_shift", coarse_shifts_shrank[ib][1], "z_shift", 0.0f));
 		cimage->do_ift_inplace();
 		cimage->depad();
@@ -6244,7 +6329,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 		qout[4*i+4] = (int)((1000000.0f/pow(10.0f,qout[4*i+3]))*ccfs[i].score);
 	}
 	return qout;
-	/*
+*/	/*
 	float score_max = FLT_MIN;
 	float score_min = FLT_MAX;
 	int ima = INT_MAX-10;
@@ -6288,10 +6373,6 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 #undef  q
 #undef  b
 #undef  t7
-
-
-#define    QUADPI      		    3.141592653589793238462643383279502884197
-#define    PI2                      2*QUADPI
 
 float Util::ener(EMData* ave, vector<int> numr) {
 	ENTERFUNC;
@@ -6546,17 +6627,8 @@ float Util::ccc_rings(EMData* circ1, EMData* circ2, float alpha, vector<int> num
 
 }
 
-#undef    QUADPI
-#undef    PI2
-
 #undef  numr
 #undef  circ
-
-
-#define	QUADPI	 3.141592653589793238462643383279502884197
-#define	PI2      QUADPI*2
-#define deg_rad  QUADPI/180.0
-#define rad_deg  180.0/QUADPI
 
 struct ori_t
 {
@@ -7032,11 +7104,6 @@ vector<double> Util::cml_spin_psi_now(const vector<EMData*>& data, vector<int> c
 
 	return res;
 }
-
-#undef	QUADPI
-#undef	PI2
-#undef  deg_rad
-#undef  rad_deg
 
 /****************************************************
  * END OF NEW CODE FOR COMMON-LINES
@@ -24553,7 +24620,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  Source modification date: 06/20/2018  12:34 PM " <<  endl;
+ cout <<"  Branch fix-sparx  Source modification date: 06/20/2018  12:34 PM " <<  endl;
 }
 
 
@@ -28623,7 +28690,7 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 		 throw ImageFormatException("Only Fourier image allowed");
 	}
 	int nx = img->get_xsize(),ny = img->get_ysize(),nz = img->get_zsize();
-	EMData *rimg    = new EMData();
+	EMData *rimg = new EMData();
 	rimg->set_size(nx, ny, nz);
 	rimg->set_complex(true);
 	rimg->to_zero();
