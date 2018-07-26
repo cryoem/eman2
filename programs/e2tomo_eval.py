@@ -312,7 +312,7 @@ class TomoEvalGUI(QtGui.QWidget):
 				data=np.vstack([data, info["phase"]])
 			
 			self.wg_plot2d.set_data(data, info["e2basename"], replace=True, linetype=0,symtype=0)
-			self.wg_plot2d.setAxes(info["basename"], 1, 2)
+			self.wg_plot2d.setAxes(info["e2basename"], 1, 2)
 			self.wg_plot2d.show()
 			
 	

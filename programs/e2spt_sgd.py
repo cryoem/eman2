@@ -165,25 +165,25 @@ def main():
 				avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":filterto})
 				if options.gaussz>0:
 					avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":options.gaussz})
-				avg.process_inplace('normalize')
+				avg.process_inplace('normalize.edgemean')
 				if options.applysym:
 					avg.process_inplace("xform.applysym",{"sym":options.sym,"averager":"mean.tomo"})
 				if options.fourier:
 					avgft=avg.do_fft()
 					refft=ref.do_fft()
-					avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":1})
+					avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":3})
 
 					dmap=avgft-refft
 					refft=refft+learnrate*dmap
 					refnew=refft.do_ift()
-					refnew.process_inplace('normalize')
+					refnew.process_inplace('normalize.edgemean')
 					dmap=refnew-ref
 					ref=refnew.copy()
 				else:
 
 					dmap=avg-ref
 					ref=ref+learnrate*dmap
-					ref.process_inplace('normalize')
+					ref.process_inplace('normalize.edgemean')
 
 				ddm=dmap*dmap
 				cc.append(ddm["mean_nonzero"])
@@ -297,13 +297,13 @@ def make_ref(fname, options):
 			ref.process_inplace('filter.lowpass.gauss', {"cutoff_freq":.01})
 			ref.process_inplace('filter.lowpass.randomphase', {"cutoff_freq":.01})
 			#ref.process_inplace("xform.applysym",{"sym":options.sym})
-			ref.process_inplace('normalize')
+			ref.process_inplace('normalize.edgemean')
 			ref.write_image(rfile,ie)
 			refs.append(ref)
 	else:
 		er=EMData(options.reference)
 		ep=EMData(fname,0)
-		pp=" --process filter.lowpass.gauss:cutoff_freq={:.3f} --process filter.lowpass.randomphase:cutoff_freq={:.3f} --process normalize".format(options.filterto, options.filterto)
+		pp=" --process filter.lowpass.gauss:cutoff_freq={:.3f} --process filter.lowpass.randomphase:cutoff_freq={:.3f} --process normalize.edgemean".format(options.filterto, options.filterto)
 		if EMUtil.get_image_count(options.reference)==1:
 			itr=2
 			pp+=" --append"
