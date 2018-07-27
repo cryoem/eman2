@@ -72,7 +72,8 @@ using std::complex;
 
 
 #define    QUADPI      		    3.141592653589793238462643383279502884197
-#define    PI2                      2*QUADPI
+#define    PI2                  QUADPI/2.0
+#define    TWOPI                2*QUADPI
 
 #define deg_rad  QUADPI/180.0
 #define rad_deg  180.0/QUADPI
@@ -1129,6 +1130,7 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 
 
 	quadri = f0 + dx0 * (c1 + dxb * c2 + dy0 * c5) + dy0 * (c3 + dyb * c4);
+//printf("quadri  %f  %f ||  %d  %d   ||  %f   %f \n",xx,yy,i,j,f0,quadri);
 
 	return quadri;
 }
@@ -2583,7 +2585,7 @@ void Util::alrq(float *xim,  int nsam , int nrow , int *numr,
 c
 c  purpose:
 c
-c  resmaple to polar coordinates
+c  resample to polar coordinates
 c
 */
 	//  dimension	      xim(nsam,nrow),circ(lcirc)
@@ -2627,6 +2629,7 @@ c
 			fi		 = static_cast<float>(dfi*j);
 			x		 = sin(fi)*yq;
 			y		 = cos(fi)*yq;
+//printf(" sampling points A  %d  %d    %f    %f    %f    %f    %f    %f    %f\n",lt,nsim,dfi,fi,sin(fi),cos(fi),yq,x,y);
 			xold		 = x;
 			yold		 = y;
 			circ(j+kcirc)	 = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
@@ -2920,14 +2923,14 @@ EMData* Util::Polar2DFT(EMData* image, int ring_length, int nb, int ne)  {
 	out->set_size(2*ring_length, lcirc); // ring_length complex numbers, or 2*ring_length real ones
 
 	float dfi;
-	dfi = PI2 / ring_length;
+	dfi = TWOPI / ring_length;
 //	Table for sin & cos
 	vector<float> vsin(ring_length/2);
 	vector<float> vcos(ring_length/2);
 	for (int x = 0; x < ring_length/2; x++) {
 		float ang = static_cast<float>(x * dfi);
 		vsin[x] = sin(ang);
-		vcos[x] = cos(ang+QUADPI);
+		vcos[x] = cos(ang);
 		//printf("trigtab   %d      %f  %f\n",x,vsin[x],vcos[x]);
 	}
 
@@ -6720,7 +6723,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 		}
 	} else {
 		cout<<"warning in Util.cml_weights"<<endl;
-		double val = PI2/float(nline);
+		double val = TWOPI/float(nline);
 		for(int i=0; i<nline; i++)  weights[i]=val;
 	}
 
@@ -24620,7 +24623,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  Branch fix-sparx  Source modification date: 06/20/2018  12:34 PM " <<  endl;
+	cout <<"   Source modification date: 07/26/2018  7:26 PM " <<  endl;
 }
 
 
