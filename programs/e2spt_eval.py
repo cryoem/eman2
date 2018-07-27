@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 from __future__ import print_function
+from __future__ import division
 from EMAN2 import *
 import numpy as np
 from PyQt4 import QtCore, QtGui
@@ -200,6 +201,7 @@ class SptEvalGUI(QtGui.QWidget):
 		for i,info in enumerate(self.fldlst):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
 			for j,pm in enumerate(hdrs):
+				if not info.has_key(pm): continue
 				v=info[pm]
 				try:
 					v=float(v)

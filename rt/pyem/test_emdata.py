@@ -1378,6 +1378,66 @@ class TestEMData(unittest.TestCase):
                 for k in range(32):
                     self.assertEqual(e.get_value_at(i, j, k), 2.0)
   
+    def test_real_operator_binary(self):
+        """test real binary operator of EMData .............."""
+        a = EMData()
+        a.set_size(32,32,32)
+        a.to_one()
+    
+        e = a + 0.5
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 1.5)
+    
+        e = a - 0.5
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 0.5)
+    
+        e = a * 2.0
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 2.0)
+    
+        e = a / 2.0
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 0.5)
+    
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e2.to_one()
+    
+        e = a + e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 2.0)
+    
+        e = a - e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 0.0)
+    
+        e = a * 2.0
+        e2 = a * 3.0
+        e = e * e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 6.0)
+    
+        e = e / e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 2.0)
+
     def test_multi_array_2d(self):
         """test multi_array_2d real.........................."""
         nx = 16

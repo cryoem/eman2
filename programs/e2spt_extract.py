@@ -96,7 +96,7 @@ def main():
 				bxs[:,2]-=zshift
 				outname=str(base_name(pfile)+"__"+val["name"]+".hdf")
 				if options.boxsz<0:
-					sz=old_div(int(val[boxsize])*scale,2)
+					sz=old_div(int(val["boxsize"])*scale,2)
 				else:
 					sz=int(np.round(options.boxsz/2.*scale))
 				towrite.append((bxs, outname, sz))

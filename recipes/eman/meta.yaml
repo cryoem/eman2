@@ -33,16 +33,11 @@ requirements:
         - {{ req }}
         {% endfor %}
     
-build:
-  script_env:
-   - EMAN_TEST_SKIP  # [osx]
-
 test:
   requires:
     - openmpi              # [not win]
     - eman-deps=11.2
     - future
-    - nose
   
   source_files:
     - examples/mpi_test.py

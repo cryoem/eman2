@@ -113,7 +113,7 @@ def main():
 			s+=" --maxtilt {:.1f}".format(options.maxtilt)
 			
 		
-		run("e2spt_average.py --threads {} --path {} --sym {} {}".format(options.threads, options.path, options.sym, s))
+		run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
 		
 		msk=options.mask
 		if len(msk)>0:

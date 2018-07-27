@@ -290,8 +290,13 @@ class TomoEvalGUI(QtGui.QWidget):
 		idx, info=self.get_id_info()
 		print("Showing tilt series for image {} : {}".format(int(idx), info["filename"]))
 		
-		self.cur_tlt=EMData(info["tltfile"])
-		self.wg_tltimage.list_idx=int(old_div(self.cur_tlt["nz"],2))		
+		if EMUtil.get_image_count(info["tltfile"])==1:
+			self.cur_tlt=EMData(info["tltfile"])
+			self.wg_tltimage.list_idx=int(old_div(self.cur_tlt["nz"],2))
+		else:
+			self.cur_tlt=EMData.read_images(info["tltfile"])
+			self.wg_tltimage.list_idx=int(len(self.cur_tlt)/2)
+
 		self.wg_tltimage.set_data(self.cur_tlt)
 		self.wg_tltimage.show()
 	
@@ -307,7 +312,7 @@ class TomoEvalGUI(QtGui.QWidget):
 				data=np.vstack([data, info["phase"]])
 			
 			self.wg_plot2d.set_data(data, info["e2basename"], replace=True, linetype=0,symtype=0)
-			self.wg_plot2d.setAxes(info["basename"], 1, 2)
+			self.wg_plot2d.setAxes(info["e2basename"], 1, 2)
 			self.wg_plot2d.show()
 			
 	
