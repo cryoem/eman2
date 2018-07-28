@@ -1005,8 +1005,6 @@ def ft2polargrid(image, ring_length, nb, ne):
 	fftip(image1)
 	# Put the origin of the (real-space) image at the center
 	image1.center_origin_fft()
-	from utilities import print_image
-	print_image(image1)
 	return image1.ft2polargrid(ring_length, nb, ne, kb)
 
 
