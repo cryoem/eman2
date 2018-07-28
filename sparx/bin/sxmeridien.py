@@ -422,9 +422,9 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					print(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
-				range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"],range, step)
-				Tracker["xr"] = range
+				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
+				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
+				Tracker["xr"] = step_range
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
 				Tracker["changed_delta"] = True
@@ -474,13 +474,13 @@ def compute_search_params(acc_trans, shifter, old_range):
 	# step refer to the fine sampled step; while the range remains
 	if(old_range == 0.0 and shifter != 0.0):  old_range = acc_trans
 	step   = min(1.5, 0.75*acc_trans)   #remove 2 
-	range  = min( 1.3*old_range, 5.0*shifter)
-	range  = max(range, 3.0*step) # change 1.5 to 3.0
-	if range > 8.0*step :   range /= 2.0 # change 4 to 8
-	if range > 8.0*step :   step   = range/8.0 # change 4 to 8
+	new_range  = min( 1.3*old_range, 5.0*shifter)
+	new_range  = max(new_range, 3.0*step) # change 1.5 to 3.0
+	if new_range > 8.0*step :   new_range /= 2.0 # change 4 to 8
+	if new_range > 8.0*step :   step   = new_range/8.0 # change 4 to 8
 	#  change 4. to 8. on account of the fact that we return actual shift which is then doubled for coarse search.
-	if(range == 0.0):  step = 0.5  # change 1.0 to 0.5
-	return range, step
+	if(new_range == 0.0):  step = 0.5  # change 1.0 to 0.5
+	return new_range, step
 
 def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 	global Tracker, Blockdata
