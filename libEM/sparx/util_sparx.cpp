@@ -3695,8 +3695,9 @@ EMData* Util::FCrngs(EMData* rings) {
 	float* dout = out->get_data();
 	float* temp = (float *)malloc(ring_length*sizeof(float));
 
+
 	for(unsigned int i=0; i<nring; i++)  {
-		EMfft::complex_to_complex_1d(&circ[i*ring_length],temp,ring_length);
+		EMfft::complex_to_complex_1d_f(&circ[i*ring_length],temp,ring_length);
 		for(unsigned int j=0; j<unique_length; ++j)  dout[i*unique_length + j] = temp[j];
 	}
 
@@ -3705,7 +3706,43 @@ EMData* Util::FCrngs(EMData* rings) {
 	EXITFUNC;
 	return out;
 }
+/*
+EMData* Util::FCrngs(EMData* rings) {
+	// We implicitly assume ring length are even.
+	int ring_length = rings->get_xsize();
+	int nring = rings->get_ysize();
+	int unique_length = ring_length;///2+2;
+	float* circ = rings->get_data();
+	EMData* out = new EMData();
+	out->set_size(unique_length, nring, 1);
+	out->set_complex(true);
+	out->set_attr("is_fftodd", 0);
+	float* dout = out->get_data();
+	float* temp = (float *)malloc(ring_length*sizeof(float));
 
+	fftwf_plan p;
+	fftwf_complex *in=(fftwf_complex *) complex_data_in;
+	fftwf_complex *out=(fftwf_complex *) temp;
+	p = fftwf_plan_dft_1d(ring_length/2, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+	fftwf_execute(p);
+	mrt = Util::MUTEX_LOCK(&fft_mutex);
+	fftwf_destroy_plan(p);
+	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+
+
+	for(unsigned int i=0; i<nring; i++)  {
+		EMfft::complex_to_complex_1d_f(&circ[i*ring_length],temp,ring_length);
+		EMfft::complex_to_complex_1d_b(temp,dout,ring_length);
+		//for(unsigned int j=0; j<unique_length; ++j)  dout[i*unique_length + j] = temp[j];
+	}
+
+	delete temp;
+	out->update();
+	EXITFUNC;
+	return out;
+}
+*/
 void Util::Frngs(EMData* circp, vector<int> numr){
 	int nring = numr.size()/3;
 	float *circ = circp->get_data();
