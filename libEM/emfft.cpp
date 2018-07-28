@@ -276,13 +276,29 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 
 
 // ming add c->c fft with fftw3 library//
-int EMfft::complex_to_complex_1d(float *complex_data_in, float *complex_data_out, int n)
+int EMfft::complex_to_complex_1d_f(float *complex_data_in, float *complex_data_out, int n)
 {
 	fftwf_plan p;
 	fftwf_complex *in=(fftwf_complex *) complex_data_in;
 	fftwf_complex *out=(fftwf_complex *) complex_data_out;
 	int mrt = Util::MUTEX_LOCK(&fft_mutex);
 	p=fftwf_plan_dft_1d(n/2,in,out, FFTW_FORWARD, FFTW_ESTIMATE);
+	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+	fftwf_execute(p);
+	mrt = Util::MUTEX_LOCK(&fft_mutex);
+	fftwf_destroy_plan(p);
+	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+	return 0;
+}
+
+// ming add c->c fft with fftw3 library//
+int EMfft::complex_to_complex_1d_b(float *complex_data_in, float *complex_data_out, int n)
+{
+	fftwf_plan p;
+	fftwf_complex *in=(fftwf_complex *) complex_data_in;
+	fftwf_complex *out=(fftwf_complex *) complex_data_out;
+	int mrt = Util::MUTEX_LOCK(&fft_mutex);
+	p=fftwf_plan_dft_1d(n/2,in,out, FFTW_BACKWARD, FFTW_ESTIMATE);
 	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
 	fftwf_execute(p);
 	mrt = Util::MUTEX_LOCK(&fft_mutex);
@@ -302,7 +318,7 @@ int EMfft::complex_to_complex_nd(float *in, float *out, int nx,int ny,int nz)
 
 	switch(rank) {
 		case 1:
-			complex_to_complex_1d(in, out, nx);
+			complex_to_complex_1d_f(in, out, nx);
 			break;
 
 		case 2:

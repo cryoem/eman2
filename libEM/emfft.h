@@ -49,7 +49,8 @@ namespace EMAN
 	  public:
 		static int real_to_complex_1d(float *real_data, float *complex_data, int n);
 		static int complex_to_real_1d(float *complex_data, float *real_data, int n);
-		static int complex_to_complex_1d(float *in, float *out, int n); // ming add
+		static int complex_to_complex_1d_f(float *in, float *out, int n); // ming add
+		static int complex_to_complex_1d_b(float *in, float *out, int n); // ming add
 		static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny,
 									  int nz);
 		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
