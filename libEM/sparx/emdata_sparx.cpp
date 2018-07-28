@@ -4641,11 +4641,14 @@ EMData* EMData::ft2polar(int ring_length, int nb, int ne) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("ft2polar requires a 2-D image.");
 	EMData *cimage = NULL;
-	if ( is_complex() )  cimage = this;
+	if ( is_complex() )  ImageFormatException("ft2polar requires a real image.");
 	else {
 		cimage = this->copy();
+		cimage->set_attr("npad",1);
+		cimage->div_sinc(1);
 		cimage = cimage->norm_pad(false, 1);
 		cimage->do_fft_inplace();
+		cimage->center_origin_fft();
 	}
 
 	int nx = cimage->get_xsize();
@@ -4685,11 +4688,63 @@ EMData* EMData::ft2polar(int ring_length, int nb, int ne) {
 		}
 	}
 
-	if ( !is_complex() ) {
-		delete cimage;
-		cimage = 0;
-	}
+	delete cimage;
+	cimage = 0;
+
 	EXITFUNC;
+	return rings;
+}
+
+
+EMData* EMData::ft2polargrid(int ring_length, int nb, int ne, Util::KaiserBessel& kb) {
+	if (2 != get_ndim())
+		throw ImageDimensionException("ft2polargrid needs a 2-D image.");
+	if (!is_complex())
+		throw ImageFormatException("ft2polargrid requires a fourier image");
+	int nxreal = nx - 2 + int(is_fftodd());
+	if (nxreal != ny)
+		throw ImageDimensionException("ft2polargrid requires ny == nx(real)");
+	if (0 != nxreal%2)
+		throw ImageDimensionException("ft2polargrid needs an even image.");
+
+	if (!is_shuffled()) fft_shuffle();
+	set_array_offsets(0,-ny/2);
+
+	int nc = ny/2;
+	int lcirc = ne-nb+1;
+	if( ne > nc-2) throw InvalidValueException(ne, "Maximum radius too large.");
+	//printf("  dims   nx ny   %d   %d   %d   %d\n",nx,ny,ring_length,lcirc);
+
+	EMData* rings = new EMData(2*ring_length-2, lcirc, 1, false);
+	rings->set_fftpad(0);
+	float dfi;
+	dfi = TWOPI / ring_length;
+//	Table for sin & cos
+	vector<float> vsin(ring_length/2);
+	vector<float> vcos(ring_length/2);
+	for (int x = 0; x < ring_length/2; x++) {
+		float ang = static_cast<float>(x * dfi);
+		vsin[x] = sin(ang);
+		vcos[x] = cos(ang);
+		//printf("trigtab   %d      %f      %f  %f\n",x,ang,vsin[x],vcos[x]);
+	}
+
+	for (unsigned int inr = nb; inr <= ne; inr++) {
+		for (unsigned int it = 0; it < ring_length/2; it++) {
+			float nuxold = vsin[it] * 2*inr;
+			float nuyold = vcos[it] * 2*inr;
+		//if(it ==0 && inr==nb) {nuxold=0.0f; nuyold=0.0f;}
+			complex<float> v1 = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
+			rings->cmplx(it,inr-nb) = v1;
+			rings->cmplx(it+ring_length/2,inr-nb) = std::conj(v1);
+			//printf("   %d   %d       %f  %f      (%f , %f)\n",2*it,inr,nuxold,nuyold, std::real(v1), std::imag(v1));
+			
+		}
+	}
+
+	rings->update();
+	set_array_offsets();
+	fft_shuffle(); // reset input to an unshuffled complex image
 	return rings;
 }
 
@@ -4787,7 +4842,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	result->fft_shuffle(); // reset to an unshuffled result
 	result->update();
 	set_array_offsets();
-	fft_shuffle(); // reset to an unshuffled complex image
+	fft_shuffle(); // reset input to an unshuffled complex image
 	return result;
 }
 
@@ -5693,8 +5748,10 @@ void EMData::div_sinc(int interpolate_method) {
 	int nx = this->get_xsize();
 	int ny = this->get_ysize();
 	int nz = this->get_zsize();
-	if (nx != ny || ny != nz)
+	if (nz>1 && (nx != ny || ny != nz))
 		throw ImageDimensionException("div_sinc requires ny == nx == nz");
+	else if(nx != ny)
+		throw ImageDimensionException("div_sinc requires ny == nx");
 	int npad = this->get_attr("npad");
 	float cdf = M_PI/(nx);
 /*

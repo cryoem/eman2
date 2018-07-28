@@ -2161,7 +2161,7 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	float wsum = (wx[0]+wx[1]+wx[2]+wx[3]+wx[4]+wx[5]+wx[6])*(wy[0]+wy[1]+wy[2]+wy[3]+wy[4]+wy[5]+wy[6]);
 
 	complex<float> result(0.f,0.f);
-        if ((ixn >= 3) && (ixn <= nhalf-3) && (iyn >= -nhalf+3) && (iyn <= nhalf-4)) {
+	if ((ixn >= 3) && (ixn <= nhalf-3) && (iyn >= -nhalf+3) && (iyn <= nhalf-4)) {
 		// (xin,yin) not within window border from the edge
 		for (int iy = 0; iy < 7; iy++) {
 			int iyp = iyn + iy - 3 ;
