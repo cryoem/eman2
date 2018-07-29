@@ -627,15 +627,19 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void  fftc_q(float  *br, float  *bi, int ln, int ks);
 	static void  fftc_d(double *br, double *bi, int ln, int ks);
 
-	/** This function conducts the Single Precision Fourier Transform for a set of complex rings */
+	/** Single Precision Fourier Transform for a set of complex rings */
 	static EMData* FCrngs(EMData* rings);
-	/** This function conducts the Single Precision Fourier Transform for a set of rings */
+	
+	/** Single Precision Fourier product and sum of a set of complex rings followed by IFT */
+	static EMData* FCross(EMData* frobj, EMData* frings);
+
+	/** Single Precision Fourier Transform for a set of rings */
 	static void  Frngs(EMData* circ, vector<int> numr);
 
 	static float polar_norm2(EMData* ring, const vector<int>& numr);
 	static void  Normalize_ring(EMData* ring, const vector<int>& numr, int norm_by_square);
 
-	/** This function conducts the Single Precision Inverse Fourier Transform for a set of rings */
+	/** Single Precision Inverse Fourier Transform for a set of rings */
 	static void  Frngs_inv(EMData* circ, vector<int> numr);
 
 	/** This is a copy of Applyws routine from alignment.py */

@@ -3182,7 +3182,7 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 
 /*
 
-        A set of 1-D power-of-two FFTs
+    Two 1-D power-of-two FFTs
 	Pawel & Chao 01/20/06
 
 fftr_q(xcmplx,nv)
@@ -3199,8 +3199,6 @@ fftr_d(xcmplx,nv)
  dimension xcmplx(2,iabs(nv)/2);
  xcmplx(1,1) --- R(0), xcmplx(2,1) --- R(NV/2)
  xcmplx(1,i) --- real, xcmplx(2,i) --- imaginary
-
-
 
 */
 #define  tab1(i)      tab1[i-1]
@@ -3705,6 +3703,39 @@ EMData* Util::FCrngs(EMData* rings) {
 	return out;
 }
 
+
+EMData* Util::FCross(EMData* frobj, EMData* frings) {
+	int nx = frobj->get_xsize();
+	int nring = frobj->get_ysize();
+	EMData* occf = new EMData(nx-2,1,1);
+	float* ccf      = occf->get_data();
+	float* d_frobj  = frobj->get_data();
+	float* d_frings = frings->get_data();
+
+	for(unsigned int i=0; i<nx-2; ++i) ccf[i]=0.0f;
+
+	for(unsigned int j=0; j<nring; ++j) {
+		unsigned int offset = j*nx;
+		ccf[0] += d_frobj[offset+0]*d_frings[offset+0];
+		ccf[1] += d_frobj[offset+nx-2]*d_frings[offset+nx-2];
+		for(unsigned int i=2; i<nx-2; i+=2) {
+			ccf[i]   +=  d_frobj[offset+i]*d_frings[offset+i]   + d_frobj[offset+i+1]*d_frings[offset+i+1];
+			ccf[i+1] += -d_frobj[offset+i]*d_frings[offset+i+1] + d_frobj[offset+i+1]*d_frings[offset+i];
+		}
+	}
+#ifdef _WIN32
+	int l = -(int)( log((float)(nx-2))/log(2.0f) );
+#else
+	int l = -(int)(log2(nx-2));
+#endif	//_WIN32
+
+	fftr_q(ccf,l);
+
+	occf->update();
+	EXITFUNC;
+	return occf;
+}
+
 void Util::Frngs(EMData* circp, vector<int> numr){
 	int nring = numr.size()/3;
 	float *circ = circp->get_data();
@@ -3714,7 +3745,7 @@ void Util::Frngs(EMData* circp, vector<int> numr){
 #ifdef _WIN32
 		l = (int)( log((float)numr(3,i))/log(2.0f) );
 #else
-		l=(int)(log2(numr(3,i)));
+		l = (int)(log2(numr(3,i)));
 #endif	//_WIN32
 
 		fftr_q(&circ(numr(2,i)),l);
