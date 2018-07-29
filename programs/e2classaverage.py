@@ -83,7 +83,7 @@ def main():
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0)
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
 	parser.add_argument("--automask",action="store_true",help="Applies a 2-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
-	parser.add_argument("--center",type=str,default="xform.center",help="If the default centering algorithm (xform.center) doesn't work well, you can specify one of the others here (e2help.py processor center)")
+	parser.add_argument("--center",type=str,default="xform.center",help="If the default centering algorithm (xform.center) doesn't work well, you can specify one of the others here (e2help.py processor center), or the word 'nocenter' for no centering")
 	parser.add_argument("--bootstrap",action="store_true",help="Ignored. Present for historical reasons only.")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is normalize.edgemean. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
 	parser.add_argument("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual final class average")
@@ -114,7 +114,7 @@ def main():
 	if options.averager : options.averager=parsemodopt(options.averager)
 	if options.cmp : options.cmp=parsemodopt(options.cmp)
 	if options.normproc : options.normproc=parsemodopt(options.normproc)
-
+	if options.center.lower()[:5]=="nocen" : options.center=None
 	if options.resultmx!=None : options.storebad=True
 
 	if (options.verbose>0):
@@ -344,7 +344,7 @@ class ClassAvTask(JSTask):
 		try:
 			avg,ptcl_info=class_average([self.data["usefilt"][1]]+self.data["usefilt"][2],ref,options["niter"],options["normproc"],options["prefilt"],options["align"],
 				options["aligncmp"],options["ralign"],options["raligncmp"],options["averager"],options["scmp"],options["keep"],options["keepsig"],
-				options["automask"],options["saveali"],options["verbose"],callback)
+				options["automask"],options["saveali"],options["verbose"],callback,self.center)
 		except KeyboardInterrupt: return None
 		except SystemExit: return None
 		except:
@@ -364,7 +364,7 @@ class ClassAvTask(JSTask):
 			#ali=align_one(avg,ref,True,self.options["align"],self.options["aligncmp"],self.options["ralign"],self.options["raligncmp"])
 #			ali=align_one(avg,ref,True,("rotate_translate_flip_iterative",{}),("ccc",{}),("refine",{}),("ccc",{}))
 			# changed to this in 3/6/14 because it was causing class-averages done without flipping to sometimes become flipped. Also not sure if I trust the _iterative aligner
-			ali=align_one(avg,ref,True,("rotate_translate",{}),("ccc",{}),("refine",{}),("ccc",{}))
+			ali=align_one(avg,ref,True,("rotate_translate_bispec",{}),("ccc",{}),("refine",{}),("ccc",{}))
 			fxf=ali["xform.align2d"]
 			avg1=avg
 			if options["verbose"]>0 : print("Final realign:",fxf)
@@ -386,13 +386,13 @@ class ClassAvTask(JSTask):
 			#avg.process_inplace("normalize.circlemean")
 			#ali=avg.process("threshold.binary",{"value":avg["mean"]+avg["sigma"]*1.5})
 			#ali.process_inplace("xform.centerofmass",{"threshold":0.5})
-			if (self.center=="nocenter"):
+			if self.center==None:
 				fxf=Transform()
 			else:
 				ali=avg.process(self.center)
 				fxf=ali["xform.align2d"]
 				
-			if options["verbose"]>0 : print("Final center:",fxf.get_trans_2d())
+			if options["verbose"]>0 : print("Final center ({}): {}".format(self.center,fxf.get_trans_2d()))
 			avg1=avg
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,None,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
 		try:
@@ -514,7 +514,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 	returns (average,((cmp,xform,used),(cmp,xform,used),...))
 	"""
 
-	if verbose>2 : print("class_average(",images,ref,niter,normproc,prefilt,align,aligncmp,ralign,raligncmp,averager,scmp,keep,keepsig,automask,verbose,callback,")")
+	if verbose>2 : print("class_average(",images,ref,niter,normproc,prefilt,align,aligncmp,ralign,raligncmp,averager,scmp,keep,keepsig,automask,verbose,callback,center,")")
 
 	# nimg is the number of particles we have to align/average
 	if isinstance(images[0],EMData) : nimg=len(images)
@@ -562,7 +562,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 			#ref2.process_inplace("xform.centerofmass",{"threshold":0.5})						# TODO: should probably check how well this works
 			#fxf=ref2["xform.align2d"]
 			#ref.translate(fxf.get_trans())
-			ref.process_inplace(center)
+			if center!=None : ref.process_inplace(center)
 			ref.process_inplace("normalize.circlemean",{"radius":old_div(ref["nx"],2)-gmw})
 			ref.process_inplace("mask.gaussian",{"inner_radius":old_div(ref["nx"],2)-gmw,"outer_radius":old_div(gmw,1.3)})
 			ref_orient=None
