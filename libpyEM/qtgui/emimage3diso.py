@@ -394,7 +394,7 @@ class EMIsoInspector(QtGui.QWidget):
 			hblbrowse.addWidget(self.mrc_browse)
 			self.vbl.addLayout(hblbrowse)
 
-			self.mrc_text.textEdited[QString].connect(self.on_mrc_text_change) #added by Muthu
+			self.mrc_text.textEdited[str].connect(self.on_mrc_text_change) #added by Muthu
 			self.mrc_browse.clicked[bool].connect(self.on_mrc_browse) # added by Muthu
 
 		self.hbl = QtGui.QHBoxLayout()
@@ -443,7 +443,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.thr.valueChanged.connect(self.on_threshold_slider)
 		self.contrast.valueChanged.connect(target.set_contrast)
 		self.bright.valueChanged.connect(target.set_brightness)
-		self.cbb.currentIndexChanged[QString].connect(self.set_material)
+		self.cbb.currentIndexChanged[str].connect(self.set_material)
 		self.smp.valueChanged[int].connect(target.set_sample)
 		self.wiretog.toggled[bool].connect(target.toggle_wire)
 		self.lighttog.toggled[bool].connect(target.toggle_light)
@@ -508,7 +508,7 @@ class EMIsoInspector(QtGui.QWidget):
 		custom["shininess"] = self.shininess.getValue()
 		self.target().colors["custom"] = custom
 
-		n = self.cbb.findText(QtCore.QString("custom"))
+		n = self.cbb.findText(str("custom"))
 		if n < 0: return
 		self.cbb.setCurrentIndex(n)
 		self.target().updateGL()

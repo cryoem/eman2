@@ -1465,13 +1465,13 @@ class SparseSymChoicesWidgets(object):
 			self.hbl_sym.addWidget(self.mirror_checkbox)
 			self.mirror_checkbox.setChecked(self.target().mirror_enabled())
 			
-		self.sym_combo.currentIndexChanged[QString].connect(self.sym_changed)
+		self.sym_combo.currentIndexChanged[str].connect(self.sym_changed)
 		self.sym_text.editingFinished.connect(self.sym_number_changed)
 
 		if enable_orient_gen:
 			self.prop_text.editingFinished.connect(self.prop_changed)
-			self.angle_label.currentIndexChanged[QString].connect(self.angle_label_changed)
-			self.strategy_label.currentIndexChanged[QString].connect(self.strategy_changed)
+			self.angle_label.currentIndexChanged[str].connect(self.angle_label_changed)
+			self.strategy_label.currentIndexChanged[str].connect(self.strategy_changed)
 		self.mirror_checkbox.stateChanged[int].connect(self.set_mirror)
 	
 		vbl.addWidget(maintab)

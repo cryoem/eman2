@@ -3061,12 +3061,12 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtoolhbl = QtGui.QHBoxLayout()
 		self.wtoolhbl.setContentsMargins(0, 0, 0, 0)
 
-		self.wbutback = QtGui.QPushButton(QString(QChar(0x2190)))
+		self.wbutback = QtGui.QPushButton(str(QChar(0x2190)))
 		self.wbutback.setMaximumWidth(36)
 		self.wbutback.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutback, 0)
 
-		self.wbutfwd = QtGui.QPushButton(QString(QChar(0x2192)))
+		self.wbutfwd = QtGui.QPushButton(str(QChar(0x2192)))
 		self.wbutfwd.setMaximumWidth(36)
 		self.wbutfwd.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutfwd, 0)
@@ -3093,11 +3093,11 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtoolhbl2 = QtGui.QHBoxLayout()
 		self.wtoolhbl2.setContentsMargins(0, 0, 0, 0)
 
-		self.wbutup = QtGui.QPushButton(QString(QChar(0x2191)))
+		self.wbutup = QtGui.QPushButton(str(QChar(0x2191)))
 		self.wbutup.setMaximumWidth(36)
 		self.wtoolhbl2.addWidget(self.wbutup, 0)
 
-		self.wbutrefresh = QtGui.QPushButton(QString(QChar(0x21ba)))
+		self.wbutrefresh = QtGui.QPushButton(str(QChar(0x21ba)))
 		self.wbutrefresh.setMaximumWidth(36)
 		self.wtoolhbl2.addWidget(self.wbutrefresh, 0)
 

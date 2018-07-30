@@ -2250,7 +2250,7 @@ class Boxable(object):
 		
 		self.process = QtCore.QProcess()
 
-		program = QtCore.QString("e2refine2d.py")
+		program = str("e2refine2d.py")
 		args = QtCore.QStringList()
 		args.append("--input="+tmpimage)
 		args.append("--ncls=25")

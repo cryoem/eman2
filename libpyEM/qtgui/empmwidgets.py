@@ -62,7 +62,7 @@ class PMComboBox(QtGui.QComboBox):
 
 class PMBaseWidget(QtGui.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
-	pmmessage = QtCore.pyqtSignal(QString)
+	pmmessage = QtCore.pyqtSignal(str)
 
 	def __init__(self, name, mode="",returnNone=False):
 		QtGui.QWidget.__init__(self)
@@ -385,7 +385,7 @@ class PMBoolWidget(PMBaseWidget):
 
 class PMFileNameWidget(PMBaseWidget):
 	""" A Widget for geting filenames. Type is checked """
-	pmfilename = QtCore.pyqtSignal(QString)
+	pmfilename = QtCore.pyqtSignal(str)
 	@staticmethod
 	def copyWidget(widget):
 		""" Basically a copy constructor to get around QT and python limitations """
@@ -525,7 +525,7 @@ class PMDirectoryWidget(PMBaseWidget):
 		gridbox.addWidget(self.combobox, 0, 1)
 		self.setLayout(gridbox)
 
-		self.combobox.activated[QString].connect(self.setValue)
+		self.combobox.activated[str].connect(self.setValue)
 
 		self.setValue(default)
 
@@ -575,7 +575,7 @@ class PMComboWidget(PMBaseWidget):
 		for choice in self.choices:
 			self.combobox.addItem(str(choice))
 
-		self.combobox.activated[QString].connect(self.setValue)
+		self.combobox.activated[str].connect(self.setValue)
 
 		self.setValue(default)
 
@@ -627,7 +627,7 @@ class PMComboParamsWidget(PMBaseWidget):
 			self.combobox.addItem(str(choice))
 		self.combobox.addItem('None')
 
-		self.combobox.activated[QString].connect(self.setValue)
+		self.combobox.activated[str].connect(self.setValue)
 
 		self.setValue(default)
 
@@ -687,7 +687,7 @@ class PMSymWidget(PMBaseWidget):
 
 		for i in ['icos','oct','tet','c','d','h']: self.combobox.addItem(i)
 
-		self.symnumbox.pmmessage[QString].connect(self._on_message)
+		self.symnumbox.pmmessage[str].connect(self._on_message)
 
 		self.setValue(default)
 
@@ -756,11 +756,11 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		self.setLayout(gridbox)
 
 		self.automask3dbool.stateChanged[int].connect(self._on_boolchanged)
-		self.params[0].pmmessage[QString].connect(self._on_message)
-		self.params[1].pmmessage[QString].connect(self._on_message)
-		self.params[2].pmmessage[QString].connect(self._on_message)
-		self.params[3].pmmessage[QString].connect(self._on_message)
-		self.params[4].pmmessage[QString].connect(self._on_message)
+		self.params[0].pmmessage[str].connect(self._on_message)
+		self.params[1].pmmessage[str].connect(self._on_message)
+		self.params[2].pmmessage[str].connect(self._on_message)
+		self.params[3].pmmessage[str].connect(self._on_message)
+		self.params[4].pmmessage[str].connect(self._on_message)
 
 		self.setValue(default)
 
@@ -828,7 +828,7 @@ class PMTableBase(PMBaseWidget):
 
 class PMFSCTableWidget(PMTableBase):
 	""" A widget for generating FSC tables"""
-	pmmessage = QtCore.pyqtSignal(QString)
+	pmmessage = QtCore.pyqtSignal(str)
 
 	@staticmethod
 	def copyWidget(widget):

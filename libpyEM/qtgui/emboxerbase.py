@@ -2408,7 +2408,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.vbl.addWidget(self.status_bar)
 		self.status_bar.showMessage("Ready",10000)
 
-		self.status_bar.messageChanged[QString].connect(self.on_status_msg_change)
+		self.status_bar.messageChanged[str].connect(self.on_status_msg_change)
 		self.done_but.clicked[bool].connect(self.on_done)
 		self.gen_output_but.clicked[bool].connect(self.write_output_clicked)
 		self.busy = False
@@ -2487,7 +2487,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		if self.target().has_thumbs():
 			self.viewthumbs.clicked[bool].connect(self.view_thumbs_clicked)
 
-		self.boxformats.currentIndexChanged[QString].connect(self.box_format_changed)
+		self.boxformats.currentIndexChanged[str].connect(self.box_format_changed)
 
 		return widget
 	def view_particles_clicked(self,val):
@@ -2569,7 +2569,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		hbl_q.addWidget(self.image_qualities)
 		layout.addLayout(hbl_q)
 
-		self.image_qualities.currentIndexChanged[QString].connect(self.image_quality_changed)
+		self.image_qualities.currentIndexChanged[str].connect(self.image_quality_changed)
 
 	def image_quality_changed(self,val):
 		if self.busy: return

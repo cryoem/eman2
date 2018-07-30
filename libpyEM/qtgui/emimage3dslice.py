@@ -485,7 +485,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 		self.slice.valueChanged.connect(target.set_slice)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
-		self.axisCombo.currentIndexChanged[QString].connect(target.setAxis)
+		self.axisCombo.currentIndexChanged[str].connect(target.setAxis)
 		self.cubetog.toggled[bool].connect(target.toggle_cube)
 		self.defaults.clicked[bool].connect(self.set_defaults)
 		self.contrast.valueChanged.connect(self.on_contrast_changed)

@@ -1222,7 +1222,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		self.textModeBox.currentIndexChanged.connect(self.on3DTextModeChanged)
 		self.fontDepth.valueChanged[int].connect(self.on3DTextDepthChanged)
 		self.fontSize.valueChanged[int].connect(self.on3DTextFontChanged)
-		self.text3d.textChanged[QtCore.QString].connect(self.on3DTextChanged)
+		self.text3d.textChanged[str].connect(self.on3DTextChanged)
 		
 	def on3DTextModeChanged(self):
 		textMode = str(self.textModeBox.currentText())

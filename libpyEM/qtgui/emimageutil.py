@@ -106,7 +106,7 @@ class EMTransformPanel(object):
 		self.az.valueChanged.connect(self.slider_rotate)
 		self.alt.valueChanged.connect(self.slider_rotate)
 		self.phi.valueChanged.connect(self.slider_rotate)
-		self.src.currentIndexChanged[QString].connect(self.set_src)
+		self.src.currentIndexChanged[str].connect(self.set_src)
 		self.scale.valueChanged.connect(self.target().set_scale)
 		self.x_trans.valueChanged[float].connect(self.target().set_cam_x)
 		self.y_trans.valueChanged[float].connect(self.target().set_cam_y)

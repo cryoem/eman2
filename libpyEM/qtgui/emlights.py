@@ -1356,7 +1356,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.n3_showing = False
 		self.quiet = False
 
-		self.cbb.currentIndexChanged[QString].connect(target.setColor)
+		self.cbb.currentIndexChanged[str].connect(target.setColor)
 		self.wiretog.toggled[bool].connect(target.toggle_wire)
 		self.lighttog.toggled[bool].connect(target.toggle_light)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
