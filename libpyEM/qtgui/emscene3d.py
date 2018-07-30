@@ -3012,7 +3012,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
 	def __init__(self, qstring, item3d, parentnode):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
-		self.name = qstring.join('')
+		self.name = ''.join(qstring)
 		self.item3d = weakref.ref(item3d)
 		if parentnode: self.parent = weakref.ref(parentnode)
 		else: self.parent = None
