@@ -598,7 +598,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		recursive helper function for loadTree
 		"""
 		for child in toplevel["CHILDREN"]:
-			qtreewidget = PMQTreeWidgetItem(QtCore.QStringList(child["NAME"]))
+			qtreewidget = PMQTreeWidgetItem([child["NAME"]])
 			qtreewidget.setIcon(0, self.icons[child["ICON"]])
 			# optional program
 			if "PROGRAM" in child: qtreewidget.setProgram(child["PROGRAM"])
@@ -639,7 +639,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		QTree.setHeaderLabel(treename)
 
 		for toplevel in tree:
-			qtreewidget = PMQTreeWidgetItem(QtCore.QStringList(toplevel["NAME"]))
+			qtreewidget = PMQTreeWidgetItem([toplevel["NAME"]])
 			qtreewidget.setIcon(0, self.icons[toplevel["ICON"]])
 			# optional program
 			if "PROGRAM" in toplevel: qtreewidget.setProgram(toplevel["PROGRAM"])

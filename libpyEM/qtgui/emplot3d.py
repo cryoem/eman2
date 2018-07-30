@@ -1182,14 +1182,14 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 				self.table.setItem( j, i, QtGui.QTableWidgetItem(item) )
 
 	def replaceRowLabels(self,rows):
-		self.table.setVerticalHeaderLabels(QtCore.QStringList(rows))
+		self.table.setVerticalHeaderLabels(list(rows))
 
 	def replaceColumnLabels(self,cols):
-		self.table.setHorizontalHeaderLabels(QtCore.QStringList(cols))
+		self.table.setHorizontalHeaderLabels(list(cols))
 
 	def replaceTableLabels(self,cols):
-		self.table.setHorizontalHeaderLabels(QtCore.QStringList(cols))
-		self.table.setVerticalHeaderLabels(QtCore.QStringList(cols))
+		self.table.setHorizontalHeaderLabels(list(cols))
+		self.table.setVerticalHeaderLabels(list(cols))
 
 class EMPlot3DRegrInsp(QtGui.QWidget):
 	"""This class implements the regression pop-up from the EMPlot3DInspector"""

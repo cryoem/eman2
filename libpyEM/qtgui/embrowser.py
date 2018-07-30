@@ -2419,19 +2419,19 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
-				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(trg[k])))))
+				itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
 				if isinstance(trg[k], list) or isinstance(trg[k], tuple) or isinstance(trg[k], set) or isinstance(trg[k], dict) :
 					self.addTreeItem(trg[k], itms[-1])
 		elif isinstance(trg, list) or isinstance(trg, tuple) or isinstance(trg, set) :
 			for k in trg :
 				if isinstance(k, list) or isinstance(k, tuple) or isinstance(k, set) or isinstance(k, dict) :
-					try : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((k.__class__.__name__, ""))))
-					except : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("??", ""))))
+					try : itms.append(QtGui.QTreeWidgetItem(list((k.__class__.__name__, ""))))
+					except : itms.append(QtGui.QTreeWidgetItem(list(("??", ""))))
 					self.addTreeItem(k, itms[-1])
 				else :
-					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ""))))
+					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg), ""))))
+			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -2585,34 +2585,34 @@ class EMJSONInfoPane(EMInfoPane) :
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
 				if isinstance(trg[k], (list, tuple, set, dict, EMAN2Ctf)) :
-					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ""))))
+					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
 					self.addTreeItem(trg[k], itms[-1])
-				else : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(trg[k])))))
+				else : itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
 		elif isinstance(trg, (list, tuple, set)) :
 			if isinstance(trg, set) : trg = sorted(trg)		# make a list temporarily
 			if len(trg) > 120 : vals = list(range(0, 50))+[-1]+list(range(len(trg)-50, len(trg)))
 			else : vals = list(range(len(trg)))
 			for k in vals :
-				if k == -1 : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("...", "..."))))
+				if k == -1 : itms.append(QtGui.QTreeWidgetItem(list(("...", "..."))))
 				else :
 					v = trg[k]
 					if isinstance(v, (list, tuple, set, dict, EMAN2Ctf)) :
-						itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ""))))
+						itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
 						self.addTreeItem(v, itms[-1])
-					else : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(v)))))
+					else : itms.append(QtGui.QTreeWidgetItem(list((str(k), str(v)))))
 		elif isinstance(trg, EMAN2Ctf) :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("EMAN2Ctf", ""))))
+			itms.append(QtGui.QTreeWidgetItem(list(("EMAN2Ctf", ""))))
 			subitms = []
 			for k, v in list(trg.to_dict().items()) :
 				if isinstance(v, (list, tuple)) :
 					v = ["%1.3g"%i for i in v]
-					subitms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ", ".join(v)))))
-				else : subitms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(v)))))
+					subitms.append(QtGui.QTreeWidgetItem(list((str(k), ", ".join(v)))))
+				else : subitms.append(QtGui.QTreeWidgetItem(list((str(k), str(v)))))
 			itms[-1].addChildren(subitms)
 		elif isinstance(trg, EMData) :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("EMData", ""))))
+			itms.append(QtGui.QTreeWidgetItem(list(("EMData", ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg), ""))))
+			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -2666,19 +2666,19 @@ class EMImageInfoPane(EMInfoPane) :
 
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
-				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(trg[k])))))
+				itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
 				if isinstance(trg[k], list) or isinstance(trg[k], tuple) or isinstance(trg[k], set) or isinstance(trg[k], dict) :
 					self.addTreeItem(trg[k], itms[-1])
 		elif isinstance(trg, list) or isinstance(trg, tuple) or isinstance(trg, set) :
 			for k in trg :
 				if isinstance(k, list) or isinstance(k, tuple) or isinstance(k, set) or isinstance(k, dict) :
-					try : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((k.__class__.__name__, ""))))
-					except : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("??", ""))))
+					try : itms.append(QtGui.QTreeWidgetItem(list((k.__class__.__name__, ""))))
+					except : itms.append(QtGui.QTreeWidgetItem(list(("??", ""))))
 					self.addTreeItem(k, itms[-1])
 				else :
-					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ""))))
+					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg), ""))))
+			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -2892,19 +2892,19 @@ class EMStackInfoPane(EMInfoPane) :
 
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
-				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(trg[k])))))
+				itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
 				if isinstance(trg[k], list) or isinstance(trg[k], tuple) or isinstance(trg[k], set) or isinstance(trg[k], dict) :
 					self.addTreeItem(trg[k], itms[-1])
 		elif isinstance(trg, list) or isinstance(trg, tuple) or isinstance(trg, set) :
 			for k in trg :
 				if isinstance(k, list) or isinstance(k, tuple) or isinstance(k, set) or isinstance(k, dict) :
-					try : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((k.__class__.__name__, ""))))
-					except : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("??", ""))))
+					try : itms.append(QtGui.QTreeWidgetItem(list((k.__class__.__name__, ""))))
+					except : itms.append(QtGui.QTreeWidgetItem(list(("??", ""))))
 					self.addTreeItem(k, itms[-1])
 				else :
-					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ""))))
+					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg), ""))))
+			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
