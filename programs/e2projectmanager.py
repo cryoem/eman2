@@ -1938,8 +1938,8 @@ class PMGUIWidget(QtGui.QScrollArea):
 				errormsg += (widget.getErrorMessage()+"<br>")
 		return errormsg
 
-	def _on_message(self, QString):
-		self.pm().statusbar.setMessage(str(QString),"color:red;")
+	def _on_message(self, s):
+		self.pm().statusbar.setMessage(str(s),"color:red;")
 
 class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
