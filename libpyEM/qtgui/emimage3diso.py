@@ -37,7 +37,7 @@ from __future__ import division
 
 from past.utils import old_div
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt, QString
+from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *

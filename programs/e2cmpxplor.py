@@ -39,7 +39,6 @@ from eman2_gui.emimage3dsym import EM3DSymModel,EMSymInspector
 import os,sys
 from EMAN2 import *
 from PyQt4 import QtGui,QtCore
-from PyQt4.QtCore import QString
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emglobjects import EM3DGLWidget
 

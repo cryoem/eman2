@@ -40,7 +40,7 @@ from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui,QtCore
-from PyQt4.QtCore import Qt, QString,QEvent
+from PyQt4.QtCore import Qt, QEvent
 from PyQt4.QtGui import QListWidgetItem
 from eman2_gui.emanimationutil import OrientationListAnimation,Animator
 from eman2_gui.emapplication import EMApp, get_application, error

@@ -60,7 +60,6 @@ from EMAN2 import *
 
 import os,sys,weakref,math, json
 from PyQt4 import QtCore
-from PyQt4.QtCore import QString
 
 
 TEMPLATE_MIN = 30
