@@ -97,12 +97,13 @@ def procthread(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,t
 		
 		if isnan(fy[0]): print("NAN",x,y,z)
 
+		cutoff=options.cutoff
 		# 0.143 resolution
-		if fy[0]<0.143 and fy[1]<0.143 : si,xx,res143=1,fx[1],fx[1]
+		if fy[0]<cutoff and fy[1]<cutoff : si,xx,res143=1,fx[1],fx[1]
 		else:
 			for si,xx in enumerate(fx[:-1]):
-				if fy[si]>0.143 and fy[si+1]<0.143 : break
-			res143=(0.143-fy[si])*(fx[si+1]-fx[si])/(fy[si+1]-fy[si])+fx[si]
+				if fy[si]>cutoff and fy[si+1]<cutoff : break
+			res143=(cutoff-fy[si])*(fx[si+1]-fx[si])/(fy[si+1]-fy[si])+fx[si]
 		if res143<0 : res143=0.0
 		if res143>fx[-1]: 
 			res143=fx[-1]		# This makes the resolution at Nyquist, which is not a good thing
@@ -143,6 +144,7 @@ and this program should be regarded as experimental.
 	parser.add_argument("--localsize", type=int, help="Size in pixels of the local region to compute the resolution in",default=-1)
 	parser.add_argument("--overlap", type=int, help="Amount of oversampling to use in local resolution windows. Larger value -> larger output map",default=4)
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
+	parser.add_argument("--cutoff", type=float, help="fsc cutoff. default is 0.143",default=0.143)
 	parser.add_argument("--mask",type=str,help="Mask to apply to both input images before calculation",default=None)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
