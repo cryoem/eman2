@@ -72,7 +72,8 @@ using std::complex;
 
 
 #define    QUADPI      		    3.141592653589793238462643383279502884197
-#define    PI2                      2*QUADPI
+#define    PI2                  QUADPI/2.0
+#define    TWOPI                2*QUADPI
 
 #define deg_rad  QUADPI/180.0
 #define rad_deg  180.0/QUADPI
@@ -1129,6 +1130,7 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 
 
 	quadri = f0 + dx0 * (c1 + dxb * c2 + dy0 * c5) + dy0 * (c3 + dyb * c4);
+//printf("quadri  %f  %f ||  %d  %d   ||  %f   %f \n",xx,yy,i,j,f0,quadri);
 
 	return quadri;
 }
@@ -2159,7 +2161,7 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 	float wsum = (wx[0]+wx[1]+wx[2]+wx[3]+wx[4]+wx[5]+wx[6])*(wy[0]+wy[1]+wy[2]+wy[3]+wy[4]+wy[5]+wy[6]);
 
 	complex<float> result(0.f,0.f);
-        if ((ixn >= 3) && (ixn <= nhalf-3) && (iyn >= -nhalf+3) && (iyn <= nhalf-4)) {
+	if ((ixn >= 3) && (ixn <= nhalf-3) && (iyn >= -nhalf+3) && (iyn <= nhalf-4)) {
 		// (xin,yin) not within window border from the edge
 		for (int iy = 0; iy < 7; iy++) {
 			int iyp = iyn + iy - 3 ;
@@ -2583,7 +2585,7 @@ void Util::alrq(float *xim,  int nsam , int nrow , int *numr,
 c
 c  purpose:
 c
-c  resmaple to polar coordinates
+c  resample to polar coordinates
 c
 */
 	//  dimension	      xim(nsam,nrow),circ(lcirc)
@@ -2627,6 +2629,7 @@ c
 			fi		 = static_cast<float>(dfi*j);
 			x		 = sin(fi)*yq;
 			y		 = cos(fi)*yq;
+//printf(" sampling points A  %d  %d    %f    %f    %f    %f    %f    %f    %f\n",lt,nsim,dfi,fi,sin(fi),cos(fi),yq,x,y);
 			xold		 = x;
 			yold		 = y;
 			circ(j+kcirc)	 = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
@@ -2920,14 +2923,14 @@ EMData* Util::Polar2DFT(EMData* image, int ring_length, int nb, int ne)  {
 	out->set_size(2*ring_length, lcirc); // ring_length complex numbers, or 2*ring_length real ones
 
 	float dfi;
-	dfi = PI2 / ring_length;
+	dfi = TWOPI / ring_length;
 //	Table for sin & cos
 	vector<float> vsin(ring_length/2);
 	vector<float> vcos(ring_length/2);
 	for (int x = 0; x < ring_length/2; x++) {
 		float ang = static_cast<float>(x * dfi);
 		vsin[x] = sin(ang);
-		vcos[x] = cos(ang+QUADPI);
+		vcos[x] = cos(ang);
 		//printf("trigtab   %d      %f  %f\n",x,vsin[x],vcos[x]);
 	}
 
@@ -3179,7 +3182,7 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 
 /*
 
-        A set of 1-D power-of-two FFTs
+    Two 1-D power-of-two FFTs
 	Pawel & Chao 01/20/06
 
 fftr_q(xcmplx,nv)
@@ -3196,8 +3199,6 @@ fftr_d(xcmplx,nv)
  dimension xcmplx(2,iabs(nv)/2);
  xcmplx(1,1) --- R(0), xcmplx(2,1) --- R(NV/2)
  xcmplx(1,i) --- real, xcmplx(2,i) --- imaginary
-
-
 
 */
 #define  tab1(i)      tab1[i-1]
@@ -3678,7 +3679,6 @@ void  Util::fftr_d(double *xcmplx, int nv)
 #undef  br
 #undef  bi
 
-
 EMData* Util::FCrngs(EMData* rings) {
 	// We implicitly assume ring length are even.
 	int ring_length = rings->get_xsize();
@@ -3693,7 +3693,7 @@ EMData* Util::FCrngs(EMData* rings) {
 	float* temp = (float *)malloc(ring_length*sizeof(float));
 
 	for(unsigned int i=0; i<nring; i++)  {
-		EMfft::complex_to_complex_1d(&circ[i*ring_length],temp,ring_length);
+		EMfft::complex_to_complex_1d_f(&circ[i*ring_length],temp,ring_length);
 		for(unsigned int j=0; j<unique_length; ++j)  dout[i*unique_length + j] = temp[j];
 	}
 
@@ -3701,6 +3701,39 @@ EMData* Util::FCrngs(EMData* rings) {
 	out->update();
 	EXITFUNC;
 	return out;
+}
+
+
+EMData* Util::FCross(EMData* frobj, EMData* frings) {
+	int nx = frobj->get_xsize();
+	int nring = frobj->get_ysize();
+	EMData* occf = new EMData(nx-2,1,1);
+	float* ccf      = occf->get_data();
+	float* d_frobj  = frobj->get_data();
+	float* d_frings = frings->get_data();
+
+	for(unsigned int i=0; i<nx-2; ++i) ccf[i]=0.0f;
+
+	for(unsigned int j=0; j<nring; ++j) {
+		unsigned int offset = j*nx;
+		ccf[0] += d_frobj[offset+0]*d_frings[offset+0];
+		ccf[1] += d_frobj[offset+nx-2]*d_frings[offset+nx-2];
+		for(unsigned int i=2; i<nx-2; i+=2) {
+			ccf[i]   +=  d_frobj[offset+i]*d_frings[offset+i]   + d_frobj[offset+i+1]*d_frings[offset+i+1];
+			ccf[i+1] += -d_frobj[offset+i]*d_frings[offset+i+1] + d_frobj[offset+i+1]*d_frings[offset+i];
+		}
+	}
+#ifdef _WIN32
+	int l = -(int)( log((float)(nx-2))/log(2.0f) );
+#else
+	int l = -(int)(log2(nx-2));
+#endif	//_WIN32
+
+	fftr_q(ccf,l);
+
+	occf->update();
+	EXITFUNC;
+	return occf;
 }
 
 void Util::Frngs(EMData* circp, vector<int> numr){
@@ -3712,7 +3745,7 @@ void Util::Frngs(EMData* circp, vector<int> numr){
 #ifdef _WIN32
 		l = (int)( log((float)numr(3,i))/log(2.0f) );
 #else
-		l=(int)(log2(numr(3,i)));
+		l = (int)(log2(numr(3,i)));
 #endif	//_WIN32
 
 		fftr_q(&circ(numr(2,i)),l);
@@ -6720,7 +6753,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 		}
 	} else {
 		cout<<"warning in Util.cml_weights"<<endl;
-		double val = PI2/float(nline);
+		double val = TWOPI/float(nline);
 		for(int i=0; i<nline; i++)  weights[i]=val;
 	}
 
@@ -24620,7 +24653,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
- cout <<"  Branch fix-sparx  Source modification date: 06/20/2018  12:34 PM " <<  endl;
+	cout <<"   Source modification date: 07/26/2018  7:26 PM " <<  endl;
 }
 
 

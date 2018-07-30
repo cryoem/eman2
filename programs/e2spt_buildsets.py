@@ -2,6 +2,7 @@
 
 # Muyuan Chen 2018-07
 from __future__ import print_function
+from __future__ import division
 from EMAN2 import *
 import numpy as np
 

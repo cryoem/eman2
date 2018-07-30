@@ -5906,7 +5906,8 @@ def calculate_space_size(x_half_size, y_half_size, psi_half_size):
 
 def convert_json_fromunicode(data):
 	import  collections
-	if isinstance(data, str):
+	import six
+	if isinstance(data, six.string_types):
 		return str(data)
 	elif isinstance(data, collections.Mapping):
 		return dict(list(map(convert_json_fromunicode, iter(list(data.items())))))

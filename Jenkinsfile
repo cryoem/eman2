@@ -16,7 +16,10 @@ def notifyGitHub(status) {
         if(status == 'SUCCESS') { message = 'Build succeeded!' }
         if(status == 'FAILURE') { message = 'Build failed!' }
         if(status == 'ERROR')   { message = 'Build aborted!' }
-        step([$class: 'GitHubCommitStatusSetter', contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
+        step([$class: 'GitHubCommitStatusSetter', 
+              contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "JenkinsCI/${JOB_NAME}"], 
+              statusResultSource: [$class: 'ConditionalStatusResultSource', 
+                                   results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
     }
 }
 

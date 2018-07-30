@@ -129,7 +129,7 @@ handled this way."""
 	
 	# Memory usage warning >2G raw data
 	n=(step[2]-step[0])//step[1]
-	nval=mask["square_sum"]
+	nval=int(mask["square_sum"])
 #	print(args[0],n,nval)
 	if options.verbose or n*nval>500000000: print("Estimated memory usage (mb): ",n*nval*4/2**20)
 	

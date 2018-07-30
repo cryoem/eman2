@@ -2,16 +2,19 @@
 
 future_imports=( 
                 print_function
+                division
                )
 
-py_files=$( find . -not -empty -name '*.py' )
+py_files=$( find . -path ./sparx -prune -o -not -empty -name '*.py' )
 
 failed_cases=()
 for f in ${py_files[@]};do
     for imp in ${future_imports[@]};do
-        if ! grep -q "from __future__ import ${imp}" ${f};then
-            failed_cases+=("$f")
-            echo "  ${f} is missing \"from __future__ import ${imp}"\"
+        if [ $f != "./sparx" ];then
+            if ! grep -q "from __future__ import ${imp}" ${f};then
+                failed_cases+=("$f")
+                echo "  ${f} is missing \"from __future__ import ${imp}"\"
+            fi
         fi
     done
 done

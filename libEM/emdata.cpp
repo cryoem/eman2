@@ -1732,6 +1732,7 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 			}
 			mn/=(float)nx;						//mean
 			sg=std::sqrt(sg/(float)nx-mn*mn);	//sigma
+			if (sg==0) sg=1.0;
 			
 			for (int x=0; x<nx; x++) rd[x+y*nx]=(rd[x+y*nx]-mn)/sg;
 		}

@@ -979,12 +979,42 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
 	return image1
 
+
+def ft2polargrid(image, ring_length, nb, ne):
+	"""
+		resample to polar coordinates using gridding in Fourier space.
+	"""
+	from EMAN2 import Processor
+	from fundamentals import fftip, fft
+
+	nx = image.get_xsize()
+	# prepare 
+	npad = 2
+	N = nx*npad
+	K = 6
+	alpha = 1.75
+	r = nx/2
+	v = K/2.0/N
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+
+	image1 = image.copy()  # This step is needed, otherwise image will be changed outside the function
+	# divide out gridding weights
+	image1.divkbsinh(kb)
+	# pad and center image, then FFT
+	image1 = image1.norm_pad(False, npad)
+	fftip(image1)
+	# Put the origin of the (real-space) image at the center
+	image1.center_origin_fft()
+	return image1.ft2polargrid(ring_length, nb, ne, kb)
+
+
 def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, interpolation_method = None, mode = "background"):
 	"""
-		rotate/shift image using:
+		rotate/shift image using (interpolation_method):
 		1. linear    interpolation
 		2. quadratic interpolation
 		3. gridding
+		4. ftgridding
 		mode specifies what will be put in corners, should they stick out:
 		background - leave original values
 		cyclic - use pixels from the image using wrap-around transformation
