@@ -46,16 +46,18 @@ def which(program):
 	def is_exe(fpath) :
 		return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 	for path in os.environ["PATH"].split(os.pathsep):
-		for f in os.listdir(path):
-			if program in f:
-				exe_file = os.path.join(path, f)
-				if is_exe(exe_file): found.append(exe_file)
+		if os.path.isdir(path):
+			for f in os.listdir(path):
+				if program in f:
+					exe_file = os.path.join(path, f)
+					if is_exe(exe_file): found.append(exe_file)
 	if len(found) == 0: return None
 	if len(found) == 1: return found[0]
 	else:
 		for f in found:
 			if program == "alignframes" and "IMOD" in f:
 				return f
+			else: return found[0]
 
 def main():
 
@@ -103,9 +105,9 @@ def main():
 	parser.add_argument("--last",  default = None, type=int, help="The index of the last frame to include in alignment.", guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
 	parser.add_argument("--mc2_patchX",  default = None, type=int, help="Use this many patches along X with MotionCor2. Default is 1, i.e. whole-frame alignment.",guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
-	parser.add_argument("--mc2_patchY",  default = None, type=int, help="Use this many patches along Y with MotionCor2. Default is 1, i.e. whole-frame alignment.",guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
+	parser.add_argument("--mc2_patchY",  default = None, type=int, help="Use this many patches along Y with MotionCor2. Default is 1, i.e. whole-frame alignment.",guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--tomo", default=False, action="store_true", help="If checked, aligned frames will be placed in a tiltseries located in the 'tiltseries' directory. Otherwise, aligned sums will populate the 'micrographs' directory.",guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="tomo[True]")
+	parser.add_argument("--tomo", default=False, action="store_true", help="If checked, aligned frames will be placed in a tiltseries located in the 'tiltseries' directory. Otherwise, aligned sums will populate the 'micrographs' directory.",guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode="tomo[True]")
 
 	parser.add_argument("--tiltseries_name",  default = "", type=str, help="Specify the name of the output tiltseries. A .mrc extension will be appended to the filename provided.",guitype='strbox', row=12, col=0, rowspan=1, colspan=2, mode="tomo")
 
@@ -164,7 +166,7 @@ def main():
 		program = which("MotionCor2") #distutils.spawn.find_executable("MotionCor2")
 		
 	if program == None:
-		print("Could not locate '{}'. Please check that the program is installed and available within your PATH environment variable as '{}'.".format(options.program.split("_")[1],options.program.split("_")[1]))
+		print("Could not locate '{}'. Please check that the program is installed and available within your PATH environment variable.".format(options.program.split("_")[1]))
 		sys.exit(1)
 
 	ext = None
@@ -242,8 +244,6 @@ def main():
 		if options.groupby != None: cmdopts+=" -Group {}".format(options.groupby)
 		if options.binby != None: cmdopts+=" -FtBin {}".format(options.binby)
 
-		if options.mc2_patch != "": cmdopts += " -Patch {} ".format(options.mc2_patch)
-
 		if options.mc2_patchX!=None and options.mc2_patchY != None:
 			cmdopts += " -Patch {} {} ".format(options.mc2_patchX,options.mc2_patchY)
 		elif options.mc2_patchX==None:
@@ -261,15 +261,13 @@ def main():
 			else: tiltname="{}/{}.hdf".format(outdir,mdoc_bname)
 
 			info=[]
-			zval=-1
 			print("DOC: {}".format(options.mdoc))
 			with open(options.mdoc) as docf:
 				for l in docf.readlines():
 					p = l.strip()
-					if "ZValue" in p:
-						zval+=1
-					elif p != "":
-						x,y = p.split("=")[:2]
+					if p != "":
+						try: x,y = p.split("=")[:2]
+						except: pass
 						x = x.strip()
 						if x == "TiltAngle": ang=float(y)
 						elif x == "SubFramePath":
