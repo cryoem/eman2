@@ -3691,18 +3691,61 @@ EMData* Util::FCrngs(EMData* rings) {
 	out->set_attr("is_fftodd", 0);
 	float* dout = out->get_data();
 	float* temp = (float *)malloc(ring_length*sizeof(float));
-
 	for(unsigned int i=0; i<nring; i++)  {
 		EMfft::complex_to_complex_1d_f(&circ[i*ring_length],temp,ring_length);
 		for(unsigned int j=0; j<unique_length; ++j)  dout[i*unique_length + j] = temp[j];
 	}
+/*
+	float* temp = (float *)malloc(nring*ring_length*sizeof(float));
+	//fftwf_complex *in  =(fftwf_complex *) &circ[i*ring_length];
+	fftwf_complex *incirc  = (fftwf_complex *) circ;
+	fftwf_complex *tout = (fftwf_complex *) temp;
+	printf("  nring ring_length  %d  %d\n",nring, ring_length);
+	fftwf_complex *in=(fftwf_complex *) complex_data_in;
+
+fftw_plan fftw_plan_many_dft(int rank, const int *n, int howmany,
+                             fftw_complex *in, const int *inembed,
+                             int istride, int idist,
+                             fftw_complex *out, const int *onembed, int ostride, int odist,
+                             int sign, unsigned flags);
+
+	fftwf_plan p = fftwf_plan_many_dft(1, &ring_length, nring, 
+									incirc, NULL, 
+									1, ring_length, 
+									tout, NULL, 1, ring_length,
+									FFTW_FORWARD,FFTW_MEASURE);
+	fftwf_execute(p);
+	for(unsigned int i=0; i<nring; i++)  {
+		for(unsigned int j=0; j<unique_length; ++j)  {dout[i*unique_length + j] = temp[i*ring_length + j];
+		printf("  dout  %d  %f\n",i*unique_length + j,dout[i*unique_length + j]);}
+	}
+	//fftw_plan p = fftwf_plan_dft_1d(ring_length/2, in, tout, FFTW_FORWARD, FFTW_ESTIMATE);
+//for(unsigned int j=0; j<10000000; j++){
+	//for(unsigned int i=0; i<nring; i++)  {
+	//fftwf_execute(p);
+
+		//EMfft::complex_to_complex_1d_f(&circ[i*ring_length],temp,ring_length);
+		//for(unsigned int j=0; j<unique_length; ++j)  dout[i*unique_length + j] = temp[j];
+	//}}
+	//fftwf_destroy_plan(p);
+*/
 
 	delete temp;
 	out->update();
 	EXITFUNC;
 	return out;
 }
+/*
+int istride, idist;
+// ... if data is column-major, set istride=howmany, idist=1
+//    if data is row-major, set istride=1, idist=N
 
+fftw_plan p = fftw_plan_many_dft(1,&N,howmany,
+data,NULL,
+howmany,1,
+data,NULL,
+howmany,1,FFTW_FORWARD,FFTW_MEASURE);
+*/
 
 EMData* Util::FCross(EMData* frobj, EMData* frings) {
 	int nx = frobj->get_xsize();
