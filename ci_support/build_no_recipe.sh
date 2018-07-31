@@ -11,14 +11,13 @@ if [ ! -z ${TRAVIS} ];then
 
     # Following Wiki instructions at
     # http://blake.bcm.edu/emanwiki/EMAN2/COMPILE_EMAN2_ANACONDA
-    conda install eman-deps=11.2 -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda install eman-deps=12.0 -c cryoem -c defaults -c conda-forge --yes --quiet
 fi
 
 if [ ! -z ${CIRCLECI} ];then
     source ${HOME}/miniconda2/bin/activate root
 fi
 
-conda install future -c defaults --yes --quiet
 python -m compileall -q .
 
 # Build and install eman2

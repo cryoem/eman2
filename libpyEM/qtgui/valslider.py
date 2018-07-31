@@ -643,40 +643,6 @@ class RangeSlider(QtGui.QWidget):
 		self.setSizePolicy(sizePolicy)
 #		self.setMinimumSize(QtCore.QSize(12,80))
 
-		#self.vboxlayout = QtGui.QVBoxLayout(self)
-		#self.vboxlayout.setMargin(0)
-		#self.vboxlayout.setSpacing(6)
-		#self.vboxlayout.setObjectName("vboxlayout")
-		
-		## Label on top
-		#self.toptxt = QtGui.QLabel(str(value[1]))
-		#self.vboxlayout.addWidget(self.toptxt)
-		
-		## canvas in the middle
-		#self.slider = QtGui.QWidget(self)	
-		#sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(7))
-		#sizePolicy.setHorizontalStretch(0)
-		#sizePolicy.setVerticalStretch(7)
-		#sizePolicy.setHeightForWidth(False)
-		#self.slider.setSizePolicy(sizePolicy)
-		#self.slider.setMinimumSize(QtCore.QSize(15,100))
-		#self.vboxlayout.addWidget(self.slider)
-		
-		## label on the bottom
-		#self.bottxt = QtGui.QLabel(str(value[0]))
-		#self.vboxlayout.addWidget(self.bottxt)
-		
-		#self.text = QtGui.QLineEdit(self)
-		
-		
-		
-		#QtCore.QObject.connect(self.text, QtCore.SIGNAL("editingFinished()"), self.textChange)
-		#QtCore.QObject.connect(self.slider, QtCore.SIGNAL("valueChanged(int)"), self.sliderChange)
-		#QtCore.QObject.connect(self.slider, QtCore.SIGNAL("sliderReleased()"), self.sliderReleased)
-		#QtCore.QObject.connect(self.slider, QtCore.SIGNAL("sliderPressed()"), self.sliderPressed)
-		
-		#self.updateboth()
-
 	def sizeHint(self): return QtCore.QSize(15,100)
 
 	def paintEvent(self,event):

@@ -16,7 +16,6 @@ if [ ! -z ${CIRCLECI} ];then
     source ${HOME}/miniconda2/bin/activate root
 fi
 
-conda install future -c defaults --yes --quiet
 python -m compileall -q .
 
 export CPU_COUNT=2

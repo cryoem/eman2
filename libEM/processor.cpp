@@ -5731,7 +5731,7 @@ void Phase180Processor::fourier_phaseshift180(EMData * image)
 	if ( !image->is_complex() ) throw ImageFormatException("Can not handle images that are not complex in fourier phase shift 180");
 
 	// The old code here was seriously broken. It inverted the contrast in some even sized images, and didn't work
-	// at all for odd images. Ugg.  We're calling Pawel's code now.
+	// at all for odd images. Ugg.  We're calling Pawel's code now. fixed 7/28/18
 	image->center_origin_fft();
 	
 // 	int nx = image->get_xsize();
@@ -12889,12 +12889,12 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			
 			
 			// original bispectrum approach
-			for (int r2=minr; r2<rfp+minr; r2++) {
-				float kx=dx*r2;
-				float ky=dy*r2;
-				for (int r=minr; r<rsize+minr; r++) {				// this is y
+			for (int dr=0; dr<rfp; dr++) {
+				for (int r=minr; r<rsize+minr; r++) {
 					float jx=dx*r;
 					float jy=dy*r;
+					float kx=dx*(r+dr);
+					float ky=dy*(r+dr);
 					
 					// original bispectrum
 					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
@@ -12915,8 +12915,8 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 
 				// stay in Fourier space
 				// real/imaginary
-				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,line->get_value_at(i+minr*2,0));
-//				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+dr*rsize*2,line->get_value_at(i+minr*2,0));
+//				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,line->get_value_at(i+minr*2,0));
+				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+dr*rsize*2,line->get_value_at(i+minr*2,0));
 
 				// Amp/phase separation
 // 				for (int i=0; i<rsize*2; i+=2) {

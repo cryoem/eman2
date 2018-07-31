@@ -111,6 +111,7 @@ def main():
 	#parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=1, col=1, rowspan=1, colspan=1)
 
 	#parser.add_argument("--maxres", type=float,help="max resolution for comparison", default=20.0, guitype='floatbox',row=2, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--path", type=str,help="path", default=None, guitype='strbox',row=2, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--iter", type=int,help="iteration", default=1, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=2, col=2,rowspan=1, colspan=1)
 
@@ -129,7 +130,6 @@ def main():
 	#parser.add_argument("--unmask", action="store_true", default=False ,help="use unmasked map as references", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=2,rowspan=1, colspan=1)
 
-	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 
 	(options, args) = parser.parse_args()

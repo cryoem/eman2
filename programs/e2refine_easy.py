@@ -205,7 +205,7 @@ not need to specify any of the following other than the ones already listed abov
 
 	# options associated with e2simmx.py
 #	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=15, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--simalign",type=str,help="Default=auto. The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_tree")
+	parser.add_argument("--simalign",type=str,help="Default=auto. The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_flip:usebispec=1")
 	parser.add_argument("--simaligncmp",type=str,help="Default=auto. Name of the aligner along with its construction arguments",default=None)
 	parser.add_argument("--simralign",type=str,help="Default=auto. The name and parameters of the second stage aligner which refines the results of the first alignment", default="auto")
 	parser.add_argument("--simraligncmp",type=str,help="Default=auto. The name and parameters of the comparitor used by the second stage aligner.",default=None)
@@ -223,7 +223,7 @@ not need to specify any of the following other than the ones already listed abov
 #	parser.add_header(name="caheader", help='Options below this label are specific to e2classaverage', title="### e2classaverage options ###", row=22, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.")
 	parser.add_argument("--classiter", type=int, help="Default=auto. The number of iterations to perform.",default=-1)
-	parser.add_argument("--classalign",type=str,default="rotate_translate_tree",help="Default=auto. If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.")
+	parser.add_argument("--classalign",type=str,default="rotate_translate_flip:usebispec=1",help="Default=auto. If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.")
 	parser.add_argument("--classaligncmp",type=str,help="Default=auto. This is the name and parameters of the comparitor used by the fist stage aligner.",default=None)
 	parser.add_argument("--classralign",type=str,help="Default=auto. The second stage aligner which refines the results of the first alignment in class averaging.", default="auto")
 	parser.add_argument("--classraligncmp",type=str,help="Default=auto. The comparitor used by the second stage aligner in class averageing.",default=None)
@@ -267,9 +267,10 @@ not need to specify any of the following other than the ones already listed abov
 		sys.exit(1)
 
 	if options.mirror:
-		if options.simalign!="rotate_translate_tree" :
+		if options.simalign not in ("rotate_translate_tree:flip=0","rotate_translate_bispec") :
 			print("WARNING: mirror option selected, but simalign specified. Critical that simalign NOT check mirrors. Please insure that the specified aligner obeys this.")
-		else : options.simalign="rotate_translate_tree:flip=0"
+		else : options.simalign="rotate_translate_bispec"
+#		else : options.simalign="rotate_translate_tree:flip=0"
 
 	if options.m3dpreprocess==None:
 		if not options.m3dold : m3dpreprocess=""
@@ -805,12 +806,12 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			### FIXME - hard-coded rotate_translate aligner here due to odd irreproducible memory related crashes with rotate_translate_tree:flip=0   8/22/17
 			### At some point this was changed back to rotate_translate_tree with flipping. May be ok since it would recover some mis-classified handedness related particles?  5/29/18
 			append_html("<p>* Computing similarity of each particle to the set of projections using bispectra. This avoids alignment, and permits classification in a single step.</p>",True)
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_tree --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_flip:usebispec=1 --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
 				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
 			progress += 1.0
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --classinfo {path}/classinfo_{itr:02d}_odd.json --classes {path}/classes_{itr:02}_odd.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_tree --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --classinfo {path}/classinfo_{itr:02d}_odd.json --classes {path}/classes_{itr:02}_odd.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_flip:usebispec=1 --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
 				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
