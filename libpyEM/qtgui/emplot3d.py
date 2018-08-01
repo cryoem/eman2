@@ -65,7 +65,7 @@ def safe_float(x):
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtOpenGL import QGLWidget
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt, QString
 from OpenGL import GL,GLU
 from OpenGL.GL import *
 import OpenGL.GL as gl
@@ -977,6 +977,7 @@ lc is the cursor selection point in plot coords"""
 			zmax=-1.0e38
 			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
+#				print(k,self.axes,self.data)
 				zmin=min(zmin,min(self.data[k][self.axes[k][2]]))
 				zmax=max(zmax,max(self.data[k][self.axes[k][2]]))
 
@@ -2081,7 +2082,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		self.slidec.valueChanged[int].connect(self.newCols)
 		self.slides.valueChanged[int].connect(self.newCols)
 		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QListWidgetItem].connect(self.list_item_changed)
+		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.list_item_changed)
 		self.color.currentIndexChanged[QString].connect(self.updPlotColor)
 		self.classb.clicked.connect(self.openClassWin)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
@@ -2564,8 +2565,8 @@ if __name__ == '__main__':
 	window = EMPlot3DWidget(app)
 	if len(sys.argv)==1 :
 		l=[i/30.*pi for i in range(30)]
-		window.set_data([[1,2,3,4],[2,3,4,3]],"test")
-		window.set_data([l,[sin(2*i) for i in l]],"test2")
+		window.set_data([[0,1,2,3],[1,2,3,4],[2,3,4,3],[2,4,2,6]],"test")
+		window.set_data([l,l,l,[sin(2*i) for i in l]],"test2")
 	else:
 		for i in range(1,len(sys.argv)):
 			window.set_data_from_file(sys.argv[i])
