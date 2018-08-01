@@ -42,6 +42,8 @@
 
 public:
 
+
+
 static int coveig(int n, float *covmat, float *eigval, float *eigvec);
 
 /** same function than Util::coveig but wrapped to use directly in python code */
@@ -613,6 +615,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
 	static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode);
 	static EMData* Polar2DFT(EMData* image, int ring_length, int nb, int ne);
+	static EMData* Polar2DShiftCoeffs(int nx, float xshift, float yshift, int ring_length, int nb, int ne);
 	/*static void alrq_ms(float *xim, int	 nsam, int  nrow, float cns2, float cnr2,
 			    int  *numr, float *circ, int lcirc, int  nring, char  mode);*/
 	static void alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
@@ -632,6 +635,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	
 	/** Single Precision Fourier product and sum of a set of complex rings followed by IFT */
 	static EMData* FCross(EMData* frobj, EMData* frings);
+	/** Single Precision Fourier product conjg and straight to get mirror and sum of a set of complex rings followed by IFT */
+	static EMData* FCrossm(EMData* frobj, EMData* frings);
 
 	/** Single Precision Fourier Transform for a set of rings */
 	static void  Frngs(EMData* circ, vector<int> numr);
