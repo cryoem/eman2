@@ -708,7 +708,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				hfac = 1
 			else :
 				w=self.matrix_panel.visiblecols*(self.data.get_xsize()+2)
-				hfac = olen(self.data)//self.matrix_panel.visiblecols+1
+				hfac = len(self.data)//self.matrix_panel.visiblecols+1
 			hfac *= self.data.get_ysize()
 			if hfac > 512: hfac = 512
 			if w > 512: w = 512
@@ -1730,8 +1730,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def __app_mode_mouse_up(self,event):
 		if self.downbutton==Qt.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
+			if lc!=None:
 
-			self.mx_mouseup.emit(event, lc)
+				self.mx_mouseup.emit(event, lc)
 
 			# disabled by stevel 2/17/2011 for external application flexibility
 			#if  not event.modifiers()&Qt.ShiftModifier:

@@ -48,6 +48,15 @@ using std::cout;
 using namespace EMAN;
 using namespace std;
 
+
+#define    QUADPI      		    3.141592653589793238462643383279502884197
+#define    PI2                  QUADPI/2.0
+#define    TWOPI                2*QUADPI
+
+#define deg_rad  QUADPI/180.0
+#define rad_deg  180.0/QUADPI
+
+
 EMData *EMData::real2FH(float OverSamplekB) // PRB
 {
 	int nx        = get_xsize();
@@ -890,7 +899,7 @@ Output: 2D 3xk real image.
 	EMData* fpimage = NULL;
 	if (f->is_complex()) fpimage = f;
 	else {
-		fpimage= f->norm_pad(false, 1); 
+		fpimage= f->norm_pad(false, 1);
 		fpimage->do_fft_inplace();
 		needfree|=1; // Extend and do the FFT if f is real
 	} 
@@ -4628,8 +4637,117 @@ void EMData::shuffle_pad_corner(float *pad_image) {
 		memcpy(&(*this)(0,iy), pad_image+6+(iy-nyhalf+3)*nx, nbytes);
 }
 
-#define    QUADPI      		        3.141592653589793238462643383279502884197
-#define    DGR_TO_RAD    		QUADPI/180
+EMData* EMData::ft2polar(int ring_length, int nb, int ne) {
+	if (2 != get_ndim())
+		throw ImageDimensionException("ft2polar requires a 2-D image.");
+	EMData *cimage = NULL;
+	if ( is_complex() )  ImageFormatException("ft2polar requires a real image.");
+	else {
+		cimage = this->copy();
+		cimage->set_attr("npad",1);
+		cimage->div_sinc(1);
+		cimage = cimage->norm_pad(false, 1);
+		cimage->do_fft_inplace();
+		cimage->center_origin_fft();
+	}
+
+	int nx = cimage->get_xsize();
+	int ny = cimage->get_ysize();
+	int nc = ny/2;
+	int lcirc = ne-nb+1;
+	if( ne > nc-2) throw InvalidValueException(ne, "Maximum radius too large.");
+	//printf("  dims   nx ny   %d   %d   %d   %d\n",nx,ny,ring_length,lcirc);
+
+	EMData* rings = new EMData(2*ring_length-2, lcirc, 1, false);
+	rings->set_fftpad(0);
+	//int lx = rings->get_xsize();
+	//int ly = rings->get_ysize();
+	//printf("  dirns  nx ny   %d   %d   %d   %d\n",lx,ly,ring_length,lcirc);
+
+	float dfi;
+	dfi = TWOPI / ring_length;
+//	Table for sin & cos
+	vector<float> vsin(ring_length/2);
+	vector<float> vcos(ring_length/2);
+	for (int x = 0; x < ring_length/2; x++) {
+		float ang = static_cast<float>(x * dfi);
+		vsin[x] = sin(ang);
+		vcos[x] = cos(ang);
+		//printf("trigtab   %d      %f      %f  %f\n",x,ang,vsin[x],vcos[x]);
+	}
+	for (unsigned int inr = nb; inr <= ne; inr++) {
+		for (unsigned int it = 0; it < ring_length/2; it++) {
+			float xnew = vsin[it] * inr;
+			float ynew = vcos[it] * inr;
+			complex<float> v1 = (complex<float>)cimage->get_complex_at_interp(xnew,ynew);
+			//printf("   %d   %d       %f  %f      (%f , %f)\n",it,inr,xnew,ynew, std::real(v1), std::imag(v1));
+			rings->set_value_at(2*it,inr-nb,std::real(v1));
+			rings->set_value_at(2*it+1,inr-nb,std::imag(v1));
+			rings->set_value_at(2*it+ring_length,inr-nb,std::real(v1));
+			rings->set_value_at(2*it+1+ring_length,inr-nb,-std::imag(v1));
+		}
+	}
+
+	delete cimage;
+	cimage = 0;
+
+	EXITFUNC;
+	return rings;
+}
+
+
+EMData* EMData::ft2polargrid(int ring_length, int nb, int ne, Util::KaiserBessel& kb) {
+	if (2 != get_ndim())
+		throw ImageDimensionException("ft2polargrid needs a 2-D image.");
+	if (!is_complex())
+		throw ImageFormatException("ft2polargrid requires a fourier image");
+	int nxreal = nx - 2 + int(is_fftodd());
+	if (nxreal != ny)
+		throw ImageDimensionException("ft2polargrid requires ny == nx(real)");
+	if (0 != nxreal%2)
+		throw ImageDimensionException("ft2polargrid needs an even image.");
+
+	if (!is_shuffled()) fft_shuffle();
+	set_array_offsets(0,-ny/2);
+
+	int nc = ny/2;
+	int lcirc = ne-nb+1;
+	if( ne > nc-2) throw InvalidValueException(ne, "Maximum radius too large.");
+	//printf("  dims   nx ny   %d   %d   %d   %d\n",nx,ny,ring_length,lcirc);
+
+	EMData* rings = new EMData(2*ring_length-2, lcirc, 1, false);
+	rings->set_fftpad(0);
+	float dfi;
+	dfi = TWOPI / ring_length;
+//	Table for sin & cos
+	vector<float> vsin(ring_length/2);
+	vector<float> vcos(ring_length/2);
+	for (int x = 0; x < ring_length/2; x++) {
+		float ang = static_cast<float>(x * dfi);
+		vsin[x] = sin(ang);
+		vcos[x] = cos(ang);
+		//printf("trigtab   %d      %f      %f  %f\n",x,ang,vsin[x],vcos[x]);
+	}
+
+	for (unsigned int inr = nb; inr <= ne; inr++) {
+		for (unsigned int it = 0; it < ring_length/2; it++) {
+			float nuxold = vsin[it] * 2*inr;
+			float nuyold = vcos[it] * 2*inr;
+		//if(it ==0 && inr==nb) {nuxold=0.0f; nuyold=0.0f;}
+			complex<float> v1 = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
+			rings->cmplx(it,inr-nb) = v1;
+			rings->cmplx(it+ring_length/2,inr-nb) = std::conj(v1);
+			//printf("   %d   %d       %f  %f      (%f , %f)\n",2*it,inr,nuxold,nuyold, std::real(v1), std::imag(v1));
+			
+		}
+	}
+
+	rings->update();
+	set_array_offsets();
+	fft_shuffle(); // reset input to an unshuffled complex image
+	return rings;
+}
+
 
 // We tried to pad the Fourier image to reduce the stick out points, howover it is not very efficient.
 /*
@@ -4663,7 +4781,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	set_array_offsets(0,-nyhalf);
 	result->set_array_offsets(0,-nyhalf);
 
-	ang = ang*DGR_TO_RAD;
+	ang = ang*deg_rad;
 	float cang = cos(ang);
 	float sang = sin(ang);
 	for (int iy = -nyhalf; iy < nyhalf; iy++) {
@@ -4707,7 +4825,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 
 
 
-	ang = ang*(float)DGR_TO_RAD;
+	ang = ang*(float)deg_rad;
 	float cang = cos(ang);
 	float sang = sin(ang);
 	for (int iy = -nyhalf; iy < nyhalf; iy++) {
@@ -4724,7 +4842,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	result->fft_shuffle(); // reset to an unshuffled result
 	result->update();
 	set_array_offsets();
-	fft_shuffle(); // reset to an unshuffled complex image
+	fft_shuffle(); // reset input to an unshuffled complex image
 	return result;
 }
 
@@ -4747,7 +4865,7 @@ EMData* EMData::fouriergridrot_shift2d(float ang, float sx, float sy, Util::Kais
 	set_array_offsets(0, -nyhalf);
 	result->set_array_offsets(0, -nyhalf);
 
-	ang = ang*(float)DGR_TO_RAD;
+	ang = ang*(float)deg_rad;
 	float cang = cos(ang);
 	float sang = sin(ang);
 	float temp = -2.0f*M_PI/nxreal;
@@ -4770,9 +4888,6 @@ EMData* EMData::fouriergridrot_shift2d(float ang, float sx, float sy, Util::Kais
 	fft_shuffle(); // reset to an unshuffled complex image
 	return result;
 }
-
-#undef QUADPI
-#undef DGR_TO_RAD
 
 void EMData::divkbsinh(const Util::KaiserBessel& kb) {
 	
@@ -5633,8 +5748,10 @@ void EMData::div_sinc(int interpolate_method) {
 	int nx = this->get_xsize();
 	int ny = this->get_ysize();
 	int nz = this->get_zsize();
-	if (nx != ny || ny != nz)
+	if (nz>1 && (nx != ny || ny != nz))
 		throw ImageDimensionException("div_sinc requires ny == nx == nz");
+	else if(nx != ny)
+		throw ImageDimensionException("div_sinc requires ny == nx");
 	int npad = this->get_attr("npad");
 	float cdf = M_PI/(nx);
 /*
@@ -7282,9 +7399,6 @@ EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
 	return result;
 }
 
-#define    QUADPI      		    3.141592653589793238462643383279502884197
-#define    DGR_TO_RAD    		QUADPI/180
-
 EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_use, float radius, float minrad) {
 	if(3 != get_ndim())               throw ImageDimensionException("helicise needs a 3-D image.");
 	if(is_complex())                  throw ImageFormatException("helicise requires a real image");
@@ -7322,8 +7436,8 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 				z = k*pixel_size + (ist-numst)*dp;
 				phi = (ist-numst)*dphi;
 			}
-			float ca = cos(phi*(float)DGR_TO_RAD);
-			float sa = sin(phi*(float)DGR_TO_RAD);
+			float ca = cos(phi*(float)deg_rad);
+			float sa = sin(phi*(float)deg_rad);
 			if((z >= nb) && (z <= ne )) {
 				nq++;
 				if( nq > numri ) break;
@@ -7467,7 +7581,7 @@ EMData* EMData::helicise_grid(float pixel_size, float dp, float dphi, Util::Kais
 						int IOZ = int(zold);
 						if(IOZ >= nb && IOZ <= ne) {
 						
-							float cphi = ist*dphi*(float)DGR_TO_RAD;
+							float cphi = ist*dphi*(float)deg_rad;
 							float ca = cos(cphi);
 							float sa = sin(cphi);
 							
@@ -8410,4 +8524,4 @@ EMData *EMData::replace_amplitudes(EMData* image, bool RetReal) {
 
 
 #undef QUADPI
-#undef DGR_TO_RAD
+#undef deg_rad

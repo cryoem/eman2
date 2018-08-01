@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
 from __future__ import print_function
+from __future__ import division
 from EMAN2 import *
 import numpy as np
 from PyQt4 import QtCore, QtGui
@@ -59,8 +60,8 @@ class SptEvalGUI(QtGui.QWidget):
 		self.imglst.setColumnWidth(1,200)
 		self.imglst_srtby=0
 		hdr=self.imglst.horizontalHeader()
-		QtCore.QObject.connect(self.imglst,QtCore.SIGNAL("cellClicked(int,int)"),self.select_folder)
-		QtCore.QObject.connect(hdr,QtCore.SIGNAL("sectionPressed(int)"),self.sortlst)
+		self.imglst.cellClicked[int, int].connect(self.select_folder)
+		hdr.sectionPressed[int].connect(self.sortlst)
 		
 		self.dp_folder=QtGui.QComboBox()
 		self.dp_folder.setToolTip("Folder suffix")
@@ -68,7 +69,7 @@ class SptEvalGUI(QtGui.QWidget):
 		sfxlst=["spt", "sptsgd"]
 		for i in sfxlst:
 			self.dp_folder.addItem(i)
-		QtCore.QObject.connect(self.dp_folder,QtCore.SIGNAL("currentIndexChanged(int)"),self.set_sfx)
+		self.dp_folder.currentIndexChanged[int].connect(self.set_sfx)
 
 		self.wg_thumbnail=EMScene3D()#parent=self)
 		#self.wg_thumbnail.set_scale(1)
@@ -107,7 +108,7 @@ class SptEvalGUI(QtGui.QWidget):
 		#self.wg_notes=QtGui.QTextEdit(self)
 		#self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 				
-		QtCore.QObject.connect(self.setspanel,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.click_set)
+		self.setspanel.itemChanged[QListWidgetItem].connect(self.click_set)
 		#QtCore.QObject.connect(self.wg_notes,QtCore.SIGNAL("textChanged()"),self.noteupdate)
 		
 		#self.wg_plot2d=EMPlot2DWidget()
@@ -200,6 +201,7 @@ class SptEvalGUI(QtGui.QWidget):
 		for i,info in enumerate(self.fldlst):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
 			for j,pm in enumerate(hdrs):
+				if not info.has_key(pm): continue
 				v=info[pm]
 				try:
 					v=float(v)

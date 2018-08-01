@@ -4569,6 +4569,23 @@ void NormalizeRowProcessor::process_inplace(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
+	if (params.has_key("unitlen")) {
+		for (int y = 0; y < ny; y++) {
+			double row_len = 0;
+			for (int x = 0; x < nx; x++) {
+				row_len += pow((double)rdata[x + y * nx],2.0);
+			}
+			row_len=sqrt(row_len);
+			if (row_len==0) row_len=1.0;
+
+			for (int x = 0; x < nx; x++) {
+				rdata[x + y * nx] /= (float)row_len;
+			}
+		}
+		image->update();
+		return;
+	}
+	
 	for (int y = 0; y < ny; y++) {
 		double row_sum = 0;
 		for (int x = 0; x < nx; x++) {
@@ -5713,32 +5730,25 @@ void Phase180Processor::fourier_phaseshift180(EMData * image)
 {
 	if ( !image->is_complex() ) throw ImageFormatException("Can not handle images that are not complex in fourier phase shift 180");
 
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
+	// The old code here was seriously broken. It inverted the contrast in some even sized images, and didn't work
+	// at all for odd images. Ugg.  We're calling Pawel's code now. fixed 7/28/18
+	image->center_origin_fft();
+	
+// 	int nx = image->get_xsize();
+// 	int ny = image->get_ysize();
+// 	int nz = image->get_zsize();
 
-	int nxy = nx * ny;
+//	int nxy = nx * ny;
 
-	float *rdata = image->get_data();
 
-	// Who uses this function? It doesn't work for odd images, and it will give incorrect results for some even images
-	// d.woolford, March 15 2009
-	int of=0;
-	if (((ny/2)%2)+((nz/2)%2)==1) of=1;
-
-	for (int k = 0; k < nz; k++) {
-		size_t k2 = (size_t)k * nxy;
-
-		for (int j = 0; j < ny; j++) {
-			int i = ((k+j)%2==of?2:0);
-			size_t j2 = j * nx + k2;
-
-			for (; i < nx; i += 4) {
-				rdata[i + j2] *= -1.0f;
-				rdata[i + j2 + 1] *= -1.0f;
-			}
-		}
-	}
+// 	for (int k=-nz/2; k<(nz==1?1:nz/2); k++) {
+// 		for (int j=-ny/2; j<ny/2; j++) {
+// 			for (int i=(k+j)%2+(j<0?2:0); i<nx/2; i+=2) {
+// 				image->set_complex_at(i,j,k,image->get_complex_at(i,j,k)* -1.0f);
+// 			}
+// 		}
+// 	}
+	
 }
 
 void Phase180Processor::swap_corners_180(EMData * image)
@@ -12682,6 +12692,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	int nkx=nky+1;
 	if (nky<4 || nky>=cimage->get_ysize()/2) nky=cimage->get_ysize()/8;
 	if (nkx<5 || nky>=cimage->get_xsize()/2) nkx=cimage->get_xsize()/8+1;
+	//if (image->get_xsize()<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
 
 	EMData* ret=new EMData(nkx*2,nky*2,1);
 	ret->set_complex(1);
@@ -12808,8 +12819,10 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
 						ret->add_complex_at(jx,jy,0,(complex<float>)(v1*v2*std::conj(v3)));
+
 						//complex<double> v4 = (complex<double>)cimage2->get_complex_at(jkx2,jky2);	// This is based on Phil's point that the v1,v2,v3 computation lacks Friedel symmetry
 						//ret->add_complex_at(jx,jy,0,(complex<float>)(v1*(v2*std::conj(v3)+std::conj(v2)*std::conj(v4))));
+						
 					}
 				}
 				delete cimage2;
@@ -12838,6 +12851,98 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		delete cimage;
 		return ret2;
         }
+	// In this mode we are making a translational invariant with information we can use for rotational alignment
+	// It is not actually a bispectrum, but is based on a 2-point method instead
+	else if (params.has_key("rfp")) {
+//		if (cimage->get_ysize()/2<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
+		int rfp=(int)params.set_default("rfp",4);
+		const int minr=4;		// lowest frequency considered in the calculation (in pixels)
+		int rsize=cimage->get_ysize()/4-minr-2;
+		if (rsize>nky) rsize=nky;
+		int nang=Util::calc_best_fft_size(int(M_PI*cimage->get_ysize()));
+		EMData *ret2=new EMData(nang,rsize*rfp*2,1);
+		EMData *line=new EMData(minr*2+rsize*2,1,1);	// one complex line
+		line->set_complex(1);
+		line->set_ri(1);
+		line->set_fftpad(1);	//correct?
+
+		for (int angi=0; angi<nang; angi++) {		// this is x
+			float ofs=M_PI/float(nang);
+			float dx=cos(2.0*M_PI*angi/float(nang)+ofs);
+			float dy=sin(2.0*M_PI*angi/float(nang)+ofs);
+			line->to_zero();
+			
+			// new invariant approach Steve 7/26/18
+// 			for (int dr=0; dr<rfp; dr++) {
+// 				for (int r=minr; r<rsize+minr; r++) {
+// 					float jx=dx*r;
+// 					float jy=dy*r;
+// 					float kx=dx*(r+dr);
+// 					float ky=dy*(r+dr);
+// 					
+// 					double pwr=double(r+dr)/double(r);
+// 					
+// 					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+// 					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(kx,ky);
+// 					line->set_complex_at(r,0,0,complex<float>(pow(v1,pwr)*std::conj(v2)));
+// 				}
+			
+			
+			// original bispectrum approach
+			for (int dr=0; dr<rfp; dr++) {
+				for (int r=minr; r<rsize+minr; r++) {
+					float jx=dx*r;
+					float jy=dy*r;
+					float kx=dx*(r+dr);
+					float ky=dy*(r+dr);
+					
+					// original bispectrum
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(kx,ky);
+					complex<double> v3 = (complex<double>)cimage->get_complex_at_interp(jx+kx,jy+ky);
+					line->set_complex_at(r,0,0,complex<float>(v1*v2*std::conj(v3)));
+				}
+				
+				// Tried a bunch of different ways of representing the bispectral invariants, but the
+				// pseudo real-space inverse seems to perform the best in testing on various targets
+				line->mult(1.0f/float(line->get_attr("sigma")));	// adjust intensities, but don't shift 0
+
+				// pseudo real-space
+// 				EMData *lreal=line->do_ift();
+// 				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,lreal->get_value_at(i,0));
+//				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+dr*rsize*2,lreal->get_value_at(i,0));
+// 				delete lreal;
+
+				// stay in Fourier space
+				// real/imaginary
+//				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,line->get_value_at(i+minr*2,0));
+				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+dr*rsize*2,line->get_value_at(i+minr*2,0));
+
+				// Amp/phase separation
+// 				for (int i=0; i<rsize*2; i+=2) {
+// 					complex<float> v(line->get_value_at(i,0),line->get_value_at(i+1,0));
+// 					ret2->set_value_at(angi,i+  (r2-minr)*rsize*2,std::abs(v));
+// 					ret2->set_value_at(angi,i+1+(r2-minr)*rsize*2,std::arg(v));
+// 				}
+				
+// 				// R/I with cube root
+// 				for (int i=0; i<rsize*2; i+=2) {
+// 					complex<float> v(line->get_value_at(i,0),line->get_value_at(i+1,0));
+// 					v=pow(v,0.3333333f);
+// 					ret2->set_value_at(angi,i+  (r2-minr)*rsize*2,std::real(v));
+// 					ret2->set_value_at(angi,i+1+(r2-minr)*rsize*2,std::imag(v));
+// 				}
+
+				
+				
+//				printf("%d %d %d %d\n",rsize,angi,r2-minr,line->get_xsize());
+			}
+		}
+		delete ret;
+		delete line;
+		delete cimage;
+		return ret2;
+	}
 	// angular integrate mode, produces the simplest rotational invariant, ignoring rotational correlations
 	else if (params.has_key("k")) {
 		int k=(int)params.set_default("k",1);

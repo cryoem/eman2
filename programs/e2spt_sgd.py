@@ -129,6 +129,7 @@ def main():
 			print("Iteration {}, {}:".format(itr, eo))
 
 			ref=refs[ieo].copy()
+			ref0=ref.copy()
 
 			#tmpout=os.path.join(path,"tmpout_{:02d}_{}.hdf".format(itr, eo))
 			#ref.write_image(tmpout,-1)
@@ -138,7 +139,7 @@ def main():
 				jsd=queue.Queue(0)
 				idx=idxs[ieo].copy()
 				np.random.shuffle(idx)
-				thrds=[threading.Thread(target=alifn,args=(jsd,fname,i,ref,options)) for i in idx[:batchsize]]
+				thrds=[threading.Thread(target=alifn,args=(jsd,fname,i,ref0,options)) for i in idx[:batchsize]]
 				#thrds=[threading.Thread(target=alifn,args=(jsd,fname,i,ref,options)) for i in idx[ib*batchsize:(ib+1)*batchsize]]
 				for t in thrds:
 					t.start()
@@ -157,38 +158,43 @@ def main():
 					p.transform(d["xform.align3d"])
 					avgr.add_image(p)
 				avg=avgr.finish()
+				#if options.setsf:
+					#sf=XYData()
+					#sf.read_file(options.setsf)
+					#avg.process_inplace("filter.setstrucfac",{"apix":avg["apix_x"],"strucfac":sf})
 				avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":filterto})
 				if options.gaussz>0:
 					avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":options.gaussz})
-				avg.process_inplace('normalize')
+				avg.process_inplace('normalize.edgemean')
 				if options.applysym:
 					avg.process_inplace("xform.applysym",{"sym":options.sym,"averager":"mean.tomo"})
 				if options.fourier:
 					avgft=avg.do_fft()
 					refft=ref.do_fft()
-					avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":1})
+					avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":3})
 
 					dmap=avgft-refft
 					refft=refft+learnrate*dmap
 					refnew=refft.do_ift()
-					refnew.process_inplace('normalize')
+					refnew.process_inplace('normalize.edgemean')
 					dmap=refnew-ref
 					ref=refnew.copy()
 				else:
 
 					dmap=avg-ref
 					ref=ref+learnrate*dmap
-					ref.process_inplace('normalize')
+					ref.process_inplace('normalize.edgemean')
 
 				ddm=dmap*dmap
 				cc.append(ddm["mean_nonzero"])
 				if options.reference==None:
 					ref.process_inplace("xform.centerofmass")
 				if options.mask:
-					ref.process_inplace("mask.fromfile", {"filename": options.mask})
+					ref0=ref.copy()
+					ref0.process_inplace("mask.fromfile", {"filename": options.mask})
 
 				#ref.write_image(tmpout,-1)
-				ref.write_image(os.path.join(path,"output.hdf"), ieo)
+				ref0.write_image(os.path.join(path,"output.hdf"), ieo)
 				sys.stdout.write('#')
 				sys.stdout.flush()
 
@@ -291,13 +297,13 @@ def make_ref(fname, options):
 			ref.process_inplace('filter.lowpass.gauss', {"cutoff_freq":.01})
 			ref.process_inplace('filter.lowpass.randomphase', {"cutoff_freq":.01})
 			#ref.process_inplace("xform.applysym",{"sym":options.sym})
-			ref.process_inplace('normalize')
+			ref.process_inplace('normalize.edgemean')
 			ref.write_image(rfile,ie)
 			refs.append(ref)
 	else:
 		er=EMData(options.reference)
 		ep=EMData(fname,0)
-		pp=" --process filter.lowpass.gauss:cutoff_freq={:.3f} --process filter.lowpass.randomphase:cutoff_freq={:.3f} --process normalize".format(options.filterto, options.filterto)
+		pp=" --process filter.lowpass.gauss:cutoff_freq={:.3f} --process filter.lowpass.randomphase:cutoff_freq={:.3f} --process normalize.edgemean".format(options.filterto, options.filterto)
 		if EMUtil.get_image_count(options.reference)==1:
 			itr=2
 			pp+=" --append"

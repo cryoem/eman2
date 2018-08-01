@@ -42,6 +42,8 @@
 
 public:
 
+
+
 static int coveig(int n, float *covmat, float *eigval, float *eigvec);
 
 /** same function than Util::coveig but wrapped to use directly in python code */
@@ -490,7 +492,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		static inline float bilinear_inline(float xold, float yold, int nsam, float* xim)
 		{
 		/*
-		c  purpose: linear interpolation
+		  purpose: linear interpolation
 		  Optimized for speed, circular closer removed, checking of ranges removed
 		  limit should be set to nsam*nrow-2.
 		*/
@@ -538,10 +540,43 @@ class FakeKaiserBessel : public KaiserBessel {
 			int ind2 = ind1 + 1;
 			int ind3 = min(ind1 + nsam,limit);
 			int ind4 = ind3 + 1;
-			*/
 			return xim[ind1] + ydif* (xim[ind3] - xim[ind1]) +
 					   xdif* (xim[ind2] - xim[ind1] +
 					   ydif* (xim[ind4] - xim[ind2] - xim[ind3] + xim[ind1]) );
+			*/
+			float rur = xim[ind1] + ydif* (xim[ind3] - xim[ind1]) +
+					   xdif* (xim[ind2] - xim[ind1] +
+					   ydif* (xim[ind4] - xim[ind2] - xim[ind3] + xim[ind1]) );
+//printf("bilin  %f  %f ||  %d  %d  %d  %d   ||  %f   %f   %f   %f  ||  %f\n",xold,yold,ind1,ind2,ind3,ind4,xim[ind1],xim[ind2],xim[ind3],xim[ind4],rur);
+			return rur;
+		}
+
+
+		static inline float bilinear_cmplx_inline(float xold, float yold, int nsam, float* xim, int real_imag)
+		{
+		/*
+		   purpose: linear interpolation. real part of a complex centered 2D FT
+		   Optimized for speed, circular closer removed, checking of ranges removed
+		   limit should be set to nsam*nrow-2.
+		   real_imag = 0 interpolate real part
+		             = 1 interpolate imag part
+		*/
+			int		ixold, iyold;
+			float	xdif, ydif;
+			ixold	= (int) xold;
+			iyold 	= (int) yold;
+			ydif	= yold - iyold;
+			xdif	= xold - ixold;
+
+			int ind1 = iyold*nsam + 2*ixold + real_imag;
+			int ind2 = ind1 + 2;
+			int ind3 = ind1 + nsam;
+			int ind4 = ind3 + 2;
+			float rur = xim[ind1] + ydif* (xim[ind3] - xim[ind1]) +
+					   xdif* (xim[ind2] - xim[ind1] +
+					   ydif* (xim[ind4] - xim[ind2] - xim[ind3] + xim[ind1]) );
+//printf("bicmplx  %f  %f ||  %d  %d  %d  %d   ||  %f   %f   %f   %f  ||  %f\n",xold,yold,ind1,ind2,ind3,ind4,xim[ind1],xim[ind2],xim[ind3],xim[ind4],rur);
+			return rur;
 		}
 
 
@@ -579,6 +614,8 @@ class FakeKaiserBessel : public KaiserBessel {
                              float *circ, int lcirc, int nring, char mode);*/
 	static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
 	static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode);
+	static EMData* Polar2DFT(EMData* image, int ring_length, int nb, int ne);
+	static EMData* Polar2DShiftCoeffs(int nx, float xshift, float yshift, int ring_length, int nb, int ne);
 	/*static void alrq_ms(float *xim, int	 nsam, int  nrow, float cns2, float cnr2,
 			    int  *numr, float *circ, int lcirc, int  nring, char  mode);*/
 	static void alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
@@ -593,13 +630,21 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void  fftc_q(float  *br, float  *bi, int ln, int ks);
 	static void  fftc_d(double *br, double *bi, int ln, int ks);
 
-	/** This function conducts the Single Precision Fourier Transform for a set of rings */
+	/** Single Precision Fourier Transform for a set of complex rings */
+	static EMData* FCrngs(EMData* rings);
+	
+	/** Single Precision Fourier product and sum of a set of complex rings followed by IFT */
+	static EMData* FCross(EMData* frobj, EMData* frings);
+	/** Single Precision Fourier product conjg and straight to get mirror and sum of a set of complex rings followed by IFT */
+	static EMData* FCrossm(EMData* frobj, EMData* frings);
+
+	/** Single Precision Fourier Transform for a set of rings */
 	static void  Frngs(EMData* circ, vector<int> numr);
 
 	static float polar_norm2(EMData* ring, const vector<int>& numr);
 	static void  Normalize_ring(EMData* ring, const vector<int>& numr, int norm_by_square);
 
-	/** This function conducts the Single Precision Inverse Fourier Transform for a set of rings */
+	/** Single Precision Inverse Fourier Transform for a set of rings */
 	static void  Frngs_inv(EMData* circ, vector<int> numr);
 
 	/** This is a copy of Applyws routine from alignment.py */

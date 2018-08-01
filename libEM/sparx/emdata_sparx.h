@@ -629,6 +629,10 @@ EMData* fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb);
 EMData* fouriergridrot_shift2d(float ang, float sx, float sy, Util::KaiserBessel& kb);
 
 
+EMData* ft2polar(int ring_length, int nb = 1, int ne = -1);
+EMData* ft2polargrid(int ring_length, int nb, int ne, Util::KaiserBessel& kb);
+
+
 /** divkbsinh -- Divide image by a Kaiser-Bessel sinh window.
  *
  *  @param[in] kb Kaiser-Bessel window object
@@ -773,7 +777,6 @@ void center_origin_yz();
 	 *
 	 */
 void center_origin_fft();
-
 
 EMData* FourInterpol(int nxn, int nyn = 1, int nzn = 1, bool RetReal = true, bool normalize = true);
 

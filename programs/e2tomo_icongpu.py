@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 ====================
-Author: Jesus Galaz-Montoya - 2017, Last update: Nov/2017
+Author: Jesus Galaz-Montoya - 2017, Last update: Jul/2018
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -318,17 +318,17 @@ def icongpufunc(options,alifile,cmdsfilepath):
 	outtomogramzshortpostproc = sourcetomo
 	if options.lowpassresolution and not options.highpasspixels:
 		outtomogramzshortpostproc = sourcetomo.replace('.mrc', '_lp' + str(options.lowpassresolution) )
-		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.lowpass.tanh:cutoff_freq:' + str(old_div(1.0,options.lowpassresolution)) 
+		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.lowpass.tanh:cutoff_freq=' + str(old_div(1.0,options.lowpassresolution)) 
 		runcmd(options,cmdeman2,cmdsfilepath)
 	
 	elif options.highpasspixels and not options.lowpassresolution:
 		outtomogramzshortpostproc = sourcetomo.replace('.mrc', '_hpp' + str(options.highpasspixels) + '.mrc')
-		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.highpass.gauss:cutoff_pixels:' + str(options.highpasspixels)
+		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.highpass.gauss:cutoff_pixels=' + str(options.highpasspixels)
 		runcmd(options,cmdeman2,cmdsfilepath)
 
 	elif options.lowpassresolution and options.highpasspixels:
 		outtomogramzshortpostproc = sourcetomo.replace('.mrc', '_lp' + str(int(round(options.lowpassresolution))) + '_hpp' + str(int(options.highpasspixels)) + '.mrc')
-		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.lowpass.tanh:cutoff_freq:' + str(old_div(1.0,options.lowpassresolution)) + ' --process filter.highpass.gauss:cutoff_pixels:' + str(options.highpasspixels)
+		cmdeman2 = 'e2proc3d.py ' + sourcetomo + ' ' + outtomogramzshortpostproc + ' --process filter.lowpass.tanh:cutoff_freq=' + str(old_div(1.0,options.lowpassresolution)) + ' --process filter.highpass.gauss:cutoff_pixels:' + str(options.highpasspixels)
 		runcmd(options,cmdeman2,cmdsfilepath)
 	
 	os.rename(outtomogramzshort, options.path + '/' + outtomogramzshort)

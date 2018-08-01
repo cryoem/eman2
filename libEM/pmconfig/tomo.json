@@ -29,13 +29,6 @@
         "CHILDREN": []
       },
       {
-        "ICON": "multiple_images",
-        "PROGRAM": "e2tomo_tiltpreproc.py",
-        "MODE": "proc",
-        "NAME": "Preprocess tiltseries",
-        "CHILDREN": []
-      },
-      {
         "ICON": "single_image_3d",
         "PROGRAM": "e2import.py",
         "MODE": "tomos",

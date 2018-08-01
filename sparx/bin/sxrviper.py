@@ -182,10 +182,11 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 	plt.xlabel('Image index')
 	plt.title("Sorted errors between projections")
 	import io
+	import six
 	which_projections = io.StringIO()
-	which_projections.write("_" + "%.6f"%error_value)
-	for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
-	for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
+	which_projections.write(six.u("_" + "%.6f"%error_value))
+	for p_i in list_of_projection_indices: which_projections.write(six.u("_" + "%03d"%p_i))
+	for p_i in list_of_projection_indices: which_projections.write(six.u("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i]))
 
 	plt.savefig(mainoutputdir + '/sorted_errors_between_projections' + which_projections.getvalue() + '.png')
 	which_projections.close()
@@ -242,10 +243,11 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 		plt.plot(second_line_x,second_line_z(second_line_x))
 
 		import io
+		import six
 		which_projections = io.StringIO()
-		which_projections.write("_" + "%.03f__%.6f"%(split_point, goodness_of_fit_for_both_lines))
-		for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
-		for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
+		which_projections.write(six.u("_" + "%.03f__%.6f"%(split_point, goodness_of_fit_for_both_lines)))
+		for p_i in list_of_projection_indices: which_projections.write(six.u("_" + "%03d"%p_i))
+		for p_i in list_of_projection_indices: which_projections.write(six.u("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i]))
 
 		plt.title(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
 		plt.savefig(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
@@ -266,10 +268,11 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 	plt.plot(second_line_x,second_line_z(second_line_x))
 
 	import io
+	import six
 	which_projections = io.StringIO()
-	which_projections.write("_" + "%.03f"%split_point)
-	for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
-	for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
+	which_projections.write(six.u("_" + "%.03f"%split_point))
+	for p_i in list_of_projection_indices: which_projections.write(six.u("_" + "%03d"%p_i))
+	for p_i in list_of_projection_indices: which_projections.write(six.u("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i]))
 
 	plt.title(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
 	plt.savefig(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')

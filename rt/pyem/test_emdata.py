@@ -1378,6 +1378,66 @@ class TestEMData(unittest.TestCase):
                 for k in range(32):
                     self.assertEqual(e.get_value_at(i, j, k), 2.0)
   
+    def test_real_operator_binary(self):
+        """test real binary operator of EMData .............."""
+        a = EMData()
+        a.set_size(32,32,32)
+        a.to_one()
+    
+        e = a + 0.5
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 1.5)
+    
+        e = a - 0.5
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 0.5)
+    
+        e = a * 2.0
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 2.0)
+    
+        e = a / 2.0
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 0.5)
+    
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e2.to_one()
+    
+        e = a + e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 2.0)
+    
+        e = a - e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 0.0)
+    
+        e = a * 2.0
+        e2 = a * 3.0
+        e = e * e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 6.0)
+    
+        e = e / e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 2.0)
+
     def test_multi_array_2d(self):
         """test multi_array_2d real.........................."""
         nx = 16
@@ -3363,7 +3423,8 @@ class TestEMData(unittest.TestCase):
                 for x in range(16):
                     self.assertEqual(data1[z][y][x], data2[z][y][x])
         
-        testlib.safe_unlink('mydb')
+        if platform.system() != "Windows":
+            testlib.safe_unlink('mydb')
         
     def test_eman1ctf_pickling(self):
         """test EMAN1Ctf pickle as image attribute .........."""
@@ -3380,7 +3441,8 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(c.to_vector(), c2.to_vector())
         self.assertEqual(c.to_string(), c2.to_string())
         self.assertEqual(c.to_dict(), c2.to_dict())
-        testlib.safe_unlink('mydb1')
+        if platform.system() != "Windows":
+            testlib.safe_unlink('mydb1')
         
     def test_eman2ctf_pickling(self):
         """test EMAN2Ctf pickle as image attribute .........."""
@@ -3397,7 +3459,8 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(q.to_vector(), q2.to_vector())
         self.assertEqual(q.to_string(), q2.to_string())
         self.assertEqual(q.to_dict(), q2.to_dict())
-        testlib.safe_unlink('mydb2')
+        if platform.system() != "Windows":
+            testlib.safe_unlink('mydb2')
         
     def test_transform_pickling(self):
         """test Transform pickle as attribute ..............."""

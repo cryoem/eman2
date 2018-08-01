@@ -11,79 +11,117 @@ import numpy as np
 import queue
 import threading
 
-def split_xf(xf):
-	dc=xf.get_params('eman')
-	xf3d=Transform({"type":"eman","alt":dc["alt"], "az":dc["az"]})
-	
-	xf2d=Transform({"type":"2d","alpha":dc["phi"], "tx":dc["tx"], "ty":dc["ty"]})
-	return xf3d, xf2d
 
-def merge_xf(xf3d, xf2d):
-	dc2=xf2d.get_params('eman')
-	dc3=xf3d.get_params('eman')
-	xf=Transform({"type":"eman","alt":dc3["alt"], "az":dc3["az"], "phi":dc2["phi"], "tx":dc2["tx"], "ty":dc2["ty"]})
-	
-	return xf
-
-def refine_ali(ids, pinfo, m, jsd, options):
-	sz=m["nx"]
-	for ii in ids:
-		l=pinfo[ii]
-		e=EMData(l[1], l[0])
-		b=e["nx"]
-		e=e.get_clip(Region(old_div((b-sz),2), old_div((b-sz),2), sz,sz)).process("normalize")
-		dc=eval(l[2])
-		try:
-			dc.pop('score')
-		except:
-			pass
+def alifn(jsd,ii, info,a,options):
+	#### deal with mirror
 		
-		xf=Transform(dc)
-		pj=m.project("standard", xf).process("normalize.edgemean")
+	nxf=options.refinentry
+	astep=options.refineastep
+	xfs=[]
+	initxf=eval(info[-1])
+	
+	for i in range(nxf):
+		d={"type":"eman","tx":initxf["tx"], "ty":initxf["ty"]}
+		for ky in ["alt", "az", "phi"]:
+			d[ky]=initxf[ky]+(i>0)*np.random.randn()*astep
+			xfs.append(Transform(d))
+			
+	
+	alignpm={"verbose":0,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs}
+	
+	b=EMData(info[1],info[0])
+	if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
+		b=b.get_clip(Region((b["nx"]-a["ny"])/2, (b["ny"]-a["ny"])/2, a["ny"],a["ny"]))
 		
-		#### do snr weighting if ctf info present
-		if e.has_attr("ctf"):
-			ctf=e["ctf"]
-			ctf.bfactor=500 #### use a fixed b factor for now...
-			ctf.dsbg=old_div(1.,(e["apix_x"]*e["nx"]))
-			s=np.array(ctf.compute_1d(e["nx"], ctf.dsbg, Ctf.CtfType.CTF_INTEN ))
-			s[:np.argmax(s)]=np.max(s)
-			s=np.maximum(s, 0.001)
-			ctf.snr=s.tolist()
-			e["ctf"]=ctf
-			eali=e.align("refine", pj, {"maxshift":8, "maxiter":50}, "frc", {"snrweight":1, "maxres":options.maxres, "minres":500})
-		else:
-			#print("missing ctf...")
-			eali=e.align("refine", pj, {"maxshift":8, "maxiter":50}, "frc", {"minres":500, "maxres":options.maxres})
-		al=eali["xform.align2d"]
 		
-		x0,x1=split_xf(xf)
-		x1=al.inverse()*x1
-		xf1=merge_xf(x0, x1)
+	b=b.do_fft()
+	b.process_inplace("xform.phaseorigin.tocorner")
+	c=b.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
+
+	
+	xf=c[0]["xform.align3d"]
+	c={"xform.align3d":xf, "score":c[0]["score"]}
+	
+	jsd.put((ii,c))
+
+#def split_xf(xf):
+	#dc=xf.get_params('eman')
+	#xf3d=Transform({"type":"eman","alt":dc["alt"], "az":dc["az"]})
+	
+	#xf2d=Transform({"type":"2d","alpha":dc["phi"], "tx":dc["tx"], "ty":dc["ty"]})
+	#return xf3d, xf2d
+
+#def merge_xf(xf3d, xf2d):
+	#dc2=xf2d.get_params('eman')
+	#dc3=xf3d.get_params('eman')
+	#xf=Transform({"type":"eman","alt":dc3["alt"], "az":dc3["az"], "phi":dc2["phi"], "tx":dc2["tx"], "ty":dc2["ty"]})
+	
+	#return xf
+
+#def refine_ali(ids, pinfo, m, jsd, options):
+	#sz=m["nx"]
+	#for ii in ids:
+		#l=pinfo[ii]
+		#e=EMData(l[1], l[0])
+		#b=e["nx"]
+		#e=e.get_clip(Region(old_div((b-sz),2), old_div((b-sz),2), sz,sz)).process("normalize")
+		#dc=eval(l[2])
+		#try:
+			#dc.pop('score')
+		#except:
+			#pass
+		
+		#xf=Transform(dc)
+		#pj=m.project("standard", xf).process("normalize.edgemean")
+		
+		##### do snr weighting if ctf info present
+		#if e.has_attr("ctf"):
+			#ctf=e["ctf"]
+			#ctf.bfactor=500 #### use a fixed b factor for now...
+			#ctf.dsbg=old_div(1.,(e["apix_x"]*e["nx"]))
+			#s=np.array(ctf.compute_1d(e["nx"], ctf.dsbg, Ctf.CtfType.CTF_INTEN ))
+			#s[:np.argmax(s)]=np.max(s)
+			#s=np.maximum(s, 0.001)
+			#ctf.snr=s.tolist()
+			#e["ctf"]=ctf
+			#eali=e.align("refine", pj, {"maxshift":8, "maxiter":50}, "frc", {"snrweight":1, "maxres":options.maxres, "minres":500})
+		#else:
+			##print("missing ctf...")
+			#eali=e.align("refine", pj, {"maxshift":8, "maxiter":50}, "frc", {"minres":500, "maxres":options.maxres})
+		#al=eali["xform.align2d"]
+		
+		#x0,x1=split_xf(xf)
+		#x1=al.inverse()*x1
+		#xf1=merge_xf(x0, x1)
 	
 
 
-		scr=eali.cmp("frc", pj, {"maxres":options.maxres})
-		dc=xf1.get_params("eman")
-		dc["score"]=float(scr)
-		jsd.put((ii, dc))
+		#scr=eali.cmp("frc", pj, {"maxres":options.maxres})
+		#dc=xf1.get_params("eman")
+		#dc["score"]=float(scr)
+		#jsd.put((ii, dc))
 		
 def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
+	#parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
 
-	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=1, col=1, rowspan=1, colspan=1)
+	#parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=1, col=1, rowspan=1, colspan=1)
 
-	parser.add_argument("--maxres", type=float,help="max resolution for comparison", default=20.0, guitype='floatbox',row=2, col=0,rowspan=1, colspan=1)
+	#parser.add_argument("--maxres", type=float,help="max resolution for comparison", default=20.0, guitype='floatbox',row=2, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--path", type=str,help="path", default=None, guitype='strbox',row=2, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--iter", type=int,help="iteration", default=1, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=2, col=2,rowspan=1, colspan=1)
 
 	parser.add_argument("--padby", type=float,help="pad by factor. default is 2", default=2., guitype='floatbox',row=3, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.5", default=0.5, guitype='floatbox',row=3, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=3, col=2,rowspan=1, colspan=1)
+	
+	parser.add_argument("--refineastep", type=float,help="angular step for refine alignment (gauss std)", default=10.)
+	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=32)
+	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=10)
 
 	parser.add_argument("--dopostp", action="store_true", default=False ,help="Do post processing routine", guitype='boolbox',row=4, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--nogs", action="store_true", default=False ,help="skip gold standard...", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
@@ -92,7 +130,6 @@ def main():
 	#parser.add_argument("--unmask", action="store_true", default=False ,help="use unmasked map as references", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=2,rowspan=1, colspan=1)
 
-	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 
 	(options, args) = parser.parse_args()
@@ -107,7 +144,7 @@ def main():
 	#### start from a spt_align - spt_average
 	if options.fromlast:
 		
-		e=EMData("{}/threed_{:02d}.hdf".format(path, itr-1))
+		e=EMData("{}/threed_{:02d}.hdf".format(path, itr))
 		bxsz=e["nx"]
 		apix=e["apix_x"]
 		print("box size {}, apix {:.2f}".format(bxsz, apix))
@@ -123,13 +160,13 @@ def main():
 		print("loading 3D particles from {}".format(src))
 		print("box size {}, apix {:.2f}".format(bxsz, apix))
 		
-		fscs=[os.path.join(path,f) for f in os.listdir(path) if f.startswith("fsc") and f.endswith("{:02d}.txt".format(itr))]
-		for f in fscs:
-			os.rename(f, f[:-4]+"_raw.txt")
+		#fscs=[os.path.join(path,f) for f in os.listdir(path) if f.startswith("fsc") and f.endswith("{:02d}.txt".format(itr))]
+		#for f in fscs:
+			#os.rename(f, f[:-4]+"_raw.txt")
 			
-		for eo in ["", "_even", "_odd"]:
-			os.rename("{}/threed_{:02d}{}.hdf".format(path, itr, eo), 
-					"{}/threed_{:02d}_raw{}.hdf".format(path, itr, eo))
+		#for eo in ["", "_even", "_odd"]:
+			#os.rename("{}/threed_{:02d}{}.hdf".format(path, itr, eo), 
+					#"{}/threed_{:02d}_raw{}.hdf".format(path, itr, eo))
 		
 		lname=[os.path.join(path, "ali_ptcls_{:02d}_{}.lst".format(itr,eo)) for eo in ["even", "odd"]]
 		for l in lname:
@@ -166,11 +203,11 @@ def main():
 		
 		if options.fromlast:
 			#### start from a previous tilt refine
-			lstname="{}/ali_ptcls_refine_{:02d}_{}.lst".format(path, itr-1, eo)
+			lstname="{}/ali_ptcls_{:02d}_{}.lst".format(path, itr, eo)
 			if options.nogs:
-				threedname="{}/threed_{:02d}.hdf".format(path, itr-1)
+				threedname="{}/threed_{:02d}.hdf".format(path, itr)
 			else:
-				threedname="{}/threed_{:02d}_{}.hdf".format(path, itr-1, eo)
+				threedname="{}/threed_{:02d}_{}.hdf".format(path, itr, eo)
 			
 			#print(lstname, threedname)
 			lst=LSXFile(lstname, True)
@@ -186,9 +223,9 @@ def main():
 				#m.process_inplace("mask.soft",{"outer_radius":-4})
 			#else:
 			if options.nogs:
-				m=EMData("{}/threed_{:02d}_raw.hdf".format(path, itr))
+				m=EMData("{}/threed_{:02d}.hdf".format(path, itr))
 			else:
-				m=EMData("{}/threed_{:02d}_raw_{}.hdf".format(path, itr, eo))
+				m=EMData("{}/threed_{:02d}_{}.hdf".format(path, itr, eo))
 			
 		m.process_inplace('normalize.edgemean')
 		#m.process_inplace("threshold.belowtozero",{"minval":0.5})
@@ -202,12 +239,13 @@ def main():
 		jsd=queue.Queue(0)
 		jobs=[]
 		print("Refining {} set with {} 2D particles..".format(eo, nptcl))
-		batchsz=100
-		for tid in range(0,nptcl,batchsz):
-			ids=list(range(tid, min(tid+batchsz, nptcl)))
-			jobs.append([ids, pinfo, m, jsd, options])
+		thrds=[threading.Thread(target=alifn,args=([jsd, i, info, m, options])) for i,info in enumerate(pinfo)]
+		#batchsz=100
+		#for tid in range(0,nptcl,batchsz):
+			#ids=list(range(tid, min(tid+batchsz, nptcl)))
+			#jobs.append([ids, pinfo, m, jsd, options])
 
-		thrds=[threading.Thread(target=refine_ali,args=(i)) for i in jobs]
+		#thrds=[threading.Thread(target=refine_ali,args=(i)) for i in jobs]
 		thrtolaunch=0
 		tsleep=threading.active_count()
 
@@ -225,9 +263,11 @@ def main():
 			while not jsd.empty():
 				ii, dc=jsd.get()
 				dics[ii]=dc
+				#print(dc)
 				ndone+=1
-				if ndone%2000==0:
-					print("\t{}/{} finished.".format(ndone, nptcl))
+				#if ndone%1000==0:
+				print("\t{}/{} finished.".format(ndone, nptcl), end='\r')
+				sys.stdout.flush()
 
 		for t in thrds: t.join()
 		#np.savetxt("tmpout1.txt", dics, fmt='%s')
@@ -249,11 +289,12 @@ def main():
 		#allscr-=np.min(allscr)-1e-5
 		#allscr/=np.max(allscr)
 
-		lname="{}/ali_ptcls_refine_{:02d}_{}.lst".format(path, itr, eo)
+		lname="{}/ali_ptcls_{:02d}_{}.lst".format(path, itr+1, eo)
 		try: os.remove(lname)
 		except: pass
 		lout=LSXFile(lname, False)
-		for i, d in enumerate(dics):
+		for i, dc in enumerate(dics):
+			d=dc["xform.align3d"].get_params("eman")
 			d["score"]=float(allscr[i])
 			l=pinfo[i]
 			lout.write(-1, l[0], l[1], str(d))
@@ -261,27 +302,27 @@ def main():
 		lout=None
 
 		pb=options.padby
-		cmd="make3dpar_rawptcls.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads 12 --outsize {bx} --apix {apx} --mode gauss_2 --keep {kp} --sym {sm}".format(
+		cmd="make3dpar_rawptcls.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads {trd} --outsize {bx} --apix {apx} --mode gauss_var --keep {kp} --sym {sm}".format(
 			inp=lname, 
-			out="{}/threed_{:02d}_{}.hdf".format(path, itr, eo),
-			bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=options.sym)
+			out="{}/threed_{:02d}_{}.hdf".format(path, itr+1, eo),
+			bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=options.sym, trd=options.threads)
 		
 		run(cmd)
 		
 	if options.dopostp:
-		sfx="{}/threed_{:02d}".format(path, itr )
+		sfx="{}/threed_{:02d}".format(path, itr+1 )
 		if len(options.setsf)>0:
 			sf=" --setsf {}".format(options.setsf)
 		else:
 			sf=""
 		cmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {} --mass 1000.0 --restarget 10.0 --sym {}  --align {}".format(
-			sfx+"_even.hdf", sfx+"_odd.hdf", sfx+".hdf", itr, options.sym, sf)
+			sfx+"_even.hdf", sfx+"_odd.hdf", sfx+".hdf", itr+1, options.sym, sf)
 		
 		run(cmd)
 	
-		fscs=[os.path.join(path,f) for f in os.listdir(path) if f.startswith("fsc") and f.endswith("{:02d}.txt".format(itr))]
-		for f in fscs:
-			os.rename(f, f[:-4]+"_ali.txt")
+		#fscs=[os.path.join(path,f) for f in os.listdir(path) if f.startswith("fsc") and f.endswith("{:02d}.txt".format(itr))]
+		#for f in fscs:
+			#os.rename(f, f[:-4]+"_ali.txt")
 			
 	E2end(logid)
 	

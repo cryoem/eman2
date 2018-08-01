@@ -11,12 +11,13 @@ from __future__ import print_function
 #  04/10/2017 - Enabled for one node
 #  04/18/2017 - Introduce symclass to handle angles in a unified manner
 #  01/21/2018 - Rationalize the code, particularly restart
+#  07/21/2018 - Full size reconstruction after delta change
 from builtins import range
 """
 There are four ways to run the program:
 
 1. Standard default run, starts from exhaustive searches, uses initial reference volume
-mpirun -np 64 --hostfile four_nodes.txt  psxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
+mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
 
 2. Restart after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
 mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  vton1 --radius=100 >2ovotn &
@@ -217,6 +218,7 @@ def AI( fff, anger, shifter, chout = False):
 		else:							inc += Tracker["nxstep"]
 		Tracker["nxinit"] = min(2*inc, Tracker["constants"]["nnxo"] )  #  Cannot exceed image size
 		Tracker["local"]  = False
+		Tracker["changed_delta"] = False
 		#  Do not use CTF during first iteration
 		#Tracker["applyctf"]    = False
 		#Tracker["constants"]["best"] = Tracker["mainiteration"]
@@ -238,7 +240,6 @@ def AI( fff, anger, shifter, chout = False):
 		Tracker["nxstep"] = max(Tracker["nxstep"], l01-l05+5)
 		if(Tracker["state"] == "FINAL" or Tracker["state"] == "RESTRICTED"): Tracker["large_at_Nyquist"] = (fff[Tracker["nxinit"]//2] > 0.1 or fff[Tracker["nxinit"]//2-1] > 0.2)
 		else:   Tracker["large_at_Nyquist"] = fff[Tracker["nxinit"]//2-1] > 0.2
-
 
 		if( Tracker["mainiteration"] == 2 ):  
 			maxres     = Tracker["constants"]["inires"]
@@ -282,6 +283,7 @@ def AI( fff, anger, shifter, chout = False):
 		if( chout ): print("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
 		Tracker["nxinit"] = tmp
+		Tracker["changed_delta"] = False
 		#  decide angular step and translations
 		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
 			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
@@ -289,11 +291,12 @@ def AI( fff, anger, shifter, chout = False):
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					print(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
-				range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"],range, step)
-				Tracker["xr"] = range
+				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
+				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
+				Tracker["xr"] = step_range
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
+				Tracker["changed_delta"] = True
 				if( Tracker["delta"] <= 3.75/2.0 ):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
 					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
@@ -411,6 +414,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 		if( chout ): print("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
 		Tracker["nxinit"] = tmp
+		Tracker["changed_delta"] = False
 		#  decide angular step and translations
 		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
 			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
@@ -418,11 +422,12 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					print(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
 			else:
-				range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
-				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"],range, step)
-				Tracker["xr"] = range
+				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
+				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
+				Tracker["xr"] = step_range
 				Tracker["ts"] = step
 				Tracker["delta"] /= 2.0
+				Tracker["changed_delta"] = True
 				if( Tracker["delta"] <= 3.75/2.0 or True):  #  MOVE DOWN TO RESTRICTED
 					Tracker["an"]		= 6*Tracker["delta"]
 					if( Tracker["delta"] <= degrees(atan(0.25/Tracker["constants"]["radius"])) ): Tracker["state"] = "FINAL"
@@ -469,13 +474,13 @@ def compute_search_params(acc_trans, shifter, old_range):
 	# step refer to the fine sampled step; while the range remains
 	if(old_range == 0.0 and shifter != 0.0):  old_range = acc_trans
 	step   = min(1.5, 0.75*acc_trans)   #remove 2 
-	range  = min( 1.3*old_range, 5.0*shifter)
-	range  = max(range, 3.0*step) # change 1.5 to 3.0
-	if range > 8.0*step :   range /= 2.0 # change 4 to 8
-	if range > 8.0*step :   step   = range/8.0 # change 4 to 8
+	new_range  = min( 1.3*old_range, 5.0*shifter)
+	new_range  = max(new_range, 3.0*step) # change 1.5 to 3.0
+	if new_range > 8.0*step :   new_range /= 2.0 # change 4 to 8
+	if new_range > 8.0*step :   step   = new_range/8.0 # change 4 to 8
 	#  change 4. to 8. on account of the fact that we return actual shift which is then doubled for coarse search.
-	if(range == 0.0):  step = 0.5  # change 1.0 to 0.5
-	return range, step
+	if(new_range == 0.0):  step = 0.5  # change 1.0 to 0.5
+	return new_range, step
 
 def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 	global Tracker, Blockdata
@@ -625,7 +630,7 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 
 	### conversion
 	
-	#for iproc in xrange(2):
+	#for iproc in range(2):
 	#	if( Tracker["nima_per_chunk"][iproc] < Blockdata["nproc"] ):  ERROR("Number of particles per chunk smaller than the number of CPUs","assign_particles_to_groups",1,Blockdata["myid"])
 	#write_text_file(q0, os.path.join(Tracker["constants"]["masterdir"],"main000","tchunk_0.txt") )
 	write_text_file(g0, os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_0.txt") )
@@ -770,7 +775,7 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		#  I am not sure whether what follows is correct.  This part should be recalculated upon restart
 		Blockdata["accumulatepw"] = [[],[]]
 		ndata = len(projdata)
-		for i in xrange(ndata):
+		for i in range(ndata):
 			if(i<first_procid):  iproc = 0 #  This points to correct procid
 			else:                iproc = 1
 			Blockdata["accumulatepw"][iproc].append([0.0]*200)
@@ -814,10 +819,10 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		#data = EMData.read_images(stack, range(image_start, image_end))
 		if(myid == 0):
 			params = read_text_row( paramsname )
-			params = [params[i][j]  for i in xrange(len(params))   for j in xrange(5)]
+			params = [params[i][j]  for i in range(len(params))   for j in range(5)]
 		else:           params = [0.0]*(5*ndata)
 		params = bcast_list_to_all(params, myid, source_node=Blockdata["main_node"])
-		params = [[params[i*5+j] for j in xrange(5)] for i in xrange(ndata)]
+		params = [[params[i*5+j] for j in range(5)] for i in range(ndata)]
 		'''
 		if(Blockdata["accumulatepw"] == None):
 			Blockdata["accumulatepw"] = [[],[]]
@@ -847,14 +852,14 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 			'''
 			tocp[indx] += 1
 
-		####for lll in xrange(len(Blockdata["accumulatepw"])):  print(myid,ndata,lll,len(Blockdata["accumulatepw"][lll]))
+		####for lll in range(len(Blockdata["accumulatepw"])):  print(myid,ndata,lll,len(Blockdata["accumulatepw"][lll]))
 		reduce_EMData_to_root(tsd, myid, Blockdata["main_node"],  mpi_comm)
 		reduce_EMData_to_root(tocp, myid, Blockdata["main_node"], mpi_comm)
 		reduce_EMData_to_root(tavg, myid, Blockdata["main_node"], mpi_comm)
 		if( myid == Blockdata["main_node"]):
 			Util.mul_scalar(tavg, 1.0/float(sum(Tracker["nima_per_chunk"])))
 			sig = Util.rotavg_fourier( tavg )
-			#for k in xrange(1,nv):  print("  BACKG  ",k,tsd.get_value_at(k,0)/tocp[0] ,sig[k],tsd.get_value_at(k,0)/tocp[0] - sig[k])
+			#for k in range(1,nv):  print("  BACKG  ",k,tsd.get_value_at(k,0)/tocp[0] ,sig[k],tsd.get_value_at(k,0)/tocp[0] - sig[k])
 			tmp1 = [0.0]*nv
 			tmp2 = [0.0]*nv
 			for i in range(ngroups):
@@ -868,10 +873,10 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 					for k in range(1,nv-1):  tmp2[k] = (tmp1[k-1]+tmp1[k]+tmp1[k+1])/3.0
 					for k in range(1,nv-1):  tmp1[k] = tmp2[k]
 				"""
-				for k in xrange(6,nv):
+				for k in range(6,nv):
 					tsd.set_value_at(k,i,1.0/(tsd.get_value_at(k,i)/tocp[i]))  # Already inverted
 				qt = tsd.get_value_at(6,i)
-				for k in xrange(1,6):
+				for k in range(1,6):
 					tsd.set_value_at(k,i,qt)
 				"""
 				#  We will keep 0-element the same as first tsd.set_value_at(0,i,1.0)
@@ -888,7 +893,7 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		for k in range(nnx): prj[k] = tsd.get_value_at(k,i)
 		Blockdata["bckgnoise"].append(prj)  #  1.0/sigma^2
 	return
-	#return Blockdata["bckgnoise"]#tsd, sd#, [int(tocp[i]) for i in xrange(len(sd))]
+	#return Blockdata["bckgnoise"]#tsd, sd#, [int(tocp[i]) for i in range(len(sd))]
 
 def getindexdata(partids, partstack, particle_groups, original_data=None, small_memory=True, nproc =-1, myid = -1, mpi_comm = -1):
 	global Tracker, Blockdata
@@ -918,7 +923,7 @@ def getindexdata(partids, partstack, particle_groups, original_data=None, small_
 	'''
 	particles_on_node = []
 	parms_on_node     = []
-	for i in xrange( group_start, group_end ):
+	for i in range( group_start, group_end ):
 		particles_on_node += lpartids[group_reference[i][2]:group_reference[i][3]+1]  #  +1 is on account of python idiosyncrasies
 		parms_on_node     += partstack[group_reference[i][2]:group_reference[i][3]+1]
 
@@ -1409,7 +1414,8 @@ def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	print(line,theme)
 	spaces = "                    "
-	exclude = ["constants", "maxit", "nodes", "yr", "shared_comm", "bckgnoise", "myid", "myid_on_node", "accumulatepw"]
+	exclude = ["constants", "maxit", "nodes", "yr", "shared_comm", "bckgnoise", "myid", "myid_on_node", "accumulatepw",\
+				"changed_delta"]
 	for key, value in sorted( dict.items() ):
 		pt = True
 		for ll in exclude:
@@ -1770,7 +1776,7 @@ def XNumrinit_local(first_ring, last_ring, skip=1, mode="F"):
 	else:                            dpi = pi
 	numr = []
 	lcirc = 1
-	for k in xrange(first_ring, last_ring+1, skip):
+	for k in range(first_ring, last_ring+1, skip):
 		numr.append(k)
 		jp = int(dpi * k+0.5)
 		ip = 2**(log2(jp)+1)  # two times oversample each ring
@@ -1792,7 +1798,7 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -1821,8 +1827,8 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 
 	'''
 	if(Blockdata["myid"] <3):
-		for kl in xrange(0,ndat,ndat/2):
-			for m in xrange(0,len(data[kl]),len(data[kl])/3):  print(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
+		for kl in range(0,ndat,ndat/2):
+			for m in range(0,len(data[kl]),len(data[kl])/3):  print(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
 	'''
 
 	if Tracker["mainiteration"]>1 :
@@ -1997,7 +2003,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -2044,8 +2050,8 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 
 	'''
 	if(Blockdata["myid"] <3):
-		for kl in xrange(0,ndat,ndat/2):
-			for m in xrange(0,len(data[kl]),len(data[kl])/3):  print(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
+		for kl in range(0,ndat,ndat/2):
+			for m in range(0,len(data[kl]),len(data[kl])/3):  print(" DNORM  ",Blockdata["myid"],kl,m, Util.innerproduct(data[kl][m],data[kl][m],mask))
 	'''
 
 	if Tracker["mainiteration"]>1 :
@@ -2269,7 +2275,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -2505,9 +2511,9 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	if Blockdata["bckgnoise"] :
 		oneover = []
 		nnx = Blockdata["bckgnoise"][0].get_xsize()
-		for i in xrange(len(Blockdata["bckgnoise"])):
+		for i in range(len(Blockdata["bckgnoise"])):
 			temp = [0.0]*nnx
-			for k in xrange(nnx):
+			for k in range(nnx):
 				if( Blockdata["bckgnoise"][i].get_value_at(k) > 0.0):  temp[k] = 1.0/sqrt(Blockdata["bckgnoise"][i].get_value_at(k))
 			oneover.append(temp)
 		del temp
@@ -2582,11 +2588,11 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		"""
 		if Blockdata["bckgnoise"]:
 			temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
-			bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in xrange(temp.get_xsize())])
+			bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
 		else:
 			bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
 		bckgnoise = bckgn.copy()
-		for j in xrange(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
+		for j in range(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
 		"""
 		if Tracker["constants"]["CTF"] :
 			ctf_params = dataimage.get_attr("ctf")
@@ -2661,7 +2667,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			xod1 /= np.sum(xod1)
 			cumprob = 0.0
 			lit = len(xod1)
-			for j in xrange(len(xod1)):
+			for j in range(len(xod1)):
 				cumprob += xod1[j]
 				if(cumprob > Tracker["constants"]["ccfpercentage"]):
 					lit = j+1
@@ -2727,7 +2733,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			xod1 /= np.sum(xod1)
 			cumprob = 0.0
 			lit = len(xod1)
-			for j in xrange(len(xod1)):
+			for j in range(len(xod1)):
 				cumprob += xod1[j]
 				if(cumprob > Tracker["constants"]["ccfpercentage"]):
 					lit = j+1
@@ -2849,7 +2855,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		np.exp(cod1, out=cod1)
 		cod1 /= np.sum(cod1)
 		cumprob = 0.0
-		for j in xrange(len(cod1)):
+		for j in range(len(cod1)):
 			cumprob += cod1[j]
 			if(cumprob > Tracker["constants"]["ccfpercentage"]):
 				lit = j+1
@@ -2858,7 +2864,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
 		###norm_per_particle[im] = np.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
 
-		###for iln in xrange(lit):
+		###for iln in range(lit):
 		newpar[im][2] = [[int(cod2), float(cod1)]]
 
 		del cod1, cod2, lina
@@ -2877,7 +2883,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	"""
 	# norm correction ---- calc the norm correction per particle
 	snormcorr = 0.0
-	for kl in xrange(nima):
+	for kl in range(nima):
 		norm_per_particle[kl] = sqrt(norm_per_particle[kl]*2.0)*oldparams[kl][7]/Tracker["avgvaradj"][procid]
 		snormcorr            += norm_per_particle[kl]
 	Tracker["avgvaradj"][procid] = snormcorr
@@ -2896,7 +2902,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	sava = 0.0
 	svar = 0.0
 	snum = 0
-	for kl in xrange(nima):
+	for kl in range(nima):
 		j = len(newpar[kl][2])
 		snum += 1
 		sava += float(j)
@@ -2936,7 +2942,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
 	mpi_barrier(MPI_COMM_WORLD)
 	#if( Blockdata["myid"] == Blockdata["main_node"] ):
-	#	#write_text_row([[newpar[0][2][j][0],newpar[0][2][j][1]] for j in xrange(len(newpar[0][2]))],os.path.join(Tracker["directory"], "polar%1d.txt"%procid))
+	#	#write_text_row([[newpar[0][2][j][0],newpar[0][2][j][1]] for j in range(len(newpar[0][2]))],os.path.join(Tracker["directory"], "polar%1d.txt"%procid))
 	#	print( "  Statistics finished : %10.1fmin"%((time()-at)/60.))
 	return newpar, [1.0]*nima#norm_per_particle
 
@@ -2949,7 +2955,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -3683,7 +3689,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -4351,7 +4357,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	#print("  NORMALIZATION DONE  ",Blockdata["myid"])
 	mpi_barrier(MPI_COMM_WORLD)
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		#write_text_row([[newpar[0][2][j][0],newpar[0][2][j][1]] for j in xrange(len(newpar[0][2]))],os.path.join(Tracker["directory"], "polar%1d.txt"%procid))
+		#write_text_row([[newpar[0][2][j][0],newpar[0][2][j][1]] for j in range(len(newpar[0][2]))],os.path.join(Tracker["directory"], "polar%1d.txt"%procid))
 		print( "  Statistics finished : %10.1fmin"%((time()-at)/60.))
 	return newpar, norm_per_particle
 
@@ -4368,7 +4374,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -5086,7 +5092,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 						#if( Blockdata["myid"] == Blockdata["main_node"]):
 						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
-						#	for iln in xrange(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
+						#	for iln in range(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
 
 
 						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
@@ -5110,7 +5116,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 				#mpi_barrier(MPI_COMM_WORLD)
 				#mpi_finalize()
 				#exit()
-				#for j in xrange(lit):
+				#for j in range(lit):
 				#	 newpar[kl][2].append([int(xod2[j]),float(xod1[j])])
 				if( lenass > 0):
 					###print("   EICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im)#,assignments_to_cones)
@@ -5254,7 +5260,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  print(" progress  ",iln,time()-at)
 					#if( Blockdata["myid"] == Blockdata["main_node"]):
 					#	print("  PROJECT   ",im,lit,johi)#,cod2)
-					#	#for iln in xrange(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
+					#	#for iln in range(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
 					del data
 					del dataml
 
@@ -5271,8 +5277,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					tbckg = [tbckg[int(q)] for q in lina]
 
 					###if( Blockdata["myid"] == Blockdata["main_node"]):
-					###for iui in xrange(len(lina)):
-					###	for iui in xrange(len(cod1)):
+					###for iui in range(len(lina)):
+					###	for iui in range(len(cod1)):
 					###		print("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
 
 					np.exp(cod1, out=cod1)
@@ -5437,7 +5443,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -6130,7 +6136,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 						#if( Blockdata["myid"] == Blockdata["main_node"]):
 						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
-						#	for iln in xrange(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
+						#	for iln in range(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
 
 
 						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
@@ -6154,7 +6160,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 				#mpi_barrier(MPI_COMM_WORLD)
 				#mpi_finalize()
 				#exit()
-				#for j in xrange(lit):
+				#for j in range(lit):
 				#	 newpar[kl][2].append([int(xod2[j]),float(xod1[j])])
 				if( lenass > 0):
 					###print("   EICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im)#,assignments_to_cones)
@@ -6296,7 +6302,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  print(" progress  ",iln,time()-at)
 					#if( Blockdata["myid"] == Blockdata["main_node"]):
 					#	print("  PROJECT   ",im,lit,johi)#,cod2)
-					#	#for iln in xrange(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
+					#	#for iln in range(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
 					del data
 					del dataml
 
@@ -6311,8 +6317,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					cod3 = cod3[lina]
 
 					###if( Blockdata["myid"] == Blockdata["main_node"]):
-					###for iui in xrange(len(lina)):
-					###	for iui in xrange(len(cod1)):
+					###for iui in range(len(lina)):
+					###	for iui in range(len(cod1)):
 					###		print("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
 
 					np.exp(cod1, out=cod1)
@@ -6444,7 +6450,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -7147,7 +7153,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 
 						#if( Blockdata["myid"] == Blockdata["main_node"]):
 						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
-						#	for iln in xrange(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
+						#	for iln in range(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
 
 
 						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
@@ -7171,7 +7177,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 				#mpi_barrier(MPI_COMM_WORLD)
 				#mpi_finalize()
 				#exit()
-				#for j in xrange(lit):
+				#for j in range(lit):
 				#	 newpar[kl][2].append([int(xod2[j]),float(xod1[j])])
 				if( lenass > 0):
 					###print("   EICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im)#,assignments_to_cones)
@@ -7313,7 +7319,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  print(" progress  ",iln,time()-at)
 					#if( Blockdata["myid"] == Blockdata["main_node"]):
 					#	print("  PROJECT   ",im,lit,johi)#,cod2)
-					#	#for iln in xrange(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
+					#	#for iln in range(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
 					del data
 					del dataml
 
@@ -7328,8 +7334,8 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					cod3 = cod3[lina]
 
 					###if( Blockdata["myid"] == Blockdata["main_node"]):
-					###for iui in xrange(len(lina)):
-					###	for iui in xrange(len(cod1)):
+					###for iui in range(len(lina)):
+					###	for iui in range(len(cod1)):
 					###		print("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
 
 					np.exp(cod1, out=cod1)
@@ -7750,7 +7756,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	from math 			import sqrt
 	#  Input data has to be CTF-multiplied, preshifted
 	#  Output - newpar, see structure
-	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in xrange(Tracker["lentop"])]] for i in xrange(len(data))]
+	#    newpar = [[i, [worst_similarity, sum_all_similarities], [[-1, -1.0e23] for j in range(Tracker["lentop"])]] for i in range(len(data))]
 	#    newpar = [[params],[],... len(data)]
 	#    params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
 	#    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
@@ -8452,7 +8458,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 
 						#if( Blockdata["myid"] == Blockdata["main_node"]):
 						#	#print("  PROJECT   ",im,lit,johi)#,cod2)
-						#	for iln in xrange(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
+						#	for iln in range(len(xod1)):  print("  ROPE   ",iln,xod1[iln],xod2[iln])
 
 
 						lina = np.argwhere(xod1 > Tracker["constants"]["expthreshold"])
@@ -8476,7 +8482,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 				#mpi_barrier(MPI_COMM_WORLD)
 				#mpi_finalize()
 				#exit()
-				#for j in xrange(lit):
+				#for j in range(lit):
 				#	 newpar[kl][2].append([int(xod2[j]),float(xod1[j])])
 				if( lenass > 0):
 					###print("   EICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im)#,assignments_to_cones)
@@ -8618,7 +8624,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						###if( Blockdata["myid"] == Blockdata["main_node"] and iln%1000 ==0):  print(" progress  ",iln,time()-at)
 					#if( Blockdata["myid"] == Blockdata["main_node"]):
 					#	print("  PROJECT   ",im,lit,johi)#,cod2)
-					#	#for iln in xrange(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
+					#	#for iln in range(lit):  print("  ROPE   ",iln,cod1[iln],cod2[iln],cod3[iln])
 					del data
 					del dataml
 
@@ -8633,8 +8639,8 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					cod3 = cod3[lina]
 
 					###if( Blockdata["myid"] == Blockdata["main_node"]):
-					###for iui in xrange(len(lina)):
-					###	for iui in xrange(len(cod1)):
+					###for iui in range(len(lina)):
+					###	for iui in range(len(cod1)):
 					###		print("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
 
 					np.exp(cod1, out=cod1)
@@ -9381,7 +9387,7 @@ def continuation_read_subset_data(masterdir, option_old_refinement_dir, option_s
 	### handle the selected cluster
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if option_selected_cluster !='': cluster = sorted(read_text_file(option_selected_cluster))
-		else: cluster= list(range(len(chunk_one)+len(chunk_two)))
+		else: cluster = list(range(len(chunk_one)+len(chunk_two)))
 	else: cluster = 0
 	cluster = wrap_mpi_bcast(cluster, Blockdata["main_node"], MPI_COMM_WORLD) # balance processors	
 	# create directories
@@ -10647,6 +10653,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 							original_data[procid], small_memory = Tracker["constants"]["small_memory"], \
 							nproc = Blockdata["nproc"], myid = Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 
+						if Tracker["changed_delta"]:
+							org_nxinit = Tracker["nxinit"]
+							Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+
 						projdata[procid] = get_shrink_data(Tracker["nxinit"], procid, original_data[procid], oldparams[procid], \
 															return_real = False, preshift = True, apply_mask = False, nonorm = True)
 
@@ -10655,6 +10665,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 						do3d(procid, projdata[procid], newparamstructure[procid], refang, rshifts, norm_per_particle[procid], Blockdata["myid"], mpi_comm = MPI_COMM_WORLD)
 						projdata[procid] = []
+						if Tracker["changed_delta"]:
+							Tracker["nxinit"] = org_nxinit
 
 						if( Blockdata["myid_on_node"] == 0 ):
 							for kproc in range(Blockdata["no_of_processes_per_group"]):
@@ -10681,6 +10693,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					del refang, rshifts
 
 					#  DRIVER RESOLUTION ASSESSMENT and RECONSTRUCTION <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+					if Tracker["changed_delta"]:
+						org_nxinit = Tracker["nxinit"]
+						Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 					if( Blockdata["no_of_groups"] == 1 ):
 						if( Blockdata["myid"] == Blockdata["nodes"][0] ):
 							tvol0 		= get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"])))
@@ -10817,7 +10832,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						#  Here end per node execution.
 					mpi_barrier(MPI_COMM_WORLD)
 					if( Blockdata["myid"] == Blockdata["nodes"][0]): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
-		
+					if Tracker["changed_delta"]:
+						Tracker["nxinit"] = org_nxinit
+	
 					#from sys import exit
 					#mpi_finalize()
 					#exit()
