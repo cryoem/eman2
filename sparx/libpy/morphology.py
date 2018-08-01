@@ -1338,7 +1338,7 @@ def residual_1dpw2(list_1dpw2, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0
 			freq.append(i/(2*Pixel_size*len(list_1dpw2)))
 	return res, freq
 
-def adaptive_mask1(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
+def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
 	"""
 		Name
 			adaptive_mask - create a mask from a given image.
@@ -1547,17 +1547,17 @@ def get_biggest_cluster(mg):
 										lg[iq,jq,kq]=0
 										l.append([iq,jq,kq])
 
-def adaptive_mask(vol, mass=2000, Pixel_size=3.6):
+def adaptive_mask_mass(vol, mass=2000, Pixel_size=3.6):
 	from utilities  import gauss_edge, model_blank
-	from morphology import binarize, threshold
-	from filter     import filt_gaussl, filt_dilation
+	from morphology import binarize, threshold, dilation
+	from filter     import filt_gaussl
 	nx = vol.get_xsize()
 	a = filt_gaussl(vol, 0.15, True)
 	TH = a.find_3d_threshold(mass, Pixel_size)
 	a = binarize(a,TH)
 	d = a.delete_disconnected_regions(0,0,0)
 
-	d = filt_dilation(d, model_blank(3,3,3,1.0), "BINARY")
+	d = dilation(d, model_blank(3,3,3,1.0), "BINARY")
 	#d = filt_dilation(d, model_blank(3,3,3,1.0), "BINARY")
 	d = gauss_edge(d)
 	return d
