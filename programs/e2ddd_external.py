@@ -301,9 +301,9 @@ def main():
 			
 			sortedlist=sorted(info, key=lambda x: x[0])
 			
-			tltangs=[]
-			for i in sortedlist:
-				tltangs.append(i[0])
+			#tltangs=[]
+			#for i in sortedlist:
+			#	tltangs.append(i[0])
 			#add tiltangs to header
 
 
@@ -325,7 +325,6 @@ def main():
 				if not os.path.isdir("tmp"): os.mkdir("tmp")
 				output = "-OutMrc {}".format(outfile)
 				cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
-				print(cmd)
 				run(cmd,verbose=options.verbose)
 
 				ali = EMData(outfile)
