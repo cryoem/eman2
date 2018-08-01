@@ -232,7 +232,24 @@ def main():
 	elif options.program == "ucsf_motioncor2":
 
 		if options.dark != None: cmdopts += " -Dark {} ".format(options.dark)
-		if options.gain != None: cmdopts += " -Gain {} ".format(options.gain)
+			file,ext=options.gain.split(".")
+			if ext.lower() in ["tif","dm4","mrcs"]:
+				gainmrc="{}_eman2.mrc".format(file)
+				if not os.path.exists(gainmrc): 
+					cmd="e2proc2d.py {} {}".format(options.gain,gainmrc)
+					run(cmd,verbose=options.verbose)
+				options.gain=gainmrc
+			cmdopts += " -Gain {} ".format(options.gain)
+			
+		if options.gain != None: 
+			file,ext=options.gain.split(".")
+			if ext.lower() in ["tif","dm4","mrcs"]:
+				gainmrc="{}_eman2.mrc".format(file)
+				if not os.path.exists(gainmrc): 
+					cmd="e2proc2d.py {} {}".format(options.gain,gainmrc)
+					run(cmd,verbose=options.verbose)
+				options.gain=gainmrc
+			cmdopts += " -Gain {} ".format(options.gain)
 
 		if options.mc2_flipgain != 0: cmdopts+=" -FlipGain {}".format(options.mc2_flipgain)
 		if options.mc2_rotgain != 0: cmdopts+=" -RotGain {}".format(options.mc2_rotgain)
@@ -283,6 +300,13 @@ def main():
 				cmdopts+=" -Trunc {}".format(lastframe)
 			
 			sortedlist=sorted(info, key=lambda x: x[0])
+			
+			tltangs=[]
+			for i in sortedlist:
+				tltangs.append(i[0])
+			#add tiltangs to header
+
+
 
 			if options.verbose > 0:
 				print("File order:")
@@ -301,6 +325,7 @@ def main():
 				if not os.path.isdir("tmp"): os.mkdir("tmp")
 				output = "-OutMrc {}".format(outfile)
 				cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
+				print(cmd)
 				run(cmd,verbose=options.verbose)
 
 				ali = EMData(outfile)
