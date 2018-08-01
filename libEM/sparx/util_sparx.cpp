@@ -7396,8 +7396,19 @@ c  purpose: linear interpolation
 */
 EMData* Util::Polar2DFT(EMData* image, int ring_length, int nb, int ne)  {
 	
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
+	EMData *cimage = NULL;
+	if ( image->is_complex() )  ImageFormatException("Polar2DFT requires a real image.");
+	else {
+		cimage = image->copy();
+		cimage->center_origin_yz();
+		cimage->set_attr("npad",1);
+		cimage->div_sinc(1);
+		cimage = cimage->norm_pad(false, 1);
+		cimage->do_fft_inplace();
+		cimage->center_origin_fft();
+	}
+	int nx = cimage->get_xsize();
+	int ny = cimage->get_ysize();
 	int nc = ny/2;
 
 	int lcirc = ne-nb+1;
@@ -7418,8 +7429,9 @@ EMData* Util::Polar2DFT(EMData* image, int ring_length, int nb, int ne)  {
 		//printf("trigtab   %d      %f  %f\n",x,vsin[x],vcos[x]);
 	}
 
-	float* xim  = image->get_data();
+	float* xim  = cimage->get_data();
 	float* rings = out->get_data();
+	//for(unsigned int inr = 0; inr <= 2*nx; inr++) printf("Polar2DFT   %d   %f\n",inr,xim[inr]);
 	for (unsigned int it = 0; it < ring_length/2; it++) {
 		for (unsigned int inr = nb; inr <= ne; inr++) {
 			xnew    = vsin[it] * inr;
@@ -7432,6 +7444,10 @@ EMData* Util::Polar2DFT(EMData* image, int ring_length, int nb, int ne)  {
 			//rings[(inr-nb)*2*ring_length + 2*it + ring_length],rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length]);
 		}
 	}
+
+	delete cimage;
+	cimage = 0;
+
 	return out;
 }
 
@@ -7444,34 +7460,46 @@ EMData* Util::Polar2DShiftCoeffs(int nx, float xshift, float yshift, int ring_le
 	
 	EMData* out = new EMData();
 	out->set_size(2*ring_length, lcirc); // ring_length complex numbers, or 2*ring_length real ones
-
-	float dfi;
-	dfi = TWOPI / ring_length;
-//	Table for sin & cos
-	vector<float> vsin(ring_length/2);
-	vector<float> vcos(ring_length/2);
-	for (int x = 0; x < ring_length/2; x++) {
-		float ang = static_cast<float>(x * dfi);
-		vsin[x] = sin(ang);
-		vcos[x] = cos(ang);
-		//printf("trigtab   %d      %f  %f\n",x,vsin[x],vcos[x]);
-	}
-
 	float* rings = out->get_data();
-	for (unsigned int it = 0; it < ring_length/2; it++) {
-		for (unsigned int inr = nb; inr <= ne; inr++) {
-			xnew    = vsin[it] * inr;
-			ynew    = vcos[it] * inr;
-			float v1 = -TWOPI*(xshift*xnew/nx + yshift*ynew/nx);
-			float c = cos(v1);
-			float s = sin(v1);
 
-			rings[(inr-nb)*2*ring_length + 2*it]                 =  c;//bilinear_cmplx_inline(xnew,ynew,nx,xim,0);
-			rings[(inr-nb)*2*ring_length + 2*it+1]               =  s;//bilinear_cmplx_inline(xnew,ynew,nx,xim,1);
-			rings[(inr-nb)*2*ring_length + 2*it + ring_length]   = -s;//rings[(inr-nb)*2*ring_length + 2*it];
-			rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length] =  c;//-rings[(inr-nb)*2*ring_length + 2*it+1];
-			//printf("   %d   %d    %f  %f     %f  %f    %f  %f\n",it,inr,xnew,ynew,rings[(inr-nb)*2*ring_length + 2*it],rings[(inr-nb)*2*ring_length + 2*it+1],
-			//rings[(inr-nb)*2*ring_length + 2*it + ring_length],rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length]);
+	if(fmod(fabs(xshift),(float)nx)<1.0e-6 &&  fmod(fabs(yshift),(float)nx)<1.0e-6) {
+		//  I have to do this silly stuff as for k*nx shift sine is minus zero and FT is ruined.
+		for (unsigned int it = 0; it < ring_length/2; it++) {
+			for (unsigned int inr = nb; inr <= ne; inr++) {
+				rings[(inr-nb)*2*ring_length + 2*it]                 = 1.0f;
+				rings[(inr-nb)*2*ring_length + 2*it+1]               = 0.0f;
+				rings[(inr-nb)*2*ring_length + 2*it + ring_length]   = 1.0f;
+				rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length] = 0.0f;
+			}
+		}
+	} else {
+		float dfi;
+		dfi = TWOPI / ring_length;
+	//	Table for sin & cos
+		vector<float> vsin(ring_length/2);
+		vector<float> vcos(ring_length/2);
+		for (int x = 0; x < ring_length/2; x++) {
+			float ang = static_cast<float>(x * dfi);
+			vsin[x] = sin(ang);
+			vcos[x] = cos(ang);
+			//printf("trigtab   %d      %f  %f\n",x,vsin[x],vcos[x]);
+		}
+
+		for (unsigned int it = 0; it < ring_length/2; it++) {
+			for (unsigned int inr = nb; inr <= ne; inr++) {
+				xnew    = vsin[it] * inr;
+				ynew    = vcos[it] * inr;
+				float v1 = -TWOPI*(xshift*xnew/nx + yshift*ynew/nx);
+				float c = cos(v1);
+				float s = sin(v1);
+
+				rings[(inr-nb)*2*ring_length + 2*it]                 =  c;//bilinear_cmplx_inline(xnew,ynew,nx,xim,0);
+				rings[(inr-nb)*2*ring_length + 2*it+1]               =  s;//bilinear_cmplx_inline(xnew,ynew,nx,xim,1);
+				rings[(inr-nb)*2*ring_length + 2*it + ring_length]   = -s;//rings[(inr-nb)*2*ring_length + 2*it];
+				rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length] =  c;//-rings[(inr-nb)*2*ring_length + 2*it+1];
+				//printf("   %d   %d    %f  %f     %f  %f    %f  %f\n",it,inr,xnew,ynew,rings[(inr-nb)*2*ring_length + 2*it],rings[(inr-nb)*2*ring_length + 2*it+1],
+				//rings[(inr-nb)*2*ring_length + 2*it + ring_length],rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length]);
+			}
 		}
 	}
 	return out;
@@ -8307,14 +8335,17 @@ EMData* Util::FCross(EMData* frobj, EMData* frings) {
 			ccf[i+1] += -d_frobj[offset+i]*d_frings[offset+i+1] + d_frobj[offset+i+1]*d_frings[offset+i];
 		}
 	}
+
+//for(unsigned int i=0; i<intx; ++i) ccf[i]=d_frobj[i]; Line for test FT
 	
 #ifdef _WIN32
-	int l = -(int)( log((float)(nx-2))/log(2.0f) );
+	int l = -(int)( log((float)(intx))/log(2.0f) );
 #else
-	int l = -(int)(log2(nx-2));
+	int l = -(int)(log2(intx));
 #endif	//_WIN32
 	fftr_q(ccf,l);
 */
+
 	float* wsave = ( float * ) malloc ( ( 3 * intx + 15 ) * sizeof ( float ) );
 	int* ifac = ( int * ) malloc ( 8 * sizeof ( int ) );
 
@@ -8336,7 +8367,6 @@ EMData* Util::FCross(EMData* frobj, EMData* frings) {
 			b[(i-2)/2] += -d_frobj[offset+i]*d_frings[offset+i+1] + d_frobj[offset+i+1]*d_frings[offset+i];
 		}
 	}
-
 	ezfftb( &intx, ccf, &azero, a, b, wsave, ifac );
 
 	free(ifac);
