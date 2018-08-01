@@ -926,7 +926,7 @@ def main():
 
 	elif options.adaptive_mask:
 		from utilities import get_im
-		from morphology import adaptive_mask1
+		from morphology import adaptive_mask
 		nargs = len(args)
 		if nargs ==0:
 			print(" Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold.")
@@ -941,7 +941,7 @@ def main():
 		input_file_name_root,ext=os.path.splitext(input_file_name)
 		if nargs == 2:  mask_file_name = args[1] # args[1]: output 3D mask file path
 		else:           mask_file_name = "adaptive_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
-		mask3d, density_stats = adaptive_mask1(inputvol, options.nsigma, options.threshold, options.ndilation, options.kernel_size, options.gauss_standard_dev)
+		mask3d, density_stats = adaptive_mask(inputvol, options.nsigma, options.threshold, options.ndilation, options.kernel_size, options.gauss_standard_dev)
 		mask3d.write_image(mask_file_name)
 		print("  Applied threshold for binarize: %f" % density_stats[0])
 		print("  Background density average    : %f" % density_stats[1])
