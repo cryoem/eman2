@@ -7414,8 +7414,7 @@ EMData* Util::Polar2DFT(EMData* image, int ring_length, int nb, int ne)  {
 	int lcirc = ne-nb+1;
 	float xnew, ynew;
 	
-	EMData* out = new EMData();
-	out->set_size(2*ring_length, lcirc); // ring_length complex numbers, or 2*ring_length real ones
+	EMData* out = new EMData(2*ring_length-2, lcirc, 1, false);
 
 	float dfi;
 	dfi = TWOPI / ring_length;
