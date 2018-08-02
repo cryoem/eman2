@@ -231,15 +231,15 @@ def main():
 
 	elif options.program == "ucsf_motioncor2":
 
-		if options.dark != None: cmdopts += " -Dark {} ".format(options.dark)
-			file,ext=options.gain.split(".")
+		if options.dark != None:
+			file,ext=options.dark.split(".")
 			if ext.lower() in ["tif","dm4","mrcs"]:
-				gainmrc="{}_eman2.mrc".format(file)
-				if not os.path.exists(gainmrc): 
-					cmd="e2proc2d.py {} {}".format(options.gain,gainmrc)
+				darkmrc="{}_eman2.mrc".format(file)
+				if not os.path.exists(darkmrc): 
+					cmd="e2proc2d.py {} {}".format(options.dark,gainmrc)
 					run(cmd,verbose=options.verbose)
-				options.gain=gainmrc
-			cmdopts += " -Gain {} ".format(options.gain)
+				options.dark=darkmrc
+			cmdopts += " -Dark {} ".format(options.dark)
 			
 		if options.gain != None: 
 			file,ext=options.gain.split(".")
