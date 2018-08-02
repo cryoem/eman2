@@ -555,7 +555,7 @@ class EMBoxingTool(object):
 		'''
 		pass
 
-class EMUnknownBoxType(object):
+class EMUnknownBoxType(Exception):
 	'''
 	Error which is thrown when a mouse tool figures out that its operating on box that it doesn't 'own'
 	'''
@@ -1951,7 +1951,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if self.output_task != None: return
 		from PyQt4 import QtCore
 		self.output_task = EMBoxerWriteOutputTask(self.file_names, dfl_boxsize=self.box_size, current_tool=self.current_tool)
-		self.output_task.emitter().task_idle.connect(self.on_output_task_idle)
+		#self.output_task.emitter().task_idle.connect(self.on_output_task_idle)
 		self.output_task.run_form()
 
 	def on_output_task_idle(self):
@@ -2303,7 +2303,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 			self.write_output(params["filenames"],coord_output_names,EMBoxList.write_coordinates,params["output_boxsize"],"Writing Coordinates")
 
 		from PyQt4 import QtCore
-		self.task_idle.emit()
+		#self.task_idle.emit()
 		self.form.close()
 		self.form = None
 		#self.write_db_entries(params)

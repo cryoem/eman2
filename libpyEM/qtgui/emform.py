@@ -271,7 +271,7 @@ class EMFileTable(QtGui.QTableWidget):
 		self.vartype = "file_table" # This is used by the EMFormWidget to insert this object correctly into a widget
 		self.name_conversions = {} # This is used to convert the displayed name to the real name of the file on the operating system
 		self.context_menu_data = {} # see self.get_context_menu_dict help
-		self.itemDoubleClicked[QTableWidgetItem].connect(self.table_item_double_clicked)
+		self.itemDoubleClicked[QtGui.QTableWidgetItem].connect(self.table_item_double_clicked)
 
 		if enable_save: self.context_menu_data["Save As"] = EMFileTable.save_as
 		self.context_menu_refs = [] # to keep a reference to context menus related objects - somebody has to
@@ -1346,7 +1346,7 @@ class EMFormWidget(QtGui.QWidget):
 		pass
 
 
-	def display_file(self,filename):
+	def display_file_func(self,filename):
 		self.display_file.emit(filename)
 
 
@@ -1871,7 +1871,7 @@ class EMParamTableEventHandler(object):
 		
 	def table_item_double_clicked(self,item):
 		if hasattr(self.table_widget,"convert_text"):
-			self.target().display_file( self.table_widget.convert_text(str(item.text())))
+			self.target().display_file_func( self.table_widget.convert_text(str(item.text())))
 		else: pass
 	
 	def contextMenuEvent(self,event):

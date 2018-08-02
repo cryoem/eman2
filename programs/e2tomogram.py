@@ -58,7 +58,7 @@ def main():
 	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.9,guitype='floatbox',row=11, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--clipz", type=float,help="How aggressive should it be when clipping the final tomogram output. default is -1, (means not clipping at all)", default=-1)#,guitype='floatbox',row=8, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking. Do not change this unless necessary..", default=32)#,guitype='intbox',row=8, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking. Default is 32. Maybe helpful to use a larger one for fiducial-less cases..", default=32, guitype='intbox',row=5, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -5", default=-5.)
 	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks in nm.", default=-1,guitype='intbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
@@ -476,9 +476,10 @@ def calc_global_trans(imgs, options, excludes=[]):
 	sz=min(imgs[0]["nx"], imgs[0]["ny"])
 
 	imgout=[0]*num
+	rmsk=sz//3
 	e0=imgs[options.zeroid].copy()
-	e0.clip_inplace(Region(old_div(e0["nx"],2)-old_div(sz,2), old_div(e0["ny"],2)-old_div(sz,2), sz,sz))
-	e0.process_inplace("mask.gaussian",{"outer_radius":old_div(sz,4)})
+	e0.clip_inplace(Region(e0["nx"]//2-sz//2, e0["ny"]//2-sz//2, sz,sz))
+	e0.process_inplace("mask.gaussian",{"outer_radius":rmsk})
 	e0["xform.align2d"]=Transform()
 	imgout[options.zeroid]=e0
 
@@ -493,8 +494,8 @@ def calc_global_trans(imgs, options, excludes=[]):
 			e0=imgout[options.zeroid+i*dr]
 			e1=imgs[nid].copy()
 			lastx=pretrans[options.zeroid+i*dr]
-			e1.clip_inplace(Region(old_div(e1["nx"],2)-old_div(sz,2)-lastx[0], old_div(e1["ny"],2)-old_div(sz,2)-lastx[1], sz,sz))
-			e1.process_inplace("mask.gaussian",{"outer_radius":old_div(sz,4)})
+			e1.clip_inplace(Region(e1["nx"]//2-sz//2-lastx[0], e1["ny"]//2-sz//2-lastx[1], sz,sz))
+			e1.process_inplace("mask.gaussian",{"outer_radius":rmsk})
 
 			e1a=e1.align("translational", e0)
 
@@ -504,7 +505,7 @@ def calc_global_trans(imgs, options, excludes=[]):
 			e1=imgs[nid].copy()
 			e1.transform(xf)
 			e1.clip_inplace(Region(old_div(e1["nx"],2)-old_div(sz,2), old_div(e1["ny"],2)-old_div(sz,2), sz,sz))
-			e1.process_inplace("mask.gaussian",{"outer_radius":old_div(sz,4)})
+			e1.process_inplace("mask.gaussian",{"outer_radius":rmsk})
 
 			imgout[nid]=e1
 			ts=xf.get_trans()
@@ -532,7 +533,7 @@ def calc_tltax_rot(imgs, options):
 		imgnp.append(m)
 
 	sm=np.mean(imgnp, axis=0)
-	sm=np.abs(sm[:,old_div(sz,2):])
+	sm=np.abs(sm[:,sz//2:])
 	print(np.max(sm), np.min(sm))
 	rr=np.arange(min(sm.shape[1], sz*.25), dtype=float)
 	angs=np.arange(0., 180, .5)

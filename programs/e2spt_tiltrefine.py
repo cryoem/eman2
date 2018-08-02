@@ -126,6 +126,7 @@ def main():
 	parser.add_argument("--dopostp", action="store_true", default=False ,help="Do post processing routine", guitype='boolbox',row=4, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--nogs", action="store_true", default=False ,help="skip gold standard...", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--fromlast", action="store_true", default=False ,help="continue from a previous tilt refine", guitype='boolbox',row=5, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="build sets only")
 
 	#parser.add_argument("--unmask", action="store_true", default=False ,help="use unmasked map as references", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=2,rowspan=1, colspan=1)
@@ -198,7 +199,8 @@ def main():
 			l.close()
 			
 		js=None
-	
+	if options.buildsetonly:
+		return
 	for eo in ["even", "odd"]:
 		
 		if options.fromlast:

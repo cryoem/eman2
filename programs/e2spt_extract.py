@@ -96,7 +96,7 @@ def main():
 				bxs[:,2]-=zshift
 				outname=str(base_name(pfile)+"__"+val["name"]+".hdf")
 				if options.boxsz<0:
-					sz=old_div(int(val["boxsize"])*scale,2)
+					sz=int(val["boxsize"])*scale//2
 				else:
 					sz=int(np.round(options.boxsz/2.*scale))
 				towrite.append((bxs, outname, sz))
@@ -163,7 +163,7 @@ def main():
 		options.pad=pad=good_size(options.boxsz*2*options.padtwod)
 		
 		print("Writing {} particles to {}".format(nptcl, outname))
-		print("Box size {}, padded to {}".format(options.boxsz*2, pad))
+		print("Box size {}, padded to {}".format(int(options.boxsz*2), pad))
 		
 		try: os.remove(options.output)
 		except: pass

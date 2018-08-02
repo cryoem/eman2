@@ -104,7 +104,7 @@ def main():
 
 			pts.append(pt)
 			scr.append(float(ccf[aid]))
-			if cc[pt]<vthr:
+			if cc[pt]<vthr or len(pts)>options.nptcl:
 				break
 				
 		pts=np.array(pts)
