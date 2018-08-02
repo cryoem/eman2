@@ -100,7 +100,8 @@ def main():
 			raise Exception
 	except:
 		print("No good bispecta found for refs. Building")
-		com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size={}:ffp={} --threads {}".format(args[0],refsbsfs,bispec_invar_parm[0],bispec_invar_parm[1],options.threads)
+		com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.bispectrum.slice:size={bssize}:ffp={bsdepth} --threads {threads}".format(
+			inp=args[0],out=refsbsfs,maskrad=int(refs[0]["nx"]//2.2),maskw=int(refs[0]["nx"]//15),bssize=bispec_invar_parm[0],bsdepth=bispec_invar_parm[1],threads=options.threads)
 		run(com)
 	
 	refsbs=EMData.read_images(refsbsfs)

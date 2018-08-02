@@ -4663,6 +4663,8 @@ EMData* EMData::ft2polar(int ring_length, int nb, int ne) {
 	//int lx = rings->get_xsize();
 	//int ly = rings->get_ysize();
 	//printf("  dirns  nx ny   %d   %d   %d   %d\n",lx,ly,ring_length,lcirc);
+	//float* xim  = cimage->get_data();
+	//for(unsigned int inr = 0; inr <= 2*nx; inr++) printf("ft2polar   %d   %f\n",inr,xim[inr]);
 
 	float dfi;
 	dfi = TWOPI / ring_length;

@@ -3404,6 +3404,12 @@ def get_ctf(ima):
 	ctf_params = ima.get_attr("ctf")
 	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont, ctf_params.dfdiff, ctf_params.dfang
 
+def same_ctf(c1,c2):
+	"""
+	  Compare two CTF objects and return True if they are the same
+	"""
+	return c1.to_string()==c2.to_string()
+
 def generate_ctf(p):
 	"""
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
