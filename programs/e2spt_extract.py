@@ -63,7 +63,10 @@ def main():
 	img=EMData(tfile,0, True)
 	apix_ptcl=ptcl["apix_x"]
 	apix_tlt=img["apix_x"]
-	zshift=ptcl["zshift"]#/2
+	try:
+		zshift=ptcl["zshift"]#/2
+	except:
+		zshift=0
 	#yt=ptcl["ytilt"]
 	yt=0
 	#options.ytilt=ttparams[np.argmin(abs(ttparams[:,3]-yt)),3]
