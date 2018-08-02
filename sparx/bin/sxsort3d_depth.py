@@ -4417,7 +4417,7 @@ def get_input_from_datastack(log_main):# Case three
 	import_from_data_stack = 1
 	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		image = get_im(Tracker["constants"]["orgstack"])
+		image = get_im(Tracker["constants"]["orgstack"], 0)
 		Tracker["constants"]["nnxo"] = image.get_xsize()		
 		if( Tracker["nxinit"] > Tracker["constants"]["nnxo"]):
 				ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"get_input_from_datastack",1, Blockdata["myid"])

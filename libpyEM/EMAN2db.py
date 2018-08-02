@@ -1373,8 +1373,16 @@ of these occasional errors"""
 
 	def __getitem__(self,key):
 		self.realopen(self.rohint)
-		try: r=loads(self.bdb.get(dumps(key,-1),txn=self.txn))
-		except: return None
+		try:
+			r = loads(self.bdb.get(dumps(key,-1),txn=self.txn))
+		except:
+			try:
+				r = loads(self.bdb.get(dumps(key,-1).replace('\x00', '\x01'), txn=self.txn))
+			except:
+				try:
+					r = loads(self.bdb.get(dumps(key,-1).replace('\x01', '\x00'), txn=self.txn))
+				except:
+					return None
 		if isinstance(r,dict) and "is_complex_x" in r :
 			pkey="%s/%s_"%(self.path,self.name)
 			fkey="%dx%dx%d"%(r["nx"],r["ny"],r["nz"])
