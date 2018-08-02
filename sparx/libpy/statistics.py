@@ -302,7 +302,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 			if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 		sumsq = Util.addn_img(ave1, ave2)
 		tavg = Util.divn_img(sumsq, ctf_2_sum)
-		Util.mul_img(sumsq, sumsq.conjg())
+		Util.mul_img(sumsq, sumsq)
 		Util.div_img(sumsq, ctf_2_sum)
 		Util.sub_img(var, sumsq)
 	else:
@@ -320,7 +320,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 			Util.add_img2(var, ima)
 		sumsq = Util.addn_img(ave1, ave2)
 		tavg = Util.mult_scalar(sumsq, 1.0/float(n))
-		Util.mul_img(sumsq, sumsq.conjg())
+		Util.mul_img(sumsq, sumsq)
 		Util.mul_scalar(sumsq, 1.0/float(n))
 		Util.sub_img(var, sumsq)
 
@@ -402,11 +402,11 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 		sumsq = Util.addn_img(ave1, ave2)
 		if CTF:
 			tavg = Util.divn_img(sumsq, ctf_2_sum)
-			Util.mul_img(sumsq, sumsq.conjg())
+			Util.mul_img(sumsq, sumsq)
 			Util.div_img(sumsq, ctf_2_sum)
 		else:
 			tavg = Util.mult_scalar(sumsq, 1.0/float(nima))
-			Util.mul_img(sumsq, sumsq.conjg())
+			Util.mul_img(sumsq, sumsq)
 			Util.mul_scalar(sumsq, 1.0/float(nima))
 		Util.sub_img(var, sumsq)
 		Util.mul_scalar(var, 1.0/float(nima-1))
@@ -1364,10 +1364,10 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 
 	"""
 	Util.mul_scalar(var, 1.0/float(n-1))
-	Util.mul_img(ave, ave.conjg())
+	Util.mul_img(ave, ave)
 	ave *= n
 	"""
-	Util.mul_img(sumsq, sumsq.conjg())
+	Util.mul_img(sumsq, sumsq)
 	#sumsq  = fft(window2d(fft(sumsq),nx,ny))
 
 	#Util.div_filter(sumsq, ctf_2_sum)
@@ -1375,7 +1375,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 	#Util.mul_scalar(var, 1.0/float(n-1))
 	#Util.div_filter(sumsq, ctf_2_sum)
 
-	#Util.mul_img(ave, ave.conjg())
+	#Util.mul_img(ave, ave)
 
 	#Util.mul_img(ave, ctf_2_sum)
 	#Util.mul_img(ave, ctf_2_sum)
@@ -1466,7 +1466,7 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 		Util.add_img(sumsq, oc)
 		Util.add_img2(var, ima)
 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params, ny=ny))
-	Util.mul_img(sumsq, sumsq.conjg())
+	Util.mul_img(sumsq, sumsq)
 	Util.div_filter(sumsq, ctf_2_sum)
 	Util.sub_img(var, sumsq)
 	Util.mul_scalar(var, 1.0/float(n-1))
@@ -1523,7 +1523,7 @@ def varf(data, mask = None, mode="a"):
 		Util.add_img(sumsq, ima)
 		Util.add_img2(var, ima)
 
-	Util.mul_img(sumsq, sumsq.conjg())
+	Util.mul_img(sumsq, sumsq)
 	Util.mad_scalar(var, sumsq, -1.0/float(n))
 	Util.mul_scalar(var, 1.0/float(n-1))
 	st = Util.infomask(var, None, True)
@@ -1591,7 +1591,7 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 		Util.add_img(sumsq, oc)
 		Util.add_img2(var, ima)
 		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params, ny = ny2, nz = nz2))
-	Util.mul_img(sumsq, sumsq.conjg())
+	Util.mul_img(sumsq, sumsq)
 	Util.div_filter(sumsq, ctf_2_sum)
 	Util.sub_img(var, sumsq)
 	Util.mul_scalar(var, 1.0/float(n-1))
