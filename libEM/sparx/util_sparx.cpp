@@ -7458,8 +7458,9 @@ EMData* Util::Polar2DShiftCoeffs(int nx, float xshift, float yshift, int ring_le
 	int lcirc = ne-nb+1;
 	float xnew, ynew;
 	
-	EMData* out = new EMData();
-	out->set_size(2*ring_length, lcirc); // ring_length complex numbers, or 2*ring_length real ones
+	EMData* out = new EMData(2*ring_length-2, lcirc, 1, false);// ring_length complex numbers, or 2*ring_length real ones
+	out->set_fftpad(0);
+	out->set_attr("is_complex", false);
 	float* rings = out->get_data();
 
 	if(fmod(fabs(xshift),(float)nx)<1.0e-6 &&  fmod(fabs(yshift),(float)nx)<1.0e-6) {
@@ -7502,6 +7503,7 @@ EMData* Util::Polar2DShiftCoeffs(int nx, float xshift, float yshift, int ring_le
 			}
 		}
 	}
+	out->set_attr("is_complex", true);
 	return out;
 }
 
@@ -24492,8 +24494,8 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
 		for (size_t i=0; i<size; i+=2) {
-			img2_ptr[i]   = img_ptr[i] * img1_ptr[i]   + img_ptr[i+1] * img1_ptr[i+1] ;
-			img2_ptr[i+1] = img_ptr[i] * img1_ptr[i+1] - img_ptr[i+1] * img1_ptr[i] ;
+			img2_ptr[i]   =  img_ptr[i] * img1_ptr[i]   + img_ptr[i+1] * img1_ptr[i+1];
+			img2_ptr[i+1] = -img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i];
 		}
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
@@ -24835,7 +24837,8 @@ void Util::mul_img(EMData* img, EMData* img1)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	/* ========= img *= img1 ===================== */
+	/* ========= img *= img1 ========================= */
+	/* ========= img *= conjg(img1)   ================ */
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
@@ -24843,10 +24846,9 @@ void Util::mul_img(EMData* img, EMData* img1)
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
 		for (size_t i=0; i<size; i+=2) {
-			float tmp     = img_ptr[i] * img1_ptr[i]   - img_ptr[i+1] * img1_ptr[i+1];
-			img_ptr[i+1]  = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i];
+			float tmp     =  img_ptr[i] * img1_ptr[i]   + img_ptr[i+1] * img1_ptr[i+1];
+			img_ptr[i+1]  = -img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i];
 			img_ptr[i]    = tmp;
-
 		}
 	} else {
 		for (size_t i=0;i<size;++i) img_ptr[i] *= img1_ptr[i];
