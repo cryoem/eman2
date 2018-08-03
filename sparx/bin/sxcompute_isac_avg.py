@@ -29,119 +29,9 @@ import string
 import json
 from   sys 	import exit
 from   time import localtime, strftime, sleep
-
 global Tracker, Blockdata
 
-
 # ------------------------------------------------------------------------------------
-
-def compute_average_ctf(mlist, radius):
-	from morphology   import ctf_img
-	from filter       import filt_ctf, filt_table
-	from fundamentals import fft, fftip
-	params_list = [None]*len(mlist)
-	orig_image_size = mlist[0].get_xsize()
-	avgo       = EMData(orig_image_size, orig_image_size, 1, False) #
-	avge       = EMData(orig_image_size, orig_image_size, 1, False) # 
-	ctf_2_sumo = EMData(orig_image_size, orig_image_size, 1, False)
-	ctf_2_sume = EMData(orig_image_size, orig_image_size, 1, False)
-	for im in range(len(mlist)):
-		ctt = ctf_img(orig_image_size, mlist[im].get_attr("ctf"))
-		alpha, sx, sy, mr, scale = get_params2D(mlist[im], xform = "xform.align2d")
-		tmp = cosinemask(rot_shift2D(mlist[im], alpha, sx, sy, mr), radius)
-		params_list[im]= [alpha, sx, sy, mr, scale]
-		tmp = fft(tmp)
-		Util.mul_img(tmp, ctt)
-		#ima_filt = filt_ctf(tmp, ctf_params, dopad=False)
-		if im%2 ==0: 
-			Util.add_img2(ctf_2_sume, ctt)
-			Util.add_img(avge, tmp)
-		else:
-			Util.add_img2(ctf_2_sumo, ctt)
-			Util.add_img(avgo, tmp)
-
-	sumavg  = Util.divn_img(avge, ctf_2_sume)
-	sumctf2 = Util.divn_img(avgo, ctf_2_sumo)
-	frc = fsc(fft(sumavg), fft(sumctf2))
-	frc[1][0] = 1.0
-	for ifreq in range(1, len(frc[0])):
-		frc[1][ifreq] = max(0.0, frc[1][ifreq])
-		frc[1][ifreq] = 2.*frc[1][ifreq]/(1.+frc[1][ifreq])
-	sumavg  =  Util.addn_img(avgo, avge)
-	sumctf2 =  Util.addn_img(ctf_2_sume, ctf_2_sumo)	
-	Util.div_img(sumavg, sumctf2)
-	sumavg = fft(sumavg)
-	return sumavg, frc, params_list
-
-def compute_average_noctf(mlist, radius):
-	from fundamentals import fft
-	params_list = [None]*len(mlist)
-	orig_image_size = mlist[0].get_xsize()
-	avgo       = EMData(orig_image_size, orig_image_size, 1, False) #
-	avge       = EMData(orig_image_size, orig_image_size, 1, False) # 
-	for im in range(len(mlist)):
-		alpha, sx, sy, mr, scale = get_params2D(mlist[im], xform = "xform.align2d")
-		params_list[im]= [alpha, sx, sy, mr, scale]
-		tmp = cosinemask(rot_shift2D(mlist[im], alpha, sx, sy, mr), radius)
-		tmp = fft(tmp)
-		if im%2 ==0: Util.add_img(avge, tmp)
-		else:        Util.add_img(avgo, tmp)
-	frc = fsc(fft(avge), fft(avgo))
-	frc[1][0] = 1.0
-	for ifreq in range(1, len(frc[0])):
-		frc[1][ifreq] = max(0.0, frc[1][ifreq])
-		frc[1][ifreq] = 2.*frc[1][ifreq]/(1.+frc[1][ifreq])
-	sumavg  =  Util.addn_img(avgo, avge)
-	sumavg = fft(sumavg)
-	return sumavg, frc, params_list
-
-def adjust_pw_to_model(image, pixel_size, roo):
-	c1 =-4.5
-	c2 = 15.0
-	c3 = 0.2
-	c4 = -1.0
-	c5 = 1./5.
-	c6 = 0.25 # six params are fitted to Yifan channel model
-	rot1 = rops_table(image)
-	fil  = [None]*len(rot1)
-	if roo is None: # adjusted to the analytic model, See Penczek Methods Enzymol 2010
-		pu = []
-		for ifreq in range(len(rot1)):
-			x = float(ifreq)/float(len(rot1))/pixel_size
-			v = exp(c1+c2/(x/c3+1)**2) + exp(c4-0.5*(((x-c5)/c6**2)**2))
-			pu.append(v)
-		s =sum(pu)
-		for ifreq in range(len(rot1)): fil[ifreq] = sqrt(pu[ifreq]/(rot1[ifreq]*s))
-	else: # adjusted to a given 1-d rotational averaged pw2
-		if roo[0]<0.1 or roo[0]>1.: s =sum(roo)
-		else:  s=1.0
-		for ifreq in range(len(rot1)):fil[ifreq] = sqrt(roo[ifreq]/(rot1[ifreq]*s))
-	return filt_table(image, fil)
-	
-def get_optimistic_res(frc):
-	nfh = 0
-	np  = 0
-	for im in range(len(frc[1])):
-		ifreq = len(frc[1])-1-im
-		if frc[1][ifreq] >=0.143:
-			np +=1
-			nfh = ifreq
-			if np >=3:break	
-	FH = frc[0][nfh]
-	if FH < 0.15:  FH = 0.15 # minimum freq
-	return FH
-	
-def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
-	guinierline = rot_avg_table(power(periodogram(avg),.5))
-	freq_max   =  1./(2.*pixel_size)
-	freq_min   =  1./B_start
-	b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, pixel_size)
-	print(ifreqmin, ifreqmax)
-	global_b = b*4. #
-	if user_defined_Bfactor < 0.0: global_b = user_defined_Bfactor
-	sigma_of_inverse = sqrt(2./global_b)
-	avg = filt_gaussinv(fft(avg), sigma_of_inverse)
-	return avg, global_b
 
 def main():
 	from optparse   import OptionParser
@@ -151,7 +41,8 @@ def main():
 	import sys, os, time
 	global Tracker, Blockdata
 	from global_def import ERROR
-	
+	from statistics import compute_average_noctf, compute_average_ctf
+	from utilities  import apply_enhancement, get_optimistic_res, adjust_pw_to_model 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -380,8 +271,8 @@ def main():
 		list_dict   = 0
 		memlist     = 0
 	params_dict = wrap_mpi_bcast(params_dict, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
-	list_dict = wrap_mpi_bcast(list_dict, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
-	memlist = wrap_mpi_bcast(memlist, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
+	list_dict   = wrap_mpi_bcast(list_dict, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
+	memlist     = wrap_mpi_bcast(memlist, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 	# Now computing!
 	del init_dict
 	tag_sharpen_avg = 1000
@@ -409,7 +300,9 @@ def main():
 		plist_dict = {}
 		
 		data_list  = [ None for im in range(navg)]
-		if Blockdata["myid"] == Blockdata["main_node"]: print("read data")		
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			if B_enhance: print("Processed avg   B-factor    FH1     FH2")	
+			else: print("Processed avg       FH1     FH2")	
 		for iavg in range(image_start,image_end):
 			mlist = EMData.read_images(Tracker["constants"]["orgstack"], list_dict[iavg])
 			for im in range(len(mlist)):
@@ -437,17 +330,17 @@ def main():
 			
 			if B_enhance:
 				new_avg, gb = apply_enhancement(new_avg, Tracker["constants"]["B_start"], Tracker["constants"]["pixel_size"], Tracker["constants"]["Bfactor"])
-				print("Processed avg  %d  %f  %f  %f"%(iavg, gb, FH1, FH2))
+				print("  %6d      %6.3f  %4.3f  %4.3f"%(iavg, gb, FH1, FH2))
 				
 			elif adjust_to_given_pw2: 
 				roo = read_text_file( Tracker["constants"]["modelpw"], -1)
 				roo = roo[0] # always on the first column
 				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], roo)
-				print("Processed avg  %d  %f  %f  "%(iavg, FH1, FH2))
+				print("  %6d      %4.3f  %4.3f  "%(iavg, FH1, FH2))
 				
 			elif adjust_to_analytic_model:
 				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], None)
-				print("Processed avg  %d  %f  %f   "%(iavg, FH1, FH2))
+				print("  %6d      %4.3f  %4.3f   "%(iavg, FH1, FH2))
 
 			elif no_adjustment: pass
 			
