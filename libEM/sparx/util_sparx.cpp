@@ -7476,27 +7476,23 @@ EMData* Util::Polar2DShiftCoeffs(int nx, float xshift, float yshift, int ring_le
 		float dfi;
 		dfi = TWOPI / ring_length;
 	//	Table for sin & cos
-		vector<float> vsin(ring_length/2);
-		vector<float> vcos(ring_length/2);
-		for (int x = 0; x < ring_length/2; x++) {
+		vector<float> vsin(ring_length);
+		vector<float> vcos(ring_length);
+		for (int x = 0; x < ring_length; x++) {
 			float ang = static_cast<float>(x * dfi);
 			vsin[x] = sin(ang);
 			vcos[x] = cos(ang);
 			//printf("trigtab   %d      %f  %f\n",x,vsin[x],vcos[x]);
 		}
 
-		for (unsigned int it = 0; it < ring_length/2; it++) {
-			for (unsigned int inr = nb; inr <= ne; inr++) {
+		//for (unsigned int it = 0; it < ring_length/2; it++) {
+		for (unsigned int inr = nb; inr <= ne; inr++) {
+			for (unsigned int it = 0; it < ring_length; it++) {
 				xnew    = vsin[it] * inr;
 				ynew    = vcos[it] * inr;
 				float v1 = -TWOPI*(xshift*xnew/nx + yshift*ynew/nx);
-				float c = cos(v1);
-				float s = sin(v1);
-
-				rings[(inr-nb)*2*ring_length + 2*it]                 =  c;//bilinear_cmplx_inline(xnew,ynew,nx,xim,0);
-				rings[(inr-nb)*2*ring_length + 2*it+1]               =  s;//bilinear_cmplx_inline(xnew,ynew,nx,xim,1);
-				rings[(inr-nb)*2*ring_length + 2*it + ring_length]   = -s;//rings[(inr-nb)*2*ring_length + 2*it];
-				rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length] =  c;//-rings[(inr-nb)*2*ring_length + 2*it+1];
+				rings[(inr-nb)*2*ring_length + 2*it]   = cos(v1);//bilinear_cmplx_inline(xnew,ynew,nx,xim,0);
+				rings[(inr-nb)*2*ring_length + 2*it+1] = sin(v1);//bilinear_cmplx_inline(xnew,ynew,nx,xim,1);
 				//printf("   %d   %d    %f  %f     %f  %f    %f  %f\n",it,inr,xnew,ynew,rings[(inr-nb)*2*ring_length + 2*it],rings[(inr-nb)*2*ring_length + 2*it+1],
 				//rings[(inr-nb)*2*ring_length + 2*it + ring_length],rings[(inr-nb)*2*ring_length + 2*it+1 + ring_length]);
 			}
