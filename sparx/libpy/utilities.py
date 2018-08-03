@@ -7216,7 +7216,7 @@ def split_chunks_bad(l, n):
 def adjust_pw_to_model(image, pixel_size, roo):
 	from fundamentals import rops_table
 	from filter       import filt_table
-	from math         import exp
+	from math         import exp, sqrt
 	c1 =-4.5
 	c2 = 15.0
 	c3 = 0.2
