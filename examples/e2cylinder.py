@@ -5,7 +5,7 @@ from __future__ import division
 from past.utils import old_div
 '''
 ====================
-Author: Jesus Galaz - 02/March/2013, Last update: 29/October/2014
+Author: Jesus Galaz - 02/March/2013, Last update: 2/August/2018
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -46,6 +46,8 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	
+	parser.add_argument("--apix",type=float,default=None,help="""Default=None. Sampling size (angstroms per pixel) to set on the header of the cylindrical mask.""")
+
 	parser.add_argument("--axes",type=str,default='z',help="""Axes along which the mask will be oriented. Default=z. You can supply more than one, separated with commas. For example: --axes=x,y,z.""")
 
 	parser.add_argument("--boxsize", type=int, default=0,help="""Size of the boxsize where the cylindrical mask will live.""")
