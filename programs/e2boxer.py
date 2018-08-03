@@ -1205,6 +1205,7 @@ class GUIBoxer(QtGui.QWidget):
 		#self.wplot=EMPlot2DWidget()
 		#self.wplot.setWindowTitle("e2evalimage - Plot")
 
+		self.downbut=0
 		self.wimage.mousedown.connect(self.imgmousedown)
 		self.wimage.mousedrag.connect(self.imgmousedrag)
 		self.wimage.mouseup.connect(self.imgmouseup)
@@ -1242,7 +1243,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.mmode="manual"
 		self.boxmm=QtGui.QGroupBox("Mouse Mode",self)
 		self.boxmm.setFlat(False)
-		self.gbl.addWidget(self.boxmm,0,2,2,2)
+		self.gbl.addWidget(self.boxmm,0,2,2,3)
 		
 		self.hbl0=QtGui.QHBoxLayout(self.boxmm)
 		
@@ -1286,20 +1287,20 @@ class GUIBoxer(QtGui.QWidget):
 		self.bfilter=QtGui.QPushButton("Filter Disp.")
 		self.bfilter.setToolTip("Filter micrograph (display only)")
 		self.bfilter.setCheckable(True)
-		self.gbl.addWidget(self.bfilter,0,4,1,1)
+		self.gbl.addWidget(self.bfilter,0,5,1,1)
 		self.bfilter.clicked[bool].connect(self.filterToggle)
 
 		self.binvert=QtGui.QPushButton("Invert")
 		self.binvert.setToolTip("Invert Micrograph (also output)")
 		self.binvert.setCheckable(True)
 		self.binvert.setChecked(invert_on_read)		# in truly bad form, this is a global
-		self.gbl.addWidget(self.binvert,1,4,1,1)
+		self.gbl.addWidget(self.binvert,1,5,1,1)
 		self.binvert.clicked[bool].connect(self.invertToggle)
 
 		# Global parameters
 		self.boxparm=QtGui.QGroupBox("Parameters",self)
 		self.boxparm.setFlat(False)
-		self.gbl.addWidget(self.boxparm,2,2,3,3)
+		self.gbl.addWidget(self.boxparm,2,2,3,4)
 		
 		self.gbl1=QtGui.QGridLayout(self.boxparm)
 		self.gbl1.setMargin(8)
@@ -1355,7 +1356,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.autolbl = QtGui.QLabel("Autoboxing Methods:")
 		self.gbl.addWidget(self.autolbl,7,2)
 		self.autotab = QtGui.QTabWidget()
-		self.gbl.addWidget(self.autotab,8,2,5,3)
+		self.gbl.addWidget(self.autotab,8,2,5,4)
 		
 		# Individual tabs from Dictionary
 		self.abwid=[]
@@ -1371,12 +1372,16 @@ class GUIBoxer(QtGui.QWidget):
 		self.gbl.addWidget(self.bbclear,13,2)
 		self.bbclear.clicked[bool].connect(self.boxClear)
 
+		self.bcentera = QtGui.QPushButton("ACF Center All")
+		self.gbl.addWidget(self.bcentera,13,3)
+		self.bcentera.clicked[bool].connect(self.doCenterAll)
+		
 		self.bautoboxa = QtGui.QPushButton("Autobox All")
-		self.gbl.addWidget(self.bautoboxa,13,3)
+		self.gbl.addWidget(self.bautoboxa,13,4)
 		self.bautoboxa.clicked[bool].connect(self.doAutoBoxAll)
 		
 		self.bautobox = QtGui.QPushButton("Autobox")
-		self.gbl.addWidget(self.bautobox,13,4)
+		self.gbl.addWidget(self.bautobox,13,5)
 		self.bautobox.clicked[bool].connect(self.doAutoBox)
 
 		self.setWindowTitle("e2boxer21 - Control Panel")
@@ -1723,7 +1728,9 @@ class GUIBoxer(QtGui.QWidget):
 
 		first=True
 		if val==None : newfilename=self.curfilename
-		else : newfilename=str(self.setlist.item(val).text()).split()[1]
+		else : 
+			try: newfilename=str(self.setlist.item(val).text()).split()[1]
+			except: return
 #		if newfilename==self.curfilename : return
 
 		# Write the current image parameters to the database
@@ -1919,7 +1926,94 @@ class GUIBoxer(QtGui.QWidget):
 		else: prog.setValue(len(self.filenames))
 		
 		self.restore_boxes()
+		
+	def doCenterAll(self,b):
+		"""Autobox button pressed, find the right algorithm and call it"""
+		
+		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
+		boxsize2=self.vbbsize.getValue()//2
+		
+		prog=QtGui.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
+		prog.setWindowModality(Qt.WindowModal)
+		prog.setValue(0)
+		prog.show()
+		
+		for i,fspl in enumerate(self.filenames):
+			print("Recentering ({}): {}             ".format(boxsize2*2,fspl))
+#			sys.stdout.flush()
+			
+			fsp=fspl.split()[1]
+			prog.setValue(i)
+			if prog.wasCanceled() : 
+				print("\nCentering Aborted!")
+				break
+			
 
+			# return existing boxes
+			db=js_open_dict(info_name(fsp))
+			try: 
+				boxes=db["boxes"]
+				newboxes=[b for b in boxes if b[2]==bname]
+				if len(newboxes)==0 : continue
+			except:
+				continue	# no boxes to center
+			
+			micrograph=load_micrograph(fsp)
+			newbname=bname+"_cen"
+			
+			for i,b in enumerate(newboxes):
+				ptcl=micrograph.get_clip(Region(b[0]-boxsize2,b[1]-boxsize2,boxsize2*2,boxsize2*2))
+				ptcl.process_inplace("normalize.edgemean")
+				ptcl.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
+				ptcl.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+				ptcl.process_inplace("xform.centeracf")
+				xf=ptcl["xform.align2d"].get_trans_2d()
+				b[0]-=xf[0]
+				b[1]-=xf[1]
+#				b[2]=newbname
+				
+				
+			#ptcl=[micrograph.get_clip(Region(box[0]-boxsize2,box[1]-boxsize2,boxsize2*2,boxsize2*2)).process("normalize.edgemean").process("filter.lowpass.gauss",{"cutoff_abs":.1}) for box in newboxes]
+
+			# old school alignment method, rotational average of particles, align, new average, ...  Doesn't work well for everything...
+			#newbname=bname+"_cen"
+			#avgr=Averagers.get("mean")
+			#for p in ptcl: avgr.add_image(p)
+			#avg=avgr.finish()
+			#avg.process_inplace("xform.centerofmass")
+			#avg.process_inplace("math.rotationalaverage")
+			#for it in range(3):
+				#avgr=Averagers.get("mean")
+				#for i,p in enumerate(ptcl):
+					#p=p.align("translational",avg)
+					#avgr.add_image(p)
+					#xf=p["xform.align2d"].get_trans_2d()
+					#print(it,i,xf[0],xf[1])
+					#if it==2 :
+						#newboxes[i][0]-=xf[0]
+						#newboxes[i][1]-=xf[1]
+						#newboxes[i][2]=newbname
+				#avg=avgr.finish()
+				#avg.process_inplace("xform.centerofmass")
+				#display(avg)
+				#avg.process_inplace("math.rotationalaverage")
+				
+			# read the existing box list and update
+#			boxes=db["boxes"]
+			# Filter out all existing boxes for this picking mode
+#			boxes=[b for b in boxes if b[2]!=newbname]
+				
+#			boxes.extend(newboxes)
+			
+			db["boxes"]=boxes
+			db.close()
+			self.setlist.setCurrentRow(i)
+#			self.__updateBoxes()
+			
+		else: prog.setValue(len(self.filenames))
+		
+		self.restore_boxes()
+		print("Centering complete")
 		
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
