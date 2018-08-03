@@ -7212,3 +7212,56 @@ def split_chunks_bad(l, n):
 	for i in range(len(result)):
 		result[i].sort()
 	return result
+	
+def adjust_pw_to_model(image, pixel_size, roo):
+	from fundamentals import rops_table
+	from filter       import filt_table
+	c1 =-4.5
+	c2 = 15.0
+	c3 = 0.2
+	c4 = -1.0
+	c5 = 1./5.
+	c6 = 0.25 # six params are fitted to Yifan channel model
+	rot1 = rops_table(image)
+	fil  = [None]*len(rot1)
+	if roo is None: # adjusted to the analytic model, See Penczek Methods Enzymol 2010
+		pu = []
+		for ifreq in range(len(rot1)):
+			x = float(ifreq)/float(len(rot1))/pixel_size
+			v = exp(c1+c2/(x/c3+1)**2) + exp(c4-0.5*(((x-c5)/c6**2)**2))
+			pu.append(v)
+		s =sum(pu)
+		for ifreq in range(len(rot1)): fil[ifreq] = sqrt(pu[ifreq]/(rot1[ifreq]*s))
+	else: # adjusted to a given 1-d rotational averaged pw2
+		if roo[0]<0.1 or roo[0]>1.: s =sum(roo)
+		else:  s=1.0
+		for ifreq in range(len(rot1)):fil[ifreq] = sqrt(roo[ifreq]/(rot1[ifreq]*s))
+	return filt_table(image, fil)
+	
+def get_optimistic_res(frc):
+	nfh = 0
+	np  = 0
+	for im in range(len(frc[1])):
+		ifreq = len(frc[1])-1-im
+		if frc[1][ifreq] >=0.143:
+			np +=1
+			nfh = ifreq
+			if np >=3:break	
+	FH = frc[0][nfh]
+	if FH < 0.15:  FH = 0.15 # minimum freq
+	return FH
+	
+def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
+	from filter       import filt_gaussinv
+	from fundamentals import rot_avg_table
+	from morphology   import compute_bfactor
+	from EMAN2        import periodogram
+	from numpy        import power
+	guinierline = rot_avg_table(power(periodogram(avg),.5))
+	freq_max    =  1./(2.*pixel_size)
+	freq_min    =  1./B_start
+	b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, pixel_size)
+	#print(ifreqmin, ifreqmax)
+	global_b = b*4. #
+	if user_defined_Bfactor < 0.0: global_b = user_defined_Bfactor
+	return filt_gaussinv(fft(avg), sqrt(2./global_b)), global_b
