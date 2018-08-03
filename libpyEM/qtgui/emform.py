@@ -993,7 +993,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 		self.vbl.addWidget(groupbox)
 		
-		self.main_combo.currentIndexChanged[QString].connect(self.selection_changed)
+		self.main_combo.currentIndexChanged[QtCore.QString].connect(self.selection_changed)
 		
 		if start_idx != None:
 			if start_idx != 0:
@@ -1867,7 +1867,7 @@ class EMParamTableEventHandler(object):
 		self.table_widget = table_widget
 		table_widget.contextMenuEvent = self.contextMenuEvent
 				
-		table_widget.itemDoubleClicked[QTableWidgetItem].connect(self.table_item_double_clicked)
+		table_widget.itemDoubleClicked[QtGui.QTableWidgetItem].connect(self.table_item_double_clicked)
 		
 	def table_item_double_clicked(self,item):
 		if hasattr(self.table_widget,"convert_text"):
