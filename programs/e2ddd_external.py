@@ -41,24 +41,6 @@ from sys import argv
 import shutil
 import subprocess
 
-def which(program):
-	found = []
-	def is_exe(fpath) :
-		return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-	for path in os.environ["PATH"].split(os.pathsep):
-		if os.path.isdir(path):
-			for f in os.listdir(path):
-				if program in f:
-					exe_file = os.path.join(path, f)
-					if is_exe(exe_file): found.append(exe_file)
-	if len(found) == 0: return None
-	if len(found) == 1: return found[0]
-	else:
-		for f in found:
-			if program == "alignframes" and "IMOD" in f:
-				return f
-			else: return found[0]
-
 def main():
 
 	progname = os.path.basename(sys.argv[0])
@@ -179,15 +161,30 @@ def main():
 		else:
 			bname = os.path.basename(args[0])
 
-	options.tiltseries_name
-
-	cmdopts = ""
-
 	if options.tomo: outdir = "tiltseries"
 	else: outdir = "micrographs"
 
 	try: os.mkdir(outdir)
 	except: pass
+
+	if options.mdoc != None and options.tomo:
+
+		if not os.path.isdir(args[0]):
+			print("ERROR: When providing an mdoc, the input option must be a directory containing the raw files referenced in the mdoc.")
+			sys.exit(1)
+		if options.tiltseries_name != "":
+			tiltname = "{}/{}.hdf".format(outdir,options.tiltseries_name)
+		else: tiltname="{}/{}.hdf".format(outdir,mdoc_bname)
+
+		mdoc_params,filenames,tilts = parse_mdoc(options.mdoc)
+		
+		jd = js_open_dict(info_name(tiltname))
+		jd["mdoc_params"] = mdoc_params
+		jd["tlt_source"] = filenames
+		jd["raw_tilts"] = tilts
+		jd.close()
+
+	cmdopts = ""
 
 	if options.program == "imod_alignframes":
 
@@ -206,18 +203,13 @@ def main():
 			cmdopts+=" -frames {} {} ".format(options.first,options.last)
 
 		if options.mdoc != None:
-
-			if options.tomo and options.tiltseries_name != "":
-				output = "{}/{}.mrc".format(options.tiltseries_name)
-			else:
-				output = "{}/{}.mrc".format(outdir,mdoc_bname)
 			#if len(args) == 0:
 				#cmd = "{} -m and os.path.isdir(args[0])doc {} -output {}".format(program,options.mdoc,output)
 			if len(args) == 1 and os.path.isdir(args[0]):
-				cmd = "{} -mdoc {} -path {} -output {}".format(program,options.mdoc,args[0],output)
+				cmd = "{} -mdoc {} -path {} -output {}".format(program,options.mdoc,args[0],tiltname)
 			else:
 				inputs = " ".join(args)
-				cmd = "{} -input {} -mdoc {} -output {}".format(program,inputs,options.mdoc,output)
+				cmd = "{} -input {} -mdoc {} -output {}".format(program,inputs,options.mdoc,tiltname)
 			run(cmd,verbose=options.verbose)
 		else:
 			for arg in args:
@@ -230,6 +222,18 @@ def main():
 				run(cmd,verbose=options.verbose)
 
 	elif options.program == "ucsf_motioncor2":
+		
+		if os.path.isdir(args[0]) and options.mdoc==None:
+			dirargs = []
+			for f in f in os.listdir(args[0]):
+				if ".mrc" in f or ".tif" in f:
+					this = "{}/{}".format(args[0],f)
+					if os.path.exists(this): dirargs.append(this)
+			if len(dirargs) == 0:
+				print("""Could not find any .mrc or .tif extension files in {}. Please try 
+					another directory or specify individual files you wish to align.""".format(args[0]))
+				sys.exit(1)
+			args = dirargs	
 
 		if options.dark != None:
 			file,ext=options.dark.split(".")
@@ -257,6 +261,29 @@ def main():
 		if options.defect_file != None: cmdopts+=" -DefectFile {}".format(options.defect_file)
 
 		if options.first != None: cmdopts+=" -Throw {}".format(options.first)
+		if options.last != None:
+			lastframe=None
+			if os.path.isdir(args[0]):
+				if options.mdoc!=None: files=filenames
+				elif options.mdoc==None: files=args
+				for file in files:
+					if os.path.exists("{}/{}".format(args[0],file)):
+						numframes=EMUtil.get_image_count("{}/{}".format(args[0],file))
+						lastframe=numframes-options.last-1
+						cmdopts+=" -Trunc {}".format(lastframe)
+						break
+				if not lastframe:
+					print("No images found in input directory. If an mdoc was specified, the image files may be in another directory. Stopping processing.".format(args[0]))
+					sys.exit(1)
+
+			elif not os.path.isdir(args[0]):
+				try: numframes=EMUtil.get_image_count(args[0])
+				except: 
+					print("First file in input is not a recognizable image. Please check input files.")
+					sys.exit(1)
+				print(numframes)
+				lastframe=numframes-options.last-1
+				cmdopts+=" -Trunc {}".format(lastframe)
 
 		if options.groupby != None: cmdopts+=" -Group {}".format(options.groupby)
 		if options.binby != None: cmdopts+=" -FtBin {}".format(options.binby)
@@ -270,58 +297,20 @@ def main():
 
 		if options.mdoc != None:
 
-			if not os.path.isdir(args[0]):
-				print("ERROR: When providing an mdoc, the input option must be a directory containing the raw files referenced in the mdoc.")
-				sys.exit(1)
-			if options.tiltseries_name != "":
-				tiltname = "{}/{}.hdf".format(outdir,options.tiltseries_name)
-			else: tiltname="{}/{}.hdf".format(outdir,mdoc_bname)
-
-			info=[]
-			print("DOC: {}".format(options.mdoc))
-			with open(options.mdoc) as docf:
-				for l in docf.readlines():
-					p = l.strip()
-					if p != "":
-						try: x,y = p.split("=")[:2]
-						except: pass
-						x = x.strip()
-						if x == "TiltAngle": ang=float(y)
-						elif x == "SubFramePath":
-							name,ext = y.split('\\')[-1].split(".")
-							if os.path.exists("{}/{}.{}".format(args[0],name,ext)):
-								info.append([ang,name,ext])
-							else:
-								print("WARNING: {}.{} was not found in {}".format(name,ext,args[0]))
-
-			if options.last != None:
-				numframes=EMUtil.get_image_count("{}/{}.{}".format(args[0],info[0][1],info[0][2]))
-				lastframe=numframes-options.last-1
-				cmdopts+=" -Trunc {}".format(lastframe)
-			
-			sortedlist=sorted(info, key=lambda x: x[0])
-			
-			#tltangs=[]
-			#for i in sortedlist:
-			#	tltangs.append(i[0])
-			#add tiltangs to header
-
-
-
-			if options.verbose > 0:
-				print("File order:")
-				for i in sortedlist:
-					print("{}\t-\t{}\t{}".format(i[0],i[1],i[2]))
-				
-			print("\nWriting tilt series to:   {}".format(tiltname))
-
 			try: os.remove(tiltname) # get rid of any previous tiltseries with same name
 			except: pass
 
-			for idx,i in enumerate(sortedlist):
-				if i[2].lower()=="mrc": infile="-InMrc {}/{}.{} ".format(args[0],i[1],i[2])
-				if i[2].lower()=="tif": infile="-InTiff {}/{}.{} ".format(args[0],i[1],i[2])
-				outfile="tmp/{}_ali.mrc".format(i[1])
+			print("\nWriting tilt series to:   {}".format(tiltname))
+
+			for idx, i in enumerate(mdoc_params):
+				x=i["SubFramePath"]
+				name,ext = x.split('\\')[-1].split(".")
+				if not os.path.exists("{}/{}.{}".format(args[0],name,ext)): 
+					print("WARNING: {}.{} was not found in {}".format(name,ext,args[0]))
+					continue
+				if ext.lower()=="mrc": infile="-InMrc {}/{}.{} ".format(args[0],name,ext)
+				if ext.lower()=="tif": infile="-InTiff {}/{}.{} ".format(args[0],name,ext)
+				outfile="tmp/{}_ali.mrc".format(name)
 				if not os.path.isdir("tmp"): os.mkdir("tmp")
 				output = "-OutMrc {}".format(outfile)
 				cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
@@ -330,19 +319,8 @@ def main():
 				ali = EMData(outfile)
 				ali.write_image(tiltname,idx)
 				os.remove(outfile)
+
 		else:
-			
-			if os.path.isdir(args[0]):
-				dirargs = []
-				for f in f in os.listdir(args[0]):
-					if ".mrc" in f or ".tif" in f:
-						this = "{}/{}".format(args[0],f)
-						if os.path.exists(this): dirargs.append(this)
-				if len(dirargs) == 0:
-					print("""Could not find any .mrc or .tif extension files in {}. Please try 
-						another directory or specify individual files you wish to align.""".format(args[0]))
-					sys.exit(1)
-				args = dirargs
 
 			for idx,arg in enumerate(args):
 				bname,ext = os.path.basename(arg).split(".")
@@ -353,6 +331,7 @@ def main():
 					cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,output,cmdopts)
 				run(cmd,verbose=options.verbose)
 
+
 def run(cmd,shell=False,cwd=None,verbose=0):
 	if verbose > 0: print(cmd)
 	if cwd == None: cwd = os.getcwd()
@@ -360,6 +339,54 @@ def run(cmd,shell=False,cwd=None,verbose=0):
 	p = subprocess.Popen(cmd, shell=shell, cwd=cwd,stderr=subprocess.PIPE)
 	_,err=p.communicate()
 	return
+
+def which(program):
+	found = []
+	def is_exe(fpath) :
+		return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+	for path in os.environ["PATH"].split(os.pathsep):
+		if os.path.isdir(path):
+			for f in os.listdir(path):
+				if program in f:
+					exe_file = os.path.join(path, f)
+					if is_exe(exe_file): found.append(exe_file)
+	if len(found) == 0: return None
+	if len(found) == 1: return found[0]
+	else:
+		for f in found:
+			if program == "alignframes" and "IMOD" in f:
+				return f
+			else: return found[0]
+
+def parse_mdoc(mdoc):
+	info=[]
+	write=False
+	print("DOC: {}".format(mdoc))
+	with open(mdoc) as docf:
+		idx=-1
+		for l in docf.readlines():
+			l=l.strip()
+			if l=="":
+				write=False
+			if "TiltAngle" in l:
+				write=True
+				idx+=1
+				info.append({})
+			if write:
+				try: x,y = l.split("=")[:2]
+				except: continue
+				x=x.strip()
+				y=y.strip()
+				if x=="TiltAngle":
+					y=float(y)
+				info[idx][x]=y
+	sortedinfo=sorted(info, key=lambda x: x['TiltAngle'])
+	filenames=[]
+	tilts=[]
+	for i in sortedinfo:
+		filenames.append(i["SubFramePath"].split('\\')[-1])
+		tilts.append(i["TiltAngle"])
+	return(sortedinfo, filenames,tilts)
 
 
 if __name__ == "__main__":
