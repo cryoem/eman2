@@ -2463,11 +2463,20 @@ def compare_two_images_eucd(data, ref_vol, fdata):
 #
 def compare_two_images_cross(data, ref_vol):
 	global Tracker, Blockdata
+	from utilities import same_ctf
 	ny    = data[0].get_ysize()
 	peaks = len(data)*[None]
 	volft = prep_vol(ref_vol, 2, 1)
 	ctfs  = [None for im in range(len(data))]
-	for im in range(len(data)): ctfs[im]  = ctf_img_real(ny, data[im].get_attr('ctf'))
+	for im in range(len(data)):
+		if im ==0:
+			current_ctf = data[im].get_attr('ctf')
+			ctfimg  = ctf_img_real(ny, current_ctf)
+		else:
+			if not same_ctf(current_ctf, data[im].get_attr('ctf')):
+				current_ctf = data[im].get_attr('ctf')
+				ctfimg  = ctf_img_real(ny, current_ctf)
+		ctfs[im] = ctfimg
 	#  Ref is in reciprocal space
 	for im in range(len(data)):
 		phi, theta, psi, s2x, s2y = get_params_proj(data[im], xform = "xform.projection")
