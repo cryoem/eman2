@@ -207,7 +207,7 @@ class InitMdlTask(JSTask):
 
 		# This is the refinement loop
 		for it in range(options["iter"]):
-			if progress != None: progress(old_div(it*100,options[iter]))
+			if progress != None: progress(old_div(it*100,options["iter"]))
 			if verbose>0 : print("Iteration %d"%it)
 #			if options.savemore : threed[it].write_image("imdl.%02d.%02d.mrc"%(t,it))
 			projs=[(threed[it].project("standard",ort),None) for ort in orts]		# projections
