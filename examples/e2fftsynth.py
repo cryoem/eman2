@@ -271,7 +271,7 @@ class GUIFourierSynth(QtGui.QWidget):
 #			print fft[i]
 			amp=fft[i].real
 			if fabs(amp)<1.0e-5 : amp=0.0
-			self.wamp[i].setValue(old_div(amp*2,(fft[nx]-2)),quiet=1)
+			self.wamp[i].setValue(old_div(amp*2,(fft["nx"]-2)),quiet=1)
 			self.wpha[i].setValue(fft[i].imag*180.0/pi+90.0,quiet=1)
 
 

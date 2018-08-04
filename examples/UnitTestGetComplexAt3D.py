@@ -39,7 +39,7 @@ print(nx,ny,nz)
 for kz in range(ny):
  for ky in range(ny):
   for kx in range(old_div(nx,2)):
-    tiBFFT.set_value_at(2*kx  ,ky, kz,  kx+old_div(ky*nx,2) +old_div(ky*nx,2));
+    tiBFFT.set_value_at(2*kx  ,ky, kz,  kx+old_div(ky*nx,2) +old_div(kz*ny*nx,2));
     tiBFFT.set_value_at(2*kx+1,ky, kz, -(kx+old_div(ky*nx,2)+old_div(kz*ny*nx,2)));
     
 # Now the real and complex values are negatives
