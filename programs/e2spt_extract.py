@@ -129,7 +129,7 @@ def main():
 		print("Reading {} particles".format(len(ptclpos)))
 		
 		if options.boxsz<0:
-			boxsz=int(old_div(ptcl[nx],2)*scale)
+			boxsz=int(old_div(ptcl["nx"],2)*scale)
 		else:
 			boxsz=int(old_div(options.boxsz,2)*scale)
 		

@@ -124,8 +124,8 @@ def main():
 			suminsig=0
 			for i in range(nimg):
 				d.read_image(infile, i)
-				d1=d.process("mask.sharp",{"outer_radius":old_div(d[nx]*2,7)})
-				d2=d.process("mask.sharp",{"inner_radius":old_div(d[nx]*2,7),"outer_radius":old_div(d["nx"],2)-2})
+				d1=d.process("mask.sharp",{"outer_radius":old_div(d["nx"]*2,7)})
+				d2=d.process("mask.sharp",{"inner_radius":old_div(d["nx"]*2,7),"outer_radius":old_div(d["nx"],2)-2})
 				sumin+=d1["mean"]
 				sumout+=d2["mean"]
 				suminsig+=d1["sigma"]
