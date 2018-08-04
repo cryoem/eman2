@@ -139,7 +139,6 @@ def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
 		global_b = user_defined_Bfactor
 	else:
 		guinierline = rot_avg_table(power(periodogram(fft(avg)),.5))
-		#guinierline = rot_avg_table(power(periodogram(map1),.5))
 		freq_max    =  1./(2.*pixel_size)
 		freq_min    =  1./B_start
 		b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, pixel_size)
