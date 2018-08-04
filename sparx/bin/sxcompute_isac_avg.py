@@ -424,8 +424,8 @@ def main():
 		
 		data_list  = [ None for im in range(navg)]
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if B_enhance: print("Avg ID   B-factor    FH1     FH2")	
-			else: print("Avg ID      FH1     FH2")	
+			if B_enhance: print("Avg ID   B-factor  FH1(Res before ali) FH2(Res after ali)")	
+			else: print("Avg ID   FH1(Res before ali)  FH2(Res after ali)")	
 		for iavg in range(image_start,image_end):
 			mlist = EMData.read_images(Tracker["constants"]["orgstack"], list_dict[iavg])
 			for im in range(len(mlist)):
