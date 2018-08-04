@@ -32,6 +32,120 @@ from   time import localtime, strftime, sleep
 global Tracker, Blockdata
 
 # ------------------------------------------------------------------------------------
+def compute_average(mlist, radius, CTF):
+	from morphology   import ctf_img, cosinemask
+	from fundamentals import fft, fftip
+	from utilities    import same_ctf, get_params2D
+	from statistics   import fsc, sum_oe
+	params_list = [None]*len(mlist)
+	if CTF:
+		orig_image_size = mlist[0].get_xsize()
+		avgo       = EMData(orig_image_size, orig_image_size, 1, False) #
+		avge       = EMData(orig_image_size, orig_image_size, 1, False) # 
+		ctf_2_sumo = EMData(orig_image_size, orig_image_size, 1, False)
+		ctf_2_sume = EMData(orig_image_size, orig_image_size, 1, False)
+		for im in range(len(mlist)):
+			current_ctf = mlist[im].get_attr("ctf")
+			if im == 0: 
+				myctf = current_ctf
+				ctt   = ctf_img(orig_image_size, myctf)
+			else:
+				if not same_ctf(current_ctf, myctf):       
+					ctt   = ctf_img(orig_image_size, myctf)
+					myctf = current_ctf
+			alpha, sx, sy, mr, scale = get_params2D(mlist[im], xform = "xform.align2d")
+			params_list[im]= [alpha, sx, sy, mr, scale]
+			tmp = fft(rot_shift2D(mlist[im], alpha, sx, sy, mr))
+			Util.mul_img(tmp, ctt)
+			if im%2 ==0: 
+				Util.add_img2(ctf_2_sume, ctt)
+				Util.add_img(avge, tmp)
+			else:
+				Util.add_img2(ctf_2_sumo, ctt)
+				Util.add_img(avgo, tmp)
+		avge = cosinemask(fft(avge), radius)
+		avgo = cosinemask(fft(avgo), radius)
+		sumavge  = Util.divn_img(fft(avge), ctf_2_sume)
+		sumavgo  = Util.divn_img(fft(avgo), ctf_2_sumo)
+		frc = fsc(fft(sumavgo), fft(sumavge))
+		frc[1][0] = 1.0
+		for ifreq in range(1, len(frc[0])):
+			frc[1][ifreq] = max(0.0, frc[1][ifreq])
+			frc[1][ifreq] = 2.*frc[1][ifreq]/(1.+frc[1][ifreq])
+		sumavg  =  Util.addn_img(fft(avgo), fft(avge))
+		sumctf2 =  Util.addn_img(ctf_2_sume, ctf_2_sumo)	
+		Util.div_img(sumavg, sumctf2)
+		return fft(sumavg), frc, params_list
+	else:
+		for im in range(len(mlist)):
+			alpha, sx, sy, mr, scale = get_params2D(mlist[im], xform = "xform.align2d")
+			params_list[im]= [alpha, sx, sy, mr, scale]  
+		avgo, avge = sum_oe(mlist, "a", CTF)
+		avge = cosinemask(avge, radius)
+		avgo = cosinemask(avgo, radius)
+		params_list = []
+		frc = fsc(avgo, avge)
+		frc[1][0] = 1.0
+		for ifreq in range(1, len(frc[0])):
+			frc[1][ifreq] = max(0.0, frc[1][ifreq])
+			frc[1][ifreq] = 2.*frc[1][ifreq]/(1.+frc[1][ifreq])
+		return avge+avgo, frc, params_list
+
+def adjust_pw_to_model(image, pixel_size, roo):
+	from fundamentals import rops_table
+	from filter       import filt_table
+	from math         import exp, sqrt
+	c1 =-4.5
+	c2 = 15.0
+	c3 = 0.2
+	c4 = -1.0
+	c5 = 1./5.
+	c6 = 0.25 # six params are fitted to Yifan channel model
+	rot1 = rops_table(image)
+	fil  = [None]*len(rot1)
+	if roo is None: # adjusted to the analytic model, See Penczek Methods Enzymol 2010
+		pu = []
+		for ifreq in range(len(rot1)):
+			x = float(ifreq)/float(len(rot1))/pixel_size
+			v = exp(c1+c2/(x/c3+1)**2) + exp(c4-0.5*(((x-c5)/c6**2)**2))
+			pu.append(v)
+		s =sum(pu)
+		for ifreq in range(len(rot1)): fil[ifreq] = sqrt(pu[ifreq]/(rot1[ifreq]*s))
+	else: # adjusted to a given 1-d rotational averaged pw2
+		if roo[0]<0.1 or roo[0]>1.: s =sum(roo)
+		else:  s=1.0
+		for ifreq in range(len(rot1)):fil[ifreq] = sqrt(roo[ifreq]/(rot1[ifreq]*s))
+	return filt_table(image, fil)
+	
+def get_optimistic_res(frc):
+	nfh = 0
+	np  = 0
+	for im in range(len(frc[1])):
+		ifreq = len(frc[1])-1-im
+		if frc[1][ifreq] >=0.143:
+			np +=1
+			nfh = ifreq
+			if np >=3:break	
+	FH = frc[0][nfh]
+	if FH < 0.15:  FH = 0.15 # minimum freq
+	return FH
+	
+def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
+	from filter       import filt_gaussinv
+	from fundamentals import rot_avg_table
+	from morphology   import compute_bfactor
+	from EMAN2        import periodogram
+	if user_defined_Bfactor>0.0:
+		global_b = user_defined_Bfactor
+	else:
+		guinierline = rot_avg_table(power(periodogram(fft(avg)),.5))
+		#guinierline = rot_avg_table(power(periodogram(map1),.5))
+		freq_max    =  1./(2.*pixel_size)
+		freq_min    =  1./B_start
+		b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, pixel_size)
+		#print(ifreqmin, ifreqmax)
+		global_b = b*4. #
+	return filt_gaussinv(fft(avg), sqrt(2./global_b)), global_b
 
 def main():
 	from optparse   import OptionParser
@@ -41,8 +155,6 @@ def main():
 	import sys, os, time
 	global Tracker, Blockdata
 	from global_def import ERROR
-	from statistics import compute_average_noctf, compute_average_ctf
-	from utilities  import apply_enhancement, get_optimistic_res, adjust_pw_to_model 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -68,8 +180,8 @@ def main():
 	parser.add_option("--navg",                  type   ="int",            default =1000000,     help= "number of aveages")
 	parser.add_option("--local_alignment",       action ="store_true",     default =False,  help= "do local alignment")
 	parser.add_option("--noctf",                 action ="store_true",     default =False,  help="no ctf correction, useful for negative stained data. always ctf for cryo data")
-	parser.add_option("--B_start",  type   ="float",  default = 10.0,  help="start frequency (Angstrom) of power spectrum for B_factor estimation")
-	parser.add_option("--Bfactor",  type   ="float",  default = -1.0,  help= "User defined bactors (e.g. 45.0[A^2]). By default, the program automatically estimates B-factor. ")
+	parser.add_option("--B_start",  type   ="float",  default = 45.0,  help="start frequency (Angstrom) of power spectrum for B_factor estimation")
+	parser.add_option("--Bfactor",  type   ="float",  default = -1.0,  help= "User defined bactors (e.g. 25.0[A^2]). By default, the program automatically estimates B-factor. ")
 			
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
@@ -82,6 +194,43 @@ def main():
 	elif options.pw_adjustment=='no_adjustment':      no_adjustment            = True
 	elif options.pw_adjustment=='bfactor':            B_enhance                = True
 	else:                                             adjust_to_given_pw2      = True 
+
+	from utilities 		import get_im, bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, write_text_row
+	from utilities 		import cmdexecute
+	from filter			import filt_tanl
+	from time           import sleep
+	from logger         import Logger,BaseLogger_Files
+	import user_functions
+	import string
+	from   string       import split, atoi, atof
+	import json
+
+	mpi_init(0, [])
+	nproc    = mpi_comm_size(MPI_COMM_WORLD)
+	myid     = mpi_comm_rank(MPI_COMM_WORLD)
+
+
+	Blockdata = {}
+	#  MPI stuff
+	Blockdata["nproc"]              = nproc
+	Blockdata["myid"]               = myid
+	Blockdata["main_node"]          = 0
+	Blockdata["shared_comm"]                    = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED,  0, MPI_INFO_NULL)
+	Blockdata["myid_on_node"]                   = mpi_comm_rank(Blockdata["shared_comm"])
+	Blockdata["no_of_processes_per_group"]      = mpi_comm_size(Blockdata["shared_comm"])
+	masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
+	Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
+			 Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
+	#  We need two nodes for processing of volumes
+	Blockdata["node_volume"] = [Blockdata["no_of_groups"]-3, Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take three last nodes
+	#  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
+	#  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
+	Blockdata["nodes"] = [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"], \
+		 Blockdata["node_volume"][2]*Blockdata["no_of_processes_per_group"]]
+	# End of Blockdata: sorting requires at least three nodes, and the used number of nodes be integer times of three
+	global_def.BATCH = True
+	global_def.MPI   = True
+
 
 	if adjust_to_given_pw2:
 		checking_flag = 0
@@ -112,43 +261,8 @@ def main():
 	#
 	# Create and initialize Tracker dictionary with input options  # State Variables
 
-	mpi_init(0, [])
-	nproc    = mpi_comm_size(MPI_COMM_WORLD)
-	myid     = mpi_comm_rank(MPI_COMM_WORLD)
-
-
-	Blockdata = {}
-	#  MPI stuff
-	Blockdata["nproc"]              = nproc
-	Blockdata["myid"]               = myid
-	Blockdata["main_node"]          = 0
-	Blockdata["shared_comm"]                    = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED,  0, MPI_INFO_NULL)
-	Blockdata["myid_on_node"]                   = mpi_comm_rank(Blockdata["shared_comm"])
-	Blockdata["no_of_processes_per_group"]      = mpi_comm_size(Blockdata["shared_comm"])
-	masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
-	Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
-			 Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
-	#  We need two nodes for processing of volumes
-	Blockdata["node_volume"] = [Blockdata["no_of_groups"]-3, Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take three last nodes
-	#  We need two CPUs for processing of volumes, they are taken to be main CPUs on each volume
-	#  We have to send the two myids to all nodes so we can identify main nodes on two selected groups.
-	Blockdata["nodes"] = [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"], \
-		 Blockdata["node_volume"][2]*Blockdata["no_of_processes_per_group"]]
-	# End of Blockdata: sorting requires at least three nodes, and the used number of nodes be integer times of three
-	global_def.BATCH = True
-	global_def.MPI   = True
 
 	#<<<---------------------->>>imported functions<<<---------------------------------------------
-
-	from utilities 		import get_im, bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, write_text_row
-	from utilities 		import cmdexecute
-	from filter			import filt_tanl
-	from time           import sleep
-	from logger         import Logger,BaseLogger_Files
-	import user_functions
-	import string
-	from   string       import split, atoi, atof
-	import json
 
 	#x_range = max(Tracker["constants"]["xrange"], int(1./Tracker["ini_shrink"])+1)
 	#y_range =  x_range
@@ -198,8 +312,17 @@ def main():
 	else: init_dict = 0
 	init_dict = wrap_mpi_bcast(init_dict, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 	###
-
+	do_ctf = True
+	if options.noctf: do_ctf = False 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
+		if do_ctf: print("CTF correction is on")
+		else:      print("CTF correction is off")
+		if options.local_alignment: print("local refinement is on")
+		else:                       print("local refinement is off")
+		if B_enhance: print("Bfactor is to be applied on averages")
+		elif adjust_to_given_pw2: print("PW of averages is adjusted to a given 1D PW curve")
+		elif adjust_to_analytic_model: print("PW of averages is adjusted to analytic model")
+		else: print("PW of averages is not adjusted")
 		#Tracker["constants"]["orgstack"] = "bdb:"+ os.path.join(Tracker["constants"]["isac_dir"],"../","sparx_stack")
 		image = get_im(Tracker["constants"]["orgstack"], 0)
 		Tracker["constants"]["nnxo"] = image.get_xsize()
@@ -244,6 +367,7 @@ def main():
 	ptl_list    = []
 	memlist     = []
 	if(Blockdata["myid"] == Blockdata["main_node"]):
+		print("Total computed number of averages in this run is %d"%navg)
 		for iavg in range(navg):
 			params_of_this_average = []
 			image   = get_im(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf"), iavg)
@@ -301,17 +425,15 @@ def main():
 		
 		data_list  = [ None for im in range(navg)]
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if B_enhance: print("Processed avg   B-factor    FH1     FH2")	
-			else: print("Processed avg       FH1     FH2")	
+			if B_enhance: print("Avg ID   B-factor    FH1     FH2")	
+			else: print("Avg ID      FH1     FH2")	
 		for iavg in range(image_start,image_end):
 			mlist = EMData.read_images(Tracker["constants"]["orgstack"], list_dict[iavg])
 			for im in range(len(mlist)):
 				#mlist[im]= get_im(Tracker["constants"]["orgstack"], list_dict[iavg][im])
 				set_params2D(mlist[im], params_dict[iavg][im], xform = "xform.align2d")
-			if options.noctf: new_avg, frc, plist = compute_average_noctf(mlist, Tracker["constants"]["radius"])
-			else: new_avg, frc, plist = compute_average_ctf(mlist, Tracker["constants"]["radius"])
+			new_avg, frc, plist = compute_average(mlist, Tracker["constants"]["radius"], do_ctf)
 			FH1 = get_optimistic_res(frc)
-			#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d_before_ali.txt"%iavg))
 			
 			if options.local_alignment:
 				new_average1 = within_group_refinement([mlist[kik] for kik in range(0,len(mlist),2)], maskfile= None, randomize= False, ir=1.0,  \
@@ -320,8 +442,7 @@ def main():
 				new_average2 = within_group_refinement([mlist[kik] for kik in range(1,len(mlist),2)], maskfile= None, randomize= False, ir=1.0, \
 				 ou= Tracker["constants"]["radius"], rs=1.0, xrng=[ x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
 				 dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.02, method="")
-				if options.noctf: new_avg, frc, plist = compute_average_noctf(mlist, Tracker["constants"]["radius"])
-				else: new_avg, frc, plist = compute_average_ctf(mlist, Tracker["constants"]["radius"])
+				new_avg, frc, plist = compute_average(mlist, Tracker["constants"]["radius"], do_ctf)
 				plist_dict[iavg] = plist
 				FH2 = get_optimistic_res(frc)
 			else: FH2 = 0.0
