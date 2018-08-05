@@ -204,7 +204,7 @@ def reorient(data,refvol,verbose=0):
 		if img["sigma"]==0 : continue
 
 		rd=elem["xform"].get_rotation("eman")
-		if verbose>0 : print(" %d/%d\r"%(i,len(data)), end=' ')
+		if verbose>0 : print(" %d/%d    \r"%(i,len(data)), end=' ')
 		sys.stdout.flush()
 
 		simp=Simplex(qual,[rd["az"],rd["alt"],rd["phi"]],[5,5,5],data=[refvol,img])
