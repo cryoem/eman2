@@ -418,56 +418,92 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 		sumsq = EMData()
 	return tavg, ave1, ave2, var, sumsq
 
-def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
+def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, return_params = False):
 	"""
 		Calculate average of an image series
 		mode - "a": use current alignment parameters
 		CTF  - if True, use CTF for calculations of the average.
 		In addition, calculate odd and even sums, these are not divided by the ctf^2
 		If ctf_2_sum not provided, sum of ctf^2 will be calculated and returned
+		If ctf_eo_sum is True, then compute ctf^2 in odd and even form
+		If return_params is True, then return ali2d.xform parameters
 	"""
-	from utilities    import    model_blank, get_params2D
+	from utilities    import    model_blank, get_params2D, same_ctf
 	from fundamentals import    rot_shift2D, fft
-
 	n      = len(data)
-	nx     = data[0].get_xsize()
-	ny     = data[0].get_ysize()
-	ave1   = model_blank(nx, ny)
-	ave2   = model_blank(nx, ny)
-
+	if return_params: params_list = [None]*n
 	if CTF:
-		from morphology   import ctf_img
-		from filter       import filt_ctf
+		origin_size = data[0].get_xsize()
+		ave1   = EMData(origin_size, origin_size, 1, False) 
+		ave2   = EMData(origin_size, origin_size, 1, False)
+		from morphology import ctf_img
+		ctf_2_sumo = EMData(origin_size, origin_size, 1, False)
+		ctf_2_sume = EMData(origin_size, origin_size, 1, False)
+
 		if data[0].get_attr_default('ctf_applied', 1) == 1:  ERROR("data cannot be ctf-applied", "sum_oe", 1)
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
-		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
-		for i in range(n):
-			ctf_params = data[i].get_attr("ctf")
-			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i])
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+		for im in range(n):
+			current_ctf = data[im].get_attr("ctf")
+			if im == 0: 
+				myctf = current_ctf
+				ctt   = ctf_img(origin_size, myctf)
 			else:
-				ima = data[i]
-			ima_filt = filt_ctf(ima, ctf_params, dopad=True)
-			if i%2 == 0:	Util.add_img(ave1, ima_filt)
-			else:	        Util.add_img(ave2, ima_filt)
-			if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+				if not same_ctf(current_ctf, myctf):       
+					ctt   = ctf_img(origin_size, myctf)
+					myctf = current_ctf
+			if mode == "a":
+				alpha, sx, sy, mirror, scale = get_params2D(data[im])
+				ima = rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
+				if return_params:
+					params_list[im]= [alpha, sx, sy, mirror, scale]
+			else:
+				ima = data[im]
+				if return_params:
+					alpha, sx, sy, mirror, scale = get_params2D(data[im])
+					params_list[im]= [alpha, sx, sy, mirror, scale]
+			ima = fft(ima)
+			Util.mul_img(ima, ctt)
+			if im%2 == 0:	
+				Util.add_img(ave1, ima)
+				Util.add_img2(ctf_2_sume, ctt)
+			else:	        
+				Util.add_img(ave2, ima)
+				Util.add_img2(ctf_2_sumo, ctt)
 	else:
-		for i in range(n):
+		nx     = data[0].get_xsize()
+		ny     = data[0].get_ysize()
+		ave1   = model_blank(nx, ny, 1) 
+		ave2   = model_blank(nx, ny, 1)
+		for im in range(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i])
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				alpha, sx, sy, mirror, scale = get_params2D(data[im])
+				ima = rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
+				if return_params:
+					params_list[im]= [alpha, sx, sy, mirror, scale]
 			else:
-				ima = data[i]
-			if i%2 == 0:	Util.add_img(ave1, ima)
+				ima = data[im]
+				if return_params:
+					alpha, sx, sy, mirror, scale = get_params2D(data[im])
+					params_list[im]= [alpha, sx, sy, mirror, scale]
+			if im%2 == 0:	Util.add_img(ave1, ima)
 			else:	        Util.add_img(ave2, ima)
 
 	if  CTF:
-		if get_ctf2: return ave1, ave2, ctf_2_sum
-		else:        return  ave1, ave2
-	else:        return  ave1, ave2
-
+		if get_ctf2:
+			if not ctf_eo_sum:# Old usage
+				ctf_2_sum  = Util.addn_img(ctf_2_sume, ctf_2_sumo)
+				return fft(ave1), fft(ave2), ctf_2_sum
+			else: # return Fourier images
+				if return_params: return ave1, ave2, ctf_2_sume, ctf_2_sumo, params_list 
+				else: return ave1, ave2, ctf_2_sume, ctf_2_sumo
+		else:
+			if return_params: return  ave1, ave2, params_list
+			else: return ave1, ave2
+	else:
+		if not return_params: return  ave1, ave2
+		else: return  ave1, ave2, params_list
+		
 def ave_var(data, mode = "a", listID=None):
 	"""
 		Calculate average and variance of a 2D or 3D image series
