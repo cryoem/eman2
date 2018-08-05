@@ -199,6 +199,7 @@ def main():
 							#rslt[1]["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 
 						if options.ref!=None : rslt[1]["average"]["projection_image"]=options.ref
+#						print("write",rslt[1]["n"])
 						if options.storebad : rslt[1]["average"].write_image(options.output,rslt[1]["n"])
 						else: rslt[1]["average"].write_image(options.output,-1)
 

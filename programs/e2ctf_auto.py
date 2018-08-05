@@ -305,7 +305,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		print("Warning: original particle A/pix is very large!")
 		resample1=1.0
 	maskwid1=old_div(20.0,options.apix)
-	maskrad1=int(old_div(boxsize,2)-maskwid1)
+	maskrad1=int(boxsize//2-maskwid1)
 
 	# for "medium" data, we target ~2.6 A/pix
 	resample2=old_div(2.6,options.apix)
@@ -315,7 +315,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		if not options.lores : print("Warning: original sampling is too large for ideal midres resolution results. Suggest <=2.6 A/pix")
 		resample2=1.0
 	maskwid2=old_div(12.0,options.apix)
-	maskrad2=int(old_div(boxsize,2)-maskwid2*1.2)
+	maskrad2=int(boxsize//2-maskwid2*1.2)
 
 	# for "low" second data, we target ~4 A/pix
 	resample3=old_div(4.0,options.apix)
@@ -324,11 +324,11 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	if resample3<1.0:
 		resample2=1.0
 	maskwid3=old_div(18.0,options.apix)
-	maskrad3=int(old_div(boxsize,2)-maskwid3*1.2)
+	maskrad3=int(boxsize//2-maskwid3*1.2)
 
 	# for high resolution data, we still go ahead and do some masking
 	maskwid4=old_div(6.0,options.apix)
-	maskrad4=int(old_div(boxsize,2)-maskwid3*1.2)
+	maskrad4=int(boxsize//2-maskwid3*1.2)
 
 	# for "5" data, we target ~1.6 A/pix
 	resample5=old_div(1.6,options.apix)
@@ -338,7 +338,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 		if not options.lores : print("Warning: original sampling is too large for ideal 5A resolution results. Suggest <=1.8 A/pix")
 		resample2=1.0
 	maskwid5=old_div(6.0,options.apix)
-	maskrad5=int(old_div(boxsize,2)-maskwid5*1.2)
+	maskrad5=int(boxsize//2-maskwid5*1.2)
 
 	if options.phaseplate : hppixels=1
 	else: hppixels=3
@@ -418,7 +418,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 	print("""
 The length of your particle on its longest axis should be <= {}. If your particle is larger than this,
 you either need a larger box-size, or you will need to proceed with CTF fitting manually (and will likely achieve
-suboptimal results). See http://www.eman2.org/emanwiki/EMAN2/BoxSize""".format(maskrad3*options.apix))
+suboptimal results). See http://www.eman2.org/emanwiki/EMAN2/BoxSize""".format(maskrad3*2*options.apix))
 
 if __name__ == "__main__":
 	main()
