@@ -31,38 +31,14 @@ from   sys 	import exit
 from   time import localtime, strftime, sleep
 global Tracker, Blockdata
 
-# ------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 def compute_average(mlist, radius, CTF):
-	from morphology   import ctf_img, cosinemask
-	from fundamentals import fft, fftip
-	from utilities    import same_ctf, get_params2D
+	from morphology   import cosinemask
+	from fundamentals import fft
 	from statistics   import fsc, sum_oe
-	params_list = [None]*len(mlist)
 	if CTF:
-		orig_image_size = mlist[0].get_xsize()
-		avgo       = EMData(orig_image_size, orig_image_size, 1, False) #
-		avge       = EMData(orig_image_size, orig_image_size, 1, False) # 
-		ctf_2_sumo = EMData(orig_image_size, orig_image_size, 1, False)
-		ctf_2_sume = EMData(orig_image_size, orig_image_size, 1, False)
-		for im in range(len(mlist)):
-			current_ctf = mlist[im].get_attr("ctf")
-			if im == 0: 
-				myctf = current_ctf
-				ctt   = ctf_img(orig_image_size, myctf)
-			else:
-				if not same_ctf(current_ctf, myctf):       
-					ctt   = ctf_img(orig_image_size, myctf)
-					myctf = current_ctf
-			alpha, sx, sy, mr, scale = get_params2D(mlist[im], xform = "xform.align2d")
-			params_list[im]= [alpha, sx, sy, mr, scale]
-			tmp = fft(rot_shift2D(mlist[im], alpha, sx, sy, mr))
-			Util.mul_img(tmp, ctt)
-			if im%2 ==0: 
-				Util.add_img2(ctf_2_sume, ctt)
-				Util.add_img(avge, tmp)
-			else:
-				Util.add_img2(ctf_2_sumo, ctt)
-				Util.add_img(avgo, tmp)
+		avge, avgo, ctf_2_sume, ctf_2_sumo, params_list = \
+		     sum_oe(mlist, "a", CTF, None, True, True)
 		avge = cosinemask(fft(avge), radius)
 		avgo = cosinemask(fft(avgo), radius)
 		sumavge  = Util.divn_img(fft(avge), ctf_2_sume)
@@ -77,13 +53,9 @@ def compute_average(mlist, radius, CTF):
 		Util.div_img(sumavg, sumctf2)
 		return fft(sumavg), frc, params_list
 	else:
-		for im in range(len(mlist)):
-			alpha, sx, sy, mr, scale = get_params2D(mlist[im], xform = "xform.align2d")
-			params_list[im]= [alpha, sx, sy, mr, scale]  
-		avgo, avge = sum_oe(mlist, "a", CTF)
+		avge, avgo, params_list = sum_oe(mlist, "a", False,  None, False, True)
 		avge = cosinemask(avge, radius)
 		avgo = cosinemask(avgo, radius)
-		params_list = []
 		frc = fsc(avgo, avge)
 		frc[1][0] = 1.0
 		for ifreq in range(1, len(frc[0])):
