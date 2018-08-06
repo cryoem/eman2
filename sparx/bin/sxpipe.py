@@ -2958,7 +2958,7 @@ def moon_eliminator(args):
 	
 	if args.input_volume_path_2nd is None:
 		print(" ")
-		print("----- Running with Single Volumes Mode -----")
+		print("----- Running with Single Volume Mode -----")
 	else:
 		print(" ")
 		print("----- Running with Halfset Volumes Mode -----")
@@ -3330,7 +3330,7 @@ def main():
 	# create the subparser for the "moon_eliminator" subcommand
 	parser_moon_eliminator = subparsers.add_parser("moon_eliminator", help="Moon eliminator: Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass. Optionally, create 3D mask also.")
 	parser_moon_eliminator.add_argument("input_volume_path",                type=str,                              help="Input volume path: Path to input volume file containing the 3D density map. (default required string)")
-	parser_moon_eliminator.add_argument("input_volume_path_2nd", nargs='?', type=str,             default=None,    help="Second iunput volume path: Path to second input volume file containing the 3D density map. Use this option to create a mask from the volume combined two MERIDIEN halfset volumes. (default none)")
+	parser_moon_eliminator.add_argument("input_volume_path_2nd", nargs='?', type=str,             default=None,    help="Second input volume path: Path to second input volume file containing the 3D density map. Use this option to create a mask from the volume combined two MERIDIEN halfset volumes. (default none)")
 	parser_moon_eliminator.add_argument("output_directory",                 type=str,                              help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
 	parser_moon_eliminator.add_argument("--pixel_size",                     type=float,           default=None,    help="Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output volume. (default required float)")
 	parser_moon_eliminator.add_argument("--mol_mass",                       type=float,           default=None,    help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)")
