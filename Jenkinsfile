@@ -33,10 +33,6 @@ def notifyEmail() {
     }
 }
 
-def isReleaseBuild() {
-    return GIT_BRANCH ==~ /.*\/release.*/
-}
-
 def isBinaryBuild() {
     return CI_BUILD == "1"
 }
