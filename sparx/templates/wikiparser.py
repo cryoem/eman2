@@ -1908,11 +1908,11 @@ def create_sxcmd_subconfig_utility_changesize():
 def create_sxcmd_subconfig_utility_window():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("clip"); token_edit.label = "Window to specified size [Pixels]"; token_edit.is_required = True; token_edit.is_locked = False; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input image or volume"; token_edit.help = "Path to input image or volume file."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "data2d3d_both"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_file"); token_edit.key_prefix = ""; token_edit.label = "Output windowed image or volume"; token_edit.help = "Path to output windowed (clipped/padded) image or volume file."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "output"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Path to input volume file."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_file"); token_edit.key_prefix = ""; token_edit.label = "Output windowed volume"; token_edit.help = "Path to output windowed (clipped/padded) volume file."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = "none"; token_edit.type = "output"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Window Image or Volume", None, token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Window Volume", None, token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -2095,8 +2095,8 @@ def build_config_list_MoinMoinWiki():
 
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/rviper.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_changesize()))
-	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2proc3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_window()))
+#	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_changesize()))
+#	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2proc3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_window()))
 #	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2proc3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_scale_clip()))
 
 	sxcmd_role = "sxr_alt"
