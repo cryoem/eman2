@@ -8,12 +8,17 @@ Moon eliminator: Eliminate moons or remove dusts from the background of a 3D den
 
 Usage in command line
 
-  sxpipe.py  moon_eliminator  input_volume_path  output_directory  --pixel_size=PIXEL_SIZE  --mol_mass=KILODALTON  --use_density_threshold=THRESHOLD  --moon_distance=PIXEL_DISTANCE  --dilation=DILATION_PIXEL_WIDTH  --edge_sigma=SIGMA_PIXEL_WIDTH  --resample_ratio=RATIO_OR_DIR_PATH  --box_size=BOX_SIZE  --resampled_shift3d  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --invert_handedness  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH  --generate_mask  --gm_dilation=DILATION_PIXEL_WIDTH  --gm_edge_width=MASK_EDGE_PIXEL_WIDTH  --gm_edge_sigma=SIGMA_PIXEL_WIDTH  --outputs_root=FILE_ROOT  --allow_disconnect  --edge_type=SOFT_EDGE_TYPE  --debug
+  sxpipe.py  moon_eliminator  input_volume_path  input_volume_path_2nd  output_directory  --pixel_size=PIXEL_SIZE  --mol_mass=KILODALTON  --use_density_threshold=THRESHOLD  --moon_distance=PIXEL_DISTANCE  --dilation=DILATION_PIXEL_WIDTH  --edge_sigma=SIGMA_PIXEL_WIDTH  --resample_ratio=RATIO_OR_DIR_PATH  --box_size=BOX_SIZE  --resampled_shift3d  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --invert_handedness  --fl=LPF_CUTOFF_FREQ  --aa=LPF_FALLOFF_WIDTH  --generate_mask  --gm_dilation=DILATION_PIXEL_WIDTH  --gm_edge_width=MASK_EDGE_PIXEL_WIDTH  --gm_edge_sigma=SIGMA_PIXEL_WIDTH  --outputs_root=FILE_ROOT  --allow_disconnect  --edge_type=SOFT_EDGE_TYPE  --debug
  
 \\
 ===== Typical usage =====
 
 sxpipe moon_eliminator does not support MPI. 
+
+There are two modes to run the program:
+
+\\
+__1. Single Volume Mode:__
 
 Create reference 3D volume and 3D mask from R-VIPER 3D model with the resample ratio used in ISAC2 using an expected molecular mass [kDa].
 
@@ -28,9 +33,18 @@ Create reference 3D volume and 3D mask from post-refined MERIDIEN 3D model using
   sxpipe.py moon_eliminator 'outdir_postrefiner/postrefine3d.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --generate_mask 
 
 \\
+__2. Halfset Volumes Mode:__
+
+Create reference 3D volume and 3D mask from halfset unfiltered volumes produced by MERIDIEN, using the expected molecular mass [kDa].
+
+  sxpipe.py moon_eliminator 'outdir_meridien/vol_0_unfil_025.hdf' 'outdir_meridien/vol_0_unfil_025.hdf' 'outdir_pipe_moon_eliminator' --mol_mass=1400 --pixel_size=1.12 --generate_mask 
+
+
+\\
 ===== Input =====
 === Main Parameters ===
   ; input_volume_path : Input volume path: Path to input volume file containing the 3D density map. (default required string)
+  ; input_volume_path_2nd : Second input volume path: Path to second input volume file containing the 3D density map. Use this option to create a mask from the volume combined two MERIDIEN halfset volumes. (default none)
   ; output_directory : Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
 
   ; %%--%%pixel_size : Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output volume. (default required float)
@@ -48,11 +62,11 @@ Create reference 3D volume and 3D mask from post-refined MERIDIEN 3D model using
   ; %%--%%invert_handedness : Invert handedness: Invert the handedness of the 3D volume. (default False)
   ; %%--%%fl : Low-pass filter resolution [A]: >0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)
   ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when %%--%%fl > 0.0. (default 0.1)
-  ; %%--%%generate_mask : Generate soft-edged mask: Generate soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through %%--%%gm_dilation, %%--%%gm_edge_width, and %%--%%gm_edge_sigma. Available methods are (1) 'gauss' for gaussian soft-edge and (2) 'cosine' for cosine soft-edged (used in PostRefiner). (default False)
+  ; %%--%%generate_mask : Generate soft-edged mask: Generate soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through %%--%%gm_* options. Available methods are (1) 'gauss' for gaussian soft-edge and (2) 'cosine' for cosine soft-edged (used in PostRefiner). (default False)
 
 \\
 === Advanced Parameters ===
-  ; %%--%%gm_dilation : Soft-edge dilation [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of %%--%%gm_edge_width so that the voxels with 1.0 values in the mask are same as the hard-edged binary volume with the threadhold. (default -1.0)
+  ; %%--%%gm_dilation : Soft-edge dilation [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of %%--%%gm_edge_width so that the voxels with 1.0 values in the mask are same as the hard-edged binary volume with the threadhold. Effective only with %%--%%enerate_mask option. (default -1.0)
   ; %%--%%gm_edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with %%--%%generate_mask option. (default 6.0)
   ; %%--%%gm_edge_sigma : Soft-edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edged masking. This value controls the fall-speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with %%--%%generate_mask and %%--%%generate_mask='gauss'. (default 2.0)
   ; %%--%%outputs_root : Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)
