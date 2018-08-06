@@ -1,5 +1,5 @@
 name: EMAN2
-version: 2.21
+version: 2.22
 
 installer_filename: eman2.mac.sh    # [osx]
 installer_filename: eman2.linux.sh  # [linux]
@@ -15,7 +15,7 @@ keep_pkgs: True
 ignore_duplicate_files: True
 
 specs:
-  - eman2 2.21
+  - eman2 2.22
   - conda * py27*
   - conda-build
   - pip
