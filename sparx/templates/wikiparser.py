@@ -1720,17 +1720,14 @@ def create_sxcmd_subconfig_meridien_standard_continuation():
 
 	return sxcmd_subconfig
 
-
-def create_sxcmd_subconfig_meridien_local_iteration():
+def create_sxcmd_subconfig_meridien_header_import_xform_projection():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("import"); token_edit.is_required = True; token_edit.is_locked = False; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("params"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = "xform.projection"; token_edit.restore = "xform.projection"; token_edit_list.append(token_edit)
 
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
-
-	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
-
-	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Iteration", "Perform local refinement where the restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, subset_config="iteration")
+	sxsubcmd_mpi_support = False
+	sxcmd_subconfig = SXsubcmd_config("Import Projection Parameters", "Import projection parameters from a file created by a meridien run to header of the input stack, which required by \'Local Refinement from Stack\' mode.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1746,6 +1743,19 @@ def create_sxcmd_subconfig_meridien_local_stack():
 	sxsubcmd_mpi_support = True
 	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Stack", "Perform local refinement where the restricted search of 3D refinement starts from user-provided orientation parameters stored in stack header. Note that delta has to be less than or equal to 3.75[A].", token_edit_list, sxsubcmd_mpi_support, subset_config="stack")
 	
+	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_meridien_local_iteration():
+	token_edit_list = []
+	token_edit = SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
+
+	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
+
+	sxsubcmd_mpi_support = True
+	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Iteration", "Perform local refinement where the restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, subset_config="iteration")
+
 	return sxcmd_subconfig
 
 def create_sxcmd_subconfig_meridien_final():
@@ -2225,8 +2235,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-	if is_dev_mode:
-		sxcmd_config_list.append(SXcmd_config("../doc/pipe_resample_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_resample_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_window"
@@ -2238,6 +2247,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_restacking.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -2294,14 +2304,11 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
 
 	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration()))
+	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_header_import_xform_projection()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
-	if is_dev_mode:
-		sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_header_import_xform_projection()))
-###		sxcmd_config_list.append(SXcmd_config("../doc/pipe_reboxer.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-		sxcmd_config_list.append(SXcmd_config("../doc/pipe_restacking.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -2335,12 +2342,10 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 ### # NOTE: 2018/01/08 Toshio Moriya
 ### # post-refiner embedded sort3d_depth is removed recently.
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_postrefiner()))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_single_vols()))
 	if is_dev_mode:
 		sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
-	if is_dev_mode:
-###		sxcmd_config_list.append(SXcmd_config("../doc/pipe_reboxer.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-		sxcmd_config_list.append(SXcmd_config("../doc/pipe_restacking.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -2348,7 +2353,6 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_binary_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_refine3d_angular_distribution()))
-	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_single_vols()))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_localres"
@@ -2395,6 +2399,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_resample_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	return sxcmd_config_list
