@@ -78,6 +78,7 @@ Create reference 3D volume and 3D mask from halfset unfiltered volumes produced 
 ===== Output =====
 === List of output Files ===
 || **File Name** || **Discription** ||
+|| *_ref_before_moon_elimination.hdf || File containing the 3D reference before moon elimination (i.e., the 3D volume just before applying moon elimination.). ||
 || *_ref_moon_eliminated.hdf || File containing the moon eliminated 3D reference. ||
 || *_mask_moon_elminator.hdf || File containing the moon elminator 3D mask. ||
 || *_bin_mol_mass.hdf || File containing the 3D bainary corresponding to the molecular mass. ||
@@ -91,6 +92,7 @@ This command executes the following processes:
   - Shift 3D volume if necessary.
   - Invert the handedness if necessary.
   - Apply low-pass filter to the input volume before the moon elimination if necessary.
+  - Save reference 3D volume before eliminating the moons.
   - Create reference 3D volume by eliminating the moons from the input volume and save the results.
   - Create 3D mask from the 3D bainary corresponding to the molecular mass and save the result if necessary 
 

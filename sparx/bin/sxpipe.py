@@ -3174,6 +3174,11 @@ def moon_eliminator(args):
 	# Let's try to use pixel size to decide the distance of the nearest moons...
 	ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass = mrk_eliminate_moons(vol3d, density_threshold, args.edge_type, args.moon_distance, args.dilation, args.edge_sigma, args.allow_disconnect, args.debug)
 	
+	ref3d_before_moon_elimination_file_path = os.path.join(args.output_directory, "{}_ref_before_moon_elimination.hdf".format(args.outputs_root))
+	print(" ")
+	print_progress("Saving 3D reference before moon elimination (i.e., the 3D volume just before applying moon elimination.) {}...".format(ref3d_before_moon_elimination_file_path))
+	vol3d.write_image(ref3d_before_moon_elimination_file_path)
+	
 	ref3d_moon_eliminated_file_path = os.path.join(args.output_directory, "{}_ref_moon_eliminated.hdf".format(args.outputs_root))
 	print(" ")
 	print_progress("Saving moon eliminated 3D reference {}...".format(ref3d_moon_eliminated_file_path))
