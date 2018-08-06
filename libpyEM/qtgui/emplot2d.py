@@ -1531,18 +1531,18 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		gbl0.addWidget(self.wlnorm,4,0)
 
 		self.wcomb_test=QtGui.QComboBox(self)
-		self.wcomb_test.addItem("Welch's t-test")
-		self.wcomb_test.addItem("Student's t-test")
-		self.wcomb_test.addItem("Hotelling's T-squared test")
-		self.wcomb_test.addItem("F-test")
-		self.wcomb_test.addItem("Z-test")
-		self.wcomb_test.addItem("Chi-Squared test")
-		self.wcomb_test.addItem("Sharpio-Wilk test")
-		self.wcomb_test.addItem("Wilcoxon signed-rank test")
-		self.wcomb_test.addItem("Kolomogorov-Smirnov test")
-		self.wcomb_test.addItem("Mann-Whitney U-test")
-		self.wcomb_test.addItem("Covariance")
-		self.wcomb_test.addItem("Pearson Correlation")
+		#self.wcomb_test.addItem("Welch's t-test")
+		#self.wcomb_test.addItem("Student's t-test")
+		#self.wcomb_test.addItem("Hotelling's T-squared test")
+		#self.wcomb_test.addItem("F-test")
+		#self.wcomb_test.addItem("Z-test")
+		#self.wcomb_test.addItem("Chi-Squared test")
+		#self.wcomb_test.addItem("Sharpio-Wilk test")
+		#self.wcomb_test.addItem("Wilcoxon signed-rank test")
+		#self.wcomb_test.addItem("Kolomogorov-Smirnov test")
+		#self.wcomb_test.addItem("Mann-Whitney U-test")
+		#self.wcomb_test.addItem("Covariance")
+		#self.wcomb_test.addItem("Pearson Correlation")
 		gbl0.addWidget(self.wcomb_test,4,1)
 
 		self.wsbcols=StringBox(label="Col(s)",value="0,1")
@@ -1638,16 +1638,15 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		self.table.clearContents()
 
 		x = np.asarray(data).T[:,cols]
-		if stat == "Covariance":
-			self.replaceTableLabels(cols)
-			result = np.cov(x,rowvar=False) #result = ["\t".join([str(round(j,rnd)) for j in i]) for i in cov]
-		elif stat == "Pearson Correlation":
-			self.replaceTableLabels(cols)
-			result = np.corrcoef(x,rowvar=False) #result = ["\t".join([str(round(j,2)) for j in i]) for i in corrcoef]
-
-		else:
-			print(("{} not yet implemented!".format(stat)))
-			return
+		#if stat == "Covariance":
+		#	self.replaceTableLabels(cols)
+		#	result = np.cov(x,rowvar=False) #result = ["\t".join([str(round(j,rnd)) for j in i]) for i in cov]
+		#if stat == "Pearson Correlation":
+		#	self.replaceTableLabels(cols)
+		#	result = np.corrcoef(x,rowvar=False) #result = ["\t".join([str(round(j,2)) for j in i]) for i in corrcoef]
+		#else:
+		#	print(("{} not yet implemented!".format(stat)))
+		#	return
 
 		self.table.setRowCount(result.shape[0])
 		self.table.setColumnCount(result.shape[1])
