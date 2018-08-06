@@ -545,8 +545,48 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 		raise Exception(fsp)
 	return ret
 
+# NOTE: Toshio Moriya 2018/08/02
+# This is a temporal function to fix the bdb related problem caused by Tunay's recent modifications
+def db_fix_image_count(fsp):
+	"""fix_image_count(path)
+
+Takes a path or bdb: specifier and returns the number of images in the referenced stack."""
+	if fsp[:4].lower()=="bdb:" :
+		path,dictname,keys=db_parse_path(fsp)
+		if keys==None :
+			# This dictionary contains image counts for the others in this directory
+			db2=db_open_dict("bdb:%s#%s"%(path,"00image_counts"))
+
+			# If this is true, we need to update the dictionary
+			# if (dictname in db2 and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or dictname not in db2 :
+			# 
+			# NOTE: Toshio Moriya 2018/08/02
+			# Always force to update values of 00image_counts.bdb
+			db=db_open_dict(fsp,True)
+			try:
+				im=db[0]
+				sz=(im["nx"],im["ny"],im["nz"])
+			except : sz=(0,0,0)
+			db2[dictname]=(time.time(),len(db),sz)
+
+			return db2[dictname][1]
+
+		else :			# if the user specifies the key in fsp, we ignore parms
+			db=db_open_dict(fsp,True)
+			n=0
+			for i in keys:
+				if i in db : n+=1
+			return n
+	try:
+		ret=EMUtil.get_image_count_c(fsp)
+	except:
+#		print"Error with get_image_count on : ",fsp
+		raise Exception(fsp)
+	return ret
+
 EMUtil.get_image_count_c=staticmethod(EMUtil.get_image_count)
 EMUtil.get_image_count=staticmethod(db_get_image_count)
+EMUtil.fix_image_count=staticmethod(db_fix_image_count)
 
 def db_get_image_info(fsp):
 	"""get_image_info(path)
