@@ -2098,7 +2098,6 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_changesize()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2proc3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_window()))
 #	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2proc3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_scale_clip()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/pipeline_viper_ref3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/viper.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
@@ -2274,7 +2273,6 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 #	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_changesize()))
 #	sxcmd_config_list.append(SXcmd_config("../doc/e2proc3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_window()))
 #	sxcmd_config_list.append(SXcmd_config("../doc/e2proc3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_scale_clip()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/pipeline_viper_ref3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_alt"
