@@ -123,7 +123,7 @@ class SXListWidget(QtGui.QListWidget):
 
 class SXPlot2DWidget(EMPlot2DWidget):
 	
-	mouseup = QtCore.pyqtSignal()
+	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent)
 
 	def full_refresh(self):
 		'''
