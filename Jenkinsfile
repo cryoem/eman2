@@ -62,12 +62,10 @@ def deployPackage() {
         upload_ext = 'experimental'
     }
     
-    if(isBinaryBuild()) {
-        if(SLAVE_OS != 'win')
-            sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2." + installer_base_name[JOB_NAME] + "." + upload_ext + ".sh"
-        else
-            bat 'ci_support\\rsync_wrapper.bat ' + upload_dir + ' ' + upload_ext
-    }
+    if(SLAVE_OS != 'win')
+        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2." + installer_base_name[JOB_NAME] + "." + upload_ext + ".sh"
+    else
+        bat 'ci_support\\rsync_wrapper.bat ' + upload_dir + ' ' + upload_ext
 }
 
 def getHomeDir() {
