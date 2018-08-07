@@ -2084,71 +2084,77 @@ def restacking(args):
 			# Currently, the following the way e2boxer.py calculates EMAN1 box format from particle center coordinates.
 			original_coordinate_x = ptcl_source_coordinate_x - (args.rb_box_size//2)
 			original_coordinate_y = ptcl_source_coordinate_y - (args.rb_box_size//2)
-			global_mic_dict[mic_basename].original_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(original_coordinate_x, original_coordinate_y, args.rb_box_size, args.rb_box_size, eman1_dummy))
+			global_mic_dict[mic_basename].original_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(int(original_coordinate_x), int(original_coordinate_y), int(args.rb_box_size), int(args.rb_box_size), int(eman1_dummy)))
 			
 			assert (img.has_attr("ctf"))
 			ctf_params = img.get_attr("ctf")
 			
-			particle_defocus_error = 0.0
-			if img.has_attr("particle_defocus_error"):
-				particle_defocus_error = img.get_attr("particle_defocus_error")
+			pp_def_error_accum = 0.0
+			if img.has_attr("pp_def_error_accum"):
+				pp_def_error_accum = img.get_attr("pp_def_error_accum")
 			
-			particle_resample_ratio = 1.0
-			if img.has_attr("particle_resample_ratio"):
-				particle_resample_ratio = img.get_attr("particle_resample_ratio")
+			pp_mag_error_accum = 1.0
+			if img.has_attr("pp_mag_error_accum"):
+				pp_mag_error_accum = img.get_attr("pp_mag_error_accum")
+			
+			chunk_id = 0
+			if img.has_attr("chunk_id"):
+				chunk_id = img.get_attr("chunk_id")
 			
 ###			global_mic_dict[mic_basename].original_rebox_coords_list.append("{:6d} {:6d} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}\n".format(ptcl_source_coordinate_x, ptcl_source_coordinate_y, proj_phi, proj_theta, proj_psi, 0.0, 0.0))
 			line = ""
-			line += " {:6d}".format(ptcl_source_coord_id)          # idx_params_mic_coord_id
-			line += " {:6d}".format(ptcl_source_coordinate_x)      # idx_params_mic_coord_x
-			line += " {:6d}".format(ptcl_source_coordinate_y)      # idx_params_mic_coord_y
-			line += " {:15.5f}".format(ptcl_source_resample_ratio) # idx_params_mic_resample_ratio
-			line += " {:15.5f}".format(ctf_params.defocus)         # idx_params_ctf_defocus
-			line += " {:15.5f}".format(ctf_params.cs)              # idx_params_ctf_cs
-			line += " {:15.5f}".format(ctf_params.voltage)         # idx_params_ctf_voltage
-			line += " {:15.5f}".format(ctf_params.apix)            # idx_params_ctf_apix
-			line += " {:15.5f}".format(ctf_params.bfactor)         # idx_params_ctf_bfactor
-			line += " {:15.5f}".format(ctf_params.ampcont)         # idx_params_ctf_ampcont
-			line += " {:15.5f}".format(ctf_params.dfdiff)          # idx_params_ctf_dfdiff
-			line += " {:15.5f}".format(ctf_params.dfang)           # idx_params_ctf_dfang
-			line += " {:15.5f}".format(proj_phi)                   # idx_params_proj_phi
-			line += " {:15.5f}".format(proj_theta)                 # idx_params_proj_theta
-			line += " {:15.5f}".format(proj_psi)                   # idx_params_proj_psi
-			line += " {:15.5f}".format(proj_tx)                    # idx_params_proj_sx
-			line += " {:15.5f}".format(proj_ty)                    # idx_params_proj_sy
-			line += " {:15.5f}".format(particle_defocus_error)     # idx_params_defocus_error
-			line += " {:15.5f}".format(particle_resample_ratio)    # idx_params_resample_ratio
+			line += " {:6d}".format(int(ptcl_source_coord_id))         # idx_params_mic_coord_id
+			line += " {:6d}".format(int(ptcl_source_coordinate_x))     # idx_params_mic_coord_x
+			line += " {:6d}".format(int(ptcl_source_coordinate_y))     # idx_params_mic_coord_y
+			line += " {:15.5f}".format(ptcl_source_resample_ratio)     # idx_params_mic_resample_ratio
+			line += " {:15.5f}".format(ctf_params.defocus)             # idx_params_ctf_defocus
+			line += " {:15.5f}".format(ctf_params.cs)                  # idx_params_ctf_cs
+			line += " {:15.5f}".format(ctf_params.voltage)             # idx_params_ctf_voltage
+			line += " {:15.5f}".format(ctf_params.apix)                # idx_params_ctf_apix
+			line += " {:15.5f}".format(ctf_params.bfactor)             # idx_params_ctf_bfactor
+			line += " {:15.5f}".format(ctf_params.ampcont)             # idx_params_ctf_ampcont
+			line += " {:15.5f}".format(ctf_params.dfdiff)              # idx_params_ctf_dfdiff
+			line += " {:15.5f}".format(ctf_params.dfang)               # idx_params_ctf_dfang
+			line += " {:15.5f}".format(proj_phi)                       # idx_params_proj_phi
+			line += " {:15.5f}".format(proj_theta)                     # idx_params_proj_theta
+			line += " {:15.5f}".format(proj_psi)                       # idx_params_proj_psi
+			line += " {:15.5f}".format(proj_tx)                        # idx_params_proj_sx
+			line += " {:15.5f}".format(proj_ty)                        # idx_params_proj_sy
+			line += " {:15.5f}".format(pp_def_error_accum)             # idx_params_pp_def_error_accum
+			line += " {:15.5f}".format(pp_mag_error_accum)             # idx_params_pp_mag_error_accum
+			line += " {:3d}".format(int(chunk_id))                     # idx_params_chunk_id
 			line += " \n"
 			global_mic_dict[mic_basename].original_rebox_coords_list.append(line)
 			
 			# Transform and center the coordinates according to projection parameters and user-provided 3D shift (corresponding to shifting the 3D volume)
 			centered_coordinate_x = int(round(original_coordinate_x + shift2d_x))
 			centered_coordinate_y = int(round(original_coordinate_y + shift2d_y))
-			global_mic_dict[mic_basename].centered_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(centered_coordinate_x, centered_coordinate_y, args.rb_box_size, args.rb_box_size, eman1_dummy))
+			global_mic_dict[mic_basename].centered_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(int(centered_coordinate_x), int(centered_coordinate_y), int(args.rb_box_size), int(args.rb_box_size), int(eman1_dummy)))
 			
-			centered_center_coordinate_x = int(round(ptcl_source_coordinate_x + shift2d_x))
-			centered_center_coordinate_y = int(round(ptcl_source_coordinate_y + shift2d_y))
+			centered_center_coordinate_x = round(ptcl_source_coordinate_x + shift2d_x)
+			centered_center_coordinate_y = round(ptcl_source_coordinate_y + shift2d_y)
 ###			global_mic_dict[mic_basename].centered_rebox_coords_list.append("{:6d} {:6d} {:15.5f} {:15.5f} {:15.5f} {:15.5f} {:15.5f}\n".format(centered_center_coordinate_x, centered_center_coordinate_y, proj_phi, proj_theta, proj_psi, 0.0, 0.0))
 			line = ""
-			line += " {:6d}".format(ptcl_source_coord_id)          # idx_params_mic_coord_id
-			line += " {:6d}".format(centered_center_coordinate_x)  # idx_params_mic_coord_x
-			line += " {:6d}".format(centered_center_coordinate_y)  # idx_params_mic_coord_y
-			line += " {:15.5f}".format(ptcl_source_resample_ratio) # idx_params_mic_resample_ratio
-			line += " {:15.5f}".format(ctf_params.defocus)         # idx_params_ctf_defocus
-			line += " {:15.5f}".format(ctf_params.cs)              # idx_params_ctf_cs
-			line += " {:15.5f}".format(ctf_params.voltage)         # idx_params_ctf_voltage
-			line += " {:15.5f}".format(ctf_params.apix)            # idx_params_ctf_apix
-			line += " {:15.5f}".format(ctf_params.bfactor)         # idx_params_ctf_bfactor
-			line += " {:15.5f}".format(ctf_params.ampcont)         # idx_params_ctf_ampcont
-			line += " {:15.5f}".format(ctf_params.dfdiff)          # idx_params_ctf_dfdiff
-			line += " {:15.5f}".format(ctf_params.dfang)           # idx_params_ctf_dfang
-			line += " {:15.5f}".format(proj_phi)                   # idx_params_proj_phi
-			line += " {:15.5f}".format(proj_theta)                 # idx_params_proj_theta
-			line += " {:15.5f}".format(proj_psi)                   # idx_params_proj_psi
-			line += " {:15.5f}".format(0.0)                        # idx_params_proj_sx
-			line += " {:15.5f}".format(0.0)                        # idx_params_proj_sy
-			line += " {:15.5f}".format(particle_defocus_error)     # idx_params_defocus_error
-			line += " {:15.5f}".format(particle_resample_ratio)    # idx_params_resample_ratio
+			line += " {:6d}".format(int(ptcl_source_coord_id))         # idx_params_mic_coord_id
+			line += " {:6d}".format(int(centered_center_coordinate_x)) # idx_params_mic_coord_x
+			line += " {:6d}".format(int(centered_center_coordinate_y)) # idx_params_mic_coord_y
+			line += " {:15.5f}".format(ptcl_source_resample_ratio)     # idx_params_mic_resample_ratio
+			line += " {:15.5f}".format(ctf_params.defocus)             # idx_params_ctf_defocus
+			line += " {:15.5f}".format(ctf_params.cs)                  # idx_params_ctf_cs
+			line += " {:15.5f}".format(ctf_params.voltage)             # idx_params_ctf_voltage
+			line += " {:15.5f}".format(ctf_params.apix)                # idx_params_ctf_apix
+			line += " {:15.5f}".format(ctf_params.bfactor)             # idx_params_ctf_bfactor
+			line += " {:15.5f}".format(ctf_params.ampcont)             # idx_params_ctf_ampcont
+			line += " {:15.5f}".format(ctf_params.dfdiff)              # idx_params_ctf_dfdiff
+			line += " {:15.5f}".format(ctf_params.dfang)               # idx_params_ctf_dfang
+			line += " {:15.5f}".format(proj_phi)                       # idx_params_proj_phi
+			line += " {:15.5f}".format(proj_theta)                     # idx_params_proj_theta
+			line += " {:15.5f}".format(proj_psi)                       # idx_params_proj_psi
+			line += " {:15.5f}".format(0.0)                            # idx_params_proj_sx
+			line += " {:15.5f}".format(0.0)                            # idx_params_proj_sy
+			line += " {:15.5f}".format(pp_def_error_accum)             # idx_params_pp_def_error_accum
+			line += " {:15.5f}".format(pp_mag_error_accum)             # idx_params_pp_mag_error_accum
+			line += " {:3d}".format(int(chunk_id))                     # idx_params_chunk_id
 			line += " \n"
 			global_mic_dict[mic_basename].centered_rebox_coords_list.append(line)
 			

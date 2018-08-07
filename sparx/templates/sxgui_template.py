@@ -1309,6 +1309,11 @@ class SXCmdWidget(QWidget):
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_rebox_rbx":
+			file_path = str(QFileDialog.getOpenFileName(self, "Select SPHIRE rebox file", SXLookFeelConst.file_dialog_dir, "SPHIRE rebox files (*.rbx)", options = QFileDialog.DontUseNativeDialog))
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_drift_txt":
 			file_path = str(QFileDialog.getOpenFileName(self, "Select drift shift parameters file", SXLookFeelConst.file_dialog_dir, "Drift shift parameters files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog))
 			# Use relative path.
@@ -1966,6 +1971,20 @@ class SXCmdTab(QWidget):
 							temp_btn = QPushButton("Select CTER partres")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a CTER partres parameters file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
+							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>'+"This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "params_rebox_rbx":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select SPHIRE rebox")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a SPHIRE rebox file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"

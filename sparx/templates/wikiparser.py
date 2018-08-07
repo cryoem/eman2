@@ -96,6 +96,7 @@ def construct_keyword_dict():
 	# - params_proj_txt     : Line edit box for formatted string type, and open file button  for projection parameters text file (*.txt) with all files (*) (params_proj_txt)
 	# - params_coords_any   : Line edit box for formatted string type, and open file buttons for EMAN1 box coordinates file (*.box) (params_coords_box) and all coordinates formats (params_coords_any)
 	# - params_cter_txt     : Line edit box for formatted string type, and open file button  for CTER partres parameters text file (*.txt) (params_cter_txt)
+	# - params_rebox_rbx    : Line edit box for formatted string type, and open file buttons for SPHIRE rebox file (*.rbx) (params_rebox_rbx)
 	# - params_drift_txt    : Line edit box for formatted string type, and open file button  for drift shit parameters text file (*.txt) with all files (*) (params_drift_txt)
 	# - params_relion_star  : Line edit box for formatted string type, and open file button  for RELION STAR file (*.star) with all files (*) (params_relion_star)
 	# 
@@ -191,8 +192,10 @@ def construct_keyword_dict():
 	keyword_dict["--import"]                      = SXkeyword_map(2, "params_any_txt")      # --import=INPUT_PARAMS_PATH
 	keyword_dict["--export"]                      = SXkeyword_map(2, "params_any_txt")      # --export==OUTPUT_PARAMS_FILE
 	keyword_dict["input_coordinates_pattern"]     = SXkeyword_map(2, "params_coords_any")   # input_coordinates_pattern
+	keyword_dict["input_rebox_pattern"]           = SXkeyword_map(2, "params_rebox_rbx")    # input_rebox_pattern
 	keyword_dict["input_ctf_params_source"]       = SXkeyword_map(2, "params_cter_txt")     # input_ctf_params_source
 	keyword_dict["cter_ctf_file"]                 = SXkeyword_map(2, "params_cter_txt")     # cter_ctf_file
+	keyword_dict["swap_ctf_params"]               = SXkeyword_map(2, "params_cter_txt")     # swap_ctf_params
 	keyword_dict["inputfile"]                     = SXkeyword_map(2, "params_drift_txt")    # inputfile
 	keyword_dict["input_shift_pattern"]           = SXkeyword_map(2, "params_drift_txt")    # input_shift_pattern
 	keyword_dict["input_star_file"]               = SXkeyword_map(2, "params_relion_star")  # input_star_file
@@ -225,6 +228,7 @@ def construct_keyword_dict():
 	keyword_dict["--pixel_size"]                  = SXkeyword_map(2, "apix")                # --pixel_size=PIXEL_SIZE
 	keyword_dict["--wn"]                          = SXkeyword_map(2, "ctfwin")              # --wn
 	keyword_dict["--box"]                         = SXkeyword_map(2, "box")                 # --box=box_size, --box_size=box_size, --boxsize=BOX_SIZE
+	keyword_dict["--rb_box_size"]                 = SXkeyword_map(2, "box")                 # --rb_box_size=BOX_SIZE
 	keyword_dict["--radius"]                      = SXkeyword_map(2, "radius")              # --radius=particle_radius, --radius=outer_radius, --radius=outer_radius, --radius=particle_radius, --radius=outer_radius, --radius=outer_radius
 	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")                 # --sym=c1, --sym=symmetry, --sym=c4
 	keyword_dict["--mol_mass"]                    = SXkeyword_map(2, "mass")                # --mol_mass=KILODALTON
@@ -269,7 +273,13 @@ def handle_exceptional_cases(sxcmd):
 	# Handle exceptional cases due to the limitation of software design
 	# In future, we should remove these exception handling by reviewing the design
 	if sxcmd.name == "sxwindow":
-		# Typically, this is target particle radius used by ISAC2.
+		assert(sxcmd.token_dict["input_micrograph_pattern"].key_base == "input_micrograph_pattern")
+		assert(sxcmd.token_dict["input_micrograph_pattern"].type == "mic_stack")
+		sxcmd.token_dict["input_micrograph_pattern"].type = "mic_one"
+		assert(sxcmd.token_dict["selection_list"].key_base == "selection_list")
+		assert(sxcmd.token_dict["selection_list"].type == "select_mic_stack")
+		sxcmd.token_dict["selection_list"].type = "select_mic_one"
+	elif sxcmd.name == "sxrewindow":
 		assert(sxcmd.token_dict["input_micrograph_pattern"].key_base == "input_micrograph_pattern")
 		assert(sxcmd.token_dict["input_micrograph_pattern"].type == "mic_stack")
 		sxcmd.token_dict["input_micrograph_pattern"].type = "mic_one"
@@ -2232,10 +2242,12 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/cter.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list=["stack_mode"]))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_cter.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 
+	sxcmd_role = "sxr_alt"
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_resample_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/pipe_resample_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_window"
@@ -2248,6 +2260,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2boxer.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_boxer(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_restacking.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/rewindow.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
@@ -2399,7 +2412,6 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_organize_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/pipe_resample_micrographs.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	# sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	return sxcmd_config_list
