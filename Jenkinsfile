@@ -33,8 +33,24 @@ def notifyEmail() {
     }
 }
 
+def isMasterBranch() {
+    return GIT_BRANCH_SHORT == "master"
+}
+
+def isReleaseBranch() {
+    return GIT_BRANCH_SHORT ==~ /release.*/
+}
+
+def isContinuousBuild() {
+    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch()
+}
+
+def isExperimentalBuild() {
+    return CI_BUILD == "1" && !(isMasterBranch() || isReleaseBranch())
+}
+
 def isBinaryBuild() {
-    return CI_BUILD == "1"
+    return isContinuousBuild() || isExperimentalBuild()
 }
 
 def testPackage() {
@@ -49,11 +65,11 @@ def deployPackage() {
                                'Centos7': 'centos7',
                                'MacOSX' : 'mac',
                               ]
-    if(GIT_BRANCH_SHORT == "master") {
+    if(isContinuousBuild()) {
         upload_dir = 'continuous_build'
         upload_ext = 'unstable'
     }
-    if(GIT_BRANCH_SHORT != "master") {
+    if(isExperimentalBuild()) {
         upload_dir = 'experimental'
         upload_ext = 'experimental'
     }
