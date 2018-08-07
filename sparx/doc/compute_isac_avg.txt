@@ -8,7 +8,7 @@ Beautifier: Beautify the ISAC2 2D clustering result with the original pixel size
 
 Usage in command line
 
-  sxcompute_isac_avg.py  --stack=FILE_PATH  --isac_dir=DIRECTORY_PATH  --output_dir=DIRECTORY_PATH  --radius=PARTICLE_PIXEL_RADIUS  --pw_adjustment=METHOD_OR_FILE_PATH  --noctf  --skip_local_alignment   --B_start=LOWER_LIMIT_RESOLUTION  --Bfactor=B_FACTOR  --fl=CUTOFF_ABS_FREQ  --pixel_size=PIXEL_SIZE  --xr=PIXELS  --ts=PIXELS  --fh=HIGH_FREQ_SERACH_LIMT  --maxit=MAX_ITERS --navg=NUM_OF_AVERAGES
+  sxcompute_isac_avg.py  --stack=FILE_PATH  --isac_dir=DIRECTORY_PATH  --output_dir=DIRECTORY_PATH  --pixel_size=PIXEL_SIZE  --radius=PARTICLE_PIXEL_RADIUS  --pw_adjustment=METHOD_OR_FILE_PATH  --fl=CUTOFF_FREQ_METHOD  --noctf  --local_alignment  --B_start=LOWER_RESOLUTION_BOUND  --Bfactor=B_FACTOR  --xr=PIXEL_RANGE  --ts=PIXEL_STEP  --fh=HIGH_FREQ_SERACH_LIMIT  --maxit=MAX_ITERS  --navg=NUM_OF_AVERAGES
 
 \\
 ===== Typical usage =====
@@ -40,18 +40,18 @@ There are four methods to adjust the power spectrum of resultant average images.
   ; %%--%%pw_adjustment : Power spectrum adjustment method: Specify the method for the power spectrum (PWS) adjustment of 2-D averages to enhance averages. ='analytical_model' adjusts PWS to an analytic model; ='bfactor' adjusts PWS using B-factor; ='FILE_PATH' adjusts PWS to rotationally averaged 1D power spectrum stored in the text file; ='no_adjustment' skips adjustment. (default analytical_model)
   ; %%--%%fl : Low-pass filter frequency [1/Pixel]: Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC2 resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). (default -1.0)
   ; %%--%%noctf : CTF correction: Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. (default False question reversed in GUI) 
-  ; %%--%%skip_local_alignment : Local alignment: Indicate if local alignment should be applied or not. (default False question reversed in GUI)
+  ; %%--%%local_alignment : Local alignment: Indicate if local alignment should be applied or not. (default False value reversed in GUI)
 
 \\
 === Advanced Parameters ===
-  ; %%--%%B_start : B-factor lower limit [A]: Lower limit for B-factor estimation. Specific to adjust to B-factor method. (default 10.0)
-  ; %%--%%Bfactor : Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor (e.g. 45.0[A^2]) for the enhancement. By default, the program automatically estimates B-factor. Specific to adjust to B-factor method. (default -1.0)
+  ; %%--%%B_start : Lower bound for B-factor estimation [A]: Lower resolution bound of power spectrum for B-factor estimation. Specific to adjust to B-factor method. (default 45.0)
+  ; %%--%%Bfactor : Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor (e.g. 25.0[A^2]) for the enhancement. By default, the program automatically estimates B-factor. Specific to adjust to B-factor method. (default -1.0)
 
   ; %%--%%xr : Local search range [Pixels]: Translational search range for local alignment. (default -1.0)
   ; %%--%%ts : Local search step [Pixels]: Translational search step for local alignment. (default 1.0)
   ; %%--%%fh : High frequency search limit [1/Pixel]: High frequency search limit in absolute frequency for local alignment. (default -1.0)
   ; %%--%%maxit : Local alignment iterations: The number of iterations for local aligment. (default 5)
-  ; %%--%%navg : Number of averages: The number of averages to be process, starting from the first image. By default, uses all ISAC2 average images. (default -1)
+  ; %%--%%navg : Number of averages: The number of averages to be process, starting from the first image. By default, uses all ISAC2 average images. (default 1000000)
 
 \\
 ===== Output =====
