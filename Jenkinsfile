@@ -61,10 +61,6 @@ def testPackage() {
 }
 
 def deployPackage() {
-    def installer_base_name = ['Centos6': 'centos6',
-                               'Centos7': 'centos7',
-                               'MacOSX' : 'mac',
-                              ]
     if(isContinuousBuild()) {
         upload_dir = 'continuous_build'
         upload_ext = 'unstable'
@@ -75,7 +71,7 @@ def deployPackage() {
     }
     
     if(SLAVE_OS != 'win')
-        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2." + installer_base_name[JOB_NAME] + "." + upload_ext + ".sh"
+        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2." + JOB_NAME.toLowerCase() + "." + upload_ext + ".sh"
     else
         bat 'ci_support\\rsync_wrapper.bat ' + upload_dir + ' ' + upload_ext
 }
