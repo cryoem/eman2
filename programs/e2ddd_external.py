@@ -103,9 +103,7 @@ def main():
 		sys.exit(1)
 
 	if options.tomo and options.mdoc == None:
-		print("""ERROR: You must specify an mdoc/idoc file via the --mdoc option when processing raw tilt movies for tomography. 
-			If no mdoc/idoc files are available, images can be aligned without the --tomo option, in which case they will be 
-			written to micrographs. From there, you can generate a tiltseries via the EMAN2 GUI or the program e2buildstacks.py.""")
+		print("""ERROR: You must specify an mdoc/idoc file via the --mdoc option when processing raw tilt movies for tomography. If no mdoc/idoc files are available, images can be aligned without the --tomo option, in which case they will be written to micrographs. From there, you can generate a tiltseries via the EMAN2 GUI or the program e2buildstacks.py.""")
 		sys.exit(1)
 
 	if options.mdoc != None:
@@ -167,22 +165,21 @@ def main():
 	try: os.mkdir(outdir)
 	except: pass
 
-	if options.mdoc != None and options.tomo:
-
-		if not os.path.isdir(args[0]):
-			print("ERROR: When providing an mdoc, the input option must be a directory containing the raw files referenced in the mdoc.")
-			sys.exit(1)
-		if options.tiltseries_name != "":
-			tiltname = "{}/{}.hdf".format(outdir,options.tiltseries_name)
-		else: tiltname="{}/{}.hdf".format(outdir,mdoc_bname)
-
-		mdoc_params,filenames,tilts = parse_mdoc(options.mdoc)
-		
-		jd = js_open_dict(info_name(tiltname))
-		jd["mdoc_params"] = mdoc_params
-		jd["tlt_source"] = filenames
-		jd["raw_tilts"] = tilts
-		jd.close()
+	if options.mdoc != None:
+		# if not os.path.isdir(args[0]):
+		# 	print("ERROR: When providing an mdoc, the input option must be a directory containing the raw files referenced in the mdoc.")
+		# 	sys.exit(1)
+		mdoc_params,tilt_source,raw_tilts = parse_mdoc(options.mdoc)
+		if options.tomo:
+			if options.tiltseries_name != "":
+				tiltname = "{}/{}.hdf".format(outdir,options.tiltseries_name)
+			else: tiltname="{}/{}.hdf".format(outdir,mdoc_bname)
+			
+			jd = js_open_dict(info_name(tiltname))
+			jd["mdoc_params"] = mdoc_params
+			jd["tilt_source"] = tilt_source
+			jd["raw_tilts"] = raw_tilts
+			jd.close()
 
 	cmdopts = ""
 
@@ -264,7 +261,7 @@ def main():
 		if options.last != None:
 			lastframe=None
 			if os.path.isdir(args[0]):
-				if options.mdoc!=None: files=filenames
+				if options.mdoc!=None: files=tilt_source
 				elif options.mdoc==None: files=args
 				for file in files:
 					if os.path.exists("{}/{}".format(args[0],file)):
@@ -273,7 +270,7 @@ def main():
 						cmdopts+=" -Trunc {}".format(lastframe)
 						break
 				if not lastframe:
-					print("No images found in input directory. If an mdoc was specified, the image files may be in another directory. Stopping processing.".format(args[0]))
+					print("No images found in input directory. Process stopped. If an mdoc was specified, only the filenames inside were searched inside the directory.".format(args[0]))
 					sys.exit(1)
 
 			elif not os.path.isdir(args[0]):
@@ -296,30 +293,44 @@ def main():
 			cmdopts += " -Patch {} 1 ".format(options.mc2_patchX)
 
 		if options.mdoc != None:
+			if options.tomo:
+				try: os.remove(tiltname) # get rid of any previous tiltseries with same name
+				except: pass
+				print("\nWriting tilt series to:   {}".format(tiltname))
 
-			try: os.remove(tiltname) # get rid of any previous tiltseries with same name
-			except: pass
+				for idx, i in enumerate(tilt_source):
+					file=tilt_source[i]
+					name,ext = file.split('\\')[-1].split(".")
+					if not os.path.exists("{}/{}.{}".format(args[0],name,ext)): 
+						print("WARNING: {}.{} was not found in {}".format(name,ext,args[0]))
+						continue
+					if ext.lower()=="mrc": infile="-InMrc {}/{}.{} ".format(args[0],name,ext)
+					if ext.lower()=="tif": infile="-InTiff {}/{}.{} ".format(args[0],name,ext)
 
-			print("\nWriting tilt series to:   {}".format(tiltname))
+					outfile="tmp/{}_ali.mrc".format(name)
+					if not os.path.isdir("tmp"): os.mkdir("tmp")
+					output = "-OutMrc {}".format(outfile)
+					cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
+					run(cmd,verbose=options.verbose)
 
-			for idx, i in enumerate(mdoc_params):
-				x=i["SubFramePath"]
-				name,ext = x.split('\\')[-1].split(".")
-				if not os.path.exists("{}/{}.{}".format(args[0],name,ext)): 
-					print("WARNING: {}.{} was not found in {}".format(name,ext,args[0]))
-					continue
-				if ext.lower()=="mrc": infile="-InMrc {}/{}.{} ".format(args[0],name,ext)
-				if ext.lower()=="tif": infile="-InTiff {}/{}.{} ".format(args[0],name,ext)
-				outfile="tmp/{}_ali.mrc".format(name)
-				if not os.path.isdir("tmp"): os.mkdir("tmp")
-				output = "-OutMrc {}".format(outfile)
-				cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
-				run(cmd,verbose=options.verbose)
-
-				ali = EMData(outfile)
-				ali.write_image(tiltname,idx)
-				os.remove(outfile)
-
+					ali = EMData(outfile)
+					ali.write_image(tiltname,idx)
+					os.remove(outfile)
+			else:
+				finalprint=""
+				for idx,arg in enumerate(args):
+					bname = os.path.basename(arg)
+					if bname in tilt_source:
+						name,ext = bname.split(".")
+						if ext.lower()=="mrc": infile="-InMrc {} ".format(arg)
+						if ext.lower()=="tif": infile="-InTiff {} ".format(arg)
+						outfile="micrographs/{}_ali.mrc".format(name)
+						output = "-OutMrc {}".format(outfile)
+						cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
+						run(cmd,verbose=options.verbose)
+					else:
+						finalprint+="{}    was not found in the list of images found in {}. It has been skipped.\n".format(bname,os.path.basename(options.mdoc))
+				if finalprint!="": print(finalprint)
 		else:
 
 			for idx,arg in enumerate(args):
