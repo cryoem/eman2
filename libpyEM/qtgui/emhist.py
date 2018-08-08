@@ -1400,25 +1400,6 @@ class DragListWidget(QtGui.QListWidget):
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 
-	def startDrag(self,actions):
-		data,axes,pparm=self.datasource().getCurrentData()		# get the "current" data object
-		if data==None : return						# don't start a drag if nothing is selected
-		# we only copy the specific axes that are used in the current plot settings !
-		if axes[0]<0: axes=[axes[0]]
-		## create the string representation of the data set
-		sdata=StringIO()		# easier to write as if to a file
-		for y in range(len(data[0])):
-			sdata.write("%1.8g"%data[axes[0]][y])
-			for x in range(1,len(axes)):
-				sdata.write("\t%1.8g"%data[axes[x]][y])
-			sdata.write("\n")
-		# start the drag operation
-		drag = QtGui.QDrag(self)
-		mimeData = QtCore.QMimeData()
-		mimeData.setText(sdata.getvalue())
-		drag.setMimeData(mimeData)
-		dropact = drag.exec_(Qt.CopyAction)
-
 
 def main(): # This is just for testing, of course
 	app = EMApp()

@@ -878,17 +878,7 @@ class EMQTColorWidget(QtGui.QWidget):
 
 		if e.buttons() != QtCore.Qt.LeftButton:
 			return
-		self._dragdrop(e)
 
-		
-	def _dragdrop(self, e):
-		mimeData = QtCore.QMimeData()
-		mimeData.setColorData(self.color)
-		drag = QtGui.QDrag(self)
-		drag.setMimeData(mimeData)
-		drag.setHotSpot(e.pos() - self.rect().topLeft())
-		dropAction = drag.exec_(QtCore.Qt.MoveAction)
-		
 	def mousePressEvent(self, event):
 		if event.buttons() != QtCore.Qt.RightButton:
 			self.inicolor = self.color
@@ -896,8 +886,6 @@ class EMQTColorWidget(QtGui.QWidget):
 			self.colrodialog.currentColorChanged[QColor].connect(self._on_colorchange)
 			self.colrodialog.colorSelected[QColor].connect(self._on_colorselect)
 			self.colrodialog.canceled.connect(self._on_cancel)
-		else:
-			self._dragdrop(event)
 			
 	def _on_colorchange(self, color):
 		if color.isValid():
