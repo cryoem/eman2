@@ -767,9 +767,9 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 
 			a = QtWidgets.QListWidgetItem(str(choice),self.list_widget)
 			if first_time and i == 0:
-				self.list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 			elif len(choice) > 4 and (choice[-4:] == s_text):
-				self.list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 
 		selected_items = self.list_widget.selectedItems() # need to preserve the selection
 		if len(selected_items) == 1:
