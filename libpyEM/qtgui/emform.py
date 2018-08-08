@@ -1182,7 +1182,7 @@ class EMFormWidget(QtWidgets.QWidget):
 		for choice in param.choices:
 			a = QtWidgets.QListWidgetItem(str(choice),list_widget)
 			if choice in param.defaultunits:
-				list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 			
 		hbl.addWidget(list_widget)
 		groupbox = QtWidgets.QGroupBox(param.desc_short)

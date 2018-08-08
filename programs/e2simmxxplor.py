@@ -436,9 +436,9 @@ class EMSimmxXplorInspector(EMSymInspector):
 
 			a = QtWidgets.QListWidgetItem(str(choice),self.list_widget)
 			if first_time and i == 0:
-				self.list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 			elif choice == s_text:
-				self.list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 
 
 	def on_combo_change(self,s):
