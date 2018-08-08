@@ -344,7 +344,7 @@ def isac_substack(args):
 	subdir_path = None
 	align2d_avg_basename = None
 	if len(isac_missing_path_list) == 0:
-		assert(len(beautifier_missing_path_list) > 0)
+		assert (len(beautifier_missing_path_list) > 0)
 		# The specified run directory is ISAC. (ISAC run directory is prioritized over Beautifier run.)
 		print(" ")
 		print_progress("ISAC run output directory is specified. The program assumes the ISAC class averages are shrunk and not beautified with the original image size.")
@@ -404,10 +404,10 @@ def isac_substack(args):
 				isac_total_align2d = list(combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)) # return value is tuple type but we want to list! 
 				
 				fullstack_total_align2d_list[fullstack_img_id] = isac_total_align2d
-				assert(len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
+				assert (len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
 				scale = 1.0 # because this 2D alignment parameters are scaled back!
 				accounted_total_align2d_list.append([fullstack_img_id, isac_total_align2d[idx_isac_align2d_alpha], isac_total_align2d[idx_isac_align2d_tx], isac_total_align2d[idx_isac_align2d_ty], isac_total_align2d[idx_isac_align2d_mirror], scale])
-				assert(len(accounted_total_align2d_list[-1]) == n_idx_beautifier_align2d)
+				assert (len(accounted_total_align2d_list[-1]) == n_idx_beautifier_align2d)
 			else: # An unaccounted particle
 				assert (shrunk_core_align2d[idx_isac_align2d_mirror] == -1)
 				assert (len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
@@ -437,7 +437,7 @@ def isac_substack(args):
 		print_progress("Found {} entries in {}.".format(n_accounted_img, accounted_local_total_align2d_path))
 		if n_accounted_img > n_fullstack_img:
 			ERROR("The number of entries in {} is not consistent with {} (the number of accounted particles is larger than ones of particles in the original fullstack). Please check the consistency of input datasets.".format(accounted_local_total_align2d_path, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
-		assert(n_accounted_img <= n_fullstack_img)
+		assert (n_accounted_img <= n_fullstack_img)
 		
 		# For each entry (2D alignment parameters of accounted particle image), register 2D alignment parameters of this Beautifier run to the lists
 		print(" ")
@@ -458,9 +458,9 @@ def isac_substack(args):
 			scale             = float(local_total_param2d[idx_beautifier_align2d_scale])
 			
 			fullstack_total_align2d_list[fullstack_img_id] = [alpha, sx, sy, mirror]
-			assert(len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
+			assert (len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
 			accounted_total_align2d_list.append([fullstack_img_id, alpha, sx, sy, mirror, scale])
-			assert(len(accounted_total_align2d_list[-1]) == n_idx_beautifier_align2d)
+			assert (len(accounted_total_align2d_list[-1]) == n_idx_beautifier_align2d)
 			
 		# Set subdirectory name for Beautifier run case.
 		# Use the corresponding subdirectory name corresponding to Beautifier output directory structure which stores the same information.
@@ -525,7 +525,7 @@ def isac_substack(args):
 			assert (total_align2d[idx_isac_align2d_mirror] != -1) # all class member particles should be accounted!!!
 			scale = 1.0 # because this 2D alignment parameters are scaled back!
 			total_align2d_list_of_isac_class.append([total_align2d[idx_isac_align2d_alpha], total_align2d[idx_isac_align2d_tx], total_align2d[idx_isac_align2d_ty], total_align2d[idx_isac_align2d_mirror], scale])
-		assert(len(total_align2d_list_of_isac_class) == len(fullstack_img_id_list_of_isac_class))
+		assert (len(total_align2d_list_of_isac_class) == len(fullstack_img_id_list_of_isac_class))
 		align2d_avg_path = os.path.join(subdir_path, "%s_%03d.txt"%(align2d_avg_basename, class_avg_id))
 		write_text_row(total_align2d_list_of_isac_class, align2d_avg_path)
 		
@@ -560,7 +560,7 @@ def isac_substack(args):
 		scale = 1.0 # because this 2D alignment parameters are scaled back!
 		isac_substack_total_header_align2d_list.append([total_align2d[idx_isac_align2d_alpha], total_align2d[idx_isac_align2d_tx], total_align2d[idx_isac_align2d_ty], total_align2d[idx_isac_align2d_mirror], scale])
 		assert (len(isac_substack_total_header_align2d_list[-1]) == n_idx_header_align2d)
-	assert(len(isac_substack_total_header_align2d_list) == n_isac_substack_img)
+	assert (len(isac_substack_total_header_align2d_list) == n_isac_substack_img)
 	
 	# Save the 2D alignment parameters of all members listed in ISAC class averages to file, using the xform.align2d header entry format.
 	isac_substack_total_header_align2d_path = os.path.join(args.output_directory, "{}_header_align2d.txt".format(args.substack_basename))
@@ -649,8 +649,8 @@ def resample_micrographs(args):
 	
 	# Change the name log file for error message
 	original_logfilename = global_def.LOGFILE
-	# global_def.LOGFILE = os.path.splitext(program_name)[0] + '_' + original_logfilename + '.txt'
-	global_def.LOGFILE = os.path.splitext(command_script_basename)[0] + args.subcommand + '_' + original_logfilename + '.txt'
+	# global_def.LOGFILE = os.path.splitext(program_name)[0] + "_" + original_logfilename + ".txt"
+	global_def.LOGFILE = os.path.splitext(command_script_basename)[0] + args.subcommand + "_" + original_logfilename + ".txt"
 	
 	# # To make the execution exit upon fatal error by ERROR in global_def.py
 	# global_def.BATCH = True 
@@ -739,7 +739,7 @@ def resample_micrographs(args):
 		# --------------------------------------------------------------------------------
 		# Prefix and suffix of micrograph basename pattern 
 		# to find the head/tail indices of micrograph id substring
-		mic_basename_tokens = mic_basename_pattern.split('*')
+		mic_basename_tokens = mic_basename_pattern.split("*")
 		assert (len(mic_basename_tokens) == 2)
 		# Find head index of micrograph id substring
 		mic_id_substr_head_idx = len(mic_basename_tokens[0])
@@ -1687,7 +1687,7 @@ def organize_micrographs(args):
 ### 		# Extract the associated coordinates from the image header
 ### 		ptcl_source_coordinate_x, ptcl_source_coordinate_y = img.get_attr("ptcl_source_coord")
 ### 		# Compute the left bottom coordinates of box (EMAN1 box file format)
-### 		assert(args.box_size > 0)
+### 		assert (args.box_size > 0)
 ### 		# eman1_original_coordinate_x = ptcl_source_coordinate_x - (args.box_size//2+1)
 ### 		# eman1_original_coordinate_y = ptcl_source_coordinate_y - (args.box_size//2+1)
 ### 		# NOTE: 2018/02/21 Toshio Moriya
@@ -2077,7 +2077,7 @@ def restacking(args):
 			ptcl_source_coordinate_x, ptcl_source_coordinate_y = img.get_attr("ptcl_source_coord")
 			
 			# Compute the left bottom coordinates of box (EMAN1 box file format)
-			assert(args.rb_box_size > 0)
+			assert (args.rb_box_size > 0)
 			# original_coordinate_x = ptcl_source_coordinate_x - (args.rb_box_size//2+1)
 			# original_coordinate_y = ptcl_source_coordinate_y - (args.rb_box_size//2+1)
 			# NOTE: 2018/02/21 Toshio Moriya
@@ -2252,19 +2252,19 @@ def restacking(args):
 
 	if args.reboxing:
 		original_coords_list_subdir = "original"
-		original_coords_list_suffix = '_original.box'
+		original_coords_list_suffix = "_original.box"
 		os.mkdir(os.path.join(args.output_directory, original_coords_list_subdir))
 		
 		original_rebox_coords_list_subdir = "original_rebox"
-		original_rebox_coords_list_suffix = '_original_rebox.rbx' # SPHIRE rebox coordinate format
+		original_rebox_coords_list_suffix = "_original_rebox.rbx" # SPHIRE rebox coordinate format
 		os.mkdir(os.path.join(args.output_directory, original_rebox_coords_list_subdir))
 		
 		centered_coords_list_subdir = "centered"
-		centered_coords_list_suffix = '_centered.box'
+		centered_coords_list_suffix = "_centered.box"
 		os.mkdir(os.path.join(args.output_directory, centered_coords_list_subdir))
 		
 		centered_rebox_coords_list_subdir = "centered_rebox"
-		centered_rebox_coords_list_suffix = '_centered_rebox.rbx' # SPHIRE rebox coordinate format
+		centered_rebox_coords_list_suffix = "_centered_rebox.rbx" # SPHIRE rebox coordinate format
 		os.mkdir(os.path.join(args.output_directory, centered_rebox_coords_list_subdir))
 	
 	global_output_image_id_list = []
@@ -3289,37 +3289,37 @@ def meridien_import_params3d(args):
 	global_def.BATCH = True 
 	
 	# Check error conditions
-	subcommand_name = 'meridien_import_params3d'
+	subcommand_name = "meridien_import_params3d"
 	if not os.path.exists(args.input_meridien_iter_dir_path):
-		ERROR('Specified input MERIDIEN iteration directory does not exist. Please check the file path and restart the program.', subcommand_name) # action=1 - fatal error, exit
+		ERROR("Specified input MERIDIEN iteration directory does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	if not os.path.exists(args.input_sparx_params3d_path):
-		ERROR('Specified input standard sparx 3D parameters file does not exist. Please check the file path and restart the program.', subcommand_name) # action=1 - fatal error, exit
+		ERROR("Specified input standard sparx 3D parameters file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	if os.path.exists(args.output_directory):
-		ERROR('Specified output directory exists. Please change the name and restart the program.', subcommand_name) # action=1 - fatal error, exit
+		ERROR("Specified output directory exists. Please change the name and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
-	assert(os.path.exists(args.input_meridien_iter_dir_path))
-	assert(os.path.exists(args.input_sparx_params3d_path))
-	assert(not os.path.exists(args.output_directory))
+	assert (os.path.exists(args.input_meridien_iter_dir_path))
+	assert (os.path.exists(args.input_sparx_params3d_path))
+	assert (not os.path.exists(args.output_directory))
 	
 	master_dir_path, iter_dir_name = os.path.split(args.input_meridien_iter_dir_path)
-	print('MRK_DEBUG: master_dir_path := ', master_dir_path)
-	print('MRK_DEBUG: iter_dir_name := ', iter_dir_name)
-	if iter_dir_name[:4] != 'main':
-		ERROR('Format of specified input MERIDIEN iteration directory name is invalid. It should start from \'main\'. Please check the file path and restart the program.', subcommand_name) # action=1 - fatal error, exit
+	print("MRK_DEBUG: master_dir_path := ", master_dir_path)
+	print("MRK_DEBUG: iter_dir_name := ", iter_dir_name)
+	if iter_dir_name[:4] != "main":
+		ERROR("Format of specified input MERIDIEN iteration directory name is invalid. It should start from \'main\'. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	try:
 		selected_iter = int(iter_dir_name[-3:])
-		print('MRK_DEBUG: selected_iter := ', selected_iter)
+		print("MRK_DEBUG: selected_iter := ", selected_iter)
 	except:
-		ERROR('Format of specified input MERIDIEN iteration directory name is invalid. It should end with a three letter number. Please check the file path and restart the program.', subcommand_name) # action=1 - fatal error, exit
+		ERROR("Format of specified input MERIDIEN iteration directory name is invalid. It should end with a three letter number. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
 	# Load lists of Particle IDs and associated chunk information from specified input MERIDIEN iteration directory
 	meridien_particle_id_list_all = read_text_file(os.path.join(args.input_meridien_iter_dir_path, "indexes_%03d.txt"%selected_iter))
 	meridien_particle_id_list_one = read_text_file(os.path.join(args.input_meridien_iter_dir_path, "chunk_0_%03d.txt"%selected_iter))
 	meridien_particle_id_list_two = read_text_file(os.path.join(args.input_meridien_iter_dir_path, "chunk_1_%03d.txt"%selected_iter))
-	assert(len(meridien_particle_id_list_all) > 0)
-	assert(len(meridien_particle_id_list_one) > 0)
-	assert(len(meridien_particle_id_list_two) > 0)
-	assert(len(meridien_particle_id_list_all) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
+	assert (len(meridien_particle_id_list_all) > 0)
+	assert (len(meridien_particle_id_list_one) > 0)
+	assert (len(meridien_particle_id_list_two) > 0)
+	assert (len(meridien_particle_id_list_all) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
 	
 	# Load lists of 3D alignment parameters from specified input MERIDIEN iteration directory
 	# 
@@ -3332,28 +3332,28 @@ def meridien_import_params3d(args):
 	# Column 3: meridien/sparx psi
 	# Column 4: meridien/sparx sx (shift x)
 	# Column 5: meridien/sparx sy (shift y)
-	# Column 6: meridien the best similarity among all possible alignments/orientations of a particle (corresponding to relion_dict['_rlnMaxValueProbDistribution']???)
-	# Column 7: meridien norm_per_particle per pixel (average per pixel) (corresponding to relion_dict['_rlnNormCorrection']???)
+	# Column 6: meridien the best similarity among all possible alignments/orientations of a particle (corresponding to relion_dict["_rlnMaxValueProbDistribution"]???)
+	# Column 7: meridien norm_per_particle per pixel (average per pixel) (corresponding to relion_dict["_rlnNormCorrection"]???)
 	# Column 8: meridien norm_per_particle or Tracker["avgvaradj"]
 	# 
 	meridien_align3d_params_list_all = read_text_row(os.path.join(args.input_meridien_iter_dir_path, "params_%03d.txt"%selected_iter))
-	assert(len(meridien_align3d_params_list_all) == len(meridien_particle_id_list_all))
-	assert(len(meridien_align3d_params_list_all) > 0)
-	assert(len(meridien_align3d_params_list_all[0]) == 8)
+	assert (len(meridien_align3d_params_list_all) == len(meridien_particle_id_list_all))
+	assert (len(meridien_align3d_params_list_all) > 0)
+	assert (len(meridien_align3d_params_list_all[0]) == 8)
 	
 	# Load lists of 3D alignment parameters from specified input SPARX 3D alignment parameters list file
 	# 
-	# Column 1: sparx_proj3d['phi']
-	# Column 2: sparx_proj3d['theta']
-	# Column 3: sparx_proj3d['psi']
-	# Column 4: sparx_proj3d['tx']
-	# Column 5: sparx_proj3d['ty'], \
-	# Column 6: relion_dict['_rlnMaxValueProbDistribution']
-	# Column 7: relion_dict['_rlnNormCorrection']
+	# Column 1: sparx_proj3d["phi"]
+	# Column 2: sparx_proj3d["theta"]
+	# Column 3: sparx_proj3d["psi"]
+	# Column 4: sparx_proj3d["tx"]
+	# Column 5: sparx_proj3d["ty"], \
+	# Column 6: relion_dict["_rlnMaxValueProbDistribution"]
+	# Column 7: relion_dict["_rlnNormCorrection"]
 	# 
 	sparx_align3d_params_list_all = read_text_row(args.input_sparx_params3d_path)
-	assert(len(sparx_align3d_params_list_all) > 0)
-	assert(len(sparx_align3d_params_list_all[0]) == 7)
+	assert (len(sparx_align3d_params_list_all) > 0)
+	assert (len(sparx_align3d_params_list_all[0]) == 7)
 
 	# Initialize chunk dictionary
 	chunk_dict = {}
@@ -3365,18 +3365,18 @@ def meridien_import_params3d(args):
 		else:
 			chunk_dict[particle_id] = {}
 			chunk_dict[particle_id]["chunk_id"] = 0
-			assert(len(chunk_dict[particle_id]) == 1)
+			assert (len(chunk_dict[particle_id]) == 1)
 	for particle_id in meridien_particle_id_list_two: 
 		if particle_id in chunk_dict:
 			print ("MRK_DEBUG: WARNING: Deplicated particle ID %d is found with meridien_particle_id_list_two"%(particle_id))
 		else:
 			chunk_dict[particle_id] = {}
 			chunk_dict[particle_id]["chunk_id"] = 1
-			assert(len(chunk_dict[particle_id]) == 1)
-	assert(len(chunk_dict) == len(meridien_particle_id_list_all))
-	assert(len(chunk_dict) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
-	assert(len(chunk_dict) == len(meridien_align3d_params_list_all))
-	assert(len(chunk_dict) == len(sparx_align3d_params_list_all))
+			assert (len(chunk_dict[particle_id]) == 1)
+	assert (len(chunk_dict) == len(meridien_particle_id_list_all))
+	assert (len(chunk_dict) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
+	assert (len(chunk_dict) == len(meridien_align3d_params_list_all))
+	assert (len(chunk_dict) == len(sparx_align3d_params_list_all))
 	
 	# Register 3D alignment parameters to chunk dictionary for each particle ID key
 	for index_of_particle in range(len(meridien_particle_id_list_all)): 
@@ -3384,21 +3384,21 @@ def meridien_import_params3d(args):
 		particle_id = meridien_particle_id_list_all[index_of_particle]
 		
 		# Register MERIDIEN 3D alignment parameters
-		assert( "meridien_align3d_params" not in chunk_dict[particle_id])
+		assert ( "meridien_align3d_params" not in chunk_dict[particle_id])
 		chunk_dict[particle_id]["meridien_align3d_params"] = meridien_align3d_params_list_all[index_of_particle]
-		assert(len(chunk_dict[particle_id]) == 2)
-		assert(len(chunk_dict[particle_id]["meridien_align3d_params"]) == 8)
+		assert (len(chunk_dict[particle_id]) == 2)
+		assert (len(chunk_dict[particle_id]["meridien_align3d_params"]) == 8)
 		
 		# Register SPARX 3D alignment parameters
-		assert( "sparx_align3d_params" not in chunk_dict[particle_id])
+		assert ( "sparx_align3d_params" not in chunk_dict[particle_id])
 		chunk_dict[particle_id]["sparx_align3d_params"] = sparx_align3d_params_list_all[index_of_particle]
-		assert(len(chunk_dict[particle_id]) == 3)
-		assert(len(chunk_dict[particle_id]["sparx_align3d_params"]) == 7)
+		assert (len(chunk_dict[particle_id]) == 3)
+		assert (len(chunk_dict[particle_id]["sparx_align3d_params"]) == 7)
 		
-	assert(len(chunk_dict) == len(meridien_particle_id_list_all))
-	assert(len(chunk_dict) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
-	assert(len(chunk_dict) == len(meridien_align3d_params_list_all))
-	assert(len(chunk_dict) == len(sparx_align3d_params_list_all))
+	assert (len(chunk_dict) == len(meridien_particle_id_list_all))
+	assert (len(chunk_dict) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
+	assert (len(chunk_dict) == len(meridien_align3d_params_list_all))
+	assert (len(chunk_dict) == len(sparx_align3d_params_list_all))
 
 	# Create output directory
 	os.mkdir(args.output_directory)
@@ -3424,15 +3424,15 @@ def meridien_import_params3d(args):
 		if chunk_dict[particle_id]["chunk_id"] == 0:
 			new_meridien_align3d_params_list_one.append(new_meridien_params3d)
 		else:
-			assert(chunk_dict[particle_id]["chunk_id"] == 1)			                             
+			assert (chunk_dict[particle_id]["chunk_id"] == 1)			                             
 			new_meridien_align3d_params_list_two.append(new_meridien_params3d)
-	assert(len(new_meridien_align3d_params_list_all) == len(meridien_particle_id_list_all))
-	assert(len(new_meridien_align3d_params_list_all) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
-	assert(len(new_meridien_align3d_params_list_all) == len(meridien_align3d_params_list_all))
-	assert(len(new_meridien_align3d_params_list_all) == len(sparx_align3d_params_list_all))
-	assert(len(new_meridien_align3d_params_list_one) == len(meridien_particle_id_list_one))
-	assert(len(new_meridien_align3d_params_list_two) == len(meridien_particle_id_list_two))
-	assert(len(new_meridien_align3d_params_list_all) == len(new_meridien_align3d_params_list_one) + len(new_meridien_align3d_params_list_two))
+	assert (len(new_meridien_align3d_params_list_all) == len(meridien_particle_id_list_all))
+	assert (len(new_meridien_align3d_params_list_all) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
+	assert (len(new_meridien_align3d_params_list_all) == len(meridien_align3d_params_list_all))
+	assert (len(new_meridien_align3d_params_list_all) == len(sparx_align3d_params_list_all))
+	assert (len(new_meridien_align3d_params_list_one) == len(meridien_particle_id_list_one))
+	assert (len(new_meridien_align3d_params_list_two) == len(meridien_particle_id_list_two))
+	assert (len(new_meridien_align3d_params_list_all) == len(new_meridien_align3d_params_list_one) + len(new_meridien_align3d_params_list_two))
 	
 	# Save new MERIDIEN parameters lists to files
 	meridien_params3d_dir_path, meridien_params3d_basename = os.path.split(args.input_meridien_iter_dir_path)
@@ -3444,6 +3444,216 @@ def meridien_import_params3d(args):
 	write_text_row(new_meridien_align3d_params_list_one, os.path.join(args.output_directory, "params-chunk_0_%03d.txt"%selected_iter))
 	write_text_row(new_meridien_align3d_params_list_two, os.path.join(args.output_directory, "params-chunk_1_%03d.txt"%selected_iter))
 
+# ----------------------------------------------------------------------------------------
+# Author 1: Toshio Moriya 08/008/2018 (toshio.moriya@mpi-dortmund.mpg.de)
+# 
+# --- desymmetrize ---
+# !!! UNDER DEVELOPMENT!!!
+# Desymmetrize particle IDs of a specified cluster sorted by SORT3D. 
+# The output will contain the particle IDs of stack before symmetrization.
+# 
+# Main purpose is for the analysis of mix symmetry structure such as TcdABC Holotoxin (TcdA C5 & TcdBC C1) done by Christos.
+# 
+# Example of protocol 
+# (1) sxmeridien.py with --symmetry=c5
+# (2) sx3dvaraiblity.py with --symmetrize & --sym=c5
+# (3) sxsort3d_depth.py with --sym=c1
+# (4) sxpipe.py desymmetrize for a specific cluster 
+# (5) sxmeridien.py --local_refinement with --symmetry=c1 for a specific cluster 
+# 
+# NOTE: 2018/08/08 Toshio Moriya
+# At this point, sxsort3d_depth.py --sym=c5 seems to store
+# the desymmetrized particle ID into Cluster###.txt.
+# 
+# ----------------------------------------------------------------------------------------
+# TEST COMMAND
+# cd /home/sphire-devel/SPHIRE_DAILY_TEST/TEST_RUNS/2018_07_30_10_09_51/TcdA1-demo
+# rm -r EMAN2DB; sx3dvariability.py --symmetrize 'bdb:Substack/isac_substack_variability' --sym='c5'
+# 
+# rm -r debug_mrkout_sxpipe_desymmetrize_g0; sxpipe.py desymmetrize bdb:Variability#sdata Sort3D/Cluster_000.txt debug_mrkout_sxpipe_desymmetrize_g0 --check_duplication
+# rm -r debug_mrkout_sxpipe_desymmetrize_g1; sxpipe.py desymmetrize bdb:Variability#sdata Sort3D/Cluster_001.txt debug_mrkout_sxpipe_desymmetrize_g1 --check_duplication
+# 
+# rm -r debug_mrkout_sxpipe_desymmetrize_cwd_g0; sxpipe.py desymmetrize bdb:sdata Sort3D/Cluster_000.txt debug_mrkout_sxpipe_desymmetrize_cwd_g0 --check_duplication
+# rm -r debug_mrkout_sxpipe_desymmetrize_cwd_g1; sxpipe.py desymmetrize bdb:sdata Sort3D/Cluster_001.txt debug_mrkout_sxpipe_desymmetrize_cwd_g1 --check_duplication
+# ----------------------------------------------------------------------------------------
+def desymmetrize(args):
+	from utilities import read_text_file, write_text_file
+	from EMAN2db import db_check_dict, db_parse_path, db_open_dict
+	
+	# To make the execution exit upon fatal error by ERROR in global_def.py
+	global_def.BATCH = True 
+	
+	# Check error conditions
+	subcommand_name = "desymmetrize"
+	
+	args.input_bdb_stack_path = args.input_bdb_stack_path.strip()
+	if args.input_bdb_stack_path[:len("bdb:")].lower() != "bdb:":
+		ERROR("Invalid input BDB stack file path %s.  The path must start with \'bdb:\'. Please check the file path and restart the program." % (args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
+	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
+		ERROR("Input BDB image stack file %s does not exist. Please check the file path and restart the program." % (args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
+	if not os.path.exists(args.input_cluster_path):
+		ERROR("Specified input cluster text file %s does not exist. Please check the file path and restart the program." %(args.input_cluster_path), subcommand_name) # action=1 - fatal error, exit
+	if os.path.exists(args.output_directory):
+		ERROR("Output directory %s exists. Please change the name and restart the program." %(args.output_directory), subcommand_name) # action=1 - fatal error, exit
+	
+	assert (os.path.exists(args.input_cluster_path))
+	assert (not os.path.exists(args.output_directory))
+	
+	# Create output directory
+	os.mkdir(args.output_directory)
+	
+	# Load symmetrized particle IDs of all sorted groups in the specified homogeneous group
+	symmetrized_particle_id_list = read_text_file(args.input_cluster_path)  # Cluster#.txt
+	print("MRK_DEBUG: len(symmetrized_particle_id_list) := ", len(symmetrized_particle_id_list))
+	print_progress("Detected %d symmetrized particle IDs in the specified cluster text file %s."%(len(symmetrized_particle_id_list), args.input_cluster_path))
+	print(" ")
+	
+	symmetrized_particle_id_list = sorted(symmetrized_particle_id_list)
+	
+	# Save the symmetrized particle id list for debugging
+	symmetrized_particle_id_list_file_path = os.path.join(args.output_directory, "sort3d_symmetrized_particle_id_list.txt")
+	write_text_file(symmetrized_particle_id_list, symmetrized_particle_id_list_file_path)
+	
+	# Extract file path from the input BDB dictionary
+	input_bdb_full_path, input_bdb_dictname, input_bdb_keys = db_parse_path(args.input_bdb_stack_path)
+	cwd = os.getcwd()
+	if cwd[-1] != cwd[0] or cwd[-1] != cwd[0]:
+		assert (cwd[0] == "/" or cwd[0] == "//")
+		cwd += cwd[0]
+	input_bdb_path = input_bdb_full_path.replace(cwd, "")
+	# print("MRK_DEBUG: input_bdb_full_path := ", input_bdb_full_path)
+	# print("MRK_DEBUG: input_bdb_dictname  := ", input_bdb_dictname)
+	# print("MRK_DEBUG: input_bdb_keys      := ", input_bdb_keys)
+	# print("MRK_DEBUG: cwd                 := ", cwd)
+	# print("MRK_DEBUG: input_bdb_path      := ", input_bdb_path)
+	
+	# Open the input BDB dictionary
+	# 
+	# NOTE: EMData.read_images() or get_im() of utilities works as well
+	input_bdb_stack = db_open_dict(args.input_bdb_stack_path, ro=True) # Read only
+	
+	n_img_detected = EMUtil.get_image_count(args.input_bdb_stack_path)
+	print_progress("Detected %d particles in symmetrized input BDB stack %s."%(n_img_detected, args.input_bdb_stack_path))
+	print(" ")
+	assert (len(symmetrized_particle_id_list) <= n_img_detected)
+	
+	# Get symmetrisation information from header of 1st image in input bdb stack
+	try: 
+		assert (n_img_detected > 0)
+		img_header = input_bdb_stack.get(0, nodata=1).get_attr_dict() # Need only header information
+	except:
+		ERROR("Failed to read image header of particle #%d from %s. Aborting..."%(symmetrized_particle_id, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
+	
+	symmetry_type = ""
+	n_symmetry = 0
+	n_presymmetriezed_img = 0
+	if "variabilitysymmetry" in img_header:
+		print_progress("Detected %s point-group symmetry in specified input BDB stack %s."%(img_header["variabilitysymmetry"], args.input_bdb_stack_path))
+		print(" ")
+		
+		symmetry_type = img_header["variabilitysymmetry"][:1].lower()
+		if symmetry_type != "c":
+			ERROR("Unsupported point-group symmetries. Other than cn are not supported yet.", subcommand_name) # action=1 - fatal error, exit
+		n_symmetry = int(img_header["variabilitysymmetry"][-1:])
+		if n_symmetry < 2:
+			ERROR("Point-group symmetry have to be higher than c1.", subcommand_name) # action=1 - fatal error, exit
+	else:
+		ERROR("Specified input BDB stack is not symmetrized. Please choose a symmetrized stack and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	
+	assert (symmetry_type == "c")
+	assert (n_symmetry > 1)
+	assert (n_img_detected % n_symmetry == 0)
+	
+	n_presymmetriezed_img = n_img_detected // n_symmetry
+	print_progress("The computed number of particles in the pre-symmetrized stack is %d."%(n_presymmetriezed_img))
+	assert (n_presymmetriezed_img < n_img_detected)
+	
+	if len(symmetrized_particle_id_list) > n_presymmetriezed_img:
+		ERROR("Input symmetrized particle ID list contains more entries (%d) than expected (%d)."%(len(symmetrized_particle_id_list), n_presymmetriezed_img), subcommand_name, action = 0) # action = 0 - non-fatal, print a warning;
+
+	# Loop through all ISAC validated particles
+	if args.check_duplication:
+		desymmetrized_particle_id_info_dict = {}
+	desymmetrized_particle_id_list = []
+	nodupilicated_desymmetrized_particle_id_list = []
+	
+	for i_img_detected, symmetrized_particle_id in enumerate(symmetrized_particle_id_list):
+		# Print progress
+		if i_img_detected % 1000 == 0:
+			try:
+				print_progress("Progress %5.2f%%: Processing %6dth entry (Symmetrized Particle ID %6d)."%(float(i_img_detected)/n_img_detected*100.0, i_img_detected, symmetrized_particle_id))
+				sys.stdout.flush()
+			except:
+				pass
+		
+		assert ("data_source" in img_header)
+		data_source_path = img_header["data_source"]
+		# print("MRK_DEBUG: data_source_path := ", data_source_path)
+		symmetrization_q_stack_path = "bdb:./Q" # Unfortunately, sx3dvariability.py --symmetrize uses "/" syntax instead of "#" before bdb dictionary name for this case... (2018/08/08 Toshio)
+		if input_bdb_path != ".":
+			if input_bdb_path != "":
+				symmetrization_q_stack_path = "bdb:{}#Q".format(input_bdb_path)
+			# else:
+			# 	assert (input_bdb_path == "")
+			# 	assert (False)  # Unreachable code for now (2018/08/08 Toshio)
+		# else:
+		# 	assert (input_bdb_path == ".")
+		# 	assert (symmetrization_q_stack_path == "bdb:./Q")
+		# 	# Do nothing
+		# print("MRK_DEBUG: symmetrization_q_stack_path := ", symmetrization_q_stack_path)
+		
+		assert (data_source_path[:len(symmetrization_q_stack_path)] == symmetrization_q_stack_path)
+		data_source_id = int(data_source_path.replace(symmetrization_q_stack_path, ""))
+		assert (data_source_id < n_symmetry)
+		
+		assert (symmetrized_particle_id < n_img_detected)
+		desymmetrized_particle_id = symmetrized_particle_id % n_presymmetriezed_img
+		assert (0 <= desymmetrized_particle_id and desymmetrized_particle_id < n_presymmetriezed_img)
+		
+		desymmetrized_particle_id_list.append(desymmetrized_particle_id)
+		
+		if args.check_duplication:
+			if desymmetrized_particle_id in desymmetrized_particle_id_info_dict:
+				print_progress("WARNING!!! Desymmetrized particle ID %d is duplicated."%(desymmetrized_particle_id))
+			else:
+				nodupilicated_desymmetrized_particle_id_list.append(desymmetrized_particle_id)
+				desymmetrized_particle_id_info_dict[desymmetrized_particle_id] = []
+			desymmetrized_particle_id_info_dict[desymmetrized_particle_id].append([desymmetrized_particle_id, symmetrized_particle_id, data_source_path, data_source_id])
+			
+	# Close input bdb stacks
+	input_bdb_stack.close()
+	
+	assert (len(desymmetrized_particle_id_list) == len(symmetrized_particle_id_list))
+	assert (len(nodupilicated_desymmetrized_particle_id_list) <= len(symmetrized_particle_id_list))
+	
+	if args.check_duplication:
+		print(" ")
+		print_progress("Duplication report...")
+		for desymmetrized_particle_id in desymmetrized_particle_id_info_dict:
+			if len(desymmetrized_particle_id_info_dict[desymmetrized_particle_id]) > 1:
+				print_progress("- Desymmetrized Particle ID %d"%(desymmetrized_particle_id))
+				for desymmetrized_particle_id_info in desymmetrized_particle_id_info_dict[desymmetrized_particle_id]:
+					assert (desymmetrized_particle_id_info[0] == desymmetrized_particle_id)
+					print_progress("-- Symmetrized Particle ID %d in %s (%d) "%(desymmetrized_particle_id_info[1], desymmetrized_particle_id_info[2], desymmetrized_particle_id_info[3]))
+		print(" ")
+
+	# Save the desymmetrized particle id list
+	desymmetrized_particle_id_list_file_path = os.path.join(args.output_directory, "sort3d_desymmetrized_particle_id_list.txt")
+	write_text_file(desymmetrized_particle_id_list, desymmetrized_particle_id_list_file_path)
+
+	# Save the no-duplicated desymmetrized particle id list
+	nodupilicated_desymmetrized_particle_id_list_file_path = os.path.join(args.output_directory, "sort3d_nodupilicated_desymmetrized_particle_id_list.txt")
+	write_text_file(nodupilicated_desymmetrized_particle_id_list, nodupilicated_desymmetrized_particle_id_list_file_path)
+
+	# Print summary of processing
+	print(" ")
+	print_progress("Summary of processing...")
+	print_progress("Symmetrized particle IDs in symmetrized stack               : %6d"%(n_img_detected))
+	print_progress("Symmetrized particle IDs in sorted cluster                  : %6d"%(len(symmetrized_particle_id_list)))
+	print_progress("Desymmetrized particle IDs in sorted cluster                : %6d"%(len(desymmetrized_particle_id_list)))
+	print_progress("No-duplicated desymmetrized particle IDs in sorted cluster  : %6d"%(len(nodupilicated_desymmetrized_particle_id_list)))
+	print(" ")
+	
 # ========================================================================================
 # Main function
 # ========================================================================================
@@ -3519,7 +3729,7 @@ def main():
 	# create the subparser for the "moon_eliminator" subcommand
 	parser_moon_eliminator = subparsers.add_parser("moon_eliminator", help="Moon eliminator: Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass. Optionally, create 3D mask also.")
 	parser_moon_eliminator.add_argument("input_volume_path",                type=str,                              help="Input volume path: Path to input volume file containing the 3D density map. (default required string)")
-	parser_moon_eliminator.add_argument("input_volume_path_2nd", nargs='?', type=str,             default=None,    help="Second input volume path: Path to second input volume file containing the 3D density map. Use this option to create a mask from the volume combined two MERIDIEN halfset volumes. (default none)")
+	parser_moon_eliminator.add_argument("input_volume_path_2nd", nargs="?", type=str,             default=None,    help="Second input volume path: Path to second input volume file containing the 3D density map. Use this option to create a mask from the volume combined two MERIDIEN halfset volumes. (default none)")
 	parser_moon_eliminator.add_argument("output_directory",                 type=str,                              help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
 	parser_moon_eliminator.add_argument("--pixel_size",                     type=float,           default=None,    help="Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output volume. (default required float)")
 	parser_moon_eliminator.add_argument("--mol_mass",                       type=float,           default=None,    help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)")
@@ -3527,7 +3737,7 @@ def main():
 	parser_moon_eliminator.add_argument("--moon_distance",                  type=float,           default=3.0,     help="Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3.0)")
 	parser_moon_eliminator.add_argument("--dilation",                       type=float,           default=-1.0,    help="Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --moon_distance so that the voxels with 1.0 values in the mask are same as the hard-edged molecular-mass binary volume. (default -1.0)")
 	parser_moon_eliminator.add_argument("--edge_sigma",                     type=float,           default=1.0,     help="Edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edge of the moon eliminator 3D mask. This value controls the falloff speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with --edge_type=\'gauss\'. (default 1.0)")
-	parser_moon_eliminator.add_argument("--resample_ratio",                 type=str,             default='1.0',   help="Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')")
+	parser_moon_eliminator.add_argument("--resample_ratio",                 type=str,             default="1.0",   help="Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')")
 	parser_moon_eliminator.add_argument("--box_size",                       type=int,             default=None,    help="Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)")
 	parser_moon_eliminator.add_argument("--resampled_shift3d",              action="store_true",  default=False,   help="Providing resampled 3D shifts: Use this option when you are providing the resampled 3D shifts (using pixel size of outputs) when --resample_ratio!=1.0. By default, the program assums the provided shifts are not resampled. (default False)")
 	parser_moon_eliminator.add_argument("--shift3d_x",                      type=int,             default=0,       help="3D x-shift [Pixels]: Provide 3D x-shift corresponding to shifting the 3D volume along x-axis. (default 0)")
@@ -3540,19 +3750,27 @@ def main():
 	parser_moon_eliminator.add_argument("--gm_dilation",                    type=float,           default=-1.0,    help="Soft-edge dilation [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --gm_edge_width so that the voxels with 1.0 values in the mask are same as the hard-edged binary volume with the threadhold. Effective only with --generate_mask option. (default -1.0)")
 	parser_moon_eliminator.add_argument("--gm_edge_width",                  type=float,           default=6.0,     help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with --generate_mask option. (default 6.0)")
 	parser_moon_eliminator.add_argument("--gm_edge_sigma",                  type=float,           default=2.0,     help="Soft-edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edged masking. This value controls the fall-speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with --generate_mask and --generate_mask=\'gauss\'. (default 2.0)")
-	parser_moon_eliminator.add_argument("--outputs_root",                   type=str,             default='vol3d', help="Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)")
+	parser_moon_eliminator.add_argument("--outputs_root",                   type=str,             default="vol3d", help="Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)")
 	parser_moon_eliminator.add_argument("--allow_disconnect",               action="store_true",  default=False,   help="Allow disconnection: Allow disconnection of density maps. Only for very special cases. (default False)")
-	parser_moon_eliminator.add_argument("--edge_type",                      type=str,             default='cosine',help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
+	parser_moon_eliminator.add_argument("--edge_type",                      type=str,             default="cosine",help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
 	parser_moon_eliminator.add_argument("--debug",                          action="store_true",  default=False,   help="Run with debug mode: Mainly for developer. (default False)")
 	parser_moon_eliminator.set_defaults(func=moon_eliminator)
 
-	# create the parser for the 'meridien_import_params3d' subcommand
-	meridien_import_params3d = subparsers.add_parser('meridien_import_params3d', help='UNDER DEVELOPMENT: Create 3D projection parameters files in MERIDIEN format for a specified iteration by importing the parameters from a specified 3D projection text file in SPARX format.')
-	meridien_import_params3d.add_argument('input_meridien_iter_dir_path', type=str,                             help='UNDER DEVELOPMENT')
-	meridien_import_params3d.add_argument('input_sparx_params3d_path',    type=str,                             help='UNDER DEVELOPMENT')
-	meridien_import_params3d.add_argument('output_directory',             type=str,                             help='Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)')
+	# create the parser for the "meridien_import_params3d" subcommand
+	meridien_import_params3d = subparsers.add_parser("meridien_import_params3d", help="UNDER DEVELOPMENT: Create 3D projection parameters files in MERIDIEN format for a specified iteration by importing the parameters from a specified 3D projection text file in SPARX format.")
+	meridien_import_params3d.add_argument("input_meridien_iter_dir_path", type=str,                             help="UNDER DEVELOPMENT")
+	meridien_import_params3d.add_argument("input_sparx_params3d_path",    type=str,                             help="UNDER DEVELOPMENT")
+	meridien_import_params3d.add_argument("output_directory",             type=str,                             help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
 	meridien_import_params3d.set_defaults(func=meridien_import_params3d)
 
+	# create the parser for the "desymmetrize" subcommand
+	parser_subcmd = subparsers.add_parser("desymmetrize", help="UNDER DEVELOPMENT - Desymmetrize particle IDs of a specified cluster sorted by SORT3D. The output will contain the particle IDs of stack before symmetrization.")
+	parser_subcmd.add_argument("input_bdb_stack_path",         type=str,                             help="Input BDB image stack: Specify the symmetrized BDB stack used for the associated SORT3D run. (default required string)")
+	parser_subcmd.add_argument("input_cluster_path",           type=str,                             help="Path to a text file containing a ID list of particles which belong to a cluster (or group) sorted by SORT3D run. Normally, Cluster#.txt. (default required string)")
+	parser_subcmd.add_argument("output_directory",             type=str,                             help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
+	parser_subcmd.add_argument("--check_duplication",          action="store_true",  default=False,  help="Check duplication of desymmetrized particle IDs. (default False)")
+	parser_subcmd.set_defaults(func=desymmetrize)
+	
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# Run specified subcommand
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
