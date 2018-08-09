@@ -3653,7 +3653,216 @@ def desymmetrize(args):
 	print_progress("Desymmetrized particle IDs in sorted cluster                : %6d"%(len(desymmetrized_particle_id_list)))
 	print_progress("No-duplicated desymmetrized particle IDs in sorted cluster  : %6d"%(len(nodupilicated_desymmetrized_particle_id_list)))
 	print(" ")
-	
+
+
+
+# ========================================================================================
+# Angular distribution
+# ========================================================================================
+
+def angular_distribution(args):
+	"""
+	Create an angular distribution 3D bild file.
+
+	Arguments:
+	args - Dictionary containing the command line arguments.
+		"params_file"
+		"output_folder"
+		"--prefix"
+		"--method"
+		"--pixel_size"
+		"--delta"
+		"--symmetry"
+		"--box_size"
+		"--particle_radius"
+
+	Returns:
+	None
+	"""
+	import fundamentals
+	import numpy
+	import scipy.spatial as scipy_spatial
+	import errno
+	import matplotlib
+	matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
+
+	# Sanity checks
+	print_progress('Check if values are valid')
+	error_template = 'ERROR: {0}'
+	error = False
+	error_list = []
+	if args.pixel_size <= 0:
+		error_list.append('Pixel size cannot be smaller equals 0')
+		error = True
+
+	if args.box_size <= 0:
+		error_list.append('Box size cannot be smaller equals 0')
+		error = True
+
+	if args.particle_radius <= 0:
+		error_list.append('Particle radius cannot be smaller equals 0')
+		error = True
+
+	if args.delta <= 0:
+		error_list.append('delta cannot be smaller equals 0')
+		error = True
+
+	if args.dpi <= 0:
+		error_list.append('Dpi cannot be smaller equals 0')
+		error = True
+
+	if error:
+		for entry in error_list:
+			print_progress(error_template.format(entry))
+		return None
+	else:
+		print_progress('Most values are valid')
+
+	try:
+		os.makedirs(args.output_folder)
+	except OSError as exc:
+		if exc.errno == errno.EEXIST and os.path.lexists(args.output_folder):
+			print_progress('Output directory already exists: {0}'.format(args.output_folder))
+		else:
+			raise
+	else:
+		print_progress('Created output directory: {0}'.format(args.output_folder))
+
+	COLUMN_X = 0
+	COLUMN_Y = 1
+	COLUMN_Z = 2
+
+	def get_color(sorted_array):
+		sorted_normalized = numpy.true_divide(sorted_array, numpy.max(sorted_array))
+		color_list = []
+		for item in sorted_normalized:
+			color_list.append((0, item, 1-item))
+		return color_list
+
+	def to_karthesian(angles):
+		column_phi = 0
+		column_theta = 1
+		angles_radians = numpy.radians(angles)
+		karthesian_array = numpy.empty((angles.shape[0], 3))
+
+		sinus = numpy.sin(angles_radians[:,column_theta])
+		karthesian_array[:, COLUMN_X] = numpy.cos(angles_radians[:, column_phi]) * sinus
+		karthesian_array[:, COLUMN_Y] = numpy.sin(angles_radians[:, column_phi]) * sinus
+		karthesian_array[:, COLUMN_Z] = numpy.cos(angles_radians[:, column_theta])
+
+		return karthesian_array
+
+	# Use name of the params file as prefix if prefix is None
+	if args.prefix is None:
+		args.prefix = os.path.basename(os.path.splitext(args.params_file)[0])
+
+	# Import the parameters, assume the columns 0 (Phi) 1 (Theta) 2 (Psi) are present
+	print_progress('Import projection parameter')
+	data_params = numpy.genfromtxt(args.params_file, usecols=(0, 1, 2))
+
+	# If the symmetry is c0, do not remove mirror projections.
+	print_progress('Reduce anglesets')
+	if args.symmetry == 'c0':
+		symmetry = 'c1'
+		inc_mirror_data = 1
+		inc_mirror_angle = 1
+	else:
+		symmetry = args.symmetry
+		inc_mirror_data = 0
+		inc_mirror_angle = 1
+
+	symclass = fundamentals.symclass(symmetry)
+	print_progress('Reduce reference angles')
+	even_angles = numpy.array(
+		symclass.reduce_anglesets(
+			symclass.even_angles(args.delta, method=args.method),
+			inc_mirror=inc_mirror_angle,
+			)
+		)
+	print_progress('Reduce data angles - This might take some time for high symmetries')
+	data_reduced = numpy.array(
+		symclass.reduce_anglesets(
+			data_params.tolist(),
+			inc_mirror=inc_mirror_data,
+			)
+		)
+
+	# Find nearest neighbours to the reference angles with the help of a KDTree
+	print_progress('Find nearest neighbours')
+	data_karthesian = to_karthesian(data_reduced)
+	angles_karthesian = to_karthesian(even_angles)
+	closest_indices = scipy_spatial.cKDTree(angles_karthesian, balanced_tree=False).query(data_karthesian)[1]
+
+	# Count the bins of the closest indices and remove all zeros: Create a histogram
+	radius_array = numpy.bincount(closest_indices)
+	nonzero_mask = numpy.nonzero(radius_array)
+	radius_array = radius_array[nonzero_mask]
+
+	# Calculate best width and length for the bins in 3D
+	width = (args.pixel_size * args.particle_radius * numpy.radians(args.delta) * 2) / float(2 * 3)
+	length = args.particle_radius * 0.2
+
+	# Normalize the radii so that the maximum value is 1
+	radius_normalized = numpy.true_divide(radius_array, numpy.max(radius_array))
+
+	# Vector pointing to the center of the Box in chimera
+	vector_center = 0.5 * numpy.array([
+		args.box_size,
+		args.box_size,
+		args.box_size
+		])
+
+	# Inner and outer vector. The bin starts at inner vector and stops at outer vector
+	inner_vector = vector_center + angles_karthesian[nonzero_mask] * args.particle_radius
+	outer_vector = vector_center + angles_karthesian[nonzero_mask] * (args.particle_radius + radius_normalized.reshape(radius_normalized.shape[0], 1) * length )
+
+	# Adjust pixel size
+	numpy.multiply(inner_vector, args.pixel_size, out=inner_vector)
+	numpy.multiply(outer_vector, args.pixel_size, out=outer_vector)
+
+	# Create output bild file
+	print_progress('Create bild file')
+	output_bild_file = os.path.join(args.output_folder, '{0}.bild'.format(args.prefix))
+	with open(output_bild_file, 'w') as write:
+		for inner, outer, radius in zip(inner_vector, outer_vector, radius_normalized):
+			write.write('.color 0 {0} {1}\n'.format(radius, 1-radius))
+			write.write(
+				'.cylinder {0:.3f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f} {6:.3f}\n'.format(
+					inner[COLUMN_X],
+					inner[COLUMN_Y],
+					inner[COLUMN_Z],
+					outer[COLUMN_X],
+					outer[COLUMN_Y],
+					outer[COLUMN_Z],
+					width
+					)
+				)
+
+	sorted_radius = numpy.sort(radius_array)[::-1]
+	array_x = numpy.arange(sorted_radius.shape[0])
+
+	# 2D distribution plot
+	print_progress('Create 2D legend plot')
+	output_bild_legend_png = os.path.join(args.output_folder, '{0}.png'.format(args.prefix))
+	color = get_color(sorted_radius)
+	plt.bar(array_x, height=sorted_radius, width=1, color=color)
+	plt.grid()
+	plt.xlabel('Bin / a.u.')
+	plt.ylabel('Nr. of Particles')
+	plt.savefig(output_bild_legend_png, dpi=args.dpi)
+	plt.clf()
+
+	# 2D distribution txt file
+	print_progress('Create 2D legend text file')
+	output_bild_legend_txt = os.path.join(args.output_folder, '{0}.txt'.format(args.prefix))
+	with open(output_bild_legend_txt, 'w') as write:
+		for value_x, value_y in zip(array_x, sorted_radius):
+			value_x = '{0:6d}'.format(value_x)
+			value_y = '{0:6d}'.format(value_y)
+			write.write('{0}\n'.format('\t'.join([value_x, value_y])))
+
+
 # ========================================================================================
 # Main function
 # ========================================================================================
@@ -3770,6 +3979,20 @@ def main():
 	parser_subcmd.add_argument("output_directory",             type=str,                             help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
 	parser_subcmd.add_argument("--check_duplication",          action="store_true",  default=False,  help="Check duplication of desymmetrized particle IDs. (default False)")
 	parser_subcmd.set_defaults(func=desymmetrize)
+	
+	# create the parser for the "desymmetrize" subcommand
+	parser_subcmd = subparsers.add_parser("angular_distribution", help="Create a 3D chimera bild file for the angular distribution with related legends.")
+	parser_subcmd.add_argument("params_file",       type=str,                           help="File containing the 3D projection parameters")
+	parser_subcmd.add_argument("output_folder",     type=str,                           help="Output folder name")
+	parser_subcmd.add_argument("--prefix",          type=str,   default=None,           help="Prefix for the output files - None uses the same name as the params file - Existing files will be overridden (default None)")
+	parser_subcmd.add_argument("--method",          type=str,   default='S',            help="Method used to create the reference angles (S or P) (default S)")
+	parser_subcmd.add_argument("--pixel_size",      type=float, default=1.0,            help="Pixel size of the project (default 1.0)")
+	parser_subcmd.add_argument("--delta",           type=float, default=3.75,           help="Angular step size in degree - Low deltas combined with low symmetry might crash your chimera session (default 3.75)")
+	parser_subcmd.add_argument("--symmetry",        type=str,   default='c1',           help="Symmetry - c0 creates full sphere distribution (default c1)")
+	parser_subcmd.add_argument("--box_size",        type=int,   default=256,            help="Box size (default 256)")
+	parser_subcmd.add_argument("--particle_radius", type=int,   default=120,            help="Particle radius (default 120)")
+	parser_subcmd.add_argument("--dpi",             type=int,   default=72,             help="Dpi for the legend plot (default 72)")
+	parser_subcmd.set_defaults(func=angular_distribution)
 	
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# Run specified subcommand
