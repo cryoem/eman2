@@ -286,7 +286,7 @@ def EMSelectorBaseTemplate(Type):
 	class EMSelectorBase(Type):
 		ok = QtCore.pyqtSignal(list)
 		oky = QtCore.pyqtSignal()
-		cancel = QtCore.pyqtSignal()
+		cancel = QtCore.pyqtSignal(list)
 
 		def __init__(self, single_selection=False):
 			'''
