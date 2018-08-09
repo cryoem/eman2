@@ -3765,26 +3765,21 @@ def angular_distribution(args):
 	print_progress('Reduce anglesets')
 	if args.symmetry == 'c0':
 		symmetry = 'c1'
-		inc_mirror_data = 1
-		inc_mirror_angle = 1
+		inc_mirror = 1
 	else:
 		symmetry = args.symmetry
-		inc_mirror_data = 0
-		inc_mirror_angle = 1
+		inc_mirror = 0
 
 	symclass = fundamentals.symclass(symmetry)
 	print_progress('Reduce reference angles')
 	even_angles = numpy.array(
-		symclass.reduce_anglesets(
-			symclass.even_angles(args.delta, method=args.method),
-			inc_mirror=inc_mirror_angle,
-			)
+		symclass.even_angles(args.delta, method=args.method, inc_mirror=inc_mirror)
 		)
 	print_progress('Reduce data angles - This might take some time for high symmetries')
 	data_reduced = numpy.array(
 		symclass.reduce_anglesets(
 			data_params.tolist(),
-			inc_mirror=inc_mirror_data,
+			inc_mirror=inc_mirror,
 			)
 		)
 
