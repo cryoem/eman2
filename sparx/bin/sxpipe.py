@@ -3765,26 +3765,26 @@ def angular_distribution(args):
 	print_progress('Reduce anglesets')
 	if args.symmetry == 'c0':
 		symmetry = 'c1'
-		inc_mirror = 1
+		inc_mirror_data = 1
+		inc_mirror_angle = 1
 	else:
 		symmetry = args.symmetry
-		inc_mirror = 0
+		inc_mirror_data = 0
+		inc_mirror_angle = 1
 
 	symclass = fundamentals.symclass(symmetry)
 	print_progress('Reduce reference angles')
 	even_angles = numpy.array(
 		symclass.reduce_anglesets(
 			symclass.even_angles(args.delta, method=args.method),
-			inc_mirror=inc_mirror,
-			do_flip=False
+			inc_mirror=inc_mirror_angle,
 			)
 		)
 	print_progress('Reduce data angles - This might take some time for high symmetries')
 	data_reduced = numpy.array(
 		symclass.reduce_anglesets(
 			data_params.tolist(),
-			inc_mirror=inc_mirror,
-			do_flip=True
+			inc_mirror=inc_mirror_data,
 			)
 		)
 
@@ -3822,7 +3822,7 @@ def angular_distribution(args):
 	numpy.multiply(outer_vector, args.pixel_size, out=outer_vector)
 
 	# Create output bild file
-	print_progress('Create .bild file')
+	print_progress('Create bild file')
 	output_bild_file = os.path.join(args.output_folder, '{0}.bild'.format(args.prefix))
 	with open(output_bild_file, 'w') as write:
 		for inner, outer, radius in zip(inner_vector, outer_vector, radius_normalized):
