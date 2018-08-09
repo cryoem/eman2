@@ -8,7 +8,7 @@ Miscellaneous Commands: Carry out various SPARX commands on image series, and ge
 
 Usage in command line
 
-  sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --combinemaps  --output_dir=DIRECTORY  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --B_start=B_START  --B_stop=B_STOP  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --window_stack  --box=BOX  --angular_distribution  --symmetry=SYMMETRY  --round_digit=ROUND_DIGIT  --box_size=BOX_SIZE  --particle_radius=PARTICLE_RADIUS  --cylinder_width=CYLINDER_WIDTH  --cylinder_length=CYLINDER_LENGTH
+  sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --combinemaps  --output_dir=DIRECTORY  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --consine_edge=CONSINE_EDGE  --dilation=DILATION  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --B_start=B_START  --B_stop=B_STOP  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --window_stack  --box=BOX 
 
 \\
 ===== Typical usage =====
@@ -145,9 +145,6 @@ To concatenate output files,
 
 15. Window stack file -reduce size of images without changing the pixel size.
 
-16. Create angular distribution .build file
-
-  sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --symmetry=c5  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
 
 \\
 ===== Input =====
@@ -214,14 +211,6 @@ To concatenate output files,
 
   ; %%--%%window_stack : Window stack images using a smaller window size: (default False)
   ; %%--%%box : New window size: (default 0)
-
-  ; %%--%%angular_distribution : Create angular distribution file: Create angular distribution file containing a 3D representation of the given angular distribution. It can be viewed with UCFS Chimera. (default False)
-  ; %%--%%symmetry : Point-group symmetry: Point-group symmetry of the reconstructed structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. (default c1)
-  ; %%--%%round_digit : Number precision: Decimal numbers will be rounded to this number of decimal points. (default 5)
-  ; %%--%%box_size : Box size [Pixels]: Box size in pixel used for calculating the center of the particle. (default 500)
-  ; %%--%%particle_radius : Particle radius [Pixels]: Used for the representation in Chimera. Defines where the cylinders representing the histogram must start. (default 175)
-  ; %%--%%cylinder_width : Cylinder width: Used for the representation in Chimera. This will define the width of the cylinders representing the histogram.(default 1)
-  ; %%--%%cylinder_length : Cylinder length: Used for the representation in Chimera. This will define the relative size of the cylinders representing the histogram. (default 10000)
 
 \\
 === Advanced Parameters ===
