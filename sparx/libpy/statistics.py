@@ -430,6 +430,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 	"""
 	from utilities    import    model_blank, get_params2D, same_ctf
 	from fundamentals import    rot_shift2D, fft
+	from copy import deepcopy
 	n      = len(data)
 	if return_params: params_list = [None]*n
 	if CTF:
@@ -446,12 +447,12 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 		for im in range(n):
 			current_ctf = data[im].get_attr("ctf")
 			if im == 0: 
-				myctf = current_ctf
-				ctt   = ctf_img(origin_size, myctf)
+				myctf = deepcopy(current_ctf)
+				ctt = ctf_img(origin_size, myctf)
 			else:
 				if not same_ctf(current_ctf, myctf):       
+					myctf = deepcopy(current_ctf)
 					ctt   = ctf_img(origin_size, myctf)
-					myctf = current_ctf
 			if mode == "a":
 				alpha, sx, sy, mirror, scale = get_params2D(data[im])
 				ima = rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
