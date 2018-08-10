@@ -12882,7 +12882,9 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		const int minr=4;		// lowest frequency considered in the calculation (in pixels)
 		int rsize=cimage->get_ysize()/4-minr-2;
 		if (rsize>nky) rsize=nky;
-		int nang=Util::calc_best_fft_size(int(M_PI*cimage->get_ysize()));
+//		int nang=Util::calc_best_fft_size(int(M_PI*cimage->get_ysize()));	// this gives basically 1 pixel precision at Nyquist. Accuracy is another question
+		int nang=Util::calc_best_fft_size(int(M_PI*0.6*cimage->get_ysize())); // one pixel at 0.6 Nyquist. Refine alignment is probably necessary anyway
+		
 		EMData *ret2=new EMData(nang,rsize*rfp*2,1);
 		EMData *line=new EMData(minr*2+rsize*2,1,1);	// one complex line
 		line->set_complex(1);
