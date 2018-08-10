@@ -1801,14 +1801,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 				# With shift-click we try to show rotated/translated images
 				if  event.modifiers()&Qt.ShiftModifier:			# If shift is pressed, transform the particle orientations
-					curim=[a["source_path"],a["source_n"]]		# this is the class-average
-					if "EMAN2DB" in curim[0] : curim[0]="bdb:"+curim[0].replace("/EMAN2DB","")
-					if curim[0][-10:-3]=="classes" :
-						mxpath=curim[0][:-11]+"#classmx_"+curim[0][-2:]
+					if "classes" in a["source_path"] :
+						mxpath=a["source_path"].replace("classes","classmx")
 						try: mx=(EMData(mxpath,2),EMData(mxpath,3),EMData(mxpath,4),EMData(mxpath,5))
-						except:
-							mxpath=curim[0][:-11]+"#classify_"+curim[0][-2:]
-							mx=(EMData(mxpath,2),EMData(mxpath,3),EMData(mxpath,4),EMData(mxpath,5))
+						except: mx=None
 					else: mx=None
 				else: mx=None
 
@@ -1833,7 +1829,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				for idx in idxs:
 					data.append(EMData(name,idx))
 					if mx!=None:
-						xfm=Transform({"type":"2d","tx":mx[0][idx],"ty":mx[1][idx],"alpha":mx[2][idx],"mirror":bool(mx[3][idx])})
+						xfm=Transform({"type":"2d","tx":mx[0][0,idx],"ty":mx[1][0,idx],"alpha":mx[2][0,idx],"mirror":bool(mx[3][0,idx])})
 						#ad=data[-1].align("rotate_translate_flip",a,{},"ccc",{})
 						data[-1].transform(xfm)
 						#data.append(ad)
