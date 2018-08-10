@@ -638,6 +638,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	/** Single Precision Fourier product conjg and straight to get mirror and sum of a set of complex rings followed by IFT */
 	static EMData* FCrossm(EMData* frobj, EMData* frings);
 
+	static vector<float> FCross_multiref(EMData* frobj, EMData* frings, int psi_start, int psi_step);
+
 	/** Single Precision Fourier Transform for a set of rings */
 	static void  Frngs(EMData* circ, vector<int> numr);
 
