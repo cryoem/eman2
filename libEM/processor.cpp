@@ -12890,6 +12890,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			
 			// original bispectrum approach
 			for (int dr=0; dr<rfp; dr++) {
+				double lsq=0;
 				for (int r=minr; r<rsize+minr; r++) {
 					float jx=dx*r;
 					float jy=dy*r;
@@ -12900,12 +12901,18 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
 					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(kx,ky);
 					complex<double> v3 = (complex<double>)cimage->get_complex_at_interp(jx+kx,jy+ky);
-					line->set_complex_at(r,0,0,complex<float>(v1*v2*std::conj(v3)));
+					complex<double> bv = v1*v2*std::conj(v3);
+					line->set_complex_at(r,0,0,complex<float>(bv));
+					lsq+=std::norm(bv);
 				}
+				float rsig = 1.0/sqrt(lsq/double(rsize));
 				
 				// Tried a bunch of different ways of representing the bispectral invariants, but the
 				// pseudo real-space inverse seems to perform the best in testing on various targets
-				line->mult(1.0f/float(line->get_attr("sigma")));	// adjust intensities, but don't shift 0
+				
+				// calling mult with 1D complex objects requires a lot of overhead for the RI/AP check, so we 
+				// combine it with output generation and compute rsig on the fly. Not exactly equivalent, but good enough.
+//				line->mult(1.0f/float(line->get_attr("sigma")));	// adjust intensities, but don't shift 0
 
 				// pseudo real-space
 // 				EMData *lreal=line->do_ift();
@@ -12916,7 +12923,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 				// stay in Fourier space
 				// real/imaginary
 //				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+(r2-minr)*rsize*2,line->get_value_at(i+minr*2,0));
-				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+dr*rsize*2,line->get_value_at(i+minr*2,0));
+				for (int i=0; i<rsize*2; i++) ret2->set_value_at(angi,i+dr*rsize*2,line->get_value_at(i+minr*2,0)*rsig);
 
 				// Amp/phase separation
 // 				for (int i=0; i<rsize*2; i+=2) {

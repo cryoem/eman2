@@ -119,6 +119,17 @@ void mult(float f);
  */
 void mult(const EMData & image, bool prevent_complex_multiplication=false);
 
+/** multiply each complex RI pixel of this image with each pixel of some
+ * other same-size image. No type checking. Images must both known to be complex RI
+ * checking for complex/ri is expensive!
+ *
+ * @param image The image multiplied to 'this' image.
+ * @param prevent_complex_multiplication if the image is complex, this flag will override complex multiplication and just multiply each pixel by the other
+ * @exception ImageFormatException If the 2 images are not same size.
+ */
+void mult_ri(const EMData & image);
+
+
 void mult_complex_efficient(const EMData & em, const int radius);
 
 /** make each pixel value divided by a float number.

@@ -583,23 +583,30 @@ void EMData::mult(const EMData & em, bool prevent_complex_multiplication)
 				data[i] *= src_data[i];
 			}
 		}
-		else
-		{
-			typedef std::complex<float> comp;
-			for( size_t i = 0; i < size; i+=2 )
-			{
-				comp c_src( src_data[i], src_data[i+1] );
-				comp c_rdat( data[i], data[i+1] );
-				comp c_result = c_src * c_rdat;
-				data[i] = c_result.real();
-				data[i+1] = c_result.imag();
-			}
-		}
+		else mult_ri(em);
 		update();
 	}
 
 	EXITFUNC;
 }
+
+// This implements complex RI multiplication, but does no checking of data types for efficiency
+// calling is_ri can be very expensive.
+void EMData::mult_ri(const EMData &em) {
+	typedef std::complex<float> comp;
+	const float *src_data = em.get_data();
+	float* data = get_data();
+	for( size_t i = 0; i < nxyz; i+=2 )
+	{
+		comp c_src( src_data[i], src_data[i+1] );
+		comp c_rdat( data[i], data[i+1] );
+		comp c_result = c_src * c_rdat;
+		data[i] = c_result.real();
+		data[i+1] = c_result.imag();
+	}
+	update();
+}
+
 
 void EMData::mult_complex_efficient(const EMData & em, const int radius)
 {

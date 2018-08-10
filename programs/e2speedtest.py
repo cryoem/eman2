@@ -66,6 +66,7 @@ improved with time."""
 	parser.add_argument("--best",action="store_true",help="rtf_best alignment",default=False)
 	parser.add_argument("--short",action="store_true",help="Fewer iterations, mainly for profiling",default=False)
 	parser.add_argument("--old",action="store_true",help="old rtf+refine aligner",default=False)
+	parser.add_argument("--bispec",action="store_true",help="new rtf with usebispec",default=False)
 	parser.add_argument("--low",action="store_true",help="low level test",default=False)
 	parser.add_argument("--size",type=int,help="Size of particles, 192 default for comparisons",default=192)
 	parser.add_argument("--simpleout",action="store_true",help="Simpler 2 column output file (appends)")
@@ -183,8 +184,13 @@ so in most cases it is not dealt with.')
 				tmp = data[i].align('rtf_slow', data[j], {"flip":None, "maxshift":old_div(SIZE,8)})
 			elif options.old:
 				tmp = data[i].align('rotate_translate_flip', data[j], {})
-				data[i].del_attr("xform.align2d")
-				tmp2 = data[i].align('refine',data[j],{"verbose":0,"xform.align2d":tmp.get_attr("xform.align2d")},"ccc",{})
+				#data[i].del_attr("xform.align2d")
+				#tmp2 = data[i].align('refine',data[j],{"verbose":0,"xform.align2d":tmp.get_attr("xform.align2d")},"ccc",{})
+			elif options.bispec:
+				tmp = data[i].align('rotate_translate_bispec', data[j], {"rfpn":2,"size":32})
+				tmp = data[i].align('rotate_translate_bispec', data[j], {"rfpn":2,"size":32})
+				#data[i].del_attr("xform.align2d")
+				#tmp2 = data[i].align('refine',data[j],{"verbose":0,"xform.align2d":tmp.get_attr("xform.align2d")},"ccc",{})
 			else:
 				tmp = data[i].align('rotate_translate_tree', data[j], {"flip":True})
 
