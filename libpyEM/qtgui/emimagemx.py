@@ -1847,7 +1847,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				for idx in idxse:
 					data.append(EMData(name,idx))
 					if mx!=None:
-						xfm=Transform({"type":"2d","tx":mx[0][idx],"ty":mx[1][idx],"alpha":mx[2][idx],"mirror":bool(mx[3][idx])})
+						xfm=Transform({"type":"2d","tx":mx[0][0,idx],"ty":mx[1][0,idx],"alpha":mx[2][0,idx],"mirror":bool(mx[3][0,idx])})
 						data[-1].transform(xfm)
 					idxseim.append(i)
 					i+=1
@@ -1863,21 +1863,30 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				progress.close()
 				get_application().setOverrideCursor(Qt.ArrowCursor)
 
-				resize_necessary = False
-				if self.class_window == None:
-					self.class_window = EMImageMXWidget()
-					self.class_window.module_closed.connect(self.on_class_window_closed)
-					resize_necessary = True
-
-				self.class_window.set_data(data,"Class Particles")
-
-				self.class_window.enable_set("excluded",idxseim, display=True, force=True)
-
-				if resize_necessary:
-					get_application().show_specific(self.class_window)
-					self.class_window.optimally_resize()
+				# with control-click we write a file containing the class average, then all particles
+				if event.modifiers()&Qt.ControlModifier:
+					outnm="cls_{}.hdf".format(a["source_n"])
+					try: os.unlink(outnm)
+					except: pass
+					a.write_image(outnm,0)
+					for i,im in enumerate(data): im.write_image(outnm,i+1)
+					QtGui.QMessageBox.information(None,"Notice","Wrote average {} and {} particles to {}".format(a["source_n"],len(data),outnm))
 				else:
-					self.class_window.updateGL()
+					resize_necessary = False
+					if self.class_window == None:
+						self.class_window = EMImageMXWidget()
+						self.class_window.module_closed.connect(self.on_class_window_closed)
+						resize_necessary = True
+
+					self.class_window.set_data(data,"Class Particles")
+
+					self.class_window.enable_set("excluded",idxseim, display=True, force=True)
+
+					if resize_necessary:
+						get_application().show_specific(self.class_window)
+						self.class_window.optimally_resize()
+					else:
+						self.class_window.updateGL()
 
 	def on_class_window_closed(self):
 		self.class_window = None
@@ -2060,7 +2069,7 @@ class EMGLScrollBar(object):
 
 		adjusted_scroll_bar_height = self.scroll_bar_height - self.scroll_bit_height
 
-		self.scroll_bit_position_ratio = (-float(current_y)//adjusted_height)
+		self.scroll_bit_position_ratio = (-float(current_y)/adjusted_height)
 		self.scroll_bit_position = self.scroll_bit_position_ratio *adjusted_scroll_bar_height
 
 		return True
