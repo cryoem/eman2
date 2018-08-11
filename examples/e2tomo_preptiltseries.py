@@ -3,7 +3,6 @@
 ====================
 Author: Jesus Galaz - 10/August/2018, Last update: 10/August/2018
 ====================
-
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
@@ -29,7 +28,9 @@ Author: Jesus Galaz - 10/August/2018, Last update: 10/August/2018
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
-
+from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from EMAN2 import *
 from EMAN2_utils import *
 import os
