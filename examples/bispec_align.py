@@ -24,7 +24,7 @@ a.append(a[1].process("xform.flip",{"axis":"x"}))
 cf=a[2].process("math.bispectrum.slice",{"rfp":rfp,"size":size})
 #cf.process_inplace("normalize.rows",{"unitlen":1})
 
-display((b,c,cf),1)
+#display((b,c,cf),1)
 
 #cc=b.calc_ccfx(c,0,-1,1,0,1)		# z score scaling also seems to work poorly
 #ccf=b.calc_ccfx(cf,0,-1,1,0,1)
@@ -34,7 +34,7 @@ display((cc,ccf),1)
 
 cc=b.calc_ccfx(c,0,-1,0)
 ccf=b.calc_ccfx(cf,0,-1,0)
-display((cc,ccf),0,1)
+#display((cc,ccf),0,1)
 
 d=a[1].align("rotate_translate_tree",a[0],{"flip":1})
 xf=d["xform.align2d"].inverse()
