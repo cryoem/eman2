@@ -270,7 +270,7 @@ def detectThreads(options):
 
 def checkinput(options):
 	"""
-	Allows to provide input as the first argument, instead of through --input. Both should be functional.
+	Checks for sanity of input whether directly as an argument or through --input. Both should be functional.
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
 	if not options.input:
@@ -281,6 +281,13 @@ def checkinput(options):
 		except:
 			print("\n(EMAN2_utils)(checkinput) ERROR: input file {} seems to have an invalid format or doesn't exist; verify that the filename is correct.".format( options.input ))
 			#parser.print_help()
+			sys.exit(1)
+	else:
+		try:
+			print("\ntrying to read input from --input={}".format(options.input))
+			EMData(options.input,0,True)
+		except:
+			print("\n(EMAN2_utils)(checkinput) ERROR: --input file {} seems to have an invalid format or doesn't exist; verify that the filename is correct.".format( options.input ))
 			sys.exit(1)
 	return options
 	
