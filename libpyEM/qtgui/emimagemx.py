@@ -402,7 +402,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.force_display_update()
 		self.updateGL()
 
-	def delete_set(self,todel):
+	def delete_set(self,todel, update=True):
 		"Deletes a set or multiple sets. todel is a string or list of strings to delete"
 
 		if isinstance(todel,str): todel=[todel]
