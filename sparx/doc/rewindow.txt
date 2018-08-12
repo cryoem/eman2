@@ -18,7 +18,7 @@ sxrewindow exists in both MPI and non-MPI versions (Running MPI version does not
 There are several modes to run the program:
 
 \\ __1. All Micrographs Mode - Process all micrographs in a directory:__
-\\ Specify path pattern of input micrographs and rebox files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between a associated pair of input micrograph and rebox file. BDB files can not be selected as input micrographs. Finally, specify output directory where all outputs should be saved. In this mode, all micrographs matching the path pattern will be processed.
+\\ Specify path pattern of input micrographs and rebox files with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between a associated pair of input micrograph and rebox file. bdb files cannot be selected as input micrographs. Finally, specify output directory where all outputs should be saved. In this mode, all micrographs matching the path pattern will be processed.
   mpirun  -np  32  sxrewindow.py  './mic*.hdf'  'outdir_rebox/centered_rebox/mic*_centered_rebox.rbx'  outdir_rewindow  --box_size=64
 
 \\ You can also ignore per-particle CTF information stored in rebox files and use CTF information stored in the CTER partres.txt instead.
@@ -42,9 +42,9 @@ There are several modes to run the program:
 \\
 ===== Input =====
 === Main Parameters ===
-  ; input_micrograph_pattern : Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and rebox file. bdb files can not be selected as input micrographs. (default required string)
-  ; input_rebox_pattern : Input rebox path pattern: Specify path pattern of input rebox files with a wild card (*). Use the wild card to indicate the place of variable part of the file names (e.g. serial number, time stamp, and etc). The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated input micrograph. (default required string)
-  ; output_directory : Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+  ; input_micrograph_pattern : Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and rebox file. bdb files cannot be selected as input micrographs. (default required string)
+  ; input_rebox_pattern : Input rebox path pattern: Specify path pattern of input rebox files with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sxgui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated input micrograph. (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
 
   ; %%--%%selection_list : Micrograph selection file: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
   ; %%--%%box_size : Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when mic_resample_ratio < 1.0. (default 256)
@@ -58,7 +58,7 @@ There are several modes to run the program:
 
 \\
 ===== Output =====
-Inside the output directory, the program will write a local BDB stack image for each micrograph. The files are named micrograph name with "_ptcls" suffix. For example, ''outdir_rewindow/EMAN2DB/mic0_ptcls.bdb'' or ''bdb:outdir_rewindow#mic0_ptcls'' 
+Inside the output directory, the program will write a local bdb stack image for each micrograph. The files are named micrograph name with "_ptcls" suffix. For example, ''outdir_rewindow/EMAN2DB/mic0_ptcls.bdb'' or ''bdb:outdir_rewindow#mic0_ptcls'' 
 
 \\
 ===== Description =====

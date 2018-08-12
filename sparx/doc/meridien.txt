@@ -41,7 +41,7 @@ There are five ways to run the program:
 ===== Input =====
 === Main Parameters ===
   ; stack : Input image stack: Input image stack. Required only for standard fresh run and local refinement from stack. (default none)
-  ; output_directory : Output directory: The results will be written here. This directory will be created automatically if it does not exist. By default, the program uses master_DATA_AND_TIME for the name. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exists because this is also used as the input directory. (default none)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. By default, the program uses master_DATA_AND_TIME for the name. For standard continuation run, local refinement from iteration, and final reconstruction only, the directory must exists because this is also used as the input directory. (default none)
   ; initial_volume : Initial 3D reference: The 3D reference used in the initial iteration of 3D refinement. Required only for standard fresh run. (default none)
 
   ; %%--%%do_final : Do only final reconstruction: Specify the iteration where you wish to perform only final reconstruction using the alignment parameters. By setting to 0, program searches the iteration which achieved the best resolution, then performs only final reconstruction using the alignment parameters. Value must be zero or positive. Specific to final reconstruction only. (default -1)

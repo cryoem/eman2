@@ -54,7 +54,7 @@ sxrsort3d.py exists only in MPI version.
     instack:: Input images stack: File path of particle stack for sorting. This option is not currently supported by SHPIRE GUI (sxgui). (default none)
 
 == Output ==
-Please use --masterdir option to specify the output directory. The results will be written here. This directory will be created automatically if it does not exist  Here, you can find a log.txt that describes the sequences of computations in the program. 
+Please use --masterdir option to specify the output directory. The results will be written here. It cannot be an existing one. Here, you can find a log.txt that describes the sequences of computations in the program. 
 
 
 = Description =

@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxgui_cter =====
-CTF Assessment: GUI tool to assess and sort micrographs based on their CTF parameters estimated by [[pipeline:cter:sxcter|sxcter]].
+CTF Assessment: GUI tool to assess and sort micrographs according to their CTF parameters estimated by [[pipeline:cter:sxcter|sxcter]].
 
 \\
 ===== Usage =====

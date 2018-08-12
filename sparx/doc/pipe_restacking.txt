@@ -34,13 +34,13 @@ Do both restacking and reboxing to generate both the virtual stack and reboxing 
 \\
 ===== Input =====
 === Main Parameters ===
-  ; input_bdb_stack_path : Input BDB image stack: Specify the input BDB image stack. (default required string)
-  ; output_directory : Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+  ; input_bdb_stack_path : Input bdb image stack: Specify the input bdb image stack. (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
 
   ; %%--%%selection_list : Micrograph/Movie selection file: Specify path to text file containing a list of selected micrograph/movie names or paths. The particles associated with the micrographs/movies in this list will be processed. The file extension must be //.txt//. The directory path of each entry will be ignored if there are any. (default none)
-  ; %%--%%shift3d_x : 3D x-shift [Pixels]: Provide 3D x-shift corresponding to shifting the 3D volume along x-axis. (default 0)
-  ; %%--%%shift3d_y : 3D y-shift [Pixels]: Provide 3D y-shift corresponding to shifting the 3D volume along y-axis. (default 0)
-  ; %%--%%shift3d_z : 3D z-shift [Pixels]: Provide 3D z-shift corresponding to shifting the 3D volume along z-axis. (default 0)
+  ; %%--%%shift3d_x : 3D x-shift [Pixels]: 3D x-shift value. (default 0)
+  ; %%--%%shift3d_y : 3D y-shift [Pixels]: 3D y-shift value. (default 0)
+  ; %%--%%shift3d_z : 3D z-shift [Pixels]: 3D z-shift value. (default 0)
   ; %%--%%save_vstack : Save virtual stack: Use this option to save the virtual stack. By default, the virtual stack will not be generated. (default False)
   ; %%--%%sv_vstack_basename : Virtual stack basename: For %%--%%save_vstack, specify the basename of output virtual stack file. It cannot be empty string or only white spaces. (default vstack)
   ; %%--%%reboxing : Generate reboxing information: Prepare reboxing by extracting coordinates from the input stack headers, then center them according to projection parameters in the header and user-provided 3D shift. If the headers do not contain projection parameters, the program assumes the prjection parameters are all zeros (null alignment). (default False)

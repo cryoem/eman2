@@ -45,7 +45,7 @@ Create reference 3D volume and 3D mask from halfset unfiltered volumes produced 
 === Main Parameters ===
   ; input_volume_path : Input volume path: Path to input volume file containing the 3D density map. (default required string)
   ; input_volume_path_2nd : Second input volume path: Path to second input volume file containing the 3D density map. Use this option to create a mask from the volume combined two MERIDIEN halfset volumes. (default none)
-  ; output_directory : Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
 
   ; %%--%%pixel_size : Output pixel size [A]: The original pixel size of dataset. This must be the pixel size after resampling when resample_ratio != 1.0. That is, it will be the pixel size of the output volume. (default required float)
   ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)
@@ -56,9 +56,9 @@ Create reference 3D volume and 3D mask from halfset unfiltered volumes produced 
   ; %%--%%resample_ratio : Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')
   ; %%--%%box_size : Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)
   ; %%--%%resampled_shift3d : Providing resampled 3D shifts: Use this option when you are providing the resampled 3D shifts (using pixel size of outputs) when %%--%%resample_ratio!=1.0. By default, the program assums the provided shifts are not resampled. (default False)
-  ; %%--%%shift3d_x : 3D x-shift [Pixels]: Provide 3D x-shift corresponding to shifting the 3D volume along x-axis. (default 0)
-  ; %%--%%shift3d_y : 3D y-shift [Pixels]: Provide 3D y-shift corresponding to shifting the 3D volume along y-axis. (default 0)
-  ; %%--%%shift3d_z : 3D z-shift [Pixels]: Provide 3D z-shift corresponding to shifting the 3D volume along z-axis. (default 0)
+  ; %%--%%shift3d_x : 3D x-shift [Pixels]: 3D x-shift value. (default 0)
+  ; %%--%%shift3d_y : 3D y-shift [Pixels]: 3D y-shift value. (default 0)
+  ; %%--%%shift3d_z : 3D z-shift [Pixels]: 3D z-shift value. (default 0)
   ; %%--%%invert_handedness : Invert handedness: Invert the handedness of the 3D volume. (default False)
   ; %%--%%fl : Low-pass filter resolution [A]: >0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)
   ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when %%--%%fl > 0.0. (default 0.1)

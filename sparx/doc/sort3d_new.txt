@@ -73,7 +73,7 @@ sxsort3d_new.py exists only in MPI version. In addition, it does not support sin
 
 
 == Output ==
-    output_dir:: Output directory: The master output directory for sorting. The results will be written here. This directory will be created automatically if it does not exist. Here, you can find a log.txt that describes the sequences of computations in the program. (default required string)
+    output_dir:: Output directory: The master output directory for sorting. The results will be written here. It cannot be an existing one. Here, you can find a log.txt that describes the sequences of computations in the program. (default required string)
 
 
 = Description =

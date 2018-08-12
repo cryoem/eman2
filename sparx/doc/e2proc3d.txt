@@ -100,7 +100,7 @@ Type of output file depends on the option settings.
 
 \\
 ===== Description =====
-This program operates on single 3D volume files, stacks of 3-D volume files, and EMAN2 BDB databases. It has many command-line options for specific tasks. The generic '--process' option is by far the most powerful, offering access to 180+ different image processing operations. For a list, type
+This program operates on single 3D volume files, stacks of 3-D volume files, and EMAN2 bdb databases. It has many command-line options for specific tasks. The generic '--process' option is by far the most powerful, offering access to 180+ different image processing operations. For a list, type
 
 'e2help.py processors -v 2' for a detailed list of available processors.
 

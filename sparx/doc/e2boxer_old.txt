@@ -22,7 +22,7 @@ e2boxer_old exists in non-MPI version.
 \\
 ===== Input =====
 === Main Parameters ===
-  ; input_micrograph_list : Input micrographs: Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if the number is very large. (default required string)
+  ; input_micrograph_list : Input micrographs: Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if their number is very large. (default required string)
 
   ; %%--%%boxsize : Box size [Pixels]: Box size for extraction of particle images. (default -1)
 
