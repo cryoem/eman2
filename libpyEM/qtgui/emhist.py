@@ -1421,7 +1421,7 @@ class DragListWidget(QtGui.QListWidget):
 		dropact = drag.exec_(Qt.CopyAction)
 
 
-if __name__ == '__main__': # This is just for testing, of course
+def main(): # This is just for testing, of course
 	app = EMApp()
 	window = EMHistogramWidget(app)
 	if len(sys.argv)==1 :
@@ -1434,3 +1434,7 @@ if __name__ == '__main__': # This is just for testing, of course
 
 	app.show()
 	app.execute()
+
+
+if __name__ == '__main__':
+	main()
