@@ -8443,38 +8443,42 @@ vector<float> Util::FCross_multiref(EMData* frobj, EMData* frings, int psi_start
 	int nref = frings->get_ysize();
 
 	vector<float> ccf((intx/psi_step)*nref);
-	float* ccfp = ( float * ) malloc ( intx * sizeof ( float ) );
+	float* ccfp = ( float * ) calloc ( intx , sizeof ( float ) );
+	//for( unsigned int i=0; i<intx; i++)  ccfp[i] = 0.0f;
 
-
-	for( unsigned int i=0; i<(intx/psi_step)*nref; i++)  ccf[i] = 0.0f;
 	float* d_frobj  = frobj->get_data();
 	float* d_frings = frings->get_data();
 
-	float* wsave = ( float * ) malloc ( ( 3 * intx + 15 ) * sizeof ( float ) );
-	int* ifac = ( int * ) malloc ( 8 * sizeof ( int ) );
+	float* wsave = ( float * ) calloc ( ( 3 * intx + 15 ) , sizeof ( float ) );
+	int* ifac = ( int * ) calloc ( 8 , sizeof ( int ) );
 
 	ezffti( &intx, wsave, ifac );
 
 	int nh = intx / 2;
 	float azero = 0.0;
-	float* a = ( float * ) malloc ( nh * sizeof ( float ) );
-	float* b = ( float * ) malloc ( nh * sizeof ( float ) );
+	float* a = ( float * ) calloc ( nh , sizeof ( float ) );
+	float* b = ( float * ) calloc ( nh , sizeof ( float ) );
 
 	for(unsigned int iref=0; iref<nref; ++iref) {
-
+		unsigned int offset2 = iref*size_of_one_image;
 		for(unsigned int i=0; i<nh; ++i) {a[i]=0.0f;b[i]=0.0f;}
 		azero = 0.0f;
 		for(unsigned int j=0; j<nring; ++j) {
 			unsigned int offset = j*nx;
-			azero   += d_frobj[offset+0]*d_frings[offset+0];
-			a[nh-1] += d_frobj[offset+intx]*d_frings[offset+intx];
+			unsigned int offset3 = offset2 + offset;
+			azero   += d_frobj[offset+0]*d_frings[offset3+0];
+			a[nh-1] += d_frobj[offset+intx]*d_frings[offset3+intx];
 			for(unsigned int i=2; i<intx; i+=2) {
-				a[(i-2)/2] +=  d_frobj[offset+i]*d_frings[offset+i]   + d_frobj[offset+i+1]*d_frings[offset+i+1];
-				b[(i-2)/2] += -d_frobj[offset+i]*d_frings[offset+i+1] + d_frobj[offset+i+1]*d_frings[offset+i];
+				float c1 = d_frobj[offset+i];
+				float c2 = d_frobj[offset+i+1];
+				float d1 = d_frings[offset3+i];
+				float d2 = d_frings[offset3+i+1];
+				a[(i-2)/2] +=  c1 * d1 + c2 * d2;//d_frobj[offset+i]*d_frings[offset+i]   + d_frobj[offset+i+1]*d_frings[offset+i+1];
+				b[(i-2)/2] += -c1 * d2 + c2 * d1;//-d_frobj[offset+i]*d_frings[offset+i+1] + d_frobj[offset+i+1]*d_frings[offset+i];
 			}
 		}
 		ezfftb( &intx, ccfp, &azero, a, b, wsave, ifac );
-		for(unsigned int i=0; i<intx; ++i) ccf[i] = ccfp[(i+psi_start)*psi_step];
+		for(unsigned int i=0; i<intx; ++i) ccf[iref*intx + i] = ccfp[(i + psi_start)*psi_step];
 	}
 
 	free(ifac);
