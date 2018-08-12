@@ -1036,7 +1036,7 @@ class EMPDBInspector(QtGui.QWidget):
 	def set_xyz_trans(self,x,y,z):
 		self.rotation_sliders.set_xyz_trans(x,y,z)
 
-if __name__ == '__main__':
+def main():
 	from .emapplication import EMApp
 	from .emimage3d import EMImage3DWidget
 	em_app = EMApp()
@@ -1048,3 +1048,6 @@ if __name__ == '__main__':
 	em_app.show()
 	em_app.execute()
 
+
+if __name__ == '__main__':
+	main()

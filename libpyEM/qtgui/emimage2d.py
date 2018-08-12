@@ -2568,7 +2568,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 
 # This is just for testing, of course
-if __name__ == '__main__':
+def main():
 	from .emapplication import EMApp
 	em_app = EMApp()
 	window = EMImage2DWidget(application=em_app)
@@ -2585,3 +2585,5 @@ if __name__ == '__main__':
 	sys.exit(em_app.exec_())
 
 
+if __name__ == '__main__':
+	main()

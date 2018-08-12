@@ -2201,7 +2201,7 @@ class EMGenericFileItem(EMGenericItem):
 app = None
 
 
-if __name__ == '__main__':
+def main():
 	em_app = EMApp()
 #	em_qt_widget = EMSelectorModule(save_as_mode=False)
 #    em_app.show()
@@ -2212,3 +2212,7 @@ if __name__ == '__main__':
 	#print "Press Ctrl-C to exit" #FIXME: figure out why Ctrl-C is required to terminate the program
 	em_app.exit(0)
 	em_app.execute() 
+
+
+if __name__ == '__main__':
+	main() 

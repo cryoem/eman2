@@ -3691,19 +3691,13 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 # This is just for testing, of course
 
-def test_result() :
-	global window
-	print("Returned")
-	print(window.getResult())
-
-if __name__ == '__main__' :
+def main():
 	em_app = EMApp()
 	window = EMBrowserWidget(withmodal = True, multiselect = True)
-	window.ok.connect(test_result)
-	window.cancel.connect(test_result)
 
 	window.show()
-	ret = em_app.exec_()
-	try : window.updthreadexit = True
-	except : pass
-	sys.exit(ret)
+	em_app.execute()
+
+
+if __name__ == '__main__' :
+	main()

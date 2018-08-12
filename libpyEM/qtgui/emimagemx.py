@@ -3423,7 +3423,7 @@ class EM3DDataListCache(EMMXDataCache):
 	def is_3d(self): return True
 
 
-if __name__ == '__main__':
+def main():
 	em_app = EMApp()
 	window = EMImageMXWidget(application=em_app)
 
@@ -3443,3 +3443,7 @@ if __name__ == '__main__':
 	em_app.show()
 	window.optimally_resize()
 	em_app.execute()
+
+
+if __name__ == '__main__':
+	main()
