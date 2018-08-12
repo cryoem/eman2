@@ -8489,6 +8489,18 @@ vector<float> Util::FCross_multiref(EMData* frobj, EMData* frings, int psi_start
 	return ccf;
 }
 
+void Util::multiply_rows( EMData* rings, const vector<int>& bckgnoise, int nb )
+{
+// Multiply rows (x-index) of rings by values of bckgnoise starting from nb element
+    float* data = rings->get_data();
+    int nx = rings->get_xsize();
+    int ny = rings->get_ysize();
+    for( int y=0; y<ny; y++ )  {
+   	 for( int x=0; x < nx; x++ )  data[y*nx+x] *= bckgnoise[x+nb];
+    }
+    rings->update();
+}
+
 
 void Util::Frngs(EMData* circp, vector<int> numr){
 	int nring = numr.size()/3;

@@ -640,6 +640,8 @@ class FakeKaiserBessel : public KaiserBessel {
 
 	static vector<float> FCross_multiref(EMData* frobj, EMData* frings, int psi_start, int psi_step);
 
+	static void multiply_rows( EMData* rings, const vector<int>& bckgnoise, int nb );
+
 	/** Single Precision Fourier Transform for a set of rings */
 	static void  Frngs(EMData* circ, vector<int> numr);
 
