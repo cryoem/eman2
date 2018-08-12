@@ -1848,7 +1848,15 @@ class symclass(object):
 					phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
 				elif( theta>90.0  and inc_mirror == 0 and not do_flip):
 					continue
-				phi = phi%qs
+
+				if( inc_mirror == 0 and not do_flip):
+					if 0 <= phi and phi < qs:
+						pass
+					else:
+						continue
+				else:
+					phi = phi%qs
+
 				if(self.sym[0] == "d"):
 					if( inc_mirror == 0 ):
 						if((self.nsym//2)%2 == 0):
