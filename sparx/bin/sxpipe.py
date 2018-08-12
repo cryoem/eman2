@@ -3734,24 +3734,42 @@ def angular_distribution(args):
 	COLUMN_Z = 2
 
 	def get_color(sorted_array):
+		"""
+		Get the color for the 2D visual representation.
+
+		Arguments:
+		sorted_array - Array sorted by size.
+
+		Returns:
+		List of colors for each entry in the sorted_array.
+		"""
 		sorted_normalized = numpy.true_divide(sorted_array, numpy.max(sorted_array))
 		color_list = []
 		for item in sorted_normalized:
 			color_list.append((0, item, 1-item))
 		return color_list
 
-	def to_karthesian(angles):
+	def to_cartesian(angles):
+		"""
+		Create carthesian coordinates out of spherical ones.
+
+		Arguments:
+		angles - list of angles that can should be converted.
+
+		Returns:
+		Numpy array containing 3D cartesian coordinates
+		"""
 		column_phi = 0
 		column_theta = 1
 		angles_radians = numpy.radians(angles)
-		karthesian_array = numpy.empty((angles.shape[0], 3))
+		cartesian_array = numpy.empty((angles_radians.shape[0], 3))
 
 		sinus = numpy.sin(angles_radians[:,column_theta])
-		karthesian_array[:, COLUMN_X] = numpy.cos(angles_radians[:, column_phi]) * sinus
-		karthesian_array[:, COLUMN_Y] = numpy.sin(angles_radians[:, column_phi]) * sinus
-		karthesian_array[:, COLUMN_Z] = numpy.cos(angles_radians[:, column_theta])
+		cartesian_array[:, COLUMN_X] = numpy.cos(angles_radians[:, column_phi]) * sinus
+		cartesian_array[:, COLUMN_Y] = numpy.sin(angles_radians[:, column_phi]) * sinus
+		cartesian_array[:, COLUMN_Z] = numpy.cos(angles_radians[:, column_theta])
 
-		return karthesian_array
+		return cartesian_array
 
 	# Use name of the params file as prefix if prefix is None
 	if args.prefix is None:
@@ -3770,27 +3788,65 @@ def angular_distribution(args):
 		symmetry = args.symmetry
 		inc_mirror = 0
 
+	# Create 2 symclass objects.
+	# One C1 object for the inital reference angles.
+	# One related to the actual symmetry, to deal with mirror projections.
+	symclass_c1 = fundamentals.symclass('c1')
 	symclass = fundamentals.symclass(symmetry)
-	print_progress('Reduce reference angles')
-	even_angles = numpy.array(
-		symclass.even_angles(args.delta, method=args.method, inc_mirror=inc_mirror)
+
+	print_progress('Reduce data to symmetry - This might take some time for high symmetries')
+	# Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
+	data = numpy.array(
+		symclass.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror)
 		)
-	print_progress('Reduce data angles - This might take some time for high symmetries')
-	data_reduced = numpy.array(
-		symclass.reduce_anglesets(
-			data_params.tolist(),
-			inc_mirror=inc_mirror,
-			)
+	# Create cartesian coordinates
+	data_cart = to_cartesian(data)
+
+	print_progress('Create reference angles')
+	# Create reference angles all around the sphere.
+	angles = numpy.array(
+		symclass_c1.even_angles(args.delta, inc_mirror=1, method=args.method)
 		)
+	# Create cartesian coordinates
+	angles_cart = to_cartesian(angles)
+
+	# Reduce the reference data by moving mirror projections into the non-mirror region of the sphere.
+	angles_reduce = numpy.array(
+		symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror)
+		)
+	# Create cartesian coordinates
+	angles_reduce_cart = to_cartesian(angles_reduce)
+
+	# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
+	angles_no_mirror = numpy.array(
+		symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror, do_flip=False)
+		)
+	# Create cartesian coordinates
+	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
 	# Find nearest neighbours to the reference angles with the help of a KDTree
 	print_progress('Find nearest neighbours')
-	data_karthesian = to_karthesian(data_reduced)
-	angles_karthesian = to_karthesian(even_angles)
-	closest_indices = scipy_spatial.cKDTree(angles_karthesian, balanced_tree=False).query(data_karthesian)[1]
+	# Find the nearest neighbours of the reduced data to the reference angles on the C1 sphere.
+	_, knn_data = scipy_spatial.cKDTree(angles_cart, balanced_tree=False).query(data_cart)
+	# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
+	_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
 
-	# Count the bins of the closest indices and remove all zeros: Create a histogram
-	radius_array = numpy.bincount(closest_indices)
+	# Calculate a histogram for the assignments to the C1 angles
+	radius = numpy.bincount(knn_data)
+	# New output histogram array that needs to be filled later
+	radius_array = numpy.zeros(angles.shape[0], dtype=int)
+
+	# Deal with symmetry wrapping!
+	# Every index idx corresponds to the angle prior to the symmetry wrapping.
+	# Every value of value corresponds to the angle after symmetry wrapping.
+	# Values can occure multiple times and therefore can contain the member information for multiple reference angles.
+	for idx, value in enumerate(knn_angle):
+		try:
+			radius_array[value] += radius[idx]
+		except:
+			pass
+
+	# Remove all zeros for speedup reasons
 	nonzero_mask = numpy.nonzero(radius_array)
 	radius_array = radius_array[nonzero_mask]
 
@@ -3809,8 +3865,8 @@ def angular_distribution(args):
 		])
 
 	# Inner and outer vector. The bin starts at inner vector and stops at outer vector
-	inner_vector = vector_center + angles_karthesian[nonzero_mask] * args.particle_radius
-	outer_vector = vector_center + angles_karthesian[nonzero_mask] * (args.particle_radius + radius_normalized.reshape(radius_normalized.shape[0], 1) * length )
+	inner_vector = vector_center + angles_no_mirror_cart[nonzero_mask] * args.particle_radius
+	outer_vector = vector_center + angles_no_mirror_cart[nonzero_mask] * (args.particle_radius + radius_normalized.reshape(radius_normalized.shape[0], 1) * length )
 
 	# Adjust pixel size
 	numpy.multiply(inner_vector, args.pixel_size, out=inner_vector)
