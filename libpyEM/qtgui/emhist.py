@@ -1421,16 +1421,16 @@ class DragListWidget(QtGui.QListWidget):
 		dropact = drag.exec_(Qt.CopyAction)
 
 
-# if __name__ == '__main__': # This is just for testing, of course
-# 	app = EMApp()
-# 	window = EMHistogramWidget(app)
-# 	if len(sys.argv)==1 :
-# 		l=[i/30.*pi for i in range(30)]
-# 		window.set_data([[1,2,3,4],[2,3,4,3]],"test")
-# 		window.set_data([l,[sin(2*i) for i in l]],"test2")
-# 	else:
-# 		for i in range(1,len(sys.argv)):
-# 			window.set_data_from_file(sys.argv[i])
-#
-# 	app.show()
-# 	app.execute()
+if __name__ == '__main__': # This is just for testing, of course
+	app = EMApp()
+	window = EMHistogramWidget(app)
+	if len(sys.argv)==1 :
+		l=[i/30.*pi for i in range(30)]
+		window.set_data([[1,2,3,4],[2,3,4,3]],"test")
+		window.set_data([l,[sin(2*i) for i in l]],"test2")
+	else:
+		for i in range(1,len(sys.argv)):
+			window.set_data_from_file(sys.argv[i])
+
+	app.show()
+	app.execute()
