@@ -180,7 +180,7 @@ class EMHistogramWidget(EMGLWidget):
 	def closeEvent(self,event):
 		self.clear_gl_memory()
 		EMGLWidget.closeEvent(self, event)
-		if self.inspector : self.inspector.closeEvent(self, event)
+		if self.inspector : self.inspector.closeEvent(event)
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_C:
