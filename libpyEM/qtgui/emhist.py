@@ -60,6 +60,7 @@ ploticon = [
 
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtCore import QString
 from PyQt4.QtOpenGL import QGLWidget
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU
@@ -1084,7 +1085,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.allbut.clicked.connect(self.selAll)
 		self.nonebut.clicked.connect(self.selNone)
 		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QListWidgetItem].connect(self.list_item_changed)
+		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.list_item_changed)
 		self.saveb.clicked.connect(self.savePlot)
 		self.pdfb.clicked.connect(self.savePdf)
 		self.concatb.clicked.connect(self.saveConcatPlot)
