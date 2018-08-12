@@ -587,59 +587,6 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 
 		return bgRGBtab
 
-#	def slider_rotate(self):
-#		self.target.load_rotation(self.get_current_rotation())
-
-#	def set_xy_trans(self, x, y):
-#		self.x_trans.setValue(x)
-#		self.y_trans.setValue(y)
-
-#	def set_translate_scale(self, xscale,yscale,zscale):
-#		self.x_trans.setSingleStep(xscale)
-#		self.y_trans.setSingleStep(yscale)
-#		self.z_trans.setSingleStep(zscale)
-
-#	def update_rotations(self,t3d):
-#		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
-#		
-#		convention = self.src.currentText()
-#		if ( self.src_map[str(convention)] == EULER_SPIN ):
-#			self.n3.setValue(rot[self.n3.getLabel()],True)
-#		
-#		self.az.setValue(rot[self.az.getLabel()],True)
-#		self.alt.setValue(rot[self.alt.getLabel()],True)
-#		self.phi.setValue(rot[self.phi.getLabel()],True)
-
-#	def slider_rotate(self):
-#		self.target.load_rotation(self.get_current_rotation())
-
-#	def get_current_rotation(self):
-#		convention = self.src.currentText()
-#		rot = {}
-#		if ( self.current_src == EULER_SPIN ):
-#			rot[self.az.getLabel()] = self.az.getValue()
-#			
-#			n1 = self.alt.getValue()
-#			n2 = self.phi.getValue()
-#			n3 = self.n3.getValue()
-#			
-#			norm = sqrt(n1*n1 + n2*n2 + n3*n3)
-#			
-#			n1 /= norm
-#			n2 /= norm
-#			n3 /= norm
-#			
-#			rot[self.alt.getLabel()] = n1
-#			rot[self.phi.getLabel()] = n2
-#			rot[self.n3.getLabel()] = n3
-#
-#		else:
-#			rot[self.az.getLabel()] = self.az.getValue()
-#			rot[self.alt.getLabel()] = self.alt.getValue()
-#			rot[self.phi.getLabel()] = self.phi.getValue()
-#		
-#		return Transform(self.current_src, rot)
-
 	def setColors(self,colors,current_color):
 		a = 0
 		for i in colors:
@@ -648,12 +595,6 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 				self.cbb.setCurrentIndex(a)
 			a += 1
 
-#class EMFontsInspector:
-#	def __init__(self, target):
-
-#	def set_scale(self,newscale):
-#		self.scale.setValue(newscale)
-#		
 # This is just for testing, of course
 def main():
 	from .emapplication import EMApp

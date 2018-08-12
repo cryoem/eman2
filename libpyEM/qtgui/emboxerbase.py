@@ -105,12 +105,9 @@ def main():
 	if cache_box_size: db["box_size"] = options.boxsize
 
 	application = EMApp()
-#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 
 	module = EMBoxerModule(args,options.boxsize)
 	module.show_interfaces()
-	#this is an example of how to add your own custom tools:
-	#module.add_tool(EraseTool,ErasingPanel,erase_radius=2*options.boxsize)
 	application.execute()
 
 def check(options,args):
