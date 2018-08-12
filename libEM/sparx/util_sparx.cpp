@@ -8489,7 +8489,7 @@ vector<float> Util::FCross_multiref(EMData* frobj, EMData* frings, int psi_start
 	return ccf;
 }
 
-void Util::multiply_rows( EMData* rings, const vector<int>& bckgnoise, int nb )
+void Util::multiply_rows( EMData* rings, const vector<float>& bckgnoise, int nb )
 {
 // Multiply rows (x-index) of rings by values of bckgnoise starting from nb element
     float* data = rings->get_data();
