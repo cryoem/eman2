@@ -3788,10 +3788,8 @@ def angular_distribution(args):
 		symmetry = args.symmetry
 		inc_mirror = 0
 
-	# Create 2 symclass objects.
-	# One C1 object for the inital reference angles.
-	# One related to the actual symmetry, to deal with mirror projections.
-	symclass_c1 = fundamentals.symclass('c1')
+	# Create symclass objects.
+	# It is related to the actual symmetry, to deal with mirror projections.
 	symclass = fundamentals.symclass(symmetry)
 
 	print_progress('Reduce data to symmetry - This might take some time for high symmetries')
@@ -3803,9 +3801,10 @@ def angular_distribution(args):
 	data_cart = to_cartesian(data)
 
 	print_progress('Create reference angles')
-	# Create reference angles all around the sphere.
+	# Create reference angles for the asymmetric unit and symmetry neighbors
+	even_angles = symclass.even_angles(args.delta, inc_mirror=1, method=args.method)
 	angles = numpy.array(
-		symclass_c1.even_angles(args.delta, inc_mirror=1, method=args.method)
+		symclass.symmetry_neighbors(even_angles)
 		)
 	# Create cartesian coordinates
 	angles_cart = to_cartesian(angles)
@@ -3819,19 +3818,19 @@ def angular_distribution(args):
 
 	# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
 	angles_no_mirror = numpy.array(
-		symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror, do_flip=False)
+		symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror, remove=True)
 		)
 	# Create cartesian coordinates
 	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
 	# Find nearest neighbours to the reference angles with the help of a KDTree
 	print_progress('Find nearest neighbours')
-	# Find the nearest neighbours of the reduced data to the reference angles on the C1 sphere.
+	# Find the nearest neighbours of the reduced data to the reference angles on the symmetry neighbor sphere.
 	_, knn_data = scipy_spatial.cKDTree(angles_cart, balanced_tree=False).query(data_cart)
 	# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
 	_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
 
-	# Calculate a histogram for the assignments to the C1 angles
+	# Calculate a histogram for the assignments to the symmetry neighbor angles
 	radius = numpy.bincount(knn_data)
 	# New output histogram array that needs to be filled later
 	radius_array = numpy.zeros(angles.shape[0], dtype=int)
