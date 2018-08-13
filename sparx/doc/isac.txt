@@ -47,7 +47,7 @@ To restart a run that stopped intentionally or unintentionally, use the '--resta
 ===== Input =====
 === Main Parameters ===
   ; stack_file : Input image stack: The images must to be square (''nx''=''ny''). The stack can be either in bdb or hdf format. (default required string)
-  ; output_directory : Output directory: The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. (default required string)
+  ; output_directory : Output directory: The automatically-created output directory will contain results. If the directory already exists, results will be written there, possibly overwriting previous runs. (default required string)
 
   ; %%--%%radius : Particle radius [Pixels]: Radius of the particle (pixels) (default required int)
   ; %%--%%img_per_grp : Images per class: Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes. (default 100)
