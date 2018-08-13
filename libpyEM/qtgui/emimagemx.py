@@ -1784,7 +1784,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			#drag.setPixmap(pm)
 			#drag.setHotSpot(QtCore.QPoint(12,12))
 
-			dropAction = drag.start()
+			dropAction = drag.exec_()
 
 	def __drag_mode_mouse_double_click(self,event):
 		lc=self.scr_to_img((event.x(),event.y()))

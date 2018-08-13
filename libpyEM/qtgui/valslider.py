@@ -887,7 +887,7 @@ class EMQTColorWidget(QtGui.QWidget):
 		drag = QtGui.QDrag(self)
 		drag.setMimeData(mimeData)
 		drag.setHotSpot(e.pos() - self.rect().topLeft())
-		dropAction = drag.start(QtCore.Qt.MoveAction)
+		dropAction = drag.exec_(QtCore.Qt.MoveAction)
 		
 	def mousePressEvent(self, event):
 		if event.buttons() != QtCore.Qt.RightButton:
