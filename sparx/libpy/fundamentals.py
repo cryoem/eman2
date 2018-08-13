@@ -1770,7 +1770,7 @@ class symclass(object):
 		return sang
 
 
-	def reduce_anglesets(self, angles, inc_mirror=1, do_flip=True):
+	def reduce_anglesets(self, angles, inc_mirror=1, remove=False):
 		#  Input is either list ot lists [[phi,thet,psi],[],[]] or a triplet [phi,thet,psi]
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		import types
@@ -1788,7 +1788,7 @@ class symclass(object):
 			phi = q[0]; theta = q[1]; psi = q[2]
 			if is_platonic_sym:
 				if(not self.is_in_subunit(phi, theta, 1)):
-					if inc_mirror == 0 and not do_flip:
+					if inc_mirror == 0 and remove:
 						continue
 					mat = rotmatrix(phi,theta,psi)
 					for l in range(self.nsym):
@@ -1803,19 +1803,19 @@ class symclass(object):
 							phi = self.brackets[1][0]-phi
 							if(l>0): psi = (360.0-psi)%360.0
 				elif(inc_mirror == 0):
-					if(phi>=self.brackets[0][0] and do_flip):
+					if(phi>=self.brackets[0][0] and not remove):
 						phi = self.brackets[1][0]-phi
 						psi = (360.0-psi)%360.0
-					elif(phi>=self.brackets[0][0] and not do_flip):
+					elif(phi>=self.brackets[0][0] and remove):
 						continue
 					elif(inc_mirror == 0):
-						if(phi>=self.brackets[0][0] and do_flip):
+						if(phi>=self.brackets[0][0] and not remove):
 							phi = self.brackets[1][0]-phi
-						elif(phi>=self.brackets[0][0] and not do_flip):
+						elif(phi>=self.brackets[0][0] and remove):
 							continue
 			elif( self.sym[0] == "t" ):
 				if(not self.is_in_subunit(phi, theta, inc_mirror)):
-					if inc_mirror == 0 and not do_flip:
+					if inc_mirror == 0 and remove:
 						continue
 					mat = rotmatrix(phi,theta,psi)
 					fifi = False
@@ -1844,12 +1844,12 @@ class symclass(object):
 
 					if( not fifi ):  print("  FAILED mirror ")
 			else:
-				if( theta>90.0  and inc_mirror == 0 and do_flip):
+				if( theta>90.0  and inc_mirror == 0 and not remove):
 					phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
-				elif( theta>90.0  and inc_mirror == 0 and not do_flip):
+				elif( theta>90.0  and inc_mirror == 0 and remove):
 					continue
 
-				if( inc_mirror == 0 and not do_flip):
+				if( inc_mirror == 0 and remove):
 					if 0 <= phi and phi < qs:
 						pass
 					else:
@@ -1860,21 +1860,21 @@ class symclass(object):
 				if(self.sym[0] == "d"):
 					if( inc_mirror == 0 ):
 						if((self.nsym//2)%2 == 0):
-							if(phi>=qs/2 and do_flip):
+							if(phi>=qs/2 and not remove):
 								phi = qs-phi
 								psi = (360.0-psi)%360.0
-							elif(phi>=qs/2 and not do_flip):
+							elif(phi>=qs/2 and remove):
 								continue
 						else:
-							if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym and do_flip):
+							if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym and not remove):
 								phi = 360.0/self.nsym-phi
 								psi = 360.0 - psi
-							elif(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym and not do_flip):
+							elif(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym and remove):
 								continue
-							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym and do_flip):
+							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym and not remove):
 								phi = 720.0/self.nsym-phi+360.0/self.nsym
 								psi = (360.0-psi)%360.0
-							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym and not do_flip):
+							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym and remove):
 								continue
 
 			redang.append([phi, theta, psi])
