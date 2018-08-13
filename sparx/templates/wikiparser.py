@@ -307,9 +307,12 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["radius"].key_base == "radius")
 		assert(sxcmd.token_dict["radius"].type == "radius")
 		sxcmd.token_dict["radius"].type = "int"
-		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
-		assert(sxcmd.token_dict["output_directory"].type == "output")
-		sxcmd.token_dict["output_directory"].type = "output_continue"
+###		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
+###		assert(sxcmd.token_dict["output_directory"].type == "output")
+##		sxcmd.token_dict["output_directory"].type = "output_continue"
+		assert(sxcmd.token_dict["directory"].key_base == "directory")
+		assert(sxcmd.token_dict["directory"].type == "output")
+		sxcmd.token_dict["directory"].type = "output_continue"
 		assert(sxcmd.token_dict["fl"].key_base == "fl")
 		assert(sxcmd.token_dict["fl"].type == "abs_freq")
 		sxcmd.token_dict["fl"].type = "float"
