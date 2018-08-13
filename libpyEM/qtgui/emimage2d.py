@@ -347,11 +347,6 @@ class EMImage2DWidget(EMGLWidget):
 
 	def set_file_name(self,file_name,load_cache_settings=True):
 		self.file_name = file_name
-		try:
-			f = self.file_name.split('/')
-			f = f[len(f)-1]
-			self.get_parent().setWindowTitle(f)
-		except:pass
 
 		#if load_cache_settings:
 			#self.__load_display_settings_from_db()

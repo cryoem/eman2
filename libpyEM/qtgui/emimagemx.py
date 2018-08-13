@@ -1766,7 +1766,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			box_image = self.get_box_image(lc[0])
 			xs=int(box_image.get_xsize())
 			ys=int(box_image.get_ysize())
-			drag = QtGui.QDrag(self.get_parent())
+			drag = QtGui.QDrag(self.parent())
 			mime_data = QtCore.QMimeData()
 
 			mime_data.setData("application/x-eman", dumps(box_image))
