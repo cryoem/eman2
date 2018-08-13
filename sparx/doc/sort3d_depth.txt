@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxsort3d_depth =====
-3D Clustering - SORT3D_DEPTH: Reproducible 3D Clustering of heterogeneous dataset. Sort out 3D heterogeneity of 2D data whose 3D reconstruction parameters have been determined already.
+3D Clustering - SORT3D_DEPTH: Reproducible 3D Clustering of heterogeneous dataset. Sorts out 3D heterogeneity of 2D data whose 3D reconstruction parameters have been already determined.
 
 \\
 ===== Usage =====
