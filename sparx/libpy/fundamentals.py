@@ -1672,6 +1672,13 @@ class symclass(object):
 			self.symatrix.append(rotmatrix(args[0],args[1],args[2]))
 
 	def is_in_subunit(self, phi, theta, inc_mirror=1):
+		"""
+		Input: a projection direction specified by (phi, theta).
+				inc_mirror = 1 consider mirror directions as unique
+				inc_mirror = 0 consider mirror directions as outside of unique range.
+		Output: True if input projection direction is in the first asymmetric subunit,
+		        False otherwise.
+		"""
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		if( (self.sym[0] == "c")  or  (self.sym[0] == "d" and (self.nsym//2)%2 == 0) ):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return True
@@ -1723,6 +1730,15 @@ class symclass(object):
 		else:  ERROR("unknown symmetry","symclass: is_in_subunit",1)
 
 	def symmetry_related(self, angles):
+		"""
+		Generate all symmetry related instances of input angles
+		Input:  is a list of list of n triplets  
+			[[phi0,theta0,psi0],[phi1,theta1,psi1],...]
+		Output: is a list of list triplets whose length is k times larger than that of input,
+		        where k is symmetry multiplicity.  First k are symmetry related version of the first triplet, 
+		        second k are symmetry related version of the second triplet and so on...
+		   [[phi0,theta0,0],[phi0,theta0,0]_SYM0,...,[phi1,theta1,],[phi1,theta1,]_SYM1,...]
+		"""
 		redang = [angles[:]]
 		if(self.sym[0] == "c"):
 			qt = 360.0/self.nsym
@@ -1746,9 +1762,15 @@ class symclass(object):
 
 
 	def symmetry_neighbors(self, angles):
-		#  input is a list of lists  [[phi0,theta0,0],[phi1,theta1,0],...]
-		#  psi is ignored
-		#  output is [[phi0,theta0,0],[phi0,theta0,0]_SYM1,...,[phi1,theta1,],[phi1,theta1,]_SYM1,...]
+		"""
+		Generate symmetry related instances of input angles only for asymmetric regions adjacent to the zero's one
+		  input is a list of lists  [[phi0,theta0,0],[phi1,theta1,0],...]
+		Output: is a list of list triplets whose length is k times larger than that of input,
+		        where k is the number of adjacent regions for a given point group symmetry.  
+		        First k are symmetry related version of the first triplet, 
+		        second k are symmetry related version of the second triplet and so on...
+		  output is [[phi0,theta0,0],[phi0,theta0,0]_SYM1,...,[phi1,theta1,],[phi1,theta1,]_SYM1,...]
+		"""
 		if( self.sym[0] == "c" or self.sym[0] == "d" ):
 			temp = Util.symmetry_neighbors(angles, self.sym)
 			nt = len(temp)/3
