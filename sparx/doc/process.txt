@@ -144,6 +144,27 @@ To concatenate output files,
 \\ Calculate B-factor and apply negative B-factor to 2D images.
 
 15. Window stack file -reduce size of images without changing the pixel size.
+	sxprocess.py input.hdf output.hdf --box=new_box_size
+
+16. Pad stack file --pad images to a larger size and set surround background to request value (default 0.0).
+	sxprocess.py input.hdf output.hdf --box=new_box_size --background=3.0
+
+17. Create angular distribution .build file
+	sxprocess.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
+	
+18. Subtract from images in the first stack images in the second stack and write results to the third stack.
+   If the name of the output stack is the same as the second stack, the results will be written to the second
+   stack (it will be overwritten).
+
+	sxprocess.py bdb:orgstack bdb:proj/data  bdb:proj/sdata bdb:proj/odata --subtract_stack
+	
+19. Balance angular distribution. Input ASCII file with 3D orientation parameters, compute a histogram
+   of ditribution of angles using user-provided angular step, retain a subset of randomly select
+   projection direction per angular bin using user-provided threshold, write the list of the all
+   retained projection directions.  (In order to create a substack with retained images, use e2bdb.py
+   with options makevstack and list).
+
+	sxprocess.py --balance_angular_distribution  params.txt select.txt --max_occupy=100 --angstep=15 --symmetry=d3
 
 
 \\
@@ -212,6 +233,11 @@ To concatenate output files,
   ; %%--%%window_stack : Window stack images using a smaller window size: (default False)
   ; %%--%%box : New window size: (default 0)
 
+  ; %%--%%balance_angular_distribution : balance an angular distribution of projection directions by removing their excess numbers, as determined by their angular histogram on a coarser grid, as specified by the angular_step option.
+  ; %%--%%max_occupy : maximum number of angular orientations per reference angle. (default 1)
+  ; %%--%%angstep : angular step of reference angles, i.e., number of bins of angular histogram. (default 15.0)
+
+
 \\
 === Advanced Parameters ===
   ; %%--%%order : order (unimplemented): Two arguments are required, (1) name of input stack and (2) desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficient. (default False)
@@ -243,7 +269,7 @@ To concatenate output files,
 
 \\
 ==== Author / Maintainer ====
-Jia Fang
+Pawel Penczek
 
 \\
 ==== Keywords ====
