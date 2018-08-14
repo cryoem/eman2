@@ -86,7 +86,7 @@ Category 1:: FUNDAMENTALS, UTILITIES, APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/bin/sxrewindow.py
+sparx/bin/sxrewindow.py
 
 \\
 ==== See also ====

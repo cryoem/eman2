@@ -96,7 +96,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/bin/sxrsort3d.py
+sparx/bin/sxrsort3d.py
 
 \\
 ==== See also ====

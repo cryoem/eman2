@@ -104,7 +104,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/templates/sxmeridien_20171120.py
+sparx/templates/sxmeridien_20171120.py
 
 \\
 ==== See also ====

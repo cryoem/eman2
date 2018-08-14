@@ -15,7 +15,7 @@ sxrsort3d.py exists only in MPI version.
 
     1. Initiate sorting from a SPHIRE/SPARX refinement:: In this mode, one can select arbitrary iteration of a 3D refinement directory. Typically, it is the master directory of a sxmeridien refinement via —niter_for_sorting option. 
 
-    ''' mpirun  -np  176  sxrsort3d.py  --refinement_method=SPARX  --refinement_dir=meridien_outdir  --niter_for_sorting=30  --radius=120  --sym=c5  --number_of_images_per_group=6000  --smallest_group=1500  --nindependent=5  --interpolation=trl  --low_pass_filter=0.25 ''' <<BR>><<BR>>
+    ''' mpirun  -np  176  sxrsort3d.py  --refinement_method=sparx  --refinement_dir=meridien_outdir  --niter_for_sorting=30  --radius=120  --sym=c5  --number_of_images_per_group=6000  --smallest_group=1500  --nindependent=5  --interpolation=trl  --low_pass_filter=0.25 ''' <<BR>><<BR>>
 
     2.  Initiate sorting from a data stack:: Currently, this mode is not supported by SPHIRE GUI.
 
@@ -31,7 +31,7 @@ sxrsort3d.py exists only in MPI version.
 
 
 == Input ==
-    refinement_method:: Input 3D refinement method: Valid values are 'SPARX' and 'relion'. Currently, SHPIRE GUI (sxgui) supports only 'SPARX'. (default none)
+    refinement_method:: Input 3D refinement method: Valid values are 'sparx' and 'relion'. Currently, SHPIRE GUI (sxgui) supports only 'sparx'. (default none)
     refinement_dir:: Input 3D refinement directory: Usually the master output directory of sxmeridien. (default required string)
     masterdir:: Output directory: The master output directory for sorting. (default none)
     niter_for_sorting:: 3D refinement iteration: Specify an iteration number of 3D refinement where the 3D alignment parameters should be extracted for this sorting. By default, it uses iteration achieved best resolution. (default -1)
@@ -78,7 +78,7 @@ Zhong Huang
 sxrsort3d.py
 
 = See also =
-[[http://SPARX-em.org/SPARXwiki/sxsort3d|sxsort3d]]
+[[http://sparx-em.org/sparxwiki/sxsort3d|sxsort3d]]
 
 = Maturity =
     beta::    Under development. It has been tested, The test cases/examples are available upon request. Please let us know if there are any bugs.

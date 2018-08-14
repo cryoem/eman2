@@ -181,7 +181,7 @@ ${COMMDNA_TOKEN_TYPE}
 ------------------------------------------------------------------------------------------
 (1) Go to the directory contains the Wiki document parser script.
 
-$ cd ~/EMAN2/src/eman2/SPARX/templates/wikiparser.py
+$ cd ~/EMAN2/src/eman2/sparx/templates/wikiparser.py
 
 (2) Execute the Wiki document parser script
 
@@ -196,7 +196,7 @@ If this happens, please edit the Wiki documents.
 
 (3) Copy the generated sxgui_auto.py to the EMAN2/bin directory of your installation as sxgui.py.
 
-$ cp ~/EMAN2/src/eman2/SPARX/bin/sxgui_auto.py ~/EMAN2/bin/sxgui.py
+$ cp ~/EMAN2/src/eman2/sparx/bin/sxgui_auto.py ~/EMAN2/bin/sxgui.py
 
 (4) Run sxgui.py in your project directory
 
