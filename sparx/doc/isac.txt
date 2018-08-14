@@ -184,7 +184,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxisac.py, sparx/bin/isac.py
+SPARX/bin/sxisac.py, SPARX/bin/isac.py
 
 \\
 ==== See also ====

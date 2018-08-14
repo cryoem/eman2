@@ -128,7 +128,7 @@ Zhong Huang
 sxsort3d_new.py
 
 = See also =
-[[http://sparx-em.org/sparxwiki/sxsort3d|sxsort3d]]
+[[http://SPARX-em.org/SPARXwiki/sxsort3d|sxsort3d]]
 
 = Maturity =
     beta::    Under development. It has been tested, The test cases/examples are available upon request. Please let us know if there are any bugs.

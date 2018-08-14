@@ -62,7 +62,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxpdb2em.py
+SPARX/bin/sxpdb2em.py
 
 \\
 ==== See also ====

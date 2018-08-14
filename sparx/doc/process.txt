@@ -252,7 +252,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxprocess.py
+SPARX/bin/sxprocess.py
 
 \\
 ==== See also ====

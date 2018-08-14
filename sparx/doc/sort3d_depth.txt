@@ -126,7 +126,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxsort3d_depth.py
+SPARX/bin/sxsort3d_depth.py
 
 \\
 ==== See also ====

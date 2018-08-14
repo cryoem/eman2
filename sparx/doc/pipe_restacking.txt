@@ -105,7 +105,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxpipe.py
+SPARX/bin/sxpipe.py
 
 \\
 ==== See also ====

@@ -64,7 +64,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxlocres.py
+SPARX/bin/sxlocres.py
 
 \\
 ==== See also ====

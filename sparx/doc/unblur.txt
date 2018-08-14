@@ -107,7 +107,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-sparx/bin/sxunblur.py
+SPARX/bin/sxunblur.py
 
 \\
 ==== See also ====
