@@ -33,12 +33,24 @@ def notifyEmail() {
     }
 }
 
-def isReleaseBuild() {
-    return GIT_BRANCH ==~ /.*\/release.*/
+def isMasterBranch() {
+    return GIT_BRANCH_SHORT == "master"
+}
+
+def isReleaseBranch() {
+    return GIT_BRANCH_SHORT ==~ /release.*/
+}
+
+def isContinuousBuild() {
+    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch()
+}
+
+def isExperimentalBuild() {
+    return CI_BUILD == "1" && !(isMasterBranch() || isReleaseBranch())
 }
 
 def isBinaryBuild() {
-    return CI_BUILD == "1"
+    return isContinuousBuild() || isExperimentalBuild()
 }
 
 def testPackage() {
@@ -53,21 +65,19 @@ def deployPackage() {
                                'Centos7': 'centos7',
                                'MacOSX' : 'mac',
                               ]
-    if(GIT_BRANCH_SHORT == "master") {
+    if(isContinuousBuild()) {
         upload_dir = 'continuous_build'
         upload_ext = 'unstable'
     }
-    if(GIT_BRANCH_SHORT != "master") {
+    if(isExperimentalBuild()) {
         upload_dir = 'experimental'
         upload_ext = 'experimental'
     }
     
-    if(isBinaryBuild()) {
-        if(SLAVE_OS != 'win')
-            sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2." + installer_base_name[JOB_NAME] + "." + upload_ext + ".sh"
-        else
-            bat 'ci_support\\rsync_wrapper.bat ' + upload_dir + ' ' + upload_ext
-    }
+    if(SLAVE_OS != 'win')
+        sh "rsync -avzh --stats ${INSTALLERS_DIR}/eman2.${SLAVE_OS}.sh ${DEPLOY_DEST}/" + upload_dir + "/eman2." + installer_base_name[JOB_NAME] + "." + upload_ext + ".sh"
+    else
+        bat 'ci_support\\rsync_wrapper.bat ' + upload_dir + ' ' + upload_ext
 }
 
 def getHomeDir() {
