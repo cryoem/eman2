@@ -64,9 +64,9 @@ Note: CTF and VPP options cannot be used together.
 
 \\
 ===== Output =====
-For each generation of running the program, there are two phases. The first phase is an exploratory phase. In this phase, we set the criteria to be very loose and try to find as much candidate class averages as possible. (OBSOLETE? This phase typically should have 10 to 20 rounds). The candidate class averages are stored in class_averages_candidate_generation_n.hdf.
+For each generation of running the program, there are two phases. The first phase is an exploratory phase. In this phase, we set the criteria to be very loose and try to find as much candidate class averages as possible. The candidate class averages are stored in class_averages_candidate_generation_n.hdf.
 
-The second phase is where the actual class averages are generated (OBSOLETE?!!, it typically have 3~9 iterations of matching). The first half of iterations are 2-way matching, the second half of iterations are 3-way matching, and the last iteration is 4-way matching. In the second phase, three files will be generated:
+The second phase is where the actual class averages are generated. The candidate groups are tested for their stability by repeated randomly initialized reference-free alignment and those deemed stable as set aside as output and member images of those that did not pass the test are returned to the overall pool of data and processed again starting from the first phase.
 
 \\
 === List of Output Files ===
