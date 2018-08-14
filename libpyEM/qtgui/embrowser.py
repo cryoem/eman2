@@ -39,7 +39,7 @@ from builtins import object
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
 from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt, QModelIndex
+from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QAction,QTreeWidgetItem
 from .emapplication import EMApp
 from .emimage2d import *
@@ -3219,10 +3219,10 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wbutrefresh.clicked[bool].connect(self.buttonRefresh)
 		self.wbutinfo.clicked[bool].connect(self.buttonInfo)
 		self.selectall.clicked[bool].connect(self.selectAll)
-		self.wtree.clicked[QModelIndex].connect(self.itemSel)
-		self.wtree.activated[QModelIndex].connect(self.itemActivate)
-		self.wtree.doubleClicked[QModelIndex].connect(self.itemDoubleClick)
-		self.wtree.expanded[QModelIndex].connect(self.itemExpand)
+		self.wtree.clicked[QtCore.QModelIndex].connect(self.itemSel)
+		self.wtree.activated[QtCore.QModelIndex].connect(self.itemActivate)
+		self.wtree.doubleClicked[QtCore.QModelIndex].connect(self.itemDoubleClick)
+		self.wtree.expanded[QtCore.QModelIndex].connect(self.itemExpand)
 		self.wpath.returnPressed.connect(self.editPath)
 		self.wbookmarks.actionTriggered[QAction].connect(self.bookmarkPress)
 		self.wfilter.currentIndexChanged[int].connect(self.editFilter)
