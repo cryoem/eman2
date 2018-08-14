@@ -3640,9 +3640,11 @@ def angular_distribution(args):
 	angles_reduce_cart = to_cartesian(angles_reduce)
 
 	# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
-	angles_no_mirror = numpy.array(
-		symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror, do_flip=False)
-		)
+	angles_no_mirror = symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror)
+	for i in range(len(angles_no_mirror)-1,-1,-1):
+		if is_in_subunit(angles_no_mirror[i], 0): del angles_no_mirror[i]
+	angles_no_mirror = numpy.array(angles_no_mirror)
+
 	# Create cartesian coordinates
 	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
