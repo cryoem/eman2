@@ -46,7 +46,7 @@ def main():
 	
 	parser.add_argument("--highpass",type=str,default='filter.highpass.gauss:cutoff_pixels=4',help="Default=filter.highpass.gauss:cutoff_pixels=4 (zeros out the first four Fourier pixels)_. A highpass filtering processor (as in e2proc3d.py) to be applied to the tiltseries.")
 
-	parser.add_argument("--lowpass",type=str,default='filter.lowpass.tanh:cutoff_freq=0.05',help="Default=filter.lowpass.tanh:cutoff_freq=0.02 (filters to 50 angstroms resolution). A lowpass filtering processor (as in e2proc3d.py) to be applied to the tiltseries.")
+	parser.add_argument("--lowpass",type=str,default='filter.lowpass.tanh:cutoff_freq=0.02',help="Default=filter.lowpass.tanh:cutoff_freq=0.02 (filters to 50 angstroms resolution). A lowpass filtering processor (as in e2proc3d.py) to be applied to the tiltseries.")
 
 	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, used for cross platform PPID""",default=-1)
 
@@ -70,28 +70,31 @@ def main():
 	
 	tiltseriesout = tiltseries.replace(extension,'_lp50_hpp4' + extension)
 	
-	lowpass = '--filter.lowpass.tanh:cutoff_freq=0.02'
+	lowpass = 'filter.lowpass.tanh:cutoff_freq=0.02'
 	if options.lowpass:
 		lowpass = options.lowpass
 		frequency = float(options.lowpass.split('cutoff_freq=')[-1].split(':')[0])
-		resolution = str(int(round(frequency)))
+		resolution = str(int(round(1.0/frequency)))
 		tiltseriesout = tiltseries.replace(extension,'_lp' + resolution + extension)
 	
 	if options.verbose:
 		print("\lowpass filter to apply is {}".format(lowpass))
 
-	highpass = '--filter.highpass.gauss:cutoff_pixels=4'
+	highpass = 'filter.highpass.gauss:cutoff_pixels=4'
 	if options.highpass:
 		highpass = options.highpass
 		pixels = options.highpass.split('cutoff_pixels=')[-1].split(':')[0]
-		tiltseriesout = tiltseries.replace(extension,'_hpp' + pixels + extension)
+		if options.lowpass:
+			tiltseriesout = tiltseriesout.replace(extension,'_hpp' + pixels + extension)
+		else:
+			tiltseriesout = tiltseries.replace(extension,'_hpp' + pixels + extension)
 
 	if options.verbose:
 		print("\highpass filter to apply is {}".format(highpass))
 
-	cmd = 'e2proc2d.py ' + tiltseries + ' ' + tiltseriesout + ' ' + lowpass + ' ' + highpass
+	cmd = 'e2proc2d.py ' + tiltseries + ' ' + tiltseriesout + ' --process ' + lowpass + ' --process ' + highpass
 	if options.replace:
-		cmd += ' cp ' + tiltseries +' backup.' + tiltseries + ' && cp ' + tiltseriesout +  ' ' + tiltseries
+		cmd += ' && cp ' + tiltseries +' backup.' + tiltseries + ' && cp ' + tiltseriesout +  ' ' + tiltseries
 	
 	runcmd(options,cmd)
 	
