@@ -1791,9 +1791,13 @@ class symclass(object):
 				sang[i*(len(neighbors[self.sym])+1) + (j+1)] = [p1,p2,0.0]
 		return sang
 
-
-	def reduce_anglesets(self, angles, inc_mirror=1, do_flip=True):
-		#  Input is either list ot lists [[phi,thet,psi],[],[]] or a triplet [phi,thet,psi]
+	def reduce_anglesets(self, angles, inc_mirror=1):
+		"""
+		  Input is either list ot lists [[phi,thet,psi],[],[]] or a triplet [phi,thet,psi]
+				inc_mirror = 1 consider mirror directions as unique
+				inc_mirror = 0 consider mirror directions as outside of unique range.
+		  It will map all triplets to the first asymmetric subunit.
+		"""
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		import types
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
@@ -1810,8 +1814,6 @@ class symclass(object):
 			phi = q[0]; theta = q[1]; psi = q[2]
 			if is_platonic_sym:
 				if(not self.is_in_subunit(phi, theta, 1)):
-					if inc_mirror == 0 and not do_flip:
-						continue
 					mat = rotmatrix(phi,theta,psi)
 					for l in range(self.nsym):
 						p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
@@ -1825,20 +1827,13 @@ class symclass(object):
 							phi = self.brackets[1][0]-phi
 							if(l>0): psi = (360.0-psi)%360.0
 				elif(inc_mirror == 0):
-					if(phi>=self.brackets[0][0] and do_flip):
+					if(phi>=self.brackets[0][0]):
 						phi = self.brackets[1][0]-phi
 						psi = (360.0-psi)%360.0
-					elif(phi>=self.brackets[0][0] and not do_flip):
-						continue
 					elif(inc_mirror == 0):
-						if(phi>=self.brackets[0][0] and do_flip):
-							phi = self.brackets[1][0]-phi
-						elif(phi>=self.brackets[0][0] and not do_flip):
-							continue
+						if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
 			elif( self.sym[0] == "t" ):
 				if(not self.is_in_subunit(phi, theta, inc_mirror)):
-					if inc_mirror == 0 and not do_flip:
-						continue
 					mat = rotmatrix(phi,theta,psi)
 					fifi = False
 					for l in range(self.nsym):
@@ -1866,38 +1861,22 @@ class symclass(object):
 
 					if( not fifi ):  print("  FAILED mirror ")
 			else:
-				if( theta>90.0  and inc_mirror == 0 and do_flip):
+				if( theta>90.0  and inc_mirror == 0 ):
 					phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
-				elif( theta>90.0  and inc_mirror == 0 and not do_flip):
-					continue
-
-				if( inc_mirror == 0 and not do_flip):
-					if 0 <= phi and phi < qs:
-						pass
-					else:
-						continue
-				else:
-					phi = phi%qs
-
+				phi = phi%qs
 				if(self.sym[0] == "d"):
 					if( inc_mirror == 0 ):
 						if((self.nsym//2)%2 == 0):
-							if(phi>=qs/2 and do_flip):
+							if(phi>=qs/2):
 								phi = qs-phi
 								psi = (360.0-psi)%360.0
-							elif(phi>=qs/2 and not do_flip):
-								continue
 						else:
-							if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym and do_flip):
+							if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym):
 								phi = 360.0/self.nsym-phi
 								psi = 360.0 - psi
-							elif(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym and not do_flip):
-								continue
-							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym and do_flip):
+							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
 								phi = 720.0/self.nsym-phi+360.0/self.nsym
 								psi = (360.0-psi)%360.0
-							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym and not do_flip):
-								continue
 
 			redang.append([phi, theta, psi])
 
@@ -1905,6 +1884,11 @@ class symclass(object):
 		else: return redang[0]
 
 	def reduce_angles(self, phiin, thetain, psiin, inc_mirror=1):
+		"""
+		  It will map three input angles to the first asymmetric subunit.
+				inc_mirror = 1 consider mirror directions as unique
+				inc_mirror = 0 consider mirror directions as outside of unique range.
+		"""
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
