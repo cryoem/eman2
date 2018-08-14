@@ -3831,7 +3831,7 @@ def angular_distribution(args):
 	_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
 
 	# Calculate a histogram for the assignments to the symmetry neighbor angles
-	radius = numpy.bincount(knn_data)
+	radius = numpy.bincount(knn_data, minlength=angles.shape[0])
 	# New output histogram array that needs to be filled later
 	radius_array = numpy.zeros(angles.shape[0], dtype=int)
 
@@ -3839,11 +3839,7 @@ def angular_distribution(args):
 	# Every index idx corresponds to the angle prior to the symmetry wrapping.
 	# Every value of value corresponds to the angle after symmetry wrapping.
 	# Values can occure multiple times and therefore can contain the member information for multiple reference angles.
-	for idx, value in enumerate(knn_angle):
-		try:
-			radius_array[value] += radius[idx]
-		except:
-			pass
+	numpy.add.at(radius_array, knn_angle, radius)
 
 	# Remove all zeros for speedup reasons
 	nonzero_mask = numpy.nonzero(radius_array)
