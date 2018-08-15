@@ -3269,184 +3269,6 @@ def moon_eliminator(args):
 # ----------------------------------------------------------------------------------------
 # Author 1: Toshio Moriya 08/008/2018 (toshio.moriya@mpi-dortmund.mpg.de)
 # 
-# --- meridien_import_params3d ---
-# !!! UNDER DEVELOPMENT!!!
-# Generate 3D projection parameters files in MERIDIEN format for a specified iteration 
-# by importing the parameters from a specified 3D projection text file in SPARX format.
-# The command also checks if the set of particle IDs are exclusive between two chunks.
-# 
-# ----------------------------------------------------------------------------------------
-# TEST COMMAND
-# cd /home/moriya/mrk_analysis/actin_sabrina/mrkwork
-# rm -r mrkmeridien_import_params3d; sxpipe.py meridien_import_params3d mrkmeridien/main018 sparx_stack_proj3d.txt mrkmeridien_import_params3d
-# ----------------------------------------------------------------------------------------
-def meridien_import_params3d(args):
-	print("IN_PROGRESS!!!")
-	
-	from utilities import read_text_file, read_text_row, write_text_row
-	
-	# To make the execution exit upon fatal error by ERROR in global_def.py
-	global_def.BATCH = True 
-	
-	# Check error conditions
-	subcommand_name = "meridien_import_params3d"
-	if not os.path.exists(args.input_meridien_iter_dir_path):
-		ERROR("Specified input MERIDIEN iteration directory does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
-	if not os.path.exists(args.input_sparx_params3d_path):
-		ERROR("Specified input standard sparx 3D parameters file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
-	if os.path.exists(args.output_directory):
-		ERROR("Specified output directory exists. Please change the name and restart the program.", subcommand_name) # action=1 - fatal error, exit
-	
-	assert (os.path.exists(args.input_meridien_iter_dir_path))
-	assert (os.path.exists(args.input_sparx_params3d_path))
-	assert (not os.path.exists(args.output_directory))
-	
-	master_dir_path, iter_dir_name = os.path.split(args.input_meridien_iter_dir_path)
-	print("MRK_DEBUG: master_dir_path := ", master_dir_path)
-	print("MRK_DEBUG: iter_dir_name := ", iter_dir_name)
-	if iter_dir_name[:4] != "main":
-		ERROR("Format of specified input MERIDIEN iteration directory name is invalid. It should start from \'main\'. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
-	try:
-		selected_iter = int(iter_dir_name[-3:])
-		print("MRK_DEBUG: selected_iter := ", selected_iter)
-	except:
-		ERROR("Format of specified input MERIDIEN iteration directory name is invalid. It should end with a three letter number. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
-	
-	# Load lists of Particle IDs and associated chunk information from specified input MERIDIEN iteration directory
-	meridien_particle_id_list_all = read_text_file(os.path.join(args.input_meridien_iter_dir_path, "indexes_%03d.txt"%selected_iter))
-	meridien_particle_id_list_one = read_text_file(os.path.join(args.input_meridien_iter_dir_path, "chunk_0_%03d.txt"%selected_iter))
-	meridien_particle_id_list_two = read_text_file(os.path.join(args.input_meridien_iter_dir_path, "chunk_1_%03d.txt"%selected_iter))
-	assert (len(meridien_particle_id_list_all) > 0)
-	assert (len(meridien_particle_id_list_one) > 0)
-	assert (len(meridien_particle_id_list_two) > 0)
-	assert (len(meridien_particle_id_list_all) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
-	
-	# Load lists of 3D alignment parameters from specified input MERIDIEN iteration directory
-	# 
-	# params.append([ refang[iang][0], refang[iang][1], (refang[iang][2]+ipsi*Tracker["delta"])%360.0 \
-	#               , rshifts[ishift][0]+oldparams[im][3], rshifts[ishift][1]+oldparams[im][4] \
-	#               , newparamstructure[im][-1][0][1], norm_per_particle[im]*qt, norm_per_particle[im]])
-	# 
-	# Column 1: meridien/sparx phi
-	# Column 2: meridien/sparx theta
-	# Column 3: meridien/sparx psi
-	# Column 4: meridien/sparx sx (shift x)
-	# Column 5: meridien/sparx sy (shift y)
-	# Column 6: meridien the best similarity among all possible alignments/orientations of a particle (corresponding to relion_dict["_rlnMaxValueProbDistribution"]???)
-	# Column 7: meridien norm_per_particle per pixel (average per pixel) (corresponding to relion_dict["_rlnNormCorrection"]???)
-	# Column 8: meridien norm_per_particle or Tracker["avgvaradj"]
-	# 
-	meridien_align3d_params_list_all = read_text_row(os.path.join(args.input_meridien_iter_dir_path, "params_%03d.txt"%selected_iter))
-	assert (len(meridien_align3d_params_list_all) == len(meridien_particle_id_list_all))
-	assert (len(meridien_align3d_params_list_all) > 0)
-	assert (len(meridien_align3d_params_list_all[0]) == 8)
-	
-	# Load lists of 3D alignment parameters from specified input SPARX 3D alignment parameters list file
-	# 
-	# Column 1: sparx_proj3d["phi"]
-	# Column 2: sparx_proj3d["theta"]
-	# Column 3: sparx_proj3d["psi"]
-	# Column 4: sparx_proj3d["tx"]
-	# Column 5: sparx_proj3d["ty"], \
-	# Column 6: relion_dict["_rlnMaxValueProbDistribution"]
-	# Column 7: relion_dict["_rlnNormCorrection"]
-	# 
-	sparx_align3d_params_list_all = read_text_row(args.input_sparx_params3d_path)
-	assert (len(sparx_align3d_params_list_all) > 0)
-	assert (len(sparx_align3d_params_list_all[0]) == 7)
-
-	# Initialize chunk dictionary
-	chunk_dict = {}
-	
-	# Register chunk ID to chunk dictionary for each particle ID key
-	for particle_id in meridien_particle_id_list_one:
-		if particle_id in chunk_dict:
-			print ("MRK_DEBUG: WARNING: Deplicated particle ID %d is found with meridien_particle_id_list_one"%(particle_id))
-		else:
-			chunk_dict[particle_id] = {}
-			chunk_dict[particle_id]["chunk_id"] = 0
-			assert (len(chunk_dict[particle_id]) == 1)
-	for particle_id in meridien_particle_id_list_two: 
-		if particle_id in chunk_dict:
-			print ("MRK_DEBUG: WARNING: Deplicated particle ID %d is found with meridien_particle_id_list_two"%(particle_id))
-		else:
-			chunk_dict[particle_id] = {}
-			chunk_dict[particle_id]["chunk_id"] = 1
-			assert (len(chunk_dict[particle_id]) == 1)
-	assert (len(chunk_dict) == len(meridien_particle_id_list_all))
-	assert (len(chunk_dict) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
-	assert (len(chunk_dict) == len(meridien_align3d_params_list_all))
-	assert (len(chunk_dict) == len(sparx_align3d_params_list_all))
-	
-	# Register 3D alignment parameters to chunk dictionary for each particle ID key
-	for index_of_particle in range(len(meridien_particle_id_list_all)): 
-		# Translate particle index to particle image ID
-		particle_id = meridien_particle_id_list_all[index_of_particle]
-		
-		# Register MERIDIEN 3D alignment parameters
-		assert ( "meridien_align3d_params" not in chunk_dict[particle_id])
-		chunk_dict[particle_id]["meridien_align3d_params"] = meridien_align3d_params_list_all[index_of_particle]
-		assert (len(chunk_dict[particle_id]) == 2)
-		assert (len(chunk_dict[particle_id]["meridien_align3d_params"]) == 8)
-		
-		# Register SPARX 3D alignment parameters
-		assert ( "sparx_align3d_params" not in chunk_dict[particle_id])
-		chunk_dict[particle_id]["sparx_align3d_params"] = sparx_align3d_params_list_all[index_of_particle]
-		assert (len(chunk_dict[particle_id]) == 3)
-		assert (len(chunk_dict[particle_id]["sparx_align3d_params"]) == 7)
-		
-	assert (len(chunk_dict) == len(meridien_particle_id_list_all))
-	assert (len(chunk_dict) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
-	assert (len(chunk_dict) == len(meridien_align3d_params_list_all))
-	assert (len(chunk_dict) == len(sparx_align3d_params_list_all))
-
-	# Create output directory
-	os.mkdir(args.output_directory)
-	
-	# Create new 3D alignment parameters lists 
-	new_meridien_align3d_params_list_all = []
-	new_meridien_align3d_params_list_one = []
-	new_meridien_align3d_params_list_two = []
-	
-	for index_of_particle in range(len(meridien_particle_id_list_all)): 
-		# Translate particle index to particle image ID
-		particle_id = meridien_particle_id_list_all[index_of_particle]
-		
-		# Get 3D alignment parameters associated with this particle ID
-		meridien_params3d = chunk_dict[particle_id]["meridien_align3d_params"]
-		sparx_params3d = chunk_dict[particle_id]["sparx_align3d_params"]
-		
-		# Overwrite phi, theta, psi, sx, sy of MERIDIEN parameters with ones of SPARX parameters
-		new_meridien_params3d = [sparx_params3d[0], sparx_params3d[1], sparx_params3d[2], sparx_params3d[3], sparx_params3d[4], meridien_params3d[5], meridien_params3d[6], meridien_params3d[7]]
-		
-		# Registed new MERIDIEN parameters to lists
-		new_meridien_align3d_params_list_all.append(new_meridien_params3d)
-		if chunk_dict[particle_id]["chunk_id"] == 0:
-			new_meridien_align3d_params_list_one.append(new_meridien_params3d)
-		else:
-			assert (chunk_dict[particle_id]["chunk_id"] == 1)			                             
-			new_meridien_align3d_params_list_two.append(new_meridien_params3d)
-	assert (len(new_meridien_align3d_params_list_all) == len(meridien_particle_id_list_all))
-	assert (len(new_meridien_align3d_params_list_all) == len(meridien_particle_id_list_one) + len(meridien_particle_id_list_two))
-	assert (len(new_meridien_align3d_params_list_all) == len(meridien_align3d_params_list_all))
-	assert (len(new_meridien_align3d_params_list_all) == len(sparx_align3d_params_list_all))
-	assert (len(new_meridien_align3d_params_list_one) == len(meridien_particle_id_list_one))
-	assert (len(new_meridien_align3d_params_list_two) == len(meridien_particle_id_list_two))
-	assert (len(new_meridien_align3d_params_list_all) == len(new_meridien_align3d_params_list_one) + len(new_meridien_align3d_params_list_two))
-	
-	# Save new MERIDIEN parameters lists to files
-	meridien_params3d_dir_path, meridien_params3d_basename = os.path.split(args.input_meridien_iter_dir_path)
-	meridien_params3d_root, meridien_params3d_ext = os.path.splitext(meridien_params3d_basename)
-	
-	write_text_row(meridien_align3d_params_list_all, os.path.join(args.output_directory, "original_params_%03d.txt"%selected_iter))
-	
-	write_text_row(new_meridien_align3d_params_list_all, os.path.join(args.output_directory, "params_%03d.txt"%selected_iter))
-	write_text_row(new_meridien_align3d_params_list_one, os.path.join(args.output_directory, "params-chunk_0_%03d.txt"%selected_iter))
-	write_text_row(new_meridien_align3d_params_list_two, os.path.join(args.output_directory, "params-chunk_1_%03d.txt"%selected_iter))
-
-# ----------------------------------------------------------------------------------------
-# Author 1: Toshio Moriya 08/008/2018 (toshio.moriya@mpi-dortmund.mpg.de)
-# 
 # --- desymmetrize ---
 # !!! UNDER DEVELOPMENT!!!
 # Desymmetrize particle IDs of a specified cluster sorted by SORT3D. 
@@ -3817,9 +3639,10 @@ def angular_distribution(args):
 	angles_reduce_cart = to_cartesian(angles_reduce)
 
 	# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
-	angles_no_mirror = numpy.array(
-		symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror, remove=True)
-		)
+	angles_no_mirror = symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror)
+	for i in range(len(angles_no_mirror)-1,-1,-1):
+		if is_in_subunit(angles_no_mirror[i], 0): del angles_no_mirror[i]
+	angles_no_mirror = numpy.array(angles_no_mirror)
 	# Create cartesian coordinates
 	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
@@ -4014,13 +3837,6 @@ def main():
 	parser_moon_eliminator.add_argument("--edge_type",                      type=str,             default="cosine",help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
 	parser_moon_eliminator.add_argument("--debug",                          action="store_true",  default=False,   help="Run with debug mode: Mainly for developer. (default False)")
 	parser_moon_eliminator.set_defaults(func=moon_eliminator)
-
-	# create the parser for the "meridien_import_params3d" subcommand
-	meridien_import_params3d = subparsers.add_parser("meridien_import_params3d", help="UNDER DEVELOPMENT: Create 3D projection parameters files in MERIDIEN format for a specified iteration by importing the parameters from a specified 3D projection text file in SPARX format.")
-	meridien_import_params3d.add_argument("input_meridien_iter_dir_path", type=str,                             help="UNDER DEVELOPMENT")
-	meridien_import_params3d.add_argument("input_sparx_params3d_path",    type=str,                             help="UNDER DEVELOPMENT")
-	meridien_import_params3d.add_argument("output_directory",             type=str,                             help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
-	meridien_import_params3d.set_defaults(func=meridien_import_params3d)
 
 	# create the parser for the "desymmetrize" subcommand
 	parser_subcmd = subparsers.add_parser("desymmetrize", help="UNDER DEVELOPMENT - Desymmetrize particle IDs of a specified cluster sorted by SORT3D. The output will contain the particle IDs of stack before symmetrization.")

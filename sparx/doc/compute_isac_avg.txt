@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxcompute_isac_avg =====
-Beautifier: Beautify the ISAC2 2D clustering result with the original pixel size.
+Beautifier: Perform local 2D alignment of ISAC2 2D clustering results using the original pixel size and full CTF correction.
 
 \\
 ===== Usage =====
@@ -15,7 +15,7 @@ Usage in command line
 
 sxcompute_isac_avg.py exists only in MPI version. 
 
-There are four methods to adjust the power spectrum of resultant average images. The method is specified with option pw_adjustment.
+There are four methods to adjust the power spectrum of resultant average images, as specified by option pw_adjustment.
 
 \\ __1. Adjust to analytical model (default method):__
   mpirun -np 48 sxcompute_isac_avg.py --stack=bdb:data --isac_dir=outdir_isac --output_dir=outdir_beautify2d --radius=120
@@ -32,9 +32,9 @@ There are four methods to adjust the power spectrum of resultant average images.
 \\
 ===== Input =====
 === Main Parameters ===
-  ; %%--%%stack : Original image stack: Data stack that used for the associated ISAC2 run. The particle images in this stack are required to create the full-sized class averages. (default required string)
+  ; %%--%%stack : Original image stack: Data stack that used for the associated ISAC2 run. The particle images in this stack are used to create the full-sized class averages. (default required string)
   ; %%--%%isac_dir : ISAC2 run directory: Path to the output directory of the associated ISAC2 run. This is input directory for this command. (default required string)
-  ; %%--%%output_dir : Output directory: The directory will be automatically created and the results will be written here. By default, the program uses sharpen_DATA_AND_TIME for the name. If this is the same as ISAC2 run directory, the program automatically creates sharpen subdirectory under the ISAC2 run directory. (default none)
+  ; %%--%%output_dir : Output directory: The automatically-created output directory will contain results. By default, the program uses sharpen_DATA_AND_TIME for the name. If this is the same as ISAC2 run directory, the program automatically creates sharpen subdirectory under the ISAC2 run directory. (default none)
   ; %%--%%pixel_size : Pixel size [A]: The pixel size of particle images in input particle stack for the associated ISAC2 run. Use 1.0 in case of negative stain data. (default -1.0)
   ; %%--%%radius : Particle radius [Pixels]: There is no default radius. (default -1)
   ; %%--%%pw_adjustment : Power spectrum adjustment method: Specify the method for the power spectrum (PWS) adjustment of 2-D averages to enhance averages. ='analytical_model' adjusts PWS to an analytic model; ='bfactor' adjusts PWS using B-factor; ='FILE_PATH' adjusts PWS to rotationally averaged 1D power spectrum stored in the text file; ='no_adjustment' skips adjustment. (default analytical_model)

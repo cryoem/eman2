@@ -1672,6 +1672,13 @@ class symclass(object):
 			self.symatrix.append(rotmatrix(args[0],args[1],args[2]))
 
 	def is_in_subunit(self, phi, theta, inc_mirror=1):
+		"""
+		Input: a projection direction specified by (phi, theta).
+				inc_mirror = 1 consider mirror directions as unique
+				inc_mirror = 0 consider mirror directions as outside of unique range.
+		Output: True if input projection direction is in the first asymmetric subunit,
+		        False otherwise.
+		"""
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		if( (self.sym[0] == "c")  or  (self.sym[0] == "d" and (self.nsym//2)%2 == 0) ):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return True
@@ -1723,6 +1730,15 @@ class symclass(object):
 		else:  ERROR("unknown symmetry","symclass: is_in_subunit",1)
 
 	def symmetry_related(self, angles):
+		"""
+		Generate all symmetry related instances of input angles
+		Input:  is a list of list of n triplets  
+			[[phi0,theta0,psi0],[phi1,theta1,psi1],...]
+		Output: is a list of list triplets whose length is k times larger than that of input,
+		        where k is symmetry multiplicity.  First k are symmetry related version of the first triplet, 
+		        second k are symmetry related version of the second triplet and so on...
+		   [[phi0,theta0,0],[phi0,theta0,0]_SYM0,...,[phi1,theta1,],[phi1,theta1,]_SYM1,...]
+		"""
 		redang = [angles[:]]
 		if(self.sym[0] == "c"):
 			qt = 360.0/self.nsym
@@ -1746,9 +1762,15 @@ class symclass(object):
 
 
 	def symmetry_neighbors(self, angles):
-		#  input is a list of lists  [[phi0,theta0,0],[phi1,theta1,0],...]
-		#  psi is ignored
-		#  output is [[phi0,theta0,0],[phi0,theta0,0]_SYM1,...,[phi1,theta1,],[phi1,theta1,]_SYM1,...]
+		"""
+		Generate symmetry related instances of input angles only for asymmetric regions adjacent to the zero's one
+		  input is a list of lists  [[phi0,theta0,0],[phi1,theta1,0],...]
+		Output: is a list of list triplets whose length is k times larger than that of input,
+		        where k is the number of adjacent regions for a given point group symmetry.  
+		        First k are symmetry related version of the first triplet, 
+		        second k are symmetry related version of the second triplet and so on...
+		  output is [[phi0,theta0,0],[phi0,theta0,0]_SYM1,...,[phi1,theta1,],[phi1,theta1,]_SYM1,...]
+		"""
 		if( self.sym[0] == "c" or self.sym[0] == "d" ):
 			temp = Util.symmetry_neighbors(angles, self.sym)
 			nt = len(temp)/3
@@ -1769,9 +1791,13 @@ class symclass(object):
 				sang[i*(len(neighbors[self.sym])+1) + (j+1)] = [p1,p2,0.0]
 		return sang
 
-
-	def reduce_anglesets(self, angles, inc_mirror=1, remove=False):
-		#  Input is either list ot lists [[phi,thet,psi],[],[]] or a triplet [phi,thet,psi]
+	def reduce_anglesets(self, angles, inc_mirror=1):
+		"""
+		  Input is either list ot lists [[phi,thet,psi],[],[]] or a triplet [phi,thet,psi]
+				inc_mirror = 1 consider mirror directions as unique
+				inc_mirror = 0 consider mirror directions as outside of unique range.
+		  It will map all triplets to the first asymmetric subunit.
+		"""
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		import types
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
@@ -1788,8 +1814,6 @@ class symclass(object):
 			phi = q[0]; theta = q[1]; psi = q[2]
 			if is_platonic_sym:
 				if(not self.is_in_subunit(phi, theta, 1)):
-					if inc_mirror == 0 and remove:
-						continue
 					mat = rotmatrix(phi,theta,psi)
 					for l in range(self.nsym):
 						p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
@@ -1803,20 +1827,13 @@ class symclass(object):
 							phi = self.brackets[1][0]-phi
 							if(l>0): psi = (360.0-psi)%360.0
 				elif(inc_mirror == 0):
-					if(phi>=self.brackets[0][0] and not remove):
+					if(phi>=self.brackets[0][0]):
 						phi = self.brackets[1][0]-phi
 						psi = (360.0-psi)%360.0
-					elif(phi>=self.brackets[0][0] and remove):
-						continue
 					elif(inc_mirror == 0):
-						if(phi>=self.brackets[0][0] and not remove):
-							phi = self.brackets[1][0]-phi
-						elif(phi>=self.brackets[0][0] and remove):
-							continue
+						if(phi>=self.brackets[0][0]):  phi = self.brackets[1][0]-phi
 			elif( self.sym[0] == "t" ):
 				if(not self.is_in_subunit(phi, theta, inc_mirror)):
-					if inc_mirror == 0 and remove:
-						continue
 					mat = rotmatrix(phi,theta,psi)
 					fifi = False
 					for l in range(self.nsym):
@@ -1844,38 +1861,22 @@ class symclass(object):
 
 					if( not fifi ):  print("  FAILED mirror ")
 			else:
-				if( theta>90.0  and inc_mirror == 0 and not remove):
+				if( theta>90.0  and inc_mirror == 0 ):
 					phi = (180.0+phi)%360.0; theta = 180.0 - theta; psi = (180.0 - psi)%360.0
-				elif( theta>90.0  and inc_mirror == 0 and remove):
-					continue
-
-				if( inc_mirror == 0 and remove):
-					if 0 <= phi and phi < qs:
-						pass
-					else:
-						continue
-				else:
-					phi = phi%qs
-
+				phi = phi%qs
 				if(self.sym[0] == "d"):
 					if( inc_mirror == 0 ):
 						if((self.nsym//2)%2 == 0):
-							if(phi>=qs/2 and not remove):
+							if(phi>=qs/2):
 								phi = qs-phi
 								psi = (360.0-psi)%360.0
-							elif(phi>=qs/2 and remove):
-								continue
 						else:
-							if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym and not remove):
+							if(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym):
 								phi = 360.0/self.nsym-phi
 								psi = 360.0 - psi
-							elif(phi>=360.0/self.nsym/2 and phi<360.0/self.nsym and remove):
-								continue
-							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym and not remove):
+							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
 								phi = 720.0/self.nsym-phi+360.0/self.nsym
 								psi = (360.0-psi)%360.0
-							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym and remove):
-								continue
 
 			redang.append([phi, theta, psi])
 
@@ -1883,6 +1884,11 @@ class symclass(object):
 		else: return redang[0]
 
 	def reduce_angles(self, phiin, thetain, psiin, inc_mirror=1):
+		"""
+		  It will map three input angles to the first asymmetric subunit.
+				inc_mirror = 1 consider mirror directions as unique
+				inc_mirror = 0 consider mirror directions as outside of unique range.
+		"""
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym

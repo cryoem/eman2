@@ -31,7 +31,7 @@ Note: CTF and VPP options cannot be used together.
 ===== Input =====
 === Main Parameters ===
   ; stack_file : Input image stack: The images must to be square (//nx//=//ny//). The stack can be either in bdb or hdf format. (default required string)
-  ; output_directory : Output directory: The directory will be automatically created and the results will be written here. If the directory already exists, results will be written there, possibly overwriting previous runs. (default required string)
+  ; output_directory : Output directory: The automatically-created output directory will contain results. If the directory already exists, results will be written there, possibly overwriting previous runs. (default required string)
 
   ; %%--%%radius : Particle radius [Pixels]: Radius of the particle (pixels). There is no default value and so a sensible number has to be provided. (default required int)
   ; %%--%%img_per_grp : Images per class: Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes or the number of classes //K// = //N// / //img_per_grp//, where //N// is the total number of images in the input stack. (default 200)
@@ -64,9 +64,9 @@ Note: CTF and VPP options cannot be used together.
 
 \\
 ===== Output =====
-For each generation of running the program, there are two phases. The first phase is an exploratory phase. In this phase, we set the criteria to be very loose and try to find as much candidate class averages as possible. (OBSOLETE? This phase typically should have 10 to 20 rounds). The candidate class averages are stored in class_averages_candidate_generation_n.hdf.
+For each generation of running the program, there are two phases. The first phase is an exploratory phase. In this phase, we set the criteria to be very loose and try to find as much candidate class averages as possible. The candidate class averages are stored in class_averages_candidate_generation_n.hdf.
 
-The second phase is where the actual class averages are generated (OBSOLETE?!!, it typically have 3~9 iterations of matching). The first half of iterations are 2-way matching, the second half of iterations are 3-way matching, and the last iteration is 4-way matching. In the second phase, three files will be generated:
+The second phase is where the actual class averages are generated. The candidate groups are tested for their stability by repeated randomly initialized reference-free alignment and those deemed stable as set aside as output and member images of those that did not pass the test are returned to the overall pool of data and processed again starting from the first phase.
 
 \\
 === List of Output Files ===
@@ -107,7 +107,7 @@ Also see the reference below.
 \\
 ==== Time and Memory ====
 
-Unfortunately, ISAC2 is very time- and memory-consuming. (OBSLETE?!! For example, on my cluster, it takes 15 hours to process 50,000 64x64 particles on 256 processors. Therefore, before embarking on the big dataset, it is recommended to run a test dataset (about 2,000~5,000 particles) first to get a rough idea of timing.)
+ISAC2 is very time- and memory-consuming.  For example, it may take 15 hours to process 50,000 particles using 256 processors. Therefore, before embarking on the big dataset, it is recommended to run a test dataset (about 20,000 particles) first to get a rough idea of timing.
 
 \\
 ==== Retrieval of images signed to selected group averages ====

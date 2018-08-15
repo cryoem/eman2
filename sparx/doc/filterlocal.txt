@@ -25,7 +25,7 @@ sxlocres exists in for both MPI and non-MPI versions.
   ; maskfile : 3D mask: Defines the region where the local filtering should be applied. (default none)
   ; outputfile : Output volume: Path to output volume file contained locally-filtered 3D density map. (default required string)
 
-  ; %%--%%radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. Typically, use radius of the particle. (default -1)
+  ; %%--%%radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere will be used. Use radius of the particle. (default -1)
   ; %%--%%falloff : Low-pass filter fall-off [1/Pixels]: The program uses a tangent low-pass filter. Specify with absolute frequency. (default 0.1)
 
 \\
