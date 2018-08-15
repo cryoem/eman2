@@ -3687,7 +3687,7 @@ def angular_distribution(args):
 				knn_angle[m][i] = l
 
 	###  I think you mean something like that below, again, maybe it can be done better in numpy
-	radius_array = numpy.asarray[len(q) for q in knn_angle]
+	radius_array = numpy.asarray([len(q) for q in knn_angle])
 
 	# Calculate a histogram for the assignments to the symmetry neighbor angles
 	###radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
