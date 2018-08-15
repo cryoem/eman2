@@ -3593,6 +3593,30 @@ def angular_distribution(args):
 
 		return cartesian_array
 
+	def add_mirrored(eah, smc):
+		#eah  = smc.even_angles(angstep, inc_mirror=0)
+		leah = len(eah)
+		u = []
+		for q in eah:
+			#print("q",q)
+			m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
+			#print("m",m)
+			itst = len(u)
+			for c in m:
+				#print("c",c)
+				if smc.is_in_subunit(c[0],c[1],1) :
+					#print(" is in 1")
+					if not smc.is_in_subunit(c[0],c[1],0) :
+						#print("  outside")
+						u.append(c)
+						break
+			if(len(u) != itst+1):
+				u.append(q)  #  This is for exceptions that cannot be easily handled
+		seaf = []
+		for q in eah+u:  seaf += smc.symmetry_related(q)
+		lseaf = 2*leah
+		return lseaf, leah, seaf
+
 	# Use name of the params file as prefix if prefix is None
 	if args.prefix is None:
 		args.prefix = os.path.basename(os.path.splitext(args.params_file)[0])
@@ -3612,53 +3636,72 @@ def angular_distribution(args):
 
 	# Create symclass objects.
 	# It is related to the actual symmetry, to deal with mirror projections.
-	symclass = fundamentals.symclass(symmetry)
+	###  This is bad idea as symclass is already a global name for symmetry class
+	###  By coding this way you redefine the symbol, which was imported at the beginning of sxpipe from sparx  PAP
+	###symclass = fundamentals.symclass(symmetry)
+	smcl = symclass(symmetry)
 
 	print_progress('Reduce data to symmetry - This might take some time for high symmetries')
 	# Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
-	data = numpy.array(
-		symclass.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror)
-		)
+	data = numpy.array( smcl.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror) )
 	# Create cartesian coordinates
 	data_cart = to_cartesian(data)
 
 	print_progress('Create reference angles')
 	# Create reference angles for the asymmetric unit and symmetry neighbors
-	even_angles = symclass.even_angles(args.delta, inc_mirror=1, method=args.method)
-	angles = symclass.symmetry_neighbors(even_angles)
+	###even_angles = smcl.even_angles(args.delta, inc_mirror=1, method=args.method)
+	###angles = smcl.symmetry_neighbors(even_angles)
+	###  Also even angles is a global name.  Please check these things while coding as otherwise
+	###  you may badly confuse things by redefining already used function names and/or variables  PAP
+	eva = smcl.even_angles(args.delta, inc_mirror=inc_mirror, method=args.method)
+	if inc_mirror == 0: lseaf, leah, eva = add_mirrored(eva, smcl)
+	###  NOTE in the line above I redefined reference angles, so you may want to dance around the issue if you need it below
 	# Create cartesian coordinates
-	angles_cart = to_cartesian(angles)
+	###angles_cart = to_cartesian(angles)
+	eva_norms = to_cartesian(eva)
 
 	# Reduce the reference data by moving mirror projections into the non-mirror region of the sphere.
-	angles_reduce = symclass.reduce_anglesets(angles, inc_mirror=inc_mirror)
+	###angles_reduce = smcl.reduce_anglesets(angles, inc_mirror=inc_mirror)
 	# Create cartesian coordinates
-	angles_reduce_cart = to_cartesian(angles_reduce)
+	###angles_reduce_cart = to_cartesian(angles_reduce)
 
 	# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
-	angles_no_mirror = [entry for entry in even_angles if symclass.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=0)]
+	###angles_no_mirror = [entry for entry in even_angles if smcl.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=0)]
 	# Create cartesian coordinates
-	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
+	###angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
 	# Find nearest neighbours to the reference angles with the help of a KDTree
 	print_progress('Find nearest neighbours')
 	# Find the nearest neighbours of the reduced data to the reference angles on the symmetry neighbor sphere.
-	_, knn_data = scipy_spatial.cKDTree(angles_cart, balanced_tree=False).query(data_cart)
+	###_, knn_data = scipy_spatial.cKDTree(angles_cart, balanced_tree=False).query(data_cart)
 	# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
-	_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
+	###_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
+	_, knn_angle = scipy_spatial.cKDTree(eva_norms, balanced_tree=False).query(data_cart)
+	if inc_mirror == 0:
+		### PAP  Here I assume knn_angle is a list of lists of assignments
+		### maybe you can do it better in numpy
+		for m,q in enumerate(knn_angle):
+			for i,l in enumerate(q):
+				l = l%lseaf
+				if(l>=leah):  l = l-leah
+				knn_angle[m][i] = l
+
+	###  I think you mean something like that below, again, maybe it can be done better in numpy
+	radius_array = numpy.asarray[len(q) for q in knn_angle]
 
 	# Calculate a histogram for the assignments to the symmetry neighbor angles
-	radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
+	###radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
 	# New output histogram array that needs to be filled later
-	radius_array = numpy.zeros(angles_cart.shape[0], dtype=int)
+	###radius_array = numpy.zeros(angles_cart.shape[0], dtype=int)
 
 	# Deal with symmetry wrapping!
 	# Every index idx corresponds to the angle prior to the symmetry wrapping.
 	# Every value of value corresponds to the angle after symmetry wrapping.
 	# Values can occure multiple times and therefore can contain the member information for multiple reference angles.
-	numpy.add.at(radius_array, knn_angle, radius)
+	###numpy.add.at(radius_array, knn_angle, radius)
 
 	# Remove all zeros for speedup reasons
-	nonzero_mask = numpy.nonzero(radius_array)
+	###nonzero_mask = numpy.nonzero(radius_array)
 	radius_array = radius_array[nonzero_mask]
 
 	# Calculate best width and length for the bins in 3D
