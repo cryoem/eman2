@@ -7443,7 +7443,7 @@ EMData* Util::Polar2DFT(EMData* image, int ring_length, int nb, int ne)  {
 		}
 	}
 
-	if ( not image->is_complex() ) {
+	if ( !image->is_complex() ) {
 		delete cimage;
 		cimage = 0;
 	}
@@ -29424,7 +29424,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
-	cout <<"   Source modification date: 07/26/2018  7:26 PM " <<  endl;
+	cout <<"   Source modification date: 08/14/2018  9:26 PM " <<  endl;
 }
 
 
