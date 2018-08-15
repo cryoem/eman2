@@ -116,7 +116,7 @@ Category 3:: GRIDDING
 
 \\
 ==== Files ====
-SPARX/bin/sxrviper.py
+sparx/bin/sxrviper.py
 
 \\
 ==== See also ====

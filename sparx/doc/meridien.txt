@@ -19,7 +19,7 @@ There are five ways to run the program:
 
 \\ __1. Standard fresh run:__
 \\ The 3D refinement starts from exhaustive searches using initial reference volume. Option initialshift is used to initialize the program with predetermined translation parameters, for example by ISAC2 program, and stored in image headers.
-  mpirun -np 64 sxmeridien.py bdb:SPARX_stack meridien_fresh_outdir ref3d.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask3d.hdf
+  mpirun -np 64 sxmeridien.py bdb:sparx_stack meridien_fresh_outdir ref3d.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask3d.hdf
 
 \\ __2. Standard continuation run:__
 \\ Simple restart where the 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but that MPI settings have to be the same.
@@ -27,7 +27,7 @@ There are five ways to run the program:
 
 \\ __3. Local refinement from stack:__
 \\ The restricted search of 3D refinement starts from user-provided orientation parameters stored in stack header. Note that delta has to be %%<=%% 3.75.
-  mpirun -np 64 sxmeridien.py --local_refinement bdb:SPARX_stack meridien_local_outdir --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask3d.hdf
+  mpirun -np 64 sxmeridien.py --local_refinement bdb:sparx_stack meridien_local_outdir --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask3d.hdf
 
 \\ __4. Local refinement from meridien iteration:__
 \\ The restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.
@@ -94,7 +94,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/bin/sxmeridien.py
+sparx/bin/sxmeridien.py
 
 \\
 ==== See also ====

@@ -57,7 +57,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/bin/sxfilterlocal.py
+sparx/bin/sxfilterlocal.py
 
 \\
 ==== See also ====

@@ -99,7 +99,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/bin/sxcompute_isac_avg.py
+sparx/bin/sxcompute_isac_avg.py
 
 \\
 ==== See also ====
