@@ -3891,7 +3891,7 @@ def main():
 	parser_subcmd.add_argument("--particle_radius", type=int,   default=120,            help="Particle radius (default 120)")
 	parser_subcmd.add_argument("--dpi",             type=int,   default=72,             help="Dpi for the legend plot (default 72)")
 	parser_subcmd.set_defaults(func=angular_distribution)
-	
+
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# Run specified subcommand
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
