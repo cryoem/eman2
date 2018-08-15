@@ -3625,24 +3625,17 @@ def angular_distribution(args):
 	print_progress('Create reference angles')
 	# Create reference angles for the asymmetric unit and symmetry neighbors
 	even_angles = symclass.even_angles(args.delta, inc_mirror=1, method=args.method)
-	angles = numpy.array(
-		symclass.symmetry_neighbors(even_angles)
-		)
+	angles = symclass.symmetry_neighbors(even_angles)
 	# Create cartesian coordinates
 	angles_cart = to_cartesian(angles)
 
 	# Reduce the reference data by moving mirror projections into the non-mirror region of the sphere.
-	angles_reduce = numpy.array(
-		symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror)
-		)
+	angles_reduce = symclass.reduce_anglesets(angles, inc_mirror=inc_mirror)
 	# Create cartesian coordinates
 	angles_reduce_cart = to_cartesian(angles_reduce)
 
 	# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
-	angles_no_mirror = symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror)
-	for i in range(len(angles_no_mirror)-1,-1,-1):
-		if is_in_subunit(angles_no_mirror[i], 0): del angles_no_mirror[i]
-	angles_no_mirror = numpy.array(angles_no_mirror)
+	angles_no_mirror = [entry for entry in even_angles if symclass.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=0)]
 	# Create cartesian coordinates
 	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
@@ -3654,9 +3647,9 @@ def angular_distribution(args):
 	_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
 
 	# Calculate a histogram for the assignments to the symmetry neighbor angles
-	radius = numpy.bincount(knn_data, minlength=angles.shape[0])
+	radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
 	# New output histogram array that needs to be filled later
-	radius_array = numpy.zeros(angles.shape[0], dtype=int)
+	radius_array = numpy.zeros(angles_cart.shape[0], dtype=int)
 
 	# Deal with symmetry wrapping!
 	# Every index idx corresponds to the angle prior to the symmetry wrapping.
