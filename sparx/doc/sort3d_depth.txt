@@ -30,7 +30,7 @@ There are two ways of running this command.
   ; %%--%%instack : Input images stack: A string denotes file path of input particle stack for sorting. Sorting switches to stack mode when option is specified. (default none)
   ; %%--%%output_dir : Output directory: A string denotes output directory for 3D sorting. It can be either existing or non-existing. By default, the program uses sort3d_DATA_AND_TIME for the name. Here, you can find a log.txt that describes the sequences of computations in the program. (default none)
 
-  ; %%--%%niter_for_sorting : Iteration ID of 3D refinement from which parameters are imported: By default, the program uses the iteration at which refinement achieved the best resolution. Option is valid only for meridien iteration mode. (default -1)
+  ; %%--%%niter_for_sorting : Iteration ID of 3D refinement for importing data: By default, the program uses the iteration at which refinement achieved the best resolution. Option is valid only for meridien iteration mode. (default -1)
   ; %%--%%nxinit : Initial image size: Image size used for MGSKmeans in case of starting sorting from a data stack. By default, the program determines window size. Option is valid only for stack mode. (default -1) 
   ; %%--%%mask3D : 3D mask: A string denotes file path of the global 3D mask for clustering. Imported from 3D refinement unless user wishes a different one in meridien iteration mode. (default none)
   ; %%--%%focus : Focus 3D mask: A string denotes file path of a binary 3D mask for focused clustering. (default none)
@@ -46,7 +46,7 @@ There are two ways of running this command.
 \\
 === Advanced Parameters ===
   ; %%--%%depth_order : Depth order: An integer value defines the number of initial independent MGSKmeans runs (2^depth_order). (default 2)
-  ; %%--%%stop_mgskmeans_percentage : A float value denotes image assignment change percentage when MGSKmeans stops [%]: Particle assignment change percentage, serves as the converge criteria of minimum group size K-means. (default 10.0)
+  ; %%--%%stop_mgskmeans_percentage : Image assignment percentage to stop MGSKmeans [%]: A floating number denotes particle assignment change percentage that serves as the converge criteria of minimum group size K-means. (default 10.0)
   ; %%--%%nsmear : Number of smears for sorting: Fill it with 1 if user does not want to use all smears. (default -1)
   ; %%--%%orientation_groups : Number of orientation groups: Number of orientation groups in an asymmetric unit. (default 100)
   ; %%--%%not_include_unaccounted : Do unaccounted reconstruction: Do not reconstruct unaccounted elements in each generation. (default False question reversed in GUI)
@@ -62,14 +62,14 @@ Results outputted:
 
 \\
 ===== Description =====
-sxsort3d_depth finds out stable group members by carrying out two-way comparison of two independent Kmeans clustering runs with minimum group size constraint.
+sxsort3d_depth performs 3D clustering on data and keeps 3D orientation parameters of data unchanged. It finds out stable group members by carrying out two-way comparison of two independent Kmeans clustering runs. The Kmeans clustering has minimum group size constraint on each cluster and thus the clustering will not fail in any circumstance.
 
 \\
 === Important Options ===
 || **Option Key** || **Discription** ||
 || %%--%%depth_order || The parameter resembles the previous option number of independent runs but it controls sorting in an different way. The default value of 2 is a good choice. ||
 || %%--%%minimum_grp_size || This parameter selects qualified clusters and controls Kmeans clustering stability. The suggested value would be between img_per_grp/2 and img_per_grp but should be less than img_per_grp. ||
-|| %%--%%stop_mgskmeans_percentage || Even though this option is not new, here the suggestion would be not to set it too small. 5.0 - 10.0  is a good choice. ||
+|| %%--%%stop_mgskmeans_percentage || The suggestion would be not to set it too small. 5.0 - 10.0  is a good choice. ||
 || %%--%%orientation_groups || It divides the asymmetric unit into the specified number of orientation groups and cast the data orientation parameters into them. It is meant to prevent sorting by angle, i.e., assign certain angle to one group, for example top views to one group and side views to another. ||
 || %%--%%swap_ratio || A ratio of randomly replaced particles in a group, it is meant to prevent premature convergence. When the program obtains both stable groups and unaccounted elements, it reassigns unaccounted elements back to stable groups, and continues sorting. Before re-assignment of unaccounted elements, the program swaps some elements of stable groups with unaccounted ones using this specified swap_ratio. ||
 
