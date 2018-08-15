@@ -89,7 +89,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/bin/sxsummovie.py
+sparx/bin/sxsummovie.py
 
 \\
 ==== See also ====
