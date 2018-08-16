@@ -3554,6 +3554,53 @@ def angular_distribution(args):
 	COLUMN_X = 0
 	COLUMN_Y = 1
 	COLUMN_Z = 2
+	print(" delta ",args.delta)
+	def angular_histogram(params, angstep = 15., sym= "c1"):
+		from fundamentals import symclass
+		from utilities import nearest_fang, angles_to_normals
+
+		smc  = symclass(sym)
+		eah  = smc.even_angles(angstep, inc_mirror=0)
+
+		leah = len(eah)
+		u = []
+		for q in eah:
+			#print("q",q)
+			m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
+			#print("m",m)
+			itst = len(u)
+			for c in m:
+				#print("c",c)
+				if smc.is_in_subunit(c[0],c[1],1) :
+					#print(" is in 1")
+					if not smc.is_in_subunit(c[0],c[1],0) :
+						#print("  outside")
+						u.append(c)
+						break
+			if(len(u) != itst+1):
+				u.append(q)  #  This is for exceptions that cannot be easily handled
+				"""
+				print(q)
+				print(m)
+				ERROR("balance angles","Fill up upper",1)
+				"""
+		seaf = []
+		for q in eah+u:  seaf += smc.symmetry_related(q)
+
+		lseaf = 2*leah
+		for i,q in enumerate(seaf):  print(" seaf  ",i,q)
+		print(seaf)
+		seaf = angles_to_normals(seaf)
+
+		occupancy = [[] for i in range(leah)]
+
+		for i,q in enumerate(params):
+			l = nearest_fang(seaf,q[0],q[1])
+			l = l%lseaf
+			if(l>=leah):  l = l-leah
+			occupancy[l].append(i)
+		for q in occupancy:  print("  ",q)
+		return  [len(q) for q in occupancy], eah
 
 	def get_color(sorted_array):
 		"""
@@ -3618,57 +3665,65 @@ def angular_distribution(args):
 
 	print_progress('Reduce data to symmetry - This might take some time for high symmetries')
 	# Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
-	data = numpy.array(
-		symclass.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror)
-		)
+	data = numpy.array( symclass.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror))
 	# Create cartesian coordinates
 	data_cart = to_cartesian(data)
 
-	print_progress('Create reference angles')
-	# Create reference angles all around the sphere.
-	angles = numpy.array(
-		symclass_c1.even_angles(args.delta, inc_mirror=1, method=args.method)
-		)
-	# Create cartesian coordinates
-	angles_cart = to_cartesian(angles)
+	if False:
+		print_progress('Create reference angles')
+		# Create reference angles all around the sphere.
+		angles = numpy.array( symclass_c1.even_angles(args.delta, inc_mirror=1, method=args.method) )
+		# Create cartesian coordinates
+		angles_cart = to_cartesian(angles)
 
-	# Reduce the reference data by moving mirror projections into the non-mirror region of the sphere.
-	angles_reduce = numpy.array(
-		symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror)
-		)
-	# Create cartesian coordinates
-	angles_reduce_cart = to_cartesian(angles_reduce)
+		# Reduce the reference data by moving mirror projections into the non-mirror region of the sphere.
+		angles_no_mirror = symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror)
+		angles_reduce = numpy.array( angles_no_mirror )
+		# Create cartesian coordinates
+		angles_reduce_cart = to_cartesian(angles_reduce)
 
-	# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
-	angles_no_mirror = symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror)
-	for i in range(len(angles_no_mirror)-1,-1,-1):
-		if symclass.is_in_subunit(angles_no_mirror[i], 0): del angles_no_mirror[i]
-	angles_no_mirror = numpy.array(angles_no_mirror)
+		# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
+		###angles_no_mirror = numpy.array( symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror, do_flip=False) )
+		angles_no_mirror = symclass.reduce_anglesets(angles.tolist(), inc_mirror=1)
 
-	# Create cartesian coordinates
-	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
+		for i in range(len(angles_no_mirror)-1,-1,-1):
+			if( not symclass.is_in_subunit(angles_no_mirror[i][0], angles_no_mirror[i][1], 0)): del angles_no_mirror[i]
 
-	# Find nearest neighbours to the reference angles with the help of a KDTree
-	print_progress('Find nearest neighbours')
-	# Find the nearest neighbours of the reduced data to the reference angles on the C1 sphere.
-	_, knn_data = scipy_spatial.cKDTree(angles_cart, balanced_tree=False).query(data_cart)
-	# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
-	_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
+		# Create cartesian coordinates
+		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
-	# Calculate a histogram for the assignments to the C1 angles
-	radius = numpy.bincount(knn_data)
-	# New output histogram array that needs to be filled later
-	radius_array = numpy.zeros(angles.shape[0], dtype=int)
+		# Find nearest neighbours to the reference angles with the help of a KDTree
+		print_progress('Find nearest neighbours')
+		# Find the nearest neighbours of the reduced data to the reference angles on the C1 sphere.
+		_, knn_data = scipy_spatial.cKDTree(angles_cart, balanced_tree=False).query(data_cart)
+		# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
+		_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
 
-	# Deal with symmetry wrapping!
-	# Every index idx corresponds to the angle prior to the symmetry wrapping.
-	# Every value of value corresponds to the angle after symmetry wrapping.
-	# Values can occure multiple times and therefore can contain the member information for multiple reference angles.
-	for idx, value in enumerate(knn_angle):
-		try:
-			radius_array[value] += radius[idx]
-		except:
-			pass
+		hiti = [[] for i in range(max(knn_data)+1)]
+		for i,q in enumerate(knn_data):
+			hiti[q].append(i)
+		for i,q in enumerate(	hiti):  print(" hiti  ",i,q)
+
+		# Calculate a histogram for the assignments to the C1 angles
+		radius = numpy.bincount(knn_data)
+		# New output histogram array that needs to be filled later
+		radius_array = numpy.zeros(angles.shape[0], dtype=int)
+
+		# Deal with symmetry wrapping!
+		# Every index idx corresponds to the angle prior to the symmetry wrapping.
+		# Every value of value corresponds to the angle after symmetry wrapping.
+		# Values can occure multiple times and therefore can contain the member information for multiple reference angles.
+		for idx, value in enumerate(knn_angle):
+			try:
+				radius_array[value] += radius[idx]
+			except:
+				pass
+
+	else:
+		occupy, eva = angular_histogram(symclass.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= args.symmetry)
+		radius_array = numpy.array(occupy)
+		angles_no_mirror = numpy.array(eva)
+		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
 	# Remove all zeros for speedup reasons
 	nonzero_mask = numpy.nonzero(radius_array)
@@ -3714,10 +3769,16 @@ def angular_distribution(args):
 					)
 				)
 
+	"""
 	lina = numpy.argsort(radius_array)
 	sorted_radius = radius_array[lina[::-1]]
 	array_x = numpy.arange(sorted_radius.shape[0])
 	angles_no_mirror = angles_no_mirror[lina[::-1]]
+	"""
+	sorted_radius = radius_array
+	array_x = numpy.arange(sorted_radius.shape[0])
+	#"""
+	
 
 	# 2D distribution plot
 	print_progress('Create 2D legend plot')
@@ -3730,17 +3791,22 @@ def angular_distribution(args):
 	plt.savefig(output_bild_legend_png, dpi=args.dpi)
 	plt.clf()
 
+	print(array_x)
+	print(sorted_radius)
+	print(len(angles_no_mirror))
+	print(angles_no_mirror)
+
 	# 2D distribution txt file
 	print_progress('Create 2D legend text file')
 	output_bild_legend_txt = os.path.join(args.output_folder, '{0}.txt'.format(args.prefix))
 	with open(output_bild_legend_txt, 'w') as write:
 		for i in range(len(angles_no_mirror)):
 			#	for value_x, value_y in zip(array_x, sorted_radius):
-			phi     = '{0:10f}'.format(angles_no_mirror[i][0])
-			theta   = '{0:10f}'.format(angles_no_mirror[i][1])
 			value_x = '{0:6d}'.format(array_x[i])
 			value_y = '{0:6d}'.format(sorted_radius[i])
-			write.write('{0}\n'.format('\t'.join([phi, theta, value_x, value_y])))
+			phi     = '{0:10f}'.format(angles_no_mirror[i][0])
+			theta   = '{0:10f}'.format(angles_no_mirror[i][1])
+			write.write('{0}\n'.format('\t'.join([value_x, value_y, phi, theta])))
 
 
 # ========================================================================================
