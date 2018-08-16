@@ -1671,13 +1671,13 @@ def create_sxcmd_subconfig_meridien_standard_fresh():
 	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Perform 3D structure refinement as standard fresh run (default run), which starts from exhaustive searches using initial reference volume.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="fresh")
+	sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Performs 3D structure refinement using a quasi-Maximum Likelihood approach.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="fresh")
 
 	return sxcmd_subconfig
 
 def create_sxcmd_subconfig_meridien_standard_continuation():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Output Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
 
 ###	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
 	# All options should be in advanced tab
@@ -1750,12 +1750,12 @@ def create_sxcmd_subconfig_meridien_final():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("do_final"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = -1; token_edit.restore = -1; token_edit_list.append(token_edit)
 	
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Output Directory"; token_edit.help = "This directory must exist. In this mode information is read from files in this directory and the results will be written there."; token_edit.is_required = True; token_edit_list.append(token_edit)
 	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only", "Do only final 3D reconstruction using a fully finished iteration of meridien fresh run or local refinement run.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only", "Compute a final 3D reconstruction using either select or best resolution iteration of meridien.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
