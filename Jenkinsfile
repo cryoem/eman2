@@ -126,7 +126,7 @@ pipeline {
       }
       
       steps {
-        sh 'source $(conda info --root)/bin/activate eman-deps-11.3 && bash ci_support/build_no_recipe.sh'
+        sh 'source $(conda info --root)/bin/activate eman-deps-12.0 && bash ci_support/build_no_recipe.sh'
       }
     }
     
