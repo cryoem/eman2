@@ -15,7 +15,7 @@ Usage in command line
 
 sxpipe angular distribution does not support MPI. 
 
-Bild files created with small delta values might crash your chimera session depending on your computers available memory.
+Bild files created with small delta values might crash chimera session depending on the computer available memory.
 
 Do angular distribution to generate a chimera .bild file based on the projection parameters stored in params_file.
 
@@ -25,12 +25,12 @@ By default, the resulting .bild file has the same name as the params_file. Use t
 
   sxpipe.py angular_distribution  params_file output_folder --prefix=my_name
 
-Adjust the pixel_size, box_size and particle_radius values if you want to open the .bild file together with your volume in chimera.
+Adjust the pixel_size, box_size and particle_radius values if the .bild file will be opened together with the structure in chimera.
 
   sxpipe.py angular_distribution  params_file output_folder --pixel_size=1.14 --box_size=120 --particle_radius=50
 
 To adjust the number of bins used in the 3D histogram, use the --delta option.
-However, using small delta values might crash your chimera session depending on your computers available memory.
+However, using small delta values might crash chimera session depending on the computers available memory.
 
   sxpipe.py angular_distribution  params_file output_folder --delta=1.875
 
@@ -51,7 +51,7 @@ With the --dpi option, one can adjust the quality of the plot.
 === Advanced Parameters ===
 
 	; %%--%%pixel_size : Pixel size [A] : Pixel size of the project (default 1.0)
-	; %%--%%delta : Angular sampling step [Degrees] : Angular step size in degree - Low deltas combined with low symmetry might crash your chimera session (default 3.75)
+	; %%--%%delta : Angular sampling step [Degrees] : Angular step size in degree - Low deltas combined with low symmetry might crash chimera session (default 3.75)
 	; %%--%%box_size : Particle box size [Pixels] : Box size (default 256)
 	; %%--%%particle_radius : Particle radius [Pixels] : Particle radius (default 120)
 	; %%--%%method : Distribution method : Method used to create the reference angles (S or P) (default S)

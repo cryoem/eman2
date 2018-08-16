@@ -18,7 +18,7 @@ sxmeridien exists only in MPI version (Running MPI version does not require --MP
 There are five ways to run the program:
 
 \\ __1. Standard fresh run:__
-\\ The 3D refinement starts from exhaustive searches using initial reference volume. Option initialshift is used to initialize the program with predetermined translation parameters, for example by ISAC2 program, and stored in image headers.
+\\ The 3D refinement starts from exhaustive searches using initial reference structure. Option initialshift is used to initialize the program with predetermined translation parameters, for example by ISAC2 program, and stored in image headers.
   mpirun -np 64 sxmeridien.py bdb:sparx_stack meridien_fresh_outdir ref3d.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask3d.hdf
 
 \\ __2. Standard continuation run:__
@@ -48,9 +48,9 @@ There are five ways to run the program:
   ; %%--%%local_refinement : Perform local refinement: Perform local refinement starting from (1) user-provided orientation parameters stored in the header of input image stack or (2) the last fully finished iteration of meridien fresh run or local refinement run. Specific to local refinement modes. (default False)
 
   ; %%--%%radius : Particle radius [Pixels]: Outer radius in pixels of particles < int(boxsize/2)-1. Ignored in final reconstruction. (default -1) 
-  ; %%--%%mask3D : 3D mask file: Soft mask for the volume. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction. (default none)
+  ; %%--%%mask3D : 3D mask file: Soft mask for the map. If not given, a hard sphere of radius boxsize/2-1 will be used. Ignored in final reconstruction. (default none)
   ; %%--%%symmetry : Point-group symmetry: Point-group symmetry of the refined structure. Acceptable values are: cn and dn, where n is multiplicity. In addition, icos, oct, and tet are supported. Ignored in final reconstruction. (default c1)
-  ; %%--%%inires : Starting resolution [A]: Resolution of the initial volume used to start the refinement. Ignored in final reconstruction. (default 25.0)
+  ; %%--%%inires : Starting resolution [A]: Resolution of the initial map used to start the refinement. Ignored in final reconstruction. (default 25.0)
   ; %%--%%delta : Initial angular sampling step [Degrees]: Initial angular sampling step. Ignored in final reconstruction. (default 7.5)
   ; %%--%%xr : Search range [Pixels]: Range for translation search in both directions. Search is +/-xr. It can be fractional. Ignored in final reconstruction. (default 5.0) 
   ; %%--%%ts : Search step size [Pixels]: Step size of translation search in both directions. Search is within a circle of radius xr on a grid with steps ts. It can be fractional. (default 1.0)
@@ -67,7 +67,7 @@ There are five ways to run the program:
   ; %%--%%small_memory : Keep data in memory: Indicate if data should be kept in memory or not. By default, data will be kept in memory. Ignored in final reconstruction. (default False question reversed in GUI)
   ; %%--%%ccfpercentage : Correlation peaks to be included [%]: Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction. (default 99.9)
   ; %%--%%nonorm : Apply image norm correction: Indicate if image norm correction should be applied or not. By default, apply image norm correction. Ignored in final reconstruction. (default False question reversed in GUI)
-  ; %%--%%function : Reference preparation function: Specify name of function that program should use to prepare the reference volume after each iteration. Ignored in final reconstruction. (default do_volume_mask)
+  ; %%--%%function : Reference preparation function: Specify name of function that program should use to prepare the reference structure after each iteration. Ignored in final reconstruction. (default do_volume_mask)
 
 \\
 ===== Output =====
