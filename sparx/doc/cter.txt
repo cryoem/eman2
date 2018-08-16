@@ -185,7 +185,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/bin/sxcter.py
+sparx/bin/sxcter.py
 
 \\
 ==== See also ====

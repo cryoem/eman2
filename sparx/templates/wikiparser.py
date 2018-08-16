@@ -349,32 +349,6 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["outdir"].key_base == "outdir")
 		assert(sxcmd.token_dict["outdir"].type == "output")
 		sxcmd.token_dict["outdir"].type = "output_continue"
-	elif sxcmd.name == "sxrsort3d":
-		# 
-		# NOTE: Toshio Moriya 2017/11/15
-		# The following lines are needed for rsort3d.txt.
-		# 
-		assert(sxcmd.token_dict["wn"].key_base == "wn")
-		assert(sxcmd.token_dict["wn"].type == "ctfwin")
-		sxcmd.token_dict["wn"].type = "int"
-###		# 
-###		# NOTE: Toshio Moriya 2017/11/15
-###		# The following lines are not necessary anymore (needed for rsort3d-1105.txt),  
-###		# since sxrsort3d.py was reverted to 2016/11/07 version 
-###		# (GitHub commit: 3b64f388e866b6eb00fb2e564f998f53fdd6cba6)
-###		# 
-###		# DESIGN_NOTE: 2016/11/23 Toshio Moriya
-###		# The below should be a temporary solution until redesign sxrsort3d command interface
-###		assert(sxcmd.token_dict["refinement_method"].key_base == "refinement_method")
-###		assert(sxcmd.token_dict["refinement_method"].is_required == False)
-###		assert(sxcmd.token_dict["refinement_method"].is_locked == False)
-###		sxcmd.token_dict["refinement_method"].is_required = True
-###		sxcmd.token_dict["refinement_method"].is_locked = True
-###		# sxcmd.token_dict["refinement_method"].default = "SPARX"
-###		sxcmd.token_dict["refinement_method"].restore = "SPARX"
-###		assert(sxcmd.token_dict["masterdir"].key_base == "masterdir")
-###		assert(sxcmd.token_dict["masterdir"].is_required == False)
-###		sxcmd.token_dict["masterdir"].is_required = True
 	elif sxcmd.name == "sxlocres":
 		assert(sxcmd.token_dict["wn"].key_base == "wn")
 		assert(sxcmd.token_dict["wn"].type == "ctfwin")
@@ -1496,7 +1470,7 @@ def create_sxcmd_subconfig_postrefiner_halfset_vol():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("do_adaptive_mask"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask_threshold"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("consine_edge"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("cosine_edge"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("fsc_adj"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
@@ -1523,7 +1497,7 @@ def create_sxcmd_subconfig_postrefiner_single_vols():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("do_adaptive_mask"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask_threshold"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("consine_edge"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("cosine_edge"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
@@ -1551,7 +1525,7 @@ def create_sxcmd_subconfig_postrefiner_single_vols():
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("do_adaptive_mask"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask_threshold"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("consine_edge"); token_edit_list.append(token_edit)
+### 	token_edit = SXcmd_token(); token_edit.initialize_edit("cosine_edge"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
@@ -1574,7 +1548,7 @@ def create_sxcmd_subconfig_postrefiner_single_vols():
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("do_adaptive_mask"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask_threshold"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("consine_edge"); token_edit_list.append(token_edit)
+### 	token_edit = SXcmd_token(); token_edit.initialize_edit("cosine_edge"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
@@ -1959,30 +1933,6 @@ def create_exclude_list_sort3d():
 	
 	return exclude_list
 
-### 
-### NOTE: Toshio Moriya 2017/11/15
-### The following lines are necessary for rsort3d.txt.
-### 
-def create_exclude_list_rsort3d():
-	exclude_list = []
-	exclude_list.append("seed")
-	exclude_list.append("sausage")
-	
-	return exclude_list
-
-### 
-### NOTE: Toshio Moriya 2017/11/15
-### The following lines are not necessary anymore (needed for rsort3d-1105.txt),  
-### since sxrsort3d.py was reverted to 2016/11/07 version 
-### (GitHub commit: 3b64f388e866b6eb00fb2e564f998f53fdd6cba6)
-### 
-###	def create_exclude_list_rsort3d_1105():
-###		exclude_list = []
-###	
-###		exclude_list.append("instack")
-###	
-###		return exclude_list
-
 ### def create_exclude_list_sort3d_new():
 ###	exclude_list = []
 ###
@@ -2080,7 +2030,6 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_category = "sxc_isac"
 
 	sxcmd_role = "sxr_pipe"
-###	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/isac.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/isac2.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_isac2()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
@@ -2120,7 +2069,6 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_category = "sxc_meridien"
 
 	sxcmd_role = "sxr_pipe"
-	# sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien_20171120()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/gui_meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
@@ -2144,11 +2092,7 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/3dvariability.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/sort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/rsort3d.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
-### sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d_1105()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_iteration()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien_20171120.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_cluster_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2bdb.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_sort3d_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
@@ -2258,7 +2202,6 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_category = "sxc_isac"
 
 	sxcmd_role = "sxr_pipe"
-###	sxcmd_config_list.append(SXcmd_config("../doc/isac.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/isac2.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_isac2()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
@@ -2299,7 +2242,6 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_category = "sxc_meridien"
 
 	sxcmd_role = "sxr_pipe"
-	# sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_meridien_20171120()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
@@ -2325,11 +2267,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_variability_preprocess()))
 	sxcmd_config_list.append(SXcmd_config("../doc/3dvariability.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list=["symmetrize"]))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
-### sxcmd_config_list.append(SXcmd_config("../doc/rsort3d-1105.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d_1105()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_new.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d_new()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_iteration()))
-###	sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_cluster_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_sort3d_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack()))
@@ -2338,14 +2276,11 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_alt"
 	if is_dev_mode:
 		sxcmd_config_list.append(SXcmd_config("../doc/sort3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_sort3d()))
-		sxcmd_config_list.append(SXcmd_config("../doc/rsort3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_rsort3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_stack()))
 ### # NOTE: 2018/01/08 Toshio Moriya
 ### # post-refiner embedded sort3d_depth is removed recently.
 ###	sxcmd_config_list.append(SXcmd_config("../doc/sort3d_depth.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_postrefiner()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_single_vols()))
-	if is_dev_mode:
-		sxcmd_config_list.append(SXcmd_config("../doc/meridien_20171120.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_20171120_local()))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 
 	sxcmd_role = "sxr_util"
