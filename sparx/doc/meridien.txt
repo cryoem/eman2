@@ -35,7 +35,7 @@ One can change some parameters (MPI settings have to be the same)
 
 \\ __5. Final reconstruction only:__
 \\ Do only final reconstruction using a fully finished iteration of meridien (here number 21).
-  mpirun -np 64 sxmeridien.py --do_final=21  meridien_fresh_outdir
+  mpirun -np 64 sxmeridien.py --do_final=21  meridien_outdir
 
 
 \\
