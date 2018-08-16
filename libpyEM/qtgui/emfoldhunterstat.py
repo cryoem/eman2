@@ -443,10 +443,14 @@ class E2FoldHunterStat(object):
 		###################################################
 
 
-if __name__ == '__main__':
+def main():
 	from .emapplication import EMApp
 	em_app = EMApp()
 	window2 = E2FoldHunterStat()
 	print("This program is meant to be run in conjunction with e2validatemed.py in the programs directory")
 	em_app.show()
 	em_app.execute()
+
+
+if __name__ == '__main__':
+	main()

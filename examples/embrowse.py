@@ -52,7 +52,7 @@ def on_done(string_list):
 	app.quit()
 
 # This is just an example of how to make a browser. You should import the browser module from emselector
-if __name__ == '__main__':
+def main():
 	em_app = EMApp()
 	app = em_app
 	browser = EMBrowser()
@@ -60,3 +60,6 @@ if __name__ == '__main__':
 	em_app.show()
 	em_app.execute()
 
+
+if __name__ == '__main__':
+	main()

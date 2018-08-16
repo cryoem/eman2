@@ -596,8 +596,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 		self.slice.setRange(min,max)
 	
 		
-	
-if __name__ == '__main__':
+def main():
 	from .emapplication import EMApp
 	from .emglobjects import EM3DGLWidget
 	em_app = EMApp()
@@ -619,3 +618,6 @@ if __name__ == '__main__':
 	em_app.show()
 	em_app.execute()
 
+
+if __name__ == '__main__':
+	main()
