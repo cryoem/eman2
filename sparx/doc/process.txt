@@ -99,7 +99,7 @@ To concatenate output files,
   sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3
 
 14. PostRefiner - Post-refine maps or images by enhancing the power spectrum after 2D averaging, 3D refinement, or 3D sorting run.
-\\ (1) Halfset Volumes Mode
+\\ (1) Half-set Maps Mode
 \\ For a pair of unfiltered odd & even halfset maps, as produced by MERIDIEN, this command executes the following steps:
   - Calculate FSC with provided mask and adjust the FSC.
   - Sum two maps.
@@ -121,7 +121,7 @@ To concatenate output files,
   sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=aa.txt  --fl=4.7  --aa=0.02 --fsc_adj
   sxprocess.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --output=postrefine_fullset_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
 
-\\ (2) Cluster Volumes Mode or Single Volumes Mode:
+\\ (2) Cluster Maps Mode or Single Map Mode:
 \\ For cluster maps produced by SORT3D_DEPTH, this command executes the following processes:
   - Apply mask
   - Apply MTF correction (optional);
