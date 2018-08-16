@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxmeridien =====
-3D Refinement: Perform 3D structure refinement using a quasi-Maximum Likelihood approach.
+3D Refinement: Performs 3D structure refinement using a quasi-Maximum Likelihood approach.
 
 \\
 ===== Usage =====
