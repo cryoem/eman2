@@ -1947,7 +1947,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.target().load_rotation(self.get_current_rotation())
 
 	
-if __name__ == '__main__':
+def main():
 	em_app = EMApp()
 	
 	#First demonstration
@@ -1960,3 +1960,7 @@ if __name__ == '__main__':
 	
 	em_app.show()
 	em_app.execute()
+
+
+if __name__ == '__main__':
+	main()

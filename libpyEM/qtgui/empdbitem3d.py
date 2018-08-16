@@ -1209,7 +1209,7 @@ class EMSphereModelInspector(EMPDBItem3DInspector):
 	def __init__(self, name, item3d):
 		EMPDBItem3DInspector.__init__(self, name, item3d)
 
-if __name__ == '__main__' :
+def main():
 	print("WARNING: This module is not designed to be run as a program. The browser you see is for testing purposes.")
 	from .emapplication import EMApp
 	from .embrowser import EMBrowserWidget
@@ -1217,3 +1217,7 @@ if __name__ == '__main__' :
 	browser = EMBrowserWidget(withmodal = False, multiselect = False)
 	browser.show()
 	app.execute()
+
+
+if __name__ == '__main__' :
+	main()

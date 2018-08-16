@@ -718,7 +718,7 @@ class EMIsoInspector(QtGui.QWidget):
 	def set_hist(self,hist,minden,maxden):
 		self.hist.set_data(hist,minden,maxden)
 
-if __name__ == '__main__':
+def main():
 	from .emglobjects import EM3DGLWidget
 	from .emapplication import EMApp
 	app = EMApp()
@@ -729,3 +729,7 @@ if __name__ == '__main__':
 	
 	app.show()
 	app.execute()
+
+
+if __name__ == '__main__':
+	main()

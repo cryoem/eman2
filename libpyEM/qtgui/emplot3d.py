@@ -2559,23 +2559,6 @@ class EMPlot3DInspector(QtGui.QWidget):
 		try: self.regresswin.close()
 		except: pass
 
-
-# This is just for testing, of course
-if __name__ == '__main__':
-
-	app = EMApp()
-	window = EMPlot3DWidget(app)
-	if len(sys.argv)==1 :
-		l=[i/30.*pi for i in range(30)]
-		window.set_data([[0,1,2,3],[1,2,3,4],[2,3,4,3],[2,4,2,6]],"test")
-		window.set_data([l,l,l,[sin(2*i) for i in l]],"test2")
-	else:
-		for i in range(1,len(sys.argv)):
-			window.set_data_from_file(sys.argv[i])
-
-	app.show()
-	app.execute()
-
 class EMDataFnPlotter(QtGui.QWidget):
 
 	def __init__(self, parent = None, data=None):
@@ -2661,3 +2644,24 @@ class EMDataFnPlotter(QtGui.QWidget):
 # 		try: self.data = np.loadtxt(f,dtype=np.float32)
 # 		except: print("Could not read {}".format(f))
 # 		self.render()
+
+
+# This is just for testing, of course
+def main():
+	
+	app = EMApp()
+	window = EMPlot3DWidget(app)
+	if len(sys.argv)==1 :
+		l=[i/30.*pi for i in range(30)]
+		window.set_data([[0,1,2,3],[1,2,3,4],[2,3,4,3],[2,4,2,6]],"test")
+		window.set_data([l,l,l,[sin(2*i) for i in l]],"test2")
+	else:
+		for i in range(1,len(sys.argv)):
+			window.set_data_from_file(sys.argv[i])
+	
+	app.show()
+	app.execute()
+
+
+if __name__ == '__main__':
+	main()

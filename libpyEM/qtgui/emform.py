@@ -2126,8 +2126,7 @@ def on_cancel():
 
 
 # This is just for testing, of course
-if __name__ == '__main__':
-	
+def main():
 	from .emapplication import EMApp
 	em_app = EMApp()
 	window = EMFormWidget(params=get_example_form_params())
@@ -2142,3 +2141,7 @@ if __name__ == '__main__':
 	
 	em_app.show()
 	em_app.execute()
+
+
+if __name__ == '__main__':
+	main()

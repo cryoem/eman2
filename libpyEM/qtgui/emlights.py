@@ -1433,7 +1433,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 
 		
 # This is just for testing, of course
-if __name__ == '__main__':
+def main():
 	from .emapplication import EMApp
 	from .emglobjects import EM3DGLWidget
 	em_app = EMApp()
@@ -1442,3 +1442,7 @@ if __name__ == '__main__':
 	window.set_model(em_lights) 
 	em_app.show()
 	em_app.execute()
+		
+	
+if __name__ == '__main__':
+	main()
