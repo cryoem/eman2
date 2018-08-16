@@ -52,7 +52,7 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/bin/sxgui_cter.py
+sparx/bin/sxgui_cter.py
 
 \\
 ==== See also ====

@@ -413,7 +413,7 @@ def main():
 	parser.add_option("--B_stop",               type="float",         default=0.0,                   help="=0.0, cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency. (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--do_adaptive_mask",     action="store_true",  default=False,                 help="generate adaptive mask with the given threshold")
 	parser.add_option("--mask_threshold",       type="float",         default=5.0,                   help="=5.0, the threshold (number of sigmas of summed two halves over avg) for adaptive_mask (effective only with --do_adaptive_mask)")
-	parser.add_option("--consine_edge",         type="float",         default=6.0,                   help="=6.0, the width in pixels for cosine transition area (effective only with --do_adaptive_mask)")
+	parser.add_option("--cosine_edge",          type="float",         default=6.0,                   help="=6.0, the width in pixels for cosine transition area (effective only with --do_adaptive_mask)")
 	parser.add_option("--dilation",             type="float",         default=6.0,                   help="=6.0, the pixels for dilate or erosion of binary mask (effective only with --do_adaptive_mask)")
 	#parser.add_option("--randomphasesafter",   type="float",         default=0.8,                   help=" set Fourier pixels random phases after FSC value ")
 	# window
@@ -440,7 +440,7 @@ def main():
 	# Options for balance_angular distribution
 	parser.add_option('--balance_angular_distribution', action="store_true",  default=False,         help='balance an angular distribution')
 	parser.add_option('--max_occupy',			type='int',           default=1,                     help='maximum number of angular orientations per reference angle (default 1)')
-	parser.add_option('--angstep',				type='float',         default=15.0,                  help='angular step of reference angles (number of bins of angular hstogram (default 15.0)')
+	parser.add_option('--angstep',				type='float',         default=15.0,                  help='angular step of reference angles, i.e., number of bins of angular histogram) (default 15.0)')
 
 	(options, args) = parser.parse_args()
 
@@ -1105,7 +1105,7 @@ def main():
 			log_main.add("Output            :"+str(options.output))
 			log_main.add("Do_adaptive_mask  :"+str(options.do_adaptive_mask))
 			log_main.add("Mask_threshold    :"+str(options.mask_threshold)+" sigma above the avg of the map to be thresholded")
-			log_main.add("Cosine_edge       :"+str(options.consine_edge))
+			log_main.add("Cosine_edge       :"+str(options.cosine_edge))
 			log_main.add("Dilation          :"+str(options.dilation))
 			# log_main.add("randomphasesafter :"+str(options.randomphasesafter))
 			log_main.add("------------->>> processing <<<-----------------------")
@@ -1189,18 +1189,18 @@ def main():
 
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
-					#log_main.add("Options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
+					#log_main.add("Options.mask_threshold, options.dilation, options.cosine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.cosine_edge))
 					from utilities import model_circle
 					cm = model_circle(map1.get_xsize()//2-1, map1.get_xsize(), map1.get_ysize(), map1.get_zsize())
 					if single_map:
 						st = Util.infomask(map1, cm, True)
 						del cm
-						m = Util.adaptive_mask(map1, st[0]+options.mask_threshold*st[1], options.dilation, options.consine_edge)
+						m = Util.adaptive_mask(map1, st[0]+options.mask_threshold*st[1], options.dilation, options.cosine_edge)
 					else:
 						st = Util.infomask((map1+map2)/2.0, cm, True)
 						del cm
-						m = Util.adaptive_mask((map1+map2)/2.0, st[0]+options.mask_threshold*st[1], options.dilation, options.consine_edge)
-					log_main.add("Actually used threhold, options.dilation, options.consine_edge %f %5.2f %5.2f"%((st[0]+options.mask_threshold*st[1]), options.dilation, options.consine_edge))
+						m = Util.adaptive_mask((map1+map2)/2.0, st[0]+options.mask_threshold*st[1], options.dilation, options.cosine_edge)
+					log_main.add("Actually used threhold, options.dilation, options.cosine_edge %f %5.2f %5.2f"%((st[0]+options.mask_threshold*st[1]), options.dilation, options.cosine_edge))
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 				else:
 					m = None

@@ -50,11 +50,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/bin/sxgui_meridien.py
+sparx/bin/sxgui_meridien.py
 
 \\
 ==== See also ====
-[[http://SPHIRE.mpg.de/wiki/doku.php?id=pipeline:meridien:sxmeridien|sxmeridien]]
+[[http://sphire.mpg.de/wiki/doku.php?id=pipeline:meridien:sxmeridien|sxmeridien]]
 
 \\
 ==== Maturity ====

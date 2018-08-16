@@ -75,7 +75,7 @@ This program now works for both hdf and bdb files.
 || xform.align3d || Use this header entry key to operate on 3D alignment parameters. This automatically includes the parameters "phi", "theta", "psi", "s3x", "s3y", "s3z", "mirror" and "scale". ||
 || ctf || Contrast Transfer Function is accessible as object "ctf" and involves six parameters: defocus [microns], cs [mm], voltage [kV], apix [A], bfactor [%%A^2%%], ampcont [%], astigmatism amplitude, astigmatism angle. ||
 
-See description of parameters [[http://SPARX-em.org/SPARXwiki/I_O|Reading and writing the image files in SPARX/EMAN2]].
+See description of parameters [[http://sparx-em.org/sparxwiki/I_O|Reading and writing the image files in SPARX/EMAN2]].
 
 \\
 === Usage in Python Programming ===
@@ -97,11 +97,11 @@ Category 1:: APPLICATIONS
 
 \\
 ==== Files ====
-SPARX/bin/sxheader.py
+sparx/bin/sxheader.py
 
 \\
 ==== See also ====
-[[http://SPARX-em.org/SPARXwiki/I_O|Reading and writing the image files in SPARX/EMAN2]]
+[[http://sparx-em.org/sparxwiki/I_O|Reading and writing the image files in SPARX/EMAN2]]
 
 \\
 ==== Maturity ====
