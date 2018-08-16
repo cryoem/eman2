@@ -998,7 +998,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Process mouse events
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			QtGui.qApp.setOverrideCursor(self.appcursor)
-			self.sgmousepress.emit([event.x(), event.y()])
+			self.sgmousepress.emit(event.x(), event.y())
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "data"):
 			QtGui.qApp.setOverrideCursor(self.datacursor)
 			filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
@@ -1115,7 +1115,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		x = event.x()
 		y = event.y()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
-			self.sgmousemove.emit([event.x(), event.y()])
+			self.sgmousemove.emit(event.x(), event.y())
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
 			self.newnode.setEndAndWidth(0.0, 0.0, 0.0, x - self.first_x, self.first_y - y, 0.0, 20.0)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ruler"):
@@ -3229,10 +3229,14 @@ class GLdemo(QtGui.QWidget):
 		self.widget.close()
 
 
-if __name__ == "__main__":
+def main():
 	import sys
 	#from pmwidgets import PMIntEntryWidget, PMStringEntryWidget, PMBoolWidget, PMFileNameWidget, PMComboWidget
 	app = QtGui.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()
 	app.exec_()
+
+
+if __name__ == "__main__":
+	main()

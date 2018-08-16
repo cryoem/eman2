@@ -841,7 +841,7 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.target().set_perspective(False)
 
 
-if __name__ == '__main__':
+def main():
 	from .emapplication import EMApp
 	import sys
 	em_app = EMApp()
@@ -857,3 +857,7 @@ if __name__ == '__main__':
 		window.set_data(a,sys.argv[1])
 	em_app.show()
 	em_app.execute()
+
+
+if __name__ == '__main__':
+	main()

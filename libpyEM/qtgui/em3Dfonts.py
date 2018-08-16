@@ -655,7 +655,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 #		self.scale.setValue(newscale)
 #		
 # This is just for testing, of course
-if __name__ == '__main__':
+def main():
 	from .emapplication import EMApp
 	from .emimage3d import EMImage3DWidget
 	em_app = EMApp()
@@ -666,3 +666,7 @@ if __name__ == '__main__':
 	window.cam.cam_z = -25 		# From David's "this is me hacking"
 	em_app.show()
 	em_app.execute()
+
+
+if __name__ == '__main__':
+	main()

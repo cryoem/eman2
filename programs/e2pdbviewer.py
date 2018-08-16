@@ -38,9 +38,6 @@ from eman2_gui.emscene3d import EMScene3D, EMInspector3D
 import os
 import sys
 
-from PyQt4 import QtCore
-from PyQt4 import QtGui
-
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
