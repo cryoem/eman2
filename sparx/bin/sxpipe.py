@@ -3643,6 +3643,7 @@ def angular_distribution(args):
 	angles_no_mirror = numpy.array(
 		symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror, do_flip=False)
 		)
+
 	# Create cartesian coordinates
 	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
@@ -3712,8 +3713,10 @@ def angular_distribution(args):
 					)
 				)
 
-	sorted_radius = numpy.sort(radius_array)[::-1]
+	lina = numpy.argsort(radius_array)
+	sorted_radius = radius_array[lina[::-1]]
 	array_x = numpy.arange(sorted_radius.shape[0])
+	angles_no_mirror = angles_no_mirror[lina[::-1]]
 
 	# 2D distribution plot
 	print_progress('Create 2D legend plot')
@@ -3730,10 +3733,13 @@ def angular_distribution(args):
 	print_progress('Create 2D legend text file')
 	output_bild_legend_txt = os.path.join(args.output_folder, '{0}.txt'.format(args.prefix))
 	with open(output_bild_legend_txt, 'w') as write:
-		for value_x, value_y in zip(array_x, sorted_radius):
-			value_x = '{0:6d}'.format(value_x)
-			value_y = '{0:6d}'.format(value_y)
-			write.write('{0}\n'.format('\t'.join([value_x, value_y])))
+		for i in range(len(angles_no_mirror)):
+			#	for value_x, value_y in zip(array_x, sorted_radius):
+			phi     = '{0:10f}'.format(angles_no_mirror[i][0])
+			theta   = '{0:10f}'.format(angles_no_mirror[i][1])
+			value_x = '{0:6d}'.format(array_x[i])
+			value_y = '{0:6d}'.format(sorted_radius[i])
+			write.write('{0}\n'.format('\t'.join([phi, theta, value_x, value_y])))
 
 
 # ========================================================================================
