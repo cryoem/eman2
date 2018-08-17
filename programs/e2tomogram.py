@@ -50,7 +50,7 @@ def main():
 	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=8, col=1, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
 	
 	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
-	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False, guitype='boolbox',row=9, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False, guitype='boolbox',row=9, col=1, rowspan=1, colspan=1,mode="easy[True]")
 	
 	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False,guitype='boolbox',row=10, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False, mode="easy[True]", guitype="boolbox", row=10,col=1, rowspan=1, colspan=1)
@@ -65,7 +65,7 @@ def main():
 
 	parser.add_argument("--correctrot", action="store_true",help="correct for global rotation and position sample flat in tomogram.", default=False,guitype='boolbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--threads", type=int,help="Number of threads", default=11,guitype='intbox',row=12, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=12, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 
@@ -545,11 +545,18 @@ def calc_tltax_rot(imgs, options):
 		vs.append(np.mean(v))
 		
 	vs[0]=vs[180]=0 #### sometimes there are false positive vertical peaks
+	vs=np.array(vs)
+	
+	#### down weight the 180 degree end a bit to avoid the 0/180 ambiguity..
+	nw=30
+	vs[-60:]*=(1-0.3*np.arange(1,nw+1, dtype=float)/nw)
+	
 	tltax=angs[np.argmax(vs)]
 	e=from_numpy(sm)
 	if options.writetmp: 
 		e.write_image(options.tmppath+"commonline.hdf")
 		np.savetxt(options.tmppath+"tltrot.txt", np.vstack([angs, vs]).T)
+		
 	return tltax
 
 #### subthread for making tomogram by tiles. similar to make_tomogram, just for small cubes

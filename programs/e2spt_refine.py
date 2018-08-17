@@ -21,7 +21,7 @@ def main():
 
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction", default=-1, guitype='floatbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
+	#parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction", default=-1, guitype='floatbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--mass", type=float,help="mass", default=500.0, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--tarres", type=float,help="target resolution", default=10, guitype='floatbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
@@ -34,7 +34,7 @@ def main():
 
 	parser.add_argument("--pkeep", type=float,help="fraction of particles to keep", default=0.8, guitype='floatbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--tkeep", type=float,help="fraction of tilt to keep. only used when tltrefine is specified. default is 0.5", default=0.5, guitype='floatbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
+	#parser.add_argument("--tkeep", type=float,help="fraction of tilt to keep. only used when tltrefine is specified. default is 0.5", default=0.5, guitype='floatbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0, guitype='floatbox',row=8, col=2,rowspan=1, colspan=1, mode="model")
 
@@ -71,9 +71,9 @@ def main():
 	
 	if options.goldcontinue==False:
 		er=EMData(ref,0)
-		if abs(1-old_div(ep["apix_x"],er["apix_x"]))>0.01:
+		if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or or ep["nx"]!=er["nx"]:
 			print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
-			rs=old_div(er["apix_x"],ep["apix_x"])
+			rs=er["apix_x"]/ep["apix_x"]
 			if rs>1.:
 				run("e2proc3d.py {} {}/model_input.hdf --clip {} --scale {} --process mask.soft:outer_radius=-1".format(ref, options.path, ep["nx"], rs))
 			else:
@@ -123,15 +123,18 @@ def main():
 				msk=" --automask3d {}".format(msk)
 		#msk=" --automask3d mask.fromfile:filename=Subtomograms/atpase_mask.hdf"
 		#msk=" --automask3d mask.cylinder:outer_radius=14:phirange=360:zmax=50.0:zmin=14.0 --automask3d2 mask.addshells.gauss:val1=0:val2=8"
-		s=" --align"
+		s=""
+		if options.goldstandard>0:
+			s+=" --align"
+		
 		if options.setsf:
 			s+=" --setsf {}".format(options.setsf)
 			
 		if options.localfilter:
 			s+=" --tophat local "
 			
-		if options.gaussz>0:
-			s+=" --m3dpostprocess filter.lowpass.gaussz:cutoff_freq={}".format(options.gaussz)
+		#if options.gaussz>0:
+			#s+=" --m3dpostprocess filter.lowpass.gaussz:cutoff_freq={}".format(options.gaussz)
 			
 		os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(options.path, options.path))
 		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr)), os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr)), os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, options.tarres, options.threads, options.sym, msk, s)

@@ -254,9 +254,9 @@ def make_ref(fname, options):
 		pp=" --process filter.lowpass.gauss:cutoff_freq={:.3f} --process filter.lowpass.randomphase:cutoff_freq={:.3f} --process normalize.edgemean".format(options.filterto, options.filterto)
 
 
-		if ep["apix_x"]!=er["apix_x"]:
-			if i==0: print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
-			rs=old_div(er["apix_x"],ep["apix_x"])
+		if ep["apix_x"]!=er["apix_x"] or ep["nx"]!=er["nx"]:
+			print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
+			rs=er["apix_x"]/ep["apix_x"]
 
 			if rs>1.:
 				run("e2proc3d.py {} {}/ref.hdf --clip {} --scale {} {}".format(options.reference, options.path, ep["nx"], rs, pp))

@@ -3354,7 +3354,7 @@ bool RT2Dto3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<flo
 
 // 	float sim=st2->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
 	float sim;
-	if (ny>=(int)params["boxsize"]-2){
+	if (ny>=(int)params["boxsize"]-2 and st2->has_attr("ctf")){
 		sim=st2->cmp("frc",small_to,Dict("snrweight", 1));
 	}
 	else{
