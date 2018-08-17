@@ -197,7 +197,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		self.pdb_model.set_current_text(pdb_file) #updates GL with the new pdb file
 
 
-if __name__ == '__main__':
+def main():
 	em_app = EMApp()
 	pdb_widget = EMPDBValWidget()
 
@@ -206,3 +206,7 @@ if __name__ == '__main__':
 	
 	em_app.show()
 	em_app.execute()
+
+
+if __name__ == '__main__':
+	main()

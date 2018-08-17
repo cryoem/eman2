@@ -643,7 +643,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("multiref_polar_ali_2d_peaklist", &EMAN::Util::multiref_polar_ali_2d_peaklist)
 		.def("multiref_polar_ali_2d_peaklist_local", &EMAN::Util::multiref_polar_ali_2d_peaklist_local)
 		.def("assign_projangles", &EMAN::Util::assign_projangles)
-		.def("assign_projangles_f", &EMAN::Util::assign_projdirs_f)
+		.def("assign_projangles_f", &EMAN::Util::assign_projangles_f)
 		.def("assign_projdirs_f", &EMAN::Util::assign_projdirs_f)
 		.def("cone_dirs_f", &EMAN::Util::cone_dirs_f)
 		.def("nearest_ang_f", &EMAN::Util::nearest_ang_f)

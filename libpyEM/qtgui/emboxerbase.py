@@ -69,7 +69,7 @@ TEMPLATE_MIN = 30
 
 EMBOXERBASE_DB = "e2boxercache/base.json"
 
-def my_main():
+def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = '''%prog [options] <image> <image2>....
 
@@ -2669,5 +2669,6 @@ class EMBoxerInspector(QtGui.QWidget):
 				if not self.browser.isVisible(): self.browser.show()
 			except: pass
 
+			
 if __name__ == "__main__":
-	my_main()
+	main()

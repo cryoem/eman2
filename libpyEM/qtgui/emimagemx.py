@@ -402,7 +402,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.force_display_update()
 		self.updateGL()
 
-	def delete_set(self,todel):
+	def delete_set(self,todel, update=True):
 		"Deletes a set or multiple sets. todel is a string or list of strings to delete"
 
 		if isinstance(todel,str): todel=[todel]
@@ -1766,7 +1766,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			box_image = self.get_box_image(lc[0])
 			xs=int(box_image.get_xsize())
 			ys=int(box_image.get_ysize())
-			drag = QtGui.QDrag(self.get_parent())
+			drag = QtGui.QDrag(self.parent())
 			mime_data = QtCore.QMimeData()
 
 			mime_data.setData("application/x-eman", dumps(box_image))
@@ -1784,7 +1784,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			#drag.setPixmap(pm)
 			#drag.setHotSpot(QtCore.QPoint(12,12))
 
-			dropAction = drag.start()
+			dropAction = drag.exec_()
 
 	def __drag_mode_mouse_double_click(self,event):
 		lc=self.scr_to_img((event.x(),event.y()))
@@ -3423,7 +3423,7 @@ class EM3DDataListCache(EMMXDataCache):
 	def is_3d(self): return True
 
 
-if __name__ == '__main__':
+def main():
 	em_app = EMApp()
 	window = EMImageMXWidget(application=em_app)
 
@@ -3443,3 +3443,7 @@ if __name__ == '__main__':
 	em_app.show()
 	window.optimally_resize()
 	em_app.execute()
+
+
+if __name__ == '__main__':
+	main()

@@ -721,7 +721,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		#self.scale.setValue(newscale)
 
 
-if __name__ == '__main__':
+def main():
 	from .emapplication import EMApp
 	from .emglobjects import EM3DGLWidget
 	
@@ -742,3 +742,7 @@ if __name__ == '__main__':
 
 	em_app.show()
 	em_app.execute()
+
+
+if __name__ == '__main__':
+	main()
