@@ -71,7 +71,7 @@ def main():
 	
 	if options.goldcontinue==False:
 		er=EMData(ref,0)
-		if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or or ep["nx"]!=er["nx"]:
+		if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or ep["nx"]!=er["nx"]:
 			print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
 			rs=er["apix_x"]/ep["apix_x"]
 			if rs>1.:
