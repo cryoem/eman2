@@ -3555,12 +3555,12 @@ def angular_distribution(args):
 	COLUMN_Y = 1
 	COLUMN_Z = 2
 	print(" delta ",args.delta)
-	def angular_histogram(params, angstep = 15., sym= "c1"):
+	def angular_histogram(params, angstep = 15., sym= "c1", method='S'):
 		from fundamentals import symclass
 		from utilities import nearest_fang, angles_to_normals
 
 		smc  = symclass(sym)
-		eah  = smc.even_angles(angstep, inc_mirror=0)
+		eah  = smc.even_angles(angstep, inc_mirror=0, method=method)
 
 		leah = len(eah)
 		u = []
@@ -3660,36 +3660,32 @@ def angular_distribution(args):
 	# Create 2 symclass objects.
 	# One C1 object for the inital reference angles.
 	# One related to the actual symmetry, to deal with mirror projections.
-	symclass_c1 = fundamentals.symclass('c1')
-	symclass = fundamentals.symclass(symmetry)
+	sym_class = fundamentals.symclass(symmetry)
 
 	print_progress('Reduce data to symmetry - This might take some time for high symmetries')
 	# Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
-	data = numpy.array( symclass.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror))
+	data = numpy.array( sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror))
 	# Create cartesian coordinates
 	data_cart = to_cartesian(data)
 
-	if False:
+	if True:
 		print_progress('Create reference angles')
 		# Create reference angles all around the sphere.
-		angles = numpy.array( symclass_c1.even_angles(args.delta, inc_mirror=1, method=args.method) )
+		ref_angles_data = sym_class.even_angles(args.delta, inc_mirror=1, method=args.method)
+
+		# Find symmetry neighbors
 		# Create cartesian coordinates
+		angles = sym_class.symmetry_neighbors(ref_angles_data)
 		angles_cart = to_cartesian(angles)
 
 		# Reduce the reference data by moving mirror projections into the non-mirror region of the sphere.
-		angles_no_mirror = symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror)
-		angles_reduce = numpy.array( angles_no_mirror )
 		# Create cartesian coordinates
+		angles_reduce = sym_class.reduce_anglesets(angles, inc_mirror=inc_mirror)
 		angles_reduce_cart = to_cartesian(angles_reduce)
 
 		# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
-		###angles_no_mirror = numpy.array( symclass.reduce_anglesets(angles.tolist(), inc_mirror=inc_mirror, do_flip=False) )
-		angles_no_mirror = symclass.reduce_anglesets(angles.tolist(), inc_mirror=1)
-
-		for i in range(len(angles_no_mirror)-1,-1,-1):
-			if( not symclass.is_in_subunit(angles_no_mirror[i][0], angles_no_mirror[i][1], 0)): del angles_no_mirror[i]
-
 		# Create cartesian coordinates
+		angles_no_mirror = [entry for entry in ref_angles_data if sym_class.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=0)] 
 		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
 		# Find nearest neighbours to the reference angles with the help of a KDTree
@@ -3702,25 +3698,21 @@ def angular_distribution(args):
 		hiti = [[] for i in range(max(knn_data)+1)]
 		for i,q in enumerate(knn_data):
 			hiti[q].append(i)
-		for i,q in enumerate(	hiti):  print(" hiti  ",i,q)
+		for i,q in enumerate(	hiti):  print(" hiti  ", i, q)
 
 		# Calculate a histogram for the assignments to the C1 angles
-		radius = numpy.bincount(knn_data)
+		radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
 		# New output histogram array that needs to be filled later
-		radius_array = numpy.zeros(angles.shape[0], dtype=int)
+		radius_array = numpy.zeros(angles_cart.shape[0], dtype=int)
 
 		# Deal with symmetry wrapping!
 		# Every index idx corresponds to the angle prior to the symmetry wrapping.
 		# Every value of value corresponds to the angle after symmetry wrapping.
 		# Values can occure multiple times and therefore can contain the member information for multiple reference angles.
-		for idx, value in enumerate(knn_angle):
-			try:
-				radius_array[value] += radius[idx]
-			except:
-				pass
+		numpy.add.at(radius_array, knn_angle, radius)
 
 	else:
-		occupy, eva = angular_histogram(symclass.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= args.symmetry)
+		occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= symmetry, method=args.method)
 		radius_array = numpy.array(occupy)
 		angles_no_mirror = numpy.array(eva)
 		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
