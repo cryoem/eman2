@@ -918,7 +918,7 @@ class EMItem3DInspector(QtGui.QTabWidget):
 		if tp: tt = tp.inverse()*rotation
 		self.item3d().getTransform().set_rotation(tt.get_rotation())
 		
-if __name__ == '__main__':
+def main():
 	#Test code
 	root = EMItem3D(0)
 	a = EMItem3D(root)
@@ -970,3 +970,7 @@ if __name__ == '__main__':
 	root.removeChild(a)
 	root.displayTree()
 	del a, b, c, aa, ab, ac, ba, bb, bc, ca, cb, cc, aaa, aab, aac #Ensure instances are deleted before the class object is deleted, which is important in EMItem3D.__del__(self):
+
+
+if __name__ == '__main__':
+	main()

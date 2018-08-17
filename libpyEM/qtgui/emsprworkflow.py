@@ -6624,11 +6624,14 @@ class E2ResolutionTask(WorkFlowTask):
 #	
 
 	
-if __name__ == '__main__':
-	
+def main():
 	from .emapplication import EMApp
 	em_app = EMApp()
 	sprinit = SPRInitTask()
 	window = sprinit.run_form() 
 	#em_app.show()
 	em_app.execute()	
+
+
+if __name__ == '__main__':
+	main()

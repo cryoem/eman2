@@ -60,6 +60,7 @@ ploticon = [
 
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtCore import QString
 from PyQt4.QtOpenGL import QGLWidget
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU
@@ -179,7 +180,7 @@ class EMHistogramWidget(EMGLWidget):
 	def closeEvent(self,event):
 		self.clear_gl_memory()
 		EMGLWidget.closeEvent(self, event)
-		if self.inspector : self.inspector.closeEvent(self, event)
+		if self.inspector : self.inspector.closeEvent(event)
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_C:
@@ -1084,7 +1085,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.allbut.clicked.connect(self.selAll)
 		self.nonebut.clicked.connect(self.selNone)
 		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QListWidgetItem].connect(self.list_item_changed)
+		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.list_item_changed)
 		self.saveb.clicked.connect(self.savePlot)
 		self.pdfb.clicked.connect(self.savePdf)
 		self.concatb.clicked.connect(self.saveConcatPlot)
@@ -1421,16 +1422,20 @@ class DragListWidget(QtGui.QListWidget):
 		dropact = drag.exec_(Qt.CopyAction)
 
 
-# if __name__ == '__main__': # This is just for testing, of course
-# 	app = EMApp()
-# 	window = EMHistogramWidget(app)
-# 	if len(sys.argv)==1 :
-# 		l=[i/30.*pi for i in range(30)]
-# 		window.set_data([[1,2,3,4],[2,3,4,3]],"test")
-# 		window.set_data([l,[sin(2*i) for i in l]],"test2")
-# 	else:
-# 		for i in range(1,len(sys.argv)):
-# 			window.set_data_from_file(sys.argv[i])
-#
-# 	app.show()
-# 	app.execute()
+def main(): # This is just for testing, of course
+	app = EMApp()
+	window = EMHistogramWidget(app)
+	if len(sys.argv)==1 :
+		l=[i/30.*pi for i in range(30)]
+		window.set_data([[1,2,3,4],[2,3,4,3]],"test")
+		window.set_data([l,[sin(2*i) for i in l]],"test2")
+	else:
+		for i in range(1,len(sys.argv)):
+			window.set_data_from_file(sys.argv[i])
+
+	app.show()
+	app.execute()
+
+
+if __name__ == '__main__':
+	main()
