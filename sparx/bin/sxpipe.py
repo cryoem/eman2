@@ -3640,6 +3640,30 @@ def angular_distribution(args):
 
 		return cartesian_array
 
+	def add_mirrored(eah, smc):
+		#eah  = smc.even_angles(angstep, inc_mirror=0)
+		leah = len(eah)
+		u = []
+		for q in eah:
+			#print("q",q)
+			m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
+			#print("m",m)
+			itst = len(u)
+			for c in m:
+				#print("c",c)
+				if smc.is_in_subunit(c[0],c[1],1) :
+					#print(" is in 1")
+					if not smc.is_in_subunit(c[0],c[1],0) :
+						#print("  outside")
+						u.append(c)
+						break
+			if(len(u) != itst+1):
+				u.append(q)  #  This is for exceptions that cannot be easily handled
+		seaf = []
+		for q in eah+u:  seaf += smc.symmetry_related(q)
+		lseaf = 2*leah
+		return lseaf, leah, seaf
+
 	# Use name of the params file as prefix if prefix is None
 	if args.prefix is None:
 		args.prefix = os.path.basename(os.path.splitext(args.params_file)[0])
@@ -3717,8 +3741,9 @@ def angular_distribution(args):
 		angles_no_mirror = numpy.array(eva)
 		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
+
 	# Remove all zeros for speedup reasons
-	nonzero_mask = numpy.nonzero(radius_array)
+	###nonzero_mask = numpy.nonzero(radius_array)
 	radius_array = radius_array[nonzero_mask]
 
 	# Calculate best width and length for the bins in 3D
@@ -3924,7 +3949,7 @@ def main():
 	parser_subcmd.add_argument("--particle_radius", type=int,   default=120,            help="Particle radius (default 120)")
 	parser_subcmd.add_argument("--dpi",             type=int,   default=72,             help="Dpi for the legend plot (default 72)")
 	parser_subcmd.set_defaults(func=angular_distribution)
-	
+
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	# Run specified subcommand
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
