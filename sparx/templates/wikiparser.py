@@ -666,7 +666,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 						token.restore = token.default
 						# Ignore the rest of line ...
 				else:
-					ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
+					ERROR("Logical Error: This section is invalid. Did you assign an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	if current_state != state_done: ERROR("Wiki Format Error: parser could not extract all information necessary (current state %d). Please check if the Wiki format has all required sections." % (current_state), "%s in %s" % (__name__, os.path.basename(__file__)))
 
@@ -678,7 +678,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 
 	handle_exceptional_cases(sxcmd)
 
-	print("Succeed to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role))
+	print("Succeeded to parse MoinMoinWiki document (%s as %s %s command)" % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role))
 
 	"""
 	# For DEBUG
@@ -786,7 +786,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	# NOTE: 2015/11/11 Toshio Moriya
 	# This should be exception. Need to decide if this should be skipped or exit system.
-	if os.path.exists(sxcmd_config.wiki) == False: ERROR("Rutime Error: Wiki document is not found.", "%s in %s" % (__name__, os.path.basename(__file__)))
+	if os.path.exists(sxcmd_config.wiki) == False: ERROR("Runtime Error: Wiki document inot found.", "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	file_wiki = open(sxcmd_config.wiki,'r')
 
@@ -822,14 +822,14 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 			if n_sxcmd_string_token_list == 2:
 				sxcmd.subname = sxcmd_string_token_list[1]
 			elif n_sxcmd_string_token_list > 2:
-				ERROR("Wiki Format Error: Command string should be only script file name or script file name plus subcommand", "%s in %s" % (__name__, os.path.basename(__file__)))
+				ERROR("Wiki Format Error: Command string should be only a script file name or a script file name plus a subcommand", "%s in %s" % (__name__, os.path.basename(__file__)))
 			current_state = state_processing_header
 		elif current_state == state_processing_header:
 			# Extract the label of this sxscript
 			line_buffer = line_wiki
 			target_operator = ":"
 			item_tail = line_buffer.find(target_operator)
-			if item_tail == -1: ERROR("Wiki Format Error: Header section body should contain a label ended with ':': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+			if item_tail == -1: ERROR("Wiki Format Error: Header section body should contain a label ending with ':': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 			sxcmd.label = line_buffer[0:item_tail].strip()
 			# Extract the short info about this sxscript (can be empty)
 			sxcmd.short_info = remove_DokuWiki_makeup(line_buffer[item_tail + len(target_operator):].strip()) # Get the rest of line
@@ -1067,7 +1067,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 			if sxcmd_token.key_base == sxcmd_token_key_base:
 				is_found = True
 				break
-		if not is_found: ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token list extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+		if not is_found: ERROR("Wiki Format Error: An additional argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token list extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	file_wiki.close()
 
@@ -1137,8 +1137,8 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 	if not sxsubcmd_config.is_modeless:
 		sxcmd.mode = mode_token.key_base
 	else:
-		assert sxsubcmd_config.is_modeless, "MRK_DEBUG: Must be alwasy True"
-		assert sxcmd.mode == "", "MRK_DEBUG: This subcommand is modeless! sxcmd.mode must be empty string!"
+		assert sxsubcmd_config.is_modeless, "MRK_DEBUG: Must be always True"
+		assert sxcmd.mode == "", "MRK_DEBUG: This subcommand has no mode! sxcmd.mode must be empty string!"
 	# print "MRK_DEBUG: sxcmd.mode = %s" % (sxcmd.mode)
 	
 	# Set unique name of this subset configuration
@@ -1461,9 +1461,10 @@ def create_sxcmd_subconfig_binary_mask3d():
 
 def create_sxcmd_subconfig_postrefiner_halfset_vol():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("combinemaps"); token_edit.label = "Post-refine halfset volumes"; token_edit.help = "Post-refine a pair of unfiltered odd & even halfset volumes produced in 3D refinement run by combining the two, then enhancing the power spectrum of the combined volume at high frequencies (Halfset Volumes Mode). B-factor can be automatically estimated from these unfiltered halfset volumes. This mode requires two arguments; typically use unfiltered halfset volumes produced by MERIDIEN."; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "First unfiltered halfset volume"; token_edit.help = "Typically, generated by sxmeridien."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "Second unfiltered halfset volume"; token_edit.help = "Typically, generated by sxmeridien."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
+	help_string = "Post-refine a pair of unfiltered odd & even halfset maps by combining them, then enhancing the high frequencies (Halfset Maps Mode). B-factor can be automatically estimated from the unfiltered halfset maps. This mode requires two arguments; use unfiltered halfset maps produced by MERIDIEN."
+	token_edit = SXcmd_token(); token_edit.initialize_edit("combinemaps"); token_edit.label = "Post-refine halfset volumes"; token_edit.help = help_string; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("firstvolume"); token_edit.key_prefix = ""; token_edit.label = "First unfiltered halfset map"; token_edit.help = "As generated by sxmeridien."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("secondvolume"); token_edit.key_prefix = ""; token_edit.label = "Second unfiltered halfset map"; token_edit.help = "As generated by sxmeridien."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
 	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
@@ -1483,13 +1484,14 @@ def create_sxcmd_subconfig_postrefiner_halfset_vol():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("PostRefiner", "Post-refine a pair of unfiltered odd & even halfset volumes produced in 3D refinement run by combining the two, then enhancing the power spectrum of the combined volume at high frequencies (Halfset Volumes Mode). B-factor can be estimated from these unfiltered halfset volumes. This mode is typically used with MERIDIEN outputs.", token_edit_list, sxsubcmd_mpi_support, subset_config="halfset volumes")
+	sxcmd_subconfig = SXsubcmd_config("PostRefiner", help_string, token_edit_list, sxsubcmd_mpi_support, subset_config="halfset maps")
 
 	return sxcmd_subconfig
 
 def create_sxcmd_subconfig_postrefiner_single_vols():
 	token_edit_list = []
-	token_edit = SXcmd_token(); token_edit.initialize_edit("combinemaps"); token_edit.label = "Post-refine single volumes"; token_edit.help = "Post-refine any single volumes by enhancing the power spectrum at high frequencies (Single Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument; path pattern with wild card \'*\' to specify a list of single volumes or path to one single volume (without wild card \'*\')."; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
+	help_string = "Post-refine a single map by enhancing the high frequencies (Single Map Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument; path pattern with wild card \'*\' to specify a list of  volumes or a path to a volume (without wild card \'*\')."
+	token_edit = SXcmd_token(); token_edit.initialize_edit("combinemaps"); token_edit.label = "Post-refine single map"; token_edit.help = help_string; token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("input_volume_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input volume pattern"; token_edit.help = "Specify path pattern of input single volumes with a wild card \'*\' or path to single volume file (without wild card \'*\'). Use the wild card to indicate the place of variable part of the file names. The path pattern must be enclosed by single quotes (\') or double quotes (\") (Note: sxgui.py automatically adds single quotes (\'))."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
 	
@@ -1500,13 +1502,13 @@ def create_sxcmd_subconfig_postrefiner_single_vols():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("cosine_edge"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit.is_required = True; token_edit.help = "A value larger than 0.5: low-pass filter to the value in Angstrom; -1.0: no low-pass filter."; token_edit.type = "float"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use provided B-factor [A^2] to enhance the map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("fl"); token_edit.is_required = True; token_edit.help = "A value larger than 0.5: low-pass filter to the resolution in Angstrom; -1.0: no low-pass filter."; token_edit.type = "float"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("aa"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("PostRefiner (Single Volumes)", "Post-refine any single volumes by enhancing the power spectrum at high frequencies (Single Volumes Mode). Only ad-hoc low-pass filter cutoff and B-factor can be used.", token_edit_list, sxsubcmd_mpi_support, subset_config="single volumes")
+	sxcmd_subconfig = SXsubcmd_config("PostRefiner (Single Map)", help_string, token_edit_list, sxsubcmd_mpi_support, subset_config="single map")
 	
 	return sxcmd_subconfig
 
@@ -1566,7 +1568,7 @@ def create_sxcmd_subconfig_variability_preprocess():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetrize"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 
-	token_edit = SXcmd_token(); token_edit.initialize_edit("prj_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image stack"; token_edit.help = "The images must containt the 3D orientation parameters in the header and optionally CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("prj_stack"); token_edit.key_prefix = ""; token_edit.label = "Input image stack"; token_edit.help = "The images must contain the 3D orientation parameters in headers and optionally also CTF information. The output image stack is bdb:sdata. Please use it as an input image stack of sx3dvariability."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_dir"); token_edit_list.append(token_edit)
 
 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
@@ -1649,7 +1651,7 @@ def add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list):
 	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask3D"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("symmetry"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("inires"); token_edit.help = "Resolution of the initial_volume volume. For local refinement, the program automatically calculates the initial resolution from inputs by default."; token_edit.default = -1.0; token_edit.restore = -1.0; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("inires"); token_edit.help = "Resolution of the initial_volume structure. For local refinement, the program automatically calculates the initial resolution using provided orientation parameters."; token_edit.default = -1.0; token_edit.restore = -1.0; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("delta"); token_edit.help = "Initial angular sampling step. For local refinement, the value has to be less than or equal to 3.75."; token_edit.default = 3.75; token_edit.restore = 3.75; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("xr"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("ts"); token_edit_list.append(token_edit)
@@ -1671,7 +1673,7 @@ def create_sxcmd_subconfig_meridien_standard_fresh():
 	add_sxcmd_subconfig_meridien_standard_shared(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Performs 3D structure refinement using a quasi-Maximum Likelihood approach.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="fresh")
+	sxcmd_subconfig = SXsubcmd_config("3D Refinement", "Performs 3D structure refinement using a quasi-Maximum Likelihood approach.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="new")
 
 	return sxcmd_subconfig
 
@@ -1704,7 +1706,7 @@ def create_sxcmd_subconfig_meridien_standard_continuation():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("function"); token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("3D Refinement Continuation", "Perform continuation run of 3D refinement, where the 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="continuation")
+	sxcmd_subconfig = SXsubcmd_config("3D Refinement Restart", "Restart 3D refinement after the last fully finished iteration of meridien run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, is_modeless = True, subset_config="restart")
 
 	return sxcmd_subconfig
 
@@ -1715,7 +1717,7 @@ def create_sxcmd_subconfig_meridien_header_import_xform_projection():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("params"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = "xform.projection"; token_edit.restore = "xform.projection"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Import Projection Parameters", "Import projection parameters from a file created by a meridien run to header of the input stack, which required by \'Local Refinement from Stack\' mode.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Import Projection Parameters", "Import projection orientation parameters to the header of the input stack. (Five columns: phi, theta, pshi, sx, sy). These parameters are required by \'Local Refinement from Stack\' mode.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1723,13 +1725,13 @@ def create_sxcmd_subconfig_meridien_local_stack():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 
-	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.help = "The stack must have the header entry for 3D alignment parameters (xform.projection), which can be imporeted using sxheader.py."; token_edit.is_required = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.help = "The stack must 3D orientation parameters (xform.projection) in image headers. They can be imporeted using sxheader.py."; token_edit.is_required = True; token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit_list.append(token_edit)
 
 	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Stack", "Perform local refinement where the restricted search of 3D refinement starts from user-provided orientation parameters stored in stack header. Note that delta has to be less than or equal to 3.75[A].", token_edit_list, sxsubcmd_mpi_support, subset_config="stack")
+	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Stack", "Perform local refinement in which the restricted search begins from the user-provided orientation parameters stored in image headers. Note delta has to be less than or equal to 3.75[A].", token_edit_list, sxsubcmd_mpi_support, subset_config="stack")
 	
 	return sxcmd_subconfig
 
@@ -1737,12 +1739,12 @@ def create_sxcmd_subconfig_meridien_local_iteration():
 	token_edit_list = []
 	token_edit = SXcmd_token(); token_edit.initialize_edit("local_refinement"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 
-	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Fresh Run Directory"; token_edit.help = "This directory must exist. The results will be written here."; token_edit.is_required = True; token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Directory"; token_edit.help = "This directory must exist. The results will be written there."; token_edit.is_required = True; token_edit_list.append(token_edit)
 
 	add_sxcmd_subconfig_meridien_local_shared_refine(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("Local Refinement from Iteration", "Perform local refinement where the restricted search of 3D refinement restarts after the last fully finished iteration of meridien fresh run or local refinement run. One can change some parameters, but MPI settings have to be the same.", token_edit_list, sxsubcmd_mpi_support, subset_config="iteration")
+	sxcmd_subconfig = SXsubcmd_config("Restart Local Refinement", "Restart local refinement after the last fully finished iteration of meridien run or local refinement run. One can change some parameters, but MPI settings have to be the same as in the original run.", token_edit_list, sxsubcmd_mpi_support, subset_config="iteration")
 
 	return sxcmd_subconfig
 
@@ -1766,7 +1768,7 @@ def create_sxcmd_subconfig_sort3d_header_import_xform_projection():
 	token_edit = SXcmd_token(); token_edit.initialize_edit("params"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = "xform.projection"; token_edit.restore = "xform.projection"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Import Projection Parameters", "Import projection parameters from a file created by a meridien run to header of the input stack, which required by 3DVARIABILITY.py and SORT3D_DEPTH Stack Mode.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("Import Projection Parameters", "Import projection orientation parameters from a file (for example created by sxmeridien) to header of the input stack; they are required by 3DVARIABILITY.py and SORT3D_DEPTH Stack Mode.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1815,7 +1817,7 @@ def create_sxcmd_subconfig_sort3d_depth_iteration():
 ###	add_sxcmd_subconfig_sort3d_depth_shared_postrefiner(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("3D Clustering from Iteration - SORT3D_DEPTH", "Run from a fully finished iteration of meridien run and imports data from there. This mode uses all meridien information (i.e., smear, normalizations and such).", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("3D Clustering from Iteration - SORT3D_DEPTH", "Initialize from a given iteration of meridien run using the associated parameters, i.e., full set of orientation parameters per image, including orientation probabilities, normalizations and so on.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -1832,7 +1834,7 @@ def create_sxcmd_subconfig_sort3d_depth_stack():
 ###	add_sxcmd_subconfig_sort3d_depth_shared_postrefiner(token_edit_list)
 
 	sxsubcmd_mpi_support = True
-	sxcmd_subconfig = SXsubcmd_config("3D Clustering from Stack - SORT3D_DEPTH", "Run from user-provided orientation parameters stored in stack header.  This mode uses only orientation parameters, which is useful for sorting data refined, say with relion.", token_edit_list, sxsubcmd_mpi_support)
+	sxcmd_subconfig = SXsubcmd_config("3D Clustering from Stack - SORT3D_DEPTH", "Run from user-provided orientation parameters stored in stack header.  This mode uses only highest probability orientation parameters per image, ths it should be avoided.  This program is used only for testing.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
