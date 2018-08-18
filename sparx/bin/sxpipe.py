@@ -3692,7 +3692,7 @@ def angular_distribution(args):
 	# Create cartesian coordinates
 	data_cart = to_cartesian(data)
 
-	if True:
+	if False:
 		print_progress('Create reference angles')
 		# Create reference angles all around the sphere.
 		ref_angles_data = sym_class.even_angles(args.delta, inc_mirror=1, method=args.method)
@@ -3711,7 +3711,7 @@ def angular_distribution(args):
 		# Create cartesian coordinates
 		angles_no_mirror = [entry for entry in ref_angles_data if sym_class.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=0)] 
 		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
-
+		
 		# Find nearest neighbours to the reference angles with the help of a KDTree
 		print_progress('Find nearest neighbours')
 		# Find the nearest neighbours of the reduced data to the reference angles on the C1 sphere.
@@ -3743,7 +3743,7 @@ def angular_distribution(args):
 
 
 	# Remove all zeros for speedup reasons
-	###nonzero_mask = numpy.nonzero(radius_array)
+	nonzero_mask = numpy.nonzero(radius_array)
 	radius_array = radius_array[nonzero_mask]
 
 	# Calculate best width and length for the bins in 3D
@@ -3791,7 +3791,10 @@ def angular_distribution(args):
 	sorted_radius = radius_array[lina[::-1]]
 	array_x = numpy.arange(sorted_radius.shape[0])
 	angles_no_mirror = angles_no_mirror[lina[::-1]]
+	nonzero_mask = list(nonzero_mask[0][lina[::-1]])
+
 	"""
+	nonzero_mask = list(nonzero_mask[0])
 	sorted_radius = radius_array
 	array_x = numpy.arange(sorted_radius.shape[0])
 	#"""
@@ -3815,14 +3818,15 @@ def angular_distribution(args):
 
 	# 2D distribution txt file
 	print_progress('Create 2D legend text file')
+
 	output_bild_legend_txt = os.path.join(args.output_folder, '{0}.txt'.format(args.prefix))
 	with open(output_bild_legend_txt, 'w') as write:
-		for i in range(len(angles_no_mirror)):
+		for i in range(len(sorted_radius)):
 			#	for value_x, value_y in zip(array_x, sorted_radius):
 			value_x = '{0:6d}'.format(array_x[i])
 			value_y = '{0:6d}'.format(sorted_radius[i])
-			phi     = '{0:10f}'.format(angles_no_mirror[i][0])
-			theta   = '{0:10f}'.format(angles_no_mirror[i][1])
+			phi     = '{0:10f}'.format(angles_no_mirror[nonzero_mask[i]][0])
+			theta   = '{0:10f}'.format(angles_no_mirror[nonzero_mask[i]][1])
 			write.write('{0}\n'.format('\t'.join([value_x, value_y, phi, theta])))
 
 
