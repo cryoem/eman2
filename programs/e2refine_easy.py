@@ -335,7 +335,6 @@ satisfied with the results with speed=5 you may consider reducing this number as
 		print("ERROR: Target resolution is smaller than 2*A/pix value. This is impossible.")
 		sys.exit(1)
 
-	logid=E2init(sys.argv,options.ppid)
 
 	###################################
 	### This is where we fill in all of the undefined options, and analyse the data
@@ -375,13 +374,21 @@ gold standard resolution assessment is not valid, and you need to re-refine, sta
 				try: 
 #					print "eosplit ",options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst","\n\n"
 					bsinput=image_eosplit(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst")
+					bsh=EMData(bsinput,0)
+					bsx=bsh["nx"]
+					bsy=bsh["ny"]
+					if bsx!=bispec_invar_parm[0]/2 or bsy!=bispec_invar_parm[0]*bispec_invar_parm[1]/2 : 
+						print("ERROR: bispectra file found, but with incorrect dimensions. This likely means it was created with an earlier version of EMAN2. Please rerun e2ctf_auto.py with the --outputonly option to regenerate bispectra.")
+						sys.exit(1)
 				except: 
-					traceback.print_exc()
-					bsinput=options.input.rsplit(".",1)[0]+"_bispec.hdf"
-					if not os.path.exists(bsinput) :
-						com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size={}:fp={} --threads {}".format(options.input,bsinput,bispec_invar_parm[0],bispec_invar_parm[1],options.threads)
-						run(com)
-					bsinput=image_eosplit(bsinput)
+					print("ERROR: ",options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst"," is not present or not usable. Please run e2ctf_auto.py on this project, and regenerate any sets you plan to use.")
+					sys.exit(1)
+					#traceback.print_exc()
+					#bsinput=options.input.rsplit(".",1)[0]+"_bispec.hdf"
+					#if not os.path.exists(bsinput) :
+						#com="e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process math.bispectrum.slice:size={}:fp={} --threads {}".format(options.input,bsinput,bispec_invar_parm[0],bispec_invar_parm[1],options.threads)
+						#run(com)
+					#bsinput=image_eosplit(bsinput)
 			# even/odd split of input data as .lst file
 			options.input=image_eosplit(options.input)
 			if options.inputavg!=None : options.inputavg=image_eosplit(options.inputavg)
@@ -389,6 +396,8 @@ gold standard resolution assessment is not valid, and you need to re-refine, sta
 			traceback.print_exc()
 			print("Error: Unable to prepare input files")
 			sys.exit(1)
+			
+	logid=E2init(sys.argv,options.ppid)
 
 	repim=EMData(options.input[0],0)		# read a representative image to get some basic info
 	if repim.has_attr("ctf") : hasctf=True

@@ -8521,7 +8521,6 @@ void Util::Frngs(EMData* circp, vector<int> numr){
 
 		fftr_q(&circ(numr(2,i)),l);
 	}
-	circp->update();
 }
 
 void Util::Frngs_inv(EMData* circp, vector<int> numr){
@@ -8538,7 +8537,6 @@ void Util::Frngs_inv(EMData* circp, vector<int> numr){
 
 		fftr_q(&circ(numr(2,i)),-l);
 	}
-	circp->update();
 }
 #undef  circ
 
@@ -8558,7 +8556,6 @@ void Util::Applyws(EMData* circp, vector<int> numr, vector<float> wr)
 		else                   circ[numr2i+1] *= 0.5*w;
 		for (int j = 2+numr2i; j < numr3i+numr2i; ++j)  circ[j] *= w;
 	}
-	circp->update();
 }
 
 void Util::prb3p(double *b, float *pos) {
