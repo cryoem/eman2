@@ -5,7 +5,7 @@ source ${PREFIX}/bin/activate
 conda info -a
 conda list
 
-conda install eman-deps=12.2 -c cryoem -c defaults -c conda-forge -y
+conda install eman-deps=13.1 -c cryoem -c defaults -c conda-forge -y
 
 cat <<EOF
 
