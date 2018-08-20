@@ -262,7 +262,7 @@ def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 			lastdfn=i
 		
 		# we make a list with the number of total elements we want
-		best=[(1e30,-1)]*(options.sep*3)		# we keep 3 possible classifications for each desired final output, the pare this down to the best nsep in the next stage
+		best=[(1e30,-1)]*(options.sep*5+5)		# we keep 5+5n possible classifications for each desired final output, then pare this down to the best nsep in the next stage
 		for j,refbs in enumerate(refsbs):
 			try: insort(best,(ptclbs.cmp("ccc",refbs),j))		# insert this comparison in sorted order
 			except:
