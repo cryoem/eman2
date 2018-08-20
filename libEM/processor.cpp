@@ -6456,6 +6456,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	if (!image->is_complex()) fft=image->do_fft();
 	else fft=image->copy();
 
+	bool purectf=(bool)params.set_default("purectf",0);
 	EMAN2Ctf ctf;
 	ctf.defocus=params["defocus"];
 	ctf.bfactor=params["bfactor"];
@@ -6468,7 +6469,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	int doflip=(int)params.set_default("phaseflip",1);		// whether to use the CTF or abs(CTF)
 	float noiseamp=params.set_default("noiseamp",0.0f);
 	float noiseampwhite=params.set_default("noiseampwhite",0.0f);
-	int bsfp=(int)params.set_default("bispectrumfp",0);		// special mode for bispectrum processing
+	int bsfp=(int)params.set_default("bispectrumfp",0);		// special mode for bispectrum processing ... obsolete as of 8/16/18
 
 	// compute the CTF
 	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*12,ctf.dsbg,ctf.CTF_AMP,NULL); // *6 goes to corner, remember you provide 2x the number of points you need
@@ -6519,7 +6520,8 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 // 					}
 // 					ctfmod*=(avgr/norm);
 
-					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy)*ctfmod);
+					if (purectf) plnf->set_complex_at(jx,jy,ctfmod);
+					else plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy)*ctfmod);
 //					plnf->set_complex_at(jx,jy,plnf->get_complex_at(jx,jy);
 //					plnf->set_complex_at(jx,jy,ctfmod);
 				}
@@ -6536,7 +6538,12 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 		delete fft;
 		return ret;
 	}
-	else fft->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
+	else {
+		if (purectf) {
+			for (size_t i=0; i<fft->get_size(); i++) fft->set_value_at_fast(i,i%2==0?1.0f:0.0f);
+		}
+		fft->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
+	}
 
 	// Add noise
 	if (noiseamp!=0 || noiseampwhite!=0) {
@@ -12781,7 +12788,8 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		
 		// We are doing a lot of rotations, so we make the image as small as possible first
 		EMData *tmp=cimage;
-		cimage=new EMData((nkx+fp+2)*2,(nky+fp+2)*2,1);
+//		cimage=new EMData((nkx*2+fp+2)*2,(nky*2+fp+2)*2,1);
+		cimage=new EMData((nkx*2+fp)*2-2,(nky*2+fp)*2,1);
 		cimage->set_complex(1);
 		cimage->set_ri(1);
 		cimage->set_fftpad(1);
@@ -12793,24 +12801,28 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		}
 		delete tmp;
 		
+//		int mjkx=0,mjx=0,mkx=0;
 		// now we compute the actual rotationally integrated "footprint"
-		for (int k=2; k<2+fp; k++) {
+		for (int dk=0; dk<fp; dk++) {
 // 			int jkx=k;
 // 			int jky=0;
-			int kx=k;
-			int ky=0;
+//			int kx=k;
+//			int ky=0;
 			ret->to_zero();
 	
 			for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
-				EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+				EMData *cimage2=cimage->process("xform",Dict("alpha",ang,"zerocorners",1));
 	
 				for (int jy=-nky; jy<nky; jy++) {
 					for (int jx=0; jx<nkx; jx++) {
-						if (jx==0 && jy<0) continue;				// this is critical!  it avoids double-computation along kx=0
+						if (jx==0 && jy<0 || (jx+dk<4)) continue;				// first avoids double-computation along kx=0, second eliminates low resolution artifacts
 // 						int kx=jkx-jx;
 // 						int ky=jky-jy;
+						int kx=jx+dk;
+						int ky=0;
 						int jkx=jx+kx;
 						int jky=jy+ky;
+//						if (jkx>mjkx) { mjkx=jkx; mjx=jx; mkx=kx; }
 						//int jkx2=jx-kx;
 						//int jky2=jy-ky;
 	
@@ -12818,6 +12830,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 						complex<double> v1 = (complex<double>)cimage2->get_complex_at(jx,jy);
 						complex<double> v2 = (complex<double>)cimage2->get_complex_at(kx,ky);
 						complex<double> v3 = (complex<double>)cimage2->get_complex_at(jkx,jky);
+//						if (jx<4&&jy<4&&Util::hypot_fast(jx,jy)<4.0) v1=0.0;	// we "filter" out the very low resolution
 						ret->add_complex_at(jx,jy,0,(complex<float>)(v1*v2*std::conj(v3)));
 
 						//complex<double> v4 = (complex<double>)cimage2->get_complex_at(jkx2,jky2);	// This is based on Phil's point that the v1,v2,v3 computation lacks Friedel symmetry
@@ -12827,6 +12840,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 				}
 				delete cimage2;
 			}
+//			printf("%d\t%d\t%d\t%d\n",dk,mjkx,mjx,mkx);
 			
 			// this fixes an issue with adding in the "special" Fourier locations ... sort of
 // 			for (int jy=-nky; jy<nky; jy++) {
@@ -12834,19 +12848,28 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 // 				ret->set_complex_at(nkx-1,jy,ret->get_complex_at(nkx-1,jy)/sqrt(2.0f));
 // 			}
 			// simple fixed high-pass filter to get rid of gradient effects
-			for (int jy=-2; jy<=2; jy++) {
-				for (int jx=0; jx<=2; jx++) {
-					ret->set_complex_at(jx,jy,0.0f);
+// 			for (int jy=-2; jy<=2; jy++) {
+// 				for (int jx=0; jx<=2; jx++) {
+// 					ret->set_complex_at(jx,jy,0.0f);
+// 				}
+// 			}
+//			ret->write_image("tst2.hdf",-1);
+// 			EMData *pln=ret->do_ift();
+// 			pln->process_inplace("xform.phaseorigin.tocenter");
+// 			pln->process_inplace("normalize");
+//			ret2->insert_clip(ret,IntPoint(0,dk*nky*2,0));
+			//ret2->insert_clip(pln,IntPoint(-nkx,(k-2)*nky*2,0));
+//			delete pln;
+			for (int x=0; x<nkx-1; x++) {
+				for (int y=-nky; y<nky; y++) {
+					complex<float> val=ret->get_complex_at(x,y);
+					if (x<=2&&abs(y)<=2&&Util::hypot_fast(x,y)<2.0) val=0.0;		// We filter out the very low resolution
+					ret2->set_value_at(x,y+nky+nky*dk*2,cbrt(std::real(val)));
+//					ret2->set_value_at(x,y+nky+nky*dk*2,std::real(val));
 				}
 			}
-//			ret->write_image("tst2.hdf",-1);
-			EMData *pln=ret->do_ift();
-			pln->process_inplace("xform.phaseorigin.tocenter");
-			pln->process_inplace("normalize");
-			//ret2->insert_clip(pln,IntPoint(0,(k-2)*nky*2,0));
-			ret2->insert_clip(pln,IntPoint(-nkx,(k-2)*nky*2,0));
-			delete pln;
 		}
+//		printf("%d\t%d\t%d\t%d\t%d\n",fp,nkx,nky,cimage->get_xsize(),cimage->get_ysize());
 		delete ret;
 		delete cimage;
 		return ret2;
@@ -12911,6 +12934,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 				
 				// Tried a bunch of different ways of representing the bispectral invariants, but the
 				// pseudo real-space inverse seems to perform the best in testing on various targets
+				// (decided this wasn't true in later testing)
 				
 				// calling mult with 1D complex objects requires a lot of overhead for the RI/AP check, so we 
 				// combine it with output generation and compute rsig on the fly. Not exactly equivalent, but good enough.

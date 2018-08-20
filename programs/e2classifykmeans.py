@@ -66,7 +66,7 @@ together."""
 	parser.add_argument("--ncls","-N",type=int,help="Number of classes to generate",default=-1)
 	parser.add_argument("--average","-A",action="store_true",help="Average the particles within each class",default=False)
 	parser.add_argument("--sigma",action="store_true",help="with --average, this will also produce standard deviation images for each average",default=False)
-	parser.add_argument("--onein",action="store_true",help="Read 1-d input images from a single 2-D image (oneout in e2basis.py)",default=False)
+	parser.add_argument("--onein",action="store_true",help="Read 1-d input images from a single 2-D image (oneout in e2basis.py, default out e2msa.py)",default=False)
 	parser.add_argument("--oneinali",action="store_true",help="Read 1-d input images from a single 2-D image where the first 4 elements on each row are da,dx,dy,flip",default=False)
 	parser.add_argument("--normavg",action="store_true",help="Normalize averages",default=False)
 	parser.add_argument("--clsmx",type=str,default=None,help="Standard EMAN2 output suitable for use with e2classaverage, etc.")
@@ -74,6 +74,7 @@ together."""
 #	parser.add_argument("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
 	parser.add_argument("--mininclass",type=int,help="Try to eliminate classes with fewer than specified members. Default=2",default=2)
 	parser.add_argument("--original","-O",type=str,help="If the input stack was derived from another stack, you can provide the name of the original stack here",default=None)
+	parser.add_argument("--axes",type=str,help="Works only for 1-D input images. Specify a range, eg 0-5 to indicate which components to use from each vector. Inclusive. default=all",default=None)
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
 	parser.add_argument("--minchange", type=int,default=-1,help="Minimum number of particles that change group before deicding to terminate. Default = len(data)/(#cls*25)")
 	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce lest consistent results.")
@@ -88,20 +89,30 @@ together."""
 	if options.onein :
 		d=EMData(args[0],0)
 		xs=d.get_xsize()
+		if options.axes==None : x0,x1=0,xs
+		else:
+			x0,x1=[int(v) for v in options.axes.split("-")]
+			x1=x1-x0+1		# x1 is width
 		data=[]
 		for i in range(d.get_ysize()):
-			data.append(d.get_clip(Region(0,i,xs,1)))
+			data.append(d.get_clip(Region(x0,i,x1,1)))
 	elif options.oneinali :
 		d=EMData(args[0],0)
 		xs=d.get_xsize()-4
+		if options.axes==None : x0,x1=4,xs
+		else:
+			x0,x1=[int(v)+4 for v in options.axes.split("-")]
+			x1=x1-x0+1		# x1 is swidth
 		data=[]
 		for i in range(d.get_ysize()):
-			data.append(d.get_clip(Region(4,i,xs,1)))
+			data.append(d.get_clip(Region(x0,i,x1,1)))
 			data[-1].set_attr("ref_dx",d.get_value_at(0,i))
 			data[-1].set_attr("ref_dy",d.get_value_at(1,i))
 			data[-1].set_attr("ref_da",d.get_value_at(2,i))
 			data[-1].set_attr("ref_flip",d.get_value_at(3,i))
-	else: data=EMData.read_images(args[0])
+	else: 
+		if options.axes!=None : print("WARNING: --axes ignored when input is an arbitrary image stack. Used only with --onein or --oneinali")
+		data=EMData.read_images(args[0])
 	nimg=len(data)						# we need this for the classification matrix when exclude is used
 	filen=list(range(len(data)))				# when exclude is used, this will map to actual file image numbers
 
