@@ -4,11 +4,6 @@ PROJECT(EMAN
 		LANGUAGES CXX
 		)
 
-IF(COMMAND cmake_policy)
-       cmake_policy(SET CMP0003 NEW)
-       cmake_policy(SET CMP0002 OLD)
-ENDIF(COMMAND cmake_policy)
-
 include(cmake/functions.cmake)
 
 OPTION(DEBUG_CMAKE_TARGETS "enable debug output for cmake target properties" OFF)
