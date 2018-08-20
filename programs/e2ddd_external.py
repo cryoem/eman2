@@ -89,7 +89,7 @@ def main():
 	parser.add_argument("--mc2_patchX",  default = None, type=int, help="Use this many patches along X with MotionCor2. Default is 1, i.e. whole-frame alignment.",guitype='intbox', row=11, col=0, rowspan=1, colspan=1, mode="tomo,spr")
 	parser.add_argument("--mc2_patchY",  default = None, type=int, help="Use this many patches along Y with MotionCor2. Default is 1, i.e. whole-frame alignment.",guitype='intbox', row=11, col=1, rowspan=1, colspan=1, mode="tomo,spr")
 
-	parser.add_argument("--tomo", default=False, action="store_true", help="If checked, aligned frames will be placed in a tiltseries located in the 'tiltseries' directory. Otherwise, aligned sums will populate the 'micrographs' directory.",guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode="tomo[True]")
+	parser.add_argument("--tomo", default=False, action="store_true", help="If checked, aligned frames will be placed in a tiltseries located in the 'tiltseries' directory. Otherwise, aligned sums will populate the 'micrographs_mrc' directory.",guitype='boolbox', row=13, col=0, rowspan=1, colspan=1, mode="tomo[True]")
 
 	parser.add_argument("--tiltseries_name",  default = "", type=str, help="Specify the name of the output tiltseries. A .mrc extension will be appended to the filename provided.",guitype='strbox', row=12, col=0, rowspan=1, colspan=2, mode="tomo")
 
@@ -103,7 +103,7 @@ def main():
 		sys.exit(1)
 
 	if options.tomo and options.mdoc == None:
-		print("""ERROR: You must specify an mdoc/idoc file via the --mdoc option when processing raw tilt movies for tomography. If no mdoc/idoc files are available, images can be aligned without the --tomo option, in which case they will be written to micrographs. From there, you can generate a tiltseries via the EMAN2 GUI or the program e2buildstacks.py.""")
+		print("""ERROR: You must specify an mdoc/idoc file via the --mdoc option when processing raw tilt movies for tomography. If no mdoc/idoc files are available, images can be aligned without the --tomo option, in which case they will be written to micrographs_mrc. From there, you can generate a tiltseries via the EMAN2 GUI or the program e2buildstacks.py.""")
 		sys.exit(1)
 
 	if options.mdoc != None:
@@ -160,7 +160,7 @@ def main():
 			bname = os.path.basename(args[0])
 
 	if options.tomo: outdir = "tiltseries"
-	else: outdir = "micrographs"
+	else: outdir = "micrographs_mrc"
 
 	try: os.mkdir(outdir)
 	except: pass
@@ -333,7 +333,7 @@ def main():
 						name,ext = bname.split(".")
 						if ext.lower()=="mrc": infile="-InMrc {} ".format(arg)
 						if ext.lower()=="tif": infile="-InTiff {} ".format(arg)
-						outfile="micrographs/{}_ali.mrc".format(name)
+						outfile="micrographs_mrc/{}_ali.mrc".format(name)
 						output = "-OutMrc {}".format(outfile)
 						cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
 						run(cmd,verbose=options.verbose)
@@ -344,7 +344,7 @@ def main():
 
 			for idx,arg in enumerate(args):
 				bname,ext = os.path.basename(arg).split(".")
-				output = "micrographs/{}_ali.mrc".format(bname)
+				output = "micrographs_mrc/{}_ali.mrc".format(bname)
 				if ext == "tif":
 					cmd = "{} -InTiff {} -OutMrc {} {}".format(program,arg,output,cmdopts)
 				else:
