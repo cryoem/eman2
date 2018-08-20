@@ -144,7 +144,6 @@ def main():
 		try: os.mkdir(options.path)
 		except: pass
 
-	logid=E2init(sys.argv,options.ppid)
 
 	fit=1
 	dcts=os.listdir(options.path)
@@ -166,17 +165,23 @@ def main():
 	# make footprint images (rotational/translational invariants)
 	fpfile=options.input.split("__")[0]+"__ctf_flip_bispec.lst"
 	if not os.path.exists(fpfile):
-		print("WARNING: ",fpfile," not found. Computing bispectra. This will slow processing. ")
-		fpfile=options.path+"/input_bispec.hdf"
-		run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+		print("ERROR: no bispectrum file found. Please run e2ctf_auto.py in your standard EMAN2 project folder. This program will not work with standalone stack files.")
+		sys.exit(1)
+		#print("WARNING: ",fpfile," not found. Computing bispectra. This will slow processing. ")
+		#fpfile=options.path+"/input_bispec.hdf"
+		#run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
 	else:
 		tmp1=EMData(fpfile,0)
 		tmp2=EMData(options.input,0)
 		tmp2=tmp2.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
 		if tmp1["nx"]!=tmp2["nx"] or tmp1["ny"]!=tmp2["ny"] :
-			print("WARNING: images in ",fpfile," have the wrong dimensions. Recomputing bispectra. This will slow processing.")
-			fpfile=options.path+"/input_bispec.hdf"
-			run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+			print("ERROR: images in ",fpfile," have the wrong dimensions. It is likely that you ran e2ctf_auto.py on an older version of EMAN2. Please rerun CTF autoprocessing, with the 'outputonly' option set to generate the correct bispectra.")
+			sys.exit(1)
+			#print("WARNING: images in ",fpfile," have the wrong dimensions. Recomputing bispectra. This will slow processing.")
+			#fpfile=options.path+"/input_bispec.hdf"
+			#run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+
+	logid=E2init(sys.argv,options.ppid)
 
 	# MSA on the footprints
 	fpbasis=options.path+"/basis_00.hdf"

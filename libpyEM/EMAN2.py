@@ -66,7 +66,7 @@ HOMEDB=None
 T=Transform({"type":"2d","alpha":0})
 
 # When generating bispectral invariants, we need 2 parameters, which must be used consistently throughout the system
-bispec_invar_parm=(32,10)
+bispec_invar_parm=(32,8)
 
 # These are processors which don't support in-place operation
 outplaceprocs=["math.bispectrum.slice"]
