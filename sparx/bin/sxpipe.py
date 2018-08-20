@@ -3796,6 +3796,7 @@ def angular_distribution(args):
 	"""
 	nonzero_mask = list(nonzero_mask[0])
 	sorted_radius = radius_array
+	sorted_radius_plot = numpy.sort(radius_array)[::-1]
 	array_x = numpy.arange(sorted_radius.shape[0])
 	#"""
 	
@@ -3803,8 +3804,8 @@ def angular_distribution(args):
 	# 2D distribution plot
 	print_progress('Create 2D legend plot')
 	output_bild_legend_png = os.path.join(args.output_folder, '{0}.png'.format(args.prefix))
-	color = get_color(sorted_radius)
-	plt.bar(array_x, height=sorted_radius, width=1, color=color)
+	color = get_color(sorted_radius_plot)
+	plt.bar(array_x, height=sorted_radius_plot, width=1, color=color)
 	plt.grid()
 	plt.xlabel('Bin / a.u.')
 	plt.ylabel('Nr. of Particles')
