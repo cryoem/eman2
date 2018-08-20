@@ -3510,7 +3510,7 @@ def angular_distribution(args):
 	import matplotlib.pyplot as plt
 
 	# Sanity checks
-	print_progress('Check if values are valid')
+	#print_progress('Check if values are valid')
 	error_template = 'ERROR: {0}'
 	error = False
 	error_list = []
@@ -3554,7 +3554,7 @@ def angular_distribution(args):
 	COLUMN_X = 0
 	COLUMN_Y = 1
 	COLUMN_Z = 2
-	print(" delta ",args.delta)
+
 	def angular_histogram(params, angstep = 15., sym= "c1", method='S'):
 		from fundamentals import symclass
 		from utilities import nearest_fang, angles_to_normals
@@ -3588,8 +3588,8 @@ def angular_distribution(args):
 		for q in eah+u:  seaf += smc.symmetry_related(q)
 
 		lseaf = 2*leah
-		for i,q in enumerate(seaf):  print(" seaf  ",i,q)
-		print(seaf)
+		#for i,q in enumerate(seaf):  print(" seaf  ",i,q)
+		#print(seaf)
 		seaf = angles_to_normals(seaf)
 
 		occupancy = [[] for i in range(leah)]
@@ -3599,7 +3599,7 @@ def angular_distribution(args):
 			l = l%lseaf
 			if(l>=leah):  l = l-leah
 			occupancy[l].append(i)
-		for q in occupancy:  print("  ",q)
+		#for q in occupancy:  print("  ",q)
 		return  [len(q) for q in occupancy], eah
 
 	def get_color(sorted_array):
@@ -3810,12 +3810,12 @@ def angular_distribution(args):
 	plt.ylabel('Nr. of Particles')
 	plt.savefig(output_bild_legend_png, dpi=args.dpi)
 	plt.clf()
-
+	"""
 	print(array_x)
 	print(sorted_radius)
 	print(len(angles_no_mirror))
 	print(angles_no_mirror)
-
+	"""
 	# 2D distribution txt file
 	print_progress('Create 2D legend text file')
 
