@@ -222,7 +222,7 @@ def main():
 		
 		if os.path.isdir(args[0]) and options.mdoc==None:
 			dirargs = []
-			for f in f in os.listdir(args[0]):
+			for f in os.listdir(args[0]):
 				if ".mrc" in f or ".tif" in f:
 					this = "{}/{}".format(args[0],f)
 					if os.path.exists(this): dirargs.append(this)
@@ -266,6 +266,9 @@ def main():
 				for file in files:
 					if os.path.exists("{}/{}".format(args[0],file)):
 						numframes=EMUtil.get_image_count("{}/{}".format(args[0],file))
+						if numframes==1:
+							head=EMData("{}/{}".format(args[0],file),0,1)
+							numframes=head["nz"]
 						lastframe=numframes-options.last-1
 						cmdopts+=" -Trunc {}".format(lastframe)
 						break
@@ -274,8 +277,14 @@ def main():
 					sys.exit(1)
 
 			elif not os.path.isdir(args[0]):
-				try: numframes=EMUtil.get_image_count(args[0])
+				try: 
+					numframes=EMUtil.get_image_count(args[0])
+					if numframes==1:
+						head=EMData(args[0],0,1)
+						numframes=head["nz"]
 				except: 
+					import traceback
+					traceback.print_exc()
 					print("First file in input is not a recognizable image. Please check input files.")
 					sys.exit(1)
 				print(numframes)

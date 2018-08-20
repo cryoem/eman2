@@ -1675,6 +1675,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("purectf", EMObject::BOOL, "If set, replaces image with simulated CTF instead of multiplying image by CTF");
 			d.put("defocus", EMObject::FLOAT, "Defocus in microns (underfocus positive)");
 			d.put("ampcont", EMObject::FLOAT, "% amplitude contrast (0-100)");
 			d.put("bfactor", EMObject::FLOAT, "B-factor in A^2, uses MRC convention rather than EMAN1 convention");

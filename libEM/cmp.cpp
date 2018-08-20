@@ -113,6 +113,7 @@ void Cmp::validate_input_args(const EMData * image, const EMData *with) const
 float CccCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
+	if (image==0 || with==0) throw ImageFormatException("NULL image provided to CCC cmp");
 	if (image->is_complex() || with->is_complex())
 		throw ImageFormatException( "Complex images not supported by CMP::CccCmp");
 	validate_input_args(image, with);
