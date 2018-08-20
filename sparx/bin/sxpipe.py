@@ -3692,7 +3692,7 @@ def angular_distribution(args):
 	# Create cartesian coordinates
 	data_cart = to_cartesian(data)
 
-	if False:
+	if True:
 		print_progress('Create reference angles')
 		# Create reference angles all around the sphere.
 		ref_angles_data = sym_class.even_angles(args.delta, inc_mirror=1, method=args.method)
