@@ -3555,12 +3555,12 @@ def angular_distribution(args):
 	COLUMN_Y = 1
 	COLUMN_Z = 2
 
-	def angular_histogram(params, angstep = 15., sym= "c1", method='S'):
+	def angular_histogram(params, angstep = 15., sym= "c1", method='S', inc_mirror=0):
 		from fundamentals import symclass
 		from utilities import nearest_fang, angles_to_normals
 
 		smc  = symclass(sym)
-		eah  = smc.even_angles(angstep, inc_mirror=0, method=method)
+		eah  = smc.even_angles(angstep, inc_mirror=inc_mirror, method=method)
 
 		leah = len(eah)
 		u = []
@@ -3674,8 +3674,8 @@ def angular_distribution(args):
 
 	# If the symmetry is c0, do not remove mirror projections.
 	print_progress('Reduce anglesets')
-	if args.symmetry == 'c0':
-		symmetry = 'c1'
+	if args.symmetry.endswith('_full'):
+		symmetry = args.symmetry.rstrip('_full')
 		inc_mirror = 1
 	else:
 		symmetry = args.symmetry
@@ -3709,7 +3709,7 @@ def angular_distribution(args):
 
 		# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
 		# Create cartesian coordinates
-		angles_no_mirror = [entry for entry in ref_angles_data if sym_class.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=0)] 
+		angles_no_mirror = [entry for entry in ref_angles_data if sym_class.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=inc_mirror)] 
 		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 		
 		# Find nearest neighbours to the reference angles with the help of a KDTree
@@ -3719,10 +3719,10 @@ def angular_distribution(args):
 		# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
 		_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
 
-		hiti = [[] for i in range(max(knn_data)+1)]
-		for i,q in enumerate(knn_data):
-			hiti[q].append(i)
-		for i,q in enumerate(	hiti):  print(" hiti  ", i, q)
+		#hiti = [[] for i in range(max(knn_data)+1)]
+		#for i,q in enumerate(knn_data):
+		#	hiti[q].append(i)
+		#for i,q in enumerate(	hiti):  print(" hiti  ", i, q)
 
 		# Calculate a histogram for the assignments to the C1 angles
 		radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
@@ -3736,7 +3736,7 @@ def angular_distribution(args):
 		numpy.add.at(radius_array, knn_angle, radius)
 
 	else:
-		occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= symmetry, method=args.method)
+		occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= symmetry, method=args.method, inc_mirror=inc_mirror)
 		radius_array = numpy.array(occupy)
 		angles_no_mirror = numpy.array(eva)
 		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
@@ -3948,7 +3948,7 @@ def main():
 	parser_subcmd.add_argument("--method",          type=str,   default='S',            help="Method used to create the reference angles (S or P) (default S)")
 	parser_subcmd.add_argument("--pixel_size",      type=float, default=1.0,            help="Pixel size of the project (default 1.0)")
 	parser_subcmd.add_argument("--delta",           type=float, default=3.75,           help="Angular step size in degree - Low deltas combined with low symmetry might crash your chimera session (default 3.75)")
-	parser_subcmd.add_argument("--symmetry",        type=str,   default='c1',           help="Symmetry - c0 creates full sphere distribution (default c1)")
+	parser_subcmd.add_argument("--symmetry",        type=str,   default='c1',           help="Symmetry - sym_full creates full sphere distribution, e.g. c1_full, icos_full (default c1)")
 	parser_subcmd.add_argument("--box_size",        type=int,   default=256,            help="Box size (default 256)")
 	parser_subcmd.add_argument("--particle_radius", type=int,   default=120,            help="Particle radius (default 120)")
 	parser_subcmd.add_argument("--dpi",             type=int,   default=72,             help="Dpi for the legend plot (default 72)")
