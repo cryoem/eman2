@@ -50,9 +50,9 @@ Since VIPER uses group of processors working together, it is important for effic
   ; %%--%%maxit1 : Maximum iterations - GA step: Maximum number of iterations for GA step. (default 400)
   ; %%--%%maxit2 : Maximum iterations - Finish step: Maximum iterations number of for Finish step. (default 50)
   ; %%--%%mask3D : 3D mask: Path to 3D mask file. (default sphere)
-  ; %%--%%L2threshold : GA stop threshold: Defines the maximum relative dispersion of volumes' L2 norms. (default 0.03)
+  ; %%--%%L2threshold : GA stop threshold: Defines the maximum relative dispersion of structures' L2 norms. (default 0.03)
   ; %%--%%ref_a : Projection generation method: Method for generating the quasi-uniformly distributed projection directions. S - Saff algorithm, or P - Penczek 1994 algorithm. (default S)
-  ; %%--%%nruns : GA population size: This defines the number of quasi-independent volumes generated. (default 6)
+  ; %%--%%nruns : GA population size: This defines the number of quasi-independent structures generated. (default 6)
   ; %%--%%doga : Threshold to start GA: Do GA when the fraction of orientation that changes less than 1.0 degrees is at least this fraction. (default 0.1)
   ; %%--%%fl : Low-pass filter frequency [1/Pixels]: Using a hyperbolic tangent low-pass filter. Specify with absolute frequency. (default 0.25)
   ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Fall-off of for the hyperbolic tangent low-pass filter. Specify with absolute frequency. (default 0.1)
@@ -64,7 +64,7 @@ Since VIPER uses group of processors working together, it is important for effic
 
 \\
 ===== Description =====
-  * This program uses a Genetic Algorithm (GA) strategy to deliver a validated 3D ab initio structure.  It will compute simultaneously ab initio structures
+  * This program uses a Genetic Algorithm (GA) strategy to deliver a validated 3D ab initio structure.  It will first compute simultaneously ab initio structures
   * whose number will be equal to the population size.  Next, it will compare solutions and apply evolutionary operators (merge some of the solutions)
   * to produce their offsprings, which subsequently are used as initial structures for the next generation of GA processing.
   * By default, structures in the first generation are initialized randomly.

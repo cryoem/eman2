@@ -20,8 +20,8 @@ sxlocres exists in for both MPI and non-MPI versions.
 \\
 ===== Input =====
 === Main Parameters ===
-  ; firstvolume : First half-volume: A sub-volume computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. (default required string)
-  ; secondvolume : Second half-volume: A sub-volume computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. (default required string)
+  ; firstvolume : First half-map: A sub-map computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. (default required string)
+  ; secondvolume : Second half-map: A sub-map computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. (default required string)
   ; maskfile : 3D mask: Defines the region for which local resolution will be computed. It is advisable to eliminate irrelevant regions surrounding the structure. (default none)
   ; outputfile : Output volume: Each voxel contains the associated resolution. It is expressed in [[definitions:absolute_frequency_units|absolute frequency]] units. (default required string)
 
@@ -35,7 +35,7 @@ sxlocres exists in for both MPI and non-MPI versions.
 \\
 === Advanced Parameters ===
   ; %%--%%out_ang_res : Save Angstrom local resolution: Additionally creates a local resolution file in Angstroms. (default False)
-  ; %%--%%apix : Pixel size of half-volumes [A]: Effective only with %%--%%out_ang_res options. (default 1.0)
+  ; %%--%%apix : Pixel size of half-maps [A]: Effective only with %%--%%out_ang_res options. (default 1.0)
   ; %%--%%MPI : Use MPI: (default False)
 
 \\
@@ -43,7 +43,7 @@ sxlocres exists in for both MPI and non-MPI versions.
 
 \\
 ===== Description =====
-Local resolution values are computed within small windowed areas (size wn<sup>3</sup>). Due to small window size the values are inaccurate and tend to underestimate resolution. Therefore, the option %%--%%res_overall allows to calibrate the average value of all local resolutions to the overall resolution, as estimated by the FSC between half-volumes. This value has to be independently obtained by the user. Command sximgstat.py computes (masked) FSC from half-volumes and one can read the absolute frequency corresponding to 0.5 (or other) cut-off threshold.
+Local resolution values are computed within small windowed areas (size wn<sup>3</sup>). Due to small window size the values are inaccurate and tend to underestimate resolution. Therefore, the option %%--%%res_overall allows to calibrate the average value of all local resolutions to the overall resolution, as estimated by the FSC between half-maps. This value has to be independently obtained by the user. Command sximgstat.py computes (masked) FSC from half-maps and one can read the absolute frequency corresponding to 0.5 (or other) cut-off threshold.
 
 \\
 ==== Method ====
