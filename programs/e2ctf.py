@@ -1767,9 +1767,9 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 	global sfcurve
 #	from bisect import insort_left
 
-	if dfhint==None : dfhint = (0.5,5.5,0.05)
-	elif isinstance(dfhint,float) : dfhint=(dfhint-.2, dfhint+.2,0.02)
-	else: dfhint=(dfhint[0],dfhint[1],min(0.05,old_div((dfhint[1]-dfhint[0]),5)))
+	if dfhint==None : dfhint = (0.5,5.5,0.01)
+	elif isinstance(dfhint,float) : dfhint=(dfhint-.2, dfhint+.2,0.01)
+	else: dfhint=(dfhint[0],dfhint[1],min(0.02,old_div((dfhint[1]-dfhint[0]),5)))
 
 	ys=im_2d.get_ysize()
 	ds=old_div(1.0,(apix*ys))
