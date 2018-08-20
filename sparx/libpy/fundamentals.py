@@ -1779,7 +1779,7 @@ class symclass(object):
 		#   in which this class generates symmetry matrices
 		neighbors = {}
 		neighbors["oct"]  = [1,2,3,8,9,12,13]
-		neighbors["tet"]  = [1,2,3,4,7]
+		neighbors["tet"]  = [1,2,3,4,6,7]
 		neighbors["icos"] = [1,2,3,4,6,7,11,12]
 		sang = [[] for l in range(len(angles)*(len(neighbors[self.sym])+1))]
 		for i,q in enumerate(angles):  sang[i*(len(neighbors[self.sym])+1)] = angles[i][:]
