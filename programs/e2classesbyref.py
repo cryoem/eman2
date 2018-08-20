@@ -100,7 +100,7 @@ def main():
 			raise Exception
 	except:
 		print("No good bispecta found for refs. Building")
-		com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.bispectrum.slice:size={bssize}:ffp={bsdepth} --threads {threads}".format(
+		com="e2proc2dpar.py {inp} {out} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process mask.soft:outer_radius={maskrad}:width={maskw} --process math.bispectrum.slice:size={bssize}:fp={bsdepth} --threads {threads}".format(
 			inp=args[0],out=refsbsfs,maskrad=int(refs[0]["nx"]//2.2),maskw=int(refs[0]["nx"]//15),bssize=bispec_invar_parm[0],bsdepth=bispec_invar_parm[1],threads=options.threads)
 		run(com)
 	
@@ -256,13 +256,19 @@ def clsfn(jsd,refs,refsbs_org,ptclfs,ptclbsfs,options,grp,n0,n1):
 		ctf=ptcl["ctf"]
 		if fabs(ctf.defocus-lastdf)>0.1: 
 #			print "New DF {} -> {}   ( {} -> {} )".format(lastdf,ctf.defocus,lastdfn,i)
-			refsbs=[im.process("math.simulatectf",{"voltage":ctf.voltage,"cs":ctf.cs,"defocus":ctf.defocus,"bfactor":ctf.bfactor,"ampcont":ctf.ampcont,"apix":ctf.apix,"phaseflip":0,"bispectrumfp":1}) for im in refsbs_org]
+			# note that with purectf=1 this is replacing the image entirely
+			ctfim=ptcl.process("math.simulatectf",{"voltage":ctf.voltage,"cs":ctf.cs,"defocus":ctf.defocus,"bfactor":ctf.bfactor,"ampcont":ctf.ampcont,"apix":ctf.apix,"phaseflip":0,"purectf":1})
+			dfmod=ctfim.process("math.bispectrum.slice",{"size":bispec_invar_parm[0],"fp":bispec_invar_parm[1]})
+			#print(ctfim["nx"],dfmod["nx"],refsbs_org[0]["nx"])
+			#print(ctfim["ny"],dfmod["ny"],refsbs_org[0]["ny"])
+			refsbs=[im.copy() for im in refsbs_org]
+			for im in refsbs: im.mult(dfmod)
 #			print "New DF done ",ctf.defocus
 			lastdf=ctf.defocus
 			lastdfn=i
 		
 		# we make a list with the number of total elements we want
-		best=[(1e30,-1)]*(options.sep*3)		# we keep 3 possible classifications for each desired final output, the pare this down to the best nsep in the next stage
+		best=[(1e30,-1)]*(options.sep*5+5)		# we keep 5+5n possible classifications for each desired final output, then pare this down to the best nsep in the next stage
 		for j,refbs in enumerate(refsbs):
 			try: insort(best,(ptclbs.cmp("ccc",refbs),j))		# insert this comparison in sorted order
 			except:

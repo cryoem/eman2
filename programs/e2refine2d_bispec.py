@@ -66,7 +66,7 @@ def main():
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
 	parser.add_argument("--input", default=None,type=str, help="The name of the file containing the particle data", browser='EMSetsTable(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--ncls", default=32, type=int, help="Number of classes to generate", guitype='intbox', row=1, col=0, rowspan=1, colspan=1, mode="spr")
-	parser.add_argument("--alignsort", default=False, action="store_true",help="This will align and sort the final class-averages based on mutual similarity. For large numbers of class-averages this can significantly increase runtimes.", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[False]")
+	parser.add_argument("--alignsort", default=False, action="store_true",help="This will align and sort the final class-averages based on mutual similarity.", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[True]")
 	parser.add_argument("--msamode",default="pca",type=str,help="e2msa can use a variety of different dimensionality reduction algorithms, the default is Principal Component Analysis (PCA), but others are available, see e2msa.py")
 #	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[True]")
 #	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results. Always use this when generating >~100 classes.",guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
@@ -144,7 +144,6 @@ def main():
 		try: os.mkdir(options.path)
 		except: pass
 
-	logid=E2init(sys.argv,options.ppid)
 
 	fit=1
 	dcts=os.listdir(options.path)
@@ -166,17 +165,23 @@ def main():
 	# make footprint images (rotational/translational invariants)
 	fpfile=options.input.split("__")[0]+"__ctf_flip_bispec.lst"
 	if not os.path.exists(fpfile):
-		print("WARNING: ",fpfile," not found. Computing bispectra. This will slow processing. ")
-		fpfile=options.path+"/input_bispec.hdf"
-		run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+		print("ERROR: no bispectrum file found. Please run e2ctf_auto.py in your standard EMAN2 project folder. This program will not work with standalone stack files.")
+		sys.exit(1)
+		#print("WARNING: ",fpfile," not found. Computing bispectra. This will slow processing. ")
+		#fpfile=options.path+"/input_bispec.hdf"
+		#run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
 	else:
 		tmp1=EMData(fpfile,0)
 		tmp2=EMData(options.input,0)
 		tmp2=tmp2.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
 		if tmp1["nx"]!=tmp2["nx"] or tmp1["ny"]!=tmp2["ny"] :
-			print("WARNING: images in ",fpfile," have the wrong dimensions. Recomputing bispectra. This will slow processing.")
-			fpfile=options.path+"/input_bispec.hdf"
-			run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+			print("ERROR: images in ",fpfile," have the wrong dimensions. It is likely that you ran e2ctf_auto.py on an older version of EMAN2. Please rerun CTF autoprocessing, with the 'outputonly' option set to generate the correct bispectra.")
+			sys.exit(1)
+			#print("WARNING: images in ",fpfile," have the wrong dimensions. Recomputing bispectra. This will slow processing.")
+			#fpfile=options.path+"/input_bispec.hdf"
+			#run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+
+	logid=E2init(sys.argv,options.ppid)
 
 	# MSA on the footprints
 	fpbasis=options.path+"/basis_00.hdf"
@@ -194,7 +199,7 @@ def main():
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# Classification
-	run("e2classifykmeans.py %s --original=%s --mininclass=2 --ncls=%d --clsmx=%s/classmx_00.hdf --onein --fastseed"%(inputproj,options.input,options.ncls,options.path))
+	run("e2classifykmeans.py %s --original %s --mininclass 2 --ncls %d --clsmx %s/classmx_00.hdf --onein --fastseed --axes 0-%d"%(inputproj,options.input,options.ncls,options.path,options.nbasisfp-1))
 
 	proc_tally += 1.0
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
@@ -253,7 +258,7 @@ def class_postproc(options,it):
 	run("e2stacksort.py %s/classes_fp_%02d.hdf %s/classes_fp_%02d.hdf %s/classes_%02d.hdf %s/classes_%02d.hdf --simcmp=ccc --seqalicen"%(options.path,it,options.path,it,options.path,it,options.path,it))
 	
 	if options.alignsort:
-		run("e2stacksort.py %s/classes_%02d.hdf %s/classes_sort_%02d.hdf --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_tree:maxres=15 --useali --iterative"%(options.path,it,options.path,it))
+		run("e2stacksort.py %s/classes_%02d.hdf %s/classes_sort_%02d.hdf --bispec"%(options.path,it,options.path,it))
 
 
 def get_classaverage_extras(options):

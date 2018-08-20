@@ -827,8 +827,8 @@ EMData *RotateTranslateAlignerBispec::align(EMData * this_img, EMData *to, const
 
 	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
 	int zscore = params.set_default("zscore",0);
-	int rfp = params.set_default("rfpn",4);
-	int size = params.set_default("size",32);
+	int rfp = params.set_default("rfpn",4);			// rfpn and size were determined empirically. rfpn<4 shows obvious alignment shifts
+	int size = params.set_default("size",16);		// size=32 and size=16 seem generally to give equivalent results
 	EMData *rot_align  =  this_img->align("rotational_bispec", to,Dict("rfpn",rfp,"size",size));
 	Transform * tmp = rot_align->get_attr("xform.align2d");
 	Dict rot = tmp->get_rotation("2d");

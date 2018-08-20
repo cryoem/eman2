@@ -41,7 +41,12 @@ def main():
   
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog fixed_model moving_model output_model [options] 
+
+	NOTICE - the development of the much faster tree aligner really makes this program
+	obsolete. While this program still works, we generally suggest using e2proc3d.py:
+	e2proc3d.py <moving_model> <output> --alignref <fixed_model> --align rotate_translate_3d_tree
 	
+	e2align3d:
 	This program is designed to rotationally and translationally align two 3D models 
 	Usually the two models are shrunk down to speed things up, then a global exhaustive 
 	search is down by the refine.3d.sphere and then this rough alignment is refined using
