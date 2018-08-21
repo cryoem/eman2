@@ -3565,16 +3565,16 @@ def angular_distribution(args):
 		leah = len(eah)
 		u = []
 		for q in eah:
-			#print("q",q)
+			print("q",q)
 			m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
-			#print("m",m)
+			print("m",m)
 			itst = len(u)
 			for c in m:
-				#print("c",c)
+				print("c",c)
 				if smc.is_in_subunit(c[0],c[1],1) :
-					#print(" is in 1")
+					print(" is in 1")
 					if not smc.is_in_subunit(c[0],c[1],0) :
-						#print("  outside")
+						print("  outside")
 						u.append(c)
 						break
 			if(len(u) != itst+1):
@@ -3588,7 +3588,7 @@ def angular_distribution(args):
 		for q in eah+u:  seaf += smc.symmetry_related(q)
 
 		lseaf = 2*leah
-		#for i,q in enumerate(seaf):  print(" seaf  ",i,q)
+		for i,q in enumerate(seaf):  print(" seaf  ",i,q)
 		#print(seaf)
 		seaf = angles_to_normals(seaf)
 
@@ -3599,7 +3599,7 @@ def angular_distribution(args):
 			l = l%lseaf
 			if(l>=leah):  l = l-leah
 			occupancy[l].append(i)
-		#for q in occupancy:  print("  ",q)
+		for i,q in enumerate(occupancy):  print("  ",i,q)
 		return  [len(q) for q in occupancy], eah
 
 	def get_color(sorted_array):
