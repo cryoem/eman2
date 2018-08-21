@@ -21,18 +21,18 @@ def main():
 
 	usage="""This shows the alignment result from e2tomogram.py uing the information from a tomorecon_xx folder.
 	
-	Example: e2tomo_showali.py --path <tomorecon_xx> --iter <iteration number>
+	Example: e2tomo_showali.py --path <tomorecon_xx> --iteration <iteration number>
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path to tomorecon_xx directory to examine fiducial error.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="fiderr")
-	parser.add_argument("--iteration","--iter", type=int,help="Refinement iteration number", default=2,guitype="intbox",row=1, col=0, rowspan=1, colspan=1,mode="fiderr")
+	parser.add_argument("--iteration", type=int,help="Refinement iteration number", default=2,guitype="intbox",row=1, col=0, rowspan=1, colspan=1,mode="fiderr")
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
-	fname=os.path.join(options.path, "ali_{:02d}.hdf".format(options.iter))
-	pname=os.path.join(options.path, "landmarks_{:02d}.txt".format(options.iter))
+	fname=os.path.join(options.path, "ali_{:02d}.hdf".format(options.iteration))
+	pname=os.path.join(options.path, "landmarks_{:02d}.txt".format(options.iteration))
 	pks=np.loadtxt(pname)
 	imgs = EMData.read_images(fname)
 	img=EMData(imgs[0]["nx"],imgs[0]["ny"], len(imgs))
@@ -42,7 +42,7 @@ def main():
 		xfs.append(m["xform.projection"])
 
 
-	aname=os.path.join(options.path, "ptclali_{:02d}.hdf".format(options.iter))
+	aname=os.path.join(options.path, "ptclali_{:02d}.hdf".format(options.iteration))
 	n=EMUtil.get_image_count(aname)
 	dirs=np.zeros((len(imgs),len(pks),2))
 	for i in range(n):
