@@ -3587,7 +3587,8 @@ def angular_distribution(args):
 		seaf = []
 		for q in eah+u:  seaf += smc.symmetry_related(q)
 
-		lseaf = 2*leah
+		lseaf = len(seaf)/(2*leah)
+		#print(lseaf)
 		for i,q in enumerate(seaf):  print(" seaf  ",i,q)
 		#print(seaf)
 		seaf = angles_to_normals(seaf)
@@ -3596,7 +3597,7 @@ def angular_distribution(args):
 
 		for i,q in enumerate(params):
 			l = nearest_fang(seaf,q[0],q[1])
-			l = l%lseaf
+			l = l/lseaf
 			if(l>=leah):  l = l-leah
 			occupancy[l].append(i)
 		for i,q in enumerate(occupancy):  print("  ",i,q)
@@ -3737,6 +3738,7 @@ def angular_distribution(args):
 
 	else:
 		occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= symmetry, method=args.method)
+		for i,q in enumerate(eva):  print(i,q)
 		radius_array = numpy.array(occupy)
 		angles_no_mirror = numpy.array(eva)
 		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
