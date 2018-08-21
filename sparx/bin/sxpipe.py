@@ -3591,15 +3591,26 @@ def angular_distribution(args):
 		#print(lseaf)
 		#for i,q in enumerate(seaf):  print(" seaf  ",i,q)
 		#print(seaf)
-		seaf = angles_to_normals(seaf)
+		seaf_norm = angles_to_normals(seaf)
 
 		occupancy = [[] for i in range(leah)]
+		_, knn_angle = scipy_spatial.cKDTree(to_cartesian(seaf), balanced_tree=False).query(to_cartesian(params))
 
-		for i,q in enumerate(params):
-			l = nearest_fang(seaf,q[0],q[1])
+		for i,q in enumerate(knn_angle):
+			l = q
 			l = l/lseaf
 			if(l>=leah):  l = l-leah
 			occupancy[l].append(i)
+		#for i,q in enumerate(occupancy):
+		#	if q:
+		#		print("  ",i,q,eah[i])
+		#print()
+
+		#for i,q in enumerate(params):
+		#	l = nearest_fang(seaf_norm,q[0],q[1])
+		#	l = l/lseaf
+		#	if(l>=leah):  l = l-leah
+		#	occupancy[l].append(i)
 		#for i,q in enumerate(occupancy):
 		#	if q:
 		#		print("  ",i,q,eah[i])
@@ -3684,7 +3695,7 @@ def angular_distribution(args):
 
 		# Reduce the reference data by removing mirror projections instead of moving them into the non-mirror region of the sphere.
 		# Create cartesian coordinates
-		angles_no_mirror = [entry for entry in ref_angles_data if sym_class.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=0)] 
+		angles_no_mirror = [entry for entry in ref_angles_data if sym_class.is_in_subunit(phi=entry[0], theta=entry[1], inc_mirror=inc_mirror)] 
 		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 		
 		# Find nearest neighbours to the reference angles with the help of a KDTree
@@ -3703,6 +3714,7 @@ def angular_distribution(args):
 
 		# Calculate a histogram for the assignments to the C1 angles
 		radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
+		mask = numpy.nonzero(radius)
 		# New output histogram array that needs to be filled later
 		radius_array = numpy.zeros(angles_cart.shape[0], dtype=int)
 
@@ -3716,7 +3728,7 @@ def angular_distribution(args):
 		#		print(" hiti  ", i, q, angles_no_mirror[i])
 		nonzero_mask = numpy.nonzero(radius_array)
 		radius_array = radius_array[nonzero_mask]
-		print(numpy.sort(radius_array))
+		return radius_array, numpy.array(angles_no_mirror)[nonzero_mask]
 
 	# Use name of the params file as prefix if prefix is None
 	if args.prefix is None:
@@ -3747,7 +3759,7 @@ def angular_distribution(args):
 	# Create cartesian coordinates
 	data_cart = to_cartesian(data)
 
-	#markus(args, data, data_cart, sym_class)
+	#radius_array_markus, angles_no_mirror_markus = markus(args, data, data_cart, sym_class)
 
 	occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= symmetry, method=args.method)
 #		for i,q in enumerate(eva):  print(i,q)
