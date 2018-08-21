@@ -549,7 +549,7 @@ def calc_tltax_rot(imgs, options):
 	
 	#### down weight the 180 degree end a bit to avoid the 0/180 ambiguity..
 	nw=30
-	vs[-60:]*=(1-0.3*np.arange(1,nw+1, dtype=float)/nw)
+	vs[-nw:]*=(1-0.3*np.arange(1,nw+1, dtype=float)/nw)
 	
 	tltax=angs[np.argmax(vs)]
 	e=from_numpy(sm)
