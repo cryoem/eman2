@@ -7209,7 +7209,6 @@ def tabessel(nx, nnxo, nbel = 5000):
 
 ####
 
-
 def split_chunks_bad(l, n):
 	"""
 	   Splits list l into n chunks with approximately equals sum of values
@@ -7229,3 +7228,16 @@ def split_chunks_bad(l, n):
 		result[i].sort()
 	return result
 	
+def convert_to_float(value):
+	"""
+	When one wants to pass floats from C to python as integers, in C one would do
+	float foo = 7.001e-23;
+	unsigned int ival = *((unsigned int *)&foo);
+	std::cout << ival<<std::endl;
+	float goo = *((float *)&ival);
+	std::cout << goo<<std::endl;
+	return ival, and then in python covert it to float
+	"""
+	from struct import unpack
+	return unpack("!f", hex(value)[2:].zfill(8).decode('hex'))[0]
+
