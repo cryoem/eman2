@@ -374,13 +374,14 @@ gold standard resolution assessment is not valid, and you need to re-refine, sta
 				try: 
 #					print "eosplit ",options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst","\n\n"
 					bsinput=image_eosplit(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst")
-					bsh=EMData(bsinput,0)
+					bsh=EMData(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst",0)
 					bsx=bsh["nx"]
 					bsy=bsh["ny"]
-					if bsx!=bispec_invar_parm[0]/2 or bsy!=bispec_invar_parm[0]*bispec_invar_parm[1]/2 : 
+					if bsx!=bispec_invar_parm[0]/2 or bsy!=bispec_invar_parm[0]*bispec_invar_parm[1] : 
 						print("ERROR: bispectra file found, but with incorrect dimensions. This likely means it was created with an earlier version of EMAN2. Please rerun e2ctf_auto.py with the --outputonly option to regenerate bispectra.")
 						sys.exit(1)
 				except: 
+#					traceback.print_exc()
 					print("ERROR: ",options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst"," is not present or not usable. Please run e2ctf_auto.py on this project, and regenerate any sets you plan to use.")
 					sys.exit(1)
 					#traceback.print_exc()

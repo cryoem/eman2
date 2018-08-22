@@ -4091,7 +4091,7 @@ def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c
 	seaf = []
 	for q in eah+u:  seaf += smc.symmetry_related(q)
 
-	lseaf = 2*leah
+	lseaf = len(seaf)/(2*leah)
 
 	seaf = angles_to_normals(seaf)
 
@@ -4099,7 +4099,7 @@ def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c
 
 	for i,q in enumerate(params):
 		l = nearest_fang(seaf,q[0],q[1])
-		l = l%lseaf
+		l = l/lseaf
 		if(l>=leah):  l = l-leah
 		occupancy[l].append(i)
 

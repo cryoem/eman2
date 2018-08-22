@@ -45,7 +45,7 @@ With the --dpi option, one can adjust the quality of the plot.
 	; params_file : Projection parameters : File containing the 3D projection parameters (default required string)
 	; output_folder : Output directory: Output folder name (default required string)
 	; %%--%%prefix : File prefix : Prefix for the output files - None uses the same name as the params file - Existing files will be overridden (default none)
-	; %%--%%symmetry : Point-group symmetry: Symmetry - c0 creates full sphere distribution (default c1)
+	; %%--%%symmetry : Point-group symmetry: Symmetry - sym_full creates full sphere distribution, e.g. c1_full, icos_full (default c1)
 
 \\
 === Advanced Parameters ===
