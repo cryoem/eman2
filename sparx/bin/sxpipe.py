@@ -3555,56 +3555,6 @@ def angular_distribution(args):
 	COLUMN_Y = 1
 	COLUMN_Z = 2
 
-	def angular_histogram(params, angstep = 15., sym= "c1", method='S'):
-		from fundamentals import symclass
-		from utilities import nearest_fang, angles_to_normals
-
-		smc  = symclass(sym)
-		eah  = smc.even_angles(angstep, inc_mirror=0, method=method)
-
-		leah = len(eah)
-		u = []
-		for q in eah:
-#			print("q",q)
-			m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
-#			print("m",m)
-			itst = len(u)
-			for c in m:
-#				print("c",c)
-				if smc.is_in_subunit(c[0],c[1],1) :
-#					print(" is in 1")
-					if not smc.is_in_subunit(c[0],c[1],0) :
-#						print("  outside")
-						u.append(c)
-						break
-			if(len(u) != itst+1):
-				u.append(q)  #  This is for exceptions that cannot be easily handled
-				"""
-				print(q)
-				print(m)
-				ERROR("balance angles","Fill up upper",1)
-				"""
-		seaf = []
-		for q in eah+u:  seaf += smc.symmetry_related(q)
-
-		lseaf = len(seaf)/(2*leah)
-		#print(lseaf)
-		#for i,q in enumerate(seaf):  print(" seaf  ",i,q)
-		#print(seaf)
-		seaf = angles_to_normals(seaf)
-
-		occupancy = [[] for i in range(leah)]
-
-		for i,q in enumerate(params):
-			l = nearest_fang(seaf,q[0],q[1])
-			l = l/lseaf
-			if(l>=leah):  l = l-leah
-			occupancy[l].append(i)
-		#for i,q in enumerate(occupancy):
-		#	if q:
-		#		print("  ",i,q,eah[i])
-		return  [len(q) for q in occupancy], eah
-
 	def get_color(sorted_array):
 		"""
 		Get the color for the 2D visual representation.
