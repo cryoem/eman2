@@ -11179,6 +11179,7 @@ vector<int> Util::multiref_Crosrng_msg_stack_stepsi_scores_local(EMData* dataima
 #undef  t7
 
 float Util::ener(EMData* ave, vector<int> numr) {
+//  Sum of squares, Fourier L2 norm, rings are not weighted
 	ENTERFUNC;
 	long double ener,en;
 
@@ -11368,7 +11369,7 @@ EMData* Util::rotate_rings(EMData* circ1, float alpha, vector<int> numr)
 
 float Util::ccc_rings(EMData* circ1, EMData* circ2, float alpha, vector<int> numr, vector<float> wr)
 {
-
+//  Real space ccc
 	int   ip, jc, numr3i, numr2i, i, j, ialpha;
 	float dq, eq;
 

@@ -165,7 +165,7 @@ class WorkFlowTask(object):
 		
 	def on_form_close(self):
 		self.disconnect_form()
-		self.task_idle.emit()
+		#self.task_idle.emit()
 
 	def close(self):
 		if self.form != None: 
