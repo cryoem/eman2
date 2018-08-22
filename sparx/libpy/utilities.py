@@ -4060,12 +4060,13 @@ def symmetry_related_normals(angles, symmetry):
 	return neighbors
 """
 
-def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c1"):
+def angular_occupancy(params, angstep = 15., sym= "c1", method='S'):
 	from fundamentals import symclass
 	from utilities import nearest_fang, angles_to_normals
 
 	smc  = symclass(sym)
-	eah  = smc.even_angles(angstep, inc_mirror=0)
+	eah  = smc.even_angles(angstep, inc_mirror=0, method=method)
+
 	leah = len(eah)
 	u = []
 	for q in eah:
@@ -4092,7 +4093,9 @@ def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c
 	for q in eah+u:  seaf += smc.symmetry_related(q)
 
 	lseaf = len(seaf)/(2*leah)
-
+	#print(lseaf)
+	#for i,q in enumerate(seaf):  print(" seaf  ",i,q)
+	#print(seaf)
 	seaf = angles_to_normals(seaf)
 
 	occupancy = [[] for i in range(leah)]
@@ -4102,6 +4105,19 @@ def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c
 		l = l/lseaf
 		if(l>=leah):  l = l-leah
 		occupancy[l].append(i)
+	#for i,q in enumerate(occupancy):
+	#	if q:
+	#		print("  ",i,q,eah[i])
+	return occupancy, eah
+
+
+def angular_histogram(params, angstep = 15., sym= "c1", method='S'):
+	occupancy, eah = angular_occupancy(params, angstep, sym, method)
+	return  [len(q) for q in occupancy], eah
+
+def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c1"):
+	from fundamentals import symclass
+	occupancy,eah = angular_occupancy(params, angstep, sym, method='S')
 
 	if(max_occupy > 0):
 		outo = []
