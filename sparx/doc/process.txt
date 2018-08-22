@@ -62,7 +62,7 @@ The output file is then imported and 3D transformed map computed.
   sxheader.py  bdb:p  --params=xform.projection  --import=output.txt
   mpirun  -np  2  sxrecons3d_n.py  bdb:p tvol.hdf  --MPI
 
-The reconstructed map is in the position of the volume computed using the input.txt parameters and then transformed with rot_shift3D(vol, phi,theta,psi,tx,ty,tz).
+The reconstructed map is in the position of the map computed using the input.txt parameters and then transformed with rot_shift3D(vol, phi,theta,psi,tx,ty,tz).
 
 10. Import ctf parameters from the output of sxcter into windowed particle headers. 
 \\ There are three possible input files formats: (1) all particles are in one stack, (2) and/or (3) particles are in stacks, each stack corresponds to a single micrograph. In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'. Normally this is done by e2boxer.py during windowing. Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
