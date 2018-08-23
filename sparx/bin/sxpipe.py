@@ -3555,53 +3555,6 @@ def angular_distribution(args):
 	COLUMN_Y = 1
 	COLUMN_Z = 2
 
-	def angular_histogram(params, angstep = 15., sym= "c1", method='S'):
-		from fundamentals import symclass
-		from utilities import nearest_fang, angles_to_normals
-
-		smc  = symclass(sym)
-		eah  = smc.even_angles(angstep, inc_mirror=0, method=method)
-
-		leah = len(eah)
-		u = []
-		for q in eah:
-			#print("q",q)
-			m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
-			#print("m",m)
-			itst = len(u)
-			for c in m:
-				#print("c",c)
-				if smc.is_in_subunit(c[0],c[1],1) :
-					#print(" is in 1")
-					if not smc.is_in_subunit(c[0],c[1],0) :
-						#print("  outside")
-						u.append(c)
-						break
-			if(len(u) != itst+1):
-				u.append(q)  #  This is for exceptions that cannot be easily handled
-				"""
-				print(q)
-				print(m)
-				ERROR("balance angles","Fill up upper",1)
-				"""
-		seaf = []
-		for q in eah+u:  seaf += smc.symmetry_related(q)
-
-		lseaf = 2*leah
-		#for i,q in enumerate(seaf):  print(" seaf  ",i,q)
-		#print(seaf)
-		seaf = angles_to_normals(seaf)
-
-		occupancy = [[] for i in range(leah)]
-
-		for i,q in enumerate(params):
-			l = nearest_fang(seaf,q[0],q[1])
-			l = l%lseaf
-			if(l>=leah):  l = l-leah
-			occupancy[l].append(i)
-		#for q in occupancy:  print("  ",q)
-		return  [len(q) for q in occupancy], eah
-
 	def get_color(sorted_array):
 		"""
 		Get the color for the 2D visual representation.
@@ -3664,35 +3617,7 @@ def angular_distribution(args):
 		lseaf = 2*leah
 		return lseaf, leah, seaf
 
-	# Use name of the params file as prefix if prefix is None
-	if args.prefix is None:
-		args.prefix = os.path.basename(os.path.splitext(args.params_file)[0])
-
-	# Import the parameters, assume the columns 0 (Phi) 1 (Theta) 2 (Psi) are present
-	print_progress('Import projection parameter')
-	data_params = numpy.genfromtxt(args.params_file, usecols=(0, 1, 2))
-
-	# If the symmetry is c0, do not remove mirror projections.
-	print_progress('Reduce anglesets')
-	if args.symmetry == 'c0':
-		symmetry = 'c1'
-		inc_mirror = 1
-	else:
-		symmetry = args.symmetry
-		inc_mirror = 0
-
-	# Create 2 symclass objects.
-	# One C1 object for the inital reference angles.
-	# One related to the actual symmetry, to deal with mirror projections.
-	sym_class = fundamentals.symclass(symmetry)
-
-	print_progress('Reduce data to symmetry - This might take some time for high symmetries')
-	# Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
-	data = numpy.array( sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror))
-	# Create cartesian coordinates
-	data_cart = to_cartesian(data)
-
-	if False:
+	def markus(args, data, data_cart, sym_class):
 		print_progress('Create reference angles')
 		# Create reference angles all around the sphere.
 		ref_angles_data = sym_class.even_angles(args.delta, inc_mirror=1, method=args.method)
@@ -3719,10 +3644,12 @@ def angular_distribution(args):
 		# Find the nearest neighbours of the reduced reference data to the reference angles that do not contain mirror projections.
 		_, knn_angle = scipy_spatial.cKDTree(angles_no_mirror_cart, balanced_tree=False).query(angles_reduce_cart)
 
-		hiti = [[] for i in range(max(knn_data)+1)]
-		for i,q in enumerate(knn_data):
-			hiti[q].append(i)
-		for i,q in enumerate(	hiti):  print(" hiti  ", i, q)
+		#hiti = [[] for i in range(max(knn_data)+1)]
+		#for i,q in enumerate(knn_data):
+		#	hiti[q].append(i)
+		#for i,q in enumerate(	hiti):
+		#	if q:
+		#		print(" hiti  ", i, q, angles_no_mirror[i])
 
 		# Calculate a histogram for the assignments to the C1 angles
 		radius = numpy.bincount(knn_data, minlength=angles_cart.shape[0])
@@ -3734,17 +3661,55 @@ def angular_distribution(args):
 		# Every value of value corresponds to the angle after symmetry wrapping.
 		# Values can occure multiple times and therefore can contain the member information for multiple reference angles.
 		numpy.add.at(radius_array, knn_angle, radius)
+		#for i,q in enumerate(radius_array):
+		#	if q:
+		#		print(" hiti  ", i, q, angles_no_mirror[i])
+		nonzero_mask = numpy.nonzero(radius_array)
+		radius_array = radius_array[nonzero_mask]
+		print(numpy.sort(radius_array))
 
+	# Use name of the params file as prefix if prefix is None
+	if args.prefix is None:
+		args.prefix = os.path.basename(os.path.splitext(args.params_file)[0])
+
+	# Import the parameters, assume the columns 0 (Phi) 1 (Theta) 2 (Psi) are present
+	print_progress('Import projection parameter')
+	data_params = numpy.atleast_2d(numpy.genfromtxt(args.params_file, usecols=(0, 1, 2)))
+
+	# If the symmetry is c0, do not remove mirror projections.
+	print_progress('Reduce anglesets')
+	if args.symmetry.endswith('_full'):
+		symmetry = args.symmetry.rstrip('_full')
+		inc_mirror = 1
 	else:
-		occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= symmetry, method=args.method)
-		radius_array = numpy.array(occupy)
-		angles_no_mirror = numpy.array(eva)
-		angles_no_mirror_cart = to_cartesian(angles_no_mirror)
+		symmetry = args.symmetry
+		inc_mirror = 0
+
+
+	# Create 2 symclass objects.
+	# One C1 object for the inital reference angles.
+	# One related to the actual symmetry, to deal with mirror projections.
+	sym_class = fundamentals.symclass(symmetry)
+
+	print_progress('Reduce data to symmetry - This might take some time for high symmetries')
+	# Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
+	data = numpy.array( sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=inc_mirror))
+	# Create cartesian coordinates
+	data_cart = to_cartesian(data)
+
+	#markus(args, data, data_cart, sym_class)
+
+	occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= symmetry, method=args.method)
+#		for i,q in enumerate(eva):  print(i,q)
+	radius_array = numpy.array(occupy)
+	angles_no_mirror = numpy.array(eva)
+	angles_no_mirror_cart = to_cartesian(angles_no_mirror)
 
 
 	# Remove all zeros for speedup reasons
 	nonzero_mask = numpy.nonzero(radius_array)
 	radius_array = radius_array[nonzero_mask]
+	#print(numpy.sort(radius_array))
 
 	# Calculate best width and length for the bins in 3D
 	width = (args.pixel_size * args.particle_radius * numpy.radians(args.delta) * 2) / float(2 * 3)
@@ -3796,6 +3761,7 @@ def angular_distribution(args):
 	"""
 	nonzero_mask = list(nonzero_mask[0])
 	sorted_radius = radius_array
+	sorted_radius_plot = numpy.sort(radius_array)[::-1]
 	array_x = numpy.arange(sorted_radius.shape[0])
 	#"""
 	
@@ -3803,8 +3769,8 @@ def angular_distribution(args):
 	# 2D distribution plot
 	print_progress('Create 2D legend plot')
 	output_bild_legend_png = os.path.join(args.output_folder, '{0}.png'.format(args.prefix))
-	color = get_color(sorted_radius)
-	plt.bar(array_x, height=sorted_radius, width=1, color=color)
+	color = get_color(sorted_radius_plot)
+	plt.bar(array_x, height=sorted_radius_plot, width=1, color=color)
 	plt.grid()
 	plt.xlabel('Bin / a.u.')
 	plt.ylabel('Nr. of Particles')

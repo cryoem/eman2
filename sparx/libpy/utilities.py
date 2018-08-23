@@ -4060,12 +4060,13 @@ def symmetry_related_normals(angles, symmetry):
 	return neighbors
 """
 
-def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c1"):
+def angular_occupancy(params, angstep = 15., sym= "c1", method='S'):
 	from fundamentals import symclass
 	from utilities import nearest_fang, angles_to_normals
 
 	smc  = symclass(sym)
-	eah  = smc.even_angles(angstep, inc_mirror=0)
+	eah  = smc.even_angles(angstep, inc_mirror=0, method=method)
+
 	leah = len(eah)
 	u = []
 	for q in eah:
@@ -4091,17 +4092,32 @@ def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c
 	seaf = []
 	for q in eah+u:  seaf += smc.symmetry_related(q)
 
-	lseaf = 2*leah
-
+	lseaf = len(seaf)/(2*leah)
+	#print(lseaf)
+	#for i,q in enumerate(seaf):  print(" seaf  ",i,q)
+	#print(seaf)
 	seaf = angles_to_normals(seaf)
 
 	occupancy = [[] for i in range(leah)]
 
 	for i,q in enumerate(params):
 		l = nearest_fang(seaf,q[0],q[1])
-		l = l%lseaf
+		l = l/lseaf
 		if(l>=leah):  l = l-leah
 		occupancy[l].append(i)
+	#for i,q in enumerate(occupancy):
+	#	if q:
+	#		print("  ",i,q,eah[i])
+	return occupancy, eah
+
+
+def angular_histogram(params, angstep = 15., sym= "c1", method='S'):
+	occupancy, eah = angular_occupancy(params, angstep, sym, method)
+	return  [len(q) for q in occupancy], eah
+
+def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c1"):
+	from fundamentals import symclass
+	occupancy,eah = angular_occupancy(params, angstep, sym, method='S')
 
 	if(max_occupy > 0):
 		outo = []
@@ -7193,7 +7209,6 @@ def tabessel(nx, nnxo, nbel = 5000):
 
 ####
 
-
 def split_chunks_bad(l, n):
 	"""
 	   Splits list l into n chunks with approximately equals sum of values
@@ -7213,3 +7228,16 @@ def split_chunks_bad(l, n):
 		result[i].sort()
 	return result
 	
+def convert_to_float(value):
+	"""
+	When one wants to pass floats from C to python as integers, in C one would do
+	float foo = 7.001e-23;
+	unsigned int ival = *((unsigned int *)&foo);
+	std::cout << ival<<std::endl;
+	float goo = *((float *)&ival);
+	std::cout << goo<<std::endl;
+	return ival, and then in python covert it to float
+	"""
+	from struct import unpack
+	return unpack("!f", hex(value)[2:].zfill(8).decode('hex'))[0]
+

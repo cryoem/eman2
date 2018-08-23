@@ -10033,7 +10033,7 @@ def compare_bckgnoise(bckgnoise1, bckgnoise2):
 # 		
 # - "Tracker" (dictionary) object
 #   Keeps the current state of option settings and dataset 
-#   (i.e. particle stack, reference volume, reconstructed volume, and etc)
+#   (i.e. particle stack, reference structure, reconstructed volume, and etc)
 #   Each iteration is allowed to add new fields/keys
 #   if necessary. This happes especially when type of 3D Refinement or metamove changes.
 #   Conceptually, each iteration will be associated to a specific Tracker state.
@@ -10066,7 +10066,7 @@ def main():
 	
 	There are five ways to run the program:
 
-1. Standard default run, starts from exhaustive searches, uses initial reference volume
+1. Standard default run, starts from exhaustive searches, uses initial reference structure
 mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
 
 2. Restart after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
@@ -10153,7 +10153,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		if keepgoing1== 0:
 			ERROR("To restart, meridien requires only the name of existing refinement directory.", "meridien",1, Blockdata["myid"])
 		if keepgoing2 ==0:
-			ERROR("To start, meridien requires at least the stack name and the name of reference volume", "meridien",1, Blockdata["myid"])
+			ERROR("To start, meridien requires at least the stack name and the name of reference structure", "meridien",1, Blockdata["myid"])
 		if restart_flag ==1: restart_mode = True
 		else: restart_mode  = False
 		
@@ -11035,7 +11035,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		if keepgoing1== 0:
 			ERROR("To restart, meridien requires only the name of existing refinement directory.", "meridien local",1, Blockdata["myid"])
 		if keepgoing2 ==0:
-			ERROR("To start, meridien requires at least the stack name and the name of reference volume", "meridien local",1, Blockdata["myid"])
+			ERROR("To start, meridien requires at least the stack name and the name of reference structure", "meridien local",1, Blockdata["myid"])
 		if restart_flag ==1: restart_mode = True
 		else: restart_mode  = False
 		

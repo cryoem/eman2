@@ -43,6 +43,7 @@ import os
 import sys
 from e2simmx import cmponetomany
 from EMAN2jsondb import JSTask,jsonclasses
+import traceback
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -65,6 +66,7 @@ def main():
 	parser.add_argument("--tries", type=int, default=10, help="The number of different initial models to generate in search of a good one", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer factor prior to reconstruction. Default=0, no shrinking", guitype='shrinkbox', row=2, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=4, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--automaskexpand", default=-1, type=int,help="Number of voxels of post-threshold expansion in the mask, for use when peripheral features are truncated. (default=shrunk boxsize/20)",guitype='intbox', row=6, col=2, rowspan=1, colspan=1 )
 	parser.add_argument("--randorient",action="store_true",help="Instead of seeding with a random volume, seeds by randomizing input orientations",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--maskproc", default=None, type=str,help="Default=none. If specified, this mask will be performed after the built-in automask, eg - mask.soft to remove the core of a virus", )
 #	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=5, col=0, rowspan=1, colspan=1)
@@ -144,7 +146,7 @@ def main():
 
 	tasks=[]
 	for t in range(options.tries):
-		tasks.append(InitMdlTask(particles_name,len(ptcls),orts,t,sfcurve,options.iter,options.sym,mask2,options.randorient,options.verbose))
+		tasks.append(InitMdlTask(particles_name,len(ptcls),orts,t,sfcurve,options.iter,options.sym,mask2,options.randorient,options.automaskexpand,options.verbose))
 
 	taskids=etc.send_tasks(tasks)
 	alltaskids=taskids[:]			# we keep a copy for monitoring progress
@@ -185,9 +187,9 @@ def main():
 
 class InitMdlTask(JSTask):
 
-	def __init__(self,ptclfile=None,ptcln=0,orts=[],tryid=0,strucfac=None,niter=5,sym="c1",mask2=None,randorient=False,verbose=0) :
+	def __init__(self,ptclfile=None,ptcln=0,orts=[],tryid=0,strucfac=None,niter=5,sym="c1",mask2=None,randorient=False,automaskexpand=-1,verbose=0) :
 		data={"images":["cache",ptclfile,(0,ptcln)],"strucfac":strucfac,"orts":orts,"mask2":mask2}
-		JSTask.__init__(self,"InitMdl",data,{"tryid":tryid,"iter":niter,"sym":sym,"randorient":randorient,"verbose":verbose},"")
+		JSTask.__init__(self,"InitMdl",data,{"tryid":tryid,"iter":niter,"sym":sym,"randorient":randorient,"automaskexpand":automaskexpand,"verbose":verbose},"")
 
 
 	def execute(self,progress=None):
@@ -195,6 +197,7 @@ class InitMdlTask(JSTask):
 		ptcls=EMData.read_images(self.data["images"][1])
 		orts=self.data["orts"]
 		options=self.options
+		automaskexpand=options["automaskexpand"]
 		verbose=options["verbose"]
 		boxsize=ptcls[0].get_xsize()
 		apix=ptcls[0]["apix_x"]
@@ -220,8 +223,7 @@ class InitMdlTask(JSTask):
 			quals=[]
 			for i in range(len(ptcls)):
 				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{"maxshift":old_div(boxsize,5)}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
-				bs=min(sim)
-#				print bs[0]
+				bs=min(sim) #				print bs[0]
 				bss+=bs[0]
 				bslst.append((bs[0],i))
 				if verbose>2 : print("align %d \t(%1.3f)\t%1.3g"%(i,bs[0],bss))
@@ -287,7 +289,11 @@ class InitMdlTask(JSTask):
 			threed[-1].process_inplace("normalize.edgemean")
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":old_div(boxsize,3.0),"outer_radius":old_div(boxsize,12.0)})
 			threed[-1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":old_div(boxsize,6),"threshold":threed[-1]["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":old_div(boxsize,20),"nshellsgauss":old_div(boxsize,20)})
+			try:
+				if automaskexpand<0 : shells=boxsize//20
+				else : shells=automaskexpand
+				if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":boxsize//6,"threshold":threed[-1]["sigma_nonzero"]*.75,"nmaxseed":30,"nshells":shells,"nshellsgauss":boxsize//20})
+			except: traceback.print_exc()
 			if mask2!=None:threed[-1].mult(mask2)
 			threed[-1]["apix_x"]=apix
 			threed[-1]["apix_y"]=apix

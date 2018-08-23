@@ -2379,7 +2379,7 @@ def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, c
 	from projection import prgs,prgl
 	from alignment import ornq_gridding
 	from fundamentals import prep_refim_gridding
-	from utilities import wrap_mpi_gatherv
+	#from utilities import wrap_mpi_gatherv
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	###from time import time
 	#  Input data has to be CTF-multiplied, preshifted, and prepped for gridding
@@ -2441,7 +2441,7 @@ def prepare_refproj(volprep, refang, delta_psi = 1.0, mempercpu = 1.e9, kb3D = N
 def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lentop = 1000, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
-	from utilities import wrap_mpi_gatherv
+	#from utilities import wrap_mpi_gatherv
 	from math import sqrt
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	from time import time
@@ -2519,7 +2519,7 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 def ali3D_direct_preselect(data, volprep, oldcodedparams, refang, delta_psi, shifts, myid, main_node, lentop = 1000, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
-	from utilities import wrap_mpi_gatherv
+	#from utilities import wrap_mpi_gatherv
 	from math import sqrt
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	from time import time
@@ -2615,7 +2615,7 @@ def ali3D_direct_preselect(data, volprep, oldcodedparams, refang, delta_psi, shi
 def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, myid, main_node, lentop = 1000, kb3D = None):
 	from projection import prgs,prgl
 	from fundamentals import fft
-	from utilities import wrap_mpi_gatherv, getfvec
+	from utilities import getfvec
 	from math import sqrt
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	from time import time
@@ -2703,7 +2703,7 @@ def proj_ali_incore_direct(data, ref_angs, numr, xrng, yrng, step, finfo=None, s
 	from EMAN2 import Vec2f
 
 	if finfo:
-		from utilities    import get_params_proj
+		from utilities import get_params_proj
 		phi, theta, psi, s2x, s2y = get_params_proj(data)
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
@@ -5614,7 +5614,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 							mpi_comm = None, myid = 0, main_node = 0, log = None ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc
-	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
+	from utilities       import bcast_number_to_all, bcast_EMData_to_all, model_blank
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
