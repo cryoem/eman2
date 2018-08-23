@@ -65,6 +65,8 @@ def main():
 
 	parser.add_argument("--correctrot", action="store_true",help="correct for global rotation and position sample flat in tomogram.", default=False,guitype='boolbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
 
+	parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
+
 	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=12, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
@@ -302,14 +304,6 @@ def main():
 		#### make tomogram loop
 		for m3diter in range(n_m3d):
 
-			### In the first round, position the tomogram so the features are relatively flat.
-			if niter==0 and m3diter==1 and options.correctrot:
-				threed=make_tomogram(imgs_500, ttparams, options, errtlt=loss0)
-				ttparams=fix_rotation(threed, ttparams) 
-				#yrot+=rot
-				#ttparams[:,3]+=rot
-				zeroid=options.zeroid=np.argmin(abs(ttparams[:,3]))
-				ttparams[:,3]-=ttparams[options.zeroid,3]
 			
 			#### make initial tomogram for landmark search, always use 500x500
 			threed=make_tomogram(imgs_500, ttparams, options, outname=name_tomo, errtlt=loss0)
@@ -329,6 +323,10 @@ def main():
 				allparams=refine_one_iter(imgs_, allparams, options, idx)
 
 			ttparams, pks=get_params(allparams, options)
+			
+			
+			
+			allparams=np.hstack([ttparams.flatten(), pks.flatten()])
 		
 		ttparams, pks=get_params(allparams, options)
 		if options.writetmp:
@@ -339,14 +337,21 @@ def main():
 		#### a final round to calculate the average loss per tilt
 		ptclpos=ali_ptcls(imgs_, allparams, options, outname=name_ptclali, doali=True)
 		loss0=np.zeros(num)
-		tpm=ttparams.copy()
 		for nid in range(num):
 			loss0[nid]=get_loss_pm([0], nid, allparams, options, [0], ptclpos)
+			
+		### In the first round, position the tomogram so the features are relatively flat.
+		if niter==0 and options.correctrot:
+			threed=make_tomogram(imgs_500, ttparams, options, errtlt=loss0)
+			ttparams=fix_rotation(threed, ttparams) 
+			zeroid=options.zeroid=np.argmin(abs(ttparams[:,3]))
+			ttparams[:,3]-=ttparams[options.zeroid,3]
 
 		print("Iteration {} finished. Final average loss {:.2f} nm".format(
 			niter, np.mean(loss0)))
 	
 		#### always save parameters at the full scale (4k)
+		tpm=ttparams.copy()
 		tpm[:,:2]*=options.binfac
 		tpm=np.hstack([np.arange(len(tpm))[:,None], tpm])
 		if options.writetmp:
@@ -399,49 +404,47 @@ def main():
 
 #### find the optimal global rotation of the tomogram so the high contrast features lies flat
 def fix_rotation(threed, ttparams):
-
+	
+	print("Positioning tomogram...")
 	m=threed.copy()
-	m.process_inplace("math.minshrink",{'n':2})
-	m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":5})
-	m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-	m.process_inplace("normalize")
 	m.process_inplace("math.meanshrink",{'n':2})
-	
+	m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
+	m.process_inplace("filter.highpass.gauss",{"cutoff_abs":.05})
+	m.process_inplace("math.absvalue")
+	m.process_inplace("normalize")
+	m.process_inplace("math.maxshrink",{'n':2})
+	m.process_inplace("math.maxshrink",{'n':2})
 	img=m.numpy().copy()
-	pval=img.flatten()
-	thr=np.sort(pval)[int(len(pval)*.1)]
 	
-	pts=np.array(np.where(img<-4)).T
+	pval=img.flatten()
+	thr=-np.sort(-pval)[500]
+	pts=np.array(np.where(img>thr)).T
 	pts=pts[:,::-1]
 	pca=PCA(3)
 	pca.fit(pts);
 	c=pca.components_
-	
 	t=Transform()
+	cc=c[2]
+	cc*=np.sign(cc[2])
 	t.set_rotation(c[2].tolist())
 	t.invert()
 	xyz=t.get_params("xyz")
 	xyz["ztilt"]=0
-	#t=Transform(xyz)
-	print(xyz)
+	print("  Global transform : xtilt {:.02f}, ytilt {:.02f}".format(xyz["xtilt"], xyz["ytilt"]))
+	
+	t=Transform(xyz)
 
-	tpm=ttparams.copy()
-	
-	tpm[:,4]=(tpm[:,4]-xyz["xtilt"])
-	tpm[:,3]=(tpm[:,3]-xyz["ytilt"])
-	
-	#thd=threed.numpy().copy()
-	#prj=np.min(thd, axis=1)
-	#pval=prj.flatten()
-	#thr=np.sort(pval)[int(len(pval)*.1)]
-	#pts=np.array(np.where(prj<thr)).T
-	#pca=PCA(1)
-	#pca.fit(pts);
-	#c=pca.components_[0]
-	#rot=(np.arctan2(c[0], c[1])*180/np.pi)
-	#rot=(rot+90)%180-90.
-	#print("Adjusting rotation {:.1f}..".format(rot))
-	return tpm
+	p1=np.array([t.transform(p.tolist()) for p in pts])
+
+	ttparams_new=ttparams.copy()
+	for i,tpm in enumerate(ttparams):
+		xf=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4], "ztilt":tpm[2]})
+		xf=xf*t.inverse()
+		x=xf.get_params("xyz")
+		ttparams_new[i][2]=x["ztilt"]
+		ttparams_new[i][3]=x["ytilt"]
+		ttparams_new[i][4]=x["xtilt"]
+	return ttparams_new
 
 #### unpack parameters. I really shouldn't need this but it is risky to remove the convertion
 def get_params(allparams, options):
@@ -683,6 +686,8 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[]):
 	apix=imgs[0]["apix_x"]
 	full3d["apix_x"]=full3d["apix_y"]=full3d["apix_z"]=apix
 	print("Done. Now writting tomogram to disk...")
+	if options.normslice:
+		full3d.process_inplace("normalize.rows")
 	return full3d
 
 #### reconstruct tomogram...
@@ -765,6 +770,8 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[]):
 	apix=imgs[0]["apix_x"]
 	threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
 
+	if options.normslice and outxy>1000:
+		threed.process_inplace("normalize.rows")
 	if outname:
 		threed.write_image(outname)
 		if options.verbose: print("Map written to {}.".format(outname))

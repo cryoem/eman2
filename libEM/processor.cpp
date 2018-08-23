@@ -4560,48 +4560,79 @@ void NormalizeRowProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	if (image->get_zsize() > 1) {
-		LOGERR("row normalize only works for 2D image");
-		return;
-	}
+	
+	
 
 	float *rdata = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
+	int nz = image->get_zsize();
 
-	if (params.has_key("unitlen")) {
-		for (int y = 0; y < ny; y++) {
-			double row_len = 0;
-			for (int x = 0; x < nx; x++) {
-				row_len += pow((double)rdata[x + y * nx],2.0);
+	if (nz > 1) {
+		// Muyuan 08/2018: normalize by slice when nz>1
+		// since this processor is not used anyways..
+		for (int z = 0; z < nz; z++) {
+			double row_sum = 0;
+			double row_sqr = 0;
+			for (int y = 0; y < ny; y++) {
+				for (int x = 0; x < nx; x++) {
+					float d = rdata[x + y * nx + z*nx*ny];
+					row_sum += d;
+					d*=d;
+					row_sqr += d;
+				}
 			}
-			row_len=sqrt(row_len);
-			if (row_len==0) row_len=1.0;
-
-			for (int x = 0; x < nx; x++) {
-				rdata[x + y * nx] /= (float)row_len;
+			double row_mean = row_sum / nx / ny;
+			double row_std = row_sqr / nx / ny;
+			row_std = sqrt(row_std - row_mean*row_mean);
+			for (int y = 0; y < ny; y++) {
+				for (int x = 0; x < nx; x++) {
+					rdata[x + y * nx+ z*nx*ny] -= (float)row_mean;
+					rdata[x + y * nx+ z*nx*ny] /= (float)row_std;
+				}
 			}
+			
 		}
-		image->update();
-		return;
+		
+		
+// 		LOGERR("row normalize only works for 2D image");
+// 		return;
 	}
 	
-	for (int y = 0; y < ny; y++) {
-		double row_sum = 0;
-		for (int x = 0; x < nx; x++) {
-			row_sum += rdata[x + y * nx];
-		}
+	else {
+		if (params.has_key("unitlen")) {
+			for (int y = 0; y < ny; y++) {
+				double row_len = 0;
+				for (int x = 0; x < nx; x++) {
+					row_len += pow((double)rdata[x + y * nx],2.0);
+				}
+				row_len=sqrt(row_len);
+				if (row_len==0) row_len=1.0;
 
-		double row_mean = row_sum / nx;
-		if (row_mean <= 0) {
-			row_mean = 1;
+				for (int x = 0; x < nx; x++) {
+					rdata[x + y * nx] /= (float)row_len;
+				}
+			}
+			image->update();
+			return;
 		}
+		
+		for (int y = 0; y < ny; y++) {
+			double row_sum = 0;
+			for (int x = 0; x < nx; x++) {
+				row_sum += rdata[x + y * nx];
+			}
 
-		for (int x = 0; x < nx; x++) {
-			rdata[x + y * nx] /= (float)row_mean;
+			double row_mean = row_sum / nx;
+			if (row_mean <= 0) {
+				row_mean = 1;
+			}
+
+			for (int x = 0; x < nx; x++) {
+				rdata[x + y * nx] /= (float)row_mean;
+			}
 		}
 	}
-
 	image->update();
 }
 
