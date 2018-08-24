@@ -212,8 +212,8 @@ def main():
 			if len(args) == 1 and os.path.isdir(args[0]):
 				cmd = "{} -mdoc {} -path {} -output {}".format(program,options.mdoc,args[0],tilttmp)
 			else:
-				inputs = " ".join(args)
-				cmd = "{} -input {} -mdoc {} -output {}".format(program,inputs,options.mdoc,tilttmp)
+				print("When running IMOD and specifying an mdoc file, the input must be a directory containing the images referenced by the mdoc.")
+				sys.exit[1]
 			run(cmd,verbose=options.verbose)
 			
 			imodtilt=EMData(tilttmp)
