@@ -1173,6 +1173,24 @@ def smallprime(arbit_num, numprime=3):
 	nicenum = arbit_num-i+1
 	return nicenum
 
+def sinc2inv(nx):
+	from math import sqrt
+	s = sincinv(nx)
+	return [i*i for i in s]
+
+def sincinv(nx):
+	from math import pi,sin
+	cdf =pi/nx
+	npad = 1
+	nxb = nx/2/npad
+	nxe = nxb + (nx/npad)%2
+	s = [1.0]*nx
+	for i in range( -nxb, nxe):
+		if( i != 0 ):
+			rrr=abs(i)
+			s[i+nxb] = (rrr*cdf)/sin(rrr*cdf)
+	return s
+
 def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	""" 
 		Calculate the power spectrum using Welch periodograms (overlapped periodogram)
