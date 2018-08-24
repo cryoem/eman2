@@ -2414,7 +2414,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.xyz.addItems(QtCore.QStringList(["x","y","z"]))
 			self.hbl.addWidget(self.xyz)
 			self.xyz.setCurrentIndex(2)
-			self.xyz.currentIndexChanged[QString].connect(self.target().xyz_changed)
+			self.xyz.currentIndexChanged[QtCore.QString].connect(self.target().xyz_changed)
 
 	def disable_xyz(self):
 		if self.xyz != None:
