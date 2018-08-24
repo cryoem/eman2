@@ -793,7 +793,7 @@ class EMBrowser(EMBrowserType):
 		self.preview_options.addItem("Multi preview")
 		#self.preview_options.setCurrentIndex(0)
 		
-		self.preview_options.currentIndexChanged[QString].connect(self.preview_options_changed)
+		self.preview_options.currentIndexChanged[QtCore.QString].connect(self.preview_options_changed)
 	
 	def preview_options_changed(self,qstring):
 		if str(qstring) == "Single preview":
@@ -890,7 +890,7 @@ class EMBrowser(EMBrowserType):
 					menu.addAction(SAVE_SUBSET)
 				
 
-		menu.triggered[QAction].connect(self.menu_action_triggered)
+		menu.triggered[QtGui.QAction].connect(self.menu_action_triggered)
 		self.action_list_widget = l # only set if the menu acutally triggers
 		menu.exec_(event.globalPos())
 		
