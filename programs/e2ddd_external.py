@@ -68,6 +68,7 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=0, rowspan=1, colspan=2, mode="tomo,spr")
 
 	parser.add_argument("--mdoc", default = None, type=str, help="When an mdoc or idoc is provided, the raw files are automatically found within the input directory",guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=3, col=0,rowspan=1, colspan=2, mode="tomo")
+	parser.add_argument("--apix", default=-1, type=float, help="Specify the Apix of the movies to be processed.",guitype='floatbox', row=2, col=1, rowspan=1, colspan=1, mode="tomo[True]")
 
 	parser.add_argument("--dark",  default = None, type=str, help="Use this dark reference.",guitype='filebox',  browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=4, col=0,rowspan=1, colspan=2, mode="tomo,spr")
 	parser.add_argument("--gain",  default = None, type=str, help="Use this gain reference.",guitype='filebox',  browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=5, col=0,rowspan=1, colspan=2, mode="tomo,spr")
@@ -103,7 +104,7 @@ def main():
 		sys.exit(1)
 
 	if options.tomo and options.mdoc == None:
-		print("""ERROR: You must specify an mdoc/idoc file via the --mdoc option when processing raw tilt movies for tomography. If no mdoc/idoc files are available, images can be aligned without the --tomo option, in which case they will be written to micrographs_mrc. From there, you can generate a tiltseries via the EMAN2 GUI or the program e2buildstacks.py.""")
+		print("""ERROR: You must specify an mdoc/idoc file via the --mdoc option when processing raw tilt movies for tomography. If no mdoc/idoc files are available, images can be aligned without the --tomo option, in which case they will be written to micrographs as an .hdf file. From there, you can generate a tiltseries via the EMAN2 GUI or the program e2buildstacks.py.""")
 		sys.exit(1)
 
 	if options.mdoc != None:
@@ -159,23 +160,29 @@ def main():
 		else:
 			bname = os.path.basename(args[0])
 
-	if options.tomo: outdir = "tiltseries"
-	else: outdir = "micrographs_mrc"
-
+	if options.tomo: outdir="tiltseries"
+	else: 
+		outdir="tmp"
+		try: os.mkdir("micrographs")
+		except: pass
 	try: os.mkdir(outdir)
 	except: pass
 
-	if options.mdoc != None:
-		# if not os.path.isdir(args[0]):
-		# 	print("ERROR: When providing an mdoc, the input option must be a directory containing the raw files referenced in the mdoc.")
-		# 	sys.exit(1)
-		mdoc_params,tilt_source,raw_tilts = parse_mdoc(options.mdoc)
+	if options.mdoc != None and options.tomo!=None:
+		if not os.path.isdir(args[0]):
+		 	print("ERROR: When providing an mdoc in tomo mode, the input option must be a directory containing the raw files referenced in the mdoc.")
+		 	sys.exit(1)
+		mdoc_params,tilt_source,raw_tilts,apix,options.mdoc = parse_mdoc(options.mdoc)
+		if options.apix==-1: options.apix=apix
 		if options.tomo:
 			if options.tiltseries_name != "":
-				tiltname = "{}/{}.hdf".format(outdir,options.tiltseries_name)
-			else: tiltname="{}/{}.hdf".format(outdir,mdoc_bname)
+				tilttmp = "tmp/{}.mrc".format(options.tiltseries_name)
+				hdftilt = "{}/{}.hdf".format(outdir,options.tiltseries_name)
+			else: 
+				tilttmp="tmp/{}.mrc".format(mdoc_bname)
+				hdftilt="{}/{}.hdf".format(outdir,mdoc_bname)
 			
-			jd = js_open_dict(info_name(tiltname))
+			jd = js_open_dict(info_name(hdftilt))
 			jd["mdoc_params"] = mdoc_params
 			jd["tilt_source"] = tilt_source
 			jd["raw_tilts"] = raw_tilts
@@ -203,20 +210,34 @@ def main():
 			#if len(args) == 0:
 				#cmd = "{} -m and os.path.isdir(args[0])doc {} -output {}".format(program,options.mdoc,output)
 			if len(args) == 1 and os.path.isdir(args[0]):
-				cmd = "{} -mdoc {} -path {} -output {}".format(program,options.mdoc,args[0],tiltname)
+				cmd = "{} -mdoc {} -path {} -output {}".format(program,options.mdoc,args[0],tilttmp)
 			else:
 				inputs = " ".join(args)
-				cmd = "{} -input {} -mdoc {} -output {}".format(program,inputs,options.mdoc,tiltname)
+				cmd = "{} -input {} -mdoc {} -output {}".format(program,inputs,options.mdoc,tilttmp)
 			run(cmd,verbose=options.verbose)
+			
+			imodtilt=EMData(tilttmp)
+			if options.apix != -1:
+				imodtilt["apix_x"] = options.apix
+				imodtilt["apix_y"] = options.apix
+			imodtilt.write_image(hdftilt)
+			os.remove(tilttmp)
+
+
 		else:
 			for arg in args:
-				bname = os.path.basename(bname).split(".")[0]
-				if options.tomo and options.tiltseries_name != "":
-					output = "{}/{}.mrc".format(options.tiltseries_name)
-				else:
-					output = "{}/{}_ali.mrc".format(outdir,bname)
+				bname = os.path.basename(arg).split(".")[0]
+				output = "{}/{}_ali.mrc".format(outdir,bname)
+				hdffile="micrographs/{}_ali.hdf".format(bname)
 				cmd = "{} -input {} -output {} {}".format(program,arg,output,cmdopts)
 				run(cmd,verbose=options.verbose)
+
+				mrcfile = EMData(output)
+				if options.apix != -1:
+					mrcfile["apix_x"] = options.apix
+					mrcfile["apix_y"] = options.apix
+				mrcfile.write_image(hdffile)
+				os.remove(output)
 
 	elif options.program == "ucsf_motioncor2":
 		
@@ -303,13 +324,15 @@ def main():
 
 		if options.mdoc != None:
 			if options.tomo:
-				try: os.remove(tiltname) # get rid of any previous tiltseries with same name
+				try: os.remove(hdftilt) # get rid of any previous tiltseries with same name
 				except: pass
-				print("\nWriting tilt series to:   {}".format(tiltname))
+				print("\nWriting tilt series to:   {}".format(hdftilt))
+
 
 				for idx, i in enumerate(tilt_source):
-					file=tilt_source[i]
+					file=i
 					name,ext = file.split('\\')[-1].split(".")
+
 					if not os.path.exists("{}/{}.{}".format(args[0],name,ext)): 
 						print("WARNING: {}.{} was not found in {}".format(name,ext,args[0]))
 						continue
@@ -323,8 +346,12 @@ def main():
 					run(cmd,verbose=options.verbose)
 
 					ali = EMData(outfile)
-					ali.write_image(tiltname,idx)
+					if options.apix != -1:
+						ali["apix_x"] = options.apix
+						ali["apix_y"] = options.apix
+					ali.write_image(hdftilt,idx)
 					os.remove(outfile)
+
 			else:
 				finalprint=""
 				for idx,arg in enumerate(args):
@@ -333,24 +360,53 @@ def main():
 						name,ext = bname.split(".")
 						if ext.lower()=="mrc": infile="-InMrc {} ".format(arg)
 						if ext.lower()=="tif": infile="-InTiff {} ".format(arg)
-						outfile="micrographs_mrc/{}_ali.mrc".format(name)
+						outfile="{}/{}_ali.mrc".format(outdir,name)
+						hdffile="micrographs/{}_ali.hdf".format(name)
 						output = "-OutMrc {}".format(outfile)
 						cmd = "{} {} {} {}".format(program,infile,output,cmdopts)
 						run(cmd,verbose=options.verbose)
+
+						mrcfile = EMData(outfile)
+						if options.apix != -1:
+							mrcfile["apix_x"] = options.apix
+							mrcfile["apix_y"] = options.apix
+						mrcfile.write_image(hdffile)
+						os.remove(outfile)
+
+						
 					else:
 						finalprint+="{}    was not found in the list of images found in {}. It has been skipped.\n".format(bname,os.path.basename(options.mdoc))
 				if finalprint!="": print(finalprint)
 		else:
 
 			for idx,arg in enumerate(args):
-				bname,ext = os.path.basename(arg).split(".")
-				output = "micrographs_mrc/{}_ali.mrc".format(bname)
-				if ext == "tif":
-					cmd = "{} -InTiff {} -OutMrc {} {}".format(program,arg,output,cmdopts)
-				else:
-					cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,output,cmdopts)
-				run(cmd,verbose=options.verbose)
+				if "json" not in arg:
+					bname,ext = os.path.basename(arg).split(".")
+					output = "{}/{}_ali.mrc".format(outdir,bname)
+					hdffile="micrographs/{}_ali.hdf".format(bname)
+					if ext == "tif":
+						cmd = "{} -InTiff {} -OutMrc {} {}".format(program,arg,output,cmdopts)
+					else:
+						cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,output,cmdopts)
+					run(cmd,verbose=options.verbose)
+					
+					mrcfile = EMData(output)
+					if options.apix != -1:
+						mrcfile["apix_x"] = options.apix
+						mrcfile["apix_y"] = options.apix
+					mrcfile.write_image(hdffile)
+					os.remove(output)
 
+# def write_apix_into_header(output,apix):
+# 	if output.split(".")[-1] == "mrc":
+# 		nimg = EMData(output,0,True)["nz"]
+# 	else:
+# 		nimg = EMUtil.get_image_count(output)
+# 	for i in range(nimg):
+# 		im = EMData(output,i) # Yes, we should read only the header. This is just a temporary fix.
+# 		im["apix_x"] = apix
+# 		im["apix_y"] = apix
+# 		im.write_image(output,i)
 
 def run(cmd,shell=False,cwd=None,verbose=0):
 	if verbose > 0: print(cmd)
@@ -379,6 +435,24 @@ def which(program):
 			else: return found[0]
 
 def parse_mdoc(mdoc):
+	if mdoc.split(".")[-1]=="idoc":
+		print("Writing idoc file as mdoc...")
+		path=mdoc.rsplit("/",1)[0]
+		bname=os.path.basename(mdoc).split(".")[0]
+		idoc=open(mdoc)
+		mdoc="{}/{}.mdoc".format(path,bname)
+		mdocwrite=open(mdoc, "w+")
+		x=0
+		for i in idoc.readlines():
+			line=i.strip()
+			if "TiltAngle" in line:
+				mdocwrite.write("[ZValue={}]\n".format(x))
+				x+=1
+			mdocwrite.write(i)
+		print("Done")
+		idoc.close()
+		mdocwrite.close()
+
 	info=[]
 	write=False
 	print("DOC: {}".format(mdoc))
@@ -400,13 +474,16 @@ def parse_mdoc(mdoc):
 				if x=="TiltAngle":
 					y=float(y)
 				info[idx][x]=y
+				if x=="PixelSpacing":
+					y=float(y)
+					apix=y
 	sortedinfo=sorted(info, key=lambda x: x['TiltAngle'])
 	filenames=[]
 	tilts=[]
 	for i in sortedinfo:
 		filenames.append(i["SubFramePath"].split('\\')[-1])
 		tilts.append(i["TiltAngle"])
-	return(sortedinfo, filenames,tilts)
+	return(sortedinfo, filenames,tilts,apix,mdoc)
 
 
 if __name__ == "__main__":
