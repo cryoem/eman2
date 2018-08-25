@@ -258,7 +258,8 @@ def AI( fff, anger, shifter, chout = False):
 		else:                                 
 			maxres     = max(l05, 5)  #  5 is minimum resolution of the map, could be set by the user
 			maxres_143 = l01
-
+		try:    bestres_143 = Tracker["bestres_143"]
+		except: Tracker["bestres_143"] = maxres_143
 		if (maxres >= Tracker["bestres"]) and (maxres_143 >=Tracker["bestres_143"]):
 			Tracker["bestres"]				= maxres
 			Tracker["bestres_143"]          = maxres_143
@@ -390,6 +391,8 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 
 		maxres     = max(l05, 5)
 		maxres_143 = l01
+		try:    bestres_143 = Tracker["bestres_143"]
+		except: Tracker["bestres_143"] = maxres_143
 		if( maxres >= Tracker["bestres"]) and  (maxres_143 >= Tracker["bestres_143"]):
 			Tracker["bestres"]				= maxres
 			Tracker["bestres_143"]			= maxres_143
