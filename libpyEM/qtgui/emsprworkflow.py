@@ -2388,7 +2388,7 @@ def recover_old_boxer_database():
 			
 
 class E2BoxerGuiTask(E2BoxerTask):	
-	gui_running = QtCore.pyqtSignal()
+	gui_running = QtCore.pyqtSignal(str, EMBoxerModule)
 	task_idle = QtCore.pyqtSignal()
 	gui_exit = QtCore.pyqtSignal()
 	documentation_string = """Select the frames you want to select boxes from, enter your boxsize, and hit OK.
@@ -3319,7 +3319,7 @@ class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 		self.task_idle.emit()
 	
 class E2CTFGuiTask(E2CTFWorkFlowTask):	
-	gui_running = QtCore.pyqtSignal()
+	gui_running = QtCore.pyqtSignal(str, GUIctf)
 	gui_exit = QtCore.pyqtSignal()
 	task_idle = QtCore.pyqtSignal()
 	documentation_string = "Autofitting tends to either work very well or get the defocus completely wrong. It is wise to at least quickly go through the data and insure that \
