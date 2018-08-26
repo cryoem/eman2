@@ -951,7 +951,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 
 		self.histogram_widget.setDynamicProbe(self.probeposition, self.probecolor, self.probepresent,levelvalue) # The needs to be node AFTER the data is set
 
-		self.cappingcolor.newcolor[QColor].connect(self._on_cap_color)
+		self.cappingcolor.newcolor[QtCore.QColor].connect(self._on_cap_color)
 
 	def _on_cap_color(self, color):
 		rgb = color.getRgb()
