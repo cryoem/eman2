@@ -2202,7 +2202,6 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		return str(len(box_list))
 
 	def get_params(self):
-#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
 		from .emdatastorage import ParamDef
 		db = js_open_dict(self.form_db_name)
 		is_gauss = self.current_tool == 'Gauss'

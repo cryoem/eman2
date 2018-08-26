@@ -1071,8 +1071,6 @@ project database, and gives an opportunity to apply a number of common filters t
 	get_sigma = staticmethod(get_sigma)
 
 	def get_params(self):
-#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
-		
 		db = db_open_dict(self.form_db_name)
 		
 		p,n = self.get_table([])
