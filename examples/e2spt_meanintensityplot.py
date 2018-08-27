@@ -35,7 +35,6 @@ from builtins import range
 import os
 from EMAN2 import *
 from sys import argv
-from optparse import OptionParser
 import sys
 import numpy as np
 #from scipy.stats import norm

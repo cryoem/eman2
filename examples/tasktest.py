@@ -40,7 +40,6 @@ from builtins import range
 from EMAN2db import EMTask
 from EMAN2 import *
 from EMAN2PAR import *
-from optparse import OptionParser
 from math import *
 import time
 import os

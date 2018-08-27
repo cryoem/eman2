@@ -32,7 +32,6 @@ from __future__ import division
 
 
 from past.utils import old_div
-from optparse import OptionParser
 
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
