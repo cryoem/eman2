@@ -34,7 +34,6 @@ from __future__ import absolute_import
 #
 #
 
-from PyQt4 import QtCore, QtGui
 from .emapplication import EMApp
 from .emselector import EMBrowser
 

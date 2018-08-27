@@ -178,7 +178,6 @@ class ThumbsEventHandler(object):
 		'''
 		connects the signals of the main 2D window to the slots of this object
 		'''
-		from PyQt4 import QtCore
 		self.thumbs_window().mx_mouseup.connect(self.thumb_image_selected)
 		self.thumbs_window().module_closed.connect(self.on_module_closed)
 
@@ -962,7 +961,6 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		connects the signals of the main 2D window to the slots of this object
 		'''
-		from PyQt4 import QtCore
 		self.main_2d_window.mousedown.connect(self.mouse_down)
 		self.main_2d_window.mousedrag.connect(self.mouse_drag)
 		self.main_2d_window.mouseup.connect(self.mouse_up)
@@ -1082,7 +1080,6 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		'''
 		connects the signals of the main 2D window to the slots of this object
 		'''
-		from PyQt4 import QtCore
 		self.particle_window.mx_image_selected.connect(self.box_selected)
 		self.particle_window.mx_mousedrag.connect(self.box_moved)
 		self.particle_window.mx_mouseup.connect(self.box_released)
@@ -1943,7 +1940,6 @@ class EMBoxerModule(EMBoxerModuleVitals, QtCore.QObject):
 			return
 		from .emsprworkflow import E2BoxerProgramOutputTask
 		if self.output_task != None: return
-		from PyQt4 import QtCore
 		self.output_task = EMBoxerWriteOutputTask(self.file_names, dfl_boxsize=self.box_size, current_tool=self.current_tool)
 		#self.output_task.emitter().task_idle.connect(self.on_output_task_idle)
 		self.output_task.run_form()
@@ -2296,7 +2292,6 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		if len(coord_output_names) > 0:
 			self.write_output(params["filenames"],coord_output_names,EMBoxList.write_coordinates,params["output_boxsize"],"Writing Coordinates")
 
-		from PyQt4 import QtCore
 		#self.task_idle.emit()
 		self.form.close()
 		self.form = None

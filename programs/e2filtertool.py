@@ -35,7 +35,6 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
 from PyQt4.QtCore import QTimer
 
 import sys

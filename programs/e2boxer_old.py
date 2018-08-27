@@ -1268,7 +1268,6 @@ class SwarmBoxer(object):
 
 			self.template_viewer.set_data(self.templates,soft_delete=True) # should work if self.templates is None
 			self.template_viewer.setWindowTitle("Templates")
-			from PyQt4 import QtCore
 			self.template_viewer.module_closed.connect(self.template_viewer_closed)
 
 		get_application().show_specific(self.template_viewer)
@@ -3226,7 +3225,6 @@ class CTFInspectorWidget(QtGui.QWidget):
 		# print "update..."
 
 	def paintEvent(self,event):
-		from PyQt4 import QtCore
 		from PyQt4.QtCore import Qt
 		if (self.i_start is None and (i_start_initial > 0)):
 			self.i_start = i_start_initial
