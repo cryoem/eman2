@@ -115,7 +115,7 @@ def sadd(d,a,b):
 	return d+"/"+a+b
 
 class EMEulerExplorer(EM3DSymModel,Animator):
-	point_selected = QtCore.pyqtSignal(int, QtGui.QMouseEvent)
+	point_selected = QtCore.pyqtSignal()
 
 	def mousePressEvent(self,event):
 		if self.events_mode == "inspect":
