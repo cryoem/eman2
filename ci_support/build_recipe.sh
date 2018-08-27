@@ -25,4 +25,4 @@ conda list
 conda render recipes/eman
 conda build purge-all
 
-conda build recipes/eman -c cryoem -c defaults -c conda-forge --quiet --no-test
+conda build recipes/eman -c cryoem -c defaults -c conda-forge --quiet
