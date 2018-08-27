@@ -108,9 +108,9 @@ def main():
 		sys.exit(1)
 
 	if options.mdoc != None:
-		mdoc_ext = options.mdoc.split(".")[-1]
-		mdoc_bname = os.path.basename(options.mdoc).split(".")[0] # good for cases where we have .mrc.mdoc.
-		#mdoc_bname,mdoc_ext = os.path.basename(options.mdoc).split(".")
+		mdoc_ext = options.mdoc.rsplit(".",1)[-1]
+		mdoc_bname = os.path.basename(options.mdoc).rsplit(".",1)[0] # good for cases where we have .mrc.mdoc.
+		#mdoc_bname,mdoc_ext = os.path.basename(options.mdoc).rsplit(".",1)
 		if mdoc_ext not in ["mdoc", "idoc"]:
 			print("""ERROR: The specified mdoc file does not have a .mdoc/.idoc extension. 
 				Please provide a valid mdoc/idoc file with the proper extension.""")
@@ -153,7 +153,7 @@ def main():
 	ext = None
 	if len(args) > 0:
 		if not os.path.isdir(args[0]) and options.mdoc == None:
-			bname,ext = os.path.basename(args[0]).split(".")
+			bname,ext = os.path.basename(args[0]).rsplit(".",1)
 			if ext not in  ["mrc","mrcs","tif"]:
 				print("{} cannot parse .{} format files. Please check that files are MRC or TIF format.".format(program,ext))
 				sys.exit(1)
@@ -226,7 +226,7 @@ def main():
 
 		else:
 			for arg in args:
-				bname = os.path.basename(arg).split(".")[0]
+				bname = os.path.basename(arg).rsplit(".",1)[0]
 				output = "{}/{}_ali.mrc".format(outdir,bname)
 				hdffile="micrographs/{}_ali.hdf".format(bname)
 				cmd = "{} -input {} -output {} {}".format(program,arg,output,cmdopts)

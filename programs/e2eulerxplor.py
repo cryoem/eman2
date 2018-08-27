@@ -40,7 +40,7 @@ from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui,QtCore
-from PyQt4.QtCore import Qt, QString
+from PyQt4.QtCore import Qt, QString,QEvent
 from PyQt4.QtGui import QListWidgetItem
 from eman2_gui.emanimationutil import OrientationListAnimation,Animator
 from eman2_gui.emapplication import EMApp, get_application, error
@@ -115,7 +115,7 @@ def sadd(d,a,b):
 	return d+"/"+a+b
 
 class EMEulerExplorer(EM3DSymModel,Animator):
-	point_selected = QtCore.pyqtSignal()
+	point_selected = QtCore.pyqtSignal(int,QEvent)
 
 	def mousePressEvent(self,event):
 		if self.events_mode == "inspect":
@@ -379,6 +379,8 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 
 
 	def on_au_selected(self, refine_dir, cls):
+		refine_dir=str(refine_dir)
+		cls=str(cls)
 		self.refine_dir = refine_dir
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		data = []

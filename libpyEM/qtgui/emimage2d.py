@@ -2390,7 +2390,7 @@ class EMImageInspector2D(QtGui.QWidget):
 			im["render_max"]=im["mean"]+im["sigma"]*2.5
 			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
 
-		ret= os.system("ffmpeg -i tmp.%%03d.png %s"%fsp)
+		ret= os.system("ffmpeg -i -vcodec libx264 -pix_fmt yuv420p tmp.%%03d.png %s"%fsp)
 		if ret!=0 :
 			QtGui.QMessageBox.warning(None,"Error","Movie conversion (ffmpeg) failed. Please make sure ffmpeg is in your path. Frames not deleted.")
 			return
