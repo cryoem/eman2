@@ -56,7 +56,6 @@ from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
 from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path,get_platform,base_name
 from EMAN2db import db_open_dict,db_check_dict,db_close_dict
 from EMAN2jsondb import *
-from .emsprworkflow import workflow_path
 from EMAN2 import *
 
 import os,sys,weakref,math, json
