@@ -25,12 +25,16 @@ function(EMAN_CHECK_FUNCTION FUNCTION VARIABLE)
 	ENDIF()
 endfunction()
 
+OPTION(DEBUG_CHECK_REQUIRED_LIB "enable debug output for function CHECK_REQUIRED_LIB" OFF)
 function(CHECK_REQUIRED_LIB upper lower header lower2 header2)
-	message("\n### BEGIN ### CHECK_REQUIRED_LIB ${upper} ${lower} ${header} ${lower2} ${header2}")
-	message_var(${upper}_INCLUDE_PATH)
-	message_var(${upper}_LIBRARY)
-	
-	message("Searching in ${EMAN_PREFIX_INC} for ${header} and ${header2} ...")
+	if(DEBUG_CHECK_REQUIRED_LIB)
+		message("\n### BEGIN ### CHECK_REQUIRED_LIB ${upper} ${lower} ${header} ${lower2} ${header2}")
+		message_var(${upper}_INCLUDE_PATH)
+		message_var(${upper}_LIBRARY)
+		
+		message("Searching in ${EMAN_PREFIX_INC} for ${header} and ${header2} ...")
+	endif()
+		
 	FIND_PATH(${upper}_INCLUDE_PATH
 			NAMES ${header} ${header2}
 			PATHS $ENV{${upper}DIR}/include ${EMAN_PREFIX_INC}
@@ -39,16 +43,21 @@ function(CHECK_REQUIRED_LIB upper lower header lower2 header2)
 	
 	IF(${upper}_INCLUDE_PATH)
 		FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB})
-		message("FIND_LIBRARY: ${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB}")
+		
+		if(DEBUG_CHECK_REQUIRED_LIB)
+			message("FIND_LIBRARY: ${upper}_LIBRARY NAMES ${lower} ${lower2} PATHS $ENV{${upper}DIR}/lib ${EMAN_PREFIX_LIB}")
+		endif()
 	ENDIF()
 	
 	IF(NOT ${upper}_INCLUDE_PATH OR NOT ${upper}_LIBRARY)
 		MESSAGE(SEND_ERROR "ERROR: ${upper} not found. please install ${upper} first!")
 	ENDIF()
-	
-	message("### END ### CHECK_REQUIRED_LIB ${upper} ${lower} ${header} ${lower2} ${header2}")
-	message_var(${upper}_INCLUDE_PATH)
-	message_var(${upper}_LIBRARY)
+
+	if(DEBUG_CHECK_REQUIRED_LIB)
+		message("### END ### CHECK_REQUIRED_LIB ${upper} ${lower} ${header} ${lower2} ${header2}")
+		message_var(${upper}_INCLUDE_PATH)
+		message_var(${upper}_LIBRARY)
+	endif()
 endfunction()
 
 function(CHECK_LIB_ONLY upper lower)

@@ -361,8 +361,8 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.combo = QtGui.QComboBox(self)
 		for e in combo_entries: self.combo.addItem(e)
 
-		self.combo.currentIndexChanged[QString].connect(self.on_combo_change)
-		self.combo.currentIndexChanged[QString].connect(self.on_combo_change)
+		self.combo.currentIndexChanged[QtCore.QString].connect(self.on_combo_change)
+		self.combo.currentIndexChanged[QtCore.QString].connect(self.on_combo_change)
 
 		vbl.addWidget(self.combo)
 
@@ -370,7 +370,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 
 		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
-		self.list_widget.itemClicked[QListWidgetItem].connect(self.list_widget_item_clicked)
+		self.list_widget.itemClicked[QtGui.QListWidgetItem].connect(self.list_widget_item_clicked)
 
 		self.update_simmx_list(True)
 		vbl.addWidget(self.list_widget)

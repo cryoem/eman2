@@ -34,7 +34,6 @@ from __future__ import division
 #
 #
 
-from past.utils import old_div
 from builtins import range
 from builtins import object
 from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -2414,7 +2413,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 			self.xyz.addItems(QtCore.QStringList(["x","y","z"]))
 			self.hbl.addWidget(self.xyz)
 			self.xyz.setCurrentIndex(2)
-			self.xyz.currentIndexChanged[QString].connect(self.target().xyz_changed)
+			self.xyz.currentIndexChanged[QtCore.QString].connect(self.target().xyz_changed)
 
 	def disable_xyz(self):
 		if self.xyz != None:

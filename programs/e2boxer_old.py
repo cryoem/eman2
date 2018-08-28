@@ -36,6 +36,7 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from builtins import object
+from PyQt4.QtGui import QAbstractButton
 from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict,EMArgumentParser
 from EMAN2db import db_check_dict
 from EMAN2jsondb import *

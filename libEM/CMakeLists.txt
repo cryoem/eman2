@@ -178,7 +178,6 @@ if(ENABLE_OPENGL)
 	mark_as_advanced(ENABLE_STATIC_FTGL)
 	
 	find_package(FTGL REQUIRED)
-	include(${CMAKE_SOURCE_DIR}/cmake/Freetype.cmake)
 	
 	add_subdirectory(fonts)
 endif()

@@ -1,13 +1,8 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.7)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.9)
 PROJECT(EMAN
 		VERSION 2.22
 		LANGUAGES CXX
 		)
-
-IF(COMMAND cmake_policy)
-       cmake_policy(SET CMP0003 NEW)
-       cmake_policy(SET CMP0002 OLD)
-ENDIF(COMMAND cmake_policy)
 
 include(cmake/functions.cmake)
 
@@ -211,8 +206,6 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 	SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")
 ENDIF()
 
-SET(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})
-SET(CMAKE_ORIG_FLAGS ${CMAKE_CXX_FLAGS})
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMAN_CXX_FLAGS} ${OPT_FLAGS}")
 
 if(WIN32)
@@ -297,11 +290,6 @@ add_custom_target(test-verbose
 		COMMAND ${CMAKE_COMMAND} -P cmake_install.cmake
 		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release
 		)
-
-#add_custom_target(test-verbose
-#		COMMAND ${CMAKE_CTEST_COMMAND} -V -C Release
-#		DEPENDS Tests
-#		)
 
 add_test(NAME imports
 		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports.py
