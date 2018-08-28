@@ -15,7 +15,10 @@ import queue
 
 def alifn(jsd,fsp,i,a,options):
 	t=time.time()
-	b=EMData(fsp,i).do_fft()
+	b=EMData(fsp,i)#.do_fft()
+	if options.shrink>1:
+		b.process_inplace("math.fft.resample",{"n":options.shrink})
+	b=b.do_fft()
 	b.process_inplace("xform.phaseorigin.tocorner")
 
 	# we align backwards due to symmetry
@@ -53,6 +56,7 @@ def main():
 	parser.add_argument("--nbatch", type=int,help="Number of batches per iteration", default=10,guitype='intbox',row=10, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--applysym", action="store_true", default=False ,help="apply symmetry", guitype='boolbox',row=11, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--shrink", type=int,help="Shrink factor for particles", default=1,guitype='intbox',row=11, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="path of output", default=None)
 	
@@ -139,6 +143,8 @@ def main():
 				d=angs[ks]
 				jspm[ks]=d
 				p=EMData(str(ks[0]), int(ks[1]))
+				if options.shrink>1:
+					p.process_inplace("math.fft.resample",{"n":options.shrink})
 				p.transform(d["xform.align3d"])
 				avgr.add_image(p)
 			avg=avgr.finish()
@@ -245,6 +251,8 @@ def make_ref(fname, options):
 		ref=avgr.finish()
 		ref.process_inplace('filter.lowpass.gauss', {"cutoff_freq":.01})
 		ref.process_inplace('filter.lowpass.randomphase', {"cutoff_freq":.01})
+		if options.shrink>1:
+			ref.process_inplace("math.fft.resample",{"n":options.shrink})
 		#ref.process_inplace("xform.applysym",{"sym":options.sym})
 		ref.process_inplace('normalize.edgemean')
 		ref.write_image(rfile)
@@ -252,6 +260,8 @@ def make_ref(fname, options):
 		er=EMData(options.reference)
 		ep=EMData(fname,0)
 		pp=" --process filter.lowpass.gauss:cutoff_freq={:.3f} --process filter.lowpass.randomphase:cutoff_freq={:.3f} --process normalize.edgemean".format(options.filterto, options.filterto)
+		if options.shrink>1:
+			pp+=" --process math.fft.resample:n={}".format(options.shrink)
 
 
 		if ep["apix_x"]!=er["apix_x"] or ep["nx"]!=er["nx"]:
@@ -264,6 +274,7 @@ def make_ref(fname, options):
 				run("e2proc3d.py {} {}/ref.hdf --scale {} --clip {} {}".format(options.reference, options.path,  rs, ep["nx"], pp))
 		else:
 			run("e2proc3d.py {} {}/ref.hdf {}".format(options.reference, options.path, pp))
+		
 		ref=EMData(rfile)
 
 	return ref

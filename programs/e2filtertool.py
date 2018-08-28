@@ -66,6 +66,7 @@ def main():
 #	parser.add_argument("--shrink",type=int,help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the file header",default=0.0)
 #	parser.add_argument("--force2d",action="store_true",help="Display 3-D data as 2-D slices",default=False)
+	parser.add_argument("--safemode",action="store_true",help="Safe mode without the timer...",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -81,7 +82,7 @@ def main():
 
 	app = EMApp()
 	pix_init()
-	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=False,verbose=options.verbose)
+	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=False,verbose=options.verbose, safemode=options.safemode)
 #	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=options.force2d,verbose=options.verbose)
 	control.show()
 	try: control.raise_()
@@ -419,7 +420,7 @@ class EMFilterTool(QtGui.QMainWindow):
 	"""This class represents the EMFilterTool application instance.  """
 	module_closed = QtCore.pyqtSignal()
 
-	def __init__(self,datafile=None,apix=0.0,force2d=False,verbose=0):
+	def __init__(self,datafile=None,apix=0.0,force2d=False,verbose=0, safemode=False):
 		QtGui.QMainWindow.__init__(self)
 
 		app=QtGui.qApp
@@ -450,6 +451,12 @@ class EMFilterTool(QtGui.QMainWindow):
 		psetnames.insert(0,"default")     # add it back at the top of the list
 		for i in psetnames : self.wsetname.addItem(i)
 		self.vblm.addWidget(self.wsetname)
+		
+		if safemode:
+			self.button_doprocess = QtGui.QPushButton("Process")
+			self.vblm.addWidget(self.button_doprocess)
+			self.button_doprocess.clicked.connect(self.on_doprocess)
+			
 
 		# scrollarea for processor widget
 		self.processorsa=QtGui.QScrollArea()
@@ -494,10 +501,14 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.errors=None		# used to communicate errors back from the reprocessing thread
 
 		self.restore_processorset("default")
+		if safemode==False:
 
-		self.timer=QTimer()
-		self.timer.timeout.connect(self.timeOut)
-		self.timer.start(100)
+			self.timer=QTimer()
+			self.timer.timeout.connect(self.timeOut)
+			self.timer.start(100)
+		else:
+			self.on_doprocess()
+			
 		E2loadappwin("e2filtertool","main",self)
 
 #		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
@@ -574,6 +585,10 @@ class EMFilterTool(QtGui.QMainWindow):
 	def on_minusPress(self,tag):
 		if len(self.processorlist)==1 : return		# Can't delete the last processor
 		self.delProcessor(tag)
+		
+	def on_doprocess(self):
+		self.reprocess()
+		self.redisplay()
 
 	def timeOut(self):
 		if self.busy : return
@@ -611,6 +626,26 @@ class EMFilterTool(QtGui.QMainWindow):
 	def procChange(self,tag):
 #		print "change"
 		self.needupdate=1
+		
+	def redisplay(self):
+		self.needredisp=0
+		if self.viewer!=None:
+			for v in self.viewer: 
+				v.show()
+				if isinstance(v,EMImageMXWidget):
+					v.set_data(self.procdata)
+				elif isinstance(v,EMImage2DWidget):
+					if self.procdata[0]["nz"]>1 :
+						v.set_data(self.procdata[0])
+					else : v.set_data(self.procdata)
+				elif isinstance(v,EMScene3D):
+					self.sgdata.setData(self.procdata[0])
+					v.updateSG()
+				elif isinstance(v,EMPlot2DWidget):
+					fft=self.procdata[0].do_fft()
+					pspec=fft.calc_radial_dist(old_div(self.ny,2),0.0,1.0,1)
+					v.set_data((self.pspecs,self.pspecorig),"Orginal",True,True,color=1)
+					v.set_data((self.pspecs,pspec),"Processed",color=2)
 
 	def reprocess(self):
 		"Called when something about a processor changes (or when the data changes)"

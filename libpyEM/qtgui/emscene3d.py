@@ -1404,7 +1404,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			image.save(filename, format)
 		print("Saved %s to disk"%os.path.basename(str(filename)))
 	
-	def saveMovie(self, filename):
+	def saveMovie_model(self, filename):
 
 		tmpnames=[]
 		fmt= str(filename).split(':')
@@ -1435,6 +1435,53 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			tmpnames.append(tmpname)
 			if oscillate:
 				tmpname = "tmp.{:03d}.png".format(2*nimgs-mdl-1)
+				image.save(tmpname, "png")
+				tmpnames.append(tmpname)
+		
+		cmd="convert tmp.???.png {} {}".format(fmtstr, filename)
+
+		ret= os.system(cmd)
+		for t in tmpnames:
+			os.unlink(t)
+		#print "Saved %s to disk"%os.path.basename(str(filename))
+		
+		
+	def saveMovie_rotate(self, filename):
+		
+		
+		dt=3.
+		tmpnames=[]
+		fmt= str(filename).split(':')
+		fmtstr=""
+		oscillate=False
+		rg=360
+		if len(fmt)>1:
+			filename=fmt[0]
+			for f in fmt[1:]:
+				if f=="oscillate":
+					oscillate=True
+				elif f.startswith("dt="):
+					dt=float(f[3:])
+				elif f.startswith("range="):
+					rg=float(f[6:])
+				else:
+					f=f.replace('=',' ')
+					fmtstr+=" -{}".format(f)
+		
+		nimgs=rg//dt
+		
+		for i in range(nimgs):
+		
+			self.updateMatrices([dt,0,1,0], "rotate")
+			
+			self.updateSG()
+			self.paintGL()
+			image = self.grabFrameBuffer()
+			tmpname = "tmp.{:03d}.png".format(i)
+			image.save(tmpname, "png")
+			tmpnames.append(tmpname)
+			if oscillate:
+				tmpname = "tmp.{:03d}.png".format(2*nimgs-i-1)
 				image.save(tmpname, "png")
 				tmpnames.append(tmpname)
 		
@@ -2652,17 +2699,20 @@ class EMInspector3D(QtGui.QWidget):
 		self.opensession_button = QtGui.QPushButton("Open Session")
 		self.savesession_button = QtGui.QPushButton("Save Session")
 		self.savebutton = QtGui.QPushButton("Save Image Snapshot")
-		self.moviebutton = QtGui.QPushButton("Save GIF Movie")
+		self.moviebutton0 = QtGui.QPushButton("Save GIF Movie (rotate)")
+		self.moviebutton1 = QtGui.QPushButton("Save GIF Movie (model)")
 		uvbox.addWidget(self.opensession_button)
 		uvbox.addWidget(self.savesession_button)
 		uvbox.addWidget(self.savebutton)
-		uvbox.addWidget(self.moviebutton)
+		uvbox.addWidget(self.moviebutton0)
+		uvbox.addWidget(self.moviebutton1)
 		uwidget.setLayout(uvbox)
 		
 		self.backgroundcolor.newcolor[QColor].connect(self._on_bg_color)
 		self.hideselectionbutton.clicked.connect(self._on_hide)
 		self.savebutton.clicked.connect(self._on_save)
-		self.moviebutton.clicked.connect(self._on_save_movie)
+		self.moviebutton0.clicked.connect(self._on_save_movie_rotate)
+		self.moviebutton1.clicked.connect(self._on_save_movie_model)
 		self.savesession_button.clicked.connect(self._on_save_session)
 		self.opensession_button.clicked.connect(self._on_open_session)
 		
@@ -2701,13 +2751,21 @@ class EMInspector3D(QtGui.QWidget):
 		if filename: # if we cancel
 			self.scenegraph().saveSnapShot(filename)
 	
-	def _on_save_movie(self):
+	def _on_save_movie_rotate(self):
 		"""
 		Save a movie of the scene
 		"""
 		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")
 		if filename: # if we cancel
-			self.scenegraph().saveMovie(filename)
+			self.scenegraph().saveMovie_rotate(filename)
+			
+	def _on_save_movie_model(self):
+		"""
+		Save a movie of the scene
+		"""
+		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")
+		if filename: # if we cancel
+			self.scenegraph().saveMovie_model(filename)
 	
 	def _on_bg_color(self, color):
 		rgb = color.getRgb()

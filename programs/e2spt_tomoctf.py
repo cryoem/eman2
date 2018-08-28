@@ -84,6 +84,8 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="tiltseries",help="Specify tiltseries you want to apply CTF correction.", default="", guitype='filebox', browser="EMTiltseriesTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--alltiltseries", action="store_true",help="Use all tilt series in the folder. Acceptable file extensions include hdf, mrc, mrcs, st.", default=False,guitype='boolbox',row=1, col=0, rowspan=1, colspan=1,mode="model")
+
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--dfrange", type=str,help="Search range of defocus (start, end, step). default is 2., 7, 0.1", default="2.,7.,0.1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 0, 5, 5", default="0,5,5", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
@@ -98,20 +100,31 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
+	#### deal with multiple inputs
+	if options.alltiltseries:
+		fld="tiltseries/"
+		args=[fld+f for f in os.listdir(fld) if (
+			f.endswith(".hdf") or f.endswith(".mrc") or f.endswith(".mrcs") or f.endswith(".st"))]
+	
 	if len(args)==1:
 		print("Reading tilt series {}...".format(args[0]))
 	else:
 		print("Processing {} tilt series in sequence..".format(len(args)))
 		cmd=sys.argv
 		opt=' '.join([s for s in cmd if s.startswith("-")])
+		opt=opt.replace("--alltiltseries","")
 		for a in args:
 			run("{} {} {}".format(cmd[0], a, opt))
 		return
 	
 	tfile=args[0]
-	js=js_open_dict(info_name(tfile))
-	tltparams=np.array(js["tlt_params"])
-	js=None
+	try:
+		js=js_open_dict(info_name(tfile))
+		tltparams=np.array(js["tlt_params"])
+		js=None
+	except:
+		print("Cannot find alignment parameters. Please make sure tomogram reconstruction is done for selected tilt series")
+		return
 
   
 	img=EMData(tfile,0)

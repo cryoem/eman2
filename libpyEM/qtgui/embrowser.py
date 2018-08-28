@@ -486,8 +486,13 @@ class EMFileType(object) :
 
 	def showFilterTool(self, brws) :
 		"""Open in e2filtertool.py"""
-
-		os.system("e2filtertool.py %s &"%self.path)
+		
+		modifiers = QtGui.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			print("Running filter tool in safe mode...")
+			os.system("e2filtertool.py %s --safemode&"%self.path)
+		else:
+			os.system("e2filtertool.py %s &"%self.path)
 
 #---------------------------------------------------------------------------
 

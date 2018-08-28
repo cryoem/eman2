@@ -25,10 +25,19 @@ def main():
 	parser.add_argument("--padtwod", type=float,help="padding factor", default=2.0, guitype='floatbox',row=5, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--noctf", action="store_true", default=False ,help="skip ctf correction..", guitype='boolbox',row=5, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--wiener", action="store_true", default=False ,help="wiener filter the particles using ctf information..", guitype='boolbox',row=6, col=1, rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--alltomograms", action="store_true", default=False ,help="use all tomograms.", guitype='boolbox',row=1, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
+	
+	if options.alltomograms:
+		fld="tomograms/"
+		args=[fld+f for f in os.listdir(fld) if f.endswith(".hdf")]
+		
+	if len(args)==0:
+		print("No input. Exit.")
+		return
 	
 	if len(args)==1:
 		print("Reading from {}...".format(args[0]))
@@ -36,6 +45,7 @@ def main():
 		print("Processing {} files in sequence..".format(len(args)))
 		cmd=sys.argv
 		opt=' '.join([s for s in cmd if s.startswith("-")])
+		opt=opt.replace("--alltomograms","")
 		for a in args:
 			run("{} {} {}".format(cmd[0], a, opt))
 		return
