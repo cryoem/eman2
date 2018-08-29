@@ -244,6 +244,9 @@ def makepath(options, stem='e2dir'):
 	
 	return options
 
+#### this triggers a segmentation fault. in case we need it somewhere...
+def do_segfault():
+	exec'()'*7**6
 
 def detectThreads(options):
 	"""

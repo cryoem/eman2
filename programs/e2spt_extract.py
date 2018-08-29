@@ -19,6 +19,7 @@ def main():
 	parser.add_pos_argument(name="tomograms",help="Specify tomograms from which you wish to extract boxed particles.", default="", guitype='filebox', browser="EMTomoBoxesTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=2, mode="extract")
 	parser.add_argument("--boxsz", type=int,help="box size in binned tomogram", default=-1, guitype='intbox',row=2, col=0,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--label", type=str,help="Only extract particle with this name. Leave blank to extract all particles.", default=None, guitype='strbox',row=2, col=1, rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--tag", type=str,help="Tag of output particles. Same as label by default.", default=None, guitype='strbox',row=6, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=3, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=1,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--maxtilt", type=int,help="max tilt", default=100, guitype='intbox',row=4, col=0, rowspan=1, colspan=1, mode="extract")
@@ -107,7 +108,12 @@ def main():
 				bxs-=[old_div(e["nx"],2), old_div(e["ny"],2), old_div(e["nz"],2)]
 				bxs*=scale
 				bxs[:,2]-=zshift
-				outname=str(base_name(pfile)+"__"+val["name"]+".hdf")
+				if options.tag=="":
+					lab=val["name"]
+				else:
+					lab=options.tag
+					
+				outname=str(base_name(pfile)+"__"+lab+".hdf")
 				if options.boxsz<0:
 					sz=int(val["boxsize"])*scale//2
 				else:
