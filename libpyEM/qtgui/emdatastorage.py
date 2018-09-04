@@ -67,11 +67,6 @@ def timeconv(x):
 def dateconv(x):
 	return str(x)
 
-def tojson(o):
-	if isinstance(o,(Database.Record,Database.ParamDef,Database.User,Database.RecordDef)):
-		return dict(o)
-	return o
-
 valid_vartypes={
 	"int":("d",lambda x:int(x)),			# 32-bit integer
 	"longint":("d",lambda x:int(x)),		# not indexed properly this way
