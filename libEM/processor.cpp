@@ -12818,16 +12818,22 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		EMData *ret2=new EMData(nkx-1,nky*2*fp,1);
 		
 		// We are doing a lot of rotations, so we make the image as small as possible first
+		// note that 'step' is actually downsampling the image in Fourier space based
+		// on the size of the desired bispectrum 9/1/18
 		EMData *tmp=cimage;
 //		cimage=new EMData((nkx*2+fp+2)*2,(nky*2+fp+2)*2,1);
 		cimage=new EMData((nkx*2+fp)*2-2,(nky*2+fp)*2,1);
 		cimage->set_complex(1);
 		cimage->set_ri(1);
 		cimage->set_fftpad(1);
+		int step=int(floor(tmp->get_ysize()/(2*cimage->get_ysize())));
+//		int step=int(floor(tmp->get_ysize()/(cimage->get_ysize())));
+		if (step==0) step=1;
+//		printf("%d\n",step);
 		
 		for (int k=-cimage->get_ysize()/2; k<cimage->get_ysize()/2; k++) {
 			for (int j=0; j<cimage->get_xsize()/2; j++) {
-				cimage->set_complex_at(j,k,tmp->get_complex_at(j,k));
+				cimage->set_complex_at(j,k,tmp->get_complex_at(j*step,k*step));
 			}
 		}
 		delete tmp;
@@ -12894,7 +12900,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			for (int x=0; x<nkx-1; x++) {
 				for (int y=-nky; y<nky; y++) {
 					complex<float> val=ret->get_complex_at(x,y);
-					if (x<=2&&abs(y)<=2&&Util::hypot_fast(x,y)<2.0) val=0.0;		// We filter out the very low resolution
+//					if (x<=2&&abs(y)<=2&&Util::hypot_fast(x,y)<2.0) val=0.0;		// We filter out the very low resolution
 					ret2->set_value_at(x,y+nky+nky*dk*2,cbrt(std::real(val)));
 //					ret2->set_value_at(x,y+nky+nky*dk*2,std::real(val));
 				}

@@ -547,8 +547,8 @@ def fixnegbg(bg_1d,im_1d,ds):
 	# Find the worst negative peak
 	ratio=1.0
 	for i in range(start,old_div(len(bg_1d),2)):
-		if old_div((im_1d[i]+im_1d[i+1]+im_1d[i-1]),(bg_1d[i]+bg_1d[i+1]+bg_1d[i-1]))<ratio :
-			ratio=old_div((im_1d[i]+im_1d[i+1]+im_1d[i-1]),(bg_1d[i]+bg_1d[i+1]+bg_1d[i-1]))
+		if (im_1d[i]+im_1d[i+1]+im_1d[i-1])/(bg_1d[i]+bg_1d[i+1]+bg_1d[i-1])<ratio :
+			ratio=(im_1d[i]+im_1d[i+1]+im_1d[i-1])/(bg_1d[i]+bg_1d[i+1]+bg_1d[i-1])
 
 	# return the corrected background
 	print("BG correction ratio %1.4f"%ratio)
@@ -582,7 +582,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		if ps==None :
 			print("Error fitting CTF on ",filename)
 			continue
-		try: ds=old_div(1.0,(apix*ps[0][2].get_ysize()))
+		try: ds=1.0/(apix*ps[0][2].get_ysize())
 		except:
 			print("Error fitting CTF (ds) on ",filename)
 			continue
@@ -2924,7 +2924,7 @@ class GUIctf(QtGui.QWidget):
 		if n>1:
 			self.ptcldata=EMData.read_images(self.data[val][0],list(range(0,min(20,n))))
 			im=sum(self.ptcldata)
-			im.mult(old_div(4.0,len(self.ptcldata)))	# 4 compensatess for noise averaging
+			im.mult(4.0/len(self.ptcldata))	# 4 compensatess for noise averaging
 			self.ptcldata.insert(0,im)
 			self.guirealim.set_data(self.ptcldata)
 		else : self.guirealim.set_data([EMData()])
