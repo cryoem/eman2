@@ -48,7 +48,6 @@ from .empdbitem3d import *
 from .emplot2d import *
 from .emhist import *
 from .emplot3d import *
-from .expand_string import expand_string
 from libpyUtils2 import EMUtil
 from .matching import matches_pats
 from string import lower
@@ -3575,7 +3574,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 			os.system(path[1:])
 			return
 
-		path = expand_string(path)
+		path = os.path.expandvars(path)
 
 		if path == "" :
 			path = "."
