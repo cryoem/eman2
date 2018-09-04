@@ -413,23 +413,6 @@ class ParamDef(DictMixin) :
 			# raise ValueError,"choices must be strings"
 			#for i in self.choices:
 
-def parseparmvalues(text,noempty=0):
-	"""This will extract parameter names $param or $param=value """
-	# Ed 05/17/2008 -- cleaned up
-	#srch=re.findall('<([^> ]*) ([^=]*)="([^"]*)" *>([^<]*)</([^>]*)>' ,text)
-	#srch=re.findall('\$\$([^\$\d\s<>=,;-]*)(?:(?:=)(?:(?:"([^"]*)")|([^ <>"]*)))?',text)
-	srch=re.finditer('\$\$([a-zA-Z0-9_\-]*)(?:(?:=)(?:(?:"([^"]*)")|([^ <>"]*)))?',text)
-	params, vals = ret=[[],{}]
-	
-	for name, a, b in (x.groups() for x in srch):
-		if name is '': continue
-		else:
-			params.append(name)
-			if a is None: val=b
-			else: val=a
-			vals[name] = val
-	return ret
-
 
 class RecordDef(DictMixin) :
 	"""This class defines a prototype for Database Records. Each Record is a member of
