@@ -5746,10 +5746,10 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 					tvol2    = recv_EMData(sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
 					if Tracker["Core_throughout"]:
 						if index_of_group !=Tracker["number_of_groups"]-1:
-							tvol2.write_image(os.path.join(Tracker["directory"], "vol_cluster%03d.hdf"%index_of_group))
+							tvol2.write_image(os.path.join(Tracker["directory"], "volume_cluster%03d.hdf"%index_of_group))
 						else:
 							tvol2.write_image(os.path.join(Tracker["directory"], "volume_core.hdf"))
-					else: tvol2.write_image(os.path.join(Tracker["directory"], "vol_cluster%03d.hdf"%index_of_group))
+					else: tvol2.write_image(os.path.join(Tracker["directory"], "volume_cluster%03d.hdf"%index_of_group))
 					del tvol2
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
@@ -5773,10 +5773,10 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 			if(Blockdata["myid_on_node"] == 0):
 				if Tracker["Core_throughout"]:
 					if index_of_group !=Tracker["number_of_groups"]-1:
-						tvol2.write_image(os.path.join(Tracker["directory"], "vol_cluster%03d.hdf"%index_of_group))
+						tvol2.write_image(os.path.join(Tracker["directory"], "volume_cluster%03d.hdf"%index_of_group))
 					else:
 						tvol2.write_image(os.path.join(Tracker["directory"], "volume_core.hdf"))
-				else: tvol2.write_image(os.path.join(Tracker["directory"], "vol_cluster%03d.hdf"%index_of_group))
+				else: tvol2.write_image(os.path.join(Tracker["directory"], "volume_cluster%03d.hdf"%index_of_group))
 				del tvol2
 			mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -5848,10 +5848,10 @@ def copy_results(log_file, all_gen_stat_list):
 					cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
 					copyfile(cluster_file, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%nclusters))
 					clusters.append(read_text_file(cluster_file))
-					#copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "vol_grp%03d_iter000.hdf"%ic), os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
+					#copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "vol_grp%03d_iter000.hdf"%ic), os.path.join(Tracker["constants"]["masterdir"], "volume_cluster%03d.hdf"%nclusters))
 					cluster      = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 					cluster_file = "Cluster_%03d.txt"%nclusters
-					vol_file     = "vol_cluster%03d.hdf"%nclusters
+					vol_file     = "volume_cluster%03d.hdf"%nclusters
 					msg          = '{:>8} {:>8}   {:^24}        {:^6}          {:^6}          {:>5}    {:^15}     {:^20} '.format(nclusters, len(cluster), ig, round(all_gen_stat_list[ig][ic][0],1), round(all_gen_stat_list[ig][ic][1],1), round(all_gen_stat_list[ig][ic][2],1), cluster_file,  vol_file)
 					nclusters   +=1
 					NACC        +=len(cluster)
@@ -6109,7 +6109,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				json.dump(freq_cutoff_dict, fout)
 				fout.close()
 				log_main.add('================================================================================================================')
-				log_main.add('                                    SORT3D IN-DEPTH   generation %d'%igen)
+				log_main.add('                                    SORT3D MULTI-LAYER   generation %d'%igen)
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
 			else: within_generation_restart = 0
 			within_generation_restart       = bcast_number_to_all(within_generation_restart, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -6157,7 +6157,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			all_gen_stat_list.append(stat_list)
 			if Blockdata["myid"] == Blockdata["main_node"]:			
 				log_main.add('================================================================================================================')
-				log_main.add('                                    SORT3D IN-DEPTH   generation %d completed'%igen)
+				log_main.add('                                    SORT3D MULTI-LAYER   generation %d completed'%igen)
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
 	
 	copy_results(log_main, all_gen_stat_list)# all nodes function
