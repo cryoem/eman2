@@ -55,8 +55,6 @@ from .emglobjects import EMViewportDepthTools, Camera2, get_default_gl_colors,ge
 from .emimageutil import ImgHistogram, EMTransformPanel
 
 
-MAG_INCREMENT_FACTOR = 1.1
-
 class EMIsosurfaceModel(EM3DModel):
 	set_threshold = QtCore.pyqtSignal(float)
 

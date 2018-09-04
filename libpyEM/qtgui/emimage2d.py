@@ -64,8 +64,6 @@ from .emanimationutil import SingleValueIncrementAnimation, LineAnimation
 
 import platform
 
-MAG_INC = 1.1
-
 from .emglobjects import EMOpenGLFlagsAndTools
 
 class EMImage2DWidget(EMGLWidget):

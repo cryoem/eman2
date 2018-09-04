@@ -54,11 +54,6 @@ from math import *
 import weakref
 
 
-
-
-
-MAG_INCREMENT_FACTOR = 1.1
-
 class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	""" 
 	A QT widget for rendering 3D EMData objects
