@@ -4751,6 +4751,70 @@ EMData* EMData::ft2polargrid(int ring_length, int nb, int ne, Util::KaiserBessel
 }
 
 
+EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) {
+	if(2 != get_ndim())
+		throw ImageDimensionException("fourier_rotate_shift2d requires a 2-D image.");
+	EMData *cimage = NULL;
+	int nxreal;
+	if ( is_complex() )  {
+		cimage = this;
+		nxreal = ny;
+	} else {
+		nxreal = nx;
+		cimage = this->copy();
+		cimage->set_attr("npad",1);
+		//cimage->div_sinc(1);
+		cimage = cimage->norm_pad(false, 1);
+		cimage->do_fft_inplace();
+		cimage->center_origin_fft();
+	}
+
+	int nxhalf = nxreal/2;
+	int nyhalf = ny/2;
+	float cir = (float)((nxhalf-1)*(nxhalf-1));
+
+
+	EMData* result = cimage->copy_head();
+	//cimage->set_array_offsets(0, -nyhalf);
+	//result->set_array_offsets(0, -nyhalf);
+
+	float fang = ang*(float)deg_rad;
+	float cang = cos(fang);
+	float sang = sin(fang);
+	float temp = -2.0f*M_PI/nxreal;
+	for (int iy = -nyhalf; iy < nyhalf; iy++) {
+		int it = iy + nyhalf;
+		float ycang = iy*cang;
+		float ysang = iy*sang;
+		for (int ix = 0; ix <= nxhalf; ix++) {
+			float nuxold = (ix*cang - ysang)*npad;
+			float nuyold = (ix*sang + ycang)*npad;
+			if(nuxold*nuxold+nuyold*nuyold<cir) {
+				complex<float> v1 = (complex<float>)cimage->get_complex_at_interp(nuxold, nuxold);
+				//result->cmplx(ix,iy) = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
+				//result->cmplx(ix,iy) = extractpoint(nuxold, nuyold, kb);
+				float phase_ang = temp*(sx*ix+sy*iy);
+				result->cmplx(ix,it) = v1*complex<float>(cos(phase_ang), sin(phase_ang));
+				complex<float> v0 = cimage->cmplx(ix,it);
+				complex<float> v2 = result->cmplx(ix,it);
+				printf("indexes   %d      %d         %f   %f           %f   %f        %f   %f       %f   %f\n",ix,iy,std::real(v0),std::imag(v0),std::real(v1),std::imag(v1),nuxold,nuyold,std::real(v2),std::imag(v2));
+			}
+		}
+	}
+	//result->set_array_offsets();
+	//result->fft_shuffle(); // reset to an unshuffled result
+	result->set_fftpad(true);
+	result->set_attr("npad", 1);
+	result->set_fftodd(false);
+	//  result->do_ift_inplace();
+	//  result->depad();
+	result->set_array_offsets(0,0,0);
+	result->update();
+	//set_array_offsets();
+	//fft_shuffle(); // reset to an unshuffled complex image
+	return result;
+}
+
 // We tried to pad the Fourier image to reduce the stick out points, howover it is not very efficient.
 /*
 EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb) {
@@ -4836,7 +4900,7 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 		for (int ix = 0; ix <= nxhalf; ix++) {
 			float nuxold = (ix*cang - ysang)*scale;
 			float nuyold = (ix*sang + ycang)*scale;
-			if (nuxold*nuxold+nuyold*nuyold<cir) result->cmplx(ix,iy) = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
+			if(nuxold*nuxold+nuyold*nuyold<cir) result->cmplx(ix,iy) = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
 			//result->cmplx(ix,iy) = extractpoint(nuxold, nuyold, kb);
 		}
 	}

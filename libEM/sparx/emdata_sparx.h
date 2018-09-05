@@ -628,6 +628,8 @@ EMData* fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb);
 
 EMData* fouriergridrot_shift2d(float ang, float sx, float sy, Util::KaiserBessel& kb);
 
+EMData* fourier_rotate_shift2d(float ang, float sx, float sy, int npad);
+
 
 EMData* ft2polar(int ring_length, int nb = 1, int ne = -1);
 EMData* ft2polargrid(int ring_length, int nb, int ne, Util::KaiserBessel& kb);
