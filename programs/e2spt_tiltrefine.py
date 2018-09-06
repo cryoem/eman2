@@ -10,6 +10,7 @@ from EMAN2 import *
 import numpy as np
 import queue
 import threading
+from EMAN2jsondb import JSTask
 
 
 def alifn(jsd,ii, info,a,options):
@@ -129,7 +130,8 @@ def main():
 	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="build sets only")
 
 	#parser.add_argument("--unmask", action="store_true", default=False ,help="use unmasked map as references", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
-	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=2,rowspan=1, colspan=1)
+	#parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=2,rowspan=1, colspan=1)
+	parser.add_argument("--parallel", type=str,help="thread/mpi", default="thread:12", guitype='strbox',row=4, col=2,rowspan=1, colspan=1)
 
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 
@@ -194,85 +196,106 @@ def main():
 					continue
 				rot=xf*xali.inverse()
 				lst[ii%2].write(-1, i, fname, str(rot.get_params("eman")))
-		
 		for l in lst:
 			l.close()
-			
 		js=None
+		
 	if options.buildsetonly:
 		return
+	
+	
+	from EMAN2PAR import EMTaskCustomer
 	for eo in ["even", "odd"]:
 		
-		if options.fromlast:
-			#### start from a previous tilt refine
-			lstname="{}/ali_ptcls_{:02d}_{}.lst".format(path, itr, eo)
-			if options.nogs:
-				threedname="{}/threed_{:02d}.hdf".format(path, itr)
-			else:
-				threedname="{}/threed_{:02d}_{}.hdf".format(path, itr, eo)
-			
-			#print(lstname, threedname)
-			lst=LSXFile(lstname, True)
-			m=EMData(threedname)
-		
+		if options.nogs:
+			threedname="{}/threed_{:02d}.hdf".format(path, itr)
 		else:
+			threedname="{}/threed_{:02d}_{}.hdf".format(path, itr, eo)
 		
-			lst=LSXFile("{}/ali_ptcls_{:02d}_{}.lst".format(path, itr, eo), True)
-			
-			
-			#if options.unmask:
-				#m=EMData("{}/threed_{}_unmasked.hdf".format(path, eo))
-				#m.process_inplace("mask.soft",{"outer_radius":-4})
-			#else:
-			if options.nogs:
-				m=EMData("{}/threed_{:02d}.hdf".format(path, itr))
-			else:
-				m=EMData("{}/threed_{:02d}_{}.hdf".format(path, itr, eo))
-			
+		lstname="{}/ali_ptcls_{:02d}_{}.lst".format(path, itr, eo)
+		lst=LSXFile(lstname, True)
+		m=EMData(threedname)
+		
 		m.process_inplace('normalize.edgemean')
 		#m.process_inplace("threshold.belowtozero",{"minval":0.5})
 		
 		pinfo=[]
 		nptcl=lst.n
+		#nptcl=96*2
 		for i in range(nptcl):
 			pinfo.append(lst.read(i))
 		lst=None
-
-		jsd=queue.Queue(0)
-		jobs=[]
-		print("Refining {} set with {} 2D particles..".format(eo, nptcl))
-		thrds=[threading.Thread(target=alifn,args=([jsd, i, info, m, options])) for i,info in enumerate(pinfo)]
-		#batchsz=100
-		#for tid in range(0,nptcl,batchsz):
-			#ids=list(range(tid, min(tid+batchsz, nptcl)))
-			#jobs.append([ids, pinfo, m, jsd, options])
-
-		#thrds=[threading.Thread(target=refine_ali,args=(i)) for i in jobs]
-		thrtolaunch=0
-		tsleep=threading.active_count()
-
-		ndone=0
+		
+		
+		
+		etc=EMTaskCustomer(options.parallel)
+		num_cpus = etc.cpu_est()
+		
+		print("{} total CPUs available".format(num_cpus))
+		print("{} jobs".format(nptcl))
+		
+		infos=[[] for i in range(num_cpus)]
+		for i,info in enumerate(pinfo):
+			infos[i%num_cpus].append([i, info])
+		
+		tids=[]
+		for info in infos:
+			task = SptTltRefineTask(info, m, options)
+			tid=etc.send_task(task)
+			tids.append(tid)
+		
+		while 1:
+			st_vals = etc.check_task(tids)
+			#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
+			#print(tids)
+			if np.min(st_vals) == 100: break
+			time.sleep(5)
+		
 		dics=[0]*nptcl
-		nthrd=options.threads
-		while thrtolaunch<len(thrds) or threading.active_count()>tsleep:
-			if thrtolaunch<len(thrds):
-				while (threading.active_count()==nthrd+tsleep ) : time.sleep(.1)
-				thrds[thrtolaunch].start()
-				thrtolaunch+=1
-			else: time.sleep(.2)
+		for i in tids:
+			ret=etc.get_results(i)[1]
+			for r in ret:
+				#print(r)
+				ii=r.pop("idx")
+				dics[ii]=r
+		
+		del etc
+		#jsd=queue.Queue(0)
+		#jobs=[]
+		#print("Refining {} set with {} 2D particles..".format(eo, nptcl))
+		#thrds=[threading.Thread(target=alifn,args=([jsd, i, info, m, options])) for i,info in enumerate(pinfo)]
+		
+		##batchsz=100
+		##for tid in range(0,nptcl,batchsz):
+			##ids=list(range(tid, min(tid+batchsz, nptcl)))
+			##jobs.append([ids, pinfo, m, jsd, options])
+
+		##thrds=[threading.Thread(target=refine_ali,args=(i)) for i in jobs]
+		#thrtolaunch=0
+		#tsleep=threading.active_count()
+
+		#ndone=0
+		#dics=[0]*nptcl
+		#nthrd=options.threads
+		#while thrtolaunch<len(thrds) or threading.active_count()>tsleep:
+			#if thrtolaunch<len(thrds):
+				#while (threading.active_count()==nthrd+tsleep ) : time.sleep(.1)
+				#thrds[thrtolaunch].start()
+				#thrtolaunch+=1
+			#else: time.sleep(.2)
 
 
-			while not jsd.empty():
-				ii, dc=jsd.get()
-				dics[ii]=dc
-				#print(dc)
-				ndone+=1
-				#if ndone%1000==0:
-				print("\t{}/{} finished.".format(ndone, nptcl), end='\r')
-				sys.stdout.flush()
+			#while not jsd.empty():
+				#ii, dc=jsd.get()
+				#dics[ii]=dc
+				##print(dc)
+				#ndone+=1
+				##if ndone%1000==0:
+				#print("\t{}/{} finished.".format(ndone, nptcl), end='\r')
+				#sys.stdout.flush()
 
-		for t in thrds: t.join()
-		#np.savetxt("tmpout1.txt", dics, fmt='%s')
+		#for t in thrds: t.join()
+		##np.savetxt("tmpout1.txt", dics, fmt='%s')
 			
 
 		allscr=np.array([d["score"] for d in dics])
@@ -307,7 +330,7 @@ def main():
 		cmd="make3dpar_rawptcls.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads {trd} --outsize {bx} --apix {apx} --mode gauss_var --keep {kp} --sym {sm}".format(
 			inp=lname, 
 			out="{}/threed_{:02d}_{}.hdf".format(path, itr+1, eo),
-			bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=options.sym, trd=options.threads)
+			bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=options.sym, trd=num_cpus)
 		
 		run(cmd)
 		
@@ -331,6 +354,62 @@ def main():
 def run(cmd):
 	print(cmd)
 	launch_childprocess(cmd)
+	
+
+
+class SptTltRefineTask(JSTask):
+	
+	
+	def __init__(self, info, ref, options):
+		
+		data={"info":info, "ref": ref}
+		JSTask.__init__(self,"SptTltRefine",data,{},"")
+		self.options=options
+	
+	
+	def execute(self, callback):
+		
+		options=self.options
+		data=self.data
+		callback(0)
+		rets=[]
+		for i, infos in enumerate(self.data["info"]):
+			ii=infos[0]
+			info=infos[1]
+			ptcl=EMData(info[1],info[0])
+			a=data["ref"]
+			
+			nxf=options.refinentry
+			astep=options.refineastep
+			xfs=[]
+			initxf=eval(info[-1])
+			for i in range(nxf):
+				d={"type":"eman","tx":initxf["tx"], "ty":initxf["ty"]}
+				for ky in ["alt", "az", "phi"]:
+					d[ky]=initxf[ky]+(i>0)*np.random.randn()*astep
+					xfs.append(Transform(d))
+					
+			alignpm={"verbose":0,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs}
+		
+			b=EMData(info[1],info[0])
+			if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
+				b=b.get_clip(Region((b["nx"]-a["ny"])/2, (b["ny"]-a["ny"])/2, a["ny"],a["ny"]))
+				
+				
+			b=b.do_fft()
+			b.process_inplace("xform.phaseorigin.tocorner")
+			c=b.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
+
+			xf=c[0]["xform.align3d"]
+			r={"idx":ii,"xform.align3d":xf, "score":c[0]["score"]}
+			
+			print(ii,info, r)
+			callback(float(i/len(self.data["info"])))
+			rets.append(r)
+		callback(100)
+			
+		return rets
+		
 	
 	
 if __name__ == '__main__':
