@@ -272,7 +272,6 @@ def main():
 	#### pack parameters together so it is easier to pass around
 	allparams=np.hstack([ttparams.flatten(), pks.flatten()])
 	
-
 	#### image scale, m3diter, fidkeep
 	#### refinement sequence []:global tilt axis, 0:tx, 1:ty, 2:tilt axis, 3: tilt, 4: off axis tilt
 	scaleiter=[(imgs_500, itnum[0], options.pkkeep*.8, [[0,1], [], [0,1],[], [0,1]]),
@@ -287,6 +286,12 @@ def main():
 		js.update(vars(options))
 		js.close()
 		
+		
+		tpm=ttparams.copy()
+		tpm[:,:2]*=options.binfac
+		tpm=np.hstack([np.arange(len(tpm))[:,None], tpm])
+		np.savetxt(path+"tltparams_init.txt", tpm, fmt="%.3f")
+	
 	yrot=0 #### this is to save the overall rotation of tomogram
 	
 	for niter, siter in enumerate(scaleiter):
@@ -512,8 +517,18 @@ def calc_global_trans(imgs, options, excludes=[]):
 			e1.process_inplace("mask.gaussian",{"outer_radius":rmsk})
 
 			e1a=e1.align("translational", e0)
-
 			xf=e1a["xform.align2d"]
+			if i>1:
+				e00=imgout[options.zeroid+(i-1)*dr]
+				e1b=e1.align("translational", e00)
+				c0=e1a.cmp("ccc", e0)
+				c1=e1b.cmp("ccc", e00)
+				if c1<c0*4:
+					print("Bad tilt image at {}  ".format(nid), c0, c1)
+					xf=e1b["xform.align2d"]
+					#exit()
+				
+
 			xf.translate(lastx[0], lastx[1], 0)
 			
 			e1=imgs[nid].copy()
@@ -838,9 +853,9 @@ def make_ali(imgs, tpm, options, outname=None):
 #### search for alignment landmarks in the tomogram
 def find_landmark(threed, options):
 	print("Searching for landmarks...")
-	threed0=threed.process("normalize.rows")
+	#threed0=threed.process("normalize.rows")
 	#### use minshrink so we keep the minimas
-	threedtiny=threed0.process("math.minshrink", {"n":2})
+	threedtiny=threed.process("math.minshrink", {"n":2})
 	threedtiny.process_inplace("normalize")
 	threedtiny.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
 	mapnp=threedtiny.numpy().copy()
