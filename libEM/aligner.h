@@ -1924,6 +1924,8 @@ namespace EMAN
 				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (no symmetry)");
 				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
+				d.put("maxres", EMObject::FLOAT,"maximum resolution to compare");
+
 // 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
