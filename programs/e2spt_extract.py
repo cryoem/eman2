@@ -19,7 +19,7 @@ def main():
 	parser.add_pos_argument(name="tomograms",help="Specify tomograms from which you wish to extract boxed particles.", default="", guitype='filebox', browser="EMTomoBoxesTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=2, mode="extract")
 	parser.add_argument("--boxsz", type=int,help="box size in binned tomogram", default=-1, guitype='intbox',row=2, col=0,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--label", type=str,help="Only extract particle with this name. Leave blank to extract all particles.", default=None, guitype='strbox',row=2, col=1, rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--tag", type=str,help="Tag of output particles. Same as label by default.", default=None, guitype='strbox',row=6, col=0, rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--tag", type=str,help="Tag of output particles. Same as label by default.", default="", guitype='strbox',row=6, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=3, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=4, col=1,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--maxtilt", type=int,help="max tilt", default=100, guitype='intbox',row=4, col=0, rowspan=1, colspan=1, mode="extract")
@@ -286,11 +286,12 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 			if e["sigma"]==0:
 				continue
 			
+			rot=Transform({"type":"xyz","xtilt":float(tpm[4]),"ytilt":float(tpm[3])})
+			p1=rot.transform(pos.tolist())
+			pz=p1[2]
+			dz=pz*apix/10000.
+			
 			if len(ctfinfo)>0:
-				rot=Transform({"type":"xyz","xtilt":float(tpm[4]),"ytilt":float(tpm[3])})
-				p1=rot.transform(pos.tolist())
-				pz=p1[2]
-				dz=pz*apix/10000.
 				df=defocus[nid]-dz
 				ctf.set_phase(phase[nid]*np.pi/180.)
 				ctf.defocus=df
@@ -317,11 +318,12 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 
 			xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4], "ztilt":tpm[2], "tx":txdf, "ty":tydf})
 			e["xform.projection"]=xform
-			e["ptcl_source_coord"]=[txint, tyint]
+			e["ptcl_source_coord"]=[txint, tyint, dz]
 			e["ptcl_source_src"]=options.tltfile
 			e["model_id"]=pid
 			e["tilt_id"]=nid
 			e["file_threed"]=options.output
+			e["ptcl_source_coord_3d"]=pos.tolist()
 			projs.append(e)
 			
 			sz=e["nx"]
