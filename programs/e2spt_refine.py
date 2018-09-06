@@ -81,6 +81,8 @@ def main():
 			
 			ref="{}/model_input.hdf".format(options.path)
 		
+	
+	curres=options.tarres
 	for itr in range(1,options.niter+1):
 		
 		#### generate alignment command first
@@ -90,7 +92,8 @@ def main():
 		if options.goldcontinue or (options.goldstandard>0 and itr>1):
 			gd=" --goldcontinue".format(options.goldstandard)
 			
-		cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} {} ".format(ptcls, ref,  options.threads, options.path, itr, options.sym, gd)
+		curres=0
+		cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --maxres {} {} ".format(ptcls, ref,  options.threads, options.path, itr, options.sym, curres, gd)
 		
 		#### in case e2spt_align get segfault....
 		ret=1
@@ -142,8 +145,9 @@ def main():
 		
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
-		rs=old_div(1.,fsc[fsc[:,1]<0.3, 0][0])
+		rs=1./fsc[fsc[:,1]<0.3, 0][0]
 		print("Resolution (FSC<0.3) is ~{:.1f} A".format(rs))
+		curres=rs*.5
 		
 		# if options.tltrefine:# and itr%2==0:
 			
