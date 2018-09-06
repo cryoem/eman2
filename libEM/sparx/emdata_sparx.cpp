@@ -4755,12 +4755,18 @@ EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) 
 	if(2 != get_ndim())
 		throw ImageDimensionException("fourier_rotate_shift2d requires a 2-D image.");
 	EMData *cimage = NULL;
-	int nxreal;
-	if ( is_complex() )  {
+	int nxreal, nxhalf, nyhalf, nyf;
+	if( is_complex() )  {
 		cimage = this;
-		nxreal = ny;
+		nxreal = ny/npad;
+		nxhalf = nxreal/2;
+		nyhalf = ny/2/npad;
+		nyf = ny/npad;
 	} else {
 		nxreal = nx;
+		nxhalf = nxreal/2;
+		nyhalf = ny/2;
+		nyf = ny;
 		cimage = this->copy();
 		cimage->set_attr("npad",npad);
 		cimage->div_sinc(1);
@@ -4770,16 +4776,11 @@ EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) 
 		cimage->fft_shuffle();
 	}
 
-	int nxhalf = nxreal/2;
-	int nyhalf = ny/2;
 	float cir = (float)((nxhalf-1)*(nxhalf-1));
 
-
-	//EMData* result = cimage->copy_head();
 	EMData* result = new EMData(nxreal, nxreal, 1, false);
 	result->to_zero();
-	//cimage->set_array_offsets(0, -nyhalf);
-	//result->set_array_offsets(0, -nyhalf);
+	//printf("nxhalf nyhalf cir  nx  ny   %d      %d     %f      %d     %d\n",nxhalf, nyhalf, cir,  nx , ny);
 
 	float fang = ang*(float)deg_rad;
 	float cang = cos(fang);
@@ -4794,31 +4795,30 @@ EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) 
 			float nuyold = ix*sang + ycang;
 			if(nuxold*nuxold+nuyold*nuyold<cir) {
 				nuyold += nyhalf;
-				if(nuyold>nyhalf)  nuyold -= ny;
+				if(nuyold>nyhalf)  nuyold -= nyf;
 				nuxold *= npad;
 				nuyold *= npad;
 				complex<float> v1 = (complex<float>)cimage->get_complex_at_interp(nuxold, nuyold);
 				float phase_ang = temp*(sx*ix+sy*iy);
 				result->cmplx(ix,it) = v1*complex<float>(cos(phase_ang), sin(phase_ang));
-				complex<float> v0 = cimage->cmplx(ix,it);
-				complex<float> v2 = result->cmplx(ix,it);
+				//complex<float> v0 = cimage->cmplx(ix,it);
+				//complex<float> v2 = result->cmplx(ix,it);
 				//printf("indexes   %d      %d     %d         %f   %f           %f   %f        %f   %f       %f   %f\n",ix,iy,it,std::real(v0),std::imag(v0),std::real(v1),std::imag(v1),nuxold,nuyold,std::real(v2),std::imag(v2));
 			}
 		}
 	}
-	//result->set_array_offsets();
-	result->fft_shuffle(); // reset to an unshuffled result
+
+	result->fft_shuffle(); // reset to an un shuffled result
 	result->set_shuffled(false);
 	result->center_origin_fft();
 	result->set_fftpad(true);
 	result->set_attr("npad", 1);
 	result->set_fftodd(false);
-	//  result->do_ift_inplace();
-	//  result->depad();
-	result->set_array_offsets(0,0,0);
+	if( !is_complex() )  {
+		result->do_ift_inplace();
+		result->depad();
+	}
 	result->update();
-	//set_array_offsets();
-	//fft_shuffle(); // reset to an unshuffled complex image
 	return result;
 }
 
