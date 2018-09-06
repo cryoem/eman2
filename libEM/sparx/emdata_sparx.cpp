@@ -4790,17 +4790,19 @@ EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) 
 		float ycang = iy*cang;
 		float ysang = iy*sang;
 		for (int ix = 0; ix <= nxhalf; ix++) {
-			float nuxold = (ix*cang - ysang)*npad;
-			float nuyold = (ix*sang + ycang)*npad;
+			float nuxold = ix*cang - ysang;
+			float nuyold = ix*sang + ycang;
 			if(nuxold*nuxold+nuyold*nuyold<cir) {
 				nuyold += nyhalf;
 				if(nuyold>nyhalf)  nuyold -= ny;
+				nuxold *= npad;
+				nuyold *= npad;
 				complex<float> v1 = (complex<float>)cimage->get_complex_at_interp(nuxold, nuyold);
 				float phase_ang = temp*(sx*ix+sy*iy);
 				result->cmplx(ix,it) = v1*complex<float>(cos(phase_ang), sin(phase_ang));
 				complex<float> v0 = cimage->cmplx(ix,it);
 				complex<float> v2 = result->cmplx(ix,it);
-				printf("indexes   %d      %d     %d         %f   %f           %f   %f        %f   %f       %f   %f\n",ix,iy,it,std::real(v0),std::imag(v0),std::real(v1),std::imag(v1),nuxold,nuyold,std::real(v2),std::imag(v2));
+				//printf("indexes   %d      %d     %d         %f   %f           %f   %f        %f   %f       %f   %f\n",ix,iy,it,std::real(v0),std::imag(v0),std::real(v1),std::imag(v1),nuxold,nuyold,std::real(v2),std::imag(v2));
 			}
 		}
 	}
