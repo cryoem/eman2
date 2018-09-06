@@ -4762,11 +4762,12 @@ EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) 
 	} else {
 		nxreal = nx;
 		cimage = this->copy();
-		cimage->set_attr("npad",1);
-		//cimage->div_sinc(1);
-		cimage = cimage->norm_pad(false, 1);
+		cimage->set_attr("npad",npad);
+		cimage->div_sinc(1);
+		cimage = cimage->norm_pad(false, npad);
 		cimage->do_fft_inplace();
 		cimage->center_origin_fft();
+		cimage->fft_shuffle();
 	}
 
 	int nxhalf = nxreal/2;
@@ -4774,7 +4775,9 @@ EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) 
 	float cir = (float)((nxhalf-1)*(nxhalf-1));
 
 
-	EMData* result = cimage->copy_head();
+	//EMData* result = cimage->copy_head();
+	EMData* result = new EMData(nxreal, nxreal, 1, false);
+	result->to_zero();
 	//cimage->set_array_offsets(0, -nyhalf);
 	//result->set_array_offsets(0, -nyhalf);
 
@@ -4790,19 +4793,21 @@ EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) 
 			float nuxold = (ix*cang - ysang)*npad;
 			float nuyold = (ix*sang + ycang)*npad;
 			if(nuxold*nuxold+nuyold*nuyold<cir) {
-				complex<float> v1 = (complex<float>)cimage->get_complex_at_interp(nuxold, nuxold);
-				//result->cmplx(ix,iy) = Util::extractpoint2(nx, ny, nuxold, nuyold, this, kb);
-				//result->cmplx(ix,iy) = extractpoint(nuxold, nuyold, kb);
+				nuyold += nyhalf;
+				if(nuyold>nyhalf)  nuyold -= ny;
+				complex<float> v1 = (complex<float>)cimage->get_complex_at_interp(nuxold, nuyold);
 				float phase_ang = temp*(sx*ix+sy*iy);
 				result->cmplx(ix,it) = v1*complex<float>(cos(phase_ang), sin(phase_ang));
 				complex<float> v0 = cimage->cmplx(ix,it);
 				complex<float> v2 = result->cmplx(ix,it);
-				printf("indexes   %d      %d         %f   %f           %f   %f        %f   %f       %f   %f\n",ix,iy,std::real(v0),std::imag(v0),std::real(v1),std::imag(v1),nuxold,nuyold,std::real(v2),std::imag(v2));
+				printf("indexes   %d      %d     %d         %f   %f           %f   %f        %f   %f       %f   %f\n",ix,iy,it,std::real(v0),std::imag(v0),std::real(v1),std::imag(v1),nuxold,nuyold,std::real(v2),std::imag(v2));
 			}
 		}
 	}
 	//result->set_array_offsets();
-	//result->fft_shuffle(); // reset to an unshuffled result
+	result->fft_shuffle(); // reset to an unshuffled result
+	result->set_shuffled(false);
+	result->center_origin_fft();
 	result->set_fftpad(true);
 	result->set_attr("npad", 1);
 	result->set_fftodd(false);
