@@ -1469,7 +1469,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					fmtstr+=" -{}".format(f)
 		
 		nimgs=rg//dt
-		
+		print("will make {} images with {:.1f} angular step covering {:d} degrees".format(nimgs, dt, int(rg)))
 		for i in range(nimgs):
 		
 			self.updateMatrices([dt,0,1,0], "rotate")
