@@ -54,7 +54,7 @@ python::numeric::array EMAN::make_numeric_array(const float *const data, vector<
 	}
 
 	python::object obj(python::handle<>(PyArray_SimpleNewFromData(dims.size(),&dims[0],
-	                                                              NPY_FLOAT, (char*)data)));
+	                                                              NPY_FLOAT32, (char*)data)));
 
 	return python::extract<python::numeric::array>(obj);
 }
@@ -140,13 +140,13 @@ EMData* EMNumPy::numpy2em(const python::numeric::array& array)
 	EMData* image = 0;
 	float * temparray = new float[(size_t)nx*ny*nz];
 	if(data_type == 'f') {
-		void* array_data = PyArray_DATA(array_ptr); //char* array_data = array_ptr->data;
+		void* array_data = PyArray_DATA(array_ptr);
 		memcpy(temparray, array_data, (size_t)nx*ny*nz*sizeof(float));
 		image = new EMData((float*)temparray, nx, ny, nz);
 	}
 	else {
-		//PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, 'f');
-		void* array_data2 = PyArray_DATA(array_ptr); //array_ptr2->data;
+		PyArrayObject * array_ptr2 = (PyArrayObject*) PyArray_Cast(array_ptr, NPY_FLOAT32); //
+		void* array_data2 = PyArray_DATA(array_ptr2);
 		memcpy(temparray, array_data2, (size_t)nx*ny*nz*sizeof(float));
 		image = new EMData((float*)temparray, nx, ny, nz);
 	}
