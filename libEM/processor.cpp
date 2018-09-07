@@ -10034,11 +10034,26 @@ void MirrorProcessor::process_inplace(EMData *image)
 	int z_start = 1-nz%2;
 
 	if (axis == "x" || axis == "X") {
+		if(image->is_complex()) {
+			if(nz>1 || ny%2 == 1 || image->is_fftodd() )  throw ImageFormatException("Error: Mirror works only on 2D even complex images");
+			for (int iy = 1; iy < ny/2; iy++) {
+				int offset = nx*iy;
+				int off2 = nx*(ny-iy);
+				for (int ix = 0; ix < nx; ix++) {
+					float tmp = data[ix+offset];
+					data[ix+offset] = data[ix+off2];
+					data[ix+off2] = tmp;
+				}
+			}
+			// conjugate
+			for (int ix = 1; ix < nxy; ix += 2) data[ix] = -data[ix];
+		} else {
 			for (int iz = 0; iz < nz; iz++)
 			for (int iy = 0; iy < ny; iy++) {
 				int offset = nx*iy + nxy*iz;
 				reverse(&data[offset+x_start],&data[offset+nx]);
 			}
+		}
 	} else if (axis == "y" || axis == "Y") {
 		float *tmp = new float[nx];
 		int nhalf	= ny/2;
@@ -12818,16 +12833,22 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		EMData *ret2=new EMData(nkx-1,nky*2*fp,1);
 		
 		// We are doing a lot of rotations, so we make the image as small as possible first
+		// note that 'step' is actually downsampling the image in Fourier space based
+		// on the size of the desired bispectrum 9/1/18
 		EMData *tmp=cimage;
 //		cimage=new EMData((nkx*2+fp+2)*2,(nky*2+fp+2)*2,1);
 		cimage=new EMData((nkx*2+fp)*2-2,(nky*2+fp)*2,1);
 		cimage->set_complex(1);
 		cimage->set_ri(1);
 		cimage->set_fftpad(1);
+		int step=int(floor(tmp->get_ysize()/(2*cimage->get_ysize())));
+//		int step=int(floor(tmp->get_ysize()/(cimage->get_ysize())));
+		if (step==0) step=1;
+//		printf("%d\n",step);
 		
 		for (int k=-cimage->get_ysize()/2; k<cimage->get_ysize()/2; k++) {
 			for (int j=0; j<cimage->get_xsize()/2; j++) {
-				cimage->set_complex_at(j,k,tmp->get_complex_at(j,k));
+				cimage->set_complex_at(j,k,tmp->get_complex_at(j*step,k*step));
 			}
 		}
 		delete tmp;
@@ -12846,7 +12867,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 				for (int jy=-nky; jy<nky; jy++) {
 					for (int jx=0; jx<nkx; jx++) {
-						if (jx==0 && jy<0 || (jx+dk<4)) continue;				// first avoids double-computation along kx=0, second eliminates low resolution artifacts
+						if ((jx==0 && jy<0) || (jx+dk<4)) continue;				// first avoids double-computation along kx=0, second eliminates low resolution artifacts
 // 						int kx=jkx-jx;
 // 						int ky=jky-jy;
 						int kx=jx+dk;
@@ -12894,7 +12915,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			for (int x=0; x<nkx-1; x++) {
 				for (int y=-nky; y<nky; y++) {
 					complex<float> val=ret->get_complex_at(x,y);
-					if (x<=2&&abs(y)<=2&&Util::hypot_fast(x,y)<2.0) val=0.0;		// We filter out the very low resolution
+//					if (x<=2&&abs(y)<=2&&Util::hypot_fast(x,y)<2.0) val=0.0;		// We filter out the very low resolution
 					ret2->set_value_at(x,y+nky+nky*dk*2,cbrt(std::real(val)));
 //					ret2->set_value_at(x,y+nky+nky*dk*2,std::real(val));
 				}

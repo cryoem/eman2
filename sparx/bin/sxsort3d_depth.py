@@ -410,7 +410,7 @@ def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccou
 		else: unaccounted_list +=nclasses[ic]
 	if len(unaccounted_list)>1:
 		unaccounted_list.sort()
-		write_text_file(unaccounted_list, os.path.join(output_dir, "Unaccounted.txt"))
+		write_text_file(unaccounted_list, os.path.join(output_dir, "Core_set.txt"))
 	nclasses = copy.deepcopy(identified_clusters)
 	del identified_clusters
 	
@@ -632,7 +632,7 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 			list_of_stable    = wrap_mpi_bcast(list_of_stable,         Blockdata["main_node"], MPI_COMM_WORLD)
 			Tracker           = wrap_mpi_bcast(Tracker,                Blockdata["main_node"], MPI_COMM_WORLD)
 			accounted_file    = os.path.join(iter_dir, "Accounted.txt")
-			unaccounted_file  = os.path.join(iter_dir, "Unaccounted.txt")
+			unaccounted_file  = os.path.join(iter_dir, "Core_set.txt")
 			
 			if Tracker["constants"]["do_swap_au"]: swap_ratio = Tracker["constants"]["swap_ratio"]
 			else:                                  swap_ratio = 0.0
@@ -3256,7 +3256,7 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	b = set(accounted_list)
 	unaccounted_list = sorted(list(a.difference(b)))
 	write_text_row(new_index, os.path.join(partition_dir, "Accounted.txt"))
-	write_text_file(unaccounted_list, os.path.join(partition_dir, "Unaccounted.txt"))
+	write_text_file(unaccounted_list, os.path.join(partition_dir, "Core_set.txt"))
 	log_list.append('  The overall reproducibility is %5.1f%%.'%ratio_accounted)
 	log_list.append('  The number of accounted for images: %d.  The number of unaccounted for images: %d.'%(len(accounted_list), len(unaccounted_list)))
 	log_list.append('  The current minimum group size: %d and the maximum group size: %d.'%(minimum_group_size, maximum_group_size))
@@ -5558,7 +5558,7 @@ def stacksize(since=0.0):
     
 #####==========-------------------------Functions for post processing
 
-def compute_final_map(work_dir):
+def compute_final_map(work_dir, log_main):
 	global Tracker, Blockdata
 	Tracker["constants"]["orgres"]			 = 0.0
 	Tracker["constants"]["refinement_delta"] = 0.0
@@ -5581,6 +5581,17 @@ def compute_final_map(work_dir):
 			final_accounted_ptl +=len(class_in)
 			clusters.append(class_in)
 			del class_in
+		try:
+			class_in          = read_text_file(os.path.join(work_dir, "Core_set.txt"))
+			minimum_size      = min(len(class_in), minimum_size)
+			number_of_groups += 1
+			final_accounted_ptl +=len(class_in)
+			clusters.append(class_in)
+			del class_in
+			Tracker["Core_throughout"] = True
+		except:
+			log_main.add(' Core_set.txt does not exist   ')
+			Tracker["Core_throughout"] = False
 		Tracker["total_stack"]      = final_accounted_ptl
 		Tracker["number_of_groups"] = number_of_groups
 		Tracker["nxinit"]           = Tracker["nxinit_refinement"]
@@ -5733,7 +5744,12 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 				elif(Blockdata["myid"] == Blockdata["last_node"]):
 					tag = 7007
 					tvol2    = recv_EMData(sub_main_node_list[index_of_colors], tag, MPI_COMM_WORLD)
-					tvol2.write_image(os.path.join(Tracker["directory"], "vol_cluster%03d.hdf"%index_of_group))
+					if Tracker["Core_throughout"]:
+						if index_of_group !=Tracker["number_of_groups"]-1:
+							tvol2.write_image(os.path.join(Tracker["directory"], "volume_cluster%03d.hdf"%index_of_group))
+						else:
+							tvol2.write_image(os.path.join(Tracker["directory"], "volume_core.hdf"))
+					else: tvol2.write_image(os.path.join(Tracker["directory"], "volume_cluster%03d.hdf"%index_of_group))
 					del tvol2
 			mpi_barrier(MPI_COMM_WORLD)
 		mpi_barrier(MPI_COMM_WORLD)
@@ -5755,13 +5771,19 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 			tvol2 = steptwo_mpi_filter(tvol2, tweight2, treg2, None, Tracker["freq_fsc143_cutoff"], 0.01, False) # has to be False!!!
 			del tweight2, treg2
 			if(Blockdata["myid_on_node"] == 0):
-				tvol2.write_image(os.path.join(Tracker["directory"], "vol_cluster%03d.hdf"%index_of_group))
+				if Tracker["Core_throughout"]:
+					if index_of_group !=Tracker["number_of_groups"]-1:
+						tvol2.write_image(os.path.join(Tracker["directory"], "volume_cluster%03d.hdf"%index_of_group))
+					else:
+						tvol2.write_image(os.path.join(Tracker["directory"], "volume_core.hdf"))
+				else: tvol2.write_image(os.path.join(Tracker["directory"], "volume_cluster%03d.hdf"%index_of_group))
 				del tvol2
 			mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check 
 	Tracker   = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-	if not keepgoing: ERROR("do3d_sorting_groups_nofsc_final  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_nofsc_final", 1, Blockdata["myid"])
+	if not keepgoing: ERROR("do3d_sorting_groups_nofsc_final  %s"%os.path.join(Tracker["directory"], \
+	     "tempdir"),"do3d_sorting_groups_nofsc_final", 1, Blockdata["myid"])
 	return
 #####==========----various utilities
 
@@ -5826,21 +5848,29 @@ def copy_results(log_file, all_gen_stat_list):
 					cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
 					copyfile(cluster_file, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%nclusters))
 					clusters.append(read_text_file(cluster_file))
-					#copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "vol_grp%03d_iter000.hdf"%ic), os.path.join(Tracker["constants"]["masterdir"], "vol_cluster%03d.hdf"%nclusters))
+					#copyfile(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "vol_grp%03d_iter000.hdf"%ic), os.path.join(Tracker["constants"]["masterdir"], "volume_cluster%03d.hdf"%nclusters))
 					cluster      = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 					cluster_file = "Cluster_%03d.txt"%nclusters
-					vol_file     = "vol_cluster%03d.hdf"%nclusters
-					msg          = '{:>8} {:>8}   {:^24}        {:^6}          {:^6}          {:>5}  {:^15} {:^20} '.format(nclusters, len(cluster), ig, round(all_gen_stat_list[ig][ic][0],1), round(all_gen_stat_list[ig][ic][1],1), round(all_gen_stat_list[ig][ic][2],1), cluster_file,  vol_file)
+					vol_file     = "volume_cluster%03d.hdf"%nclusters
+					msg          = '{:>8} {:>8}   {:^24}        {:^6}          {:^6}          {:>5}    {:^15}     {:^20} '.format(nclusters, len(cluster), ig, round(all_gen_stat_list[ig][ic][0],1), round(all_gen_stat_list[ig][ic][1],1), round(all_gen_stat_list[ig][ic][2],1), cluster_file,  vol_file)
 					nclusters   +=1
 					NACC        +=len(cluster)
-					log_file.add(msg)
-			Unaccounted_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Unaccounted.txt")
-			copyfile(Unaccounted_file, os.path.join(Tracker["constants"]["masterdir"], "Unaccounted.txt"))
+					log_file.add(msg)			
+			try:
+				Unaccounted_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"], "Core_set.txt")
+				cluster = read_text_file(Unaccounted_file)
+				copyfile(Unaccounted_file, os.path.join(Tracker["constants"]["masterdir"], "Core_set.txt"))
+				cluster_file = "Core_set.txt"
+				vol_file     = "volume_core.hdf"
+				msg          = '{:>8} {:>8}   {:^24}        {:^6}          {:^6}          {:>5}    {:^15}     {:^20} '.format(nclusters, len(cluster), Tracker["current_generation"], 0.0, 0.0, 0.0, cluster_file,  vol_file)
+				log_file.add(msg)
+			except:
+				log_file.add("Core_set.txt does not exist")
 			NUACC = Tracker["constants"]["total_stack"] - NACC
 			log_file.add('{:^7} {:^8} {:^22} {:^8} {:^24} {:^8} '.format(' Images', Tracker["constants"]["total_stack"], 'accounted for images: ', NACC, 'unaccounted for images: ', NUACC))
-			log_file.add('Unaccounted images saved in Unaccounted.txt')
+			log_file.add('The unaccounted for images are saved in Core_set.txt')
 			if    len(clusters) >=2: do_analysis_on_identified_clusters(clusters, log_file)
-			else: log_file.add(' ANOVA analysis is skipped ')
+			else: log_file.add(' ANOVA analysis is skipped')
 			fout = open(os.path.join(Tracker["constants"]["masterdir"], "Tracker.json"), 'w')
 			json.dump(Tracker, fout)
 			fout.close()
@@ -6079,7 +6109,7 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				json.dump(freq_cutoff_dict, fout)
 				fout.close()
 				log_main.add('================================================================================================================')
-				log_main.add('                                    SORT3D IN-DEPTH   generation %d'%igen)
+				log_main.add('                                    SORT3D MULTI-LAYER   generation %d'%igen)
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
 			else: within_generation_restart = 0
 			within_generation_restart       = bcast_number_to_all(within_generation_restart, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -6127,11 +6157,11 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			all_gen_stat_list.append(stat_list)
 			if Blockdata["myid"] == Blockdata["main_node"]:			
 				log_main.add('================================================================================================================')
-				log_main.add('                                    SORT3D IN-DEPTH   generation %d completed'%igen)
+				log_main.add('                                    SORT3D MULTI-LAYER   generation %d completed'%igen)
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
 	
 	copy_results(log_main, all_gen_stat_list)# all nodes function
-	compute_final_map(Tracker["constants"]["masterdir"])
+	compute_final_map(Tracker["constants"]["masterdir"], log_main)
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		time_of_sorting_h,  time_of_sorting_m = get_time(time_sorting_start)
 		log_main.add('SORT3D execution time: %d hours %d minutes.'%(time_of_sorting_h, time_of_sorting_m))
@@ -6188,8 +6218,8 @@ def main():
 		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,                   help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
 		parser.add_option("--orientation_groups",                type   ="int",           default =100,                    help="Number of orientation groups in the asymmetric unit")
 		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,                  help="Do not reconstruct unaccounted elements in each generation")
-		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="Swap ratio. A float number between 0.0 and 50")
-		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="Randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
+		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="Percentage of particles with changed group assignment. Converge criteria for Kmeans clustering with constrained group size")
+		parser.add_option("--swap_ratio",                        type   ="float",         default =5.0,                    help="Randomness ratio of swapping accounted elements with unaccounted for elemetns per cluster. A float number between 0.0 and 50.0")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="Do not applynoise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="Flag to turn on swapping the accounted for images with the unaccounted for images")
 		parser.add_option("--random_group_elimination_threshold",  type   ="float",       default =2.0,                    help="Number of random group reproducibility standard deviation for eliminating random groups")
@@ -6280,7 +6310,7 @@ def main():
 		else:                         Tracker["applybckgnoise"] = True
 	
 		###=====<--options for advanced users:
-		Tracker["total_number_of_iterations"] = 25
+		Tracker["total_number_of_iterations"] = 15
 		Tracker["clean_volumes"]              = True # always true
 	
 		### -----------Orientation constraints
@@ -6331,7 +6361,7 @@ def main():
 		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
-				log_main.add('                                 SORT3D IN-DEPTH v1.1')
+				log_main.add('                                 SORT3D MULTI-LAYER v1.2')
 				log_main.add('================================================================================================================')
 			import_data(log_main)
 			print_shell_command(sys.argv, log_main)
@@ -6346,7 +6376,7 @@ def main():
 		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
-			log_main.add('                                 SORT3D IN-DEPTH finished')
+			log_main.add('                                 SORT3D MULTI-LAYER finished')
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
 		from mpi import mpi_finalize
 		mpi_finalize()
@@ -6367,8 +6397,8 @@ def main():
 		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,                   help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
 		parser.add_option("--orientation_groups",                type   ="int",           default =100,                    help="Number of orientation groups in the asymmetric unit")
 		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,                  help="Do not reconstruct unaccounted elements in each generation")
-		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="Swap ratio. A float number between 0.0 and 50.0")
-		parser.add_option("--swap_ratio",                        type   ="float",         default =1.0,                    help="Randomness ratio of swapping accounted elements with unaccounted elemetns per cluster")
+		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="Percentage of particles with changed group assignment. Converge criteria for Kmeans clustering with constrained group size")
+		parser.add_option("--swap_ratio",                        type   ="float",         default =5.0,                    help="Randomness ratio of swapping accounted elements with unaccounted for elemetns per cluster. A float number between 0.0 and 50.0")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="Flag to turn off background noise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="Flag to turn on swapping the accounted for images with the unaccounted for images")
 		parser.add_option("--random_group_elimination_threshold",  type   ="float",       default =2.0,                    help="Number of random group reproducibility standard deviation for eliminating random groups")
@@ -6450,7 +6480,7 @@ def main():
 		else:                         Tracker["applybckgnoise"] = True
 	
 		###=====<--options for advanced users:
-		Tracker["total_number_of_iterations"] = 25
+		Tracker["total_number_of_iterations"] = 15
 		Tracker["clean_volumes"]              = True # always true
 	
 		### -----------Orientation constraints
@@ -6504,7 +6534,7 @@ def main():
 		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
-				log_main.add('                                  SORT3D IN-DEPTH v1.1')
+				log_main.add('                                  SORT3D SORT3D MULTI-LAYER v1.2')
 				log_main.add('================================================================================================================\n')	
 			import_data(log_main)
 			print_shell_command(sys.argv, log_main)
@@ -6519,7 +6549,7 @@ def main():
 		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
-			log_main.add('                                 SORT3D IN-DEPTH finished')
+			log_main.add('                                 SORT3D SORT3D MULTI-LAYER finished')
 			log_main.add('----------------------------------------------------------------------------------------------------------------' )
 		from mpi import mpi_finalize
 		mpi_finalize()

@@ -2390,7 +2390,8 @@ class EMImageInspector2D(QtGui.QWidget):
 			im["render_max"]=im["mean"]+im["sigma"]*2.5
 			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
 
-		ret= os.system("ffmpeg -i tmp.%%03d.png -vcodec libx264 -pix_fmt yuv420p %s"%fsp)
+		# vcodec and pix_fmt are for quicktime compatibility. r 2 is 2 FPS
+		ret= os.system("ffmpeg -r 5 -i tmp.%%03d.png -vcodec libx264 -pix_fmt yuv420p  %s"%fsp)
 		if ret!=0 :
 			QtGui.QMessageBox.warning(None,"Error","Movie conversion (ffmpeg) failed. Please make sure ffmpeg is in your path. Frames not deleted.")
 			return

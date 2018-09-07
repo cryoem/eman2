@@ -108,7 +108,7 @@ def main():
 				bxs-=[old_div(e["nx"],2), old_div(e["ny"],2), old_div(e["nz"],2)]
 				bxs*=scale
 				bxs[:,2]-=zshift
-				if options.tag=="":
+				if options.tag==None:
 					lab=val["name"]
 				else:
 					lab=options.tag

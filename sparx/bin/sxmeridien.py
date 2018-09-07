@@ -79,13 +79,15 @@ Local with an = 12*delta
 """
 08/14/2018
 Normalization issues:
-This is for real space filter
+#This is for real space filter
+nx = 1024
 mask = Util.unrollmask(nx)
 for j in range(nx//2,nx):  mask[0,j]=1.0
-This is for Fourier valid region
+#This is for Fourier valid region
 m = Util.unrollmask(nx)
-fp1=fft(Util.mulnclreal(fft(p1),mask))
-Util.innerproduct(p2,p2,m)/(nx*nx*2) = Util.innerproduct(fp1,fp1,None)
+p2 = fft(p1)
+fp1=fft(Util.mulnclreal(p2,mask))
+Util.innerproduct(p2,p2,m)/(nx*nx/2) = Util.innerproduct(fp1,fp1,None)
 """
 
 
