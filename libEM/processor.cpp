@@ -12867,7 +12867,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 				for (int jy=-nky; jy<nky; jy++) {
 					for (int jx=0; jx<nkx; jx++) {
-						if (jx==0 && jy<0 || (jx+dk<4)) continue;				// first avoids double-computation along kx=0, second eliminates low resolution artifacts
+						if ((jx==0 && jy<0) || (jx+dk<4)) continue;				// first avoids double-computation along kx=0, second eliminates low resolution artifacts
 // 						int kx=jkx-jx;
 // 						int ky=jky-jy;
 						int kx=jx+dk;
