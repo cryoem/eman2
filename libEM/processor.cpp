@@ -10034,11 +10034,26 @@ void MirrorProcessor::process_inplace(EMData *image)
 	int z_start = 1-nz%2;
 
 	if (axis == "x" || axis == "X") {
+		if(image->is_complex()) {
+			if(nz>1 || ny%2 == 1 || image->is_fftodd() )  throw ImageFormatException("Error: Mirror works only on 2D even complex images");
+			for (int iy = 1; iy < ny/2; iy++) {
+				int offset = nx*iy;
+				int off2 = nx*(ny-iy);
+				for (int ix = 0; ix < nx; ix++) {
+					float tmp = data[ix+offset];
+					data[ix+offset] = data[ix+off2];
+					data[ix+off2] = tmp;
+				}
+			}
+			// conjugate
+			for (int ix = 1; ix < nxy; ix += 2) data[ix] = -data[ix];
+		} else {
 			for (int iz = 0; iz < nz; iz++)
 			for (int iy = 0; iy < ny; iy++) {
 				int offset = nx*iy + nxy*iz;
 				reverse(&data[offset+x_start],&data[offset+nx]);
 			}
+		}
 	} else if (axis == "y" || axis == "Y") {
 		float *tmp = new float[nx];
 		int nhalf	= ny/2;
