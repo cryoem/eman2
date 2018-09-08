@@ -206,6 +206,7 @@ def main():
 	import time
 	from   random   import random, seed, randint
 	from   optparse import OptionParser
+	from global_def import ERROR
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options] <inputfile> <outputfile>
@@ -218,16 +219,19 @@ def main():
 	Order a 2-D stack of image based on pair-wise similarity (computed as a cross-correlation coefficent).
 		Options 1-3 require image stack to be aligned.  The program will apply orientation parameters if present in headers.
 	    The ways to use the program:
-	   1  Use option initial to specify which image will be used as an initial seed to form the chain.
+	   1.  Use option initial to specify which image will be used as an initial seed to form the chain.
 	        sxchains.py input_stack.hdf output_stack.hdf --initial=23 --radius=25
-	   2  If options initial is omitted, the program will determine which image best serves as initial seed to form the chain
+
+	   2.  If options initial is omitted, the program will determine which image best serves as initial seed to form the chain
 	        sxchains.py input_stack.hdf output_stack.hdf --radius=25
-	   3  Use option circular to form a circular chain.
+
+	   3.  Use option circular to form a circular chain.
 	        sxchains.py input_stack.hdf output_stack.hdf --circular--radius=25
-	   4  New circular code based on pairwise alignments
+
+	   4.  New circular code based on pairwise alignments
 			sxchains.py aclf.hdf chain.hdf circle.hdf --align  --radius=25 --xr=2 --pairwiseccc=lcc.txt
 
-	   5  Circular ordering based on pairwise alignments
+	   5.  Circular ordering based on pairwise alignments
 			sxchains.py vols.hdf chain.hdf mask.hdf --dd  --radius=25
 
 
@@ -308,6 +312,8 @@ def main():
 		new_stack = args[1]
 		
 		d = EMData.read_images(stack)
+		if(len(d)<6):
+			ERROR("Chains requires at least six images in the input stack to be executed", "sxchains.py", 1)
 
 		"""
 		# will align anyway
