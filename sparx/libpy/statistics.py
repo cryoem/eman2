@@ -1139,7 +1139,7 @@ def aves_w(stack, mode="a"):
 	for i in range(len(TE)):  ctf_2_sum[i] = 1./(ctf_2_sum[i]+1.)
 	return filt_table(twie, ctf_2_sum)
 	
-def aves_wiener(input_stack, mode="a", SNR=1.0):
+def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 	"""
 		Apply alignment parameters, and calculate Wiener average using CTF info
 		mode="a" will apply alignment parameters to the input image.
@@ -1156,11 +1156,13 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	ima = get_im(input_stack, 0)
 	nx = ima.get_xsize()
 	ny = ima.get_xsize()
+	if(interpolation_method=="fourier"):  npad = 2
+	else:  npad = 1
 
-	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "faves_wiener", 1)
 
-	nx2 = nx*2
-	ny2 = ny*2
+	nx2 = nx*npad
+	ny2 = ny*npad
 	ave       = EMData(nx2, ny2, 1, False)
 	ctf_2_sum = EMData(nx2, ny2, 1, False)
 	snrsqrt = sqrt(SNR)
@@ -1170,7 +1172,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params, dopad=False)
 		Util.mul_scalar(oc, SNR)
 		Util.add_img(ave, oc)
@@ -1185,16 +1187,13 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 		oc = filt_ctf(ave, ctf_params, dopad=False)
 		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
 		Util.add_img2(var, ima)
 	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
 	Util.mul_scalar(var, 1.0/(n-1))
-	#  The variance is incorrect, so I replaced it by a blank image, will fix later
-	var.to_zero()
 	return ave, var
-
 
 def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1):
 	"""
