@@ -38,10 +38,10 @@ from builtins import range
 from EMAN2 import *
 import unittest,os,sys
 import testlib
-from pyemtbx.exceptions import *
 import numpy
 import platform
 from optparse import OptionParser
+from testlib import exception_type
 
 IS_TEST_EXCEPTION = False
 

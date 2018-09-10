@@ -37,7 +37,6 @@ from past.utils import old_div
 from builtins import range
 import EMAN2
 from EMAN2 import *
-from pyemtbx.exceptions import *
 import unittest
 import testlib
 import sys
@@ -45,6 +44,7 @@ import platform
 import math
 import os
 from optparse import OptionParser
+from testlib import exception_type
 
 IS_TEST_EXCEPTION = False
 
