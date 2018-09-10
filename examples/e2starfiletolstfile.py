@@ -17,7 +17,6 @@ from EMAN2 import *
 import sys
 import os
 from EMAN2star import *
-import pyemtbx.options
 
 progname = os.path.basename(sys.argv[0])
 usage = """ prog [options] <input star file> <output lst file>
@@ -34,7 +33,6 @@ parser = EMArgumentParser(usage, version=EMANVERSION)
 parser.add_pos_argument(name="input_star", type=str, help="The name of the input star file", default="")
 parser.add_pos_argument(name="output_lst", type=str, help="The name of the output .lst file", default="")
 parser.add_argument("--path", type=str, default=None, help="Path for the files. Use this if you want to change the output path for the files in the .lst file. For example, instead of the file being located at /raid1/myaccount/data/image.hdf you could do --path=data/particles and the new path written into the .lst file will be data/particles/image.hdf")
-optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
 
 if len(args) != 2:

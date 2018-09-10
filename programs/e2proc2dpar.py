@@ -93,8 +93,6 @@ def main():
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 
 
-	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
-
 	(options, args) = parser.parse_args()
 
 	if len(args) != 2:
