@@ -2250,7 +2250,7 @@ class EMInspector3D(QtGui.QWidget):
 		The Treeitem also needs to know the node, so it can talk to the node.
 		You can think of this as a three way conversation (the alterative it to use a mediator, but that is not worth it w/ only three players)
 		"""
-		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d, parentitem)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
+		tree_item = EMQTreeWidgetItem(list(name), item3d, parentitem)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
 		item3d.setEMQTreeWidgetItem(tree_item)				# Reference to the EMQTreeWidgetItem
 		item_inspector = item3d.getItemInspector()				# Get the node GUI controls 
 		#return tree_item
@@ -3012,7 +3012,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
 	def __init__(self, qstring, item3d, parentnode):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
-		self.name = qstring.join('')
+		self.name = ''.join(qstring)
 		self.item3d = weakref.ref(item3d)
 		if parentnode: self.parent = weakref.ref(parentnode)
 		else: self.parent = None
