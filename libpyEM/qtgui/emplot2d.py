@@ -65,7 +65,6 @@ def safe_float(x):
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtGui import QListWidgetItem
-from PyQt4.QtCore import QString
 from PyQt4.QtOpenGL import QGLWidget
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU
@@ -1657,14 +1656,14 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 				self.table.setItem( j, i, QtGui.QTableWidgetItem(item) )
 
 	def replaceRowLabels(self,rows):
-		self.table.setVerticalHeaderLabels(QtCore.QStringList(rows))
+		self.table.setVerticalHeaderLabels(rows)
 
 	def replaceColumnLabels(self,cols):
-		self.table.setHorizontalHeaderLabels(QtCore.QStringList(cols))
+		self.table.setHorizontalHeaderLabels(cols)
 
 	def replaceTableLabels(self,cols):
-		self.table.setHorizontalHeaderLabels(QtCore.QStringList(cols))
-		self.table.setVerticalHeaderLabels(QtCore.QStringList(cols))
+		self.table.setHorizontalHeaderLabels(cols)
+		self.table.setVerticalHeaderLabels(cols)
 
 class EMPlot2DRegrInsp(QtGui.QWidget):
 	"""This class implements the regression pop-up from the EMPlot2DInspector"""
@@ -2518,23 +2517,23 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.slides.valueChanged[int].connect(self.newCols)
 		self.setlist.currentRowChanged[int].connect(self.newSet)
 		self.setlist.itemChanged[QListWidgetItem].connect(self.list_item_changed)
-		self.color.currentIndexChanged[QString].connect(self.updPlotColor)
+		self.color.currentIndexChanged[str].connect(self.updPlotColor)
 		self.classb.clicked.connect(self.openClassWin)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
 		self.symtog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlotHmsel)
 		#QtCore.QObject.connect(self.hmbins,QtCore.SIGNAL("clicked()"),self.updPlotHmbins)
-		self.symsel.currentIndexChanged[QString].connect(self.updPlotSymsel)
+		self.symsel.currentIndexChanged[str].connect(self.updPlotSymsel)
 		self.symsize.valueChanged[int].connect(self.updPlotSymsize)
 		self.xlogtog.clicked.connect(self.updPlot)
 		self.ylogtog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.zlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		self.lintog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.hmtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		self.linsel.currentIndexChanged[QString].connect(self.updPlotLinsel)
+		self.linsel.currentIndexChanged[str].connect(self.updPlotLinsel)
 		self.linwid.valueChanged[int].connect(self.updPlotLinwid)
-		self.xlabel.textChanged[QString].connect(self.updPlot)
-		self.ylabel.textChanged[QString].connect(self.updPlot)
+		self.xlabel.textChanged[str].connect(self.updPlot)
+		self.ylabel.textChanged[str].connect(self.updPlot)
 		self.stats.clicked.connect(self.openStatsWin)
 		self.regress.clicked.connect(self.openRegrWin)
 		self.saveb.clicked.connect(self.savePlot)

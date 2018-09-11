@@ -793,7 +793,7 @@ class EMBrowser(EMBrowserType):
 		self.preview_options.addItem("Multi preview")
 		#self.preview_options.setCurrentIndex(0)
 		
-		self.preview_options.currentIndexChanged[QtCore.QString].connect(self.preview_options_changed)
+		self.preview_options.currentIndexChanged[str].connect(self.preview_options_changed)
 	
 	def preview_options_changed(self,qstring):
 		if str(qstring) == "Single preview":

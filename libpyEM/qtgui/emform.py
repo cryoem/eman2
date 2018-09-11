@@ -993,7 +993,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 		self.vbl.addWidget(groupbox)
 		
-		self.main_combo.currentIndexChanged[QtCore.QString].connect(self.selection_changed)
+		self.main_combo.currentIndexChanged[str].connect(self.selection_changed)
 		
 		if start_idx != None:
 			if start_idx != 0:
