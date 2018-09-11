@@ -58,22 +58,25 @@ def main():
 	usage = """Usage: e2spt_pcasplit.py [options] <spt_XX> <reference>"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--iter",type=int,required=True,help="Iteration number within path. Default = start a new iteration",default=0)
-	parser.add_argument("--path",type=str,required=True,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)")
-	parser.add_argument("--sym",type=str,help="Apply this symmetry.",default=None)
-	parser.add_argument("--res",type=float,help="Filter particles to this resolution (in Angstroms) before classification",default=30.0)
-	#parser.add_argument("--outpath",type=str,help="",default=None)
-	parser.add_argument("--mask",type=str,help="Apply this symmetry.",default=None)
-	parser.add_argument("--nowedgefill",action='store_true',help="Do not fill the missing wedge before classification.",default=False)
-	parser.add_argument("--keepthresh",type=float,help="Center PCA outliers beyond this value before performing K-means clustering. Default is 0.2.",default=0.2)
-	parser.add_argument("--nbasis",type=int,required=True,help="Number of PCA basis vectors. Default is 4.",default=4)
-	parser.add_argument("--nclass",type=int,required=True,help="Number of classes. Default is 2.",default=2)
+	parser.add_argument("--path",type=str,required=True,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)",guitype='filebox',row=0, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--iter",type=int,required=True,help="Iteration number within path. Default = start a new iteration",default=0,guitype='intbox',row=1, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--nclass",type=int,required=True,help="Number of classes. Default is 2.",default=2,guitype="intbox",row=1, col=1, rowspan=1, colspan=1)
+	parser.add_header(name="orblock1", help='', title="Optional", row=2, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--res",type=float,help="Filter particles to this resolution (in Angstroms) before classification",default=30.0,guitype="floatbox",row=3, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--sym",type=str,help="Apply this symmetry.",default=None,guitype="intbox",row=3, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--mask",type=str,help="Apply this mask. Default is 'mask_tight.hdf' from <--path>_<--iter>.",default=None,guitype="filebox",row=4, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--nbasis",type=int,required=True,help="Number of PCA basis vectors. Default is 4.",default=4,guitype="intbox",row=5, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--keepthresh",type=float,help="Center PCA outliers beyond this value before performing K-means clustering. Default is 0.2.",default=0.2,guitype="floatbox",row=5, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--nowedgefill",action='store_true',help="Do not fill the missing wedge before classification.",default=False,guitype="boolbox",row=6, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 
 	if options.path == None:
 		print("You must specify the path to an existing spt_XX refinement directory.")
+		sys.exit(1)
+	if not os.path.isdir(options.path):
+		print("Could not locate --path {}".format(options.path))
 		sys.exit(1)
 
 	if options.iter<=0 :
