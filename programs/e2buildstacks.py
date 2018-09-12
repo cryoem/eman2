@@ -114,7 +114,8 @@ def main():
 
 		#series_db["tilt_angles"] = ordered_angles
 		for n,arg in enumerate(args):
-			img.write_image("tiltseries/{}".format(options.output),n)
+			img = EMData(arg)
+			img.write_image(options.output,n)
 
 		#for n,(angle,arg) in enumerate(zip(ordered_angles,sorted_args)):
 
