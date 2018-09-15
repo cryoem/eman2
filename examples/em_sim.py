@@ -74,17 +74,19 @@ class Microscope(QtOpenGL.QGLWidget):
 			
 				
 	
-	def __init__(self, parent=None, imgwindow=None, pltwindow=None, twodwindow=None, mode=0, cs=0):
+	def __init__(self, parent=None, options=None, imgwindow=None, pltwindow=None, twodwindow=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
+		
 		self.win_size=[500,1000]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
 		self.imgwindow=imgwindow
 		self.pltwindow=pltwindow
 		self.twodwindow=twodwindow
 		self.mag=1
-		self.lens_sets(mode)
-		self.mode=mode
-		self.cs=cs
+		self.lens_sets(options.mode)
+		self.mode=options.mode
+		self.cs=options.cs
+		self.options=options
 		
 		
 		self.wavesign=1
@@ -176,7 +178,7 @@ class Microscope(QtOpenGL.QGLWidget):
 		sz=512-1 ### length of x-axis
 		xdivz=2e-3 ### x/z scale ratio
 		mpix=4e-8 ### pixel to meter
-		wavelen=old_div(2e-12,mpix) ### wave length
+		wavelen=2e-12/mpix ### wave length
 		wid=8 ### width of the slits
 		w2=4 ### position of the slits
 		
@@ -185,10 +187,13 @@ class Microscope(QtOpenGL.QGLWidget):
 		#raw[sz/2-wid+w2:sz/2+wid+w2]=1
 		
 		#raw[sz/2-wid+1:sz/2+wid]=1
-		raw0=np.exp(old_div(-(np.arange(sz, dtype=float)-old_div(sz,2)+5)**2,5))
-		raw0+=np.exp(old_div(-(np.arange(sz, dtype=float)-old_div(sz,2)-5)**2,5))
-		raw0+=np.exp(old_div(-(np.arange(sz, dtype=float)-old_div(sz,2)-15)**2,5))
-		raw0+=np.exp(old_div(-(np.arange(sz, dtype=float)-old_div(sz,2)+15)**2,5))
+		raw0=np.zeros(sz) ### input signal
+		ni=self.options.ninput
+		dx=30/ni
+		for i in range(ni):
+			x=dx*i-15*(ni>1)
+			raw0+=np.exp(-(np.arange(sz, dtype="float32")-(sz/2)+x)**2/5)
+		
 		#raw0+=np.exp(-(np.arange(sz, dtype=float)-sz/2-7.5)**2/5)
 		#raw0+=np.exp(-(np.arange(sz, dtype=float)-sz/2+7.5)**2/5)
 		#raw=np.exp(-1j*raw0*1)#*(np.exp(-raw0*.1))
@@ -288,7 +293,9 @@ class Microscope(QtOpenGL.QGLWidget):
 		self.imgwindow.shapes={ i:shapes[i] for i in range(len(shapes)) }
 		self.imgwindow.shapechange=1
 		#self.imgwindow.set_data([from_numpy(abs(d)*np.sin(np.angle(d))) for d in alldata])
-		self.imgwindow.set_data([from_numpy(abs(alldata[0])), from_numpy(np.cos(np.angle(alldata[0]))) ])
+		self.imgwindow.set_data([
+			from_numpy(abs(alldata[0]).astype("float32")), 
+			from_numpy(np.cos(np.angle(alldata[0])).astype("float32")) ])
 		
 		if self.pltwindow:
 			
@@ -450,7 +457,7 @@ class Microscope(QtOpenGL.QGLWidget):
 			imgs.append(img)
 			vz -= zmax-1
 
-		self.twodwindow.set_data([from_numpy(np.real(d).copy()) for d in imgs])
+		self.twodwindow.set_data([from_numpy(np.real(d).copy().astype("float32")) for d in imgs])
 		return imgs[-1]
 	
 	#### draw vertex and keep track of the distance
@@ -912,16 +919,16 @@ class Microscope(QtOpenGL.QGLWidget):
 
 class MainWindow(QtGui.QMainWindow):
 	
-	def __init__(self, mode=0, cs=0., twod=False):
+	def __init__(self, options):
 		QtGui.QMainWindow.__init__(self)
 		
-		if twod:
+		if options.twod:
 			self.twodview = EMImage2DWidget()
-			widget = Microscope(self, None, None, self.twodview, mode, cs)
+			widget = Microscope(self, options, None, None, self.twodview)
 		else:
 			self.imgview = EMImage2DWidget()
 			self.pltview = EMPlot2DWidget()
-			widget = Microscope(self, self.imgview, self.pltview, None, mode, cs)
+			widget = Microscope(self, options, self.imgview, self.pltview, None)
 			#widget = Microscope(self, None, None, None, mode, cs)
 
 		#widget = Microscope(self, None, None)
@@ -938,6 +945,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--mode", type=int,help="operating mode. 0: imaging mode with all lens; 1:diffraction mode with all lens; 2: imaging mode with single lens and phase plate; else: imaging mode with one lens.", default=0)
 	parser.add_argument("--cs", type=float,help="Cs of microscope.", default=0.0)
+	parser.add_argument("--ninput", type=int,help="number of peaks in sampel.", default=4)
 	parser.add_argument("--twod", action="store_true", help="Show twod image instead of 1D plot and beam propagation in the microscope.", default=False)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -946,7 +954,7 @@ def main():
 	app = EMApp()
 #	app=QtGui.QApplication([""])
 	
-	window = MainWindow(options.mode, options.cs, options.twod)
+	window = MainWindow(options)
 	window.show()
 	window.raise_()
 	

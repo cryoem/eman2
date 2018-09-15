@@ -677,6 +677,25 @@ def fdownsample(img, sub_rate=0.5, RetReal = True):
 	return 	e
 
 
+def prepf(image, npad = 2):
+	"""
+		Name
+			prepf - prepare 2-D image for Fourier interpolation rotation/shift
+		Input
+			image: input image that is going to be rotated and shifted using fourier_rotate_shift2d
+		Output
+			imageft: Fourier space image prepared for Fourier interpolation rotation/shift
+	"""
+	nxreal = image.get_xsize()
+	cimage = image.copy()
+	cimage.set_attr("npad",npad)
+	cimage.div_sinc(1)
+	cimage = cimage.norm_pad(False, npad)
+	fftip(cimage)
+	cimage.center_origin_fft()
+	cimage.fft_shuffle()
+	return cimage
+
 def prepi(image, RetReal = True):
 	"""
 		Name
@@ -1015,6 +1034,7 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		2. quadratic interpolation
 		3. gridding
 		4. ftgridding
+		5. fourier
 		mode specifies what will be put in corners, should they stick out:
 		background - leave original values
 		cyclic - use pixels from the image using wrap-around transformation
@@ -1062,6 +1082,10 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 	elif(use_method == "ftgridding"): # previous rtshg
 		from fundamentals import gridrot_shift2D
 		img = gridrot_shift2D(img, angle, sx, sy, scale)
+		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
+		return img
+	elif(use_method == "fourier"):
+		img = img.fourier_rotate_shift2d(angle, sx, sy, 2)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	else:	ERROR("rot_shift_2D interpolation method is incorrectly set", "rot_shift_2D", 1)

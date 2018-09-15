@@ -48,7 +48,7 @@ from sys import exit
 def main():
 	progname = os.path.basename(sys.argv[0])
 	helpstring =  """Help is available on the following topics:
-processors, cmps, aligners, averagers, projectors, reconstructors, analyzers, symmetries, orientgens, rotationtypes"""
+boxsizes,processors, cmps, aligners, averagers, projectors, reconstructors, analyzers, symmetries, orientgens, rotationtypes"""
 	usage = """prog <topic> [contains]
 	
 Interactive help on a variety of the eman2 library's modular functions. The optional 'contains' argument will
@@ -126,6 +126,12 @@ act as a filter on the names of the algorithms."""
 	elif args[0] in ("orientgen","orientationgen","orientgens","orientationgens","orientationgenerators") :
 		print("Available orientation generators:")
 		l=dump_orientgens_list()
+	elif args[0][:3]=="box":
+		if len(args)>1 :
+			print(good_size(int(args[1])))
+		else:
+			print(good_box_sizes)
+		exit(0)
 	elif args[0][:8]=="rotation" :
 		print("Available rotation conventions:")
 		l={"eman":["EMAN convention, az(Z),alt(X),phi(Z') Eulers","alt","FLOAT","Altitude, X-axis","az","FLOAT","Azimuth, Z-axis","phi","FLOAT","Z' Axis. in-plane rotation in 2-D"],

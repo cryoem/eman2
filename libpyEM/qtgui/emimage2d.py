@@ -2427,7 +2427,7 @@ class EMImageInspector2D(QtGui.QWidget):
 			r="Error executing. Access the image as 'img', for example \nimg['mean'] will yield the mean image value"
 #		print r
 
-		self.pyout.setText(QtCore.QString(r))
+		self.pyout.setText(str(r))
 
 	def disable_image_range(self):
 		self.stminsb.setRange(0,0)

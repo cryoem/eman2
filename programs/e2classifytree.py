@@ -233,10 +233,9 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 			if os.path.isfile(tmplist): os.remove(tmplist)
 			rr=LSXFile(tmplist)
 			
-			## FIXME I do not know why I need to write twice here, but e2simmx reads one less line if I don't
 			for r,a in enumerate(ai):
 				rr.write(r,a,nodes)
-				#rr.write(r,a,nodes)
+
 			rr=None
 			#print len(ai)
 			if len(ai)<10:

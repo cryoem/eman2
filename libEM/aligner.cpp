@@ -3430,6 +3430,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float sigmathis = params.set_default("sigmathis",0.01f);
 	float sigmato = params.set_default("sigmato",0.01f);
 	int verbose = params.set_default("verbose",0);
+	float maxres = params.set_default("maxres",0.1f);
 
 
 	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_this->get_ysize()!=base_this->get_zsize()
@@ -3452,7 +3453,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 //	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
 	string axname[] = {"az","alt","phi"};
-
+	int lastss=24;
 	// We start with 32^3, 64^3 ...
 	for (int sexp=4; sexp<10; sexp++) {
 		int ss=pow(2.0,sexp);
@@ -3602,7 +3603,13 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		// Once we have our initial list of best locations, we just refine each possibility individually
 		else {
 			// We generate a search pattern around each existing solution
-			if (verbose>1) printf("stage 2 (%1.2f)\n",astep);
+			float res=float(ny)/float(ss)*apix*2;
+			if (verbose>1) printf("stage 2 - maxres %1.2f, astep %1.2f\n",res, astep);
+			
+			if (res < maxres){ // stop when the nyquist is at maxres
+				break;
+			}
+			
 			for (int i=0; i<nsoln; i++) {
 
 				if (verbose>2) {
@@ -3681,11 +3688,25 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 		delete small_this;
 		delete small_to;
+		
+		lastss=ss;
 		if (ss==ny) break;
 	}
 
 	delete base_this;
 	delete base_to;
+	
+	// note the translations are wrong when the alignment stops before ss==ny
+	if (lastss<ny){
+		for (unsigned int i = 0; i < nrsoln; ++i ) {
+			Transform tt=s_xform[i];
+			Vec3f v=tt.get_trans();
+			v=v*ny/lastss;
+			tt.set_trans(v);
+			s_xform[i]=tt;
+			
+		}
+	}
 
 
 	// initialize results

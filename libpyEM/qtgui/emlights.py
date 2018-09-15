@@ -44,7 +44,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt, QString
+from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QListWidgetItem
 from .emglobjects import Camera2, get_default_gl_colors, EMViewportDepthTools2, get_RGB_tab, get_gl_lights_vector, init_glut, EM3DModel
 from .emimageutil import EMTransformPanel # for EMLightsInspector
@@ -1356,7 +1356,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.n3_showing = False
 		self.quiet = False
 
-		self.cbb.currentIndexChanged[QString].connect(target.setColor)
+		self.cbb.currentIndexChanged[str].connect(target.setColor)
 		self.wiretog.toggled[bool].connect(target.toggle_wire)
 		self.lighttog.toggled[bool].connect(target.toggle_light)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)

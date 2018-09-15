@@ -361,8 +361,8 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.combo = QtGui.QComboBox(self)
 		for e in combo_entries: self.combo.addItem(e)
 
-		self.combo.currentIndexChanged[QtCore.QString].connect(self.on_combo_change)
-		self.combo.currentIndexChanged[QtCore.QString].connect(self.on_combo_change)
+		self.combo.currentIndexChanged[str].connect(self.on_combo_change)
+		self.combo.currentIndexChanged[str].connect(self.on_combo_change)
 
 		vbl.addWidget(self.combo)
 

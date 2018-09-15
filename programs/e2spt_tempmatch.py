@@ -26,10 +26,11 @@ def main():
 	parser.add_argument("--label", type=str,help="Assign unique label to particles resembling specified reference. This allows specific particles to be extracted in the next step and aids project organization with easily interpreted filenames.\nIf --label is not specified, this set of particles will be labeled according to the file name of the reference without file extension.", default=None, guitype='strbox',row=3, col=0, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--nptcl", type=int,help="maximum number of particles", default=500, guitype='intbox', row=3, col=1,rowspan=1, colspan=1, mode="boxing")
 
-	parser.add_argument("--dthr", type=float,help="distance threshold", default=16.0, guitype='floatbox', row=4, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--dthr", type=float,help="distance threshold", default=-1, guitype='floatbox', row=4, col=0,rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--vthr", type=float,help="value threshold (n sigma)", default=2.0, guitype='floatbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
 
 	parser.add_argument("--delta", type=float,help="delta angle", default=30.0, guitype='floatbox', row=5, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox', row=5, col=1,rowspan=1, colspan=1, mode="boxing")
 
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
@@ -40,23 +41,35 @@ def main():
 	time0=time.time()
 
 	tmpname=options.reference #args[1]
-	m=EMData(tmpname)
-	m.process_inplace("math.meanshrink",{'n':2})
-	sz=m["nx"]
 
 	sym=parsesym("c1")
 	dt=options.delta
 	oris=sym.gen_orientations("eman",{"delta":dt, "phitoo":dt})
-	
 	print("Try {} orientations.".format(len(oris)))
+	
+	
 
 	for filenum,imgname in enumerate(args):
 		
 		print("Locating reference-like particles in {} (File {}/{})".format(imgname,filenum+1,len(args)))
 		img=EMData(imgname)
-		img.process_inplace("math.meanshrink",{'n':2})
+		nbin=int(img["nx"]//500)
+		print("Will shrink tomogram by {}".format(nbin))
+		img.process_inplace("math.meanshrink",{'n':nbin})
 		img.mult(-1)
+		img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 		img.process_inplace('normalize')
+		img.process_inplace('threshold.clampminmax.nsigma', {"nsigma":1})
+		
+		m=EMData(tmpname)
+		mbin=img["apix_x"]/m["apix_x"]
+		print("Will shrink reference by {:.1f}".format(mbin))
+		m.process_inplace("math.fft.resample",{'n':mbin})
+		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
+		m.process_inplace('normalize')
+		sz=good_boxsize(m["nx"])
+		if options.dthr<0:
+			options.dthr=sz/np.sqrt(2)
 
 		hdr=m.get_attr_dict()
 		ccc=img.copy()*0-65535
@@ -84,6 +97,13 @@ def main():
 		print("")
 
 		cbin=ccc.process("math.maxshrink", {"n":2})
+		msk=cbin.copy()
+		msk.to_one()
+		msk.process_inplace("mask.cylinder",{"outer_radius":128-8, "phirange":360})
+		msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.03})
+		cbin.mult(msk)
+		#cbin.write_image("tmp0.hdf")
+		#msk.write_image("tmp1.hdf")
 		cc=cbin.numpy().copy()
 		cshp=cc.shape
 		ccf=cc.flatten()
@@ -91,7 +111,7 @@ def main():
 		pts=[]
 		vthr=np.mean(ccf)+np.std(ccf)*options.vthr
 		
-		dthr=old_div(options.dthr,4)
+		dthr=options.dthr/4.
 		scr=[]
 		#print vthr,cc.shape
 		for i in range(len(asrt)):
@@ -104,7 +124,7 @@ def main():
 
 			pts.append(pt)
 			scr.append(float(ccf[aid]))
-			if cc[pt]<vthr or len(pts)>options.nptcl:
+			if cc[pt]<vthr or len(pts)>=options.nptcl:
 				break
 				
 		pts=np.array(pts)
@@ -120,9 +140,9 @@ def main():
 			kid=0
 		
 		if options.label:
-			clst[str(kid)]={"boxsize":sz*4, "name":options.label}
+			clst[str(kid)]={"boxsize":sz*2, "name":options.label}
 		else:
-			clst[str(kid)]={"boxsize":sz*4, "name":base_name(tmpname)}
+			clst[str(kid)]={"boxsize":sz*2, "name":base_name(tmpname)}
 		js["class_list"]=clst
 		if "boxes_3d" in js:
 			bxs=js["boxes_3d"]

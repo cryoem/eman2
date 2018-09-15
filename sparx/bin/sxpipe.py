@@ -605,7 +605,7 @@ def isac_substack(args):
 	print_progress("Summary of processing...")
 	print_progress("  Particles in fullstack  : %6d"%(n_fullstack_img)) 
 	print_progress("  Accounted particles     : %6d"%(n_accounted_img))
-	print_progress("  Defalut class averages  : %6d"%(n_default_class_avg)) 
+	print_progress("  Default class averages  : %6d"%(n_default_class_avg)) 
 	print_progress("  Provided class averages : %6d"%(n_class_avg)) 
 	print_progress("  Extracted class members : %6d"%(n_isac_substack_img))
 	print_progress("  ISAC substack size      : %6d"%(EMUtil.get_image_count(virtual_bdb_substack_path)))

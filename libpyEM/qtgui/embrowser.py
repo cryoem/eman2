@@ -39,7 +39,7 @@ from builtins import object
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
 from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import QChar, QString, Qt, QModelIndex
+from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QAction,QTreeWidgetItem
 from .emapplication import EMApp
 from .emimage2d import *
@@ -2419,19 +2419,19 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
-				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(trg[k])))))
+				itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
 				if isinstance(trg[k], list) or isinstance(trg[k], tuple) or isinstance(trg[k], set) or isinstance(trg[k], dict) :
 					self.addTreeItem(trg[k], itms[-1])
 		elif isinstance(trg, list) or isinstance(trg, tuple) or isinstance(trg, set) :
 			for k in trg :
 				if isinstance(k, list) or isinstance(k, tuple) or isinstance(k, set) or isinstance(k, dict) :
-					try : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((k.__class__.__name__, ""))))
-					except : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("??", ""))))
+					try : itms.append(QtGui.QTreeWidgetItem(list((k.__class__.__name__, ""))))
+					except : itms.append(QtGui.QTreeWidgetItem(list(("??", ""))))
 					self.addTreeItem(k, itms[-1])
 				else :
-					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ""))))
+					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg), ""))))
+			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -2585,34 +2585,34 @@ class EMJSONInfoPane(EMInfoPane) :
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
 				if isinstance(trg[k], (list, tuple, set, dict, EMAN2Ctf)) :
-					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ""))))
+					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
 					self.addTreeItem(trg[k], itms[-1])
-				else : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(trg[k])))))
+				else : itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
 		elif isinstance(trg, (list, tuple, set)) :
 			if isinstance(trg, set) : trg = sorted(trg)		# make a list temporarily
 			if len(trg) > 120 : vals = list(range(0, 50))+[-1]+list(range(len(trg)-50, len(trg)))
 			else : vals = list(range(len(trg)))
 			for k in vals :
-				if k == -1 : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("...", "..."))))
+				if k == -1 : itms.append(QtGui.QTreeWidgetItem(list(("...", "..."))))
 				else :
 					v = trg[k]
 					if isinstance(v, (list, tuple, set, dict, EMAN2Ctf)) :
-						itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ""))))
+						itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
 						self.addTreeItem(v, itms[-1])
-					else : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(v)))))
+					else : itms.append(QtGui.QTreeWidgetItem(list((str(k), str(v)))))
 		elif isinstance(trg, EMAN2Ctf) :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("EMAN2Ctf", ""))))
+			itms.append(QtGui.QTreeWidgetItem(list(("EMAN2Ctf", ""))))
 			subitms = []
 			for k, v in list(trg.to_dict().items()) :
 				if isinstance(v, (list, tuple)) :
 					v = ["%1.3g"%i for i in v]
-					subitms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ", ".join(v)))))
-				else : subitms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(v)))))
+					subitms.append(QtGui.QTreeWidgetItem(list((str(k), ", ".join(v)))))
+				else : subitms.append(QtGui.QTreeWidgetItem(list((str(k), str(v)))))
 			itms[-1].addChildren(subitms)
 		elif isinstance(trg, EMData) :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("EMData", ""))))
+			itms.append(QtGui.QTreeWidgetItem(list(("EMData", ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg), ""))))
+			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -2666,19 +2666,19 @@ class EMImageInfoPane(EMInfoPane) :
 
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
-				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(trg[k])))))
+				itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
 				if isinstance(trg[k], list) or isinstance(trg[k], tuple) or isinstance(trg[k], set) or isinstance(trg[k], dict) :
 					self.addTreeItem(trg[k], itms[-1])
 		elif isinstance(trg, list) or isinstance(trg, tuple) or isinstance(trg, set) :
 			for k in trg :
 				if isinstance(k, list) or isinstance(k, tuple) or isinstance(k, set) or isinstance(k, dict) :
-					try : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((k.__class__.__name__, ""))))
-					except : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("??", ""))))
+					try : itms.append(QtGui.QTreeWidgetItem(list((k.__class__.__name__, ""))))
+					except : itms.append(QtGui.QTreeWidgetItem(list(("??", ""))))
 					self.addTreeItem(k, itms[-1])
 				else :
-					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ""))))
+					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg), ""))))
+			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -2892,19 +2892,19 @@ class EMStackInfoPane(EMInfoPane) :
 
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
-				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), str(trg[k])))))
+				itms.append(QtGui.QTreeWidgetItem(list((str(k), str(trg[k])))))
 				if isinstance(trg[k], list) or isinstance(trg[k], tuple) or isinstance(trg[k], set) or isinstance(trg[k], dict) :
 					self.addTreeItem(trg[k], itms[-1])
 		elif isinstance(trg, list) or isinstance(trg, tuple) or isinstance(trg, set) :
 			for k in trg :
 				if isinstance(k, list) or isinstance(k, tuple) or isinstance(k, set) or isinstance(k, dict) :
-					try : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((k.__class__.__name__, ""))))
-					except : itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("??", ""))))
+					try : itms.append(QtGui.QTreeWidgetItem(list((k.__class__.__name__, ""))))
+					except : itms.append(QtGui.QTreeWidgetItem(list(("??", ""))))
 					self.addTreeItem(k, itms[-1])
 				else :
-					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k), ""))))
+					itms.append(QtGui.QTreeWidgetItem(list((str(k), ""))))
 		else :
-			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg), ""))))
+			itms.append(QtGui.QTreeWidgetItem(list((str(trg), ""))))
 
 		if parent == None :
 			self.wheadtree.addTopLevelItems(itms)
@@ -3061,12 +3061,12 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtoolhbl = QtGui.QHBoxLayout()
 		self.wtoolhbl.setContentsMargins(0, 0, 0, 0)
 
-		self.wbutback = QtGui.QPushButton(QString(QChar(0x2190)))
+		self.wbutback = QtGui.QPushButton(unichr(0x2190))
 		self.wbutback.setMaximumWidth(36)
 		self.wbutback.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutback, 0)
 
-		self.wbutfwd = QtGui.QPushButton(QString(QChar(0x2192)))
+		self.wbutfwd = QtGui.QPushButton(unichr(0x2192))
 		self.wbutfwd.setMaximumWidth(36)
 		self.wbutfwd.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutfwd, 0)
@@ -3093,11 +3093,11 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtoolhbl2 = QtGui.QHBoxLayout()
 		self.wtoolhbl2.setContentsMargins(0, 0, 0, 0)
 
-		self.wbutup = QtGui.QPushButton(QString(QChar(0x2191)))
+		self.wbutup = QtGui.QPushButton(unichr(0x2191))
 		self.wbutup.setMaximumWidth(36)
 		self.wtoolhbl2.addWidget(self.wbutup, 0)
 
-		self.wbutrefresh = QtGui.QPushButton(QString(QChar(0x21ba)))
+		self.wbutrefresh = QtGui.QPushButton(unichr(0x21ba))
 		self.wbutrefresh.setMaximumWidth(36)
 		self.wtoolhbl2.addWidget(self.wbutrefresh, 0)
 
@@ -3219,10 +3219,10 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wbutrefresh.clicked[bool].connect(self.buttonRefresh)
 		self.wbutinfo.clicked[bool].connect(self.buttonInfo)
 		self.selectall.clicked[bool].connect(self.selectAll)
-		self.wtree.clicked[QModelIndex].connect(self.itemSel)
-		self.wtree.activated[QModelIndex].connect(self.itemActivate)
-		self.wtree.doubleClicked[QModelIndex].connect(self.itemDoubleClick)
-		self.wtree.expanded[QModelIndex].connect(self.itemExpand)
+		self.wtree.clicked[QtCore.QModelIndex].connect(self.itemSel)
+		self.wtree.activated[QtCore.QModelIndex].connect(self.itemActivate)
+		self.wtree.doubleClicked[QtCore.QModelIndex].connect(self.itemDoubleClick)
+		self.wtree.expanded[QtCore.QModelIndex].connect(self.itemExpand)
 		self.wpath.returnPressed.connect(self.editPath)
 		self.wbookmarks.actionTriggered[QAction].connect(self.bookmarkPress)
 		self.wfilter.currentIndexChanged[int].connect(self.editFilter)
@@ -3676,7 +3676,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 #		print "Got action ", action.text(), action.data().toString()
 
-		self.setPath(action.data().toString())
+		self.setPath(str(action.data()))
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 
 	def closeEvent(self, event) :

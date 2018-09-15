@@ -1081,74 +1081,17 @@ def aveq(stack, mode="a", i1 = 0, i2 = 0):
 	ave = Util.mult_scalar(ave, 1.0/float(nima))
 	return ave
 
-def aves_w(stack, mode="a"):
-	"""
-		Apply alignment parameters, and calculate Wiener average
-		using CTF and SNR saved in header
-		mode="a" will apply alignment parameters to the input image.
-	"""
-	
-	from filter       import filt_table
-	from utilities    import model_blank, get_params2D
-	from fundamentals import rot_shift2D
-	
-	
-	e    = EMData()
-	wie  = EMData()
-	nima = EMUtil.get_image_count(stack)
-	e.read_image(stack,0, True)
-	nx = e.get_xsize()
-	ny = e.get_ysize()
-	twie = model_blank(nx, ny)
-	ctf_1     = e.get_attr('ctf_1')
-	ctf_2_sum = [0]*len(ctf_1)
-	for i in range(nima):
-		e.read_image(stack,i)
-		# # horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# active = e.get_attr('active')
-		# if(active):
-		if(mode == "a"): # for alignment 
-			alpha, sx, sy, mirror, scale = get_params2D(e)
-			out = rot_shift2D(e, alpha, sx, sy, mirror)
-		else:
-			out=e.copy()
-		ctf_mul = e.get_attr('ctf_applied')
-		ctf_1   = e.get_attr('ctf_1')
-		ctf_2   = e.get_attr('ctf_2')
-		TE      = e.get_attr('TE')
-		snr = e.get_attr('SNR') # SNR can be either float or list
-		import types
-		if(type(snr) is list):
-			for k in range(len(snr)):
-				if(ctf_mul): ctf_1[k]  =snr[k]*ctf_2[k]*TE[k]*TE[k]*TE[k]
-				else:        ctf_1[k] *= snr[k]*TE[k]
-			Util.add_img(twie, filt_table(out, ctf_1))
-			for j in range(len(snr)):
-				if(ctf_mul==1): ctf_2_sum[j]+=ctf_2[j]*snr[j]*ctf_2[j]*TE[j]**4
-				else:	       	ctf_2_sum[j]+=ctf_2[j]*snr[j]*TE[j]**2
-		else:
-			for k in range(len(TE)):
-				if(ctf_mul==1): ctf_1[k]=snr*ctf_2[k]*TE[k]*TE[k]*TE[k]
-				else: ctf_1[k]*=snr*TE[k]
-			wie = filt_table(out, ctf_1)*snr
-			Util.add_img(twie, wie)
-			for j in range(len(TE)):
-				if(ctf_mul==1): ctf_2_sum[j]+=ctf_2[j]*snr*ctf_2[j]*TE[j]**4
-				else: ctf_2_sum[j]+=ctf_2[j]*snr*TE[j]**2
-
-	for i in range(len(TE)):  ctf_2_sum[i] = 1./(ctf_2_sum[i]+1.)
-	return filt_table(twie, ctf_2_sum)
-	
-def aves_wiener(input_stack, mode="a", SNR=1.0):
+def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 	"""
 		Apply alignment parameters, and calculate Wiener average using CTF info
 		mode="a" will apply alignment parameters to the input image.
 	"""
 	
-	from  fundamentals import fft, rot_shift2D
-	from  morphology   import ctf_img
-	from  filter 	   import filt_ctf
-	from  utilities    import pad, get_params2D, get_im
+	from  fundamentals	import fft, rot_shift2D
+	from  morphology	import ctf_img
+	from  filter		import filt_ctf
+	from  utilities		import pad, get_params2D, get_im
+	from  EMAN2			import EMAN2Ctf
 	from  math 	   import sqrt
 	
 	if type(input_stack) == type(""):	n = EMUtil.get_image_count(input_stack)
@@ -1156,11 +1099,13 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	ima = get_im(input_stack, 0)
 	nx = ima.get_xsize()
 	ny = ima.get_xsize()
+	if(interpolation_method=="fourier"):  npad = 2
+	else:  npad = 1
 
-	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "faves_wiener", 1)
 
-	nx2 = nx*2
-	ny2 = ny*2
+	nx2 = nx*npad
+	ny2 = ny*npad
 	ave       = EMData(nx2, ny2, 1, False)
 	ctf_2_sum = EMData(nx2, ny2, 1, False)
 	snrsqrt = sqrt(SNR)
@@ -1168,13 +1113,16 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 	for i in range(n):
 		ima = get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
+		ctf_rot = EMAN2Ctf()
+		ctf_rot.copy_from(ctf_params)
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+			ctf_rot.dfang += alpha
 		oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params, dopad=False)
 		Util.mul_scalar(oc, SNR)
 		Util.add_img(ave, oc)
-		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
+		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx2, ctf_rot, ny = ny2, nz = 1))
 	ctf_2_sum += 1.0
 	Util.div_filter(ave, ctf_2_sum)
 	# variance
@@ -1185,18 +1133,15 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 		oc = filt_ctf(ave, ctf_params, dopad=False)
 		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
 		Util.add_img2(var, ima)
 	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
 	Util.mul_scalar(var, 1.0/(n-1))
-	#  The variance is incorrect, so I replaced it by a blank image, will fix later
-	var.to_zero()
 	return ave, var
 
-
-def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1):
+def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="linear"):
 	"""
 		Apply alignment parameters, and calculate Wiener average using CTF info
 		mode="a" will apply alignment parameters to the input image.
@@ -1221,17 +1166,22 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1):
 	Ave = EMData(nx, nx, 1, False)
 
 	if Ng == -1: Ng = n
+
 	for i in range(n):
 		ima = get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
-		ctfimg = ctf_img(nx, ctf_params)
-		Util.add_img2(ctf_2_sum, ctfimg)
-		Util.add_img_abs(ctf_abs_sum, ctfimg)
+		ctf_rot = EMAN2Ctf()
+		ctf_rot.copy_from(ctf_params)
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+			ctf_rot.dfang += alpha
+
 		oc = filt_ctf(fft(ima), ctf_params, dopad=False)
 		Util.add_img(Ave, oc)
+		ctfimg = ctf_img(nx, ctf_rot)
+		Util.add_img2(ctf_2_sum, ctfimg)
+		Util.add_img_abs(ctf_abs_sum, ctfimg)
 
 	adw_img = Util.mult_scalar(ctf_2_sum, SNR)
 	#adw_img += 1.0
@@ -1253,13 +1203,11 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1):
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 		oc = filt_ctf(ave, ctf_params, dopad=False)
 		Util.sub_img(ima, oc)
 		Util.add_img2(var, ima)
 	Util.mul_scalar(var, 1.0/(n-1))
-	#  The variance is incorrect, so I replaced it by a blank image, will fix later
-	var.to_zero()
 	return ave, var
 
 def ssnr2d(data, mask = None, mode=""):
