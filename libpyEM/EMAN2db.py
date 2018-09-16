@@ -1541,7 +1541,7 @@ of these occasional errors"""
 				if "data_path" in r:
 					if r["data_path"].endswith('.mrcs'):
 						p=r["data_path"]
-						l=r["data_n"]
+						l=r["ptcl_source_coord_id"]
 						if p[0]=='/' or p[0]=='\\' or p[1]==':':
 							ret.read_image(p,int(l))		# absolute path
 						else:
