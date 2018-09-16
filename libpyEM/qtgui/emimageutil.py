@@ -37,7 +37,7 @@ from past.utils import old_div
 from builtins import range
 from builtins import object
 from PyQt4 import QtGui,QtCore
-from PyQt4.QtCore import Qt, QString
+from PyQt4.QtCore import Qt
 from math import *
 import numpy
 from EMAN2 import *
@@ -106,7 +106,7 @@ class EMTransformPanel(object):
 		self.az.valueChanged.connect(self.slider_rotate)
 		self.alt.valueChanged.connect(self.slider_rotate)
 		self.phi.valueChanged.connect(self.slider_rotate)
-		self.src.currentIndexChanged[QString].connect(self.set_src)
+		self.src.currentIndexChanged[str].connect(self.set_src)
 		self.scale.valueChanged.connect(self.target().set_scale)
 		self.x_trans.valueChanged[float].connect(self.target().set_cam_x)
 		self.y_trans.valueChanged[float].connect(self.target().set_cam_y)

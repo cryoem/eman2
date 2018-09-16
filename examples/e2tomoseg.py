@@ -1886,7 +1886,7 @@ class TomoSegInspector(QtGui.QWidget):
 		The Treeitem also needs to know the node, so it can talk to the node.
 		You can think of this as a three way conversation (the alterative it to use a mediator, but that is not worth it w/ only three players)
 		"""
-		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d, parentitem)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
+		tree_item = EMQTreeWidgetItem(list(name), item3d, parentitem)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
 		item3d.setEMQTreeWidgetItem(tree_item)				# Reference to the EMQTreeWidgetItem
 		item_inspector = item3d.getItemInspector()				# Get the node GUI controls 
 		#return tree_item

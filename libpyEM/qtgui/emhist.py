@@ -60,7 +60,6 @@ ploticon = [
 
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import QString
 from PyQt4.QtOpenGL import QGLWidget
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU
@@ -1097,10 +1096,10 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.slidenbs.valueChanged[int].connect(self.newNBins)
 		self.rwidth.valueChanged.connect(self.updPlot)
 		self.alpha.valueChanged.connect(self.updPlot)
-		self.color.currentIndexChanged[QString].connect(self.updPlot)
-		self.histtype.currentIndexChanged[QString].connect(self.updPlotRepr)
-		self.orient.currentIndexChanged[QString].connect(self.updPlotRepr)
-		self.align.currentIndexChanged[QString].connect(self.updPlotRepr)
+		self.color.currentIndexChanged[str].connect(self.updPlot)
+		self.histtype.currentIndexChanged[str].connect(self.updPlotRepr)
+		self.orient.currentIndexChanged[str].connect(self.updPlotRepr)
+		self.align.currentIndexChanged[str].connect(self.updPlotRepr)
 		#QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		#QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		self.wxmin.valueChanged.connect(self.newLimits)

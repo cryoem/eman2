@@ -188,6 +188,12 @@
       },
       {
         "ICON": "tomo_hunter",
+        "PROGRAM": "e2spt_pcasplit.py",
+        "NAME": "PCA-based classification",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "tomo_hunter",
         "PROGRAM": "e2spt_classify.py",
         "NAME": "Multi-reference refinement",
         "MODE": "multi",
