@@ -11257,8 +11257,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			else:
 				total_stack = 0
 			total_stack = bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])
+			
 			# ------------------------------------------------------------------------------------
 			partids   = os.path.join(initdir, "indexes_000.txt")
+			if( Blockdata["myid"] == Blockdata["main_node"] ):
+				write_text_file(list(range(total_stack)), partids)
+			mpi_barrier(MPI_COMM_WORLD)
+
 			#  store params
 			partids = [None]*2
 			for procid in range(2):  partids[procid] = os.path.join(initdir,"chunk_%01d_000.txt"%procid)
