@@ -250,7 +250,7 @@ def main():
 
 	for it in range(niter):
 		threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
-				options.fillangle,options.altedgemask,max(options.verbose-1,0))) for i in range(options.threads)]
+				options.fillangle,options.altedgemask,max(options.verbose-1,0),options.input.endswith(".lst"))) for i in range(options.threads)]
 
 		if it==0:
 			if options.seedmap!=None :
@@ -429,14 +429,33 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 			exit(1)
 	else :
 		tmp=EMData()
+		
+		#### deal with lst input with transform in comment
+		getlst=False
+		if inputfile.endswith(".lst"):
+			lst=LSXFile(inputfile, True)
+			lstinfo=lst.read(0)
+			if lstinfo[2]:
+				getlst=True
+
 		for i in range(n_input):
 			tmp.read_image(inputfile,i,True)
 			#else : tmp=get_processed_image(inputfile,i,-1,preprocess,pad)
-
 			# these rely only on the header
-			try: elem={"xform":tmp["xform.projection"]}
-			except : continue
-				#raise Exception,"Image %d doesn't have orientation information in its header"%i
+			
+			if getlst:
+				lstinfo=lst.read(i)
+				dc=eval(lstinfo[2])
+				if "score" in dc:
+					score=dc.pop("score")
+				else:
+					score=2
+				elem={"xform":Transform(dc)}
+			else:
+			
+				try: elem={"xform":tmp["xform.projection"]}
+				except : continue
+					#raise Exception,"Image %d doesn't have orientation information in its header"%i
 
 			# skip any particles targeted at a different model
 			if inputmodel != None and tmp["model_id"]!=inputmodel : continue
@@ -456,6 +475,16 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 			except:
 				try: elem["quality"]=old_div(1.0,(elem["weight"]+.00001))
 				except: elem["quality"]=1.0
+				
+			if getlst:
+				if score<2:
+					elem["quality"]=-abs(score)
+					elem["weight"]=abs(score)
+				else:
+					elem["quality"]=1.0
+					elem["weight"]=1.0
+
+				
 			elem["filename"]=inputfile
 			elem["filenum"]=i
 			elem["fileslice"]=-1
@@ -494,7 +523,7 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 
 	return ret
 
-def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0):
+def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=False):
 	"""Do an actual reconstruction using an already allocated reconstructor, and a data list as produced
 	by initialize_data(). preprocess is a list of processor strings to be applied to the image data in the
 	event that it hasn't already been read into the data array. start and startweight are optional parameters
@@ -536,7 +565,14 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0):
 #				print(elem["filenum"],elem["xform"].get_rotation("eman")["alt"],1.0/cos(elem["xform"].get_rotation("eman")["alt"]*pi/180.0),pxl)
 				img.process_inplace("mask.zeroedge2d",{"x0":pxl,"x1":pxl})
 				img.write_image("masked.hdf",elem["filenum"])
-			img=recon.preprocess_slice(img,elem["xform"])	# no caching here, with the lowmem option
+				
+			xf=Transform(elem["xform"])
+			if lstinput:
+				xf.set_rotation({"type":"eman"})
+				#### inverse the translation so make3d matches projection 
+				xf=xf.inverse()
+			
+			img=recon.preprocess_slice(img,xf)	# no caching here, with the lowmem option
 #		img["n"]=i
 #		if i==7 : display(img)
 

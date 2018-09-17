@@ -108,7 +108,7 @@ def main():
 				bxs-=[old_div(e["nx"],2), old_div(e["ny"],2), old_div(e["nz"],2)]
 				bxs*=scale
 				bxs[:,2]-=zshift
-				if options.tag==None:
+				if options.tag=="":
 					lab=val["name"]
 				else:
 					lab=options.tag
@@ -318,7 +318,7 @@ def make3d(jsd, ids, imgs, ttparams, ppos, options, ctfinfo=[]):
 
 			xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4], "ztilt":tpm[2], "tx":txdf, "ty":tydf})
 			e["xform.projection"]=xform
-			e["ptcl_source_coord"]=[txint, tyint, dz]
+			e["ptcl_source_coord"]=[float(txint), float(tyint), float(dz)]
 			e["ptcl_source_src"]=options.tltfile
 			e["model_id"]=pid
 			e["tilt_id"]=nid

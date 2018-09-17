@@ -104,7 +104,7 @@ class GUIFourierSynth(QtGui.QWidget):
 		
 		self.targfn=None
 		
-		self.vnsin=ValBox(self,(1,64),"# Sin:",16)
+		self.vnsin=ValBox(self,(1,64),"# Sin:",32)
 		self.vnsin.intonly=1
 		self.hbl1.addWidget(self.vnsin)
 		

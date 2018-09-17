@@ -16,7 +16,6 @@ from __future__ import division
 #P [centerelec]	Center based on the center of electron charge
 #P [centermass]	Center based on the center of mass
 #P [animorph=<n>,<apix>,<vecfile>]	This will use a morph vector file (segment3d) to morph atom positions
-#P [apix=<A/pix>]	multiply trans by apix
 #P [split]	Split file at TER records. Results imperfect.
 #P [include=[helix,sheet,other]]
 #P [chains=<chainltr>]	eg - "ABO", for extracting a portion of a complex
@@ -34,18 +33,17 @@ atomdefs={'H':(1.0,1.00794),'C':(6.0,12.0107),'A':(7.0,14.00674),'N':(7.0,14.006
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage:\nprocpdb.py <input>\nprocpdb.py <input> <output> [rot=<alt,az,phi>] [trans=<dx,dy,dz>] [centeratoms] [centerelec] [centermass] [apix=<A/pixel>]\n."""
+	usage = """Usage:\nprocpdb.py <input>\nprocpdb.py <input> <output> [rot=<alt,az,phi>] [trans=<dx,dy,dz>] [centeratoms] [centerelec] [centermass] \n."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
 	parser.add_argument("--animorph", "-AN", type=str, help="This will use a morph vector file (segment3d) to morph atom positions,#P [animorph=<n>,<apix>,<vecfile>]",default=None)
-	parser.add_argument("--apix", "-A", type=float, help="apix", default=1.0)
 	parser.add_argument("--scale", "-S", type=float, help="scale", default=1.0)
 	parser.add_argument("--center", "-C", type=str, help="center of the rotation, (0,0,0)", default='0.0,0.0,0.0')
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'", default=None)
 	parser.add_argument("--trans", "-TR", type=str, help="transform, (0,0,0)",default='0,0,0')
 	parser.add_argument("--include", type=str,help="savetype", default=["helix","sheet","other"])
-	parser.add_argument("--mirror",type=bool, help="mirror",default='False')
+	parser.add_argument("--mirror",type=bool, help="mirror",default=0)
 #matrix
 	parser.add_argument("--matrix", "-matrix", type=str, help="transform matrix.", default='0,0,0,0,0,0,0,0,0,0,0,0')
 	parser.add_argument("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
@@ -177,12 +175,12 @@ def main():
 	lines = inp.readlines()
 	inp.close()
 	
-	outputlines=pdb_transform(t,lines,options.center,options.include,options.animorph,options.apix,options.chains,trans)
+	outputlines=pdb_transform(t,lines,options.center,options.include,options.animorph,options.chains,trans)
 	out=open(args[1],"w")
 	for i in outputlines: out.write(i)
 	out.close()
 
-def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=None, apix=1.0,chains=None,trans=(0,0,0)):
+def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=None, chains=None,trans=(0,0,0)):
 	
 	helixlist = []
 	sheetlist = []
@@ -337,9 +335,9 @@ def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=
 					elif (res in sheetlist) :
 						if (not "sheet" in savetypes) : continue
 					elif (not "other" in savetypes) : continue
-					x=float(i[30:38])+(apix*trans[0])
-					y=float(i[38:46])+(apix*trans[1])
-					z=float(i[46:54])+(apix*trans[2])
+					x=float(i[30:38])
+					y=float(i[38:46])
+					z=float(i[46:54])
 					v1=(x,y,z)
 					v1_transformed=t*v1
 					x4=v1_transformed[0]
