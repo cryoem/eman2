@@ -8,18 +8,18 @@ RELION to SPHIRE Conversion: Create several types of parameter text files and pe
 
 Usage in command line
 
-  sxrelion2sphire.py  input_star_file  output_directory  --relion_project_dir=DIR_PATH  --star_section=STAR_SECTION  --outputs_root=ROOT_NAME_STRING   --box_size=BOX_SIZE  --create_stack  --cs_save_as_hdf
+  sxrelion2sphire.py   input_star_file output_directory --relion_project_dir=DIR_PATH --star_section=SECTION_STRING --outputs_root=ROOT_NAME_STRING --box_size=BOX_SIZE --do_not_create_stack
 
 \\
 ===== Typical usage =====
 
 sxrelion2sphire does not support MPI. 
 
-  sxrelion2sphire.py  'Particles.star'  'Sphire_Project'  --box_size=256  --create_stack
+  sxrelion2sphire.py  'Particles.star'  'Sphire_Project'  --box_size=256  --do_not_create_stack
   
-  sxrelion2sphire.py  'Refine3D/run1_data.star' 'Sphire_Project'  --star_section='data_images'  --box_size=100  --create_stack
+  sxrelion2sphire.py  'Refine3D/run1_data.star' 'Sphire_Project'  --star_section='data_images'  --box_size=100  --do_not_create_stack
   
-  sxrelion2sphire.py  'Relion_Project/Refine3D/run1_data.star'  'Sphire_Project'  --relion_project_dir='Relion_Project' --outputs_root='my_protein'  --create_stack
+  sxrelion2sphire.py  'Relion_Project/Refine3D/run1_data.star'  'Sphire_Project'  --relion_project_dir='Relion_Project' --outputs_root='my_protein'  --do_not_create_stack
 
 \\
 ===== Input =====
@@ -31,11 +31,10 @@ sxrelion2sphire does not support MPI.
   ; %%--%%star_section : Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_)
   ; %%--%%outputs_root : Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default sphire)
   ; %%--%%box_size : Box size: Box size for particle extraction. It also controls the saved coordinates file format. If the given value is > 0, store the eman1 format. coordinate file. The coordinates of eman1 format is particle box corner associated with this box size. The coordinates of SPHIRE format is particle center. By default, use SPHIRE format. (default 0)
-  ; %%--%%create_stack : Create virtual stacks: Create per-micrograph virtual stacks of particle images in bdb format. By default, the program does not generate the stack of particle images because it takes a long time and the file size is large. (default False)
 
 \\
 === Advanced Parameters ===
-  ; %%--%%cs_save_as_hdf : Save stack as HDF file: Save a stack file in HDF file format instead in bdb format. In this case, the stack file will contain all particle images in the input RELION STAR file. Effective only with %%--%%create_stack. (default False)
+  ;%%--%%do_not_create_stack : Skip virtual stack: Create per-micrograph virtual stacks without the actual particle meta information in BDB format. By default, the program does generate the stack of particle meta information. (default False))
 
 \\
 ===== Output =====
@@ -51,8 +50,7 @@ Each output subdirectory will contain the files in the table below.
 || *_cter_partres.txt || Text file containing a list of CTF parameters in CTER format (CTER partres file). It can be used as an input of [[pipeline:cter:sxgui_cter|sxgui_cter]] and [[pipeline:window:sxwindow|sxwindow]]. (requires CTF Estimation Category) ||
 || Coordinates/*.box || Coordinates files. One for each micrograph. These files can be used as inputs of [[pipeline:window:sxwindow|sxwindow]]. (requires Particle Extraction Category) ||
 || Rebox/*.rbx || SPHIRE rebox files. One for each micrograph. These files can be used as inputs of [[pipeline:window:sxrewindow|sxrewindow]]. (requires Particle Extraction Category) ||
-|| EMAN2DB/*_stack.bdb || Per-micrograph virtual stacks of particle images in bdb format (only when %%--%%create_stack option without %%--%%cs_save_as_hdf is used) containing the header entries associated with the extracted information. (requires Particle Extraction Category) ||
-|| *_stack.hdf || Stack of all particle images in HDF format (only when %%--%%create_stack option with %%--%%cs_save_as_hdf is used) containing the header entries associated with the extracted information. (requires Particle Extraction Category) ||
+|| EMAN2DB/*_stack.bdb || Per-micrograph virtual stacks of particle meta information in bdb format (only when %%--%%do_not_create_stack is not used) containing the header entries associated with the extracted information. (requires Particle Extraction Category) ||
 
 \\
 ===== Description =====
@@ -77,6 +75,7 @@ The script sets the following header entries of EMAN2DB/*_stack.bdb or *_stack.h
 || ptcl_source_image || Micrograph path (relative path) where RELION extracted this particle image. ||
 || ptcl_source_coord || Coordinates of this particle in the Micrograph in SPHIRE format. ||
 || ptcl_source_coord_id || Coordinates ID in the original coordinate file RELION used. ||
+|| data_path || Relative path to the original particle image location. ||
 || data_n || Serial particle image ID.  Here, it is same as ptcl_source_coord_id. ||
 || resample_ratio || Resampling ratio of dimensions or pixel size of extracted particle images relative to micrograph. Here, it is always set to 1.0. ||
 || ctf || CTF parameters. ||
@@ -97,6 +96,12 @@ NOTE: If you run [[pipeline:window:sxwindow|sxwindow]] using the coordinates fil
 
 \\
 ==== Developer Notes ====
+=== 2018/09/17 Markus Stabrin ===
+  - Remove image stack creation.
+  - Created stacks only contain meta data.
+  - Write bdb meta data stacks by default (Change %%--%%create_stack to %%--%%do_not_create_stack).
+  - Remove %%--%%cs_save_as_hdf option.
+
 === 2018/07/11 Toshio Moriya ===
   - Change default stack format from HDF to bdb (%%--%%cs_save_as_hdf). 
     * By default, the script creates a local particle image stack for each micrograph like sxwindow.py.
@@ -124,6 +129,7 @@ To create these files, please use [[pipeline:utilities:sxheader|sxheader]] to ex
 \\
 ==== Author / Maintainer ====
 Toshio Moriya
+Markus Stabrin
 
 \\
 ==== Keywords ====
