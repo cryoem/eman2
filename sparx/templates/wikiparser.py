@@ -150,6 +150,7 @@ def construct_keyword_dict():
 ###	keyword_dict["--skip_create_substack"]        = SXkeyword_map(0, "bool")                # --skip_create_substack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--no_virtual_stack"]            = SXkeyword_map(0, "bool")                # --no_virtual_stack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--create_stack"]                = SXkeyword_map(0, "bool")                # --create_stack (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--do_not_create_stack"]         = SXkeyword_map(0, "bool")                # --do_not_create_stack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--save_vstack"]                 = SXkeyword_map(0, "bool")                # --save_vstack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--mask_threshold"]              = SXkeyword_map(0, "float")               # --mask_threshold=MASK_THRESHOLD (contains keyworkd 'mask' but this should be bool type)
 	# Use priority 1 for output

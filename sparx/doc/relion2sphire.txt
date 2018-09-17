@@ -34,7 +34,7 @@ sxrelion2sphire does not support MPI.
 
 \\
 === Advanced Parameters ===
-  ;%%--%%do_not_create_stack : Skip virtual stack: Create per-micrograph virtual stacks without the actual particle meta information in BDB format. By default, the program does generate the stack of particle meta information. (default False))
+  ;%%--%%do_not_create_stack : Skip virtual stack creation: Create per-micrograph virtual stacks without the actual particle meta information in BDB format. By default, the program does generate the stack of particle meta information. (default False))
 
 \\
 ===== Output =====
