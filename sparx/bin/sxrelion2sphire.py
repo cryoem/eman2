@@ -138,7 +138,7 @@ def main():
 	parser.add_option('--star_section',       type='string',         default='data_',   help='Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_)')
 	parser.add_option('--outputs_root',       type='string',         default='sphire',  help='Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default sphire)')
 	parser.add_option('--box_size',           type=int,              default=0,         help='Box size: Box size for particle extraction. It also controls the saved coordinates file format. If the given value is > 0, store the eman1 format. coordinate file. The coordinates of eman1 format is particle box corner associated with this box size. The coordinates of sphire format is particle center. By default, use sphire format. (default 0)')
-	parser.add_option('--do_not_create_stack',       action='store_true',   default=False,     help='Create virtual stacks: Create per-micrograph virtual stacks without the actual particle images in BDB format. By default, the program does generate the stack of particle images (default False)')
+	parser.add_option('--do_not_create_stack',       action='store_true',   default=False,     help='Create virtual stacks: Create per-micrograph virtual stacks without the actual particle meta information in BDB format. By default, the program does generate the stack of particle meta information (default False)')
 	
 	(options,args) = parser.parse_args( arglist[1:] )
 
