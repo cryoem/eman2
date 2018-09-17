@@ -336,10 +336,10 @@ def main():
 		
 	if options.dopostp:
 		sfx="{}/threed_{:02d}".format(path, itr+1 )
-		if len(options.setsf)>0:
-			sf=" --setsf {}".format(options.setsf)
-		else:
-			sf=""
+
+		jd = json_open_dict("{}/0_spt_params.json".format(path))
+		if jd.has_key("setsf"): sf = "--setsf {}".format(jd["setsf"])
+		else: sf=""
 		cmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {} --mass 1000.0 --restarget 10.0 --sym {}  --align {}".format(
 			sfx+"_even.hdf", sfx+"_odd.hdf", sfx+".hdf", itr+1, options.sym, sf)
 		
