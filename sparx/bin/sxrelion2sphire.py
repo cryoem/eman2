@@ -92,7 +92,9 @@ def mrk_table_stat(X):
 	
 	avg = av/N
 	var = 0.0
-	if N - 1 > 0:
+	if ma - mi == 0:
+		var = 0.0
+	elif N - 1 > 0:
 		var = (va - av*av/N)/float(N - 1)
 	sd = 0.0
 	if var > 0.0:
@@ -770,7 +772,8 @@ def main():
 		for micrograph_dirname in sorted(sphire_micrographs_dict):
 			dir_path_sphire_micrographs = os.path.join(dir_path_work, micrograph_dirname)
 			if not os.path.exists(dir_path_sphire_micrographs):
-				os.mkdir(dir_path_sphire_micrographs)
+				#Markus 05.06.18 -- os.mkdir(dir_path_sphire_micrographs)
+				os.makedirs(dir_path_sphire_micrographs)
 			
 			file_path_sphire_micrographs = os.path.join(dir_path_sphire_micrographs, file_name_sphire_micrographs)
 			file_sphire_micrographs = open(file_path_sphire_micrographs,'w+')
@@ -782,7 +785,8 @@ def main():
 		for micrograph_dirname in sorted(sphire_cter_dict):
 			dir_path_sphire_cter_partres = os.path.join(dir_path_work, micrograph_dirname)
 			if not os.path.exists(dir_path_sphire_cter_partres):
-				os.mkdir(dir_path_sphire_cter_partres)
+				#Markus 05.06.18 -- os.mkdir(dir_path_sphire_micrographs)
+				os.makedirs(dir_path_sphire_cter_partres)
 			
 			micrograph_extension = os.path.splitext(micrograph_basename)[1]
 			file_path_sphire_cter_partres = os.path.join(dir_path_sphire_cter_partres, file_name_sphire_cter_partres)
