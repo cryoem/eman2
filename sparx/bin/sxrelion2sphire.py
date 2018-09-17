@@ -1113,7 +1113,7 @@ def main():
 				# assert db_check_dict(file_path_sphire_mic_dir_stack, readonly=True), '# Logical Error: Output BDB stack in output directory should exist at this point of code.'
 				# assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_sphire_mic_dir_stack), '# The numbers of particles should match always at this point of code'
 				
-				file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(os.path.join(dir_path_work, micrograph_dirname), outputs_root)
+				file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(dir_path_local_bdb_stacks, outputs_root)
 				e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
 				print('# ')
 				print('# Please execute the following command line to create single virtual stack by combining all local stacks in {} directory'.format(micrograph_dirname))
