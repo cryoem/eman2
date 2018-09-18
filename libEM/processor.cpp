@@ -12915,7 +12915,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			for (int x=0; x<nkx-1; x++) {
 				for (int y=-nky; y<nky; y++) {
 					complex<float> val=ret->get_complex_at(x,y);
-//					if (x<=2&&abs(y)<=2&&Util::hypot_fast(x,y)<2.0) val=0.0;		// We filter out the very low resolution
+					if (x<=2&&abs(y)<=2&&Util::hypot_fast(x,y)<2.0) val=0.0;		// We filter out the very low resolution
 					ret2->set_value_at(x,y+nky+nky*dk*2,cbrt(std::real(val)));
 //					ret2->set_value_at(x,y+nky+nky*dk*2,std::real(val));
 				}
