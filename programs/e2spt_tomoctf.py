@@ -190,22 +190,25 @@ def main():
 			if len(ptsxf)<npt*.8:
 				continue
 			
-			
 			rds=[]
 			for p in ptsxf:
 				tile=rawimg.get_clip(Region(p[0]-old_div(box,2), p[1]-old_div(box,2), box, box))
+				if tile["sigma"]<1e-3 or tile["mean"] != tile["mean_nonzero"]:  # strong criteria to exclude edges
+					#rds.append(np.zeros(box//2))
+					continue
 				tile.do_fft_inplace()
-				rd=np.array(tile.calc_radial_dist(old_div(box,2), 0,1,0))
+				rd=np.array(tile.calc_radial_dist(box//2, 0,1,0))
 				rd=np.log10(rd)
 				rd-=np.min(rd)
 				rd/=np.max(rd[1:])
 				rd[rd>1]=1
 				rds.append(rd)
 			
-			rd=np.mean(rds, axis=0)
+			if len(rds) == 0: rd = np.zeros(box//2)
+			else: rd=np.mean(rds, axis=0)
 			allrd.append(rd)
 			pzus.append(np.mean(pz*upix))
-			
+
 		allrd=np.array(allrd)
 		powerspecs.append([allrd, pzus])
 		
