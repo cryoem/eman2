@@ -337,7 +337,7 @@ def main():
 	if options.dopostp:
 		sfx="{}/threed_{:02d}".format(path, itr+1 )
 
-		jd = json_open_dict("{}/0_spt_params.json".format(path))
+		jd = js_open_dict("{}/0_spt_params.json".format(path))
 		if jd.has_key("setsf"): sf = "--setsf {}".format(jd["setsf"])
 		else: sf=""
 		cmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {} --mass 1000.0 --restarget 10.0 --sym {}  --align {}".format(
