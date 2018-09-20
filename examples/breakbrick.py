@@ -9,7 +9,6 @@ from eman2_gui.emapplication import EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape
 
-import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from PyQt4.QtCore import QTimer
