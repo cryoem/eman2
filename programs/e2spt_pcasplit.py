@@ -37,6 +37,8 @@ standard_library.install_aliases()
 from builtins import range
 
 from EMAN2 import *
+
+from EMAN2_utils import make_path
 import numpy as np
 import matplotlib.pyplot as plt
 import sklearn.decomposition as skdc
@@ -47,12 +49,12 @@ import time
 import os
 from sys import argv,exit
 
-def mkpath(base):
-	num = 0
-	while os.path.isdir("{}_{:02d}".format(base,num)):
-		num += 1
-	os.mkdir("{}_{:02d}".format(base,num))
-	return "{}_{:02d}".format(base,num)
+#def mkpath(base):
+	#num = 0
+	#while os.path.isdir("{}_{:02d}".format(base,num)):
+		#num += 1
+	#os.mkdir("{}_{:02d}".format(base,num))
+	#return "{}_{:02d}".format(base,num)
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -63,13 +65,15 @@ def main():
 	parser.add_argument("--iter",type=int,required=True,help="Iteration number within path. Default is the second to last iteration (-2).",default=-2,guitype='intbox',row=1, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--nclass",type=int,required=True,help="Number of classes. Default is 2.",default=2,guitype="intbox",row=1, col=1, rowspan=1, colspan=1)
 	parser.add_header(name="orblock1", help='', title="Optional", row=2, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--res",type=float,help="Filter particles to this resolution (in Angstroms) before classification",default=30.0,guitype="floatbox",row=3, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--sym",type=str,help="Apply this symmetry.",default=None,guitype="intbox",row=3, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--mask",type=str,help="Apply this mask. Default is 'mask_tight.hdf' from <--path>_<--iter>.",default=None,guitype="filebox",row=4, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--nbasis",type=int,required=True,help="Number of PCA basis vectors. Default is 4.",default=4,guitype="intbox",row=5, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--maxres",type=float,help="Filter particles to this resolution (in Angstroms) before classification",default=30.0,guitype="floatbox",row=3, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--sym",type=str,help="Apply this symmetry.",default="c1",guitype="strbox",row=3, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--mask",type=str,help="Apply this mask. Default is 'mask_tight.hdf' from <--path>_<--iter>. Specify 'none' for no masking",default="",guitype="filebox",row=4, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--nbasis",type=int,required=True,help="Number of PCA basis vectors. Default is 3.",default=3,guitype="intbox",row=5, col=0, rowspan=1, colspan=1)
 	# parser.add_argument("--keepthresh",type=float,help="Center PCA outliers beyond this value before performing K-means clustering. Default is no threshold (-1).",default=,guitype="floatbox",row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--nowedgefill",action='store_true',help="Do not fill the missing wedge before classification.",default=False,guitype="boolbox",row=5, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--clean",action='store_true',help="remove outliers before PCA.",default=False,guitype="boolbox",row=6, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 
@@ -87,14 +91,18 @@ def main():
 			sys.exit(1)
 		options.iter=max(fls)-1
 
-	options.outpath = mkpath("sptcls")
-
+	
 	logid=E2init(sys.argv, options.ppid)
 
 	threed = EMData("{}/threed_{:02d}.hdf".format(options.path,options.iter))
-	
-	if options.mask: msk = EMData(options.msk)
-	else: msk = EMData("{}/mask_tight.hdf".format(options.path))
+	 
+	if options.mask=="none":
+		msk=threed.copy()
+		msk.to_one()
+	elif options.mask=="":
+		msk = EMData("{}/mask_tight.hdf".format(options.path))
+	else:
+		msk = EMData(options.msk)
 
 	refparms=js_open_dict("{}/0_spt_params.json".format(options.path))
 	try:
@@ -108,87 +116,195 @@ def main():
 
 	nptcl=len(js.keys())
 	pname=eval(js.keys()[0])[0]
-	xfs=[]
-	coord=[]
-	srcs=[]
 
-	refft = threed.do_fft()
-	imgs00 = []
-
+	
+	print("Preprocessing {} particles...".format(nptcl))
+	
+	#### doing everything in fourier space with numpy
+	
+	data=[]
+	wgs=[]
+	
+	### to clip fourier space based on resolution
+	sz=threed["nx"]
+	freq=np.fft.fftfreq(sz, threed["apix_x"])[:sz//2]
+	clip=sz//2-np.argmax(freq>1./options.maxres)
+	
 	for i in range(nptcl):
+		
+		sys.stdout.write("\r   {}/{} particles".format(i+1,nptcl))
+		sys.stdout.flush()
 
-		if options.verbose:
-			sys.stdout.write("\r{}/{} particles".format(i+1,nptcl))
-			sys.stdout.flush()
-
+		
 		k="('{}', {})".format(pname, i)
+	#	 if js.has_key(k)==False: continue
 		xf=js[k]['xform.align3d']
-
-		e=EMData(pname, i)		
+		e=EMData(pname, i)
 		e.transform(xf)
-		e["score"]=js[k]['score']
+	
+		en=e.numpy().copy()
+		#### numpy fft is actually significantly slower than EMAN fft. so probably should change to EMAN if I can get the coordinates right..
 		
-		if options.nowedgefill: 
-			enew = e
-		else:
-			eft=e.do_fft()
-			eft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":0.0})
-			enew=eft.do_ift()
+		ef=np.fft.fftshift(np.fft.fftn(en))
+		ef=ef[clip:-clip,clip:-clip,clip:-clip]
+		if i==0:
+			sz=len(ef)
+			idx=np.indices((sz,sz,sz))-sz//2
+			r=np.sqrt(np.sum(idx**2, 0))
+			r = r.astype(np.int)
+			nr = np.bincount(r.ravel())
+			
+		efa=abs(ef)
+		tbin = np.bincount(r.ravel(), efa.ravel())
+		sf = tbin / nr
+		sf[sf==0]=1e-5
+		div=np.divide(efa,sf[r])
+		wdg=np.logical_and(div<0.5, r>1)
 		
-		enew.mult(msk)
-		enew.process_inplace("math.meanshrink",{"n":2})
-		enew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1/options.res})
-
-		if options.sym != None:
-			enew.process_inplace("xform.applysym",{"averager":"mean.tomo", "sym":options.sym})
-
-		enew["xform.align3d"]=xf
-
-		enew.write_image("{}/aliptcls.hdf".format(options.outpath), i)
-		imgs00.append(enew)
+		ef[wdg]=0
+		data.append(ef.flatten())
+		wgs.append(wdg.flatten())
 
 	js.close()
+	data=np.array(data)
+	wgs=np.array(wgs)
 
-	nptcl = len(imgs00)
-	imgsnp=np.array([m.numpy().copy() for m in imgs00])
+	avg=np.mean(data, axis=0)
+	dv=data-avg
+	dv[wgs]=0
+	
+	imgsnp=np.hstack([dv.real, dv.imag])
+	
+	
+	options.outpath = make_path("sptcls")
+	print("Output will be written to {}".format(options.outpath))
 
+	#### real space version:
+	
+	#refft = threed.do_fft()
+	#imgs00 = []
+	#for i in range(nptcl):
+
+		#sys.stdout.write("\r{}/{} particles".format(i+1,nptcl))
+		#sys.stdout.flush()
+
+		#k="('{}', {})".format(pname, i)
+		#xf=js[k]['xform.align3d']
+
+		#e=EMData(pname, i)		
+		#e.transform(xf)
+		#e["score"]=js[k]['score']
+		
+		#if options.nowedgefill: 
+			#enew = e
+		#else:
+			#eft=e.do_fft()
+			#eft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":0.0})
+			#enew=eft.do_ift()
+		
+		#enew.mult(msk)
+		#enew.process_inplace("math.meanshrink",{"n":options.shrink})
+		#enew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1/options.maxres})
+
+		#if options.sym != None:
+			#enew.process_inplace("xform.applysym",{"averager":"mean.tomo", "sym":options.sym})
+
+		#enew["xform.align3d"]=xf
+
+		#enew.write_image("{}/aliptcls.hdf".format(options.outpath), i)
+		#imgs00.append(enew)
+
+	#js.close()
+	
+
+	#nptcl = len(imgs00)
+	#imgsnp=np.array([m.numpy().copy() for m in imgs00])
+	
+	print("Performing PCA...")
+	
+	ptclids=np.arange(nptcl,dtype=int)[:, None]
+	nptcl=len(imgsnp)
+	if options.clean:
+		#### do pca twice to remove outliers	
+		pca=PCA(options.nbasis)
+		pout=pca.fit_transform(imgsnp)
+		dst=np.linalg.norm(pout-np.mean(pout, 0), axis=1)
+		outlr=dst>np.mean(dst)+np.std(dst)*2
+		
+		np.savetxt("{}/pca_rmoutlier.txt".format(options.outpath), 
+			np.hstack([ptclids, pout]))
+		print("Removing {} outliers...".format(np.sum(outlr)))
+		
+		imgsnp=imgsnp[outlr==False]
+		ptclids=ptclids[outlr==False]
+	
+	
 	pca=PCA(options.nbasis)
-	pout=pca.fit_transform(imgsnp.reshape((nptcl, -1)))
+	pout=pca.fit_transform(imgsnp)
+	np.savetxt("{}/pca_ptcls.txt".format(options.outpath), 
+		np.hstack([ptclids, pout]))
 
 	basisfile = "{}/pca_basis.hdf".format(options.outpath)
+	#threed.process("math.meanshrink",{"n":options.shrink}).write_image(basisfile, 0)
 	for i,c in enumerate(pca.components_):
 		egmap=c.reshape(imgsnp[0].shape)
 		m=from_numpy(egmap.copy())
 		m.write_image(basisfile,i)
 
+	print("Classifying particles...")
 	kmeans = KMeans(n_clusters=options.nclass).fit(pout)
 	lb=kmeans.labels_
-
-	if options.verbose: print("Class: Particle count")
+	
+	if options.clean:
+		lbfull=np.zeros(nptcl, dtype=int)
+		lbfull[outlr==False]=lb
+		lbfull[outlr]=-1
+		lb=lbfull
+		
+	print("Class: Particle count")
 	for i in range(kmeans.n_clusters):
-		if options.verbose: print("{}: {}".format(lb,np.sum(lb==i)))
+		print("{}: {}".format(lb,np.sum(lb==i)))
 
-	# subtomogram average particles from each class
-	avgr=[Averagers.get("mean.tomo") for i in range(kmeans.n_clusters)]
-	for i in range(nptcl):
-		avgr[lb[i]].add_image(imgs00[i])
+	
+	## subtomogram average particles from each class
+	#avgr=[Averagers.get("mean.tomo") for i in range(kmeans.n_clusters)]
+	#for i in range(nptcl):
+		#avgr[lb[i]].add_image(imgs00[i])
 
-	classfile = "{}/classes3d.hdf".format(options.outpath)
-	for i in range(kmeans.n_clusters):
-		e=avgr[i].finish()
-		e.process_inplace("normalize")
-		e.write_image(classfile,i)
+	#classfile = "{}/classes3d.hdf".format(options.outpath)
+	#for i in range(kmeans.n_clusters):
+		#e=avgr[i].finish()
+		#e.process_inplace("normalize")
+		#e.write_image(classfile,i)
 
 	inlst=LSXFile(inptcls, True)
 	outlsts=[]
 	for lbl in sorted(np.unique(lb)):
-		outlst = LSXFile(inptcls.replace(".lst","_{}.lst".format(lbl)))
-		for i in range(inlst.n):
+		#outlst = LSXFile(inptcls.replace(".lst","_{}.lst".format(lbl)))
+		outlst = LSXFile("{}/ptcls_cls{:02d}.lst".format(options.outpath, lbl))
+		for i in range(nptcl):
 			if lb[i]==lbl:
 				l=inlst.read(i)
 				outlst.write(-1,l[0], l[1],l[2])
 		outlst.close()
 	inlst.close()
+	
+	js0=js_open_dict(parmsfile)
+
+	pname=eval(js.keys()[0])[0]
+	dics=[{} for i in range(kmeans.n_clusters)]
+	for i in range(nptcl):
+		if lb[i]>=0:
+			k="('{}', {})".format(pname, i)
+			dics[lb[i]][k]=js0[k]
+			
+	js0.close()
+
+	for i,d in enumerate(dics):
+		js=js_open_dict("{}/particle_parms_{:02d}.json".format(options.outpath, i+1))
+		js.update(d)
+		js.close()
+		os.system("e2spt_average.py --path {} --iter {} --threads 10 --sym {} --skippostp".format(options.outpath, i+1, options.sym))
 
 	E2end(logid)
 

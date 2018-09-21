@@ -78,7 +78,7 @@ class SptEvalGUI(QtGui.QWidget):
 		#print self.wg_thumbnail_width
 		self.wg_thumbnail.setMinimumHeight(330)
 		self.wg_thumbnail.setMinimumWidth(330)
-		self.gbl.addWidget(self.wg_thumbnail, 0,1,2,2)
+		self.gbl.addWidget(self.wg_thumbnail, 1,1,2,2)
 
 		self.wg_thumbnail.newnode=None
 

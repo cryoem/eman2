@@ -69,8 +69,16 @@ def main():
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	#parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_pos_argument(name="tomogram",help="Specify a tomogram from which you want to extract particles.", default="", guitype='filebox', browser="EMTomoBoxesTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="boxing")
-	# parser.add_argument("--low_memory",action="store_true",default=False,help="Default=False. If on, the tomogram will not be read into memory. Note, this will significantly affect performance, greatly slowing down the process of manually boxing particles.", guitype='boolbox', row=1, col=0, rowspan=1, colspan=1, mode="boxing")
+
+	parser.add_pos_argument(name="tomogram",help="Specify a tomogram from which you want to extract particles.", default="", guitype='filebox', browser="EMTomoBoxesTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="box3d,box2d")
+	parser.add_argument("--box2d",action="store_true",help="Boxing 2D particls from tomograms.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='box2d[True]')
+	parser.add_argument("--box3d",action="store_true",help="Boxing 3D particls from tomograms (default).",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='box3d[True]')
+	parser.add_header(name="instruction0", help='instruction', title="### Use '~' and '1' to go through slices along Z axis. ###", row=10, col=0, rowspan=1, colspan=2, mode="box3d,box2d")
+	parser.add_header(name="instruction1", help='instruction', title="### Hold Shift to delete particles ###", row=11, col=0, rowspan=1, colspan=2, mode="box3d,box2d")
+
+
+	#parser.add_argument("--mode", type=str,help="Boxing mode. choose from '2D' and '3D'. Default is '3D'", default="3D",guitype='combobox',choicelist="('2D', '3D')",row=1, col=0, rowspan=1, colspan=1,mode="boxing")
+
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
 	(options, args) = parser.parse_args()
@@ -79,7 +87,12 @@ def main():
 	if len(args) == 0:
 		print("INPUT ERROR: You must specify a tomogram.")
 		sys.exit(1)
-
+	
+	if options.box2d==True and options.box3d==False:
+		options.mode="2D"
+	else:
+		options.mode="3D"
+	
 	img = args[0]
 
 	app = EMApp()
@@ -103,21 +116,20 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 	module_closed = QtCore.pyqtSignal()
 
-	def __init__(self,application,options,datafile=None):
+	def __init__(self,application,options,datafile):
 		QtGui.QWidget.__init__(self)
 		self.initialized=False
 		self.app=weakref.ref(application)
 		self.options=options
-		boxsize=32
-		self.helixboxer=False
 		self.yshort=False
 		self.apix=options.apix
 		self.currentset=0
 		self.shrink=1#options.shrink
-		self.invert=True
-		self.center=None
-		self.normalize=None
 		self.setWindowTitle("Main Window (e2spt_boxer.py)")
+		if options.mode=="3D":
+			self.boxshape="circle"
+		else:
+			self.boxshape="rect"
 
 
 		# Menu Bar
@@ -127,11 +139,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.mfile_save_boxloc=self.mfile.addAction("Save Box Coord")
 		self.mfile_save_boxes_stack=self.mfile.addAction("Save Boxes as Stack")
 		self.mfile_quit=self.mfile.addAction("Quit")
-
-		#self.mwin=self.menuBar().addMenu("Window")
-		#self.mwin_boxes=self.mwin.addAction("Particles")
-		#self.mwin_single=self.mwin.addAction("Single Particle")
-		#self.mwin_average=self.mwin.addAction("Averaging")
 
 
 		self.setCentralWidget(QtGui.QWidget())
@@ -162,21 +169,27 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl2 = QtGui.QGridLayout()
 		self.gbl.addLayout(self.gbl2,1,0)
 
+		#self.wxpos = QtGui.QSlider(Qt.Horizontal)
+		#self.gbl2.addWidget(self.wxpos,0,0)
+		
+		#self.wypos = QtGui.QSlider(Qt.Vertical)
+		#self.gbl2.addWidget(self.wypos,0,3,6,1)
+		
 		# box size
-		self.wboxsize=ValBox(label="Box Size:",value=boxsize)
-		self.gbl2.addWidget(self.wboxsize,1,0,1,2)
+		self.wboxsize=ValBox(label="Box Size:",value=0)
+		self.gbl2.addWidget(self.wboxsize,2,0,1,2)
 
 		# max or mean
-		self.wmaxmean=QtGui.QPushButton("MaxProj")
-		self.wmaxmean.setCheckable(True)
-		self.gbl2.addWidget(self.wmaxmean,2,0)
+		#self.wmaxmean=QtGui.QPushButton("MaxProj")
+		#self.wmaxmean.setCheckable(True)
+		#self.gbl2.addWidget(self.wmaxmean,3,0)
 
 		# number slices
 		self.wnlayers=QtGui.QSpinBox()
 		self.wnlayers.setMinimum(1)
 		self.wnlayers.setMaximum(256)
 		self.wnlayers.setValue(1)
-		self.gbl2.addWidget(self.wnlayers,2,1)
+		self.gbl2.addWidget(self.wnlayers,3,1)
 
 		# Local boxes in side view
 		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")
@@ -194,14 +207,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.curbox=-1
 		
 		self.boxes=[]						# array of box info, each is (x,y,z,...)
-		self.helixboxes=[]					# array of helix box info. each is (xi, yi, zi, xf, yf, zf)
 		self.boxesimgs=[]					# z projection of each box
 		self.xydown=self.xzdown=self.zydown=None
 		self.firsthbclick = None
 
 		# coordinate display
 		self.wcoords=QtGui.QLabel("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
-		self.gbl2.addWidget(self.wcoords, 0, 0, 1, 2)
+		self.gbl2.addWidget(self.wcoords, 1, 0, 1, 2)
 
 		# file menu
 		self.mfile_open.triggered[bool].connect(self.menu_file_open)
@@ -210,16 +222,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.mfile_save_boxes_stack.triggered[bool].connect(self.save_boxes)
 		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
 
-		# window menu
-		#QtCore.QObject.connect(self.mwin_boxes,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_boxes  )
-		#QtCore.QObject.connect(self.mwin_single,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_single  )
-#		QtCore.QObject.connect(self.mwin_average,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_average  )
-
 		# all other widgets
 		self.wdepth.valueChanged[int].connect(self.event_depth)
 		self.wnlayers.valueChanged[int].connect(self.event_nlayers)
 		self.wboxsize.valueChanged.connect(self.event_boxsize)
-		self.wmaxmean.clicked[bool].connect(self.event_projmode)
+		#self.wmaxmean.clicked[bool].connect(self.event_projmode)
 		self.wscale.valueChanged.connect(self.event_scale)
 		self.wfilt.valueChanged.connect(self.event_filter)
 		self.wlocalbox.stateChanged[int].connect(self.event_localbox)
@@ -258,12 +265,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			
 		data=EMData(datafile)
 		self.set_data(data)
-
-		#if options.low_memory:
-		#	self.set_datafile(datafile) # This triggers a lot of things to happen, so we do it last
-		#else:
-		#	data=EMData(datafile)
-		#	self.set_data(data)
 
 		# Boxviewer subwidget (details of a single box)
 		self.boxviewer=EMBoxViewer()
@@ -314,23 +315,41 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		clr=QtGui.QColor
 		self.setcolors=[clr("blue"),clr("green"),clr("red"),clr("cyan"),clr("purple"),clr("orange"), clr("yellow"),clr("hotpink"),clr("gold")]
 		self.sets_visible={}
-		
+				
 		if "boxes_3d" in info:
 			box=info["boxes_3d"]
 			for i,b in enumerate(box):
 				#### X-center,Y-center,Z-center,method,[score,[class #]]
 				bdf=[0,0,0,"manual",0.0, 0]
-				for j in range(len(b)):
-					bdf[j]=b[j]
+				for j,bi in enumerate(b):  bdf[j]=bi
 				
 				
 				if bdf[5] not in list(self.sets.keys()):
 					clsi=int(bdf[5])
 					self.sets[clsi]="particles_{:02d}".format(clsi)
+					self.boxsize[clsi]=boxsize
 				
 				self.boxes.append(bdf)
-				
 		
+		
+		###### this is the new (2018-09) metadata standard..
+		### now we use coordinates at full size from center of tomogram so it works for different binning and clipping
+		### have to make it compatible with older versions though..
+		if "apix_unbin" in info:
+			self.apix_unbin=info["apix_unbin"]
+			self.apix_cur=apix=data["apix_x"]
+			for b in self.boxes:
+				b[0]=b[0]/apix*self.apix_unbin+data["nx"]//2
+				b[1]=b[1]/apix*self.apix_unbin+data["ny"]//2
+				b[2]=b[2]/apix*self.apix_unbin+data["nz"]//2
+				
+			for k in self.boxsize.keys():
+				self.boxsize[k]=self.boxsize[k]/apix*self.apix_unbin
+		else:
+			self.apix_unbin=-1
+		
+		
+		self.wboxsize.setValue(self.get_boxsize())
 		info.close()
 		if len(self.sets)==0:
 			self.new_set("particles_00")
@@ -347,17 +366,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.initialized=True
 
 	def set_data(self,data):
-		if data==None :
-			self.datafile=None
-			self.data=None
-			self.xyview.set_data(None)
-			self.xzview.set_data(None)
-			self.zyview.set_data(None)
-			return
 
 		self.data=data
 		self.apix=data["apix_x"]
-		self.datafile=None
 
 		self.datasize=(data["nx"],data["ny"],data["nz"])
 
@@ -384,12 +395,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		else:
 			bz=bs
 		
-	
-		if self.data!=None:
-			r=self.data.get_clip(Region(x-old_div(bs,2),y-old_div(bs,2),z-old_div(bz,2),bs,bs,bz))
-		elif self.datafile!=None:
-			r=EMData(self.datafile,0,0,Region(x-old_div(bs,2),y-old_div(bs,2),z-old_div(bz,2),bs,bs,bz))
-		else: return None
+		if ((x<-bs//2) or (y<-bs//2) or (z<-bz//2)
+			or (x>self.data["nx"]+bs//2) or (y>self.data["ny"]+bs//2) or (z>self.data["nz"]+bz//2) ):
+			r=EMData(bs,bs,bz)
+		else:
+			r=self.data.get_clip(Region(x-bs//2,y-bs//2,z-bz//2,bs,bs,bz))
 
 		if self.apix!=0 :
 			r["apix_x"]=self.apix
@@ -403,59 +413,15 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def get_slice(self,n,xyz):
 		"""Reads a slice either from a file or the preloaded memory array.
 		xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
-		if self.yshort:
-			if self.data!=None :
-				if xyz==0:
-					r=self.data.get_clip(Region(n,0,0,1,self.datasize[2],self.datasize[1]))
-					r.set_size(self.datasize[2],self.datasize[1],1)
-				elif xyz==2:
-					r=self.data.get_clip(Region(0,n,0,self.datasize[0],1,self.datasize[1]))
-					r.set_size(self.datasize[0],self.datasize[1],1)
-				else:
-					r=self.data.get_clip(Region(0,0,n,self.datasize[0],self.datasize[2],1))
 
-			elif self.datafile!=None:
-				if xyz==0:
-					r=EMData()
-					r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[2],self.datasize[1]))
-					r.set_size(self.datasize[2],self.datasize[1],1)
-
-				elif xyz==2:
-					r=EMData()
-					r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[1]))
-					r.set_size(self.datasize[0],self.datasize[1],1)
-				else:
-					r=EMData()
-					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[2],1))
-			else:
-				return None
-
-		else :
-			if self.data!=None :
-				if xyz==0:
-					r=self.data.get_clip(Region(n,0,0,1,self.datasize[1],self.datasize[2]))
-					r.set_size(self.datasize[1],self.datasize[2],1)
-				elif xyz==1:
-					r=self.data.get_clip(Region(0,n,0,self.datasize[0],1,self.datasize[2]))
-					r.set_size(self.datasize[0],self.datasize[2],1)
-				else:
-					r=self.data.get_clip(Region(0,0,n,self.datasize[0],self.datasize[1],1))
-
-			elif self.datafile!=None:
-				if xyz==0:
-					r=EMData()
-					r.read_image(self.datafile,0,0,Region(n,0,0,1,self.datasize[1],self.datasize[2]))
-					r.set_size(self.datasize[1],self.datasize[2],1)
-				elif xyz==1:
-					r=EMData()
-					r.read_image(self.datafile,0,0,Region(0,n,0,self.datasize[0],1,self.datasize[2]))
-					r.set_size(self.datasize[0],self.datasize[2],1)
-				else:
-					r=EMData()
-					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[1],1))
-
-			else :
-				return None
+		if xyz==0:
+			r=self.data.get_clip(Region(n,0,0,1,self.datasize[1],self.datasize[2]))
+			r.set_size(self.datasize[1],self.datasize[2],1)
+		elif xyz==1:
+			r=self.data.get_clip(Region(0,n,0,self.datasize[0],1,self.datasize[2]))
+			r.set_size(self.datasize[0],self.datasize[2],1)
+		else:
+			r=self.data.get_clip(Region(0,0,n,self.datasize[0],self.datasize[1],1))
 
 		if self.apix!=0 :
 			r["apix_x"]=self.apix
@@ -567,12 +533,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
 
 		out=file(fsp,"w")
-		if self.helixboxer:
-			for b in self.helixboxes:
-				out.write("%d\t%d\t%d\t%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf,b[3]*shrinkf,b[4]*shrinkf,b[5]*shrinkf))
-		else:
-			for b in self.boxes:
-				out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
+		for b in self.boxes:
+			out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
 		out.close()
 
 
@@ -589,15 +551,22 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if name[-4:].lower()!=".hdf" :
 			name+=".hdf"
 			
+			
+		if self.options.mode=="3D":
+			dr="particles3d"
+			is2d=False
+		else:
+			dr="particles"
+			is2d=True
 		
-		for dr in ["particles3d", "particles"]:
-			if not os.path.isdir(dr):
-				os.mkdir(dr)
 		
-		fsp=os.path.join("particles3d",self.basename)+name
-		#fspprjs=os.path.join("particles",self.basename)+name.replace('.hdf','_prjs.hdf')
-		print("Saving 3D particles to {}".format(fsp))
-		#for f in [fsp, fspprjs]:
+		if not os.path.isdir(dr):
+			os.mkdir(dr)
+		
+		fsp=os.path.join(dr,self.basename)+name
+
+		print("Saving {} particles to {}".format(self.options.mode, fsp))
+		
 		if os.path.isfile(fsp):
 			print("{} exist. Overwritting...".format(fsp))
 			os.remove(fsp)
@@ -620,22 +589,19 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					print("Inconsistant box size in the particles to save.. Using {:d}..".format(boxsz))
 					bs=boxsz
 			
-			sz=[old_div(s,2) for s in self.datasize]
-			img=self.get_cube(b[0], b[1], b[2], boxsz=bs)
-			img.process_inplace('normalize')
+			sz=[s//2 for s in self.datasize]
+			
+			img=self.get_cube(b[0], b[1], b[2], centerslice=is2d, boxsz=bs)
+			if is2d==False:
+				img.process_inplace('normalize')
 			
 			img["ptcl_source_image"]=self.datafilename
 			img["ptcl_source_coord"]=(b[0]-sz[0], b[1]-sz[1], b[2]-sz[2])
 			
-			if self.invert:
+			if is2d==False: #### do not invert contrast for 2D images
 				img.mult(-1)
-			prj=img.project("standard", Transform())
-			
-			prj["ptcl_source_image"]=self.datafilename
-			prj["ptcl_source_coord"]=(b[0]-sz[0], b[1]-sz[1], b[2]-sz[2])
 			
 			img.write_image(fsp,-1)
-			#prj.write_image(fspprjs,-1)
 
 			progress.setValue(i+1)
 			if progress.wasCanceled():
@@ -651,7 +617,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	def get_averager(self):
 		"""returns an averager of the appropriate type for generating projection views"""
-		if self.wmaxmean.isChecked() : return Averagers.get("minmax",{"max":1})
+		#if self.wmaxmean.isChecked() : return Averagers.get("minmax",{"max":1})
 
 		return Averagers.get("mean")
 
@@ -661,12 +627,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#print "\n\n\n\n\nIn update sides, self.datafile is", self.datafile
 		#print "\n\n\n\n"
 
-		if self.datafile==None and self.data==None:
+		if self.data==None:
 			return
 
 		if self.curbox==-1 :
-			x=old_div(self.datasize[0],2)
-			y=old_div(self.datasize[1],2)
+			x=self.datasize[0]//2
+			y=self.datasize[1]//2
 			z=0
 		else:
 			x,y,z=self.boxes[self.curbox][:3]
@@ -680,7 +646,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			for i in range(len(self.boxes)):
 				bs=self.get_boxsize(self.boxes[i][5])
 				if self.boxes[i][1]<self.cury+old_div(bs,2) and self.boxes[i][1]>self.cury-old_div(bs,2) and  self.boxes[i][5] in self.sets_visible:
-					xzs[i][0]="rect"
+					xzs[i][0]=self.boxshape
 				else:
 					xzs[i][0]="hidden"
 
@@ -689,7 +655,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			for i in range(len(self.boxes)):
 				bs=self.get_boxsize(self.boxes[i][5])
 				if self.boxes[i][0]<self.curx+old_div(bs,2) and self.boxes[i][0]>self.curx-old_div(bs,2) and  self.boxes[i][5] in self.sets_visible:
-					zys[i][0]="rect"
+					zys[i][0]=self.boxshape
 				else:
 					zys[i][0]="hidden"
 		else :
@@ -699,8 +665,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			for i in range(len(self.boxes)):
 				bs=self.get_boxsize(self.boxes[i][5])
 				if  self.boxes[i][5] in self.sets_visible:
-					xzs[i][0]="rect"
-					zys[i][0]="rect"
+					xzs[i][0]=self.boxshape
+					zys[i][0]=self.boxshape
 				else:
 					xzs[i][0]="hidden"
 					zys[i][0]="hidden"
@@ -711,7 +677,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		# yz
 		avgr=self.get_averager()
 
-		for x in range(x-old_div(self.nlayers(),2),x+old_div((self.nlayers()+1),2)):
+		for x in range(x-(self.nlayers()//2),x+((self.nlayers()+1)//2)):
 			slc=self.get_slice(x,0)
 			avgr.add_image(slc)
 
@@ -744,10 +710,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#print "\n\n\n\n\nIn update_xy, self.datafile is", self.datafile
 		#print "\n\n\n\n"
 
-		if self.datafile==None and self.data==None:
+		if self.data==None:
 			return
-
-
 
 		# Boxes should also be limited by default in the XY view
 		if len(self.boxes) > 0:
@@ -755,29 +719,31 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			#print "The current depth is", self.wdepth.value()
 			xys=self.xyview.get_shapes()
 			for i in range(len(self.boxes)):
-				
+
 				bs=self.get_boxsize(self.boxes[i][5])
-				#print "the z coord of box %d is %d" %(i,self.boxes[i][2])
-				#print "therefore the criteria to determine whether to display it is", abs(self.boxes[i][2] - zc)
 				zdist=abs(self.boxes[i][2] - zc)
-				if zdist < old_div(bs,2) and self.boxes[i][5] in self.sets_visible:
-					#print "Which is less than half the box thus it survives"
-					xys[i][0]="circle"
-					xys[i][6]=old_div(bs,2)-zdist
+
+				if self.options.mode=="3D":
+					zthr=bs/2
+					xys[i][6]=bs//2-zdist
+				else:
+					zthr=1
+					
+				if zdist < zthr and self.boxes[i][5] in self.sets_visible:
+					xys[i][0]=self.boxshape
+					
 				else :
 					xys[i][0]="hidden"
-					#print "Which is more than half the box and thus it dies"
-
 			self.xyview.shapechange=1
 
-		if self.wmaxmean.isChecked():
-			avgr=Averagers.get("minmax",{"max":1})
+		#if self.wmaxmean.isChecked():
+			#avgr=Averagers.get("minmax",{"max":1})
 
-		else:
-			avgr=Averagers.get("mean")
+		#else:
+		avgr=Averagers.get("mean")
 
 		slc=EMData()
-		for z in range(self.wdepth.value()-old_div(self.nlayers(),2),self.wdepth.value()+old_div((self.nlayers()+1),2)):
+		for z in range(self.wdepth.value()-self.nlayers()//2,self.wdepth.value()+(self.nlayers()+1)//2):
 			slc=self.get_slice(z,2)
 			avgr.add_image(slc)
 
@@ -798,18 +764,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		#print "\n\n\n\n\nIn update all, self.datafile is", self.datafile
 		#print "\n\n\n\n"
-		if self.datafile==None and self.data==None:
+		if self.data==None:
 			return
-
-
 
 		self.update_xy()
 		self.update_sides()
 		self.update_boximgs()
-
-		#self.xyview.update()
-		#self.xzview.update()
-		#self.zyview.update()
 
 	def update_coords(self):
 		self.wcoords.setText("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
@@ -819,8 +779,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		box=self.boxes[n]
 		if box[5] not in self.sets_visible:
 			return False
-		bs=old_div(self.get_boxsize(box[5]),2)
-		rr=(x>=0)*((box[0]-x)**2) + (y>=0)*((box[1]-y) **2) + (z>=0)*((box[2]-z)**2)
+		bs=self.get_boxsize(box[5])/2
+		if self.options.mode=="3D":
+			rr=(x>=0)*((box[0]-x)**2) + (y>=0)*((box[1]-y) **2) + (z>=0)*((box[2]-z)**2)
+		else:
+			rr=(x>=0)*((box[0]-x)**2) + (y>=0)*((box[1]-y) **2) + (z>=0)*(box[2]!=z)*(1e3*bs**2)
 		return rr<=bs**2
 
 	def do_deletion(self, delids):
@@ -835,20 +798,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.curbox=-1
 		self.update_all()
 
-	def do_helix_deletion(self, n):
-		if n==len(self.helixboxes)-1 :
-			self.helixboxes.pop()
-			self.xyview.del_shape(str(n)+"helix")
-			self.xzview.del_shape(str(n)+"helix")
-			self.zyview.del_shape(str(n)+"helix")
-		else:
-			a=self.helixboxes.pop()
-			self.helixboxes[n]=a
-			self.xyview.del_shape(str(len(self.helixboxes))+"helix")
-			self.xzview.del_shape(str(len(self.helixboxes))+"helix")
-			self.zyview.del_shape(str(len(self.helixboxes))+"helix")
-			self.update_helixbox(n)
-
 	def del_box(self,n):
 		"""Delete an existing box by replacing the deleted box with the last box. A bit funny, but otherwise
 		update after deletion is REALLY slow."""
@@ -859,49 +808,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.curbox=-1
 		self.do_deletion([n])
 
-	def compute_crossAB(self, a, b):
-		c1 = a[1]*b[2] - a[2]*b[1]
-		c2 = a[2]*b[0] - a[0]*b[2]
-		c3 = a[0]*b[1] - a[1]*b[0]
-		return Vec3f(c1,c2,c3)
-
-	def compute_perpZ(self, a):
-		# Z axis
-		b1 = -a[1]
-		b2 = a[0]
-		b3 = 0
-		return Vec3f(b1,b2,b3)
-
-	def compute_perpY(self, a):
-		# Y axis
-		b1 = -a[2]
-		b2 = 0
-		b3 = a[0]
-
-		return Vec3f(b1,b2,b3)
-
-	def get_box_coord_system(self, helixbox):
-		"""
-		Compute the coordinate system for the box
-		"""
-		a = Vec3f((helixbox[0]-helixbox[3]), (helixbox[1]-helixbox[4]), (helixbox[2]-helixbox[5]))
-
-		a.normalize()
-		b = self.compute_perpZ(a)
-		b.normalize()
-		c = self.compute_crossAB(a, b)
-
-		return Transform([a[0],a[1],a[2],helixbox[3],b[0],b[1],b[2],helixbox[4],c[0],c[1],c[2],helixbox[5]])
-
-
-	def get_extended_a_vector(self, helixbox):
-		"""
-		Extend the A vector to the box ends
-		"""
-		a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[5]-helixbox[2]))
-		a.normalize()
-		bs = self.get_boxsize()
-		return [(helixbox[0] - old_div(a[0]*bs,2)),(helixbox[1] - old_div(a[1]*bs,2)),(helixbox[2] - old_div(a[2]*bs,2)),(helixbox[3] + old_div(a[0]*bs,2)),(helixbox[4] + old_div(a[1]*bs,2)),(helixbox[5] + old_div(a[2]*bs,2))]
 
 
 
@@ -913,23 +819,23 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			box=self.boxes[n]
 		except IndexError:
 			return
-		bs2=old_div(self.get_boxsize(box[5]),2)
+		bs2=self.get_boxsize(box[5])//2
 
 		
 		color=self.setcolors[box[5]%len(self.setcolors)].getRgbF()
-		
-		#self.xyview.add_shape(n,EMShape(("rect",.2,.2,.8,box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2,2)))
-		self.xyview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[1],bs2,2]))
-		#self.xyview.add_shape("xl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[0],box[1],1)))
-		#self.xyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[0],0,box[0],self.datasize[1],1)))
-		#self.xzview.add_shape(n,EMShape(["circle",.2,.2,.8,box[0],box[2],bs2,2]))
-		self.xzview.add_shape(n,EMShape(("rect",color[0],color[1],color[2],box[0]-bs2,box[2]-bs2,box[0]+bs2,box[2]+bs2,2)))
-		#self.xzview.add_shape("xl",EMShape(("line",.8,.8,.1,0,box[2],self.datasize[0],box[2],1)))
-		#self.xzview.add_shape("zl",EMShape(("line",.8,.8,.1,box[0],0,box[0],self.datasize[2],1)))
-		#self.zyview.add_shape(n,EMShape(["circle",.2,.2,.8,box[2],box[1],bs2,2]))
-		self.zyview.add_shape(n,EMShape(("rect",color[0],color[1],color[2],box[2]-bs2,box[1]-bs2,box[2]+bs2,box[1]+bs2,2)))
-		#self.zyview.add_shape("yl",EMShape(("line",.8,.8,.1,box[2],0,box[2],self.datasize[1],1)))
-		#self.zyview.add_shape("zl",EMShape(("line",.8,.8,.1,0,box[1],self.datasize[2],box[1],1)))
+		if self.options.mode=="3D":
+			self.xyview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[1],bs2,2]))
+			self.xzview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[2],bs2,2]))
+			self.zyview.add_shape(n,EMShape(("circle",color[0],color[1],color[2],box[2],box[1],bs2,2)))
+		else:
+			self.xyview.add_shape(n,EMShape(["rect",color[0],color[1],color[2],
+				    box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2,2]))
+			self.xzview.add_shape(n,EMShape(["rect",color[0],color[1],color[2], 
+				    box[0]-bs2,box[2]-1,box[0]+bs2,box[2]+1,2]))
+			self.zyview.add_shape(n,EMShape(["rect",color[0],color[1],color[2],
+				    box[2]-1,box[1]-bs2,box[2]+1,box[1]+bs2,2]))
+			
+			
 
 		if self.depth()!=box[2]:
 			self.wdepth.setValue(box[2])
@@ -938,33 +844,25 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if self.initialized: self.update_sides()
 
 		# For speed, we turn off updates while dragging a box around. Quiet is set until the mouse-up
-		if not quiet and not self.helixboxer:
+		if not quiet:
 			# Get the cube from the original data (normalized)
-			cube=self.get_cube(box[0], box[1], box[2], centerslice=True, boxsz=self.get_boxsize(box[5]))
-			#self.boxviewer.set_data(cube)
-
-			# Make a z projection and store it in the list of all boxes
-			#proj=cube.process("misc.directional_sum",{"axis":"z"})
-			proj=cube
+			proj=self.get_cube(box[0], box[1], box[2], centerslice=True, boxsz=self.get_boxsize(box[5]))
 			proj.process_inplace("normalize")
 			
 			for i in range(len(self.boxesimgs),n+1): 
 				self.boxesimgs.append(None)
 			
 			self.boxesimgs[n]=proj
-			#try: 
-				#self.boxesimgs[n]=proj
-			#except:
-				#for i in range(len(self.boxesimgs),n+1): 
-					#self.boxesimgs.append(None)
-				#self.boxesimgs[n]=proj
+
 			mm=[m for im,m in enumerate(self.boxesimgs) if self.boxes[im][5] in self.sets_visible]
+			
+			if self.initialized: self.SaveJson()
 			
 		if self.initialized:
 			self.update_boximgs()
-			self.SaveJson()
+			
 
-			if n!=self.curbox and not self.helixboxer:
+			if n!=self.curbox:
 				self.boxesviewer.set_selected((n,),True)
 
 		self.curbox=n
@@ -992,13 +890,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.setspanel.initialized=False
 			self.setspanel.update_sets()
 
-	def add_helix_box(self, xf, yf, zf, xi, yi, zi):
-		print(xf, yf, zf, xi, yi, zi)
-		if options.yshort:
-			self.helixboxes.append([xf, zf, yf, xi, zi, yi])
-		else:
-			self.helixboxes.append([xf, yf, zf, xi, yi, zi])
-	
 	def del_region_xy(self, x=-1, y=-1, z=-1, rad=-1):
 		if rad<0:
 			rad=self.eraser_width()
@@ -1025,24 +916,15 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		for i in range(len(self.boxes)):
 			if self.inside_box(i,x,y,z):
 				if event.modifiers()&Qt.ShiftModifier:
-					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
+					self.del_box(i)
+					self.firsthbclick = None
 				else:
 					self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
-					if self.helixboxer: self.update_helixbox(int(old_div(i,2)))
 					self.update_box(i)
 				break
 		else:
 #			if x>self.get_boxsize()/2 and x<self.datasize[0]-self.get_boxsize()/2 and y>self.get_boxsize()/2 and y<self.datasize[1]-self.get_boxsize()/2 and self.depth()>self.get_boxsize()/2 and self.depth()<self.datasize[2]-self.get_boxsize()/2 :
 			if not event.modifiers()&Qt.ShiftModifier:
-				###########
-				if self.helixboxer:	# Only create a helixbox every 2 clicks
-					if self.firsthbclick:
-						self.add_helix_box(x, y, self.depth(), self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2])
-						self.firsthbclick = None
-						self.update_helixbox(len(self.helixboxes)-1)
-					else:
-						self.firsthbclick = [x, y, self.depth()]
-				###########
 				self.boxes.append(([x,y,self.depth(), 'manual', 0.0, self.currentset]))
 				self.xydown=(len(self.boxes)-1,x,y,x,y)		# box #, x down, y down, x box at down, y box at down
 				self.update_box(self.xydown[0])
@@ -1122,23 +1004,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		for i in range(len(self.boxes)):
 			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,y,z)) or self.inside_box(i,x,self.cury,z) :
 				if event.modifiers()&Qt.ShiftModifier:
-					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
+					self.del_box(i)
+					self.firsthbclick = None
 				else :
 					self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
-					if self.helixboxer: self.update_helixbox(int(old_div(i,2)))
 					self.update_box(i)
 				break
 		else:
 			if not event.modifiers()&Qt.ShiftModifier:
-				###########
-				if self.helixboxer:	# Only create a helixbox every 2 clicks
-					if self.firsthbclick:
-						self.add_helix_box(x, self.cury, z, self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2])
-						self.firsthbclick = None
-						self.update_helixbox(len(self.helixboxes)-1)
-					else:
-						self.firsthbclick = [x, self.cury, z]
-				###########
 				self.boxes.append(([x,self.cury,z, 'manual', 0.0, self.currentset]))
 				self.xzdown=(len(self.boxes)-1,x,z,x,z)		# box #, x down, y down, x box at down, y box at down
 				self.update_box(self.xzdown[0])
@@ -1156,19 +1029,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		dx=x-self.xzdown[1]
 		dz=z-self.xzdown[2]
-		if self.helixboxer:
-			if len(self.boxes) % 2 == 0 or (self.xzdown[0] != len(self.boxes)-1):	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
-				hb = self.helixboxes[int(old_div(self.xzdown[0],2))]
-				if self.xzdown[0] % 2 == 0:
-					hb[3] = dx+self.xzdown[3]
-					hb[5] = dz+self.xzdown[4]
-				else:
-					hb[0] = dx+self.xzdown[3]
-					hb[2] = dz+self.xzdown[4]
-				self.update_helixbox(int(old_div(self.xzdown[0],2)))
-			else:
-				self.firsthbclick[0] = x
-				self.firsthbclick[2] = z
 
 		self.boxes[self.xzdown[0]][0]=dx+self.xzdown[3]
 		self.boxes[self.xzdown[0]][2]=dz+self.xzdown[4]
@@ -1203,22 +1063,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		for i in range(len(self.boxes)):
 			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,y,z)) or  self.inside_box(i,self.curx,y,z):
 				if event.modifiers()&Qt.ShiftModifier:
-					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
+					self.del_box(i) 
+					self.firsthbclick = None
 				else :
 					self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
-					if self.helixboxer: self.update_helixbox(int(old_div(i,2)))
 					self.update_box(i)
 				break
 		else:
 			if not event.modifiers()&Qt.ShiftModifier:
-				###########
-				if self.helixboxer:	# Only create a helixbox every 2 clicks
-					if self.firsthbclick:
-						self.add_helix_box(self.curx, y, z, self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2])
-						self.firsthbclick = None
-						self.update_helixbox(len(self.helixboxes)-1)
-					else:
-						self.firsthbclick = [self.curx, y, z]
 				###########
 				self.boxes.append(([self.curx,y,z, 'manual', 0.0, self.currentset]))
 				self.zydown=(len(self.boxes)-1,z,y,z,y)		# box #, x down, y down, x box at down, y box at down
@@ -1287,6 +1139,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def show_set(self, name):
 		name=parse_setname(name)
 		self.sets_visible[name]=0
+		self.currentset=name
+		self.wboxsize.setValue(self.get_boxsize())
 		if self.initialized: 
 			self.update_all()
 			self.update_boximgs()
@@ -1344,12 +1198,31 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def SaveJson(self):
 		
 		info=js_open_dict(self.jsonfile)
-		info["boxes_3d"]=self.boxes
+		sx,sy,sz=(self.data["nx"]//2,self.data["ny"]//2,self.data["nz"]//2)
+		if "apix_unbin" in info:
+			bxs=[]
+			for b0 in self.boxes:
+				b=[	(b0[0]-sx)*self.apix_cur/self.apix_unbin,
+					(b0[1]-sy)*self.apix_cur/self.apix_unbin,
+					(b0[2]-sz)*self.apix_cur/self.apix_unbin,
+					b0[3], b0[4], b0[5]	]
+				bxs.append(b)
+				
+			bxsz={}
+			for k in self.boxsize.keys():
+				bxsz[k]=self.boxsize[k]*self.apix_cur/self.apix_unbin
+
+				
+		else:
+			bxs=self.boxes
+			bxsz=self.boxsize
+				
+		info["boxes_3d"]=bxs
 		clslst={}
 		for key in list(self.sets.keys()):
 			clslst[int(key)]={
 				"name":self.sets[key],
-				"boxsize":self.boxsize[key],
+				"boxsize":int(bxsz[key]),
 				}
 		info["class_list"]=clslst
 		info.close()

@@ -3028,7 +3028,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 	cancel = QtCore.pyqtSignal()
 	module_closed = QtCore.pyqtSignal()
 
-	def __init__(self, parent = None, withmodal = False, multiselect = False, startpath = ".", setsmode = None) :
+	def __init__(self, parent = None, withmodal = False, multiselect = False, startpath = ".", setsmode = None, dirregex="") :
 		"""withmodal - if specified will have ok/cancel buttons, and provide a mechanism for a return value (not truly modal)
 		multiselect - if True, multiple files can be simultaneously selected
 		startpath - default "."
@@ -3120,7 +3120,8 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wfilter.addItem(".*\.pdb")
 		self.wfilter.addItem("help")
 		self.wtoolhbl2.addWidget(self.wfilter, 5)
-
+		if dirregex!="":
+			self.wfilter.setEditText(dirregex)
 		# self.wspacet1 = QtGui.QSpacerItem(100, 10, QtGui.QSizePolicy.MinimumExpanding)
 		# self.wtoolhbl.addSpacerItem(self.wspacet1)
 

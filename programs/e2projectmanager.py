@@ -599,7 +599,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		for child in toplevel["CHILDREN"]:
 			qtreewidget = PMQTreeWidgetItem([child["NAME"]])
-			qtreewidget.setIcon(0, self.icons[child["ICON"]])
+			if "ICON" in  child: qtreewidget.setIcon(0, self.icons[child["ICON"]])
 			# optional program
 			if "PROGRAM" in child: qtreewidget.setProgram(child["PROGRAM"])
 			# optional table to diaply rather than a program
@@ -640,7 +640,7 @@ class EMProjectManager(QtGui.QMainWindow):
 
 		for toplevel in tree:
 			qtreewidget = PMQTreeWidgetItem([toplevel["NAME"]])
-			qtreewidget.setIcon(0, self.icons[toplevel["ICON"]])
+			if "ICON" in toplevel: qtreewidget.setIcon(0, self.icons[toplevel["ICON"]])
 			# optional program
 			if "PROGRAM" in toplevel: qtreewidget.setProgram(toplevel["PROGRAM"])
 			# optional table to diaply rather than a program

@@ -42,9 +42,11 @@ def main():
 	#print usage
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	#parser.add_header(name="tmpheader", help='temp label', title="### This program is NOT avaliable yet... ###", row=0, col=0, rowspan=1, colspan=2, mode="train,test")
-	parser.add_argument("--trainset",help="Training set.", default=None, guitype='filebox', browser="EMParticlesTable(withmodal=True)",  row=1, col=0,rowspan=1, colspan=3, mode="train")
-	parser.add_argument("--from_trained", type=str,help="Start from pre-trained neural network", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True)", row=2, col=0, rowspan=1, colspan=3, mode="train,test")
-	parser.add_argument("--netout", type=str,help="Output neural net file name", default="nnet_save.hdf",guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode="train")
+	parser.add_argument("--trainset",help="Training set.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='particles', dirregex='*_trainset.hdf')",  row=1, col=0,rowspan=1, colspan=3, mode="train")
+	parser.add_argument("--from_trained", type=str,help="Train from an existing network", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True, startpath='neuralnets', dirregex='nnet_save*')", row=2, col=0, rowspan=1, colspan=3, mode="train")
+	parser.add_argument("--nnet", type=str,help="Trained network input (nnet_save_xx.hdf)", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True, startpath='neuralnets', dirregex='nnet_save*')", row=2, col=0, rowspan=1, colspan=3, mode="test")
+	#parser.add_argument("--netout", type=str,help="Output neural net file name", default="nnet_save.hdf",guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode="train")
+	parser.add_argument("--nettag", type=str,help="Tag of the output neural net file. Will use the tag of good particles in training set by default.", default="",guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode="train")
 	
 	parser.add_argument("--learnrate", type=float,help="Learning rate ", default=1e-4, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="train")
 	parser.add_argument("--niter", type=int,help="Training iterations", default=20, guitype='intbox', row=4, col=1, rowspan=1, colspan=1, mode="train")
@@ -56,11 +58,11 @@ def main():
 	#parser.add_argument("--weightdecay", type=float,help="Weight decay. Used for regularization.", default=1e-6, guitype='floatbox', row=7, col=1, rowspan=1, colspan=1, mode="train")
 	parser.add_argument("--trainout", action="store_true", default=False ,help="Output the result of the training set", guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode='train[True]')
 	parser.add_argument("--training", action="store_true", default=False ,help="Doing training", guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='train[True]')
-	parser.add_argument("--tomograms", type=str,help="Tomograms input.", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True)", row=1, col=0, rowspan=1, colspan=3, mode="test")
+	parser.add_argument("--tomograms", type=str,help="Tomograms input.", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True, startpath='tomograms')", row=1, col=0, rowspan=1, colspan=3, mode="test")
 	parser.add_argument("--applying", action="store_true", default=False ,help="Applying the neural network on tomograms", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='test[True]')
 	#parser.add_argument("--dream", action="store_true", default=False ,help="Iterativly applying the neural network on noise")
-	parser.add_argument("--to3d", action="store_true", default=True ,help="convert to result to 3D.", guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='test')
-	parser.add_argument("--output", type=str,help="Segmentation out file name", default="tomosegresult.hdf", guitype='strbox', row=3, col=0, rowspan=1, colspan=1, mode="test")
+	#parser.add_argument("--to3d", action="store_true", default=True ,help="convert to result to 3D.", guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='test')
+	parser.add_argument("--outtag", type=str,help="Tag of the segmentation output. When left empty, the segmentation will be saved to 'segmentations/<tomogram name>__<neural network tag>_seg.hdf'. When set, the output will be written to 'segmentations/<tomogram name>__<outtag>.hdf'", default="", guitype='strbox', row=3, col=0, rowspan=1, colspan=1, mode="test")
 	parser.add_argument("--threads", type=int,help="Number of thread to use when applying neural net on test images. Not used during trainning", default=12, guitype='intbox', row=10, col=0, rowspan=1, colspan=1, mode="test")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--device", type=str, help="For Convnet training only. Pick a device to use. chose from cpu, gpu, or gpuX (X=0,1,...) when multiple gpus are available. default is cpu",default="cpu",guitype='strbox', row=7, col=1, rowspan=1, colspan=1,mode="train")
@@ -68,7 +70,10 @@ def main():
 
 	(options, args) = parser.parse_args()
 	E2n=E2init(sys.argv,options.ppid)
+	time00=time.time()
 	
+	if options.from_trained==None and options.nnet!=None:
+		options.from_trained=options.nnet
 	
 	#### parse the options.
 	nkernel=[int(i) for i in options.nkernel.split(',')]
@@ -77,18 +82,37 @@ def main():
 	
 	
 	if options.applying:
-		apply_neuralnet(options)
+		dirname="segmentations"
+		try: os.mkdir(dirname)
+		except: pass
+	
+		bn=base_name(options.tomograms)
+		if options.outtag=="":	
+			nn=options.nnet
+			nn=nn[nn.rfind("__")+2:-4]
+			outname="segmentations/{}__{}_seg.hdf".format(bn, nn)
+		else:
+			outname="segmentations/{}__{}.hdf".format(bn, options.outtag)
+			
+		print("Output segmentation will be written to {}...".format(outname))
+		segout=apply_neuralnet(options)
+		segout.write_image(outname)
+		print("Done.")
+		print("Total time: ", time.time()-time00)
+	
 		E2end(E2n)
-		exit()
-	
-	
+		return
 	
 	
 	if options.trainset==None:
 		print("No training set input...exit.")
-		exit()
+		return
 	
 	
+	if options.nettag=="":
+		tag=options.trainset
+		options.nettag=tag[tag.rfind('__')+2:-4].replace("_trainset","")
+		
 	if "CUDA_VISIBLE_DEVICES" in os.environ:
 		print("CUDA_VISIBLE_DEVICES is already set as environment variable. This will overwrite the device option...")
 	else:
@@ -126,120 +150,35 @@ def main():
 		print("Setting up model...")
 		kernels=[(k,ksize[i],poolsz[i]) for i,k in enumerate(nkernel)]
 		convnet = StackedConvNet_tf(kernels, shape[0], batch_size, meanout=False)
+		session.run(tf.global_variables_initializer())
+
 	
 	
+	#convnet.save_network(options.netout, session, options)
 	
 	if (options.niter>0):	
 		
 		convnet.do_training(data, labels, session, shuffle=False, learnrate=options.learnrate, niter=options.niter)
 		
 		
+		
+	dirname="neuralnets"
+	try: os.mkdir(dirname)
+	except: pass
+	options.netout="{}/nnet_save__{}.hdf".format(dirname, options.nettag)
 
 	if options.trainout:
-		fname="trainout_{}".format(options.netout)
-		if not fname.endswith(".hdf"):
-			fname+=".hdf"
-			
+		fname="{}/trainout_nnet_save__{}.hdf".format(dirname, options.nettag)
 		convnet.write_output_train(fname, session, writelabel=True)
 		
-		#print("Generating results ...")
-		#nsample=100
-		#self.update_shape((nsample, shape[2], shape[0],shape[1]))
-		#test_cls = theano.function(
-			#inputs=[],
-			#outputs=self.clslayer.get_image(False),
-			#givens={
-				#self.x: train_set_x[:nsample]
-			#}
-		#)
-		
-		#try:os.remove(fname)
-		#except: pass
-		##print self.outsize,shape
-		#mid=test_cls()
-		
-		#ipt= train_set_x[:nsample]
-		#ipt= ipt.eval()
-		
-		#lb= labels[:nsample].eval()
-		#amp=[]
-		#for t in range(nsample):
-			
-			##### raw image
-			#if shape[2]==1:
-				#img=ipt[t].reshape(shape[0],shape[1])
-			#else:
-				#img=ipt[t].reshape(shape[2],shape[0],shape[1])
-				#img=img[shape[2]/2]
-			#e0 = from_numpy(img.astype("float32"))
-			#e0.write_image(fname,-1)
-			
-			##### manual annotation
-			#img=lb[t].reshape(self.outsize,self.outsize)
-			#e1 = from_numpy(img.astype("float32"))
-			#e1=e1.get_clip(Region((self.outsize-shape[0])/2,(self.outsize-shape[0])/2,shape[0],shape[0]))
-			#e1.scale(float(shape[0])/float(self.outsize))
-			#e1.process_inplace("threshold.binary", {"value":.67})
-			#e1.write_image(fname,-1)
-			
-			##### neural net output
-			#img=mid[t].reshape(self.outsize,self.outsize)
-			#e2 = from_numpy(img.astype("float32"))
-			#e2=e2.get_clip(Region((self.outsize-shape[0])/2,(self.outsize-shape[0])/2,shape[0],shape[0]))
-			##print float(shape[0])/float(self.outsize)
-			#e2.scale(float(shape[0])/float(self.outsize))
-			#e2.write_image(fname,-1)
-			
-			##### measure the amplitude of the neural network output by comparing it to the label
-			#e2.mult(e1)
-			#amp.append(e2["mean_nonzero"])
-		#print("amplitude: ", np.mean(amp))
-		#self.amplitude=np.mean(amp)
-		#print("Writing output on training set in {}".format(fname))
-		
-	#save_model(convnet, options.netout, options)
-	convnet.save_network(options.netout, session)
+	convnet.save_network(options.netout, session, options)
 	print("Done")
+	print("Total time: ", time.time()-time00)
 	E2end(E2n)
 
 def run(cmd):
 	print(cmd)
 	launch_childprocess(cmd)
-
-def save_model(convnet, fname, options=None):
-	print("Saving the trained net to {}...".format(fname))
-	#fname="nnet_save.hdf"
-	sz=int(self.convlayers[0].W.shape[-1].eval())
-
-	hdr=EMData(sz,sz)
-	hdr["nkernel"]=self.n_kernel
-	hdr["ksize"]=self.ksize
-	hdr["poolsz"]=self.poolsz
-	hdr["imageshape"]=self.image_shape
-	hdr["amplitude"]=self.amplitude
-	if options:
-		if options.trainset:
-			hdr["trainset_src"]=options.trainset
-	
-	
-	hdr.write_image(fname,0)
-
-	k=1
-	for i in range(self.n_convlayers):
-		w=self.convlayers[i].W.get_value()        
-		b=self.convlayers[i].b.get_value()
-		s=w.shape
-		
-		e=from_numpy(b)
-		e["w_shape"]=s
-		e.write_image(fname,k)
-		k+=1
-		w=w.reshape(s[0]*s[1], s[2], s[3])
-		for wi in w:
-			e=from_numpy(wi)
-			e.write_image(fname,k)
-			k+=1
-	print("Saving finished.")
 
 	
 def apply_neuralnet(options):
@@ -278,6 +217,8 @@ def apply_neuralnet(options):
 	if amplitude<=0: amplitude=1.
 	ksize=hdr["ksize"]
 	poolsz=hdr["poolsz"]
+	if hdr.has_attr("trained_from"):
+		output["trainset"]=hdr["trained_from"]
 	labelshrink=np.prod(poolsz)
 	k=1
 	#global layers
@@ -301,7 +242,7 @@ def apply_neuralnet(options):
 			
 			for mi in range(s[1]):
 				sw=allw[wi][mi]["nx"]
-				allw[wi][mi]=allw[wi][mi].get_clip(Region(old_div((sw-enx),2),old_div((sw-eny),2),enx,eny))
+				allw[wi][mi]=allw[wi][mi].get_clip(Region(((sw-enx)//2),((sw-eny)//2),enx,eny))
 				
 				allw[wi][mi].process_inplace("xform.phaseorigin.tocenter")
 				#allw[wi][mi].do_fft_inplace()
@@ -354,23 +295,12 @@ def apply_neuralnet(options):
 	
 		while not jsd.empty():
 			idx,cout=jsd.get()
-			cout=cout.get_clip(Region(old_div((cout["nx"]-enx),2),old_div((cout["ny"]-eny),2) ,enx, eny))
+			cout.write_image("tmp.hdf",-1)
+			cout=cout.get_clip(Region(((cout["nx"]-enx)//2),((cout["ny"]-eny)//2) ,enx, eny))
 			cout.scale(labelshrink)
 			cout.div(amplitude)
 			output.insert_clip(cout, [0,0,idx])
-			
-	#if is3d and options.to3d:
-		#to3d=" --twod2threed"
-	#else:
-		#to3d=""
-		
-		
-	#fout="__tomoseg_tmp.hdf"
-	#run("e2proc2d.py {} {} --process math.fft.resample:n={} {} --apix {} ".format(options.output,fout,float(1./labelshrink), to3d, apix))
-	##os.rename(fout, options.output)
-	output.write_image(options.output)
-	print("Done.")
-	print("Total time: ", time.time()-tt0)
+	return output
 	
 def do_convolve(jsd, job):
 	tomo_in, idx, layers= job
@@ -379,11 +309,6 @@ def do_convolve(jsd, job):
 	e0=tomo_in[idx]
 	e0.div(3.)
 	imgs=[e0]
-	
-	#if len(rg)>4:
-		#e0=EMData(tomo, 0, False, Region(rg[0],rg[1],rg[2],rg[3],rg[4],rg[5]))
-	#else:
-		#e0=EMData(tomo, idx, False, Region(rg[0],rg[1],rg[2],rg[3]))
 	
 		
 	for layer in layers:
@@ -481,7 +406,7 @@ class StackedConvNet_tf(object):
 		
 	def __init__(self, kernels, imgsz=64, batchsz=10, meanout=False):
 		
-		convnet = type('convnet', (), {})() ### an empty object
+		#convnet = type('convnet', (), {})() ### an empty object
 		nlayer=len(kernels)
 		sz=imgsz
 			
@@ -564,8 +489,9 @@ class StackedConvNet_tf(object):
 
 	def do_training(self, data, label, session, shuffle=False, learnrate=1e-4, niter=10):
 		print("Training...")
-		train_step = tf.train.AdamOptimizer(learnrate).minimize(self.loss)
-		session.run(tf.global_variables_initializer())
+		optimizer=tf.train.AdamOptimizer(learnrate)
+		train_step=optimizer.minimize(self.loss)
+		session.run(tf.variables_initializer(optimizer.variables()))
 		
 		for it in range(niter):
 			if shuffle:
@@ -584,7 +510,7 @@ class StackedConvNet_tf(object):
 		session.run(self.iterator.initializer, feed_dict={self.data: data, self.label: label})
 		
 		
-	def save_network(self, fname, session):
+	def save_network(self, fname, session, options):
 		try: os.remove(fname)
 		except: pass
 		print("Saving the trained net to {}...".format(fname))
@@ -599,6 +525,7 @@ class StackedConvNet_tf(object):
 		hdr["imageshape"]=(self.batchsize,1,self.imgsz,self.imgsz)
 		hdr["amplitude"]=self.amplitude
 		hdr["meanout"]=self.meanout
+		hdr["trained_from"]=options.trainset
 		nlayer=len(self.kernels)
 
 
@@ -618,7 +545,8 @@ class StackedConvNet_tf(object):
 			k+=1
 			w=w.reshape(s[0]*s[1], s[2], s[3])
 			for wi in w:
-				e=from_numpy(wi)
+				ws=wi.T.copy()
+				e=from_numpy(ws)
 				e.write_image(fname,k)
 				k+=1
 
@@ -639,13 +567,8 @@ class StackedConvNet_tf(object):
 		poolsz=hdr["poolsz"]
 
 		bf=1
-		for i,p in enumerate(poolsz):
-			ksize[i]=old_div(sz,bf)
-			bf*=p
-			
 
 		kernels=[(k,ksize[i],poolsz[i]) for i,k in enumerate(nkernel)]
-		
 		
 		meanout=hdr.get_attr_default("meanout", True)
 		nnet=StackedConvNet_tf(kernels, sz, batchsize, meanout)
@@ -662,10 +585,10 @@ class StackedConvNet_tf(object):
 			for wi in range(s[0]*s[1]):
 				e=EMData(fname,k)
 				sw=e["nx"]
-				e=e.get_clip(Region(old_div((sw-ks),2),old_div((sw-ks),2),ks,ks))
+				#e=e.get_clip(Region((sw-ks)//2,(sw-ks)//2,ks,ks))
 				k+=1
-				w=e.numpy()
-				allw[wi]=w.copy()
+				w=e.numpy().copy().astype(np.float32)
+				allw[wi]=w
 			allw=allw.reshape([s[0], s[1], ks, ks]).astype(np.float32).transpose(3,2,1,0)
 			session.run(tf.assign(nnet.wts[i], allw))
 			
@@ -676,6 +599,8 @@ class StackedConvNet_tf(object):
 		outsz=self.outsz
 		try: os.remove(outfile)
 		except: pass
+		
+		print("Writting network output of training set to {}...".format(outfile))
 	
 		amp=[]
 		for nc in range(ncopy):

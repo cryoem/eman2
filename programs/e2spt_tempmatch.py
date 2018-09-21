@@ -99,7 +99,7 @@ def main():
 		cbin=ccc.process("math.maxshrink", {"n":2})
 		msk=cbin.copy()
 		msk.to_one()
-		msk.process_inplace("mask.cylinder",{"outer_radius":128-8, "phirange":360})
+		#msk.process_inplace("mask.cylinder",{"outer_radius":128-8, "phirange":360})
 		msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.03})
 		cbin.mult(msk)
 		#cbin.write_image("tmp0.hdf")

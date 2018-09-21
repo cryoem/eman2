@@ -4,32 +4,28 @@
 
 [
   {
-    "ICON": "green_boxes",
     "NAME": "Raw Data",
+    "ICON": "tomo_raw",
     "CHILDREN": [
       {
-        "ICON": "multiple_images",
         "MODE": "tomo",
         "PROGRAM": "e2ddd_external.py",
         "NAME": "Process DDD movies",
         "CHILDREN": []
       },
       {
-        "ICON": "multiple_images",
         "PROGRAM": "e2buildstacks.py",
         "MODE": "tomo",
         "NAME": "Generate tiltseries",
         "CHILDREN": []
       },
       {
-        "ICON": "multiple_images",
         "PROGRAM": "e2import.py",
         "MODE": "tiltseries",
         "NAME": "Import tiltseries",
         "CHILDREN": []
       },
       {
-        "ICON": "single_image_3d",
         "PROGRAM": "e2import.py",
         "MODE": "tomos",
         "WIZARD": "/lib/pmconfig/tomoimport.json",
@@ -40,18 +36,16 @@
   },
 
   {
-    "ICON": "green_boxes",
     "NAME": "3D Reconstruction",
+    "ICON": "tomo_recon",
     "CHILDREN": [
       {
-        "ICON": "multiple_images",
         "PROGRAM": "e2tomogram.py",
         "MODE": "easy",
         "NAME": "Reconstruct tomograms",
         "CHILDREN": []
       },
       {
-        "ICON": "multiple_images",
         "PROGRAM": "e2tomo_showali.py",
         "MODE": "fiderr",
         "NAME": "Examine fiducial error",
@@ -60,64 +54,61 @@
     ]
   },
   {
-    "ICON": "single_image",
     "NAME": "Segmentation",
+    "ICON": "tomo_seg",
     "CHILDREN": [
       {
-        "ICON": "single_image_3d",
         "PROGRAM": "e2tomoseg_preproc.py",
         "MODE": "proc",
         "NAME": "Preprocess tomograms",
         "CHILDREN": []
       },
       {
-        "ICON": "green_boxes",
-        "PROGRAM": "e2tomoseg_buildtrainset.py",
-        "MODE": "box",
+        "PROGRAM": "e2spt_boxer22.py",
+        "MODE": "box2d",
         "NAME": "Box training references",
         "CHILDREN": []
       },
       {
-        "ICON": "single_image_3d",
         "PROGRAM": "e2tomoseg_buildtrainset.py",
         "MODE": "seg",
         "NAME": "Segment training references",
         "CHILDREN": []
       },
       {
-        "ICON": "green_boxes",
         "PROGRAM": "e2tomoseg_buildtrainset.py",
         "MODE": "set",
         "NAME": "Build training set",
         "CHILDREN": []
       },
       {
-        "ICON": "web",
         "PROGRAM": "e2tomoseg_convnet.py",
         "MODE": "train",
         "NAME": "Train the neural network",
         "CHILDREN": []
       },
       {
-        "ICON": "web",
         "PROGRAM": "e2tomoseg_convnet.py",
         "MODE": "test",
         "NAME": "Apply the neural network",
         "CHILDREN": []
       },
       {
-        "ICON": "single_image",
+        "PROGRAM": "e2spt_extractfromseg.py",
+        "MODE": "extract",
+        "NAME": "Find particles from segmentation",
+        "CHILDREN": []
+      },
+      {
         "NAME": "Manual Segmentation",
         "CHILDREN": [
           {
-            "ICON": "single_image",
             "PROGRAM": "e2tomo_drawcurve.py",
             "MODE": "tomoseg",
             "NAME": "Draw curves",
             "CHILDREN": []
           },
           {
-            "ICON": "single_image",
             "PROGRAM": "e2tomo_drawcontour.py",
             "MODE": "tomoseg",
             "NAME": "Draw contours",
@@ -128,32 +119,28 @@
     ]
   },
   {
-    "ICON":"tomo_hunter",
     "NAME":"Subtomogram Averaging",
+    "ICON": "tomo_spt",
     "CHILDREN":[
       {
-        "ICON": "green_boxes",
-        "MODE": "boxing",
+        "MODE": "box3d",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer22",
         "PROGRAM": "e2spt_boxer22.py",
         "NAME": "Manual boxing",
         "CHILDREN": []
       },
       {
-        "ICON": "green_boxes",
         "MODE": "boxing",
         "PROGRAM": "e2spt_tempmatch.py",
         "NAME": "Reference-based boxing",
         "CHILDREN": []
       },
       {
-        "ICON": "ctf",
         "PROGRAM": "e2spt_tomoctf.py",
         "NAME": "CTF correction",
         "CHILDREN": []
       },
       {
-        "ICON": "green_boxes",
         "MODE": "extract",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
         "PROGRAM": "e2spt_extract.py",
@@ -161,56 +148,47 @@
         "CHILDREN": []
       },
       {
-        "ICON": "single_image_3d",
         "PROGRAM": "e2spt_buildsets.py",
         "NAME": "Build sets",
         "MODE": "sets",
         "CHILDREN": []
       },
       {
-        "ICON": "single_image_3d",
         "PROGRAM": "e2spt_sgd.py",
         "NAME": "Generate initial model",
         "MODE": "model",
         "CHILDREN": []
       },
       {
-        "ICON": "tomo_hunter",
         "PROGRAM": "e2spt_refine.py",
         "NAME": "3D refinement",
         "CHILDREN": []
       },
       {
-        "ICON": "multiple_images",
         "PROGRAM": "e2spt_tiltrefine.py",
         "NAME": "Sub-tilt refinement",
         "CHILDREN": []
       },
       {
-        "ICON": "tomo_hunter",
         "PROGRAM": "e2spt_pcasplit.py",
         "NAME": "PCA-based classification",
         "CHILDREN": []
       },
       {
-        "ICON": "tomo_hunter",
         "PROGRAM": "e2spt_classify.py",
         "NAME": "Multi-reference refinement",
         "MODE": "multi",
         "CHILDREN": []
       },
       {
-        "ICON": "tomo_hunter",
         "NAME": "Extract from IMOD",
         "CHILDREN": [
           {
-            "ICON": "tomo_hunter",
             "PROGRAM": "e2spt_subtilt_from_imod.py",
             "NAME": "Extract 2D particles",
             "CHILDREN": []
           },
           {
-            "ICON": "single_image_3d",
             "PROGRAM": "e2spt_make3d.py",
             "NAME": "Reconstruction from 2D particles",
             "CHILDREN": []
@@ -220,23 +198,20 @@
     ]
   },
   {
-      "ICON":"tomo_hunter",
       "NAME":"Analysis and Visualization",
+      "ICON": "tomo_plt",
       "CHILDREN":[
         {
-          "ICON": "multiple_images",
           "PROGRAM": "e2tomo_eval.py",
           "NAME": "Evaluate tomograms",
           "CHILDREN": []
         },
         {
-          "ICON": "single_image_3d",
           "PROGRAM": "e2spt_eval.py",
           "NAME": "Evaluate SPT refinements",
           "CHILDREN": []
         },
         {
-          "ICON": "resolution",
           "PROGRAM": "e2spt_stat.py",
           "NAME": "Calc quality vs. reference",
           "MODE": "gui",

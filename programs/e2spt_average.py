@@ -190,10 +190,6 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	avo.write_image(oddfile,0)
 	av.write_image(combfile,0)
 
-	#### skip post process in case we want to do this elsewhere...
-	if options.skippostp:
-		E2end(logid)
-		return
 
 	cmd="e2proc3d.py {evenfile} {path}/fsc_unmasked_{itr:02d}.txt --calcfsc={oddfile}".format(path=options.path,itr=options.iter,evenfile=evenfile,oddfile=oddfile)
 	launch_childprocess(cmd)
@@ -201,6 +197,11 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	# final volume at this point is Wiener filtered
 	launch_childprocess("e2proc3d.py {combfile} {combfile} --process=filter.wiener.byfsc:fscfile={path}/fsc_unmasked_{itr:02d}.txt:snrmult=2".format(path=options.path,itr=options.iter,combfile=combfile))
 
+	#### skip post process in case we want to do this elsewhere...
+	if options.skippostp:
+		E2end(logid)
+		return
+	
 	# New version of automasking based on a more intelligent interrogation of the volume
 	vol=EMData(combfile)
 	nx=vol["nx"]
