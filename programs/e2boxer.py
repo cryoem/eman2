@@ -1749,12 +1749,17 @@ class GUIBoxer(QtGui.QWidget):
 		if self.bfilter.isChecked() :
 			nx=self.micrograph["nx"]
 			ny=self.micrograph["ny"]
-			gs=good_size(max(self.micrograph["nx"],self.micrograph["ny"]))
-			fm=self.micrograph.get_clip(Region(0,0,gs,gs)).do_fft()
-			fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.005})
-			fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
-			fm=fm.do_ift()
-			self.wimage.set_data(fm.get_clip(Region(0,0,nx,ny)))
+			gs=good_size(max(nx//2,ny//2))
+			fm=self.micrograph.get_clip(Region(nx/2-gs,ny/2-gs,gs*2,gs*2)).process("math.meanshrink",{"n":2})
+			fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.01})
+			fm.process_inplace("mask.decayedge2d",{"width":50})
+			fm.add(-fm["minimum"])
+			fm.process_inplace("filter.lowpass.tophat",{"cutoff_freq":0.05})
+			fm.process_inplace("math.squared")
+			fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.02})
+			fm.process_inplace("xform.scale",{"scale":2.0,"clip":gs*2})
+			fm=fm.get_clip(Region(gs-nx/2,gs-ny/2,nx,ny))	# rembmer the image has been shrunk by 2 here!
+			self.wimage.set_data(fm)
 		else: self.wimage.set_data(self.micrograph)
 
 	def save_boxes(self):
