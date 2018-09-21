@@ -4344,6 +4344,15 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "sxproj_compare"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Compare Re-projections"; sxcmd.short_info = "Compare re-projections to class averages. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "Set of class averages, e.g., produced by ISAC2. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data2d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input volume from which re-projections will be computed"; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "outdir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "The results will be written here. If not given, the program will write to the directory where the input image stack is located. If the directory already exists, results will be written there, possibly overwriting previous runs."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output_continue"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "angles"; token.key_prefix = "--"; token.label = "Input projection parameters"; token.help = "Import parameters containing projection angles. In RVIPER for example, this file is of the form 'main003/run002/rotated_reduced_params.txt'. This file is not required if the angles have already been written to the header."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "params_any_txt"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "select"; token.key_prefix = "--"; token.label = "Particles selection file"; token.help = "Input selection text file containing a list of selected image IDs (or indexes of the data subset). Some images may have been excluded from the reconstruction, and thus may not be represented in the angles file. In RVIPER for example, this file is of the form 'main003/index_keep_images.txt'. If in RVIPER no stable solution is found, this file will not be present, and will not be needed.  This file is not required if the angles have already been written to the stack header, or if all images are represented in the angles file."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_data2d_stack"; sxcmd.token_list.append(token)
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "sxprocess"; sxcmd.subname = ""; sxcmd.mode = "adaptive_mask"; sxcmd.subset_config = ""; sxcmd.label = "Adaptive 3D Mask"; sxcmd.short_info = "Create soft-edged 3D mask from the input structure. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "adaptive_mask"; token.key_prefix = "--"; token.label = "Create soft-edged 3D mask"; token.help = "Create soft-edged 3D mask from the input structure. "; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.default = True; token.restore = True; token.type = "bool"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input reference volume"; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
@@ -4987,6 +4996,15 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "sxproj_compare"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Compare Re-projections"; sxcmd.short_info = "Compare re-projections to class averages. "; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "Set of class averages, e.g., produced by ISAC2. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data2d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "input_volume"; token.key_prefix = ""; token.label = "Input volume"; token.help = "Input volume from which re-projections will be computed"; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "outdir"; token.key_prefix = "--"; token.label = "Output directory"; token.help = "The results will be written here. If not given, the program will write to the directory where the input image stack is located. If the directory already exists, results will be written there, possibly overwriting previous runs."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "output_continue"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "angles"; token.key_prefix = "--"; token.label = "Input projection parameters"; token.help = "Import parameters containing projection angles. In RVIPER for example, this file is of the form 'main003/run002/rotated_reduced_params.txt'. This file is not required if the angles have already been written to the header."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "params_any_txt"; sxcmd.token_list.append(token)
+		token = SXcmd_token(); token.key_base = "select"; token.key_prefix = "--"; token.label = "Particles selection file"; token.help = "Input selection text file containing a list of selected image IDs (or indexes of the data subset). Some images may have been excluded from the reconstruction, and thus may not be represented in the angles file. In RVIPER for example, this file is of the form 'main003/index_keep_images.txt'. If in RVIPER no stable solution is found, this file will not be present, and will not be needed.  This file is not required if the angles have already been written to the stack header, or if all images are represented in the angles file."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "select_data2d_stack"; sxcmd.token_list.append(token)
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "sxpipe"; sxcmd.subname = "moon_eliminator"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Moon eliminator"; sxcmd.short_info = "Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass. Optionally, create 3D mask also."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "input_volume_path"; token.key_prefix = ""; token.label = "Input volume path"; token.help = "Path to input volume file containing the 3D density map. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token)
 		token = SXcmd_token(); token.key_base = "input_volume_path_2nd"; token.key_prefix = ""; token.label = "Second input volume path"; token.help = "Path to second input volume file containing the 3D density map. Use this option to create a mask from the sum of two MERIDIEN half-set maps. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token)
@@ -5205,6 +5223,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 				sxcmd.widget.sxcmd_tab_main.set_qsub_enable_state()
 
 	def handle_sxmenu_item_btn_event(self, sxmenu_item):
+		#print("handle_sxmenu_item_btn_event:", sxmenu_item.name)
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
 		modifiers = QApplication.keyboardModifiers()
@@ -5261,8 +5280,10 @@ def main():
 	# The valid keys can be retrieved using the keys() function.
 	# Typically they include "windows", "motif", "cde", "plastique" and "cleanlooks".
 	# Depending on the platform, "windowsxp", "windowsvista" and "macintosh" may be available. Note that keys are case insensitive.
-	# sxapp.setStyle("macintosh")
-	sxapp.setStyle("cleanlooks")
+	if sys.platform.startswith('darwin'):
+		sxapp.setStyle("macintosh")
+	else:
+		sxapp.setStyle("cleanlooks")
 	# sxapp.setStyle("plastique")
 
 	# print "MRK_DEBUG:"
