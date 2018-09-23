@@ -41,7 +41,20 @@ from	EMAN2 		import EMUtil
 import	os
 import	sys
 from 	time		import	time
-	
+from mpi import *
+
+"""
+Instruction:
+nohup mpirun -np  64   --hostfile ./node4567.txt  sx3dvariability.py bdb:data/data \
+  --output_dir=var3d  --window=300 --var3D=var.hdf --img_per_grp=100 \
+      --CTF>var3d/printout &
+ 1. Always use small decimation rate in the first run if one has no clue about the 3D \
+   variability of the data. In addition, one can skip low pass filteration when decimation \
+   rate is small and this can significantly speed up computation.
+ 2. Check the decimated image size. It is better that the targeted decimation image size
+    consists of smallprimes, 2, 3, 5...
+ 3. The program estimates the possible largest decimation rate.
+"""
 def main():
 
 	def params_3D_2D_NEW(phi, theta, psi, s2x, s2y, mirror):
@@ -55,39 +68,40 @@ def main():
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=15. --aa=0.01  --sym=symmetry --CTF"
+	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=  --aa=   --sym=symmetry --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 	
-	parser.add_option("--output_dir",   type="string"	   ,	default="./",				help="output directory")
-	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D averages")
-	parser.add_option("--var2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D variances")
-	parser.add_option("--ave3D",		type="string"	   ,	default=False,				help="write to the disk reconstructed 3D average")
-	parser.add_option("--var3D",		type="string"	   ,	default=False,				help="compute 3D variability (time consuming!)")
-	parser.add_option("--img_per_grp",	type="int"         ,	default=10   ,				help="number of neighbouring projections")
-	parser.add_option("--no_norm",		action="store_true",	default=False,				help="do not use normalization")
+	parser.add_option("--output_dir",   type="string"	   ,	default="./",				help="Output directory")
+	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="Write to the disk a stack of 2D averages")
+	parser.add_option("--var2D",		type="string"	   ,	default=False,				help="Write to the disk a stack of 2D variances")
+	parser.add_option("--ave3D",		type="string"	   ,	default=False,				help="Write to the disk reconstructed 3D average")
+	parser.add_option("--var3D",		type="string"	   ,	default=False,				help="Compute 3D variability (time consuming!)")
+	parser.add_option("--img_per_grp",	type="int"         ,	default=100,	     	    help="Number of neighbouring projections.(Default is 100)")
+	parser.add_option("--no_norm",		action="store_true",	default=False,				help="Do not use normalization.(Default is to apply normalization)")
 	#parser.add_option("--radius", 	    type="int"         ,	default=-1   ,				help="radius for 3D variability" )
-	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="number of time to pad the original images")
-	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry")
-	parser.add_option("--fl",			type="float"       ,	default=0.0  ,				help="low pass filter cutoff in absolute frequency (0.0-0.5) and is applied after decimation. (Default - no filtration)")
-	parser.add_option("--aa",			type="float"       ,	default=0.01 ,				help="fall off of the filter. Put 0.01 if user has no clue about falloff (Default - no filtration)")
-	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
-	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="Long output for debugging")
+	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="Number of time to pad the original images.(Default is 2 times padding)")
+	parser.add_option("--sym" , 		type="string"      ,	default="c1",				help="Symmetry. (Default is no symmetry)")
+	parser.add_option("--fl",			type="float"       ,	default=0.0,				help="Low pass filter cutoff in absolute frequency (0.0 - 0.5) and is applied to decimated image. (Default - no filtration)")
+	parser.add_option("--aa",			type="float"       ,	default=0.02 ,				help="Fall off of the filter. Use default value if user has no clue about falloff (Default value is 0.02)")
+	parser.add_option("--CTF",			action="store_true",	default=False,				help="Use CFT correction.(Default is no CTF correction)")
 	#parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version")
 	#parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
 	#parser.add_option("--iter", 		type="int"         ,	default=40   ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
 	#parser.add_option("--abs", 		type="float"   ,        default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	#parser.add_option("--squ", 		type="float"   ,	    default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
-	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack of input consists of 2D variances (Default False)")
-	parser.add_option("--decimate",     type="float",           default= 1.0,               help="image decimate rate, a number less than 1. default is 1")
-	parser.add_option("--window",       type="int",             default= 0,                 help="target image size relative to original image size. Default value is zero.")
+	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="Stack of input consists of 2D variances (Default False)")
+	parser.add_option("--decimate",     type="float",           default=0.25,               help="Image decimate rate, a number less than 1. (Default is 0.25)")
+	parser.add_option("--window",       type="int",             default=0,                  help="Target image size relative to original image size. (Default value is zero.)")
 	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
-	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
+	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="Number of eigenvectors, (Default = 0 meaning no PCA calculated)")
 	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
-	
+	parser.add_option("--memory_per_node", type="float",        default=-1.0,               help="Available memory per node, (Default value is -1. Program will assign 2 GB for each CPU)")
+
 	(options,args) = parser.parse_args()
 	#####
 	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_recv, MPI_COMM_WORLD
 	from mpi import mpi_barrier, mpi_reduce, mpi_bcast, mpi_send, MPI_FLOAT, MPI_SUM, MPI_INT, MPI_MAX
+	#from mpi import *
 	from applications   import MPI_start_end
 	from reconstruction import recons3d_em, recons3d_em_MPI
 	from reconstruction	import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
@@ -198,7 +212,17 @@ def main():
 		myid           = mpi_comm_rank(MPI_COMM_WORLD)
 		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 		main_node      = 0
-		keepgoing      = 1
+		shared_comm  = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED,  0, MPI_INFO_NULL)
+		myid_on_node = mpi_comm_rank(shared_comm)
+		no_of_processes_per_group = mpi_comm_size(shared_comm)
+		masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, main_node == myid_on_node, myid_on_node)
+		color, no_of_groups, balanced_processor_load_on_nodes = get_colors_and_subsets(main_node, MPI_COMM_WORLD, myid, \
+		    shared_comm, myid_on_node, masters_from_groups_vs_everything_else_comm)
+		overhead_loading = 1.0*no_of_processes_per_group
+		memory_per_node  = options.memory_per_node
+		if memory_per_node == -1.: memory_per_node = 2.*no_of_processes_per_group
+		keepgoing = 1
+		
 		if len(args) == 1: stack = args[0]
 		else:
 			print(( "usage: " + usage))
@@ -260,13 +284,12 @@ def main():
 		img_per_grp = options.img_per_grp
 		nvec        = options.nvec
 		radiuspca   = options.radiuspca
-		
+		from logger import Logger,BaseLogger_Files
+		#if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
+		log_main=Logger(BaseLogger_Files())
+		log_main.prefix = os.path.join(options.output_dir, "./")
+
 		if myid == main_node:
-		
-			from logger import Logger,BaseLogger_Files
-			#if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
-			log_main=Logger(BaseLogger_Files())
-			log_main.prefix = os.path.join(options.output_dir, "./")
 			line = ""
 			for a in sys.argv: line +=" "+a
 			log_main.add(line)
@@ -297,9 +320,8 @@ def main():
 			img  = get_image(stack)
 			nx   = img.get_xsize()
 			ny   = img.get_ysize()
-			org_nx = nx
-			org_ny = nx
-			org_nz = nx
+			nnxo = nx
+			nnyo = ny
 			if options.sym != "c1" :
 				imgdata = get_im(stack)
 				try:
@@ -318,15 +340,17 @@ def main():
 			nima = 0
 			nx = 0
 			ny = 0
+			nnxo = 0
+			nnyo = 0
 		nima    = bcast_number_to_all(nima)
 		nx      = bcast_number_to_all(nx)
 		ny      = bcast_number_to_all(ny)
-		Tracker ={}
-		Tracker["total_stack"] = nima
+		nnxo    = bcast_number_to_all(nnxo)
+		nnyo    = bcast_number_to_all(nnyo)
 		if options.window > max(nx, ny):
 			ERROR("Window size is larger than the original image size", "sx3dvariability", 1)
 		
-		if options.decimate==1.:
+		if options.decimate == 1.:
 			if options.window !=0:
 				nx = options.window
 				ny = options.window
@@ -337,13 +361,15 @@ def main():
 			else:
 				nx = int(options.window*options.decimate+0.5)
 				ny = nx
-		Tracker["nx"]  = nx
-		Tracker["ny"]  = ny
-		Tracker["nz"]  = nx
-
 		symbaselen     = bcast_number_to_all(symbaselen)
+		if myid == main_node:
+			log_main.add("The targeted image size:    %5d"%nx)
+			from fundamentals import smallprime
+			if nx !=smallprime(nx):
+				log_main.add("The target image size does not consist of small prime numbers")
+			else:
+				log_main.add("The targeted image size consists of small prime numbers")
 		if radiuspca == -1: radiuspca = nx/2-2
-
 		if myid == main_node: log_main.add("%-70s:  %d\n"%("Number of projection", nima))
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
 		
@@ -382,12 +408,17 @@ def main():
 		
 		if options.VAR: # 2D variance images have no shifts
 			#varList   = EMData.read_images(stack, range(img_begin, img_end))
-			varList    = []
-			this_image = EMData()
+			from EMAN2 import Region
+			if options.window > 0:
+				mx = nnxo//2 - options.window//2
+				my = nnyo//2 - options.window//2
+				reg = Region(mx, my, options.window, options.window)
+			else: reg = None
+			from fundamentals import subsample
 			for index_of_particle in range(img_begin,img_end):
-				this_image.read_image(stack,index_of_particle)
-				#varList.append(image_decimate_window_xform_ctf(this_image, options.decimate, options.window,options.CTF))
-				varList.append(window2d(resample(this_image, options.decimate), nx, ny))
+				image = get_im(stack, index_of_proj)
+				if reg: varList.append(subsample(image.get_clip(reg), options.decimate))
+				else:   varList.append(subsample(image, options.decimate))
 				
 		else:
 			from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
@@ -399,13 +430,13 @@ def main():
 			from morphology		import threshold, square_root
 			from projection 	import project, prep_vol, prgs
 			from sets		    import Set
-
+			from utilities      import wrap_mpi_recv, wrap_mpi_bcast, wrap_mpi_send
+			import numpy as np
 			if myid == main_node:
 				t1          = time()
 				proj_angles = []
 				aveList     = []
-				tab = EMUtil.get_all_attributes(stack, 'xform.projection')
-				
+				tab = EMUtil.get_all_attributes(stack, 'xform.projection')	
 				for i in range(nima):
 					t     = tab[i].get_params('spider')
 					phi   = t['phi']
@@ -418,76 +449,149 @@ def main():
 				t2 = time()
 				log_main.add( "%-70s:  %d\n"%("Number of neighboring projections", img_per_grp))
 				log_main.add("...... Finding neighboring projections\n")
-				if options.VERBOSE:
-					log_main.add( "Number of images per group: %d"%img_per_grp)
-					log_main.add( "Now grouping projections")
+				log_main.add( "Number of images per group: %d"%img_per_grp)
+				log_main.add( "Now grouping projections")
 				proj_angles.sort()
-			proj_angles_list = [0.0]*(nima*4)
-			if myid == main_node:
+				proj_angles_list = np.full((nima, 4), 0.0, dtype=np.float32)	
 				for i in range(nima):
-					proj_angles_list[i*4]   = proj_angles[i][1]
-					proj_angles_list[i*4+1] = proj_angles[i][2]
-					proj_angles_list[i*4+2] = proj_angles[i][3]
-					proj_angles_list[i*4+3] = proj_angles[i][4]
-			proj_angles_list = bcast_list_to_all(proj_angles_list, myid, main_node)
+					proj_angles_list[i][0] = proj_angles[i][1]
+					proj_angles_list[i][1] = proj_angles[i][2]
+					proj_angles_list[i][2] = proj_angles[i][3]
+					proj_angles_list[i][3] = proj_angles[i][4]
+			else: proj_angles_list = 0
+			proj_angles_list = wrap_mpi_bcast(proj_angles_list, main_node, MPI_COMM_WORLD)
 			proj_angles      = []
 			for i in range(nima):
-				proj_angles.append([proj_angles_list[i*4], proj_angles_list[i*4+1], proj_angles_list[i*4+2], int(proj_angles_list[i*4+3])])
+				proj_angles.append([proj_angles_list[i][0], proj_angles_list[i][1], proj_angles_list[i][2], int(proj_angles_list[i][3])])
 			del proj_angles_list
-			proj_list, mirror_list = nearest_proj(proj_angles, img_per_grp, list(range(img_begin, img_end)))
-
+			proj_list, mirror_list = nearest_proj(proj_angles, img_per_grp, range(img_begin, img_end))
 			all_proj = Set()
 			for im in proj_list:
 				for jm in im:
 					all_proj.add(proj_angles[jm][3])
-
 			all_proj = list(all_proj)
-			
-			if options.VERBOSE: # all nodes info
-				print("On node %2d, number of images needed to be read = %5d"%(myid, len(all_proj)))
-
 			index = {}
 			for i in range(len(all_proj)): index[all_proj[i]] = i
 			mpi_barrier(MPI_COMM_WORLD)
-
 			if myid == main_node:
 				log_main.add("%-70s:  %.2f\n"%("Finding neighboring projections lasted [s]", time()-t2))
 				log_main.add("%-70s:  %d\n"%("Number of groups processed on the main node", len(proj_list)))
-				if options.VERBOSE:
-					log_main.add("Grouping projections took: ", (time()-t2)/60	, "[min]")
-					log_main.add("Number of groups on main node: ", len(proj_list))
+				log_main.add("Grouping projections took: ", (time()-t2)/60	, "[min]")
+				log_main.add("Number of groups on main node: ", len(proj_list))
 			mpi_barrier(MPI_COMM_WORLD)
 
 			if myid == main_node:
 				log_main.add("...... Calculating the stack of 2D variances \n")
-				if options.VERBOSE:
-					log_main.add("Now calculating the stack of 2D variances")
-
-			proj_params = [0.0]*(nima*5)
+				log_main.add("Now calculating the stack of 2D variances")
+			# Memory estimation. There are two memory consumption peaks
+			# peak 1. Compute ave, var; 
+			# peak 2. Var volume reconstruction;
+			# proj_params = [0.0]*(nima*5)
 			aveList = []
 			varList = []				
-			if nvec > 0:
-				eigList = [[] for i in range(nvec)]
-
-			if options.VERBOSE: 	print("Begin to read images on processor %d"%(myid)) # all nodes info
-			ttt = time()
-			#imgdata = EMData.read_images(stack, all_proj)
-			imgdata = []
-			
-			#if myid==0: print(get_im(stack, 0).get_attr_dict())
-			for index_of_proj in range(len(all_proj)):
-				#img     = EMData()
-				#img.read_image(stack, all_proj[index_of_proj])
-				#dmg = image_decimate_window_xform_ctf(get_im(stack, all_proj[index_of_proj]), options.decimate, options.window, options.CTF)
-				#print dmg.get_xsize(), "init"
-				imgdata.append(window2d(resample(get_im(stack, all_proj[index_of_proj]), options.decimate), nx, ny))
-			
-			#if myid ==0 : print(imgdata[0].get_attr_dict())
-			if options.VERBOSE: # all nodes info
-				print("Reading images on processor %d done, time = %.2f"%(myid, time()-ttt))
-				print("On processor %d, we got %d images"%(myid, len(imgdata)))
+			if nvec > 0: eigList = [[] for i in range(nvec)]
+			dnumber  = len(all_proj)# all neighborhood set for assigned to myid
+			pnumber  = len(proj_list)*2. +img_per_grp # aveList and varList 
+			tnumber  = dnumber+pnumber
+			vol_size2 =  nx**3*4.*8/1.e9
+			vol_size1 =  2.*nnxo**3*4.*8/1.e9
+			proj_size =  nnxo*nnyo*len(proj_list)*4.*1./1.e9 # only varList
+			orig_data_size    = nnxo*nnyo*4.*tnumber/1.e9
+			reduced_data_size = nx*nx*4.*tnumber/1.e9
+			full_data = np.full((number_of_proc, 2), -1., dtype=np.float16)
+			full_data[myid] = orig_data_size, reduced_data_size
+			if myid != main_node: 
+				wrap_mpi_send(full_data, main_node, MPI_COMM_WORLD)
+			if myid == main_node:
+				for iproc in range(number_of_proc):
+					if iproc != main_node:
+						dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
+						full_data[np.where(dummy>-1)] = dummy[np.where(dummy>-1)]
+				del dummy
 			mpi_barrier(MPI_COMM_WORLD)
-
+			full_data = wrap_mpi_bcast(full_data, main_node, MPI_COMM_WORLD)
+			# find the CPU with heaviest load
+			minindx = np.argsort(full_data, 0)
+			heavy_load_myid = minindx[-1][1]
+			if myid == main_node:
+				log_main.add("Number of images computed on each CPU:")
+				log_main.add("CPU    orig size     reduced size")
+				msg =""
+				mem_on_node_orig    = np.full(no_of_groups, 0.0, dtype=np.float16)
+				mem_on_node_current = np.full(no_of_groups, 0.0, dtype=np.float16)
+				for iproc in range(number_of_proc):
+					msg += "%5d   %8.3f GB  %8.3f GB"%(iproc, full_data[iproc][0], full_data[iproc][1])+"; "
+					if (iproc%3 == 2):
+						log_main.add(msg)
+						msg =""
+					mem_on_node_orig[iproc//no_of_processes_per_group]    += full_data[iproc][0]
+					mem_on_node_current[iproc//no_of_processes_per_group] += full_data[iproc][1]
+				if number_of_proc%3 !=0:log_main.add(msg)
+				try:
+					mem_bytes = os.sysconf('SC_PAGE_SIZE')*os.sysconf('SC_PHYS_PAGES')# e.g. 4015976448
+					mem_gib   = mem_bytes/(1024.**3)
+					log_main.add("Available memory information provided by the operating system: %5.1f GB"%mem_gib)
+					if mem_gib >memory_per_node: memory_per_node = mem_gib
+				except: 
+					mem_gib= None
+				log_main.add("Estimated memory to be used per node:")
+				msg = ""
+				run_with_current_setting = True
+				for inode in range(no_of_groups):
+					msg += "%5d   %8.3f GB  %8.3f GB"%(inode, mem_on_node_orig[inode], mem_on_node_current[inode])+";"
+					if mem_on_node_current[inode] > (memory_per_node -   overhead_loading): run_with_current_setting = False
+					if (inode%3 == 2):
+						log_main.add(msg)
+						msg =""
+				if no_of_groups%3 !=0:log_main.add(msg)
+				## Estimate maximum decimate ratio:
+				mem_on_node_orig = np.divide(mem_on_node_orig,(memory_per_node - overhead_loading))
+				max_decimate = 1./np.amax(mem_on_node_orig)
+				from math import sqrt
+				max_decimate = sqrt(max_decimate)
+				if max_decimate>1.0:log_main.add("Memory can afford 2D ave and var computation without image decimation")
+				else:log_main.add("Memory can afford computation with the largest image decimate for 2D ave and var of %6.3f "%max_decimate)
+				if not run_with_current_setting:
+					log_main.add("Warning: memory might not afford the computation with the currently used image decimation")
+				recons3d_decimate_ratio =(memory_per_node - overhead_loading)/\
+				     ((vol_size1 + proj_size)*no_of_processes_per_group)
+				if recons3d_decimate_ratio<1.:
+					log_main.add("Memory can afford var3D reconstruction with image decimate %6.3f"%recons3d_decimate_ratio)
+				else:
+					log_main.add("Memory can afford var3D reconstruction without image decimation") 
+			del full_data
+			if myid == main_node: del mem_on_node_orig, mem_on_node_current, minindx
+			mpi_barrier(MPI_COMM_WORLD)
+			if myid == heavy_load_myid:
+				log_main.add("Begin reading and preprocessing images on processor. Wait... ")
+				ttt = time()
+			#imgdata = EMData.read_images(stack, all_proj)			
+			imgdata = []
+			#if myid==0: print(get_im(stack, 0).get_attr_dict())
+			# Compute region
+			from EMAN2 import Region
+			if options.window > 0:
+				mx  = nnxo//2 - options.window//2
+				my  = nnyo//2 - options.window//2
+				reg = Region(mx, my, options.window, options.window)
+			else: reg = None
+			from fundamentals import subsample
+			for index_of_proj in range(len(all_proj)):
+				image = get_im(stack, all_proj[index_of_proj])
+				if options.decimate>0:
+					ctf = image.get_attr("ctf")
+					ctf.apix = ctf.apix/options.decimate
+					image.set_attr("ctf", ctf)
+				if reg: imgdata.append(subsample(image.get_clip(reg), options.decimate))
+				else:   imgdata.append(subsample(image, options.decimate))
+				if myid == heavy_load_myid and index_of_proj%100 ==0:
+					log_main.add(" ...... %6.2f%% "%(index_of_proj/float(len(all_proj))*100.))
+			if myid == heavy_load_myid:
+				log_main.add("All_proj data reading and preprocessing cost %7.2f m"%((time()-ttt)/60.))
+				log_main.add("Wait till reading jobs on all cpu done...")
+			del image
+			if reg: del reg
+			mpi_barrier(MPI_COMM_WORLD)
 			'''	
 			imgdata2 = EMData.read_images(stack, range(img_begin, img_end))
 			if options.fl > 0.0:
@@ -505,63 +609,61 @@ def main():
 			'''
 			from applications import prepare_2d_forPCA
 			from utilities    import model_blank
+			from EMAN2        import Transform
+			if not options.no_norm: 
+				mask = model_circle(nx/2-2, nx, nx)
+			nx2 = 2*nx
+			ny2 = 2*ny
+			mx1  = nx2//2 - nx//2
+			my1  = ny2//2 - ny//2
+			reg1 = Region(mx1, my1, nx, ny)
+			if options.CTF: 
+				from utilities import pad
+				from filter import filt_ctf
+			from filter import filt_tanl
+			if myid == heavy_load_myid:
+				log_main.add("Start computing 2D aveList and varList. Wait...")
+				ttt = time()
 			for i in range(len(proj_list)):
 				ki = proj_angles[proj_list[i][0]][3]
 				if ki >= symbaselen:  continue
 				mi = index[ki]
-				phiM, thetaM, psiM, s2xM, s2yM = get_params_proj(imgdata[mi])
-
+				dpar = Util.get_transform_params(imgdata[mi], "xform.projection", "spider")
+				phiM, thetaM, psiM, s2xM, s2yM  = dpar["phi"],dpar["theta"],dpar["psi"],-dpar["tx"]*options.decimate,-dpar["ty"]*options.decimate
 				grp_imgdata = []
 				for j in range(img_per_grp):
 					mj = index[proj_angles[proj_list[i][j]][3]]
-					phi, theta, psi, s2x, s2y = get_params_proj(imgdata[mj])
-					alpha, sx, sy, mirror = params_3D_2D_NEW(phi, theta, psi, s2x, s2y, mirror_list[i][j])
+					cpar = Util.get_transform_params(imgdata[mj], "xform.projection", "spider")
+					alpha, sx, sy, mirror = params_3D_2D_NEW(cpar["phi"], cpar["theta"],cpar["psi"], -cpar["tx"]*options.decimate, -cpar["ty"]*options.decimate, mirror_list[i][j])
 					if thetaM <= 90:
-						if mirror == 0:  alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, phiM-phi, 0.0, 0.0, 1.0)
-						else:            alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 180-(phiM-phi), 0.0, 0.0, 1.0)
+						if mirror == 0:  alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, phiM - cpar["phi"], 0.0, 0.0, 1.0)
+						else:            alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 180-(phiM - cpar["phi"]), 0.0, 0.0, 1.0)
 					else:
-						if mirror == 0:  alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, -(phiM-phi), 0.0, 0.0, 1.0)
-						else:            alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, -(180-(phiM-phi)), 0.0, 0.0, 1.0)
-					set_params2D(imgdata[mj], [alpha, sx, sy, mirror, 1.0])
+						if mirror == 0:  alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, -(phiM- cpar["phi"]), 0.0, 0.0, 1.0)
+						else:            alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, -(180-(phiM - cpar["phi"])), 0.0, 0.0, 1.0)
+					imgdata[mj].set_attr("xform.align2d", Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mirror,"scale":1.0}))
 					grp_imgdata.append(imgdata[mj])
-					#print grp_imgdata[j].get_xsize(), imgdata[mj].get_xsize()
-
 				if not options.no_norm:
-					#print grp_imgdata[j].get_xsize()
-					mask = model_circle(nx/2-2, nx, nx)
 					for k in range(img_per_grp):
 						ave, std, minn, maxx = Util.infomask(grp_imgdata[k], mask, False)
 						grp_imgdata[k] -= ave
 						grp_imgdata[k] /= std
-					del mask
-
 				if options.fl > 0.0:
-					from filter import filt_ctf, filt_table
-					nx2 = 2*nx
-					ny2 = 2*ny
 					if options.CTF:
-						from utilities import pad
 						for k in range(img_per_grp):
-							grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa) ),nx,ny)
-							#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
-							#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
+							ctf = grp_imgdata[k].get_attr("ctf")
+							cimage = fft(filt_tanl(filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)),\
+							    grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa))
+							grp_imgdata[k] = cimage.get_clip(reg1)							
 					else:
 						for k in range(img_per_grp):
 							grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
-							#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
-							#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
 				else:
-					from utilities import pad, read_text_file
-					from filter    import filt_ctf, filt_table
-					nx2 = 2*nx
-					ny2 = 2*ny
 					if options.CTF:
-						from utilities import pad
 						for k in range(img_per_grp):
-							grp_imgdata[k] = window2d( fft( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1) ) , nx,ny)
-							#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
-							#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
-
+							cimage = fft(filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)),\
+							   grp_imgdata[k].get_attr("ctf"), binary=1))
+							grp_imgdata[k] = cimage.get_clip(reg1)
 				'''
 				if i < 10 and myid == main_node:
 					for k in xrange(10):
@@ -580,8 +682,8 @@ def main():
 				"""
 
 				var = model_blank(nx,ny)
-				for q in grp_imgdata:  Util.add_img2( var, q )
-				Util.mul_scalar( var, 1.0/(len(grp_imgdata)-1))
+				for q in grp_imgdata:  Util.add_img2(var, q)
+				Util.mul_scalar(var, 1.0/(len(grp_imgdata)-1))
 				# Switch to std dev
 				var = square_root(threshold(var))
 				#if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
@@ -591,15 +693,13 @@ def main():
 					ave.write_image("avgv.hdf",i)
 					var.write_image("varv.hdf",i)
 				"""
-			
+
 				set_params_proj(ave, [phiM, thetaM, 0.0, 0.0, 0.0])
 				set_params_proj(var, [phiM, thetaM, 0.0, 0.0, 0.0])
 
 				aveList.append(ave)
 				varList.append(var)
 
-				if options.VERBOSE:
-					print("%5.2f%% done on processor %d"%(i*100.0/len(proj_list), myid))
 				if nvec > 0:
 					eig = pca(input_stacks=grp_imgdata, subavg="", mask_radius=radiuspca, nvec=nvec, incore=True, shuffle=False, genbuf=True)
 					for k in range(nvec):
@@ -610,13 +710,20 @@ def main():
 						for k in xrange(nvec):
 							eig[k].write_image("eig.hdf", k)
 					"""
-
-			del imgdata
+				if (myid == heavy_load_myid) and (i%100 == 0):
+					log_main.add(" ......%6.2f%%  "%(i/float(len(proj_list))*100.))		
+			del imgdata, grp_imgdata, cpar, dpar, all_proj, proj_angles, index, reg1
+			if options.CTF: del cimage
+			if not options.no_norm: del mask
+			if myid == main_node: del tab
 			#  To this point, all averages, variances, and eigenvectors are computed
-
+			if (myid == heavy_load_myid):
+				log_main.add("Computing aveList and varList cost %7.2f m"%((time()-ttt)/60.))
+			mpi_barrier(MPI_COMM_WORLD) # synchronize all cpus
 			if options.ave2D:
 				from fundamentals import fpol
 				if myid == main_node:
+					log_main.add("Compute ave2D ... ")
 					km = 0
 					for i in range(number_of_proc):
 						if i == main_node :
@@ -638,7 +745,7 @@ def main():
 								members = mpi_recv(3, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 								ave.set_attr('refprojdir', map(float, members))
 								"""
-								tmpvol=fpol(ave, Tracker["nx"],Tracker["nx"],1)								
+								tmpvol=fpol(ave, nx,nx,1)								
 								tmpvol.write_image(os.path.join(options.output_dir, options.ave2D), km)
 								km += 1
 				else:
@@ -659,19 +766,20 @@ def main():
 						"""
 
 			if options.ave3D:
+				if myid == main_node:
+					log_main.add("Compute ave3D... ")
 				from fundamentals import fpol
-				if options.VERBOSE and myid == main_node: log_main.add("Reconstructing 3D average volume")
+				if myid == main_node: log_main.add("Reconstructing 3D average volume")
 				ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad)
 				bcast_EMData_to_all(ave3D, myid)
 				if myid == main_node:
-					ave3D = fpol(ave3D,Tracker["nx"],Tracker["nx"],Tracker["nx"])
+					ave3D = fpol(ave3D,nx,nx,nx)
 					ave3D.write_image(os.path.join(options.output_dir, options.ave3D))
 					log_main.add("%-70s:  %s\n"%("Writing to the disk volume reconstructed from averages as", options.ave3D))
-			del ave, var, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList
-
+			del ave, var, proj_list, stack, alpha, sx, sy, mirror, aveList
 			if nvec > 0:
 				for k in range(nvec):
-					if options.VERBOSE and myid == main_node:log_main.add("Reconstruction eigenvolumes", k)
+					if myid == main_node:log_main.add("Reconstruction eigenvolumes", k)
 					cont = True
 					ITER = 0
 					mask2d = model_circle(radiuspca, nx, nx)
@@ -716,11 +824,12 @@ def main():
 			if options.var2D:
 				from fundamentals import fpol 
 				if myid == main_node:
+					log_main.add("Compute var2D...")
 					km = 0
 					for i in range(number_of_proc):
 						if i == main_node :
 							for im in range(len(varList)):
-								tmpvol=fpol(varList[im], Tracker["nx"], Tracker["nx"],1)
+								tmpvol=fpol(varList[im], nx, nx,1)
 								tmpvol.write_image(os.path.join(options.output_dir, options.var2D), km)
 								km += 1
 						else:
@@ -728,7 +837,7 @@ def main():
 							nl = int(nl[0])
 							for im in range(nl):
 								ave = recv_EMData(i, im+i+70000)
-								tmpvol=fpol(ave, Tracker["nx"], Tracker["nx"],1)
+								tmpvol=fpol(ave, nx, nx,1)
 								tmpvol.write_image(os.path.join(options.output_dir, options.var2D), km)
 								km += 1
 				else:
@@ -737,22 +846,21 @@ def main():
 						send_EMData(varList[im], main_node, im+myid+70000)#  What with the attributes??
 			mpi_barrier(MPI_COMM_WORLD)
 
-		if  options.var3D:
-			if myid == main_node and options.VERBOSE: log_main.add("Reconstructing 3D variability volume")
+		if options.var3D:
+			if myid == main_node: log_main.add("Reconstructing 3D variability volume")
 			t6 = time()
 			# radiusvar = options.radius
 			# if( radiusvar < 0 ):  radiusvar = nx//2 -3
-			res = recons3d_4nn_MPI(myid, varList, symmetry=options.sym, npad=options.npad)
+			res = recons3d_4nn_MPI(myid, varList, symmetry = options.sym, npad=options.npad)
 			#res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)
-			
 			if myid == main_node:
 				from fundamentals import fpol
-				res = fpol(res, int(org_nx*options.decimate+0.5),  int(org_ny*options.decimate+0.5),  int(org_nz*options.decimate+0.5))
-				res	= resample(res, 1./options.decimate)
+				if options.decimate != 1.0: res	= resample(res, 1./options.decimate)
+				res = fpol(res, nnxo, nnxo, nnxo)
 				set_pixel_size(res, 1.0)
 				res.write_image(os.path.join(options.output_dir, options.var3D))
 				log_main.add("%-70s:  %.2f\n"%("Reconstructing 3D variability took [s]", time()-t6))
-				log_main.add("%-70s:  %.2f\n"%("Total time for these computations [s]", time()-t0))
+				log_main.add("%-70s:  %.2f\n"%("Total computation time [m]", (time()-t0)/60.))
 				log_main.add("sx3dvariability finishes")	
 		from mpi import mpi_finalize
 		mpi_finalize()
