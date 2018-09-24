@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2016  Thorsten Wagner (markus.stabrin@mpi-dortmund.mpg.de)
+# Copyright (C) 2016  Thorsten Wagner (thorsten.wagner@mpi-dortmund.mpg.de)
 #
 
 # source code in this file under either license. However, note that the
