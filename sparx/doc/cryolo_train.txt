@@ -8,7 +8,7 @@ crYOLO - training: Training of crYOLO, a deep learning high accuracy particle pi
 
 Usage in command line
 
-  sxcryolo_train.py architecture particle_diameter training_dir annot_dir --input_size=input_size --num_patches=num_patches --overlap_patches=overlap_patches --train_times=train_times --weights_name=weights_name --batch_size=batch_size --learning_rate=learning_rate --np_epoch=np_epoch --object_scale=object_scale --no_object_scale=no_object_scale --coord_scale=coord_scale --valid_image_dir=valid_image_dir --valid_annot_dir=valid_annot_dir --warmup=warmup
+  sxcryolo_train.py architecture particle_diameter training_dir annot_dir --input_size=input_size --num_patches=num_patches --overlap_patches=overlap_patches --train_times=train_times --weights_name=weights_name --batch_size=batch_size --learning_rate=learning_rate --np_epoch=np_epoch --object_scale=object_scale --no_object_scale=no_object_scale --coord_scale=coord_scale --valid_image_dir=valid_image_dir --valid_annot_dir=valid_annot_dir --warmup=warmup --gpu=gpu
 
 \\
 ===== Typical usage =====
@@ -49,6 +49,7 @@ Then the training typcial happens in two steps:
   ; %%--%%valid_image_dir : Path to validation images : Images used (default none)
   ; %%--%%valid_annot_dir : Path to validation annotations : Path to the validation box files (default none)
   ; %%--%%warmup : Warm up epochs : Number of warmup epochs. (default 5)
+  ; %%--%%gpu: GPUs : List of GPUs to use. (default 0)
 
 \\
 ===== Output =====
