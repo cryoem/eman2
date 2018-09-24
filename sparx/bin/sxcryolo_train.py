@@ -24,7 +24,7 @@
 
 from __future__ import print_function
 import argparse
-from json import dump, load
+from json import dump
 import subprocess
 
 argparser = argparse.ArgumentParser(
