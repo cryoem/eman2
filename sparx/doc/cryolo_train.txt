@@ -55,9 +55,6 @@ Then the training typcial happens in two steps:
 ===== Output =====
 It will write a .h5 file (default yolo_model.h5) into your project directory.
 
-\\
-=== List of Output Files ===
-Write box and star files into the output directory
 
 \\
 ===== Description =====
