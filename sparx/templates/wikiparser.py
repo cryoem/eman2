@@ -234,6 +234,13 @@ def construct_keyword_dict():
 	keyword_dict["--sym"]                         = SXkeyword_map(2, "sym")                 # --sym=c1, --sym=symmetry, --sym=c4
 	keyword_dict["--mol_mass"]                    = SXkeyword_map(2, "mass")                # --mol_mass=KILODALTON
 
+	#Added keywords for crYOLO
+	keyword_dict["--input_size"] = SXkeyword_map(0, "int")
+	keyword_dict["training_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["annot_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["valid_image_dir"] = SXkeyword_map(2, "dir")
+	keyword_dict["valid_annot_dir"] = SXkeyword_map(2, "dir")
+
 	# NOTE: 2018/02/06 Toshio Moriya
 	# Low-pass filter fall-off width does not make sense to convert to resolution [A] directly. 
 	# It might make more sense to compute Angstrom range from the given cutoff, falloff width, and pixel size
@@ -2330,6 +2337,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_changesize()))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2proc3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_window()))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_angular_distribution.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_train.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 ###	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_single_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_single_vols()))
 	sxcmd_config_list.append(SXcmd_config("../doc/unblur.txt", "DokuWiki", sxcmd_category, sxcmd_role))
