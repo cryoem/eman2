@@ -241,8 +241,8 @@ def construct_keyword_dict():
 	keyword_dict["valid_image_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["valid_annot_dir"] = SXkeyword_map(2, "dir")
 	keyword_dict["target_dir"] = SXkeyword_map(2, "dir")
-	keyword_dict["params_any_json"] = SXkeyword_map(2, "params_any_json")  # --import=INPUT_PARAMS_PATH
-	keyword_dict["params_any_h5"] = SXkeyword_map(2, "params_any_h5")
+	keyword_dict["config_path"] = SXkeyword_map(2, "params_any_json")  # --import=INPUT_PARAMS_PATH
+	keyword_dict["model_path"] = SXkeyword_map(2, "params_any_h5")
 
 	# NOTE: 2018/02/06 Toshio Moriya
 	# Low-pass filter fall-off width does not make sense to convert to resolution [A] directly. 

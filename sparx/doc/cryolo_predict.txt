@@ -25,9 +25,9 @@ for writing the box files. Optionally one can specify the confidence threshold a
 \\
 ===== Input =====
 === Main Parameters ===
-  ; params_any_json : Config file: Path of the crYOLO config file.  (default config_yolo.json)
+  ; config_path : Config file: Path of the crYOLO config file.  (default config_yolo.json)
   ; target_dir : Image directory  : Folder which contain all images. (default none)
-  ; params_any_h5 : Model path : Path to the trained model. (default cryolo_model.h5)
+  ; model_path : Model path : Path to the trained model. (default cryolo_model.h5)
   ; output_dir : Output directory : Folder to write the box files. (default none)
 
 
