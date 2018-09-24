@@ -210,9 +210,9 @@ def main():
     warmup_argument = "-w=" + str(warmup)
     gpu_argument = "-g=" + arg_gpu
     early_stop = "-e=" + str(early_stop)
-    subprocess.check_call(['python', 'cryolo_train.py', "-c=config_yolo", warmup_argument, gpu_argument, early_stop])
+    subprocess.check_call(['python', 'cryolo_train.py', "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop])
     warmup_argument = "-w=" + 0
-    subprocess.check_call(['python', 'cryolo_train.py', "-c=config_yolo", warmup_argument, gpu_argument, early_stop])
+    subprocess.check_call(['python', 'cryolo_train.py', "-c=config_yolo.json", warmup_argument, gpu_argument, early_stop])
 
 
 
