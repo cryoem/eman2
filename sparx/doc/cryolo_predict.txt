@@ -1,0 +1,90 @@
+~~NOTOC~~
+
+===== sxcryolo_predict =====
+crYOLO - predict: Prediction with crYOLO, a deep learning high accuracy particle picking procedure.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sxcryolo_predict config_file model_path target_folder output --confidence_threshold=confidence_threshold --gpu=gpu
+
+\\
+===== Typical usage =====
+
+To pick with crYOLO one have to specifiy the config file, the target folder containing the images and the output folder
+for writing the box files. Optionally one can specify the confidence threshold and which GPUs should be used.
+
+\\ __Prediction__:
+
+  sxcryolo_predict.py config_file target_dir output_dir --confidence_threshold=0.3 --gpu=0
+
+\
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; params_any_json : Config file: Path of the crYOLO config file.  (default config_yolo.json)
+  ; target_dir : Image directory  : Folder which contain all images. (default none)
+  ; params_any_h5 : Model path : Path to the trained model. (default cryolo_model.h5)
+  ; output_dir : Output directory : Folder to write the box files. (default none)
+
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%confidence_threshold : Confidence threshold [0-1] : Confidence threshold for picking. Particles with a confidence threshold lower than this value will be discarded. (default 0.3)
+  ; %%--%%gpu : GPUs : List of GPUs to use. (default 0)
+
+\\
+===== Output =====
+It will write box and star files into your output directory.
+
+\\
+=== List of Output Files ===
+Write box and star files into the output directory
+
+
+\\
+==== Method ====
+See the reference below.
+
+\\
+==== Time and Memory ===
+Picking is very fast with up to 8 micrographs / s.
+
+
+\\
+==== Developer Notes ====
+=== 2019/09/24 Thorsten Wagner ===
+  * Initial creation of the document
+
+\\
+==== Reference ====
+ https://doi.org/10.1101/356584
+
+\\
+==== Author / Maintainer ====
+Thorsten Wagner
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sparx/bin/sxcryolo_predict.py
+
+\\
+==== See also ====
+[[pipeline:window:cryolo|crYOLO]]
+
+\\
+==== Maturity ====
+Stable
+
+\\
+==== Bugs ====
+None right now.
+
+\\
