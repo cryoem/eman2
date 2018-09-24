@@ -92,13 +92,34 @@ def mrk_table_stat(X):
 	
 	avg = av/N
 	var = 0.0
-	if N - 1 > 0:
+	if ma - mi == 0:
+		var = 0.0
+	elif N - 1 > 0:
 		var = (va - av*av/N)/float(N - 1)
 	sd = 0.0
 	if var > 0.0:
 		sd = sqrt(var)
 	
 	return  avg, sd, mi, ma
+
+
+# ----------------------------------------------------------------------------------------
+# Create relative path of path p2 to p1
+# ----------------------------------------------------------------------------------------
+def makerelpath(p1,p2):
+	"""Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
+	
+	p1s=[i for i in p1.split("/") if len(i)>0]
+	p2s=[i for i in p2.split("/") if len(i)>0]
+
+	for dv in range(min(len(p1s),len(p2s))):
+		if p1s[dv]!=p2s[dv] : break
+	else: dv+=1
+
+	p1s=p1s[dv:]
+	p2s=p2s[dv:]
+	
+	return "../"*len(p1s)+"/".join(p2s)
 
 # ========================================================================================
 # Main function
@@ -110,15 +131,14 @@ def main():
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
-	usage = progname + ' input_star_file output_directory --relion_project_dir=DIR_PATH --star_section=SECTION_STRING --outputs_root=ROOT_NAME_STRING --box_size=BOX_SIZE --create_stack --cs_save_as_hdf'
+	usage = progname + ' input_star_file output_directory --relion_project_dir=DIR_PATH --star_section=SECTION_STRING --outputs_root=ROOT_NAME_STRING --box_size=BOX_SIZE --do_not_create_stack'
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option('--relion_project_dir', type='string',         default=None,      help='RELION project directory: Path to RELION project directory associated with the RELION STAR file. By default, the program assume the current directory is the RELION project directory. (default none)')
 	parser.add_option('--star_section',       type='string',         default='data_',   help='Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_)')
 	parser.add_option('--outputs_root',       type='string',         default='sphire',  help='Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default sphire)')
 	parser.add_option('--box_size',           type=int,              default=0,         help='Box size: Box size for particle extraction. It also controls the saved coordinates file format. If the given value is > 0, store the eman1 format. coordinate file. The coordinates of eman1 format is particle box corner associated with this box size. The coordinates of sphire format is particle center. By default, use sphire format. (default 0)')
-	parser.add_option('--create_stack',       action='store_true',   default=False,     help='Create virtual stacks: Create per-micrograph virtual stacks of particle images in BDB format. By default, the program does not generate the stack of particle images because it takes a long time and the file size is large. (default False)')
-	parser.add_option('--cs_save_as_hdf',     action='store_true',   default=False,     help='Save stack as HDF file: Save a stack file in HDF file format instead of BDB format. In this case, the stack file will contain all particle images in the input RELION STAR file. Effective only with --create_stack. (default False)')
+	parser.add_option('--do_not_create_stack',       action='store_true',   default=False,     help='Create virtual stacks: Create per-micrograph virtual stacks without the actual particle meta information in BDB format. By default, the program does generate the stack of particle meta information (default False)')
 	
 	(options,args) = parser.parse_args( arglist[1:] )
 
@@ -143,9 +163,8 @@ def main():
 	str_relion_start_section    = options.star_section
 	outputs_root                = options.outputs_root.strip()
 	box_size                    = options.box_size
-	is_enable_create_stack      = options.create_stack
-	cs_save_as_hdf              = options.cs_save_as_hdf
-	
+	is_enable_create_stack      = bool(not options.do_not_create_stack)
+
 	if (not os.path.exists(file_path_relion_star)):
 		print(( 'ERROR!!! Input RELION STAR file ({}) is not found.'.format(file_path_relion_star)))
 		sys.exit(-1)
@@ -753,7 +772,8 @@ def main():
 		for micrograph_dirname in sorted(sphire_micrographs_dict):
 			dir_path_sphire_micrographs = os.path.join(dir_path_work, micrograph_dirname)
 			if not os.path.exists(dir_path_sphire_micrographs):
-				os.mkdir(dir_path_sphire_micrographs)
+				#Markus 05.06.18 -- os.mkdir(dir_path_sphire_micrographs)
+				os.makedirs(dir_path_sphire_micrographs)
 			
 			file_path_sphire_micrographs = os.path.join(dir_path_sphire_micrographs, file_name_sphire_micrographs)
 			file_sphire_micrographs = open(file_path_sphire_micrographs,'w+')
@@ -765,7 +785,8 @@ def main():
 		for micrograph_dirname in sorted(sphire_cter_dict):
 			dir_path_sphire_cter_partres = os.path.join(dir_path_work, micrograph_dirname)
 			if not os.path.exists(dir_path_sphire_cter_partres):
-				os.mkdir(dir_path_sphire_cter_partres)
+				#Markus 05.06.18 -- os.mkdir(dir_path_sphire_micrographs)
+				os.makedirs(dir_path_sphire_cter_partres)
 			
 			micrograph_extension = os.path.splitext(micrograph_basename)[1]
 			file_path_sphire_cter_partres = os.path.join(dir_path_sphire_cter_partres, file_name_sphire_cter_partres)
@@ -1021,22 +1042,19 @@ def main():
 			for micrograph_dirname in sorted(sphire_header_dict):
 				print('# ')
 				print('# Processing {} directory ...'.format(micrograph_dirname))
-				
-				if not cs_save_as_hdf:
-					dir_path_local_bdb_stacks = os.path.join(dir_path_work, micrograph_dirname, dir_name_local_stacks)
-					if not os.path.exists(dir_path_local_bdb_stacks):
-						os.mkdir(dir_path_local_bdb_stacks)
-				else:
-					file_path_hdf_stack = os.path.join(dir_path_work, micrograph_dirname, '{}_stack.hdf'.format(outputs_root))
-				
+
+				dir_path_local_bdb_stacks = os.path.join(dir_path_work, micrograph_dirname, dir_name_local_stacks)
+				if not os.path.exists(dir_path_local_bdb_stacks):
+					os.mkdir(dir_path_local_bdb_stacks)
+
 				for i_micrograph, micrograph_basename in enumerate(sorted(sphire_header_dict[micrograph_dirname])):
 					if i_micrograph % 100 == 0:
 						print('# Processing micrographs from {:5d} to {:5d} in {} directory...'.format(i_micrograph, i_micrograph + 100 - 1, micrograph_dirname))
 					
-					if not cs_save_as_hdf:
-						micrograph_baseroot = os.path.splitext(micrograph_basename)[0]
-						file_path_local_bdb_stack = 'bdb:{}#{}_ptcls'.format(dir_path_local_bdb_stacks, micrograph_baseroot)
-					
+					micrograph_baseroot = os.path.splitext(micrograph_basename)[0]
+					file_path_local_bdb_stack = 'bdb:{}#{}_ptcls'.format(dir_path_local_bdb_stacks, micrograph_baseroot)
+					local_bdb_stack = db_open_dict(file_path_local_bdb_stack)
+
 					for sphire_header_id, sphire_header in enumerate(sphire_header_dict[micrograph_dirname][micrograph_basename]):
 						# Copy this particle image from local stack to new global stack
 						# First read image
@@ -1045,69 +1063,61 @@ def main():
 						assert os.path.exists(relion_local_stack_path)
 						n_img_relion_local_stack = EMUtil.get_image_count(relion_local_stack_path)
 						assert sphire_local_particle_id < n_img_relion_local_stack, '# Logical Error: The local particle ID must not exceed the number of images in the assocaited local particle stack.'
-						img_particle = get_im(relion_local_stack_path, sphire_local_particle_id)
+						img_particles_dict = get_im(relion_local_stack_path, sphire_local_particle_id).get_attr_dict()
 						
 						# NOTE: 2015/10/19 Toshio Moriya
 						# Store the extracted information into the image header
-						img_particle.set_attr('ptcl_source_relion', sphire_header['ptcl_source_relion'])
-						img_particle.set_attr('ptcl_source_image', sphire_header['ptcl_source_image'])
-						img_particle.set_attr('ptcl_source_coord', sphire_header['ptcl_source_coord']) # No conversion is necessary from RELION to SPHIRE foramts
-						img_particle.set_attr('ptcl_source_coord_id', sphire_header['ptcl_source_coord_id'])
-						img_particle.set_attr('data_n', sphire_header['data_n'])  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
-						img_particle.set_attr('resample_ratio', sphire_header['resample_ratio'])
+						img_particles_dict['ptcl_source_relion'] = sphire_header['ptcl_source_relion']
+						img_particles_dict['ptcl_source_image'] = sphire_header['ptcl_source_image']
+						img_particles_dict['ptcl_source_coord'] = sphire_header['ptcl_source_coord'] # No conversion is necessary from RELION to SPHIRE formats
+						img_particles_dict['ptcl_source_coord_id'] = sphire_header['ptcl_source_coord_id']
+						img_particles_dict['data_n'] = sphire_header['data_n']  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
+						img_particles_dict['data_path'] = makerelpath(dir_path_local_bdb_stacks + '/EMAN2DB', relion_local_stack_path)  # NOTE: Markus Stabrin 2018/09/17: Link to existing mrcs stack
+						img_particles_dict['resample_ratio'] = sphire_header['resample_ratio']
 						# 
 						# NOTE: 2017/12/05 Toshio Moriya 
 						# Add header entries so that it consistent with sxwindow.py (refer note in sxwindow.py about why these are set to 1.0[A])
 						# 
-						img_particle.set_attr('apix_x', sphire_header['apix_x'])
-						img_particle.set_attr('apix_y', sphire_header['apix_y'])
-						img_particle.set_attr('apix_z', sphire_header['apix_z'])
+						img_particles_dict['apix_x'] = sphire_header['apix_x']
+						img_particles_dict['apix_y'] = sphire_header['apix_y']
+						img_particles_dict['apix_z'] = sphire_header['apix_z']
 						
 						if relion_category_dict['helical'][idx_is_category_found] == True:
-							img_particle.set_attr('filament', sphire_header['filament'])
+							img_particles_dict['filament'] = sphire_header['filament']
 						if relion_category_dict['ctf'][idx_is_category_found] == True:
-							img_particle.set_attr('ctf', sphire_header['ctf'])
-							img_particle.set_attr('ctf_applied', sphire_header['ctf_applied'])
-							img_particle.set_attr('ptcl_source_apix', sphire_header['ptcl_source_apix']) # Store the original pixel size
+							img_particles_dict['ctf'] = sphire_header['ctf']
+							img_particles_dict['ctf_applied'] = sphire_header['ctf_applied']
+							img_particles_dict['ptcl_source_apix'] = sphire_header['ptcl_source_apix'] # Store the original pixel size
 						if relion_category_dict['proj3d'][idx_is_category_found] == True:
-							set_params_proj(img_particle, sphire_header['xform.projection'])
+							img_particles_dict[img_particle] = sphire_header['xform.projection']
 							# Add relion specific header entries
-							img_particle.set_attr('relion_max_prob_dist', sphire_header['relion_max_prob_dist'])
-							img_particle.set_attr('relion_norm_correct', sphire_header['relion_norm_correct'])
+							img_particles_dict['relion_max_prob_dist'] = sphire_header['relion_max_prob_dist']
+							img_particles_dict['relion_norm_correct'] = sphire_header['relion_norm_correct']
 						if relion_category_dict['chunk'][idx_is_category_found] == True:
-							img_particle.set_attr('chunk_id', sphire_header['chunk_id'])
-						
-						if not cs_save_as_hdf:
-							# Write the particle image to local stack file
-							img_particle.write_image(file_path_local_bdb_stack, sphire_header_id)
-						else:
-							# assert cs_save_as_hdf
-							img_particle.write_image(file_path_hdf_stack, sphire_header['i_sphire_stack_particle_img'])
+							img_particles_dict['chunk_id'] = sphire_header['chunk_id']
+
+						# Write the particle image to local stack file
+						local_bdb_stack[sphire_header_id] = img_particles_dict
+					db_close_dict(file_path_local_bdb_stack)
+
+				# # NOTE: Toshio Moriya 2018/07/09
+				# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...
+				# file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(os.path.join(dir_path_work, micrograph_dirname), outputs_root)
+				# e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
+				# print('# ')
+				# print('# Putting local stacks together to a virtual stack...')
+				# print('#  {}'.format(e2bdb_command))
+				# # cmdexecute(e2bdb_command, printing_on_success = False)
+				# cmdexecute(e2bdb_command)
+				# 
+				# assert db_check_dict(file_path_sphire_mic_dir_stack, readonly=True), '# Logical Error: Output BDB stack in output directory should exist at this point of code.'
+				# assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_sphire_mic_dir_stack), '# The numbers of particles should match always at this point of code'
 				
-				if not cs_save_as_hdf:
-					# # NOTE: Toshio Moriya 2018/07/09
-					# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...
-					# file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(os.path.join(dir_path_work, micrograph_dirname), outputs_root)
-					# e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
-					# print('# ')
-					# print('# Putting local stacks together to a virtual stack...')
-					# print('#  {}'.format(e2bdb_command))
-					# # cmdexecute(e2bdb_command, printing_on_success = False)
-					# cmdexecute(e2bdb_command)
-					# 
-					# assert db_check_dict(file_path_sphire_mic_dir_stack, readonly=True), '# Logical Error: Output BDB stack in output directory should exist at this point of code.'
-					# assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_sphire_mic_dir_stack), '# The numbers of particles should match always at this point of code'
-					
-					file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(os.path.join(dir_path_work, micrograph_dirname), outputs_root)
-					e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
-					print('# ')
-					print('# Please execute the following command line to create single virtual stack by combining all local stacks in {} directory'.format(micrograph_dirname))
-					print('#   {}'.format(e2bdb_command))
-				else:
-					# assert cs_save_as_hdf
-					# Do nothing
-					assert os.path.exists(file_path_hdf_stack), '# The SPHIRE stack must exist at this point of code.'
-					# assert i_sphire_stack_particle_img == EMUtil.get_image_count(file_path_hdf_stack), '# The numbers of particles should match always at this point of code' 
+				file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(dir_path_local_bdb_stacks, outputs_root)
+				e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
+				print('# ')
+				print('# Please execute the following command line to create single virtual stack by combining all local stacks in {} directory'.format(micrograph_dirname))
+				print('#   {}'.format(e2bdb_command))
 			
 			# # NOTE: Toshio Moriya 2018/07/10
 			# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...
