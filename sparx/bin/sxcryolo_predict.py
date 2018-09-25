@@ -88,5 +88,4 @@ def main():
     output_argument = "-o=" + str(output_dir)
     thresh_argument = "-t=" + str(confidence_threshold)
     gpu_argument = "-g=" + arg_gpu
-    subprocess.check_call(
-        ['python', 'cryolo_predict.py', config_argument, weights_argument, input_argument, output_argument,thresh_argument,gpu_argument])
+    subprocess.check_call(['python', 'cryolo_predict.py', config_argument, weights_argument, input_argument, output_argument,thresh_argument,gpu_argument])
