@@ -4504,60 +4504,6 @@ post-process - This is an optional filter to apply to the model as a final step,
 		
 		return ["Project 3D",params]
 		
-class E2RunFreAlign(WorkFlowTask):
-	"""Select the directory you want to use for frealign"""
-	def __init__(self):
-		WorkFlowTask.__init__(self)
-		self.window_title = "Launch e2runfrealign"
-		self.report_task = None
-
-	def get_ref_table(self):
-		data_dict = EMProjectDataDict(spr_freealign_dirs_dict)
-		init_model_data = data_dict.get_data_dict()
-		self.project_data_at_init = init_model_data # so if the user hits cancel this can be reset
-		init_model_names = list(init_model_data.keys())
-
-		from .emform import EM3DFileTable,EMFileTable,float_lt
-		table = EM3DFileTable(init_model_names,name="dirs",desc_short="FreAlign Dirs",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_freealign_dirs_dict)
-		table.add_context_menu_data(context_menu_data)
-		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-		
-		return table,len(init_model_names)
-		
-	def get_params(self):
-		params = []
-	 	
-		r,rn = self.get_ref_table()
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Select directories for FreAlign",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
-		params.append(r)
-		#piter = ParamDef(name="iter",vartype="int",desc_short="iterations", desc_long="number of FreAlign iterations",property=None,defaultunits=5,choices=None)
-		#params.append(piter)
-		return params
-		
-	def on_form_ok(self,params):
-		
-		if "dirs" not in params:
-			EMErrorMessageDisplay.run(["Please select dirs for processing"])
-			return
-		if  "dirs" in params and len(params["dirs"]) == 0:
-			EMErrorMessageDisplay.run(["Please select dirs for processing"])
-			return
-			
-		self.write_db_entries(params)
-		
-		
-		edir = params["dirs"][0]
-		edir = edir[:edir.rindex("/")]
-		
-		prflist = "e2runfrealign.py"
-		
-		child = subprocess.Popen(prflist, cwd=edir, shell=True)
-		
-		self.form.close()
-		self.form = None
-		
-
 		
 def resolution_display_convert(dir):
 	'''
