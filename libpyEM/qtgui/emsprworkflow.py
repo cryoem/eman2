@@ -4505,13 +4505,6 @@ post-process - This is an optional filter to apply to the model as a final step,
 		return ["Project 3D",params]
 		
 		
-def resolution_display_convert(dir):
-	'''
-	This "display_convert" function breaks the mold a little in that it returns the name of a database that has plots in it. It's handled in e2workflow.py
-	'''
-	return "bdb:"+dir+"#convergence.results"
-
-
 def get_e2resolution_results_list(keys):
 		'''
 		Extract the names from the keys that match the e2resolution.py output naming convention
