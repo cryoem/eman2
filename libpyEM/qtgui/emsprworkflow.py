@@ -2002,64 +2002,6 @@ class E2BoxerTask(ParticleWorkFlowTask):
 		self.task_idle.emit()
 
 
-class OldBoxerRecoveryDialog(QtGui.QDialog):
-	def __init__(self):
-		'''
-		@param sym some kind of symmetry, such as "d7", "icos" etc
-		'''
-		QtGui.QDialog.__init__(self)
-		self.setWindowTitle("Old Boxer Recovery")
-		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "green_boxes.png"))
-
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
-		self.vbl.setSpacing(6)
-		self.vbl.setObjectName("vbl")
-		
-		text_edit = QtGui.QTextEdit("")
-		text_edit.setReadOnly(True)
-		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
-		text_edit.setText("The workflow has detected you have data stored in the local database that was generated with an old version of e2boxer. You can recover it (recommended), in which case the old data is converted so it can be interpreted within the current framework. Alternatively you can just delete it, which means the box coordinates will be lost forever.")
-		self.vbl.addWidget(text_edit)
-		self.button_hbl = QtGui.QHBoxLayout()
-		self.recover = QtGui.QPushButton("Recover")
-		self.recover.setToolTip("The old database will be converted to a format recognized by the new boxer. The old database will then be deleted.")
-		self.recover.setDefault(True)
-		self.remove = QtGui.QPushButton("Remove")
-		self.remove.setToolTip("The old database will be removed and all previous boxing results will be deleted from disk.")
-		self.cancel = QtGui.QPushButton("Cancel")
-		self.cancel.setToolTip("The operation will be cancelled.")
-		self.button_hbl.addWidget(self.cancel )
-		self.button_hbl.addWidget(self.remove )
-		self.button_hbl.addWidget(self.recover )
-		self.vbl.addLayout(self.button_hbl)
-
-	
-		self.recover.clicked[bool].connect(self.on_recover)
-		self.remove.clicked[bool].connect(self.on_remove)
-		self.cancel.clicked[bool].connect(self.on_cancel)
-		self.ret_code = 0
-	def on_cancel(self,int):
-		self.ret_code = 0
-		self.accept()
-		
-	def on_remove(self,int):
-		self.ret_code = 1
-		self.accept()
-		
-	def on_recover(self,int):
-		self.ret_code = 2
-		self.accept()
-	
-	def exec_(self):
-		'''
-		Customized exec_ function
-		@return None if the user hit cancel or a dictionary containing important parameters if the user hit ok
-		'''
-		QtGui.QDialog.exec_(self)
-		return self.ret_code
-
-
 class E2CTFWorkFlowTask(EMParticleReportTask):
 	'''
 	Common functionality for E2CTF Work flow taskss
