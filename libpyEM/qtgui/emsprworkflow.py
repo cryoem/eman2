@@ -2523,27 +2523,6 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		#db_close_dict("bdb:e2ctf.parms")
 		return ret
 
-class CTFReportTask(E2CTFWorkFlowTask):
-	
-	documentation_string = "This tool is for displaying the currently determined CTF parameters for the particles associated with the project. It also displays \
-the number of phase flipped and/or wiener filtered images corresponding to each particle set. Normally you don't do anything on this page other than get a \
-status report on current processing."
-	warning_string = "\n\n\nNOTE: There are no particles currently associated with the project. Please go to the \"Particles\" task and import/box particles first."
-	def __init__(self):
-		E2CTFWorkFlowTask.__init__(self)
-		self.window_title = "CTF Parameters And Images"
-
-	def get_params(self):
-		params = []
-		p,n = self.get_full_ctf_table()
-
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=CTFReportTask.documentation_string,choices=None))
-		params.append(p)
-		return params
-
-	def write_db_entry(self,key,value):
-		pass		
-
 class E2CTFOutputTask(E2CTFWorkFlowTask):	
 	"""Select the particle data for which you wish to generate phase flipped and/or Wiener filtered output and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs that write the output into a predefined location in the EMAN2 database.\nNote that the Wiener filtered output images are also phase flipped."""
 	task_idle = QtCore.pyqtSignal()
