@@ -3388,17 +3388,6 @@ class E2Refine2DTask(EMClassificationTools):
 	 	
 		return []
 
-class EMSetsOptions(EMPartSetOptions):
-	''' 
-	e2refine2d and e2refine, from with the worklfow setting, both want to know the same 
-	thing, basically, what are the available stacks (including filtered options)
-	'''
-	
-	def __init__(self,bdb_only=False):
-		EMPartSetOptions.__init__(self,spr_sets_dict,bdb_only)
-		self.image_count = False
-
-		 	
 class E2InitialModelsTool(object):
 	def __init__(self):
 		self.project_data_at_init = None
