@@ -2059,59 +2059,6 @@ class OldBoxerRecoveryDialog(QtGui.QDialog):
 		QtGui.QDialog.exec_(self)
 		return self.ret_code
 
-def recover_old_boxer_database():
-	'''
-	This function will become redundant, probably by the beginning of 2010
-	'''
-	old_boxer_database = "bdb:e2boxer.cache"
-	if db_check_dict(old_boxer_database):
-		recovery_items = []
-		db = db_open_dict(old_boxer_database)
-		for key,value in list(db.items()):
-			if isinstance(key,str) and len(key) > 2 and key[-3:] == "_DD":
-				if isinstance(value,dict):
-					if "reference_boxes" in value or "auto_boxes" in value or "manual_boxes" in value:
-						if "e2boxer_image_name" in value:
-							recovery_items.append([key,value])
-		if len(recovery_items) > 0:
-			dialog = OldBoxerRecoveryDialog()
-			code = dialog.exec_()
-			if code == 0:
-				return 0
-			else:
-				if code == 1:
-					db_remove_dict(old_boxer_database)
-				else: # code == 2
-					new_db_name = "bdb:e2boxercache#boxes"
-					db = db_open_dict(new_db_name)
-					for item in recovery_items:
-						from pyemtbx.boxertools import TrimBox
-						value = item[1]
-						name = value["e2boxer_image_name"]
-						auto = None
-						ref = None
-						man = None
-						new_boxes = []
-						for box_name in ["reference_boxes","auto_boxes","manual_boxes"]:
-							if box_name in value:
-								old_boxes =  value[box_name]
-								for box in old_boxes:
-									x = box.xcorner+old_div(box.xsize,2)
-									y = box.ycorner+old_div(box.ysize,2)
-	#									score = box.correlation_score
-									new_boxes.append([x,y,"manual"])
-						
-						print(name,len(new_boxes))
-						if name in db:
-							new_boxes = new_boxes.extend(db[name])
-						
-						db[name] = new_boxes
-					
-					db_remove_dict(old_boxer_database)
-			return 1
-		
-	return 1
-			
 
 class E2CTFWorkFlowTask(EMParticleReportTask):
 	'''
