@@ -2914,65 +2914,6 @@ class EMParticleOptions(EMPartSetOptions):
 		EMPartSetOptions.__init__(self,spr_ptcls_dict,bdb_only)
 	
  		 	
-class E2ParticleExamineTask(E2CTFWorkFlowTask):
-	'''This task is for defining bad particles. Double click on the particle stack you want to examine and then (once the stack viewer has loaded) click on particles to define them as bad. You can come back and review your bad particle selections at any time. You can write stacks that exclude particles you've defined as bad using 'Make Particle Set' tool.'''
-	def __init__(self,particle_stacks=[],name_map={}):
-		E2CTFWorkFlowTask.__init__(self)
-		self.window_title = "Particle Set Examination"
-		self.particle_stacks = particle_stacks
-		self.name_map = name_map
-
-	def get_params(self):
-		params = []
-		from .emform import EM2DStackExamineTable,EMFileTable,int_lt
-		table = EM2DStackExamineTable(self.particle_stacks,desc_short="Particles",desc_long="",name_map=self.name_map)
-		bpc = E2ParticleExamineTask.BadParticlesColumn(self.name_map)
-		# think bpc will be devoured by the garbage collector? Think again! the table has a reference to one of bpc's functions, and this is enough to prevent death
-		table.insert_column_data(1,EMFileTable.EMColumnData("Bad Particles",bpc.num_bad_particles,"The number of particles you have identified as bad",int_lt))
-		table.register_animated_column("Bad Particles")
-		
-		p,n = self.get_particle_selection_table(self.particle_stacks,table) # I wish this came from a "has a" not an "is a" relationship. But too late to chaneg
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
-		params.append(p)
-
-		return params
-	
-	class BadParticlesColumn(object):
-		task_idle = QtCore.pyqtSignal()
-
-		def __init__(self,name_map):
-			self.name_map = name_map
-	
-		def num_bad_particles(self,filename):
-			if not db_check_dict("bdb:select"): return "0"
-			if filename not in self.name_map:
-				EMErrorMessageDisplay.run(["The name map doesn't have the %s key" %filename])
-				return "0"
-		
-			db_name = self.name_map[filename]
-			db = db_open_dict("bdb:select",ro=True)
-			if db_name not in db: return "0"
-			set_list = db[db_name]
-			if set_list == None: return "0"
-			else: return str(len(set_list))
-	
-	
-	def on_form_ok(self,params):
-		self.form.close()
-		self.form = None
-		self.task_idle.emit()
-		
-	def on_form_close(self):
-		# this is to avoid a task_idle signal, which would be incorrect if e2boxer is running
-		self.task_idle.emit()
-		
-	def on_form_cancel(self):
-		
-		self.form.close()
-		self.form = None
-		self.task_idle.emit()
-
- 		 	
 class EMClassificationTools(ParticleWorkFlowTask):
 	'''
 	Encapsulation of common functionality.
