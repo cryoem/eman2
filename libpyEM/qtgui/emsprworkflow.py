@@ -3772,34 +3772,6 @@ class EMSetsOptions(EMPartSetOptions):
 		self.image_count = False
 
 		 	
-class E2RefFreeClassAveTool(object):
-	def __init__(self):
-		self.project_data_at_init = None
-	
-	def get_reference_free_class_averages_table(self):
-		data_dict = EMProjectDataDict(spr_rfca_dict)
-		data = data_dict.get_data_dict()
-		self.project_data_at_init = data # so if the user hits cancel this can be reset
-		names = list(data.keys())
-		from .emform import EM2DStackTable,EMFileTable,int_lt
-		table = EM2DStackTable(names,desc_short="Class Averages",desc_long="")
-		context_menu_data = EMRawDataReportTask.ProjectListContextMenu(spr_rfca_dict)
-		table.add_context_menu_data(context_menu_data)
-		table.add_button_data(EMRawDataReportTask.ProjectAddRawDataButton(table,context_menu_data))
-		table.insert_column_data(1,EMFileTable.EMColumnData("Particles On Disk",EMParticleReportTask.get_num_ptcls,"Particles currently stored on disk that are associated with this image",int_lt))
-		table.insert_column_data(2,EMFileTable.EMColumnData("Particle Dims",EMParticleReportTask.get_particle_dims,"The dimensions of the particles that are stored on disk"))
-		
-		return table, len(names)
-	
-	def recover_original_raw_data_list(self):
-		'''
-		Called if the user hits cancel - if they removed some files or added files the changes
-		are not saved unless the user hits ok
-		'''
-		project_db = db_open_dict("bdb:project")
-		project_db[spr_rfca_dict] = self.project_data_at_init
-		
-
 class E2Refine2DRunTask(E2Refine2DTask):
 	task_idle = QtCore.pyqtSignal()
 	documentation_string = "Select a particle set to use for 2-D refinement.  Select how many classes you want to generate. The other options on this page will generally produce \
