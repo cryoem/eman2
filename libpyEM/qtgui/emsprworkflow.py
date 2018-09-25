@@ -2344,59 +2344,6 @@ class E2BoxerOutputTaskGeneral(E2BoxerOutputTask):
 		p.append(pdims)
 		return p
 	
-class E2BoxerProgramOutputTask(E2BoxerOutputTask):
-	'''
-	This task is called from e2boxer itself. Not from the workflow
-	'''
-	task_idle = QtCore.pyqtSignal()
-	documentation_string = "Use this form to write output file from within the e2boxer interface.\nYou can choose to write image files in a number of formats. The bdb file format is most useful if you are using EMAN2. If you plan to use your data with other programs, including EMAN1, you must choose either the hdf or img output formats.\nYou can also choose to write EMAN1 style .box files"
-	def __init__(self,application,filenames,target,exclusions=[]):
-		E2BoxerOutputTask.__init__(self)
-		self.window_title = "Generate e2boxer Output"
-		self.filenames = filenames
-		self.target = weakref.ref(target)
-		self.exclusions = exclusions
-		self.output_formats = ["bdb","img","hdf"]
-		
-	def get_params(self):
-		params = []
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="E2Boxer output form",desc_long="",property=None,defaultunits=E2BoxerProgramOutputTask.documentation_string,choices=None))
-		
-		p = EMParamTable(name="filenames",desc_short="Choose a subset of these images",desc_long="")
-		pnames = ParamDef(name="Filenames",vartype="stringlist",desc_short="File Names",desc_long="The filenames",property=None,defaultunits=None,choices=self.filenames)
-		p.append(pnames)
-		setattr(p,"convert_text", ptable_convert_2)
-		setattr(p,"icon_type","single_image")
-		setattr(p,"exclusions",self.exclusions)
-		
-		params.append(p)
-		
-		self.add_general_params(params)
-		return params
-	
-	def on_form_ok(self,params):
-
-		if  "filenames" in params and len(params["filenames"]) == 0:
-			self.run_select_files_msg()
-			return
-		
-		error_message = self.check_params(params)
-		if len(error_message) > 0: 
-			self.show_error_message(error_message)
-			return
-		else:
-			if params["write_dbbox"]:
-				self.target().write_coord_files(params["filenames"],params["output_boxsize"],params["force"])
-			if params["write_ptcls"]:
-				normproc = False
-				if params["norm"] != "none":
-					normproc=True
-				self.target().write_box_image_files(params["filenames"],params["output_boxsize"],params["force"],params["format"],normproc,params["norm"],params["invert"])
-				
-			self.task_idle.emit()
-			self.form.close()
-			self.form = None
-
 class E2CTFWorkFlowTask(EMParticleReportTask):
 	'''
 	Common functionality for E2CTF Work flow taskss

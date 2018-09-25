@@ -1938,7 +1938,6 @@ class EMBoxerModule(EMBoxerModuleVitals, QtCore.QObject):
 			print("\n\nThis operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n")
 			error("This operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!","Error")
 			return
-		from .emsprworkflow import E2BoxerProgramOutputTask
 		if self.output_task != None: return
 		self.output_task = EMBoxerWriteOutputTask(self.file_names, dfl_boxsize=self.box_size, current_tool=self.current_tool)
 		#self.output_task.emitter().task_idle.connect(self.on_output_task_idle)
