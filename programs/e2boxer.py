@@ -1749,6 +1749,8 @@ class GUIBoxer(QtGui.QWidget):
 		if self.bfilter.isChecked() :
 			nx=self.micrograph["nx"]
 			ny=self.micrograph["ny"]
+			boxsize=self.vbbsize.getValue()
+			apix=self.micrograph["apix_x"]
 			gs=good_size(max(nx//2,ny//2))
 			fm=self.micrograph.get_clip(Region(nx/2-gs,ny/2-gs,gs*2,gs*2)).process("math.meanshrink",{"n":2})
 			fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.01})
@@ -1756,7 +1758,7 @@ class GUIBoxer(QtGui.QWidget):
 			fm.add(-fm["minimum"])
 			fm.process_inplace("filter.lowpass.tophat",{"cutoff_freq":0.05})
 			fm.process_inplace("math.squared")
-			fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.02})
+			fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":10.0/(boxsize*apix)})		# 10 oscillations/box
 			fm.process_inplace("xform.scale",{"scale":2.0,"clip":gs*2})
 			fm=fm.get_clip(Region(gs-nx/2,gs-ny/2,nx,ny))	# rembmer the image has been shrunk by 2 here!
 			self.wimage.set_data(fm)

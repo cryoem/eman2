@@ -780,7 +780,13 @@ lc is the cursor selection point in plot coords"""
 				for i in range(old_div(len(cmts),2)):
 					imn = int(cmts[2*i])
 					imf = cmts[2*i+1]
-					ptclim=EMData(imf,imn)
+					# The first image window will display the first 2 images when available
+					if i==0 and len(cmts)>=4: 
+						ptclim=[EMData(imf,imn),EMData(cmts[3],int(cmts[2]))] 
+						ptclim[0].process_inplace("normalize.edgemean")
+						ptclim[1].process_inplace("normalize.edgemean")
+					else: ptclim=EMData(imf,imn)
+					
 					try: self.particle_viewers[i].set_data(ptclim)
 					except: 
 						self.particle_viewers.append(emimage2d.EMImage2DWidget(ptclim))
