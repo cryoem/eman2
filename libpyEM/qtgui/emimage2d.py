@@ -713,8 +713,7 @@ class EMImage2DWidget(EMGLWidget):
 			return
 
 		self.curfft=val
-
-		fourier = self.__set_display_image(val)
+		fourier = self.__set_display_image(self.curfft)
 
 		self.inspector_update(use_fourier=fourier)
 
@@ -747,7 +746,6 @@ class EMImage2DWidget(EMGLWidget):
 			self.display_fft = None
 
 	def __set_display_image(self,val):
-		if self.list_data!=None and val>=len(self.list_data) : val=len(self.list_data)-1
 		if self.list_data == None:
 			if val > 0 :
 				try:
@@ -774,13 +772,15 @@ class EMImage2DWidget(EMGLWidget):
 				if self.data == None:
 					self.data = self.fft.do_ift()
 				return False
-			else:
+			else:						# val is negative!?!?
 				self.display_fft=None
 
 			return False
 		else:
+			if self.list_idx>=len(self.list_data): self.list_idx=len(self.list_data)-1
 			if val > 0 :
 				try:
+					if len(self.list_fft_data)!=len(self.list_data) : self.list_fft_data=[None for i in range(len(self.list_data))]
 					if self.list_fft_data[self.list_idx] == None:
 						self.list_fft_data[self.list_idx] = self.list_data[self.list_idx].do_fft()
 						if self.fftorigincenter :
