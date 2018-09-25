@@ -2904,16 +2904,6 @@ class EMPartSetOptions(object):
 		
 		return stacks_map, stacks_name_map,choices,name_map
 	
-class EMParticleOptions(EMPartSetOptions):
-	''' 
-	e2refine2d and e2refine, from with the worklfow setting, both want to know the same 
-	thing, basically, what are the available particles (including filtered options)
-	'''
-	
-	def __init__(self,bdb_only=False):
-		EMPartSetOptions.__init__(self,spr_ptcls_dict,bdb_only)
-	
- 		 	
 class EMClassificationTools(ParticleWorkFlowTask):
 	'''
 	Encapsulation of common functionality.
