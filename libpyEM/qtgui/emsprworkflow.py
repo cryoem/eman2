@@ -731,37 +731,6 @@ class EMProjectDataDict(object):
 		project_db[ self.recovery_list_name] = None
 
 	
-class SPRInitTask(WorkFlowTask):
-	'''Welcome to the EMAN2 workflow. Use this tool to step through and manage the process of generating single particle reconstructions. Get started by entering what you can of the parameters in this form and then proceed to the next step task in the workflow'''
-	def __init__(self):
-		WorkFlowTask.__init__(self)
-		self.window_title = "Project Settings"
-	def get_params(self):
-		params = []
-		project_db = db_open_dict("bdb:project")
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="SPR",desc_long="Information regarding this task",property=None,defaultunits=self.__doc__,choices=None))
-		
-		papix = ParamDef(name="global.apix",vartype="float",desc_short="A/pix for project",desc_long="The physical distance represented by the pixel spacing",property=None,defaultunits=project_db.get("global.apix",dfl=1.1),choices=None)
-		pmass = ParamDef(name="global.particle_mass",vartype="float",desc_short="Particle mass (kda)",desc_long="The mass of the particle in kilodaltons",property=None,defaultunits=project_db.get("global.particle_mass",dfl=800),choices=None)
-		
-		pvolt = ParamDef(name="global.microscope_voltage",vartype="float",desc_short="Microscope voltage",desc_long="The operating voltage of the microscope in kilo volts",property=None,defaultunits=project_db.get("global.microscope_voltage",dfl=300),choices=None)
-		pcs = ParamDef(name="global.microscope_cs",vartype="float",desc_short="Microscope Cs",desc_long="Microscope spherical aberration constant",property=None,defaultunits=project_db.get("global.microscope_cs",dfl=2.0),choices=None)
-		pncp = ParamDef(name="global.num_cpus",vartype="int",desc_short="Number of CPUs",desc_long="Number of CPUS available for the project to use",property=None,defaultunits=project_db.get("global.num_cpus",dfl=num_cpus()),choices=None)
-		mem = memory_stats()
-		pmem = ParamDef(name="global.memory_available",vartype="float",desc_short="Memory usage (%.2f Gb total)" %mem[0],desc_long="The total amount of system memory you want to make available to the project in gigabytes",property=None,defaultunits=project_db.get("global.memory_available",dfl=mem[1]),choices=None)
-		params.append(pmass)
-		params.append(papix)
-		params.append(pvolt)
-		params.append(pcs)
-		params.append(pncp)
-		params.append(pmem)
-		#db_close_dict("bdb:project")
-		return params
-
-	def write_db_entry(self,key,value):
-		WorkFlowTask.write_db_entry(self,key,value)		
-
-
 class EMRawDataReportTask(WorkFlowTask):	
 	'''This form displays raw data that are associated with the project. You browse to add raw data, or right click and choose Add.''' 
 	documentation_string = "This page shows raw micrographs/ccd frames currently associated with the project. It is possible to add additional images directly on this panel, which will \
@@ -2920,16 +2889,3 @@ def get_convergence_results_list(keys):
 
 		i += 1
 	return solns
-
-	
-def main():
-	from .emapplication import EMApp
-	em_app = EMApp()
-	sprinit = SPRInitTask()
-	window = sprinit.run_form() 
-	#em_app.show()
-	em_app.execute()	
-
-
-if __name__ == '__main__':
-	main()
