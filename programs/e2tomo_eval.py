@@ -150,6 +150,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		#### getting information from json files
 		files=sorted([os.path.join(self.path,f) for f in os.listdir(self.path)])
 		ptclcls={}
+		infonames=[]
 		for i,name in enumerate(files):
 			info=info_name(base_name(name))
 			if os.path.isfile(info):
@@ -192,14 +193,15 @@ class TomoEvalGUI(QtGui.QWidget):
 				else:
 					dic["phase"]=[]
 					
-				if nbox>0 and "class_list" in js:
+				if (nbox>0) and ("class_list" in js):
 					cls=js["class_list"]
 					for k in list(cls.keys()):
 						vname=str(cls[k]["name"])
 						n=np.sum([b[-1]==int(k) for b in boxes])
-						
 						if n>0:
 							bxcls[vname]=n
+							if (info in infonames):
+								continue
 							if vname in ptclcls:
 								ptclcls[vname][1]+=n
 							else:
@@ -212,7 +214,9 @@ class TomoEvalGUI(QtGui.QWidget):
 				dic["boxcls"]=bxcls
 				dic["id"]=len(self.imginfo)
 				self.imginfo.append(dic)
+				infonames.append(info)
 				js=None
+				
 		
 		self.ptclcls=ptclcls
 		
@@ -232,8 +236,8 @@ class TomoEvalGUI(QtGui.QWidget):
 		#### update file list
 		self.imglst.clear()
 		self.imglst.setRowCount(len(self.imginfo))
-		self.imglst.setColumnCount(4)
-		self.imglst.setHorizontalHeaderLabels(["ID", "file name", "#box", "loss"])
+		self.imglst.setColumnCount(5)
+		self.imglst.setHorizontalHeaderLabels(["ID", "file name", "#box", "loss", "defocus"])
 		for i,info in enumerate(self.imginfo):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
 			it=QtGui.QTableWidgetItem()
@@ -251,10 +255,20 @@ class TomoEvalGUI(QtGui.QWidget):
 				loss=-1
 			else: 
 				loss=np.round(np.mean(info["loss"]), 2)
+				
 			
 			it=QtGui.QTableWidgetItem()
 			it.setData(Qt.EditRole, float(loss))
 			self.imglst.setItem(i,3, it)
+			
+			if len(info["defocus"])==0:
+				df=-1
+			else: 
+				df=np.round(np.mean(info["defocus"]), 1)
+			it=QtGui.QTableWidgetItem()
+			it.setData(Qt.EditRole, float(df))
+			self.imglst.setItem(i,4, it)
+			
 		
 	def get_id_info(self):
 		#### utility function to get the info of current selected row.
