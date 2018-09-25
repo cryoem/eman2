@@ -1787,13 +1787,6 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				a(files,table_widget)
 
 
-from os.path import commonprefix
-def best_match(name,lst):
-	ml=[(len(commonprefix((name,i.split('/')[-1]))),n) for n,i in enumerate(lst)]
-#	print name,lst,ml
-	if max(ml)[0]==0 : return None
-	return lst[max(ml)[1]]
-		
 class E2BoxerTask(ParticleWorkFlowTask):
 	'''
 	Provides some common functions for the e2boxer tasks
