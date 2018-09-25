@@ -1489,12 +1489,6 @@ class CTFDBColumns(CTFColumns):
 				pass
 		return "-"
 
-def ptable_convert_2(text):
-	'''
-	This is needed in one location - very close to removal
-	'''
-	return text
-
 class EMParticleReportTask(ParticleWorkFlowTask):
 	'''This tool is for displaying the particles that are currently associated with this project.'''
 	task_idle = QtCore.pyqtSignal()
