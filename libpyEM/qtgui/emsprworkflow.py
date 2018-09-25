@@ -2812,53 +2812,6 @@ important when manually fitting before determining a structure factor."
 			self.task_idle.emit()
 		else: pass
 		
-class E2CTFGuiTaskGeneral(E2CTFGuiTask):
-	''' This one uses the names in the e2ctf.parms to generate it's table of options, not the particles in the particles directory
-	'''
-	warning_string = "\n\n\nNOTE: There are there are no previously generated CTF parameters. Please run automated fitting using e2ctf first." 
-	
-	documentation_string = "Write me"
-	def __init__(self):
-		E2CTFGuiTask.__init__(self)
-
-	def get_params(self):
-		params = []		
-		
-		names = self.get_names_with_ctf_params()
-		n = [l[0] for l in names]
-		p,num = self.get_ctf_param_table()
-		
-		if num == 0:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTask.documentation_string+E2CTFGuiTaskGeneral.warning_string,choices=None))
-		else:
-			params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGuiTaskGeneral.documentation_string,choices=None))
-			params.append(p)
-		return params
-	
-	def get_default_ctf_options(self,params):
-		'''
-		These are the options required to run pspec_and_ctf_fit in e2ctf.py
-		'''
-	
-		if  "filenames" in params and len(params["filenames"]) == 0:
-			self.run_select_files_msg()
-			return None # this is fine
-		
-		
-		options = EmptyObject()
-
-		selected_filenames = params["filenames"]
-		
-		filenames = []
-		names = self.get_names_with_ctf_params()
-		for name in names:
-			if name[0] in selected_filenames:
-				filenames.append(name[1])
-		options.filenames = filenames
-#		
-		return options
-
-
 class EMPartSetOptions(object):
 	def __init__(self,data_dict_name,bdb_only=False):
 		self.data_dict_name  = data_dict_name
