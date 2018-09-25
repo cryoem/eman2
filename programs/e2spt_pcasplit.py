@@ -115,6 +115,7 @@ def main():
 	js=js_open_dict(parmsfile)
 
 	nptcl=len(js.keys())
+	#nptcl=400
 	pname=eval(js.keys()[0])[0]
 
 	
@@ -141,6 +142,7 @@ def main():
 		xf=js[k]['xform.align3d']
 		e=EMData(pname, i)
 		e.transform(xf)
+		e.mult(msk)
 	
 		en=e.numpy().copy()
 		#### numpy fft is actually significantly slower than EMAN fft. so probably should change to EMAN if I can get the coordinates right..
@@ -159,7 +161,7 @@ def main():
 		sf = tbin / nr
 		sf[sf==0]=1e-5
 		div=np.divide(efa,sf[r])
-		wdg=np.logical_and(div<0.5, r>1)
+		wdg=np.logical_and(div<1., r>1)
 		
 		ef[wdg]=0
 		data.append(ef.flatten())
@@ -169,10 +171,16 @@ def main():
 	data=np.array(data)
 	wgs=np.array(wgs)
 
-	avg=np.mean(data, axis=0)
+	#avg=np.mean(data, axis=0)
+	avg=np.sum(data, axis=0)
+	w=np.sum(1-np.array(wgs), axis=0)
+	avg=avg/w
 	dv=data-avg
-	dv[wgs]=0
-	
+	std=np.std(abs(dv))
+	dv/=std
+	#for i,w in enumerate(wgs):
+		#data[i][w]=avg[w]
+	#dv=data
 	imgsnp=np.hstack([dv.real, dv.imag])
 	
 	
@@ -224,6 +232,7 @@ def main():
 	
 	ptclids=np.arange(nptcl,dtype=int)[:, None]
 	nptcl=len(imgsnp)
+	
 	if options.clean:
 		#### do pca twice to remove outliers	
 		pca=PCA(options.nbasis)
@@ -246,9 +255,12 @@ def main():
 
 	basisfile = "{}/pca_basis.hdf".format(options.outpath)
 	#threed.process("math.meanshrink",{"n":options.shrink}).write_image(basisfile, 0)
+	l=len(data[0])
 	for i,c in enumerate(pca.components_):
-		egmap=c.reshape(imgsnp[0].shape)
-		m=from_numpy(egmap.copy())
+		eg=c[:l]+c[l:]*1j
+		egmap=eg.reshape((sz,sz,sz))
+		o=np.real(np.fft.ifftn(np.fft.ifftshift(egmap)))
+		m=from_numpy(o.copy())
 		m.write_image(basisfile,i)
 
 	print("Classifying particles...")

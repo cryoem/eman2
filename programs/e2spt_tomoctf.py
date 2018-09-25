@@ -11,7 +11,7 @@ from scipy.signal import argrelextrema
 from multiprocessing import pool, Manager
 
 def calc_ctf(defocus, bxsz=256, voltage=300, cs=4.7, apix=1. ,phase=0.):
-	ds=old_div(1.0,(apix*bxsz))
+	ds=1.0/(apix*bxsz)
 	ctf=EMAN2Ctf()
 	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":0.,"cs":cs,"ampcont":0,"apix":apix,"dfdiff":0,"defang":0})
 	ctf.set_phase(phase*np.pi/180.)
@@ -49,11 +49,14 @@ def calc_all_scr(curve, allctf, zlist, bxsz, exclude=[]):
 	for i,cf in enumerate(allctf):
 		if i in exclude: continue
 		zz=zlist[i]
+		if len(zz)==0:
+			allscr[i]=1
+			continue
 
 		z0=zz[0]
 		z1=np.minimum(zz[-1], int(bxsz/2*.7))
 
-		if z1-z0<old_div(bxsz,10): continue
+		if z1-z0<bxsz/10: continue
 
 		bg=np.array([np.interp(np.arange(z0, z1), zz, p[zz]) for p in curve])
 
@@ -66,13 +69,13 @@ def calc_all_scr(curve, allctf, zlist, bxsz, exclude=[]):
 			mx=np.max(c, axis=1)
 			m0=(mx<=0)
 			mx[m0]=1
-			mx=old_div(1.,mx)
+			mx=1./mx
 			mx[m0]=0
 			c*=mx[:, None]
 
 		bsub=bsub[:, z0:z1]
 		bsub[bsub<0]=0
-		scr=old_div(-np.dot(bsub,cf[z0:z1]),(np.sum(cf[z0:z1])))
+		scr=-np.dot(bsub,cf[z0:z1])/(np.sum(cf[z0:z1]))
 #		 scr=np.mean((bsub-cf[z0:z1])**2, axis=1)
 		allscr[i]=scr
 	return allscr
@@ -90,8 +93,8 @@ def main():
 	parser.add_argument("--dfrange", type=str,help="Search range of defocus (start, end, step). default is 2., 7, 0.1", default="2.,7.,0.1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--psrange", type=str,help="phase shift range (start, end, step). default is 0, 5, 5", default="0,5,5", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--tilesize", type=int,help="Size of tile to calculate FFT, default is 256", default=256, guitype='intbox',row=4, col=2,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--voltage", type=int,help="Voltage of microscope in kV", default=200, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--cs", type=float,help="Cs of microscope in kV", default=2.0, guitype='floatbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--voltage", type=int,help="Voltage of microscope in kV", default=300, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--cs", type=float,help="Cs of microscope in kV", default=2.7, guitype='floatbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--nref", type=int,help="Using N tilt images near the center tilt to estimate the range of defocus for all images. Default is 15", default=15, guitype='intbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--stepx", type=int,help="Number of tiles to generate on x-axis (different defocus)", default=20, guitype='intbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--stepy", type=int,help="Number of tiles to generate on y-axis (same defocus)", default=40, guitype='intbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
@@ -184,7 +187,7 @@ def main():
 			ptsxf=np.array([get_xf_pos(tpm, p) for p in pts])
 			pz=ptsxf[:,2].copy()
 			ptsxf=ptsxf[:,:2]
-			ptsxf+=[old_div(nx,2), old_div(ny,2)]
+			ptsxf+=[nx//2, ny//2]
 			
 			ptsxf=ptsxf[np.sum((ptsxf>[nx, ny]) + (ptsxf<0), axis=1)==0, :]
 			if len(ptsxf)<npt*.8:
@@ -192,7 +195,7 @@ def main():
 			
 			rds=[]
 			for p in ptsxf:
-				tile=rawimg.get_clip(Region(p[0]-old_div(box,2), p[1]-old_div(box,2), box, box))
+				tile=rawimg.get_clip(Region(p[0]-box//2, p[1]-box//2, box, box))
 				if tile["sigma"]<1e-3 or tile["mean"] != tile["mean_nonzero"]:  # strong criteria to exclude edges
 					#rds.append(np.zeros(box//2))
 					continue
@@ -245,7 +248,7 @@ def main():
 			allscr.append(stilt)
 			
 		allscr=np.array(allscr)
-		
+		#print(allscr)
 		amp, df= np.array(np.where(allscr==np.min(allscr))).T[0]
 		print("ID {}, angle {:.1f}, defocus {:.1f}, phase shift {:.0f}".format(it, tltparams[it,3],  defrg[df], pshift[amp]))
 		dfs.append(defrg[df])
