@@ -3496,13 +3496,6 @@ documentation for other details. Don't forget the other tabs !\
 		self.form.close()
 		self.form = None
 
-class E2Refine2DWithGenericTask(E2Refine2DRunTask):
-	def __init__(self,workflow_setting=True):
-		E2Refine2DRunTask.__init__(self,[])
-		self.end_tag = "generic"
-		self.workflow_setting = workflow_setting
-			
-							
 class E2InitialModelsTool(object):
 	def __init__(self):
 		self.project_data_at_init = None
