@@ -12841,7 +12841,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		cimage->set_complex(1);
 		cimage->set_ri(1);
 		cimage->set_fftpad(1);
-		int step=int(floor(tmp->get_ysize()/(2*cimage->get_ysize())));
+		int step=int(floor(tmp->get_ysize()/(2.0f*cimage->get_ysize())));
 //		int step=int(floor(tmp->get_ysize()/(cimage->get_ysize())));
 		if (step==0) step=1;
 //		printf("%d\n",step);
