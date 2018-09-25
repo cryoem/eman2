@@ -3204,55 +3204,6 @@ class EMParticleOptions(EMPartSetOptions):
 		EMPartSetOptions.__init__(self,spr_ptcls_dict,bdb_only)
 	
  		 	
-class E2ParticleExamineChooseDataTask(ParticleWorkFlowTask):
-	"""Choose the particle data you wish to examine. This will pop a second form listing the particles stacks along with other relevant information"""
-	replace_task = QtCore.pyqtSignal()
-	documentation_string = "On the next screen you will have the opportunity to eliminate 'bad' particles. This page selects which type of particles you \
-want to look at for doing this. Normally Wiener filtered particles are used for this purpose. The selection here has no impact on the output generated from \
-this stage. It is used for display purposes only !" 
-	def __init__(self):
-		ParticleWorkFlowTask.__init__(self)
-		self.window_title = "Choose Data For Particle Examination"
-		self.preferred_size = (480,300)
-		self.form_db_name ="bdb:emform.workflow_particle_examine"
-
-	def get_params(self):
-		ptcl_opts = EMParticleOptions(bdb_only=True)
-		self.particles_map, self.particles_name_map,choices,self.name_map = ptcl_opts.get_particle_options()
-			
-		params = []		
-		
-		#if as_string:
-		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
-		db = db_open_dict(self.form_db_name)
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=str(self.__doc__),choices=None))
-		
-		if len(self.particles_map) > 0 and len(choices) > 0:
-			params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
-		return params
-
-	def on_form_ok(self,params):
-		if "particle_set_choice" in params:
-
-			choice = params["particle_set_choice"]
-			
-#			name_map = {}
-#			particles = self.particles_map[self.particles_name_map[choice]]
-#			for name in particles:
-#				if self.name_map.has_key(name):
-#					name_map[name] = base_name(self.name_map[name])
-#				else:
-#					name_map[name] = base_name(name)
-					
-			self.replace_task.emit(E2ParticleExamineTask(particles,self.name_map), "Particle Set Examination")
-		
-		self.form.close()
-		self.form = None
-		
-		self.write_db_entries(params)
-		
-
-		
 class E2ParticleExamineTask(E2CTFWorkFlowTask):
 	'''This task is for defining bad particles. Double click on the particle stack you want to examine and then (once the stack viewer has loaded) click on particles to define them as bad. You can come back and review your bad particle selections at any time. You can write stacks that exclude particles you've defined as bad using 'Make Particle Set' tool.'''
 	def __init__(self,particle_stacks=[],name_map={}):
@@ -3819,47 +3770,6 @@ class EMSetsOptions(EMPartSetOptions):
 	def __init__(self,bdb_only=False):
 		EMPartSetOptions.__init__(self,spr_sets_dict,bdb_only)
 		self.image_count = False
-
-class E2Refine2DChooseParticlesTask(ParticleWorkFlowTask):
-	replace_task = QtCore.pyqtSignal()
-	documentation_string = "Select the type of particles you wish to run e2refine2d on. Typically the phase_flipped_hp particles will give the \
- best results, followed by the phase_flipped particles. Wiener filtered particles have strong contrast, but tend to produce blurry class-averages, \
- since it is the particles that are filtered, not the averages. After you hit OK, you will be prompted for specific refinement options." 
-	def __init__(self):
-		ParticleWorkFlowTask.__init__(self)
-		self.window_title = "Choose Particles For e2refine2d"
-		self.preferred_size = (480,300)
-		self.form_db_name ="bdb:emform.e2refine2d"
-	
-	def get_params(self):
-		ptcl_opts = EMParticleOptions()
-		self.particles_map, self.particles_name_map,choices,unused = ptcl_opts.get_particle_options()
-		choices.append("Specify")
-			
-		params = []		
-		#if as_string:
-		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
-		db = db_open_dict(self.form_db_name)
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2Refine2DChooseParticlesTask.documentation_string,choices=None))
-		params.append(ParamDef(name="particle_set_choice",vartype="choice",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short="Choose data",property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
-		return params
-
-	def on_form_ok(self,params):
-		if "particle_set_choice" not in params or params["particle_set_choice"] == None:
-			error("Please choose some data")
-			return
-		
-		choice = params["particle_set_choice"]
-		
-		if choice == "Specify":
-			self.replace_task.emit(E2Refine2DWithGenericTask(), "e2refine2d arguments")
-		else:
-			self.replace_task.emit(E2Refine2DRunTask(self.particles_map[self.particles_name_map[choice]]), "e2refine2d arguments")
-		self.form.close()
-		self.form = None
-		
-		self.write_db_entries(params)
-
 
 		 	
 class E2RefFreeClassAveTool(object):
