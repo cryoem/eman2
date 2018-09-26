@@ -492,10 +492,10 @@ def main():
 			if nvec > 0: eigList = [[] for i in range(nvec)]
 			dnumber  = len(all_proj)# all neighborhood set for assigned to myid
 			pnumber  = len(proj_list)*2. +img_per_grp # aveList and varList 
-			tnumber  = dnumber+pnumber
+			tnumber  =   dnumber+pnumber
 			vol_size2 =  nx**3*4.*8/1.e9
 			vol_size1 =  2.*nnxo**3*4.*8/1.e9
-			proj_size =  nnxo*nnyo*len(proj_list)*4.*1./1.e9 # only varList
+			proj_size =  nnxo*nnyo*len(proj_list)*4.*2./1.e9 # both aveList and varList
 			orig_data_size    = nnxo*nnyo*4.*tnumber/1.e9
 			reduced_data_size = nx*nx*4.*tnumber/1.e9
 			full_data = np.full((number_of_proc, 2), -1., dtype=np.float16)
@@ -555,10 +555,10 @@ def main():
 					log_main.add("Warning: memory might not afford the computation with the currently used image decimation")
 				recons3d_decimate_ratio =(memory_per_node - overhead_loading)/\
 				     ((vol_size1 + proj_size)*no_of_processes_per_group)
-				if recons3d_decimate_ratio<1.:
-					log_main.add("Memory can afford var3D reconstruction with image decimate %6.3f"%recons3d_decimate_ratio)
+				if recons3d_decimate_ratio< 1.:
+					log_main.add("Memory can afford var3D/ave3D reconstruction with image decimate %6.3f"%recons3d_decimate_ratio)
 				else:
-					log_main.add("Memory can afford var3D reconstruction without image decimation") 
+					log_main.add("Memory can afford var3D/ave3D reconstruction without image decimation") 
 			del full_data
 			if myid == main_node: del mem_on_node_orig, mem_on_node_current, minindx
 			mpi_barrier(MPI_COMM_WORLD)
@@ -766,16 +766,20 @@ def main():
 						"""
 
 			if options.ave3D:
-				if myid == main_node:
-					log_main.add("Compute ave3D... ")
 				from fundamentals import fpol
-				if myid == main_node: log_main.add("Reconstructing 3D average volume")
+				t5 = time()
+				if myid == main_node: log_main.add("Reconstruct ave3D ... ")
 				ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad)
 				bcast_EMData_to_all(ave3D, myid)
 				if myid == main_node:
-					ave3D = fpol(ave3D,nx,nx,nx)
+					if options.decimate != 1.0: ave3D = resample(ave3D, 1./options.decimate)
+					ave3D = fpol(ave3D, nnxo, nnxo, nnxo) # always to the orignal image size
+					set_pixel_size(ave3D, 1.0)
 					ave3D.write_image(os.path.join(options.output_dir, options.ave3D))
-					log_main.add("%-70s:  %s\n"%("Writing to the disk volume reconstructed from averages as", options.ave3D))
+					log_main.add("%-70s:  %.2f\n"%("Ave3D reconstruction took [s]", time()-t5))
+					log_main.add("%-70s:  %s\n"%("The reconstructed ave3D is saved as ", options.ave3D))
+					
+			mpi_barrier(MPI_COMM_WORLD)		
 			del ave, var, proj_list, stack, alpha, sx, sy, mirror, aveList
 			if nvec > 0:
 				for k in range(nvec):
@@ -847,7 +851,7 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 
 		if options.var3D:
-			if myid == main_node: log_main.add("Reconstructing 3D variability volume")
+			if myid == main_node: log_main.add("Reconstruct var3D ...")
 			t6 = time()
 			# radiusvar = options.radius
 			# if( radiusvar < 0 ):  radiusvar = nx//2 -3
@@ -859,9 +863,10 @@ def main():
 				res = fpol(res, nnxo, nnxo, nnxo)
 				set_pixel_size(res, 1.0)
 				res.write_image(os.path.join(options.output_dir, options.var3D))
-				log_main.add("%-70s:  %.2f\n"%("Reconstructing 3D variability took [s]", time()-t6))
+				log_main.add("%-70s:  %s\n"%("The reconstructed var3D is saved as ", options.var3D))
+				log_main.add("%-70s:  %.2f\n"%("Var3D reconstruction took [s]", time()-t6))
 				log_main.add("%-70s:  %.2f\n"%("Total computation time [m]", (time()-t0)/60.))
-				log_main.add("sx3dvariability finishes")	
+				log_main.add("sx3dvariability finishes")
 		from mpi import mpi_finalize
 		mpi_finalize()
 		
