@@ -39,7 +39,6 @@ from EMAN2 import *
 from math import *
 import os
 import sys
-from Simplex import Simplex
 from bisect import insort
 
 cmp_probe=None

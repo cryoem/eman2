@@ -44,7 +44,6 @@ import os
 import sys
 
 from OpenGL import GL, GLU, GLUT
-from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 
 def main():

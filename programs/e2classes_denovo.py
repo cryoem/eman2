@@ -35,7 +35,6 @@ from __future__ import division
 
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 from os import remove
 import sys

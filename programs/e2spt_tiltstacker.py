@@ -30,7 +30,6 @@ from __future__ import print_function
 from __future__ import division
 from past.utils import old_div
 from builtins import range
-from optparse import OptionParser
 from EMAN2_utils import *
 from EMAN2 import *
 import sys

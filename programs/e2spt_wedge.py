@@ -35,7 +35,6 @@ from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
 from eman2_gui.emapplication import EMApp
 from eman2_gui import emscene3d
 from eman2_gui import emdataitem3d

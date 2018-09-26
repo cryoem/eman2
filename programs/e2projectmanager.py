@@ -36,7 +36,6 @@ from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
 from eman2_gui.pmicons import *
 from PyQt4.QtGui import QTreeWidgetItem
 import os, json, re, glob, signal

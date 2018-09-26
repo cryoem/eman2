@@ -40,7 +40,6 @@ from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict
-from optparse import OptionParser
 from math import *
 import os
 import sys

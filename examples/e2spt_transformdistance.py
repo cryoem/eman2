@@ -35,7 +35,6 @@ Author: Jesus Galaz - 2012, Last update: 08/2013
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 
-from optparse import OptionParser
 from EMAN2 import *
 from sys import argv
 import sys
