@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Copyright (C) 2016  Thorsten Wagner (thorsten.wagner@mpi-dortmund.mpg.de)
 #
@@ -33,14 +34,14 @@ argparser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 argparser.add_argument(
-    'target_dir',
+    '--target_dir',
     type=str,
-    help='Specifiy the path to your config file.')
+    help='Specifiy the path to your image directory.')
 
 argparser.add_argument(
     '--box_dir',
     type=str,
-    help='Specifiy the path to your config file.')
+    help='Specifiy the path to a box file directory.')
 
 def main():
     # Read arguments
@@ -48,13 +49,16 @@ def main():
 
     target_dir = args.target_dir
     box_dir = args.box_dir
-    call = ['python', 'cryolo_boxmanager.py']
+    call = ['cryolo_boxmanager.py']
     if target_dir:
         input_argument = "-i=" + str(target_dir)
         call.append(input_argument)
         if box_dir:
             box_argument = "-b=" + str(box_dir)
             call.append(box_argument)
+    print(call)
     subprocess.check_call(call)
 
 
+if __name__ == "__main__":
+	main()
