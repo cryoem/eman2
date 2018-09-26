@@ -82,10 +82,10 @@ class ValSlider(QtGui.QWidget):
 	emit valueChanged(float)
 	"""
 	enableChanged = QtCore.pyqtSignal(int)
-	valueChanged = QtCore.pyqtSignal(float)
-	textChanged = QtCore.pyqtSignal(float)
-	sliderReleased = QtCore.pyqtSignal(float)
-	sliderPressed = QtCore.pyqtSignal(float)
+	valueChanged = QtCore.pyqtSignal(object)
+	textChanged = QtCore.pyqtSignal(object)
+	sliderReleased = QtCore.pyqtSignal(object)
+	sliderPressed = QtCore.pyqtSignal(object)
 
 	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1,rounding=3):
 		#if not parent: raise Exception,"ValSliders must have parents"
@@ -301,8 +301,8 @@ class ValBox(QtGui.QWidget):
 	so for virtually all purposes it could be used as a drop-in replacement.
 	"""
 	enableChanged = QtCore.pyqtSignal(int)
-	valueChanged = QtCore.pyqtSignal(float)
-	textChanged = QtCore.pyqtSignal()
+	valueChanged = QtCore.pyqtSignal(object)
+	textChanged = QtCore.pyqtSignal(object)
 
 	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1):
 		#if not parent: raise Exception,"ValSliders must have parents"
