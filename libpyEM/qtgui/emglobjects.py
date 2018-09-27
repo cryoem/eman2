@@ -1260,9 +1260,6 @@ class Camera2(object):
 		# here is where zoom is applied
 		glScale(self.scale,self.scale,self.scale)
 		
-	def scale_event(self,delta):
-		self.scale_delta(delta)
-		
 	def scale_delta(self,delta):
 		if delta > 0:
 			self.scale *= self.mag_factor
@@ -1439,7 +1436,7 @@ class Camera2(object):
 				return False
 			
 	def wheelEvent(self, event):
-		self.scale_event(event.delta())
+		self.scale_delta(event.delta())
 		return True
 	
 	def motion_translate_z_only(self,prev_x,prev_y,event):
