@@ -4084,7 +4084,10 @@ def main():
 	# Typically they include "windows", "motif", "cde", "plastique" and "cleanlooks".
 	# Depending on the platform, "windowsxp", "windowsvista" and "macintosh" may be available. Note that keys are case insensitive.
 	# sxapp.setStyle("macintosh")
-	sxapp.setStyle("cleanlooks")
+	if sys.platform.startswith('darwin'):
+		sxapp.setStyle("macintosh")
+	else:
+		sxapp.setStyle("cleanlooks")
 	# sxapp.setStyle("plastique")
 
 	# print "MRK_DEBUG:"
