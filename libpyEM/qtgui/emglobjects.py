@@ -1262,7 +1262,6 @@ class Camera2(object):
 		
 	def scale_event(self,delta):
 		self.scale_delta(delta)
-		if self.emit_events:self.parent().scale_delta.emit(delta)
 		
 	def scale_delta(self,delta):
 		if delta > 0:
@@ -1346,9 +1345,6 @@ class Camera2(object):
 			quaternion["n3"] = rotaxis_z
 			quaternion["type"] = "spin"
 			t3d.set_params(quaternion)
-			if self.emit_events: 
-				self.parent().apply_rotation.emit(t3d)
-			
 			self.t3d_stack[-1] = t3d*self.t3d_stack[-1]
 		else :
 			# if az is fixed then we rotate in alt/az space, not with quaternions
@@ -1457,10 +1453,6 @@ class Camera2(object):
 		if dy > 0: d = -d 
 		self.cam_z += d
 		v = (0,0,d)
-			
-		if self.emit_events: 
-			#print "emitting applyt translation"
-			self.parent().apply_translation.emit(v)
 	
 	def motion_translateLA(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
@@ -1502,18 +1494,12 @@ class Camera2(object):
 			self.cam_y += dy
 			self.cam_z += dx
 			v = (0,dy,dx)
-			
-		if self.emit_events: 
-			#print "emitting applyt translation"
-			self.parent().apply_translation.emit(v)
 	
 	def explicit_translate(self,x,y,z):
 		
 		self.cam_x += x
 		self.cam_y += y
 		self.cam_z += z
-		
-		if self.emit_events: self.parent().apply_translation.emit((x,y,z))
 			
 	def apply_translation(self,v):
 		self.cam_x += v[0]
