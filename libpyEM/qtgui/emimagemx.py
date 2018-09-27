@@ -216,8 +216,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	set_origin = QtCore.pyqtSignal(float, float, bool)
 
 	def __init__(self, data=None,application=None,winid=None, parent=None, title=""):
-		self.emit_events = False
-
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		#fmt.setSampleBuffers(True)
@@ -585,9 +583,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
 		self.deleteLater()
 
-	def get_emit_signals_and_connections(self):
-		return {"set_origin":self.set_origin,"signal_set_scale":self.set_scale,"origin_update":self.origin_update}
-
 	def get_data(self):
 		'''
 		Gets the current data object, this is either an EMDataListCache, an EM3DDataListCache, an EMLightWeightParticleCache, or None
@@ -941,7 +936,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.draw_scroll = True
 			self.scroll_bar.update_target_ypos()
 
-		if self.emit_events: self.signal_set_scale.emit(self.scale, adjust, update_gl)
 		if update_gl: self.updateGL()
 
 	def resize_event(self, width, height):
@@ -1676,8 +1670,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		else:
 			return
 
-		if self.emit_events: self.origin_update.emit(self.origin)
-
 	def check_newy(self,y):
 		newy = y
 		if newy > self.matrix_panel.min_sep: newy = self.matrix_panel.min_sep # this is enforcing a strong boundary at the bottom
@@ -1951,7 +1943,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 			#self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
 			self.origin=(self.matrix_panel.xoffset,newy)
-			if self.emit_events: self.set_origin.emit(self.origin[0], self.origin[1], False)
 			self.mousedrag=(event.x(),event.y())
 			try:self.updateGL()
 			except: pass

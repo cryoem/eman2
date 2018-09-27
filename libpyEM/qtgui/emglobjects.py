@@ -1171,7 +1171,6 @@ class Camera2(object):
 	apply_translation = QtCore.pyqtSignal(float)
 
 	def __init__(self,parent):
-		self.emit_events = False
 		# The magnification factor influences how the scale (zoom) is altered when a zoom event is received.
 		# The equation is scale *= mag_factor or scale /= mag_factor, depending on the event.
 		self.parent=weakref.ref(parent)
@@ -1195,15 +1194,6 @@ class Camera2(object):
 		self.allow_translations = True
 		self.allow_phi_rotations = True
 
-	
-	def enable_emit_events(self,val=True):
-		#print "set emit events to",val
-		self.emit_events = val
-	def is_emitting(self): return self.emit_events	
-		
-	def get_emit_signals_and_connections(self):
-		return  {"apply_rotation":self.apply_rotation,"apply_translation":self.apply_translation,"scale_delta":self.scale_delta}
-		
 	def set_plane(self,plane='xy'):
 		'''
 		plane should by xy,yx,xz,zx,yz, or zy. It should also be a string
@@ -1369,8 +1359,6 @@ class Camera2(object):
 			p["az"]  = p["az"] -  old_div(fac*x,self.motiondull)*pi
 			p["phi"] = 180.0
 			t3d.set_params(p)
-			
-			if self.emit_events: print("Warning: no events emitted in fixed phi mode")
 		
 		#if not self.allow_phi_rotations:
 			#p = t3d.get_params("eman")
@@ -2035,7 +2023,6 @@ class EM3DModel(QtCore.QObject):
 		self.gl_widget = weakref.ref(gl_widget)	#A GL context must exist before OpenGL statements are used, so the constructor requires this.
 		
 		#TODO: Figure out which of these is needed
-		self.emit_events = False
 		self.disable_inspector = False
 		
 		self.blendflags = EMOpenGLFlagsAndTools()
@@ -2101,8 +2088,7 @@ class EM3DModel(QtCore.QObject):
 	def get_current_transform(self):
 		size = len(self.cam.t3d_stack)
 		return self.cam.t3d_stack[size-1]
-	def get_emit_signals_and_connections(self):
-		return {}
+
 	def get_gl_context_parent(self): 
 		return self.gl_widget()
 	def get_gl_widget(self):
