@@ -1166,9 +1166,6 @@ class Camera2(object):
 	Then call 'position' in your main OpenGL draw function before drawing anything.
 	
 	"""
-	scale_delta = QtCore.pyqtSignal(float)
-	apply_rotation = QtCore.pyqtSignal(float)
-	apply_translation = QtCore.pyqtSignal(float)
 
 	def __init__(self,parent):
 		# The magnification factor influences how the scale (zoom) is altered when a zoom event is received.
