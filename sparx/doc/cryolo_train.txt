@@ -8,7 +8,7 @@ crYOLO - training: Training of crYOLO, a deep learning high accuracy particle pi
 
 Usage in command line
 
-  sxcryolo_train.py architecture particle_diameter training_dir annot_dir --input_size=input_size --num_patches=num_patches --overlap_patches=overlap_patches --train_times=train_times --weights_name=weights_name --batch_size=batch_size --learning_rate=learning_rate --np_epoch=np_epoch --object_scale=object_scale --no_object_scale=no_object_scale --coord_scale=coord_scale --valid_image_dir=valid_image_dir --valid_annot_dir=valid_annot_dir --warmup=warmup --gpu=gpu
+  sxcryolo_train.py particle_diameter training_dir annot_dir --architecture=architecture --input_size=input_size --num_patches=num_patches --overlap_patches=overlap_patches --train_times=train_times --weights_name=weights_name --batch_size=batch_size --learning_rate=learning_rate --np_epoch=np_epoch --object_scale=object_scale --no_object_scale=no_object_scale --coord_scale=coord_scale --valid_image_dir=valid_image_dir --valid_annot_dir=valid_annot_dir --warmup=warmup --gpu=gpu
 
 \\
 ===== Typical usage =====
@@ -18,7 +18,7 @@ Then the training typcial happens in two steps:
 
 \\ __1. Warmup__:
 
-  sxcryolo_train.py architecture particle_diameter
+  sxcryolo_train.py particle_diameter training_dir annot_dir --architecture="YOLO" --warmup=5
 
 \\ __2. Actual training__:
 
@@ -27,14 +27,14 @@ Then the training typcial happens in two steps:
 \\
 ===== Input =====
 === Main Parameters ===
-  ; architecture : Network architecture: Type of network that is trained.  (default YOLO)
-  ; particle_diameter : Particle diameter [Pixel] : Particle diameter in pixel. This size will be used for as box size for picking. Should be as small as possible. (default 200)
-  ; training_dir : Training image directory : Folder which contain all images. (default none)
-  ; annot_dir : Annotation directory : Box or star files used for training. The should have the same name as the images. (default none)
+  ; particle_diameter : Particle diameter [Pixel] : Particle diameter in pixel. This size will be used for as box size for picking. Should be as small as possible. (default required int)
+  ; training_dir : Training image directory : Folder which contain all images. (default required string)
+  ; annot_dir : Annotation directory : Box or star files used for training. The should have the same name as the images. (default required string)
 
 
 \\
 === Advanced Parameters ===
+  ; %%--%%architecture : Network architecture: Type of network that is trained.  (default YOLO)
   ; %%--%%input_size : Input image dimension [Pixel] : Dimension of the image used as input to network. (default 768)
   ; %%--%%num_patches : Number of patches : The number of patches (e.g 2x2) the image is divided and classified separately. (default 2)
   ; %%--%%overlap_patches: Patch overlap [Pixel]: The amount of overlap the patches will overlap (default 200)
