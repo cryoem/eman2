@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #
 # Copyright (C) 2016  Thorsten Wagner (thorsten.wagner@mpi-dortmund.mpg.de)
 #
@@ -32,11 +34,6 @@ argparser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 argparser.add_argument(
-    'architecture',
-    type=str,
-    help='Specifiy the used model')
-
-argparser.add_argument(
     'particle_diameter',
     type=int,
     help='Particle diameter in pixel')
@@ -50,6 +47,12 @@ argparser.add_argument(
     'annot_dir',
     type=str,
     help='Path to training images')
+
+argparser.add_argument(
+    '--architecture',
+    default="YOLO",
+    type=str,
+    help='Specifiy the used model')
 
 argparser.add_argument(
     '--input_size',
@@ -125,6 +128,7 @@ argparser.add_argument(
 argparser.add_argument(
     '--warmup',
     type=int,
+    default=5,
     help='Warm up epochs')
 
 argparser.add_argument(
@@ -148,6 +152,7 @@ def main():
 
     architecture = args.architecture
     particle_diameter = args.particle_diameter
+    print("Diameter:", args.particle_diameter)
     trainging_dir = args.training_dir
     annot_dir = args.annot_dir
     input_size = args.input_size
