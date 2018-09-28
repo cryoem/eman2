@@ -152,7 +152,6 @@ def main():
 
     architecture = args.architecture
     particle_diameter = args.particle_diameter
-    print("Diameter:", args.particle_diameter)
     trainging_dir = args.training_dir
     annot_dir = args.annot_dir
     input_size = args.input_size
