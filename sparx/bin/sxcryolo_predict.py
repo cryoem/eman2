@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Copyright (C) 2016  Thorsten Wagner (thorsten.wagner@mpi-dortmund.mpg.de)
 #
