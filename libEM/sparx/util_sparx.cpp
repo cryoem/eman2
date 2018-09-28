@@ -24452,6 +24452,24 @@ EMData* Util::shrinkfvol(EMData* img, int npad)
 #undef out_ptr
 #undef w_ptr
 
+void Util::divclreal(EMData* img1, EMData* img2, float cutoff)
+{
+	ENTERFUNC;
+	size_t nx=img2->get_xsize(),ny=img2->get_ysize(),nz=img2->get_zsize();
+	float *img1_ptr  = img1->get_data();
+	float *img2_ptr  = img2->get_data();
+
+	for( size_t i = 0; i<(nx*ny*nz); i++) {
+		float value  = img2_ptr[i];
+		if(value < cutoff) value = 0.0; 
+		else               value = 1./value;
+		img1_ptr[2*i]   *= value;
+		img1_ptr[2*i+1] *= value;
+	}
+
+	img1->update();
+	EXITFUNC;
+}
 
 EMData* Util::mulreal(EMData* img1, EMData* img2)
 {
@@ -29528,7 +29546,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 void Util::version()
 {
 
-	cout <<"   Source modification date: August 2018 release " <<  endl;
+	cout <<"   Source modification date: 08/29/2018" <<  endl;
 }
 
 

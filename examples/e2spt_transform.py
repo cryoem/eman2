@@ -34,7 +34,6 @@ from __future__ import print_function
 from __future__ import division
 
 from builtins import range
-from optparse import OptionParser
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
 

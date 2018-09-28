@@ -105,12 +105,9 @@ def main():
 	if cache_box_size: db["box_size"] = options.boxsize
 
 	application = EMApp()
-#	QtCore.QObject.connect(gui, QtCore.SIGNAL("module_idle"), on_idle)
 
 	module = EMBoxerModule(args,options.boxsize)
 	module.show_interfaces()
-	#this is an example of how to add your own custom tools:
-	#module.add_tool(EraseTool,ErasingPanel,erase_radius=2*options.boxsize)
 	application.execute()
 
 def check(options,args):
@@ -181,7 +178,6 @@ class ThumbsEventHandler(object):
 		'''
 		connects the signals of the main 2D window to the slots of this object
 		'''
-		from PyQt4 import QtCore
 		self.thumbs_window().mx_mouseup.connect(self.thumb_image_selected)
 		self.thumbs_window().module_closed.connect(self.on_module_closed)
 
@@ -965,7 +961,6 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		'''
 		connects the signals of the main 2D window to the slots of this object
 		'''
-		from PyQt4 import QtCore
 		self.main_2d_window.mousedown.connect(self.mouse_down)
 		self.main_2d_window.mousedrag.connect(self.mouse_drag)
 		self.main_2d_window.mouseup.connect(self.mouse_up)
@@ -1085,7 +1080,6 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		'''
 		connects the signals of the main 2D window to the slots of this object
 		'''
-		from PyQt4 import QtCore
 		self.particle_window.mx_image_selected.connect(self.box_selected)
 		self.particle_window.mx_mousedrag.connect(self.box_moved)
 		self.particle_window.mx_mouseup.connect(self.box_released)
@@ -1740,8 +1734,8 @@ class EMBoxerModuleVitals(object):
 		self.box_list.reset_shapes()
 		self.full_box_update()
 
-import PyQt4
-class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
+from PyQt4 import QtCore
+class EMBoxerModule(EMBoxerModuleVitals, QtCore.QObject):
 	'''
 	The EMBoxerModule is like a coordinator. It has 4 widgets: 1 inspector, 1 2D window viewer, and 2 particle
 	stack viewers (one for viewing boxed particles, one for viewing thumbnails).
@@ -1749,7 +1743,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 	that would otherwise not necessary interact. Overall the interactions can be complicated and this class is an
 	attempt to correctly granulate the overall design and the complexity of the classes involved.
 	'''
-	module_closed = PyQt4.QtCore.pyqtSignal()
+	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,file_names=[],box_size=128):
 		'''
@@ -1757,7 +1751,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		@exception RuntimeError raised if the file does not exist
 		'''
 		EMBoxerModuleVitals.__init__(self, file_names=file_names, box_size=box_size)
-		PyQt4.QtCore.QObject.__init__(self)
+		QtCore.QObject.__init__(self)
 
 		self.signal_slot_handlers = {} # this is a dictionary, keys are (somewhat random) names, values are event handlers such as Main2DWindowEventHandler. This dict has the only reference to the event handlers
 		self.tools = {} # this is just to keep track of all the tools that have been added
@@ -1944,9 +1938,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 			print("\n\nThis operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n")
 			error("This operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!","Error")
 			return
-		from .emsprworkflow import E2BoxerProgramOutputTask
 		if self.output_task != None: return
-		from PyQt4 import QtCore
 		self.output_task = EMBoxerWriteOutputTask(self.file_names, dfl_boxsize=self.box_size, current_tool=self.current_tool)
 		#self.output_task.emitter().task_idle.connect(self.on_output_task_idle)
 		self.output_task.run_form()
@@ -2209,7 +2201,6 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		return str(len(box_list))
 
 	def get_params(self):
-#		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
 		from .emdatastorage import ParamDef
 		db = js_open_dict(self.form_db_name)
 		is_gauss = self.current_tool == 'Gauss'
@@ -2299,7 +2290,6 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		if len(coord_output_names) > 0:
 			self.write_output(params["filenames"],coord_output_names,EMBoxList.write_coordinates,params["output_boxsize"],"Writing Coordinates")
 
-		from PyQt4 import QtCore
 		#self.task_idle.emit()
 		self.form.close()
 		self.form = None

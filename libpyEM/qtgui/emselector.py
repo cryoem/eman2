@@ -54,7 +54,6 @@ from .emimageutil import EMTransformPanel
 from .emplot2d import EMPlot2DWidget
 #from e2simmxxplor import EMSimmxExplorer
 from .emsave import save_data
-import PyQt4
 import math
 import os
 import re

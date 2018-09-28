@@ -440,7 +440,6 @@ def run(command):
 # In some cases it is impossible to import PyQT4, particularly on clusters
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from PyQt4.QtCore import Qt
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import ValSlider
 	from eman2_gui.emplot2d import EMPolarPlot2DWidget
