@@ -140,3 +140,9 @@ def assertfloat(self, f1, f2):
     diff = f1 - f2
     if math.fabs(diff) > delta:
         self.assertEqual(f1, f2)
+
+def exception_type(runtime_err):
+	fullerr = runtime_err.args[0]
+	first_space = fullerr.find(" ")
+	firstword = fullerr[0:first_space]
+	return firstword

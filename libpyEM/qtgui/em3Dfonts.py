@@ -52,7 +52,6 @@ from libpyGLUtils2 import *
 from .emglobjects import EM3DModel, Camera2,EMViewportDepthTools, get_default_gl_colors
 from .emlights import *
 
-MAG_INCREMENT_FACTOR = 101.1
 
 class DynamicFonts(object):
 	def __init__(self):

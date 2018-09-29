@@ -46,7 +46,6 @@ from EMAN2 import *
 from time import *
 from eman2_gui.emglobjects import EM3DModel, Camera2,get_default_gl_colors,EMViewportDepthTools2
 
-MAG_INCREMENT_FACTOR = 1.1
 
 class EM3DHelloWorld(EM3DModel):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
