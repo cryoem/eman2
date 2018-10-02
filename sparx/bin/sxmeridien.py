@@ -79,11 +79,11 @@ Local with an = 12*delta
 """
 08/14/2018
 Normalization issues:
-#This is for real space filter
+This is for real space filter
 nx = 1024
 mask = Util.unrollmask(nx)
 for j in range(nx//2,nx):  mask[0,j]=1.0
-#This is for Fourier valid region
+This is for Fourier valid region
 m = Util.unrollmask(nx)
 p2 = fft(p1)
 fp1=fft(Util.mulnclreal(p2,mask))
@@ -262,6 +262,7 @@ def AI( fff, anger, shifter, chout = False):
 			maxres_143 = l01
 		try:    bestres_143 = Tracker["bestres_143"]
 		except: Tracker["bestres_143"] = maxres_143
+		
 		if (maxres >= Tracker["bestres"]) and (maxres_143 >=Tracker["bestres_143"]):
 			Tracker["bestres"]				= maxres
 			Tracker["bestres_143"]          = maxres_143
@@ -303,7 +304,7 @@ def AI( fff, anger, shifter, chout = False):
 			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					print(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
+					print(line,"Convergence criterion A is reached (angular step delta %s smaller than 3/4 angular accuracy (change in angles) %s)" % (Tracker["delta"], Tracker["acc_rot"]))
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
 				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
@@ -436,7 +437,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 			if( Tracker["delta"] < 0.75*Tracker["acc_rot"] ):#<<<----it might cause converge issues when shake is 0.0
 				keepgoing = 0
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					print(line,"Convergence criterion A is reached (angular step delta smaller than 3/4 changes in angles))")
+					print(line,"Convergence criterion A is reached (angular step delta %s smaller than 3/4 angular accuracy (change in angles) %s)" % (Tracker["delta"], Tracker["acc_rot"]))
 			else:
 				step_range, step = compute_search_params(Tracker["acc_trans"], Tracker["shifter"], Tracker["xr"])
 				if( chout ):   print("  Computed  pares  ",Tracker["anger"] ,anger,Tracker["shifter"],shifter, Tracker["xr"], step_range, step)
@@ -1351,6 +1352,8 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_
 	
 def do3d_final_mpi(final_iter):
 	global Tracker, Blockdata
+	#from utilities import model_circle
+	
 	# steptwo of final reconstruction
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if Blockdata["myid"] == Blockdata["main_node"]: print(line, "do3d_final")
@@ -1388,6 +1391,14 @@ def do3d_final_mpi(final_iter):
 			del tweight0, treg0
 			if( Blockdata["myid_on_node"] == 0):
 				tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil_%03d.hdf"%final_iter))	
+				
+				# Write normalized volume
+				#masksphere = model_circle(tvol0.get_xsize()//2-1, tvol0.get_xsize(), tvol0.get_ysize(), tvol0.get_zsize())
+				#tvol0.process_inplace("normalize.mask", {"mask":masksphere, "no_sigma":0})  
+				##stats = Util.infomask(tvol0, masksphere, True)
+				tvol0.process_inplace("normalize")
+				normvol = os.path.join(Tracker["constants"]["masterdir"], "vol_0_unfil_%03d_norm.hdf"%final_iter)
+				tvol0.write_image(normvol)
 		elif( Blockdata["color"] == Blockdata["node_volume"][0]):
 			if( Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
 				treg1 = get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
@@ -1399,6 +1410,11 @@ def do3d_final_mpi(final_iter):
 			del tweight1, treg1
 			if( Blockdata["myid_on_node"] == 0):
 				tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil_%03d.hdf"%final_iter))
+				
+				# Write normalized volume
+				tvol1.process_inplace("normalize")
+				normvol = os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil_%03d_norm.hdf"%final_iter)
+				tvol1.write_image(normvol)
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
 		for iproc in range(2):
@@ -1420,8 +1436,20 @@ def do3d_final_mpi(final_iter):
 			if iproc ==0 : tvol0 = steptwo_mpi(tvol0, tweight0, treg, None, False , color = Blockdata["node_volume"][0])
 			else: tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
 			if( Blockdata["myid_on_node"] == 0):
-				if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
-				else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
+				if iproc ==0: 
+					tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
+					
+					# Write normalized volume
+					tvol0.process_inplace("normalize")
+					normvol = os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d_norm.hdf"%(iproc, final_iter))
+					tvol0.write_image(normvol)
+				else: 
+					tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
+					
+					# Write normalized volume
+					tvol1.process_inplace("normalize")
+					normvol = os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d_norm.hdf"%(iproc, final_iter))
+					tvol1.write_image(normvol)
 			mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD) #  
 	return
@@ -9074,6 +9102,7 @@ def rec3d_tmp(mainiteration, original_data):
 		if (Tracker["currentres"] >= Tracker["bestres"]) and (Tracker["fsc143"] >=Tracker["bestres_143"]):
 			Tracker["bestres"] = Tracker["currentres"]
 			Tracker["constants"]["best"] = mainiteration
+			#print("MRK_DEBUG, rec3d_tmp: mainiteration %s, best %s" % (Tracker["mainiteration"]-1, Tracker["constants"]["best"]))
 		if( Blockdata["myid"] == Blockdata["main_node"]):
 			fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"Tracker_%03d.json"%Tracker["mainiteration"]),'w')
 			json.dump(Tracker, fout)
@@ -10509,6 +10538,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Tracker["mainiteration"] = mainiteration
 			Tracker["directory"]     = os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 			doit, keepchecking = checkstep(Tracker["directory"], keepchecking)
+			#print("MRK_DEBUG, main: restart_mode: %s, directory: %s, doit %s" % (restart_mode, Tracker["directory"]))
 			if( not doit ):			
 				li = True
 				doit2, keepchecking2 = checkstep(os.path.join(Tracker["directory"],"Tracker_%03d.json"%Tracker["mainiteration"]), li)
@@ -10984,6 +11014,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					oldparams         			= [[],[]]
 					Blockdata["accumulatepw"]  	= [None, None]
 					#if Tracker["constants"]["memory_per_node"] <0.0: Tracker["constants"]["memory_per_node"] = 2.0*Blockdata["no_of_processes_per_group"]
+					#print("MRK_DEBUG, main: keepgoing %s, best %s " % (keepgoing, Tracker["constants"]["best"]))
 					recons3d_final(Tracker["constants"]["masterdir"], Tracker["constants"]["best"], Tracker["constants"]["memory_per_node"])
 
 			#  End of if doit
@@ -10996,6 +11027,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 	elif( do_continuation_mode ):
 		# case1: local meridien run using parameters stored in headers
 		# case2: restart mode of standard meridien run. Parameters can be altered in the restart run.
+		
 		parser.add_option("--radius",      		   		type= "int",          	default= -1,			     	help="Outer radius [in pixels] of particles < int(nx/2)-1")
 		parser.add_option("--xr",      		       		type="float",         	default= 5.,		         	help="Range for translation search in both directions, search is +/xr (default 5), can be fractional")
 		parser.add_option("--ts",      		       		type="float",        	default= 1.,		         	help="Step size of the translation search in both directions, search is within a circle of radius xr on a grid with steps ts, (default 1), can be fractional")
@@ -11765,6 +11797,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ): mpi_comm_free(Blockdata["subgroup_comm"])
 					if(Blockdata["myid"] == Blockdata["main_node"]):
+						#print("MRK_DEBUG, main: myid %s, do_final_mode %s, best %s " % 
+							#(Blockdata["myid"], do_final_mode, Tracker["constants"]["best"]))
 						print(line,"Resolution achieved in ITERATION  #%2d: %3d/%3d pixels, %5.2fA/%5.2fA."%
 								(Tracker["mainiteration"]-1, \
 								Tracker["currentres"], Tracker["fsc143"], Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["currentres"]), \
@@ -11845,6 +11879,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 	
 		Blockdata["accumulatepw"]       = [[],[]]
+		#print("MRK_DEBUG, main: do_final_mode %s, options.do_final %s " % (do_final_mode, options.do_final))
 		recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
 		mpi_finalize()
 		exit()
