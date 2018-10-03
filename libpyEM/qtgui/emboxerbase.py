@@ -59,7 +59,6 @@ from EMAN2jsondb import *
 from EMAN2 import *
 
 import os,sys,weakref,math, json
-from PyQt5 import QtCore
 
 
 TEMPLATE_MIN = 30
@@ -573,7 +572,7 @@ class ErasingPanel(object):
 
 	def get_widget(self):
 		if self.widget == None:
-			from PyQt5 import QtCore, QtGui, QtWidgets
+			from PyQt5 import QtWidgets
 			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QVBoxLayout(self.widget)
 			vbl.setContentsMargins(0, 0, 0, 0)
@@ -614,7 +613,7 @@ class ManualBoxingPanel(object):
 
 	def get_widget(self):
 		if self.widget == None:
-			from PyQt5 import QtCore, QtGui, QtWidgets
+			from PyQt5 import QtWidgets
 			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QGridLayout(self.widget)
 			vbl.setContentsMargins(0, 0, 0, 0)
@@ -657,7 +656,7 @@ class EraseTool(EMBoxingTool):
 	def unique_name(self): return "Erase"
 
 	def icon(self):
-		from PyQt5 import QtGui, QtWidgets
+		from PyQt5 import QtGui
 		return QtGui.QIcon(get_image_directory() + "boxer_erase.png")
 
 	def get_widget(self):
@@ -764,7 +763,7 @@ class ManualBoxingTool(object):
 
 
 	def icon(self):
-		from PyQt5 import QtGui, QtWidgets
+		from PyQt5 import QtGui
 		return QtGui.QIcon(get_image_directory() + "white_box.png")
 
 
@@ -2357,7 +2356,7 @@ def get_coord_outnames(params):
 			output.append(base_name(name)+ '.box')
 	return output
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 class EMBoxerInspector(QtWidgets.QWidget):
 
 	PTCL_SHAPE_MAP = {}
@@ -2368,7 +2367,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 	PTCL_SHAPE_MAP["circle with marker"] = "rcirclepoint"
 
 	def __init__(self,target) :
-		from PyQt5 import QtCore, QtGui, QtWidgets
+		from PyQt5 import QtGui, QtWidgets
 		self.busy = True
 		self.tool_dynamic_vbl = None # this will be used to dynamic add widgets as the buttons are changed
 		self.dynamic_box_button_widget = None # this will be used to dynamic add widgets as the buttons are changed
@@ -2424,7 +2423,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		self.target().run_output_dialog()
 
 	def get_display_tab(self):
-		from PyQt5 import QtCore, QtGui, QtWidgets
+		from PyQt5 import QtWidgets
 		widget = QtWidgets.QWidget()
 		vbl =  QtWidgets.QVBoxLayout(widget)
 
@@ -2514,7 +2513,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 
 
 	def get_main_tab(self):
-		from PyQt5 import QtCore, QtGui, QtWidgets
+		from PyQt5 import QtGui, QtWidgets
 		widget = QtWidgets.QWidget()
 		vbl = QtWidgets.QVBoxLayout(widget)
 		vbl.setContentsMargins(0, 0, 0, 0)
@@ -2542,7 +2541,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		return widget
 
 	def add_bottom_buttons(self,layout):
-		from PyQt5 import QtCore, QtGui, QtWidgets
+		from PyQt5 import QtWidgets
 		hbl_t=QtWidgets.QHBoxLayout()
 
 		hbl_q=QtWidgets.QHBoxLayout()
@@ -2576,7 +2575,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		self.busy = False
 
 	def add_boxing_button_group(self,layout):
-		from PyQt5 import QtCore, QtGui, QtWidgets
+		from PyQt5 import QtWidgets
 
 		self.tool_button_group_box = QtWidgets.QGroupBox("Tools")
 		self.tool_button_group_box_vbl = QtWidgets.QVBoxLayout(self.tool_button_group_box)
