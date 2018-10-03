@@ -531,7 +531,7 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 	log_main.add("Estimated required memory for sorting on each node:")
 	smearings_on_nodes = np.full(Blockdata["no_of_groups"], 0.0, dtype=np.float32)
 	smearings_per_cpu  = [None for im in range(Blockdata["nproc"])]
-	dict = {}
+	dict = [None for i in range(Blockdata["nproc"])]
 	for iproc in range(Blockdata["nproc"]):
 		image_start, image_end = MPI_start_end(smearing_list.shape[0], Blockdata["nproc"],iproc)
 		smearings_on_nodes[iproc//Blockdata["no_of_processes_per_group"]] += \
@@ -3303,7 +3303,7 @@ def split_partition_into_ordered_clusters_split_ucluster(partition, input_row_wi
 	if group_id.shape[0] >1: 
 		for icluster in range(group_id.shape[0]):
 			if icluster <group_id.shape[0] -1: clusters.append((np.sort(partition[1][isin(partition[0],\
-			     cluster_id[icluster])])).tolist())
+			     group_id[icluster])])).tolist())
 			else:  ucluster =(np.sort(partition[1][isin(partition[0], group_id[icluster])])).tolist()
 		return clusters, ucluster
 	else: return [partition[1].tolist()], []
