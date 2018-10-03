@@ -2963,7 +2963,7 @@ class SortSelTree(QtWidgets.QTreeView) :
 
 	def __init__(self, parent = None) :
 		QtWidgets.QTreeView.__init__(self, parent)
-		self.header().setClickable(True)
+		self.header().setSectionsClickable(True)
 		self.header().sectionClicked[int].connect(self.colclick)
 		self.scol = -1
 		self.sdir = 1
