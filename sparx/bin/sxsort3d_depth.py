@@ -6385,11 +6385,8 @@ def main():
 		Tracker["even_scale_fsc"]                 = True
 		Tracker["minimum_img_per_cpu"]            =   5 # User can adjust it to other number
 		
-		ndict = {}
-		for im in range(Blockdata["nproc"]):ndict[im] = -1
-		Tracker["num_on_the_fly"] = ndict
+		Tracker["num_on_the_fly"] = [ -1  for im in range(Blockdata["nproc"])]
 		Tracker["current_img_per_grp"] = Tracker["constants"]["img_per_grp"]
-
 		try : 
 			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 			Tracker["constants"]["orientation_groups"] = \
@@ -6575,9 +6572,7 @@ def main():
 		Blockdata["symclass"]                      = symclass(Tracker["constants"]["symmetry"])
 		Tracker["constants"]["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
 		
-		ndict = {}
-		for im in range(Blockdata["nproc"]): ndict[im] = -1
-		Tracker["num_on_the_fly"]      = ndict
+		Tracker["num_on_the_fly"]      = [ -1 for im in range(Blockdata["nproc"])]
 		Tracker["current_img_per_grp"] = Tracker["constants"]["img_per_grp"]
 		
 		ast = get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
