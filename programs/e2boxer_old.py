@@ -1797,7 +1797,7 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 		return self.panel_object.get_widget()
 
 	def icon(self):
-		from PyQt5 import QtGui, QtWidgets
+		from PyQt5 import QtGui
 		return QtGui.QIcon(get_image_directory() + "swarm_icon.png")
 
 
@@ -3107,7 +3107,7 @@ class GaussTool(GaussBoxer,EMBoxingTool):
 		return self.panel_object.get_widget()
 
 	def icon(self):
-		from PyQt5 import QtGui, QtWidgets
+		from PyQt5 import QtGui
 		return QtGui.QIcon(get_image_directory() + "swarm_icon.png")
 
 	def get_2d_window(self): return self.target().get_2d_window()
@@ -3202,6 +3202,8 @@ class GaussTool(GaussBoxer,EMBoxingTool):
 
 	def boxes_erased(self,list_of_boxes):
 		GaussBoxer.boxes_erased(self,list_of_boxes,self.target().current_file())
+
+from PyQt5 import QtWidgets
 
 # this is class CTFInspector from sxboxer.py with very slight modifications
 class CTFInspectorWidget(QtWidgets.QWidget):
