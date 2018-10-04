@@ -403,7 +403,8 @@ def check_state_within_box_run(keepgoing, nruns, unaccounted_list, no_cluster_la
 def get_box_partition(box_dir, ncluster, unaccounted_list):
 	unaccounted_list = sorted(unaccounted_list)
 	if ncluster >=1:
-		clusters_in_box = [read_text_file(os.path.join(box_dir, "Cluster_%03d.txt"%ic)) for ic in range(ncluster)]
+		clusters_in_box = [read_text_file(os.path.join(box_dir, \
+		      "Cluster_%03d.txt"%ic)) for ic in range(ncluster)]
 		if len(unaccounted_list)>0: clusters_in_box.append(unaccounted_list)
 		alist, plist = merge_classes_into_partition_list(clusters_in_box)
 	else:  plist = []
@@ -451,7 +452,8 @@ def do_analysis_on_identified_clusters(clusters, log_main):
 	else:
 		ds, ss, norms = get_params_for_analysis(Tracker["constants"]["orgstack"], \
 			os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt"),\
-			os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), Tracker["constants"]["nsmear"])
+			os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"), \
+			       Tracker["constants"]["nsmear"])
 
 	tmpres1, tmpres2 = do_one_way_anova_scipy(clusters, ds,                       name_of_variable="defocus",  log_main = log_main)
 	if ss is not None: tmpres1, tmpres2 = do_one_way_anova_scipy(clusters, ss,    name_of_variable="smearing", log_main = log_main)
@@ -702,12 +704,14 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 					os.mkdir(Tracker["directory"])
 					os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 				mpi_barrier(MPI_COMM_WORLD)
-				tmp_final_list, premature, kmeans_iterations =  Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, ctf_images, \
+				tmp_final_list, premature, kmeans_iterations = \
+				    Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, ctf_images, \
 					parameterstructure, norm_per_particle, \
 				     MGSKmeans_index_file, params, minimum_grp_size, clean_volumes= Tracker["clean_volumes"] )
 				max_iter = max(max_iter, kmeans_iterations)	   
 				if Blockdata["myid"] == Blockdata["main_node"]:
-					write_text_row(tmp_final_list, os.path.join(iter_dir, "partition_%03d.txt"%indep_run_iter))
+					write_text_row(tmp_final_list, os.path.join(iter_dir,\
+					    "partition_%03d.txt"%indep_run_iter))
 			mpi_barrier(MPI_COMM_WORLD)
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				minimum_grp_size1, maximum_grp_size1, list_of_stable, unaccounted_list, \
@@ -724,7 +728,21 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 			Tracker           = wrap_mpi_bcast(Tracker,                Blockdata["main_node"], MPI_COMM_WORLD)
 			accounted_file    = os.path.join(iter_dir, "Accounted.txt")
 			unaccounted_file  = os.path.join(iter_dir, "Core_set.txt")
+			###### Compute rand_index for two independent runs
 			if Blockdata["myid"] == Blockdata["main_node"]:
+				core1      = read_text_file(os.path.join(iter_dir, "partition_000.txt"),  -1)
+				core2      = read_text_file(os.path.join(iter_dir, "partition_001.txt"),  -1)
+				core1      = core1[0]
+				core2      = core2[0]
+			else:
+				core1 = 0
+				core2 = 0
+			core1  = wrap_mpi_bcast(core1, Blockdata["main_node"])
+			core2  = wrap_mpi_bcast(core2, Blockdata["main_node"])
+			rand_index  = compute_rand_index_mpi(core1, core2)
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				info_table.append('  Rand index of two paritions is %5.4f '%rand_index)
+				info_table.append('----------------------------------------------------------------------------------------------------------------')
 				if abs(iter_current_iter_ratio - iter_previous_iter_ratio< 1.0) and \
 				   iter_current_iter_ratio > 90.:converged = 1
 				else: converged = 0
@@ -1218,10 +1236,8 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	msa = ssa/(K-1.0)
 	mse = sse/float(n1)
 	mst = sst/float(n1)
-	try:
-		f_ratio = msa/mse
-	except:
-		f_ratio = 999999.
+	try:    f_ratio = msa/mse
+	except: f_ratio = 999999.
 	log_main.add('                              ANOVA of %s'%name_of_variable)
 	log_main.add('{:5} {:^12} {:^12} '.format('ANOVA', 'F-value',  'Significance'))
 	log_main.add('{:5} {:12.2f} {:12.2f}'.format('ANOVA', res[0], res[1]*100.))
@@ -1372,7 +1388,8 @@ def AI_MGSKmeans(iter_assignment, last_iter_assignment, best_assignment, \
 	if is_unicorn_cluster == 0:
 		sum_newindices1 = 0
 		sum_newindices2 = 0
-		ratio, newindices, stable_clusters = compare_two_iterations(iter_assignment, last_iter_assignment)
+		ratio, newindices, stable_clusters = \
+		   compare_two_iterations(iter_assignment, last_iter_assignment)
 		for idx in range(len(newindices)):
 			sum_newindices1 += newindices[idx][0]
 			sum_newindices2 += newindices[idx][1]
@@ -1705,7 +1722,8 @@ def do_assignment_by_dmatrix_orien_group_minimum_group_size(dmatrix, \
 		value_list     = value_list.tolist()
 		if len(value_list)<  number_of_groups:
 			for i in range(len(index_list)):
-				if tarray[index_list[i]] ==  tarray[duplicate_list[0]]: duplicate_list.append(index_list[i])# find all duplicated ones
+				if tarray[index_list[i]] ==  tarray[duplicate_list[0]]: 
+					duplicate_list.append(index_list[i])# find all duplicated ones
 			shuffle(duplicate_list)
 			duplicate_list.remove(duplicate_list[0])
 			for i in range(len(duplicate_list)):# swap the first row with the next row
@@ -2016,7 +2034,8 @@ def read_paramstructure_for_sorting(partids, paramstructure_dict_file, paramstru
 	im_start, im_end   = MPI_start_end(psize, Blockdata["nproc"], Blockdata["myid"])
 	lcore              = lcore[im_start:im_end]
 	nima               = len(lcore)
-	if( Blockdata["myid"] == Blockdata["main_node"]): tmp_list = read_text_row(paramstructure_dict_file)
+	if( Blockdata["myid"] == Blockdata["main_node"]):
+		tmp_list = read_text_row(paramstructure_dict_file)
 	else: tmp_list = 0
 	tmp_list = wrap_mpi_bcast(tmp_list, Blockdata["main_node"])
 	pdict    = {}
@@ -2391,7 +2410,8 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 		if not Tracker["nosmearing"] and norms: cimage *= Tracker["avgnorm"][chunk_id]/norms[im] #norm correction
 		if Tracker["applybckgnoise"]:
 			if Tracker["applymask"]:
-				if Tracker["constants"]["hardmask"]: cimage = cosinemask(cimage, radius = Tracker["constants"]["radius"])
+				if Tracker["constants"]["hardmask"]: 
+					cimage = cosinemask(cimage, radius = Tracker["constants"]["radius"])
 				else:
 					bckg = model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
 					bckg.set_attr("is_complex",1)
@@ -2992,10 +3012,17 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 		core2 = read_text_file(input_box_parti2, -1)
 		ptp2, tmp2 = split_partition_into_ordered_clusters(core2, False)
 	else:
-		ptp1 = 0
-		ptp2 = 0
+		ptp1  = 0
+		ptp2  = 0
+		core1 = 0
+		core2 = 0
 	ptp1 = wrap_mpi_bcast(ptp1, Blockdata["main_node"], MPI_COMM_WORLD)
 	ptp2 = wrap_mpi_bcast(ptp2, Blockdata["main_node"], MPI_COMM_WORLD)
+	core1 = wrap_mpi_bcast(core1, Blockdata["main_node"], MPI_COMM_WORLD)
+	core2 = wrap_mpi_bcast(core2, Blockdata["main_node"], MPI_COMM_WORLD)
+	rand_index = compute_rand_index_mpi(core1[0], core2[0])
+	if Blockdata["myid"]==Blockdata["main_node"]:
+		log_main.add('Rand index of two pairs of independent runs is  %5.4f'%rand_index)
 	#### before comparison we do a simulation
 	gave, gvar = do_random_groups_simulation_mpi(ptp1, ptp2)
 	if Blockdata["myid"]==Blockdata["main_node"]:# sorting data processing
@@ -3219,7 +3246,6 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	ptp1, tmp1 = split_partition_into_ordered_clusters(core1, False)
 	core2      = read_text_file(os.path.join(partition_dir, "partition_%03d.txt"%(2*ipair+1)),-1)
 	ptp2, tmp2 = split_partition_into_ordered_clusters(core2, False)
-	
 	log_list.append('       Matching of sorting results of two quasi-independent runs')
 	# before comparison
 	msg = 'P0      '
@@ -3289,9 +3315,49 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	log_list.append('  The overall reproducibility is %5.1f%%.'%Tracker["current_iter_ratio"])
 	log_list.append('  The number of accounted for images: %d.  The number of core set images: %d.'%(len(accounted_list), len(unaccounted_list)))
 	log_list.append('  The current minimum group size: %d and the maximum group size: %d.'%(minimum_group_size, maximum_group_size))
-	log_list.append('----------------------------------------------------------------------------------------------------------------')
 	return minimum_group_size, maximum_group_size, selected_clusters, unaccounted_list, Tracker["current_iter_ratio"], len(list_stable), log_list
 
+def compute_rand_index_mpi(inassign1, inassign2):
+	# Two partitions always have the same length
+	# rand_index = (a + b)/[(n-1)*n/2] ; n is the full length of both partitions
+	# a: pairs in the same class in both partitions
+	# b: pairs not in the same class in both partitions
+	# Journal of the American Statistical Association.
+	# American Statistical Association. 66(336): 846-850
+	# rand_index should be between [0, 1]; 
+	# =0; two partitions different; =1; two partitions identical
+	global Tracker, Blockdata
+	import numpy as np
+	time_start = time()
+	assign1 = np.array(inassign1, dtype=np.int8)
+	assign2 = np.array(inassign2, dtype=np.int8)
+	num_in_both     = 0
+	num_in_neither  = 0
+	ntot = len(assign1)
+	num_all_pairs = ntot*(ntot-1)/2
+	parti_list = []
+	for im in range(ntot-1):
+		if im%Blockdata["nproc"] == Blockdata["myid"]:parti_list.append(im)
+		
+	for lm in range(len(parti_list)):
+		for im in range(parti_list[lm], parti_list[lm]+1):
+			for jm in range(im +1, ntot):
+				g1im, g1jm = assign1[im], assign1[jm]
+				g2im, g2jm = assign2[im], assign2[jm]
+				if (g1im == g1jm) and (g2im == g2jm): num_in_both    +=1
+				if (g1im != g1jm) and (g2im != g2jm): num_in_neither +=1
+	nomin = num_in_both+num_in_neither
+	del assign1, assign2
+	mpi_barrier(MPI_COMM_WORLD)
+	if (Blockdata["myid"] != Blockdata["main_node"]):
+		wrap_mpi_send(nomin, Blockdata["main_node"], MPI_COMM_WORLD)
+	else:
+		for iproc in range(Blockdata["nproc"]):
+			if (iproc !=Blockdata["main_node"]):
+				nomin += wrap_mpi_recv(iproc, MPI_COMM_WORLD)
+	nomin = bcast_number_to_all(nomin,  Blockdata["main_node"], MPI_COMM_WORLD)
+	return nomin/float(num_all_pairs)
+	
 def isin(element, test_elements, assume_unique=False, invert=False):
     import numpy as np
     element = np.asarray(element)
