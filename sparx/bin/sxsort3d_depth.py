@@ -1082,6 +1082,7 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 	log_main.add('                                       ANOVA analysis')
 	log_main.add('----------------------------------------------------------------------------------------------------------------')
 	if len(clusters)<=1:
+		log_main.add("There is only one group. No %s ANOVA analysis"%name_of_variable)
 		return None, None, None
 	K = min(NMAX, len(clusters))
 	replicas = []
@@ -1210,14 +1211,17 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 		summed_squared_elements_within_groups[i] = ssa_per_group**2/float(len(replicas[i]))
 		
 	sst -=global_mean**2/nsamples
-	ssa = sum(summed_squared_elements_within_groups) - global_mean**2/nsamples
-	sse = sst - ssa
-	n1 = 0
+	ssa  = sum(summed_squared_elements_within_groups) - global_mean**2/nsamples
+	sse  = sst - ssa
+	n1   = 0
 	for i in range(K): n1 +=len(replicas[i])-1
 	msa = ssa/(K-1.0)
 	mse = sse/float(n1)
 	mst = sst/float(n1)
-	f_ratio = msa/mse
+	try:
+		f_ratio = msa/mse
+	except:
+		f_ratio = 999999.
 	log_main.add('                              ANOVA of %s'%name_of_variable)
 	log_main.add('{:5} {:^12} {:^12} '.format('ANOVA', 'F-value',  'Significance'))
 	log_main.add('{:5} {:12.2f} {:12.2f}'.format('ANOVA', res[0], res[1]*100.))
