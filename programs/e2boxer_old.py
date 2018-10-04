@@ -522,7 +522,7 @@ class SwarmPanel(object):
 
 	def get_widget(self):
 		if self.widget == None:
-			from PyQt4 import QtCore, QtGui, Qt
+			from PyQt4 import QtCore, QtGui
 			self.widget = QtGui.QWidget()
 			vbl = QtGui.QVBoxLayout(self.widget)
 			vbl.setMargin(0)
@@ -1971,7 +1971,7 @@ class GaussPanel(object):
 
 			gbdb = js_open_dict(GaussPanel.GDB_NAME)
 
-			from PyQt4 import QtCore, QtGui, Qt
+			from PyQt4 import QtCore, QtGui
 			self.widget = QtGui.QWidget()
 			vbl = QtGui.QVBoxLayout(self.widget)
 			vbl.setMargin(0)

@@ -573,7 +573,7 @@ class ErasingPanel(object):
 
 	def get_widget(self):
 		if self.widget == None:
-			from PyQt4 import QtCore, QtGui, Qt
+			from PyQt4 import QtCore, QtGui
 			self.widget = QtGui.QWidget()
 			vbl = QtGui.QVBoxLayout(self.widget)
 			vbl.setMargin(0)
@@ -614,7 +614,7 @@ class ManualBoxingPanel(object):
 
 	def get_widget(self):
 		if self.widget == None:
-			from PyQt4 import QtCore, QtGui, Qt
+			from PyQt4 import QtCore, QtGui
 			self.widget = QtGui.QWidget()
 			vbl = QtGui.QGridLayout(self.widget)
 			vbl.setMargin(0)
@@ -2424,7 +2424,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.target().run_output_dialog()
 
 	def get_display_tab(self):
-		from PyQt4 import QtCore, QtGui, Qt
+		from PyQt4 import QtCore, QtGui
 		widget = QtGui.QWidget()
 		vbl =  QtGui.QVBoxLayout(widget)
 
@@ -2514,7 +2514,7 @@ class EMBoxerInspector(QtGui.QWidget):
 
 
 	def get_main_tab(self):
-		from PyQt4 import QtCore, QtGui, Qt
+		from PyQt4 import QtCore, QtGui
 		widget = QtGui.QWidget()
 		vbl = QtGui.QVBoxLayout(widget)
 		vbl.setMargin(0)
@@ -2542,7 +2542,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		return widget
 
 	def add_bottom_buttons(self,layout):
-		from PyQt4 import QtCore, QtGui, Qt
+		from PyQt4 import QtCore, QtGui
 		hbl_t=QtGui.QHBoxLayout()
 
 		hbl_q=QtGui.QHBoxLayout()
@@ -2576,7 +2576,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.busy = False
 
 	def add_boxing_button_group(self,layout):
-		from PyQt4 import QtCore, QtGui, Qt
+		from PyQt4 import QtCore, QtGui
 
 		self.tool_button_group_box = QtGui.QGroupBox("Tools")
 		self.tool_button_group_box_vbl = QtGui.QVBoxLayout(self.tool_button_group_box)
