@@ -430,7 +430,7 @@ class EMBoxingTool(object):
 		''''
 		required by the Main2DWindowEventHandler
 		How shall you respond to the mouse move event?
-		@param event a QtGui.QEvent
+		@param event a QtCore.QEvent
 		'''
 		raise  NotImplementedException("Inheriting classes must supply this function")
 
@@ -438,7 +438,7 @@ class EMBoxingTool(object):
 		'''
 		required by the Main2DWindowEventHandler
 		How shall you respond to the mouse wheel event?
-		@param event a QtGui.QEvent
+		@param event a QtCore.QEvent
 		'''
 		raise  NotImplementedException("Inheriting classes must supply this function")
 
@@ -446,7 +446,7 @@ class EMBoxingTool(object):
 		'''
 		required by the Main2DWindowEventHandler
 		How shall you respond to the mouse down event?
-		@param event a QtGui.QEvent
+		@param event a QtCore.QEvent
 		'''
 		raise  NotImplementedException("Inheriting classes must supply this function")
 
@@ -455,7 +455,7 @@ class EMBoxingTool(object):
 		'''
 		required by the Main2DWindowEventHandlers
 		How shall you respond to the mouse drag event?
-		@param event a QtGui.QEvent
+		@param event a QtCore.QEvent
 		'''
 		raise  NotImplementedException("Inheriting classes must supply this function")
 
@@ -464,7 +464,7 @@ class EMBoxingTool(object):
 		'''
 		required by the Main2DWindowEventHandler
 		How shall you respond to the mouse up event?
-		@param event a QtGui.QEvent
+		@param event a QtCore.QEvent
 		'''
 		raise  NotImplementedException("Inheriting classes must supply this function")
 
@@ -473,7 +473,7 @@ class EMBoxingTool(object):
 		'''
 		required by the Main2DWindowEventHandler
 		How shall you respond to the key press event?
-		@param event a QtGui.QEvent
+		@param event a QtCore.QEvent
 		'''
 		raise NotImplementedException("Inheriting classes must supply this function")
 
