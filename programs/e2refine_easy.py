@@ -171,6 +171,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement[False]")
+	parser.add_argument("--focused", dest = "focused", default=None,help = "Specify a 3-D mask to apply to the volume before projection. Focuses refinement on a specific portion of the structure. Incompatible with symmetry.", guitype='filebox', row=29, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--tophat", type=str, default=None,help = "'local' or 'global'. Instead of imposing a final Wiener filter, use a tophat filter (global similar to Relion). local determines local resolution and filters. danger of feature exaggeration", guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement['None']")
 	parser.add_argument("--nogoldfinal", action="store_true", default=False,help = "If selected, the final iteration will turn off gold-standard behavior and both halves will be refined from the same model. Normally used with --tophat=local.")
 	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.")
@@ -270,6 +271,9 @@ not need to specify any of the following other than the ones already listed abov
 			print("WARNING: mirror option selected, but simalign specified. Critical that simalign NOT check mirrors. Please insure that the specified aligner obeys this.")
 		else : options.simalign="rotate_translate_bispec"
 #		else : options.simalign="rotate_translate_tree:flip=0"
+
+	if options.sym.lower() not in ("c1","i") and options.focused!=None and len(options.focused)>3 :
+		print("WARNING: when --focused is used with symmetry, symmetry is imposed after each iteration on the 3-D model, but projections are made for the entire (hemi)sphere, since the mask generally breaks the symmetry.")
 
 	if options.m3dpreprocess==None:
 		if not options.m3dold : m3dpreprocess=""
@@ -776,12 +780,44 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		### 3-D Projections
 		# Note that projections are generated on a single node only as specified by --threads
 		append_html("<p>* Generating 2-D projections of even/odd 3-D maps",True)
+		fspe="{path}/threed_{itrm1:02d}_even.hdf".format(path=options.path,itrm1=it-1)
+		fspo="{path}/threed_{itrm1:02d}_odd.hdf".format(path=options.path,itrm1=it-1)
+		# For focused mode we temporarily replace the volume with a masked version, then replace it when we're done
+		if options.focused:
+			projsym="c1"
+			fmask=EMData(options.focused)
+			omap=EMData(fspe)
+			os.rename(fspe,"tmp.hdf")
+			omap.mult(fmask)
+			omap.write_image(fspe,0)
+			# TODO = should really be making projections of the mask as well to use during comparison
+		else: projsym=options.sym
+			
 		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
-			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,threads=options.threads,verbose=verbose)
+			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,verbose=verbose)
 		run(cmd)
+		
+		if options.focused:
+			# put the original even map back where it belongs
+			os.unlink(fspe)
+			os.rename("tmp.hdf",fspe)
+
+			# mask the odd map
+			omap=EMData(fspo)
+			os.rename(fspo,"tmp.hdf")
+			omap.mult(fmask)
+			omap.write_image(fspo,0)
+		
 		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
-			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,threads=options.threads,verbose=verbose)
+			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,verbose=verbose)
 		run(cmd)
+		
+		if options.focused:
+			# finally, replace the original odd map
+			os.unlink(fspo)
+			os.rename("tmp.hdf",fspo)
+			
+		
 		progress += 1.0
 		E2progress(logid,old_div(progress,total_procs))
 
