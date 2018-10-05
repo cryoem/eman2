@@ -437,23 +437,24 @@ def run(command):
 		print("Error running:\n%s"%command)		    
 		exit(1)
 
-# In some cases it is impossible to import PyQT4, particularly on clusters
-try:
-	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from eman2_gui.emshape import *
-	from eman2_gui.valslider import ValSlider
-	from eman2_gui.emplot2d import EMPolarPlot2DWidget
-except:
-	class dummy(object):
-		pass
-	class QWidget(object):
-		"A dummy class for use when Qt not installed"
-		def __init__(self,parent):
-			print("Qt4 has not been loaded")
-	QtGui=dummy()
-	QtGui.QWidget=QWidget
 
 def display_validation_plots(path, radcut, planethres, plotdatalabels=False, color='#00ff00', plotzaxiscolor=False):
+	# In some cases it is impossible to import PyQT4, particularly on clusters
+	try:
+		from PyQt4 import QtCore, QtGui, QtOpenGL
+		from eman2_gui.emshape import *
+		from eman2_gui.valslider import ValSlider
+		from eman2_gui.emplot2d import EMPolarPlot2DWidget
+	except:
+		class dummy(object):
+			pass
+		class QWidget(object):
+			"A dummy class for use when Qt not installed"
+			def __init__(self,parent):
+				print("Qt4 has not been loaded")
+		QtGui=dummy()
+		QtGui.QWidget=QWidget
+
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emapplication import EMApp
 	r = []
