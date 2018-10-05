@@ -3334,7 +3334,7 @@ def compute_rand_index_mpi(inassign1, inassign2):
 	num_in_both     = 0
 	num_in_neither  = 0
 	ntot = len(assign1)
-	num_all_pairs = ntot*(ntot-1)/2
+	num_all_pairs = (ntot-1)/2.
 	parti_list = []
 	for im in range(ntot-1):
 		if im%Blockdata["nproc"] == Blockdata["myid"]:parti_list.append(im)
@@ -3346,7 +3346,7 @@ def compute_rand_index_mpi(inassign1, inassign2):
 				g2im, g2jm = assign2[im], assign2[jm]
 				if (g1im == g1jm) and (g2im == g2jm): num_in_both    +=1
 				if (g1im != g1jm) and (g2im != g2jm): num_in_neither +=1
-	nomin = num_in_both+num_in_neither
+	nomin = (num_in_both+num_in_neither)/float(ntot)
 	del assign1, assign2
 	mpi_barrier(MPI_COMM_WORLD)
 	if (Blockdata["myid"] != Blockdata["main_node"]):
