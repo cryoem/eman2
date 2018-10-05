@@ -1104,7 +1104,7 @@ def main():
 			log_main.add("Mtf               :"+str(options.mtf))
 			log_main.add("Output            :"+str(options.output))
 			log_main.add("Do_adaptive_mask  :"+str(options.do_adaptive_mask))
-			log_main.add("Mask_threshold    :"+str(options.mask_threshold)+" sigma above the avg of the map to be thresholded")
+			log_main.add("Mask_threshold    :"+str(options.mask_threshold))
 			log_main.add("Cosine_edge       :"+str(options.cosine_edge))
 			log_main.add("Dilation          :"+str(options.dilation))
 			# log_main.add("randomphasesafter :"+str(options.randomphasesafter))
