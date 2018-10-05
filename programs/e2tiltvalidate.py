@@ -442,7 +442,7 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 	# In some cases it is impossible to import PyQT4, particularly on clusters
 	try:
 		from PyQt4 import QtCore, QtGui, QtOpenGL
-		from eman2_gui.emshape import *
+#		from eman2_gui.emshape import *
 		from eman2_gui.valslider import ValSlider
 		from eman2_gui.emplot2d import EMPolarPlot2DWidget
 	except:
@@ -498,94 +498,94 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 		image.show()
 	app.exec_()
 
-# Compute a RGB value to represent a data range. Basically convert Hue to GSB with I=0.33 and S=1.0
-def computeRGBcolor(value, minval, maxval):
-	# Normalize from 0 to 1
-	normval = old_div((value-minval),(maxval-minval))
-	radval = normval*2*math.pi
-	if radval < 2*math.pi/3:
-		B = 0.0
-		R = 0.33*(1 + old_div(math.cos(radval),math.cos(old_div(math.pi,3) - radval)))
-		G = 1.0 - R
-		return "#%02x%02x%02x"%(255*R,255*G,255*B)
-	if radval > 2*math.pi/3 and radval < 4*math.pi/3:
-		hue = radval- 2*math.pi/3
-		R = 0.0
-		G = 0.33*(1 + old_div(math.cos(hue),math.cos(old_div(math.pi,3) - hue)))
-		B = 1.0 - G
-		return "#%02x%02x%02x"%(255*R,255*G,255*B)
-	if radval > 4*math.pi/3:
-		hue = radval- 4*math.pi/3
-		G = 0
-		B = 0.33*(1 + old_div(math.cos(hue),math.cos(old_div(math.pi,3) - hue)))
-		R = 1.0 - B
-		return "#%02x%02x%02x"%(255*R,255*G,255*B)
+	# Compute a RGB value to represent a data range. Basically convert Hue to GSB with I=0.33 and S=1.0
+	def computeRGBcolor(value, minval, maxval):
+		# Normalize from 0 to 1
+		normval = old_div((value-minval),(maxval-minval))
+		radval = normval*2*math.pi
+		if radval < 2*math.pi/3:
+			B = 0.0
+			R = 0.33*(1 + old_div(math.cos(radval),math.cos(old_div(math.pi,3) - radval)))
+			G = 1.0 - R
+			return "#%02x%02x%02x"%(255*R,255*G,255*B)
+		if radval > 2*math.pi/3 and radval < 4*math.pi/3:
+			hue = radval- 2*math.pi/3
+			R = 0.0
+			G = 0.33*(1 + old_div(math.cos(hue),math.cos(old_div(math.pi,3) - hue)))
+			B = 1.0 - G
+			return "#%02x%02x%02x"%(255*R,255*G,255*B)
+		if radval > 4*math.pi/3:
+			hue = radval- 4*math.pi/3
+			G = 0
+			B = 0.33*(1 + old_div(math.cos(hue),math.cos(old_div(math.pi,3) - hue)))
+			R = 1.0 - B
+			return "#%02x%02x%02x"%(255*R,255*G,255*B)
 	
-class EMValidationPlot(QtGui.QWidget):
-	"""Make a plot to display validation info"""
-	def __init__(self):
-		QtGui.QWidget.__init__(self)
-		box = QtGui.QVBoxLayout()
-		self.polarplot = EMPolarPlot2DWidget()
-		self.polarplot.setMinimumHeight(50)
-		self.polarplot.setMinimumWidth(50)
-		self.resize(480,580)
-		
-		meanAngLabel = QtGui.QLabel("Mean Tilt Angle") 
-		self.meanAngle = QtGui.QLineEdit("")
-		meanAxisLabel = QtGui.QLabel("Mean Tilt Axis") 
-		self.meanAxis = QtGui.QLineEdit("")
-		rmsdAngLabel = QtGui.QLabel("RMSD Tilt Angle") 
-		self.rmsdAngle = QtGui.QLineEdit("")
-		rmsdAxisLabel = QtGui.QLabel("RMSD Tilt Axis") 
-		self.rmsdAxis = QtGui.QLineEdit("")
-		pointsLabel = QtGui.QLabel("Num points")
-		self.points = QtGui.QLineEdit("")
-		self.pointlabel = QtGui.QLabel("Right click to pick the nearest point")
-		
-		
-		frame = QtGui.QFrame()
-		frame.setFrameShape(QtGui.QFrame.StyledPanel)
-		frame.setMaximumHeight(100)
-		grid = QtGui.QGridLayout()
-		grid.addWidget(meanAngLabel, 0, 0)
-		grid.addWidget(self.meanAngle, 0, 1)
-		grid.addWidget(meanAxisLabel, 0, 2)
-		grid.addWidget(self.meanAxis, 0, 3)
-		grid.addWidget(rmsdAngLabel , 1, 0)
-		grid.addWidget(self.rmsdAngle, 1, 1)
-		grid.addWidget(rmsdAxisLabel, 1, 2)
-		grid.addWidget(self.rmsdAxis, 1, 3)
-		grid.addWidget(self.pointlabel, 2, 0, 1, 2)
-		grid.addWidget(pointsLabel, 2, 2)
-		grid.addWidget(self.points, 2, 3)
-		frame.setLayout(grid)
-		
-		box.addWidget(self.polarplot)
-		box.addWidget(frame)
-		self.setLayout(box)
-		self.polarplot.clusterStats.connect(self._on_stats)
-		
-	def _on_stats(self, stats):
-		""" Set the selected stats """
-		self.meanAngle.setText(str(round(stats[1],2)))
-		self.meanAxis.setText(str(round(stats[0],2)))
-		self.rmsdAngle.setText(str(round(stats[3],2)))
-		self.rmsdAxis.setText(str(round(stats[2],2)))
-		self.points.setText(str(stats[4]))
-		
-	def _on_point(self, point):
-		""" Set the selected point"""
-		self.pointlabel.setText("You selected the point: %s"%str(point))
-		
-	def set_data(self, data, linewidth, radcut, datapoints):
-		self.polarplot.set_data(data, linewidth=linewidth, radcut=radcut, datapoints=datapoints)
-		
-	def set_datalabelscolor(self, color):
-		self.polarplot.setDataLabelsColor(color)
-		
-	def set_scattercolor(self, color):
-		self.polarplot.setScatterColor(color)
+	class EMValidationPlot(QtGui.QWidget):
+		"""Make a plot to display validation info"""
+		def __init__(self):
+			QtGui.QWidget.__init__(self)
+			box = QtGui.QVBoxLayout()
+			self.polarplot = EMPolarPlot2DWidget()
+			self.polarplot.setMinimumHeight(50)
+			self.polarplot.setMinimumWidth(50)
+			self.resize(480,580)
+			
+			meanAngLabel = QtGui.QLabel("Mean Tilt Angle") 
+			self.meanAngle = QtGui.QLineEdit("")
+			meanAxisLabel = QtGui.QLabel("Mean Tilt Axis") 
+			self.meanAxis = QtGui.QLineEdit("")
+			rmsdAngLabel = QtGui.QLabel("RMSD Tilt Angle") 
+			self.rmsdAngle = QtGui.QLineEdit("")
+			rmsdAxisLabel = QtGui.QLabel("RMSD Tilt Axis") 
+			self.rmsdAxis = QtGui.QLineEdit("")
+			pointsLabel = QtGui.QLabel("Num points")
+			self.points = QtGui.QLineEdit("")
+			self.pointlabel = QtGui.QLabel("Right click to pick the nearest point")
+			
+			
+			frame = QtGui.QFrame()
+			frame.setFrameShape(QtGui.QFrame.StyledPanel)
+			frame.setMaximumHeight(100)
+			grid = QtGui.QGridLayout()
+			grid.addWidget(meanAngLabel, 0, 0)
+			grid.addWidget(self.meanAngle, 0, 1)
+			grid.addWidget(meanAxisLabel, 0, 2)
+			grid.addWidget(self.meanAxis, 0, 3)
+			grid.addWidget(rmsdAngLabel , 1, 0)
+			grid.addWidget(self.rmsdAngle, 1, 1)
+			grid.addWidget(rmsdAxisLabel, 1, 2)
+			grid.addWidget(self.rmsdAxis, 1, 3)
+			grid.addWidget(self.pointlabel, 2, 0, 1, 2)
+			grid.addWidget(pointsLabel, 2, 2)
+			grid.addWidget(self.points, 2, 3)
+			frame.setLayout(grid)
+			
+			box.addWidget(self.polarplot)
+			box.addWidget(frame)
+			self.setLayout(box)
+			self.polarplot.clusterStats.connect(self._on_stats)
+			
+		def _on_stats(self, stats):
+			""" Set the selected stats """
+			self.meanAngle.setText(str(round(stats[1],2)))
+			self.meanAxis.setText(str(round(stats[0],2)))
+			self.rmsdAngle.setText(str(round(stats[3],2)))
+			self.rmsdAxis.setText(str(round(stats[2],2)))
+			self.points.setText(str(stats[4]))
+			
+		def _on_point(self, point):
+			""" Set the selected point"""
+			self.pointlabel.setText("You selected the point: %s"%str(point))
+			
+		def set_data(self, data, linewidth, radcut, datapoints):
+			self.polarplot.set_data(data, linewidth=linewidth, radcut=radcut, datapoints=datapoints)
+			
+		def set_datalabelscolor(self, color):
+			self.polarplot.setDataLabelsColor(color)
+			
+		def set_scattercolor(self, color):
+			self.polarplot.setScatterColor(color)
 		
 if __name__ == "__main__":
 	main()
