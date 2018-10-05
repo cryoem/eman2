@@ -3328,7 +3328,6 @@ def compute_rand_index_mpi(inassign1, inassign2):
 	# =0; two partitions different; =1; two partitions identical
 	global Tracker, Blockdata
 	import numpy as np
-	time_start = time()
 	assign1 = np.array(inassign1, dtype=np.int8)
 	assign2 = np.array(inassign2, dtype=np.int8)
 	num_in_both     = 0
@@ -3337,15 +3336,15 @@ def compute_rand_index_mpi(inassign1, inassign2):
 	num_all_pairs = (ntot-1)/2.
 	parti_list = []
 	for im in range(ntot-1):
-		if im%Blockdata["nproc"] == Blockdata["myid"]:parti_list.append(im)
-		
+		if im%Blockdata["nproc"] == Blockdata["myid"]:
+			parti_list.append(im)
 	for lm in range(len(parti_list)):
 		for im in range(parti_list[lm], parti_list[lm]+1):
 			for jm in range(im +1, ntot):
-				g1im, g1jm = assign1[im], assign1[jm]
-				g2im, g2jm = assign2[im], assign2[jm]
-				if (g1im == g1jm) and (g2im == g2jm): num_in_both    +=1
-				if (g1im != g1jm) and (g2im != g2jm): num_in_neither +=1
+				if (assign1[im] == assign1[jm]) and (assign2[im] == assign2[jm]):
+					num_in_both    +=1
+				if (assign1[im] != assign1[jm]) and (assign2[im] != assign2[jm]):
+					num_in_neither +=1
 	nomin = (num_in_both+num_in_neither)/float(ntot)
 	del assign1, assign2
 	mpi_barrier(MPI_COMM_WORLD)
@@ -3356,13 +3355,13 @@ def compute_rand_index_mpi(inassign1, inassign2):
 			if (iproc !=Blockdata["main_node"]):
 				nomin += wrap_mpi_recv(iproc, MPI_COMM_WORLD)
 	nomin = bcast_number_to_all(nomin,  Blockdata["main_node"], MPI_COMM_WORLD)
-	return nomin/float(num_all_pairs)
+	return float(nomin)/num_all_pairs
 	
 def isin(element, test_elements, assume_unique=False, invert=False):
     import numpy as np
     element = np.asarray(element)
-    return np.in1d(element, test_elements, assume_unique=assume_unique,
-                invert=invert).reshape(element.shape)
+    return np.in1d(element, test_elements, assume_unique=assume_unique, \
+        invert=invert).reshape(element.shape)
 
 def split_partition_into_ordered_clusters_split_ucluster(partition, input_row_wise = True):
 	# group particles  by their cluster ids; take the last one as unaccounted group
@@ -3431,8 +3430,10 @@ def merge_classes_into_partition_list(classes_list):
 		indx.tolist()
 		cluster_ids = np.full(parti_list.shape[0], -1, dtype=np.int32)
 		for im in range(len(classes_list)):
-			np.place(cluster_ids, isin(parti_list, np.array(classes_list[indx[im]])), np.int32(im))
-		return parti_list.tolist(), (np.array([cluster_ids, parti_list],dtype=np.int32 ).transpose()).tolist()
+			np.place(cluster_ids, isin(parti_list, \
+			np.array(classes_list[indx[im]])), np.int32(im))
+		return parti_list.tolist(), (np.array([cluster_ids, \
+		     parti_list],dtype=np.int32 ).transpose()).tolist()
 		
 def get_sorting_parti_from_stack(data):
 	global Tracker, Blockdata
@@ -3448,9 +3449,11 @@ def get_sorting_parti_from_stack(data):
 		plist = 0
 		if Blockdata["myid"] == myproc:
 			plist = np.full(len(data), -1, dtype=np.int32)
-			for im in range(len(data)): plist[im] = data[im].get_attr("group")
+			for im in range(len(data)):
+				plist[im] = data[im].get_attr("group")
 		plist = wrap_mpi_bcast(plist, myproc, MPI_COMM_WORLD)
-		if Blockdata["myid"] == Blockdata["main_node"]:total_plist[image_start:image_end] = plist
+		if Blockdata["myid"] == Blockdata["main_node"]:
+			total_plist[image_start:image_end] = plist
 		mpi_barrier(MPI_COMM_WORLD)
 	total_plist = wrap_mpi_bcast(total_plist, Blockdata["main_node"])
 	return total_plist
@@ -3460,8 +3463,10 @@ def get_angle_step_from_number_of_orien_groups(orien_groups):
 	global Tracker, Blockdata
 	N = orien_groups
 	angle_step = 60.
-	while len(Blockdata["symclass"].even_angles(angle_step))< N: angle_step /=2.
-	while len(Blockdata["symclass"].even_angles(angle_step))> N: angle_step +=0.1
+	while len(Blockdata["symclass"].even_angles(angle_step))< N:
+		angle_step /=2.
+	while len(Blockdata["symclass"].even_angles(angle_step))> N:
+		angle_step +=0.1
 	return angle_step
 	
 def parti_oriens(params, angstep, smc):
@@ -3480,7 +3485,7 @@ def parti_oriens(params, angstep, smc):
 		if(len(u) != itst+1):
 			u.append(q)  #  This is for exceptions that cannot be easily handled
 	seaf = []
-	for q in eah+u:  seaf += smc.symmetry_related(q)
+	for q in eah+u:seaf += smc.symmetry_related(q)
 	lseaf = 2*leah
 	seaf = angles_to_normals(seaf)
 	occupancy = [[] for i in range(leah)]
@@ -3523,7 +3528,8 @@ def get_angle_step_and_orien_groups_mpi(params_in, partids_in, angstep):
 			ptls_in_orien_groups[img][:] = tmp[:]
 	else:
 		ptls_in_orien_groups = 0
-	ptls_in_orien_groups = wrap_mpi_bcast(ptls_in_orien_groups,Blockdata["main_node"], MPI_COMM_WORLD)
+	ptls_in_orien_groups = wrap_mpi_bcast( \
+	  ptls_in_orien_groups,Blockdata["main_node"], MPI_COMM_WORLD)
 	return ptls_in_orien_groups
 
 ##### ================= orientation groups	
@@ -3538,11 +3544,13 @@ def compare_two_iterations(assignment1, assignment2):
 	res1 = []
 	assignment1 = np.array(assignment1,  dtype = np.int32)
 	group1_ids  = np.unique(assignment1)
-	for im in range(group1_ids.shape[0]): res1.append(np.sort(full_list[isin(assignment1, group1_ids[im])]))
+	for im in range(group1_ids.shape[0]):
+		res1.append(np.sort(full_list[isin(assignment1, group1_ids[im])]))
 	res2 = []
 	assignment2 = np.array(assignment2, dtype = np.int32)
 	group2_ids  = np.unique(assignment2)
-	for im in range(group2_ids.shape[0]): res2.append(np.sort(full_list[isin(assignment2, group2_ids[im])]))
+	for im in range(group2_ids.shape[0]):
+		res2.append(np.sort(full_list[isin(assignment2, group2_ids[im])]))
 	newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(res1, res2)
 	del res1
 	del res2
@@ -3586,9 +3594,12 @@ def copy_refinement_tracker(tracker_refinement):
 	
 def print_dict(dict, theme):
 	spaces = "                    "
-	exclude = ["nodes", "yr", "output", "shared_comm", "bckgnoise", "myid", "myid_on_node", "accumulatepw", \
-	     "chunk_dict", "PW_dict", "full_list", "rshifts", "refang", "chunk_dict", "PW_dict", "full_list", "rshifts", \
-	        "refang", "sorting_data_list", "partition", "constants", "random_assignment"]
+	exclude = ["nodes", "yr", "output", "shared_comm", "bckgnoise", \
+	   "myid", "myid_on_node", "accumulatepw", \
+	     "chunk_dict", "PW_dict", "full_list", "rshifts", "refang",\
+	         "chunk_dict", "PW_dict", "full_list", "rshifts", \
+	        "refang", "sorting_data_list", "partition", \
+	          "constants", "random_assignment"]
 	for key, value in sorted( dict.items() ):
 		pt = True
 		for ll in exclude:
@@ -3757,7 +3768,7 @@ def steptwo_mpi_reg(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa = 0
 	if( Blockdata["myid_on_node"] == 0 ):
 		at = time()
 		#print(" iterefa  ",Blockdata["myid"],"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime()),"   ",(time()-at)/60.0)
-		from filter       import  filt_tanl
+		from filter import  filt_tanl
 		#  Either pad or window in F space to 2*nnxo
 		if not cfsc: tvol = filt_tanl(tvol, cutoff_freq2, aa)
 		nx = tvol.get_ysize()
@@ -4264,8 +4275,10 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			 "driver_%03d.txt"%selected_iter), os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
 		else: import_from_sparx_refinement = 0
 		
-		if import_from_sparx_refinement: fsc_curve = read_text_row(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
-		Tracker["constants"]["fsc_curve"] = read_text_file(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
+		if import_from_sparx_refinement:
+			fsc_curve = read_text_row(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
+		Tracker["constants"]["fsc_curve"] = \
+		  read_text_file(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
 		
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:
@@ -4458,7 +4471,8 @@ def get_input_from_datastack(log_main):# Case three
 		image = get_im(Tracker["constants"]["orgstack"], 0)
 		Tracker["constants"]["nnxo"] = image.get_xsize()		
 		if( Tracker["nxinit"] > Tracker["constants"]["nnxo"]):
-				ERROR("Image size less than minimum permitted %d"%Tracker["nxinit"],"get_input_from_datastack",1, Blockdata["myid"])
+				ERROR("Image size less than minimum permitted %d"%Tracker["nxinit"], \
+				  "get_input_from_datastack",1, Blockdata["myid"])
 				nnxo = -1
 		else:
 			if Tracker["constants"]["CTF"]:
