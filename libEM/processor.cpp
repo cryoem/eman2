@@ -1995,6 +1995,7 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 	float phicen = params.set_default("phicen",0.0f)*M_PI/180.0;
 	phicen=Util::angle_norm_pi(phicen);
 	float phirange = params.set_default("phirange",180.0f)*M_PI/180.0;
+	float phitrirange = params.set_default("phitrirange",0.0f)*M_PI/180.0;
 	int phitriangle = params.set_default("phitriangle",0);
 	float cx = params.set_default("cx",nx/2);
 	float cy = params.set_default("cy",ny/2);
@@ -2006,26 +2007,17 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 	for (int x=0; x<nx; x++) {
 		for (int y=0; y<ny; y++) {
 			float az=atan2(y-cy,x-cx);
+			float az2=az-M_PI*2.0f;
+			float az3=az+M_PI*2.0f;
 			float r=hypot(y-cy,x-cx);
 			float val=0.0f;
 			if (r>inner_radius&&r<=outer_radius) {
-				if (az>phicen-phirange&&az<phicen+phirange) {
-					if (phitriangle) val=1.0f-fabs(az-phicen)/phirange;
-					else val=1.0f;
-				}
-				else if (az+M_PI*2.0>phicen-phirange&&az+M_PI*2.0<phicen+phirange) {
-					if (phitriangle) val=1.0f-fabs(az+M_PI*2.0-phicen)/phirange;
-					else val=1.0f;
-				}
-				else if (az-M_PI*2.0>phicen-phirange&&az-M_PI*2.0<phicen+phirange) {
-					if (phitriangle) val=1.0f-fabs(az-M_PI*2.0-phicen)/phirange;
-					else val=1.0f;
-				}
+				float as=Util::angle_sub_2pi(az,phicen);
+				if (as<phirange) val=1.0f;
+				else if (!phitriangle || as>phirange+phitrirange) val=0.0f;
+				else val=1.0-(as-phirange)/float(phitrirange);
 			}
-			if (r==0 && inner_radius<=0) {
-				if (phitriangle) val=phirange/360.0;
-				else val=1.0;
-			}
+			if (r==0 && inner_radius<=0)  val=1.0;
 
 			for (int z=0; z<nz; z++) {
 				if (z<zmin || z>zmax) image->mult_value_at_fast(x,y,z,0);

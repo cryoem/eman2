@@ -3431,7 +3431,8 @@ The basic design of EMAN Processors: <br>\
 
 			d.put("phicen", EMObject::FLOAT,"Angle in degrees ccw from the x-axis. Center of the region to NOT set to zero.");
 			d.put("phirange", EMObject::FLOAT,"Angle in degrees. Region phicen+-phirange will not be zeroed");
-			d.put("phitriangle", EMObject::BOOL, "If set mask will fall from 1 at phicen to 0 at phicen+-phirange");
+			d.put("phitrirange", EMObject::FLOAT,"Angle in degrees. With phitriangle, width outside phirange to fall from 1 to 0.");
+			d.put("phitriangle", EMObject::BOOL, "If set mask will fall from 1 at phicen+-phirange to 0 at +-phitrirange");
 			d.put("cx", EMObject::FLOAT,"Mask X center. Default nx/2");
 			d.put("cy", EMObject::FLOAT,"Mask Y center. Default ny/2");
 			d.put("zmin", EMObject::FLOAT,"Minimum Z to include");
