@@ -518,11 +518,8 @@ class EMImage2DWidget(EMGLWidget):
 		#except: pass
 
 	def auto_contrast(self,bool=False,inspector_update=True,display_update=True):
-		global HOMEDB
-		HOMEDB=EMAN2db.EMAN2DB.open_db()
-		HOMEDB.open_dict("display_preferences")
-		db = HOMEDB.display_preferences
-		auto_contrast = db.get("display_2d_auto_contrast",dfl=True)
+		auto_contrast = E2getappval("display2d","autocontrast",True)
+		
 		if self.curfft == 0:
 			if self.data == None: return
 			# histogram is impacted by downsampling, so we need to compensate
