@@ -32,7 +32,6 @@ from __future__ import division
 
 
 from builtins import range
-from optparse import OptionParser
 from EMAN2 import *
 import sys
 import math

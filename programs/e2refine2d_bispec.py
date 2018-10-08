@@ -38,7 +38,6 @@ from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_list_dicts
-from optparse import OptionParser
 from math import *
 from os import remove
 import time

@@ -9,7 +9,6 @@ import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui, QtCore, QtOpenGL
-from PyQt4.QtCore import Qt
 from eman2_gui.emimage2d import EMImage2DWidget
 from EMAN2 import *
 from eman2_gui.emapplication import EMApp

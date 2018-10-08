@@ -45,7 +45,6 @@ except:
 
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import sys

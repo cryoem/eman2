@@ -42,7 +42,6 @@ import collections
 import math
 import random
 import sys
-import optparse
 import os
 import subprocess
 import sys

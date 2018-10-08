@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #====================
-#Author: Jesus Galaz-Montoya 2/20/2013 , Last update: September/05/2018
+#Author: Jesus Galaz-Montoya 2/20/2013 , Last update: October/04/2018
 #====================
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -27,7 +27,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 from __future__ import print_function
+from __future__ import division
 from optparse import OptionParser
+from past.utils import old_div
+from builtins import range
 from EMAN2_utils import *
 from EMAN2 import *
 import sys
@@ -100,7 +103,7 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 
-	print("--negativetiltseries", options.negativetiltseries)
+	#print("--negativetiltseries", options.negativetiltseries)
 	
 	if options.exclude and options.include:
 		print("\nERROR: Supplied either exclude or include. Cannot supply both at the same time.")
@@ -149,208 +152,274 @@ def main():
 			restacker( options )
 			angles = getangles( options, 0, True )			#Second parameter enforces to keep the 'raw order' of the input file. Otherwise, this function returns angles from -tiltrange to +tiltrange if --negativetiltseries is supplied; from +tiltrange to -tiltrange otherwise
 
-			#finalangles = list(angles)
-			#anglestoexclude = []
-			
 			print("\n\nthere are these many angles", len(angles))
-			#if tiltstoexclude:
-			#	for tilt in tiltstoexclude:
-			#		anglestoexclude.append( angles[ int(tilt) ] )
-			#		finalangles.remove( angles[ int(tilt) ] )
-			#	#for ax in anglestoexclude:
-			#	#	finalangles.remove( ax )
-			#
-			#	print "\n\nthere are these many angles to exclude",len(anglestoexclude)
-			#	print "\nexcluded angles",anglestoexclude
-			#	
-			#	#finalangles = list( set(angles) - set(anglestoexclude) )
-				
-				
-			#print "\nthere are these many final angles",len(finalangles)
-			#print "\nfinal angles are", finalangles
-		
-			
+					
 			writetlt(angles,options,True)
 		else:
 			print("ERROR: --tltfile required when using --restack")
 			sys.exit()
 	else:
-		kk=0
-		intilts = findtiltimgfiles( options )
-
-		if options.verbose>5:
-			print("\nfound n={} images, and will now organize them".format(len(intilts)))
-		
-		print("\nWill organize tilt imgs found")
-		intiltsdict = organizetilts( options, intilts )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
-		print("\nDone organizing tilt imgs")					#where damageRank tells you the order in which the images where acquired
-															#regardless of wether the tilt series goes from -tiltrange to +tiltrange, 
-															#or 0 to -tiltrange then +tiltstep to +tiltrange, or the opposite of these 
-		outstackhdf = options.path + '/stack.hdf' 
-		
-
-		if not intiltsdict:
-			print("\nERROR: intiltsdict is empty: {}".format(intiltsdict))
-			sys.exit(1)
-		else:
-			if options.verbose > 5:
-				print("\nintiltsdict is {}".format(intiltsdict))
-
-		minindx = min(intiltsdict)
-		print("minindx is", minindx)
-		print("getting size from any first image, intiltsdict[ minindx ][0]", intiltsdict[ minindx ][0])
-		
-		hdr = EMData( intiltsdict[minindx][0], 0, True )
-		nx = hdr['nx']
-		ny = hdr['ny']
-		print(nx,ny)
-		
-		
-		print("\nOutstack is", outstackhdf)
-		
-		print("\nintiltsdict.keys() are={}, because intiltsdict is={}".format(intiltsdict.keys(),intiltsdict))
-		
-		finalindexesordered = [x for x in intiltsdict.keys()]
-		finalindexesordered.sort()
-	
-		#for index in intiltsdict:
-		for index in finalindexesordered:	
-			#if str(index) not in tiltstoexclude:
-			intiltimgfile =	intiltsdict[index][0]
-				
-			if options.verbose > 9:
-				print("\nat index {} we have image {}, collected in turn {}".format( index, intiltsdict[index][0], intiltsdict[index][-1] ))
-			
-			intiltimg = EMData( intiltimgfile, 0 )
-			
-			tiltangle = intiltsdict[index][1]
-			intiltimg['spt_tiltangle'] = tiltangle
-			
-			damageRank = intiltsdict[index][2]
-			intiltimg['damageRank'] = damageRank
-			
-			if options.invert:
-				intiltimg.mult(-1)
-			intiltimg.write_image( outstackhdf, -1 )
-			#print "\nWrote image index", index
-		
-		
-		tmp = options.path + '/tmp.hdf'
-
-		if options.clip:
-			clip = options.clip.split(',')
-			
-			shiftx = 0
-			shifty = 0
-			if len( clip ) == 1:
-				clipx = clipy = clip[0]
-			
-			if len( clip ) == 2:
-				clipx = clip[0]
-				clipy = clip[1]
-			
-			if len( clip ) == 4:
-				clipx = clip[0]
-				clipy = clip[1]
-				shiftx = clip[2]
-				shifty = clip[3]
-			
-			
-			cmdClip = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --clip=' + clipx + ',' + clipy
-			
-			if shiftx:
-				xcenter = int( round( nx/2.0 + float(shiftx)))
-				cmdClip += ',' + str(xcenter)
-			if shifty:
-				ycenter = int( round( ny/2.0 + float(shifty)))
-				cmdClip += ',' + str(ycenter)
-			
-			runcmd(options,cmdClip)
-
-			os.remove(outstackhdf)
-			os.rename(tmp,outstackhdf)			
-		
-		if options.shrink and options.shrink > 1.0:
-			
-			cmdBin = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --process=math.fft.resample:n=' + str(options.shrink) 
-			
-			print("\n(e2spt_tiltstacker.py)(main) cmdBin is", cmdBin)
-			
-			runcmd(options,cmdBin)
-			
-			os.remove(outstackhdf)
-			print("\nremoved {}".format(outstackhdf))
-			os.rename(tmp,outstackhdf)
-			print("\nrenamed {} to {}".format(tmp,outstackhdf))
-
-		print("\nreading outstackhdf hdr, for file {}".format(outstackhdf))
-		outtilthdr = EMData(outstackhdf,0,True)
-		currentapix = outtilthdr['apix_x']
-		if float(options.apix) and float(options.apix) != float(currentapix):
-			if options.shrink:
-				options.apix *= options.shrink
-
-			print("\nFixing apix")
-			cmdapix = 'e2procheader.py --input=' + outstackhdf + ' --stem=apix --valtype=float --stemval=' + str( options.apix )
-			
-			print("\n(e2spt_tiltstacker.py)(main) cmdapix is", cmdapix)
-			
-			runcmd(options,cmdapix)
-			
-		outstackst = outstackhdf.replace('.hdf','.st')
-		stcmd = 'e2proc2d.py	' + outstackhdf + ' ' + outstackst + ' --twod2threed'
-		if options.outmode != 'float':
-			stcmd += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
-			
-		print("\n(e2spt_tiltstacker.py)(main) stcmd is", stcmd)	
-
-		runcmd(options,stcmd)
-		os.remove(outstackhdf)
-
-		if options.normalizeimod:
-			try:
-				cmd = 'newstack ' + outstackst + ' ' + outstackst + ' --float 2'
-				print("normalizeimod cmd is", cmd)
-				runcmd(options,cmd)
-			except:
-				print("\nERROR: --normalizeimod skipped. Doesn't seem like IMOD is installed on this machine")	
-		
-		if options.mirroraxis:
-			print("\nMirroring across axis", options.mirroraxis)
-			mirrorlabel = options.mirroraxis.upper()
-			outstackstmirror = outstackst.replace('.st','_mirror'+ mirrorlabel+ '.st')
-
-			cmdMirror = 'e2proc2d.py ' + outstackst + ' ' + outstackstmirror + ' --process=xform.mirror:axis=' + options.mirroraxis
-			
-			if options.outmode != 'float':
-				cmdMirror += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
-			
-			print("options.apix is", options.apix)
-			if options.apix:
-				cmdMirror += ' --apix=' + str(options.apix)
-				cmdMirror += ' && e2fixheaderparam.py --input=' + outstackstmirror + ' --stem=apix --valtype=float --stemval=' + str( options.apix ) + ' --output=' + outstackstmirror.replace('.st','.mrc') + " && mv " +  outstackstmirror.replace('.st','.mrc') + ' ' + outstackstmirror
-				
-				print("added fixheaderparam to cmdMirror!")
-			
-			print("cmdMirror is", cmdMirror)
-			runcmd(options,cmdMirror)
-
-		findir = os.listdir(options.path)
-		for f in findir:
-			if '~' in f:
-				print("\nfile to remove",f)
-				print("in path", options.path + '/' + f)
-				os.remove(options.path + '/' + f)
-
+		stacker(options)
 
 	E2end( logger )
 	return
 
 
-"""
-Function to determine which files in the current directory should be used
-"""
-def findtiltimgfiles( options ):
+"""c:
+c:Function to stack images belonging to a tiltseries
+c:"""
+def stacker(options):
+	kk=0
+	intilts = findtiltimgs( options )
+
+	if options.verbose>5:
+		print("\n(e2spt_tiltstacker.py)(stacker) found n={} images, and will now organize them".format(len(intilts)))
+	
+	print("\n(e2spt_tiltstacker.py)(stacker) organizing tilt imgs")
+	intiltsdict = organizetilts( options, intilts )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
+	print("\n(e2spt_tiltstacker.py)(stacker) done organizing tilt imgs")					#where damageRank tells you the order in which the images 
+																							#were acquired regardless of wether the tilt series goes from 
+													#-tiltrange to +tiltrange, or 0 to -tiltrange then +tiltstep to +tiltrange, or the opposite of these 
+	outstackhdf = options.path + '/stack.hdf' 
+	
+
+	if not intiltsdict:
+		print("\n(e2spt_tiltstacker.py)(stacker) ERROR: intiltsdict is empty: {}".format(intiltsdict))
+		sys.exit(1)
+	else:
+		if options.verbose > 5:
+			print("\n(e2spt_tiltstacker.py)(stacker) intiltsdict is {}".format(intiltsdict))
+
+	minindx = min(intiltsdict)
+	print("\n(e2spt_tiltstacker.py)(stacker) minindx is", minindx)
+	print("\n(e2spt_tiltstacker.py)(stacker) getting image size from the image at the least tilted angle, intiltsdict[ minindx ][0]", intiltsdict[ minindx ][0])
+	
+	hdr = EMData( intiltsdict[minindx][0], 0, True )
+	nx = hdr['nx']
+	ny = hdr['ny']
+	print(nx,ny)
+	
+	if options.verbose > 5:
+		print("\n(e2spt_tiltstacker.py)(stacker) outstack is", outstackhdf)
+		print("\n(e2spt_tiltstacker.py)(stacker) intiltsdict.keys() are={}, because intiltsdict is={}".format(intiltsdict.keys(),intiltsdict))
+	
+	finalindexesordered = [x for x in intiltsdict.keys()]
+	finalindexesordered.sort()
+
+	damagelist=[]
+	#for index in intiltsdict:
+	for index in finalindexesordered:	
+		#if str(index) not in tiltstoexclude:
+		intiltimgfile =	intiltsdict[index][0]
+			
+		if options.verbose > 9:
+			print("\n(e2spt_tiltstacker.py)(stacker) at index {} we have image {}, collected in turn {}".format( index, intiltsdict[index][0], intiltsdict[index][-1] ))
+		
+		intiltimg = EMData( intiltimgfile, 0 )
+		
+		tiltangle = intiltsdict[index][1]
+		intiltimg['spt_tiltangle'] = tiltangle
+		
+		damageRank = intiltsdict[index][2]
+		damagelist.append(damageRank)
+
+		intiltimg['damageRank'] = damageRank
+		
+		if options.invert:
+			intiltimg.mult(-1)
+		intiltimg.write_image( outstackhdf, -1 )
+		#print "\nWrote image index", index
+	
+	orderfilepath = options.path + '/collection_order.txt'
+	textwriter(damagelist,options,orderfilepath,invert=0,xvals=None,onlydata=True)
+
+	tmp = options.path + '/tmp.hdf'
+
+	if options.clip:
+		clip = options.clip.split(',')
+		
+		shiftx = 0
+		shifty = 0
+		if len( clip ) == 1:
+			clipx = clipy = clip[0]
+		
+		if len( clip ) == 2:
+			clipx = clip[0]
+			clipy = clip[1]
+		
+		if len( clip ) == 4:
+			clipx = clip[0]
+			clipy = clip[1]
+			shiftx = clip[2]
+			shifty = clip[3]
+		
+		
+		cmdClip = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --clip=' + clipx + ',' + clipy
+		
+		if shiftx:
+			xcenter = int( round( nx/2.0 + float(shiftx)))
+			cmdClip += ',' + str(xcenter)
+		if shifty:
+			ycenter = int( round( ny/2.0 + float(shifty)))
+			cmdClip += ',' + str(ycenter)
+		
+		runcmd(options,cmdClip)
+
+		os.remove(outstackhdf)
+		os.rename(tmp,outstackhdf)			
+	
+	if options.shrink and options.shrink > 1.0:
+		
+		cmdBin = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --process=math.fft.resample:n=' + str(options.shrink) 
+		
+		print("\n(e2spt_tiltstacker.py)(stacker) cmdBin is", cmdBin)
+		
+		runcmd(options,cmdBin)
+		
+		os.remove(outstackhdf)
+		print("\n(e2spt_tiltstacker.py)(stacker) removed {}".format(outstackhdf))
+		os.rename(tmp,outstackhdf)
+		print("\n(e2spt_tiltstacker.py)(stacker) renamed {} to {}".format(tmp,outstackhdf))
+
+	print("\n(e2spt_tiltstacker.py)(stacker) reading outstackhdf hdr, for file {}".format(outstackhdf))
+	outtilthdr = EMData(outstackhdf,0,True)
+	currentapix = outtilthdr['apix_x']
+	if float(options.apix) and float(options.apix) != float(currentapix):
+		if options.shrink:
+			options.apix *= options.shrink
+
+		print("\n(e2spt_tiltstacker.py)(stacker) Fixing apix")
+		cmdapix = 'e2procheader.py --input=' + outstackhdf + ' --stem=apix --valtype=float --stemval=' + str( options.apix )
+		
+		print("\n(e2spt_tiltstacker.py)(stacker) cmdapix is", cmdapix)
+		
+		runcmd(options,cmdapix)
+		
+	outstackst = outstackhdf.replace('.hdf','.st')
+	stcmd = 'e2proc2d.py	' + outstackhdf + ' ' + outstackst + ' --twod2threed'
+	if options.outmode != 'float':
+		stcmd += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
+		
+	print("\n(e2spt_tiltstacker.py)(stacker) stcmd is", stcmd)	
+
+	runcmd(options,stcmd)
+	os.remove(outstackhdf)
+
+	if options.normalizeimod:
+		try:
+			cmd = 'newstack ' + outstackst + ' ' + outstackst + ' --float 2'
+			print("normalizeimod cmd is", cmd)
+			runcmd(options,cmd)
+		except:
+			print("\n(e2spt_tiltstacker.py)(stacker) ERROR: --normalizeimod skipped. Doesn't seem like IMOD is installed on this machine")	
+	
+	if options.mirroraxis:
+		print("\n(e2spt_tiltstacker.py)(stacker) Mirroring across axis", options.mirroraxis)
+		mirrorlabel = options.mirroraxis.upper()
+		outstackstmirror = outstackst.replace('.st','_mirror'+ mirrorlabel+ '.st')
+
+		cmdMirror = 'e2proc2d.py ' + outstackst + ' ' + outstackstmirror + ' --process=xform.mirror:axis=' + options.mirroraxis
+		
+		if options.outmode != 'float':
+			cmdMirror += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
+		
+		print("options.apix is", options.apix)
+		if options.apix:
+			cmdMirror += ' --apix=' + str(options.apix)
+			cmdMirror += ' && e2fixheaderparam.py --input=' + outstackstmirror + ' --stem=apix --valtype=float --stemval=' + str( options.apix ) + ' --output=' + outstackstmirror.replace('.st','.mrc') + " && mv " +  outstackstmirror.replace('.st','.mrc') + ' ' + outstackstmirror
+			
+			print("added fixheaderparam to cmdMirror!")
+		
+		print("cmdMirror is", cmdMirror)
+		runcmd(options,cmdMirror)
+
+	findir = os.listdir(options.path)
+	for f in findir:
+		if '~' in f:
+			print("\n(e2spt_tiltstacker.py)(stacker) file to remove",f)
+			print("in path", options.path + '/' + f)
+			os.remove(options.path + '/' + f)
+
+	return
+
+
+def unstacker( options ):
+	
+	#print "\n(e2spt_tiltstacker)(unstacker) options.unstack is".format(options.unstack)
+	
+	outname = options.path + '/' + options.unstack.replace('.mrc','.hdf')
+	outname = options.path + '/' + options.unstack.replace('.mrcs','.hdf')
+	outname = options.path + '/' + options.unstack.replace('.st','.hdf')	
+	outname = options.path + '/' + options.unstack.replace('.ali','.hdf')
+	
+	outname = outname.replace('.hdf','_UNSTACKED.hdf')
+	
+	print("\n(e2spt_tiltstacker)(unstacker) unstack outname is {}".format(outname))
+	
+	#print "\noutname of unstacked tilt will be", outname
+	
+	cmdun = 'e2proc2d.py ' + options.unstack + ' ' + outname + ' --unstacking '
+	if options.outmode:
+		cmdun += ' --outmode=' + options.outmode
+	
+	if options.exclude or options.include:
+		lst = makeimglist( options.unstack, options ) 
+		cmdun += ' --list=' + lst
+	
+
+	print("\n(e2spt_tiltstacker)(unstacker) cmdun is", cmdun)	
+	runcmd(options,cmdun)
+	
+	#p = subprocess.Popen( cmdun , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	#text = p.communicate()	
+	#p.stdout.close()
+
+	return outname
+		
+
+def restacker( options ):
+	inputf = options.restack
+	
+	outname = options.path + '/' + options.restack.replace('.hdf','_RESTACKED.hdf')
+	
+	if '.ali' in inputf[-4:]: 
+		outname = options.path + '/' + options.restack.replace('.ali','_RESTACKED.ali')
+	if '.mrc' in inputf[-4:]: 
+		outname = options.path + '/' + options.restack.replace('.mrc','_RESTACKED.mrc')
+	if '.mrcs' in inputf[-5:]: 
+		outname = options.path + '/' + options.restack.replace('.mrcs','_RESTACKED.mrcs')
+	if '.st' in inputf[-3:]:
+		outname = options.path + '/' + options.restack.replace('.st','_RESTACKED.st')
+		
+	if '.hdf' in inputf[-3:]:
+		outname = options.path + '/' + options.restack.replace('.st','_RESTACKED.hdf')
+	
+	print("\n(e2spt_tiltstacker.py)(restacker) Outname is", outname)
+	
+	tmp = options.path + '/' + 'tmp.hdf'
+	
+	if '.ali' in inputf[-4:] or '.mrc' in inputf[-4:] or '.mrcs' in inputf[-5:] or '.st' in inputf[-3:] or '.hdf' in inputf[-4:]  :
+		tmp = options.path + '/' + 'tmp.mrcs'
+	
+	cmdre = 'e2proc2d.py ' + options.restack + ' ' + tmp
+	
+	if options.outmode:
+		cmdre += ' --outmode=' + options.outmode
+	
+	if options.exclude or options.include:
+		lst = makeimglist( options.restack, options )
+		cmdre += ' --list=' + lst
+	
+	runcmd(options,cmdre)
+		
+	#cmdre += ' && mv ' + tmp + ' ' + outname
+	return
+
+
+"""c:
+c:Function to determine which files in the current directory should be used
+c:"""
+def findtiltimgs( options ):
 	
 	currentdir = os.getcwd()
 	filesindir = os.listdir( currentdir )
@@ -363,7 +432,7 @@ def findtiltimgfiles( options ):
 		intilt = ''	
 		for f in filesindir:
 			if options.verbose > 5:		
-				print("\nexamining file {}".format(f))
+				print("\n(e2spt_tiltstacker.py)(findtiltimgs) examining file {}".format(f))
 			if options.stem2stack in f:
 				if options.verbose > 5:	
 					print("\nfile {} contains stem2stack {}".format(f,options.stem2stack))
@@ -376,11 +445,11 @@ def findtiltimgfiles( options ):
 						if intilt:
 							intilts.append( intilt )
 					else:
-						print("extension not valid. Needs to be .mrc, .mrcs, .hdf, .dm3, .tif")
+						print("\n(e2spt_tiltstacker.py)(findtiltimgs) extension not valid. Needs to be .mrc, .mrcs, .hdf, .dm3, .tif")
 					
 					#k will serve to compensate for damage.
 					#It indicates the order in which data collection occured
-	print("\n(e2spt_tiltstacker.py)(findtiltimgfiles) These many img files were found n={}".format(len( intilts )))		
+	print("\n(e2spt_tiltstacker.py)(findtiltimgs) These many img files were found n={}".format(len( intilts )))		
 	
 	#try:
 	#	sorted(intilts, key=lambda s: float(s.split("_")[options.anglesindxinfilename].replace('.mrc','')))
@@ -388,18 +457,18 @@ def findtiltimgfiles( options ):
 	#try:
 	
 	if intilts:
-		print("\nintilts are {}".format(intilts))	
+		print("\n(e2spt_tiltstacker.py)(findtiltimgs) intilts are {}".format(intilts))	
 		import re
 		intilts.sort(key = lambda s: float(re.search('(\+|-)?\d+(\.\d+)?', s).group()))
 		
 	
 	else:
-		print("\nERROR: no image files found with --stem2stack {}".format(options.stem2stack))	
+		print("\n(e2spt_tiltstacker.py)(findtiltimgs) ERROR: no image files found with --stem2stack {}".format(options.stem2stack))	
 	#except:
 	#print("\nWARNING: sorting input files WITHOUT --anglesindxinfilename; if the tiltangles are preceeded + or -, regular sorting based on the filename may not work and might require --anglesindxinfilename.")
 	#intilts.sort()
 
-	print("\nand they've been sorted input files={}".format(intilts))
+	print("\n(e2spt_tiltstacker.py)(findtiltimgs)and they've been sorted as follows={}".format(intilts))
 		
 	return intilts
 
@@ -470,7 +539,6 @@ def writetlt( angles, options, raworder=False ):
 	if not options.negativetiltseries and not raworder:
 		angless.reverse()
 		
-	f = open( options.path + '/stack.rawtlt','w')
 	lines = []
 	
 	k=0
@@ -484,10 +552,16 @@ def writetlt( angles, options, raworder=False ):
 			anglestoexclude.append( angless[k] )
 		
 		k+=1
-	print("\nthese many angles excluded",len(anglestoexclude))
-	print("\nexcluded angles",anglestoexclude)	
-	f.writelines( lines )
-	f.close()
+	
+	print("\n(e2spt_tiltstacker)(writetlt) these many angles excluded",len(anglestoexclude))
+	print("\n(e2spt_tiltstacker)(writetlt) excluded angles",anglestoexclude)	
+	
+	#f = open( options.path + '/stack.rawtlt','w')
+	tltfilepath = options.path + '/stack.rawtlt'
+	textwriter(lines,options,tltfilepath,invert=0,xvals=None,onlydata=True)
+
+	#f.writelines( lines )
+	#f.close()
 		
 	return
 
@@ -503,7 +577,7 @@ def organizetilts( options, intilts, raworder=False ):
 	if options.exclude:
 		tiltstoexclude = [int(x) for x in options.exclude.split(',')]
 		if options.verbose > 5:
-			print("\ntiltstoexclude are {}".format(tiltstoexclude))
+			print("\n(e2spt_tiltstacker)(organizetilts) tiltstoexclude are {}".format(tiltstoexclude))
 
 	if options.anglesindxinfilename:
 		collectionindex=0
@@ -514,7 +588,7 @@ def organizetilts( options, intilts, raworder=False ):
 
 			parsedname = intilt.replace(extension,'').replace(',',' ').replace('-',' ').replace('_',' ').replace('[',' ').replace(']',' ').replace('+',' ').split()
 			#dividerstoadd = options.anglesindxinfilename - 1
-			print('parsedname is',parsedname)
+			print('\n(e2spt_tiltstacker)(organizetilts) parsedname is',parsedname)
 			
 			charsum = 0
 			for i in range(options.anglesindxinfilename):
@@ -533,7 +607,7 @@ def organizetilts( options, intilts, raworder=False ):
 
 			if sign == '-':
 				angle *= -1
-				print("\ntherfore corrected angle to be negative, now it is {}".format(angle))
+				print("\n(e2spt_tiltstacker)(organizetilts) therfore corrected angle to be negative, now it is {}".format(angle))
 
 			
 			#sign2 = intilt.split(str(angle))[0][-1]
@@ -544,11 +618,14 @@ def organizetilts( options, intilts, raworder=False ):
 			
 			collectionindex+=1
 		
-		if options.negativetiltseries:
-			angles.sort()
-		else:
-			angles.sort()
+		angles.sort()
+		if not options.negativetiltseries:
 			angles.reverse()
+		#if options.negativetiltseries:
+		#	angles.sort()
+		#else:
+		#	angles.sort()
+		#	angles.reverse()
 
 		writetlt( angles, options )
 
@@ -559,25 +636,23 @@ def organizetilts( options, intilts, raworder=False ):
 		indexintiltseries = 0
 		newindexintiltseries = 0
 		
-		
-
 		for angle in angles:
 			#indexintiltseries = kkkk
 			#newindexintiltseries = kkkk
 			if options.verbose>5:
-				print("\nexamining angle {} corresponding to index {}".format(angle,indexintiltseries))	
+				print("\n(e2spt_tiltstacker)(organizetilts) examining angle {} corresponding to index {}".format(angle,indexintiltseries))	
 			#{ indexintiltseries:[ imgile, angle, collectionindx]} 
 			if indexintiltseries not in tiltstoexclude:
 				intiltsdict.update( { newindexintiltseries:[ anglesdict[angle][0], angle, anglesdict[angle][1] ]} )
-				
+				print("\n(e2spt_tiltstacker)(organizetilts) updating intiltsdict with img={}, angle={}, order={}".format(anglesdict[angle][0], angle, anglesdict[angle][1] ) )
 				finalangles.append(angle)
 				
 				if options.verbose>5:
-					print("\nkept oldindex={}, which after excluding images became newindex={}".format(indexintiltseries,newindexintiltseries))
+					print("\n(e2spt_tiltstacker)(organizetilts) kept oldindex={}, which after excluding images became newindex={}".format(indexintiltseries,newindexintiltseries))
 				newindexintiltseries+=1
 			else:
 				if options.verbose>5:
-                                        print("\n!!!! discarding index={} because it is in tiltstoexclude={}".format(indexintiltseries,tiltstoexclude))
+					print("\n(e2spt_tiltstacker)(organizetilts) !!!! discarding index={} because it is in tiltstoexclude={}".format(indexintiltseries,tiltstoexclude))
 		
 			indexintiltseries+=1
 		
@@ -715,79 +790,6 @@ def organizetilts( options, intilts, raworder=False ):
 	return intiltsdict
 
 
-def unstacker( options ):
-	
-	#print "\n(e2spt_tiltstacker)(unstacker) options.unstack is".format(options.unstack)
-	
-	outname = options.path + '/' + options.unstack.replace('.mrc','.hdf')
-	outname = options.path + '/' + options.unstack.replace('.mrcs','.hdf')
-	outname = options.path + '/' + options.unstack.replace('.st','.hdf')	
-	outname = options.path + '/' + options.unstack.replace('.ali','.hdf')
-	
-	outname = outname.replace('.hdf','_UNSTACKED.hdf')
-	
-	print("\n(e2spt_tiltstacker)(unstacker) unstack outname is {}".format(outname))
-	
-	#print "\noutname of unstacked tilt will be", outname
-	
-	cmdun = 'e2proc2d.py ' + options.unstack + ' ' + outname + ' --unstacking '
-	if options.outmode:
-		cmdun += ' --outmode=' + options.outmode
-	
-	if options.exclude or options.include:
-		lst = makeimglist( options.unstack, options ) 
-		cmdun += ' --list=' + lst
-	
-
-	print("\n(e2spt_tiltstacker)(unstacker) cmdun is", cmdun)	
-	runcmd(options,cmdun)
-	
-	#p = subprocess.Popen( cmdun , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	#text = p.communicate()	
-	#p.stdout.close()
-
-	return outname
-		
-
-def restacker( options ):
-	inputf = options.restack
-	
-	outname = options.path + '/' + options.restack.replace('.hdf','_RESTACKED.hdf')
-	
-	if '.ali' in inputf[-4:]: 
-		outname = options.path + '/' + options.restack.replace('.ali','_RESTACKED.ali')
-	if '.mrc' in inputf[-4:]: 
-		outname = options.path + '/' + options.restack.replace('.mrc','_RESTACKED.mrc')
-	if '.mrcs' in inputf[-5:]: 
-		outname = options.path + '/' + options.restack.replace('.mrcs','_RESTACKED.mrcs')
-	if '.st' in inputf[-3:]:
-		outname = options.path + '/' + options.restack.replace('.st','_RESTACKED.st')
-		
-	if '.hdf' in inputf[-3:]:
-		outname = options.path + '/' + options.restack.replace('.st','_RESTACKED.hdf')
-	
-	print("\n!!!!!!!!!!!!!!!!\n\nOutname is", outname)
-	
-	tmp = options.path + '/' + 'tmp.hdf'
-	
-	if '.ali' in inputf[-4:] or '.mrc' in inputf[-4:] or '.mrcs' in inputf[-5:] or '.st' in inputf[-3:] or '.hdf' in inputf[-4:]  :
-		tmp = options.path + '/' + 'tmp.mrcs'
-	
-	cmdre = 'e2proc2d.py ' + options.restack + ' ' + tmp
-	
-	if options.outmode:
-		cmdre += ' --outmode=' + options.outmode
-	
-	if options.exclude or options.include:
-		lst = makeimglist( options.restack, options )
-		cmdre += ' --list=' + lst
-	
-	runcmd(options,cmdre)
-		
-	#cmdre += ' && mv ' + tmp + ' ' + outname
-	return
-
-
 def getindxs( string ):
 	
 	parsedindxs = set([])
@@ -891,7 +893,7 @@ def floatrange(start, stop, step):
 	
 	return
 
-
+'''
 def runcmd(options,cmd,cmdsfilepath=''):
 	if options.verbose > 9:
 		print("(e2tomo_icongpu)(runcmd) running command", cmd)
@@ -907,7 +909,7 @@ def runcmd(options,cmd,cmdsfilepath=''):
 		with open(cmdsfilepath,'a') as cmdfile: cmdfile.write( cmd + '\n')
 
 	return 1
-
+'''
 
 if __name__ == "__main__":
 

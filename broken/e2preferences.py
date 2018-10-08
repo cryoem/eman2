@@ -86,7 +86,6 @@ class EMPreferencesTask(WorkFlowTask):
 		self.write_db_entries(params)
 		self.form.close()
 		self.form = None
-		from PyQt4 import QtCore
 		self.task_idle.emit()
 	
 	def run_form(self):
@@ -96,7 +95,6 @@ class EMPreferencesTask(WorkFlowTask):
 		self.form.setWindowTitle(self.window_title)
 		get_application().show_specific(self.form)
 		
-		from PyQt4 import QtCore
 		self.form.emform_ok.connect(self.on_form_ok)
 		self.form.emform_cancel.connect(self.on_form_cancel)
 		self.form.emform_close.connect(self.on_form_close)

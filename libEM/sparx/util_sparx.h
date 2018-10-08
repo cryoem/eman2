@@ -967,6 +967,7 @@ costlist, int* curbranch);
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
 
 	static EMData* shrinkfvol(EMData* img, int npad);
+	static void divclreal(EMData* img1, EMData* img2, float cutoff);
 	static EMData* mulreal(EMData* img1, EMData* img2);
 	static void mulreal_2D_in_place(EMData* img0, EMData* img1, EMData* img2, int slice_index);
 	static void mulclreal(EMData* img1, EMData* img2);
