@@ -171,7 +171,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement[False]")
-	parser.add_argument("--focused", dest = "focused", default=None,help = "Highly experimental, and under development! Specify a 3-D mask. Not used for coarse alignment, but only for final 'fine tuning'.", guitype='filebox', row=29, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--focused", dest = "focused", default=None,help = "Highly experimental, and under development! Specify a 3-D mask. Not used for coarse alignment, but only for final 'fine tuning' and symmetrizing. With symmetry also use breaksym.", guitype='filebox', row=29, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--tophat", type=str, default=None,help = "'local' or 'global'. Instead of imposing a final Wiener filter, use a tophat filter (global similar to Relion). local determines local resolution and filters. danger of feature exaggeration", guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement['None']")
 	parser.add_argument("--nogoldfinal", action="store_true", default=False,help = "If selected, the final iteration will turn off gold-standard behavior and both halves will be refined from the same model. Normally used with --tophat=local.")
 	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.")
@@ -273,7 +273,8 @@ not need to specify any of the following other than the ones already listed abov
 #		else : options.simalign="rotate_translate_tree:flip=0"
 
 	if options.sym.lower() not in ("c1","i") and options.focused!=None and len(options.focused)>3 :
-		print("WARNING: when --focused is used with symmetry, symmetry is imposed after each iteration on the 3-D model, but this may be counterproductive. You may consider running without symmetry.")
+		print("WARNING: when --focused is used with symmetry, symmetry is imposed under the focused maskafter each iteration on the 3-D model, it is thus important that the focused mask take this into account and match the symmetry.")
+		if not options.breaksym : "WARNING: Stronly suggest using --breaksym when using --focused with symmetry imposed"
 
 	if options.m3dpreprocess==None:
 		if not options.m3dold : m3dpreprocess=""
@@ -785,7 +786,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		projsym=options.sym
 		# For focused mode we make a separate set of masked projections (un-numbered) for use in final alignment
 		# these get overwritten in each iteration
-		if options.focused:
+		if options.focused!=None:
 			fmask=EMData(options.focused)
 			omap=EMData(fspe)
 			omap.mult(fmask)
@@ -990,6 +991,19 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 		run(cmd)
 		progress += 1.0
+		
+		### in focused mode we need to symmetrize under the mask
+		if options.focused!=None and options.sym.lower() not in ("c1","i") :
+			fmask=EMData(options.focused)
+			emap=EMData("{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it))
+			emap.mult(fmask)
+			emap.process_inplace("xform.applysym",{"sym":options.sym})
+			emap.write_image("{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it),0)
+
+			omap=EMData("{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it))
+			omap.mult(fmask)
+			omap.process_inplace("xform.applysym",{"sym":options.sym})
+			omap.write_image("{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it),0)
 
 		### postprocessing
 		append_html("""<p>* Finally, determine the resolution, filter and mask the even/odd maps, and then produce the final 3-D map for this iteration.

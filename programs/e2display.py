@@ -153,14 +153,14 @@ def set_full_range():
 	#auto_contrast = db.get("display_2d_auto_contrast",dfl=True)
 	#db["display_2d_auto_contrast"] = False
 	#current_settings["display_2d_auto_contrast"] = auto_contrast
-	current_settings["display_2d_auto_contrast"] = True
+	current_settings["display_2d_auto_contrast"] = False
 
 	#stack_auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
 	#stack_np_for_auto = db.get("display_stack_np_for_auto",dfl=5)
 
 	#db["display_stack_auto_contrast"] = False
 	#current_settings["display_stack_auto_contrast"] = stack_auto_contrast
-	current_settings["display_stack_auto_contrast"] = True
+	current_settings["display_stack_auto_contrast"] = False
 
 	#db["display_stack_np_for_auto"] = -1
 	#current_settings["display_stack_np_for_auto"] = stack_np_for_auto
