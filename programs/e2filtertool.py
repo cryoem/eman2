@@ -506,6 +506,8 @@ class EMFilterTool(QtGui.QMainWindow):
 			self.timer.timeout.connect(self.timeOut)
 			self.timer.start(100)
 		else:
+			for p in self.processorlist:
+				p.wenable.setChecked(False)
 			self.on_doprocess()
 			
 		E2loadappwin("e2filtertool","main",self)

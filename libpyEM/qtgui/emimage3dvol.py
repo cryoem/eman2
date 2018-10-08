@@ -54,8 +54,6 @@ from time import *
 from .emglobjects import EM3DModel, EMViewportDepthTools, Camera2, Camera, EMOpenGLFlagsAndTools
 from .emimageutil import ImgHistogram, EMTransformPanel
 
-MAG_INCREMENT_FACTOR = 1.1
-
 
 class EMVolumeModel(EM3DModel):
 	def __init__(self, gl_widget, image=None):

@@ -349,15 +349,15 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.apix_unbin=-1
 		
 		
-		self.wboxsize.setValue(self.get_boxsize())
+		
 		info.close()
 		if len(self.sets)==0:
 			self.new_set("particles_00")
 		self.sets_visible[list(self.sets.keys())[0]]=0
 		self.currentset=sorted(self.sets.keys())[0]
 		self.setspanel.update_sets()
-	
-		self.e = None
+		self.wboxsize.setValue(self.get_boxsize())
+
 		print(self.sets)
 		for i in range(len(self.boxes)):
 			self.update_box(i)
@@ -1176,7 +1176,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			
 		self.sets[i]=name
 		self.sets_visible[i]=0
-		self.boxsize[i]=32
+		if self.options.mode=="3D":
+			self.boxsize[i]=32
+		else:
+			self.boxsize[i]=64
 		
 		return
 	

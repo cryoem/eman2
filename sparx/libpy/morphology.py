@@ -1665,6 +1665,11 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 		idx_freq_max = i
 		if(x[i] > freq_max**2):
 			break
+
+	# Linear regression will crash if min & max frequencies are only one apart
+	if idx_freq_max-idx_freq_min <= 1: 
+		ERROR("B_start is too high a resolution! Decrease it (under Advanced) and re-run the program! ", "compute_bfactor")
+		
 	B, s = linreg(x[idx_freq_min:idx_freq_max], pws_log[idx_freq_min:idx_freq_max])
 	#print  B,s
 

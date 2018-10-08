@@ -51,13 +51,36 @@ def main():
 	parser.add_argument("--extractkey", type=str, default=None, help="This will extract a single named value from each specified file. Output will be multicolumn if the referenced label is an object, such as CTF.")
 	parser.add_argument("--removekey", type=str, default=None, help="DANGER! This will remove all data associated with the named key from all listed .json files.")
 	parser.add_argument("--output", type=str, default="jsoninfo.txt", help="Output filename. default = jsoninfo.txt")
-
+	parser.add_argument("--setoption",type=str, default=None, help="Set a single option in application preferences, eg - display2d.autocontrast:true")
+	parser.add_argument("--listoptions",action="store_true", default=False, help="List all currently set user application preferences")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
 
 
 	(options, args) = parser.parse_args()
+
+	if options.setoption!=None:
+		try:
+			k,v=options.setoption.split(":")
+			com,opt=k.split(".")
+			if isinstance(v,str) and v.lower()=="true" : v=True
+			elif isinstance(v,str) and v.lower()=="false" : v=False
+			E2setappval(com,opt,v)
+		except:
+#			import traceback
+#			traceback.print_exc()
+			print("ERROR: could not write preferences. Must be of form 'program.option:value'")
+			sys.exit(1)
+		sys.exit(0)
+		
+	if options.listoptions:
+		prefs=E2getappvals()
+		if len(prefs)==0 : 
+			print("No preferences have been set. Please see 'http://eman2.org/ApplicationPreferences' for a list of available preferences.")
+			sys.exit(0)
+		for a,s,v,gl in prefs: print("{:>30s} {:25s} {}".format(".".join((a,s)),str(v),gl))
+		sys.exit(0)
 
 	if options.allinfo:
 		args=["info/{}".format(i) for i in os.listdir("info") if ".json" in i]

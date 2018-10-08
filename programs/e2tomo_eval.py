@@ -332,7 +332,9 @@ class TomoEvalGUI(QtGui.QWidget):
 	
 	def runboxer(self):
 		idx, info=self.get_id_info()
-		launch_childprocess("e2spt_boxer22.py {}".format(info["filename"]))
+		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
+		subprocess.Popen("e2spt_boxer22.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+		#launch_childprocess()
 
 	def clickset(self, item):
 		name=str(item.text())

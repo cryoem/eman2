@@ -38,6 +38,57 @@ from eman2_gui.emplot2d import EMPlot2DWidget,colortypes
 from eman2_gui.empmwidgets import PMFSCTableWidget
 from eman2_gui.emapplication import EMApp
 
+
+def get_e2resolution_results_list(keys):
+		'''
+		Extract the names from the keys that match the e2resolution.py output naming convention
+		(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
+		'''
+		solns = []
+		for k in keys:
+			if len(k) > 6 and k[-7:] == "res_fsc":
+				solns.append(k)
+		solns.sort()
+		return solns
+
+
+def get_e2eotest_results_list(keys):
+	'''
+	Extract the names from the keys that match the e2eotest.py output naming convention
+	(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
+	'''
+	solns = []
+	for k in keys:
+		if len(k) > 7 and k[0:8] == "even_odd":
+			solns.append(k)
+	solns.sort()
+	return solns
+
+
+def get_convergence_results_list(keys):
+	'''
+	Extract the names from the keys that match the e2refine.py convergence plot output naming convention
+	(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
+	'''
+	solns = []
+	if "init_00_fsc" in keys:
+		solns.append("init_00_fsc")
+		
+	i = 0
+	while True:
+		s1 = str(i)
+		s2 = str(i+1)
+		if len(s1) == 1: s1 = "0"+s1
+		if len(s2) == 1: s2 = "0"+s2
+		k = s1+"_"+s2+"_fsc"
+		if k in keys:
+			solns.append(k)
+		else:
+			break
+
+		i += 1
+	return solns
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog Refinement directory [options]

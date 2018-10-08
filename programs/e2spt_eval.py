@@ -125,7 +125,8 @@ class SptEvalGUI(QtGui.QWidget):
 		rows = []
 		for k in jd.keys():
 			dct = jd[k]
-			tf = dct[u'xform.align3d']
+			#### inverse since we want the transform from reference to particle
+			tf = dct[u'xform.align3d'].inverse()
 			t = tf.get_trans()
 			r = tf.get_rotation()
 			row = [r["az"],r["alt"],r["phi"],t[0],t[1],t[2],dct["score"],dct["coverage"]]
@@ -138,13 +139,17 @@ class SptEvalGUI(QtGui.QWidget):
 		for f in sorted(os.listdir(self.path)):
 			if "particle_parms_" in f:
 				parms = self.json_to_array("{}/{}".format(self.path,f))
-				self.paramplot.set_data(parms,f)
+				try:
+					self.paramplot.set_data(parms,f)
+				except: 
+					print("Cannot parse {}..".format(f))
+				
 		self.paramplot.show()
 		return
 
 	def plot_fscs(self):
 		for f in sorted(os.listdir(self.path)):
-			if "fsc_maskedtight_" in f and "ali.txt" in f:
+			if "fsc_maskedtight_" in f:
 				self.fscplot.set_data_from_file("{}/{}".format(self.path,f))
 		self.fscplot.show()
 		return

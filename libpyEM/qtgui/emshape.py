@@ -37,7 +37,6 @@ from builtins import range
 from builtins import object
 from OpenGL import GL,GLUT
 from math import *
-from EMAN2 import get_3d_font_renderer, Util
 import warnings
 
 from libpyGLUtils2 import *
@@ -620,39 +619,6 @@ class EMShape(object):
 		control_points = self.control_pts()
 		squared_distances = [point[0]**2+point[1]**2 for point in control_points]
 		return sqrt(min(squared_distances))
-
-class EMShapeList(list):
-	def collisions(self,x,y,fuzzy=False):
-		"""
-		This returns a list of shapes that enclose the point (x,y).	If fuzzy
-		is set to True, the point need not be exactly inside the shape.
-		"""
-		ret = []
-		for shape in self:
-			if shape.collision(x,y,fuzzy):
-				ret.append[shape]
-		return ret
-	
-	def closest_collision(self, x, y, fuzzy=False):
-		"""
-		This searches the list returned by collisions() to find the shape
-		with a control point closest to x,y. The parameter fuzzy is used by
-		collisions(). If there are no collisions, this returns none.
-		"""
-		shapes = self.collisions(x, y, fuzzy)
-		if shapes:
-			min_dist = None
-			for shape in shapes:
-				dist = shape.control_pt_min_distance(x,y)
-				if min_dist == None:
-					min_dist = dist
-					closest_shape = shape
-				elif dist < min_dist:
-					min_dist = dist
-					closest_shape = shape
-			return closest_shape		
-		else:
-			return None
 
 class EMShapeDict(dict):
 	def collisions(self,x,y,fuzzy=False):
