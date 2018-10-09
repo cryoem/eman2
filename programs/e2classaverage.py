@@ -400,7 +400,7 @@ class ClassAvTask(JSTask):
 				
 			if options["verbose"]>0 : print("Final center ({}): {}".format(self.center,fxf.get_trans_2d()))
 			avg1=avg
-			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,None,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
+			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,None,focused,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
 		try:
 			avg["class_ptcl_qual"]=avg1["class_ptcl_qual"]
 			avg["class_ptcl_qual_sigma"]=avg1["class_ptcl_qual_sigma"]
