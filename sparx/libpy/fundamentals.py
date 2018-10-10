@@ -1704,7 +1704,9 @@ class symclass(object):
 			for l1 in range(36,324+1,72):
 				for l2 in range(0,288+1,72):
 					self.symangles.append([float(l1),lvl2,float(l2)])
-			for i in range(0,288+1,72):  self.symangles.append([0.0,180.0,float(i)])			
+			for i in range(0,288+1,72):  self.symangles.append([0.0,180.0,float(i)])
+		
+		else:  ERROR("Unknown symmetry","symclass",1)
 
 		#
 		self.transform = []

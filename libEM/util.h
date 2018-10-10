@@ -1006,7 +1006,8 @@ namespace EMAN
 		 */
 		static inline float angle_sub_2pi(float x, float y)
 		{
-			float r = fmod(fabs(x - y), (float) (2 * M_PI));
+			float r = fmod(fabs(x - y), (float) (2.0 * M_PI));
+			if (r<0) r+=2.0*M_PI;
 			if (r > M_PI) {
 				r = (float) (2.0 * M_PI - r);
 			}

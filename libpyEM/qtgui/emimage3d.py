@@ -41,7 +41,7 @@ from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import QTimer, Qt
+from PyQt4.QtCore import Qt
 from e2eulerxplor import EMEulerExplorer
 from .emglobjects import Camera, Camera2, EMGLWidget, EMViewportDepthTools, EMGLProjectionViewMatrices, EMOpenGLFlagsAndTools
 from .emimage3diso import EMIsosurfaceModel
@@ -53,11 +53,6 @@ from .emlights import EMLightsInspectorBase, EMLightsDrawer
 from math import *
 import weakref
 
-
-
-
-
-MAG_INCREMENT_FACTOR = 1.1
 
 class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	""" 

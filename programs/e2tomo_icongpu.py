@@ -297,8 +297,8 @@ def icongpufunc(options,alifile,cmdsfilepath):
 		sys.exit(1)	
 		
 	if options.verbose:
-		print("\n(e2tomo_icongpu)(icongpufunc) calling ICONMask2.")
-	cmdicon2 = 'ICONMask2 -inputPath ' + icondir + '/reconstruction -tiltfile ' + options.tltfile + ' -output ' + outtomogram + ' -slice 0,' + str(outsize-1) + ' -thickness ' + str(thickness) + ' -crossVfrc ' + icondir + '/crossValidation/crossV.frc -fullRecfrc ' + icondir + '/crossValidation/fullRec.frc' 
+		print("\n(e2tomo_icongpu)(icongpufunc) calling ICONMask3.")
+	cmdicon2 = 'ICONMask3 -inputPath ' + icondir + '/reconstruction -tiltfile ' + options.tltfile + ' -output ' + outtomogram + ' -slice 0,' + str(outsize-1) + ' -thickness ' + str(thickness) + ' -crossVfrc ' + icondir + '/crossValidation/crossV.frc -fullRecfrc ' + icondir + '/crossValidation/fullRec.frc' 
 	runcmd(options,cmdicon2,cmdsfilepath)
 
 	outtomogramzshort = outtomogram.replace('.mrc','_ZSHORT.mrc') 

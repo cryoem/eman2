@@ -42,9 +42,9 @@ import sys
 import testlib
 import os
 import platform
-from pyemtbx.exceptions import *
 from optparse import OptionParser
 from EMAN2 import remove_file
+from testlib import exception_type
 
 IS_TEST_EXCEPTION = False
 

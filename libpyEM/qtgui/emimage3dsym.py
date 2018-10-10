@@ -52,7 +52,6 @@ from .valslider import ValSlider
 from weakref import WeakKeyDictionary
 import weakref
 
-MAG_INCREMENT_FACTOR = 1.1
 
 class Orientations(object):
 	def __init__(self):
