@@ -421,10 +421,14 @@ def sanity_checks(args):
 	for idx, option in enumerate(file_exists_check):
 		if option:
 			if option.startswith('bdb:'):
-				dirnames = os.path.dirname(option[4:])
-				if not dirnames:
-					dirnames = '.'
-				basename = os.path.basename(option[4:])
+				if '#' in option:
+					raw_dirnames, basename = option.split('#')
+					dirnames = raw_dirnames[4:]
+				else:
+					dirnames = os.path.dirname(option[4:])
+					if not dirnames:
+						dirnames = '.'
+					basename = os.path.basename(option[4:])
 				option = '{0}/EMAN2DB/{1}.bdb'.format(dirnames,basename)
 			if not os.path.isfile(option):
 				global_def.ERROR(
