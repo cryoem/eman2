@@ -293,7 +293,8 @@ class SXLookFeelConst(object):
 	sxcmd_tab_bg_color_string = 'rgba(229, 229, 229, 200)' # White Transparent
 
 	# Constants
-	project_dir = "sxgui_settings"
+	project_dir_raw = "sxgui_settings"
+	project_dir = project_dir_raw
 	sxmain_window_left = 0
 	sxmain_window_top = 0
 	sxmain_window_min_width = 1500 # Requirement of specification
@@ -317,9 +318,15 @@ class SXLookFeelConst(object):
 	file_dialog_dir = ""
 	
 	@staticmethod
-	def initialise(sxapp):
+	def initialise(sxapp, version):
 		# Set the directory for all file dialogs to script directory
+		SXLookFeelConst.project_dir += '_{0}'.format(version)
 		SXLookFeelConst.file_dialog_dir = os.getcwd()
+		for file_name in os.listdir(SXLookFeelConst.file_dialog_dir):
+			if SXLookFeelConst.project_dir_raw in file_name and file_name != SXLookFeelConst.project_dir:
+				print('sxgui_settings_XXX directory detected that belongs to another version of SPHIRE.')
+				print('To load old settings, please load the gui settings manually.')
+				print('Backwards compatibility cannot be guaranteed.')
 
 		monitor_index = 0
 		# Search for maximun screen height and set it to SXLookFeelConst singleton class
@@ -4132,11 +4139,12 @@ def main():
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 
 	# Initialise a singleton class for look & feel constants
-	SXLookFeelConst.initialise(sxapp)
+	version_string = '1.2_rc3'
+	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
 	sxmain_window = SXMainWindow()
-	sxmain_window.setWindowTitle("SPHIRE-GUI Main Version 1.0")
+	sxmain_window.setWindowTitle("SPHIRE-GUI Main Version {0}".format(version_string))
 	sxmain_window.setMinimumWidth(SXLookFeelConst.sxmain_window_width)
 	sxmain_window.setMinimumHeight(SXLookFeelConst.sxmain_window_height)
 	sxmain_window.resize(SXLookFeelConst.sxmain_window_width, SXLookFeelConst.sxmain_window_height)
