@@ -494,7 +494,7 @@ def main():
 					if relion_dict['_rlnCtfFigureOfMerit'][idx_col] >= 0:
 						sphire_cter_entry[idx_cter_reserved] = float(tokens_line[relion_dict['_rlnCtfFigureOfMerit'][idx_col] - 1])
 					else:
-						parx_cter_entry[idx_cter_reserved]  = 0.0
+						sphire_cter_entry[idx_cter_reserved]  = 0.0
 					
 					sphire_cter_entry[idx_cter_mic_name]     = adjusted_relion_micrograph_name
 					assert len(sphire_cter_entry) == n_idx_cter, '# Logical Error: The length of sphiret CTER entry %d must be always %d at this point of code.' % (len(sphire_cter_entry), n_idx_cter)
