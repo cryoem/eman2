@@ -10,7 +10,6 @@ from EMAN2 import *
 import numpy as np
 from scipy.optimize import minimize
 import scipy.spatial.distance as scidist
-import psutil
 from EMAN2_utils import *
 import queue
 from sklearn.decomposition import PCA
@@ -666,10 +665,15 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	#### we make 2 tomograms with half a box shift and average them together to compensate for boundary artifacts.
 	mem=(outxy*outxy*outz*8+pad*pad*pad*options.threads*4)
 	print("This will take {}x{}x{}x4x2 + {}x{}x{}x{}x4 = {:.1f} GB of memory memory...".format(outxy, outxy, outz, pad, pad, pad,options.threads, mem/1024**3))
-	memaval=psutil.virtual_memory()
-	if mem>memaval.total:
-		print("Not enough memory. Exit.")
-		exit()
+	#try:
+		#import psutil
+		#memaval=psutil.virtual_memory()
+		#if mem>memaval.total:
+			#print("Not enough memory. Exit.")
+			#exit()
+	
+	#except:
+		#pass
 	
 	
 	full3d=[EMData(outxy, outxy, outz) for i in [0,1]]
