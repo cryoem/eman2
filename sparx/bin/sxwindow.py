@@ -1061,15 +1061,10 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		x0 = nx//2
 		y0 = ny//2
 
-		local_particle_id = 0 # can be different from coordinates_id
 		coords_reject_out_of_boundary_messages = []
 
-		local_mrcs = EMData(box_size, box_size, len(coords_list))
-		local_mrcs.set_attr("apix_x", 1.0) # particle_img.set_attr("apix_x", resampled_pixel_size)
-		local_mrcs.set_attr("apix_y", 1.0) # particle_img.set_attr("apix_y", resampled_pixel_size)
-		local_mrcs.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
-		local_mrcs.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
 		# Loop through coordinates
+		coords_accepted = []
 		for coords_id in range(len(coords_list)):
 			# Get coordinates
 			x = int(coords_list[coords_id][0])
@@ -1085,12 +1080,20 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			
 			# Window a particle at this coordinates
 			if( (0 <= x - box_half) and ( x + box_half <= nx ) and (0 <= y - box_half) and ( y + box_half <= ny ) ):
-				particle_img = Util.window(mic_img, box_size, box_size, 1, x-x0, y-y0)
+				coords_accepted.append([mic_img, box_size, box_size, 1, x-x0, y-y0])
 			else:
 				coords_reject_out_of_boundary_messages.append("coordinates ID = %04d: x = %4d, y = %4d, box_size = %4d " % (coords_id, x, y, box_size))
 				# print("MRK_DEBUG: coords_reject_out_of_boundary_messages[-1] := %s" % coords_reject_out_of_boundary_messages[-1])
 				continue
-			
+
+		local_mrcs = EMData(box_size, box_size, len(coords_accepted))
+		local_mrcs.set_attr("apix_x", 1.0) # particle_img.set_attr("apix_x", resampled_pixel_size)
+		local_mrcs.set_attr("apix_y", 1.0) # particle_img.set_attr("apix_y", resampled_pixel_size)
+		local_mrcs.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
+		local_mrcs.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
+		local_particle_id = 0 # can be different from coordinates_id
+		for coords_id, entry in enumerate(coords_accepted):
+			particle_img = Util.window(*entry)
 			# Normalize this particle image
 			particle_img = ramp(particle_img)
 			particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
