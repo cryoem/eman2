@@ -1086,71 +1086,72 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				# print("MRK_DEBUG: coords_reject_out_of_boundary_messages[-1] := %s" % coords_reject_out_of_boundary_messages[-1])
 				continue
 
-		local_mrcs = EMData(box_size, box_size, len(coords_accepted))
-		local_mrcs.set_attr("apix_x", 1.0) # particle_img.set_attr("apix_x", resampled_pixel_size)
-		local_mrcs.set_attr("apix_y", 1.0) # particle_img.set_attr("apix_y", resampled_pixel_size)
-		local_mrcs.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
-		local_mrcs.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
-		local_particle_id = 0 # can be different from coordinates_id
-		for coords_id, entry in enumerate(coords_accepted):
-			particle_img = Util.window(*entry)
-			# Normalize this particle image
-			particle_img = ramp(particle_img)
-			particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
-			particle_img -= particle_stats[0]
-			try:
-				particle_img /= particle_stats[1]
-			except ZeroDivisionError:
-				print("The standard deviation of the particle image associated with %dth coordinates entry in micrograph %s for %s is zero unexpectedly. Skipping..." % (coords_id, mic_path, mic_basename))
-				continue
-			
-			# Set header entries (attributes) of this particle image
-			# 
-			# NOTE: 2015/04/09 Toshio Moriya
-			# ptcl_source_image might be redundant information...
-			# Consider re-organizing header entries...
-			# 
-			particle_img_dict = particle_img.get_attr_dict()
-			particle_img_dict["ptcl_source_image"] = mic_path
-			particle_img_dict["ptcl_source_coord"] = [int(coords_list[coords_id][0]), int(coords_list[coords_id][1])]
-			particle_img_dict["ptcl_source_coord_id"] = coords_id
-			particle_img_dict['data_n'] = coords_id  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
-			particle_img_dict["data_path"] = '../' + local_mrcs_name
-			particle_img_dict["resample_ratio"] = resample_ratio
+		if len(coords_accepted) > 0:
+			local_mrcs = EMData(box_size, box_size, len(coords_accepted))
+			local_mrcs.set_attr("apix_x", 1.0) # particle_img.set_attr("apix_x", resampled_pixel_size)
+			local_mrcs.set_attr("apix_y", 1.0) # particle_img.set_attr("apix_y", resampled_pixel_size)
+			local_mrcs.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
+			local_mrcs.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
+			local_particle_id = 0 # can be different from coordinates_id
+			for coords_id, entry in enumerate(coords_accepted):
+				particle_img = Util.window(*entry)
+				# Normalize this particle image
+				particle_img = ramp(particle_img)
+				particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
+				particle_img -= particle_stats[0]
+				try:
+					particle_img /= particle_stats[1]
+				except ZeroDivisionError:
+					print("The standard deviation of the particle image associated with %dth coordinates entry in micrograph %s for %s is zero unexpectedly. Skipping..." % (coords_id, mic_path, mic_basename))
+					continue
+				
+				# Set header entries (attributes) of this particle image
+				# 
+				# NOTE: 2015/04/09 Toshio Moriya
+				# ptcl_source_image might be redundant information...
+				# Consider re-organizing header entries...
+				# 
+				particle_img_dict = particle_img.get_attr_dict()
+				particle_img_dict["ptcl_source_image"] = mic_path
+				particle_img_dict["ptcl_source_coord"] = [int(coords_list[coords_id][0]), int(coords_list[coords_id][1])]
+				particle_img_dict["ptcl_source_coord_id"] = coords_id
+				particle_img_dict['data_n'] = coords_id  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
+				particle_img_dict["data_path"] = '../' + local_mrcs_name
+				particle_img_dict["resample_ratio"] = resample_ratio
 
-			particle_img_dict["nx"] = box_size
-			particle_img_dict["ny"] = box_size
-			particle_img_dict["nz"] = 1
-			# 
-			# NOTE: 2015/04/13 Toshio Moriya 
-			# Pawel Comment: Micrograph is not supposed to have CTF header info.
-			# So, let's assume it does not exist & ignore its presence.
-			# assert (not particle_img.has_ctff())
-			# 
-			# NOTE: 2015/04/13 Toshio Moriya 
-			# Note that resample() "correctly" updates pixel size of CTF header info if it exists
-			# 
-			# NOTE: 2015/04/13 Toshio Moriya
-			# apix_* attributes are updated by resample() only when resample_ratio != 1.0
-			# Let's make sure header info is consistent by setting apix_* = 1.0 
-			# regardless of options, so it is not passed down the processing line
-			# 
-			particle_img_dict["apix_x"] = 1.0 # particle_img.set_attr("apix_x", resampled_pixel_size)
-			particle_img_dict["apix_y"] = 1.0 # particle_img.set_attr("apix_y", resampled_pixel_size)
-			particle_img_dict["apix_z"] = 1.0 # particle_img.set_attr("apix_z", resampled_pixel_size)
-			particle_img_dict["ptcl_source_apix"] = src_pixel_size # Store the original pixel size
-			particle_img_dict["ctf"] =ctf_obj
-			particle_img_dict["ctf_applied"] = 0
-			
-			# Write the particle image to local stack file
-			# print("MRK_DEBUG: local_stack_path, local_particle_id", local_stack_path, local_particle_id)
+				particle_img_dict["nx"] = box_size
+				particle_img_dict["ny"] = box_size
+				particle_img_dict["nz"] = 1
+				# 
+				# NOTE: 2015/04/13 Toshio Moriya 
+				# Pawel Comment: Micrograph is not supposed to have CTF header info.
+				# So, let's assume it does not exist & ignore its presence.
+				# assert (not particle_img.has_ctff())
+				# 
+				# NOTE: 2015/04/13 Toshio Moriya 
+				# Note that resample() "correctly" updates pixel size of CTF header info if it exists
+				# 
+				# NOTE: 2015/04/13 Toshio Moriya
+				# apix_* attributes are updated by resample() only when resample_ratio != 1.0
+				# Let's make sure header info is consistent by setting apix_* = 1.0 
+				# regardless of options, so it is not passed down the processing line
+				# 
+				particle_img_dict["apix_x"] = 1.0 # particle_img.set_attr("apix_x", resampled_pixel_size)
+				particle_img_dict["apix_y"] = 1.0 # particle_img.set_attr("apix_y", resampled_pixel_size)
+				particle_img_dict["apix_z"] = 1.0 # particle_img.set_attr("apix_z", resampled_pixel_size)
+				particle_img_dict["ptcl_source_apix"] = src_pixel_size # Store the original pixel size
+				particle_img_dict["ctf"] =ctf_obj
+				particle_img_dict["ctf_applied"] = 0
+				
+				# Write the particle image to local stack file
+				# print("MRK_DEBUG: local_stack_path, local_particle_id", local_stack_path, local_particle_id)
 
-			local_bdb_stack[local_particle_id] = particle_img_dict
-			local_mrcs.insert_clip(particle_img, (0, 0, local_particle_id))
-			#particle_img.write_image(local_stack_path, local_particle_id) # NOTE: Insert slice instead of write the image
-			local_particle_id += 1
+				local_bdb_stack[local_particle_id] = particle_img_dict
+				local_mrcs.insert_clip(particle_img, (0, 0, local_particle_id))
+				#particle_img.write_image(local_stack_path, local_particle_id) # NOTE: Insert slice instead of write the image
+				local_particle_id += 1
 
-		local_mrcs.write_image(local_mrcs_path)
+			local_mrcs.write_image(local_mrcs_path)
 
 		# Save the message list of rejected coordinates because of out-of-boundary
 		# print("MRK_DEBUG: len(coords_reject_out_of_boundary_messages) := %d" % len(coords_reject_out_of_boundary_messages))
