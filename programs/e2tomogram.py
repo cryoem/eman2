@@ -10,6 +10,7 @@ from EMAN2 import *
 import numpy as np
 from scipy.optimize import minimize
 import scipy.spatial.distance as scidist
+import psutil
 from EMAN2_utils import *
 import queue
 from sklearn.decomposition import PCA
@@ -48,7 +49,7 @@ def main():
 	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=7, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltrange", type=str,help="Include only tilts between 'START' and 'STOP', i.e. -40.0,40.0. Default behavior is to include all tilts.", default=None)#, guitype='strbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k and 2k. default is 1k", default="1k",guitype='combobox',choicelist="('1k', '2k')",row=8, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k, 2k and 4k. default is 1k", default="1k",guitype='combobox',choicelist="('1k', '2k', '4k')",row=8, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=8, col=1, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
 	
 	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
@@ -63,7 +64,7 @@ def main():
 	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking. Default is 32. Maybe helpful to use a larger one for fiducial-less cases..", default=32, guitype='intbox',row=5, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -5", default=-5.)
-	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks, as fraction of micrograph length. Default is 0.12", default=0.12,guitype='floatbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks, as fraction of micrograph length. Default is 0.125", default=0.125,guitype='floatbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--correctrot", action="store_true",help="correct for global rotation and position sample flat in tomogram.", default=False,guitype='boolbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
 
@@ -376,6 +377,9 @@ def main():
 	#### alignment finish. now save output
 	if options.outsize=="2k":
 		imgout=imgs_2k
+	elif options.outsize=="4k":
+		options.bytile=True
+		imgout=imgs_4k
 	else:
 		imgout=imgs_1k
 		
@@ -633,8 +637,9 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	elif imgs[0]["nx"]<=2048*1.1:
 		b=2
 	else:
-		print("tiling only support for 1k and 2k tomograms...")
-		return make_tomogram(imgs, tltpm, options, errtlt=errtlt)
+		b=4
+		#print("tiling only support for 1k and 2k tomograms...")
+		#return make_tomogram(imgs, tltpm, options, errtlt=errtlt)
 	
 	print("Making bin{:d} tomogram by tiling...".format(int(np.round(scale))))
 	tpm=tltpm.copy()
@@ -659,8 +664,15 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		outz=pad
 
 	#### we make 2 tomograms with half a box shift and average them together to compensate for boundary artifacts.
-	full3d=[EMData(outxy, outxy, outz) for i in [0,1]]
+	mem=(outxy*outxy*outz*8+pad*pad*pad*options.threads*4)
+	print("This will take {}x{}x{}x4x2 + {}x{}x{}x{}x4 = {:.1f} GB of memory memory...".format(outxy, outxy, outz, pad, pad, pad,options.threads, mem/1024**3))
+	memaval=psutil.virtual_memory()
+	if mem>memaval.total:
+		print("Not enough memory. Exit.")
+		exit()
 	
+	
+	full3d=[EMData(outxy, outxy, outz) for i in [0,1]]
 	
 	
 	jsd=queue.Queue(0)
