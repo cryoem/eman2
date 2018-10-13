@@ -512,9 +512,10 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 	if len(indx_list) ==1: indx_list= indx_list[0]
 	else:                  indx_list= indx_list[1]
 	indx_list = np.sort(np.array(indx_list, dtype = np.int32))
-	avg_smear = np.sum(smearing_list[indx_list])/indx_list.shape[0]
+	smearing_list = smearing_list[indx_list]
+	avg_smear = np.sum(smearing_list)/smearing_list.shape[0]
 	cdata_in_core  = (Tracker["total_stack"]*nxinit*nxinit*4.0)/1.e9/Blockdata["no_of_groups"]
-	srdata_in_core = (nxinit*nxinit*np.sum(smearing_list[indx_list])*4.)/1.e9/Blockdata["no_of_groups"]
+	srdata_in_core = (nxinit*nxinit*np.sum(smearing_list)*4.)/1.e9/Blockdata["no_of_groups"]
 	if not Tracker["constants"]["focus3D"]:	fdata_in_core = 0.0
 	else: fdata_in_core = cdata_in_core
 	ctfdata     = cdata_in_core
@@ -538,7 +539,7 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 		image_start, image_end = MPI_start_end(smearing_list.shape[0], Blockdata["nproc"],iproc)
 		smearings_on_nodes[iproc//Blockdata["no_of_processes_per_group"]] += \
 			np.sum(smearing_list[image_start:image_end])*(nxinit*nxinit*4.)/1.e9
-		smearings_per_cpu[iproc] = smearing_list[indx_list[image_start:image_end]]
+		smearings_per_cpu[iproc] = smearing_list[image_start:image_end]
 	msg = ""
 	for icolor in range(Blockdata["no_of_groups"]):
 		tdata = cdata_in_core + ctfdata + refvol_size + smearings_on_nodes[icolor]+fdata_in_core
