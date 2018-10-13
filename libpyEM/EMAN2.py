@@ -297,28 +297,30 @@ When settings are read, the local value is checked first, then if necessary, the
 		return
 
 	try:
-		db=shelve.open(".eman2settings")
+		db=js_open_dict(".eman2settings.json")
 		db[app+"."+key]=value
-		db.close()
+#		db.close()
 	except:
 		pass
 
 	try:
 		dir=e2gethome()
 		dir+="/.eman2"
-		os.mkdir(dir)
 	except:
 		return
+	
+	try: os.mkdir(dir)
+	except: pass
 
 	try:
-		db=shelve.open(dir+"/appdefaults")
+		db=js_open_dict(dir+"/eman2settings.json")
 		db[app+"."+key]=value
-		db.close()
+#		db.close()
 	except:
 		return
 
 
-def E2getappval(app,key):
+def E2getappval(app,key,dfl=None):
 	"""E2getappval
 This function will get an application default by first checking the local directory, followed by
 ~/.eman2"""
@@ -330,9 +332,8 @@ This function will get an application default by first checking the local direct
 		return None
 
 	try:
-		db=shelve.open(".eman2settings")
+		db=js_open_dict(".eman2settings.json")
 		ret=db[app+"."+key]
-		db.close()
 		return ret
 	except:
 		pass
@@ -340,15 +341,38 @@ This function will get an application default by first checking the local direct
 	try:
 		dir=e2gethome()
 		dir+="/.eman2"
-		db=shelve.open(dir+"/appdefaults")
+		db=js_open_dict(dir+"/eman2settings.json")
 		ret=db[app+"."+key]
 		db.close()
 
 		return ret
 	except: pass
 
-	return None
+	return dfl
 
+def E2getappvals():
+	"""E2getappvals
+This function will return a list of lists containing all currently set application defaults as [program,option,value,global|local]"""
+
+	ret=[]
+	ret2=[]
+
+	try:
+		db=js_open_dict(".eman2settings.json")
+		keys=db.keys()
+		ret=[(k.split(".")[0],k.split(".")[1],db[k],"local") for k in keys]
+	except:
+		pass
+	
+	try:
+		dir=e2gethome()
+		dir+="/.eman2"
+		dbu=js_open_dict(dir+"/eman2settings.json")
+		ret2=[(k.split(".")[0],k.split(".")[1],dbu[k],"user") for k in dbu.keys() if k not in keys]  # only show global when local doesn't exist
+		
+	except: pass
+
+	return ret2+ret
 
 def e2getinstalldir() :
 	"""platform independent path with '/'"""

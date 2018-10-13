@@ -139,6 +139,7 @@ def main():
 	parser.add_option('--outputs_root',       type='string',         default='sphire',  help='Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default sphire)')
 	parser.add_option('--box_size',           type=int,              default=0,         help='Box size: Box size for particle extraction. It also controls the saved coordinates file format. If the given value is > 0, store the eman1 format. coordinate file. The coordinates of eman1 format is particle box corner associated with this box size. The coordinates of sphire format is particle center. By default, use sphire format. (default 0)')
 	parser.add_option('--do_not_create_stack',       action='store_true',   default=False,     help='Create virtual stacks: Create per-micrograph virtual stacks without the actual particle meta information in BDB format. By default, the program does generate the stack of particle meta information (default False)')
+	parser.add_option('--negative_stain',       action='store_true',   default=False,     help='Create negative stain CTF entry (default False)')
 	
 	(options,args) = parser.parse_args( arglist[1:] )
 
@@ -471,7 +472,7 @@ def main():
 					relion_det_pix_size = float(tokens_line[relion_dict['_rlnDetectorPixelSize'][idx_col] - 1])
 					relion_mag = float(tokens_line[relion_dict['_rlnMagnification'][idx_col] - 1])
 					sphire_cter_entry[idx_cter_apix] = 10000 * relion_det_pix_size / relion_mag # convert um to A
-					
+
 					##### Store CTER specific parameters ##### 
 					sphire_cter_entry[idx_cter_bfactor]      = 0.0    # RELION does not output B-Factor, so set it zero always
 					sphire_cter_entry[idx_cter_sd_def]       = 0.0
@@ -493,7 +494,7 @@ def main():
 					if relion_dict['_rlnCtfFigureOfMerit'][idx_col] >= 0:
 						sphire_cter_entry[idx_cter_reserved] = float(tokens_line[relion_dict['_rlnCtfFigureOfMerit'][idx_col] - 1])
 					else:
-						parx_cter_entry[idx_cter_reserved]  = 0.0
+						sphire_cter_entry[idx_cter_reserved]  = 0.0
 					
 					sphire_cter_entry[idx_cter_mic_name]     = adjusted_relion_micrograph_name
 					assert len(sphire_cter_entry) == n_idx_cter, '# Logical Error: The length of sphiret CTER entry %d must be always %d at this point of code.' % (len(sphire_cter_entry), n_idx_cter)
@@ -513,7 +514,33 @@ def main():
 						sphire_cter_dict[micrograph_dirname][micrograph_basename].append(sphire_cter_entry)
 					
 					i_sphire_stack_ctf += 1
-					
+				elif options.negative_stain:
+					relion_det_pix_size = float(tokens_line[relion_dict['_rlnDetectorPixelSize'][idx_col] - 1])
+					relion_mag = float(tokens_line[relion_dict['_rlnMagnification'][idx_col] - 1])
+					sphire_cter_entry = [None] * n_idx_cter
+					sphire_cter_entry[idx_cter_def]          = 0.0
+					sphire_cter_entry[idx_cter_cs]           = 0.0
+					sphire_cter_entry[idx_cter_vol]          = 300.0
+					sphire_cter_entry[idx_cter_apix] = 10000 * relion_det_pix_size / relion_mag # convert um to A
+					sphire_cter_entry[idx_cter_bfactor]      = 0.0
+					sphire_cter_entry[idx_cter_total_ac]     = 100.0
+					sphire_cter_entry[idx_cter_astig_amp]    = 0.0
+					sphire_cter_entry[idx_cter_astig_ang]    = 0.0
+					sphire_cter_entry[idx_cter_sd_def]       = 0.0
+					sphire_cter_entry[idx_cter_sd_total_ac]  = 0.0
+					sphire_cter_entry[idx_cter_sd_astig_amp] = 0.0
+					sphire_cter_entry[idx_cter_sd_astig_ang] = 0.0
+					sphire_cter_entry[idx_cter_cv_def]       = 0.0
+					sphire_cter_entry[idx_cter_cv_astig_amp] = 0.0
+					sphire_cter_entry[idx_cter_error_def]    = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_error_astig]  = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_error_ctf]    = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_max_freq]     = 0.5/sphire_cter_entry[idx_cter_apix] # Set to Nyquist frequency
+					sphire_cter_entry[idx_cter_reserved]     = 0.0
+					sphire_cter_entry[idx_cter_const_ac]     = 0.0
+					sphire_cter_entry[idx_cter_phase_shift]  = 0.0
+					sphire_cter_entry[idx_cter_mic_name]     = ""
+
 				if relion_category_dict['window'][idx_is_category_found]:
 					relion_particle_source = tokens_line[relion_dict['_rlnImageName'][idx_col] - 1]
 					tokens_particle_source = relion_particle_source.split('@')
@@ -660,7 +687,7 @@ def main():
 						
 						if relion_category_dict['helical'][idx_is_category_found]:
 							sphire_header['filament'] = '{0}{1:05d}'.format(adjusted_relion_micrograph_name, sphire_filament_id)
-						if relion_category_dict['ctf'][idx_is_category_found]:
+						if relion_category_dict['ctf'][idx_is_category_found] or options.negative_stain:
 							sphire_cter_entry_list = []
 							for idx_sphire_ctf in range(n_idx_sphire_ctf):
 								sphire_cter_entry_list.append(sphire_cter_entry[idx_sphire_ctf])
@@ -1063,7 +1090,8 @@ def main():
 						assert os.path.exists(relion_local_stack_path)
 						n_img_relion_local_stack = EMUtil.get_image_count(relion_local_stack_path)
 						assert sphire_local_particle_id < n_img_relion_local_stack, '# Logical Error: The local particle ID must not exceed the number of images in the assocaited local particle stack.'
-						img_particles_dict = get_im(relion_local_stack_path, sphire_local_particle_id).get_attr_dict()
+						img_particle = get_im(relion_local_stack_path, sphire_local_particle_id)
+						img_particles_dict = img_particle.get_attr_dict()
 						
 						# NOTE: 2015/10/19 Toshio Moriya
 						# Store the extracted information into the image header
@@ -1084,12 +1112,13 @@ def main():
 						
 						if relion_category_dict['helical'][idx_is_category_found] == True:
 							img_particles_dict['filament'] = sphire_header['filament']
-						if relion_category_dict['ctf'][idx_is_category_found] == True:
+						if relion_category_dict['ctf'][idx_is_category_found] == True or options.negative_stain:
 							img_particles_dict['ctf'] = sphire_header['ctf']
 							img_particles_dict['ctf_applied'] = sphire_header['ctf_applied']
 							img_particles_dict['ptcl_source_apix'] = sphire_header['ptcl_source_apix'] # Store the original pixel size
 						if relion_category_dict['proj3d'][idx_is_category_found] == True:
-							img_particles_dict[img_particle] = sphire_header['xform.projection']
+							set_params_proj(img_particle, sphire_header['xform.projection'])
+							img_particles_dict['xform.projection'] = img_particle.get_attr('xform.projection')
 							# Add relion specific header entries
 							img_particles_dict['relion_max_prob_dist'] = sphire_header['relion_max_prob_dist']
 							img_particles_dict['relion_norm_correct'] = sphire_header['relion_norm_correct']

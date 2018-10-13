@@ -22,7 +22,7 @@ def alifn(jsd,fsp,i,a,options):
 	b.process_inplace("xform.phaseorigin.tocorner")
 
 	# we align backwards due to symmetry
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c1","sigmathis":0.1,"sigmato":0.1, "maxres":(1./options.filterto)*.8},1)
+	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c1","sigmathis":1,"sigmato":1, "maxres":(1./options.filterto)*.8},1)
 	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 	jsd.put((fsp,i,c[0]))
@@ -157,7 +157,7 @@ def main():
 			if options.fourier:
 				avgft=avg.do_fft()
 				refft=ref.do_fft()
-				avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":3})
+				avgft.process_inplace("mask.wedgefill",{"fillsource":refft, "thresh_sigma":1})
 
 				dmap=avgft-refft
 				refft=refft+learnrate*dmap

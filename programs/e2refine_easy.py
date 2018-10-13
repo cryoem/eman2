@@ -171,7 +171,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement[False]")
-	parser.add_argument("--focused", dest = "focused", default=None,help = "Specify a 3-D mask to apply to the volume before projection. Focuses refinement on a specific portion of the structure. Incompatible with symmetry.", guitype='filebox', row=29, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--focused", dest = "focused", default=None,help = "Highly experimental, and under development! Specify a 3-D mask. Not used for coarse alignment, but only for final 'fine tuning' and symmetrizing. With symmetry also use breaksym.", guitype='filebox', row=29, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--tophat", type=str, default=None,help = "'local' or 'global'. Instead of imposing a final Wiener filter, use a tophat filter (global similar to Relion). local determines local resolution and filters. danger of feature exaggeration", guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement['None']")
 	parser.add_argument("--nogoldfinal", action="store_true", default=False,help = "If selected, the final iteration will turn off gold-standard behavior and both halves will be refined from the same model. Normally used with --tophat=local.")
 	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.")
@@ -273,7 +273,8 @@ not need to specify any of the following other than the ones already listed abov
 #		else : options.simalign="rotate_translate_tree:flip=0"
 
 	if options.sym.lower() not in ("c1","i") and options.focused!=None and len(options.focused)>3 :
-		print("WARNING: when --focused is used with symmetry, symmetry is imposed after each iteration on the 3-D model, but projections are made for the entire (hemi)sphere, since the mask generally breaks the symmetry.")
+		print("WARNING: when --focused is used with symmetry, symmetry is imposed under the focused maskafter each iteration on the 3-D model, it is thus important that the focused mask take this into account and match the symmetry.")
+		if not options.breaksym : "WARNING: Stronly suggest using --breaksym when using --focused with symmetry imposed"
 
 	if options.m3dpreprocess==None:
 		if not options.m3dold : m3dpreprocess=""
@@ -782,41 +783,37 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		append_html("<p>* Generating 2-D projections of even/odd 3-D maps",True)
 		fspe="{path}/threed_{itrm1:02d}_even.hdf".format(path=options.path,itrm1=it-1)
 		fspo="{path}/threed_{itrm1:02d}_odd.hdf".format(path=options.path,itrm1=it-1)
-		# For focused mode we temporarily replace the volume with a masked version, then replace it when we're done
-		if options.focused:
-			projsym="c1"
+		projsym=options.sym
+		# For focused mode we make a separate set of masked projections (un-numbered) for use in final alignment
+		# these get overwritten in each iteration
+		if options.focused!=None:
 			fmask=EMData(options.focused)
 			omap=EMData(fspe)
-			os.rename(fspe,"tmp.hdf")
 			omap.mult(fmask)
-			omap.write_image(fspe,0)
-			# TODO = should really be making projections of the mask as well to use during comparison
-		else: projsym=options.sym
+			omap.write_image("{path}/tmp.hdf".format(path=options.path),0)
+			cmd = "e2project3d.py {path}/tmp.hdf  --outfile {path}/projections_masked_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
+				path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,verbose=verbose)
+			run(cmd)
+			
+			omap=EMData(fspo)
+			omap.mult(fmask)
+			omap.write_image("{path}/tmp.hdf".format(path=options.path),0)
+			cmd = "e2project3d.py {path}/tmp.hdf  --outfile {path}/projections_masked_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
+				path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,verbose=verbose)
+			run(cmd)
+			
+			omap=None
+			fmask=None
+			try: os.unlink("{path}/tmp.hdf".format(path=options.path))
+			except: pass
 			
 		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
 			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,verbose=verbose)
 		run(cmd)
 		
-		if options.focused:
-			# put the original even map back where it belongs
-			os.unlink(fspe)
-			os.rename("tmp.hdf",fspe)
-
-			# mask the odd map
-			omap=EMData(fspo)
-			os.rename(fspo,"tmp.hdf")
-			omap.mult(fmask)
-			omap.write_image(fspo,0)
-		
 		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
 			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,verbose=verbose)
 		run(cmd)
-		
-		if options.focused:
-			# finally, replace the original odd map
-			os.unlink(fspo)
-			os.rename("tmp.hdf",fspo)
-			
 		
 		progress += 1.0
 		E2progress(logid,old_div(progress,total_procs))
@@ -913,19 +910,23 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 #		if not options.bispec or classiter!=0 :
 		try:
 			append_html("<p>* Iteratively align and average all of the particles within each class, discarding the worst fraction</p>",True)
+			if options.focused : focused="--focused {path}/projections_even_masked.hdf".format(path=options.path)
+			else: focused =""
 			cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
 	-f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
-	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
+	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {focused} {verbose} {parallel}".format(
 				inputfile=cainput[0], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 				classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
-				classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
+				classralign=classralign, prefilt=prefilt,focused=focused, verbose=verbose, parallel=parallel)
 			run(cmd)
+			
+			if options.focused : focused="--focused {path}/projections_odd_masked.hdf".format(path=options.path)
 			cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
 	-f --resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
-	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
+	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {focused} {verbose} {parallel}".format(
 				inputfile=cainput[1], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 				classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
-				classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
+				classralign=classralign, prefilt=prefilt,focused=focused, verbose=verbose, parallel=parallel)
 			run(cmd)
 		except:
 			print("classaverage error")
@@ -990,6 +991,19 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 		run(cmd)
 		progress += 1.0
+		
+		### in focused mode we need to symmetrize under the mask
+		if options.focused!=None and options.sym.lower() not in ("c1","i") :
+			fmask=EMData(options.focused)
+			emap=EMData("{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it))
+			emap.mult(fmask)
+			emap.process_inplace("xform.applysym",{"sym":options.sym})
+			emap.write_image("{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it),0)
+
+			omap=EMData("{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it))
+			omap.mult(fmask)
+			omap.process_inplace("xform.applysym",{"sym":options.sym})
+			omap.write_image("{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it),0)
 
 		### postprocessing
 		append_html("""<p>* Finally, determine the resolution, filter and mask the even/odd maps, and then produce the final 3-D map for this iteration.

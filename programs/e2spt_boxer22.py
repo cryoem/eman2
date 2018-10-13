@@ -1139,7 +1139,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def show_set(self, name):
 		name=parse_setname(name)
 		self.sets_visible[name]=0
-		self.currentset=name
+		#self.currentset=name
 		self.wboxsize.setValue(self.get_boxsize())
 		if self.initialized: 
 			self.update_all()
@@ -1435,8 +1435,10 @@ class EMTomoSetsPanel(QtGui.QWidget):
 
 	def set_list_item_changed(self,item):
 		name=str(item.text())
-		if item.checkState() == Qt.Checked : self.target().show_set(name)
-		else: self.target().hide_set(name)
+		if item.checkState() == Qt.Checked : 
+			self.target().show_set(name)
+		else: 
+			self.target().hide_set(name)
 		
 
 	def delete_set(self,unused):

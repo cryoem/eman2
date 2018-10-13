@@ -181,6 +181,11 @@
         "CHILDREN": []
       },
       {
+        "PROGRAM": "e2spt_mapptclstotomo.py",
+        "NAME": "Map particles to tomograms",
+        "CHILDREN": []
+      },
+      {
         "NAME": "Extract from IMOD",
         "CHILDREN": [
           {

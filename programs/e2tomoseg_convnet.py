@@ -510,7 +510,7 @@ class StackedConvNet_tf(object):
 		session.run(self.iterator.initializer, feed_dict={self.data: data, self.label: label})
 		
 		
-	def save_network(self, fname, session, options):
+	def save_network(self, fname, session, options=None):
 		try: os.remove(fname)
 		except: pass
 		print("Saving the trained net to {}...".format(fname))
@@ -525,7 +525,8 @@ class StackedConvNet_tf(object):
 		hdr["imageshape"]=(self.batchsize,1,self.imgsz,self.imgsz)
 		hdr["amplitude"]=self.amplitude
 		hdr["meanout"]=self.meanout
-		hdr["trained_from"]=options.trainset
+		if options!=None:
+			hdr["trained_from"]=options.trainset
 		nlayer=len(self.kernels)
 
 
