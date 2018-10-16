@@ -423,7 +423,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 	from utilities    import    model_blank, get_params2D, same_ctf
 	from fundamentals import    rot_shift2D, fft
 	from copy import deepcopy
-	ERROR("This function was disabled as it does not treat astigmatism properly","sum_oe",1)
+	if CTF: ERROR("This function was disabled as it does not treat astigmatism properly","sum_oe",1)
 	n      = len(data)
 	if return_params: params_list = [None]*n
 	if CTF:
@@ -571,8 +571,8 @@ def ave_series(data, pave = True, mask = None):
 	for i in range(n):
 		alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
-		if mask: Util.mul_img(temp, mask)
 		Util.add_img(ave, temp)
+	if mask: Util.mul_img(ave, mask)
 	if pave:  Util.mul_scalar(ave, 1.0/float(n))
 	return ave
 
@@ -591,8 +591,8 @@ def ave_series_ctf(data, ctf2, mask = None):
 	for i in range(n):
 		alpha, sx, sy, mirror, scale = get_params2D(data[i])
 		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
-		if mask: Util.mul_img(temp, mask)
 		Util.add_img(ave, temp)
+	if mask: Util.mul_img(ave, mask)
 
 	return filt_table(ave, ctf2)
 
@@ -1268,8 +1268,7 @@ def ssnr2d(data, mask = None, mode=""):
 
 	return rssnr, rsumsq, rvar, ssnr, sumsq, var
 
-'''
-def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
+def ssnr2d_ctf(data, mask = None, mode="", dopa=False):
 	"""
 	Calculate ssnr and variance in Fourier space for 2D images including CTF information
 	If mode = "a" apply alignment parameters
@@ -1313,12 +1312,13 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ctf_params.dfang += alpha
 		if mask:  Util.mul_img(ima, mask)
 		if  dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
 		Util.add_img(sumsq, filt_ctf(ima, ctf_params, dopa))
 		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
-	print("   NEW ")
+	#print("   NEW ")
 
 	ave = Util.divn_filter(sumsq, ctf_2_sum)
 
@@ -1333,21 +1333,25 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ctf_params.dfang += alpha
 		if mask:  Util.mul_img(ima, mask)
 		if dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
-		"""
+
 		ima = ima-filt_ctf(ave, ctf_params, dopa)
 		Util.add_img2(var, ima)
-		"""
-		ima = filt_ctf(ima-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
+
+		#ima = filt_ctf(ima-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
 		#Util.div_filter(ima, ctf_2_sum)
-		Util.add_img2(var, ima)
+		#Util.add_img2(var, ima)
+
+	return  ave,var
 
 	"""
 	Util.mul_scalar(var, 1.0/float(n-1))
 	Util.mul_img(ave, ave)
 	ave *= n
+	"""
 	"""
 	Util.mul_img(sumsq, sumsq)
 	#sumsq  = fft(window2d(fft(sumsq),nx,ny))
@@ -1399,7 +1403,9 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		else:              ERROR("ssnr2d","rvar negative",1)
 		rssnr.append(qt)
 	return rssnr, rave, rvar, ssnr, sumsq, ave, tvar
+	"""
 
+'''
 def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 	"""
 	Calculate ssnr and variance in Fourier space for 2D images including CTF information
