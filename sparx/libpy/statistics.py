@@ -193,6 +193,7 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 			angle, sx, sy, mirror, scale = get_params2D(img)
 			img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 
 		img = pad(img, nx2, ny2, 1, background = "circumference")
 		fftip(img)
@@ -217,6 +218,7 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 			angle, sx, sy, mirror, scale = get_params2D(img)
 			img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 
 		img = pad(img, nx2, ny2, 1, background = "circumference")
 		fftip(img)
@@ -280,6 +282,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 				if mask:  Util.mul_img(ima, mask)
 				fftip(ima)
 				ctf_params.dfang += alpha
+				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
@@ -361,6 +364,7 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 				if mask:  Util.mul_img(ima, mask)
 				fftip(ima)
 				ctf_params.dfang += alpha
+				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 			else:
 				if  mask:   ima = fft(Util.muln_img(data[i], mask))
 				else:       ima = fft(data[i])
@@ -1114,6 +1118,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			oc = rot_shift2D(oc, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		Util.mul_scalar(oc, SNR)
 		Util.add_img(ave, oc)
 		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
@@ -1130,6 +1135,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		oc = filt_ctf(ave, ctf_params, dopad=False)
 		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
 		Util.add_img2(var, ima)
@@ -1172,6 +1178,7 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="line
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_rot.dfang += alpha
+			if mirror == 1:  ctf_rot.dfang = 270.0-ctf_rot.dfang
 
 		oc = filt_ctf(fft(ima), ctf_params, dopad=False)
 		Util.add_img(Ave, oc)
@@ -1313,6 +1320,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=False):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if mask:  Util.mul_img(ima, mask)
 		if  dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
@@ -1334,6 +1342,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=False):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if mask:  Util.mul_img(ima, mask)
 		if dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
@@ -1448,6 +1457,8 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if mask:  Util.mul_img(ima, mask)
 		fftip(ima)
 		oc = filt_ctf(ima, ctf_params)
@@ -1574,6 +1585,7 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if(mask): Util.mul_img(ima, mask)
 		if dopad:  ima = pad(ima, nx2, ny2, nz2, background = "circumference")
 		fftip(ima)
@@ -1629,6 +1641,7 @@ def varf2d(data, ave, mask = None, mode="a"):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
+			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if(mask): Util.mul_img(ima, mask)
 		oc = filt_ctf(ave, ctf_params, dopad=True)
 		#print i, "  changed  ctf  ",defocus,Util.infomask(oc, None, True)
@@ -1674,6 +1687,7 @@ def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node 
 				alpha, sx, sy, mirror, scale = get_params2D(data[i])
 				ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
 				ctf_params.dfang += alpha
+				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 			else:
 				ima = data[i].copy()
 			if(mask): Util.mul_img(ima, mask)
