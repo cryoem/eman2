@@ -138,7 +138,7 @@ def main():
 	###  probably still better to do the import.
 	for m in imgs: 
 		m.process_inplace("threshold.clampminmax.nsigma", {"nsigma":10})
-		m.process_inplace("normalize")
+		m.process_inplace("normalize.edgemean")
 	img=None
 	
 	options.apix_init=float(imgs[0]["apix_x"])
@@ -157,24 +157,25 @@ def main():
 	elif imgs[0]["nx"]<=4096:
 		#### 4k input
 		imgs_4k=imgs
-		imgs_2k=[img.process("math.meanshrink", {"n":2}).process("normalize") for img in imgs_4k]
+		imgs_2k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_4k]
 			
 	else:
 		#### even larger images.. hopefully 8k at most
 		bf=imgs[0]["nx"]//4096+1
-		imgs_4k=[img.process("math.meanshrink", {"n":bf}).process("normalize") for img in imgs]
-		imgs_2k=[img.process("math.meanshrink", {"n":2}).process("normalize") for img in imgs_4k]
+		imgs_4k=[img.process("math.meanshrink", {"n":bf}).process("normalize.edgemean") for img in imgs]
+		imgs_2k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_4k]
 		imgs=None
 			
-	imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize") for img in imgs_2k]
+	imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_2k]
 	
 	#### 500x500 images. this is used for the initial coarse alignment so we need to filter it a bit. 
 	imgs_500=[]
 	for p in imgs_1k:
 		m=p.process("math.meanshrink", {"n":2})
-		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":5})
+		m.process_inplace("filter.ramp")
 		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 		m.process_inplace("normalize.edgemean")
+		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":5})
 		m["apix_x"]=m["apix_y"]=p["apix_x"]*2.
 		imgs_500.append(m)
 
@@ -248,7 +249,8 @@ def main():
 		if options.writetmp:
 			for i,m in enumerate(img_tali):
 				m.write_image(options.tmppath+"tltseries_transali.hdf", i)
-
+		
+		#return
 		#### estimate initial tilt axis by common line
 		if options.tltax==None:
 			tltax=calc_tltax_rot(img_tali, options)
@@ -500,7 +502,8 @@ def calc_global_trans(imgs, options, excludes=[]):
 	rmsk=sz//3
 	e0=imgs[options.zeroid].copy()
 	e0.clip_inplace(Region(e0["nx"]//2-sz//2, e0["ny"]//2-sz//2, sz,sz))
-	e0.process_inplace("mask.gaussian",{"outer_radius":rmsk})
+	#e0.process_inplace("filter.highpass.gauss",{"cutoff_pixels":10})
+	e0.process_inplace("mask.soft",{"outer_radius":sz//4,"width":sz//10})
 	e0["xform.align2d"]=Transform()
 	imgout[options.zeroid]=e0
 
@@ -515,8 +518,9 @@ def calc_global_trans(imgs, options, excludes=[]):
 			e0=imgout[options.zeroid+i*dr]
 			e1=imgs[nid].copy()
 			lastx=pretrans[options.zeroid+i*dr]
+			e1.process_inplace("mask.soft",{"outer_radius":sz//4,"width":sz//10})
 			e1.clip_inplace(Region(e1["nx"]//2-sz//2-lastx[0], e1["ny"]//2-sz//2-lastx[1], sz,sz))
-			e1.process_inplace("mask.gaussian",{"outer_radius":rmsk})
+			#e1.process_inplace("filter.highpass.gauss",{"cutoff_pixels":10})
 
 			e1a=e1.align("translational", e0)
 			xf=e1a["xform.align2d"]
@@ -533,12 +537,13 @@ def calc_global_trans(imgs, options, excludes=[]):
 
 			xf.translate(lastx[0], lastx[1], 0)
 			
-			e1=imgs[nid].copy()
-			e1.transform(xf)
-			e1.clip_inplace(Region(old_div(e1["nx"],2)-old_div(sz,2), old_div(e1["ny"],2)-old_div(sz,2), sz,sz))
-			e1.process_inplace("mask.gaussian",{"outer_radius":rmsk})
+			#e1=imgs[nid].copy()
+			#e1.transform(xf)
+			#e1.clip_inplace(Region((e1["nx"]//2)-(sz//2), (e1["ny"]//2)-(sz//2), sz,sz))
+			##e1.process_inplace("filter.highpass.gauss",{"cutoff_pixels":10})
+			#e1.process_inplace("mask.soft",{"outer_radius":sz//4,"width":sz//10})
 
-			imgout[nid]=e1
+			imgout[nid]=e1a
 			ts=xf.get_trans()
 			if options.verbose: print("\t{:d}: {:.1f}, {:.1f}".format(nid, ts[0], ts[1]))
 			pretrans[nid, 0]=ts[0]
@@ -619,7 +624,8 @@ def make_tile(args):
 	
 	threed=recon.finish(True)
 	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
-	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
+	#threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
+	#threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 	jsd.put( [stepx, stepy, threed])
 	
 	return
@@ -676,8 +682,10 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		#pass
 	
 	
-	full3d=[EMData(outxy, outxy, outz) for i in [0,1]]
-	
+	#full3d=[EMData(outxy, outxy, outz) for i in [0,1]]
+	full3d=EMData(outxy, outxy, outz)
+	wt=full3d.copy()
+	wt.to_zero()
 	
 	jsd=queue.Queue(0)
 	jobs=[]
@@ -702,6 +710,11 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	print("now start threads...")
 	thrtolaunch=0
 	tsleep=threading.active_count()
+	msk=EMData(sz,sz,outz)
+	msk.to_one()
+	#msk.process_inplace("mask.soft",{"outer_radius":sz//4, "width":sz//6})
+	msk.process_inplace("mask.gaussian",{"outer_radius":sz//4})
+	msk.add(0.001)
 	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or jsd.empty()==False:
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads ) : time.sleep(.1)
@@ -711,20 +724,32 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		
 		if not jsd.empty():
 			stepx, stepy, threed=jsd.get()
+			threed.mult(msk)
 			#### insert the cubes to corresponding tomograms
-			full3d[stepx%2].insert_clip(
-				threed,
-				(int(stepx*step+outxy//2-threed["nx"]//2),
-				int(stepy*step+outxy//2-threed["nx"]//2), 
-				outz//2-threed["nz"]//2))
+			#full3d[stepx%2].insert_clip(
+				#threed,
+				#(int(stepx*step+outxy//2-sz//2),
+				#int(stepy*step+outxy//2-sz//2), 
+				#outz//2-threed["nz"]//2))
+				
+			full3d.insert_scaled_sum(
+				threed,(int(stepx*step+outxy//2),int(stepy*step+outxy//2), outz//2))
+				
+			
+			wt.insert_scaled_sum(msk,(int(stepx*step+outxy//2),
+				int(stepy*step+outxy//2), 
+				outz//2))
+				
 				
 	for t in thrds: t.join()
 	
 	#full3d[0].write_image("tmp00_full.hdf")
 	#full3d[1].write_image("tmp01_full.hdf")
-	
-	full3d=full3d[0]+full3d[1]
-	full3d.div(2)
+	#wt.write_image("tmp02_wt.hdf")
+	#wt.add(.01)
+	#full3d=full3d[0]+full3d[1]
+	full3d.div(wt)
+	full3d.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	full3d.process_inplace("normalize")
 	
 	#### skip the tomogram positioning step because there is some contrast difference at the boundary that sometimes breaks the algorithm...
@@ -909,7 +934,7 @@ def find_landmark(threed, options):
 		#np.random.shuffle(pts)
 		pts=pts[:options.npk]
 
-	pks=(np.array(pts)-old_div(np.array(mapnp.shape),2.))
+	pks=np.array(pts)-np.array(mapnp.shape)/2.
 	pks=pks[:,::-1]
 	#### mult 2 since we bin 2 in the begining.
 	scale=float(threed["apix_x"])/options.apix_init*2.
