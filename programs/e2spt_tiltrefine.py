@@ -168,6 +168,8 @@ def main():
 			if re.match("threed_[0-9][0-9].hdf",f):
 				itr = int(f[7:].split(".")[0])
 
+	print(oldpath)
+
 	# if itr == -1:
 	# 	itrs = []
 	# 	for f in sorted(os.listdir(path)):
@@ -178,9 +180,14 @@ def main():
 	# 				pass
 	# 	itr = max(itrs)
 
-	if not os.path.isfile("{}/threed_{:02d}.hdf".format(oldpath,itr)) or not os.path.isfile("{}/particle_parms_{:02d}.json".format(oldpath,itr)):
-		print("Could not locate one or both of the following files:\n{recpath}/threed_{iteration:02d}.hdf\n{recpath}/particle_parms_{iteration:02d}.json.\nExiting.".format(recpath=path,iteration=itr))
-		return
+	if not os.path.isfile("{}/threed_{:02d}.hdf".format(oldpath,itr)):
+		print("Could not locate {}/threed_{:02d}.hdf".format(oldpath,itr))
+		print("Please specify the iteration number (--iter) of a completed subtomogram refinement.")
+		sys.exit(1)
+	elif not os.path.isfile("{}/particle_parms_{:02d}.json".format(oldpath,itr)):
+		print("Could not locate {}/particle_parms_{:02d}.json".format(oldpath,itr))
+		print("Please specify the iteration number (--iter) of a completed subtomogram refinement.")
+		sys.exit(1)
 	else:
 		copy2("{}/0_spt_params.json".format(oldpath),"{}/0_subtlt_params.json".format(path))
 
