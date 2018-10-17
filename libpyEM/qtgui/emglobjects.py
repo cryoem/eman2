@@ -1166,12 +1166,8 @@ class Camera2(object):
 	Then call 'position' in your main OpenGL draw function before drawing anything.
 	
 	"""
-	scale_delta = QtCore.pyqtSignal(float)
-	apply_rotation = QtCore.pyqtSignal(float)
-	apply_translation = QtCore.pyqtSignal(float)
 
 	def __init__(self,parent):
-		self.emit_events = False
 		# The magnification factor influences how the scale (zoom) is altered when a zoom event is received.
 		# The equation is scale *= mag_factor or scale /= mag_factor, depending on the event.
 		self.parent=weakref.ref(parent)
@@ -1195,15 +1191,6 @@ class Camera2(object):
 		self.allow_translations = True
 		self.allow_phi_rotations = True
 
-	
-	def enable_emit_events(self,val=True):
-		#print "set emit events to",val
-		self.emit_events = val
-	def is_emitting(self): return self.emit_events	
-		
-	def get_emit_signals_and_connections(self):
-		return  {"apply_rotation":self.apply_rotation,"apply_translation":self.apply_translation,"scale_delta":self.scale_delta}
-		
 	def set_plane(self,plane='xy'):
 		'''
 		plane should by xy,yx,xz,zx,yz, or zy. It should also be a string
@@ -1269,10 +1256,6 @@ class Camera2(object):
 			print("Camera scale ",self.scale)
 		# here is where zoom is applied
 		glScale(self.scale,self.scale,self.scale)
-		
-	def scale_event(self,delta):
-		self.scale_delta(delta)
-		if self.emit_events:self.parent().scale_delta.emit(delta)
 		
 	def scale_delta(self,delta):
 		if delta > 0:
@@ -1356,9 +1339,6 @@ class Camera2(object):
 			quaternion["n3"] = rotaxis_z
 			quaternion["type"] = "spin"
 			t3d.set_params(quaternion)
-			if self.emit_events: 
-				self.parent().apply_rotation.emit(t3d)
-			
 			self.t3d_stack[-1] = t3d*self.t3d_stack[-1]
 		else :
 			# if az is fixed then we rotate in alt/az space, not with quaternions
@@ -1369,8 +1349,6 @@ class Camera2(object):
 			p["az"]  = p["az"] -  old_div(fac*x,self.motiondull)*pi
 			p["phi"] = 180.0
 			t3d.set_params(p)
-			
-			if self.emit_events: print("Warning: no events emitted in fixed phi mode")
 		
 		#if not self.allow_phi_rotations:
 			#p = t3d.get_params("eman")
@@ -1455,7 +1433,7 @@ class Camera2(object):
 				return False
 			
 	def wheelEvent(self, event):
-		self.scale_event(event.delta())
+		self.scale_delta(event.delta())
 		return True
 	
 	def motion_translate_z_only(self,prev_x,prev_y,event):
@@ -1469,10 +1447,6 @@ class Camera2(object):
 		if dy > 0: d = -d 
 		self.cam_z += d
 		v = (0,0,d)
-			
-		if self.emit_events: 
-			#print "emitting applyt translation"
-			self.parent().apply_translation.emit(v)
 	
 	def motion_translateLA(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
@@ -1514,18 +1488,12 @@ class Camera2(object):
 			self.cam_y += dy
 			self.cam_z += dx
 			v = (0,dy,dx)
-			
-		if self.emit_events: 
-			#print "emitting applyt translation"
-			self.parent().apply_translation.emit(v)
 	
 	def explicit_translate(self,x,y,z):
 		
 		self.cam_x += x
 		self.cam_y += y
 		self.cam_z += z
-		
-		if self.emit_events: self.parent().apply_translation.emit((x,y,z))
 			
 	def apply_translation(self,v):
 		self.cam_x += v[0]
@@ -2035,7 +2003,6 @@ class EM3DModel(QtCore.QObject):
 		self.gl_widget = weakref.ref(gl_widget)	#A GL context must exist before OpenGL statements are used, so the constructor requires this.
 		
 		#TODO: Figure out which of these is needed
-		self.emit_events = False
 		self.disable_inspector = False
 		
 		self.blendflags = EMOpenGLFlagsAndTools()
@@ -2101,8 +2068,7 @@ class EM3DModel(QtCore.QObject):
 	def get_current_transform(self):
 		size = len(self.cam.t3d_stack)
 		return self.cam.t3d_stack[size-1]
-	def get_emit_signals_and_connections(self):
-		return {}
+
 	def get_gl_context_parent(self): 
 		return self.gl_widget()
 	def get_gl_widget(self):
