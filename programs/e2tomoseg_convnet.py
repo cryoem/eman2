@@ -58,7 +58,7 @@ def main():
 	#parser.add_argument("--weightdecay", type=float,help="Weight decay. Used for regularization.", default=1e-6, guitype='floatbox', row=7, col=1, rowspan=1, colspan=1, mode="train")
 	parser.add_argument("--trainout", action="store_true", default=False ,help="Output the result of the training set", guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode='train[True]')
 	parser.add_argument("--training", action="store_true", default=False ,help="Doing training", guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='train[True]')
-	parser.add_argument("--tomograms", type=str,help="Tomograms input.", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True, startpath='tomograms')", row=1, col=0, rowspan=1, colspan=3, mode="test")
+	parser.add_argument("--tomograms", type=str,help="Tomograms input.", default=None,guitype='filebox',browser="EMBrowserWidget(withmodal=True, startpath='tomograms', multiselect=True)", row=1, col=0, rowspan=1, colspan=3, mode="test")
 	parser.add_argument("--applying", action="store_true", default=False ,help="Applying the neural network on tomograms", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='test[True]')
 	#parser.add_argument("--dream", action="store_true", default=False ,help="Iterativly applying the neural network on noise")
 	#parser.add_argument("--to3d", action="store_true", default=True ,help="convert to result to 3D.", guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='test')
@@ -86,17 +86,21 @@ def main():
 		try: os.mkdir(dirname)
 		except: pass
 	
-		bn=base_name(options.tomograms)
-		if options.outtag=="":	
-			nn=options.nnet
-			nn=nn[nn.rfind("__")+2:-4]
-			outname="segmentations/{}__{}_seg.hdf".format(bn, nn)
-		else:
-			outname="segmentations/{}__{}.hdf".format(bn, options.outtag)
-			
-		print("Output segmentation will be written to {}...".format(outname))
-		segout=apply_neuralnet(options)
-		segout.write_image(outname)
+		tomos=options.tomograms.split(',')
+		
+		for tm in tomos:
+			print("Starting on {}...".format(tm))
+			bn=base_name(tm)
+			if options.outtag=="":	
+				nn=options.nnet
+				nn=nn[nn.rfind("__")+2:-4]
+				outname="segmentations/{}__{}_seg.hdf".format(bn, nn)
+			else:
+				outname="segmentations/{}__{}.hdf".format(bn, options.outtag)
+				
+			print("Output segmentation will be written to {}...".format(outname))
+			segout=apply_neuralnet(options, tm)
+			segout.write_image(outname)
 		print("Done.")
 		print("Total time: ", time.time()-time00)
 	
@@ -181,14 +185,16 @@ def run(cmd):
 	launch_childprocess(cmd)
 
 	
-def apply_neuralnet(options):
+def apply_neuralnet(options, tomogram=None):
 	
+	if tomogram==None:
+		tomogram=options.tomograms
 	tt0=time.time()
 	
-	nframe=EMUtil.get_image_count(options.tomograms)
+	nframe=EMUtil.get_image_count(tomogram)
 	is3d=False
 	### deal with 3D volume or image stack
-	e=EMData(options.tomograms, 0, True)
+	e=EMData(tomogram, 0, True)
 	apix=e["apix_x"]
 	if nframe==1:
 		nframe=e["nz"]
@@ -202,7 +208,7 @@ def apply_neuralnet(options):
 	shape=[enx,eny]
 	
 	output=EMData(enx,eny, nframe)
-	output["tomogram_src"]=options.tomograms
+	output["tomogram_src"]=tomogram
 	output["nnet_src"]=options.from_trained
 	output["apix_x"]=apix
 	output["apix_y"]=apix
@@ -262,9 +268,9 @@ def apply_neuralnet(options):
 	tomo_in=[]
 	for nf in range(nframe):
 		if is3d:
-			e0=EMData(options.tomograms, 0, False, Region(0,0,nf,enx,eny,1))
+			e0=EMData(tomogram, 0, False, Region(0,0,nf,enx,eny,1))
 		else:
-			e0=EMData(options.tomograms, nf, False, Region(0,0,enx,eny))
+			e0=EMData(tomogram, nf, False, Region(0,0,enx,eny))
 		tomo_in.append(e0)
 	
 	#####################
