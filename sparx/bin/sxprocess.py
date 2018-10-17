@@ -1189,11 +1189,11 @@ def main():
 
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
-					log_main.add("Options.mask_threshold, options.dilation, options.consine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.consine_edge))
+					log_main.add("Options.mask_threshold, options.dilation, options.cosine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.cosine_edge))
 					if single_map:
-						m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.consine_edge)
+						m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.cosine_edge)
 					else:
-						m = Util.adaptive_mask((map1+map2)/2.0, options.mask_threshold, options.dilation, options.consine_edge)
+						m = Util.adaptive_mask((map1+map2)/2.0, options.mask_threshold, options.dilation, options.cosine_edge)
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 				else:
 					m = None
@@ -1574,7 +1574,7 @@ def main():
 				log_main.add("---------- >>> Summary <<<------------")
 				if not single_map:
 					log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
-					if dip_at_fsc: log_main.add("There is a dip in the fsc curve in the region between 0.5 and 0.143, and you might consider ploting your fsc curve")
+					if dip_at_fsc: log_main.add("There is a dip in the fsc curve in the region between 0.5 and 0.143, and you might cosider ploting your fsc curve")
 				if options.B_enhance !=-1:  log_main.add( "B-factor is %6.2f[A^2]"%(round((-global_b),2)))
 				else:log_main.add( "B-factor is not applied")
 				if not single_map:
