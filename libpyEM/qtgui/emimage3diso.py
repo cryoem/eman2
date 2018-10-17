@@ -92,9 +92,6 @@ class EMIsosurfaceModel(EM3DModel):
 	def get_type(self):
 		return "Isosurface"
 	
-	def get_emit_signals_and_connections(self):
-		return {"set_threshold":self.set_threshold}
-	
 	def update_data_and_texture(self):
 		
 		self.data_copy = self.data.copy()
@@ -309,7 +306,6 @@ class EMIsosurfaceModel(EM3DModel):
 				self.update_data_and_texture()
 			self.get_iso_dl()
 		
-			if self.emit_events: self.set_threshold.emit(val)
 			self.updateGL()
 	
 	def set_sample(self,val):
