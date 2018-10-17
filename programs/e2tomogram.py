@@ -714,7 +714,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	msk.to_one()
 	#msk.process_inplace("mask.soft",{"outer_radius":sz//4, "width":sz//6})
 	msk.process_inplace("mask.gaussian",{"outer_radius":sz//4})
-	msk.add(0.001)
+	msk.add(0.1)
 	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or jsd.empty()==False:
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads ) : time.sleep(.1)
