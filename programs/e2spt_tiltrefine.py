@@ -113,31 +113,35 @@ def main():
 	#parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
 	#parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=1, col=1, rowspan=1, colspan=1)
 
-	parser.add_argument("--path", type=str,help="path", default=None, guitype='strbox',row=2, col=0,rowspan=1, colspan=1)
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=2, col=2,rowspan=1, colspan=1)
-	parser.add_argument("--niters", type=int,help="run this many iterations. Default is 1.", default=1, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--path", type=str,help="path", default=None, guitype='strbox',row=0, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--iter", type=int,help="start from iteration X", default=-1, guitype='intbox',row=0, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--niters", type=int,help="run this many iterations. Default is 4.", default=4, guitype='intbox',row=0, col=2,rowspan=1, colspan=1)
 
-	parser.add_argument("--padby", type=float,help="pad by factor. default is 2", default=2., guitype='floatbox',row=3, col=0,rowspan=1, colspan=1)
-	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.5", default=0.5, guitype='floatbox',row=3, col=1,rowspan=1, colspan=1)
-	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=3, col=2,rowspan=1, colspan=1)
-	
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=1, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--padby", type=float,help="pad by factor. default is 2", default=2., guitype='floatbox',row=1, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.5", default=0.5, guitype='floatbox',row=1, col=2,rowspan=1, colspan=1)
+
+	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=2, col=0,rowspan=1, colspan=1)	
+	#parser.add_argument("--fromlast", action="store_true", default=False ,help="continue from a previous tilt refine", guitype='boolbox',row=2, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--nogs", action="store_true", default=False ,help="skip gold standard...", guitype='boolbox',row=2, col=1,rowspan=1, colspan=1)
+
+	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="build sets only")
+	parser.add_argument("--output", type=str,help="Write results to this directory. We do not recommend changing this.", default="subtlt")#, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
+
 	parser.add_argument("--refineastep", type=float,help="angular step for refine alignment (gauss std)", default=10.)
 	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=32)
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=10)
 
-	#parser.add_argument("--dopostp", action="store_true", default=False ,help="Do post processing routine", guitype='boolbox',row=4, col=0,rowspan=1, colspan=1)
-	parser.add_argument("--nogs", action="store_true", default=False ,help="skip gold standard...", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
-	#parser.add_argument("--unmask", action="store_true", default=False ,help="use unmasked map as references", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
-	parser.add_argument("--parallel", type=str,help="thread/mpi", default="thread:12", guitype='strbox',row=4, col=2,rowspan=1, colspan=1)
-	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=5, col=0,rowspan=1, colspan=1)
 
-	parser.add_argument("--fromlast", action="store_true", default=False ,help="continue from a previous tilt refine", guitype='boolbox',row=5, col=0,rowspan=1, colspan=1)
-	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="build sets only")
-	parser.add_argument("--iter", type=int,help="start from iteration X", default=-1)#, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
-	parser.add_argument("--output", type=str,help="Write results to this directory.", default="subtlt")#, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--threads", type=int,help="Number of CPU threads to use. Default is 12.", default=12, guitype='intbox',row=2, col=2,rowspan=1, colspan=1)
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12", guitype='strbox',row=4, col=0,rowspan=1, colspan=3)
+
 
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data (threads * 8 particles)")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
+
+	#parser.add_argument("--dopostp", action="store_true", default=False ,help="Do post processing routine", guitype='boolbox',row=4, col=0,rowspan=1, colspan=1)
+	#parser.add_argument("--unmask", action="store_true", default=False ,help="use unmasked map as references", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
