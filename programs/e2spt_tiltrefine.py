@@ -47,71 +47,10 @@ def alifn(jsd,ii, info,a,options):
 	
 	jsd.put((ii,c))
 
-#def split_xf(xf):
-	#dc=xf.get_params('eman')
-	#xf3d=Transform({"type":"eman","alt":dc["alt"], "az":dc["az"]})
-	
-	#xf2d=Transform({"type":"2d","alpha":dc["phi"], "tx":dc["tx"], "ty":dc["ty"]})
-	#return xf3d, xf2d
-
-#def merge_xf(xf3d, xf2d):
-	#dc2=xf2d.get_params('eman')
-	#dc3=xf3d.get_params('eman')
-	#xf=Transform({"type":"eman","alt":dc3["alt"], "az":dc3["az"], "phi":dc2["phi"], "tx":dc2["tx"], "ty":dc2["ty"]})
-	
-	#return xf
-
-#def refine_ali(ids, pinfo, m, jsd, options):
-	#sz=m["nx"]
-	#for ii in ids:
-		#l=pinfo[ii]
-		#e=EMData(l[1], l[0])
-		#b=e["nx"]
-		#e=e.get_clip(Region(old_div((b-sz),2), old_div((b-sz),2), sz,sz)).process("normalize")
-		#dc=eval(l[2])
-		#try:
-			#dc.pop('score')
-		#except:
-			#pass
-		
-		#xf=Transform(dc)
-		#pj=m.project("standard", xf).process("normalize.edgemean")
-		
-		##### do snr weighting if ctf info present
-		#if e.has_attr("ctf"):
-			#ctf=e["ctf"]
-			#ctf.bfactor=500 #### use a fixed b factor for now...
-			#ctf.dsbg=old_div(1.,(e["apix_x"]*e["nx"]))
-			#s=np.array(ctf.compute_1d(e["nx"], ctf.dsbg, Ctf.CtfType.CTF_INTEN ))
-			#s[:np.argmax(s)]=np.max(s)
-			#s=np.maximum(s, 0.001)
-			#ctf.snr=s.tolist()
-			#e["ctf"]=ctf
-			#eali=e.align("refine", pj, {"maxshift":8, "maxiter":50}, "frc", {"snrweight":1, "maxres":options.maxres, "minres":500})
-		#else:
-			##print("missing ctf...")
-			#eali=e.align("refine", pj, {"maxshift":8, "maxiter":50}, "frc", {"minres":500, "maxres":options.maxres})
-		#al=eali["xform.align2d"]
-		
-		#x0,x1=split_xf(xf)
-		#x1=al.inverse()*x1
-		#xf1=merge_xf(x0, x1)
-	
-
-
-		#scr=eali.cmp("frc", pj, {"maxres":options.maxres})
-		#dc=xf1.get_params("eman")
-		#dc["score"]=float(scr)
-		#jsd.put((ii, dc))
-
-
 def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-
-	#parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="model")
-	#parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=1, col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--path", type=str,help="path", default=None, guitype='strbox',row=0, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--iter", type=int,help="start from iteration X", default=-1, guitype='intbox',row=0, col=1,rowspan=1, colspan=1)
@@ -122,7 +61,6 @@ def main():
 	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.5", default=0.5, guitype='floatbox',row=1, col=2,rowspan=1, colspan=1)
 
 	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=2, col=0,rowspan=1, colspan=1)	
-	#parser.add_argument("--fromlast", action="store_true", default=False ,help="continue from a previous tilt refine", guitype='boolbox',row=2, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--nogs", action="store_true", default=False ,help="skip gold standard...", guitype='boolbox',row=2, col=1,rowspan=1, colspan=1)
 
 	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="build sets only")
@@ -132,16 +70,11 @@ def main():
 	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=32)
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=10)
 
-
 	parser.add_argument("--threads", type=int,help="Number of CPU threads to use. Default is 12.", default=12, guitype='intbox',row=2, col=2,rowspan=1, colspan=1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12", guitype='strbox',row=4, col=0,rowspan=1, colspan=3)
 
-
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data (threads * 8 particles)")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
-
-	#parser.add_argument("--dopostp", action="store_true", default=False ,help="Do post processing routine", guitype='boolbox',row=4, col=0,rowspan=1, colspan=1)
-	#parser.add_argument("--unmask", action="store_true", default=False ,help="use unmasked map as references", guitype='boolbox',row=4, col=1,rowspan=1, colspan=1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -169,16 +102,6 @@ def main():
 				itr = int(f[7:].split(".")[0])
 
 	print(oldpath)
-
-	# if itr == -1:
-	# 	itrs = []
-	# 	for f in sorted(os.listdir(path)):
-	# 		if "threed_" in f:
-	# 			try: 
-	# 				itrs.append(int(f.split("_")[-1].split(".")[0]))
-	# 			except: 
-	# 				pass
-	# 	itr = max(itrs)
 
 	if not os.path.isfile("{}/threed_{:02d}.hdf".format(oldpath,itr)):
 		print("Could not locate {}/threed_{:02d}.hdf".format(oldpath,itr))
@@ -233,11 +156,6 @@ def main():
 	apix=e["apix_x"]
 	print("loading 3D particles from {}".format(src))
 	print("box size {}, apix {:.2f}".format(bxsz, apix))
-	#fscs=[os.path.join(path,f) for f in os.listdir(path) if f.startswith("fsc") and f.endswith("{:02d}.txt".format(itr))]
-	#for f in fscs:
-		#os.rename(f, f[:-4]+"_raw.txt")
-	#for eo in ["", "_even", "_odd"]:
-		#os.rename("{}/threed_{:02d}{}.hdf".format(path, itr, eo), "{}/threed_{:02d}_raw{}.hdf".format(path, itr, eo))
 
 	lname=[os.path.join(path, "ali_ptcls_00_{}.lst".format(eo)) for eo in ["even", "odd"]]
 	for l in lname:
@@ -267,17 +185,9 @@ def main():
 		l.close()
 	js=None
 
-	if options.buildsetonly:
-		return
-
-	e=EMData(os.path.join(path,"threed_00.hdf"))
-	bxsz=e["nx"]
-	apix=e["apix_x"]
-	print("Box size {}, apix {:.2f}".format(bxsz, apix))
-	
+	if options.buildsetonly: return
 
 	for itr in range(0,options.niters):
-
 
 		from EMAN2PAR import EMTaskCustomer
 
@@ -470,9 +380,7 @@ class SptTltRefineTask(JSTask):
 		callback(100)
 			
 		return rets
-		
-	
+
 	
 if __name__ == '__main__':
 	main()
-
