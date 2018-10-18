@@ -257,8 +257,8 @@ not need to specify any of the following other than the ones already listed abov
 			print("Note: automatically setting --threads:{}".format(options.threads))
 		else: print("WARNING: specifying --threads=<N> (where N is the number of cores to use on a single processor) is strongly recommended, even if already specifying --parallel")
 
-	if options.input!=None and options.model!=None and options.startfrom!=None:
-		print("ERROR : You may specify --input and --model  OR  --startfrom, not both")
+	if options.model!=None and options.startfrom!=None:
+		print("ERROR : You may specify --model  OR  --startfrom, not both")
 		sys.exit(1)
 
 	if (options.input==None or options.model==None) and options.startfrom==None :
@@ -356,7 +356,8 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 			olddb = js_open_dict(options.startfrom+"/0_refine_parms.json")
 			run("e2proc3d.py {oldeven} {path}/threed_00_even.hdf".format(oldeven=olddb["last_even"],path=options.path))
 			run("e2proc3d.py {oldodd} {path}/threed_00_odd.hdf".format(  oldodd =olddb["last_odd"] ,path=options.path))
-			options.input=(str(olddb["input"][0]),str(olddb["input"][1]))
+			if options.input==None: options.input=(str(olddb["input"][0]),str(olddb["input"][1]))
+			else: append_html("<p>Using --startfrom, but --input also specified, so overriding --input found in previous refine_xx folder.</p>")
 			append_html("<p>Using {oldeven} {oldodd} as starting models without additional randomizing. Input particles are from {infile}</p>".format(oldeven=olddb["last_even"],oldodd=["last_odd"],infile=options.input))
 
 		except:
