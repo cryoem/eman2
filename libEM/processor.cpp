@@ -2001,6 +2001,7 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 	float cy = params.set_default("cy",ny/2);
 	float zmin = params.set_default("zmin",0);
 	float zmax = params.set_default("zmax",nz);
+	float ztri = params.set_default("ztriangle",0.0f);
 	float inner_radius = params.set_default("inner_radius",0.0f);
 	float outer_radius = params.set_default("outer_radius",nx+ny);
 
@@ -2020,8 +2021,10 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 			if (r==0 && inner_radius<=0)  val=1.0;
 
 			for (int z=0; z<nz; z++) {
-				if (z<zmin || z>zmax) image->mult_value_at_fast(x,y,z,0);
-				image->mult_value_at_fast(x,y,z,val);
+				if (z<zmin-ztri || z>zmax+ztri) image->mult_value_at_fast(x,y,z,0);
+				else if (z>=zmin+ztri && z<=zmax-ztri) image->mult_value_at_fast(x,y,z,val);
+				else if (z>=zmin-ztri && z<=zmin+ztri) image->mult_value_at_fast(x,y,z,val*((z-zmin)/(2.0f*ztri)+0.5));
+				else image->mult_value_at_fast(x,y,z,val*((zmax-z)/(2.0f*ztri)+0.5));
 			}
 		}
 	}

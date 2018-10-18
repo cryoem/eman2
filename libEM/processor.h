@@ -3437,6 +3437,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("cy", EMObject::FLOAT,"Mask Y center. Default ny/2");
 			d.put("zmin", EMObject::FLOAT,"Minimum Z to include");
 			d.put("zmax", EMObject::FLOAT,"Maximum Z to include");
+			d.put("ztriangle", EMObject::FLOAT,"1/2 width in pixels of linear falloff in Z margin. Centered on specified zmin/zmax.");
 			d.put("inner_radius", EMObject::INT, "inner mask radius. optional. Default 0");
 			d.put("outer_radius", EMObject::INT, "outer mask radius. optional. Default nx+ny. Negative value -> box radius + outer_radius +1");
 

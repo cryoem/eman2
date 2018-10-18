@@ -41,24 +41,31 @@ import random
 import time
 import string
 import math
+import queue
 from os import system
 from os import unlink
 from sys import argv
 import traceback
 from EMAN2 import *
 from numpy import arange
-from time import time
 
-def monoextract(jsd,cls,threed,mask,subunitmask,ptclmask,outermask,symxfs,eulers,cptcl,cmxtx,cmxty,cmxalpha,cmxmirror,domask,verbose):
+def monoextract(jsd,cls,threed,nptcl,mask,subunitmask,outermask,symxfs,eulers,cptcl,classmx,cmxtx,cmxty,cmxalpha,cmxmirror,domask,newbox,verbose):
 	# for a single class-average, subtract away a projection of the reference with the exclusion mask in
 	# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
-	if verbose>1 : print("--- Class %d"%cls)
+	# subunitmask - when applied, includes only the density for the subunit to be extracted
+	# mask - when applied, includes everything inside the normal 3-D whole model mask EXCEPT the subunit to be extracted
+	# ptclmask - 
+	if verbose : print("--- Class %d"%cls)
 	ret=[]
 
-	# The first projection is unmasked, used for scaling
 	# We regenerate the masked volumes for each class to avoid using too much RAM
+
+	# Projection of the full, unmasked 3-D reference
+	# followed by projections excluding the subunit to be retained in each symmetry-based orientation
 	projs=[threed.project("standard",{"transform":eulers[cls]})]
+	
+	# 2-D masks to be applied to the subparticles after subtraction
 	projmask=[]
 	for xf in symxfs:
 		maskx=mask.process("xform",{"transform":xf})
@@ -66,6 +73,9 @@ def monoextract(jsd,cls,threed,mask,subunitmask,ptclmask,outermask,symxfs,eulers
 		masked.mult(maskx)
 		projs.append(masked.project("standard",{"transform":eulers[cls]}))
 
+		# these are the projection masks. There is one less of these since we don't have one for the unmasked ref volume
+		# These include any region in 2-D which might conceivably contain subunit information
+		# we need this for centering even if we don't apply the final mask
 		if outermask!=None:
 			omaskx=outermask.process("xform",{"transform":xf})
 #				projmask.append(omaskx.project("standard",{"transform":eulers[cls]}))
@@ -74,22 +84,19 @@ def monoextract(jsd,cls,threed,mask,subunitmask,ptclmask,outermask,symxfs,eulers
 			omaskx=subunitmask.process("xform",{"transform":xf})
 			projmask.append(omaskx.project("standard",{"transform":eulers[cls]}).process("threshold.binary",{"value":0.01}))
 		
-		
-#		projmask=ptclmask.project("standard",eulers[cls])		# projection of the 3-D mask for the reference volume to apply to particles
-#		proj.process_inplace("normalize.circlemean")
-#		proj.mult(softmask)
-
+	if verbose : print("--- Class %d masks prepared"%cls)
+	
 	for eo in range(2):
 		for j in range(nptcl[eo]):
-			#if classmx[eo][0,j]!=i : 
+			if classmx[eo][0,j]!=cls : 
 				#if options.debug: print("XXX {}\t{}\t{}\t{}".format(cls,("even","odd")[eo],j,classmx[eo][0,j]))
-				#continue		# only proceed if the particle is in this class
-			if verbose: print("{}\t{}\t{}".format(cls,("even","odd")[eo],j))
+				continue		# only proceed if the particle is in this class
+			if verbose>1: print("{}\t{}\t{}".format(cls,("even","odd")[eo],j))
 
 			ptcl=EMData(cptcl[eo],j)
 #				ptcl.write_image(options.output,-1)
-			lowth=ptcl["mean"]-ptcl["sigma"]*3.0
-			highth=ptcl["mean"]+ptcl["sigma"]*3.0
+			#lowth=ptcl["mean"]-ptcl["sigma"]*3.0
+			#highth=ptcl["mean"]+ptcl["sigma"]*3.0
 
 			# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 			ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
@@ -97,34 +104,17 @@ def monoextract(jsd,cls,threed,mask,subunitmask,ptclmask,outermask,symxfs,eulers
 			projm=[im.process("xform",{"transform":ptclxf}) for im in projmask]
 			maskctr=[j.calc_center_of_mass(0.5) for j in projm]
 
-			# debugging
-			#for ii,p in enumerate(projm):
-				#p["com"]=maskctr[ii]
-				#p.write_image("prjm.hdf",-1)
-
-			if domask : 
-				zmsk=projc[0].process("threshold.binary",{"value":0.01})
-				
-				#projmaskc=projmask.process("xform",{"transform":ptclxf})
-				#ptcl.mult(projmaskc)
-				#for pr in projc: pr.mult(projmaskc)
-#				projmaskc.process_inplace("threshold.notzero")
-
-			#ptcl.write_image("tst.hdf",0)
-			#projc[0].write_image("tst.hdf",1)
-
 			# now subtract the masked versions processed using the scaling/normalization
 			# we got from the whole/unmasked particle
 			for k,pr in enumerate(projc[1:]):
-				if domask : ptcl.mult(zmsk)
 				ptcl3=ptcl.process("math.sub.optimal",{"ref":projc[0],"actual":pr})
-				if options.outermask!=None :
+				if domask :
 					ptcl3.mult(projm[k])
 #					projm[k].write_image(options.output,-1)
 #					ptcl3.write_image(options.output,-1)
 				ptcl3.translate(-maskctr[k][0]+ptcl3["nx"]//2,-maskctr[k][1]+ptcl3["ny"]//2,0)
-				if options.newbox>3 : 
-					ptcl4=ptcl3.get_clip(Region((ptcl3["nx"]-options.newbox)//2,(ptcl3["ny"]-options.newbox)//2,options.newbox,options.newbox))
+				if newbox>3 : 
+					ptcl4=ptcl3.get_clip(Region((ptcl3["nx"]-newbox)//2,(ptcl3["ny"]-newbox)//2,newbox,newbox))
 					ret.append(ptcl4)
 				else: ret.append(ptcl3)
 #					print ptcl.cmp("optsub",projc[0])
@@ -134,6 +124,9 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <refine_xx folder> <iteration number>
 
+WARNING - particularly with a lot of threads and larger box-sizes, this program can eat a LOT of RAM. Try running on a small number of threads 
+briefly, and monitor memory usage before ramping up to the full number of available threads.
+
 This program modifies raw particle data to subtract-away undesired portions of the density on a per-particle basis.
 For example, one could take GroEL particles with D7 symmetry and extract the top and bottom heptamers as separate
 particles for reconstruction. In this example there would be 2x as many output particles as input particles. The
@@ -142,13 +135,16 @@ possible, taking CTF, normalization and other factors into account.
 
 To use this program you should first run a complete refinement to the best possible resolution. Refinement parameters
 will be examined automatically to extract the corresponding particles and projections.
+
+Since each input particle may possibly become multiple output particles (with --sym), no relationship to the original micrographs
+is maintained, and a single output stack is generated by this program.
 """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--output",type=str,default="sets/subparticles.hdf",help="Specify output filename, which will contain nptcl*sym particles. Default=sets/subparticles.hdf")
-	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.")
-	parser.add_argument("--subunitmask",type=str,default=None,help = "Specify a 3-D mask containing the region to extract from each particle. Required.")
-	parser.add_argument("--outermask",type=str,default=None,help = "A 3-D mask larger than subunitmask, containing the zone to be included in each subtracted particle")
-	parser.add_argument("--masked",action="store_true",default=False,help="If specified, each particle will be masked based on the projection mask.")
+	parser.add_argument("--output",type=str,default=None,help="Specify output filename, which will contain nptcl*sym particles. Default=sets/subptcl_<refine>_<iter>.hdf")
+	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos. If specified each input 'particle' will become N extracted subparticles.")
+	parser.add_argument("--subunitmask",type=str,default=None,help = "Required. When applied to the 3-D volume, this mask contains the subunit being extracted. 'soft' edges are permitted")
+	parser.add_argument("--outermask",type=str,default=None,help = "Optional. If specified, this mask is projected into 2-D and used to mask out noise outside the subunit. If not specified a thresholded subunitmask is used. Only useful with --masked. ")
+	parser.add_argument("--masked",action="store_true",default=False,help="If specified, each output subparticle will be masked based on the projection mask. Recommended.")
 	parser.add_argument("--newbox", type=int, help="New box size for extracted regions",default=-1)
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -165,8 +161,12 @@ will be examined automatically to extract the corresponding particles and projec
 		sys.exit(1)
 
 	if options.subunitmask==None : 
-		print("The --subunitmask option is now required. Please see --help.")
+		print("The --subunitmask option is required. Please see --help.")
 		sys.exit(1)
+
+	if options.output==None:
+		options.output="sets/subptcl_{}_{}.hdf".format(args[0].split("_")[-1],args[1])
+	outlst="sets/subptcl_{}_{}.lst".format(args[0].split("_")[-1],args[1])
 
 	# each of these classmx variables becomes a 2 element list with even and odd particles respectively
 	try:
@@ -204,14 +204,21 @@ will be examined automatically to extract the corresponding particles and projec
 	# The 3D reference volume we are using for subtraction
 	threed=EMData("{}/threed_{:02d}.hdf".format(args[0],args[1]),0)
 
-	# The exclusion mask in "neutral" orientation
+	# When applied this mask will include only the subunit to be extracted
+	# note that it is not binarized, so "soft" edges are permitted
 	subunitmask=EMData(options.subunitmask)
+	
+	# this is the "inverted" subunit mask, including everything except the subunit, again, "soft" edges are preserved
 	mask=subunitmask.process("math.linear",{"scale":-1.0,"shift":1.0})
-
-	# The mask from the reference volume
-	ptclmask=EMData(args[0]+"/mask.hdf",0)
+	ptclmask=EMData(args[0]+"/mask.hdf",0) # The full model mask from the reference volume
 	mask.mult(ptclmask)
 	# mask now excludes the subunit and volume outside the masked 3-D particle 
+
+	# Projections of the 3-D outermask will be used in 2-D to eliminate noise
+	# if not specified, the subunitmask will be projected (and thresholded) instead
+	if options.outermask!=None:
+		outermask=EMData(options.outermask)
+	else: outermask=None
 
 	logid=E2init(sys.argv, options.ppid)
 
@@ -226,21 +233,18 @@ will be examined automatically to extract the corresponding particles and projec
 	try: os.unlink(options.output)
 	except: pass
 
-	if options.outermask!=None:
-		outermask=EMData(options.outermask)
-	else: outermask=None
 		
 	NTHREADS=max(options.threads+1,2)		# we only run in threaded mode, and need one for collecting the results
 	jsd=queue.Queue(0)
 
 	# we start out with just a list of parameters to avoid initializing so many Thread objects at once
-	thrds=[(jsd,cls,threed,mask,subunitmask,ptclmask,outermask,symxfs,eulers,cptcl,cmxtx,cmxty,cmxalpha,cmxmirror,options.masked,options.verbose) for cls in range(nref)]
+	thrds=[(jsd,cls,threed,nptcl,mask,subunitmask,outermask,symxfs,eulers,cptcl,classmx,cmxtx,cmxty,cmxalpha,cmxmirror,options.masked,options.newbox,options.verbose-1) for cls in range(nref)]
 
 	# here we run the threads and save the results, no actual alignment done here
 	if options.verbose: print(len(thrds)," threads")
 	thrtolaunch=0
 	ncmpl=0
-	starttime=time()
+	starttime=time.time()
 	while thrtolaunch<len(thrds) or threading.active_count()>1:
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 		# note that it's ok that we wait here forever, since there can't be new results if an existing
@@ -256,18 +260,20 @@ will be examined automatically to extract the corresponding particles and projec
 		# We do a running estimate in min/sec for the job to finish
 		if options.verbose>1 and ncmpl>0: 
 			frac=ncmpl/float(len(thrds))
-			ETR=((tlf-starttime)/frac)-(time()-starttime)
+			ETR=((tlf-starttime)/frac)-(time.time()-starttime)
 			print("{}% complete.  ETC- {:d}:{:02d}".format(100.0*frac,ETR//60,ETR%60))
 	
 		while not jsd.empty():
 			ncmpl+=1			# number of completed tasks
-			tlf=time()			# used for remaining time estimate
+			tlf=time.time()			# used for remaining time estimate
 			cls,ptcls=jsd.get()
 			for i,p in ptcls: 
 				p.write_image(options.output,-1)
 			thrds[cls].join()
 			thrds[cls]=None
 
+	os.system("e2proclst.py --create {} {}".format(outlst,options.output))
+	print("Extraction complete")
 
 	E2end(logid)
 
