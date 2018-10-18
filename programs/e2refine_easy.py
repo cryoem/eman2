@@ -322,7 +322,7 @@ not need to specify any of the following other than the ones already listed abov
 			xsize=EMData(options.input,0,True)["nx"]
 			xsize3d=EMData("{}/threed_00_even.hdf".format(options.startfrom),0,True)["nx"]
 			if xsize!=xsize3d :
-				print "ERROR: specified --input dimensions do not match the dimensions of the volumes in --startfrom. In --startfrom mode it is not valid to rescale the input maps. Please use --input and --model to reinitialize gold standard refinement"
+				print("ERROR: specified --input dimensions do not match the dimensions of the volumes in --startfrom. In --startfrom mode it is not valid to rescale the input maps. Please use --input and --model to reinitialize gold standard refinement")
 				sys.exit(1)
 
 
