@@ -47,6 +47,88 @@ from sys import argv
 import traceback
 from EMAN2 import *
 from numpy import arange
+from time import time
+
+def monoextract(jsd,cls,threed,mask,subunitmask,ptclmask,outermask,symxfs,eulers,cptcl,cmxtx,cmxty,cmxalpha,cmxmirror,domask,verbose):
+	# for a single class-average, subtract away a projection of the reference with the exclusion mask in
+	# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
+	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
+	if verbose>1 : print("--- Class %d"%cls)
+	ret=[]
+
+	# The first projection is unmasked, used for scaling
+	# We regenerate the masked volumes for each class to avoid using too much RAM
+	projs=[threed.project("standard",{"transform":eulers[cls]})]
+	projmask=[]
+	for xf in symxfs:
+		maskx=mask.process("xform",{"transform":xf})
+		masked=threed.copy()
+		masked.mult(maskx)
+		projs.append(masked.project("standard",{"transform":eulers[cls]}))
+
+		if outermask!=None:
+			omaskx=outermask.process("xform",{"transform":xf})
+#				projmask.append(omaskx.project("standard",{"transform":eulers[cls]}))
+			projmask.append(omaskx.project("standard",{"transform":eulers[cls]}).process("threshold.binary",{"value":0.01}))
+		else:
+			omaskx=subunitmask.process("xform",{"transform":xf})
+			projmask.append(omaskx.project("standard",{"transform":eulers[cls]}).process("threshold.binary",{"value":0.01}))
+		
+		
+#		projmask=ptclmask.project("standard",eulers[cls])		# projection of the 3-D mask for the reference volume to apply to particles
+#		proj.process_inplace("normalize.circlemean")
+#		proj.mult(softmask)
+
+	for eo in range(2):
+		for j in range(nptcl[eo]):
+			#if classmx[eo][0,j]!=i : 
+				#if options.debug: print("XXX {}\t{}\t{}\t{}".format(cls,("even","odd")[eo],j,classmx[eo][0,j]))
+				#continue		# only proceed if the particle is in this class
+			if verbose: print("{}\t{}\t{}".format(cls,("even","odd")[eo],j))
+
+			ptcl=EMData(cptcl[eo],j)
+#				ptcl.write_image(options.output,-1)
+			lowth=ptcl["mean"]-ptcl["sigma"]*3.0
+			highth=ptcl["mean"]+ptcl["sigma"]*3.0
+
+			# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
+			ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
+			projc=[im.process("xform",{"transform":ptclxf}) for im in projs]		# we transform the projections, not the particle (as in the original classification)
+			projm=[im.process("xform",{"transform":ptclxf}) for im in projmask]
+			maskctr=[j.calc_center_of_mass(0.5) for j in projm]
+
+			# debugging
+			#for ii,p in enumerate(projm):
+				#p["com"]=maskctr[ii]
+				#p.write_image("prjm.hdf",-1)
+
+			if domask : 
+				zmsk=projc[0].process("threshold.binary",{"value":0.01})
+				
+				#projmaskc=projmask.process("xform",{"transform":ptclxf})
+				#ptcl.mult(projmaskc)
+				#for pr in projc: pr.mult(projmaskc)
+#				projmaskc.process_inplace("threshold.notzero")
+
+			#ptcl.write_image("tst.hdf",0)
+			#projc[0].write_image("tst.hdf",1)
+
+			# now subtract the masked versions processed using the scaling/normalization
+			# we got from the whole/unmasked particle
+			for k,pr in enumerate(projc[1:]):
+				if domask : ptcl.mult(zmsk)
+				ptcl3=ptcl.process("math.sub.optimal",{"ref":projc[0],"actual":pr})
+				if options.outermask!=None :
+					ptcl3.mult(projm[k])
+#					projm[k].write_image(options.output,-1)
+#					ptcl3.write_image(options.output,-1)
+				ptcl3.translate(-maskctr[k][0]+ptcl3["nx"]//2,-maskctr[k][1]+ptcl3["ny"]//2,0)
+				if options.newbox>3 : 
+					ptcl4=ptcl3.get_clip(Region((ptcl3["nx"]-options.newbox)//2,(ptcl3["ny"]-options.newbox)//2,options.newbox,options.newbox))
+					ret.append(ptcl4)
+				else: ret.append(ptcl3)
+#					print ptcl.cmp("optsub",projc[0])
+	jsd.put(cls,ret)
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -63,11 +145,12 @@ will be examined automatically to extract the corresponding particles and projec
 """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--output",type=str,default="sets/subparticles.hdf",help="Specify output filename, which will contain nptcl*sym particles. Default=sets/subparticles.hdf")
-	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.")
 	parser.add_argument("--subunitmask",type=str,default=None,help = "Specify a 3-D mask containing the region to extract from each particle. Required.")
 	parser.add_argument("--outermask",type=str,default=None,help = "A 3-D mask larger than subunitmask, containing the zone to be included in each subtracted particle")
 	parser.add_argument("--masked",action="store_true",default=False,help="If specified, each particle will be masked based on the projection mask.")
 	parser.add_argument("--newbox", type=int, help="New box size for extracted regions",default=-1)
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--debug",action="store_true",default=False,help="Enable debugging mode with verbose output and image display. Not suitable for real runs.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -145,138 +228,48 @@ will be examined automatically to extract the corresponding particles and projec
 
 	if options.outermask!=None:
 		outermask=EMData(options.outermask)
+	else: outermask=None
+		
+	NTHREADS=max(options.threads+1,2)		# we only run in threaded mode, and need one for collecting the results
+	jsd=queue.Queue(0)
 
-	# now we loop over the classes, and subtract away a projection of the reference with the exclusion mask in
-	# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
-	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
-	for i in range(nref):
-		if options.verbose>1 : print("--- Class %d"%i)
+	# we start out with just a list of parameters to avoid initializing so many Thread objects at once
+	thrds=[(jsd,cls,threed,mask,subunitmask,ptclmask,outermask,symxfs,eulers,cptcl,cmxtx,cmxty,cmxalpha,cmxmirror,options.masked,options.verbose) for cls in range(nref)]
 
-		# The first projection is unmasked, used for scaling
-		# We regenerate the masked volumes for each class to avoid using too much RAM
-		projs=[threed.project("standard",{"transform":eulers[i]})]
-		projmask=[]
-		for xf in symxfs:
-			maskx=mask.process("xform",{"transform":xf})
-			masked=threed.copy()
-			masked.mult(maskx)
-			projs.append(masked.project("standard",{"transform":eulers[i]}))
+	# here we run the threads and save the results, no actual alignment done here
+	if options.verbose: print(len(thrds)," threads")
+	thrtolaunch=0
+	ncmpl=0
+	starttime=time()
+	while thrtolaunch<len(thrds) or threading.active_count()>1:
+		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+		# note that it's ok that we wait here forever, since there can't be new results if an existing
+		# thread hasn't finished.
+		if thrtolaunch<len(thrds) :
+			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+			if options.verbose>1 : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
+			thrds[thrtolaunch]=threading.Thread(target=monoextract,args=thrds[thrtolaunch])
+			thrds[thrtolaunch].start()
+			thrtolaunch+=1
+		else: time.sleep(1)		# the final threads are running, we can wait a while
+		
+		# We do a running estimate in min/sec for the job to finish
+		if options.verbose>1 and ncmpl>0: 
+			frac=ncmpl/float(len(thrds))
+			ETR=((tlf-starttime)/frac)-(time()-starttime)
+			print("{}% complete.  ETC- {:d}:{:02d}".format(100.0*frac,ETR//60,ETR%60))
+	
+		while not jsd.empty():
+			ncmpl+=1			# number of completed tasks
+			tlf=time()			# used for remaining time estimate
+			cls,ptcls=jsd.get()
+			for i,p in ptcls: 
+				p.write_image(options.output,-1)
+			thrds[cls].join()
+			thrds[cls]=None
 
-			if options.outermask:
-				omaskx=outermask.process("xform",{"transform":xf})
-#				projmask.append(omaskx.project("standard",{"transform":eulers[i]}))
-				projmask.append(omaskx.project("standard",{"transform":eulers[i]}).process("threshold.binary",{"value":0.01}))
-			else:
-				omaskx=subunitmask.process("xform",{"transform":xf})
-				projmask.append(omaskx.project("standard",{"transform":eulers[i]}).process("threshold.binary",{"value":0.01}))
-			
-			
-#		projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
-#		proj.process_inplace("normalize.circlemean")
-#		proj.mult(softmask)
-
-		for eo in range(2):
-			for j in range(nptcl[eo]):
-				if classmx[eo][0,j]!=i : 
-					if options.debug: print("XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j]))
-					continue		# only proceed if the particle is in this class
-				if options.verbose: print("{}\t{}\t{}".format(i,("even","odd")[eo],j))
-
-				ptcl=EMData(cptcl[eo],j)
-#				ptcl.write_image(options.output,-1)
-				lowth=ptcl["mean"]-ptcl["sigma"]*3.0
-				highth=ptcl["mean"]+ptcl["sigma"]*3.0
-
-				# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
-				ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
-				projc=[im.process("xform",{"transform":ptclxf}) for im in projs]		# we transform the projections, not the particle (as in the original classification)
-				projm=[im.process("xform",{"transform":ptclxf}) for im in projmask]
-				maskctr=[j.calc_center_of_mass(0.5) for j in projm]
-
-				# debugging
-				#for i,p in enumerate(projm):
-					#p["com"]=maskctr[i]
-					#p.write_image("prjm.hdf",-1)
-
-				if options.masked : 
-					zmsk=projc[0].process("threshold.binary",{"value":0.01})
-					
-					#projmaskc=projmask.process("xform",{"transform":ptclxf})
-					#ptcl.mult(projmaskc)
-					#for pr in projc: pr.mult(projmaskc)
-#				projmaskc.process_inplace("threshold.notzero")
-
-				#ptcl.write_image("tst.hdf",0)
-				#projc[0].write_image("tst.hdf",1)
-
-				# now subtract the masked versions processed using the scaling/normalization
-				# we got from the whole/unmasked particle
-				for k,pr in enumerate(projc[1:]):
-					if options.masked : ptcl.mult(zmsk)
-					ptcl3=ptcl.process("math.sub.optimal",{"ref":projc[0],"actual":pr})
-					if options.outermask!=None :
-						ptcl3.mult(projm[k])
-#					projm[k].write_image(options.output,-1)
-#					ptcl3.write_image(options.output,-1)
-					ptcl3.translate(-maskctr[k][0]+old_div(ptcl3["nx"],2),-maskctr[k][1]+old_div(ptcl3["ny"],2),0)
-					if options.newbox>3 : 
-						ptcl4=ptcl3.get_clip(Region(old_div((ptcl3["nx"]-options.newbox),2),old_div((ptcl3["ny"]-options.newbox),2),options.newbox,options.newbox))
-						ptcl4.write_image(options.output,-1)
-					else: ptcl3.write_image(options.output,-1)
-#					print ptcl.cmp("optsub",projc[0])
 
 	E2end(logid)
-
-
-				## we make a filtered copy of the particle filtered such that it's power spectrum is roughly that of a noise-free particle
-				## we do this using an approximate filter from the particle set based CTF estimate, but apply this filter to the actual
-				## particle image, so it will retain some of the detailed features of the actual particle power spectrum
-				## The filter is basically (1-N/(N+S))
-				#ctf=ptcl["ctf"]
-				#ds=1.0/(ctf.apix*ptcl["ny"])
-				#filt=ctf.compute_1d(ptcl["ny"],ds,Ctf.CtfType.CTF_NOISERATIO,None)
-##				plot(filt)
-				#ptclr=ptcl.process("filter.radialtable",{"table":filt})		# reference particle for scaling
-##				ptclr=ptcl.copy()
-				#ptclr.mult(projmaskc)
-
-				## Now we match the radial structure factor of the total projection to the filtered particle, then scale
-				## we will use the filter curve returned by this process to scale the masked projections, since
-				## they should not match the whole particle
-				#projf=projc[0].process("filter.matchto",{"to":ptclr,"interpolate":1,"return_radial":1})
-				#projf.mult(projmaskc)
-				#projf.process_inplace("normalize.toimage",{"to":ptcl,"ignore_lowsig":0.75,"high_threshold":highth})
-				#print projf["norm_add"],projf["norm_mult"]
-
-				## This block is a test to see if normalize.toimage is producing the optimal subtraction in terms of
-				## standard deviation of the post-subtraction image. Unfortunately it seems not to in most cases, though
-				## visually the normalize.toimage value does seem to give close to optimal particle erasure. This may
-				## be an issue with CTF correction, and leaving a bit of residual black ring behind after subtracting
-				## TODO : investigate further
-## 				sseq=[]
-## 				for s in arange(0,1.5,0.05):
-## 					projf2=projf*s
-## 					ptcl2=ptcl-projf2
-## 					sseq.append(ptcl2)
-## 					print "{}\t{}".format(s,ptcl2["sigma"])
-##				display(sseq)
-
-				#ptcl2=ptcl-projf
-
-				## now subtract the masked versions processed using the scaling/normalization
-				## we got from the whole/unmasked particle
-				#for pr in projc:
-					#projm=pr.process("filter.radialtable",{"table":projf["filter_curve"]})
-					#projm.mult(projmaskc)
-					#projm.process_inplace("math.linear",{"scale":projf["norm_mult"],"shift":projf["norm_add"]})
-					#projm.process_inplace("normalize.toimage",{"to":ptcl,"ignore_lowsig":0.75,"high_threshold":highth})
-					#print projm["norm_add"],projm["norm_mult"]
-					#ptcl3=ptcl-projm
-##					display((projc[0],projf,pr,projm))
-					#display((ptcl,ptcl3,projm,pr))
-
-##				display((projc[0],ptclr,ptcl,projf,ptcl2),True)
-##				sys.exit(0)
 
 
 
