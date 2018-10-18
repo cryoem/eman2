@@ -292,8 +292,8 @@ not need to specify any of the following other than the ones already listed abov
 	except: pass
 
 	# make sure the box sizes match
-	if options.input!=None and options.startfrom!=None:
-		if options.startfrom!=None:
+	if options.input!=None :
+		if options.startfrom==None:
 			xsize3d=EMData(options.model,0,True)["nx"]
 			xsize=EMData(options.input,0,True)["nx"]
 			img1 = EMData(options.input,0,True)
