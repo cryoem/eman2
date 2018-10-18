@@ -292,31 +292,39 @@ not need to specify any of the following other than the ones already listed abov
 	except: pass
 
 	# make sure the box sizes match
-	if options.input!=None :
-		xsize3d=EMData(options.model,0,True)["nx"]
-		xsize=EMData(options.input,0,True)["nx"]
-		img1 = EMData(options.input,0,True)
-		img3 = EMData(options.model,0,True)
-		apix1=1.0
-		try:
-			apix1=img1["apix_x"]
-			apix3=img3["apix_x"]
-		except:
-			apix3=apix1
-
-		if ( xsize3d != xsize or apix3==0 or fabs(fabs(old_div(apix1,apix3))-1.0)>.001 ) :
-			print("WARNING: the dimensions of the particles (%d @ %1.4f A/pix) do not match the dimensions of the starting model (%d @ %1.4f A/pix). I will attempt to adjust the model appropriately."%(xsize,apix1,xsize3d,apix3))
+	if options.input!=None and options.startfrom!=None:
+		if options.startfrom!=None:
+			xsize3d=EMData(options.model,0,True)["nx"]
+			xsize=EMData(options.input,0,True)["nx"]
+			img1 = EMData(options.input,0,True)
+			img3 = EMData(options.model,0,True)
+			apix1=1.0
 			try:
-				scale=old_div(img3["apix_x"],img1["apix_x"])
-				print("Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale))
+				apix1=img1["apix_x"]
+				apix3=img3["apix_x"]
 			except:
-				print("A/pix unknown, assuming scale same as relative box size")
-				scale=old_div(float(xsize),xsize3d)
-			if scale>1 : cmd="e2proc3d.py %s %s/scaled_model.hdf --clip=%d,%d,%d --scale=%1.5f"%(options.model,options.path,xsize,xsize,xsize,scale)
-			else :       cmd="e2proc3d.py %s %s/scaled_model.hdf --scale=%1.5f --clip=%d,%d,%d"%(options.model,options.path,scale,xsize,xsize,xsize)
-			run(cmd)
+				apix3=apix1
 
-			options.model="%s/scaled_model.hdf"%options.path
+			if ( xsize3d != xsize or apix3==0 or fabs(fabs(old_div(apix1,apix3))-1.0)>.001 ) :
+				print("WARNING: the dimensions of the particles (%d @ %1.4f A/pix) do not match the dimensions of the starting model (%d @ %1.4f A/pix). I will attempt to adjust the model appropriately."%(xsize,apix1,xsize3d,apix3))
+				try:
+					scale=old_div(img3["apix_x"],img1["apix_x"])
+					print("Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale))
+				except:
+					print("A/pix unknown, assuming scale same as relative box size")
+					scale=old_div(float(xsize),xsize3d)
+				if scale>1 : cmd="e2proc3d.py %s %s/scaled_model.hdf --clip=%d,%d,%d --scale=%1.5f"%(options.model,options.path,xsize,xsize,xsize,scale)
+				else :       cmd="e2proc3d.py %s %s/scaled_model.hdf --scale=%1.5f --clip=%d,%d,%d"%(options.model,options.path,scale,xsize,xsize,xsize)
+				run(cmd)
+
+				options.model="%s/scaled_model.hdf"%options.path
+		else:
+			xsize=EMData(options.input,0,True)["nx"]
+			xsize3d=EMData("{}/threed_00_even.hdf".format(options.startfrom),0,True)["nx"]
+			if xsize!=xsize3d :
+				print "ERROR: specified --input dimensions do not match the dimensions of the volumes in --startfrom. In --startfrom mode it is not valid to rescale the input maps. Please use --input and --model to reinitialize gold standard refinement"
+				sys.exit(1)
+
 
 	if options.speed>7 or options.speed<1 :
 		print("ERROR: --speed must be between 1 and 7. Lower numbers will make refinements take longer, but produce slightly better measured resolutions. The default value of 5 is a good balance for typical refinements. When\
