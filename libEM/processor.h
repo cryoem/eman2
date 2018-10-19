@@ -6672,7 +6672,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("int_shift_only", EMObject::INT, "set to 1 only shift by integer, no interpolation");
+				d.put("int_shift_only", EMObject::INT, "If set, will only shift by integer amounts to avoid interpolation");
 				return d;
 			}
 
@@ -6743,6 +6743,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 			TypeDict d;
 			d.put("int_shift_only", EMObject::INT, "set to 1 only shift by integer, no interpolation");
 			d.put("threshold", EMObject::FLOAT, "Only values larger than the threshold are included in the center of mass computation. Default is 0.");
+			d.put("powercenter", EMObject::INT, "If set, squares pixel values before computing the center. The threshold is with respect to the squared values.");
 //			d.put("positive", EMObject::INT, "uses only densities >0 for the calculatton");
 			return d;
 		}

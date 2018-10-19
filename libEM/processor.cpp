@@ -7024,6 +7024,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	}
 
 	int int_shift_only = params.set_default("int_shift_only",1);
+	int powercenter = params.set_default("powercenter",0);
 	float threshold = params.set_default("threshold",0.0f);
 //	int positive = params.set_default("positive",0);
 
@@ -7033,7 +7034,10 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 		threshold=(float)image->get_attr("mean")+(float)image->get_attr("sigma");
 	}
 
+	EMData *tmp = 0;
+	if (powercenter) { tmp=image; image=tmp->process("math.squared"); }  // yes, I know, not very efficient
 	FloatPoint com = image->calc_center_of_mass(threshold);
+	if (powercenter) { delete image; image=tmp; }
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
