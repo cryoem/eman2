@@ -1633,7 +1633,7 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 	global Tracker, Blockdata
 	import shutil
 	import numpy as np
-	
+	##-----------------------------------------------
 	### 1. assignment np.int32; 
 	### 2. particle ids np.int32; 
 	### 3. EMAN2 functions python native int;
@@ -1653,13 +1653,12 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 	max_iter                 = Tracker["total_number_of_iterations"]
 	last_score               = 100.0
 	fixed_value              = 100.0
-	has_converged            = 0
 	times_around_fixed_value = 0
 	do_move_one_up           = 0
 	move_up_counter          = 0
 	freeze_changes           = 0
 	
-	####----determine minimum_group_size------------------------------------------------------------
+	####------------->>>>>>> Determine minimum_group_size <<<<------------------------------------------------------------
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		mlist, mdict = compute_nstep(Tracker["minimum_grp_size"], Tracker["nstep"])
 		if minimum_group_size_init == 0: minimum_group_size = mlist[0] # always start from high bound
@@ -1725,7 +1724,7 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 	current_mu = Tracker["mu"]
 	minimum_group_size       = max(minimum_group_size, len(ptls_in_orien_groups)) # At least one particle in one orien group
 	minimum_group_size_ratio = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]), 0.95)	
-	### printed info
+	### printed info-------------------------------------------------------------------------------------------------------------------
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		log_main.add('----------------------------------------------------------------------------------------------------------------' )
 		log_main.add('      ==================> MGSKmeans clustering of run_iter %d<========== '%run_iter)
@@ -1737,7 +1736,7 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 		log_main.add(msg)
 		log_main.add("Minimum_grp_size   low  high", minimum_group_size, Tracker["minimum_grp_size"][0],Tracker["minimum_grp_size"][1])
 		log_main.add("Img_per_grp  low  high", Tracker["constants"]["img_per_grp"], Tracker["img_per_grp"][0],Tracker["img_per_grp"][1])
-		
+	###-------------------------------------------------------------------------------------------------------------------------------	
 	proc_list = [[None, None] for iproc in range(Blockdata["nproc"])]
 	for iproc in range(Blockdata["nproc"]):
 		iproc_image_start, iproc_image_end = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
@@ -1844,7 +1843,7 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 			move_up_counter    = bcast_number_to_all(move_up_counter, Blockdata["main_node"],    MPI_COMM_WORLD)
 			max_iter           = bcast_number_to_all(max_iter, Blockdata["main_node"],           MPI_COMM_WORLD)
 			minimum_group_size_ratio = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]),0.95)
-		#### Preprocess reference volumes---------compute distance	
+		#### Preprocess reference volumes---------compute distance	-------------------------------------------
 		for iref in range(number_of_groups):
 			if(Blockdata["myid"] == Blockdata["last_node"]):
 				ref_vol = get_im(os.path.join(Tracker["directory"],"vol_grp%03d_iter%03d.hdf"%(iref, total_iter)))
@@ -1856,12 +1855,12 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 				ref_vol *=mask3D
 			else: ref_vol = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 			bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["last_node"])
-			## Image comparison optimal solution is the larger one	
+			## Image comparison	
 			if Tracker["constants"]["comparison_method"] =="cross": ref_peaks = compare_two_images_cross(cdata, ref_vol, ctf_images)
 			else:                                                   ref_peaks = compare_two_images_eucd(cdata, ref_vol, fdata, ctf_images)
 			local_peaks[iref] = ref_peaks
 			mpi_barrier(MPI_COMM_WORLD)
-		###------------------------------------------------------- 
+		###------------------------------------------------------- -----------------------------------
 		###-------------------Compute dmatrix---------------------
 		local_peaks = local_peaks.reshape(number_of_groups*nima)
 		acc_rest    = time() - rest_time
@@ -1927,16 +1926,19 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 			       keepgoing, best_score, stopercnt, minimum_group_size, \
 			           current_mu, Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"],\
 			               do_move_one_up, mdict, mlist, freeze_changes, log_main)
-			if abs(last_score - changed_nptls)< 1.0:
-				if  times_around_fixed_value == 0:
-					fixed_value = changed_nptls
-					times_around_fixed_value +=1
-				else:
-					if abs(changed_nptls - fixed_value)<1.0: 
+			###-------------------------------------------
+			if (changed_nptls !=100) and (total_iter>1):
+				if abs(last_score - changed_nptls)< 1.0:
+					if  times_around_fixed_value == 0:
+						fixed_value = changed_nptls
 						times_around_fixed_value +=1
 					else:
-						times_around_fixed_value = 0
-						fixed_value = changed_nptls
+						if abs(changed_nptls - fixed_value)< 1.0: 
+							times_around_fixed_value +=1
+						else:
+							times_around_fixed_value = 0
+							fixed_value = changed_nptls
+			##----------------------------------------------
 		else:
 			iter_assignment = 0
 			best_assignment = 0
@@ -1952,7 +1954,10 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 		acc_rest = time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			print("Compute analysis takes  %f minutes"%(acc_rest/60.))
-		if times_around_fixed_value>=3: keepgoing = 0
+		if times_around_fixed_value>=3:
+			if Blockdata["myid"] == Blockdata["main_node"]:
+				log_main.add("No improvment in clustering exceeds limit. Stop MGSKmeans. ")
+			keepgoing = 0
 		if keepgoing == 0: break
 		
 	#->>>>>> Finalize-----------------------------------------------------------------------------------------
@@ -1976,6 +1981,7 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 	else: fplist = 0
 	fplist     = wrap_mpi_bcast(fplist,         Blockdata["main_node"], MPI_COMM_WORLD)
 	premature  = bcast_number_to_all(premature, Blockdata["main_node"], MPI_COMM_WORLD)
+	#######-----------------------------------------------clean volumes----------------
 	if(Blockdata["myid"] == Blockdata["last_node"]):
 		if clean_volumes:# always true unless in debug mode
 			for jter in range(total_iter):
@@ -1987,14 +1993,17 @@ def do_assignment_by_dmatrix_orien_group_minimum_group_size(dmatrix, \
       orien_group_members, number_of_groups, minimum_group_size_ratio):
 	import numpy as np
 	import random
+	###---------------------------------------------------------------------
 	results = [[] for i in range(number_of_groups)]
 	nima               = len(orien_group_members)
 	minimum_group_size = int(minimum_group_size_ratio*nima/number_of_groups)
 	auxmatrix          = np.full(nima, -1.0, dtype=np.float32)
 	submatrix          = np.full((number_of_groups, nima), 0.0, dtype=np.float32)
+	####----------------------------------------------------------------------
 	for im in range(number_of_groups):
 		submatrix[im] = np.multiply(auxmatrix, dmatrix[im][orien_group_members])# sort in descending order
 	tmp_array = np.argsort(submatrix, axis = 1)
+	####------------------------- Ranking ------------------------------------
 	rmatrix   = []
 	for i in range(number_of_groups): rmatrix.append(tmp_array[i].tolist())
 	del tmp_array
@@ -2022,6 +2031,7 @@ def do_assignment_by_dmatrix_orien_group_minimum_group_size(dmatrix, \
 			for j in range(number_of_groups): rmatrix[i].remove(value_list[j]) # remove K elements from each column
 	kmeans_ptl_list = np.delete(np.array(range(nima), dtype = np.int32), np.array(results).ravel()) # ravel works only for even size
 	del rmatrix
+	####----------------------assign to K groups by distance--------------------------
 	for iptl in range(len(kmeans_ptl_list)):
 		max_indexes = np.argwhere(submatrix[:, kmeans_ptl_list[iptl]]<=submatrix[:, \
 		    kmeans_ptl_list[iptl]][submatrix[:, kmeans_ptl_list[iptl]].argmin()])
@@ -3158,12 +3168,12 @@ def swap_clusters_small_NUACC(glist, clusters, swap_ratio):
 	for ic in range(len(clusters)):
 		slist[ic] = int(swap_ratio*len(clusters[ic]))
 		shuffle(clusters[ic])
-		temp_list +=clusters[ic][0:slist[ic]]
+		temp_list.extend(clusters[ic][0:slist[ic]])
 		del clusters[ic][0:slist[ic]]
 	ulist +=temp_list
 	for ic in range(len(clusters)):
 		shuffle(ulist)
-		clusters[ic] +=ulist[0:slist[ic]]
+		clusters[ic].extend(ulist[0:slist[ic]])
 		del ulist[0:slist[ic]]
 	return ulist, clusters
 		
@@ -3176,11 +3186,11 @@ def swap_clusters_large_NUACC(glist, clusters, swap_ratio):
 	for ic in range(len(clusters)):
 		slist[ic] = int(swap_ratio*len(clusters[ic]))
 		shuffle(clusters[ic])
-		temp_list +=clusters[ic][0:slist[ic]]
+		temp_list.extend(clusters[ic][0:slist[ic]])
 		del clusters[ic][0:slist[ic]]
 	for ic in range(len(clusters)):
 		shuffle(ulist)
-		clusters[ic] +=ulist[0:slist[ic]]
+		clusters[ic].extend(ulist[0:slist[ic]])
 		del ulist[0:slist[ic]]
 	ulist +=temp_list
 	shuffle(ulist)
@@ -6624,11 +6634,13 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 			within_generation_restart = bcast_number_to_all(within_generation_restart, Blockdata["main_node"], MPI_COMM_WORLD)
 			if within_generation_restart == 1: read_tracker_mpi(work_dir)
 			else: dump_tracker(work_dir)
-			output_list, bad_clustering, stat_list = depth_clustering(work_dir, depth_order, my_pids, params, previous_params, log_main)
+			output_list, bad_clustering, stat_list = depth_clustering(work_dir, depth_order, \
+			    my_pids, params, previous_params, log_main)
 			all_gen_stat_list.append(stat_list)
 			if bad_clustering !=1:
 				if Blockdata["myid"] == Blockdata["main_node"]:
-					clusters, nclusters, nuacc  = output_clusters(work_dir, output_list[0][0], output_list[0][1], not_include_unaccounted, log_main)
+					clusters, nclusters, nuacc  = output_clusters(work_dir, output_list[0][0], \
+					    output_list[0][1], not_include_unaccounted, log_main)
 					try: del Tracker["generation"][str(igen)]
 					except: pass 
 					Tracker["generation"][igen] = len(clusters)
@@ -6647,7 +6659,8 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 				else:
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						time_of_generation_h,  time_of_generation_m = get_time(time_generation_start)
-						log_main.add('SORT3D generation%d time: %d hours %d minutes.'%(igen, time_of_generation_h, time_of_generation_m))
+						log_main.add('SORT3D generation%d time: %d hours %d minutes.'%(igen, \
+						   time_of_generation_h, time_of_generation_m))
 					my_pids = os.path.join( work_dir, 'indexes_next_generation.txt')
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						write_text_file(output_list[0][1], my_pids)
@@ -7106,13 +7119,10 @@ def main():
 		Tracker["nxinit"]           = Tracker["constants"]["nxinit"]
 		if options.notapplybckgnoise: Tracker["applybckgnoise"] = False
 		else:                         Tracker["applybckgnoise"] = True
-		### ------------=====< option for proteins images that have preferred orientations
-		 # for orientation groups
+		### ------------------------------------
 		if Tracker["constants"]["memory_per_node"] == -1 or Tracker["constants"]["memory_per_node"] <32.:
-			Tracker["constants"]["small_memory"] = True
+			Tracker["constants"]["small_memory"]   = True
 		else: Tracker["constants"]["small_memory"] = False
-	
-		## additional check
 		Tracker["constants"]["hardmask"]          = True
 		Tracker["applymask"]                      = True
 		Tracker["constants"]["refinement_method"] = "SPARX" 
@@ -7135,7 +7145,8 @@ def main():
 		create_zero_group()		
 		#
 		from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
-		from utilities 		import get_im,bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
+		from utilities 		import get_im,bcast_number_to_all, write_text_file,read_text_file,\
+		   wrap_mpi_bcast, get_params_proj, write_text_row
 		from filter			import filt_tanl
 		from logger         import Logger,BaseLogger_Files
 		import string
@@ -7220,7 +7231,7 @@ def main():
 		if options.img_per_grp <=1:
 			ERROR("Improperiate number for img_per_grp", "sort3d", 1, Blockdata["myid"])
 				
-		#--- Fill input parameters into dictionary Constants
+		#--- Fill input parameters into dictionary Constants--------------
 		Constants		                                 = {}
 		Constants["stop_mgskmeans_percentage"]           = options.stop_mgskmeans_percentage
 		Constants["memory_per_node"]                     = options.memory_per_node
@@ -7267,7 +7278,7 @@ def main():
 		Constants["overhead"]            = max(options.overhead, 1.)
 		#
 		#
-		# Create and initialize Tracker dictionary with input options  # State Variables	
+		# Create and initialize Tracker dictionary with input options  # State Variables<<<------------	
 		Tracker                     = {}
 		Tracker["constants"]	    = Constants
 		Tracker["radius"]           = Tracker["constants"]["radius"]
@@ -7277,7 +7288,7 @@ def main():
 		if options.notapplybckgnoise: Tracker["applybckgnoise"] = False
 		else:                         Tracker["applybckgnoise"] = True
 	
-		### ------------=====< option for proteins images that have preferred orientations
+		### ------------=====< option for proteins images that have preferred orientations<<<------------
 		 # for orientation groups
 		if Tracker["constants"]["memory_per_node"] == -1 or Tracker["constants"]["memory_per_node"] <32.:
 			Tracker["constants"]["small_memory"]   = True
@@ -7309,7 +7320,8 @@ def main():
 		create_zero_group()
 		# 
 		from statistics 	import k_means_match_clusters_asg_new,k_means_stab_bbenum
-		from utilities 		import get_im,bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, get_params_proj, write_text_row
+		from utilities 		import get_im,bcast_number_to_all, write_text_file,read_text_file,\
+		      wrap_mpi_bcast, get_params_proj, write_text_row
 		from filter			import filt_tanl
 		from logger         import Logger,BaseLogger_Files
 		import string
