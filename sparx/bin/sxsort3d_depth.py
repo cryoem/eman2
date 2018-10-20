@@ -627,7 +627,7 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 	log_main.add("The data to be in core for sorting occupies %7.3f percents of memory;  average smearing is %5.1f"%\
 		(min(tdata/Tracker["constants"]["memory_per_node"]*100., 90.0), avg_smear))
 
-	log_main.add("Estimated required memory for sorting on each node:/n")
+	log_main.add("Estimated required memory for sorting on each node:\n")
 	smearings_on_nodes = np.full(Blockdata["no_of_groups"], 0.0, dtype=np.float32)
 	smearings_per_cpu  = [None for im in range(Blockdata["nproc"])]
 	
