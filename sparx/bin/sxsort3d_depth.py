@@ -654,7 +654,7 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 	  
 	mem_leftover = mem_leftover/float(Blockdata["no_of_processes_per_group"])
 	log_main.add("Number of particles precomputed on each CPU:\n")
-	log_main.add("Node       Number          Pecentage")
+	log_main.add("Node       Number   Pecentage")
 	msg = ""
 	for im in range(Blockdata["nproc"]):
 		image_start, image_end = MPI_start_end(smearing_list.shape[0], Blockdata["nproc"],im)
