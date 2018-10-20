@@ -3703,7 +3703,7 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	log_list.append('The number of accounted for images: %d.  The number of core set images: %d.'%(len(accounted_list), len(unaccounted_list)))
 	log_list.append('The smallest group size: %d the largest group size: %d.'%(smallest_size, largest_size))
 	log_list.append('-------------------------------------------------------------------------')
-	log_list.append('------->>>Current FSC0.143 versus group sizes<<<-----')
+	log_list.append('------->>>Current group sizes versus FSC0.143 (in pixels) <<<-----')
 	# AI for checking states and making decisions:
 	from statistics import scale_fsc_datasetsize
 	log_list.append('                         size     FSC0.143   move up/down  ')
@@ -6746,12 +6746,12 @@ def set_minimum_group_size(log_main, printing_dres_table = True):
 		mlow, mhigh, min_res = Tracker["minimum_grp_size"][0], Tracker["minimum_grp_size"][1], Tracker["minimum_grp_size"][2]
 		log_main.add("--------------------------------------------------------------------------------------")
 		log_main.add("                           Dres_table                                                 ")
-		log_main.add("FSC0.143 differences between the (K-1) smallest and the largest groups ")
+		log_main.add("FSC0.143 differences (mu) between the (K-1) small groups and one large group ")
 		log_main.add("Total number of images: %8d   number of groups: %3d  "%(total_stack, number_of_groups))
-		log_main.add("Mu   move down   up   smallest size  largest size  ratio")
+		log_main.add("Mu   down   up  (to total/K)  small size   large size  ratio")
 		log_main.add("--------------------------------------------------------------------------------------")
 		for il in range(len(dres_table)):
-			log_main.add("%3d   %3d     %3d    %10d    %10d    %5.4f"%(dres_table[il][0], dres_table[il][1], \
+			log_main.add("%3d   %3d     %3d        %10d      %10d    %5.4f"%(dres_table[il][0], dres_table[il][1], \
 			  dres_table[il][2], dres_table[il][3], dres_table[il][4], dres_table[il][3]/float(dres_table[il][4])))
 	if mu<Tracker["constants"]["mu"]:
 		log_main.add("The user provided mu is too large. It is changed to %d"%mu)
@@ -6879,29 +6879,28 @@ def set_sorting_global_variables_mpi(log_file):
 	from statistics import scale_fsc_datasetsize
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		###=====<--options for advanced users:
-		log_file.add("-----------------------------------------------")
-		log_file.add("    Set global adjuastable varibales           ")
-		log_file.add("-----------------------------------------------")
+		log_file.add("---------------------------------------------------------------------------------------------------")
+		log_file.add(" Global adjustable varibales (adanced users may madify them to fit specific clustering requirements)")
+		log_file.add("---------------------------------------------------------------------------------------------------")
 		Tracker["total_number_of_iterations"] = 15
 		Tracker["clean_volumes"]              = True  # always true
 		Tracker["compute_fsc"]                = False
-		### -----------Orientation constraints
+		### -----------Orientation constraints------------------
 		Tracker["tilt1"]                      =  0.0
 		Tracker["tilt2"]                      =  180.0
-		Tracker["grp_size_relx_ratio"]        =  0.98
 		Tracker["minimum_ptl_number"]         =  20
-        ### --------------------------------------
+        ### -----------------------------------------------------
 		Tracker["minimum_img_per_cpu"]            =  5 # User can adjust it to other number
 		Tracker["minimum_grp_size"]               = [0, 0, 0, 0] # low, high, res, total
 		Tracker["num_on_the_fly"]                 = [ -1  for im in range(Blockdata["nproc"])]
 		Tracker["current_img_per_grp"]            = Tracker["constants"]["img_per_grp"]
 		Tracker["constants"]["box_niter"]         = 5
-		Tracker["even_scale_fsc"] = True
+		Tracker["even_scale_fsc"]                 = True
 		Tracker["rand_index"]                     = 0.0
 		Tracker["nruns"]                          = -1
 		Tracker["minimum_grp_size"]               = [0, 0, 0, 0]
 		Tracker["img_per_grp"]                    = [0, 0, 0, 0]
-		### ---------------------------------------
+		### ------------------------------------------------------
 		log_file.add("Maximum box iteration:                            %d"%Tracker["constants"]["box_niter"])
 		log_file.add("Minimum_img_per_cpu:                              %d"%Tracker["minimum_img_per_cpu"])
 		log_file.add("MGSKmeans maximum iteration:                      %d"%Tracker["total_number_of_iterations"])
@@ -6913,26 +6912,25 @@ def set_sorting_global_variables_mpi(log_file):
 		calculate_grp_size_variation(log_file, state = "sort_init")
 		####-------------------------------------------------------
 		log_file.add("-----------------------------------------------------------------------------------")
-		log_file.add(" Compute relationship between resolution (FSC0.143) and size                       ")
-		log_file.add(" Fouriel pixel   low bound     high bound   size of pixel bin                      ")
+		log_file.add(" Compute scaling relationship (dres_table) between FSC0.143 and image group size   ")
+		log_file.add(" FSC0.143 (in pixels)  size  low bound     high bound    width of pixel bin        ")
 		log_file.add("-----------------------------------------------------------------------------------")
 		dict = {}
 		previous_res = 0
-		res_list = []
+		res_list     = []
 		growing_size = Tracker["constants"]["img_per_grp"]//100
 		step = max(growing_size//1000, 20)
 		while growing_size + step<Tracker["total_stack"]:
 			growing_size +=step
 			res = get_res143(scale_fsc_datasetsize(\
 			   Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], growing_size))
-			if res == previous_res:
-				dict[str(res)][1] = growing_size
+			if res == previous_res: dict[str(res)][1] = growing_size
 			else: 
 				res_list.append(str(res))
 				dict[str(res)] = [growing_size, growing_size]
 			previous_res  = res
 		for il in range(len(res_list)):
-			log_file.add("%5s  %10d  %10d    %10d"%(res_list[il], dict[res_list[il]][0], \
+			log_file.add("%5s               %10d           %10d        %10d"%(res_list[il], dict[res_list[il]][0], \
 			   dict[res_list[il]][1],  (dict[res_list[il]][1]- dict[res_list[il]][0])))
 		log_file.add("-----------------------------------------------------------------------------------")
 		Tracker["dres"] = [res_list, dict]
