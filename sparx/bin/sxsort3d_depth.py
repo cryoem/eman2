@@ -1106,7 +1106,7 @@ def check_mpi_settings(log_main):
 			log_main.add("Percentage of memory occupied by precalculated shifted 2D data:     %8.3f%% "%\
 			   (precalculated_2D_data/total_memory*100.))
 			if Tracker["constants"]["compute_on_the_fly"]:
-				log_main.add("The compute_on_the_fly option is on and 2D data is precacluated till 90 percent memory is filled up")
+				log_main.add("The compute_on_the_fly option is on. The multiplely assiged 2D data is precacluated till 90 percents of the memory is filled up")
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		log_main.add('----------------------------------------------------------------------------------------------------------------\n')
 	return
