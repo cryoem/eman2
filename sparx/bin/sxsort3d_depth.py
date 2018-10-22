@@ -820,6 +820,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 		minimum_grp_size       = [0, 0] # adjustable
 		do_freeze              = [0, 0]
 		iter_init_K = Tracker["number_of_groups"]
+		last_recompute = 0
 		while((iter < box_niter) and (converged == 0)):# within a pair of Kmeans
 			info_table             = None
 			reset_number_of_groups = 0
@@ -882,15 +883,16 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				   iter_current_iter_ratio > 90.) or rand_index>0.97:#
 				   	converged = 1 # no much improved
 				   	
-				if max_iter <= quick_converge: converged = 1 # Kmeans goes for only one step.
+				if max_iter <= quick_converge: 
+					converged = 1 # Kmeans goes for only one step.
 				
-				if (len(list_of_stable) < iter_init_K ) and (iter>=2):
-					if len(list_of_stable) >=2: 
-						 Tracker["number_of_groups"]    = len(list_of_stable) # Excessively large number of groups
-						 Tracker["current_img_per_grp"] = Tracker["total_stack"]//Tracker["number_of_groups"]
-						 reset_number_of_groups = 1
-						 iter_init_K = len(list_of_stable)
-						 info_table.append('Reset number of groups to %d'%Tracker["number_of_groups"])
+				if (len(list_of_stable) < iter_init_K ) and len(list_of_stable)>=2 : 
+					if (converged == 1) or (iter-last_recompute)>=3 :
+						reset_number_of_groups = 1
+						iter_init_K = len(list_of_stable)
+						last_recompute = iter
+						info_table.append('Reset number of groups to %d'%Tracker["number_of_groups"])
+					else: pass
 				###------------------print info	------------------------------	 
 				with open(os.path.join(iter_dir, "info.txt"),'w') as fout:
 					for line in info_table:
@@ -928,9 +930,12 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				iter_previous_iter_ratio = iter_current_iter_ratio
 				iter +=1
 				iter_dir = os.path.join(within_box_run_dir, "iter%d"%iter)
+				reset_number_of_groups = 0
 				##+++++++++++++++++++++++++++++++++++++++++++++
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					log_main.add('Decrease number of groups within box run to %d'%Tracker["number_of_groups"])
+					Tracker["number_of_groups"]    = len(list_of_stable) # Excessively large number of groups
+					Tracker["current_img_per_grp"] = Tracker["total_stack"]//Tracker["number_of_groups"]
 					calculate_grp_size_variation(log_main, state = "number_of_groups")
 					set_minimum_group_size(log_main, printing_dres_table = True)
 					alist = read_text_file(accounted_file,  -1)
@@ -6743,9 +6748,9 @@ def set_minimum_group_size(log_main, printing_dres_table = True):
 	from statistics import scale_fsc_datasetsize
 	#---->>> parameters <<<--------
 	# Guiding rule: high should be large, low should be small
-	min_size_low_bound  = 0.20
-	min_size_high_bound = 0.75
-	min_size_cutoff     = 0.25
+	min_size_low_bound  = 0.25
+	min_size_high_bound = 0.90
+	min_size_cutoff     = 0.30
 	#----------------------------
 	total_stack      = Tracker["total_stack"]
 	img_per_grp      = Tracker["current_img_per_grp"]
@@ -6955,8 +6960,8 @@ def set_sorting_global_variables_mpi(log_file):
 		log_file.add("Minimum_img_per_cpu:                              %d"%Tracker["minimum_img_per_cpu"])
 		log_file.add("MGSKmeans maximum iteration:                      %d"%Tracker["total_number_of_iterations"])
 		log_file.add("Minimum number of images per orientation angle:   %d"%Tracker["minimum_ptl_number"])
-		log_file.add("Minimum group size steps:                         %d"%Tracker["nstep"])
-		log_file.add("box_learning:                                     %d\n"%Tracker["box_learning"])
+		log_file.add("Minimum group shrink size steps:                  %d"%Tracker["nstep"])
+		log_file.add("Box_learning:                                     %d\n"%Tracker["box_learning"])
 		
 		###--------------------------------------------------------
 		calculate_grp_size_variation(log_file, state = "sort_init")
