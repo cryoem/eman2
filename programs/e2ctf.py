@@ -2342,7 +2342,7 @@ class GUIctf(QtGui.QWidget):
 		self.guiim.mmode="app"
 
 		# This object is itself a widget we need to set up
-		self.hbl = QtGui.QHBoxLayout(self)
+		self.hbl = QtWidgets.QHBoxLayout(self)
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
@@ -2413,7 +2413,7 @@ class GUIctf(QtGui.QWidget):
 		self.vbl.addWidget(self.squality)
 
 
-		self.hbl_buttons = QtGui.QHBoxLayout()
+		self.hbl_buttons = QtWidgets.QHBoxLayout()
 		self.saveparms = QtGui.QPushButton("Save parms")
 		self.recallparms = QtGui.QPushButton("Recall")
 		self.refit = QtGui.QPushButton("Refit")
@@ -2424,7 +2424,7 @@ class GUIctf(QtGui.QWidget):
 		self.hbl_buttons.addWidget(self.refit)
 		self.hbl_buttons.addWidget(self.saveparms)
 		self.hbl_buttons.addWidget(self.recallparms)
-		self.hbl_buttons2 = QtGui.QHBoxLayout()
+		self.hbl_buttons2 = QtWidgets.QHBoxLayout()
 		self.hbl_buttons2.addWidget(self.show2dfit)
 		self.hbl_buttons2.addWidget(self.showzerorings)
 		self.hbl_buttons2.addWidget(self.usephaseplate)

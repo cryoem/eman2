@@ -1383,7 +1383,7 @@ class TomoSegInspector(QtGui.QWidget):
 	def getAutomaticTools(self):
 		widget = QtGui.QWidget()
 		
-		hbox = QtGui.QHBoxLayout()
+		hbox = QtWidgets.QHBoxLayout()
 		
 		frame = QtWidgets.QFrame()
 		grid = QtWidgets.QGridLayout(widget)
@@ -1513,7 +1513,7 @@ class TomoSegInspector(QtGui.QWidget):
 	def getSemiAutomaticTools(self):
 		widget = QtGui.QWidget()
 		
-		hbox = QtGui.QHBoxLayout()
+		hbox = QtWidgets.QHBoxLayout()
 		
 		frame = QtWidgets.QFrame()
 		grid = QtWidgets.QGridLayout(widget)
@@ -1644,7 +1644,7 @@ class TomoSegInspector(QtGui.QWidget):
 		
 		widget = QtGui.QWidget()
 		
-		hbox = QtGui.QHBoxLayout()
+		hbox = QtWidgets.QHBoxLayout()
 		
 		frame = QtWidgets.QFrame()
 		grid = QtWidgets.QGridLayout(widget)
@@ -1776,7 +1776,7 @@ class TomoSegInspector(QtGui.QWidget):
 		This returns the treeview-control panel widget
 		"""
 		widget = QtGui.QWidget()
-		hbox = QtGui.QHBoxLayout(widget)
+		hbox = QtWidgets.QHBoxLayout(widget)
 		treeframe = QtWidgets.QFrame()
 		treeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		treeframe.setLayout(self._get_tree_layout(widget))

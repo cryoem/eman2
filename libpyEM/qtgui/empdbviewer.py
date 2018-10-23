@@ -996,7 +996,7 @@ class EMPDBInspector(QtGui.QWidget):
 			self.text.setText(text_value)
 		self.browse = QtGui.QPushButton("Browse")
 
-		hbl1 = QtGui.QHBoxLayout()
+		hbl1 = QtWidgets.QHBoxLayout()
 		hbl1.addWidget(self.text)
 		hbl1.addWidget(self.browse)
 

@@ -1051,7 +1051,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 		for param in params:
 			if isinstance(param,list):
-				hbl=QtGui.QHBoxLayout()
+				hbl=QtWidgets.QHBoxLayout()
 				for iparam in param:
 					self.auto_incorporate[iparam.vartype](iparam,hbl,self)
 				vbl.addLayout(hbl)
@@ -1157,7 +1157,7 @@ class EMFormWidget(QtGui.QWidget):
 					self.incorporate_ftable_list(param,layout)
 					act = False
 				elif not isinstance(param,EMParamTable):
-					hbl=QtGui.QHBoxLayout()
+					hbl=QtWidgets.QHBoxLayout()
 					for iparam in param:
 #						if iparam.vartype == "EMButtonDialog": print "it was a button"
 						self.auto_incorporate[iparam.vartype](iparam,hbl,self)
@@ -1170,7 +1170,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.enable_boolean_dependents()
 		
 	def incorporate_list(self,param,layout,target,type_of):
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
@@ -1221,7 +1221,7 @@ class EMFormWidget(QtGui.QWidget):
 			
 		
 			vbl=QtGui.QVBoxLayout()
-			hbl=QtGui.QHBoxLayout()
+			hbl=QtWidgets.QHBoxLayout()
 			hbl.setMargin(0)
 			hbl.setSpacing(2)
 			
@@ -1247,11 +1247,11 @@ class EMFormWidget(QtGui.QWidget):
 	
 	
 	def incorporate_float_with_choices(self,param,layout,target):
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		label = QtGui.QLabel(param.desc_short,target)
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label)
@@ -1272,11 +1272,11 @@ class EMFormWidget(QtGui.QWidget):
 		target.name_widget_map[param.name] = [combo,label]
 	
 	def incorporate_int_with_choices(self,param,layout,target):
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		label = QtGui.QLabel(param.desc_short,target)
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label)
@@ -1296,11 +1296,11 @@ class EMFormWidget(QtGui.QWidget):
 		target.name_widget_map[param.name] = [combo,label]
 	
 	def incorporate_string_with_choices(self,param,layout,target):
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		label = QtGui.QLabel(param.desc_short,target)
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label,0)
@@ -1320,7 +1320,7 @@ class EMFormWidget(QtGui.QWidget):
 		target.name_widget_map[param.name] = [combo,label]
 	
 	def __add_ok_cancel_buttons(self,layout):
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		label = QtGui.QLabel("Form commands:")
 		hbl.addWidget(label)
 		
@@ -1373,7 +1373,7 @@ class IncorpFileTable(object):
 		# first check that there are no inconsistencies in the number of parameter choices
 		
 		vbl=QtGui.QVBoxLayout()
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
@@ -1408,7 +1408,7 @@ class IncorpParamTable(object):
 					return
 		
 		vbl=QtGui.QVBoxLayout()
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
@@ -1473,7 +1473,7 @@ class IncorpIntList(object):
 class IncorpBool(object):
 	def __init__(self): pass
 	def __call__(self,param,layout,target):
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		check_box = QtWidgets.QCheckBox(str(param.desc_short),target)
@@ -1493,7 +1493,7 @@ class IncorpString(object):
 		if param.choices != None and len(param.choices) > 1:
 			target.incorporate_string_with_choices(param,layout,target)
 		else:
-			hbl=QtGui.QHBoxLayout()
+			hbl=QtWidgets.QHBoxLayout()
 			hbl.setMargin(0)
 			hbl.setSpacing(2)
 			label = QtGui.QLabel(param.desc_short+":",target)
@@ -1512,7 +1512,7 @@ class IncorpFloat(object):
 		if param.choices != None and len(param.choices) > 1:
 			target.incorporate_float_with_choices(param,layout,target)
 		else:
-			hbl=QtGui.QHBoxLayout()
+			hbl=QtWidgets.QHBoxLayout()
 			hbl.setMargin(0)
 			hbl.setSpacing(2)
 			label = QtGui.QLabel(param.desc_short+":",target)
@@ -1533,7 +1533,7 @@ class IncorpInt(object):
 		if param.choices != None and len(param.choices) > 1:
 			target.incorporate_int_with_choices(param,layout,target)
 		else:
-			hbl=QtGui.QHBoxLayout()
+			hbl=QtWidgets.QHBoxLayout()
 			hbl.setMargin(0)
 			hbl.setSpacing(2)
 			label = QtGui.QLabel(param.desc_short+":",target)
@@ -1552,7 +1552,7 @@ class IncorpInt(object):
 class IncorpText(object):
 	def __init__(self): pass
 	def __call__(self,param,layout,target):
-#			hbl=QtGui.QHBoxLayout()
+#			hbl=QtWidgets.QHBoxLayout()
 #			hbl.setMargin(0)
 #			hbl.setSpacing(2)
 				
@@ -1577,7 +1577,7 @@ class IncorpUrl(object):
 	def __init__(self): pass
 	def __call__(self,param,layout,target):
 		vbl=QtGui.QVBoxLayout()
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		defaults = ""
@@ -1593,7 +1593,7 @@ class IncorpUrl(object):
 		hbl.addWidget(text_edit,0)
 		vbl.addLayout(hbl)
 		
-		hbl2=QtGui.QHBoxLayout()
+		hbl2=QtWidgets.QHBoxLayout()
 		hbl2.setMargin(0)
 		hbl2.setSpacing(2)
 		
@@ -1621,7 +1621,7 @@ class IncorpDict(object):
 		changes the entries in the second combo to values in the dictionary corresponding to the keys
 		'''
 		# hbl - tht
-		hbl=QtGui.QHBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
@@ -1665,7 +1665,7 @@ class IncorpChoice(object):
 	def __init__(self): pass
 	def __call__(self,param,layout,target):
 	
-		hbl = QtGui.QHBoxLayout()
+		hbl = QtWidgets.QHBoxLayout()
 		buttons = []
 		for choice in param.choices:
 			button = QtGui.QRadioButton(str(choice))
@@ -2014,7 +2014,7 @@ class EMTableFormWidget(EMFormWidget):
 #			for param in paramlist:
 #				EMFormWidget.incorporate_params(self, params, vbl)
 #				if isinstance(param,list) and len(param) != 1:
-#					hbl=QtGui.QHBoxLayout()
+#					hbl=QtWidgets.QHBoxLayout()
 #					for iparam in param:
 #						try:
 #							self.auto_incorporate[iparam.vartype](iparam,hbl,self)

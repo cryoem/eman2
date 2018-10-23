@@ -90,7 +90,7 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.setLayout(self.vbl1)
 		
 		# First row contains general purpose controls
-		self.hbl1=QtGui.QHBoxLayout()
+		self.hbl1=QtWidgets.QHBoxLayout()
 		self.vbl1.addLayout(self.hbl1)
 		
 		self.vcell=ValBox(self,(0,128.0),"Cell:",64)

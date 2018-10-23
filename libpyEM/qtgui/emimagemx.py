@@ -2240,7 +2240,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.vbl.setObjectName("vboxlayout")
 
 
-		self.hbl3 = QtGui.QHBoxLayout()
+		self.hbl3 = QtWidgets.QHBoxLayout()
 		self.hbl3.setMargin(0)
 		self.hbl3.setSpacing(6)
 		self.hbl3.setObjectName("hboxlayout")
@@ -2276,7 +2276,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 
 		# This shows the mouse mode buttons
-		self.hbl2 = QtGui.QHBoxLayout()
+		self.hbl2 = QtWidgets.QHBoxLayout()
 		self.hbl2.setMargin(0)
 		self.hbl2.setSpacing(6)
 		self.hbl2.setObjectName("hboxlayout")
@@ -2305,7 +2305,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.mapp.setChecked(True)
 
 
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hboxlayout")
@@ -2612,7 +2612,7 @@ class EMMXSetsPanel(QtGui.QWidget):
 		self.itemflags=	Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 
 		# now build the interface
-		hbl = QtGui.QHBoxLayout(self)
+		hbl = QtWidgets.QHBoxLayout(self)
 		self.setlist=QtGui.QListWidget()
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		hbl.addWidget(self.setlist)

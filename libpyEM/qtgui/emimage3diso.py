@@ -381,7 +381,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.mrcChanged = False #added by Muthu
 		
 		if enable_browse:
-			hblbrowse = QtGui.QHBoxLayout()
+			hblbrowse = QtWidgets.QHBoxLayout()
 			self.mrc_text = QtGui.QLineEdit()
 			hblbrowse.addWidget(self.mrc_text)
 			self.mrc_browse = QtGui.QPushButton("Browse")
@@ -391,7 +391,7 @@ class EMIsoInspector(QtGui.QWidget):
 			self.mrc_text.textEdited[str].connect(self.on_mrc_text_change) #added by Muthu
 			self.mrc_browse.clicked[bool].connect(self.on_mrc_browse) # added by Muthu
 
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
@@ -595,7 +595,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.shininess.setValue(64)
 		gltab.vbl.addWidget(self.shininess)
 
-		self.hbl_color = QtGui.QHBoxLayout()
+		self.hbl_color = QtWidgets.QHBoxLayout()
 		self.hbl_color.setMargin(0)
 		self.hbl_color.setSpacing(6)
 		self.hbl_color.setObjectName("Material")
@@ -662,7 +662,7 @@ class EMIsoInspector(QtGui.QWidget):
 			self.thr.setValue(0.5)
 			maintab.vbl.addWidget(self.thr)
 			
-			self.hbl_smp = QtGui.QHBoxLayout()
+			self.hbl_smp = QtWidgets.QHBoxLayout()
 			self.hbl_smp.setMargin(0)
 			self.hbl_smp.setSpacing(6)
 			self.hbl_smp.setObjectName("Sample")

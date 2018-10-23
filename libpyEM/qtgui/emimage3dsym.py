@@ -1299,7 +1299,7 @@ class SparseSymChoicesWidgets(object):
 		@param vbl a QtGui.QVBoxLayout - all widgets and layouts are added to it
 		'''
 		self.busy = True
-		self.button_hbl1 = QtGui.QHBoxLayout()
+		self.button_hbl1 = QtWidgets.QHBoxLayout()
 		self.symtogdisplay = QtGui.QPushButton("Display Eulers")
 		self.symtogdisplay.setCheckable(1)
 		self.symtogdisplay.setChecked(1)
@@ -1312,7 +1312,7 @@ class SparseSymChoicesWidgets(object):
 		
 		vbl.addLayout(self.button_hbl1)
 		
-		self.button_hbl2 = QtGui.QHBoxLayout()
+		self.button_hbl2 = QtWidgets.QHBoxLayout()
 		
 		self.arctog = QtGui.QPushButton("Display Arcs")
 		self.arctog.setCheckable(1)
@@ -1379,7 +1379,7 @@ class SparseSymChoicesWidgets(object):
 		maintab.vbl.setSpacing(6)
 		maintab.vbl.setObjectName("Main")
 		
-		self.hbl_sym = QtGui.QHBoxLayout()
+		self.hbl_sym = QtWidgets.QHBoxLayout()
 		self.hbl_sym.setMargin(0)
 		self.hbl_sym.setSpacing(6)
 		self.hbl_sym.setObjectName("Sym")
@@ -1436,7 +1436,7 @@ class SparseSymChoicesWidgets(object):
 			self.prop_text.setFixedWidth(50)
 			self.hbl_sym.addWidget(self.prop_text)
 			
-			self.hbl_sym2 = QtGui.QHBoxLayout()
+			self.hbl_sym2 = QtWidgets.QHBoxLayout()
 			self.hbl_sym2.setMargin(0)
 			self.hbl_sym2.setSpacing(6)
 			self.hbl_sym2.setObjectName("Sym2")
@@ -1624,7 +1624,7 @@ class EMSymChoiceDialog(QtWidgets.QDialog):
 
 		self.vbl.addWidget(self.sym_widget,10)
 		
-		self.button_hbl = QtGui.QHBoxLayout()
+		self.button_hbl = QtWidgets.QHBoxLayout()
 		self.ok = QtGui.QPushButton("Ok")
 		self.ok.setDefault(True)
 		self.cancel = QtGui.QPushButton("Cancel")
@@ -1720,7 +1720,7 @@ class EMSymInspector(QtGui.QWidget):
 			return
 
 		if self.score_options_hbl == None:
-			self.score_options_hbl = QtGui.QHBoxLayout()
+			self.score_options_hbl = QtWidgets.QHBoxLayout()
 			self.score_options = self.__get_combo(options,default)
 			self.score_options_hbl.addWidget(QtGui.QLabel("Cylinder Score:",self))
 			self.score_options_hbl.addWidget(self.score_options)
@@ -1819,20 +1819,20 @@ class EMSymInspector(QtGui.QWidget):
 		keys = list(self.target().colors.keys())
 		keys.sort()
 		self.arc_color = self.__get_combo(keys,self.target().arc_color)
-		hbl1 = QtGui.QHBoxLayout()
+		hbl1 = QtWidgets.QHBoxLayout()
 		hbl1.addWidget(QtGui.QLabel("Arc Color:",self))
 		hbl1.addWidget(self.arc_color)
 		self.display_tab.vbl.addLayout(hbl1)
 		
 		self.tall_column_color = self.__get_combo(keys,self.target().tall_column_color)
-		hbl2 = QtGui.QHBoxLayout()
+		hbl2 = QtWidgets.QHBoxLayout()
 		hbl2.addWidget(QtGui.QLabel("Higher Cylinder Color:",self))
 		hbl2.addWidget(self.tall_column_color)
 		self.display_tab.vbl.addLayout(hbl2)
 		
 		
 		self.small_column_color = self.__get_combo(keys,self.target().small_column_color)
-		hbl3 = QtGui.QHBoxLayout()
+		hbl3 = QtWidgets.QHBoxLayout()
 		hbl3.addWidget(QtGui.QLabel("Lower Cylinder Color:",self))
 		hbl3.addWidget(self.small_column_color)
 		self.display_tab.vbl.addLayout(hbl3)
@@ -1849,7 +1849,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.arc_width_scale.setValue(self.target().arc_width_scale)
 		self.display_tab.vbl.addWidget(self.arc_width_scale)
 		
-		hbl_l = QtGui.QHBoxLayout()
+		hbl_l = QtWidgets.QHBoxLayout()
 		arc_div_label = QtGui.QLabel("Arc Segments:")
 		arc_div_label.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
 		hbl_l.addWidget(arc_div_label)
@@ -1885,7 +1885,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.sparse_syms_widgets.add_symmetry_options(self.vbl,self.enable_og)
 
 		if self.enable_trace:		
-			self.hbl_pt = QtGui.QHBoxLayout()
+			self.hbl_pt = QtWidgets.QHBoxLayout()
 			self.hbl_pt.setMargin(0)
 			self.hbl_pt.setSpacing(6)
 			self.hbl_pt.setObjectName("Ptl Trace")

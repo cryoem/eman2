@@ -101,7 +101,7 @@ class ValSlider(QtGui.QWidget):
 		self.intonly=0
 		self.rounding = rounding
 		
-		self.hboxlayout = QtGui.QHBoxLayout(self)
+		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setMargin(0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
@@ -315,7 +315,7 @@ class ValBox(QtGui.QWidget):
 		self.intonly=0
 		self.digits=5		# digits of precision to display
 		
-		self.hboxlayout = QtGui.QHBoxLayout(self)
+		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setMargin(0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
@@ -461,7 +461,7 @@ class StringBox(QtGui.QWidget):
 		if value==None : value=""
 		self.ignore=0
 		
-		self.hboxlayout = QtGui.QHBoxLayout(self)
+		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setMargin(0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
@@ -547,7 +547,7 @@ class CheckBox(QtGui.QWidget):
 		
 		self.ignore=0
 		
-		self.hboxlayout = QtGui.QHBoxLayout(self)
+		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setMargin(0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
@@ -747,7 +747,7 @@ class EMSpinWidget(QtGui.QWidget):
 		self.wheelstep=wheelstep
 		self.rounding = rounding
 		
-		shbox = QtGui.QHBoxLayout()
+		shbox = QtWidgets.QHBoxLayout()
 		self.lbutton = QtGui.QPushButton("",self)
 		self.lbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(leftarrow)))
 		self.lbutton.setAutoRepeat(True)
