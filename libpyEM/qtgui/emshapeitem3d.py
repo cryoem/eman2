@@ -259,7 +259,7 @@ class EMCube(EMShapeBase):
 		Return a cube control widget for the stacked_widget
 		"""
 		cubewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		cube_dim_label = QtGui.QLabel("Cube Dimension")
 		attribdict["cube_dim"] = QtGui.QLineEdit("50")
 		node_name_label = QtGui.QLabel("Cube Name")
@@ -365,7 +365,7 @@ class EMSphere(EMShapeBase):
 		Return a sphere control widget for the stacked_widget
 		"""
 		spherewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		sphere_dim_label = QtGui.QLabel("Sphere Dimension")
 		attribdict["sphere_dim"] = QtGui.QLineEdit("50")
 		node_name_label = QtGui.QLabel("Sphere Name")
@@ -485,7 +485,7 @@ class EMCylinder(EMShapeBase):
 		Return a cylinder control widget for the stacked_widget
 		"""
 		cyliderwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		cylider_radius_label = QtGui.QLabel("Cylider Radius")
 		attribdict["cylider_radius"] = QtGui.QLineEdit("50")
 		grid.addWidget(cylider_radius_label, 0, 0, 1, 2)
@@ -566,7 +566,7 @@ class EMLine(EMShapeBase):
 		Return a line control widget for the stacked_widget
 		"""
 		linewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		line_xyzi_label = QtGui.QLabel("Line start, X, Y, Z")
 		attribdict["linexi"] = QtGui.QLineEdit("0.0")
 		attribdict["lineyi"] = QtGui.QLineEdit("0.0")
@@ -769,7 +769,7 @@ class EMCone(EMShapeBase):
 		Return a cone control widget for the stacked_widget
 		"""
 		conewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		cone_radius_label = QtGui.QLabel("Cone Radius")
 		attribdict["cone_radius"] = QtGui.QLineEdit("50")
 		grid.addWidget(cone_radius_label, 0, 0, 1, 2)
@@ -848,7 +848,7 @@ class EM3DText(EMShapeBase):
 		Return a text control widget for the stacked_widget
 		"""
 		textwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		text_label = QtGui.QLabel("Text")
 		attribdict["text_content"] = QtGui.QLineEdit()
 		grid.addWidget(text_label, 0, 0, 1, 2)
@@ -976,7 +976,7 @@ class EMInspectorControlShape(EMItem3DInspector):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControlShape.addControls(self, gridbox)
 		
@@ -1082,7 +1082,7 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		""" Add a tab for each 'column' """
 		super(EMInspectorControlScatterPlot, self).addTabs()
 		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControlScatterPlot.addControls(self, gridbox)
 		
@@ -1096,7 +1096,7 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		scatterframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		scattergridbox = QtGui.QGridLayout()
+		scattergridbox = QtWidgets.QGridLayout()
 		scattergridbox.setAlignment(QtCore.Qt.AlignTop)
 		
 		# Add widgets to frame
@@ -1151,7 +1151,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		""" Add a tab for each 'column' """
 		super(EMInspectorControl3DText, self).addTabs()
 		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControl3DText.addControls(self, gridbox)
 		
@@ -1165,7 +1165,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		textframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		textgridbox = QtGui.QGridLayout()
+		textgridbox = QtWidgets.QGridLayout()
 		
 		# Add widgets to textframe
 		textlabel = QtGui.QLabel("3D Font Mode")
@@ -1201,7 +1201,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		# Add text
 		text3dframe = QtWidgets.QFrame()
 		text3dframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		text3dgridbox = QtGui.QGridLayout()
+		text3dgridbox = QtWidgets.QGridLayout()
 		
 		textlabel3 = QtGui.QLabel("3D Text")
 		textlabel3.setFont(lfont)
@@ -1273,7 +1273,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		""" Add a tab for each 'column' """
 		super(EMInspectorControlLine, self).addTabs()
 		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControlLine.addControls(self, gridbox)
 		
@@ -1287,7 +1287,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		lineframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		linegridbox = QtGui.QGridLayout()
+		linegridbox = QtWidgets.QGridLayout()
 		
 		leftlabel = QtGui.QLabel("Left arrow")
 		leftlabel.setFont(lfont)

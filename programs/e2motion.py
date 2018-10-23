@@ -153,7 +153,7 @@ class EMMotion(QtGui.QMainWindow):
 
 
 		self.setCentralWidget(QtGui.QWidget())
-		self.gbl = QtGui.QGridLayout(self.centralWidget())
+		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 		cen=self.centralWidget()
 		
 		######
@@ -161,7 +161,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.vgb0=QtGui.QGroupBox("Particle Data")
 		self.gbl.addWidget(self.vgb0,0,0,1,4)
 		
-		self.gbl2=QtGui.QGridLayout(self.vgb0)
+		self.gbl2=QtWidgets.QGridLayout(self.vgb0)
 		self.wlpath=QtGui.QLabel("Path: {}".format(self.path))
 		self.gbl2.addWidget(self.wlpath,0,0)
 		self.gbl2.setColumnStretch(0,1)

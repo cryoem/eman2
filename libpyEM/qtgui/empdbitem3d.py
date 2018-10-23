@@ -63,7 +63,7 @@ class EMPDBItem3D(EMItem3D):
 	def getNodeDialogWidget(attribdict):
 		"""Get PDB Widget"""
 		pdbwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		node_name_data_label = QtGui.QLabel("PDB Model Label")
 		attribdict["node_name"] = QtGui.QLineEdit()
 		data_path_label = QtGui.QLabel("PDB Model Path")
@@ -180,7 +180,7 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "data")
 		# add data tab first, then basic
@@ -193,7 +193,7 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 		dataframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		datagridbox = QtGui.QGridLayout()
+		datagridbox = QtWidgets.QGridLayout()
 		self.data_checkbox= QtWidgets.QCheckBox("Display Bounding Box")
 		datagridbox.addWidget(self.data_checkbox, 0, 0)
 		self.file_browse_button = QtGui.QPushButton("Set Data Source")
@@ -250,7 +250,7 @@ class EMBallStickModel(EMPDBItem3D):
 	def getNodeDialogWidget(attribdict):
 		"""Get Ball and Stick Model Widget"""
 		ballstickwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		node_name_model_label = QtGui.QLabel("PDB Structure Name")
 		attribdict["node_name"] = QtGui.QLineEdit(str(EMBallStickModel.representation))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
@@ -1048,7 +1048,7 @@ class EMSphereModel(EMPDBItem3D):
 	def getNodeDialogWidget(attribdict):
 		"""Get Spheres Model Widget"""
 		sphereswidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		node_name_model_label = QtGui.QLabel("PDB Structure Name")
 		attribdict["node_name"] = QtGui.QLineEdit(str(EMSphereModel.representation))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)

@@ -142,7 +142,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 
 		self.setCentralWidget(QtGui.QWidget())
-		self.gbl = QtGui.QGridLayout(self.centralWidget())
+		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 
 		# relative stretch factors
 		self.gbl.setColumnStretch(0,1)
@@ -166,7 +166,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl.addWidget(self.wdepth,1,2)
 
 		### Control panel area in upper left corner
-		self.gbl2 = QtGui.QGridLayout()
+		self.gbl2 = QtWidgets.QGridLayout()
 		self.gbl.addLayout(self.gbl2,1,0)
 
 		#self.wxpos = QtGui.QSlider(Qt.Horizontal)
@@ -1265,7 +1265,7 @@ class EMBoxViewer(QtGui.QWidget):
 
 		self.resize(300,300)
 
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 		self.xyview = EMImage2DWidget()
 		self.gbl.addWidget(self.xyview,0,1)
 
@@ -1353,7 +1353,7 @@ class EMTomoBoxerOptions(QtGui.QWidget):
 		self.setWindowTitle("Options")
 		self.target=weakref.ref(target)
 		
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 		#self.gbl.setMargin(2)
 		#self.gbl.setSpacing(6)
 		self.gbl.setObjectName("gbl")

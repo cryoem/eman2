@@ -547,7 +547,7 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 			frame = QtWidgets.QFrame()
 			frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
 			frame.setMaximumHeight(100)
-			grid = QtGui.QGridLayout()
+			grid = QtWidgets.QGridLayout()
 			grid.addWidget(meanAngLabel, 0, 0)
 			grid.addWidget(self.meanAngle, 0, 1)
 			grid.addWidget(meanAxisLabel, 0, 2)

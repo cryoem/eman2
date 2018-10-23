@@ -53,7 +53,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
 
 		# This object is itself a widget we need to set up
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 		self.gbl.setMargin(8)
 		self.gbl.setSpacing(6)
 		self.gbl.setColumnStretch(0,4)
