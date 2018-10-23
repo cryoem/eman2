@@ -63,7 +63,7 @@ except:
 	QtGui=nothing()
 	QtCore=nothing()
 	QtCore.QObject=nothing()
-	QtGui.QWidget=nothing()
+	QtWidgets.QWidget=nothing()
 
 
 # ok, this is kind of bad style, but really don't want to have to drag this flag around through many objects
@@ -1167,7 +1167,7 @@ aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("NeuralNet", "auto_convnet", boxerConvNet)]
 boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
 
-class GUIBoxer(QtGui.QWidget):
+class GUIBoxer(QtWidgets.QWidget):
 	# Dictionary of autopickers
 	# to add a new one, provide name:(Qt_setup_function,picker_execution_function)
 	# Qt_setup_function(self,empty_grid_layout)
@@ -1178,7 +1178,7 @@ class GUIBoxer(QtGui.QWidget):
 		"""The 'new' e2boxer interface.
 		"""
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 #		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.boxcolors=boxcolors
@@ -1385,7 +1385,7 @@ class GUIBoxer(QtGui.QWidget):
 		# Individual tabs from Dictionary
 		self.abwid=[]
 		for name,bname,cls in aboxmodes:
-			w=QtGui.QWidget()
+			w=QtWidgets.QWidget()
 			gl=QtWidgets.QGridLayout(w)
 			self.abwid.append((w,gl))
 			cls.setup_gui(gl, self)
@@ -2054,7 +2054,7 @@ class GUIBoxer(QtGui.QWidget):
 		print("Centering complete")
 		
 	def closeEvent(self,event):
-#		QtGui.QWidget.closeEvent(self,event)
+#		QtWidgets.QWidget.closeEvent(self,event)
 		self.save_boxes()
 		E2saveappwin("e2boxer21","main",self)
 		E2saveappwin("e2boxer21","image",self.wimage.qt_parent)

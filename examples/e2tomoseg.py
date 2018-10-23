@@ -90,7 +90,7 @@ class TomoSegSliceViewer(QtWidgets.QMainWindow):
 	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,shrink=1,contrast=None,center=None,mod=False,normalize=False):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		
 		self.yshort=yshort
 		self.apix=apix
@@ -118,7 +118,7 @@ class TomoSegSliceViewer(QtWidgets.QMainWindow):
 		self.mwin_single=self.mwin.addAction("Single Particle")
 		self.mwin_average=self.mwin.addAction("Averaging")
 
-		self.setCentralWidget(QtGui.QWidget())
+		self.setCentralWidget(QtWidgets.QWidget())
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 
 		# relative stretch factors
@@ -1353,7 +1353,7 @@ class TomoSegSliceViewer(QtWidgets.QMainWindow):
 	#def closeEvent(self,event):
 		#self.target().done()
 
-class TomoSegInspector(QtGui.QWidget):
+class TomoSegInspector(QtWidgets.QWidget):
 	
 	def __init__(self):
 		super(TomoSegInspector,self).__init__()
@@ -1381,7 +1381,7 @@ class TomoSegInspector(QtGui.QWidget):
 		return tooltabs
 	
 	def getAutomaticTools(self):
-		widget = QtGui.QWidget()
+		widget = QtWidgets.QWidget()
 		
 		hbox = QtWidgets.QHBoxLayout()
 		
@@ -1511,7 +1511,7 @@ class TomoSegInspector(QtGui.QWidget):
 		return widget
 
 	def getSemiAutomaticTools(self):
-		widget = QtGui.QWidget()
+		widget = QtWidgets.QWidget()
 		
 		hbox = QtWidgets.QHBoxLayout()
 		
@@ -1642,7 +1642,7 @@ class TomoSegInspector(QtGui.QWidget):
 
 	def getManualTools(self):
 		
-		widget = QtGui.QWidget()
+		widget = QtWidgets.QWidget()
 		
 		hbox = QtWidgets.QHBoxLayout()
 		
@@ -1775,7 +1775,7 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		This returns the treeview-control panel widget
 		"""
-		widget = QtGui.QWidget()
+		widget = QtWidgets.QWidget()
 		hbox = QtWidgets.QHBoxLayout(widget)
 		treeframe = QtWidgets.QFrame()
 		treeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -1970,7 +1970,7 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		Return the utilites widget
 		"""
-		uwidget = QtGui.QWidget()
+		uwidget = QtWidgets.QWidget()
 		uvbox = QtWidgets.QVBoxLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
@@ -2075,11 +2075,11 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		pass
 
-class EMBoxViewer(QtGui.QWidget):
+class EMBoxViewer(QtWidgets.QWidget):
 	"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
 
 	def __init__(self):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.setWindowTitle("Single Particle View")
 
 		self.resize(300,300)

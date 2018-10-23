@@ -179,12 +179,12 @@ def maskparmgui(classes):
 		sys.exit(1)
 
 
-	class GUImask(QtGui.QWidget):
+	class GUImask(QtWidgets.QWidget):
 		def __init__(self,app,classes):
 			"""Effectively a modal dialog for selecting masking parameters interactively
 			"""
 			self.app=app
-			QtGui.QWidget.__init__(self,None)
+			QtWidgets.QWidget.__init__(self,None)
 			nx=classes[0]["nx"]
 			
 			self.classes=classes

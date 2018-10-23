@@ -115,7 +115,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,application,options,datafile):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.initialized=False
 		self.app=weakref.ref(application)
 		self.options=options
@@ -139,7 +139,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.mfile_quit=self.mfile.addAction("Quit")
 
 
-		self.setCentralWidget(QtGui.QWidget())
+		self.setCentralWidget(QtWidgets.QWidget())
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 
 		# relative stretch factors
@@ -1254,11 +1254,11 @@ def parse_setname(name):
 			
 	
 
-class EMBoxViewer(QtGui.QWidget):
+class EMBoxViewer(QtWidgets.QWidget):
 	"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
 
 	def __init__(self):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.setWindowTitle("Single Particle View")
 
 		self.resize(300,300)
@@ -1344,9 +1344,9 @@ class EMBoxViewer(QtGui.QWidget):
 		self.zyview.close()
 
 
-class EMTomoBoxerOptions(QtGui.QWidget):
+class EMTomoBoxerOptions(QtWidgets.QWidget):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		#print "aaaaaaaa"
 		self.setWindowTitle("Options")
 		self.target=weakref.ref(target)
@@ -1372,12 +1372,12 @@ class EMTomoBoxerOptions(QtGui.QWidget):
 		return 
 
 #### Copied from emimagemx.py since some modification are needed...
-class EMTomoSetsPanel(QtGui.QWidget):
+class EMTomoSetsPanel(QtWidgets.QWidget):
 	'''
 	This is the set display panel
 	'''
 	def __init__(self,target):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 
 		self.target = weakref.ref(target) # this should be the EMImageMXWidget
 		self.busy = False

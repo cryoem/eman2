@@ -280,7 +280,7 @@ def EMSelectorBaseTemplate(Type):
 	'''
 	This is templated inheritance. I need the selector to be a dialog, and I need it to be a normal widget.
 	See the EMSelectorDialogType and EMBrowserType
-	Types currently in use are the QtGui.QWidget and the QtWidgets.QDialog
+	Types currently in use are the QtWidgets.QWidget and the QtWidgets.QDialog
 	'''
 	class EMSelectorBase(Type):
 		ok = QtCore.pyqtSignal(list)
@@ -708,7 +708,7 @@ def fspsort(x):
 	y=x.rsplit(".",1)
 	return y[1]+"."+y[0]
 
-EMBrowserType = EMSelectorBaseTemplate(QtGui.QWidget)
+EMBrowserType = EMSelectorBaseTemplate(QtWidgets.QWidget)
 class EMBrowser(EMBrowserType):
 	def __init__(self, single_selection=False, usescenegraph=False):
 		EMBrowserType.__init__(self,single_selection)

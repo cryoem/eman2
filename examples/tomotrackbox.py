@@ -88,7 +88,7 @@ feature from all slices. Generally best for uniform objects like vesicles."""
 	
 	E2end(logid)
 	
-class TrackerControl(QtGui.QWidget):
+class TrackerControl(QtWidgets.QWidget):
 	def __init__(self,app,maxshift,invert=False,seqali=False,tiltstep=2.0):
 		self.app=app
 		self.maxshift=maxshift
@@ -97,7 +97,7 @@ class TrackerControl(QtGui.QWidget):
 		self.tiltstep=tiltstep
 		
 		# the control panel
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 
 		self.gbl = QtWidgets.QGridLayout(self)
 		self.gbl.setMargin(0)

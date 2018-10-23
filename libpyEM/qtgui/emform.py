@@ -937,13 +937,13 @@ def get_table_items_in_column(table_widget,column):
 		
 	return entries
 	
-class EMEmanStrategyWidget(QtGui.QWidget):
+class EMEmanStrategyWidget(QtWidgets.QWidget):
 	'''
 	Something that knows how to automatically display and build parameters strings for 
 	Eman strategy types, such as aligners, cmps, etc	
 	'''
 	def __init__(self,dumped_dict={},name="strategy",desc_short="Strategy",desc_long="Choose a strategy",defaultunits=None):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.name = name
 		self.output_writers = [] # used to register output write objects, for the purpose of returning the results
 		self.name_widget_map = {} # used to map parameter names to qt widgets - used by booleans to automatically disable and enable widgets
@@ -1025,7 +1025,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		data = self.dumped_dict[strategy]
 		if (len(data) -1) % 3 != 0: raise RuntimeError("The format of the data is unknown") # first entry is descriptive text, then they should be in groups of threes, see dump_aligners_list, for example
 		
-		widget = QtGui.QWidget()
+		widget = QtWidgets.QWidget()
 		vbl = QtWidgets.QVBoxLayout(widget)
 		widget.setToolTip(data[0])
 		params = []
@@ -1085,7 +1085,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		dict[self.name] = result
 
 
-class EMFormWidget(QtGui.QWidget):
+class EMFormWidget(QtWidgets.QWidget):
 	'''
 	See the example in __main__ below
 	If ok is clicked the "emform_ok" signal is emitted along with a dictionary containing all of the form entries
@@ -1097,7 +1097,7 @@ class EMFormWidget(QtGui.QWidget):
 	display_file = QtCore.pyqtSignal(str)
 
 	def __init__(self,params=None,disable_ok_cancel=False):
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.params = params
 		self.event_handlers = [] # used to keep event handlers in memory
 		self.resize_event_handlers = [] # used to keep resize event handlers in memory
@@ -1142,7 +1142,7 @@ class EMFormWidget(QtGui.QWidget):
 	
 	def closeEvent(self, event):
 		self.emform_close.emit()
-		QtGui.QWidget.closeEvent(self, event)
+		QtWidgets.QWidget.closeEvent(self, event)
 	
 	def incorporate_params(self,params,layout):
 		for param in params:
@@ -1233,7 +1233,7 @@ class EMFormWidget(QtGui.QWidget):
 			
 #			groupbox = QtWidgets.QGroupBox(paramtable.desc_short)
 #			groupbox.setToolTip(paramtable.desc_long)
-			page = QtGui.QWidget()
+			page = QtWidgets.QWidget()
 			page.setLayout(vbl)
 			if hasattr(paramtable,"icon"):
 				table.addTab(page,paramtable.icon,paramtable.desc_short)
@@ -2007,7 +2007,7 @@ class EMTableFormWidget(EMFormWidget):
 		
 		for title,paramlist in params:
 			
-			widget = QtGui.QWidget(None)
+			widget = QtWidgets.QWidget(None)
 			vbl =  QtWidgets.QVBoxLayout(widget)
 			#print paramlist
 			EMFormWidget.incorporate_params(self,paramlist,vbl)

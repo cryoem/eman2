@@ -40,13 +40,13 @@ def main():
 	E2end(logid)
 	
 	
-class TomoEvalGUI(QtGui.QWidget):
+class TomoEvalGUI(QtWidgets.QWidget):
 
 	
 	def __init__(self, options):
 		
 		self.path="tomograms/"
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 
 
 		self.win_size=[1000,680]

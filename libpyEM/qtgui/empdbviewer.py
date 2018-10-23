@@ -983,9 +983,9 @@ class EMPDBModel(EM3DModel):
 		self.get_inspector().text.setText(self.text)
 		self.updateGL()
 		
-class EMPDBInspector(QtGui.QWidget):
+class EMPDBInspector(QtWidgets.QWidget):
 	def __init__(self,target,enable_advanced=False):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.target = weakref.ref(target)
 
 		self.rotation_sliders = EMTransformPanel(target,self)

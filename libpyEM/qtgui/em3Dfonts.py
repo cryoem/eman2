@@ -280,9 +280,9 @@ class EM3DFontModel(EMLightsDrawer,EM3DModel,DynamicFonts):
 		return "EM3DFontModel"
 
 
-class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
+class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		EMLightsInspectorBase.__init__(self)
 		self.target=weakref.ref(target)
 		self.transform_panel = EMTransformPanel(target,self)
@@ -441,7 +441,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.transform_panel.set_xyz_trans(x,y,z)	
 
 	def get_GL_tab(self):
-		self.gltab = QtGui.QWidget()
+		self.gltab = QtWidgets.QWidget()
 		gltab = self.gltab
 
 		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab)
@@ -464,7 +464,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 
 	def get_main_tab(self):
 		if ( self.maintab == None ):
-			self.maintab = QtGui.QWidget()
+			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
 			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 			maintab.vbl.setMargin(0)
@@ -481,7 +481,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		return maintab
 
 	def get_format_tab(self):
-		self.formattab = QtGui.QWidget()
+		self.formattab = QtWidgets.QWidget()
 		formattab = self.formattab
 		formattab.vbl = QtWidgets.QVBoxLayout(self.formattab)
 		formattab.vbl.setMargin(0)
@@ -549,7 +549,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		return formattab
 
 	def get_bgRGB_tab(self):
-		self.bgRGBtab = QtGui.QWidget()
+		self.bgRGBtab = QtWidgets.QWidget()
 		bgRGBtab = self.bgRGBtab
 		bgRGBtab.vbl2 = QtWidgets.QVBoxLayout(self.bgRGBtab)
 		bgRGBtab.vbl2.setMargin(0)

@@ -60,12 +60,12 @@ class PMComboBox(QtWidgets.QComboBox):
 		event.ignore()
 
 
-class PMBaseWidget(QtGui.QWidget):
+class PMBaseWidget(QtWidgets.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
 	pmmessage = QtCore.pyqtSignal(str)
 
 	def __init__(self, name, mode="",returnNone=False):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 
 		self.postional = False
 		self.name = name

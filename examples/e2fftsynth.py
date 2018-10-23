@@ -75,12 +75,12 @@ This program allows the user to play around with Fourier synthesis graphically
 	except: pass
 	app.exec_()
 	
-class GUIFourierSynth(QtGui.QWidget):
+class GUIFourierSynth(QtWidgets.QWidget):
 	"""This class represents an application for interactive Fourier synthesis"""
 	
 	def __init__(self,app):
 		self.app=app
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 
 		self.synthplot=EMPlot2DWidget(self.app)
 		self.synthplot.show()
@@ -135,7 +135,7 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.hbl1.addWidget(self.cbtargfn)
 		
 		# Widget containing valsliders
-		self.wapsliders=QtGui.QWidget(self)
+		self.wapsliders=QtWidgets.QWidget(self)
 #		self.wapsliders.setMinimumSize(800,640)
 		self.gblap=QtWidgets.QGridLayout()
 		self.gblap.setSizeConstraint(QtWidgets.QLayout.SetMinAndMaxSize)

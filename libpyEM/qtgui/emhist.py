@@ -831,10 +831,10 @@ lc is the cursor selection point in plot coords"""
 		pass
 
 
-class EMHistogramInspector(QtGui.QWidget):
+class EMHistogramInspector(QtWidgets.QWidget):
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.target=weakref.ref(target)
 

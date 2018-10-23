@@ -205,9 +205,9 @@ class EM3DHelloWorld(EM3DModel):
 		return self.inspector
 		
 
-class EMHelloWorldInspector(QtGui.QWidget):
+class EMHelloWorldInspector(QtWidgets.QWidget):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=target
 		
 		self.vbl = QtWidgets.QVBoxLayout(self)
@@ -257,7 +257,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
 	
 	def get_GL_tab(self):
-		self.gltab = QtGui.QWidget()
+		self.gltab = QtWidgets.QWidget()
 		gltab = self.gltab
 		
 		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
@@ -280,7 +280,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 	
 	def get_main_tab(self):
 		if ( self.maintab == None ):
-			self.maintab = QtGui.QWidget()
+			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
 			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 			maintab.vbl.setMargin(0)

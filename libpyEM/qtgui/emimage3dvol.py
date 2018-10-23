@@ -568,9 +568,9 @@ class EMVolumeModel(EM3DModel):
 		self.vdtools.set_update_P_inv()
 
 
-class EMVolumeInspector(QtGui.QWidget):
+class EMVolumeInspector(QtWidgets.QWidget):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.rotation_sliders = EMTransformPanel(target,self)
@@ -636,7 +636,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		return self.maintab.vbl
 	
 	def get_GL_tab(self):
-		self.gltab = QtGui.QWidget()
+		self.gltab = QtWidgets.QWidget()
 		gltab = self.gltab
 		
 		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
@@ -659,7 +659,7 @@ class EMVolumeInspector(QtGui.QWidget):
 	
 	def get_main_tab(self):
 	
-		self.maintab = QtGui.QWidget()
+		self.maintab = QtWidgets.QWidget()
 		maintab = self.maintab
 		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 		maintab.vbl.setMargin(0)

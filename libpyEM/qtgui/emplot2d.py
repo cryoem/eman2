@@ -1510,12 +1510,12 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.shapechange=1
 		#self.updateGL()
 
-class EMPlot2DStatsInsp(QtGui.QWidget):
+class EMPlot2DStatsInsp(QtWidgets.QWidget):
 
 	"""This class implements the statistics pop-up from the EMPlot2DInspector"""
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		gbl0=QtWidgets.QGridLayout(self)
 
@@ -1668,11 +1668,11 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		self.table.setHorizontalHeaderLabels(cols)
 		self.table.setVerticalHeaderLabels(cols)
 
-class EMPlot2DRegrInsp(QtGui.QWidget):
+class EMPlot2DRegrInsp(QtWidgets.QWidget):
 	"""This class implements the regression pop-up from the EMPlot2DInspector"""
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		gbl0=QtWidgets.QGridLayout(self)
 
@@ -1792,11 +1792,11 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		elif norm == "None":
 			return x
 
-class EMPlot2DClassInsp(QtGui.QWidget):
+class EMPlot2DClassInsp(QtWidgets.QWidget):
 	"""This class implements the classification pop-up from the EMPlot2DInspector"""
 	def __init__(self,target) :
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		gbl0=QtWidgets.QGridLayout(self)
 
@@ -2200,10 +2200,10 @@ class DragListWidget(QtWidgets.QListWidget):
 #		print "Dropped ",dropact
 
 
-class EMPlot2DInspector(QtGui.QWidget):
+class EMPlot2DInspector(QtWidgets.QWidget):
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.target=weakref.ref(target)
 		vbl0=QtWidgets.QVBoxLayout(self)
@@ -2978,10 +2978,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 		try: self.regresswin.close()
 		except: pass
 
-class EMDataFnPlotter(QtGui.QWidget):
+class EMDataFnPlotter(QtWidgets.QWidget):
 
 	def __init__(self, parent = None, data=None):
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 
 		self.setWindowTitle("Plotter")
 

@@ -1789,7 +1789,7 @@ def draw_volume_bounds(width,height,depth,color=True):
 
 
 def get_RGB_tab(parent, name=""):
-	rgbtab = QtGui.QWidget(parent)
+	rgbtab = QtWidgets.QWidget(parent)
 	rgbtab.vbl = QtWidgets.QVBoxLayout(rgbtab)
 	rgbtab.vbl.setMargin(0)
 	rgbtab.vbl.setSpacing(6)

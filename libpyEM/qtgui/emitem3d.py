@@ -144,7 +144,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		Get Data Widget
 		"""
-		nodewidget = QtGui.QWidget()
+		nodewidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		node_name_label = QtWidgets.QLabel("Node Name")
 		attribdict["node_name"] = QtWidgets.QLineEdit()
@@ -533,7 +533,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
+		tabwidget = QtWidgets.QWidget()
 		gridbox = QtWidgets.QGridLayout()
 		
 		EMItem3DInspector.addControls(self, gridbox)
@@ -733,14 +733,14 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		
 	def addRotationWidgets(self):
 		""" Add alll the widgets for the various EMAN2 rotation conventions """
-		EMANwidget = QtGui.QWidget()
-		Imagicwidget = QtGui.QWidget()
-		Spiderwidget = QtGui.QWidget()
-		MRCwidget = QtGui.QWidget()
-		XYZwidget = QtGui.QWidget()
-		spinwidget = QtGui.QWidget()
-		sgirotwidget = QtGui.QWidget()
-		quaternionwidget = QtGui.QWidget()
+		EMANwidget = QtWidgets.QWidget()
+		Imagicwidget = QtWidgets.QWidget()
+		Spiderwidget = QtWidgets.QWidget()
+		MRCwidget = QtWidgets.QWidget()
+		XYZwidget = QtWidgets.QWidget()
+		spinwidget = QtWidgets.QWidget()
+		sgirotwidget = QtWidgets.QWidget()
+		quaternionwidget = QtWidgets.QWidget()
 		# EMAN
 		emanbox = QtWidgets.QVBoxLayout()
 		self.emanazslider = ValSlider(EMANwidget, (0.0, 360.0), "  Az", rounding = 1)

@@ -1908,9 +1908,9 @@ class EMImage2DWidget(EMGLWidget):
 		glDisable(GL_TEXTURE_2D)
 
 
-class EMImageInspector2D(QtGui.QWidget):
+class EMImageInspector2D(QtWidgets.QWidget):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 
 		self.vbl = QtWidgets.QVBoxLayout(self)
@@ -1922,12 +1922,12 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mmtab = QtWidgets.QTabWidget()
 
 		# App tab
-		self.apptab = QtGui.QWidget()
+		self.apptab = QtWidgets.QWidget()
 		self.apptablab = QtWidgets.QLabel("Application specific mouse functions",self.apptab)
 		self.mmtab.addTab(self.apptab,"App")
 
 		# Save tab
-		self.savetab = QtGui.QWidget()
+		self.savetab = QtWidgets.QWidget()
 		self.stlay = QtWidgets.QGridLayout(self.savetab)
 
 		self.stsnapbut = QtWidgets.QPushButton("Snapshot")
@@ -1970,7 +1970,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.stanimgif.clicked[bool].connect(self.do_makegifanim)
 
 		# Filter tab
-		self.filttab = QtGui.QWidget()
+		self.filttab = QtWidgets.QWidget()
 		self.ftlay=QtWidgets.QGridLayout(self.filttab)
 
 		self.procbox1=StringBox(label="Process1:",value="filter.lowpass.gauss:cutoff_abs=0.125",showenable=0)
@@ -1995,7 +1995,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.procbox3.textChanged.connect(self.do_filters)
 
 		# Probe tab
-		self.probetab = QtGui.QWidget()
+		self.probetab = QtWidgets.QWidget()
 		self.ptlay=QtWidgets.QGridLayout(self.probetab)
 
 		self.ptareasize= ValBox(label="Probe Size:",value=32)
@@ -2030,13 +2030,13 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.ptlay.addWidget(self.ptcoord2,5,1,Qt.AlignLeft)
 
 		# not really necessary since the pointbox accurately labels the pixel when zoomed in
-		#self.ptpixels= QtGui.QWidget()
+		#self.ptpixels= QtWidgets.QWidget()
 		#self.ptlay.addWidget(self.ptpixels,0,2)
 
 		self.mmtab.addTab(self.probetab,"Probe")
 
 		# Measure tab
-		self.meastab = QtGui.QWidget()
+		self.meastab = QtWidgets.QWidget()
 		self.mtlay = QtWidgets.QGridLayout(self.meastab)
 
 		#self.mtl1= QtWidgets.QLabel("A/Pix")
@@ -2074,7 +2074,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mmtab.addTab(self.meastab,"Meas")
 
 		# Draw tab
-		self.drawtab = QtGui.QWidget()
+		self.drawtab = QtWidgets.QWidget()
 		self.drawlay = QtWidgets.QGridLayout(self.drawtab)
 
 		self.dtl1 = QtWidgets.QLabel("Pen Size:")
@@ -2108,7 +2108,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mmtab.addTab(self.drawtab,"Draw")
 
 		# PSpec tab
-		self.pstab = QtGui.QWidget()
+		self.pstab = QtWidgets.QWidget()
 		self.pstlay = QtWidgets.QGridLayout(self.pstab)
 
 		self.psbsing = QtWidgets.QPushButton("Single")
@@ -2121,7 +2121,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.pspecwins=[]
 
 		# Python tab
-		self.pytab = QtGui.QWidget()
+		self.pytab = QtWidgets.QWidget()
 		self.pytlay = QtWidgets.QGridLayout(self.pytab)
 
 		self.pyinp = QtWidgets.QLineEdit()

@@ -2217,9 +2217,9 @@ class EMGLScrollBar(object):
 		self.down_arrow_color = self.scroll_bar_idle_color
 		self.target().updateGL()
 
-class EMImageInspectorMX(QtGui.QWidget):
+class EMImageInspectorMX(QtWidgets.QWidget):
 	def __init__(self,target, allow_opt_button=False):
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"multiple_images.png"))
 
 		self.target=weakref.ref(target)
@@ -2412,7 +2412,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.target().animation_enabled = state
 
 	def get_image_manip_page(self):
-		self.impage = QtGui.QWidget()
+		self.impage = QtWidgets.QWidget()
 		vbl = QtWidgets.QVBoxLayout(self.impage )
 		vbl.setMargin(2)
 		vbl.setSpacing(6)
@@ -2598,12 +2598,12 @@ class EMMXDeletionManager(object):
 	def deleted_ptcls(self):
 		return self.deleted_idxs
 
-class EMMXSetsPanel(QtGui.QWidget):
+class EMMXSetsPanel(QtWidgets.QWidget):
 	'''
 	This is the set display panel
 	'''
 	def __init__(self,target):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 
 		self.target = weakref.ref(target) # this should be the EMImageMXWidget
 		self.busy = False
