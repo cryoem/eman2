@@ -76,7 +76,7 @@ def main():
 	
 	parser.add_argument("--binwidth", type=float, default=0.0, help="""default=0.0 (not used). requires --histogram. Y axes. Enforce this value for the width of histogram bins (it will be used to calculate --nbins)""")
 
-	parser.add_argument("--data", type=str, default='', help="""default=None (not used). Text file(s) with two column of values mean to be plotted on the X and Y axes. If supplying multiple files, separate them by commas.""")
+	parser.add_argument("--data", type=str, default='', help="""default=None (not used). Text file(s) with two column of values meant to be plotted on the X and Y axes. If supplying multiple files, separate them by commas.""")
 	parser.add_argument("--datax", type=str, default='', help="""default=None (not used). Text file(s) with a single column of values meant to be plotted on the X axis. If not provided, the X axis will go from 0 to n, where n is the number of values in --datay. If supplying multiple files, separate them by commas (the number of files for --datax and --datay must be the same).""")
 	parser.add_argument("--datay", type=str, default='', help="""default=None (not used). Text file(s) with a single column of values meant to be plotted on the  Y axis. If not provided, the Y axis will go from 0 to n, where n is the number of values in --datax. If supplying multiple files, separate them by commas (the number of files for --datax and --datay must be the same).""")
 
@@ -91,8 +91,8 @@ def main():
 	parser.add_argument("--legend",type=str,default='',help=""""Default=None. If you are plotting only 1 curve, or --individualplots is on, and you desire a specific legend for the data series in each plot, supply it here as a string with no spaces. You can provide any string without spaces; if you need spaces, add an underscore instead and the program will replace the underscore with a space; for exampe 'ribosome_80s' will appear as 'ribosome 80s'.""")
 	parser.add_argument("--linesoff", action='store_true', default=False, help="""Default=False. This requires --markerson and will get rid of the line uniting data points (the plot will be like a scatter plot).""")
 	
-	parser.add_argument("--markerson", action='store_true', default=False, help="""Default=False. This will enforce markers in the plot for each data point (like a scatter plot, but the points will still be united by a line).""")
-	parser.add_argument("--marker",type=str,default='',help=""""Default=None. If you are plotting only 1 curve, or --individualplots is on, and you desire a specific marker, supply it here (for example o, or *, or x.""")
+	parser.add_argument("--markerson", action='store_true', default=False, help="""Default=False. This will enforce markers in the plot for each data point (like a scatter plot, but the points will still be united by a line). Will be switched on if --linesoff is provided.""")
+	parser.add_argument("--marker",type=str,default='',help=""""Default=None. If you are plotting only 1 curve, or --individualplots is on, and you desire a specific marker, supply it here (for example o, or *, or x. Will default to 'x' if --linesoff is provided.""")
 	
 	parser.add_argument("--maxx",type=float,default=None,help="""Default=None. Maximum value to plot in X. Automatically set to the maximum value in the data, per image, if not explicitly set.""")
 	parser.add_argument("--maxy",type=float,default=None,help="""Default=None. Maximum value to plot in Y. Automatically set to the maximum value in the data, per image, if not explicitly set.""")
@@ -134,6 +134,8 @@ def main():
 				print("\n(e2plotfig)(main) ERROR: provide at least one of --data, --datax, or --datay.")
 				sys.exit(1)
 
+	if options.linesoff:
+		options.markerson=True
 
 	if options.unitsx:
 		if options.unitsx=='angstroms' or options.unitsx=='Angstroms' or options.unitsx=="A" or options.unitsx=="ANGSTROMS":
@@ -395,8 +397,10 @@ def plotdata( options, data ):
 		plt.close('fig')
 		print("\n(e2plotfig)(plotdata) saving figure {}".format(filetosave))
 
-	if options.individualplots:
+	elif options.individualplots:
 		#colorstep=0
+		if options.linesoff:
+			options.marker='x'
 		for k in data:
 			#colorbar=False
 			fig,ax = resetplot()
@@ -415,6 +419,8 @@ def plotdata( options, data ):
 
 def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis='', transparent=False )	:
 	
+	if options.verbose > 9:
+		print('\ndatax={}, datay={}'.format(datax,datay))
 	alphaval=1.0
 	if transparent:
 		alphaval=0.5
@@ -450,7 +456,7 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 		linewidth=0
 	
 	if not options.histogram:
-		ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=5, color=colorthis, label=label, alpha=alphaval)
+		ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=10, markeredgewidth=5, color=colorthis, label=label, alpha=alphaval)
 	elif options.histogram:
 		nbins = calcbins(options,datay)
 		print("\ndatay is",datay)
