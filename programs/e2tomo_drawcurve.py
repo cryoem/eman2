@@ -10,8 +10,8 @@ import numpy as np
 import weakref
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtGui, QtCore, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
+from PyQt5.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape

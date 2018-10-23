@@ -176,7 +176,7 @@ class MorphBoxingTool(EMBoxingTool):
 		return self.panel_object.get_widget()
 
 	def icon(self):
-		from PyQt4 import QtGui
+		from PyQt5 import QtGui, QtWidgets
 		return QtGui.QIcon(get_image_directory() + "white_box.png")
 
 	def set_panel_object(self,panel): self.panel_object = panel
@@ -193,7 +193,7 @@ class MorphBoxingTool(EMBoxingTool):
 	def mouse_down(self,event) :
 		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
 		box_num = self.target().detect_box_collision(m)
-		from PyQt4.QtCore import Qt
+		from PyQt5.QtCore import Qt
 		if box_num == -1:
 			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
 			box_num = self.target().add_box(m[0],m[1],MorphBoxingTool.BOX_TYPE)
@@ -212,7 +212,7 @@ class MorphBoxingTool(EMBoxingTool):
 
 	def mouse_drag(self,event) :
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
-		from PyQt4.QtCore import Qt
+		from PyQt5.QtCore import Qt
 		if event.modifiers()&Qt.ShiftModifier:
 			box_num = self.target().detect_box_collision(m)
 			if ( box_num != -1):
@@ -310,7 +310,7 @@ class MorphBoxingPanel(object):
 	
 	def get_widget(self):
 		if self.widget == None:
-			from PyQt4 import QtCore, QtGui
+			from PyQt5 import QtCore, QtGui, QtWidgets
 			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QVBoxLayout(self.widget)
 			vbl.setMargin(0)
@@ -345,7 +345,7 @@ class ErasingPanel(object): # copied for ideas for the morph panel
 
 	def get_widget(self):
 		if self.widget == None:
-			from PyQt4 import QtCore, QtGui
+			from PyQt5 import QtCore, QtGui, QtWidgets
 			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QVBoxLayout(self.widget)
 			vbl.setMargin(0)

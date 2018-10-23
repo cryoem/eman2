@@ -35,7 +35,7 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from eman2_gui.pmicons import *
 import os, json, re, glob, signal
 import subprocess

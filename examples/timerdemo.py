@@ -34,7 +34,7 @@ from __future__ import division
 #
 
 from EMAN2 import *
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 
