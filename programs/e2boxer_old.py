@@ -2036,7 +2036,7 @@ class GaussPanel(object):
 			vbl.addLayout(hbl_invcont)
 
 			hbl_gwidth = QtWidgets.QHBoxLayout()
-			self.gauss_width_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+			self.gauss_width_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
 			self.gauss_width_slider.setRange( -100, 100 )
 			self.gauss_width_slider.setValue( self.SLVAL )
 			hbl_gwidth.addWidget( self.gauss_width_slider)

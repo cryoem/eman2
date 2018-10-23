@@ -1230,7 +1230,7 @@ def sptboxergui(options,args):
 			self.gbl.addWidget(self.zyview,0,0)
 
 			# Select Z for xy view
-			self.wdepth = QtGui.QSlider()
+			self.wdepth = QtWidgets.QSlider()
 			self.gbl.addWidget(self.wdepth,1,2)
 
 			### Control panel area in upper left corner
