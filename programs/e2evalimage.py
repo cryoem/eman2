@@ -640,7 +640,7 @@ class GUIEvalImage(QtGui.QWidget):
 			self.procthread.start()
 
 		if self.errors:
-			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
+			QtWidgets.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			self.errors=None
 
 	def doRefit(self):
@@ -692,7 +692,7 @@ class GUIEvalImage(QtGui.QWidget):
 		if not os.access("micrographs",os.R_OK) :
 			try : os.mkdir("micrographs")
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
+				QtWidgets.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
 				return
 
 		#db=db_open_dict("bdb:micrographs#%s"%item)

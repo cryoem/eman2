@@ -108,15 +108,15 @@ class EMDeleteItemAction(EMItemAction,EMMultiItemAction,EMActionDelegate):
 		self.__delete_items( [item] )
 
 	def __delete_items(self,items):
-		msg = QtGui.QMessageBox()
+		msg = QtWidgets.QMessageBox()
 		msg.setText("Deletion will be permanent. Are you sure you want to delete the selected file(s)?")
 		s = ""
 		for i in items: s+=i.text()+"\n"
 		msg.setInformativeText(s)
-		msg.setStandardButtons(QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Ok )
-		msg.setDefaultButton(QtGui.QMessageBox.Cancel)
+		msg.setStandardButtons(QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Ok )
+		msg.setDefaultButton(QtWidgets.QMessageBox.Cancel)
 		ret = msg.exec_()
-		if ret == QtGui.QMessageBox.Cancel: return False
+		if ret == QtWidgets.QMessageBox.Cancel: return False
 		
 		for item in items:
 			delegate= item.get_delegate()
@@ -1004,7 +1004,7 @@ class EMSelectorDialog(EMSelectorDialogType):
 		
 		directory = self.get_current_directory()
 		if directory == None:
-			msg = QtGui.QMessageBox()
+			msg = QtWidgets.QMessageBox()
 			msg.setText("Can not deduce the current directory. Please update your selection")
 			msg.exec_()
 			return

@@ -528,7 +528,7 @@ class EMMotion(QtWidgets.QMainWindow):
 
 	def menuFileOpen(self,x):
 		if self.particles!=None:
-			QtGui.QMessageBox.warning(None,"Error","%s already contains a stack of particles. A new folder is required to start with a new stack of particles. Rerun without --path option."%self.path)
+			QtWidgets.QMessageBox.warning(None,"Error","%s already contains a stack of particles. A new folder is required to start with a new stack of particles. Rerun without --path option."%self.path)
 			return
 
 		self.dialog = embrowser.EMBrowserWidget(withmodal=True,multiselect=False)
@@ -548,9 +548,9 @@ class EMMotion(QtWidgets.QMainWindow):
 		## We don't want the user to overwhelm the system
 		#if sz*sz*4*n > 5.0e8 :
 			#nmax=5.0e8/(sz*sz*4)
-			#r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: This full particle set will require %d+ gb memory to process. Select Yes to use only the first %d particles, No to use the entire stack, or Cancel to abort. You may also consider using e2proc2d.py --meanshrink= to produce a downsampled stack for processing."%(int(sz*sz*12*n/1.0e9+.5),nmax),QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
-			#if r==QtGui.QMessageBox.Cancel : return
-			#if r==QtGui.QMessageBox.Yes : n=nmax
+			#r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: This full particle set will require %d+ gb memory to process. Select Yes to use only the first %d particles, No to use the entire stack, or Cancel to abort. You may also consider using e2proc2d.py --meanshrink= to produce a downsampled stack for processing."%(int(sz*sz*12*n/1.0e9+.5),nmax),QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No|QtWidgets.QMessageBox.Cancel)
+			#if r==QtWidgets.QMessageBox.Cancel : return
+			#if r==QtWidgets.QMessageBox.Yes : n=nmax
 		
 		#task="e2proclst.py %s --create %s/particles.lst --range=0,%d,1"%(ptcl,self.path,n)
 		#print task
@@ -911,7 +911,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		
 		if mode==0 : self.doComputePCA()
 		elif mode==1 : self.doComputeAvD()
-		else : QtGui.QMessageBox.warning("Unknown mode %d"%mode)
+		else : QtWidgets.QMessageBox.warning("Unknown mode %d"%mode)
 		
 		return
 		

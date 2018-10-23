@@ -66,7 +66,7 @@ def display_error(msg) :
 
 	print(msg)
 	sys.stdout.flush()
-	QtGui.QMessageBox.warning(None, "Error", msg)
+	QtWidgets.QMessageBox.warning(None, "Error", msg)
 
 # This is a floating point number-finding regular expression
 
@@ -109,10 +109,10 @@ def isprint(s) :
 def askFileExists() :
 	"""Opens a dialog and asks the user what to do if a file to be written to already exists"""
 
-	box = QtGui.QMessageBox(4, "File Exists", "File already exists. What would you like to do ?")	# 4 means we're asking a question
-	b1 = box.addButton("Append", QtGui.QMessageBox.AcceptRole)
-	b2 = box.addButton("Overwrite", QtGui.QMessageBox.AcceptRole)
-	b3 = box.addButton("Cancel", QtGui.QMessageBox.AcceptRole)
+	box = QtWidgets.QMessageBox(4, "File Exists", "File already exists. What would you like to do ?")	# 4 means we're asking a question
+	b1 = box.addButton("Append", QtWidgets.QMessageBox.AcceptRole)
+	b2 = box.addButton("Overwrite", QtWidgets.QMessageBox.AcceptRole)
+	b3 = box.addButton("Cancel", QtWidgets.QMessageBox.AcceptRole)
 
 	box.exec_()
 
@@ -2038,7 +2038,7 @@ class EMTextInfoPane(EMInfoPane) :
 
 	def buttonOk(self, tog) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
-		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
+		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
 #---------------------------------------------------------------------------
 
@@ -2111,7 +2111,7 @@ class EMHTMLInfoPane(EMInfoPane) :
 
 	def buttonOk(self, tog) :
 		try : open(self.target.path(), "w").write(str(self.text.toHtml()))
-		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
+		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
 #---------------------------------------------------------------------------
 
@@ -2170,7 +2170,7 @@ class EMPDBInfoPane(EMInfoPane) :
 
 	def buttonOk(self, tog) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
-		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
+		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
 #---------------------------------------------------------------------------
 
@@ -2323,7 +2323,7 @@ class EMBDBInfoPane(EMInfoPane) :
 		try :
 			val = int(val)
 		except :
-			QtGui.QMessageBox.warning(self, "Error", "Sorry, cannot display string-keyed images")
+			QtWidgets.QMessageBox.warning(self, "Error", "Sorry, cannot display string-keyed images")
 			return
 
 		self.curft.setN(val)
@@ -3619,14 +3619,14 @@ class EMBrowserWidget(QtGui.QWidget) :
 			"3. *.txt *.tiff  - find all text files or tiff files\n" + \
 			"4. *             - find all files"
 
-			QtGui.QMessageBox.warning(None, "Info", hlp)
+			QtWidgets.QMessageBox.warning(None, "Info", hlp)
 		else :
 			try :
 				flt = re.compile(filt)
 				filt = flt
 			except :
 				filt = filt
-#				QtGui.QMessageBox.warning(self, "Error", "Bad filter expression")
+#				QtWidgets.QMessageBox.warning(self, "Error", "Bad filter expression")
 
 		# if path in self.models :
 			# self.curmodel = self.models[path]
@@ -3640,7 +3640,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 			except :
 				self.curmodel = inimodel(path)
 				filt = None
-#				QtGui.QMessageBox.warning(None, "Error", "Filtering not allowed.")
+#				QtWidgets.QMessageBox.warning(None, "Error", "Filtering not allowed.")
 				print("Filtering is not implemented in this instance of the file browser.")
 		else :
 			self.curmodel = inimodel(path)

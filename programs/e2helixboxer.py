@@ -1132,14 +1132,14 @@ if ENABLE_GUI:
 			coords_list = load_helix_coords(path)
 
 			if self.main_image.shapes!=None and len(self.main_image.shapes)>0 :
-				keep_boxes_msgbox = QtGui.QMessageBox()
+				keep_boxes_msgbox = QtWidgets.QMessageBox()
 				keep_boxes_msgbox.setText(self.tr("Keep current boxes?"))
 				keep_boxes_msgbox.setInformativeText(self.tr("Do you want to keep your current boxes?"))
-				keep_boxes_msgbox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
-				keep_boxes_msgbox.setDefaultButton(QtGui.QMessageBox.Yes)
+				keep_boxes_msgbox.setStandardButtons(QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Yes)
+				keep_boxes_msgbox.setDefaultButton(QtWidgets.QMessageBox.Yes)
 				keep_current_boxes = keep_boxes_msgbox.exec_()
 
-				if keep_current_boxes == QtGui.QMessageBox.No:
+				if keep_current_boxes == QtWidgets.QMessageBox.No:
 					self.main_image.shapes = EMShapeDict()
 					self.set_db_item("helixboxes", [])
 					self.helices_dict = {}

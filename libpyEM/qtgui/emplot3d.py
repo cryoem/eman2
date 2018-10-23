@@ -1256,7 +1256,7 @@ class EMPlot3DRegrInsp(QtGui.QWidget):
 			zaxes=[int(i) for i in zaxes.split(",")]
 			if max(zaxes)>=ncol : raise Exception
 		except:
-			pass #QtGui.QMessageBox.warning(self, "Axes must be a comma separated list of column numbers")
+			pass #QtWidgets.QMessageBox.warning(self, "Axes must be a comma separated list of column numbers")
 			#return
 
 		xs = ",".join([str(i) for i in xaxes])
@@ -1414,10 +1414,10 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 		for name in names:
 			try: num=int(name.rsplit("_",1)[1])
 			except:
-				QtGui.QMessageBox.warning(self,"Error","Please hilight sets with names ending in _# !")
+				QtWidgets.QMessageBox.warning(self,"Error","Please hilight sets with names ending in _# !")
 				return
 			if num in nums:
-				QtGui.QMessageBox.warning(self, "Error","Please select only one group of sets at a time !")
+				QtWidgets.QMessageBox.warning(self, "Error","Please select only one group of sets at a time !")
 				return
 			nums.add(num)
 
@@ -1426,13 +1426,13 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 
 			try: comments=self.target().comments[name]
 			except:
-				QtGui.QMessageBox.warning(self,"Error", "No filenames stored in {}".format(name))
+				QtWidgets.QMessageBox.warning(self,"Error", "No filenames stored in {}".format(name))
 				return
 
 			for r in range(len(comments)):
 				try: imn,imf=comments[r].split(";")[:2]
 				except:
-					QtGui.QMessageBox.warning(self,"Error", "Invalid filename {} in {}, line {}".format(comments[r],name,r))
+					QtWidgets.QMessageBox.warning(self,"Error", "Invalid filename {} in {}, line {}".format(comments[r],name,r))
 					return
 
 				imn=int(imn)
@@ -1440,7 +1440,7 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 				val=lsx[imf][imn]
 				out[r]=val
 
-		QtGui.QMessageBox.information(None,"Finished","New sets created: "+", ".join(outs))
+		QtWidgets.QMessageBox.information(None,"Finished","New sets created: "+", ".join(outs))
 
 	def doKMeans(self):
 		"""Performs K-means classification, and produces nseg new data sets"""
@@ -1462,7 +1462,7 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 				axes=[int(i) for i in axes.split(",")]
 				if max(axes)>=ncol : raise Exception
 			except:
-				QtGui.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
+				QtWidgets.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
 				return
 
 		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
@@ -1520,14 +1520,14 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 				axes=[int(i) for i in axes.split(",")]
 				if max(axes)>=ncol : raise Exception
 			except:
-				QtGui.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
+				QtWidgets.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
 				return
 
 		try:
 			vals=[float(i) for i in vals.split(",")]
 			if len(vals) != len(axes): raise Exception
 		except:
-			QtGui.QMessageBox.warning(self, "You must specify one (comma separated) value for each axis.")
+			QtWidgets.QMessageBox.warning(self, "You must specify one (comma separated) value for each axis.")
 			return
 
 		if thresh_type == "value":
