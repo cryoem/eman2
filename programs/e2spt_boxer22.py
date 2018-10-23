@@ -504,7 +504,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 
 	def menu_file_open(self,tog):
-		QtGui.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
+		QtWidgets.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
 
 	def load_box_yshort(self, boxcoords):
 		if options.yshort:
@@ -1442,7 +1442,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 	def delete_set(self,unused):
 		selections = self.setlist.selectedItems()
 		names=[str(i.text()) for i in selections]
-		cancel=QtGui.QMessageBox.warning(self, "Delete set", "Are you sure to delete {}? This will remove all particles in that class".format(names[0]), "Yes", "No")
+		cancel=QtWidgets.QMessageBox.warning(self, "Delete set", "Are you sure to delete {}? This will remove all particles in that class".format(names[0]), "Yes", "No")
 		if not cancel:
 			self.target().delete_set(names[0])
 		self.update_sets()

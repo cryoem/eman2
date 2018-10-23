@@ -345,7 +345,7 @@ class WorkFlowTask(object):
 		'''
 		Runs a QMessageBox asking for the user to select files for processing
 		'''
-		msg = QtGui.QMessageBox()
+		msg = QtWidgets.QMessageBox()
 		msg.setWindowTitle("Almost")
 		msg.setText("Please select files for processing")
 		msg.exec_()

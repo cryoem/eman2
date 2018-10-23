@@ -262,7 +262,7 @@ class EMCmpExplorer(EM3DSymModel):
 					ali=p.align(ropt[0],ptcl,ropt[1],rcmp[0],rcmp[1])
 			except:
 				print(traceback.print_exc())
-				QtGui.QMessageBox.warning(None,"Error","Problem with alignment parameters")
+				QtWidgets.QMessageBox.warning(None,"Error","Problem with alignment parameters")
 				progress.close()
 				return
 			p["ptcl.align2d"]=ali["xform.align2d"]
@@ -290,7 +290,7 @@ class EMCmpExplorer(EM3DSymModel):
 			try : p["cmp"]=-ptcl.cmp(cmpopt[0],ali,cmpopt[1])
 			except:
 				print(traceback.print_exc())
-				QtGui.QMessageBox.warning(None,"Error","Invalid similarity metric string, or other comparison error")
+				QtWidgets.QMessageBox.warning(None,"Error","Invalid similarity metric string, or other comparison error")
 				progress.close()
 				return
 			progress.setValue(i)
