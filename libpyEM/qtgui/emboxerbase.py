@@ -2394,7 +2394,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.done_but=QtWidgets.QPushButton("Done")
 		self.vbl.addWidget(self.done_but)
 
-		self.status_bar = QtGui.QStatusBar()
+		self.status_bar = QtWidgets.QStatusBar()
 		self.vbl.addWidget(self.status_bar)
 		self.status_bar.showMessage("Ready",10000)
 
