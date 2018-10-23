@@ -159,7 +159,7 @@ class EMProcessorWidget(QtGui.QWidget):
 #		self.wup = QtWidgets.QPushButton(app.style().standardIcon(QtGui.QStyle.SP_ArrowUp),"")
 		self.wup = QtWidgets.QPushButton(pix_up,"",self)
 		self.wup.setMaximumSize(QtCore.QSize(17, 17))
-#		self.wup.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
+#		self.wup.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
 		self.gbl2.addWidget(self.wup,0,0)
 
 		self.wdown = QtWidgets.QPushButton(pix_down,"",self)
