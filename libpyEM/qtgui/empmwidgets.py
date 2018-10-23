@@ -140,7 +140,7 @@ class PMIntEntryWidget(PMBaseWidget):
 		self.setPositional(postional)
 
 		gridbox = QtWidgets.QGridLayout()
-		label = QtGui.QLabel(name)
+		label = QtWidgets.QLabel(name)
 		self.intbox = QtGui.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.intbox, 0, 1)
@@ -235,7 +235,7 @@ class PMFloatEntryWidget(PMBaseWidget):
 		self.setPositional(postional)
 
 		gridbox = QtWidgets.QGridLayout()
-		label = QtGui.QLabel(name)
+		label = QtWidgets.QLabel(name)
 		self.floatbox = QtGui.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.floatbox, 0, 1)
@@ -291,7 +291,7 @@ class PMStringEntryWidget(PMBaseWidget):
 		self.setPositional(postional)
 
 		gridbox = QtWidgets.QGridLayout()
-		label = QtGui.QLabel(name)
+		label = QtWidgets.QLabel(name)
 		self.stringbox = QtGui.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.stringbox, 0, 1)
@@ -323,7 +323,7 @@ class PMHeaderWidget(PMBaseWidget):
 		PMBaseWidget.__init__(self, name)
 
 		gridbox = QtWidgets.QGridLayout()
-		self.header = QtGui.QLabel()
+		self.header = QtWidgets.QLabel()
 		font = QtGui.QFont()
 		font.setBold(True)
 		self.header.setFont(font)
@@ -398,11 +398,11 @@ class PMFileNameWidget(PMBaseWidget):
 		self.setPositional(postional)
 
 		gridbox = QtWidgets.QGridLayout()
-		label = QtGui.QLabel(name)
+		label = QtWidgets.QLabel(name)
 		self.browser = browser
 		self.filenamebox = QtGui.QLineEdit()
 		self.browsebutton = QtGui.QPushButton("Browse")
-		self.infolabel = QtGui.QLabel("Num Images: None")
+		self.infolabel = QtWidgets.QLabel("Num Images: None")
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.filenamebox, 0, 1)
 		gridbox.addWidget(self.browsebutton, 0, 2)
@@ -519,7 +519,7 @@ class PMDirectoryWidget(PMBaseWidget):
 		self.setPositional(postional)
 
 		gridbox = QtWidgets.QGridLayout()
-		label = QtGui.QLabel(name)
+		label = QtWidgets.QLabel(name)
 		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
@@ -565,7 +565,7 @@ class PMComboWidget(PMBaseWidget):
 		self.setPositional(postional)
 
 		gridbox = QtWidgets.QGridLayout()
-		label = QtGui.QLabel(name)
+		label = QtWidgets.QLabel(name)
 		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
@@ -612,9 +612,9 @@ class PMComboParamsWidget(PMBaseWidget):
 		self.setPositional(postional)
 
 		gridbox = QtWidgets.QGridLayout()
-		label = QtGui.QLabel(name)
+		label = QtWidgets.QLabel(name)
 		self.combobox = PMComboBox()
-		plabel = QtGui.QLabel("params:")
+		plabel = QtWidgets.QLabel("params:")
 		self.params = QtGui.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
@@ -676,7 +676,7 @@ class PMSymWidget(PMBaseWidget):
 		self.initdefault = initdefault
 
 		gridbox = QtWidgets.QGridLayout()
-		label = QtGui.QLabel(name)
+		label = QtWidgets.QLabel(name)
 		label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
 		self.combobox = PMComboBox()
 		self.symnumbox = PMIntEntryWidget("Symmetry Number", 0, mode, lrange=0)

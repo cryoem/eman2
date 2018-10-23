@@ -78,7 +78,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		grid.addWidget(self.makeTilteBarWidget(), 0, 0, 1, 3)
 		#grid.addWidget(workflowcontrollabel, 1,0)
 		grid.addWidget(self.makeModeWidget(font))
-		guilabel = QtGui.QLabel("EMAN2 Program Interface", centralwidget)
+		guilabel = QtWidgets.QLabel("EMAN2 Program Interface", centralwidget)
 		guilabel.setFont(font)
 		guilabel.setMaximumHeight(20)
 		grid.addWidget(guilabel, 1,1)
@@ -198,7 +198,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		widget = QtGui.QWidget()
 		box = QtWidgets.QHBoxLayout()
 		box.setContentsMargins(0,0,0,0)
-		workflowcontrollabel = QtGui.QLabel("Workflow Mode", widget)
+		workflowcontrollabel = QtWidgets.QLabel("Workflow Mode", widget)
 		workflowcontrollabel.setFont(font)
 		workflowcontrollabel.setMaximumHeight(20)
 		self.modeCB = QtWidgets.QComboBox()
@@ -259,9 +259,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.PMIcon = PMIcon(self.pm_icon, tbwidget)
 		self.PMIcon.setAlignment(QtCore.Qt.AlignLeft)
 		grid.addWidget(self.PMIcon,0 , 0, 2, 1)
-		self.PMTitle = QtGui.QLabel("EMAN2 Project Manager ")
+		self.PMTitle = QtWidgets.QLabel("EMAN2 Project Manager ")
 		self.PMTitle.setAlignment(QtCore.Qt.AlignCenter)
-		self.PMProjectNameBanner = QtGui.QLabel("Project Name: "+self.pn_project_name)
+		self.PMProjectNameBanner = QtWidgets.QLabel("Project Name: "+self.pn_project_name)
 		self.PMProjectNameBanner.setAlignment(QtCore.Qt.AlignCenter)
 		titlefont = QtGui.QFont()
 		titlefont.setPointSize(30)
@@ -952,12 +952,12 @@ class EMAN2StatusBar(QtGui.QTextEdit):
 
 
 
-class PMIcon(QtGui.QLabel):
+class PMIcon(QtWidgets.QLabel):
 	"""
 	The Icon manager for PM
 	"""
 	def __init__(self, image, parent=None):
-		QtGui.QLabel.__init__(self, ("<img src=\"%s\" />")%image, parent)
+		QtWidgets.QLabel.__init__(self, ("<img src=\"%s\" />")%image, parent)
 
 	def setIcon(self, image):
 		self.setText(("<img src=\"%s\" />")%image)
@@ -989,7 +989,7 @@ class EMWizardPage(QtGui.QWizardPage):
 
 		#Set Hep info
 		self.setTitle(page["TITLE"])
-		label = QtGui.QLabel(page["INST"])
+		label = QtWidgets.QLabel(page["INST"])
 		label.setWordWrap(True)
 		# add to grid
 		grid = QtWidgets.QGridLayout()
@@ -1054,7 +1054,7 @@ class TheHelp(QtGui.QWidget):
 
 		font = QtGui.QFont()
 		font.setBold(True)
-		helplabel = QtGui.QLabel("EMAN2 topic:")
+		helplabel = QtWidgets.QLabel("EMAN2 topic:")
 		helplabel.setFont(font)
 		helplabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
@@ -1139,7 +1139,7 @@ class NoteBook(QtGui.QWidget):
 		grid = QtWidgets.QGridLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
-		textlabel = QtGui.QLabel("EMAN2 NoteBook")
+		textlabel = QtWidgets.QLabel("EMAN2 NoteBook")
 		textlabel.setFont(font)
 		self.texteditbox = PMTextEdit(self)
 		grid.addWidget(textlabel,0,0)
@@ -1379,7 +1379,7 @@ class TaskManager(QtGui.QWidget):
 		grid = QtWidgets.QGridLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
-		textlabel = QtGui.QLabel("Running Tasks")
+		textlabel = QtWidgets.QLabel("Running Tasks")
 		textlabel.setFont(font)
 		grid.addWidget(textlabel,0,0)
 		self.list_widget = QtGui.QListWidget()
@@ -2048,27 +2048,27 @@ class ProjectDialog(QtWidgets.QDialog):
 
 		grid.addWidget(textbox, 0, 0, 1, 2)
 		# add pm name and icon
-		project_name_label = QtGui.QLabel("Project Name")
+		project_name_label = QtWidgets.QLabel("Project Name")
 		self.project_name = QtGui.QLineEdit()
 		self.project_name.setMinimumWidth(minwidth)
 		grid.addWidget(project_name_label, 1, 0)
 		grid.addWidget(self.project_name, 1, 1)
-		icon_path_label = QtGui.QLabel("Project Icon")
+		icon_path_label = QtWidgets.QLabel("Project Icon")
 		self.icon_path = QtGui.QLineEdit()
 		self.icon_path.setMinimumWidth(minwidth)
 		grid.addWidget(icon_path_label, 2, 0)
 		grid.addWidget(self.icon_path, 2, 1)
 		# Mass
-		particle_mass_label = QtGui.QLabel("Particle Mass (kDa)")
+		particle_mass_label = QtWidgets.QLabel("Particle Mass (kDa)")
 		self.particle_mass = QtGui.QLineEdit()
 		grid.addWidget(particle_mass_label, 3, 0)
 		grid.addWidget(self.particle_mass, 3, 1)
 		# Scope pars
-		micrscope_cs_label = QtGui.QLabel("Microscope CS (mm)")
+		micrscope_cs_label = QtWidgets.QLabel("Microscope CS (mm)")
 		self.micrscope_cs = QtGui.QLineEdit()
-		microscope_voltage_label = QtGui.QLabel("Microscope Voltage")
+		microscope_voltage_label = QtWidgets.QLabel("Microscope Voltage")
 		self.microscope_voltage = QtGui.QLineEdit()
-		microscope_apix_label = QtGui.QLabel("Microscope apix")
+		microscope_apix_label = QtWidgets.QLabel("Microscope apix")
 		self.microscope_apix = QtGui.QLineEdit()
 		grid.addWidget(micrscope_cs_label, 4, 0)
 		grid.addWidget(self.micrscope_cs, 4, 1)

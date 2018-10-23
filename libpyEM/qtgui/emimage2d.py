@@ -1923,7 +1923,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		# App tab
 		self.apptab = QtGui.QWidget()
-		self.apptablab = QtGui.QLabel("Application specific mouse functions",self.apptab)
+		self.apptablab = QtWidgets.QLabel("Application specific mouse functions",self.apptab)
 		self.mmtab.addTab(self.apptab,"App")
 
 		# Save tab
@@ -1949,7 +1949,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		self.rngbl = QtWidgets.QHBoxLayout()
 		self.stlay.addLayout(self.rngbl,2,0,1,3)
-		self.stmmlbl = QtGui.QLabel("Img Range :")
+		self.stmmlbl = QtWidgets.QLabel("Img Range :")
 		self.stminsb = QtGui.QSpinBox()
 		self.stminsb.setRange(0,0)
 		self.stminsb.setValue(0)
@@ -1982,7 +1982,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.procbox3=StringBox(label="Process3:",value="math.linear:scale=5:shift=0",showenable=0)
 		self.ftlay.addWidget(self.procbox3,10,0)
 
-		self.proclbl1=QtGui.QLabel("Image unchanged, display only!")
+		self.proclbl1=QtWidgets.QLabel("Image unchanged, display only!")
 		self.ftlay.addWidget(self.proclbl1,12,0)
 
 		self.mmtab.addTab(self.filttab,"Filt")
@@ -2002,31 +2002,31 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.ptareasize.setIntonly(True)
 		self.ptlay.addWidget(self.ptareasize,0,0,1,2)
 
-		self.ptpointval= QtGui.QLabel("Point Value (ctr pix): ")
+		self.ptpointval= QtWidgets.QLabel("Point Value (ctr pix): ")
 		self.ptlay.addWidget(self.ptpointval,1,0,1,2,Qt.AlignLeft)
 
-		self.ptareaavg= QtGui.QLabel("Area Avg: ")
+		self.ptareaavg= QtWidgets.QLabel("Area Avg: ")
 		self.ptlay.addWidget(self.ptareaavg,2,0,Qt.AlignLeft)
 
-		self.ptareaavgnz= QtGui.QLabel("Area Avg (!=0): ")
+		self.ptareaavgnz= QtWidgets.QLabel("Area Avg (!=0): ")
 		self.ptlay.addWidget(self.ptareaavgnz,2,1,Qt.AlignLeft)
 
-		self.ptareasig= QtGui.QLabel("Area Sig: ")
+		self.ptareasig= QtWidgets.QLabel("Area Sig: ")
 		self.ptlay.addWidget(self.ptareasig,3,0,Qt.AlignLeft)
 
-		self.ptareasignz= QtGui.QLabel("Area Sig (!=0): ")
+		self.ptareasignz= QtWidgets.QLabel("Area Sig (!=0): ")
 		self.ptlay.addWidget(self.ptareasignz,3,1,Qt.AlignLeft)
 
-		self.ptareaskew= QtGui.QLabel("Skewness: ")
+		self.ptareaskew= QtWidgets.QLabel("Skewness: ")
 		self.ptlay.addWidget(self.ptareaskew,4,0,Qt.AlignLeft)
 
-		self.ptcoord= QtGui.QLabel("Center Coord: ")
+		self.ptcoord= QtWidgets.QLabel("Center Coord: ")
 		self.ptlay.addWidget(self.ptcoord,4,1,Qt.AlignLeft)
 
-		self.ptareakurt= QtGui.QLabel("Kurtosis: ")
+		self.ptareakurt= QtWidgets.QLabel("Kurtosis: ")
 		self.ptlay.addWidget(self.ptareakurt,5,0,Qt.AlignLeft)
 
-		self.ptcoord2= QtGui.QLabel("( ) ")
+		self.ptcoord2= QtWidgets.QLabel("( ) ")
 		self.ptlay.addWidget(self.ptcoord2,5,1,Qt.AlignLeft)
 
 		# not really necessary since the pointbox accurately labels the pixel when zoomed in
@@ -2039,7 +2039,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.meastab = QtGui.QWidget()
 		self.mtlay = QtWidgets.QGridLayout(self.meastab)
 
-		#self.mtl1= QtGui.QLabel("A/Pix")
+		#self.mtl1= QtWidgets.QLabel("A/Pix")
 		#self.mtl1.setAlignment(Qt.AlignRight)
 		#self.mtlay.addWidget(self.mtl1,0,0)
 
@@ -2052,22 +2052,22 @@ class EMImageInspector2D(QtGui.QWidget):
 #		print self.mtapix.sizeHint().width(),self.mtapix.sizeHint().height()
 
 
-		self.mtshoworigin= QtGui.QLabel("Origin: 0,0")
+		self.mtshoworigin= QtWidgets.QLabel("Origin: 0,0")
 		self.mtlay.addWidget(self.mtshoworigin,1,0,Qt.AlignLeft)
 
-		self.mtshowend= QtGui.QLabel("End: 0,0")
+		self.mtshowend= QtWidgets.QLabel("End: 0,0")
 		self.mtlay.addWidget(self.mtshowend,1,1,Qt.AlignLeft)
 
-		self.mtshowlen= QtGui.QLabel("dx,dy: 0")
+		self.mtshowlen= QtWidgets.QLabel("dx,dy: 0")
 		self.mtlay.addWidget(self.mtshowlen,2,0,Qt.AlignLeft)
 
-		self.mtshowlen2= QtGui.QLabel("Length: 0")
+		self.mtshowlen2= QtWidgets.QLabel("Length: 0")
 		self.mtlay.addWidget(self.mtshowlen2,2,1,Qt.AlignLeft)
 
-		self.mtshowval= QtGui.QLabel("Value: ?")
+		self.mtshowval= QtWidgets.QLabel("Value: ?")
 		self.mtlay.addWidget(self.mtshowval,3,0,1,2,Qt.AlignLeft)
 
-		self.mtshowval2= QtGui.QLabel(" ")
+		self.mtshowval2= QtWidgets.QLabel(" ")
 		self.mtlay.addWidget(self.mtshowval2,4,0,1,2,Qt.AlignLeft)
 
 
@@ -2077,28 +2077,28 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.drawtab = QtGui.QWidget()
 		self.drawlay = QtWidgets.QGridLayout(self.drawtab)
 
-		self.dtl1 = QtGui.QLabel("Pen Size:")
+		self.dtl1 = QtWidgets.QLabel("Pen Size:")
 		self.dtl1.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl1,0,0)
 
 		self.dtpen = QtGui.QLineEdit("5")
 		self.drawlay.addWidget(self.dtpen,0,1)
 
-		self.dtl2 = QtGui.QLabel("Pen Val:")
+		self.dtl2 = QtWidgets.QLabel("Pen Val:")
 		self.dtl2.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl2,1,0)
 
 		self.dtpenv = QtGui.QLineEdit("1.0")
 		self.drawlay.addWidget(self.dtpenv,1,1)
 
-		self.dtl3 = QtGui.QLabel("Pen Size2:")
+		self.dtl3 = QtWidgets.QLabel("Pen Size2:")
 		self.dtl3.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl3,0,2)
 
 		self.dtpen2 = QtGui.QLineEdit("5")
 		self.drawlay.addWidget(self.dtpen2,0,3)
 
-		self.dtl4 = QtGui.QLabel("Pen Val2:")
+		self.dtl4 = QtWidgets.QLabel("Pen Val2:")
 		self.dtl4.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl4,1,2)
 

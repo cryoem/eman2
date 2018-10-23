@@ -64,9 +64,9 @@ class EMPDBItem3D(EMItem3D):
 		"""Get PDB Widget"""
 		pdbwidget = QtGui.QWidget()
 		grid = QtWidgets.QGridLayout()
-		node_name_data_label = QtGui.QLabel("PDB Model Label")
+		node_name_data_label = QtWidgets.QLabel("PDB Model Label")
 		attribdict["node_name"] = QtGui.QLineEdit()
-		data_path_label = QtGui.QLabel("PDB Model Path")
+		data_path_label = QtWidgets.QLabel("PDB Model Path")
 		attribdict["data_path"] = QtGui.QLineEdit()
 		browse_button = QtGui.QPushButton("Browse")
 		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
@@ -200,7 +200,7 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 		datagridbox.addWidget(self.file_browse_button, 1, 0)
 		dataframe.setLayout(datagridbox)
 		gridbox.addWidget(dataframe, 2, 0)
-		self.file_path_label = QtGui.QLabel()
+		self.file_path_label = QtWidgets.QLabel()
 		self.file_path_label.setAlignment(QtCore.Qt.AlignCenter)
 		self.file_path_label.setFont(lfont)
 		gridbox.addWidget(self.file_path_label, 3, 0)
@@ -251,7 +251,7 @@ class EMBallStickModel(EMPDBItem3D):
 		"""Get Ball and Stick Model Widget"""
 		ballstickwidget = QtGui.QWidget()
 		grid = QtWidgets.QGridLayout()
-		node_name_model_label = QtGui.QLabel("PDB Structure Name")
+		node_name_model_label = QtWidgets.QLabel("PDB Structure Name")
 		attribdict["node_name"] = QtGui.QLineEdit(str(EMBallStickModel.representation))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
@@ -1049,7 +1049,7 @@ class EMSphereModel(EMPDBItem3D):
 		"""Get Spheres Model Widget"""
 		sphereswidget = QtGui.QWidget()
 		grid = QtWidgets.QGridLayout()
-		node_name_model_label = QtGui.QLabel("PDB Structure Name")
+		node_name_model_label = QtWidgets.QLabel("PDB Structure Name")
 		attribdict["node_name"] = QtGui.QLineEdit(str(EMSphereModel.representation))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)

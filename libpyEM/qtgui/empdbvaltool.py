@@ -67,7 +67,7 @@ class EMPDBValWidget(QtGui.QWidget):
 	def __init_gui(self):
 		self.data_groupbox = QtWidgets.QGroupBox(self.tr("Data"))
 		
-		pdb_label = QtGui.QLabel("PDB:")
+		pdb_label = QtWidgets.QLabel("PDB:")
 		self.pdb_line_edit = QtGui.QLineEdit()
 		self.pdb_browse_button = QtGui.QPushButton(self.tr("Browse"))
 		pdb_layout = QtWidgets.QHBoxLayout()
@@ -75,7 +75,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		pdb_layout.addWidget(self.pdb_line_edit)
 		pdb_layout.addWidget(self.pdb_browse_button)		
 		
-		volume_label = QtGui.QLabel("Volume:")
+		volume_label = QtWidgets.QLabel("Volume:")
 		self.volume_line_edit = QtGui.QLineEdit()
 		self.volume_browse_button = QtGui.QPushButton(self.tr("Browse"))
 		volume_layout = QtWidgets.QHBoxLayout()
@@ -92,7 +92,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		
 		self.validation_groupbox = QtWidgets.QGroupBox(self.tr("Validation"))
 		
-		transformations_label = QtGui.QLabel(self.tr("&Number of Transformations"))
+		transformations_label = QtWidgets.QLabel(self.tr("&Number of Transformations"))
 		self.transformations_spinbox = QtGui.QSpinBox()
 		self.transformations_spinbox.setMaximum(9999)
 		self.transformations_spinbox.setValue(20)
@@ -101,7 +101,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		transformations_layout.addWidget(transformations_label)
 		transformations_layout.addWidget(self.transformations_spinbox)
 		
-		threshold_label = QtGui.QLabel(self.tr("Isosurface &Threshold"))
+		threshold_label = QtWidgets.QLabel(self.tr("Isosurface &Threshold"))
 		self.threshold_doublespinbox = QtWidgets.QDoubleSpinBox()
 		self.threshold_doublespinbox.setValue(0.1)
 		threshold_label.setBuddy(self.threshold_doublespinbox)

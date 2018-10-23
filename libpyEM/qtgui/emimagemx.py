@@ -2315,7 +2315,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 		self.xyz = None
 
-		self.font_label = QtGui.QLabel("font size:")
+		self.font_label = QtWidgets.QLabel("font size:")
 		self.font_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
 		self.hbl.addWidget(self.font_label)
 

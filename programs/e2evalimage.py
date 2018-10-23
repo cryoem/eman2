@@ -236,7 +236,7 @@ class GUIEvalImage(QtGui.QWidget):
 			self.setlist.addItem(i)
 		self.gbl.addWidget(self.setlist,0,0,8,2)
 
-		self.lcalcmode=QtGui.QLabel("Region:",self)
+		self.lcalcmode=QtWidgets.QLabel("Region:",self)
 		self.gbl.addWidget(self.lcalcmode,10,0)
 
 		self.scalcmode=QtWidgets.QComboBox(self)
@@ -246,7 +246,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.gbl.addWidget(self.scalcmode,10,1)
 
 
-		self.lcalcmode=QtGui.QLabel("2D FFT:",self)
+		self.lcalcmode=QtWidgets.QLabel("2D FFT:",self)
 		self.gbl.addWidget(self.lcalcmode,11,0)
 
 		self.s2dmode=QtWidgets.QComboBox(self)
@@ -255,7 +255,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.s2dmode.addItem("Background")
 		self.gbl.addWidget(self.s2dmode,11,1)
 
-		self.lcalcmode=QtGui.QLabel("Annotate:",self)
+		self.lcalcmode=QtWidgets.QLabel("Annotate:",self)
 		self.gbl.addWidget(self.lcalcmode,12,0)
 
 		self.s2danmode=QtWidgets.QComboBox(self)
@@ -266,7 +266,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.gbl.addWidget(self.s2danmode,12,1)
 
 
-		self.lcalcmode=QtGui.QLabel("Plot:",self)
+		self.lcalcmode=QtWidgets.QLabel("Plot:",self)
 		self.gbl.addWidget(self.lcalcmode,13,0)
 
 		self.splotmode=QtWidgets.QComboBox(self)

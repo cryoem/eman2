@@ -1252,7 +1252,7 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.setSpacing(2)
 		
 		hbl=QtWidgets.QHBoxLayout()
-		label = QtGui.QLabel(param.desc_short,target)
+		label = QtWidgets.QLabel(param.desc_short,target)
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label)
 				
@@ -1277,7 +1277,7 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.setSpacing(2)
 		
 		hbl=QtWidgets.QHBoxLayout()
-		label = QtGui.QLabel(param.desc_short,target)
+		label = QtWidgets.QLabel(param.desc_short,target)
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label)
 				
@@ -1301,7 +1301,7 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.setSpacing(2)
 		
 		hbl=QtWidgets.QHBoxLayout()
-		label = QtGui.QLabel(param.desc_short,target)
+		label = QtWidgets.QLabel(param.desc_short,target)
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label,0)
 				
@@ -1321,7 +1321,7 @@ class EMFormWidget(QtGui.QWidget):
 	
 	def __add_ok_cancel_buttons(self,layout):
 		hbl=QtWidgets.QHBoxLayout()
-		label = QtGui.QLabel("Form commands:")
+		label = QtWidgets.QLabel("Form commands:")
 		hbl.addWidget(label)
 		
 		ok_button = QtGui.QPushButton("Ok")
@@ -1496,7 +1496,7 @@ class IncorpString(object):
 			hbl=QtWidgets.QHBoxLayout()
 			hbl.setMargin(0)
 			hbl.setSpacing(2)
-			label = QtGui.QLabel(param.desc_short+":",target)
+			label = QtWidgets.QLabel(param.desc_short+":",target)
 			label.setToolTip(param.desc_long)
 			hbl.addWidget(label)
 			line_edit = QtGui.QLineEdit(str(param.defaultunits),target)
@@ -1515,7 +1515,7 @@ class IncorpFloat(object):
 			hbl=QtWidgets.QHBoxLayout()
 			hbl.setMargin(0)
 			hbl.setSpacing(2)
-			label = QtGui.QLabel(param.desc_short+":",target)
+			label = QtWidgets.QLabel(param.desc_short+":",target)
 			label.setToolTip(param.desc_long)
 			hbl.addWidget(label)
 			double_validator = QtGui.QDoubleValidator(target)
@@ -1536,7 +1536,7 @@ class IncorpInt(object):
 			hbl=QtWidgets.QHBoxLayout()
 			hbl.setMargin(0)
 			hbl.setSpacing(2)
-			label = QtGui.QLabel(param.desc_short+":",target)
+			label = QtWidgets.QLabel(param.desc_short+":",target)
 			label.setToolTip(param.desc_long)
 			hbl.addWidget(label)
 			pos_int_validator = QtGui.QIntValidator(target)
@@ -1627,7 +1627,7 @@ class IncorpDict(object):
 		
 		keys = list(param.choices.keys())
 		keys.sort() # yes this is somewhat restrictive but it was my only way around something
-#		label = QtGui.QLabel(param.desc_short+":",target)
+#		label = QtWidgets.QLabel(param.desc_short+":",target)
 #		label.setToolTip(param.desc_long)
 #		hbl.addWidget(label)
 		
