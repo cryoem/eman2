@@ -543,10 +543,10 @@ class SwarmPanel(object):
 
 			vbl.addLayout(hbl)
 
-			self.thrbut = QtGui.QRadioButton(SwarmBoxer.THRESHOLD)
-			self.selbut = QtGui.QRadioButton(SwarmBoxer.SELECTIVE)
+			self.thrbut = QtWidgets.QRadioButton(SwarmBoxer.THRESHOLD)
+			self.selbut = QtWidgets.QRadioButton(SwarmBoxer.SELECTIVE)
 			self.selbut.setChecked(True)
-			self.morselbut = QtGui.QRadioButton(SwarmBoxer.MORESELECTIVE)
+			self.morselbut = QtWidgets.QRadioButton(SwarmBoxer.MORESELECTIVE)
 
 			self.method_group = QtWidgets.QButtonGroup()
 			self.method_group.addButton(self.thrbut)
