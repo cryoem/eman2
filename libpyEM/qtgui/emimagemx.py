@@ -419,7 +419,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			return
 		
 		# Get the output filespec
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Image Output File")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Image Output File")
 		fsp=str(fsp)
 		
 		badimg=[]
@@ -2502,7 +2502,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 			#QtGui.QMessageBox.warning ( self, "Framebuffer ?", "Could not read framebuffer")
 
 		# Get the output filespec
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select File")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select File")
 		fsp=str(fsp)
 
 		qim.save(fsp,None,90)

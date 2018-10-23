@@ -1570,7 +1570,7 @@ def sptboxergui(options,args):
 				return boxcoords
 
 		def menu_file_read_boxloc(self):
-			fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
+			fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select output text file"))
 
 			f=open(fsp,"r")
 			if options.helixboxer:
@@ -1592,7 +1592,7 @@ def sptboxergui(options,args):
 		def menu_file_save_boxloc(self):
 			shrinkf=self.shrink 								#jesus
 
-			fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
+			fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output text file"))
 
 			out=open(fsp,"w")
 			if options.helixboxer:
@@ -1604,7 +1604,7 @@ def sptboxergui(options,args):
 			out.close()
 
 		def menu_file_save_boxes(self):
-			fsp=os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (numbers added)")))
+			fsp=os.path.basename(str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output file (numbers added)")))
 			if ".hdf" not in fsp[-4:]:
 				fsp += '.hdf'
 			
@@ -1674,7 +1674,7 @@ def sptboxergui(options,args):
 
 		def menu_file_save_boxes_stack(self):
 
-			fsp=os.path.join(options.path,os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (.hdf supported only)"))))
+			fsp=os.path.join(options.path,os.path.basename(str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output file (.hdf supported only)"))))
 			#if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
 
 

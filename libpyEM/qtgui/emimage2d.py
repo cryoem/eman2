@@ -2327,7 +2327,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def do_snapshot(self,du) :
 		if self.target().data==None or self.target() == None: return
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, .pgm, .ppm, .jpeg, .png or .tiff only")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, .pgm, .ppm, .jpeg, .png or .tiff only")
 		fsp=str(fsp)
 		# Just grab the framebuffer, as a QTImage, and save as tiff
 		self.target().update()
@@ -2355,13 +2355,13 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def do_saveimg(self,du) :
 		if self.target().data==None : return
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion")
 		fsp=str(fsp)
 		self.target().data.write_image(fsp,-1)
 
 	def do_savestack(self,du) :
 		if self.target().list_data==None : return
-		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select root output file, format extrapolated from file extenstion"))
+		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select root output file, format extrapolated from file extenstion"))
 		#fsp=str(fsp).split(".")
 		#if len(fsp)==1 :
 			#fsp1=fsp[0]
@@ -2375,7 +2375,7 @@ class EMImageInspector2D(QtGui.QWidget):
 			im.write_image(fsp,-1)
 
 	def do_makemovie(self,du) :
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion. ffmpeg must be installed")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion. ffmpeg must be installed")
 		if self.target().list_data==None : return
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
@@ -2395,7 +2395,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 
 	def do_makegifanim(self,du) :
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output gif file")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output gif file")
 		if self.target().list_data==None : return
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):

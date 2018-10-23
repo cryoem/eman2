@@ -90,7 +90,7 @@ class EMDataItem3D(EMItem3D):
 
 	@staticmethod
 	def _on_browse():
-		filename = QtGui.QFileDialog.getOpenFileName(None, 'Get file', os.getcwd())
+		filename = QtWidgets.QFileDialog.getOpenFileName(None, 'Get file', os.getcwd())
 		if filename:
 			EMDataItem3D.attribdict["data_path"].setText(filename)
 			name = os.path.basename(str(filename))
@@ -228,7 +228,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 
 	def onFileBrowse(self):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
-		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
+		file_path = QtWidgets.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
 		if file_path:
 			self.file_path_label.setText(file_path)
 			self.item3d().setData(file_path)
