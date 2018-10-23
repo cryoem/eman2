@@ -781,10 +781,10 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		
-		self.persbut = QtGui.QRadioButton("Perspective")
+		self.persbut = QtWidgets.QRadioButton("Perspective")
 		self.persbut.setChecked(self.target().perspective==True)
 		
-		self.orthbut = QtGui.QRadioButton("Orthographic")
+		self.orthbut = QtWidgets.QRadioButton("Orthographic")
 		self.orthbut.setChecked(self.target().perspective==False)
 		
 		self.groupbox = QtGui.QVBoxLayout()

@@ -1668,7 +1668,7 @@ class IncorpChoice(object):
 		hbl = QtWidgets.QHBoxLayout()
 		buttons = []
 		for choice in param.choices:
-			button = QtGui.QRadioButton(str(choice))
+			button = QtWidgets.QRadioButton(str(choice))
 			if choice == param.defaultunits: button.setChecked(True)
 			hbl.addWidget( button)
 			buttons.append(button)
