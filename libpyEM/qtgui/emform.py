@@ -1476,7 +1476,7 @@ class IncorpBool(object):
 		hbl=QtGui.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
-		check_box = QtGui.QCheckBox(str(param.desc_short),target)
+		check_box = QtWidgets.QCheckBox(str(param.desc_short),target)
 		check_box.setChecked(bool(param.defaultunits))
 		check_box.setToolTip(param.desc_long)
 		hbl.addWidget(check_box,0)

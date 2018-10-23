@@ -1255,7 +1255,7 @@ def sptboxergui(options,args):
 			self.gbl2.addWidget(self.wnlayers,2,1)
 
 			# Local boxes in side view
-			self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")
+			self.wlocalbox=QtWidgets.QCheckBox("Limit Side Boxes")
 			self.gbl2.addWidget(self.wlocalbox,3,0)
 
 			# scale factor

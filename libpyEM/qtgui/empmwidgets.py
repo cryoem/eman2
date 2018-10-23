@@ -357,7 +357,7 @@ class PMBoolWidget(PMBaseWidget):
 		self.initdefault = initdefault
 
 		gridbox = QtGui.QGridLayout()
-		self.boolbox = QtGui.QCheckBox(name)
+		self.boolbox = QtWidgets.QCheckBox(name)
 		gridbox.addWidget(self.boolbox, 0, 0)
 		self.setLayout(gridbox)
 
@@ -740,7 +740,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		self.initdefault = initdefault
 
 		gridbox = QtGui.QGridLayout()
-		self.automask3dbool = QtGui.QCheckBox("Auto Mask 3D")
+		self.automask3dbool = QtWidgets.QCheckBox("Auto Mask 3D")
 		self.params = []
 		self.params.append(PMFloatEntryWidget("Threshold", 0.8, mode))
 		self.params.append(PMIntEntryWidget("Radius", 30, mode))

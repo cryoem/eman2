@@ -194,7 +194,7 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
 		datagridbox = QtGui.QGridLayout()
-		self.data_checkbox= QtGui.QCheckBox("Display Bounding Box")
+		self.data_checkbox= QtWidgets.QCheckBox("Display Bounding Box")
 		datagridbox.addWidget(self.data_checkbox, 0, 0)
 		self.file_browse_button = QtGui.QPushButton("Set Data Source")
 		datagridbox.addWidget(self.file_browse_button, 1, 0)

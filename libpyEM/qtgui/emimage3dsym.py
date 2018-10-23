@@ -1456,11 +1456,11 @@ class SparseSymChoicesWidgets(object):
 			self.strategy_label.setCurrentIndex(n-1)
 			self.hbl_sym2.addWidget(self.strategy_label)
 			
-			self.mirror_checkbox = QtGui.QCheckBox("Mirror")
+			self.mirror_checkbox = QtWidgets.QCheckBox("Mirror")
 			self.hbl_sym2.addWidget(self.mirror_checkbox)
 			self.mirror_checkbox.setChecked(self.target().mirror_enabled())
 		else:
-			self.mirror_checkbox = QtGui.QCheckBox("Mirror")
+			self.mirror_checkbox = QtWidgets.QCheckBox("Mirror")
 			self.hbl_sym.addWidget(self.mirror_checkbox)
 			self.mirror_checkbox.setChecked(self.target().mirror_enabled())
 			
@@ -1724,7 +1724,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.score_options = self.__get_combo(options,default)
 			self.score_options_hbl.addWidget(QtGui.QLabel("Cylinder Score:",self))
 			self.score_options_hbl.addWidget(self.score_options)
-			self.cylinder_log = QtGui.QCheckBox("log scale")
+			self.cylinder_log = QtWidgets.QCheckBox("log scale")
 			self.cylinder_log.setChecked(self.target().log_scale)
 			self.score_options_hbl.addWidget(self.cylinder_log)
 			self.display_tab.vbl.addLayout(self.score_options_hbl)
