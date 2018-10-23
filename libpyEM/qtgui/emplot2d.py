@@ -190,13 +190,13 @@ class EMPlot2DWidget(EMGLWidget):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt5 import QtWebKit
+			try: from PyQt5 import QtWebEngineWidgets
 			except: return
 			try:
 				try:
 					test = self.browser
 				except:
-					self.browser = QtWebKit.QWebView()
+					self.browser = QtWebEngineWidgets.QWebEngineView()
 					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
 					self.browser.resize(800,800)
 
@@ -1032,13 +1032,13 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt5 import QtWebKit
+			try: from PyQt5 import QtWebEngineWidgets
 			except: return
 			try:
 				try:
 					test = self.browser
 				except:
-					self.browser = QtWebKit.QWebView()
+					self.browser = QtWebEngineWidgets.QWebEngineView()
 					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
 					self.browser.resize(800,800)
 
