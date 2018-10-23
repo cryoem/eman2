@@ -787,7 +787,7 @@ class EMSpinWidget(QtWidgets.QWidget):
 		self.coeff = incr
 		
 	def wheelEvent(self, event):
-		if event.delta() > 0:
+		if event.angleDelta().y() > 0:
 			self.setValue(self.value+self.wheelstep)
 		else:
 			value = self.value-self.wheelstep

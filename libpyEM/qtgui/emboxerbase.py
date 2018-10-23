@@ -698,7 +698,7 @@ class EraseTool(EMBoxingTool):
 		from PyQt5.QtCore import Qt
 		if event.modifiers()&Qt.ShiftModifier:
 			from .emshape import EMShape
-			self.adjust_erase_rad(event.delta())
+			self.adjust_erase_rad(event.angleDelta().y())
 			m= self.get_2d_window().scr_to_img((event.x(),event.y()))
 			self.get_2d_window().add_eraser_shape("eraser",["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3])
 			self.get_2d_window().updateGL()

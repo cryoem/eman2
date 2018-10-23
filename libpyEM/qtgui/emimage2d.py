@@ -1738,15 +1738,15 @@ class EMImage2DWidget(EMGLWidget):
 				if self.mouse_mode==0 and event.modifiers()&Qt.ShiftModifier:
 					self.mousewheel.emit(event)
 					return
-				if event.delta() > 0:
+				if event.angleDelta().y() > 0:
 					self.set_scale( self.scale * self.mag )
-				elif event.delta() < 0:
+				elif event.angleDelta().y() < 0:
 					self.set_scale(self.scale * self.invmag )
 				# The self.scale variable is updated now, so just update with that
 				if self.inspector: self.inspector.set_scale(self.scale)
 		else:
 			move_fac = old_div(1.0,20.0)
-			delta = old_div(event.delta(),120.0)
+			delta = old_div(event.angleDelta().y(),120.0)
 
 #			print self.origin, self.data.get_xsize(),self.data.get_ysize(),self.scale,self.width(),self.height()
 
@@ -1755,12 +1755,12 @@ class EMImage2DWidget(EMGLWidget):
 				visible_vertical_pixels = old_div(self.height(),sqrt(self.scale))
 				shift_per_delta = move_fac*visible_vertical_pixels
 #				print "there are this many visible vertical pixels",visible_vertical_pixels, "deltas", delta, "shift per delta",shift_per_delta
-#				print "shifting vertical",event.delta(),shift_per_delta
+#				print "shifting vertical",event.angleDelta().y(),shift_per_delta
 				self.origin=(self.origin[0],self.origin[1]-delta*shift_per_delta)
 			elif event.orientation() & Qt.Horizontal:
 				visible_horizontal_pixels = old_div(self.width(),sqrt(self.scale))
 				shift_per_delta = move_fac*visible_horizontal_pixels
-#				print "shifting horizontal",event.delta(),shift_per_delta
+#				print "shifting horizontal",event.angleDelta().y(),shift_per_delta
 #	   	   	   	print "there are this many visible horizontal pixels",visible_horizontal_pixels, "deltas", delta, "shift per delta",shift_per_delta
 				self.origin=(self.origin[0]+delta*shift_per_delta,self.origin[1])
 			try: self.updateGL()

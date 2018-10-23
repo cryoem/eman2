@@ -1174,7 +1174,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# The 25 is a fudge factor that controls the speed of scaling, lower if slower scaling
 		if event.orientation() & Qt.Vertical:
 			self.cameraNeedsanUpdate()
-			if event.delta() > 0:
+			if event.angleDelta().y() > 0:
 				if self.camera.getUseOrtho():
 					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
 				else:

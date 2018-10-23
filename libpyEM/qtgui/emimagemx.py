@@ -1970,9 +1970,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def wheelEvent(self, event):
 		if not self.data: return
-		if event.delta() > 0:
+		if event.angleDelta().y() > 0:
 			self.set_scale( self.scale * self.mag )
-		elif event.delta() < 0:
+		elif event.angleDelta().y() < 0:
 			self.set_scale(self.scale * self.invmag)
 		#self.resize_event(self.width(),self.height())
 		# The self.scale variable is updated now, so just update with that
