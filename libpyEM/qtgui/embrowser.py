@@ -2182,7 +2182,7 @@ class EMPlotInfoPane(EMInfoPane) :
 
 		# List as alternate mechanism for selecting image number(s)
 
-		self.plotdata = QtGui.QTableWidget()
+		self.plotdata = QtWidgets.QTableWidget()
 		self.gbl.addWidget(self.plotdata, 0, 0)
 
 	def display(self, target) :

@@ -62,7 +62,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.gbl.setRowStretch(0,1)
 
 		# Micrograph list
-		self.imglst=QtGui.QTableWidget(1, 3, self)
+		self.imglst=QtWidgets.QTableWidget(1, 3, self)
 		self.imglst.verticalHeader().hide()
 		
 		self.gbl.addWidget(self.imglst,0,0,11,1)
