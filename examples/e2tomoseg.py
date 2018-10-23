@@ -1385,7 +1385,7 @@ class TomoSegInspector(QtGui.QWidget):
 		
 		hbox = QtGui.QHBoxLayout()
 		
-		frame = QtGui.QFrame()
+		frame = QtWidgets.QFrame()
 		grid = QtGui.QGridLayout(widget)
 		
 		self.rotatetool = EMANToolButton()
@@ -1503,7 +1503,7 @@ class TomoSegInspector(QtGui.QWidget):
 		hbox.addWidget(frame)
 		
 		self.stacked_widget = QtGui.QStackedWidget()
-		self.stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox.addWidget(self.stacked_widget)
 		
 		widget.setLayout(hbox) #grid
@@ -1515,7 +1515,7 @@ class TomoSegInspector(QtGui.QWidget):
 		
 		hbox = QtGui.QHBoxLayout()
 		
-		frame = QtGui.QFrame()
+		frame = QtWidgets.QFrame()
 		grid = QtGui.QGridLayout(widget)
 		
 		self.rotatetool = EMANToolButton()
@@ -1633,7 +1633,7 @@ class TomoSegInspector(QtGui.QWidget):
 		hbox.addWidget(frame)
 		
 		self.stacked_widget = QtGui.QStackedWidget()
-		self.stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox.addWidget(self.stacked_widget)
 		
 		widget.setLayout(hbox) #grid
@@ -1646,7 +1646,7 @@ class TomoSegInspector(QtGui.QWidget):
 		
 		hbox = QtGui.QHBoxLayout()
 		
-		frame = QtGui.QFrame()
+		frame = QtWidgets.QFrame()
 		grid = QtGui.QGridLayout(widget)
 		
 		self.rotatetool = EMANToolButton()
@@ -1764,7 +1764,7 @@ class TomoSegInspector(QtGui.QWidget):
 		hbox.addWidget(frame)
 		
 		self.stacked_widget = QtGui.QStackedWidget()
-		self.stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox.addWidget(self.stacked_widget)
 		
 		widget.setLayout(hbox) #grid
@@ -1777,13 +1777,13 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		widget = QtGui.QWidget()
 		hbox = QtGui.QHBoxLayout(widget)
-		treeframe = QtGui.QFrame()
-		treeframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		treeframe = QtWidgets.QFrame()
+		treeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		treeframe.setLayout(self._get_tree_layout(widget))
 		treeframe.setMinimumWidth(self.mintreewidth)
 		hbox.addWidget(treeframe)
 		self.stacked_widget = QtGui.QStackedWidget()
-		self.stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox.addWidget(self.stacked_widget)
 		widget.setLayout(hbox)
 		

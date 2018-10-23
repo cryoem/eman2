@@ -2118,8 +2118,8 @@ class EMInspector3D(QtGui.QWidget):
 		self.inspectortab.addTab(self.getLightsWidget(), "Lights")
 		self.inspectortab.addTab(self.getCameraWidget(), "Camera")
 		self.inspectortab.addTab(self.getUtilsWidget(), "Utils")
-		toolframe = QtGui.QFrame()
-		toolframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		toolframe = QtWidgets.QFrame()
+		toolframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		toolframe.setLayout(self._get_toolbox_layout())
 		vbox.addWidget(self.inspectortab)
 		vbox.addWidget(toolframe)
@@ -2142,13 +2142,13 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		widget = QtGui.QWidget()
 		hbox = QtGui.QHBoxLayout(widget)
-		treeframe = QtGui.QFrame()
-		treeframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		treeframe = QtWidgets.QFrame()
+		treeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		treeframe.setLayout(self._get_tree_layout(widget))
 		treeframe.setMinimumWidth(self.mintreewidth)
 		hbox.addWidget(treeframe)
 		self.stacked_widget = QtGui.QStackedWidget()
-		self.stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox.addWidget(self.stacked_widget)
 		widget.setLayout(hbox)
 		
@@ -2480,8 +2480,8 @@ class EMInspector3D(QtGui.QWidget):
 		positionlabel = QtGui.QLabel("Position", lwidget)
 		positionlabel.setMaximumHeight(20.0)
 		positionlabel.setAlignment(QtCore.Qt.AlignCenter)
-		valslidersplitter = QtGui.QFrame()
-		valslidersplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		valslidersplitter = QtWidgets.QFrame()
+		valslidersplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		valslidersplitter.setMaximumHeight(80)
 		valvbox = QtGui.QVBoxLayout()
 		self.hvalslider = ValSlider(lwidget,(0.0,360.0),"Horizontal")
@@ -2547,8 +2547,8 @@ class EMInspector3D(QtGui.QWidget):
 		grid.addWidget(self.far, 2, 1)
 		
 		# The frame for linking capping, etc
-		cframe = QtGui.QFrame()
-		cframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		cframe = QtWidgets.QFrame()
+		cframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		cframegrid = QtGui.QGridLayout()
 		self.linkcb = QtWidgets.QCheckBox("Link clipping planes")
 		self.linkcb.setMinimumHeight(40.0)
@@ -2565,9 +2565,9 @@ class EMInspector3D(QtGui.QWidget):
 		grid.addWidget(cframe, 1, 2, 3, 1)
 		
 		# The frame for project matrices
-		frame = QtGui.QFrame()
+		frame = QtWidgets.QFrame()
 		frame.setMaximumHeight(40.0)
-		frame.setFrameShape(QtGui.QFrame.StyledPanel)
+		frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox = QtGui.QHBoxLayout()
 		vvlabel = QtGui.QLabel("Viewing Volume")
 		self.orthoradio = QtGui.QRadioButton("Orthographic")
@@ -2678,8 +2678,8 @@ class EMInspector3D(QtGui.QWidget):
 		font = QtGui.QFont()
 		font.setBold(True)
 		# Controls frame
-		frame = QtGui.QFrame()
-		frame.setFrameShape(QtGui.QFrame.StyledPanel)
+		frame = QtWidgets.QFrame()
+		frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		gridbox = QtGui.QGridLayout()
 		backgroundcolor_label = QtGui.QLabel("Background Color", frame)
 		backgroundcolor_label.setFont(font)
@@ -2894,8 +2894,8 @@ class EMSGNodeInspector(EMItem3DInspector):
 
 	def addControls(self, gridbox):
 		super(EMSGNodeInspector, self).addControls(gridbox)
-		buttonframe = QtGui.QFrame()
-		buttonframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		buttonframe = QtWidgets.QFrame()
+		buttonframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		buttongrid = QtGui.QGridLayout()
 		# Make buttons
 		centerall = QtGui.QPushButton("Center All")
@@ -3109,13 +3109,13 @@ class NodeDialog(QtWidgets.QDialog):
 		self.transformgroup = {}
 		vbox = QtGui.QVBoxLayout(self)
 		# Stuff within the frame
-		frame = QtGui.QFrame()
-		frame.setFrameStyle(QtGui.QFrame.StyledPanel)
+		frame = QtWidgets.QFrame()
+		frame.setFrameStyle(QtWidgets.QFrame.StyledPanel)
 		fvbox = QtGui.QVBoxLayout(frame)
 		label = QtGui.QLabel("Node Type to add")
 		self.node_type_combo = QtWidgets.QComboBox() 
 		self.node_stacked_widget = QtGui.QStackedWidget()
-		self.node_stacked_widget.setFrameStyle(QtGui.QFrame.StyledPanel)
+		self.node_stacked_widget.setFrameStyle(QtWidgets.QFrame.StyledPanel)
 		self.addnode_button = QtGui.QPushButton("Add Node")
 		fvbox.addWidget(label)
 		fvbox.addWidget(self.node_type_combo)

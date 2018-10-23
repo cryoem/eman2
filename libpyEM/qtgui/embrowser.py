@@ -3132,8 +3132,8 @@ class EMBrowserWidget(QtGui.QWidget) :
 		### Central verticalregion has bookmarks and tree
 		# Bookmarks implemented with a toolbar in a frame
 
-		self.wbookmarkfr = QtGui.QFrame()
-		self.wbookmarkfr.setFrameStyle(QtGui.QFrame.StyledPanel|QtGui.QFrame.Raised)
+		self.wbookmarkfr = QtWidgets.QFrame()
+		self.wbookmarkfr.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Raised)
 		self.wbmfrbl = QtGui.QVBoxLayout(self.wbookmarkfr)
 
 		self.wbookmarks = QtGui.QToolBar()
