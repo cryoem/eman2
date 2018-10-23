@@ -333,7 +333,7 @@ class EMMotion(QtGui.QMainWindow):
 #		self.wllistresult.setAlignment(Qt.AlignHCenter)
 		self.vbl3.addWidget(self.wllistresult)
 		
-		self.wlistresult=QtGui.QListWidget()
+		self.wlistresult=QtWidgets.QListWidget()
 		self.vbl3.addWidget(self.wlistresult)
 
 		###### Parameters for processing

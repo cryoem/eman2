@@ -101,7 +101,7 @@ class SptEvalGUI(QtGui.QWidget):
 
 		self.fscplot = EMPlot2DWidget()
 
-		self.setspanel=QtGui.QListWidget(self)
+		self.setspanel=QtWidgets.QListWidget(self)
 		self.gbl.addWidget(self.setspanel, 5,1,5,2)
 		self.itemflags=	Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 		

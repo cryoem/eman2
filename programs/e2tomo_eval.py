@@ -128,7 +128,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.wg_tltimage.set_scale(.2)
 		self.cur_tlt=None
 		
-		self.setspanel=QtGui.QListWidget(self)
+		self.setspanel=QtWidgets.QListWidget(self)
 		self.gbl.addWidget(self.setspanel, 8,1,2,2)
 		self.itemflags=	Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 		

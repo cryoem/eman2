@@ -1255,7 +1255,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.gbl.setColumnStretch(4,1)
 
 		# Micrograph list
-		self.setlist=QtGui.QListWidget(self)
+		self.setlist=QtWidgets.QListWidget(self)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		for i in imagenames:
 			self.setlist.addItem(i)
