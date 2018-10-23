@@ -580,7 +580,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
@@ -677,7 +677,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.bright.setValue(0.0)
 		maintab.vbl.addWidget(self.bright)
 
-		self.hbl_smp = QtGui.QHBoxLayout()
+		self.hbl_smp = QtWidgets.QHBoxLayout()
 		self.hbl_smp.setMargin(0)
 		self.hbl_smp.setSpacing(6)
 		self.hbl_smp.setObjectName("Texture Oversampling")

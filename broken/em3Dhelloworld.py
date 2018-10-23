@@ -215,7 +215,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
@@ -292,7 +292,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.scale.setValue(1.0)
 			maintab.vbl.addWidget(self.scale)
 			
-			self.hbl_color = QtGui.QHBoxLayout()
+			self.hbl_color = QtWidgets.QHBoxLayout()
 			self.hbl_color.setMargin(0)
 			self.hbl_color.setSpacing(6)
 			self.hbl_color.setObjectName("Material")
@@ -305,7 +305,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.cbb = QtWidgets.QComboBox(maintab)
 			self.hbl_color.addWidget(self.cbb)
 	
-			self.hbl_trans = QtGui.QHBoxLayout()
+			self.hbl_trans = QtWidgets.QHBoxLayout()
 			self.hbl_trans.setMargin(0)
 			self.hbl_trans.setSpacing(6)
 			self.hbl_trans.setObjectName("Trans")
@@ -342,7 +342,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.z_trans.setValue(0.0)
 			self.hbl_trans.addWidget(self.z_trans)
 			
-			self.hbl_src = QtGui.QHBoxLayout()
+			self.hbl_src = QtWidgets.QHBoxLayout()
 			self.hbl_src.setMargin(0)
 			self.hbl_src.setSpacing(6)
 			self.hbl_src.setObjectName("hbl")

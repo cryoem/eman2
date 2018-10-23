@@ -1269,7 +1269,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.boxmm.setFlat(False)
 		self.gbl.addWidget(self.boxmm,0,2,2,3)
 		
-		self.hbl0=QtGui.QHBoxLayout(self.boxmm)
+		self.hbl0=QtWidgets.QHBoxLayout(self.boxmm)
 		
 		self.bmmanual=QtGui.QPushButton("Manual")
 		self.bmmanual.setToolTip("Manual selection of particles. No impact on autoselection.")
@@ -1357,7 +1357,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.boxparm.setFlat(False)
 		self.gbl.addWidget(self.reftools,5,2,2,2)
 		
-		self.hbl1=QtGui.QHBoxLayout(self.reftools)
+		self.hbl1=QtWidgets.QHBoxLayout(self.reftools)
 		
 		self.rtload3d=QtGui.QPushButton("From 3D")
 		self.rtload3d.setToolTip("Load box refs from 3-D volume")

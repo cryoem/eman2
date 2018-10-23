@@ -451,7 +451,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
@@ -536,7 +536,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 		maintab.vbl.setSpacing(6)
 		maintab.vbl.setObjectName("Main")
 		
-		self.hbl_slice = QtGui.QHBoxLayout()
+		self.hbl_slice = QtWidgets.QHBoxLayout()
 		self.hbl_slice.setMargin(0)
 		self.hbl_slice.setSpacing(6)
 		self.hbl_slice.setObjectName("Axis")

@@ -352,7 +352,7 @@ class ErasingPanel(object): # copied for ideas for the morph panel
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
 
-			hbl = QtGui.QHBoxLayout()
+			hbl = QtWidgets.QHBoxLayout()
 			hbl.addWidget(QtGui.QLabel("Erase Radius:"))
 			from eman2_gui.valslider import ValSlider
 			self.erase_rad_edit = ValSlider(None,(0.0,1000.0),"")

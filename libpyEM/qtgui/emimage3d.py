@@ -603,7 +603,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 		self.hbl.setMargin(2)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
@@ -613,7 +613,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		
 		self.tabwidget = QtGui.QTabWidget()
 		
-		self.hbl_check = QtGui.QHBoxLayout()
+		self.hbl_check = QtWidgets.QHBoxLayout()
 		self.hbl_check.setMargin(0)
 		self.hbl_check.setSpacing(6)
 		self.hbl_check.setObjectName("hbl_check")
@@ -621,12 +621,12 @@ class EMImageInspector3D(QtGui.QWidget):
 		#self.advancedcheck = QtWidgets.QCheckBox("Advanced",self)
 		#self.hbl_check.addWidget(self.advancedcheck)
 		
-		self.hbl_buttons = QtGui.QHBoxLayout()
+		self.hbl_buttons = QtWidgets.QHBoxLayout()
 		self.hbl_buttons.setMargin(0)
 		self.hbl_buttons.setSpacing(6)
 		self.hbl_buttons.setObjectName("hbl_buttons")
 		
-		self.hbl_buttons2 = QtGui.QHBoxLayout()
+		self.hbl_buttons2 = QtWidgets.QHBoxLayout()
 		self.hbl_buttons2.setMargin(0)
 		self.hbl_buttons2.setSpacing(6)
 		self.hbl_buttons2.setObjectName("hbl_buttons2")
@@ -649,7 +649,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.vbl.addLayout(self.hbl_buttons)
 		self.vbl.addLayout(self.hbl_buttons2)
 		
-		self.hbl_buttons3 = QtGui.QHBoxLayout()
+		self.hbl_buttons3 = QtWidgets.QHBoxLayout()
 		self.delete = QtGui.QPushButton("Delete")
 		self.hbl_buttons3.addWidget(self.delete)
 		self.vbl.addLayout(self.hbl_buttons3)
@@ -776,7 +776,7 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		maintab = self.maintab
 		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
 		
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 		self.hbl.setMargin(2)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")

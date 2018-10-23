@@ -1947,7 +1947,7 @@ class EMInfoPane(QtGui.QWidget) :
 
 		# Root class represents no target
 
-		self.hbl = QtGui.QHBoxLayout(self)
+		self.hbl = QtWidgets.QHBoxLayout(self)
 		self.lbl = QtGui.QLabel("No Information Available")
 		self.hbl.addWidget(self.lbl)
 
@@ -1987,7 +1987,7 @@ class EMTextInfoPane(EMInfoPane) :
 
 		# Buttons
 
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 
 		self.wbutedit = QtGui.QPushButton("Edit")
 		self.hbl.addWidget(self.wbutedit)
@@ -2062,7 +2062,7 @@ class EMHTMLInfoPane(EMInfoPane) :
 
 		# Buttons
 
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 
 		self.wbutedit = QtGui.QPushButton("Edit")
 		self.hbl.addWidget(self.wbutedit)
@@ -2128,7 +2128,7 @@ class EMPDBInfoPane(EMInfoPane) :
 		self.wfind = StringBox(label = "Find:")
 		self.vbl.addWidget(self.wfind)
 		# Buttons
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 		self.wbutedit = QtGui.QPushButton("Edit")
 		self.hbl.addWidget(self.wbutedit)
 		self.wbutcancel = QtGui.QPushButton("Revert")
@@ -3056,7 +3056,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 		# Top Toolbar area
 
-		self.wtoolhbl = QtGui.QHBoxLayout()
+		self.wtoolhbl = QtWidgets.QHBoxLayout()
 		self.wtoolhbl.setContentsMargins(0, 0, 0, 0)
 
 		self.wbutback = QtGui.QPushButton(unichr(0x2190))
@@ -3088,7 +3088,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 		# 2nd Top Toolbar area
 
-		self.wtoolhbl2 = QtGui.QHBoxLayout()
+		self.wtoolhbl2 = QtWidgets.QHBoxLayout()
 		self.wtoolhbl2.setContentsMargins(0, 0, 0, 0)
 
 		self.wbutup = QtGui.QPushButton(unichr(0x2191))

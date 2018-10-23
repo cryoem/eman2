@@ -196,7 +196,7 @@ class EMProjectManager(QtGui.QMainWindow):
 	def makeModeWidget(self, font):
 		""" Return a mode control widget """
 		widget = QtGui.QWidget()
-		box = QtGui.QHBoxLayout()
+		box = QtWidgets.QHBoxLayout()
 		box.setContentsMargins(0,0,0,0)
 		workflowcontrollabel = QtGui.QLabel("Workflow Mode", widget)
 		workflowcontrollabel.setFont(font)
@@ -490,7 +490,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		cmdwidget = QtWidgets.QFrame()
 		cmdwidget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		cmdwidget.setMaximumHeight(40)
-		hbox = QtGui.QHBoxLayout()
+		hbox = QtWidgets.QHBoxLayout()
 		self.cancelbutton = QtGui.QPushButton("Cancel")
 		self.launchbutton = QtGui.QPushButton("Launch")
 		hbox.addWidget(self.cancelbutton)
@@ -1058,7 +1058,7 @@ class TheHelp(QtGui.QWidget):
 		helplabel.setFont(font)
 		helplabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
-		hbox = QtGui.QHBoxLayout()
+		hbox = QtWidgets.QHBoxLayout()
 		hbox.addWidget(PMIcon(get_image_directory() + "SirEMAN2.png"))
 		hbox.addWidget(helplabel)
 		hbox.setContentsMargins(0,0,0,0)
@@ -1163,7 +1163,7 @@ class NoteBook(QtGui.QWidget):
 	def getToolBar(self):
 		""" Return the toolbar widget """
 		tbwidget = QtGui.QWidget()
-		hbox = QtGui.QHBoxLayout()
+		hbox = QtWidgets.QHBoxLayout()
 		self.dbdict = js_open_dict(self.pm().getPMCWD()+"/info/notebook.json")
 
 		# font type

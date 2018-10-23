@@ -324,7 +324,7 @@ def EMSelectorBaseTemplate(Type):
 			
 			self.__load_url(e2getcwd(),self.list_widgets[0])
 	
-			self.bottom_hbl = QtGui.QHBoxLayout()
+			self.bottom_hbl = QtWidgets.QHBoxLayout()
 			self.bottom_hbl.addWidget(self.filter_text,0)
 			self.bottom_hbl.addWidget(self.filter_combo,1)
 			self.__init_buttons()
@@ -718,12 +718,12 @@ class EMBrowser(EMBrowserType):
 		
 		self.__init_action_delegates()
 		
-		bottom_hbl2 = QtGui.QHBoxLayout()
+		bottom_hbl2 = QtWidgets.QHBoxLayout()
 		self.__init_preview_options()
 		bottom_hbl2.addWidget(self.preview_options,0)
 		self.hbl.addLayout(bottom_hbl2)
 				
-		bottom_hbl3 = QtGui.QHBoxLayout()
+		bottom_hbl3 = QtWidgets.QHBoxLayout()
 		self.__init_plot_options()
 		bottom_hbl3.addWidget(self.replace,0)
 		bottom_hbl3.addWidget(self.include,0)
@@ -917,7 +917,7 @@ class EMSelectorDialog(EMSelectorDialogType):
 	def __init__(self,single_selection=False,save_as_mode=True): #TODO: figure out whether save_as_mode is needed (unused)
 		EMSelectorDialogType.__init__(self,single_selection)	
 
-		hbl2=QtGui.QHBoxLayout()
+		hbl2=QtWidgets.QHBoxLayout()
 		hbl2.setMargin(0)
 		hbl2.setSpacing(2)
 		self.selection_label = QtGui.QLabel(SAVE_AS,self)

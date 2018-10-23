@@ -1947,7 +1947,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.stmoviebut.setEnabled(False)
 		self.stanimgif.setEnabled(False)
 
-		self.rngbl = QtGui.QHBoxLayout()
+		self.rngbl = QtWidgets.QHBoxLayout()
 		self.stlay.addLayout(self.rngbl,2,0,1,3)
 		self.stmmlbl = QtGui.QLabel("Img Range :")
 		self.stminsb = QtGui.QSpinBox()
@@ -2148,7 +2148,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.vbl.addWidget(self.mmtab)
 
 		# histogram level horiz layout
-		self.hbl = QtGui.QHBoxLayout()
+		self.hbl = QtWidgets.QHBoxLayout()
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
