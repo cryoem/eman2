@@ -59,7 +59,6 @@ ploticon = [
 ]
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtOpenGL import QGLWidget
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU
 from OpenGL.GL import *
