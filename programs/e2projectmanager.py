@@ -978,12 +978,12 @@ class EMWizard(QtWidgets.QWizard):
 			self.addPage(EMWizardPage(page, self.e2gui))
 
 
-class EMWizardPage(QtGui.QWizardPage):
+class EMWizardPage(QtWidgets.QWizardPage):
 	"""
 	Make a page for the wizard, uses input validation. If input is not valid send a message to the PM status bar and you will not be allowed to continue to the next wizard page
 	"""
 	def __init__(self, page, e2gui):
-		QtGui.QWizardPage.__init__(self)
+		QtWidgets.QWizardPage.__init__(self)
 		self.e2gui = e2gui
 		self.widgetlist = []
 
