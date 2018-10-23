@@ -2643,13 +2643,13 @@ class EMBoxerInspector(QtWidgets.QWidget):
 				return
 			except: pass
 
-			try: from PyQt5 import QtWebKit
+			try: from PyQt5 import QtWebEngineWidgets
 			except: return
 			try:
 				try:
 					test = self.browser
 				except:
-					self.browser = QtWebKit.QWebView()
+					self.browser = QtWebEngineWidgets.QWebEngineView()
 					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2boxer"))
 					self.browser.resize(800,800)
 

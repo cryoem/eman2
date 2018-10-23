@@ -43,7 +43,7 @@ import EMAN2db
 import weakref
 from libpyGLUtils2 import *
 
-try: from PyQt5 import QtWebKit
+try: from PyQt5 import QtWebEngineWidgets
 except: pass
 
 class ModuleEventsManager(object): 
@@ -176,7 +176,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 				try:
 					test = self.browser
 				except: 
-					self.browser = QtWebKit.QWebView()
+					self.browser = QtWebEngineWidgets.QWebEngineView()
 					self.browser.load(QtCore.QUrl())
 					self.browser.resize(800,800)
 				
