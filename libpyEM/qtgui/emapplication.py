@@ -246,14 +246,14 @@ class EMApp(QtWidgets.QApplication):
 		
 		QtWidgets.QApplication.__init__(self, sys.argv)
 		
-		style=QtGui.QStyleFactory.create("Plastique")
+		style=QtWidgets.QStyleFactory.create("Plastique")
 		
 		if style==None:
 			print("Note: standard Plastique style not available, controls may be distorted. Using ", end=' ')
 			
 			# the first one should work, but we have the loop, just in case
-			for s in list(QtGui.QStyleFactory.keys()):
-				style=QtGui.QStyleFactory.create(s)
+			for s in list(QtWidgets.QStyleFactory.keys()):
+				style=QtWidgets.QStyleFactory.create(s)
 				if style!=None: 
 					print(s)
 					break
