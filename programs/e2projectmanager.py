@@ -633,7 +633,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		tree = json.loads(data)
 		jsonfile.close()
 
-		QTree = QtGui.QTreeWidget()
+		QTree = QtWidgets.QTreeWidget()
 		QTree.setHeaderLabel(treename)
 
 		for toplevel in tree:

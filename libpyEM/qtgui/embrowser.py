@@ -2259,7 +2259,7 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		# Actual header contents
 
-		self.wheadtree = QtGui.QTreeWidget()
+		self.wheadtree = QtWidgets.QTreeWidget()
 		self.wheadtree.setColumnCount(2)
 		self.wheadtree.setHeaderLabels(["Item", "Value"])
 		self.gbl.addWidget(self.wheadtree, 0, 1, 2, 1)
@@ -2451,7 +2451,7 @@ class EMJSONInfoPane(EMInfoPane) :
 
 		# contents of a single key
 
-		self.wheadtree = QtGui.QTreeWidget()
+		self.wheadtree = QtWidgets.QTreeWidget()
 		self.wheadtree.setColumnCount(2)
 		self.wheadtree.setHeaderLabels(["Key/#", "Value"])
 		self.gbl.addWidget(self.wheadtree, 0, 1, 2, 1)
@@ -2629,7 +2629,7 @@ class EMImageInfoPane(EMInfoPane) :
 
 		# Actual header contents
 
-		self.wheadtree = QtGui.QTreeWidget()
+		self.wheadtree = QtWidgets.QTreeWidget()
 		self.wheadtree.setColumnCount(2)
 		self.wheadtree.setHeaderLabels(["Item", "Value"])
 		self.gbl.addWidget(self.wheadtree, 0, 0)
@@ -2722,7 +2722,7 @@ class EMStackInfoPane(EMInfoPane) :
 		self.gbl.addWidget(self.wimlist, 2, 0) # Jesus
 
 		'''Actual header contents'''
-		self.wheadtree = QtGui.QTreeWidget()
+		self.wheadtree = QtWidgets.QTreeWidget()
 
 		# self.wheadtree.setColumnCount(2) #
 		self.wheadtree.setHeaderLabels(["Item", "Value"])
