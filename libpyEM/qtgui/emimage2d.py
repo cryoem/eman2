@@ -98,7 +98,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.fftorigincenter = E2getappval("emimage2d","origincenter")
 		if self.fftorigincenter == None : self.fftorigincenter=False
 
-		#sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(7))
+		#sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(7))
 		#sizePolicy.setHorizontalStretch(7)
 		#sizePolicy.setVerticalStretch(7)
 		#sizePolicy.setHeightForWidth(False)
@@ -2047,7 +2047,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mtapix.setRange(0.5,10.0)
 		self.mtapix.setValue(1.0)
 		self.mtlay.addWidget(self.mtapix,0,0,1,2)
-#		self.mtapix.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
+#		self.mtapix.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
 #		self.mtapix.resize(60,21)
 #		print self.mtapix.sizeHint().width(),self.mtapix.sizeHint().height()
 

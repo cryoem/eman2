@@ -1256,7 +1256,7 @@ class GUIBoxer(QtGui.QWidget):
 
 		# Micrograph list
 		self.setlist=QtWidgets.QListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		for i in imagenames:
 			self.setlist.addItem(i)
 		self.gbl.addWidget(self.setlist,0,0,12,2)

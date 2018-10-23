@@ -1644,7 +1644,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		# now build the interface
 		hbl = QtWidgets.QHBoxLayout(self)
 		self.setlist=QtWidgets.QListWidget()
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		hbl.addWidget(self.setlist)
 
 		vbl = QtGui.QVBoxLayout()

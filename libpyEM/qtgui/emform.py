@@ -1560,7 +1560,7 @@ class IncorpText(object):
 		text_edit.setReadOnly(True)
 		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
 		text_edit.setText(param.defaultunits)
-		#text_edit.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Minimum)
+		#text_edit.setSizePolicy(QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Minimum)
 #			hbl.addWidget(text_edit,0)
 		
 #			groupbox = QtWidgets.QGroupBox(param.desc_short)

@@ -231,7 +231,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		# plot list and plot mode combobox
 		self.setlist=e2ctf.MyListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		for i in images:
 			self.setlist.addItem(i)
 		self.gbl.addWidget(self.setlist,0,0,8,2)
