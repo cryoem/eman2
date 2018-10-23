@@ -1083,7 +1083,7 @@ class EMLightsInspectorBase(object):
 		hbl.setObjectName("hbl")
 		vbl.addLayout(hbl)
 
-		self.light_list = QtGui.QListWidget(None)
+		self.light_list = QtWidgets.QListWidget(None)
 		self.light_list.setMouseTracking(True)
 		self.redo_directional_light_list()
 
@@ -1163,7 +1163,7 @@ class EMLightsInspectorBase(object):
 		hbl.setObjectName("hbl")
 		vbl.addLayout(hbl)
 
-		self.point_light_list = QtGui.QListWidget(None)
+		self.point_light_list = QtWidgets.QListWidget(None)
 		self.point_light_list.setMouseTracking(True)
 		
 		self.redo_pointsource_light_list()

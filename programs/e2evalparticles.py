@@ -89,7 +89,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.wclassfilel=QtWidgets.QLabel("Class-average File:")
 		self.vbl.addWidget(self.wclassfilel)
 
-		self.wfilesel=QtGui.QListWidget()
+		self.wfilesel=QtWidgets.QListWidget()
 		self.vbl.addWidget(self.wfilesel)
 		self.vbl.addSpacing(5)
 

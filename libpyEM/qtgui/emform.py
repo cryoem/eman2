@@ -1174,7 +1174,7 @@ class EMFormWidget(QtGui.QWidget):
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
 		
-		list_widget = QtGui.QListWidget(None)
+		list_widget = QtWidgets.QListWidget(None)
 		
 		list_widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 		list_widget.setMouseTracking(True)	

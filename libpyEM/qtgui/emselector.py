@@ -1051,18 +1051,18 @@ class EMSelectorDialog(EMSelectorDialogType):
 		return ret
 	
 	
-class EMListWidget(QtGui.QListWidget):
+class EMListWidget(QtWidgets.QListWidget):
 	'''
 	Customized ListWidget as displayed in the browser
 	'''
 	def __init__(self,target,*args):
 		self.target = weakref.ref(target)
-		QtGui.QListWidget.__init__(self,*args)
+		QtWidgets.QListWidget.__init__(self,*args)
 		self.reset_vars()
 	
 	def clear(self):
 		self.reset_vars()
-		QtGui.QListWidget.clear(self)
+		QtWidgets.QListWidget.clear(self)
 		
 	def contextMenuEvent(self,event):
 		self.target().list_widget_context_menu_event(event)

@@ -608,7 +608,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		
-		#self.listwidget = QtGui.QListWidget(self)
+		#self.listwidget = QtWidgets.QListWidget(self)
 		#self.vbl.addWidget(self.listwidget)
 		
 		self.tabwidget = QtGui.QTabWidget()

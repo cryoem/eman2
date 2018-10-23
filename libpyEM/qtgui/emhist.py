@@ -1339,7 +1339,7 @@ class EMHistogramInspector(QtGui.QWidget):
 	def closeEvent(self, event):
 		pass
 
-class DragListWidget(QtGui.QListWidget):
+class DragListWidget(QtWidgets.QListWidget):
 	"This is a minor modification of the QListWidget to support drag-drop of data sets"
 	def setDataSource(self,trg):
 		"""We keep a weak reference to our data source so we can pull the data only when dragging actually starts"""
@@ -1350,7 +1350,7 @@ class DragListWidget(QtGui.QListWidget):
 			name=str(self.currentItem().text())		# currently hilighted item
 			nbins=len(self.datasource().target().hist_edges)
 			self.datasource().target().set_data(None,key=name,alpha=0.8,width=0.8,nbins=nbins)
-		else: QtGui.QListWidget.keyPressEvent(self,event)
+		else: QtWidgets.QListWidget.keyPressEvent(self,event)
 
 	def dragEnterEvent(self,e):
 		if e.mimeData().hasText() : e.acceptProposedAction()
@@ -1389,13 +1389,13 @@ class DragListWidget(QtGui.QListWidget):
 
 	def setMovement(self,x):
 		"""The ListView and ListWidget unfortunately make use of drag-drop for internal rearrangement, but we need to use it for widget->widget copy. This prevents the parent from disabling drag/drop."""
-		QtGui.QListWidget.setMovement(self,x)
+		QtWidgets.QListWidget.setMovement(self,x)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 
 	def setViewMode(self,x):
 		"""The ListView and ListWidget unfortunately make use of drag-drop for internal rearrangement, but we need to use it for widget->widget copy. This prevents the parent from disabling drag/drop."""
-		QtGui.QListWidget.setViewMode(self,x)
+		QtWidgets.QListWidget.setViewMode(self,x)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 

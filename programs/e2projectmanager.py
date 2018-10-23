@@ -1382,7 +1382,7 @@ class TaskManager(QtGui.QWidget):
 		textlabel = QtWidgets.QLabel("Running Tasks")
 		textlabel.setFont(font)
 		grid.addWidget(textlabel,0,0)
-		self.list_widget = QtGui.QListWidget()
+		self.list_widget = QtWidgets.QListWidget()
 		grid.addWidget(self.list_widget,1,0,1,2)
 		self.killpb = QtGui.QPushButton("Kill")
 		self.closepb = QtGui.QPushButton("Close")
