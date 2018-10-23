@@ -823,10 +823,10 @@ class EMLightsInspectorBase(object):
 		vbl.setSpacing(6)
 		vbl.setObjectName("Lights")
 		
-		self.light_manip_check = QtGui.QCheckBox("Mouse moves lights")
-		self.local_viewer_check = QtGui.QCheckBox("Local light model")
+		self.light_manip_check = QtWidgets.QCheckBox("Mouse moves lights")
+		self.local_viewer_check = QtWidgets.QCheckBox("Local light model")
 		self.local_viewer_check.setChecked(glGetInteger(GL_LIGHT_MODEL_LOCAL_VIEWER))
-		show_lights = QtGui.QCheckBox("Show lights")
+		show_lights = QtWidgets.QCheckBox("Show lights")
 		show_lights.setChecked(self.target().display_lights)
 		max_lights_label = QtGui.QLabel()
 		max_lights_label.setText("Max lights : " + str(glGetInteger(GL_MAX_LIGHTS)))

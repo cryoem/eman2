@@ -1304,7 +1304,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		sidelabel2.setAlignment(QtCore.Qt.AlignVCenter)
 		linegridbox.addWidget(sidelabel2, 3, 0, 1, 1)
 		
-		self.leftShowArrow = QtGui.QCheckBox("Show")
+		self.leftShowArrow = QtWidgets.QCheckBox("Show")
 		self.leftShowArrow.setChecked(self.item3d().showLeftArrow)
 		linegridbox.addWidget(self.leftShowArrow, 1, 1, 1, 1)
 		
@@ -1321,7 +1321,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		rightlabel.setAlignment(QtCore.Qt.AlignCenter)
 		linegridbox.addWidget(rightlabel, 0, 2, 1, 1)
 		
-		self.rightShowArrow = QtGui.QCheckBox("Show")
+		self.rightShowArrow = QtWidgets.QCheckBox("Show")
 		self.rightShowArrow.setChecked(self.item3d().showRightArrow)
 		linegridbox.addWidget(self.rightShowArrow, 1, 2, 1, 1)
 		

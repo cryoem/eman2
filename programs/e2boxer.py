@@ -751,7 +751,7 @@ class boxerConvNet(QtCore.QObject):
 		boxerConvNet.bt_train.setToolTip("Train the network using references")
 		gridlay.addWidget(boxerConvNet.bt_train)
 		boxerConvNet.bt_train.clicked[bool].connect(boxerConvNet.do_training)
-		#boxerConvNet.ck_train=QtGui.QCheckBox("Train from scratch")
+		#boxerConvNet.ck_train=QtWidgets.QCheckBox("Train from scratch")
 		#gridlay.addWidget(boxerConvNet.ck_train)
 		
 		boxerConvNet.threshold=ValSlider(None,(0,5.0),"Threshold1",0.2,90)

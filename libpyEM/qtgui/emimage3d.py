@@ -618,7 +618,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.hbl_check.setSpacing(6)
 		self.hbl_check.setObjectName("hbl_check")
 		
-		#self.advancedcheck = QtGui.QCheckBox("Advanced",self)
+		#self.advancedcheck = QtWidgets.QCheckBox("Advanced",self)
 		#self.hbl_check.addWidget(self.advancedcheck)
 		
 		self.hbl_buttons = QtGui.QHBoxLayout()

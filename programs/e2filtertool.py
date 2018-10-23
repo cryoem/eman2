@@ -131,7 +131,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		self.gbl.setColumnStretch(3,3)
 
 		# Enable checkbox
-		self.wenable=QtGui.QCheckBox(self)
+		self.wenable=QtWidgets.QCheckBox(self)
 		self.wenable.setChecked(False)			# disable new processors by default to permit their values to be set
 		self.gbl.addWidget(self.wenable,0,1)
 

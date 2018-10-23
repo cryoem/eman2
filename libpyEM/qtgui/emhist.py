@@ -1006,11 +1006,11 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl02.setSpacing(6)
 		vbl.addLayout(hbl02)
 
-		self.normed=QtGui.QCheckBox(self)
+		self.normed=QtWidgets.QCheckBox(self)
 		self.normed.setText("Norm")
 		hbl02.addWidget(self.normed)
 
-		self.cumulative=QtGui.QCheckBox(self)
+		self.cumulative=QtWidgets.QCheckBox(self)
 		self.cumulative.setText("Cumulative")
 		hbl02.addWidget(self.cumulative)
 
@@ -1019,11 +1019,11 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl03.setSpacing(6)
 		vbl.addLayout(hbl03)
 
-		self.logtogy=QtGui.QCheckBox(self)
+		self.logtogy=QtWidgets.QCheckBox(self)
 		self.logtogy.setText("Log Y")
 		hbl03.addWidget(self.logtogy)
 
-		self.stacked=QtGui.QCheckBox(self)
+		self.stacked=QtWidgets.QCheckBox(self)
 		self.stacked.setText("Stacked")
 		hbl03.addWidget(self.stacked)
 

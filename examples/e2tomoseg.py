@@ -164,7 +164,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		self.gbl2.addWidget(self.wnlayers,1,1)
 
 		# Local boxes in side view
-		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")
+		self.wlocalbox=QtWidgets.QCheckBox("Limit Side Boxes")
 		self.gbl2.addWidget(self.wlocalbox,2,0)
 
 		# scale factor

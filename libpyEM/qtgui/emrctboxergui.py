@@ -447,11 +447,11 @@ class PairPickerTool(QtGui.QWidget):
 		label.setFont(boldfont)
 		vbl.addWidget(label)
 
-		self.updateboxes_cb = QtGui.QCheckBox("Update box positions")
+		self.updateboxes_cb = QtWidgets.QCheckBox("Update box positions")
 		self.updateboxes_cb.setChecked(False)
 		vbl.addWidget(self.updateboxes_cb)
 		
-		self.centertilts_cb = QtGui.QCheckBox("Center opposite box position")
+		self.centertilts_cb = QtWidgets.QCheckBox("Center opposite box position")
 		self.centertilts_cb.setChecked(False)
 		vbl.addWidget(self.centertilts_cb)
 		

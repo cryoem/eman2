@@ -192,7 +192,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.gbl2.addWidget(self.wnlayers,3,1)
 
 		# Local boxes in side view
-		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")
+		self.wlocalbox=QtWidgets.QCheckBox("Limit Side Boxes")
 		self.gbl2.addWidget(self.wlocalbox,3,0)
 		self.wlocalbox.setChecked(True)
 
@@ -1359,7 +1359,7 @@ class EMTomoBoxerOptions(QtGui.QWidget):
 		self.gbl.setObjectName("gbl")
 		
 		
-		self.erasercheckbox=QtGui.QCheckBox("Eraser")
+		self.erasercheckbox=QtWidgets.QCheckBox("Eraser")
 		self.gbl.addWidget(self.erasercheckbox,0,0)
 		
 		self.eraser_radius=ValBox(label="Radius:",value=64)

@@ -316,7 +316,7 @@ class MorphBoxingPanel(object):
 			vbl.setMargin(0)
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
-			self.auto_center_checkbox = QtGui.QCheckBox("Auto-center")
+			self.auto_center_checkbox = QtWidgets.QCheckBox("Auto-center")
 			self.clear=QtGui.QPushButton("Clear")
 			vbl.addWidget(self.auto_center_checkbox)
 			vbl.addWidget(self.clear)
@@ -360,7 +360,7 @@ class ErasingPanel(object): # copied for ideas for the morph panel
 			self.erase_rad_edit.setEnabled(True)
 			hbl.addWidget(self.erase_rad_edit)
 
-			self.unerase = QtGui.QCheckBox("Unerase")
+			self.unerase = QtWidgets.QCheckBox("Unerase")
 			self.unerase.setChecked(False)
 
 			vbl.addLayout(hbl)
