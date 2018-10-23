@@ -491,7 +491,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.hbl1 = QtWidgets.QHBoxLayout()
 		self.text = QtGui.QLineEdit()
 		self.text.setText("hello world")
-		text_label = QtGui.QLabel("Enter Text:",self)
+		text_label = QtWidgets.QLabel("Enter Text:",self)
 		text_label.setToolTip("Enters quotes to evaluate new line e.g. \"hello\\nworld\". Evaluates numerical expressions e.g. 9*9 (with out quotes)")
 		self.hbl1.addWidget(text_label)
 		self.hbl1.addWidget(self.text)
@@ -500,7 +500,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.hbl1 = QtWidgets.QHBoxLayout()
 		self.Dfont = QtWidgets.QComboBox()
 		for k in self.l: self.Dfont.addItem(k)
-		self.hbl1.addWidget(QtGui.QLabel("Fonts:",self))
+		self.hbl1.addWidget(QtWidgets.QLabel("Fonts:",self))
 		self.hbl1.addWidget(self.Dfont)
 		formattab.vbl.addLayout(self.hbl1)
 
@@ -508,12 +508,12 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.tsize = QtGui.QSpinBox()
 		self.tsize.setRange(0,500)
 		self.tsize.setValue(32)
-		self.hbl1.addWidget(QtGui.QLabel("Size:",self),Qt.AlignLeft)
+		self.hbl1.addWidget(QtWidgets.QLabel("Size:",self),Qt.AlignLeft)
 		self.hbl1.addWidget(self.tsize,Qt.AlignRight)
 		self.combo = QtWidgets.QComboBox()
 		self.items = ["Extrude","Pixmap","Bitmap","Polygon","Outline","Texture"]
 		for k in self.items: self.combo.addItem(k)
-		self.hbl1.addWidget(QtGui.QLabel("Style:",self),Qt.AlignLeft)
+		self.hbl1.addWidget(QtWidgets.QLabel("Style:",self),Qt.AlignLeft)
 		self.hbl1.addWidget(self.combo,Qt.AlignRight)
 		formattab.vbl.addLayout(self.hbl1)
 
@@ -534,7 +534,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 
 		self.hbl1 = QtWidgets.QHBoxLayout()
 		self.cbb = QtWidgets.QComboBox()
-		self.hbl1.addWidget(QtGui.QLabel("Material:",self))
+		self.hbl1.addWidget(QtWidgets.QLabel("Material:",self))
 		self.hbl1.addWidget(self.cbb)
 		formattab.vbl.addLayout(self.hbl1)
 

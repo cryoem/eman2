@@ -425,7 +425,7 @@ def EMSelectorBaseTemplate(Type):
 			self.lock = False
 					
 		def __init_filter_combo(self):
-			self.filter_text = QtGui.QLabel("Filter:",self)
+			self.filter_text = QtWidgets.QLabel("Filter:",self)
 			self.filter_combo = QtWidgets.QComboBox(None)
 			self.filter_combo.addItem("EM types")
 			self.filter_combo.addItem("Databases") # this doesn't really do anything
@@ -920,7 +920,7 @@ class EMSelectorDialog(EMSelectorDialogType):
 		hbl2=QtWidgets.QHBoxLayout()
 		hbl2.setMargin(0)
 		hbl2.setSpacing(2)
-		self.selection_label = QtGui.QLabel(SAVE_AS,self)
+		self.selection_label = QtWidgets.QLabel(SAVE_AS,self)
 		hbl2.addWidget(self.selection_label)
 		self.save_as_line_edit = QtGui.QLineEdit("",self)
 		hbl2.addWidget(self.save_as_line_edit,0)

@@ -601,7 +601,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.hbl_color.setObjectName("Material")
 		gltab.vbl.addLayout(self.hbl_color)
 		
-		self.color_label = QtGui.QLabel()
+		self.color_label = QtWidgets.QLabel()
 		self.color_label.setText('Material')
 		self.hbl_color.addWidget(self.color_label)
 		
@@ -668,7 +668,7 @@ class EMIsoInspector(QtGui.QWidget):
 			self.hbl_smp.setObjectName("Sample")
 			maintab.vbl.addLayout(self.hbl_smp)
 			
-			self.smp_label = QtGui.QLabel()
+			self.smp_label = QtWidgets.QLabel()
 			self.smp_label.setText('Sample Level')
 			self.hbl_smp.addWidget(self.smp_label)
 			

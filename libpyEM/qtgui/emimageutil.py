@@ -53,13 +53,13 @@ class EMTransformPanel(object):
 		self.target = weakref.ref(target)
 		self.parent = weakref.ref(parent)
 		
-		self.label_src = QtGui.QLabel(parent)
+		self.label_src = QtWidgets.QLabel(parent)
 		self.label_src.setText('Rotation Convention')
 		
 		self.src = QtWidgets.QComboBox(parent)
 		self.load_src_options(self.src)
 		
-		self.x_label = QtGui.QLabel()
+		self.x_label = QtWidgets.QLabel()
 		self.x_label.setText('x')
 		
 		self.x_trans = QtWidgets.QDoubleSpinBox(parent)
@@ -67,7 +67,7 @@ class EMTransformPanel(object):
 		self.x_trans.setMaximum(10000)
 		self.x_trans.setValue(0.0)
 	
-		self.y_label = QtGui.QLabel()
+		self.y_label = QtWidgets.QLabel()
 		self.y_label.setText('y')
 		
 		self.y_trans = QtWidgets.QDoubleSpinBox(parent)
@@ -75,7 +75,7 @@ class EMTransformPanel(object):
 		self.y_trans.setMaximum(10000)
 		self.y_trans.setValue(0.0)
 		
-		self.z_label = QtGui.QLabel()
+		self.z_label = QtWidgets.QLabel()
 		self.z_label.setText('z')
 		
 		self.z_trans = QtWidgets.QDoubleSpinBox(parent)

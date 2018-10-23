@@ -2378,7 +2378,7 @@ class GUIctf(QtGui.QWidget):
 		#self.samp = ValSlider(self,(0,5.0),"Amp:",0)
 		#self.vbl.addWidget(self.samp)
 
-		self.imginfo=QtGui.QLabel("Info",self)
+		self.imginfo=QtWidgets.QLabel("Info",self)
 		self.vbl.addWidget(self.imginfo)
 
 		self.sdefocus=ValSlider(self,(0,5),"Defocus:",0,90)

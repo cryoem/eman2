@@ -1948,7 +1948,7 @@ class EMInfoPane(QtGui.QWidget) :
 		# Root class represents no target
 
 		self.hbl = QtWidgets.QHBoxLayout(self)
-		self.lbl = QtGui.QLabel("No Information Available")
+		self.lbl = QtWidgets.QLabel("No Information Available")
 		self.hbl.addWidget(self.lbl)
 
 	def display(self, target) :
@@ -2289,10 +2289,10 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		# These just clean up the layout a bit
 
-		self.wbutxx = QtGui.QLabel("")
+		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutxx, 0, 6)
-		self.wbutyy = QtGui.QLabel("")
+		self.wbutyy = QtWidgets.QLabel("")
 		self.wbutyy.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutyy, 1, 6)
 
@@ -2481,10 +2481,10 @@ class EMJSONInfoPane(EMInfoPane) :
 
 		# These just clean up the layout a bit
 
-		self.wbutxx = QtGui.QLabel("")
+		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutxx, 0, 6)
-		self.wbutyy = QtGui.QLabel("")
+		self.wbutyy = QtWidgets.QLabel("")
 		self.wbutyy.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutyy, 1, 6)
 
@@ -2697,10 +2697,10 @@ class EMStackInfoPane(EMInfoPane) :
 
 		self.gbl = QtWidgets.QGridLayout(self)
 
-		self.gbl.label1 = QtGui.QLabel("Images") # Jesus
+		self.gbl.label1 = QtWidgets.QLabel("Images") # Jesus
 		self.gbl.addWidget(self.gbl.label1, 0, 0) # Jesus
 
-		self.gbl.label2 = QtGui.QLabel("Header Info") # Jesus
+		self.gbl.label2 = QtWidgets.QLabel("Header Info") # Jesus
 		self.gbl.addWidget(self.gbl.label2, 0, 1) # Jesus
 
 		'''Spinbox for selecting image number'''
@@ -2757,12 +2757,12 @@ class EMStackInfoPane(EMInfoPane) :
 
 		# These just clean up the layout a bit
 
-		self.wbutxx = QtGui.QLabel("")
+		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		# self.hbl2.addWidget(self.wbutxx, 0, 6) # JOHN
 		self.hbl2.addWidget(self.wbutxx, 1, 6) # Jesus
 
-		self.wbutyy = QtGui.QLabel("")
+		self.wbutyy = QtWidgets.QLabel("")
 		self.wbutyy.setMaximumHeight(12)
 
 		# self.hbl2.addWidget(self.wbutyy, 1, 6) # JOHN
@@ -3044,7 +3044,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 		self.setWindowTitle("e2display.py Browser") # Jesus
 
-		# label = QtGui.QLabel(self);
+		# label = QtWidgets.QLabel(self);
       # label.setText("Window Title");
       # self.setWindowTitle("Window Title");
 
@@ -3071,7 +3071,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 		# Text line for showing (or editing) full path
 
-		self.lpath = QtGui.QLabel("  Path:")
+		self.lpath = QtWidgets.QLabel("  Path:")
 		self.wtoolhbl.addWidget(self.lpath)
 
 		self.wpath = QtGui.QLineEdit()
@@ -3101,7 +3101,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 
 		# Text line for showing (or editing) full path
 
-		self.lfilter = QtGui.QLabel("Filter:")
+		self.lfilter = QtWidgets.QLabel("Filter:")
 		self.wtoolhbl2.addWidget(self.lfilter)
 
 		self.wfilter = QtWidgets.QComboBox()
@@ -3184,10 +3184,10 @@ class EMBrowserWidget(QtGui.QWidget) :
 #				self.wbutmisc[-1].setEnabled(False)
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
-		self.wbutxx = QtGui.QLabel("")
+		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutxx, 0, 6)
-		self.wbutyy = QtGui.QLabel("")
+		self.wbutyy = QtWidgets.QLabel("")
 		self.wbutyy.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutyy, 1, 6)
 

@@ -162,7 +162,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl.addWidget(self.vgb0,0,0,1,4)
 		
 		self.gbl2=QtWidgets.QGridLayout(self.vgb0)
-		self.wlpath=QtGui.QLabel("Path: {}".format(self.path))
+		self.wlpath=QtWidgets.QLabel("Path: {}".format(self.path))
 		self.gbl2.addWidget(self.wlpath,0,0)
 		self.gbl2.setColumnStretch(0,1)
 		
@@ -176,7 +176,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl2.addWidget(self.wvsnum,0,3)
 		self.gbl2.setColumnStretch(3,4)
 		
-		self.wlnptcl=QtGui.QLabel(" ")
+		self.wlnptcl=QtWidgets.QLabel(" ")
 		self.gbl2.addWidget(self.wlnptcl,0,5)
 		self.gbl2.setColumnStretch(5,2)
 		
@@ -185,11 +185,11 @@ class EMMotion(QtGui.QMainWindow):
 		
 		###### Alignment Mask
 		# widget for editing the alignment mask
-		self.wlalimaskdraw=QtGui.QLabel("<big><pre>Edit</pre></big>")
+		self.wlalimaskdraw=QtWidgets.QLabel("<big><pre>Edit</pre></big>")
 		self.wlalimaskdraw.setAlignment(Qt.AlignHCenter)
 		self.gbl.addWidget(self.wlalimaskdraw,2,1)
 		
-		self.wlalimaskdraw2=QtGui.QLabel("<big><pre>A\nl\ni\ng\nn</pre></big>")
+		self.wlalimaskdraw2=QtWidgets.QLabel("<big><pre>A\nl\ni\ng\nn</pre></big>")
 		self.gbl.addWidget(self.wlalimaskdraw2,3,0)
 		
 		self.w2dalimaskdraw=EMImage2DWidget()
@@ -217,7 +217,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl.addLayout(self.vbl1,3,2)
 		self.vbl1.addStretch(5)
 		
-		self.wlalimaskblur=QtGui.QLabel("Blur")
+		self.wlalimaskblur=QtWidgets.QLabel("Blur")
 		self.vbl1.addWidget(self.wlalimaskblur)
 		
 		self.wsbalimaskblur=QtGui.QSpinBox()
@@ -226,7 +226,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.vbl1.addSpacing(16)
 		
-		self.wlalimaskbase=QtGui.QLabel("Base")
+		self.wlalimaskbase=QtWidgets.QLabel("Base")
 		self.vbl1.addWidget(self.wlalimaskbase)
 		
 		self.wsbalimaskbase=QtGui.QSpinBox()
@@ -236,7 +236,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.vbl1.addSpacing(16)
 
-		self.wlalimaskrot=QtGui.QLabel("Rot")
+		self.wlalimaskrot=QtWidgets.QLabel("Rot")
 		self.vbl1.addWidget(self.wlalimaskrot)
 		
 		self.wsbalimaskrot=QtGui.QSpinBox()
@@ -252,7 +252,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.vbl1.addStretch(5)
 		
 		# widget for displaying the masked alignment reference
-		self.wlalimask=QtGui.QLabel("<big><pre>Reference</pre></big>")
+		self.wlalimask=QtWidgets.QLabel("<big><pre>Reference</pre></big>")
 		self.wlalimask.setAlignment(Qt.AlignHCenter)
 		self.gbl.addWidget(self.wlalimask,2,3)
 		
@@ -274,7 +274,7 @@ class EMMotion(QtGui.QMainWindow):
 
 		###### ROI Mask
 		# widget for editing the ROI mask
-		self.wlroimaskdraw=QtGui.QLabel("<big><pre>R\nO\nI</pre></big>")
+		self.wlroimaskdraw=QtWidgets.QLabel("<big><pre>R\nO\nI</pre></big>")
 		self.gbl.addWidget(self.wlroimaskdraw,6,0)
 		
 		self.w2droimaskdraw=EMImage2DWidget()
@@ -302,7 +302,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl.addLayout(self.vbl2,6,2)
 		self.vbl2.addStretch(5)
 		
-		self.wlroimaskblur=QtGui.QLabel("Blur")
+		self.wlroimaskblur=QtWidgets.QLabel("Blur")
 		self.vbl2.addWidget(self.wlroimaskblur)
 		
 		self.wsbroimaskblur=QtGui.QSpinBox()
@@ -321,7 +321,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.vbl2.addStretch(5)
 
-		self.wlarrow1=QtGui.QLabel(unichr(0x2192))
+		self.wlarrow1=QtWidgets.QLabel(unichr(0x2192))
 		self.gbl.addWidget(self.wlarrow1,4,4)
 
 		###### Results
@@ -329,7 +329,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.vbl3=QtGui.QVBoxLayout()
 		self.gbl.addLayout(self.vbl3,3,6,5,1)
 		
-		self.wllistresult=QtGui.QLabel("Results")
+		self.wllistresult=QtWidgets.QLabel("Results")
 #		self.wllistresult.setAlignment(Qt.AlignHCenter)
 		self.vbl3.addWidget(self.wllistresult)
 		
@@ -384,13 +384,13 @@ class EMMotion(QtGui.QMainWindow):
 		self.wbcompute=QtGui.QPushButton("Compute")
 		self.vbl3a.addWidget(self.wbcompute)
 
-		self.wlarrow2=QtGui.QLabel(unichr(0x2192))
+		self.wlarrow2=QtWidgets.QLabel(unichr(0x2192))
 		self.gbl.addWidget(self.wlarrow2,4,7)
 
 
 		###### Output widgets
 		# Class-averages
-		self.wlclasses=QtGui.QLabel("<big><pre>Classes</pre></big>")
+		self.wlclasses=QtWidgets.QLabel("<big><pre>Classes</pre></big>")
 		self.wlclasses.setAlignment(Qt.AlignHCenter)
 		self.gbl.addWidget(self.wlclasses,2,9)
 		

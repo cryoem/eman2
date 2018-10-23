@@ -105,14 +105,14 @@ class ControlPannel(QtGui.QWidget):
 		vbox = QtGui.QVBoxLayout()
 		
 		hbl=QtWidgets.QHBoxLayout()
-		flabel = QtGui.QLabel("Filter Type:",self)
+		flabel = QtWidgets.QLabel("Filter Type:",self)
 		hbl.addWidget(flabel)
 		self.filter_combobox = QtWidgets.QComboBox()
 		hbl.addWidget(self.filter_combobox)
 		vbox.addLayout(hbl)
 		
 		hbl=QtWidgets.QHBoxLayout()
-		klabel = QtGui.QLabel("Kernal Size:",self)
+		klabel = QtWidgets.QLabel("Kernal Size:",self)
 		hbl.addWidget(klabel)
 		self.kernel_combobox = QtWidgets.QComboBox()
 		hbl.addWidget(self.kernel_combobox)
@@ -145,7 +145,7 @@ class ControlPannel(QtGui.QWidget):
 		
 		vbox1 = QtGui.QVBoxLayout()
 		hbl=QtWidgets.QHBoxLayout()
-		flabel = QtGui.QLabel("Filter:",self)
+		flabel = QtWidgets.QLabel("Filter:",self)
 		hbl.addWidget(flabel)
 		self.processor_combobox = QtWidgets.QComboBox()
 		proc_data = dump_processors_list()
@@ -158,7 +158,7 @@ class ControlPannel(QtGui.QWidget):
 		vbox1.addLayout(hbl)
 		
 		hbl2=QtWidgets.QHBoxLayout()
-		plabel = QtGui.QLabel("Parameters:",self)
+		plabel = QtWidgets.QLabel("Parameters:",self)
 		hbl2.addWidget(plabel)
 		self.params_listbox = QtGui.QLineEdit(str(self.db.getdefault("processorparams",dfl="")), self)
 		hbl2.addWidget(self.params_listbox)
@@ -283,7 +283,7 @@ class ControlPannel(QtGui.QWidget):
 		
 	def get_main(self, layout):
 		hbl=QtWidgets.QHBoxLayout()
-		self.box_size_label = QtGui.QLabel("Box Size:",self)
+		self.box_size_label = QtWidgets.QLabel("Box Size:",self)
 		hbl.addWidget(self.box_size_label)
 		
 		self.pos_int_validator = QtGui.QIntValidator(2,5000, self)	#Anything bigger than 5,000 is crazy!!!!
@@ -300,7 +300,7 @@ class ControlPannel(QtGui.QWidget):
 		
 		grid = QtWidgets.QGridLayout()
 		self.current_tool_combobox = QtWidgets.QComboBox()
-		grid.addWidget(QtGui.QLabel("Current Boxing Tool:"),0,0)
+		grid.addWidget(QtWidgets.QLabel("Current Boxing Tool:"),0,0)
 		grid.addWidget(self.current_tool_combobox,0,1)
 		# Add stacked widget
 		self.tools_stacked_widget = QtGui.QStackedWidget()
@@ -313,7 +313,7 @@ class ControlPannel(QtGui.QWidget):
 			self.quality.setCurrentIndex(self.qualitydb.getdefault(self.mediator.windowlist[0].filename,dfl=0))
 		else:
 			self.quality.setCurrentIndex(self.qualitydb.getdefault(os.path.basename(self.mediator.windowlist[0].filename),dfl=0))
-		grid.addWidget(QtGui.QLabel("Quality Score"),2,0)
+		grid.addWidget(QtWidgets.QLabel("Quality Score"),2,0)
 		grid.addWidget(self.quality, 2,1)
 		# add to layout
 		self.tool_button_group_box.setLayout(grid)
@@ -402,7 +402,7 @@ class ManualPicker(QtGui.QWidget):
 		self.mediator = mediator
 		self.db=db
 		vbl = QtGui.QVBoxLayout()
-		label = QtGui.QLabel("Manual Picker", self)
+		label = QtWidgets.QLabel("Manual Picker", self)
 		boldfont = QtGui.QFont()
 		boldfont.setBold(True)
 		label.setFont(boldfont)
@@ -441,7 +441,7 @@ class PairPickerTool(QtGui.QWidget):
 		ppwidget = QtGui.QWidget()
 		
 		vbl = QtGui.QVBoxLayout()
-		label = QtGui.QLabel("Pair Picker", self)
+		label = QtWidgets.QLabel("Pair Picker", self)
 		boldfont = QtGui.QFont()
 		boldfont.setBold(True)
 		label.setFont(boldfont)
@@ -456,7 +456,7 @@ class PairPickerTool(QtGui.QWidget):
 		vbl.addWidget(self.centertilts_cb)
 		
 		hbl = QtWidgets.QHBoxLayout()
-		slabel = QtGui.QLabel("Min pairs for xform", self)
+		slabel = QtWidgets.QLabel("Min pairs for xform", self)
 		hbl.addWidget(slabel)
 		self.spinbox = QtGui.QSpinBox(self)
 		self.spinbox.setMinimum(self.minpp_for_xform)
@@ -465,7 +465,7 @@ class PairPickerTool(QtGui.QWidget):
 		vbl.addLayout(hbl)
 		
 		hta = QtWidgets.QHBoxLayout()
-		tlabel = QtGui.QLabel("Computed tilt angle", self)
+		tlabel = QtWidgets.QLabel("Computed tilt angle", self)
 		hta.addWidget(tlabel)
 		self.tiltangle = QtGui.QLineEdit("", self)
 		self.tiltangle.setReadOnly(True)
@@ -473,7 +473,7 @@ class PairPickerTool(QtGui.QWidget):
 		vbl.addLayout(hta)
 		
 		htax = QtWidgets.QHBoxLayout()
-		talabel = QtGui.QLabel("Computed tilt axis (Y)", self)
+		talabel = QtWidgets.QLabel("Computed tilt axis (Y)", self)
 		htax.addWidget(talabel)
 		self.tiltaxis = QtGui.QLineEdit("", self)
 		self.tiltaxis.setReadOnly(True)
@@ -481,7 +481,7 @@ class PairPickerTool(QtGui.QWidget):
 		vbl.addLayout(htax)
 		
 		hgamma = QtWidgets.QHBoxLayout()
-		gammalabel = QtGui.QLabel("Gamma angle", self)
+		gammalabel = QtWidgets.QLabel("Gamma angle", self)
 		hgamma.addWidget(gammalabel)
 		self.gamma = QtGui.QLineEdit("", self)
 		self.gamma.setReadOnly(True)
@@ -489,7 +489,7 @@ class PairPickerTool(QtGui.QWidget):
 		vbl.addLayout(hgamma)
 		
 		hmb = QtWidgets.QHBoxLayout()
-		mlabel = QtGui.QLabel("Mask Type", self)
+		mlabel = QtWidgets.QLabel("Mask Type", self)
 		hmb.addWidget(mlabel)
 		self.mask_combobox = QtWidgets.QComboBox()
 		self.mask_combobox.setEnabled(False)

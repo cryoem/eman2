@@ -531,7 +531,7 @@ class SwarmPanel(object):
 			db = js_open_dict(SwarmPanel.DB_NAME)
 
 			hbl = QtWidgets.QHBoxLayout()
-			ptcl_diam_label = QtGui.QLabel("Particle Diameter:")
+			ptcl_diam_label = QtWidgets.QLabel("Particle Diameter:")
 			ptcl_diam_label.setToolTip("An estimate of the particle diameter - this used by Swarm for automatically shrinking and for determining automatic picking parameters.\nA value that is slightly larger than the particle is generally good. Err on the side of being too large, not too small.")
 			hbl.addWidget(ptcl_diam_label)
 
@@ -1978,12 +1978,12 @@ class GaussPanel(object):
 			vbl.setObjectName("vbl")
 
 			hgc = QtWidgets.QHBoxLayout()
-			gconvheader = QtGui.QLabel("<b>Parameters of Gauss convolution</b>")
+			gconvheader = QtWidgets.QLabel("<b>Parameters of Gauss convolution</b>")
 			hgc.addWidget(gconvheader)
 			vbl.addLayout(hgc)
 
 			hbl = QtWidgets.QHBoxLayout()
-			pixel_input_label = QtGui.QLabel("Input Pixel Size:")
+			pixel_input_label = QtWidgets.QLabel("Input Pixel Size:")
 			pixel_input_label.setToolTip("Input pixel size")
 			hbl.addWidget(pixel_input_label)
 
@@ -1996,7 +1996,7 @@ class GaussPanel(object):
 
 			#vbl.addLayout(hbl)
 
-			pixel_output_label = QtGui.QLabel("Output Pixel Size:")
+			pixel_output_label = QtWidgets.QLabel("Output Pixel Size:")
 			pixel_output_label.setToolTip("Output pixel size")
 			hbl.addWidget(pixel_output_label)
 
@@ -2040,7 +2040,7 @@ class GaussPanel(object):
 			self.gauss_width_slider.setRange( -100, 100 )
 			self.gauss_width_slider.setValue( self.SLVAL )
 			hbl_gwidth.addWidget( self.gauss_width_slider)
-			hbl_gwidth.addWidget(QtGui.QLabel("Gauss Width Adjust:"))
+			hbl_gwidth.addWidget(QtWidgets.QLabel("Gauss Width Adjust:"))
 			self.gauss_width = QtGui.QLineEdit(self.GW)
 			gauss_width_cache = gbdb.setdefault('gauss_width',None)
 			if not(gauss_width_cache == None):
@@ -2053,7 +2053,7 @@ class GaussPanel(object):
 			vbl.addLayout(hbl_gwidth)
 
 			hbl_thr = QtWidgets.QHBoxLayout()
-			thr_low_label = QtGui.QLabel("Threshold Low:")
+			thr_low_label = QtWidgets.QLabel("Threshold Low:")
 			hbl_thr.addWidget(thr_low_label)
 			self.thr_low_edit = QtGui.QLineEdit(self.THRNA)
 			thrlow_cache = gbdb.setdefault('thr_low',None)
@@ -2061,7 +2061,7 @@ class GaussPanel(object):
 				self.thr_low_edit = QtGui.QLineEdit(str(thrlow_cache))
 			self.new_thr_low()
 			hbl_thr.addWidget(self.thr_low_edit)
-			thr_hi_label = QtGui.QLabel("Threshold High:")
+			thr_hi_label = QtWidgets.QLabel("Threshold High:")
 			hbl_thr.addWidget(thr_hi_label)
 
 			thrhi_cache = gbdb.setdefault('thr_hi',None)
@@ -2087,19 +2087,19 @@ class GaussPanel(object):
 
 			# add input fields for CTF estimation
 			hgctf = QtWidgets.QHBoxLayout()
-			ctftitle = QtGui.QLabel("<b>Parameters of CTF estimation</b>")
+			ctftitle = QtWidgets.QLabel("<b>Parameters of CTF estimation</b>")
 			hgctf.addWidget(ctftitle)
 			vbl.addLayout(hgctf)
 
 			hbl_wscs = QtWidgets.QHBoxLayout()
 
-			window_size_label = QtGui.QLabel("Window size:")
+			window_size_label = QtWidgets.QLabel("Window size:")
 			hbl_wscs.addWidget(window_size_label)
 			self.ctf_window_size = QtGui.QLineEdit(str(gbdb.setdefault('ctf_window',"512")))
 
 			hbl_wscs.addWidget(self.ctf_window_size)
 
-			cs_label = QtGui.QLabel("Cs:")
+			cs_label = QtWidgets.QLabel("Cs:")
 			hbl_wscs.addWidget(cs_label)
 			self.ctf_cs = QtGui.QLineEdit(str(gbdb.setdefault('ctf_cs',"2.0")))
 
@@ -2109,12 +2109,12 @@ class GaussPanel(object):
 
 			hbl_esv = QtWidgets.QHBoxLayout()
 
-			edge_size_label = QtGui.QLabel("Edge size:")
+			edge_size_label = QtWidgets.QLabel("Edge size:")
 			hbl_esv.addWidget(edge_size_label)
 			self.ctf_edge_size = QtGui.QLineEdit(str(gbdb.setdefault('ctf_edge',"0")))
 			hbl_esv.addWidget(self.ctf_edge_size)
 
-			voltage_label = QtGui.QLabel("Voltage:")
+			voltage_label = QtWidgets.QLabel("Voltage:")
 			hbl_esv.addWidget(voltage_label)
 			self.ctf_volt = QtGui.QLineEdit(str(gbdb.setdefault('ctf_volt',"200.0")))
 			hbl_esv.addWidget(self.ctf_volt)
@@ -2123,12 +2123,12 @@ class GaussPanel(object):
 
 			hbl_oac = QtWidgets.QHBoxLayout()
 
-			overlap_label = QtGui.QLabel("Overlap:")
+			overlap_label = QtWidgets.QLabel("Overlap:")
 			hbl_oac.addWidget(overlap_label)
 			self.ctf_overlap_size = QtGui.QLineEdit(str(gbdb.setdefault('ctf_overlap',"50")))
 			hbl_oac.addWidget(self.ctf_overlap_size)
 
-			amplitude_contrast_label = QtGui.QLabel("Amplitude Contrast:")
+			amplitude_contrast_label = QtWidgets.QLabel("Amplitude Contrast:")
 			hbl_oac.addWidget(amplitude_contrast_label)
 			self.ctf_ampcont = QtGui.QLineEdit(str(gbdb.setdefault('ctf_ampcont',"10.0")))
 			hbl_oac.addWidget(self.ctf_ampcont)
@@ -2137,7 +2137,7 @@ class GaussPanel(object):
 
 			# cter kboot
 			hbl_kboot = QtWidgets.QHBoxLayout()
-			kboot_label = QtGui.QLabel("kboot:")
+			kboot_label = QtWidgets.QLabel("kboot:")
 			hbl_kboot.addWidget(kboot_label)
 
 			self.ctf_kboot = QtGui.QLineEdit(str(gbdb.setdefault('ctf_kboot',"16")))
@@ -2147,47 +2147,47 @@ class GaussPanel(object):
 			hbl_estdef = QtWidgets.QHBoxLayout()
 			hbl_fed = QtWidgets.QHBoxLayout()
 
-			fstart_label = QtGui.QLabel("F_start:")
+			fstart_label = QtWidgets.QLabel("F_start:")
 			hbl_fed.addWidget(fstart_label)
 			self.ctf_f_start = QtGui.QLineEdit(str(gbdb.setdefault('ctf_fstart',"0.020")))
 			hbl_fed.addWidget(self.ctf_f_start)
 
-			estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
+			estimated_defocus_label = QtWidgets.QLabel("Estimated defocus:")
 			hbl_estdef.addWidget(estimated_defocus_label)
 			self.estdef = QtGui.QLineEdit('')
 			hbl_estdef.addWidget(self.estdef)
 			vbl.addLayout(hbl_estdef)
 
 			hbl_estdeferr = QtWidgets.QHBoxLayout()
-			deferr_label = QtGui.QLabel("Estimated defocus error:")
+			deferr_label = QtWidgets.QLabel("Estimated defocus error:")
 			hbl_estdeferr.addWidget(deferr_label)
 			self.deferr = QtGui.QLineEdit('')
 			hbl_estdeferr.addWidget(self.deferr)
 			vbl.addLayout(hbl_estdeferr)
 
 			hbl_astamp = QtWidgets.QHBoxLayout()
-			astig_amp_label = QtGui.QLabel("Estimated astigmatism \namplitude:")
+			astig_amp_label = QtWidgets.QLabel("Estimated astigmatism \namplitude:")
 			hbl_astamp.addWidget(astig_amp_label)
 			self.astamp = QtGui.QLineEdit('')
 			hbl_astamp.addWidget(self.astamp)
 			vbl.addLayout(hbl_astamp)
 
 			hbl_astamperr = QtWidgets.QHBoxLayout()
-			astamperr_label = QtGui.QLabel("Estimated astigmatism \namplitude error:")
+			astamperr_label = QtWidgets.QLabel("Estimated astigmatism \namplitude error:")
 			hbl_astamperr.addWidget(astamperr_label)
 			self.astamperr = QtGui.QLineEdit('')
 			hbl_astamperr.addWidget(self.astamperr)
 			vbl.addLayout(hbl_astamperr)
 
 			hbl_astagl = QtWidgets.QHBoxLayout()
-			astig_angle_label = QtGui.QLabel("Estimated astigmatism \nangle")
+			astig_angle_label = QtWidgets.QLabel("Estimated astigmatism \nangle")
 			hbl_astagl.addWidget(astig_angle_label)
 			self.astagl = QtGui.QLineEdit('')
 			hbl_astagl.addWidget(self.astagl)
 			vbl.addLayout(hbl_astagl)
 
 			hbl_astaglerr = QtWidgets.QHBoxLayout()
-			astaglerr_label = QtGui.QLabel("Estimated astigmatism \nangle error:")
+			astaglerr_label = QtWidgets.QLabel("Estimated astigmatism \nangle error:")
 			hbl_astaglerr.addWidget(astaglerr_label)
 			self.astaglerr = QtGui.QLineEdit('')
 			hbl_astaglerr.addWidget(self.astaglerr)
@@ -2206,7 +2206,7 @@ class GaussPanel(object):
 
 			#hbl_fs = QtWidgets.QHBoxLayout()
 
-			#fstop_label = QtGui.QLabel("F_stop:")
+			#fstop_label = QtWidgets.QLabel("F_stop:")
 			#hbl_fs.addWidget(fstop_label)
 			#self.ctf_f_stop = QtGui.QLineEdit(str(gbdb.setdefault('ctf_fstop',"0.500")))
 			#hbl_fs.addWidget(self.ctf_f_stop)

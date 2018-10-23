@@ -987,13 +987,13 @@ class EMHistogramInspector(QtGui.QWidget):
 
 		# per plot column selectors
 		gl=QtWidgets.QGridLayout()
-		gl.addWidget(QtGui.QLabel("Column:",self),0,0,Qt.AlignRight)
+		gl.addWidget(QtWidgets.QLabel("Column:",self),0,0,Qt.AlignRight)
 		self.slidecol=QtGui.QSpinBox(self)
 		self.slidecol.setRange(0,1)
 		self.slidecol.setValue(1)
 		gl.addWidget(self.slidecol,0,1,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("N Bins:",self),0,2,Qt.AlignRight)
+		gl.addWidget(QtWidgets.QLabel("N Bins:",self),0,2,Qt.AlignRight)
 		self.slidenbs=QtGui.QSpinBox(self)
 		self.slidenbs.setRange(1,10000)
 		self.slidenbs.setValue(10)
@@ -1035,16 +1035,16 @@ class EMHistogramInspector(QtGui.QWidget):
 
 		hbl2a=QtWidgets.QHBoxLayout()
 
-		self.wl1=QtGui.QLabel("Min")
+		self.wl1=QtWidgets.QLabel("Min")
 		self.wl1.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl1)
-		self.wl2=QtGui.QLabel("Max")
+		self.wl2=QtWidgets.QLabel("Max")
 		self.wl2.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl2)
-		self.wl3=QtGui.QLabel("Min")
+		self.wl3=QtWidgets.QLabel("Min")
 		self.wl3.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl3)
-		self.wl4=QtGui.QLabel("Max")
+		self.wl4=QtWidgets.QLabel("Max")
 		self.wl4.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl4)
 		vbl0.addLayout(hbl2a)
@@ -1064,13 +1064,13 @@ class EMHistogramInspector(QtGui.QWidget):
 		vbl0.addLayout(hbl2)
 #
 # 		hbl4 = QtWidgets.QHBoxLayout()
-# 		hbl4.addWidget(QtGui.QLabel("X Label:",self))
+# 		hbl4.addWidget(QtWidgets.QLabel("X Label:",self))
 # 		self.xlabel=QtGui.QLineEdit(self)
 # 		hbl4.addWidget(self.xlabel)
 # 		vbl0.addLayout(hbl4)
 #
 # 		hbl5 = QtWidgets.QHBoxLayout()
-# 		hbl5.addWidget(QtGui.QLabel("Y Label:",self))
+# 		hbl5.addWidget(QtWidgets.QLabel("Y Label:",self))
 # 		self.ylabel=QtGui.QLineEdit(self)
 # 		hbl5.addWidget(self.ylabel)
 # 		vbl0.addLayout(hbl5)

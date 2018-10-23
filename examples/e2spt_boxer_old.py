@@ -973,7 +973,7 @@ def sptboxergui(options,args):
 			self.wmask = ValSlider(rng=(0,100),label="Mask:",value=0.0)
 			self.gbl2.addWidget(self.wmask,3,0,1,2)
 
-			self.wsymlbl=QtGui.QLabel("Symmetry:")
+			self.wsymlbl=QtWidgets.QLabel("Symmetry:")
 			self.gbl2.addWidget(self.wsymlbl,4,0)
 
 			self.wsym=QtGui.QLineEdit("C1")
@@ -1274,7 +1274,7 @@ def sptboxergui(options,args):
 			self.firsthbclick = None
 
 			# coordinate display
-			self.wcoords=QtGui.QLabel("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
+			self.wcoords=QtWidgets.QLabel("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
 			self.gbl2.addWidget(self.wcoords, 0, 0, 1, 2)
 
 			# file menu

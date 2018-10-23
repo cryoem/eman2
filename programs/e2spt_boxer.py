@@ -245,7 +245,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.firsthbclick = None
 
 		# coordinate display
-		self.wcoords=QtGui.QLabel("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
+		self.wcoords=QtWidgets.QLabel("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
 		self.gbl2.addWidget(self.wcoords, 0, 0, 1, 2)
 
 		# Boxviewer subwidget (details of a single box)

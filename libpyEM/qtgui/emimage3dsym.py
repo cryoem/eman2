@@ -1407,7 +1407,7 @@ class SparseSymChoicesWidgets(object):
 		self.sym_combo.setCurrentIndex(idx_default)
 		self.hbl_sym.addWidget(self.sym_combo)
 		
-		self.sym_label = QtGui.QLabel()
+		self.sym_label = QtWidgets.QLabel()
 		self.sym_label.setText('C/D sym')
 		self.hbl_sym.addWidget(self.sym_label)
 		
@@ -1442,7 +1442,7 @@ class SparseSymChoicesWidgets(object):
 			self.hbl_sym2.setObjectName("Sym2")
 			maintab.vbl.addLayout(self.hbl_sym2)
 			
-			self.og_label = QtGui.QLabel()
+			self.og_label = QtWidgets.QLabel()
 			self.og_label.setText('Strategy')
 			self.hbl_sym2.addWidget(self.og_label)
 			
@@ -1722,7 +1722,7 @@ class EMSymInspector(QtGui.QWidget):
 		if self.score_options_hbl == None:
 			self.score_options_hbl = QtWidgets.QHBoxLayout()
 			self.score_options = self.__get_combo(options,default)
-			self.score_options_hbl.addWidget(QtGui.QLabel("Cylinder Score:",self))
+			self.score_options_hbl.addWidget(QtWidgets.QLabel("Cylinder Score:",self))
 			self.score_options_hbl.addWidget(self.score_options)
 			self.cylinder_log = QtWidgets.QCheckBox("log scale")
 			self.cylinder_log.setChecked(self.target().log_scale)
@@ -1820,20 +1820,20 @@ class EMSymInspector(QtGui.QWidget):
 		keys.sort()
 		self.arc_color = self.__get_combo(keys,self.target().arc_color)
 		hbl1 = QtWidgets.QHBoxLayout()
-		hbl1.addWidget(QtGui.QLabel("Arc Color:",self))
+		hbl1.addWidget(QtWidgets.QLabel("Arc Color:",self))
 		hbl1.addWidget(self.arc_color)
 		self.display_tab.vbl.addLayout(hbl1)
 		
 		self.tall_column_color = self.__get_combo(keys,self.target().tall_column_color)
 		hbl2 = QtWidgets.QHBoxLayout()
-		hbl2.addWidget(QtGui.QLabel("Higher Cylinder Color:",self))
+		hbl2.addWidget(QtWidgets.QLabel("Higher Cylinder Color:",self))
 		hbl2.addWidget(self.tall_column_color)
 		self.display_tab.vbl.addLayout(hbl2)
 		
 		
 		self.small_column_color = self.__get_combo(keys,self.target().small_column_color)
 		hbl3 = QtWidgets.QHBoxLayout()
-		hbl3.addWidget(QtGui.QLabel("Lower Cylinder Color:",self))
+		hbl3.addWidget(QtWidgets.QLabel("Lower Cylinder Color:",self))
 		hbl3.addWidget(self.small_column_color)
 		self.display_tab.vbl.addLayout(hbl3)
 		
@@ -1850,7 +1850,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.display_tab.vbl.addWidget(self.arc_width_scale)
 		
 		hbl_l = QtWidgets.QHBoxLayout()
-		arc_div_label = QtGui.QLabel("Arc Segments:")
+		arc_div_label = QtWidgets.QLabel("Arc Segments:")
 		arc_div_label.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
 		hbl_l.addWidget(arc_div_label)
 		self.arc_divisions = QtGui.QSpinBox(self)
@@ -1902,7 +1902,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.hbl_pt.addWidget(self.tracefile)
 			self.tracefile.setEnabled(False)
 			
-			self.pt_label = QtGui.QLabel()
+			self.pt_label = QtWidgets.QLabel()
 			self.pt_label.setText('Range')
 			self.hbl_pt.addWidget(self.pt_label)
 			
@@ -1915,7 +1915,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.hbl_pt.addWidget(self.lowrange)
 			self.lowrange.setEnabled(False)
 			
-			self.pt_label_to = QtGui.QLabel()
+			self.pt_label_to = QtWidgets.QLabel()
 			self.pt_label_to.setText('to')
 			self.hbl_pt.addWidget(self.pt_label_to)
 			

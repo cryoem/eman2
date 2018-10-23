@@ -707,36 +707,36 @@ if ENABLE_GUI:
 
 			self.helices_coords_groupbox = QtWidgets.QGroupBox(self.tr("Helix Coordinates (EMAN1 format)"))
 			self.helices_coords_groupbox.setCheckable(True)
-			helices_coords_label = QtGui.QLabel(self.tr("Path:"))
+			helices_coords_label = QtWidgets.QLabel(self.tr("Path:"))
 			self.helices_coords_line_edit = QtGui.QLineEdit()
 			self.helices_coords_line_edit.setMinimumWidth(300)
 			self.helices_coords_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
 			self.helices_images_groupbox = QtWidgets.QGroupBox(self.tr("Helix Images"))
 			self.helices_images_groupbox.setCheckable(True)
-			helices_images_label = QtGui.QLabel(self.tr("Path:"))
+			helices_images_label = QtWidgets.QLabel(self.tr("Path:"))
 			self.helices_images_line_edit = QtGui.QLineEdit()
 			self.helices_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
 			self.ptcls_groupbox = QtWidgets.QGroupBox(self.tr("Write &Particles:"))
 			self.ptcls_groupbox.setCheckable(True)
 
-			ptcls_overlap_label = QtGui.QLabel(self.tr("&Overlap:"))
+			ptcls_overlap_label = QtWidgets.QLabel(self.tr("&Overlap:"))
 			self.ptcls_overlap_spinbox = QtGui.QSpinBox()
 			self.ptcls_overlap_spinbox.setMaximum(10000)
 			ptcls_overlap_label.setBuddy(self.ptcls_overlap_spinbox)
-			ptcls_length_label = QtGui.QLabel(self.tr("&Length:"))
+			ptcls_length_label = QtWidgets.QLabel(self.tr("&Length:"))
 			self.ptcls_length_spinbox = QtGui.QSpinBox()
 			self.ptcls_length_spinbox.setMaximum(10000)
 			ptcls_length_label.setBuddy(self.ptcls_length_spinbox)
-			ptcls_width_label = QtGui.QLabel(self.tr("W&idth:"))
+			ptcls_width_label = QtWidgets.QLabel(self.tr("W&idth:"))
 			self.ptcls_width_spinbox = QtGui.QSpinBox()
 			self.ptcls_width_spinbox.setMaximum(10000)
 			ptcls_width_label.setBuddy(self.ptcls_width_spinbox)
 
 			self.ptcls_coords_groupbox = QtWidgets.QGroupBox(self.tr("Particle Coordinates"))
 			self.ptcls_coords_groupbox.setCheckable(True)
-			ptcls_coords_label = QtGui.QLabel(self.tr("Path:"))
+			ptcls_coords_label = QtWidgets.QLabel(self.tr("Path:"))
 			self.ptcls_coords_line_edit = QtGui.QLineEdit()
 			self.ptcls_coords_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
@@ -763,7 +763,7 @@ if ENABLE_GUI:
 			self.ptcls_multiple_stack_radiobutton.setToolTip("Saves an image stack file for each helix. Fails for incompatible file formats.")
 			self.ptcls_no_stack_radiobutton = QtGui.QRadioButton(self.tr("File for each particle"))
 
-			ptcls_images_label = QtGui.QLabel(self.tr("Path:"))
+			ptcls_images_label = QtWidgets.QLabel(self.tr("Path:"))
 			self.ptcls_images_line_edit = QtGui.QLineEdit()
 			self.ptcls_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
@@ -1029,12 +1029,12 @@ if ENABLE_GUI:
 			self.file_menu.addAction(self.quit_action)
 			self.menu_bar.addMenu(self.file_menu)
 
-			self.box_width_label = QtGui.QLabel(self.tr("Box &Width:"))
+			self.box_width_label = QtWidgets.QLabel(self.tr("Box &Width:"))
 			self.box_width_spinbox = QtGui.QSpinBox()
 			self.box_width_spinbox.setMaximum(10000)
 			self.box_width_label.setBuddy(self.box_width_spinbox)
 
-			self.img_quality_label = QtGui.QLabel(self.tr("Image &Quality:"))
+			self.img_quality_label = QtWidgets.QLabel(self.tr("Image &Quality:"))
 			self.img_quality_combobox = QtWidgets.QComboBox()
 			qualities = [str(i) for i in range(5)]
 			self.img_quality_combobox.addItems(qualities)

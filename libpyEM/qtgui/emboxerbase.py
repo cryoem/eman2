@@ -581,7 +581,7 @@ class ErasingPanel(object):
 			vbl.setObjectName("vbl")
 
 			hbl = QtWidgets.QHBoxLayout()
-			hbl.addWidget(QtGui.QLabel("Erase Radius:"))
+			hbl.addWidget(QtWidgets.QLabel("Erase Radius:"))
 			from .valslider import ValSlider
 			self.erase_rad_edit = ValSlider(None,(0.0,1000.0),"")
 			self.erase_rad_edit.setValue(int(self.erase_radius))
@@ -625,7 +625,7 @@ class ManualBoxingPanel(object):
 			self.clearfrom = QtGui.QLineEdit(str(-1))
 			vbl.addWidget(self.auto_center_checkbox,1,0)
 			vbl.addWidget(self.clear,2,0)
-			vbl.addWidget(QtGui.QLabel("Keep range #:"),3,0)
+			vbl.addWidget(QtWidgets.QLabel("Keep range #:"),3,0)
 			vbl.addWidget(self.clearfrom,3,1)
 			
 
@@ -2524,7 +2524,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		box_size_hbl.setMargin(0)
 		box_size_hbl.setSpacing(2)
 
-		self.box_size_label = QtGui.QLabel("Box Size:",self)
+		self.box_size_label = QtWidgets.QLabel("Box Size:",self)
 		box_size_hbl.addWidget(self.box_size_label)
 		self.pos_int_validator = QtGui.QIntValidator(self)
 		self.pos_int_validator.setBottom(1)
@@ -2546,7 +2546,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		hbl_t=QtWidgets.QHBoxLayout()
 
 		hbl_q=QtWidgets.QHBoxLayout()
-		self.quality=QtGui.QLabel("Image Quality:")
+		self.quality=QtWidgets.QLabel("Image Quality:")
 		qual_tt = "Assign a quality number to the image. This acts as metadata for your convenience and is displayed in eman2 forms when possible."
 		self.quality.setToolTip(qual_tt)
 		hbl_q.addWidget(self.quality)
@@ -2583,7 +2583,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.tool_dynamic_vbl = QtGui.QVBoxLayout()
 
 		hbl = QtWidgets.QHBoxLayout()
-		current_tool_label = QtGui.QLabel("Current Boxing Tool:")
+		current_tool_label = QtWidgets.QLabel("Current Boxing Tool:")
 		self.current_tool_combobox = QtWidgets.QComboBox()
 		hbl.addWidget(current_tool_label)
 		hbl.addWidget(self.current_tool_combobox)
