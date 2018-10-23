@@ -2127,7 +2127,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.pyinp = QtWidgets.QLineEdit()
 		self.pytlay.addWidget(self.pyinp,0,0)
 
-		self.pyout = QtGui.QTextEdit()
+		self.pyout = QtWidgets.QTextEdit()
 		self.pyout.setText("The displayed image is 'img'.\nEnter an expression above, like img['sigma']")
 		self.pyout.setReadOnly(True)
 		self.pytlay.addWidget(self.pyout,1,0,4,1)

@@ -105,7 +105,7 @@ class SptEvalGUI(QtGui.QWidget):
 		self.gbl.addWidget(self.setspanel, 5,1,5,2)
 		self.itemflags=	Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 		
-		#self.wg_notes=QtGui.QTextEdit(self)
+		#self.wg_notes=QtWidgets.QTextEdit(self)
 		#self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 				
 		self.setspanel.itemChanged[QtWidgets.QListWidgetItem].connect(self.click_set)

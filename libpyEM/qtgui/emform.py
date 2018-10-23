@@ -1556,7 +1556,7 @@ class IncorpText(object):
 #			hbl.setMargin(0)
 #			hbl.setSpacing(2)
 				
-		text_edit = QtGui.QTextEdit("",target)
+		text_edit = QtWidgets.QTextEdit("",target)
 		text_edit.setReadOnly(True)
 		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
 		text_edit.setText(param.defaultunits)
@@ -1587,7 +1587,7 @@ class IncorpUrl(object):
 				if i != (len(param.defaultunits)-1): 
 					defaults += '\n'
 				
-		text_edit = QtGui.QTextEdit("",target)
+		text_edit = QtWidgets.QTextEdit("",target)
 		text_edit.setWordWrapMode(QtGui.QTextOption.NoWrap)
 		text_edit.setText(defaults)
 		hbl.addWidget(text_edit,0)
