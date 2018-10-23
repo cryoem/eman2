@@ -783,7 +783,7 @@ if ENABLE_GUI:
 			helices_images_layout.addWidget(self.helices_images_browse_button)
 			self.helices_images_groupbox.setLayout(helices_images_layout)
 
-			helices_layout = QtGui.QVBoxLayout()
+			helices_layout = QtWidgets.QVBoxLayout()
 			helices_layout.addWidget(self.helices_coords_groupbox)
 			helices_layout.addWidget(self.helices_images_groupbox)
 
@@ -812,13 +812,13 @@ if ENABLE_GUI:
 			ptcls_images_path_layout.addWidget(self.ptcls_images_line_edit)
 			ptcls_images_path_layout.addWidget(self.ptcls_images_browse_button)
 
-			ptcls_images_rotation_layout = QtGui.QVBoxLayout()
+			ptcls_images_rotation_layout = QtWidgets.QVBoxLayout()
 			ptcls_images_rotation_layout.addWidget(self.ptcls_bilinear_rotation_radiobutton)
 			ptcls_images_rotation_layout.addWidget(self.ptcls_gridding_rotation_radiobutton)
 			ptcls_images_rotation_layout.addWidget(self.ptcls_no_rotation_radiobutton)
 			self.ptcls_rotation_groupbox.setLayout(ptcls_images_rotation_layout)
 
-			ptcls_imagestack_layout = QtGui.QVBoxLayout()
+			ptcls_imagestack_layout = QtWidgets.QVBoxLayout()
 			ptcls_imagestack_layout.addWidget(self.ptcls_single_stack_radiobutton)
 			ptcls_imagestack_layout.addWidget(self.ptcls_multiple_stack_radiobutton)
 			ptcls_imagestack_layout.addWidget(self.ptcls_no_stack_radiobutton)
@@ -828,13 +828,13 @@ if ENABLE_GUI:
 			ptcls_rotation_stack_layout.addWidget(self.ptcls_rotation_groupbox)
 			ptcls_rotation_stack_layout.addWidget(self.ptcls_stack_groupbox)
 
-			ptcls_images_layout = QtGui.QVBoxLayout()
+			ptcls_images_layout = QtWidgets.QVBoxLayout()
 			ptcls_images_layout.addLayout(ptcls_rotation_stack_layout)
 			ptcls_images_layout.addWidget(self.ptcls_edgenorm_checkbox)
 			ptcls_images_layout.addLayout(ptcls_images_path_layout)
 			self.ptcls_images_groupbox.setLayout(ptcls_images_layout)
 
-			ptcls_opts_layout = QtGui.QVBoxLayout()
+			ptcls_opts_layout = QtWidgets.QVBoxLayout()
 			ptcls_opts_layout.addLayout(ptcls_overlap_layout)
 			ptcls_opts_layout.addLayout(ptcls_length_layout)
 			ptcls_opts_layout.addLayout(ptcls_width_layout)
@@ -842,7 +842,7 @@ if ENABLE_GUI:
 			ptcls_opts_layout.addWidget(self.ptcls_images_groupbox)
 			self.ptcls_groupbox.setLayout(ptcls_opts_layout)
 
-			self.vbl = QtGui.QVBoxLayout(self)
+			self.vbl = QtWidgets.QVBoxLayout(self)
 			self.vbl.setMargin(0)
 			self.vbl.setSpacing(6)
 			self.vbl.setObjectName("vbl")
@@ -1055,7 +1055,7 @@ if ENABLE_GUI:
 			qualityLayout.addWidget(self.img_quality_label)
 			qualityLayout.addWidget(self.img_quality_combobox)
 
-			self.vbl = QtGui.QVBoxLayout(self)
+			self.vbl = QtWidgets.QVBoxLayout(self)
 			self.vbl.setMargin(0)
 			self.vbl.setSpacing(6)
 			self.vbl.setObjectName("vbl")

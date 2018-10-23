@@ -81,7 +81,7 @@ class EMClassPtclTool(QtGui.QWidget):
 
 	def __init__(self,extrafiles=None):
 		QtGui.QWidget.__init__(self)
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 
 		self.extrafiles=extrafiles
 
@@ -129,7 +129,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.wprocessg.setFlat(False)
 		self.vbl.addWidget(self.wprocessg)
 
-		self.vbl2=QtGui.QVBoxLayout(self.wprocessg)
+		self.vbl2=QtWidgets.QVBoxLayout(self.wprocessg)
 
 		self.wselused=CheckBox(None,"Included Ptcls",1,100)
 		self.vbl2.addWidget(self.wselused)

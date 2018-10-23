@@ -347,7 +347,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.bbox=QtWidgets.QGroupBox("Project")
 		self.gbl.addWidget(self.bbox,10,4,4,1)
 
-		self.bvbl=QtGui.QVBoxLayout()
+		self.bvbl=QtWidgets.QVBoxLayout()
 		self.bbox.setLayout(self.bvbl)
 
 		self.bimport=QtWidgets.QPushButton("Import")

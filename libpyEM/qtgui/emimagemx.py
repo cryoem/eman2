@@ -2234,7 +2234,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		action.setCheckable(1)
 		action.setChecked(1)
 
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(2)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vboxlayout")
@@ -2250,7 +2250,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.hist.setObjectName("hist")
 		self.hbl3.addWidget(self.hist)
 
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.vbl2.setMargin(0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vboxlayout")
@@ -2413,7 +2413,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 	def get_image_manip_page(self):
 		self.impage = QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(self.impage )
+		vbl = QtWidgets.QVBoxLayout(self.impage )
 		vbl.setMargin(2)
 		vbl.setSpacing(6)
 		vbl.setObjectName("get_image_manip_page")
@@ -2617,7 +2617,7 @@ class EMMXSetsPanel(QtGui.QWidget):
 		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		hbl.addWidget(self.setlist)
 
-		vbl = QtGui.QVBoxLayout()
+		vbl = QtWidgets.QVBoxLayout()
 
 		self.new_set_button = QtWidgets.QPushButton("New")
 		vbl.addWidget(self.new_set_button)

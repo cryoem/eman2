@@ -534,7 +534,7 @@ class EMFileExistsDialog(QtWidgets.QDialog):
 				append_enable=True
 		
 		# some widgets
-		vbl = QtGui.QVBoxLayout(self)
+		vbl = QtWidgets.QVBoxLayout(self)
 		hbl = QtWidgets.QHBoxLayout()
 		overwrite = QtWidgets.QPushButton("Overwrite")
 		cancel = QtWidgets.QPushButton("Cancel")

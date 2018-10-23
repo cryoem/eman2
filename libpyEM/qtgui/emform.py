@@ -970,8 +970,8 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 	def build_widgets(self):
 		
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.dynamic_layout = QtGui.QVBoxLayout()
+		self.vbl = QtWidgets.QVBoxLayout(self)
+		self.dynamic_layout = QtWidgets.QVBoxLayout()
 		groupbox = QtWidgets.QGroupBox(self.desc_short)
 		groupbox.setToolTip(self.desc_long)
 		
@@ -1026,7 +1026,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		if (len(data) -1) % 3 != 0: raise RuntimeError("The format of the data is unknown") # first entry is descriptive text, then they should be in groups of threes, see dump_aligners_list, for example
 		
 		widget = QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(widget)
+		vbl = QtWidgets.QVBoxLayout(widget)
 		widget.setToolTip(data[0])
 		params = []
 		tmp_params = []
@@ -1123,7 +1123,7 @@ class EMFormWidget(QtGui.QWidget):
 		self.auto_incorporate["EMButtonDialog"]= IncorpButtonDialog()
 		self.auto_incorporate["strategy"]= IncorpStrategy()
 		
-		vbl = QtGui.QVBoxLayout()
+		vbl = QtWidgets.QVBoxLayout()
 		self.incorporate_params(self.params,vbl)
 		if not disable_ok_cancel: self.__add_ok_cancel_buttons(vbl)
 		self.setLayout(vbl)
@@ -1220,7 +1220,7 @@ class EMFormWidget(QtGui.QWidget):
 		for paramtable in file_table_list:
 			
 		
-			vbl=QtGui.QVBoxLayout()
+			vbl=QtWidgets.QVBoxLayout()
 			hbl=QtWidgets.QHBoxLayout()
 			hbl.setMargin(0)
 			hbl.setSpacing(2)
@@ -1372,7 +1372,7 @@ class IncorpFileTable(object):
 		num_choices = None
 		# first check that there are no inconsistencies in the number of parameter choices
 		
-		vbl=QtGui.QVBoxLayout()
+		vbl=QtWidgets.QVBoxLayout()
 		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
@@ -1407,7 +1407,7 @@ class IncorpParamTable(object):
 					print("error, the number of choices is not consistent in __incorporate_paramtable")
 					return
 		
-		vbl=QtGui.QVBoxLayout()
+		vbl=QtWidgets.QVBoxLayout()
 		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
@@ -1576,7 +1576,7 @@ class IncorpText(object):
 class IncorpUrl(object):
 	def __init__(self): pass
 	def __call__(self,param,layout,target):
-		vbl=QtGui.QVBoxLayout()
+		vbl=QtWidgets.QVBoxLayout()
 		hbl=QtWidgets.QHBoxLayout()
 		hbl.setMargin(0)
 		hbl.setSpacing(2)
@@ -2008,7 +2008,7 @@ class EMTableFormWidget(EMFormWidget):
 		for title,paramlist in params:
 			
 			widget = QtGui.QWidget(None)
-			vbl =  QtGui.QVBoxLayout(widget)
+			vbl =  QtWidgets.QVBoxLayout(widget)
 			#print paramlist
 			EMFormWidget.incorporate_params(self,paramlist,vbl)
 #			for param in paramlist:

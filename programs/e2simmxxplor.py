@@ -315,7 +315,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 
 	def add_simmx_options(self):
 		self.simmx_tab= QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(self.simmx_tab)
+		vbl = QtWidgets.QVBoxLayout(self.simmx_tab)
 
 		self.__init_ptcl_slider(vbl)
 		self.tabwidget.insertTab(0,self.simmx_tab,"Simmx")
@@ -352,7 +352,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		if len(self.data) == 0: raise RuntimeError("There is no simmx refinement data in the current directory")
 
 		self.simmx_dir_tab= QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(self.simmx_dir_tab)
+		vbl = QtWidgets.QVBoxLayout(self.simmx_dir_tab)
 
 		# This is the combo-box with the list of refine_* directories
 		combo_entries = [d[0] for d in self.data]

@@ -83,7 +83,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		volume_layout.addWidget(self.volume_line_edit)
 		volume_layout.addWidget(self.volume_browse_button)
 		
-		data_layout = QtGui.QVBoxLayout()
+		data_layout = QtWidgets.QVBoxLayout()
 		data_layout.addLayout(pdb_layout)
 		data_layout.addLayout(volume_layout)
 		
@@ -111,13 +111,13 @@ class EMPDBValWidget(QtGui.QWidget):
 		
 		self.validate_button = QtWidgets.QPushButton(self.tr("&Validate"))
 		
-		validation_layout = QtGui.QVBoxLayout()
+		validation_layout = QtWidgets.QVBoxLayout()
 		validation_layout.addLayout(transformations_layout)
 		validation_layout.addLayout(threshold_layout)
 		validation_layout.addWidget(self.validate_button)
 		self.validation_groupbox.setLayout(validation_layout)
 		
-		layout = QtGui.QVBoxLayout()
+		layout = QtWidgets.QVBoxLayout()
 		layout.addWidget(self.data_groupbox)
 		layout.addWidget(self.validation_groupbox)
 		

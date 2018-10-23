@@ -446,7 +446,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 		self.transform_panel = EMTransformPanel(target,self)
 		self.target=weakref.ref(target)
 		
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -461,7 +461,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 		self.hist.setObjectName("hist")
 		self.hbl.addWidget(self.hist)
 		
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.vbl2.setMargin(0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
@@ -531,7 +531,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 	
 		self.maintab = QtGui.QWidget()
 		maintab = self.maintab
-		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 		maintab.vbl.setMargin(0)
 		maintab.vbl.setSpacing(6)
 		maintab.vbl.setObjectName("Main")

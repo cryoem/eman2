@@ -2112,7 +2112,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.mintreewidth = 250		# minimum width of the tree
 		self.mincontrolwidth = 0
 		
-		vbox = QtGui.QVBoxLayout(self)
+		vbox = QtWidgets.QVBoxLayout(self)
 		self.inspectortab = QtWidgets.QTabWidget()
 		self.inspectortab.addTab(self.getTreeWidget(), "Tree View")
 		self.inspectortab.addTab(self.getLightsWidget(), "Lights")
@@ -2158,7 +2158,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Returns the tree layout
 		"""
-		tvbox = QtGui.QVBoxLayout()
+		tvbox = QtWidgets.QVBoxLayout()
 		self.tree_widget = EMQTreeWidget(parent)
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
@@ -2468,7 +2468,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		self.lighttab_open = False
 		lwidget = QtGui.QWidget()
-		lvbox = QtGui.QVBoxLayout()
+		lvbox = QtWidgets.QVBoxLayout()
 		lightslabel = QtWidgets.QLabel("Lights", lwidget)
 		lightslabel.setAlignment(QtCore.Qt.AlignCenter)
 		lightslabel.setMaximumHeight(30.0)
@@ -2483,7 +2483,7 @@ class EMInspector3D(QtGui.QWidget):
 		valslidersplitter = QtWidgets.QFrame()
 		valslidersplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		valslidersplitter.setMaximumHeight(80)
-		valvbox = QtGui.QVBoxLayout()
+		valvbox = QtWidgets.QVBoxLayout()
 		self.hvalslider = ValSlider(lwidget,(0.0,360.0),"Horizontal")
 		self.vvalslider = ValSlider(lwidget,(0.0,360.0),"Vertical")
 		valvbox.addWidget(self.hvalslider)
@@ -2674,7 +2674,7 @@ class EMInspector3D(QtGui.QWidget):
 		Return the utilites widget
 		"""
 		uwidget = QtGui.QWidget()
-		uvbox = QtGui.QVBoxLayout()
+		uvbox = QtWidgets.QVBoxLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
 		# Controls frame
@@ -3107,11 +3107,11 @@ class NodeDialog(QtWidgets.QDialog):
 		self.setWindowTitle('Node Controler')
 		self.setMaximumWidth(300)
 		self.transformgroup = {}
-		vbox = QtGui.QVBoxLayout(self)
+		vbox = QtWidgets.QVBoxLayout(self)
 		# Stuff within the frame
 		frame = QtWidgets.QFrame()
 		frame.setFrameStyle(QtWidgets.QFrame.StyledPanel)
-		fvbox = QtGui.QVBoxLayout(frame)
+		fvbox = QtWidgets.QVBoxLayout(frame)
 		label = QtWidgets.QLabel("Node Type to add")
 		self.node_type_combo = QtWidgets.QComboBox() 
 		self.node_stacked_widget = QtWidgets.QStackedWidget()
@@ -3276,7 +3276,7 @@ class GLdemo(QtGui.QWidget):
 		self.widget.addChild(self.cylider)
 		
 		# QT stuff to display the widget
-		vbox = QtGui.QVBoxLayout()
+		vbox = QtWidgets.QVBoxLayout()
 		vbox.addWidget(self.widget)
 		self.setLayout(vbox)
 		self.setGeometry(300, 300, 600, 600)

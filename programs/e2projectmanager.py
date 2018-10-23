@@ -312,7 +312,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		"""
 		toolwidget = QtWidgets.QFrame()
 		#toolwidget.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		tbox = QtGui.QVBoxLayout()
+		tbox = QtWidgets.QVBoxLayout()
 		self.browsebutton = QtWidgets.QToolButton()
 		self.browsebutton.setIcon(QtGui.QIcon(QtGui.QPixmap(browseicon)))
 		self.browsebutton.setToolTip("Browse button")
@@ -422,7 +422,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		"""
 		#programtoolwidget = QtWidgets.QFrame()
 		#programtoolwidget.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		#tbox = QtGui.QVBoxLayout()
+		#tbox = QtWidgets.QVBoxLayout()
 		self.wikibutton = QtWidgets.QToolButton()
 		self.wikibutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wikiicon)))
 		self.wikibutton.setToolTip("Show Wiki button")
