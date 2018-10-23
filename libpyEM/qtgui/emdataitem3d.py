@@ -538,7 +538,7 @@ class EMSliceInspector(EMInspectorControlShape):
 		sliceframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		slice_grid_layout = QtWidgets.QGridLayout()
 
-		self.constrained_group_box = QtGui.QGroupBox("Constrained Slices")
+		self.constrained_group_box = QtWidgets.QGroupBox("Constrained Slices")
 		self.constrained_group_box.setCheckable(True)
 		self.constrained_group_box.setChecked(False)
 

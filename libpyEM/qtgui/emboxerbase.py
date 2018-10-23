@@ -2444,7 +2444,7 @@ class EMBoxerInspector(QtGui.QWidget):
 			self.viewthumbs.setChecked(True)
 			viewhbl.addWidget(self.viewthumbs)
 
-		viewmanagement = QtGui.QGroupBox("Displayed Windows")
+		viewmanagement = QtWidgets.QGroupBox("Displayed Windows")
 		viewmanagement.setLayout(viewhbl)
 		vbl.addWidget(viewmanagement)
 
@@ -2467,7 +2467,7 @@ class EMBoxerInspector(QtGui.QWidget):
 			raise RuntimeError("Unknown ptcl display shape %s" %val)
 
 
-		displayboxes = QtGui.QGroupBox("Displayed Boxes")
+		displayboxes = QtWidgets.QGroupBox("Displayed Boxes")
 		displayboxes.setLayout(viewhbl2)
 		vbl.addWidget(displayboxes)
 
@@ -2578,7 +2578,7 @@ class EMBoxerInspector(QtGui.QWidget):
 	def add_boxing_button_group(self,layout):
 		from PyQt4 import QtCore, QtGui
 
-		self.tool_button_group_box = QtGui.QGroupBox("Tools")
+		self.tool_button_group_box = QtWidgets.QGroupBox("Tools")
 		self.tool_button_group_box_vbl = QtGui.QVBoxLayout(self.tool_button_group_box)
 		self.tool_dynamic_vbl = QtGui.QVBoxLayout()
 

@@ -845,7 +845,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 
-		gbx = QtGui.QGroupBox("Data sets")
+		gbx = QtWidgets.QGroupBox("Data sets")
 
 		vbl3 = QtGui.QVBoxLayout()
 		vbl3.setMargin(4)

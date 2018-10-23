@@ -296,7 +296,7 @@ class ControlPannel(QtGui.QWidget):
 		self.boxsize.editingFinished.connect(self.new_boxsize)
 		
 	def add_boxing_button_group(self,layout):
-		self.tool_button_group_box = QtGui.QGroupBox("Tools")
+		self.tool_button_group_box = QtWidgets.QGroupBox("Tools")
 		
 		grid = QtWidgets.QGridLayout()
 		self.current_tool_combobox = QtWidgets.QComboBox()

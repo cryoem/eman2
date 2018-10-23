@@ -65,7 +65,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		get_application().attach_child(self)
 		
 	def __init_gui(self):
-		self.data_groupbox = QtGui.QGroupBox(self.tr("Data"))
+		self.data_groupbox = QtWidgets.QGroupBox(self.tr("Data"))
 		
 		pdb_label = QtGui.QLabel("PDB:")
 		self.pdb_line_edit = QtGui.QLineEdit()
@@ -90,7 +90,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		self.data_groupbox.setLayout(data_layout)
 
 		
-		self.validation_groupbox = QtGui.QGroupBox(self.tr("Validation"))
+		self.validation_groupbox = QtWidgets.QGroupBox(self.tr("Validation"))
 		
 		transformations_label = QtGui.QLabel(self.tr("&Number of Transformations"))
 		self.transformations_spinbox = QtGui.QSpinBox()

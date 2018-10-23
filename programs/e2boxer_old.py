@@ -558,7 +558,7 @@ class SwarmPanel(object):
 			self.methodhbox.addWidget(self.selbut)
 			self.methodhbox.addWidget(self.morselbut)
 
-			self.groupbox = QtGui.QGroupBox("Auto Box Method")
+			self.groupbox = QtWidgets.QGroupBox("Auto Box Method")
 			self.groupbox.setToolTip("Tell Swarm what criteria to use for selecting particles.")
 			self.groupbox.setLayout(self.methodhbox)
 			vbl.addWidget(self.groupbox)
