@@ -553,7 +553,7 @@ class EMFileTable(QtGui.QTableWidget):
 		Creates a context menu using self.context_menu_data, which is a dictionary
 		@param event a QtGui.QContextMenuEvent - it is accepted
 		'''
-		menu = QtGui.QMenu()
+		menu = QtWidgets.QMenu()
 		cmenu = self.context_menu_data
 		for k in list(cmenu.keys()):
 			menu.addAction(k)
@@ -1876,7 +1876,7 @@ class EMParamTableEventHandler(object):
 	
 	def contextMenuEvent(self,event):
 		if hasattr(self.table_widget,"context_menu"):
-			menu = QtGui.QMenu()
+			menu = QtWidgets.QMenu()
 			for k in list(self.table_widget.context_menu.keys()):
 				menu.addAction(k)
 			menu.triggered[QtWidgets.QAction].connect(self.menu_action_triggered)

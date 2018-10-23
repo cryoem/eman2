@@ -2224,7 +2224,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 		self.target=weakref.ref(target)
 		self.busy = 1
-		self.vals = QtGui.QMenu()
+		self.vals = QtWidgets.QMenu()
 		self.valsbut = QtGui.QPushButton("Values")
 		self.valsbut.setMenu(self.vals)
 
