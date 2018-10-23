@@ -71,7 +71,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		font = QtGui.QFont()
 		font.setBold(True)
 		centralwidget = QtGui.QWidget()
-		vsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
+		vsplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
 
 		# Make the tiltebars
 		grid = QtWidgets.QGridLayout()
