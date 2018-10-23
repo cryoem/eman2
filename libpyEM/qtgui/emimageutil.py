@@ -62,7 +62,7 @@ class EMTransformPanel(object):
 		self.x_label = QtGui.QLabel()
 		self.x_label.setText('x')
 		
-		self.x_trans = QtGui.QDoubleSpinBox(parent)
+		self.x_trans = QtWidgets.QDoubleSpinBox(parent)
 		self.x_trans.setMinimum(-10000)
 		self.x_trans.setMaximum(10000)
 		self.x_trans.setValue(0.0)
@@ -70,7 +70,7 @@ class EMTransformPanel(object):
 		self.y_label = QtGui.QLabel()
 		self.y_label.setText('y')
 		
-		self.y_trans = QtGui.QDoubleSpinBox(parent)
+		self.y_trans = QtWidgets.QDoubleSpinBox(parent)
 		self.y_trans.setMinimum(-10000)
 		self.y_trans.setMaximum(10000)
 		self.y_trans.setValue(0.0)
@@ -78,7 +78,7 @@ class EMTransformPanel(object):
 		self.z_label = QtGui.QLabel()
 		self.z_label.setText('z')
 		
-		self.z_trans = QtGui.QDoubleSpinBox(parent)
+		self.z_trans = QtWidgets.QDoubleSpinBox(parent)
 		self.z_trans.setMinimum(-10000)
 		self.z_trans.setMaximum(10000)
 		self.z_trans.setValue(0.0)
