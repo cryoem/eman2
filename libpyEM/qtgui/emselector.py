@@ -889,7 +889,7 @@ class EMBrowser(EMBrowserType):
 					menu.addAction(SAVE_SUBSET)
 				
 
-		menu.triggered[QtGui.QAction].connect(self.menu_action_triggered)
+		menu.triggered[QtWidgets.QAction].connect(self.menu_action_triggered)
 		self.action_list_widget = l # only set if the menu acutally triggers
 		menu.exec_(event.globalPos())
 		

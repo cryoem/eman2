@@ -3223,7 +3223,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtree.doubleClicked[QtCore.QModelIndex].connect(self.itemDoubleClick)
 		self.wtree.expanded[QtCore.QModelIndex].connect(self.itemExpand)
 		self.wpath.returnPressed.connect(self.editPath)
-		self.wbookmarks.actionTriggered[QtGui.QAction].connect(self.bookmarkPress)
+		self.wbookmarks.actionTriggered[QtWidgets.QAction].connect(self.bookmarkPress)
 		self.wfilter.currentIndexChanged[int].connect(self.editFilter)
 
 		self.setsmode = setsmode	# The sets mode is used when selecting bad particles
