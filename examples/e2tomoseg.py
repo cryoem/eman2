@@ -495,7 +495,7 @@ class TomoSegSliceViewer(QtWidgets.QMainWindow):
 		fspprjs=fsp.replace('.','_prjs.hdf')
 		prj=EMData() #Dummy
 
-		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
+		progress = QtWidgets.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
 				img = self.extract_subtomo_box(self.get_extended_a_vector(b), cshrink=self.shrink)
@@ -563,7 +563,7 @@ class TomoSegSliceViewer(QtWidgets.QMainWindow):
 		fspprjs=fsp.replace('.hdf','_prjs.hdf')
 		prj=EMData() #Dummy
 
-		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
+		progress = QtWidgets.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
 				img = self.extract_subtomo_box(self.get_extended_a_vector(b), cshrink=self.shrink)

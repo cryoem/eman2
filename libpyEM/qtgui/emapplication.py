@@ -367,9 +367,9 @@ class EMApp(QtWidgets.QApplication):
 
 		
 	
-class EMProgressDialog(QtGui.QProgressDialog):
+class EMProgressDialog(QtWidgets.QProgressDialog):
 	def __init__(self,label_text,cancel_button_text, minimum, maximum, parent = None):
-		QtGui.QProgressDialog.__init__(self,label_text,cancel_button_text, minimum, maximum, parent)
+		QtWidgets.QProgressDialog.__init__(self,label_text,cancel_button_text, minimum, maximum, parent)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 
 
