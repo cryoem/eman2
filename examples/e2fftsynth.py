@@ -138,7 +138,7 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.wapsliders=QtGui.QWidget(self)
 #		self.wapsliders.setMinimumSize(800,640)
 		self.gblap=QtWidgets.QGridLayout()
-		self.gblap.setSizeConstraint(QtGui.QLayout.SetMinAndMaxSize)
+		self.gblap.setSizeConstraint(QtWidgets.QLayout.SetMinAndMaxSize)
 		self.gblap.setColumnMinimumWidth(0,250)
 		self.gblap.setColumnMinimumWidth(1,250)
 		self.wapsliders.setLayout(self.gblap)
