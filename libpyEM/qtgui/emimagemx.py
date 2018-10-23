@@ -1806,7 +1806,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				except: idxse = []
 				name = d["class_ptcl_src"]
 				try:
-					progress = QtGui.QProgressDialog("Reading images from %s" %base_name(name), "Cancel", 0, len(idxs)+len(idxse),None)
+					progress = QtWidgets.QProgressDialog("Reading images from %s" %base_name(name), "Cancel", 0, len(idxs)+len(idxse),None)
 					progress.show()
 				except:
 					pass

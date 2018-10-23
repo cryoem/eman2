@@ -569,7 +569,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			print("{} exist. Overwritting...".format(fsp))
 			os.remove(fsp)
 		
-		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
+		progress = QtWidgets.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		
 		
 		boxsz=-1

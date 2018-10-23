@@ -837,7 +837,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		allfilt=" ".join([i.getAsProc() for i in self.processorlist])
 
 		n=EMUtil.get_image_count(self.datafile)
-		progressdialog=QtGui.QProgressDialog("Processing Images","Abort",0,n,self)
+		progressdialog=QtWidgets.QProgressDialog("Processing Images","Abort",0,n,self)
 		progressdialog.setMinimumDuration(1000)
 
 		e=E2init(["e2proc2d.py",self.datafile,str(name[0]),allfilt])	# we don't actually run this program, since we couldn't have a progress dialog easo;y then

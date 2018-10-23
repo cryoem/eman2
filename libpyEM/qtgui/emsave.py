@@ -424,7 +424,7 @@ class EMStackSaveDialog(EMFileSaver):
 		total_images = len(self.__item_list)
 
 		out_file = tmp_file_object.get_tmp_file_name()
-		progress = QtGui.QProgressDialog("Writing files", "abort", 0, 2*total_images,None)
+		progress = QtWidgets.QProgressDialog("Writing files", "abort", 0, 2*total_images,None)
 		progress.show()
 		tally = 0
 		exc_list = None
