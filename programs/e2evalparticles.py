@@ -181,7 +181,7 @@ class EMClassPtclTool(QtGui.QWidget):
 
 	def makeNewSet(self,x):
 		"Makes a new particle set based on the selected class-averages"
-		setname=QtGui.QInputDialog.getText(None,"Set Name","Please specify the name for the set. If you specify an existing set, new particles will be added to the end")
+		setname=QtWidgets.QInputDialog.getText(None,"Set Name","Please specify the name for the set. If you specify an existing set, new particles will be added to the end")
 		if setname[1]==False : return
 		else: setname=setname[0]
 		if setname[-4:]!=".lst" : setname=setname+".lst"
@@ -294,7 +294,7 @@ class EMClassPtclTool(QtGui.QWidget):
 	def savePtclNum(self,x):
 		"Saves a list of particles from marked classes into a text file"
 
-		filename=QtGui.QInputDialog.getText(None,"Filename","Please enter a filename for the particle list. The file will contain the particle number (within the particle file) for each particle associated with a selected class-average.")
+		filename=QtWidgets.QInputDialog.getText(None,"Filename","Please enter a filename for the particle list. The file will contain the particle number (within the particle file) for each particle associated with a selected class-average.")
 		if filename[1]==False or filename[0]=="" : return
 
 		out=open(filename[0],"w")
@@ -303,7 +303,7 @@ class EMClassPtclTool(QtGui.QWidget):
 
 	def saveOrigPtclNum(self,x):
 		"Saves a file containing micrograph-dereferenced particles"
-		filename=QtGui.QInputDialog.getText(None,"Filename","Please enter a filename for the particle list. The file will contain particle number and image file, one per line. Image files will be referenced back to the original per-CCD frame stacks.")
+		filename=QtWidgets.QInputDialog.getText(None,"Filename","Please enter a filename for the particle list. The file will contain particle number and image file, one per line. Image files will be referenced back to the original per-CCD frame stacks.")
 		if filename[1]==False or filename[0]=="" : return
 
 		lst=LSXFile(self.curPtclFile())		# lst file for dereferenceing
@@ -333,7 +333,7 @@ class EMClassPtclTool(QtGui.QWidget):
 
 	def selRangeClasses(self,x):
 		"Select a range of images (ask the user for the range)"
-		rng=QtGui.QInputDialog.getText(None,"Select Range","Enter the range of particle values as first-last (inclusive). Merges with existing selection.")
+		rng=QtWidgets.QInputDialog.getText(None,"Select Range","Enter the range of particle values as first-last (inclusive). Merges with existing selection.")
 		if rng[1]==False : return
 
 		try:
