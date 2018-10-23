@@ -373,7 +373,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.wcbprocmode.addItem("Average Density")
 		self.vbl3a.addWidget(self.wcbprocmode)
 		
-		self.wpbprogress=QtGui.QProgressBar()
+		self.wpbprogress=QtWidgets.QProgressBar()
 		self.wpbprogress.setEnabled(False)
 		self.wpbprogress.setMinimum(0)
 		self.wpbprogress.setMaximum(100)

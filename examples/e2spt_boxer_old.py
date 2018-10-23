@@ -979,7 +979,7 @@ def sptboxergui(options,args):
 			self.wsym=QtWidgets.QLineEdit("C1")
 			self.gbl2.addWidget(self.wsym,4,1)
 
-			self.wprog=QtGui.QProgressBar()
+			self.wprog=QtWidgets.QProgressBar()
 			self.wprog.setRange(0,100)
 			self.gbl2.addWidget(self.wprog,5,0,1,2)
 
