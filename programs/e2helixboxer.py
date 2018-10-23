@@ -1043,7 +1043,7 @@ if ENABLE_GUI:
 			self.micrograph_table = QtGui.QTableWidget(1,2)
 			self.micrograph_table.setHorizontalHeaderLabels(["Micrograph", "Boxed Helices"])
 
-			self.status_bar = QtGui.QStatusBar()
+			self.status_bar = QtWidgets.QStatusBar()
 			#self.status_bar.showMessage("Ready",10000)
 
 			widthLayout = QtWidgets.QHBoxLayout()

@@ -1545,7 +1545,7 @@ class EMBoxViewer(QtGui.QWidget):
 #		self.setSizeGripEnabled(True)
 
 #		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool
-#			self.status = QtGui.QStatusBar()
+#			self.status = QtWidgets.QStatusBar()
 #			self.gbl.addWidget(self.status,3,0,1,2)
 #			self.margin = 0
 
