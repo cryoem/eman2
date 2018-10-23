@@ -38,7 +38,7 @@ class MouseAndKeyModifiers(QtGui.QWidget):
 
 if __name__ == "__main__":
 	import sys
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 	window = MouseAndKeyModifiers()
 	window.show()
 	window.raise_()
