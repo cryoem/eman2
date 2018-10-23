@@ -781,8 +781,8 @@ class EMBrowser(EMBrowserType):
 		self.action_delegates[SAVE_SUBSET] = EMSaveStackSaveAction()
 		
 	def __init_plot_options(self):
-		self.replace = QtGui.QRadioButton("Replace")
-		self.include = QtGui.QRadioButton("Include")
+		self.replace = QtWidgets.QRadioButton("Replace")
+		self.include = QtWidgets.QRadioButton("Include")
 		self.include.setChecked(True)
 
 	def __init_preview_options(self):
