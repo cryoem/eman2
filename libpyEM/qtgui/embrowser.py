@@ -3104,9 +3104,9 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.lfilter = QtGui.QLabel("Filter:")
 		self.wtoolhbl2.addWidget(self.lfilter)
 
-		self.wfilter = QtGui.QComboBox()
+		self.wfilter = QtWidgets.QComboBox()
 		self.wfilter.setEditable(True)
-		self.wfilter.setInsertPolicy(QtGui.QComboBox.InsertAtBottom)
+		self.wfilter.setInsertPolicy(QtWidgets.QComboBox.InsertAtBottom)
 		self.wfilter.addItem("")
 		self.wfilter.addItem("(.(?!_ctf))*$")
 		self.wfilter.addItem(".*\.img")

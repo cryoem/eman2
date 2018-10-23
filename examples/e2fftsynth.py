@@ -114,7 +114,7 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.cbshifted=QtWidgets.QCheckBox("Shifted")
 		self.hbl1.addWidget(self.cbshifted)
 
-		self.cbtargfn=QtGui.QComboBox(self)
+		self.cbtargfn=QtWidgets.QComboBox(self)
 		self.cbtargfn.addItem("None")
 		self.cbtargfn.addItem("triangle")
 		self.cbtargfn.addItem("square")

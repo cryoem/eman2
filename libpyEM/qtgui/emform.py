@@ -975,7 +975,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		groupbox = QtGui.QGroupBox(self.desc_short)
 		groupbox.setToolTip(self.desc_long)
 		
-		self.main_combo = QtGui.QComboBox()
+		self.main_combo = QtWidgets.QComboBox()
 		start_idx = None
 		dumped_dict_keys = list(self.dumped_dict.keys())
 		dumped_dict_keys.sort()
@@ -1256,7 +1256,7 @@ class EMFormWidget(QtGui.QWidget):
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label)
 				
-		combo = QtGui.QComboBox(target)
+		combo = QtWidgets.QComboBox(target)
 		idx_default = 0
 		for i,float_p in enumerate(param.choices):
 			combo.addItem(str(float_p))
@@ -1281,7 +1281,7 @@ class EMFormWidget(QtGui.QWidget):
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label)
 				
-		combo = QtGui.QComboBox(target)
+		combo = QtWidgets.QComboBox(target)
 		idx_default = 0
 		for i,integer in enumerate(param.choices):
 			combo.addItem(str(integer))
@@ -1305,7 +1305,7 @@ class EMFormWidget(QtGui.QWidget):
 		label.setToolTip(param.desc_long)
 		hbl.addWidget(label,0)
 				
-		combo = QtGui.QComboBox(target)
+		combo = QtWidgets.QComboBox(target)
 		idx_default = 0
 		for i,string in enumerate(param.choices):
 			combo.addItem(string)
@@ -1631,7 +1631,7 @@ class IncorpDict(object):
 #		label.setToolTip(param.desc_long)
 #		hbl.addWidget(label)
 		
-		combo = QtGui.QComboBox(target)
+		combo = QtWidgets.QComboBox(target)
 		idx_default = 0
 		for i,k in enumerate(keys):
 			combo.addItem(str(k))
@@ -1644,7 +1644,7 @@ class IncorpDict(object):
 		hbl.addWidget(combo)
 		
 		
-		combo2 = QtGui.QComboBox(target)
+		combo2 = QtWidgets.QComboBox(target)
 		for v in param.choices[combo_default]:
 			combo2.addItem(str(v))
 			

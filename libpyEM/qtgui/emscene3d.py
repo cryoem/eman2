@@ -3113,7 +3113,7 @@ class NodeDialog(QtGui.QDialog):
 		frame.setFrameStyle(QtGui.QFrame.StyledPanel)
 		fvbox = QtGui.QVBoxLayout(frame)
 		label = QtGui.QLabel("Node Type to add")
-		self.node_type_combo = QtGui.QComboBox() 
+		self.node_type_combo = QtWidgets.QComboBox() 
 		self.node_stacked_widget = QtGui.QStackedWidget()
 		self.node_stacked_widget.setFrameStyle(QtGui.QFrame.StyledPanel)
 		self.addnode_button = QtGui.QPushButton("Add Node")

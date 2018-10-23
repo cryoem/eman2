@@ -1389,7 +1389,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.color_label.setText('Material')
 		self.hbl_color.addWidget(self.color_label)
 		
-		self.cbb = QtGui.QComboBox(gltab)
+		self.cbb = QtWidgets.QComboBox(gltab)
 		self.hbl_color.addWidget(self.cbb)
 		
 		self.glcontrast = ValSlider(gltab,(1.0,5.0),"GLShd:")

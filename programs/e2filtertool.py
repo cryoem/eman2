@@ -136,14 +136,14 @@ class EMProcessorWidget(QtGui.QWidget):
 		self.gbl.addWidget(self.wenable,0,1)
 
 		# List of processor categories
-		self.wcat=QtGui.QComboBox(self)
+		self.wcat=QtWidgets.QComboBox(self)
 		self.wcat.addItem("")
 		for i in self.cats: self.wcat.addItem(i)
 #		self.wcat.setCurrentindex(self.wcat.findText("processor"))
 		self.gbl.addWidget(self.wcat,0,2)
 
 		# List of processor subcategories
-		self.wsubcat=QtGui.QComboBox(self)
+		self.wsubcat=QtWidgets.QComboBox(self)
 		self.gbl.addWidget(self.wsubcat,0,3)
 #		self.update_subcat()
 
@@ -442,7 +442,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.vblm = QtGui.QVBoxLayout(self.centralWidget())		# The contents of the main window
 
 		# List of processor sets
-		self.wsetname=QtGui.QComboBox()
+		self.wsetname=QtWidgets.QComboBox()
 		self.wsetname.setEditable(True)
 		psetnames=[i.split("_",1)[1][:-4].replace("_"," ") for i in os.listdir(".") if i[:11]=="filtertool_"]
 		try: psetnames.remove("default")  # remove default if it exists

@@ -542,7 +542,7 @@ class EMSliceInspector(EMInspectorControlShape):
 		self.constrained_group_box.setCheckable(True)
 		self.constrained_group_box.setChecked(False)
 
-		self.constrained_plane_combobox = QtGui.QComboBox()
+		self.constrained_plane_combobox = QtWidgets.QComboBox()
 		self.constrained_plane_combobox.addItems(["XY", "YZ", "ZX"])
 		self.constrained_slider = ValSlider(label="Trans:")
 

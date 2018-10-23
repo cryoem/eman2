@@ -565,7 +565,7 @@ class EMItem3DInspector(QtGui.QTabWidget):
 		xformlabel.setAlignment(QtCore.Qt.AlignCenter)
 		xformbox.addWidget(xformlabel, 0, 0, 1, 2)
 		# Rotations
-		self.rotcombobox = QtGui.QComboBox()
+		self.rotcombobox = QtWidgets.QComboBox()
 		xformbox.addWidget(self.rotcombobox, 1, 0, 1, 2)
 		self.rotstackedwidget = QtGui.QStackedWidget()
 		self.addRotationWidgets()

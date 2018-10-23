@@ -728,7 +728,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		combo_entries = list(self.au_data.keys())
 		combo_entries.sort()
 		combo_entries.reverse()
-		self.combo = QtGui.QComboBox(self)
+		self.combo = QtWidgets.QComboBox(self)
 		for e in combo_entries:
 			self.combo.addItem(e)
 
