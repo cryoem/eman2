@@ -728,7 +728,7 @@ class EMBrowser(EMBrowserType):
 		bottom_hbl3.addWidget(self.replace,0)
 		bottom_hbl3.addWidget(self.include,0)
 		
-		self.groupbox = QtGui.QGroupBox("Plot/3D options")
+		self.groupbox = QtWidgets.QGroupBox("Plot/3D options")
 		self.groupbox.setLayout(bottom_hbl3)
 		self.groupbox.setEnabled(False)
 		

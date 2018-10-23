@@ -344,7 +344,7 @@ class GUIEvalImage(QtGui.QWidget):
 		# this is just a spacer
 		self.gbl.setColumnStretch(3,2)
 
-		self.bbox=QtGui.QGroupBox("Project")
+		self.bbox=QtWidgets.QGroupBox("Project")
 		self.gbl.addWidget(self.bbox,10,4,4,1)
 
 		self.bvbl=QtGui.QVBoxLayout()

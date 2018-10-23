@@ -103,7 +103,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.vbl.addSpacing(5)
 
 		# Selection tools
-		self.wselectg=QtGui.QGroupBox("Class Selection",self)
+		self.wselectg=QtWidgets.QGroupBox("Class Selection",self)
 		self.wselectg.setFlat(False)
 		self.vbl.addWidget(self.wselectg)
 		self.vbl.addSpacing(5)
@@ -125,7 +125,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.wsel3db=QtGui.QPushButton("From 3D")
 		self.gbl0.addWidget(self.wsel3db,1,2)
 
-		self.wprocessg=QtGui.QGroupBox("Process results",self)
+		self.wprocessg=QtWidgets.QGroupBox("Process results",self)
 		self.wprocessg.setFlat(False)
 		self.vbl.addWidget(self.wprocessg)
 

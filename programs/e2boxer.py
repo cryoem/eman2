@@ -1265,7 +1265,7 @@ class GUIBoxer(QtGui.QWidget):
 		
 		# Mouse Modes
 		self.mmode="manual"
-		self.boxmm=QtGui.QGroupBox("Mouse Mode",self)
+		self.boxmm=QtWidgets.QGroupBox("Mouse Mode",self)
 		self.boxmm.setFlat(False)
 		self.gbl.addWidget(self.boxmm,0,2,2,3)
 		
@@ -1322,7 +1322,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.binvert.clicked[bool].connect(self.invertToggle)
 
 		# Global parameters
-		self.boxparm=QtGui.QGroupBox("Parameters",self)
+		self.boxparm=QtWidgets.QGroupBox("Parameters",self)
 		self.boxparm.setFlat(False)
 		self.gbl.addWidget(self.boxparm,2,2,3,4)
 		
@@ -1353,7 +1353,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.gbl1.addWidget(self.vbthreads,1,3)
 
 		# Reference tools
-		self.reftools=QtGui.QGroupBox("Box Refs",self)
+		self.reftools=QtWidgets.QGroupBox("Box Refs",self)
 		self.boxparm.setFlat(False)
 		self.gbl.addWidget(self.reftools,5,2,2,2)
 		

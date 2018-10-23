@@ -791,7 +791,7 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.groupbox.addWidget(self.persbut)
 		self.groupbox.addWidget(self.orthbut)
 		
-		self.viewingvol = QtGui.QGroupBox("Viewing Volume")
+		self.viewingvol = QtWidgets.QGroupBox("Viewing Volume")
 		self.viewingvol.setLayout(self.groupbox)
 		
 		self.hbl.addWidget(self.viewingvol)

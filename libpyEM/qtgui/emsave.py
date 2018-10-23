@@ -570,7 +570,7 @@ class EMFileExistsDialog(QtWidgets.QDialog):
 		text_edit.setText(help)
 		hbl2.addWidget(text_edit,0)
 		
-		groupbox = QtGui.QGroupBox("Warning")
+		groupbox = QtWidgets.QGroupBox("Warning")
 		groupbox.setLayout(hbl2)
 		vbl.addWidget(groupbox)
 		
