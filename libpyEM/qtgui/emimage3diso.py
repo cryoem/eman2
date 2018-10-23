@@ -374,7 +374,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 		self.rotation_sliders = EMTransformPanel(target,self)
 		
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
@@ -392,7 +392,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 			self.mrc_browse.clicked[bool].connect(self.on_mrc_browse) # added by Muthu
 
 		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
@@ -402,7 +402,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 		self.hbl.addWidget(self.hist)
 		
 		self.vbl2 = QtWidgets.QVBoxLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
@@ -533,7 +533,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 		return get_RGB_tab(self,name)
 		#rgbtab = QtWidgets.QWidget(self)
 		#rgbtab.vbl = QtWidgets.QVBoxLayout(rgbtab)
-		#rgbtab.vbl.setMargin(0)
+		#rgbtab.vbl.setContentsMargins(0, 0, 0, 0)
 		#rgbtab.vbl.setSpacing(6)
 		#rgbtab.vbl.setObjectName(name)
 		
@@ -559,7 +559,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 		gltab = self.gltab
 		
 		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
-		gltab.vbl.setMargin(0)
+		gltab.vbl.setContentsMargins(0, 0, 0, 0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("GL")
 		
@@ -596,7 +596,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 		gltab.vbl.addWidget(self.shininess)
 
 		self.hbl_color = QtWidgets.QHBoxLayout()
-		self.hbl_color.setMargin(0)
+		self.hbl_color.setContentsMargins(0, 0, 0, 0)
 		self.hbl_color.setSpacing(6)
 		self.hbl_color.setObjectName("Material")
 		gltab.vbl.addLayout(self.hbl_color)
@@ -620,7 +620,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 			self.texturetab = QtWidgets.QWidget()
 			texturetab = self.texturetab
 			texturetab.vbl = QtWidgets.QVBoxLayout(self.texturetab)
-			texturetab.vbl.setMargin(0)
+			texturetab.vbl.setContentsMargins(0, 0, 0, 0)
 			texturetab.vbl.setSpacing(6)
 			texturetab.vbl.setObjectName("Main")
 		
@@ -653,7 +653,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
 			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
-			maintab.vbl.setMargin(0)
+			maintab.vbl.setContentsMargins(0, 0, 0, 0)
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			
@@ -663,7 +663,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 			maintab.vbl.addWidget(self.thr)
 			
 			self.hbl_smp = QtWidgets.QHBoxLayout()
-			self.hbl_smp.setMargin(0)
+			self.hbl_smp.setContentsMargins(0, 0, 0, 0)
 			self.hbl_smp.setSpacing(6)
 			self.hbl_smp.setObjectName("Sample")
 			maintab.vbl.addLayout(self.hbl_smp)

@@ -211,18 +211,18 @@ class EMHelloWorldInspector(QtWidgets.QWidget):
 		self.target=target
 		
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
 		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 		
 		self.vbl2 = QtWidgets.QVBoxLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
@@ -261,7 +261,7 @@ class EMHelloWorldInspector(QtWidgets.QWidget):
 		gltab = self.gltab
 		
 		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
-		gltab.vbl.setMargin(0)
+		gltab.vbl.setContentsMargins(0, 0, 0, 0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
 		
@@ -283,7 +283,7 @@ class EMHelloWorldInspector(QtWidgets.QWidget):
 			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
 			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
-			maintab.vbl.setMargin(0)
+			maintab.vbl.setContentsMargins(0, 0, 0, 0)
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			
@@ -293,7 +293,7 @@ class EMHelloWorldInspector(QtWidgets.QWidget):
 			maintab.vbl.addWidget(self.scale)
 			
 			self.hbl_color = QtWidgets.QHBoxLayout()
-			self.hbl_color.setMargin(0)
+			self.hbl_color.setContentsMargins(0, 0, 0, 0)
 			self.hbl_color.setSpacing(6)
 			self.hbl_color.setObjectName("Material")
 			maintab.vbl.addLayout(self.hbl_color)
@@ -306,7 +306,7 @@ class EMHelloWorldInspector(QtWidgets.QWidget):
 			self.hbl_color.addWidget(self.cbb)
 	
 			self.hbl_trans = QtWidgets.QHBoxLayout()
-			self.hbl_trans.setMargin(0)
+			self.hbl_trans.setContentsMargins(0, 0, 0, 0)
 			self.hbl_trans.setSpacing(6)
 			self.hbl_trans.setObjectName("Trans")
 			maintab.vbl.addLayout(self.hbl_trans)
@@ -343,7 +343,7 @@ class EMHelloWorldInspector(QtWidgets.QWidget):
 			self.hbl_trans.addWidget(self.z_trans)
 			
 			self.hbl_src = QtWidgets.QHBoxLayout()
-			self.hbl_src.setMargin(0)
+			self.hbl_src.setContentsMargins(0, 0, 0, 0)
 			self.hbl_src.setSpacing(6)
 			self.hbl_src.setObjectName("hbl")
 			maintab.vbl.addLayout(self.hbl_src)

@@ -935,7 +935,7 @@ class EMAN2StatusBar(QtWidgets.QTextEdit):
 		QtWidgets.QTextEdit.__init__(self)
 		self.setFrameShape(QtWidgets.QFrame.Panel | QtWidgets.QFrame.Sunken)
 		self.setLineWidth(2)
-		#self.setMargin(4)
+		#self.setContentsMargins(4, 4, 4, 4)
 		self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
 		self.viewport().setCursor(QtCore.Qt.ArrowCursor)
 		self.setMessage(text, style)

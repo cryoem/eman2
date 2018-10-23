@@ -1914,7 +1914,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.target=weakref.ref(target)
 
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(2)
+		self.vbl.setContentsMargins(2, 2, 2, 2)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 
@@ -2149,7 +2149,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 		# histogram level horiz layout
 		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
@@ -2160,7 +2160,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 		# Buttons next to the histogram
 		self.vbl2 = QtWidgets.QGridLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)

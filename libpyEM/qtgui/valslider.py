@@ -102,7 +102,7 @@ class ValSlider(QtWidgets.QWidget):
 		self.rounding = rounding
 		
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
-		self.hboxlayout.setMargin(0)
+		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
 		
@@ -316,7 +316,7 @@ class ValBox(QtWidgets.QWidget):
 		self.digits=5		# digits of precision to display
 		
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
-		self.hboxlayout.setMargin(0)
+		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
 		
@@ -462,7 +462,7 @@ class StringBox(QtWidgets.QWidget):
 		self.ignore=0
 		
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
-		self.hboxlayout.setMargin(0)
+		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
 		
@@ -548,7 +548,7 @@ class CheckBox(QtWidgets.QWidget):
 		self.ignore=0
 		
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
-		self.hboxlayout.setMargin(0)
+		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
 		

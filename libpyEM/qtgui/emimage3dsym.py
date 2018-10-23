@@ -1375,12 +1375,12 @@ class SparseSymChoicesWidgets(object):
 		self.maintab = QtWidgets.QWidget()
 		maintab = self.maintab
 		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
-		maintab.vbl.setMargin(0)
+		maintab.vbl.setContentsMargins(0, 0, 0, 0)
 		maintab.vbl.setSpacing(6)
 		maintab.vbl.setObjectName("Main")
 		
 		self.hbl_sym = QtWidgets.QHBoxLayout()
-		self.hbl_sym.setMargin(0)
+		self.hbl_sym.setContentsMargins(0, 0, 0, 0)
 		self.hbl_sym.setSpacing(6)
 		self.hbl_sym.setObjectName("Sym")
 		maintab.vbl.addLayout(self.hbl_sym)
@@ -1437,7 +1437,7 @@ class SparseSymChoicesWidgets(object):
 			self.hbl_sym.addWidget(self.prop_text)
 			
 			self.hbl_sym2 = QtWidgets.QHBoxLayout()
-			self.hbl_sym2.setMargin(0)
+			self.hbl_sym2.setContentsMargins(0, 0, 0, 0)
 			self.hbl_sym2.setSpacing(6)
 			self.hbl_sym2.setObjectName("Sym2")
 			maintab.vbl.addLayout(self.hbl_sym2)
@@ -1610,7 +1610,7 @@ class EMSymChoiceDialog(QtWidgets.QDialog):
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
 
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
@@ -1675,7 +1675,7 @@ class EMSymInspector(QtWidgets.QWidget):
 		self.enable_trace = enable_trace
 		self.enable_og = enable_og
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
@@ -1886,7 +1886,7 @@ class EMSymInspector(QtWidgets.QWidget):
 
 		if self.enable_trace:		
 			self.hbl_pt = QtWidgets.QHBoxLayout()
-			self.hbl_pt.setMargin(0)
+			self.hbl_pt.setContentsMargins(0, 0, 0, 0)
 			self.hbl_pt.setSpacing(6)
 			self.hbl_pt.setObjectName("Ptl Trace")
 			

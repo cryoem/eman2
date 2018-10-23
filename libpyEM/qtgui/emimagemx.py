@@ -2235,13 +2235,13 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 		action.setChecked(1)
 
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(2)
+		self.vbl.setContentsMargins(2, 2, 2, 2)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vboxlayout")
 
 
 		self.hbl3 = QtWidgets.QHBoxLayout()
-		self.hbl3.setMargin(0)
+		self.hbl3.setContentsMargins(0, 0, 0, 0)
 		self.hbl3.setSpacing(6)
 		self.hbl3.setObjectName("hboxlayout")
 		self.vbl.addLayout(self.hbl3)
@@ -2251,7 +2251,7 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 		self.hbl3.addWidget(self.hist)
 
 		self.vbl2 = QtWidgets.QVBoxLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vboxlayout")
 		self.hbl3.addLayout(self.vbl2)
@@ -2277,7 +2277,7 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 
 		# This shows the mouse mode buttons
 		self.hbl2 = QtWidgets.QHBoxLayout()
-		self.hbl2.setMargin(0)
+		self.hbl2.setContentsMargins(0, 0, 0, 0)
 		self.hbl2.setSpacing(6)
 		self.hbl2.setObjectName("hboxlayout")
 		self.vbl.addLayout(self.hbl2)
@@ -2306,7 +2306,7 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 
 
 		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hboxlayout")
 		self.vbl.addLayout(self.hbl)
@@ -2414,7 +2414,7 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 	def get_image_manip_page(self):
 		self.impage = QtWidgets.QWidget()
 		vbl = QtWidgets.QVBoxLayout(self.impage )
-		vbl.setMargin(2)
+		vbl.setContentsMargins(2, 2, 2, 2)
 		vbl.setSpacing(6)
 		vbl.setObjectName("get_image_manip_page")
 

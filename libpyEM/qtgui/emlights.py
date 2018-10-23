@@ -819,7 +819,7 @@ class EMLightsInspectorBase(object):
 		light_tab = self.light_tab
 		
 		vbl = QtWidgets.QVBoxLayout(self.light_tab )
-		vbl.setMargin(0)
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("Lights")
 		
@@ -1073,12 +1073,12 @@ class EMLightsInspectorBase(object):
 		self.directional_light_widget = QtWidgets.QWidget()
 		
 		vbl = QtWidgets.QVBoxLayout(self.directional_light_widget)
-		vbl.setMargin(0)
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("Lights")
 		
 		hbl = QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 		vbl.addLayout(hbl)
@@ -1090,7 +1090,7 @@ class EMLightsInspectorBase(object):
 		hbl.addWidget(self.light_list)
 
 		vbl2 = QtWidgets.QVBoxLayout()
-		vbl2.setMargin(0)
+		vbl2.setContentsMargins(0, 0, 0, 0)
 		vbl2.setSpacing(6)
 		vbl2.setObjectName("vbl2")
 		hbl.addLayout(vbl2)
@@ -1129,7 +1129,7 @@ class EMLightsInspectorBase(object):
 		
 		
 		hbl_trans = QtWidgets.QHBoxLayout()
-		hbl_trans.setMargin(0)
+		hbl_trans.setContentsMargins(0, 0, 0, 0)
 		hbl_trans.setSpacing(6)
 		hbl_trans.setObjectName("Trans")
 		hbl_trans.addWidget(x_label)
@@ -1153,12 +1153,12 @@ class EMLightsInspectorBase(object):
 		self.pointsource_light_widget = QtWidgets.QWidget()
 		
 		vbl = QtWidgets.QVBoxLayout(self.pointsource_light_widget)
-		vbl.setMargin(0)
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("Lights")
 		
 		hbl = QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 		vbl.addLayout(hbl)
@@ -1172,7 +1172,7 @@ class EMLightsInspectorBase(object):
 		hbl.addWidget(self.point_light_list)
 
 		vbl2 = QtWidgets.QVBoxLayout()
-		vbl2.setMargin(0)
+		vbl2.setContentsMargins(0, 0, 0, 0)
 		vbl2.setSpacing(6)
 		vbl2.setObjectName("vbl2")
 		hbl.addLayout(vbl2)
@@ -1214,7 +1214,7 @@ class EMLightsInspectorBase(object):
 		
 		
 		hbl_trans = QtWidgets.QHBoxLayout()
-		hbl_trans.setMargin(0)
+		hbl_trans.setContentsMargins(0, 0, 0, 0)
 		hbl_trans.setSpacing(6)
 		hbl_trans.setObjectName("Trans")
 		hbl_trans.addWidget(pos_label)
@@ -1268,7 +1268,7 @@ class EMLightsInspectorBase(object):
 		self.light_ps_zdir.setValue(0.0)
 		
 		hbl_trans2 = QtWidgets.QHBoxLayout()
-		hbl_trans2.setMargin(0)
+		hbl_trans2.setContentsMargins(0, 0, 0, 0)
 		hbl_trans2.setSpacing(6)
 		hbl_trans2.setObjectName("Trans")
 		hbl_trans2.addWidget(dir_label)
@@ -1318,18 +1318,18 @@ class EMLightsInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 		self.target=weakref.ref(target)
 		
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
 		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 
 		self.vbl2 = QtWidgets.QVBoxLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
@@ -1376,12 +1376,12 @@ class EMLightsInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 		gltab = self.gltab
 		
 		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
-		gltab.vbl.setMargin(0)
+		gltab.vbl.setContentsMargins(0, 0, 0, 0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
 		
 		self.hbl_color = QtWidgets.QHBoxLayout()
-		self.hbl_color.setMargin(0)
+		self.hbl_color.setContentsMargins(0, 0, 0, 0)
 		self.hbl_color.setSpacing(6)
 		gltab.vbl.addLayout(self.hbl_color)
 
@@ -1410,7 +1410,7 @@ class EMLightsInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
 			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
-			maintab.vbl.setMargin(0)
+			maintab.vbl.setContentsMargins(0, 0, 0, 0)
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			

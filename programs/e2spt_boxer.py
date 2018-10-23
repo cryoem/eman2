@@ -1607,7 +1607,7 @@ class EMTomoBoxerOptions(QtWidgets.QWidget):
 		self.target=weakref.ref(target)
 		
 		self.gbl = QtWidgets.QGridLayout(self)
-		#self.gbl.setMargin(2)
+		#self.gbl.setContentsMargins(2, 2, 2, 2)
 		#self.gbl.setSpacing(6)
 		self.gbl.setObjectName("gbl")
 		

@@ -158,7 +158,7 @@ class EMTransformPanel(object):
 		
 		target.addWidget(self.scale)
 		self.hbl_trans = QtWidgets.QHBoxLayout()
-		self.hbl_trans.setMargin(0)
+		self.hbl_trans.setContentsMargins(0, 0, 0, 0)
 		self.hbl_trans.setSpacing(6)
 		self.hbl_trans.setObjectName("Trans")
 		self.hbl_trans.addWidget(self.x_label)
@@ -171,7 +171,7 @@ class EMTransformPanel(object):
 		target.addLayout(self.hbl_trans)
 		
 		self.hbl_src = QtWidgets.QHBoxLayout()
-		self.hbl_src.setMargin(0)
+		self.hbl_src.setContentsMargins(0, 0, 0, 0)
 		self.hbl_src.setSpacing(6)
 		self.hbl_src.setObjectName("hbl")
 		self.hbl_src.addWidget(self.label_src)
@@ -308,7 +308,7 @@ class EMParentWin(QtWidgets.QWidget,Animator):
 			self.margin = 0
 		else:
 			self.margin = 5
-		self.hbl.setMargin(self.margin)
+		self.hbl.setContentsMargins(self.margin, self.margin, self.margin, self.margin)
 		
 		
 	def __del__(self):
