@@ -2631,7 +2631,7 @@ class EMMXSetsPanel(QtGui.QWidget):
 		self.save_set_button.clicked[bool].connect(self.save_set)
 		self.new_set_button.clicked[bool].connect(self.new_set)
 		self.delete_set_button.clicked[bool].connect(self.delete_set)
-		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.set_list_item_changed)
+		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
 		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
 		self.target().setsChanged.connect(self.sets_changed)
 
@@ -2685,7 +2685,7 @@ class EMMXSetsPanel(QtGui.QWidget):
 		self.setlist.clear()
 
 		for i,k in enumerate(keys):
-			item=QtGui.QListWidgetItem(k)
+			item=QtWidgets.QListWidgetItem(k)
 			item.setFlags(self.itemflags)
 			item.setTextColor(self.target().setcolors[i%len(self.target().setcolors)])
 			self.setlist.addItem(item)

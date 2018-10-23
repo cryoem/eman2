@@ -982,7 +982,7 @@ class EMLightsInspectorBase(object):
 			if glIsEnabled(l):
 				pos = glGetLightfv(l,GL_POSITION)
 				if pos[3] == 0:
-					a = QtGui.QListWidgetItem("Light "+str(i),self.light_list)
+					a = QtWidgets.QListWidgetItem("Light "+str(i),self.light_list)
 					if len(self.light_list.selectedItems()) == 0:
 						a.setSelected(True)
 						
@@ -992,7 +992,7 @@ class EMLightsInspectorBase(object):
 			if glIsEnabled(l):
 				pos = glGetLightfv(l,GL_POSITION)
 				if pos[3] == 1:
-					a = QtGui.QListWidgetItem("Light "+str(i),self.light_list)
+					a = QtWidgets.QListWidgetItem("Light "+str(i),self.light_list)
 					if len(self.light_list.selectedItems()) == 0 and len(self.point_light_list.selectedItems()) == 0:
 						a.setSelected(True)
 		
@@ -1027,11 +1027,11 @@ class EMLightsInspectorBase(object):
 				new_label = "Light "+str(i)
 				
 				if not point_source: 
-					a = QtGui.QListWidgetItem(new_label,self.light_list)
+					a = QtWidgets.QListWidgetItem(new_label,self.light_list)
 					for item in self.point_light_list.selectedItems(): item.setSelected(False)
 						
 				else:
-					a = QtGui.QListWidgetItem(new_label,self.point_light_list)
+					a = QtWidgets.QListWidgetItem(new_label,self.point_light_list)
 					for item in self.light_list.selectedItems(): item.setSelected(False)
 					
 				a.setSelected(True)
@@ -1046,7 +1046,7 @@ class EMLightsInspectorBase(object):
 				glEnable(l)
 				new_label = "Light "+str(i)
 				
-				a = QtGui.QListWidgetItem(new_label,self.light_list)
+				a = QtWidgets.QListWidgetItem(new_label,self.light_list)
 				a.setSelected(True)
 				
 				self.refresh_light_states()
@@ -1143,7 +1143,7 @@ class EMLightsInspectorBase(object):
 		
 		new_light.clicked.connect(self.new_directional_light)
 		del_light.clicked.connect(self.del_directional_light)
-		self.light_list.itemPressed[QtGui.QListWidgetItem].connect(self.light_list_clicked)
+		self.light_list.itemPressed[QtWidgets.QListWidgetItem].connect(self.light_list_clicked)
 		
 		return self.directional_light_widget
 	
@@ -1167,7 +1167,7 @@ class EMLightsInspectorBase(object):
 		self.point_light_list.setMouseTracking(True)
 		
 		self.redo_pointsource_light_list()
-		#a = QtGui.QListWidgetItem(str("Light 0"),self.light_list)
+		#a = QtWidgets.QListWidgetItem(str("Light 0"),self.light_list)
 		#a.setSelected(True)
 		hbl.addWidget(self.point_light_list)
 
@@ -1293,7 +1293,7 @@ class EMLightsInspectorBase(object):
 		
 		
 		new_light.clicked.connect(self.new_pointsource_light)
-		self.point_light_list.itemPressed[QtGui.QListWidgetItem].connect(self.point_light_list_clicked)
+		self.point_light_list.itemPressed[QtWidgets.QListWidgetItem].connect(self.point_light_list_clicked)
 		self.light_x_pos.valueChanged[float].connect(self.update_light)
 		self.light_y_pos.valueChanged[float].connect(self.update_light)
 		self.light_z_pos.valueChanged[float].connect(self.update_light)

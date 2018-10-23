@@ -1180,7 +1180,7 @@ class EMFormWidget(QtGui.QWidget):
 		list_widget.setMouseTracking(True)	
 	
 		for choice in param.choices:
-			a = QtGui.QListWidgetItem(str(choice),list_widget)
+			a = QtWidgets.QListWidgetItem(str(choice),list_widget)
 			if choice in param.defaultunits:
 				list_widget.setItemSelected(a,True)
 			

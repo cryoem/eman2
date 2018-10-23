@@ -2519,7 +2519,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.slidec.valueChanged[int].connect(self.newCols)
 		self.slides.valueChanged[int].connect(self.newCols)
 		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.list_item_changed)
+		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.list_item_changed)
 		self.color.currentIndexChanged[str].connect(self.updPlotColor)
 		self.classb.clicked.connect(self.openClassWin)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
@@ -2943,7 +2943,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		parms = self.target().pparm # get the colors from this
 
 		for i,j in enumerate(keys) :
-			a = QtGui.QListWidgetItem(j)
+			a = QtWidgets.QListWidgetItem(j)
 			a.setFlags(flags)
 			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 			except:

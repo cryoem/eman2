@@ -466,11 +466,11 @@ def EMSelectorBaseTemplate(Type):
 			
 			self.list_widget_data.append(None)
 			
-			list_widget.itemDoubleClicked[QtGui.QListWidgetItem].connect(self.list_widget_dclicked)
+			list_widget.itemDoubleClicked[QtWidgets.QListWidgetItem].connect(self.list_widget_dclicked)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"),self.list_widget_clicked)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentRowChanged (int)"),self.list_widget_row_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("paintEvent (int)"),self.list_widget_row_changed)
-			list_widget.itemEntered[QtGui.QListWidgetItem].connect(self.list_widget_item_entered)
+			list_widget.itemEntered[QtWidgets.QListWidgetItem].connect(self.list_widget_item_entered)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
 			#\QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
@@ -1417,7 +1417,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 
 		return item
 
-class EMListItem(QtGui.QListWidgetItem):
+class EMListItem(QtWidgets.QListWidgetItem):
 	'''
 	Base class definition providing the pubic interface of list widget items as 
 	required by the EMSelector
@@ -1426,9 +1426,9 @@ class EMListItem(QtGui.QListWidgetItem):
 	def __init__(self,delegate=None,text=""):
 		'''
 		@param delegate an instance of an EMBrowseDelegate - a strong reference is made to this
-		@param text the string that will be displayed in the QtGui.QListWidgetItem
+		@param text the string that will be displayed in the QtWidgets.QListWidgetItem
 		'''
-		QtGui.QListWidgetItem.__init__(self,self.get_icon(),text)
+		QtWidgets.QListWidgetItem.__init__(self,self.get_icon(),text)
 		self.delegate = delegate
 		self.context_menu_options = {} # this is used for running context menu actions
 		self.icon = None
