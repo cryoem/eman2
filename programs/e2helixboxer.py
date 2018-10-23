@@ -1035,7 +1035,7 @@ if ENABLE_GUI:
 			self.box_width_label.setBuddy(self.box_width_spinbox)
 
 			self.img_quality_label = QtGui.QLabel(self.tr("Image &Quality:"))
-			self.img_quality_combobox = QtGui.QComboBox()
+			self.img_quality_combobox = QtWidgets.QComboBox()
 			qualities = [str(i) for i in range(5)]
 			self.img_quality_combobox.addItems(qualities)
 			self.img_quality_combobox.setCurrentIndex(2)

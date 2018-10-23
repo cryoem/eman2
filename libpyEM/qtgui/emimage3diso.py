@@ -605,7 +605,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.color_label.setText('Material')
 		self.hbl_color.addWidget(self.color_label)
 		
-		self.cbb = QtGui.QComboBox(gltab)
+		self.cbb = QtWidgets.QComboBox(gltab)
 		self.hbl_color.addWidget(self.cbb)
 		
 		return gltab

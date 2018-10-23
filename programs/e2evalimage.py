@@ -239,7 +239,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.lcalcmode=QtGui.QLabel("Region:",self)
 		self.gbl.addWidget(self.lcalcmode,10,0)
 
-		self.scalcmode=QtGui.QComboBox(self)
+		self.scalcmode=QtWidgets.QComboBox(self)
 		self.scalcmode.addItem("Single Region")
 		self.scalcmode.addItem("Tiled Boxes")
 		self.scalcmode.setCurrentIndex(1)
@@ -249,7 +249,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.lcalcmode=QtGui.QLabel("2D FFT:",self)
 		self.gbl.addWidget(self.lcalcmode,11,0)
 
-		self.s2dmode=QtGui.QComboBox(self)
+		self.s2dmode=QtWidgets.QComboBox(self)
 		self.s2dmode.addItem("Power Spectrum")
 		self.s2dmode.addItem("Bg Subtracted")
 		self.s2dmode.addItem("Background")
@@ -258,7 +258,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.lcalcmode=QtGui.QLabel("Annotate:",self)
 		self.gbl.addWidget(self.lcalcmode,12,0)
 
-		self.s2danmode=QtGui.QComboBox(self)
+		self.s2danmode=QtWidgets.QComboBox(self)
 		self.s2danmode.addItem("Ctf Zeroes")
 		self.s2danmode.addItem("Resolution Ring")
 		self.s2danmode.addItem("2-D Xtal")
@@ -269,7 +269,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.lcalcmode=QtGui.QLabel("Plot:",self)
 		self.gbl.addWidget(self.lcalcmode,13,0)
 
-		self.splotmode=QtGui.QComboBox(self)
+		self.splotmode=QtWidgets.QComboBox(self)
 		self.splotmode.addItem("Bgsub and Fit")
 		self.splotmode.addItem("Fg and Bg")
 		self.splotmode.addItem("Bgsub, 45 deg slices")

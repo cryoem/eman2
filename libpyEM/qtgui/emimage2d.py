@@ -2170,7 +2170,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.vbl2.addWidget(self.invtog,0,0,1,1)#0012
 
 
-		self.histoequal = QtGui.QComboBox(self)
+		self.histoequal = QtWidgets.QComboBox(self)
 		self.histoequal.addItem("Normal")
 		self.histoequal.addItem("Hist Flat")
 		self.histoequal.addItem("Hist Gauss")

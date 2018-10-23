@@ -2396,7 +2396,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 	def enable_xyz(self):
 
 		if self.xyz == None:
-			self.xyz = QtGui.QComboBox()
+			self.xyz = QtWidgets.QComboBox()
 			self.xyz.addItems(["x","y","z"])
 			self.hbl.addWidget(self.xyz)
 			self.xyz.setCurrentIndex(2)

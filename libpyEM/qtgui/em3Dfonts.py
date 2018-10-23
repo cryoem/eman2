@@ -498,7 +498,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		formattab.vbl.addLayout(self.hbl1)
 
 		self.hbl1 = QtGui.QHBoxLayout()
-		self.Dfont = QtGui.QComboBox()
+		self.Dfont = QtWidgets.QComboBox()
 		for k in self.l: self.Dfont.addItem(k)
 		self.hbl1.addWidget(QtGui.QLabel("Fonts:",self))
 		self.hbl1.addWidget(self.Dfont)
@@ -510,7 +510,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.tsize.setValue(32)
 		self.hbl1.addWidget(QtGui.QLabel("Size:",self),Qt.AlignLeft)
 		self.hbl1.addWidget(self.tsize,Qt.AlignRight)
-		self.combo = QtGui.QComboBox()
+		self.combo = QtWidgets.QComboBox()
 		self.items = ["Extrude","Pixmap","Bitmap","Polygon","Outline","Texture"]
 		for k in self.items: self.combo.addItem(k)
 		self.hbl1.addWidget(QtGui.QLabel("Style:",self),Qt.AlignLeft)
@@ -533,7 +533,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		formattab.vbl.addLayout(self.hbl1)
 
 		self.hbl1 = QtGui.QHBoxLayout()
-		self.cbb = QtGui.QComboBox()
+		self.cbb = QtWidgets.QComboBox()
 		self.hbl1.addWidget(QtGui.QLabel("Material:",self))
 		self.hbl1.addWidget(self.cbb)
 		formattab.vbl.addLayout(self.hbl1)

@@ -358,7 +358,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		combo_entries = [d[0] for d in self.data]
 		combo_entries.sort()
 		combo_entries.reverse()
-		self.combo = QtGui.QComboBox(self)
+		self.combo = QtWidgets.QComboBox(self)
 		for e in combo_entries: self.combo.addItem(e)
 
 		self.combo.currentIndexChanged[str].connect(self.on_combo_change)

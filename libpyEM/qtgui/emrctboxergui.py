@@ -107,14 +107,14 @@ class ControlPannel(QtGui.QWidget):
 		hbl=QtGui.QHBoxLayout()
 		flabel = QtGui.QLabel("Filter Type:",self)
 		hbl.addWidget(flabel)
-		self.filter_combobox = QtGui.QComboBox()
+		self.filter_combobox = QtWidgets.QComboBox()
 		hbl.addWidget(self.filter_combobox)
 		vbox.addLayout(hbl)
 		
 		hbl=QtGui.QHBoxLayout()
 		klabel = QtGui.QLabel("Kernal Size:",self)
 		hbl.addWidget(klabel)
-		self.kernel_combobox = QtGui.QComboBox()
+		self.kernel_combobox = QtWidgets.QComboBox()
 		hbl.addWidget(self.kernel_combobox)
 		vbox.addLayout(hbl)
 		
@@ -147,7 +147,7 @@ class ControlPannel(QtGui.QWidget):
 		hbl=QtGui.QHBoxLayout()
 		flabel = QtGui.QLabel("Filter:",self)
 		hbl.addWidget(flabel)
-		self.processor_combobox = QtGui.QComboBox()
+		self.processor_combobox = QtWidgets.QComboBox()
 		proc_data = dump_processors_list()
 		for key in list(proc_data.keys()):
 			if len(key) >= 5 and key[:7] == "filter.":
@@ -299,14 +299,14 @@ class ControlPannel(QtGui.QWidget):
 		self.tool_button_group_box = QtGui.QGroupBox("Tools")
 		
 		grid = QtGui.QGridLayout()
-		self.current_tool_combobox = QtGui.QComboBox()
+		self.current_tool_combobox = QtWidgets.QComboBox()
 		grid.addWidget(QtGui.QLabel("Current Boxing Tool:"),0,0)
 		grid.addWidget(self.current_tool_combobox,0,1)
 		# Add stacked widget
 		self.tools_stacked_widget = QtGui.QStackedWidget()
 		grid.addWidget(self.tools_stacked_widget,1,0,1,2)
 		# Add quality combobox
-		self.quality = QtGui.QComboBox()
+		self.quality = QtWidgets.QComboBox()
 		for i in range(5): self.quality.addItem(str(i))
 		# check full path then check basename
 		if self.mediator.windowlist[0].filename not in self.qualitydb:
@@ -491,7 +491,7 @@ class PairPickerTool(QtGui.QWidget):
 		hmb = QtGui.QHBoxLayout()
 		mlabel = QtGui.QLabel("Mask Type", self)
 		hmb.addWidget(mlabel)
-		self.mask_combobox = QtGui.QComboBox()
+		self.mask_combobox = QtWidgets.QComboBox()
 		self.mask_combobox.setEnabled(False)
 		hmb.addWidget(self.mask_combobox)
 		vbl.addLayout(hmb)

@@ -2450,7 +2450,7 @@ class EMBoxerInspector(QtGui.QWidget):
 
 
 		viewhbl2 = QtGui.QHBoxLayout()
-		self.boxformats = QtGui.QComboBox(self)
+		self.boxformats = QtWidgets.QComboBox(self)
 		for val in list(EMBoxerInspector.PTCL_SHAPE_MAP.keys()):
 			self.boxformats.addItem(val)
 
@@ -2551,7 +2551,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.quality.setToolTip(qual_tt)
 		hbl_q.addWidget(self.quality)
 
-		self.image_qualities = QtGui.QComboBox()
+		self.image_qualities = QtWidgets.QComboBox()
 		for i in range(10):
 			self.image_qualities.addItem(str(i))
 		self.image_qualities.setCurrentIndex(2)
@@ -2584,7 +2584,7 @@ class EMBoxerInspector(QtGui.QWidget):
 
 		hbl = QtGui.QHBoxLayout()
 		current_tool_label = QtGui.QLabel("Current Boxing Tool:")
-		self.current_tool_combobox = QtGui.QComboBox()
+		self.current_tool_combobox = QtWidgets.QComboBox()
 		hbl.addWidget(current_tool_label)
 		hbl.addWidget(self.current_tool_combobox)
 

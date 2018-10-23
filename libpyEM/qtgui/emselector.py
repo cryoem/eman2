@@ -426,7 +426,7 @@ def EMSelectorBaseTemplate(Type):
 					
 		def __init_filter_combo(self):
 			self.filter_text = QtGui.QLabel("Filter:",self)
-			self.filter_combo = QtGui.QComboBox(None)
+			self.filter_combo = QtWidgets.QComboBox(None)
 			self.filter_combo.addItem("EM types")
 			self.filter_combo.addItem("Databases") # this doesn't really do anything
 			self.filter_combo.addItem("*.spi,*.hdf,*.img, bdb:")
@@ -786,7 +786,7 @@ class EMBrowser(EMBrowserType):
 		self.include.setChecked(True)
 
 	def __init_preview_options(self):
-		self.preview_options = QtGui.QComboBox(self)
+		self.preview_options = QtWidgets.QComboBox(self)
 		#self.preview_options.addItem("No preview")
 		self.preview_options.addItem("Single preview")
 		self.preview_options.addItem("Multi preview")

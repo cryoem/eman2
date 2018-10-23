@@ -336,7 +336,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.cmp_realignb=QtGui.QPushButton("Set Alignment")
 		gridl.addWidget(self.cmp_realignb,3,2)
 		
-		self.cmp_combo=QtGui.QComboBox()
+		self.cmp_combo=QtWidgets.QComboBox()
 		self.cmp_combo.setEditable(True)
 		self.cmp_combo.setInsertPolicy(self.cmp_combo.InsertAlphabetically)
 		self.cmp_combo.addItem("dot:normalize=1")

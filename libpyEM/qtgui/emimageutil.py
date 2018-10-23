@@ -56,7 +56,7 @@ class EMTransformPanel(object):
 		self.label_src = QtGui.QLabel(parent)
 		self.label_src.setText('Rotation Convention')
 		
-		self.src = QtGui.QComboBox(parent)
+		self.src = QtWidgets.QComboBox(parent)
 		self.load_src_options(self.src)
 		
 		self.x_label = QtGui.QLabel()

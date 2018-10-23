@@ -201,7 +201,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		workflowcontrollabel = QtGui.QLabel("Workflow Mode", widget)
 		workflowcontrollabel.setFont(font)
 		workflowcontrollabel.setMaximumHeight(20)
-		self.modeCB = QtGui.QComboBox()
+		self.modeCB = QtWidgets.QComboBox()
 		# To add a new mode add an item to the list, and then add the json file in fuction: makeStackedWidget
 		self.modeCB.addItem("SPR")
 		self.modeCB.addItem("Tomo")
@@ -1063,7 +1063,7 @@ class TheHelp(QtGui.QWidget):
 		hbox.addWidget(helplabel)
 		hbox.setContentsMargins(0,0,0,0)
 		grid.addLayout(hbox,0, 0)
-		self.helpcb = QtGui.QComboBox()
+		self.helpcb = QtWidgets.QComboBox()
 		grid.addWidget(self.helpcb, 0, 1, 1, 2)
 
 		self.helpcb.addItem("aligners")
@@ -1168,11 +1168,11 @@ class NoteBook(QtGui.QWidget):
 
 		# font type
 		self.fontdb = QtGui.QFontDatabase()
-		self.fontfamily = QtGui.QComboBox()
+		self.fontfamily = QtWidgets.QComboBox()
 		self.fontfamily.addItems(self.fontdb.families())
 
 		# font size
-		self.fontsizecb = QtGui.QComboBox()
+		self.fontsizecb = QtWidgets.QComboBox()
 
 		# Bold italic, underline
 		self.boldbutton = PMToolButton()
