@@ -98,7 +98,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.wptclfilel=QtGui.QLabel("Particle Data File:")
 		self.vbl.addWidget(self.wptclfilel)
 
-		self.wptclfile=QtGui.QComboBox(self)
+		self.wptclfile=QtWidgets.QComboBox(self)
 		self.vbl.addWidget(self.wptclfile)
 		self.vbl.addSpacing(5)
 

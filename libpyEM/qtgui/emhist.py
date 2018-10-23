@@ -920,19 +920,19 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl01.setSpacing(6)
 		vbl.addLayout(hbl01)
 
-		self.histtype=QtGui.QComboBox(self)
+		self.histtype=QtWidgets.QComboBox(self)
 		self.histtype.addItem("bar")
 		#self.histtype.addItem("barstacked")
 		#self.histtype.addItem("step")
 		#self.histtype.addItem("stepfilled")
 		hbl01.addWidget(self.histtype)
 
-		self.orient=QtGui.QComboBox(self)
+		self.orient=QtWidgets.QComboBox(self)
 		self.orient.addItem("vertical")
 		#self.orient.addItem("horizontal")
 		hbl01.addWidget(self.orient)
 
-		self.align=QtGui.QComboBox(self)
+		self.align=QtWidgets.QComboBox(self)
 		self.align.addItem("center")
 		self.align.addItem("edge")
 		#self.align.addItem("right")
@@ -942,7 +942,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl1.setMargin(0)
 		hbl1.setSpacing(6)
 
-		self.color=QtGui.QComboBox(self)
+		self.color=QtWidgets.QComboBox(self)
 		self.color.addItem("black")
 		self.color.addItem("blue")
 		self.color.addItem("red")

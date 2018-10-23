@@ -368,7 +368,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.wvbcores.setIntonly(True)
 		self.vbl3a.addWidget(self.wvbcores)
 		
-		self.wcbprocmode=QtGui.QComboBox()
+		self.wcbprocmode=QtWidgets.QComboBox()
 		self.wcbprocmode.addItem("PCA / k-means")
 		self.wcbprocmode.addItem("Average Density")
 		self.vbl3a.addWidget(self.wcbprocmode)

@@ -135,7 +135,7 @@ class MissingWedgeViewer(QtGui.QWidget):
 		grid.addWidget(self.widget3d, 0, 0, 1, 4)
 		# make contols
 		combolabel = QtGui.QLabel("Volume Idx")
-		self.volcombobox = QtGui.QComboBox()
+		self.volcombobox = QtWidgets.QComboBox()
 		self.fitbutton = QtGui.QPushButton("Fit Wedge")
 		self.fitbutton.setEnabled(False)
 		labeli = QtGui.QLabel("Wedge_i")

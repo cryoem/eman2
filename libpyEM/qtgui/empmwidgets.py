@@ -50,10 +50,10 @@ from .embrowser import EMBrowserWidget
 from .empmtabwidgets import *
 from functools import reduce
 
-class PMComboBox(QtGui.QComboBox):
+class PMComboBox(QtWidgets.QComboBox):
 	""" Reimplment the QComboBox to remove wheel widget activation """
 	def __init__(self):
-		QtGui.QComboBox.__init__(self)
+		QtWidgets.QComboBox.__init__(self)
 
 	def wheelEvent(self, event):
 		""" Ignore wheelevents is not poped up """

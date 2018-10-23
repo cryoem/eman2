@@ -547,7 +547,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 		self.slice.setValue(1.0)
 		self.hbl_slice.addWidget(self.slice)
 		
-		self.axisCombo = QtGui.QComboBox(maintab)
+		self.axisCombo = QtWidgets.QComboBox(maintab)
 		self.axisCombo.addItem(' z ')
 		self.axisCombo.addItem(' y ')
 		self.axisCombo.addItem(' x ')

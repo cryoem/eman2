@@ -1051,7 +1051,7 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 		self.wlnorm.setText("Test:")
 		gbl0.addWidget(self.wlnorm,4,0)
 
-		self.wcomb_test=QtGui.QComboBox(self)
+		self.wcomb_test=QtWidgets.QComboBox(self)
 		self.wcomb_test.addItem("Welch's t-test")
 		self.wcomb_test.addItem("Student's t-test")
 		self.wcomb_test.addItem("Hotelling's T-squared test")
@@ -1222,7 +1222,7 @@ class EMPlot3DRegrInsp(QtGui.QWidget):
 		self.wlnorm.setText("Normalization:")
 		gbl0.addWidget(self.wlnorm,6,0)
 
-		self.wcomb_norm=QtGui.QComboBox(self)
+		self.wcomb_norm=QtWidgets.QComboBox(self)
 		self.wcomb_norm.addItem("None")
 		self.wcomb_norm.addItem("Standardize")
 		self.wcomb_norm.addItem("Maxmin")
@@ -1368,7 +1368,7 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 		self.wnax_thresh=StringBox(label="Axes:",value="0")
 		gbl0.addWidget(self.wnax_thresh,10,1)
 
-		self.wcomb_threshtype=QtGui.QComboBox(self)
+		self.wcomb_threshtype=QtWidgets.QComboBox(self)
 		self.wcomb_threshtype.addItem("value")
 		self.wcomb_threshtype.addItem("sigma")
 		self.wcomb_threshtype.addItem("median")
@@ -1807,7 +1807,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		hbl1.setMargin(0)
 		hbl1.setSpacing(6)
 
-		self.color=QtGui.QComboBox(self)
+		self.color=QtWidgets.QComboBox(self)
 		self.color.addItem("black")
 		self.color.addItem("blue")
 		self.color.addItem("red")
@@ -1836,7 +1836,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		self.lintog.setCheckable(1)
 		vbl2a.addWidget(self.lintog)
 
-		self.linsel=QtGui.QComboBox(self)
+		self.linsel=QtWidgets.QComboBox(self)
 		self.linsel.addItem("------")
 		self.linsel.addItem("- - - -")
 		self.linsel.addItem(".......")
@@ -1858,7 +1858,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		self.symtog.setCheckable(1)
 		vbl2b.addWidget(self.symtog)
 
-		self.symsel=QtGui.QComboBox(self)
+		self.symsel=QtWidgets.QComboBox(self)
 		self.symsel.addItem("circle")
 		self.symsel.addItem("square")
 		self.symsel.addItem("plus")
@@ -1881,7 +1881,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		#self.hmtog.setCheckable(1)
 		#vbl2c.addWidget(self.hmtog)
 
-		#self.hmsel=QtGui.QComboBox(self)
+		#self.hmsel=QtWidgets.QComboBox(self)
 		#self.hmsel.addItem("hex")
 		#self.hmsel.addItem("square")
 		#vbl2c.addWidget(self.hmsel)

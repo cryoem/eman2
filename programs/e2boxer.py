@@ -2665,7 +2665,7 @@ class GUIBoxer(QtGui.QWidget):
 		#self.lboxmode=QtGui.QLabel("Mode:",self)
 		#self.gbl.addWidget(self.lboxmode,10,0)
 
-		#self.sboxmode=QtGui.QComboBox(self)
+		#self.sboxmode=QtWidgets.QComboBox(self)
 		#self.sboxmode.addItem("Manual")
 		#self.sboxmode.addItem("Reference")
 		#self.sboxmode.setCurrentIndex(1)
@@ -2674,7 +2674,7 @@ class GUIBoxer(QtGui.QWidget):
 		#self.lanmode=QtGui.QLabel("Annotate:",self)
 		#self.gbl.addWidget(self.lanmode,12,0)
 
-		#self.sanmode=QtGui.QComboBox(self)
+		#self.sanmode=QtWidgets.QComboBox(self)
 		#self.sanmode.addItem("Box")
 		#self.sanmode.addItem("Box+dot")
 		#self.sanmode.addItem("Circle")

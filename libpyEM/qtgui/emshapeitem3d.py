@@ -1173,7 +1173,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		textlabel.setAlignment(QtCore.Qt.AlignCenter)
 		textgridbox.addWidget(textlabel, 0, 0, 1, 1)
 		
-		self.textModeBox = QtGui.QComboBox()
+		self.textModeBox = QtWidgets.QComboBox()
 		self.textModeBox.addItems(["EXTRUDE", "TEXTURE", "POLYGON", "OUTLINE"])
 		textgridbox.addWidget(self.textModeBox, 0, 1, 1, 1)
 			

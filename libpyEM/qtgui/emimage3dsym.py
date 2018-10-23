@@ -1385,7 +1385,7 @@ class SparseSymChoicesWidgets(object):
 		self.hbl_sym.setObjectName("Sym")
 		maintab.vbl.addLayout(self.hbl_sym)
 		
-		self.sym_combo = QtGui.QComboBox(maintab)
+		self.sym_combo = QtWidgets.QComboBox(maintab)
 		self.symmetries = []
 		self.symmetries.append(' Icosahedral ')
 		self.symmetries.append(' Octahedral ')
@@ -1423,7 +1423,7 @@ class SparseSymChoicesWidgets(object):
 		self.set_sym(self.target().get_sym())
 		
 		if enable_orient_gen:
-			self.angle_label = QtGui.QComboBox()
+			self.angle_label = QtWidgets.QComboBox()
 			self.angle_label.addItem('Angle Based')
 			self.angle_label.addItem('Number Based')
 			self.hbl_sym.addWidget(self.angle_label)
@@ -1446,7 +1446,7 @@ class SparseSymChoicesWidgets(object):
 			self.og_label.setText('Strategy')
 			self.hbl_sym2.addWidget(self.og_label)
 			
-			self.strategy_label = QtGui.QComboBox()
+			self.strategy_label = QtWidgets.QComboBox()
 			l = dump_orientgens_list()
 				
 			n = len(l)
@@ -1872,7 +1872,7 @@ class EMSymInspector(QtGui.QWidget):
 		return self.display_tab
 	
 	def __get_combo(self,keys,default):
-		combo = QtGui.QComboBox()
+		combo = QtWidgets.QComboBox()
 		idx = 0
 		for i,k in enumerate(keys): 
 			combo.addItem(k)

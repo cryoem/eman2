@@ -302,7 +302,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.color_label.setText('Material')
 			self.hbl_color.addWidget(self.color_label)
 			
-			self.cbb = QtGui.QComboBox(maintab)
+			self.cbb = QtWidgets.QComboBox(maintab)
 			self.hbl_color.addWidget(self.cbb)
 	
 			self.hbl_trans = QtGui.QHBoxLayout()
@@ -352,7 +352,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.label_src.setText('Rotation Convention')
 			self.hbl_src.addWidget(self.label_src)
 			
-			self.src = QtGui.QComboBox(maintab)
+			self.src = QtWidgets.QComboBox(maintab)
 			self.load_src_options(self.src)
 			self.hbl_src.addWidget(self.src)
 			

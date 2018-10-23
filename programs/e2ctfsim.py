@@ -167,7 +167,7 @@ class GUIctfsim(QtGui.QWidget):
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		self.vbl2.addWidget(self.setlist)
 
-		self.splotmode=QtGui.QComboBox(self)
+		self.splotmode=QtWidgets.QComboBox(self)
 		self.splotmode.addItem("Amplitude")
 		self.splotmode.addItem("Intensity")
 		self.splotmode.addItem("Int w sum")
