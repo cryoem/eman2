@@ -2354,7 +2354,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 #		QtCore.QObject.connect(self.mDel, QtCore.SIGNAL("clicked(bool)"), self.set_Del_mode)
 #		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.set_drag_mode)
 #		QtCore.QObject.connect(self.mset, QtCore.SIGNAL("clicked(bool)"), self.set_set_mode)
-		self.mouse_mode_but_grp.buttonClicked[QtGui.QAbstractButton].connect(self.mouse_mode_button_clicked)
+		self.mouse_mode_but_grp.buttonClicked[QtWidgets.QAbstractButton].connect(self.mouse_mode_button_clicked)
 
 		self.bsavedata.clicked[bool].connect(self.save_data)
 		if allow_opt_button:

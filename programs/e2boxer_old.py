@@ -631,7 +631,7 @@ class SwarmPanel(object):
 			self.clear.clicked[bool].connect(self.clear_clicked)
 			self.view_template.clicked[bool].connect(self.view_template_clicked)
 			self.autobox.clicked[bool].connect(self.auto_box_clicked)
-			self.method_group.buttonClicked [QtGui.QAbstractButton].connect(self.method_group_clicked)
+			self.method_group.buttonClicked [QtWidgets.QAbstractButton].connect(self.method_group_clicked)
 			self.enable_interactive_threshold.clicked[bool].connect(self.interact_thresh_clicked)
 			self.thr.sliderReleased.connect(self.new_threshold_release)
 			self.thr.textChanged.connect(self.new_threshold_text_changed)
