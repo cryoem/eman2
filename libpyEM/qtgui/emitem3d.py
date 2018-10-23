@@ -514,12 +514,12 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def mouseReleaseEvent(self, event): pass
 	def wheelEvent(self, event): pass
 		
-class EMItem3DInspector(QtGui.QTabWidget):
+class EMItem3DInspector(QtWidgets.QTabWidget):
 	"""
 	Class to make the EMItem GUI controls
 	"""
 	def __init__(self, name, item3d):
-		QtGui.QTabWidget.__init__(self)
+		QtWidgets.QTabWidget.__init__(self)
 		self.item3d = weakref.ref(item3d)
 		self.name = name
 		self.inspector = None

@@ -1685,7 +1685,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.add_symmetry_options()
 		self.n3_showing = False
 		
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		self.tabwidget.addTab(self.get_display_tab(), "Display")
 		self.tabwidget.addTab(self.get_transform_tab(), "Transform")
 		self.vbl.addWidget(self.tabwidget)

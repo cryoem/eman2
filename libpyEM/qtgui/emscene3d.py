@@ -2113,7 +2113,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.mincontrolwidth = 0
 		
 		vbox = QtGui.QVBoxLayout(self)
-		self.inspectortab = QtGui.QTabWidget()
+		self.inspectortab = QtWidgets.QTabWidget()
 		self.inspectortab.addTab(self.getTreeWidget(), "Tree View")
 		self.inspectortab.addTab(self.getLightsWidget(), "Lights")
 		self.inspectortab.addTab(self.getCameraWidget(), "Camera")

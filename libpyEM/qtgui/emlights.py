@@ -842,7 +842,7 @@ class EMLightsInspectorBase(object):
 		vbl.addLayout(hdl_l)
 		vbl.addLayout(hdl_t)
 		
-		self.light_tab_widget = QtGui.QTabWidget()
+		self.light_tab_widget = QtWidgets.QTabWidget()
 		
 		
 		self.light_tab_widget.addTab(self.get_directional_light_tab(), "Directional")
@@ -850,7 +850,7 @@ class EMLightsInspectorBase(object):
 		
 		vbl.addWidget(self.light_tab_widget)
 		
-		light_material_tab_widget = QtGui.QTabWidget()
+		light_material_tab_widget = QtWidgets.QTabWidget()
 		self.light_ambient = get_RGB_tab(self,"ambient")
 		light_material_tab_widget.addTab(self.light_ambient, "Ambient")
 		self.light_diffuse = get_RGB_tab(self,"diffuse")
@@ -1343,7 +1343,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.lighttog.setChecked(True)
 		self.vbl2.addWidget(self.lighttog)
 		
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		self.maintab = None
 		self.tabwidget.addTab(self.get_light_tab(), "Lights")
 		self.tabwidget.addTab(self.get_main_tab(), "Transform")

@@ -424,7 +424,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.vbl2.addWidget(self.texturetog)
 		self.texture = False
 		
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		self.maintab = None
 		self.tabwidget.addTab(self.get_main_tab(), "Main")
 		self.texturetab = None
@@ -575,7 +575,7 @@ class EMIsoInspector(QtGui.QWidget):
 		self.glbrightness.setValue(0.0)
 		gltab.vbl.addWidget(self.glbrightness)
 	
-		self.material_tab_widget = QtGui.QTabWidget()
+		self.material_tab_widget = QtWidgets.QTabWidget()
 		self.ambient_tab = self.get_RGB_tab("ambient")
 		self.material_tab_widget.addTab(self.ambient_tab, "Ambient")
 		

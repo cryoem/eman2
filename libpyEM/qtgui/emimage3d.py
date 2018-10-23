@@ -611,7 +611,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		#self.listwidget = QtWidgets.QListWidget(self)
 		#self.vbl.addWidget(self.listwidget)
 		
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		
 		self.hbl_check = QtWidgets.QHBoxLayout()
 		self.hbl_check.setMargin(0)
@@ -758,7 +758,7 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		self.tabwidget.addTab(self.get_main_tab(), "Transform")
 		self.tabwidget.addTab(self.get_light_tab(), "Lights")
 		

@@ -115,7 +115,7 @@ class EMMarkPtclTool(QtWidgets.QMainWindow):
 #		self.mfile_save_processed=self.mfile.addAction("Save processed data")
 		self.mfile_quit=self.mfile.addAction("Quit")
 
-		self.wtabs=QtGui.QTabWidget()
+		self.wtabs=QtWidgets.QTabWidget()
 		self.setCentralWidget(self.wtabs)
 
 		self.wclasstab=EMClassPtclTool(extrafiles)
