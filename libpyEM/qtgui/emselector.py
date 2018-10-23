@@ -837,7 +837,7 @@ class EMBrowser(EMBrowserType):
 		selected_items = l.selectedItems()
 		if len(selected_items) == 0: return
 		
-		menu = QtGui.QMenu()
+		menu = QtWidgets.QMenu()
 		self.menu_selected_items = selected_items
 		if len(selected_items) == 1:
 			first_item = selected_items[0]
