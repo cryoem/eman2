@@ -1013,7 +1013,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "text"):
 			QtGui.qApp.setOverrideCursor(self.textcursor)
-			text, ok = QtGui.QInputDialog.getText(self, 'Enter Text', '')
+			text, ok = QtWidgets.QInputDialog.getText(self, 'Enter Text', '')
 			if ok:
 				self.newnode = EM3DText(str(text), 32.0, transform=self._gettransformbasedonscreen(event))
 				self._insert_shape(text, self.newnode)
