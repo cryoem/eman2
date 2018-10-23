@@ -370,7 +370,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 
 		self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
-		self.list_widget.itemClicked[QtGui.QListWidgetItem].connect(self.list_widget_item_clicked)
+		self.list_widget.itemClicked[QtWidgets.QListWidgetItem].connect(self.list_widget_item_clicked)
 
 		self.update_simmx_list(True)
 		vbl.addWidget(self.list_widget)
@@ -434,7 +434,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		for i,vals in enumerate(data[3]):
 			choice = vals
 
-			a = QtGui.QListWidgetItem(str(choice),self.list_widget)
+			a = QtWidgets.QListWidgetItem(str(choice),self.list_widget)
 			if first_time and i == 0:
 				self.list_widget.setItemSelected(a,True)
 			elif choice == s_text:

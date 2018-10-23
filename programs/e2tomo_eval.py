@@ -137,7 +137,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		#self.wg_notes.setStyleSheet("color: rgb(150, 150, 150);")
 		self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 		
-		self.setspanel.itemChanged[QtGui.QListWidgetItem].connect(self.clickset)
+		self.setspanel.itemChanged[QtWidgets.QListWidgetItem].connect(self.clickset)
 		self.wg_notes.textChanged.connect(self.noteupdate)
 		
 		self.wg_plot2d=EMPlot2DWidget()
@@ -227,7 +227,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		for k in list(self.ptclcls.keys()):
 			v=self.ptclcls[k]
 			kname="    {}\t:  {}".format(k, v[1])
-			item=QtGui.QListWidgetItem(kname)
+			item=QtWidgets.QListWidgetItem(kname)
 			item.setFlags(self.itemflags)
 			self.setspanel.addItem(item)
 			item.setCheckState(Qt.Checked)

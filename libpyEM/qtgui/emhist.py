@@ -1082,7 +1082,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.allbut.clicked.connect(self.selAll)
 		self.nonebut.clicked.connect(self.selNone)
 		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.list_item_changed)
+		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.list_item_changed)
 		self.saveb.clicked.connect(self.savePlot)
 		self.pdfb.clicked.connect(self.savePdf)
 		self.concatb.clicked.connect(self.saveConcatPlot)
@@ -1312,7 +1312,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		keys.sort()
 		parms = self.target().pparm # get the colors from this
 		for i,j in enumerate(keys) :
-			a = QtGui.QListWidgetItem(j)
+			a = QtWidgets.QListWidgetItem(j)
 			a.setFlags(flags)
 			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 			except:

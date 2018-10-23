@@ -108,7 +108,7 @@ class SptEvalGUI(QtGui.QWidget):
 		#self.wg_notes=QtGui.QTextEdit(self)
 		#self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 				
-		self.setspanel.itemChanged[QtGui.QListWidgetItem].connect(self.click_set)
+		self.setspanel.itemChanged[QtWidgets.QListWidgetItem].connect(self.click_set)
 		#QtCore.QObject.connect(self.wg_notes,QtCore.SIGNAL("textChanged()"),self.noteupdate)
 		
 		#self.wg_plot2d=EMPlot2DWidget()
@@ -182,7 +182,7 @@ class SptEvalGUI(QtGui.QWidget):
 		
 		self.setspanel.clear()
 		for k in sorted(self.paramlst.keys()):
-			item=QtGui.QListWidgetItem(k)
+			item=QtWidgets.QListWidgetItem(k)
 			item.setFlags(self.itemflags)
 			self.setspanel.addItem(item)
 			item.setCheckState(Qt.Checked)
