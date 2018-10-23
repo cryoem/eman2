@@ -1710,7 +1710,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		self.target=weakref.ref(target)
 		vbl0=QtGui.QVBoxLayout(self)
 
-		hbl = QtGui.QHBoxLayout()
+		hbl = QtWidgets.QHBoxLayout()
 		hbl.setMargin(2)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
@@ -1734,7 +1734,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		vbl3.addWidget(self.setlist)
 
 		# none and all buttons for turning plot display on and off
-		hbl6 = QtGui.QHBoxLayout()
+		hbl6 = QtWidgets.QHBoxLayout()
 		hbl.setObjectName("hbl6")
 		vbl3.addLayout(hbl6)
 
@@ -1752,7 +1752,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		vbl3.addWidget(self.showslide)
 
 		# number and step for the slider
-		hbl7 = QtGui.QHBoxLayout()
+		hbl7 = QtWidgets.QHBoxLayout()
 		hbl.setObjectName("hbl7")
 		vbl3.addLayout(hbl7)
 
@@ -1768,7 +1768,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		vbl.setObjectName("vbl")
 		hbl.addLayout(vbl)
 
-		hbl0=QtGui.QHBoxLayout()
+		hbl0=QtWidgets.QHBoxLayout()
 		hbl0.setMargin(0)
 		hbl0.setSpacing(6)
 		vbl.addLayout(hbl0)
@@ -1786,7 +1786,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 #		self.pdfb.setEnabled(False)
 		hbl0.addWidget(self.pdfb)
 
-		hbl01=QtGui.QHBoxLayout()
+		hbl01=QtWidgets.QHBoxLayout()
 		hbl01.setMargin(0)
 		hbl01.setSpacing(6)
 		vbl.addLayout(hbl01)
@@ -1803,7 +1803,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		self.classb.setText("Classification")
 		hbl01.addWidget(self.classb)
 
-		hbl1 = QtGui.QHBoxLayout()
+		hbl1 = QtWidgets.QHBoxLayout()
 		hbl1.setMargin(0)
 		hbl1.setSpacing(6)
 
@@ -1820,7 +1820,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 
 		vbl.addLayout(hbl1)
 
-		hbl2 = QtGui.QHBoxLayout()
+		hbl2 = QtWidgets.QHBoxLayout()
 		hbl2.setMargin(0)
 		hbl2.setSpacing(6)
 		vbl.addLayout(hbl2)
@@ -1918,7 +1918,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		gl.addWidget(self.slides,1,3,Qt.AlignLeft)
 		vbl.addLayout(gl)
 
-		hbl2 = QtGui.QHBoxLayout()
+		hbl2 = QtWidgets.QHBoxLayout()
 
 		self.xlogtog=QtGui.QPushButton(self)
 		self.xlogtog.setText("X Log")
@@ -2006,28 +2006,28 @@ class EMPlot3DInspector(QtGui.QWidget):
 		vbl0.addLayout(gblmm)
 
 
-		hbl4 = QtGui.QHBoxLayout()
+		hbl4 = QtWidgets.QHBoxLayout()
 		hbl4.addWidget(QtGui.QLabel("X Label:",self))
 		self.xlabel=QtGui.QLineEdit(self)
 		hbl4.addWidget(self.xlabel)
 		self.xlabel.setText("X")
 		vbl0.addLayout(hbl4)
 
-		hbl5 = QtGui.QHBoxLayout()
+		hbl5 = QtWidgets.QHBoxLayout()
 		hbl5.addWidget(QtGui.QLabel("Y Label:",self))
 		self.ylabel=QtGui.QLineEdit(self)
 		hbl5.addWidget(self.ylabel)
 		self.ylabel.setText("Y")
 		vbl0.addLayout(hbl5)
 
-		hbl5a = QtGui.QHBoxLayout()
+		hbl5a = QtWidgets.QHBoxLayout()
 		hbl5a.addWidget(QtGui.QLabel("Z Label:",self))
 		self.zlabel=QtGui.QLineEdit(self)
 		hbl5a.addWidget(self.zlabel)
 		self.zlabel.setText("Z")
 		vbl0.addLayout(hbl5a)
 
-		hbl6 = QtGui.QHBoxLayout()
+		hbl6 = QtWidgets.QHBoxLayout()
 		#hbl6.addWidget(QtGui.QLabel("Transparency:",self))
 		self.alphaslider=ValSlider(self,(0,1),"Transparency:",0.5,50)
 		hbl6.addWidget(self.alphaslider)

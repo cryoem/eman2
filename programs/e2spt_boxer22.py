@@ -1389,7 +1389,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		self.itemflags=	Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 
 		# now build the interface
-		hbl = QtGui.QHBoxLayout(self)
+		hbl = QtWidgets.QHBoxLayout(self)
 		self.setlist=QtGui.QListWidget()
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		hbl.addWidget(self.setlist)

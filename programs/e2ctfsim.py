@@ -156,7 +156,7 @@ class GUIctfsim(QtGui.QWidget):
 		self.guiim.mmode="app"
 
 		# This object is itself a widget we need to set up
-		self.hbl = QtGui.QHBoxLayout(self)
+		self.hbl = QtWidgets.QHBoxLayout(self)
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
@@ -220,7 +220,7 @@ class GUIctfsim(QtGui.QWidget):
 		self.vbl.addWidget(self.ssamples)
 
 
-		self.hbl_buttons = QtGui.QHBoxLayout()
+		self.hbl_buttons = QtWidgets.QHBoxLayout()
 		self.newbut = QtGui.QPushButton("New")
 		self.hbl_buttons.addWidget(self.newbut)
 		self.vbl.addLayout(self.hbl_buttons)

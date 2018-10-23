@@ -196,7 +196,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl.addWidget(self.w2dalimaskdraw,3,1)
 		
 		# Buttons for controlling mask
-		self.hbl1=QtGui.QHBoxLayout()
+		self.hbl1=QtWidgets.QHBoxLayout()
 		self.gbl.addLayout(self.hbl1,4,1)
 		self.hbl1.addStretch(5)
 
@@ -259,7 +259,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.w2dalimask=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dalimask,3,3)
 		
-		self.hbl1a=QtGui.QHBoxLayout()
+		self.hbl1a=QtWidgets.QHBoxLayout()
 		self.gbl.addLayout(self.hbl1a,4,3)
 		self.hbl1a.addStretch(5)
 		
@@ -281,7 +281,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl.addWidget(self.w2droimaskdraw,6,1)
 
 		# Buttons for controlling mask
-		self.hbl2=QtGui.QHBoxLayout()
+		self.hbl2=QtWidgets.QHBoxLayout()
 		self.gbl.addLayout(self.hbl2,5,1)
 		self.hbl2.addStretch(5)
 		
@@ -404,7 +404,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl.addWidget(self.w2dptcl,6,9)
 		
 		## Buttons for controlling mask
-		#self.hbl1=QtGui.QHBoxLayout()
+		#self.hbl1=QtWidgets.QHBoxLayout()
 		#self.gbl.addLayout(self.hbl1,2,1)
 		#self.hbl1.addStretch(5)
 		

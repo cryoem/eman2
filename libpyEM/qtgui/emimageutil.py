@@ -157,7 +157,7 @@ class EMTransformPanel(object):
 	def addWidgets(self,target):
 		
 		target.addWidget(self.scale)
-		self.hbl_trans = QtGui.QHBoxLayout()
+		self.hbl_trans = QtWidgets.QHBoxLayout()
 		self.hbl_trans.setMargin(0)
 		self.hbl_trans.setSpacing(6)
 		self.hbl_trans.setObjectName("Trans")
@@ -170,7 +170,7 @@ class EMTransformPanel(object):
 		
 		target.addLayout(self.hbl_trans)
 		
-		self.hbl_src = QtGui.QHBoxLayout()
+		self.hbl_src = QtWidgets.QHBoxLayout()
 		self.hbl_src.setMargin(0)
 		self.hbl_src.setSpacing(6)
 		self.hbl_src.setObjectName("hbl")

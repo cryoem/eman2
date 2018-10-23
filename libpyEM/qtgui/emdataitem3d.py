@@ -1067,7 +1067,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.sampling_spinbox = QtGui.QSpinBox()
 		self.sampling_spinbox.setValue(1)
 
-		sampling_hbox_layout = QtGui.QHBoxLayout()
+		sampling_hbox_layout = QtWidgets.QHBoxLayout()
 		sampling_hbox_layout.addWidget(self.sampling_label)
 		sampling_hbox_layout.addWidget(self.sampling_spinbox)
 

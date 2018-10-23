@@ -193,7 +193,7 @@ def maskparmgui(classes):
 			self.vbl = QtGui.QVBoxLayout(self)
 			self.vbl.addWidget(self.classview)
 			
-			self.hbl = QtGui.QHBoxLayout()
+			self.hbl = QtWidgets.QHBoxLayout()
 			
 			self.cmode=CheckBox(self,"orig",value=1)
 			self.hbl.addWidget(self.cmode)

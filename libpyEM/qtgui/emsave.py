@@ -535,7 +535,7 @@ class EMFileExistsDialog(QtWidgets.QDialog):
 		
 		# some widgets
 		vbl = QtGui.QVBoxLayout(self)
-		hbl = QtGui.QHBoxLayout()
+		hbl = QtWidgets.QHBoxLayout()
 		overwrite = QtGui.QPushButton("Overwrite")
 		cancel = QtGui.QPushButton("Cancel")
 		
@@ -550,7 +550,7 @@ class EMFileExistsDialog(QtWidgets.QDialog):
 			overwrite.setToolTip("Overwriting bdb files is currently disabled.")
 		
 		# Text to alert the user
-		hbl2 = QtGui.QHBoxLayout()
+		hbl2 = QtWidgets.QHBoxLayout()
 		text_edit = QtGui.QTextEdit("",self)
 		text_edit.setReadOnly(True)
 		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)

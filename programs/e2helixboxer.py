@@ -771,13 +771,13 @@ if ENABLE_GUI:
 
 
 
-			helices_coords_layout = QtGui.QHBoxLayout()
+			helices_coords_layout = QtWidgets.QHBoxLayout()
 			helices_coords_layout.addWidget(helices_coords_label)
 			helices_coords_layout.addWidget(self.helices_coords_line_edit)
 			helices_coords_layout.addWidget(self.helices_coords_browse_button)
 			self.helices_coords_groupbox.setLayout(helices_coords_layout)
 
-			helices_images_layout = QtGui.QHBoxLayout()
+			helices_images_layout = QtWidgets.QHBoxLayout()
 			helices_images_layout.addWidget(helices_images_label)
 			helices_images_layout.addWidget(self.helices_images_line_edit)
 			helices_images_layout.addWidget(self.helices_images_browse_button)
@@ -789,25 +789,25 @@ if ENABLE_GUI:
 
 			self.helices_groupbox.setLayout(helices_layout)
 
-			ptcls_overlap_layout = QtGui.QHBoxLayout()
+			ptcls_overlap_layout = QtWidgets.QHBoxLayout()
 			ptcls_overlap_layout.addWidget(ptcls_overlap_label)
 			ptcls_overlap_layout.addWidget(self.ptcls_overlap_spinbox)
 
-			ptcls_length_layout = QtGui.QHBoxLayout()
+			ptcls_length_layout = QtWidgets.QHBoxLayout()
 			ptcls_length_layout.addWidget(ptcls_length_label)
 			ptcls_length_layout.addWidget(self.ptcls_length_spinbox)
 
-			ptcls_width_layout = QtGui.QHBoxLayout()
+			ptcls_width_layout = QtWidgets.QHBoxLayout()
 			ptcls_width_layout.addWidget(ptcls_width_label)
 			ptcls_width_layout.addWidget(self.ptcls_width_spinbox)
 
-			ptcls_coords_layout = QtGui.QHBoxLayout()
+			ptcls_coords_layout = QtWidgets.QHBoxLayout()
 			ptcls_coords_layout.addWidget(ptcls_coords_label)
 			ptcls_coords_layout.addWidget(self.ptcls_coords_line_edit)
 			ptcls_coords_layout.addWidget(self.ptcls_coords_browse_button)
 			self.ptcls_coords_groupbox.setLayout(ptcls_coords_layout)
 
-			ptcls_images_path_layout = QtGui.QHBoxLayout()
+			ptcls_images_path_layout = QtWidgets.QHBoxLayout()
 			ptcls_images_path_layout.addWidget(ptcls_images_label)
 			ptcls_images_path_layout.addWidget(self.ptcls_images_line_edit)
 			ptcls_images_path_layout.addWidget(self.ptcls_images_browse_button)
@@ -824,7 +824,7 @@ if ENABLE_GUI:
 			ptcls_imagestack_layout.addWidget(self.ptcls_no_stack_radiobutton)
 			self.ptcls_stack_groupbox.setLayout(ptcls_imagestack_layout)
 
-			ptcls_rotation_stack_layout = QtGui.QHBoxLayout()
+			ptcls_rotation_stack_layout = QtWidgets.QHBoxLayout()
 			ptcls_rotation_stack_layout.addWidget(self.ptcls_rotation_groupbox)
 			ptcls_rotation_stack_layout.addWidget(self.ptcls_stack_groupbox)
 
@@ -1047,11 +1047,11 @@ if ENABLE_GUI:
 			self.status_bar = QtGui.QStatusBar()
 			#self.status_bar.showMessage("Ready",10000)
 
-			widthLayout = QtGui.QHBoxLayout()
+			widthLayout = QtWidgets.QHBoxLayout()
 			widthLayout.addWidget(self.box_width_label)
 			widthLayout.addWidget(self.box_width_spinbox)
 
-			qualityLayout = QtGui.QHBoxLayout()
+			qualityLayout = QtWidgets.QHBoxLayout()
 			qualityLayout.addWidget(self.img_quality_label)
 			qualityLayout.addWidget(self.img_quality_combobox)
 

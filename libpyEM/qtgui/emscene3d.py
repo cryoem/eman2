@@ -2141,7 +2141,7 @@ class EMInspector3D(QtGui.QWidget):
 		This returns the treeview-control panel widget
 		"""
 		widget = QtGui.QWidget()
-		hbox = QtGui.QHBoxLayout(widget)
+		hbox = QtWidgets.QHBoxLayout(widget)
 		treeframe = QtWidgets.QFrame()
 		treeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		treeframe.setLayout(self._get_tree_layout(widget))
@@ -2330,7 +2330,7 @@ class EMInspector3D(QtGui.QWidget):
 			print("Error cannot remove root node!!")
 			
 	def _get_toolbox_layout(self):
-		tvbox = QtGui.QHBoxLayout()
+		tvbox = QtWidgets.QHBoxLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
 		toollabel = QtGui.QLabel("Tools")
@@ -2568,7 +2568,7 @@ class EMInspector3D(QtGui.QWidget):
 		frame = QtWidgets.QFrame()
 		frame.setMaximumHeight(40.0)
 		frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		hbox = QtGui.QHBoxLayout()
+		hbox = QtWidgets.QHBoxLayout()
 		vvlabel = QtGui.QLabel("Viewing Volume")
 		self.orthoradio = QtGui.QRadioButton("Orthographic")
 		self.perspectiveradio = QtGui.QRadioButton("Perspective")

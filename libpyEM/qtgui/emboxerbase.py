@@ -580,7 +580,7 @@ class ErasingPanel(object):
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
 
-			hbl = QtGui.QHBoxLayout()
+			hbl = QtWidgets.QHBoxLayout()
 			hbl.addWidget(QtGui.QLabel("Erase Radius:"))
 			from .valslider import ValSlider
 			self.erase_rad_edit = ValSlider(None,(0.0,1000.0),"")
@@ -2449,7 +2449,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		vbl.addWidget(viewmanagement)
 
 
-		viewhbl2 = QtGui.QHBoxLayout()
+		viewhbl2 = QtWidgets.QHBoxLayout()
 		self.boxformats = QtWidgets.QComboBox(self)
 		for val in list(EMBoxerInspector.PTCL_SHAPE_MAP.keys()):
 			self.boxformats.addItem(val)
@@ -2520,7 +2520,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		vbl.setMargin(0)
 		vbl.setSpacing(6)
 
-		box_size_hbl=QtGui.QHBoxLayout()
+		box_size_hbl=QtWidgets.QHBoxLayout()
 		box_size_hbl.setMargin(0)
 		box_size_hbl.setSpacing(2)
 
@@ -2543,9 +2543,9 @@ class EMBoxerInspector(QtGui.QWidget):
 
 	def add_bottom_buttons(self,layout):
 		from PyQt4 import QtCore, QtGui
-		hbl_t=QtGui.QHBoxLayout()
+		hbl_t=QtWidgets.QHBoxLayout()
 
-		hbl_q=QtGui.QHBoxLayout()
+		hbl_q=QtWidgets.QHBoxLayout()
 		self.quality=QtGui.QLabel("Image Quality:")
 		qual_tt = "Assign a quality number to the image. This acts as metadata for your convenience and is displayed in eman2 forms when possible."
 		self.quality.setToolTip(qual_tt)
@@ -2582,7 +2582,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.tool_button_group_box_vbl = QtGui.QVBoxLayout(self.tool_button_group_box)
 		self.tool_dynamic_vbl = QtGui.QVBoxLayout()
 
-		hbl = QtGui.QHBoxLayout()
+		hbl = QtWidgets.QHBoxLayout()
 		current_tool_label = QtGui.QLabel("Current Boxing Tool:")
 		self.current_tool_combobox = QtWidgets.QComboBox()
 		hbl.addWidget(current_tool_label)
