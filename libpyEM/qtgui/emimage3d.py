@@ -598,7 +598,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.target=weakref.ref(target)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -753,7 +753,7 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.target=weakref.ref(target)
 		self.parent=weakref.ref(parent)
 
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -774,7 +774,7 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 	def get_main_tab(self):
 		self.maintab = QtGui.QWidget()
 		maintab = self.maintab
-		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 		
 		self.hbl = QtWidgets.QHBoxLayout()
 		self.hbl.setMargin(2)
@@ -787,7 +787,7 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.orthbut = QtWidgets.QRadioButton("Orthographic")
 		self.orthbut.setChecked(self.target().perspective==False)
 		
-		self.groupbox = QtGui.QVBoxLayout()
+		self.groupbox = QtWidgets.QVBoxLayout()
 		self.groupbox.addWidget(self.persbut)
 		self.groupbox.addWidget(self.orthbut)
 		

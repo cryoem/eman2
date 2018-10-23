@@ -289,7 +289,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.transform_vbl = None # This will eventually be a vertical box layout for the transform panel
 		self.init_fonts()
 
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -300,7 +300,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.vbl2.setMargin(0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
@@ -444,7 +444,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.gltab = QtGui.QWidget()
 		gltab = self.gltab
 
-		gltab.vbl = QtGui.QVBoxLayout(self.gltab)
+		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab)
 		gltab.vbl.setMargin(0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
@@ -466,12 +466,12 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		if ( self.maintab == None ):
 			self.maintab = QtGui.QWidget()
 			maintab = self.maintab
-			maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 			maintab.vbl.setMargin(0)
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			
-			self.transform_vbl = QtGui.QVBoxLayout()
+			self.transform_vbl = QtWidgets.QVBoxLayout()
 			self.transform_panel.addWidgets(self.transform_vbl)
 			maintab.vbl.addLayout(self.transform_vbl)
 			self.glwidget = QtWidgets.QTabWidget()
@@ -483,7 +483,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 	def get_format_tab(self):
 		self.formattab = QtGui.QWidget()
 		formattab = self.formattab
-		formattab.vbl = QtGui.QVBoxLayout(self.formattab)
+		formattab.vbl = QtWidgets.QVBoxLayout(self.formattab)
 		formattab.vbl.setMargin(0)
 		formattab.vbl.setSpacing(6)
 		formattab.vbl.setObjectName("Format")
@@ -551,7 +551,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 	def get_bgRGB_tab(self):
 		self.bgRGBtab = QtGui.QWidget()
 		bgRGBtab = self.bgRGBtab
-		bgRGBtab.vbl2 = QtGui.QVBoxLayout(self.bgRGBtab)
+		bgRGBtab.vbl2 = QtWidgets.QVBoxLayout(self.bgRGBtab)
 		bgRGBtab.vbl2.setMargin(0)
 		bgRGBtab.vbl2.setSpacing(6)
 		bgRGBtab.vbl2.setObjectName("BG RGB")

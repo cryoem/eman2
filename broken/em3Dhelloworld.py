@@ -210,7 +210,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
 		
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -221,7 +221,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 		
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.vbl2.setMargin(0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
@@ -260,7 +260,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.gltab = QtGui.QWidget()
 		gltab = self.gltab
 		
-		gltab.vbl = QtGui.QVBoxLayout(self.gltab )
+		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
 		gltab.vbl.setMargin(0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
@@ -282,7 +282,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		if ( self.maintab == None ):
 			self.maintab = QtGui.QWidget()
 			maintab = self.maintab
-			maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 			maintab.vbl.setMargin(0)
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")

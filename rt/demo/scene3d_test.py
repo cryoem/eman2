@@ -39,7 +39,7 @@ class GLdemo(QtGui.QWidget):
 		#self.widget.showInspector()
 		
 		# QT stuff to display the widget
-		vbox = QtGui.QVBoxLayout()
+		vbox = QtWidgets.QVBoxLayout()
 		vbox.addWidget(self.widget)
 		self.setLayout(vbox)
 		self.setGeometry(300, 300, 600, 600)

@@ -575,7 +575,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.rotation_sliders = EMTransformPanel(target,self)
 		
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -590,7 +590,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.hist.setObjectName("hist")
 		self.hbl.addWidget(self.hist)
 		
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.vbl2.setMargin(0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
@@ -639,7 +639,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.gltab = QtGui.QWidget()
 		gltab = self.gltab
 		
-		gltab.vbl = QtGui.QVBoxLayout(self.gltab )
+		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
 		gltab.vbl.setMargin(0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
@@ -661,7 +661,7 @@ class EMVolumeInspector(QtGui.QWidget):
 	
 		self.maintab = QtGui.QWidget()
 		maintab = self.maintab
-		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 		maintab.vbl.setMargin(0)
 		maintab.vbl.setSpacing(6)
 		maintab.vbl.setObjectName("Main")

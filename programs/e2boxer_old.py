@@ -523,7 +523,7 @@ class SwarmPanel(object):
 		if self.widget == None:
 			from PyQt4 import QtCore, QtGui
 			self.widget = QtGui.QWidget()
-			vbl = QtGui.QVBoxLayout(self.widget)
+			vbl = QtWidgets.QVBoxLayout(self.widget)
 			vbl.setMargin(0)
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
@@ -1989,7 +1989,7 @@ class GaussPanel(object):
 
 			from PyQt4 import QtCore, QtGui
 			self.widget = QtGui.QWidget()
-			vbl = QtGui.QVBoxLayout(self.widget)
+			vbl = QtWidgets.QVBoxLayout(self.widget)
 			vbl.setMargin(0)
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")

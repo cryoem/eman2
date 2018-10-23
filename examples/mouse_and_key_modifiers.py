@@ -6,7 +6,7 @@ class MouseAndKeyModifiers(QtGui.QWidget):
 	def __init__(self, parent = None):
 		QtGui.QWidget.__init__(self, parent)
 		
-		layout = QtGui.QVBoxLayout()
+		layout = QtWidgets.QVBoxLayout()
 		label = QtWidgets.QLabel("Click here to test mouse buttons: Left, Right, Middle\nand keyboard modifiers: Ctrl, Alt, Shift, and Command (a Mac key)")
 		self.text_browser = QtWidgets.QTextBrowser()
 		layout.addWidget(label)

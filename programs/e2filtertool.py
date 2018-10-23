@@ -439,7 +439,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		self.mview_new_plotwin=self.mview.addAction("Add Plot View")
 
 		self.setCentralWidget(QtGui.QWidget())
-		self.vblm = QtGui.QVBoxLayout(self.centralWidget())		# The contents of the main window
+		self.vblm = QtWidgets.QVBoxLayout(self.centralWidget())		# The contents of the main window
 
 		# List of processor sets
 		self.wsetname=QtWidgets.QComboBox()
@@ -465,7 +465,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		self.processorpanel=QtGui.QWidget()
 		self.processorsa.setWidget(self.processorpanel)
 		self.processorsa.setWidgetResizable(True)
-		self.vbl = QtGui.QVBoxLayout(self.processorpanel)
+		self.vbl = QtWidgets.QVBoxLayout(self.processorpanel)
 
 		self.processorlist=[]
 		self.addProcessor()

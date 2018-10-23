@@ -213,7 +213,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.hbl1.addStretch(5)
 
 		# Widget for setting alignment mask blur and base level
-		self.vbl1=QtGui.QVBoxLayout()
+		self.vbl1=QtWidgets.QVBoxLayout()
 		self.gbl.addLayout(self.vbl1,3,2)
 		self.vbl1.addStretch(5)
 		
@@ -298,7 +298,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.hbl2.addStretch(5)
 
 		# Widget for setting alignment mask blur and base level
-		self.vbl2=QtGui.QVBoxLayout()
+		self.vbl2=QtWidgets.QVBoxLayout()
 		self.gbl.addLayout(self.vbl2,6,2)
 		self.vbl2.addStretch(5)
 		
@@ -326,7 +326,7 @@ class EMMotion(QtWidgets.QMainWindow):
 
 		###### Results
 		# Widget showing lists of different result sets
-		self.vbl3=QtGui.QVBoxLayout()
+		self.vbl3=QtWidgets.QVBoxLayout()
 		self.gbl.addLayout(self.vbl3,3,6,5,1)
 		
 		self.wllistresult=QtWidgets.QLabel("Results")
@@ -340,7 +340,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.vgb1=QtWidgets.QGroupBox("Launch Job")
 		self.vbl3.addWidget(self.vgb1)
 		
-		self.vbl3a=QtGui.QVBoxLayout()
+		self.vbl3a=QtWidgets.QVBoxLayout()
 		self.vgb1.setLayout(self.vbl3a)
 		
 		self.wvbclasses=ValBox(None,(0,256),"# Classes",32)

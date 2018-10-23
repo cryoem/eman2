@@ -1913,7 +1913,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(2)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")

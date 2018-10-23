@@ -86,7 +86,7 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.synthplot.show()
 		
 		# overall layout
-		self.vbl1=QtGui.QVBoxLayout()
+		self.vbl1=QtWidgets.QVBoxLayout()
 		self.setLayout(self.vbl1)
 		
 		# First row contains general purpose controls

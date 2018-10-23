@@ -312,7 +312,7 @@ class MorphBoxingPanel(object):
 		if self.widget == None:
 			from PyQt4 import QtCore, QtGui
 			self.widget = QtGui.QWidget()
-			vbl = QtGui.QVBoxLayout(self.widget)
+			vbl = QtWidgets.QVBoxLayout(self.widget)
 			vbl.setMargin(0)
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
@@ -347,7 +347,7 @@ class ErasingPanel(object): # copied for ideas for the morph panel
 		if self.widget == None:
 			from PyQt4 import QtCore, QtGui
 			self.widget = QtGui.QWidget()
-			vbl = QtGui.QVBoxLayout(self.widget)
+			vbl = QtWidgets.QVBoxLayout(self.widget)
 			vbl.setMargin(0)
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
