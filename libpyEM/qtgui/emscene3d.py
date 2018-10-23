@@ -3289,7 +3289,7 @@ class GLdemo(QtGui.QWidget):
 def main():
 	import sys
 	#from pmwidgets import PMIntEntryWidget, PMStringEntryWidget, PMBoolWidget, PMFileNameWidget, PMComboWidget
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()
 	app.exec_()

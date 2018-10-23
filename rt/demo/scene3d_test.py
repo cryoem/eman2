@@ -50,7 +50,7 @@ class GLdemo(QtGui.QWidget):
 		
 if __name__ == "__main__":
 	import sys
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()
 	app.exec_()

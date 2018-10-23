@@ -263,7 +263,7 @@ def runservmon():
 #	activedata=TaskData(queue.active)
 #	completedata=TaskData(queue.complete)
 
-	app = QtGui.QApplication([])
+	app = QtWidgets.QApplication([])
 	window = GUIservmon()
 	
 #	ui.tableView.setModel(data)
