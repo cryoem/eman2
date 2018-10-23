@@ -1664,7 +1664,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		self.new_set_button.clicked[bool].connect(self.new_set)
 		self.rename_set_button.clicked[bool].connect(self.rename_set)
 		self.delete_set_button.clicked[bool].connect(self.delete_set)
-		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.set_list_item_changed)
+		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
 		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
 
 
@@ -1740,7 +1740,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		for i,k in enumerate(keys):
 			
 			kname="{:02d} :: {}".format(int(k), self.target().sets[k])
-			item=QtGui.QListWidgetItem(kname)
+			item=QtWidgets.QListWidgetItem(kname)
 			item.setFlags(self.itemflags)
 			item.setTextColor(self.target().setcolors[i%len(self.target().setcolors)])
 			self.setlist.addItem(item)
