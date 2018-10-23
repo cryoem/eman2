@@ -221,7 +221,7 @@ class GUIctfsim(QtGui.QWidget):
 
 
 		self.hbl_buttons = QtWidgets.QHBoxLayout()
-		self.newbut = QtGui.QPushButton("New")
+		self.newbut = QtWidgets.QPushButton("New")
 		self.hbl_buttons.addWidget(self.newbut)
 		self.vbl.addLayout(self.hbl_buttons)
 

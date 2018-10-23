@@ -983,7 +983,7 @@ def sptboxergui(options,args):
 			self.wprog.setRange(0,100)
 			self.gbl2.addWidget(self.wprog,5,0,1,2)
 
-			self.wrestart=QtGui.QPushButton("Restart")
+			self.wrestart=QtWidgets.QPushButton("Restart")
 			self.gbl2.addWidget(self.wrestart,6,1)
 
 			self.needupd=0					# Set by the second thread when a display update is ready, 1 means progress update, 2 means volume update
@@ -1243,7 +1243,7 @@ def sptboxergui(options,args):
 			self.oldboxsize=boxsize
 
 			# max or mean
-			self.wmaxmean=QtGui.QPushButton("MaxProj")
+			self.wmaxmean=QtWidgets.QPushButton("MaxProj")
 			self.wmaxmean.setCheckable(True)
 			self.gbl2.addWidget(self.wmaxmean,2,0)
 

@@ -1989,14 +1989,14 @@ class EMTextInfoPane(EMInfoPane) :
 
 		self.hbl = QtWidgets.QHBoxLayout()
 
-		self.wbutedit = QtGui.QPushButton("Edit")
+		self.wbutedit = QtWidgets.QPushButton("Edit")
 		self.hbl.addWidget(self.wbutedit)
 
-		self.wbutcancel = QtGui.QPushButton("Revert")
+		self.wbutcancel = QtWidgets.QPushButton("Revert")
 		self.wbutcancel.setEnabled(False)
 		self.hbl.addWidget(self.wbutcancel)
 
-		self.wbutok = QtGui.QPushButton("Save")
+		self.wbutok = QtWidgets.QPushButton("Save")
 		self.wbutok.setEnabled(False)
 		self.hbl.addWidget(self.wbutok)
 
@@ -2064,14 +2064,14 @@ class EMHTMLInfoPane(EMInfoPane) :
 
 		self.hbl = QtWidgets.QHBoxLayout()
 
-		self.wbutedit = QtGui.QPushButton("Edit")
+		self.wbutedit = QtWidgets.QPushButton("Edit")
 		self.hbl.addWidget(self.wbutedit)
 
-		self.wbutcancel = QtGui.QPushButton("Revert")
+		self.wbutcancel = QtWidgets.QPushButton("Revert")
 		self.wbutcancel.setEnabled(False)
 		self.hbl.addWidget(self.wbutcancel)
 
-		self.wbutok = QtGui.QPushButton("Save")
+		self.wbutok = QtWidgets.QPushButton("Save")
 		self.wbutok.setEnabled(False)
 		self.hbl.addWidget(self.wbutok)
 
@@ -2129,12 +2129,12 @@ class EMPDBInfoPane(EMInfoPane) :
 		self.vbl.addWidget(self.wfind)
 		# Buttons
 		self.hbl = QtWidgets.QHBoxLayout()
-		self.wbutedit = QtGui.QPushButton("Edit")
+		self.wbutedit = QtWidgets.QPushButton("Edit")
 		self.hbl.addWidget(self.wbutedit)
-		self.wbutcancel = QtGui.QPushButton("Revert")
+		self.wbutcancel = QtWidgets.QPushButton("Revert")
 		self.wbutcancel.setEnabled(False)
 		self.hbl.addWidget(self.wbutcancel)
-		self.wbutok = QtGui.QPushButton("Save")
+		self.wbutok = QtWidgets.QPushButton("Save")
 		self.wbutok.setEnabled(False)
 		self.hbl.addWidget(self.wbutok)
 		self.vbl.addLayout(self.hbl)
@@ -2282,7 +2282,7 @@ class EMBDBInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
@@ -2474,7 +2474,7 @@ class EMJSONInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 
 			for j in range(2) :
-				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
@@ -2750,7 +2750,7 @@ class EMStackInfoPane(EMInfoPane) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
@@ -3059,12 +3059,12 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtoolhbl = QtWidgets.QHBoxLayout()
 		self.wtoolhbl.setContentsMargins(0, 0, 0, 0)
 
-		self.wbutback = QtGui.QPushButton(unichr(0x2190))
+		self.wbutback = QtWidgets.QPushButton(unichr(0x2190))
 		self.wbutback.setMaximumWidth(36)
 		self.wbutback.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutback, 0)
 
-		self.wbutfwd = QtGui.QPushButton(unichr(0x2192))
+		self.wbutfwd = QtWidgets.QPushButton(unichr(0x2192))
 		self.wbutfwd.setMaximumWidth(36)
 		self.wbutfwd.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutfwd, 0)
@@ -3080,7 +3080,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		# self.wspacet1 = QtGui.QSpacerItem(100, 10, QtGui.QSizePolicy.MinimumExpanding)
 		# self.wtoolhbl.addSpacerItem(self.wspacet1)
 
-		self.wbutinfo = QtGui.QPushButton("Info")
+		self.wbutinfo = QtWidgets.QPushButton("Info")
 		self.wbutinfo.setCheckable(True)
 		self.wtoolhbl.addWidget(self.wbutinfo, 1)
 
@@ -3091,11 +3091,11 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtoolhbl2 = QtWidgets.QHBoxLayout()
 		self.wtoolhbl2.setContentsMargins(0, 0, 0, 0)
 
-		self.wbutup = QtGui.QPushButton(unichr(0x2191))
+		self.wbutup = QtWidgets.QPushButton(unichr(0x2191))
 		self.wbutup.setMaximumWidth(36)
 		self.wtoolhbl2.addWidget(self.wbutup, 0)
 
-		self.wbutrefresh = QtGui.QPushButton(unichr(0x21ba))
+		self.wbutrefresh = QtWidgets.QPushButton(unichr(0x21ba))
 		self.wbutrefresh.setMaximumWidth(36)
 		self.wtoolhbl2.addWidget(self.wbutrefresh, 0)
 
@@ -3123,7 +3123,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		# self.wspacet1 = QtGui.QSpacerItem(100, 10, QtGui.QSizePolicy.MinimumExpanding)
 		# self.wtoolhbl.addSpacerItem(self.wspacet1)
 
-		self.selectall = QtGui.QPushButton("Sel All")
+		self.selectall = QtWidgets.QPushButton("Sel All")
 		self.wtoolhbl2.addWidget(self.selectall, 1)
 		self.selectall.setEnabled(withmodal)
 
@@ -3178,7 +3178,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 			self.hbl2.setColumnStretch(i, 2)
 	
 			for j in range(2) :
-				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.wbutmisc.append(QtWidgets.QPushButton(""))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].hide()
 #				self.wbutmisc[-1].setEnabled(False)
@@ -3197,10 +3197,10 @@ class EMBrowserWidget(QtGui.QWidget) :
 #			self.wspace1 = QtGui.QSpacerItem(100, 10, QtGui.QSizePolicy.MinimumExpanding)
 #			self.hbl2.addSpacerItem(self.wspace1)
 
-			self.wbutcancel = QtGui.QPushButton("Cancel")
+			self.wbutcancel = QtWidgets.QPushButton("Cancel")
 			self.hbl2.addWidget(self.wbutcancel, 1, 7)
 
-			self.wbutok = QtGui.QPushButton("OK")
+			self.wbutok = QtWidgets.QPushButton("OK")
 			self.hbl2.addWidget(self.wbutok, 1, 8)
 
 			self.hbl2.setColumnStretch(6, 1)

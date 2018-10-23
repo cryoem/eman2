@@ -212,7 +212,7 @@ def maskparmgui(classes):
 			self.ssigma=ValSlider(self,(0,2),"Sigma:",0.333,90)
 			self.hbl.addWidget(self.ssigma)
 			
-			self.bok=QtGui.QPushButton("OK")
+			self.bok=QtWidgets.QPushButton("OK")
 			self.hbl.addWidget(self.bok)
 
 			self.vbl.addLayout(self.hbl)

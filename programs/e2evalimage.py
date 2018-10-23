@@ -305,7 +305,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.squality.setIntonly(True)
 		self.gbl.addWidget(self.squality,6,2,1,3)
 
-		self.brefit=QtGui.QPushButton("Refit")
+		self.brefit=QtWidgets.QPushButton("Refit")
 		self.gbl.addWidget(self.brefit,7,2)
 
 		self.cbgadj=CheckBox(None,"CTF BG Adj",1)
@@ -350,7 +350,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.bvbl=QtGui.QVBoxLayout()
 		self.bbox.setLayout(self.bvbl)
 
-		self.bimport=QtGui.QPushButton("Import")
+		self.bimport=QtWidgets.QPushButton("Import")
 		self.bvbl.addWidget(self.bimport)
 
 		self.cinvert=CheckBox(None,"Invert")

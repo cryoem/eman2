@@ -77,8 +77,8 @@ class EMButtonDialog(object):
 		Add the button to the given layout
 		@param layout a QtWidgets.QLayout object
 		'''
-		if self.icon != None: self.button = QtGui.QPushButton(self.icon,self.desc_short)
-		else: self.button = QtGui.QPushButton(self.desc_short)
+		if self.icon != None: self.button = QtWidgets.QPushButton(self.icon,self.desc_short)
+		else: self.button = QtWidgets.QPushButton(self.desc_short)
 		self.button.setToolTip(self.desc_long)
 		layout.addWidget(self.button)
 		self.button.clicked[bool].connect(self.on_button)
@@ -600,7 +600,7 @@ class EMFileTable(QtGui.QTableWidget):
 		@param layout a Qt Layout (e.g. QVBoxLayout, QHBoxLayout - objects that support the 'addWidget' and 'addLayout' syntax
 		'''
 		for button_data in self.button_data:
-			button = QtGui.QPushButton(button_data.name,None)
+			button = QtWidgets.QPushButton(button_data.name,None)
 			layout.addWidget(button,0)
 			button.clicked[bool].connect(button_data.function)
 			button.clicked[bool].connect(self.sendupdate)
@@ -1324,10 +1324,10 @@ class EMFormWidget(QtGui.QWidget):
 		label = QtWidgets.QLabel("Form commands:")
 		hbl.addWidget(label)
 		
-		ok_button = QtGui.QPushButton("Ok")
+		ok_button = QtWidgets.QPushButton("Ok")
 		ok_button.setToolTip("When you click ok the values in the form are sent to the calling program")
 		hbl.addWidget(ok_button)
-		cancel_button = QtGui.QPushButton("Cancel")
+		cancel_button = QtWidgets.QPushButton("Cancel")
 		hbl.addWidget(cancel_button,0)
 		layout.addLayout(hbl)
 		ok_button.clicked[bool].connect(self.ok_pressed)
@@ -1597,9 +1597,9 @@ class IncorpUrl(object):
 		hbl2.setMargin(0)
 		hbl2.setSpacing(2)
 		
-		browse_button = QtGui.QPushButton("Browse",target)
+		browse_button = QtWidgets.QPushButton("Browse",target)
 		hbl2.addWidget(browse_button)
-		clear_button = QtGui.QPushButton("Clear",target)
+		clear_button = QtWidgets.QPushButton("Clear",target)
 		hbl2.addWidget(clear_button,0)
 		vbl.addLayout(hbl2)
 		
