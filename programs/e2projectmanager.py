@@ -1696,14 +1696,14 @@ class PMProgramWidget(QtGui.QTabWidget):
 
 		self.previoustab = idx
 
-class PMGUIWidget(QtGui.QScrollArea):
+class PMGUIWidget(QtWidgets.QScrollArea):
 	"""
 	Creates a GUI widget using a dict derived from the e2program options. Instances of this widget are added to the QStackedWidget on the right hand side of the PM.
 	When the user clicks on a leaf node in the workflow tree an instace of this class is created, if it doesn't already exists, and added to the stckedwidget. If it
 	already exists, then it is rendered visible.
 	"""
 	def __init__(self, options, program, pm, mode):
-		QtGui.QScrollArea.__init__(self)
+		QtWidgets.QScrollArea.__init__(self)
 		self.errorstate = False
 		# I need both an ordered list and an associavite means of accessing the widgets
 		self.widgetlist = []
