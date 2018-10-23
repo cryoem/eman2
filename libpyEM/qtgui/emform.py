@@ -972,7 +972,7 @@ class EMEmanStrategyWidget(QtGui.QWidget):
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.dynamic_layout = QtGui.QVBoxLayout()
-		groupbox = QtGui.QGroupBox(self.desc_short)
+		groupbox = QtWidgets.QGroupBox(self.desc_short)
 		groupbox.setToolTip(self.desc_long)
 		
 		self.main_combo = QtWidgets.QComboBox()
@@ -1185,7 +1185,7 @@ class EMFormWidget(QtGui.QWidget):
 				list_widget.setItemSelected(a,True)
 			
 		hbl.addWidget(list_widget)
-		groupbox = QtGui.QGroupBox(param.desc_short)
+		groupbox = QtWidgets.QGroupBox(param.desc_short)
 		groupbox.setToolTip(param.desc_long)
 		groupbox.setLayout(hbl)
 		
@@ -1231,7 +1231,7 @@ class EMFormWidget(QtGui.QWidget):
 			
 			paramtable.custom_addition(vbl)
 			
-#			groupbox = QtGui.QGroupBox(paramtable.desc_short)
+#			groupbox = QtWidgets.QGroupBox(paramtable.desc_short)
 #			groupbox.setToolTip(paramtable.desc_long)
 			page = QtGui.QWidget()
 			page.setLayout(vbl)
@@ -1383,7 +1383,7 @@ class IncorpFileTable(object):
 		
 		paramtable.custom_addition(vbl)
 		
-		groupbox = QtGui.QGroupBox(paramtable.desc_short)
+		groupbox = QtWidgets.QGroupBox(paramtable.desc_short)
 		groupbox.setToolTip(paramtable.desc_long)
 		
 		#if hasattr(paramtable,"icon"):groupbox.setWindowIcon(paramtable.icon) #it would be nice if this worked
@@ -1430,7 +1430,7 @@ class IncorpParamTable(object):
 		table_widget.setToolTip(paramtable.desc_long)
 		hbl.addWidget(table_widget,1)
 		
-		groupbox = QtGui.QGroupBox(paramtable.desc_short)
+		groupbox = QtWidgets.QGroupBox(paramtable.desc_short)
 		groupbox.setToolTip(paramtable.desc_long)
 		groupbox.setLayout(vbl)
 		layout.addWidget(groupbox,10)
@@ -1563,7 +1563,7 @@ class IncorpText(object):
 		#text_edit.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Minimum)
 #			hbl.addWidget(text_edit,0)
 		
-#			groupbox = QtGui.QGroupBox(param.desc_short)
+#			groupbox = QtWidgets.QGroupBox(param.desc_short)
 #			groupbox.setToolTip(param.desc_long)
 #			groupbox.setLayout(hbl)
 		
@@ -1603,7 +1603,7 @@ class IncorpUrl(object):
 		hbl2.addWidget(clear_button,0)
 		vbl.addLayout(hbl2)
 		
-		groupbox = QtGui.QGroupBox(param.desc_short)
+		groupbox = QtWidgets.QGroupBox(param.desc_short)
 		groupbox.setToolTip(param.desc_long)
 		groupbox.setLayout(vbl)
 		
@@ -1650,7 +1650,7 @@ class IncorpDict(object):
 			
 		hbl.addWidget(combo2)
 		
-		groupbox = QtGui.QGroupBox(param.desc_short)
+		groupbox = QtWidgets.QGroupBox(param.desc_short)
 		groupbox.setToolTip(param.desc_long)
 		groupbox.setLayout(hbl)
 		
@@ -1673,7 +1673,7 @@ class IncorpChoice(object):
 			hbl.addWidget( button)
 			buttons.append(button)
 		
-		groupbox = QtGui.QGroupBox(param.desc_short)
+		groupbox = QtWidgets.QGroupBox(param.desc_short)
 		groupbox.setToolTip(param.desc_long)
 		groupbox.setLayout(hbl)
 		layout.addWidget(groupbox,0)

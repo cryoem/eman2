@@ -702,23 +702,23 @@ if ENABLE_GUI:
 			self.button_box.rejected.connect(self.cancel)
 
 		def __create_ui(self):
-			self.helices_groupbox = QtGui.QGroupBox(self.tr("Write &Helices:"))
+			self.helices_groupbox = QtWidgets.QGroupBox(self.tr("Write &Helices:"))
 			self.helices_groupbox.setCheckable(True)
 
-			self.helices_coords_groupbox = QtGui.QGroupBox(self.tr("Helix Coordinates (EMAN1 format)"))
+			self.helices_coords_groupbox = QtWidgets.QGroupBox(self.tr("Helix Coordinates (EMAN1 format)"))
 			self.helices_coords_groupbox.setCheckable(True)
 			helices_coords_label = QtGui.QLabel(self.tr("Path:"))
 			self.helices_coords_line_edit = QtGui.QLineEdit()
 			self.helices_coords_line_edit.setMinimumWidth(300)
 			self.helices_coords_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
-			self.helices_images_groupbox = QtGui.QGroupBox(self.tr("Helix Images"))
+			self.helices_images_groupbox = QtWidgets.QGroupBox(self.tr("Helix Images"))
 			self.helices_images_groupbox.setCheckable(True)
 			helices_images_label = QtGui.QLabel(self.tr("Path:"))
 			self.helices_images_line_edit = QtGui.QLineEdit()
 			self.helices_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
-			self.ptcls_groupbox = QtGui.QGroupBox(self.tr("Write &Particles:"))
+			self.ptcls_groupbox = QtWidgets.QGroupBox(self.tr("Write &Particles:"))
 			self.ptcls_groupbox.setCheckable(True)
 
 			ptcls_overlap_label = QtGui.QLabel(self.tr("&Overlap:"))
@@ -734,19 +734,19 @@ if ENABLE_GUI:
 			self.ptcls_width_spinbox.setMaximum(10000)
 			ptcls_width_label.setBuddy(self.ptcls_width_spinbox)
 
-			self.ptcls_coords_groupbox = QtGui.QGroupBox(self.tr("Particle Coordinates"))
+			self.ptcls_coords_groupbox = QtWidgets.QGroupBox(self.tr("Particle Coordinates"))
 			self.ptcls_coords_groupbox.setCheckable(True)
 			ptcls_coords_label = QtGui.QLabel(self.tr("Path:"))
 			self.ptcls_coords_line_edit = QtGui.QLineEdit()
 			self.ptcls_coords_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
-			self.ptcls_images_groupbox = QtGui.QGroupBox(self.tr("Particle Images"))
+			self.ptcls_images_groupbox = QtWidgets.QGroupBox(self.tr("Particle Images"))
 			self.ptcls_images_groupbox.setCheckable(True)
 			self.ptcls_edgenorm_checkbox = QtWidgets.QCheckBox(self.tr("&Normalize Edge-Mean"))
 			self.ptcls_edgenorm_checkbox.setChecked(False)
 			self.ptcls_edgenorm_checkbox.setToolTip("Uses normalize.edgemean processor on each particle: pixel-value -> (pixel-value - edge-mean) / standard deviation")
 
-			self.ptcls_rotation_groupbox = QtGui.QGroupBox(self.tr("Rotation"))
+			self.ptcls_rotation_groupbox = QtWidgets.QGroupBox(self.tr("Rotation"))
 			self.ptcls_bilinear_rotation_radiobutton = QtGui.QRadioButton(self.tr("Bilinear Rotation"))
 			self.ptcls_bilinear_rotation_radiobutton.setToolTip("Rectangular particles. Rotation angle is the one that makes associated helix vertical. Bilinear rotation algorithm.")
 			self.ptcls_bilinear_rotation_radiobutton.setChecked(True)
@@ -755,7 +755,7 @@ if ENABLE_GUI:
 			self.ptcls_no_rotation_radiobutton = QtGui.QRadioButton(self.tr("No Rotation"))
 			self.ptcls_no_rotation_radiobutton.setToolTip("Particles are not rotated from the micrograph. Square particles with sides = max(length, width)")
 
-			self.ptcls_stack_groupbox = QtGui.QGroupBox(self.tr("Image Stacks"))
+			self.ptcls_stack_groupbox = QtWidgets.QGroupBox(self.tr("Image Stacks"))
 			self.ptcls_single_stack_radiobutton = QtGui.QRadioButton(self.tr("Single image stack"))
 			self.ptcls_single_stack_radiobutton.setChecked(True)
 			self.ptcls_single_stack_radiobutton.setToolTip("Saves a single image stack file for all the helices. Fails for incompatible file formats.")

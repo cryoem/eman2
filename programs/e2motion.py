@@ -158,7 +158,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		######
 		# Folder parameters
-		self.vgb0=QtGui.QGroupBox("Particle Data")
+		self.vgb0=QtWidgets.QGroupBox("Particle Data")
 		self.gbl.addWidget(self.vgb0,0,0,1,4)
 		
 		self.gbl2=QtWidgets.QGridLayout(self.vgb0)
@@ -337,7 +337,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.vbl3.addWidget(self.wlistresult)
 
 		###### Parameters for processing
-		self.vgb1=QtGui.QGroupBox("Launch Job")
+		self.vgb1=QtWidgets.QGroupBox("Launch Job")
 		self.vbl3.addWidget(self.vgb1)
 		
 		self.vbl3a=QtGui.QVBoxLayout()
