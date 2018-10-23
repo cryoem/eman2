@@ -63,7 +63,6 @@ def safe_float(x):
 	except: return 0.0
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtOpenGL import QGLWidget
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU
 from OpenGL.GL import *
