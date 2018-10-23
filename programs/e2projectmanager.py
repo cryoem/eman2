@@ -148,7 +148,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		# File menu
 		filemenu = menubar.addMenu('&File')
 		# exit
-		exit = QtGui.QAction('Exit', self)
+		exit = QtWidgets.QAction('Exit', self)
 		exit.setShortcut('Ctrl+Q')
 		exit.setStatusTip('Exit application')
 		exit.triggered.connect(self.close)
@@ -156,12 +156,12 @@ class EMProjectManager(QtGui.QMainWindow):
 
 		# Project
 		projectmenu = menubar.addMenu('&Project')
-		openproject = QtGui.QAction('Open Project', self)
+		openproject = QtWidgets.QAction('Open Project', self)
 		openproject.setShortcut('Ctrl+O')
 		openproject.setStatusTip('Open Project')
 		openproject.triggered.connect(self._on_openproject)
 		projectmenu.addAction(openproject)
-		editproject = QtGui.QAction('Edit Project', self)
+		editproject = QtWidgets.QAction('Edit Project', self)
 		editproject.setShortcut('Ctrl+E')
 		editproject.setStatusTip('Edit Project')
 		editproject.triggered.connect(self._on_editproject)
@@ -171,13 +171,13 @@ class EMProjectManager(QtGui.QMainWindow):
 
 		# Utils
 		utilsmenu = menubar.addMenu('&Utilities')
-		filebrowser = QtGui.QAction('File Browser', self)
+		filebrowser = QtWidgets.QAction('File Browser', self)
 		filebrowser.setShortcut('Ctrl+F')
 		filebrowser.setStatusTip('File Browser')
 		utilsmenu.addAction(filebrowser)
 		utilsmenu.addSeparator()
 		filebrowser.triggered.connect(self._on_browse)
-		self.dumpterminal = QtGui.QAction('Dump Terminal', self)
+		self.dumpterminal = QtWidgets.QAction('Dump Terminal', self)
 		self.dumpterminal.setCheckable(True)
 		self.dumpterminal.setChecked(False)
 		utilsmenu.addAction(self.dumpterminal)
@@ -186,10 +186,10 @@ class EMProjectManager(QtGui.QMainWindow):
 
 		# Help
 		helpmenu = menubar.addMenu('&Help')
-		about = QtGui.QAction('About', self)
+		about = QtWidgets.QAction('About', self)
 		about.setStatusTip('About')
 		helpmenu.addAction(about)
-		helpdoc = QtGui.QAction('Help', self)
+		helpdoc = QtWidgets.QAction('Help', self)
 		helpdoc.setStatusTip('Help')
 		helpmenu.addAction(helpdoc)
 

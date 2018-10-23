@@ -557,7 +557,7 @@ class EMFileTable(QtGui.QTableWidget):
 		cmenu = self.context_menu_data
 		for k in list(cmenu.keys()):
 			menu.addAction(k)
-		menu.triggered[QtGui.QAction].connect(self.menu_action_triggered)
+		menu.triggered[QtWidgets.QAction].connect(self.menu_action_triggered)
 		menu.exec_(event.globalPos())
 		event.accept()
 	
@@ -1879,7 +1879,7 @@ class EMParamTableEventHandler(object):
 			menu = QtGui.QMenu()
 			for k in list(self.table_widget.context_menu.keys()):
 				menu.addAction(k)
-			menu.triggered[QtGui.QAction].connect(self.menu_action_triggered)
+			menu.triggered[QtWidgets.QAction].connect(self.menu_action_triggered)
 			menu.exec_(event.globalPos())
 	
 	def menu_action_triggered(self,action):
