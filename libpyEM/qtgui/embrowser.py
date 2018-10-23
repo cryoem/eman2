@@ -1922,12 +1922,12 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 #---------------------------------------------------------------------------
 
-class myQItemSelection(QtGui.QItemSelectionModel) :
+class myQItemSelection(QtCore.QItemSelectionModel) :
 	"""For debugging"""
 
 	def select(self, tl, br) :
 		print(tl.indexes()[0].row(), tl.indexes()[0].column(), int(br))
-		QtGui.QItemSelectionModel.select(self, tl, QtGui.QItemSelectionModel.SelectionFlags(QtGui.QItemSelectionModel.ClearAndSelect+QtGui.QItemSelectionModel.Rows))
+		QtCore.QItemSelectionModel.select(self, tl, QtCore.QItemSelectionModel.SelectionFlags(QtCore.QItemSelectionModel.ClearAndSelect+QtCore.QItemSelectionModel.Rows))
 
 #---------------------------------------------------------------------------
 
@@ -3009,9 +3009,9 @@ class SortSelTree(QtWidgets.QTreeView) :
 
 		qis = QtCore.QItemSelection()
 		for i in sel : qis.select(i, i)
-		self.selectionModel().select(qis, QtGui.QItemSelectionModel.ClearAndSelect|QtGui.QItemSelectionModel.Rows)
+		self.selectionModel().select(qis, QtCore.QItemSelectionModel.ClearAndSelect|QtCore.QItemSelectionModel.Rows)
 
-#		for i in sel : self.selectionModel().select(i, QtGui.QItemSelectionModel.ClearAndSelect)
+#		for i in sel : self.selectionModel().select(i, QtCore.QItemSelectionModel.ClearAndSelect)
 #		self.update()
 
 #---------------------------------------------------------------------------
