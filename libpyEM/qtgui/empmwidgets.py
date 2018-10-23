@@ -809,7 +809,7 @@ class PMTableBase(PMBaseWidget):
 		self.initdefault = initdefault
 
 		gridbox = QtWidgets.QGridLayout()
-		self.tablewidget = QtGui.QTableWidget()
+		self.tablewidget = QtWidgets.QTableWidget()
 		gridbox.addWidget(self.tablewidget, 0, 0)
 		self.tablewidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)	# Readonly table
 		self.setLayout(gridbox)
