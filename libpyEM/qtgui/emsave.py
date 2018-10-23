@@ -490,7 +490,7 @@ class EMStackSaveDialog(EMFileSaver):
 		'''
 		return self.file_name_used
 
-class EMFileExistsDialog(QtGui.QDialog):
+class EMFileExistsDialog(QtWidgets.QDialog):
 	'''
 	Runs a dialog asking if the user wants to overwrite,append to, or cancel the operation.
 	Appending may not be possible in which case nly the Overwrite and Cancel buttons are available.
@@ -514,7 +514,7 @@ class EMFileExistsDialog(QtGui.QDialog):
 		@param item_list a list - the first object must have supply the get_attr_dict function, the keys "nx", "ny" and "nz therein
 		If you want to use this function for a single EMData object then just put it in a list
 		'''
-		QtGui.QDialog.__init__(self,None)
+		QtWidgets.QDialog.__init__(self,None)
 		self.resize(480,320)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		self.setWindowTitle("File already exists")
@@ -609,14 +609,14 @@ class EMFileExistsDialog(QtGui.QDialog):
 	
 	def exec_(self):
 		'''
-		Wraps QtGui.QDialog.exec_ but returns a custom return value
+		Wraps QtWidgets.QDialog.exec_ but returns a custom return value
 		@return important integer code
 		The return integer codes are as follows:
 		0 - The user hit cancel
 		1 - The user hit overwrite
 		2 - The user hit append 
 		'''
-		QtGui.QDialog.exec_(self)
+		QtWidgets.QDialog.exec_(self)
 		return self.__result
 	
 class EMTmpFileHandle(object):
