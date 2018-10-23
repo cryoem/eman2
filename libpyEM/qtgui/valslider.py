@@ -1176,7 +1176,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 	def updateWidget(self):
 		self.update()
 		
-class EMANToolButton(QtGui.QToolButton):
+class EMANToolButton(QtWidgets.QToolButton):
 	"""
 	This widget is a toolbutton that is toogleable. Only one button can be down at any given point.
 	The only weakness is only one of these button groups can be used at any given time. It is possible 
@@ -1185,7 +1185,7 @@ class EMANToolButton(QtGui.QToolButton):
 	clicked = QtCore.pyqtSignal(int)
 	toolpanellist = []
 	def __init__(self):
-		QtGui.QToolButton.__init__(self)
+		QtWidgets.QToolButton.__init__(self)
 		self.setMinimumWidth(30)
 		self.setMinimumHeight(30)
 		self.weakrefself = weakref.ref(self)
@@ -1200,7 +1200,7 @@ class EMANToolButton(QtGui.QToolButton):
 				tool().setDown(False)
 	
 	def setDown(self, state, quiet=True):
-		QtGui.QToolButton.setDown(self, state)
+		QtWidgets.QToolButton.setDown(self, state)
 		if state: self.setSelfAsUnique()
 		if not quiet: self.clicked.emit(self.isDown())
 		
