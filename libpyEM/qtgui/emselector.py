@@ -314,7 +314,7 @@ def EMSelectorBaseTemplate(Type):
 			self.previews = [] # keeps track of all of the preview windows
 #			self.module_events = [] # used to coordinate signals from the modules, especially close events, to free memory
 			self.list_widget_data= [] # entries should be tuples containing (current folder item)
-			self.splitter = QtGui.QSplitter(self)
+			self.splitter = QtWidgets.QSplitter(self)
 			self.splitter.setChildrenCollapsible(False)
 
 			self.add_list_widget()
