@@ -56,7 +56,6 @@ from OpenGL import GLU
 from OpenGL.GL import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QTreeWidgetItem, QColor
 
 
 #from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
@@ -2173,9 +2172,9 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.tree_node_button_remove)
 		tvbox.addWidget(self.tree_node_slider)
 		
-		self.tree_widget.itemClicked[QTreeWidgetItem, int].connect(self._tree_widget_click)
-		self.tree_widget.visibleItem[QTreeWidgetItem].connect(self._tree_widget_visible)
-		self.tree_widget.editItem[QTreeWidgetItem].connect(self._tree_widget_edit)
+		self.tree_widget.itemClicked[QtGui.QTreeWidgetItem, int].connect(self._tree_widget_click)
+		self.tree_widget.visibleItem[QtGui.QTreeWidgetItem].connect(self._tree_widget_visible)
+		self.tree_widget.editItem[QtGui.QTreeWidgetItem].connect(self._tree_widget_edit)
 		self.tree_node_button_remove.clicked.connect(self._tree_widget_remove)
 		self.tree_node_button_add.clicked.connect(self._on_add_button)
 		self.tree_node_slider.valueChanged.connect(self._slider_change)
@@ -2588,7 +2587,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.perspectiveradio.clicked.connect(self._on_radio_click)
 		self.capcb.clicked.connect(self._on_capping)
 		self.linkcb.clicked.connect(self._on_linking)
-		self.cappingcolor.newcolor[QColor].connect(self._on_cap_color)
+		self.cappingcolor.newcolor[QtGui.QColor].connect(self._on_cap_color)
 		
 		return cwidget
 		
@@ -2708,7 +2707,7 @@ class EMInspector3D(QtGui.QWidget):
 		uvbox.addWidget(self.moviebutton1)
 		uwidget.setLayout(uvbox)
 		
-		self.backgroundcolor.newcolor[QColor].connect(self._on_bg_color)
+		self.backgroundcolor.newcolor[QtGui.QColor].connect(self._on_bg_color)
 		self.hideselectionbutton.clicked.connect(self._on_hide)
 		self.savebutton.clicked.connect(self._on_save)
 		self.moviebutton0.clicked.connect(self._on_save_movie_rotate)
@@ -2991,8 +2990,8 @@ class EMQTreeWidget(QtGui.QTreeWidget):
 	"""
 	Subclassing the QTreeWidget to enable is_visible toggling
 	"""
-	visibleItem = QtCore.pyqtSignal(QTreeWidgetItem)
-	editItem = QtCore.pyqtSignal(QTreeWidgetItem)
+	visibleItem = QtCore.pyqtSignal(QtGui.QTreeWidgetItem)
+	editItem = QtCore.pyqtSignal(QtGui.QTreeWidgetItem)
 
 	def __init__(self, parent=None):
 		QtGui.QTreeWidget.__init__(self, parent)

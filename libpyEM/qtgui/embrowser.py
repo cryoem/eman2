@@ -40,7 +40,6 @@ from EMAN2 import *
 from EMAN2jsondb import js_open_dict
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt, QTimer
-from PyQt4.QtGui import QAction,QTreeWidgetItem
 from .emapplication import EMApp
 from .emimage2d import *
 from .emimagemx import *
@@ -2492,10 +2491,10 @@ class EMJSONInfoPane(EMInfoPane) :
 		self.gbl.addLayout(self.hbl2, 2, 0, 1, 2)
 
 		self.wkeylist.itemSelectionChanged.connect(self.imSelChange)
-		self.wheadtree.itemExpanded[QTreeWidgetItem].connect(self.treeExp)
-		self.wheadtree.itemCollapsed[QTreeWidgetItem].connect(self.treeExp)
+		self.wheadtree.itemExpanded[QtGui.QTreeWidgetItem].connect(self.treeExp)
+		self.wheadtree.itemCollapsed[QtGui.QTreeWidgetItem].connect(self.treeExp)
 		self.wheadtree.itemSelectionChanged.connect(self.treeSel)
-		self.wheadtree.itemActivated[QTreeWidgetItem, int].connect(self.treeAct)
+		self.wheadtree.itemActivated[QtGui.QTreeWidgetItem, int].connect(self.treeAct)
 ##		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		self.view2d = []
 		self.view3d = []
@@ -3224,7 +3223,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtree.doubleClicked[QtCore.QModelIndex].connect(self.itemDoubleClick)
 		self.wtree.expanded[QtCore.QModelIndex].connect(self.itemExpand)
 		self.wpath.returnPressed.connect(self.editPath)
-		self.wbookmarks.actionTriggered[QAction].connect(self.bookmarkPress)
+		self.wbookmarks.actionTriggered[QtGui.QAction].connect(self.bookmarkPress)
 		self.wfilter.currentIndexChanged[int].connect(self.editFilter)
 
 		self.setsmode = setsmode	# The sets mode is used when selecting bad particles
