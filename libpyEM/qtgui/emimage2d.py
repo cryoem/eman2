@@ -1919,7 +1919,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.vbl.setObjectName("vbl")
 
 		# This is the tab-bar for mouse mode selection
-		self.mmtab = QtGui.QTabWidget()
+		self.mmtab = QtWidgets.QTabWidget()
 
 		# App tab
 		self.apptab = QtGui.QWidget()

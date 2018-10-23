@@ -1364,7 +1364,7 @@ class TomoSegInspector(QtGui.QWidget):
 		self.mincontrolwidth = 0
 		
 		vbox = QtGui.QVBoxLayout(self)
-		self.inspectortab = QtGui.QTabWidget()
+		self.inspectortab = QtWidgets.QTabWidget()
 		self.inspectortab.addTab(self.getToolsWidget(), "Tools")
 		self.inspectortab.addTab(self.getTreeWidget(), "Annotations")
 		self.inspectortab.addTab(self.getUtilsWidget(), "Utils")
@@ -1374,7 +1374,7 @@ class TomoSegInspector(QtGui.QWidget):
 		self.updateGeometry()
 
 	def getToolsWidget(self):
-		tooltabs = QtGui.QTabWidget()
+		tooltabs = QtWidgets.QTabWidget()
 		tooltabs.addTab(self.getAutomaticTools(), "Automatic")
 		tooltabs.addTab(self.getSemiAutomaticTools(), "Interactive")
 		tooltabs.addTab(self.getManualTools(), "Manual")

@@ -1635,12 +1635,12 @@ class PMQListWidgetItem(QtWidgets.QListWidgetItem):
 	def getProgramName(self):
 		return self.programname
 
-class PMProgramWidget(QtGui.QTabWidget):
+class PMProgramWidget(QtWidgets.QTabWidget):
 	"""
 	Creates a program interface for each e2 program, for each mode, etc. This is a tab widget and there are three tabs, a GUI tab, a comand line tab and a help tab
 	"""
 	def __init__(self, options, program, pm, mode):
-		QtGui.QTabWidget.__init__(self)
+		QtWidgets.QTabWidget.__init__(self)
 		self.pm = weakref.ref(pm)
 		self.setMinimumHeight(210) # Size of the tool bar
 

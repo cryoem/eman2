@@ -314,7 +314,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.lighttog.setCheckable(1)
 		self.vbl2.addWidget(self.lighttog)
 
-		self.tabwidget2 = QtGui.QTabWidget()
+		self.tabwidget2 = QtWidgets.QTabWidget()
 		self.maintab = None
 		self.tabwidget2.addTab(self.get_main_tab(), "Main")
 		#self.tabwidget2.addTab(self.get_GL_tab(),"GL")
@@ -474,7 +474,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 			self.transform_vbl = QtGui.QVBoxLayout()
 			self.transform_panel.addWidgets(self.transform_vbl)
 			maintab.vbl.addLayout(self.transform_vbl)
-			self.glwidget = QtGui.QTabWidget()
+			self.glwidget = QtWidgets.QTabWidget()
 			self.glwidget.addTab(self.get_GL_tab(),"GL")
 			maintab.vbl.addWidget(self.glwidget)
 
@@ -539,7 +539,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		formattab.vbl.addLayout(self.hbl1)
 
 		self.hbl1 = QtWidgets.QHBoxLayout()
-		self.bgtabwidget = QtGui.QTabWidget()
+		self.bgtabwidget = QtWidgets.QTabWidget()
 		self.maintab = None
 		self.bgtabwidget.addTab(self.get_bgRGB_tab(), "BG RGB")
 		self.hbl1.addWidget(self.bgtabwidget)

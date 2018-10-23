@@ -1363,7 +1363,7 @@ class EMTomoBoxerOptions(QtGui.QWidget):
 		self.eraser_radius=ValBox(label="Radius:",value=64)
 		self.gbl.addWidget(self.eraser_radius,0,1)
 
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		self.gbl.addWidget(self.tabwidget,1,0,1,2)
 		
 	def add_panel(self,widget,name):

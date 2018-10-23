@@ -603,7 +603,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.defaults = QtWidgets.QPushButton("Defaults")
 		self.vbl2.addWidget(self.defaults)
 		
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		
 		self.tabwidget.addTab(self.get_main_tab(), "Main")
 		self.tabwidget.addTab(self.get_GL_tab(),"GL")
