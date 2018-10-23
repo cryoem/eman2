@@ -2218,10 +2218,10 @@ class EMPlotInfoPane(EMInfoPane) :
 
 		for r in range(len(data)) :
 			for c in range(numc) :
-				self.plotdata.setItem(r, c, QtGui.QTableWidgetItem("%1.4g"%data[r][c]))
+				self.plotdata.setItem(r, c, QtWidgets.QTableWidgetItem("%1.4g"%data[r][c]))
 
 		if len(data) == 2500 :
-			self.plotdata.setVerticalHeaderItem(2500, QtGui.QTableWidgetItem("..."))
+			self.plotdata.setVerticalHeaderItem(2500, QtWidgets.QTableWidgetItem("..."))
 
 #---------------------------------------------------------------------------
 

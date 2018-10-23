@@ -234,15 +234,15 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.imglst.setHorizontalHeaderLabels(["ID", "file name", "#box", "loss", "defocus"])
 		for i,info in enumerate(self.imginfo):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
-			it=QtGui.QTableWidgetItem()
+			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, int(info["id"]))
 			self.imglst.setItem(i,0,it)
-			self.imglst.setItem(i,1,QtGui.QTableWidgetItem(str(info["basename"])))
+			self.imglst.setItem(i,1,QtWidgets.QTableWidgetItem(str(info["basename"])))
 			nbox=0
 			for kname in list(info["boxcls"].keys()):
 				if self.ptclcls[kname][0]==1:
 					nbox+=info["boxcls"][kname]
-			it=QtGui.QTableWidgetItem()
+			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, int(nbox))
 			self.imglst.setItem(i,2, it)
 			if len(info["loss"])==0:
@@ -251,7 +251,7 @@ class TomoEvalGUI(QtGui.QWidget):
 				loss=np.round(np.mean(info["loss"]), 2)
 				
 			
-			it=QtGui.QTableWidgetItem()
+			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, float(loss))
 			self.imglst.setItem(i,3, it)
 			
@@ -259,7 +259,7 @@ class TomoEvalGUI(QtGui.QWidget):
 				df=-1
 			else: 
 				df=np.round(np.mean(info["defocus"]), 1)
-			it=QtGui.QTableWidgetItem()
+			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, float(df))
 			self.imglst.setItem(i,4, it)
 			
