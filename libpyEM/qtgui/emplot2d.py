@@ -937,9 +937,9 @@ lc is the cursor selection point in plot coords"""
 
 	def wheelEvent(self, event):
 		pass
-		#if event.delta() > 0:
+		#if event.angleDelta().y() > 0:
 			#self.set_scale(self.scale + MAG_INC)
-		#elif event.delta() < 0:
+		#elif event.angleDelta().y() < 0:
 			#if ( self.scale - MAG_INC > 0 ):
 				#self.set_scale(self.scale - MAG_INC)
 		## The self.scale variable is updated now, so just update with that

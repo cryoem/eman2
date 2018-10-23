@@ -1005,7 +1005,7 @@ lc is the cursor selection point in plot coords"""
 		if self.inspector: self.inspector.update()
 
 	def wheelEvent(self, event):
-		if event.delta()<0: scale=1.05
+		if event.angleDelta().y()<0: scale=1.05
 		else: scale=old_div(1.0,1.05)
 		
 		xrng=self.xlimits[1]-self.xlimits[0]
