@@ -767,7 +767,7 @@ if ENABLE_GUI:
 			self.ptcls_images_line_edit = QtGui.QLineEdit()
 			self.ptcls_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
-			self.button_box = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Save | QtGui.QDialogButtonBox.Cancel)
+			self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
 
 
 
