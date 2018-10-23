@@ -1082,7 +1082,7 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 		hl2.setSizePolicy(QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Expanding)
 		gbl0.addWidget(hl2,9,0,1,2)
 
-		self.table = QtGui.QTableWidget() #QtGui.QTextEdit()
+		self.table = QtWidgets.QTableWidget() #QtGui.QTextEdit()
 		self.table.setRowCount(1)
 		self.table.setColumnCount(1)
 		self.table.setSortingEnabled(True)

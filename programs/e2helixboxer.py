@@ -1041,7 +1041,7 @@ if ENABLE_GUI:
 			self.img_quality_combobox.setCurrentIndex(2)
 			self.img_quality_label.setBuddy(self.img_quality_combobox)
 
-			self.micrograph_table = QtGui.QTableWidget(1,2)
+			self.micrograph_table = QtWidgets.QTableWidget(1,2)
 			self.micrograph_table.setHorizontalHeaderLabels(["Micrograph", "Boxed Helices"])
 
 			self.status_bar = QtWidgets.QStatusBar()
