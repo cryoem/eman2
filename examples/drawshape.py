@@ -6,7 +6,7 @@ from past.utils import old_div
 from EMAN2 import *
 import numpy as np
 import weakref
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape

@@ -38,8 +38,8 @@ from EMAN2 import *
 from eman2_gui.emimagemx import EMImageMXWidget
 
 import sys
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
 from eman2_gui.emapplication import EMApp
 import os

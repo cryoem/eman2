@@ -48,13 +48,13 @@ from numpy import array,arange
 import traceback
 
 try:
-	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from PyQt4.QtCore import Qt
-	from PyQt4.QtCore import QTimer
+	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+	from PyQt5.QtCore import Qt
+	from PyQt5.QtCore import QTimer
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import *
 except:
-	print("Warning: PyQt4 must be installed")
+	print("Warning: PyQt5 must be installed")
 	sys.exit(1)
 
 

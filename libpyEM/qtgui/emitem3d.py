@@ -35,7 +35,7 @@ from __future__ import absolute_import
 
 from builtins import object
 from OpenGL import GL
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from EMAN2 import Transform, Vec4f, Vec3f
 from libpyGLUtils2 import GLUtil
 from .valslider import ValSlider, EMSpinWidget

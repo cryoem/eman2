@@ -38,8 +38,8 @@ from builtins import range
 from builtins import object
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt, QTimer
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt, QTimer
 from .emapplication import EMApp
 from .emimage2d import *
 from .emimagemx import *

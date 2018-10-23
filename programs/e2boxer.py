@@ -52,8 +52,8 @@ class nothing(object):
 		return
 
 try: 
-	from PyQt4 import QtCore, QtGui
-	from PyQt4.QtCore import Qt
+	from PyQt5 import QtCore, QtGui, QtWidgets
+	from PyQt5.QtCore import Qt
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emplot2d import EMPlot2DWidget
 	from eman2_gui.emimagemx import EMImageMXWidget
@@ -307,7 +307,7 @@ def main():
 	if options.gui :
 		if isinstance(QtGui,nothing) :
 			print("=====================================")
-			print("ERROR: GUI mode unavailable without PyQt4")
+			print("ERROR: GUI mode unavailable without PyQt5")
 			sys.exit(1)
 		from eman2_gui.emapplication import EMApp
 		app=EMApp()
