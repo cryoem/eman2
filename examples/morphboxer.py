@@ -317,7 +317,7 @@ class MorphBoxingPanel(object):
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
 			self.auto_center_checkbox = QtWidgets.QCheckBox("Auto-center")
-			self.clear=QtGui.QPushButton("Clear")
+			self.clear=QtWidgets.QPushButton("Clear")
 			vbl.addWidget(self.auto_center_checkbox)
 			vbl.addWidget(self.clear)
 			self.clear.clicked[bool].connect(self.clear_clicked)

@@ -306,11 +306,11 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 
-		self.wiretog = QtGui.QPushButton("Wire")
+		self.wiretog = QtWidgets.QPushButton("Wire")
 		self.wiretog.setCheckable(1)
 		self.vbl2.addWidget(self.wiretog)
 
-		self.lighttog = QtGui.QPushButton("Light")
+		self.lighttog = QtWidgets.QPushButton("Light")
 		self.lighttog.setCheckable(1)
 		self.vbl2.addWidget(self.lighttog)
 

@@ -81,32 +81,32 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.wg_thumbnail.setMinimumHeight(330)
 		self.gbl.addWidget(self.wg_thumbnail, 0,1,3,2)
 		
-		self.bt_show2d=QtGui.QPushButton("Show2D")
+		self.bt_show2d=QtWidgets.QPushButton("Show2D")
 		self.bt_show2d.setToolTip("Show 2D images")
 		self.gbl.addWidget(self.bt_show2d, 4,1,1,2)
 		
-		self.bt_runboxer=QtGui.QPushButton("Boxer")
+		self.bt_runboxer=QtWidgets.QPushButton("Boxer")
 		self.bt_runboxer.setToolTip("Run spt_boxer")
 		self.gbl.addWidget(self.bt_runboxer, 5,1)
 		
-		self.bt_refresh=QtGui.QPushButton("Refresh")
+		self.bt_refresh=QtWidgets.QPushButton("Refresh")
 		self.bt_refresh.setToolTip("Refresh")
 		self.gbl.addWidget(self.bt_refresh, 5,2)
 		
-		self.bt_showtlts=QtGui.QPushButton("ShowTilts")
+		self.bt_showtlts=QtWidgets.QPushButton("ShowTilts")
 		self.bt_showtlts.setToolTip("Show raw tilt series")
 		self.gbl.addWidget(self.bt_showtlts, 6,1)
 		
-		self.bt_plottpm=QtGui.QPushButton("TiltParams")
+		self.bt_plottpm=QtWidgets.QPushButton("TiltParams")
 		self.bt_plottpm.setToolTip("Plot tilt parameters")
 		self.gbl.addWidget(self.bt_plottpm, 6,2)
 		
-		self.bt_plotloss=QtGui.QPushButton("PlotLoss")
+		self.bt_plotloss=QtWidgets.QPushButton("PlotLoss")
 		self.bt_plotloss.setToolTip("Plot alignment loss")
 		self.gbl.addWidget(self.bt_plotloss, 7,1)
 		
 		
-		self.bt_plotctf=QtGui.QPushButton("PlotCtf")
+		self.bt_plotctf=QtWidgets.QPushButton("PlotCtf")
 		self.bt_plotctf.setToolTip("Plot CTF estimation")
 		self.gbl.addWidget(self.bt_plotctf, 7,2)
 		

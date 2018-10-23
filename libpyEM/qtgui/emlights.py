@@ -1095,11 +1095,11 @@ class EMLightsInspectorBase(object):
 		vbl2.setObjectName("vbl2")
 		hbl.addLayout(vbl2)
 		
-		new_light = QtGui.QPushButton("New")
+		new_light = QtWidgets.QPushButton("New")
 		vbl2.addWidget(new_light)
-		#copy_light = QtGui.QPushButton("Copy")
+		#copy_light = QtWidgets.QPushButton("Copy")
 		#vbl2.addWidget(copy_light)
-		del_light = QtGui.QPushButton("Delete")
+		del_light = QtWidgets.QPushButton("Delete")
 		vbl2.addWidget(del_light)
 		
 		
@@ -1177,11 +1177,11 @@ class EMLightsInspectorBase(object):
 		vbl2.setObjectName("vbl2")
 		hbl.addLayout(vbl2)
 		
-		new_light = QtGui.QPushButton("New")
+		new_light = QtWidgets.QPushButton("New")
 		vbl2.addWidget(new_light)
-		#copy_light = QtGui.QPushButton("Copy")
+		#copy_light = QtWidgets.QPushButton("Copy")
 		#vbl2.addWidget(copy_light)
-		del_light = QtGui.QPushButton("Delete")
+		del_light = QtWidgets.QPushButton("Delete")
 		vbl2.addWidget(del_light)
 		
 		
@@ -1334,11 +1334,11 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 		
-		self.wiretog = QtGui.QPushButton("Wire")
+		self.wiretog = QtWidgets.QPushButton("Wire")
 		self.wiretog.setCheckable(1)
 		self.vbl2.addWidget(self.wiretog)
 		
-		self.lighttog = QtGui.QPushButton("Light")
+		self.lighttog = QtWidgets.QPushButton("Light")
 		self.lighttog.setCheckable(1)
 		self.lighttog.setChecked(True)
 		self.vbl2.addWidget(self.lighttog)

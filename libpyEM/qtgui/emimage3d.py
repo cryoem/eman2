@@ -631,26 +631,26 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.hbl_buttons2.setSpacing(6)
 		self.hbl_buttons2.setObjectName("hbl_buttons2")
 		
-		self.addIso = QtGui.QPushButton("Isosurface")
+		self.addIso = QtWidgets.QPushButton("Isosurface")
 		self.hbl_buttons.addWidget(self.addIso)
 		
-		self.addVol = QtGui.QPushButton("Volume")
+		self.addVol = QtWidgets.QPushButton("Volume")
 		self.hbl_buttons.addWidget(self.addVol)
 		
 		glflags = EMOpenGLFlagsAndTools()
 		if glflags.npt_textures_unsupported(): self.addVol.setEnabled(False)
 		
-		self.addSli = QtGui.QPushButton("Slices")
+		self.addSli = QtWidgets.QPushButton("Slices")
 		self.hbl_buttons2.addWidget(self.addSli)
 		
-		self.add_sym = QtGui.QPushButton("Sym")
+		self.add_sym = QtWidgets.QPushButton("Sym")
 		self.hbl_buttons2.addWidget(self.add_sym)
 
 		self.vbl.addLayout(self.hbl_buttons)
 		self.vbl.addLayout(self.hbl_buttons2)
 		
 		self.hbl_buttons3 = QtWidgets.QHBoxLayout()
-		self.delete = QtGui.QPushButton("Delete")
+		self.delete = QtWidgets.QPushButton("Delete")
 		self.hbl_buttons3.addWidget(self.delete)
 		self.vbl.addLayout(self.hbl_buttons3)
 		

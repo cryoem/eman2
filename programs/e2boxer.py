@@ -747,7 +747,7 @@ class boxerConvNet(QtCore.QObject):
 	@staticmethod
 	def setup_gui(gridlay, boxerwindow=None):
 		boxerConvNet.boxerwindow=boxerwindow
-		boxerConvNet.bt_train=QtGui.QPushButton("Train")
+		boxerConvNet.bt_train=QtWidgets.QPushButton("Train")
 		boxerConvNet.bt_train.setToolTip("Train the network using references")
 		gridlay.addWidget(boxerConvNet.bt_train)
 		boxerConvNet.bt_train.clicked[bool].connect(boxerConvNet.do_training)
@@ -1271,32 +1271,32 @@ class GUIBoxer(QtGui.QWidget):
 		
 		self.hbl0=QtWidgets.QHBoxLayout(self.boxmm)
 		
-		self.bmmanual=QtGui.QPushButton("Manual")
+		self.bmmanual=QtWidgets.QPushButton("Manual")
 		self.bmmanual.setToolTip("Manual selection of particles. No impact on autoselection.")
 		self.bmmanual.setAutoExclusive(True)
 		self.bmmanual.setCheckable(True)
 		self.bmmanual.setChecked(True)
 		self.hbl0.addWidget(self.bmmanual)
 		
-		self.bmdel=QtGui.QPushButton("Delete")
+		self.bmdel=QtWidgets.QPushButton("Delete")
 		self.bmdel.setToolTip("Delete particles from any mode. Can also shift-click in other mouse modes.")
 		self.bmdel.setAutoExclusive(True)
 		self.bmdel.setCheckable(True)
 		self.hbl0.addWidget(self.bmdel)
 		
-		self.bmgref=QtGui.QPushButton("Good Refs")
+		self.bmgref=QtWidgets.QPushButton("Good Refs")
 		self.bmgref.setToolTip("Identify some good particles. Available to all autoboxers.")
 		self.bmgref.setAutoExclusive(True)
 		self.bmgref.setCheckable(True)
 		self.hbl0.addWidget(self.bmgref)
 
-		self.bmbref=QtGui.QPushButton("Bad Refs")
+		self.bmbref=QtWidgets.QPushButton("Bad Refs")
 		self.bmbref.setToolTip("Identify contamination which should not be selected as particles.")
 		self.bmbref.setAutoExclusive(True)
 		self.bmbref.setCheckable(True)
 		self.hbl0.addWidget(self.bmbref)
 
-		self.bmbgref=QtGui.QPushButton("Bkgnd Refs")
+		self.bmbgref=QtWidgets.QPushButton("Bkgnd Refs")
 		self.bmbgref.setToolTip("Identify background density which should not be selected as particles.")
 		self.bmbgref.setAutoExclusive(True)
 		self.bmbgref.setCheckable(True)
@@ -1308,13 +1308,13 @@ class GUIBoxer(QtGui.QWidget):
 		self.bmbref.clicked[bool].connect(self.setMouseBadRef)
 		self.bmbgref.clicked[bool].connect(self.setMouseBgRef)
 
-		self.bfilter=QtGui.QPushButton("Filter Disp.")
+		self.bfilter=QtWidgets.QPushButton("Filter Disp.")
 		self.bfilter.setToolTip("Filter micrograph (display only)")
 		self.bfilter.setCheckable(True)
 		self.gbl.addWidget(self.bfilter,0,5,1,1)
 		self.bfilter.clicked[bool].connect(self.filterToggle)
 
-		self.binvert=QtGui.QPushButton("Invert")
+		self.binvert=QtWidgets.QPushButton("Invert")
 		self.binvert.setToolTip("Invert Micrograph (also output)")
 		self.binvert.setCheckable(True)
 		self.binvert.setChecked(invert_on_read)		# in truly bad form, this is a global
@@ -1359,15 +1359,15 @@ class GUIBoxer(QtGui.QWidget):
 		
 		self.hbl1=QtWidgets.QHBoxLayout(self.reftools)
 		
-		self.rtload3d=QtGui.QPushButton("From 3D")
+		self.rtload3d=QtWidgets.QPushButton("From 3D")
 		self.rtload3d.setToolTip("Load box refs from 3-D volume")
 		self.hbl1.addWidget(self.rtload3d)
 		
-		self.rtload2d=QtGui.QPushButton("From 2D")
+		self.rtload2d=QtWidgets.QPushButton("From 2D")
 		self.rtload2d.setToolTip("Load box refs from 2-D stack")
 		self.hbl1.addWidget(self.rtload2d)
 
-		self.rtclear=QtGui.QPushButton("Clear")
+		self.rtclear=QtWidgets.QPushButton("Clear")
 		self.rtclear.setToolTip("Clear all current good and bad refs")
 		self.hbl1.addWidget(self.rtclear)
 
@@ -1391,20 +1391,20 @@ class GUIBoxer(QtGui.QWidget):
 			cls.setup_gui(gl, self)
 			self.autotab.addTab(w,name)
 			
-		self.bbclear=QtGui.QPushButton("Clear Boxes")
+		self.bbclear=QtWidgets.QPushButton("Clear Boxes")
 		self.bbclear.setToolTip("Clear all boxes in current micrograph")
 		self.gbl.addWidget(self.bbclear,13,2)
 		self.bbclear.clicked[bool].connect(self.boxClear)
 
-		self.bcentera = QtGui.QPushButton("ACF Center All")
+		self.bcentera = QtWidgets.QPushButton("ACF Center All")
 		self.gbl.addWidget(self.bcentera,13,3)
 		self.bcentera.clicked[bool].connect(self.doCenterAll)
 		
-		self.bautoboxa = QtGui.QPushButton("Autobox All")
+		self.bautoboxa = QtWidgets.QPushButton("Autobox All")
 		self.gbl.addWidget(self.bautoboxa,13,4)
 		self.bautoboxa.clicked[bool].connect(self.doAutoBoxAll)
 		
-		self.bautobox = QtGui.QPushButton("Autobox")
+		self.bautobox = QtWidgets.QPushButton("Autobox")
 		self.gbl.addWidget(self.bautobox,13,5)
 		self.bautobox.clicked[bool].connect(self.doAutoBox)
 
@@ -2689,13 +2689,13 @@ class GUIBoxer(QtGui.QWidget):
 
 		#self.gbl.addWidget(self.squality,6,2,1,3)
 
-		#self.brefit=QtGui.QPushButton("Autobox")
+		#self.brefit=QtWidgets.QPushButton("Autobox")
 		#self.gbl.addWidget(self.brefit,7,2)
 
-		#self.bclrauto=QtGui.QPushButton("Clear Auto")
+		#self.bclrauto=QtWidgets.QPushButton("Clear Auto")
 		#self.gbl.addWidget(self.bclrauto,7,3)
 
-		#self.bclrall=QtGui.QPushButton("Clear All")
+		#self.bclrall=QtWidgets.QPushButton("Clear All")
 		#self.gbl.addWidget(self.bclrall,7,4)
 
 		#self.sapix=ValBox(self,(0,500),"A/pix:",1.0,90)

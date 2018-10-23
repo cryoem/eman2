@@ -69,7 +69,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		
 		pdb_label = QtWidgets.QLabel("PDB:")
 		self.pdb_line_edit = QtWidgets.QLineEdit()
-		self.pdb_browse_button = QtGui.QPushButton(self.tr("Browse"))
+		self.pdb_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
 		pdb_layout = QtWidgets.QHBoxLayout()
 		pdb_layout.addWidget(pdb_label)
 		pdb_layout.addWidget(self.pdb_line_edit)
@@ -77,7 +77,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		
 		volume_label = QtWidgets.QLabel("Volume:")
 		self.volume_line_edit = QtWidgets.QLineEdit()
-		self.volume_browse_button = QtGui.QPushButton(self.tr("Browse"))
+		self.volume_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
 		volume_layout = QtWidgets.QHBoxLayout()
 		volume_layout.addWidget(volume_label)
 		volume_layout.addWidget(self.volume_line_edit)
@@ -109,7 +109,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		threshold_layout.addWidget(threshold_label)
 		threshold_layout.addWidget(self.threshold_doublespinbox)
 		
-		self.validate_button = QtGui.QPushButton(self.tr("&Validate"))
+		self.validate_button = QtWidgets.QPushButton(self.tr("&Validate"))
 		
 		validation_layout = QtGui.QVBoxLayout()
 		validation_layout.addLayout(transformations_layout)

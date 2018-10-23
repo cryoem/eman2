@@ -152,7 +152,7 @@ class TomoSegSliceViewer(QtWidgets.QMainWindow):
 		self.oldboxsize=boxsize
 
 		# max or mean
-		self.wmaxmean=QtGui.QPushButton("MaxProj")
+		self.wmaxmean=QtWidgets.QPushButton("MaxProj")
 		self.wmaxmean.setCheckable(True)
 		self.gbl2.addWidget(self.wmaxmean,1,0)
 
@@ -1797,8 +1797,8 @@ class TomoSegInspector(QtGui.QWidget):
 		self.tree_widget = EMQTreeWidget(parent)
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
-		self.tree_node_button_add = QtGui.QPushButton("Add Object")
-		self.tree_node_button_remove = QtGui.QPushButton("Remove Object")
+		self.tree_node_button_add = QtWidgets.QPushButton("Add Object")
+		self.tree_node_button_remove = QtWidgets.QPushButton("Remove Object")
 		self.tree_node_slider = ValSlider(label="Seq:")
 		self.tree_node_slider.setIntonly(True)
 		self.tree_node_slider.setRange(0,1)
@@ -1975,13 +1975,13 @@ class TomoSegInspector(QtGui.QWidget):
 		font = QtGui.QFont()
 		font.setBold(True)
 		
-		self.opensession_button = QtGui.QPushButton("Open Session")
-		self.savesession_button = QtGui.QPushButton("Save Session")
-		self.savebutton = QtGui.QPushButton("Save Image Snapshot")
+		self.opensession_button = QtWidgets.QPushButton("Open Session")
+		self.savesession_button = QtWidgets.QPushButton("Save Session")
+		self.savebutton = QtWidgets.QPushButton("Save Image Snapshot")
 		
-		self.open_tomogram_button = QtGui.QPushButton("Open Tomogram")
-		self.open_segmentation_button = QtGui.QPushButton("Open Segmentation")
-		self.save_segmentation_button = QtGui.QPushButton("Save Segmentation")
+		self.open_tomogram_button = QtWidgets.QPushButton("Open Tomogram")
+		self.open_segmentation_button = QtWidgets.QPushButton("Open Segmentation")
+		self.save_segmentation_button = QtWidgets.QPushButton("Save Segmentation")
 		
 		uvbox.addWidget(self.opensession_button)
 		uvbox.addWidget(self.savesession_button)

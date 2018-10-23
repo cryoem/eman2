@@ -180,7 +180,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.gbl2.addWidget(self.wlnptcl,0,5)
 		self.gbl2.setColumnStretch(5,2)
 		
-		self.wbdoavg=QtGui.QPushButton("Make Avg")
+		self.wbdoavg=QtWidgets.QPushButton("Make Avg")
 		self.gbl2.addWidget(self.wbdoavg,0,8)
 		
 		###### Alignment Mask
@@ -200,14 +200,14 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.gbl.addLayout(self.hbl1,4,1)
 		self.hbl1.addStretch(5)
 
-		self.wbdrawali=QtGui.QPushButton("Draw")
+		self.wbdrawali=QtWidgets.QPushButton("Draw")
 		self.hbl1.addWidget(self.wbdrawali)
 		self.wbdrawali.hide()						# this functionality won't work with the current widget
 
-		self.wbautoali=QtGui.QPushButton("Auto")
+		self.wbautoali=QtWidgets.QPushButton("Auto")
 		self.hbl1.addWidget(self.wbautoali)
 		
-		self.wbresetali=QtGui.QPushButton("Reset")
+		self.wbresetali=QtWidgets.QPushButton("Reset")
 		self.hbl1.addWidget(self.wbresetali)
 
 		self.hbl1.addStretch(5)
@@ -246,7 +246,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		
 		self.vbl1.addSpacing(16)
 		
-		self.wbaligo=QtGui.QPushButton(unichr(0x2192))
+		self.wbaligo=QtWidgets.QPushButton(unichr(0x2192))
 		self.vbl1.addWidget(self.wbaligo)
 
 		self.vbl1.addStretch(5)
@@ -263,10 +263,10 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.gbl.addLayout(self.hbl1a,4,3)
 		self.hbl1a.addStretch(5)
 		
-		self.wbrecalcref=QtGui.QPushButton("Realign")
+		self.wbrecalcref=QtWidgets.QPushButton("Realign")
 		self.hbl1a.addWidget(self.wbrecalcref)
 		
-		self.wbrrecalcref=QtGui.QPushButton("Rerefine")
+		self.wbrrecalcref=QtWidgets.QPushButton("Rerefine")
 		self.hbl1a.addWidget(self.wbrrecalcref)
 		
 		self.hbl1a.addStretch(5)
@@ -285,14 +285,14 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.gbl.addLayout(self.hbl2,5,1)
 		self.hbl2.addStretch(5)
 		
-		self.wbdrawroi=QtGui.QPushButton("Draw")
+		self.wbdrawroi=QtWidgets.QPushButton("Draw")
 		self.hbl1.addWidget(self.wbdrawroi)
 		self.wbdrawroi.hide()							# this button won't work right for now
 
-		self.wbautoroi=QtGui.QPushButton("Auto")
+		self.wbautoroi=QtWidgets.QPushButton("Auto")
 		self.hbl2.addWidget(self.wbautoroi)
 		
-		self.wbresetroi=QtGui.QPushButton("Reset")
+		self.wbresetroi=QtWidgets.QPushButton("Reset")
 		self.hbl2.addWidget(self.wbresetroi)
 		
 		self.hbl2.addStretch(5)
@@ -311,7 +311,7 @@ class EMMotion(QtWidgets.QMainWindow):
 
 		self.vbl2.addSpacing(16)
 		
-		self.wbroigo=QtGui.QPushButton(unichr(0x2192))
+		self.wbroigo=QtWidgets.QPushButton(unichr(0x2192))
 		self.vbl2.addWidget(self.wbroigo)
 
 
@@ -381,7 +381,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.vbl3a.addWidget(self.wpbprogress)
 		
 		# doubles as a cancel button
-		self.wbcompute=QtGui.QPushButton("Compute")
+		self.wbcompute=QtWidgets.QPushButton("Compute")
 		self.vbl3a.addWidget(self.wbcompute)
 
 		self.wlarrow2=QtWidgets.QLabel(unichr(0x2192))
@@ -397,7 +397,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.w2dclasses=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dclasses,3,9)
 
-		self.wbshowptcl=QtGui.QPushButton(unichr(0x2193))
+		self.wbshowptcl=QtWidgets.QPushButton(unichr(0x2193))
 		self.gbl.addWidget(self.wbshowptcl,4,9)
 
 		self.w2dptcl=EMImage2DWidget()
@@ -408,10 +408,10 @@ class EMMotion(QtWidgets.QMainWindow):
 		#self.gbl.addLayout(self.hbl1,2,1)
 		#self.hbl1.addStretch(5)
 		
-		#self.wbautoali=QtGui.QPushButton("Auto")
+		#self.wbautoali=QtWidgets.QPushButton("Auto")
 		#self.hbl1.addWidget(self.wbautoali)
 		
-		#self.wbresetali=QtGui.QPushButton("Reset")
+		#self.wbresetali=QtWidgets.QPushButton("Reset")
 		#self.hbl1.addWidget(self.wbresetali)"bdb:%s"
 
 		#self.hbl1.addStretch(5)

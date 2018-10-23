@@ -868,11 +868,11 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl.setObjectName("hbl6")
 		vbl3.addLayout(hbl6)
 
-		self.nonebut=QtGui.QPushButton(self)
+		self.nonebut=QtWidgets.QPushButton(self)
 		self.nonebut.setText("None")
 		hbl6.addWidget(self.nonebut)
 
-		self.allbut=QtGui.QPushButton(self)
+		self.allbut=QtWidgets.QPushButton(self)
 		self.allbut.setText("All")
 		hbl6.addWidget(self.allbut)
 
@@ -903,15 +903,15 @@ class EMHistogramInspector(QtGui.QWidget):
 		hbl0.setSpacing(6)
 		vbl.addLayout(hbl0)
 
-		self.saveb=QtGui.QPushButton(self)
+		self.saveb=QtWidgets.QPushButton(self)
 		self.saveb.setText("Save")
 		hbl0.addWidget(self.saveb)
 
-		self.concatb=QtGui.QPushButton(self)
+		self.concatb=QtWidgets.QPushButton(self)
 		self.concatb.setText("Concat")
 		hbl0.addWidget(self.concatb)
 
-		self.pdfb=QtGui.QPushButton(self)
+		self.pdfb=QtWidgets.QPushButton(self)
 		self.pdfb.setText("PDF")
 		hbl0.addWidget(self.pdfb)
 
@@ -1027,7 +1027,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.stacked.setText("Stacked")
 		hbl03.addWidget(self.stacked)
 
-		self.wrescale=QtGui.QPushButton(self)
+		self.wrescale=QtWidgets.QPushButton(self)
 		self.wrescale.setText("Rescale")
 		vbl.addWidget(self.wrescale)
 

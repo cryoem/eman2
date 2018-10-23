@@ -121,7 +121,7 @@ class ControlPannel(QtGui.QWidget):
 		self.kernel_stacked_widget = QtGui.QStackedWidget()
 		vbox.addWidget(self.kernel_stacked_widget)
 		
-		self.filter_but=QtGui.QPushButton("Filter")
+		self.filter_but=QtWidgets.QPushButton("Filter")
 		vbox.addWidget(self.filter_but)
 		
 		filterwidget.setLayout(vbox)
@@ -167,7 +167,7 @@ class ControlPannel(QtGui.QWidget):
 		vboxa.addLayout(vbox1)
 		
 		vbox2 = QtGui.QVBoxLayout()
-		self.processor_but=QtGui.QPushButton("Filter")
+		self.processor_but=QtWidgets.QPushButton("Filter")
 		vbox2.addWidget(self.processor_but)
 		vboxa.addLayout(vbox2)
 		
@@ -324,12 +324,12 @@ class ControlPannel(QtGui.QWidget):
 	
 	def add_controls(self, layout):
 		butbox = QtWidgets.QHBoxLayout()
-		self.write_box_but=QtGui.QPushButton("Write Boxes")
+		self.write_box_but=QtWidgets.QPushButton("Write Boxes")
 		butbox.addWidget(self.write_box_but)
-		self.write_but=QtGui.QPushButton("Write Ptcls")
+		self.write_but=QtWidgets.QPushButton("Write Ptcls")
 		butbox.addWidget(self.write_but)
 		layout.addLayout(butbox)
-		self.done_but=QtGui.QPushButton("Done")
+		self.done_but=QtWidgets.QPushButton("Done")
 		layout.addWidget(self.done_but)
 		
 		self.write_box_but.clicked[bool].connect(self.on_write_box)
@@ -407,7 +407,7 @@ class ManualPicker(QtGui.QWidget):
 		boldfont.setBold(True)
 		label.setFont(boldfont)
 		label.setAlignment(QtCore.Qt.AlignTop)
-		self.clr_but = QtGui.QPushButton("Clear", self)
+		self.clr_but = QtWidgets.QPushButton("Clear", self)
 		vbl.addWidget(label)
 		vbl.addWidget(self.clr_but)
 		self.setLayout(vbl)
@@ -497,16 +497,16 @@ class PairPickerTool(QtGui.QWidget):
 		vbl.addLayout(hmb)
 		
 		hbb = QtWidgets.QHBoxLayout()
-		self.upboxes_but = QtGui.QPushButton("Update Boxes", self)
+		self.upboxes_but = QtWidgets.QPushButton("Update Boxes", self)
 		self.upboxes_but.setEnabled(False)
 		hbb.addWidget(self.upboxes_but)
 		
-		self.centerboxes_but = QtGui.QPushButton("Center Boxes", self)
+		self.centerboxes_but = QtWidgets.QPushButton("Center Boxes", self)
 		self.centerboxes_but.setEnabled(False)
 		hbb.addWidget(self.centerboxes_but)
 		vbl.addLayout(hbb)
 		
-		self.clr_but = QtGui.QPushButton("Clear", self)
+		self.clr_but = QtWidgets.QPushButton("Clear", self)
 		vbl.addWidget(self.clr_but)
 		self.setLayout(vbl)
 		

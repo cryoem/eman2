@@ -384,7 +384,7 @@ class EMIsoInspector(QtGui.QWidget):
 			hblbrowse = QtWidgets.QHBoxLayout()
 			self.mrc_text = QtWidgets.QLineEdit()
 			hblbrowse.addWidget(self.mrc_text)
-			self.mrc_browse = QtGui.QPushButton("Browse")
+			self.mrc_browse = QtWidgets.QPushButton("Browse")
 			hblbrowse.addWidget(self.mrc_browse)
 			self.vbl.addLayout(hblbrowse)
 
@@ -407,19 +407,19 @@ class EMIsoInspector(QtGui.QWidget):
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 		
-		self.wiretog = QtGui.QPushButton("Wire")
+		self.wiretog = QtWidgets.QPushButton("Wire")
 		self.wiretog.setCheckable(1)
 		self.vbl2.addWidget(self.wiretog)
 		
-		self.lighttog = QtGui.QPushButton("Light")
+		self.lighttog = QtWidgets.QPushButton("Light")
 		self.lighttog.setCheckable(1)
 		self.vbl2.addWidget(self.lighttog)
 		
-		self.cubetog = QtGui.QPushButton("Cube")
+		self.cubetog = QtWidgets.QPushButton("Cube")
 		self.cubetog.setCheckable(1)
 		self.vbl2.addWidget(self.cubetog)
 		
-		self.texturetog = QtGui.QPushButton("Texture")
+		self.texturetog = QtWidgets.QPushButton("Texture")
 		self.texturetog.setCheckable(1)
 		self.vbl2.addWidget(self.texturetog)
 		self.texture = False
