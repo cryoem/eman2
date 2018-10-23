@@ -68,7 +68,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		self.data_groupbox = QtWidgets.QGroupBox(self.tr("Data"))
 		
 		pdb_label = QtWidgets.QLabel("PDB:")
-		self.pdb_line_edit = QtGui.QLineEdit()
+		self.pdb_line_edit = QtWidgets.QLineEdit()
 		self.pdb_browse_button = QtGui.QPushButton(self.tr("Browse"))
 		pdb_layout = QtWidgets.QHBoxLayout()
 		pdb_layout.addWidget(pdb_label)
@@ -76,7 +76,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		pdb_layout.addWidget(self.pdb_browse_button)		
 		
 		volume_label = QtWidgets.QLabel("Volume:")
-		self.volume_line_edit = QtGui.QLineEdit()
+		self.volume_line_edit = QtWidgets.QLineEdit()
 		self.volume_browse_button = QtGui.QPushButton(self.tr("Browse"))
 		volume_layout = QtWidgets.QHBoxLayout()
 		volume_layout.addWidget(volume_label)

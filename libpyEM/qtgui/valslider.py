@@ -128,7 +128,7 @@ class ValSlider(QtGui.QWidget):
 			self.hboxlayout.addWidget(self.label)
 		
 		
-		self.text = QtGui.QLineEdit(self)
+		self.text = QtWidgets.QLineEdit(self)
 		
 		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(0))
 		sizePolicy.setHorizontalStretch(1)
@@ -342,7 +342,7 @@ class ValBox(QtGui.QWidget):
 			self.hboxlayout.addWidget(self.label)
 		
 		
-		self.text = QtGui.QLineEdit(self)
+		self.text = QtWidgets.QLineEdit(self)
 		
 		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(0))
 		sizePolicy.setHorizontalStretch(1)
@@ -488,7 +488,7 @@ class StringBox(QtGui.QWidget):
 			self.hboxlayout.addWidget(self.label)
 		
 		
-		self.text = QtGui.QLineEdit(self)
+		self.text = QtWidgets.QLineEdit(self)
 		self.text.setText(value)
 		
 		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(0))
@@ -753,7 +753,7 @@ class EMSpinWidget(QtGui.QWidget):
 		self.lbutton.setAutoRepeat(True)
 		self.lbutton.setAutoRepeatDelay(200)
 		shbox.addWidget(self.lbutton)
-		self.numbox = QtGui.QLineEdit(str(self.value), self)
+		self.numbox = QtWidgets.QLineEdit(str(self.value), self)
 		shbox.addWidget(self.numbox)
 		self.lbutton.setMaximumHeight(self.numbox.height())
 		self.lbutton.setMaximumWidth(self.maxarrowwidth)

@@ -321,16 +321,16 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.cmp_shrink.setValue(1)
 		gridl.addWidget(self.cmp_shrink,0,2)
 		
-		self.cmp_ali=QtGui.QLineEdit("rotate_translate_flip")
+		self.cmp_ali=QtWidgets.QLineEdit("rotate_translate_flip")
 		gridl.addWidget(self.cmp_ali,1,0,1,2)
 		
-		self.cmp_alicmp=QtGui.QLineEdit("dot")
+		self.cmp_alicmp=QtWidgets.QLineEdit("dot")
 		gridl.addWidget(self.cmp_alicmp,1,2,1,2)
 		
-		self.cmp_refine=QtGui.QLineEdit("refine")
+		self.cmp_refine=QtWidgets.QLineEdit("refine")
 		gridl.addWidget(self.cmp_refine,2,0,1,2)
 		
-		self.cmp_refinecmp=QtGui.QLineEdit("dot:normalize=1")
+		self.cmp_refinecmp=QtWidgets.QLineEdit("dot:normalize=1")
 		gridl.addWidget(self.cmp_refinecmp,2,2,1,2)
 		
 		self.cmp_realignb=QtGui.QPushButton("Set Alignment")

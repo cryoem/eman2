@@ -922,7 +922,7 @@ class EMSelectorDialog(EMSelectorDialogType):
 		hbl2.setSpacing(2)
 		self.selection_label = QtWidgets.QLabel(SAVE_AS,self)
 		hbl2.addWidget(self.selection_label)
-		self.save_as_line_edit = QtGui.QLineEdit("",self)
+		self.save_as_line_edit = QtWidgets.QLineEdit("",self)
 		hbl2.addWidget(self.save_as_line_edit,0)
 		self.hbl.insertLayout(1,hbl2)
 		self.dialog_mode = True

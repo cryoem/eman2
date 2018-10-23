@@ -708,14 +708,14 @@ if ENABLE_GUI:
 			self.helices_coords_groupbox = QtWidgets.QGroupBox(self.tr("Helix Coordinates (EMAN1 format)"))
 			self.helices_coords_groupbox.setCheckable(True)
 			helices_coords_label = QtWidgets.QLabel(self.tr("Path:"))
-			self.helices_coords_line_edit = QtGui.QLineEdit()
+			self.helices_coords_line_edit = QtWidgets.QLineEdit()
 			self.helices_coords_line_edit.setMinimumWidth(300)
 			self.helices_coords_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
 			self.helices_images_groupbox = QtWidgets.QGroupBox(self.tr("Helix Images"))
 			self.helices_images_groupbox.setCheckable(True)
 			helices_images_label = QtWidgets.QLabel(self.tr("Path:"))
-			self.helices_images_line_edit = QtGui.QLineEdit()
+			self.helices_images_line_edit = QtWidgets.QLineEdit()
 			self.helices_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
 			self.ptcls_groupbox = QtWidgets.QGroupBox(self.tr("Write &Particles:"))
@@ -737,7 +737,7 @@ if ENABLE_GUI:
 			self.ptcls_coords_groupbox = QtWidgets.QGroupBox(self.tr("Particle Coordinates"))
 			self.ptcls_coords_groupbox.setCheckable(True)
 			ptcls_coords_label = QtWidgets.QLabel(self.tr("Path:"))
-			self.ptcls_coords_line_edit = QtGui.QLineEdit()
+			self.ptcls_coords_line_edit = QtWidgets.QLineEdit()
 			self.ptcls_coords_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
 			self.ptcls_images_groupbox = QtWidgets.QGroupBox(self.tr("Particle Images"))
@@ -764,7 +764,7 @@ if ENABLE_GUI:
 			self.ptcls_no_stack_radiobutton = QtGui.QRadioButton(self.tr("File for each particle"))
 
 			ptcls_images_label = QtWidgets.QLabel(self.tr("Path:"))
-			self.ptcls_images_line_edit = QtGui.QLineEdit()
+			self.ptcls_images_line_edit = QtWidgets.QLineEdit()
 			self.ptcls_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
 
 			self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
