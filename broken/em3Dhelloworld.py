@@ -235,7 +235,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.lighttog.setCheckable(1)
 		self.vbl2.addWidget(self.lighttog)
 		
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		self.maintab = None
 		self.tabwidget.addTab(self.get_main_tab(), "Main")
 		self.tabwidget.addTab(self.get_GL_tab(),"GL")

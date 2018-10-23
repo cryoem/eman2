@@ -1215,7 +1215,7 @@ class EMFormWidget(QtGui.QWidget):
 	
 	def incorporate_ftable_list(self,file_table_list,layout):
 		
-		table = QtGui.QTabWidget()
+		table = QtWidgets.QTabWidget()
 		
 		for paramtable in file_table_list:
 			
@@ -2003,7 +2003,7 @@ class EMTableFormWidget(EMFormWidget):
 #	def __del__(self): print "del table form widget"
 		
 	def incorporate_params(self,params,layout):
-		tabwidget = QtGui.QTabWidget(self)
+		tabwidget = QtWidgets.QTabWidget(self)
 		
 		for title,paramlist in params:
 			

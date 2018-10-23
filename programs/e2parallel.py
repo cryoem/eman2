@@ -282,7 +282,7 @@ class GUIservmon(QtWidgets.QMainWindow):
 		self.setCentralWidget(self.cw)
 		self.vbl=QtGui.QVBoxLayout(self.cw)
 		
-		self.tabs = QtGui.QTabWidget()
+		self.tabs = QtWidgets.QTabWidget()
 		self.vbl.addWidget(self.tabs)
 		self.tabs.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 	
