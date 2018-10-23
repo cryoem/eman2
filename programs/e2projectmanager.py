@@ -962,14 +962,14 @@ class PMIcon(QtWidgets.QLabel):
 	def setIcon(self, image):
 		self.setText(("<img src=\"%s\" />")%image)
 
-class EMWizard(QtGui.QWizard):
+class EMWizard(QtWidgets.QWizard):
 	"""
 	This creates a wizard for filling out EM program forms.
 	wizarddata is a list of dicts
 	e2gui is a reference to a PMProgramWidget which is what this wizard is to fill out
 	"""
 	def __init__(self, wizarddata, e2gui):
-		QtGui.QWizard.__init__(self)
+		QtWidgets.QWizard.__init__(self)
 		#self.setModal(True)
 		self.setWindowTitle("e2program wizard")
 		self.e2gui = e2gui
