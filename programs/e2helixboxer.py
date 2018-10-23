@@ -850,16 +850,16 @@ if ENABLE_GUI:
 			self.vbl.addWidget(self.ptcls_groupbox)
 			self.vbl.addWidget(self.button_box)
 		def browse_helix_coords(self):
-			file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Coordinates"))
-			file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Coordinates"))
+			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile( os.path.join(self.default_dir, self.micrograph_name + "_boxes.txt") )
 			if file_dlg.exec_():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.helices_coords_line_edit.setText(file_path)
 		def browse_helix_images(self):
-			file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Images"))
-			file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Images"))
+			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.helices_images_line_edit.text())
 			if file_dlg.exec_():
 				file_path = file_dlg.selectedFiles()[0]
@@ -875,16 +875,16 @@ if ENABLE_GUI:
 	#                path = os.path.join( path, os.path.basename(self.helices_images_line_edit.text()) )
 	#            self.helices_images_line_edit.setText(path)
 		def browse_ptcl_coords(self):
-			file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Coordinates"))
-			file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Coordinates"))
+			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.ptcls_coords_line_edit.text())
 			if file_dlg.exec_():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.ptcls_coords_line_edit.setText(file_path)
 		def browse_ptcl_images(self):
-			file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Images"))
-			file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Images"))
+			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.ptcls_images_line_edit.text())
 			if file_dlg.exec_():
 				file_path = file_dlg.selectedFiles()[0]
@@ -1127,7 +1127,7 @@ if ENABLE_GUI:
 			"""
 			load boxes from a file selected in a file browser dialog
 			"""
-			path = QtGui.QFileDialog.getOpenFileName(self, self.tr("Open Box Coordinates File"), "", self.tr("Boxes (*.txt *.box)"))
+			path = QtWidgets.QFileDialog.getOpenFileName(self, self.tr("Open Box Coordinates File"), "", self.tr("Boxes (*.txt *.box)"))
 			path = str(path)
 			coords_list = load_helix_coords(path)
 
@@ -1298,8 +1298,8 @@ if ENABLE_GUI:
 	#        """
 	#        (micrograph_dir, micrograph_filename) = os.path.split(self.micrograph_filepath)
 	#        default_filename = os.path.splitext(micrograph_filename)[0] + "_boxes.txt"
-	#        file_dlg = QtGui.QFileDialog(self,self.tr("Save Helix Coordinates"), micrograph_dir)
-	#        file_dlg.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+	#        file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Coordinates"), micrograph_dir)
+	#        file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 	#        file_dlg.selectFile(default_filename)
 	#        if file_dlg.exec_():
 	#            file_path = file_dlg.selectedFiles()[0]
