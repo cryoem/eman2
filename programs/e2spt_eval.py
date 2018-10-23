@@ -4,8 +4,8 @@ from __future__ import print_function
 from __future__ import division
 from EMAN2 import *
 import numpy as np
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 from eman2_gui import embrowser
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emscene3d import EMScene3D

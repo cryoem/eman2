@@ -41,8 +41,8 @@ from EMAN2 import get_image_directory, get_dtag, EMData, \
 	remove_directories_from_name, Util, EMUtil, IMAGE_UNKNOWN, base_name, \
 	file_exists, base_name
 from EMAN2db import EMAN2DB, db_convert_path, db_open_dict, db_check_dict, e2getcwd
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
 from .emapplication import ModuleEventsManager, EMApp, get_application
 from .emimage2d import EMImage2DWidget
 from .emimagemx import EMImageMXWidget

@@ -44,7 +44,7 @@ import os
 import sys
 
 from OpenGL import GL, GLU, GLUT
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 
 def main():
 	progname = os.path.basename(sys.argv[0])

@@ -35,7 +35,7 @@ from __future__ import absolute_import
 
 from EMAN2 import PDBReader, EMData
 from .emapplication import EMApp, get_application
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from .emimage3d import EMImage3DWidget
 from .emimage3diso import EMIsosurfaceModel
 from .empdbviewer import *

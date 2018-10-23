@@ -38,8 +38,8 @@ from past.utils import old_div
 from builtins import range
 from builtins import object
 from .emdatastorage import ParamDef
-from PyQt4 import QtGui,QtCore
-from PyQt4.QtCore import Qt
+from PyQt5 import QtGui, QtWidgets,QtCore
+from PyQt5.QtCore import Qt
 import os
 from .emselector import EMSelectorDialog
 from .emapplication import get_application

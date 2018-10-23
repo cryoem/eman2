@@ -236,8 +236,8 @@ def killdcserver(server,port,verbose):
 
 # We import Qt even if we don't need it
 try:
-	from PyQt4 import QtCore, QtGui
-	from PyQt4.QtCore import Qt
+	from PyQt5 import QtCore, QtGui, QtWidgets
+	from PyQt5.QtCore import Qt
 except:
 	class dummy(object):
 		"A dummy class for use when Qt not installed"

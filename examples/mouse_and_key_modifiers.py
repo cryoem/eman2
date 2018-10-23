@@ -1,6 +1,6 @@
 from __future__ import print_function
 from __future__ import division
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 class MouseAndKeyModifiers(QtWidgets.QWidget):
 	def __init__(self, parent = None):

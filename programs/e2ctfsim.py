@@ -79,12 +79,12 @@ A simple CTF simulation program.
 
 
 try:
-	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from PyQt4.QtCore import Qt
+	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+	from PyQt5.QtCore import Qt
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import ValSlider
 except:
-	print("Error: PyQt4 must be installed")
+	print("Error: PyQt5 must be installed")
 	sys.exit(1)
 
 class MyListWidget(QtWidgets.QListWidget):
