@@ -1106,7 +1106,7 @@ class EMLightsInspectorBase(object):
 		x_label = QtGui.QLabel()
 		x_label.setText('x')
 		
-		self.light_x_dir = QtGui.QDoubleSpinBox(self)
+		self.light_x_dir = QtWidgets.QDoubleSpinBox(self)
 		self.light_x_dir.setMinimum(-100000)
 		self.light_x_dir.setMaximum(100000)
 		self.light_x_dir.setValue(0.0)
@@ -1114,7 +1114,7 @@ class EMLightsInspectorBase(object):
 		y_label = QtGui.QLabel()
 		y_label.setText('y')
 		
-		self.light_y_dir = QtGui.QDoubleSpinBox(self)
+		self.light_y_dir = QtWidgets.QDoubleSpinBox(self)
 		self.light_y_dir.setMinimum(-100000)
 		self.light_y_dir.setMaximum(100000)
 		self.light_y_dir.setValue(0.0)
@@ -1122,7 +1122,7 @@ class EMLightsInspectorBase(object):
 		z_label = QtGui.QLabel()
 		z_label.setText('z')
 		
-		self.light_z_dir = QtGui.QDoubleSpinBox(self)
+		self.light_z_dir = QtWidgets.QDoubleSpinBox(self)
 		self.light_z_dir.setMinimum(-100000)
 		self.light_z_dir.setMaximum(100000)
 		self.light_z_dir.setValue(0.0)
@@ -1191,7 +1191,7 @@ class EMLightsInspectorBase(object):
 		x_label = QtGui.QLabel()
 		x_label.setText('x')
 		
-		self.light_x_pos = QtGui.QDoubleSpinBox(self)
+		self.light_x_pos = QtWidgets.QDoubleSpinBox(self)
 		self.light_x_pos.setMinimum(-100000)
 		self.light_x_pos.setMaximum(100000)
 		self.light_x_pos.setValue(0.0)
@@ -1199,7 +1199,7 @@ class EMLightsInspectorBase(object):
 		y_label = QtGui.QLabel()
 		y_label.setText('y')
 		
-		self.light_y_pos = QtGui.QDoubleSpinBox(self)
+		self.light_y_pos = QtWidgets.QDoubleSpinBox(self)
 		self.light_y_pos.setMinimum(-100000)
 		self.light_y_pos.setMaximum(100000)
 		self.light_y_pos.setValue(0.0)
@@ -1207,7 +1207,7 @@ class EMLightsInspectorBase(object):
 		z_label = QtGui.QLabel()
 		z_label.setText('z')
 		
-		self.light_z_pos = QtGui.QDoubleSpinBox(self)
+		self.light_z_pos = QtWidgets.QDoubleSpinBox(self)
 		self.light_z_pos.setMinimum(-100000)
 		self.light_z_pos.setMaximum(100000)
 		self.light_z_pos.setValue(0.0)
@@ -1246,7 +1246,7 @@ class EMLightsInspectorBase(object):
 		dir_label = QtGui.QLabel()
 		dir_label.setText('Dir: ')
 		
-		self.light_ps_xdir = QtGui.QDoubleSpinBox(self)
+		self.light_ps_xdir = QtWidgets.QDoubleSpinBox(self)
 		self.light_ps_xdir.setMinimum(-100000)
 		self.light_ps_xdir.setMaximum(100000)
 		self.light_ps_xdir.setValue(0.0)
@@ -1254,7 +1254,7 @@ class EMLightsInspectorBase(object):
 		y_label = QtGui.QLabel()
 		y_label.setText('y')
 		
-		self.light_ps_ydir = QtGui.QDoubleSpinBox(self)
+		self.light_ps_ydir = QtWidgets.QDoubleSpinBox(self)
 		self.light_ps_ydir.setMinimum(-100000)
 		self.light_ps_ydir.setMaximum(100000)
 		self.light_ps_ydir.setValue(0.0)
@@ -1262,7 +1262,7 @@ class EMLightsInspectorBase(object):
 		z_label = QtGui.QLabel()
 		z_label.setText('z')
 		
-		self.light_ps_zdir = QtGui.QDoubleSpinBox(self)
+		self.light_ps_zdir = QtWidgets.QDoubleSpinBox(self)
 		self.light_ps_zdir.setMinimum(-100000)
 		self.light_ps_zdir.setMaximum(100000)
 		self.light_ps_zdir.setValue(0.0)

@@ -315,7 +315,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.x_label.setText('x')
 			self.hbl_trans.addWidget(self.x_label)
 			
-			self.x_trans = QtGui.QDoubleSpinBox(self)
+			self.x_trans = QtWidgets.QDoubleSpinBox(self)
 			self.x_trans.setMinimum(-10000)
 			self.x_trans.setMaximum(10000)
 			self.x_trans.setValue(0.0)
@@ -325,7 +325,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.y_label.setText('y')
 			self.hbl_trans.addWidget(self.y_label)
 			
-			self.y_trans = QtGui.QDoubleSpinBox(maintab)
+			self.y_trans = QtWidgets.QDoubleSpinBox(maintab)
 			self.y_trans.setMinimum(-10000)
 			self.y_trans.setMaximum(10000)
 			self.y_trans.setValue(0.0)
@@ -336,7 +336,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.z_label.setText('z')
 			self.hbl_trans.addWidget(self.z_label)
 			
-			self.z_trans = QtGui.QDoubleSpinBox(maintab)
+			self.z_trans = QtWidgets.QDoubleSpinBox(maintab)
 			self.z_trans.setMinimum(-10000)
 			self.z_trans.setMaximum(10000)
 			self.z_trans.setValue(0.0)
