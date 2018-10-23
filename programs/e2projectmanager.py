@@ -1546,7 +1546,7 @@ class TaskManager(QtGui.QWidget):
 
 	def _on_kill(self):
 		killsig=signal.SIGTERM
-		modifiers = QtGui.QApplication.keyboardModifiers()
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		if modifiers == QtCore.Qt.ShiftModifier:
 			print("Shift held. Will force kill processes")
 			killsig=signal.SIGKILL
@@ -2128,7 +2128,7 @@ GUI directly to browse the contents of old-style projects.""")
 
 	from eman2_gui.emapplication import EMApp
 	app = EMApp()
-	#app = QtGui.QApplication(sys.argv)
+	#app = QtWidgets.QApplication(sys.argv)
 	pm = EMProjectManager()
 	pm.show()
 	try: pm.raise_()

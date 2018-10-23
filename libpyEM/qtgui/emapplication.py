@@ -236,7 +236,7 @@ get_application = em_app_instance.get_instance
 #def get_application() : return QtGui.qApp
 
 
-class EMApp(QtGui.QApplication):
+class EMApp(QtWidgets.QApplication):
 	def __init__(self):
 		self.children = []
 		
@@ -244,7 +244,7 @@ class EMApp(QtGui.QApplication):
 		self.timer_function = None
 		self.tmr = None
 		
-		QtGui.QApplication.__init__(self, sys.argv)
+		QtWidgets.QApplication.__init__(self, sys.argv)
 		
 		style=QtGui.QStyleFactory.create("Plastique")
 		

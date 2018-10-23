@@ -865,7 +865,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			nimg=sqrt(len(self.data))
 			x=self.data[0]["nx"]*sqrt(nimg)
 			y=self.data[0]["ny"]*sqrt(nimg)
-			xys=QtGui.QApplication.desktop().availableGeometry()
+			xys=QtWidgets.QApplication.desktop().availableGeometry()
 			mx=xys.width()*2//3
 			my=xys.height()*2//3
 			
@@ -3196,7 +3196,7 @@ class EMDataListCache(EMMXDataCache):
 		if refresh: self.__refresh_cache()
 
 	def __refresh_cache(self):
-		app = QtGui.QApplication.instance()
+		app = QtWidgets.QApplication.instance()
 		app.setOverrideCursor(Qt.BusyCursor)
 
 		try:

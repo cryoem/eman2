@@ -76,7 +76,7 @@ def main():
 
 	app = EMApp()
 	#gapp = app
-	#QtGui.QApplication(sys.argv)
+	#QtWidgets.QApplication(sys.argv)
 	win=[]
 	if options.fullrange:
 		print("""The --fullrange option has been removed, and replaced with an option in user preferences.
