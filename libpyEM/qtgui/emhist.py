@@ -858,7 +858,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		self.setlist=DragListWidget(self)
 		self.setlist.setDataSource(self)
 		self.setlist.setSelectionMode(3)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 		vbl3.addWidget(self.setlist)

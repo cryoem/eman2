@@ -1763,7 +1763,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		self.setWidget(self.scwidget)
 		self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 		self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-		self.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
+		self.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
 
 	def getRowSpan(self, option):
 		"""Return the rowspan"""

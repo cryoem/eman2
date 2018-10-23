@@ -116,7 +116,7 @@ class ValSlider(QtGui.QWidget):
 			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
-			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
+			sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(0),QtWidgets.QSizePolicy.Policy(0))
 #			sizePolicy.setHorizontalStretch(1)
 #			sizePolicy.setVerticalStretch(0)
 #			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
@@ -130,7 +130,7 @@ class ValSlider(QtGui.QWidget):
 		
 		self.text = QtWidgets.QLineEdit(self)
 		
-		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(0))
+		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(0))
 		sizePolicy.setHorizontalStretch(1)
 		sizePolicy.setVerticalStretch(0)
 		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
@@ -141,7 +141,7 @@ class ValSlider(QtGui.QWidget):
 		
 		self.slider = QtGui.QSlider(self)
 		
-		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(0))
+		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(0))
 		sizePolicy.setHorizontalStretch(7)
 		sizePolicy.setVerticalStretch(0)
 		sizePolicy.setHeightForWidth(self.slider.sizePolicy().hasHeightForWidth())
@@ -330,7 +330,7 @@ class ValBox(QtGui.QWidget):
 			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
-			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
+			sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(0),QtWidgets.QSizePolicy.Policy(0))
 #			sizePolicy.setHorizontalStretch(1)
 #			sizePolicy.setVerticalStretch(0)
 #			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
@@ -344,7 +344,7 @@ class ValBox(QtGui.QWidget):
 		
 		self.text = QtWidgets.QLineEdit(self)
 		
-		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(0))
+		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(0))
 		sizePolicy.setHorizontalStretch(1)
 		sizePolicy.setVerticalStretch(0)
 		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
@@ -476,7 +476,7 @@ class StringBox(QtGui.QWidget):
 			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
-			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
+			sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(0),QtWidgets.QSizePolicy.Policy(0))
 #			sizePolicy.setHorizontalStretch(1)
 #			sizePolicy.setVerticalStretch(0)
 #			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
@@ -491,7 +491,7 @@ class StringBox(QtGui.QWidget):
 		self.text = QtWidgets.QLineEdit(self)
 		self.text.setText(value)
 		
-		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(0))
+		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(0))
 		sizePolicy.setHorizontalStretch(1)
 		sizePolicy.setVerticalStretch(0)
 		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
@@ -562,7 +562,7 @@ class CheckBox(QtGui.QWidget):
 			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
-			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
+			sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(0),QtWidgets.QSizePolicy.Policy(0))
 #			sizePolicy.setHorizontalStretch(1)
 #			sizePolicy.setVerticalStretch(0)
 #			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
@@ -635,7 +635,7 @@ class RangeSlider(QtGui.QWidget):
 		self.mdownloc=None
 		if len(rng)!=2 or len(value)!=2 : raise Exception("RangeSlider needs a valid range and value)")
 
-		sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(7))
+		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(0),QtWidgets.QSizePolicy.Policy(7))
 		sizePolicy.setHorizontalStretch(0)
 		sizePolicy.setVerticalStretch(7)
 		sizePolicy.setHeightForWidth(False)

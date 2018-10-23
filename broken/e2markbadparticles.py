@@ -123,7 +123,7 @@ class EMMarkPtclTool(QtWidgets.QMainWindow):
 
 		self.vbl2 = QtGui.QVBoxLayout()
 		self.setlist=MyListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.vbl2.addWidget(self.setlist)
 		
 
