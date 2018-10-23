@@ -415,7 +415,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		"""Saves the particles in a named set to a file"""
 		outset=self.get_set(name)
 		if len(outset)==None :
-			QtGui.QMessageBox.warning(None,"Error","The set: %s is empty"%(name))
+			QtWidgets.QMessageBox.warning(None,"Error","The set: %s is empty"%(name))
 			return
 		
 		# Get the output filespec
@@ -428,9 +428,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			except: badimg.append(i)
 
 		if len(badimg)>0 :
-			QtGui.QMessageBox.warning(None,"Error","Could not save images: %s"%(str(badimg)))
+			QtWidgets.QMessageBox.warning(None,"Error","Could not save images: %s"%(str(badimg)))
 		else:
-			QtGui.QMessageBox.information(None,"Save Succesful","%d images appended to %s"%(len(outset),fsp))
+			QtWidgets.QMessageBox.information(None,"Save Succesful","%d images appended to %s"%(len(outset),fsp))
 		
 
 	def get_set(self,name):
@@ -1564,7 +1564,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		Overwrites existing data (the old file is removed)
 		'''
 
-		msg = QtGui.QMessageBox()
+		msg = QtWidgets.QMessageBox()
 		msg.setWindowTitle("Woops")
 		if self.data==None or len(self.data)==0:
 			msg.setText("there is no data to save" %fsp)
@@ -1643,11 +1643,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					i.write_image(i["source_path"],i["source_n"])
 #					print j,i["source_path"],i["source_n"]
 				except:
-					QtGui.QMessageBox.warning(None,"Error","Failed to save inverted image at: %s %d"%(i["source_path"],i["source_n"]))
+					QtWidgets.QMessageBox.warning(None,"Error","Failed to save inverted image at: %s %d"%(i["source_path"],i["source_n"]))
 					return
 
 
-			QtGui.QMessageBox.warning(None,"Images Saved","Images have been inverted on-disk")
+			QtWidgets.QMessageBox.warning(None,"Images Saved","Images have been inverted on-disk")
 			return
 
 		elif event.key()==Qt.Key_Up :
@@ -1857,7 +1857,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					except: pass
 					a.write_image(outnm,0)
 					for i,im in enumerate(data): im.write_image(outnm,i+1)
-					QtGui.QMessageBox.information(None,"Notice","Wrote average {} and {} particles to {}".format(a["source_n"],len(data),outnm))
+					QtWidgets.QMessageBox.information(None,"Notice","Wrote average {} and {} particles to {}".format(a["source_n"],len(data),outnm))
 				else:
 					resize_necessary = False
 					if self.class_window == None:
@@ -2499,7 +2499,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		#try:
 		qim=self.target().get_frame_buffer()
 		#except:
-			#QtGui.QMessageBox.warning ( self, "Framebuffer ?", "Could not read framebuffer")
+			#QtWidgets.QMessageBox.warning ( self, "Framebuffer ?", "Could not read framebuffer")
 
 		# Get the output filespec
 		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select File")

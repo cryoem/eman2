@@ -76,7 +76,7 @@ def load_micrograph(filename):
 	
 	n=EMUtil.get_image_count(filename)
 	if n==0 :
-		QtGui.QMessageBox.warning(None,"Error","The file {} contains no images".format(newfilename))
+		QtWidgets.QMessageBox.warning(None,"Error","The file {} contains no images".format(newfilename))
 		return
 	elif n==1 :
 		img=EMData(filename,0)		# single image
@@ -1543,8 +1543,8 @@ class GUIBoxer(QtGui.QWidget):
 	
 		
 	def reftoolClear(self,x):
-		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will remove all good and bad box references. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
-		if r==QtGui.QMessageBox.Cancel : return
+		r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: this will remove all good and bad box references. Are you sure?",QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.Cancel)
+		if r==QtWidgets.QMessageBox.Cancel : return
 
 		self.goodrefs=[]
 		self.goodrefchg=True
@@ -1559,8 +1559,8 @@ class GUIBoxer(QtGui.QWidget):
 		self.wbgrefs.set_data(self.bgrefs)
 
 	def boxClear(self,x):
-		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will erase all box locations in the current micrograph. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
-		if r==QtGui.QMessageBox.Cancel : return
+		r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: this will erase all box locations in the current micrograph. Are you sure?",QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.Cancel)
+		if r==QtWidgets.QMessageBox.Cancel : return
 
 		self.boxes=[]
 		self.__updateBoxes()
@@ -2253,7 +2253,7 @@ class GUIBoxer(QtGui.QWidget):
 			#self.procthread.start()
 
 		#if self.errors:
-			#QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
+			#QtWidgets.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			#self.errors=None
 
 	#def doRefit(self):
@@ -2292,7 +2292,7 @@ class GUIBoxer(QtGui.QWidget):
 		#if not os.access("micrographs",os.R_OK) :
 			#try : os.mkdir("micrographs")
 			#except:
-				#QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
+				#QtWidgets.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
 				#return
 
 		##db=db_open_dict("bdb:micrographs#%s"%item)

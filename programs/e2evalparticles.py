@@ -195,7 +195,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			try :
 				orign,origfile,comment=lst.read(n)			# the original file/number dereferenced from the LST file
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
+				QtWidgets.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
 				return
 
 			include.append((origfile,orign,comment))		# build a list so we can sort by frame
@@ -206,8 +206,8 @@ class EMClassPtclTool(QtGui.QWidget):
 	def markBadPtcl(self,x):
 		"Mark particles from the selected class-averages as bad in the set interface"
 
-		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: There is no undo for this operation. It will  mark all particles associated with the selected class-averages as bad. Are you sure you want to proceed ?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
-		if r==QtGui.QMessageBox.Cancel : return
+		r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: There is no undo for this operation. It will  mark all particles associated with the selected class-averages as bad. Are you sure you want to proceed ?",QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.Cancel)
+		if r==QtWidgets.QMessageBox.Cancel : return
 
 		lst=LSXFile(self.curPtclFile())		# lst file for dereferenceing
 		ptcls={}						# dictionary keyed by original frame filename with list of selected particle #s
@@ -216,7 +216,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			try :
 				orign,origfile,comment=lst.read(n)
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
+				QtWidgets.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
 				return
 
 			try: ptcls[origfile].append(orign)		# try to add to a list for an existing filename
@@ -248,8 +248,8 @@ class EMClassPtclTool(QtGui.QWidget):
 	def markGoodPtcl(self,x):
 		"Mark particles from the selected class-averages as good in the set interface"
 
-		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: There is no undo for this operation. It will un-mark all particles associated with the selected class-averages as bad. Are you sure you want to proceed ?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
-		if r==QtGui.QMessageBox.Cancel : return
+		r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: There is no undo for this operation. It will un-mark all particles associated with the selected class-averages as bad. Are you sure you want to proceed ?",QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.Cancel)
+		if r==QtWidgets.QMessageBox.Cancel : return
 
 		lst=LSXFile(self.curPtclFile())		# lst file for dereferenceing
 		ptcls={}						# dictionary keyed by original frame filename with list of selected particle #s
@@ -258,7 +258,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			try :
 				orign,origfile,comment=lst.read(n)
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
+				QtWidgets.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
 				return
 
 			try: ptcls[origfile].append(orign)		# try to add to a list for an existing filename
@@ -313,7 +313,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			try :
 				orign,origfile,comment=lst.read(n)			# the original file/number dereferenced from the LST file
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
+				QtWidgets.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
 				return
 
 			include.append((origfile,orign,comment))		# build a list so we can sort by frame
@@ -341,7 +341,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			x0=int(x0)
 			x1=int(x1)+1
 		except:
-			QtGui.QMessageBox.warning(self,"Error !","Invalid range specified. Use: min-max")
+			QtWidgets.QMessageBox.warning(self,"Error !","Invalid range specified. Use: min-max")
 			return
 
 		self.vclasses.subset_set(list(range(x0,x1)))
@@ -355,7 +355,7 @@ class EMClassPtclTool(QtGui.QWidget):
 
 		f=self.curFile()
 		if not '#classes_' in f :
-			QtGui.QMessageBox.warning(self,"Error !","A classes_xx file from a refine_xx directory is not currently selected")
+			QtWidgets.QMessageBox.warning(self,"Error !","A classes_xx file from a refine_xx directory is not currently selected")
 			return
 
 		# construct the path to the threed_xx file
@@ -366,7 +366,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			a=EMData(d3path,0,True)
 			goodptcl=a["threed_ptcl_idxs"]
 		except:
-			QtGui.QMessageBox.warning(self,"Error !","Cannot read classes from "+d3path)
+			QtWidgets.QMessageBox.warning(self,"Error !","Cannot read classes from "+d3path)
 			return
 
 		self.vclasses.clear_set()
@@ -463,7 +463,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			else:
 				self.wptclfile.setCurrentIndex(i)
 		except:
-			QtGui.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
+			QtWidgets.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
 			ptclfile="None"
 
 
@@ -491,7 +491,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			ptclgood=lc[3]["class_ptcl_idxs"]
 			self.vgoodptcl.set_data(EMData.read_images(ptclfile,ptclgood))
 		except:
-			QtGui.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
+			QtWidgets.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
 			QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
 			return
 		try:

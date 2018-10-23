@@ -1561,7 +1561,7 @@ def sptboxergui(options,args):
 
 
 		def menu_file_open(self,tog):
-			QtGui.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
+			QtWidgets.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
 
 		def load_box_yshort(self, boxcoords):
 			if options.yshort:
@@ -1631,7 +1631,7 @@ def sptboxergui(options,args):
 					img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".hdf",1)[0],i,'hdf')))
 					
 					#else:
-					#	QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
+					#	QtWidgets.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 					#	return
 
 					progress.setValue(i+1)
@@ -1666,7 +1666,7 @@ def sptboxergui(options,args):
 					prj.write_image(fspprjs,-1)
 
 					#else:
-					#	QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
+					#	QtWidgets.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 					#	return
 
 					progress.setValue(i+1)
@@ -1679,7 +1679,7 @@ def sptboxergui(options,args):
 
 
 			if fsp[-4:].lower()!=".hdf" :
-				#QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for .hdf files")
+				#QtWidgets.QMessageBox.warning(None,"Error","3-D stacks supported only for .hdf files")
 				#return
 				fsp+='.hdf'
 

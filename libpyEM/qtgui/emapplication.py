@@ -385,7 +385,7 @@ class EMErrorMessageDisplay(object):
 		'''
 		error_message is a list of error messages
 		'''
-		msg = QtGui.QMessageBox()
+		msg = QtWidgets.QMessageBox()
 		msg.setWindowTitle(title)
 		msg.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		mes = ""

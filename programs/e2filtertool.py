@@ -600,7 +600,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 			self.procthread.start()
 
 		if self.errors:
-			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
+			QtWidgets.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			self.errors=None
 
 		# When reprocessing is done, we want to redisplay from the main thread
@@ -824,7 +824,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		#out.write("\n")
 		#out.close()
 
-		#QtGui.QMessageBox.warning(None,"Saved","The processor parameters have been added to the end of 'processor.txt'")
+		#QtWidgets.QMessageBox.warning(None,"Saved","The processor parameters have been added to the end of 'processor.txt'")
 
 		self.save_current_processorset(str(self.wsetname.currentText()))
 
@@ -865,12 +865,12 @@ class EMFilterTool(QtWidgets.QMainWindow):
 			try: os.unlink("processed_map.hdf")
 			except : pass
 			self.procdata[0].write_image("processed_map.hdf",0)
-			QtGui.QMessageBox.warning(None,"Saved","The processed map has been saved as processed_map.hdf")
+			QtWidgets.QMessageBox.warning(None,"Saved","The processed map has been saved as processed_map.hdf")
 		else :
 			try: os.unlink("processed_images.hdf")
 			except: pass
 			for i in self.procdata: i.write_image("processed_images.hdf",-1)
-			QtGui.QMessageBox.warning(None,"Saved","The processed image(s) has been saved as processed_images.hdf. WARNING: this will include only be a subset of the images in a large image stack. To process the full stack, use e2proc2d.py with the options in filtertool_<filtername>.txt")
+			QtWidgets.QMessageBox.warning(None,"Saved","The processed image(s) has been saved as processed_images.hdf. WARNING: this will include only be a subset of the images in a large image stack. To process the full stack, use e2proc2d.py with the options in filtertool_<filtername>.txt")
 
 	def menu_file_quit(self):
 		self.close()
