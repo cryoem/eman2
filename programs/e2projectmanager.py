@@ -37,7 +37,6 @@ from builtins import range
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from eman2_gui.pmicons import *
-from PyQt4.QtGui import QTreeWidgetItem
 import os, json, re, glob, signal
 import subprocess
 from eman2_gui.empmwidgets import *
@@ -657,7 +656,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			self._add_children(toplevel, qtreewidget)
 			QTree.addTopLevelItem(qtreewidget)
 
-		QTree.itemClicked[QTreeWidgetItem, int].connect(self._tree_widget_click)
+		QTree.itemClicked[QtGui.QTreeWidgetItem, int].connect(self._tree_widget_click)
 
 		return QTree
 

@@ -47,7 +47,6 @@ from .valslider import EMQTColorWidget, ValSlider, EMSpinWidget
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtGui import QColor
 
 import numpy as np
 
@@ -1039,9 +1038,9 @@ class EMInspectorControlShape(EMItem3DInspector):
 		# Set to default, but do not run if being inherited
 		if type(self) == EMInspectorControlShape: self.updateItemControls()
 		
-		self.ambcolorbox.newcolor[QColor].connect(self._on_ambient_color)
-		self.diffusecolorbox.newcolor[QColor].connect(self._on_diffuse_color)
-		self.specularcolorbox.newcolor[QColor].connect(self._on_specular_color)
+		self.ambcolorbox.newcolor[QtGui.QColor].connect(self._on_ambient_color)
+		self.diffusecolorbox.newcolor[QtGui.QColor].connect(self._on_diffuse_color)
+		self.specularcolorbox.newcolor[QtGui.QColor].connect(self._on_specular_color)
 		self.shininess.valueChanged.connect(self._on_shininess)
 		
 	def _on_ambient_color(self, color):

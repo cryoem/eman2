@@ -45,7 +45,6 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QListWidgetItem
 from .emglobjects import Camera2, get_default_gl_colors, EMViewportDepthTools2, get_RGB_tab, get_gl_lights_vector, init_glut, EM3DModel
 from .emimageutil import EMTransformPanel # for EMLightsInspector
 from math import *
@@ -1144,7 +1143,7 @@ class EMLightsInspectorBase(object):
 		
 		new_light.clicked.connect(self.new_directional_light)
 		del_light.clicked.connect(self.del_directional_light)
-		self.light_list.itemPressed[QListWidgetItem].connect(self.light_list_clicked)
+		self.light_list.itemPressed[QtGui.QListWidgetItem].connect(self.light_list_clicked)
 		
 		return self.directional_light_widget
 	
@@ -1294,7 +1293,7 @@ class EMLightsInspectorBase(object):
 		
 		
 		new_light.clicked.connect(self.new_pointsource_light)
-		self.point_light_list.itemPressed[QListWidgetItem].connect(self.point_light_list_clicked)
+		self.point_light_list.itemPressed[QtGui.QListWidgetItem].connect(self.point_light_list_clicked)
 		self.light_x_pos.valueChanged[float].connect(self.update_light)
 		self.light_y_pos.valueChanged[float].connect(self.update_light)
 		self.light_z_pos.valueChanged[float].connect(self.update_light)

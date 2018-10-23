@@ -38,7 +38,6 @@ from builtins import range
 from builtins import object
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QAction, QAbstractButton, QListWidgetItem, QImage
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -1761,7 +1760,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 			EMAN2.GUIbeingdragged= box_image	# This deals with within-application dragging between windows
 			mime_data.setText( str(lc[0])+"\n")
-			di=QImage(GLUtil.render_amp8(box_image, 0,0,xs,ys,xs*4,1.0,0,255,self.get_density_min(),self.get_density_max(),1.0,14),xs,ys,QImage.Format_RGB32)
+			di=QtGui.QImage(GLUtil.render_amp8(box_image, 0,0,xs,ys,xs*4,1.0,0,255,self.get_density_min(),self.get_density_max(),1.0,14),xs,ys,QtGui.QImage.Format_RGB32)
 			mime_data.setImageData(QtCore.QVariant(di))
 			drag.setMimeData(mime_data)
 
@@ -2350,12 +2349,12 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 		self.busy=0
 
-		self.vals.triggered[QAction].connect(self.newValDisp)
+		self.vals.triggered[QtGui.QAction].connect(self.newValDisp)
 #		QtCore.QObject.connect(self.mapp, QtCore.SIGNAL("clicked(bool)"), self.set_app_mode)
 #		QtCore.QObject.connect(self.mDel, QtCore.SIGNAL("clicked(bool)"), self.set_Del_mode)
 #		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.set_drag_mode)
 #		QtCore.QObject.connect(self.mset, QtCore.SIGNAL("clicked(bool)"), self.set_set_mode)
-		self.mouse_mode_but_grp.buttonClicked[QAbstractButton].connect(self.mouse_mode_button_clicked)
+		self.mouse_mode_but_grp.buttonClicked[QtGui.QAbstractButton].connect(self.mouse_mode_button_clicked)
 
 		self.bsavedata.clicked[bool].connect(self.save_data)
 		if allow_opt_button:
@@ -2632,7 +2631,7 @@ class EMMXSetsPanel(QtGui.QWidget):
 		self.save_set_button.clicked[bool].connect(self.save_set)
 		self.new_set_button.clicked[bool].connect(self.new_set)
 		self.delete_set_button.clicked[bool].connect(self.delete_set)
-		self.setlist.itemChanged[QListWidgetItem].connect(self.set_list_item_changed)
+		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.set_list_item_changed)
 		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
 		self.target().setsChanged.connect(self.sets_changed)
 
