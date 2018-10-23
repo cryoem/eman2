@@ -335,7 +335,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		#self.ptcl_slider.setIntonly(True)
 		#layout.addWidget(self.ptcl_slider)
 		#self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged"), self.set_ptcl_idx)
-		self.ptcl_slider=QtGui.QSpinBox()
+		self.ptcl_slider=QtWidgets.QSpinBox()
 		self.ptcl_slider.setRange(0,1000)
 		self.ptcl_slider.setSingleStep(1)
 		self.ptcl_slider.setValue(0)

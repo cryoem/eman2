@@ -1843,7 +1843,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		self.linsel.addItem("-.-.-.-")
 		vbl2a.addWidget(self.linsel)
 
-		self.linwid=QtGui.QSpinBox(self)
+		self.linwid=QtWidgets.QSpinBox(self)
 		self.linwid.setRange(1,10)
 		vbl2a.addWidget(self.linwid)
 
@@ -1866,7 +1866,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		self.symsel.addItem("tridown")
 		vbl2b.addWidget(self.symsel)
 
-		self.symsize=QtGui.QSpinBox(self)
+		self.symsize=QtWidgets.QSpinBox(self)
 		self.symsize.setRange(0,25)
 		vbl2b.addWidget(self.symsize)
 
@@ -1886,34 +1886,34 @@ class EMPlot3DInspector(QtGui.QWidget):
 		#self.hmsel.addItem("square")
 		#vbl2c.addWidget(self.hmsel)
 
-		#self.hmbins=QtGui.QSpinBox(self)
+		#self.hmbins=QtWidgets.QSpinBox(self)
 		#self.hmbins.setRange(1,50)
 		#vbl2c.addWidget(self.hmbins)
 
 		# per plot column selectors
 		gl=QtWidgets.QGridLayout()
 		gl.addWidget(QtWidgets.QLabel("X Col:",self),0,0,Qt.AlignRight)
-		self.slidex=QtGui.QSpinBox(self)
+		self.slidex=QtWidgets.QSpinBox(self)
 		self.slidex.setRange(-1,1)
 		gl.addWidget(self.slidex,0,1,Qt.AlignLeft)
 
 		gl.addWidget(QtWidgets.QLabel("Y Col:",self),1,0,Qt.AlignRight)
-		self.slidey=QtGui.QSpinBox(self)
+		self.slidey=QtWidgets.QSpinBox(self)
 		self.slidey.setRange(-1,1)
 		gl.addWidget(self.slidey,1,1,Qt.AlignLeft)
 
 		gl.addWidget(QtWidgets.QLabel("Z Col:",self),2,0,Qt.AlignRight)
-		self.slidez=QtGui.QSpinBox(self)
+		self.slidez=QtWidgets.QSpinBox(self)
 		self.slidez.setRange(-1,1)
 		gl.addWidget(self.slidez,2,1,Qt.AlignLeft)
 
 		gl.addWidget(QtWidgets.QLabel("C Col:",self),0,2,Qt.AlignRight)
-		self.slidec=QtGui.QSpinBox(self)
+		self.slidec=QtWidgets.QSpinBox(self)
 		self.slidec.setRange(-2,1)
 		gl.addWidget(self.slidec,0,3,Qt.AlignLeft)
 
 		gl.addWidget(QtWidgets.QLabel("S Col:",self),1,2,Qt.AlignRight)
-		self.slides=QtGui.QSpinBox(self)
+		self.slides=QtWidgets.QSpinBox(self)
 		self.slides.setRange(-2,1)
 		gl.addWidget(self.slides,1,3,Qt.AlignLeft)
 		vbl.addLayout(gl)

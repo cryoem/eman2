@@ -988,13 +988,13 @@ class EMHistogramInspector(QtGui.QWidget):
 		# per plot column selectors
 		gl=QtWidgets.QGridLayout()
 		gl.addWidget(QtWidgets.QLabel("Column:",self),0,0,Qt.AlignRight)
-		self.slidecol=QtGui.QSpinBox(self)
+		self.slidecol=QtWidgets.QSpinBox(self)
 		self.slidecol.setRange(0,1)
 		self.slidecol.setValue(1)
 		gl.addWidget(self.slidecol,0,1,Qt.AlignLeft)
 
 		gl.addWidget(QtWidgets.QLabel("N Bins:",self),0,2,Qt.AlignRight)
-		self.slidenbs=QtGui.QSpinBox(self)
+		self.slidenbs=QtWidgets.QSpinBox(self)
 		self.slidenbs.setRange(1,10000)
 		self.slidenbs.setValue(10)
 		gl.addWidget(self.slidenbs,0,3,Qt.AlignLeft)

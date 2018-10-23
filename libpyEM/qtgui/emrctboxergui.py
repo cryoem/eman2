@@ -458,7 +458,7 @@ class PairPickerTool(QtGui.QWidget):
 		hbl = QtWidgets.QHBoxLayout()
 		slabel = QtWidgets.QLabel("Min pairs for xform", self)
 		hbl.addWidget(slabel)
-		self.spinbox = QtGui.QSpinBox(self)
+		self.spinbox = QtWidgets.QSpinBox(self)
 		self.spinbox.setMinimum(self.minpp_for_xform)
 		self.spinbox.setMaximum(1000)
 		hbl.addWidget(self.spinbox)

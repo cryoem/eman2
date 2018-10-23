@@ -111,7 +111,7 @@ class TrackerControl(QtGui.QWidget):
 		self.btiltaxisval=QtWidgets.QLineEdit("90.0")
 		self.bsavedata=QtWidgets.QPushButton("Save Data")
 		self.breconst=QtWidgets.QPushButton("3D Normal")
-		self.sbmode=QtGui.QSpinBox(self)
+		self.sbmode=QtWidgets.QSpinBox(self)
 		self.sbmode.setRange(0,2)
 		self.sbmode.setValue(0)
 		self.bmagict=QtWidgets.QPushButton("3D Tomofill")
