@@ -41,7 +41,6 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt, QEvent
-from PyQt4.QtGui import QListWidgetItem
 from eman2_gui.emanimationutil import OrientationListAnimation,Animator
 from eman2_gui.emapplication import EMApp, get_application, error
 from eman2_gui.emglobjects import EM3DModel
@@ -743,7 +742,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 
 		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
-		self.list_widget.itemClicked[QListWidgetItem].connect(self.list_widget_item_clicked)
+		self.list_widget.itemClicked[QtGui.QListWidgetItem].connect(self.list_widget_item_clicked)
 
 		self.update_classes_list(first_time=True)
 		self.au_tab.vbl.addWidget(self.list_widget)

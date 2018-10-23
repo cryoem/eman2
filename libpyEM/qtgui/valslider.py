@@ -38,7 +38,6 @@ from OpenGL.GL import *
 from OpenGL import GLU
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QColor
 
 leftarrow = [
     '12 10 2 1',
@@ -834,7 +833,7 @@ class EMQTColorWidget(QtGui.QWidget):
 	A widget displaying a color box that is used to control colors
 	multiple boxes can be implemented
 	"""
-	newcolor = QtCore.pyqtSignal(QColor)
+	newcolor = QtCore.pyqtSignal(QtGui.QColor)
 	newconnection = QtCore.pyqtSignal()
 
 	def __init__(self, parent=None, red=255, green=255, blue=255, width=30, height=30):
@@ -883,8 +882,8 @@ class EMQTColorWidget(QtGui.QWidget):
 		if event.buttons() != QtCore.Qt.RightButton:
 			self.inicolor = self.color
 			self.colrodialog = EMQtColorDialog(self.color)
-			self.colrodialog.currentColorChanged[QColor].connect(self._on_colorchange)
-			self.colrodialog.colorSelected[QColor].connect(self._on_colorselect)
+			self.colrodialog.currentColorChanged[QtGui.QColor].connect(self._on_colorchange)
+			self.colrodialog.colorSelected[QtGui.QColor].connect(self._on_colorselect)
 			self.colrodialog.canceled.connect(self._on_cancel)
 			
 	def _on_colorchange(self, color):

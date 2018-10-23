@@ -63,7 +63,6 @@ def safe_float(x):
 	except: return 0.0
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtGui import QListWidgetItem
 from PyQt4.QtOpenGL import QGLWidget
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU
@@ -2521,7 +2520,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.slidec.valueChanged[int].connect(self.newCols)
 		self.slides.valueChanged[int].connect(self.newCols)
 		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QListWidgetItem].connect(self.list_item_changed)
+		self.setlist.itemChanged[QtGui.QListWidgetItem].connect(self.list_item_changed)
 		self.color.currentIndexChanged[str].connect(self.updPlotColor)
 		self.classb.clicked.connect(self.openClassWin)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)

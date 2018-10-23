@@ -36,7 +36,6 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from builtins import object
-from PyQt4.QtGui import QAbstractButton
 from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict,EMArgumentParser
 from EMAN2db import db_check_dict
 from EMAN2jsondb import *
@@ -632,7 +631,7 @@ class SwarmPanel(object):
 			self.clear.clicked[bool].connect(self.clear_clicked)
 			self.view_template.clicked[bool].connect(self.view_template_clicked)
 			self.autobox.clicked[bool].connect(self.auto_box_clicked)
-			self.method_group.buttonClicked [QAbstractButton].connect(self.method_group_clicked)
+			self.method_group.buttonClicked [QtGui.QAbstractButton].connect(self.method_group_clicked)
 			self.enable_interactive_threshold.clicked[bool].connect(self.interact_thresh_clicked)
 			self.thr.sliderReleased.connect(self.new_threshold_release)
 			self.thr.textChanged.connect(self.new_threshold_text_changed)
