@@ -3007,7 +3007,7 @@ class SortSelTree(QtWidgets.QTreeView) :
 		sel = self.model().findSelected()
 		if len(sel) == 0 :return
 
-		qis = QtGui.QItemSelection()
+		qis = QtCore.QItemSelection()
 		for i in sel : qis.select(i, i)
 		self.selectionModel().select(qis, QtGui.QItemSelectionModel.ClearAndSelect|QtGui.QItemSelectionModel.Rows)
 
