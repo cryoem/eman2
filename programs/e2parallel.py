@@ -288,19 +288,19 @@ class GUIservmon(QtWidgets.QMainWindow):
 	
 		self.activetab=QtGui.QWidget()
 		self.vblat=QtGui.QVBoxLayout(self.activetab)
-		self.actview=QtGui.QTableView()
+		self.actview=QtWidgets.QTableView()
 		self.vblat.addWidget(self.actview)
 		self.tabs.addTab(self.activetab,"Active")
 		
 		self.donetab=QtGui.QWidget()
 		self.vbldt=QtGui.QVBoxLayout(self.donetab)
-		self.doneview=QtGui.QTableView()
+		self.doneview=QtWidgets.QTableView()
 		self.vbldt.addWidget(self.doneview)
 		self.tabs.addTab(self.donetab,"Complete")
 		
 		self.clienttab=QtGui.QWidget()
 		self.vblct=QtGui.QVBoxLayout(self.clienttab)
-		self.clientview=QtGui.QTableView()
+		self.clientview=QtWidgets.QTableView()
 		self.vblct.addWidget(self.clientview)
 		self.tabs.addTab(self.clienttab,"Clients")
 		
