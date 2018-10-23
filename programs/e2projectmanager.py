@@ -313,7 +313,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		toolwidget = QtWidgets.QFrame()
 		#toolwidget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		tbox = QtGui.QVBoxLayout()
-		self.browsebutton = QtGui.QToolButton()
+		self.browsebutton = QtWidgets.QToolButton()
 		self.browsebutton.setIcon(QtGui.QIcon(QtGui.QPixmap(browseicon)))
 		self.browsebutton.setToolTip("Browse button")
 		self.browsebutton.setMinimumWidth(30)
@@ -423,7 +423,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		#programtoolwidget = QtWidgets.QFrame()
 		#programtoolwidget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		#tbox = QtGui.QVBoxLayout()
-		self.wikibutton = QtGui.QToolButton()
+		self.wikibutton = QtWidgets.QToolButton()
 		self.wikibutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wikiicon)))
 		self.wikibutton.setToolTip("Show Wiki button")
 		self.wikibutton.setMinimumWidth(30)
@@ -434,7 +434,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		self.expertbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(experticon)))
 		self.expertbutton.setToolTip("ExpertMode")
 		self.expertbutton.setEnabled(False)
-		self.wizardbutton = QtGui.QToolButton()
+		self.wizardbutton = QtWidgets.QToolButton()
 		self.wizardbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wizardicon)))
 		self.wizardbutton.setToolTip("Form Wizard")
 		self.wizardbutton.setMinimumWidth(30)
@@ -2007,17 +2007,17 @@ class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	def getExpertMode(self):
 		return self.exmodestate
 
-class PMToolButton(QtGui.QToolButton):
+class PMToolButton(QtWidgets.QToolButton):
 	""" Create a toogle button """
 	stateChanged = QtCore.pyqtSignal(bool)
 
 	def __init__(self):
-		QtGui.QToolButton.__init__(self)
+		QtWidgets.QToolButton.__init__(self)
 		self.setMinimumWidth(30)
 		self.setMinimumHeight(30)
 
 	def setDown(self, state, quiet=False):
-		QtGui.QToolButton.setDown(self, state)
+		QtWidgets.QToolButton.setDown(self, state)
 		if not quiet: self.stateChanged.emit(state)
 
 	def mousePressEvent(self, event):
