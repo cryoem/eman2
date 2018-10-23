@@ -2180,7 +2180,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.vbl2.addWidget(self.auto_contrast_button,1,0,1,2)
 
 		# FFT Buttons
-		self.fftg=QtGui.QButtonGroup()
+		self.fftg=QtWidgets.QButtonGroup()
 		self.fftg.setExclusive(1)
 
 		self.ffttog0 = QtGui.QPushButton("Real")
