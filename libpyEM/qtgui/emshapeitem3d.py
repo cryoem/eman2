@@ -986,8 +986,8 @@ class EMInspectorControlShape(EMItem3DInspector):
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 		super(EMInspectorControlShape, self).addControls(gridbox)
-		colorframe = QtGui.QFrame()
-		colorframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		colorframe = QtWidgets.QFrame()
+		colorframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		colorvbox = QtGui.QVBoxLayout()
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
@@ -1092,8 +1092,8 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 		
-		scatterframe = QtGui.QFrame()
-		scatterframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		scatterframe = QtWidgets.QFrame()
+		scatterframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
 		scattergridbox = QtGui.QGridLayout()
@@ -1161,8 +1161,8 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 	
-		textframe = QtGui.QFrame()
-		textframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		textframe = QtWidgets.QFrame()
+		textframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
 		textgridbox = QtGui.QGridLayout()
@@ -1199,8 +1199,8 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		gridbox.addWidget(textframe, 2, 0)
 		
 		# Add text
-		text3dframe = QtGui.QFrame()
-		text3dframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		text3dframe = QtWidgets.QFrame()
+		text3dframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		text3dgridbox = QtGui.QGridLayout()
 		
 		textlabel3 = QtGui.QLabel("3D Text")
@@ -1283,8 +1283,8 @@ class EMInspectorControlLine(EMInspectorControlShape):
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 		#frame to control properties of left/right arrows
-		lineframe = QtGui.QFrame()
-		lineframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		lineframe = QtWidgets.QFrame()
+		lineframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
 		linegridbox = QtGui.QGridLayout()
@@ -1353,8 +1353,8 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		gridbox.addWidget(lineframe, 2, 0)
 		
 		#frame to control slice/stack of the line
-		lineframe2 = QtGui.QFrame()
-		lineframe2.setFrameShape(QtGui.QFrame.StyledPanel)
+		lineframe2 = QtWidgets.QFrame()
+		lineframe2.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		linehbox = QtGui.QVBoxLayout()
 				
 		self.slice = ValSlider(lineframe2, (1, 100), "Slice", rounding=0)

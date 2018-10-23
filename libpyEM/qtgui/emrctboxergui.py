@@ -88,7 +88,7 @@ class ControlPannel(QtGui.QWidget):
 		mlayout = QtGui.QVBoxLayout()
 		self.get_main(mlayout)			# add the widgets const for all tools
 		msplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-		msplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		msplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		msplitter.setLayout(mlayout)
 		vbox.addWidget(msplitter)
 		
@@ -413,7 +413,7 @@ class ManualPicker(QtGui.QWidget):
 		self.setLayout(vbl)
 		
 		self.mpsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-		self.mpsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.mpsplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		self.mpsplitter.addWidget(self)
 		self.clr_but.clicked[bool].connect(self.on_clear)
 	
@@ -511,7 +511,7 @@ class PairPickerTool(QtGui.QWidget):
 		self.setLayout(vbl)
 		
 		self.ppsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-		self.ppsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.ppsplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		self.ppsplitter.addWidget(self)
 		
 		self.spinbox.valueChanged[int].connect(self.on_spinbox)

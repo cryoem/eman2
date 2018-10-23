@@ -557,8 +557,8 @@ class EMItem3DInspector(QtGui.QTabWidget):
 			databox.addWidget(self.boundingbox)
 		gridbox.addLayout(databox, 1, 0, 1, 1)
 		# angluar controls
-		xformframe = QtGui.QFrame()
-		xformframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		xformframe = QtWidgets.QFrame()
+		xformframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		xformbox = QtGui.QGridLayout()
 		xformlabel = QtGui.QLabel("Transformation", xformframe)
 		xformlabel.setFont(font)

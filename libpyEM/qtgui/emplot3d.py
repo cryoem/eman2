@@ -1042,8 +1042,8 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 		self.summary.setText("Summary Table")
 		gbl0.addWidget(self.summary,2,0,1,2)
 
-		hl1 = QtGui.QFrame()
-		hl1.setFrameStyle(QtGui.QFrame.HLine)
+		hl1 = QtWidgets.QFrame()
+		hl1.setFrameStyle(QtWidgets.QFrame.HLine)
 		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
 		gbl0.addWidget(hl1,3,0,1,2)
 
@@ -1077,8 +1077,8 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 		self.run.setText("Compute")
 		gbl0.addWidget(self.run,8,0,1,2)
 
-		hl2 = QtGui.QFrame()
-		hl2.setFrameStyle(QtGui.QFrame.HLine)
+		hl2 = QtWidgets.QFrame()
+		hl2.setFrameStyle(QtWidgets.QFrame.HLine)
 		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
 		gbl0.addWidget(hl2,9,0,1,2)
 
@@ -1352,8 +1352,8 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 		self.wcbaxnorm=CheckBox(label="Eq Wt Axes:",value=0)
 		gbl0.addWidget(self.wcbaxnorm,6,0)
 
-		hl1 = QtGui.QFrame()
-		hl1.setFrameStyle(QtGui.QFrame.HLine)
+		hl1 = QtWidgets.QFrame()
+		hl1.setFrameStyle(QtWidgets.QFrame.HLine)
 		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
 		gbl0.addWidget(hl1,7,0,1,2)
 
@@ -1376,8 +1376,8 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 		self.wcomb_threshtype.addItem("percentile")
 		gbl0.addWidget(self.wcomb_threshtype,12,0)
 
-		hl2 = QtGui.QFrame()
-		hl2.setFrameStyle(QtGui.QFrame.HLine)
+		hl2 = QtWidgets.QFrame()
+		hl2.setFrameStyle(QtWidgets.QFrame.HLine)
 		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
 		gbl0.addWidget(hl2,13,0,1,2)
 
