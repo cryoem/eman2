@@ -1433,7 +1433,7 @@ class Camera2(object):
 				return False
 			
 	def wheelEvent(self, event):
-		self.scale_delta(event.delta())
+		self.scale_delta(event.angleDelta().y())
 		return True
 	
 	def motion_translate_z_only(self,prev_x,prev_y,event):

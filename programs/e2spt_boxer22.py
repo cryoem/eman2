@@ -960,11 +960,11 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.xydown=None
 
 	def xy_wheel (self,event):
-		if event.delta() > 0:
+		if event.angleDelta().y() > 0:
 			#self.wdepth.setValue(self.wdepth.value()+4)
 			self.wdepth.setValue(self.wdepth.value()+1) #jesus
 
-		elif event.delta() < 0:
+		elif event.angleDelta().y() < 0:
 			#self.wdepth.setValue(self.wdepth.value()-4)
 			self.wdepth.setValue(self.wdepth.value()-1) #jesus
 
