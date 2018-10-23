@@ -2349,7 +2349,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 
 		self.busy=0
 
-		self.vals.triggered[QtGui.QAction].connect(self.newValDisp)
+		self.vals.triggered[QtWidgets.QAction].connect(self.newValDisp)
 #		QtCore.QObject.connect(self.mapp, QtCore.SIGNAL("clicked(bool)"), self.set_app_mode)
 #		QtCore.QObject.connect(self.mDel, QtCore.SIGNAL("clicked(bool)"), self.set_Del_mode)
 #		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.set_drag_mode)
