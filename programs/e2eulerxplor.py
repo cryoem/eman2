@@ -740,7 +740,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 
 		self.list_widget = QtGui.QListWidget(None)
 
-		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+		self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
 		self.list_widget.itemClicked[QtGui.QListWidgetItem].connect(self.list_widget_item_clicked)
 

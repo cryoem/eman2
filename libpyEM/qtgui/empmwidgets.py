@@ -811,7 +811,7 @@ class PMTableBase(PMBaseWidget):
 		gridbox = QtGui.QGridLayout()
 		self.tablewidget = QtGui.QTableWidget()
 		gridbox.addWidget(self.tablewidget, 0, 0)
-		self.tablewidget.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)	# Readonly table
+		self.tablewidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)	# Readonly table
 		self.setLayout(gridbox)
 
 	def updateTable(self):
@@ -843,8 +843,8 @@ class PMFSCTableWidget(PMTableBase):
 		self.tablewidget.setHorizontalHeaderLabels(["Refine", "# Iter", "Masked .143", "Unmasked .143"])
 		self.tablewidget.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
 		self.tablewidget.horizontalHeader().setHighlightSections(False)
-		self.tablewidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)	# select rows
-		self.tablewidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)	# single selection
+		self.tablewidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)	# select rows
+		self.tablewidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)	# single selection
 
 		self.tablewidget.setRowCount(0)
 		self.patterns = ["refine","frealign","multi"]
