@@ -2865,7 +2865,7 @@ class EMSGNodeInspector(EMItem3DInspector):
 		
 	def addExtraTabAllObjects(self,gridbox):
 		self.getthresh = QtWidgets.QLabel("Iso-threshod")
-		self.isothr_box=QtGui.QLineEdit("0.0")
+		self.isothr_box=QtWidgets.QLineEdit("0.0")
 		gridbox.addWidget(self.getthresh, 1, 0, 1, 1)
 		gridbox.addWidget(self.isothr_box, 1, 1, 1, 1)
 		self.isothr_box.returnPressed.connect(self._on_change_threshold)
@@ -3074,7 +3074,7 @@ class NodeEditDialog(QtWidgets.QDialog):
 		self.inspector = weakref.ref(inspector)
 		grid = QtWidgets.QGridLayout(self)
 		label = QtWidgets.QLabel("Node Name")
-		self.nodename = QtGui.QLineEdit(self.item.item3d().getLabel())
+		self.nodename = QtWidgets.QLineEdit(self.item.item3d().getLabel())
 		grid.addWidget(label, 0, 0, 1, 2)
 		grid.addWidget(self.nodename, 1, 0, 1, 2)
 		self.ok_button = QtGui.QPushButton("Ok")

@@ -2455,11 +2455,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl2=QtWidgets.QHBoxLayout()
 
 		#hbl2.addWidget(QtWidgets.QLabel("X:",self))
-		#self.wxmin=QtGui.QLineEdit(self)
+		#self.wxmin=QtWidgets.QLineEdit(self)
 		self.wxmin=ValBox(label="X:")
 		hbl2.addWidget(self.wxmin)
 		#hbl2.addWidget(QtWidgets.QLabel("-",self))
-		#self.wxmax=QtGui.QLineEdit(self)
+		#self.wxmax=QtWidgets.QLineEdit(self)
 		self.wxmax=ValBox(label="  ")
 		hbl2.addWidget(self.wxmax)
 
@@ -2486,13 +2486,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		hbl4 = QtWidgets.QHBoxLayout()
 		hbl4.addWidget(QtWidgets.QLabel("X Label:",self))
-		self.xlabel=QtGui.QLineEdit(self)
+		self.xlabel=QtWidgets.QLineEdit(self)
 		hbl4.addWidget(self.xlabel)
 		vbl0.addLayout(hbl4)
 
 		hbl5 = QtWidgets.QHBoxLayout()
 		hbl5.addWidget(QtWidgets.QLabel("Y Label:",self))
-		self.ylabel=QtGui.QLineEdit(self)
+		self.ylabel=QtWidgets.QLineEdit(self)
 		hbl5.addWidget(self.ylabel)
 		vbl0.addLayout(hbl5)
 

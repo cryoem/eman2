@@ -489,7 +489,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		formattab.vbl.setObjectName("Format")
 
 		self.hbl1 = QtWidgets.QHBoxLayout()
-		self.text = QtGui.QLineEdit()
+		self.text = QtWidgets.QLineEdit()
 		self.text.setText("hello world")
 		text_label = QtWidgets.QLabel("Enter Text:",self)
 		text_label.setToolTip("Enters quotes to evaluate new line e.g. \"hello\\nworld\". Evaluates numerical expressions e.g. 9*9 (with out quotes)")

@@ -141,7 +141,7 @@ class PMIntEntryWidget(PMBaseWidget):
 
 		gridbox = QtWidgets.QGridLayout()
 		label = QtWidgets.QLabel(name)
-		self.intbox = QtGui.QLineEdit()
+		self.intbox = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.intbox, 0, 1)
 		self.setLayout(gridbox)
@@ -236,7 +236,7 @@ class PMFloatEntryWidget(PMBaseWidget):
 
 		gridbox = QtWidgets.QGridLayout()
 		label = QtWidgets.QLabel(name)
-		self.floatbox = QtGui.QLineEdit()
+		self.floatbox = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.floatbox, 0, 1)
 		self.setLayout(gridbox)
@@ -292,7 +292,7 @@ class PMStringEntryWidget(PMBaseWidget):
 
 		gridbox = QtWidgets.QGridLayout()
 		label = QtWidgets.QLabel(name)
-		self.stringbox = QtGui.QLineEdit()
+		self.stringbox = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.stringbox, 0, 1)
 		self.setLayout(gridbox)
@@ -400,7 +400,7 @@ class PMFileNameWidget(PMBaseWidget):
 		gridbox = QtWidgets.QGridLayout()
 		label = QtWidgets.QLabel(name)
 		self.browser = browser
-		self.filenamebox = QtGui.QLineEdit()
+		self.filenamebox = QtWidgets.QLineEdit()
 		self.browsebutton = QtGui.QPushButton("Browse")
 		self.infolabel = QtWidgets.QLabel("Num Images: None")
 		gridbox.addWidget(label, 0, 0)
@@ -615,7 +615,7 @@ class PMComboParamsWidget(PMBaseWidget):
 		label = QtWidgets.QLabel(name)
 		self.combobox = PMComboBox()
 		plabel = QtWidgets.QLabel("params:")
-		self.params = QtGui.QLineEdit()
+		self.params = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
 		gridbox.addWidget(plabel, 0, 2)

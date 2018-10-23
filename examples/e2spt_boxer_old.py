@@ -976,7 +976,7 @@ def sptboxergui(options,args):
 			self.wsymlbl=QtWidgets.QLabel("Symmetry:")
 			self.gbl2.addWidget(self.wsymlbl,4,0)
 
-			self.wsym=QtGui.QLineEdit("C1")
+			self.wsym=QtWidgets.QLineEdit("C1")
 			self.gbl2.addWidget(self.wsym,4,1)
 
 			self.wprog=QtGui.QProgressBar()

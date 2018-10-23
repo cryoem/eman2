@@ -382,7 +382,7 @@ class EMIsoInspector(QtGui.QWidget):
 		
 		if enable_browse:
 			hblbrowse = QtWidgets.QHBoxLayout()
-			self.mrc_text = QtGui.QLineEdit()
+			self.mrc_text = QtWidgets.QLineEdit()
 			hblbrowse.addWidget(self.mrc_text)
 			self.mrc_browse = QtGui.QPushButton("Browse")
 			hblbrowse.addWidget(self.mrc_browse)

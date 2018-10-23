@@ -2081,28 +2081,28 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.dtl1.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl1,0,0)
 
-		self.dtpen = QtGui.QLineEdit("5")
+		self.dtpen = QtWidgets.QLineEdit("5")
 		self.drawlay.addWidget(self.dtpen,0,1)
 
 		self.dtl2 = QtWidgets.QLabel("Pen Val:")
 		self.dtl2.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl2,1,0)
 
-		self.dtpenv = QtGui.QLineEdit("1.0")
+		self.dtpenv = QtWidgets.QLineEdit("1.0")
 		self.drawlay.addWidget(self.dtpenv,1,1)
 
 		self.dtl3 = QtWidgets.QLabel("Pen Size2:")
 		self.dtl3.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl3,0,2)
 
-		self.dtpen2 = QtGui.QLineEdit("5")
+		self.dtpen2 = QtWidgets.QLineEdit("5")
 		self.drawlay.addWidget(self.dtpen2,0,3)
 
 		self.dtl4 = QtWidgets.QLabel("Pen Val2:")
 		self.dtl4.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl4,1,2)
 
-		self.dtpenv2 = QtGui.QLineEdit("0")
+		self.dtpenv2 = QtWidgets.QLineEdit("0")
 		self.drawlay.addWidget(self.dtpenv2,1,3)
 
 		self.mmtab.addTab(self.drawtab,"Draw")
@@ -2124,7 +2124,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.pytab = QtGui.QWidget()
 		self.pytlay = QtWidgets.QGridLayout(self.pytab)
 
-		self.pyinp = QtGui.QLineEdit()
+		self.pyinp = QtWidgets.QLineEdit()
 		self.pytlay.addWidget(self.pyinp,0,0)
 
 		self.pyout = QtGui.QTextEdit()
