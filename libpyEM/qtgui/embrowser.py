@@ -2919,7 +2919,7 @@ class EMInfoWin(QtGui.QWidget) :
 		QtGui.QWidget.__init__(self, parent)
 
 		self.target = None
-		self.stack = QtGui.QStackedLayout(self)
+		self.stack = QtWidgets.QStackedLayout(self)
 
 		# We add one instance of 'infoPane' parent class to represent nothing
 
