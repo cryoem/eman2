@@ -3077,7 +3077,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wpath = QtWidgets.QLineEdit()
 		self.wtoolhbl.addWidget(self.wpath, 5)
 
-		# self.wspacet1 = QtGui.QSpacerItem(100, 10, QtWidgets.QSizePolicy.MinimumExpanding)
+		# self.wspacet1 = QtWidgets.QSpacerItem(100, 10, QtWidgets.QSizePolicy.MinimumExpanding)
 		# self.wtoolhbl.addSpacerItem(self.wspacet1)
 
 		self.wbutinfo = QtWidgets.QPushButton("Info")
@@ -3120,7 +3120,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wtoolhbl2.addWidget(self.wfilter, 5)
 		if dirregex!="":
 			self.wfilter.setEditText(dirregex)
-		# self.wspacet1 = QtGui.QSpacerItem(100, 10, QtWidgets.QSizePolicy.MinimumExpanding)
+		# self.wspacet1 = QtWidgets.QSpacerItem(100, 10, QtWidgets.QSizePolicy.MinimumExpanding)
 		# self.wtoolhbl.addSpacerItem(self.wspacet1)
 
 		self.selectall = QtWidgets.QPushButton("Sel All")
@@ -3194,7 +3194,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		# buttons for selector use
 
 		if withmodal :
-#			self.wspace1 = QtGui.QSpacerItem(100, 10, QtWidgets.QSizePolicy.MinimumExpanding)
+#			self.wspace1 = QtWidgets.QSpacerItem(100, 10, QtWidgets.QSizePolicy.MinimumExpanding)
 #			self.hbl2.addSpacerItem(self.wspace1)
 
 			self.wbutcancel = QtWidgets.QPushButton("Cancel")
