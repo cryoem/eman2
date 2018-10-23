@@ -548,7 +548,7 @@ class SwarmPanel(object):
 			self.selbut.setChecked(True)
 			self.morselbut = QtGui.QRadioButton(SwarmBoxer.MORESELECTIVE)
 
-			self.method_group = QtGui.QButtonGroup()
+			self.method_group = QtWidgets.QButtonGroup()
 			self.method_group.addButton(self.thrbut)
 			self.method_group.addButton(self.selbut)
 			self.method_group.addButton(self.morselbut)
