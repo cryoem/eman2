@@ -1047,7 +1047,7 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
 		gbl0.addWidget(hl1,3,0,1,2)
 
-		self.wlnorm=QtGui.QLabel(self)
+		self.wlnorm=QtWidgets.QLabel(self)
 		self.wlnorm.setText("Test:")
 		gbl0.addWidget(self.wlnorm,4,0)
 
@@ -1218,7 +1218,7 @@ class EMPlot3DRegrInsp(QtGui.QWidget):
 		self.wnpts.intonly=1
 		gbl0.addWidget(self.wnpts,4,1)
 
-		self.wlnorm=QtGui.QLabel(self)
+		self.wlnorm=QtWidgets.QLabel(self)
 		self.wlnorm.setText("Normalization:")
 		gbl0.addWidget(self.wlnorm,6,0)
 
@@ -1892,27 +1892,27 @@ class EMPlot3DInspector(QtGui.QWidget):
 
 		# per plot column selectors
 		gl=QtWidgets.QGridLayout()
-		gl.addWidget(QtGui.QLabel("X Col:",self),0,0,Qt.AlignRight)
+		gl.addWidget(QtWidgets.QLabel("X Col:",self),0,0,Qt.AlignRight)
 		self.slidex=QtGui.QSpinBox(self)
 		self.slidex.setRange(-1,1)
 		gl.addWidget(self.slidex,0,1,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("Y Col:",self),1,0,Qt.AlignRight)
+		gl.addWidget(QtWidgets.QLabel("Y Col:",self),1,0,Qt.AlignRight)
 		self.slidey=QtGui.QSpinBox(self)
 		self.slidey.setRange(-1,1)
 		gl.addWidget(self.slidey,1,1,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("Z Col:",self),2,0,Qt.AlignRight)
+		gl.addWidget(QtWidgets.QLabel("Z Col:",self),2,0,Qt.AlignRight)
 		self.slidez=QtGui.QSpinBox(self)
 		self.slidez.setRange(-1,1)
 		gl.addWidget(self.slidez,2,1,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("C Col:",self),0,2,Qt.AlignRight)
+		gl.addWidget(QtWidgets.QLabel("C Col:",self),0,2,Qt.AlignRight)
 		self.slidec=QtGui.QSpinBox(self)
 		self.slidec.setRange(-2,1)
 		gl.addWidget(self.slidec,0,3,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("S Col:",self),1,2,Qt.AlignRight)
+		gl.addWidget(QtWidgets.QLabel("S Col:",self),1,2,Qt.AlignRight)
 		self.slides=QtGui.QSpinBox(self)
 		self.slides.setRange(-2,1)
 		gl.addWidget(self.slides,1,3,Qt.AlignLeft)
@@ -1950,30 +1950,30 @@ class EMPlot3DInspector(QtGui.QWidget):
 
 		gblmm=QtWidgets.QGridLayout()
 
-		self.wl1=QtGui.QLabel("Min")
+		self.wl1=QtWidgets.QLabel("Min")
 #		self.wl1.setAlignment(Qt.AlignHCenter)
 		gblmm.addWidget(self.wl1,1,0)
-		self.wl2=QtGui.QLabel("Max")
+		self.wl2=QtWidgets.QLabel("Max")
 #		self.wl2.setAlignment(Qt.AlignHCenter)
 		gblmm.addWidget(self.wl2,2,0)
 
-		self.wl1h=QtGui.QLabel("X")
+		self.wl1h=QtWidgets.QLabel("X")
 		self.wl1h.setAlignment(Qt.AlignHCenter)
 		gblmm.addWidget(self.wl1h,0,1)
 
-		self.wl2h=QtGui.QLabel("Y")
+		self.wl2h=QtWidgets.QLabel("Y")
 		self.wl2h.setAlignment(Qt.AlignHCenter)
 		gblmm.addWidget(self.wl2h,0,2)
 
-		self.wl3h=QtGui.QLabel("Z")
+		self.wl3h=QtWidgets.QLabel("Z")
 		self.wl3h.setAlignment(Qt.AlignHCenter)
 		gblmm.addWidget(self.wl3h,0,3)
 
-		self.wl4h=QtGui.QLabel("C")
+		self.wl4h=QtWidgets.QLabel("C")
 		self.wl4h.setAlignment(Qt.AlignHCenter)
 		gblmm.addWidget(self.wl4h,0,4)
 
-		self.wl5h=QtGui.QLabel("S")
+		self.wl5h=QtWidgets.QLabel("S")
 		self.wl5h.setAlignment(Qt.AlignHCenter)
 		gblmm.addWidget(self.wl5h,0,5)
 
@@ -2007,28 +2007,28 @@ class EMPlot3DInspector(QtGui.QWidget):
 
 
 		hbl4 = QtWidgets.QHBoxLayout()
-		hbl4.addWidget(QtGui.QLabel("X Label:",self))
+		hbl4.addWidget(QtWidgets.QLabel("X Label:",self))
 		self.xlabel=QtGui.QLineEdit(self)
 		hbl4.addWidget(self.xlabel)
 		self.xlabel.setText("X")
 		vbl0.addLayout(hbl4)
 
 		hbl5 = QtWidgets.QHBoxLayout()
-		hbl5.addWidget(QtGui.QLabel("Y Label:",self))
+		hbl5.addWidget(QtWidgets.QLabel("Y Label:",self))
 		self.ylabel=QtGui.QLineEdit(self)
 		hbl5.addWidget(self.ylabel)
 		self.ylabel.setText("Y")
 		vbl0.addLayout(hbl5)
 
 		hbl5a = QtWidgets.QHBoxLayout()
-		hbl5a.addWidget(QtGui.QLabel("Z Label:",self))
+		hbl5a.addWidget(QtWidgets.QLabel("Z Label:",self))
 		self.zlabel=QtGui.QLineEdit(self)
 		hbl5a.addWidget(self.zlabel)
 		self.zlabel.setText("Z")
 		vbl0.addLayout(hbl5a)
 
 		hbl6 = QtWidgets.QHBoxLayout()
-		#hbl6.addWidget(QtGui.QLabel("Transparency:",self))
+		#hbl6.addWidget(QtWidgets.QLabel("Transparency:",self))
 		self.alphaslider=ValSlider(self,(0,1),"Transparency:",0.5,50)
 		hbl6.addWidget(self.alphaslider)
 		vbl0.addLayout(hbl6)
@@ -2539,7 +2539,7 @@ class EMDataFnPlotter(QtGui.QWidget):
 		self.plot = EMPlot3DWidget(parent=self)
 		self.gbl.addWidget(self.plot,0,0,1,1)
 
-		self.lplot = QtGui.QLabel("Plot")
+		self.lplot = QtWidgets.QLabel("Plot")
 		self.gbl.addWidget(self.plot,1,0)
 
 		if data!=None :

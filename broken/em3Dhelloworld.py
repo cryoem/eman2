@@ -298,7 +298,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.hbl_color.setObjectName("Material")
 			maintab.vbl.addLayout(self.hbl_color)
 			
-			self.color_label = QtGui.QLabel()
+			self.color_label = QtWidgets.QLabel()
 			self.color_label.setText('Material')
 			self.hbl_color.addWidget(self.color_label)
 			
@@ -311,7 +311,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.hbl_trans.setObjectName("Trans")
 			maintab.vbl.addLayout(self.hbl_trans)
 			
-			self.x_label = QtGui.QLabel()
+			self.x_label = QtWidgets.QLabel()
 			self.x_label.setText('x')
 			self.hbl_trans.addWidget(self.x_label)
 			
@@ -321,7 +321,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.x_trans.setValue(0.0)
 			self.hbl_trans.addWidget(self.x_trans)
 			
-			self.y_label = QtGui.QLabel()
+			self.y_label = QtWidgets.QLabel()
 			self.y_label.setText('y')
 			self.hbl_trans.addWidget(self.y_label)
 			
@@ -332,7 +332,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.hbl_trans.addWidget(self.y_trans)
 			
 			
-			self.z_label = QtGui.QLabel()
+			self.z_label = QtWidgets.QLabel()
 			self.z_label.setText('z')
 			self.hbl_trans.addWidget(self.z_label)
 			
@@ -348,7 +348,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.hbl_src.setObjectName("hbl")
 			maintab.vbl.addLayout(self.hbl_src)
 			
-			self.label_src = QtGui.QLabel()
+			self.label_src = QtWidgets.QLabel()
 			self.label_src.setText('Rotation Convention')
 			self.hbl_src.addWidget(self.label_src)
 			

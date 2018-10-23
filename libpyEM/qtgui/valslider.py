@@ -113,7 +113,7 @@ class ValSlider(QtGui.QWidget):
 			self.enablebox.toggled[bool].connect(self.setEnabled)
 		
 		if label:
-			self.label = QtGui.QLabel(self)
+			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
 			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
@@ -327,7 +327,7 @@ class ValBox(QtGui.QWidget):
 			self.enablebox.toggled[bool].connect(self.setEnabled)
 			
 		if label:
-			self.label = QtGui.QLabel(self)
+			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
 			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
@@ -473,7 +473,7 @@ class StringBox(QtGui.QWidget):
 			self.enablebox.toggled[bool].connect(self.setEnabled)
 			
 		if label:
-			self.label = QtGui.QLabel(self)
+			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
 			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
@@ -559,7 +559,7 @@ class CheckBox(QtGui.QWidget):
 			self.enablebox.toggled[bool].connect(self.setEnabled)
 			
 		if label:
-			self.label = QtGui.QLabel(self)
+			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
 			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))

@@ -1377,7 +1377,7 @@ class GUIBoxer(QtGui.QWidget):
 		
 		
 		# Autoboxing Tabs
-		self.autolbl = QtGui.QLabel("Autoboxing Methods:")
+		self.autolbl = QtWidgets.QLabel("Autoboxing Methods:")
 		self.gbl.addWidget(self.autolbl,7,2)
 		self.autotab = QtGui.QTabWidget()
 		self.gbl.addWidget(self.autotab,8,2,5,4)
@@ -2662,7 +2662,7 @@ class GUIBoxer(QtGui.QWidget):
     #pageComboBox->addItem(tr("Page 3"));
     #connect(pageComboBox, SIGNAL(activated(int)),stackedWidget, SLOT(setCurrentIndex(int)));
 
-		#self.lboxmode=QtGui.QLabel("Mode:",self)
+		#self.lboxmode=QtWidgets.QLabel("Mode:",self)
 		#self.gbl.addWidget(self.lboxmode,10,0)
 
 		#self.sboxmode=QtWidgets.QComboBox(self)
@@ -2671,7 +2671,7 @@ class GUIBoxer(QtGui.QWidget):
 		#self.sboxmode.setCurrentIndex(1)
 		#self.gbl.addWidget(self.sboxmode,10,1)
 
-		#self.lanmode=QtGui.QLabel("Annotate:",self)
+		#self.lanmode=QtWidgets.QLabel("Annotate:",self)
 		#self.gbl.addWidget(self.lanmode,12,0)
 
 		#self.sanmode=QtWidgets.QComboBox(self)

@@ -86,7 +86,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.extrafiles=extrafiles
 
 		# A listwidget for selecting which class-average file we're looking at
-		self.wclassfilel=QtGui.QLabel("Class-average File:")
+		self.wclassfilel=QtWidgets.QLabel("Class-average File:")
 		self.vbl.addWidget(self.wclassfilel)
 
 		self.wfilesel=QtGui.QListWidget()
@@ -95,7 +95,7 @@ class EMClassPtclTool(QtGui.QWidget):
 
 		# A widget containing the current particle filename, editable by the user
 		# If edited it will also impact set generation !
-		self.wptclfilel=QtGui.QLabel("Particle Data File:")
+		self.wptclfilel=QtWidgets.QLabel("Particle Data File:")
 		self.vbl.addWidget(self.wptclfilel)
 
 		self.wptclfile=QtWidgets.QComboBox(self)

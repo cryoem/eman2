@@ -531,17 +531,17 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 			self.polarplot.setMinimumWidth(50)
 			self.resize(480,580)
 			
-			meanAngLabel = QtGui.QLabel("Mean Tilt Angle") 
+			meanAngLabel = QtWidgets.QLabel("Mean Tilt Angle") 
 			self.meanAngle = QtGui.QLineEdit("")
-			meanAxisLabel = QtGui.QLabel("Mean Tilt Axis") 
+			meanAxisLabel = QtWidgets.QLabel("Mean Tilt Axis") 
 			self.meanAxis = QtGui.QLineEdit("")
-			rmsdAngLabel = QtGui.QLabel("RMSD Tilt Angle") 
+			rmsdAngLabel = QtWidgets.QLabel("RMSD Tilt Angle") 
 			self.rmsdAngle = QtGui.QLineEdit("")
-			rmsdAxisLabel = QtGui.QLabel("RMSD Tilt Axis") 
+			rmsdAxisLabel = QtWidgets.QLabel("RMSD Tilt Axis") 
 			self.rmsdAxis = QtGui.QLineEdit("")
-			pointsLabel = QtGui.QLabel("Num points")
+			pointsLabel = QtWidgets.QLabel("Num points")
 			self.points = QtGui.QLineEdit("")
-			self.pointlabel = QtGui.QLabel("Right click to pick the nearest point")
+			self.pointlabel = QtWidgets.QLabel("Right click to pick the nearest point")
 			
 			
 			frame = QtWidgets.QFrame()
