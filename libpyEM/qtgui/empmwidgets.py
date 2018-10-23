@@ -901,14 +901,14 @@ class PMFSCTableWidget(PMTableBase):
 
 		for i, directory in enumerate(sorted(dirs)):
 			# load each directory
-			qwi_dirname = QtGui.QTableWidgetItem(str(directory))
+			qwi_dirname = QtWidgets.QTableWidgetItem(str(directory))
 			self.tablewidget.setItem(i, 0, qwi_dirname)
 
 			fscs=sorted([ii for ii in os.listdir(directory) if ii[:11]=="fsc_masked_"])
 			niter=len(fscs)
 			if "fsc_masked_00.txt" in fscs : niter-=1
 			
-			self.tablewidget.setItem(i, 1, QtGui.QTableWidgetItem(str(niter)))
+			self.tablewidget.setItem(i, 1, QtWidgets.QTableWidgetItem(str(niter)))
 			
 			try:
 				# We use a running average of 5 points to compute the threshold
@@ -918,9 +918,9 @@ class PMFSCTableWidget(PMTableBase):
 					v=old_div((xyd.get_y(ii-2)+xyd.get_y(ii-1)+xyd.get_y(ii)+xyd.get_y(ii+1)+xyd.get_y(ii+2)),5.0)
 					if v<0.143 : break
 				
-				self.tablewidget.setItem(i,2,QtGui.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
+				self.tablewidget.setItem(i,2,QtWidgets.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
 			except:
-				self.tablewidget.setItem(i,2,QtGui.QTableWidgetItem("?"))
+				self.tablewidget.setItem(i,2,QtWidgets.QTableWidgetItem("?"))
 
 			try:
 				# We use a running average of 5 points to compute the threshold
@@ -930,9 +930,9 @@ class PMFSCTableWidget(PMTableBase):
 					v=old_div((xyd.get_y(ii-2)+xyd.get_y(ii-1)+xyd.get_y(ii)+xyd.get_y(ii+1)+xyd.get_y(ii+2)),5.0)
 					if v<0.143 : break
 				
-				self.tablewidget.setItem(i,3,QtGui.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
+				self.tablewidget.setItem(i,3,QtWidgets.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
 			except:
-				self.tablewidget.setItem(i,3,QtGui.QTableWidgetItem("?"))
+				self.tablewidget.setItem(i,3,QtWidgets.QTableWidgetItem("?"))
 
 			
 

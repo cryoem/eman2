@@ -214,7 +214,7 @@ class SptEvalGUI(QtGui.QWidget):
 					v=float(v)
 				except:
 					v=str(v)
-				it=QtGui.QTableWidgetItem()
+				it=QtWidgets.QTableWidgetItem()
 				it.setData(Qt.EditRole, v)
 				self.imglst.setItem(i,j,it)
 				

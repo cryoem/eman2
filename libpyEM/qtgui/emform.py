@@ -220,8 +220,8 @@ class EMParamTable(list):
 		selected_items = []
 		for i,param in enumerate(self):
 			for j,choice in enumerate(param.choices):
-				if i == 0 and icon != None: item = QtGui.QTableWidgetItem(icon,str(choice))
-				else: item = QtGui.QTableWidgetItem(str(choice))
+				if i == 0 and icon != None: item = QtWidgets.QTableWidgetItem(icon,str(choice))
+				else: item = QtWidgets.QTableWidgetItem(str(choice))
 				if i == 0:
 					if str(choice) not in exclusions:
 						item.setFlags(flag2|flag3)
@@ -240,7 +240,7 @@ class EMParamTable(list):
 				
 				table_widget.setItem(j, i, item)
 				
-			item = QtGui.QTableWidgetItem(param.desc_short)
+			item = QtWidgets.QTableWidgetItem(param.desc_short)
 			item.setTextAlignment(QtCore.Qt.AlignHCenter)
 			item.setToolTip(param.desc_long)
 			table_widget.setHorizontalHeaderItem(i,item)
@@ -271,7 +271,7 @@ class EMFileTable(QtWidgets.QTableWidget):
 		self.vartype = "file_table" # This is used by the EMFormWidget to insert this object correctly into a widget
 		self.name_conversions = {} # This is used to convert the displayed name to the real name of the file on the operating system
 		self.context_menu_data = {} # see self.get_context_menu_dict help
-		self.itemDoubleClicked[QtGui.QTableWidgetItem].connect(self.table_item_double_clicked)
+		self.itemDoubleClicked[QtWidgets.QTableWidgetItem].connect(self.table_item_double_clicked)
 
 		if enable_save: self.context_menu_data["Save As"] = EMFileTable.save_as
 		self.context_menu_refs = [] # to keep a reference to context menus related objects - somebody has to
@@ -455,8 +455,8 @@ class EMFileTable(QtWidgets.QTableWidget):
 
 		# first step is to insert the first column, which is the file names
 		for i,name in enumerate(self.listed_names):
-			if self.icon != None: item = QtGui.QTableWidgetItem(self.icon,self.display_name(name))
-			else: item = QtGui.QTableWidgetItem(self.display_name(name))
+			if self.icon != None: item = QtWidgets.QTableWidgetItem(self.icon,self.display_name(name))
+			else: item = QtWidgets.QTableWidgetItem(self.display_name(name))
 
 			if not file_exists(name):item.setTextColor(QtGui.QColor(0,128,0))
 				
@@ -477,7 +477,7 @@ class EMFileTable(QtWidgets.QTableWidget):
 				
 			self.setItem(i, 0, item)
 				
-		item = QtGui.QTableWidgetItem(self.desc_short)
+		item = QtWidgets.QTableWidgetItem(self.desc_short)
 		item.setTextAlignment(QtCore.Qt.AlignHCenter)
 		item.setToolTip(self.desc_long)
 		self.setHorizontalHeaderItem(0,item)
@@ -485,19 +485,19 @@ class EMFileTable(QtWidgets.QTableWidget):
 		# second step is to add the columns
 		col = 1
 		for cd in self.column_data:
-			item = QtGui.QTableWidgetItem(cd.name)
+			item = QtWidgets.QTableWidgetItem(cd.name)
 			item.setTextAlignment(QtCore.Qt.AlignHCenter)
 			item.setToolTip(cd.tooltip)
 			
 			self.setHorizontalHeaderItem(col,item)
 			for i in range(0,len(self.listed_names)):
-				try : item = QtGui.QTableWidgetItem(cd.function(self.listed_names[i]))
-				except : item = QtGui.QTableWidgetItem("-")
+				try : item = QtWidgets.QTableWidgetItem(cd.function(self.listed_names[i]))
+				except : item = QtWidgets.QTableWidgetItem("-")
 				item.setTextAlignment(QtCore.Qt.AlignHCenter)
 				item.setFlags(flag3)
 				if cd.lt_function: # This is how sort gets customized
 					import new
-					item.__lt__ = new.instancemethod(cd.lt_function,item,QtGui.QTableWidgetItem)
+					item.__lt__ = new.instancemethod(cd.lt_function,item,QtWidgets.QTableWidgetItem)
 				self.setItem(i, col, item)
 			col += 1
 
@@ -520,8 +520,8 @@ class EMFileTable(QtWidgets.QTableWidget):
 		flag4 = Qt.ItemFlags(Qt.ItemIsEditable)
 		new_items = []
 		for i in range(0,len(list_of_names)):
-			if self.icon != None: item = QtGui.QTableWidgetItem(self.icon,self.display_name(list_of_names[i]))
-			else: item = QtGui.QTableWidgetItem(self.display_name(list_of_names[i]))
+			if self.icon != None: item = QtWidgets.QTableWidgetItem(self.icon,self.display_name(list_of_names[i]))
+			else: item = QtWidgets.QTableWidgetItem(self.display_name(list_of_names[i]))
 			item.setFlags(flag2|flag3)
 			item.setTextAlignment(QtCore.Qt.AlignHCenter)
 			self.setItem(r+i, 0, item)
@@ -530,12 +530,12 @@ class EMFileTable(QtWidgets.QTableWidget):
 				item.setSelected(True)
 			
 			for j, cd in enumerate(self.column_data):
-				item = QtGui.QTableWidgetItem(cd.function(list_of_names[i]))
+				item = QtWidgets.QTableWidgetItem(cd.function(list_of_names[i]))
 				item.setTextAlignment(QtCore.Qt.AlignHCenter)
 				item.setFlags(flag3)
 				if cd.lt_function: # This is how sort gets customized
 					import new
-					item.__lt__ = new.instancemethod(cd.lt_function,item,QtGui.QTableWidgetItem)
+					item.__lt__ = new.instancemethod(cd.lt_function,item,QtWidgets.QTableWidgetItem)
 				self.setItem(r+i,j+1, item)
 			
 		self.setSortingEnabled(sorting)
@@ -1867,7 +1867,7 @@ class EMParamTableEventHandler(object):
 		self.table_widget = table_widget
 		table_widget.contextMenuEvent = self.contextMenuEvent
 				
-		table_widget.itemDoubleClicked[QtGui.QTableWidgetItem].connect(self.table_item_double_clicked)
+		table_widget.itemDoubleClicked[QtWidgets.QTableWidgetItem].connect(self.table_item_double_clicked)
 		
 	def table_item_double_clicked(self,item):
 		if hasattr(self.table_widget,"convert_text"):
