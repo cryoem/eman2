@@ -1014,7 +1014,7 @@ if ENABLE_GUI:
 
 		def __create_ui(self):
 
-			self.menu_bar = QtGui.QMenuBar(self)
+			self.menu_bar = QtWidgets.QMenuBar(self)
 			self.file_menu = QtWidgets.QMenu(self.tr("&File"))
 			self.load_micrograph_action = QtWidgets.QAction(self.tr("&Open Micrographs"), self)
 	#        self.write_coords_action = QtWidgets.QAction(self.tr("Save &Coordinates"), self)
