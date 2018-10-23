@@ -107,7 +107,7 @@ class ValSlider(QtGui.QWidget):
 		self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
-			self.enablebox=QtGui.QCheckBox(self)
+			self.enablebox=QtWidgets.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
 			self.enablebox.toggled[bool].connect(self.setEnabled)
@@ -321,7 +321,7 @@ class ValBox(QtGui.QWidget):
 		self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
-			self.enablebox=QtGui.QCheckBox(self)
+			self.enablebox=QtWidgets.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
 			self.enablebox.toggled[bool].connect(self.setEnabled)
@@ -467,7 +467,7 @@ class StringBox(QtGui.QWidget):
 		self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
-			self.enablebox=QtGui.QCheckBox(self)
+			self.enablebox=QtWidgets.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
 			self.enablebox.toggled[bool].connect(self.setEnabled)
@@ -553,7 +553,7 @@ class CheckBox(QtGui.QWidget):
 		self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
-			self.enablebox=QtGui.QCheckBox(self)
+			self.enablebox=QtWidgets.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
 			self.enablebox.toggled[bool].connect(self.setEnabled)
@@ -574,7 +574,7 @@ class CheckBox(QtGui.QWidget):
 			self.hboxlayout.addWidget(self.label)
 		
 		
-		self.check = QtGui.QCheckBox(self)
+		self.check = QtWidgets.QCheckBox(self)
 #		print "'%s'"%str(value)
 		self.check.setChecked(value)
 		self.hboxlayout.addWidget(self.check)

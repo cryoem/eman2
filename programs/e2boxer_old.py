@@ -577,13 +577,13 @@ class SwarmPanel(object):
 			vbl.addLayout(hbl_ww)
 
 			hbl_aa = QtGui.QHBoxLayout()
-			self.update_template = QtGui.QCheckBox("Refresh Template")
+			self.update_template = QtWidgets.QCheckBox("Refresh Template")
 			self.update_template.setToolTip("Whether or not the act of adding a reference should force an update of the template being used by Swarm.\nOnce you have an adequate template you can turn this off and interactive picking will be faster.")
 			self.update_template.setChecked(True)
 			hbl_aa.addWidget(self.update_template)
 
 
-			self.auto_update = QtGui.QCheckBox("Auto Update")
+			self.auto_update = QtWidgets.QCheckBox("Auto Update")
 			self.auto_update.setToolTip("Whether or not autoboxing should occur every time you change a parameter or select a different image. This is the old dynapix button.")
 			self.auto_update.setChecked(db.setdefault("auto_update",True))
 			hbl_aa.addWidget(self.auto_update)
@@ -591,7 +591,7 @@ class SwarmPanel(object):
 
 
 			self.advanced_hbl2 = QtGui.QHBoxLayout()
-			self.enable_interactive_threshold  = QtGui.QCheckBox("Interactive Threshold")
+			self.enable_interactive_threshold  = QtWidgets.QCheckBox("Interactive Threshold")
 			self.enable_interactive_threshold.setToolTip("Tweak the correlation threshold that is used to select particles.")
 			self.enable_interactive_threshold.setChecked(False)
 			from eman2_gui.valslider import ValSlider
@@ -603,7 +603,7 @@ class SwarmPanel(object):
 			vbl.addLayout(self.advanced_hbl2)
 
 			self.overlap_hbl = QtGui.QHBoxLayout()
-			self.enable_overlap_removal  = QtGui.QCheckBox("Proximity Threshold")
+			self.enable_overlap_removal  = QtWidgets.QCheckBox("Proximity Threshold")
 			self.enable_overlap_removal.setToolTip("Remove closely positioned particles.")
 			self.enable_overlap_removal.setChecked(False)
 			self.proximity_thr = ValSlider(None,(0,self.particle_diameter*2),"")
@@ -2011,7 +2011,7 @@ class GaussPanel(object):
 			vbl.addLayout(hbl)
 
 			hbl_invcont = QtGui.QHBoxLayout()
-			self.invert_contrast_chk = QtGui.QCheckBox("Invert Contrast")
+			self.invert_contrast_chk = QtWidgets.QCheckBox("Invert Contrast")
 			self.invert_contrast_chk.setToolTip("Invert contrast")
 			invert_cache = gbdb.setdefault('invert_contrast',None)
 			if invert_cache == None:
@@ -2022,7 +2022,7 @@ class GaussPanel(object):
 				self.invert_contrast_checked(invert_cache)
 			hbl_invcont.addWidget(self.invert_contrast_chk)
 
-			self.use_variance_chk = QtGui.QCheckBox("Use Variance")
+			self.use_variance_chk = QtWidgets.QCheckBox("Use Variance")
 			self.use_variance_chk.setToolTip("Use the variance image")
 			use_variance_cache = gbdb.setdefault('use_variance',None)
 			if use_variance_cache == None:

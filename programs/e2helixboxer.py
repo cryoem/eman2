@@ -742,7 +742,7 @@ if ENABLE_GUI:
 
 			self.ptcls_images_groupbox = QtGui.QGroupBox(self.tr("Particle Images"))
 			self.ptcls_images_groupbox.setCheckable(True)
-			self.ptcls_edgenorm_checkbox = QtGui.QCheckBox(self.tr("&Normalize Edge-Mean"))
+			self.ptcls_edgenorm_checkbox = QtWidgets.QCheckBox(self.tr("&Normalize Edge-Mean"))
 			self.ptcls_edgenorm_checkbox.setChecked(False)
 			self.ptcls_edgenorm_checkbox.setToolTip("Uses normalize.edgemean processor on each particle: pixel-value -> (pixel-value - edge-mean) / standard deviation")
 

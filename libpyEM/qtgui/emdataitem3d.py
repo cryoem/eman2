@@ -208,7 +208,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		lfont.setBold(True)
 		datagridbox = QtGui.QGridLayout()
 
-		self.data_checkbox= QtGui.QCheckBox("Display Bounding Box")
+		self.data_checkbox= QtWidgets.QCheckBox("Display Bounding Box")
 		datagridbox.addWidget(self.data_checkbox, 0, 0)
 		self.file_browse_button = QtGui.QPushButton("Set Data Source")
 		datagridbox.addWidget(self.file_browse_button, 1, 0)
@@ -552,7 +552,7 @@ class EMSliceInspector(EMInspectorControlShape):
 		constrained_layout.addStretch()
 		self.constrained_group_box.setLayout(constrained_layout)
 
-		self.use_3d_texture_checkbox = QtGui.QCheckBox("Use 3D Texture")
+		self.use_3d_texture_checkbox = QtWidgets.QCheckBox("Use 3D Texture")
 		self.use_3d_texture_checkbox.setChecked(self.item3d().use_3d_texture)
 
 		self.brightness_slider = ValSlider(label="Bright:")
@@ -1056,9 +1056,9 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		isoframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		isogridbox = QtGui.QGridLayout()
 
-		self.cullbackface = QtGui.QCheckBox("Cull Back Face Polygons")
+		self.cullbackface = QtWidgets.QCheckBox("Cull Back Face Polygons")
 		self.cullbackface.setChecked(True)
-		self.wireframe = QtGui.QCheckBox("Wireframe mode")
+		self.wireframe = QtWidgets.QCheckBox("Wireframe mode")
 		self.wireframe.setChecked(False)
 		self.thr = ValSlider(self,(0.0,4.0),"Threshold:")
 		self.thr.setObjectName("thr")
@@ -1076,7 +1076,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		cbrframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		cbrlayout = QtGui.QGridLayout()
 		cbrlayout.setAlignment(QtCore.Qt.AlignTop)
-		self.colorbyradius = QtGui.QCheckBox("Color By Radius")
+		self.colorbyradius = QtWidgets.QCheckBox("Color By Radius")
 		self.colorbyradius.setChecked(False)
 		self.innercolorscaling = EMSpinWidget(0.0, 1.0, rounding=0)
 		self.innercolorscaling.setMinimumWidth(120)
@@ -1098,7 +1098,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		cbmframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		cbmlayout = QtGui.QGridLayout()
 		cbmlayout.setAlignment(QtCore.Qt.AlignTop)
-		self.colorbymap = QtGui.QCheckBox("Color By Map")
+		self.colorbymap = QtWidgets.QCheckBox("Color By Map")
 		self.colorbymap.setEnabled(False)
 		self.colormap = QtGui.QLineEdit("")
 		self.cmapbrowse = QtGui.QPushButton("Browse")

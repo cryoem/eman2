@@ -108,10 +108,10 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.vnsin.intonly=1
 		self.hbl1.addWidget(self.vnsin)
 		
-		self.cbshowall=QtGui.QCheckBox("Show All")
+		self.cbshowall=QtWidgets.QCheckBox("Show All")
 		self.hbl1.addWidget(self.cbshowall)
 
-		self.cbshifted=QtGui.QCheckBox("Shifted")
+		self.cbshifted=QtWidgets.QCheckBox("Shifted")
 		self.hbl1.addWidget(self.cbshifted)
 
 		self.cbtargfn=QtGui.QComboBox(self)

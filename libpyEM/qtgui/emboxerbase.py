@@ -589,7 +589,7 @@ class ErasingPanel(object):
 			hbl.addWidget(self.erase_rad_edit)
 
 
-			self.unerase = QtGui.QCheckBox("Unerase")
+			self.unerase = QtWidgets.QCheckBox("Unerase")
 			self.unerase.setChecked(False)
 
 			vbl.addLayout(hbl)
@@ -620,7 +620,7 @@ class ManualBoxingPanel(object):
 			vbl.setMargin(0)
 			vbl.setSpacing(10)
 			vbl.setObjectName("vbl")
-			self.auto_center_checkbox = QtGui.QCheckBox("Auto-center")
+			self.auto_center_checkbox = QtWidgets.QCheckBox("Auto-center")
 			self.clear=QtGui.QPushButton("Clear")
 			self.clearfrom = QtGui.QLineEdit(str(-1))
 			vbl.addWidget(self.auto_center_checkbox,1,0)
@@ -2431,16 +2431,16 @@ class EMBoxerInspector(QtGui.QWidget):
 		#  Insert the plot widget
 		viewhbl = QtGui.QVBoxLayout()
 
-		self.viewboxes = QtGui.QCheckBox("Particle Window")
+		self.viewboxes = QtWidgets.QCheckBox("Particle Window")
 		self.viewboxes.setChecked(True)
-		self.viewimage = QtGui.QCheckBox("2D Image Window")
+		self.viewimage = QtWidgets.QCheckBox("2D Image Window")
 		self.viewimage.setChecked(True)
 
 		viewhbl.addWidget(self.viewboxes)
 		viewhbl.addWidget(self.viewimage)
 
 		if self.target().has_thumbs():
-			self.viewthumbs = QtGui.QCheckBox("Thumbnails Window")
+			self.viewthumbs = QtWidgets.QCheckBox("Thumbnails Window")
 			self.viewthumbs.setChecked(True)
 			viewhbl.addWidget(self.viewthumbs)
 
