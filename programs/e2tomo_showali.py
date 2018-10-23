@@ -129,7 +129,7 @@ class Boxes(EMShape):
 		return
 
 
-class EMDrawWindow(QtGui.QMainWindow):
+class EMDrawWindow(QtWidgets.QMainWindow):
 
 	def __init__(self,application,options,datafile, pks, xfs, dirs):
 		QtGui.QWidget.__init__(self)

@@ -1174,7 +1174,7 @@ def sptboxergui(options,args):
 			self.d3view.close()
 
 
-	class EMTomoBoxer(QtGui.QMainWindow):
+	class EMTomoBoxer(QtWidgets.QMainWindow):
 		"""This class represents the EMTomoBoxer application instance.  """
 		module_closed = QtCore.pyqtSignal()
 

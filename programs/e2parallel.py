@@ -249,7 +249,7 @@ except:
 
 	QtGui=dummy(True)
 	QtGui.QWidget=dummy
-	QtGui.QMainWindow=dummy
+	QtWidgets.QMainWindow=dummy
 	QtCore=dummy(True)
 	QtCore.QAbstractTableModel=dummy
 	
@@ -273,7 +273,7 @@ def runservmon():
 	
 	app.exec_()
 	
-class GUIservmon(QtGui.QMainWindow):
+class GUIservmon(QtWidgets.QMainWindow):
 	"""A DC server monitor GUI"""
 	def __init__(self):
 		QtGui.QWidget.__init__(self,None)
