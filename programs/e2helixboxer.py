@@ -666,7 +666,7 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = No
 
 
 if ENABLE_GUI:
-	class EMWriteHelixFilesDialog(QtGui.QDialog):
+	class EMWriteHelixFilesDialog(QtWidgets.QDialog):
 		"""
 		options for writing helices and particles to files
 		"""
