@@ -1459,7 +1459,7 @@ class GUIBoxer(QtGui.QWidget):
 		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select 3-D Volume"))
 		if fsp==None or len(fsp)<4 : return
 
-		symname=str(QtGui.QInputDialog.getText(None,"Symmetry","Please specify the symmetry of the map, or c1 for none")[0])
+		symname=str(QtWidgets.QInputDialog.getText(None,"Symmetry","Please specify the symmetry of the map, or c1 for none")[0])
 #		print symname
 		try:
 			sym = Symmetries.get(symname)

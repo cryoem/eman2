@@ -2665,7 +2665,7 @@ class EMMXSetsPanel(QtGui.QWidget):
 
 
 	def new_set(self,unused=None):
-		name,ok=QtGui.QInputDialog.getText( self, "Set Name", "Enter a name for the new set:")
+		name,ok=QtWidgets.QInputDialog.getText( self, "Set Name", "Enter a name for the new set:")
 		if not ok : return
 		name=str(name)
 		if name in self.target().sets :

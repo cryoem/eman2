@@ -677,7 +677,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		else:
 			defaultname="_".join([self.sets[i] for i in clsid])+".hdf"
 		
-		name,ok=QtGui.QInputDialog.getText( self, "Save particles", "Filename suffix:", text=defaultname)
+		name,ok=QtWidgets.QInputDialog.getText( self, "Save particles", "Filename suffix:", text=defaultname)
 		if not ok:
 			return
 		name=self.filetag+str(name)
@@ -1702,7 +1702,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 
 
 	def new_set(self,unused=None):
-		name,ok=QtGui.QInputDialog.getText( self, "Set Name", "Enter a name for the new set:")
+		name,ok=QtWidgets.QInputDialog.getText( self, "Set Name", "Enter a name for the new set:")
 		if not ok : return
 		name=str(name)
 		if name in self.target().sets :
@@ -1717,7 +1717,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		sels=[str(i.text()) for i in selections]
 		if len(sels)==0:
 			return
-		name,ok=QtGui.QInputDialog.getText( self, "Set Name", "Enter a name for the new set:")
+		name,ok=QtWidgets.QInputDialog.getText( self, "Set Name", "Enter a name for the new set:")
 		if not ok : return
 		name=str(name)
 		

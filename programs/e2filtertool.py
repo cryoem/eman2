@@ -831,7 +831,7 @@ class EMFilterTool(QtGui.QMainWindow):
 	def menu_file_save_stack(self):
 		"Processes the entire current stack, and saves as a new name"
 
-		name=QtGui.QInputDialog.getText(None,"Enter Filename","Enter an output filename for the entire processed particle stack (not just the displayed images).")
+		name=QtWidgets.QInputDialog.getText(None,"Enter Filename","Enter an output filename for the entire processed particle stack (not just the displayed images).")
 		if not name[1] : return		# canceled
 
 		allfilt=" ".join([i.getAsProc() for i in self.processorlist])
