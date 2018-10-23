@@ -246,7 +246,7 @@ class EMCmpExplorer(EM3DSymModel):
 		if self.current_particle<0 : return
 		ptcl=self.ptcl_data[self.current_particle]
 		
-		progress = QtGui.QProgressDialog("Computing alignments", "Abort", 0, len(self.proj_data),None)
+		progress = QtWidgets.QProgressDialog("Computing alignments", "Abort", 0, len(self.proj_data),None)
 		progress.show()
 		# redetermines particle alignments
 		# then we can quickly compute a series of different similarity values
@@ -281,7 +281,7 @@ class EMCmpExplorer(EM3DSymModel):
 	def update_cmp(self):
 		cmpopt=parsemodopt(self.simcmp)
 		
-		progress = QtGui.QProgressDialog("Computing similarities", "Abort", 0, len(self.proj_data),None)
+		progress = QtWidgets.QProgressDialog("Computing similarities", "Abort", 0, len(self.proj_data),None)
 		progress.show()
 		ptcl=self.ptcl_data[self.current_particle]
 		for i,p in enumerate(self.proj_data):

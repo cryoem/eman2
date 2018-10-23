@@ -1467,7 +1467,7 @@ class GUIBoxer(QtGui.QWidget):
 			print("Error: Unknown symmetry")
 			return
 		orts=sym.gen_orientations("eman",{"delta":15,"inc_mirror":1})
-		prog=QtGui.QProgressDialog("Making Projections","Abort",0,len(orts))
+		prog=QtWidgets.QProgressDialog("Making Projections","Abort",0,len(orts))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
 		
@@ -1913,7 +1913,7 @@ class GUIBoxer(QtGui.QWidget):
 		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
 		boxsize2=self.vbbsize.getValue()//2
 		
-		prog=QtGui.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
+		prog=QtWidgets.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
 		prog.show()
@@ -1969,7 +1969,7 @@ class GUIBoxer(QtGui.QWidget):
 		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
 		boxsize2=self.vbbsize.getValue()//2
 		
-		prog=QtGui.QProgressDialog("Recentering","Abort",0,len(self.filenames))
+		prog=QtWidgets.QProgressDialog("Recentering","Abort",0,len(self.filenames))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
 		prog.show()
