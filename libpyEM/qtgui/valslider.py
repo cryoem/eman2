@@ -916,20 +916,20 @@ def singleton(cls):
 	return getinstance
     
 @singleton
-class EMQtColorDialog(QtGui.QColorDialog):
+class EMQtColorDialog(QtWidgets.QColorDialog):
 	"""
 	The Is to create a non-modal color dialog. Only one color dialog is allowed at once, so I use the singltion pattern
 	"""
 	canceled = QtCore.pyqtSignal()
 
 	def __init__(self, inicolor):
-		QtGui.QColorDialog.__init__(self, inicolor)
+		QtWidgets.QColorDialog.__init__(self, inicolor)
 		self.hidden = False
 		self.setWindowFlags(QtCore.Qt.Window)
 		self.show()
 	
 	def hideEvent(self, e):
-		QtGui.QColorDialog.hideEvent(self, e)
+		QtWidgets.QColorDialog.hideEvent(self, e)
 		self.canceled.emit()
 		self.hidden = True
 
