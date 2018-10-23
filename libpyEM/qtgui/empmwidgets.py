@@ -841,7 +841,7 @@ class PMFSCTableWidget(PMTableBase):
 		# table stuff
 		self.tablewidget.setColumnCount(4)
 		self.tablewidget.setHorizontalHeaderLabels(["Refine", "# Iter", "Masked .143", "Unmasked .143"])
-		self.tablewidget.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+		self.tablewidget.horizontalHeader().setResizeMode(QtWidgets.QHeaderView.ResizeToContents)
 		self.tablewidget.horizontalHeader().setHighlightSections(False)
 		self.tablewidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)	# select rows
 		self.tablewidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)	# single selection
