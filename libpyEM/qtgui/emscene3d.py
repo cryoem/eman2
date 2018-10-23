@@ -3064,12 +3064,12 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 			self.child(0).removeAllChildren(inspector)
 			inspector.removeTreeNode(self, 0) 
 
-class NodeEditDialog(QtGui.QDialog):
+class NodeEditDialog(QtWidgets.QDialog):
 	"""
 	A dialog for editing the node
 	"""
 	def __init__(self, inspector, item):
-		QtGui.QDialog.__init__(self)
+		QtWidgets.QDialog.__init__(self)
 		self.item = item
 		self.inspector = weakref.ref(inspector)
 		grid = QtGui.QGridLayout(self)
@@ -3095,13 +3095,13 @@ class NodeEditDialog(QtGui.QDialog):
 	def _on_cancel(self):
 		self.done(1)
 	
-class NodeDialog(QtGui.QDialog):
+class NodeDialog(QtWidgets.QDialog):
 	"""
 	Generate a dialog to add or remove node. If reome is chosen 'item' node is removed
 	If add node is chosen, a node is inserted just below this node.
 	"""
 	def __init__(self, inspector, item):
-		QtGui.QDialog.__init__(self)
+		QtWidgets.QDialog.__init__(self)
 		self.item = item
 		self.inspector = weakref.ref(inspector)
 		self.setWindowTitle('Node Controler')

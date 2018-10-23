@@ -2026,12 +2026,12 @@ class PMToolButton(QtGui.QToolButton):
 	def mouseReleaseEvent(self, event):
 		pass
 
-class ProjectDialog(QtGui.QDialog):
+class ProjectDialog(QtWidgets.QDialog):
 	"""
 	Class for the Project New and Edit dialogs
 	"""
 	def __init__(self, pm):
-		QtGui.QDialog.__init__(self)
+		QtWidgets.QDialog.__init__(self)
 		self.pm = pm
 
 		# Dialog line edit fields
