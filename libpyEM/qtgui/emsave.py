@@ -551,7 +551,7 @@ class EMFileExistsDialog(QtWidgets.QDialog):
 		
 		# Text to alert the user
 		hbl2 = QtWidgets.QHBoxLayout()
-		text_edit = QtGui.QTextEdit("",self)
+		text_edit = QtWidgets.QTextEdit("",self)
 		text_edit.setReadOnly(True)
 		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
 		if (filename == ""):
