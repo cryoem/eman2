@@ -366,7 +366,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 
 		vbl.addWidget(self.combo)
 
-		self.list_widget = QtGui.QListWidget(None)
+		self.list_widget = QtWidgets.QListWidget(None)
 
 		self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)

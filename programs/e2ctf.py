@@ -2275,20 +2275,20 @@ except:
 			print("Qt4 has not been loaded")
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
-	QtGui.QListWidget=QListWidget
+	QtWidgets.QListWidget=QListWidget
 
 def notzero(x):
 	if x==0 : return 1.0
 	return x
 
-class MyListWidget(QtGui.QListWidget):
+class MyListWidget(QtWidgets.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
 	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 
 	def keyPressEvent(self,event):
 
 		if event.key() in (Qt.Key_Up,Qt.Key_Down) :
-			QtGui.QListWidget.keyPressEvent(self,event)
+			QtWidgets.QListWidget.keyPressEvent(self,event)
 			return
 
 		self.keypress.emit(event)

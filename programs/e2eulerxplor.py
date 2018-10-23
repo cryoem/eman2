@@ -738,7 +738,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		self.au_tab.vbl.addWidget(self.combo)
 		self.refine_dir = combo_entries[0]
 
-		self.list_widget = QtGui.QListWidget(None)
+		self.list_widget = QtWidgets.QListWidget(None)
 
 		self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
