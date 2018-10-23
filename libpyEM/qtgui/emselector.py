@@ -458,8 +458,8 @@ def EMSelectorBaseTemplate(Type):
 			
 			#list_widget.contextMenuEvent = self.list_widget_context_menu_event
 			
-			if self.single_selection:list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-			else: list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+			if self.single_selection:list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+			else: list_widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 			list_widget.setMouseTracking(True)	
 			self.list_widgets.append(list_widget)
 			self.splitter.addWidget(list_widget)
