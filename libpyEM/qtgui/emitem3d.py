@@ -567,7 +567,7 @@ class EMItem3DInspector(QtGui.QTabWidget):
 		# Rotations
 		self.rotcombobox = QtWidgets.QComboBox()
 		xformbox.addWidget(self.rotcombobox, 1, 0, 1, 2)
-		self.rotstackedwidget = QtGui.QStackedWidget()
+		self.rotstackedwidget = QtWidgets.QStackedWidget()
 		self.addRotationWidgets()
 		xformbox.addWidget(self.rotstackedwidget, 2, 0, 1, 2)
 		#translations

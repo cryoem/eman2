@@ -282,7 +282,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		"""
 		This is the stacked widget to manage the tree types. To Add modes, do so here. Be sure to add the mode to the combo box in function: makeModeWidget
 		"""
-		self.tree_stacked_widget = QtGui.QStackedWidget()
+		self.tree_stacked_widget = QtWidgets.QStackedWidget()
 		self.tree_stacked_widget.setMinimumWidth(300)
 		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/spr.json', 'Single Particle Refinement'))
 		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography'))
@@ -296,7 +296,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		When a python script is called for the first time a GUI widget is made and added to the stack
 		The First Widget on the stack is the blank widget, the rest are e2program widgets
 		"""
-		self.gui_stacked_widget = QtGui.QStackedWidget()
+		self.gui_stacked_widget = QtWidgets.QStackedWidget()
 		# Set the initial height of the browser
 		#self.gui_stacked_widget.setMinimumHeight(250)
 		self.gui_stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)

@@ -118,7 +118,7 @@ class ControlPannel(QtGui.QWidget):
 		hbl.addWidget(self.kernel_combobox)
 		vbox.addLayout(hbl)
 		
-		self.kernel_stacked_widget = QtGui.QStackedWidget()
+		self.kernel_stacked_widget = QtWidgets.QStackedWidget()
 		vbox.addWidget(self.kernel_stacked_widget)
 		
 		self.filter_but=QtWidgets.QPushButton("Filter")
@@ -303,7 +303,7 @@ class ControlPannel(QtGui.QWidget):
 		grid.addWidget(QtWidgets.QLabel("Current Boxing Tool:"),0,0)
 		grid.addWidget(self.current_tool_combobox,0,1)
 		# Add stacked widget
-		self.tools_stacked_widget = QtGui.QStackedWidget()
+		self.tools_stacked_widget = QtWidgets.QStackedWidget()
 		grid.addWidget(self.tools_stacked_widget,1,0,1,2)
 		# Add quality combobox
 		self.quality = QtWidgets.QComboBox()

@@ -2588,7 +2588,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		hbl.addWidget(current_tool_label)
 		hbl.addWidget(self.current_tool_combobox)
 
-		self.tools_stacked_widget = QtGui.QStackedWidget()
+		self.tools_stacked_widget = QtWidgets.QStackedWidget()
 		self.tool_dynamic_vbl.addLayout(hbl)
 		self.tool_dynamic_vbl.addWidget(self.tools_stacked_widget)
 		self.tool_button_group_box_vbl.addLayout(self.tool_dynamic_vbl,1)
