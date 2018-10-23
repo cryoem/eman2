@@ -108,7 +108,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.vbl.addWidget(self.wselectg)
 		self.vbl.addSpacing(5)
 
-		self.gbl0=QtGui.QGridLayout(self.wselectg)
+		self.gbl0=QtWidgets.QGridLayout(self.wselectg)
 
 		self.wselallb=QtGui.QPushButton("All")
 		self.gbl0.addWidget(self.wselallb,0,0)

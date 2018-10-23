@@ -1245,7 +1245,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.wbgrefs.mx_mouseup.connect(self.bgrefmouseup)
 
 		# This object is itself a widget we need to set up
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 		self.gbl.setMargin(8)
 		self.gbl.setSpacing(6)
 		self.gbl.setColumnStretch(0,2)
@@ -1326,7 +1326,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.boxparm.setFlat(False)
 		self.gbl.addWidget(self.boxparm,2,2,3,4)
 		
-		self.gbl1=QtGui.QGridLayout(self.boxparm)
+		self.gbl1=QtWidgets.QGridLayout(self.boxparm)
 		self.gbl1.setMargin(8)
 		self.gbl1.setSpacing(6)
 		
@@ -1386,7 +1386,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.abwid=[]
 		for name,bname,cls in aboxmodes:
 			w=QtGui.QWidget()
-			gl=QtGui.QGridLayout(w)
+			gl=QtWidgets.QGridLayout(w)
 			self.abwid.append((w,gl))
 			cls.setup_gui(gl, self)
 			self.autotab.addTab(w,name)

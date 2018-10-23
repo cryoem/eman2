@@ -986,7 +986,7 @@ class EMHistogramInspector(QtGui.QWidget):
 		vbl.addLayout(hbl2)
 
 		# per plot column selectors
-		gl=QtGui.QGridLayout()
+		gl=QtWidgets.QGridLayout()
 		gl.addWidget(QtGui.QLabel("Column:",self),0,0,Qt.AlignRight)
 		self.slidecol=QtGui.QSpinBox(self)
 		self.slidecol.setRange(0,1)

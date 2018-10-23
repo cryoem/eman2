@@ -124,7 +124,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		app=QtGui.qApp
 
 		QtGui.QWidget.__init__(self,parent)
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 		self.gbl.setColumnStretch(0,0)
 		self.gbl.setColumnStretch(1,0)
 		self.gbl.setColumnStretch(2,1)
@@ -148,7 +148,7 @@ class EMProcessorWidget(QtGui.QWidget):
 #		self.update_subcat()
 
 		#button grid
-		self.gbl2=QtGui.QGridLayout()
+		self.gbl2=QtWidgets.QGridLayout()
 		self.gbl.addLayout(self.gbl2,0,0,1,1)
 		if get_platform().lower()=="darwin": self.gbl2.setSpacing(10)
 		else: self.gbl2.setSpacing(1)
