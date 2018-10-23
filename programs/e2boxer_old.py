@@ -522,7 +522,7 @@ class SwarmPanel(object):
 	def get_widget(self):
 		if self.widget == None:
 			from PyQt4 import QtCore, QtGui
-			self.widget = QtGui.QWidget()
+			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QVBoxLayout(self.widget)
 			vbl.setMargin(0)
 			vbl.setSpacing(6)
@@ -1971,7 +1971,7 @@ class GaussPanel(object):
 			gbdb = js_open_dict(GaussPanel.GDB_NAME)
 
 			from PyQt4 import QtCore, QtGui
-			self.widget = QtGui.QWidget()
+			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QVBoxLayout(self.widget)
 			vbl.setMargin(0)
 			vbl.setSpacing(6)
@@ -3187,10 +3187,10 @@ class GaussTool(GaussBoxer,EMBoxingTool):
 		GaussBoxer.boxes_erased(self,list_of_boxes,self.target().current_file())
 
 # this is class CTFInspector from sxboxer.py with very slight modifications
-class CTFInspectorWidget(QtGui.QWidget):
+class CTFInspectorWidget(QtWidgets.QWidget):
 
 	def __init__(self,parent,data=None) :
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		# we need to keep track of our parent to signal when we are gone again....
 		self.parent = weakref.ref(parent) # this needs to be a weakref ask David Woolford for details, but otherwise just call self.parent() in place of self.parent
 		self.setGeometry(300, 300, 250, 150)
@@ -3220,7 +3220,7 @@ class CTFInspectorWidget(QtGui.QWidget):
 		return True
 
 	def update(self):
-		QtGui.QWidget.update(self) #self.paintEvent(None)
+		QtWidgets.QWidget.update(self) #self.paintEvent(None)
 		# print "update..."
 
 	def paintEvent(self,event):

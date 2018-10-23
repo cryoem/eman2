@@ -1720,7 +1720,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		EMGLWidget.closeEvent(self,event)
 	
 	def showEvent(self, event):
-		QtGui.QWidget.showEvent(self, event)
+		QtWidgets.QWidget.showEvent(self, event)
 		# if desired scale viewport to a chosen scale so that initialviewportdims fills the screen
 		if self.initialviewportdims != None:
 			self.camera.scaleToDims(self.initialviewportdims)
@@ -2102,12 +2102,12 @@ class EMCamera(object):
 		
 ###################################### Inspector Code #########################################################################################
 
-class EMInspector3D(QtGui.QWidget):
+class EMInspector3D(QtWidgets.QWidget):
 	def __init__(self, scenegraph):
 		"""
 		The inspector for the 3D widget. The inspector is a strict observer of the SceneGraph, and is updated by calling update inspector
 		"""
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.scenegraph = weakref.ref(scenegraph)
 		self.mintreewidth = 250		# minimum width of the tree
 		self.mincontrolwidth = 0
@@ -2140,7 +2140,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		This returns the treeview-control panel widget
 		"""
-		widget = QtGui.QWidget()
+		widget = QtWidgets.QWidget()
 		hbox = QtWidgets.QHBoxLayout(widget)
 		treeframe = QtWidgets.QFrame()
 		treeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -2467,7 +2467,7 @@ class EMInspector3D(QtGui.QWidget):
 		Returns the lights control widget
 		"""
 		self.lighttab_open = False
-		lwidget = QtGui.QWidget()
+		lwidget = QtWidgets.QWidget()
 		lvbox = QtWidgets.QVBoxLayout()
 		lightslabel = QtWidgets.QLabel("Lights", lwidget)
 		lightslabel.setAlignment(QtCore.Qt.AlignCenter)
@@ -2524,7 +2524,7 @@ class EMInspector3D(QtGui.QWidget):
 		Returns the camera control widget
 		"""
 		self.cameratab_open = False
-		cwidget = QtGui.QWidget()
+		cwidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		grid.setContentsMargins(11,5,11,5)
 		self.camerawidget = CameraControls(scenegraph=self.scenegraph())
@@ -2673,7 +2673,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Return the utilites widget
 		"""
-		uwidget = QtGui.QWidget()
+		uwidget = QtWidgets.QWidget()
 		uvbox = QtWidgets.QVBoxLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
@@ -2855,7 +2855,7 @@ class EMSGNodeInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
 		if name=="All Objects":
-			tabwidget = QtGui.QWidget()
+			tabwidget = QtWidgets.QWidget()
 			gridbox = QtWidgets.QGridLayout()
 			
 			EMSGNodeInspector.addExtraTabAllObjects(self, gridbox)
@@ -3262,9 +3262,9 @@ class NodeDialog(QtWidgets.QDialog):
 		
 # All object that are rendered inherit from abstractSGnode and implement the render method
 
-class GLdemo(QtGui.QWidget):
+class GLdemo(QtWidgets.QWidget):
 	def __init__(self):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		
 		self.widget = EMScene3D()
 		#self.widget.camera.usePrespective(50, 0.5)

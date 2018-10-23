@@ -62,7 +62,7 @@ class EMPDBItem3D(EMItem3D):
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get PDB Widget"""
-		pdbwidget = QtGui.QWidget()
+		pdbwidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		node_name_data_label = QtWidgets.QLabel("PDB Model Label")
 		attribdict["node_name"] = QtWidgets.QLineEdit()
@@ -179,7 +179,7 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
+		tabwidget = QtWidgets.QWidget()
 		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "data")
@@ -249,7 +249,7 @@ class EMBallStickModel(EMPDBItem3D):
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get Ball and Stick Model Widget"""
-		ballstickwidget = QtGui.QWidget()
+		ballstickwidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		node_name_model_label = QtWidgets.QLabel("PDB Structure Name")
 		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMBallStickModel.representation))
@@ -1047,7 +1047,7 @@ class EMSphereModel(EMPDBItem3D):
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get Spheres Model Widget"""
-		sphereswidget = QtGui.QWidget()
+		sphereswidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		node_name_model_label = QtWidgets.QLabel("PDB Structure Name")
 		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMSphereModel.representation))

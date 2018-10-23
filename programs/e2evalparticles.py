@@ -76,11 +76,11 @@ def main():
 
 #	E2end(logid)
 
-class EMClassPtclTool(QtGui.QWidget):
+class EMClassPtclTool(QtWidgets.QWidget):
 	"""This class is a tab widget for inspecting particles within class-averages"""
 
 	def __init__(self,extrafiles=None):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.vbl = QtWidgets.QVBoxLayout(self)
 
 		self.extrafiles=extrafiles
@@ -518,7 +518,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		try : self.vbadptcl.close()
 		except: pass
 
-		QtGui.QWidget.closeEvent(self, event)
+		QtWidgets.QWidget.closeEvent(self, event)
 
 class EMEvalPtclTool(QtWidgets.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
@@ -549,7 +549,7 @@ class EMEvalPtclTool(QtWidgets.QMainWindow):
 
 	def closeEvent(self,event):
 		self.wclasstab.close()
-		QtGui.QWidget.closeEvent(self, event)
+		QtWidgets.QWidget.closeEvent(self, event)
 
 if __name__ == "__main__":
 	main()

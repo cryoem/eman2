@@ -365,9 +365,9 @@ class EMIsosurfaceModel(EM3DModel):
 		return self.get_inspector().mrcfileName
 		
 
-class EMIsoInspector(QtGui.QWidget):
+class EMIsoInspector(QtWidgets.QWidget):
 	def __init__(self,target,enable_browse=False) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.target=weakref.ref(target)
@@ -531,7 +531,7 @@ class EMIsoInspector(QtGui.QWidget):
 	
 	def get_RGB_tab(self, name=""):
 		return get_RGB_tab(self,name)
-		#rgbtab = QtGui.QWidget(self)
+		#rgbtab = QtWidgets.QWidget(self)
 		#rgbtab.vbl = QtWidgets.QVBoxLayout(rgbtab)
 		#rgbtab.vbl.setMargin(0)
 		#rgbtab.vbl.setSpacing(6)
@@ -555,7 +555,7 @@ class EMIsoInspector(QtGui.QWidget):
 		#return rgbtab
 	
 	def get_GL_tab(self):
-		self.gltab = QtGui.QWidget()
+		self.gltab = QtWidgets.QWidget()
 		gltab = self.gltab
 		
 		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
@@ -617,7 +617,7 @@ class EMIsoInspector(QtGui.QWidget):
 	
 	def get_texture_tab(self):
 		if ( self.texturetab == None ):
-			self.texturetab = QtGui.QWidget()
+			self.texturetab = QtWidgets.QWidget()
 			texturetab = self.texturetab
 			texturetab.vbl = QtWidgets.QVBoxLayout(self.texturetab)
 			texturetab.vbl.setMargin(0)
@@ -650,7 +650,7 @@ class EMIsoInspector(QtGui.QWidget):
 	
 	def get_main_tab(self):
 		if ( self.maintab == None ):
-			self.maintab = QtGui.QWidget()
+			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
 			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 			maintab.vbl.setMargin(0)

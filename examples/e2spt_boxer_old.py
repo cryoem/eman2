@@ -932,11 +932,11 @@ def sptboxergui(options,args):
 	from eman2_gui.emshape import EMShape
 	from eman2_gui.valslider import ValSlider, ValBox
 
-	class EMAverageViewer(QtGui.QWidget):
+	class EMAverageViewer(QtWidgets.QWidget):
 		"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
 
 		def __init__(self,parent):
-			QtGui.QWidget.__init__(self)
+			QtWidgets.QWidget.__init__(self)
 
 			self.setWindowTitle("Particle Average")
 
@@ -1069,11 +1069,11 @@ def sptboxergui(options,args):
 				time.sleep(5)
 
 
-	class EMBoxViewer(QtGui.QWidget):
+	class EMBoxViewer(QtWidgets.QWidget):
 		"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
 
 		def __init__(self):
-			QtGui.QWidget.__init__(self)
+			QtWidgets.QWidget.__init__(self)
 			self.setWindowTitle("Single Particle View")
 
 			self.resize(300,300)
@@ -1179,7 +1179,7 @@ def sptboxergui(options,args):
 		module_closed = QtCore.pyqtSignal()
 
 		def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,shrink=1,contrast=None,center=None,mod=False,normalize=False):
-			QtGui.QWidget.__init__(self)
+			QtWidgets.QWidget.__init__(self)
 
 			self.app=weakref.ref(application)
 			self.yshort=yshort
@@ -1209,7 +1209,7 @@ def sptboxergui(options,args):
 			self.mwin_average=self.mwin.addAction("Averaging")
 
 
-			self.setCentralWidget(QtGui.QWidget())
+			self.setCentralWidget(QtWidgets.QWidget())
 			self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 
 			# relative stretch factors

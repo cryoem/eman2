@@ -8,9 +8,9 @@ from eman2_gui.emshapeitem3d import *
 
 from EMAN2 import *
 
-class GLdemo(QtGui.QWidget):
+class GLdemo(QtWidgets.QWidget):
 	def __init__(self):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.widget = EMScene3D()
 
 		self.cube1 = EMCube(50.0)

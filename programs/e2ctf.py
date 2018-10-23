@@ -2274,7 +2274,7 @@ except:
 		def __init__(self,parent):
 			print("Qt4 has not been loaded")
 	QtGui=dummy()
-	QtGui.QWidget=QWidget
+	QtWidgets.QWidget=QWidget
 	QtWidgets.QListWidget=QListWidget
 
 def notzero(x):
@@ -2295,7 +2295,7 @@ class MyListWidget(QtWidgets.QListWidget):
 #		event.key()==Qt.Key_I
 
 
-class GUIctf(QtGui.QWidget):
+class GUIctf(QtWidgets.QWidget):
 	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,application,data,autohp=True,nosmooth=False,highdensity=False):
@@ -2318,7 +2318,7 @@ class GUIctf(QtGui.QWidget):
 		self.nosmooth=nosmooth
 		self.highdensity=highdensity
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.data=data
@@ -2584,7 +2584,7 @@ class GUIctf(QtGui.QWidget):
 		self.show()
 
 	def closeEvent(self,event):
-#		QtGui.QWidget.closeEvent(self,event)
+#		QtWidgets.QWidget.closeEvent(self,event)
 #		self.app.app.closeAllWindows()
 		E2saveappwin("e2ctf","main",self)
 

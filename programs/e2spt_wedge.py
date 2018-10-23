@@ -113,10 +113,10 @@ def wedgestats(volume,angle, wedgei, wedgef):
 	return(mean,sigma)
 
 
-class MissingWedgeViewer(QtGui.QWidget):
+class MissingWedgeViewer(QtWidgets.QWidget):
 	""" Display a missing wedge"""
 	def __init__(self, filename, angle, wedgei=0.0, wedgef=1.0):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.setWindowTitle('The Wedge Viewer')
 		self.setMinimumWidth(400)
 		self.setMinimumHeight(400)

@@ -224,9 +224,9 @@ class Contour(EMShape):
 class EMDrawWindow(QtWidgets.QMainWindow):
 
 	def __init__(self,application,options,datafile=None):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.imgview = EMImage2DWidget()
-		self.setCentralWidget(QtGui.QWidget())
+		self.setCentralWidget(QtWidgets.QWidget())
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 
 		self.gbl.addWidget(self.imgview,0,0)

@@ -258,7 +258,7 @@ class EMCube(EMShapeBase):
 		"""
 		Return a cube control widget for the stacked_widget
 		"""
-		cubewidget = QtGui.QWidget()
+		cubewidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		cube_dim_label = QtWidgets.QLabel("Cube Dimension")
 		attribdict["cube_dim"] = QtWidgets.QLineEdit("50")
@@ -364,7 +364,7 @@ class EMSphere(EMShapeBase):
 		"""
 		Return a sphere control widget for the stacked_widget
 		"""
-		spherewidget = QtGui.QWidget()
+		spherewidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		sphere_dim_label = QtWidgets.QLabel("Sphere Dimension")
 		attribdict["sphere_dim"] = QtWidgets.QLineEdit("50")
@@ -484,7 +484,7 @@ class EMCylinder(EMShapeBase):
 		"""
 		Return a cylinder control widget for the stacked_widget
 		"""
-		cyliderwidget = QtGui.QWidget()
+		cyliderwidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		cylider_radius_label = QtWidgets.QLabel("Cylider Radius")
 		attribdict["cylider_radius"] = QtWidgets.QLineEdit("50")
@@ -565,7 +565,7 @@ class EMLine(EMShapeBase):
 		"""
 		Return a line control widget for the stacked_widget
 		"""
-		linewidget = QtGui.QWidget()
+		linewidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		line_xyzi_label = QtWidgets.QLabel("Line start, X, Y, Z")
 		attribdict["linexi"] = QtWidgets.QLineEdit("0.0")
@@ -768,7 +768,7 @@ class EMCone(EMShapeBase):
 		"""
 		Return a cone control widget for the stacked_widget
 		"""
-		conewidget = QtGui.QWidget()
+		conewidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		cone_radius_label = QtWidgets.QLabel("Cone Radius")
 		attribdict["cone_radius"] = QtWidgets.QLineEdit("50")
@@ -847,7 +847,7 @@ class EM3DText(EMShapeBase):
 		"""
 		Return a text control widget for the stacked_widget
 		"""
-		textwidget = QtGui.QWidget()
+		textwidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		text_label = QtWidgets.QLabel("Text")
 		attribdict["text_content"] = QtWidgets.QLineEdit()
@@ -975,7 +975,7 @@ class EMInspectorControlShape(EMItem3DInspector):
 	
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
+		tabwidget = QtWidgets.QWidget()
 		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControlShape.addControls(self, gridbox)
@@ -1081,7 +1081,7 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		super(EMInspectorControlScatterPlot, self).addTabs()
-		tabwidget = QtGui.QWidget()
+		tabwidget = QtWidgets.QWidget()
 		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControlScatterPlot.addControls(self, gridbox)
@@ -1150,7 +1150,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		super(EMInspectorControl3DText, self).addTabs()
-		tabwidget = QtGui.QWidget()
+		tabwidget = QtWidgets.QWidget()
 		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControl3DText.addControls(self, gridbox)
@@ -1272,7 +1272,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		super(EMInspectorControlLine, self).addTabs()
-		tabwidget = QtGui.QWidget()
+		tabwidget = QtWidgets.QWidget()
 		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControlLine.addControls(self, gridbox)

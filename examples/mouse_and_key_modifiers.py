@@ -2,9 +2,9 @@ from __future__ import print_function
 from __future__ import division
 from PyQt4 import QtCore, QtGui
 
-class MouseAndKeyModifiers(QtGui.QWidget):
+class MouseAndKeyModifiers(QtWidgets.QWidget):
 	def __init__(self, parent = None):
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 		
 		layout = QtWidgets.QVBoxLayout()
 		label = QtWidgets.QLabel("Click here to test mouse buttons: Left, Right, Middle\nand keyboard modifiers: Ctrl, Alt, Shift, and Command (a Mac key)")

@@ -314,7 +314,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 #		print "simmx xplor died"
 
 	def add_simmx_options(self):
-		self.simmx_tab= QtGui.QWidget()
+		self.simmx_tab= QtWidgets.QWidget()
 		vbl = QtWidgets.QVBoxLayout(self.simmx_tab)
 
 		self.__init_ptcl_slider(vbl)
@@ -351,7 +351,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.data = simmx_xplore_dir_data()
 		if len(self.data) == 0: raise RuntimeError("There is no simmx refinement data in the current directory")
 
-		self.simmx_dir_tab= QtGui.QWidget()
+		self.simmx_dir_tab= QtWidgets.QWidget()
 		vbl = QtWidgets.QVBoxLayout(self.simmx_dir_tab)
 
 		# This is the combo-box with the list of refine_* directories

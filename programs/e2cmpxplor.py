@@ -310,7 +310,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 #		print "simmx xplor died"
 		
 	def add_cmp_options(self):
-		self.cmp_tab= QtGui.QWidget()
+		self.cmp_tab= QtWidgets.QWidget()
 		gridl = QtWidgets.QGridLayout(self.cmp_tab)
 		
 		self.cmp_shrinkl=QtWidgets.QLabel("Shrink:")

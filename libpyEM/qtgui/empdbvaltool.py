@@ -42,14 +42,14 @@ from .empdbviewer import *
 from .emselector import EMSelectorDialog
 
 
-class EMPDBValWidget(QtGui.QWidget):
+class EMPDBValWidget(QtWidgets.QWidget):
 	'''
 	EMPDB versus isosurface visual evaluation
 	'''
 	run_validate = QtCore.pyqtSignal(str, str, int, float)
 
 	def __init__(self):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 
 		self.pdb_model = None # will eventually be a EMPDBModel
 		self.iso_model = None # will eventually be a EMIsosurfaceModel
@@ -154,7 +154,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		
 	def closeEvent(self, event):
 		self.viewer_window.close()
-		QtGui.QWidget.closeEvent(self, event)
+		QtWidgets.QWidget.closeEvent(self, event)
 		
 	def draw_objects(self):
 		if self.iso_model == None: 

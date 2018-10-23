@@ -1372,7 +1372,7 @@ class SparseSymChoicesWidgets(object):
 		Makes QtCore.QObject connections to functions of self.target() (see bottom of this function)
 		'''
 		self.busy = True
-		self.maintab = QtGui.QWidget()
+		self.maintab = QtWidgets.QWidget()
 		maintab = self.maintab
 		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 		maintab.vbl.setMargin(0)
@@ -1663,10 +1663,10 @@ class EMSymChoiceDialog(QtWidgets.QDialog):
 		return self.dialog_result
 		
 	
-class EMSymInspector(QtGui.QWidget):
+class EMSymInspector(QtWidgets.QWidget):
 	def __init__(self,target,enable_trace=True,enable_og=True) :
 		self.busy = True
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
 		self.target=weakref.ref(target)
 		
@@ -1776,7 +1776,7 @@ class EMSymInspector(QtGui.QWidget):
 		
 		
 	def get_transform_tab(self):
-		self.transform_tab = QtGui.QWidget()
+		self.transform_tab = QtWidgets.QWidget()
 		self.transform_tab.vbl = QtWidgets.QVBoxLayout(self.transform_tab)
 		self.rotation_sliders.addWidgets(self.transform_tab.vbl)
 		
@@ -1802,7 +1802,7 @@ class EMSymInspector(QtGui.QWidget):
 	
 	def get_display_tab(self):
 		
-		self.display_tab = QtGui.QWidget()
+		self.display_tab = QtWidgets.QWidget()
 		self.display_tab.vbl = QtWidgets.QVBoxLayout(self.display_tab)
 				
 #		self.glcontrast = ValSlider(self.display_tab,(1.0,5.0),"GLShd:")

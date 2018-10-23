@@ -31,13 +31,13 @@ def main():
 	E2end(logid)
 	
 	
-class SptEvalGUI(QtGui.QWidget):
+class SptEvalGUI(QtWidgets.QWidget):
 
 	
 	def __init__(self, options):
 		
 		self.path="tomograms/"
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 
 		self.win_size=[1000,680]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])

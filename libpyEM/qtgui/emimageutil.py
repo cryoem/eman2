@@ -278,7 +278,7 @@ class EMTransformPanel(object):
 	
 import weakref
 
-class EMParentWin(QtGui.QWidget,Animator):
+class EMParentWin(QtWidgets.QWidget,Animator):
 	"""
 	This class adds a status bar with a size grip to QGLWidgets on Mac OS X, 
 	to provide a visual cue that the window can be resized. This is accomplished
@@ -293,7 +293,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 		@param enable_timer: not used... historical purposes???
 		"""
 		#TODO: figure out why the enable_timer parameter isn't being used
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		Animator.__init__(self)
 
 
@@ -331,7 +331,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 			self.child().closeEvent(e)
 			#self.child.inspector.close()
 		except: pass
-		QtGui.QWidget.closeEvent(self,e)
+		QtWidgets.QWidget.closeEvent(self,e)
 		
 #	def resizeEvent(self,event):
 #		self.child().resizeEvent(event)
@@ -364,12 +364,12 @@ class EMParentWin(QtGui.QWidget,Animator):
 	def initGL(self):
 		self.child().glInit()
 	
-class ImgHistogram(QtGui.QWidget):
+class ImgHistogram(QtWidgets.QWidget):
 	""" A small fixed-size histogram widget"""
 	thresholdChanged = QtCore.pyqtSignal(float)
 
 	def __init__(self,parent):
-		QtGui.QWidget.__init__(self,parent)
+		QtWidgets.QWidget.__init__(self,parent)
 		
 		self.brush=QtGui.QBrush(Qt.black)
 		self.font=QtGui.QFont("Helvetica", 12);

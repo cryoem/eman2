@@ -68,7 +68,7 @@ class EMDataItem3D(EMItem3D):
 		"""
 		Get Data Widget
 		"""
-		datawidget = QtGui.QWidget()
+		datawidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		node_name_data_label = QtWidgets.QLabel("Data Label")
 		attribdict["node_name"] = QtWidgets.QLineEdit()
@@ -192,7 +192,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 
-		tabwidget = QtGui.QWidget()
+		tabwidget = QtWidgets.QWidget()
 		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "data")
@@ -251,7 +251,7 @@ class EMSliceItem3D(EMItem3D):
 		"""
 		Get Slice Widget
 		"""
-		slicewidget = QtGui.QWidget()
+		slicewidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		node_name_slice_label = QtWidgets.QLabel("Slice Name")
 		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMSliceItem3D.name))
@@ -524,7 +524,7 @@ class EMSliceInspector(EMInspectorControlShape):
 
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
+		tabwidget = QtWidgets.QWidget()
 		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "slices")
@@ -625,7 +625,7 @@ class EMVolumeItem3D(EMItem3D):
 		"""
 		Get Volume Widget
 		"""
-		volumewidget = QtGui.QWidget()
+		volumewidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		node_name_volume_label = QtWidgets.QLabel("Volume Name")
 		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMVolumeItem3D.name))
@@ -881,7 +881,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
+		tabwidget = QtWidgets.QWidget()
 		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "volume")
@@ -1038,7 +1038,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
+		tabwidget = QtWidgets.QWidget()
 		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "isosurface")
@@ -1212,7 +1212,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		"""
 		Get Isosurface Widget
 		"""
-		isosurfacewidget = QtGui.QWidget()
+		isosurfacewidget = QtWidgets.QWidget()
 		grid = QtWidgets.QGridLayout()
 		node_name_data_label = QtWidgets.QLabel("Isosurface Name")
 		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMIsosurface.name))

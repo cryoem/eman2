@@ -41,12 +41,12 @@ from EMAN2jsondb import js_open_dict
 from EMAN2 import *
 import os
 
-class ControlPannel(QtGui.QWidget):
+class ControlPannel(QtWidgets.QWidget):
 	'''This controls the RCT boxer. Normally this will not need to be midified. If a new pair pciking strategy is to be implmented, then
 	A new GUI class should be added as decribed below and the new tool needs to be added to __init__ and the functions: current_tool_combobox_changed 
 	and add_picker_tools'''
 	def __init__(self, mediator):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.mediator = mediator
 		self.db = js_open_dict("info/emboxerrctgui.json")
 		self.qualitydb = js_open_dict("e2boxercache/quality.json")
@@ -81,7 +81,7 @@ class ControlPannel(QtGui.QWidget):
 #		E2loadappwin("e2rctboxer","filtertab",self.wplot)
 		
 	def get_main_tab(self):
-		mainwidget = QtGui.QWidget()
+		mainwidget = QtWidgets.QWidget()
 		vbox = QtWidgets.QVBoxLayout()
 		
 		# Make the main tools layout
@@ -101,7 +101,7 @@ class ControlPannel(QtGui.QWidget):
 	
 	def get_filter_tab(self):
 		
-		filterwidget = QtGui.QWidget()
+		filterwidget = QtWidgets.QWidget()
 		vbox = QtWidgets.QVBoxLayout()
 		
 		hbl=QtWidgets.QHBoxLayout()
@@ -140,7 +140,7 @@ class ControlPannel(QtGui.QWidget):
 	
 	def get_processor_tab(self):
 		
-		processorwidget = QtGui.QWidget()
+		processorwidget = QtWidgets.QWidget()
 		vboxa = QtWidgets.QVBoxLayout()
 		
 		vbox1 = QtWidgets.QVBoxLayout()
@@ -265,7 +265,7 @@ class ControlPannel(QtGui.QWidget):
 					self.gridkernel[2][i].setText("1")	
 			
 	def add_custom_kernels(self, size):
-		self.kernelwidget = QtGui.QWidget()
+		self.kernelwidget = QtWidgets.QWidget()
 		grid3 = QtWidgets.QGridLayout()
 		kernelwidgetidx = []
 		for i in range(size):
@@ -396,9 +396,9 @@ class ControlPannel(QtGui.QWidget):
 
 # Current tools. Other tools can be added by simply adding a Pciker GUi and then building a 
 # corresponding Strategy based by subclassing Strategy in emrctstrategy
-class ManualPicker(QtGui.QWidget):
+class ManualPicker(QtWidgets.QWidget):
 	def __init__(self, mediator, db):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.mediator = mediator
 		self.db=db
 		vbl = QtWidgets.QVBoxLayout()
@@ -428,9 +428,9 @@ class ManualPicker(QtGui.QWidget):
 	def get_widget(self):	
 		return self.mpsplitter
 		
-class PairPickerTool(QtGui.QWidget):
+class PairPickerTool(QtWidgets.QWidget):
 	def __init__(self, mediator, db):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.mediator = mediator
 		self.db = db
 		self.updateboxes = False
@@ -438,7 +438,7 @@ class PairPickerTool(QtGui.QWidget):
 		self.centertilts = False
 		
 		# GUI code below here
-		ppwidget = QtGui.QWidget()
+		ppwidget = QtWidgets.QWidget()
 		
 		vbl = QtWidgets.QVBoxLayout()
 		label = QtWidgets.QLabel("Pair Picker", self)
