@@ -916,10 +916,10 @@ class Microscope(QtOpenGL.QGLWidget):
 		print("Exit..")
 		exit()
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
 	
 	def __init__(self, options):
-		QtGui.QMainWindow.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 		
 		if options.twod:
 			self.twodview = EMImage2DWidget()

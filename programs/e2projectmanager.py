@@ -43,11 +43,11 @@ from eman2_gui.empmwidgets import *
 from eman2_gui.valslider import EMQTColorWidget
 from eman2_gui.embrowser import EMBrowserWidget
 
-class EMProjectManager(QtGui.QMainWindow):
+class EMProjectManager(QtWidgets.QMainWindow):
 	""" The EM Project Manager is a QT application to provide a GUI for EMAN2 job managment.
 	See the wiki for more details. For documentation see the EMAN2 WIKI """
 	def __init__(self):
-		QtGui.QMainWindow.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 		# default PM attributes
 		self.pm_cwd = os.getcwd()
 		self.pn_project_name_default='Unknown'

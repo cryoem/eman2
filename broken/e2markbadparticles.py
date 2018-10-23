@@ -101,11 +101,11 @@ def main():
 
 #	E2end(logid)
 
-class EMMarkPtclTool(QtGui.QMainWindow):
+class EMMarkPtclTool(QtWidgets.QMainWindow):
 	"""This is a tool for marking bad particles"""
 
 	def __init__(self,extrafiles=None,verbose=0):
-		QtGui.QMainWindow.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 
 		app=QtGui.qApp
 		self.setWindowTitle("e2markbadparticles")

@@ -109,7 +109,7 @@ def main():
 	E2end(logid)
 	return
 
-class EMTomoBoxer(QtGui.QMainWindow):
+class EMTomoBoxer(QtWidgets.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 	module_closed = QtCore.pyqtSignal()

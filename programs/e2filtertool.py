@@ -415,12 +415,12 @@ class EMProcessorWidget(QtGui.QWidget):
 
 		return (proc,parms)
 
-class EMFilterTool(QtGui.QMainWindow):
+class EMFilterTool(QtWidgets.QMainWindow):
 	"""This class represents the EMFilterTool application instance.  """
 	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,datafile=None,apix=0.0,force2d=False,verbose=0, safemode=False):
-		QtGui.QMainWindow.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 
 		app=QtGui.qApp
 		self.apix=apix

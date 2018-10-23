@@ -86,7 +86,7 @@ class TomoSegVolumeViewer(EMScene3D):
 		
 		self.setWindowTitle("TomoSeg Subvolume Viewer")
 
-class TomoSegSliceViewer(QtGui.QMainWindow):
+class TomoSegSliceViewer(QtWidgets.QMainWindow):
 	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,shrink=1,contrast=None,center=None,mod=False,normalize=False):

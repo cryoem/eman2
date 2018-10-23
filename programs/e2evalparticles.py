@@ -520,11 +520,11 @@ class EMClassPtclTool(QtGui.QWidget):
 
 		QtGui.QWidget.closeEvent(self, event)
 
-class EMEvalPtclTool(QtGui.QMainWindow):
+class EMEvalPtclTool(QtWidgets.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 
 	def __init__(self,extrafiles=None,verbose=0):
-		QtGui.QMainWindow.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 
 		app=QtGui.qApp
 		self.setWindowTitle("e2evalparticles")

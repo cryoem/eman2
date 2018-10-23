@@ -37,7 +37,7 @@ def run(cmd):
 	launch_childprocess(cmd)
 	
 	
-class EMDrawWindow(QtGui.QMainWindow):
+class EMDrawWindow(QtWidgets.QMainWindow):
 
 	def __init__(self,application,options,datafile=None):
 		QtGui.QWidget.__init__(self)
