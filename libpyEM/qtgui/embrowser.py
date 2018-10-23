@@ -3136,7 +3136,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wbookmarkfr.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Raised)
 		self.wbmfrbl = QtGui.QVBoxLayout(self.wbookmarkfr)
 
-		self.wbookmarks = QtGui.QToolBar()
+		self.wbookmarks = QtWidgets.QToolBar()
 		# self.wbookmarks.setAutoFillBackground(True)
 		# self.wbookmarks.setBackgroundRole(QtGui.QPalette.Dark)
 		self.wbookmarks.setOrientation(2)
