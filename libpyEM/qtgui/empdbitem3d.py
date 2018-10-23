@@ -189,8 +189,8 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		dataframe = QtGui.QFrame()
-		dataframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		dataframe = QtWidgets.QFrame()
+		dataframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
 		datagridbox = QtGui.QGridLayout()

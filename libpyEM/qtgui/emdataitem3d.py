@@ -202,8 +202,8 @@ class EMDataItem3DInspector(EMItem3DInspector):
 
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		dataframe = QtGui.QFrame()
-		dataframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		dataframe = QtWidgets.QFrame()
+		dataframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
 		datagridbox = QtGui.QGridLayout()
@@ -534,8 +534,8 @@ class EMSliceInspector(EMInspectorControlShape):
 
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		sliceframe = QtGui.QFrame()
-		sliceframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		sliceframe = QtWidgets.QFrame()
+		sliceframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		slice_grid_layout = QtGui.QGridLayout()
 
 		self.constrained_group_box = QtGui.QGroupBox("Constrained Slices")
@@ -894,12 +894,12 @@ class EMVolumeInspector(EMInspectorControlShape):
 		self.histogram_widget = ImgHistogram(self)
 		self.histogram_widget.setObjectName("hist")
 
-		volframe = QtGui.QFrame()
-		volframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		volframe = QtWidgets.QFrame()
+		volframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		vol_grid_layout = QtGui.QGridLayout()
 
-		probeframe = QtGui.QFrame()
-		probeframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		probeframe = QtWidgets.QFrame()
+		probeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		probelayout = QtGui.QGridLayout()
 		probelayout.setAlignment(QtCore.Qt.AlignTop)
 		self.range = QtGui.QLabel("Range: %1.3f, %1.3f"%(self.item3d().minden,self.item3d().maxden))
@@ -914,7 +914,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 		probelayout.addWidget(self.cappingcolor, 0, 3, 1, 1)
 		probeframe.setLayout(probelayout)
 
-#		paramframe = QtGui.QFrame()
+#		paramframe = QtWidgets.QFrame()
 		self.brightness_slider = ValSlider(label="Bright:")
 		self.contrast_slider = ValSlider(label="Contr:")
 
@@ -1052,8 +1052,8 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.histogram_widget.setObjectName("hist")
 
 		# Perhaps we should allow the inspector control this?
-		isoframe = QtGui.QFrame()
-		isoframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		isoframe = QtWidgets.QFrame()
+		isoframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		isogridbox = QtGui.QGridLayout()
 
 		self.cullbackface = QtWidgets.QCheckBox("Cull Back Face Polygons")
@@ -1072,8 +1072,8 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		sampling_hbox_layout.addWidget(self.sampling_spinbox)
 
 		# Color by radius frame
-		cbrframe = QtGui.QFrame()
-		cbrframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		cbrframe = QtWidgets.QFrame()
+		cbrframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		cbrlayout = QtGui.QGridLayout()
 		cbrlayout.setAlignment(QtCore.Qt.AlignTop)
 		self.colorbyradius = QtWidgets.QCheckBox("Color By Radius")
@@ -1094,8 +1094,8 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		cbrframe.setLayout(cbrlayout)
 
 		# Color by map frame
-		cbmframe = QtGui.QFrame()
-		cbmframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		cbmframe = QtWidgets.QFrame()
+		cbmframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		cbmlayout = QtGui.QGridLayout()
 		cbmlayout.setAlignment(QtCore.Qt.AlignTop)
 		self.colorbymap = QtWidgets.QCheckBox("Color By Map")
