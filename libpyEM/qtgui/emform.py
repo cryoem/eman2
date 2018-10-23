@@ -75,7 +75,7 @@ class EMButtonDialog(object):
 	def add_to_layout(self,layout):
 		'''
 		Add the button to the given layout
-		@param layout a QtGui.QLayout object
+		@param layout a QtWidgets.QLayout object
 		'''
 		if self.icon != None: self.button = QtGui.QPushButton(self.icon,self.desc_short)
 		else: self.button = QtGui.QPushButton(self.desc_short)
