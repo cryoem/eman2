@@ -119,7 +119,7 @@ class EMMotion(QtWidgets.QMainWindow):
 	
 	def __init__(self,application,path=None,piter=None,threads=4):
 		"""application is an QApplication instance. ptclstack is the path to the file containing the particles to analyze. path is the path for ouput files""" 
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 
 		self.aliimg=None		# This is the unmasked alignment reference image
 		self.alisig=None		# This is the standard deviation of the alignment reference
@@ -152,7 +152,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		#self.mwin_average=self.mwin.addAction("Averaging")
 
 
-		self.setCentralWidget(QtGui.QWidget())
+		self.setCentralWidget(QtWidgets.QWidget())
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 		cen=self.centralWidget()
 		

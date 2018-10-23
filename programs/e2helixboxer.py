@@ -671,7 +671,7 @@ if ENABLE_GUI:
 		options for writing helices and particles to files
 		"""
 		def __init__(self, qparent=None,saveext="hdf"):
-			QtGui.QWidget.__init__(self, qparent)
+			QtWidgets.QWidget.__init__(self, qparent)
 			self.setWindowTitle(self.tr("Write Helix and Particle Files"))
 			self.__create_ui()
 	#        self.helices_file_extension_dict = {"MRC":"mrc", "Spider":"spi", "Imagic": "img", "HDF5": "hdf"}
@@ -961,7 +961,7 @@ if ENABLE_GUI:
 			self.hide()
 
 if ENABLE_GUI:
-	class EMHelixBoxerWidget(QtGui.QWidget):
+	class EMHelixBoxerWidget(QtWidgets.QWidget):
 		"""
 		the GUI widget which contains the settings for boxing helices and writing results to files
 		"""
@@ -970,7 +970,7 @@ if ENABLE_GUI:
 			@param micrograph_filepath: the path to the image file for the micrograph
 			@param app: the application to which this widget belongs
 			"""
-			QtGui.QWidget.__init__(self)
+			QtWidgets.QWidget.__init__(self)
 
 			if box_width<1 : box_width=100
 			self.box_width=box_width

@@ -453,7 +453,7 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 			def __init__(self,parent):
 				print("Qt4 has not been loaded")
 		QtGui=dummy()
-		QtGui.QWidget=QWidget
+		QtWidgets.QWidget=QWidget
 
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emapplication import EMApp
@@ -521,10 +521,10 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 			R = 1.0 - B
 			return "#%02x%02x%02x"%(255*R,255*G,255*B)
 	
-	class EMValidationPlot(QtGui.QWidget):
+	class EMValidationPlot(QtWidgets.QWidget):
 		"""Make a plot to display validation info"""
 		def __init__(self):
-			QtGui.QWidget.__init__(self)
+			QtWidgets.QWidget.__init__(self)
 			box = QtWidgets.QVBoxLayout()
 			self.polarplot = EMPolarPlot2DWidget()
 			self.polarplot.setMinimumHeight(50)

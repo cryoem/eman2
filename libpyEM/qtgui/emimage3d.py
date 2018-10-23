@@ -583,7 +583,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 				pass
 		self.updateGL()
 
-class EMImageInspector3D(QtGui.QWidget):
+class EMImageInspector3D(QtWidgets.QWidget):
 	def set_directional_light_dir(self,d):
 		self.advanced_tab.set_directional_light_dir(d)
 	
@@ -594,7 +594,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.advanced_tab.set_positional_light_dir(d)
 	
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		
@@ -744,11 +744,11 @@ class EMImageInspector3D(QtGui.QWidget):
 	
 
 
-class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
+class EM3DAdvancedInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 	
 	
 	def __init__(self,target,parent=None):
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		EMLightsInspectorBase.__init__(self)
 		self.target=weakref.ref(target)
 		self.parent=weakref.ref(parent)
@@ -772,7 +772,7 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 	
 	
 	def get_main_tab(self):
-		self.maintab = QtGui.QWidget()
+		self.maintab = QtWidgets.QWidget()
 		maintab = self.maintab
 		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 		

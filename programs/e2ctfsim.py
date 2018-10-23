@@ -101,7 +101,7 @@ class MyListWidget(QtWidgets.QListWidget):
 #		event.key()==Qt.Key_I
 
 
-class GUIctfsim(QtGui.QWidget):
+class GUIctfsim(QtWidgets.QWidget):
 	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,application,apix=1.0,voltage=300.0,cs=4.1,ac=10.0,samples=256,apply=None):
@@ -136,7 +136,7 @@ class GUIctfsim(QtGui.QWidget):
 			print("A/pix reset to ",self.df_apix)
 			self.applyim=EMImage2DWidget(application=self.app())
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.data=[]
@@ -293,7 +293,7 @@ class GUIctfsim(QtGui.QWidget):
 		self.show()
 
 	def closeEvent(self,event):
-#		QtGui.QWidget.closeEvent(self,event)
+#		QtWidgets.QWidget.closeEvent(self,event)
 #		self.app.app.closeAllWindows()
 		E2saveappwin("e2ctf","main",self)
 

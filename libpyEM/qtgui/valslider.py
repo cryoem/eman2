@@ -74,7 +74,7 @@ rightarrow = [
 def clamp(x0,val,x1):
 	return int(max(min(val,x1),x0))
 
-class ValSlider(QtGui.QWidget):
+class ValSlider(QtWidgets.QWidget):
 	"""The valslider class represents a connected text widget and horizontal slider.
 	showenable - if -1, no enable box shown, if 0, shown unchecked, if 1 shown and checked
 	setValue(float) - to programatically change the value
@@ -88,7 +88,7 @@ class ValSlider(QtGui.QWidget):
 
 	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1,rounding=3):
 		#if not parent: raise Exception,"ValSliders must have parents"
-		QtGui.QWidget.__init__(self,parent)
+		QtWidgets.QWidget.__init__(self,parent)
 		
 		#print label, "allocated"
 		
@@ -164,7 +164,7 @@ class ValSlider(QtGui.QWidget):
 		
 	#def __del__(self):
 		#print self.getLabel(), " freed"
-#		QtGui.QWidget.__del__(self)
+#		QtWidgets.QWidget.__del__(self)
 
 	def setEnabled(self,ena):
 		self.slider.setEnabled(ena)
@@ -295,7 +295,7 @@ class ValSlider(QtGui.QWidget):
 		self.updates()
 		self.updatet()
 
-class ValBox(QtGui.QWidget):
+class ValBox(QtWidgets.QWidget):
 	"""A ValSlider without the slider part. Everything is the same except that the slider doesn't exist,
 	so for virtually all purposes it could be used as a drop-in replacement.
 	"""
@@ -305,7 +305,7 @@ class ValBox(QtGui.QWidget):
 
 	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1):
 		#if not parent: raise Exception,"ValSliders must have parents"
-		QtGui.QWidget.__init__(self,parent)
+		QtWidgets.QWidget.__init__(self,parent)
 		
 		if rng : self.rng=list(rng)
 		else : self.rng=[0,1.0]
@@ -447,7 +447,7 @@ class ValBox(QtGui.QWidget):
 	def updateboth(self):
 		self.updatet()
 
-class StringBox(QtGui.QWidget):
+class StringBox(QtWidgets.QWidget):
 	"""A ValBox but it takes arbitrary text. Basically maintains the label/enable functionality for a QLineEdit widget
 	"""
 	enableChanged = QtCore.pyqtSignal(int)
@@ -456,7 +456,7 @@ class StringBox(QtGui.QWidget):
 
 	def __init__(self, parent=None, label=None, value="",labelwidth=30,showenable=-1):
 		#if not parent: raise Exception,"ValSliders must have parents"
-		QtGui.QWidget.__init__(self,parent)
+		QtWidgets.QWidget.__init__(self,parent)
 		
 		if value==None : value=""
 		self.ignore=0
@@ -532,7 +532,7 @@ class StringBox(QtGui.QWidget):
 		return str(self.label.text())
 		
 
-class CheckBox(QtGui.QWidget):
+class CheckBox(QtWidgets.QWidget):
 	"""A QCheckBox with a label
 	"""
 	enableChanged = QtCore.pyqtSignal(int)
@@ -540,7 +540,7 @@ class CheckBox(QtGui.QWidget):
 
 	def __init__(self, parent=None, label=None, value="",labelwidth=30,showenable=-1):
 		#if not parent: raise Exception,"ValSliders must have parents"
-		QtGui.QWidget.__init__(self,parent)
+		QtWidgets.QWidget.__init__(self,parent)
 		
 		if value==None : value=False
 		if value!=False and value!=True : value=True
@@ -619,7 +619,7 @@ class CheckBox(QtGui.QWidget):
 		return str(self.label.text())
 
 
-class RangeSlider(QtGui.QWidget):
+class RangeSlider(QtWidgets.QWidget):
 	"""This is an int slider with two values in a fixed range (v0,v1) in a fixed range (min,max). Each value
 	can be set individually or the pair can be moved up and down together. The values are displayed at
 	the top and bottom of the vertical slider.
@@ -628,7 +628,7 @@ class RangeSlider(QtGui.QWidget):
 
 	def __init__(self, parent=None, rng=(0,100), value=(25,75)):
 		#if not parent: raise Exception,"ValSliders must have parents"
-		QtGui.QWidget.__init__(self,parent)
+		QtWidgets.QWidget.__init__(self,parent)
 		
 		self.rng=tuple(rng)
 		self.value=tuple(value)
@@ -727,7 +727,7 @@ class RangeSlider(QtGui.QWidget):
 	def getValue(self):
 		return self.value
 		
-class EMSpinWidget(QtGui.QWidget):
+class EMSpinWidget(QtWidgets.QWidget):
 	"""
 	Widget for a unbounded spin box using left and right arrow keys. When the value is changed
 	valueChanged(int) is emited
@@ -738,7 +738,7 @@ class EMSpinWidget(QtGui.QWidget):
 	valueChanged = QtCore.pyqtSignal(int)
 
 	def __init__(self, value, coeff, rounding=2, maxarrowwidth=20, postivemode=False, wheelstep=1):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.value = value
 		self.coeff = coeff
 		self.powercoeff = 0.0
@@ -828,7 +828,7 @@ class EMSpinWidget(QtGui.QWidget):
 			self.numbox.setText(str(self.value))
 			print("ERROR!!! You must enter a number")
 		
-class EMQTColorWidget(QtGui.QWidget):
+class EMQTColorWidget(QtWidgets.QWidget):
 	"""
 	A widget displaying a color box that is used to control colors
 	multiple boxes can be implemented
@@ -837,7 +837,7 @@ class EMQTColorWidget(QtGui.QWidget):
 	newconnection = QtCore.pyqtSignal()
 
 	def __init__(self, parent=None, red=255, green=255, blue=255, width=30, height=30):
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 		self.width = width
 		self.height = height
 		self.color = QtGui.QColor(red,green,blue)

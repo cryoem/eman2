@@ -438,10 +438,10 @@ class EM3DSliceModel(EM3DModel):
 		self.vdtools.set_update_P_inv()
 		
 
-class EM3DSliceInspector(QtGui.QWidget):
+class EM3DSliceInspector(QtWidgets.QWidget):
 	def __init__(self,target) :
 		self.busy = False
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.transform_panel = EMTransformPanel(target,self)
 		self.target=weakref.ref(target)
@@ -529,7 +529,7 @@ class EM3DSliceInspector(QtGui.QWidget):
 
 	def get_main_tab(self):
 	
-		self.maintab = QtGui.QWidget()
+		self.maintab = QtWidgets.QWidget()
 		maintab = self.maintab
 		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 		maintab.vbl.setMargin(0)

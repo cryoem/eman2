@@ -815,7 +815,7 @@ class EMLightsInspectorBase(object):
 		self.target().updateGL()
 		
 	def get_light_tab(self):
-		self.light_tab = QtGui.QWidget()
+		self.light_tab = QtWidgets.QWidget()
 		light_tab = self.light_tab
 		
 		vbl = QtWidgets.QVBoxLayout(self.light_tab )
@@ -1070,7 +1070,7 @@ class EMLightsInspectorBase(object):
 	
 	def get_directional_light_tab(self):
 		
-		self.directional_light_widget = QtGui.QWidget()
+		self.directional_light_widget = QtWidgets.QWidget()
 		
 		vbl = QtWidgets.QVBoxLayout(self.directional_light_widget)
 		vbl.setMargin(0)
@@ -1150,7 +1150,7 @@ class EMLightsInspectorBase(object):
 	
 	def get_pointsource_light_tab(self):
 		
-		self.pointsource_light_widget = QtGui.QWidget()
+		self.pointsource_light_widget = QtWidgets.QWidget()
 		
 		vbl = QtWidgets.QVBoxLayout(self.pointsource_light_widget)
 		vbl.setMargin(0)
@@ -1311,9 +1311,9 @@ class EMLightsInspectorBase(object):
 		return self.pointsource_light_widget
 	
 
-class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
+class EMLightsInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		EMLightsInspectorBase.__init__(self)
 		self.target=weakref.ref(target)
 		
@@ -1372,7 +1372,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		#return self.advanced_tab
 	
 	def get_GL_tab(self):
-		self.gltab = QtGui.QWidget()
+		self.gltab = QtWidgets.QWidget()
 		gltab = self.gltab
 		
 		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
@@ -1407,7 +1407,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 	
 	def get_main_tab(self):
 		if ( self.maintab == None ):
-			self.maintab = QtGui.QWidget()
+			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
 			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 			maintab.vbl.setMargin(0)
