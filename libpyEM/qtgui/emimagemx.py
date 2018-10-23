@@ -2295,7 +2295,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.hbl2.addWidget(self.mdrag)
 
 
-		self.mouse_mode_but_grp=QtGui.QButtonGroup()
+		self.mouse_mode_but_grp=QtWidgets.QButtonGroup()
 		self.mouse_mode_but_grp.setExclusive(1)
 		self.mouse_mode_but_grp.addButton(self.mapp)
 		self.mouse_mode_but_grp.addButton(self.mDel)
