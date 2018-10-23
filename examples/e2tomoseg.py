@@ -456,7 +456,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 			return boxcoords
 
 	def menu_file_read_boxloc(self):
-		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
+		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select output text file"))
 
 		f=open(fsp,"r")
 		if options.helixboxer:
@@ -478,7 +478,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 	def menu_file_save_boxloc(self):
 		shrinkf=self.shrink 								#jesus
 
-		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
+		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output text file"))
 
 		out=open(fsp,"w")
 		if options.helixboxer:
@@ -490,7 +490,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		out.close()
 
 	def menu_file_save_boxes(self):
-		fsp=os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (numbers added)")))
+		fsp=os.path.basename(str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output file (numbers added)")))
 
 		fspprjs=fsp.replace('.','_prjs.hdf')
 		prj=EMData() #Dummy
@@ -552,7 +552,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 
 	def menu_file_save_boxes_stack(self):
 
-		fsp=os.path.join(options.path,os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (.hdf supported only)"))))
+		fsp=os.path.join(options.path,os.path.basename(str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output file (.hdf supported only)"))))
 		#if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
 
 
@@ -2006,25 +2006,25 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		Open a session... (might want to add a warning dialog that this will close the current session)
 		"""
-		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")
+		filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")
 		
 	def _on_save_session(self):
 		"""
 		Return a list of all the child items (actually a tree of sorts)
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")
 
 	def _on_save(self):
 		"""
 		Save a snapshot of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")
 
 	def _on_open_tomogram(self):
 		"""
 		Open a session
 		"""
-		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Tomogram', os.getcwd(), "*.hdf,*.mrc")
+		filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Tomogram', os.getcwd(), "*.hdf,*.mrc")
 		#if filename:
 		#	self.scenegraph().loadSession(filename)
 		
@@ -2033,7 +2033,7 @@ class TomoSegInspector(QtGui.QWidget):
 		Open a session
 		"""
 		# Open the file
-		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Segmentation', os.getcwd(), "*.hdf,*.xml")
+		filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Segmentation', os.getcwd(), "*.hdf,*.xml")
 		#if filename:
 		#	self.scenegraph().loadSession(filename)
 		
@@ -2041,7 +2041,7 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		Save a snapshot of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Segmentation', os.getcwd(), "(*.hdf,*.xml)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Segmentation', os.getcwd(), "(*.hdf,*.xml)")
 		#if filename: # if we cancel
 		#	self.scenegraph().saveSnapShot(filename)
 		

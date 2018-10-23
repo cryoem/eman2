@@ -1017,7 +1017,7 @@ class EMPDBInspector(QtGui.QWidget):
 
 	def on_browse(self):
 		import os
-		self.fileName = QtGui.QFileDialog.getOpenFileName(self, "open file", os.getcwd(), "Text files (*.pdb)")
+		self.fileName = QtWidgets.QFileDialog.getOpenFileName(self, "open file", os.getcwd(), "Text files (*.pdb)")
 		if (self.fileName == ""): return
 		self.target().set_current_text(str(self.fileName)) #self.target().text and self.text are what the user sees. 
 		self.text.setText(self.fileName) #if self.text changes, then self.fName becomes self.text and the image regenerates	

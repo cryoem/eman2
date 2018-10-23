@@ -1000,7 +1000,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.sgmousepress.emit(event.x(), event.y())
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "data"):
 			QtGui.qApp.setOverrideCursor(self.datacursor)
-			filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
+			filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
 			if not filename: return
 			name = os.path.basename(str(filename))
 			self.newnode = EMDataItem3D(filename, transform=self._gettransformbasedonscreen(event, rescale=False))
@@ -2730,7 +2730,7 @@ class EMInspector3D(QtGui.QWidget):
 		Open a session
 		"""
 		# Open the file
-		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")
+		filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")
 		if filename:
 			self.scenegraph().loadSession(filename)
 		
@@ -2738,7 +2738,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Return a list of all the child items (actually a tree of sorts)
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")
 		if filename: # if we cancel
 			self.scenegraph().saveSession(filename)
 
@@ -2746,7 +2746,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Save a snapshot of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")
 		if filename: # if we cancel
 			self.scenegraph().saveSnapShot(filename)
 	
@@ -2754,7 +2754,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Save a movie of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")
 		if filename: # if we cancel
 			self.scenegraph().saveMovie_rotate(filename)
 			
@@ -2762,7 +2762,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Save a movie of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.gif)")
 		if filename: # if we cancel
 			self.scenegraph().saveMovie_model(filename)
 	
