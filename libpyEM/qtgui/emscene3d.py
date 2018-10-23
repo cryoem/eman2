@@ -2172,9 +2172,9 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.tree_node_button_remove)
 		tvbox.addWidget(self.tree_node_slider)
 		
-		self.tree_widget.itemClicked[QtGui.QTreeWidgetItem, int].connect(self._tree_widget_click)
-		self.tree_widget.visibleItem[QtGui.QTreeWidgetItem].connect(self._tree_widget_visible)
-		self.tree_widget.editItem[QtGui.QTreeWidgetItem].connect(self._tree_widget_edit)
+		self.tree_widget.itemClicked[QtWidgets.QTreeWidgetItem, int].connect(self._tree_widget_click)
+		self.tree_widget.visibleItem[QtWidgets.QTreeWidgetItem].connect(self._tree_widget_visible)
+		self.tree_widget.editItem[QtWidgets.QTreeWidgetItem].connect(self._tree_widget_edit)
 		self.tree_node_button_remove.clicked.connect(self._tree_widget_remove)
 		self.tree_node_button_add.clicked.connect(self._on_add_button)
 		self.tree_node_slider.valueChanged.connect(self._slider_change)
@@ -2990,8 +2990,8 @@ class EMQTreeWidget(QtWidgets.QTreeWidget):
 	"""
 	Subclassing the QTreeWidget to enable is_visible toggling
 	"""
-	visibleItem = QtCore.pyqtSignal(QtGui.QTreeWidgetItem)
-	editItem = QtCore.pyqtSignal(QtGui.QTreeWidgetItem)
+	visibleItem = QtCore.pyqtSignal(QtWidgets.QTreeWidgetItem)
+	editItem = QtCore.pyqtSignal(QtWidgets.QTreeWidgetItem)
 
 	def __init__(self, parent=None):
 		QtWidgets.QTreeWidget.__init__(self, parent)
@@ -3004,13 +3004,13 @@ class EMQTreeWidget(QtWidgets.QTreeWidget):
 			self.editItem.emit(self.currentItem())
 			
 			
-class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
+class EMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 	"""
 	Subclass of QTreeWidgetItem
 	adds functionality
 	"""
 	def __init__(self, qstring, item3d, parentnode):
-		QtGui.QTreeWidgetItem.__init__(self, [qstring])
+		QtWidgets.QTreeWidgetItem.__init__(self, [qstring])
 		self.name = ''.join(qstring)
 		self.item3d = weakref.ref(item3d)
 		if parentnode: self.parent = weakref.ref(parentnode)

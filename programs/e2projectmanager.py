@@ -656,7 +656,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			self._add_children(toplevel, qtreewidget)
 			QTree.addTopLevelItem(qtreewidget)
 
-		QTree.itemClicked[QtGui.QTreeWidgetItem, int].connect(self._tree_widget_click)
+		QTree.itemClicked[QtWidgets.QTreeWidgetItem, int].connect(self._tree_widget_click)
 
 		return QTree
 
@@ -1939,12 +1939,12 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 	def _on_message(self, s):
 		self.pm().statusbar.setMessage(str(s),"color:red;")
 
-class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
+class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 	"""
 	Custon QTreeWidget for PM, holds a bunch of properites relating to the e2program(or table) it represnsts.
 	"""
 	def __init__(self, qstring):
-		QtGui.QTreeWidgetItem.__init__(self, qstring)
+		QtWidgets.QTreeWidgetItem.__init__(self, qstring)
 		self.program = None
 		self.table = None
 		self.mode = ""
