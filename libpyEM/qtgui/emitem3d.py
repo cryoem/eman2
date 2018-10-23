@@ -145,7 +145,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		Get Data Widget
 		"""
 		nodewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		node_name_label = QtGui.QLabel("Node Name")
 		attribdict["node_name"] = QtGui.QLineEdit()
 		grid.addWidget(node_name_label , 0, 0, 1, 2)
@@ -534,7 +534,7 @@ class EMItem3DInspector(QtGui.QTabWidget):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		
 		EMItem3DInspector.addControls(self, gridbox)
 		
@@ -559,7 +559,7 @@ class EMItem3DInspector(QtGui.QTabWidget):
 		# angluar controls
 		xformframe = QtWidgets.QFrame()
 		xformframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		xformbox = QtGui.QGridLayout()
+		xformbox = QtWidgets.QGridLayout()
 		xformlabel = QtGui.QLabel("Transformation", xformframe)
 		xformlabel.setFont(font)
 		xformlabel.setAlignment(QtCore.Qt.AlignCenter)

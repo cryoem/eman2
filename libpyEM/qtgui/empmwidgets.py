@@ -139,7 +139,7 @@ class PMIntEntryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.intbox = QtGui.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
@@ -234,7 +234,7 @@ class PMFloatEntryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.floatbox = QtGui.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
@@ -290,7 +290,7 @@ class PMStringEntryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.stringbox = QtGui.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
@@ -322,7 +322,7 @@ class PMHeaderWidget(PMBaseWidget):
 	def __init__(self, name, header):
 		PMBaseWidget.__init__(self, name)
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		self.header = QtGui.QLabel()
 		font = QtGui.QFont()
 		font.setBold(True)
@@ -356,7 +356,7 @@ class PMBoolWidget(PMBaseWidget):
 		self.boolvalue = boolvalue
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		self.boolbox = QtWidgets.QCheckBox(name)
 		gridbox.addWidget(self.boolbox, 0, 0)
 		self.setLayout(gridbox)
@@ -397,7 +397,7 @@ class PMFileNameWidget(PMBaseWidget):
 		self.checkfileexist= checkfileexist
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.browser = browser
 		self.filenamebox = QtGui.QLineEdit()
@@ -518,7 +518,7 @@ class PMDirectoryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
@@ -564,7 +564,7 @@ class PMComboWidget(PMBaseWidget):
 		self.datatype=datatype	# Must be int, float or str
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
@@ -611,7 +611,7 @@ class PMComboParamsWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.combobox = PMComboBox()
 		plabel = QtGui.QLabel("params:")
@@ -675,7 +675,7 @@ class PMSymWidget(PMBaseWidget):
 		PMBaseWidget.__init__(self, name, mode)
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		label = QtGui.QLabel(name)
 		label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
 		self.combobox = PMComboBox()
@@ -739,7 +739,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		PMBaseWidget.__init__(self, name, mode)
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		self.automask3dbool = QtWidgets.QCheckBox("Auto Mask 3D")
 		self.params = []
 		self.params.append(PMFloatEntryWidget("Threshold", 0.8, mode))
@@ -808,7 +808,7 @@ class PMTableBase(PMBaseWidget):
 		self.setPositional(postional)
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		self.tablewidget = QtGui.QTableWidget()
 		gridbox.addWidget(self.tablewidget, 0, 0)
 		self.tablewidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)	# Readonly table

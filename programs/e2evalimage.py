@@ -225,7 +225,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.wfft.mmode="app"
 
 		# This object is itself a widget we need to set up
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 		self.gbl.setMargin(8)
 		self.gbl.setSpacing(6)
 

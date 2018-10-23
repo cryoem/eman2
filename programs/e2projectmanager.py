@@ -74,7 +74,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		vsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
 
 		# Make the tiltebars
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		grid.addWidget(self.makeTilteBarWidget(), 0, 0, 1, 3)
 		#grid.addWidget(workflowcontrollabel, 1,0)
 		grid.addWidget(self.makeModeWidget(font))
@@ -255,7 +255,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		tbwidget = QtWidgets.QFrame()
 		tbwidget.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		self.PMIcon = PMIcon(self.pm_icon, tbwidget)
 		self.PMIcon.setAlignment(QtCore.Qt.AlignLeft)
 		grid.addWidget(self.PMIcon,0 , 0, 2, 1)
@@ -992,13 +992,13 @@ class EMWizardPage(QtGui.QWizardPage):
 		label = QtGui.QLabel(page["INST"])
 		label.setWordWrap(True)
 		# add to grid
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		grid.addWidget(label,0,0)
 
 		# Add widgets stuff
 		frame = QtWidgets.QFrame()
 		frame.setFrameStyle(QtWidgets.QFrame.StyledPanel)
-		framegrid = QtGui.QGridLayout()
+		framegrid = QtWidgets.QGridLayout()
 		framegrid.setContentsMargins(6,0,6,0)
 
 		# Insanely if I were to just addWidget using self.e2gui.widgethash[widget], it steals it from the PMGUI layout, so I need to make a copy !!!
@@ -1036,7 +1036,7 @@ class TheHelp(QtGui.QWidget):
 		self.widgetgeometry = None
 
 		self.setWindowTitle('The Help')
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		grid.addWidget(self.getToolBar(), 0, 0)
 		self.textbox = QtGui.QTextEdit()
 		self.textbox.setReadOnly(True)
@@ -1049,7 +1049,7 @@ class TheHelp(QtGui.QWidget):
 	def getToolBar(self):
 		""" Return the toolbar widget """
 		tbwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		grid.setContentsMargins(6,0,6,0)
 
 		font = QtGui.QFont()
@@ -1136,7 +1136,7 @@ class NoteBook(QtGui.QWidget):
 		self.widgetgeometry = None
 
 		self.setWindowTitle('NoteBook')
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
 		textlabel = QtGui.QLabel("EMAN2 NoteBook")
@@ -1376,7 +1376,7 @@ class TaskManager(QtGui.QWidget):
 		self.widgetgeometry = None
 		self.setWindowTitle('Task Manager')
 
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
 		textlabel = QtGui.QLabel("Running Tasks")
@@ -1715,7 +1715,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		self.mode = mode
 
 		# loop through options (a list of dicts) and generate the GUI widget
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		for option in options:
 			"""create the correct widget type"""
 			if ('expert' in  option) and self.pm().getProgramExpertMode() < 2: continue	# Do no add expertmode options if not in expert mode (defined as 2, available AND turned on) Should have used ENUM here
@@ -2038,7 +2038,7 @@ class ProjectDialog(QtWidgets.QDialog):
 		minwidth = 8*max(len(self.pm.pm_cwd),len(self.pm.pm_icon))
 		frame = QtWidgets.QFrame()
 		frame.setFrameStyle(QtWidgets.QFrame.StyledPanel)
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		# add intro
 		textbox = QtGui.QTextEdit("")
 		textbox.setHtml("Welcome to the EMAN2 project manager. Please add project specific paramters below. For Questions email: <a href='mailto:sludtke@bcm.edu'>sludtke@bcm.edu<\a>")
@@ -2082,7 +2082,7 @@ class ProjectDialog(QtWidgets.QDialog):
 		# Ok, cancel buttons
 		done_pb = QtGui.QPushButton("Ok")
 		cancel_pb = QtGui.QPushButton("Cancel")
-		sgrid = QtGui.QGridLayout()
+		sgrid = QtWidgets.QGridLayout()
 		sgrid.addWidget(frame,0,0,1,2)
 		sgrid.addWidget(done_pb,1,0)
 		sgrid.addWidget(cancel_pb,1,1)

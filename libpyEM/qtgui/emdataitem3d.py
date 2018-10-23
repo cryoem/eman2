@@ -69,7 +69,7 @@ class EMDataItem3D(EMItem3D):
 		Get Data Widget
 		"""
 		datawidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		node_name_data_label = QtGui.QLabel("Data Label")
 		attribdict["node_name"] = QtGui.QLineEdit()
 		data_path_label = QtGui.QLabel("Data Path")
@@ -193,7 +193,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		""" Add a tab for each 'column' """
 
 		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "data")
 		# add data tab first, then basic
@@ -206,7 +206,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		dataframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		datagridbox = QtGui.QGridLayout()
+		datagridbox = QtWidgets.QGridLayout()
 
 		self.data_checkbox= QtWidgets.QCheckBox("Display Bounding Box")
 		datagridbox.addWidget(self.data_checkbox, 0, 0)
@@ -252,7 +252,7 @@ class EMSliceItem3D(EMItem3D):
 		Get Slice Widget
 		"""
 		slicewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		node_name_slice_label = QtGui.QLabel("Slice Name")
 		attribdict["node_name"] = QtGui.QLineEdit(str(EMSliceItem3D.name))
 		grid.addWidget(node_name_slice_label, 0, 0, 1, 2)
@@ -525,7 +525,7 @@ class EMSliceInspector(EMInspectorControlShape):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "slices")
 		# add slices tab first then basic tab
@@ -536,7 +536,7 @@ class EMSliceInspector(EMInspectorControlShape):
 		""" Construct all the widgets in this Item Inspector """
 		sliceframe = QtWidgets.QFrame()
 		sliceframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		slice_grid_layout = QtGui.QGridLayout()
+		slice_grid_layout = QtWidgets.QGridLayout()
 
 		self.constrained_group_box = QtGui.QGroupBox("Constrained Slices")
 		self.constrained_group_box.setCheckable(True)
@@ -626,7 +626,7 @@ class EMVolumeItem3D(EMItem3D):
 		Get Volume Widget
 		"""
 		volumewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		node_name_volume_label = QtGui.QLabel("Volume Name")
 		attribdict["node_name"] = QtGui.QLineEdit(str(EMVolumeItem3D.name))
 		grid.addWidget(node_name_volume_label, 0, 0, 1, 2)
@@ -882,7 +882,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "volume")
 		# add volume tab then basic tab
@@ -896,11 +896,11 @@ class EMVolumeInspector(EMInspectorControlShape):
 
 		volframe = QtWidgets.QFrame()
 		volframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		vol_grid_layout = QtGui.QGridLayout()
+		vol_grid_layout = QtWidgets.QGridLayout()
 
 		probeframe = QtWidgets.QFrame()
 		probeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		probelayout = QtGui.QGridLayout()
+		probelayout = QtWidgets.QGridLayout()
 		probelayout.setAlignment(QtCore.Qt.AlignTop)
 		self.range = QtGui.QLabel("Range: %1.3f, %1.3f"%(self.item3d().minden,self.item3d().maxden))
 		self.level = QtGui.QLabel("Level: %1.3f"%self.item3d().isothr)
@@ -1039,7 +1039,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "isosurface")
 		# add isosurface tab first, then basic tab
@@ -1054,7 +1054,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		# Perhaps we should allow the inspector control this?
 		isoframe = QtWidgets.QFrame()
 		isoframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		isogridbox = QtGui.QGridLayout()
+		isogridbox = QtWidgets.QGridLayout()
 
 		self.cullbackface = QtWidgets.QCheckBox("Cull Back Face Polygons")
 		self.cullbackface.setChecked(True)
@@ -1074,7 +1074,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		# Color by radius frame
 		cbrframe = QtWidgets.QFrame()
 		cbrframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		cbrlayout = QtGui.QGridLayout()
+		cbrlayout = QtWidgets.QGridLayout()
 		cbrlayout.setAlignment(QtCore.Qt.AlignTop)
 		self.colorbyradius = QtWidgets.QCheckBox("Color By Radius")
 		self.colorbyradius.setChecked(False)
@@ -1096,7 +1096,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		# Color by map frame
 		cbmframe = QtWidgets.QFrame()
 		cbmframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		cbmlayout = QtGui.QGridLayout()
+		cbmlayout = QtWidgets.QGridLayout()
 		cbmlayout.setAlignment(QtCore.Qt.AlignTop)
 		self.colorbymap = QtWidgets.QCheckBox("Color By Map")
 		self.colorbymap.setEnabled(False)
@@ -1213,7 +1213,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		Get Isosurface Widget
 		"""
 		isosurfacewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		node_name_data_label = QtGui.QLabel("Isosurface Name")
 		attribdict["node_name"] = QtGui.QLineEdit(str(EMIsosurface.name))
 		grid.addWidget(node_name_data_label, 0, 0, 1, 2)

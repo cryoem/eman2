@@ -1036,7 +1036,7 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-		gbl0=QtGui.QGridLayout(self)
+		gbl0=QtWidgets.QGridLayout(self)
 
 		self.summary=QtGui.QPushButton(self)
 		self.summary.setText("Summary Table")
@@ -1194,7 +1194,7 @@ class EMPlot3DRegrInsp(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-		gbl0=QtGui.QGridLayout(self)
+		gbl0=QtWidgets.QGridLayout(self)
 
 		insp = self.target().get_inspector()
 
@@ -1329,7 +1329,7 @@ class EMPlot3DClassInsp(QtGui.QWidget):
 
 		QtGui.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-		gbl0=QtGui.QGridLayout(self)
+		gbl0=QtWidgets.QGridLayout(self)
 
 		#self.wimgfile=StringBox(label="Images:")
 		#gbl0.addWidget(self.wimgfile,0,0)
@@ -1891,7 +1891,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 		#vbl2c.addWidget(self.hmbins)
 
 		# per plot column selectors
-		gl=QtGui.QGridLayout()
+		gl=QtWidgets.QGridLayout()
 		gl.addWidget(QtGui.QLabel("X Col:",self),0,0,Qt.AlignRight)
 		self.slidex=QtGui.QSpinBox(self)
 		self.slidex.setRange(-1,1)
@@ -1948,7 +1948,7 @@ class EMPlot3DInspector(QtGui.QWidget):
 
 		vbl0.addLayout(hbl)
 
-		gblmm=QtGui.QGridLayout()
+		gblmm=QtWidgets.QGridLayout()
 
 		self.wl1=QtGui.QLabel("Min")
 #		self.wl1.setAlignment(Qt.AlignHCenter)
@@ -2534,7 +2534,7 @@ class EMDataFnPlotter(QtGui.QWidget):
 		self.setWindowTitle("Plotter")
 
 		self.resize(780, 580)
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 
 		self.plot = EMPlot3DWidget(parent=self)
 		self.gbl.addWidget(self.plot,0,0,1,1)

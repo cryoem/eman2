@@ -137,7 +137,7 @@ class GUIFourierSynth(QtGui.QWidget):
 		# Widget containing valsliders
 		self.wapsliders=QtGui.QWidget(self)
 #		self.wapsliders.setMinimumSize(800,640)
-		self.gblap=QtGui.QGridLayout()
+		self.gblap=QtWidgets.QGridLayout()
 		self.gblap.setSizeConstraint(QtGui.QLayout.SetMinAndMaxSize)
 		self.gblap.setColumnMinimumWidth(0,250)
 		self.gblap.setColumnMinimumWidth(1,250)

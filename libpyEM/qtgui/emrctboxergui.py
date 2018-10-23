@@ -266,7 +266,7 @@ class ControlPannel(QtGui.QWidget):
 			
 	def add_custom_kernels(self, size):
 		self.kernelwidget = QtGui.QWidget()
-		grid3 = QtGui.QGridLayout()
+		grid3 = QtWidgets.QGridLayout()
 		kernelwidgetidx = []
 		for i in range(size):
 			for j in range(size):
@@ -298,7 +298,7 @@ class ControlPannel(QtGui.QWidget):
 	def add_boxing_button_group(self,layout):
 		self.tool_button_group_box = QtGui.QGroupBox("Tools")
 		
-		grid = QtGui.QGridLayout()
+		grid = QtWidgets.QGridLayout()
 		self.current_tool_combobox = QtWidgets.QComboBox()
 		grid.addWidget(QtGui.QLabel("Current Boxing Tool:"),0,0)
 		grid.addWidget(self.current_tool_combobox,0,1)

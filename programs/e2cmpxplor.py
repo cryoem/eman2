@@ -311,7 +311,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		
 	def add_cmp_options(self):
 		self.cmp_tab= QtGui.QWidget()
-		gridl = QtGui.QGridLayout(self.cmp_tab)
+		gridl = QtWidgets.QGridLayout(self.cmp_tab)
 		
 		self.cmp_shrinkl=QtGui.QLabel("Shrink:")
 		gridl.addWidget(self.cmp_shrinkl,0,1)

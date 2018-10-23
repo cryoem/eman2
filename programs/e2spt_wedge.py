@@ -129,7 +129,7 @@ class MissingWedgeViewer(QtGui.QWidget):
 		
 		self.dataitems= []
 		
-		grid=QtGui.QGridLayout()
+		grid=QtWidgets.QGridLayout()
 		# Make threed widget
 		self.widget3d=emscene3d.EMScene3D()
 		grid.addWidget(self.widget3d, 0, 0, 1, 4)
