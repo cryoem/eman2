@@ -1975,7 +1975,7 @@ class EMTextInfoPane(EMInfoPane) :
 
 		# text editing widget
 
-		self.text = QtGui.QTextEdit()
+		self.text = QtWidgets.QTextEdit()
 		self.text.setAcceptRichText(False)
 		self.text.setReadOnly(True)
 		self.vbl.addWidget(self.text)
@@ -2050,7 +2050,7 @@ class EMHTMLInfoPane(EMInfoPane) :
 
 		# text editing widget
 
-		self.text = QtGui.QTextEdit()
+		self.text = QtWidgets.QTextEdit()
 		self.text.setAcceptRichText(True)
 		self.text.setReadOnly(True)
 		self.vbl.addWidget(self.text)
@@ -2120,7 +2120,7 @@ class EMPDBInfoPane(EMInfoPane) :
 		QtGui.QWidget.__init__(self, parent)
 		self.vbl = QtGui.QVBoxLayout(self)
 		# text editing widget
-		self.text = QtGui.QTextEdit()
+		self.text = QtWidgets.QTextEdit()
 		self.text.setAcceptRichText(False)
 		self.text.setReadOnly(True)
 		self.vbl.addWidget(self.text)

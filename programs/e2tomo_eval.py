@@ -132,7 +132,7 @@ class TomoEvalGUI(QtGui.QWidget):
 		self.gbl.addWidget(self.setspanel, 8,1,2,2)
 		
 		
-		self.wg_notes=QtGui.QLineEdit(self)
+		self.wg_notes=QtWidgets.QLineEdit(self)
 		self.wg_notes.setText("Comments:")
 		#self.wg_notes.setStyleSheet("color: rgb(150, 150, 150);")
 		self.gbl.addWidget(self.wg_notes, 10,1,1,2)

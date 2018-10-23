@@ -927,12 +927,12 @@ class EMPopen(subprocess.Popen):
 			# Some sort of syncronization issue
 			time.sleep(0.1)
 
-class EMAN2StatusBar(QtGui.QTextEdit):
+class EMAN2StatusBar(QtWidgets.QTextEdit):
 	"""
 	The Stats bar for PM
 	"""
 	def __init__(self, text, style):
-		QtGui.QTextEdit.__init__(self)
+		QtWidgets.QTextEdit.__init__(self)
 		self.setFrameShape(QtWidgets.QFrame.Panel | QtWidgets.QFrame.Sunken)
 		self.setLineWidth(2)
 		#self.setMargin(4)
@@ -1038,7 +1038,7 @@ class TheHelp(QtGui.QWidget):
 		self.setWindowTitle('The Help')
 		grid = QtWidgets.QGridLayout()
 		grid.addWidget(self.getToolBar(), 0, 0)
-		self.textbox = QtGui.QTextEdit()
+		self.textbox = QtWidgets.QTextEdit()
 		self.textbox.setReadOnly(True)
 		grid.addWidget(self.textbox, 1, 0)
 		self.setLayout(grid)
@@ -1312,10 +1312,10 @@ class NoteBook(QtGui.QWidget):
 		self.pm().notebook = None
 		self.pm().updateProject()
 
-class PMTextEdit(QtGui.QTextEdit):
+class PMTextEdit(QtWidgets.QTextEdit):
 	""" Sub class of the QTextEdit widget to observe the PMNoteBook """
 	def __init__(self, parent):
-		QtGui.QTextEdit.__init__(self)
+		QtWidgets.QTextEdit.__init__(self)
 		self.parent = weakref.ref(parent)
 
 		self.setPMFontWeight(QtGui.QFont.Normal)
@@ -1323,7 +1323,7 @@ class PMTextEdit(QtGui.QTextEdit):
 
 	def mousePressEvent(self,event):
 		""" Stupidly, TextEdit resets the font based on its context, which I find undesireable """
-		QtGui.QTextEdit.mousePressEvent(self, event)
+		QtWidgets.QTextEdit.mousePressEvent(self, event)
 		self.setFontWeight(self.pmfontweight)
 		self.setTextColor(self.textcolor)
 
@@ -1649,12 +1649,12 @@ class PMProgramWidget(QtWidgets.QTabWidget):
 		self.addTab(self.guiwidget, "GUI")
 
 		# Add command tab
-		self.guitexteditbox = QtGui.QTextEdit("")
+		self.guitexteditbox = QtWidgets.QTextEdit("")
 		self.guitexteditbox.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
 		self.addTab(self.guitexteditbox, "Command")
 
 		# Add help tab
-		self.helptexteditbox = QtGui.QTextEdit("")
+		self.helptexteditbox = QtWidgets.QTextEdit("")
 		self.helptexteditbox.setWordWrapMode(QtGui.QTextOption.WordWrap)
 		self.helptexteditbox.setReadOnly(True)
 		self.helptexteditbox.viewport().setCursor(QtCore.Qt.ArrowCursor)
@@ -2040,7 +2040,7 @@ class ProjectDialog(QtWidgets.QDialog):
 		frame.setFrameStyle(QtWidgets.QFrame.StyledPanel)
 		grid = QtWidgets.QGridLayout()
 		# add intro
-		textbox = QtGui.QTextEdit("")
+		textbox = QtWidgets.QTextEdit("")
 		textbox.setHtml("Welcome to the EMAN2 project manager. Please add project specific paramters below. For Questions email: <a href='mailto:sludtke@bcm.edu'>sludtke@bcm.edu<\a>")
 		textbox.setMaximumHeight(66)
 		textbox.setReadOnly(True)
