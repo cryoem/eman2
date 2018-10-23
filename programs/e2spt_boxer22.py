@@ -162,17 +162,17 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.gbl.addWidget(self.zyview,0,0)
 
 		# Select Z for xy view
-		self.wdepth = QtGui.QSlider()
+		self.wdepth = QtWidgets.QSlider()
 		self.gbl.addWidget(self.wdepth,1,2)
 
 		### Control panel area in upper left corner
 		self.gbl2 = QtWidgets.QGridLayout()
 		self.gbl.addLayout(self.gbl2,1,0)
 
-		#self.wxpos = QtGui.QSlider(Qt.Horizontal)
+		#self.wxpos = QtWidgets.QSlider(Qt.Horizontal)
 		#self.gbl2.addWidget(self.wxpos,0,0)
 		
-		#self.wypos = QtGui.QSlider(Qt.Vertical)
+		#self.wypos = QtWidgets.QSlider(Qt.Vertical)
 		#self.gbl2.addWidget(self.wypos,0,3,6,1)
 		
 		# box size

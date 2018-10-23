@@ -139,7 +139,7 @@ class ValSlider(QtGui.QWidget):
 		self.text.setObjectName("text")
 		self.hboxlayout.addWidget(self.text)
 		
-		self.slider = QtGui.QSlider(self)
+		self.slider = QtWidgets.QSlider(self)
 		
 		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(0))
 		sizePolicy.setHorizontalStretch(7)
