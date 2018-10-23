@@ -2957,12 +2957,12 @@ class EMInfoWin(QtGui.QWidget) :
 		QtGui.QWidget.closeEvent(self, event)
 		self.winclosed.emit()
 
-class SortSelTree(QtGui.QTreeView) :
-	"""This is a subclass of QtGui.QTreeView. It is almost identical but implements selection processing with sorting.
+class SortSelTree(QtWidgets.QTreeView) :
+	"""This is a subclass of QtWidgets.QTreeView. It is almost identical but implements selection processing with sorting.
 	The correct way of doing this in QT4.2 is to use a QSortFilterProxy object, but that won't work properly in this case."""
 
 	def __init__(self, parent = None) :
-		QtGui.QTreeView.__init__(self, parent)
+		QtWidgets.QTreeView.__init__(self, parent)
 		self.header().setClickable(True)
 		self.header().sectionClicked[int].connect(self.colclick)
 		self.scol = -1
@@ -3000,7 +3000,7 @@ class SortSelTree(QtGui.QTreeView) :
 
 		# then do the actual sort
 
-		QtGui.QTreeView.sortByColumn(self, col, ascend)
+		QtWidgets.QTreeView.sortByColumn(self, col, ascend)
 
 		# then set a new selection list
 
@@ -3332,7 +3332,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 # 		"""Make sure we update selection when keyboard is pressed"""
 #
 # 		print "key", event.__dict__
-# 		QtGui.QTreeView.keyPressEvent(self.wtree, event)
+# 		QtWidgets.QTreeView.keyPressEvent(self.wtree, event)
 # 		self.itemSel(None)
 
 	def itemSel(self, qmi) :
