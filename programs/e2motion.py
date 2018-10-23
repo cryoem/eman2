@@ -220,7 +220,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.wlalimaskblur=QtWidgets.QLabel("Blur")
 		self.vbl1.addWidget(self.wlalimaskblur)
 		
-		self.wsbalimaskblur=QtGui.QSpinBox()
+		self.wsbalimaskblur=QtWidgets.QSpinBox()
 		self.wsbalimaskblur.setRange(0,25)
 		self.vbl1.addWidget(self.wsbalimaskblur)
 		
@@ -229,7 +229,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.wlalimaskbase=QtWidgets.QLabel("Base")
 		self.vbl1.addWidget(self.wlalimaskbase)
 		
-		self.wsbalimaskbase=QtGui.QSpinBox()
+		self.wsbalimaskbase=QtWidgets.QSpinBox()
 		self.wsbalimaskbase.setRange(0,100)
 		self.wsbalimaskbase.setValue(10)
 		self.vbl1.addWidget(self.wsbalimaskbase)
@@ -239,7 +239,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.wlalimaskrot=QtWidgets.QLabel("Rot")
 		self.vbl1.addWidget(self.wlalimaskrot)
 		
-		self.wsbalimaskrot=QtGui.QSpinBox()
+		self.wsbalimaskrot=QtWidgets.QSpinBox()
 		self.wsbalimaskrot.setRange(0,360)
 		self.wsbalimaskrot.setValue(0)
 		self.vbl1.addWidget(self.wsbalimaskrot)
@@ -305,7 +305,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		self.wlroimaskblur=QtWidgets.QLabel("Blur")
 		self.vbl2.addWidget(self.wlroimaskblur)
 		
-		self.wsbroimaskblur=QtGui.QSpinBox()
+		self.wsbroimaskblur=QtWidgets.QSpinBox()
 		self.wsbroimaskblur.setRange(0,25)
 		self.vbl2.addWidget(self.wsbroimaskblur)
 

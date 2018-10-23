@@ -316,7 +316,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.cmp_shrinkl=QtWidgets.QLabel("Shrink:")
 		gridl.addWidget(self.cmp_shrinkl,0,1)
 		
-		self.cmp_shrink=QtGui.QSpinBox()
+		self.cmp_shrink=QtWidgets.QSpinBox()
 		self.cmp_shrink.setRange(1,5)
 		self.cmp_shrink.setValue(1)
 		gridl.addWidget(self.cmp_shrink,0,2)

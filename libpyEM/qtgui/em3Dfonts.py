@@ -505,7 +505,7 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		formattab.vbl.addLayout(self.hbl1)
 
 		self.hbl1 = QtWidgets.QHBoxLayout()
-		self.tsize = QtGui.QSpinBox()
+		self.tsize = QtWidgets.QSpinBox()
 		self.tsize.setRange(0,500)
 		self.tsize.setValue(32)
 		self.hbl1.addWidget(QtWidgets.QLabel("Size:",self),Qt.AlignLeft)

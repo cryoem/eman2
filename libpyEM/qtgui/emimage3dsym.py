@@ -1853,7 +1853,7 @@ class EMSymInspector(QtGui.QWidget):
 		arc_div_label = QtWidgets.QLabel("Arc Segments:")
 		arc_div_label.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
 		hbl_l.addWidget(arc_div_label)
-		self.arc_divisions = QtGui.QSpinBox(self)
+		self.arc_divisions = QtWidgets.QSpinBox(self)
 		self.arc_divisions.setRange(1,1000)
 		self.arc_divisions.setValue(int(self.target().arc_segments))
 		hbl_l.addWidget(self.arc_divisions)

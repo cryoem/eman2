@@ -157,7 +157,7 @@ class TomoSegSliceViewer(QtWidgets.QMainWindow):
 		self.gbl2.addWidget(self.wmaxmean,1,0)
 
 		# number slices
-		self.wnlayers=QtGui.QSpinBox()
+		self.wnlayers=QtWidgets.QSpinBox()
 		self.wnlayers.setMinimum(1)
 		self.wnlayers.setMaximum(256)
 		self.wnlayers.setValue(1)

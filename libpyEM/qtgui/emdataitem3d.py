@@ -1064,7 +1064,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.thr.setObjectName("thr")
 		self.thr.setValue(self.item3d().isothr)
 		self.sampling_label = QtWidgets.QLabel("Sample Level:")
-		self.sampling_spinbox = QtGui.QSpinBox()
+		self.sampling_spinbox = QtWidgets.QSpinBox()
 		self.sampling_spinbox.setValue(1)
 
 		sampling_hbox_layout = QtWidgets.QHBoxLayout()

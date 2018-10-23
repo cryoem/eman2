@@ -93,7 +93,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		self.validation_groupbox = QtWidgets.QGroupBox(self.tr("Validation"))
 		
 		transformations_label = QtWidgets.QLabel(self.tr("&Number of Transformations"))
-		self.transformations_spinbox = QtGui.QSpinBox()
+		self.transformations_spinbox = QtWidgets.QSpinBox()
 		self.transformations_spinbox.setMaximum(9999)
 		self.transformations_spinbox.setValue(20)
 		transformations_label.setBuddy(self.transformations_spinbox)

@@ -2319,7 +2319,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.font_label.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
 		self.hbl.addWidget(self.font_label)
 
-		self.font_size = QtGui.QSpinBox()
+		self.font_size = QtWidgets.QSpinBox()
 		self.font_size.setObjectName("nrow")
 		self.font_size.setRange(1,50)
 		self.font_size.setValue(int(self.target().get_font_size()))

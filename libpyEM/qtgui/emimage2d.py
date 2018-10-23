@@ -1950,10 +1950,10 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.rngbl = QtWidgets.QHBoxLayout()
 		self.stlay.addLayout(self.rngbl,2,0,1,3)
 		self.stmmlbl = QtWidgets.QLabel("Img Range :")
-		self.stminsb = QtGui.QSpinBox()
+		self.stminsb = QtWidgets.QSpinBox()
 		self.stminsb.setRange(0,0)
 		self.stminsb.setValue(0)
-		self.stmaxsb = QtGui.QSpinBox()
+		self.stmaxsb = QtWidgets.QSpinBox()
 		self.stmaxsb.setRange(0,0)
 		self.stmaxsb.setValue(0)
 
