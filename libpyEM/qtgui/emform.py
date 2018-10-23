@@ -278,9 +278,9 @@ class EMFileTable(QtGui.QTableWidget):
 
 		self.single_selection = single_selection
 		if self.single_selection:
-			self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+			self.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 		else:
-			self.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+			self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 		
 		self.timer = None
 		self.timer_interval = 5000
@@ -1176,7 +1176,7 @@ class EMFormWidget(QtGui.QWidget):
 		
 		list_widget = QtGui.QListWidget(None)
 		
-		list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+		list_widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 		list_widget.setMouseTracking(True)	
 	
 		for choice in param.choices:
@@ -1418,7 +1418,7 @@ class IncorpParamTable(object):
 		icon = target.get_ptable_icon(paramtable)
 		
 		if not paramtable.enable_multiple_selection:
-			table_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+			table_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 			
 		selected_items = [] # used to ensure default selection is correct
 		
