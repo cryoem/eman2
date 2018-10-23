@@ -290,18 +290,18 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 		self.init_fonts()
 
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 
 		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 
 		self.vbl2 = QtWidgets.QVBoxLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
@@ -445,7 +445,7 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 		gltab = self.gltab
 
 		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab)
-		gltab.vbl.setMargin(0)
+		gltab.vbl.setContentsMargins(0, 0, 0, 0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
 
@@ -467,7 +467,7 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
 			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
-			maintab.vbl.setMargin(0)
+			maintab.vbl.setContentsMargins(0, 0, 0, 0)
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			
@@ -484,7 +484,7 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 		self.formattab = QtWidgets.QWidget()
 		formattab = self.formattab
 		formattab.vbl = QtWidgets.QVBoxLayout(self.formattab)
-		formattab.vbl.setMargin(0)
+		formattab.vbl.setContentsMargins(0, 0, 0, 0)
 		formattab.vbl.setSpacing(6)
 		formattab.vbl.setObjectName("Format")
 
@@ -552,7 +552,7 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 		self.bgRGBtab = QtWidgets.QWidget()
 		bgRGBtab = self.bgRGBtab
 		bgRGBtab.vbl2 = QtWidgets.QVBoxLayout(self.bgRGBtab)
-		bgRGBtab.vbl2.setMargin(0)
+		bgRGBtab.vbl2.setContentsMargins(0, 0, 0, 0)
 		bgRGBtab.vbl2.setSpacing(6)
 		bgRGBtab.vbl2.setObjectName("BG RGB")
 

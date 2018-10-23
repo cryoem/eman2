@@ -1171,7 +1171,7 @@ class EMFormWidget(QtWidgets.QWidget):
 		
 	def incorporate_list(self,param,layout,target,type_of):
 		hbl=QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(2)
 		
 		list_widget = QtWidgets.QListWidget(None)
@@ -1222,7 +1222,7 @@ class EMFormWidget(QtWidgets.QWidget):
 		
 			vbl=QtWidgets.QVBoxLayout()
 			hbl=QtWidgets.QHBoxLayout()
-			hbl.setMargin(0)
+			hbl.setContentsMargins(0, 0, 0, 0)
 			hbl.setSpacing(2)
 			
 			paramtable.build_table()
@@ -1248,7 +1248,7 @@ class EMFormWidget(QtWidgets.QWidget):
 	
 	def incorporate_float_with_choices(self,param,layout,target):
 		hbl=QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(2)
 		
 		hbl=QtWidgets.QHBoxLayout()
@@ -1273,7 +1273,7 @@ class EMFormWidget(QtWidgets.QWidget):
 	
 	def incorporate_int_with_choices(self,param,layout,target):
 		hbl=QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(2)
 		
 		hbl=QtWidgets.QHBoxLayout()
@@ -1297,7 +1297,7 @@ class EMFormWidget(QtWidgets.QWidget):
 	
 	def incorporate_string_with_choices(self,param,layout,target):
 		hbl=QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(2)
 		
 		hbl=QtWidgets.QHBoxLayout()
@@ -1374,7 +1374,7 @@ class IncorpFileTable(object):
 		
 		vbl=QtWidgets.QVBoxLayout()
 		hbl=QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(2)
 		
 		paramtable.build_table()
@@ -1409,7 +1409,7 @@ class IncorpParamTable(object):
 		
 		vbl=QtWidgets.QVBoxLayout()
 		hbl=QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(2)
 		
 		vbl.addLayout(hbl)
@@ -1474,7 +1474,7 @@ class IncorpBool(object):
 	def __init__(self): pass
 	def __call__(self,param,layout,target):
 		hbl=QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(2)
 		check_box = QtWidgets.QCheckBox(str(param.desc_short),target)
 		check_box.setChecked(bool(param.defaultunits))
@@ -1494,7 +1494,7 @@ class IncorpString(object):
 			target.incorporate_string_with_choices(param,layout,target)
 		else:
 			hbl=QtWidgets.QHBoxLayout()
-			hbl.setMargin(0)
+			hbl.setContentsMargins(0, 0, 0, 0)
 			hbl.setSpacing(2)
 			label = QtWidgets.QLabel(param.desc_short+":",target)
 			label.setToolTip(param.desc_long)
@@ -1513,7 +1513,7 @@ class IncorpFloat(object):
 			target.incorporate_float_with_choices(param,layout,target)
 		else:
 			hbl=QtWidgets.QHBoxLayout()
-			hbl.setMargin(0)
+			hbl.setContentsMargins(0, 0, 0, 0)
 			hbl.setSpacing(2)
 			label = QtWidgets.QLabel(param.desc_short+":",target)
 			label.setToolTip(param.desc_long)
@@ -1534,7 +1534,7 @@ class IncorpInt(object):
 			target.incorporate_int_with_choices(param,layout,target)
 		else:
 			hbl=QtWidgets.QHBoxLayout()
-			hbl.setMargin(0)
+			hbl.setContentsMargins(0, 0, 0, 0)
 			hbl.setSpacing(2)
 			label = QtWidgets.QLabel(param.desc_short+":",target)
 			label.setToolTip(param.desc_long)
@@ -1553,7 +1553,7 @@ class IncorpText(object):
 	def __init__(self): pass
 	def __call__(self,param,layout,target):
 #			hbl=QtWidgets.QHBoxLayout()
-#			hbl.setMargin(0)
+#			hbl.setContentsMargins(0, 0, 0, 0)
 #			hbl.setSpacing(2)
 				
 		text_edit = QtWidgets.QTextEdit("",target)
@@ -1578,7 +1578,7 @@ class IncorpUrl(object):
 	def __call__(self,param,layout,target):
 		vbl=QtWidgets.QVBoxLayout()
 		hbl=QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(2)
 		defaults = ""
 		if param.defaultunits != None:
@@ -1594,7 +1594,7 @@ class IncorpUrl(object):
 		vbl.addLayout(hbl)
 		
 		hbl2=QtWidgets.QHBoxLayout()
-		hbl2.setMargin(0)
+		hbl2.setContentsMargins(0, 0, 0, 0)
 		hbl2.setSpacing(2)
 		
 		browse_button = QtWidgets.QPushButton("Browse",target)
@@ -1622,7 +1622,7 @@ class IncorpDict(object):
 		'''
 		# hbl - tht
 		hbl=QtWidgets.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(2)
 		
 		keys = list(param.choices.keys())

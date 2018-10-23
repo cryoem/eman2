@@ -1711,14 +1711,14 @@ class EMPlot3DInspector(QtWidgets.QWidget):
 		vbl0=QtWidgets.QVBoxLayout(self)
 
 		hbl = QtWidgets.QHBoxLayout()
-		hbl.setMargin(2)
+		hbl.setContentsMargins(2, 2, 2, 2)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 
 		gbx = QtWidgets.QGroupBox("Data sets")
 
 		vbl3 = QtWidgets.QVBoxLayout()
-		vbl3.setMargin(4)
+		vbl3.setContentsMargins(4, 4, 4, 4)
 		vbl3.setSpacing(6)
 		vbl3.setObjectName("vbl3")
 		gbx.setLayout(vbl3)
@@ -1763,13 +1763,13 @@ class EMPlot3DInspector(QtWidgets.QWidget):
 		hbl7.addWidget(self.stepbox)
 
 		vbl = QtWidgets.QVBoxLayout()
-		vbl.setMargin(0)
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("vbl")
 		hbl.addLayout(vbl)
 
 		hbl0=QtWidgets.QHBoxLayout()
-		hbl0.setMargin(0)
+		hbl0.setContentsMargins(0, 0, 0, 0)
 		hbl0.setSpacing(6)
 		vbl.addLayout(hbl0)
 
@@ -1787,7 +1787,7 @@ class EMPlot3DInspector(QtWidgets.QWidget):
 		hbl0.addWidget(self.pdfb)
 
 		hbl01=QtWidgets.QHBoxLayout()
-		hbl01.setMargin(0)
+		hbl01.setContentsMargins(0, 0, 0, 0)
 		hbl01.setSpacing(6)
 		vbl.addLayout(hbl01)
 
@@ -1804,7 +1804,7 @@ class EMPlot3DInspector(QtWidgets.QWidget):
 		hbl01.addWidget(self.classb)
 
 		hbl1 = QtWidgets.QHBoxLayout()
-		hbl1.setMargin(0)
+		hbl1.setContentsMargins(0, 0, 0, 0)
 		hbl1.setSpacing(6)
 
 		self.color=QtWidgets.QComboBox(self)
@@ -1821,13 +1821,13 @@ class EMPlot3DInspector(QtWidgets.QWidget):
 		vbl.addLayout(hbl1)
 
 		hbl2 = QtWidgets.QHBoxLayout()
-		hbl2.setMargin(0)
+		hbl2.setContentsMargins(0, 0, 0, 0)
 		hbl2.setSpacing(6)
 		vbl.addLayout(hbl2)
 
 		# This is for line parms
 		vbl2a = QtWidgets.QVBoxLayout()
-		vbl2a.setMargin(0)
+		vbl2a.setContentsMargins(0, 0, 0, 0)
 		vbl2a.setSpacing(6)
 		hbl2.addLayout(vbl2a)
 
@@ -1849,7 +1849,7 @@ class EMPlot3DInspector(QtWidgets.QWidget):
 
 		# This is for point parms
 		vbl2b = QtWidgets.QVBoxLayout()
-		vbl2b.setMargin(0)
+		vbl2b.setContentsMargins(0, 0, 0, 0)
 		vbl2b.setSpacing(6)
 		hbl2.addLayout(vbl2b)
 
@@ -1872,7 +1872,7 @@ class EMPlot3DInspector(QtWidgets.QWidget):
 
 		# This is for "heatmap"/2D hexbin parms
 		#vbl2c = QtWidgets.QVBoxLayout()
-		#vbl2c.setMargin(0)
+		#vbl2c.setContentsMargins(0, 0, 0, 0)
 		#vbl2c.setSpacing(6)
 		#hbl2.addLayout(vbl2c)
 

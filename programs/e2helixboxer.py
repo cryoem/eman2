@@ -843,7 +843,7 @@ if ENABLE_GUI:
 			self.ptcls_groupbox.setLayout(ptcls_opts_layout)
 
 			self.vbl = QtWidgets.QVBoxLayout(self)
-			self.vbl.setMargin(0)
+			self.vbl.setContentsMargins(0, 0, 0, 0)
 			self.vbl.setSpacing(6)
 			self.vbl.setObjectName("vbl")
 			self.vbl.addWidget(self.helices_groupbox)
@@ -1056,7 +1056,7 @@ if ENABLE_GUI:
 			qualityLayout.addWidget(self.img_quality_combobox)
 
 			self.vbl = QtWidgets.QVBoxLayout(self)
-			self.vbl.setMargin(0)
+			self.vbl.setContentsMargins(0, 0, 0, 0)
 			self.vbl.setSpacing(6)
 			self.vbl.setObjectName("vbl")
 			self.vbl.addWidget(self.menu_bar)
