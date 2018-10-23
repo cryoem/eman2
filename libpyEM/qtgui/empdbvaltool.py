@@ -102,7 +102,7 @@ class EMPDBValWidget(QtGui.QWidget):
 		transformations_layout.addWidget(self.transformations_spinbox)
 		
 		threshold_label = QtGui.QLabel(self.tr("Isosurface &Threshold"))
-		self.threshold_doublespinbox = QtGui.QDoubleSpinBox()
+		self.threshold_doublespinbox = QtWidgets.QDoubleSpinBox()
 		self.threshold_doublespinbox.setValue(0.1)
 		threshold_label.setBuddy(self.threshold_doublespinbox)
 		threshold_layout = QtGui.QHBoxLayout()
