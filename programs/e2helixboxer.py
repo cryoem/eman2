@@ -1257,9 +1257,9 @@ if ENABLE_GUI:
 					num_boxes = len(boxes)
 				else:
 					num_boxes = 0
-				micrograph_item = QtGui.QTableWidgetItem(micrograph)
+				micrograph_item = QtWidgets.QTableWidgetItem(micrograph)
 				micrograph_item.setToolTip(micrograph_filepath)
-				num_boxes_item = QtGui.QTableWidgetItem(str(num_boxes))
+				num_boxes_item = QtWidgets.QTableWidgetItem(str(num_boxes))
 				self.micrograph_table.insertRow(i)
 				self.micrograph_table.setItem(i,0, micrograph_item)
 				self.micrograph_table.setItem(i,1, num_boxes_item)

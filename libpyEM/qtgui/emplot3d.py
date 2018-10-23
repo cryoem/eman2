@@ -1141,7 +1141,7 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 			for s,stat in enumerate(stats):
 				if s == 0: item = str(int(stat))
 				else: item = str(round(stat,rnd))
-				self.table.setItem( c, s, QtGui.QTableWidgetItem(item) )
+				self.table.setItem( c, s, QtWidgets.QTableWidgetItem(item) )
 
 	def runTest(self):
 		stat = str(self.wcomb_test.currentText())
@@ -1176,7 +1176,7 @@ class EMPlot3DStatsInsp(QtGui.QWidget):
 		for i, r in enumerate(result):
 			for j, c in enumerate(r):
 				item = str(c)
-				self.table.setItem( j, i, QtGui.QTableWidgetItem(item) )
+				self.table.setItem( j, i, QtWidgets.QTableWidgetItem(item) )
 
 	def replaceRowLabels(self,rows):
 		self.table.setVerticalHeaderLabels(list(rows))
