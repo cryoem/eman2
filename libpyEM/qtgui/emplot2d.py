@@ -3045,7 +3045,7 @@ class EMDataFnPlotter(QtGui.QWidget):
 # 		# the window corner OpenGL coordinates are (-+1, -+1)
 # 		gl.glOrtho(-1, 1, 1, -1, -1, 1)
 #
-# class EMGLPlot2DWidget(QtGui.QMainWindow):
+# class EMGLPlot2DWidget(QtWidgets.QMainWindow):
 #
 # 	def __init__(self):
 # 		super(EMGLPlot2DWidget, self).__init__()

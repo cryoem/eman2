@@ -114,7 +114,7 @@ def main():
 	
 	E2end(pid)
 
-class EMMotion(QtGui.QMainWindow):
+class EMMotion(QtWidgets.QMainWindow):
 	"""This is the main window for the EMMotion application"""
 	
 	def __init__(self,application,path=None,piter=None,threads=4):

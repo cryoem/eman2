@@ -221,7 +221,7 @@ class Contour(EMShape):
 			glDrawArrays(GL_POINTS, 0, len(pts))
 		#print "bbbbbbbbb"
 
-class EMDrawWindow(QtGui.QMainWindow):
+class EMDrawWindow(QtWidgets.QMainWindow):
 
 	def __init__(self,application,options,datafile=None):
 		QtGui.QWidget.__init__(self)
