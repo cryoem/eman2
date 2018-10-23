@@ -687,7 +687,7 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.smp_label.setText('Texture Oversampling')
 		self.hbl_smp.addWidget(self.smp_label)
 		
-		self.smp = QtGui.QSpinBox(maintab)
+		self.smp = QtWidgets.QSpinBox(maintab)
 		self.smp.setMaximum(10)
 		self.smp.setMinimum(1)
 		self.smp.setValue(1)

@@ -672,7 +672,7 @@ class EMIsoInspector(QtGui.QWidget):
 			self.smp_label.setText('Sample Level')
 			self.hbl_smp.addWidget(self.smp_label)
 			
-			self.smp = QtGui.QSpinBox(maintab)
+			self.smp = QtWidgets.QSpinBox(maintab)
 			self.smp.setValue(1)
 			self.hbl_smp.addWidget(self.smp)
 	

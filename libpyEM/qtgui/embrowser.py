@@ -2248,7 +2248,7 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		# Spinbox for selecting image number
 
-		self.wimnum = QtGui.QSpinBox()
+		self.wimnum = QtWidgets.QSpinBox()
 		self.wimnum.setRange(0, 0)
 		self.gbl.addWidget(self.wimnum, 0, 0)
 
@@ -2705,7 +2705,7 @@ class EMStackInfoPane(EMInfoPane) :
 
 		'''Spinbox for selecting image number'''
 
-		self.wimnum = QtGui.QSpinBox()
+		self.wimnum = QtWidgets.QSpinBox()
 
 		# self.wimnum.setRange(0, 0) # JOHN
 		# self.gbl.addWidget(self.wimnum, 0, 0) # JOHN
