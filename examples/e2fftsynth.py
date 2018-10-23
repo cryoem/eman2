@@ -144,7 +144,7 @@ class GUIFourierSynth(QtGui.QWidget):
 		self.wapsliders.setLayout(self.gblap)
 		
 		# ScrollArea providing view on slider container widget
-		self.wapsarea=QtGui.QScrollArea(self)
+		self.wapsarea=QtWidgets.QScrollArea(self)
 		self.wapsarea.setWidgetResizable(True)
 		self.wapsarea.setWidget(self.wapsliders)
 		self.vbl1.addWidget(self.wapsarea)
