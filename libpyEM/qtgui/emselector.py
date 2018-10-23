@@ -297,7 +297,7 @@ def EMSelectorBaseTemplate(Type):
 			self.single_selection = single_selection # Flag indicating single selection in interface
 			self.browse_delegates = [EMBDBDelegate(self), EMFileSystemDelegate(self)] # Object capable of returning listed items based on url- Add your own
 			
-			self.hbl = QtGui.QVBoxLayout(self)
+			self.hbl = QtWidgets.QVBoxLayout(self)
 			self.hbl.setMargin(0)
 			self.hbl.setSpacing(6)
 			self.hbl.setObjectName("hbl")

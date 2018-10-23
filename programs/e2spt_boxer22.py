@@ -1394,7 +1394,7 @@ class EMTomoSetsPanel(QtGui.QWidget):
 		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		hbl.addWidget(self.setlist)
 
-		vbl = QtGui.QVBoxLayout()
+		vbl = QtWidgets.QVBoxLayout()
 
 		self.new_set_button = QtWidgets.QPushButton("New")
 		vbl.addWidget(self.new_set_button)

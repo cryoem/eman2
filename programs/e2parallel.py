@@ -280,26 +280,26 @@ class GUIservmon(QtWidgets.QMainWindow):
 
 		self.cw=QtGui.QWidget()
 		self.setCentralWidget(self.cw)
-		self.vbl=QtGui.QVBoxLayout(self.cw)
+		self.vbl=QtWidgets.QVBoxLayout(self.cw)
 		
 		self.tabs = QtWidgets.QTabWidget()
 		self.vbl.addWidget(self.tabs)
 		self.tabs.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 	
 		self.activetab=QtGui.QWidget()
-		self.vblat=QtGui.QVBoxLayout(self.activetab)
+		self.vblat=QtWidgets.QVBoxLayout(self.activetab)
 		self.actview=QtWidgets.QTableView()
 		self.vblat.addWidget(self.actview)
 		self.tabs.addTab(self.activetab,"Active")
 		
 		self.donetab=QtGui.QWidget()
-		self.vbldt=QtGui.QVBoxLayout(self.donetab)
+		self.vbldt=QtWidgets.QVBoxLayout(self.donetab)
 		self.doneview=QtWidgets.QTableView()
 		self.vbldt.addWidget(self.doneview)
 		self.tabs.addTab(self.donetab,"Complete")
 		
 		self.clienttab=QtGui.QWidget()
-		self.vblct=QtGui.QVBoxLayout(self.clienttab)
+		self.vblct=QtWidgets.QVBoxLayout(self.clienttab)
 		self.clientview=QtWidgets.QTableView()
 		self.vblct.addWidget(self.clientview)
 		self.tabs.addTab(self.clienttab,"Clients")

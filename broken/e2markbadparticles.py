@@ -121,7 +121,7 @@ class EMMarkPtclTool(QtWidgets.QMainWindow):
 		self.wclasstab=EMClassPtclTool(extrafiles)
 		self.wtabs.addTab(self.wclasstab,"Classes")
 
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.setlist=MyListWidget(self)
 		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.vbl2.addWidget(self.setlist)

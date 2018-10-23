@@ -742,7 +742,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		sgirotwidget = QtGui.QWidget()
 		quaternionwidget = QtGui.QWidget()
 		# EMAN
-		emanbox = QtGui.QVBoxLayout()
+		emanbox = QtWidgets.QVBoxLayout()
 		self.emanazslider = ValSlider(EMANwidget, (0.0, 360.0), "  Az", rounding = 1)
 		self.emanaltslider = ValSlider(EMANwidget, (0.0, 180.0), "Alt", rounding = 1)
 		self.emanphislider = ValSlider(EMANwidget, (0.0, 360.0), "Phi", rounding = 1)
@@ -751,7 +751,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		emanbox.addWidget(self.emanphislider)
 		EMANwidget.setLayout(emanbox)
 		# Imagic
-		imagicbox = QtGui.QVBoxLayout()
+		imagicbox = QtWidgets.QVBoxLayout()
 		self.imagicgammaslider = ValSlider(Imagicwidget, (0.0, 360.0), "Gamma", rounding = 1)
 		self.imagicbetaslider = ValSlider(Imagicwidget, (0.0, 180.0), "     Beta", rounding = 1)
 		self.imagicalphaslider = ValSlider(Imagicwidget, (0.0, 360.0), "   Alpha", rounding = 1)
@@ -760,7 +760,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		imagicbox.addWidget(self.imagicalphaslider)
 		Imagicwidget.setLayout(imagicbox)
 		# Spider
-		spiderbox = QtGui.QVBoxLayout()
+		spiderbox = QtWidgets.QVBoxLayout()
 		self.spiderpsislider = ValSlider(Spiderwidget, (0.0, 360.0), "   Psi", rounding = 1)
 		self.spiderthetaslider = ValSlider(Spiderwidget, (0.0, 180.0), "Theta", rounding = 1)
 		self.spiderphislider = ValSlider(Spiderwidget, (0.0, 360.0), "   Phi", rounding = 1)
@@ -769,7 +769,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		spiderbox.addWidget(self.spiderphislider)
 		Spiderwidget.setLayout(spiderbox)
 		# MRC
-		mrcbox = QtGui.QVBoxLayout()
+		mrcbox = QtWidgets.QVBoxLayout()
 		self.mrcpsislider = ValSlider(MRCwidget, (0.0, 360.0), "      Psi", rounding = 1)
 		self.mrcthetaslider = ValSlider(MRCwidget, (0.0, 180.0), "  Theta", rounding = 1)
 		self.mrcomegaslider = ValSlider(MRCwidget, (0.0, 360.0), "Omega", rounding = 1)
@@ -778,7 +778,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		mrcbox.addWidget(self.mrcomegaslider)
 		MRCwidget.setLayout(mrcbox)
 		# XYZ
-		xyzbox = QtGui.QVBoxLayout()
+		xyzbox = QtWidgets.QVBoxLayout()
 		self.xyzzslider = ValSlider(XYZwidget, (0.0, 360.0), "Z", rounding = 1)
 		self.xyzyslider = ValSlider(XYZwidget, (0.0, 180.0), "Y", rounding = 1)
 		self.xyzxslider = ValSlider(XYZwidget, (0.0, 360.0), "X", rounding = 1)
@@ -787,7 +787,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		xyzbox.addWidget(self.xyzxslider)
 		XYZwidget.setLayout(xyzbox)
 		# spin
-		spinbox = QtGui.QVBoxLayout()
+		spinbox = QtWidgets.QVBoxLayout()
 		self.spinomegaslider = ValSlider(spinwidget, (0.0, 180.0), "Omega", rounding = 1)
 		self.spinn1slider = ValSlider(spinwidget, (0.0, 1.0), "       N1", rounding = 4)
 		self.spinn2slider = ValSlider(spinwidget, (0.0, 1.0), "       N2", rounding = 4)
@@ -798,7 +798,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		spinbox.addWidget(self.spinn3slider)
 		spinwidget.setLayout(spinbox)
 		# sgirot
-		sgirotbox = QtGui.QVBoxLayout()
+		sgirotbox = QtWidgets.QVBoxLayout()
 		self.sgirotqslider = ValSlider(sgirotwidget, (0.0, 180.0), " Q", rounding = 1)
 		self.sgirotn1slider = ValSlider(sgirotwidget, (0.0, 1.0), "N1", rounding = 4)
 		self.sgirotn2slider = ValSlider(sgirotwidget, (0.0, 1.0), "N2", rounding = 4)
@@ -809,7 +809,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		sgirotbox.addWidget(self.sgirotn3slider)
 		sgirotwidget.setLayout(sgirotbox)
 		# quaternion
-		quaternionbox = QtGui.QVBoxLayout()
+		quaternionbox = QtWidgets.QVBoxLayout()
 		self.quaternione0slider = ValSlider(quaternionwidget, (0.0, 1.0), "E0", rounding = 4)
 		self.quaternione1slider = ValSlider(quaternionwidget, (0.0, 1.0), "E1", rounding = 4)
 		self.quaternione2slider = ValSlider(quaternionwidget, (0.0, 1.0), "E2", rounding = 4)

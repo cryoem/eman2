@@ -818,7 +818,7 @@ class EMLightsInspectorBase(object):
 		self.light_tab = QtGui.QWidget()
 		light_tab = self.light_tab
 		
-		vbl = QtGui.QVBoxLayout(self.light_tab )
+		vbl = QtWidgets.QVBoxLayout(self.light_tab )
 		vbl.setMargin(0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("Lights")
@@ -1072,7 +1072,7 @@ class EMLightsInspectorBase(object):
 		
 		self.directional_light_widget = QtGui.QWidget()
 		
-		vbl = QtGui.QVBoxLayout(self.directional_light_widget)
+		vbl = QtWidgets.QVBoxLayout(self.directional_light_widget)
 		vbl.setMargin(0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("Lights")
@@ -1089,7 +1089,7 @@ class EMLightsInspectorBase(object):
 
 		hbl.addWidget(self.light_list)
 
-		vbl2 = QtGui.QVBoxLayout()
+		vbl2 = QtWidgets.QVBoxLayout()
 		vbl2.setMargin(0)
 		vbl2.setSpacing(6)
 		vbl2.setObjectName("vbl2")
@@ -1152,7 +1152,7 @@ class EMLightsInspectorBase(object):
 		
 		self.pointsource_light_widget = QtGui.QWidget()
 		
-		vbl = QtGui.QVBoxLayout(self.pointsource_light_widget)
+		vbl = QtWidgets.QVBoxLayout(self.pointsource_light_widget)
 		vbl.setMargin(0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("Lights")
@@ -1171,7 +1171,7 @@ class EMLightsInspectorBase(object):
 		#a.setSelected(True)
 		hbl.addWidget(self.point_light_list)
 
-		vbl2 = QtGui.QVBoxLayout()
+		vbl2 = QtWidgets.QVBoxLayout()
 		vbl2.setMargin(0)
 		vbl2.setSpacing(6)
 		vbl2.setObjectName("vbl2")
@@ -1317,7 +1317,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		EMLightsInspectorBase.__init__(self)
 		self.target=weakref.ref(target)
 		
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -1328,7 +1328,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.vbl2.setMargin(0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
@@ -1375,7 +1375,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		self.gltab = QtGui.QWidget()
 		gltab = self.gltab
 		
-		gltab.vbl = QtGui.QVBoxLayout(self.gltab )
+		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
 		gltab.vbl.setMargin(0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
@@ -1409,7 +1409,7 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		if ( self.maintab == None ):
 			self.maintab = QtGui.QWidget()
 			maintab = self.maintab
-			maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 			maintab.vbl.setMargin(0)
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")

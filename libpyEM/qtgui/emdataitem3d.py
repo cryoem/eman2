@@ -546,7 +546,7 @@ class EMSliceInspector(EMInspectorControlShape):
 		self.constrained_plane_combobox.addItems(["XY", "YZ", "ZX"])
 		self.constrained_slider = ValSlider(label="Trans:")
 
-		constrained_layout = QtGui.QVBoxLayout()
+		constrained_layout = QtWidgets.QVBoxLayout()
 		constrained_layout.addWidget(self.constrained_plane_combobox)
 		constrained_layout.addWidget(self.constrained_slider)
 		constrained_layout.addStretch()

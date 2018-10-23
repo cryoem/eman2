@@ -162,7 +162,7 @@ class GUIctfsim(QtGui.QWidget):
 		self.hbl.setObjectName("hbl")
 
 		# plot list and plot mode combobox
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.setlist=MyListWidget(self)
 		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.vbl2.addWidget(self.setlist)
@@ -176,7 +176,7 @@ class GUIctfsim(QtGui.QWidget):
 		self.hbl.addLayout(self.vbl2)
 
 		# ValSliders for CTF parameters
-		self.vbl = QtGui.QVBoxLayout()
+		self.vbl = QtWidgets.QVBoxLayout()
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")

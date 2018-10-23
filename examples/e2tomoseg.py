@@ -1363,7 +1363,7 @@ class TomoSegInspector(QtGui.QWidget):
 		self.mintreewidth = 250		# minimum width of the tree
 		self.mincontrolwidth = 0
 		
-		vbox = QtGui.QVBoxLayout(self)
+		vbox = QtWidgets.QVBoxLayout(self)
 		self.inspectortab = QtWidgets.QTabWidget()
 		self.inspectortab.addTab(self.getToolsWidget(), "Tools")
 		self.inspectortab.addTab(self.getTreeWidget(), "Annotations")
@@ -1793,7 +1793,7 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		Returns the tree layout
 		"""
-		tvbox = QtGui.QVBoxLayout()
+		tvbox = QtWidgets.QVBoxLayout()
 		self.tree_widget = EMQTreeWidget(parent)
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
@@ -1971,7 +1971,7 @@ class TomoSegInspector(QtGui.QWidget):
 		Return the utilites widget
 		"""
 		uwidget = QtGui.QWidget()
-		uvbox = QtGui.QVBoxLayout()
+		uvbox = QtWidgets.QVBoxLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
 		

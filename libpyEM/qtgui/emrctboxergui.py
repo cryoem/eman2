@@ -57,7 +57,7 @@ class ControlPannel(QtGui.QWidget):
 		self.manual_tool = ManualPicker(self.mediator, self.db)
 		self.pair_picker_tool = PairPickerTool(self.mediator, self.db)
 		
-		vbox = QtGui.QVBoxLayout(self)
+		vbox = QtWidgets.QVBoxLayout(self)
 		
 		self.tab_widget = QtWidgets.QTabWidget()
 		self.tab_widget.addTab(self.get_main_tab(),"Main")
@@ -82,10 +82,10 @@ class ControlPannel(QtGui.QWidget):
 		
 	def get_main_tab(self):
 		mainwidget = QtGui.QWidget()
-		vbox = QtGui.QVBoxLayout()
+		vbox = QtWidgets.QVBoxLayout()
 		
 		# Make the main tools layout
-		mlayout = QtGui.QVBoxLayout()
+		mlayout = QtWidgets.QVBoxLayout()
 		self.get_main(mlayout)			# add the widgets const for all tools
 		msplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
 		msplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -102,7 +102,7 @@ class ControlPannel(QtGui.QWidget):
 	def get_filter_tab(self):
 		
 		filterwidget = QtGui.QWidget()
-		vbox = QtGui.QVBoxLayout()
+		vbox = QtWidgets.QVBoxLayout()
 		
 		hbl=QtWidgets.QHBoxLayout()
 		flabel = QtWidgets.QLabel("Filter Type:",self)
@@ -141,9 +141,9 @@ class ControlPannel(QtGui.QWidget):
 	def get_processor_tab(self):
 		
 		processorwidget = QtGui.QWidget()
-		vboxa = QtGui.QVBoxLayout()
+		vboxa = QtWidgets.QVBoxLayout()
 		
-		vbox1 = QtGui.QVBoxLayout()
+		vbox1 = QtWidgets.QVBoxLayout()
 		hbl=QtWidgets.QHBoxLayout()
 		flabel = QtWidgets.QLabel("Filter:",self)
 		hbl.addWidget(flabel)
@@ -166,7 +166,7 @@ class ControlPannel(QtGui.QWidget):
 		vbox1.setAlignment(QtCore.Qt.AlignTop)
 		vboxa.addLayout(vbox1)
 		
-		vbox2 = QtGui.QVBoxLayout()
+		vbox2 = QtWidgets.QVBoxLayout()
 		self.processor_but=QtWidgets.QPushButton("Filter")
 		vbox2.addWidget(self.processor_but)
 		vboxa.addLayout(vbox2)
@@ -401,7 +401,7 @@ class ManualPicker(QtGui.QWidget):
 		QtGui.QWidget.__init__(self)
 		self.mediator = mediator
 		self.db=db
-		vbl = QtGui.QVBoxLayout()
+		vbl = QtWidgets.QVBoxLayout()
 		label = QtWidgets.QLabel("Manual Picker", self)
 		boldfont = QtGui.QFont()
 		boldfont.setBold(True)
@@ -440,7 +440,7 @@ class PairPickerTool(QtGui.QWidget):
 		# GUI code below here
 		ppwidget = QtGui.QWidget()
 		
-		vbl = QtGui.QVBoxLayout()
+		vbl = QtWidgets.QVBoxLayout()
 		label = QtWidgets.QLabel("Pair Picker", self)
 		boldfont = QtGui.QFont()
 		boldfont.setBold(True)

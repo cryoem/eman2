@@ -298,7 +298,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 
 
 		self.setMaximumSize(8000,8000)
-		self.hbl = QtGui.QVBoxLayout(self)
+		self.hbl = QtWidgets.QVBoxLayout(self)
 		
 		self.hbl.setSpacing(0)
 		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool

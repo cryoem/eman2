@@ -722,7 +722,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 	def add_au_table(self):
 
 		self.au_tab= QtGui.QWidget()
-		self.au_tab.vbl = QtGui.QVBoxLayout(self.au_tab)
+		self.au_tab.vbl = QtWidgets.QVBoxLayout(self.au_tab)
 
 		self.au_data = self.target().au_data
 		combo_entries = list(self.au_data.keys())

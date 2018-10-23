@@ -1296,7 +1296,7 @@ class SparseSymChoicesWidgets(object):
 		Adds 4 buttons in a grid
 		| Display Eulers | Display Triangles |
 		| Display Arcs   | All Syms          |
-		@param vbl a QtGui.QVBoxLayout - all widgets and layouts are added to it
+		@param vbl a QtWidgets.QVBoxLayout - all widgets and layouts are added to it
 		'''
 		self.busy = True
 		self.button_hbl1 = QtWidgets.QHBoxLayout()
@@ -1365,8 +1365,8 @@ class SparseSymChoicesWidgets(object):
 	
 	def add_symmetry_options(self,vbl,enable_orient_gen=True):
 		'''
-		Add common symmetry options to a QtGui.QVBoxLayout
-		@param vbl a QtGui.QVBoxLayout - all widgets and layouts are added to it
+		Add common symmetry options to a QtWidgets.QVBoxLayout
+		@param vbl a QtWidgets.QVBoxLayout - all widgets and layouts are added to it
 		@param enable_orient_gen a boolean indicating whether or not the user should be permitted to change the distribution of eulers - this is False when using E2eulerxplor to examine refinement results
 		
 		Makes QtCore.QObject connections to functions of self.target() (see bottom of this function)
@@ -1374,7 +1374,7 @@ class SparseSymChoicesWidgets(object):
 		self.busy = True
 		self.maintab = QtGui.QWidget()
 		maintab = self.maintab
-		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 		maintab.vbl.setMargin(0)
 		maintab.vbl.setSpacing(6)
 		maintab.vbl.setObjectName("Main")
@@ -1609,7 +1609,7 @@ class EMSymChoiceDialog(QtWidgets.QDialog):
 		self.setWindowTitle("Choose Distribution Parameters")
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "eulerxplor.png"))
 
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -1674,7 +1674,7 @@ class EMSymInspector(QtGui.QWidget):
 		self.rotation_sliders = EMTransformPanel(self.target(),self)
 		self.enable_trace = enable_trace
 		self.enable_og = enable_og
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -1777,7 +1777,7 @@ class EMSymInspector(QtGui.QWidget):
 		
 	def get_transform_tab(self):
 		self.transform_tab = QtGui.QWidget()
-		self.transform_tab.vbl = QtGui.QVBoxLayout(self.transform_tab)
+		self.transform_tab.vbl = QtWidgets.QVBoxLayout(self.transform_tab)
 		self.rotation_sliders.addWidgets(self.transform_tab.vbl)
 		
 		return self.transform_tab
@@ -1803,7 +1803,7 @@ class EMSymInspector(QtGui.QWidget):
 	def get_display_tab(self):
 		
 		self.display_tab = QtGui.QWidget()
-		self.display_tab.vbl = QtGui.QVBoxLayout(self.display_tab)
+		self.display_tab.vbl = QtWidgets.QVBoxLayout(self.display_tab)
 				
 #		self.glcontrast = ValSlider(self.display_tab,(1.0,5.0),"GLShd:")
 #		self.glcontrast.setObjectName("GLShade")

@@ -988,7 +988,7 @@ class EMInspectorControlShape(EMItem3DInspector):
 		super(EMInspectorControlShape, self).addControls(gridbox)
 		colorframe = QtWidgets.QFrame()
 		colorframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		colorvbox = QtGui.QVBoxLayout()
+		colorvbox = QtWidgets.QVBoxLayout()
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
 		colorlabel = QtWidgets.QLabel("Color",colorframe)
@@ -1355,7 +1355,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		#frame to control slice/stack of the line
 		lineframe2 = QtWidgets.QFrame()
 		lineframe2.setFrameShape(QtWidgets.QFrame.StyledPanel)
-		linehbox = QtGui.QVBoxLayout()
+		linehbox = QtWidgets.QVBoxLayout()
 				
 		self.slice = ValSlider(lineframe2, (1, 100), "Slice", rounding=0)
 		self.slice.setValue(self.item3d().slices)
