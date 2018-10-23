@@ -3074,7 +3074,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.lpath = QtWidgets.QLabel("  Path:")
 		self.wtoolhbl.addWidget(self.lpath)
 
-		self.wpath = QtGui.QLineEdit()
+		self.wpath = QtWidgets.QLineEdit()
 		self.wtoolhbl.addWidget(self.wpath, 5)
 
 		# self.wspacet1 = QtGui.QSpacerItem(100, 10, QtGui.QSizePolicy.MinimumExpanding)

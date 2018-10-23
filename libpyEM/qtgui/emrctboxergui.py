@@ -160,7 +160,7 @@ class ControlPannel(QtGui.QWidget):
 		hbl2=QtWidgets.QHBoxLayout()
 		plabel = QtWidgets.QLabel("Parameters:",self)
 		hbl2.addWidget(plabel)
-		self.params_listbox = QtGui.QLineEdit(str(self.db.getdefault("processorparams",dfl="")), self)
+		self.params_listbox = QtWidgets.QLineEdit(str(self.db.getdefault("processorparams",dfl="")), self)
 		hbl2.addWidget(self.params_listbox)
 		vbox1.addLayout(hbl2)
 		vbox1.setAlignment(QtCore.Qt.AlignTop)
@@ -270,7 +270,7 @@ class ControlPannel(QtGui.QWidget):
 		kernelwidgetidx = []
 		for i in range(size):
 			for j in range(size):
-				kw = QtGui.QLineEdit("",self)
+				kw = QtWidgets.QLineEdit("",self)
 				kw.setFixedSize(40,25)	# This could be an issue......
 				kernelwidgetidx.append(kw)
 				grid3.addWidget(kw, i, j)
@@ -287,7 +287,7 @@ class ControlPannel(QtGui.QWidget):
 		hbl.addWidget(self.box_size_label)
 		
 		self.pos_int_validator = QtGui.QIntValidator(2,5000, self)	#Anything bigger than 5,000 is crazy!!!!
-		self.boxsize = QtGui.QLineEdit(str(self.mediator.boxsize),self)
+		self.boxsize = QtWidgets.QLineEdit(str(self.mediator.boxsize),self)
 		self.boxsize.setValidator(self.pos_int_validator)
 		
 		hbl.addWidget(self.boxsize)
@@ -467,7 +467,7 @@ class PairPickerTool(QtGui.QWidget):
 		hta = QtWidgets.QHBoxLayout()
 		tlabel = QtWidgets.QLabel("Computed tilt angle", self)
 		hta.addWidget(tlabel)
-		self.tiltangle = QtGui.QLineEdit("", self)
+		self.tiltangle = QtWidgets.QLineEdit("", self)
 		self.tiltangle.setReadOnly(True)
 		hta.addWidget(self.tiltangle)
 		vbl.addLayout(hta)
@@ -475,7 +475,7 @@ class PairPickerTool(QtGui.QWidget):
 		htax = QtWidgets.QHBoxLayout()
 		talabel = QtWidgets.QLabel("Computed tilt axis (Y)", self)
 		htax.addWidget(talabel)
-		self.tiltaxis = QtGui.QLineEdit("", self)
+		self.tiltaxis = QtWidgets.QLineEdit("", self)
 		self.tiltaxis.setReadOnly(True)
 		htax.addWidget(self.tiltaxis)
 		vbl.addLayout(htax)
@@ -483,7 +483,7 @@ class PairPickerTool(QtGui.QWidget):
 		hgamma = QtWidgets.QHBoxLayout()
 		gammalabel = QtWidgets.QLabel("Gamma angle", self)
 		hgamma.addWidget(gammalabel)
-		self.gamma = QtGui.QLineEdit("", self)
+		self.gamma = QtWidgets.QLineEdit("", self)
 		self.gamma.setReadOnly(True)
 		hgamma.addWidget(self.gamma)
 		vbl.addLayout(hgamma)

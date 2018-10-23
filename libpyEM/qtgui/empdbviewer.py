@@ -990,7 +990,7 @@ class EMPDBInspector(QtGui.QWidget):
 
 		self.rotation_sliders = EMTransformPanel(target,self)
 		
-		self.text = QtGui.QLineEdit()
+		self.text = QtWidgets.QLineEdit()
 		text_value = self.target().current_text()
 		if text_value:
 			self.text.setText(text_value)

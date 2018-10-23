@@ -108,7 +108,7 @@ class TrackerControl(QtGui.QWidget):
 		self.bcenalign=QtGui.QPushButton("Center Align")
 		self.bprojalign=QtGui.QPushButton("Proj. Realign")
 		self.btiltaxis=QtGui.QPushButton("Tilt Axis")
-		self.btiltaxisval=QtGui.QLineEdit("90.0")
+		self.btiltaxisval=QtWidgets.QLineEdit("90.0")
 		self.bsavedata=QtGui.QPushButton("Save Data")
 		self.breconst=QtGui.QPushButton("3D Normal")
 		self.sbmode=QtGui.QSpinBox(self)

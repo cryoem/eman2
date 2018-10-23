@@ -1065,13 +1065,13 @@ class EMHistogramInspector(QtGui.QWidget):
 #
 # 		hbl4 = QtWidgets.QHBoxLayout()
 # 		hbl4.addWidget(QtWidgets.QLabel("X Label:",self))
-# 		self.xlabel=QtGui.QLineEdit(self)
+# 		self.xlabel=QtWidgets.QLineEdit(self)
 # 		hbl4.addWidget(self.xlabel)
 # 		vbl0.addLayout(hbl4)
 #
 # 		hbl5 = QtWidgets.QHBoxLayout()
 # 		hbl5.addWidget(QtWidgets.QLabel("Y Label:",self))
-# 		self.ylabel=QtGui.QLineEdit(self)
+# 		self.ylabel=QtWidgets.QLineEdit(self)
 # 		hbl5.addWidget(self.ylabel)
 # 		vbl0.addLayout(hbl5)
 

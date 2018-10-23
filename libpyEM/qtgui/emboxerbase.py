@@ -622,7 +622,7 @@ class ManualBoxingPanel(object):
 			vbl.setObjectName("vbl")
 			self.auto_center_checkbox = QtWidgets.QCheckBox("Auto-center")
 			self.clear=QtGui.QPushButton("Clear")
-			self.clearfrom = QtGui.QLineEdit(str(-1))
+			self.clearfrom = QtWidgets.QLineEdit(str(-1))
 			vbl.addWidget(self.auto_center_checkbox,1,0)
 			vbl.addWidget(self.clear,2,0)
 			vbl.addWidget(QtWidgets.QLabel("Keep range #:"),3,0)
@@ -2528,7 +2528,7 @@ class EMBoxerInspector(QtGui.QWidget):
 		box_size_hbl.addWidget(self.box_size_label)
 		self.pos_int_validator = QtGui.QIntValidator(self)
 		self.pos_int_validator.setBottom(1)
-		self.box_size = QtGui.QLineEdit(str(self.target().get_box_size()),self)
+		self.box_size = QtWidgets.QLineEdit(str(self.target().get_box_size()),self)
 		self.box_size.setValidator(self.pos_int_validator)
 		box_size_hbl.addWidget(self.box_size)
 

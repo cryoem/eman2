@@ -1499,7 +1499,7 @@ class IncorpString(object):
 			label = QtWidgets.QLabel(param.desc_short+":",target)
 			label.setToolTip(param.desc_long)
 			hbl.addWidget(label)
-			line_edit = QtGui.QLineEdit(str(param.defaultunits),target)
+			line_edit = QtWidgets.QLineEdit(str(param.defaultunits),target)
 			hbl.addWidget(line_edit,0)
 			hbl.name = param.name
 			layout.addLayout(hbl)
@@ -1519,7 +1519,7 @@ class IncorpFloat(object):
 			label.setToolTip(param.desc_long)
 			hbl.addWidget(label)
 			double_validator = QtGui.QDoubleValidator(target)
-			line_edit = QtGui.QLineEdit(str(param.defaultunits),target)
+			line_edit = QtWidgets.QLineEdit(str(param.defaultunits),target)
 			line_edit.setValidator(double_validator)
 			hbl.addWidget(line_edit,0)
 			hbl.name = param.name
@@ -1540,7 +1540,7 @@ class IncorpInt(object):
 			label.setToolTip(param.desc_long)
 			hbl.addWidget(label)
 			pos_int_validator = QtGui.QIntValidator(target)
-			line_edit = QtGui.QLineEdit("",target)
+			line_edit = QtWidgets.QLineEdit("",target)
 			line_edit.setValidator(pos_int_validator)
 			line_edit.setText(str(param.defaultunits))
 			hbl.addWidget(line_edit,0)

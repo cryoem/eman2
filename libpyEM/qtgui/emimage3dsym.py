@@ -1413,7 +1413,7 @@ class SparseSymChoicesWidgets(object):
 		
 		self.pos_int_validator = QtGui.QIntValidator(self.widget())
 		self.pos_int_validator.setBottom(1)
-		self.sym_text = QtGui.QLineEdit()
+		self.sym_text = QtWidgets.QLineEdit()
 		self.sym_text.setValidator(self.pos_int_validator)
 		self.sym_text.setText("7")
 		self.sym_text.setFixedWidth(50)
@@ -1430,7 +1430,7 @@ class SparseSymChoicesWidgets(object):
 			
 			self.pos_double_validator = QtGui.QDoubleValidator(self.widget())
 			self.pos_double_validator.setBottom(0.05)
-			self.prop_text = QtGui.QLineEdit()
+			self.prop_text = QtWidgets.QLineEdit()
 			self.prop_text.setValidator(self.pos_double_validator)
 			self.prop_text.setText(str(self.target().get_prop()))
 			self.prop_text.setFixedWidth(50)
@@ -1896,7 +1896,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.tracetog.setChecked(0)
 			self.hbl_pt.addWidget(self.tracetog)
 			
-			self.tracefile = QtGui.QLineEdit()
+			self.tracefile = QtWidgets.QLineEdit()
 			self.tracefile.setText("filename.txt")
 			self.tracefile.setFixedWidth(100)
 			self.hbl_pt.addWidget(self.tracefile)
@@ -1908,7 +1908,7 @@ class EMSymInspector(QtGui.QWidget):
 			
 			self.pos_int_validator2 = QtGui.QIntValidator(self)
 			self.pos_int_validator2.setBottom(0)
-			self.lowrange = QtGui.QLineEdit()
+			self.lowrange = QtWidgets.QLineEdit()
 			self.lowrange.setValidator(self.pos_int_validator2)
 			self.lowrange.setText("1")
 			self.lowrange.setFixedWidth(50)
@@ -1919,7 +1919,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.pt_label_to.setText('to')
 			self.hbl_pt.addWidget(self.pt_label_to)
 			
-			self.highrange = QtGui.QLineEdit()
+			self.highrange = QtWidgets.QLineEdit()
 			self.highrange.setValidator(self.pos_int_validator2)
 			self.highrange.setText("1")
 			self.highrange.setFixedWidth(50)

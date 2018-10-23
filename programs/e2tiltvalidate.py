@@ -532,15 +532,15 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 			self.resize(480,580)
 			
 			meanAngLabel = QtWidgets.QLabel("Mean Tilt Angle") 
-			self.meanAngle = QtGui.QLineEdit("")
+			self.meanAngle = QtWidgets.QLineEdit("")
 			meanAxisLabel = QtWidgets.QLabel("Mean Tilt Axis") 
-			self.meanAxis = QtGui.QLineEdit("")
+			self.meanAxis = QtWidgets.QLineEdit("")
 			rmsdAngLabel = QtWidgets.QLabel("RMSD Tilt Angle") 
-			self.rmsdAngle = QtGui.QLineEdit("")
+			self.rmsdAngle = QtWidgets.QLineEdit("")
 			rmsdAxisLabel = QtWidgets.QLabel("RMSD Tilt Axis") 
-			self.rmsdAxis = QtGui.QLineEdit("")
+			self.rmsdAxis = QtWidgets.QLineEdit("")
 			pointsLabel = QtWidgets.QLabel("Num points")
-			self.points = QtGui.QLineEdit("")
+			self.points = QtWidgets.QLineEdit("")
 			self.pointlabel = QtWidgets.QLabel("Right click to pick the nearest point")
 			
 			
