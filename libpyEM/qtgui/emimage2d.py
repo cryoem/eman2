@@ -1930,14 +1930,14 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.savetab = QtGui.QWidget()
 		self.stlay = QtWidgets.QGridLayout(self.savetab)
 
-		self.stsnapbut = QtGui.QPushButton("Snapshot")
+		self.stsnapbut = QtWidgets.QPushButton("Snapshot")
 		self.stsnapbut.setToolTip(".pgm, .ppm, .jpeg, .png, or .tiff format only")
-		self.stwholebut = QtGui.QPushButton("Save Img")
+		self.stwholebut = QtWidgets.QPushButton("Save Img")
 		self.stwholebut.setToolTip("save EMData in any EMAN2 format")
-		self.ststackbut = QtGui.QPushButton("Save Stack")
+		self.ststackbut = QtWidgets.QPushButton("Save Stack")
 		self.ststackbut.setToolTip("save EMData objects as stack in any EMAN2 format")
-		self.stmoviebut = QtGui.QPushButton("Movie")
-		self.stanimgif = QtGui.QPushButton("GIF Anim")
+		self.stmoviebut = QtWidgets.QPushButton("Movie")
+		self.stanimgif = QtWidgets.QPushButton("GIF Anim")
 
 		self.stlay.addWidget(self.stsnapbut,0,0)
 		self.stlay.addWidget(self.stwholebut,1,0)
@@ -2111,10 +2111,10 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.pstab = QtGui.QWidget()
 		self.pstlay = QtWidgets.QGridLayout(self.pstab)
 
-		self.psbsing = QtGui.QPushButton("Single")
+		self.psbsing = QtWidgets.QPushButton("Single")
 		self.pstlay.addWidget(self.psbsing,0,0)
 
-		self.psbstack = QtGui.QPushButton("Stack")
+		self.psbstack = QtWidgets.QPushButton("Stack")
 		self.pstlay.addWidget(self.psbstack,0,1)
 
 		self.mmtab.addTab(self.pstab,"PSpec")
@@ -2165,7 +2165,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 
-		self.invtog = QtGui.QPushButton("Invert")
+		self.invtog = QtWidgets.QPushButton("Invert")
 		self.invtog.setCheckable(1)
 		self.vbl2.addWidget(self.invtog,0,0,1,1)#0012
 
@@ -2176,30 +2176,30 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.histoequal.addItem("Hist Gauss")
 		self.vbl2.addWidget(self.histoequal,0,1,1,1)
 
-		self.auto_contrast_button = QtGui.QPushButton("Auto contrast")
+		self.auto_contrast_button = QtWidgets.QPushButton("Auto contrast")
 		self.vbl2.addWidget(self.auto_contrast_button,1,0,1,2)
 
 		# FFT Buttons
 		self.fftg=QtWidgets.QButtonGroup()
 		self.fftg.setExclusive(1)
 
-		self.ffttog0 = QtGui.QPushButton("Real")
+		self.ffttog0 = QtWidgets.QPushButton("Real")
 		self.ffttog0.setCheckable(1)
 		self.ffttog0.setChecked(1)
 		self.vbl2.addWidget(self.ffttog0,2,0)
 		self.fftg.addButton(self.ffttog0,0)
 
-		self.ffttog1 = QtGui.QPushButton("FFT")
+		self.ffttog1 = QtWidgets.QPushButton("FFT")
 		self.ffttog1.setCheckable(1)
 		self.vbl2.addWidget(self.ffttog1,2,1)
 		self.fftg.addButton(self.ffttog1,1)
 
-		self.ffttog2 = QtGui.QPushButton("Amp")
+		self.ffttog2 = QtWidgets.QPushButton("Amp")
 		self.ffttog2.setCheckable(1)
 		self.vbl2.addWidget(self.ffttog2,3,0)
 		self.fftg.addButton(self.ffttog2,2)
 
-		self.ffttog3 = QtGui.QPushButton("Pha")
+		self.ffttog3 = QtWidgets.QPushButton("Pha")
 		self.ffttog3.setCheckable(1)
 		self.vbl2.addWidget(self.ffttog3,3,1)
 		self.fftg.addButton(self.ffttog3,3)

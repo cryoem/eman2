@@ -536,13 +536,13 @@ class EMFileExistsDialog(QtWidgets.QDialog):
 		# some widgets
 		vbl = QtGui.QVBoxLayout(self)
 		hbl = QtWidgets.QHBoxLayout()
-		overwrite = QtGui.QPushButton("Overwrite")
-		cancel = QtGui.QPushButton("Cancel")
+		overwrite = QtWidgets.QPushButton("Overwrite")
+		cancel = QtWidgets.QPushButton("Cancel")
 		
 		# add Widgets to Layouts
 		hbl.addWidget(cancel)
 		if append_enable:
-			append = QtGui.QPushButton("Append")
+			append = QtWidgets.QPushButton("Append")
 			hbl.addWidget(append)
 		hbl.addWidget(overwrite)
 		if (len(filename) > 3 and filename[:4] == "bdb:"):

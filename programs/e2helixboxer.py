@@ -710,13 +710,13 @@ if ENABLE_GUI:
 			helices_coords_label = QtWidgets.QLabel(self.tr("Path:"))
 			self.helices_coords_line_edit = QtWidgets.QLineEdit()
 			self.helices_coords_line_edit.setMinimumWidth(300)
-			self.helices_coords_browse_button = QtGui.QPushButton(self.tr("Browse"))
+			self.helices_coords_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
 
 			self.helices_images_groupbox = QtWidgets.QGroupBox(self.tr("Helix Images"))
 			self.helices_images_groupbox.setCheckable(True)
 			helices_images_label = QtWidgets.QLabel(self.tr("Path:"))
 			self.helices_images_line_edit = QtWidgets.QLineEdit()
-			self.helices_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
+			self.helices_images_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
 
 			self.ptcls_groupbox = QtWidgets.QGroupBox(self.tr("Write &Particles:"))
 			self.ptcls_groupbox.setCheckable(True)
@@ -738,7 +738,7 @@ if ENABLE_GUI:
 			self.ptcls_coords_groupbox.setCheckable(True)
 			ptcls_coords_label = QtWidgets.QLabel(self.tr("Path:"))
 			self.ptcls_coords_line_edit = QtWidgets.QLineEdit()
-			self.ptcls_coords_browse_button = QtGui.QPushButton(self.tr("Browse"))
+			self.ptcls_coords_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
 
 			self.ptcls_images_groupbox = QtWidgets.QGroupBox(self.tr("Particle Images"))
 			self.ptcls_images_groupbox.setCheckable(True)
@@ -765,7 +765,7 @@ if ENABLE_GUI:
 
 			ptcls_images_label = QtWidgets.QLabel(self.tr("Path:"))
 			self.ptcls_images_line_edit = QtWidgets.QLineEdit()
-			self.ptcls_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
+			self.ptcls_images_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
 
 			self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
 

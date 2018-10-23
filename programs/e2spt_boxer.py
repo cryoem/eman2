@@ -213,7 +213,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.gbl2.addWidget(self.wboxsize,1,0,1,2)
 
 		# max or mean
-		self.wmaxmean=QtGui.QPushButton("MaxProj")
+		self.wmaxmean=QtWidgets.QPushButton("MaxProj")
 		self.wmaxmean.setCheckable(True)
 		self.gbl2.addWidget(self.wmaxmean,2,0)
 
@@ -1649,13 +1649,13 @@ class EMTomoSetsPanel(QtGui.QWidget):
 
 		vbl = QtGui.QVBoxLayout()
 
-		self.new_set_button = QtGui.QPushButton("New")
+		self.new_set_button = QtWidgets.QPushButton("New")
 		vbl.addWidget(self.new_set_button)
-		self.rename_set_button = QtGui.QPushButton("Rename")
+		self.rename_set_button = QtWidgets.QPushButton("Rename")
 		vbl.addWidget(self.rename_set_button)
-		self.save_set_button = QtGui.QPushButton("Save")
+		self.save_set_button = QtWidgets.QPushButton("Save")
 		vbl.addWidget(self.save_set_button)
-		self.delete_set_button = QtGui.QPushButton("Delete")
+		self.delete_set_button = QtWidgets.QPushButton("Delete")
 		vbl.addWidget(self.delete_set_button)
 
 		hbl.addLayout(vbl)

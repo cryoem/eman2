@@ -1300,12 +1300,12 @@ class SparseSymChoicesWidgets(object):
 		'''
 		self.busy = True
 		self.button_hbl1 = QtWidgets.QHBoxLayout()
-		self.symtogdisplay = QtGui.QPushButton("Display Eulers")
+		self.symtogdisplay = QtWidgets.QPushButton("Display Eulers")
 		self.symtogdisplay.setCheckable(1)
 		self.symtogdisplay.setChecked(1)
 		self.button_hbl1.addWidget(self.symtogdisplay)
 		
-		self.triangletog = QtGui.QPushButton("Display Triangles")
+		self.triangletog = QtWidgets.QPushButton("Display Triangles")
 		self.triangletog.setCheckable(1)
 		self.triangletog.setChecked(0)
 		self.button_hbl1.addWidget(self.triangletog)
@@ -1314,12 +1314,12 @@ class SparseSymChoicesWidgets(object):
 		
 		self.button_hbl2 = QtWidgets.QHBoxLayout()
 		
-		self.arctog = QtGui.QPushButton("Display Arcs")
+		self.arctog = QtWidgets.QPushButton("Display Arcs")
 		self.arctog.setCheckable(1)
 		self.arctog.setChecked(1)
 		self.button_hbl2.addWidget(self.arctog)
 		
-		self.symtog = QtGui.QPushButton("All syms")
+		self.symtog = QtWidgets.QPushButton("All syms")
 		self.symtog.setCheckable(1)
 		self.button_hbl2.addWidget(self.symtog)
 		vbl.addLayout(self.button_hbl2)
@@ -1625,9 +1625,9 @@ class EMSymChoiceDialog(QtWidgets.QDialog):
 		self.vbl.addWidget(self.sym_widget,10)
 		
 		self.button_hbl = QtWidgets.QHBoxLayout()
-		self.ok = QtGui.QPushButton("Ok")
+		self.ok = QtWidgets.QPushButton("Ok")
 		self.ok.setDefault(True)
-		self.cancel = QtGui.QPushButton("Cancel")
+		self.cancel = QtWidgets.QPushButton("Cancel")
 		self.button_hbl.addWidget(self.cancel )
 		self.button_hbl.addWidget(self.ok )
 		self.vbl.addLayout(self.button_hbl)
@@ -1891,7 +1891,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.hbl_pt.setObjectName("Ptl Trace")
 			
 			
-			self.tracetog = QtGui.QPushButton("Trace")
+			self.tracetog = QtWidgets.QPushButton("Trace")
 			self.tracetog.setCheckable(1)
 			self.tracetog.setChecked(0)
 			self.hbl_pt.addWidget(self.tracetog)
@@ -1926,7 +1926,7 @@ class EMSymInspector(QtGui.QWidget):
 			self.hbl_pt.addWidget(self.highrange)
 			self.highrange.setEnabled(False)
 			
-			self.reducetog = QtGui.QPushButton("Reduce")
+			self.reducetog = QtWidgets.QPushButton("Reduce")
 			self.reducetog.setCheckable(1)
 			self.reducetog.setChecked(0)
 			self.hbl_pt.addWidget(self.reducetog)

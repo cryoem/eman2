@@ -401,7 +401,7 @@ class PMFileNameWidget(PMBaseWidget):
 		label = QtWidgets.QLabel(name)
 		self.browser = browser
 		self.filenamebox = QtWidgets.QLineEdit()
-		self.browsebutton = QtGui.QPushButton("Browse")
+		self.browsebutton = QtWidgets.QPushButton("Browse")
 		self.infolabel = QtWidgets.QLabel("Num Images: None")
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.filenamebox, 0, 1)

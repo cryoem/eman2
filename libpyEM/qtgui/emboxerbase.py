@@ -621,7 +621,7 @@ class ManualBoxingPanel(object):
 			vbl.setSpacing(10)
 			vbl.setObjectName("vbl")
 			self.auto_center_checkbox = QtWidgets.QCheckBox("Auto-center")
-			self.clear=QtGui.QPushButton("Clear")
+			self.clear=QtWidgets.QPushButton("Clear")
 			self.clearfrom = QtWidgets.QLineEdit(str(-1))
 			vbl.addWidget(self.auto_center_checkbox,1,0)
 			vbl.addWidget(self.clear,2,0)
@@ -2388,10 +2388,10 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.tab_widget.addTab(self.get_display_tab(),"Display")
 		self.vbl.addWidget(self.tab_widget)
 
-		self.gen_output_but=QtGui.QPushButton("Write output")
+		self.gen_output_but=QtWidgets.QPushButton("Write output")
 		self.vbl.addWidget(self.gen_output_but)
 
-		self.done_but=QtGui.QPushButton("Done")
+		self.done_but=QtWidgets.QPushButton("Done")
 		self.vbl.addWidget(self.done_but)
 
 		self.status_bar = QtGui.QStatusBar()

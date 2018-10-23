@@ -110,19 +110,19 @@ class EMClassPtclTool(QtGui.QWidget):
 
 		self.gbl0=QtWidgets.QGridLayout(self.wselectg)
 
-		self.wselallb=QtGui.QPushButton("All")
+		self.wselallb=QtWidgets.QPushButton("All")
 		self.gbl0.addWidget(self.wselallb,0,0)
 
-		self.wselnoneb=QtGui.QPushButton("Clear")
+		self.wselnoneb=QtWidgets.QPushButton("Clear")
 		self.gbl0.addWidget(self.wselnoneb,0,1)
 
-		self.wselrangeb=QtGui.QPushButton("Range")
+		self.wselrangeb=QtWidgets.QPushButton("Range")
 		self.gbl0.addWidget(self.wselrangeb,1,0)
 
-		self.wselinvertb=QtGui.QPushButton("Invert")
+		self.wselinvertb=QtWidgets.QPushButton("Invert")
 		self.gbl0.addWidget(self.wselinvertb,0,2)
 
-		self.wsel3db=QtGui.QPushButton("From 3D")
+		self.wsel3db=QtWidgets.QPushButton("From 3D")
 		self.gbl0.addWidget(self.wsel3db,1,2)
 
 		self.wprocessg=QtWidgets.QGroupBox("Process results",self)
@@ -138,24 +138,24 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.vbl2.addWidget(self.wselunused)
 
 		# Mark particles in selected classes as bad
-		self.wmarkbut=QtGui.QPushButton("Mark as Bad")
+		self.wmarkbut=QtWidgets.QPushButton("Mark as Bad")
 		self.vbl2.addWidget(self.wmarkbut)
 
 		# Mark particles in selected classes as good
-		self.wmarkgoodbut=QtGui.QPushButton("Mark as Good")
+		self.wmarkgoodbut=QtWidgets.QPushButton("Mark as Good")
 		self.vbl2.addWidget(self.wmarkgoodbut)
 
 		# Make a new set from selected classes
-		self.wmakebut=QtGui.QPushButton("Make New Set")
+		self.wmakebut=QtWidgets.QPushButton("Make New Set")
 		self.vbl2.addWidget(self.wmakebut)
 #		self.wmakebut.setEnabled(False)
 
 		# Save list
-		self.wsavebut=QtGui.QPushButton("Save Particle List")
+		self.wsavebut=QtWidgets.QPushButton("Save Particle List")
 		self.vbl2.addWidget(self.wsavebut)
 
 		# Save micrograph dereferenced lists
-		self.wsaveorigbut=QtGui.QPushButton("Save CCD-based List")
+		self.wsaveorigbut=QtWidgets.QPushButton("Save CCD-based List")
 		self.vbl2.addWidget(self.wsaveorigbut)
 
 

@@ -748,7 +748,7 @@ class EMSpinWidget(QtGui.QWidget):
 		self.rounding = rounding
 		
 		shbox = QtWidgets.QHBoxLayout()
-		self.lbutton = QtGui.QPushButton("",self)
+		self.lbutton = QtWidgets.QPushButton("",self)
 		self.lbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(leftarrow)))
 		self.lbutton.setAutoRepeat(True)
 		self.lbutton.setAutoRepeatDelay(200)
@@ -757,7 +757,7 @@ class EMSpinWidget(QtGui.QWidget):
 		shbox.addWidget(self.numbox)
 		self.lbutton.setMaximumHeight(self.numbox.height())
 		self.lbutton.setMaximumWidth(self.maxarrowwidth)
-		self.rbutton = QtGui.QPushButton("",self)
+		self.rbutton = QtWidgets.QPushButton("",self)
 		self.rbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(rightarrow)))
 		self.rbutton.setAutoRepeat(True)
 		self.rbutton.setAutoRepeatDelay(200)

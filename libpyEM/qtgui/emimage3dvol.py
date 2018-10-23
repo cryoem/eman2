@@ -596,11 +596,11 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 	
-		self.cubetog = QtGui.QPushButton("Cube")
+		self.cubetog = QtWidgets.QPushButton("Cube")
 		self.cubetog.setCheckable(1)
 		self.vbl2.addWidget(self.cubetog)
 		
-		self.defaults = QtGui.QPushButton("Defaults")
+		self.defaults = QtWidgets.QPushButton("Defaults")
 		self.vbl2.addWidget(self.defaults)
 		
 		self.tabwidget = QtGui.QTabWidget()

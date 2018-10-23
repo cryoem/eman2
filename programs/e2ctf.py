@@ -2414,13 +2414,13 @@ class GUIctf(QtGui.QWidget):
 
 
 		self.hbl_buttons = QtWidgets.QHBoxLayout()
-		self.saveparms = QtGui.QPushButton("Save parms")
-		self.recallparms = QtGui.QPushButton("Recall")
-		self.refit = QtGui.QPushButton("Refit")
+		self.saveparms = QtWidgets.QPushButton("Save parms")
+		self.recallparms = QtWidgets.QPushButton("Recall")
+		self.refit = QtWidgets.QPushButton("Refit")
 		self.show2dfit = CheckBox(label="Show 2D Sim:",value=False)
 		self.showzerorings = CheckBox(label="Show Zeroes:",value=False)
 		self.usephaseplate = CheckBox(label="Phaseplate:",value=False)
-		self.output = QtGui.QPushButton("Output")
+		self.output = QtWidgets.QPushButton("Output")
 		self.hbl_buttons.addWidget(self.refit)
 		self.hbl_buttons.addWidget(self.saveparms)
 		self.hbl_buttons.addWidget(self.recallparms)

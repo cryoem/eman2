@@ -347,10 +347,10 @@ def EMSelectorBaseTemplate(Type):
 			get_application().attach_child(self)
 			
 		def __init_buttons(self):
-			self.ok_button = QtGui.QPushButton("Ok")
+			self.ok_button = QtWidgets.QPushButton("Ok")
 			self.ok_button.adjustSize()
 			
-			self.cancel_button = QtGui.QPushButton("Cancel")
+			self.cancel_button = QtWidgets.QPushButton("Cancel")
 			self.cancel_button.adjustSize()
 		
 			self.ok_button.clicked[bool].connect(self.ok_button_clicked)
