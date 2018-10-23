@@ -100,7 +100,7 @@ class TrackerControl(QtWidgets.QWidget):
 		QtWidgets.QWidget.__init__(self,None)
 
 		self.gbl = QtWidgets.QGridLayout(self)
-		self.gbl.setMargin(0)
+		self.gbl.setContentsMargins(0, 0, 0, 0)
 		self.gbl.setSpacing(6)
 		self.gbl.setObjectName("hbl")
 		

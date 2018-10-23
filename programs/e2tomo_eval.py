@@ -54,7 +54,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 
 		# This object is itself a widget we need to set up
 		self.gbl = QtWidgets.QGridLayout(self)
-		self.gbl.setMargin(8)
+		self.gbl.setContentsMargins(8, 8, 8, 8)
 		self.gbl.setSpacing(6)
 		self.gbl.setColumnStretch(0,4)
 		self.gbl.setColumnStretch(1,1)

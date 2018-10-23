@@ -1246,7 +1246,7 @@ class GUIBoxer(QtWidgets.QWidget):
 
 		# This object is itself a widget we need to set up
 		self.gbl = QtWidgets.QGridLayout(self)
-		self.gbl.setMargin(8)
+		self.gbl.setContentsMargins(8, 8, 8, 8)
 		self.gbl.setSpacing(6)
 		self.gbl.setColumnStretch(0,2)
 		self.gbl.setColumnStretch(1,2)
@@ -1327,7 +1327,7 @@ class GUIBoxer(QtWidgets.QWidget):
 		self.gbl.addWidget(self.boxparm,2,2,3,4)
 		
 		self.gbl1=QtWidgets.QGridLayout(self.boxparm)
-		self.gbl1.setMargin(8)
+		self.gbl1.setContentsMargins(8, 8, 8, 8)
 		self.gbl1.setSpacing(6)
 		
 		self.vbbsize = ValBox(label="Box Size:",value=box)

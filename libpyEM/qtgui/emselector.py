@@ -298,7 +298,7 @@ def EMSelectorBaseTemplate(Type):
 			self.browse_delegates = [EMBDBDelegate(self), EMFileSystemDelegate(self)] # Object capable of returning listed items based on url- Add your own
 			
 			self.hbl = QtWidgets.QVBoxLayout(self)
-			self.hbl.setMargin(0)
+			self.hbl.setContentsMargins(0, 0, 0, 0)
 			self.hbl.setSpacing(6)
 			self.hbl.setObjectName("hbl")
 			
@@ -918,7 +918,7 @@ class EMSelectorDialog(EMSelectorDialogType):
 		EMSelectorDialogType.__init__(self,single_selection)	
 
 		hbl2=QtWidgets.QHBoxLayout()
-		hbl2.setMargin(0)
+		hbl2.setContentsMargins(0, 0, 0, 0)
 		hbl2.setSpacing(2)
 		self.selection_label = QtWidgets.QLabel(SAVE_AS,self)
 		hbl2.addWidget(self.selection_label)

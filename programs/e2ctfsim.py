@@ -157,7 +157,7 @@ class GUIctfsim(QtWidgets.QWidget):
 
 		# This object is itself a widget we need to set up
 		self.hbl = QtWidgets.QHBoxLayout(self)
-		self.hbl.setMargin(0)
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 
@@ -177,7 +177,7 @@ class GUIctfsim(QtWidgets.QWidget):
 
 		# ValSliders for CTF parameters
 		self.vbl = QtWidgets.QVBoxLayout()
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		self.hbl.addLayout(self.vbl)

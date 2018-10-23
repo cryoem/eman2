@@ -313,7 +313,7 @@ class MorphBoxingPanel(object):
 			from PyQt5 import QtCore, QtGui, QtWidgets
 			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QVBoxLayout(self.widget)
-			vbl.setMargin(0)
+			vbl.setContentsMargins(0, 0, 0, 0)
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
 			self.auto_center_checkbox = QtWidgets.QCheckBox("Auto-center")
@@ -348,7 +348,7 @@ class ErasingPanel(object): # copied for ideas for the morph panel
 			from PyQt5 import QtCore, QtGui, QtWidgets
 			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QVBoxLayout(self.widget)
-			vbl.setMargin(0)
+			vbl.setContentsMargins(0, 0, 0, 0)
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
 

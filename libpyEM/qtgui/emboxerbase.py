@@ -576,7 +576,7 @@ class ErasingPanel(object):
 			from PyQt5 import QtCore, QtGui, QtWidgets
 			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QVBoxLayout(self.widget)
-			vbl.setMargin(0)
+			vbl.setContentsMargins(0, 0, 0, 0)
 			vbl.setSpacing(6)
 			vbl.setObjectName("vbl")
 
@@ -617,7 +617,7 @@ class ManualBoxingPanel(object):
 			from PyQt5 import QtCore, QtGui, QtWidgets
 			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QGridLayout(self.widget)
-			vbl.setMargin(0)
+			vbl.setContentsMargins(0, 0, 0, 0)
 			vbl.setSpacing(10)
 			vbl.setObjectName("vbl")
 			self.auto_center_checkbox = QtWidgets.QCheckBox("Auto-center")
@@ -2379,7 +2379,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		self.target=weakref.ref(target)
 
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 
@@ -2517,11 +2517,11 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		from PyQt5 import QtCore, QtGui, QtWidgets
 		widget = QtWidgets.QWidget()
 		vbl = QtWidgets.QVBoxLayout(widget)
-		vbl.setMargin(0)
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 
 		box_size_hbl=QtWidgets.QHBoxLayout()
-		box_size_hbl.setMargin(0)
+		box_size_hbl.setContentsMargins(0, 0, 0, 0)
 		box_size_hbl.setSpacing(2)
 
 		self.box_size_label = QtWidgets.QLabel("Box Size:",self)

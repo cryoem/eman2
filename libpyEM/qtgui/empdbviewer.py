@@ -1001,7 +1001,7 @@ class EMPDBInspector(QtWidgets.QWidget):
 		hbl1.addWidget(self.browse)
 
 		vbl = QtWidgets.QVBoxLayout()
-		vbl.setMargin(0)
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.addLayout(hbl1)
 		

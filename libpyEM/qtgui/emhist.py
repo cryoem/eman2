@@ -841,14 +841,14 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		vbl0=QtWidgets.QVBoxLayout(self)
 
 		hbl = QtWidgets.QHBoxLayout()
-		hbl.setMargin(2)
+		hbl.setContentsMargins(2, 2, 2, 2)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 
 		gbx = QtWidgets.QGroupBox("Data sets")
 
 		vbl3 = QtWidgets.QVBoxLayout()
-		vbl3.setMargin(4)
+		vbl3.setContentsMargins(4, 4, 4, 4)
 		vbl3.setSpacing(6)
 		vbl3.setObjectName("vbl3")
 		gbx.setLayout(vbl3)
@@ -893,13 +893,13 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		hbl7.addWidget(self.stepbox)
 
 		vbl = QtWidgets.QVBoxLayout()
-		vbl.setMargin(0)
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("vbl")
 		hbl.addLayout(vbl)
 
 		hbl0=QtWidgets.QHBoxLayout()
-		hbl0.setMargin(0)
+		hbl0.setContentsMargins(0, 0, 0, 0)
 		hbl0.setSpacing(6)
 		vbl.addLayout(hbl0)
 
@@ -916,7 +916,7 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		hbl0.addWidget(self.pdfb)
 
 		hbl01=QtWidgets.QHBoxLayout()
-		hbl01.setMargin(0)
+		hbl01.setContentsMargins(0, 0, 0, 0)
 		hbl01.setSpacing(6)
 		vbl.addLayout(hbl01)
 
@@ -939,7 +939,7 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		hbl01.addWidget(self.align)
 
 		hbl1 = QtWidgets.QHBoxLayout()
-		hbl1.setMargin(0)
+		hbl1.setContentsMargins(0, 0, 0, 0)
 		hbl1.setSpacing(6)
 
 		self.color=QtWidgets.QComboBox(self)
@@ -956,7 +956,7 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		vbl.addLayout(hbl1)
 
 		hbl000 = QtWidgets.QHBoxLayout()
-		hbl000.setMargin(0)
+		hbl000.setContentsMargins(0, 0, 0, 0)
 		hbl000.setSpacing(6)
 
 		self.alpha=ValSlider(self,(0,1),"Alpha:",0,25)
@@ -965,7 +965,7 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		vbl.addLayout(hbl000)
 
 		hbl001 = QtWidgets.QHBoxLayout()
-		hbl001.setMargin(0)
+		hbl001.setContentsMargins(0, 0, 0, 0)
 		hbl001.setSpacing(6)
 
 		self.rwidth=ValSlider(self,(0,1),"Width:",0,25)
@@ -975,13 +975,13 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		vbl.addLayout(hbl001)
 
 		hbl2 = QtWidgets.QHBoxLayout()
-		hbl2.setMargin(0)
+		hbl2.setContentsMargins(0, 0, 0, 0)
 		hbl2.setSpacing(6)
 
 		vbl.addLayout(hbl2)
 
 		hbl2 = QtWidgets.QHBoxLayout()
-		hbl2.setMargin(0)
+		hbl2.setContentsMargins(0, 0, 0, 0)
 		hbl2.setSpacing(6)
 		vbl.addLayout(hbl2)
 
@@ -1002,7 +1002,7 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		vbl.addLayout(gl)
 
 		hbl02=QtWidgets.QHBoxLayout()
-		hbl02.setMargin(0)
+		hbl02.setContentsMargins(0, 0, 0, 0)
 		hbl02.setSpacing(6)
 		vbl.addLayout(hbl02)
 
@@ -1015,7 +1015,7 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		hbl02.addWidget(self.cumulative)
 
 		hbl03=QtWidgets.QHBoxLayout()
-		hbl03.setMargin(0)
+		hbl03.setContentsMargins(0, 0, 0, 0)
 		hbl03.setSpacing(6)
 		vbl.addLayout(hbl03)
 

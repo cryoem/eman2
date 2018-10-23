@@ -599,12 +599,12 @@ class EMImageInspector3D(QtWidgets.QWidget):
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
 		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setMargin(2)
+		self.hbl.setContentsMargins(2, 2, 2, 2)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		
@@ -614,7 +614,7 @@ class EMImageInspector3D(QtWidgets.QWidget):
 		self.tabwidget = QtWidgets.QTabWidget()
 		
 		self.hbl_check = QtWidgets.QHBoxLayout()
-		self.hbl_check.setMargin(0)
+		self.hbl_check.setContentsMargins(0, 0, 0, 0)
 		self.hbl_check.setSpacing(6)
 		self.hbl_check.setObjectName("hbl_check")
 		
@@ -622,12 +622,12 @@ class EMImageInspector3D(QtWidgets.QWidget):
 		#self.hbl_check.addWidget(self.advancedcheck)
 		
 		self.hbl_buttons = QtWidgets.QHBoxLayout()
-		self.hbl_buttons.setMargin(0)
+		self.hbl_buttons.setContentsMargins(0, 0, 0, 0)
 		self.hbl_buttons.setSpacing(6)
 		self.hbl_buttons.setObjectName("hbl_buttons")
 		
 		self.hbl_buttons2 = QtWidgets.QHBoxLayout()
-		self.hbl_buttons2.setMargin(0)
+		self.hbl_buttons2.setContentsMargins(0, 0, 0, 0)
 		self.hbl_buttons2.setSpacing(6)
 		self.hbl_buttons2.setObjectName("hbl_buttons2")
 		
@@ -754,7 +754,7 @@ class EM3DAdvancedInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 		self.parent=weakref.ref(parent)
 
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 
@@ -777,7 +777,7 @@ class EM3DAdvancedInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 		
 		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setMargin(2)
+		self.hbl.setContentsMargins(2, 2, 2, 2)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		

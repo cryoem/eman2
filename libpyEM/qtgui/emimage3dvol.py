@@ -576,12 +576,12 @@ class EMVolumeInspector(QtWidgets.QWidget):
 		self.rotation_sliders = EMTransformPanel(target,self)
 		
 		self.vbl = QtWidgets.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
 		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
@@ -591,7 +591,7 @@ class EMVolumeInspector(QtWidgets.QWidget):
 		self.hbl.addWidget(self.hist)
 		
 		self.vbl2 = QtWidgets.QVBoxLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
@@ -640,7 +640,7 @@ class EMVolumeInspector(QtWidgets.QWidget):
 		gltab = self.gltab
 		
 		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
-		gltab.vbl.setMargin(0)
+		gltab.vbl.setContentsMargins(0, 0, 0, 0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
 		
@@ -662,7 +662,7 @@ class EMVolumeInspector(QtWidgets.QWidget):
 		self.maintab = QtWidgets.QWidget()
 		maintab = self.maintab
 		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
-		maintab.vbl.setMargin(0)
+		maintab.vbl.setContentsMargins(0, 0, 0, 0)
 		maintab.vbl.setSpacing(6)
 		maintab.vbl.setObjectName("Main")
 			
@@ -678,7 +678,7 @@ class EMVolumeInspector(QtWidgets.QWidget):
 		maintab.vbl.addWidget(self.bright)
 
 		self.hbl_smp = QtWidgets.QHBoxLayout()
-		self.hbl_smp.setMargin(0)
+		self.hbl_smp.setContentsMargins(0, 0, 0, 0)
 		self.hbl_smp.setSpacing(6)
 		self.hbl_smp.setObjectName("Texture Oversampling")
 		maintab.vbl.addLayout(self.hbl_smp)
