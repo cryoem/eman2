@@ -2986,7 +2986,7 @@ class EMSGNodeInspector(EMItem3DInspector):
 		if tp: tt = tp.inverse()*t
 		child.getTransform().set_trans(tt.get_trans())
 		
-class EMQTreeWidget(QtGui.QTreeWidget):
+class EMQTreeWidget(QtWidgets.QTreeWidget):
 	"""
 	Subclassing the QTreeWidget to enable is_visible toggling
 	"""
@@ -2994,10 +2994,10 @@ class EMQTreeWidget(QtGui.QTreeWidget):
 	editItem = QtCore.pyqtSignal(QtGui.QTreeWidgetItem)
 
 	def __init__(self, parent=None):
-		QtGui.QTreeWidget.__init__(self, parent)
+		QtWidgets.QTreeWidget.__init__(self, parent)
 			
 	def mousePressEvent(self, e):
-		QtGui.QTreeWidget.mousePressEvent(self, e)
+		QtWidgets.QTreeWidget.mousePressEvent(self, e)
 		if e.button()==Qt.RightButton:
 			self.visibleItem.emit(self.currentItem())
 		if e.button()==Qt.MidButton or (e.buttons()&Qt.LeftButton and e.modifiers()&Qt.AltModifier):
