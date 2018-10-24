@@ -4111,23 +4111,45 @@ void DecayEdgeProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	if (image->get_zsize() > 1) throw ImageDimensionException("3D model not supported");
-
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
 	float *d = image->get_data();
 	int width = params["width"];
 
-	for (int i=0; i<width; i++) {
-		float frac=i/(float)width;
-		for (int j=0; j<nx; j++) {
-			d[j+i*nx]*=frac;
-			d[nx*ny-j-i*nx-1]*=frac;
+	if (width > min(nx,ny)/2.){
+		LOGERR("width parameter cannot be greater than min(nx,ny)/2");
+		throw InvalidParameterException("width cannot be greater than min(nx,ny)/2");
+	}
+
+	if (image->get_zsize() > 1){
+		for (int k=0; k<image->get_zsize(); k++){
+			int zidx = k*nx*ny;
+			for (int i=0; i<width; i++) {
+				float frac=i/(float)width;
+				for (int j=0; j<nx; j++) {
+					d[zidx+j+i*nx]*=frac;
+					d[zidx+nx*ny-j-i*nx-1]*=frac;
+				}
+				for (int j=0; j<ny; j++) {
+					d[zidx+j*nx+i]*=frac;
+					d[zidx+nx*ny-j*nx-i-1]*=frac;
+				}
+			}
 		}
-		for (int j=0; j<ny; j++) {
-			d[j*nx+i]*=frac;
-			d[nx*ny-j*nx-i-1]*=frac;
+	} 
+	else {
+
+		for (int i=0; i<width; i++) {
+			float frac=i/(float)width;
+			for (int j=0; j<nx; j++) {
+				d[j+i*nx]*=frac;
+				d[nx*ny-j-i*nx-1]*=frac;
+			}
+			for (int j=0; j<ny; j++) {
+				d[j*nx+i]*=frac;
+				d[nx*ny-j*nx-i-1]*=frac;
+			}
 		}
 	}
 
