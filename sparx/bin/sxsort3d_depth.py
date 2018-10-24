@@ -505,18 +505,23 @@ def get_box_partition(box_dir, ncluster, unaccounted_list):
 def output_clusters(output_dir, partition, unaccounted_list, not_include_unaccounted, log_main):
 	global Tracker, Blockdata
 	import copy
-	### single cpu function
+	### Single cpu function
 	nclasses, npart = split_partition_into_ordered_clusters(partition)
-	nc              = 0
+	nc = 0
 	identified_clusters = []
+	largest  = -float("inf")
+	smallest = float("inf") 
+	for any in nclasses:
+		largest  = max(largest, len(any))
+		smallest = min(smallest, len(any)) 
 	for ic in range(len(nclasses)):
-		if len(nclasses[ic])>= (Tracker["constants"]["img_per_grp"]*0.75 +
-		   (Tracker["minimum_grp_size"][0]+Tracker["minimum_grp_size"][1])//2)//2:
+		if (len(nclasses[ic])>= min(Tracker["constants"]["img_per_grp"]*0.75,
+		   (Tracker["minimum_grp_size"][0]+Tracker["minimum_grp_size"][1])//2)) and (largest/float(len(any))< 2.0) :
 			write_text_file(nclasses[ic], os.path.join(output_dir,"Cluster_%03d.txt"%nc))
 			nc +=1
 			identified_clusters.append(nclasses[ic])
 		else: unaccounted_list +=nclasses[ic]
-	if len(unaccounted_list)>1:
+	if len(unaccounted_list) > 1:
 		unaccounted_list = sorted(unaccounted_list)
 		write_text_file(unaccounted_list, os.path.join(output_dir, "Core_set.txt"))
 	nclasses = copy.deepcopy(identified_clusters)
@@ -823,6 +828,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 		max_iter               = Tracker["total_number_of_iterations"]
 		minimum_grp_size       = [0, 0] # adjustable
 		do_freeze              = [0, 0]
+		minimum_grp_size       = [0, 0]
 		iter_init_K            = Tracker["number_of_groups"]
 		last_recompute = 0
 		quick_converge_counter = 0
@@ -837,7 +843,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 					os.mkdir(Tracker["directory"])
 					os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 				mpi_barrier(MPI_COMM_WORLD)
-				tmp_final_list, premature, kmeans_iterations, minimum_grp_size[indep_run_iter], do_freeze[indep_run_iter]=\
+				tmp_final_list, kmeans_iterations, minimum_grp_size[indep_run_iter], do_freeze[indep_run_iter]=\
 				    Kmeans_minimum_group_size_orien_groups(iter, cdata, fdata, srdata, ctf_images, \
 					parameterstructure, norm_per_particle, \
 				    MGSKmeans_index_file, params, minimum_grp_size[indep_run_iter], \
@@ -886,23 +892,23 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				score_diff = abs(rand_index*100. - iter_current_iter_ratio)
 				info_table.append('Rand index of two paritions is %5.4f '%rand_index)
 				info_table.append('Difference between two indeces is %5.1f percent'%score_diff)
-				
-				if (abs(iter_current_iter_ratio - iter_previous_iter_ratio < iter_converge_criterion) and \
-				   iter_current_iter_ratio > 90.) or (rand_index>0.97) or (score_diff< 5.):#
-				   	converged = 1 # no much improved
+				if iter>2:#####
+					if (abs(iter_current_iter_ratio - iter_previous_iter_ratio < iter_converge_criterion) and \
+					   iter_current_iter_ratio > 90.) or (rand_index>0.97) or (score_diff< 5.):#
+						converged = 1 # no much improved
 				   	
-				if (max_iter <= quick_converge):
-					quick_converge_counter +=1
-					if  quick_converge_counter>=2: converged = 1 # Kmeans goes for only one step.
+					if (max_iter <= quick_converge):
+						quick_converge_counter +=1
+						if  quick_converge_counter>=2: converged = 1 # Kmeans goes for only one step.
 				
-				if (nbox == 0) and (nruns == 0): #
-					if (len(list_of_stable) < iter_init_K ) and len(list_of_stable)>=2 : 
-						if (converged == 1) or (iter-last_recompute)>=3 :
-							reset_number_of_groups = 1
-							iter_init_K = len(list_of_stable)
-							last_recompute = iter
-							info_table.append('Reset number of groups to %d'%len(list_of_stable))
-						else: pass
+					if (nbox == 0) and (nruns == 0): #
+						if (len(list_of_stable) < iter_init_K ) and len(list_of_stable)>=2 : 
+							if (converged == 1) or (iter-last_recompute)>=3 :
+								reset_number_of_groups = 1
+								iter_init_K = len(list_of_stable)
+								last_recompute = iter
+								info_table.append('Reset number of groups to %d'%len(list_of_stable))
+							else: pass
 				###------------------print info	------------------------------	 
 				with open(os.path.join(iter_dir, "info.txt"),'w') as fout:
 					for line in info_table:
@@ -1576,7 +1582,7 @@ def sort3d_init(to_be_decided, log_main):
 	if Tracker["total_stack"] <= Blockdata["nproc"]*Tracker["minimum_img_per_cpu"]:
 		log_main.add("Either user requires too many processors, or number of images is too small.")
 		keepsorting = 0
-	##Set img_per_grp
+	## Set img_per_grp
 	return keepsorting
 
 def print_shell_command(args_list, log_main):
@@ -1592,16 +1598,14 @@ def print_shell_command(args_list, log_main):
 def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assignment, \
         keepgoing, best_score, stopercnt, minimum_grp_size, current_mu, global_fsc, \
              global_total, do_move_one_up, mdict, mlist, freeze_changes, log_file):
-	# Single cpu function
+	#------------ Single cpu function ---------------
 	import numpy as np
 	from statistics import scale_fsc_datasetsize
-	# Empirical parameters----------
+	#---------->>> Empirical parameters <<<----------
 	large_cluster_scale    = 2.
-	above_minimum_grp_size = 0.20
-	stopercnt_scale  = 2.0
-	cutoff_two_rate = 0.3
-	
-	#### Assignment analysis--------
+	stopercnt_scale        = 2.0
+	cutoff_two_rate        = 0.3
+	####------->>>> Assignment analysis <<<<--------
 	group_dict = np.sort(np.unique(iter_assignment))
 	number_of_groups = group_dict.shape[0]
 	clusters = []
@@ -1609,12 +1613,12 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 		one_group = np.sort(iter_assignment[isin(iter_assignment, group_dict[igrp])])
 		clusters.append(one_group.shape[0])
 	number_of_groups = len(clusters)
-	minres143  = get_res143(scale_fsc_datasetsize(global_fsc, global_total, minimum_grp_size))
-	ares143    = get_res143(scale_fsc_datasetsize(global_fsc, global_total, len(iter_assignment)//number_of_groups))
-	#####
+	minres143 = get_res143(scale_fsc_datasetsize(global_fsc, global_total, minimum_grp_size))
+	ares143   = get_res143(scale_fsc_datasetsize(global_fsc, global_total, len(iter_assignment)//number_of_groups))
+	#####-----------------------------------------------------------------------------------------------------------
 	log_file.add('Group ID  group size fsc143  move up/down ')
-	log_file.add('-----------Current resolutions versus sizes ------------------------------------------')
-	log_file.add('  AVG   %8d        %3d       %3d  '%(len(iter_assignment)/number_of_groups, ares143, 0))
+	log_file.add('------------------->>> Current resolutions versus sizes <<<---------------------------------------')
+	#log_file.add('  AVG   %8d        %3d       %3d  '%(len(iter_assignment)/number_of_groups, ares143, 0))
 	log_file.add('  Min   %8d        %3d       %3d  '%(minimum_grp_size, minres143, (minres143-ares143)))
 	log_file.add('---------------                   ---------------------')
 	res_list = [ 0 for jl in range(number_of_groups)]
@@ -1623,14 +1627,13 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 		res_list[il] = get_res143(cfsc)
 		log_file.add('%5d   %8d        %3d       %3d'%(il, clusters[il], res_list[il], (res_list[il] - ares143)))
 	log_file.add('------------------------------------------------------------')
-	
-	########--------------------------<<<
+	########----------------------------------------------------------------------------------------------------------
 	nc  = 0
 	tot = 0
 	for ic in range(len(clusters)):
 		tot += clusters[ic]
-		if clusters[ic] < minimum_grp_size + len(clusters): nc +=1
-		
+		if clusters[ic] < minimum_grp_size + len(clusters):
+			nc +=1
 	sum_newindices1 = 0
 	sum_newindices2 = 0
 	ratio, newindices, stable_clusters = \
@@ -1652,7 +1655,7 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 	max_res       = max(res_list)
 	size_smallest = min(clusters)
 	size_largest  = max(clusters)
-	###-------------------------------------------------------------
+	###------------------------------------------------------------------
 	if (number_of_groups ==2) and float(size_smallest)/float(size_largest)<\
 	      cutoff_two_rate and (freeze_changes == 0):
 		minimum_grp_size = int((len(iter_assignment)//2)*0.75) # always use large minimum_grp_size
@@ -1660,17 +1663,20 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 		keepgoing        = 1
 		do_move_one_up   = 1
 		freeze_changes   = 1
-		iter_assignment = np.random.randint(0, number_of_groups, \
-		     size = len(iter_assignment), dtype = np.int32)
+		iter_assignment  = np.random.randint(0, number_of_groups, size = len(iter_assignment))
 		log_file.add("Freeze minimum_grp_size as %d and shuffle assignment."%minimum_grp_size)
+		
+	log_file.add("freeze_changes  %d;  best score %6.2f"%(freeze_changes, best_score))
 	##--------------------------------------------------------------------
 	# 1. K is too large: Some groups have minimum_grp_size elements
 	# 2. K is too small
 	# Uneven clusters
 	# Case 1: Normal case; decrease minimum group size; conservative mode
 	####-------------------------------------------------------------------
-	do_move_one_up == 0 # normal case
-	min_index = -1
+	do_move_one_up = 0 # normal case
+	min_index      = -1
+	make_change    = False
+		
 	if (changed_nptls < stopercnt*stopercnt_scale) and (freeze_changes == 0):
 		for im in range(len(mlist)):
 			if minimum_grp_size == mlist[im]:
@@ -1687,19 +1693,18 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 				keepgoing      = 1
 				changed_nptls  = 100
 				do_move_one_up = 1
-			else:
-				freeze_changes =1
+			else:freeze_changes =1
 		else: pass
 	else:log_file.add("Normal progress.")
 	####--------------------------------------------------------------------
-	if changed_nptls < stopercnt: keepgoing = 0
+	if changed_nptls < stopercnt:keepgoing = 0
 	return best_score, changed_nptls, keepgoing, best_assignment, \
 	    iter_assignment, do_move_one_up, minimum_grp_size, freeze_changes
 	
 #####
-def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_images,\
-	    paramstructure, norm_per_particle, partids, params,\
-	       minimum_group_size_init, freeze_changes, clean_volumes = True):
+def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata,\
+       ctf_images,paramstructure, norm_per_particle, partids, params, \
+         minimum_group_size_init, freeze_changes, clean_volumes = True):
 	global Tracker, Blockdata
 	import shutil
 	import numpy as np
@@ -1713,16 +1718,15 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 	log_main	             = Logger()
 	log_main                 = Logger(BaseLogger_Files())
 	log_main.prefix          = Tracker["directory"]+"/"
-	premature                = 0
-	changed_nptls            = 100.0
 	number_of_groups         = Tracker["number_of_groups"]
 	stopercnt                = Tracker["constants"]["stop_mgskmeans_percentage"]
 	total_iter               = 0
 	partial_rec3d            = False
+	changed_nptls            = 100.0
 	best_score               = 100.0
+	last_score               = 100.0
 	best_assignment          = []
 	max_iter                 = Tracker["total_number_of_iterations"]
-	last_score               = 100.0
 	do_move_one_up           = 0
 	move_up_counter          = 0
 	changed_nptls_list       = []
@@ -1903,11 +1907,11 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 				log_main.add('Minimum_grp_size is updated to %d'%minimum_group_size) 
 			else: move_up_counter = 0
 			minimum_group_size = bcast_number_to_all(minimum_group_size, Blockdata["main_node"], MPI_COMM_WORLD)
-			do_move_one_up     = bcast_number_to_all(do_move_one_up, Blockdata["main_node"],     MPI_COMM_WORLD)
-			move_up_counter    = bcast_number_to_all(move_up_counter, Blockdata["main_node"],    MPI_COMM_WORLD)
-			max_iter           = bcast_number_to_all(max_iter, Blockdata["main_node"],           MPI_COMM_WORLD)
+			do_move_one_up     = bcast_number_to_all(do_move_one_up,     Blockdata["main_node"], MPI_COMM_WORLD)
+			move_up_counter    = bcast_number_to_all(move_up_counter,    Blockdata["main_node"], MPI_COMM_WORLD)
+			max_iter           = bcast_number_to_all(max_iter,           Blockdata["main_node"], MPI_COMM_WORLD)
 			minimum_group_size_ratio = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]),0.95)
-		#### Preprocess reference volumes---------compute distance	-------------------------------------------
+		#### Preprocess reference volumes---------compute distance	------------------------------
 		for iref in range(number_of_groups):
 			if(Blockdata["myid"] == Blockdata["last_node"]):
 				ref_vol = get_im(os.path.join(Tracker["directory"],"vol_grp%03d_iter%03d.hdf"%(iref, total_iter)))
@@ -1924,8 +1928,8 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 			else:                                                   ref_peaks = compare_two_images_eucd(cdata, ref_vol, fdata, ctf_images)
 			local_peaks[iref] = ref_peaks
 			mpi_barrier(MPI_COMM_WORLD)
-		###------------------------------------------------------- -----------------------------------
-		###-------------------Compute dmatrix---------------------
+		###------------------------------------------------------- -------------------------------
+		###-------------------Compute dmatrix----------------------------------
 		local_peaks = local_peaks.reshape(number_of_groups*nima)
 		acc_rest    = time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -1948,7 +1952,7 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 					for im in range(len(local_peaks)): 
 						dmatrix[im/iproc_nima][im%iproc_nima + proc_list[iproc][0]] = local_peaks[im]
 		dmatrix = wrap_mpi_bcast(dmatrix, Blockdata["main_node"], MPI_COMM_WORLD)
-		###-------------------------------------------------------------------
+		###-----------------------------------------------------------------------------
 		acc_rest = time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			print("compute dmatrix of various orien groups step1 take  %f minutes"%(acc_rest/60.))
@@ -1975,7 +1979,7 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
 					iter_assignment[np.where(dummy>-1)] = dummy[np.where(dummy>-1)]
 		mpi_barrier(MPI_COMM_WORLD)
-		###--------------------------------------------------------
+		###------------------------------------------------------------------------------
 		acc_rest = time() - rest_time
 		td = time() - tdmat
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -2030,7 +2034,7 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					log_main.add("Stat of changed_nptls within the last 3 iters: ")
 					log_main.add("%f  %f  %f  %f "%(pave, sqrt(pstd), pmin, pmax))
-				if sqrt(pstd) < 1.5:
+				if sqrt(pstd) < 1.0:
 					keepgoing = 0
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						log_main.add("No improvment in clustering exceeds limit. Stop MGSKmeans. ")
@@ -2038,7 +2042,7 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 				if Blockdata["myid"] == Blockdata["main_node"]:				 
 					log_main.add("No improvement check. ")
 		if keepgoing == 0: break
-	#->>>>>> Finalize-----------------------------------------------------------------------------------------
+	#-------------->>>>>>>> Finalize  <<<<<<<<<----------------------------------------------------------------
 	update_data_assignment(cdata, srdata, iter_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
 	partition = get_sorting_parti_from_stack(cdata)
 	del iter_assignment
@@ -2052,20 +2056,18 @@ def Kmeans_minimum_group_size_orien_groups(run_iter, cdata, fdata, srdata, ctf_i
 		lpartids = read_text_file(partids, -1)
 		if len(lpartids) ==1: lpartids =lpartids[0]
 		else: lpartids =lpartids[1]
-		if best_score > Tracker["constants"]["stop_mgskmeans_percentage"]: premature = 1
 		write_text_file([partition.tolist(), lpartids], os.path.join(Tracker["directory"],"list.txt"))
 		shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 		fplist  = np.array([partition, np.array(lpartids)], dtype = np.int32)
 	else: fplist = 0
 	fplist     = wrap_mpi_bcast(fplist,         Blockdata["main_node"], MPI_COMM_WORLD)
-	premature  = bcast_number_to_all(premature, Blockdata["main_node"], MPI_COMM_WORLD)
-	#######-----------------------------------------------clean volumes----------------
+	#######--------------------------------------------------------------------------------------------------
 	if(Blockdata["myid"] == Blockdata["last_node"]):
 		if clean_volumes:# always true unless in debug mode
 			for jter in range(total_iter):
 				for igroup in range(Tracker["number_of_groups"]):
 					os.remove(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(igroup,jter)))
-	return (fplist).transpose().tolist(), premature, total_iter, minimum_group_size, freeze_changes
+	return (fplist).transpose().tolist(), total_iter, minimum_group_size, freeze_changes
 	
 def do_assignment_by_dmatrix_orien_group_minimum_group_size(dmatrix, \
       orien_group_members, number_of_groups, minimum_group_size_ratio):
@@ -3542,14 +3544,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			decision_table[3][index_of_any] = largest_size/float(len(any))#
 		for im in range(4):
 			decision_stat.append(table_stat(decision_table[im]))
-		
-		### printoutv -------------------------
-		log_main.add("------  Stat of stable_list ( mean, std, min, max)  ------")
-		for indx in range(4):
-			log_main.add("%3d    %12.1f    %8.3f   %12.1f    %12.1f "%(indx, float(decision_stat[indx][0]), sqrt(decision_stat[indx][1]), \
-			    float(decision_stat[indx][2]), float(decision_stat[indx][3])))
-		log_main.add("----------------------------------------------------------\n")
-		####-----------------------------------------------------------------------------------------------------------		  
+				####-----------------------------------------------------------------------------------------------------------		  
 		for indx in range(len(list_stable)):
 			any = np.sort(list_stable[indx])
 			any.tolist()
@@ -3577,6 +3572,14 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			log_main.add("The smallest group is less than minimum_grp_size")
 		if nclass>1:
 			log_main.add("nclass is %d"%nclass)
+		### printout -------------------------
+		log_main.add("      Decision making table     ")
+		log_main.add("------  Stat of stable_list ( mean, std, min, max)  ------")
+		log_main.add("------>>> 0: group size; 1: reproducibility; 2: mu; 3: Max(group size)/group size  <<<------")
+		for indx in range(4):
+			log_main.add("%3d    %12.1f    %8.3f   %12.1f    %12.1f "%(indx, float(decision_stat[indx][0]), sqrt(decision_stat[indx][1]), \
+			    float(decision_stat[indx][2]), float(decision_stat[indx][3])))
+		log_main.add("----------------------------------------------------------\n")
 		###
 		if len(tmp_list)>1:
 			tmp_new_list  = []
@@ -3589,7 +3592,8 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			new_list[:]   = tmp_new_list[:]
 			stat_list[:]  = tmp_stat_list[:]
 	else: nclass = 0
-	nclass     = bcast_number_to_all(nclass,  Blockdata["main_node"], MPI_COMM_WORLD)
+	nclass = bcast_number_to_all(nclass,  Blockdata["main_node"], MPI_COMM_WORLD)
+	
 		
 	if nclass == 0:
 		### redo two way comparison
@@ -3846,11 +3850,24 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	log_list.append('-------------------------------------------------------------------------')
 	### printout
 	log_list.append("------  Stat of stable_list (mean, std, min, max) ------")
+	log_list.append("------>>> 0: group size; 1: reproducibility; 2: mu; 3: Max(group size)/group size  <<<------")
 	for indx in range(4):
-		log_list.append("%3d    %12.1f    %8.3f   %12.1f    %12.1f "%(indx, float(decision_stat[indx][0]), sqrt(decision_stat[indx][1]), \
-		   float(decision_stat[indx][2]), float(decision_stat[indx][3])))
+		log_list.append("%3d    %12.1f    %8.3f   %12.1f    %12.1f "%(indx, float(decision_stat[indx][0]),\
+		    sqrt(decision_stat[indx][1]), float(decision_stat[indx][2]), float(decision_stat[indx][3])))
 	log_list.append("----------------------------------------------------------\n")
-
+	### 
+	b1, b2 = AI_within_box(decision_table, cutoff_ratio = 3.0, \
+	     cutoff_size =  (Tracker["minimum_grp_size"][0]+Tracker["minimum_grp_size"][0])//2,\
+	       cutoff_mu = Tracker["mu"]+1)
+	
+	log_list.append(" Decision making table ")
+	for im in range(len(list_stable)):
+		if b1[im]: c1 = 1
+		else:      c1 = 0
+		if b2[im]: c2 = 1
+		else:      c2 = 0
+		log_list.append(" %3d   %8d  c1  %1d  c2  %1d"%(im, len(list_stable[im]), c1, c2))
+	log_list.append("----------------------------------------------------------\n")
 	return smallest_size, largest_size, selected_clusters, unaccounted_list, \
 	      current_iter_ratio, current_number_of_groups, log_list
 
@@ -6817,7 +6834,8 @@ def set_minimum_group_size(log_main, printing_dres_table = True):
 	from statistics import scale_fsc_datasetsize
 	#---->>> Empirical parameters <<<---------------------------------
 	# Guiding rule: high should be large, low should be small
-	min_size_low_bound  = 0.25   
+	min_size_low_bound1  = 0.2
+	min_size_low_bound2  = 0.3   
 	min_size_high_bound = 0.90   
 	#--------------------------------------------------------
 	total_stack      = Tracker["total_stack"]
@@ -6857,8 +6875,9 @@ def set_minimum_group_size(log_main, printing_dres_table = True):
 	###--AI to determine mlow and mhigh
 	if(mlow >=mhigh): mlow = mhigh
 	mhigh = int(min_size_high_bound*total_stack//number_of_groups)
-	mlow  = max(Tracker["img_per_grp"][0]*min_size_low_bound, mlow)# low bound should be always less than quarter of  img_per_grp
-	Tracker["minimum_grp_size"] = [int(mlow), mhigh, min_res, total_stack]
+	mlow = max(int(Tracker["img_per_grp"][0]*min_size_low_bound1), mlow)
+	mlow = min(int(Tracker["img_per_grp"][0]*min_size_low_bound2), mlow)
+	Tracker["minimum_grp_size"] = [mlow, mhigh, min_res, total_stack]
 	####-------------------------------
 	if printing_dres_table:
 		mlow, mhigh, min_res = Tracker["minimum_grp_size"][0], Tracker["minimum_grp_size"][1], Tracker["minimum_grp_size"][2]
@@ -7018,7 +7037,7 @@ def set_sorting_global_variables_mpi(log_file):
 		Tracker["nruns"]                          = -1
 		Tracker["minimum_grp_size"]               = [0, 0, 0, 0]
 		Tracker["img_per_grp"]                    = [0, 0, 0, 0]
-		### ------------------------------------------------------
+		### ---------------------------------------------------------
 		log_file.add("Maximum box iteration:                            %d"%Tracker["constants"]["box_niter"])
 		log_file.add("Minimum_img_per_cpu:                              %d"%Tracker["minimum_img_per_cpu"])
 		log_file.add("MGSKmeans maximum iteration:                      %d"%Tracker["total_number_of_iterations"])
@@ -7026,9 +7045,9 @@ def set_sorting_global_variables_mpi(log_file):
 		log_file.add("Minimum group shrink size steps:                  %d"%Tracker["nstep"])
 		log_file.add("Box_learning:                                     %d\n"%Tracker["box_learning"])
 		
-		###--------------------------------------------------------
+		###----------------------------------------------------------
 		calculate_grp_size_variation(log_file, state = "sort_init")
-		####-------------------------------------------------------
+		####---------------------------------------------------------
 		log_file.add("-----------------------------------------------------------------------------------")
 		log_file.add(" Compute scaling relationship (dres_table) between FSC0.143 and image group size   ")
 		log_file.add(" FSC0.143 (in pixels)  size  low bound     high bound    width of pixel bin        ")
@@ -7067,26 +7086,23 @@ def copy_state_variables_from_tracker(state_keys):
 		dict[akey] = Tracker[akey] 
 	return dict
 	
-def dump_state_dict(state_keys, dict_file):
-	global Tracker, Blockdata
-	import json
-	dict = copy_state_variables_from_tracker(state_keys)
-	try:
-		with open(dict_file,'r+') as fout:
-			old_dict = convert_json_fromunicode(json.load(fout))
-			old_dict.update(dict)
-			fout.seek(0)
-			json.dump(dict, fout)
-			fout.truncate()
-		fout.close()
-	except:
-		with open(dict_file,'w') as fout:
-			fout.seek(0)
-			json.dump(dict, fout)
-			fout.truncate()
-		fout.close()
-	return
-# 
+def AI_within_box(dtable, cutoff_ratio, cutoff_size, cutoff_mu):
+	import numpy as np
+	dtable = np.array(dtable, dtype=np.float64)
+	(ntp, nsize) = dtable.shape
+	# size, rep, cres, size ratio
+	bratio  = dtable[3] < cutoff_ratio 
+	bsize   = dtable[0] > cutoff_size
+	cresmax = np.amax(dtable[2])
+	#cresmin = np.minimum(dtable[2])
+	bmu     = np.ones(nsize, dtype=bool)
+	for im in range(nsize):
+		 if cresmax - dtable[2][im]>cutoff_mu:
+		 	bmu[im]= False
+	bratio_mu   = np.multiply(bratio, bmu)
+	bratio_size = np.multiply(bratio, bsize)
+	return bratio_mu, bratio_size
+		 
 def main():
 	from optparse   import OptionParser
 	from global_def import SPARXVERSION
