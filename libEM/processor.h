@@ -3437,6 +3437,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("cy", EMObject::FLOAT,"Mask Y center. Default ny/2");
 			d.put("zmin", EMObject::FLOAT,"Minimum Z to include");
 			d.put("zmax", EMObject::FLOAT,"Maximum Z to include");
+			d.put("ztriangle", EMObject::FLOAT,"1/2 width in pixels of linear falloff in Z margin. Centered on specified zmin/zmax.");
 			d.put("inner_radius", EMObject::INT, "inner mask radius. optional. Default 0");
 			d.put("outer_radius", EMObject::INT, "outer mask radius. optional. Default nx+ny. Negative value -> box radius + outer_radius +1");
 
@@ -6671,7 +6672,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("int_shift_only", EMObject::INT, "set to 1 only shift by integer, no interpolation");
+				d.put("int_shift_only", EMObject::INT, "If set, will only shift by integer amounts to avoid interpolation");
 				return d;
 			}
 
@@ -6742,6 +6743,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 			TypeDict d;
 			d.put("int_shift_only", EMObject::INT, "set to 1 only shift by integer, no interpolation");
 			d.put("threshold", EMObject::FLOAT, "Only values larger than the threshold are included in the center of mass computation. Default is 0.");
+			d.put("powercenter", EMObject::INT, "If set, squares pixel values before computing the center. The threshold is with respect to the squared values.");
 //			d.put("positive", EMObject::INT, "uses only densities >0 for the calculatton");
 			return d;
 		}

@@ -126,7 +126,9 @@ def main():
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(1)
-		if options.verbose>1: print("{}% complete".format(100.0*frac))
+		if options.verbose>1 and thrtolaunch>0:
+			frac=thrtolaunch/float(len(thrds))
+			print("{}% complete".format(100.0*frac))
 	
 		while not jsd.empty():
 			fsp,nds=jsd.get()

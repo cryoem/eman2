@@ -1086,13 +1086,13 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				# print("MRK_DEBUG: coords_reject_out_of_boundary_messages[-1] := %s" % coords_reject_out_of_boundary_messages[-1])
 				continue
 
+		local_particle_id = 0 # can be different from coordinates_id
 		if len(coords_accepted) > 0:
 			local_mrcs = EMData(box_size, box_size, len(coords_accepted))
 			local_mrcs.set_attr("apix_x", 1.0) # particle_img.set_attr("apix_x", resampled_pixel_size)
 			local_mrcs.set_attr("apix_y", 1.0) # particle_img.set_attr("apix_y", resampled_pixel_size)
 			local_mrcs.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
 			local_mrcs.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
-			local_particle_id = 0 # can be different from coordinates_id
 			for coords_id, entry in enumerate(coords_accepted):
 				particle_img = Util.window(*entry)
 				# Normalize this particle image
