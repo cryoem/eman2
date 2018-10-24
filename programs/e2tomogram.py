@@ -48,7 +48,7 @@ def main():
 	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=7, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltrange", type=str,help="Include only tilts between 'START' and 'STOP', i.e. -40.0,40.0. Default behavior is to include all tilts.", default=None)#, guitype='strbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k, 2k and 4k. default is 1k", default="1k",guitype='combobox',choicelist="('1k', '2k', '4k')",row=8, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k, 2k and 4k. default is 1k", default="1k",guitype='combobox',choicelist="('1k', '2k')",row=8, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=8, col=1, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
 	
 	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
@@ -952,19 +952,23 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 	num=len(imgs)
 	npk=options.npk
 	ttparams, pks=get_params(allparams, options)
-	scale=old_div(float(imgs[0]["apix_x"]),options.apix_init)
+	scale=float(imgs[0]["apix_x"])/options.apix_init
 	ttparams[:,:2]/=scale
 	pks/=scale
 	#### do this slightly differently at different image size
-	lowres=(scale>1.5)
+	lowres=(scale>3)
 	if len(errtlt)==0:
 		nrange=list(range(num))
 	else:
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
-	bx=old_div(options.bxsz,2)
-	if not lowres:
-		bx=int(bx*1.5/(scale))
-		#print("scale{}, box size {}".format(scale, bx*2))
+	bx=options.bxsz//2
+	if abs(scale-2)<.1:
+		bx=int(bx*1.5)
+	elif abs(scale-1)<.1:
+		bx*=2
+	#if not lowres:
+		#bx=int(bx*2/(scale))
+	#print("scale{}, box size {}".format(scale, bx*2))
 
 	for pid in range(npk):
 		pad=good_size(bx*4)
@@ -1067,7 +1071,7 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 	num=options.num
 	nrange=np.hstack([np.arange(zeroid, num), np.arange(zeroid, -1, -1)])
 	ttparams, pks=get_params(allpms, options)
-	scale=old_div(float(imgs[0]["apix_x"]),options.apix_init)
+	scale=imgs[0]["apix_x"]/options.apix_init
 	ttparams[:,:2]/=scale
 	pks/=scale
 	prange=np.arange(options.npk)
@@ -1076,12 +1080,16 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 	nx=imgs[0]["nx"]
 	ny=imgs[0]["ny"]
 	fidptcls=[]
-	bx=old_div(options.bxsz,2)
+	bx=options.bxsz//2
 	apix=imgs[0]["apix_x"]
 	#### use a larger a box size at low resolution mode
-	lowres=(scale>1.5)
-	if not lowres:
-		bx=int(bx*1.5/(scale))
+	lowres=(scale>3)
+	if abs(scale-2)<.1:
+		bx=int(bx*1.5)
+	elif abs(scale-1)<.1:
+		bx*=2
+	#if not lowres:
+		#bx=int(bx*2/(scale))
 	
 	#### this is the matrix to return containing the offset of each landmark at each tilt
 	ptclpos=[]
