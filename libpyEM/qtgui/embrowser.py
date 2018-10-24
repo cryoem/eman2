@@ -3675,7 +3675,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 #		print "Got action ", action.text(), action.data().toString()
 
-		self.setPath(action.data().toString())
+		self.setPath(action.data())
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 
 	def closeEvent(self, event) :
