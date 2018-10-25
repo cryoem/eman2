@@ -782,14 +782,14 @@ def resample_micrographs(args):
 		# Generate micrograph lists according to the execution mode
 		if args.selection_list == None:
 			print(" ")
-			print("----- Running with All Micrographs Mode -----")
+			print("----- Running in All Micrographs Mode -----")
 			# Treat all micrographs in the input directory as selected ones
 			selected_mic_path_list = input_mic_path_list
 		else:
 			assert (args.selection_list != None)
 			if os.path.splitext(args.selection_list)[1] == ".txt":
 				print(" ")
-				print("----- Running with Selected Micrographs Mode -----")
+				print("----- Running in Selected Micrographs Mode -----")
 				print(" ")
 				print("Checking the selection list...")
 				assert (os.path.exists(args.selection_list))
@@ -806,7 +806,7 @@ def resample_micrographs(args):
 					break
 			else:
 				print(" ")
-				print("----- Running with Single Micrograph Mode -----")
+				print("----- Running in Single Micrograph Mode -----")
 				print(" ")
 				print("Processing a single micorgprah: %s..." % (args.selection_list))
 				selected_mic_path_list = [args.selection_list]
@@ -1162,11 +1162,11 @@ def organize_micrographs(args):
 	# Swap input directory and output directory if necessary
 	if not args.reverse:
 		print(" ")
-		print_progress("Running with Normal Operation Mode... ")
+		print_progress("Running in Normal Operation Mode... ")
 	else:
 		assert (args.reverse)
 		print(" ")
-		print_progress("Running with Reverse Operation Mode... ")
+		print_progress("Running in Reverse Operation Mode... ")
 		dst_dir = src_dir
 		src_dir = record_dir
 		src_mic_pattern = os.path.join(src_dir, mic_basename_pattern)
@@ -1919,7 +1919,7 @@ def restacking(args):
 		
 		# Generate the list of selected micrograph paths in the selection file
 		print(" ")
-		print_progress("----- Running with Selected Micrographs Mode -----")
+		print_progress("----- Running in Selected Micrographs Mode -----")
 		print(" ")
 		print_progress("Checking the selection list {}...".format(args.selection_list))
 		selected_mic_path_list = read_text_file(args.selection_list)
@@ -1957,7 +1957,7 @@ def restacking(args):
 	else:
 		assert (args.selection_list is None)
 		print(" ")
-		print_progress("----- Running with All Micrographs Mode -----")
+		print_progress("----- Running in All Micrographs Mode -----")
 
 	# --------------------------------------------------------------------------------
 	# Register micrograph basename found in the selection list
@@ -2486,12 +2486,6 @@ class SXDalton(object):
 		mol_mass = SXDalton.compute_mol_mass_from_vol_voxels(vol_voxels, pixel_size)
 		
 		return mol_mass
-	
-	@staticmethod
-	def compute_density_threshold_from_mol_mass(vol3d, mol_mass, pixel_size):
-		density_threshold = vol3d.find_3d_threshold(mol_mass, pixel_size)
-		
-		return density_threshold
 
 	# Count the number of voxels whose density value is higher than or equal to the threshold
 	@staticmethod
@@ -2518,48 +2512,6 @@ class SXDalton(object):
 		vol_voxels = int(bin3d_stats[0] * n_voxels)
 		
 		return vol_voxels
-
-	# Compute the density threshold where the number of voxels whose density value is higher than or equal to the threshold
-	@staticmethod
-	def compute_density_threshold_from_vol_voxels(vol3d, vol_voxels, pixel_size):
-		mol_mass = SXDalton.compute_mol_mass_from_vol_voxels(vol_voxels, pixel_size)
-		density_threshold = vol3d.find_3d_threshold(mol_mass, pixel_size)
-		
-		return density_threshold
-	
-	# Convert the number of voxels to molecular mass [kDa] with a given pixel size [A/Pixel]
-	@staticmethod
-	def compute_mol_mass_from_vol_voxels(vol_voxels, pixel_size):
-		# Shorten the variable names for readability
-		avagadro = SXDalton.the_avagadro
-		density_protein = SXDalton.the_density_protein
-		R = SXDalton.the_R
-		C = SXDalton.the_C
-		
-		# Convert the number of voxels to molecular mass [kDa] with a given pixel size [A/Pixel]
-		vol_angstrom = vol_voxels * pow(pixel_size, 3.0)
-		vol_1_mole = vol_angstrom / pow(pow(10.0, 8.0), 3.0)
-		density_1_mole = vol_1_mole * density_protein
-		mol_mass = density_1_mole * avagadro / 1000.0 # Kilodalton
-	
-		return mol_mass;
-	
-	# Convert molecular mass [kDa] to the number of voxels with a given pixel size [A/Pixel]
-	@staticmethod
-	def compute_vol_voxels_from_mol_mass(mol_mass, pixel_size):
-		# Shorten the variable names for readability
-		avagadro = SXDalton.the_avagadro
-		density_protein = SXDalton.the_density_protein
-		R = SXDalton.the_R
-		C = SXDalton.the_C
-		
-		# Convert molecular mass [kDa] to the number of voxels with a given pixel size [A/Pixel]
-		density_1_mole = mol_mass * 1000.0 / avagadro
-		vol_1_mole =  density_1_mole / density_protein
-		vol_angstrom =  vol_1_mole * pow(pow(10.0, 8.0), 3.0)
-		vol_voxels = vol_angstrom / pow(pixel_size, 3.0)
-		
-		return vol_voxels;
 
 # ----------------------------------------------------------------------------------------
 def mrk_binarize_non_zero_positive(vol3d):
@@ -2964,10 +2916,10 @@ def moon_eliminator(args):
 	
 	if args.input_volume_path_2nd is None:
 		print(" ")
-		print("----- Running with Single Volume Mode -----")
+		print("----- Running in Single Volume Mode -----")
 	else:
 		print(" ")
-		print("----- Running with Halfset Volumes Mode -----")
+		print("----- Running in Halfset Volumes Mode -----")
 	
 	# Load volume
 	print(" ")
@@ -3110,17 +3062,11 @@ def moon_eliminator(args):
 	# Step 4: Invert handedness if necessary.
 	# ------------------------------------------------------------------------------------
 	if args.invert_handedness:
-		# Flip the volume along z-axis
-		filter_name = "xform.flip"
-		filter_params = {"axis": "z"}
-		print(" ")
-		print_progress("Inverting the handedness of input volume...")
-		if args.debug:
-			print_progress("MRK_DEBUG: filter_name = {}".format(filter_name))
-			print_progress("MRK_DEBUG: filter_params = {}".format(filter_params))
-		vol3d.process_inplace(filter_name, filter_params)
-		# Rotate the volume upside down
-		vol3d = rot_shift3D(vol3d, theta = 180.0) 
+		print_progress("Inverting handedness of input volume...")
+		# Rotate the volume upside down  
+		# PAP - clearly Toshio was not aware of the fact that mirroring along z followed by rotation about y 
+		# is equivalent to mirroring along y.
+		vol3d = mirror(vol3d,"y")
 	
 	if args.debug:
 		vol3d_invert_hand_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_invert_hand.hdf".format(debug_output_id))
@@ -3133,11 +3079,11 @@ def moon_eliminator(args):
 	if args.fl != -1.0:
 		assert (args.fl >= nyquist_res)
 		print(" ")
-		print_progress("Applying low-pass filter to input volume with low-pass filter cutoff resolution {}[A] with falloff width {}[1/Pixels]...".format(args.fl, args.aa))
+		print_progress("Low-pass filtration of the input volume using cutoff resolution {}[A] and fall-off {}[1/Pixels]...".format(args.fl, args.aa))
 		vol3d = filt_tanl(vol3d, args.pixel_size/args.fl, args.aa)
 	else:
 		print(" ")
-		print_progress("Low-pass filter cutoff resolution is {}[A]. The program does not apply the low-pass filter to the input volume before eliminating moons...".format(args.fl))
+		print_progress("The program does not low-pass filter input volume...".format(args.fl))
 	
 	if args.debug:
 		vol3d_lpf_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_lpf.hdf".format(debug_output_id))
@@ -3147,35 +3093,38 @@ def moon_eliminator(args):
 	# ------------------------------------------------------------------------------------
 	# Step 6: Create reference 3D volumes by eliminating the moons from the input volume
 	# ------------------------------------------------------------------------------------
-	print(" ")
-	print_progress("Computing correspoding volume [Voxels] of the specified molecular mass {}[kDa] using pixel size {}[A/Pixels]...".format(args.mol_mass, args.pixel_size))
-	computed_vol_voxels_from_mass = SXDalton.compute_vol_voxels_from_mol_mass(args.mol_mass, args.pixel_size)
-	print_progress("  Computed corresponing volume [Voxels] from this molecular mass         : {}".format(computed_vol_voxels_from_mass))
 	
 	density_threshold = None
 	if args.use_density_threshold is None:
 		print(" ")
-		print_progress("Finding density threshold corresponing to the specified molecular mass {}[kDa] using pixel size {}[A/Pixels]...".format(args.mol_mass, args.pixel_size))
-		computed_density_threshold_from_mass = SXDalton.compute_density_threshold_from_mol_mass(vol3d, args.mol_mass, args.pixel_size)
-		print_progress("  Found corresponing density threshold                                   : {}".format(computed_density_threshold_from_mass))
-		density_threshold = computed_density_threshold_from_mass
+		density_threshold = vol3d.find_3d_threshold(args.mol_mass, args.pixel_size)
+		print_progress("The density threshold corresponing to the specified molecular mass {}[kDa] and pixel size {}[A/Pixels] is  {}".format(args.mol_mass, args.pixel_size,density_threshold))
 	else:
 		assert (args.use_density_threshold > 0.0)
 		print(" ")
-		print_progress("Using user-provided ad-hoc density threshold {} instead of the molecular mass {}[kDa]...".format(args.use_density_threshold, args.mol_mass))
+		print_progress("Using user-provided density threshold {}...".format(args.use_density_threshold))
 		density_threshold = args.use_density_threshold
 	assert (density_threshold is not None)
-	
-	computed_mol_mass_from_density = SXDalton.compute_mol_mass_from_density_threshold(vol3d, density_threshold, args.pixel_size)
-	computed_vol_voxels_from_density = SXDalton.compute_vol_voxels_from_density_threshold(vol3d, density_threshold, args.pixel_size)
-	print_progress("  Computed corresponing molecular mass [kDa] from this density threshold : {}".format(computed_mol_mass_from_density))
-	print_progress("  Percentage of corresponing molecular mass [kDa] relative to specified  : {}".format(computed_mol_mass_from_density/args.mol_mass * 100))
-	print_progress("  Computed corresponing volume [Voxels] from this density threshold      : {}".format(computed_vol_voxels_from_density))
-	print_progress("  Percentage of corresponing volume [Voxels] relative to specified       : {}".format(computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100))
 	
 	# Eliminate moons
 	print(" ")
 	print_progress("Eliminating moons of the input volume using density threshold of {} with {} edge...".format(density_threshold, args.edge_type))
+	my_volume_binarized = binarize(vol3d, density_threshold)
+	my_volume_binarized_with_no_moons = Util.get_biggest_cluster(my_volume_binarized)
+	volume_difference = my_volume_binarized - my_volume_binarized_with_no_moons
+	if volume_difference.get_value_at(volume_difference.calc_max_index()) == 0 and \
+		volume_difference.get_value_at(volume_difference.calc_min_index()) == 0:
+		ref3d_moon_eliminated = vol3d
+	else:
+		if args.edge_type == "cosine":
+			gm_mask3d_moon_eliminated = Util.adaptive_mask(my_volume_binarized_with_no_moons, 0.5, args.gm_dilation, args.gm_edge_width)
+		elif args.edge_type == "gauss":
+			from utilities import gauss_edge
+			gm_mask3d_moon_eliminated = gauss_edge(my_volume_binarized_with_no_moons)
+
+		ref3d_moon_eliminated = gm_mask3d_moon_eliminated * vol3d
+
+	"""
 	# NOTE: Toshio Moriya 2018/04/01
 	# Let's try to use pixel size to decide the distance of the nearest moons...
 	ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass = mrk_eliminate_moons(vol3d, density_threshold, args.edge_type, args.moon_distance, args.dilation, args.edge_sigma, args.allow_disconnect, args.debug)
@@ -3184,12 +3133,13 @@ def moon_eliminator(args):
 	print(" ")
 	print_progress("Saving 3D reference before moon elimination (i.e., the 3D volume just before applying moon elimination.) {}...".format(ref3d_before_moon_elimination_file_path))
 	vol3d.write_image(ref3d_before_moon_elimination_file_path)
+	"""
 	
 	ref3d_moon_eliminated_file_path = os.path.join(args.output_directory, "{}_ref_moon_eliminated.hdf".format(args.outputs_root))
 	print(" ")
 	print_progress("Saving moon eliminated 3D reference {}...".format(ref3d_moon_eliminated_file_path))
 	ref3d_moon_eliminated.write_image(ref3d_moon_eliminated_file_path)
-	
+	"""
 	mask3d_moon_elminator_file_path = os.path.join(args.output_directory, "{}_mask_moon_elminator.hdf".format(args.outputs_root))
 	print(" ")
 	print_progress("Saving moon elminator 3D mask to {}...".format(mask3d_moon_elminator_file_path))
@@ -3197,18 +3147,20 @@ def moon_eliminator(args):
 	
 	bin3d_mol_mass_file_path = os.path.join(args.output_directory, "{}_bin_mol_mass.hdf".format(args.outputs_root))
 	print(" ")
-	print_progress("Saving 3D bainary at molecular mass to {}...".format(bin3d_mol_mass_file_path))
+	print_progress("Saving 3D binary at molecular mass to {}...".format(bin3d_mol_mass_file_path))
 	bin3d_mol_mass.write_image(bin3d_mol_mass_file_path)
-	
+
 	if args.debug:
 		if bin3d_mol_mass_dilated is not None:
 			bin3d_mol_mass_dilated_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_bin3d_mol_mass_dilated.hdf".format(debug_output_id))
 			bin3d_mol_mass_dilated.write_image(bin3d_mol_mass_dilated_file_path)
 			debug_output_id += 1
+	"""
 	
 	# ------------------------------------------------------------------------------------
 	# Step 7: Create 3D mask from the 3D reference if necessary
 	# ------------------------------------------------------------------------------------
+	'''
 	if args.generate_mask:
 		print(" ")
 		print_progress("Generating mooon elimnated soft-edged 3D mask from the 3D binary volume corresponding to the specified molecular mass or density threshold with specified option parameters...")
@@ -3226,7 +3178,6 @@ def moon_eliminator(args):
 				print_progress("MRK_DEBUG:   args.gm_dilation       := {}".format(args.gm_dilation))
 				print_progress("MRK_DEBUG:   args.gm_edge_width     := {}".format(args.gm_edge_width))
 			gm_mask3d_moon_eliminated = Util.adaptive_mask(bin3d_mol_mass, gm_binarize_threshold, args.gm_dilation, args.gm_edge_width)
-			assert (gm_bin3d_mol_mass_dilated is None)
 		elif args.edge_type == "gauss":
 			gm_gauss_kernel_radius = args.gm_edge_width - args.gm_dilation
 			gm_mask3d_moon_eliminated, gm_bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, args.gm_dilation, gm_gauss_kernel_radius, args.gm_edge_sigma, args.debug)
@@ -3246,26 +3197,22 @@ def moon_eliminator(args):
 		print(" ")
 		print_progress("Saving moon eliminated 3D mask to {}...".format(gm_mask3d_moon_eliminated_file_path))
 		gm_mask3d_moon_eliminated.write_image(gm_mask3d_moon_eliminated_file_path)
-		
-	
+	'''	
+	'''
 	print(" ")
 	print_progress("Summary of processing...")
 	print_progress("  Provided expected molecular mass [kDa]      : {}".format(args.mol_mass))
-	if args.use_density_threshold is None:
-		print_progress("  Corresponding volume [voxels]               : {}".format(computed_vol_voxels_from_mass))
-		print_progress("  Corresponding density threshold             : {}".format(computed_density_threshold_from_mass))
-	else:
-		assert (args.use_density_threshold is not None)
-		print_progress("  User-provided ad-hoc density threshold      : {}".format(args.use_density_threshold))
+	"""
 	print_progress("  Applied density threshold                   : {}".format(density_threshold))
 	print_progress("  Computed molecular mass [kDa] of density    : {}".format(computed_mol_mass_from_density))
 	print_progress("  Percentage of this molecular mass [kDa]     : {}".format(computed_mol_mass_from_density/args.mol_mass * 100))
 	print_progress("  Computed volume [Voxels] of density         : {}".format(computed_vol_voxels_from_density))
 	print_progress("  Percentage of this volume [Voxels]          : {}".format(computed_vol_voxels_from_density/computed_vol_voxels_from_mass * 100))
+	"""
 	print_progress("  Saved moon eliminated 3D reference to       : {}".format(ref3d_moon_eliminated_file_path))
 	if args.generate_mask:
 		print_progress("  Saved mooon elimnated soft-edged 3D mask to : {}".format(gm_mask3d_moon_eliminated_file_path))
-
+	'''
 # ----------------------------------------------------------------------------------------
 # Author 1: Toshio Moriya 08/008/2018 (toshio.moriya@mpi-dortmund.mpg.de)
 # 
