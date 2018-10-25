@@ -513,7 +513,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			return boxcoords
 
 	def menu_file_read_boxloc(self):
-		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select output text file"))
+		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select output text file")[0])
 
 		f=file(fsp,"r")
 		for b in f:
@@ -528,7 +528,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	def menu_file_save_boxloc(self):
 		shrinkf=self.shrink 								#jesus
 
-		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output text file"))
+		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output text file")[0])
 
 		out=file(fsp,"w")
 		for b in self.boxes:

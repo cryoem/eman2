@@ -2327,7 +2327,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 	def do_snapshot(self,du) :
 		if self.target().data==None or self.target() == None: return
-		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, .pgm, .ppm, .jpeg, .png or .tiff only")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, .pgm, .ppm, .jpeg, .png or .tiff only")[0]
 		fsp=str(fsp)
 		# Just grab the framebuffer, as a QTImage, and save as tiff
 		self.target().update()
@@ -2355,13 +2355,13 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 	def do_saveimg(self,du) :
 		if self.target().data==None : return
-		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion")[0]
 		fsp=str(fsp)
 		self.target().data.write_image(fsp,-1)
 
 	def do_savestack(self,du) :
 		if self.target().list_data==None : return
-		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select root output file, format extrapolated from file extenstion"))
+		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select root output file, format extrapolated from file extenstion")[0])
 		#fsp=str(fsp).split(".")
 		#if len(fsp)==1 :
 			#fsp1=fsp[0]
@@ -2375,7 +2375,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 			im.write_image(fsp,-1)
 
 	def do_makemovie(self,du) :
-		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion. ffmpeg must be installed")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion. ffmpeg must be installed")[0]
 		if self.target().list_data==None : return
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
@@ -2395,7 +2395,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 
 	def do_makegifanim(self,du) :
-		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output gif file")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output gif file")[0]
 		if self.target().list_data==None : return
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):

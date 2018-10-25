@@ -1067,7 +1067,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		x = self.firstcx - old_div(self.width(),2.0)
 		y = self.firstcy - old_div(self.height(),2.0)
 		if event.buttons()&Qt.MidButton:
-			filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")
+			filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")[0]
 			if filename: # if we cancel
 				self.saveSnapShot(filename)
 		elif event.buttons()&Qt.LeftButton:

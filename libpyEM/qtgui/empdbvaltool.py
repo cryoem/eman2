@@ -149,7 +149,7 @@ class EMPDBValWidget(QtWidgets.QWidget):
 		self.volume_line_edit.setText(file_path)
 		
 	def browse_pdb(self):
-		file_path = QtWidgets.QFileDialog.getOpenFileName(filter="Protein Data Bank (*.pdb)")
+		file_path = QtWidgets.QFileDialog.getOpenFileName(filter="Protein Data Bank (*.pdb)")[0]
 		self.pdb_line_edit.setText(file_path)
 		
 	def closeEvent(self, event):
