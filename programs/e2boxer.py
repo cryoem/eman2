@@ -1456,7 +1456,7 @@ class GUIBoxer(QtWidgets.QWidget):
 		self.mmode="refbg"
 
 	def reftoolLoad3D(self,x):
-		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select 3-D Volume"))
+		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select 3-D Volume")[0])
 		if fsp==None or len(fsp)<4 : return
 
 		symname=str(QtWidgets.QInputDialog.getText(None,"Symmetry","Please specify the symmetry of the map, or c1 for none")[0])
@@ -1508,7 +1508,7 @@ class GUIBoxer(QtWidgets.QWidget):
 		self.goodrefchg=True
 		
 	def reftoolLoad2D(self,x):
-		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select 2-D Stack"))
+		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select 2-D Stack")[0])
 		if fsp==None or len(fsp)<4 : return
 		
 		refs=EMData.read_images(fsp)

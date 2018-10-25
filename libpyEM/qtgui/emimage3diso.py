@@ -467,7 +467,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 
 	def on_mrc_browse(self): #if enable_browse, added by muthu
 		import os
-		self.mrcfileName = QtWidgets.QFileDialog.getOpenFileName(self, "open file", os.getcwd(), "Text files (*.mrc)")
+		self.mrcfileName = QtWidgets.QFileDialog.getOpenFileName(self, "open file", os.getcwd(), "Text files (*.mrc)")[0]
 		if (self.mrcfileName == ""): return
 		mrcData = EMData(str(self.mrcfileName))
 		self.target().set_data(mrcData)

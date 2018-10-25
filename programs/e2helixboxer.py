@@ -1127,7 +1127,7 @@ if ENABLE_GUI:
 			"""
 			load boxes from a file selected in a file browser dialog
 			"""
-			path = QtWidgets.QFileDialog.getOpenFileName(self, self.tr("Open Box Coordinates File"), "", self.tr("Boxes (*.txt *.box)"))
+			path = QtWidgets.QFileDialog.getOpenFileName(self, self.tr("Open Box Coordinates File"), "", self.tr("Boxes (*.txt *.box)"))[0]
 			path = str(path)
 			coords_list = load_helix_coords(path)
 
