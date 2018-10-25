@@ -437,8 +437,8 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 		self.writeCurParm()
 		event.accept()
-		QtGui.qApp.exit(0)
-		#app=QtGui.qApp
+		QtWidgets.qApp.exit(0)
+		#app=QtWidgets.qApp
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
 			#self.wimage = None

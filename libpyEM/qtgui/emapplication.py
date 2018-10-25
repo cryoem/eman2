@@ -233,7 +233,7 @@ class EMInstance(object):
 em_app_instance = EMInstance()
 
 get_application = em_app_instance.get_instance
-#def get_application() : return QtGui.qApp
+#def get_application() : return QtWidgets.qApp
 
 
 class EMApp(QtWidgets.QApplication):

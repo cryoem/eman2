@@ -996,10 +996,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.first_y = self.previous_y
 		# Process mouse events
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
-			QtGui.qApp.setOverrideCursor(self.appcursor)
+			QtWidgets.qApp.setOverrideCursor(self.appcursor)
 			self.sgmousepress.emit(event.x(), event.y())
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "data"):
-			QtGui.qApp.setOverrideCursor(self.datacursor)
+			QtWidgets.qApp.setOverrideCursor(self.datacursor)
 			filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())[0]
 			if not filename: return
 			name = os.path.basename(str(filename))
@@ -1012,45 +1012,45 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.insertNewNode("Isosurface", self.isonode, parentnode=self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "text"):
-			QtGui.qApp.setOverrideCursor(self.textcursor)
+			QtWidgets.qApp.setOverrideCursor(self.textcursor)
 			text, ok = QtWidgets.QInputDialog.getText(self, 'Enter Text', '')
 			if ok:
 				self.newnode = EM3DText(str(text), 32.0, transform=self._gettransformbasedonscreen(event))
 				self._insert_shape(text, self.newnode)
 				self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
-			QtGui.qApp.setOverrideCursor(self.linecursor)
+			QtWidgets.qApp.setOverrideCursor(self.linecursor)
 			self.newnode = EMLine(0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 20.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Line", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
-			QtGui.qApp.setOverrideCursor(self.cubecursor)
+			QtWidgets.qApp.setOverrideCursor(self.cubecursor)
 			self.newnode = EMCube(2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cube", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
-			QtGui.qApp.setOverrideCursor(self.spherecursor)
+			QtWidgets.qApp.setOverrideCursor(self.spherecursor)
 			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Sphere", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
-			QtGui.qApp.setOverrideCursor(self.cylindercursor)
+			QtWidgets.qApp.setOverrideCursor(self.cylindercursor)
 			self.newnode = EMCylinder(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cylinder", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
-			QtGui.qApp.setOverrideCursor(self.conecursor)
+			QtWidgets.qApp.setOverrideCursor(self.conecursor)
 			self.newnode = EMCone(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cone", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()	
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
-				QtGui.qApp.setOverrideCursor(self.zrotatecursor)
+				QtWidgets.qApp.setOverrideCursor(self.zrotatecursor)
 				self.zrotate = True
 			else:
-				QtGui.qApp.setOverrideCursor(self.xyrotatecursor)
+				QtWidgets.qApp.setOverrideCursor(self.xyrotatecursor)
 				self.zrotate = False
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ruler"):
 			self.newnode = EMRuler(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, self.getAPix(), self.camera.getViewPortWidthScaling(), transform=self._gettransformbasedonscreen(event))
@@ -1058,9 +1058,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			#self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
 		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
-			QtGui.qApp.setOverrideCursor(self.scalecursor)
+			QtWidgets.qApp.setOverrideCursor(self.scalecursor)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection"): 
-			#QtGui.qApp.setOverrideCursor(self.selectorcursor)
+			#QtWidgets.qApp.setOverrideCursor(self.selectorcursor)
 			self.multiselect = False
 			self.appendselection = False
 			self.toggleselection = False
@@ -1073,7 +1073,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.pickItem()
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
-			#QtGui.qApp.setOverrideCursor(self.selectorcursor)
+			#QtWidgets.qApp.setOverrideCursor(self.selectorcursor)
 			self.multiselect = True
 			self.appendselection = False
 			self.toggleselection = False
@@ -1081,9 +1081,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			if event.modifiers()&Qt.ShiftModifier:
 				self.appendselection = True
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
-			QtGui.qApp.setOverrideCursor(self.zhaircursor)
+			QtWidgets.qApp.setOverrideCursor(self.zhaircursor)
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
-			QtGui.qApp.setOverrideCursor(self.crosshaircursor)
+			QtWidgets.qApp.setOverrideCursor(self.crosshaircursor)
 		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.showInspector()
 	
@@ -1159,7 +1159,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.sgmouserelease.emit([event.x(), event.y()])
 			
-		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 		# Select using the selection box
 		if self.toggle_render_selectedarea:
 			self.pickItem()

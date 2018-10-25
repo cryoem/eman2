@@ -294,7 +294,7 @@ class EMCmpExplorer(EM3DSymModel):
 				progress.close()
 				return
 			progress.setValue(i)
-			QtGui.qApp.processEvents()
+			QtWidgets.qApp.processEvents()
 			
 		progress.close()
 		self.set_emdata_list_as_data(self.proj_data,"cmp")
