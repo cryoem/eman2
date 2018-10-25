@@ -3267,12 +3267,12 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 	def busy(self) :
 		"""display a busy cursor"""
 
-		QtGui.qApp.setOverrideCursor(Qt.BusyCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.BusyCursor)
 
 	def notbusy(self) :
 		"""normal arrow cursor"""
 
-		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 
 	def updateDetails(self) :
 		"""This is spawned as a thread to gradually fill in file details in the background"""
