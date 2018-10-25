@@ -622,7 +622,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		while 1:
 			time.sleep(0.2)
 			self.wpbprogress.setValue(int(old_div(lst.qsize()*100,maxl)))
-			QtGui.qApp.processEvents()
+			QtWidgets.qApp.processEvents()
 
 			# If any threads are alive, it breaks out of the inner loop, if none are alive, the else block breaks out of the outer loop
 			for t in thrs:
@@ -638,7 +638,7 @@ class EMMotion(QtWidgets.QMainWindow):
 
 		self.wpbprogress.setEnabled(True)
 		self.wpbprogress.reset()
-		QtGui.qApp.processEvents()
+		QtWidgets.qApp.processEvents()
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
 
 		print("bs1")

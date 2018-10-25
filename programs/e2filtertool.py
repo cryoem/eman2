@@ -121,7 +121,7 @@ class EMProcessorWidget(QtWidgets.QWidget):
 	}
 
 	def __init__(self,parent=None,tag=None):
-		app=QtGui.qApp
+		app=QtWidgets.qApp
 
 		QtWidgets.QWidget.__init__(self,parent)
 		self.gbl = QtWidgets.QGridLayout(self)
@@ -422,7 +422,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 	def __init__(self,datafile=None,apix=0.0,force2d=False,verbose=0, safemode=False):
 		QtWidgets.QMainWindow.__init__(self)
 
-		app=QtGui.qApp
+		app=QtWidgets.qApp
 		self.apix=apix
 		self.force2d=force2d
 		self.setWindowTitle("e2filtertool.py")
@@ -846,7 +846,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 
 		for i in range(n):
 			im=EMData(self.datafile,i)
-			QtGui.qApp.processEvents()
+			QtWidgets.qApp.processEvents()
 			for p in pp: im.process_inplace(p[0],p[1])
 			im.write_image(str(name[0]),i)
 			progressdialog.setValue(i+1)

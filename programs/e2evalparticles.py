@@ -436,7 +436,7 @@ class EMClassPtclTool(QtWidgets.QWidget):
 	def fileUpdate(self):
 		"Called when the user selects a file from the list or need to completely refresh display"
 
-		QtGui.qApp.setOverrideCursor(Qt.BusyCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.BusyCursor)
 
 		if self.vclasses==None :
 			self.vclasses=EMImageMXWidget()
@@ -480,19 +480,19 @@ class EMClassPtclTool(QtWidgets.QWidget):
 		self.vgoodptcl.show()
 		self.vbadptcl.show()
 
-		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 
 	def classSelect(self,event,lc):
 		"Single clicked class particle. lc=(img#,x,y,image_dict)"
 
-		QtGui.qApp.setOverrideCursor(Qt.BusyCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.BusyCursor)
 		ptclfile=self.curPtclFile()
 		try:
 			ptclgood=lc[3]["class_ptcl_idxs"]
 			self.vgoodptcl.set_data(EMData.read_images(ptclfile,ptclgood))
 		except:
 			QtWidgets.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
-			QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+			QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 			return
 		try:
 			ptclbad=lc[3]["exc_class_ptcl_idxs"]
@@ -503,7 +503,7 @@ class EMClassPtclTool(QtWidgets.QWidget):
 
 		self.vgoodptcl.show()
 		self.vbadptcl.show()
-		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 
 	def classDouble(self,event,lc):
 		self.vclasses.image_set_associate(lc[0],update_gl=True)
@@ -526,7 +526,7 @@ class EMEvalPtclTool(QtWidgets.QMainWindow):
 	def __init__(self,extrafiles=None,verbose=0):
 		QtWidgets.QMainWindow.__init__(self)
 
-		app=QtGui.qApp
+		app=QtWidgets.qApp
 		self.setWindowTitle("e2evalparticles")
 
 		# Menu Bar

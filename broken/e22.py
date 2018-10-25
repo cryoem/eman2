@@ -58,7 +58,7 @@ def on_timer():
 	global ttx
 	
 	if ttx :
-		QtGui.qApp.quit()
+		QtWidgets.qApp.quit()
 
 ipythr=threading.Thread(target=IPY)
 ipythr.run()

@@ -107,7 +107,7 @@ class EMMarkPtclTool(QtWidgets.QMainWindow):
 	def __init__(self,extrafiles=None,verbose=0):
 		QtWidgets.QMainWindow.__init__(self)
 
-		app=QtGui.qApp
+		app=QtWidgets.qApp
 		self.setWindowTitle("e2markbadparticles")
 
 		# Menu Bar
