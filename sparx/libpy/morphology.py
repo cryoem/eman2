@@ -1937,7 +1937,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			print(("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern))))
 			if len(input_mic_path_list) == 0:
 				# The result shouldn't be empty if the specified  file name pattern is invalid
-				error_status = ("There are no s whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
+				error_status = ("There are no micrographs whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
 				break
 		
 			# Register  id substrings to the global entry dictionary
@@ -2228,20 +2228,6 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			except:
 				print("MRK_DEBUG: tilemic() in cter_mrk() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
-			# # NOTE: 2017/07/24 Toshio Moriya 
-			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
-			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
-			# # error with 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf': 'cannot access file 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf'' caught
-			# 
-			# if stack == None:
-			# 	# create  thumbnail
-			# 	nx = mic.get_xsize()
-			# 	if nx > 512:
-			# 		img_micthumb = resample(mic, 512.0/nx)
-			# 	else:
-			# 		img_micthumb = mic
-			# 	img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
-			# 	del img_micthumb
 			del mic
 		else:
 			img_type = "Stack"
@@ -3006,7 +2992,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			print(("Found %d micrographs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern))))
 			if len(input_mic_path_list) == 0:
 				# The result shouldn't be empty if the specified  file name pattern is invalid
-				error_status = ("There are no s whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
+				error_status = ("There are no micrographs whose paths match with the specified file path pattern (%s) for %s. Please check input_image_path. Run %s -h for help." % (mic_pattern, cter_mode_name, program_name), getframeinfo(currentframe()))
 				break
 		
 			# Register  id substrings to the global entry dictionary
@@ -3297,20 +3283,6 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			except:
 				print("MRK_DEBUG: tilemic() in cter_pap() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
-			# # NOTE: 2017/07/24 Toshio Moriya 
-			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
-			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
-			# # error with 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf': 'cannot access file 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf'' caught
-			# 
-			# if stack == None:
-			# 	# create  thumbnail
-			# 	nx = mic.get_xsize()
-			# 	if nx > 512:
-			# 		img_micthumb = resample(mic, 512.0/nx)
-			# 	else:
-			# 		img_micthumb = mic
-			# 	img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
-			# 	del img_micthumb
 			del mic
 		else:
 			img_type = "Stack"
@@ -3602,9 +3574,6 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				bd1 = -bd1
 				cd1 = 90.0 + cd1
 			cd1 = cd1 % 180
-			#  TOSHIO: please avoid this style of coding at all cost.  It follows from the above paragraph that the conditions below can never be met.  So what do you have them?
-			#if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (ad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-			#if cd1 < 0.0 or cd1 >= 180: ERROR("Logical Error: Encountered unexpected astig. angle value (%f). Consult with the developer." % (cd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 			
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
 			reject_img_messages = []
@@ -3612,11 +3581,6 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				pwrot2 = rotavg_ctf( model_blank(wn, wn), ad1, Cs, voltage, pixel_size, bd1, cd1)
 			except:
 				reject_img_messages.append("    - Astigmatism amplitude (%f) is larger than defocus (%f) or defocus (%f) is negative." % (bd1, ad1, ad1))
-			
-			#  TOSHIO:  where do you get 0.3 from?  It cannot be here.  If you need something like that ask the user what acceptable minimum should be.
-			#valid_min_defocus = 0.3
-			#if ad1 < valid_min_defocus:
-			#	reject_img_messages.append("    - Defocus (%f) is smaller than valid minimum value (%f)." % (ad1, valid_min_defocus))
 			
 			if len(reject_img_messages) > 0:
 				rejected_img_names.append(img_name)
@@ -3673,17 +3637,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				cvavad1 = stdavad1 / ad1 * 100 # use percentage
 				
 				if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				#  TOSHIO - no need to ceck, it was computed as sqrt above, so it cannot be <0
-				#if stdavbd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. SD value (%f). Consult with the developer." % (stdavbd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 
-
-				#  TOSHIO, I am not sure why do you need it, but I guess what you are trying to write is:
 				bd1 = max(bd1, 1.0e-15)
-				""" Please delete
-				bd1_precision = 1.0e-15  # use double precision
-				if bd1 < bd1_precision:
-					bd1 = bd1_precision
-				"""
 				
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
 				
@@ -5712,20 +5667,6 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			except:
 				print("MRK_DEBUG: tilemic() in cter_vpp() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
-			# # NOTE: 2017/07/24 Toshio Moriya 
-			# # Writing thumbnail at this timing causes exception with MPI processing for some micrographs
-			# # RuntimeError:     FileAccessException at EMAN2_SRC_DIR/eman2/libEM/hdfio2.cpp:517: 
-			# # error with 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf': 'cannot access file 'CTER_OUTDIR/micthumb/MIC_BASENAME_ROOT.hdf'' caught
-			# 
-			# if stack == None:
-			# 	# create  thumbnail
-			# 	nx = mic.get_xsize()
-			# 	if nx > 512:
-			# 		img_micthumb = resample(mic, 512.0/nx)
-			# 	else:
-			# 		img_micthumb = mic
-			# 	img_micthumb.write_image(os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root)))
-			# 	del img_micthumb
 			del mic
 
 		else:
@@ -5938,9 +5879,6 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				bd1 = -bd1
 				cd1 += 90.0
 			cd1 = cd1%180
-
-			#if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (ad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-			#if cd1 < 0.0 or cd1 >= 180: ERROR("Logical Error: Encountered unexpected astig. angle value (%f). Consult with the developer." % (cd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 			
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
 			reject_img_messages = []
