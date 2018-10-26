@@ -1026,9 +1026,25 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 							assert (not token.is_required)
 							assert (not token.is_locked)
 							assert (not token.is_reversed)
-						# Initialise restore value with default value
 						if not token.is_locked:
 							token.restore = token.default
+						target_operator = ":"
+						item_tail = line_buffer.find(target_operator)
+						if item_tail != -1:
+							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
+							target_operator = ":"
+							item_tail = line_buffer.find(target_operator)
+							if item_tail == -1:
+								entry = line_buffer.replace("%%", "").strip()
+							else:
+								entry = line_buffer[:item_tail].replace("%%", "").strip()
+							group_key, state = entry.split('==')
+							token.dependency_group = [group_key.strip('-'), state]
+							try:
+								sxcmd.dependency_dict[group_key].append([token.key_base, state])
+							except KeyError:
+								sxcmd.dependency_dict[group_key] = [[token.key_base, state]]
+						# Initialise restore value with default value
 						# Ignore the rest of line ...
 						# Register this command token to the list (ordered) and dictionary (unordered)
 						sxcmd.token_list.append(token)
@@ -1279,6 +1295,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		output_file.write("; token.is_required = %s" % token.is_required)
 		output_file.write("; token.is_locked = %s" % token.is_locked)
 		output_file.write("; token.is_reversed = %s" % token.is_reversed)
+		output_file.write("; token.dependency_group = %s" % str(token.dependency_group))
 		if token.type == "bool":
 			output_file.write("; token.default = %s" % token.default)
 			output_file.write("; token.restore = %s" % token.restore)
@@ -1297,6 +1314,9 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		# output_file.write("; token.is_in_io = %s" % token.is_in_io)
 
 		output_file.write("; %s.token_list.append(token)" % sxcmd_variable_name)
+		output_file.write("; %s.token_dict[token.key_base] = token" % sxcmd_variable_name)
+		if token.dependency_group[0]:
+			output_file.write("; %s.dependency_dict.setdefault('%s', []).append([token.key_base, %s])" % (sxcmd_variable_name, token.dependency_group[0], token.dependency_group[1]))
 		output_file.write("\n")
 
 	output_file.write("\n")
