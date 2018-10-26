@@ -35,7 +35,7 @@ sxlocres exists in for both MPI and non-MPI versions.
 \\
 === Advanced Parameters ===
   ; %%--%%out_ang_res : Save Angstrom local resolution: Additionally creates a local resolution file in Angstroms. (default False)
-  ; %%--%%apix : Pixel size of half-maps [A]: Effective only with %%--%%out_ang_res options. (default 1.0)
+  ; %%--%%apix : Pixel size of half-maps [A]: Effective only with %%--%%out_ang_res options. (default 1.0) : %%--%%out_ang_res==True
   ; %%--%%MPI : Use MPI: (default False)
 
 \\
