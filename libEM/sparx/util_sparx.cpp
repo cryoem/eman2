@@ -30394,153 +30394,64 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define smask_ptr(i,j,k) smask_ptr[i+(j+(k*ny))*(size_t)nx]
-#define tmpimg_ptr(i,j,k) tmpimg_ptr[i+(j+(k*ny))*(size_t)nx]
-EMData* Util::adaptive_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width)
-{  
+EMData* Util::soft_edge(EMData* img, int edge_width, string mode)
+{
+//  mode is either "C" for cosine or "G" for Gaussian
 	ENTERFUNC;
 
-	if (!img) {
-		throw NullPointerException("NULL input image");
-	}
-	int img_dim = img->get_ndim();
-	if (img_dim<3)
-	throw ImageDimensionException(" surface_mask is only applicable to 3-D volume");
+	if (!img)  throw NullPointerException("NULL input image");
+
+	if(img->get_ndim()<3) throw ImageDimensionException(" surface_mask is only applicable to 3-D volume");
+	int ntab = 100;
+	vector<float> tabf(ntab+1);
+	if( mode == "C" ) {
+		for(int iz=0; iz<ntab+1; iz++) tabf[iz] = 0.5 + 0.5 * cos(QUADPI * (float)(iz)/ntab);
+	}  else if( mode == "G" ) {
+		float Q = -4.605170185988091f;
+		for(int iz=0; iz<ntab+1; iz++) tabf[iz] = exp(Q*(float)(iz)/ntab*(float)(iz)/ntab);
+	}  else  throw InvalidCallException("Mode has to be with C (cosine edge) or G (Gaussian edge)");
+
    	int nx = img->get_xsize(), ny = img->get_ysize(), nz = img->get_zsize();
-	EMData* smask = new EMData();
-	smask->set_size(nx,ny,nz);
-	smask  ->to_zero();
-	EMData* tmpimg = new EMData();
-	tmpimg ->set_size(nx,ny,nz);
-	tmpimg ->to_zero();
-	float *img_ptr    = img->get_data();
-	float *smask_ptr  = smask->get_data();
-	float *tmpimg_ptr = tmpimg->get_data();
+
+	EMData* smask = img->copy();
+	float* img_ptr = img->get_data();
+	float* smask_ptr = smask->get_data();
+	
+	int edge_width2 = edge_width * edge_width;
+	int edge_width3 = edge_width2 * edge_width;
 	for (int iz=0; iz<nz; iz++) {
-				for (int iy=0; iy<ny; iy++) {
-					for (int ix=0; ix<nx; ix++) {
-						if (img_ptr(ix,iy,iz) > threshold){	
-							smask_ptr(ix,iy,iz)=  1.0;
-							tmpimg_ptr(ix,iy,iz)= 1.0; }
-						else {
-								smask_ptr(ix,iy,iz)=  0.0;
-								tmpimg_ptr(ix,iy,iz)= 0.0;}
-				      }
-			   }				
-	  }
-	if (surface_dilation_ini > 0. || surface_dilation_ini < 0.) 
-	{
-		int surface_dilation = abs(ceil(surface_dilation_ini));
-		//std:cout<<" surface_dilation starts"<<surface_dilation<<std::endl;
-		float  surface_dilation_ini2 = surface_dilation_ini*surface_dilation_ini;
-		if (surface_dilation_ini > 0.)
-		{
-			for (int iz=0; iz<nz; iz++) {
-				for (int iy=0; iy<ny; iy++) {
-					for (int ix=0; ix<nx; ix++) {
-						if (tmpimg_ptr(ix,iy,iz) < 0.001) {
-									bool already_done = false;
-									for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++) {
-										for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++) {
-											for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++) {
-												if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx)){											  								   
-															if (tmpimg_ptr(jp,ip,kp) > 0.999) {
-																float r2 = (float)( (kp-iz)*(kp-iz)+(ip-iy)*(ip-iy)+(jp-ix)*(jp-ix));
-																if (r2<surface_dilation_ini2){
-																		smask_ptr(ix, iy, iz) = 1.;
-																		already_done = true; }
-															      }
-													}
-												   if (already_done) break;  
-											  }
-											   if (already_done) break;		
-										 }
-										 if (already_done) break;
-									  } // kp
-									
-								   }//if 
-								
-								 } // ix	
-						    }//iy
-					}//iz							   
-				}
-		else {
-			for (int iz=0; iz<nz; iz++) {
-				for (int iy=0; iy<ny; iy++) {
-					for (int ix=0; ix<nx; ix++) {
-						if (tmpimg_ptr(ix,iy,iz) > 0.999) {
-								bool already_done = false;
-								for (int kp = iz - surface_dilation; kp <= iz + surface_dilation; kp++) {
-									for (int ip = iy - surface_dilation; ip <= iy + surface_dilation; ip++) {
-										for (int jp = ix - surface_dilation; jp <= ix + surface_dilation; jp++) {
-											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx)) {										   
-												if (tmpimg_ptr(jp,ip,kp) < 0.001){
-													float r2 = (float)( (kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix) );
-													if (r2<surface_dilation_ini2) {
-															smask_ptr(ix,iy,iz) = 0.0;
-															already_done = true;
-														 }
-											  	    }
-											}	
-											if (already_done) break;  
+		for (int iy=0; iy<ny; iy++) {
+			for (int ix=0; ix<nx; ix++) {
+				if(img_ptr(ix, iy, iz) < 0.5) {
+					int min_r2 = edge_width3;
+					for (int kp = iz - edge_width ; kp <= iz + edge_width ; kp++)  {
+						if(kp>=0 && kp <nz) {
+							int ztmp = (kp-iz)*(kp-iz);
+							for (int ip = iy - edge_width ; ip <= iy + edge_width ; ip++)  {
+								if(ip>=0 && ip <ny) {
+									int ytmp = ztmp + (ip-iy)*(ip-iy);
+									for (int jp = ix - edge_width ; jp <= ix + edge_width ; jp++)  {
+										if(jp>=0 && jp<nx)  {
+											if(img_ptr(jp,ip,kp) >= 0.5)  min_r2 = Util::get_min(min_r2, ytmp + (jp-ix)*(jp-ix));
+										}
 									}
-									if (already_done) break;		
 								}
-							if (already_done) break;
-							}			
-						}//if	
+							}
+						}
 					}
-				}						   
+					if(min_r2 < edge_width2) smask_ptr(ix, iy, iz) = tabf[(int)(sqrt((float)(min_r2)/edge_width2)*ntab+0.5f)];
+					//0.5 + 0.5 * cos(QUADPI * sqrt((float)min_r2)/edge_width);								
+				}
 			}
 		}
 	}
-			if (cosine_width > 0.0) {
-		       // std::cout<<" make the edge   "<<std::endl;
-				for (int iz=0; iz<nz; iz++) {
-					for (int iy=0; iy<ny; iy++) {
-						for (int ix=0; ix<nx; ix++) {
-								tmpimg_ptr(ix,iy,iz)= smask_ptr(ix,iy,iz);
-							} 
-						}
-					}
-			
-				int icosine_width   = abs(ceil(cosine_width));
-				float cosine_width2 = cosine_width*cosine_width;
-				//std::cout<<" make softmask  "<<icosine_width<<std::endl;	
-				for (int iz=0; iz<nz; iz++) {
-				  //  std::cout<<"  slice "<<iz<<std::endl;
-					for (int iy=0; iy<ny; iy++) {
-						for (int ix=0; ix<nx; ix++) {
-							if (tmpimg_ptr(ix, iy, iz) < 0.001) {
-								float min_r2 = 9999.;
-								for (int kp = iz - icosine_width ; kp <= iz + icosine_width ; kp++){
-									for (int ip = iy - icosine_width ; ip <= iy + icosine_width ; ip++){
-										for (int jp = ix - icosine_width ; jp <= ix + icosine_width ; jp++){
-											if ((kp>=0 && kp <nz) && (ip>=0 && ip <ny) && (jp>=0 && jp<nx)){										   
-												if (tmpimg_ptr(jp,ip,kp) > 0.999) {
-													float r2 = (float)((kp-iz)*(kp-iz) + (ip-iy)*(ip-iy)+ (jp-ix)*(jp-ix));
-													if (r2<min_r2)
-													   min_r2 = r2;
-													}
-												}
-											}
-										}
-									}
-									if   (min_r2 < cosine_width2) {								   
-										 smask_ptr(ix, iy, iz) = 0.5 + 0.5 * cos(QUADPI * sqrt(min_r2)/cosine_width);}									
-									}//if
-							   }//ix
-						   }//iy
-					  }//iz					
-				}//if
 
- 	delete tmpimg;
 	smask->update();
 	EXITFUNC;
 	return smask;
 }
 #undef img_ptr
 #undef smask_ptr
-#undef tmpimg_ptr
 /*
 #define  cent(i)     out[i+N]
 #define  assign(i)   out[i]
