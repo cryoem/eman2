@@ -48,7 +48,7 @@ def main():
 	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=7, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltrange", type=str,help="Include only tilts between 'START' and 'STOP', i.e. -40.0,40.0. Default behavior is to include all tilts.", default=None)#, guitype='strbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k, 2k and 4k. default is 1k", default="1k",guitype='combobox',choicelist="('1k', '2k', '4k')",row=8, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--outsize", type=str,help="Size of output tomograms. choose from 1k, 2k and 4k. default is 1k", default="1k",guitype='combobox',choicelist="('1k', '2k')",row=8, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--niter", type=str,help="Number of iterations for bin8, bin4, bin2 images. Default if 2,1,1,1", default="2,1,1,1",guitype='strbox',row=8, col=1, rowspan=1, colspan=1,mode='easy[2,1,1,1]')
 	
 	parser.add_argument("--badzero", action="store_true",help="In case the 0 degree tilt is bad for some reason...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
@@ -684,8 +684,8 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	
 	#full3d=[EMData(outxy, outxy, outz) for i in [0,1]]
 	full3d=EMData(outxy, outxy, outz)
-	wt=full3d.copy()
-	wt.to_zero()
+	#wt=full3d.copy()
+	#wt.to_zero()
 	
 	jsd=queue.Queue(0)
 	jobs=[]
@@ -710,17 +710,29 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	print("now start threads...")
 	thrtolaunch=0
 	tsleep=threading.active_count()
-	msk=EMData(sz,sz,outz)
-	msk.to_one()
+	
+	#### non-round fall off. this is mathematically correct but seem to have grid artifacts
+	#f=np.zeros((sz,sz))
+	x,y=np.indices((sz,sz),dtype=float)/sz-.5
+	f=.25-(x**2+y**2)/2 + ((abs(x)-0.5)**2+(abs(y)-0.5)**2)/2
+	f3=np.repeat(f[None, :,:], outz, axis=0)
+	msk=from_numpy(f3).copy()
+	#####
+
+	
+	#msk=EMData(sz,sz,outz)
+	#msk.to_one()
 	#msk.process_inplace("mask.soft",{"outer_radius":sz//4, "width":sz//6})
-	msk.process_inplace("mask.gaussian",{"outer_radius":sz//4})
-	msk.add(0.1)
+	#msk.process_inplace("mask.gaussian",{"outer_radius":sz//4})
+	#msk.process_inplace("mask.poly",{"2d":True, "k4":1/4, "k2":-1, "k0":1})
+	#msk.add(0.1)
+	#msk.write_image("tmp03_msk.hdf")
 	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or jsd.empty()==False:
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads ) : time.sleep(.1)
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
-		else: time.sleep(1)
+		else: time.sleep(.1)
 		
 		if not jsd.empty():
 			stepx, stepy, threed=jsd.get()
@@ -736,9 +748,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 				threed,(int(stepx*step+outxy//2),int(stepy*step+outxy//2), outz//2))
 				
 			
-			wt.insert_scaled_sum(msk,(int(stepx*step+outxy//2),
-				int(stepy*step+outxy//2), 
-				outz//2))
+			#wt.insert_scaled_sum(msk,(int(stepx*step+outxy//2),int(stepy*step+outxy//2), outz//2))
 				
 				
 	for t in thrds: t.join()
@@ -746,9 +756,10 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	#full3d[0].write_image("tmp00_full.hdf")
 	#full3d[1].write_image("tmp01_full.hdf")
 	#wt.write_image("tmp02_wt.hdf")
+	#print("lalala")
 	#wt.add(.01)
 	#full3d=full3d[0]+full3d[1]
-	full3d.div(wt)
+	#full3d.div(wt)
 	full3d.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	full3d.process_inplace("normalize")
 	
@@ -952,19 +963,23 @@ def make_samples(imgs, allparams, options, refinepos=False, outname=None, errtlt
 	num=len(imgs)
 	npk=options.npk
 	ttparams, pks=get_params(allparams, options)
-	scale=old_div(float(imgs[0]["apix_x"]),options.apix_init)
+	scale=float(imgs[0]["apix_x"])/options.apix_init
 	ttparams[:,:2]/=scale
 	pks/=scale
 	#### do this slightly differently at different image size
-	lowres=(scale>1.5)
+	lowres=(scale>3)
 	if len(errtlt)==0:
 		nrange=list(range(num))
 	else:
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
-	bx=old_div(options.bxsz,2)
-	if not lowres:
-		bx=int(bx*1.5/(scale))
-		#print("scale{}, box size {}".format(scale, bx*2))
+	bx=options.bxsz//2
+	if abs(scale-2)<.1:
+		bx=int(bx*1.5)
+	elif abs(scale-1)<.1:
+		bx*=2
+	#if not lowres:
+		#bx=int(bx*2/(scale))
+	#print("scale{}, box size {}".format(scale, bx*2))
 
 	for pid in range(npk):
 		pad=good_size(bx*4)
@@ -1067,7 +1082,7 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 	num=options.num
 	nrange=np.hstack([np.arange(zeroid, num), np.arange(zeroid, -1, -1)])
 	ttparams, pks=get_params(allpms, options)
-	scale=old_div(float(imgs[0]["apix_x"]),options.apix_init)
+	scale=imgs[0]["apix_x"]/options.apix_init
 	ttparams[:,:2]/=scale
 	pks/=scale
 	prange=np.arange(options.npk)
@@ -1076,12 +1091,16 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 	nx=imgs[0]["nx"]
 	ny=imgs[0]["ny"]
 	fidptcls=[]
-	bx=old_div(options.bxsz,2)
+	bx=options.bxsz//2
 	apix=imgs[0]["apix_x"]
 	#### use a larger a box size at low resolution mode
-	lowres=(scale>1.5)
-	if not lowres:
-		bx=int(bx*1.5/(scale))
+	lowres=(scale>3)
+	if abs(scale-2)<.1:
+		bx=int(bx*1.5)
+	elif abs(scale-1)<.1:
+		bx*=2
+	#if not lowres:
+		#bx=int(bx*2/(scale))
 	
 	#### this is the matrix to return containing the offset of each landmark at each tilt
 	ptclpos=[]

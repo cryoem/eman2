@@ -101,14 +101,14 @@ class SptEvalGUI(QtGui.QWidget):
 
 		self.fscplot = EMPlot2DWidget()
 
-		self.setspanel=QtGui.QListWidget(self)
+		self.setspanel=TomoListWidget(self)
 		self.gbl.addWidget(self.setspanel, 5,1,5,2)
-		self.itemflags=	Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		self.itemflags=	Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 		
 		#self.wg_notes=QtGui.QTextEdit(self)
 		#self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 				
-		self.setspanel.itemChanged[QtGui.QListWidgetItem].connect(self.click_set)
+		#self.setspanel.itemChanged[QtGui.QListWidgetItem].connect(self.click_set)
 		#QtCore.QObject.connect(self.wg_notes,QtCore.SIGNAL("textChanged()"),self.noteupdate)
 		
 		#self.wg_plot2d=EMPlot2DWidget()
@@ -298,6 +298,50 @@ class SPTBrowserWidget(embrowser.EMBrowserWidget):
 		self.updtimer.stop()
 		# self.app().close_specific(self)
 		self.module_closed.emit()
+
+		
+class TomoListWidget(QtGui.QListWidget):
+	def __init__(self, parent=None):
+		super(TomoListWidget, self).__init__(parent)
+		self.parent=parent
+		
+
+	def mousePressEvent(self, event):
+		self._mouse_button = event.buttons()
+		item=self.itemAt(event.pos())
+		self.setCurrentItem(item)
+		
+		#print(item.text(), event.button())
+		
+		if event.button()==1:
+			if item.checkState()==Qt.Checked:
+				item.setCheckState(Qt.Unchecked)
+			else:
+				item.setCheckState(Qt.Checked)
+			#return
+		
+		elif event.button()==2:
+			for i in range(self.count()):
+				self.item(i).setCheckState(Qt.Unchecked)
+			
+			item.setCheckState(Qt.Checked)
+		
+		
+		for i in range(self.count()):
+			txt=str(self.item(i).text().split(":")[0]).strip()
+			self.parent.paramlst[txt]=(self.item(i).checkState()==Qt.Checked)
+			
+			
+		self.parent.update_list()
+		#print(self.currentItem(),event)
+		#print(item.text(), self._mouse_button)
+		#super(TomoListWidget, self).mousePressEvent(event)
+		
+		
+	def mouseReleaseEvent(self, event):
+		#print("aaa")
+		return
+
 
 def run(cmd):
 	print(cmd)

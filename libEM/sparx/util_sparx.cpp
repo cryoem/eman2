@@ -12607,7 +12607,6 @@ float Util::hist_comp_freq(float PA,float PB,size_t size_img, int hist_len, EMDa
 	return static_cast<float>(freq_hist);
 }
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define    QUADPI      		        3.141592653589793238462643383279502884197
 #define    DGR_TO_RAD    		QUADPI/180
 #define    DM(I)         		DM	    [I-1]
 #define    SS(I)         		SS	    [I-1]
@@ -12652,7 +12651,6 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 }
 #undef SS
 #undef DM
-#undef QUADPI
 #undef DGR_TO_RAD
 //-----------------------------------------------------------------------------------------------------------------------
 struct t_BPCQ_line{
@@ -29545,8 +29543,38 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
+/*
+        int nthreads = 4;
+        int i;
+        int nx,ny,nz;
+        nx=ny=nz=384*2;
+        int forward = 1;
+        int rank = 3;
+        int dims[3];
+        dims[0] = nz;
+        dims[1] = ny;
+        dims[2] = nx;
+        size_t sizein = nx*ny*nz;
+        size_t sizeou = (nx+2)*ny*nz;
 
-	cout <<"   Source modification date: 08/29/2018" <<  endl;
+        float *real_data = fftwf_alloc_real(sizein);
+        float *complex_data = fftwf_alloc_real(sizeou);
+
+        for( i = 0; i<sizein; i++ )  real_data[i]=1.1;
+
+        fftwf_plan plan;
+        fftwf_init_threads();
+        fftwf_plan_with_nthreads(nthreads);
+        if( forward == 1 )  plan = fftwf_plan_dft_r2c(rank, dims + (3 - rank), real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+        else plan = fftwf_plan_dft_c2r(rank, dims + (3 - rank), (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
+
+
+        fftwf_execute(plan);
+        fftwf_destroy_plan(plan);
+
+        fftwf_cleanup_threads();
+*/
+	cout <<"   Source modification date: 10/24/2018" <<  endl;
 }
 
 
@@ -30161,7 +30189,6 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 }
 #undef ctf_img1_ptr
 	
-#define		quadpi	 	 	3.141592653589793238462643383279502884197 
 /***
 EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s)
 {  
@@ -30227,7 +30254,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 						s1 +=(*img)(ix,iy,iz);
 					}
 					if ( r>=radius && r<radius_p) {
-						float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
+						float temp = (0.5+0.5*cos(QUADPI*(radius_p-r)/cosine_width));
 						u += temp;
 						s1 += (*img)(ix,iy,iz)*temp;
 					}
@@ -30248,7 +30275,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
 					if (r>=radius_p)  (*cmasked) (ix,iy,iz) = s1;
 					if (r>=radius && r<radius_p) {
-						float temp = (0.5 + 0.5*cos(quadpi*(radius_p-r)/cosine_width));
+						float temp = (0.5 + 0.5*cos(QUADPI*(radius_p-r)/cosine_width));
 						(*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz)+temp*(s1-(*img)(ix,iy,iz));
 					}
 					if (r<radius) (*cmasked)(ix,iy,iz) = (*img)(ix,iy,iz);
@@ -30329,7 +30356,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 						s1 +=img_ptr(ix,iy,iz);
 					}
 					if ( r>=radius && r<radius_p) {
-						float temp = (0.5+0.5*cos(quadpi*(radius_p-r)/cosine_width));
+						float temp = (0.5+0.5*cos(QUADPI*(radius_p-r)/cosine_width));
 						u += temp;
 						s1 += img_ptr(ix,iy,iz)*temp;
 					}
@@ -30350,7 +30377,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
 					if (r>=radius_p)  cmasked_ptr (ix,iy,iz) = s1;
 					if (r>=radius && r<radius_p) {
-						float temp = (0.5 + 0.5*cos(quadpi*(radius_p-r)/cosine_width));
+						float temp = (0.5 + 0.5*cos(QUADPI*(radius_p-r)/cosine_width));
 						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(s1-img_ptr(ix,iy,iz)); }
 					if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
 				}
@@ -30365,9 +30392,6 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 #undef cmasked_ptr
 #undef bckg_ptr
 
-#undef quadpi
-
-#define		quadpi	 3.141592653589793238462643383279502884197
 #define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
 #define smask_ptr(i,j,k) smask_ptr[i+(j+(k*ny))*(size_t)nx]
 #define tmpimg_ptr(i,j,k) tmpimg_ptr[i+(j+(k*ny))*(size_t)nx]
@@ -30502,7 +30526,7 @@ EMData* Util::adaptive_mask(EMData* img, float threshold, float surface_dilation
 										}
 									}
 									if   (min_r2 < cosine_width2) {								   
-										 smask_ptr(ix, iy, iz) = 0.5 + 0.5 * cos(quadpi * sqrt(min_r2)/cosine_width);}									
+										 smask_ptr(ix, iy, iz) = 0.5 + 0.5 * cos(QUADPI * sqrt(min_r2)/cosine_width);}									
 									}//if
 							   }//ix
 						   }//iy
@@ -30514,7 +30538,6 @@ EMData* Util::adaptive_mask(EMData* img, float threshold, float surface_dilation
 	EXITFUNC;
 	return smask;
 }
-#undef quadpi
 #undef img_ptr
 #undef smask_ptr
 #undef tmpimg_ptr
@@ -33604,7 +33627,6 @@ inline float rnd_unif(float a, float b)
         return a + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(b-a)));
 }
 
-#define		quadpi	 	 	3.141592653589793238462643383279502884197
 EMData* Util::randomizephasesafter( EMData* img, float res) 
 {
 	ENTERFUNC;
@@ -33631,22 +33653,18 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 			iy = j;  if(j>ny2) iy=j - ny;
 			for ( i=0; i<nx2; i++) {
 				ix=i;
-				if(float(ix*ix+iy*iy+iz*iz)>res2) 
-				{
+				if(float(ix*ix+iy*iy+iz*iz)>res2)  {
 					float amp           = (*img)(2*i, j, k)*(*img)(2*i, j, k)+(*img)(2*i+1, j, k)*(*img)(2*i+1, j, k);
 					amp                 = sqrt(amp);
-					float twopi         = 2.*quadpi;
-    				float phase         = rnd_unif(0., twopi);
+    				float phase         = rnd_unif(0., TWOPI);
 					(*rimg) (i*2,j,k)   = amp * cos(phase);
 					(*rimg) (i*2+1,j,k) = amp * sin(phase);	
-					}
-			  else
-			  		{
-						(*rimg) (i*2,j,k) =(*img) (i*2,j,k);
-						(*rimg) (i*2+1,j,k) =(*img) (i*2+1,j,k);
-			  	 	}
-			  	}
+				}  else  {
+					(*rimg) (i*2,j,k) =(*img) (i*2,j,k);
+					(*rimg) (i*2+1,j,k) =(*img) (i*2+1,j,k);
+				}
 			}
+		}
 	}
 	rimg->set_ri(true);
 	if(ny%2==0) rimg->set_fftodd(false); else rimg->set_fftodd(true);
@@ -33654,7 +33672,7 @@ EMData* Util::randomizephasesafter( EMData* img, float res)
 	EXITFUNC;
 	return rimg;
 }
-#undef	quadpi
+
 void Util::iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 	ENTERFUNC;
 	/* Exception Handle */
