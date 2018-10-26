@@ -36,10 +36,10 @@ e2boxer exists in non-MPI version.
 
 \\
 === Advanced Parameters ===
-  ; %%--%%allmicrographs : Include all micrographs in a directory: Add all images from micrographs folder. (default False)
   ; %%--%%unboxedonly : Include only unboxed micrographs: Only include image files without existing box locations. (default False)
   ; %%--%%write_ptcls : Save selected particle: Extract selected particles from micrographs and write to disk. (default False)
-  ; %%--%%suffix : Micrograph suffix: Suffix of the micrographs used for particle picking (i.e. suffix=goodali will use micrographs end with _goodali.hdf). It is only useful when --allmicrographs option is True. (default none)
+  ; %%--%%allmicrographs : Include all micrographs in a directory: Add all images from micrographs folder. (default False)
+  ; %%--%%suffix : Micrograph suffix: Suffix of the micrographs used for particle picking (i.e. suffix=goodali will use micrographs end with _goodali.hdf). It is only useful when --allmicrographs option is True. (default none): %%--%%allmicrographs==True
   ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default -1)
   ; %%--%%cs : Microscope spherical aberration (Cs) [mm]: The spherical aberration (Cs) of microscope used for imaging. (default -1)
   ; %%--%%ac : Amplitude contrast [%]: The typical amplitude contrast is in the range of 7% - 14%. The value mainly depends on the thickness of the ice embedding the particles. (default 10.0)
