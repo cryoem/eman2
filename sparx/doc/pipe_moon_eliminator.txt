@@ -66,12 +66,12 @@ Create reference 3D structure and 3D mask from halfset unfiltered maps produced 
 
 \\
 === Advanced Parameters ===
-  ; %%--%%gm_dilation : Soft-edge dilation [Pixels]: The pixel width to dilate the 3D binary map corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of %%--%%gm_edge_width so that the voxels with 1.0 values in the mask are same as the hard-edged binary map with the threadhold. Effective only with %%--%%enerate_mask option. (default -1.0)
-  ; %%--%%gm_edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with %%--%%generate_mask option. (default 6.0)
-  ; %%--%%gm_edge_sigma : Soft-edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edged masking. This value controls the fall-speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with %%--%%generate_mask and %%--%%generate_mask='gauss'. (default 2.0)
+  ; %%--%%gm_dilation : Soft-edge dilation [Pixels]: The pixel width to dilate the 3D binary map corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of %%--%%gm_edge_width so that the voxels with 1.0 values in the mask are same as the hard-edged binary map with the threadhold. Effective only with %%--%%enerate_mask option. (default -1.0) : %%--%%generate_mask==True
+  ; %%--%%gm_edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with %%--%%generate_mask option. (default 6.0) : %%--%%generate_mask==True
+  ; %%--%%gm_edge_sigma : Soft-edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edged masking. This value controls the fall-speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with %%--%%generate_mask and %%--%%generate_mask='gauss'. (default 2.0) : %%--%%generate_mask==True
   ; %%--%%outputs_root : Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)
   ; %%--%%allow_disconnect : Allow disconnection: Allow disconnection of density maps. Only for very special cases. (default False)
-  ; %%--%%edge_type : Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) 'cosine' for cosine soft-edged (used in PostRefiner) and (2) 'gauss' for gaussian soft-edge. (default cosine)
+  ; %%--%%edge_type : Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) 'cosine' for cosine soft-edged (used in PostRefiner) and (2) 'gauss' for gaussian soft-edge. (default cosine) : %%--%%generate_mask==True
   ; %%--%%debug : Run with debug mode: Mainly for developer. (default False)
 
 \\
