@@ -75,16 +75,6 @@ def get_time_stamp_suffix():
 	return time_stamp_suffix
 
 # ----------------------------------------------------------------------------------------
-#  Data type checker
-# ----------------------------------------------------------------------------------------
-def is_float(value):
-	try:
-		float(value)
-		return True
-	except ValueError:
-		return False
-
-# ----------------------------------------------------------------------------------------
 # MPI run class
 # ----------------------------------------------------------------------------------------
 class SXmpi_run(object):
@@ -96,7 +86,7 @@ class SXmpi_run(object):
 	my_mpi_proc_id = 0
 	n_mpi_procs = 1
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-	
+
 	# Set up MPI related variables
 	@staticmethod
 	def setup():
@@ -107,14 +97,11 @@ class SXmpi_run(object):
 		if SXmpi_run.RUNNING_UNDER_MPI:
 			from mpi import mpi_init
 			from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
-		
+
 			mpi_init(0, [])
 			SXmpi_run.my_mpi_proc_id = mpi_comm_rank(MPI_COMM_WORLD)
 			SXmpi_run.n_mpi_procs = mpi_comm_size(MPI_COMM_WORLD)
-		else:
-			assert (SXmpi_run.my_mpi_proc_id == 0)
-			assert (SXmpi_run.n_mpi_procs == 1)
-	
+
 	@staticmethod
 	def cleanup():
 		if SXmpi_run.RUNNING_UNDER_MPI:
@@ -171,7 +158,6 @@ def isac_substack(args):
 	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
-		assert (SXmpi_run.RUNNING_UNDER_MPI)
 		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
 		if_error_then_all_processes_exit_program(error_status)
 	
@@ -189,10 +175,6 @@ def isac_substack(args):
 	if os.path.exists(args.output_directory):
 		ERROR("Output directory exists. Please change the name and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
-	assert (db_check_dict(args.input_bdb_stack_path, readonly=True))
-	assert (os.path.exists(args.input_run_dir))
-	assert (not os.path.exists(args.output_directory))
-	
 	# Check error conditions of options
 	defalut_isac_class_avgs_path = os.path.join(args.input_run_dir, "ordered_class_averages.hdf")
 	if args.isac_class_avgs_path != "": # User provided name
@@ -207,9 +189,6 @@ def isac_substack(args):
 	if args.substack_basename == "":
 		ERROR("Substack basename cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
 	
-	assert (os.path.exists(args.isac_class_avgs_path))
-	assert (args.substack_basename != "")
-	
 	# Create output directory
 	print(" ")
 	print_progress("Creating output directory {}.".format(args.output_directory))
@@ -219,8 +198,7 @@ def isac_substack(args):
 	n_fullstack_img = EMUtil.get_image_count(args.input_bdb_stack_path)
 	if n_fullstack_img == 0:
 		ERROR("Input BDB image stack file does contain no images. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
-	assert (n_fullstack_img > 0)
-	
+
 	# ------------------------------------------------------------------------------------
 	# Find out if the input ISAC directory is one of ISAC run or Beautifier run
 	# ------------------------------------------------------------------------------------
@@ -254,7 +232,6 @@ def isac_substack(args):
 	isac_path_list[idx_isac_path_file_shrink]                        = ["File", os.path.join(args.input_run_dir, "README_shrink_ratio.txt")]
 	isac_path_list[idx_isac_path_file_fullstack_prealign2d]          = ["File", os.path.join(args.input_run_dir, "2dalignment", "initial2Dparams.txt")]
 	isac_path_list[idx_isac_path_file_fullstack_shrunk_core_align2d] = ["File", os.path.join(args.input_run_dir, "all_parameters.txt")]
-	assert (len(isac_path_list) == n_idx_isac_path)
 	
 	# Check if the contents of run output directory match with ISAC
 	isac_missing_path_list = []
@@ -281,7 +258,6 @@ def isac_substack(args):
 	beautifier_path_list = [None] * n_idx_beautifier_path
 	beautifier_path_list[idx_beautifier_path_file_accounted_isac_total_align2d]  = ["File", os.path.join(args.input_run_dir, "init_isac_params.txt")]   
 	beautifier_path_list[idx_beautifier_path_file_accounted_local_total_align2d] = ["File", os.path.join(args.input_run_dir, "ali2d_local_params.txt")] 
-	assert (len(beautifier_path_list) == n_idx_beautifier_path)
 	
 	# Check if the contents of run output directory match with Beautifier
 	beautifier_missing_path_list = []
@@ -299,7 +275,6 @@ def isac_substack(args):
 		for beautifier_missing_path in beautifier_missing_path_list:
 			error_message += "    {} {}\n".format(beautifier_missing_path[idx_path_item_path], beautifier_missing_path[idx_path_item_type])
 		ERROR(error_message, subcommand_name) # action=1 - fatal error, exit
-	assert (len(isac_missing_path_list) == 0 or len(beautifier_missing_path_list) == 0)
 	
 	# Define enumerators for indices of 2D alignment parameters header entry (xform.align2d)
 	i_enum = -1
@@ -344,7 +319,6 @@ def isac_substack(args):
 	subdir_path = None
 	align2d_avg_basename = None
 	if len(isac_missing_path_list) == 0:
-		assert (len(beautifier_missing_path_list) > 0)
 		# The specified run directory is ISAC. (ISAC run directory is prioritized over Beautifier run.)
 		print(" ")
 		print_progress("ISAC run output directory is specified. The program assumes the ISAC class averages are shrunk and not beautified with the original image size.")
@@ -352,7 +326,6 @@ def isac_substack(args):
 		
 		# shrink ratio
 		isac_shrink_path = isac_path_list[idx_isac_path_file_shrink][idx_path_item_path]
-		assert (os.path.exists(isac_shrink_path))
 		isac_shrink_file = open(isac_path_list[idx_isac_path_file_shrink][idx_path_item_path], "r")
 		isac_shrink_lines = isac_shrink_file.readlines()
 		isac_shrink_ratio = float(isac_shrink_lines[5])  # 6th line: shrink ratio (= [target particle radius]/[particle radius]) used in the ISAC run
@@ -364,7 +337,6 @@ def isac_substack(args):
 		
 		# Pre-alignment (initial 2D alignment) parameters
 		fullstack_prealign2d_path = isac_path_list[idx_isac_path_file_fullstack_prealign2d][idx_path_item_path]
-		assert (os.path.exists(fullstack_prealign2d_path))
 		fullstack_prealign2d_list = read_text_row(fullstack_prealign2d_path)
 		print(" ")
 		print_progress("Found {} entries in {}.".format(len(fullstack_prealign2d_list), fullstack_prealign2d_path))
@@ -373,14 +345,12 @@ def isac_substack(args):
 		
 		# ISAC 2D alignment parameters
 		fullstack_shrunk_core_align2d_path = isac_path_list[idx_isac_path_file_fullstack_shrunk_core_align2d][idx_path_item_path]
-		assert (os.path.exists(fullstack_shrunk_core_align2d_path))
 		fullstack_shrunk_core_align2d_list = read_text_row(fullstack_shrunk_core_align2d_path)
 		print(" ")
 		print_progress("Found {} entries in {}.".format(len(fullstack_shrunk_core_align2d_list), fullstack_shrunk_core_align2d_path))
 		if len(fullstack_shrunk_core_align2d_list) != n_fullstack_img:
 			ERROR("The number of entries in {} is not consistent with {}. Please check the consistency of input datasets.".format(fullstack_shrunk_core_align2d_path, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
 		
-		assert (len(fullstack_prealign2d_list) == len(fullstack_shrunk_core_align2d_list))
 		
 		# For each entry (2D alignment parameters of particle image), register sxcaled back and combined 2D alignment parameters of this ISAC run to the lists
 		print(" ")
@@ -404,14 +374,9 @@ def isac_substack(args):
 				isac_total_align2d = list(combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)) # return value is tuple type but we want to list! 
 				
 				fullstack_total_align2d_list[fullstack_img_id] = isac_total_align2d
-				assert (len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
 				scale = 1.0 # because this 2D alignment parameters are scaled back!
 				accounted_total_align2d_list.append([fullstack_img_id, isac_total_align2d[idx_isac_align2d_alpha], isac_total_align2d[idx_isac_align2d_tx], isac_total_align2d[idx_isac_align2d_ty], isac_total_align2d[idx_isac_align2d_mirror], scale])
-				assert (len(accounted_total_align2d_list[-1]) == n_idx_beautifier_align2d)
-			else: # An unaccounted particle
-				assert (shrunk_core_align2d[idx_isac_align2d_mirror] == -1)
-				assert (len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
-				assert (fullstack_total_align2d_list[fullstack_img_id][idx_isac_align2d_mirror] == -1) # Leave this entry to the initialisation value of invalid 2D alignment parameters in fullset list
+
 		
 		# Set the number of accounted images
 		n_accounted_img = len(accounted_total_align2d_list)
@@ -423,21 +388,18 @@ def isac_substack(args):
 		
 	else:
 		# The specified run directory is Beautifier.
-		assert (len(beautifier_missing_path_list) == 0 and len(isac_missing_path_list) > 0)
 		print(" ")
 		print_progress("Beautifier run output directory is specified. The program assumes the ISAC class averages are beautified with the original image size.")
 		print_progress("Extracting the 2D alingment parameters of this Beautifier run...")
 	
 		# local alignment parameters
 		accounted_local_total_align2d_path = beautifier_path_list[idx_beautifier_path_file_accounted_local_total_align2d][idx_path_item_path]
-		assert (os.path.exists(accounted_local_total_align2d_path))
 		accounted_local_total_align2d_list = read_text_row(accounted_local_total_align2d_path)
 		n_accounted_img = len(accounted_local_total_align2d_list)
 		print(" ")
 		print_progress("Found {} entries in {}.".format(n_accounted_img, accounted_local_total_align2d_path))
 		if n_accounted_img > n_fullstack_img:
 			ERROR("The number of entries in {} is not consistent with {} (the number of accounted particles is larger than ones of particles in the original fullstack). Please check the consistency of input datasets.".format(accounted_local_total_align2d_path, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
-		assert (n_accounted_img <= n_fullstack_img)
 		
 		# For each entry (2D alignment parameters of accounted particle image), register 2D alignment parameters of this Beautifier run to the lists
 		print(" ")
@@ -448,7 +410,6 @@ def isac_substack(args):
 				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(local_total_param2d), accounted_img_id, accounted_local_total_align2d_path, n_idx_beautifier_align2d), subcommand_name) # action=1 - fatal error, exit
 			if local_total_param2d[idx_beautifier_align2d_mirror] == -1: # An Unaccounted Particle
 				ERROR("Invalid alignment parameters of an unaccounted particle is detected at entry #{} in {}. The parameter files might be corrupted. Please consider to rerun Beautifier.".format(accounted_img_id, accounted_local_total_align2d_path), subcommand_name) # action=1 - fatal error, exit
-			assert (local_total_param2d[idx_beautifier_align2d_mirror] != -1)
 			
 			fullstack_img_id  = int(local_total_param2d[idx_beautifier_align2d_fullstack_img_id])
 			alpha             = float(local_total_param2d[idx_beautifier_align2d_alpha])
@@ -458,9 +419,7 @@ def isac_substack(args):
 			scale             = float(local_total_param2d[idx_beautifier_align2d_scale])
 			
 			fullstack_total_align2d_list[fullstack_img_id] = [alpha, sx, sy, mirror]
-			assert (len(fullstack_total_align2d_list[fullstack_img_id]) == n_idx_isac_align2d)
 			accounted_total_align2d_list.append([fullstack_img_id, alpha, sx, sy, mirror, scale])
-			assert (len(accounted_total_align2d_list[-1]) == n_idx_beautifier_align2d)
 			
 		# Set subdirectory name for Beautifier run case.
 		# Use the corresponding subdirectory name corresponding to Beautifier output directory structure which stores the same information.
@@ -469,11 +428,9 @@ def isac_substack(args):
 		
 	if len(fullstack_total_align2d_list) == 0:
 		ERROR("No alignment parameters are detected. Please check the contents of ISAC or Beautifier run output directory.", subcommand_name) # action=1 - fatal error, exit
-	assert (len(fullstack_total_align2d_list) != 0 and len(fullstack_total_align2d_list) == n_fullstack_img)
 
 	if len(accounted_total_align2d_list) == 0:
 		ERROR("No alignment parameters of accounted particles are detected. Please check the contents of ISAC or Beautifier run output directory.", subcommand_name) # action=1 - fatal error, exit
-	assert (len(accounted_total_align2d_list) != 0 and len(accounted_total_align2d_list) == n_accounted_img and n_accounted_img <= n_fullstack_img)
 
 	# Save the 2D alignment parameters of all particles to file, using the same format as ISAC 2D alignment file (all_parameters.txt)
 	fullset_total_align2d_path = os.path.join(args.output_directory, "scaled_all_parameters.txt")
@@ -488,7 +445,6 @@ def isac_substack(args):
 	print_progress("Saved the total 2D alignment parameters of all accounted particles to {}, using the same format as Beautifier 2D alignment file.".format(accounted_total_align2d_path))
 	
 	# Create subdirectory
-	assert (subdir_path is not None)
 	if not os.path.exists(subdir_path): 
 		print(" ")
 		print_progress("Creating output subdirectory {}.".format(subdir_path))
@@ -502,7 +458,6 @@ def isac_substack(args):
 		n_default_class_avg = EMUtil.get_image_count(defalut_isac_class_avgs_path)
 	else: 
 		print_progress("WARNING! The default ISAC class averages file does not exist.")
-		assert (n_default_class_avg == 0)
 	print(" ")
 	print_progress("Detected {} default ISAC class averages in {}".format(n_default_class_avg, defalut_isac_class_avgs_path))
 	
@@ -522,10 +477,8 @@ def isac_substack(args):
 			total_align2d = fullstack_total_align2d_list[fullstack_img_id]
 			if total_align2d[idx_isac_align2d_mirror] == -1:
 				ERROR("The member with original fullstack particle ID {} listed in ISAC class averages {} has the invalid 2D alignment parameters for ISAC unaccounted particle. Please check the consistency of input datasets. Worse yet, the input datasets might be corrupted. In this case, please consider to rerun ISAC.".format(fullstack_img_id, args.isac_class_avgs_path), subcommand_name) # action=1 - fatal error, exit
-			assert (total_align2d[idx_isac_align2d_mirror] != -1) # all class member particles should be accounted!!!
 			scale = 1.0 # because this 2D alignment parameters are scaled back!
 			total_align2d_list_of_isac_class.append([total_align2d[idx_isac_align2d_alpha], total_align2d[idx_isac_align2d_tx], total_align2d[idx_isac_align2d_ty], total_align2d[idx_isac_align2d_mirror], scale])
-		assert (len(total_align2d_list_of_isac_class) == len(fullstack_img_id_list_of_isac_class))
 		align2d_avg_path = os.path.join(subdir_path, "%s_%03d.txt"%(align2d_avg_basename, class_avg_id))
 		write_text_row(total_align2d_list_of_isac_class, align2d_avg_path)
 		
@@ -538,7 +491,6 @@ def isac_substack(args):
 	n_isac_substack_img = len(fullstack_img_id_list_of_isac_substack)
 	print(" ")
 	print_progress("Extracted {} ISAC class members from {}".format(n_isac_substack_img, args.isac_class_avgs_path))
-	assert (n_accounted_img <= n_fullstack_img)
 	if not n_isac_substack_img <= n_accounted_img:
 		ERROR("Invalid number of ISAC class members {}. It must be smaller than or equal to the total number of ISAC accounted particles {}. The stack header might be corrupted. Please consider to rerun ISAC.".format(n_isac_substack_img, n_accounted_img), subcommand_name) # action=1 - fatal error, exit
 	
@@ -555,12 +507,9 @@ def isac_substack(args):
 		fullstack_img_id = fullstack_img_id_list_of_isac_substack[isac_substack_img_id]
 		# Get 2D alignment parameters associated with this particle and conver to 3D alignment parameters
 		total_align2d = fullstack_total_align2d_list[fullstack_img_id]
-		assert (total_align2d[idx_isac_align2d_mirror] != -1) # all class member particles should be accounted!!!
 		# Register total_align2d to the list in xform.align2d format
 		scale = 1.0 # because this 2D alignment parameters are scaled back!
 		isac_substack_total_header_align2d_list.append([total_align2d[idx_isac_align2d_alpha], total_align2d[idx_isac_align2d_tx], total_align2d[idx_isac_align2d_ty], total_align2d[idx_isac_align2d_mirror], scale])
-		assert (len(isac_substack_total_header_align2d_list[-1]) == n_idx_header_align2d)
-	assert (len(isac_substack_total_header_align2d_list) == n_isac_substack_img)
 	
 	# Save the 2D alignment parameters of all members listed in ISAC class averages to file, using the xform.align2d header entry format.
 	isac_substack_total_header_align2d_path = os.path.join(args.output_directory, "{}_header_align2d.txt".format(args.substack_basename))
@@ -569,14 +518,12 @@ def isac_substack(args):
 	print_progress("Saved the converted 2D alignment parameters to {}.".format(isac_substack_total_header_align2d_path))
 	
 	# Create virtual stack for ISAC substack
-	assert (args.output_directory != "")
 	print(" ")
 	print_progress("Creating ISAC substack as a virtual stack...")
 	virtual_bdb_substack_path = "bdb:{}#{}".format(args.output_directory, args.substack_basename)
 	cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(args.input_bdb_stack_path, virtual_bdb_substack_path, fullstack_img_id_path_of_isac_substack)
 	status = cmdexecute(cmd_line)
 	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
-	assert (EMUtil.get_image_count(virtual_bdb_substack_path) == n_isac_substack_img)
 	
 	# Import the total 2D alignment parameters to xform.align2d
 	print(" ")
@@ -707,8 +654,6 @@ def resample_micrographs(args):
 		
 		break
 	if_error_then_all_processes_exit_program(error_status)
-	assert (mic_pattern != None)
-	assert (root_out_dir != None)
 	
 	# ------------------------------------------------------------------------------------
 	# Prepare the variables for all sections
@@ -740,7 +685,6 @@ def resample_micrographs(args):
 		# Prefix and suffix of micrograph basename pattern 
 		# to find the head/tail indices of micrograph id substring
 		mic_basename_tokens = mic_basename_pattern.split("*")
-		assert (len(mic_basename_tokens) == 2)
 		# Find head index of micrograph id substring
 		mic_id_substr_head_idx = len(mic_basename_tokens[0])
 		
@@ -757,7 +701,6 @@ def resample_micrographs(args):
 		if error_status is None and len(input_mic_path_list) == 0:
 			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), getframeinfo(currentframe()))
 			break
-		assert (len(input_mic_path_list) > 0)
 		
 		# Register micrograph id substrings to the global entry dictionary
 		for input_mic_path in input_mic_path_list:
@@ -765,13 +708,10 @@ def resample_micrographs(args):
 			input_mic_basename = os.path.basename(input_mic_path)
 			mic_id_substr_tail_idx = input_mic_basename.index(mic_basename_tokens[1])
 			mic_id_substr = input_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-			assert (input_mic_path == mic_pattern.replace("*", mic_id_substr))
 			if not mic_id_substr in global_entry_dict:
 				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
 				global_entry_dict[mic_id_substr] = {}
-			assert (mic_id_substr in global_entry_dict)
 			global_entry_dict[mic_id_substr][subkey_input_mic_path] = input_mic_path
-		assert (len(global_entry_dict) > 0)
 		
 		# --------------------------------------------------------------------------------
 		# Register micrograph id substrings found in the selection list
@@ -786,13 +726,11 @@ def resample_micrographs(args):
 			# Treat all micrographs in the input directory as selected ones
 			selected_mic_path_list = input_mic_path_list
 		else:
-			assert (args.selection_list != None)
 			if os.path.splitext(args.selection_list)[1] == ".txt":
 				print(" ")
 				print("----- Running in Selected Micrographs Mode -----")
 				print(" ")
 				print("Checking the selection list...")
-				assert (os.path.exists(args.selection_list))
 				selected_mic_path_list = read_text_file(args.selection_list)
 				
 				# Check error condition of micrograph entry lists
@@ -800,7 +738,6 @@ def resample_micrographs(args):
 				if error_status is None and len(selected_mic_path_list) == 0:
 					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break
-				assert (len(selected_mic_path_list) > 1)
 				if error_status is None and not isinstance(selected_mic_path_list[0], str):
 					error_status = ("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break
@@ -810,13 +747,11 @@ def resample_micrographs(args):
 				print(" ")
 				print("Processing a single micorgprah: %s..." % (args.selection_list))
 				selected_mic_path_list = [args.selection_list]
-			assert (len(selected_mic_path_list) > 0)
 			
 			selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 			if selected_mic_directory != "":
 				print("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory))
 			
-		assert (len(selected_mic_path_list) > 0)
 		
 		# Register micrograph id substrings to the global entry dictionary
 		for selected_mic_path in selected_mic_path_list:
@@ -830,9 +765,7 @@ def resample_micrographs(args):
 			if not mic_id_substr in global_entry_dict:
 				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
 				global_entry_dict[mic_id_substr] = {}
-			assert (mic_id_substr in global_entry_dict)
 			global_entry_dict[mic_id_substr][subkey_selected_mic_basename] = selected_mic_basename
-		assert (len(global_entry_dict) > 0)
 		
 		del selected_mic_path_list # Do not need this anymore
 		del input_mic_path_list # Do not need this anymore
@@ -874,13 +807,11 @@ def resample_micrographs(args):
 					# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
 			# else:
-			# 	assert (not subkey_selected_mic_basename in mic_id_entry)
 			# 	# This entry is not in the selection list. Do nothing
 			
 		# Check the input dataset consistency and save the result to a text file, if necessary.
 		if args.check_consistency:
 			# Create output directory
-			assert (not os.path.exists(root_out_dir))
 			os.mkdir(root_out_dir)
 			
 			# Open the consistency check file
@@ -997,26 +928,20 @@ def resample_micrographs(args):
 		# 
 		# NOTE: Toshio Moriya 2018/03/06
 		# To walk-around synchronisation problem between all MPI nodes and a file server,
-		# we use exception to assert the existence of directory.
 		# 
 		try: 
 			os.mkdir(root_out_dir)
-			assert False, "Unreachable code..."
 		except OSError as err:
 			pass
-	else: 
-		assert os.path.exists(root_out_dir)
 	
 	# ------------------------------------------------------------------------------------
 	# Starting main parallel execution
 	# ------------------------------------------------------------------------------------
 	for mic_id_substr_idx, mic_id_substr in enumerate(valid_mic_id_substr_list):
-		
 		# --------------------------------------------------------------------------------
 		# Print out progress if necessary
 		# --------------------------------------------------------------------------------
 		mic_basename = global_entry_dict[mic_id_substr][subkey_selected_mic_basename]
-		assert (mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 		if SXmpi_run.is_main_proc():
 			print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
 		
@@ -1024,7 +949,6 @@ def resample_micrographs(args):
 		# Read micrograph
 		# --------------------------------------------------------------------------------
 		mic_path = global_entry_dict[mic_id_substr][subkey_input_mic_path]
-		assert (mic_path == mic_pattern.replace("*", mic_id_substr))
 		try:
 			mic_img = get_im(mic_path)
 		except:
@@ -1123,7 +1047,6 @@ def organize_micrographs(args):
 	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
-		assert (SXmpi_run.RUNNING_UNDER_MPI)
 		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
 		if_error_then_all_processes_exit_program(error_status)
 	
@@ -1149,7 +1072,6 @@ def organize_micrographs(args):
 	
 	if not os.path.exists(select_list_path):
 		ERROR("The micrograph selecting list file does not exist. Please choose a correct file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
-	assert (os.path.exists(select_list_path))
 	
 	# ------------------------------------------------------------------------------------
 	# Define operation mode information
@@ -1164,7 +1086,6 @@ def organize_micrographs(args):
 		print(" ")
 		print_progress("Running in Normal Operation Mode... ")
 	else:
-		assert (args.reverse)
 		print(" ")
 		print_progress("Running in Reverse Operation Mode... ")
 		dst_dir = src_dir
@@ -1198,7 +1119,6 @@ def organize_micrographs(args):
 	# Prefix and suffix of micrograph basename pattern 
 	# to find the head/tail indices of micrograph id substring
 	mic_basename_tokens = mic_basename_pattern.split("*")
-	assert (len(mic_basename_tokens) == 2)
 	# Find head index of micrograph id substring
 	mic_id_substr_head_idx = len(mic_basename_tokens[0])
 
@@ -1221,7 +1141,6 @@ def organize_micrographs(args):
 	print_progress("Found %d microgarphs in %s."%(len(src_mic_path_list), src_dir))
 	if len(src_mic_path_list) == 0:
 		ERROR("No micrograph files are found in the directory specified by the micrograph path pattern (%s). Please check source_micrograph_pattern argument and restart the program."%(src_dir), subcommand_name) # action=1 - fatal error, exit
-	assert (len(src_mic_path_list) > 0)
 	
 	# Register micrograph id substrings to the global entry dictionary
 	for src_mic_path in src_mic_path_list:
@@ -1229,13 +1148,10 @@ def organize_micrographs(args):
 		src_mic_basename = os.path.basename(src_mic_path)
 		mic_id_substr_tail_idx = src_mic_basename.index(mic_basename_tokens[1])
 		mic_id_substr = src_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-		assert (src_mic_path == src_mic_pattern.replace("*", mic_id_substr))
 		if not mic_id_substr in global_entry_dict:
 			# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from src_mic_path_list "%(mic_id_substr))
 			global_entry_dict[mic_id_substr] = {}
-		assert (mic_id_substr in global_entry_dict)
 		global_entry_dict[mic_id_substr][subkey_src_mic_path] = src_mic_path
-	assert (len(global_entry_dict) > 0)
 	
 	# Clean up variables which won't be used anymore
 	del src_mic_path_list
@@ -1245,7 +1161,6 @@ def organize_micrographs(args):
 	# and associated source micrograph path to the global entry dictionary
 	# --------------------------------------------------------------------------------
 	if dst_mic_pattern is not None:
-		assert (os.path.exists(dst_dir))
 		dst_mic_pattern = os.path.join(dst_dir, mic_basename_pattern)
 		# Generate the list of micrograph paths in the output directory
 		print(" ")
@@ -1260,13 +1175,10 @@ def organize_micrographs(args):
 			dst_mic_basename = os.path.basename(dst_mic_path)
 			mic_id_substr_tail_idx = dst_mic_basename.index(mic_basename_tokens[1])
 			mic_id_substr = dst_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-			assert (dst_mic_path == dst_mic_pattern.replace("*", mic_id_substr))
 			if not mic_id_substr in global_entry_dict:
 				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from dst_mic_path_list "%(mic_id_substr))
 				global_entry_dict[mic_id_substr] = {}
-			assert (mic_id_substr in global_entry_dict)
 			global_entry_dict[mic_id_substr][subkey_dst_mic_path] = dst_mic_path
-		assert (len(global_entry_dict) > 0)
 	
 		# Clean up variables which won't be used anymore
 		del dst_mic_path_list
@@ -1286,7 +1198,6 @@ def organize_micrographs(args):
 	print_progress("Found %d microgarph entries in %s."%(len(select_mic_path_list), select_list_path))
 	if len(select_mic_path_list) == 0:
 		ERROR("No micrograph entries are found in the selection list file (%s). Please correct selection_list option and restart the program."%(select_list_path), subcommand_name) # action=1 - fatal error, exit
-	assert (len(select_mic_path_list) > 0)
 	
 	select_mic_dir = os.path.dirname(select_mic_path_list[0])
 	if select_mic_dir != "":
@@ -1298,13 +1209,10 @@ def organize_micrographs(args):
 		select_mic_basename = os.path.basename(select_mic_path)
 		mic_id_substr_tail_idx = select_mic_basename.index(mic_basename_tokens[1])
 		mic_id_substr = select_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
-		assert (select_mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 		if not mic_id_substr in global_entry_dict:
 			# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from select_mic_path_list "%(mic_id_substr))
 			global_entry_dict[mic_id_substr] = {}
-		assert (mic_id_substr in global_entry_dict)
 		global_entry_dict[mic_id_substr][subkey_select_mic_basename] = select_mic_basename
-	assert (len(global_entry_dict) > 0)
 	
 	# Clean up variables which won't be used anymore
 	del select_mic_path_list
@@ -1322,7 +1230,6 @@ def organize_micrographs(args):
 	print_progress("Checking consistency of the provided dataset ...")
 
 	if dst_mic_pattern is None:
-		assert (not os.path.exists(dst_dir))
 		# Prepare lists to keep track of invalid (rejected) micrographs
 		no_src_mic_id_substr_list = []
 		
@@ -1348,15 +1255,12 @@ def organize_micrographs(args):
 					# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
 			# else:
-			# 	assert (not subkey_select_mic_basename in mic_id_entry)
 			# 	# This entry is not in the selection list. Do nothing
 			
 		# Check the input dataset consistency and save the result to a text file, if necessary.
 		if args.check_consistency:
 			# Create destination directory
-			assert (not os.path.exists(dst_dir))
 			os.mkdir(dst_dir)
-			assert (os.path.exists(dst_dir))
 			
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(record_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
@@ -1412,8 +1316,6 @@ def organize_micrographs(args):
 		del no_src_mic_id_substr_list
 
 	else:
-		assert (dst_mic_pattern is not None)
-		assert (os.path.exists(dst_dir))
 		# Prepare lists to keep track of invalid (rejected) micrographs
 		no_mic_in_both_dirs_id_substr_list = []
 		already_in_dst_dir_mic_id_substr_list = []
@@ -1433,18 +1335,15 @@ def organize_micrographs(args):
 						warinnig_messages.append("    associated micrograph (%s) does not exist neither in the source directory (%s) nor in the destination directory (%s)."%(mic_basename, src_dir, dst_dir))
 						no_mic_in_both_dirs_id_substr_list.append(mic_id_substr)
 					else:
-						assert (subkey_dst_mic_path in mic_id_entry)
 						warinnig_messages.append("    associated micrograph (%s) exists only in the destination directory (%s), but not in the source directory (%s)."%(mic_basename, dst_dir, src_dir))
 						already_in_dst_dir_mic_id_substr_list.append(mic_id_substr)
 				else: 
-					assert (subkey_src_mic_path in mic_id_entry)
 					if subkey_dst_mic_path in mic_id_entry:
 						mic_basename = mic_basename_pattern.replace("*", mic_id_substr)
 						warinnig_messages.append("    associated micrograph (%s) exist both in the source directory (%s) and in the destination directory (%s)."%(mic_basename, src_dir, dst_dir))
 						duplicated_in_dst_dir_mic_id_substr_list.append(mic_id_substr)
 					# else:
 					#	# This should most typical case!
-					#	assert (not subkey_dst_mic_path in mic_id_entry)
 				if len(warinnig_messages) > 0:
 					print_progress("WARNING!!! Micrograph ID %s has problems with consistency among the provided dataset:"%(mic_id_substr))
 					for warinnig_message in warinnig_messages:
@@ -1454,12 +1353,10 @@ def organize_micrographs(args):
 					# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
 			# else:
-			# 	assert (not subkey_select_mic_basename in mic_id_entry)
 			# 	# This entry is not in the selection list. Do nothing
 			
 		# Check the input dataset consistency and save the result to a text file, if necessary.
 		if args.check_consistency:
-			assert (os.path.exists(dst_dir))
 			
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(record_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
@@ -1549,7 +1446,6 @@ def organize_micrographs(args):
 		print(" ")
 		print_progress("Creating the destination directory (%s)..."%(dst_dir))
 		os.mkdir(dst_dir)
-	assert (os.path.exists(dst_dir))
 
 	# --------------------------------------------------------------------------------
 	# Move micrographs in selecting list form source directory to destination directory
@@ -1567,7 +1463,6 @@ def organize_micrographs(args):
 	for mic_id_substr_idx, mic_id_substr in enumerate(valid_mic_id_substr_list):
 		mic_id_entry = global_entry_dict[mic_id_substr]
 		mic_basename = mic_id_entry[subkey_select_mic_basename]
-		assert (mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 		
 		### # Print out progress if necessary
 		### print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
@@ -1576,9 +1471,6 @@ def organize_micrographs(args):
 		# - must exist in source directory
 		# - must NOT exist in destination directory
 		# because of the consistency check above
-		assert (subkey_src_mic_path in mic_id_entry)
-		assert (os.path.exists(mic_id_entry[subkey_src_mic_path]))
-		assert (not os.path.exists(os.path.join(dst_dir, mic_basename)))
 		
 		# Move this micrograph from input directory to output directory
 		src_mic_path = mic_id_entry[subkey_src_mic_path]
@@ -1681,13 +1573,11 @@ def organize_micrographs(args):
 ### 		mic_basename = os.path.basename(mic_path)
 ### 		if mic_basename not in global_coordinates_dict:
 ### 			global_coordinates_dict[mic_basename] = coordinates_entry(mic_basename)
-### 			assert (global_coordinates_dict[mic_basename].mic_basename == mic_basename)
 ### 			# print_progress("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_coordinates_dict)))
 ### 		
 ### 		# Extract the associated coordinates from the image header
 ### 		ptcl_source_coordinate_x, ptcl_source_coordinate_y = img.get_attr("ptcl_source_coord")
 ### 		# Compute the left bottom coordinates of box (EMAN1 box file format)
-### 		assert (args.box_size > 0)
 ### 		# eman1_original_coordinate_x = ptcl_source_coordinate_x - (args.box_size//2+1)
 ### 		# eman1_original_coordinate_y = ptcl_source_coordinate_y - (args.box_size//2+1)
 ### 		# NOTE: 2018/02/21 Toshio Moriya
@@ -1712,7 +1602,6 @@ def organize_micrographs(args):
 ### 	print(" ")
 ### 	print_progress("Found total of {} assocaited micrographs in the input stack {}".format(len(global_coordinates_dict), args.input_stack_path))
 ### 	
-### 	assert (not os.path.exists(args.output_directory))
 ### 	os.mkdir(args.output_directory)
 ### 	
 ### 	mic_list_file_name = "micrographs.txt"
@@ -1728,7 +1617,6 @@ def organize_micrographs(args):
 ### 	os.mkdir(os.path.join(args.output_directory, eman1_centered_coordinates_subdir))
 ### 
 ### 	global_coordinates_list = sorted(global_coordinates_dict) # sort entries according to keys (i.e. micrograph basenames)
-### 	assert (len(global_coordinates_list) == len(global_coordinates_dict))
 ### 	
 ### 	print(" ")
 ### 	for mic_basename in global_coordinates_list:
@@ -1737,7 +1625,6 @@ def organize_micrographs(args):
 ### 		
 ### 		mic_rootname, mic_extension = os.path.splitext(mic_basename)
 ### 		mic_entry = global_coordinates_dict[mic_basename]
-### 		assert (len(mic_entry.eman1_original) == len(mic_entry.eman1_centered))
 ### 		
 ### 		# Save the original coordinates to output file; original EMAN1 box coordinate file or this micrograph
 ### 		eman1_original_coordinates_path = os.path.join(args.output_directory, eman1_original_coordinates_subdir, "{}{}".format(mic_rootname, eman1_original_coordinates_suffix))
@@ -1861,7 +1748,6 @@ def restacking(args):
 	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
-		assert (SXmpi_run.RUNNING_UNDER_MPI)
 		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
 		if_error_then_all_processes_exit_program(error_status)
 	
@@ -1887,7 +1773,6 @@ def restacking(args):
 		img = EMData()
 		img.read_image(args.input_bdb_stack_path, 0, True)
 		img_size = img.get_xsize()
-		assert (img.get_xsize() == img.get_ysize())
 		if abs(args.shift3d_x) >= img_size//2:
 			ERROR("Invalid 3D x-shift {}. 3D x-shift must be smaller than half of image size {}. Please provide valid values for x-shift and/or box size. Then, restart the program.".format(args.shift3d_x, args.img_size//2), subcommand_name) # action=1 - fatal error, exit
 		if abs(args.shift3d_y) >= img_size//2:
@@ -1914,8 +1799,6 @@ def restacking(args):
 	selected_mic_path_list = []
 	# Generate micrograph lists according to the execution mode
 	if args.selection_list is not None:
-		assert (os.path.exists(args.selection_list))
-		assert (os.path.splitext(args.selection_list)[1] == ".txt")
 		
 		# Generate the list of selected micrograph paths in the selection file
 		print(" ")
@@ -1928,11 +1811,9 @@ def restacking(args):
 		print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), args.selection_list))
 		if len(selected_mic_path_list) == 0:
 			ERROR("No micrograph entries are found in the selection list file. Please check the micrograph selecting list and restart the program.", subcommand_name) # action=1 - fatal error, exit
-		assert (len(selected_mic_path_list) > 0)
 		if not isinstance(selected_mic_path_list[0], str):
 			ERROR("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check the micrograph selecting list and restart the program.", subcommand_name) # action=1 - fatal error, exit
 		
-		assert (len(selected_mic_path_list) > 0)
 		selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 		if selected_mic_directory != "":
 			print_progress("    NOTE: Program disregards the directory paths in the selection list ({}).".format(selected_mic_directory))
@@ -1947,15 +1828,10 @@ def restacking(args):
 				print_progress("WARNING!!! Micrograph {} is duplicated in the selection list {}. Ignoring this duplicated entry...".format(mic_path, args.selection_list))
 				continue
 			
-			assert (mic_basename not in global_mic_dict)
 			global_mic_dict[mic_basename] = SX_mic_entry(mic_basename)
 			global_mic_dict[mic_basename].is_in_list = True
-			assert (global_mic_dict[mic_basename].mic_basename == mic_basename)
-			assert (global_mic_dict[mic_basename].is_in_stack == False)
-			assert (global_mic_dict[mic_basename].is_in_list == True)
 			# print_progress("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_mic_dict)))
 	else:
-		assert (args.selection_list is None)
 		print(" ")
 		print_progress("----- Running in All Micrographs Mode -----")
 
@@ -1987,30 +1863,21 @@ def restacking(args):
 		# Case 1: This micrograph has been not registered yet.
 		if mic_basename not in global_mic_dict:
 			mic_entry = SX_mic_entry(mic_basename)
-			assert (mic_entry.mic_basename == mic_basename)
-			assert (not mic_entry.is_in_stack)
 			mic_entry.is_in_stack = True
-			assert (mic_entry.is_in_stack)
 			if args.selection_list is None:
 				# If selection list is not provided, process as if all micrographs in the input stack are selected
-				assert (not mic_entry.is_in_list)
 				mic_entry.is_in_list = True
-				assert (mic_entry.is_in_list)
 			global_mic_dict[mic_basename] = mic_entry
-			assert (global_mic_dict[mic_basename].mic_basename == mic_basename)
 			# print_progress("Found new micrograph {}. Detected {} micrographs so far...".format(mic_basename, len(global_mic_dict)))
 		# Case 2: This micrograph has been registered already. (1) This is in the selection list or (2) Not first incidence in the input stack
 		else:
-			assert (mic_basename in global_mic_dict)
 			mic_entry = global_mic_dict[mic_basename]
 			if not mic_entry.is_in_stack:
 				mic_entry.is_in_stack = True
-			assert (mic_entry.is_in_stack)
 			
 		global_mic_dict[mic_basename].img_id_list.append(img_id)
 		
 		# Get micrograph resampling ratio of previous sxwindow run
-		assert (img.has_attr("resample_ratio"))
 		ptcl_source_resample_ratio = img.get_attr("resample_ratio")
 			
 		# Initialise CTF parameters same way as the dummy CTF of sxwindow.py
@@ -2071,13 +1938,10 @@ def restacking(args):
 		
 		if args.reboxing:
 			# Extract the associated coordinates from the image header
-			assert (img.has_attr("ptcl_source_coord_id"))
 			ptcl_source_coord_id = img.get_attr("ptcl_source_coord_id")
-			assert (img.has_attr("ptcl_source_coord"))
 			ptcl_source_coordinate_x, ptcl_source_coordinate_y = img.get_attr("ptcl_source_coord")
 			
 			# Compute the left bottom coordinates of box (EMAN1 box file format)
-			assert (args.rb_box_size > 0)
 			# original_coordinate_x = ptcl_source_coordinate_x - (args.rb_box_size//2+1)
 			# original_coordinate_y = ptcl_source_coordinate_y - (args.rb_box_size//2+1)
 			# NOTE: 2018/02/21 Toshio Moriya
@@ -2086,7 +1950,6 @@ def restacking(args):
 			original_coordinate_y = ptcl_source_coordinate_y - (args.rb_box_size//2)
 			global_mic_dict[mic_basename].original_coords_list.append("{:6d} {:6d} {:6d} {:6d} {:6d}\n".format(int(original_coordinate_x), int(original_coordinate_y), int(args.rb_box_size), int(args.rb_box_size), int(eman1_dummy)))
 			
-			assert (img.has_attr("ctf"))
 			ctf_params = img.get_attr("ctf")
 			
 			pp_def_error_accum = 0.0
@@ -2180,7 +2043,6 @@ def restacking(args):
 	# Loop over all registed micrograph basename
 	for mic_basename in global_mic_dict:
 		mic_entry = global_mic_dict[mic_basename]
-		assert (mic_entry.mic_basename == mic_basename)
 		
 		if mic_entry.is_in_stack:
 			mic_basename_list_of_input_stack.append(mic_basename)
@@ -2188,17 +2050,11 @@ def restacking(args):
 				# This is only condition (expected typical case) where we have to output the info of this micrograph
 				mic_basename_list_of_output_stack.append(mic_basename)
 			else:
-				assert (not mic_entry.is_in_list)
 				print_progress("    Micrograph {} is in the stack but not in the selection list.".format(mic_basename))
 		else:
-			assert (not mic_entry.is_in_stack)
 			if mic_entry.is_in_list:
 				print_progress("    Micrograph {} is in the selection list but not in the stack.".format(mic_basename))
-			else:
-				assert (not mic_entry.is_in_list)
-				assert ("Unreachable!!! This condition should never happen!")
 	
-	assert (not os.path.exists(args.output_directory))
 	os.mkdir(args.output_directory)
 
 	print(" ")
@@ -2207,16 +2063,10 @@ def restacking(args):
 	mic_basename_list_of_input_stack.sort()
 	mic_basename_list_of_output_stack.sort()
 	
-	assert (len(mic_basename_list_of_input_stack) >= len(mic_basename_list_of_output_stack))
-	assert (len(global_mic_dict) >= len(mic_basename_list_of_input_stack))  # Extra micrographs might be only selection file
-	assert (len(global_mic_dict) >= len(mic_basename_list_of_output_stack))
 	
 	if args.selection_list is not None:
 		print(" ")
 		print_progress("Found total of {} valid micrographs for the output.".format(len(mic_basename_list_of_output_stack)))
-	else: 
-		assert (args.selection_list is None)
-		assert (len(mic_basename_list_of_input_stack) == len(mic_basename_list_of_output_stack))
 	
 	print(" ")
 	input_mic_list_file_name = "micrographs_in_input_stack.txt"
@@ -2278,23 +2128,16 @@ def restacking(args):
 	print(" ")
 	for mic_basename in mic_basename_list_of_output_stack:
 		mic_entry = global_mic_dict[mic_basename]
-		assert (mic_basename == mic_entry.mic_basename)
 		
 		# Append particle ID list to global output stack particle ID list
 		global_output_image_id_list += mic_entry.img_id_list
 		
 		# Count up total number of CTF parameters
-		assert (len(mic_entry.ctf_params_list) == len(mic_entry.img_id_list))
 		global_ctf_params_counters += len(mic_entry.ctf_params_list)
-		assert (global_ctf_params_counters == len(global_output_image_id_list))
 		
 		# Count up total number of project parameters
-		assert (len(mic_entry.original_proj_params_list) == len(mic_entry.img_id_list))
-		assert (len(mic_entry.centered_proj_params_list) == len(mic_entry.img_id_list))
 		global_original_proj_params_counters += len(mic_entry.original_proj_params_list)
 		global_centered_proj_params_counters += len(mic_entry.centered_proj_params_list)
-		assert (global_original_proj_params_counters == len(global_output_image_id_list))
-		assert (global_centered_proj_params_counters == len(global_output_image_id_list))
 		
 		for ctf_params in mic_entry.ctf_params_list:
 			ctf_params_list_file.write("{}\n".format(ctf_params))
@@ -2307,20 +2150,12 @@ def restacking(args):
 
 		if args.reboxing:
 			mic_rootname, mic_extension = os.path.splitext(mic_basename)
-			assert (len(mic_entry.original_coords_list) == len(mic_entry.img_id_list))
-			assert (len(mic_entry.original_rebox_coords_list) == len(mic_entry.img_id_list))
-			assert (len(mic_entry.centered_coords_list) == len(mic_entry.img_id_list))
-			assert (len(mic_entry.centered_rebox_coords_list) == len(mic_entry.img_id_list))
 
 			# Count up total number of coordinates
 			global_original_coords_counters += len(mic_entry.original_coords_list)
 			global_original_rebox_coords_counters += len(mic_entry.original_rebox_coords_list)
 			global_centered_coords_counters += len(mic_entry.centered_coords_list)
 			global_centered_rebox_coords_counters += len(mic_entry.centered_rebox_coords_list)
-			assert (global_original_coords_counters == len(global_output_image_id_list))
-			assert (global_original_rebox_coords_counters == len(global_output_image_id_list))
-			assert (global_centered_coords_counters == len(global_output_image_id_list))
-			assert (global_centered_rebox_coords_counters == len(global_output_image_id_list))
 		
 			# Save the original coordinates to output file; original EMAN1 box coordinate file for this micrograph
 			original_coords_list_path = os.path.join(args.output_directory, original_coords_list_subdir, "{}{}".format(mic_rootname, original_coords_list_suffix))
@@ -2357,7 +2192,7 @@ def restacking(args):
 		# print_progress("  Original projection parameters       : {:6d}".format(len(mic_entry.original_proj_params_list)))
 		# print_progress("  Centered projection parameters       : {:6d}".format(len(mic_entry.centered_proj_params_list)))
 		print_progress(" {:6d} particles in {}...".format(len(mic_entry.img_id_list), mic_basename))
-		if args.reboxing:
+		#if args.reboxing:
 		#	print_progress("  Extracted original coordinates       : {:6d}".format(len(mic_entry.original_coords_list)))
 		#	print_progress("  Saved original coordinates to        : {}".format(original_coords_list_path))
 		#	print_progress("  Extracted original rebox coordinates : {:6d}".format(len(mic_entry.original_rebox_coords_list)))
@@ -2367,7 +2202,6 @@ def restacking(args):
 		#	print_progress("  Extracted centered rebox coordinates : {:6d}".format(len(mic_entry.centered_rebox_coords_list)))
 		#	print_progress("  Saved centered rebox coordinates to  : {}".format(centered_rebox_coords_list_path))
 		#	print_progress(" {:6d} particle coordinates for {}...".format(len(mic_entry.original_coords_list), mic_basename))
-			assert (len(mic_entry.original_coords_list) == len(mic_entry.img_id_list))
 	
 	ctf_params_list_file.close()
 	original_proj_params_list_file.close()
@@ -2386,14 +2220,12 @@ def restacking(args):
 
 	if args.save_vstack:
 		# Create virtual stack for output stack
-		assert (args.output_directory != "")
 		print(" ")
 		print_progress("Creating output stack as a virtual stack...")
 		virtual_bdb_stack_path = "bdb:{}#{}".format(args.output_directory, args.sv_vstack_basename)
 		cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(args.input_bdb_stack_path, virtual_bdb_stack_path, output_particle_id_list_file_path)
 		status = cmdexecute(cmd_line)
 		if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
-		assert (EMUtil.get_image_count(virtual_bdb_stack_path) == len(global_output_image_id_list))
 
 	print(" ")
 	print_progress("Global summary of processing...")
@@ -2425,394 +2257,6 @@ def restacking(args):
 		print_progress("Save output stack as                                  : {}".format(virtual_bdb_stack_path))
 
 # ----------------------------------------------------------------------------------------
-# TEST COMMAND
-# 
-# cd /home/moriya/mrk_qa/mrktest_pipeline/debug_mrkout_sxpipe_moon_eliminator
-# 
-# sxpipe.py moon_eliminator --help
-# 
-# [CASE-01]
-# rm -rf mrkout_gauss_md6o0_dl3o5_sd1o2 mrkjob_gauss_md6o0_dl3o5_sd1o2.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md6o0_dl3o5_sd1o2' --pixel_size=1.12 --mol_mass=1400 --moon_distance=6.0 --dilation=3.5  --edge_sigma=1.2 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md6o0_dl3o5_sd1o2.txt
-# -> Very nice balance!!!
-# 
-# [CASE-02]
-# rm -rf mrkout_gauss_md6o0_dl3o0_sd2o0 mrkjob_gauss_md6o0_dl3o0_sd2o0.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md6o0_dl3o0_sd2o0' --pixel_size=1.12 --mol_mass=1400 --moon_distance=6.0 --dilation=3.0  --edge_sigma=2.0 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md6o0_dl3o0_sd2o0.txt
-# -> Very nice balance!!!
-# 
-# [CASE-03]
-# rm -rf mrkout_gauss_md6o0_dl0o0_sd2o0 mrkjob_gauss_md6o0_dl0o0_sd2o0.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md6o0_dl0o0_sd2o0' --pixel_size=1.12 --mol_mass=1400 --moon_distance=6.0 --dilation=0.0  --edge_sigma=2.0 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md6o0_dl0o0_sd2o0.txt
-# -> Very nice balance!!! However, mask@1.0 is too small...
-# 
-# [CASE-04]
-# rm -rf mrkout_gauss_md3o0_dl2o0_sd0o6 mrkjob_gauss_md3o0_dl2o0_sd0o6.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md3o0_dl2o0_sd0o6' --pixel_size=1.12 --mol_mass=1400 --moon_distance=3.0 --dilation=2.0  --edge_sigma=0.6 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md3o0_dl2o0_sd0o6.txt
-# -> NG!!!  This creates a little jaggy moon eliminator mask and strange obvious dent in density histogram of moon eliminated volume.
-#    Sigma is too small....
-# 
-# [CASE-05]
-# rm -rf mrkout_gauss_md3o0_dl1o5_sd1o0 mrkjob_gauss_md3o0_dl1o5_sd1o0.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md3o0_dl1o5_sd1o0' --pixel_size=1.12 --mol_mass=1400 --moon_distance=3.0 --dilation=1.5  --edge_sigma=1.0 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md3o0_dl1o5_sd1o0.txt
-# -> NG!!! This creates a little jaggy moon eliminator mask and strange dent (very small though) in density histogram of moon eliminated volume.
-#    Sigma is too small....
-# 
-# [CASE-06]
-# rm -rf mrkout_gauss_md3o0_dl0o0_sd1o0 mrkjob_gauss_md3o0_dl0o0_sd1o0.txt; sxpipe.py moon_eliminator 'vol3d.hdf' 'mrkout_gauss_md3o0_dl0o0_sd1o0' --pixel_size=1.12 --mol_mass=1400 --moon_distance=3.0 --dilation=0.0  --edge_sigma=1.0 --edge_type='gauss' --debug 2>&1 | tee mrkjob_gauss_md3o0_dl0o0_sd1o0.txt
-# -> NG!!! This creates a little jaggy moon eliminator mask and strange dent (very small though) in density histogram of moon eliminated volume.
-#    Sigma is too small....
-# 
-# [NOTES]
-# -> Maybe, sigma should be at least larger than 1[pixel] (large)!!!
-#    If samller, density Histogram of ref3d.hdf will have a strange dent!!!
-# -> Set dilation = moon_distance/2 when you want to mask@1.0 equal to the bin3d_mol_mass.
-# -> Set dilation = 0 when you want to mask@0.5 equal to the bin3d_mol_mass.
-# 
-# ----------------------------------------------------------------------------------------
-# Author 1: Felipe Merino 01/26/2018 (felipe.merino@mpi-dortmund.mpg.de)
-# Author 2: Toshio Moriya 03/07/2018 (toshio.moriya@mpi-dortmund.mpg.de)
-# ----------------------------------------------------------------------------------------
-class SXDalton(object):
-	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-	# static class variables
-	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-	# Define Physical coefficient
-	the_avagadro = 6.023 * pow(10.0, 23.0)
-	the_density_protein = 1.36
-	the_R = 0.61803399
-	the_C = 1.0 - the_R
-	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-	
-	# Compute molecular mass corresponds to the volume [Voxels] where the density value is higher than or equal to the threshold
-	@staticmethod
-	def compute_mol_mass_from_density_threshold(vol3d, density_threshold, pixel_size):
-		vol_voxels = SXDalton.compute_vol_voxels_from_density_threshold(vol3d, density_threshold, pixel_size)
-		mol_mass = SXDalton.compute_mol_mass_from_vol_voxels(vol_voxels, pixel_size)
-		
-		return mol_mass
-
-	# Count the number of voxels whose density value is higher than or equal to the threshold
-	@staticmethod
-	def compute_vol_voxels_from_density_threshold(vol3d, density_threshold, pixel_size):
-		from morphology import binarize
-		
-		mask3d = None
-		# mask3d = None : Find statistics of all voxels
-		flip_mask3d = False
-		# flip_mask = True : Find statistics inside the mask (mask >0.5)
-		# flip_mask = False: Find statistics ourside the mask (mask <0.5)
-		
-		# Count the number of voxels whose density value is higher than or equal to the threshold
-		bin3d = binarize(vol3d, density_threshold)
-		bin3d_stats = Util.infomask(bin3d, mask3d, flip_mask3d)
-		# bin3d_stats[0] : average
-		# bin3d_stats[1] : sigma (standard deviation)
-		# bin3d_stats[2] : minimum voxel value
-		# bin3d_stats[3] : maximum voxel value
-		nx = bin3d.get_xsize()
-		ny = bin3d.get_ysize() 
-		nz = bin3d.get_zsize()
-		n_voxels = nx * ny * nz
-		vol_voxels = int(bin3d_stats[0] * n_voxels)
-		
-		return vol_voxels
-
-# ----------------------------------------------------------------------------------------
-def mrk_binarize_non_zero_positive(vol3d):
-	from morphology import binarize
-	
-	vol3d_inv = -1 * vol3d
-	bin3d_inv = binarize(vol3d_inv)
-	bin3d = (-1 * bin3d_inv) + 1
-	
-	return bin3d
-
-# ----------------------------------------------------------------------------------------
-def mrk_sphere_dilation(bin3d, dilation, debug = False):
-	from utilities import model_circle
-	from EMAN2 import rsconvolution
-	
-	if debug:
-		print_progress("MRK_DEBUG: ")
-		print_progress("MRK_DEBUG: mrk_sphere_dilation()")
-		print_progress("MRK_DEBUG:   dilation             := {}".format(dilation))
-	
-	if dilation > 0:
-		dilation_kernel_size = int(ceil(dilation)) * 2 + 1
-		
-		if debug:
-			print_progress("MRK_DEBUG:   dilation_kernel_size := {}".format(dilation_kernel_size))
-			# print_progress("MRK_DEBUG:   dilation_kernel_size % 2 := {}".format(dilation_kernel_size % 2))
-			# print_progress("MRK_DEBUG:   type(dilation_kernel_size) := {}".format(type(dilation_kernel_size)))
-		
-		assert (dilation_kernel_size % 2 == 1)
-		assert (type(dilation_kernel_size) is int)
-		
-		bin3d_stats = Util.infomask(bin3d, None, False)
-		assert (bin3d.get_ndim() == 3)
-		assert (bin3d_stats[2] >= 0.0)
-		assert (bin3d_stats[3] <= 1.0)
-	
-		sphere_kernel = model_circle(dilation, dilation_kernel_size, dilation_kernel_size, dilation_kernel_size)
-		bin3d_dilated = rsconvolution(bin3d, sphere_kernel)
-		### # NOTE: Toshio Moriya 2018/05/29
-		### # The following method is not working.
-		### bin3d_dilated = bin3d.copy()
-		### bin3d_dilated.process_inplace("math.convolution", {"with":sphere_kernel})
-		bin3d_dilated = binarize(bin3d_dilated, 1.0)
-	else:
-		if debug:
-			print_progress("MRK_DEBUG:  Provided dilation size is not non-zero positive value. Returning the copy of input bainary 3D volume...")
-		bin3d_dilated = bin3d.copy()
-	
-	return bin3d_dilated
-
-# ----------------------------------------------------------------------------------------
-def mrk_sphere_gauss_edge(bin3d, dilation, gauss_kernel_radius, gauss_sigma, debug = False):
-	# smooth bin3d with Gaussian function
-	# 1. The sharp-edge image is convoluted with a gassian kernel
-	# 2. The convolution normalized
-	from utilities import model_gauss, model_circle
-	from EMAN2 import rsconvolution
-	
-	assert (bin3d.get_ndim() == 3)
-	
-	gauss_kernel_size = int(ceil(gauss_kernel_radius)) * 2 + 1
-	
-	if debug:
-		print_progress("MRK_DEBUG: ")
-		print_progress("MRK_DEBUG: mrk_sphere_gauss_edge()")
-		print_progress("MRK_DEBUG:   dilation            := {}".format(dilation))
-		print_progress("MRK_DEBUG:   gauss_kernel_radius := {}".format(gauss_kernel_radius))
-		print_progress("MRK_DEBUG:   gauss_kernel_size   := {}".format(gauss_kernel_size))
-		print_progress("MRK_DEBUG:   gauss_sigma         := {}".format(gauss_sigma))
-		# print_progress("MRK_DEBUG:   gauss_kernel_size % 2 := {}".format(gauss_kernel_size % 2))
-		# print_progress("MRK_DEBUG:   type(gauss_kernel_size) := {}".format(type(gauss_kernel_size)))
-	
-	assert (gauss_kernel_size % 2 == 1)
-	assert (type(gauss_kernel_size) is int)
-	
-	# dilate the volume by soft-edge width
-	sphere_dilation_start_time = time()
-	bin3d_dilated = mrk_sphere_dilation(bin3d, dilation, debug)
-	print_progress("  Sphere Dilation took {:7.2f} sec...".format(time() - sphere_dilation_start_time))
-	
-	### debug_adaptive_mask_start_time = time()
-	### consine_width = 0.0
-	### binarize_threshold = 0.0
-	### bin3d_dilated = Util.adaptive_mask(bin3d, binarize_threshold, dilation, consine_width)
-	### print_progress("MRK_DEBUG:   Adaptive mask took {} sec...".format(time() - debug_adaptive_mask_start_time))
-	
-	circular_mask = model_circle(gauss_kernel_radius, gauss_kernel_size, gauss_kernel_size, gauss_kernel_size)
-	gauss_kernel = model_gauss(gauss_sigma, gauss_kernel_size, gauss_kernel_size, gauss_kernel_size)
-	circular_gauss_kernel = gauss_kernel * circular_mask
-	
-	### aves = Util.infomask(circular_gauss_kernel, None, False)
-	### nx = circular_gauss_kernel.get_xsize()
-	### ny = circular_gauss_kernel.get_ysize()
-	### nz = circular_gauss_kernel.get_zsize()
-	### circular_gauss_kernel /= (aves[0]*nx*ny*nz)
-	
-	### nx = circular_gauss_kernel.get_xsize()
-	### ny = circular_gauss_kernel.get_ysize()
-	### nz = circular_gauss_kernel.get_zsize()
-	### n_voxel = nx * ny * nz
-	###
-	### original_sum = 0.0
-	###  for i_voxel in xrange(n_voxel):
-	### 	original_sum += circular_gauss_kernel.get_value_at(i_voxel)
-	### circular_gauss_kernel /= original_sum
-	###
-	### norm_sum = 0.0
-	### for i_voxel in xrange(n_voxel):
-	###	norm_sum += circular_gauss_kernel.get_value_at(i_voxel)
-	### norm_sum_error = 1.0 - norm_sum
-	###
-	### final_sum = 0.0
-	### for i_voxel in xrange(n_voxel):
-	### 	final_sum += circular_gauss_kernel.get_value_at(i_voxel)
-	### final_center_value = circular_gauss_kernel.get_value_at(nx//2, ny//2, nz//2)
-	
-	nx = circular_gauss_kernel.get_xsize()
-	ny = circular_gauss_kernel.get_ysize()
-	nz = circular_gauss_kernel.get_zsize()
-	
-	original_vector = circular_gauss_kernel.get_data_as_vector()
-	original_sum = sum(original_vector)
-	circular_gauss_kernel /= original_sum
-	
-	norm_vector = circular_gauss_kernel.get_data_as_vector()
-	norm_sum = sum(norm_vector)
-	norm_sum_error = 1.0 - norm_sum
-	
-	norm_center_value = circular_gauss_kernel.get_value_at(nx//2, ny//2, nz//2)
-	circular_gauss_kernel.set_value_at(nx//2, ny//2, nz//2, norm_center_value + norm_sum_error)
-	
-	gauss_convolution_start_time = time()
-	mask3d_gauss_edged = rsconvolution(bin3d_dilated, circular_gauss_kernel)
-	print_progress("  Gauss Convolution took {:7.2f} sec...".format(time() - gauss_convolution_start_time))
-	### # NOTE: Toshio Moriya 2018/05/29
-	### # The following method is not working.
-	### mask3d_gauss_edged = bin3d_dilated.copy()
-	### mask3d_gauss_edged.process_inplace("math.convolution", {"with":circular_gauss_kernel})
-	
-	if debug:
-		final_vector = circular_gauss_kernel.get_data_as_vector()
-		final_sum = sum(final_vector)
-		final_sum_error = 1.0 - final_sum
-		final_center_value = circular_gauss_kernel.get_value_at(nx//2, ny//2, nz//2)
-		
-		original_max_val = max(original_vector)
-		original_max_idx = original_vector.index(original_max_val)
-		norm_max_val = max(norm_vector)
-		norm_max_idx = norm_vector.index(norm_max_val)
-		final_max_val = max(final_vector)
-		final_max_idx = final_vector.index(final_max_val)
-		
-		n_voxel = nx * ny * nz
-		
-		print_progress("MRK_DEBUG: ")
-		print_progress("MRK_DEBUG: mrk_sphere_gauss_edge()")
-		print_progress("MRK_DEBUG:   original_sum       := {}".format(original_sum))
-		print_progress("MRK_DEBUG:   norm_sum           := {}".format(norm_sum))
-		print_progress("MRK_DEBUG:   norm_sum_error     := {}".format(norm_sum_error))
-		print_progress("MRK_DEBUG:   norm_center_value  := {}".format(norm_center_value))
-		print_progress("MRK_DEBUG:   final_sum          := {}".format(final_sum))
-		print_progress("MRK_DEBUG:   final_sum_error    := {}".format(final_sum_error))
-		print_progress("MRK_DEBUG:   final_center_value := {}".format(final_center_value))
-		print_progress("MRK_DEBUG: ")
-		print_progress("MRK_DEBUG:   original_max_val   := {}".format(original_max_val))
-		print_progress("MRK_DEBUG:   original_max_idx   := {}".format(original_max_idx))
-		print_progress("MRK_DEBUG:   norm_max_val       := {}".format(norm_max_val))
-		print_progress("MRK_DEBUG:   norm_max_idx       := {}".format(norm_max_idx))
-		print_progress("MRK_DEBUG:   final_max_val      := {}".format(final_max_val))
-		print_progress("MRK_DEBUG:   final_max_idx      := {}".format(final_max_idx))
-		print_progress("MRK_DEBUG: ")
-		print_progress("MRK_DEBUG:   n_voxel            := {}".format(n_voxel))
-		print_progress("MRK_DEBUG:   nx                 := {}".format(nx))
-		print_progress("MRK_DEBUG:   ny                 := {}".format(ny))
-		print_progress("MRK_DEBUG:   nz                 := {}".format(nz))
-	
-	return mask3d_gauss_edged, bin3d_dilated
-
-# ----------------------------------------------------------------------------------------
-def mrk_eliminate_moons(vol3d, density_threshold, edge_type, moon_distance, dilation, gauss_sigma, allow_disconnect, debug = False):
-	from morphology import binarize
-	from utilities import gauss_edge
-	
-	if debug:
-		print_progress("MRK_DEBUG: ")
-		print_progress("MRK_DEBUG: mrk_eliminate_moons()")
-		print_progress("MRK_DEBUG:   density_threshold := {}".format(density_threshold))
-		print_progress("MRK_DEBUG:   edge_type         := {}".format(edge_type))
-		print_progress("MRK_DEBUG:   moon_distance     := {}".format(moon_distance))
-		print_progress("MRK_DEBUG:   dilation          := {}".format(dilation))
-		print_progress("MRK_DEBUG:   gauss_sigma       := {}".format(gauss_sigma))
-		print_progress("MRK_DEBUG:   allow_disconnect  := {}".format(allow_disconnect))
-	
-	bin3d = binarize(vol3d, density_threshold)
-	bin3d_mol_mass = None
-	if not allow_disconnect:
-		bin3d_mol_mass = Util.get_biggest_cluster(bin3d)
-	else:
-		bin3d_mol_mass = bin3d
-	assert (bin3d_mol_mass is not None)
-	
-	mask3d_moon_elminator = None
-	bin3d_mol_mass_dilated = None
-	soft_edging_start_time = time()
-	if edge_type == "cosine":
-		# Create cosine soft-edged binary mask with no moons (Same as PostRefiner)
-		binarize_threshold = 0.5
-		consine_width = (moon_distance - dilation) * 2.0
-		if debug:
-			print_progress("MRK_DEBUG: ")
-			print_progress("MRK_DEBUG: Util.adaptive_mask()")
-			print_progress("MRK_DEBUG:   binarize_threshold := {}".format(binarize_threshold))
-			print_progress("MRK_DEBUG:   dilation           := {}".format(dilation))
-			print_progress("MRK_DEBUG:   consine_width      := {}".format(consine_width))
-		mask3d_moon_elminator = Util.adaptive_mask(bin3d_mol_mass, binarize_threshold, dilation, consine_width)
-		assert (bin3d_mol_mass_dilated is None)
-	elif edge_type == "gauss":
-		# Create Gaussian soft-edged binary mask with no moons
-		gauss_kernel_radius = moon_distance - dilation
-		mask3d_moon_elminator, bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, dilation, gauss_kernel_radius, gauss_sigma, debug)
-		assert (bin3d_mol_mass_dilated is not None)
-	else:
-		assert (False) # Unreachable code. The invalid value of edge_type should not reach here.
-	assert (mask3d_moon_elminator is not None)
-	print_progress("  Totally, {} soft-edging of 3D mask moon eliminator took {:7.2f} sec...".format(edge_type.upper(), time() - soft_edging_start_time))
-	
-	# 
-	# The difference are supposed to contain only moons!
-	# If all differences are zero, there should be no effect of moon elimination on the input volume.
-	# In this case, return the original volume.
-	# 
-	# NOTE: Toshio Moriya 2018/04/12
-	# Somehow, the following condition happend when I applied filter to the 3D volume, 
-	# and did not remove moons of very week density...
-	# The value must be too close to zero for this type of check!!
-	# Let's apply moon eliminator always since it does not harm anything...
-	# 
-	# ref3d_moon_eliminated = vol3d
-	# bin3d_diff = bin3d - bin3d_mol_mass
-	# if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) != 0.0 or bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) != 0.0:
-	# 	# Eliminate moons from the original volume and soften the volume edge by apply the soft-edged binary mask with no moons to the original volume.
-	# 	ref3d_moon_eliminated = mask3d_moon_elminator * vol3d
-	# 
-	ref3d_moon_eliminated = mask3d_moon_elminator * vol3d
-	# bin3d_diff = bin3d - bin3d_mol_mass
-	# if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) == 0.0 and bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) == 0.0:
-	# 	print_progress("MRK_DEBUG:   There was no effect of the moon elimination")
-	
-	return ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass
-
-"""
-# ----------------------------------------------------------------------------------------
-# Use sphere dilation and sphere Gaussian soft-edging (aka surface mask)
-# 
-def mrk_eliminate_moons_sphire_gaussian_edge(vol3d, density_threshold, gauss_kernel_radius, gauss_sigma, allow_disconnect, debug):
-	from morphology import binarize
-	from utilities import gauss_edge
-	
-	print_progress("MRK_DEBUG: ")
-	print_progress("MRK_DEBUG: mrk_eliminate_moons_sphire_gaussian_edge()")
-	# print_progress("MRK_DEBUG:   density_threshold    := {}".format(density_threshold))
-	# print_progress("MRK_DEBUG:   gauss_kernel_radius  := {}".format(gauss_kernel_radius))
-	# print_progress("MRK_DEBUG:   gauss_sigma          := {}".format(gauss_sigma))
-	
-	bin3d = binarize(vol3d, density_threshold)
-	bin3d_mol_mass = None
-	if not allow_disconnect:
-		bin3d_mol_mass = Util.get_biggest_cluster(bin3d)
-	else:
-		bin3d_mol_mass = bin3d
-	assert (bin3d_mol_mass is not None)
-	
-	# Create Gaussian soft-edged binary mask with no moons 
-	mask3d_moon_elminator, bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, gauss_kernel_radius, gauss_sigma, debug)
-	# 
-	# The difference are supposed to contain only moons!
-	# If all differences are zero, there should be no effect of moon elimination on the input volume.
-	# In this case, return the original volume.
-	# 
-	# NOTE: Toshio Moriya 2018/04/12
-	# Somehow, the following condition happend when I applied filter to the 3D volume, 
-	# and did not remove moons of very week density...
-	# The value must be too close to zero for this type of check!!
-	# Let's apply moon eliminator always since it does not harm anything...
-	# 
-	# ref3d_moon_eliminated = vol3d
-	# bin3d_diff = bin3d - bin3d_mol_mass
-	# if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) != 0.0 or bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) != 0.0:
-	# 	# Eliminate moons from the original volume and soften the volume edge by apply the soft-edged binary mask with no moons to the original volume.
-	# 	ref3d_moon_eliminated = mask3d_moon_elminator * vol3d
-	# 
-	ref3d_moon_eliminated = mask3d_moon_elminator * vol3d
-	# bin3d_diff = bin3d - bin3d_mol_mass
-	# if bin3d_diff.get_value_at(bin3d_diff.calc_max_index()) == 0.0 and bin3d_diff.get_value_at(bin3d_diff.calc_min_index()) == 0.0:
-	# 	print_progress("MRK_DEBUG:   There was no effect of the moon elimination")
-	
-	return ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass
-"""
-
-# ----------------------------------------------------------------------------------------
 def moon_eliminator(args):
 	from fundamentals import resample, rot_shift3D
 	
@@ -2823,7 +2267,6 @@ def moon_eliminator(args):
 	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
-		assert (SXmpi_run.RUNNING_UNDER_MPI)
 		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
 		if_error_then_all_processes_exit_program(error_status)
 
@@ -2837,72 +2280,56 @@ def moon_eliminator(args):
 	args.input_volume_path = args.input_volume_path.strip()
 	if not os.path.exists(args.input_volume_path):
 		ERROR("Input volume file {} does not exist. Please check the file path and restart the program.".format(args.input_volume_path), subcommand_name) # action=1 - fatal error, exit
-	assert (os.path.exists(args.input_volume_path))
 	
 	if args.input_volume_path_2nd is not None:
 		args.input_volume_path_2nd = args.input_volume_path_2nd.strip()
 		if not os.path.exists(args.input_volume_path_2nd):
 			ERROR("Second input volume file {} does not exist. Please check the file path and restart the program.".format(args.input_volume_path_2nd), subcommand_name) # action=1 - fatal error, exit
-		assert (os.path.exists(args.input_volume_path_2nd))
 	
 	args.output_directory = args.output_directory.strip()
 	if os.path.exists(args.output_directory):
 		ERROR("Output directory {} exists. Please change the name and restart the program.".format(args.output_directory), subcommand_name) # action=1 - fatal error, exit
-	assert (not os.path.exists(args.output_directory))
 	
 	# Check error conditions of options
 	if args.pixel_size is None:
 		ERROR("Pixel size [A] is required. Please set a pasitive value larger than 0.0 to --pixel_size option.", subcommand_name) # action=1 - fatal error, exit
 	else:
-		assert (args.pixel_size is not None)
 		if args.pixel_size <= 0.0:
 			ERROR("Invalid pixel size {}[A]. Please set a pasitive value larger than 0.0 to --pixel_size option.".format(args.pixel_size), subcommand_name) # action=1 - fatal error, exit
-	assert (args.pixel_size > 0.0)
 	
 	nyquist_res = args.pixel_size * 2
-	assert (nyquist_res > 0.0)
 	
 	if args.mol_mass is None:
 		ERROR("Molecular mass [kDa] is required. Please set a pasitive value larger than 0.0 to --mol_mass option.", subcommand_name) # action=1 - fatal error, exit
 	else:
-		assert (args.mol_mass is not None)
 		if args.mol_mass <= 0.0:
 			ERROR("Invalid molecular mass {}[A]. Please set a pasitive value larger than 0.0 to --mol_mass option.".format(args.mol_mass), subcommand_name) # action=1 - fatal error, exit
-	assert (args.mol_mass > 0.0)
 	
 	if args.use_density_threshold is not None:
 		if args.use_density_threshold <= 0.0:
 			ERROR("Invalid density threshold {}. Please set a pasitive value larger than 0.0 to --use_density_threshold option.".format(args.use_density_threshold), subcommand_name) # action=1 - fatal error, exit
-		assert (args.use_density_threshold > 0.0)
 	
 	isac_shrink_path = None
-	if not is_float(args.resample_ratio):
-		assert (type(args.resample_ratio) is str)
+	if( not (type(args.resample_ratio) is float)):
 		
 		# This should be string for the output directory path of an ISAC2 run
 		if not os.path.exists(args.resample_ratio):
 			ERROR("Specified ISAC2 run output directory {} does not exist. Please check --resample_ratio option.".format(args.resample_ratio), subcommand_name) # action=1 - fatal error, exit
-		assert (os.path.exists(args.resample_ratio))
 		
 		isac_shrink_path = os.path.join(args.resample_ratio, "README_shrink_ratio.txt")
 		if not os.path.exists(isac_shrink_path):
 			ERROR("{} does not exist in the specified ISAC2 run output directory. Please check ISAC2 run directory and --resample_ratio option.".format(isac_shrink_path), subcommand_name) # action=1 - fatal error, exit
-		assert (os.path.exists(isac_shrink_path))
 	else:
-		assert (is_float(args.resample_ratio))
 		if float(args.resample_ratio) <= 0.0:
 			ERROR("Invalid resample ratio {}. Please set a value larger than 0.0 to --resample_ratio option.".format(args.resample_ratio), subcommand_name) # action=1 - fatal error, exit
-		assert (float(args.resample_ratio) > 0.0)
 	
 	if args.box_size is not None:
 		if args.box_size <= 0.0:
 			ERROR("Invalid box size {}[Pixels]. Please set a pasitive value larger than 0 to --box_size option.".format(args.box_size), subcommand_name) # action=1 - fatal error, exit
-		assert (args.box_size > 0.0)
 		
 	if args.fl != -1.0:
 		if args.fl < nyquist_res:
 			ERROR("Invalid low-pass filter resolution {}[A] for 3D volume. Please set a value larger than or equal to Nyquist resolution {}[A].".format(args.fl, nyquist_res), subcommand_name) # action=1 - fatal error, exit
-		assert (args.fl >= nyquist_res)
 	
 	args.outputs_root = args.outputs_root.strip()
 	if args.outputs_root == "":
@@ -2922,50 +2349,26 @@ def moon_eliminator(args):
 		print("----- Running in Halfset Volumes Mode -----")
 	
 	# Load volume
-	print(" ")
-	print_progress("Loading input 3D volume...")
 	vol3d = get_im(args.input_volume_path)
 	
 	vol3d_dims = vol3d.get_xsize()
-	assert (vol3d_dims == vol3d.get_xsize())
-	assert (vol3d_dims == vol3d.get_ysize())
-	assert (vol3d_dims == vol3d.get_zsize())
-	print_progress("  The dimensions of input 3D volume : {}".format(vol3d_dims))
+	print(" ")
+	print_progress("Dimension of input 3D volume : {}".format(vol3d_dims))
 	
 	# Load second volume if specified
-	if args.input_volume_path_2nd is not None:
-		print(" ")
-		print_progress("Loading second input 3D volume...")
-		vol3d_2nd = get_im(args.input_volume_path_2nd)
-		
-		assert (vol3d_dims == vol3d_2nd.get_xsize())
-		assert (vol3d_dims == vol3d_2nd.get_ysize())
-		assert (vol3d_dims == vol3d_2nd.get_zsize())
-		print_progress("Merging first and second input 3D volumes...")
-		vol3d = (vol3d + vol3d_2nd) / 2.0
+	if args.input_volume_path_2nd:
+		Util.add_img(vol3d, get_im(args.input_volume_path_2nd))
+		Util.mul_scalar(vol3d, 0.5)
 	
 	# Create output directory
 	print(" ")
-	print_progress("Creating output directory {}...".format(args.output_directory))
-	assert (not os.path.exists(args.output_directory))
 	os.mkdir(args.output_directory)
-	
-	if args.dilation < 0.0:
-		args.dilation = args.moon_distance / 2.0
-		print(" ")
-		print_progress("Setting default dilation for moon eliminator to {}...".format(args.dilation))
-	
-	if args.generate_mask and args.gm_dilation < 0.0:
-		args.gm_dilation = args.gm_edge_width / 2.0
-		print(" ")
-		print_progress("Setting default dilation for mask generation to {}...".format(args.gm_dilation))
 	
 	# ------------------------------------------------------------------------------------
 	# Step 1: Extract resample ratio from ISAC run directory if necessary (mainly designed for R-VIPER models).
 	# ------------------------------------------------------------------------------------
 	resample_ratio = 0.0
 	if isac_shrink_path is not None:
-		assert (os.path.exists(isac_shrink_path))
 		isac_shrink_file = open(isac_shrink_path, "r")
 		isac_shrink_lines = isac_shrink_file.readlines()
 		isac_shrink_ratio = float(isac_shrink_lines[5])  # 6th line: shrink ratio (= [target particle radius]/[particle radius]) used in the ISAC run
@@ -2978,16 +2381,13 @@ def moon_eliminator(args):
 		print_progress("  ISAC particle radius : {}".format(isac_radius))
 		resample_ratio = 1.0 / isac_shrink_ratio
 	else:
-		assert (is_float(args.resample_ratio))
 		resample_ratio = float(args.resample_ratio)
 		if resample_ratio != 1.0:
 			print(" ")
 			print_progress("Resample ratio {} is specified with --resample_ratio option...".format(resample_ratio))
 		else:
-			assert (resample_ratio == 1.0)
 			print(" ")
 			print_progress("Resample ratio is {}. The program does not resample the input volume...".format(resample_ratio))
-	assert (resample_ratio > 0.0)
 	
 	# ------------------------------------------------------------------------------------
 	# Step 2: Resample and window the volume (Mainly designed for R-VIPER models)
@@ -2999,10 +2399,7 @@ def moon_eliminator(args):
 		vol3d = resample(vol3d, resample_ratio)
 		
 		vol3d_dims = vol3d.get_xsize()
-		assert (vol3d_dims == vol3d.get_xsize())
-		assert (vol3d_dims == vol3d.get_ysize())
-		assert (vol3d_dims == vol3d.get_zsize())
-		print_progress("  The dimensions of resampled 3D volume : {}".format(vol3d_dims))
+		print_progress("  Dimensions of resampled 3D volume : {}".format(vol3d_dims))
 		
 	# 
 	# NOTE: 2018/04/09 Toshio Moriya 
@@ -3016,29 +2413,22 @@ def moon_eliminator(args):
 	
 	# Window the volume to specified dimensions
 	if args.box_size is not None:
-		assert (args.box_size > 0.0)
 		if args.box_size != vol3d_dims:
 			print(" ")
 			print_progress("Adjusting the dimensions of 3D volume to {}...".format(args.box_size))
 			if args.box_size > vol3d_dims:
 				vol3d = Util.pad(vol3d, args.box_size, args.box_size, args.box_size, 0, 0, 0, "circumference")
 			else:
-				assert (args.box_size < vol3d_dims)
-				vol3d = Util.window(vol3d, args.box_size, args.box_size, args.box_size, 0, 0)
-		else:
-			assert (args.box_size == vol3d_dims)
-		
+				vol3d = Util.window(vol3d, args.box_size, args.box_size, args.box_size, 0, 0, 0)
+
 		vol3d_dims = vol3d.get_xsize()
-		assert (vol3d_dims == vol3d.get_xsize())
-		assert (vol3d_dims == vol3d.get_ysize())
-		assert (vol3d_dims == vol3d.get_zsize())
 		print_progress("  The dimensions of adjusted 3D volume : {}".format(vol3d_dims))
 	
 	if args.debug:
 		vol3d_restore_dim_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_restore_dim.hdf".format(debug_output_id))
 		vol3d.write_image(vol3d_restore_dim_file_path)
 		debug_output_id += 1
-	
+
 	# ------------------------------------------------------------------------------------
 	# Step 3: Shift 3D volume if necessary.
 	# ------------------------------------------------------------------------------------
@@ -3077,7 +2467,6 @@ def moon_eliminator(args):
 	# Step 5: Apply low-pass filter to the input volume before moon elimination if necessary.
 	# ------------------------------------------------------------------------------------
 	if args.fl != -1.0:
-		assert (args.fl >= nyquist_res)
 		print(" ")
 		print_progress("Low-pass filtration of the input volume using cutoff resolution {}[A] and fall-off {}[1/Pixels]...".format(args.fl, args.aa))
 		vol3d = filt_tanl(vol3d, args.pixel_size/args.fl, args.aa)
@@ -3089,73 +2478,40 @@ def moon_eliminator(args):
 		vol3d_lpf_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_lpf.hdf".format(debug_output_id))
 		vol3d.write_image(vol3d_lpf_file_path)
 		debug_output_id += 1
-	
+
 	# ------------------------------------------------------------------------------------
-	# Step 6: Create reference 3D volumes by eliminating the moons from the input volume
+	# Step 6: Create reference 3D volumes by eliminating moons from the input volume
 	# ------------------------------------------------------------------------------------
-	
+
 	density_threshold = None
 	if args.use_density_threshold is None:
 		print(" ")
 		density_threshold = vol3d.find_3d_threshold(args.mol_mass, args.pixel_size)
 		print_progress("The density threshold corresponing to the specified molecular mass {}[kDa] and pixel size {}[A/Pixels] is  {}".format(args.mol_mass, args.pixel_size,density_threshold))
 	else:
-		assert (args.use_density_threshold > 0.0)
 		print(" ")
 		print_progress("Using user-provided density threshold {}...".format(args.use_density_threshold))
 		density_threshold = args.use_density_threshold
-	assert (density_threshold is not None)
-	
+
 	# Eliminate moons
 	print(" ")
 	print_progress("Eliminating moons of the input volume using density threshold of {} with {} edge...".format(density_threshold, args.edge_type))
 	my_volume_binarized = binarize(vol3d, density_threshold)
 	my_volume_binarized_with_no_moons = Util.get_biggest_cluster(my_volume_binarized)
 	volume_difference = my_volume_binarized - my_volume_binarized_with_no_moons
-	if volume_difference.get_value_at(volume_difference.calc_max_index()) == 0 and \
-		volume_difference.get_value_at(volume_difference.calc_min_index()) == 0:
-		ref3d_moon_eliminated = vol3d
-	else:
-		if args.edge_type == "cosine":
-			gm_mask3d_moon_eliminated = Util.adaptive_mask(my_volume_binarized_with_no_moons, 0.5, args.gm_dilation, args.gm_edge_width)
-		elif args.edge_type == "gauss":
-			from utilities import gauss_edge
-			gm_mask3d_moon_eliminated = gauss_edge(my_volume_binarized_with_no_moons)
+	if( volume_difference.get_value_at(volume_difference.calc_max_index()) != 0 or \
+		volume_difference.get_value_at(volume_difference.calc_min_index()) != 0 ):
+		if args.edge_type == "cosine": mode = "C"
+		else:  mode = "G"
+		Util.mul_img(vol3d, adaptive_mask(my_volume_binarized_with_no_moons, 0.0, 0.5, args.gm_dilation, args.gm_edge_width, mode))
 
-		ref3d_moon_eliminated = gm_mask3d_moon_eliminated * vol3d
+	del volume_difference, my_volume_binarized, my_volume_binarized_with_no_moons
 
-	"""
-	# NOTE: Toshio Moriya 2018/04/01
-	# Let's try to use pixel size to decide the distance of the nearest moons...
-	ref3d_moon_eliminated, mask3d_moon_elminator, bin3d_mol_mass_dilated, bin3d_mol_mass = mrk_eliminate_moons(vol3d, density_threshold, args.edge_type, args.moon_distance, args.dilation, args.edge_sigma, args.allow_disconnect, args.debug)
-	
-	ref3d_before_moon_elimination_file_path = os.path.join(args.output_directory, "{}_ref_before_moon_elimination.hdf".format(args.outputs_root))
-	print(" ")
-	print_progress("Saving 3D reference before moon elimination (i.e., the 3D volume just before applying moon elimination.) {}...".format(ref3d_before_moon_elimination_file_path))
-	vol3d.write_image(ref3d_before_moon_elimination_file_path)
-	"""
-	
 	ref3d_moon_eliminated_file_path = os.path.join(args.output_directory, "{}_ref_moon_eliminated.hdf".format(args.outputs_root))
 	print(" ")
 	print_progress("Saving moon eliminated 3D reference {}...".format(ref3d_moon_eliminated_file_path))
-	ref3d_moon_eliminated.write_image(ref3d_moon_eliminated_file_path)
-	"""
-	mask3d_moon_elminator_file_path = os.path.join(args.output_directory, "{}_mask_moon_elminator.hdf".format(args.outputs_root))
-	print(" ")
-	print_progress("Saving moon elminator 3D mask to {}...".format(mask3d_moon_elminator_file_path))
-	mask3d_moon_elminator.write_image(mask3d_moon_elminator_file_path)
-	
-	bin3d_mol_mass_file_path = os.path.join(args.output_directory, "{}_bin_mol_mass.hdf".format(args.outputs_root))
-	print(" ")
-	print_progress("Saving 3D binary at molecular mass to {}...".format(bin3d_mol_mass_file_path))
-	bin3d_mol_mass.write_image(bin3d_mol_mass_file_path)
+	vol3d.write_image(ref3d_moon_eliminated_file_path)
 
-	if args.debug:
-		if bin3d_mol_mass_dilated is not None:
-			bin3d_mol_mass_dilated_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_bin3d_mol_mass_dilated.hdf".format(debug_output_id))
-			bin3d_mol_mass_dilated.write_image(bin3d_mol_mass_dilated_file_path)
-			debug_output_id += 1
-	"""
 	
 	# ------------------------------------------------------------------------------------
 	# Step 7: Create 3D mask from the 3D reference if necessary
@@ -3181,10 +2537,7 @@ def moon_eliminator(args):
 		elif args.edge_type == "gauss":
 			gm_gauss_kernel_radius = args.gm_edge_width - args.gm_dilation
 			gm_mask3d_moon_eliminated, gm_bin3d_mol_mass_dilated = mrk_sphere_gauss_edge(bin3d_mol_mass, args.gm_dilation, gm_gauss_kernel_radius, args.gm_edge_sigma, args.debug)
-			assert (gm_bin3d_mol_mass_dilated is not None)
 		else:
-			assert (False) # Unreachable code. The invalid value of edge_type should not reach here.
-		assert (gm_mask3d_moon_eliminated is not None)
 		print_progress("  Totally, {} soft-edging of 3D mask took {:7.2f} sec...".format(args.edge_type.upper(), time() - gm_soft_edging_start_time))
 		
 		if args.debug:
@@ -3265,8 +2618,6 @@ def desymmetrize(args):
 	if os.path.exists(args.output_directory):
 		ERROR("Output directory %s exists. Please change the name and restart the program." %(args.output_directory), subcommand_name) # action=1 - fatal error, exit
 	
-	assert (os.path.exists(args.input_cluster_path))
-	assert (not os.path.exists(args.output_directory))
 	
 	# Create output directory
 	os.mkdir(args.output_directory)
@@ -3287,7 +2638,6 @@ def desymmetrize(args):
 	input_bdb_full_path, input_bdb_dictname, input_bdb_keys = db_parse_path(args.input_bdb_stack_path)
 	cwd = os.getcwd()
 	if cwd[-1] != cwd[0] or cwd[-1] != cwd[0]:
-		assert (cwd[0] == "/" or cwd[0] == "//")
 		cwd += cwd[0]
 	input_bdb_path = input_bdb_full_path.replace(cwd, "")
 	# print("MRK_DEBUG: input_bdb_full_path := ", input_bdb_full_path)
@@ -3304,11 +2654,9 @@ def desymmetrize(args):
 	n_img_detected = EMUtil.get_image_count(args.input_bdb_stack_path)
 	print_progress("Detected %d particles in symmetrized input BDB stack %s."%(n_img_detected, args.input_bdb_stack_path))
 	print(" ")
-	assert (len(symmetrized_particle_id_list) <= n_img_detected)
 	
 	# Get symmetrisation information from header of 1st image in input bdb stack
 	try: 
-		assert (n_img_detected > 0)
 		img_header = input_bdb_stack.get(0, nodata=1).get_attr_dict() # Need only header information
 	except:
 		ERROR("Failed to read image header of particle #%d from %s. Aborting..."%(symmetrized_particle_id, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
@@ -3329,13 +2677,9 @@ def desymmetrize(args):
 	else:
 		ERROR("Specified input BDB stack is not symmetrized. Please choose a symmetrized stack and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
-	assert (symmetry_type == "c")
-	assert (n_symmetry > 1)
-	assert (n_img_detected % n_symmetry == 0)
 	
 	n_presymmetriezed_img = n_img_detected // n_symmetry
 	print_progress("The computed number of particles in the pre-symmetrized stack is %d."%(n_presymmetriezed_img))
-	assert (n_presymmetriezed_img < n_img_detected)
 	
 	if len(symmetrized_particle_id_list) > n_presymmetriezed_img:
 		ERROR("Input symmetrized particle ID list contains more entries (%d) than expected (%d)."%(len(symmetrized_particle_id_list), n_presymmetriezed_img), subcommand_name, action = 0) # action = 0 - non-fatal, print a warning;
@@ -3355,7 +2699,6 @@ def desymmetrize(args):
 			except:
 				pass
 		
-		assert ("data_source" in img_header)
 		data_source_path = img_header["data_source"]
 		# print("MRK_DEBUG: data_source_path := ", data_source_path)
 		symmetrization_q_stack_path = "bdb:./Q" # Unfortunately, sx3dvariability.py --symmetrize uses "/" syntax instead of "#" before bdb dictionary name for this case... (2018/08/08 Toshio)
@@ -3363,21 +2706,13 @@ def desymmetrize(args):
 			if input_bdb_path != "":
 				symmetrization_q_stack_path = "bdb:{}#Q".format(input_bdb_path)
 			# else:
-			# 	assert (input_bdb_path == "")
-			# 	assert (False)  # Unreachable code for now (2018/08/08 Toshio)
 		# else:
-		# 	assert (input_bdb_path == ".")
-		# 	assert (symmetrization_q_stack_path == "bdb:./Q")
 		# 	# Do nothing
 		# print("MRK_DEBUG: symmetrization_q_stack_path := ", symmetrization_q_stack_path)
 		
-		assert (data_source_path[:len(symmetrization_q_stack_path)] == symmetrization_q_stack_path)
 		data_source_id = int(data_source_path.replace(symmetrization_q_stack_path, ""))
-		assert (data_source_id < n_symmetry)
 		
-		assert (symmetrized_particle_id < n_img_detected)
 		desymmetrized_particle_id = symmetrized_particle_id % n_presymmetriezed_img
-		assert (0 <= desymmetrized_particle_id and desymmetrized_particle_id < n_presymmetriezed_img)
 		
 		desymmetrized_particle_id_list.append(desymmetrized_particle_id)
 		
@@ -3392,8 +2727,6 @@ def desymmetrize(args):
 	# Close input bdb stacks
 	input_bdb_stack.close()
 	
-	assert (len(desymmetrized_particle_id_list) == len(symmetrized_particle_id_list))
-	assert (len(nodupilicated_desymmetrized_particle_id_list) <= len(symmetrized_particle_id_list))
 	
 	if args.check_duplication:
 		print(" ")
@@ -3402,7 +2735,6 @@ def desymmetrize(args):
 			if len(desymmetrized_particle_id_info_dict[desymmetrized_particle_id]) > 1:
 				print_progress("- Desymmetrized Particle ID %d"%(desymmetrized_particle_id))
 				for desymmetrized_particle_id_info in desymmetrized_particle_id_info_dict[desymmetrized_particle_id]:
-					assert (desymmetrized_particle_id_info[0] == desymmetrized_particle_id)
 					print_progress("-- Symmetrized Particle ID %d in %s (%d) "%(desymmetrized_particle_id_info[1], desymmetrized_particle_id_info[2], desymmetrized_particle_id_info[3]))
 		print(" ")
 
@@ -3816,7 +3148,7 @@ def main():
 	parser_restacking.set_defaults(func=restacking)
 
 	# create the subparser for the "moon_eliminator" subcommand
-	parser_moon_eliminator = subparsers.add_parser("moon_eliminator", help="Moon eliminator: Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass. Optionally, create 3D mask also.")
+	parser_moon_eliminator = subparsers.add_parser("moon_eliminator", help="Moon eliminator: Eliminate moons or remove dusts from the background of a 3D density map based on the expected molecular mass.")
 	parser_moon_eliminator.add_argument("input_volume_path",                type=str,                              help="Input volume path: Path to input volume file containing the 3D density map. (default required string)")
 	parser_moon_eliminator.add_argument("input_volume_path_2nd", nargs="?", type=str,             default=None,    help="Second input volume path: Path to second input volume file containing the 3D density map. Use this option to create a mask from the volume combined two MERIDIEN halfset volumes. (default none)")
 	parser_moon_eliminator.add_argument("output_directory",                 type=str,                              help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
@@ -3825,7 +3157,6 @@ def main():
 	parser_moon_eliminator.add_argument("--use_density_threshold",          type=float,           default=None,    help="Use ad-hoc density threshold: Use user-provided ad-hoc density threshold, instead of computing the value from the molecular mass. Below this density value, the data is assumed not to belong to the main body of the particle density. (default none)")
 	parser_moon_eliminator.add_argument("--moon_distance",                  type=float,           default=3.0,     help="Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3.0)")
 	parser_moon_eliminator.add_argument("--dilation",                       type=float,           default=-1.0,    help="Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --moon_distance so that the voxels with 1.0 values in the mask are same as the hard-edged molecular-mass binary volume. (default -1.0)")
-	parser_moon_eliminator.add_argument("--edge_sigma",                     type=float,           default=1.0,     help="Edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edge of the moon eliminator 3D mask. This value controls the falloff speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with --edge_type=\'gauss\'. (default 1.0)")
 	parser_moon_eliminator.add_argument("--resample_ratio",                 type=str,             default="1.0",   help="Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')")
 	parser_moon_eliminator.add_argument("--box_size",                       type=int,             default=None,    help="Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)")
 	parser_moon_eliminator.add_argument("--resampled_shift3d",              action="store_true",  default=False,   help="Providing resampled 3D shifts: Use this option when you are providing the resampled 3D shifts (using pixel size of outputs) when --resample_ratio!=1.0. By default, the program assums the provided shifts are not resampled. (default False)")
@@ -3834,11 +3165,9 @@ def main():
 	parser_moon_eliminator.add_argument("--shift3d_z",                      type=int,             default=0,       help="3D z-shift [Pixels]: Provide 3D z-shift corresponding to shifting the 3D volume along z-axis. (default 0)")
 	parser_moon_eliminator.add_argument("--invert_handedness",              action="store_true",  default=False,   help="Invert handedness: Invert the handedness of the 3D volume. (default False)")
 	parser_moon_eliminator.add_argument("--fl",                             type=float,           default=-1.0,    help="Low-pass filter resolution [A]: >0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)")
-	parser_moon_eliminator.add_argument("--aa",                             type=float,           default=0.1,     help="Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when --fl > 0.0. (default 0.1)")
-	parser_moon_eliminator.add_argument("--generate_mask",                  action="store_true",  default=False,   help="Generate soft-edged mask: Generate soft-edged mask with specified method from the 3D binary volume corresponding to the specified molecular mass or density threshold, using the values provided through --gm_* options. Available methods are (1) \'gauss\' for gaussian soft-edge and (2) \'cosine\' for cosine soft-edged (used in PostRefiner). (default False)")
-	parser_moon_eliminator.add_argument("--gm_dilation",                    type=float,           default=-1.0,    help="Soft-edge dilation [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --gm_edge_width so that the voxels with 1.0 values in the mask are same as the hard-edged binary volume with the threadhold. Effective only with --generate_mask option. (default -1.0)")
-	parser_moon_eliminator.add_argument("--gm_edge_width",                  type=float,           default=6.0,     help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. Effective only with --generate_mask option. (default 6.0)")
-	parser_moon_eliminator.add_argument("--gm_edge_sigma",                  type=float,           default=2.0,     help="Soft-edge sigma [Pixels]: The Gaussian sigma of transition area for soft-edged masking. This value controls the fall-speed of soft-edge; The samller the sigma, the faster the falloff. Effective only with --generate_mask and --generate_mask=\'gauss\'. (default 2.0)")
+	parser_moon_eliminator.add_argument("--aa",                             type=float,           default=0.02,    help="Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when --fl > 0.0. (default 0.02)")
+	parser_moon_eliminator.add_argument("--ndilation",                    type=float,           default=1,       help="Numberof time dilation will be applied to the binary mask used to eliminate moons (default 1)")
+	parser_moon_eliminator.add_argument("--edge_width",                  type=float,           default=5,       help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking.(default 5)")
 	parser_moon_eliminator.add_argument("--outputs_root",                   type=str,             default="vol3d", help="Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)")
 	parser_moon_eliminator.add_argument("--allow_disconnect",               action="store_true",  default=False,   help="Allow disconnection: Allow disconnection of density maps. Only for very special cases. (default False)")
 	parser_moon_eliminator.add_argument("--edge_type",                      type=str,             default="cosine",help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
