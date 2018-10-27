@@ -76,19 +76,19 @@ def dilation(f, mask = None, morphtype="BINARY"):
 	from EMAN2 import morph_type, filt_dilation_
 
 	if not mask:
-		from utilities import model_blank
+		from utilities import model_circle
 		nx = f.get_xsize()
 		ny = f.get_ysize()
 		nz = f.get_zsize()
-		if(nz == 1):	mask = model_blank(3,3,bckg = 1.0)
-		elif(nz >1):  mask = model_blank(3,3,3,bckg = 1.0)
+		if(nz == 1):	mask = model_circle(2,5,5)
+		elif(nz >1):  mask = model_circle(2,5,5)
 		else:  ERROR("Command does not work for 1D images","dilation",1)
 
 	if morphtype=="BINARY":
 		return filt_dilation_(f, mask, morph_type.BINARY)
 	elif morphtype=="GRAYLEVEL":
 		return filt_dilation_(f, mask, morph_type.GRAYLEVEL)
-	else: print("Unknown dilation type.")
+	else: ERROR("Unknown dilation type","dilation",1)
 
 def erosion(f, mask = None, morphtype="BINARY"):
 	"""
@@ -112,22 +112,26 @@ def erosion(f, mask = None, morphtype="BINARY"):
 		nx = f.get_xsize()
 		ny = f.get_ysize()
 		nz = f.get_zsize()
-		if(nz == 1):	mask = model_blank(3,3,bckg = 1.0)
-		elif(nz >1):  mask = model_blank(3,3,3,bckg = 1.0)
-		else:  ERROR("Command does not work for 1D images","dilation",1)
+		from utilities import model_circle
+		nx = f.get_xsize()
+		ny = f.get_ysize()
+		nz = f.get_zsize()
+		if(nz == 1):	mask = model_circle(2,5,5)
+		elif(nz >1):  mask = model_circle(2,5,5)
+		else:  ERROR("Command does not work for 1D images","erosion",1)
 
 	if morphtype=="BINARY":
 		return filt_erosion_(f, mask, morph_type.BINARY)
 	elif morphtype=="GRAYLEVEL":
 		return filt_erosion_(f, mask, morph_type.GRAYLEVEL)
-	else: print("Unknown erosion type.")
+	else: ERROR("Unknown erosion type","erosion",1)
 
 def invert(im):
 	"""
 	 Invert contrast of an image (while keeping the average)
 	"""
-	p = Util.infomask(im, None, True)
-	return ((-1.0*im) + 2*p[0])
+	p = Util.infomask(im, None, True)[0]
+	return ((-1.0*im) + 2*p)
 
 #def compress(img, value = 0.0, frange=1.0):
 #	return img.process( "threshold.compress", {"value": value, "range": frange } )
@@ -1368,7 +1372,7 @@ def residual_1dpw2(list_1dpw2, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0
 			freq.append(i/(2*Pixel_size*len(list_1dpw2)))
 	return res, freq
 
-def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
+def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C"):
 	"""
 		Name
 			adaptive_mask - create a mask from a given image.
@@ -1376,7 +1380,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_
 			img: input image
 			nsigma: value for initial thresholding of the image.
 		Output
-			mask: The mask will have values one, zero, with Gaussian smooth transition between two regions.
+			mask: The mask will have values one, zero, with cosine smooth transition between two regions.
 	"""
 	from utilities  import gauss_edge, model_circle
 	from morphology import binarize, dilation
@@ -1387,7 +1391,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_
 	s1 = Util.infomask(vol, mc, True) # flip true: find statistics under the mask (mask >0.5)
 	if threshold <= -9999.0:
 		# Use automatic mode
-		s1 = [s1[0] + s1[1] * nsigma, s1[0], s1[1], nsigma] 
+		s1 = [s1[0] + s1[1] * nsigma, s1[0], s1[1], nsigma]
 		# new s1[0] is calculated threshold for binarize
 	else: 
 		# use the user-provided threshold
@@ -1398,9 +1402,9 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, kernel_
 		# new s1[3] is calculated nsigma corresponding to user-provided threshold
 	mask = Util.get_biggest_cluster(binarize(vol, s1[0]))
 	for i in range(ndilation):   mask = dilation(mask)
-	mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
-	return mask, s1 # s1[0]: threshold for binarize, s1[1]: background density average, s1[2]: background density sigma, s1[3]: sigma factor (nsigma)
-	
+	mask = Util.soft_edge(mask, edge_width, "C")
+	return mask
+
 def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
 	"""
 		Name
