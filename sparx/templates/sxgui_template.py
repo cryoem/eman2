@@ -119,6 +119,7 @@ class SXcmd_token(object):
 		self.label = ""               # User friendly name of argument or option
 		self.help = ""                # Help info
 		self.group = ""               # Tab group: main or advanced
+		self.dependency_group = ["", "", ""]    # Depencency group: Disables or enables widgets
 		self.is_required = False      # Required argument or options. No default values are available
 		self.is_locked = False        # The restore value will be used as the locked value.
 		self.is_reversed = False      # Reversed default value of bool. The flag will be added if the value is same as default 
@@ -167,6 +168,7 @@ class SXcmd(object):
 		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue
 		self.token_list = []                  # List of command tokens. Need this to keep the order of command tokens
 		self.token_dict = {}                  # Dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
+		self.dependency_dict = {}             # Dictionary of command tokens, containing the dependencies
 		self.btn = None                       # <Used only in sxgui.py> QPushButton button instance associating with this command
 		self.widget = None                    # <Used only in sxgui.py> SXCmdWidget instance associating with this command
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -590,6 +592,23 @@ class SXCmdWidget(QWidget):
 
 		self.sxcmd_tab_main = SXCmdTab("Main", self)
 		self.sxcmd_tab_advance = SXCmdTab("Advanced", self)
+		for key in self.sxcmd.dependency_dict:
+			self.sxcmd.token_dict[key].widget.my_changed_state.connect(self.change_state)
+			if isinstance(self.sxcmd.token_dict[key].widget, SXCheckBox):
+				idx = self.sxcmd.token_dict[key].widget.checkState()
+				if idx == 0:
+					self.sxcmd.token_dict[key].widget.setCheckState(2)
+				elif idx == 1:
+					self.sxcmd.token_dict[key].widget.setCheckState(2)
+				elif idx == 2:
+					self.sxcmd.token_dict[key].widget.setCheckState(0)
+				self.sxcmd.token_dict[key].widget.setCheckState(idx)
+			elif isinstance(self.sxcmd.token_dict[key].widget, SXLineEdit):
+				text = self.sxcmd.token_dict[key].widget.text()
+				self.sxcmd.token_dict[key].widget.setText('0000000000000000099999')
+				self.sxcmd.token_dict[key].widget.setText(text)
+
+
 		tab_widget = QTabWidget()
 		tab_widget.insertTab(0, self.sxcmd_tab_main, self.sxcmd_tab_main.name)
 		tab_widget.insertTab(1, self.sxcmd_tab_advance, self.sxcmd_tab_advance.name)
@@ -631,6 +650,73 @@ class SXCmdWidget(QWidget):
 		tab_widget.setPalette(palette)
 		grid_layout.addWidget(tab_widget, 0, 0)
 
+	@QtCore.pyqtSlot(str, str)
+	@QtCore.pyqtSlot(str, int)
+	def change_state(self, dependency, state, old_dependency=None):
+		"""
+		Change the state of widgets based on the choice of the corresponding combo box
+
+		name - Name of the group to change status (Emitted by the combo box)
+
+		Returns:
+		None
+		"""
+
+		if old_dependency is None:
+			old_dependency = [dependency]
+		else:
+			old_dependency.append(dependency)
+		parent = self.sender().parent()
+		while True:
+			if hasattr(parent, 'sxcmd'):
+				break
+			else:
+				parent = parent.parent()
+
+		if isinstance(self.sender(), SXCheckBox):
+			type_check = bool
+		elif isinstance(self.sender(), SXLineEdit):
+			type_check = str
+		else:
+			assert False
+		try:
+			for name, exp_state, inverse in parent.sxcmd.dependency_dict[str(dependency)]:
+				if not parent.sxcmd.token_dict[str(dependency)].widget.isEnabled():
+					is_enabled = False
+				elif str(type_check(state)) != exp_state and inverse == 'True':
+					is_enabled = True
+				elif str(type_check(state)) == exp_state and inverse == 'True':
+					is_enabled = False
+				elif str(type_check(state)) == exp_state:
+					is_enabled = True
+				else:
+					is_enabled = False
+				SXCmdTab.set_text_entry_widget_enable_state(parent.sxcmd.token_dict[name].widget, is_enabled)
+				if name not in old_dependency and str(dependency) != parent.sxcmd.token_dict[name].dependency_group[0]:
+					try:
+						new_state = parent.sxcmd.token_dict[name].widget.checkState()
+					except AttributeError:
+						new_state = parent.sxcmd.token_dict[name].widget.isEnabled()
+					self.change_state(name, new_state, old_dependency)
+		except KeyError:
+			return None
+		#print(state)
+		#try:
+		#	for entry in self.cmd[name]:
+		#		widget = entry[0]
+		#		state = entry[1]
+		#		sub_name = entry[2]
+		#		if not self.content[name].isEnabled():
+		#			widget.setEnabled(False)
+		#		elif self.content[name].edit.currentText() == state:
+		#			widget.setEnabled(True)
+		#		else:
+		#			widget.setEnabled(False)
+		#		self.change_state(name=sub_name)
+		#except KeyError:
+		#	return None
+
+
 	def map_widgets_to_sxcmd_line(self):
 		# Add program name to command line
 		sxcmd_line = "%s.py" % (self.sxcmd.name)
@@ -641,7 +727,9 @@ class SXCmdWidget(QWidget):
 		# Loop through all command tokens
 		for sxcmd_token in self.sxcmd.token_list:
 			# First, handle very special cases
-			if sxcmd_token.type == "user_func":
+			if not sxcmd_token.widget.isEnabled():
+				continue
+			elif sxcmd_token.type == "user_func":
 				user_func_name_index = 0
 				external_file_path_index = 1
 				user_func_name = str(sxcmd_token.widget[user_func_name_index].text())
@@ -1399,6 +1487,24 @@ class SXCmdWidget(QWidget):
 #		QMessageBox.information(self, "sx* output","outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program.")
 	"""
 
+class SXLineEdit(QtGui.QLineEdit):
+	my_changed_state = QtCore.pyqtSignal(str, str)
+
+	def __init__(self, dependency, parent=None):
+		super(SXLineEdit, self).__init__(parent)
+		self.dependency = dependency
+		self.textChanged.connect(lambda x: self.my_changed_state.emit(self.dependency, x))
+
+
+class SXCheckBox(QtGui.QCheckBox):
+	my_changed_state = QtCore.pyqtSignal(str, int)
+
+	def __init__(self, dependency, parent=None):
+		super(SXCheckBox, self).__init__(parent)
+		self.dependency = dependency
+		self.stateChanged.connect(lambda x: self.my_changed_state.emit(self.dependency, x))
+
+
 # ========================================================================================
 class SXCmdTab(QWidget):
 	def __init__(self, name, parent=None):
@@ -1580,8 +1686,8 @@ class SXCmdTab(QWidget):
 					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
-					# cmd_token_widget[widget_index] = QLineEdit(self)
-					cmd_token_widget[widget_index] = QLineEdit()
+					# cmd_token_widget[widget_index] = SXLineEdit(self)
+					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
 					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index])
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
@@ -1601,7 +1707,7 @@ class SXCmdTab(QWidget):
 					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
-					cmd_token_widget[widget_index] = QLineEdit()
+					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
 					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index]) # Because default user functions is internal
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
@@ -1663,7 +1769,7 @@ class SXCmdTab(QWidget):
 						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 						# construct new widget(s) for this command token
-						cmd_token_widget = QCheckBox("")
+						cmd_token_widget = SXCheckBox(cmd_token.key_base)
 						if cmd_token.restore == True:
 							cmd_token_widget.setCheckState(Qt.Checked)
 						else:
@@ -1696,7 +1802,7 @@ class SXCmdTab(QWidget):
 						cmd_token_restore_widget.setEnabled(is_btn_enable)
 						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
-						cmd_token_widget = QLineEdit()
+						cmd_token_widget = SXLineEdit(cmd_token.key_base)
 						cmd_token_widget.setText(cmd_token.restore)
 						cmd_token_widget.setEnabled(not cmd_token.is_locked)
 						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
@@ -2481,7 +2587,8 @@ class SXCmdTab(QWidget):
 			# Initialize enable state of qsub related widgets
 			self.set_qsub_enable_state()
 
-	def set_text_entry_widget_enable_state(self, widget, is_enabled):
+	@staticmethod
+	def set_text_entry_widget_enable_state(widget, is_enabled):
 		# Set enable state and background color of text entry widget according to enable state
 		default_palette = QPalette()
 		bg_color = default_palette.color(QPalette.Inactive, QPalette.Base)
@@ -2528,6 +2635,7 @@ class SXCmdTab(QWidget):
 				elif sxcmd_token.type == "apix":
 					for sxcmd_token_other_dialog in sxcmd_token.other_dialog_list:
 						sxcmd_token_other_dialog.reflect_external_local_update_apix()
+
 
 	def handle_apix_token_editing_finished_event(self, sxcmd_token_apix):
 		assert (sxcmd_token_apix.type == "apix")

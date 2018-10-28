@@ -316,6 +316,7 @@ const string GrowSkeletonProcessor::NAME = "morph.grow";
 const string FixSignProcessor::NAME = "math.fixmode";
 const string ZThicknessProcessor::NAME = "misc.zthick";
 const string ReplaceValuefromListProcessor::NAME = "misc.colorlabel";
+const string PolyMaskProcessor::NAME = "mask.poly";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -600,6 +601,7 @@ template <> Factory < Processor >::Factory()
 	force_add<BinaryBlackHatProcessor>();
 	force_add<ZThicknessProcessor>();
 	force_add<ReplaceValuefromListProcessor>();
+	force_add<PolyMaskProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();

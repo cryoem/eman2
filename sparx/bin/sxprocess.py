@@ -278,13 +278,13 @@ def main():
 
    12. Generate soft-edged 3D mask from input 3D volume automatically or using the user-provided threshold.
         Automatically compute the threshold to intially obtain the largest density cluster.
-        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --nsigma=3.0  --ndilation=1  --kernel_size=9  --gauss_standard_dev=5
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --fl=12.0 --aa=0.02 --pixel_size=3.1 --nsigma=3.0  --ndilation=1  --edge_width=3 --edge_type="G" --mol_mass=1500.0
         
         Use the user-provided threshold to intially obtain the largest density cluster.
-        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  --ndilation=0  --kernel_size=9  --gauss_standard_dev=5
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  --ndilation=0  --edge_width=5
 
    13. Generate binary 3D mask from input 3D volume using the user-provided threshold.
-        sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3
+        sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ndilation=0 --nerosion=0
 
    14. Sharpen of volumes or images by enhancing the power spectrum:
        (1) Halfset Volumes Mode
@@ -387,16 +387,17 @@ def main():
 	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
 	parser.add_option("--adaptive_mask",        action="store_true", default=False,                  help="generate soft-edged 3D mask from input 3D volume")
 	parser.add_option("--nsigma",               type="float",        default=1.0,                    help="number of times of sigma of the input volume to intially obtain the largest density cluster")
-	parser.add_option("--threshold",            type="float",        default=-9999.0,                help="threshold provided by user to intially obtain the largest density cluster")
-	parser.add_option("--ndilation",            type="int",          default=3,                      help="number of times of dilation applied to the largest cluster of density")
-	parser.add_option("--kernel_size",          type="int",          default=11,                     help="convolution kernel for smoothing the edge of the mask")
-	parser.add_option("--gauss_standard_dev",   type="int",          default=9,                      help="stanadard deviation value to generate Gaussian edge")
+	parser.add_option("--threshold",            type="float",        default=-9999.0,                help="threshold provided by user to intially obtain the largest density cluster (default: -9999, threshold will be determined automatically")
+	parser.add_option("--ndilation",            type="int",          default=1,                      help="number of times of dilation applied to the largest cluster of density")
+	parser.add_option("--edge_width",           type="int",          default=5,                      help="width of the cosine edge of the mask")
+	parser.add_option("--edge_type",            type=str,            default="cosine",               help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
+	parser.add_option("--mol_mass",             type=float,          default=-1.0,                   help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default Not used)")
+
 	
 	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
 	parser.add_option("--binary_mask",          action="store_true", default=False,                  help="generate binary 3D mask from input 3D volume")
 	parser.add_option("--bin_threshold",        type="float",        default=0.0,                    help="threshold provided by user to binarize input volume")
-	parser.add_option("--ne",                   type="int",          default=0,                      help="number of times to erode binarized volume")
-	parser.add_option("--nd",                   type="int",          default=0,                      help="number of times to dilate binarized volume")
+	parser.add_option("--nerosion",             type="int",          default=0,                      help="number of times to erode binarized volume")
 
 	# Postprocess 3-D  
 	parser.add_option("--combinemaps",          action="store_true",  default=False,                 help="flag to enhance the power spectrum of volumes or images. Available modes are (1) Halfset Volumes Mode, (2) Cluster Volumes Mode,and (3) Images Mode")
@@ -413,8 +414,6 @@ def main():
 	parser.add_option("--B_stop",               type="float",         default=0.0,                   help="=0.0, cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency. (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--do_adaptive_mask",     action="store_true",  default=False,                 help="generate adaptive mask with the given threshold")
 	parser.add_option("--mask_threshold",       type="float",         default=0.02,                  help="the threshold for adaptive_mask (effective only with --do_adaptive_mask)")
-	parser.add_option("--cosine_edge",          type="float",         default=6.0,                   help="=6.0, the width in pixels for cosine transition area (effective only with --do_adaptive_mask)")
-	parser.add_option("--dilation",             type="float",         default=6.0,                   help="=6.0, the pixels for dilate or erosion of binary mask (effective only with --do_adaptive_mask)")
 	#parser.add_option("--randomphasesafter",   type="float",         default=0.8,                   help=" set Fourier pixels random phases after FSC value ")
 	# window
 	parser.add_option("--window_stack",         action="store_true",  default=False,                 help="window stack images using a smaller window size")
@@ -940,22 +939,22 @@ def main():
 			print(" Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold.")
 			return
 		elif nargs > 2:
-			ERROR( "Too many arguments are given, try again!", "options.adaptive_mask")
+			ERROR( "Too many arguments", "options.adaptive_mask", 1)
 			return
 		
-		print("Started sxprocess.py  --adaptive_mask")
 		inputvol = get_im(args[0]) # args[0]: input 3D volume file path
 		input_path, input_file_name = os.path.split(args[0])
 		input_file_name_root,ext=os.path.splitext(input_file_name)
 		if nargs == 2:  mask_file_name = args[1] # args[1]: output 3D mask file path
 		else:           mask_file_name = "adaptive_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
-		mask3d, density_stats = adaptive_mask(inputvol, options.nsigma, options.threshold, options.ndilation, options.kernel_size, options.gauss_standard_dev)
-		mask3d.write_image(mask_file_name)
-		print("  Applied threshold for binarize: %f" % density_stats[0])
-		print("  Background density average    : %f" % density_stats[1])
-		print("  Background density sigma      : %f" % density_stats[2])
-		print("  Sigma factor (nsigma)         : %f" % density_stats[3])
-		print("Finished sxprocess.py  --adaptive_mask")
+
+		if( options.fl > 0.0 ):  inputvol =filt_tanl(inputvol,options.fl/option.pixel_size, options.aa)
+		if( options.mol_mass> 0.0 ): density_threshold = inputvol.find_3d_threshold(options.mol_mass, options.pixel_size)
+		else: density_threshold = options.threshold
+		if options.edge_type == "cosine": mode = "C"
+		else:  mode = "G"
+
+		adaptive_mask(inputvol, options.nsigma, density_threshold, options.ndilation, options.edge_width, mode).write_image(mask_file_name)
 	
 	elif options.binary_mask:
 		from utilities import get_im
@@ -968,18 +967,15 @@ def main():
 			print("Too many arguments are given, try again!")
 			return
 		
-		print("Started sxprocess.py  --binary_mask")
 		inputvol = get_im(args[0])
 		input_path, input_file_name = os.path.split(args[0])
 		input_file_name_root,ext=os.path.splitext(input_file_name)
 		if nargs == 2:  mask_file_name = args[1]
 		else:           mask_file_name = "binary_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
 		mask3d = binarize(inputvol, options.bin_threshold)
-		for i in range(options.ne): mask3d = erosion(mask3d)
-		for i in range(options.nd): mask3d = dilation(mask3d)
+		for i in range(options.nerosion): mask3d = erosion(mask3d)
+		for i in range(options.ndilation): mask3d = dilation(mask3d)
 		mask3d.write_image(mask_file_name)
-		print("applied threshold value for binarization is %f" % options.bin_threshold)
-		print("finished sxprocess.py  --binary_mask")
 
 	elif options.combinemaps:
 		if options.output_dir !="./":
@@ -1043,7 +1039,7 @@ def main():
 		log_main.add(line)
 		if e1.get_zsize() == 1:  # 2D case
 			log_main.add("-------->>> Settings given by all options <<<-------")
-			log_main.add("pixle_size        :"+str(options.pixel_size))
+			log_main.add("pixel_size        :"+str(options.pixel_size))
 			log_main.add("mask              :"+str(options.mask))
 			log_main.add("B_enhance         :"+str(options.B_enhance))
 			log_main.add("low_pass_filter   :"+str(options.fl))
@@ -1190,10 +1186,11 @@ def main():
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
 					log_main.add("Options.mask_threshold, options.dilation, options.cosine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.cosine_edge))
+					from morphology import adaptive_mask
 					if single_map:
-						m = Util.adaptive_mask(map1, options.mask_threshold, options.dilation, options.cosine_edge)
+						m = adaptive_mask(map1, options.mask_threshold, options.dilation, options.edge_width)
 					else:
-						m = Util.adaptive_mask((map1+map2)/2.0, options.mask_threshold, options.dilation, options.cosine_edge)
+						m = adaptive_mask((map1+map2)/2.0, options.mask_threshold, options.dilation, options.edge_width)
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 				else:
 					m = None

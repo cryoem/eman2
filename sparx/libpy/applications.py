@@ -1062,7 +1062,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				if CTF: 
 					tavg_Ng = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
 					tavg    = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
-				else:	 
+				else:
 					tavg = (ave1+ave2)/total_nima
 				if outdir:
 					tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
@@ -14029,7 +14029,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 def pw2sp(indir, outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, prefix_of_micrograph="micrograph", MPI=False):
 	""" 
 		Calculate power spectra of a list of micrographs in a given directory using Welch's periodogram
-		The input options enable one selects area in micrographs to calculate overlapped periodogram.
+		The input options enable one to select an area in micrographs to calculate overlapped periodogram.
 	"""
 	if MPI:
 		pw2sp_MPI(indir, outdir, w, xo, yo, xd, yd, r, prefix_of_micrograph)
@@ -14073,7 +14073,7 @@ def pw2sp(indir, outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, 
 def pw2sp_MPI(indir, outdir, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, prefix_of_micrograph="micrograph"):
 	""" 
 		Calculate power spectra of a list of micrographs in a given directory using Welch's periodogram
-		The input options enable one selects area in micrographs to calculate overlapped periodogram.
+		The input options enable one to select an area in micrographs to calculate overlapped periodogram.
 	"""
 	from utilities    	import get_image,drop_image, model_circle, info
 	from fundamentals 	import welch_pw2, ro_textfile
