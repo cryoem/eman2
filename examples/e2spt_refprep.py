@@ -173,7 +173,7 @@ def main():
 	options = makepath(options,'spt_refprep')
 		
 	if options.subset < 4:
-		print("ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided.""")
+		print("ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided.")
 		sys.exit()
 	
 	if options.hacref and options.subset < options.hacref * 2:
