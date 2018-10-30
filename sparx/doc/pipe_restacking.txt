@@ -42,9 +42,9 @@ Do both restacking and reboxing to generate both the virtual stack and reboxing 
   ; %%--%%shift3d_y : 3D y-shift [Pixels]: 3D y-shift value. (default 0)
   ; %%--%%shift3d_z : 3D z-shift [Pixels]: 3D z-shift value. (default 0)
   ; %%--%%save_vstack : Save virtual stack: Use this option to save the virtual stack. By default, the virtual stack will not be generated. (default False)
-  ; %%--%%sv_vstack_basename : Virtual stack basename: For %%--%%save_vstack, specify the basename of output virtual stack file. It cannot be empty string or only white spaces. (default vstack)
+  ; %%--%%sv_vstack_basename : Virtual stack basename: For %%--%%save_vstack, specify the basename of output virtual stack file. It cannot be empty string or only white spaces. (default vstack) : %%--%%save_vstack==True
   ; %%--%%reboxing : Generate reboxing information: Prepare reboxing by extracting coordinates from the input stack headers, then center them according to projection parameters in the header and user-provided 3D shift. If the headers do not contain projection parameters, the program assumes the prjection parameters are all zeros (null alignment). (default False)
-  ; %%--%%rb_box_size : Particle box size [Pixels]: For %%--%%reboxing option, specify the x and y dimensions of square area to be windowed. (default 0)
+  ; %%--%%rb_box_size : Particle box size [Pixels]: For %%--%%reboxing option, specify the x and y dimensions of square area to be windowed. (default 0) : %%--%%reboxing==True
 
 \\
 === Advanced Parameters ===

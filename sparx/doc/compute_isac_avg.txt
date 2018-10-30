@@ -47,10 +47,10 @@ There are four methods to adjust the power spectrum of resultant average images,
   ; %%--%%B_start : Lower bound for B-factor estimation [A]: Lower resolution bound of power spectrum for B-factor estimation. Specific to adjust to B-factor method. (default 45.0)
   ; %%--%%Bfactor : Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor (e.g. 25.0[A^2]) for the enhancement. By default, the program automatically estimates B-factor. Specific to adjust to B-factor method. (default -1.0)
 
-  ; %%--%%xr : Local search range [Pixels]: Translational search range for local alignment. (default -1.0)
-  ; %%--%%ts : Local search step [Pixels]: Translational search step for local alignment. (default 1.0)
-  ; %%--%%fh : High frequency search limit [1/Pixel]: High frequency search limit in absolute frequency for local alignment. (default -1.0)
-  ; %%--%%maxit : Local alignment iterations: The number of iterations for local aligment. (default 5)
+  ; %%--%%xr : Local search range [Pixels]: Translational search range for local alignment. (default -1.0) : %%--%%local_alignment==True
+  ; %%--%%ts : Local search step [Pixels]: Translational search step for local alignment. (default 1.0) : %%--%%local_alignment==True
+  ; %%--%%fh : High frequency search limit [1/Pixel]: High frequency search limit in absolute frequency for local alignment. (default -1.0) : %%--%%local_alignment==True
+  ; %%--%%maxit : Local alignment iterations: The number of iterations for local aligment. (default 5) : %%--%%local_alignment==True
   ; %%--%%navg : Number of averages: The number of averages to be process, starting from the first image. By default, uses all ISAC2 average images. (default 1000000)
 
 \\
