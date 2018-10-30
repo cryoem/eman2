@@ -146,11 +146,16 @@ def main():
 	## the translation numbers used in this program are based on 2k tomograms. so binfac is the factor from the input to 2k images
 	#binfac=max(1, int(np.round(imgs[0]["nx"]/2048.)))
 	#options.binfac=binfac
-	if imgs[0]["nx"]<=1024:
+	if imgs[0]["nx"]<=512:
 		print("Tilt series image too small. Only support 2K or larger input images...")
 		return
 	
-	if imgs[0]["nx"]<=2048:
+	elif imgs[0]["nx"]<=1024:
+		imgs_1k=imgs_2k=imgs_4k=imgs
+		itnum[3]=itnum[2]=0
+		options.outsize="1k"
+		
+	elif imgs[0]["nx"]<=2048:
 		#### 2k or smaller input. skip 4k refinement
 		imgs_2k=imgs_4k=imgs
 		itnum[3]=0
@@ -165,8 +170,9 @@ def main():
 		imgs_4k=[img.process("math.meanshrink", {"n":bf}).process("normalize.edgemean") for img in imgs]
 		imgs_2k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_4k]
 		imgs=None
-			
-	imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_2k]
+	
+	if imgs[0]["nx"]>1024:
+		imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_2k]
 	
 	#### 500x500 images. this is used for the initial coarse alignment so we need to filter it a bit. 
 	imgs_500=[]
@@ -669,8 +675,8 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		outz=pad
 
 	#### we make 2 tomograms with half a box shift and average them together to compensate for boundary artifacts.
-	mem=(outxy*outxy*outz*8+pad*pad*pad*options.threads*4)
-	print("This will take {}x{}x{}x4x2 + {}x{}x{}x{}x4 = {:.1f} GB of memory memory...".format(outxy, outxy, outz, pad, pad, pad,options.threads, mem/1024**3))
+	mem=(outxy*outxy*outz*4+pad*pad*pad*options.threads*4)
+	print("This will take {}x{}x{}x4 + {}x{}x{}x{}x4 = {:.1f} GB of memory memory...".format(outxy, outxy, outz, pad, pad, pad,options.threads, mem/1024**3))
 	#try:
 		#import psutil
 		#memaval=psutil.virtual_memory()
