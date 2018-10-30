@@ -214,6 +214,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Default=auto. Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. 0 -> no shrinking", )
 	parser.add_argument("--shrinks1", dest="shrinks1", type = int, help="The level of shrinking to apply in the first stage of the two-stage classification process. Default=0 (autoselect)",default=0)
 	parser.add_argument("--prefilt",action="store_true",help="Default=auto. Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison. Applies both to classification and class-averaging.",default=False)
+	parser.add_argument("--prectf",action="store_true",help="Default=auto. Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison. Applies both to classification and class-averaging.",default=False)
 	parser.add_argument("--cmpdiff",action="store_true",help="Used only in binary tree classification. Use a mask that focus on the difference of two children.",default=False)
 	parser.add_argument("--treeincomplete",type=int, help="Used only in binary tree classification. Incompleteness of the tree on each level.Default=0",default=0)
 
@@ -654,6 +655,7 @@ are memory concerns, using a smaller pad option may be the only reasonable alter
 	else: parallel=""
 
 	if options.prefilt : prefilt="--prefilt"
+	elif options.prectf : prefilt="--prectf"
 	else: prefilt=""
 
 	if options.cmpdiff : cmpdiff="--cmpdiff"
