@@ -70,6 +70,8 @@ def main():
 	parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--filterto", type=float,help="filter to abs.", default=0.45,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
 
+	parser.add_argument("--extrapad", action="store_true",help="pad extra for tilted reconstruction. slower and cost more memory, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
+	
 	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=12, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
@@ -667,12 +669,15 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	outxy=1024*b
 	step=128*b #### distance between each tile
 	sz=step*2 #### this is the output 3D size 
-	pad=good_boxsize(sz*1.2) #### this is the padded size in fourier space
+	if options.extrapad:
+		pad=good_boxsize(sz*2) #### this is the padded size in fourier space
+	else:
+		pad=good_boxsize(sz*1.2) #### this is the padded size in fourier space
 	
 	if clipz>0:
 		outz=clipz
 	else:
-		outz=pad
+		outz=good_boxsize(sz*1.2)
 
 	#### we make 2 tomograms with half a box shift and average them together to compensate for boundary artifacts.
 	mem=(outxy*outxy*outz*4+pad*pad*pad*options.threads*4)
