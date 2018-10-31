@@ -68,6 +68,7 @@ def main():
 	parser.add_argument("--colmasks",type=str,help="File containing one mask for each column (projection) image, to be used when refining row (particle) image alignments.",default=None)
 	parser.add_argument("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
+	parser.add_argument("--prectf",action="store_true",help="Apply CTF to each projection before comparison",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_argument("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save meclen,mory but potentially increase CPU time",default=False)
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
@@ -106,7 +107,6 @@ def main():
 		# compute the reference self-similarity matrix
 #		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
 		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_tree --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
-		if options.prefilt : cmd+=" --prefilt"
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print("executing ",cmd)
 		launch_childprocess(cmd)
@@ -177,6 +177,7 @@ def main():
 		cmd="e2simmx.py %s %s %s %s --align=%s --aligncmp=%s  --cmp=%s  --saveali --force --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
 			options.align,options.aligncmp,options.cmp, options.verbose-1)
 		if options.prefilt : cmd+=" --prefilt"
+		if options.prectf : cmd+=" --prectf"
 		if options.ralign!=None : cmd+=" --ralign=%s --raligncmp=%s"%(options.ralign,options.raligncmp)
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		if options.exclude!=None : cmd+=" --exclude="+options.exclude
@@ -227,6 +228,7 @@ def main():
 		cmd += " --verbose=%d"%(options.verbose-1)
 
 	if options.prefilt : cmd+=" --prefilt"
+	if options.prectf : cmd+=" --prectf"
 	if options.parallel: cmd += " --parallel=%s" %options.parallel
 
 	#if (options.lowmem): e2simmxcmd += " --lowmem"

@@ -1696,7 +1696,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Applies a simulated CTF with noise to an image. The added noise is either white or based on an empirical curve generated from cryoEM data. ";
+			return "Applies a simulated CTF with noise to an image. Astigmatism is always zero. The added noise is either white or based on an empirical curve generated from cryoEM data. ";
 		}
 
 		static const string NAME;
@@ -2073,7 +2073,7 @@ The basic design of EMAN Processors: <br>\
 
 	/**f(x) = |x|
 	 */
-	class AbsoluateValueProcessor:public RealPixelProcessor
+	class AbsoluteValueProcessor:public RealPixelProcessor
 	{
 	  public:
 		string get_name() const
@@ -2082,7 +2082,7 @@ The basic design of EMAN Processors: <br>\
 		}
 		static Processor *NEW()
 		{
-			return new AbsoluateValueProcessor();
+			return new AbsoluteValueProcessor();
 		}
 
 		static const string NAME;

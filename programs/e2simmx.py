@@ -408,12 +408,12 @@ class EMSimTaskDC(JSTask):
 				image.process_inplace("math.fft.resample",{"n":shrink})
 
 			if ref_masks_name==None :
-				refs[idx] = (image,None)
+				refs[idx] = [image,None]
 			else :
 				mask=EMData(ref_masks_name,idx)
 				if shrink != None:
 					mask.process_inplace("math.fft.resample",{"n":shrink})
-				refs[idx] = (image,mask)
+				refs[idx] = [image,mask]
 
 		ptcl_data_name=self.data["particles"][1]
 		ptcl_indices = image_range(*self.data["particles"][2:])
@@ -447,6 +447,12 @@ class EMSimTaskDC(JSTask):
 
 		options = self.options
 
+		if "prefilt" in options and  options["prefilt"]==2:
+				ctf=ptcl["ctf"]
+				ctf.apix=ptcl["apix_x"]		# not always adjusted with rescaling
+				ctfmul=ptcl.do_fft()
+				ctf.compute_2d_complex(ctfmul,Ctf.CtfType.CTF_ABS)	# abs of CTF amplitude with B-factor
+			
 		data = {}
 		cbli=0
 		for ref_idx,ref in list(refs.items()):
@@ -461,29 +467,39 @@ class EMSimTaskDC(JSTask):
 			if "prefilt" in options and options["prefilt"]:
 				if ref[1]==None:
 					msk=ref[0].process("threshold.notzero")					# mask from the projection
-					ref[0]=ref[0].process("filter.matchto",{"to":ptcl})	# matched filter
-					ref[0].mult(msk)											# remask after setsf
+					if options["prefilt"]==1: ref[0]=ref[0].process("filter.matchto",{"to":ptcl})	# matched filter
+					else: 
+						refc=ref[0].do_fft()
+						refc.mult(ctfmul)
+						refc=refc.do_ift()
+					refc.mult(msk)											# remask after setsf
 				else:
-					ref[0]=ref[0].process("filter.matchto",{"to":ptcl})	# matched filter
-					ref[0].mult(ref[1])											# remask after setsf
+					if options["prefilt"]==1: ref[0]=ref[0].process("filter.matchto",{"to":ptcl})	# matched filter
+					else:
+						refc=ref[0].do_fft()
+						refc.mult(ctfmul)
+						refc=refc.do_ift()
+					refc.mult(ref[1])											# remask after setsf
+			else: refc=ref[0]
+			
 			if "align" in options and options["align"][0] != None:
-				aligned=ref[0].align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
+				aligned=refc.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 
 				if "ralign" in options and options["ralign"] != None: # potentially employ refine alignment
 					refine_parms=options["ralign"][1]
 					if ref[1]!=None :
 						#print "using mask, and ",mask
 						refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d").inverse()
-						ref[0].del_attr("xform.align2d")
+						refc.del_attr("xform.align2d")
 						refine_parms["mask"]=ref[1]
-						alip = ptcl.align(options["ralign"][0],ref[0],refine_parms,options["raligncmp"][0],options["raligncmp"][1])
-						aligned=ref[0].copy()
+						alip = ptcl.align(options["ralign"][0],refc,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
+						aligned=refc.copy()
 						aligned.transform(alip["xform.align2d"].inverse())
 						aligned["xform.align2d"]=alip["xform.align2d"].inverse()
 					else:
 						refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
-						ref[0].del_attr("xform.align2d")
-						aligned = ref[0].align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
+						refc.del_attr("xform.align2d")
+						aligned = refc.align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
 
 
 				if mask!=None :
@@ -501,7 +517,7 @@ class EMSimTaskDC(JSTask):
 #					print t,data[ref_idx]
 					
 			else:
-				data[ref_idx] = (ptcl.cmp(options["cmp"][0],ref[0],options["cmp"][1]),None)
+				data[ref_idx] = (ptcl.cmp(options["cmp"][0],refc,options["cmp"][1]),None)
 
 		return data
 
@@ -609,6 +625,7 @@ def main():
 	parser.add_argument("--raligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
 	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
+	parser.add_argument("--prectf",action="store_true",help="Apply CTF to each projection before comparison",default=False)
 	parser.add_argument("--mask",type=str,help="File containing a single mask image to apply after alignment, but before similarity comparison",default=None)
 	parser.add_argument("--colmasks",type=str,help="File containing one mask for each column (projection) image, to be used when refining row (particle) image alignments.",default=None)
 	parser.add_argument("--range",type=str,help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
@@ -645,6 +662,14 @@ def main():
 
 	if error : exit(1)
 	if options.check: exit(0)
+	
+	if options.prectf :
+		if options.prefilt :
+			print("ERROR: may only specify one of prefilt or prectf")
+			sys.exit(1)
+		options.prefilt=2
+	elif options.prefilt: options.prefilt=1
+	else: options.prefilt=0
 
 	E2n=E2init(sys.argv, options.ppid)
 

@@ -70,6 +70,8 @@ def main():
 	parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--filterto", type=float,help="filter to abs.", default=0.45,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
 
+	parser.add_argument("--extrapad", action="store_true",help="pad extra for tilted reconstruction. slower and cost more memory, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
+	
 	parser.add_argument("--threads", type=int,help="Number of threads", default=12,guitype='intbox',row=12, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
@@ -146,11 +148,16 @@ def main():
 	## the translation numbers used in this program are based on 2k tomograms. so binfac is the factor from the input to 2k images
 	#binfac=max(1, int(np.round(imgs[0]["nx"]/2048.)))
 	#options.binfac=binfac
-	if imgs[0]["nx"]<=1024:
+	if imgs[0]["nx"]<=512:
 		print("Tilt series image too small. Only support 2K or larger input images...")
 		return
 	
-	if imgs[0]["nx"]<=2048:
+	elif imgs[0]["nx"]<=1024:
+		imgs_1k=imgs_2k=imgs_4k=imgs
+		itnum[3]=itnum[2]=0
+		options.outsize="1k"
+		
+	elif imgs[0]["nx"]<=2048:
 		#### 2k or smaller input. skip 4k refinement
 		imgs_2k=imgs_4k=imgs
 		itnum[3]=0
@@ -165,8 +172,9 @@ def main():
 		imgs_4k=[img.process("math.meanshrink", {"n":bf}).process("normalize.edgemean") for img in imgs]
 		imgs_2k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_4k]
 		imgs=None
-			
-	imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_2k]
+	
+	if imgs[0]["nx"]>1024:
+		imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_2k]
 	
 	#### 500x500 images. this is used for the initial coarse alignment so we need to filter it a bit. 
 	imgs_500=[]
@@ -661,16 +669,19 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	outxy=1024*b
 	step=128*b #### distance between each tile
 	sz=step*2 #### this is the output 3D size 
-	pad=good_boxsize(sz*1.2) #### this is the padded size in fourier space
+	if options.extrapad:
+		pad=good_boxsize(sz*2) #### this is the padded size in fourier space
+	else:
+		pad=good_boxsize(sz*1.2) #### this is the padded size in fourier space
 	
 	if clipz>0:
 		outz=clipz
 	else:
-		outz=pad
+		outz=good_boxsize(sz*1.2)
 
 	#### we make 2 tomograms with half a box shift and average them together to compensate for boundary artifacts.
-	mem=(outxy*outxy*outz*8+pad*pad*pad*options.threads*4)
-	print("This will take {}x{}x{}x4x2 + {}x{}x{}x{}x4 = {:.1f} GB of memory memory...".format(outxy, outxy, outz, pad, pad, pad,options.threads, mem/1024**3))
+	mem=(outxy*outxy*outz*4+pad*pad*pad*options.threads*4)
+	print("This will take {}x{}x{}x4 + {}x{}x{}x{}x4 = {:.1f} GB of memory memory...".format(outxy, outxy, outz, pad, pad, pad,options.threads, mem/1024**3))
 	#try:
 		#import psutil
 		#memaval=psutil.virtual_memory()

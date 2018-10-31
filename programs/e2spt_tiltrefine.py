@@ -62,16 +62,17 @@ def main():
 
 	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=2, col=0,rowspan=1, colspan=1)	
 	parser.add_argument("--nogs", action="store_true", default=False ,help="skip gold standard...", guitype='boolbox',row=2, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=2, col=2,rowspan=1, colspan=1)
 
-	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="build sets only")
-	parser.add_argument("--output", type=str,help="Write results to this directory. We do not recommend changing this.", default="subtlt")#, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--threads", type=int,help="Number of CPU threads to use. Default is 12.", default=12, guitype='intbox',row=2, col=2,rowspan=1, colspan=1)
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12", guitype='strbox',row=4, col=0,rowspan=1, colspan=3)
 
 	parser.add_argument("--refineastep", type=float,help="angular step for refine alignment (gauss std)", default=10.)
 	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=32)
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=10)
 
-	parser.add_argument("--threads", type=int,help="Number of CPU threads to use. Default is 12.", default=12, guitype='intbox',row=2, col=2,rowspan=1, colspan=1)
-	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12", guitype='strbox',row=4, col=0,rowspan=1, colspan=3)
+	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="build sets only")
+	parser.add_argument("--output", type=str,help="Write results to this directory. We do not recommend changing this.", default="subtlt")#, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
 
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data (threads * 8 particles)")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
@@ -101,7 +102,7 @@ def main():
 			if re.match("threed_[0-9][0-9].hdf",f):
 				itr = int(f[7:].split(".")[0])
 
-	print(oldpath)
+	# print(oldpath)
 
 	if not os.path.isfile("{}/threed_{:02d}.hdf".format(oldpath,itr)):
 		print("Could not locate {}/threed_{:02d}.hdf".format(oldpath,itr))
@@ -112,40 +113,47 @@ def main():
 		print("Please specify the iteration number (--iter) of a completed subtomogram refinement.")
 		sys.exit(1)
 	else:
-		copy2("{}/0_spt_params.json".format(oldpath),"{}/0_subtlt_params.json".format(path))
+		#copy2("{}/0_spt_params.json".format(oldpath),"{}/0_subtlt_params.json".format(path))
 
 		oldmap = os.path.join(oldpath,"threed_{:02d}.hdf".format(itr))
 		oem = os.path.join(oldpath,"threed_{:02d}_even.hdf".format(itr))
 		oom = os.path.join(oldpath,"threed_{:02d}_odd.hdf".format(itr))
 		oldparm = os.path.join(oldpath,"particle_parms_{:02d}.json".format(itr))
-		oldfsc = os.path.join(oldpath, "fsc_masked_{:02d}.txt".format(itr))
+		oldfsc = os.path.join(oldpath, "fsc_maskedtight_{:02d}.txt".format(itr))
 
 		copy2(oldmap,os.path.join(path,"threed_00.hdf"))
 		copy2(oldparm,os.path.join(path,"particle_parms_00.json"))
-		copy2(oldfsc, os.path.join(path, "fsc_masked_00.txt"))
+		copy2(oldfsc, os.path.join(path, "fsc_maskedtight_00.txt"))
 		copy2(oem,os.path.join(path,"threed_00_even.hdf"))
 		copy2(oom,os.path.join(path,"threed_00_odd.hdf"))
 
-		oldmsk = "{}/mask_tight.hdf".format(oldpath)
-		if os.path.isfile(oldmsk):
-			msk = "{}/mask_tight.hdf".format(path)
-			copy2(oldmsk, msk)
-
 	jd = js_open_dict("{}/0_subtlt_params.json".format(path))
-	jd["path"] = options.path
+	jd["cmd"] = " ".join(sys.argv)
+	jd["path"] = oldpath
 	jd["iter"] = itr
-	jd["sym"] = options.sym
 	jd["niters"] = options.niters
+	jd["sym"] = options.sym
 	jd["padby"] = options.padby
 	jd["keep"] = options.keep
 	jd["maxalt"] = options.maxalt
+	jd["nogs"] = options.nogs
+	# jd["buildsetonly"] = options.buildsetonly
+	jd["output"] = path
 	jd["refineastep"] = options.refineastep
 	jd["refinentry"] = options.refinentry
 	jd["maxshift"] = options.maxshift
-	jd["nogs"] = options.nogs
-	jd["parallel"] = options.parallel
 	jd["threads"] = options.threads
-	jd["mask"] = msk
+	jd["parallel"] = options.parallel
+
+	if options.localfilter == True:
+		jd["localfilter"] = True
+	
+	sptparms = os.path.join(oldpath,"particle_parms_{:02d}.json".format(itr))
+	if os.path.isfile(sptparms):
+		oldjd = js_open_dict(sptparms)
+		if oldjd.has_key("mass"): jd["mass"] = oldjd["mass"]
+		if oldjd.has_key("setsf"): jd["setsf"] = oldjd["setsf"]
+		oldjd.close()
 	jd.close()
 
 	js=js_open_dict(os.path.join(path,"particle_parms_00.json"))
@@ -292,15 +300,14 @@ def main():
 		if jd.has_key("mass"): 
 			s += " --mass {}".format(jd["mass"])
 		else: 
-			s += " --mass 1000"
+			s += " --mass 2500"
 		if jd.has_key("sym"):
-			if jd["sym"] != "c1": 
-				s += " --sym {}".format(jd["sym"])
-		msk = jd["mask"] #{}/mask_tight.hdf".format(path)
-		if os.path.isfile(msk):
-			s += " --automask3d mask.fromfile:filename={}".format(msk)
-		else:
-			s += " --automask3d {}".format(msk)
+			s += " --sym {}".format(jd["sym"])
+		# msk = jd["mask"] #{}/mask_tight.hdf".format(path)
+		# if os.path.isfile(msk):
+		# 	s += " --automask3d mask.fromfile:filename={}".format(msk)
+		# else:
+		# 	s += " --automask3d {}".format(msk)
 		jd.close()
 
 		# get target resolution from last iteration map

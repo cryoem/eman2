@@ -402,7 +402,11 @@ class TomoListWidget(QtGui.QListWidget):
 		return txt
 		
 	def update_list(self, lst):
-		self.lblen=max([len(l) for l in lst.keys()])+3
+		self.clear()
+		if len(lst.keys())>0:
+			self.lblen=max([len(l) for l in lst.keys()])+3
+		else:
+			self.lblen=0
 		self.itemlst=[]
 		for k in list(lst.keys()):
 			ni=lst[k][1]

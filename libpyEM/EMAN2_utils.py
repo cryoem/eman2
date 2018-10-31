@@ -446,8 +446,8 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			ret[i]=None
 			continue
 		if prefilt :
-			msk=r.process("threshold.notzero")					# mask from the projection
-			r[0]=r[0].process("filter.matchto",{"to":target})
+			msk=r[0].process("threshold.notzero")					# mask from the projection
+			r[0].process_inplace("filter.matchto",{"to":target})
 			r[0].mult(msk)											# remask after filtering
 
 #		print "Final: ",target["source_n"],",",r[0]["source_n"]
