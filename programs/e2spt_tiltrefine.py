@@ -128,7 +128,7 @@ def main():
 		copy2(oom,os.path.join(path,"threed_00_odd.hdf"))
 
 	jd = js_open_dict("{}/0_subtlt_params.json".format(path))
-	jd["cmd"] = sys.argv.join(" ")
+	jd["cmd"] = " ".join(sys.argv)
 	jd["path"] = oldpath
 	jd["iter"] = itr
 	jd["niters"] = options.niters
@@ -145,7 +145,8 @@ def main():
 	jd["threads"] = options.threads
 	jd["parallel"] = options.parallel
 
-	if options.localfilter: jd["localfilter"] = True
+	if options.localfilter == True:
+		jd["localfilter"] = True
 	
 	sptparms = os.path.join(oldpath,"particle_parms_{:02d}.json".format(itr))
 	if os.path.isfile(sptparms):
