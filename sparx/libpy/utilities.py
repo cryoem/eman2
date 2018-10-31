@@ -5294,7 +5294,7 @@ def get_dist(c1, c2):
 def eliminate_moons(my_volume, moon_elimination_params):
 	"""
 	moon_elimination_params[0] - mass in KDa
-	moon_elimination_params[1] - resolution in px/A
+	moon_elimination_params[1] - pixel size in A
 	"""
 
 	from morphology import binarize

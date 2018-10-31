@@ -119,6 +119,7 @@ class SXcmd_token(object):
 		self.label = ""               # User friendly name of argument or option
 		self.help = ""                # Help info
 		self.group = ""               # Tab group: main or advanced
+		self.dependency_group = ["", "", ""]    # Depencency group: Disables or enables widgets
 		self.is_required = False      # Required argument or options. No default values are available
 		self.is_locked = False        # The restore value will be used as the locked value.
 		self.is_reversed = False      # Reversed default value of bool. The flag will be added if the value is same as default 
@@ -167,6 +168,7 @@ class SXcmd(object):
 		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue
 		self.token_list = []                  # List of command tokens. Need this to keep the order of command tokens
 		self.token_dict = {}                  # Dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
+		self.dependency_dict = {}             # Dictionary of command tokens, containing the dependencies
 		self.btn = None                       # <Used only in sxgui.py> QPushButton button instance associating with this command
 		self.widget = None                    # <Used only in sxgui.py> SXCmdWidget instance associating with this command
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -590,6 +592,23 @@ class SXCmdWidget(QWidget):
 
 		self.sxcmd_tab_main = SXCmdTab("Main", self)
 		self.sxcmd_tab_advance = SXCmdTab("Advanced", self)
+		for key in self.sxcmd.dependency_dict:
+			self.sxcmd.token_dict[key].widget.my_changed_state.connect(self.change_state)
+			if isinstance(self.sxcmd.token_dict[key].widget, SXCheckBox):
+				idx = self.sxcmd.token_dict[key].widget.checkState()
+				if idx == 0:
+					self.sxcmd.token_dict[key].widget.setCheckState(2)
+				elif idx == 1:
+					self.sxcmd.token_dict[key].widget.setCheckState(2)
+				elif idx == 2:
+					self.sxcmd.token_dict[key].widget.setCheckState(0)
+				self.sxcmd.token_dict[key].widget.setCheckState(idx)
+			elif isinstance(self.sxcmd.token_dict[key].widget, SXLineEdit):
+				text = self.sxcmd.token_dict[key].widget.text()
+				self.sxcmd.token_dict[key].widget.setText('0000000000000000099999')
+				self.sxcmd.token_dict[key].widget.setText(text)
+
+
 		tab_widget = QTabWidget()
 		tab_widget.insertTab(0, self.sxcmd_tab_main, self.sxcmd_tab_main.name)
 		tab_widget.insertTab(1, self.sxcmd_tab_advance, self.sxcmd_tab_advance.name)
@@ -631,6 +650,73 @@ class SXCmdWidget(QWidget):
 		tab_widget.setPalette(palette)
 		grid_layout.addWidget(tab_widget, 0, 0)
 
+	@QtCore.pyqtSlot(str, str)
+	@QtCore.pyqtSlot(str, int)
+	def change_state(self, dependency, state, old_dependency=None):
+		"""
+		Change the state of widgets based on the choice of the corresponding combo box
+
+		name - Name of the group to change status (Emitted by the combo box)
+
+		Returns:
+		None
+		"""
+
+		if old_dependency is None:
+			old_dependency = [dependency]
+		else:
+			old_dependency.append(dependency)
+		parent = self.sender().parent()
+		while True:
+			if hasattr(parent, 'sxcmd'):
+				break
+			else:
+				parent = parent.parent()
+
+		if isinstance(self.sender(), SXCheckBox):
+			type_check = bool
+		elif isinstance(self.sender(), SXLineEdit):
+			type_check = str
+		else:
+			assert False
+		try:
+			for name, exp_state, inverse in parent.sxcmd.dependency_dict[str(dependency)]:
+				if not parent.sxcmd.token_dict[str(dependency)].widget.isEnabled():
+					is_enabled = False
+				elif str(type_check(state)) != exp_state and inverse == 'True':
+					is_enabled = True
+				elif str(type_check(state)) == exp_state and inverse == 'True':
+					is_enabled = False
+				elif str(type_check(state)) == exp_state:
+					is_enabled = True
+				else:
+					is_enabled = False
+				SXCmdTab.set_text_entry_widget_enable_state(parent.sxcmd.token_dict[name].widget, is_enabled)
+				if name not in old_dependency and str(dependency) != parent.sxcmd.token_dict[name].dependency_group[0]:
+					try:
+						new_state = parent.sxcmd.token_dict[name].widget.checkState()
+					except AttributeError:
+						new_state = parent.sxcmd.token_dict[name].widget.isEnabled()
+					self.change_state(name, new_state, old_dependency)
+		except KeyError:
+			return None
+		#print(state)
+		#try:
+		#	for entry in self.cmd[name]:
+		#		widget = entry[0]
+		#		state = entry[1]
+		#		sub_name = entry[2]
+		#		if not self.content[name].isEnabled():
+		#			widget.setEnabled(False)
+		#		elif self.content[name].edit.currentText() == state:
+		#			widget.setEnabled(True)
+		#		else:
+		#			widget.setEnabled(False)
+		#		self.change_state(name=sub_name)
+		#except KeyError:
+		#	return None
+
+
 	def map_widgets_to_sxcmd_line(self):
 		# Add program name to command line
 		sxcmd_line = "%s.py" % (self.sxcmd.name)
@@ -641,7 +727,9 @@ class SXCmdWidget(QWidget):
 		# Loop through all command tokens
 		for sxcmd_token in self.sxcmd.token_list:
 			# First, handle very special cases
-			if sxcmd_token.type == "user_func":
+			if not sxcmd_token.widget.isEnabled():
+				continue
+			elif sxcmd_token.type == "user_func":
 				user_func_name_index = 0
 				external_file_path_index = 1
 				user_func_name = str(sxcmd_token.widget[user_func_name_index].text())
@@ -1019,16 +1107,16 @@ class SXCmdWidget(QWidget):
 					target_operator = "<"
 					item_tail = label_in.find(target_operator)
 					if item_tail != 0:
-						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should start from \"%s\" for key base name in line (%s) of file (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in, file_path_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should start from \"%s\" for key base name in line (%s) of file (%s). The format of this file might be corrupted. Please save the parameter file again." % (target_operator, line_in, file_path_in))
 					label_in = label_in[item_tail + len(target_operator):].strip() # Get the rest of line
 					target_operator = ">"
 					item_tail = label_in.find(target_operator)
 					if item_tail == -1:
-						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) of file (%s). The format of this file might be corrupted. Please save the paramater file again." % (target_operator, line_in, file_path_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Command token entry should have \"%s\" closing key base name in line (%s) of file (%s). The format of this file might be corrupted. Please save the parameter file again." % (target_operator, line_in, file_path_in))
 					key_base = label_in[0:item_tail]
 					# Get corresponding cmd_token
 					if key_base not in list(self.sxcmd.token_dict.keys()):
-						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s) of file (%s). This parameter file might be incompatible with the current version. Please save the paramater file again." % (key_base, line_in, file_path_in))
+						QMessageBox.warning(self, "Invalid Parameter File Format", "Invalid base name of command token \"%s\" is found in line (%s) of file (%s). This parameter file might be incompatible with the current version. Please save the parameter file again." % (key_base, line_in, file_path_in))
 					cmd_token = self.sxcmd.token_dict[key_base]
 					if not cmd_token.is_locked: 
 						# First, handle very special cases
@@ -1065,7 +1153,7 @@ class SXCmdWidget(QWidget):
 				# 	print("MRK_DEBUG: AFTER sxcmd_token_apix_other_dialog.sxcmd_token_widget_apix.text() := \"{}\"".format(sxcmd_token_apix_other_dialog.sxcmd_token_widget_apix.text()))
 				# 	print("MRK_DEBUG: AFTER sxcmd_token_apix_other_dialog.sxcmd_token_widget_abs_freq.text() := \"{}\"".format(sxcmd_token_apix_other_dialog.sxcmd_token_widget_abs_freq.text()))
 		else:
-			QMessageBox.warning(self, "Fail to load parameters", "The specified file is not parameter file for %s." % self.sxcmd.get_mode_name_for("human"))
+			QMessageBox.warning(self, "Fail to load parameters", "The specified file parameter file for %s could not be read." % self.sxcmd.get_mode_name_for("human"))
 
 		file_in.close()
 
@@ -1399,6 +1487,24 @@ class SXCmdWidget(QWidget):
 #		QMessageBox.information(self, "sx* output","outdir is the name of the output folder specified by the user. If it does not exist, the directory will be created. If it does exist, the program will crash and an error message will come up. Please change the name of directory and restart the program.")
 	"""
 
+class SXLineEdit(QtGui.QLineEdit):
+	my_changed_state = QtCore.pyqtSignal(str, str)
+
+	def __init__(self, dependency, parent=None):
+		super(SXLineEdit, self).__init__(parent)
+		self.dependency = dependency
+		self.textChanged.connect(lambda x: self.my_changed_state.emit(self.dependency, x))
+
+
+class SXCheckBox(QtGui.QCheckBox):
+	my_changed_state = QtCore.pyqtSignal(str, int)
+
+	def __init__(self, dependency, parent=None):
+		super(SXCheckBox, self).__init__(parent)
+		self.dependency = dependency
+		self.stateChanged.connect(lambda x: self.my_changed_state.emit(self.dependency, x))
+
+
 # ========================================================================================
 class SXCmdTab(QWidget):
 	def __init__(self, name, parent=None):
@@ -1580,8 +1686,8 @@ class SXCmdTab(QWidget):
 					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
-					# cmd_token_widget[widget_index] = QLineEdit(self)
-					cmd_token_widget[widget_index] = QLineEdit()
+					# cmd_token_widget[widget_index] = SXLineEdit(self)
+					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
 					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index])
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
@@ -1601,7 +1707,7 @@ class SXCmdTab(QWidget):
 					cmd_token_restore_widget[widget_index].setToolTip('<FONT>'+default_cmd_token_restore_tooltip+'</FONT>')
 					grid_layout.addWidget(cmd_token_restore_widget[widget_index], grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
-					cmd_token_widget[widget_index] = QLineEdit()
+					cmd_token_widget[widget_index] = SXLineEdit(cmd_token.key_base)
 					cmd_token_widget[widget_index].setText(cmd_token.restore[widget_index]) # Because default user functions is internal
 					cmd_token_widget[widget_index].setToolTip('<FONT>'+cmd_token.help[widget_index]+'</FONT>')
 					grid_layout.addWidget(cmd_token_widget[widget_index], grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
@@ -1610,7 +1716,7 @@ class SXCmdTab(QWidget):
 
 					file_format = "py"
 					temp_btn = QPushButton("Select Python script")
-					temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s python script file</FONT>" % file_format)
+					temp_btn.setToolTip('<FONT>'+"Display open file dialog to select .%s python script file</FONT>" % file_format)
 					grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 					temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget[widget_index], file_format))
 
@@ -1663,7 +1769,7 @@ class SXCmdTab(QWidget):
 						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
 						# construct new widget(s) for this command token
-						cmd_token_widget = QCheckBox("")
+						cmd_token_widget = SXCheckBox(cmd_token.key_base)
 						if cmd_token.restore == True:
 							cmd_token_widget.setCheckState(Qt.Checked)
 						else:
@@ -1696,7 +1802,7 @@ class SXCmdTab(QWidget):
 						cmd_token_restore_widget.setEnabled(is_btn_enable)
 						grid_layout.addWidget(cmd_token_restore_widget, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
-						cmd_token_widget = QLineEdit()
+						cmd_token_widget = SXLineEdit(cmd_token.key_base)
 						cmd_token_widget.setText(cmd_token.restore)
 						cmd_token_widget.setEnabled(not cmd_token.is_locked)
 						grid_layout.addWidget(cmd_token_widget, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
@@ -1707,7 +1813,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any displayables")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select displayable data files of any supported formats</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select displayable data files of any supported formats</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1721,7 +1827,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any image/volume")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select an image/volume file of any supported format</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select an image/volume file of any supported format</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1735,12 +1841,12 @@ class SXCmdTab(QWidget):
 							file_format = "mrc2d_mic_both"
 							temp_btn = QPushButton("Select MRC mic/movie")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a MRC format micrograph or movie file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a MRC format micrograph or movie file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any mic/movie")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph or movie file of any supported format</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a micrograph or movie file of any supported format</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -1748,12 +1854,12 @@ class SXCmdTab(QWidget):
 							file_format = "mrc2d_mic_one"
 							temp_btn = QPushButton("Select MRC micrograph")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a MRC format micrograph file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a MRC format micrograph file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any micrograph")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph file of any supported format</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a micrograph file of any supported format</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -1761,12 +1867,12 @@ class SXCmdTab(QWidget):
 							file_format = "mrc2d_mic_one_list"
 							temp_btn = QPushButton("Select MRC micrographs")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select MRC format micrograph files</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select MRC format micrograph files</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any micrographs")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select micrograph files of any supported formats</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select micrograph files of any supported formats</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -1774,12 +1880,12 @@ class SXCmdTab(QWidget):
 							file_format = "mrc2d_mic_stack"
 							temp_btn = QPushButton("Select MRC movie")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a MRC format movie file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a MRC format movie file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any movie")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a movie file of any supported format</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a movie file of any supported format</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -1787,12 +1893,12 @@ class SXCmdTab(QWidget):
 							file_format = "hdf2d_one"
 							temp_btn = QPushButton("Select HDF image")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a HDF format image file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a HDF format image file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any image")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a image file of any supported format</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a image file of any supported format</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -1800,7 +1906,7 @@ class SXCmdTab(QWidget):
 							file_format = "bdb2d_stack"
 							temp_btn = QPushButton("Select BDB image stack")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a BDB format image stack file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a BDB format image stack file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1814,12 +1920,12 @@ class SXCmdTab(QWidget):
 							file_format = "bdb2d_stack"
 							temp_btn = QPushButton("Select BDB image stack")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a BDB format image stack file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a BDB format image stack file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any image stack")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a image stack file of any supported format</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a image stack file of any supported format</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -1827,12 +1933,12 @@ class SXCmdTab(QWidget):
 							file_format = "hdf3d_one"
 							temp_btn = QPushButton("Select HDF volume")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a HDF format volume file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a HDF format volume file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any volume")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a volume file of any supported format</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a volume file of any supported format</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -1840,12 +1946,12 @@ class SXCmdTab(QWidget):
 							file_format = "hdf3d_stack"
 							temp_btn = QPushButton("Select HDF volume stack")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a HDF format volume stack file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a HDF format volume stack file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any volume stack")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a volume stack file of any supported format</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a volume stack file of any supported format</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -1853,7 +1959,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select mic/movie list")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph/movie selection file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a micrograph/movie selection file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1867,7 +1973,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select micrograph list")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph selection file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a micrograph selection file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1881,12 +1987,12 @@ class SXCmdTab(QWidget):
 							file_format = "select_mic_one"
 							temp_btn = QPushButton("Select micrograph list")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph selection file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a micrograph selection file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "mic_one"
 							temp_btn = QPushButton("Select any micrograph")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph file of any supported format</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a micrograph file of any supported format</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -1894,7 +2000,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select movie list")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a micrograph movie selection file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a micrograph movie selection file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1908,7 +2014,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select image list")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a image selection file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a image selection file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1922,7 +2028,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select drift params list")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a drift shift parameters selection file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a drift shift parameters selection file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1936,7 +2042,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select parameters text")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a parameters text file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a parameters text file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1950,7 +2056,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select projection params")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a projection parameters file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a projection parameters file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1964,12 +2070,12 @@ class SXCmdTab(QWidget):
 							file_format = "params_coords_box"
 							temp_btn = QPushButton("Select BOX coordinates")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a EMAN BOX coordinates file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a EMAN BOX coordinates file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select any coordinates")
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a coordinates file of any supported format</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a coordinates file of any supported format</FONT>")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -1977,7 +2083,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select CTER partres")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a CTER partres parameters file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a CTER partres parameters file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -1991,7 +2097,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select SPHIRE rebox")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a SPHIRE rebox file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a SPHIRE rebox file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -2005,7 +2111,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select drift shift params")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a drift shift parameters file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a drift shift parameters file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -2019,7 +2125,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select matrix file")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a rotational matrix file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a rotational matrix file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -2033,7 +2139,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select RELION STAR file")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a RELION STAR file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a RELION STAR file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -2047,7 +2153,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select power spectrum")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a 1D power spectrum file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a 1D power spectrum file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -2061,7 +2167,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select MTF data")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a MTF data file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a MTF data file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -2075,7 +2181,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select PDB data")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a PDB data file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a PDB data file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -2089,7 +2195,7 @@ class SXCmdTab(QWidget):
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select executable")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select an executable file</FONT>")
+							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select an executable file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 							file_format = "INVISIBLE"
@@ -2102,7 +2208,7 @@ class SXCmdTab(QWidget):
 						elif cmd_token.type == "dir" or cmd_token.type == "dir_list" or cmd_token.type == "output_continue":
 							temp_btn = QPushButton("Select directory")
 							temp_btn.setMinimumWidth(func_btn_min_width)
-							temp_btn.setToolTip('<FONT>'+"Display select directory dailog"+'</FONT>')
+							temp_btn.setToolTip('<FONT>'+"Display select directory dialog"+'</FONT>')
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_dir, cmd_token_widget))
 							file_format = "INVISIBLE"
@@ -2121,7 +2227,7 @@ class SXCmdTab(QWidget):
 							grid_layout.addWidget(cmd_token_subwidget_left, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 							# Create button to show the associated calculator dialog.
 							cmd_token_subwidget_right = QPushButton("Use resolution [A]")
-							cmd_token_subwidget_right.setToolTip('<FONT>'+"Display calculator dailog to use the resolution [A] instead of absolute frequency [1/Pixel]. It calculates absolute frequency [1/Pixel] (abs_freq) From resolution [A] (ares) using a give pixel size [A/Pixel] (apix), where abs_freq = apix/ares. </FONT>")
+							cmd_token_subwidget_right.setToolTip('<FONT>'+"Display calculator dialog to use the resolution [A] instead of absolute frequency [1/Pixel]. It calculates absolute frequency [1/Pixel] (abs_freq) From resolution [A] (ares) using a give pixel size [A/Pixel] (apix), where abs_freq = apix/ares. </FONT>")
 							cmd_token_subwidget_right.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(cmd_token_subwidget_right, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 							# Associated this subwidget to open the calculator dialog
@@ -2134,19 +2240,19 @@ class SXCmdTab(QWidget):
 							cmd_token_subwidget_right.clicked.connect(cmd_token_calculator_dialog.show)
 ###						elif cmd_token.type == "any_micrograph":
 ###							temp_btn = QPushButton("Select Image")
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image file (e.g. .hdf, .mrc)</FONT>")
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select standard format image file (e.g. .hdf, .mrc)</FONT>")
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 ###							file_format = "txt"
 ###							temp_btn = QPushButton("Select text file")
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a parameters text file</FONT>" )
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a parameters text file</FONT>" )
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 ###						elif cmd_token.type == "any_image":
 ###							temp_btn = QPushButton("Select Image")
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image file (e.g. .hdf, .mrc)</FONT>")
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select standard format image file (e.g. .hdf, .mrc)</FONT>")
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
@@ -2160,7 +2266,7 @@ class SXCmdTab(QWidget):
 ###						elif cmd_token.type == "any_image_list":
 ###							temp_btn = QPushButton("Select Images")
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select standard format image files (e.g. .hdf, .mrc)</FONT>")
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select standard format image files (e.g. .hdf, .mrc)</FONT>")
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
 ###							file_format = "INVISIBLE"
@@ -2173,7 +2279,7 @@ class SXCmdTab(QWidget):
 ###						elif cmd_token.type == "any_file":
 ###							temp_btn = QPushButton("Select File")
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select file (e.g. *.*)</FONT>")
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select file (e.g. *.*)</FONT>")
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget))
 ###							file_format = "INVISIBLE"
@@ -2185,26 +2291,26 @@ class SXCmdTab(QWidget):
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 ###						elif cmd_token.type == "any_file_list":
 ###							temp_btn = QPushButton("Select Files")
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select files (e.g. *.*)</FONT>")
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select files (e.g. *.*)</FONT>")
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, cmd_token.type))
 ###							file_format = "bdb"
 ###							temp_btn = QPushButton("Select .%s" % file_format)
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select .%s format image file</FONT>" % file_format)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 ###						elif cmd_token.type == "image":
 ###							file_format = "hdf"
 ###							temp_btn = QPushButton("Select .%s" % file_format)
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select .%s format image file</FONT>" % file_format)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 ###							file_format = "bdb"
 ###							temp_btn = QPushButton("Select .%s" % file_format)
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select .%s format image file</FONT>" % file_format)
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
@@ -2212,7 +2318,7 @@ class SXCmdTab(QWidget):
 ###							file_format = "bdb"
 ###							temp_btn = QPushButton("Select .%s" % file_format)
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select .%s format image file</FONT>" % file_format)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 ###							file_format = "INVISIBLE"
@@ -2226,7 +2332,7 @@ class SXCmdTab(QWidget):
 ###							file_format = cmd_token.type
 ###							temp_btn = QPushButton("Select .%s" % file_format)
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select .%s format image file</FONT>" % file_format)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 ###							file_format = "INVISIBLE"
@@ -2240,7 +2346,7 @@ class SXCmdTab(QWidget):
 ###							file_format = cmd_token.type
 ###							temp_btn = QPushButton("Select .%s" % file_format)
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select .%s format image file</FONT>" % file_format)
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select .%s format image file</FONT>" % file_format)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 ###							file_format = "INVISIBLE"
@@ -2254,7 +2360,7 @@ class SXCmdTab(QWidget):
 ###							file_format = cmd_token.type
 ###							temp_btn = QPushButton("Select text file")
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
-###							temp_btn.setToolTip('<FONT>'+"Display open file dailog to select a parameters text file</FONT>")
+###							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a parameters text file</FONT>")
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)
 ###							self.connect(temp_btn, SIGNAL("clicked()"), partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
 ###							file_format = "INVISIBLE"
@@ -2339,7 +2445,7 @@ class SXCmdTab(QWidget):
 			# Add space
 			grid_row += 1
 
-			# Add gui components for MPI related paramaters
+			# Add gui components for MPI related parameters
 			temp_label = QLabel("MPI processors")
 			temp_label.setMinimumWidth(token_label_min_width)
 			submit_layout.addWidget(temp_label, grid_row, grid_col_origin, token_label_row_span, token_label_col_span)
@@ -2350,7 +2456,7 @@ class SXCmdTab(QWidget):
 			self.mpi_nproc_edit.setToolTip('<FONT>'+"Number of processors to use. default is single processor mode"+'</FONT>')
 			submit_layout.addWidget(self.mpi_nproc_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
-			# Add save paramaters button
+			# Add save parameters button
 			self.save_params_btn = QPushButton("Save parameters")
 			self.save_params_btn.setMinimumWidth(btn_min_width)
 			self.save_params_btn.setToolTip('<FONT>'+"Save gui parameter settings"+'</FONT>')
@@ -2368,7 +2474,7 @@ class SXCmdTab(QWidget):
 			self.mpi_cmd_line_edit.setToolTip('<FONT>'+"Template of MPI command line (e.g. \"mpirun -np XXX_SXMPI_NPROC_XXX --host n0,n1,n2 XXX_SXCMD_LINE_XXX\"). if empty, use \"mpirun -np XXX_SXMPI_NPROC_XXX XXX_SXCMD_LINE_XXX\"</FONT>")
 			submit_layout.addWidget(self.mpi_cmd_line_edit, grid_row, grid_col_origin + token_label_col_span, token_widget_row_span, token_widget_col_span)
 
-			# Add load paramaters button
+			# Add load parameters button
 			self.load_params_btn = QPushButton("Load parameters")
 			self.load_params_btn.setMinimumWidth(btn_min_width)
 			self.load_params_btn.setToolTip('<FONT>'+"Load gui parameter settings to retrieve a previously-saved one"+'</FONT>')
@@ -2450,7 +2556,7 @@ class SXCmdTab(QWidget):
 
 			self.qsub_script_open_btn = QPushButton("Select template")
 			self.qsub_script_open_btn.setMinimumWidth(func_btn_min_width)
-			self.qsub_script_open_btn.setToolTip('<FONT>'+"Display open file dailog to select job submission script template file"+'</FONT>')
+			self.qsub_script_open_btn.setToolTip('<FONT>'+"Display open file dialog to select job submission script template file"+'</FONT>')
 			self.qsub_script_open_btn.clicked.connect(partial(self.sxcmdwidget.select_file, self.qsub_script_edit))
 			submit_layout.addWidget(self.qsub_script_open_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_row_span, token_widget_col_span)
 
@@ -2481,7 +2587,8 @@ class SXCmdTab(QWidget):
 			# Initialize enable state of qsub related widgets
 			self.set_qsub_enable_state()
 
-	def set_text_entry_widget_enable_state(self, widget, is_enabled):
+	@staticmethod
+	def set_text_entry_widget_enable_state(widget, is_enabled):
 		# Set enable state and background color of text entry widget according to enable state
 		default_palette = QPalette()
 		bg_color = default_palette.color(QPalette.Inactive, QPalette.Base)
@@ -2528,6 +2635,7 @@ class SXCmdTab(QWidget):
 				elif sxcmd_token.type == "apix":
 					for sxcmd_token_other_dialog in sxcmd_token.other_dialog_list:
 						sxcmd_token_other_dialog.reflect_external_local_update_apix()
+
 
 	def handle_apix_token_editing_finished_event(self, sxcmd_token_apix):
 		assert (sxcmd_token_apix.type == "apix")

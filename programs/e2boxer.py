@@ -397,12 +397,16 @@ class boxerByRef(QtCore.QObject):
 		if len(goodrefs)<1 :
 			print('Box reference images ("Good Refs") required for autopicking')
 			return []
-		try: threshold=params["threshold"]
+		try: 
+			threshold=params["threshold"]
 		except:
-			try: threshold=boxerByRef.threshold.getValue()
+			try: 
+				threshold=boxerByRef.threshold.getValue()
 			except:
 				print("Error, no threshold (0.1-2) specified")
 				return
+			
+		print("threshold = ",threshold)
 		
 		downsample=old_div(10.0,apix)			# we downsample to 10 A/pix
 		microdown=micrograph.process("normalize.edgemean").process("math.fft.resample",{"n":downsample})
@@ -411,25 +415,25 @@ class boxerByRef(QtCore.QObject):
 		print("downsample by ",downsample,"  Good size:",gs)
 	
 		## Here we precompute a normalization image to deal with local standard deviation variation
-		#nx=goodrefs[0]["nx"]/downsample
-		#circle=EMData(gs,gs,1)
-		#circle.to_one()
-		#circle.process_inplace("mask.sharp",{"outer_radius":nx/2})
+		microlp=microdown.get_clip(Region(0,0,gs,gs)).process("filter.lowpass.gauss",{"cutoff_freq":0.005})		# we really only want the standard deviation of low resolution info
+		nx=goodrefs[0]["nx"]/downsample
+		circle=EMData(gs,gs,1)
+		circle.to_one()
+		circle.process_inplace("mask.sharp",{"outer_radius":nx/2})
 ##		circle.process_inplace("normalize.unitlen")
-		#circle.process_inplace("xform.phaseorigin.tocorner")
-		#circlef=circle.do_fft()
+		circle.process_inplace("xform.phaseorigin.tocorner")
+#		circlef=circle.do_fft()
 		
-		#ccfc=microf.calc_ccf(circlef)
-		#ccfc.mult(1.0/(nx*nx))
-		#ccfc.process_inplace("math.squared")
+		ccfc=microlp.calc_ccf(circle)
+		ccfc.mult(1.0/(nx*nx))
+		ccfc.process_inplace("math.squared")
 		
-		#md2=microdown.process("math.squared")
-		#md2f=md2.get_clip(Region(0,0,gs,gs)).do_fft()
-		#norm=md2f.calc_ccf(circlef)
-		#norm.mult(1.0/(nx*nx))
+		md2=microlp.process("math.squared")
+		norm=md2.calc_ccf(circle)
+		norm.mult(1.0/(nx*nx))
 	
-		## Norm should now be the variance
-		#norm.sub(ccfc)
+		## Norm should now be the related to the variance
+		norm.sub(ccfc)
 	
 		# Iterate over refs
 		owner=EMData(gs,gs,1)
@@ -475,23 +479,25 @@ class boxerByRef(QtCore.QObject):
 		# get rid of nasty edges
 		final.clip_inplace(Region(0,0,int(old_div(micrograph["nx"],downsample)),int(old_div(micrograph["ny"],downsample))))
 		owner.clip_inplace(Region(0,0,int(old_div(micrograph["nx"],downsample)),int(old_div(micrograph["ny"],downsample))))
-		#norm.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
+		norm.clip_inplace(Region(0,0,int(micrograph["nx"]/downsample),int(micrograph["ny"]/downsample)))
 		#norm.process("math.sqrt")
-		#norm.process_inplace("math.reciprocal")
+		norm.add(norm["minimum"])		# This reduces the upweighting of empty regions
+		norm.process_inplace("math.reciprocal")
 		# this establishes the scale for our threshold (in terms of sigma)
 		final.add(-final["mean"]) 
 		# Now pull out only local peaks
 		# Zero edges to eliminate boxes within 1/2 box size of edge
 		edge=int(old_div(goodrefs[0]["nx"],(2.0*downsample))+0.5)
-		#final.mult(norm)
+		final.mult(norm)
+		final.write_image("final.hdf",0)
 		final.process_inplace("mask.zeroedge2d",{"x0":edge,"y0":edge})
 		final.process_inplace("mask.onlypeaks",{"npeaks":0,"usemean":0})
 		final.process_inplace("normalize.edgemean")
 #		final.process_inplace("threshold.belowtozero",{"minval":threshold})
 
-		final.write_image("final.hdf",0)
-		owner.write_image("final.hdf",1)
-		#norm.write_image("final.hdf",2)
+		final.write_image("final.hdf",1)
+		owner.write_image("final.hdf",2)
+		norm.write_image("final.hdf",3)
 #		display(final)
 		
 		print("Find peaks")
@@ -536,19 +542,35 @@ class boxerByRef(QtCore.QObject):
 		mref=ref.process("mask.soft",{"outer_radius":old_div(ref["nx"],2)-4,"width":3})
 		mref.process_inplace("normalize.unitlen")
 		
+		### we use a cross correlation with a random phase version of the references to try and normalize the results
+		#randref=mref.copy()
+		#randref.process_inplace("math.fft.resample",{"n":downsample})
+		#randref.process_inplace("normalize")
+		#avgr=Averagers.get("minmax",{"max":1})
+		#for i in range(8):
+			#randref.process_inplace("filter.lowpass.randomphase",{"cutoff_pixels":2})		# ideally we would repeat for a few different phase randomizations
+			#randref2=randref.get_clip(Region(-diff,-diff,gs,gs))
+			#randref2.process_inplace("xform.phaseorigin.tocorner")
+			#randccf=microf.calc_ccf(randref2)
+			#randccf.process_inplace("math.absvalue")
+			#avgr.add_image(randccf)
+		#randccf=avgr.finish()
+		#randccf.write_image("5.hdf",-1)
+		
 		for ang in range(0,360,10):
 			dsref=mref.process("xform",{"transform":Transform({"type":"2d","alpha":ang})})
 			# don't downsample until after rotation
 			dsref.process_inplace("math.fft.resample",{"n":downsample})
 			dsref.process_inplace("normalize")
-			diff=old_div((gs-dsref["nx"]),2)
+			diff=(gs-dsref["nx"])//2
 			dsref=dsref.get_clip(Region(-diff,-diff,gs,gs))
 			dsref.process_inplace("xform.phaseorigin.tocorner")
 			ccf=microf.calc_ccf(dsref)
 			#ccf.process_inplace("normalize")
-			ccf["ortid"]=ri+old_div(ang,360.0)			# integer portion is projection number, fractional portion is angle, should be enough precision with the ~100 references we're using
+			ccf["ortid"]=ri+ang/360.0			# integer portion is projection number, fractional portion is angle, should be enough precision with the ~100 references we're using
 
 			jsd.put(ccf)
+		
 		sys.stdout.write("*")
 		
 class boxerLocal(QtCore.QObject):
@@ -1143,7 +1165,7 @@ aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("by Ref","auto_ref",boxerByRef), 
 #	     ("Gauss","auto_gauss",boxerGauss),
 	     ("NeuralNet", "auto_convnet", boxerConvNet)]
-boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.4,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.1,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.4,.1,.1)}
+boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
 
 class GUIBoxer(QtGui.QWidget):
 	# Dictionary of autopickers
@@ -1867,10 +1889,12 @@ class GUIBoxer(QtGui.QWidget):
 		"""Autobox button pressed, find the right algorithm and call it"""
 		
 		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
-		
+		boxsize2=self.vbbsize.getValue()//2
+
 		print(name," called")
 
 		boxes=cls.do_autobox(self.micrograph,self.goodrefs,self.badrefs,self.bgrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{})
+		boxes=[b for b in boxes if b[0]-boxsize2>=0 and b[1]-boxsize2>=0 and b[0]+boxsize2<self.micrograph["nx"] and b[1]+boxsize2<self.micrograph["ny"]]
 		
 		# if we got nothing, we just leave the current results alone
 		if len(boxes)==0 : return
@@ -1887,6 +1911,7 @@ class GUIBoxer(QtGui.QWidget):
 		"""Autobox button pressed, find the right algorithm and call it"""
 		
 		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
+		boxsize2=self.vbbsize.getValue()//2
 		
 		prog=QtGui.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
 		prog.setWindowModality(Qt.WindowModal)
@@ -1910,6 +1935,8 @@ class GUIBoxer(QtGui.QWidget):
 			micrograph=load_micrograph(fsp)
 
 			newboxes=cls.do_autobox(micrograph,self.goodrefs,self.badrefs,self.bgrefs,self.vbbapix.getValue(),self.vbthreads.getValue(),{},prog)
+			newboxes=[b for b in newboxes if b[0]-boxsize2>=0 and b[1]-boxsize2>=0 and b[0]+boxsize2<micrograph["nx"] and b[1]+boxsize2<micrograph["ny"]]
+
 			print("{}) {} boxes -> {}".format(i,len(newboxes),fsp))
 			
 			# if we got nothing, we just leave the current results alone
@@ -1942,7 +1969,7 @@ class GUIBoxer(QtGui.QWidget):
 		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
 		boxsize2=self.vbbsize.getValue()//2
 		
-		prog=QtGui.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
+		prog=QtGui.QProgressDialog("Recentering","Abort",0,len(self.filenames))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
 		prog.show()
@@ -1961,8 +1988,8 @@ class GUIBoxer(QtGui.QWidget):
 			# return existing boxes
 			db=js_open_dict(info_name(fsp))
 			try: 
-				boxes=db["boxes"]
-				newboxes=[b for b in boxes if b[2]==bname]
+				boxes=[list(b) for b in db["boxes"]]			# otherwise we get tuples
+				newboxes=[b for b in boxes if b[2]==bname]		# reference to subset of existing lists
 				if len(newboxes)==0 : continue
 			except:
 				continue	# no boxes to center
@@ -2014,10 +2041,12 @@ class GUIBoxer(QtGui.QWidget):
 				
 #			boxes.extend(newboxes)
 			
+			boxes=[b for b in boxes if b[0]-boxsize2>=0 and b[1]-boxsize2>=0 and b[0]+boxsize2<micrograph["nx"] and b[1]+boxsize2<micrograph["ny"]]
+			
 			db["boxes"]=boxes
 			db.close()
-			self.setlist.setCurrentRow(i)
-#			self.__updateBoxes()
+#			self.setlist.setCurrentRow(i)
+			self.__updateBoxes()
 			
 		else: prog.setValue(len(self.filenames))
 		

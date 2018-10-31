@@ -217,18 +217,18 @@ To concatenate output files,
   ; %%--%%output_dir : Output directory: Specify path to the output directory for PostRefiner process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
   ; %%--%%output : Output file name: File name of output final post-refined structure. (default vol_combined.hdf)
   ; %%--%%pixel_size : Pixel size [A]: Pixel size of input data. (default 0.0)
-  ; %%--%%mask : 3D mask file: Path to user-provided mask. (default none)
-  ; %%--%%do_adaptive_mask : Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False)
-  ; %%--%%mask_threshold : Adaptive mask threshold: Density threshold for creating adaptive surface mask. Effective only with --do_adaptive_mask option. (default 0.02)
-  ; %%--%%cosine_edge : Cosine edge width [Pixels]: Width of cosine transition area for soft-edge masking. Effective only with --do_adaptive_mask option. (default 6.0)
-  ; %%--%%dilation : Surface dilation size [Pixels]: Size of surface dilation or erosion. Effective only with --do_adaptive_mask option. (default 6.0) 
+  ; %%--%%mask : 3D mask file: Path to user-provided mask. (default none) : %%--%%do_adaptive_mask==False
+  ; %%--%%do_adaptive_mask : Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False) : %%--%%mask==none
+  ; %%--%%mask_threshold : Adaptive mask threshold: Density threshold for creating adaptive surface mask. Effective only with --do_adaptive_mask option. (default 0.02) : %%--%%do_adaptive_mask==True
+  ; %%--%%cosine_edge : Cosine edge width [Pixels]: Width of cosine transition area for soft-edge masking. Effective only with --do_adaptive_mask option. (default 6.0) : %%--%%do_adaptive_mask==True
+  ; %%--%%dilation : Surface dilation size [Pixels]: Size of surface dilation or erosion. Effective only with --do_adaptive_mask option. (default 6.0)  : %%--%%do_adaptive_mask==True
   ; %%--%%mtf : MTF file: Path to file contains the MTF (modulation transfer function) of the detector used. (default none)
   ; %%--%%fsc_adj : Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged map before the B-factor estimation. Effective only in Halfset Volumes Mode. (default False)
   ; %%--%%B_enhance : B-factor enhancement: 0.0: program automatically estimates B-factor using power spectrum at frequencies from B_start (usually 10 Angstrom) to the resolution determined by FSC143 (valid only in Halfset Volumes Mode; Non-zero positive value: program use the given value [A^2] to enhance map); -1.0: B-factor is not applied. (default 0.0)
-  ; %%--%%B_start : B-factor estimation lower limit [A]: Frequency in Angstrom defining lower boundary of B-factor estimation. Effective only in Halfset Volumes Mode with --B_enhance=0.0. (default 10.0)
-  ; %%--%%B_stop : B-factor estimation upper limit [A]: Frequency in Angstrom defining upper boundary of B-factor estimation. Recommended to set the upper boundary to the frequency where fsc is smaller than 0.0. Effective only in Halfset Volumes Mode with --B_enhance=0.0. (default  0.0)
+  ; %%--%%B_start : B-factor estimation lower limit [A]: Frequency in Angstrom defining lower boundary of B-factor estimation. Effective only in Halfset Volumes Mode with --B_enhance=0.0. (default 10.0) : %%--%%B_enhance==0.0
+  ; %%--%%B_stop : B-factor estimation upper limit [A]: Frequency in Angstrom defining upper boundary of B-factor estimation. Recommended to set the upper boundary to the frequency where fsc is smaller than 0.0. Effective only in Halfset Volumes Mode with --B_enhance=0.0. (default  0.0) : %%--%%B_enhance==0.0
   ; %%--%%fl : Low-pass filter frequency [A]: 0.0: low-pass filter to resolution (valid only in Halfset Volumes Mode); A value larger than 0.5: low-pass filter to the value in Angstrom; -1.0: no low-pass filter. (default 0.0)
-  ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. Effective only when --fl option is not -1.0. (default 0.01)
+  ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. Effective only when --fl option is not -1.0. (default 0.01) : %%--fl%%!=-1.0
 
   ; %%--%%window_stack : Window stack images using a smaller window size: (default False)
   ; %%--%%box : New window size: (default 0)

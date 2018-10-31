@@ -104,7 +104,7 @@ const string DoGFourierProcessor::NAME = "filter.DoG";
 const string AzSharpProcessor::NAME = "filter.azimuthal.contrast";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
-const string AbsoluateValueProcessor::NAME = "math.absvalue";
+const string AbsoluteValueProcessor::NAME = "math.absvalue";
 const string FloorValueProcessor::NAME = "math.floor";
 const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
@@ -316,6 +316,7 @@ const string GrowSkeletonProcessor::NAME = "morph.grow";
 const string FixSignProcessor::NAME = "math.fixmode";
 const string ZThicknessProcessor::NAME = "misc.zthick";
 const string ReplaceValuefromListProcessor::NAME = "misc.colorlabel";
+const string PolyMaskProcessor::NAME = "mask.poly";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -344,7 +345,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add<LinearPyramidProcessor>();
 	force_add<LinearRampProcessor>();
-	force_add<AbsoluateValueProcessor>();
+	force_add<AbsoluteValueProcessor>();
 	force_add<FloorValueProcessor>();
 	force_add<BooleanProcessor>();
 	force_add<KmeansSegmentProcessor>();
@@ -600,6 +601,7 @@ template <> Factory < Processor >::Factory()
 	force_add<BinaryBlackHatProcessor>();
 	force_add<ZThicknessProcessor>();
 	force_add<ReplaceValuefromListProcessor>();
+	force_add<PolyMaskProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -2001,6 +2003,7 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 	float cy = params.set_default("cy",ny/2);
 	float zmin = params.set_default("zmin",0);
 	float zmax = params.set_default("zmax",nz);
+	float ztri = params.set_default("ztriangle",0.0f);
 	float inner_radius = params.set_default("inner_radius",0.0f);
 	float outer_radius = params.set_default("outer_radius",nx+ny);
 
@@ -2020,8 +2023,10 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 			if (r==0 && inner_radius<=0)  val=1.0;
 
 			for (int z=0; z<nz; z++) {
-				if (z<zmin || z>zmax) image->mult_value_at_fast(x,y,z,0);
-				image->mult_value_at_fast(x,y,z,val);
+				if (z<zmin-ztri || z>zmax+ztri) image->mult_value_at_fast(x,y,z,0);
+				else if (z>=zmin+ztri && z<=zmax-ztri) image->mult_value_at_fast(x,y,z,val);
+				else if (z>=zmin-ztri && z<=zmin+ztri) image->mult_value_at_fast(x,y,z,val*((z-zmin)/(2.0f*ztri)+0.5));
+				else image->mult_value_at_fast(x,y,z,val*((zmax-z)/(2.0f*ztri)+0.5));
 			}
 		}
 	}
@@ -2630,9 +2635,7 @@ EMData* FFTResampleProcessor::process(const EMData *const image)
 		// the type casting here is because FourTruncate was not defined to be const (but it is)
 		result=((EMData *)image)->FourInterpol(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
 	}
-	result->set_attr("apix_x",(float)result->get_attr("apix_x")*(float)nx/(float)nnx);
-	result->set_attr("apix_y",(float)result->get_attr("apix_y")*(float)ny/(float)nny);
-	result->set_attr("apix_z",(float)result->get_attr("apix_z")*(float)nz/(float)nnz);
+	result->scale_pixel((float)nx/(float)nnx);
 	result->update();
 	return result;
 	
@@ -2678,9 +2681,7 @@ void FFTResampleProcessor::process_inplace(EMData * image)
 
 	image->set_size(nnx,nny,nnz);
 	memcpy(image->get_data(),result->get_data(),nnx*nny*nnz*sizeof(float));
-	image->set_attr("apix_x",(float)image->get_attr("apix_x")*(float)nx/(float)nnx);
-	image->set_attr("apix_y",(float)image->get_attr("apix_y")*(float)ny/(float)nny);
-	image->set_attr("apix_z",(float)image->get_attr("apix_z")*(float)nz/(float)nnz);
+	result->scale_pixel((float)nx/(float)nnx);
 	image->update();
 	delete result;
 
@@ -4108,23 +4109,45 @@ void DecayEdgeProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	if (image->get_zsize() > 1) throw ImageDimensionException("3D model not supported");
-
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
 	float *d = image->get_data();
 	int width = params["width"];
 
-	for (int i=0; i<width; i++) {
-		float frac=i/(float)width;
-		for (int j=0; j<nx; j++) {
-			d[j+i*nx]*=frac;
-			d[nx*ny-j-i*nx-1]*=frac;
+	if (width > min(nx,ny)/2.){
+		LOGERR("width parameter cannot be greater than min(nx,ny)/2");
+		throw InvalidParameterException("width cannot be greater than min(nx,ny)/2");
+	}
+
+	if (image->get_zsize() > 1){
+		for (int k=0; k<image->get_zsize(); k++){
+			int zidx = k*nx*ny;
+			for (int i=0; i<width; i++) {
+				float frac=i/(float)width;
+				for (int j=0; j<nx; j++) {
+					d[zidx+j+i*nx]*=frac;
+					d[zidx+nx*ny-j-i*nx-1]*=frac;
+				}
+				for (int j=0; j<ny; j++) {
+					d[zidx+j*nx+i]*=frac;
+					d[zidx+nx*ny-j*nx-i-1]*=frac;
+				}
+			}
 		}
-		for (int j=0; j<ny; j++) {
-			d[j*nx+i]*=frac;
-			d[nx*ny-j*nx-i-1]*=frac;
+	} 
+	else {
+
+		for (int i=0; i<width; i++) {
+			float frac=i/(float)width;
+			for (int j=0; j<nx; j++) {
+				d[j+i*nx]*=frac;
+				d[nx*ny-j-i*nx-1]*=frac;
+			}
+			for (int j=0; j<ny; j++) {
+				d[j*nx+i]*=frac;
+				d[nx*ny-j*nx-i-1]*=frac;
+			}
 		}
 	}
 
@@ -7021,6 +7044,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	}
 
 	int int_shift_only = params.set_default("int_shift_only",1);
+	int powercenter = params.set_default("powercenter",0);
 	float threshold = params.set_default("threshold",0.0f);
 //	int positive = params.set_default("positive",0);
 
@@ -7030,7 +7054,10 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 		threshold=(float)image->get_attr("mean")+(float)image->get_attr("sigma");
 	}
 
+	EMData *tmp = 0;
+	if (powercenter) { tmp=image; image=tmp->process("math.squared"); }  // yes, I know, not very efficient
 	FloatPoint com = image->calc_center_of_mass(threshold);
+	if (powercenter) { delete image; image=tmp; }
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -7898,6 +7925,12 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 		image->set_attr("apix_x", (float)params["apix"]);
 		image->set_attr("apix_y", (float)params["apix"]);
 		image->set_attr("apix_z", (float)params["apix"]);
+		if (image->has_attr("ctf")) {
+			Ctf *ctf=image->get_attr("ctf");
+			ctf->apix=(float)params["apix"];
+			image->set_attr("ctf",ctf);
+			delete(ctf);
+		}
 	}
 
 	float apix=image->get_attr("apix_x");

@@ -55,6 +55,8 @@ def main():
 		opt=opt.replace("--alltomograms","")
 		for a in args:
 			run("{} {} {}".format(cmd[0], a, opt))
+			
+		print("Finished.")
 		return
 	
 	pfile=args[0]

@@ -214,6 +214,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Default=auto. Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. 0 -> no shrinking", )
 	parser.add_argument("--shrinks1", dest="shrinks1", type = int, help="The level of shrinking to apply in the first stage of the two-stage classification process. Default=0 (autoselect)",default=0)
 	parser.add_argument("--prefilt",action="store_true",help="Default=auto. Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison. Applies both to classification and class-averaging.",default=False)
+	parser.add_argument("--prectf",action="store_true",help="Default=auto. Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison. Applies both to classification and class-averaging.",default=False)
 	parser.add_argument("--cmpdiff",action="store_true",help="Used only in binary tree classification. Use a mask that focus on the difference of two children.",default=False)
 	parser.add_argument("--treeincomplete",type=int, help="Used only in binary tree classification. Incompleteness of the tree on each level.Default=0",default=0)
 
@@ -257,8 +258,8 @@ not need to specify any of the following other than the ones already listed abov
 			print("Note: automatically setting --threads:{}".format(options.threads))
 		else: print("WARNING: specifying --threads=<N> (where N is the number of cores to use on a single processor) is strongly recommended, even if already specifying --parallel")
 
-	if options.input!=None and options.model!=None and options.startfrom!=None:
-		print("ERROR : You may specify --input and --model  OR  --startfrom, not both")
+	if options.model!=None and options.startfrom!=None:
+		print("ERROR : You may specify --model  OR  --startfrom, not both")
 		sys.exit(1)
 
 	if (options.input==None or options.model==None) and options.startfrom==None :
@@ -293,30 +294,38 @@ not need to specify any of the following other than the ones already listed abov
 
 	# make sure the box sizes match
 	if options.input!=None :
-		xsize3d=EMData(options.model,0,True)["nx"]
-		xsize=EMData(options.input,0,True)["nx"]
-		img1 = EMData(options.input,0,True)
-		img3 = EMData(options.model,0,True)
-		apix1=1.0
-		try:
-			apix1=img1["apix_x"]
-			apix3=img3["apix_x"]
-		except:
-			apix3=apix1
-
-		if ( xsize3d != xsize or apix3==0 or fabs(fabs(old_div(apix1,apix3))-1.0)>.001 ) :
-			print("WARNING: the dimensions of the particles (%d @ %1.4f A/pix) do not match the dimensions of the starting model (%d @ %1.4f A/pix). I will attempt to adjust the model appropriately."%(xsize,apix1,xsize3d,apix3))
+		if options.startfrom==None:
+			xsize3d=EMData(options.model,0,True)["nx"]
+			xsize=EMData(options.input,0,True)["nx"]
+			img1 = EMData(options.input,0,True)
+			img3 = EMData(options.model,0,True)
+			apix1=1.0
 			try:
-				scale=old_div(img3["apix_x"],img1["apix_x"])
-				print("Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale))
+				apix1=img1["apix_x"]
+				apix3=img3["apix_x"]
 			except:
-				print("A/pix unknown, assuming scale same as relative box size")
-				scale=old_div(float(xsize),xsize3d)
-			if scale>1 : cmd="e2proc3d.py %s %s/scaled_model.hdf --clip=%d,%d,%d --scale=%1.5f"%(options.model,options.path,xsize,xsize,xsize,scale)
-			else :       cmd="e2proc3d.py %s %s/scaled_model.hdf --scale=%1.5f --clip=%d,%d,%d"%(options.model,options.path,scale,xsize,xsize,xsize)
-			run(cmd)
+				apix3=apix1
 
-			options.model="%s/scaled_model.hdf"%options.path
+			if ( xsize3d != xsize or apix3==0 or fabs(fabs(old_div(apix1,apix3))-1.0)>.001 ) :
+				print("WARNING: the dimensions of the particles (%d @ %1.4f A/pix) do not match the dimensions of the starting model (%d @ %1.4f A/pix). I will attempt to adjust the model appropriately."%(xsize,apix1,xsize3d,apix3))
+				try:
+					scale=old_div(img3["apix_x"],img1["apix_x"])
+					print("Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale))
+				except:
+					print("A/pix unknown, assuming scale same as relative box size")
+					scale=old_div(float(xsize),xsize3d)
+				if scale>1 : cmd="e2proc3d.py %s %s/scaled_model.hdf --clip=%d,%d,%d --scale=%1.5f"%(options.model,options.path,xsize,xsize,xsize,scale)
+				else :       cmd="e2proc3d.py %s %s/scaled_model.hdf --scale=%1.5f --clip=%d,%d,%d"%(options.model,options.path,scale,xsize,xsize,xsize)
+				run(cmd)
+
+				options.model="%s/scaled_model.hdf"%options.path
+		else:
+			xsize=EMData(options.input,0,True)["nx"]
+			xsize3d=EMData("{}/threed_00_even.hdf".format(options.startfrom),0,True)["nx"]
+			if xsize!=xsize3d :
+				print("ERROR: specified --input dimensions do not match the dimensions of the volumes in --startfrom. In --startfrom mode it is not valid to rescale the input maps. Please use --input and --model to reinitialize gold standard refinement")
+				sys.exit(1)
+
 
 	if options.speed>7 or options.speed<1 :
 		print("ERROR: --speed must be between 1 and 7. Lower numbers will make refinements take longer, but produce slightly better measured resolutions. The default value of 5 is a good balance for typical refinements. When\
@@ -356,7 +365,10 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 			olddb = js_open_dict(options.startfrom+"/0_refine_parms.json")
 			run("e2proc3d.py {oldeven} {path}/threed_00_even.hdf".format(oldeven=olddb["last_even"],path=options.path))
 			run("e2proc3d.py {oldodd} {path}/threed_00_odd.hdf".format(  oldodd =olddb["last_odd"] ,path=options.path))
-			options.input=(str(olddb["input"][0]),str(olddb["input"][1]))
+			if options.input==None: options.input=(str(olddb["input"][0]),str(olddb["input"][1]))
+			else:
+				options.input=image_eosplit(options.input)
+				append_html("<p>Using --startfrom, but --input also specified, so overriding --input found in previous refine_xx folder.</p>")
 			append_html("<p>Using {oldeven} {oldodd} as starting models without additional randomizing. Input particles are from {infile}</p>".format(oldeven=olddb["last_even"],oldodd=["last_odd"],infile=options.input))
 
 		except:
@@ -643,6 +655,7 @@ are memory concerns, using a smaller pad option may be the only reasonable alter
 	else: parallel=""
 
 	if options.prefilt : prefilt="--prefilt"
+	elif options.prectf : prefilt="--prectf"
 	else: prefilt=""
 
 	if options.cmpdiff : cmpdiff="--cmpdiff"

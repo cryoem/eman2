@@ -16,6 +16,7 @@ def main():
 	parser.add_argument("--iter", type=int,help="iteration number", default=1,guitype='intbox',row=0, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--tomo", type=str,help="tomogram file name", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='tomograms')", row=2, col=0,rowspan=1, colspan=2,)
 	parser.add_argument("--avg", type=str,help="3D average. will use spt_xx/threed_xx by default", default="")
+	parser.add_argument("--keep", type=float,help="propotion to keep. will exclude bad particles if this is smaller than 1.0", default=1.0)
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -49,20 +50,39 @@ def main():
 	avg.process_inplace("math.fft.resample",{"n":shrink})
 	avg.process_inplace("normalize.edgemean")
 	
-	
 	tomo.to_zero()
 	
 	bname=base_name(options.tomo)
 	#print(js.keys())
+	
+	scr=[]
+	for i in range(lst.n):
+		l=lst.read(i)
+		if bname in l[1]:
+			ky=str((ptclin,i))
+			val=js[ky]
+			scr.append(val["score"])
+	
+	nptcl=int(len(scr)*options.keep)
+	if options.keep<1.0:
+		sthr=np.sort(scr)[nptcl]
+	else:
+		sthr=100
+	
 	pts=[]
+	print("{:d} particles total.".format(int(nptcl)))
 	for i in range(lst.n):
 		l=lst.read(i)
 		if bname in l[1]:
 			#print(i,lst.n)
 			ky=str((ptclin,i))
 			val=js[ky]
+			s=val["score"]
+			if s>sthr:
+				continue
 			a=EMData(l[1], l[0],True)
 			xf=Transform(val["xform.align3d"])
+			
 			if tomo.has_attr("zshift"):
 				zs=tomo["zshift"]
 			else:
@@ -75,6 +95,8 @@ def main():
 			t=avg.process("xform", {"transform":xf})
 			pts.append(crd-ts/4)
 			tomo.insert_scaled_sum(t,crd.tolist())
+			print("\t{}/{} finished.".format(len(pts), nptcl), end='\r')
+			sys.stdout.flush()
 			
 
 	pts=np.array(pts)
