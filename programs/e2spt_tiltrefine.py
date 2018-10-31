@@ -276,7 +276,7 @@ def main():
 			cmd="e2make3dpar.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads {trd} --outsize {bx} --apix {apx} --mode gauss_var --keep {kp} --sym {sm}".format(
 				inp=lname, 
 				out="{}/threed_{:02d}_{}.hdf".format(path, itr+1, eo),
-				bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=options.sym, trd=num_cpus)
+				bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=options.sym, trd=options.threads)
 			
 			run(cmd)
 
