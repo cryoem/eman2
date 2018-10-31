@@ -113,16 +113,16 @@ def main():
 		print("Please specify the iteration number (--iter) of a completed subtomogram refinement.")
 		sys.exit(1)
 	else:
-		copy2("{}/0_spt_params.json".format(oldpath),"{}/0_subtlt_params.json".format(path))
+		#copy2("{}/0_spt_params.json".format(oldpath),"{}/0_subtlt_params.json".format(path))
 
 		oldmap = os.path.join(oldpath,"threed_{:02d}.hdf".format(itr))
 		oem = os.path.join(oldpath,"threed_{:02d}_even.hdf".format(itr))
 		oom = os.path.join(oldpath,"threed_{:02d}_odd.hdf".format(itr))
-		#oldparm = os.path.join(oldpath,"particle_parms_{:02d}.json".format(itr))
+		oldparm = os.path.join(oldpath,"particle_parms_{:02d}.json".format(itr))
 		oldfsc = os.path.join(oldpath, "fsc_maskedtight_{:02d}.txt".format(itr))
 
 		copy2(oldmap,os.path.join(path,"threed_00.hdf"))
-		#copy2(oldparm,os.path.join(path,"particle_parms_00.json"))
+		copy2(oldparm,os.path.join(path,"particle_parms_00.json"))
 		copy2(oldfsc, os.path.join(path, "fsc_maskedtight_00.txt"))
 		copy2(oem,os.path.join(path,"threed_00_even.hdf"))
 		copy2(oom,os.path.join(path,"threed_00_odd.hdf"))
