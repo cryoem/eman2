@@ -29540,13 +29540,13 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 	return ccc;
 }
 
-void Util::fftwf_init_threads(int nthreads) {
-	//fftwf_init_threads();
-	//fftwf_plan_with_nthreads(nthreads);
+void Util::init_threads(int nthreads) {
+	fftwf_init_threads();
+	fftwf_plan_with_nthreads(nthreads);
 }
 
-void Util::fftwf_cleanup_threads() {
-	//fftwf_cleanup_threads();
+void Util::cleanup_threads() {
+	fftwf_cleanup_threads();
 }
 
 void Util::version()
