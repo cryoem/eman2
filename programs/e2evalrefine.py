@@ -216,7 +216,7 @@ def main():
 			try:
 				options.iter=int(jsparm["last_map"].split("_")[-1][:2])
 				if options.sym==None :
-					options.sym=jsparm["sym"]
+					options.sym=str(jsparm["sym"])
 			except:
 				print("Could not find a completed iteration in ",args[0])
 				sys.exit(1)
@@ -458,6 +458,13 @@ def main():
 
 		pf = "ptclfsc_{}_projections.hdf".format(rfnnum)
 
+		if options.sym==None or len(options.sym)==0 : options.sym="c1"
+		try:
+			sym=parsesym(options.sym).get_syms()
+		except:
+			print("Symmetry parsing error! ",options.sym)
+			sys.exit(1)
+			
 		#tfs = []
 
 		tlast=time()
@@ -500,12 +507,6 @@ def main():
 		fout=open(ptclfsc,"w")
 		fout.write("# 100-30 it1; 30-15 it1; 15-8 it1; 8-4 it1; 100-30 it2; 30-15 it2; 15-8 it2; 8-4 it2; it12rmsd; (30-8)/(100-30) alt1; az1; cls1; alt2; az2; cls2; defocus; angdiff\n")
 
-		if options.sym==None or len(options.sym)==0 : options.sym="c1"
-		try:
-			sym=parsesym(options.sym).get_syms()
-		except:
-			print("Symmetry parsing error! ",options.sym)
-			sys.exit(1)
 		# loop over all particles and print results
 		rmsds=[]
 		for j in range(nptcl[0]+nptcl[1]):

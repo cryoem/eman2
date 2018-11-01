@@ -277,7 +277,7 @@ def main():
 
 		if options.verbose:
 			print("Iteration ",it)
-			output.write_image("it{}.hdf".format(it))
+			if options.verbose>2: output.write_image("it{}.hdf".format(it))
 			#if options.verbose>2 and it!=niter-1: 
 				#output.process("xform.phaseorigin.tocenter").do_ift().write_image("it{}.hdf".format(it))
 
