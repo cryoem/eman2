@@ -29551,8 +29551,8 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-/*
-        int nthreads = 4;
+
+        int nthreads = 16;
         int i;
         int nx,ny,nz;
         nx=ny=nz=384*2;
@@ -29577,12 +29577,12 @@ void Util::version()
         else plan = fftwf_plan_dft_c2r(rank, dims + (3 - rank), (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
 
 
-        fftwf_execute(plan);
+        //fftwf_execute(plan);
         fftwf_destroy_plan(plan);
 
-        fftwf_cleanup_threads();
-*/
-	cout <<"   Source modification date: 10/24/2018" <<  endl;
+	//fftwf_cleanup_threads();
+
+	cout <<"   Source modification date: 11/01/2018" <<  endl;
 }
 
 
