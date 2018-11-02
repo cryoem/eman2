@@ -29581,10 +29581,10 @@ void Util::version()
         else plan = fftwf_plan_dft_c2r(rank, dims + (3 - rank), (fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
 
 
-        //fftwf_execute(plan);
+        fftwf_execute(plan);
         fftwf_destroy_plan(plan);
 
-	//fftwf_cleanup_threads();
+	fftwf_cleanup_threads();
 
 	cout <<"   Source modification date: 11/01/2018" <<  endl;
 }
