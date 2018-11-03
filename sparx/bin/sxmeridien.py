@@ -7635,7 +7635,8 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		mpi_barrier(Blockdata["subgroup_comm"])
 	mpi_barrier(MPI_COMM_WORLD)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if Blockdata["myid"] == Blockdata["main_node"]: print(line, "final rec3d_make_maps")
+	if Blockdata["myid"] == Blockdata["main_node"]: 
+		print(line, "final rec3d_make_maps")
 	rec3d_make_maps(compute_fsc = False, regularized = False)
 	
 	# also copy params to masterdir as final params
@@ -7643,7 +7644,6 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		shutil.copyfile(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["mainiteration"], \
 		  "params_%03d.txt"%Tracker["mainiteration"]), os.path.join(Tracker["constants"]["masterdir"], \
 		     "final_params_%03d.txt"%Tracker["mainiteration"]))
-		shutil.rmtree(os.path.join(Tracker["constants"]["masterdir"], "tempdir"))
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 
@@ -7664,13 +7664,15 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 				do_final_iter =  Tracker["constants"]["best"] # set the best as do_final iteration
 			except: carryon = 0
 		carryon = bcast_number_to_all(carryon)
-		if carryon == 0: ERROR("Best resolution is not found, do_final will not be computed", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
+		if carryon == 0: 
+			ERROR("Best resolution is not found, do_final will not be computed", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
 		do_final_iter = bcast_number_to_all(do_final_iter)
 	elif( do_final_iter_init == -1 ): do_final_iter = Tracker["constants"]["best"]
 	else:
 		do_final_iter = do_final_iter_init
 		if(Blockdata["myid"] == Blockdata["main_node"]): print("User selected %d iteration to compute the 3D reconstruction "%do_final_iter)
-		if do_final_iter<=2:  ERROR("The selected iteration should be larger than 2", "recons3d_final", 1, Blockdata["myid"])
+		if do_final_iter<=2:
+			ERROR("The selected iteration should be larger than 2", "recons3d_final", 1, Blockdata["myid"])
 			
 	final_dir = os.path.join(masterdir, "main%03d"%do_final_iter)
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check json file and load tracker
@@ -7681,14 +7683,16 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 		except: carryon = 0
 		if orgstack: Tracker["constants"]["stack"] = orgstack
 	else: Tracker = 0
-	carryon = bcast_number_to_all(carryon)
-	if carryon == 0: ERROR("Failed to load Tracker file %s, program terminates "%os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter), "recons3d_final",1, Blockdata["myid"])
-	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+	carryon = bcast_number_to_all(carryon,  source_node = Blockdata["main_node"], MPI_COMM_WORLD)
+	if carryon == 0: 
+		ERROR("Failed to load Tracker file %s, program terminates "%os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter), "recons3d_final",1, Blockdata["myid"])
+	Tracker = wrap_mpi_bcast(Tracker,      Blockdata["main_node"], MPI_COMM_WORLD)
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check stack 
-		try: image = get_im(Tracker["constants"]["stack"],0)
+		try:  image = get_im(Tracker["constants"]["stack"],0)
 		except:carryon = 0
-	carryon = bcast_number_to_all(carryon)
-	if carryon == 0: ERROR("The orignal data stack for reconstruction %s does not exist, final reconstruction terminates"%Tracker["constants"]["stack"],"recons3d_final", 1, Blockdata["myid"])
+	carryon = bcast_number_to_all(carryon, Blockdata["main_node"], MPI_COMM_WORLD)
+	if carryon == 0: 
+		ERROR("The orignal data stack for reconstruction %s does not exist, final reconstruction terminates"%Tracker["constants"]["stack"],"recons3d_final", 1, Blockdata["myid"])
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		#  Estimated volume size
@@ -7703,8 +7707,9 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 		nnprocs = 0
 		nogo = 0
 	
-	nogo = bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-	if( nogo == 1 ):ERROR("Insufficient memory to compute final reconstruction","recons3d_final", 1, Blockdata["myid"])
+	nogo =    bcast_number_to_all(nogo,    source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	if( nogo == 1 ):
+		ERROR("Insufficient memory to compute final reconstruction","recons3d_final", 1, Blockdata["myid"])
 	nnprocs = bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 	Blockdata["ncpuspernode"] 	= nnprocs
 	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
@@ -7721,7 +7726,8 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, projdata, \
 	  do_final_iter, Blockdata["subgroup_comm"])
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(Blockdata["myid"] == Blockdata["main_node"]): print(line, "Final reconstruction is successfully done")
+	if(Blockdata["myid"] == Blockdata["main_node"]):
+		print(line, "Final reconstruction is successfully done")
 	return
 
 def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, original_data = None, oldparams = None, \
@@ -9003,6 +9009,7 @@ def compare_bckgnoise(bckgnoise1, bckgnoise2):
 def rec3d_make_maps(compute_fsc = True, regularized = True):
 	global Tracker, Blockdata
 	# final reconstruction: compute_fsc = False; regularized = False
+	# tempdir is removed in the end of the function
 	if compute_fsc:
 		if(Blockdata["no_of_groups"] == 1):
 			if( Blockdata["myid"] == Blockdata["nodes"][0] ):
