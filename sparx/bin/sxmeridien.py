@@ -7644,6 +7644,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		shutil.copyfile(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%Tracker["mainiteration"], \
 		  "params_%03d.txt"%Tracker["mainiteration"]), os.path.join(Tracker["constants"]["masterdir"], \
 		     "final_params_%03d.txt"%Tracker["mainiteration"]))
+		shutil.rmtree(os.path.join(Tracker["constants"]["masterdir"], "tempdir"))
 	mpi_barrier(MPI_COMM_WORLD)
 	return
 
@@ -9152,6 +9153,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					del tvol1
 					#--  memory_check(Blockdata["myid"],"second node, after 2 steptwo")
 			#  Here end per node execution.
+		if( Blockdata["myid"] == Blockdata["nodes"][0]): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
 		if(Blockdata["no_of_groups"] == 1):
@@ -9226,7 +9228,6 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 				if( Blockdata["myid_on_node"] == 0):
 					tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_1_unfil_%03d.hdf"%Tracker["mainiteration"]))
 			mpi_barrier(MPI_COMM_WORLD)
-	if( Blockdata["myid"] == Blockdata["nodes"][0]): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 	return
 	
 def refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, general_mode = True, continuation_mode = False):
