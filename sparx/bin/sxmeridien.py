@@ -7725,6 +7725,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 
 	do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, projdata, \
 	  do_final_iter, Blockdata["subgroup_comm"])
+	mpi_barrier(MPI_COMM_WORLD)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		print(line, "Final reconstruction is successfully done")
