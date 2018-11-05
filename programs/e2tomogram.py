@@ -631,8 +631,9 @@ def make_tile(args):
 		
 	
 	threed=recon.finish(True)
+	threed.write_image("tmp3d00.hdf", -1)
 	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
-	#threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
+	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	#threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 	jsd.put( [stepx, stepy, threed])
 	
@@ -672,12 +673,12 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	if options.extrapad:
 		pad=good_boxsize(sz*2) #### this is the padded size in fourier space
 	else:
-		pad=good_boxsize(sz*1.2) #### this is the padded size in fourier space
+		pad=good_boxsize(sz*1.4) #### this is the padded size in fourier space
 	
 	if clipz>0:
 		outz=clipz
 	else:
-		outz=good_boxsize(sz*1.2)
+		outz=sz#good_boxsize(sz*1.2)
 
 	#### we make 2 tomograms with half a box shift and average them together to compensate for boundary artifacts.
 	mem=(outxy*outxy*outz*4+pad*pad*pad*options.threads*4)
@@ -725,7 +726,8 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	#### non-round fall off. this is mathematically correct but seem to have grid artifacts
 	#f=np.zeros((sz,sz))
 	x,y=np.indices((sz,sz),dtype=float)/sz-.5
-	f=.25-(x**2+y**2)/2 + ((abs(x)-0.5)**2+(abs(y)-0.5)**2)/2
+	#f=.25-(x**2+y**2)/2 + ((abs(x)-0.5)**2+(abs(y)-0.5)**2)/2
+	f=1+np.exp(-(x**2+y**2)/0.1) - np.exp(-((abs(x)-0.5)**2+(abs(y)-0.5)**2)/0.1)
 	f3=np.repeat(f[None, :,:], outz, axis=0)
 	msk=from_numpy(f3).copy()
 	#####
@@ -771,7 +773,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	#wt.add(.01)
 	#full3d=full3d[0]+full3d[1]
 	#full3d.div(wt)
-	full3d.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
+	#full3d.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	full3d.process_inplace("normalize")
 	
 	#### skip the tomogram positioning step because there is some contrast difference at the boundary that sometimes breaks the algorithm...
