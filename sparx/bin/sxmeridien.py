@@ -9009,6 +9009,8 @@ def compare_bckgnoise(bckgnoise1, bckgnoise2):
 	
 def rec3d_make_maps(compute_fsc = True, regularized = True):
 	global Tracker, Blockdata
+	import user_functions
+	
 	# final reconstruction: compute_fsc = False; regularized = False
 	# tempdir is removed in the end of the function
 	if compute_fsc:
@@ -9109,7 +9111,8 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 							if( Blockdata["no_of_groups"] > 1 ):  del cfsc
 
 						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
-						ref_data = [tvol0, Tracker, mainiteration]
+						#ref_data = [tvol0, Tracker, mainiteration]
+						ref_data = [tvol0, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
 						user_func(ref_data).write_image(os.path.join(Tracker["directory"], \
 							"vol_0_%03d.hdf"%(Tracker["mainiteration"])))
@@ -9140,7 +9143,8 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 							tvol1 = filt_table(tvol1, cfsc)
 							del cfsc
 						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
-						ref_data = [tvol1, Tracker, mainiteration]
+						#ref_data = [tvol1, Tracker, mainiteration]
+						ref_data = [tvol1, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
 						user_func(ref_data).write_image(os.path.join(Tracker["directory"], \
 						   "vol_1_%03d.hdf"%(Tracker["mainiteration"])))
@@ -9224,7 +9228,7 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 	if( Blockdata["myid"] == Blockdata["nodes"][0]): shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 	return
 	
-def refinement_one_iteration(general_mode = True, continuation_mode = False):
+def refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, general_mode = True, continuation_mode = False):
 	global Tracker, Blockdata
 	#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	for procid in range(2):
@@ -10053,7 +10057,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 					mpi_barrier(MPI_COMM_WORLD)
 					
-					refinement_one_iteration(general_mode =True, continuation_mode = False)
+					refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, \
+					    general_mode =True, continuation_mode = False)
 					
 					#	print("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
@@ -10530,7 +10535,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					mpi_barrier(MPI_COMM_WORLD)
 
 					#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
-					refinement_one_iteration(general_mode = False, continuation_mode = True)
+					refinement_one_iteration(partids, partstack, original_data, oldparams, projdata, \
+					   general_mode = False, continuation_mode = True)
 					#	print("  MOVING  ON --------------------------------------------------------------------")
 				else: # converged, do final
 					if( Blockdata["subgroup_myid"] > -1 ):
