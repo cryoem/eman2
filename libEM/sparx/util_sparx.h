@@ -826,8 +826,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	*/
 	static void search2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* matchlist, int* costlist, int J);
 	
-	static void explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* curintx, int size_curintx, int* next, int size_next, int depth, int J, int* matchlist, int*
-costlist, int* curbranch);
+	static void explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* curintx, int size_curintx, 
+				int* next, int size_next, int depth, int J, int* matchlist, int* costlist, int* curbranch);
 	
 	/** First element of output is total cost of the matches in the output
 	 * Second element of output is the total number of matches in output
@@ -1316,7 +1316,12 @@ public:
 
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
 
+
+	static void init_threads(int nthreads);
+	static void cleanup_threads();
+
 	static void version();
+
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 
 	static EMData* get_biggest_cluster( EMData* mg );

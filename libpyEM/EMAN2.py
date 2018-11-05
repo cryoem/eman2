@@ -771,6 +771,32 @@ def read_number_file(path):
 	except:
 		return []
 
+def angle_ab_sym(sym,a,b,c=None,d=None):
+	"""Computes the angle of the rotation required to go from Transform A to Transform B under symmetry,
+	such that the smallest symmetry-related angle is returned. sym may be either a list of Transforms
+	or a symmetry specifier, eg "c4". For the two orientations, specify either
+	two Transform objects, or the symmetry followed by four floats in the order 
+	AltA,AzA,AltB,AzB. Return in degrees."""
+	
+	if c!=None :
+		A=Transform({"type":"eman","alt":a,"az":b})
+		B=Transform({"type":"eman","alt":c,"az":d})
+	else :
+		A=a
+		B=b
+	
+	# easier to do it here
+	Bi=B.inverse()
+		
+	# needs to be a list of Transforms
+	if isinstance(sym,str):
+		sym=parsesym(sym).get_syms()
+		
+	#if not (isinstance(A,Transform) and isinstance(B,Transform)):
+		#raise Exception,"angle_ab_sym requries two transforms or 4 angles"
+
+	return min([(A*s*Bi).get_rotation("spin")["omega"] for s in sym])
+
 def display(img,force_2d=False,force_plot=False):
 	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with
 	the optional flags"""
