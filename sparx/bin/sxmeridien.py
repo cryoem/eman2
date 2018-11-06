@@ -10552,7 +10552,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 								Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["fsc143"]) ) )
 						print("\n\n\n\n")
 						
-						print("The iteration contains the best resolution is %d"%Tracker["constants"]["best"])
+						print("Iteration that contains the best resolution is %d"%Tracker["constants"]["best"])
 						if Tracker["constants"]["best"] ==2:
 							print("No resolution improvement in refinement ")
 						
