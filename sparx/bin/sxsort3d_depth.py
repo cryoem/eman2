@@ -1898,23 +1898,19 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 	else:              sstat = [sublist[0], 0.0, sublist[0], sublist[0]]
 	log_file.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat[0], sqrt(sstat[1]), sstat[2], sstat[3]))
 	if len(sublist1)>1: sstat1 = table_stat(sublist1)
-	else:              sstat1 = [sublist1[0], 0.0, sublist1[0], sublist1[0]]
+	else:               sstat1 = [sublist1[0], 0.0, sublist1[0], sublist1[0]]
 	log_file.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat1[0], sqrt(sstat1[1]), sstat1[2], sstat1[3]))
 	###-----------------------------------------------------------------------------------
 	if len(clusters)>2:
-		if sum(glist) == 1: cutoff = coid[1]
+		if sum(glist) == len(glist)-1:cutoff = coid[1]
 		else:
 			if ratio >33.:
-				if sqrt(sstat[1])/sstat[0] > 0.50:
-					cutoff   = int(coid[0] + sqrt(sstat[1]))  #int(2*current_img_per_grp)
-				else:	
-					cutoff   = int(coid[0] + 2.*sqrt(sstat[1]))
-			else:          
-				cutoff   = int(2.*current_img_per_grp)
+				if sqrt(sstat[1])/sstat[0] > 0.50: cutoff   = int(coid[0] + sqrt(sstat[1]))  #int(2*current_img_per_grp)
+				else: cutoff = int(coid[0] + 2.*sqrt(sstat[1]))
+			else: cutoff = int(2.*current_img_per_grp)
 	else:
-		if ratio < 33.: cutoff =  (coid[0]+coid[1])//2  #always balance the minor size group
-		else:           cutoff =  int(2.*current_img_per_grp)
-		
+		if ratio < 33.: cutoff = (coid[0]+coid[1])//2  #always balance the minor size group
+		else:           cutoff = int(2.*current_img_per_grp)
 	for igrp in range(group_dict.shape[0]):
 		if len(groups[igrp])>cutoff:
 			shuffle(groups[igrp])
@@ -3916,7 +3912,7 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 		else:
 			if (nbox == 0):
 				if (niter >= iter_start_removing) and (len(list_stable)> 2): # Will not disturb sorting before it is stabilized.
-					if (ratio<50. and dtable[indx] == 0) or (ratio>50.): # size checking
+					if ((ratio<50. and dtable[indx] == 0) or (ratio>50.) or (sum(dtable)== (len(dtable)-1))): # size checking
 					
 						if (len(any) > (Tracker["minimum_grp_size"][0]*min_size_relax_rate)) and \
 						   (maxres143- decision_table[2][indx] <= Tracker["mu"]+1) and \
