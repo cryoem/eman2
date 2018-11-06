@@ -1172,19 +1172,18 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		# Originally the wheel sclaed by zoom the viewport, but that caused all sorts of issues, so I now just scale the SG
 		# The 25 is a fudge factor that controls the speed of scaling, lower if slower scaling
-		if event.orientation() & Qt.Vertical:
-			self.cameraNeedsanUpdate()
-			if event.angleDelta().y() > 0:
-				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
-				else:
-					self.camera.setFovy(self.camera.getFovy()+1.0)
+		self.cameraNeedsanUpdate()
+		if event.angleDelta().y() > 0:
+			if self.camera.getUseOrtho():
+				self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
 			else:
-				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
-				else:
-					self.camera.setFovy(self.camera.getFovy()-1.0)
-			self.updateSG()
+				self.camera.setFovy(self.camera.getFovy()+1.0)
+		else:
+			if self.camera.getUseOrtho():
+				self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
+			else:
+				self.camera.setFovy(self.camera.getFovy()-1.0)
+		self.updateSG()
 			
 			
 	def mouseDoubleClickEvent(self,event):
