@@ -429,7 +429,7 @@ def AI_continuation(fff, anger = -1.0, shifter = -1.0, chout = False):
 
 		if( chout ): print("  IN AI: nxstep, large at Nyq, outcoming current res, adjusted current, inc, estimated image size",Tracker["nxstep"],Tracker["large_at_Nyquist"],Tracker["currentres"],inc,tmp)
 
-		Tracker["nxinit"] = tmp
+		Tracker["nxinit"]        = tmp
 		Tracker["changed_delta"] = False
 		#  decide angular step and translations
 		if((Tracker["no_improvement"]>=Tracker["constants"]["limit_improvement"]) and (Tracker["no_params_changes"]>=Tracker["constants"]["limit_changes"]) and (not Tracker["large_at_Nyquist"])):
@@ -8809,7 +8809,7 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		if(Blockdata["myid"] == Blockdata["nodes"][procid]): print(line, "3-D reconstruction of group %d"%procid)
 		
-		do3d(procid, projdata[procid], oldparams[procid], None, None, None, myid, smearing = False, mpi_comm = mpi_comm)
+		do3d(procid, projdata[procid], oldparams[procid], None, None, None, Blockdata["myid"], smearing = False, mpi_comm = mpi_comm)
 		
 		projdata[procid] = []
 		mpi_barrier(mpi_comm)
@@ -10256,6 +10256,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Tracker["bestres_143"]          = 0
 			Blockdata["bckgnoise"]          = None
 			Blockdata["accumulatepw"]       = [[],[]]
+			Tracker["changed_delta"]        = False
 
 			# ------------------------------------------------------------------------------------
 			# Get the pixel size; if none, set to 1.0, and the original image size
