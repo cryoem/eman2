@@ -119,11 +119,11 @@ def main():
 		oem = os.path.join(oldpath,"threed_{:02d}_even.hdf".format(itr))
 		oom = os.path.join(oldpath,"threed_{:02d}_odd.hdf".format(itr))
 		oldparm = os.path.join(oldpath,"particle_parms_{:02d}.json".format(itr))
-		oldfsc = os.path.join(oldpath, "fsc_maskedtight_{:02d}.txt".format(itr))
+		oldfsc = os.path.join(oldpath, "fsc_masked_{:02d}.txt".format(itr))
 
 		copy2(oldmap,os.path.join(path,"threed_00.hdf"))
 		copy2(oldparm,os.path.join(path,"particle_parms_00.json"))
-		copy2(oldfsc, os.path.join(path, "fsc_maskedtight_00.txt"))
+		copy2(oldfsc, os.path.join(path, "fsc_masked_00.txt"))
 		copy2(oem,os.path.join(path,"threed_00_even.hdf"))
 		copy2(oom,os.path.join(path,"threed_00_odd.hdf"))
 
