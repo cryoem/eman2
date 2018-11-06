@@ -1889,15 +1889,20 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 	glist, coid         = AI_split_groups(clusters)
 	ratio   = coid[1]/float(coid[0])*100.
 	sublist = []
+	sublist1 = []
 	for im in range(len(clusters)):
 		if glist[im] == 0:
 			sublist.append(clusters[im])
+		else: sublist1.append(clusters[im])
 	if len(sublist)>1: sstat = table_stat(sublist)
 	else:              sstat = [sublist[0], 0.0, sublist[0], sublist[0]]
 	log_file.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat[0], sqrt(sstat[1]), sstat[2], sstat[3]))
-	###----------------------------------------------------------
+	if len(sublist1)>1: sstat1 = table_stat(sublist1)
+	else:              sstat1 = [sublist1[0], 0.0, sublist1[0], sublist1[0]]
+	log_file.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat1[0], sqrt(sstat1[1]), sstat1[2], sstat1[3]))
+	###-----------------------------------------------------------------------------------
 	if len(clusters)>2:
-		if sum(glist) == 1: cutoff = (current_img_per_grp + coid[1])//2
+		if sum(glist) == 1: cutoff = coid[1]
 		else:
 			if ratio >33.:
 				if sqrt(sstat[1])/sstat[0] > 0.50:
@@ -1930,7 +1935,7 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 				new_assi[groups[igrp][im]] = group_dict[igrp]
 			clusters.append(len(groups[igrp]))
 		iter_assignment = new_assi
-	####================================================================================
+	####==================================================================================
 	minres143 = get_res143(scale_fsc_datasetsize(global_fsc, global_total, minimum_grp_size))
 	ares143   = get_res143(scale_fsc_datasetsize(global_fsc, global_total, \
 	    len(iter_assignment)//number_of_groups))
@@ -3910,7 +3915,7 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 			selected_clusters.append(any)
 		else:
 			if (nbox == 0):
-				if (niter >= iter_start_removing) and (len(list_stable)> 2) # Will not disturb sorting before it is stabilized.
+				if (niter >= iter_start_removing) and (len(list_stable)> 2): # Will not disturb sorting before it is stabilized.
 					if (ratio<50. and dtable[indx] == 0) or (ratio>50.): # size checking
 					
 						if (len(any) > (Tracker["minimum_grp_size"][0]*min_size_relax_rate)) and \
