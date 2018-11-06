@@ -541,11 +541,13 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 					if (iter>2) and (nbox == 0):#####
 						if (abs(iter_current_iter_ratio - iter_previous_iter_ratio < iter_converge_criterion) and \
 						   iter_current_iter_ratio > 90.) or (rand_index>0.97) or (score_diff< 5.):#
-							converged = 1 # no much improved	
+							converged = 1 # no much improved
+							
 						if (max_iter <= quick_converge) and (iter>0):
 							quick_converge_counter +=1
 							if  quick_converge_counter>=2: 
 								converged = 1 # Kmeans goes for only one step.
+								
 						if (nbox == 0) and (nruns == 0): #
 							if (len(list_of_stable) < iter_init_K ) and len(list_of_stable)>2 : 
 								if (converged == 1) or (iter-last_recompute)>=2 :
@@ -1895,9 +1897,7 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 	log_file.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat[0], sqrt(sstat[1]), sstat[2], sstat[3]))
 	###----------------------------------------------------------
 	if len(clusters)>2:
-		if sum(glist) == 1:
-			if ratio < 50.: cutoff = (coid[0]+coid[1])//2
-			else:           cutoff = int(2*current_img_per_grp)
+		if sum(glist) == 1: cutoff = (current_img_per_grp + coid[1])//2
 		else:
 			if ratio >33.:
 				if sqrt(sstat[1])/sstat[0] > 0.50:
@@ -3872,12 +3872,12 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	   Tracker["constants"]["total_stack"], smallest_size))
 	
 	dtable, coid = AI_split_groups(groups)
-	ratio = coid[1]/float(coid[0])
+	ratio = coid[1]/float(coid[0])*100.
 	log_list.append('------------>>> Bineary decision on groups <<<--------------------')
 	for im in range(len(list_stable)):
 		log_list.append('%3d    %3d '%(im, dtable[im]))
 	log_list.append('------ Two centroids of binary decision --------------')
-	log_list.append('%8d   %8d    %8.3f '%(coid[0], coid[1], ratio*100.))
+	log_list.append('%8d   %8d    %8.3f '%(coid[0], coid[1], ratio))
 	###-----------------------------------------------------------------------------------
 	score_list =[ ]
 	current_MGR = get_MGR_from_two_way_comparison(newindeces, ptp1, ptp2, total_data)
@@ -3898,31 +3898,34 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	for im in range(4):
 		decision_stat.append(table_stat(decision_table[im]))
 	### ----------------------------------------------------------------------------------
-	
 	log_list.append('--------------------------------------------------------')
 	log_list.append('               Post-matching results.                   ')
 	log_list.append('{:>8} {:>10} {:>17} {:>8} {:>15}'.format('Group ID', '   size', 'min random size', ' status ',   'reproducibility'))
 	for indx in range(len(list_stable)):
 		any = np.sort(list_stable[indx])
 		any.tolist()
-		
 		if (Tracker["freeze_groups"]== 1):
 			log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}   {:>8}  '.format(indx, \
 			  len(any), current_MGR[indx],'accepted', decision_table[1][indx], decision_table[2][indx]))
 			selected_clusters.append(any)
 		else:
 			if (nbox == 0):
-				if (niter >= iter_start_removing): # Will not disturb sorting before it is stabilized.
-					if (len(any) > (Tracker["minimum_grp_size"][0]*min_size_relax_rate)) and \
-					   (maxres143- decision_table[2][indx] <= Tracker["mu"]+1) and \
-					      (float(len(any))/largest_size >cutoff_small) and (len(any)>sqrt(decision_stat[0][1])):
-					      
-						log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}   {:>8}  '.format(indx, \
-						decision_table[0][indx], current_MGR[indx],'accepted', decision_table[1][indx], decision_table[2][indx]))
-						selected_clusters.append(any)
+				if (niter >= iter_start_removing) and (len(list_stable)> 2) # Will not disturb sorting before it is stabilized.
+					if (ratio<50. and dtable[indx] == 0) or (ratio>50.): # size checking
+					
+						if (len(any) > (Tracker["minimum_grp_size"][0]*min_size_relax_rate)) and \
+						   (maxres143- decision_table[2][indx] <= Tracker["mu"]+1) and \
+							  (float(len(any))/largest_size >cutoff_small) and (len(any)>sqrt(decision_stat[0][1])):
+							log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}   {:>8}  '.format(indx, \
+							decision_table[0][indx], current_MGR[indx],'accepted', decision_table[1][indx], decision_table[2][indx]))
+							selected_clusters.append(any)
+							
+						else:
+							log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}   {:>8}   '.format(indx, \
+								decision_table[0][indx], current_MGR[indx], 'rejected', score3, cres))
 					else:
-						log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}   {:>8}   '.format(indx, \
-					        decision_table[0][indx], current_MGR[indx], 'rejected', score3, cres))
+						log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}   {:>8}   '.format(indx,\
+						    decision_table[0][indx], current_MGR[indx], 'rejected', score3, cres))
 				else:
 					log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}   {:>8}  '.format(indx, \
 					   len(any), current_MGR[indx],'accepted', decision_table[1][indx], decision_table[2][indx]))
@@ -3931,7 +3934,6 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 				log_list.append('{:>8} {:>10d} {:>10d}        {:>8} {:>8.1f}   {:>8}  '.format(indx, \
 				   len(any), current_MGR[indx],'accepted', decision_table[1][indx], decision_table[2][indx]))
 				selected_clusters.append(any)
-				
 	if (len(selected_clusters) ==0): selected_clusters = list_stable
 	###-----------------------------------------------------------------------------------	     		
 	accounted_list, new_index = merge_classes_into_partition_list(selected_clusters)
