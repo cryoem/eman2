@@ -1317,8 +1317,8 @@ public:
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
 
 
-	static void init_threads(int nthreads);
-	static void cleanup_threads();
+	static void fftwf_init_threads(int nthreads);
+	static void fftwf_cleanup_threads();
 
 	static void version();
 
