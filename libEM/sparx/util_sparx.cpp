@@ -29540,11 +29540,23 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 	return ccc;
 }
 
+void Util::init_threads(int nthreads) {
+#ifdef USE_FFTW3
+	fftwf_init_threads();
+	fftwf_plan_with_nthreads(nthreads);
+#endif
+}
+
+void Util::cleanup_threads() {
+#ifdef USE_FFTW3
+	fftwf_cleanup_threads();
+#endif
+}
 
 void Util::version()
 {
 
-        int nthreads = 4;
+        int nthreads = 16;
         int i;
         int nx,ny,nz;
         nx=ny=nz=384*2;
@@ -29572,9 +29584,9 @@ void Util::version()
         fftwf_execute(plan);
         fftwf_destroy_plan(plan);
 
-        fftwf_cleanup_threads();
+	fftwf_cleanup_threads();
 
-	cout <<"   Source modification date: 10/24/2018" <<  endl;
+	cout <<"   Source modification date: 11/01/2018" <<  endl;
 }
 
 
