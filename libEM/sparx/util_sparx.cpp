@@ -29543,7 +29543,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::version()
 {
-/*
+
         int nthreads = 4;
         int i;
         int nx,ny,nz;
@@ -29573,7 +29573,7 @@ void Util::version()
         fftwf_destroy_plan(plan);
 
         fftwf_cleanup_threads();
-*/
+
 	cout <<"   Source modification date: 10/24/2018" <<  endl;
 }
 
