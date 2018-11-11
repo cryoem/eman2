@@ -171,7 +171,7 @@ def main():
 		bf=imgs[0]["nx"]//4096+1
 		imgs_4k=[img.process("math.meanshrink", {"n":bf}).process("normalize.edgemean") for img in imgs]
 		imgs_2k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_4k]
-		imgs=None
+		imgs=imgs_4k
 	
 	if imgs[0]["nx"]>1024:
 		imgs_1k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_2k]
