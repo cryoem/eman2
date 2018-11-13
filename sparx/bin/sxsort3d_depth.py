@@ -476,7 +476,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 		Tracker["check_minimum_size"] = True
 		### ------------------------------------------------------------------------------
 		
-		while((iter < box_niter) and (converged == 0)):# within a pair of Kmeans, start an iter
+		while((iter < box_niter) and (converged == 0)):# Within a pair of Kmeans, start an iter
 			info_table             = None
 			reset_number_of_groups = 0
 			for indep_run_iter in range(2):
@@ -488,7 +488,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				mpi_barrier(MPI_COMM_WORLD)
 				###---------------->>>     Kmeans clustering      <<<----------------------
 				tmp_final_list, kmeans_iterations, minimum_grp_size[indep_run_iter], do_freeze[indep_run_iter]=\
-				    Kmeans_minimum_group_size_orien_groups(iter_mstep, iter, cdata, fdata, srdata, ctf_images, \
+				    Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, iter, cdata, fdata, srdata, ctf_images, \
 					parameterstructure, norm_per_particle, MGSKmeans_index_file, params, \
 					 minimum_grp_size[indep_run_iter], do_freeze[indep_run_iter], indep_run_iter, \
 					    clean_volumes = Tracker["clean_volumes"])
@@ -579,17 +579,17 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 					elif nbox > 0:
 						if (abs(iter_current_iter_ratio - iter_previous_iter_ratio < iter_converge_criterion) or \
 						   iter_current_iter_ratio > 90.) or (rand_index>0.90):#
-						   if (iter>=1): converged = 1 # n
-						if (max_iter <= quick_converge) and (iter>=1):converged = 1
+						   if (iter>=2): converged = 1 # n
+						if (max_iter <= quick_converge) and (iter>=2):converged = 1
 				else:
 					# -------->>> freeze groups <<<---------
 					if (abs(iter_current_iter_ratio - iter_previous_iter_ratio < iter_converge_criterion) \
 					   or iter_current_iter_ratio > 90.):#
-					   if iter>=1: converged = 1
+					   if iter>=2: converged = 1
 					   	
 					if (max_iter <= quick_converge) and (iter>=2):quick_converge_counter +=1
 						
-					if (quick_converge_counter>=1) and iter>=1:
+					if (quick_converge_counter>=1) and iter>=2:
 						converged = 1 # Kmeans goes for only one step.
 					
 				###------------------print info	------------------------------------------	 
@@ -1820,7 +1820,7 @@ def recons3d_trl_struct_group_nofsc_shifted_data_fcm_MPI(myid, main_node,\
 		return None, None, None
 #####=====================================================================================
 #####========>>> Constrained Kmeans clustering and respective utilities <<<<==============
-def Kmeans_minimum_group_size_orien_groups(iter_mstep, run_iter, cdata, fdata, srdata,\
+def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fdata, srdata,\
        ctf_images,paramstructure, norm_per_particle, partids, params, \
          minimum_group_size_init, freeze_changes, indep_iter, clean_volumes = True):
 	global Tracker, Blockdata
@@ -2066,7 +2066,7 @@ def Kmeans_minimum_group_size_orien_groups(iter_mstep, run_iter, cdata, fdata, s
 		## Compute umat
 		dmat     = np.array(dmat).transpose()
 		#fcm_umat = compute_umat_cross(dmat, 9.0)
-		umat     = dmat_to_umat(dmat, m =2)
+		umat     = dmat_to_umat(dmat, m =1)
 		###-------------------Compute dmatrix---------------------------------------------
 		local_peaks = local_peaks.reshape(number_of_groups*nima)
 		acc_rest    = time() - rest_time
@@ -2156,7 +2156,8 @@ def Kmeans_minimum_group_size_orien_groups(iter_mstep, run_iter, cdata, fdata, s
 		####----------------------------------------------------
 		#shake = tmp_list[-1]/100.* 0.25
 		shake = 0.0
-		scale = tmp_list[-1]/100.* 0.25
+		if nbox == 0: scale = tmp_list[-1]/100.* 0.75*float(minimum_group_size)/max(mlist)
+		else: 		  scale = tmp_list[-1]/100.* 0.5*float(minimum_group_size)/max(mlist)
 		pe1   = get_PE(umat)
 		umat  = mix_assignment(umat, number_of_groups, \
 		     iter_assignment[image_start:image_end], scale,  shake)
@@ -7372,7 +7373,7 @@ def set_minimum_group_size(log_main, printing_dres_table = True):
 	
 	if (mhigh - mlow)/float(img_per_grp) > 0.25: # large gap between two bounds; tolerate more
 		mhigh = int(min_size_high_bound2*img_per_grp)
-		mlow  = min(img_per_grp//2, max(mlow, img_per_grp//3))
+		mlow  = min(img_per_grp//3, max(mlow, img_per_grp//4))
 		mhigh = max(int(0.90*img_per_grp), mhigh)
 		#	if mhigh<mlow:
 		#		mhigh = 2*img_per_grp//3
@@ -7742,7 +7743,7 @@ def main():
 		else:                         Tracker["freeze_groups"] = 1
 		if Tracker["constants"]["img_per_grp"]>1: Tracker["search_mode"] = False
 		if Tracker["search_mode"]:
-			Tracker["constants"]["init_K"] = 7
+			Tracker["constants"]["init_K"] = 4
 			Tracker["freeze_groups"]       = 0
 		else:Tracker["constants"]["init_K"] = -1
 		###-------------------------------------------------------------------------------
@@ -7904,7 +7905,7 @@ def main():
 		
 		if Tracker["constants"]["img_per_grp"]>1:Tracker["search_mode"] = False
 		if Tracker["search_mode"]: 
-			Tracker["constants"]["init_K"] = 9
+			Tracker["constants"]["init_K"] = 7
 			Tracker["freeze_groups"]       = 0
 		else: Tracker["constants"]["init_K"] = -1
 		###-------------------------------------------------------------------------------
