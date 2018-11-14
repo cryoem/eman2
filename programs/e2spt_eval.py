@@ -305,7 +305,6 @@ class TomoListWidget(QtGui.QListWidget):
 		super(TomoListWidget, self).__init__(parent)
 		self.parent=parent
 		
-
 	def mousePressEvent(self, event):
 		self._mouse_button = event.buttons()
 		item=self.itemAt(event.pos())
@@ -314,17 +313,22 @@ class TomoListWidget(QtGui.QListWidget):
 		#print(item.text(), event.button())
 		
 		if event.button()==1:
-			if item.checkState()==Qt.Checked:
-				item.setCheckState(Qt.Unchecked)
+			if item==None:
+				for i in range(self.count()):
+					self.item(i).setCheckState(Qt.Checked)
 			else:
-				item.setCheckState(Qt.Checked)
+				if item.checkState()==Qt.Checked:
+					item.setCheckState(Qt.Unchecked)
+				else:
+					item.setCheckState(Qt.Checked)
 			#return
 		
 		elif event.button()==2:
 			for i in range(self.count()):
 				self.item(i).setCheckState(Qt.Unchecked)
-			
-			item.setCheckState(Qt.Checked)
+			if item!=None:
+				item.setCheckState(Qt.Checked)
+		
 		
 		
 		for i in range(self.count()):
