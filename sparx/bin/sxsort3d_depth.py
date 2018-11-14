@@ -243,7 +243,6 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 							msg ="Pair %d is completed"%nbox
 							log_main.add(msg)
 				else: checkingbox = 0
-				
 				checkingbox = bcast_number_to_all(checkingbox, Blockdata["main_node"], MPI_COMM_WORLD) 
 				Tracker     = wrap_mpi_bcast(Tracker,          Blockdata["main_node"], MPI_COMM_WORLD)
 				# Code structure of the box
@@ -259,8 +258,8 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 					log_main.add('Box %d of layer %d is done and it costs %f minutes'%(nbox, depth, time_box_finish))
 			if bad_clustering !=1:
 				partition_per_box_per_layer_list = []
-				stop_generation_list = []
-				
+				stop_generation_list             = []
+				stat_lists                       = []
 				for nbox in range(0,n_cluster_boxes, 2):
 					input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
 					input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
@@ -268,6 +267,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 					do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
 					stop_generation_list.append(stop_generation)
 					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
+					stat_lists.append(stat_list)
 					
 				if sum(stop_generation_list)>=1:# one cluster case: output the one with largest accounted ptls
 					if len(partition_per_box_per_layer_list)>1:
@@ -277,6 +277,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 							if len(partition_per_box_per_layer_list[im][0]) >output_acc:
 								output_box = im
 						partition_per_box_per_layer_list = [partition_per_box_per_layer_list[output_box]]
+						stat_list = stat_lists[output_box]
 					break
 				mpi_barrier(MPI_COMM_WORLD)
 				
@@ -284,13 +285,14 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				mark_sorting_state(depth_dir, True)
-			if( bad_clustering  == 1):  break
-			if( stop_generation == 1 ): break ### only one cluster survives
+			if(bad_clustering  == 1):  break
+			if(stop_generation == 1):  break ### only one cluster survives
 		else:
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				log_main.add('Layer %d sorting has completed. Recompute two_way comparison'%depth)
 			partition_per_box_per_layer_list = []
 			stop_generation_list = []
+			stat_lists = []
 			for nbox in range(0, n_cluster_boxes,2):
 				input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
 				input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
@@ -298,6 +300,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
 				stop_generation_list.append(stop_generation)
 				partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
+				stat_lists.append(stat_list)
 				
 			if sum(stop_generation_list)>=1:# one cluster case: output the one with largest accounted ptls
 				if len(partition_per_box_per_layer_list)>1:
@@ -306,6 +309,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 					for im in range(len(partition_per_box_per_layer_list)):
 						if len(partition_per_box_per_layer_list[im][0]) >output_acc:output_box = im
 					partition_per_box_per_layer_list = [partition_per_box_per_layer_list[output_box]]
+					stat_list = stat_lists[output_box]
 				break
 			mpi_barrier(MPI_COMM_WORLD)
 			
@@ -1975,10 +1979,16 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 	while total_iter < max_iter: #### Kmeans
 		rest_time  = time()
 		if(Blockdata["myid"] == Blockdata["main_node"]):
+			msg = "-----------------------------------------------------------------------"
+			log_main.add(msg)
 			msg = "Iteration %3d: particle assignment changed ratio  %f "%(total_iter, changed_nptls)
 			log_main.add(msg)
 			write_text_file(np.copy(iter_assignment).tolist(), os.path.join(Tracker["directory"],\
 			     "assignment%03d.txt"%total_iter))
+			if changed_nptls< 50.0: do_partial_rec3d = 1
+			else:                   do_partial_rec3d = 0
+		else:do_partial_rec3d = 0
+		do_partial_rec3d = bcast_number_to_all(do_partial_rec3d, Blockdata["main_node"], MPI_COMM_WORLD)
 		update_data_assignment(cdata, srdata, iter_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
 		mpi_barrier(MPI_COMM_WORLD)####----------
 		acc_rest = time() - rest_time
@@ -1987,8 +1997,15 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 				print("orien_groups take  %f minutes"%(acc_rest/60.))
 		rest_time           = time()
 		current_group_sizes = get_group_size_from_iter_assign(iter_assignment)
-		do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particle,\
+		
+		if Tracker["use_umat"]:
+			do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particle,\
 		  umat, current_group_sizes, iteration = total_iter)
+		  
+		else:
+			do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particle,\
+           partial_rec3d, current_group_sizes, iteration = total_iter)
+           
 		acc_rest = time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			if Tracker["do_timing"]:
@@ -2068,7 +2085,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		## Compute umat
 		dmat     = np.array(dmat).transpose()
 		#fcm_umat = compute_umat_cross(dmat, 9.0)
-		umat     = dmat_to_umat(dmat, m = 1)
+		umat     = dmat_to_umat(dmat, m = 1)# rank group assignment per particle
 		###-------------------Compute dmatrix---------------------------------------------
 		local_peaks = local_peaks.reshape(number_of_groups*nima)
 		acc_rest    = time() - rest_time
@@ -2148,15 +2165,15 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 			do_move_one_up     = 0
 			changed_nptls_list = 0
 			tmp_list           = 0
-		iter_assignment      = wrap_mpi_bcast(iter_assignment,      Blockdata["main_node"], MPI_COMM_WORLD)
-		best_assignment      = wrap_mpi_bcast(best_assignment,      Blockdata["main_node"], MPI_COMM_WORLD)
-		changed_nptls_list   = wrap_mpi_bcast(changed_nptls_list,   Blockdata["main_node"], MPI_COMM_WORLD)
-		tmp_list             = wrap_mpi_bcast(tmp_list,             Blockdata["main_node"], MPI_COMM_WORLD)
-		keepgoing            = bcast_number_to_all(keepgoing,       Blockdata["main_node"], MPI_COMM_WORLD)
-		do_move_one_up       = bcast_number_to_all(do_move_one_up,  Blockdata["main_node"], MPI_COMM_WORLD)
-		freeze_changes       = bcast_number_to_all(freeze_changes,  Blockdata["main_node"], MPI_COMM_WORLD)
+		iter_assignment      = wrap_mpi_bcast(iter_assignment,          Blockdata["main_node"], MPI_COMM_WORLD)
+		best_assignment      = wrap_mpi_bcast(best_assignment,          Blockdata["main_node"], MPI_COMM_WORLD)
+		changed_nptls_list   = wrap_mpi_bcast(changed_nptls_list,       Blockdata["main_node"], MPI_COMM_WORLD)
+		tmp_list             = wrap_mpi_bcast(tmp_list,                 Blockdata["main_node"], MPI_COMM_WORLD)
+		keepgoing            = bcast_number_to_all(keepgoing,           Blockdata["main_node"], MPI_COMM_WORLD)
+		do_move_one_up       = bcast_number_to_all(do_move_one_up,      Blockdata["main_node"], MPI_COMM_WORLD)
+		freeze_changes       = bcast_number_to_all(freeze_changes,      Blockdata["main_node"], MPI_COMM_WORLD)
 		decrease_last_iter   = bcast_number_to_all(decrease_last_iter,  Blockdata["main_node"], MPI_COMM_WORLD)
-		####----------------------------------------------------
+		####======================== Fuzzy membership =====================================
 		#shake = tmp_list[-1]/100.* 0.25
 		#shake = 0.1*float(minimum_group_size)/max(mlist)*tmp_list[-1]/100.
 		shake = 0.0
@@ -2176,17 +2193,17 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 					for im in range(2):
 						score_sub_list[im] += dummy[im] 
 			score_sub_list = np.multiply(score_sub_list, 1./Tracker["total_stack"])
-			log_main.add("Simple PE %f  Mixed PE %f "%(score_sub_list[0], score_sub_list[1]))
+			log_main.add("Simple PE: %f  Mixed PE: %f "%(score_sub_list[0], score_sub_list[1]))
 		mpi_barrier(MPI_COMM_WORLD)
 		total_iter +=1
-		acc_rest = time() - rest_time
+		acc_rest    = time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			if Tracker["do_timing"]:
 				print("Compute analysis takes  %f minutes"%(acc_rest/60.))
-		###---------------------------------------------------------------
+		###-------------------------------------------------------------------------------
 		if (Tracker["freeze_groups"] == 0): stop_pstd = 1.0
 		else:                               stop_pstd = 2.0
-		###----------------------------------------------------------------
+		###-------------------------------------------------------------------------------
 		if keepgoing == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add("Converge criterion reaches. Stop MGSKmeans.")
@@ -2196,18 +2213,15 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					log_main.add("Stat of changed_nptls within the last 3 iters: ")
 					log_main.add("%f  %f  %f  %f "%(pave, sqrt(pstd), pmin, pmax))
-				if sqrt(pstd) < stop_pstd:
+				if (sqrt(pstd) < stop_pstd):
 					keepgoing = 0
 					if Blockdata["myid"] == Blockdata["main_node"]:
 						log_main.add("No improvment in clustering exceeds limit. Stop MGSKmeans. ")
-		if keepgoing == 0: 
-			break
+		if (keepgoing == 0): break
 		if (total_iter > max_iter):
 			[best_score,changed_nptls ] = tmp_list
-			if (stopercnt*2.)> changed_nptls:
-				best_assignment = copy.copy(iter_assignment)
-			elif (best_score*2.)>changed_nptls:
-				best_assignment = copy.copy(iter_assignment)
+			if (stopercnt*2.)> changed_nptls:   best_assignment = copy.copy(iter_assignment)
+			elif (best_score*2.)>changed_nptls: best_assignment = copy.copy(iter_assignment)
 	
 	#-------------->>>>>>>> Finalize  <<<<<<<<<-------------------------------------------
 	update_data_assignment(cdata, srdata, best_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
@@ -2456,8 +2470,8 @@ def do_assignment_by_dmatrix_orien_group_minimum_group_size(dmatrix, \
 	del results
 	del submatrix
 	return iter_assignment
-###================================================================================
-### =============>>>>  various reading data <<<====================================
+###=======================================================================================
+### =============>>>>  various reading data <<<===========================================
 ### 1
 def get_shrink_data_sorting(partids, partstack, return_real = False, preshift = True, apply_mask = True, npad = 1):
 	# The function will read from stack a subset of images specified in partids
@@ -3210,7 +3224,7 @@ def downsize_data_for_rec3D(original_data, particle_size, return_real = False, n
 	mask2D     = model_circle(Tracker["constants"]["radius"],\
 	   Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	shrinkage  = particle_size/float(Tracker["constants"]["nnxo"])
-	radius     = int(Tracker["constants"]["radius"] * shrinkage +0.5)
+	radius     = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	for im in range(nima):
 		image = original_data[im].copy()
 		chunk_id = image.get_attr("chunk_id")
@@ -4068,8 +4082,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 			ptp, unaccounted_list = split_partition_into_ordered_clusters_split_ucluster([assi, np.array(full_list)], False)
 			accounted_list, new_index = merge_classes_into_partition_list(ptp)
 			stat_list = []
-			for im in range(number_of_groups):
-				stat_list.append([0.,  0.,  0.])
+			for im in range(number_of_groups):stat_list.append([0.,  0.,  0.])
 			log_main.add('================================================================================================================\n')
 		else: new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0
 		new_index          = wrap_mpi_bcast(new_index,               Blockdata["main_node"], MPI_COMM_WORLD)
@@ -6921,7 +6934,7 @@ def set_sorting_global_variables_mpi(log_file):
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		###=====<--options for advanced users:
 		log_file.add("---------------------------------------------------------------------------------------------------")
-		log_file.add(" Global adjustable varibales (for adanced users and can be modified to fit specific clustering requirements)")
+		log_file.add(" Global adjustable varibales (to be modified for advanced users to fit specific clustering requirements)")
 		log_file.add("---------------------------------------------------------------------------------------------------")
 		Tracker["total_number_of_iterations"]         = 15
 		Tracker["clean_volumes"]                      = True  # always true
@@ -6955,10 +6968,16 @@ def set_sorting_global_variables_mpi(log_file):
 		### ---------------------------------------------------------------------------------------------
 		if Tracker["search_mode"]:
 			log_file.add("Sorting is set on search_mode and starts from K=%d"%Tracker["constants"]["init_K"])
-		elif (Tracker["freeze_groups"]== 1) and (not Tracker["search_mode"]): 
+			
+		elif (Tracker["freeze_groups"]== 1) and (not Tracker["search_mode"]):
 			log_file.add("Sorting is set on freeze_groups mode")
-		else: log_file.add("Sorting is set on general mode")
+			
+		else:
+			log_file.add("Sorting is set on general mode")
 		
+		if Tracker["use_umat"]:
+			log_file.add("Fuzzy membership is applied to stabilize sorting")
+			
 		log_file.add("Sorting depth order:                                   %8d"%Tracker["depth_order"])
 		log_file.add("Maximum box iteration:                                 %8d"%Tracker["constants"]["box_niter"])
 		log_file.add("Minimum_img_per_cpu:                                   %8d"%Tracker["minimum_img_per_cpu"])
@@ -6977,12 +6996,12 @@ def set_sorting_global_variables_mpi(log_file):
 		log_file.add(" Compute scaling relationship (dres_table) between FSC0.143 and image group size   ")
 		log_file.add(" FSC0.143 (in pixels)  size  low bound     high bound    width of pixel bin        ")
 		log_file.add("-----------------------------------------------------------------------------------")
-		dict = {}
+		dict         = {}
 		previous_res = 0
 		res_list     = []
 		growing_size = Tracker["constants"]["img_per_grp"]//100
 		step = max(growing_size//1000, 20)
-		while growing_size + step<Tracker["total_stack"]:
+		while (growing_size + step<Tracker["total_stack"]):
 			growing_size +=step
 			res = get_res143(scale_fsc_datasetsize(\
 			   Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], growing_size))
@@ -7113,7 +7132,7 @@ def copy_results(log_file, all_gen_stat_list):
 					cluster_file = "Cluster_%03d.txt"%nclusters
 					vol_file     = "vol_cluster%03d.hdf"%nclusters
 					msg          = '{:>8} {:>8}   {:^24}        {:^6}          {:^6}          {:>5} {:^20} {:^20} '.format(nclusters, \
-					  len(cluster), ig, round(all_gen_stat_list[ig][ic][0],1), round(all_gen_stat_list[ig][ic][1],1), \
+					  len(cluster), ig, round(all_gen_stat_list[ig][ic][0], 1), round(all_gen_stat_list[ig][ic][1], 1), \
 					    round(all_gen_stat_list[ig][ic][2],1), cluster_file,  vol_file)
 					nclusters   +=1
 					NACC        +=len(cluster)
@@ -7654,6 +7673,7 @@ def main():
 		parser.add_option("--nstep",                       type   ="int",           default =5,		    help="Number of steps to decrease minimum group size from high bound to low bound")
 		parser.add_option("--overhead",                    type   ="float",         default =5.0,       help="Estimated python overhead per node in GB")
 		parser.add_option("--not_freeze_groups",           action ="store_true",    default =False,     help="Do not remove small groups during within-box clustering")
+		parser.add_option("--use_umat",                    action ="store_true",    default =False,     help="Use fuzzy membership to stabalize sorting")
 
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
@@ -7759,6 +7779,7 @@ def main():
 			Tracker["constants"]["init_K"] = 5
 			Tracker["freeze_groups"]       = 0
 		else:Tracker["constants"]["init_K"] = -1
+		Tracker["use_umat"]      =  options.use_umat
 		###-------------------------------------------------------------------------------
 				
 		try : 
@@ -7789,7 +7810,7 @@ def main():
 		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
-				log_main.add('                                 SORT3D MULTI-LAYER v1.2')
+				log_main.add('                                 SORT3D MULTI-LAYER v2.0')
 				log_main.add('================================================================================================================')
 			import_data(log_main)
 			print_shell_command(sys.argv, log_main)
@@ -7829,6 +7850,8 @@ def main():
 		parser.add_option("--nstep",                             type   ="int",           default =5,		   help="number of steps to decrease minimum group size from high bound to low bound")
 		parser.add_option("--overhead",                          type   ="float",         default =5.0,        help="Estimated python overhead per node in GB")
 		parser.add_option("--not_freeze_groups",                 action ="store_true",    default =False,      help="Do not remove small groups during within-box clustering")
+		parser.add_option("--use_umat",                          action ="store_true",    default =False,      help="Use fuzzy membership to stabilize sorting")
+		
 
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
@@ -7918,9 +7941,10 @@ def main():
 		
 		if Tracker["constants"]["img_per_grp"]>1:Tracker["search_mode"] = False
 		if Tracker["search_mode"]: 
-			Tracker["constants"]["init_K"] = 7
-			Tracker["freeze_groups"]       = 0
+			Tracker["constants"]["init_K"]   = 7
+			Tracker["freeze_groups"]         = 0
 		else: Tracker["constants"]["init_K"] = -1
+		Tracker["use_umat"]                  =  options.use_umat
 		###-------------------------------------------------------------------------------
 		
 		Tracker["constants"]["hardmask"]           = True
@@ -7960,7 +7984,7 @@ def main():
 		if continue_from_interuption == 0:# Fresh run
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
-				log_main.add('                                  SORT3D MULTI-LAYER v1.2')
+				log_main.add('                                  SORT3D MULTI-LAYER v2.0')
 				log_main.add('================================================================================================================\n')	
 			import_data(log_main)
 			print_shell_command(sys.argv, log_main)
