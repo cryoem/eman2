@@ -1048,12 +1048,13 @@ def check_sorting(total_data, keepsorting, log_file):
 	########## add some code to check current settings
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if not Tracker["search_mode"]:
-			number_of_groups = total_data//Tracker["constants"]["img_per_grp"]
+			number_of_groups = int(round(total_data/Tracker["constants"]["img_per_grp"]))
 			log_file.add("Check_sorting: In the next generation, total =  %d   K = %d  img_per_grp   %d"%\
 			     (total_data, number_of_groups, Tracker["constants"]["img_per_grp"]))
 		else:
 			current_img_per_grp = Tracker["constants"]["total_stack"]//Tracker["constants"]["init_K"]
-			number_of_groups    = total_data//current_img_per_grp
+			number_of_groups    = int(round(total_data/current_img_per_grp))
+			
 			log_file.add("Check_sorting: In the next generation, total = %8d   K = %3d  img_per_grp = %8d"%\
 			     (total_data, number_of_groups, current_img_per_grp))
 		
@@ -1955,6 +1956,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 	keepgoing            = 1
 	do_partial_rec3d     = 0
 	partial_rec3d        = False
+	decrease_last_iter   = 0
 	from statistics import scale_fsc_datasetsize
 	current_fsc_curve = Tracker["constants"]["fsc_curve"]
 	
@@ -2066,7 +2068,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		## Compute umat
 		dmat     = np.array(dmat).transpose()
 		#fcm_umat = compute_umat_cross(dmat, 9.0)
-		umat     = dmat_to_umat(dmat, m =1)
+		umat     = dmat_to_umat(dmat, m = 1)
 		###-------------------Compute dmatrix---------------------------------------------
 		local_peaks = local_peaks.reshape(number_of_groups*nima)
 		acc_rest    = time() - rest_time
@@ -2131,12 +2133,12 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			last_score = changed_nptls
 			best_score, changed_nptls, keepgoing, best_assignment, iter_assignment,\
-			    do_move_one_up, minimum_group_size, freeze_changes = \
+			    do_move_one_up, minimum_group_size, freeze_changes, decrease_last_iter = \
 			     AI_MGSKmeans(total_iter, iter_assignment, last_iter_assignment, best_assignment, \
 			       keepgoing, best_score, stopercnt, last_score, minimum_group_size, \
 			           current_mu, Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"],\
 			               do_move_one_up, mdict, mlist, freeze_changes, Tracker["search_mode"], \
-			                  Tracker["freeze_groups"], log_main)
+			                  Tracker["freeze_groups"], decrease_last_iter, log_main)
 			changed_nptls_list.append(changed_nptls)
 			tmp_list =[best_score,changed_nptls]
 		else:
@@ -2153,11 +2155,13 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		keepgoing            = bcast_number_to_all(keepgoing,       Blockdata["main_node"], MPI_COMM_WORLD)
 		do_move_one_up       = bcast_number_to_all(do_move_one_up,  Blockdata["main_node"], MPI_COMM_WORLD)
 		freeze_changes       = bcast_number_to_all(freeze_changes,  Blockdata["main_node"], MPI_COMM_WORLD)
+		decrease_last_iter   = bcast_number_to_all(decrease_last_iter,  Blockdata["main_node"], MPI_COMM_WORLD)
 		####----------------------------------------------------
 		#shake = tmp_list[-1]/100.* 0.25
+		#shake = 0.1*float(minimum_group_size)/max(mlist)*tmp_list[-1]/100.
 		shake = 0.0
-		if nbox == 0: scale = tmp_list[-1]/100.* 0.75*float(minimum_group_size)/max(mlist)
-		else: 		  scale = tmp_list[-1]/100.* 0.5*float(minimum_group_size)/max(mlist)
+		if nbox == 0: scale = tmp_list[-1]/100.* 0.5*float(minimum_group_size)/max(mlist)
+		else: 		  scale = tmp_list[-1]/100.* 0.25*float(minimum_group_size)/max(mlist)
 		pe1   = get_PE(umat)
 		umat  = mix_assignment(umat, number_of_groups, \
 		     iter_assignment[image_start:image_end], scale,  shake)
@@ -2236,7 +2240,8 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 ###---------------------------------------------------------------------------------------
 def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assignment, \
         keepgoing, best_score, stopercnt, last_score, minimum_grp_size, current_mu, global_fsc, \
-             global_total, do_move_one_up, mdict, mlist, freeze_changes, search_mode, freeze_groups, log_file):
+             global_total, do_move_one_up, mdict, mlist, freeze_changes, search_mode, \
+               freeze_groups, decrease_last_iter, log_file):
 	#------------ Single cpu function ----------------------------------------------------
 	import numpy as np
 	from statistics import scale_fsc_datasetsize
@@ -2340,8 +2345,8 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 	min_index      = -1
 	make_change    = False
 	###-------------------------- K=2 checking -------------------------------------------
-	if (number_of_groups == 2) and float(size_smallest)/float(size_largest)<\
-	      cutoff_two_rate and (freeze_changes == 0):
+	if (number_of_groups == 2) and (float(size_smallest)/float(size_largest)<cutoff_two_rate)\
+	     and (freeze_changes == 0):
 		minimum_grp_size = int((len(iter_assignment)//2)*0.75) # always use large minimum_grp_size
 		changed_nptls    = 100
 		keepgoing        = 1
@@ -2356,16 +2361,16 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 	# Uneven clusters
 	# Case 1: Normal case; decrease minimum group size; conservative mode
 	####----------------------------------------------------------------------------------			
-	if freeze_groups == 0: # adjust min group size
-		if (changed_nptls < stopercnt*stopercnt_scale) and (freeze_changes == 0) and \
-		       (last_score > changed_nptls):
+	if (freeze_groups == 0): # adjust min group size
+		if (changed_nptls < 50.) and (freeze_changes == 0) and \
+		       (last_score > changed_nptls) and (decrease_last_iter == 0):
 			dis = float('inf')
 			for im in range(len(mlist)):
 				if abs(minimum_grp_size - mlist[im]) < dis:
 					min_index = im
 					dis = abs(minimum_grp_size - mlist[im])
-			if min_index>-1:
-				if min_index+1 <=len(mlist) - 1:
+			if (min_index>-1):
+				if (min_index+1 <= len(mlist) - 1):
 					new_size = mlist [min_index+1]
 					msg ="Shrink minimum_grp_size to %d from %d."%\
 					   (new_size, minimum_grp_size)
@@ -2376,15 +2381,23 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 					keepgoing = 1
 					#changed_nptls  = 100
 					do_move_one_up = 1
-				else: freeze_changes =1
+					decrease_last_iter = 1
+				else:
+					decrease_last_iter =1 
+					freeze_changes =1
 			else: pass
-		else:log_file.add("Normal progress.")
+		else:
+			decrease_last_iter = 0
+			log_file.add("Normal progress. No minimum_grp_size update.")
 	####----------------------------------------------------------------------------------
-		if (changed_nptls < stopercnt) and (minimum_grp_size == mlist[-1]): keepgoing = 0
+		if (changed_nptls < stopercnt) and (minimum_grp_size == mlist[-1]):
+			keepgoing = 0
 	else:
-		if (changed_nptls < stopercnt): keepgoing = 0
+		if (changed_nptls < stopercnt): 
+			keepgoing = 0
 	return best_score, changed_nptls, keepgoing, best_assignment, \
-	    iter_assignment, do_move_one_up, minimum_grp_size, freeze_changes
+	    iter_assignment, do_move_one_up, minimum_grp_size, \
+	       freeze_changes, decrease_last_iter
 	    
 ###------------------------------------------------------------------------ end of AI	
 def do_assignment_by_dmatrix_orien_group_minimum_group_size(dmatrix, \
@@ -7743,7 +7756,7 @@ def main():
 		else:                         Tracker["freeze_groups"] = 1
 		if Tracker["constants"]["img_per_grp"]>1: Tracker["search_mode"] = False
 		if Tracker["search_mode"]:
-			Tracker["constants"]["init_K"] = 4
+			Tracker["constants"]["init_K"] = 5
 			Tracker["freeze_groups"]       = 0
 		else:Tracker["constants"]["init_K"] = -1
 		###-------------------------------------------------------------------------------
