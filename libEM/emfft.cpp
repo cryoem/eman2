@@ -85,6 +85,11 @@ const int EMfft::EMAN2_COMPLEX_2_REAL = 2;
 EMfft::EMfftw3_cache::EMfftw3_cache() :
 		num_plans(0)
 {
+	// NOTE 2018/11/13 Toshio Moriya: 
+	// Modified for Pawel
+	clear_plans();
+	
+	/*
 	for(int i = 0; i < EMFFTW3_CACHE_SIZE; ++i)
 	{
 		rank[i] = 0;
@@ -93,6 +98,7 @@ EMfft::EMfftw3_cache::EMfftw3_cache() :
 		ip[i] = -1;
 		fftwplans[i] = NULL;
 	}
+	*/
 }
 
 void EMfft::EMfftw3_cache::debug_plans()
@@ -109,6 +115,50 @@ void EMfft::EMfftw3_cache::debug_plans()
 
 EMfft::EMfftw3_cache::~EMfftw3_cache()
 {
+	// NOTE 2018/11/13 Toshio Moriya: 
+	// Modified for Pawel
+	destroy_plans();
+	
+	/*
+	for(int i = 0; i < EMFFTW3_CACHE_SIZE; ++i)
+	{
+		if (fftwplans[i] != NULL)
+		{
+			int mrt = Util::MUTEX_LOCK(&fft_mutex);
+			fftwf_destroy_plan(fftwplans[i]);
+			mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+			fftwplans[i] = NULL;
+		}
+	}
+	*/
+}
+
+// NOTE 2018/11/13 Toshio Moriya: 
+// Added for Pawel
+void EMfft::EMfftw3_cache::clear_plans()
+{
+	// NOTE 2018/11/13 Toshio Moriya: 
+	// Debug output to make sure of EMfft::initialize_plan_cache is working
+	//cout << "MRK_DEBUG: EMfft::clear_plans is executed\n";
+	
+	for(int i = 0; i < EMFFTW3_CACHE_SIZE; ++i)
+	{
+		rank[i] = 0;
+		plan_dims[i][0] = 0; plan_dims[i][1] = 0; plan_dims[i][2] = 0;
+		r2c[i] = -1;
+		ip[i] = -1;
+		fftwplans[i] = NULL;
+	}
+}
+
+// NOTE 2018/11/13 Toshio Moriya: 
+// Added for Pawel
+void EMfft::EMfftw3_cache::destroy_plans()
+{
+	// NOTE 2018/11/13 Toshio Moriya: 
+	// Debug output to make sure of EMfft::initialize_plan_cache is working
+	//cout << "MRK_DEBUG: EMfft::EMfftw3_cache destroy_plans is executed\n";
+	
 	for(int i = 0; i < EMFFTW3_CACHE_SIZE; ++i)
 	{
 		if (fftwplans[i] != NULL)
@@ -439,6 +489,17 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 			break;
 	}
 	
+	return 0;
+}
+
+
+// NOTE 2018/11/13 Toshio Moriya: 
+// Added for Pawel so that he re-initialize EMfftw3_cache plan_cache through this function
+// This function is available only when USE_FFTW3 is defined. 
+int EMfft::initialize_plan_cache()
+{
+	plan_cache.destroy_plans();
+	plan_cache.clear_plans();
 	return 0;
 }
 

@@ -29542,6 +29542,7 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 
 void Util::init_threads(int nthreads) {
 #ifdef USE_FFTW3
+	EMfft::initialize_plan_cache();
 	fftwf_init_threads();
 	fftwf_plan_with_nthreads(nthreads);
 #endif
@@ -29550,6 +29551,7 @@ void Util::init_threads(int nthreads) {
 void Util::cleanup_threads() {
 #ifdef USE_FFTW3
 	fftwf_cleanup_threads();
+	EMfft::initialize_plan_cache();
 #endif
 }
 
