@@ -117,7 +117,7 @@ def main():
 
 	parser.add_argument("--optbox", type=int,help="Box size to use during alignment optimization. Default is 512.",default=512, guitype='intbox', row=23, col=0, rowspan=1, colspan=1, mode="align,tomo")
 	parser.add_argument("--optstep", type=int,help="Step size to use during alignment optimization. Default is 448.",default=448,  guitype='intbox', row=23, col=1, rowspan=1, colspan=1, mode="align,tomo")
-	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.5. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.5, guitype='floatbox', row=23, col=2, rowspan=1, colspan=1, mode="align,tomo")
+	parser.add_argument("--optalpha", type=float,help="Penalization to apply during robust regression. Default is 0.1. If 0.0, unpenalized least squares will be performed (i.e., no trajectory smoothing).",default=0.1, guitype='floatbox', row=23, col=2, rowspan=1, colspan=1, mode="align,tomo")
 	parser.add_argument("--optccf",default="robust",type=str, choices=["robust","centerofmass","ccfmax"],help="Use this approach to determine relative frame translations.\nNote: 'robust' utilizes a bimodal Gaussian to robustly determine CCF peaks between pairs of frames in the presence of a fixed background.", guitype='combobox', row=24, col=0, rowspan=1, colspan=2, mode='align["robust"],tomo["robust"]',choicelist='["robust","centerofmass","ccfmax"]')
 
 	parser.add_header(name="orblock5", help='Just a visual separation', title="Optional: ", row=25, col=0, rowspan=2, colspan=3, mode="align,tomo")
