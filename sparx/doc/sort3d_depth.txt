@@ -15,7 +15,7 @@ Usage in command line
 
 sxsort3d_depth.py exists only in MPI version. It surports single node workstation. 
 
-There are two ways of running this command and each ways has three modes, namely search mode, freeze group mode, and general mode respectively. Skipping img_per_grp option activates search mode.
+There are two ways of running this command and each ways has three modes, namely search mode, freeze group mode, and general mode respectively. Unsetting img_per_grp option activates search mode. The advanced parameters are set/reset in function set_sorting_global_variables_mpi.
 
 \\ __1. 3D sorting from meridien iteration__: Clustering is initiated from a completed iteration of meridien refinement and imports data from there. This mode uses all meridien information (i.e., smear, normalizations and such).
   mpirun -np 48 sxsort3d_depth.py --refinement_dir='outdir_sxmeridien' --output_dir='outdir_sxsort3d_depth_iteration' --radius=52 --sym='c1' --memory_per_node=60.0 --img_per_grp=2000 
@@ -73,6 +73,10 @@ sxsort3d_depth performs 3D clustering on data and keeps 3D orientation parameter
 \\
 === Important Options ===
 || **Option Key** || **Discription** ||
+|| %%--%%img_per_grp || This is the only sorting parameter user has to determine. The default value sets program in cluster search mode. (default -1) ||
+|| %%--%%nstep || It decreases the minimum group size during sorting and thus select out faked groups when the initial number of groups is set too large.  ||
+|| %%--%%use_umat || The option enables the maps reconstructed by fuzzy group membership of particle images. It stabilizes sorting and helps to select out true groups. However, the consumed time is in proportion to the number of particle smearing. ||
+|| %%--%%not_freeze_groups || Freezing group implies not removing groups during within box comparison and it allows sorting uses the strategies before v1.2. ||
 || %%--%%depth_order || The parameter resembles the previous option number of independent runs but it controls sorting in an different way. The default value of 2 is a good choice. ||
 || %%--%%orientation_groups || It divides the asymmetric unit into the specified number of orientation groups and cast the data orientation parameters into them. It is meant to prevent sorting by angle, i.e., assign certain angle to one group, for example top views to one group and side views to another. ||
 
