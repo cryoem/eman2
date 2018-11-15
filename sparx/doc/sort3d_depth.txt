@@ -80,15 +80,16 @@ sxsort3d_depth performs 3D clustering on data and keeps 3D orientation parameter
 === Test Results ===
 1. Simulated ribosome. 
 \\
-14400 particles with 64*64 image size belong to five even groups (all have 2880 members).  The command for this run is given in case 2 and it costs 10 minutes on our cluster with 48 cpus. 
+17280 particles with 64*64 image size belong to five even groups (all have 3456 members).  The command for this run is given in case 2 and it costs 19 minutes on our cluster with 32 cpus with the initial K=9 with use_umat option and without focus mask. 
 \\
 == The sorting results ==
 || **Group ID** || **Particles** || **% of True** ||
-|| group 1 || 2448 || 98% are true members ||
-|| group 2 || 2493 || 98% are true members ||
-|| group 3 || 2806 || 98% are true members ||
-|| group 4 || 2883 || 98% are true members ||
-|| group 5 || 2891 || 98% are true members ||
+|| group 1 || 3303 || 97% are true members ||
+|| group 2 || 3447 || 98% are true members ||
+|| group 3 || 3229 || 98% are true members ||
+|| group 4 || 3454 || 99% are true members ||
+|| group 5 || 3442 || 99% are true members ||
+
 
 2. Ribosome EMPIAR-10028: 
 \\
