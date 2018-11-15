@@ -8,7 +8,7 @@
 
 Usage in command line
 
-  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --nstep=minimum_grp_steps --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES    --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER   --orientation_groups=NUM_OF_ORIEN_GROUPS  --not_include_unaccounted  --notapplybckgnoise  --random_group_elimination_threshold --check_smearing --num_core_set=NUM_OF_MIN_IMAGES --overhead=SOME_NUMBER --compute_on_the_fly --use_umat --not_freeze_groups
+  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --nstep=minimum_grp_steps --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES    --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER   --orientation_groups=NUM_OF_ORIEN_GROUPS  --not_include_unaccounted  --nsmear=NUMBER_OF_SMEAR --notapplybckgnoise  --random_group_elimination_threshold --check_smearing --num_core_set=NUM_OF_MIN_IMAGES --overhead=SOME_NUMBER --compute_on_the_fly --use_umat --not_freeze_groups
 
 \\
 ===== Typical usage =====
@@ -29,7 +29,6 @@ There are two ways of running this command and each ways has three modes, namely
   ; %%--%%refinement_dir : Meridien refinement directory: A string denotes meridien 3D refinement directory. Sorting switches to meridien iteration mode when specified. (default none)
   ; %%--%%instack : Input images stack: A string denotes file path of input particle stack for sorting. Sorting switches to stack mode when option is specified. (default none)
   ; %%--%%output_dir : Output directory: A string denotes output directory for 3D sorting. It can be either existing or non-existing. By default, the program uses sort3d_DATA_AND_TIME for the name. Here, you can find a log.txt that describes the sequences of computations in the program. (default none)
-
   ; %%--%%niter_for_sorting : Iteration ID of 3D refinement for importing data: By default, the program uses the iteration at which refinement achieved the best resolution. Option is valid only for meridien iteration mode. (default -1)
   ; %%--%%nxinit : Initial image size: Image size used for MGSKmeans in case of starting sorting from a data stack. By default, the program determines window size. Option is valid only for stack mode. (default -1) 
   ; %%--%%mask3D : 3D mask: A string denotes file path of the global 3D mask for clustering. Imported from 3D refinement unless user wishes a different one in meridien iteration mode. (default none)
