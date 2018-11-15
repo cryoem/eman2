@@ -2190,10 +2190,11 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 			for iproc in range(Blockdata["nproc"]):
 				if iproc !=Blockdata["main_node"]:
 					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
-					for im in range(2):
-						score_sub_list[im] += dummy[im] 
+					for im in range(2):score_sub_list[im] += dummy[im] 
 			score_sub_list = np.multiply(score_sub_list, 1./Tracker["total_stack"])
 			log_main.add("Simple PE: %f  Mixed PE: %f "%(score_sub_list[0], score_sub_list[1]))
+			if Tracker["use_umat"]:log_main.add("Use_umat is turned on.")
+			else:                  log_main.add("Use_umat is turned off.")
 		mpi_barrier(MPI_COMM_WORLD)
 		total_iter +=1
 		acc_rest    = time() - rest_time
@@ -7661,7 +7662,7 @@ def main():
 		parser.add_option("--sym",                         type   ="string",        default ='c1',      help="Point-group symmetry")
 		parser.add_option("--img_per_grp",                 type   ="int",           default =-1,        help="Number of images per group, default value will activate automated group search")
 		parser.add_option("--nsmear",                      type   ="float",         default =-1.,       help="Number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
-		parser.add_option("--mu",				           type   ="int",           default =-1,	    help="Cluster selection size")
+		#parser.add_option("--mu",				           type   ="int",           default =-1,	    help="Cluster selection size")
 		parser.add_option("--memory_per_node",             type   ="float",         default =-1.0,      help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
 		parser.add_option("--orientation_groups",          type   ="int",           default = 20,       help="Number of orientation groups in the asymmetric unit")
 		parser.add_option("--not_include_unaccounted",     action ="store_true",    default =False,     help="Do not reconstruct unaccounted elements in each generation")
@@ -7716,7 +7717,7 @@ def main():
 		else:                   Constants["focus3D"] = False
 	
 		Constants["img_per_grp"]                 = options.img_per_grp
-		Constants["mu"]      		             = options.mu
+		Constants["mu"]      		             = -1
 		Constants["radius"]              		 = options.radius
 		Constants["sym"]                         = options.sym
 		Constants["nsmear"]                      = options.nsmear
@@ -7840,7 +7841,7 @@ def main():
 		parser.add_option("--sym",                               type   ="string",        default ='c1',       help="Point-group symmetry")
 		parser.add_option("--img_per_grp",                       type   ="int",           default =-1,         help="Number of images per group, default value will activate automated group search")
 		parser.add_option("--nsmear",                            type   ="float",         default =10.,        help="Number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
-		parser.add_option("--mu",		            		     type   ="int",           default =-1,		   help="Cluster selection size")
+		#parser.add_option("--mu",		            		     type   ="int",           default =-1,		   help="Cluster selection size")
 		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,       help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
 		parser.add_option("--orientation_groups",                type   ="int",           default = 20,        help="Number of orientation groups in the asymmetric unit")
 		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,      help="Do not reconstruct unaccounted elements in each generation")
@@ -7885,7 +7886,7 @@ def main():
 		
 		Constants["nsmear"]                      = 1
 		Constants["img_per_grp"]                 = options.img_per_grp
-		Constants["mu"]                          = options.mu
+		Constants["mu"]                          = -1
 		Constants["radius"]              		 = options.radius
 		Constants["sym"]                         = options.sym
 	
