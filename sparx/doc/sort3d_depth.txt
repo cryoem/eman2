@@ -15,13 +15,13 @@ Usage in command line
 
 sxsort3d_depth.py exists only in MPI version. It surports single node workstation. 
 
-There are two ways of running this command and each ways has three modes, namely search mode, freeze group mode, and general mode respectively. Unsetting img_per_grp option activates search mode. The advanced parameters are set/reset in function set_sorting_global_variables_mpi.
+There are two ways of running this command and each ways has three modes, namely search mode, freeze group mode, and general mode respectively. The default value of img_per_grp option activates search mode. The advanced parameters are set/reset in function main and set_sorting_global_variables_mpi.
 
 \\ __1. 3D sorting from meridien iteration__: Clustering is initiated from a completed iteration of meridien refinement and imports data from there. This mode uses all meridien information (i.e., smear, normalizations and such).
-  mpirun -np 48 sxsort3d_depth.py --refinement_dir='outdir_sxmeridien' --output_dir='outdir_sxsort3d_depth_iteration' --radius=52 --sym='c1' --memory_per_node=60.0 --img_per_grp=2000 
+  mpirun -np 48 sxsort3d_depth.py --refinement_dir='outdir_sxmeridien' --output_dir='outdir_sxsort3d_depth_iteration' --radius=30 --sym='c1' --memory_per_node=60.0 --img_per_grp=2000 
 
-\\ __2. 3D sorting from stack__: Clustering is initiated from user-provided orientation parameters stored in stack header.  This mode uses only orientation parameters, which is useful for sorting data refined, say with relion.
-  mpirun -np 48 sxsort3d_depth.py --instack='bdb:data' --output_dir='outdir_sxsort3d_depth_stack' --radius=52 --sym='c1' --img_per_grp=2000 
+\\ __2. 3D sorting from stack__: Clustering is initiated from user-provided orientation parameters stored in stack header. This mode uses only orientation parameters, which is useful for sorting data refined, say with relion.
+  mpirun -np 48 sxsort3d_depth.py --instack='bdb:data' --output_dir='outdir_sxsort3d_depth_stack' --radius=30 --sym='c1' 
 
 \\
 ===== Input =====
@@ -49,9 +49,8 @@ There are two ways of running this command and each ways has three modes, namely
   ; %%--%%orientation_groups : Number of orientation groups: Number of orientation groups in an asymmetric unit. (default 20)
   ; %%--%%not_include_unaccounted : Do unaccounted reconstruction: Do not reconstruct unaccounted elements in each generation. (default False question reversed in GUI)
   ; %%--%%notapplybckgnoise : Use background noise flag: Flag to turn off background noise. (default False question reversed in GUI)
-  ; %%--%%random_group_elimination_threshold : Random group elimination threshold: A floating value denotes the random group reproducibility standard deviation for eliminating random groups. (default 2.0)
   ; %%--%%check_smearing : Check smearing: A boolean flag to turn on Printing out average smearing of all iterations of meridien refinement. By default, program will not print. (default false)
-  ; %%--%%num_core_set : Number of core set images: Core set images will not be reconstructed if the total core set number is less than this. By default, the program will choose the maximum number between minimum group size and 100 as num_core_set. (default -1)
+  ; %%--%%num_core_set : Number of core set images: Map will not be reconstructed if number of core set images is less than this number. By default, the program will choose the maximum number between minimum group size and 100 as num_core_set. (default -1)
   ; %%--%%compute_on_the_fly : Compute on the fly: A boolean flag controls the number of pre-calculated smearing images to avoid memory overflow. By default, program calculates smearing images for 3D reconstruction prior constrained Kmeans. (default false)
   ; %%--%%nstep : Number of steps to decrease minimum group size: An integer number controls group size constrained Kmeans clustering. By default, it is set 5. (default 5)
   ; %%--%%not_freeze_groups : Remove small groups during within box comparison: A boolean flag to control the group searching. By default, sorting will not remove small groups. (default False)
@@ -73,7 +72,7 @@ sxsort3d_depth performs 3D clustering on data and keeps 3D orientation parameter
 \\
 === Important Options ===
 || **Option Key** || **Discription** ||
-|| %%--%%img_per_grp || This is the only sorting parameter user has to determine. The default value sets program in cluster search mode. (default -1) ||
+|| %%--%%img_per_grp || The only sorting parameter user has to be determined by user. The default value sets program in cluster search mode. (default -1) ||
 || %%--%%nstep || It decreases the minimum group size during sorting and thus select out faked groups when the initial number of groups is set too large.  ||
 || %%--%%use_umat || The option enables the maps reconstructed by fuzzy group membership of particle images. It stabilizes sorting and helps to select out true groups. However, the consumed time is in proportion to the number of particle smearing. ||
 || %%--%%not_freeze_groups || Freezing group implies not removing groups during within box comparison and it allows sorting uses the strategies before v1.2. ||
@@ -84,9 +83,9 @@ sxsort3d_depth performs 3D clustering on data and keeps 3D orientation parameter
 === Test Results ===
 1. Simulated ribosome. 
 \\
-17280 particles with 64*64 image size belong to five even groups (all have 3456 members).  The command for this run is given in case 2 and it costs 19 minutes on our cluster with 32 cpus with the initial K=9 with use_umat option and without focus mask. 
+17,280 particles with 64*64 image size belong to five even groups (all have 3,456 members). The command for this run is given in case 2 outputs five clusters when K= 5-11 (with focus mask). In case of K = 11 it requires with use_umat on to get five groups only. The program determines clusters by respective structural features hierarchically.
 \\
-== The sorting results ==
+== The sorting results (K=9, 19 min, 32 CPU/2 nodes) ==
 || **Group ID** || **Particles** || **% of True** ||
 || group 1 || 3303 || 97% are true members ||
 || group 2 || 3447 || 98% are true members ||
@@ -97,7 +96,7 @@ sxsort3d_depth performs 3D clustering on data and keeps 3D orientation parameter
 
 2. Ribosome EMPIAR-10028: 
 \\
-105,247 particles with image size 360*360 with K=5. It took about 13 hours using 96 CPUs of our cluster, which is about twice the time it took to refine this set. The command for this run is given in case 1. We were able to sort out missing helix and missing domain. (See the attached movie and figure).
+105,247 particles with image size 360*360 with K=5. It took about 7 hours using 96 CPUs of our cluster, which is about twice the time it took to refine this set. The command for this run is given in case 1. We were able to sort out missing helix and missing domain. (See the attached movie and figure).
 
 \\
 ==== Method ====
@@ -113,16 +112,16 @@ Not published yet.
 The following is old descriptions, and will be deleted in near future.
 
 Important Outputs:
-The results are saved in the directory specified as output_dir  ('outdir_sxsort3d_depth' in the example above). The final results are partitioned particles IDs saved in text files. Also, unfiltered maps of each cluster are reconstructed in the way of meridien does. One can use postprocess command to merge the two halves of maps of each group.
+The results are saved in the directory specified as output_dir  ('outdir_sxsort3d_depth' in the example above). The final results are partitioned particles IDs saved in text files.
 
   * Cluster*.txt: Sorting results. The number of cluster files is equal to the number of classes found. These selection files contain one column for particle indexes. Input projection EM data is assumed to be number 0 to n-1.
   * vol_cluster*.hdf: Reconstructed map per cluster. User can user B_factor to adjust the visualization to decide whether a local refinement on the cluster is worth doing.
   * anova on defocus, number of smears, norm and statistics of micrographs of the final clusters and clusters produced in each generation are documented in log.txt.
-  * sorting_summary.txt:  summary of results. 
-  * vol_cluster*_iter000.hdf, Cluster*.txt in each generation_00? directories. The last cluster is the unaccounted elements in each generation.
+  * Core_set.txt: Particles indexes that are not selected when sort3d program is done.  
+  * volume_core.hdf: Map reconstructed from Core_set.txt.
 
 Some examples for timing: 
-In general, reconstruction costs more than 80% of time for each sorting. 
+In general, reconstruction costs more than 80% of time for each sorting. Activate do_timing variable in set_sorting_global_variables_mpi and the program prints timing of major steps. 
 
 \\
 ==== Author / Maintainer ====
