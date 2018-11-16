@@ -1828,7 +1828,7 @@ def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
 	token_edit = SXcmd_token(); token_edit.initialize_edit("not_include_unaccounted"); token_edit_list.append(token_edit)
 ###	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("notapplybckgnoise"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("random_group_elimination_threshold"); token_edit_list.append(token_edit)
+	#token_edit = SXcmd_token(); token_edit.initialize_edit("random_group_elimination_threshold"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("num_core_set"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nstep"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("use_umat"); token_edit_list.append(token_edit)
