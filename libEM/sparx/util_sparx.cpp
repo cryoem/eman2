@@ -32497,9 +32497,9 @@ float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 	size_t size = (size_t)nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
-	float ip = 0.0f;
+	double ip = 0.0;
 	if (mask == NULL) {
-		for (size_t i=0;i<size;++i) ip += img_ptr[i]*img1_ptr[i];
+		for (size_t i=0;i<size;++i) ip += img_ptr[i]*(double)img1_ptr[i];
 	} else {
 		float *pmask = mask->get_data();
 		for (size_t i=0;i<size/2;++i) {
@@ -32507,11 +32507,12 @@ float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 			//if( pmask[i] > 0.5f)  {
 			int lol = i*2;
 			//	ip += img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1];
-			ip += (img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1])*pmask[i];
+			ip += (img_ptr[lol]*(double)img1_ptr[lol]+img_ptr[lol+1]*(double)img1_ptr[lol+1])*pmask[i];
 			//}
 		}
 	}
-	return ip;
+	float sp = (float)ip;
+	return sp;
 }
 
 float Util::innerproduct_np(std::string numpy_address, EMData* img1, EMData* mask)
