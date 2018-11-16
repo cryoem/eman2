@@ -8,7 +8,7 @@
 
 Usage in command line
 
-  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --nstep=minimum_grp_steps --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES    --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER   --orientation_groups=NUM_OF_ORIEN_GROUPS  --not_include_unaccounted  --nsmear=NUMBER_OF_SMEAR --notapplybckgnoise  --random_group_elimination_threshold --check_smearing --num_core_set=NUM_OF_MIN_IMAGES --overhead=SOME_NUMBER --compute_on_the_fly --use_umat --not_freeze_groups
+  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --nstep=minimum_grp_steps --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES    --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER   --orientation_groups=NUM_OF_ORIEN_GROUPS  --not_include_unaccounted  --nsmear=NUMBER_OF_SMEAR --notapplybckgnoise  --check_smearing --num_core_set=NUM_OF_MIN_IMAGES --overhead=SOME_NUMBER --compute_on_the_fly --use_umat --not_freeze_groups
 
 \\
 ===== Typical usage =====
