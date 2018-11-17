@@ -1065,6 +1065,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 
 		# Loop through coordinates
 		coords_accepted = []
+		idx_info = 0
+		idx_id = 1
 		for coords_id in range(len(coords_list)):
 			# Get coordinates
 			x = int(coords_list[coords_id][0])
@@ -1080,7 +1082,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			
 			# Window a particle at this coordinates
 			if( (0 <= x - box_half) and ( x + box_half <= nx ) and (0 <= y - box_half) and ( y + box_half <= ny ) ):
-				coords_accepted.append([mic_img, box_size, box_size, 1, x-x0, y-y0])
+				coords_accepted.append([None, None])
+				coords_accepted[-1][idx_info] = [mic_img, box_size, box_size, 1, x-x0, y-y0]
+				coords_accepted[-1][idx_id] = coords_id
 			else:
 				coords_reject_out_of_boundary_messages.append("coordinates ID = %04d: x = %4d, y = %4d, box_size = %4d " % (coords_id, x, y, box_size))
 				# print("MRK_DEBUG: coords_reject_out_of_boundary_messages[-1] := %s" % coords_reject_out_of_boundary_messages[-1])
@@ -1094,7 +1098,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			local_mrcs.set_attr("apix_z", 1.0) # particle_img.set_attr("apix_z", resampled_pixel_size)
 			local_mrcs.set_attr("ptcl_source_apix", src_pixel_size) # Store the original pixel size
 			for coords_id, entry in enumerate(coords_accepted):
-				particle_img = Util.window(*entry)
+				original_id = entry[idx_id]
+				particle_img = Util.window(*entry[idx_info])
 				# Normalize this particle image
 				particle_img = ramp(particle_img)
 				particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
@@ -1113,8 +1118,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				# 
 				particle_img_dict = particle_img.get_attr_dict()
 				particle_img_dict["ptcl_source_image"] = mic_path
-				particle_img_dict["ptcl_source_coord"] = [int(coords_list[coords_id][0]), int(coords_list[coords_id][1])]
-				particle_img_dict["ptcl_source_coord_id"] = coords_id
+				particle_img_dict["ptcl_source_coord"] = [int(coords_list[original_id][0]), int(coords_list[original_id][1])]
+				particle_img_dict["ptcl_source_coord_id"] = original_id
 				particle_img_dict['data_n'] = coords_id  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
 				particle_img_dict["data_path"] = '../' + local_mrcs_name
 				particle_img_dict["resample_ratio"] = resample_ratio
