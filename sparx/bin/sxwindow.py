@@ -1119,7 +1119,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				particle_img_dict = particle_img.get_attr_dict()
 				particle_img_dict["ptcl_source_image"] = mic_path
 				particle_img_dict["ptcl_source_coord"] = [int(coords_list[original_id][0]), int(coords_list[original_id][1])]
-				particle_img_dict["ptcl_source_coord_id"] = original_id
+				particle_img_dict["ptcl_source_coord_id"] = coords_id
+				particle_img_dict["ptcl_source_box_id"] = original_id
 				particle_img_dict['data_n'] = coords_id  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
 				particle_img_dict["data_path"] = '../' + local_mrcs_name
 				particle_img_dict["resample_ratio"] = resample_ratio
