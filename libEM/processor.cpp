@@ -2681,7 +2681,7 @@ void FFTResampleProcessor::process_inplace(EMData * image)
 
 	image->set_size(nnx,nny,nnz);
 	memcpy(image->get_data(),result->get_data(),nnx*nny*nnz*sizeof(float));
-	result->scale_pixel((float)nx/(float)nnx);
+	image->scale_pixel((float)nx/(float)nnx);
 	image->update();
 	delete result;
 
