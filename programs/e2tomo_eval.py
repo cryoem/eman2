@@ -413,7 +413,7 @@ class TomoListWidget(QtWidgets.QListWidget):
 			self.itemlst.append([k, ni])
 			#print(txt)
 			txt=self.get_text(k, ni)
-			item=QtGui.QListWidgetItem(txt)
+			item=QtWidgets.QListWidgetItem(txt)
 			item.setFlags(self.itemflags)
 			item.setCheckState(Qt.Checked)
 			try: item.setFont(QtGui.QFont("Monospace"))
