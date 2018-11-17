@@ -385,7 +385,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.wg_thumbnail.close()
 		self.wg_2dimage.close()	
 		
-class TomoListWidget(QtGui.QListWidget):
+class TomoListWidget(QtWidgets.QListWidget):
 	def __init__(self, parent=None):
 		super(TomoListWidget, self).__init__(parent)
 		self.parent=parent

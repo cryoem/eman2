@@ -300,7 +300,7 @@ class SPTBrowserWidget(embrowser.EMBrowserWidget):
 		self.module_closed.emit()
 
 		
-class TomoListWidget(QtGui.QListWidget):
+class TomoListWidget(QtWidgets.QListWidget):
 	def __init__(self, parent=None):
 		super(TomoListWidget, self).__init__(parent)
 		self.parent=parent
