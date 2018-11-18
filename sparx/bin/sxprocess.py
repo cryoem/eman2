@@ -387,7 +387,7 @@ def main():
 	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
 	parser.add_option("--adaptive_mask",        action="store_true", default=False,                  help="generate soft-edged 3D mask from input 3D volume")
 	parser.add_option("--nsigma",               type="float",        default=1.0,                    help="number of times of sigma of the input volume to intially obtain the largest density cluster")
-	parser.add_option("--threshold",       type="float",        default=0.02,                help="threshold provided by user to intially obtain the largest density cluster (default: -9999, threshold will be determined automatically")
+	parser.add_option("--threshold",       type="float",        default=-9999,                help="threshold provided by user to intially obtain the largest density cluster (default: -9999, threshold will be determined automatically")
 	parser.add_option("--ndilation",            type="int",          default=1,                      help="number of times of dilation applied to the largest cluster of density")
 	parser.add_option("--edge_width",           type="int",          default=5,                      help="width of the cosine edge of the mask")
 	parser.add_option("--edge_type",            type=str,            default="cosine",               help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
