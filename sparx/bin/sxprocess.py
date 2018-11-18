@@ -387,7 +387,7 @@ def main():
 	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
 	parser.add_option("--adaptive_mask",        action="store_true", default=False,                  help="generate soft-edged 3D mask from input 3D volume")
 	parser.add_option("--nsigma",               type="float",        default=1.0,                    help="number of times of sigma of the input volume to intially obtain the largest density cluster")
-	parser.add_option("--threshold",            type="float",        default=-9999.0,                help="threshold provided by user to intially obtain the largest density cluster (default: -9999, threshold will be determined automatically")
+	parser.add_option("--threshold",       type="float",        default=-9999,                help="threshold provided by user to intially obtain the largest density cluster (default: -9999, threshold will be determined automatically")
 	parser.add_option("--ndilation",            type="int",          default=1,                      help="number of times of dilation applied to the largest cluster of density")
 	parser.add_option("--edge_width",           type="int",          default=5,                      help="width of the cosine edge of the mask")
 	parser.add_option("--edge_type",            type=str,            default="cosine",               help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
@@ -413,7 +413,6 @@ def main():
 	parser.add_option("--B_start",              type="float",         default=10.0,                  help="=10.0 Angstrom, starting frequency in Angstrom for B-factor estimation (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--B_stop",               type="float",         default=0.0,                   help="=0.0, cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency. (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--do_adaptive_mask",     action="store_true",  default=False,                 help="generate adaptive mask with the given threshold")
-	parser.add_option("--mask_threshold",       type="float",         default=0.02,                  help="the threshold for adaptive_mask (effective only with --do_adaptive_mask)")
 	#parser.add_option("--randomphasesafter",   type="float",         default=0.8,                   help=" set Fourier pixels random phases after FSC value ")
 	# window
 	parser.add_option("--window_stack",         action="store_true",  default=False,                 help="window stack images using a smaller window size")
@@ -1100,9 +1099,9 @@ def main():
 			log_main.add("Mtf               :"+str(options.mtf))
 			log_main.add("Output            :"+str(options.output))
 			log_main.add("Do_adaptive_mask  :"+str(options.do_adaptive_mask))
-			log_main.add("Mask_threshold    :"+str(options.mask_threshold))
-			log_main.add("Cosine_edge       :"+str(options.cosine_edge))
-			log_main.add("Dilation          :"+str(options.dilation))
+			log_main.add("threshold    :"+str(options.threshold))
+			log_main.add("Edge width        :"+str(options.edge_width))
+			log_main.add("Ndilation         :"+str(options.ndilation))
 			# log_main.add("randomphasesafter :"+str(options.randomphasesafter))
 			log_main.add("------------->>> processing <<<-----------------------")
 			log_main.add("3-D refinement combinemaps")
@@ -1185,12 +1184,31 @@ def main():
 
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
-					log_main.add("Options.mask_threshold, options.dilation, options.cosine_edge %f %5.2f %5.2f"%(options.mask_threshold, options.dilation, options.cosine_edge))
+					log_main.add("Options.threshold, options.ndilation, options.edge_width %f %5.2f %5.2f"%(options.threshold, options.ndilation, options.edge_width))
 					from morphology import adaptive_mask
 					if single_map:
-						m = adaptive_mask(map1, options.mask_threshold, options.dilation, options.edge_width)
+						input_vol_mask = map1
 					else:
-						m = adaptive_mask((map1+map2)/2.0, options.mask_threshold, options.dilation, options.edge_width)
+						input_vol_mask = (map1+map2)/2.0
+					if( options.mol_mass> 0.0 ):
+						density_threshold = input_vol_mask.find_3d_threshold(
+							options.mol_mass,
+							options.pixel_size
+							)
+					else:
+						density_threshold = options.threshold
+					if options.edge_type == "cosine":
+						mode = "C"
+					else:
+						mode = "G"
+					m = adaptive_mask(
+						input_vol_mask,
+						options.nsigma,
+						density_threshold,
+						options.ndilation,
+						options.edge_width,
+						mode
+						)
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 				else:
 					m = None
