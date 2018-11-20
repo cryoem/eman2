@@ -12412,18 +12412,18 @@ void Util::cyclicshift(EMData *image, Dict params) {
 	// x-reverses
 	if (mx != 0) {
 		for (int iz = 0; iz < nz; iz++)
-	               for (int iy = 0; iy < ny; iy++) {
+			for (int iy = 0; iy < ny; iy++) {
 				// reverses for column iy
-	        		size_t offset = nx*iy + (size_t)nx*ny*iz; // starting location for column iy in slice iz
+				size_t offset = nx*iy + (size_t)nx*ny*iz; // starting location for column iy in slice iz
 				reverse(&data[offset],&data[offset+mx]);
 				reverse(&data[offset+mx],&data[offset+nx]);
 				reverse(&data[offset],&data[offset+nx]);
-	        	}
+			}
 	}
 	// y-reverses
 	if (my != 0) {
 		for (int iz = 0; iz < nz; iz++) {
-	        	size_t offset = (size_t)nx*ny*iz;
+			size_t offset = (size_t)nx*ny*iz;
 			colreverse(&data[offset], &data[offset + my*nx], nx);
 			colreverse(&data[offset + my*nx], &data[offset + ny*nx], nx);
 			colreverse(&data[offset], &data[offset + ny*nx], nx);
@@ -29557,7 +29557,9 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-
+	cout <<"   Source modification date: 11/20/2018" <<  endl;
+/*
+This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;
         int i;
         int nx,ny,nz;
@@ -29587,8 +29589,7 @@ void Util::version()
         fftwf_destroy_plan(plan);
 
 	fftwf_cleanup_threads();
-
-	cout <<"   Source modification date: 11/01/2018" <<  endl;
+*/
 }
 
 
