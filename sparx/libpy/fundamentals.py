@@ -686,7 +686,6 @@ def prepf(image, npad = 2):
 		Output
 			imageft: Fourier space image prepared for Fourier interpolation rotation/shift
 	"""
-	nxreal = image.get_xsize()
 	cimage = image.copy()
 	cimage.set_attr("npad",npad)
 	cimage.div_sinc(1)
@@ -955,7 +954,8 @@ def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	# gridding rotation
 	return o.rot_scale_conv(radians(ang), dx, dy, kb, scale)
 
-def Xgridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
+'''
+def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	"""
 		Rotate and shift an image using gridding in Fourier space.
 	"""
@@ -997,6 +997,7 @@ def Xgridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	image1 = image1.window_center(nx)
 	Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
 	return image1
+'''
 
 def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	"""
