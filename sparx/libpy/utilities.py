@@ -613,6 +613,8 @@ def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 		Here  if v's are vectors:   vnew = T2*T1 vold
 		     with T1 described by alpha1, sx1, scale1 etc.
 
+	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
+
 	    Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
 	       angles in degrees
 	"""
@@ -628,6 +630,8 @@ def compose_transform2m(alpha1=0.0, sx1=0., sy1=0.0, mirror1=0, scale1=1.0, alph
 	"""Print the composition of two transformations  T2*T1
 		Here  if v's are vectors:   vnew = T2*T1 vold
 		     with T1 described by alpha1, sx1, scale1 etc.
+
+	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
 
 	    Usage: compose_transform2(alpha1,sx1,sy1,mirror1,scale1,alpha2,sx2,sy2,mirror2,scale2)
 	       angles in degrees
@@ -658,6 +662,7 @@ def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,
 def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	"""
 	  Combine 2D alignment parameters including mirror: Tnew = T2*T1
+	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
 	"""
 
 	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":1.0})
