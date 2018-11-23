@@ -5857,6 +5857,7 @@ void EMData::div_sinc(int interpolate_method) {
 	int nze = nzb + (nz/npad)%2;
 	int nye = nyb + (ny/npad)%2;
 	int nxe = nxb + (nx/npad)%2;
+	if(nz == 1) nze = 1;
 	for (int k = -nzb; k < nze; k++) {
 		for (int j = -nyb; j < nye; j++) {
 			for (int i = -nxb; i < nxe; i++) {
