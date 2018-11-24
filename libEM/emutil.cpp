@@ -413,7 +413,7 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	}
 
 	char first_block[1024];
-	size_t n = fread(first_block, sizeof(char), sizeof(first_block), in);
+	size_t n = fread(first_block, 1, 1024, in);
 	portable_fseek(in, 0, SEEK_END);
 	off_t file_size = portable_ftell(in);
 
