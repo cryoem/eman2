@@ -29557,7 +29557,7 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 11/20/2018" <<  endl;
+	cout <<"   Source modification date: 11/24/2018" <<  endl;
 /*
 This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;
