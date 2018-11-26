@@ -43,13 +43,13 @@ periodogram(EMData* f) {
 	int ny  = f->get_ysize();
 	int nz  = f->get_zsize();
 
- 		// We manifestly assume no zero-padding here, just the
-		// necessary extension along x for the fft
+ 	// We manifestly assume no zero-padding here, just the
+	// necessary extension along x for the fft
 
 	if (f->is_complex()) nx = (nx - 2 + f->is_fftodd()); // nx is the real-space size of the input image
 	int lsd2 = (nx + 2 - nx%2) / 2; // Extended x-dimension of the complex image
 
-//  Process f if real
+	//  Process f if real
 	EMData* fp = NULL;
 	if(f->is_complex()) fp = f->copy(); // we need to make a full copy so that we don't damage the original
 	else {
@@ -82,8 +82,9 @@ periodogram(EMData* f) {
 	EMData& power = *(new EMData()); // output image
 	power.set_size(nx, ny, nz);
 	power.set_array_offsets(-nx2,-ny2,-nz2);
-//If instead of preservation of the norm one would prefer to have peak of a PW of a single sine wave equal one
-//                             multiply power by the scale below, or the other way around.
+	// If instead of preservation of the norm 
+	// one would prefer to have peak of a PW of a single sine wave equal one
+	// multiply power by the scale below, or the other way around.
 	float scale = 4.0f/float (nx*nx)/float (ny*ny)/float (nz*nz);
 	for (int iz = 1; iz <= nz; iz++) {
 		int jz=iz-1; 
@@ -99,7 +100,7 @@ periodogram(EMData* f) {
 		}
 	}
 
-//  Create the Friedel related half
+	//  Create the Friedel related half
 	int  nzb, nze, nyb, nye, nxb, nxe;
 	nxb =-nx2+(nx+1)%2;
 	nxe = nx2-(nx+1)%2;

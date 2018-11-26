@@ -686,14 +686,15 @@ def prepf(image, npad = 2):
 		Output
 			imageft: Fourier space image prepared for Fourier interpolation rotation/shift
 	"""
-	nxreal = image.get_xsize()
-	cimage = image.copy()
+	
+	cimage = Util.pad(image,2*(image.get_xsize()),2*(image.get_ysize()),1,0,0,0,"0.0")
 	cimage.set_attr("npad",npad)
 	cimage.div_sinc(1)
-	cimage = cimage.norm_pad(False, npad)
-	fftip(cimage)
+	cimage = cimage.norm_pad(False, 1)
+	cimage.do_fft_inplace()
 	cimage.center_origin_fft()
 	cimage.fft_shuffle()
+	cimage.set_attr("npad",npad)
 	return cimage
 
 def prepi(image, RetReal = True):
@@ -955,6 +956,7 @@ def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	# gridding rotation
 	return o.rot_scale_conv(radians(ang), dx, dy, kb, scale)
 
+'''
 def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	"""
 		Rotate and shift an image using gridding in Fourier space.
@@ -996,6 +998,56 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	image1 = fft(image1)
 	image1 = image1.window_center(nx)
 	Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
+	return image1
+'''
+
+def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
+	"""
+		Rotate and shift an image using gridding in Fourier space.
+	"""
+	from EMAN2 import Processor
+	from fundamentals import fftip, fft
+	from utilities import compose_transform2
+
+	nx = image.get_xsize()
+	# prepare 
+	npad = 2
+	N = nx*npad
+	K = 6
+	alpha = 1.75
+	r = nx/2
+	v = K/2.0/N
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+
+	image1 = image.copy()  # This step is needed, otherwise image will be changed outside the function
+	# invert shifts
+	_, tsx, tsy, _ = compose_transform2(0.,sx,sy,1,-ang,0,0,1)
+	# split shift into integer and fractional parts
+	isx = int(tsx)
+	fsx = tsx - isx
+	isy = int(tsy)
+	fsy = tsy - isy
+	# shift image to the center
+	Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
+	# bring back fractional shifts
+	_, tsx, tsy, _ = compose_transform2(0.,fsx,fsy,1,ang,0,0,1)
+	# divide out gridding weights
+	image1.divkbsinh(kb)
+	# pad and center image, then FFT
+	image1 = image1.norm_pad(False, npad)
+	fftip(image1)
+	# Put the origin of the (real-space) image at the center
+	image1.center_origin_fft()
+	# gridding rotation
+	image1 = image1.fouriergridrot2d(ang, scale, kb)
+	if(fsx != 0.0 or fsy != 0.0):
+		params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(tsx), "y_shift" : float(tsy), "z_shift" : 0.0 }
+		image1 = Processor.EMFourierFilter(image1, params)
+	# put the origin back in the corner
+	image1.center_origin_fft()
+	# undo FFT and remove padding (window)
+	image1 = fft(image1)
+	image1 = image1.window_center(nx)
 	return image1
 
 
