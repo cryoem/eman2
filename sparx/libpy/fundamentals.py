@@ -686,13 +686,15 @@ def prepf(image, npad = 2):
 		Output
 			imageft: Fourier space image prepared for Fourier interpolation rotation/shift
 	"""
-	cimage = image.copy()
+	
+	cimage = Util.pad(image,2*(image.get_xsize()),2*(image.get_ysize()),1,0,0,0,"0.0")
 	cimage.set_attr("npad",npad)
 	cimage.div_sinc(1)
-	cimage = cimage.norm_pad(False, npad)
-	fftip(cimage)
+	cimage = cimage.norm_pad(False, 1)
+	cimage.do_fft_inplace()
 	cimage.center_origin_fft()
 	cimage.fft_shuffle()
+	cimage.set_attr("npad",npad)
 	return cimage
 
 def prepi(image, RetReal = True):
