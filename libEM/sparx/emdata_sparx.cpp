@@ -4599,6 +4599,8 @@ inline void swapx(float* a, float* b, float* temp, size_t nbytes) {
 }
 
 void EMData::fft_shuffle() {
+	//  swap Fourier image columns
+	//  such that center is moved from (0,0,0) to (0, ny/2, nz/2)
 	if (!is_complex())
 		throw ImageFormatException("fft_shuffle requires a fourier image");
 	vector<int> offsets = get_array_offsets();
@@ -4699,17 +4701,14 @@ EMData* EMData::ft2polar(int ring_length, int nb, int ne) {
 
 
 EMData* EMData::ft2polargrid(int ring_length, int nb, int ne, Util::KaiserBessel& kb) {
-	if (2 != get_ndim())
-		throw ImageDimensionException("ft2polargrid needs a 2-D image.");
-	if (!is_complex())
-		throw ImageFormatException("ft2polargrid requires a fourier image");
-	int nxreal = nx - 2 + int(is_fftodd());
-	if (nxreal != ny)
-		throw ImageDimensionException("ft2polargrid requires ny == nx(real)");
-	if (0 != nxreal%2)
-		throw ImageDimensionException("ft2polargrid needs an even image.");
+	if(get_ndim() != 2) throw ImageDimensionException("ft2polargrid requires a 2-D image.");
+	if(!is_complex()) throw ImageFormatException("ft2polargrid requires a fourier image");
 
-	if (!is_shuffled()) fft_shuffle();
+	int nxreal = nx - 2 + int(is_fftodd());
+	if(nxreal != ny) throw ImageDimensionException("ft2polargrid requires ny == nx(real)");
+	if(nxreal%2 != 0) throw ImageDimensionException("ft2polargrid needs an even image.");
+
+	if(!is_shuffled()) fft_shuffle();
 	set_array_offsets(0,-ny/2);
 
 	int nc = ny/2;
@@ -4721,7 +4720,7 @@ EMData* EMData::ft2polargrid(int ring_length, int nb, int ne, Util::KaiserBessel
 	rings->set_fftpad(0);
 	float dfi;
 	dfi = TWOPI / ring_length;
-//	Table for sin & cos
+	//	Table for sin & cos
 	vector<float> vsin(ring_length/2);
 	vector<float> vcos(ring_length/2);
 	for (int x = 0; x < ring_length/2; x++) {
@@ -4752,10 +4751,10 @@ EMData* EMData::ft2polargrid(int ring_length, int nb, int ne, Util::KaiserBessel
 
 
 EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) {
-	if(2 != get_ndim())
-		throw ImageDimensionException("fourier_rotate_shift2d requires a 2-D image.");
+	if(get_ndim() != 2) throw ImageDimensionException("fourier_rotate_shift2d requires a 2-D image.");
 	EMData *cimage = NULL;
 	int nxreal, nxhalf, nyhalf, nyf;
+	int ix,iy,np;
 	if( is_complex() )  {
 		cimage = this;
 		nxreal = ny/npad;
@@ -4767,20 +4766,20 @@ EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) 
 		nxhalf = nxreal/2;
 		nyhalf = ny/2;
 		nyf = ny;
-		cimage = this->copy();
+		cimage = Util::pad(this, 2*nx, 2*ny, 1, 0,0,0, "0.0");
 		cimage->set_attr("npad",npad);
 		cimage->div_sinc(1);
-		cimage = cimage->norm_pad(false, npad);
+		cimage = cimage->norm_pad(false, 1);
 		cimage->do_fft_inplace();
 		cimage->center_origin_fft();
 		cimage->fft_shuffle();
+		cimage->set_attr("npad",npad);
 	}
 
 	float cir = (float)((nxhalf-1)*(nxhalf-1));
 
 	EMData* result = new EMData(nxreal, nxreal, 1, false);
 	result->to_zero();
-	//printf("nxhalf nyhalf cir  nx  ny   %d      %d     %f      %d     %d\n",nxhalf, nyhalf, cir,  nx , ny);
 
 	float fang = ang*(float)deg_rad;
 	float cang = cos(fang);
@@ -8047,10 +8046,10 @@ float circumference( EMData* emdata, int npixel )
         return sumf/sumn;
 }
 /*
-Purpose: Create a new [normalized] [zero-padded]  image.
+Purpose: Create a new [normalized] [zero-padded] image.
 Method: Normalize, pad with zero or circumference, extend for fft,
 return new image.
-Input: f real n-dimensional image
+Input: real n-dimensional image
 flag specify normalize, pad, and/or extend
 Output: zero-padded, ft-extended, normalized input image
  */
@@ -8084,7 +8083,7 @@ EMData* EMData::norm_pad(bool donorm, int npad, int valtype) {
 	// Not currently fft-extended, so we want to extend for ffts
 	offset = 2 - nxpad%2;
 	bytes = nx*sizeof(float);
-	EMData* fpimage = copy_head();
+	EMData* fpimage = new EMData();//copy_head();
 	fpimage->set_size(nxpad+offset, nypad, nzpad);
 	int xstart = 0, ystart = 0, zstart = 0;
 	if( npad > 1) {
@@ -8117,8 +8116,7 @@ EMData* EMData::norm_pad(bool donorm, int npad, int valtype) {
 	this->set_array_offsets( saved_offsets );
 
 
-	//  Perform the actual normalization (only on the
-	//  non-zero section of the image)
+	//  Perform normalization (only on the non-zero section of the image)
 	if (donorm) { // Normalization requested
 		for (int iz = zstart; iz < nz+zstart; iz++)
 			for (int iy = ystart; iy < ny+ystart; iy++)
