@@ -3328,7 +3328,7 @@ def file_type(name):
 def get_params2D(ima, xform = "xform.align2d"):
 	"""
 	  retrieve 2D alignment parameters from the header
-	  alpha tx ty mirror scale
+	  alpha, tx, ty, mirror, scale
 	"""
 	d = Util.get_transform_params(ima, xform, "2D")
 	return d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]
@@ -3336,7 +3336,7 @@ def get_params2D(ima, xform = "xform.align2d"):
 def set_params2D(ima, p, xform = "xform.align2d"):
 	"""
 	  set 2D alignment parameters in the header
-	  alpha tx ty mirror scale
+	  p = [alpha, tx, ty, mirror, scale]
 	"""
 	t = Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
 	ima.set_attr(xform, t)
@@ -3344,7 +3344,7 @@ def set_params2D(ima, p, xform = "xform.align2d"):
 def get_params3D(ima, xform = "xform.align3d"):
 	"""
 	  retrieve 3D alignment parameters from the header
-	  phi  theta  psi  tx  ty  tz mirror scale
+	  phi,theta, psi, tx, ty, tz, mirror,scale
 	"""
 	d = Util.get_transform_params(ima, xform, "spider")
 	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]
@@ -3352,7 +3352,7 @@ def get_params3D(ima, xform = "xform.align3d"):
 def set_params3D(ima, p, xform = "xform.align3d"):
 	"""
 	  set 3D alignment parameters in the header
-	  phi  theta  psi  tx  ty  tz mirror scale
+	  p = [phi,theta, psi, tx, ty, tz, mirror,scale]
 	"""
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":p[3],"ty":p[4],"tz":p[5],"mirror":p[6],"scale":p[7]})
 	ima.set_attr(xform, t)
@@ -3360,7 +3360,7 @@ def set_params3D(ima, p, xform = "xform.align3d"):
 def get_params_proj(ima, xform = "xform.projection"):
 	"""
 	  retrieve projection alignment parameters from the header
-	  phi  theta  psi  s2x  s2y
+	  phi, theta, psi, s2x, s2y
 	"""
 	d = Util.get_transform_params(ima, xform, "spider")
 	return  d["phi"],d["theta"],d["psi"],-d["tx"],-d["ty"]
@@ -3368,7 +3368,7 @@ def get_params_proj(ima, xform = "xform.projection"):
 def set_params_proj(ima, p, xform = "xform.projection"):
 	"""
 	  set projection alignment parameters in the header
-	  phi  theta  psi  s2x  s2y
+	  p = [phi, theta, psi, s2x, s2y]
 	"""
 	from EMAN2 import Vec2f
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
@@ -3380,7 +3380,7 @@ def get_ctf(ima):
 	"""
 	  recover numerical values of CTF parameters from EMAN2 CTF object stored in a header of the input image
 	  order of returned parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
+        defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle
 	"""
 	from EMAN2 import EMAN2Ctf
 	ctf_params = ima.get_attr("ctf")
@@ -3396,7 +3396,7 @@ def generate_ctf(p):
 	"""
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+        p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
 	    [ microns, mm, kV, Angstroms, A^2, microns, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
@@ -3425,7 +3425,7 @@ def set_ctf(ima, p):
 	"""
 	  set EMAN2 CTF object in the header of input image using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
+        p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
 	"""
 	from utilities import generate_ctf
 	ima.set_attr( "ctf", generate_ctf( p ) )
