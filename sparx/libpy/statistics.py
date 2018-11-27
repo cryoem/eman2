@@ -1089,7 +1089,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 	from  fundamentals	import fft, rot_shift2D
 	from  morphology	import ctf_img
 	from  filter		import filt_ctf
-	from  utilities		import pad, get_params2D, get_im
+	from  utilities		import pad, get_params2D, get_im, model_blank
 	from  EMAN2			import EMAN2Ctf
 	from  math 	   import sqrt
 	
@@ -1102,7 +1102,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 	#else:  npad = 1
 	npad = 1
 
-	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', -2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
 	nx2 = nx*npad
 	ny2 = ny*npad
@@ -1160,7 +1160,7 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="line
 	ima = get_im(input_stack, 0)
 	nx  = ima.get_xsize()
 
-	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', -2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
 	ctf_abs_sum = EMData(nx, nx, 1, False)
 	ctf_2_sum = EMData(nx, nx, 1, False)
