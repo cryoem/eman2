@@ -8083,7 +8083,7 @@ EMData* EMData::norm_pad(bool donorm, int npad, int valtype) {
 	// Not currently fft-extended, so we want to extend for ffts
 	offset = 2 - nxpad%2;
 	bytes = nx*sizeof(float);
-	EMData* fpimage = new EMData();//copy_head();
+	EMData* fpimage = copy_head();
 	fpimage->set_size(nxpad+offset, nypad, nzpad);
 	int xstart = 0, ystart = 0, zstart = 0;
 	if( npad > 1) {
