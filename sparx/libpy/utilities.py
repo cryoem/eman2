@@ -668,6 +668,13 @@ def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":1.0})
 	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":1.0})
 	tt = t2*t1
+	"""
+	t1.printme()
+	print(" ")
+	t2.printme()
+	print(" ")
+	tt.printme()
+	"""
 	d = tt.get_params("2D")
 	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], int(d[ "mirror" ]+0.1)
 
@@ -1255,36 +1262,6 @@ def info(image, mask=None, Comment=""):
 
 	print("avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax))
 	return mean, sigma, imin, imax, nx, ny, nz
-
-def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_high=0):
-	from filter import filt_btwl
-	from fundamentals import smallprime, window2d
-	from utilities import get_image
-	"""
-		Window image to FFT-friendly size, apply Butterworth low pass filter,
-		and decimate 2D image
-	"""
-	if type(img)     == str :	img=get_image(img)
-	if decimation    <= 1   :  	ERROR("Improper decimation ratio", "image_decimation", 1)
-	if frequency_low <= 0   :
-		frequency_low  = .5/decimation- .05
-		if frequency_low <= 0: ERROR("Butterworth passband frequency is too low", "image_decimation", 1)
-		frequency_high = .5/decimation+ .05
-	if fit_to_fft :
-		nx_d = (img.get_xsize())/int(decimation)
-		ny_d = (img.get_ysize())/int(decimation)
-		nx_fft_d = smallprime(int(nx_d))
-		ny_fft_d = smallprime(int(ny_d))
-		nx_fft_m = nx_fft_d*int(decimation)
-		ny_fft_m = ny_fft_d*int(decimation)
-		e   = window2d(img, nx_fft_m, ny_fft_m, "l")
-		e1  = filt_btwl(e, frequency_low, frequency_high)
-		img = Util.decimate(e1, int(decimation), int(decimation), 1)
-	else:
-
-		e1  = filt_btwl(img, frequency_low, frequency_high)
-		img = Util.decimate(e1, int(decimation), int(decimation), 1)
-	return  img
 
 #### -----M--------
 def model_circle(r, nx, ny, nz=1):
