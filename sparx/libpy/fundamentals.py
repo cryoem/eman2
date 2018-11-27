@@ -497,7 +497,7 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 		and decimate image by integer factor
 	"""
 	from filter       import filt_btwl
-	from fundamentals import smallprime, window2d
+	from fundamentals import smallprime
 	from utilities    import get_image
 	if type(img)     == str:	img=get_image(img)
 	nz       = img.get_zsize()
