@@ -49,8 +49,8 @@ def main():
 	## Not sure if this is correct, but it seems like it might help
 	## amplitude contrast should result in img["minimum"]>=0, 
 	## but phase effects could make that more complicated
-	if r_phase["minimum"]<0: 
-		r_phase -= r_phase["minimum"]
+	# if r_phase["minimum"]<0: 
+	# 	r_phase -= r_phase["minimum"]
 
 	if options.verbose: print("Reading in raw tiltseries: {}".format(options.raw_tiltseries))
 	binfac = 1
@@ -106,11 +106,12 @@ def main():
 			d.process_inplace("math.squared")
 			d.process_inplace("math.sqrt")
 			d.process_inplace("math.log")
+			d.process_inplace("threshold.belowtozero",{"minval":0.0})
 
 			d.write_image("{}/logdiffs_{}.hdf".format(outdir,nexti),i)
 		
 		# Reconstruct amplitude contrast representation
-		cmd = "e2make3dpar.py --input {inp} --output {out} --keep {keep} --apix {apix} --pad {pad} --sym {sym} --mode {mode} --threads {ncores} --outsize {nx} --clipz {nz}".format(
+		cmd = "e2make3dpar.py --input {inp} --output {out} --keep {keep} --apix {apix} --pad {pad} --sym {sym} --mode {mode} --altedgemask --threads {ncores} --outsize {nx} --clipz {nz}".format(
 			inp="{}/logdiffs_{}.hdf".format(outdir,nexti), 
 			out="{}/ramplitude_{}.hdf".format(outdir,nexti), 
 			keep=1.0, apix=apix, pad=-1, sym="c1", 
@@ -138,7 +139,7 @@ def main():
 		if options.verbose: print("Reconstructing corrected tiltseries")
 
 		# Reconstruct new phase contrast representation
-		cmd = "e2make3dpar.py --input {inp} --output {out} --keep {keep} --apix {apix} --pad {pad} --sym {sym} --mode {mode} --threads {ncores} --outsize {nx} --clipz {nz}".format(
+		cmd = "e2make3dpar.py --input {inp} --output {out} --keep {keep} --apix {apix} --pad {pad} --sym {sym} --altedgemask --mode {mode} --threads {ncores} --outsize {nx} --clipz {nz}".format(
 			inp="{}/projs_{}.hdf".format(outdir,nexti),
 			out="{}/threed_{}.hdf".format(outdir,nexti),
 			keep=1.0,apix=apix,pad=-1,sym='c1',
@@ -147,7 +148,9 @@ def main():
 		
 		# define new phase contrast representation and tiltseries
 		r_phase = EMData("{}/threed_{}.hdf".format(outdir,nexti))
-		#tilts = EMData.read_images("{}/projs_{}.hdf".format(outdir,nexti)) # probably DONT do this...
+		
+		# probably DONT do this...
+		#tilts = EMData.read_images("{}/projs_{}.hdf".format(outdir,nexti)) 
 
 	print("DONE")
 
