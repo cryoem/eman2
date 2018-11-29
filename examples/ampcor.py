@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+from __future__ import division
+
 from EMAN2 import *
 import numpy as np
 import os
@@ -170,7 +173,7 @@ def make_projection(param,threed,binfac):
 	xf=Transform({"type":"xyz","tx":-param[0]/binfac,"ty":-param[1]/binfac,"ytilt":param[3],"xtilt":param[4]})
 	p = threed.project("standard",xf)
 	p.rotate(0,0,param[2])
-	return p#-p["minimum"]
+	return p
 
 def run(cmd,options):
 	if options.verbose: print("{}: {}".format(time.ctime(time.time()),cmd))
