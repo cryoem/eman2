@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from EMAN2 import *
 import numpy as np
 import os
@@ -5,74 +7,64 @@ import sys
 from scipy.optimize import minimize
 from scipy.optimize import fmin
 from joblib import Parallel, delayed 
-
-# Optimize parameters by minimizing ||R_phase+(a/b)*R_amp/log(I0)||^2
-def cost(x,r_phase,r_amp):
-	if x[1] <= 0.0 : return np.inf
-	energy = r_phase - x[0] * ( r_amp / np.log(x[1]) )
-	return energy["square_sum"]
-
-def run(cmd,options):
-	if options.verbose: print("{}: {}".format(time.ctime(time.time()),cmd))
-	ret=launch_childprocess(cmd)
-	if ret != 0: print("Error running: {}".format(cmd))
-	return
-
-def make_projection(param,threed,binfac):
-	xf=Transform({"type":"xyz","tx":-param[0]/binfac,"ty":-param[1]/binfac,"ytilt":param[3],"xtilt":param[4]})
-	p = threed.project("standard",xf)
-	p.rotate(0,0,param[2])
-	return p-p["minimum"]
+from EMAN2_utils import *
 
 def main():
-
-	parser = EMArgumentParser(usage=get_usage())
+	parser = EMArgumentParser()
 	parser.add_argument("--tomogram", required=True, help="Path to tomogram.")
-	parser.add_argument("--raw_tiltseries", required=True, help="Path to tiltseries.")
-	parser.add_argument("--binfac", default=1,type=int,help="Apply this binning to tilt images before processing. If this number is inconsistent with the binning of the specified tomogram, the program will fail. Example: A '__bin8' tomogram will need a binfac of 8.")
-	parser.add_argument("--niters", default=3,type=int,help="Number of iterations.")
+	parser.add_argument("--raw_tiltseries", required=True, help="Path to tiltseries.")	
+	parser.add_argument("--niters", default=3,type=int,help="Number of iterations to run.")
 	parser.add_argument("--threads", default=8,type=int,help="Number of threads to run in parallel on a single computer.")
-	parser.add_argument("--outpath", default="ampcor", help="Output reconstructed volume file name.")
+	parser.add_argument("--outpath", default="ampcor", help="Name of output directory. Numbers will be appended to ensure each instance is written to a unique folder. Default is ampcor_XX.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 
-	jd = js_open_dict("./info/g1c1_cc_info.json")
-	tiltparams = np.asarray(jd['tlt_params'])
-	jd.close()
+	niters = options.niters
+
+	info_file = info_name(options.raw_tiltseries)
+	if os.path.isfile(info_file):
+		jd = js_open_dict(info_file)
+		try: 
+			tiltparams = np.asarray(jd['tlt_params'])
+			jd.close()
+		except:
+			jd.close()
+			print("Could not locate tlt_params key in {}. Try running this through e2tomogram.py before proceeding.".format(info_file))
+			sys.exit(1)
+	else:
+		print("Could not locate metadata file ({}) for {}. Exiting.".format(info_file,options.raw_tiltseries))
+		sys.exit(1)
 
 	if options.verbose: print("Loading input data...")
 
-	if options.verbose: print("Raw tiltseries: {}".format(options.raw_tiltseries))
-	tilts = EMData.read_images(options.raw_tiltseries)
-	sthdr = EMData(options.raw_tiltseries,0,True)
-
-	if options.verbose: print("Tomogram: {}".format(options.tomogram))
+	if options.verbose: print("Reading in tomogram: {}".format(options.raw_tiltseries))
 	r_phase=EMData(options.tomogram)
 	rnx = r_phase["nx"]
 	rny = r_phase["ny"]
 	rnz = r_phase["nz"]
 	apix = r_phase["apix_x"]
 
-	niters = options.niters
-	ncores = options.threads
-	outdir = make_path(options.outpath)
+	if options.verbose: print("Reading in raw tiltseries: {}".format(options.raw_tiltseries))
+	binfac = 1
+	for f in [2,4,8,16]:
+		if "_bin{}".format(f) in options.tomogram:
+			binfac = f
+	if binfac == 1: 
+		tilts = EMData.read_images(options.raw_tiltseries)
+	else:
+		# not sure if this is read/write limited, but the fft resample process takes quite a bit of time on large images.
+		ntlt = EMUtil.get_image_count(options.raw_tiltseries)
+		tilts = Parallel(n_jobs=options.threads, verbose=0, backend="threading")(delayed(get_binned_tilt) (i,binfac,options) for i in range(ntlt))
 
-	# binfac = 1
-	# for f in [2,4,8,16,32]:
-	# 	if "_bin{}".format(f) in options.tomogram:
-	# 		binfac = f
-	if binfac != 1:
-		for i,t in enumerate(tilts):
-			t.process_inplace("math.fft.resample",{"n":binfac})
+	outdir = make_path(options.outpath)
 
 	# initial parameters for optimization. Likely not the best values.
 	incid = []
 	for t in tilts:
 		inc = t+t["minimum"]
 		incid.append(inc["maximum"])
-	incid = np.max(incid)
+	incid = np.max(incid) # incident intensity (approximated)
 
 	alpha = 1.0
 	beta = 0.1 # dunno...just something to start with
@@ -82,7 +74,7 @@ def main():
 	if options.verbose: print("Generating initial projections of reconstructed tomogram")
 
 	# Generate initial projections of reconstructed tomogram
-	projs = Parallel(n_jobs=ncores, verbose=0, backend="threading")(delayed(make_projection) (tp,r_phase,binfac) for tp in tiltparams)
+	projs = Parallel(n_jobs=options.threads, verbose=0, backend="threading")(delayed(make_projection) (tp,r_phase,binfac) for tp in tiltparams)
 	for i,p in enumerate(projs):
 		p.write_image("{}/projs_00.hdf".format(outdir),i)
 	
@@ -110,7 +102,7 @@ def main():
 			inp="{}/logdiffs_{}.hdf".format(outdir,nexti), 
 			out="{}/ramplitude_{}.hdf".format(outdir,nexti), 
 			keep=1.0, apix=apix, pad=-1, sym="c1", 
-			mode="gauss_2", ncores=ncores, nx=rnx, nz=rnz)
+			mode="gauss_2", ncores=options.threads, nx=rnx, nz=rnz)
 		run(cmd,options)
 		r_amp = EMData("{}/ramplitude_{}.hdf".format(outdir,nexti))
 
@@ -127,7 +119,7 @@ def main():
 		if options.verbose: print("Generating corrected tiltseries")
 
 		# generate corrected tiltseries
-		projs = Parallel(n_jobs=ncores, verbose=1, backend="threading")(delayed(make_projection) (tp,new_phi,binfac) for tp in tiltparams)
+		projs = Parallel(n_jobs=options.threads, verbose=0, backend="threading")(delayed(make_projection) (tp,new_phi,binfac) for tp in tiltparams)
 		for i,p in enumerate(projs):
 			p.write_image("{}/projs_{}.hdf".format(outdir,nexti),i)
 		
@@ -138,12 +130,37 @@ def main():
 			inp="{}/projs_{}.hdf".format(outdir,nexti),
 			out="{}/threed_{}.hdf".format(outdir,nexti),
 			keep=1.0,apix=apix,pad=-1,sym='c1',
-			mode='gauss_2',ncores=ncores,nx=rnx,nz=rnz)
+			mode='gauss_2',ncores=options.threads,nx=rnx,nz=rnz)
 		run(cmd,options)
 		
 		# define new phase contrast representation and tiltseries
 		r_phase = EMData("{}/threed_{}.hdf".format(outdir,nexti))
 		tilts = EMData.read_images("{}/projs_{}.hdf".format(outdir,nexti))
+
+	print("DONE")
+
+# Optimize parameters by minimizing ||R_phase+(a/b)*R_amp/log(I0)||^2
+def cost(x,r_phase,r_amp):
+	if x[1] <= 0.0 : return np.inf
+	energy = r_phase - x[0] * ( r_amp / np.log(x[1]) )
+	return energy["square_sum"]
+
+def get_binned_tilt(i,binfac,options):
+	t = EMData(options.raw_tiltseries,i)
+	t.process_inplace("math.fft.resample",{"n":binfac})
+	return t
+
+def make_projection(param,threed,binfac):
+	xf=Transform({"type":"xyz","tx":-param[0]/binfac,"ty":-param[1]/binfac,"ytilt":param[3],"xtilt":param[4]})
+	p = threed.project("standard",xf)
+	p.rotate(0,0,param[2])
+	return p-p["minimum"]
+
+def run(cmd,options):
+	if options.verbose: print("{}: {}".format(time.ctime(time.time()),cmd))
+	ret=launch_childprocess(cmd)
+	if ret != 0: print("Error running: {}".format(cmd))
+	return
 
 if __name__ == "__main__":
 	main()
