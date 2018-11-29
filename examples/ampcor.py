@@ -13,6 +13,7 @@ def main():
 	parser = EMArgumentParser()
 	parser.add_argument("--tomogram", required=True, help="Path to tomogram.")
 	parser.add_argument("--raw_tiltseries", required=True, help="Path to tiltseries.")	
+	parser.add_argument("--filterto",default=0.125,type=float,help="cutoff_abs for lowpass filter applied to tilts and reconstruction projections. Useful to exclude high-resolution information we can't currently correct.")
 	parser.add_argument("--niters", default=3,type=int,help="Number of iterations to run.")
 	parser.add_argument("--threads", default=8,type=int,help="Number of threads to run in parallel on a single computer.")
 	parser.add_argument("--outpath", default="ampcor", help="Name of output directory. Numbers will be appended to ensure each instance is written to a unique folder. Default is ampcor_XX.")
@@ -45,6 +46,12 @@ def main():
 	rnz = r_phase["nz"]
 	apix = r_phase["apix_x"]
 
+	## Not sure if this is correct, but it seems like it might help
+	## amplitude contrast should result in img["minimum"]>=0, 
+	## but phase effects could make that more complicated
+	if r_phase["minimum"]<0: 
+		r_phase -= r_phase["minimum"]
+
 	if options.verbose: print("Reading in raw tiltseries: {}".format(options.raw_tiltseries))
 	binfac = 1
 	for f in [2,4,8,16]:
@@ -67,7 +74,7 @@ def main():
 	incid = np.max(incid) # incident intensity (approximated)
 
 	alpha = 1.0
-	beta = 0.1 # dunno...just something to start with
+	beta = 0.1 # ...just something to start with
 
 	x0 = [alpha/beta,incid] # initial guess for optimization
 
@@ -88,13 +95,18 @@ def main():
 		# Get differences between reconstruction projections and original tilt series
 		for i in range(len(tiltparams)):
 			p = EMData("{}/projs_{}.hdf".format(outdir,thisi),i)
-			
+			dmask = p.process("threshold.notzero")
+			p.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
+
 			m = tilts[i].copy()
 			reg = Region((m["nx"]-rnx)/2,(m["ny"]-2-rny)/2-1,rny,rny)
 			m = m.get_clip(reg)
-			
-			d = p.process("normalize.toimage",{"to":m}) - m # not sure about this...
+
+			d = p - m*dmask # not sure about this...
+			d.process_inplace("math.squared")
+			d.process_inplace("math.sqrt")
 			d.process_inplace("math.log")
+
 			d.write_image("{}/logdiffs_{}.hdf".format(outdir,nexti),i)
 		
 		# Reconstruct amplitude contrast representation
@@ -135,7 +147,7 @@ def main():
 		
 		# define new phase contrast representation and tiltseries
 		r_phase = EMData("{}/threed_{}.hdf".format(outdir,nexti))
-		tilts = EMData.read_images("{}/projs_{}.hdf".format(outdir,nexti))
+		#tilts = EMData.read_images("{}/projs_{}.hdf".format(outdir,nexti)) # probably DONT do this...
 
 	print("DONE")
 
@@ -148,13 +160,14 @@ def cost(x,r_phase,r_amp):
 def get_binned_tilt(i,binfac,options):
 	t = EMData(options.raw_tiltseries,i)
 	t.process_inplace("math.fft.resample",{"n":binfac})
+	t.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	return t
 
 def make_projection(param,threed,binfac):
 	xf=Transform({"type":"xyz","tx":-param[0]/binfac,"ty":-param[1]/binfac,"ytilt":param[3],"xtilt":param[4]})
 	p = threed.project("standard",xf)
 	p.rotate(0,0,param[2])
-	return p-p["minimum"]
+	return p#-p["minimum"]
 
 def run(cmd,options):
 	if options.verbose: print("{}: {}".format(time.ctime(time.time()),cmd))
