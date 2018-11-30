@@ -31,6 +31,7 @@ from __future__ import print_function
 
 from builtins import range
 from global_def import *
+import numpy.random
 
 
 #  06-12-14 code lifted
@@ -1353,7 +1354,7 @@ def select_k(dJe, T):
 	# the next line looks strange, but it assures that at least the lst element is selected
 	p[K-1] = 2.0
 
-	pb = random()
+	pb = numpy.random.random()
 	select = 0
 
 	while(p[select] < pb):  select += 1
@@ -1411,7 +1412,7 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 		# the next line looks strange, but it assures that at least the lst element is selected
 		cp[K-1] = 2.0
 
-		pb = random()
+		pb = numpy.random.random()
 		select = 0
 		while(cp[select] < pb):  select += 1
 
