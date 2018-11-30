@@ -1862,8 +1862,8 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 			phi    = 360.0*numpy.random.random()
 			theta  = 180.0*numpy.random.random()
 			psi    = 360.0*numpy.random.random()
-			tx     = 6.0*(random() - 0.5)
-			ty     = 6.0*(random() - 0.5)
+			tx     = 6.0*(numpy.random.random() - 0.5)
+			ty     = 6.0*(numpy.random.random() - 0.5)
 			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
 		elif(random_angles  == 1):
 			from  random import  random
