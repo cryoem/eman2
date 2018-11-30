@@ -103,6 +103,7 @@ from mpi   	import  *
 from math  	import  *
 from random import *
 import numpy as np
+import numpy.random
 import shutil
 
 
@@ -7471,7 +7472,7 @@ def cerrs(params, ctfs, particle_groups):
 				xshift = yshift = 0.0
 
 				#// Perturb angle or shift , depending on the mode
-				ran = random()
+				ran = numpy.random.random()
 				if (imode == 0) :
 					if (ran < 0.3333):   phi2   = phi1   + ang_error
 					elif (ran < 0.6667): theta2 = theta1 + ang_error
@@ -9258,7 +9259,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 	refang, rshifts, coarse_angles, coarse_shifts = get_refangs_and_shifts()
 	if( Tracker["constants"]["shake"] > 0.0 ):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
+			shakenumber = numpy.random.uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
 		else:
 			shakenumber = 0.0
 		shakenumber = bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])

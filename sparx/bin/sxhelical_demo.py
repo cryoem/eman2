@@ -41,6 +41,8 @@ from   global_def     import *
 from   user_functions import *
 from   optparse       import OptionParser
 import sys
+import numpy.random
+import random
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -178,7 +180,8 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 	
 	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "sxhelical_demo", 1)
 	os.mkdir(outdir)
-	seed(rand_seed)
+	numpy.random.seed(rand_seed)
+	random.seed(rand_seed)
 	Util.set_randnum_seed(rand_seed)
 	angles =[]
 	for i in range(3):
