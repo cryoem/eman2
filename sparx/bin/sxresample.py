@@ -41,6 +41,7 @@ from   sparx import *
 from   numpy import *
 from   time import time
 from   optparse import OptionParser
+import numpy.random
 
 def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 	from EMAN2 import  newfile_store
@@ -240,7 +241,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		for i in range(nbufvol):
 			for l in range(nrefa):
 				mass = assignments[l][:]
-				shuffle(mass)
+				numpy.random.shuffle(mass)
 				mass = mass[:keep]
 				mass.sort()
 				#print  l, "  *  ",mass
