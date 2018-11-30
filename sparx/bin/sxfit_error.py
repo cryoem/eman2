@@ -42,6 +42,7 @@ from sparx import *
 from mpi import *
 from math import sqrt
 from random import random
+import numpy.random
 import sys
 
 from os import system
@@ -926,8 +927,8 @@ for i in range(nt1):
 	lt = i*ncpu+myid
 
 	for k in range(lpar):
-		if k<lpar-3: params[k] = shake_ang_1*(2.0*random()-1.0)
-		else: params[k] = shake_shift_1*(2.0*random()-1.0)
+		if k<lpar-3: params[k] = shake_ang_1*(2.0*numpy.random.random()-1.0)
+		else: params[k] = shake_shift_1*(2.0*numpy.random.random()-1.0)
 
 	params = ali_vol_grid(img1_filt, params, img2_filt, ang_bracket, shift_bracket, mask_rad, discrep, kb, False)
 
@@ -1115,8 +1116,8 @@ for cycle in range(max_cycles):
 	bparams = [0.0]*lpar
 	for i in range(nt2):
 		for k in range(lpar):
-			if k<lpar-3: params[k] = shake_ang_2*(2.0*random()-1.0)
-			else: params[k] = shake_shift_2*(2.0*random()-1.0)
+			if k<lpar-3: params[k] = shake_ang_2*(2.0*numpy.random.random()-1.0)
+			else: params[k] = shake_shift_2*(2.0*numpy.random.random()-1.0)
 
 		params = ali_vol_grid(img1_init, params, img2_noisy, ang_bracket, shift_bracket, mask_rad, discrep, kbi, False)
 
