@@ -34,12 +34,13 @@ import subprocess
 import global_def
 from global_def import SPARXVERSION, ERROR
 from optparse import OptionParser, SUPPRESS_HELP
+import os
 
 
 def main():
 
     # Parse the Options
-    progname = path.basename(argv[0])
+    progname = os.path.basename(argv[0])
     usage = progname + """ summovie_path input_micrograph_pattern input_shift_pattern output_directory
     --selection_list
     --nr_frames=nr_frames
@@ -97,20 +98,20 @@ def main():
         ERROR("see usage " + usage, 1)
 
     # Convert the realtive parts to absolute ones
-    summovie_path = path.realpath(args[0]) # summovie_path
-    input_image = path.realpath(args[1])   # input_micrograph_pattern
-    input_shift = path.realpath(args[2])   # input_shift_pattern
-    output_dir = path.realpath(args[3])    # output_directory
+    summovie_path = os.path.realpath(args[0]) # summovie_path
+    input_image = os.path.realpath(args[1])   # input_micrograph_pattern
+    input_shift = os.path.realpath(args[2])   # input_shift_pattern
+    output_dir = os.path.realpath(args[3])    # output_directory
 
     # If the summovie executable file does not exists, stop the script
-    if not path.exists(summovie_path):
+    if not os.path.exists(summovie_path):
         ERROR(
             'Summovie directory does not exist, please change' +
             ' the name and restart the program.', 'sxsummovie.py', 1
             )
 
     # If the output directory exists, stop the script
-    if path.exists(output_dir):
+    if os.path.exists(output_dir):
         ERROR(
             'Output directory exists, please change' +
             ' the name and restart the program.', 'sxsummovie.py', 1
@@ -163,15 +164,15 @@ def main():
         input_dir = ''
 
     # Create output directorys
-    if not path.exists(output_dir):
+    if not os.path.exists(output_dir):
         mkdir(output_dir)
-    if not path.exists(output_path):
+    if not os.path.exists(output_path):
         mkdir(output_path)
-    if not path.exists(frc_path):
+    if not os.path.exists(frc_path):
         mkdir(frc_path)
-    if not path.exists(temp_path) and not options.summovie_ready:
+    if not os.path.exists(temp_path) and not options.summovie_ready:
         mkdir(temp_path)
-    if not path.exists(log_path):
+    if not os.path.exists(log_path):
         mkdir(log_path)
 
     # shift wildcard list
@@ -196,7 +197,7 @@ def main():
         mic_list = [
                 entry for entry in mic_list \
                 if entry[len(input_dir):] in selection and \
-                path.exists(entry)
+                os.path.exists(entry)
                 ]
         # If no match is there abort
         if len(mic_list) == 0:
@@ -382,7 +383,7 @@ def run_summovie(
         for entry in temp_summovie_files:
             remove(entry)
         if not opt['summovie_ready']:
-            if path.exists(temp_name):
+            if os.path.exists(temp_name):
                 # Remove temp file
                 remove(temp_name)
             else:
