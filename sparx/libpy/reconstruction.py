@@ -1850,17 +1850,18 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 		# active = proj.get_attr_default('active', 1)
 		# if(active == 1):
+		import numpy.random
 		if(random_angles  == 2):
 			from  random import  random
-			phi    = 360.0*random()
-			theta  = 180.0*random()
-			psi    = 360.0*random()
+			phi    = 360.0*numpy.random.random()
+			theta  = 180.0*numpy.random.random()
+			psi    = 360.0*numpy.random.random()
 			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
 		elif(random_angles  == 3):
 			from  random import  random
-			phi    = 360.0*random()
-			theta  = 180.0*random()
-			psi    = 360.0*random()
+			phi    = 360.0*numpy.random.random()
+			theta  = 180.0*numpy.random.random()
+			psi    = 360.0*numpy.random.random()
 			tx     = 6.0*(random() - 0.5)
 			ty     = 6.0*(random() - 0.5)
 			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
@@ -1868,7 +1869,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 			from  random import  random
 			old_xform_proj = proj.get_attr( "xform.projection" )
 			dict = old_xform_proj.get_rotation( "spider" )
-			dict["psi"] = 360.0*random()
+			dict["psi"] = 360.0*numpy.random.random()
 			xform_proj = Transform( dict )
 		else:
 			xform_proj = proj.get_attr( "xform.projection" )
@@ -1926,25 +1927,26 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 		# active = prj.get_attr_default('active', 1)
 		# if active == 1:
+		import numpy.random
 		if random_angles  == 2:
 			from  random import  random
-			phi	 = 360.0*random()
-			theta    = 180.0*random()
-			psi	 = 360.0*random()
+			phi	 = 360.0*numpy.random.random()
+			theta    = 180.0*numpy.random.random()
+			psi	 = 360.0*numpy.random.random()
 			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
 		elif random_angles  == 3:
 			from  random import  random
-			phi    = 360.0*random()
-			theta  = 180.0*random()
-			psi    = 360.0*random()
-			tx     = 6.0*(random() - 0.5)
-			ty     = 6.0*(random() - 0.5)
+			phi    = 360.0*numpy.random.random()
+			theta  = 180.0*numpy.random.random()
+			psi    = 360.0*numpy.random.random()
+			tx     = 6.0*(numpy.random.random() - 0.5)
+			ty     = 6.0*(numpy.random.random() - 0.5)
 			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
 		elif random_angles  == 1:
 			from  random import  random
 			old_xform_proj = prj.get_attr( "xform.projection" )
 			dict = old_xform_proj.get_rotation( "spider" )
-			dict["psi"] = 360.0*random()
+			dict["psi"] = 360.0*numpy.random.random()
 			xform_proj = Transform( dict )
 		else:
 			xform_proj = prj.get_attr( "xform.projection" )
