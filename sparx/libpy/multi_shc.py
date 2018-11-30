@@ -683,7 +683,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 							noreseeding = False
 							terminate   = False
 							log.add("Insufficient initial variability, reseeding!\n")
-							all_params = [[[random()*360.0,random()*180.0,random()*360.0,0.0,0.0]\
+							import numpy.random
+							all_params = [[[numpy.random.random()*360.0,numpy.random.random()*180.0,numpy.random.random()*360.0,0.0,0.0]\
 											 for j in range(total_nima)] for i in range(number_of_runs)]
 						else:  	terminate = Iter > max_iter or crit
 
@@ -696,12 +697,13 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 
 						from utilities import nearest_many_full_k_projangles, angles_to_normals
 						from random import random, randint, shuffle
+						import numpy.random
 						# select random pairs of solutions
 						ipl = list(range(number_of_runs))
 						shuffle(ipl)
 						for ip in range(0,2*(len(ipl)/2)+len(ipl)%2,2):
 							#  random reference projection:
-							itmp = randint(0,total_nima-1)
+							itmp = numpy.random.randint(0,total_nima-1)
 							#print  "  nearest_many_full_k_projangles  ",total_nima,itmp,ipl,ip,len(GA[ipl[ip]][1]),GA[ipl[ip]][1][itmp],GA[ipl[ip]][1]
 							keepset = nearest_many_full_k_projangles(angles_to_normals(GA[ipl[ip]][1]), [GA[ipl[ip]][1][itmp]], howmany = total_nima/2, sym_class = symmetry_class)[0]
 							#print  "  keepset  ",total_nima,len(keepset),itmp,keepset
@@ -742,7 +744,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 						for i in range(keepset):
 							all_params[0][i][2] += 180.0
 							#  Always reseed the last ones
-							all_params[-1-i] = [[random()*360.0,random()*180.0,random()*360.0,0.0,0.0]\
+							import numpy.random
+							all_params[-1-i] = [[numpy.random.random()*360.0,numpy.random.random()*180.0,numpy.random.random()*360.0,0.0,0.0]\
 										 for j in range(total_nima)]
 
 				terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
@@ -1355,9 +1358,10 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		if(len(prms) < len(subset)): error = 1
 		else:
 			from random import shuffle
+			import numpy.random
 			shuffle(prms)
 			for i in subset:
-				prms[i][2] = random()*360.0
+				prms[i][2] = numpy.random.random()*360.0
 				set_params_proj(all_projs[i], prms[i]+[0.,0.])
 				#all_projs[i].set_attr("stable", 0)
 				all_projs[i].set_attr("previousmax", -1.e23)

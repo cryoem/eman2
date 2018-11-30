@@ -32,6 +32,7 @@ from __future__ import print_function
 from builtins import range
 from builtins import object
 from global_def import *
+import numpy.random
 
 def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", \
 			nomirror=False, dst=0.0, center=-1, maxit=0, \
@@ -3199,8 +3200,8 @@ def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, ds
 			alpha, sx, sy, miri, scale = get_params2D(data2d[im])
 			#  Check this 07/11/2015 PAP
 			alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
-			if check_mirror: alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
-			else:            alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, 0)			
+			if check_mirror: alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, numpy.random.random()*360.0, 0.0, 0.0, randint(0, 1))
+			else:            alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, numpy.random.random()*360.0, 0.0, 0.0, 0)			
 			set_params2D(data2d[im], [alphan, sxn, syn, mirrorn, 1.0] )
 		else:
 			alphan, sxn, syn, mirrorn, scale = get_params2D(data2d[im])
@@ -8238,7 +8239,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 							Jc[0] = J[0]
 							for iref in range(1, numref):
 								Jc[iref] = Jc[iref-1]+J[iref]
-							sss = random()
+							sss = numpy.random.random()
 							for group in range(numref):
 								if( sss <= Jc[group]): break
 						tasi[group].append(N[ima])
@@ -15451,25 +15452,25 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 			# if active == 1:
 			if random_angles == 2:
 				from  random import  random
-				phi	 = 360.0*random()
-				theta	 = 180.0*random()
-				psi	 = 360.0*random()
+				phi	 = 360.0*numpy.random.random()
+				theta	 = 180.0*numpy.random.random()
+				psi	 = 360.0*numpy.random.random()
 				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
 				prj.set_attr("xform.projection", xform_proj)
 			elif random_angles == 3:
 				from  random import  random
-				phi    = 360.0*random()
-				theta  = 180.0*random()
-				psi    = 360.0*random()
-				tx     = 6.0*(random() - 0.5)
-				ty     = 6.0*(random() - 0.5)
+				phi    = 360.0*numpy.random.random()
+				theta  = 180.0*numpy.random.random()
+				psi    = 360.0*numpy.random.random()
+				tx     = 6.0*(numpy.random.random() - 0.5)
+				ty     = 6.0*(numpy.random.random() - 0.5)
 				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
 				prj.set_attr("xform.projection", xform_proj)
 			elif random_angles  == 1:
 				from  random import  random
 				old_xform_proj = prj.get_attr( "xform.projection" )
 				dict = old_xform_proj.get_rotation( "spider" )
-				dict["psi"] = 360.0*random()
+				dict["psi"] = 360.0*numpy.random.random()
 				xform_proj = Transform( dict )
 				prj.set_attr("xform.projection", xform_proj)
 		random_angles = 0
@@ -15920,9 +15921,9 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 					Ori[j+1] = 0.0
 					Ori[j+2] = 0.0
 				else:
-					Ori[j]   = random() * 360  # phi
-					Ori[j+1] = random() * 180  # theta
-					Ori[j+2] = random() * 360  # psi
+					Ori[j]   = numpy.random.random() * 360  # phi
+					Ori[j+1] = numpy.random.random() * 180  # theta
+					Ori[j+2] = numpy.random.random() * 360  # psi
 				j += 4
 
 		# prepare rotation matrix
@@ -15999,9 +16000,9 @@ def cml_find_structure_MPI2(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 					Ori[j+1] = 0.0
 					Ori[j+2] = 0.0
 				else:
-					Ori[j]   = random() * 360  # phi
-					Ori[j+1] = random() * 180  # theta
-					Ori[j+2] = random() * 360  # psi
+					Ori[j]   = numpy.random.random() * 360  # phi
+					Ori[j+1] = numpy.random.random() * 180  # theta
+					Ori[j+2] = numpy.random.random() * 360  # psi
 				j += 4
 
 		# prepare rotation matrix
@@ -16098,9 +16099,9 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 					Ori[j+1] = 0.0
 					Ori[j+2] = 0.0
 				else:
-					Ori[j]   = random() * 360  # phi
-					Ori[j+1] = random() * 180  # theta
-					Ori[j+2] = random() * 360  # psi
+					Ori[j]   = numpy.random.random() * 360  # phi
+					Ori[j+1] = numpy.random.random() * 180  # theta
+					Ori[j+2] = numpy.random.random() * 360  # psi
 				j += 4
 
 		# prepare rotation matrix
@@ -16353,9 +16354,9 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 						EMUtil.write_hdf_attribute(stack, p, i, i)					
 				elif randomize:
 					if p[:13] == "xform.align2d":
-						alpha = random()*360.0
-						sx = random()*2.0-1.0
-						sy = random()*2.0-1.0
+						alpha = numpy.random.random()*360.0
+						sx = numpy.random.random()*2.0-1.0
+						sy = numpy.random.random()*2.0-1.0
 						mirror = randint(0, 1)
 						scale = 1.0
 						#set_params2D(img, [alpha, sx, sy, mirror, scale], p)
@@ -16365,11 +16366,11 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 						elif ext == "hdf":
 							EMUtil.write_hdf_attribute(stack, "xform.align2d", t, i)
 					elif p[:16] == "xform.projection":
-						phi = random()*360.0
-						theta = random()*180.0
-						psi = random()*360.0
-						s2x = random()*4.0-2.0
-						s2y = random()*4.0-2.0
+						phi = numpy.random.random()*360.0
+						theta = numpy.random.random()*180.0
+						psi = numpy.random.random()*360.0
+						s2x = numpy.random.random()*4.0-2.0
+						s2y = numpy.random.random()*4.0-2.0
 						#set_params_proj(img, [phi, theta, psi, s2x, s2y], p)
 						t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 						t.set_trans(Vec2f(-s2x, -s2y))
@@ -16378,12 +16379,12 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 						elif ext == "hdf":
 							EMUtil.write_hdf_attribute(stack, "xform.projection", t, i)
 					elif p[:13] == "xform.align3d":
-						phi = random()*360.0
-						theta = random()*180.0
-						psi = random()*360.0
-						s3x = random()*4.0-2.0
-						s3y = random()*4.0-2.0
-						s3z = random()*4.0-2.0
+						phi = numpy.random.random()*360.0
+						theta = numpy.random.random()*180.0
+						psi = numpy.random.random()*360.0
+						s3x = numpy.random.random()*4.0-2.0
+						s3y = numpy.random.random()*4.0-2.0
+						s3z = numpy.random.random()*4.0-2.0
 						mirror = randint(0, 1)
 						scale = 1.0
 						#set_params3D(img, [phi, theta, psi, s3x, s3y, s3z, mirror, scale], p)	
@@ -16397,7 +16398,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 						return						
 				elif rand_alpha:
 					if p[:13] == "xform.align2d":
-						alpha = random()*360.0
+						alpha = numpy.random.random()*360.0
 						sx = 0.0
 						sy = 0.0
 						mirror = randint(0, 1)
@@ -16409,9 +16410,9 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 						elif ext == "hdf":
 							EMUtil.write_hdf_attribute(stack, "xform.align2d", t, i)	
 					elif p[:16] == "xform.projection":
-						phi = random()*360.0
-						theta = random()*180.0
-						psi = random()*360.0
+						phi = numpy.random.random()*360.0
+						theta = numpy.random.random()*180.0
+						psi = numpy.random.random()*360.0
 						s2x = 0.0
 						s2y = 0.0
 						#set_params_proj(img, [phi, theta, psi, s2x, s2y], p)
@@ -16423,9 +16424,9 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 						elif ext == "hdf":
 							EMUtil.write_hdf_attribute(stack, "xform.projection", t, i)
 					elif p[:13] == "xform.align3d":
-						phi = random()*360.0
-						theta = random()*180.0
-						psi = random()*360.0
+						phi = numpy.random.random()*360.0
+						theta = numpy.random.random()*180.0
+						psi = numpy.random.random()*360.0
 						s3x = 0.0
 						s3y = 0.0
 						s3z = 0.0
@@ -17945,7 +17946,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		for im in data:
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
-			alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
+			alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, numpy.random.random()*360.0, 0.0, 0.0, randint(0, 1))
 			set_params2D(im, [alphan, sxn, syn, mirrorn, 1.0])
 
 	cnx = nx/2+1
@@ -18005,7 +18006,7 @@ def Xwithin_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, 
 		sxi -= lx[im]
 		syi -= ly[im]
 		if randomize :
-			alphan, sxn, syn, mirrorn    = combine_params2(0.0, sxi, syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
+			alphan, sxn, syn, mirrorn    = combine_params2(0.0, sxi, syi, 0, numpy.random.random()*360.0, 0.0, 0.0, randint(0, 1))
 			#alphan, sxn, syn, mirrorn = combine_params2(0.0, randint(-xrng[0],xrng[0]), randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
 		else:
 			alphan, sxn, syn, dummy = combine_params2(0.0, sxi, syi, 0, alpha, 0.0, 0.0, 0)
@@ -18220,7 +18221,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		for im in data:
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			alphai, sxi, syi, mirrori    = inverse_transform2(alpha, sx, sy)
-			alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
+			alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi, -syi, 0, numpy.random.random()*360.0, 0.0, 0.0, randint(0, 1))
 			#alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi+randint(-xrng[0],xrng[0]), -syi+randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
 			set_params2D(im, [alphan, sxn, syn, mirrorn, 1.0])
 
@@ -18419,7 +18420,7 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 			#alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			#alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
 			#alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0,0, randint(0, 1))
-			params[im] = [random()*360.0, 0, 0, randint(0, 1)]
+			params[im] = [numpy.random.random()*360.0, 0, 0, randint(0, 1)]
 	else:
 		for im in xrange(nima):
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
@@ -24390,7 +24391,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 							Jc[0] = J[0]
 							for iref in range(1, numref):
 								Jc[iref] = Jc[iref-1]+J[iref]
-							sss = random()
+							sss = numpy.random.random()
 							for group in range(numref):
 								if( sss <= Jc[group]): break
 						tasi[group].append(N[ima])
@@ -25269,7 +25270,7 @@ def mref_ali3d_EQ_Kmeans_circular(ref_list, outdir, particle_list_file, Tracker)
 							Jc[0] = J[0]
 							for iref in range(1, numref):
 								Jc[iref] = Jc[iref-1]+J[iref]
-							sss = random()
+							sss = numpy.random.random()
 							for group in range(numref):
 								if( sss <= Jc[group]): break
 						tasi[group].append(N[ima])
