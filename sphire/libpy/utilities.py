@@ -6128,7 +6128,7 @@ def fill_in_mpi_list(mpi_list,data_list,index_start,index_end):
 		mpi_list[index] = data_list[index-index_start]
 	return mpi_list
 
-def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
+def get_groups_from_partition_deprecated(partition, initial_ID_list, number_of_groups):
 	# sort out Kmref results to individual groups that has initial IDs
 	# make a dictionary
 	dict = {}
@@ -6144,7 +6144,7 @@ def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 		res.append(class_one)
 	return res
 
-def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
+def remove_small_groups_deprecated_1(class_list,minimum_number_of_objects_in_a_group):
 	new_class  = []
 	final_list = []
 	for one_class in class_list:
@@ -6179,7 +6179,7 @@ def get_initial_ID(part_list, full_ID_dict):
 		#new_dict[iptl] = id
 	return part_initial_id_list#, new_dict
 
-def remove_small_groups(class_list,minimum_number_of_objects_in_a_group):
+def remove_small_groups_deprecated_2(class_list,minimum_number_of_objects_in_a_group):
 	new_class  = []
 	final_list = []
 	for one_class in class_list:
@@ -6204,7 +6204,7 @@ def print_upper_triangular_matrix(data_table_dict,N_indep,log_main):
 					msg +="      "
 			log_main.add(msg)
 
-def print_a_line_with_timestamp(string_to_be_printed ):
+def print_a_line_with_timestamp_deprecated(string_to_be_printed ):
 	line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 	print((line,string_to_be_printed))
 	return string_to_be_printed
@@ -6601,7 +6601,7 @@ def create_random_list(Tracker):
 		indep_list.append(ll)
 	Tracker["this_indep_list"] = indep_list
 
-def get_number_of_groups(total_particles,number_of_images_per_group, round_off=.2):
+def get_number_of_groups_deprecated(total_particles,number_of_images_per_group, round_off=.2):
 	number_of_groups=float(total_particles)/number_of_images_per_group
 	if number_of_groups - int(number_of_groups)<round_off:
 		number_of_groups = int(number_of_groups)
@@ -6667,7 +6667,7 @@ def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
 		res.append(class_one)
 	return res
 
-def get_number_of_groups(total_particles,number_of_images_per_group):
+def get_number_of_groups_deprecated_2(total_particles,number_of_images_per_group):
 	# soft partition groups
 	number_of_groups=float(total_particles)/number_of_images_per_group
 	if number_of_groups - int(number_of_groups)<.4:

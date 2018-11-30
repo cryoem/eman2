@@ -270,7 +270,7 @@ def threshold_to_minval(img, minval = 0.0):
 	"""
 	return img.process( "threshold.belowtominval", {"minval": minval } )
 
-def threshold_outside(img, minval, maxval):
+def threshold_outside_deprecated(img, minval, maxval):
 	"""
 		Name
 			threshold_outside - replace values outside given thresholds by respective threshold values
