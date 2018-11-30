@@ -2665,6 +2665,7 @@ def k_means_criterion(Cls, crit_name=''):
 def select_kmeans(dJe, T):
 	from random import random
 	from math   import exp
+	import numpy.random
 
 	K    = len(dJe)
 	p    = [[0.0, k] for k in range(K)]
@@ -2679,7 +2680,7 @@ def select_kmeans(dJe, T):
 	for k in range(K): p[k][0] /= sump
 	p.sort()
 	for k in range(1, K): p[k][0] += p[k - 1][0]
-	rnd = random()
+	rnd = numpy.random.random()
 	s   = 0
 	while p[s][0] < rnd: s += 1
 	s   = p[s][1]
