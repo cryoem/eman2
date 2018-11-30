@@ -809,7 +809,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 	from string    import lower,split
 	angles = []
 	symmetryLower = symmetry.lower()
-	symmetry_string = split(symmetry)[0]
+	symmetry_string = symmetry.split()[0]
 	if(symmetry_string[0]  == "c"):
 		if(phi2 == 359.99):
 			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2/int(symmetry_string[1:])+ant, method, phiEqpsi)
@@ -1219,8 +1219,8 @@ def get_input_from_string(str_input):
 	"""
 		Extract input numbers from a given string
 	"""
-	from re import split
-	qq = split(" |,",str_input)
+	import re
+	qq = re.split(" |,",str_input)
 	for i in range(len(qq)-1, -1, -1):
 		if(qq[i] == ""):  del qq[i]
 	o = []
@@ -1779,7 +1779,7 @@ def read_text_row(fnam, format="", skip=";"):
 		for j in range(len(strg)):
 			if(strg[j] == skip):	com_line = True
 		if com_line == False:
-			word=split(strg)
+			word=strg.split()
 			if format == "s" :
 				key = int(word[1])
 				if key != len(word) - 2:
@@ -1854,7 +1854,7 @@ def read_text_file(file_name, ncol = 0):
 	data = []
 	while len(line) > 0:
 		if ncol == -1:
-			vdata = split(line)
+			vdata = line.split()
 			if data == []:
 				for i in range(len(vdata)):
 					try:     data.append([int(vdata[i])])
@@ -1868,7 +1868,7 @@ def read_text_file(file_name, ncol = 0):
 						try:  data[i].append(float(vdata[i]))
 						except:  data[i].append(vdata[i])
 		else:
-			vdata = split(line)[ncol]
+			vdata = line.split()[ncol]
 			try:     data.append(int(vdata))
 			except:
 				try:  	data.append(float(vdata))
@@ -3225,7 +3225,7 @@ def read_fsc( filename ):
 	fscc = None
 	line = f.readline()
 	while len(line) > 0:
-		items = split( line )
+		items =  line.split()
 		if fscc is None:
 			fscc = [None]*len(items)
 			for i in range( len(items) ):
@@ -4981,6 +4981,7 @@ class iterImagesStack(object):
 from pickle import dumps,loads
 from zlib import compress,decompress
 from struct import pack,unpack
+import pickle
 
 def pack_message(data):
 	"""Convert data for transmission efficiently"""
@@ -4999,8 +5000,8 @@ def unpack_message(msg):
 
 	if msg[0]=="C" : return decompress((msg[1:]).tostring())
 	elif msg[0]=="S" : return (msg[1:]).tostring()
-	elif msg[0]=="Z" : return loads(decompress((msg[1:]).tostring()))
-	elif msg[0]=="O" : return loads((msg[1:]).tostring())
+	elif msg[0]=="Z" : return pickle.loads(decompress((msg[1:]).tostring()))
+	elif msg[0]=="O" : return pickle.loads((msg[1:]).tostring())
 	else :
 		print("ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20]))
 		raise Exception("unpack_message")
@@ -6715,7 +6716,7 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 	from statistics import k_means_match_clusters_asg_new
 	from numpy import array
 
-	sort3d_rootdir_list = split(SORT3D_rootdirs)
+	sort3d_rootdir_list = SORT3D_rootdirs.split()
 	dict1              = []
 	maximum_elements   = 0
 	for index_sort3d in range(len(sort3d_rootdir_list)):
