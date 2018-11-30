@@ -31,16 +31,28 @@ from __future__ import print_function
 #
 #
 
-
-import os
+import applications
 import global_def
-from global_def import *
-from optparse import OptionParser
+import optparse
+import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " volume ref_volume --discrepancy=ccc --ang_scale=angular range  --shift_scale=shift range  --mag_scale=magnification range --r=radius of a mask"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--discrepancy", type="string", default="ccc", help="  Discrepancy measure used: ccc - crosscorrelation coefficient (default), SqEuclidean - Euclidean squared) ")
 	parser.add_option("--ang_scale",    type='float', default=None, help="  Correct angles will be within +/- ang_scale of initial values")
 	parser.add_option("--shift_scale",  type='float', default=None, help="  Correct shifts will be within +/- shift_scale of initial values")
@@ -49,37 +61,37 @@ def main():
 	(options, args) = parser.parse_args()    	
 
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
 
 	if len(args) != 2:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
 		exit(1)
 	elif(options.ang_scale != None and options.shift_scale != None and options.mag_scale != None):
-		from applications  import ali_vol_scale
+		pass#IMPORTIMPORTIMPORT from applications  import ali_vol_scale
 		global_def.BATCH = True
-		ali_vol_scale(args[0], args[1], options.ang_scale, options.shift_scale, options.mag_scale, options.r, options.discrepancy)
+		applications.ali_vol_scale(args[0], args[1], options.ang_scale, options.shift_scale, options.mag_scale, options.r, options.discrepancy)
 		global_def.BATCH = False
 	elif(options.ang_scale is None and options.shift_scale is None and options.mag_scale != None):
-		from applications  import ali_vol_only_scale
+		pass#IMPORTIMPORTIMPORT from applications  import ali_vol_only_scale
 		global_def.BATCH = True
-		ali_vol_only_scale(args[0], args[1], options.mag_scale, options.r, options.discrepancy)
+		applications.ali_vol_only_scale(args[0], args[1], options.mag_scale, options.r, options.discrepancy)
 		global_def.BATCH = False
 	elif(options.ang_scale is None and options.shift_scale != None and options.mag_scale is None):
-		from applications  import ali_vol_shift
+		pass#IMPORTIMPORTIMPORT from applications  import ali_vol_shift
 		global_def.BATCH = True
-		ali_vol_shift(args[0], args[1], options.shift_scale, options.r, options.discrepancy)
+		applications.ali_vol_shift(args[0], args[1], options.shift_scale, options.r, options.discrepancy)
 		global_def.BATCH = False
 	elif(options.ang_scale != None and options.shift_scale != None and options.mag_scale is None):
-		from applications  import ali_vol
+		pass#IMPORTIMPORTIMPORT from applications  import ali_vol
 		global_def.BATCH = True
-		ali_vol(args[0], args[1], options.ang_scale, options.shift_scale, options.r, options.discrepancy)
+		applications.ali_vol(args[0], args[1], options.ang_scale, options.shift_scale, options.r, options.discrepancy)
 		global_def.BATCH = False
 	elif(options.ang_scale != None and options.shift_scale is None and options.mag_scale is None):
-		from applications  import ali_vol_rotate
+		pass#IMPORTIMPORTIMPORT from applications  import ali_vol_rotate
 		global_def.BATCH = True
-		ali_vol_rotate(args[0], args[1], options.ang_scale, options.r, options.discrepancy)
+		applications.ali_vol_rotate(args[0], args[1], options.ang_scale, options.r, options.discrepancy)
 		global_def.BATCH = False
 		
 if __name__ == "__main__":

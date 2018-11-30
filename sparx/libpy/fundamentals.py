@@ -29,9 +29,28 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+import EMAN2_cppwrap
+import filter
+import global_def
+import math
+import numpy
+import os
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import filter
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import numpy as np
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import string
+pass#IMPORTIMPORTIMPORT import types
+pass#IMPORTIMPORTIMPORT import utilities
 from builtins import range
 from builtins import object
-from global_def import *
+pass#IMPORTIMPORTIMPORT from global_def import *
 
 def absi(e):
 	if e.is_complex():
@@ -49,8 +68,8 @@ def acf(e, center=True):
 		Output
 			circulant autocorrelation function of the input image. Real.
 	"""
-	from EMAN2 import autocorrelation, fp_flag
-	return autocorrelation(e, fp_flag.CIRCULANT, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import autocorrelation, fp_flag
+	return EMAN2_cppwrap.autocorrelation(e, EMAN2_cppwrap.fp_flag.CIRCULANT, center)
 
 def acfn(e, center=True):
 	"""
@@ -62,12 +81,12 @@ def acfn(e, center=True):
 		Output
 			normalized circulant autocorrelation function of an input image. Real.
 	"""
-	from EMAN2 import autocorrelation, fp_flag
-	return autocorrelation(e, fp_flag.CIRCULANT_NORMALIZED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import autocorrelation, fp_flag
+	return EMAN2_cppwrap.autocorrelation(e, EMAN2_cppwrap.fp_flag.CIRCULANT_NORMALIZED, center)
 
 def acfp(e, center=True):
-	from EMAN2 import autocorrelation, fp_flag
-	return autocorrelation(e, fp_flag.PADDED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import autocorrelation, fp_flag
+	return EMAN2_cppwrap.autocorrelation(e, EMAN2_cppwrap.fp_flag.PADDED, center)
 
 def acfnp(e, center=True):
 	"""
@@ -79,8 +98,8 @@ def acfnp(e, center=True):
 		Output
 			normalized autocorrelation function of the input image. Real. 
 	"""
-	from EMAN2 import autocorrelation, fp_flag
-	return autocorrelation(e, fp_flag.PADDED_NORMALIZED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import autocorrelation, fp_flag
+	return EMAN2_cppwrap.autocorrelation(e, EMAN2_cppwrap.fp_flag.PADDED_NORMALIZED, center)
 
 def acfpl(e, center=True):
 	"""
@@ -93,8 +112,8 @@ def acfpl(e, center=True):
 			normalized autocorrelation function of the input image. Real. 
 			
 	"""
-	from EMAN2 import autocorrelation, fp_flag
-	return autocorrelation(e, fp_flag.PADDED_LAG, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import autocorrelation, fp_flag
+	return EMAN2_cppwrap.autocorrelation(e, EMAN2_cppwrap.fp_flag.PADDED_LAG, center)
 
 def acfnpl(e, center=True):
 	"""
@@ -106,11 +125,11 @@ def acfnpl(e, center=True):
 		Output
 			autocorrelation function of the input image. Real. 
 	"""
-	from EMAN2 import autocorrelation, fp_flag
-	return autocorrelation(e, fp_flag.PADDED_NORMALIZED_LAG, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import autocorrelation, fp_flag
+	return EMAN2_cppwrap.autocorrelation(e, EMAN2_cppwrap.fp_flag.PADDED_NORMALIZED_LAG, center)
 
 def __buildweights(m, kb):
-	weights = EMData()
+	weights = EMAN2_cppwrap.EMData()
 	weights.set_size(m,m,1)
 	for iy in range(m):
 		wy = kb.sinhwin(iy-m//2)
@@ -127,8 +146,8 @@ def ccf(e, f, center=True):
 	Input images may be real or complex.  Output image is real.
 	1-D, 2-D, or 3-D images supported.
 	"""
-	from EMAN2 import correlation, fp_flag
-	return correlation(e,f,fp_flag.CIRCULANT, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import correlation, fp_flag
+	return EMAN2_cppwrap.correlation(e,f,EMAN2_cppwrap.fp_flag.CIRCULANT, center)
 
 def ccfn(e, f, center=True):
 	"""
@@ -141,8 +160,8 @@ def ccfn(e, f, center=True):
 		Output
 			normalized circulant cross-correlation function between image and ref. Real.
 	"""
-	from EMAN2 import correlation, fp_flag
-	return correlation(e,f,fp_flag.CIRCULANT_NORMALIZED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import correlation, fp_flag
+	return EMAN2_cppwrap.correlation(e,f,EMAN2_cppwrap.fp_flag.CIRCULANT_NORMALIZED, center)
 
 def ccfp(e, f, center=True):
 	"""
@@ -155,8 +174,8 @@ def ccfp(e, f, center=True):
 		Output
 			cross-correlation function between image and ref. Real.
 	"""
-	from EMAN2 import correlation, fp_flag
-	return correlation(e,f,fp_flag.PADDED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import correlation, fp_flag
+	return EMAN2_cppwrap.correlation(e,f,EMAN2_cppwrap.fp_flag.PADDED, center)
 
 def ccfnp(e, f, center=True):
 	"""
@@ -169,8 +188,8 @@ def ccfnp(e, f, center=True):
 		Output
 			normalized cross-correlation function between image and ref. Real.
 	"""
-	from EMAN2 import correlation, fp_flag
-	return correlation(e,f,fp_flag.PADDED_NORMALIZED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import correlation, fp_flag
+	return EMAN2_cppwrap.correlation(e,f,EMAN2_cppwrap.fp_flag.PADDED_NORMALIZED, center)
 
 def ccfpl(e, f, center=True):
 	"""
@@ -183,8 +202,8 @@ def ccfpl(e, f, center=True):
 		Output
 			cross-correlation function between image and ref. Real. 
 	"""
-	from EMAN2 import correlation, fp_flag
-	return correlation(e,f, fp_flag.PADDED_LAG, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import correlation, fp_flag
+	return EMAN2_cppwrap.correlation(e,f, EMAN2_cppwrap.fp_flag.PADDED_LAG, center)
 
 def ccfnpl(e, f, center=True):
 	"""
@@ -195,8 +214,8 @@ def ccfnpl(e, f, center=True):
 			ref: second input image (real) 
 			center: if set to True (default), the origin of the result is at the center
 	"""
-	from EMAN2 import correlation, fp_flag
-	return correlation(e,f,fp_flag.PADDED_NORMALIZED_LAG, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import correlation, fp_flag
+	return EMAN2_cppwrap.correlation(e,f,EMAN2_cppwrap.fp_flag.PADDED_NORMALIZED_LAG, center)
     
 # Convolution functions
 def cnv(e, f, center=True):
@@ -210,8 +229,8 @@ def cnv(e, f, center=True):
 		Output
 			circulant convolution function between image and ref. Real.
 	"""
-	from EMAN2 import convolution, fp_flag
-	return convolution(e,f,fp_flag.CIRCULANT, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import convolution, fp_flag
+	return EMAN2_cppwrap.convolution(e,f,EMAN2_cppwrap.fp_flag.CIRCULANT, center)
 
 def cnvn(e, f, center=True):
 	"""
@@ -224,8 +243,8 @@ def cnvn(e, f, center=True):
 		Output
 			normalized circulant convolution function between image and ref. Real. 
 	"""
-	from EMAN2 import convolution, fp_flag
-	return convolution(e,f,fp_flag.CIRCULANT_NORMALIZED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import convolution, fp_flag
+	return EMAN2_cppwrap.convolution(e,f,EMAN2_cppwrap.fp_flag.CIRCULANT_NORMALIZED, center)
 
 def cnvp(e, f, center=True):
 	"""
@@ -238,8 +257,8 @@ def cnvp(e, f, center=True):
 		Output
 			convolution function between image and ref. Real.
 	"""
-	from EMAN2 import convolution, fp_flag
-	return convolution(e,f,fp_flag.PADDED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import convolution, fp_flag
+	return EMAN2_cppwrap.convolution(e,f,EMAN2_cppwrap.fp_flag.PADDED, center)
 
 def cnvnp(e, f, center=True):
 	"""
@@ -252,8 +271,8 @@ def cnvnp(e, f, center=True):
 		Output
 			normalized convolution function between image and ref. Real. 
 	"""
-	from EMAN2 import convolution, fp_flag
-	return convolution(e,f,fp_flag.PADDED_NORMALIZED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import convolution, fp_flag
+	return EMAN2_cppwrap.convolution(e,f,EMAN2_cppwrap.fp_flag.PADDED_NORMALIZED, center)
 
 def cnvpl(e, f, center=True):
 	"""
@@ -266,8 +285,8 @@ def cnvpl(e, f, center=True):
 		Output
 			convolution function between image and ref. Real. 
 	"""
-	from EMAN2 import convolution, fp_flag
-	return convolution(e,f,fp_flag.PADDED_LAG, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import convolution, fp_flag
+	return EMAN2_cppwrap.convolution(e,f,EMAN2_cppwrap.fp_flag.PADDED_LAG, center)
 
 def cnvnpl(e, f, center=True):
 	"""
@@ -280,8 +299,8 @@ def cnvnpl(e, f, center=True):
 		Output
 			convolution function between image and ref. Real.
 	"""
-	from EMAN2 import convolution, fp_flag
-	return convolution(e,f,fp_flag.PADDED_NORMALIZED_LAG, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import convolution, fp_flag
+	return EMAN2_cppwrap.convolution(e,f,EMAN2_cppwrap.fp_flag.PADDED_NORMALIZED_LAG, center)
     
     
 # Selfcorrelation functions
@@ -295,8 +314,8 @@ def scf(e, center=True):
 		Output
 			circulant self-correlation function of the input image. Real.
 	"""
-	from EMAN2 import self_correlation, fp_flag
-	return self_correlation(e, fp_flag.CIRCULANT, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import self_correlation, fp_flag
+	return EMAN2_cppwrap.self_correlation(e, EMAN2_cppwrap.fp_flag.CIRCULANT, center)
 
 def scfn(e, center=True):
 	"""
@@ -308,8 +327,8 @@ def scfn(e, center=True):
 		Output
 			normalized circulant self-correlation function of an input image. Real.
 	"""
-	from EMAN2 import self_correlation, fp_flag
-	return self_correlation(e, fp_flag.CIRCULANT_NORMALIZED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import self_correlation, fp_flag
+	return EMAN2_cppwrap.self_correlation(e, EMAN2_cppwrap.fp_flag.CIRCULANT_NORMALIZED, center)
 
 def scfp(e, center=True):
 	"""
@@ -321,8 +340,8 @@ def scfp(e, center=True):
 		Output
 			self-correlation function of the input image. Real. 
 	"""
-	from EMAN2 import self_correlation, fp_flag
-	return self_correlation(e, fp_flag.PADDED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import self_correlation, fp_flag
+	return EMAN2_cppwrap.self_correlation(e, EMAN2_cppwrap.fp_flag.PADDED, center)
 
 def scfnp(e, center=True):
 	"""
@@ -334,8 +353,8 @@ def scfnp(e, center=True):
 		Output
 			normalized self-correlation function of the input image. Real.
 	"""
-	from EMAN2 import self_correlation, fp_flag
-	return self_correlation(e, fp_flag.PADDED_NORMALIZED, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import self_correlation, fp_flag
+	return EMAN2_cppwrap.self_correlation(e, EMAN2_cppwrap.fp_flag.PADDED_NORMALIZED, center)
 
 def scfpl(e, center=True):
 	"""
@@ -347,8 +366,8 @@ def scfpl(e, center=True):
 		Output
 			self-correlation function of the input image. Real.
 	"""
-	from EMAN2 import self_correlation, fp_flag
-	return self_correlation(e, fp_flag.PADDED_LAG, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import self_correlation, fp_flag
+	return EMAN2_cppwrap.self_correlation(e, EMAN2_cppwrap.fp_flag.PADDED_LAG, center)
 
 def scfnpl(e, center=True):
 	"""
@@ -360,8 +379,8 @@ def scfnpl(e, center=True):
 		Output
 			self-correlation function of the input image. Real.
 	"""
-	from EMAN2 import self_correlation, fp_flag
-	return self_correlation(e, fp_flag.PADDED_NORMALIZED_LAG, center)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import self_correlation, fp_flag
+	return EMAN2_cppwrap.self_correlation(e, EMAN2_cppwrap.fp_flag.PADDED_NORMALIZED_LAG, center)
  
 def cyclic_shift(img, dx=0, dy=0, dz=0):
 	"""
@@ -376,7 +395,7 @@ def cyclic_shift(img, dx=0, dy=0, dz=0):
 			output image
 	"""
 	e = img.copy()
-	Util.cyclicshift(e,{"dx":dx,"dy":dy,"dz":dz})
+	EMAN2_cppwrap.Util.cyclicshift(e,{"dx":dx,"dy":dy,"dz":dz})
 	return e
 
 def mirror(img, axis = 'x'):
@@ -444,7 +463,7 @@ def fpol(image, nnx, nny=1, nnz=1, RetReal = True, normalize = True):
 		Output
 			the output interpolated up image
 	"""
-	from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
 	
 	nx = image.get_xsize()
 	ny = image.get_ysize()
@@ -486,44 +505,44 @@ def fshift(e, delx=0, dely=0, delz=0):
 		Output
 			output image
 	"""
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 
-	params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(delx), "y_shift" : float(dely), "z_shift" : float(delz) }
-	return Processor.EMFourierFilter(e, params)
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.SHIFT,	"x_shift" : float(delx), "y_shift" : float(dely), "z_shift" : float(delz) }
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
 
 def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, frequency_high=0):
 	"""
 		Window 2D image to FFT-friendly size, apply Butterworth low pass filter,
 		and decimate image by integer factor
 	"""
-	from filter       import filt_btwl
-	from fundamentals import smallprime
-	from utilities    import get_image
-	if type(img)     == str:	img=get_image(img)
+	pass#IMPORTIMPORTIMPORT from filter       import filt_btwl
+	pass#IMPORTIMPORTIMPORT from fundamentals import smallprime
+	pass#IMPORTIMPORTIMPORT from utilities    import get_image
+	if type(img)     == str:	img=utilities.get_image(img)
 	nz       = img.get_zsize()
-	if( nz > 1):                    ERROR("This command works only for 2-D images", "image_decimate", 1)
-	if decimation    <= 1  : 	ERROR("Improper decimation ratio", "image_decimate", 1)
+	if( nz > 1):                    global_def.ERROR("This command works only for 2-D images", "image_decimate", 1)
+	if decimation    <= 1  : 	global_def.ERROR("Improper decimation ratio", "image_decimate", 1)
 	if(decimation    == 1.0): 	return  img.copy()
 	if frequency_low <= 0  :	
 		frequency_low     = 0.5/decimation-0.02
-		if frequency_low <= 0 : ERROR("Butterworth pass-band frequency is too low","image_decimation",1)			
+		if frequency_low <= 0 : global_def.ERROR("Butterworth pass-band frequency is too low","image_decimation",1)			
 		frequency_high    = min(0.5/decimation + 0.02, 0.499)
 	if fit_to_fft:
 		nx       = img.get_xsize()
 		ny       = img.get_ysize()
 		nx_fft_m = smallprime(nx)
 		ny_fft_m = smallprime(ny)
-		e        = Util.window(img, nx_fft_m, ny_fft_m, 1, 0,0,0)
-		e        = filt_btwl(e, frequency_low, frequency_high)
+		e        = EMAN2_cppwrap.Util.window(img, nx_fft_m, ny_fft_m, 1, 0,0,0)
+		e        = filter.filt_btwl(e, frequency_low, frequency_high)
 	else:
-		e        = filt_btwl(img, frequency_low, frequency_high)
-	return Util.decimate(e, int(decimation), int(decimation), 1)
+		e        = filter.filt_btwl(img, frequency_low, frequency_high)
+	return EMAN2_cppwrap.Util.decimate(e, int(decimation), int(decimation), 1)
 
 def subsample(image, subsample_rate=1.0):
 	if subsample_rate == 1.0: return  image.copy()
 	template_min = 15
 	frequency_cutoff = 0.5*subsample_rate
-	sb = Util.sincBlackman(template_min, frequency_cutoff, 1999) # 1999 taken directly from util_sparx.h
+	sb = EMAN2_cppwrap.Util.sincBlackman(template_min, frequency_cutoff, 1999) # 1999 taken directly from util_sparx.h
 	return image.downsample(sb, subsample_rate)
 
 def resample(img, sub_rate=0.5):
@@ -535,16 +554,16 @@ def resample(img, sub_rate=0.5):
 		fit_to_fft will change the ouput image size to an fft_friendly size
 	"""
 
-	from fundamentals import subsample
-	from utilities    import get_pixel_size, set_pixel_size
+	pass#IMPORTIMPORTIMPORT from fundamentals import subsample
+	pass#IMPORTIMPORTIMPORT from utilities    import get_pixel_size, set_pixel_size
 
 	if type(img) == str:
-		from utilities    import get_image
-		img = get_image(img)
+		pass#IMPORTIMPORTIMPORT from utilities    import get_image
+		img = utilities.get_image(img)
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
-	if( ny == 1):  ERROR("Only 2D or 3D images allowed","resample",1)
+	if( ny == 1):  global_def.ERROR("Only 2D or 3D images allowed","resample",1)
 	if sub_rate == 1.0: return  img.copy()
 	elif sub_rate < 1.0:
 		e = subsample(img, sub_rate)
@@ -557,42 +576,42 @@ def resample(img, sub_rate=0.5):
 			new_nz = int(ny*sub_rate+0.5)
 		if ( nx!=ny and nz==1 ):
 			nn = max(new_nx, new_ny)
-			e = Util.pad(img, nn, nn,  1, 0, 0, 0, "circumference")
+			e = EMAN2_cppwrap.Util.pad(img, nn, nn,  1, 0, 0, 0, "circumference")
 			e, kb = prepi(e)
-			e = Util.window( e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, sub_rate), new_nx, new_ny, 1, 0,0,0)
+			e = EMAN2_cppwrap.Util.window( e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, sub_rate), new_nx, new_ny, 1, 0,0,0)
 		 
 		elif ((nx!=ny or nx!=nz or ny!=nz) and nz>1):
 			nn = max(new_nx, new_ny,new_nz)
-			e = Util.pad(img, nn, nn,  nn, 0, 0, 0, "circumference")
+			e = EMAN2_cppwrap.Util.pad(img, nn, nn,  nn, 0, 0, 0, "circumference")
 			e, kb = prepi3D(e)
-			e = Util.window( e.rot_scale_conv_new_3D(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, kb, sub_rate), new_nx, new_ny, new_nz, 0,0,0)
+			e = EMAN2_cppwrap.Util.window( e.rot_scale_conv_new_3D(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, kb, sub_rate), new_nx, new_ny, new_nz, 0,0,0)
 		else:
 			if nz==1:
-				e, kb = prepi(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"))
+				e, kb = prepi(EMAN2_cppwrap.Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"))
 				e = e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, sub_rate)
 			else:
-				e, kb = prepi3D(Util.pad(img, new_nx, new_ny, new_nz, 0, 0, 0, "circumference"))
+				e, kb = prepi3D(EMAN2_cppwrap.Util.pad(img, new_nx, new_ny, new_nz, 0, 0, 0, "circumference"))
 				e = e.rot_scale_conv_new_3D(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, kb, sub_rate)
 
 	# Automatically adjust pixel size for ctf parameters
-	from utilities import get_pixel_size, set_pixel_size
-	apix = get_pixel_size(e)
+	pass#IMPORTIMPORTIMPORT from utilities import get_pixel_size, set_pixel_size
+	apix = utilities.get_pixel_size(e)
 	apix /= sub_rate
-	set_pixel_size(e, apix)
+	utilities.set_pixel_size(e, apix)
 	cc = e.get_attr_default("xform.projection", None)
 	if cc:
 		cp = cc.get_params("spider")
 		cp["tx"] *= sub_rate
 		cp["ty"] *= sub_rate
-		from utilities import set_params_proj
-		set_params_proj(e, [cp["phi"], cp["theta"], cp["psi"], -cp["tx"], -cp["ty"]]) # have to invert as set inverts them again
+		pass#IMPORTIMPORTIMPORT from utilities import set_params_proj
+		utilities.set_params_proj(e, [cp["phi"], cp["theta"], cp["psi"], -cp["tx"], -cp["ty"]]) # have to invert as set inverts them again
 	cc = e.get_attr_default("xform.align2d", None)
 	if cc:
 		cp = cc.get_params("2D")
 		cp["tx"] *= sub_rate
 		cp["ty"] *= sub_rate
-		from utilities import set_params2D
-		set_params2D(e, [cp["alpha"], cp["tx"], cp["ty"], cp["mirror"], cp["scale"]])
+		pass#IMPORTIMPORTIMPORT from utilities import set_params2D
+		utilities.set_params2D(e, [cp["alpha"], cp["tx"], cp["ty"], cp["mirror"], cp["scale"]])
 
 	return 	e
 	
@@ -607,18 +626,18 @@ def fdownsample(img, sub_rate=0.5, RetReal = True):
 		fit_to_fft will change the ouput image size to an fft_friendly size
 	"""
 
-	from fundamentals import fdecimate
-	from utilities    import get_pixel_size, set_pixel_size
+	pass#IMPORTIMPORTIMPORT from fundamentals import fdecimate
+	pass#IMPORTIMPORTIMPORT from utilities    import get_pixel_size, set_pixel_size
 
 	if type(img) == str:
-		from utilities    import get_image
-		img = get_image(img)
+		pass#IMPORTIMPORTIMPORT from utilities    import get_image
+		img = utilities.get_image(img)
 	nx = img.get_xsize()
 	if img.is_complex():
 		nx -= (2-nx%2)
 	ny = img.get_ysize()
 	nz = img.get_zsize()
-	if( ny == 1):  ERROR("Only 2D or 3D images allowed","resample",1)
+	if( ny == 1):  global_def.ERROR("Only 2D or 3D images allowed","resample",1)
 	if sub_rate == 1.0: return  img.copy()
 	elif sub_rate < 1.0:
 		nnx = int(nx*sub_rate+0.5)
@@ -626,7 +645,7 @@ def fdownsample(img, sub_rate=0.5, RetReal = True):
 		nnz = int(nz*sub_rate+0.5)
 		e = fdecimate(img, nnx, nny, nnz, RetReal = RetReal)
 	else:  #  sub_rate>1
-		ERROR("fdownsample","upscaling not implemented",1)
+		global_def.ERROR("fdownsample","upscaling not implemented",1)
 		"""
 		new_nx = int(nx*sub_rate+0.5)
 		new_ny = int(ny*sub_rate+0.5)
@@ -655,24 +674,24 @@ def fdownsample(img, sub_rate=0.5, RetReal = True):
 		"""
 
 	# Automatically adjust pixel size for ctf parameters
-	from utilities import get_pixel_size, set_pixel_size
-	apix = get_pixel_size(e)
+	pass#IMPORTIMPORTIMPORT from utilities import get_pixel_size, set_pixel_size
+	apix = utilities.get_pixel_size(e)
 	apix /= sub_rate
-	set_pixel_size(e, apix)
+	utilities.set_pixel_size(e, apix)
 	cc = e.get_attr_default("xform.projection", None)
 	if cc:
 		cp = cc.get_params("spider")
 		cp["tx"] *= sub_rate
 		cp["ty"] *= sub_rate
-		from utilities import set_params_proj
-		set_params_proj(e, [cp["phi"], cp["theta"], cp["psi"], -cp["tx"], -cp["ty"]]) # have to invert as set inverts them again
+		pass#IMPORTIMPORTIMPORT from utilities import set_params_proj
+		utilities.set_params_proj(e, [cp["phi"], cp["theta"], cp["psi"], -cp["tx"], -cp["ty"]]) # have to invert as set inverts them again
 	cc = e.get_attr_default("xform.align2d", None)
 	if cc:
 		cp = cc.get_params("2D")
 		cp["tx"] *= sub_rate
 		cp["ty"] *= sub_rate
-		from utilities import set_params2D
-		set_params2D(e, [cp["alpha"], cp["tx"], cp["ty"], cp["mirror"], cp["scale"]])
+		pass#IMPORTIMPORTIMPORT from utilities import set_params2D
+		utilities.set_params2D(e, [cp["alpha"], cp["tx"], cp["ty"], cp["mirror"], cp["scale"]])
 
 	return 	e
 
@@ -687,7 +706,7 @@ def prepf(image, npad = 2):
 			imageft: Fourier space image prepared for Fourier interpolation rotation/shift
 	"""
 	
-	cimage = Util.pad(image,2*(image.get_xsize()),2*(image.get_ysize()),1,0,0,0,"0.0")
+	cimage = EMAN2_cppwrap.Util.pad(image,2*(image.get_xsize()),2*(image.get_ysize()),1,0,0,0,"0.0")
 	cimage.set_attr("npad",npad)
 	cimage.div_sinc(1)
 	cimage = cimage.norm_pad(False, 1)
@@ -707,7 +726,7 @@ def prepi(image, RetReal = True):
 			imageft: real space image prepared for gridding rotation and shift by convolution
 			kb: interpolants (tabulated Kaiser-Bessel function)
 	"""
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 
 	M = image.get_xsize()
 	# pad two times
@@ -718,31 +737,31 @@ def prepi(image, RetReal = True):
 	alpha = 1.75
 	r = M/2
 	v = K/2.0/N
-	kb = Util.KaiserBessel(alpha, K, r, v, N)
+	kb = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, r, v, N)
 	# first pad it with zeros in Fourier space
 	q = image.FourInterpol(N, N, 1, 0)
-	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	params = {"filter_type": EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 	          "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
-	q = Processor.EMFourierFilter(q, params)
-	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+	q = EMAN2_cppwrap.Processor.EMFourierFilter(q, params)
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
 		"cutoff_abs" : 0.25, "dopad" : False}
-	q = Processor.EMFourierFilter(q, params)
+	q = EMAN2_cppwrap.Processor.EMFourierFilter(q, params)
 	if RetReal: return fft(q), kb
 	else:  return q, kb
 
 
 def prep_refim_gridding(refim, wr, numr, mode = "F"):
-	from fundamentals import prepi
+	pass#IMPORTIMPORTIMPORT from fundamentals import prepi
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
 	cnx = nx//2+1
 	cny = ny//2+1
 	#precalculate rings
 	temp,kb = prepi(refim)
-	crefim = Util.Polar2Dmi(temp, cnx, cny, numr, mode, kb)
-	Util.Normalize_ring(cimage, numr, 0 )
-	Util.Frngs(crefim, numr)
-	Util.Applyws(crefim, numr, wr)
+	crefim = EMAN2_cppwrap.Util.Polar2Dmi(temp, cnx, cny, numr, mode, kb)
+	EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
+	EMAN2_cppwrap.Util.Frngs(crefim, numr)
+	EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
 	return  crefim,kb
 
 def prepi3D(image):
@@ -755,7 +774,7 @@ def prepi3D(image):
 			imageft: image prepared for gridding rotation and shift
 			kb: interpolants (tabulated Kaiser-Bessel function)
 	"""
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 
 	M = image.get_xsize()
 	# padding size:
@@ -766,15 +785,15 @@ def prepi3D(image):
 	alpha = 1.75
 	r = M/2
 	v = K/2.0/N
-	kb = Util.KaiserBessel(alpha, K, r, v, N)
+	kb = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, r, v, N)
 	# pad with zeros in Fourier space:
 	q = image.FourInterpol(N, N, N, 0)
-	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	params = {"filter_type": EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 	          "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
-	q = Processor.EMFourierFilter(q, params)
-	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+	q = EMAN2_cppwrap.Processor.EMFourierFilter(q, params)
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
 		"cutoff_abs" : 0.25, "dopad" : False}
-	q = Processor.EMFourierFilter(q, params)
+	q = EMAN2_cppwrap.Processor.EMFourierFilter(q, params)
 	return fft(q), kb
 
 def prepg(image, kb):
@@ -787,7 +806,7 @@ def prepg(image, kb):
 		Output
 			imageft: image prepared for gridding rotation and shift
 	"""
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 
 	M = image.get_xsize()
 	# padd two times
@@ -800,9 +819,9 @@ def prepg(image, kb):
 	v = K/2.0/N
 	# first pad it with zeros in Fourier space
 	o = image.FourInterpol(2*M,2*M,1,0)
-	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 		  "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
-	q = Processor.EMFourierFilter(o,params)
+	q = EMAN2_cppwrap.Processor.EMFourierFilter(o,params)
 	return  fft(q)
 	
 def ramp(inputimage):
@@ -840,9 +859,9 @@ def rot_avg_image(image_to_be_averaged):
 	Rotational average
 	Returns a 2-D or 3-D image containing a rotational average of image e
 	"""
-	import types
-	from utilities import get_im
-	if type(image_to_be_averaged) is bytes: image_to_be_averaged = get_im(image_to_be_averaged)
+	pass#IMPORTIMPORTIMPORT import types
+	pass#IMPORTIMPORTIMPORT from utilities import get_im
+	if type(image_to_be_averaged) is bytes: image_to_be_averaged = utilities.get_im(image_to_be_averaged)
 	return image_to_be_averaged.rotavg_i()
 
 def ro_textfile(e, filename, helpful_string=""):
@@ -862,8 +881,8 @@ def rops(e):
 	   Returns a 1-D image containing a rotational average
 	   of the periodogram of image e.
 	"""
-	from EMAN2 import periodogram
-	ps = periodogram(e)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import periodogram
+	ps = EMAN2_cppwrap.periodogram(e)
 	return ps.rotavg()
 
 def rops_textfile(e, filename, helpful_string="", lng = False):
@@ -871,17 +890,17 @@ def rops_textfile(e, filename, helpful_string="", lng = False):
 	   Saves a text file (suitable for gnuplot) of the rotational average 
 	   of the periodogram of image e.
 	"""
-	from EMAN2 import periodogram
+	pass#IMPORTIMPORTIMPORT from EMAN2 import periodogram
 	out = open(filename, "w")
 	if helpful_string != "": out.write("#Rotational average: %s\n" % (helpful_string))
-	ps = periodogram(e)
+	ps = EMAN2_cppwrap.periodogram(e)
 	f = ps.rotavg()
 	nr = f.get_xsize()
 	table = [0.0]*nr
 	for ir in range(nr): table[ir] = f.get_value_at(ir)
 	if lng:
-		from math import log
-		for ir in range(1,nr): table[ir] = log(table[ir])
+		pass#IMPORTIMPORTIMPORT from math import log
+		for ir in range(1,nr): table[ir] = numpy.log(table[ir])
 		table[0] = table[1]
 	for ir in range(nr): out.write("%d\t%12.5g\n" % (ir, table[ir]))
 	out.close()
@@ -892,15 +911,15 @@ def rops_table(img, lng = False):
 		Calculate 1D rotationally averaged 
 		power spectrum and save it in list
 	"""
-	from EMAN2 import periodogram
-	e = periodogram(img)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import periodogram
+	e = EMAN2_cppwrap.periodogram(img)
 	ro = e.rotavg()
 	nr = ro.get_xsize()
 	table = [0.0]*nr
 	for ir in range(nr): table[ir] = ro.get_value_at(ir)
 	if lng:
-		from math import log10
-		for ir in range(1,nr): table[ir] = log10(table[ir])
+		pass#IMPORTIMPORTIMPORT from math import log10
+		for ir in range(1,nr): table[ir] = numpy.log10(table[ir])
 		table[0] = table[1]
 	return table
 
@@ -909,36 +928,36 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 		Calculate 1D rotationally averaged power spectra from
 		image stack listed in a directory
 	"""
-	from EMAN2 import periodogram
-	import os
+	pass#IMPORTIMPORTIMPORT from EMAN2 import periodogram
+	pass#IMPORTIMPORTIMPORT import os
 	flist = os.listdir(indir)
 	print(flist)
 	if os.path.exists(output_dir) is False: os.mkdir(output_dir)
 	for i, v in enumerate(flist):
 		(filename, filextension) = os.path.splitext(v)
-		nima = EMUtil.get_image_count(os.path.join(indir,v))
+		nima = EMAN2_cppwrap.EMUtil.get_image_count(os.path.join(indir,v))
 		print(nima)
 		for im in range(nima):
-			e = EMData()
+			e = EMAN2_cppwrap.EMData()
 			file_name = os.path.join(indir,v)
 			e.read_image(file_name, im)
-			tmp1 = periodogram(e)
+			tmp1 = EMAN2_cppwrap.periodogram(e)
 			tmp  = tmp1.rotavg()
 			if im == 0:
-				sum_ima  = model_blank(tmp.get_xsize())
+				sum_ima  = utilities.model_blank(tmp.get_xsize())
 				sum_ima += tmp
 			else :  sum_ima += tmp
 		table = []
 		nr = sum_ima.get_xsize()
 		for ir in range(nr):  table.append([sum_ima.get_value_at(ir)])
-		drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
+		utilities.drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
 
 
 def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	"""Rotate and shift an image using gridding
 	"""
-	from math import radians
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from math import radians
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 
 	M = image.get_xsize()
 	alpha = 1.75
@@ -948,21 +967,21 @@ def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	v = K/2.0/N
 	# first pad it with zeros in Fourier space
 	o = image.FourInterpol(N,N,1,0)
-	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
-	q = Processor.EMFourierFilter(o,params)
+	q = EMAN2_cppwrap.Processor.EMFourierFilter(o,params)
 	o = fft(q)
 
 	# gridding rotation
-	return o.rot_scale_conv(radians(ang), dx, dy, kb, scale)
+	return o.rot_scale_conv(numpy.radians(ang), dx, dy, kb, scale)
 
 '''
 def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	"""
 		Rotate and shift an image using gridding in Fourier space.
 	"""
-	from EMAN2 import Processor
-	from fundamentals import fftip, fft
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from fundamentals import fftip, fft
 
 	nx = image.get_xsize()
 	# split shift into integer and fractional parts
@@ -1005,9 +1024,9 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	"""
 		Rotate and shift an image using gridding in Fourier space.
 	"""
-	from EMAN2 import Processor
-	from fundamentals import fftip, fft
-	from utilities import compose_transform2
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from fundamentals import fftip, fft
+	pass#IMPORTIMPORTIMPORT from utilities import compose_transform2
 
 	nx = image.get_xsize()
 	# prepare 
@@ -1017,20 +1036,20 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	alpha = 1.75
 	r = nx/2
 	v = K/2.0/N
-	kb = Util.KaiserBessel(alpha, K, r, v, N)
+	kb = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, r, v, N)
 
 	image1 = image.copy()  # This step is needed, otherwise image will be changed outside the function
 	# invert shifts
-	_, tsx, tsy, _ = compose_transform2(0.,sx,sy,1,-ang,0,0,1)
+	_, tsx, tsy, _ = utilities.compose_transform2(0.,sx,sy,1,-ang,0,0,1)
 	# split shift into integer and fractional parts
 	isx = int(tsx)
 	fsx = tsx - isx
 	isy = int(tsy)
 	fsy = tsy - isy
 	# shift image to the center
-	Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
+	EMAN2_cppwrap.Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
 	# bring back fractional shifts
-	_, tsx, tsy, _ = compose_transform2(0.,fsx,fsy,1,ang,0,0,1)
+	_, tsx, tsy, _ = utilities.compose_transform2(0.,fsx,fsy,1,ang,0,0,1)
 	# divide out gridding weights
 	image1.divkbsinh(kb)
 	# pad and center image, then FFT
@@ -1041,8 +1060,8 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	# gridding rotation
 	image1 = image1.fouriergridrot2d(ang, scale, kb)
 	if(fsx != 0.0 or fsy != 0.0):
-		params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(tsx), "y_shift" : float(tsy), "z_shift" : 0.0 }
-		image1 = Processor.EMFourierFilter(image1, params)
+		params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.SHIFT,	"x_shift" : float(tsx), "y_shift" : float(tsy), "z_shift" : 0.0 }
+		image1 = EMAN2_cppwrap.Processor.EMFourierFilter(image1, params)
 	# put the origin back in the corner
 	image1.center_origin_fft()
 	# undo FFT and remove padding (window)
@@ -1055,8 +1074,8 @@ def ft2polargrid(image, ring_length, nb, ne):
 	"""
 		resample to polar coordinates using gridding in Fourier space.
 	"""
-	from EMAN2 import Processor
-	from fundamentals import fftip, fft
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from fundamentals import fftip, fft
 
 	nx = image.get_xsize()
 	# prepare 
@@ -1066,7 +1085,7 @@ def ft2polargrid(image, ring_length, nb, ne):
 	alpha = 1.75
 	r = nx/2
 	v = K/2.0/N
-	kb = Util.KaiserBessel(alpha, K, r, v, N)
+	kb = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, r, v, N)
 
 	image1 = image.copy()  # This step is needed, otherwise image will be changed outside the function
 	# divide out gridding weights
@@ -1093,17 +1112,17 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		
 	"""
 
-	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift2D", 1)
+	if scale == 0.0 :  global_def.ERROR("0 scale factor encountered","rot_shift2D", 1)
 	if(interpolation_method):  use_method = interpolation_method
-	else:  use_method = interpolation_method_2D
+	else:  use_method = global_def.interpolation_method_2D
 
 	if(use_method == "linear" and mode == "cyclic"):
-		T  = Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
+		T  = EMAN2_cppwrap.Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
 		img = img.rot_scale_trans(T, None)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	elif(use_method == "linear" and mode == "background"):
-		T  = Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
+		T  = EMAN2_cppwrap.Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
 		img = img.rot_scale_trans_background(T, None)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
@@ -1116,23 +1135,23 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	elif(use_method == "gridding" and mode == "cyclic"): # previous rtshg
-		from math import radians
-		from fundamentals import prepi
+		pass#IMPORTIMPORTIMPORT from math import radians
+		pass#IMPORTIMPORTIMPORT from fundamentals import prepi
 		o, kb = prepi(img)
 		# gridding rotation
-		o = o.rot_scale_conv_new(radians(angle), sx, sy, kb, scale)
+		o = o.rot_scale_conv_new(numpy.radians(angle), sx, sy, kb, scale)
 		if  mirror: o.process_inplace("xform.mirror", {"axis":'x'})
 		return o
 	elif(use_method == "gridding" and mode == "background"): # previous rtshg
-		from math import radians
-		from fundamentals import prepi
+		pass#IMPORTIMPORTIMPORT from math import radians
+		pass#IMPORTIMPORTIMPORT from fundamentals import prepi
 		o, kb = prepi(img)
 		# gridding rotation
-		o = o.rot_scale_conv_new_background(radians(angle), sx, sy, kb, scale)
+		o = o.rot_scale_conv_new_background(numpy.radians(angle), sx, sy, kb, scale)
 		if  mirror: o.process_inplace("xform.mirror", {"axis":'x'})
 		return o	
 	elif(use_method == "ftgridding"): # previous rtshg
-		from fundamentals import gridrot_shift2D
+		pass#IMPORTIMPORTIMPORT from fundamentals import gridrot_shift2D
 		img = gridrot_shift2D(img, angle, sx, sy, scale)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
@@ -1140,7 +1159,7 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		img = img.fourier_rotate_shift2d(angle, sx, sy, 2)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
-	else:	ERROR("rot_shift_2D interpolation method is incorrectly set", "rot_shift_2D", 1)
+	else:	global_def.ERROR("rot_shift_2D interpolation method is incorrectly set", "rot_shift_2D", 1)
 
 def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scale = 1.0, mode="background"):
 	"""
@@ -1156,9 +1175,9 @@ def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scal
 			The rotated, shifted, and scaled output 3D volume
 	"""
 
-	if scale == 0.0 :  ERROR("0 scale factor encountered","rot_shift3D", 1)
-	T1 = Transform({'scale':scale})
-	T2 = Transform({'type': 'SPIDER', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
+	if scale == 0.0 :  global_def.ERROR("0 scale factor encountered","rot_shift3D", 1)
+	T1 = EMAN2_cppwrap.Transform({'scale':scale})
+	T2 = EMAN2_cppwrap.Transform({'type': 'SPIDER', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
 	T  = T1*T2
 	if (mode == "cyclic"): return image.rot_scale_trans(T, None)
 	else: return image.rot_scale_trans_background(T, None)
@@ -1175,27 +1194,27 @@ def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, s
 		'wrap': option for using wraparound pixels during translations
 	"""
 
-	if scale == 0.0 :  ERROR("scale=0 not allowed", "rot_shift3D_grid", 1)
+	if scale == 0.0 :  global_def.ERROR("scale=0 not allowed", "rot_shift3D_grid", 1)
 
 	if mode == "cyclic":
-		from math import radians
+		pass#IMPORTIMPORTIMPORT from math import radians
 		if kb == None:
 			o, kb = prepi3D(img)
 		else:
 			o = img
 		# gridding rotation/shift:
 		#if  mirror: o.process_inplace("xform.mirror", {"axis":'x'})
-		return o.rot_scale_conv_new_3D(radians(phi), radians(theta), radians(psi), sx, sy, sz, kb, scale, wrap)
+		return o.rot_scale_conv_new_3D(numpy.radians(phi), numpy.radians(theta), numpy.radians(psi), sx, sy, sz, kb, scale, wrap)
 	elif mode == "background":
-		from math import radians
+		pass#IMPORTIMPORTIMPORT from math import radians
 		if kb == None:
 			o, kb = prepi3D(img)
 		else:
 			o = img
 		# gridding rotation
 		#if  mirror: o.process_inplace("xform.mirror", {"axis":'x'})
-		return o.rot_scale_conv_new_background_3D(radians(phi), radians(theta), radians(psi), sx, sy, sz, kb, scale, wrap)	
-	else: ERROR("rot_shift3D_grid mode not valid", "rot_shift3D_grid", 1)
+		return o.rot_scale_conv_new_background_3D(numpy.radians(phi), numpy.radians(theta), numpy.radians(psi), sx, sy, sz, kb, scale, wrap)	
+	else: global_def.ERROR("rot_shift3D_grid mode not valid", "rot_shift3D_grid", 1)
 
 
 def rtshg(image, angle = 0.0, sx=0.0, sy=0.0, scale = 1.0):
@@ -1211,10 +1230,10 @@ def rtshg(image, angle = 0.0, sx=0.0, sy=0.0, scale = 1.0):
 		Output
 			the output rotated and shifted image
 	"""
-	from math import radians
+	pass#IMPORTIMPORTIMPORT from math import radians
 	o,kb = prepi(image)
 	# gridding rotation
-	return o.rot_scale_conv_new(radians(angle), sx, sy, kb, scale)
+	return o.rot_scale_conv_new(numpy.radians(angle), sx, sy, kb, scale)
 
 def rtshgkb(image, angle, sx, sy, kb, scale = 1.0):
 	"""
@@ -1227,9 +1246,9 @@ def rtshgkb(image, angle, sx, sy, kb, scale = 1.0):
 		Output
 			the output rotated and shifted image
 	"""
-	from math import radians
+	pass#IMPORTIMPORTIMPORT from math import radians
 	# gridding rotation
-	return image.rot_scale_conv_new(radians(angle), sx, sy, kb, scale)
+	return image.rot_scale_conv_new(numpy.radians(angle), sx, sy, kb, scale)
 	
 def smallprime(arbit_num, numprime=3):
 	primelist = [2,3,5,7,11,13,17,19,23]
@@ -1250,13 +1269,13 @@ def smallprime(arbit_num, numprime=3):
 	return nicenum
 
 def sinc2inv(nx):
-	from math import sqrt
+	pass#IMPORTIMPORTIMPORT from math import sqrt
 	s = sincinv(nx)
 	return [i*i for i in s]
 
 def sincinv(nx):
-	from math import pi,sin
-	cdf =pi/nx
+	pass#IMPORTIMPORTIMPORT from math import pi,sin
+	cdf =numpy.pi/nx
 	npad = 1
 	nxb = nx/2/npad
 	nxe = nxb + (nx/npad)%2
@@ -1264,36 +1283,36 @@ def sincinv(nx):
 	for i in range( -nxb, nxe):
 		if( i != 0 ):
 			rrr=abs(i)
-			s[i+nxb] = (rrr*cdf)/sin(rrr*cdf)
+			s[i+nxb] = (rrr*cdf)/numpy.sin(rrr*cdf)
 	return s
 
 def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	""" 
 		Calculate the power spectrum using Welch periodograms (overlapped periodogram)
 	"""
-	from fundamentals import window2d, ramp
-	from EMAN2 import periodogram
+	pass#IMPORTIMPORTIMPORT from fundamentals import window2d, ramp
+	pass#IMPORTIMPORTIMPORT from EMAN2 import periodogram
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nx_fft = smallprime(nx)
 	ny_fft = smallprime(ny)
 	x_gaussian_hi = 1./win_size
-	from filter    import filt_gaussh
-	e_fil = filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
+	pass#IMPORTIMPORTIMPORT from filter    import filt_gaussh
+	e_fil = filter.filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
 	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
 	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
 	x26 = int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
 	x29 = int(x39*((ny-2*edge_y)/win_size-1)+1)  # number of pieces vertical dim.(Y)
 	iz = 0	
-	pw2 = EMData()
+	pw2 = EMAN2_cppwrap.EMData()
 	for iy in range(1, x29+1):	
 		x21 = (win_size/x39)*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
 		for ix in  range(1, x26+1):			 
 			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
 			wi  = window2d(e_fil, win_size, win_size, "l", x22, x21)
 			iz  = iz+1
-			if (iz == 1): pw2  = periodogram(ramp(wi))
-			else:         pw2 += periodogram(ramp(wi))
+			if (iz == 1): pw2  = EMAN2_cppwrap.periodogram(ramp(wi))
+			else:         pw2 += EMAN2_cppwrap.periodogram(ramp(wi))
 	return  pw2/float(iz)
 
 def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256):
@@ -1302,7 +1321,7 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 		2. The tilt micrograph is rotated such that the tilt axis is vertical (along Y axis)
 		3. edge_x and edge_y are removed from the micrograph
 	""" 
-	from EMAN2 import periodogram
+	pass#IMPORTIMPORTIMPORT from EMAN2 import periodogram
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	num1 = int(nx-2*edge_x)
@@ -1319,16 +1338,16 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 	win_y = win_x
 	x_gaussian_hi = 1./win_x
 	del img
-	from filter import filt_gaussh
-	from utilities import drop_image, rot_image
+	pass#IMPORTIMPORTIMPORT from filter import filt_gaussh
+	pass#IMPORTIMPORTIMPORT from utilities import drop_image, rot_image
 	# The input img is rotated such that tilt axis is vertical
 	img2  = rot_image(img1,theta, 0, 0, 1.0,1.0)	
-	e_fil = filt_gaussh(img2, x_gaussian_hi)
+	e_fil = filter.filt_gaussh(img2, x_gaussian_hi)
 	del img1
 	del img2
 	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
 	x29 = int(x39*((ny)/win_y-1)+1)  # number of pieces vertical dim.(Y)
-	pw2 = EMData()
+	pw2 = EMAN2_cppwrap.EMData()
 	pw2_band = []
 	for ix in  range(1, num_bnd+1):
 		x22 = (win_x)*(ix-1)# x-direction it should start from 0 if edge_x =0
@@ -1337,8 +1356,8 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 			x21 = (win_y/x39)*(iy-1) #  y-direction it should start from 0 if edge_y=0	      			 
 			wi = window2d(e_fil,win_x, win_y,"l",x22, x21)
 			iz = iz+1
-			if (iz == 1): pw2  = periodogram(ramp(wi))
-			else:         pw2 += periodogram(ramp(wi))
+			if (iz == 1): pw2  = EMAN2_cppwrap.periodogram(ramp(wi))
+			else:         pw2 += EMAN2_cppwrap.periodogram(ramp(wi))
 		pw2/=float(iz)
 		# drop_image(pw2,"band%03d"%(ix))
 		pw2_band.append(pw2)	
@@ -1349,15 +1368,15 @@ def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	""" 
 		Calculate set of periodograms for tiles.  Returns a list.
 	"""
-	from fundamentals import window2d, ramp
-	from EMAN2 import periodogram
+	pass#IMPORTIMPORTIMPORT from fundamentals import window2d, ramp
+	pass#IMPORTIMPORTIMPORT from EMAN2 import periodogram
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nx_fft = smallprime(nx)
 	ny_fft = smallprime(ny)
 	x_gaussian_hi = 1./win_size
-	from filter    import filt_gaussh
-	e_fil = filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
+	pass#IMPORTIMPORTIMPORT from filter    import filt_gaussh
+	e_fil = filter.filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
 	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
 	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
 	x26 = int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
@@ -1368,9 +1387,9 @@ def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 		for ix in  range(1, x26+1):			 
 			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
 			wi  = ramp( window2d(e_fil, win_size, win_size, "l", x22, x21) )
-			st = Util.infomask(wi, None, True)
+			st = EMAN2_cppwrap.Util.infomask(wi, None, True)
 			wi = (wi - st[0])/st[1]*win_size
-			pw2.append(periodogram(wi))
+			pw2.append(EMAN2_cppwrap.periodogram(wi))
 	return  pw2
 
 
@@ -1384,17 +1403,17 @@ def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 	lx = img.get_xsize()
 	ly = img.get_ysize()
 	if(lx == isize_x and ly == isize_y):  return img.copy()
-	from EMAN2 import Region
-	if(opt == "l"): reg = Region(ix, iy, isize_x, isize_y)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Region
+	if(opt == "l"): reg = EMAN2_cppwrap.Region(ix, iy, isize_x, isize_y)
 	elif(opt == "c"):
 		mx = lx//2-isize_x//2
 		my = ly//2-isize_y//2
-		reg = Region(mx, my, isize_x, isize_y)
+		reg = EMAN2_cppwrap.Region(mx, my, isize_x, isize_y)
 	elif(opt == "a"):
 		mx = ix-isize_x//2
 		my = iy-isize_y//2
-		reg = Region(mx, my, isize_x, isize_y)
-	else:  ERROR("Unknown window2d option","window2d",1)
+		reg = EMAN2_cppwrap.Region(mx, my, isize_x, isize_y)
+	else:  global_def.ERROR("Unknown window2d option","window2d",1)
 	return img.get_clip(reg)
 
 # GOLDEN SEARCH CODE
@@ -1418,8 +1437,8 @@ def bracket(f,x1,h):
 	print("Bracket did not find a mimimum")        
  
 def goldsearch(f,a,b,tol=1.0e-9):
-	from math import log, ceil
-	nIter = int(ceil(-2.078087*log(tol/abs(b-a))))
+	pass#IMPORTIMPORTIMPORT from math import log, ceil
+	nIter = int(numpy.ceil(-2.078087*numpy.log(tol/abs(b-a))))
 	R = 0.618033989
 	C = 1.0 - R
 	# First telescoping
@@ -1443,7 +1462,7 @@ def goldsearch(f,a,b,tol=1.0e-9):
 #                 will fix the problem of rotation of a 0,0,0 direction.  It does not as one neeeds psi
 #                 in this case as well.  So, the only choice is to use small theta instead of exact 0,0,0 direction
 def rotate_params(params, transf):
-	from fundamentals import rotmatrix, recmat, rotmatrix
+	pass#IMPORTIMPORTIMPORT from fundamentals import rotmatrix, recmat, rotmatrix
 	matinv = rotmatrix( -transf[2], -transf[1], -transf[0] )
 	n = len(params)
 	cpar = [None]*n
@@ -1455,7 +1474,7 @@ def rotate_params(params, transf):
 
 """
 def rotmatrix(phi,theta,psi):
-	from math import sin,cos,radians
+	pass#IMPORTIMPORTIMPORT from math import sin,cos,radians
 	rphi   = radians(phi)
 	rtheta = radians(theta)
 	rpsi   = radians(psi)
@@ -1478,16 +1497,16 @@ def rotmatrix(phi,theta,psi):
 """
 
 def rotmatrix(phi,theta,psi):
-	from math import sin,cos,radians
-	rphi   = radians(phi)
-	rtheta = radians(theta)
-	rpsi   = radians(psi)
-	cosphi = cos(rphi)
-	sinphi = sin(rphi)
-	costheta = cos(rtheta)
-	sintheta = sin(rtheta)
-	cospsi = cos(rpsi)
-	sinpsi = sin(rpsi)
+	pass#IMPORTIMPORTIMPORT from math import sin,cos,radians
+	rphi   = numpy.radians(phi)
+	rtheta = numpy.radians(theta)
+	rpsi   = numpy.radians(psi)
+	cosphi = numpy.cos(rphi)
+	sinphi = numpy.sin(rphi)
+	costheta = numpy.cos(rtheta)
+	sintheta = numpy.sin(rtheta)
+	cospsi = numpy.cos(rpsi)
+	sinpsi = numpy.sin(rpsi)
 	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
 
 	mat[0][0] =  cospsi*costheta*cosphi - sinpsi*sinphi
@@ -1527,7 +1546,7 @@ def mulmat(m1,m2):
 	return mat
 
 def recmat(mat):
-	from math import acos,asin,atan2,degrees,pi
+	pass#IMPORTIMPORTIMPORT from math import acos,asin,atan2,degrees,pi
 	def sign(x):
 		if( x >= 0.0 ): return 1
 		else:  return -1
@@ -1547,53 +1566,53 @@ def recmat(mat):
 		theta = 0.0
 		psi = 0.0
 		if( mat[0][0] == 0.0 ):
-			phi = asin(mat[0][1])
+			phi = math.asin(mat[0][1])
 		else:
-			phi = atan2(mat[0][1],mat[0][0])
+			phi = math.atan2(mat[0][1],mat[0][0])
 	elif(mat[2][2] == -1.0):
-		theta = pi
+		theta = numpy.pi
 		psi = 0.0
 		if(mat[0][0] == 0.0):
-			phi = asin(-mat[0][1])
+			phi = math.asin(-mat[0][1])
 		else:
-			phi = atan2(-mat[0][1],-mat[0][0])
+			phi = math.atan2(-mat[0][1],-mat[0][0])
 	else:
-		theta = acos(mat[2][2])
+		theta = math.acos(mat[2][2])
 		st = sign(theta)
 		#print theta,st,mat[2][0]
 		if(mat[2][0] == 0.0):
 			if( st != sign(mat[2][1]) ):
-				phi = 1.5*pi
+				phi = 1.5*numpy.pi
 			else:
-				phi = 0.5*pi
+				phi = 0.5*numpy.pi
 		else:
-			phi = atan2(st*mat[2][1], st*mat[2][0])
+			phi = math.atan2(st*mat[2][1], st*mat[2][0])
 
 		#print theta,st,mat[0][2],mat[1][2]
 		if(mat[0][2] == 0.0):
 			if( st != sign(mat[1][2]) ):
-				psi = 1.5*pi
+				psi = 1.5*numpy.pi
 			else:
-				psi = 0.5*pi
+				psi = 0.5*numpy.pi
 		else:
-			psi = atan2(st*mat[1][2], -st*mat[0][2])
+			psi = math.atan2(st*mat[1][2], -st*mat[0][2])
 	#pi2 = 2*pi
 	#return  degrees(round(phi%pi2,8)),degrees(round(theta%pi2,8)),degrees(round(psi%pi2,8))
 	#return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
-	return  degrees(phi)%360.0,degrees(theta)%360.0,degrees(psi)%360.0
+	return  numpy.degrees(phi)%360.0,numpy.degrees(theta)%360.0,numpy.degrees(psi)%360.0
 
 
 """
 
 def mulmat_np(m1,m2):
-	import numpy as np
+	pass#IMPORTIMPORTIMPORT import numpy as np
 	mat1 = np.matrix(m1,dtype="f8")
 	mat2 = np.matrix(m2,dtype="f8")
 	mat1 = np.array(mat1*mat2)
 	return [list(q) for q in mat1]
 
 def rotmatrix_np(phi,theta,psi):
-	import numpy as np
+	pass#IMPORTIMPORTIMPORT import numpy as np
 	mat = np.matrix(((0.,0.,0.),(0.,0.,0.),(0.,0.,0.)), dtype = "f8")
 	rphi   = np.radians(np.float64(phi))
 	rtheta = np.radians(np.float64(theta))
@@ -1623,7 +1642,7 @@ def rotmatrix_np(phi,theta,psi):
 
 def recmat_np(mat):
 	#from math import np.arccos,np.np.arcsin,np.arctan2,degrees,pi
-	import numpy as np
+	pass#IMPORTIMPORTIMPORT import numpy as np
 	'''
 	def sign(x):
 		if( x >= 0.0 ): return 1
@@ -1680,18 +1699,18 @@ def recmat_np(mat):
 """
 
 class symclass(object):
-	import numpy as np
+	pass#IMPORTIMPORTIMPORT import numpy as np
 	def __init__(self, sym):
 		"""
 		  sym: cn, dn, oct, tet, icos
 		"""
-		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt, pi
+		pass#IMPORTIMPORTIMPORT from math import degrees, radians, sin, cos, tan, atan, acos, sqrt, pi
 		#from utilities import get_sym, get_symt
-		from string import lower
+		pass#IMPORTIMPORTIMPORT from string import lower
 		self.sym = sym.lower()
 		if(self.sym[0] == "c"):
 			self.nsym = int(self.sym[1:])
-			if(self.nsym<1):  ERROR("For Cn symmetry, we need n>0","symclass",1)
+			if(self.nsym<1):  global_def.ERROR("For Cn symmetry, we need n>0","symclass",1)
 			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym,180.0,360./self.nsym,180.0]]
 			self.symangles = []
 			for i in range(self.nsym):
@@ -1699,7 +1718,7 @@ class symclass(object):
 
 		elif(self.sym[0] == "d"):
 			self.nsym = 2*int(self.sym[1:])
-			if(self.nsym<1):  ERROR("For Dn symmetry, we need n>0","symclass",1)
+			if(self.nsym<1):  global_def.ERROR("For Dn symmetry, we need n>0","symclass",1)
 			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym*2,90.0,360./self.nsym*2,90.0]]
 			self.symangles = []
 			for i in range(self.nsym/2):
@@ -1711,8 +1730,8 @@ class symclass(object):
 			self.nsym = 24
 			ncap = 4
 			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
-			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
-			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
+			alpha = numpy.degrees(math.acos(1.0/(numpy.sqrt(3.0)*numpy.tan(2*numpy.pi/ncap/2.0)))) # also platonic_params["alt_max"]
+			theta = numpy.degrees(0.5*math.acos( numpy.cos(numpy.radians(cap_sig))/(1.0-numpy.cos(numpy.radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
 			self.brackets = [[180./ncap,theta,cap_sig,alpha],[360./ncap,theta,cap_sig,alpha]]
 			self.symangles = [[0.0,0.0,float(i)] for i in range(0,271,90)]
 			for i in range(0,271,90):
@@ -1724,10 +1743,10 @@ class symclass(object):
 			self.nsym = 12
 			ncap = 3
 			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
-			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
-			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
+			alpha = numpy.degrees(math.acos(1.0/(numpy.sqrt(3.0)*numpy.tan(2*numpy.pi/ncap/2.0)))) # also platonic_params["alt_max"]
+			theta = numpy.degrees(0.5*math.acos( numpy.cos(numpy.radians(cap_sig))/(1.0-numpy.cos(numpy.radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
 			self.brackets = [[360.0/ncap,theta,cap_sig,alpha],[360.0/ncap,theta,cap_sig,alpha]]
-			lvl1 = degrees(acos(-1.0/3.0)) # There  are 3 faces at this angle
+			lvl1 = numpy.degrees(math.acos(-1.0/3.0)) # There  are 3 faces at this angle
 			self.symangles = [ [0.,0.,0.], [0., 0., 120.], [0., 0., 240.]]
 			for l1 in range(0,241,120):
 				for l2 in range(60,301,120):
@@ -1744,10 +1763,10 @@ class symclass(object):
 			self.nsym = 60
 			ncap = 5
 			cap_sig = 360.0/ncap  # also called platonic_params["az_max"]
-			alpha = degrees(acos(1.0/(sqrt(3.0)*tan(2*pi/ncap/2.0)))) # also platonic_params["alt_max"]
-			theta = degrees(0.5*acos( cos(radians(cap_sig))/(1.0-cos(radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
+			alpha = numpy.degrees(math.acos(1.0/(numpy.sqrt(3.0)*numpy.tan(2*numpy.pi/ncap/2.0)))) # also platonic_params["alt_max"]
+			theta = numpy.degrees(0.5*math.acos( numpy.cos(numpy.radians(cap_sig))/(1.0-numpy.cos(numpy.radians(cap_sig))) ))  #  also platonic_params["theta_c_on_two"]
 			self.brackets = [[36.,theta,cap_sig,alpha],[72.,theta,cap_sig,alpha]]
-			lvl1= degrees(atan(2.0))  #there are 5 pentagons with centers at this height (angle)
+			lvl1= numpy.degrees(math.atan(2.0))  #there are 5 pentagons with centers at this height (angle)
 			lvl2 = 180.0 - lvl1      #there are 5 pentagons with centers at this height (angle)
 			self.symangles = [[0.0,0.0,float(i)] for i in range(0,288+1,72)]
 			for l1 in range(0,288+1,72):
@@ -1758,13 +1777,13 @@ class symclass(object):
 					self.symangles.append([float(l1),lvl2,float(l2)])
 			for i in range(0,288+1,72):  self.symangles.append([0.0,180.0,float(i)])
 		
-		else:  ERROR("Unknown symmetry","symclass",1)
+		else:  global_def.ERROR("Unknown symmetry","symclass",1)
 
 		#
 		self.transform = []
 		self.symatrix = []
 		for args in self.symangles:
-			self.transform.append(Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2]}))
+			self.transform.append(EMAN2_cppwrap.Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2]}))
 			self.symatrix.append(rotmatrix(args[0],args[1],args[2]))
 
 	def is_in_subunit(self, phi, theta, inc_mirror=1):
@@ -1775,7 +1794,7 @@ class symclass(object):
 		Output: True if input projection direction is in the first asymmetric subunit,
 		        False otherwise.
 		"""
-		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
+		pass#IMPORTIMPORTIMPORT from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		if( (self.sym[0] == "c")  or  (self.sym[0] == "d" and (self.nsym//2)%2 == 0) ):
 			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return True
 			else:  return False
@@ -1791,9 +1810,9 @@ class symclass(object):
 			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
 				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
 				baldwin_lower_alt_bound = \
-				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
-					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
-				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound))
+				(numpy.sin(numpy.radians(self.brackets[inc_mirror][2]/2.0-tmphi))/numpy.tan(numpy.radians(self.brackets[inc_mirror][1])) + \
+					numpy.sin(numpy.radians(tmphi))/numpy.tan(numpy.radians(self.brackets[inc_mirror][3])))/numpy.sin(numpy.radians(self.brackets[inc_mirror][2]/2.0))
+				baldwin_lower_alt_bound = numpy.degrees(math.atan(1.0/baldwin_lower_alt_bound))
 				#print(  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta)
 				if(baldwin_lower_alt_bound>theta): return True
 				else: return False
@@ -1804,18 +1823,18 @@ class symclass(object):
 			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
 				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
 				baldwin_lower_alt_bound = \
-				(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
-					sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3])))/sin(radians(self.brackets[inc_mirror][2]/2.0))
-				baldwin_lower_alt_bound = degrees(atan(1.0/baldwin_lower_alt_bound))
+				(numpy.sin(numpy.radians(self.brackets[inc_mirror][2]/2.0-tmphi))/numpy.tan(numpy.radians(self.brackets[inc_mirror][1])) + \
+					numpy.sin(numpy.radians(tmphi))/numpy.tan(numpy.radians(self.brackets[inc_mirror][3])))/numpy.sin(numpy.radians(self.brackets[inc_mirror][2]/2.0))
+				baldwin_lower_alt_bound = numpy.degrees(math.atan(1.0/baldwin_lower_alt_bound))
 				#print(  "  baldwin_lower_alt_bound ",phi,theta,baldwin_lower_alt_bound,self.brackets[inc_mirror])
 				if(baldwin_lower_alt_bound>theta):
 					if( inc_mirror == 1 ):
 						return True
 					else:
 						baldwin_upper_alt_bound = \
-						(sin(radians(self.brackets[inc_mirror][2]/2.0-tmphi))/tan(radians(self.brackets[inc_mirror][1])) + \
-							sin(radians(tmphi))/tan(radians(self.brackets[inc_mirror][3]/2.0)))/sin(radians(self.brackets[inc_mirror][2]/2.0))
-						baldwin_upper_alt_bound = degrees(atan(1.0/baldwin_upper_alt_bound))
+						(numpy.sin(numpy.radians(self.brackets[inc_mirror][2]/2.0-tmphi))/numpy.tan(numpy.radians(self.brackets[inc_mirror][1])) + \
+							numpy.sin(numpy.radians(tmphi))/numpy.tan(numpy.radians(self.brackets[inc_mirror][3]/2.0)))/numpy.sin(numpy.radians(self.brackets[inc_mirror][2]/2.0))
+						baldwin_upper_alt_bound = numpy.degrees(math.atan(1.0/baldwin_upper_alt_bound))
 						#print(  "  baldwin_upper_alt_bound ",phi,theta,baldwin_upper_alt_bound,self.brackets[inc_mirror])
 						if(baldwin_upper_alt_bound<theta): return False
 						else:  return True
@@ -1823,7 +1842,7 @@ class symclass(object):
 			else:
 				#print "phi",self.brackets
 				return False
-		else:  ERROR("unknown symmetry","symclass: is_in_subunit",1)
+		else:  global_def.ERROR("unknown symmetry","symclass: is_in_subunit",1)
 
 	def symmetry_related(self, angles):
 		"""
@@ -1848,7 +1867,7 @@ class symclass(object):
 			for l in range(nsm,self.nsym):
 				redang.append([(360.0-redang[l-nsm][0])%360.0, 180.0-angles[1], (angles[2]+180.0*(nsm%2))%360.0])
 		else:
-			from fundamentals import rotmatrix, recmat, mulmat
+			pass#IMPORTIMPORTIMPORT from fundamentals import rotmatrix, recmat, mulmat
 			mat = rotmatrix(angles[0],angles[1],angles[2])
 			for l in range(1,self.nsym):
 				p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
@@ -1868,7 +1887,7 @@ class symclass(object):
 		  output is [[phi0,theta0,0],[phi0,theta0,0]_SYM1,...,[phi1,theta1,],[phi1,theta1,]_SYM1,...]
 		"""
 		if( self.sym[0] == "c" or self.sym[0] == "d" ):
-			temp = Util.symmetry_neighbors(angles, self.sym)
+			temp = EMAN2_cppwrap.Util.symmetry_neighbors(angles, self.sym)
 			nt = len(temp)/3
 			return [[temp[l*3],temp[l*3+1],0.0] for l in range(nt) ]
 		#  Note symmetry neighbors below refer to the particular order 
@@ -1879,7 +1898,7 @@ class symclass(object):
 		neighbors["icos"] = [1,2,3,4,6,7,11,12]
 		sang = [[] for l in range(len(angles)*(len(neighbors[self.sym])+1))]
 		for i,q in enumerate(angles):  sang[i*(len(neighbors[self.sym])+1)] = angles[i][:]
-		from fundamentals import rotmatrix, recmat, mulmat
+		pass#IMPORTIMPORTIMPORT from fundamentals import rotmatrix, recmat, mulmat
 		for i,q in enumerate(angles):
 			mat = rotmatrix(q[0],q[1],q[2])
 			for j,l in enumerate(neighbors[self.sym]):
@@ -1894,8 +1913,8 @@ class symclass(object):
 				inc_mirror = 0 consider mirror directions as outside of unique range.
 		  It will map all triplets to the first asymmetric subunit.
 		"""
-		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
-		import types
+		pass#IMPORTIMPORTIMPORT from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
+		pass#IMPORTIMPORTIMPORT import types
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
@@ -1985,7 +2004,7 @@ class symclass(object):
 				inc_mirror = 1 consider mirror directions as unique
 				inc_mirror = 0 consider mirror directions as outside of unique range.
 		"""
-		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
+		pass#IMPORTIMPORTIMPORT from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "i"
 		if(self.sym[0] == "c"): qs = 360.0/self.nsym
 		elif(self.sym[0] == "d"): qs = 720.0/self.nsym
@@ -2055,7 +2074,7 @@ class symclass(object):
 
 	"""
 	def reduce_normal(self, phi, theta, psi, inc_mirror):
-		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
+		pass#IMPORTIMPORTIMPORT from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
 		return False
 	"""
 
@@ -2069,14 +2088,14 @@ class symclass(object):
 						 it will yield angles from the asymmetric unit, not the specified range;
 		"""
 
-		from math      import pi, sqrt, cos, acos, tan, sin, radians, degrees
-		from utilities import even_angles_cd
+		pass#IMPORTIMPORTIMPORT from math      import pi, sqrt, cos, acos, tan, sin, radians, degrees
+		pass#IMPORTIMPORTIMPORT from utilities import even_angles_cd
 		angles = []
 		phi2_org = phi2
 		if(phi2_org < 0.0):  phi2_org = self.brackets[1][0] - 1.0e-7 # exclude right border of unit
 		theta2_org = theta2
 		if(theta2_org < 0.0): theta2_org = self.brackets[1][3]
-		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta),1)
+		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  global_def.ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta),1)
 		if(phi1 < 0.0):  phi1 = 0.0
 		if(phi2 < 0.0):  phi2 = self.brackets[inc_mirror][0] - 1.0e-7 # exclude right border of unit
 		if(theta1 < 0.0): theta1 = 0.0
@@ -2097,7 +2116,7 @@ class symclass(object):
 				while(theta <= theta2):
 					phi = phi1
 					if(theta==0.0 or theta==180.0): detphi = 2*phi2
-					else:  detphi = delta/sin(radians(theta))
+					else:  detphi = delta/numpy.sin(numpy.radians(theta))
 					while(phi<phi2):
 						if(self.is_in_subunit(phi, theta, inc_mirror)): 	angles.append([phi, theta, 0.0])
 						else:  	angles.append([phi, theta, 0.0])
@@ -2106,21 +2125,21 @@ class symclass(object):
 			else:
 				# I have to use original phi2 and theta2 to compute Deltaz and wedgeFactor as otherwise
 				# points for include mirror differ from do not include mirror.
-				Deltaz  = cos(radians(theta2_org))-cos(radians(theta1))
-				s       = delta*pi/180.0
+				Deltaz  = numpy.cos(numpy.radians(theta2_org))-numpy.cos(numpy.radians(theta1))
+				s       = delta*numpy.pi/180.0
 				NFactor = 3.6/s
 				wedgeFactor = abs(Deltaz*(phi2_org-phi1)/720.0)
 				NumPoints   = int(NFactor*NFactor*wedgeFactor)
 				angles.append([phi1, theta1, 0.0])
 				# initialize loop
 				phistep = phi2_org-phi1
-				z1 = cos(radians(theta1))
+				z1 = numpy.cos(numpy.radians(theta1))
 				phi = phi1
 				for k in range(1, NumPoints-1):
 					z = z1 + Deltaz*k/(NumPoints-1)
-					r = sqrt(1.0-z*z)
+					r = numpy.sqrt(1.0-z*z)
 					phi = phi1+(phi + delta/r - phi1)%phistep
-					theta = degrees(acos(z))
+					theta = numpy.degrees(math.acos(z))
 					if(theta>180.0):  break
 					if(not self.is_in_subunit(phi, theta, inc_mirror)): continue
 					angles.append([phi, theta, 0.0])

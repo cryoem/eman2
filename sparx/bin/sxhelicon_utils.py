@@ -32,14 +32,39 @@ from __future__ import print_function
 #
 #
 
+import EMAN2_cppwrap
+import applications
+import copy
+import global_def
+import mpi
+import numpy
+import optparse
+import os
+import pixel_error
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import copy
+pass#IMPORTIMPORTIMPORT import development
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import pixel_error
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
 
 from builtins import range
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
-	from global_def import SPARXVERSION
-	import global_def
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+	pass#IMPORTIMPORTIMPORT from global_def import SPARXVERSION
+	pass#IMPORTIMPORTIMPORT import global_def
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -75,7 +100,7 @@ def main():
         8. Helical symmetry search:
             mpirun -np 3 sxhelicon_utils.py volf0010.hdf outsymsearch --symsearch --dp=27.6 --dphi=166.715 --apix=1.84 --fract=0.65 --rmin=0 --rmax=92.0 --datasym=datasym.txt  --dp_step=0.92 --ndp=3 --dphi_step=1.0 --ndphi=10 --MPI
 """
-	parser = OptionParser(usage2,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage2,version=global_def.SPARXVERSION)
 	#parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
 	parser.add_option("--ou",                 type="float", 	     default= -1,                 help="outer radius for rotational 2D correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
 	parser.add_option("--rs",                 type="int",   		 default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
@@ -162,15 +187,15 @@ def main():
 			if len(args) != 1:
 				print("Incorrect number of parameters")
 				sys.exit()
-			from applications import imgstat_hfsc
-			imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
+			pass#IMPORTIMPORTIMPORT from applications import imgstat_hfsc
+			applications.imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
 			sys.exit()
 		elif len(options.filinfo) > 0:
 			if len(args) != 1:
 				print("Incorrect number of parameters")
 				sys.exit()
-			from EMAN2 import EMUtil
-			filams =  EMUtil.get_all_attributes(args[0], "filament")
+			pass#IMPORTIMPORTIMPORT from EMAN2 import EMUtil
+			filams =  EMAN2_cppwrap.EMUtil.get_all_attributes(args[0], "filament")
 			ibeg = 0
 			filcur = filams[0]
 			n = len(filams)
@@ -185,8 +210,8 @@ def main():
 					ibeg = i
 					filcur = fis
 				i += 1
-			from utilities import write_text_row
-			write_text_row(inf, options.filinfo)
+			pass#IMPORTIMPORTIMPORT from utilities import write_text_row
+			utilities.write_text_row(inf, options.filinfo)
 			sys.exit()
 		
 		if len(options.stackdisk) > 0:
@@ -198,13 +223,13 @@ def main():
 			if(abs(float(rise) - dpp)>1.0e-3):
 				print("  dpp has to be integer multiplicity of the pixel size")
 				sys.exit()
-			from utilities import get_im
-			v = get_im(args[0])
-			from applications import stack_disks
+			pass#IMPORTIMPORTIMPORT from utilities import get_im
+			v = utilities.get_im(args[0])
+			pass#IMPORTIMPORTIMPORT from applications import stack_disks
 			ref_ny = options.ref_ny
 			if ref_ny < 0:
 				ref_ny = options.ref_nx
-			sv = stack_disks(v, options.ref_nx, ref_ny, options.ref_nz, options.dphi, rise)
+			sv = applications.stack_disks(v, options.ref_nx, ref_ny, options.ref_nz, options.dphi, rise)
 			sv.write_image(options.stackdisk)
 			sys.exit()
 
@@ -212,17 +237,17 @@ def main():
 			if len(args) != 1:
 				print("Incorrect number of parameters")
 				sys.exit()
-			from development import consistency_params	
-			consistency_params(args[0], options.consistency, options.dphi, options.dp, options.apix,phithr=options.phithr, ythr=options.ythr, THR=options.segthr)
+			pass#IMPORTIMPORTIMPORT from development import consistency_params
+			pixel_error.consistency_params(args[0], options.consistency, options.dphi, options.dp, options.apix,phithr=options.phithr, ythr=options.ythr, THR=options.segthr)
 			sys.exit()
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
 		
-		from utilities import get_input_from_string, get_im
+		pass#IMPORTIMPORTIMPORT from utilities import get_input_from_string, get_im
 
-		xr = get_input_from_string(options.xr)
-		txs = get_input_from_string(options.txs)
+		xr = utilities.get_input_from_string(options.xr)
+		txs = utilities.get_input_from_string(options.txs)
 
 		irp = 1
 		if options.ou < 0:  oup = -1
@@ -240,8 +265,8 @@ def main():
 		zstepp = int( (options.zstep/options.apix) + 0.5)
 
 		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init, mpi_finalize
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
 		if len(options.predict_helical) > 0:
 			if len(args) != 1:
@@ -250,7 +275,7 @@ def main():
 			if options.dp < 0:
 				print("Helical symmetry paramter rise --dp should not be negative")
 				sys.exit()
-			from applications import predict_helical_params
+			pass#IMPORTIMPORTIMPORT from applications import predict_helical_params
 			predict_helical_params(args[0], options.dp, options.dphi, options.apix, options.predict_helical)
 			sys.exit()
 
@@ -261,11 +286,11 @@ def main():
 			if options.dp < 0:
 				print("Helical symmetry paramter rise --dp should not be negative")
 				sys.exit()
-			from utilities import get_im, sym_vol
-			vol = get_im(args[0])
-			vol = sym_vol(vol, options.sym)
+			pass#IMPORTIMPORTIMPORT from utilities import get_im, sym_vol
+			vol = utilities.get_im(args[0])
+			vol = utilities.sym_vol(vol, options.sym)
 			hvol = vol.helicise(options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp)
-			hvol = sym_vol(hvol, options.sym)
+			hvol = utilities.sym_vol(hvol, options.sym)
 			hvol.write_image(args[1])
 			sys.exit()
 
@@ -277,10 +302,10 @@ def main():
 			if options.dp < 0:
 				print("Helical symmetry paramter rise --dp should not be negative")
 				sys.exit()
-			from math import cos, sin, radians
-			from copy import deepcopy
-			import numpy
-			from numpy import zeros,dot,float32
+			pass#IMPORTIMPORTIMPORT from math import cos, sin, radians
+			pass#IMPORTIMPORTIMPORT from copy import deepcopy
+			pass#IMPORTIMPORTIMPORT import numpy
+			pass#IMPORTIMPORTIMPORT from numpy import zeros,dot,float32
 
 			dp   = options.dp
 			dphi = options.dphi
@@ -301,11 +326,11 @@ def main():
 					pos.append(i)
 			n = len(p)
 
-			X = zeros( (3,len(p) ), dtype=float32 )
-			X_new = zeros( (3,len(p) ), dtype=float32 )
+			X = numpy.zeros( (3,len(p) ), dtype=numpy.float32 )
+			X_new = numpy.zeros( (3,len(p) ), dtype=numpy.float32 )
 
 			for i in range( len(p) ):
-				element = deepcopy( p[i] )
+				element = copy.deepcopy( p[i] )
 				X[0,i]=float(element[30:38])
 				X[1,i]=float(element[38:46])	
 				X[2,i]=float(element[46:54])
@@ -313,11 +338,11 @@ def main():
 			pnew = []
 			for j in range(-nperiod, nperiod+1):
 				for i in range( n ):
-					pnew.append( deepcopy(p[i]) )
+					pnew.append( copy.deepcopy(p[i]) )
 
-			dphi = radians(dphi)
-			m = zeros( (3,3 ), dtype=float32 )
-			t = zeros( (3,1 ), dtype=float32 )
+			dphi = numpy.radians(dphi)
+			m = numpy.zeros( (3,3 ), dtype=numpy.float32 )
+			t = numpy.zeros( (3,1 ), dtype=numpy.float32 )
 			m[2][2] = 1.0
 			t[0,0]  = 0.0
 			t[1,0]  = 0.0
@@ -325,12 +350,12 @@ def main():
 			for j in range(-nperiod, nperiod+1):
 				if j != 0:
 					rd = j*dphi
-					m[0][0] =  cos(rd)
-					m[0][1] =  sin(rd)
+					m[0][0] =  numpy.cos(rd)
+					m[0][1] =  numpy.sin(rd)
 					m[1][0] = -m[0][1]
 					m[1][1] =  m[0][0]
 					t[2,0]  = j*dp
-					X_new = dot(m, X) + t
+					X_new = numpy.dot(m, X) + t
 					for i in range( n ):
 						pnew[j*n+i] = pnew[j*n+i][:30] + "%8.3f"%( float(X_new[0,i]) )+"%8.3f"%( float(X_new[1,i]) )+"%8.3f"%( float(X_new[2,i]) ) + pnew[j*n+i][54:]
 
@@ -348,9 +373,9 @@ def main():
 				sys.exit()
 			if len(args) < 4:  mask = None
 			else:               mask = args[3]
-			from applications import volalixshift_MPI
+			pass#IMPORTIMPORTIMPORT from applications import volalixshift_MPI
 			global_def.BATCH = True
-			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
+			applications.volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
 			global_def.BATCH = False
 
 		if options.diskali:
@@ -361,11 +386,11 @@ def main():
 			else:               mask = args[3]
 			global_def.BATCH = True
 			if(options.sym[:1] == "d" or options.sym[:1] == "D" ):
-				from development import diskaliD_MPI
+				pass#IMPORTIMPORTIMPORT from development import diskaliD_MPI
 				diskaliD_MPI(args[0], args[1], args[2], mask, options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			else:
-				from applications import diskali_MPI
-				diskali_MPI(args[0], args[1], args[2], mask, options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
+				pass#IMPORTIMPORTIMPORT from applications import diskali_MPI
+				applications.diskali_MPI(args[0], args[1], args[2], mask, options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			global_def.BATCH = False
 		
 		if options.symsearch:
@@ -377,37 +402,37 @@ def main():
 			
 			if options.dp < 0 or options.dphi < 0:
 				# read helical symmetry parameters from symdoc
-				from utilities import read_text_row
-				hparams=read_text_row(options.symdoc)
+				pass#IMPORTIMPORTIMPORT from utilities import read_text_row
+				hparams=utilities.read_text_row(options.symdoc)
 				dp = hparams[0][0]
 				dphi = hparams[0][1]
 			else:
 				dp   = options.dp
 				dphi = options.dphi
 			
-			from applications import symsearch_MPI
+			pass#IMPORTIMPORTIMPORT from applications import symsearch_MPI
 			if len(args) < 3:	
 				mask = None
 			else:
 				mask= args[2]
 			global_def.BATCH = True
-			symsearch_MPI(args[0], args[1], mask, dp, options.ndp, options.dp_step, dphi, options.ndphi, options.dphi_step, rminp, rmaxp, options.fract, options.sym, options.function, options.datasym, options.apix, options.debug)
+			applications.symsearch_MPI(args[0], args[1], mask, dp, options.ndp, options.dp_step, dphi, options.ndphi, options.dphi_step, rminp, rmaxp, options.fract, options.sym, options.function, options.datasym, options.apix, options.debug)
 			global_def.BATCH = False
 			
 		elif len(options.gendisk)> 0:
-			from applications import gendisks_MPI
+			pass#IMPORTIMPORTIMPORT from applications import gendisks_MPI
 			global_def.BATCH = True
 			if len(args) == 1:  mask3d = None
 			else:               mask3d = args[1]
 			if options.dp < 0:
 				print("Helical symmetry paramter rise --dp must be explictly set!")
 				sys.exit()
-			gendisks_MPI(args[0], mask3d, options.ref_nx, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk, options.maxerror, options.new_pixel_size, options.match_pixel_rise)
+			applications.gendisks_MPI(args[0], mask3d, options.ref_nx, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk, options.maxerror, options.new_pixel_size, options.match_pixel_rise)
 			global_def.BATCH = False
 		
 		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+			mpi.mpi_finalize()
 
 if __name__ == "__main__":
 	main()

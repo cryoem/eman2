@@ -31,12 +31,31 @@ from __future__ import print_function
 #
 #
 
-
-import os
+import applications
 import global_def
-from global_def import *
-from optparse import OptionParser
+import mpi
+import multi_shc
+import optparse
+import os
 import sys
+import user_functions
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import development
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import multi_shc
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import user_functions
+pass#IMPORTIMPORTIMPORT import utilities
+
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 
 def main():
 
@@ -45,7 +64,7 @@ def main():
 		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --deltapsi=Delta_psi --startpsi=Start_psi --maxit=max_iter --stoprnct=percentage_to_stop --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function --Fourvar=Fourier_variance --debug --MPI"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--ir",       type= "int",         default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",         default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
 	parser.add_option("--rs",       type= "int",         default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" )
@@ -88,17 +107,17 @@ def main():
 		else:
 			mask = args[3]
 		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init, mpi_finalize
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 		#  centering permanently disabled due to the way new polar searches are done
 		center = 0
 		if(options.ns):
 			global_def.BATCH = True
-			from development import  ali3d_saturn
+			pass#IMPORTIMPORTIMPORT from development import  ali3d_saturn
 			ali3d_saturn(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 				center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
@@ -106,7 +125,7 @@ def main():
 			global_def.BATCH = False
 		elif(options.ns2):
 			global_def.BATCH = True
-			from development import  ali3d_saturn2
+			pass#IMPORTIMPORTIMPORT from development import  ali3d_saturn2
 			ali3d_saturn2(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 				center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
@@ -118,42 +137,42 @@ def main():
 			else:
 				global_def.BATCH = True
 				if(options.nsoft == 1):
-					from applications import ali3d_shcMPI
-					ali3d_shcMPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+					pass#IMPORTIMPORTIMPORT from applications import ali3d_shcMPI
+					applications.ali3d_shcMPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 					options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 					center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 					options.function, options.Fourvar, options.npad, options.debug, options.stoprnct, gamma=options.gamma)
 				elif(options.nsoft == 0):
-					from applications import ali3d_shc0MPI
+					pass#IMPORTIMPORTIMPORT from applications import ali3d_shc0MPI
 					ali3d_shc0MPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 					options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 					center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 					options.function, options.Fourvar, options.npad, options.debug, options.stoprnct, gamma=options.gamma)
 				else:
-					from multi_shc import ali3d_multishc_soft
-					import user_functions
+					pass#IMPORTIMPORTIMPORT from multi_shc import ali3d_multishc_soft
+					pass#IMPORTIMPORTIMPORT import user_functions
 					options.user_func = user_functions.factory[options.function]
-					ali3d_multishc_soft(args[0], args[1], options, mpi_comm = None, log = None, nsoft = options.nsoft )
+					multi_shc.ali3d_multishc_soft(args[0], args[1], options, mpi_comm = None, log = None, nsoft = options.nsoft )
 				global_def.BATCH = False
 		elif(options.nh2):
 			global_def.BATCH = True
-			from development import ali3d_shc2
+			pass#IMPORTIMPORTIMPORT from development import ali3d_shc2
 			ali3d_shc2(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 				center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 			global_def.BATCH = False
 		elif options.searchpsi:
-			from applications import ali3dpsi_MPI
+			pass#IMPORTIMPORTIMPORT from applications import ali3dpsi_MPI
 			global_def.BATCH = True
-			ali3dpsi_MPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+			applications.ali3dpsi_MPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 			options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 			center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 			options.function, options.Fourvar, options.npad, options.debug, options.stoprnct)
 			global_def.BATCH = False
 		else:
 			if options.rantest:
-				from development import ali3d_rantest
+				pass#IMPORTIMPORTIMPORT from development import ali3d_rantest
 				global_def.BATCH = True
 				ali3d_rantest(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
@@ -161,15 +180,15 @@ def main():
 				options.function, options.Fourvar, options.npad, options.debug, options.stoprnct)
 				global_def.BATCH = False
 			else:
-				from applications import ali3d
+				pass#IMPORTIMPORTIMPORT from applications import ali3d
 				global_def.BATCH = True
-				ali3d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+				applications.ali3d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 				center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 				global_def.BATCH = False
 
-		if options.MPI:  mpi_finalize()
+		if options.MPI:  mpi.mpi_finalize()
 
 if __name__ == "__main__":
 	main()

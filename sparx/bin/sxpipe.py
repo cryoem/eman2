@@ -33,17 +33,63 @@ from __future__ import print_function
 # ========================================================================================
 # Python Standard Libraries
 from builtins import range
-from builtins import object
-import sys
-import os
+import EMAN2_cppwrap
+import EMAN2db
+import applications
 import argparse
+import errno
+import filter
+import fundamentals
+import glob
+import global_def
+import inspect
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import morphology
+import mpi
+import numpy
+import os
+import scipy.spatial as scipy_spatial
+import shutil
+import sys
+import time
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import EMAN2db
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import argparse
+pass#IMPORTIMPORTIMPORT import errno
+pass#IMPORTIMPORTIMPORT import filter
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import glob
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import inspect
+pass#IMPORTIMPORTIMPORT import matplotlib
+#pass#IMPORTIMPORTIMPORT matplotlib.use("Agg")
+pass#IMPORTIMPORTIMPORT import matplotlib.pyplot as plt
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import scipy.spatial as scipy_spatial
+pass#IMPORTIMPORTIMPORT import shutil
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import time
+pass#IMPORTIMPORTIMPORT import utilities
+from builtins import object
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import argparse
 
 # SPHIRE/EMAN2 Libraries
-from EMAN2 import *
-from sparx import *
-import global_def
-from global_def import *
-from time import time
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from sparx import *
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from time import time
 
 # ========================================================================================
 # Helper Functions
@@ -62,16 +108,16 @@ def get_cmd_line():
 # Print progress message with time stamp
 # ----------------------------------------------------------------------------------------
 def print_progress(message):
-	from time import strftime, localtime
-	time_stamp = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	pass#IMPORTIMPORTIMPORT from time import strftime, localtime
+	time_stamp = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 	print(time_stamp, message)
 
 # ----------------------------------------------------------------------------------------
 # Get suffix of current time stamp
 # ----------------------------------------------------------------------------------------
 def get_time_stamp_suffix():
-	from time import strftime, localtime
-	time_stamp_suffix = strftime("%Y%m%d_%H%M%S", localtime())
+	pass#IMPORTIMPORTIMPORT from time import strftime, localtime
+	time_stamp_suffix = time.strftime("%Y%m%d_%H%M%S", time.localtime())
 	return time_stamp_suffix
 
 # ----------------------------------------------------------------------------------------
@@ -95,19 +141,19 @@ class SXmpi_run(object):
 	
 		SXmpi_run.main_mpi_proc = 0
 		if SXmpi_run.RUNNING_UNDER_MPI:
-			from mpi import mpi_init
-			from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init
+			pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size
 
-			mpi_init(0, [])
-			SXmpi_run.my_mpi_proc_id = mpi_comm_rank(MPI_COMM_WORLD)
-			SXmpi_run.n_mpi_procs = mpi_comm_size(MPI_COMM_WORLD)
+			mpi.mpi_init(0, [])
+			SXmpi_run.my_mpi_proc_id = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+			SXmpi_run.n_mpi_procs = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
 
 	@staticmethod
 	def cleanup():
 		if SXmpi_run.RUNNING_UNDER_MPI:
-			from mpi import MPI_COMM_WORLD, mpi_barrier, mpi_finalize
-			mpi_barrier(MPI_COMM_WORLD)
-			mpi_finalize()
+			pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD, mpi_barrier, mpi_finalize
+			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+			mpi.mpi_finalize()
 	
 	@staticmethod
 	def is_main_proc():
@@ -146,8 +192,8 @@ class SXmpi_run(object):
 # 
 # ----------------------------------------------------------------------------------------
 def isac_substack(args):
-	from utilities import get_im, read_text_row, write_text_row, write_text_file, combine_params2, cmdexecute
-	from EMAN2db import db_check_dict
+	pass#IMPORTIMPORTIMPORT from utilities import get_im, read_text_row, write_text_row, write_text_file, combine_params2, cmdexecute
+	pass#IMPORTIMPORTIMPORT from EMAN2db import db_check_dict
 	# from EMAN2db import db_open_dict, db_check_dict
 	# from e2bdb import makerelpath
 	
@@ -158,36 +204,36 @@ def isac_substack(args):
 	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
-		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
-		if_error_then_all_processes_exit_program(error_status)
+		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), inspect.getframeinfo(inspect.currentframe()))
+		utilities.if_error_then_all_processes_exit_program(error_status)
 	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
 	global_def.BATCH = True 
 	
 	# Check error conditions of arguments
 	args.input_bdb_stack_path = args.input_bdb_stack_path.strip()
-	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
-		ERROR("Input BDB image stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	if not EMAN2db.db_check_dict(args.input_bdb_stack_path, readonly=True):
+		global_def.ERROR("Input BDB image stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	args.input_run_dir = args.input_run_dir.strip()
 	if not os.path.exists(args.input_run_dir):
-		ERROR("ISAC or Beautifier run output directory does not exist. Please check the directory path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("ISAC or Beautifier run output directory does not exist. Please check the directory path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	args.output_directory = args.output_directory.strip()
 	if os.path.exists(args.output_directory):
-		ERROR("Output directory exists. Please change the name and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Output directory exists. Please change the name and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
 	# Check error conditions of options
 	defalut_isac_class_avgs_path = os.path.join(args.input_run_dir, "ordered_class_averages.hdf")
 	if args.isac_class_avgs_path != "": # User provided name
 		args.isac_class_avgs_path = args.isac_class_avgs_path.strip()
 		if not os.path.exists(args.isac_class_avgs_path):
-			ERROR("The specifed ISAC class average stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("The specifed ISAC class average stack file does not exist. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	else: # Default name of ISAC or Beautifier
 		args.isac_class_avgs_path = defalut_isac_class_avgs_path
 		if not os.path.exists(args.isac_class_avgs_path):
-			ERROR("ISAC or Beautifier run output directory does not contain the default ISAC class average stack file ({}). Please check the directory path or specify ISAC class average stack file, then restart the program.".format(args.isac_class_avgs_path), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("ISAC or Beautifier run output directory does not contain the default ISAC class average stack file ({}). Please check the directory path or specify ISAC class average stack file, then restart the program.".format(args.isac_class_avgs_path), subcommand_name) # action=1 - fatal error, exit
 	args.substack_basename = args.substack_basename.strip()
 	if args.substack_basename == "":
-		ERROR("Substack basename cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Substack basename cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
 	
 	# Create output directory
 	print(" ")
@@ -195,9 +241,9 @@ def isac_substack(args):
 	os.mkdir(args.output_directory)
 	
 	# Extract the number of images in the input BDB stack
-	n_fullstack_img = EMUtil.get_image_count(args.input_bdb_stack_path)
+	n_fullstack_img = EMAN2_cppwrap.EMUtil.get_image_count(args.input_bdb_stack_path)
 	if n_fullstack_img == 0:
-		ERROR("Input BDB image stack file does contain no images. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Input BDB image stack file does contain no images. Please check the file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 
 	# ------------------------------------------------------------------------------------
 	# Find out if the input ISAC directory is one of ISAC run or Beautifier run
@@ -274,7 +320,7 @@ def isac_substack(args):
 		error_message = "    For Beautifier, the directory must contains:\n"
 		for beautifier_missing_path in beautifier_missing_path_list:
 			error_message += "    {} {}\n".format(beautifier_missing_path[idx_path_item_path], beautifier_missing_path[idx_path_item_type])
-		ERROR(error_message, subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR(error_message, subcommand_name) # action=1 - fatal error, exit
 	
 	# Define enumerators for indices of 2D alignment parameters header entry (xform.align2d)
 	i_enum = -1
@@ -337,19 +383,19 @@ def isac_substack(args):
 		
 		# Pre-alignment (initial 2D alignment) parameters
 		fullstack_prealign2d_path = isac_path_list[idx_isac_path_file_fullstack_prealign2d][idx_path_item_path]
-		fullstack_prealign2d_list = read_text_row(fullstack_prealign2d_path)
+		fullstack_prealign2d_list = utilities.read_text_row(fullstack_prealign2d_path)
 		print(" ")
 		print_progress("Found {} entries in {}.".format(len(fullstack_prealign2d_list), fullstack_prealign2d_path))
 		if len(fullstack_prealign2d_list) != n_fullstack_img:
-			ERROR("The number of entries in {} is not consistent with {}. Please check the consistency of input datasets.".format(fullstack_prealign2d_path, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("The number of entries in {} is not consistent with {}. Please check the consistency of input datasets.".format(fullstack_prealign2d_path, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
 		
 		# ISAC 2D alignment parameters
 		fullstack_shrunk_core_align2d_path = isac_path_list[idx_isac_path_file_fullstack_shrunk_core_align2d][idx_path_item_path]
-		fullstack_shrunk_core_align2d_list = read_text_row(fullstack_shrunk_core_align2d_path)
+		fullstack_shrunk_core_align2d_list = utilities.read_text_row(fullstack_shrunk_core_align2d_path)
 		print(" ")
 		print_progress("Found {} entries in {}.".format(len(fullstack_shrunk_core_align2d_list), fullstack_shrunk_core_align2d_path))
 		if len(fullstack_shrunk_core_align2d_list) != n_fullstack_img:
-			ERROR("The number of entries in {} is not consistent with {}. Please check the consistency of input datasets.".format(fullstack_shrunk_core_align2d_path, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("The number of entries in {} is not consistent with {}. Please check the consistency of input datasets.".format(fullstack_shrunk_core_align2d_path, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
 		
 		
 		# For each entry (2D alignment parameters of particle image), register sxcaled back and combined 2D alignment parameters of this ISAC run to the lists
@@ -358,10 +404,10 @@ def isac_substack(args):
 		for fullstack_img_id in range(n_fullstack_img):
 			prealign2d = fullstack_prealign2d_list[fullstack_img_id]
 			if len(prealign2d) != n_idx_isac_align2d:
-				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(prealign2d), fullstack_img_id, fullstack_prealign2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
+				global_def.ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(prealign2d), fullstack_img_id, fullstack_prealign2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
 			shrunk_core_align2d = fullstack_shrunk_core_align2d_list[fullstack_img_id]
 			if len(shrunk_core_align2d) != n_idx_isac_align2d:
-				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(shrunk_core_align2d), fullstack_img_id, fullstack_shrunk_core_align2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
+				global_def.ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(shrunk_core_align2d), fullstack_img_id, fullstack_shrunk_core_align2d_path, n_idx_isac_align2d), subcommand_name) # action=1 - fatal error, exit
 			if shrunk_core_align2d[idx_isac_align2d_mirror] != -1: # An accounted particle
 				alpha1  = float(prealign2d[idx_isac_align2d_alpha])
 				sx1     = float(prealign2d[idx_isac_align2d_tx])
@@ -371,7 +417,7 @@ def isac_substack(args):
 				sx2     = float(shrunk_core_align2d[idx_isac_align2d_tx])/isac_shrink_ratio # Need to apply the shrink ratio to ISAC x-shift
 				sy2     = float(shrunk_core_align2d[idx_isac_align2d_ty])/isac_shrink_ratio # Need to apply the shrink ratio to ISAC y-shift
 				mirror2 = int(shrunk_core_align2d[idx_isac_align2d_mirror])
-				isac_total_align2d = list(combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)) # return value is tuple type but we want to list! 
+				isac_total_align2d = list(utilities.combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)) # return value is tuple type but we want to list! 
 				
 				fullstack_total_align2d_list[fullstack_img_id] = isac_total_align2d
 				scale = 1.0 # because this 2D alignment parameters are scaled back!
@@ -394,12 +440,12 @@ def isac_substack(args):
 	
 		# local alignment parameters
 		accounted_local_total_align2d_path = beautifier_path_list[idx_beautifier_path_file_accounted_local_total_align2d][idx_path_item_path]
-		accounted_local_total_align2d_list = read_text_row(accounted_local_total_align2d_path)
+		accounted_local_total_align2d_list = utilities.read_text_row(accounted_local_total_align2d_path)
 		n_accounted_img = len(accounted_local_total_align2d_list)
 		print(" ")
 		print_progress("Found {} entries in {}.".format(n_accounted_img, accounted_local_total_align2d_path))
 		if n_accounted_img > n_fullstack_img:
-			ERROR("The number of entries in {} is not consistent with {} (the number of accounted particles is larger than ones of particles in the original fullstack). Please check the consistency of input datasets.".format(accounted_local_total_align2d_path, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("The number of entries in {} is not consistent with {} (the number of accounted particles is larger than ones of particles in the original fullstack). Please check the consistency of input datasets.".format(accounted_local_total_align2d_path, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
 		
 		# For each entry (2D alignment parameters of accounted particle image), register 2D alignment parameters of this Beautifier run to the lists
 		print(" ")
@@ -407,9 +453,9 @@ def isac_substack(args):
 		for accounted_img_id in range(n_accounted_img):
 			local_total_param2d = accounted_local_total_align2d_list[accounted_img_id]
 			if len(local_total_param2d) != n_idx_beautifier_align2d:
-				ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(local_total_param2d), accounted_img_id, accounted_local_total_align2d_path, n_idx_beautifier_align2d), subcommand_name) # action=1 - fatal error, exit
+				global_def.ERROR("Invalid number of columns {} at entry #{} in {}. It should be {}. The parameter file might be corrupted. Please consider to rerun ISAC.".format(len(local_total_param2d), accounted_img_id, accounted_local_total_align2d_path, n_idx_beautifier_align2d), subcommand_name) # action=1 - fatal error, exit
 			if local_total_param2d[idx_beautifier_align2d_mirror] == -1: # An Unaccounted Particle
-				ERROR("Invalid alignment parameters of an unaccounted particle is detected at entry #{} in {}. The parameter files might be corrupted. Please consider to rerun Beautifier.".format(accounted_img_id, accounted_local_total_align2d_path), subcommand_name) # action=1 - fatal error, exit
+				global_def.ERROR("Invalid alignment parameters of an unaccounted particle is detected at entry #{} in {}. The parameter files might be corrupted. Please consider to rerun Beautifier.".format(accounted_img_id, accounted_local_total_align2d_path), subcommand_name) # action=1 - fatal error, exit
 			
 			fullstack_img_id  = int(local_total_param2d[idx_beautifier_align2d_fullstack_img_id])
 			alpha             = float(local_total_param2d[idx_beautifier_align2d_alpha])
@@ -427,20 +473,20 @@ def isac_substack(args):
 		align2d_avg_basename = "ali2d_local_params_avg"
 		
 	if len(fullstack_total_align2d_list) == 0:
-		ERROR("No alignment parameters are detected. Please check the contents of ISAC or Beautifier run output directory.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("No alignment parameters are detected. Please check the contents of ISAC or Beautifier run output directory.", subcommand_name) # action=1 - fatal error, exit
 
 	if len(accounted_total_align2d_list) == 0:
-		ERROR("No alignment parameters of accounted particles are detected. Please check the contents of ISAC or Beautifier run output directory.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("No alignment parameters of accounted particles are detected. Please check the contents of ISAC or Beautifier run output directory.", subcommand_name) # action=1 - fatal error, exit
 
 	# Save the 2D alignment parameters of all particles to file, using the same format as ISAC 2D alignment file (all_parameters.txt)
 	fullset_total_align2d_path = os.path.join(args.output_directory, "scaled_all_parameters.txt")
-	write_text_row(fullstack_total_align2d_list, fullset_total_align2d_path)
+	utilities.write_text_row(fullstack_total_align2d_list, fullset_total_align2d_path)
 	print(" ")
 	print_progress("Saved the total 2D alignment parameters of all particles in original fullstack to {}, using the same format as ISAC 2D alignment file.".format(fullset_total_align2d_path))
 	
 	# Save the 2D alignment parameters of all accounted particles to file, using the same format as Beautifier 2D alignment file
 	accounted_total_align2d_path = os.path.join(args.output_directory, "init_isac_params.txt")
-	write_text_row(accounted_total_align2d_list, accounted_total_align2d_path)
+	utilities.write_text_row(accounted_total_align2d_list, accounted_total_align2d_path)
 	print(" ")
 	print_progress("Saved the total 2D alignment parameters of all accounted particles to {}, using the same format as Beautifier 2D alignment file.".format(accounted_total_align2d_path))
 	
@@ -455,7 +501,7 @@ def isac_substack(args):
 	print_progress("Checking the number of default ISAC class averages {} in ISAC or Beautifier run output directory...".format(defalut_isac_class_avgs_path))
 	n_default_class_avg = 0
 	if os.path.exists(defalut_isac_class_avgs_path):
-		n_default_class_avg = EMUtil.get_image_count(defalut_isac_class_avgs_path)
+		n_default_class_avg = EMAN2_cppwrap.EMUtil.get_image_count(defalut_isac_class_avgs_path)
 	else: 
 		print_progress("WARNING! The default ISAC class averages file does not exist.")
 	print(" ")
@@ -464,23 +510,23 @@ def isac_substack(args):
 	# Retrieve original fullstack particle IDs of members listed in ISAC class averages
 	print(" ")
 	print_progress("Extracting original fullstack particle IDs of members listed in ISAC class averages...")
-	n_class_avg = EMUtil.get_image_count(args.isac_class_avgs_path)
+	n_class_avg = EMAN2_cppwrap.EMUtil.get_image_count(args.isac_class_avgs_path)
 	print(" ")
 	print_progress("Detected {} ISAC class averages in {}".format(n_class_avg, args.isac_class_avgs_path))
 	fullstack_img_id_list_of_isac_substack = []
 	for class_avg_id in range(n_class_avg):
 		fullstack_img_id_list_of_isac_class = []
-		fullstack_img_id_list_of_isac_class = get_im(args.isac_class_avgs_path, class_avg_id).get_attr("members")
+		fullstack_img_id_list_of_isac_class = utilities.get_im(args.isac_class_avgs_path, class_avg_id).get_attr("members")
 		fullstack_img_id_list_of_isac_class.sort()
 		total_align2d_list_of_isac_class = []
 		for fullstack_img_id in fullstack_img_id_list_of_isac_class:
 			total_align2d = fullstack_total_align2d_list[fullstack_img_id]
 			if total_align2d[idx_isac_align2d_mirror] == -1:
-				ERROR("The member with original fullstack particle ID {} listed in ISAC class averages {} has the invalid 2D alignment parameters for ISAC unaccounted particle. Please check the consistency of input datasets. Worse yet, the input datasets might be corrupted. In this case, please consider to rerun ISAC.".format(fullstack_img_id, args.isac_class_avgs_path), subcommand_name) # action=1 - fatal error, exit
+				global_def.ERROR("The member with original fullstack particle ID {} listed in ISAC class averages {} has the invalid 2D alignment parameters for ISAC unaccounted particle. Please check the consistency of input datasets. Worse yet, the input datasets might be corrupted. In this case, please consider to rerun ISAC.".format(fullstack_img_id, args.isac_class_avgs_path), subcommand_name) # action=1 - fatal error, exit
 			scale = 1.0 # because this 2D alignment parameters are scaled back!
 			total_align2d_list_of_isac_class.append([total_align2d[idx_isac_align2d_alpha], total_align2d[idx_isac_align2d_tx], total_align2d[idx_isac_align2d_ty], total_align2d[idx_isac_align2d_mirror], scale])
 		align2d_avg_path = os.path.join(subdir_path, "%s_%03d.txt"%(align2d_avg_basename, class_avg_id))
-		write_text_row(total_align2d_list_of_isac_class, align2d_avg_path)
+		utilities.write_text_row(total_align2d_list_of_isac_class, align2d_avg_path)
 		
 		# Append class particle ID list to substack particle ID list
 		fullstack_img_id_list_of_isac_substack += fullstack_img_id_list_of_isac_class
@@ -492,11 +538,11 @@ def isac_substack(args):
 	print(" ")
 	print_progress("Extracted {} ISAC class members from {}".format(n_isac_substack_img, args.isac_class_avgs_path))
 	if not n_isac_substack_img <= n_accounted_img:
-		ERROR("Invalid number of ISAC class members {}. It must be smaller than or equal to the total number of ISAC accounted particles {}. The stack header might be corrupted. Please consider to rerun ISAC.".format(n_isac_substack_img, n_accounted_img), subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Invalid number of ISAC class members {}. It must be smaller than or equal to the total number of ISAC accounted particles {}. The stack header might be corrupted. Please consider to rerun ISAC.".format(n_isac_substack_img, n_accounted_img), subcommand_name) # action=1 - fatal error, exit
 	
 	# Save the substack particle id list
 	fullstack_img_id_path_of_isac_substack = os.path.join(args.output_directory, "{}_particle_id_list.txt".format(args.substack_basename))
-	write_text_file(fullstack_img_id_list_of_isac_substack, fullstack_img_id_path_of_isac_substack)
+	utilities.write_text_file(fullstack_img_id_list_of_isac_substack, fullstack_img_id_path_of_isac_substack)
 	print(" ")
 	print_progress("Saved original fullstack particle IDs of all members listed in ISAC class averages to {}.".format(fullstack_img_id_path_of_isac_substack))
 	
@@ -513,7 +559,7 @@ def isac_substack(args):
 	
 	# Save the 2D alignment parameters of all members listed in ISAC class averages to file, using the xform.align2d header entry format.
 	isac_substack_total_header_align2d_path = os.path.join(args.output_directory, "{}_header_align2d.txt".format(args.substack_basename))
-	write_text_row(isac_substack_total_header_align2d_list, isac_substack_total_header_align2d_path)
+	utilities.write_text_row(isac_substack_total_header_align2d_list, isac_substack_total_header_align2d_path)
 	print(" ")
 	print_progress("Saved the converted 2D alignment parameters to {}.".format(isac_substack_total_header_align2d_path))
 	
@@ -522,30 +568,30 @@ def isac_substack(args):
 	print_progress("Creating ISAC substack as a virtual stack...")
 	virtual_bdb_substack_path = "bdb:{}#{}".format(args.output_directory, args.substack_basename)
 	cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(args.input_bdb_stack_path, virtual_bdb_substack_path, fullstack_img_id_path_of_isac_substack)
-	status = cmdexecute(cmd_line)
-	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
+	status = utilities.cmdexecute(cmd_line)
+	if status == 0: global_def.ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
 	
 	# Import the total 2D alignment parameters to xform.align2d
 	print(" ")
 	print_progress("Importing the total 2D alignment parameters in the original scale to the header entry...")
 	cmd_line = "sxheader.py {} --import={} --params=xform.align2d".format(virtual_bdb_substack_path, isac_substack_total_header_align2d_path)
-	status = cmdexecute(cmd_line)
-	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
+	status = utilities.cmdexecute(cmd_line)
+	if status == 0: global_def.ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
 	
 	# Transform xform.align2d to xform.projection
 	print(" ")
 	print_progress("Creating projection parameters header entry from imported 2D alignment parameters using 2D-to-3D transformation...")
 	cmd_line = "sxparams_2D_to_3D.py {}".format(virtual_bdb_substack_path)
-	status = cmdexecute(cmd_line)
-	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
+	status = utilities.cmdexecute(cmd_line)
+	if status == 0: global_def.ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
 	
 	# Export projection parameters from xform.projection
 	print(" ")
 	print_progress("Exporting projection parameters from the header entry...")
 	isac_substack_total_header_projection_path = os.path.join(args.output_directory, "{}_header_projection.txt".format(args.substack_basename))
 	cmd_line = "sxheader.py {} --export={} --params=xform.projection".format(virtual_bdb_substack_path, isac_substack_total_header_projection_path)
-	status = cmdexecute(cmd_line)
-	if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
+	status = utilities.cmdexecute(cmd_line)
+	if status == 0: global_def.ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
 	
 	# Print summary of processing
 	print(" ")
@@ -555,7 +601,7 @@ def isac_substack(args):
 	print_progress("  Default class averages  : %6d"%(n_default_class_avg)) 
 	print_progress("  Provided class averages : %6d"%(n_class_avg)) 
 	print_progress("  Extracted class members : %6d"%(n_isac_substack_img))
-	print_progress("  ISAC substack size      : %6d"%(EMUtil.get_image_count(virtual_bdb_substack_path)))
+	print_progress("  ISAC substack size      : %6d"%(EMAN2_cppwrap.EMUtil.get_image_count(virtual_bdb_substack_path)))
 	print(" ")
 
 # ----------------------------------------------------------------------------------------
@@ -569,10 +615,10 @@ def isac_substack(args):
 #
 # ----------------------------------------------------------------------------------------
 def resample_micrographs(args):
-	import glob
-	import shutil
-	from applications import MPI_start_end
-	from inspect import currentframe, getframeinfo
+	pass#IMPORTIMPORTIMPORT import glob
+	pass#IMPORTIMPORTIMPORT import shutil
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from inspect import currentframe, getframeinfo
 
 	# ====================================================================================
 	# Prepare processing
@@ -585,14 +631,14 @@ def resample_micrographs(args):
 	# Check MPI execution
 	# ------------------------------------------------------------------------------------
 	if SXmpi_run.RUNNING_UNDER_MPI:
-		from mpi import MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
+		pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 
 	# ------------------------------------------------------------------------------------
 	# Set up SPHIRE global definitions
 	# ------------------------------------------------------------------------------------
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
 	
 	# Change the name log file for error message
 	original_logfilename = global_def.LOGFILE
@@ -617,43 +663,43 @@ def resample_micrographs(args):
 		# Check error conditions of arguments
 		# --------------------------------------------------------------------------------
 		if error_status is None and mic_pattern is None:
-			error_status = ("Missing required argument input_micrograph_pattern. Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			error_status = ("Missing required argument input_micrograph_pattern. Please run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 
 		if error_status is None and mic_pattern[:len("bdb:")].lower() == "bdb":
-			error_status = ("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			error_status = ("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		if error_status is None and mic_pattern.find("*") == -1:
-			error_status = ("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			error_status = ("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		if error_status is None and root_out_dir is None:
-			error_status = ("Missing required argument output_directory. Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			error_status = ("Missing required argument output_directory. Please run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 
 		if error_status is None and os.path.exists(root_out_dir):
-			error_status = ("Output directory exists. Please change the name and restart the program.", getframeinfo(currentframe()))
+			error_status = ("Output directory exists. Please change the name and restart the program.", inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		# --------------------------------------------------------------------------------
 		# Check error conditions of options
 		# --------------------------------------------------------------------------------
 		if error_status is None and args.resample_ratio is None:
-			error_status = ("Missing required option --resample_ratio. Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			error_status = ("Missing required option --resample_ratio. Please run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		if error_status is None and (args.resample_ratio <= 0.0 or args.resample_ratio >= 1.0):
-			error_status = ("Invalid option value: --resample_ratio=%s. Please run %s -h for help." % (args.resample_ratio, program_name), getframeinfo(currentframe()))
+			error_status = ("Invalid option value: --resample_ratio=%s. Please run %s -h for help." % (args.resample_ratio, program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		if args.selection_list != None:
 			if error_status is None and not os.path.exists(args.selection_list): 
-				error_status = ("File specified by --selection_list option does not exists. Please check --selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+				error_status = ("File specified by --selection_list option does not exists. Please check --selection_list option. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 				break
 		
 		break
-	if_error_then_all_processes_exit_program(error_status)
+	utilities.if_error_then_all_processes_exit_program(error_status)
 	
 	# ------------------------------------------------------------------------------------
 	# Prepare the variables for all sections
@@ -699,7 +745,7 @@ def resample_micrographs(args):
 		# Check error condition of input micrograph file path list
 		print("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 		if error_status is None and len(input_mic_path_list) == 0:
-			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), getframeinfo(currentframe()))
+			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		# Register micrograph id substrings to the global entry dictionary
@@ -731,15 +777,15 @@ def resample_micrographs(args):
 				print("----- Running in Selected Micrographs Mode -----")
 				print(" ")
 				print("Checking the selection list...")
-				selected_mic_path_list = read_text_file(args.selection_list)
+				selected_mic_path_list = utilities.read_text_file(args.selection_list)
 				
 				# Check error condition of micrograph entry lists
 				print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), args.selection_list))
 				if error_status is None and len(selected_mic_path_list) == 0:
-					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 					break
 				if error_status is None and not isinstance(selected_mic_path_list[0], str):
-					error_status = ("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+					error_status = ("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 					break
 			else:
 				print(" ")
@@ -760,7 +806,7 @@ def resample_micrographs(args):
 			mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
 			mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 			if error_status is None and selected_mic_basename != mic_basename_pattern.replace("*", mic_id_substr):
-				error_status = ("A micrograph name (%s) in the input directory (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please correct input micrograph path pattern. Run %s -h for help." % (selected_mic_basename, os.path.dirname(mic_pattern), mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), getframeinfo(currentframe()))
+				error_status = ("A micrograph name (%s) in the input directory (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please correct input micrograph path pattern. Run %s -h for help." % (selected_mic_basename, os.path.dirname(mic_pattern), mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), inspect.getframeinfo(inspect.currentframe()))
 				break
 			if not mic_id_substr in global_entry_dict:
 				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
@@ -869,7 +915,7 @@ def resample_micrographs(args):
 		# Check MPI error condition
 		# --------------------------------------------------------------------------------
 		if error_status is None and len(valid_mic_id_substr_list) < SXmpi_run.n_mpi_procs:
-			error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed)." % (SXmpi_run.n_mpi_procs, len(valid_mic_id_substr_list)), getframeinfo(currentframe()))
+			error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed)." % (SXmpi_run.n_mpi_procs, len(valid_mic_id_substr_list)), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		break
@@ -878,7 +924,7 @@ def resample_micrographs(args):
 	# The following function takes care of the case when an if-statement uses break for occurence of an error.
 	# However, more elegant way is to use 'exception' statement of exception mechanism...
 	# 
-	if_error_then_all_processes_exit_program(error_status)
+	utilities.if_error_then_all_processes_exit_program(error_status)
 	
 	# ====================================================================================
 	# Obtain the list of micrograph id sustrings
@@ -899,13 +945,13 @@ def resample_micrographs(args):
 	# keep a copy of the root output directory where the final bdb will be created
 	unsliced_valid_serial_id_list = valid_mic_id_substr_list
 	if SXmpi_run.RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		# All mpi processes should know global entry directory and valid micrograph id substring list
-		global_entry_dict = wrap_mpi_bcast(global_entry_dict, SXmpi_run.main_mpi_proc)
-		valid_mic_id_substr_list = wrap_mpi_bcast(valid_mic_id_substr_list, SXmpi_run.main_mpi_proc)
+		global_entry_dict = utilities.wrap_mpi_bcast(global_entry_dict, SXmpi_run.main_mpi_proc)
+		valid_mic_id_substr_list = utilities.wrap_mpi_bcast(valid_mic_id_substr_list, SXmpi_run.main_mpi_proc)
 		
 		# Slice the list of valid micrograph id substrings for this mpi process
-		mic_start, mic_end = MPI_start_end(len(valid_mic_id_substr_list), SXmpi_run.n_mpi_procs, SXmpi_run.my_mpi_proc_id)
+		mic_start, mic_end = applications.MPI_start_end(len(valid_mic_id_substr_list), SXmpi_run.n_mpi_procs, SXmpi_run.my_mpi_proc_id)
 		valid_mic_id_substr_list = valid_mic_id_substr_list[mic_start:mic_end]
 		
 	if SXmpi_run.is_main_proc():
@@ -924,7 +970,7 @@ def resample_micrographs(args):
 
 	# All node should wait for main node to create root output directory
 	if SXmpi_run.RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD) # all MPI processes should wait until the directory is created by main process
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD) # all MPI processes should wait until the directory is created by main process
 		# 
 		# NOTE: Toshio Moriya 2018/03/06
 		# To walk-around synchronisation problem between all MPI nodes and a file server,
@@ -950,7 +996,7 @@ def resample_micrographs(args):
 		# --------------------------------------------------------------------------------
 		mic_path = global_entry_dict[mic_id_substr][subkey_input_mic_path]
 		try:
-			mic_img = get_im(mic_path)
+			mic_img = utilities.get_im(mic_path)
 		except:
 			print("Failed to read the associate micrograph %s for %s. The file might be corrupted. Skipping..." % (mic_path, mic_basename))
 			continue
@@ -962,7 +1008,7 @@ def resample_micrographs(args):
 		# NOTE: Toshio Moriya 2018/03/06
 		# resample() efficiently takes care of the case resample_ratio = 1.0 but
 		# it does not set apix_*. Even though it sets apix_* when resample_ratio < 1.0...
-		mic_img = resample(mic_img, resample_ratio)
+		mic_img = fundamentals.resample(mic_img, resample_ratio)
 		
 		# --------------------------------------------------------------------------------
 		# Generate the output file path of particle stack for this mpi process
@@ -981,7 +1027,7 @@ def resample_micrographs(args):
 	# Print out summary of processing
 	# ------------------------------------------------------------------------------------
 	if SXmpi_run.RUNNING_UNDER_MPI:
-		n_mic_process = mpi_reduce(n_mic_process, 1, MPI_INT, MPI_SUM, SXmpi_run.main_mpi_proc, MPI_COMM_WORLD)
+		n_mic_process = mpi.mpi_reduce(n_mic_process, 1, mpi.MPI_INT, mpi.MPI_SUM, SXmpi_run.main_mpi_proc, mpi.MPI_COMM_WORLD)
 	
 	# Print out the summary of all micrographs
 	if SXmpi_run.is_main_proc():
@@ -991,7 +1037,7 @@ def resample_micrographs(args):
 		print("Processed                          : %6d" % (n_mic_process))
 	
 	if SXmpi_run.RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	
 	if SXmpi_run.is_main_proc():
 		print(" ")
@@ -1036,9 +1082,9 @@ def resample_micrographs(args):
 # 
 # ----------------------------------------------------------------------------------------
 def organize_micrographs(args):
-	import glob
-	import shutil
-	from utilities import read_text_file
+	pass#IMPORTIMPORTIMPORT import glob
+	pass#IMPORTIMPORTIMPORT import shutil
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_file
 	
 	# Define the name of this subcommand
 	# subcommand_name = "organize_micrographs"
@@ -1047,8 +1093,8 @@ def organize_micrographs(args):
 	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
-		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
-		if_error_then_all_processes_exit_program(error_status)
+		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), inspect.getframeinfo(inspect.currentframe()))
+		utilities.if_error_then_all_processes_exit_program(error_status)
 	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
 	global_def.BATCH = True 
@@ -1065,13 +1111,13 @@ def organize_micrographs(args):
 	# Check error conditions
 	# ------------------------------------------------------------------------------------
 	if src_mic_pattern.find("*") == -1:
-		ERROR("The source micrograph path pattern must contain wild card (*). Please correct source_micrograph_pattern argument and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("The source micrograph path pattern must contain wild card (*). Please correct source_micrograph_pattern argument and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
 	if os.path.splitext(select_list_path)[1] != ".txt":
-		ERROR("The extension of source micrograph selecting list file must \'.txt\'. Please choose a correct file path or change the file extension, then restart the program.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("The extension of source micrograph selecting list file must \'.txt\'. Please choose a correct file path or change the file extension, then restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
 	if not os.path.exists(select_list_path):
-		ERROR("The micrograph selecting list file does not exist. Please choose a correct file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("The micrograph selecting list file does not exist. Please choose a correct file path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
 	# ------------------------------------------------------------------------------------
 	# Define operation mode information
@@ -1140,7 +1186,7 @@ def organize_micrographs(args):
 	# Check error condition of source micrograph file path list
 	print_progress("Found %d microgarphs in %s."%(len(src_mic_path_list), src_dir))
 	if len(src_mic_path_list) == 0:
-		ERROR("No micrograph files are found in the directory specified by the micrograph path pattern (%s). Please check source_micrograph_pattern argument and restart the program."%(src_dir), subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("No micrograph files are found in the directory specified by the micrograph path pattern (%s). Please check source_micrograph_pattern argument and restart the program."%(src_dir), subcommand_name) # action=1 - fatal error, exit
 	
 	# Register micrograph id substrings to the global entry dictionary
 	for src_mic_path in src_mic_path_list:
@@ -1192,12 +1238,12 @@ def organize_micrographs(args):
 	# Generate micrograph lists according to the execution mode
 	print(" ")
 	print_progress("Checking the selection list...")
-	select_mic_path_list = read_text_file(select_list_path)
+	select_mic_path_list = utilities.read_text_file(select_list_path)
 	
 	# Check error condition of micrograph entry lists
 	print_progress("Found %d microgarph entries in %s."%(len(select_mic_path_list), select_list_path))
 	if len(select_mic_path_list) == 0:
-		ERROR("No micrograph entries are found in the selection list file (%s). Please correct selection_list option and restart the program."%(select_list_path), subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("No micrograph entries are found in the selection list file (%s). Please correct selection_list option and restart the program."%(select_list_path), subcommand_name) # action=1 - fatal error, exit
 	
 	select_mic_dir = os.path.dirname(select_mic_path_list[0])
 	if select_mic_dir != "":
@@ -1720,8 +1766,8 @@ def restacking(args):
 	# import glob
 	# import traceback
 	# import math
-	from EMAN2db   import db_check_dict
-	from utilities import get_im, get_params_proj
+	pass#IMPORTIMPORTIMPORT from EMAN2db   import db_check_dict
+	pass#IMPORTIMPORTIMPORT from utilities import get_im, get_params_proj
 	
 	# ========================================================================================
 	class SX_mic_entry(object):
@@ -1748,46 +1794,46 @@ def restacking(args):
 	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
-		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
-		if_error_then_all_processes_exit_program(error_status)
+		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), inspect.getframeinfo(inspect.currentframe()))
+		utilities.if_error_then_all_processes_exit_program(error_status)
 	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
 	global_def.BATCH = True 
 	
 	# Check error conditions of arguments
-	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
-		ERROR("Input BDB image stack file does not exist. Please check the input stack path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+	if not EMAN2db.db_check_dict(args.input_bdb_stack_path, readonly=True):
+		global_def.ERROR("Input BDB image stack file does not exist. Please check the input stack path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	if os.path.exists(args.output_directory):
-		ERROR("Output directory exists. Please change the name and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Output directory exists. Please change the name and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
 	# Check error conditions of options
 	if args.selection_list is not None:
 		if not os.path.exists(args.selection_list):
-			ERROR("Micrograph selecting list does not exist. Please check the micrograph selecting list path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Micrograph selecting list does not exist. Please check the micrograph selecting list path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 		if os.path.splitext(args.selection_list)[1] != ".txt":
-			ERROR("The extention of micrograph selecting list file must be .txt. Please check the micrograph selecting list path and restart the program.", subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("The extention of micrograph selecting list file must be .txt. Please check the micrograph selecting list path and restart the program.", subcommand_name) # action=1 - fatal error, exit
 		args.sv_vstack_basename = args.sv_vstack_basename.strip()
 		if args.sv_vstack_basename == "":
-			ERROR("Output virtual stack basename cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Output virtual stack basename cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
 	if not args.reboxing:
-		img = EMData()
+		img = EMAN2_cppwrap.EMData()
 		img.read_image(args.input_bdb_stack_path, 0, True)
 		img_size = img.get_xsize()
 		if abs(args.shift3d_x) >= img_size//2:
-			ERROR("Invalid 3D x-shift {}. 3D x-shift must be smaller than half of image size {}. Please provide valid values for x-shift and/or box size. Then, restart the program.".format(args.shift3d_x, args.img_size//2), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid 3D x-shift {}. 3D x-shift must be smaller than half of image size {}. Please provide valid values for x-shift and/or box size. Then, restart the program.".format(args.shift3d_x, args.img_size//2), subcommand_name) # action=1 - fatal error, exit
 		if abs(args.shift3d_y) >= img_size//2:
-			ERROR("Invalid 3D y-shift {}. 3D y-shift must be smaller than half of image size {}. Please provide valid values for y-shift and/or box size. Then, restart the program.".format(args.shift3d_y, args.img_size//2), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid 3D y-shift {}. 3D y-shift must be smaller than half of image size {}. Please provide valid values for y-shift and/or box size. Then, restart the program.".format(args.shift3d_y, args.img_size//2), subcommand_name) # action=1 - fatal error, exit
 		if abs(args.shift3d_z) >= img_size//2:
-			ERROR("Invalid 3D z-shift {}. 3D z-shift must be smaller than half of image size {}. Please provide valid values for z-shift and/or box size. Then, restart the program.".format(args.shift3d_z, args.img_size//2), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid 3D z-shift {}. 3D z-shift must be smaller than half of image size {}. Please provide valid values for z-shift and/or box size. Then, restart the program.".format(args.shift3d_z, args.img_size//2), subcommand_name) # action=1 - fatal error, exit
 	if args.reboxing:
 		if args.rb_box_size <= 0:
-			ERROR("Invalid box size {}. Box size must be larger than zero. Please provide valid box size and restart the program.".format(args.rb_box_size), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid box size {}. Box size must be larger than zero. Please provide valid box size and restart the program.".format(args.rb_box_size), subcommand_name) # action=1 - fatal error, exit
 		if abs(args.shift3d_x) >= args.rb_box_size//2:
-			ERROR("Invalid 3D x-shift {}. 3D x-shift must be smaller than half of box size {}. Please provide valid values for x-shift and/or box size. Then, restart the program.".format(args.shift3d_x, args.rb_box_size//2), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid 3D x-shift {}. 3D x-shift must be smaller than half of box size {}. Please provide valid values for x-shift and/or box size. Then, restart the program.".format(args.shift3d_x, args.rb_box_size//2), subcommand_name) # action=1 - fatal error, exit
 		if abs(args.shift3d_y) >= args.rb_box_size//2:
-			ERROR("Invalid 3D y-shift {}. 3D y-shift must be smaller than half of box size {}. Please provide valid values for y-shift and/or box size. Then, restart the program.".format(args.shift3d_y, args.rb_box_size//2), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid 3D y-shift {}. 3D y-shift must be smaller than half of box size {}. Please provide valid values for y-shift and/or box size. Then, restart the program.".format(args.shift3d_y, args.rb_box_size//2), subcommand_name) # action=1 - fatal error, exit
 		if abs(args.shift3d_z) >= args.rb_box_size//2:
-			ERROR("Invalid 3D z-shift {}. 3D z-shift must be smaller than half of box size {}. Please provide valid values for z-shift and/or box size. Then, restart the program.".format(args.shift3d_z, args.rb_box_size//2), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid 3D z-shift {}. 3D z-shift must be smaller than half of box size {}. Please provide valid values for z-shift and/or box size. Then, restart the program.".format(args.shift3d_z, args.rb_box_size//2), subcommand_name) # action=1 - fatal error, exit
 	
 	# args.scale=1.0
 	
@@ -1805,14 +1851,14 @@ def restacking(args):
 		print_progress("----- Running in Selected Micrographs Mode -----")
 		print(" ")
 		print_progress("Checking the selection list {}...".format(args.selection_list))
-		selected_mic_path_list = read_text_file(args.selection_list)
+		selected_mic_path_list = utilities.read_text_file(args.selection_list)
 		
 		# Check error condition of micrograph entry lists
 		print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), args.selection_list))
 		if len(selected_mic_path_list) == 0:
-			ERROR("No micrograph entries are found in the selection list file. Please check the micrograph selecting list and restart the program.", subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("No micrograph entries are found in the selection list file. Please check the micrograph selecting list and restart the program.", subcommand_name) # action=1 - fatal error, exit
 		if not isinstance(selected_mic_path_list[0], str):
-			ERROR("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check the micrograph selecting list and restart the program.", subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check the micrograph selecting list and restart the program.", subcommand_name) # action=1 - fatal error, exit
 		
 		selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 		if selected_mic_directory != "":
@@ -1841,7 +1887,7 @@ def restacking(args):
 	# --------------------------------------------------------------------------------
 	print(" ")
 	print_progress("Checking the input stack {}...".format(args.input_bdb_stack_path))
-	n_img = EMUtil.get_image_count(args.input_bdb_stack_path)
+	n_img = EMAN2_cppwrap.EMUtil.get_image_count(args.input_bdb_stack_path)
 	# print(" ")
 	print_progress("Found {} particle images in the input stack {}".format(n_img, args.input_bdb_stack_path))
 	
@@ -1852,7 +1898,7 @@ def restacking(args):
 	eman1_dummy = -1       # For 5th column of EMAN1 boxer format
 	missing_ctf_params_counter = 0
 	missing_proj_params_counter = 0
-	img = EMData()
+	img = EMAN2_cppwrap.EMData()
 	for img_id in range(n_img):
 		# Load images 
 		# img = get_im(args.input_bdb_stack_path, img_id)
@@ -1891,7 +1937,7 @@ def restacking(args):
 		dfang   = 0.0
 		# Extract the CTF parameters from the image header
 		if img.has_attr("ctf"):
-			defocus, cs, voltage, apix, bfactor, ampcont, dfdiff, dfang = get_ctf(img)
+			defocus, cs, voltage, apix, bfactor, ampcont, dfdiff, dfang = utilities.get_ctf(img)
 		else:
 			missing_ctf_params_counter += 1
 		
@@ -1905,7 +1951,7 @@ def restacking(args):
 		proj_tx    = 0.0
 		proj_ty    = 0.0
 		if img.has_attr("xform.projection"):
-			proj_phi, proj_theta, proj_psi, proj_tx, proj_ty = get_params_proj(img)
+			proj_phi, proj_theta, proj_psi, proj_tx, proj_ty = utilities.get_params_proj(img)
 		else:
 			missing_proj_params_counter += 1
 		
@@ -1927,8 +1973,8 @@ def restacking(args):
 			resampled_shift3d_z /= ptcl_source_resample_ratio
 		
 		# Transform the coordinates according to projection parameters and user-provided 3D shift (corresponding to shifting the 3D volume)
-		trans3x3 = Transform({"phi":float(proj_phi), "theta":float(proj_theta), "psi":float(proj_psi), "tx":float(resampled_proj_tx), "ty":float(resampled_proj_ty), "tz":0.0, "type":"spider"})
-		origin_vec3d = Vec3f(float(resampled_shift3d_x), float(resampled_shift3d_y), float(resampled_shift3d_z))
+		trans3x3 = EMAN2_cppwrap.Transform({"phi":float(proj_phi), "theta":float(proj_theta), "psi":float(proj_psi), "tx":float(resampled_proj_tx), "ty":float(resampled_proj_ty), "tz":0.0, "type":"spider"})
+		origin_vec3d = EMAN2_cppwrap.Vec3f(float(resampled_shift3d_x), float(resampled_shift3d_y), float(resampled_shift3d_z))
 		transformed_vec3d = trans3x3 * origin_vec3d
 		shift2d_x = -1 * transformed_vec3d[0]
 		shift2d_y = -1 * transformed_vec3d[1]
@@ -2224,8 +2270,8 @@ def restacking(args):
 		print_progress("Creating output stack as a virtual stack...")
 		virtual_bdb_stack_path = "bdb:{}#{}".format(args.output_directory, args.sv_vstack_basename)
 		cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(args.input_bdb_stack_path, virtual_bdb_stack_path, output_particle_id_list_file_path)
-		status = cmdexecute(cmd_line)
-		if status == 0: ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
+		status = utilities.cmdexecute(cmd_line)
+		if status == 0: global_def.ERROR("\"{}\" execution failed. Exiting...".format(cmd_line), subcommand_name) # action=1 - fatal error, exit
 
 	print(" ")
 	print_progress("Global summary of processing...")
@@ -2258,7 +2304,7 @@ def restacking(args):
 
 # ----------------------------------------------------------------------------------------
 def moon_eliminator(args):
-	from fundamentals import resample, rot_shift3D
+	pass#IMPORTIMPORTIMPORT from fundamentals import resample, rot_shift3D
 	
 	# Define the name of this subcommand
 	# subcommand_name = "isac_substack"
@@ -2267,8 +2313,8 @@ def moon_eliminator(args):
 	
 	# Check MPI execution
 	if SXmpi_run.n_mpi_procs > 1:
-		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), getframeinfo(currentframe()))
-		if_error_then_all_processes_exit_program(error_status)
+		error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), inspect.getframeinfo(inspect.currentframe()))
+		utilities.if_error_then_all_processes_exit_program(error_status)
 
 	# To make the execution exit upon fatal error by ERROR in global_def.py
 	global_def.BATCH = True 
@@ -2279,61 +2325,61 @@ def moon_eliminator(args):
 	# Check error conditions of arguments
 	args.input_volume_path = args.input_volume_path.strip()
 	if not os.path.exists(args.input_volume_path):
-		ERROR("Input volume file {} does not exist. Please check the file path and restart the program.".format(args.input_volume_path), subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Input volume file {} does not exist. Please check the file path and restart the program.".format(args.input_volume_path), subcommand_name) # action=1 - fatal error, exit
 	
 	if args.input_volume_path_2nd is not None:
 		args.input_volume_path_2nd = args.input_volume_path_2nd.strip()
 		if not os.path.exists(args.input_volume_path_2nd):
-			ERROR("Second input volume file {} does not exist. Please check the file path and restart the program.".format(args.input_volume_path_2nd), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Second input volume file {} does not exist. Please check the file path and restart the program.".format(args.input_volume_path_2nd), subcommand_name) # action=1 - fatal error, exit
 	
 	args.output_directory = args.output_directory.strip()
 	if os.path.exists(args.output_directory):
-		ERROR("Output directory {} exists. Please change the name and restart the program.".format(args.output_directory), subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Output directory {} exists. Please change the name and restart the program.".format(args.output_directory), subcommand_name) # action=1 - fatal error, exit
 	
 	# Check error conditions of options
 	if args.pixel_size is None:
-		ERROR("Pixel size [A] is required. Please set a pasitive value larger than 0.0 to --pixel_size option.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Pixel size [A] is required. Please set a pasitive value larger than 0.0 to --pixel_size option.", subcommand_name) # action=1 - fatal error, exit
 	else:
 		if args.pixel_size <= 0.0:
-			ERROR("Invalid pixel size {}[A]. Please set a pasitive value larger than 0.0 to --pixel_size option.".format(args.pixel_size), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid pixel size {}[A]. Please set a pasitive value larger than 0.0 to --pixel_size option.".format(args.pixel_size), subcommand_name) # action=1 - fatal error, exit
 	
 	nyquist_res = args.pixel_size * 2
 	
 	if args.mol_mass is None:
-		ERROR("Molecular mass [kDa] is required. Please set a pasitive value larger than 0.0 to --mol_mass option.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Molecular mass [kDa] is required. Please set a pasitive value larger than 0.0 to --mol_mass option.", subcommand_name) # action=1 - fatal error, exit
 	else:
 		if args.mol_mass <= 0.0:
-			ERROR("Invalid molecular mass {}[A]. Please set a pasitive value larger than 0.0 to --mol_mass option.".format(args.mol_mass), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid molecular mass {}[A]. Please set a pasitive value larger than 0.0 to --mol_mass option.".format(args.mol_mass), subcommand_name) # action=1 - fatal error, exit
 	
 	if args.use_density_threshold is not None:
 		if args.use_density_threshold <= 0.0:
-			ERROR("Invalid density threshold {}. Please set a pasitive value larger than 0.0 to --use_density_threshold option.".format(args.use_density_threshold), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid density threshold {}. Please set a pasitive value larger than 0.0 to --use_density_threshold option.".format(args.use_density_threshold), subcommand_name) # action=1 - fatal error, exit
 	
 	isac_shrink_path = None
 	if( not (type(args.resample_ratio) is float)):
 		
 		# This should be string for the output directory path of an ISAC2 run
 		if not os.path.exists(args.resample_ratio):
-			ERROR("Specified ISAC2 run output directory {} does not exist. Please check --resample_ratio option.".format(args.resample_ratio), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Specified ISAC2 run output directory {} does not exist. Please check --resample_ratio option.".format(args.resample_ratio), subcommand_name) # action=1 - fatal error, exit
 		
 		isac_shrink_path = os.path.join(args.resample_ratio, "README_shrink_ratio.txt")
 		if not os.path.exists(isac_shrink_path):
-			ERROR("{} does not exist in the specified ISAC2 run output directory. Please check ISAC2 run directory and --resample_ratio option.".format(isac_shrink_path), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("{} does not exist in the specified ISAC2 run output directory. Please check ISAC2 run directory and --resample_ratio option.".format(isac_shrink_path), subcommand_name) # action=1 - fatal error, exit
 	else:
 		if float(args.resample_ratio) <= 0.0:
-			ERROR("Invalid resample ratio {}. Please set a value larger than 0.0 to --resample_ratio option.".format(args.resample_ratio), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid resample ratio {}. Please set a value larger than 0.0 to --resample_ratio option.".format(args.resample_ratio), subcommand_name) # action=1 - fatal error, exit
 	
 	if args.box_size is not None:
 		if args.box_size <= 0.0:
-			ERROR("Invalid box size {}[Pixels]. Please set a pasitive value larger than 0 to --box_size option.".format(args.box_size), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid box size {}[Pixels]. Please set a pasitive value larger than 0 to --box_size option.".format(args.box_size), subcommand_name) # action=1 - fatal error, exit
 		
 	if args.fl != -1.0:
 		if args.fl < nyquist_res:
-			ERROR("Invalid low-pass filter resolution {}[A] for 3D volume. Please set a value larger than or equal to Nyquist resolution {}[A].".format(args.fl, nyquist_res), subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Invalid low-pass filter resolution {}[A] for 3D volume. Please set a value larger than or equal to Nyquist resolution {}[A].".format(args.fl, nyquist_res), subcommand_name) # action=1 - fatal error, exit
 	
 	args.outputs_root = args.outputs_root.strip()
 	if args.outputs_root == "":
-		ERROR("Root name of outputs cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Root name of outputs cannot be empty string or only white spaces.", subcommand_name) # action=1 - fatal error, exit
 	
 	# ------------------------------------------------------------------------------------
 	# Preparation
@@ -2349,7 +2395,7 @@ def moon_eliminator(args):
 		print("----- Running in Halfset Volumes Mode -----")
 	
 	# Load volume
-	vol3d = get_im(args.input_volume_path)
+	vol3d = utilities.get_im(args.input_volume_path)
 	
 	vol3d_dims = vol3d.get_xsize()
 	print(" ")
@@ -2357,8 +2403,8 @@ def moon_eliminator(args):
 	
 	# Load second volume if specified
 	if args.input_volume_path_2nd:
-		Util.add_img(vol3d, get_im(args.input_volume_path_2nd))
-		Util.mul_scalar(vol3d, 0.5)
+		EMAN2_cppwrap.Util.add_img(vol3d, utilities.get_im(args.input_volume_path_2nd))
+		EMAN2_cppwrap.Util.mul_scalar(vol3d, 0.5)
 	
 	# Create output directory
 	print(" ")
@@ -2396,7 +2442,7 @@ def moon_eliminator(args):
 	if resample_ratio != 1.0:
 		print(" ")
 		print_progress("Resampling the input volume with resample ratio {}...".format(resample_ratio))
-		vol3d = resample(vol3d, resample_ratio)
+		vol3d = fundamentals.resample(vol3d, resample_ratio)
 		
 		vol3d_dims = vol3d.get_xsize()
 		print_progress("  Dimensions of resampled 3D volume : {}".format(vol3d_dims))
@@ -2417,9 +2463,9 @@ def moon_eliminator(args):
 			print(" ")
 			print_progress("Adjusting the dimensions of 3D volume to {}...".format(args.box_size))
 			if args.box_size > vol3d_dims:
-				vol3d = Util.pad(vol3d, args.box_size, args.box_size, args.box_size, 0, 0, 0, "circumference")
+				vol3d = EMAN2_cppwrap.Util.pad(vol3d, args.box_size, args.box_size, args.box_size, 0, 0, 0, "circumference")
 			else:
-				vol3d = Util.window(vol3d, args.box_size, args.box_size, args.box_size, 0, 0, 0)
+				vol3d = EMAN2_cppwrap.Util.window(vol3d, args.box_size, args.box_size, args.box_size, 0, 0, 0)
 
 		vol3d_dims = vol3d.get_xsize()
 		print_progress("  The dimensions of adjusted 3D volume : {}".format(vol3d_dims))
@@ -2441,7 +2487,7 @@ def moon_eliminator(args):
 			args.shift3d_y *= resample_ratio
 			args.shift3d_z *= resample_ratio
 		print_progress("  Applying 3D shift (x, y, z) = ({}, {}, {}) to the volume...".format(args.shift3d_x, args.shift3d_y, args.shift3d_z))
-		vol3d = rot_shift3D(vol3d, sx = args.shift3d_x, sy = args.shift3d_y, sz = args.shift3d_z)
+		vol3d = fundamentals.rot_shift3D(vol3d, sx = args.shift3d_x, sy = args.shift3d_y, sz = args.shift3d_z)
 	
 	if args.debug:
 		vol3d_shift_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_shift.hdf".format(debug_output_id))
@@ -2456,7 +2502,7 @@ def moon_eliminator(args):
 		# Rotate the volume upside down  
 		# PAP - clearly Toshio was not aware of the fact that mirroring along z followed by rotation about y 
 		# is equivalent to mirroring along y.
-		vol3d = mirror(vol3d,"y")
+		vol3d = fundamentals.mirror(vol3d,"y")
 	
 	if args.debug:
 		vol3d_invert_hand_file_path = os.path.join(args.output_directory, "mrkdebug{:02d}_vol3d_invert_hand.hdf".format(debug_output_id))
@@ -2469,7 +2515,7 @@ def moon_eliminator(args):
 	if args.fl != -1.0:
 		print(" ")
 		print_progress("Low-pass filtration of the input volume using cutoff resolution {}[A] and fall-off {}[1/Pixels]...".format(args.fl, args.aa))
-		vol3d = filt_tanl(vol3d, args.pixel_size/args.fl, args.aa)
+		vol3d = filter.filt_tanl(vol3d, args.pixel_size/args.fl, args.aa)
 	else:
 		print(" ")
 		print_progress("The program does not low-pass filter input volume...".format(args.fl))
@@ -2496,14 +2542,14 @@ def moon_eliminator(args):
 	# Eliminate moons
 	print(" ")
 	print_progress("Eliminating moons of the input volume using density threshold of {} with {} edge...".format(density_threshold, args.edge_type))
-	my_volume_binarized = binarize(vol3d, density_threshold)
-	my_volume_binarized_with_no_moons = Util.get_biggest_cluster(my_volume_binarized)
+	my_volume_binarized = morphology.binarize(vol3d, density_threshold)
+	my_volume_binarized_with_no_moons = EMAN2_cppwrap.Util.get_biggest_cluster(my_volume_binarized)
 	volume_difference = my_volume_binarized - my_volume_binarized_with_no_moons
 	if( volume_difference.get_value_at(volume_difference.calc_max_index()) != 0 or \
 		volume_difference.get_value_at(volume_difference.calc_min_index()) != 0 ):
 		if args.edge_type == "cosine": mode = "C"
 		else:  mode = "G"
-		Util.mul_img(vol3d, adaptive_mask(my_volume_binarized_with_no_moons, 0.0, 0.5, args.gm_dilation, args.gm_edge_width, mode))
+		EMAN2_cppwrap.Util.mul_img(vol3d, morphology.adaptive_mask(my_volume_binarized_with_no_moons, 0.0, 0.5, args.gm_dilation, args.gm_edge_width, mode))
 
 	del volume_difference, my_volume_binarized, my_volume_binarized_with_no_moons
 
@@ -2599,8 +2645,8 @@ def moon_eliminator(args):
 # rm -r debug_mrkout_sxpipe_desymmetrize_cwd_g1; sxpipe.py desymmetrize bdb:sdata Sort3D/Cluster_001.txt debug_mrkout_sxpipe_desymmetrize_cwd_g1 --check_duplication
 # ----------------------------------------------------------------------------------------
 def desymmetrize(args):
-	from utilities import read_text_file, write_text_file
-	from EMAN2db import db_check_dict, db_parse_path, db_open_dict
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_file, write_text_file
+	pass#IMPORTIMPORTIMPORT from EMAN2db import db_check_dict, db_parse_path, db_open_dict
 	
 	# To make the execution exit upon fatal error by ERROR in global_def.py
 	global_def.BATCH = True 
@@ -2610,20 +2656,20 @@ def desymmetrize(args):
 	
 	args.input_bdb_stack_path = args.input_bdb_stack_path.strip()
 	if args.input_bdb_stack_path[:len("bdb:")].lower() != "bdb:":
-		ERROR("Invalid input BDB stack file path %s.  The path must start with \'bdb:\'. Please check the file path and restart the program." % (args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
-	if not db_check_dict(args.input_bdb_stack_path, readonly=True):
-		ERROR("Input BDB image stack file %s does not exist. Please check the file path and restart the program." % (args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Invalid input BDB stack file path %s.  The path must start with \'bdb:\'. Please check the file path and restart the program." % (args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
+	if not EMAN2db.db_check_dict(args.input_bdb_stack_path, readonly=True):
+		global_def.ERROR("Input BDB image stack file %s does not exist. Please check the file path and restart the program." % (args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
 	if not os.path.exists(args.input_cluster_path):
-		ERROR("Specified input cluster text file %s does not exist. Please check the file path and restart the program." %(args.input_cluster_path), subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Specified input cluster text file %s does not exist. Please check the file path and restart the program." %(args.input_cluster_path), subcommand_name) # action=1 - fatal error, exit
 	if os.path.exists(args.output_directory):
-		ERROR("Output directory %s exists. Please change the name and restart the program." %(args.output_directory), subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Output directory %s exists. Please change the name and restart the program." %(args.output_directory), subcommand_name) # action=1 - fatal error, exit
 	
 	
 	# Create output directory
 	os.mkdir(args.output_directory)
 	
 	# Load symmetrized particle IDs of all sorted groups in the specified homogeneous group
-	symmetrized_particle_id_list = read_text_file(args.input_cluster_path)  # Cluster#.txt
+	symmetrized_particle_id_list = utilities.read_text_file(args.input_cluster_path)  # Cluster#.txt
 	print("MRK_DEBUG: len(symmetrized_particle_id_list) := ", len(symmetrized_particle_id_list))
 	print_progress("Detected %d symmetrized particle IDs in the specified cluster text file %s."%(len(symmetrized_particle_id_list), args.input_cluster_path))
 	print(" ")
@@ -2632,10 +2678,10 @@ def desymmetrize(args):
 	
 	# Save the symmetrized particle id list for debugging
 	symmetrized_particle_id_list_file_path = os.path.join(args.output_directory, "sort3d_symmetrized_particle_id_list.txt")
-	write_text_file(symmetrized_particle_id_list, symmetrized_particle_id_list_file_path)
+	utilities.write_text_file(symmetrized_particle_id_list, symmetrized_particle_id_list_file_path)
 	
 	# Extract file path from the input BDB dictionary
-	input_bdb_full_path, input_bdb_dictname, input_bdb_keys = db_parse_path(args.input_bdb_stack_path)
+	input_bdb_full_path, input_bdb_dictname, input_bdb_keys = EMAN2db.db_parse_path(args.input_bdb_stack_path)
 	cwd = os.getcwd()
 	if cwd[-1] != cwd[0] or cwd[-1] != cwd[0]:
 		cwd += cwd[0]
@@ -2649,9 +2695,9 @@ def desymmetrize(args):
 	# Open the input BDB dictionary
 	# 
 	# NOTE: EMData.read_images() or get_im() of utilities works as well
-	input_bdb_stack = db_open_dict(args.input_bdb_stack_path, ro=True) # Read only
+	input_bdb_stack = EMAN2db.db_open_dict(args.input_bdb_stack_path, ro=True) # Read only
 	
-	n_img_detected = EMUtil.get_image_count(args.input_bdb_stack_path)
+	n_img_detected = EMAN2_cppwrap.EMUtil.get_image_count(args.input_bdb_stack_path)
 	print_progress("Detected %d particles in symmetrized input BDB stack %s."%(n_img_detected, args.input_bdb_stack_path))
 	print(" ")
 	
@@ -2659,7 +2705,7 @@ def desymmetrize(args):
 	try: 
 		img_header = input_bdb_stack.get(0, nodata=1).get_attr_dict() # Need only header information
 	except:
-		ERROR("Failed to read image header of particle #%d from %s. Aborting..."%(symmetrized_particle_id, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Failed to read image header of particle #%d from %s. Aborting..."%(symmetrized_particle_id, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
 	
 	symmetry_type = ""
 	n_symmetry = 0
@@ -2670,19 +2716,19 @@ def desymmetrize(args):
 		
 		symmetry_type = img_header["variabilitysymmetry"][:1].lower()
 		if symmetry_type != "c":
-			ERROR("Unsupported point-group symmetries. Other than cn are not supported yet.", subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Unsupported point-group symmetries. Other than cn are not supported yet.", subcommand_name) # action=1 - fatal error, exit
 		n_symmetry = int(img_header["variabilitysymmetry"][-1:])
 		if n_symmetry < 2:
-			ERROR("Point-group symmetry have to be higher than c1.", subcommand_name) # action=1 - fatal error, exit
+			global_def.ERROR("Point-group symmetry have to be higher than c1.", subcommand_name) # action=1 - fatal error, exit
 	else:
-		ERROR("Specified input BDB stack is not symmetrized. Please choose a symmetrized stack and restart the program.", subcommand_name) # action=1 - fatal error, exit
+		global_def.ERROR("Specified input BDB stack is not symmetrized. Please choose a symmetrized stack and restart the program.", subcommand_name) # action=1 - fatal error, exit
 	
 	
 	n_presymmetriezed_img = n_img_detected // n_symmetry
 	print_progress("The computed number of particles in the pre-symmetrized stack is %d."%(n_presymmetriezed_img))
 	
 	if len(symmetrized_particle_id_list) > n_presymmetriezed_img:
-		ERROR("Input symmetrized particle ID list contains more entries (%d) than expected (%d)."%(len(symmetrized_particle_id_list), n_presymmetriezed_img), subcommand_name, action = 0) # action = 0 - non-fatal, print a warning;
+		global_def.ERROR("Input symmetrized particle ID list contains more entries (%d) than expected (%d)."%(len(symmetrized_particle_id_list), n_presymmetriezed_img), subcommand_name, action = 0) # action = 0 - non-fatal, print a warning;
 
 	# Loop through all ISAC validated particles
 	if args.check_duplication:
@@ -2740,11 +2786,11 @@ def desymmetrize(args):
 
 	# Save the desymmetrized particle id list
 	desymmetrized_particle_id_list_file_path = os.path.join(args.output_directory, "sort3d_desymmetrized_particle_id_list.txt")
-	write_text_file(desymmetrized_particle_id_list, desymmetrized_particle_id_list_file_path)
+	utilities.write_text_file(desymmetrized_particle_id_list, desymmetrized_particle_id_list_file_path)
 
 	# Save the no-duplicated desymmetrized particle id list
 	nodupilicated_desymmetrized_particle_id_list_file_path = os.path.join(args.output_directory, "sort3d_nodupilicated_desymmetrized_particle_id_list.txt")
-	write_text_file(nodupilicated_desymmetrized_particle_id_list, nodupilicated_desymmetrized_particle_id_list_file_path)
+	utilities.write_text_file(nodupilicated_desymmetrized_particle_id_list, nodupilicated_desymmetrized_particle_id_list_file_path)
 
 	# Print summary of processing
 	print(" ")
@@ -2780,13 +2826,13 @@ def angular_distribution(args):
 	Returns:
 	None
 	"""
-	import fundamentals
-	import numpy
-	import scipy.spatial as scipy_spatial
-	import errno
-	import matplotlib
-	matplotlib.use('Agg')
-	import matplotlib.pyplot as plt
+	pass#IMPORTIMPORTIMPORT import fundamentals
+	pass#IMPORTIMPORTIMPORT import numpy
+	pass#IMPORTIMPORTIMPORT import scipy.spatial as scipy_spatial
+	pass#IMPORTIMPORTIMPORT import errno
+	pass#IMPORTIMPORTIMPORT import matplotlib
+#	pass#IMPORTIMPORTIMPORT matplotlib.use('Agg')
+	pass#IMPORTIMPORTIMPORT import matplotlib.pyplot as plt
 
 	# Sanity checks
 	#print_progress('Check if values are valid')
@@ -2978,7 +3024,7 @@ def angular_distribution(args):
 
 	#markus(args, data, data_cart, sym_class)
 
-	occupy, eva = angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= symmetry, method=args.method)
+	occupy, eva = utilities.angular_histogram(sym_class.reduce_anglesets(data_params.tolist(), inc_mirror=1), angstep = args.delta, sym= symmetry, method=args.method)
 #		for i,q in enumerate(eva):  print(i,q)
 	radius_array = numpy.array(occupy)
 	angles_no_mirror = numpy.array(eva)
@@ -3083,7 +3129,7 @@ def main():
 	# Set up argument parser (supports subcommand)
 	# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 	parser = argparse.ArgumentParser(description="The collection of SPHIRE small pipleline tools.")
-	parser.add_argument("--version", action="version", version=SPARXVERSION)
+	parser.add_argument("--version", action="version", version=global_def.SPARXVERSION)
 	# subparsers = parser.add_subparsers(title="subcommands", description="valid subcommands", help="additional help")
 	subparsers = parser.add_subparsers(help="sub-command help", dest="subcommand")
 

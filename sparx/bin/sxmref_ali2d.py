@@ -32,18 +32,33 @@ from __future__ import print_function
 #
 #
 
-import os
+import applications
 import global_def
-from global_def import *
-from optparse import OptionParser
+import mpi
+import optparse
+import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import development
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 def main():
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " data_stack reference_stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translation_step --center=center_type --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --rand_seed=random_seed --MPI"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--ir", type="float", default=1, help="  inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou", type="float", default=-1, help="  outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
 	parser.add_option("--rs", type="float", default=1, help="  step between rings in rotational correlation > 0 (set to 1)" )
@@ -70,26 +85,26 @@ def main():
 			mask = args[3]
 
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 		
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
 		global_def.BATCH = True
 		if options.EQ:
-			from development import mrefeq_ali2df
+			pass#IMPORTIMPORTIMPORT from development import mrefeq_ali2df
 			#print  "  calling MPI",options.MPI,options.function,options.rand_seed
 			#print  args
 			mrefeq_ali2df(args[0], args[1], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
 		else:
-			from applications import mref_ali2d
-			mref_ali2d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
+			pass#IMPORTIMPORTIMPORT from applications import mref_ali2d
+			applications.mref_ali2d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
 		global_def.BATCH = False
 		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+			mpi.mpi_finalize()
 
 
 if __name__ == "__main__":

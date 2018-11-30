@@ -32,26 +32,57 @@ from __future__ import print_function
 #
 #
 
-from builtins import range
-import	global_def
-from	global_def 	import *
-from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
-from    EMAN2jsondb import js_open_dict
-
-from	utilities 	import *
-from    statistics import mono
+import EMAN2_cppwrap
+import alignment
+import copy
+import fundamentals
+import global_def
+import numpy
 import numpy.random
-import  os
+import optparse
+import os
+import statistics
+import sys
+import time
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import EMAN2jsondb
+pass#IMPORTIMPORTIMPORT import alignment
+pass#IMPORTIMPORTIMPORT import copy
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import numpy.random
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import pyemtbx.options
+pass#IMPORTIMPORTIMPORT import random
+pass#IMPORTIMPORTIMPORT import statistics
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import time
+pass#IMPORTIMPORTIMPORT import utilities
+from builtins import range
+pass#IMPORTIMPORTIMPORT import	global_def
+pass#IMPORTIMPORTIMPORT from	global_def 	import *
+pass#IMPORTIMPORTIMPORT from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
+pass#IMPORTIMPORTIMPORT from    EMAN2jsondb import js_open_dict
+
+pass#IMPORTIMPORTIMPORT from	utilities 	import *
+pass#IMPORTIMPORTIMPORT from    statistics import mono
+pass#IMPORTIMPORTIMPORT import numpy.random
+pass#IMPORTIMPORTIMPORT import  os
 
 """
 	Traveling salesman problem solved using Simulated Annealing.
 """
 #from scipy import *
 #from pylab import *
-from numpy import *
+pass#IMPORTIMPORTIMPORT from numpy import *
 
 def Distance(i1, i2, lccc):
-	return max(1.0 - lccc[mono(i1,i2)][0], 0.0)
+	return max(1.0 - lccc[statistics.mono(i1,i2)][0], 0.0)
 # 	return sqrt((R1[0]-R2[0])**2+(R1[1]-R2[1])**2)
 
 def TotalDistance(city, lccc):
@@ -100,8 +131,8 @@ def Plot(city, R, dist):
 def tsp(lccc):
 
 	#     ncity = 100        # Number of cities to visit
-	from math import sqrt
-	ncity = int( (1+sqrt(1+8*len(lccc)))/2 )        # Number of cities to visit
+	pass#IMPORTIMPORTIMPORT from math import sqrt
+	ncity = int( (1+numpy.sqrt(1+8*len(lccc)))/2 )        # Number of cities to visit
     #  sanity check
 	if( ncity*(ncity-1)/2 != len(lccc) ): return [-1]
 
@@ -122,7 +153,7 @@ def tsp(lccc):
 	#  Not clear what is nct
 	nct = ncity
 	# Stores points of a move
-	n = zeros(6, dtype=int)
+	n = numpy.zeros(6, dtype=int)
 
 	T = Tstart # temperature
 
@@ -153,7 +184,7 @@ def tsp(lccc):
 				de = Distance(city[n[2]], city[n[1]], lccc) + Distance(city[n[3]], city[n[0]], lccc)\
 					 - Distance(city[n[2]], city[n[0]], lccc) - Distance(city[n[3]] ,city[n[1]], lccc)
                 
-				if de<0 or exp(-de/T)>numpy.random.rand(): # Metropolis
+				if de<0 or numpy.exp(-de/T)>numpy.random.rand(): # Metropolis
 					accepted += 1
 					dist += de
 					reverse(city, n)
@@ -169,7 +200,7 @@ def tsp(lccc):
 				de += Distance( city[n[0]], city[n[4]], lccc) + Distance( city[n[1]], city[n[5]], lccc) \
 						+ Distance( city[n[2]], city[n[3]], lccc)
 
-				if de<0 or exp(-de/T)>numpy.random.rand(): # Metropolis
+				if de<0 or numpy.exp(-de/T)>numpy.random.rand(): # Metropolis
 					accepted += 1
 					dist += de
 					city = transpt(city, n)
@@ -191,22 +222,22 @@ def tsp(lccc):
 
 
 def pca(cov):
-	from numpy import  linalg, argsort
+	pass#IMPORTIMPORTIMPORT from numpy import  linalg, argsort
 	""" assume one sample per column """
-	values, vecs = linalg.eigh(cov)
-	perm = argsort(-values)  # sort in descending order
+	values, vecs = numpy.linalg.eigh(cov)
+	perm = numpy.argsort(-values)  # sort in descending order
 	return values[perm], vecs[:, perm]
 
 
 def main():
-	import sys
-	import os
-	import math
-	import random
-	import pyemtbx.options
-	from   random   import random, seed, randint
-	from   optparse import OptionParser
-	from global_def import ERROR
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT import math
+	pass#IMPORTIMPORTIMPORT import random
+	pass#IMPORTIMPORTIMPORT import pyemtbx.options
+	pass#IMPORTIMPORTIMPORT from   random   import random, seed, randint
+	pass#IMPORTIMPORTIMPORT from   optparse import OptionParser
+	pass#IMPORTIMPORTIMPORT from global_def import ERROR
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options] <inputfile> <outputfile>
@@ -237,7 +268,7 @@ def main():
 
 """
 
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--dd", action="store_true", help="Circular ordering without adjustment of orientations", default=False)
 	parser.add_option("--circular", action="store_true", help="Select circular ordering (first image has to be similar to the last)", default=False)
 	parser.add_option("--align", action="store_true", help="Compute all pairwise alignments and from the table of image similarities find the best chain", default=False)
@@ -265,36 +296,36 @@ def main():
 		new_stack = args[1]
 
 
-		from utilities import model_circle
-		from statistics import ccc
-		from statistics import mono
-		lend = EMUtil.get_image_count(stack)
+		pass#IMPORTIMPORTIMPORT from utilities import model_circle
+		pass#IMPORTIMPORTIMPORT from statistics import ccc
+		pass#IMPORTIMPORTIMPORT from statistics import mono
+		lend = EMAN2_cppwrap.EMUtil.get_image_count(stack)
 		lccc = [None]*(lend*(lend-1)/2)
 
 		for i in range(lend-1):
-			v1 = get_im( stack, i )
+			v1 = utilities.get_im( stack, i )
 			if( i == 0 and nargs == 2):
 				nx = v1.get_xsize()
 				ny = v1.get_ysize()
 				nz = v1.get_ysize()
 				if options.ou < 1 : radius = nx//2-2
 				else:  radius = options.ou
-				mask = model_circle(radius, nx, ny, nz)
+				mask = utilities.model_circle(radius, nx, ny, nz)
 			else:
-				mask = get_im(args[2])
+				mask = utilities.get_im(args[2])
 				
 			for j in range(i+1, lend):
-				lccc[mono(i,j)] = [ccc(v1, get_im( stack, j ), mask), 0]
+				lccc[statistics.mono(i,j)] = [statistics.ccc(v1, utilities.get_im( stack, j ), mask), 0]
 
 
 		order = tsp(lccc)
 		if(len(order) != lend):
 			print(" problem with data length")
-			from sys import exit
+			pass#IMPORTIMPORTIMPORT from sys import exit
 			exit()
 		print("Total sum of cccs :",TotalDistance(order, lccc))
 		print("ordering :",order)
-		for i in range(lend):  get_im(stack, order[i]).write_image( new_stack, i )
+		for i in range(lend):  utilities.get_im(stack, order[i]).write_image( new_stack, i )
 
 	elif options.align:
 		nargs = len(args)
@@ -302,18 +333,18 @@ def main():
 			print("must provide name of input and two output files!")
 			return
 
-		from utilities import get_params2D, model_circle
-		from fundamentals import rot_shift2D
-		from statistics import ccc
-		from time import time
-		from alignment import align2d, align2d_scf
+		pass#IMPORTIMPORTIMPORT from utilities import get_params2D, model_circle
+		pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
+		pass#IMPORTIMPORTIMPORT from statistics import ccc
+		pass#IMPORTIMPORTIMPORT from time import time
+		pass#IMPORTIMPORTIMPORT from alignment import align2d, align2d_scf
 		
 		stack = args[0]
 		new_stack = args[1]
 		
-		d = EMData.read_images(stack)
+		d = EMAN2_cppwrap.EMData.read_images(stack)
 		if(len(d)<6):
-			ERROR("Chains requires at least six images in the input stack to be executed", "sxchains.py", 1)
+			global_def.ERROR("Chains requires at least six images in the input stack to be executed", "sxchains.py", 1)
 
 		"""
 		# will align anyway
@@ -330,7 +361,7 @@ def main():
 		ny = d[0].get_ysize()
 		if options.ou < 1 : radius = nx//2-2
 		else:  radius = options.ou
-		mask = model_circle(radius, nx, ny)
+		mask = utilities.model_circle(radius, nx, ny)
 
 		if(options.xr < 0):	xrng = 0
 		else:				xrng = options.xr
@@ -339,35 +370,35 @@ def main():
 			
 		initial = max(options.initial, 0)
 
-		from statistics import mono
+		pass#IMPORTIMPORTIMPORT from statistics import mono
 		lend = len(d)
 		lccc = [None]*(lend*(lend-1)/2)
-		from utilities import read_text_row
+		pass#IMPORTIMPORTIMPORT from utilities import read_text_row
 
 		if  options.pairwiseccc == " " or not os.path.exists(options.pairwiseccc) :
-			st = time()
+			st = time.time()
 			for i in range(lend-1):
 				for j in range(i+1, lend):
 					#  j>i meaning mono entry (i,j) or (j,i) indicates T i->j (from smaller index to larger)
 					#alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng, yrng, step=options.ts, first_ring=options.ir, last_ring=radius, mode = "F")
-					alpha, sx, sy, mir, peak = align2d_scf(d[i],d[j], xrng, yrng, ou=radius)
-					lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), alpha, sx, sy, mir]
+					alpha, sx, sy, mir, peak = alignment.align2d_scf(d[i],d[j], xrng, yrng, ou=radius)
+					lccc[statistics.mono(i,j)] = [statistics.ccc(d[j], fundamentals.rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), alpha, sx, sy, mir]
 				#print "  %4d   %10.1f"%(i,time()-st)
 
 			if((not os.path.exists(options.pairwiseccc)) and (options.pairwiseccc != " ")):
-				from utilities import write_text_row
-				write_text_row([[initial,0,0,0,0]]+lccc, options.pairwiseccc)
+				pass#IMPORTIMPORTIMPORT from utilities import write_text_row
+				utilities.write_text_row([[initial,0,0,0,0]]+lccc, options.pairwiseccc)
 		elif(os.path.exists(options.pairwiseccc)):
-			lccc = read_text_row(options.pairwiseccc)
+			lccc = utilities.read_text_row(options.pairwiseccc)
 			initial = int(lccc[0][0] + 0.1)
 			del lccc[0]
 
 
 		for i in range(len(lccc)):
-			T = Transform({"type":"2D","alpha":lccc[i][1],"tx":lccc[i][2],"ty":lccc[i][3],"mirror":int(lccc[i][4]+0.1)})
+			T = EMAN2_cppwrap.Transform({"type":"2D","alpha":lccc[i][1],"tx":lccc[i][2],"ty":lccc[i][3],"mirror":int(lccc[i][4]+0.1)})
 			lccc[i] = [lccc[i][0],T]
 
-		tdummy = Transform({"type":"2D"})
+		tdummy = EMAN2_cppwrap.Transform({"type":"2D"})
 		maxsum = -1.023
 		for m in range(0,lend):#initial, initial+1):
 			indc = list(range( lend))
@@ -378,13 +409,13 @@ def main():
 			while len(indc) > 1:
 				maxcit = -111.
 				for i in range(len(indc)):
-						cuc = lccc[mono(indc[i], lsnake[-1][0])][0]
+						cuc = lccc[statistics.mono(indc[i], lsnake[-1][0])][0]
 						if cuc > maxcit:
 								maxcit = cuc
 								qi = indc[i]
 								#  Here we need transformation from the current to the previous,
 								#     meaning indc[i] -> lsnake[-1][0]
-								T = lccc[mono(indc[i], lsnake[-1][0])][1]
+								T = lccc[statistics.mono(indc[i], lsnake[-1][0])][1]
 								#  If direction is from larger to smaller index, the transformation has to be inverted
 								if( indc[i] > lsnake[-1][0] ):  T = T.inverse()
 								
@@ -394,9 +425,9 @@ def main():
 
 				del indc[indc.index(qi)]
 
-			T = lccc[mono(indc[-1], lsnake[-1][0])][1]
+			T = lccc[statistics.mono(indc[-1], lsnake[-1][0])][1]
 			if( indc[-1] > lsnake[-1][0]):  T = T.inverse()
-			lsnake.append([indc[-1], T, lccc[mono(indc[-1], lsnake[-1][0])][0]])
+			lsnake.append([indc[-1], T, lccc[statistics.mono(indc[-1], lsnake[-1][0])][0]])
 			print(" initial image and lsum  ",m,lsum)
 			#print lsnake
 			if(lsum > maxsum):
@@ -406,8 +437,8 @@ def main():
 		print("  Initial image selected : ",init,maxsum,"    ",TotalDistance([snake[m][0] for m in range(lend)], lccc))
 		#for q in snake: print q
 
-		from copy import deepcopy
-		trans=deepcopy([snake[i][1] for i in range(len(snake))])
+		pass#IMPORTIMPORTIMPORT from copy import deepcopy
+		trans=copy.deepcopy([snake[i][1] for i in range(len(snake))])
 		print([snake[i][0] for i in range(len(snake))])
 		"""
 		for m in xrange(lend):
@@ -423,12 +454,12 @@ def main():
 			prms = trans[m].get_params("2D")
 			#print " %3d   %7.1f   %7.1f   %7.1f   %2d  %6.2f"%(snake[m][0], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], snake[m][2])
 			#rot_shift2D(d[snake[m][0]], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"]).write_image(new_stack, m)
-			rot_shift2D(d[snake[m][0]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(new_stack, m)
+			fundamentals.rot_shift2D(d[snake[m][0]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(new_stack, m)
 
 		order = tsp(lccc)
 		if(len(order) != lend):
 			print(" problem with data length")
-			from sys import exit
+			pass#IMPORTIMPORTIMPORT from sys import exit
 			exit()
 		print(TotalDistance(order, lccc))
 		print(order)
@@ -442,13 +473,13 @@ def main():
 		for i in range(1,lend):
 			#  Here we need transformation from the current to the previous,
 			#     meaning order[i] -> order[i-1]]
-			T = lccc[mono(order[i], order[i-1])][1]
+			T = lccc[statistics.mono(order[i], order[i-1])][1]
 			#  If direction is from larger to smaller index, the transformation has to be inverted
 			if( order[i] > order[i-1] ):  T = T.inverse()
 			snake.append(T)
 		assert(len(snake) == lend)
-		from copy import deepcopy
-		trans = deepcopy(snake)
+		pass#IMPORTIMPORTIMPORT from copy import deepcopy
+		trans = copy.deepcopy(snake)
 		for k in range(lend-2,0,-1):
 			T = snake[k]
 			for i in range(k+1, lend):
@@ -473,11 +504,11 @@ def main():
 		for m in range(lend):
 			prms = trans[m].get_params("2D")
 			#rot_shift2D(d[order[m]], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"]).write_image("metro.hdf", m)
-			rot_shift2D(d[order[m]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(args[2], m)
+			fundamentals.rot_shift2D(d[order[m]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(args[2], m)
 
 		"""
 		#  This was an effort to get number of loops, inconclusive, to say the least
-		from numpy import outer, zeros, float32, sqrt
+		pass#IMPORTIMPORTIMPORT from numpy import outer, zeros, float32, sqrt
 		lend = len(d)
  		cor = zeros(lend,float32)
  		cor = outer(cor, cor)
@@ -489,7 +520,7 @@ def main():
 
 		lmbd, eigvec = pca(cor)
 
-		from utilities import write_text_file
+		pass#IMPORTIMPORTIMPORT from utilities import write_text_file
 
 		nvec=20
 		print  [lmbd[j] for j in xrange(nvec)]
@@ -575,22 +606,22 @@ def main():
 			print("must provide name of input and output file!")
 			return
 		
-		from utilities import get_params2D, model_circle
-		from fundamentals import rot_shift2D
-		from statistics import ccc
-		from time import time
-		from alignment import align2d
+		pass#IMPORTIMPORTIMPORT from utilities import get_params2D, model_circle
+		pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
+		pass#IMPORTIMPORTIMPORT from statistics import ccc
+		pass#IMPORTIMPORTIMPORT from time import time
+		pass#IMPORTIMPORTIMPORT from alignment import align2d
 		
 		stack = args[0]
 		new_stack = args[1]
 		
-		d = EMData.read_images(stack)
+		d = EMAN2_cppwrap.EMData.read_images(stack)
 		try:
 			print("Using 2D alignment parameters from header.")
 			ttt = d[0].get_attr('xform.params2d')
 			for i in range(len(d)):
-				alpha, sx, sy, mirror, scale = get_params2D(d[i])
-				d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(d[i])
+				d[i] = fundamentals.rot_shift2D(d[i], alpha, sx, sy, mirror)
 		except:
 			pass
 
@@ -598,7 +629,7 @@ def main():
 		ny = d[0].get_ysize()
 		if options.radius < 1 : radius = nx//2-2
 		else:  radius = options.radius
-		mask = model_circle(radius, nx, ny)
+		mask = utilities.model_circle(radius, nx, ny)
 
 		init = options.initial
 		
@@ -612,7 +643,7 @@ def main():
 			while len(d) > 1:
 				maxcit = -111.
 				for i in range(len(d)):
-						cuc = ccc(d[i], temp, mask)
+						cuc = statistics.ccc(d[i], temp, mask)
 						if cuc > maxcit:
 								maxcit = cuc
 								qi = i
@@ -642,7 +673,7 @@ def main():
 					while len(indc) > 1:
 						maxcit = -111.
 						for i in range(len(indc)):
-								cuc = ccc(d[indc[i]], temp, mask)
+								cuc = statistics.ccc(d[indc[i]], temp, mask)
 								if cuc > maxcit:
 										maxcit = cuc
 										qi = indc[i]
@@ -687,7 +718,7 @@ def main():
 					while len(indc) > 1:
 						maxcit = -111.
 						for i in range(len(indc)):
-								cuc = ccc(d[indc[i]], temp, mask)
+								cuc = statistics.ccc(d[indc[i]], temp, mask)
 								if cuc > maxcit:
 										maxcit = cuc
 										qi = indc[i]

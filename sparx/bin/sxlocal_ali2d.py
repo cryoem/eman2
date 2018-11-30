@@ -32,16 +32,28 @@ from __future__ import print_function
 #
 #
 
-
-import os
+import applications
 import global_def
-from global_def import *
-from optparse import OptionParser
+import optparse
+import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack outdir <maskfile> --ou=outer_radius --br=brackets --center=center_type --eps=epsilon --maxit=max_iter --CTF --snr=SNR --function=user_function_name"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--ou", type="float", default=-1, help="  outer radius for a 2-D mask within which the alignment is performed")
 	parser.add_option("--br", type="float", default=1.75, help="  brackets for the search of orientation parameters (each parameter will be checked +/- bracket (set to 1.75)")
 	parser.add_option("--center", type="float", default=1, help="  0 - if you do not want the average to be centered, 1 - center the average (default=1)")
@@ -60,14 +72,14 @@ def main():
 		else:
 			mask = args[2]
 		
-		from applications import local_ali2d
+		pass#IMPORTIMPORTIMPORT from applications import local_ali2d
 
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 		
 		global_def.BATCH = True	
-		local_ali2d(args[0], args[1], mask, options.ou, options.br, options.center, options.eps, options.maxit, options.CTF, options.snr, options.function)
+		applications.local_ali2d(args[0], args[1], mask, options.ou, options.br, options.center, options.eps, options.maxit, options.CTF, options.snr, options.function)
 		global_def.BATCH = False	
 if __name__ == "__main__":
 	main()

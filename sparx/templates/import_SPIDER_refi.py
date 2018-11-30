@@ -3,13 +3,25 @@ from __future__ import print_function
 
 # it is likely that the above line would have to be changed depending on python location
 
+import EMAN2_cppwrap
+import numpy
+import string
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import string
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
 from builtins import range
-from EMAN2 import *
-from sparx import *
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from sparx import *
 
-from sys import  *
-from string import *
-from math import sqrt
+pass#IMPORTIMPORTIMPORT from sys import  *
+pass#IMPORTIMPORTIMPORT from string import *
+pass#IMPORTIMPORTIMPORT from math import sqrt
 
 doc_home = "/mnt/fast2/username/"
 prj_home = "/mnt/fast2/username/DATA/"
@@ -39,13 +51,13 @@ for ii in range(1,696+1) :
 
 	fn_high = doc_home + "FINAL/defgrp%03d/select_298_pop01.ext" % ii
 
-	selected_particles = read_spider_doc(fn_high)
+	selected_particles = utilities.read_spider_doc(fn_high)
 
-	nimage  = EMUtil.get_image_count( proj_in )
-	trans = read_text_row(fn_tran, format = "s")
-	angl  = read_text_row(fn_angl, format = "s")
+	nimage  = EMAN2_cppwrap.EMUtil.get_image_count( proj_in )
+	trans = utilities.read_text_row(fn_tran, format = "s")
+	angl  = utilities.read_text_row(fn_angl, format = "s")
 
-	defocus = atof( split( i_ctfs.readline() )[2] )
+	defocus = string.atof( split( i_ctfs.readline() )[2] )
 
 	print("Converting ", proj_in, ", defocus is ", defocus, " Number of my great particles is ",len(selected_particles))
 
@@ -64,7 +76,7 @@ for ii in range(1,696+1) :
 		mir	= trans[i][5]
 		active = 1
 
-		assb, sxnb, synb, sc = compose_transform2(0.0, sx, sy, 1,  -alpha, 0.,0.,1)
+		assb, sxnb, synb, sc = utilities.compose_transform2(0.0, sx, sy, 1,  -alpha, 0.,0.,1)
 		if( mir > 0.5 ) :
 			phi   = (540.0 + phi)%360.0
 			theta = 180.0 - theta
@@ -72,20 +84,20 @@ for ii in range(1,696+1) :
 		else :
 			psi = (psi + assb)%360.0
 
-		data = EMData()
+		data = EMAN2_cppwrap.EMData()
 		data.read_image( proj_in, i )
 		#  One could decimate the data here as spider images are usually oversampled.  This would require setting scale and adjusting
 		#  pixel size appropriately
 		#deci = Util.window(resample(data,scale),128,128,1,0,0,0)
 		deci = data
-		set_params_proj(deci, [phi, theta, psi, sxnb, synb])
+		utilities.set_params_proj(deci, [phi, theta, psi, sxnb, synb])
 		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 		# deci.set_attr_dict({'active':1, 'ctf_applied':0})
 		deci.set_attr_dict({'ctf_applied':0})
 
 		# Here, we convert the amp_contrast into the new convention
-		amp_cont = amp_contrast*100/sqrt(2*amp_contrast**2-2*amp_contrast+1)
-		set_ctf(deci, [defocus, Cs, voltage, pixel, bfactor, amp_cont])
+		amp_cont = amp_contrast*100/numpy.sqrt(2*amp_contrast**2-2*amp_contrast+1)
+		utilities.set_ctf(deci, [defocus, Cs, voltage, pixel, bfactor, amp_cont])
 
 		deci.write_image( proj_out, total_high_proj )
 

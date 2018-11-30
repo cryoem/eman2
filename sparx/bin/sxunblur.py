@@ -4,6 +4,22 @@ from __future__ import print_function
 # Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 #
 
+import glob
+import global_def
+import numpy
+import optparse
+import os
+import subprocess
+import sys
+import time
+pass#IMPORTIMPORTIMPORT import glob
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import subprocess
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import time
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
 # so you are responsible for compliance with the licenses of these packages
@@ -24,23 +40,23 @@ from __future__ import print_function
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-from sys import argv
-from os import mkdir, path, system, remove, rmdir
-from glob import glob
-from numpy import genfromtxt
-import numpy
-import time
-import subprocess
-import global_def
-from global_def import SPARXVERSION, ERROR
-from optparse import OptionParser, SUPPRESS_HELP
-from sxsummovie import create_summovie_command
-import os
+pass#IMPORTIMPORTIMPORT from sys import argv
+pass#IMPORTIMPORTIMPORT from os import mkdir, path, system, remove, rmdir
+pass#IMPORTIMPORTIMPORT from glob import glob
+pass#IMPORTIMPORTIMPORT from numpy import genfromtxt
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import time
+pass#IMPORTIMPORTIMPORT import subprocess
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import SPARXVERSION, ERROR
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser, SUPPRESS_HELP
+pass#IMPORTIMPORTIMPORT from sxsummovie import create_summovie_command
+pass#IMPORTIMPORTIMPORT import os
 
 def main():
 
     # Parse the Options
-    progname = os.path.basename(argv[0])
+    progname = os.path.basename(sys.argv[0])
     usage = progname + """ unblur_path input_micrograph_pattern output_directory
     --summovie_path
     --selection_list
@@ -101,22 +117,22 @@ def main():
     --iterations=10 --verbose --nr_threads=1
     """
 
-    parser = OptionParser(usage, version=SPARXVERSION)
+    parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
     parser.add_option('--summovie_path',      type='str',          default='',        help='summovie executable path (SPHIRE specific): Specify the file path of summovie executable. (default none)')
     parser.add_option('--selection_list',     type='str',          default='',        help='Micrograph selecting list (SPHIRE specific): Specify a name of micrograph selection list text file. The file extension must be \'.txt\'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='Number of movie frames: The number of movie frames in each input micrograph. (default 3)')
-    parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
-    parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=SUPPRESS_HELP)
+    parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=optparse.SUPPRESS_HELP)
+    parser.add_option('--shift_suffix',       type='str',          default='_shift',  help=optparse.SUPPRESS_HELP)
     parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='Pixel size [A]: The pixel size of input micrographs. (default required float)')
     parser.add_option('--voltage',            type='float',        default=300.0,     help='Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)')
     parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='Per frame exposure [e/A^2]: The electron dose per frame in e/A^2. (default 2.0)')
     parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='Pre-exposure [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging .(default 0.0)')
     parser.add_option('--nr_threads',         type='int',          default=1,         help='Number of threads: The number of threads unblur can use. The higher the faster, but it requires larger memory. (default 1)')
     parser.add_option('--save_frames',        action='store_true', default=False,     help='Save aligned movie frames: Save aligned movie frames. This option slows down the process. (default False)')
-    parser.add_option('--frames_suffix',      type='string',       default='_frames', help=SUPPRESS_HELP)
+    parser.add_option('--frames_suffix',      type='string',       default='_frames', help=optparse.SUPPRESS_HELP)
     parser.add_option('--skip_dose_filter',   action='store_true', default=False,     help='Skip dose filter step: With this option, voltage, exposure per frame, and pre exposure will be ignored. (default False)')
     parser.add_option('--expert_mode',        action='store_true', default=False,     help='Use expert mode: Requires initial shift, shift radius, b-factor, fourier_vertical, fourier_horizontal, shift threshold, iterations, restore noise, and verbosity options. (default False)')
-    parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=SUPPRESS_HELP)
+    parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=optparse.SUPPRESS_HELP)
     parser.add_option('--shift_initial',      type='float',        default=2.0,       help='Minimum shift for initial search [A] (expert mode): Effective with unblur expert mode. (default 2.0)')
     parser.add_option('--shift_radius',       type='float',        default=200.0,     help='Outer radius shift limit [A] (expert mode): Effective with unblur expert mode. (default 200.0)')
     parser.add_option('--b_factor',           type='float',        default=1500.0,    help='Apply B-factor to images [A^2] (expert mode): Effective with unblur expert mode. (default 1500.0)')
@@ -126,16 +142,16 @@ def main():
     parser.add_option('--iterations',         type='int',          default=10,        help='Maximum iterations (expert mode): Effective with unblur expert mode. (default 10)')
     parser.add_option('--dont_restore_noise', action='store_true', default=False,     help='Do not restore noise power (expert mode): Effective with unblur expert mode. (default False)')
     parser.add_option('--verbose',            action='store_true', default=False,     help='Verbose (expert mode): Effective with unblur expert mode. (default False)')
-    parser.add_option('--unblur_ready',       action='store_true', default=False,     help=SUPPRESS_HELP)
+    parser.add_option('--unblur_ready',       action='store_true', default=False,     help=optparse.SUPPRESS_HELP)
 
     # list of the options and the arguments
-    (options, args) = parser.parse_args(argv[1:])
+    (options, args) = parser.parse_args(sys.argv[1:])
 
     global_def.BATCH = True
 
     # If there arent enough arguments, stop the script
     if len(args) != 3:
-        ERROR("see usage " + usage, 1)
+        global_def.ERROR("see usage " + usage, 1)
 
     # Convert the realtive parts to absolute ones
     unblur_path = os.path.realpath(args[0]) # unblur_path
@@ -144,30 +160,30 @@ def main():
 
     # If the unblur executable file does not exists, stop the script
     if not os.path.exists(unblur_path):
-        ERROR(
+        global_def.ERROR(
             'Unblur directory does not exist, please change' +
             ' the name and restart the program.', 'sxunblur.py', 1
             )
 
     # If the output directory exists, stop the script
     if os.path.exists(output_dir):
-        ERROR(
+        global_def.ERROR(
             'Output directory exists, please change' +
             ' the name and restart the program.', 'sxunblur.py', 1
             )
 
     # If the input file does not exists, stop the script
-    file_list = glob(input_image)
+    file_list = glob.glob(input_image)
 
     if not file_list:
-        ERROR(
+        global_def.ERROR(
             'Input file does not exist, please change' +
             ' the name and restart the program.', 'sxunblur.py', 1
             )
 
     # If the skip_dose_filter option is false, the summovie path is necessary
     if not options.skip_dose_filter and not os.path.exists(options.summovie_path):
-        ERROR(
+        global_def.ERROR(
             'Path to the SumMovie executable is necessary when dose weighting is performed.',
             'sxunblur.py', 1
             )
@@ -196,21 +212,21 @@ def main():
 
     # Create output directorys
     if not os.path.exists(output_dir):
-        mkdir(output_dir)
+        os.mkdir(output_dir)
     if not os.path.exists(uncorrected_path):
-        mkdir(uncorrected_path)
+        os.mkdir(uncorrected_path)
     if not os.path.exists(shift_path):
-        mkdir(shift_path)
+        os.mkdir(shift_path)
     if not os.path.exists(corrected_path):
         if not options.skip_dose_filter:
-            mkdir(corrected_path)
+            os.mkdir(corrected_path)
     if not os.path.exists(frc_path):
         if options.expert_mode or not options.skip_dose_filter:
-            mkdir(frc_path)
+            os.mkdir(frc_path)
     if not os.path.exists(temp_path) and not options.unblur_ready:
-        mkdir(temp_path)
+        os.mkdir(temp_path)
     if not os.path.exists(log_path):
-        mkdir(log_path)
+        os.mkdir(log_path)
 
     # Run unblur
     run_unblur(
@@ -230,9 +246,9 @@ def main():
 
     if not options.unblur_ready:
         # Remove temp folder
-        for entry in glob('{0}/*'.format(temp_path)):
-            remove(entry)
-        rmdir(temp_path)
+        for entry in glob.glob('{0}/*'.format(temp_path)):
+            os.remove(entry)
+        os.rmdir(temp_path)
 
     print('All Done!')
 
@@ -265,9 +281,9 @@ def run_unblur(
     if mic_list:
         # Import list file
         try:
-            set_selection = genfromtxt(mic_list, dtype=None)
+            set_selection = numpy.genfromtxt(mic_list, dtype=None)
         except TypeError:
-            ERROR('no entrys in list file {0}'.format(mic_list), 'sxunblur.py', 1)
+            global_def.ERROR('no entrys in list file {0}'.format(mic_list), 'sxunblur.py', 1)
         # List of files which are in pattern and list
         file_list = [
                 entry for entry in file_list \
@@ -276,7 +292,7 @@ def run_unblur(
                 ]
         # If no match is there abort
         if len(file_list) == 0:
-            ERROR(
+            global_def.ERROR(
                 'no files in {0} matched the file pattern:\n'.format(mic_list), 'sxunblur.py',
                 1
                 )
@@ -467,14 +483,14 @@ def run_unblur(
                         )
 
         # Remove temp unblur files
-        temp_unblur_files = glob('.UnBlur*')
+        temp_unblur_files = glob.glob('.UnBlur*')
         for entry in temp_unblur_files:
-            remove(entry)
+            os.remove(entry)
 
         # Remove temp summovie files
-        temp_summovie_files = glob('.SumMovie*')
+        temp_summovie_files = glob.glob('.SumMovie*')
         for entry in temp_summovie_files:
-            remove(entry)
+            os.remove(entry)
 
         with open(log_name, 'w') as f:
             with open(error_name, 'w') as e:
@@ -488,14 +504,14 @@ def run_unblur(
                         ).wait()
 
                     # Remove temp unblur files
-                    temp_unblur_files = glob('.UnBlur*')
+                    temp_unblur_files = glob.glob('.UnBlur*')
                     for entry in temp_unblur_files:
-                        remove(entry)
+                        os.remove(entry)
 
                     # Remove temp summovie files
-                    temp_summovie_files = glob('.SumMovie*')
+                    temp_summovie_files = glob.glob('.SumMovie*')
                     for entry in temp_summovie_files:
-                        remove(entry)
+                        os.remove(entry)
 
                     subprocess.Popen(
                         [full_command_summovie], shell=True,
@@ -510,18 +526,18 @@ def run_unblur(
                         ).wait()
 
         # Remove temp unblur files
-        temp_unblur_files = glob('.UnBlur*')
+        temp_unblur_files = glob.glob('.UnBlur*')
         for entry in temp_unblur_files:
-            remove(entry)
+            os.remove(entry)
         # Remove temp summovie files
-        temp_summovie_files = glob('.SumMovie*')
+        temp_summovie_files = glob.glob('.SumMovie*')
         for entry in temp_summovie_files:
-            remove(entry)
+            os.remove(entry)
 
         if not options.unblur_ready:
             if os.path.exists(temp_name):
                 # Remove temp file
-                remove(temp_name)
+                os.remove(temp_name)
             else:
                 print(('Error with file:\n{0}'.format(inputfile)))
 
@@ -538,7 +554,7 @@ def run_unblur(
         if clean_unblur:
             print('UnBlur finished cleanly.')
         else:
-            ERROR(
+            global_def.ERROR(
                 'unblur error. check the logfile for more information: {0}'.format(
                     log_name
                     ), 'sxunblur.py', 0
@@ -547,7 +563,7 @@ def run_unblur(
         if clean_summovie:
             print('SumMovie finished cleanly.')
         else:
-            ERROR(
+            global_def.ERROR(
                 'summovie error. check the logfile for more information: {0}'.format(
                     log_name
                     ), 'sxunblur.py', 0

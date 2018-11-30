@@ -32,26 +32,50 @@ from __future__ import print_function
 #
 #
 
-from builtins import range
+import EMAN2_cppwrap
 import global_def
-from   global_def import *
-
-from   EMAN2 import *
-from   sparx import *
-from   numpy import *
-from   time import time
-from   optparse import OptionParser
+import mpi
+import numpy
 import numpy.random
+import optparse
+import os
+import random
+import sys
+import time
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import numpy.random
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import random
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import time
+pass#IMPORTIMPORTIMPORT import utilities
+from builtins import range
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def import *
+
+pass#IMPORTIMPORTIMPORT from   EMAN2 import *
+pass#IMPORTIMPORTIMPORT from   sparx import *
+pass#IMPORTIMPORTIMPORT from   numpy import *
+pass#IMPORTIMPORTIMPORT from   time import time
+pass#IMPORTIMPORTIMPORT from   optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import numpy.random
 
 def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
-	from EMAN2 import  newfile_store
-	ostore = newfile_store( bufprefix, npad, CTF )
+	pass#IMPORTIMPORTIMPORT from EMAN2 import  newfile_store
+	ostore = EMAN2_cppwrap.newfile_store( bufprefix, npad, CTF )
 	blocksize = 250
 	nvol = len(fftvols)
 	nprj = len(mults[0])
 	nblock = (nprj-1)/blocksize + 1
 
-	overall_start = time()
+	overall_start = time.time()
 
 	for iblock in range(nblock):
 		if iblock==nblock - 1:
@@ -61,60 +85,60 @@ def resample_insert( bufprefix, fftvols, wgtvols, mults, CTF, npad, info=None):
 			pbeg = iblock*blocksize
 			pend = pbeg + blocksize
 
-		start_time = time()
+		start_time = time.time()
 		ostore.read( pend - pbeg )
 		if not(info is None):
-			t = time()
+			t = time.time()
 			info.write("        block %d read.   \t time: %10.3f %10.3f\n" % (iblock, t-start_time, t-overall_start) )
 			info.flush()
 
-		start_time = time()
+		start_time = time.time()
 		for ivol in range(nvol):
 			ostore.add_tovol( fftvols[ivol], wgtvols[ivol], mults[ivol], pbeg, pend )
 		if not(info is None):
-			t = time()
+			t = time.time()
 			info.write("        block %d inserted.\t time: %10.3f %10.3f\n" % (iblock, t-start_time, t-overall_start) )
 			info.flush()
 
 	if not(info is None):
-		info.write("    Projection inserted.\t time: %10.3f\n" % (time() - overall_start) )
+		info.write("    Projection inserted.\t time: %10.3f\n" % (time.time() - overall_start) )
 		info.flush()
 
 def resample_finish( rectors, fftvols, wgtvols, volfile, niter, nprj, info=None ):
-	from time import time
-	overall_start = time()
+	pass#IMPORTIMPORTIMPORT from time import time
+	overall_start = time.time()
 	nvol = len(fftvols)
 	for ivol in range(nvol):
-		start_time = time()
+		start_time = time.time()
 		iwrite = nvol*niter + ivol
 
 		dummy = rectors[ivol].finish(True)
 		# Here add multiplication as per Kimmel-Penczek formula
-		Util.mul_scalar( fftvols[ivol], float(nprj) )          # ??????????
+		EMAN2_cppwrap.Util.mul_scalar( fftvols[ivol], float(nprj) )          # ??????????
 		fftvols[ivol].write_image( volfile, iwrite )
 		if not(info is None):
-			t = time()
+			t = time.time()
 			info.write( "        vol %d reconstred.\t time: %10.3f %10.3f\n" % (ivol, t-start_time, t-overall_start) )
 			info.flush()
 
 	if not(info is None):
-		info.write( "    Volume finished.\t time: %10.3f\n" % (time() - overall_start) )
+		info.write( "    Volume finished.\t time: %10.3f\n" % (time.time() - overall_start) )
 
 def resample_prepare( prjfile, nvol, snr, CTF, npad ):
-	from utilities import get_im
-	nx = get_im( prjfile, 0 ).get_xsize()
+	pass#IMPORTIMPORTIMPORT from utilities import get_im
+	nx = utilities.get_im( prjfile, 0 ).get_xsize()
 	fftvols = [None]*nvol
 	wgtvols = [None]*nvol
 	rectors = [None]*nvol
 	for i in range(nvol):
-		fftvols[i] = EMData()
-		wgtvols[i] = EMData()
+		fftvols[i] = EMAN2_cppwrap.EMData()
+		wgtvols[i] = EMAN2_cppwrap.EMData()
 		if CTF:
 			params = {"size":nx, "npad":npad, "snr":snr, "weight":wgtvols[i], "fftvol":fftvols[i]}
-			rectors[i] = Reconstructors.get( "nn4_ctf", params )
+			rectors[i] = EMAN2_cppwrap.Reconstructors.get( "nn4_ctf", params )
 		else:
 			params = {"size":nx, "npad":npad, "snr":snr, "weight":wgtvols[i], "fftvol":fftvols[i]}
-			rectors[i] = Reconstructors.get( "nn4", params )
+			rectors[i] = EMAN2_cppwrap.Reconstructors.get( "nn4", params )
 
 		rectors[i].setup()
 
@@ -123,51 +147,51 @@ def resample_prepare( prjfile, nvol, snr, CTF, npad ):
 def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		delta, d, snr, CTF, npad,\
 		MPI, myid, ncpu, verbose = 0 ):
-	from   utilities import even_angles
-	from   random import seed, jumpahead, shuffle
-	import os
-	from   sys import exit
+	pass#IMPORTIMPORTIMPORT from   utilities import even_angles
+	pass#IMPORTIMPORTIMPORT from   random import seed, jumpahead, shuffle
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT from   sys import exit
 
-	nprj = EMUtil.get_image_count( prjfile )
+	nprj = EMAN2_cppwrap.EMUtil.get_image_count( prjfile )
 
 	if MPI:
-		from mpi import mpi_barrier, MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_barrier, MPI_COMM_WORLD
 
 		if myid == 0:
 			if os.path.exists(outdir):  nx = 1
 			else:  nx = 0
 		else:  nx = 0
-		ny = bcast_number_to_all(nx, source_node = 0)
-		if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "resample", 1,myid)
-		mpi_barrier(MPI_COMM_WORLD)
+		ny = utilities.bcast_number_to_all(nx, source_node = 0)
+		if ny == 1:  global_def.ERROR('Output directory exists, please change the name and restart the program', "resample", 1,myid)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 		if myid == 0:
 			os.mkdir(outdir)
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	else:
 		if os.path.exists(outdir):
-			ERROR('Output directory exists, please change the name and restart the program', "resample", 1,0)
+			global_def.ERROR('Output directory exists, please change the name and restart the program', "resample", 1,0)
 		os.mkdir(outdir)
 
 	if(verbose == 1):  finfo=open( os.path.join(outdir, "progress%04d.txt" % myid), "w" )
 	else:              finfo = None
 	#print  " before evenangles",myid
-	from utilities import getvec
-	from numpy import array, reshape
-	refa = even_angles(delta)
+	pass#IMPORTIMPORTIMPORT from utilities import getvec
+	pass#IMPORTIMPORTIMPORT from numpy import array, reshape
+	refa = utilities.even_angles(delta)
 	nrefa = len(refa)
-	refnormal = zeros((nrefa,3),'float32')
+	refnormal = numpy.zeros((nrefa,3),'float32')
 
 	tetref = [0.0]*nrefa
 	for i in range(nrefa):
-		tr = getvec( refa[i][0], refa[i][1] )
+		tr = utilities.getvec( refa[i][0], refa[i][1] )
 		for j in range(3):  refnormal[i][j] = tr[j]
 		tetref[i] = refa[i][1]
 	del refa
-	vct = array([0.0]*(3*nprj),'float32')
+	vct = numpy.array([0.0]*(3*nprj),'float32')
 	if myid == 0:
 		print(" will read ",myid)
-		tr = EMUtil.get_all_attributes(prjfile,'xform.projection')
+		tr = EMAN2_cppwrap.EMUtil.get_all_attributes(prjfile,'xform.projection')
 		tetprj = [0.0]*nprj
 		for i in range(nprj):
 			temp = tr[i].get_params("spider")
@@ -182,12 +206,12 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	#print "  READ ",myid
 	if  MPI:
 		#print " will bcast",myid
-		from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-		vct = mpi_bcast(vct,len(vct),MPI_FLOAT,0,MPI_COMM_WORLD)
-		from utilities import  bcast_list_to_all
-		tetprj = bcast_list_to_all(tetprj, myid, 0)
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+		vct = mpi.mpi_bcast(vct,len(vct),mpi.MPI_FLOAT,0,mpi.MPI_COMM_WORLD)
+		pass#IMPORTIMPORTIMPORT from utilities import  bcast_list_to_all
+		tetprj = utilities.bcast_list_to_all(tetprj, myid, 0)
 	#print  "  reshape  ",myid
-	vct = reshape(vct,(nprj,3))
+	vct = numpy.reshape(vct,(nprj,3))
 	assignments = [[] for i in range(nrefa)]
 	dspn = 1.25*delta
 	for k in range(nprj):
@@ -220,21 +244,21 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 			exit()  #                                         FIX
 
 	if(seedbase < 1):
-		seed()
-		jumpahead(17*myid+123)
+		random.seed()
+		random.jumpahead(17*myid+123)
 	else:
-		seed(seedbase)
-		jumpahead(17*myid+123)
+		random.seed(seedbase)
+		random.jumpahead(17*myid+123)
 
 	volfile = os.path.join(outdir, "bsvol%04d.hdf" % myid)
-	from random import randint
+	pass#IMPORTIMPORTIMPORT from random import randint
 	niter = nvol/ncpu/nbufvol
 	for kiter in range(niter):
 		if(verbose == 1):
 			finfo.write( "Iteration %d: \n" % kiter )
 			finfo.flush()
 
-		iter_start = time()
+		iter_start = time.time()
 		#  the following has to be converted to resample  mults=1 means take given projection., mults=0 means omit
 
 		mults = [ [0]*nprj for i in range(nbufvol) ]
@@ -265,12 +289,12 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		fftvols = None
 		wgtvols = None
 		if(verbose == 1):
-			finfo.write( "time for iteration: %10.3f\n" % (time() - iter_start) )
+			finfo.write( "time for iteration: %10.3f\n" % (time.time() - iter_start) )
 			finfo.flush()
 
 def main():
 
-	import sys
+	pass#IMPORTIMPORTIMPORT import sys
 
 	arglist = []
 	for arg in sys.argv:
@@ -278,7 +302,7 @@ def main():
 
 	progname = os.path.basename(arglist[0])
 	usage = progname + " prjstack outdir bufprefix --delta --d --nvol --nbufvol --seedbase --snr --npad --CTF --MPI --verbose"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--nvol",     type="int",                         help="number of resample volumes to be generated")
 	parser.add_option("--nbufvol",  type="int",          default=1,     help="number of fftvols in the memory")
 	parser.add_option("--delta",    type="float",        default=10.0,  help="angular step for cones")
@@ -299,18 +323,18 @@ def main():
 	prjfile = args[0]
 
 	if options.MPI:
-		from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
-		from mpi import mpi_init
-		sys.argv = mpi_init( len(sys.argv), sys.argv )
-		myid = mpi_comm_rank( MPI_COMM_WORLD )
-		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_barrier, mpi_comm_rank, mpi_comm_size, mpi_comm_split, MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_init
+		sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
+		myid = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
+		ncpu = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
 	else:
 		myid = 0
 		ncpu = 1
 
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
 
 	outdir = args[1]
 	bufprefix = args[2]
@@ -318,8 +342,8 @@ def main():
 	           options.delta, options.d, options.snr, options.CTF, options.npad,\
 		   options.MPI, myid, ncpu, options.verbose )
 	if options.MPI:
-		from mpi import mpi_finalize
-		mpi_finalize()
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+		mpi.mpi_finalize()
 
 
 if __name__ == "__main__":

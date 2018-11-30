@@ -33,26 +33,38 @@ from __future__ import print_function
 #
 #
 
-
-
-import os
-from applications  import  cpy
-
+import applications
 import global_def
-from global_def import *
-
-from optparse import OptionParser
+import optparse
+import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+
+
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT from applications  import  cpy
+
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack_in  stack_out"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	(options, args) = parser.parse_args()
 
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
 	
 	# check length of arguments list. less than 2 is illegal
 	if (len(args) < 2):
@@ -61,7 +73,7 @@ def main():
 	# 2 is file to file copying
 	elif (2 == len(args)):
 		#print "file to file"
-		cpy(args[0], args[1])
+		applications.cpy(args[0], args[1])
 	# more than 2, this means a wildcard is transformed to a list of filenams
 	else:
 		#print "list to file"
@@ -76,7 +88,7 @@ def main():
 		#    since [-1:] pass a list containing only the last entry....
 		#
 		# application.cpy
-		cpy(args[:-1], args[-1:][0])
+		applications.cpy(args[:-1], args[-1:][0])
 		
 if __name__ == "__main__":
 	main()

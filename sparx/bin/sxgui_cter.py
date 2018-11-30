@@ -30,21 +30,63 @@ from __future__ import print_function
 #
 #
 
-from EMAN2 import *
-from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
-from eman2_gui.emshape import *
-from eman2_gui.valslider import *
-from eman2_gui.emplot2d import EMPlot2DWidget
-from eman2_gui.emapplication import EMApp
-from eman2_gui.emimage2d import EMImage2DWidget
-
-from OpenGL import GL,GLUT
-from math import *
-import os
-import sys
-# from numpy import array,arange
+import EMAN2
+import EMAN2_cppwrap
+import EMAN2_meta
+import eman2_gui.emapplication as emapplication
+import eman2_gui.emimage2d as emimage2d
+import eman2_gui.emplot2d as emplot2d
+import eman2_gui.emshape as emshape
+import eman2_gui.valslider as valslider
+import global_def
+import morphology
 import numpy as np
+import optparse
+import os
+import scipy
+import statistics
+import sys
 import traceback
+import utilities
+import warnings
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import EMAN2_meta
+pass#IMPORTIMPORTIMPORT import EMAN2db
+pass#IMPORTIMPORTIMPORT import OpenGL
+pass#IMPORTIMPORTIMPORT import eman2_gui.emapplication as emapplication
+pass#IMPORTIMPORTIMPORT import eman2_gui.emimage2d as emimage2d
+pass#IMPORTIMPORTIMPORT import eman2_gui.emplot2d as emplot2d
+pass#IMPORTIMPORTIMPORT import eman2_gui.emshape as emshape
+pass#IMPORTIMPORTIMPORT import eman2_gui.valslider as valslider
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import numpy as np
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import scipy
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import statistics
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import traceback
+pass#IMPORTIMPORTIMPORT import utilities
+pass#IMPORTIMPORTIMPORT import warnings
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
+pass#IMPORTIMPORTIMPORT from eman2_gui.emshape import *
+pass#IMPORTIMPORTIMPORT from eman2_gui.valslider import *
+pass#IMPORTIMPORTIMPORT from eman2_gui.emplot2d import EMPlot2DWidget
+pass#IMPORTIMPORTIMPORT from eman2_gui.emapplication import EMApp
+pass#IMPORTIMPORTIMPORT from eman2_gui.emimage2d import EMImage2DWidget
+
+pass#IMPORTIMPORTIMPORT from OpenGL import GL,GLUT
+pass#IMPORTIMPORTIMPORT from math import *
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+# from numpy import array,arange
+pass#IMPORTIMPORTIMPORT import numpy as np
+pass#IMPORTIMPORTIMPORT import traceback
 
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -54,27 +96,27 @@ except:
 	print("Warning: PyQt4 must be installed")
 	sys.exit(1)
 
-from sparx import *
-from optparse import OptionParser
-from statistics import hist_list
+pass#IMPORTIMPORTIMPORT from sparx import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT from statistics import hist_list
 
 '''
 Scipy now calls numpy 1.15, which generates numerous warnings of the form 
 "RuntimeWarning: numpy.dtype size changed, may indicate binary incompatibility. Expected 96, got 88".
 Filterwarnings suppreses this message.
 '''
-import warnings
+pass#IMPORTIMPORTIMPORT import warnings
 warnings.filterwarnings("ignore", message="numpy.dtype")
-from scipy import interpolate, optimize
+pass#IMPORTIMPORTIMPORT from scipy import interpolate, optimize
 
-from morphology import ampcont2angle
+pass#IMPORTIMPORTIMPORT from morphology import ampcont2angle
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """  cter_ctf_file 
 	This GUI application is designed for the evaluation of micrographs using the parameters outputed by CTER.
 	"""
-	parser = OptionParser(usage, version=SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
 	# No options!!! Does not need to call parser.add_option()
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
@@ -83,7 +125,7 @@ def main():
 		print("see usage " + usage)
 		sys.exit()
 	
-	app=EMApp()
+	app=emapplication.EMApp()
 	
 	cter_ctf_file = None
 	if len(args) == 1 and args[0] != "":
@@ -133,7 +175,7 @@ class SXListWidget(QtGui.QListWidget):
 		
 		self.emit(QtCore.SIGNAL("keypress"),event)
 
-class SXPlot2DWidget(EMPlot2DWidget):
+class SXPlot2DWidget(emplot2d.EMPlot2DWidget):
 	
 	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent)
 
@@ -151,7 +193,7 @@ class SXPlot2DWidget(EMPlot2DWidget):
 		# self.del_shapes(("plot_param_shape_label")) # for SXGuiCter.wscatterparam
 	
 	def mouseReleaseEvent(self, event):
-		EMPlot2DWidget.mouseReleaseEvent(self,event)
+		emplot2d.EMPlot2DWidget.mouseReleaseEvent(self,event)
 		if event.button()==Qt.LeftButton:
 			self.mouseup.emit(event)  #self.emit(QtCore.SIGNAL("mouseup"),event)
 
@@ -189,7 +231,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.round_ndigits = 15
 		
 #		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
-		self.setWindowIcon(QtGui.QIcon(get_image_directory()+"sparxicon.png"))
+		self.setWindowIcon(QtGui.QIcon(EMAN2.get_image_directory()+"sparxicon.png"))
 
 #		# NOTE: 2016/03/08 Toshio Moriya
 #		# Checked the following window flags and found out ...
@@ -556,7 +598,7 @@ class SXGuiCter(QtGui.QWidget):
 #		self.wfft.qt_parent.setWindowFlags((self.qt_parent.wfft.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 #		self.is_wfft_minimized = False
 		
-		self.wimgmicthumb=EMImage2DWidget()
+		self.wimgmicthumb=emimage2d.EMImage2DWidget()
 		self.wimgmicthumb.setWindowTitle("sxgui_cter - Micrograph Thumbnail")
 		self.wimgmicthumb.mmode="app"
 		self.wimgmicthumb.qt_parent.setWindowFlags((self.wimgmicthumb.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
@@ -630,7 +672,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
-		self.vbnentry=ValBox(self,(0,10000),None,0)
+		self.vbnentry=valslider.ValBox(self,(0,10000),None,0)
 		self.vbnentry.setEnabled(False)
 		self.vbnentry.intonly=True
 		self.vbnentry.text.setStyleSheet("color: rgb(127,127,127);")
@@ -641,7 +683,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
-		self.vbuncheckcounts=ValBox(self,(0,1000000),None,0)
+		self.vbuncheckcounts=valslider.ValBox(self,(0,1000000),None,0)
 		self.vbuncheckcounts.setEnabled(False)
 		self.vbuncheckcounts.intonly=True
 		self.vbuncheckcounts.text.setStyleSheet("color: rgb(0,0,0);")
@@ -652,7 +694,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
-		self.vbuncheckratio=ValBox(self,(0,1.0),None,0)
+		self.vbuncheckratio=valslider.ValBox(self,(0,1.0),None,0)
 		self.vbuncheckratio.setEnabled(False)
 		self.vbuncheckratio.text.setStyleSheet("color: rgb(0,0,0);")
 		self.gbl.addWidget(self.vbuncheckratio,grid_row,grid_col+col_span_label,1,col_span_edit)
@@ -687,7 +729,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.cbrotavgdisplay=CheckBox(None,None,self.curplotrotavgdisplay)
+		self.cbrotavgdisplay=valslider.CheckBox(None,None,self.curplotrotavgdisplay)
 		# self.cbrotavgdisplay.setEnabled(self.cbrotavgdisplay)
 		self.gbl.addWidget(self.cbrotavgdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
 		grid_row+=1
@@ -696,7 +738,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.cbrotzoomdisplay=CheckBox(None,None,self.curplotrotzoomdisplay)
+		self.cbrotzoomdisplay=valslider.CheckBox(None,None,self.curplotrotzoomdisplay)
 		self.gbl.addWidget(self.cbrotzoomdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
 		grid_row+=1
 		
@@ -704,7 +746,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.cbhistogramdisplay=CheckBox(None,None,self.curhistogramdisplay)
+		self.cbhistogramdisplay=valslider.CheckBox(None,None,self.curhistogramdisplay)
 		self.gbl.addWidget(self.cbhistogramdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
 		grid_row+=1
 		
@@ -712,7 +754,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.cbscatterdisplay=CheckBox(None,None,self.curscatterdisplay)
+		self.cbscatterdisplay=valslider.CheckBox(None,None,self.curscatterdisplay)
 		self.gbl.addWidget(self.cbscatterdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
 		grid_row+=1
 		
@@ -720,7 +762,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.cbmicthumbdisplay=CheckBox(None,None,self.curimgmicthumbdisplay)
+		self.cbmicthumbdisplay=valslider.CheckBox(None,None,self.curimgmicthumbdisplay)
 		# self.cbmicthumbdisplay.setEnabled(self.curimgmicthumbdisplay)
 		self.gbl.addWidget(self.cbmicthumbdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
 		grid_row+=1
@@ -746,7 +788,7 @@ class SXGuiCter(QtGui.QWidget):
 			temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 			temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 			self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_sublabel)
-			self.graph_map_list[idx_graph][self.idx_graph_item_widget]=CheckBox(None,None,True)
+			self.graph_map_list[idx_graph][self.idx_graph_item_widget]=valslider.CheckBox(None,None,True)
 			self.gbl.addWidget(self.graph_map_list[idx_graph][self.idx_graph_item_widget],grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
 			grid_row += 1
 		
@@ -754,7 +796,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.vbplotfixscale=ValBox(self,(0,99999),None,self.curplotfixscale)  # default <- self.curplotfixscale
+		self.vbplotfixscale=valslider.ValBox(self,(0,99999),None,self.curplotfixscale)  # default <- self.curplotfixscale
 		self.gbl.addWidget(self.vbplotfixscale,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
 		grid_row += 1
 		
@@ -820,7 +862,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col_1st,1,col_span_1st_label)
-		self.ssortedid=ValBox(self,(0,10000),None,0)
+		self.ssortedid=valslider.ValBox(self,(0,10000),None,0)
 		self.ssortedid.setEnabled(False)
 		self.ssortedid.intonly=True
 		self.ssortedid.text.setStyleSheet("color: rgb(0,0,0);")
@@ -940,7 +982,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sublabel)
-		self.cbsortorder=CheckBox(None,None,self.cursortorder)
+		self.cbsortorder=valslider.CheckBox(None,None,self.cursortorder)
 		self.gbl.addWidget(self.cbsortorder,grid_row,grid_col_1st_sub+col_span_1st_sublabel,1,col_span_1st_subedit)
 		
 		# Pulldown menu to move lower/upper threshold
@@ -971,7 +1013,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sublabel)
-		self.cbsortselect=CheckBox(None,None,self.cursortselect)
+		self.cbsortselect=valslider.CheckBox(None,None,self.cursortselect)
 		self.gbl.addWidget(self.cbsortselect,grid_row,grid_col_1st_sub+col_span_1st_sublabel,1,col_span_1st_subedit)
 		
 		# Checkbox to sort according to histogrammed/plotted values
@@ -979,7 +1021,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,col_span_2nd_sublabel)
-		self.cbsyncsort=CheckBox(None,None,self.cursyncsort)
+		self.cbsyncsort=valslider.CheckBox(None,None,self.cursyncsort)
 		self.gbl.addWidget(self.cbsyncsort,grid_row,grid_col_2nd+col_span_2nd_sublabel,1,col_span_2nd_subedit)
 		
 		temp_label=QtGui.QLabel("<b>Save Selection:</b>",self)
@@ -991,7 +1033,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd, 1, col_span_2nd_sublabel)
-		self.vsentryperbin=ValBox(self,(0,10000),None,self.curentryperbin)
+		self.vsentryperbin=valslider.ValBox(self,(0,10000),None,self.curentryperbin)
 		self.vsentryperbin.setIntonly(True)
 		self.gbl.addWidget(self.vsentryperbin,grid_row,grid_col_2nd+col_span_2nd_sublabel,1,col_span_2nd_subedit)
 		
@@ -1000,7 +1042,7 @@ class SXGuiCter(QtGui.QWidget):
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
 		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,col_span_3rd_sublabel)
-		self.vfilesuffix=StringBox(self,None,"Trial00")
+		self.vfilesuffix=valslider.StringBox(self,None,"Trial00")
 		self.gbl.addWidget(self.vfilesuffix,grid_row,grid_col_3rd+col_span_3rd_sublabel,1,col_span_3rd_subedit)
 		grid_row += 1
 		
@@ -1093,7 +1135,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.wplotrotavgfine.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.wplotrotavgcoarse.qt_parent.resize(child_win_width,child_win_height)
 		self.wplotrotavgcoarse.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
-		self.wimgmicthumb.set_data(model_blank(img_size,img_size, bckg=1.0)) # resize does not work if no image is set
+		self.wimgmicthumb.set_data(utilities.model_blank(img_size,img_size, bckg=1.0)) # resize does not work if no image is set
 		self.wimgmicthumb.qt_parent.resize(child_win_width,child_win_height)
 		self.wimgmicthumb.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.wimgmicthumb.scroll_to(-1 * img_size,-1 * img_size)
@@ -1138,13 +1180,13 @@ class SXGuiCter(QtGui.QWidget):
 #		# self.wimgmicthumb.set_scale(scale_factor)
 		
 		# Try to recover sizes & positions of windows of the previous GUI session
-		E2loadappwin("sxgui_cter","main",self)
+		EMAN2.E2loadappwin("sxgui_cter","main",self)
 #		E2loadappwin("sxgui_cter","fft",self.wfft.qt_parent)
-		E2loadappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
-		E2loadappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
-		E2loadappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
-		E2loadappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
-		E2loadappwin("sxgui_cter","plotparam",self.wscatterparam.qt_parent)
+		EMAN2.E2loadappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
+		EMAN2.E2loadappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
+		EMAN2.E2loadappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
+		EMAN2.E2loadappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
+		EMAN2.E2loadappwin("sxgui_cter","plotparam",self.wscatterparam.qt_parent)
 		
 #		if self.cter_entry_list:
 # #			self.wfft.show()
@@ -1183,7 +1225,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
 		
 		val_default = val_min
-		val_widget = ValBox(self,(val_min,val_max),None,val_default)
+		val_widget = valslider.ValBox(self,(val_min,val_max),None,val_default)
 		val_widget.setEnabled(False)
 		val_widget.intonly=intonly
 		val_widget.text.setStyleSheet(style_sheet)
@@ -1204,12 +1246,12 @@ class SXGuiCter(QtGui.QWidget):
 		val_max = self.hist_map_list[idx_hist][self.idx_hist_item_val_max]
 		
 		# Add widget for unapplied thresholds
-		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower]=ValBox(self,(val_min,val_max),None,val_min,labelwidth)
+		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower]=valslider.ValBox(self,(val_min,val_max),None,val_min,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].setEnabled(False)
 		self.unapplied_grid.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],grid_row,grid_col_2nd)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].text.setMinimumSize(QtCore.QSize(editwidth,0))
 		self.gbl.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],grid_row,grid_col_2nd)
-		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper]=ValBox(self,(val_min,val_max),None,val_max,labelwidth)
+		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper]=valslider.ValBox(self,(val_min,val_max),None,val_max,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].text.setStyleSheet("color: rgb(255,0,0);")
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].text.setMinimumSize(QtCore.QSize(editwidth,0))
@@ -1220,12 +1262,12 @@ class SXGuiCter(QtGui.QWidget):
 		val_max = self.hist_map_list[idx_hist][self.idx_hist_item_val_max]
 		
 		# Add widget for applied thresholds
-		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower]=ValBox(self,(val_min,val_max),None,val_min,labelwidth)
+		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower]=valslider.ValBox(self,(val_min,val_max),None,val_min,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].text.setStyleSheet("color: rgb(0,0,255);")
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].text.setMinimumSize(QtCore.QSize(editwidth,0))
 		self.applied_grid.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower],grid_row,grid_col_3rd)
-		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper]=ValBox(self,(val_min,val_max),None,val_max,labelwidth)
+		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper]=valslider.ValBox(self,(val_min,val_max),None,val_max,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].text.setStyleSheet("color: rgb(255,0,0);")
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].text.setMinimumSize(QtCore.QSize(editwidth,0))
@@ -1246,7 +1288,7 @@ class SXGuiCter(QtGui.QWidget):
 			QtGui.QMessageBox.warning(None,"Warning","Invalid file extension for CTER partres file (%s). The file extension must be \".txt\"." % (file_path))
 			return
 		
-		new_entry_list = read_text_row(file_path)
+		new_entry_list = utilities.read_text_row(file_path)
 		if len(new_entry_list) == 0:
 			QtGui.QMessageBox.warning(self, "Warning", "Specified CTER partres file (%s) does not contain any entry. Please check the file." % (file_path))
 			return
@@ -1310,7 +1352,7 @@ class SXGuiCter(QtGui.QWidget):
 				# assume amplitude amplitude contrast is total amplitude constrast in [%], estimated as variable Volta phase shift. Conver it to [deg].
 				# Also, assuming constant amplitude contrast is zero since there is no information available in the old format.
 				#from morphology import ampcont2angle
-				total_phase_shift = ampcont2angle(new_entry_list[cter_id][self.idx_old_cter_ac])
+				total_phase_shift = morphology.ampcont2angle(new_entry_list[cter_id][self.idx_old_cter_ac])
 				
 				# Add extra items first to make sure indices match
 				extended_entry = []
@@ -1622,7 +1664,7 @@ class SXGuiCter(QtGui.QWidget):
 		assert len(val_list) >= n_bin, "MRK_DEBUG"
 		assert n_bin > 0, "MRK_DEBUG"
 		#from statistics import hist_list
-		hist_x_list, hist_y_list = hist_list(val_list, n_bin)
+		hist_x_list, hist_y_list = statistics.hist_list(val_list, n_bin)
 		
 		# Pad with zero for better visual impression...
 		hist_x_list += [max(val_list)]
@@ -1767,7 +1809,7 @@ class SXGuiCter(QtGui.QWidget):
 		assert os.path.exists(self.cter_pwrot_file_path), "MRK_DEBUG"
 		
 		# Now update the plots
-		self.rotinf_table = read_text_file(self.cter_pwrot_file_path, ncol=-1)
+		self.rotinf_table = utilities.read_text_file(self.cter_pwrot_file_path, ncol=-1)
 		
 		# print "MRK_DEBUG: Last entry of the 1st colum should be a micrograph name %s which is same as " % os.path.basename(self.rotinf_table[0][-1])
 		
@@ -1825,15 +1867,15 @@ class SXGuiCter(QtGui.QWidget):
 		# print "MRK_DEBUG: %s= %1.5g" % (error_name, error_freq)
 		if error_freq > 0.0 and error_freq <= nyquist_freq:
 			error_scr_x, error_scr_y = self.wplotrotavgcoarse.plot2scr(error_freq, 0.0)
-			self.wplotrotavgcoarse.add_shape(error_name,EMShape(("scrline",0,0,0.5,error_scr_x,coarseLimits[1],error_scr_x,coarseLimits[1]+coarseLimits[3],1)))
+			self.wplotrotavgcoarse.add_shape(error_name,emshape.EMShape(("scrline",0,0,0.5,error_scr_x,coarseLimits[1],error_scr_x,coarseLimits[1]+coarseLimits[3],1)))
 			# self.wplotrotavgcoarse.set_data(([error_freq, error_freq], [global_min, global_max]),"astig_error_freq_limit",quiet=False,color=0,linetype=0)
 			self.wplotrotavgcoarse.add_shape("%s_freq"%(error_name),
-								  EMShape(("scrlabel",0,0,0,error_scr_x-260,coarseLimits[1]+coarseLimits[3]-18,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+								  emshape.EMShape(("scrlabel",0,0,0,error_scr_x-260,coarseLimits[1]+coarseLimits[3]-18,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
 			error_scr_x, error_scr_y = self.wplotrotavgfine.plot2scr(error_freq, 0.0)
-			self.wplotrotavgfine.add_shape(error_name,EMShape(("scrline",0,0,0.5,error_scr_x,fineLimits[1],error_scr_x,fineLimits[1]+fineLimits[3],1)))
+			self.wplotrotavgfine.add_shape(error_name,emshape.EMShape(("scrline",0,0,0.5,error_scr_x,fineLimits[1],error_scr_x,fineLimits[1]+fineLimits[3],1)))
 			# self.wplotrotavgfine.set_data(([error_freq, error_freq], [global_min, global_max]),"astig_error_freq_limit",quiet=False,color=0,linetype=0)
 			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),
-								  EMShape(("scrlabel",0,0,0,error_scr_x-260,fineLimits[1]+fineLimits[3]-18,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+								  emshape.EMShape(("scrlabel",0,0,0,error_scr_x-260,fineLimits[1]+fineLimits[3]-18,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
 		
 		error_name = "error_def"
 		error_label = "Defocus Limit"
@@ -1841,15 +1883,15 @@ class SXGuiCter(QtGui.QWidget):
 		# print "MRK_DEBUG: %s= %1.5g" % (error_name, error_freq)
 		if error_freq > 0.0 and error_freq <= nyquist_freq:
 			error_scr_x, error_scr_y = self.wplotrotavgcoarse.plot2scr(error_freq, 0.0)
-			self.wplotrotavgcoarse.add_shape(error_name,EMShape(("scrline",0.5,0,0,error_scr_x,coarseLimits[1],error_scr_x,coarseLimits[1]+coarseLimits[3],1)))
+			self.wplotrotavgcoarse.add_shape(error_name,emshape.EMShape(("scrline",0.5,0,0,error_scr_x,coarseLimits[1],error_scr_x,coarseLimits[1]+coarseLimits[3],1)))
 			# self.wplotrotavgcoarse.set_data(([error_freq, error_freq], [global_min, global_max]),"defocus_error_freq_limit",quiet=False,color=0,linetype=0)
 			self.wplotrotavgcoarse.add_shape("%s_freq"%(error_name),
-									EMShape(("scrlabel",0,0,0,error_scr_x-260,coarseLimits[1]+coarseLimits[3]-36,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+									emshape.EMShape(("scrlabel",0,0,0,error_scr_x-260,coarseLimits[1]+coarseLimits[3]-36,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
 			error_scr_x, error_scr_y = self.wplotrotavgfine.plot2scr(error_freq, 0.0)
-			self.wplotrotavgfine.add_shape(error_name,EMShape(("scrline",0.5,0,0,error_scr_x,fineLimits[1],error_scr_x,fineLimits[1]+fineLimits[3],1)))
+			self.wplotrotavgfine.add_shape(error_name,emshape.EMShape(("scrline",0.5,0,0,error_scr_x,fineLimits[1],error_scr_x,fineLimits[1]+fineLimits[3],1)))
 			# self.wplotrotavgfine.set_data(([error_freq, error_freq], [global_min, global_max]),"defocus_error_freq_limit",quiet=False,color=0,linetype=0)
 			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),
-								  EMShape(("scrlabel",0,0,0,error_scr_x-260,fineLimits[1]+fineLimits[3]-36,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+								  emshape.EMShape(("scrlabel",0,0,0,error_scr_x-260,fineLimits[1]+fineLimits[3]-36,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
 		
 		error_name = "error_ctf"
 		error_label = "CTF Limit"
@@ -1857,16 +1899,16 @@ class SXGuiCter(QtGui.QWidget):
 		# print "MRK_DEBUG: %s= %1.5g" % (error_name, error_freq)
 		if error_freq > 0.0 and error_freq <= nyquist_freq:
 			error_scr_x, error_scr_y = self.wplotrotavgcoarse.plot2scr(error_freq, 0.0)
-			self.wplotrotavgcoarse.add_shape(error_name,EMShape(("scrline",0,0.5,0,error_scr_x,coarseLimits[1],error_scr_x,coarseLimits[1]+coarseLimits[3],1)))
+			self.wplotrotavgcoarse.add_shape(error_name,emshape.EMShape(("scrline",0,0.5,0,error_scr_x,coarseLimits[1],error_scr_x,coarseLimits[1]+coarseLimits[3],1)))
 			# self.wplotrotavgcoarse.set_data(([error_freq, error_freq], [global_min, global_max]),"ctf_freq_limit")
 			self.wplotrotavgcoarse.add_shape("%s_freq"%(error_name),
-									EMShape(("scrlabel",0,0,0,error_scr_x-260,coarseLimits[1]+coarseLimits[3]-54,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+									emshape.EMShape(("scrlabel",0,0,0,error_scr_x-260,coarseLimits[1]+coarseLimits[3]-54,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
 			error_scr_x, error_scr_y = self.wplotrotavgfine.plot2scr(error_freq, 0.0)
 			self.wplotrotavgfine.add_shape(error_name,
-								  EMShape(("scrline",0,0.5,0,error_scr_x,fineLimits[1],error_scr_x,fineLimits[1]+fineLimits[3],1)))
+								  emshape.EMShape(("scrline",0,0.5,0,error_scr_x,fineLimits[1],error_scr_x,fineLimits[1]+fineLimits[3],1)))
 			# self.wplotrotavgfine.set_data(([error_freq, error_freq], [global_min, global_max]),"ctf_freq_limit")
 			self.wplotrotavgfine.add_shape("%s_freq"%(error_name),
-								  EMShape(("scrlabel",0,0,0,error_scr_x-260,fineLimits[1]+fineLimits[3]-54,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
+								  emshape.EMShape(("scrlabel",0,0,0,error_scr_x-260,fineLimits[1]+fineLimits[3]-54,"%s %1.5g (%1.5g)"%(error_label,error_freq,1.0/error_freq),120.0,-1)))
 		
 		self.wplotrotavgcoarse.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
 		self.wplotrotavgfine.setAxisParms("frequency (1/"+ "$\AA$" +")","power spectrum")
@@ -1944,13 +1986,13 @@ class SXGuiCter(QtGui.QWidget):
 		#print("xNP",xNP)
 
 		# Splinefit extrema
-		fitMinTck = interpolate.splrep(fitMinXNP, fitMinYNP, s=bkgdSmooth)  # s==smoothing factor
-		expMaxTck = interpolate.splrep(expMaxXNP, expMaxYNP, s=envSmooth)
+		fitMinTck = scipy.interpolate.splrep(fitMinXNP, fitMinYNP, s=bkgdSmooth)  # s==smoothing factor
+		expMaxTck = scipy.interpolate.splrep(expMaxXNP, expMaxYNP, s=envSmooth)
 
 		# Evaluate splines
-		fitMinSpline = interpolate.splev(xNP, fitMinTck)
+		fitMinSpline = scipy.interpolate.splev(xNP, fitMinTck)
 		#print("fitMinSpline", type(fitMinSpline), len(fitMinSpline), fitMinSpline)
-		expMaxSpline = interpolate.splev(xNP, expMaxTck)  # not used
+		expMaxSpline = scipy.interpolate.splev(xNP, expMaxTck)  # not used
 		expMinSpline = []
 		expMin = min(expWAstig[3:])  # value at origin will be zero
 
@@ -2142,7 +2184,7 @@ class SXGuiCter(QtGui.QWidget):
 		assert os.path.exists(self.cter_micthumb_file_path), "MRK_DEBUG"
 		
 		# Now update the image
-		micthumb_img = EMData(self.cter_micthumb_file_path) # read the image from disk
+		micthumb_img = EMAN2_cppwrap.EMData(self.cter_micthumb_file_path) # read the image from disk
 		self.wimgmicthumb.set_data(micthumb_img)
 		self.wimgmicthumb.setWindowTitle("sxgui_cter - Micrograph Thumbnail- %s, %s" 
 				% (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), 
@@ -2198,7 +2240,7 @@ class SXGuiCter(QtGui.QWidget):
 		assert os.path.exists(self.cter_fft_file_path), "MRK_DEBUG"
 		
 		# Now update the image
-		fft_img = EMData(self.cter_fft_file_path) # read the image from disk
+		fft_img = EMAN2_cppwrap.EMData(self.cter_fft_file_path) # read the image from disk
 		self.wfft.set_data(fft_img)
 		self.wfft.setWindowTitle("sxgui_cter - 2D FFT %s, %s" 
 				% (os.path.basename(self.cter_entry_list[self.curentry][self.idx_cter_mic_name]), 
@@ -2598,7 +2640,7 @@ class SXGuiCter(QtGui.QWidget):
 		# Write lines to check consistency upon loading
 		file_out.write("# @@@@@ gui_cter thresholds - ")
 		# file_out.write(EMANVERSION + " (CVS" + CVSDATESTAMP[6:-2] +")")
-		file_out.write(EMANVERSION + " (GITHUB: " + DATESTAMP +")" )
+		file_out.write(EMAN2_meta.EMANVERSION + " (GITHUB: " + EMAN2_meta.DATESTAMP +")" )
 		file_out.write(" @@@@@ \n")
 		file_out.write("# Associated CTER Partres File == %s\n" % (self.cter_partres_file_path))
 		file_out.write("# Saved Threshold Set == %s\n" % (self.thresholdset_map_list[idx_thresholdset][self.idx_thresholdset_item_label]))
@@ -2942,14 +2984,14 @@ class SXGuiCter(QtGui.QWidget):
 	
 	def closeEvent(self,event):
 		# Save current window layout
-		E2saveappwin("sxgui_cter","main",self)
+		EMAN2.E2saveappwin("sxgui_cter","main",self)
 		if self.cter_entry_list != None:
 #			E2saveappwin("sxgui_cter","fft",self.wfft.qt_parent)
-			E2saveappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
-			E2saveappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
-			E2saveappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
-			E2saveappwin("sxgui_cter","plotparam",self.wscatterparam.qt_parent)
-			E2saveappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
+			EMAN2.E2saveappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
+			EMAN2.E2saveappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
+			EMAN2.E2saveappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
+			EMAN2.E2saveappwin("sxgui_cter","plotparam",self.wscatterparam.qt_parent)
+			EMAN2.E2saveappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
 		
 		# close all child windows
 		# if self.wfft:

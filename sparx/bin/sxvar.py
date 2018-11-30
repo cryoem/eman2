@@ -32,18 +32,33 @@ from __future__ import print_function
 #
 #
 
-
-
-import sys
-import os
+import applications
 import global_def
-from global_def import *
+import mpi
+import optparse
+import os
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import development
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+
+
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
 
 def main():
-	from   optparse       import OptionParser
+	pass#IMPORTIMPORTIMPORT from   optparse       import OptionParser
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " filelist outdir  --fl=filter_low_value --aa=filter_fall_off --radccc=radius_ccc  -repair=repairfile --pca --pcamask --pcanvec --MPI"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--fl",             type="float",        default=0.0,       help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--aa",             type="float",        default=0.0,       help="fall-off of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--radccc",         type="int",          default=-1,        help="radius for ccc calculation")
@@ -64,11 +79,11 @@ def main():
 		outdir = args[-1]
 
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init( len(sys.argv), sys.argv )
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init
+			sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
 
 
 			arglist = []
@@ -78,20 +93,20 @@ def main():
 			global_def.BATCH = True
 			
 			if(options.n):
-				from development import var_mpi_new
+				pass#IMPORTIMPORTIMPORT from development import var_mpi_new
 				var_mpi_new( files[0], outdir, options.scratch, options.fl, options.aa, options.radccc, False, False, options.repair, options.pca, options.pcamask, options.pcanvec)
 			else:
-				from applications import var_mpi
-				var_mpi( files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
+				pass#IMPORTIMPORTIMPORT from applications import var_mpi
+				applications.var_mpi( files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
 
 			global_def.BATCH = False
-			from mpi import mpi_finalize
-			mpi_finalize()
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+			mpi.mpi_finalize()
 		else:
 			global_def.BATCH = True
-			ERROR("Please use MPI version","sxvar",1)
-			from applications import defvar
-			defvar(  files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
+			global_def.ERROR("Please use MPI version","sxvar",1)
+			pass#IMPORTIMPORTIMPORT from applications import defvar
+			applications.defvar(  files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
 			global_def.BATCH = False
 
 

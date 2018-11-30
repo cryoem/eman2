@@ -29,8 +29,24 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+import EMAN2_cppwrap
+import fundamentals
+import morphology
+import mpi
+import numpy
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import filter
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import utilities
 from builtins import range
-from global_def import *
+pass#IMPORTIMPORTIMPORT from global_def import *
 
 def filt_median(f, nx, ny, nz = 1, kernelshape = "BLOCK"):
 	"""
@@ -51,11 +67,11 @@ def filt_median(f, nx, ny, nz = 1, kernelshape = "BLOCK"):
 	Output
 		median filtered image
 	"""
-	from EMAN2 import kernel_shape, filt_median_
+	pass#IMPORTIMPORTIMPORT from EMAN2 import kernel_shape, filt_median_
 
-	if kernelshape=="BLOCK":         return filt_median_(f,nx,ny,nz,kernel_shape.BLOCK)
-	elif kernelshape=="CIRCULAR":    return filt_median_(f,nx,ny,nz,kernel_shape.CIRCULAR)
-	elif kernelshape=="CROSS":       return filt_median_(f,nx,ny,nz,kernel_shape.CROSS)
+	if kernelshape=="BLOCK":         return EMAN2_cppwrap.filt_median_(f,nx,ny,nz,EMAN2_cppwrap.kernel_shape.BLOCK)
+	elif kernelshape=="CIRCULAR":    return EMAN2_cppwrap.filt_median_(f,nx,ny,nz,EMAN2_cppwrap.kernel_shape.CIRCULAR)
+	elif kernelshape=="CROSS":       return EMAN2_cppwrap.filt_median_(f,nx,ny,nz,EMAN2_cppwrap.kernel_shape.CROSS)
 	else: print("Unknown kernel shape.")
 
 # Fourier filters
@@ -71,10 +87,10 @@ def filt_tophatl(e, freq, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
 		"cutoff_abs" : freq, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_tophath(e, freq, pad = False):
 	"""
@@ -88,10 +104,10 @@ def filt_tophath(e, freq, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_HIGH_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TOP_HAT_HIGH_PASS,
 		  "cutoff_abs" : freq, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_tophatb(e, freql, freqh, pad = False):
 	"""
@@ -106,10 +122,10 @@ def filt_tophatb(e, freql, freqh, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_BAND_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TOP_HAT_BAND_PASS,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_tophato(e, freql, freqh, value, pad = False):
 	"""
@@ -126,10 +142,10 @@ def filt_tophato(e, freql, freqh, value, pad = False):
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.TOP_HOMOMORPHIC,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TOP_HOMOMORPHIC,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "value_at_zero_frequency" : value, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
 
     
 
@@ -145,10 +161,10 @@ def filt_gaussl(e, sigma, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_LOW_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.GAUSS_LOW_PASS,
 		  "cutoff_abs" : sigma, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_gaussinv(e, sigma, pad = False):
 	"""
@@ -162,10 +178,10 @@ def filt_gaussinv(e, sigma, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_INVERSE,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.GAUSS_INVERSE,
 		  "cutoff_abs" : sigma, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
 
 def filt_gaussh(e, sigma, pad = False):
 	"""
@@ -179,10 +195,10 @@ def filt_gaussh(e, sigma, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_HIGH_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.GAUSS_HIGH_PASS,
 		  "cutoff_abs" : sigma, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
 
 def filt_gaussb(e, sigma, center, pad = False):
 	"""
@@ -196,10 +212,10 @@ def filt_gaussb(e, sigma, center, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_BAND_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.GAUSS_BAND_PASS,
 		  "cutoff_abs" : sigma, "center" : center, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_gausso(e, sigma, value, pad = False):
 	"""
@@ -213,10 +229,10 @@ def filt_gausso(e, sigma, value, pad = False):
 	Output
 		filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.GAUSS_HOMOMORPHIC,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.GAUSS_HOMOMORPHIC,
 		  "cutoff_abs" : sigma, "value_at_zero_frequency" : value, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
 
 
 
@@ -233,10 +249,10 @@ def filt_btwl(e, freql, freqh, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.BUTTERWORTH_LOW_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.BUTTERWORTH_LOW_PASS,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_btwh(e, freql, freqh, pad = False):
 	"""
@@ -252,10 +268,10 @@ def filt_btwh(e, freql, freqh, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.BUTTERWORTH_HIGH_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.BUTTERWORTH_HIGH_PASS,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_btwo(e, freql, freqh, value, pad = False):
 	"""
@@ -272,11 +288,11 @@ def filt_btwo(e, freql, freqh, value, pad = False):
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.BUTTERWORTH_HOMOMORPHIC,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.BUTTERWORTH_HOMOMORPHIC,
 		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh,
 	    	  "value_at_zero_frequency" : value, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
    
 
 
@@ -293,10 +309,10 @@ def filt_tanl(e, freq, fall_off, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.TANH_LOW_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TANH_LOW_PASS,
 		  "cutoff_abs" : freq, "fall_off": fall_off, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_tanh(e, freq, fall_off, pad = False):
 	"""
@@ -311,10 +327,10 @@ def filt_tanh(e, freq, fall_off, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.TANH_HIGH_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TANH_HIGH_PASS,
 		  "cutoff_abs" : freq, "fall_off": fall_off, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_tanb(e, freql, low_fall_off, freqh, high_fall_off, pad = False):
 	"""
@@ -331,11 +347,11 @@ def filt_tanb(e, freql, low_fall_off, freqh, high_fall_off, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.TANH_BAND_PASS,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TANH_BAND_PASS,
 		  "low_cutoff_frequency" : freql, "Low_fall_off": low_fall_off,
 	    	  "high_cutoff_frequency" : freqh, "high_fall_off": high_fall_off, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_tano(e, freq, fall_off, value, pad = False):
 	"""
@@ -351,61 +367,61 @@ def filt_tano(e, freq, fall_off, value, pad = False):
 		Output
 			filtered image. Output image is real when input image is real or Fourier when input image is Fourier.
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.TANH_HOMOMORPHIC,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TANH_HOMOMORPHIC,
 		  "cutoff_abs" : freq, "fall_off": fall_off,
 	    	  "value_at_zero_frequency" : value, "dopad" : pad}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
 
 
   
 def filt_kaisersinh(e, alpha):
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
 	r=M/2
 	v=K/2.0/N
-	from EMAN2 import Processor
-	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type":EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH,
 		  "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_kaisersinhp(e, alpha):
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
 	r=M/2
 	v=K/2.0/N
-	from EMAN2 import Processor
-	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type":EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH,
 		  "dopad" : 1, "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_kaisersinhinv(e, alpha):
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
 	r=M/2
 	v=K/2.0/N
-	from EMAN2 import Processor
-	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type":EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 		  "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
     
 def filt_kaisersinhinvp(e, alpha):
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 	M = e.get_xsize()
 	K = 6
 	N = M*2  # npad*image size
 	r=M/2
 	v=K/2.0/N
-	from EMAN2 import Processor
-	params = {"filter_type":Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type":EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 		  "dopad" : 1, "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
 
 def filt_table(e, table):
 	"""
@@ -420,10 +436,10 @@ def filt_table(e, table):
 			fast: use the fast method; may combust certain computers.
 			huge: gobble memory; there is plenty of it, anyway.
 	"""
-	from EMAN2 import Processor
-	params = {"filter_type" : Processor.fourier_filter_types.RADIAL_TABLE,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.RADIAL_TABLE,
 			"table" : table}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
 
 def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 	"""
@@ -438,7 +454,7 @@ def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 		Output
 			image multiplied in Fourier space by the CTF, the output image has the same format as the input image.
 	"""
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 	assert img.get_ysize() > 1
 	dict        = ctf.to_dict()
 	dz          = dict["defocus"]
@@ -453,7 +469,7 @@ def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 	if dopad and not img.is_complex():  ip = 1
 	else:                               ip = 0
 
-	params = {"filter_type": Processor.fourier_filter_types.CTF_,
+	params = {"filter_type": EMAN2_cppwrap.Processor.fourier_filter_types.CTF_,
 		"defocus" : dz,
 		"Cs": cs,
 		"voltage": voltage,
@@ -465,7 +481,7 @@ def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 		"sign": sign,
 		"dza": dza,
 		"azz":azz}
-	tmp = Processor.EMFourierFilter(img, params)
+	tmp = EMAN2_cppwrap.Processor.EMFourierFilter(img, params)
 	tmp.set_attr_dict({"ctf":ctf})
 	return tmp
 
@@ -478,8 +494,8 @@ def filt_unctf(e, dz, cs, voltage, pixel, wgh=0.1, b_factor=0.0, sign=-1.0, dza=
 		b_factor: Angstrom^2
 		wgh: Unitless
 	"""	
-	from EMAN2 import Processor
-	params = {"filter_type": Processor.fourier_filter_types.CTF_,
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type": EMAN2_cppwrap.Processor.fourier_filter_types.CTF_,
 		"defocus" : dz,
 		"Cs" : cs,
 		"voltage" : voltage,
@@ -490,7 +506,7 @@ def filt_unctf(e, dz, cs, voltage, pixel, wgh=0.1, b_factor=0.0, sign=-1.0, dza=
 		"dza": dza,
 		"azz":azz,
 		"undo": 1}
-	return Processor.EMFourierFilter(e, params)
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
 
 def filt_params(dres, high = 0.95, low = 0.1):
 	"""
@@ -620,7 +636,7 @@ def filt_from_fsc_bwt(dres, low = 0.1):
 		Output
 			filtc: filter created from FRC
 	"""
-	from math import log,sqrt
+	pass#IMPORTIMPORTIMPORT from math import log,sqrt
 	n = len(dres[0])
 	filtc = [0.0]*n
 	eps=0.882 # copied from spider fq np command 
@@ -631,11 +647,11 @@ def filt_from_fsc_bwt(dres, low = 0.1):
 			lowf=dres[0][i]
 			break
 	highf=lowf+.05
-	order=2.*log(eps/sqrt(a**2-1))/log(lowf/highf)
+	order=2.*numpy.log(eps/numpy.sqrt(a**2-1))/numpy.log(lowf/highf)
 	rad=lowf/eps**(2./order)
 	for i in range(n):		
 		if(dres[1][i]<low): 
-			qt = 1./sqrt(1.+(dres[0][i]/rad)**order)
+			qt = 1./numpy.sqrt(1.+(dres[0][i]/rad)**order)
 		else:
 			qt = 2*dres[1][i]/(1.0+dres[1][i])
 		filtc[i] = qt
@@ -652,7 +668,7 @@ def fit_tanh(dres, low = 0.1):
 		return parameters of the tanh filter: freq - cutoff frequency at which filter value is 0.5, and fall_off, the 'width' of the filter
 	"""
 	def fit_tanh_func(args, data):
-		from math import pi, tanh
+		pass#IMPORTIMPORTIMPORT from math import pi, tanh
 		v = 0.0
 
 		if(data[1][0] < 0.0 ):
@@ -661,7 +677,7 @@ def fit_tanh(dres, low = 0.1):
 		for i in range(len(data[0])):
 			fsc =  2*data[1][i]/(1.0+data[1][i])
 			if args[0]==0 or args[1]==0: qt=0
-			else: qt  = fsc - 0.5*( tanh(pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - tanh(pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
+			else: qt  = fsc - 0.5*( numpy.tanh(numpy.pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - numpy.tanh(numpy.pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
 			v  -= qt*qt
 		#print args,v
 		return v
@@ -683,16 +699,16 @@ def fit_tanh(dres, low = 0.1):
 		fall_off = 0.2
 		return freq, fall_off
 
-	from utilities import amoeba
+	pass#IMPORTIMPORTIMPORT from utilities import amoeba
 	args   = [freq, 0.1]
 	scale  = [0.05, 0.05]
-	result = amoeba(args, scale, fit_tanh_func, data = dres)
+	result = utilities.amoeba(args, scale, fit_tanh_func, data = dres)
 
 	'''
 	args[0] = result[0][0]
 	args[1] = result[0][1]
 	#print  args
-	from math import pi, tanh
+	pass#IMPORTIMPORTIMPORT from math import pi, tanh
 	for i in xrange(len(dres[0])):
 		fsc = 2*dres[1][i]/(1.0+dres[1][i])
 		print i, dres[0][i],fsc , 0.5*( tanh(pi*(dres[0][i]+args[0])/2.0/args[1]/args[0]) - tanh(pi*(dres[0][i]-args[0])/2.0/args[1]/args[0]) )
@@ -711,12 +727,12 @@ def fit_tanh1(dres, low = 0.1):
 		return parameters of the tanh filter: freq - cutoff frequency at which filter value is 0.5, and fall_off, the 'width' of the filter
 	"""
 	def fit_tanh_func(args, data):
-		from math import pi, tanh
+		pass#IMPORTIMPORTIMPORT from math import pi, tanh
 		v = 0.0
 		for i in range(len(data[0])):
 			fsc =  data[1][i]
 			if args[0]==0 or args[1]==0: qt=0
-			else: qt  = fsc - 0.5*( tanh(pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - tanh(pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
+			else: qt  = fsc - 0.5*( numpy.tanh(numpy.pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - numpy.tanh(numpy.pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
 			v  -= qt*qt
 		#print args,v
 		return v
@@ -737,16 +753,16 @@ def fit_tanh1(dres, low = 0.1):
 		freq = 0.2
 		fall_off = 0.2
 		return freq, fall_off
-	from utilities import amoeba
+	pass#IMPORTIMPORTIMPORT from utilities import amoeba
 	args   = [freq, 0.1]
 	scale  = [0.05, 0.05]
-	result = amoeba(args, scale, fit_tanh_func, data = dres)
+	result = utilities.amoeba(args, scale, fit_tanh_func, data = dres)
 
 	'''
 	args[0] = result[0][0]
 	args[1] = result[0][1]
 	#print  args
-	from math import pi, tanh
+	pass#IMPORTIMPORTIMPORT from math import pi, tanh
 	for i in xrange(len(dres[0])):
 		fsc = 2*dres[1][i]/(1.0+dres[1][i])
 		print i, dres[0][i],fsc , 0.5*( tanh(pi*(dres[0][i]+args[0])/2.0/args[1]/args[0]) - tanh(pi*(dres[0][i]-args[0])/2.0/args[1]/args[0]) )
@@ -756,12 +772,12 @@ def fit_tanh1(dres, low = 0.1):
 
 def tanhfilter(nx, fl, aa):
 	#  generate discretized tanh filter
-	from math import pi, tanh
+	pass#IMPORTIMPORTIMPORT from math import pi, tanh
 	n = nx//2 + nx%2
 	f = [0.0]*n
 	for i in range(n):
 		x = float(i)/nx
-		f[i] = 0.5*( tanh(pi*(x+fl)/2.0/aa/fl) - tanh(pi*(x-fl)/2.0/aa/fl) )
+		f[i] = 0.5*( numpy.tanh(numpy.pi*(x+fl)/2.0/aa/fl) - numpy.tanh(numpy.pi*(x-fl)/2.0/aa/fl) )
 	return  [[float(i)/nx for i in range(n)],f]
 
 def filt_matched(ima, SNR, Pref):
@@ -771,10 +787,10 @@ def filt_matched(ima, SNR, Pref):
 		See paper Alignment under noise by PRB et al
 	"""
 
-	from filter import filt_from_fsc_bwt, filt_table
-	from math import sqrt
-	from EMAN2 import EMData
-	from fundamentals import rops_table
+	pass#IMPORTIMPORTIMPORT from filter import filt_from_fsc_bwt, filt_table
+	pass#IMPORTIMPORTIMPORT from math import sqrt
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMData
+	pass#IMPORTIMPORTIMPORT from fundamentals import rops_table
 	
 	ctf_2 = ima.get_attr('ctf_2')
 	PU = ima.get_attr('PU')
@@ -788,7 +804,7 @@ def filt_matched(ima, SNR, Pref):
 		if(SNR[j]>.05): 
 			thm=SNR[j]*(SNR[j]+1.)*PU[j]/Pref[j]
 			print(thm)
-			hm=sqrt(thm)
+			hm=numpy.sqrt(thm)
 			deno=(SNR[j]+1)*(ctf_2[j]*Pn2[j]*TE[j]**2+Pn1[j])+ctf_2[j]*PU[j]*TE[j]**2
 			xval=hm/deno 
 		else: 
@@ -807,10 +823,10 @@ def filt_matched(ima, SNR, Pref):
 	return res	
 
 def filt_vols( vols, fscs, mask3D ):
-	from math          import sqrt
-	from filter        import fit_tanh, filt_tanl, filt_table
-	from fundamentals  import rops_table
-	from morphology    import threshold
+	pass#IMPORTIMPORTIMPORT from math          import sqrt
+	pass#IMPORTIMPORTIMPORT from filter        import fit_tanh, filt_tanl, filt_table
+	pass#IMPORTIMPORTIMPORT from fundamentals  import rops_table
+	pass#IMPORTIMPORTIMPORT from morphology    import threshold
 
 	flmin = 1.0
 	flmax = -1.0
@@ -826,29 +842,29 @@ def filt_vols( vols, fscs, mask3D ):
 	print(" Filter tanl, parameters: ",flmin-0.05, "  ",  aamin)
 	volmax = vols[idmax]
 	volmax = filt_tanl( volmax, flmin-0.05, aamin )
-	pmax = rops_table( volmax )
+	pmax = fundamentals.rops_table( volmax )
 
 	for i in range(nvol):
-		ptab = rops_table( vols[i] )
+		ptab = fundamentals.rops_table( vols[i] )
 		for j in range( len(ptab) ):
-			ptab[j] = sqrt( pmax[j]/ptab[j] )
+			ptab[j] = numpy.sqrt( pmax[j]/ptab[j] )
 
 		vols[i] = filt_table( vols[i], ptab )
 		#stat = Util.infomask( vols[i], mask3D, False )
 		#volf -= stat[0]
-		Util.mul_img( vols[i], mask3D )
+		EMAN2_cppwrap.Util.mul_img( vols[i], mask3D )
 		#volf = threshold( volf )
 
 	return vols
 
 def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
-	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
-	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
-	from utilities import bcast_number_to_all, bcast_list_to_all, model_blank, bcast_EMData_to_all, reduce_EMData_to_root
-	from morphology import threshold_outside
-	from filter import filt_tanl
-	from fundamentals import fft, fftip
+	pass#IMPORTIMPORTIMPORT from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
+	pass#IMPORTIMPORTIMPORT from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
+	pass#IMPORTIMPORTIMPORT from utilities import bcast_number_to_all, bcast_list_to_all, model_blank, bcast_EMData_to_all, reduce_EMData_to_root
+	pass#IMPORTIMPORTIMPORT from morphology import threshold_outside
+	pass#IMPORTIMPORTIMPORT from filter import filt_tanl
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft, fftip
 
 	if(myid == main_node):
 
@@ -865,34 +881,34 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 		falloff = 0.0
 		radius  = 0
 		dis = [0,0,0]
-	falloff = bcast_number_to_all(falloff, main_node)
-	dis = bcast_list_to_all(dis, myid, source_node = main_node)
+	falloff = utilities.bcast_number_to_all(falloff, main_node)
+	dis = utilities.bcast_list_to_all(dis, myid, source_node = main_node)
 
 	if(myid != main_node):
 		nx = int(dis[0])
 		ny = int(dis[1])
 		nz = int(dis[2])
 
-		vi = model_blank(nx,ny,nz)
-		ui = model_blank(nx,ny,nz)
+		vi = utilities.model_blank(nx,ny,nz)
+		ui = utilities.model_blank(nx,ny,nz)
 
-	bcast_EMData_to_all(vi, myid, main_node)
-	bcast_EMData_to_all(ui, myid, main_node)
+	utilities.bcast_EMData_to_all(vi, myid, main_node)
+	utilities.bcast_EMData_to_all(ui, myid, main_node)
 
-	fftip(vi)  #  volume to be filtered
+	fundamentals.fftip(vi)  #  volume to be filtered
 
-	st = Util.infomask(ui, m, True)
+	st = EMAN2_cppwrap.Util.infomask(ui, m, True)
 
 
-	filteredvol = model_blank(nx,ny,nz)
+	filteredvol = utilities.model_blank(nx,ny,nz)
 	cutoff = max(st[2] - 0.01,0.0)
 	while(cutoff < st[3] ):
 		cutoff = round(cutoff + 0.01, 2)
 		#if(myid == main_node):  print  cutoff,st
-		pt = Util.infomask( threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)  # Ideally, one would want to check only slices in question...
+		pt = EMAN2_cppwrap.Util.infomask( morphology.threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)  # Ideally, one would want to check only slices in question...
 		if(pt[0] != 0.0):
 			#print cutoff,pt[0]
-			vovo = fft( filt_tanl(vi, cutoff, falloff) )
+			vovo = fundamentals.fft( filt_tanl(vi, cutoff, falloff) )
 			for z in range(myid, nz, number_of_proc):
 				for x in range(nx):
 					for y in range(ny):
@@ -900,6 +916,6 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 							if(round(ui.get_value_at(x,y,z),2) == cutoff):
 								filteredvol.set_value_at_fast(x,y,z,vovo.get_value_at(x,y,z))
 
-	mpi_barrier(MPI_COMM_WORLD)
-	reduce_EMData_to_root(filteredvol, myid, main_node, MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+	utilities.reduce_EMData_to_root(filteredvol, myid, main_node, mpi.MPI_COMM_WORLD)
 	return filteredvol

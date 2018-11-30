@@ -31,18 +31,31 @@ from __future__ import print_function
 #
 #
 
-import os
 import global_def
-from global_def import *
-from optparse import OptionParser
+import mpi
+import optparse
+import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import development
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 def main():
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir --dp=rise --dphi=rotation --apix=pixel_size --phistep=phi_step --zstep=z_step --fract=helicising_fraction --rmax=maximum_radius --rmin=min_radius --CTF --sym=c1 --function=user_function --maxit=max_iter --MPI"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--dp",       type="float",        default= 1.0,                help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",     type="float",        default= 1.0,                help="delta phi - rotation in degrees")  
 	parser.add_option("--apix",     type="float",        default= 1.84,               help="pixel size in Angstroms")
@@ -61,24 +74,24 @@ def main():
 		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init, mpi_finalize
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 		else:
 			print("There is only MPI version of sxfilrecons3d.py. See SPARX wiki page for downloading MyMPI details.")
 			sys.exit()
 			
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 
-		from development import filrecons3D_MPI
+		pass#IMPORTIMPORTIMPORT from development import filrecons3D_MPI
 		global_def.BATCH = True
 		filrecons3D_MPI(args[0], args[1], args[2], options.dp, options.dphi, options.apix, options.function, options.zstep, options.fract, options.rmax, options.rmin,
 		                options.CTF, options.maxit, options.sym)
 		
 		global_def.BATCH = False
 
-		if options.MPI:  mpi_finalize()
+		if options.MPI:  mpi.mpi_finalize()
 
 if __name__ == "__main__":
 	main()

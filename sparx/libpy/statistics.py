@@ -29,11 +29,68 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+import EMAN2_cppwrap
+import EMAN2db
+import alignment
+import applications
+import configparser
+import copy
+import filter
+import fundamentals
+import global_def
+import logging
+import morphology
+import mpi
+import numpy
+import numpy.random
+import os
+import pixel_error
+import projection
+import random
+import random as rdq
+import reconstruction
+import scipy.stats
+import string
+import sys
+import time
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import EMAN2db
+pass#IMPORTIMPORTIMPORT import alignment
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import array
+pass#IMPORTIMPORTIMPORT import configparser
+pass#IMPORTIMPORTIMPORT import copy
+pass#IMPORTIMPORTIMPORT import development
+pass#IMPORTIMPORTIMPORT import filter
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import logging
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import numpy.random
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import pickle
+pass#IMPORTIMPORTIMPORT import pixel_error
+pass#IMPORTIMPORTIMPORT import projection
+pass#IMPORTIMPORTIMPORT import random
+pass#IMPORTIMPORTIMPORT import random as rdq
+pass#IMPORTIMPORTIMPORT import reconstruction
+pass#IMPORTIMPORTIMPORT import scipy.stats
+pass#IMPORTIMPORTIMPORT import statistics
+pass#IMPORTIMPORTIMPORT import string
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import time
+pass#IMPORTIMPORTIMPORT import types
+pass#IMPORTIMPORTIMPORT import utilities
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
-from global_def import *
+pass#IMPORTIMPORTIMPORT from global_def import *
 
 def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True):
 	'''
@@ -55,19 +112,19 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 	var: the variance of the image series in real space
 
 	'''
-	from utilities    import model_blank
-	from alignment    import kbt
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank
+	pass#IMPORTIMPORTIMPORT from alignment    import kbt
 
 	inmem = True
 	if type(data) == type(""):
 		inmem = False
-		from utilities    import get_im	
+		pass#IMPORTIMPORTIMPORT from utilities    import get_im
 
 	img2D = True
 	if inmem:
 		img = data[0]
 	else:
-		img = get_im(data,0)
+		img = utilities.get_im(data,0)
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
@@ -76,20 +133,20 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 
 	if mode == 'a':
 		if img2D:
-			from utilities import get_params2D
-			from fundamentals import rot_shift2D
+			pass#IMPORTIMPORTIMPORT from utilities import get_params2D
+			pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 		else:
-			from utilities import get_params3D
-			from fundamentals import rot_shift3D
+			pass#IMPORTIMPORTIMPORT from utilities import get_params3D
+			pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
 
 	if inmem:
 		data_nima = len(data)
 	else:
-		data_nima = EMUtil.get_image_count(data)
+		data_nima = EMAN2_cppwrap.EMUtil.get_image_count(data)
 	if i2 == 0: i2 = data_nima-1
 
-	ave = model_blank(nx,ny,nz)
-	var = model_blank(nx,ny,nz)
+	ave = utilities.model_blank(nx,ny,nz)
+	var = utilities.model_blank(nx,ny,nz)
 	nima = 0
 	for i in range(i1, i2+1):
 		if not(use_odd) and i%2 == 1:
@@ -100,18 +157,18 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 		if inmem:
 			img = data[i]
 		else:
-			img = get_im(data, i)
+			img = utilities.get_im(data, i)
 		if (mode == 'a'):
 			if img2D:
-				angle, sx, sy, mirror, scale = get_params2D(img)
-				img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+				angle, sx, sy, mirror, scale = utilities.get_params2D(img)
+				img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 			else:
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
-				img = rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
-		Util.add_img(ave, img)
-		Util.add_img2(var, img)
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = utilities.get_params3D(img)
+				img = fundamentals.rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
+		EMAN2_cppwrap.Util.add_img(ave, img)
+		EMAN2_cppwrap.Util.add_img2(var, img)
 
-	Util.mul_scalar(ave, 1.0 /float(nima) )
+	EMAN2_cppwrap.Util.mul_scalar(ave, 1.0 /float(nima) )
 	return ave, (var - ave*ave*nima)/(nima-1)
 
 def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0, dopa = True):
@@ -137,38 +194,38 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 	
 	'''
 
-	from utilities    import model_blank, pad
-	from alignment    import kbt
-	from fundamentals import fft, fftip, window2d
-	from filter       import filt_ctf
-	from morphology   import ctf_img
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, pad
+	pass#IMPORTIMPORTIMPORT from alignment    import kbt
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft, fftip, window2d
+	pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
+	pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
 
 	inmem = True
 	if type(data) == type(""):
 		inmem = False
-		from utilities    import get_im	
+		pass#IMPORTIMPORTIMPORT from utilities    import get_im
 
 	if inmem:
 		img = data[0]
 	else:
-		img = get_im(data,0)
+		img = utilities.get_im(data,0)
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
 	if nz > 1:
-		ERROR("images must be 2D for CTF correction.....exiting","avgvar_ctf",1)
+		global_def.ERROR("images must be 2D for CTF correction.....exiting","avgvar_ctf",1)
 
 	if img.get_attr_default('ctf_applied', 0) == 1:
-		ERROR("data cannot be ctf-applied....exiting","avgvar_ctf",1)
+		global_def.ERROR("data cannot be ctf-applied....exiting","avgvar_ctf",1)
 
 	if mode == 'a':
-		from utilities import get_params2D
-		from fundamentals import rot_shift2D
+		pass#IMPORTIMPORTIMPORT from utilities import get_params2D
+		pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 
 	if inmem:
 		data_nima = len(data)
 	else:
-		data_nima = EMUtil.get_image_count(data)
+		data_nima = EMAN2_cppwrap.EMUtil.get_image_count(data)
 
 	if i2 == 0: i2 = data_nima-1
 	if dopa:
@@ -177,77 +234,77 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 	else:
 		nx2 = nx
 		ny2 = ny
-	ave = EMData(nx2, ny2, 1, False)
-	ctf_2_sum = EMData(nx2, ny2, 1, False)
+	ave = EMAN2_cppwrap.EMData(nx2, ny2, 1, False)
+	ctf_2_sum = EMAN2_cppwrap.EMData(nx2, ny2, 1, False)
 	nima = 0
 	for i in range(i1, i2+1):
 		if not(use_odd) and i%2 == 1: continue
 		if not(use_even) and i%2 == 0: continue
 		nima += 1
 		if inmem: img = data[i].copy()
-		else: img = get_im(data, i)
+		else: img = utilities.get_im(data, i)
 
 		ctf_params = img.get_attr("ctf")
 
 		if(mode == 'a'):
-			angle, sx, sy, mirror, scale = get_params2D(img)
-			img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
-			ctf_params.dfang += alpha
+			angle, sx, sy, mirror, scale = utilities.get_params2D(img)
+			img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+			ctf_params.dfang += scipy.stats.alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 
-		img = pad(img, nx2, ny2, 1, background = "circumference")
-		fftip(img)
-		Util.add_img(ave, filt_ctf(img, ctf_params))
-		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
+		img = utilities.pad(img, nx2, ny2, 1, background = "circumference")
+		fundamentals.fftip(img)
+		EMAN2_cppwrap.Util.add_img(ave, filter.filt_ctf(img, ctf_params))
+		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx2, ctf_params))
 
 	ctf_2_sum += 1.0/snr
-	Util.div_filter(ave, ctf_2_sum)
+	EMAN2_cppwrap.Util.div_filter(ave, ctf_2_sum)
 
 	# calculate variance in real space
 	#totv = model_blank(nx2, ny2, nz)
-	tvar = model_blank(nx, ny, nz)
+	tvar = utilities.model_blank(nx, ny, nz)
 	for i in range(i1, i2+1):
 		if not(use_odd) and i%2 == 1: continue
 		if not(use_even) and i%2 == 0: continue
 		if inmem: img = data[i].copy()
-		else: img = get_im(data, i)
+		else: img = utilities.get_im(data, i)
 
 		ctf_params = img.get_attr("ctf")
 
 		if (mode == 'a'):
-			angle, sx, sy, mirror, scale = get_params2D(img)
-			img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
-			ctf_params.dfang += alpha
+			angle, sx, sy, mirror, scale = utilities.get_params2D(img)
+			img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+			ctf_params.dfang += scipy.stats.alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 
-		img = pad(img, nx2, ny2, 1, background = "circumference")
-		fftip(img)
+		img = utilities.pad(img, nx2, ny2, 1, background = "circumference")
+		fundamentals.fftip(img)
 		#img = filt_ctf(img-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
-		img = img-filt_ctf(ave, ctf_params, dopa)
+		img = img-filter.filt_ctf(ave, ctf_params, dopa)
 		#Util.div_filter(img, ctf_2_sum)
-		img = window2d(fft(img),nx,ny)
+		img = fundamentals.window2d(fundamentals.fft(img),nx,ny)
 		#Util.add_img(totv, img)
-		Util.add_img2(tvar, img)
+		EMAN2_cppwrap.Util.add_img2(tvar, img)
 	#Util.mul_scalar(tvar, float(nima)*nima/(nima-1)) # the strange factor is due to the fact that division by ctf^2 is equivalent to division by nima
-	Util.mul_scalar(tvar, 1.0/float(nima))
-	return  window2d(fft(ave),nx,ny) , tvar#,(tvar - totv*totv/nima), tvar, totv,tavg
+	EMAN2_cppwrap.Util.mul_scalar(tvar, 1.0/float(nima))
+	return  fundamentals.window2d(fundamentals.fft(ave),nx,ny) , tvar#,(tvar - totv*totv/nima), tvar, totv,tavg
 
 def add_oe_series(data, ali_params="xform.align2d"):
 	"""
 		Calculate odd and even sum of an image series using current alignment parameters
 	"""
-	from utilities    import model_blank, get_params2D
-	from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, get_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave1 = model_blank(nx,ny)
-	ave2 = model_blank(nx,ny)
+	ave1 = utilities.model_blank(nx,ny)
+	ave2 = utilities.model_blank(nx,ny)
 	for i in range(n):
-		alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-		temp = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
-		if i%2 == 0: Util.add_img(ave1, temp)
-		else:         Util.add_img(ave2, temp)
+		alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
+		temp = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+		if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, temp)
+		else:         EMAN2_cppwrap.Util.add_img(ave2, temp)
 	return ave1, ave2
 
 def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, ali_params = "xform.align2d"):
@@ -256,72 +313,72 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 		mode - "a": use current alignment parameters
 		CTF  - if True, use CTF for calculations of both average and variance.
 	"""
-	from utilities    import    model_blank, get_params2D, info
-	from fundamentals import    rot_shift2D, fft, fftip
+	pass#IMPORTIMPORTIMPORT from utilities    import    model_blank, get_params2D, info
+	pass#IMPORTIMPORTIMPORT from fundamentals import    rot_shift2D, fft, fftip
 
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave1 = EMData(nx, ny, 1, False)
-	ave2 = EMData(nx, ny, 1, False)
-	var  = EMData(nx, ny, 1, False)
+	ave1 = EMAN2_cppwrap.EMData(nx, ny, 1, False)
+	ave2 = EMAN2_cppwrap.EMData(nx, ny, 1, False)
+	var  = EMAN2_cppwrap.EMData(nx, ny, 1, False)
 	
 	if CTF:
-		from morphology   import ctf_img
-		from filter       import filt_ctf, filt_table
+		pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
+		pass#IMPORTIMPORTIMPORT from filter       import filt_ctf, filt_table
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			ERROR("data cannot be ctf-applied", "add_ave_varf", 1)
+			global_def.ERROR("data cannot be ctf-applied", "add_ave_varf", 1)
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
-		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
+		if get_ctf2: ctf_2_sum = EMAN2_cppwrap.EMData(nx, ny, 1, False)
 		ctf_params = data[i].get_attr("ctf")
 		for i in range(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
-				if mask:  Util.mul_img(ima, mask)
-				fftip(ima)
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
+				fundamentals.fftip(ima)
 				ctf_params.dfang += alpha
 				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
 			else:
-				if  mask:   ima = fft(Util.muln_img(data[i], mask))
-				else:       ima = fft(data[i])
-			ima_filt = filt_ctf(ima, ctf_params, dopad=False)
-			if(i%2 == 0):  Util.add_img(ave1, ima_filt)
-			else:          Util.add_img(ave2, ima_filt)
-			Util.add_img2(var, ima)
-			if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
-		sumsq = Util.addn_img(ave1, ave2)
-		tavg = Util.divn_img(sumsq, ctf_2_sum)
-		Util.mul_img(sumsq, sumsq)
-		Util.div_img(sumsq, ctf_2_sum)
-		Util.sub_img(var, sumsq)
+				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:       ima = fundamentals.fft(data[i])
+			ima_filt = filter.filt_ctf(ima, ctf_params, dopad=False)
+			if(i%2 == 0):  EMAN2_cppwrap.Util.add_img(ave1, ima_filt)
+			else:          EMAN2_cppwrap.Util.add_img(ave2, ima_filt)
+			EMAN2_cppwrap.Util.add_img2(var, ima)
+			if get_ctf2: EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx, ctf_params))
+		sumsq = EMAN2_cppwrap.Util.addn_img(ave1, ave2)
+		tavg = EMAN2_cppwrap.Util.divn_img(sumsq, ctf_2_sum)
+		EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
+		EMAN2_cppwrap.Util.div_img(sumsq, ctf_2_sum)
+		EMAN2_cppwrap.Util.sub_img(var, sumsq)
 	else:
 		for i in range(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
-				if mask:  Util.mul_img(ima, mask)
-				fftip(ima)
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
+				fundamentals.fftip(ima)
 			else:
-				if  mask:   ima = fft(Util.muln_img(data[i], mask))
-				else:       ima = fft(data[i])
-			if(i%2 == 0):   Util.add_img(ave1, ima)
-			else:           Util.add_img(ave2, ima)
-			Util.add_img2(var, ima)
-		sumsq = Util.addn_img(ave1, ave2)
-		tavg = Util.mult_scalar(sumsq, 1.0/float(n))
-		Util.mul_img(sumsq, sumsq)
-		Util.mul_scalar(sumsq, 1.0/float(n))
-		Util.sub_img(var, sumsq)
+				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:       ima = fundamentals.fft(data[i])
+			if(i%2 == 0):   EMAN2_cppwrap.Util.add_img(ave1, ima)
+			else:           EMAN2_cppwrap.Util.add_img(ave2, ima)
+			EMAN2_cppwrap.Util.add_img2(var, ima)
+		sumsq = EMAN2_cppwrap.Util.addn_img(ave1, ave2)
+		tavg = EMAN2_cppwrap.Util.mult_scalar(sumsq, 1.0/float(n))
+		EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
+		EMAN2_cppwrap.Util.mul_scalar(sumsq, 1.0/float(n))
+		EMAN2_cppwrap.Util.sub_img(var, sumsq)
 
-	Util.mul_scalar(var, 1.0/float(n-1))
+	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(n-1))
 	var.set_value_at(0, 0, 1.0)
-	st = Util.infomask(var, None, True)
-	if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf", 1)
+	st = EMAN2_cppwrap.Util.infomask(var, None, True)
+	if st[2] < 0.0:  global_def.ERROR("Negative variance!", "add_ave_varf", 1)
 	return tavg, ave1, ave2, var, sumsq
 
 def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, ali_params = "xform.align2d", main_node = 0, comm = -1):
@@ -332,86 +389,86 @@ def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum
 		mode - "a": use current alignment parameters
 		CTF  - if True, use CTF for calculations of the sum.
 	"""
-	from utilities    import    model_blank, get_params2D
-	from fundamentals import    rot_shift2D, fft, fftip
-	from utilities    import    reduce_EMData_to_root
-	from mpi          import    mpi_reduce, MPI_INT, MPI_SUM
+	pass#IMPORTIMPORTIMPORT from utilities    import    model_blank, get_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import    rot_shift2D, fft, fftip
+	pass#IMPORTIMPORTIMPORT from utilities    import    reduce_EMData_to_root
+	pass#IMPORTIMPORTIMPORT from mpi          import    mpi_reduce, MPI_INT, MPI_SUM
 	
 	if comm == -1:
-		from mpi import MPI_COMM_WORLD
-		comm = MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD
+		comm = mpi.MPI_COMM_WORLD
 
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave1 = EMData(nx, ny, 1, False)
-	ave2 = EMData(nx, ny, 1, False)
-	var  = EMData(nx, ny, 1, False)
+	ave1 = EMAN2_cppwrap.EMData(nx, ny, 1, False)
+	ave2 = EMAN2_cppwrap.EMData(nx, ny, 1, False)
+	var  = EMAN2_cppwrap.EMData(nx, ny, 1, False)
 	
 	if CTF:
-		from filter       import filt_ctf
-		from morphology   import ctf_img
+		pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
+		pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
+			global_def.ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
-		if get_ctf2: ctf_2_sum = EMData(nx, ny, 1, False)
+		if get_ctf2: ctf_2_sum = EMAN2_cppwrap.EMData(nx, ny, 1, False)
 		ctf_params = data[i].get_attr("ctf")
 		for i in range(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
-				if mask:  Util.mul_img(ima, mask)
-				fftip(ima)
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
+				fundamentals.fftip(ima)
 				ctf_params.dfang += alpha
 				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 			else:
-				if  mask:   ima = fft(Util.muln_img(data[i], mask))
-				else:       ima = fft(data[i])
-			ima_filt = filt_ctf(ima, ctf_params, dopad=False)
-			if(i%2 == 0):   Util.add_img(ave1, ima_filt)
-			else:           Util.add_img(ave2, ima_filt)
-			Util.add_img2(var, ima)
-			if get_ctf2: Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:       ima = fundamentals.fft(data[i])
+			ima_filt = filter.filt_ctf(ima, ctf_params, dopad=False)
+			if(i%2 == 0):   EMAN2_cppwrap.Util.add_img(ave1, ima_filt)
+			else:           EMAN2_cppwrap.Util.add_img(ave2, ima_filt)
+			EMAN2_cppwrap.Util.add_img2(var, ima)
+			if get_ctf2: EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx, ctf_params))
 	else:
 		get_ctf2 = False
 		for i in range(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i], ali_params)
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
-				if mask:  Util.mul_img(ima, mask)
-				fftip(ima)
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
+				fundamentals.fftip(ima)
 			else:
-				if  mask:   ima = fft(Util.muln_img(data[i], mask))
-				else:       ima = fft(data[i])
-			if(i%2 == 0):   Util.add_img(ave1, ima)
-			else:           Util.add_img(ave2, ima)
-			Util.add_img2(var, ima)
-	reduce_EMData_to_root(ave1, myid, main_node, comm)
-	reduce_EMData_to_root(ave2, myid, main_node, comm)
-	reduce_EMData_to_root(var, myid, main_node, comm)
-	if get_ctf2: reduce_EMData_to_root(ctf_2_sum, myid, main_node, comm)
+				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:       ima = fundamentals.fft(data[i])
+			if(i%2 == 0):   EMAN2_cppwrap.Util.add_img(ave1, ima)
+			else:           EMAN2_cppwrap.Util.add_img(ave2, ima)
+			EMAN2_cppwrap.Util.add_img2(var, ima)
+	utilities.reduce_EMData_to_root(ave1, myid, main_node, comm)
+	utilities.reduce_EMData_to_root(ave2, myid, main_node, comm)
+	utilities.reduce_EMData_to_root(var, myid, main_node, comm)
+	if get_ctf2: utilities.reduce_EMData_to_root(ctf_2_sum, myid, main_node, comm)
 	nima = n
-	nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, comm)
+	nima = mpi.mpi_reduce(nima, 1, mpi.MPI_INT, mpi.MPI_SUM, main_node, comm)
 	if myid == main_node:
 		nima = int(nima)
-		sumsq = Util.addn_img(ave1, ave2)
+		sumsq = EMAN2_cppwrap.Util.addn_img(ave1, ave2)
 		if CTF:
-			tavg = Util.divn_img(sumsq, ctf_2_sum)
-			Util.mul_img(sumsq, sumsq)
-			Util.div_img(sumsq, ctf_2_sum)
+			tavg = EMAN2_cppwrap.Util.divn_img(sumsq, ctf_2_sum)
+			EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
+			EMAN2_cppwrap.Util.div_img(sumsq, ctf_2_sum)
 		else:
-			tavg = Util.mult_scalar(sumsq, 1.0/float(nima))
-			Util.mul_img(sumsq, sumsq)
-			Util.mul_scalar(sumsq, 1.0/float(nima))
-		Util.sub_img(var, sumsq)
-		Util.mul_scalar(var, 1.0/float(nima-1))
+			tavg = EMAN2_cppwrap.Util.mult_scalar(sumsq, 1.0/float(nima))
+			EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
+			EMAN2_cppwrap.Util.mul_scalar(sumsq, 1.0/float(nima))
+		EMAN2_cppwrap.Util.sub_img(var, sumsq)
+		EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(nima-1))
 		var.set_value_at(0, 0, 1.0)
-		st = Util.infomask(var, None, True)
-		if st[2] < 0.0:  ERROR("Negative variance!", "add_ave_varf_MPI", 1)
+		st = EMAN2_cppwrap.Util.infomask(var, None, True)
+		if st[2] < 0.0:  global_def.ERROR("Negative variance!", "add_ave_varf_MPI", 1)
 	else:
-		tavg  = EMData()
-		sumsq = EMData()
+		tavg  = EMAN2_cppwrap.EMData()
+		sumsq = EMAN2_cppwrap.EMData()
 	return tavg, ave1, ave2, var, sumsq
 
 def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, return_params = False):
@@ -424,74 +481,74 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 		If ctf_eo_sum is True, then compute ctf^2 in odd and even form
 		If return_params is True, then return ali2d.xform parameters
 	"""
-	from utilities    import    model_blank, get_params2D, same_ctf
-	from fundamentals import    rot_shift2D, fft
-	from copy import deepcopy
-	if CTF: ERROR("This function was disabled as it does not treat astigmatism properly","sum_oe",1)
+	pass#IMPORTIMPORTIMPORT from utilities    import    model_blank, get_params2D, same_ctf
+	pass#IMPORTIMPORTIMPORT from fundamentals import    rot_shift2D, fft
+	pass#IMPORTIMPORTIMPORT from copy import deepcopy
+	if CTF: global_def.ERROR("This function was disabled as it does not treat astigmatism properly","sum_oe",1)
 	n      = len(data)
 	if return_params: params_list = [None]*n
 	if CTF:
 		origin_size = data[0].get_xsize()
-		ave1   = EMData(origin_size, origin_size, 1, False) 
-		ave2   = EMData(origin_size, origin_size, 1, False)
-		from morphology import ctf_img
-		ctf_2_sumo = EMData(origin_size, origin_size, 1, False)
-		ctf_2_sume = EMData(origin_size, origin_size, 1, False)
+		ave1   = EMAN2_cppwrap.EMData(origin_size, origin_size, 1, False) 
+		ave2   = EMAN2_cppwrap.EMData(origin_size, origin_size, 1, False)
+		pass#IMPORTIMPORTIMPORT from morphology import ctf_img
+		ctf_2_sumo = EMAN2_cppwrap.EMData(origin_size, origin_size, 1, False)
+		ctf_2_sume = EMAN2_cppwrap.EMData(origin_size, origin_size, 1, False)
 
-		if data[0].get_attr_default('ctf_applied', 1) == 1:  ERROR("data cannot be ctf-applied", "sum_oe", 1)
+		if data[0].get_attr_default('ctf_applied', 1) == 1:  global_def.ERROR("data cannot be ctf-applied", "sum_oe", 1)
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
 		for im in range(n):
 			current_ctf = data[im].get_attr("ctf")
 			if im == 0: 
-				myctf = deepcopy(current_ctf)
-				ctt = ctf_img(origin_size, myctf)
+				myctf = copy.deepcopy(current_ctf)
+				ctt = morphology.ctf_img(origin_size, myctf)
 			else:
-				if not same_ctf(current_ctf, myctf):
-					myctf = deepcopy(current_ctf)
-					ctt   = ctf_img(origin_size, myctf)
+				if not utilities.same_ctf(current_ctf, myctf):
+					myctf = copy.deepcopy(current_ctf)
+					ctt   = morphology.ctf_img(origin_size, myctf)
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[im])
-				ima = rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
+				ima = fundamentals.rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
 				if return_params:
 					params_list[im]= [alpha, sx, sy, mirror, scale]
 			else:
 				ima = data[im]
 				if return_params:
-					alpha, sx, sy, mirror, scale = get_params2D(data[im])
+					alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
 					params_list[im]= [alpha, sx, sy, mirror, scale]
-			ima = fft(ima)
-			Util.mul_img(ima, ctt)
+			ima = fundamentals.fft(ima)
+			EMAN2_cppwrap.Util.mul_img(ima, ctt)
 			if im%2 == 0:	
-				Util.add_img(ave1, ima)
-				Util.add_img2(ctf_2_sume, ctt)
+				EMAN2_cppwrap.Util.add_img(ave1, ima)
+				EMAN2_cppwrap.Util.add_img2(ctf_2_sume, ctt)
 			else:	        
-				Util.add_img(ave2, ima)
-				Util.add_img2(ctf_2_sumo, ctt)
+				EMAN2_cppwrap.Util.add_img(ave2, ima)
+				EMAN2_cppwrap.Util.add_img2(ctf_2_sumo, ctt)
 	else:
 		nx     = data[0].get_xsize()
 		ny     = data[0].get_ysize()
-		ave1   = model_blank(nx, ny, 1) 
-		ave2   = model_blank(nx, ny, 1)
+		ave1   = utilities.model_blank(nx, ny, 1) 
+		ave2   = utilities.model_blank(nx, ny, 1)
 		for im in range(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[im])
-				ima = rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
+				ima = fundamentals.rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
 				if return_params:
 					params_list[im]= [alpha, sx, sy, mirror, scale]
 			else:
 				ima = data[im]
 				if return_params:
-					alpha, sx, sy, mirror, scale = get_params2D(data[im])
+					alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
 					params_list[im]= [alpha, sx, sy, mirror, scale]
-			if im%2 == 0:	Util.add_img(ave1, ima)
-			else:	        Util.add_img(ave2, ima)
+			if im%2 == 0:	EMAN2_cppwrap.Util.add_img(ave1, ima)
+			else:	        EMAN2_cppwrap.Util.add_img(ave2, ima)
 
 	if  CTF:
 		if get_ctf2:
 			if not ctf_eo_sum:# Old usage
-				ctf_2_sum  = Util.addn_img(ctf_2_sume, ctf_2_sumo)
-				return fft(ave1), fft(ave2), ctf_2_sum
+				ctf_2_sum  = EMAN2_cppwrap.Util.addn_img(ctf_2_sume, ctf_2_sumo)
+				return fundamentals.fft(ave1), fundamentals.fft(ave2), ctf_2_sum
 			else: # return Fourier images
 				if return_params: return ave1, ave2, ctf_2_sume, ctf_2_sumo, params_list 
 				else: return ave1, ave2, ctf_2_sume, ctf_2_sumo
@@ -508,40 +565,40 @@ def ave_var(data, mode = "a", listID=None):
 		with optional application of orientation parameters
 		data can be either in-core stack or a disk file
 	"""
-	from utilities import model_blank, get_im
-	if  type(data) == type(""): n = EMUtil.get_image_count(data)
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank, get_im
+	if  type(data) == type(""): n = EMAN2_cppwrap.EMUtil.get_image_count(data)
 	else:                       n = len(data)
 	if listID == None:
 		listID = list(range(n))
-	img = get_im(data, 0)
+	img = utilities.get_im(data, 0)
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
 	if(mode == "a"):
 		if(nz > 1):
 			ali_params = "xform.align3d"
-			from fundamentals import rot_shift3D
-			from utilities import get_params3D
+			pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
+			pass#IMPORTIMPORTIMPORT from utilities import get_params3D
 		else:
 			ali_params = "xform.align2d"
-			from fundamentals import rot_shift2D
-			from utilities import get_params2D
+			pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
+			pass#IMPORTIMPORTIMPORT from utilities import get_params2D
 
-	ave = model_blank(nx,ny,nz)
-	var = model_blank(nx,ny,nz)
+	ave = utilities.model_blank(nx,ny,nz)
+	var = utilities.model_blank(nx,ny,nz)
 	nlistID = len(listID)
 	for i in range(nlistID):
-		img = get_im(data,listID[i])
+		img = utilities.get_im(data,listID[i])
 		if(mode == "a"):
 			if(nz > 1):
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
-				img = rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = utilities.get_params3D(img)
+				img = fundamentals.rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
 			else:
-				angle, sx, sy, mirror, scale = get_params2D(img)
-				img = rot_shift2D(img, angle, sx, sy, mirror, scale)
-		Util.add_img(ave, img)
-		Util.add_img2(var, img)
-	Util.mul_scalar(ave, 1.0 /float(nlistID) )
+				angle, sx, sy, mirror, scale = utilities.get_params2D(img)
+				img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
+		EMAN2_cppwrap.Util.add_img(ave, img)
+		EMAN2_cppwrap.Util.add_img2(var, img)
+	EMAN2_cppwrap.Util.mul_scalar(ave, 1.0 /float(nlistID) )
 
 	return ave, (var - ave*ave*nlistID)/(nlistID-1)
 
@@ -549,16 +606,16 @@ def add_oe(data):
 	"""
 		Calculate odd and even sum of an image series
 	"""
-	from utilities import model_blank
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
 	nz = data[0].get_zsize()
-	ave1 = model_blank(nx,ny,nz)
-	ave2 = model_blank(nx,ny,nz)
+	ave1 = utilities.model_blank(nx,ny,nz)
+	ave2 = utilities.model_blank(nx,ny,nz)
 	for i in range(n):
-		if i%2 == 0: Util.add_img(ave1, data[i])
-		else:        Util.add_img(ave2, data[i])
+		if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, data[i])
+		else:        EMAN2_cppwrap.Util.add_img(ave2, data[i])
 	return ave1, ave2
 
 def ave_series(data, pave = True, mask = None):
@@ -566,18 +623,18 @@ def ave_series(data, pave = True, mask = None):
 		Calculate average of a image series using current alignment parameters
 		data - real space image series
 	"""
-	from utilities    import model_blank, get_params2D
-	from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, get_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave = model_blank(nx, ny)
+	ave = utilities.model_blank(nx, ny)
 	for i in range(n):
-		alpha, sx, sy, mirror, scale = get_params2D(data[i])
-		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
-		Util.add_img(ave, temp)
-	if mask: Util.mul_img(ave, mask)
-	if pave:  Util.mul_scalar(ave, 1.0/float(n))
+		alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
+		temp = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
+		EMAN2_cppwrap.Util.add_img(ave, temp)
+	if mask: EMAN2_cppwrap.Util.mul_img(ave, mask)
+	if pave:  EMAN2_cppwrap.Util.mul_scalar(ave, 1.0/float(n))
 	return ave
 
 def ave_series_ctf(data, ctf2, mask = None):
@@ -585,28 +642,28 @@ def ave_series_ctf(data, ctf2, mask = None):
 		Calculate average of an image series using current alignment parameters and ctf
 		data - real space image series premultiplied by the CTF
 	"""
-	from utilities    import model_blank, get_params2D
-	from filter       import filt_table
-	from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, get_params2D
+	pass#IMPORTIMPORTIMPORT from filter       import filt_table
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave = model_blank(nx,ny)
+	ave = utilities.model_blank(nx,ny)
 	for i in range(n):
-		alpha, sx, sy, mirror, scale = get_params2D(data[i])
-		temp = rot_shift2D(data[i], alpha, sx, sy, mirror)
-		Util.add_img(ave, temp)
-	if mask: Util.mul_img(ave, mask)
+		alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
+		temp = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
+		EMAN2_cppwrap.Util.add_img(ave, temp)
+	if mask: EMAN2_cppwrap.Util.mul_img(ave, mask)
 
-	return filt_table(ave, ctf2)
+	return filter.filt_table(ave, ctf2)
 
 '''
 def ave_var_series(data, kb):
 	"""
 		Calculate average and variance of an image series using current alignment parameters
 	"""
-	from fundamentals import rotshift2dg
-	from utilities    import model_blank
+	pass#IMPORTIMPORTIMPORT from fundamentals import rotshift2dg
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
@@ -630,8 +687,8 @@ def ave_var_series_g(data, kb):
 		Calculate average and variance of a image series using current alignment parameters,
 		data contains images prepared for gridding
 	"""
-	from fundamentals import rtshgkb
-	from utilities    import model_blank
+	pass#IMPORTIMPORTIMPORT from fundamentals import rtshgkb
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank
 	n = len(data)
 	ny = data[0].get_ysize()/2
 	nx = ny
@@ -655,8 +712,8 @@ def ave_oe_series_g(data, kb):
 		Calculate odd and even averages of a image series using current alignment parameters,
 		      data contains images prepared for gridding
 	"""
-	from fundamentals import rtshgkb
-	from utilities    import model_blank
+	pass#IMPORTIMPORTIMPORT from fundamentals import rtshgkb
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank
 	n  = len(data)
 	ny = data[0].get_ysize()/2
 	nx = ny
@@ -684,30 +741,30 @@ def ave_oe_series_d(data):
 	ave1 = data[0].copy()
 	ave2 = data[1].copy()
 	for i in range(2,n):
-		if i%2 == 0: Util.add_img(ave1, data[i])
-		else:        Util.add_img(ave2, data[i])
+		if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, data[i])
+		else:        EMAN2_cppwrap.Util.add_img(ave2, data[i])
 	return ave1/(n//2+(n%2)), ave2/(n//2)
 
 def ave_oe_series(stack):
 	"""
 		Calculate odd and even averages of an image stack using current alignment parameters
 	"""
-	from utilities import model_blank, get_params2D
-	from fundamentals import rot_shift2D
-	n = EMUtil.get_image_count(stack)
-	ima = EMData()
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank, get_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
+	n = EMAN2_cppwrap.EMUtil.get_image_count(stack)
+	ima = EMAN2_cppwrap.EMData()
 	ima.read_image(stack, 0, True)
 	nx = ima.get_xsize()
 	ny = ima.get_ysize()
-	ave1 = model_blank(nx,ny)
-	ave2 = model_blank(nx,ny)
+	ave1 = utilities.model_blank(nx,ny)
+	ave2 = utilities.model_blank(nx,ny)
 	for i in range(n):
-		ima = EMData()
+		ima = EMAN2_cppwrap.EMData()
 		ima.read_image(stack,i)
-		alpha, sx, sy, mirror, scale = get_params2D(ima)
-		temp = rot_shift2D(ima, alpha, sx, sy, mirror)
-		if i%2 == 0: Util.add_img(ave1, temp)
-		else:        Util.add_img(ave2, temp)
+		alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+		temp = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+		if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, temp)
+		else:        EMAN2_cppwrap.Util.add_img(ave2, temp)
 	return ave1/(n//2+(n%2)), ave2/(n//2)
 
 
@@ -715,27 +772,27 @@ def ave_oe_series_textfile(stack, textfile):
 	"""
 		Calculate odd and even averages of an image stack using alignment parameters in a text file
 	"""
-	from utilities import model_blank, read_text_file
-	from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank, read_text_file
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 	
-	n = EMUtil.get_image_count(stack)
-	ima = EMData()
+	n = EMAN2_cppwrap.EMUtil.get_image_count(stack)
+	ima = EMAN2_cppwrap.EMData()
 	ima.read_image(stack, 0, True)
 	nx = ima.get_xsize()
 	ny = ima.get_ysize()
-	ave1 = model_blank(nx, ny)
-	ave2 = model_blank(nx, ny)
-	params = read_text_file(textfile, -1)
+	ave1 = utilities.model_blank(nx, ny)
+	ave2 = utilities.model_blank(nx, ny)
+	params = utilities.read_text_file(textfile, -1)
 	for i in range(n):
-		ima = EMData()
+		ima = EMAN2_cppwrap.EMData()
 		ima.read_image(stack, i)
 		alpha = params[0][i]
 		sx = params[1][i]
 		sy = params[2][i]
 		mirror = params[3][i]
-		temp = rot_shift2D(ima, alpha, sx, sy, mirror)
-		if i%2 == 0: Util.add_img(ave1, temp)
-		else:        Util.add_img(ave2, temp)
+		temp = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+		if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, temp)
+		else:        EMAN2_cppwrap.Util.add_img(ave2, temp)
 	return ave1/(n/2+n%2), ave2/(n/2)
 
 
@@ -743,26 +800,26 @@ def ave_oe_series_indexed(stack, idx_ref):
 	"""
 		Calculate odd and even averages of an image series using current alignment parameters,
 	"""
-	from utilities import model_blank
-	from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 	
 	ntot = 0
-	n = EMUtil.get_image_count(stack)
-	ima = EMData()
+	n = EMAN2_cppwrap.EMUtil.get_image_count(stack)
+	ima = EMAN2_cppwrap.EMData()
 	ima.read_image(stack,0)
 	nx = ima.get_xsize()
 	ny = ima.get_ysize()
-	ave1 = model_blank(nx,ny)
-	ave2 = model_blank(nx,ny)
+	ave1 = utilities.model_blank(nx,ny)
+	ave2 = utilities.model_blank(nx,ny)
 	for i in range(n):
-		if i == 0: ima = EMData()
+		if i == 0: ima = EMAN2_cppwrap.EMData()
 		ima.read_image(stack, i)
 		if idx_ref == ima.get_attr('ref_num'):
 			ntot+=1
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			temp = rot_shift2D(ima, alpha, sx, sy, mirror)
-			if i%2 == 0: Util.add_img(ave1, temp)
-			else:        Util.add_img(ave2, temp)
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			temp = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+			if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, temp)
+			else:        EMAN2_cppwrap.Util.add_img(ave2, temp)
 	if ntot >= 0:	return ave1/(ntot/2+(ntot%2)), ave2/(ntot/2), ntot
 	else:		return ave1, ave2, ntot
 	
@@ -770,23 +827,23 @@ def ave_var_series_one(data, skip, kb):
 	"""
 		Calculate average and variance of an image series using current alignment parameters
 	"""
-	from fundamentals import rotshift2dg
-	from utilities import model_blank
+	pass#IMPORTIMPORTIMPORT from fundamentals import rotshift2dg
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave = model_blank(nx,ny)
-	var = model_blank(nx,ny)
+	ave = utilities.model_blank(nx,ny)
+	var = utilities.model_blank(nx,ny)
 	for i in range(n):
 		if( i!=skip):
 			alpha  = data[i].get_attr('alpha')
 			sx     = data[i].get_attr('sx')
 			sy     = data[i].get_attr('sy')
 			mirror = data[i].get_attr('mirror')
-			temp = rotshift2dg(data[i], alpha, sx, sy, kb)
+			temp = fundamentals.rotshift2dg(data[i], alpha, sx, sy, kb)
 			if  mirror: temp.process_inplace("xform.mirror", {"axis":'x'})
-			Util.add_img(ave, temp)
-			Util.add_img2(var, temp)
+			EMAN2_cppwrap.Util.add_img(ave, temp)
+			EMAN2_cppwrap.Util.add_img2(var, temp)
 
 	ave /= n-1
 	return ave, (var - ave*ave*(n-1))/(n-2)
@@ -800,12 +857,12 @@ def add_series(stack, i1=0 ,i2=0):
 	  average and variance are output objects
 	  
 	"""
-	from utilities import model_blank, get_im
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank, get_im
 
 	if(i2==0):
-		if  type(stack) == type(""): i2 = EMUtil.get_image_count(stack)-1
+		if  type(stack) == type(""): i2 = EMAN2_cppwrap.EMUtil.get_image_count(stack)-1
 		else:                       i2 = len(stack)-1
-	ave = get_im(stack, i1)
+	ave = utilities.get_im(stack, i1)
 	var = ave*ave  #pow(ave,2.0)
 	nx = ave.get_xsize()
 	ny = ave.get_ysize()
@@ -813,16 +870,16 @@ def add_series(stack, i1=0 ,i2=0):
 
 	# process the remaining files
 	for index in range(i1+1,i2+1):
-		e = get_im(stack, index)
-		Util.add_img(ave, e)        #ave += e
-		Util.add_img2(var, e)       #var += e*e  #pow(e,2.0)
+		e = utilities.get_im(stack, index)
+		EMAN2_cppwrap.Util.add_img(ave, e)        #ave += e
+		EMAN2_cppwrap.Util.add_img2(var, e)       #var += e*e  #pow(e,2.0)
 
 	ii=i2-i1+1
-	ave = Util.mult_scalar(ave, 1.0/float(ii))  
-	e = model_blank(nx, ny, nz)
-	Util.add_img2(e, ave)
-	var = Util.madn_scalar(var, e, -float(ii))
-	Util.mul_scalar(var, 1.0/float(ii-1))
+	ave = EMAN2_cppwrap.Util.mult_scalar(ave, 1.0/float(ii))  
+	e = utilities.model_blank(nx, ny, nz)
+	EMAN2_cppwrap.Util.add_img2(e, ave)
+	var = EMAN2_cppwrap.Util.madn_scalar(var, e, -float(ii))
+	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(ii-1))
 	
 	return ave, var
 
@@ -835,16 +892,16 @@ def add_series_class(stack, i1 = 0, i2 = 0):
 	  average and variance are output objects
 	  
 	"""
-	from utilities import model_blank, get_im
-	if(i2==0): i2 = EMUtil.get_image_count(stack)-1
-	e = get_im(stack, i1)
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank, get_im
+	if(i2==0): i2 = EMAN2_cppwrap.EMUtil.get_image_count(stack)-1
+	e = utilities.get_im(stack, i1)
 	kc = e.get_attr('nclass')
 	nx = e.get_xsize()
 	ny = e.get_ysize()
 	nz = e.get_zsize()
 	ave = []
 	var = []
-	e = model_blank(nx,ny,nz)
+	e = utilities.model_blank(nx,ny,nz)
 	for k in range(kc):
 		ave.append(e.copy())
 		var.append(e.copy())
@@ -852,27 +909,27 @@ def add_series_class(stack, i1 = 0, i2 = 0):
 	nclass = [0]*kc
 	# process files
 	for index in range(i1,i2+1):
-		e = get_im(stack, index)
+		e = utilities.get_im(stack, index)
 		g = e.get_attr('ref_num')
 		nclass[g] += 1
-		Util.add_img(ave[g], e)
+		EMAN2_cppwrap.Util.add_img(ave[g], e)
 		#ave[g] += e
 		#ave[g] = ave[g] + e
-		Util.add_img2(var[g], e)
+		EMAN2_cppwrap.Util.add_img2(var[g], e)
 		#var[g] = var[g] + e*e  #pow(e,2.0)
 
 	for k in range(kc):
 		ii = nclass[k]
 		if(ii > 0):
-			ave[k] = Util.mult_scalar(ave[k], 1.0/float(ii))         #ave[k] = ave[k]/ii
+			ave[k] = EMAN2_cppwrap.Util.mult_scalar(ave[k], 1.0/float(ii))         #ave[k] = ave[k]/ii
 			if(ii > 1):
 				#var[k] = (var[k] - ave[k]*ave[k]*ii) / (ii-1)
-				temp = model_blank(nx, ny, nz)
-				Util.add_img2(temp, ave[k])
-				var[k] = Util.madn_scalar(var[k], temp, -float(ii))
-				Util.mul_scalar(var[k], 1.0/float(ii-1))
+				temp = utilities.model_blank(nx, ny, nz)
+				EMAN2_cppwrap.Util.add_img2(temp, ave[k])
+				var[k] = EMAN2_cppwrap.Util.madn_scalar(var[k], temp, -float(ii))
+				EMAN2_cppwrap.Util.mul_scalar(var[k], 1.0/float(ii-1))
 			else:
-				var[k] = model_blank(nx,ny,nz)
+				var[k] = utilities.model_blank(nx,ny,nz)
 
 	return ave, var, nclass
 
@@ -887,14 +944,14 @@ def add_series_class_mem(data, assign, kc):
 	  average and variance are output objects
 	  
 	"""
-	from utilities import model_blank
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank
 
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
 	nz = data[0].get_zsize()
 	ave = []
 	var = []
-	e = model_blank(nx,ny,nz)
+	e = utilities.model_blank(nx,ny,nz)
 	for k in range(kc):
 		ave.append(e.copy())
 		var.append(e.copy())
@@ -904,21 +961,21 @@ def add_series_class_mem(data, assign, kc):
 	for index in range(len(data)):
 		g = assign[index]
 		nclass[g] += 1
-		Util.add_img(ave[g], data[index])
+		EMAN2_cppwrap.Util.add_img(ave[g], data[index])
 		#ave[g] += e
 		#ave[g] = ave[g] + e
-		Util.add_img2(var[g], data[index])        
+		EMAN2_cppwrap.Util.add_img2(var[g], data[index])        
 		#var[g] = var[g] + e*e  #pow(e,2.0)
 
 	for k in range(kc):
 		ii = nclass[k]
-		ave[k] = Util.mult_scalar(ave[k], 1.0/float(ii))         #ave[k] = ave[k]/ii
+		ave[k] = EMAN2_cppwrap.Util.mult_scalar(ave[k], 1.0/float(ii))         #ave[k] = ave[k]/ii
 		if(ii > 1):
 			#var[k] = (var[k] - ave[k]*ave[k]*ii) / (ii-1)
-			temp = model_blank(nx, ny, nz)
-			Util.add_img2(temp, ave[k])
-			var[k] = Util.madn_scalar(var[k], temp, -float(ii))
-			Util.mul_scalar(var[k], 1.0/float(ii-1))
+			temp = utilities.model_blank(nx, ny, nz)
+			EMAN2_cppwrap.Util.add_img2(temp, ave[k])
+			var[k] = EMAN2_cppwrap.Util.madn_scalar(var[k], temp, -float(ii))
+			EMAN2_cppwrap.Util.mul_scalar(var[k], 1.0/float(ii-1))
 		else:
 			var[k].to_zero()
 
@@ -938,9 +995,9 @@ def add_series_class_ctf(images, ctf1, ctf2, snr, assign, kc):
 	  average and variance are output objects
 	  
 	"""
-	from fundamentals import  fftip, fft
-	from filter       import  filt_table
-	from utilities    import  model_blank #, info
+	pass#IMPORTIMPORTIMPORT from fundamentals import  fftip, fft
+	pass#IMPORTIMPORTIMPORT from filter       import  filt_table
+	pass#IMPORTIMPORTIMPORT from utilities    import  model_blank #, info
 	nx = images[0].get_xsize()
 	ny = images[0].get_ysize()
 	nz = images[0].get_zsize()
@@ -1016,37 +1073,37 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 		1. mode="a" for alignment
 		2. mode=else for normal summation
 	"""
-	from utilities    import get_im, model_blank, get_params2D
-	from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from utilities    import get_im, model_blank, get_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 
 	if i2 == 0:
-		if type(stack) == type(""):  i2 = EMUtil.get_image_count(stack)-1
+		if type(stack) == type(""):  i2 = EMAN2_cppwrap.EMUtil.get_image_count(stack)-1
 		else:  i2 = len(stack)-1
 	nima = i2-i1+1
 
-	ima = get_im(stack, i1)
+	ima = utilities.get_im(stack, i1)
 	nx  = ima.get_xsize()
 	ny  = ima.get_ysize()
-	ave = model_blank(nx,ny)
-	var = model_blank(nx,ny)
+	ave = utilities.model_blank(nx,ny)
+	var = utilities.model_blank(nx,ny)
 	for i in range(i1, i2 + 1):
 		if i > i1:
-			ima = get_im(stack, i)
+			ima = utilities.get_im(stack, i)
 		if mode=="a":
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			out = rot_shift2D(ima, alpha, sx, sy, mirror)
-			Util.add_img(ave, out)
-			Util.add_img2(var, out)
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			out = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+			EMAN2_cppwrap.Util.add_img(ave, out)
+			EMAN2_cppwrap.Util.add_img2(var, out)
 		else: 
-			Util.add_img(ave, ima)
-			Util.add_img2(var, ima)
+			EMAN2_cppwrap.Util.add_img(ave, ima)
+			EMAN2_cppwrap.Util.add_img2(var, ima)
 	#var[k] = (var[k] - ave[k]*ave[k]*ii) / (ii-1)
 
-	ave = Util.mult_scalar(ave, 1.0/float(nima))
-	temp = model_blank(nx, ny)
-	Util.add_img2(temp, ave)
-	var = Util.madn_scalar(var, temp, -float(nima))
-	Util.mul_scalar(var, 1.0/float(nima-1))
+	ave = EMAN2_cppwrap.Util.mult_scalar(ave, 1.0/float(nima))
+	temp = utilities.model_blank(nx, ny)
+	EMAN2_cppwrap.Util.add_img2(temp, ave)
+	var = EMAN2_cppwrap.Util.madn_scalar(var, temp, -float(nima))
+	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(nima-1))
 
 	return ave, var
 	
@@ -1056,28 +1113,28 @@ def aveq(stack, mode="a", i1 = 0, i2 = 0):
 		1. mode="a" for alignment
 		2. mode=else for normal summation
 	"""
-	from utilities    import get_im, model_blank, get_params2D
-	from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from utilities    import get_im, model_blank, get_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 
 	if i2 == 0:
-		if type(stack) == type(""):  i2 = EMUtil.get_image_count(stack)-1
+		if type(stack) == type(""):  i2 = EMAN2_cppwrap.EMUtil.get_image_count(stack)-1
 		else:  i2 = len(stack)-1
 	nima = i2-i1+1
 
-	ima = get_im(stack, i1)
+	ima = utilities.get_im(stack, i1)
 	nx  = ima.get_xsize()
 	ny  = ima.get_ysize()
-	ave = model_blank(nx,ny)
+	ave = utilities.model_blank(nx,ny)
 	for i in range(i1, i2 + 1):
 		if i > i1:
-			ima = get_im(stack, i)
+			ima = utilities.get_im(stack, i)
 		if mode=="a":
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			Util.add_img(ave, rot_shift2D(ima, alpha, sx, sy, mirror))
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			EMAN2_cppwrap.Util.add_img(ave, fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror))
 		else: 
-			Util.add_img(ave, ima)
+			EMAN2_cppwrap.Util.add_img(ave, ima)
 
-	ave = Util.mult_scalar(ave, 1.0/float(nima))
+	ave = EMAN2_cppwrap.Util.mult_scalar(ave, 1.0/float(nima))
 	return ave
 
 def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
@@ -1086,61 +1143,61 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 		mode="a" will apply alignment parameters to the input image.
 	"""
 	
-	from  fundamentals	import fft, rot_shift2D
-	from  morphology	import ctf_img
-	from  filter		import filt_ctf
-	from  utilities		import pad, get_params2D, get_im, model_blank
-	from  EMAN2			import EMAN2Ctf
-	from  math 	   import sqrt
+	pass#IMPORTIMPORTIMPORT from  fundamentals	import fft, rot_shift2D
+	pass#IMPORTIMPORTIMPORT from  morphology	import ctf_img
+	pass#IMPORTIMPORTIMPORT from  filter		import filt_ctf
+	pass#IMPORTIMPORTIMPORT from  utilities		import pad, get_params2D, get_im, model_blank
+	pass#IMPORTIMPORTIMPORT from  EMAN2			import EMAN2Ctf
+	pass#IMPORTIMPORTIMPORT from  math 	   import sqrt
 	
-	if type(input_stack) == type(""):	n = EMUtil.get_image_count(input_stack)
+	if type(input_stack) == type(""):	n = EMAN2_cppwrap.EMUtil.get_image_count(input_stack)
 	else:  n = len(input_stack)
-	ima = get_im(input_stack, 0)
+	ima = utilities.get_im(input_stack, 0)
 	nx = ima.get_xsize()
 	ny = ima.get_xsize()
 	#if(interpolation_method=="fourier"):  npad = 2
 	#else:  npad = 1
 	npad = 1
 
-	if ima.get_attr_default('ctf_applied', -2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', -2) > 0:	global_def.ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
 	nx2 = nx*npad
 	ny2 = ny*npad
-	ave       = model_blank(nx2,ny2)
-	ctf_2_sum = EMData(nx2, ny2, 1, False)
-	snrsqrt = sqrt(SNR)
+	ave       = utilities.model_blank(nx2,ny2)
+	ctf_2_sum = EMAN2_cppwrap.EMData(nx2, ny2, 1, False)
+	snrsqrt = numpy.sqrt(SNR)
 
 	for i in range(n):
-		ima = get_im(input_stack, i)
+		ima = utilities.get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
-		oc = filt_ctf(pad(ima, nx2, ny2, background = 0.0), ctf_params, dopad=False)
+		oc = filter.filt_ctf(utilities.pad(ima, nx2, ny2, background = 0.0), ctf_params, dopad=False)
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			oc = rot_shift2D(oc, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			oc = fundamentals.rot_shift2D(oc, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
-		Util.mul_scalar(oc, SNR)
-		Util.add_img(ave, oc)
-		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
+		EMAN2_cppwrap.Util.mul_scalar(oc, SNR)
+		EMAN2_cppwrap.Util.add_img(ave, oc)
+		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, snrsqrt*morphology.ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
 	ctf_2_sum += 1.0
-	ave = fft(ave)
-	Util.div_filter(ave, ctf_2_sum)
+	ave = fundamentals.fft(ave)
+	EMAN2_cppwrap.Util.div_filter(ave, ctf_2_sum)
 	# variance
-	var = EMData(nx,ny)
+	var = EMAN2_cppwrap.EMData(nx,ny)
 	var.to_zero()
 	for i in range(n):
-		ima = get_im(input_stack, i)
+		ima = utilities.get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
-		oc = filt_ctf(ave, ctf_params, dopad=False)
-		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
-		Util.add_img2(var, ima)
-	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
-	Util.mul_scalar(var, 1.0/(n-1))
+		oc = filter.filt_ctf(ave, ctf_params, dopad=False)
+		EMAN2_cppwrap.Util.sub_img(ima, EMAN2_cppwrap.Util.window(fundamentals.fft(oc),nx,ny,1,0,0,0))
+		EMAN2_cppwrap.Util.add_img2(var, ima)
+	ave = EMAN2_cppwrap.Util.window(fundamentals.fft(ave),nx,ny,1,0,0,0)
+	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/(n-1))
 	return ave, var
 
 def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="linear"):
@@ -1149,68 +1206,68 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="line
 		mode="a" will apply alignment parameters to the input image.
 	"""
 	
-	from  fundamentals import fft, rot_shift2D
-	from  morphology   import ctf_img, ctf_1d, ctf_2
-	from  filter 	   import filt_ctf, filt_table
-	from  utilities    import pad, get_params2D, get_im
-	from  math 	   import sqrt
-	ERROR("This function was disabled as it does not treat astigmatism properly","aves_adw",1)
-	if type(input_stack) == type(""):	n = EMUtil.get_image_count(input_stack)
+	pass#IMPORTIMPORTIMPORT from  fundamentals import fft, rot_shift2D
+	pass#IMPORTIMPORTIMPORT from  morphology   import ctf_img, ctf_1d, ctf_2
+	pass#IMPORTIMPORTIMPORT from  filter 	   import filt_ctf, filt_table
+	pass#IMPORTIMPORTIMPORT from  utilities    import pad, get_params2D, get_im
+	pass#IMPORTIMPORTIMPORT from  math 	   import sqrt
+	global_def.ERROR("This function was disabled as it does not treat astigmatism properly","aves_adw",1)
+	if type(input_stack) == type(""):	n = EMAN2_cppwrap.EMUtil.get_image_count(input_stack)
 	else:  n = len(input_stack)
-	ima = get_im(input_stack, 0)
+	ima = utilities.get_im(input_stack, 0)
 	nx  = ima.get_xsize()
 
-	if ima.get_attr_default('ctf_applied', -2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', -2) > 0:	global_def.ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
-	ctf_abs_sum = EMData(nx, nx, 1, False)
-	ctf_2_sum = EMData(nx, nx, 1, False)
+	ctf_abs_sum = EMAN2_cppwrap.EMData(nx, nx, 1, False)
+	ctf_2_sum = EMAN2_cppwrap.EMData(nx, nx, 1, False)
 
-	Ave = EMData(nx, nx, 1, False)
+	Ave = EMAN2_cppwrap.EMData(nx, nx, 1, False)
 
 	if Ng == -1: Ng = n
 
 	for i in range(n):
-		ima = get_im(input_stack, i)
+		ima = utilities.get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
-		ctf_rot = EMAN2Ctf()
+		ctf_rot = EMAN2_cppwrap.EMAN2Ctf()
 		ctf_rot.copy_from(ctf_params)
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_rot.dfang += alpha
 			if mirror == 1:  ctf_rot.dfang = 270.0-ctf_rot.dfang
 
-		oc = filt_ctf(fft(ima), ctf_params, dopad=False)
-		Util.add_img(Ave, oc)
-		ctfimg = ctf_img(nx, ctf_rot)
-		Util.add_img2(ctf_2_sum, ctfimg)
-		Util.add_img_abs(ctf_abs_sum, ctfimg)
+		oc = filter.filt_ctf(fundamentals.fft(ima), ctf_params, dopad=False)
+		EMAN2_cppwrap.Util.add_img(Ave, oc)
+		ctfimg = morphology.ctf_img(nx, ctf_rot)
+		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, ctfimg)
+		EMAN2_cppwrap.Util.add_img_abs(ctf_abs_sum, ctfimg)
 
-	adw_img = Util.mult_scalar(ctf_2_sum, SNR)
+	adw_img = EMAN2_cppwrap.Util.mult_scalar(ctf_2_sum, SNR)
 	#adw_img += 1.0
-	Util.div_filter(adw_img, ctf_abs_sum)
+	EMAN2_cppwrap.Util.div_filter(adw_img, ctf_abs_sum)
 	#Util.mul_scalar(adw_img, float(Ng-1)/(n-1)/SNR)
-	Util.mul_scalar(adw_img, float(Ng-1)/(n-1))
+	EMAN2_cppwrap.Util.mul_scalar(adw_img, float(Ng-1)/(n-1))
 	adw_img += float(n-Ng)/(n-1)
 	#Util.mul_scalar(adw_img, SNR)
 	#Util.mul_scalar(ctf_2_sum, SNR)
 	#ctf_2_sum += 1.0
 
-	ave = fft(Util.divn_filter(Util.muln_img(Ave, adw_img), ctf_2_sum))
+	ave = fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(EMAN2_cppwrap.Util.muln_img(Ave, adw_img), ctf_2_sum))
 
 	# variance
-	var = EMData(nx, nx)
+	var = EMAN2_cppwrap.EMData(nx, nx)
 	var.to_zero()
 	for i in range(n):
-		ima = get_im(input_stack, i)
+		ima = utilities.get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
-		oc = filt_ctf(ave, ctf_params, dopad=False)
-		Util.sub_img(ima, oc)
-		Util.add_img2(var, ima)
-	Util.mul_scalar(var, 1.0/(n-1))
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+		oc = filter.filt_ctf(ave, ctf_params, dopad=False)
+		EMAN2_cppwrap.Util.sub_img(ima, oc)
+		EMAN2_cppwrap.Util.add_img2(var, ima)
+	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/(n-1))
 	return ave, var
 
 def ssnr2d(data, mask = None, mode=""):
@@ -1218,13 +1275,13 @@ def ssnr2d(data, mask = None, mode=""):
 	Calculate ssnr and variance in Fourier space for 2D or 3D images
 	If mode = "a" apply alignment parameters
 	'''
-	from morphology   import threshold
-	from utilities    import get_params2D
-	from fundamentals import fft, rot_shift2D
-	import  types
+	pass#IMPORTIMPORTIMPORT from morphology   import threshold
+	pass#IMPORTIMPORTIMPORT from utilities    import get_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft, rot_shift2D
+	pass#IMPORTIMPORTIMPORT import  types
 	if (type(data) is bytes):
-		n = EMUtil.get_image_count(data)
-		ima = EMData()
+		n = EMAN2_cppwrap.EMUtil.get_image_count(data)
+		ima = EMAN2_cppwrap.EMData()
 		ima.read_image(data, 0, True)
 		nx = ima.get_xsize()
 		ny = ima.get_ysize()
@@ -1235,42 +1292,42 @@ def ssnr2d(data, mask = None, mode=""):
 		ny = data[0].get_ysize()
 		nz = data[0].get_zsize()
 
-	sumsq = EMData(nx, ny, nz, False)
-	var   = EMData(nx, ny, nz, False)
+	sumsq = EMAN2_cppwrap.EMData(nx, ny, nz, False)
+	var   = EMAN2_cppwrap.EMData(nx, ny, nz, False)
 
 	for i in range(n):
 		if (type(data) is bytes):
-			ima = EMData()
+			ima = EMAN2_cppwrap.EMData()
 			ima.read_image(data, i)
 			if(mode == "a"):
-				alpha, sx, sy, mirror, scale = get_params2D(ima)
-				ima = rot_shift2D(ima, alpha, sx, sy, mirror)
-			if(mask):  Util.mul_img(ima, mask)
-			fim = fft(ima)
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+				ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+			if(mask):  EMAN2_cppwrap.Util.mul_img(ima, mask)
+			fim = fundamentals.fft(ima)
 		else:
 			if(mode == "a"):
-				alpha, sx, sy, mirror, scale = get_params2D(data[i])
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
-				if(mask):  fim = fft(Util.muln_img(ima, mask))
-				else    :  fim = fft(ima)
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
+				if(mask):  fim = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(ima, mask))
+				else    :  fim = fundamentals.fft(ima)
 			else:
-				if(mask):  fim = fft(Util.muln_img(data[i], mask))
-				else:      fim = fft(data[i])
-		Util.add_img(sumsq, fim)
-		Util.add_img2(var, fim)
-	Util.mul_img(sumsq, sumsq.conjg())
+				if(mask):  fim = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:      fim = fundamentals.fft(data[i])
+		EMAN2_cppwrap.Util.add_img(sumsq, fim)
+		EMAN2_cppwrap.Util.add_img2(var, fim)
+	EMAN2_cppwrap.Util.mul_img(sumsq, sumsq.conjg())
 	# convert to real images
-	var   = Util.pack_complex_to_real(var)
-	sumsq = Util.pack_complex_to_real(sumsq)
+	var   = EMAN2_cppwrap.Util.pack_complex_to_real(var)
+	sumsq = EMAN2_cppwrap.Util.pack_complex_to_real(sumsq)
 	var = (var - sumsq/n)/(n-1)
 	ssnr   = sumsq/var/n - 1.0
-	from fundamentals import rot_avg_table
-	rvar = rot_avg_table(var)
-	rsumsq = rot_avg_table(sumsq)
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
+	rvar = fundamentals.rot_avg_table(var)
+	rsumsq = fundamentals.rot_avg_table(sumsq)
 	rssnr = []
 	for i in range(len(rvar)):
 		if(rvar[i] > 0.0): qt = max(0.0, rsumsq[i]/rvar[i]/n - 1.0)
-		else:              ERROR("ssnr2d","rvar negative",1)
+		else:              global_def.ERROR("ssnr2d","rvar negative",1)
 		rssnr.append(qt)
 
 	return rssnr, rsumsq, rvar, ssnr, sumsq, var
@@ -1280,23 +1337,23 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=False):
 	Calculate ssnr and variance in Fourier space for 2D images including CTF information
 	If mode = "a" apply alignment parameters
 	"""
-	from fundamentals import fft, rot_shift2D, rot_avg_table, fftip
-	from morphology   import ctf_img, threshold
-	from filter       import filt_ctf
-	from utilities    import get_params2D, pad
-	import  types
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft, rot_shift2D, rot_avg_table, fftip
+	pass#IMPORTIMPORTIMPORT from morphology   import ctf_img, threshold
+	pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
+	pass#IMPORTIMPORTIMPORT from utilities    import get_params2D, pad
+	pass#IMPORTIMPORTIMPORT import  types
 
 	if type(data) is bytes:
-		n = EMUtil.get_image_count(data)
-		ima = EMData()
+		n = EMAN2_cppwrap.EMUtil.get_image_count(data)
+		ima = EMAN2_cppwrap.EMData()
 		ima.read_image(data, 0, True)
 		if ima.get_attr_default('ctf_applied', 1) == 1:
-			ERROR("data cannot be ctf-applied","ssnr2d",1)
+			global_def.ERROR("data cannot be ctf-applied","ssnr2d",1)
 		nx = ima.get_xsize()
 		ny = ima.get_ysize()
 	else:
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			ERROR("data cannot be ctf-applied","ssnr2d",1)
+			global_def.ERROR("data cannot be ctf-applied","ssnr2d",1)
 		n = len(data)
 		nx = data[0].get_xsize()
 		ny = data[0].get_ysize()
@@ -1306,49 +1363,49 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=False):
 	else:
 		nx2 = nx
 		ny2 = ny
-	ctf_2_sum = EMData(nx2, ny2, 1, False)
-	sumsq     = EMData(nx2, ny2, 1, False)
+	ctf_2_sum = EMAN2_cppwrap.EMData(nx2, ny2, 1, False)
+	sumsq     = EMAN2_cppwrap.EMData(nx2, ny2, 1, False)
 
 	for i in range(n):
 		if type(data) is bytes:
-			ima = EMData()
+			ima = EMAN2_cppwrap.EMData()
 			ima.read_image(data, i)
 		else:
 			ima = data[i].copy()
 		ctf_params = ima.get_attr('ctf')
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
-		if mask:  Util.mul_img(ima, mask)
-		if  dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
-		fftip(ima)
-		Util.add_img(sumsq, filt_ctf(ima, ctf_params, dopa))
-		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
+		if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
+		if  dopa:  ima = utilities.pad(ima, nx2, ny2, 1, background = "circumference")
+		fundamentals.fftip(ima)
+		EMAN2_cppwrap.Util.add_img(sumsq, filter.filt_ctf(ima, ctf_params, dopa))
+		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx2, ctf_params))
 	#print("   NEW ")
 
-	ave = Util.divn_filter(sumsq, ctf_2_sum)
+	ave = EMAN2_cppwrap.Util.divn_filter(sumsq, ctf_2_sum)
 
-	var       = EMData(nx2, ny2, 1, False)
+	var       = EMAN2_cppwrap.EMData(nx2, ny2, 1, False)
 	for i in range(n):
 		if type(data) is bytes:
-			ima = EMData()
+			ima = EMAN2_cppwrap.EMData()
 			ima.read_image(data, i)
 		else:
 			ima = data[i].copy()
 		ctf_params = ima.get_attr('ctf')
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
-		if mask:  Util.mul_img(ima, mask)
-		if dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
-		fftip(ima)
+		if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
+		if dopa:  ima = utilities.pad(ima, nx2, ny2, 1, background = "circumference")
+		fundamentals.fftip(ima)
 
-		ima = ima-filt_ctf(ave, ctf_params, dopa)
-		Util.add_img2(var, ima)
+		ima = ima-filter.filt_ctf(ave, ctf_params, dopa)
+		EMAN2_cppwrap.Util.add_img2(var, ima)
 
 		#ima = filt_ctf(ima-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
 		#Util.div_filter(ima, ctf_2_sum)
@@ -1380,8 +1437,8 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=False):
 	nn = nx2//2
 	nm = ny2//2
 
-	from utilities import info
-	from fundamentals import resample
+	pass#IMPORTIMPORTIMPORT from utilities import info
+	pass#IMPORTIMPORTIMPORT from fundamentals import resample
 	sumsq = Util.pack_complex_to_real(sumsq)
 	sumsq[nn,nm] = sumsq[nn+1,nm]
 	#if dopa:  sumsq = resample(sumsq,0.5)
@@ -1420,11 +1477,11 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 	Calculate ssnr and variance in Fourier space for 2D images including CTF information
 	If mode = "a" apply alignment parameters
 	"""
-	from fundamentals import fft, fftip, rot_shift2D, rot_avg_table
-	from morphology   import ctf_img, threshold
-	from filter       import filt_ctf
-	from utilities    import get_params2D
-	import  types
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft, fftip, rot_shift2D, rot_avg_table
+	pass#IMPORTIMPORTIMPORT from morphology   import ctf_img, threshold
+	pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
+	pass#IMPORTIMPORTIMPORT from utilities    import get_params2D
+	pass#IMPORTIMPORTIMPORT import  types
 	
 	if type(data) is bytes:
 		n = EMUtil.get_image_count(data)
@@ -1490,12 +1547,12 @@ def varf(data, mask = None, mode="a"):
 	Calculate variance in Fourier space for 2D or 3D images, (no CTF correction)
 	If mode = "a" apply alignment parameters
 	"""
-	from fundamentals import fftip, rot_shift2D
-	from utilities    import get_params2D
-	import  types
+	pass#IMPORTIMPORTIMPORT from fundamentals import fftip, rot_shift2D
+	pass#IMPORTIMPORTIMPORT from utilities    import get_params2D
+	pass#IMPORTIMPORTIMPORT import  types
 	if (type(data) is bytes):
-		n = EMUtil.get_image_count(data)
-		ima = EMData()
+		n = EMAN2_cppwrap.EMUtil.get_image_count(data)
+		ima = EMAN2_cppwrap.EMData()
 		ima.read_image(data, 0, True)
 		nx = ima.get_xsize()
 		ny = ima.get_ysize()
@@ -1506,31 +1563,31 @@ def varf(data, mask = None, mode="a"):
 		ny = data[0].get_ysize()
 		nz = data[0].get_zsize()
 
-	sumsq = EMData(nx, ny, nz, False)
-	var   = EMData(nx, ny, nz, False)
+	sumsq = EMAN2_cppwrap.EMData(nx, ny, nz, False)
+	var   = EMAN2_cppwrap.EMData(nx, ny, nz, False)
 
 	for i in range(n):
 		if (type(data) is bytes):
-			ima = EMData()
+			ima = EMAN2_cppwrap.EMData()
 			ima.read_image(data, i)
 		else:
 			ima = data[i].copy()
 		if(mode == "a"):
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
-		if(mask):  Util.mul_img(ima, mask)
-		fftip(ima)
-		Util.add_img(sumsq, ima)
-		Util.add_img2(var, ima)
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+		if(mask):  EMAN2_cppwrap.Util.mul_img(ima, mask)
+		fundamentals.fftip(ima)
+		EMAN2_cppwrap.Util.add_img(sumsq, ima)
+		EMAN2_cppwrap.Util.add_img2(var, ima)
 
-	Util.mul_img(sumsq, sumsq)
-	Util.mad_scalar(var, sumsq, -1.0/float(n))
-	Util.mul_scalar(var, 1.0/float(n-1))
-	st = Util.infomask(var, None, True)
-	if(st[2]<0.0):  ERROR("Negative variance!","varf",1)
-	from fundamentals import rot_avg_table
+	EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
+	EMAN2_cppwrap.Util.mad_scalar(var, sumsq, -1.0/float(n))
+	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(n-1))
+	st = EMAN2_cppwrap.Util.infomask(var, None, True)
+	if(st[2]<0.0):  global_def.ERROR("Negative variance!","varf",1)
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
 
-	return var, rot_avg_table(Util.pack_complex_to_real(var))
+	return var, fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
 
 def varfctf(data, mask = None, mode="a", dopad = True):
 	'''
@@ -1538,24 +1595,24 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 	If mode = "a" apply alignment parameters
 	This command is for ML average, i.e., A = sum_k (CTF_k F_k) / sum_k ( CTF_k^2 )
 	'''
-	from fundamentals import fftip, fft, rot_shift2D, window2d, cyclic_shift
-	from morphology   import ctf_img
-	from filter       import filt_ctf
-	from utilities    import get_arb_params, get_params2D
-	import  types
+	pass#IMPORTIMPORTIMPORT from fundamentals import fftip, fft, rot_shift2D, window2d, cyclic_shift
+	pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
+	pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
+	pass#IMPORTIMPORTIMPORT from utilities    import get_arb_params, get_params2D
+	pass#IMPORTIMPORTIMPORT import  types
 
 	if (type(data) is bytes):
-		n = EMUtil.get_image_count(data)
-		ima = EMData()
+		n = EMAN2_cppwrap.EMUtil.get_image_count(data)
+		ima = EMAN2_cppwrap.EMData()
 		ima.read_image(data, 0, True)
 		if(ima.get_attr_default('ctf_applied', 1) == 1):
-			ERROR("data cannot be ctf-applied","varfctf",1)
+			global_def.ERROR("data cannot be ctf-applied","varfctf",1)
 		nx = ima.get_xsize()
 		ny = ima.get_ysize()
 		nz = ima.get_zsize()
 	else:
 		if(data[0].get_attr_default('ctf_applied', 1) == 1):
-			ERROR("data cannot be ctf-applied","varfctf",1)
+			global_def.ERROR("data cannot be ctf-applied","varfctf",1)
 		n = len(data)
 		nx = data[0].get_xsize()
 		ny = data[0].get_ysize()
@@ -1565,46 +1622,46 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 		ny2 = 2*ny
 		if( nz>1 ): nz2 = 2*nz
 		else:       nz2 = nz
-		from utilities import pad
+		pass#IMPORTIMPORTIMPORT from utilities import pad
 	else:
 		nx2 = nx
 		ny2 = ny
 		nz2 = nz
-	ctf_2_sum = EMData(nx2, ny2, nz2, False)
-	sumsq     = EMData(nx2, ny2, nz2, False)
-	var       = EMData(nx2, ny2, nz, False)
+	ctf_2_sum = EMAN2_cppwrap.EMData(nx2, ny2, nz2, False)
+	sumsq     = EMAN2_cppwrap.EMData(nx2, ny2, nz2, False)
+	var       = EMAN2_cppwrap.EMData(nx2, ny2, nz, False)
 
 	for i in range(n):
 		if (type(data) is bytes):
-			ima = EMData()
+			ima = EMAN2_cppwrap.EMData()
 			ima.read_image(data, i)
 		else:
 			ima = data[i].copy()
 		ctf_params = ima.get_attr("ctf")
 		if(mode == "a"):
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
-		if(mask): Util.mul_img(ima, mask)
-		if dopad:  ima = pad(ima, nx2, ny2, nz2, background = "circumference")
-		fftip(ima)
-		oc = filt_ctf(ima, ctf_params)
-		Util.add_img(sumsq, oc)
-		Util.add_img2(var, ima)
-		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params, ny = ny2, nz = nz2))
-	Util.mul_img(sumsq, sumsq)
-	Util.div_filter(sumsq, ctf_2_sum)
-	Util.sub_img(var, sumsq)
-	Util.mul_scalar(var, 1.0/float(n-1))
-	st = Util.infomask(var, None, True)
-	if(st[2]<0.0):  ERROR("Negative variance!","varfctf",1)
+		if(mask): EMAN2_cppwrap.Util.mul_img(ima, mask)
+		if dopad:  ima = utilities.pad(ima, nx2, ny2, nz2, background = "circumference")
+		fundamentals.fftip(ima)
+		oc = filter.filt_ctf(ima, ctf_params)
+		EMAN2_cppwrap.Util.add_img(sumsq, oc)
+		EMAN2_cppwrap.Util.add_img2(var, ima)
+		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx2, ctf_params, ny = ny2, nz = nz2))
+	EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
+	EMAN2_cppwrap.Util.div_filter(sumsq, ctf_2_sum)
+	EMAN2_cppwrap.Util.sub_img(var, sumsq)
+	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(n-1))
+	st = EMAN2_cppwrap.Util.infomask(var, None, True)
+	if(st[2]<0.0):  global_def.ERROR("Negative variance!","varfctf",1)
 	if dopad:  #  CHECK THIS< CAN IT BE DONE BETTER??
-		var = fft( cyclic_shift(window2d(cyclic_shift(fft(var), nx, ny, nz), nx, ny), -nx//2, -ny//2, -nz//2) )
+		var = fundamentals.fft( fundamentals.cyclic_shift(fundamentals.window2d(fundamentals.cyclic_shift(fundamentals.fft(var), nx, ny, nz), nx, ny), -nx//2, -ny//2, -nz//2) )
 
-	from fundamentals import rot_avg_table
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
 
-	return var, rot_avg_table(Util.pack_complex_to_real(var))
+	return var, fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
 
 def varf2d(data, ave, mask = None, mode="a"):
 	'''
@@ -1613,47 +1670,47 @@ def varf2d(data, ave, mask = None, mode="a"):
 	If mode = "a" apply alignment parameters
 	This command is for Wiener average, i.e., A = sum_k (CTF_k SNR_k F_k) / [sum_k ( CTF_k^2 SNR_k) + 1]
 	'''
-	from fundamentals import fft, rot_shift2D
-	from morphology   import ctf_img
-	from filter       import filt_ctf
-	from utilities    import get_arb_params, get_params2D, get_im
-	from fundamentals import fft
-	import  types
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft, rot_shift2D
+	pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
+	pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
+	pass#IMPORTIMPORTIMPORT from utilities    import get_arb_params, get_params2D, get_im
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT import  types
 
 	if (type(data) is bytes):
-		n = EMUtil.get_image_count(data)
+		n = EMAN2_cppwrap.EMUtil.get_image_count(data)
 	else:
 		n = len(data)
-	ima = get_im(data)
+	ima = utilities.get_im(data)
 	nx = ima.get_xsize()
 	ny = ima.get_ysize()
 	nz = ima.get_zsize()
 	if(ima.get_attr_default('ctf_applied', 1) == 1):
-		ERROR("data cannot be ctf-applied","varf2d",1)
-	if(nz > 1): ERROR("data cannot be 3D","varf2d",1)
+		global_def.ERROR("data cannot be ctf-applied","varf2d",1)
+	if(nz > 1): global_def.ERROR("data cannot be 3D","varf2d",1)
 
-	var = EMData(nx, ny, nz, False)
+	var = EMAN2_cppwrap.EMData(nx, ny, nz, False)
 
 	for i in range(n):
-		ima = get_im(data, i)
+		ima = utilities.get_im(data, i)
 		ctf_params = ima.get_attr("ctf")
 		if(mode == "a"):
-			alpha, sx, sy, mirror, scale = get_params2D(ima)
-			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
+			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
-		if(mask): Util.mul_img(ima, mask)
-		oc = filt_ctf(ave, ctf_params, dopad=True)
+		if(mask): EMAN2_cppwrap.Util.mul_img(ima, mask)
+		oc = filter.filt_ctf(ave, ctf_params, dopad=True)
 		#print i, "  changed  ctf  ",defocus,Util.infomask(oc, None, True)
-		Util.add_img2(var, fft(Util.subn_img(ima, oc)))
+		EMAN2_cppwrap.Util.add_img2(var, fundamentals.fft(EMAN2_cppwrap.Util.subn_img(ima, oc)))
 
-	Util.mul_scalar(var, 1.0/float(n-1))
-	st = Util.infomask(var, None, True)
-	if(st[2]<0.0):  ERROR("Negative variance!","varf2d",1)
+	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(n-1))
+	st = EMAN2_cppwrap.Util.infomask(var, None, True)
+	if(st[2]<0.0):  global_def.ERROR("Negative variance!","varf2d",1)
 
-	from fundamentals import rot_avg_table
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
 
-	return var, rot_avg_table(Util.pack_complex_to_real(var))
+	return var, fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
 
 def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node = 0, comm = -1):
 	"""
@@ -1662,60 +1719,60 @@ def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node 
 	If mode = "a" apply alignment parameters
 	This command is for Wiener average, i.e., A = sum_k (CTF_k SNR_k F_k) / [sum_k ( CTF_k^2 SNR_k) + 1]
 	"""
-	from utilities    import    model_blank, get_params2D
-	from fundamentals import    rot_shift2D, fft, fftip
-	from utilities    import    reduce_EMData_to_root
-	from mpi          import    mpi_reduce, MPI_INT, MPI_SUM
+	pass#IMPORTIMPORTIMPORT from utilities    import    model_blank, get_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import    rot_shift2D, fft, fftip
+	pass#IMPORTIMPORTIMPORT from utilities    import    reduce_EMData_to_root
+	pass#IMPORTIMPORTIMPORT from mpi          import    mpi_reduce, MPI_INT, MPI_SUM
 	
 	if comm == -1:
-		from mpi import MPI_COMM_WORLD
-		comm = MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD
+		comm = mpi.MPI_COMM_WORLD
 
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	var  = EMData(nx, ny, 1, False)
+	var  = EMAN2_cppwrap.EMData(nx, ny, 1, False)
 	
 	if CTF:
-		from filter       import filt_ctf
-		from morphology   import ctf_img
+		pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
+		pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
+			global_def.ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
 		for i in range(n):
 			ctf_params = data[i].get_attr("ctf")
 			if(mode == "a"):
-				alpha, sx, sy, mirror, scale = get_params2D(data[i])
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror)
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
 				ctf_params.dfang += alpha
 				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 			else:
 				ima = data[i].copy()
-			if(mask): Util.mul_img(ima, mask)
-			oc = filt_ctf(ave, ctf_params, dopad=True)
-			Util.add_img2(var, fft(Util.subn_img(ima, oc)))
+			if(mask): EMAN2_cppwrap.Util.mul_img(ima, mask)
+			oc = filter.filt_ctf(ave, ctf_params, dopad=True)
+			EMAN2_cppwrap.Util.add_img2(var, fundamentals.fft(EMAN2_cppwrap.Util.subn_img(ima, oc)))
 	else:
 		for i in range(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = get_params2D(data[i])
-				ima = rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
-				if mask:  Util.mul_img(ima, mask)
-				fftip(ima)
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
+				fundamentals.fftip(ima)
 			else:
-				if  mask:   ima = fft(Util.muln_img(data[i], mask))
-				else:       ima = fft(data[i])
-			Util.add_img2(var, ima)
-	reduce_EMData_to_root(var, myid, main_node, comm)
+				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:       ima = fundamentals.fft(data[i])
+			EMAN2_cppwrap.Util.add_img2(var, ima)
+	utilities.reduce_EMData_to_root(var, myid, main_node, comm)
 	nima = n
-	nima = mpi_reduce(nima, 1, MPI_INT, MPI_SUM, main_node, comm)
+	nima = mpi.mpi_reduce(nima, 1, mpi.MPI_INT, mpi.MPI_SUM, main_node, comm)
 	if myid == main_node:
-		Util.mul_scalar(var, 1.0/float(nima-1))
+		EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(nima-1))
 		if var.get_value_at(0, 0) < 0.0:	var.set_value_at(0, 0, 0.0)		
-		st = Util.infomask(var, None, True)
-		if st[2] < 0.0:  ERROR("Negative variance!", "varf2_MPI", 1)
-		from fundamentals import rot_avg_table
-		return var, rot_avg_table(Util.pack_complex_to_real(var))
+		st = EMAN2_cppwrap.Util.infomask(var, None, True)
+		if st[2] < 0.0:  global_def.ERROR("Negative variance!", "varf2_MPI", 1)
+		pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
+		return var, fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
 	else:
-		return  EMData(), [0]  # return minimum what has to be returned, but no meaning.
+		return  EMAN2_cppwrap.EMData(), [0]  # return minimum what has to be returned, but no meaning.
 
 def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1"):
 	"""
@@ -1726,11 +1783,11 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	  from the reconstruction program, it was computed using different snr.  I tested it and in practice there is no difference,
 	  as this only changes the background variance due to reconstruction algorithm, which is much lower anyway.  PAP.
 	"""
-	from reconstruction import   recons3d_nn_SSNR, recons3d_4nn, recons3d_4nn_ctf
-	from utilities      import   model_blank
-	from projection     import   prep_vol, prgs
+	pass#IMPORTIMPORTIMPORT from reconstruction import   recons3d_nn_SSNR, recons3d_4nn, recons3d_4nn_ctf
+	pass#IMPORTIMPORTIMPORT from utilities      import   model_blank
+	pass#IMPORTIMPORTIMPORT from projection     import   prep_vol, prgs
 
-	[ssnr1, vol_ssnr1] = recons3d_nn_SSNR(prjlist, mask2D, rw, npad, sign, sym, CTF)
+	[ssnr1, vol_ssnr1] = reconstruction.recons3d_nn_SSNR(prjlist, mask2D, rw, npad, sign, sym, CTF)
 
 	nx  = prjlist[0].get_xsize()
 	if ou == -1: radius = int(nx/2) - 1
@@ -1738,25 +1795,25 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	if(reference_structure == None):
 		if CTF :
 			snr = 1.0#e20
-			reference_structure = recons3d_4nn_ctf(prjlist, list(range(prjlist)), snr, sign, sym, 0, npad)
+			reference_structure = reconstruction.recons3d_4nn_ctf(prjlist, list(range(prjlist)), snr, sign, sym, 0, npad)
 		else  :
-			reference_structure = recons3d_4nn(prjlist, list(range(prjlist)), sym, npad)
+			reference_structure = reconstruction.recons3d_4nn(prjlist, list(range(prjlist)), sym, npad)
 
-	volft,kb = prep_vol(reference_structure)
+	volft,kb = projection.prep_vol(reference_structure)
 	del reference_structure
-	from utilities import get_params_proj
-	if CTF: from filter import filt_ctf
+	pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
+	pass#IMPORTIMPORTIMPORT if CTF: from filter import filt_ctf
 	re_prjlist = []
 	for prj in prjlist:
-		phi,theta,psi,tx,ty = get_params_proj(prj)
-		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
+		phi,theta,psi,tx,ty = utilities.get_params_proj(prj)
+		proj = projection.prgs(volft, kb, [phi,theta,psi,-tx,-ty])
 		if CTF:
 			ctf_params = prj.get_attr("ctf")			
-			proj = filt_ctf(proj, ctf_params)
+			proj = filter.filt_ctf(proj, ctf_params)
 			proj.set_attr('sign', 1)
 		re_prjlist.append(proj)
 	del volft
-	[ssnr2, vol_ssnr2] = recons3d_nn_SSNR(re_prjlist, mask2D, rw, npad, sign, sym, CTF)
+	[ssnr2, vol_ssnr2] = reconstruction.recons3d_nn_SSNR(re_prjlist, mask2D, rw, npad, sign, sym, CTF)
 
 	outf = open(ssnr_text_file, "w")
 	for i in range(len(ssnr2[0])):
@@ -1773,7 +1830,7 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 		datstrings.append("\n")
 		outf.write("".join(datstrings))
 	outf.close()
-	vol_ssnr1 = Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2))
+	vol_ssnr1 = EMAN2_cppwrap.Util.subn_img(EMAN2_cppwrap.Util.pack_complex_to_real(vol_ssnr1), EMAN2_cppwrap.Util.pack_complex_to_real(vol_ssnr2))
 	del  vol_ssnr2
 	nc = nx//2
 	r2 = radius**2
@@ -1805,16 +1862,16 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 	  from the reconstruction program, it was computed using different snr.  I tested it and in practice there is no difference,
 	  as this only changes the background variance due to reconstruction algorithm, which is much lower anyway.  PAP.
 	"""
-	from reconstruction import   recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
-	from utilities      import   bcast_EMData_to_all, model_blank
-	from projection     import   prep_vol, prgs
-	from mpi import MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from reconstruction import   recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
+	pass#IMPORTIMPORTIMPORT from utilities      import   bcast_EMData_to_all, model_blank
+	pass#IMPORTIMPORTIMPORT from projection     import   prep_vol, prgs
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD
 	
 	if mpi_comm == None:
-		mpi_comm = MPI_COMM_WORLD
+		mpi_comm = mpi.MPI_COMM_WORLD
 	
-	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
-	else:                              recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+	if myid == 0: [ssnr1, vol_ssnr1] = reconstruction.recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+	else:                              reconstruction.recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
 
 	nx  = prjlist[0].get_xsize()
 	if ou == -1: radius = int(nx/2) - 2
@@ -1823,35 +1880,35 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 		if CTF :
 			snr = 1.0#e20
 			if myid == 0 :
-				reference_structure = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
+				reference_structure = reconstruction.recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
 			else :
-				recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
-				reference_structure = model_blank(nx, nx, nx)
+				reconstruction.recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
+				reference_structure = utilities.model_blank(nx, nx, nx)
 		else  :
 			if myid == 0 :
-				reference_structure = recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
+				reference_structure = reconstruction.recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
 			else :
-				recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
-				reference_structure = model_blank(nx, nx, nx)
-		bcast_EMData_to_all(reference_structure, myid, 0, mpi_comm)
+				reconstruction.recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
+				reference_structure = utilities.model_blank(nx, nx, nx)
+		utilities.bcast_EMData_to_all(reference_structure, myid, 0, mpi_comm)
 	#if myid == 0:  reference_structure.write_image("refer.hdf",0)
 	#vol *= model_circle(radius, nx, nx, nx)
-	volft,kb = prep_vol(reference_structure)
+	volft,kb = projection.prep_vol(reference_structure)
 	del reference_structure
-	from utilities import get_params_proj
-	if CTF: from filter import filt_ctf
+	pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
+	pass#IMPORTIMPORTIMPORT if CTF: from filter import filt_ctf
 	re_prjlist = []
 	for prj in prjlist:
-		phi,theta,psi,tx,ty = get_params_proj(prj)
-		proj = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
+		phi,theta,psi,tx,ty = utilities.get_params_proj(prj)
+		proj = projection.prgs(volft, kb, [phi,theta,psi,-tx,-ty])
 		if CTF:
 			ctf_params = prj.get_attr("ctf")
-			proj = filt_ctf(proj, ctf_params)
+			proj = filter.filt_ctf(proj, ctf_params)
 			proj.set_attr('sign', 1)
 		re_prjlist.append(proj)
 	del volft
-	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
-	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+	if myid == 0: [ssnr2, vol_ssnr2] = reconstruction.recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+	else:                              reconstruction.recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
 	del re_prjlist
 
 	if myid == 0 and ssnr_text_file != None:
@@ -1871,7 +1928,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 			outf.write("".join(datstrings))
 		outf.close()
 	if myid == 0:
-		vol_ssnr1 = Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2))
+		vol_ssnr1 = EMAN2_cppwrap.Util.subn_img(EMAN2_cppwrap.Util.pack_complex_to_real(vol_ssnr1), EMAN2_cppwrap.Util.pack_complex_to_real(vol_ssnr2))
 		del  vol_ssnr2
 		# what follows is a risky business.  There should be a better way to deal with negative values. but for the time being...
 		nc = nx//2
@@ -1894,7 +1951,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 		return  vol_ssnr1
 		#from morphology import threshold_to_minval
 		#return  threshold_to_minval( Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
-	else:  return  model_blank(2,2,2)
+	else:  return  utilities.model_blank(2,2,2)
 
 
 def ccc(img1, img2, mask=None):
@@ -1939,51 +1996,51 @@ def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 		If no mask is provided, using circular mask with R=nx//2
 
 	"""
-	from statistics import fsc
-	from morphology import binarize
-	from utilities  import model_circle
+	pass#IMPORTIMPORTIMPORT from statistics import fsc
+	pass#IMPORTIMPORTIMPORT from morphology import binarize
+	pass#IMPORTIMPORTIMPORT from utilities  import model_circle
 	nx = img1.get_xsize()
 	ny = img1.get_ysize()
 	nz = img1.get_zsize()
-	if( mask == None):  mask = model_circle(nx//2, nx, ny, nz)
-	m = binarize(mask, 0.5)
-	s1 = Util.infomask(img1, m, True)
-	s2 = Util.infomask(img2, m, True)
+	if( mask == None):  mask = utilities.model_circle(nx//2, nx, ny, nz)
+	m = morphology.binarize(mask, 0.5)
+	s1 = EMAN2_cppwrap.Util.infomask(img1, m, True)
+	s2 = EMAN2_cppwrap.Util.infomask(img2, m, True)
 	return fsc((img1-s1[0])*mask, (img2-s2[0])*mask, w, filename)
 
 
 def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
-	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
-	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
-	from fundamentals import fft
-	from utilities import model_blank, bcast_EMData_to_all, recv_EMData, send_EMData, bcast_number_to_all, info
-	from filter import filt_tophatb
-	from EMAN2 import rsconvolution
-	from morphology import square_root, threshold
+	pass#IMPORTIMPORTIMPORT from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
+	pass#IMPORTIMPORTIMPORT from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank, bcast_EMData_to_all, recv_EMData, send_EMData, bcast_number_to_all, info
+	pass#IMPORTIMPORTIMPORT from filter import filt_tophatb
+	pass#IMPORTIMPORTIMPORT from EMAN2 import rsconvolution
+	pass#IMPORTIMPORTIMPORT from morphology import square_root, threshold
 	
 
 	nx = m.get_xsize()
 	ny = m.get_ysize()
 	nz = m.get_zsize()
 
-	mc = model_blank(nx,ny,nz,1.0)-m
+	mc = utilities.model_blank(nx,ny,nz,1.0)-m
 
 	if(myid == main_node):
-		st = Util.infomask(vi,m,True)
+		st = EMAN2_cppwrap.Util.infomask(vi,m,True)
 		vi -= st[0]
 
-		st = Util.infomask(ui,m,True)
+		st = EMAN2_cppwrap.Util.infomask(ui,m,True)
 		ui -= st[1]
 
-	bcast_EMData_to_all(vi, myid, main_node)
-	bcast_EMData_to_all(ui, myid, main_node)
+	utilities.bcast_EMData_to_all(vi, myid, main_node)
+	utilities.bcast_EMData_to_all(ui, myid, main_node)
 
-	vf = fft(vi)
-	uf = fft(ui)
+	vf = fundamentals.fft(vi)
+	uf = fundamentals.fft(ui)
 
 	if(myid == 0):
-		freqvol = model_blank(nx,ny,nz)
+		freqvol = utilities.model_blank(nx,ny,nz)
 		resolut = []
 	lp = int(max(nx,ny,nz)/2/step+0.5)
 	step = 0.5/lp
@@ -1997,52 +2054,52 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 		#print number_of_proc,myid,lp,i,step,fl,fh,freq
 
 		if i>0 :
-			v = fft(filt_tophatb( vf, fl, fh))
-			u = fft(filt_tophatb( uf, fl, fh))
-			tmp1 = Util.muln_img(v,v)
-			tmp2 = Util.muln_img(u,u)
-			tmp3 = Util.muln_img(u,v)
-			do = Util.infomask(square_root(threshold(Util.muln_img(tmp1,tmp2))),m,True)[0]
-			dp = Util.infomask(tmp3,m,True)[0]
+			v = fundamentals.fft(filter.filt_tophatb( vf, fl, fh))
+			u = fundamentals.fft(filter.filt_tophatb( uf, fl, fh))
+			tmp1 = EMAN2_cppwrap.Util.muln_img(v,v)
+			tmp2 = EMAN2_cppwrap.Util.muln_img(u,u)
+			tmp3 = EMAN2_cppwrap.Util.muln_img(u,v)
+			do = EMAN2_cppwrap.Util.infomask(morphology.square_root(morphology.threshold(EMAN2_cppwrap.Util.muln_img(tmp1,tmp2))),m,True)[0]
+			dp = EMAN2_cppwrap.Util.infomask(tmp3,m,True)[0]
 			#print "dpdo   ",myid,dp,do
 			if do == 0.0: dis = [freq, 0.0]
 			else:  dis = [freq, dp/do]
 		else:
-			tmp1 = model_blank(nx,ny,nz,1.0)
-			tmp2 = model_blank(nx,ny,nz,1.0)
-			tmp3 = model_blank(nx,ny,nz,1.0)
+			tmp1 = utilities.model_blank(nx,ny,nz,1.0)
+			tmp2 = utilities.model_blank(nx,ny,nz,1.0)
+			tmp3 = utilities.model_blank(nx,ny,nz,1.0)
 			dis = [freq, 1.0]
 
 
-		tmp1 = Util.box_convolution(tmp1, nk)
-		tmp2 = Util.box_convolution(tmp2, nk)
-		tmp3 = Util.box_convolution(tmp3, nk)
+		tmp1 = EMAN2_cppwrap.Util.box_convolution(tmp1, nk)
+		tmp2 = EMAN2_cppwrap.Util.box_convolution(tmp2, nk)
+		tmp3 = EMAN2_cppwrap.Util.box_convolution(tmp3, nk)
 
-		Util.mul_img(tmp1,tmp2)
+		EMAN2_cppwrap.Util.mul_img(tmp1,tmp2)
 
-		tmp1 = square_root(threshold(tmp1))
+		tmp1 = morphology.square_root(morphology.threshold(tmp1))
 
-		Util.mul_img(tmp1,m)
-		Util.add_img(tmp1,mc)
+		EMAN2_cppwrap.Util.mul_img(tmp1,m)
+		EMAN2_cppwrap.Util.add_img(tmp1,mc)
 
 
-		Util.mul_img(tmp3,m)
-		Util.add_img(tmp3,mc)
+		EMAN2_cppwrap.Util.mul_img(tmp3,m)
+		EMAN2_cppwrap.Util.add_img(tmp3,mc)
 
-		Util.div_img(tmp3,tmp1)
+		EMAN2_cppwrap.Util.div_img(tmp3,tmp1)
 
-		Util.mul_img(tmp3,m)
+		EMAN2_cppwrap.Util.mul_img(tmp3,m)
 
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 		if(myid == main_node):
 			for k in range(number_of_proc):
 				if(k != main_node):
 					#print " start receiving",myid,i
 					tag_node = k+1001
-					dis = mpi_recv(2, MPI_FLOAT, k, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					dis = mpi.mpi_recv(2, mpi.MPI_FLOAT, k, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 					#print  "received ",myid,dis
-					tmp3 = recv_EMData(k, tag_node)
+					tmp3 = utilities.recv_EMData(k, tag_node)
 					#print  "received ",myid
 				if(dis[0] <=0.5):  resolut.append(dis)
 				fl = step*(i+k)
@@ -2052,7 +2109,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 				#if(k == number_of_proc-1):  bailout = 1
 				bailout = 0
 				#print  "setting freqvol  ",k
-				Util.set_freq(freqvol,tmp3,m,cutoff, freq)
+				EMAN2_cppwrap.Util.set_freq(freqvol,tmp3,m,cutoff, freq)
 				"""
 				for x in xrange(nx):
 					for y in xrange(ny):
@@ -2076,15 +2133,15 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 		else:
 			tag_node = myid+1001
 			#print   "sent from", myid,dis
-			mpi_send(dis, 2, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi.mpi_send(dis, 2, mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 			#print   "sending EMD from", myid
-			send_EMData(tmp3, main_node, tag_node)
+			utilities.send_EMData(tmp3, main_node, tag_node)
 			#print   "sent EMD from",myid
 
-		bailout = bcast_number_to_all(bailout, main_node)
+		bailout = utilities.bcast_number_to_all(bailout, main_node)
 		if(bailout == 1):  break
 
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	if( myid == main_node ):  return freqvol, resolut
 	else:  return None, None
 
@@ -2094,13 +2151,13 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 	"""
 		Calculate multiple references from imgstack using aligment parameter table
 	"""
-	from filter import fshift
+	pass#IMPORTIMPORTIMPORT from filter import fshift
 			 	
-	refimg=EMData()
-	refimgo=EMData()
-	refimge=EMData()
-	nima = EMUtil.get_image_count(imgstack)
-	ima = EMData()
+	refimg=EMAN2_cppwrap.EMData()
+	refimgo=EMAN2_cppwrap.EMData()
+	refimge=EMAN2_cppwrap.EMData()
+	nima = EMAN2_cppwrap.EMUtil.get_image_count(imgstack)
+	ima = EMAN2_cppwrap.EMData()
 	tc=[]
 	print(len(params))
 	for ir in range(nref):
@@ -2109,7 +2166,7 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 			if(ir+1==int(params[im][4])):
 				ncnt+=1
 				ima.read_image(imgstack,im)
-				out = rot_shift2D(ima, params[im][0], params[im][1], params[im][2], params[im][3])
+				out = fundamentals.rot_shift2D(ima, params[im][0], params[im][1], params[im][2], params[im][3])
 				if(ncnt<=2):
 					if(ncnt%2==0): refimge=out
 					if(ncnt%2==1): refimgo=out
@@ -2119,12 +2176,12 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 		if(center):
 			if(ncnt>=2):
 				tavg= (refimgo*(int(ncnt/2)+(ncnt%2)) + refimge*int(ncnt/2))/ncnt
-				drop_image(tavg,"tavg.spi")
+				utilities.drop_image(tavg,"tavg.spi")
 				cs[ir] = tavg.phase_cog()
-				refimg = fshift(tavg, -cs[ir][0], -cs[ir][1])
+				refimg = fundamentals.fshift(tavg, -cs[ir][0], -cs[ir][1])
 			else:
 				cs[ir] = refimgo.phase_cog()
-				refimg = fshift(refimgo, -cs[ir][0], -cs[ir][1])				
+				refimg = fundamentals.fshift(refimgo, -cs[ir][0], -cs[ir][1])				
 		else:
 			if(ncnt>=2):
 				refimg= (refimgo*(int(ncnt/2)+(ncnt%2)) + refimge*int(ncnt/2))/ncnt
@@ -2143,16 +2200,16 @@ def get_1dpw_table_stack(stack):
 		Output
 			a list containing 1D rotationally averaged power spectrum
 	"""
-	from utilities import get_im
-	from EMAN2 import periodogram
-	if  type(stack) == type(""): nima = EMUtil.get_image_count(stack)
+	pass#IMPORTIMPORTIMPORT from utilities import get_im
+	pass#IMPORTIMPORTIMPORT from EMAN2 import periodogram
+	if  type(stack) == type(""): nima = EMAN2_cppwrap.EMUtil.get_image_count(stack)
 	else:                       nima = len(stack)
 	for i in range(nima):
-		img = get_im(stack,i)
-		e  = periodogram(img)
+		img = utilities.get_im(stack,i)
+		e  = EMAN2_cppwrap.periodogram(img)
 		ro = e.rotavg()
 		if(i==0): rosum = ro.copy()
-		else: Util.add_img(rosum, ro)
+		else: EMAN2_cppwrap.Util.add_img(rosum, ro)
 	rosum /= nima
 	nr = rosum.get_xsize()
 	table = [0.0]*nr
@@ -2171,26 +2228,26 @@ def histogram(image, mask = None, nbins = 0, hmin = 0.0, hmax = 0.0):
 		Output
 			h:a list containining 2*nbins elements.
 	"""
-	return  Util.histogram(image, mask, nbins, hmin, hmax)
+	return  EMAN2_cppwrap.Util.histogram(image, mask, nbins, hmin, hmax)
 
 def im_diff(im1, im2, mask = None):
-	import types
-	from utilities import model_circle, get_im
-	if type(im1) == bytes : im1 = get_im(im1)
-	if type(im2) == bytes : im2 = get_im(im2)
+	pass#IMPORTIMPORTIMPORT import types
+	pass#IMPORTIMPORTIMPORT from utilities import model_circle, get_im
+	if type(im1) == bytes : im1 = utilities.get_im(im1)
+	if type(im2) == bytes : im2 = utilities.get_im(im2)
 	nx = im1.get_xsize()
 	ny = im1.get_ysize()
 	nz = im1.get_zsize()
 	if mask != None :
-		if   type(mask) == float or type(mask) == int: m = model_circle(mask, nx, ny, nz)
-		elif type(mask) == bytes:   m = get_im(mask)
+		if   type(mask) == float or type(mask) == int: m = utilities.model_circle(mask, nx, ny, nz)
+		elif type(mask) == bytes:   m = utilities.get_im(mask)
 		else: m = mask
 	else:
 		if   im1.get_ndim() == 3: radius = min(nx,ny,nz)//2 - 1
 		elif im1.get_ndim() == 2: radius = min(nx,ny)//2    - 1
 		else:                     radius = int(nx)//2       - 1
-		m = model_circle(radius, nx, ny, nz)
-	l = Util.im_diff(im1, im2, m)
+		m = utilities.model_circle(radius, nx, ny, nz)
+	l = EMAN2_cppwrap.Util.im_diff(im1, im2, m)
 	return  l["imdiff"], l["A"], l["B"]
 
 
@@ -2199,7 +2256,7 @@ def im_diff(im1, im2, mask = None):
 
 # init cluster assignment randomly
 def k_means_init_asg_rnd(N, K):
-	from random import randint
+	pass#IMPORTIMPORTIMPORT from random import randint
 	assign  = [0] * N
 	nc      = [0] * K
 	retrial = 20
@@ -2207,14 +2264,14 @@ def k_means_init_asg_rnd(N, K):
 		retrial -= 1
 		i = 0
 		for im in range(N):
-			assign[im] = randint(0, K-1)
+			assign[im] = random.randint(0, K-1)
 			nc[assign[im]] += 1
 		flag,k = 1,K
 		while k>0 and flag:
 			k -= 1 
 			if nc[k] <= 1:
 				flag = 0
-				if retrial == 0: ERROR('Empty class in the initialization', 'k_means_SSE', 1)
+				if retrial == 0: global_def.ERROR('Empty class in the initialization', 'k_means_SSE', 1)
 				for k in range(K): nc[k] = 0
 		if flag == 1:
 			retrial = 0
@@ -2223,14 +2280,14 @@ def k_means_init_asg_rnd(N, K):
 
 # init cluster assignment by D2 weighting
 def k_means_init_asg_d2w(im, N, K):
-	from random    import randrange, gauss
-	from numpy     import ones
+	pass#IMPORTIMPORTIMPORT from random    import randrange, gauss
+	pass#IMPORTIMPORTIMPORT from numpy     import ones
 	#from utilities import print_msg
-	from sys       import exit
+	pass#IMPORTIMPORTIMPORT from sys       import exit
 	
-	C = [im[randrange(N)]]
+	C = [im[random.randrange(N)]]
 	#print_msg('\n')
-	d = ones((N)) * 1e4
+	d = numpy.ones((N)) * 1e4
 	for k in range(K-1):
 		#print_msg('\rInitialization with D2 weighting method... %i / %i' % (k+2, K))
 		for n in range(N):
@@ -2242,7 +2299,7 @@ def k_means_init_asg_d2w(im, N, K):
 		p    = list(map(float, p))
 		ps   = list(zip(p, list(range(N))))
 		ps.sort(reverse = True)
-		ind  = gauss(0, n // 6) # 6 is a cst define empirically
+		ind  = random.gauss(0, n // 6) # 6 is a cst define empirically
 		ind  = int(abs(ind))
 		C.append(im[ps[ind][1]])
 
@@ -2250,7 +2307,7 @@ def k_means_init_asg_d2w(im, N, K):
 	assign = [0] * N
 	nc     = [0] * K
 	for n in range(N):
-		res            = Util.min_dist_real(im[n], C)
+		res            = EMAN2_cppwrap.Util.min_dist_real(im[n], C)
 		assign[n]      = res['pos']
 		nc[assign[n]] += 1
 
@@ -2302,16 +2359,16 @@ def k_means_locasg2glbasg(ASG, LUT, N):
 
 # k-means, prepare to open images later
 def k_means_init_open_im(stack, maskname):
-	from utilities import get_image, get_im, model_blank, file_type
+	pass#IMPORTIMPORTIMPORT from utilities import get_image, get_im, model_blank, file_type
 
-	ext = file_type(stack)
+	ext = utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
 	# open mask if defined
 	if maskname != None:
-		mask = get_image(maskname)
-		im   = Util.compress_image_mask(mask, mask)
+		mask = utilities.get_image(maskname)
+		im   = EMAN2_cppwrap.Util.compress_image_mask(mask, mask)
 		m    = im.get_xsize()
 		del im
 	else:
@@ -2320,14 +2377,14 @@ def k_means_init_open_im(stack, maskname):
 			line = open(stack, 'r').readline()
 			m    = len(line.split())
 		else:
-			im = get_im(stack, 0)
+			im = utilities.get_im(stack, 0)
 			m  = im.get_xsize() * im.get_ysize() * im.get_zsize()
 			del im
 
 	# get some params
 	if TXT:
 		Ntot = len(open(stack, 'r').readlines())
-	else:   Ntot = EMUtil.get_image_count(stack)
+	else:   Ntot = EMAN2_cppwrap.EMUtil.get_image_count(stack)
 
 	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1	
 	# # check if the flag active is used, in the case where k-means will run for the stability
@@ -2367,16 +2424,16 @@ def k_means_init_open_im(stack, maskname):
 
 # k-means open and prepare images
 def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
-	from utilities     import get_params2D, get_image, get_params3D, file_type, model_blank, print_msg
-	from fundamentals  import rot_shift2D, rot_shift3D
-	from sys           import exit
+	pass#IMPORTIMPORTIMPORT from utilities     import get_params2D, get_image, get_params3D, file_type, model_blank, print_msg
+	pass#IMPORTIMPORTIMPORT from fundamentals  import rot_shift2D, rot_shift3D
+	pass#IMPORTIMPORTIMPORT from sys           import exit
 	if CTF:
-		from morphology		import ctf_2, ctf_1d
-		from filter		import filt_ctf, filt_table
-		from fundamentals 	import fftip
-		from utilities          import get_arb_params
+		pass#IMPORTIMPORTIMPORT from morphology		import ctf_2, ctf_1d
+		pass#IMPORTIMPORTIMPORT from filter		import filt_ctf, filt_table
+		pass#IMPORTIMPORTIMPORT from fundamentals 	import fftip
+		pass#IMPORTIMPORTIMPORT from utilities          import get_arb_params
 
-	ext = file_type(stack)
+	ext = utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 	N   = len(lim)
@@ -2389,19 +2446,19 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 		nx   = len(data[0].split())
 		for idi in lim:
 			line = data[idi]
-			im   = model_blank(nx)
+			im   = utilities.model_blank(nx)
 			line = line.split()
 			for i in range(nx):
 				val = float(line[i])
 				im.set_value_at_fast(i, 0, val)
 
-			if mask != None: im = Util.compress_image_mask(im, mask)
+			if mask != None: im = EMAN2_cppwrap.Util.compress_image_mask(im, mask)
 
 			IM[c] = im.copy()
 			c += 1
 
 	else:
-		im = EMData()
+		im = EMAN2_cppwrap.EMData()
 		im.read_image(stack, 0)
 		nx = im.get_xsize()
 		ny = im.get_ysize()
@@ -2410,15 +2467,15 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 			ctf	    = [[] for i in range(N)]
 			ctf2	    = [[] for i in range(N)]
 			ctf_params  = im.get_attr( "ctf" )
-			if im.get_attr("ctf_applied")>0.0: ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+			if im.get_attr("ctf_applied")>0.0: global_def.ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
 
 		IM = im.read_images(stack, lim)
 		for i in range(N):
 		# 3D object
 			if nz > 1:
 				try:
-					phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(IM[i])
-					IM[i]  = rot_shift3D(IM[i], phi, theta, psi, s3x, s3y, s3z, scale)
+					phi, theta, psi, s3x, s3y, s3z, mirror, scale = utilities.get_params3D(IM[i])
+					IM[i]  = fundamentals.rot_shift3D(IM[i], phi, theta, psi, s3x, s3y, s3z, scale)
 					if mirror: IM[i].process_inplace('xform.mirror', {'axis':'x'})
 				except:
 					#ERROR('K-MEANS no 3D alignment parameters found', "k_means_open_im", 1)
@@ -2427,8 +2484,8 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 			# 2D object
 			elif ny > 1:
 				try:
-					alpha, sx, sy, mirror, scale = get_params2D(IM[i])
-					IM[i] = rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
+					alpha, sx, sy, mirror, scale = utilities.get_params2D(IM[i])
+					IM[i] = fundamentals.rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
 				except: 
 					#ERROR('K-MEANS no 2D alignment parameters found', "k_means_open_im", 1)
 					#sys.exit()
@@ -2437,22 +2494,22 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 			# obtain ctf
 			if CTF:
 				ctf_params = IM[i].get_attr( "ctf" )
-				ctf[i]     = ctf_1d(nx, ctf_params)
-				ctf2[i]    = ctf_2(nx, ctf_params)
+				ctf[i]     = morphology.ctf_1d(nx, ctf_params)
+				ctf2[i]    = morphology.ctf_2(nx, ctf_params)
 
 			if flagnorm:
 				# normalize
-				ave, std, mi, mx = Util.infomask(IM[i], mask, True)
+				ave, std, mi, mx = EMAN2_cppwrap.Util.infomask(IM[i], mask, True)
 				IM[i] -= ave
 				IM[i] /= std
 
 			# apply mask
 			if mask != None:
-				if CTF: Util.mul_img(IM[i], mask)
-				else:	IM[i] = Util.compress_image_mask(IM[i], mask)
+				if CTF: EMAN2_cppwrap.Util.mul_img(IM[i], mask)
+				else:	IM[i] = EMAN2_cppwrap.Util.compress_image_mask(IM[i], mask)
 
 			# fft
-			if CTF: fftip(IM[i])
+			if CTF: fundamentals.fftip(IM[i])
 
 			# mem the original size
 			if i == 0:
@@ -2465,7 +2522,7 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 
 # k-means write the head of the logfile
 def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, maxit, CTF, T0, F, rnd, ncpu, m, init_method='random'):
-	from utilities import print_msg
+	pass#IMPORTIMPORTIMPORT from utilities import print_msg
 
 	if F != 0: SA = True
 	else:      SA = False
@@ -2480,34 +2537,34 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 	if ncpu > 1: methodhead = method + ' MPI'
 	else:        methodhead = method
 
-	print_msg('\n************* k-means %s *************\n' % methodhead)
-	print_msg('Input stack                 : %s\n'     % stackname)
-	print_msg('Number of images            : %i\n'     % N)
-	print_msg('Maskfile                    : %s\n'     % maskname)
-	print_msg('Number of pixels under mask : %i\n'     % m)
-	print_msg('Number of clusters          : %s\n'     % Ks)
-	print_msg('Number of trials            : %i\n'     % trials)
-	print_msg('Maximum iteration           : %i\n'     % maxit)
-	print_msg('Data with CTF               : %s\n'     % CTF)
-	print_msg('Criterion                   : %s\n'     % crit)
-	print_msg('Optimization method         : %s\n'     % method)
+	utilities.print_msg('\n************* k-means %s *************\n' % methodhead)
+	utilities.print_msg('Input stack                 : %s\n'     % stackname)
+	utilities.print_msg('Number of images            : %i\n'     % N)
+	utilities.print_msg('Maskfile                    : %s\n'     % maskname)
+	utilities.print_msg('Number of pixels under mask : %i\n'     % m)
+	utilities.print_msg('Number of clusters          : %s\n'     % Ks)
+	utilities.print_msg('Number of trials            : %i\n'     % trials)
+	utilities.print_msg('Maximum iteration           : %i\n'     % maxit)
+	utilities.print_msg('Data with CTF               : %s\n'     % CTF)
+	utilities.print_msg('Criterion                   : %s\n'     % crit)
+	utilities.print_msg('Optimization method         : %s\n'     % method)
 	if SA:
-		print_msg('Simulated annealing          : ON\n')
+		utilities.print_msg('Simulated annealing          : ON\n')
 		#if SA2: print_msg('   select neighbour         : closer according T\n')
 		#else: 	 print_msg('   select neighbour         : randomly\n')
-		print_msg('   T0                       : %f\n' % T0)
-		print_msg('   F                        : %f\n' % F)
+		utilities.print_msg('   T0                       : %f\n' % T0)
+		utilities.print_msg('   F                        : %f\n' % F)
 	else:
-		print_msg('Simulated annealing          : OFF\n')
-	print_msg('Random seed                 : %i\n'     % rnd)
-	print_msg('Initialization method       : %s\n'     % init_method)
-	print_msg('Number of CPUs              : %i\n'     % ncpu)
-	print_msg('Output seed names           : %s\n\n'   % outname)
+		utilities.print_msg('Simulated annealing          : OFF\n')
+	utilities.print_msg('Random seed                 : %i\n'     % rnd)
+	utilities.print_msg('Initialization method       : %s\n'     % init_method)
+	utilities.print_msg('Number of CPUs              : %i\n'     % ncpu)
+	utilities.print_msg('Output seed names           : %s\n\n'   % outname)
 
 # K-means write results output directory
 def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
-	from utilities import print_msg
-	import os
+	pass#IMPORTIMPORTIMPORT from utilities import print_msg
+	pass#IMPORTIMPORTIMPORT import os
 
 	if not os.path.exists(out_seedname): os.mkdir(out_seedname)
 
@@ -2518,22 +2575,22 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 		Je += Cls['Ji'][k]
 		if Cls['n'][k] > 16000:
 			flagHDF = True
-			print_msg('\nWARNING: limitation of number attributes in hdf format, the results will be export in separate text files\n')
+			utilities.print_msg('\nWARNING: limitation of number attributes in hdf format, the results will be export in separate text files\n')
 
-	print_msg('\n\n_Details____________________________________________________\n')
-	print_msg('\n\t%s\t%11.6e\n\n' % ('The total Sum of Squares Error (Je) = ', Je))
+	utilities.print_msg('\n\n_Details____________________________________________________\n')
+	utilities.print_msg('\n\t%s\t%11.6e\n\n' % ('The total Sum of Squares Error (Je) = ', Je))
 
 	for name in crit['name']:
-		if name   == 'C': print_msg('\t%s\t%11.4e\n' % ('Criteria Coleman', crit['C']))
-		elif name == 'H': print_msg('\t%s\t%11.4e\n' % ('Criteria Harabasz', crit['H']))
-		elif name == 'D': print_msg('\t%s\t%11.4e\n' % ('Criteria Davies-Bouldin', crit['D']))
-		else:             ERROR('Kind of criterion k-means unknown', 'k_means_out_res', 0)	
-	print_msg('\n')
+		if name   == 'C': utilities.print_msg('\t%s\t%11.4e\n' % ('Criteria Coleman', crit['C']))
+		elif name == 'H': utilities.print_msg('\t%s\t%11.4e\n' % ('Criteria Harabasz', crit['H']))
+		elif name == 'D': utilities.print_msg('\t%s\t%11.4e\n' % ('Criteria Davies-Bouldin', crit['D']))
+		else:             global_def.ERROR('Kind of criterion k-means unknown', 'k_means_out_res', 0)	
+	utilities.print_msg('\n')
 
 	for k in range(Cls['k']):
-		print_msg('\t%s\t%d\t%s\t%d' % ('Cluster no:', k, 'No of Objects = ', Cls['n'][k]))
-		if(Cls['n'][k] > 1): print_msg('\t%s\t%11.6e\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k], ' Variance', Cls['Ji'][k] / float(Cls['n'][k]-1)))
-		else:               print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
+		utilities.print_msg('\t%s\t%d\t%s\t%d' % ('Cluster no:', k, 'No of Objects = ', Cls['n'][k]))
+		if(Cls['n'][k] > 1): utilities.print_msg('\t%s\t%11.6e\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k], ' Variance', Cls['Ji'][k] / float(Cls['n'][k]-1)))
+		else:               utilities.print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
 
 		lassign = []
 		for i in range(len(assign)):
@@ -2576,8 +2633,8 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 
 # K-means compute criterion in order to validate the number of groups
 def k_means_criterion(Cls, crit_name=''):
-	from utilities		import model_blank
-	from fundamentals	import fftip
+	pass#IMPORTIMPORTIMPORT from utilities		import model_blank
+	pass#IMPORTIMPORTIMPORT from fundamentals	import fftip
 	
 	if crit_name == 'all':	crit_name = 'CHD'
 	
@@ -2589,10 +2646,10 @@ def k_means_criterion(Cls, crit_name=''):
 	
 	# if complex need buf complex
 	if Cls['ave'][0].is_complex():
-		buf  = model_blank(nx, ny, nz)
+		buf  = utilities.model_blank(nx, ny, nz)
 		buf.set_complex(1)
 	else:	
-		buf  = model_blank(nx, ny, nz)
+		buf  = utilities.model_blank(nx, ny, nz)
 				
 	# Criterion
 	Crit         = {}
@@ -2614,10 +2671,10 @@ def k_means_criterion(Cls, crit_name=''):
 		buf.to_zero()
 		nob = 0
 		for k in range(Cls['k']):
-			Util.add_img(buf, Cls['ave'][k]*Cls['n'][k])
+			EMAN2_cppwrap.Util.add_img(buf, Cls['ave'][k]*Cls['n'][k])
 			nob += Cls['n'][k]
 			Je += Cls['Ji'][k]
-		Util.mul_scalar(buf, 1.0/float(nob))
+		EMAN2_cppwrap.Util.mul_scalar(buf, 1.0/float(nob))
 		for k in range(Cls['k']):	Tr += buf.cmp("SqEuclidean", Cls['ave'][k])
 	
 	# Compute the criterion required
@@ -2656,16 +2713,16 @@ def k_means_criterion(Cls, crit_name=''):
 			Crit['D'] = DB / Cls['k']			
 
 		else:
-			ERROR("Criterion type for K-means unknown","k_means_criterion",1)
+			global_def.ERROR("Criterion type for K-means unknown","k_means_criterion",1)
 	# return the results
 	return Crit
 
 # K-means SA selection, modification of the function alignment.py/select_K which didn't work
 # very well for k-means, error of selection, insufficiently smooth, ... JB 2009-01-16 12:30:43
 def select_kmeans(dJe, T):
-	from random import random
-	from math   import exp
-	import numpy.random
+	pass#IMPORTIMPORTIMPORT from random import random
+	pass#IMPORTIMPORTIMPORT from math   import exp
+	pass#IMPORTIMPORTIMPORT import numpy.random
 
 	K    = len(dJe)
 	p    = [[0.0, k] for k in range(K)]
@@ -2674,7 +2731,7 @@ def select_kmeans(dJe, T):
 	for k in range(K):
 	    arg    = -dJe[k] * pw
 	    arg    = min( max(arg, -30.0), 30.0)
-	    p[k][0] = exp(arg)
+	    p[k][0] = numpy.exp(arg)
 	    sump  += p[k][0]
 
 	for k in range(K): p[k][0] /= sump
@@ -2689,18 +2746,18 @@ def select_kmeans(dJe, T):
 
 # K-means with classical method
 def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False, rnd_method = 'rnd'):
-	from utilities 		import model_blank, get_im, running_time
-	from random    		import seed, randint
-	from utilities 		import print_msg
-	from copy		import deepcopy
-	import sys
-	import time
+	pass#IMPORTIMPORTIMPORT from utilities 		import model_blank, get_im, running_time
+	pass#IMPORTIMPORTIMPORT from random    		import seed, randint
+	pass#IMPORTIMPORTIMPORT from utilities 		import print_msg
+	pass#IMPORTIMPORTIMPORT from copy		import deepcopy
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT import time
 	if CTF[0]:
-		from filter	        import filt_ctf, filt_table
-		from fundamentals 	import fftip
+		pass#IMPORTIMPORTIMPORT from filter	        import filt_ctf, filt_table
+		pass#IMPORTIMPORTIMPORT from fundamentals 	import fftip
 
-		ctf  = deepcopy(CTF[1])
-		ctf2 = deepcopy(CTF[2])
+		ctf  = copy.deepcopy(CTF[1])
+		ctf2 = copy.deepcopy(CTF[2])
 		CTF  = True
 	else:
 		CTF  = False 
@@ -2711,12 +2768,12 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 	if SA:
 		# for simulated annealing
-		from math   import exp
-		from random import random
+		pass#IMPORTIMPORTIMPORT from math   import exp
+		pass#IMPORTIMPORTIMPORT from random import random
 
 	if mask != None:
 		if isinstance(mask, str):
-			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
 	t_start = time.time()
@@ -2726,8 +2783,8 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		nx  = im_M[0].get_attr('or_nx')
 		ny  = im_M[0].get_attr('or_ny')
 		nz  = im_M[0].get_attr('or_nz')
-		buf = model_blank(nx, ny, nz)
-		fftip(buf)		
+		buf = utilities.model_blank(nx, ny, nz)
+		fundamentals.fftip(buf)		
 		nx   = im_M[0].get_xsize()
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
@@ -2737,11 +2794,11 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
 		norm = nx * ny * nz
-		buf  = model_blank(nx, ny, nz)
+		buf  = utilities.model_blank(nx, ny, nz)
 
 	# Variables			
-	if rand_seed > 0:  seed(rand_seed)
-	else:              seed()
+	if rand_seed > 0:  random.seed(rand_seed)
+	else:              random.seed()
 	Cls        = {}
 	Cls['n']   = [0]*K   # number of objects in a given cluster
 	Cls['ave'] = [0]*K   # value of cluster average
@@ -2795,24 +2852,24 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 				
 				# compute average first step
-				CTFxF = filt_table(im_M[im], ctf[im])
-				Util.add_img(Cls['ave'][assign[im]], CTFxF)
+				CTFxF = filter.filt_table(im_M[im], ctf[im])
+				EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 						
 			for k in range(K):
 				for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-				Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+				Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 			# compute Ji and Je
 			for n in range(N):
-				CTFxAve               = filt_table(Cls['ave'][assign[n]], ctf[n])
+				CTFxAve               = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 			Je = 0
 			for k in range(K):        Je = Cls['Ji'][k]
 																			
 		else:
 			# compute average
-			for im in range(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
-			for k in range(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0 / float(Cls['n'][k]))
+			for im in range(N):	EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], im_M[im])
+			for k in range(K):	Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0 / float(Cls['n'][k]))
 
 			# compute Ji and Je
 			Je = 0
@@ -2827,8 +2884,8 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 		if DEBUG: print('init Je', Je)
 		
-		print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-		print_msg('Criterion: %11.6e \n' % Je)
+		utilities.print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+		utilities.print_msg('Criterion: %11.6e \n' % Je)
 
 		while change and watch_dog < maxit:
 			ite       += 1
@@ -2840,10 +2897,10 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			for im in range(N):
 				if CTF:
 					CTFxAVE = []
-					for k in range(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
-					res = Util.min_dist_four(im_M[im], CTFxAVE)
+					for k in range(K): CTFxAVE.append(filter.filt_table(Cls['ave'][k], ctf[im]))
+					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAVE)
 				else:
-					res = Util.min_dist_real(im_M[im], Cls['ave'])
+					res = EMAN2_cppwrap.Util.min_dist_real(im_M[im], Cls['ave'])
 
 				# Simulated annealing
 				if SA:
@@ -2879,7 +2936,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			# manage empty cluster
 			for k in range(K):
 				if Cls['n'][k] <= 1:
-					print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
+					utilities.print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
 					flag_empty = True
 					break
 			if flag_empty: break
@@ -2899,23 +2956,23 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 
 					# compute average first step
-					CTFxF = filt_table(im_M[im], ctf[im])
-					Util.add_img(Cls['ave'][assign[im]], CTFxF)
+					CTFxF = filter.filt_table(im_M[im], ctf[im])
+					EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 
 				for k in range(K):
 					for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-					Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+					Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 				# compute Ji and Je
 				for n in range(N):
-					CTFxAve               = filt_table(Cls['ave'][assign[n]], ctf[n])
+					CTFxAve               = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 				Je = 0
 				for k in range(K):       Je += Cls['Ji'][k]
 			
 			else:
-				for im in range(N): Util.add_img(Cls['ave'][assign[im]], im_M[im])
-				for k in range(K):  Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+				for im in range(N): EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], im_M[im])
+				for k in range(K):  Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 				# compute Ji and Je
 				Je = 0
@@ -2931,11 +2988,11 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				if thd < 1.0e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
 				if T < 0.009 and ct_pert < 5: SA = False
-				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
+				utilities.print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
 				if DEBUG: print('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert))
 			else:
 				if thd < 1.0e-8: watch_dog = maxit
-				print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
+				utilities.print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
 				if DEBUG: print('> iteration: %5d    criterion: %11.6e' % (ite, Je))
 
 			old_Je = Je
@@ -2943,10 +3000,10 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		if not flag_empty:
 			# memorize the result for this trial	
 			if trials > 1:
-				MemCls[ntrials-1]    = deepcopy(Cls)
-				MemJe[ntrials-1]     = deepcopy(Je)
-				MemAssign[ntrials-1] = deepcopy(assign)
-				print_msg('# Criterion: %11.6e \n' % Je)
+				MemCls[ntrials-1]    = copy.deepcopy(Cls)
+				MemJe[ntrials-1]     = copy.deepcopy(Je)
+				MemAssign[ntrials-1] = copy.deepcopy(assign)
+				utilities.print_msg('# Criterion: %11.6e \n' % Je)
 				ALL_EMPTY = False
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -2959,11 +3016,11 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					if ntrials == trials:
 						#print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 						#sys.exit()
-						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
+						utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
 						
-					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+					else:	utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
-					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
 				wd_trials = 0
 			else:
@@ -2973,7 +3030,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	
 	if trials > 1:
 		if ALL_EMPTY:
-			print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+			utilities.print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
 			sys.exit()
 						
 	# if severals trials choose the best
@@ -2993,29 +3050,29 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	if CTF:
 		# compute Ji and the variance S (F - CTF * Ave)**2
 		for n in range(N):
-			CTFxAve   	      = filt_table(Cls['ave'][assign[n]], ctf[n])	
+			CTFxAve   	      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])	
 			Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 			
 			buf.to_zero()
-			buf = Util.subn_img(CTFxAve, im_M[n])
-			Util.add_img(Cls['var'][assign[n]], buf) # **2
+			buf = EMAN2_cppwrap.Util.subn_img(CTFxAve, im_M[n])
+			EMAN2_cppwrap.Util.add_img(Cls['var'][assign[n]], buf) # **2
 			
 	else:
 		# compute Ji
 		for n in range(N): 	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
 		
 		# compute the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)
-		for im in range(N):	Util.add_img2(Cls['var'][assign[im]],im_M[im])
+		for im in range(N):	EMAN2_cppwrap.Util.add_img2(Cls['var'][assign[im]],im_M[im])
 		for k in range(K):
 			buf.to_zero()
-			Util.add_img2(buf, Cls['ave'][k])
-			Util.mad_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
-			Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
+			EMAN2_cppwrap.Util.add_img2(buf, Cls['ave'][k])
+			EMAN2_cppwrap.Util.mad_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
+			EMAN2_cppwrap.Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
 						
 			# Uncompress ave and var images if the mask is used
 			if mask != None:
-				Cls['ave'][k] = Util.reconstitute_image_mask(Cls['ave'][k], mask)
-				Cls['var'][k] = Util.reconstitute_image_mask(Cls['var'][k], mask)
+				Cls['ave'][k] = EMAN2_cppwrap.Util.reconstitute_image_mask(Cls['ave'][k], mask)
+				Cls['var'][k] = EMAN2_cppwrap.Util.reconstitute_image_mask(Cls['var'][k], mask)
 	
 	# prepare the results
 	if CTF:
@@ -3027,9 +3084,9 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			Cls['var'][k].depad()
 
 	# information display
-	running_time(t_start)
-	print_msg('Criterion = %11.6e \n' % Je)
-	for k in range(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
+	utilities.running_time(t_start)
+	utilities.print_msg('Criterion = %11.6e \n' % Je)
+	for k in range(K):	utilities.print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 
 	# to debug
 	if DEBUG: print(Cls['n'])
@@ -3040,19 +3097,19 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 # K-means with SSE method
 def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False, rnd_method = 'rnd'):
-	from utilities    import model_blank, get_im, running_time
-	from utilities    import print_begin_msg, print_end_msg, print_msg
-	from random       import seed, randint, shuffle
-	from copy         import deepcopy
-	import sys
-	import time
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, get_im, running_time
+	pass#IMPORTIMPORTIMPORT from utilities    import print_begin_msg, print_end_msg, print_msg
+	pass#IMPORTIMPORTIMPORT from random       import seed, randint, shuffle
+	pass#IMPORTIMPORTIMPORT from copy         import deepcopy
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT import time
 	
 	if CTF[0]:
-		from filter		import filt_ctf, filt_table
-		from fundamentals	import fftip
+		pass#IMPORTIMPORTIMPORT from filter		import filt_ctf, filt_table
+		pass#IMPORTIMPORTIMPORT from fundamentals	import fftip
 
-		ctf  = deepcopy(CTF[1])
-		ctf2 = deepcopy(CTF[2])
+		ctf  = copy.deepcopy(CTF[1])
+		ctf2 = copy.deepcopy(CTF[2])
 		CTF  = True
 	else:
 		CTF  = False
@@ -3063,12 +3120,12 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 	if SA:
 		# for simulated annealing
-		from math   import exp
-		from random import random
+		pass#IMPORTIMPORTIMPORT from math   import exp
+		pass#IMPORTIMPORTIMPORT from random import random
 
 	if mask != None:
 		if isinstance(mask, str):
-			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
 
@@ -3079,8 +3136,8 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		nx  = im_M[0].get_attr('or_nx')
 		ny  = im_M[0].get_attr('or_ny')
 		nz  = im_M[0].get_attr('or_nz')
-		buf = model_blank(nx, ny, nz)
-		fftip(buf)		
+		buf = utilities.model_blank(nx, ny, nz)
+		fundamentals.fftip(buf)		
 		nx   = im_M[0].get_xsize()
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
@@ -3090,11 +3147,11 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
 		norm = nx * ny * nz
-		buf  = model_blank(nx, ny, nz)
+		buf  = utilities.model_blank(nx, ny, nz)
 
 	# Variables
-	if(rand_seed > 0):  seed(rand_seed)
-	else:               seed()
+	if(rand_seed > 0):  random.seed(rand_seed)
+	else:               random.seed()
 	Cls = {}
 	Cls['n']   = [0]*K     # number of objects in a given cluster
 	Cls['ave'] = [0]*K     # value of cluster average
@@ -3147,24 +3204,24 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 				
 				# compute average first step
-				CTFxF = filt_table(im_M[im], ctf[im])
-				Util.add_img(Cls['ave'][assign[im]], CTFxF)
+				CTFxF = filter.filt_table(im_M[im], ctf[im])
+				EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 
 			for k in range(K):
 				valCTF = [0] * len_ctm
 				for i in range(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-				Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
+				Cls['ave'][k] = filter.filt_table(Cls['ave'][k], valCTF)
 
 			## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 			for n in range(N):
-				CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
+				CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 			Je = 0
 			for k in range(K):	  Je += Cls['Ji'][k]
 		else:
 			## Calculate averages
-			for im in range(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
-			for k in range(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+			for im in range(N):	EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], im_M[im])
+			for k in range(K):	Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 				
 			# Compute Ji = S(im - ave)**2 and Je = S Ji
 			Je = 0
@@ -3180,14 +3237,14 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 		if DEBUG: print('init Je', Je)
 
-		print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-		print_msg('Criterion: %11.6e \n' % Je)
+		utilities.print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+		utilities.print_msg('Criterion: %11.6e \n' % Je)
 
 		while change and watch_dog < maxit:
 			ite       += 1
 			watch_dog += 1
 			change     = False
-			shuffle(order)
+			random.shuffle(order)
 			if SA: ct_pert = 0
 
 			for imn in range(N):
@@ -3201,12 +3258,12 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					# CTF: (F - CTFxAve)**2
 					CTFxAve = []
 					for k in range(K):
-						tmp = filt_table(Cls['ave'][k], ctf[im])
+						tmp = filter.filt_table(Cls['ave'][k], ctf[im])
 						CTFxAve.append(tmp.copy())
-					res = Util.min_dist_four(im_M[im], CTFxAve)
+					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAve)
 				else:
 					# compute the minimum distance with centroids
-					res = Util.min_dist_real(im_M[im], Cls['ave'])
+					res = EMAN2_cppwrap.Util.min_dist_real(im_M[im], Cls['ave'])
 
 				dJe = [0.0] * K
 				ni  = float(Cls['n'][assign[im]])
@@ -3252,39 +3309,39 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 							valCTF[i] = Cls_ctf2[assign_from][i] - ctf2[im][i]
 							valCTF[i] = ctf[im][i] / valCTF[i]
 						# compute CTFxAve
-						CTFxAve = filt_table(Cls['ave'][assign_from], ctf[im])
+						CTFxAve = filter.filt_table(Cls['ave'][assign_from], ctf[im])
 						# compute F - CTFxAve
 						buf.to_zero()
-						buf = Util.subn_img(im_M[im], CTFxAve) 
+						buf = EMAN2_cppwrap.Util.subn_img(im_M[im], CTFxAve) 
 						# compute valCTF * (F - CTFxAve)
-						buf = filt_table(buf, valCTF)
+						buf = filter.filt_table(buf, valCTF)
 						# sub the value at the average
-						Util.sub_img(Cls['ave'][assign_from], buf)
+						EMAN2_cppwrap.Util.sub_img(Cls['ave'][assign_from], buf)
 
 						# compute valCTF = CTFi / (S ctf2 + ctf2i)
 						valCTF = [0] * len_ctm
 						for i in range(len_ctm):
 							valCTF[i] = ctf[im][i] / (Cls_ctf2[assign_to][i] + ctf2[im][i])
 						# compute CTFxAve
-						CTFxAve = filt_table(Cls['ave'][assign_to], ctf[im])
+						CTFxAve = filter.filt_table(Cls['ave'][assign_to], ctf[im])
 						# compute F - CTFxAve
 						buf.to_zero()
-						buf = Util.subn_img(im_M[im], CTFxAve) 
+						buf = EMAN2_cppwrap.Util.subn_img(im_M[im], CTFxAve) 
 						# compute valCTF * (F - CTFxAve)
-						buf = filt_table(buf, valCTF)
+						buf = filter.filt_table(buf, valCTF)
 						# add the value at the average
-						Util.add_img(Cls['ave'][assign_to], buf)
+						EMAN2_cppwrap.Util.add_img(Cls['ave'][assign_to], buf)
 					else:
 						# Update average
 						buf.to_zero()
-						buf = Util.mult_scalar(Cls['ave'][assign_from], float(Cls['n'][assign_from]))
-						Util.sub_img(buf,im_M[im])
-						Cls['ave'][assign_from] = Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_from]-1))
+						buf = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][assign_from], float(Cls['n'][assign_from]))
+						EMAN2_cppwrap.Util.sub_img(buf,im_M[im])
+						Cls['ave'][assign_from] = EMAN2_cppwrap.Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_from]-1))
 
 						buf.to_zero()
-						buf = Util.mult_scalar(Cls['ave'][assign_to], float(Cls['n'][assign_to]))
-						Util.add_img(buf, im_M[im])
-						Cls['ave'][assign_to] = Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_to]+1))
+						buf = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][assign_to], float(Cls['n'][assign_to]))
+						EMAN2_cppwrap.Util.add_img(buf, im_M[im])
+						Cls['ave'][assign_to] = EMAN2_cppwrap.Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_to]+1))
 
 					# new number of objects in clusters
 					Cls['n'][assign_from] -= 1
@@ -3299,7 +3356,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					# empty cluster control
 					
 					if Cls['n'][assign_from] <= 1:
-						print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
+						utilities.print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
 						flag_empty = True
 												
 					change = True
@@ -3314,7 +3371,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
-					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
+					CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
@@ -3334,11 +3391,11 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				if thd < 1e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
 				if T < 0.009: SA = False
-				print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
+				utilities.print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
 				if DEBUG: print('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert))
 			else:
 				if thd < 1e-8: watch_dog = maxit
-				print_msg('> iteration: %5d    criterion: %11.6e\n'%(ite, Je))
+				utilities.print_msg('> iteration: %5d    criterion: %11.6e\n'%(ite, Je))
 				if DEBUG: print('> iteration: %5d    criterion: %11.6e'%(ite, Je))
 
 			old_Je = Je
@@ -3353,16 +3410,16 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					# compute Sum ctf2
 					for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 					# compute average first step
-					CTFxF = filt_table(im_M[im], ctf[im])
-					Util.add_img(Cls['ave'][assign[im]], CTFxF)
+					CTFxF = filter.filt_table(im_M[im], ctf[im])
+					EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 				for k in range(K):
 					valCTF = [0] * len_ctm
 					for i in range(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-					Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
+					Cls['ave'][k] = filter.filt_table(Cls['ave'][k], valCTF)
 				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
-					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
+					CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
@@ -3370,8 +3427,8 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				# Calculate the real averages, because the iterations method cause approximation
 				buf.to_zero()
 				for k in range(K):     Cls['ave'][k] = buf.copy()
-				for im in range(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
-				for k in range(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+				for im in range(N):	EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], im_M[im])
+				for k in range(K):	Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 				# Compute the accurate Je, because during the iterations Je is aproximated from average
 				Je = 0
@@ -3381,10 +3438,10 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 			# memorize the result for this trial	
 			if trials > 1:
-				MemCls[ntrials-1]    = deepcopy(Cls)
-				MemJe[ntrials-1]     = deepcopy(Je)
-				MemAssign[ntrials-1] = deepcopy(assign)
-				print_msg('# Criterion: %11.6e \n' % Je)
+				MemCls[ntrials-1]    = copy.deepcopy(Cls)
+				MemJe[ntrials-1]     = copy.deepcopy(Je)
+				MemAssign[ntrials-1] = copy.deepcopy(assign)
+				utilities.print_msg('# Criterion: %11.6e \n' % Je)
 				ALL_EMPTY = False
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -3398,10 +3455,10 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					if ntrials == trials:
 						#print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 						#sys.exit()
-						print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
-					else:	print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+						utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
+					else:	utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
-					print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
 				wd_trials = 0
 			else:
@@ -3409,7 +3466,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 	if trials > 1:
 		if ALL_EMPTY:
-			print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+			utilities.print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
 			sys.exit()
 
 	# if severals trials choose the best
@@ -3431,25 +3488,25 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		for k in range(K): Cls['var'][k] = buf.copy()
 		
 		for n in range(N):
-			CTFxAve = filt_table(Cls['ave'][assign[n]], ctf[n])
+			CTFxAve = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 			
 			buf.to_zero()
-			buf     = Util.subn_img(im_M[n], CTFxAve)
-			Util.add_img(Cls['var'][assign[n]], buf) ## **2
+			buf     = EMAN2_cppwrap.Util.subn_img(im_M[n], CTFxAve)
+			EMAN2_cppwrap.Util.add_img(Cls['var'][assign[n]], buf) ## **2
 		
 	else:
 		# compute the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)
-		for im in range(N):	Util.add_img2(Cls['var'][assign[im]], im_M[im])
+		for im in range(N):	EMAN2_cppwrap.Util.add_img2(Cls['var'][assign[im]], im_M[im])
 		for k in range(K):
 			buf.to_zero()
-			Util.add_img2(buf, Cls['ave'][k])
-			Cls['var'][k] = Util.madn_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
-			Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
+			EMAN2_cppwrap.Util.add_img2(buf, Cls['ave'][k])
+			Cls['var'][k] = EMAN2_cppwrap.Util.madn_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
+			EMAN2_cppwrap.Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
 			
 			# Uncompress ave and var images if the mask is used
 			if mask != None:
-				Cls['ave'][k] = Util.reconstitute_image_mask(Cls['ave'][k], mask)
-				Cls['var'][k] = Util.reconstitute_image_mask(Cls['var'][k], mask)
+				Cls['ave'][k] = EMAN2_cppwrap.Util.reconstitute_image_mask(Cls['ave'][k], mask)
+				Cls['var'][k] = EMAN2_cppwrap.Util.reconstitute_image_mask(Cls['var'][k], mask)
 
 	# write the results if out_dire is defined
 	if CTF:
@@ -3461,9 +3518,9 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			Cls['var'][k].depad()
 
 	# information display
-	running_time(t_start)
-	print_msg('Criterion = %11.6e \n' % Je)
-	for k in range(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
+	utilities.running_time(t_start)
+	utilities.print_msg('Criterion = %11.6e \n' % Je)
+	for k in range(K):	utilities.print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 	
 	# to debug
 	if DEBUG: print(Cls['n'])
@@ -3473,25 +3530,25 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 	# Common
-	from utilities   import print_begin_msg, print_end_msg, print_msg, file_type, running_time
-	from statistics  import k_means_locasg2glbasg
-	from time        import time
-	import sys, os
+	pass#IMPORTIMPORTIMPORT from utilities   import print_begin_msg, print_end_msg, print_msg, file_type, running_time
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_locasg2glbasg
+	pass#IMPORTIMPORTIMPORT from time        import time
+	pass#IMPORTIMPORTIMPORT import sys, os
 	
-	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
-	from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
-	from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send
-	from utilities  import bcast_number_to_all, recv_EMData, send_EMData
+	pass#IMPORTIMPORTIMPORT from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
+	pass#IMPORTIMPORTIMPORT from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
+	pass#IMPORTIMPORTIMPORT from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send
+	pass#IMPORTIMPORTIMPORT from utilities  import bcast_number_to_all, recv_EMData, send_EMData
 
 	#print "my id ==", myid, " assign [10:20] ", assign[10:20], " Je===", Je, "Cls==",Cls[ 'n' ], " Ji==", Cls['Ji']
 
 	if myid == main_node:
 		je_return = [0.0]*(ncpu)
 		for n1 in range(ncpu):
-			if n1 != main_node: je_return[n1]	=	mpi_recv(1, MPI_FLOAT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			if n1 != main_node: je_return[n1]	=	mpi.mpi_recv(1, mpi.MPI_FLOAT, n1, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 			else:               je_return[main_node]  = Je
 	else:
-		mpi_send(Je, 1, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+		mpi.mpi_send(Je, 1, mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 	n_best = -1
 	if(myid == main_node):
 		je_return = list(map(float, je_return))
@@ -3508,18 +3565,18 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 					n_best = i
 		#print "main_node n_best===", n_best
 
-	n_best = bcast_number_to_all(n_best,   source_node = main_node)
+	n_best = utilities.bcast_number_to_all(n_best,   source_node = main_node)
 
 	if( n_best >=0):
 		
 		if myid == main_node:
 			assign_return = [0]*(N)
 			if n_best == main_node: assign_return[0:N-1] = assign[0:N-1] 
-			else: assign_return = mpi_recv(N, MPI_INT, n_best, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			else: assign_return = mpi.mpi_recv(N, mpi.MPI_INT, n_best, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
 		else:
 			if n_best == myid:
-				mpi_send(assign, N, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				mpi.mpi_send(assign, N, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
 		if myid == main_node:	
 			r_Cls={}
@@ -3534,21 +3591,21 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 
 			if n_best == main_node: r_Cls['n'] = Cls['n'] 
 			else:
-				r_Cls['n'] = mpi_recv(K, MPI_INT, n_best, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				r_Cls['n'] = mpi.mpi_recv(K, mpi.MPI_INT, n_best, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 				r_Cls['n'] = list(map(int, r_Cls['n']))
 
 		else:
 			if n_best == myid:
-				mpi_send(Cls['n'], K, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				mpi.mpi_send(Cls['n'], K, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		# get 'Ji'
 		if myid == main_node:
 
 			if n_best == main_node: r_Cls['Ji'] = Cls['Ji'] 
-			else: r_Cls['Ji'] = mpi_recv(K, MPI_FLOAT, n_best, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			else: r_Cls['Ji'] = mpi.mpi_recv(K, mpi.MPI_FLOAT, n_best, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
 		else:
 			if n_best == myid:
-				mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				mpi.mpi_send(Cls['Ji'], K, mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
 
 		for k in range( K):
@@ -3560,17 +3617,17 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 					r_Cls['ave'][k] = Cls['ave'][k] 
 					r_Cls['var'][k] = Cls['var'][k]
 				else: 
-					r_Cls['ave'][k] = recv_EMData( n_best, tag_cls_ave )
-					r_Cls['var'] [k]= recv_EMData( n_best, tag_cls_var )
+					r_Cls['ave'][k] = utilities.recv_EMData( n_best, tag_cls_ave )
+					r_Cls['var'] [k]= utilities.recv_EMData( n_best, tag_cls_var )
 
 			else:
 				if n_best == myid:
-					send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
-					send_EMData( Cls['var'][k], main_node, tag_cls_var )	
+					utilities.send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
+					utilities.send_EMData( Cls['var'][k], main_node, tag_cls_var )	
 
 
-			mpi_barrier(MPI_COMM_WORLD)
-		mpi_barrier(MPI_COMM_WORLD)
+			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 
 		if myid == main_node: return assign_return, r_Cls, je_return, n_best
@@ -3583,15 +3640,15 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 
 def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 	# Common
-	from utilities   import print_begin_msg, print_end_msg, print_msg, file_type, running_time
-	from statistics  import k_means_locasg2glbasg
-	from time        import time
-	import sys, os
+	pass#IMPORTIMPORTIMPORT from utilities   import print_begin_msg, print_end_msg, print_msg, file_type, running_time
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_locasg2glbasg
+	pass#IMPORTIMPORTIMPORT from time        import time
+	pass#IMPORTIMPORTIMPORT import sys, os
 	
-	from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
-	from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
-	from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send
-	from utilities  import bcast_number_to_all, recv_EMData, send_EMData
+	pass#IMPORTIMPORTIMPORT from mpi        import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier
+	pass#IMPORTIMPORTIMPORT from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
+	pass#IMPORTIMPORTIMPORT from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send
+	pass#IMPORTIMPORTIMPORT from utilities  import bcast_number_to_all, recv_EMData, send_EMData
 	
 	
 	
@@ -3616,9 +3673,9 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			if n == main_node:
 				r_assign[ n ] = assign
 			else:
-				r_assign[ n ] = mpi_recv(N, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				r_assign[ n ] = mpi.mpi_recv(N, mpi.MPI_INT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 	else:
-		mpi_send(assign, N, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+		mpi.mpi_send(assign, N, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		
 	
 	if  myid == main_node:
@@ -3635,7 +3692,7 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			r_cls.append( t_Cls )
 			del t_Cls
 	#print " myiid ==", myid, "Cls['n'] before ==", Cls['n']
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	
 
 	for n in range( ncpu ):
@@ -3643,12 +3700,12 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			if n == main_node:
 				(r_cls[n])['n'] = Cls['n']
 			else:
-				(r_cls[n])['n'] = mpi_recv(K, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				(r_cls[n])['n'] = mpi.mpi_recv(K, mpi.MPI_INT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		
 		else:
 			if myid == n:
-				mpi_send(Cls['n'], K, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)	
-		mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_send(Cls['n'], K, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)	
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	'''if myid == main_node:
 		for n in xrange( ncpu ):
 			print " n==", n, "Cls['n'] after ==", (r_cls[ n ])['n']	'''
@@ -3657,9 +3714,9 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			if n == main_node:
 				(r_cls[n])['Ji'] = Cls['Ji']
 			else:
-				(r_cls[n])['Ji'] = mpi_recv(K, MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+				(r_cls[n])['Ji'] = mpi.mpi_recv(K, mpi.MPI_FLOAT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 	else:
-		mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+		mpi.mpi_send(Cls['Ji'], K, mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		
 
 	for k in range( K):	
@@ -3671,16 +3728,16 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 					(r_cls[n])['ave'][k] = Cls['ave'][k]
 					(r_cls[n])['var'][k] = Cls['var'][k]
 				else:
-					(r_cls[n])['ave'][k] = recv_EMData( n, tag_cls_ave )
-					(r_cls[n])['var'][k] = recv_EMData( n, tag_cls_var )
+					(r_cls[n])['ave'][k] = utilities.recv_EMData( n, tag_cls_ave )
+					(r_cls[n])['var'][k] = utilities.recv_EMData( n, tag_cls_var )
 
 		else:
-			send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
-			send_EMData( Cls['var'][k], main_node, tag_cls_var )	
+			utilities.send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
+			utilities.send_EMData( Cls['var'][k], main_node, tag_cls_var )	
 
 
-		mpi_barrier(MPI_COMM_WORLD)
-	mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	
 
@@ -3691,19 +3748,19 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 	
 
 def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=False, rnd_method = 'rnd', myid = 0, main_node =0, jumping = 1):
-	from utilities    import model_blank, get_im, running_time
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, get_im, running_time
 	#from utilities    import print_begin_msg, print_end_msg, print_msg
-	from random       import seed, randint, shuffle
-	from copy         import deepcopy
-	import sys
-	import time
+	pass#IMPORTIMPORTIMPORT from random       import seed, randint, shuffle
+	pass#IMPORTIMPORTIMPORT from copy         import deepcopy
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT import time
 	#using jumping to change method for initialization
 	if CTF[0]:
-		from filter		import filt_ctf, filt_table
-		from fundamentals	import fftip
+		pass#IMPORTIMPORTIMPORT from filter		import filt_ctf, filt_table
+		pass#IMPORTIMPORTIMPORT from fundamentals	import fftip
 
-		ctf  = deepcopy(CTF[1])
-		ctf2 = deepcopy(CTF[2])
+		ctf  = copy.deepcopy(CTF[1])
+		ctf2 = copy.deepcopy(CTF[2])
 		CTF  = True
 	else:
 		CTF  = False
@@ -3714,12 +3771,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 
 	if SA:
 		# for simulated annealing
-		from math   import exp
-		from random import random
+		pass#IMPORTIMPORTIMPORT from math   import exp
+		pass#IMPORTIMPORTIMPORT from random import random
 
 	if mask != None:
 		if isinstance(mask, str):
-			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
 
@@ -3730,8 +3787,8 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 		nx  = im_M[0].get_attr('or_nx')
 		ny  = im_M[0].get_attr('or_ny')
 		nz  = im_M[0].get_attr('or_nz')
-		buf = model_blank(nx, ny, nz)
-		fftip(buf)		
+		buf = utilities.model_blank(nx, ny, nz)
+		fundamentals.fftip(buf)		
 		nx   = im_M[0].get_xsize()
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
@@ -3741,14 +3798,14 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
 		norm = nx * ny * nz
-		buf  = model_blank(nx, ny, nz)
+		buf  = utilities.model_blank(nx, ny, nz)
 
 	# Variables
-	if(rand_seed > 0):  seed(rand_seed)
-	else:               seed()
+	if(rand_seed > 0):  random.seed(rand_seed)
+	else:               random.seed()
 	if jumping ==1:
-		from random import jumpahead
-		if(myid != main_node):  jumpahead(17*myid+123)
+		pass#IMPORTIMPORTIMPORT from random import jumpahead
+		if(myid != main_node):  random.jumpahead(17*myid+123)
 	Cls = {}
 	Cls['n']   = [0]*K     # number of objects in a given cluster
 	Cls['ave'] = [0]*K     # value of cluster average
@@ -3801,24 +3858,24 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 				
 				# compute average first step
-				CTFxF = filt_table(im_M[im], ctf[im])
-				Util.add_img(Cls['ave'][assign[im]], CTFxF)
+				CTFxF = filter.filt_table(im_M[im], ctf[im])
+				EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 
 			for k in range(K):
 				valCTF = [0] * len_ctm
 				for i in range(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-				Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
+				Cls['ave'][k] = filter.filt_table(Cls['ave'][k], valCTF)
 
 			## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 			for n in range(N):
-				CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
+				CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 			Je = 0
 			for k in range(K):	  Je += Cls['Ji'][k]
 		else:
 			## Calculate averages
-			for im in range(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
-			for k in range(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+			for im in range(N):	EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], im_M[im])
+			for k in range(K):	Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 				
 			# Compute Ji = S(im - ave)**2 and Je = S Ji
 			Je = 0
@@ -3841,7 +3898,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 			ite       += 1
 			watch_dog += 1
 			change     = False
-			shuffle(order)
+			random.shuffle(order)
 			if SA: ct_pert = 0
 
 			for imn in range(N):
@@ -3855,12 +3912,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 					# CTF: (F - CTFxAve)**2
 					CTFxAve = []
 					for k in range(K):
-						tmp = filt_table(Cls['ave'][k], ctf[im])
+						tmp = filter.filt_table(Cls['ave'][k], ctf[im])
 						CTFxAve.append(tmp.copy())
-					res = Util.min_dist_four(im_M[im], CTFxAve)
+					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAve)
 				else:
 					# compute the minimum distance with centroids
-					res = Util.min_dist_real(im_M[im], Cls['ave'])
+					res = EMAN2_cppwrap.Util.min_dist_real(im_M[im], Cls['ave'])
 
 				dJe = [0.0] * K
 				ni  = float(Cls['n'][assign[im]])
@@ -3906,39 +3963,39 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 							valCTF[i] = Cls_ctf2[assign_from][i] - ctf2[im][i]
 							valCTF[i] = ctf[im][i] / valCTF[i]
 						# compute CTFxAve
-						CTFxAve = filt_table(Cls['ave'][assign_from], ctf[im])
+						CTFxAve = filter.filt_table(Cls['ave'][assign_from], ctf[im])
 						# compute F - CTFxAve
 						buf.to_zero()
-						buf = Util.subn_img(im_M[im], CTFxAve) 
+						buf = EMAN2_cppwrap.Util.subn_img(im_M[im], CTFxAve) 
 						# compute valCTF * (F - CTFxAve)
-						buf = filt_table(buf, valCTF)
+						buf = filter.filt_table(buf, valCTF)
 						# sub the value at the average
-						Util.sub_img(Cls['ave'][assign_from], buf)
+						EMAN2_cppwrap.Util.sub_img(Cls['ave'][assign_from], buf)
 
 						# compute valCTF = CTFi / (S ctf2 + ctf2i)
 						valCTF = [0] * len_ctm
 						for i in range(len_ctm):
 							valCTF[i] = ctf[im][i] / (Cls_ctf2[assign_to][i] + ctf2[im][i])
 						# compute CTFxAve
-						CTFxAve = filt_table(Cls['ave'][assign_to], ctf[im])
+						CTFxAve = filter.filt_table(Cls['ave'][assign_to], ctf[im])
 						# compute F - CTFxAve
 						buf.to_zero()
-						buf = Util.subn_img(im_M[im], CTFxAve) 
+						buf = EMAN2_cppwrap.Util.subn_img(im_M[im], CTFxAve) 
 						# compute valCTF * (F - CTFxAve)
-						buf = filt_table(buf, valCTF)
+						buf = filter.filt_table(buf, valCTF)
 						# add the value at the average
-						Util.add_img(Cls['ave'][assign_to], buf)
+						EMAN2_cppwrap.Util.add_img(Cls['ave'][assign_to], buf)
 					else:
 						# Update average
 						buf.to_zero()
-						buf = Util.mult_scalar(Cls['ave'][assign_from], float(Cls['n'][assign_from]))
-						Util.sub_img(buf,im_M[im])
-						Cls['ave'][assign_from] = Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_from]-1))
+						buf = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][assign_from], float(Cls['n'][assign_from]))
+						EMAN2_cppwrap.Util.sub_img(buf,im_M[im])
+						Cls['ave'][assign_from] = EMAN2_cppwrap.Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_from]-1))
 
 						buf.to_zero()
-						buf = Util.mult_scalar(Cls['ave'][assign_to], float(Cls['n'][assign_to]))
-						Util.add_img(buf, im_M[im])
-						Cls['ave'][assign_to] = Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_to]+1))
+						buf = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][assign_to], float(Cls['n'][assign_to]))
+						EMAN2_cppwrap.Util.add_img(buf, im_M[im])
+						Cls['ave'][assign_to] = EMAN2_cppwrap.Util.mult_scalar(buf, 1.0/float(Cls['n'][assign_to]+1))
 
 					# new number of objects in clusters
 					Cls['n'][assign_from] -= 1
@@ -3967,7 +4024,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
-					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
+					CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
@@ -4006,16 +4063,16 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 					# compute Sum ctf2
 					for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 					# compute average first step
-					CTFxF = filt_table(im_M[im], ctf[im])
-					Util.add_img(Cls['ave'][assign[im]], CTFxF)
+					CTFxF = filter.filt_table(im_M[im], ctf[im])
+					EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 				for k in range(K):
 					valCTF = [0] * len_ctm
 					for i in range(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-					Cls['ave'][k] = filt_table(Cls['ave'][k], valCTF)
+					Cls['ave'][k] = filter.filt_table(Cls['ave'][k], valCTF)
 				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
-					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
+					CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
@@ -4023,8 +4080,8 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				# Calculate the real averages, because the iterations method cause approximation
 				buf.to_zero()
 				for k in range(K):     Cls['ave'][k] = buf.copy()
-				for im in range(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
-				for k in range(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+				for im in range(N):	EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], im_M[im])
+				for k in range(K):	Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 				# Compute the accurate Je, because during the iterations Je is aproximated from average
 				Je = 0
@@ -4034,9 +4091,9 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 
 			# memorize the result for this trial	
 			if trials > 1:
-				MemCls[ntrials-1]    = deepcopy(Cls)
-				MemJe[ntrials-1]     = deepcopy(Je)
-				MemAssign[ntrials-1] = deepcopy(assign)
+				MemCls[ntrials-1]    = copy.deepcopy(Cls)
+				MemJe[ntrials-1]     = copy.deepcopy(Je)
+				MemAssign[ntrials-1] = copy.deepcopy(assign)
 				#print_msg('# Criterion: %11.6e \n' % Je)
 				ALL_EMPTY = False
 			# set to zero watch dog trials
@@ -4083,25 +4140,25 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 		for k in range(K): Cls['var'][k] = buf.copy()
 		
 		for n in range(N):
-			CTFxAve = filt_table(Cls['ave'][assign[n]], ctf[n])
+			CTFxAve = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 			
 			buf.to_zero()
-			buf     = Util.subn_img(im_M[n], CTFxAve)
-			Util.add_img(Cls['var'][assign[n]], buf) ## **2
+			buf     = EMAN2_cppwrap.Util.subn_img(im_M[n], CTFxAve)
+			EMAN2_cppwrap.Util.add_img(Cls['var'][assign[n]], buf) ## **2
 		
 	else:
 		# compute the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)
-		for im in range(N):	Util.add_img2(Cls['var'][assign[im]], im_M[im])
+		for im in range(N):	EMAN2_cppwrap.Util.add_img2(Cls['var'][assign[im]], im_M[im])
 		for k in range(K):
 			buf.to_zero()
-			Util.add_img2(buf, Cls['ave'][k])
-			Cls['var'][k] = Util.madn_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
-			Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
+			EMAN2_cppwrap.Util.add_img2(buf, Cls['ave'][k])
+			Cls['var'][k] = EMAN2_cppwrap.Util.madn_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
+			EMAN2_cppwrap.Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
 			
 			# Uncompress ave and var images if the mask is used
 			if mask != None:
-				Cls['ave'][k] = Util.reconstitute_image_mask(Cls['ave'][k], mask)
-				Cls['var'][k] = Util.reconstitute_image_mask(Cls['var'][k], mask)
+				Cls['ave'][k] = EMAN2_cppwrap.Util.reconstitute_image_mask(Cls['ave'][k], mask)
+				Cls['var'][k] = EMAN2_cppwrap.Util.reconstitute_image_mask(Cls['var'][k], mask)
 
 	# write the results if out_dire is defined
 	if CTF:
@@ -4129,22 +4186,22 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 
 # K-means MPI with classical method
 def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, main_node, N_start, N_stop, N):
-	from utilities    import model_blank, get_im
-	from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
-	from utilities    import print_msg, running_time
-	from random       import seed, randint, jumpahead
-	from copy	  import deepcopy
-	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
-	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_LOR
-	import time
-	import sys
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, get_im
+	pass#IMPORTIMPORTIMPORT from utilities    import bcast_EMData_to_all, reduce_EMData_to_root
+	pass#IMPORTIMPORTIMPORT from utilities    import print_msg, running_time
+	pass#IMPORTIMPORTIMPORT from random       import seed, randint, jumpahead
+	pass#IMPORTIMPORTIMPORT from copy	  import deepcopy
+	pass#IMPORTIMPORTIMPORT from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
+	pass#IMPORTIMPORTIMPORT from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_LOR
+	pass#IMPORTIMPORTIMPORT import time
+	pass#IMPORTIMPORTIMPORT import sys
 	if CTF[0]:
-		from filter		import filt_ctf, filt_table
-		from fundamentals	import fftip
+		pass#IMPORTIMPORTIMPORT from filter		import filt_ctf, filt_table
+		pass#IMPORTIMPORTIMPORT from fundamentals	import fftip
 
-		tmpctf  = deepcopy(CTF[1])
-		tmpctf2 = deepcopy(CTF[2])
+		tmpctf  = copy.deepcopy(CTF[1])
+		tmpctf2 = copy.deepcopy(CTF[2])
 		CTF     = True
 		ctf     = [None] * N
 		ctf[N_start:N_stop]  = tmpctf
@@ -4162,12 +4219,12 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	else:      SA = False
 
 	if SA:
-		from math   import exp
-		from random import random
+		pass#IMPORTIMPORTIMPORT from math   import exp
+		pass#IMPORTIMPORTIMPORT from random import random
 
 	if mask != None:
 		if isinstance(mask, str):
-			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	
 	# [id]   part of code different for each node
@@ -4182,8 +4239,8 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		nx  = im_M[N_start].get_attr('or_nx')
 		ny  = im_M[N_start].get_attr('or_ny')
 		nz  = im_M[N_start].get_attr('or_nz')
-		buf = model_blank(nx, ny, nz)
-		fftip(buf)		
+		buf = utilities.model_blank(nx, ny, nz)
+		fundamentals.fftip(buf)		
 		nx   = im_M[N_start].get_xsize()
 		ny   = im_M[N_start].get_ysize()
 		nz   = im_M[N_start].get_zsize()
@@ -4193,12 +4250,12 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		ny   = im_M[N_start].get_ysize()
 		nz   = im_M[N_start].get_zsize()
 		norm = nx * ny * nz
-		buf  = model_blank(nx, ny, nz)
+		buf  = utilities.model_blank(nx, ny, nz)
 	
 	# [all] define parameters
-	if rand_seed > 0: seed(rand_seed)
-	else:             seed()
-	if(myid != main_node):  jumpahead(17*myid+123)
+	if rand_seed > 0: random.seed(rand_seed)
+	else:             random.seed()
+	if(myid != main_node):  random.jumpahead(17*myid+123)
 	Cls={}
 	Cls['n']   = [0]*K   # number of objects in a given cluster
 	Cls['ave'] = [0]*K   # value of cluster average
@@ -4244,14 +4301,14 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				retrial -= 1
 				i = 0
 				for im in range(N):
-					assign[im] = randint(0, K-1)
+					assign[im] = random.randint(0, K-1)
 					Cls['n'][int(assign[im])] += 1
 				flag,k = 1,0
 				while k < K and flag:
 					if Cls['n'][k] <= 1:
 						flag = 0
 						if retrial == 0:
-							print_msg('Empty class in the initialization k_means_cla_MPI\n')
+							utilities.print_msg('Empty class in the initialization k_means_cla_MPI\n')
 							FLAG_EXIT = 1
 							flag      = 1
 						for k in range(K):
@@ -4260,18 +4317,18 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				if flag == 1: retrial = 0
 
 		# [sync] waiting the assign is finished
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 		# [all] check if need to exit due to initialization
-		FLAG_EXIT = mpi_reduce(FLAG_EXIT, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-		FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		FLAG_EXIT = mpi.mpi_reduce(FLAG_EXIT, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, mpi.MPI_COMM_WORLD)
+		FLAG_EXIT = mpi.mpi_bcast(FLAG_EXIT, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 		FLAG_EXIT = map(int, FLAG_EXIT)[0]
 		if FLAG_EXIT: sys.exit()
 
 		# [all] send assign to the others proc and the number of objects in each clusters
-		assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
+		assign = mpi.mpi_bcast(assign, N, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 		assign = list(map(int, assign))     # convert array gave by MPI to list
-		Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		Cls['n'] = mpi.mpi_bcast(Cls['n'], K, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 		Cls['n'] = list(map(int, Cls['n'])) # convert array gave by MPI to list
 		
 		## 
@@ -4285,41 +4342,41 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				for i in range(len_ctm):
 					Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
 				# ave
-				CTFxF = filt_table(im_M[im], ctf[im])
-				Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
+				CTFxF = filter.filt_table(im_M[im], ctf[im])
+				EMAN2_cppwrap.Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
 
 			# [sync] waiting the result
-			mpi_barrier(MPI_COMM_WORLD)
+			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 			# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
 			for k in range(K):
-				Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-				Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				Cls_ctf2[k] = mpi.mpi_reduce(Cls_ctf2[k], len_ctm, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+				Cls_ctf2[k] = mpi.mpi_bcast(Cls_ctf2[k],  len_ctm, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 				Cls_ctf2[k] = list(map(float, Cls_ctf2[k]))    # convert array gave by MPI to list
 
-				reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+				utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+				utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
 				for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / Cls_ctf2[k][i]
-				Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+				Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 			# [id] compute Ji
 			for im in range(N_start, N_stop):
-				CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
+				CTFxAve = filter.filt_table(Cls['ave'][int(assign[im])], ctf[im])
 				Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
 
 		else:
 			# [id] Calculates averages, first calculate local sum
-			for im in range(N_start, N_stop):	Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
+			for im in range(N_start, N_stop):	EMAN2_cppwrap.Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
 
 			# [sync] waiting the result
-			mpi_barrier(MPI_COMM_WORLD)
+			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 			# [all] compute global sum, broadcast the results and obtain the average
 			for k in range(K):
-				reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-				bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-				Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+				utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+				utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+				Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 			# [id] compute Ji
 			for im in range(N_start, N_stop): Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm
@@ -4329,11 +4386,11 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		for k in range(K): Je += Cls['Ji'][k]
 
 		# [all] waiting the result
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 		# [all] calculate Je global sum and broadcast
-		Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		Je = mpi.mpi_reduce(Je, 1, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+		Je = mpi.mpi_bcast(Je, 1, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 		Je = map(float, Je)[0]
 		
 		## Clustering		
@@ -4342,8 +4399,8 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		old_Je    = 0
 		change    = 1
 		if myid == main_node:
-			print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-			print_msg('Criterion: %11.6e \n' % Je)
+			utilities.print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+			utilities.print_msg('Criterion: %11.6e \n' % Je)
 		
 		while change and watch_dog < maxit:
 			ite       += 1
@@ -4360,11 +4417,11 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				if CTF:
 					CTFxAve = []
 					for k in range(K):
-						tmp = filt_table(Cls['ave'][k], ctf[im])
+						tmp = filter.filt_table(Cls['ave'][k], ctf[im])
 						CTFxAve.append(tmp.copy())
-					res = Util.min_dist_four(im_M[im], CTFxAve)
+					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAve)
 				else:
-					res = Util.min_dist_real(im_M[im], Cls['ave'])
+					res = EMAN2_cppwrap.Util.min_dist_real(im_M[im], Cls['ave'])
 
 				# [all] Simulated annealing
 				if SA:
@@ -4399,18 +4456,18 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			for n in range(N_start, N_stop): Cls['n'][int(assign[n])] += 1			
 				
 			# [sync] waiting the result
-			mpi_barrier(MPI_COMM_WORLD)
+			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 			# [all] sum the number of objects in each node and broadcast
-			Cls['n'] = mpi_reduce(Cls['n'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			Cls['n'] = mpi.mpi_reduce(Cls['n'], K, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+			Cls['n'] = mpi.mpi_bcast(Cls['n'], K, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 			Cls['n'] = list(map(int, Cls['n'])) # convert array gave by MPI to list
 			
 			# [all] init average and ctf2
 			FLAG_EMPTY = 0
 			for k in range(K):
 				if Cls['n'][k] <= 1:
-					if myid == main_node: print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
+					if myid == main_node: utilities.print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
 					FLAG_EMPTY = 1
 					break
 				
@@ -4419,9 +4476,9 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				if CTF:	Cls_ctf2[k] = [0] * len_ctm
 
 			# [all] broadcast empty cluster information
-			mpi_barrier(MPI_COMM_WORLD)
-			FLAG_EMPTY = mpi_reduce(FLAG_EMPTY, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-			FLAG_EMPTY = mpi_bcast(FLAG_EMPTY, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+			FLAG_EMPTY = mpi.mpi_reduce(FLAG_EMPTY, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, mpi.MPI_COMM_WORLD)
+			FLAG_EMPTY = mpi.mpi_bcast(FLAG_EMPTY, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 			FLAG_EMPTY = map(int, FLAG_EMPTY)[0]
 			if FLAG_EMPTY: break
 			
@@ -4432,41 +4489,41 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					for i in range(len_ctm):
 						Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
 					# ave
-					CTFxF = filt_table(im_M[im], ctf[im])
-					Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
+					CTFxF = filter.filt_table(im_M[im], ctf[im])
+					EMAN2_cppwrap.Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
 				
 				# [sync] waiting the result
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 				
 				# [all] compute global sum, broadcast the results and obtain the average ave = S CTF.F / S CTF**2
 				for k in range(K):
-					Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-					Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k], len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+					Cls_ctf2[k] = mpi.mpi_reduce(Cls_ctf2[k], len_ctm, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+					Cls_ctf2[k] = mpi.mpi_bcast(Cls_ctf2[k], len_ctm, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 					Cls_ctf2[k] = list(map(float, Cls_ctf2[k])) # convert array gave by MPI to list
 
-					reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+					utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+					utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 					
 					for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-					Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+					Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 				# [id] compute Ji
 				for im in range(N_start, N_stop):
-					CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
+					CTFxAve = filter.filt_table(Cls['ave'][int(assign[im])], ctf[im])
 					Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
 			
 			else:			
 				# [id] Update clusters averages
-				for im in range(N_start, N_stop):	Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
+				for im in range(N_start, N_stop):	EMAN2_cppwrap.Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
 
 				# [sync] waiting the result
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 				# [all] compute global sum, broadcast the results and obtain the average
 				for k in range(K):
-					reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-					bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-					Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+					utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+					utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+					Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 				# [id] compute Ji
 				for im in range(N_start, N_stop): Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm
@@ -4476,11 +4533,11 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			for k in range(K): Je += Cls['Ji'][k]
 
 			# [all] waiting the result
-			mpi_barrier(MPI_COMM_WORLD)
+			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 			# [all] calculate Je global sum and broadcast
-			Je = mpi_reduce(Je, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			Je = mpi_bcast(Je, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			Je = mpi.mpi_reduce(Je, 1, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+			Je = mpi.mpi_bcast(Je, 1, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 			Je = map(float, Je)[0]
 
 			# threshold convergence control
@@ -4493,29 +4550,29 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				T *= F
 				if T < 0.009 and ct_pert < 5: SA = False
 				#[id] informations display
-				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
+				if myid == main_node: utilities.print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
 			else:
 				if thd < 1e-8:	change = 0
 				# [id] informations display
-				if myid == main_node: print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
+				if myid == main_node: utilities.print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
 				
 			old_Je = Je
 			
 			# [all] Need to broadcast this value because all node must run together
-			change = mpi_reduce(change, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-			change = mpi_bcast(change, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			change = mpi.mpi_reduce(change, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, mpi.MPI_COMM_WORLD)
+			change = mpi.mpi_bcast(change, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 			change = map(int, change)[0]
 		
 		# [all] waiting the result
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 		if not FLAG_EMPTY:
 			# [id] memorize the result for this trial	
 			if trials > 1:
-				MemCls[ntrials-1]    = deepcopy(Cls)
-				MemJe[ntrials-1]     = deepcopy(Je)
-				MemAssign[ntrials-1] = deepcopy(assign)
-				if myid == main_node: print_msg('# Criterion: %11.6e \n' % Je)
+				MemCls[ntrials-1]    = copy.deepcopy(Cls)
+				MemJe[ntrials-1]     = copy.deepcopy(Je)
+				MemAssign[ntrials-1] = copy.deepcopy(assign)
+				if myid == main_node: utilities.print_msg('# Criterion: %11.6e \n' % Je)
 				ALL_EMPTY = False
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -4528,12 +4585,12 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					if ntrials == trials:
 						#if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 						#sys.exit()
-						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty.\n\n')
+						if myid == main_node: utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty.\n\n')
 					else:
-						if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+						if myid == main_node: utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
 					
-					if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					if myid == main_node: utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
 				wd_trials = 0
 			else:
@@ -4541,7 +4598,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	
 	if trials > 1:
 		if ALL_EMPTY:
-			if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+			if myid == main_node: utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 			sys.exit()
 			
 	# if severals trials choose the best
@@ -4560,51 +4617,51 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	if CTF:
 		# [id] compute Ji and the variance S (F - CTFxAve)**2
 		for im in range(N_start, N_stop):
-			CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
+			CTFxAve = filter.filt_table(Cls['ave'][int(assign[im])], ctf[im])
 			Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
 			
 			buf.to_zero()
-			buf = Util.subn_img(CTFxAve, im_M[im])
-			Util.add_img(Cls['var'][int(assign[im])], buf) # **2
+			buf = EMAN2_cppwrap.Util.subn_img(CTFxAve, im_M[im])
+			EMAN2_cppwrap.Util.add_img(Cls['var'][int(assign[im])], buf) # **2
 		
 		# [all] waiting the result
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
 		# [all] global sum Ji and var
-		Cls['Ji'] = mpi_reduce(Cls['Ji'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		Cls['Ji'] = mpi_bcast(Cls['Ji'],  K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		Cls['Ji'] = mpi.mpi_reduce(Cls['Ji'], K, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+		Cls['Ji'] = mpi.mpi_bcast(Cls['Ji'],  K, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 		Cls['Ji'] = list(map(float, Cls['Ji']))
 		for k in range(K):
-			reduce_EMData_to_root(Cls['var'][k], myid, main_node)
+			utilities.reduce_EMData_to_root(Cls['var'][k], myid, main_node)
 			
 	else:
 		# [id] compute Ji and the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)	
 		for im in range(N_start, N_stop):
 			Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm		
-			Util.add_img2(Cls['var'][int(assign[im])], im_M[im])
+			EMAN2_cppwrap.Util.add_img2(Cls['var'][int(assign[im])], im_M[im])
 		
 		# [all] waiting the result
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 		# [all] global sum ji and im**2
-		Cls['Ji'] = mpi_reduce(Cls['Ji'], K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		Cls['Ji'] = mpi_bcast(Cls['Ji'],  K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		Cls['Ji'] = mpi.mpi_reduce(Cls['Ji'], K, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+		Cls['Ji'] = mpi.mpi_bcast(Cls['Ji'],  K, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 		Cls['Ji'] = list(map(float, Cls['Ji']))
 		
-		for k in range(K): reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
+		for k in range(K): utilities.reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
 		
 		# [main] caclculate the variance for each cluster
 		if myid == main_node:
 			for k in range(K):
 				buf.to_zero()
-				Util.add_img2(buf, Cls['ave'][k])
-				Cls['var'][k] = Util.madn_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
-				Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
+				EMAN2_cppwrap.Util.add_img2(buf, Cls['ave'][k])
+				Cls['var'][k] = EMAN2_cppwrap.Util.madn_scalar(Cls['var'][k], buf, -float(Cls['n'][k]))
+				EMAN2_cppwrap.Util.mul_scalar(Cls['var'][k], 1.0/float(Cls['n'][k]))
 				
 				# Uncompress ave and var images if the mask is used
 				if mask != None:
-					Cls['ave'][k] = Util.reconstitute_image_mask(Cls['ave'][k], mask)
-					Cls['var'][k] = Util.reconstitute_image_mask(Cls['var'][k], mask)
+					Cls['ave'][k] = EMAN2_cppwrap.Util.reconstitute_image_mask(Cls['ave'][k], mask)
+					Cls['var'][k] = EMAN2_cppwrap.Util.reconstitute_image_mask(Cls['var'][k], mask)
 
 	# [id] prepare assign to update
 	v = list(range(N_start, N_stop))
@@ -4614,7 +4671,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		assign[n] = 0
 		
 	# [all] gather in main_node
-	assign = mpi_reduce(assign, N, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	assign = mpi.mpi_reduce(assign, N, mpi.MPI_INT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
 	assign = list(map(int, assign)) # convert array given by MPI to list
 
 	# [main_node] write the result
@@ -4628,22 +4685,22 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			
 	# [main_node] information display
 	if myid == main_node:
-		running_time(t_start)
-		print_msg('Criterion = %11.6e \n' % Je)
-		for k in range(K):	print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
+		utilities.running_time(t_start)
+		utilities.print_msg('Criterion = %11.6e \n' % Je)
+		for k in range(K):	utilities.print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 
 	# [all] waiting all nodes
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
 	if myid == main_node: return Cls, assign
 	else:                 return None, None
 
 # K-means CUDA
 def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, nbpart, logging = -1, flagnorm = False):
-	from statistics import k_means_cuda_error, k_means_cuda_open_im
-	from statistics import k_means_locasg2glbasg, k_means_cuda_export
-	from utilities  import print_msg, running_time
-	from time       import time
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_cuda_error, k_means_cuda_open_im
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_locasg2glbasg, k_means_cuda_export
+	pass#IMPORTIMPORTIMPORT from utilities  import print_msg, running_time
+	pass#IMPORTIMPORTIMPORT from time       import time
 	
 	# Init memory
 	Kmeans = MPICUDA_kmeans()
@@ -4668,7 +4725,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 		Kmeans.compute_AVE()
 
 		# K-means iteration
-		t_start = time()
+		t_start = time.time()
 		if F != 0:
 			switch_SA = True
 			Kmeans.set_T(T0)
@@ -4683,7 +4740,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 				T      = Kmeans.get_T()
 				ct     = Kmeans.get_ct_im_mv()
 
-				print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+				utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
 				if ct == 0: memct += 1
 				else:       memct  = 0
 				T *= F
@@ -4692,7 +4749,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 			else:   
 				status = Kmeans.one_iter()
 				ct     = Kmeans.get_ct_im_mv()
-				print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+				utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
 				if status == 255: break
 
 			ite += 1
@@ -4707,8 +4764,8 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 			k_means_cuda_error(status)
 			exit()
 
-		running_time(t_start)
-		print_msg('Number of iterations        : %i\n' % ite)	
+		utilities.running_time(t_start)
+		utilities.print_msg('Number of iterations        : %i\n' % ite)	
 		Ji   = Kmeans.compute_ji()
 		crit = Kmeans.compute_criterion(Ji)
 		AVE  = Kmeans.get_AVE()
@@ -4724,10 +4781,10 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 	
 # K-mean CUDA
 def k_means_SSE_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, nbpart, logging = -1, flagnorm = False):
-	from statistics import k_means_cuda_error, k_means_cuda_open_im
-	from statistics import k_means_locasg2glbasg, k_means_cuda_export
-	from utilities  import print_msg, running_time
-	from time       import time
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_cuda_error, k_means_cuda_open_im
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_locasg2glbasg, k_means_cuda_export
+	pass#IMPORTIMPORTIMPORT from utilities  import print_msg, running_time
+	pass#IMPORTIMPORTIMPORT from time       import time
 	
 	# Init memory
 	Kmeans = MPICUDA_kmeans()
@@ -4753,7 +4810,7 @@ def k_means_SSE_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, o
 		Kmeans.compute_AVE()  #get h_AVE, h_AVE2
 
 		# K-means iteration
-		t_start = time()
+		t_start = time.time()
 		if F != 0:
 			switch_SA = True
 			Kmeans.set_T(T0)
@@ -4769,7 +4826,7 @@ def k_means_SSE_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, o
 				T      = Kmeans.get_T()
 				ct     = Kmeans.get_ct_im_mv()
 
-				print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+				utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
 				if ct == 0: memct += 1
 				else:       memct  = 0
 				T *= F
@@ -4778,7 +4835,7 @@ def k_means_SSE_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, o
 			else:   
 				status = Kmeans.one_iter_SSE()
 				ct     = Kmeans.get_ct_im_mv()
-				print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+				utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
 				
 				if status == 255: break
 
@@ -4795,8 +4852,8 @@ def k_means_SSE_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, o
 			exit()
 
 		#Kmeans.AVE_to_host()
-		running_time(t_start)
-		print_msg('Number of iterations        : %i\n' % ite)	
+		utilities.running_time(t_start)
+		utilities.print_msg('Number of iterations        : %i\n' % ite)	
 		Ji   = Kmeans.compute_ji()
 		crit = Kmeans.compute_criterion(Ji)
 		AVE  = Kmeans.get_AVE()
@@ -4816,19 +4873,19 @@ def dump_AVE(AVE, mask, myid, ite = 0):
     #mask = get_im(maskname, 0)
     K = 256
     for k in range(K):
-        NEWAVE = Util.reconstitute_image_mask(AVE[k], mask)
+        NEWAVE = EMAN2_cppwrap.Util.reconstitute_image_mask(AVE[k], mask)
         NEWAVE.write_image('ave_from_%02i_ite_%02i.hdf' % (myid, ite), k)
 
 # K-mean CUDA
 def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, outdir, TXT, nbpart, logging = -1, flagnorm = False):
-	from applications import MPI_start_end
-	from statistics   import k_means_cuda_error, k_means_cuda_open_im
-	from statistics   import k_means_locasg2glbasg, k_means_cuda_export
-	from mpi          import mpi_bcast, mpi_reduce, mpi_barrier, mpi_gatherv
-	from mpi          import MPI_COMM_WORLD, MPI_INT, MPI_SUM, MPI_LOR, MPI_FLOAT
-	from utilities    import print_msg, running_time
-	from time         import time, sleep
-	import sys
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from statistics   import k_means_cuda_error, k_means_cuda_open_im
+	pass#IMPORTIMPORTIMPORT from statistics   import k_means_locasg2glbasg, k_means_cuda_export
+	pass#IMPORTIMPORTIMPORT from mpi          import mpi_bcast, mpi_reduce, mpi_barrier, mpi_gatherv
+	pass#IMPORTIMPORTIMPORT from mpi          import MPI_COMM_WORLD, MPI_INT, MPI_SUM, MPI_LOR, MPI_FLOAT
+	pass#IMPORTIMPORTIMPORT from utilities    import print_msg, running_time
+	pass#IMPORTIMPORTIMPORT from time         import time, sleep
+	pass#IMPORTIMPORTIMPORT import sys
 
 	# CST
 	NGPU_PER_NODES = 4
@@ -4836,7 +4893,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 	#if myid == main_node: t1 = time()
 	# Init memory
 	Kmeans                = MPICUDA_kmeans()
-	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
+	N_start, N_stop       = applications.MPI_start_end(N, ncpu, myid)
 	lut                   = LUT[N_start:N_stop]
 	n                     = len(lut)
 
@@ -4846,7 +4903,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 	for im in range(ncpu):
 		if im == main_node:  disps.append(0)
 		else:                disps.append(disps[im-1] + recvcount[im-1])
-		ib, ie = MPI_start_end(N, ncpu, im)
+		ib, ie = applications.MPI_start_end(N, ncpu, im)
 		recvcount.append(ie - ib)
 
 	status = Kmeans.setup(m, N, n, K, N_start) 
@@ -4872,8 +4929,8 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 			Kmeans.random_ASG(rnd[ipart])
 			ASG = Kmeans.get_ASG()
 		else:   ASG = None
-		mpi_barrier(MPI_COMM_WORLD)
-		ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+		ASG = mpi.mpi_bcast(ASG, N, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 		ASG = list(map(int, ASG))
 		Kmeans.set_ASG(ASG)
 		Kmeans.compute_NC()
@@ -4881,7 +4938,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 
 		#if myid == main_node: print 'Init: ', time() - t1, 's'
 		# K-means iterations
-		if myid == main_node: tstart = time()
+		if myid == main_node: tstart = time.time()
 		if F  != 0:
 			switch_SA = True
 			Kmeans.set_T(T0)
@@ -4903,7 +4960,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 				if ct == 0: ctconv += 1
 				else:       ctconv  = 0
 				if myid == main_node:
-					print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d %5d\n' % (ite, T, ct, ctconv))
+					utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d %5d\n' % (ite, T, ct, ctconv))
 				T *= F
 				Kmeans.set_T(T)
 				
@@ -4914,10 +4971,10 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 				
 				ct     = Kmeans.get_ct_im_mv()
 				if myid == main_node:
-					print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+					utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
 				if status != 0: stop = 1
-			stop = mpi_reduce(stop, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-			stop = mpi_bcast(stop, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			stop = mpi.mpi_reduce(stop, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, mpi.MPI_COMM_WORLD)
+			stop = mpi.mpi_bcast(stop, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 			stop = int(stop[0])
 			
 			if stop: break
@@ -4927,8 +4984,8 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 			#if myid == main_node: ts2 = time()		
 			# update
 			asg = Kmeans.get_asg()
-			ASG = mpi_gatherv(asg, n, MPI_INT, recvcount, disps, MPI_INT, main_node, MPI_COMM_WORLD)
-			ASG = mpi_bcast(ASG, N, MPI_INT, main_node, MPI_COMM_WORLD)
+			ASG = mpi.mpi_gatherv(asg, n, mpi.MPI_INT, recvcount, disps, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
+			ASG = mpi.mpi_bcast(ASG, N, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 			ASG = list(map(int, ASG))
 			Kmeans.set_ASG(ASG)
 			#if myid == main_node: print 'com asg', time() - ts2, 's'
@@ -4948,25 +5005,25 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 		if status != 5:
 			not_empty_class_error=1
 		
-		not_empty_class_error = mpi_reduce(not_empty_class_error, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
+		not_empty_class_error = mpi.mpi_reduce(not_empty_class_error, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, mpi.MPI_COMM_WORLD)
 		if myid == main_node:
 			not_empty_class_error = int(not_empty_class_error[0])
 			if logging != -1 and not_empty_class_error == 0:
 				logging.info("EMPTY_CLASS_ERROR_K=%d"%K)	
 
-		error = mpi_reduce(error, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-		error = mpi_bcast(error, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		error = mpi.mpi_reduce(error, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, mpi.MPI_COMM_WORLD)
+		error = mpi.mpi_bcast(error, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 		error = int(error[0])
 		if error:
 			k_means_cuda_error(status)
 			exit()
 
 		if myid == main_node:
-			running_time(tstart)
-			print_msg('Number of iterations        : %i\n' % ite)
+			utilities.running_time(tstart)
+			utilities.print_msg('Number of iterations        : %i\n' % ite)
 		ji   = Kmeans.compute_ji()
-		Ji   = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		Ji   = mpi_bcast(Ji, K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		Ji   = mpi.mpi_reduce(ji, K, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+		Ji   = mpi.mpi_bcast(Ji, K, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 		Ji   = list(map(float, Ji))
 		crit = Kmeans.compute_criterion(Ji)
 		AVE  = Kmeans.get_AVE()
@@ -4983,20 +5040,20 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 
 
 def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, myid, main_node, ncpu, outdir, TXT, ipart, logging = -1, flagnorm = False, comm = -1, gpuid = 0):
-	from applications import MPI_start_end
-	from statistics   import k_means_cuda_error, k_means_cuda_open_im
-	from statistics   import k_means_locasg2glbasg, k_means_cuda_export
-	from mpi          import mpi_bcast, mpi_reduce, mpi_barrier, mpi_gatherv
-	from mpi          import MPI_COMM_WORLD, MPI_INT, MPI_SUM, MPI_LOR, MPI_FLOAT
-	from utilities    import print_msg, running_time
-	from time         import time, sleep
-	import sys
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from statistics   import k_means_cuda_error, k_means_cuda_open_im
+	pass#IMPORTIMPORTIMPORT from statistics   import k_means_locasg2glbasg, k_means_cuda_export
+	pass#IMPORTIMPORTIMPORT from mpi          import mpi_bcast, mpi_reduce, mpi_barrier, mpi_gatherv
+	pass#IMPORTIMPORTIMPORT from mpi          import MPI_COMM_WORLD, MPI_INT, MPI_SUM, MPI_LOR, MPI_FLOAT
+	pass#IMPORTIMPORTIMPORT from utilities    import print_msg, running_time
+	pass#IMPORTIMPORTIMPORT from time         import time, sleep
+	pass#IMPORTIMPORTIMPORT import sys
 
-	if comm == -1:  comm = MPI_COMM_WORLD	
+	if comm == -1:  comm = mpi.MPI_COMM_WORLD	
 
 	# Init memory
 	Kmeans                = MPICUDA_kmeans()
-	N_start, N_stop       = MPI_start_end(N, ncpu, myid)
+	N_start, N_stop       = applications.MPI_start_end(N, ncpu, myid)
 	lut                   = LUT[N_start:N_stop]
 	n                     = len(lut)
 
@@ -5006,7 +5063,7 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 	for im in range(ncpu):
 		if im == main_node:  disps.append(0)
 		else:                disps.append(disps[im-1] + recvcount[im-1])
-		ib, ie = MPI_start_end(N, ncpu, im)
+		ib, ie = applications.MPI_start_end(N, ncpu, im)
 		recvcount.append(ie - ib)
 
 	status = Kmeans.setup(m, N, n, K, N_start) 
@@ -5031,8 +5088,8 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 		Kmeans.random_ASG(rnd[ipart])
 		ASG = Kmeans.get_ASG()
 	else:   ASG = None
-	mpi_barrier(comm)
-	ASG = mpi_bcast(ASG, N, MPI_INT, main_node, comm)
+	mpi.mpi_barrier(comm)
+	ASG = mpi.mpi_bcast(ASG, N, mpi.MPI_INT, main_node, comm)
 	ASG = list(map(int, ASG))
 	Kmeans.set_ASG(ASG)
 	Kmeans.compute_NC()
@@ -5040,7 +5097,7 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 
 	#if myid == main_node: print 'Init: ', time() - t1, 's'
 	# K-means iterations
-	if myid == main_node: tstart = time()
+	if myid == main_node: tstart = time.time()
 	if F  != 0:
 		switch_SA = True
 		Kmeans.set_T(T0)
@@ -5061,7 +5118,7 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 			if ct == 0: ctconv += 1
 			else:       ctconv  = 0
 			if myid == main_node:
-				print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d %5d\n' % (ite, T, ct, ctconv))
+				utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d %5d\n' % (ite, T, ct, ctconv))
 			T *= F
 			Kmeans.set_T(T)
 			
@@ -5071,10 +5128,10 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 			status = Kmeans.one_iter()
 			ct     = Kmeans.get_ct_im_mv()
 			if myid == main_node:
-				print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+				utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
 			if status != 0: stop = 1
-		stop = mpi_reduce(stop, 1, MPI_INT, MPI_LOR, main_node, comm)
-		stop = mpi_bcast(stop, 1, MPI_INT, main_node, comm)
+		stop = mpi.mpi_reduce(stop, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, comm)
+		stop = mpi.mpi_bcast(stop, 1, mpi.MPI_INT, main_node, comm)
 		stop = int(stop[0])
 		if stop: break
 
@@ -5083,8 +5140,8 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 		#if myid == main_node: ts2 = time()		
 		# update
 		asg = Kmeans.get_asg()
-		ASG = mpi_gatherv(asg, n, MPI_INT, recvcount, disps, MPI_INT, main_node, comm)
-		ASG = mpi_bcast(ASG, N, MPI_INT, main_node, comm)
+		ASG = mpi.mpi_gatherv(asg, n, mpi.MPI_INT, recvcount, disps, mpi.MPI_INT, main_node, comm)
+		ASG = mpi.mpi_bcast(ASG, N, mpi.MPI_INT, main_node, comm)
 		ASG = list(map(int, ASG))
 		Kmeans.set_ASG(ASG)
 		#if myid == main_node: print 'com asg', time() - ts2, 's'
@@ -5104,25 +5161,25 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 	if status != 5:
 		not_empty_class_error=1
 	
-	not_empty_class_error = mpi_reduce(not_empty_class_error, 1, MPI_INT, MPI_LOR, main_node, comm)
+	not_empty_class_error = mpi.mpi_reduce(not_empty_class_error, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, comm)
 	if myid == main_node:
 		not_empty_class_error = int(not_empty_class_error[0])
 		if logging != -1 and not_empty_class_error == 0:
 			logging.info("EMPTY_CLASS_ERROR_K=%d"%K)	
 
-	error = mpi_reduce(error, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-	error = mpi_bcast(error, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+	error = mpi.mpi_reduce(error, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, mpi.MPI_COMM_WORLD)
+	error = mpi.mpi_bcast(error, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 	error = int(error[0])
 	if error:
 		k_means_cuda_error(status)
 		exit(5)
 
 	if myid == main_node:
-		running_time(tstart)
-		print_msg('Number of iterations        : %i\n' % ite)
+		utilities.running_time(tstart)
+		utilities.print_msg('Number of iterations        : %i\n' % ite)
 	ji   = Kmeans.compute_ji()
-	Ji   = mpi_reduce(ji, K, MPI_FLOAT, MPI_SUM, main_node, comm)
-	Ji   = mpi_bcast(Ji, K, MPI_FLOAT, main_node, comm)
+	Ji   = mpi.mpi_reduce(ji, K, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm)
+	Ji   = mpi.mpi_bcast(Ji, K, mpi.MPI_FLOAT, main_node, comm)
 	Ji   = list(map(float, Ji))
 	crit = Kmeans.compute_criterion(Ji)
 	AVE  = Kmeans.get_AVE()
@@ -5165,19 +5222,19 @@ def k_means_groups_gnuplot(file, src, C, DB, H):
 
 # to figure out the number of clusters
 def k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, DEBUG = False, flagnorm = False):
-	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time, file_type
-	from statistics  import k_means_open_im, k_means_criterion, k_means_headlog
-	from statistics  import k_means_cla, k_means_SSE, k_means_groups_gnuplot
-	from statistics  import k_means_init_open_im
-	import os, sys, time
+	pass#IMPORTIMPORTIMPORT from utilities   import print_begin_msg, print_end_msg, print_msg, running_time, file_type
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_open_im, k_means_criterion, k_means_headlog
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_cla, k_means_SSE, k_means_groups_gnuplot
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_init_open_im
+	pass#IMPORTIMPORTIMPORT import os, sys, time
 
-	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_serial", 1)
+	if os.path.exists(outdir): global_def.ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_serial", 1)
 	os.mkdir(outdir)
 
 	t_start = time.time()
-	print_begin_msg('k-means groups')	
+	utilities.print_begin_msg('k-means groups')	
 
-	ext = file_type(stack)
+	ext = utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
@@ -5199,16 +5256,16 @@ def k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed
 	# Compute the criterion and format
 	for K in KK:
 		
-		print_msg('\n')
-		print_msg('| K=%d |====================================================================\n' % K)
+		utilities.print_msg('\n')
+		utilities.print_msg('| K=%d |====================================================================\n' % K)
 
 		try:
 			if opt_method   == 'cla': [Cls, assign] = k_means_cla(IM, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
 			elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(IM, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
-			else:			  ERROR('Kind of k-means unknown', 'k_means_groups', 1)
+			else:			  global_def.ERROR('Kind of k-means unknown', 'k_means_groups', 1)
 
 		except SystemExit:
-			ERROR('Empty cluster, number of groups too high %d'%K, 'k_means_groups', 1)
+			global_def.ERROR('Empty cluster, number of groups too high %d'%K, 'k_means_groups', 1)
 		
 		crit = k_means_criterion(Cls, 'CHD')
 
@@ -5224,28 +5281,28 @@ def k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed
 		
 	# gnuplot script
 	k_means_groups_gnuplot(outdir + '/' + outdir + '.p', outdir, C, DB, H)
-	running_time(t_start)
-	print_end_msg('k-means groups')
+	utilities.running_time(t_start)
+	utilities.print_end_msg('k-means groups')
 
 # to figure out the number of clusters CUDA version
 def k_means_groups_CUDA(stack, outdir, maskname, K1, K2, rand_seed, maxit, F, T0):
-	from utilities   import print_begin_msg, print_end_msg, print_msg, running_time, file_type
-	from statistics  import k_means_cuda_init_open_im, k_means_cuda_headlog
-	from statistics  import k_means_groups_gnuplot, k_means_CUDA
-	import time, os, sys
+	pass#IMPORTIMPORTIMPORT from utilities   import print_begin_msg, print_end_msg, print_msg, running_time, file_type
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_cuda_init_open_im, k_means_cuda_headlog
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_groups_gnuplot, k_means_CUDA
+	pass#IMPORTIMPORTIMPORT import time, os, sys
 
-	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_CUDA", 1)
+	if os.path.exists(outdir): global_def.ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_CUDA", 1)
 	os.mkdir(outdir)
 	t_start = time.time()
 	
-	ext = file_type(stack)
+	ext = utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
 	# init to open images
 	LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 	# write logfile
-	print_begin_msg('k-means groups')
+	utilities.print_begin_msg('k-means groups')
 	k_means_cuda_headlog(stack, outdir, 'cuda', N, [K1, K2], maskname, maxit, T0, F, rand_seed, 1, m)
 
 	# init
@@ -5261,8 +5318,8 @@ def k_means_groups_CUDA(stack, outdir, maskname, K1, K2, rand_seed, maxit, F, T0
 		
 	# Compute the criterion and format
 	for K in KK:
-		print_msg('\n')
-		print_msg('| K=%d |====================================================================\n' % K)
+		utilities.print_msg('\n')
+		utilities.print_msg('| K=%d |====================================================================\n' % K)
 
 		#try:
 		crit = k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, 1)
@@ -5283,30 +5340,30 @@ def k_means_groups_CUDA(stack, outdir, maskname, K1, K2, rand_seed, maxit, F, T0
 	k_means_groups_gnuplot(outdir + '/' + outdir + '.p', outdir, C, DB, H)
 		
 	# runtime
-	running_time(t_start)
-	print_end_msg('k-means groups')
+	utilities.running_time(t_start)
+	utilities.print_end_msg('k-means groups')
 
 # to figure out the number of clusters MPI version
 def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm):
-	from utilities    import print_begin_msg, print_end_msg, print_msg, running_time, file_type
-	from statistics   import k_means_open_im, k_means_criterion, k_means_headlog
-	from statistics   import k_means_cla_MPI, k_means_SSE_MPI
-	from applications import MPI_start_end
-	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD, mpi_bcast, MPI_INT, mpi_send, mpi_recv
-	import sys, os, time
-	from utilities import bcast_number_to_all
+	pass#IMPORTIMPORTIMPORT from utilities    import print_begin_msg, print_end_msg, print_msg, running_time, file_type
+	pass#IMPORTIMPORTIMPORT from statistics   import k_means_open_im, k_means_criterion, k_means_headlog
+	pass#IMPORTIMPORTIMPORT from statistics   import k_means_cla_MPI, k_means_SSE_MPI
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD, mpi_bcast, MPI_INT, mpi_send, mpi_recv
+	pass#IMPORTIMPORTIMPORT import sys, os, time
+	pass#IMPORTIMPORTIMPORT from utilities import bcast_number_to_all
 
-	sys.argv  = mpi_init(len(sys.argv), sys.argv)
-	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
-	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	sys.argv  = mpi.mpi_init(len(sys.argv), sys.argv)
+	ncpu      = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+	myid      = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 	main_node = 0
 	
-	ext = file_type(stack)
+	ext = utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 	
-	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1, myid)
-	mpi_barrier(MPI_COMM_WORLD)
+	if os.path.exists(outdir): global_def.ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1, myid)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	
 	if myid == main_node:
 		#print_begin_msg('k-means groups_MPI')
@@ -5336,8 +5393,8 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 	# get some criterion
 	for K in KK:
 		if myid == main_node:
-			print_msg('\n')
-			print_msg('| K=%d |====================================================================\n' % K)
+			utilities.print_msg('\n')
+			utilities.print_msg('| K=%d |====================================================================\n' % K)
 			t_start1 = time.time()
 
 		
@@ -5346,31 +5403,31 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 					1, [CTF, ctf, ctf2], F, T0, False, "rnd", myid = myid, main_node = main_node, jumping = 1)
 
 
-		from statistics import k_means_SSE_combine
+		pass#IMPORTIMPORTIMPORT from statistics import k_means_SSE_combine
 		[ assign_return, r_Cls, je_return, n_best] = k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node)
-		if myid == main_node: running_time(t_start1)
+		if myid == main_node: utilities.running_time(t_start1)
 		n_best_get = 0
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		if myid == main_node:
 			for n1 in range(ncpu):
-				if n1 != main_node: mpi_send(n_best, 1, MPI_INT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD) 
+				if n1 != main_node: mpi.mpi_send(n_best, 1, mpi.MPI_INT, n1, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD) 
 				else:               n_best_get  = n_best
-		else: n_best_get	=	mpi_recv(1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+		else: n_best_get	=	mpi.mpi_recv(1, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		n_best_get = int(n_best_get)
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		#print "myid==",myid," n_best==", n_best_get
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		if myid == main_node:
 
 			if n_best == -1:
-				print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+				utilities.print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
 				#print "assign_return===", assign_return[10:20], "cls_n return==", r_Cls['n'], "Ji==", r_Cls['Ji'], "ave size ==", r_Cls['ave'][0].get_xsize()
 			else:
 				for i in range( ncpu ):
 					if( je_return[i] <0 ):
-						print_msg('> Trials: %5d    resulted in empty clusters  \n' % (i) )
+						utilities.print_msg('> Trials: %5d    resulted in empty clusters  \n' % (i) )
 					else:
-						print_msg('> Trials: %5d    criterion: %11.6e  \n' % (i, je_return[i]) )
+						utilities.print_msg('> Trials: %5d    criterion: %11.6e  \n' % (i, je_return[i]) )
 				crit = k_means_criterion(r_Cls, 'CHD')
 				#glb_assign = k_means_locasg2glbasg(assign_return, LUT, Ntot)
 				#k_means_export(r_Cls, crit, glb_assign, outdir, -1, TXT)
@@ -5393,20 +5450,20 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 			H.append(crit['H'])
 			DB.append(crit['D'])
 
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
 	# gnuplot script
 	if myid == main_node:
 		k_means_groups_gnuplot(outdir + '/' + outdir + '.p', outdir, C, DB, H)
-		running_time(t_start)
-		print_end_msg('k-means groups')
+		utilities.running_time(t_start)
+		utilities.print_end_msg('k-means groups')
 
 ## K-MEANS CUDA ###########################################################################
 # 2009-02-20 15:39:43
 
 # k-means print out error given by the cuda code
 def k_means_cuda_error(status):
-	from utilities import print_msg
+	pass#IMPORTIMPORTIMPORT from utilities import print_msg
 	# status info:
 	#   0 - all is ok
 	#   1 - error to init host memory
@@ -5417,19 +5474,19 @@ def k_means_cuda_error(status):
 	#   6 - error to select the device
 	# 255 - k-means done
 	if status == 0 or status == 255: return
-	print_msg('============================================\n')
-	if   status == 1: print_msg('* ERROR: allocation host memory            *\n')
-	elif status == 2: print_msg('* ERROR: allocation device memory          *\n')
-	elif status == 3: print_msg('* ERROR: system device                     *\n')
-	elif status == 4: print_msg('* ERROR: random assignment (empty class)   *\n')
-	elif status == 5: print_msg('* ERROR: classification return empty class *\n')
-	elif status == 6: print_msg('* ERROR: fail to select the device         *\n')
-	print_msg('============================================\n')
+	utilities.print_msg('============================================\n')
+	if   status == 1: utilities.print_msg('* ERROR: allocation host memory            *\n')
+	elif status == 2: utilities.print_msg('* ERROR: allocation device memory          *\n')
+	elif status == 3: utilities.print_msg('* ERROR: system device                     *\n')
+	elif status == 4: utilities.print_msg('* ERROR: random assignment (empty class)   *\n')
+	elif status == 5: utilities.print_msg('* ERROR: classification return empty class *\n')
+	elif status == 6: utilities.print_msg('* ERROR: fail to select the device         *\n')
+	utilities.print_msg('============================================\n')
 
 # k-means write the head of the logfile for CUDA
 def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, F, rnd, ncpu, m):
-	from utilities import print_msg
-	from math import log
+	pass#IMPORTIMPORTIMPORT from utilities import print_msg
+	pass#IMPORTIMPORTIMPORT from math import log
 
 	if F != 0: SA = True
 	else:      SA = False
@@ -5458,65 +5515,65 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 	host   = N * m * 4 + max(k) * m * 4 + N * max(k) * 4 / float(ncpu)      
 	#       ASG     NC           IM2                   AVE2
 	host  += N * 2 + max(k) * 4 + N * 4 / float(ncpu) + max(k) * 4
-	ie_device  = int(log(device) // log(1e3))
-	ie_host    = int(log(host)   // log(1e3))
+	ie_device  = int(numpy.log(device) // numpy.log(1e3))
+	ie_host    = int(numpy.log(host)   // numpy.log(1e3))
 	device    /= (1e3 ** ie_device)
 	host      /= (1e3 ** ie_host)
 	txt        = ['', 'k', 'M', 'G', 'T']
 	device     = '%5.2f %sB' % (device, txt[ie_device])
 	host       = '%5.2f %sB' % (host,   txt[ie_host])
 
-	print_msg('\n************* k-means %s *************\n' % methodhead)
-	print_msg('Input stack                 : %s\n'     % stackname)
-	print_msg('Number of images            : %i\n'     % N)
-	print_msg('Maskfile                    : %s\n'     % maskname)
-	print_msg('Number of pixels under mask : %i\n'     % m)
-	print_msg('Number of clusters          : %s\n'     % txtK)
-	print_msg('Maximum iteration           : %i\n'     % maxit)
-	print_msg('Criterion                   : CHD\n'    )
-	print_msg('Optimization method         : %s\n'     % method)
+	utilities.print_msg('\n************* k-means %s *************\n' % methodhead)
+	utilities.print_msg('Input stack                 : %s\n'     % stackname)
+	utilities.print_msg('Number of images            : %i\n'     % N)
+	utilities.print_msg('Maskfile                    : %s\n'     % maskname)
+	utilities.print_msg('Number of pixels under mask : %i\n'     % m)
+	utilities.print_msg('Number of clusters          : %s\n'     % txtK)
+	utilities.print_msg('Maximum iteration           : %i\n'     % maxit)
+	utilities.print_msg('Criterion                   : CHD\n'    )
+	utilities.print_msg('Optimization method         : %s\n'     % method)
 	if SA:
-		print_msg('Simulated annealing          : ON\n')
-		print_msg('   F                        : %f\n' % F)
-		if T0 != -1: print_msg('   T0                       : %f\n' % T0)
-		else:        print_msg('   T0                       : AUTO\n')
+		utilities.print_msg('Simulated annealing          : ON\n')
+		utilities.print_msg('   F                        : %f\n' % F)
+		if T0 != -1: utilities.print_msg('   T0                       : %f\n' % T0)
+		else:        utilities.print_msg('   T0                       : AUTO\n')
 
 	else:
-		print_msg('Simulated annealing          : OFF\n')
-	print_msg('Random seed                 : %s\n'     % txtrnd)
-	print_msg('Number of Cs              : %i\n'     % ncpu)
-	print_msg('Output seed names           : %s\n'     % outname)
-	print_msg('Memory on device            : %s\n'     % device)
-	print_msg('Memory on host              : %s\n\n'   % host)
+		utilities.print_msg('Simulated annealing          : OFF\n')
+	utilities.print_msg('Random seed                 : %s\n'     % txtrnd)
+	utilities.print_msg('Number of Cs              : %i\n'     % ncpu)
+	utilities.print_msg('Output seed names           : %s\n'     % outname)
+	utilities.print_msg('Memory on device            : %s\n'     % device)
+	utilities.print_msg('Memory on host              : %s\n\n'   % host)
 
 # k-means, prepare to open images later
 def k_means_cuda_init_open_im(stack, maskname):
-	from utilities import get_image, get_im, model_blank, file_type
-	from EMAN2db import db_open_dict
+	pass#IMPORTIMPORTIMPORT from utilities import get_image, get_im, model_blank, file_type
+	pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
 
-	ext = file_type(stack)
+	ext = utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
 	# open mask if defined
-	if maskname != None: mask = get_image(maskname)
+	if maskname != None: mask = utilities.get_image(maskname)
 	else:
 		# anyway image must be a flat image
 		if TXT:
 			line = open(stack, 'r').readline()
 			nx   = len(line.split())
-			mask = model_blank(nx)
+			mask = utilities.model_blank(nx)
 			mask.to_one()
 		else:
-			im = get_im(stack, 0)
-			mask = model_blank(im.get_xsize(), im.get_ysize(), im.get_zsize())
+			im = utilities.get_im(stack, 0)
+			mask = utilities.model_blank(im.get_xsize(), im.get_ysize(), im.get_zsize())
 			mask.to_one()
 			del im
 
 	# get some params
 	if TXT: Ntot = len(open(stack, 'r').readlines())
-	else:   Ntot = EMUtil.get_image_count(stack)
-	im = Util.compress_image_mask(mask, mask)
+	else:   Ntot = EMAN2_cppwrap.EMUtil.get_image_count(stack)
+	im = EMAN2_cppwrap.Util.compress_image_mask(mask, mask)
 	m  = im.get_xsize()
 	del im
 
@@ -5559,10 +5616,10 @@ def k_means_cuda_init_open_im(stack, maskname):
 
 # k-means open, prepare, and load images for CUDA k-means
 def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
-	from utilities     import get_params2D, get_params3D, get_im, file_type, model_blank
-	from fundamentals  import rot_shift2D, rot_shift3D
+	pass#IMPORTIMPORTIMPORT from utilities     import get_params2D, get_params3D, get_im, file_type, model_blank
+	pass#IMPORTIMPORTIMPORT from fundamentals  import rot_shift2D, rot_shift3D
 	
-	ext = file_type(stack)
+	ext = utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
@@ -5572,19 +5629,19 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
 		data = open(stack, 'r').readlines()
 		nx   = len(data[0].split())
 		for line in data:
-			im   = model_blank(nx)
+			im   = utilities.model_blank(nx)
 			line = line.split()
 			for i in range(nx):
 				val = float(line[i])
 				im.set_value_at_fast(i, 0, val)
-			im = Util.compress_image_mask(im, mask)
+			im = EMAN2_cppwrap.Util.compress_image_mask(im, mask)
 			KmeansCUDA.append_flat_image(im, c)
 			c += 1
 			
 		return
 
 	# some parameters
-	image = get_im(stack, 0)
+	image = utilities.get_im(stack, 0)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
@@ -5594,34 +5651,34 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
 	# even if it takes more time
 	c = 0
 	for i in lim:
-		image = get_im(stack, i)
+		image = utilities.get_im(stack, i)
 		
 		# 3D object
 		if nz > 1:
 			try:
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(image)
-				image = rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = utilities.get_params3D(image)
+				image = fundamentals.rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
 				if mirror: image.process_inplace('xfrom.mirror', {'axis':'x'})
 			except:
-				ERROR('K-MEANS no 3D alignment parameters found', "k_means_cuda_open_im", 1)
+				global_def.ERROR('K-MEANS no 3D alignment parameters found', "k_means_cuda_open_im", 1)
 				sys.exit()
 		# 2D object
 		elif ny > 1:
 			try:
-				alpha, sx, sy, mirror, scale = get_params2D(image)
-				image = rot_shift2D(image, alpha, sx, sy, mirror, scale)
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(image)
+				image = fundamentals.rot_shift2D(image, alpha, sx, sy, mirror, scale)
 			except: 
-				ERROR('K_MEANS no 2D alignment parameters found', "k_means_cuda_open_im", 1)
+				global_def.ERROR('K_MEANS no 2D alignment parameters found', "k_means_cuda_open_im", 1)
 				sys.exit()
 
 		if flagnorm:
 			# normalize
-			ave, std, mi, mx = Util.infomask(image, mask, True)
+			ave, std, mi, mx = EMAN2_cppwrap.Util.infomask(image, mask, True)
 			image -= ave
 			image /= std
 
 		# apply mask 
-		image = Util.compress_image_mask(image, mask)
+		image = EMAN2_cppwrap.Util.compress_image_mask(image, mask)
 
 		# load to C function through the kmeansCUDA object
 		KmeansCUDA.append_flat_image(image, c)
@@ -5629,7 +5686,7 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
 
 # K-means write only the major info to the header, call by the stability process
 def k_means_cuda_info(INFO):
-	from utilities import print_msg
+	pass#IMPORTIMPORTIMPORT from utilities import print_msg
 	
 	# write the report on the logfile
 	time_run = int(INFO['time'])
@@ -5637,24 +5694,24 @@ def k_means_cuda_info(INFO):
 	time_m   = (time_run % 3600) / 60
 	time_s   = (time_run % 3600) % 60
 	
-	print_msg('Running time is             : %s h %s min %s s\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
-	print_msg('Number of iterations        : %i\n' % INFO['noi'])
-	print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % INFO['Je'])
-	print_msg('Criteria Coleman is         : %11.6e\n' % INFO['C'])
-	print_msg('Criteria Harabasz is        : %11.6e\n' % INFO['H'])
-	print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % INFO['DB'])
+	utilities.print_msg('Running time is             : %s h %s min %s s\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
+	utilities.print_msg('Number of iterations        : %i\n' % INFO['noi'])
+	utilities.print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % INFO['Je'])
+	utilities.print_msg('Criteria Coleman is         : %11.6e\n' % INFO['C'])
+	utilities.print_msg('Criteria Harabasz is        : %11.6e\n' % INFO['H'])
+	utilities.print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % INFO['DB'])
 
 # K-means write results output directory
 def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT = False):
-	from utilities import print_msg
-	import os
+	pass#IMPORTIMPORTIMPORT from utilities import print_msg
+	pass#IMPORTIMPORTIMPORT import os
 	if not os.path.exists(out_seedname): os.mkdir(out_seedname)
 
 	Je, C, H, DB = crit
-	print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % Je)
-	print_msg('Criteria Coleman is         : %11.6e\n' % C)
-	print_msg('Criteria Harabasz is        : %11.6e\n' % H)
-	print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % DB)
+	utilities.print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % Je)
+	utilities.print_msg('Criteria Coleman is         : %11.6e\n' % C)
+	utilities.print_msg('Criteria Harabasz is        : %11.6e\n' % H)
+	utilities.print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % DB)
 
 	# prepare list of images id for each group
 	K   = max(PART) + 1
@@ -5667,15 +5724,15 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT 
 	flagHDF = False
 	for k in range(K):
 		if len(GRP[k]) > 16000: flagHDF = True
-	if flagHDF: print_msg('\nWARNING: limitation of number attributes in hdf format, the results will be export in separate text files\n')
+	if flagHDF: utilities.print_msg('\nWARNING: limitation of number attributes in hdf format, the results will be export in separate text files\n')
 
 	# write the details of the clustering
-	print_msg('\n-- Details ----------------------------\n')
+	utilities.print_msg('\n-- Details ----------------------------\n')
 	for k in range(K):
-		print_msg('\t%s\t%d\t%s\t%d\n' % ('Cluster no:', k, 'No of Objects = ', len(GRP[k])))
+		utilities.print_msg('\t%s\t%d\t%s\t%d\n' % ('Cluster no:', k, 'No of Objects = ', len(GRP[k])))
 
 		# reconstitute averages
-		AVE = Util.reconstitute_image_mask(FLATAVE[k], mask)
+		AVE = EMAN2_cppwrap.Util.reconstitute_image_mask(FLATAVE[k], mask)
 		
 		# limitation of hdf format
 		if flagHDF or TXT:
@@ -5693,34 +5750,34 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT 
 
 		if part == -1: AVE.write_image(os.path.join(out_seedname, 'averages.hdf'), k)
 		else:          AVE.write_image(os.path.join(out_seedname, 'averages_%02i.hdf' % part), k)
-	print_msg('\n')
+	utilities.print_msg('\n')
 
 ## K-MEANS STABILITY ######################################################################
 # 2008-12-18 11:35:11 
 
 # K-means SA define the first temperature T0 with a couple of testing values
 def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
-	from utilities 		import model_blank, print_msg
-	from alignment          import select_k
-	from random    		import seed, randint
-	import sys
-	import time
+	pass#IMPORTIMPORTIMPORT from utilities 		import model_blank, print_msg
+	pass#IMPORTIMPORTIMPORT from alignment          import select_k
+	pass#IMPORTIMPORTIMPORT from random    		import seed, randint
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT import time
 	if CTF[0]:
-		from filter	        import filt_ctf, filt_table
-		from fundamentals 	import fftip
+		pass#IMPORTIMPORTIMPORT from filter	        import filt_ctf, filt_table
+		pass#IMPORTIMPORTIMPORT from fundamentals 	import fftip
 
-		ctf  = deepcopy(CTF[1])
-		ctf2 = deepcopy(CTF[2])
+		ctf  = copy.deepcopy(CTF[1])
+		ctf2 = copy.deepcopy(CTF[2])
 		CTF  = True
 	else:
 		CTF  = False
 
-	from math   import exp
-	from random import random
+	pass#IMPORTIMPORTIMPORT from math   import exp
+	pass#IMPORTIMPORTIMPORT from random import random
 
 	if mask != None:
 		if isinstance(mask, str):
-			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
 
@@ -5731,8 +5788,8 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 		nx  = im_M[0].get_attr('or_nx')
 		ny  = im_M[0].get_attr('or_ny')
 		nz  = im_M[0].get_attr('or_nz')
-		buf = model_blank(nx, ny, nz)
-		fftip(buf)		
+		buf = utilities.model_blank(nx, ny, nz)
+		fundamentals.fftip(buf)		
 		nx   = im_M[0].get_xsize()
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
@@ -5742,11 +5799,11 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
 		norm = nx * ny * nz
-		buf  = model_blank(nx, ny, nz)
+		buf  = utilities.model_blank(nx, ny, nz)
 
 	# Variables			
-	if rand_seed > 0:  seed(rand_seed)
-	else:              seed()
+	if rand_seed > 0:  random.seed(rand_seed)
+	else:              random.seed()
 	Cls        = {}
 	Cls['n']   = [0]*K   # number of objects in a given cluster
 	Cls['ave'] = [0]*K   # value of cluster average
@@ -5774,7 +5831,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 		retrial -= 1
 		i = 0
 		for im in range(N):
-			assign[im] = randint(0, K-1)
+			assign[im] = random.randint(0, K-1)
 			Cls['n'][assign[im]] += 1
 
 		flag, k = 1, K
@@ -5798,24 +5855,24 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 			for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 
 			# compute average first step
-			CTFxF = filt_table(im_M[im], ctf[im])
-			Util.add_img(Cls['ave'][assign[im]], CTFxF)
+			CTFxF = filter.filt_table(im_M[im], ctf[im])
+			EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 
 		for k in range(K):
 			for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-			Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+			Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 		# compute Ji and Je
 		for n in range(N):
-			CTFxAve               = filt_table(Cls['ave'][assign[n]], ctf[n])
+			CTFxAve               = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 			Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 		Je = 0
 		for k in range(K):        Je = Cls['Ji'][k]
 
 	else:
 		# compute average
-		for im in range(N):	Util.add_img(Cls['ave'][assign[im]], im_M[im])
-		for k in range(K):	Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0 / float(Cls['n'][k]))
+		for im in range(N):	EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], im_M[im])
+		for k in range(K):	Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0 / float(Cls['n'][k]))
 
 		# compute Ji and Je
 		Je = 0
@@ -5836,10 +5893,10 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 			for im in range(N):
 				if CTF:
 					CTFxAVE = []
-					for k in range(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
-					res = Util.min_dist_four(im_M[im], CTFxAVE)
+					for k in range(K): CTFxAVE.append(filter.filt_table(Cls['ave'][k], ctf[im]))
+					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAVE)
 				else:
-					res = Util.min_dist_real(im_M[im], Cls['ave'])
+					res = EMAN2_cppwrap.Util.min_dist_real(im_M[im], Cls['ave'])
 		
 				# Simulated annealing
 				dJe = [0.0] * K
@@ -5857,7 +5914,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 				mindJe = min(dJe)
 				scale  = max(dJe) - mindJe
 				for k in range(K): dJe[k] = (dJe[k] - mindJe) / scale
-				select = select_k(dJe, T)
+				select = alignment.select_k(dJe, T)
 
 				if select != res['pos']:
 					ct_pert    += 1
@@ -5878,30 +5935,30 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 
 # K-means SA define the first temperature T0 (MPI version) with a couple of testing values
 def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start, N_stop):
-	from utilities 		import model_blank, print_msg, bcast_EMData_to_all, reduce_EMData_to_root
-	from random    		import seed, randint
-	from alignment          import select_k
-	from mpi                import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
-	from mpi                import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_LOR, MPI_COMM_WORLD
-	from copy               import deepcopy
-	import sys
-	import time
+	pass#IMPORTIMPORTIMPORT from utilities 		import model_blank, print_msg, bcast_EMData_to_all, reduce_EMData_to_root
+	pass#IMPORTIMPORTIMPORT from random    		import seed, randint
+	pass#IMPORTIMPORTIMPORT from alignment          import select_k
+	pass#IMPORTIMPORTIMPORT from mpi                import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
+	pass#IMPORTIMPORTIMPORT from mpi                import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_LOR, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from copy               import deepcopy
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT import time
 	if CTF[0]:
-		from filter	        import filt_ctf, filt_table
-		from fundamentals 	import fftip
+		pass#IMPORTIMPORTIMPORT from filter	        import filt_ctf, filt_table
+		pass#IMPORTIMPORTIMPORT from fundamentals 	import fftip
 
-		ctf  = deepcopy(CTF[1])
-		ctf2 = deepcopy(CTF[2])
+		ctf  = copy.deepcopy(CTF[1])
+		ctf2 = copy.deepcopy(CTF[2])
 		CTF  = True
 	else:
 		CTF  = False
 
-	from math   import exp
-	from random import random
+	pass#IMPORTIMPORTIMPORT from math   import exp
+	pass#IMPORTIMPORTIMPORT from random import random
 
 	if mask != None:
 		if isinstance(mask, str):
-			ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
 
@@ -5912,8 +5969,8 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 		nx  = im_M[N_start].get_attr('or_nx')
 		ny  = im_M[N_start].get_attr('or_ny')
 		nz  = im_M[N_start].get_attr('or_nz')
-		buf = model_blank(nx, ny, nz)
-		fftip(buf)		
+		buf = utilities.model_blank(nx, ny, nz)
+		fundamentals.fftip(buf)		
 		nx   = im_M[N_start].get_xsize()
 		ny   = im_M[N_start].get_ysize()
 		nz   = im_M[N_start].get_zsize()
@@ -5923,11 +5980,11 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 		ny   = im_M[N_start].get_ysize()
 		nz   = im_M[N_start].get_zsize()
 		norm = nx * ny * nz
-		buf  = model_blank(nx, ny, nz)
+		buf  = utilities.model_blank(nx, ny, nz)
 
 	# Variables			
-	if rand_seed > 0:  seed(rand_seed)
-	else:              seed()
+	if rand_seed > 0:  random.seed(rand_seed)
+	else:              random.seed()
 	Cls        = {}
 	Cls['n']   = [0]*K   # number of objects in a given cluster
 	Cls['ave'] = [0]*K   # value of cluster average
@@ -5957,7 +6014,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			retrial -= 1
 			i = 0
 			for im in range(N):
-				assign[im] = randint(0, K-1)
+				assign[im] = random.randint(0, K-1)
 				Cls['n'][assign[im]] += 1
 
 			flag, k = 1, K
@@ -5972,17 +6029,17 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			if flag == 1:	retrial = 0
 
 	# if need all node quit
-	mpi_barrier(MPI_COMM_WORLD)
-	FLAG_EXIT = mpi_reduce(FLAG_EXIT, 1, MPI_INT, MPI_LOR, main_node, MPI_COMM_WORLD)
-	FLAG_EXIT = mpi_bcast(FLAG_EXIT, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+	FLAG_EXIT = mpi.mpi_reduce(FLAG_EXIT, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, mpi.MPI_COMM_WORLD)
+	FLAG_EXIT = mpi.mpi_bcast(FLAG_EXIT, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 	FLAG_EXIT = map(int, FLAG_EXIT)[0]
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	if FLAG_EXIT: sys.exit()
 
 	# [sync] waiting assignment
-	assign = mpi_bcast(assign, N, MPI_INT, main_node, MPI_COMM_WORLD)
+	assign = mpi.mpi_bcast(assign, N, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 	assign = list(map(int, assign))     # convert array gave by MPI to list
-	Cls['n'] = mpi_bcast(Cls['n'], K, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+	Cls['n'] = mpi.mpi_bcast(Cls['n'], K, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 	Cls['n'] = list(map(float, Cls['n'])) # convert array gave by MPI to list
 
 	## Calculate averages, if CTF: ave = S CTF.F / S CTF**2
@@ -5995,33 +6052,33 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 
 			# compute average first step
-			CTFxF = filt_table(im_M[im], ctf[im])
-			Util.add_img(Cls['ave'][assign[im]], CTFxF)
+			CTFxF = filter.filt_table(im_M[im], ctf[im])
+			EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 
 		# sync
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		for k in range(K):
-			Cls_ctf2[k] = mpi_reduce(Cls_ctf2[k], len_ctm, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			Cls_ctf2[k] = mpi_bcast(Cls_ctf2[k],  len_ctm, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			Cls_ctf2[k] = mpi.mpi_reduce(Cls_ctf2[k], len_ctm, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+			Cls_ctf2[k] = mpi.mpi_bcast(Cls_ctf2[k],  len_ctm, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 			Cls_ctf2[k] = list(map(float, Cls_ctf2[k]))    # convert array gave by MPI to list
-			reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+			utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+			utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
 			for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-			Cls['ave'][k] = filt_table(Cls['ave'][k], Cls_ctf2[k])
+			Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 	else:
 		# [id] Calculates averages, first calculate local sum
-		for im in range(N_start, N_stop):	Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
+		for im in range(N_start, N_stop):	EMAN2_cppwrap.Util.add_img(Cls['ave'][int(assign[im])], im_M[im])
 
 		# [sync] waiting the result
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 		# [all] compute global sum, broadcast the results and obtain the average
 		for k in range(K):
-			reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-			bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
-			Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
+			utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+			utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+			Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 	## Clustering		
 	th = int(float(N)*0.8)
@@ -6037,10 +6094,10 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			for im in range(N_start, N_stop):
 				if CTF:
 					CTFxAVE = []
-					for k in range(K): CTFxAVE.append(filt_table(Cls['ave'][k], ctf[im]))
-					res = Util.min_dist_four(im_M[im], CTFxAVE)
+					for k in range(K): CTFxAVE.append(filter.filt_table(Cls['ave'][k], ctf[im]))
+					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAVE)
 				else:
-					res = Util.min_dist_real(im_M[im], Cls['ave'])
+					res = EMAN2_cppwrap.Util.min_dist_real(im_M[im], Cls['ave'])
 
 				# Simulated annealing
 				dJe = [0.0] * K
@@ -6058,16 +6115,16 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 				mindJe = min(dJe)
 				scale  = max(dJe) - mindJe
 				for k in range(K): dJe[k] = (dJe[k] - mindJe) / scale
-				select = select_k(dJe, T)
+				select = alignment.select_k(dJe, T)
 
 				if select != res['pos']:
 					ct_pert    += 1
 					res['pos']  = select
 
 		# sync
-		mpi_barrier(MPI_COMM_WORLD)
-		ct_pert = mpi_reduce(ct_pert, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		ct_pert = mpi_bcast(ct_pert, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+		ct_pert = mpi.mpi_reduce(ct_pert, 1, mpi.MPI_INT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+		ct_pert = mpi.mpi_bcast(ct_pert, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 		ct_pert = map(int, ct_pert)[0]
 		ct_pert /= 2.0
 
@@ -6077,7 +6134,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			break
 
 	# sync
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	# if not found, set to the max value
 	if T0 == -1: T0 = Tm
@@ -6128,7 +6185,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 '''
-import sys
+pass#IMPORTIMPORTIMPORT import sys
 class Munkres(object):
     """
 Calculate the Munkres solution to the classical assignment problem.
@@ -6477,9 +6534,9 @@ See the module documentation for usage.
 '''
 # Hungarian algorithm between two partitions
 def Hungarian(part1, part2):
-	from statistics import Munkres
-	from numpy      import zeros, array
-	import sys
+	pass#IMPORTIMPORTIMPORT from statistics import Munkres
+	pass#IMPORTIMPORTIMPORT from numpy      import zeros, array
+	pass#IMPORTIMPORTIMPORT import sys
 
 	K = len(part1)
 	# prepare matrix
@@ -6504,19 +6561,19 @@ def Hungarian(part1, part2):
 
 # K-means main stability stream command line
 def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, maxit = 1e9, flagnorm = False):
-	from utilities 	 import print_begin_msg, print_end_msg, print_msg
-	from utilities   import model_blank, get_image, get_im, file_type
-	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_export, k_means_init_open_im
-	from statistics  import k_means_cla, k_means_SSE, k_means_criterion, k_means_locasg2glbasg, k_means_open_im
-	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_export_txt, k_means_stab_H, k_means_stab_bbenum
-	import sys, logging, os, pickle
+	pass#IMPORTIMPORTIMPORT from utilities 	 import print_begin_msg, print_end_msg, print_msg
+	pass#IMPORTIMPORTIMPORT from utilities   import model_blank, get_image, get_im, file_type
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_export, k_means_init_open_im
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_cla, k_means_SSE, k_means_criterion, k_means_locasg2glbasg, k_means_open_im
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_export_txt, k_means_stab_H, k_means_stab_bbenum
+	pass#IMPORTIMPORTIMPORT import sys, logging, os, pickle
 	
-	ext = file_type(stack)
+	ext = utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
 	# create a directory
-	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	if os.path.exists(outdir):  global_def.ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	# create main log
@@ -6531,8 +6588,8 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 	if(rand_seed > 0):
 		for n in range(1, npart + 1): rnd.append(n * (2**n) + rand_seed)
 	else:
-		from random import randint
-		for n in range(1, npart + 1): rnd.append(randint(1,91234567))
+		pass#IMPORTIMPORTIMPORT from random import randint
+		for n in range(1, npart + 1): rnd.append(random.randint(1,91234567))
 	logging.info('... Init list random seed: %s' % rnd)
 
 	trials       = 1
@@ -6550,7 +6607,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 		sys.exit()
 
 	# loop over partition
-	print_begin_msg('k-means')
+	utilities.print_begin_msg('k-means')
 	for n in range(npart):
 		# info
 		logging.info('...... Start partition: %d' % (n + 1))
@@ -6574,7 +6631,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 		k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
 				
 	# end of classification
-	print_end_msg('k-means')
+	utilities.print_end_msg('k-means')
 
 	# convert all assignment to partition
 	logging.info('... Matching')
@@ -6606,22 +6663,22 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 # K-means main stability stream command line
 # added argument num_first_matches (jia)
 def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th_nobj = 0, rand_seed = 0, opt_method = 'cla', CTF = False, maxit = 1e9, flagnorm = False, num_first_matches=1):
-	from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
-	from mpi         import mpi_bcast, MPI_FLOAT, MPI_INT, mpi_send, mpi_recv
-	from utilities 	 import print_begin_msg, print_end_msg, print_msg, running_time
-	from utilities   import model_blank, get_image, get_im, file_type
-	from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_init_open_im, k_means_open_im
-	from statistics  import k_means_cla_MPI, k_means_SSE_MPI, k_means_criterion, k_means_locasg2glbasg
-	from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_H, k_means_export, k_means_stab_export_txt, k_means_stab_bbenum, k_means_stab_getinfo
-	from applications import MPI_start_end
-	import sys, logging, os, pickle, time
+	pass#IMPORTIMPORTIMPORT from mpi         import mpi_init, mpi_comm_size, mpi_comm_rank, mpi_barrier, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi         import mpi_bcast, MPI_FLOAT, MPI_INT, mpi_send, mpi_recv
+	pass#IMPORTIMPORTIMPORT from utilities 	 import print_begin_msg, print_end_msg, print_msg, running_time
+	pass#IMPORTIMPORTIMPORT from utilities   import model_blank, get_image, get_im, file_type
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_stab_update_tag, k_means_headlog, k_means_init_open_im, k_means_open_im
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_cla_MPI, k_means_SSE_MPI, k_means_criterion, k_means_locasg2glbasg
+	pass#IMPORTIMPORTIMPORT from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_H, k_means_export, k_means_stab_export_txt, k_means_stab_bbenum, k_means_stab_getinfo
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT import sys, logging, os, pickle, time
 	
-	ncpu      = mpi_comm_size(MPI_COMM_WORLD)
-	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	ncpu      = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+	myid      = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 	main_node = 0
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	npart = ncpu
-	ext = file_type(stack)
+	ext = utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
@@ -6629,16 +6686,16 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	if myid == main_node:
 		if os.path.exists(outdir):
 			nx = 1
-			ERROR('Output directory exists, please change the name and restart the program', " k_means_mpi", 0)
+			global_def.ERROR('Output directory exists, please change the name and restart the program', " k_means_mpi", 0)
 		else:
 			os.system( "mkdir " + outdir )
-	nx = mpi_bcast(nx, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	nx = mpi.mpi_bcast(nx, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)
 	nx = int(nx[0])
 	if(nx != 0):
-		import sys
+		pass#IMPORTIMPORTIMPORT import sys
 		exit()
 
-	mpi_barrier( MPI_COMM_WORLD )
+	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
 	if myid == main_node:
 		# create main log
@@ -6652,9 +6709,9 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 		for n in range( 1,ncpu+1):
 			rnd.append( n * (2**n) + rand_seed)
 	else:
-		from random import randint
+		pass#IMPORTIMPORTIMPORT from random import randint
 		for n in range( 1,ncpu+1):
-			rnd.append( randint(1,91234567) )
+			rnd.append( random.randint(1,91234567) )
 	if myid == main_node: logging.info('... Init list random seed: %s' % rnd)
 
 	trials       = 1
@@ -6675,7 +6732,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 
 	# loop over partition
 	if myid == main_node: 
-		print_begin_msg('k-means')
+		utilities.print_begin_msg('k-means')
 		t_start = time.time()
 	
 	[Cls, assign, Je] = k_means_SSE_MPI(IM, mask, K, rnd[myid], maxit,1, [CTF, ctf, ctf2], F, T0, False, "rnd", myid = myid, main_node = main_node, jumping = 0) # no jumping
@@ -6684,10 +6741,10 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	if myid == main_node:
 		je_return = [0.0]*(ncpu)
 		for n1 in range(ncpu):
-			if n1 != main_node: je_return[n1]	=	mpi_recv(1, MPI_FLOAT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			if n1 != main_node: je_return[n1]	=	mpi.mpi_recv(1, mpi.MPI_FLOAT, n1, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 			else:               je_return[main_node]  = Je
 	else:
-		mpi_send(Je, 1, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+		mpi.mpi_send(Je, 1, mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
 	
 	n_best = 0
@@ -6696,18 +6753,18 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 		for n in range( ncpu):
 			je_return[n] = float(je_return[n])
 			if( je_return[n] < 0): n_best = -1
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	if myid == main_node:
 		for n1 in range(ncpu):
-			if n1 != main_node: mpi_send(n_best, 1, MPI_INT, n1, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD) 
+			if n1 != main_node: mpi.mpi_send(n_best, 1, mpi.MPI_INT, n1, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD) 
 			else:               n_best  = n_best
-	else: n_best	=	mpi_recv(1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+	else: n_best	=	mpi.mpi_recv(1, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 	n_best = int(n_best)		
 	#print "myid ==", myid, "n_best==", n_best
-	mpi_barrier( MPI_COMM_WORLD )
+	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 	if n_best == -1: 
 		if myid == main_node:
-			print_msg('>> K is too big and resulted empty cluters, stop k-means  \n' )
+			utilities.print_msg('>> K is too big and resulted empty cluters, stop k-means  \n' )
 		sys.exit()
 	
 	[r_assign, r_cls] = k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node)
@@ -6718,7 +6775,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 			k_means_headlog(stack, outdir, opt_method, N, K, 
 						      '', maskname, 1, maxit, CTF, T0, 
 						      F, rnd[n], ncpu, m)
-			print_msg('\n>>>>>>>>partion:       %5d'%(n+1))
+			utilities.print_msg('\n>>>>>>>>partion:       %5d'%(n+1))
 			crit       = k_means_criterion(r_cls[n], 'CHD')
 			glb_assign = k_means_locasg2glbasg(r_assign[n], LUT, Ntot)
 			k_means_export(r_cls[n], crit, glb_assign, outdir, n, TXT)
@@ -6727,8 +6784,8 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 			
 	if myid == main_node:
 		# end of classification
-		running_time(t_start)
-		print_end_msg('k-means')
+		utilities.running_time(t_start)
+		utilities.print_end_msg('k-means')
 
 		# convert all assignments to partition
 		logging.info('... Matching')
@@ -6764,17 +6821,17 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 # Match two partitions with hungarian algorithm
 def k_means_match_clusters_asg(asg1, asg2):
 	# asg1 and asg2 are numpy array
-	from numpy      import zeros, array
-	from statistics import Munkres
-	import sys
+	pass#IMPORTIMPORTIMPORT from numpy      import zeros, array
+	pass#IMPORTIMPORTIMPORT from statistics import Munkres
+	pass#IMPORTIMPORTIMPORT import sys
 
 	K        = len(asg1)
 	MAT      = [[0] * K for i in range(K)] 
 	cost_MAT = [[0] * K for i in range(K)]
-	dummy    = array([0], 'int32')
+	dummy    = numpy.array([0], 'int32')
 	for k1 in range(K):
 		for k2 in range(K):
-			MAT[k1][k2] = Util.k_means_cont_table(asg1[k1], asg2[k2], dummy, asg1[k1].size, asg2[k2].size, 0)
+			MAT[k1][k2] = EMAN2_cppwrap.Util.k_means_cont_table(asg1[k1], asg2[k2], dummy, asg1[k1].size, asg2[k2].size, 0)
 
 	for i in range(K):
 		for j in range(K):
@@ -6786,11 +6843,11 @@ def k_means_match_clusters_asg(asg1, asg2):
 	for r, c in indexes:
 		cont = MAT[r][c]
 		if cont == 0:
-			list_stable.append(array([], 'int32'))
+			list_stable.append(numpy.array([], 'int32'))
 			continue
 		nb_tot_objs += cont
-		objs = zeros(cont, 'int32')
-		dummy = Util.k_means_cont_table(asg1[r], asg2[c], objs, asg1[r].size, asg2[c].size, 1)
+		objs = numpy.zeros(cont, 'int32')
+		dummy = EMAN2_cppwrap.Util.k_means_cont_table(asg1[r], asg2[c], objs, asg1[r].size, asg2[c].size, 1)
 		list_stable.append(objs)
 
 	return list_stable, nb_tot_objs
@@ -6802,17 +6859,17 @@ def k_means_match_clusters_asg(asg1, asg2):
 #     then their "cost" is set to 0 in MAT, i.e., the cost table which is input to Munkres. 
 def k_means_match_clusters_asg_new(asg1, asg2, T=0):
 	# asg1 and asg2 are numpy array
-	from numpy      import zeros, array
-	from statistics import Munkres
-	import sys
+	pass#IMPORTIMPORTIMPORT from numpy      import zeros, array
+	pass#IMPORTIMPORTIMPORT from statistics import Munkres
+	pass#IMPORTIMPORTIMPORT import sys
 
 	K        = len(asg1)
 	MAT      = [[0] * K for i in range(K)] 
 	cost_MAT = [[0] * K for i in range(K)]
-	dummy    = array([0], 'int32')
+	dummy    = numpy.array([0], 'int32')
 	for k1 in range(K):
 		for k2 in range(K):
-			MAT[k1][k2] = Util.k_means_cont_table(asg1[k1], asg2[k2], dummy, asg1[k1].size, asg2[k2].size, 0)
+			MAT[k1][k2] = EMAN2_cppwrap.Util.k_means_cont_table(asg1[k1], asg2[k2], dummy, asg1[k1].size, asg2[k2].size, 0)
 			if MAT[k1][k2] <= T:
 				MAT[k1][k2] = 0
 	for i in range(K):
@@ -6826,11 +6883,11 @@ def k_means_match_clusters_asg_new(asg1, asg2, T=0):
 	for r, c in indexes:
 		cont = MAT[r][c]
 		if cont <= T:
-			list_stable.append(array([], 'int32'))
+			list_stable.append(numpy.array([], 'int32'))
 			continue
 		nb_tot_objs += cont
-		objs = zeros(cont, 'int32')
-		dummy = Util.k_means_cont_table(asg1[r], asg2[c], objs, asg1[r].size, asg2[c].size, 1)
+		objs = numpy.zeros(cont, 'int32')
+		dummy = EMAN2_cppwrap.Util.k_means_cont_table(asg1[r], asg2[c], objs, asg1[r].size, asg2[c].size, 1)
 		list_stable.append(objs)
 		newindexes.append([r,c])
 
@@ -6838,8 +6895,8 @@ def k_means_match_clusters_asg_new(asg1, asg2, T=0):
 
 # Hierarchical stability between partitions given by k-means
 def k_means_stab_H(ALL_PART):
-	from copy       import deepcopy
-	from statistics import k_means_match_clusters_asg
+	pass#IMPORTIMPORTIMPORT from copy       import deepcopy
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_match_clusters_asg
 
 	nb_part = len(ALL_PART)
 	K       = len(ALL_PART[0])
@@ -6857,7 +6914,7 @@ def k_means_stab_H(ALL_PART):
 
 
 		ALL_PART = []
-		ALL_PART = deepcopy(newPART)
+		ALL_PART = copy.deepcopy(newPART)
 
 	nb_stb = 0
 	for i in range(K): nb_stb += len(ALL_PART[0][i])
@@ -6870,17 +6927,17 @@ def k_means_stab_H(ALL_PART):
 
 # Pairwise recurence agreement matching between paritions given by k-means
 def k_means_match_pwa(PART, lim = -1):
-	from numpy import zeros, array
+	pass#IMPORTIMPORTIMPORT from numpy import zeros, array
 
 	# get table contengenci between two partitions
 	def get_mat(part1, part2):
 	    K = len(part1)
 
-	    MAT  = zeros((K, K), 'int32')
-	    dummy = array([0], 'int32')
+	    MAT  = numpy.zeros((K, K), 'int32')
+	    dummy = numpy.array([0], 'int32')
 	    for k1 in range(K):
 		    for k2 in range(K):
-			    MAT[k1][k2] = Util.k_means_cont_table(part1[k1], part2[k2], dummy, part1[k1].size, part2[k2].size, 0)
+			    MAT[k1][k2] = EMAN2_cppwrap.Util.k_means_cont_table(part1[k1], part2[k2], dummy, part1[k1].size, part2[k2].size, 0)
 
 	    return MAT
 
@@ -6896,7 +6953,7 @@ def k_means_match_pwa(PART, lim = -1):
 				val.append([mat[m1[k]][k], m1[k], k])
 		val.sort(reverse = True)
 		# change to flat format [l0, c0, l1, c1, ..., li, ci]
-		res = zeros((2 * len(val)), 'int32')
+		res = numpy.zeros((2 * len(val)), 'int32')
 		ct  = 0
 		for obj in val:
 			res[ct] = obj[1]
@@ -6938,8 +6995,8 @@ def k_means_match_pwa(PART, lim = -1):
 	np   = len(PART)
 	if lim == -1: lim = len(PART[0])               # number of groups
 	MAX  = []
-	Nmax = zeros((np - 1), 'int32')                # number of maximum per pairwise table
-	pos  = zeros((np * (np - 1) / 2 + 1), 'int32') # position list of maximum in MAX
+	Nmax = numpy.zeros((np - 1), 'int32')                # number of maximum per pairwise table
+	pos  = numpy.zeros((np * (np - 1) / 2 + 1), 'int32') # position list of maximum in MAX
 	for i in range(1, np):
 		for j in range(i):
 			mat  = get_mat(PART[j], PART[i])
@@ -6949,14 +7006,14 @@ def k_means_match_pwa(PART, lim = -1):
 			pos[mono(i, j) + 1] = 2 * nb
 			MAX.extend(lmax)
 
-	MAX = array(MAX, 'int32')
+	MAX = numpy.array(MAX, 'int32')
 
 	# matching
 	Nmax  = pos[1:] 
 	Nmax  = Nmax / 2
 	pos   = pos.cumsum()
-	res   = zeros((np), 'int32')
-	lmax  = zeros((np - 1), 'int32')
+	res   = numpy.zeros((np), 'int32')
+	lmax  = numpy.zeros((np - 1), 'int32')
 	MATCH = []
 	if np > 2:
 		# for each maximum in p0p1
@@ -6981,14 +7038,14 @@ def k_means_match_pwa(PART, lim = -1):
 	else:
 		# if only two partitions return the list of maximum
 		for i in range(0, 2*Nmax[0], 2):
-			MATCH.append(array([MAX[i], MAX[i+1]], 'int32'))
+			MATCH.append(numpy.array([MAX[i], MAX[i+1]], 'int32'))
 
 	return MATCH
 
 # Stability with pairwise agreement matching
 def k_means_stab_pwa(PART, lim = -1):
-	from statistics import k_means_match_pwa
-	from copy       import deepcopy
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_match_pwa
+	pass#IMPORTIMPORTIMPORT from copy       import deepcopy
 
 	MATCH    = k_means_match_pwa(PART, lim)
 	np       = len(PART)
@@ -7026,7 +7083,7 @@ def k_means_stab_pwa(PART, lim = -1):
 					CT_s[kk] += 1
 					stb.append(i + vmin)
 
-		STB_PART[kk] = deepcopy(stb)
+		STB_PART[kk] = copy.deepcopy(stb)
 
 	for k in range(K):
 		if CT_t[k] == 0: continue
@@ -7052,15 +7109,15 @@ def k_means_stab_export_txt(PART, outdir, th_nobj):
 
 # Build and export the stable class averages 
 def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
-	from utilities    import model_blank, get_params2D, get_im
-	from fundamentals import rot_shift2D, fftip
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, get_params2D, get_im
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D, fftip
 	
 	K    = len(PART)
-	im   = EMData()
+	im   = EMAN2_cppwrap.EMData()
 	im.read_image(stack, 0)
 	nx   = im.get_xsize()
 	ny   = im.get_ysize()
-	imbk = model_blank(nx, ny)
+	imbk = utilities.model_blank(nx, ny)
 	AVE  = []
 	lrej = []
 	Kr   = 0
@@ -7077,19 +7134,19 @@ def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 		if nobjs >= th_nobj:
 			if CTF:
 				data = []
-				for ID in PART[k]: data.append(get_im(stack, int(ID)))
+				for ID in PART[k]: data.append(utilities.get_im(stack, int(ID)))
 				AVE[ck], dum, dum, dum, dum = add_ave_varf(data, None, 'a', True)
-				fftip(AVE[ck])
+				fundamentals.fftip(AVE[ck])
 				AVE[ck].depad()
 			else:
 				for ID in PART[k]:
 					im.read_image(stack, int(ID))
 					if im.get_ysize() > 1:
-						alpha, sx, sy, mirror, scale = get_params2D(im)
-						im = rot_shift2D(im, alpha, sx, sy, mirror)
+						alpha, sx, sy, mirror, scale = utilities.get_params2D(im)
+						im = fundamentals.rot_shift2D(im, alpha, sx, sy, mirror)
 
-					Util.add_img(AVE[ck], im)
-				Util.mul_scalar(AVE[ck], 1.0 / float(nobjs))
+					EMAN2_cppwrap.Util.add_img(AVE[ck], im)
+				EMAN2_cppwrap.Util.mul_scalar(AVE[ck], 1.0 / float(nobjs))
 
 			AVE[ck].set_attr('Class_average', 1.0)
 			AVE[ck].set_attr('nobjects', nobjs)
@@ -7105,57 +7162,57 @@ def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 # Init the header for the stack file
 # TODO this function need to be removed (not used)
 def k_means_stab_init_tag(stack):
-	from utilities import file_type, write_header
-	from EMAN2db import db_open_dict
+	pass#IMPORTIMPORTIMPORT from utilities import file_type, write_header
+	pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
 	
-	N   = EMUtil.get_image_count(stack)
-	ext = file_type(stack)
+	N   = EMAN2_cppwrap.EMUtil.get_image_count(stack)
+	ext = utilities.file_type(stack)
 	if ext == 'bdb':
-		DB = db_open_dict(stack)
+		DB = EMAN2db.db_open_dict(stack)
 		for n in range(N):
 			DB.set_attr(n, 'stab_active', 1)
 			DB.set_attr(n, 'stab_part', -2)
 		DB.close()
 	else:
-		im = EMData()
+		im = EMAN2_cppwrap.EMData()
 		for n in range(N):
 			im.read_image(stack, n, True)
 			im.set_attr('stab_active', 1)
 			im.set_attr('stab_part', -2)
-			write_header(stack, im, n) 
+			utilities.write_header(stack, im, n) 
 
 # Convert local all assignment to absolute all partition
 def k_means_stab_asg2part(outdir, npart):
-	from numpy     import array
-	from utilities import get_im
-	from os        import path, listdir
+	pass#IMPORTIMPORTIMPORT from numpy     import array
+	pass#IMPORTIMPORTIMPORT from utilities import get_im
+	pass#IMPORTIMPORTIMPORT from os        import path, listdir
 
 	# first check special case, when membership is export as txt file
 	# due to the limitation of hdf header or the data is TXT file
 	ALL_PART = []
-	if path.isfile(path.join(outdir, 'kmeans_part_01_grp_001.txt')):
-		from utilities import read_text_file
-		lname = listdir(outdir)
+	if os.path.isfile(os.path.join(outdir, 'kmeans_part_01_grp_001.txt')):
+		pass#IMPORTIMPORTIMPORT from utilities import read_text_file
+		lname = os.listdir(outdir)
 		K     = 0
 		for name in lname:
 			if name.find('kmeans_part_01_grp_') == 0: K += 1
 		for n in range(npart):
 			part = []
 			for k in range(K):
-				lid = read_text_file(path.join(outdir, 'kmeans_part_%02i_grp_%03i.txt' % (n+1, k+1)), 0)
-				lid = array(lid, 'int32')
+				lid = utilities.read_text_file(os.path.join(outdir, 'kmeans_part_%02i_grp_%03i.txt' % (n+1, k+1)), 0)
+				lid = numpy.array(lid, 'int32')
 				lid.sort()
 				part.append(lid.copy())
 			ALL_PART.append(part)
 	else:
 		for n in range(npart):
-			name = path.join(outdir, 'averages_%02i.hdf' % n)			
-			K    = EMUtil.get_image_count(name)
+			name = os.path.join(outdir, 'averages_%02i.hdf' % n)			
+			K    = EMAN2_cppwrap.EMUtil.get_image_count(name)
 			part = []
 			for k in range(K):
-				im  = get_im(name, k)
+				im  = utilities.get_im(name, k)
 				lid = im.get_attr('members')
-				lid = array(lid, 'int32')
+				lid = numpy.array(lid, 'int32')
 				lid.sort()
 				part.append(lid.copy())
 			ALL_PART.append(part)
@@ -7205,23 +7262,23 @@ def k_means_asg_locasg2glbpart(ASG, LUT):
 
 # Gather all stable class averages in the same stack
 def k_means_stab_gather(nb_run, maskname, outdir):
-	from utilities import get_image
-	from os        import path
+	pass#IMPORTIMPORTIMPORT from utilities import get_image
+	pass#IMPORTIMPORTIMPORT from os        import path
 
 	ct   = 0
-	im   = EMData()
+	im   = EMAN2_cppwrap.EMData()
 	for nr in range(1, nb_run + 1):
 		name = outdir + '/average_stb_run%02d.hdf' % nr
-		if path.exists(name):
-			N = EMUtil.get_image_count(name)
+		if os.path.exists(name):
+			N = EMAN2_cppwrap.EMUtil.get_image_count(name)
 			if nr == 1:
-				if maskname != None: mask = get_image(maskname)
+				if maskname != None: mask = utilities.get_image(maskname)
 				else: mask   = None
 			for n in range(N):
 				im.read_image(name, n)
 				try:
 					nobjs = im.get_attr('nobjects') # check if ave not empty
-					ret = Util.infomask(im, mask, False) # 
+					ret = EMAN2_cppwrap.Util.infomask(im, mask, False) # 
 					im  = (im - ret[0]) / ret[1]        # normalize
 					im.write_image(outdir + '/averages.hdf', ct)
 					ct += 1
@@ -7231,48 +7288,48 @@ def k_means_stab_gather(nb_run, maskname, outdir):
 
 # extract group to a stack of images for each classe, and apply alignment
 def k_means_extract_class_ali(stack_name, ave_name, dir):
-	from   utilities  import get_im, get_params2D, set_params2D
-	from fundamentals import rot_shift2D
-	import os
+	pass#IMPORTIMPORTIMPORT from   utilities  import get_im, get_params2D, set_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT import os
 
-	K = EMUtil.get_image_count(ave_name)
+	K = EMAN2_cppwrap.EMUtil.get_image_count(ave_name)
 	# all images are not open, I assume we pick up only few images (from stable_averages)
 	for k in range(K):
-		im  = get_im(ave_name, k)
+		im  = utilities.get_im(ave_name, k)
 		lid = im.get_attr('members')
 		# if there are only one image in member 
 		if not isinstance(lid, list): lid = [lid]
 		trg = os.path.join(dir, 'class_%03i.hdf' % k)
 		for i, item in enumerate(lid):
-			im = get_im(stack_name, item)
-			alpha, sx, sy, mir, scale = get_params2D(im, 'xform.align2d')
-			im = rot_shift2D(im, alpha, sx, sy, mir, scale)
-			set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0], 'xform.align2d')
+			im = utilities.get_im(stack_name, item)
+			alpha, sx, sy, mir, scale = utilities.get_params2D(im, 'xform.align2d')
+			im = fundamentals.rot_shift2D(im, alpha, sx, sy, mir, scale)
+			utilities.set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0], 'xform.align2d')
 			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 			# im.set_attr('active', 1)
 			im.write_image(trg, i)
 	
 # compute pixel error for a class given	
 def k_means_class_pixerror(class_name, dir, ou, xr, ts, maxit, fun, CTF=False, snr=1.0, Fourvar=False):
-	from applications import header, ali2d
-	from utilities    import estimate_stability
-	from statistics   import aves
-	import os
+	pass#IMPORTIMPORTIMPORT from applications import header, ali2d
+	pass#IMPORTIMPORTIMPORT from utilities    import estimate_stability
+	pass#IMPORTIMPORTIMPORT from statistics   import aves
+	pass#IMPORTIMPORTIMPORT import os
 	name = class_name.split('.')[0]
 	file = os.path.join(dir, class_name)
-	header(file, 'xform.align2d', randomize=True)
-	ali2d(file, os.path.join(dir, '%s_01' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
+	applications.header(file, 'xform.align2d', randomize=True)
+	applications.ali2d(file, os.path.join(dir, '%s_01' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
 		CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=False)
-	header(file, 'xform.align2d', backup=True, suffix='_round1')
-	header(file, 'xform.align2d', randomize=True)
-	ali2d(file, os.path.join(dir, '%s_02' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
+	applications.header(file, 'xform.align2d', backup=True, suffix='_round1')
+	applications.header(file, 'xform.align2d', randomize=True)
+	applications.ali2d(file, os.path.join(dir, '%s_02' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
 		CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=False)
 
-	data1 = EMData.read_images(file)
-	header(file, 'xform.align2d_round1', restore=True)
-	data2 = EMData.read_images(file)
+	data1 = EMAN2_cppwrap.EMData.read_images(file)
+	applications.header(file, 'xform.align2d_round1', restore=True)
+	data2 = EMAN2_cppwrap.EMData.read_images(file)
 
-	stab_mirror, list_pix_err, ccc = estimate_stability(data1, data2, CTF, snr, ou)
+	stab_mirror, list_pix_err, ccc = pixel_error.estimate_stability(data1, data2, CTF, snr, ou)
 	ave_pix_err = sum(list_pix_err) / float(len(list_pix_err))
 
 	ave, var = aves(file, 'a')
@@ -7284,7 +7341,7 @@ def k_means_class_pixerror(class_name, dir, ou, xr, ts, maxit, fun, CTF=False, s
 
 # ISC procedure, update configuration file with ite
 def isc_update_ite_conf(conf_file, ite):
-	import configparser
+	pass#IMPORTIMPORTIMPORT import configparser
 	config = configparser.ConfigParser()
 	config.read(conf_file)
 	config.set('main', 'ite', ite)
@@ -7292,7 +7349,7 @@ def isc_update_ite_conf(conf_file, ite):
 
 # ISC procedure, read configuration file
 def isc_read_conf(conf_file):
-	import configparser
+	pass#IMPORTIMPORTIMPORT import configparser
 
 	# read config file
 	config  = configparser.ConfigParser()
@@ -7381,24 +7438,24 @@ def isc_read_conf(conf_file):
 	return cfgmain, cfgali, cfgclu, cfgrali
 
 def isc_ave_huge(ave_tiny, org_data, ave_huge):
-	from utilities    import get_im, get_params2D, model_blank
-	from fundamentals import rot_shift2D
-	from sys import exit
-	im = get_im(org_data, 0)
+	pass#IMPORTIMPORTIMPORT from utilities    import get_im, get_params2D, model_blank
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from sys import exit
+	im = utilities.get_im(org_data, 0)
 	nx = im.get_xsize()
 	ny = im.get_ysize()
-	D  = EMData.read_images(org_data)
-	A  = EMData.read_images(ave_tiny)
+	D  = EMAN2_cppwrap.EMData.read_images(org_data)
+	A  = EMAN2_cppwrap.EMData.read_images(ave_tiny)
 	K  = len(A)
 	for k in range(K):
 		asg = A[k].get_attr('members')
 		asg = list(map(int, asg))
-		ave = model_blank(nx, ny)
+		ave = utilities.model_blank(nx, ny)
 		for id in asg:
-			a, sx, sy, mir, sc = get_params2D(D[id])
-			im = rot_shift2D(D[id], a, sx, sy, mir, sc)
-			Util.add_img(ave, im)
-		Util.mul_scalar(ave, 1.0 / float(len(asg)))
+			a, sx, sy, mir, sc = utilities.get_params2D(D[id])
+			im = fundamentals.rot_shift2D(D[id], a, sx, sy, mir, sc)
+			EMAN2_cppwrap.Util.add_img(ave, im)
+		EMAN2_cppwrap.Util.mul_scalar(ave, 1.0 / float(len(asg)))
 
 		ave.set_attr('members', asg)
 		ave.set_attr('nobjects', len(asg))
@@ -7731,8 +7788,8 @@ class py_cluster_HierarchicalClustering(py_cluster_BaseClusterMethod):
    http://www.elet.polimi.it/upload/matteucc/Clustering/tutorial_html/hierarchical.html
 
    USAGE
-      >>> from cluster import HierarchicalClustering
-      >>> # or: from cluster import *
+      pass#IMPORTIMPORTIMPORT >>> from cluster import HierarchicalClustering
+      pass#IMPORTIMPORTIMPORT >>> # or: from cluster import *
       >>> cl = HierarchicalClustering([123,334,345,242,234,1,3], lambda x,y: float(abs(x-y)))
       >>> cl.getlevel(90)
       [[345, 334], [234, 242], [123], [3, 1]]
@@ -7956,24 +8013,24 @@ class py_cluster_HierarchicalClustering(py_cluster_BaseClusterMethod):
 
 # helper functions for ali2d_ra and ali2d_rac
 def kmn(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
-	from utilities    import model_blank, print_msg
-	from random       import seed, randint, shuffle
-	seed(this_seed)
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, print_msg
+	pass#IMPORTIMPORTIMPORT from random       import seed, randint, shuffle
+	random.seed(this_seed)
 	if (not cm):  mirror = 0
 	nima = len(data)
 	# Randomization/shuffling
 	rnd = list(range(nima))
-	shuffle(rnd)
+	random.shuffle(rnd)
 	# calculate random approximation of the total average
 	tave = data[rnd[0]].copy()
 	for imi in range(1, nima):
 		# align current image to the reference minus this image
 		im = rnd[imi]
 		if (cm):
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 0)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 0)
 			qn  = retvals["qn"]
 			tot = retvals["tot"]
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 1)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 1)
 			qm  = retvals["qn"]
 			tmt = retvals["tot"]
 			if (qn >= qm):
@@ -7983,21 +8040,21 @@ def kmn(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				alpha  = tmt
 				mirror = 1
 		else:
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 0)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 0)
 			alpha = retvals["tot"]
 		data[im].set_attr_dict({'alpha':alpha, 'mirror': mirror})
-		Util.update_fav(tave, data[im], alpha, mirror, numr)
+		EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
 
 	nx = tave.get_xsize()
-	a0 = Util.ener(tave, numr)
+	a0 = EMAN2_cppwrap.Util.ener(tave, numr)
 	msg = "Initial criterion = %20.7e\n"%(a0)
-	print_msg(msg)
+	utilities.print_msg(msg)
 
 	# do the alignment
 	for Iter in range(max_iter):
 		again = False
 		for im in range(nima):
-			it = randint(0, nima-1)
+			it = random.randint(0, nima-1)
 			tmp = rnd[im]; rnd[im] = rnd[it]; rnd[it] = tmp;
 		for imi in range(nima):
 			# subtract current image from the average
@@ -8006,13 +8063,13 @@ def kmn(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 			mirror =  data[im].get_attr('mirror')
 			# Subtract current image from the average
 			refim = tave.copy()
-			Util.sub_fav(refim, data[im], alpha, mirror, numr)
+			EMAN2_cppwrap.Util.sub_fav(refim, data[im], alpha, mirror, numr)
 			# align current image to the reference minus this image
 			if(cm):
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 0)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 0)
 				qn  = retvals["qn"]
 				tot = retvals["tot"]
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 1)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 1)
 				qm  = retvals["qn"]
 				tmt = retvals["tot"]
 				if (qn >= qm):
@@ -8022,11 +8079,11 @@ def kmn(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 					alpha  = tmt
 					mirror = 1
 			else:
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 0)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 0)
 				alpha = retvals["tot"]
-			Util.update_fav(refim, data[im], alpha, mirror, numr)
+			EMAN2_cppwrap.Util.update_fav(refim, data[im], alpha, mirror, numr)
 			# calculate the criterion
-			a1 = Util.ener(refim, numr)
+			a1 = EMAN2_cppwrap.Util.ener(refim, numr)
 			if(a1 > a0):
 				# replace the average by the improved average and set the new parameters to the image, otherwise, do nothing
 				tave = refim.copy()
@@ -8035,38 +8092,38 @@ def kmn(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				again = True
 		if (again):
 			# calculate total average using current alignment parameters
-			tave = model_blank(nx)
+			tave = utilities.model_blank(nx)
 			for im in range(nima):
 				alpha  = data[im].get_attr('alpha')
 				mirror = data[im].get_attr('mirror')
-				Util.update_fav(tave, data[im], alpha, mirror, numr)
-			a1 = Util.ener(tave, numr)
+				EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
+			a1 = EMAN2_cppwrap.Util.ener(tave, numr)
 			msg = "ITERATION #%3d        criterion = %20.7e\n"%(Iter+1,a1)
-			print_msg(msg)
+			utilities.print_msg(msg)
 			if (a1 <= a0):  break
 			else:          a0 = a1
 		else:  break
 
 
 def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
-	from utilities    import model_blank, print_msg, amoeba
-	from random       import seed, randint, shuffle
-	seed(this_seed)
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, print_msg, amoeba
+	pass#IMPORTIMPORTIMPORT from random       import seed, randint, shuffle
+	random.seed(this_seed)
 	if (not cm):  mirror = 0
 	nima = len(data)
 	# Randomization/shuffling
 	rnd = list(range(nima))
-	shuffle(rnd)
+	random.shuffle(rnd)
 	# calculate random approximation of the total average
 	tave = data[rnd[0]].copy()
 	for imi in range(1, nima):
 		# align current image to the reference minus this image
 		im = rnd[imi]
 		if (cm):
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 0)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 0)
 			qn  = retvals["qn"]
 			tot = retvals["tot"]
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 1)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 1)
 			qm  = retvals["qn"]
 			tmt = retvals["tot"]
 			if (qn >= qm):
@@ -8076,21 +8133,21 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				alpha  = tmt
 				mirror = 1
 		else:
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 0)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 0)
 			alpha = retvals["tot"]
 		data[im].set_attr_dict({'alpha':alpha, 'mirror': mirror})
-		Util.update_fav(tave, data[im], alpha, mirror, numr)
+		EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
 
 	nx = tave.get_xsize()
-	a0 = Util.ener(tave, numr)
+	a0 = EMAN2_cppwrap.Util.ener(tave, numr)
 	msg = "Initial criterion = %-20.7e\n"%(a0)
-	print_msg(msg)
+	utilities.print_msg(msg)
 
 	# do the alignment
 	for Iter in range(max_iter):
 		again = False
 		for im in range(nima):
-			it = randint(0, nima-1)
+			it = random.randint(0, nima-1)
 			tmp = rnd[im]; rnd[im] = rnd[it]; rnd[it] = tmp;
 		for imi in range(nima):
 			# subtract current image from the average
@@ -8099,13 +8156,13 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 			mirror =  data[im].get_attr('mirror')
 			# Subtract current image from the average
 			refim = tave.copy()
-			Util.sub_fav(refim, data[im], alpha, mirror, numr)
+			EMAN2_cppwrap.Util.sub_fav(refim, data[im], alpha, mirror, numr)
 			# align current image to the reference minus this image
 			if(cm):
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 0)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 0)
 				qn  = retvals["qn"]
 				tot = retvals["tot"]
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 1)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 1)
 				qm  = retvals["qn"]
 				tmt = retvals["tot"]
 				if (qn >= qm):
@@ -8115,11 +8172,11 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 					alpha  = tmt
 					mirror = 1
 			else:
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 0)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 0)
 				alpha = retvals["tot"]
-			Util.update_fav(refim, data[im], alpha, mirror, numr)
+			EMAN2_cppwrap.Util.update_fav(refim, data[im], alpha, mirror, numr)
 			# calculate the criterion
-			a1 = Util.ener(refim, numr)
+			a1 = EMAN2_cppwrap.Util.ener(refim, numr)
 			if(a1 > a0):
 				# replace the average by the improved average and set the new parameters to the image, otherwise, do nothing
 				tave = refim.copy()
@@ -8128,14 +8185,14 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				again = True
 		if (again):
 			# calculate total average using current alignment parameters
-			tave = model_blank(nx)
+			tave = utilities.model_blank(nx)
 			for im in range(nima):
 				alpha  = data[im].get_attr('alpha')
 				mirror = data[im].get_attr('mirror')
-				Util.update_fav(tave, data[im], alpha, mirror, numr)
-			a1 = Util.ener(tave, numr)
+				EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
+			a1 = EMAN2_cppwrap.Util.ener(tave, numr)
 			msg = "ITERATION #%3d        criterion = %20.7e\n"%(Iter+1,a1)
-			print_msg(msg)
+			utilities.print_msg(msg)
 			if (a1 <= a0):  break
 			else:          a0 = a1
 		else:  break
@@ -8149,38 +8206,38 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 		alpha = data[im].get_attr('alpha')
 		all_alpha.append(alpha)
 	alpha_range = [2.0]*nima
-	ps = amoeba(all_alpha, alpha_range, multi_search_func, 1.e-4, 1.e-4, 1000, amoeba_data)
+	ps = utilities.amoeba(all_alpha, alpha_range, multi_search_func, 1.e-4, 1.e-4, 1000, amoeba_data)
 	for im in range(nima):
 		data[im].set_attr_dict({'alpha': ps[0][im]})
 	msg = "Final criterion = %20.7e\n"%(ps[1])
-	print_msg(msg)
+	utilities.print_msg(msg)
 
 
 def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed = 1000):
 
-	from utilities    import   model_blank, print_msg, amoeba, combine_params2
-	from random       import   seed, randint
-	from alignment    import   ang_n
-	from development  import   oned_search_func
-	from random       import   gauss
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from utilities    import   model_blank, print_msg, amoeba, combine_params2
+	pass#IMPORTIMPORTIMPORT from random       import   seed, randint
+	pass#IMPORTIMPORTIMPORT from alignment    import   ang_n
+	pass#IMPORTIMPORTIMPORT from development  import   oned_search_func
+	pass#IMPORTIMPORTIMPORT from random       import   gauss
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 	
 	mode = "F"
-	seed(this_seed)
+	random.seed(this_seed)
 	if (not check_mirror):  mirror = 0
 	nima = len(data)
 	# Randomization/shuffling
 	rnd = list(range(nima))
 	for im in range(nima):
-		it = randint(0,nima-1)
+		it = random.randint(0,nima-1)
 		tmp = rnd[im]; rnd[im] = rnd[it]; rnd[it] = tmp;
 	# calculate random approximation of the total average
 	tave = data[rnd[0]].copy()
 	tave_w = tave.copy()
-	Util.Applyws(tave_w, numr, wr)
+	EMAN2_cppwrap.Util.Applyws(tave_w, numr, wr)
 	maxrin = numr[len(numr)-1]
 		
-	line = EMData()
+	line = EMAN2_cppwrap.EMData()
 	line.set_size(maxrin,1,1)
 	M=maxrin
 	# do not pad
@@ -8191,8 +8248,8 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 	alpha=1.75
 	r=M/2
 	v=K/2.0/N
-	kbline = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
-	parline = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
+	kbline = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
+	parline = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
 	amoeba_data = []
 	amoeba_data.append(kbline)
 		
@@ -8200,7 +8257,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 		# align current image to the reference minus this image
 		im = rnd[imi]
 		if (check_mirror):
-			qt = Util.Crosrng_msg(tave_w, data[im], numr)
+			qt = EMAN2_cppwrap.Util.Crosrng_msg(tave_w, data[im], numr)
 				
 			# straight
 			for i in range(0,maxrin): line[i]=qt[i,0]					
@@ -8208,9 +8265,9 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			ps=line.peak_search(1,1)				
 			qn=ps[1]
 			jtot=ps[2]/2
-			q=Processor.EMFourierFilter(line,parline)
+			q=EMAN2_cppwrap.Processor.EMFourierFilter(line,parline)
 			amoeba_data.insert(0,q)
-			ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+			ps = utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 			del amoeba_data[0]
 			jtot=ps[0][0]*2
 			qn=ps[1]
@@ -8221,9 +8278,9 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			ps=line.peak_search(1,1)				
 			qm=ps[1]
 			mtot=ps[2]/2
-			q=Processor.EMFourierFilter(line,parline)
+			q=EMAN2_cppwrap.Processor.EMFourierFilter(line,parline)
 			amoeba_data.insert(0,q)
-			ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+			ps = utilities.amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 			del amoeba_data[0]
 			mtot=ps[0][0]*2
 			qm=ps[1]
@@ -8237,16 +8294,16 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				alpha = mtot+1
 				mirror = 1
 		else:		
-			line_s = Util.Crosrng_msg_s(tave_w, data[im], numr)
+			line_s = EMAN2_cppwrap.Util.Crosrng_msg_s(tave_w, data[im], numr)
 			
 			# straight
 			#  find the current maximum and its location
 			ps=line_s.peak_search(1,1)
 			qn=ps[1]
 			jtot=ps[2]/2
-			q=Processor.EMFourierFilter(line_s,parline)
+			q=EMAN2_cppwrap.Processor.EMFourierFilter(line_s,parline)
 			amoeba_data.insert(0,q)
-			ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+			ps = utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 			del amoeba_data[0]
 			jtot=ps[0][0]*2
 			qn=ps[1]
@@ -8256,20 +8313,20 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			mirror = 0
 			
 		data[im].set_attr_dict({'alpha':alpha, 'mirror': mirror})		
-		Util.update_fav(tave, data[im], alpha, mirror, numr)
+		EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
 		tave_w = tave.copy()
-		Util.Applyws(tave_w, numr, wr)
+		EMAN2_cppwrap.Util.Applyws(tave_w, numr, wr)
 	
 	nx = tave.get_xsize()
-	a0 = Util.ener(tave, numr)
+	a0 = EMAN2_cppwrap.Util.ener(tave, numr)
 	msg = "Initial criterion = %-20.7e\n"%(a0)
-	print_msg(msg)
+	utilities.print_msg(msg)
 	
 	# do the alignment
 	for Iter in range(max_iter):
 		again = False
 		for im in range(nima):
-			it = randint(0, nima-1)
+			it = random.randint(0, nima-1)
 			tmp = rnd[im]; rnd[im] = rnd[it]; rnd[it] = tmp;
 		for imi in range(nima):
 			# subtract current image from the average
@@ -8278,12 +8335,12 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			mirror = data[im].get_attr('mirror')
 			# Subtract current image from the average
 			refim = tave.copy()
-			Util.sub_fav(refim, data[im], alpha, mirror, numr)
+			EMAN2_cppwrap.Util.sub_fav(refim, data[im], alpha, mirror, numr)
 			refim_w = refim.copy()
-			Util.Applyws(refim_w, numr, wr)
+			EMAN2_cppwrap.Util.Applyws(refim_w, numr, wr)
 			# align current image to the reference minus this image
 			if (check_mirror):
-				qt = Util.Crosrng_msg(refim_w, data[im], numr)
+				qt = EMAN2_cppwrap.Util.Crosrng_msg(refim_w, data[im], numr)
 					
 				# straight
 				for i in range(0,maxrin): line[i]=qt[i,0]					
@@ -8291,9 +8348,9 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				ps=line.peak_search(1,1)				
 				qn=ps[1]
 				jtot=ps[2]/2
-				q=Processor.EMFourierFilter(line,parline)
+				q=EMAN2_cppwrap.Processor.EMFourierFilter(line,parline)
 				amoeba_data.insert(0,q)
-				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+				ps = utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 				del amoeba_data[0]
 				jtot=ps[0][0]*2
 				qn=ps[1]
@@ -8304,9 +8361,9 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				ps=line.peak_search(1,1)				
 				qm=ps[1]
 				mtot=ps[2]/2
-				q=Processor.EMFourierFilter(line,parline)
+				q=EMAN2_cppwrap.Processor.EMFourierFilter(line,parline)
 				amoeba_data.insert(0,q)
-				ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+				ps = utilities.amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 				del amoeba_data[0]
 				mtot=ps[0][0]*2
 				qm=ps[1]
@@ -8320,16 +8377,16 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 					alpha = mtot+1
 					mirror = 1
 			else:
-				line_s = Util.Crosrng_msg_s(refim_w, data[im], numr)
+				line_s = EMAN2_cppwrap.Util.Crosrng_msg_s(refim_w, data[im], numr)
 				
 				# straight
 				#  find the current maximum and its location
 				ps=line_s.peak_search(1,1)				
 				qn=ps[1]
 				jtot=ps[2]/2
-				q=Processor.EMFourierFilter(line_s,parline)
+				q=EMAN2_cppwrap.Processor.EMFourierFilter(line_s,parline)
 				amoeba_data.insert(0,q)
-				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+				ps = utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 				del amoeba_data[0]
 				jtot=ps[0][0]*2
 				qn=ps[1]
@@ -8337,9 +8394,9 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				#alpha = ang_n(jtot+1, mode, maxrin)
 				alpha =  jtot+1
 				mirror = 0
-			Util.update_fav(refim, data[im], alpha, mirror, numr)
+			EMAN2_cppwrap.Util.update_fav(refim, data[im], alpha, mirror, numr)
 			# calculate the criterion
-			a1 = Util.ener(refim, numr)
+			a1 = EMAN2_cppwrap.Util.ener(refim, numr)
 			if (a1 > a0):
 				# replace the average by the improved average and set the new parameters to the image, otherwise, do nothing
 				tave = refim.copy()
@@ -8348,34 +8405,34 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				again = True
 		if (again):
 			# calculate total average using current alignment parameters
-			tave = model_blank(nx)
+			tave = utilities.model_blank(nx)
 			for im in range(nima):  
 				alpha  = data[im].get_attr('alpha')
 				mirror = data[im].get_attr('mirror')
-				Util.update_fav(tave, data[im], alpha, mirror, numr)
-			a1 = Util.ener(tave, numr)
+				EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
+			a1 = EMAN2_cppwrap.Util.ener(tave, numr)
 			msg = "ITERATION #%3d        criterion = %20.7e\n"%(Iter+1,a1)
-			print_msg(msg)
+			utilities.print_msg(msg)
 			if (a1 <= a0):  break
 			else:          a0 = a1
 		else:  break
 	
 	
-	temp = EMData()
+	temp = EMAN2_cppwrap.EMData()
 	for im in range(nima):
 		alpha_original   = data[im].get_attr('alpha_original')
 		alpha = data[im].get_attr('alpha')
 		sx    =  data[im].get_attr('sx')
 		sy    =  data[im].get_attr('sy')
 		mirror =  data[im].get_attr('mirror')
-		alpha = ang_n(alpha+1, mode, maxrin)
+		alpha = alignment.ang_n(alpha+1, mode, maxrin)
 		#  here the original angle is irrelevant, used only to determine proper shifts
-		alpha_original_n, sxn, syn, mir = combine_params2(0, -sx, -sy, 0, -alpha_original, 0,0,0)
-		alphan, sxn, syn, mir           = combine_params2(0, -sxn, -syn, 0, alpha, 0,0, mirror)
+		alpha_original_n, sxn, syn, mir = utilities.combine_params2(0, -sx, -sy, 0, -alpha_original, 0,0,0)
+		alphan, sxn, syn, mir           = utilities.combine_params2(0, -sxn, -syn, 0, alpha, 0,0, mirror)
 		temp.read_image(stack, im, True)
 		#if(CTF and data_had_ctf == 0):   temp.set_attr('ctf_applied', 0)
 		temp.set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror': mir})
-		temp.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
+		temp.write_image(stack, im, EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF, True)
 	
 	ave1, ave2 =  ave_oe_series(stack)	
 	fsc(ave1, ave2, 1.0, "fsc_before_amoeba")
@@ -8396,42 +8453,42 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 	new_alpha = []
 
 	for Iter in range(10):
-		tave = model_blank(nx)
+		tave = utilities.model_blank(nx)
 		all_alpha = []
 		for im in range(nima):
 			alpha = data[im].get_attr('alpha')
 			if Iter==0: shake = 0.0
-			else: shake = gauss(0, 0.5)
+			else: shake = random.gauss(0, 0.5)
 			all_alpha.append(alpha+shake)
-			Util.update_fav(tave, data[im], alpha+shake, 0, numr)
+			EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha+shake, 0, numr)
 		amoeba_data.append(tave)
 		amoeba_data.append(all_alpha)		
-		ps = amoeba(all_alpha, alpha_range, multi_search_func, 1.e-4, 1.e-4, 10000, amoeba_data)
+		ps = utilities.amoeba(all_alpha, alpha_range, multi_search_func, 1.e-4, 1.e-4, 10000, amoeba_data)
 		dummy = amoeba_data.pop()
 		dummy = amoeba_data.pop()
 		msg = "Trial %2d of amoeba:   criterion = %20.7e    Iteration = %4d\n"%(Iter+1, ps[1], ps[2])
-		print_msg(msg)				
+		utilities.print_msg(msg)				
 		if ps[1]>a0:
 			a0 = ps[1]			
 			new_alpha = ps[0]
 		else:
 			if new_alpha == []:	new_alpha = all_alpha		
 				
-		temp = EMData()
+		temp = EMAN2_cppwrap.EMData()
 		for im in range(nima):
 			alpha_original   = data[im].get_attr('alpha_original')
 			alpha = ps[0][im]
 			sx    =  data[im].get_attr('sx')
 			sy    =  data[im].get_attr('sy')
 			mirror =  data[im].get_attr('mirror')
-			alpha = ang_n(alpha+1, mode, maxrin)
+			alpha = alignment.ang_n(alpha+1, mode, maxrin)
 			#  here the original angle is irrelevant, used only to determine proper shifts
-			alpha_original_n, sxn, syn, mir = combine_params2(0, -sx, -sy, 0, -alpha_original, 0,0,0)
-			alphan, sxn, syn, mir           = combine_params2(0, -sxn, -syn, 0, alpha, 0,0, mirror)
+			alpha_original_n, sxn, syn, mir = utilities.combine_params2(0, -sx, -sy, 0, -alpha_original, 0,0,0)
+			alphan, sxn, syn, mir           = utilities.combine_params2(0, -sxn, -syn, 0, alpha, 0,0, mirror)
 			temp.read_image(stack, im, True)
 			#if(CTF and data_had_ctf == 0):   temp.set_attr('ctf_applied', 0)
 			temp.set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror': mir})
-			temp.write_image(stack, im, EMUtil.ImageType.IMAGE_HDF, True)
+			temp.write_image(stack, im, EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF, True)
 
 		ave1, ave2 =  ave_oe_series(stack)	
 		fsc(ave1, ave2, 1.0, "fsc_trial_%02d"%(Iter+1))
@@ -8440,12 +8497,12 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 		data[im].set_attr_dict({'alpha': new_alpha[im]})
 		
 	msg = "Final criterion = %-20.7e\n"%(a0)
-	print_msg(msg)
+	utilities.print_msg(msg)
 	
 
 def multi_search_func(args, data):
 
-	from utilities import model_blank
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank
 
 	fdata = data[0]
 	numr = data[1]
@@ -8463,15 +8520,15 @@ def multi_search_func(args, data):
 
 	if total_change < nima*0.3:
 		for im in update_list:
-			Util.sub_fav(tave, fdata[im], ori_alpha[im], 0, numr) 
-			Util.update_fav(tave, fdata[im], args[im], 0, numr)
+			EMAN2_cppwrap.Util.sub_fav(tave, fdata[im], ori_alpha[im], 0, numr) 
+			EMAN2_cppwrap.Util.update_fav(tave, fdata[im], args[im], 0, numr)
 	else:
 		nx = tave.get_xsize()
-		tave = model_blank(nx)
+		tave = utilities.model_blank(nx)
 		for im in range(nima):
-			Util.update_fav(tave, fdata[im], args[im], 0, numr)
+			EMAN2_cppwrap.Util.update_fav(tave, fdata[im], args[im], 0, numr)
 			
-	energy = Util.ener(tave, numr)	
+	energy = EMAN2_cppwrap.Util.ener(tave, numr)	
 	#energy = Util.ener_tot(fdata, numr, args)
 
 	return energy
@@ -8479,8 +8536,8 @@ def multi_search_func(args, data):
 """
 def multi_search_func2(args, data):
 	
-	from utilities import model_blank, model_circle
-	from alignment import ang_n
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank, model_circle
+	pass#IMPORTIMPORTIMPORT from alignment import ang_n
 	
 	stack = data[0]
 	numr = data[1]
@@ -8504,25 +8561,25 @@ def multi_search_func2(args, data):
 """
 
 def kmn_ctf(data, ref_data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
-	from utilities    import model_blank, print_msg
-	from random       import seed, randint, shuffle
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank, print_msg
+	pass#IMPORTIMPORTIMPORT from random       import seed, randint, shuffle
 	#  This version is not quite correct, as ctf2 is not modified in the avergae, but it cannot be done any other simple way :-(
-	seed(this_seed)
+	random.seed(this_seed)
 	if(not cm):  mirror = 0
 	nima = len(data)
 	# Randomization/shuffling
 	rnd = list(range(nima))
-	shuffle(rnd)
+	random.shuffle(rnd)
 	# calculate random approximation of the total average
 	tave = ref_data[rnd[0]].copy()
 	for imi in range(1, nima):
 		# align current image to the reference minus this image
 		im = rnd[imi]
 		if(cm):
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 0)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 0)
 			qn  = retvals["qn"]
 			tot = retvals["tot"]
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 1)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 1)
 			qm  = retvals["qn"]
 			tmt = retvals["tot"]
 			if (qn >= qm):
@@ -8532,21 +8589,21 @@ def kmn_ctf(data, ref_data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				alpha  = tmt
 				mirror = 1
 		else:
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 0)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 0)
 			alpha = retvals["tot"]
 		data[im].set_attr_dict({'alpha':alpha, 'mirror': mirror})
-		Util.update_fav(tave, ref_data[im], alpha, mirror, numr)
+		EMAN2_cppwrap.Util.update_fav(tave, ref_data[im], alpha, mirror, numr)
 	
 	nx = tave.get_xsize()
-	a0 = Util.ener(tave, numr)
+	a0 = EMAN2_cppwrap.Util.ener(tave, numr)
 	msg = "Initial criterion = %-20.7e\n"%(a0)
-	print_msg(msg)
+	utilities.print_msg(msg)
 
 	# do the alignment
 	for Iter in range(max_iter):
 		again = False
 		for im in range(nima):
-			it = randint(0,nima-1)
+			it = random.randint(0,nima-1)
 			tmp = rnd[im]; rnd[im] = rnd[it]; rnd[it] = tmp;
 		for imi in range(nima):
 			# subtract current image from the average
@@ -8555,13 +8612,13 @@ def kmn_ctf(data, ref_data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 			mirror =  data[im].get_attr('mirror')
 			# Subtract current image from the average
 			refim = tave.copy()
-			Util.sub_fav(refim, ref_data[im], alpha, mirror, numr)
+			EMAN2_cppwrap.Util.sub_fav(refim, ref_data[im], alpha, mirror, numr)
 			# align current image to the reference minus this image
 			if(cm):
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 0)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 0)
 				qn  = retvals["qn"]
 				tot = retvals["tot"]
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 1)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 1)
 				qm  = retvals["qn"]
 				tmt = retvals["tot"]
 				if (qn >= qm):
@@ -8571,11 +8628,11 @@ def kmn_ctf(data, ref_data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 					alpha  = tmt
 					mirror = 1
 			else:
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 0)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 0)
 				alpha = retvals["tot"]
-			Util.update_fav(refim, ref_data[im], alpha, mirror, numr)
+			EMAN2_cppwrap.Util.update_fav(refim, ref_data[im], alpha, mirror, numr)
 			# calculate the criterion
-			a1 = Util.ener(refim, numr)
+			a1 = EMAN2_cppwrap.Util.ener(refim, numr)
 			if(a1 > a0):
 				# replace the average by the improved average and set the new parameters to the image, otherwise, do nothing
 				tave = refim.copy()
@@ -8584,22 +8641,22 @@ def kmn_ctf(data, ref_data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				again = True
 		if(again):
 			# calculate total average using current alignment parameters
-			tave = model_blank(nx)
+			tave = utilities.model_blank(nx)
 			for im in range(nima):  
 				alpha  = data[im].get_attr('alpha')
 				mirror =  data[im].get_attr('mirror')
-				Util.update_fav(tave, ref_data[im], alpha, mirror, numr)
-			a1 = Util.ener(tave, numr)
+				EMAN2_cppwrap.Util.update_fav(tave, ref_data[im], alpha, mirror, numr)
+			a1 = EMAN2_cppwrap.Util.ener(tave, numr)
 			msg = "ITERATION #%3d        criterion = %20.7e\n"%(Iter+1,a1)
-			print_msg(msg)
+			utilities.print_msg(msg)
 			if(a1 <= a0):  break
 			else:          a0 = a1
 		else:  break
 
 def kmnr(data, assign, nima, k, numr, wr, cm = 0, max_iter = 10, this_seed = 1000, MPI = False):
-	from random       import seed, randint, random, shuffle
-	from utilities    import model_blank
-	seed(this_seed)
+	pass#IMPORTIMPORTIMPORT from random       import seed, randint, random, shuffle
+	pass#IMPORTIMPORTIMPORT from utilities    import model_blank
+	random.seed(this_seed)
 	if(not cm):  mirror = 0
 	ntot = len(data)
 
@@ -8617,7 +8674,7 @@ def kmnr(data, assign, nima, k, numr, wr, cm = 0, max_iter = 10, this_seed = 100
 
 	# random / shuffle
 	rnd = list(range(nima))
-	shuffle(rnd)
+	random.shuffle(rnd)
 				
 	# calculate random approximation of the total average
 	if not MPI: tave = data[lob[rnd[0]]].copy()
@@ -8629,10 +8686,10 @@ def kmnr(data, assign, nima, k, numr, wr, cm = 0, max_iter = 10, this_seed = 100
 		else:       im = rnd[imi]
 		
 		if(cm):
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 0)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 0)
 			qn  = retvals["qn"]
 			tot = retvals["tot"]
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 1)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 1)
 			qm  = retvals["qn"]
 			tmt = retvals["tot"]
 			if (qn >= qm):
@@ -8642,22 +8699,22 @@ def kmnr(data, assign, nima, k, numr, wr, cm = 0, max_iter = 10, this_seed = 100
 			   alpha  = tmt
 			   mirror = 1
 		else:
-			retvals = Util.Crosrng_ew(tave, data[im], numr, wr, 0)
+			retvals = EMAN2_cppwrap.Util.Crosrng_ew(tave, data[im], numr, wr, 0)
 			alpha = retvals["tot"]
 		
 		data[im].set_attr_dict({'alpha':alpha, 'mirror': mirror})
-		Util.update_fav(tave, data[im], alpha, mirror, numr)
+		EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
 	
 	nr = tave.get_xsize()
-	at = Util.ener(tave, numr)
+	at = EMAN2_cppwrap.Util.ener(tave, numr)
 	a0 = at
 	#print  "Initial criterion = ",a0
-	temp = EMData()
+	temp = EMAN2_cppwrap.EMData()
 	# do the alignment
 	for iter in range(max_iter):
 		again = False
 		rnd = list(range(nima))
-		shuffle(rnd)
+		random.shuffle(rnd)
 		for imi in range(nima):
 			# subtract current image from the average
 			if not MPI: im = lob[rnd[imi]]
@@ -8667,13 +8724,13 @@ def kmnr(data, assign, nima, k, numr, wr, cm = 0, max_iter = 10, this_seed = 100
 			mirror =  data[im].get_attr('mirror')
 			#  Subtract current image from the average
 			refim = tave.copy()
-			Util.sub_fav(refim, data[im], alpha, mirror, numr)
+			EMAN2_cppwrap.Util.sub_fav(refim, data[im], alpha, mirror, numr)
 			# align current image to the reference minus this image
 			if(cm):
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 0)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 0)
 				qn  = retvals["qn"]
 				tot = retvals["tot"]
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 1)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 1)
 				qm  = retvals["qn"]
 				tmt = retvals["tot"]
 				if (qn >= qm):
@@ -8683,11 +8740,11 @@ def kmnr(data, assign, nima, k, numr, wr, cm = 0, max_iter = 10, this_seed = 100
 					alpha  = tmt
 					mirror = 1
 			else:
-				retvals = Util.Crosrng_ew(refim, data[im], numr, wr, 0)
+				retvals = EMAN2_cppwrap.Util.Crosrng_ew(refim, data[im], numr, wr, 0)
 				alpha = retvals["tot"]
-			Util.update_fav(refim, data[im], alpha, mirror, numr)
+			EMAN2_cppwrap.Util.update_fav(refim, data[im], alpha, mirror, numr)
 			# calculate the criterion
-			a1 = Util.ener(refim, numr)
+			a1 = EMAN2_cppwrap.Util.ener(refim, numr)
 			#print  im, a1, psi, mirror
 			if(a1 > a0):
 				# replace the average by the improved average and set the new parameters to the image, otherwise, do nothing
@@ -8697,15 +8754,15 @@ def kmnr(data, assign, nima, k, numr, wr, cm = 0, max_iter = 10, this_seed = 100
 				again = True
 		if(again):
 			# calculate total average using current alignment parameters
-			tave = model_blank(nr)
+			tave = utilities.model_blank(nr)
 			for imi in range(nima):
 				if not MPI: im = lob[imi]
 				else:       im = rnd[imi]
 				
 				alpha  = data[im].get_attr('alpha')
 				mirror =  data[im].get_attr('mirror')
-				Util.update_fav(tave, data[im], alpha, mirror, numr)
-			a0 = Util.ener(tave, numr)
+				EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
+			a0 = EMAN2_cppwrap.Util.ener(tave, numr)
 			#print " ITERATION #",iter+1,"  criterion = ",a0
 			if(a0 <= at):  break
 			else:          at = a0
@@ -8715,7 +8772,7 @@ def kmnr(data, assign, nima, k, numr, wr, cm = 0, max_iter = 10, this_seed = 100
 	return  tave
 	
 def Wiener_CSQ(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
-	from filter       import filt_table
+	pass#IMPORTIMPORTIMPORT from filter       import filt_table
 
 	N = len(data)
 	lctf = len(ctf2[0])
@@ -8729,30 +8786,30 @@ def Wiener_CSQ(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
 	#Calculate averages
 	for im in range(N):
 		k = assign[im]
-		avec = filt_table( data[im], ctf1[im] )  # multiply data by the CTF
-		Util.add_img(Cls[k].C, avec)
+		avec = filter.filt_table( data[im], ctf1[im] )  # multiply data by the CTF
+		EMAN2_cppwrap.Util.add_img(Cls[k].C, avec)
 		for i in range(lctf): ctf_2[k][i] += ctf2[im][i]
 		Cls[k].n +=1
 
 	# check whether there are empty classes
 	for k in range(K):
 		if(Cls[k].n == 0):
-			ERROR("empty class", "Wiener_CSQ", 0)
+			global_def.ERROR("empty class", "Wiener_CSQ", 0)
 			return  [],[]
 
 	ctf_temp = [0.0]*lctf
 	for k in range(K):
 		for i in range(lctf): ctf_temp[i] = 1.0/(ctf_2[k][i] + 1.0/snr)
-		avek = filt_table( Cls[k].C, ctf_temp )
+		avek = filter.filt_table( Cls[k].C, ctf_temp )
 		for im in range(len(data)):
 			if(k == assign[im]):
-				Cls[k].SSE += data[im].cmp("SqEuclidean", filt_table( avek, ctf1[im] ))
+				Cls[k].SSE += data[im].cmp("SqEuclidean", filter.filt_table( avek, ctf1[im] ))
 
 	return Cls, ctf_2
 	
 def Wiener_sse(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
-	from filter       import filt_table
-	from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from filter       import filt_table
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
 	N = len(data)
 	lctf = len(ctf2[0])
 	ctf_2 = [[0.0]*lctf for k in range(K)]
@@ -8764,9 +8821,9 @@ def Wiener_sse(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
 
 	#Calculate averages
 	for im in range(N):
-		ctf_x = filt_table( data[im], ctf1[im] )
+		ctf_x = filter.filt_table( data[im], ctf1[im] )
 		k = assign[im]
-		Util.add_img(Cls[k].C, ctf_x)
+		EMAN2_cppwrap.Util.add_img(Cls[k].C, ctf_x)
 		#Cls[k].C += ctf_x
 		for i in range(lctf): ctf_2[k][i] += ctf2[im][i]
 		Cls[k].n +=1
@@ -8775,16 +8832,16 @@ def Wiener_sse(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
 	for k in range(K):
 		if(Cls[k].n == 0):
 			return  []
-			ERROR("empty class", "Wiener_sse", 1)
+			global_def.ERROR("empty class", "Wiener_sse", 1)
 
 	#  Calculate partial SSEs and total SSE
 	for k in range(K):
 		for i in range(lctf):  ctf_2[k][i] = 1.0/(ctf_2[k][i] + 1.0/snr)
-		Cls[k].C = filt_table( Cls[k].C, ctf_2[k] )
+		Cls[k].C = filter.filt_table( Cls[k].C, ctf_2[k] )
 
 	for im in range(len(data)):
 		k = assign[im]
-		ctf_x = filt_table( Cls[k].C, ctf1[k] )
+		ctf_x = filter.filt_table( Cls[k].C, ctf1[k] )
 		Cls[k].SSE += data[im].cmp("SqEuclidean", ctf_x)
 
 	return Cls
@@ -8792,9 +8849,9 @@ def Wiener_sse(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
 '''
 # This code looks obsolete, I do not write it. JB.. So I commented it out, PAP 12/31/09
 def k_means_aves(images, N, K, rand_seed, outdir):
-	from utilities import model_blank
-	from random       import seed, randint
-	from sys import exit
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank
+	pass#IMPORTIMPORTIMPORT from random       import seed, randint
+	pass#IMPORTIMPORTIMPORT from sys import exit
 	
 	#  This version is not quite correct, as ctf2 is not modified in the average, but it cannot be done any other simple way :-(
 	seed(rand_seed)
@@ -8839,7 +8896,7 @@ def k_means_aves(images, N, K, rand_seed, outdir):
 	print  " TOTAL = ",CT
 	print  " Cls ",Cls
 	# clustering
-	from random import shuffle
+	pass#IMPORTIMPORTIMPORT from random import shuffle
 	order = range(N)
 	cnt = 0
 	change = True
@@ -8895,7 +8952,7 @@ def var_bydef(vol_stack, vol_list, info):
 	"""  var_bydef calculates variance from definition
 	"""
 	if type(vol_stack)==type(''):
-	    average = EMData()
+	    average = EMAN2_cppwrap.EMData()
 	    average.read_image( vol_stack, vol_list[0] )
 	else:
 	    average = vol_stack[ vol_list[0] ].copy()
@@ -8906,7 +8963,7 @@ def var_bydef(vol_stack, vol_list, info):
 	    info.write( "Calculating average:" ) 
 	    info.flush()
 	for ivol in vol_list: 
-		curt = EMData()
+		curt = EMAN2_cppwrap.EMData()
 		if type(vol_stack)==type(''): curt.read_image(vol_stack, ivol )
 		else:                       curt = vol_stack[ivol]
 		average += curt
@@ -8929,7 +8986,7 @@ def var_bydef(vol_stack, vol_list, info):
 		info.flush()
 	for ivol in vol_list:
 		if type(vol_stack)==type(''):
-			curt = EMData()
+			curt = EMAN2_cppwrap.EMData()
 			curt.read_image(vol_stack,ivol)
 		else:
 			curt = vol_stack[ivol].copy()
@@ -9027,7 +9084,7 @@ def linreg(X, Y):
 	det = Sxx * N - Sx * Sx
 	a, b = (Sxy * N - Sy * Sx)/det, (Sxx * Sy - Sx * Sxy)/det
 	"""
-	from math import sqrt
+	pass#IMPORTIMPORTIMPORT from math import sqrt
 	meanerror = residual = 0.0
 	for x, y in map(None, X, Y):
 		meanerror += (y - Sy/N)**2
@@ -9048,7 +9105,7 @@ def pearson(X, Y):
 	"""
 	  Pearson correlation coefficient between two lists
 	"""
-	from math import sqrt
+	pass#IMPORTIMPORTIMPORT from math import sqrt
 	Sx = Sy = Sxx = Syy = Sxy = 0.0
 	N = len(X)
 	for x, y in map(None, X, Y):
@@ -9057,7 +9114,7 @@ def pearson(X, Y):
 		Sxx += x*x
 		Syy += y*y
 		Sxy += x*y
-	return (Sxy - Sx * Sy / N) / sqrt((Sxx - Sx*Sx/N)*(Syy - Sy*Sy/N))
+	return (Sxy - Sx * Sy / N) / numpy.sqrt((Sxx - Sx*Sx/N)*(Syy - Sy*Sy/N))
 
 def table_stat(X):
 	"""
@@ -9089,16 +9146,16 @@ def get_power_spec(stack_file, start_particle, end_particle):
 	# computes the rotationally averaged power spectra of a series of images, e.g. a defocus group
 	# and averages these spectra into one spectrum for the whole set of images
 	# returns a list
-	from fundamentals import rops_table
-	from utilities import get_im
+	pass#IMPORTIMPORTIMPORT from fundamentals import rops_table
+	pass#IMPORTIMPORTIMPORT from utilities import get_im
 
-	ima = get_im(stack_file, start_particle)
-	PSrot_avg = rops_table(ima)
+	ima = utilities.get_im(stack_file, start_particle)
+	PSrot_avg = fundamentals.rops_table(ima)
 	nnn = len(PSrot_avg)
 	q= end_particle-start_particle+1
 	for i in range(start_particle+1, end_particle+1):
-		ima = get_im(stack_file, i)
-		PSrot = rops_table(ima)
+		ima = utilities.get_im(stack_file, i)
+		PSrot = fundamentals.rops_table(ima)
 		for y in range(nnn): PSrot_avg[y] += PSrot[y]
 	for y in range(nnn): PSrot_avg[y] /= q
 	return PSrot_avg
@@ -9118,7 +9175,7 @@ def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
 			b_factor: exponential factor
 			norm: normalization factor
 	"""
-	from math import log, sqrt, exp
+	pass#IMPORTIMPORTIMPORT from math import log, sqrt, exp
 	# pw 	    : a list containing the values of a power spectrum		
 	# lo_limit  : lower frequency threshold for minima search -> lt in freq. units
 	# hi_limit  : upper frequency threshold for minima search -> ut in freq. units
@@ -9137,15 +9194,15 @@ def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
 		for k in range(lt,ut+1):
 			if(pw[k-1] > pw[k] and pw[k+1] > pw[k]):
 				xx.append(pow(float(k)*0.5/nnn,2))
-				yy.append(log(pw[k]))	
+				yy.append(numpy.log(pw[k]))	
 		if (len(xx)==0):
 			for k in range(lt,ul+1):
 				xx.append(pow(float(k)*0.5/nnn,2))
-				yy.append(log(pw[k]))
+				yy.append(numpy.log(pw[k]))
 		else:
 			for k in range(ut,ul+1):
 				xx.append(pow(float(k)*0.5/nnn,2))
-				yy.append(log(pw[k]))
+				yy.append(numpy.log(pw[k]))
 		return 	linreg(xx, yy)
 
 	def get_ns_pw(pw_in,a,b):
@@ -9156,7 +9213,7 @@ def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
 		freq =[]
 		for k in range(nnn):
 			f = float(k)*0.5/nnn
-			pw_sub.append(pw_in[k]-exp(a*f*f+b))
+			pw_sub.append(pw_in[k]-numpy.exp(a*f*f+b))
 			freq.append(f)
 		return pw_sub,freq
 	
@@ -9185,7 +9242,7 @@ def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
 	for k in range(len(x2)): 
 		x_value = int(x2[k])		
 		xc.append(pow(float(x_value)*0.5/nnn,2))
-		y2.append(log(pw[x_value]))
+		y2.append(numpy.log(pw[x_value]))
 
 	a2,b2 = linreg(xc,y2)
 	pw_n2,freq2 = get_ns_pw(pw,a2,b2) # pw_n2 is the noise corrected power spectrum after 2nd run
@@ -9194,37 +9251,37 @@ def noise_corrected_PW(pw, lo_limit, hi_limit, abs_limit):
 
 class def_variancer(object):
 	def __init__(self, nx, ny, nz):
-		from utilities import model_blank
+		pass#IMPORTIMPORTIMPORT from utilities import model_blank
 		self.nimg = 0
-		self.sum1 = model_blank(nx, ny, nz)
+		self.sum1 = utilities.model_blank(nx, ny, nz)
 		self.imgs = []
 
 	def insert(self, img):
 		self.nimg += 1
-		Util.add_img(self.sum1, img)
+		EMAN2_cppwrap.Util.add_img(self.sum1, img)
 
 		self.imgs.append(img)
 
 	def mpi_getvar(self, myid, rootid):
-		from utilities import reduce_EMData_to_root, bcast_EMData_to_all
-		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT from utilities import reduce_EMData_to_root, bcast_EMData_to_all
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 		avg = self.sum1.copy()
 
-		reduce_EMData_to_root( avg, myid, rootid )
-		nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
+		utilities.reduce_EMData_to_root( avg, myid, rootid )
+		nimg = mpi.mpi_reduce( self.nimg, 1, mpi.MPI_INT, mpi.MPI_SUM, rootid, mpi.MPI_COMM_WORLD)
 
 		if myid==rootid:
 			nimg = int(nimg[0])
 			avg /= nimg
 
-		bcast_EMData_to_all( avg, myid, rootid )
+		utilities.bcast_EMData_to_all( avg, myid, rootid )
 
 		var = avg.copy()
 		var.to_zero()
 		for img in self.imgs:
-			Util.add_img2( var, Util.subn_img(img, avg) )
+			EMAN2_cppwrap.Util.add_img2( var, EMAN2_cppwrap.Util.subn_img(img, avg) )
 
-		reduce_EMData_to_root( var, myid, rootid )
+		utilities.reduce_EMData_to_root( var, myid, rootid )
 		if myid == rootid:
 			var /= (nimg-1)
 			var.set_attr( "nimg", nimg )
@@ -9234,14 +9291,14 @@ class def_variancer(object):
 
 
 	def mpi_getavg(self, myid, rootid ):
-		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
-		from utilities import reduce_EMData_to_root
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT from utilities import reduce_EMData_to_root
 
 		cpy1 = self.sum1.copy()
 
-		reduce_EMData_to_root( cpy1, myid, rootid )
+		utilities.reduce_EMData_to_root( cpy1, myid, rootid )
 		
-		nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
+		nimg = mpi.mpi_reduce( self.nimg, 1, mpi.MPI_INT, mpi.MPI_SUM, rootid, mpi.MPI_COMM_WORLD)
 		
 		if myid==rootid:
 			nimg = int( nimg[0] )
@@ -9253,8 +9310,8 @@ class def_variancer(object):
 		avg1 = self.sum1/self.nimg
 
 		tmp = avg1.copy()
-		Util.mul_img( tmp, avg1 )
-		Util.sub_img(avg2 , tmp)
+		EMAN2_cppwrap.Util.mul_img( tmp, avg1 )
+		EMAN2_cppwrap.Util.sub_img(avg2 , tmp)
 
 		avg2 *= (float(self.nimg)/float(self.nimg-1))
 		 
@@ -9266,7 +9323,7 @@ class def_variancer(object):
 
 class inc_variancer(object):
 	def __init__(self, nx, ny, nz):
-		import numpy
+		pass#IMPORTIMPORTIMPORT import numpy
 		self.nx = nx
 		self.ny = ny
 		self.nz = nz
@@ -9276,9 +9333,9 @@ class inc_variancer(object):
 		self.nimg = 0
 
 	def insert(self, img):
-		from numpy import reshape
-		from utilities import get_image_data
-		data = reshape( get_image_data(img), (self.ntot,) )
+		pass#IMPORTIMPORTIMPORT from numpy import reshape
+		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
+		data = numpy.reshape( utilities.get_image_data(img), (self.ntot,) )
 		self.sum1 += data
 		self.sum2 += (data*data)
 		self.nimg += 1
@@ -9286,23 +9343,23 @@ class inc_variancer(object):
 
 
 	def mpi_getvar(self, myid, rootid):
-		from utilities import memory_usage, get_image_data, model_blank
-		from mpi import mpi_reduce, MPI_DOUBLE, MPI_INT, MPI_SUM, MPI_COMM_WORLD
-		from numpy import reshape
+		pass#IMPORTIMPORTIMPORT from utilities import memory_usage, get_image_data, model_blank
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, MPI_DOUBLE, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT from numpy import reshape
 
 		cpy1 = self.sum1.copy()
 		cpy2 = self.sum2.copy()
-		sum1 = mpi_reduce( cpy1, self.ntot, MPI_DOUBLE, MPI_SUM, rootid, MPI_COMM_WORLD )
-		sum2 = mpi_reduce( cpy2, self.ntot, MPI_DOUBLE, MPI_SUM, rootid, MPI_COMM_WORLD )
-		sum_nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
+		sum1 = mpi.mpi_reduce( cpy1, self.ntot, mpi.MPI_DOUBLE, mpi.MPI_SUM, rootid, mpi.MPI_COMM_WORLD )
+		sum2 = mpi.mpi_reduce( cpy2, self.ntot, mpi.MPI_DOUBLE, mpi.MPI_SUM, rootid, mpi.MPI_COMM_WORLD )
+		sum_nimg = mpi.mpi_reduce( self.nimg, 1, mpi.MPI_INT, mpi.MPI_SUM, rootid, mpi.MPI_COMM_WORLD)
 		if myid==rootid:
 
 			nimg = int(sum_nimg[0])
 
-			avg = model_blank( self.nx, self.ny, self.nz )
-			var = model_blank( self.nx, self.ny, self.nz )
-			vdata = reshape( get_image_data(var), (self.ntot,) )
-			adata = reshape( get_image_data(avg), (self.ntot,) )
+			avg = utilities.model_blank( self.nx, self.ny, self.nz )
+			var = utilities.model_blank( self.nx, self.ny, self.nz )
+			vdata = numpy.reshape( utilities.get_image_data(var), (self.ntot,) )
+			adata = numpy.reshape( utilities.get_image_data(avg), (self.ntot,) )
 	
 			
 			for i in range(self.ntot):
@@ -9327,23 +9384,23 @@ class inc_variancer(object):
 		del sum2
 		del cpy1
 		del cpy2
-		return model_blank(self.nx,self.ny,self.nz), model_blank(self.nx,self.ny,self.nz)
+		return utilities.model_blank(self.nx,self.ny,self.nz), utilities.model_blank(self.nx,self.ny,self.nz)
 
 
 	def mpi_getavg(self, myid, rootid ):
-		from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
-		import numpy
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT import numpy
 
 		cpy1 = self.sum1.copy()
-		cpy1 = mpi_reduce(cpy1, ntot, MPI_DOUBLE, MPI_SUM, rootid, MPI_COMM_WORLD)
-		sum_nimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, rootid, MPI_COMM_WORLD)
+		cpy1 = mpi.mpi_reduce(cpy1, ntot, mpi.MPI_DOUBLE, mpi.MPI_SUM, rootid, mpi.MPI_COMM_WORLD)
+		sum_nimg = mpi.mpi_reduce( self.nimg, 1, mpi.MPI_INT, mpi.MPI_SUM, rootid, mpi.MPI_COMM_WORLD)
 		
 		if myid==rootid:
 			sum_nimg = int( sum_nimg[0] )
 			cpy1 /= sum_nimg
 
-			avg = model_blank( self.nx, self.ny, self.nz )
-			adata = get_image_data(var).reshape( [self.ntot] ).astype( numpy.float32 )
+			avg = utilities.model_blank( self.nx, self.ny, self.nz )
+			adata = utilities.get_image_data(numpy.var).reshape( [self.ntot] ).astype( numpy.float32 )
 
 			adata[0:self.ntot] = cpy1[0:self.ntot]
 			avg.set_attr( "nimg", sum_nimg )
@@ -9356,8 +9413,8 @@ class inc_variancer(object):
 		avg2 = self.sum2/self.nimg
 
 		tmp = avg1.copy()
-		Util.mul_img( tmp, avg1 )
-		Util.sub_img(avg2 , tmp)
+		EMAN2_cppwrap.Util.mul_img( tmp, avg1 )
+		EMAN2_cppwrap.Util.sub_img(avg2 , tmp)
 
 		avg2 *= (float(self.nimg)/float(self.nimg-1))
 		 
@@ -9383,16 +9440,16 @@ def cluster_pairwise(d, K):
 	  d  - lower half of the square matrix of pairwsie distances
 	  K  - number of classes
 	"""
-	from statistics import mono
-	from random import randint, shuffle
-	from math import sqrt
-	N = 1 + int((sqrt(1.0 + 8.0*len(d))-1.0)/2.0)
+	pass#IMPORTIMPORTIMPORT from statistics import mono
+	pass#IMPORTIMPORTIMPORT from random import randint, shuffle
+	pass#IMPORTIMPORTIMPORT from math import sqrt
+	N = 1 + int((numpy.sqrt(1.0 + 8.0*len(d))-1.0)/2.0)
 	if(N*(N-1)/2 != len(d)):
 		print("  incorrect dimension")
 		return
 	cent = [0]*K
 	assign = list(range(N))
-	shuffle(assign)
+	random.shuffle(assign)
 	for k in range(K):  cent[k] = assign[k]
 	# assign
 	assign = [0]*N
@@ -9438,7 +9495,7 @@ def cluster_pairwise(d, K):
 	return  assign,cent,disp,it
 	"""
 	# write out information
-	from utilities import write_text_file
+	pass#IMPORTIMPORTIMPORT from utilities import write_text_file
 	write_text_file(cent, "cent")
 	for k in xrange(K):
 		cent = []
@@ -9452,11 +9509,11 @@ def cluster_equalsize(d, m):
 	  d  - lower half of the square matrix of pairwsie distances
 	  m  - number of objects per class
 	"""
-	from statistics import mono
-	from random import randint, shuffle
-	from math import sqrt
+	pass#IMPORTIMPORTIMPORT from statistics import mono
+	pass#IMPORTIMPORTIMPORT from random import randint, shuffle
+	pass#IMPORTIMPORTIMPORT from math import sqrt
 	nd = d.get_xsize()
-	N = 1 + int((sqrt(1.0 + 8.0*nd)-1.0)/2.0)
+	N = 1 + int((numpy.sqrt(1.0 + 8.0*nd)-1.0)/2.0)
 	if(N*(N-1)/2 != nd):
 		print("  incorrect dimension")
 		return
@@ -9562,11 +9619,11 @@ def cluster_equalsize(d, m):
 
 class pcanalyzer(object):
 	def __init__(self, mask, nvec=3, incore=False, MPI=False, scratch=None):
-		import os
+		pass#IMPORTIMPORTIMPORT import os
 		self.mask = mask.copy()
 		if MPI:
-			from mpi import mpi_comm_rank, MPI_COMM_WORLD
-			self.myid = mpi_comm_rank( MPI_COMM_WORLD )
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, MPI_COMM_WORLD
+			self.myid = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
 			if( scratch == None):
 				self.file = os.path.join("." , "maskedimg%04d.bin" % self.myid )
 			else:
@@ -9590,7 +9647,7 @@ class pcanalyzer(object):
 		self.incore = incore
 
 	def writedat( self, data ):
-		import array
+		pass#IMPORTIMPORTIMPORT import array
 		if not self.incore:
 			if self.fw is None:
 				self.fw = open( self.file, "wb" )
@@ -9604,14 +9661,14 @@ class pcanalyzer(object):
 				self.myBuffPos += 1
 
 	def read_dat( self, data ):
-		from numpy import fromfile, float32
+		pass#IMPORTIMPORTIMPORT from numpy import fromfile, float32
 		if not self.incore:
 			if not(self.fw is None) and not( self.fw.closed ):
 				self.fw.close()
 			if self.fr is None:
 				self.fr = open( self.file, "rb" )
 			assert not(self.fr is None) and not self.fr.closed
-			Util.readarray( self.fr, data, self.ncov )
+			EMAN2_cppwrap.Util.readarray( self.fr, data, self.ncov )
 		else:
 			data[:] = self.myBuff[self.myBuffPos]
 			self.myBuffPos += 1
@@ -9640,7 +9697,7 @@ class pcanalyzer(object):
 				for iz in range(nz):
 					if( self.mask.get_value_at(ix,iy,iz) >= 0.5 ):
 						self.ncov += 1
-		import os
+		pass#IMPORTIMPORTIMPORT import os
 		size = os.stat( self.file )[6]
 		self.nimg = size/(self.ncov*4)
 		assert self.nimg * self.ncov*4 == size
@@ -9648,16 +9705,16 @@ class pcanalyzer(object):
 
 	def shuffle( self ):
 		assert self.bufused
-		from random import shuffle, seed
-		from numpy  import zeros, float32, array
-		from string import replace
-		seed( 10000 + 10*self.myid )
+		pass#IMPORTIMPORTIMPORT from random import shuffle, seed
+		pass#IMPORTIMPORTIMPORT from numpy  import zeros, float32, array
+		pass#IMPORTIMPORTIMPORT from string import replace
+		random.seed( 10000 + 10*self.myid )
 
-		shfflfile = replace( self.file, "masked", "shuffled" )
+		shfflfile = string.replace( self.file, "masked", "shuffled" )
 
 		#print self.myid, "shuffling"
-		sumdata = zeros( (self.ncov), float32 )
-		imgdata = zeros( (self.ncov), float32 )
+		sumdata = numpy.zeros( (self.ncov), numpy.float32 )
+		imgdata = numpy.zeros( (self.ncov), numpy.float32 )
 		if not self.incore: 
 			self.fr = open( self.file, "rb" )
 		self.avgdata = None
@@ -9666,7 +9723,7 @@ class pcanalyzer(object):
 			fw = open( shfflfile, "wb" )
 		for i in range(self.nimg):
 			self.read_dat( imgdata )
-			shuffle( imgdata )
+			random.shuffle( imgdata )
 			sumdata += imgdata
 			if not self.incore:
 				imgdata.tofile( fw )
@@ -9680,13 +9737,13 @@ class pcanalyzer(object):
 			self.close_dat()
 		
 		if self.MPI:
-			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
-			sumdata = mpi_reduce( sumdata, self.ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
-			sumdata = mpi_bcast(  sumdata, self.ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
-			sumdata = array(sumdata, float32)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+			sumdata = mpi.mpi_reduce( sumdata, self.ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
+			sumdata = mpi.mpi_bcast(  sumdata, self.ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
+			sumdata = numpy.array(sumdata, numpy.float32)
  
-			sumnimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
-			sumnimg = mpi_bcast(  sumnimg,   1, MPI_INT, 0, MPI_COMM_WORLD )
+			sumnimg = mpi.mpi_reduce( self.nimg, 1, mpi.MPI_INT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
+			sumnimg = mpi.mpi_bcast(  sumnimg,   1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD )
 		else:
 			sumnimg = self.nimg
 
@@ -9697,11 +9754,11 @@ class pcanalyzer(object):
 
 
 	def setavg( self, avg ):
-		from numpy import zeros, float32
-		from utilities import get_image_data
-		tmpimg = Util.compress_image_mask( avg, self.mask )
-		avgdat = get_image_data(tmpimg)
-		self.avgdat = zeros( (len(avgdat)), float32 )
+		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32
+		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
+		tmpimg = EMAN2_cppwrap.Util.compress_image_mask( avg, self.mask )
+		avgdat = utilities.get_image_data(tmpimg)
+		self.avgdat = numpy.zeros( (len(avgdat)), numpy.float32 )
 		self.avgdat[:] = avgdat[:]
 
 	def insert( self, img ):
@@ -9709,9 +9766,9 @@ class pcanalyzer(object):
 		assert self.mask.get_ysize()==img.get_ysize()
 		assert self.mask.get_zsize()==img.get_zsize()
 
-		from utilities import get_image_data
-		tmpimg = Util.compress_image_mask( img, self.mask )
-		tmpdat = get_image_data(tmpimg)
+		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
+		tmpimg = EMAN2_cppwrap.Util.compress_image_mask( img, self.mask )
+		tmpdat = utilities.get_image_data(tmpimg)
 		if self.incore:
 			self.myBuffPos = len(self.myBuff)
 		self.writedat( tmpdat )
@@ -9723,40 +9780,40 @@ class pcanalyzer(object):
 	def analyze( self ):
 		#if self.myid==0:
 		#	print "analyze: ", self.ncov, " nvec: ", self.nvec
-		from time import time
-		from numpy import zeros, float32, int32, int64
+		pass#IMPORTIMPORTIMPORT from time import time
+		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32, int32, int64
 		ncov = self.ncov
 		kstep = self.nvec + 20 # the choice of kstep is purely heuristic
 
-		diag    = zeros( (kstep), float32 )
-		subdiag = zeros( (kstep), float32 )
-		vmat    = zeros( (kstep, ncov), float32 )
+		diag    = numpy.zeros( (kstep), numpy.float32 )
+		subdiag = numpy.zeros( (kstep), numpy.float32 )
+		vmat    = numpy.zeros( (kstep, ncov), numpy.float32 )
 
-		lanczos_start = time()
+		lanczos_start = time.time()
 		kstep = self.lanczos( kstep, diag, subdiag, vmat )
 		#print 'time for lanczos: ', time() - lanczos_start
 		if not self.MPI or self.myid==0:
-			qmat = zeros( (kstep,kstep), float32 )
+			qmat = numpy.zeros( (kstep,kstep), numpy.float32 )
 			lfwrk = 100 + 4*kstep + kstep*kstep
 			liwrk =   3 + 5*kstep
 
-			fwork = zeros( (lfwrk), float32 )
-			iwork = zeros( (liwrk), int32 )
-			info = Util.sstevd( "V", kstep, diag, subdiag, qmat, kstep, fwork, lfwrk, iwork, liwrk)
+			fwork = numpy.zeros( (lfwrk), numpy.float32 )
+			iwork = numpy.zeros( (liwrk), numpy.int32 )
+			info = EMAN2_cppwrap.Util.sstevd( "V", kstep, diag, subdiag, qmat, kstep, fwork, lfwrk, iwork, liwrk)
 
-			eigval = zeros( (self.nvec), float32 )
+			eigval = numpy.zeros( (self.nvec), numpy.float32 )
 			for j in range(self.nvec):
 				eigval[j] = diag[kstep-j-1]
 
-			from utilities import model_blank, get_image_data
+			pass#IMPORTIMPORTIMPORT from utilities import model_blank, get_image_data
 			eigimgs = []
 			for j in range(self.nvec):
-				tmpimg = model_blank(ncov, 1, 1)
-				eigvec = get_image_data( tmpimg )
+				tmpimg = utilities.model_blank(ncov, 1, 1)
+				eigvec = utilities.get_image_data( tmpimg )
 				trans = 'N'
-				Util.sgemv( trans, ncov, kstep, 1.0, vmat, ncov, qmat[kstep-j-1], 1, 0.0, eigvec, 1 );
+				EMAN2_cppwrap.Util.sgemv( trans, ncov, kstep, 1.0, vmat, ncov, qmat[kstep-j-1], 1, 0.0, eigvec, 1 );
 
-				eigimg = Util.reconstitute_image_mask(tmpimg, self.mask)
+				eigimg = EMAN2_cppwrap.Util.reconstitute_image_mask(tmpimg, self.mask)
 				eigimg.set_attr( "eigval", float(eigval[j])/(self.nimg - 1) )
 				eigimgs.append( eigimg )
 
@@ -9764,48 +9821,48 @@ class pcanalyzer(object):
 
 
 	def lanczos( self, kstep, diag, subdiag, V ):
-		from numpy import zeros, float32, array
-		from time import time
+		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32, array
+		pass#IMPORTIMPORTIMPORT from time import time
 
-		all_start = time()
+		all_start = time.time()
 
 		ncov = self.ncov
-		v0 = zeros( (ncov), float32)
-		Av = zeros( (ncov), float32)
+		v0 = numpy.zeros( (ncov), numpy.float32)
+		Av = numpy.zeros( (ncov), numpy.float32)
 
-		hvec = zeros( (kstep), float32 )
-		htmp = zeros( (kstep), float32 )
-		imgdata = zeros( (ncov), float32 )
+		hvec = numpy.zeros( (kstep), numpy.float32 )
+		htmp = numpy.zeros( (kstep), numpy.float32 )
+		imgdata = numpy.zeros( (ncov), numpy.float32 )
 
 		for i in range(ncov):
 			v0[i] = 1.0
 
-		beta = Util.snrm2(ncov, v0, 1)
+		beta = EMAN2_cppwrap.Util.snrm2(ncov, v0, 1)
 		for i in range(ncov):
 			V[0][i] = v0[i]/beta
 
 		for i in range(self.nimg):
 			self.read_dat(imgdata)                                     #  READ_DAT			
-			alpha = Util.sdot( ncov, imgdata, 1, V[0], 1 )
-			Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
+			alpha = EMAN2_cppwrap.Util.sdot( ncov, imgdata, 1, V[0], 1 )
+			EMAN2_cppwrap.Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
 		self.close_dat()
 
 		if self.MPI:
-			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
-			Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
-			Av = mpi_bcast(  Av, ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
-			Av = array(Av, float32)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
+			Av = mpi.mpi_reduce( Av, ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
+			Av = mpi.mpi_bcast(  Av, ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
+			Av = numpy.array(Av, numpy.float32)
 		#print 'iter 0: ', time() - all_start
 
 
-		diag[0] = Util.sdot( ncov, V[0], 1, Av, 1 )
+		diag[0] = EMAN2_cppwrap.Util.sdot( ncov, V[0], 1, Av, 1 )
 		alpha = -diag[0]
-		Util.saxpy( ncov, float(alpha), V[0], 1, Av, 1 )
+		EMAN2_cppwrap.Util.saxpy( ncov, float(alpha), V[0], 1, Av, 1 )
 
 		TOL = 1.0e-7
 		for iter in range(1, kstep):
-			iter_start = time()
-			beta = Util.snrm2(ncov, Av, 1)
+			iter_start = time.time()
+			beta = EMAN2_cppwrap.Util.snrm2(ncov, Av, 1)
 			if( beta < TOL ):
 				kstep = iter+1
 				break
@@ -9818,32 +9875,32 @@ class pcanalyzer(object):
 
 			for i in range(self.nimg):
 				self.read_dat( imgdata )                                #READ_DAT
-				alpha = Util.sdot( ncov, imgdata, 1, V[iter], 1 )
-				Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
+				alpha = EMAN2_cppwrap.Util.sdot( ncov, imgdata, 1, V[iter], 1 )
+				EMAN2_cppwrap.Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
 			self.close_dat()
 
 
 			if self.MPI:
-				Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
-				Av = mpi_bcast(  Av, ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
-				Av = array(Av, float32)
+				Av = mpi.mpi_reduce( Av, ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
+				Av = mpi.mpi_bcast(  Av, ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
+				Av = numpy.array(Av, numpy.float32)
 
 			trans = 'T'
-			Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
 			              0.0, hvec, 1 )
 
 			trans = 'N'
-			Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, hvec, 1,
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, hvec, 1,
 			              1.0,     Av, 1 )
 
 			trans = 'T'
-			Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
 			              0.0,   htmp, 1 )
 
-			Util.saxpy(iter+1, 1.0, htmp, 1, hvec, 1)
+			EMAN2_cppwrap.Util.saxpy(iter+1, 1.0, htmp, 1, hvec, 1)
 
 			trans = 'N'
-			Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, htmp, 1,
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, htmp, 1,
 			              1.0,     Av, 1 )
 
 			diag[iter] = hvec[iter]
@@ -9855,11 +9912,11 @@ class pcanalyzer(object):
 
 class pcanalyzebck(object):
 	def __init__(self, mask, nvec, dataw, list_of_particles, dm, variance, fl, aa, MPI=False ):
-		import os
+		pass#IMPORTIMPORTIMPORT import os
 		self.mask = mask.copy()
 		if MPI:
-			from mpi import mpi_comm_rank, MPI_COMM_WORLD
-			self.myid = mpi_comm_rank( MPI_COMM_WORLD )
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, MPI_COMM_WORLD
+			self.myid = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
 			"""
 			if( scratch == None):
 				self.file = os.path.join(sdir , "maskedimg%04d.bin" % self.myid )
@@ -9892,7 +9949,7 @@ class pcanalyzebck(object):
 
 	"""
 	def writedat( self, data ):
-		import array
+		pass#IMPORTIMPORTIMPORT import array
 
 		if self.fw is None:
 			self.fw = open( self.file, "wb" )
@@ -9900,7 +9957,7 @@ class pcanalyzebck(object):
 		data.tofile( self.fw )
 
 	def read_dat( self, data ):
-		from numpy import fromfile, float32
+		pass#IMPORTIMPORTIMPORT from numpy import fromfile, float32
 		if not(self.fw is None) and not( self.fw.closed ):
 			self.fw.close()
 
@@ -9910,18 +9967,18 @@ class pcanalyzebck(object):
 			data -= self.avgdat
 	"""
 	def get_dat( self, k ):
-		from reconstruction import backproject_swbp
-		from filter  import filt_tanl
-		vb = Util.divn_img(backproject_swbp(self.dataw[k], self.list_of_particles[k], self.dm), self.variance)
+		pass#IMPORTIMPORTIMPORT from reconstruction import backproject_swbp
+		pass#IMPORTIMPORTIMPORT from filter  import filt_tanl
+		vb = EMAN2_cppwrap.Util.divn_img(reconstruction.backproject_swbp(self.dataw[k], self.list_of_particles[k], self.dm), self.variance)
 		if(self.fl > 0.0):
-			vb = filt_tanl(vb, self.fl, self.aa)
+			vb = filter.filt_tanl(vb, self.fl, self.aa)
 		#vb -= pc[0]
 		#vb *= (refstat[1]/pc[1])
-		from numpy import zeros, float32
-		from utilities import get_image_data
+		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32
+		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
 
-		tmpimg = Util.compress_image_mask( vb, self.mask )
-		data = get_image_data(tmpimg)
+		tmpimg = EMAN2_cppwrap.Util.compress_image_mask( vb, self.mask )
+		data = utilities.get_image_data(tmpimg)
 		if not(self.avgdat is None):
 			data -= self.avgdat
 		return data
@@ -9946,9 +10003,9 @@ class pcanalyzebck(object):
 	"""
 	def shuffle( self ):
 		assert self.bufused
-		from random import shuffle, seed
-		from numpy  import zeros, float32, array
-		from string import replace
+		pass#IMPORTIMPORTIMPORT from random import shuffle, seed
+		pass#IMPORTIMPORTIMPORT from numpy  import zeros, float32, array
+		pass#IMPORTIMPORTIMPORT from string import replace
 		seed( 10000 + 10*self.myid )
 
 		shfflfile = replace( self.file, "masked", "shuffled" )
@@ -9970,7 +10027,7 @@ class pcanalyzebck(object):
 		fw.close()
 
 		if self.MPI:
-			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 			sumdata = mpi_reduce( sumdata, self.ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
 			sumdata = mpi_bcast(  sumdata, self.ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
 			sumdata = array(sumdata, float32)
@@ -9984,11 +10041,11 @@ class pcanalyzebck(object):
 	"""
 
 	def setavg( self, avg ):
-		from numpy import zeros, float32
-		from utilities import get_image_data
-		tmpimg = Util.compress_image_mask( avg, self.mask )
-		avgdat = get_image_data(tmpimg)
-		self.avgdat = zeros( (len(avgdat)), float32 )
+		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32
+		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
+		tmpimg = EMAN2_cppwrap.Util.compress_image_mask( avg, self.mask )
+		avgdat = utilities.get_image_data(tmpimg)
+		self.avgdat = numpy.zeros( (len(avgdat)), numpy.float32 )
 		self.avgdat[:] = avgdat[:]
 
 	"""
@@ -9997,7 +10054,7 @@ class pcanalyzebck(object):
 		assert self.mask.get_ysize()==img.get_ysize()
 		assert self.mask.get_zsize()==img.get_zsize()
 
-		from utilities import get_image_data
+		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
 		tmpimg = Util.compress_image_mask( img, self.mask )
 		tmpdat = get_image_data(tmpimg)
 		self.writedat( tmpdat )                                   #   WRITEDAT
@@ -10007,41 +10064,41 @@ class pcanalyzebck(object):
 	def analyze( self ):
 		if self.myid==0:
 			print("analyze: ", self.ncov, " nvec: ", self.nvec)
-		from time import time
-		from numpy import zeros, float32, int32, int64
+		pass#IMPORTIMPORTIMPORT from time import time
+		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32, int32, int64
 		ncov = self.ncov
 		kstep = self.nvec + 20 # the choice of kstep is purely heuristic
 
-		diag    = zeros( (kstep), float32 )
-		subdiag = zeros( (kstep), float32 )
-		vmat    = zeros( (kstep, ncov), float32 )
+		diag    = numpy.zeros( (kstep), numpy.float32 )
+		subdiag = numpy.zeros( (kstep), numpy.float32 )
+		vmat    = numpy.zeros( (kstep, ncov), numpy.float32 )
 
-		lanczos_start = time()
+		lanczos_start = time.time()
 		kstep = self.lanczos( kstep, diag, subdiag, vmat )
-		print('time for lanczos: ', time() - lanczos_start)
+		print('time for lanczos: ', time.time() - lanczos_start)
 
 		if not self.MPI or self.myid==0:
-			qmat = zeros( (kstep,kstep), float32 )
+			qmat = numpy.zeros( (kstep,kstep), numpy.float32 )
 			lfwrk = 100 + 4*kstep + kstep*kstep
 			liwrk =   3 + 5*kstep
 
-			fwork = zeros( (lfwrk), float32 )
-			iwork = zeros( (liwrk), int32 )
-			info = Util.sstevd( "V", kstep, diag, subdiag, qmat, kstep, fwork, lfwrk, iwork, liwrk)
+			fwork = numpy.zeros( (lfwrk), numpy.float32 )
+			iwork = numpy.zeros( (liwrk), numpy.int32 )
+			info = EMAN2_cppwrap.Util.sstevd( "V", kstep, diag, subdiag, qmat, kstep, fwork, lfwrk, iwork, liwrk)
 
-			eigval = zeros( (self.nvec), float32 )
+			eigval = numpy.zeros( (self.nvec), numpy.float32 )
 			for j in range(self.nvec):
 				eigval[j] = diag[kstep-j-1]
 
-			from utilities import model_blank, get_image_data
+			pass#IMPORTIMPORTIMPORT from utilities import model_blank, get_image_data
 			eigimgs = []
 			for j in range(self.nvec):
-				tmpimg = model_blank(ncov, 1, 1)
-				eigvec = get_image_data( tmpimg )
+				tmpimg = utilities.model_blank(ncov, 1, 1)
+				eigvec = utilities.get_image_data( tmpimg )
 				trans = 'N'
-				Util.sgemv( trans, ncov, kstep, 1.0, vmat, ncov, qmat[kstep-j-1], 1, 0.0, eigvec, 1 );
+				EMAN2_cppwrap.Util.sgemv( trans, ncov, kstep, 1.0, vmat, ncov, qmat[kstep-j-1], 1, 0.0, eigvec, 1 );
 
-				eigimg = Util.reconstitute_image_mask(tmpimg, self.mask)
+				eigimg = EMAN2_cppwrap.Util.reconstitute_image_mask(tmpimg, self.mask)
 				eigimg.set_attr( "eigval", float(eigval[j]) )
 				eigimgs.append( eigimg )
 
@@ -10049,22 +10106,22 @@ class pcanalyzebck(object):
 
 
 	def lanczos( self, kstep, diag, subdiag, V ):
-		from numpy import zeros, float32, array
-		from time import time
-		all_start = time()
+		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32, array
+		pass#IMPORTIMPORTIMPORT from time import time
+		all_start = time.time()
 	
 		ncov = self.ncov
-		v0 = zeros( (ncov), float32)
-		Av = zeros( (ncov), float32)
+		v0 = numpy.zeros( (ncov), numpy.float32)
+		Av = numpy.zeros( (ncov), numpy.float32)
 
-		hvec = zeros( (kstep), float32 )
-		htmp = zeros( (kstep), float32 )
-		imgdata = zeros( (ncov), float32 )
+		hvec = numpy.zeros( (kstep), numpy.float32 )
+		htmp = numpy.zeros( (kstep), numpy.float32 )
+		imgdata = numpy.zeros( (ncov), numpy.float32 )
 	
 		for i in range(ncov):
 			v0[i] = 1.0
 
-		beta = Util.snrm2(ncov, v0, 1)
+		beta = EMAN2_cppwrap.Util.snrm2(ncov, v0, 1)
 		for i in range(ncov):
 			V[0][i] = v0[i]/beta
 
@@ -10072,26 +10129,26 @@ class pcanalyzebck(object):
 		for i in range(self.nimg):
 			#self.read_dat(imgdata)                                     #  READ_DAT
 			imgdata = self.get_dat(i)
-			alpha = Util.sdot( ncov, imgdata, 1, V[0], 1 )
-			Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
+			alpha = EMAN2_cppwrap.Util.sdot( ncov, imgdata, 1, V[0], 1 )
+			EMAN2_cppwrap.Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
 		#self.fr.close()
 
 		if self.MPI:
-			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
-			Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
-			Av = mpi_bcast(  Av, ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
-			Av = array(Av, float32)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
+			Av = mpi.mpi_reduce( Av, ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
+			Av = mpi.mpi_bcast(  Av, ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
+			Av = numpy.array(Av, numpy.float32)
 		#print 'iter 0: ', time() - all_start
 
 
-		diag[0] = Util.sdot( ncov, V[0], 1, Av, 1 )
+		diag[0] = EMAN2_cppwrap.Util.sdot( ncov, V[0], 1, Av, 1 )
 		alpha = -diag[0]
-		Util.saxpy( ncov, float(alpha), V[0], 1, Av, 1 )
+		EMAN2_cppwrap.Util.saxpy( ncov, float(alpha), V[0], 1, Av, 1 )
 
 		TOL = 1.0e-7
 		for iter in range(1, kstep):
-			iter_start = time()
-			beta = Util.snrm2(ncov, Av, 1)
+			iter_start = time.time()
+			beta = EMAN2_cppwrap.Util.snrm2(ncov, Av, 1)
 			if( beta < TOL ):
 				kstep = iter+1
 				break
@@ -10106,43 +10163,43 @@ class pcanalyzebck(object):
 			for i in range(self.nimg):
 				#self.read_dat( imgdata )                                #READ_DAT
 				imgdata = self.get_dat( i)
-				alpha = Util.sdot( ncov, imgdata, 1, V[iter], 1 )
-				Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
+				alpha = EMAN2_cppwrap.Util.sdot( ncov, imgdata, 1, V[iter], 1 )
+				EMAN2_cppwrap.Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
 			#self.fr.close()
 
 
 			if self.MPI:
-				Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
-				Av = mpi_bcast(  Av, ncov, MPI_FLOAT, 0, MPI_COMM_WORLD )
-				Av = array(Av, float32)
+				Av = mpi.mpi_reduce( Av, ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
+				Av = mpi.mpi_bcast(  Av, ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
+				Av = numpy.array(Av, numpy.float32)
 
 			trans = 'T'
-			Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
 			              0.0, hvec, 1 )
 
 			trans = 'N'
-			Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, hvec, 1,
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, hvec, 1,
 			              1.0,     Av, 1 )
 
 			trans = 'T'
-			Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
 			              0.0,   htmp, 1 )
 
-			Util.saxpy(iter+1, 1.0, htmp, 1, hvec, 1)
+			EMAN2_cppwrap.Util.saxpy(iter+1, 1.0, htmp, 1, hvec, 1)
 
 			trans = 'N'
-			Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, htmp, 1,
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, htmp, 1,
 			              1.0,     Av, 1 )
 
 			diag[iter] = hvec[iter]
 
-			print('iter, time, overall_time: ', iter, time()-iter_start, time()-all_start)
+			print('iter, time, overall_time: ', iter, time.time()-iter_start, time.time()-all_start)
 		return kstep
 
 
 
 def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1,do_mpi=False, K=-1,cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
-	from statistics import k_means_match_clusters_asg_new
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_match_clusters_asg_new
 	"""
 		
 		Input:
@@ -10230,8 +10287,8 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 	
 	"""
 	
-	from copy import deepcopy
-	from numpy import array, append
+	pass#IMPORTIMPORTIMPORT from copy import deepcopy
+	pass#IMPORTIMPORTIMPORT from numpy import array, append
 
 	MATCH=[]
 	np = len(PART)
@@ -10272,7 +10329,7 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 					# pad with empty arrays
 					df = maxK - len(PART[i])
 					for pd in range(df):
-						PART[i].append(array([garbage_value, garbage_value+1],'int32'))
+						PART[i].append(numpy.array([garbage_value, garbage_value+1],'int32'))
 						garbage_value = garbage_value + 2
 						
 		# now call 
@@ -10315,7 +10372,7 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 					CT_s[kk] += 1
 					stb.append(i + vmin)
 
-		STB_PART[kk] = deepcopy(stb)
+		STB_PART[kk] = copy.deepcopy(stb)
 
 	for k in range(K):
 		if CT_t[k] == 0: continue
@@ -10336,7 +10393,7 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 # DO NOT copy memory - could lead to crashes	
 # This is the wrapper function for bb_enumerateMPI. It packages the arguments and formats the output....
 def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesses=5, branchfunc=2, LIM=-1, DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1, c_dim=[],N_start=-1, N_stop=-1, topMatches=[]):	
-	from numpy import array, append, insert,sort
+	pass#IMPORTIMPORTIMPORT from numpy import array, append, insert,sort
 	
 	MATCH=[]
 	output=[]
@@ -10386,7 +10443,7 @@ def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesse
 				# pad with empty arrays
 				df = max_K - len(PART[i])
 				for j in range(df):
-					PART[i].append(array([garbage_value, garbage_value+1],'int32'))
+					PART[i].append(numpy.array([garbage_value, garbage_value+1],'int32'))
 					garbage_value = garbage_value + 2	
 					
 		
@@ -10415,12 +10472,12 @@ def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesse
 				
 				#ar_argParts = append(ar_argParts,[j,0])
 				#ar_argParts=append(ar_argParts,PART[i][j])
-		ar_argParts = array(onedParts,'int32')
-		ar_class_dim = array(class_dim,'int32')
+		ar_argParts = numpy.array(onedParts,'int32')
+		ar_class_dim = numpy.array(class_dim,'int32')
 		
 
 		# Single processor version
-		output = Util.bb_enumerateMPI(ar_argParts, ar_class_dim,np,K,T, nguesses,LARGEST_CLASS, J, max_branching, stmult, branchfunc, LIM)
+		output = EMAN2_cppwrap.Util.bb_enumerateMPI(ar_argParts, ar_class_dim,np,K,T, nguesses,LARGEST_CLASS, J, max_branching, stmult, branchfunc, LIM)
 		
 	# first element of output is the total  cost of the solution, second element is the number of matches
 	# in the output solution, and then follows the list of matches.
@@ -10430,7 +10487,7 @@ def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesse
 	
 	for j in range(num_matches):
 		# get the j-th match
-		ar_match = array(output[j*np + 2: j*np + 2+np],'int32')
+		ar_match = numpy.array(output[j*np + 2: j*np + 2+np],'int32')
 		MATCH.append(ar_match)
 		
 	# order Matches in Match by group in first partition
@@ -10450,8 +10507,8 @@ def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesse
 # match is a list, where every five tuple corresponds to a match
 def k_means_stab_getinfo(PART, match):
 	
-	from copy import deepcopy
-	from numpy import array
+	pass#IMPORTIMPORTIMPORT from copy import deepcopy
+	pass#IMPORTIMPORTIMPORT from numpy import array
 	K=len(PART[0])
 	np = len(PART)
 	
@@ -10464,7 +10521,7 @@ def k_means_stab_getinfo(PART, match):
 		sys.exit()
 	num_matches = len_match/np
 	for i in range(num_matches):
-		MATCH.append(array(match[i*np:(i+1)*np]))
+		MATCH.append(numpy.array(match[i*np:(i+1)*np]))
 	
 	STB_PART = [[] for i in range(K)]
 	nm       = len(MATCH)
@@ -10500,7 +10557,7 @@ def k_means_stab_getinfo(PART, match):
 					CT_s[kk] += 1
 					stb.append(i + vmin)
 
-		STB_PART[kk] = deepcopy(stb)
+		STB_PART[kk] = copy.deepcopy(stb)
 
 	for k in range(K):
 		if CT_t[k] == 0: continue
@@ -10533,28 +10590,28 @@ def fit_ctf(crossresolution, ctf_params, rangedef = -1.0, i1 = 0, i2 = 0, chisqu
 	"""
 		ctf_params = [defocus, cs, voltage, apix, bfactor, ampcont]
 	"""
-	from math import copysign
-	from morphology import ctf_1d
-	from utilities import generate_ctf
+	pass#IMPORTIMPORTIMPORT from math import copysign
+	pass#IMPORTIMPORTIMPORT from morphology import ctf_1d
+	pass#IMPORTIMPORTIMPORT from utilities import generate_ctf
 	n = len(crossresolution[1])
 	if(i2 <= i1):  i2 = n
 	nx = 2*n
 	if(rangedef == -1.0): rangedef = ctf_params[0]*0.1
 	sgncrs = [0.0]*n
-	for i in range(n):  sgncrs[i] = copysign(1.0, crossresolution[1][i])
+	for i in range(n):  sgncrs[i] = numpy.copysign(1.0, crossresolution[1][i])
 	
 	qt = 1.0e23
 	nstep = 21
 	for j in range(21):
 		defi = ctf_params[0]-rangedef + rangedef*0.1*j
-		ctf = ctf_1d(nx, generate_ctf([defi]+ctf_params[1:]))
+		ctf = morphology.ctf_1d(nx, utilities.generate_ctf([defi]+ctf_params[1:]))
 		disc = 0.0
 		if chisquare:
 			for k in range(i1,i2):
-				disc += ((sgncrs[k] - copysign(1.0, ctf[k]))/crossresolution[2][k])**2
+				disc += ((sgncrs[k] - numpy.copysign(1.0, ctf[k]))/crossresolution[2][k])**2
 		else:
 			for k in range(i1,i2):
-				disc += (sgncrs[k] - copysign(1.0, ctf[k]))**2
+				disc += (sgncrs[k] - numpy.copysign(1.0, ctf[k]))**2
 		if( disc < qt):
 			best_def = defi
 			qt = disc
@@ -10566,12 +10623,12 @@ def randprojdir(ang, sigma):
 		ang - projection directions in rows
 		output - same as ang, but with first two positions (phi, theta) dispersed using gaussian noise with sigma
 	"""
-	import random as rdq
+	pass#IMPORTIMPORTIMPORT import random as rdq
 	l = len(ang[0])
 	aout = []
 	for n in range(len(ang)):
-		t = Transform({"type":"spider","phi":ang[n][0],"theta":ang[n][1],"psi":0.0})
-		r = Transform({"type":"spider","phi":rdq.random()*360.0,"theta":abs(rdq.gauss(0.0,sigma)),"psi":0.0})
+		t = EMAN2_cppwrap.Transform({"type":"spider","phi":ang[n][0],"theta":ang[n][1],"psi":0.0})
+		r = EMAN2_cppwrap.Transform({"type":"spider","phi":rdq.random()*360.0,"theta":abs(rdq.gauss(0.0,sigma)),"psi":0.0})
 		r = r*t
 		d = r.get_params("spider")
 		aout.append([d["phi"],d["theta"]] + [ang[n][k] for k in range(2,l)])

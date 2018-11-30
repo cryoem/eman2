@@ -32,17 +32,31 @@ from __future__ import print_function
 #
 #
 
-
-import os, sys
 import global_def
-from   global_def     import *
-from   user_functions import *
-from   optparse       import OptionParser
+import mpi
+import optparse
+import os
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import development
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import user_functions
+pass#IMPORTIMPORTIMPORT import utilities
+
+pass#IMPORTIMPORTIMPORT import os, sys
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def     import *
+pass#IMPORTIMPORTIMPORT from   user_functions import *
+pass#IMPORTIMPORTIMPORT from   optparse       import OptionParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --Fourvar --th_err=threshold_cutoff --ali=kind_of_alignment --center=center_type"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--ou",       type="int",        default=-1,             help="outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
 	parser.add_option("--xr",       type="string",       default="4 2",      help="range for translation search in x direction, search is +/xr ")
 	parser.add_option("--ts",       type="string",       default="2 1", help="step of translation search in both directions")
@@ -65,22 +79,22 @@ def main():
     		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv),sys.argv)		
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init
+			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)		
 
 		global_def.BATCH = True
-		from development import mref_alignment
+		pass#IMPORTIMPORTIMPORT from development import mref_alignment
 		mref_alignment(args[0], args[1], args[2], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, 
 				options.Fourvar, options.Ng, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		global_def.BATCH = False
 		
 		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+			mpi.mpi_finalize()
 
 if __name__ == "__main__":
 	main()

@@ -32,12 +32,26 @@ from __future__ import print_function
 #
 #
 
-
-import os
+import applications
 import global_def
-from global_def import *
-from optparse import OptionParser
+import mpi
+import optparse
+import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 def main():
 	arglist = []
 	i = 0
@@ -53,7 +67,7 @@ def main():
 	usage = progname + " stack ref_vols outdir <mask> --focus=3Dmask --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step " +\
 	" --delta=angular_step --an=angular_neighborhood --center=1 --nassign=reassignment_number --nrefine=alignment_number --maxit=max_iter --stoprnct=percentage_to_stop " + \
 	" --debug --fourvar=fourier_variance --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --MPI --kmeans"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--focus",    type="string",       default=None,             help="3D mask for focused clustering ")
 	parser.add_option("--ir",       type= "int",         default=1, 	           help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",         default="-1",	           help="outer radius for rotational correlation <nx-1 (set to the radius of the particle)")
@@ -93,16 +107,16 @@ def main():
 			maskfile = args[3]
 
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 		
 		global_def.BATCH = True
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv),sys.argv)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init
+			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
 			if options.kmeans:
-				from applications import Kmref_ali3d_MPI
-				Kmref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
+				pass#IMPORTIMPORTIMPORT from applications import Kmref_ali3d_MPI
+				applications.Kmref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
 				options.xr, options.yr, options.ts, options.delta, options.an, options.center, \
 				options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, \
 				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm=None, log=None)
@@ -110,28 +124,28 @@ def main():
 				if( options.nassign != 0):
 					print("  Setting nassign to zero")
 					options.nassign = 0
-				from applications import Kmref2_ali3d_MPI
-				Kmref2_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
+				pass#IMPORTIMPORTIMPORT from applications import Kmref2_ali3d_MPI
+				applications.Kmref2_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
 				options.xr, options.yr, options.ts, options.delta, options.an, options.center, \
 				options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, \
 				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm=None, log=None)
 			else:
-				from applications import mref_ali3d_MPI
-				mref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
+				pass#IMPORTIMPORTIMPORT from applications import mref_ali3d_MPI
+				applications.mref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
 				options.xr, options.yr, options.ts, options.delta, options.an, options.center, \
 				options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, \
 				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm = None, log = None)
 		else:
-			from applications import mref_ali3d
-			mref_ali3d(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, 
+			pass#IMPORTIMPORTIMPORT from applications import mref_ali3d
+			applications.mref_ali3d(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, 
 			options.xr, options.yr, options.ts, options.delta, options.an, options.center,
 			options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym,
 			options.function,  options.npad, options.debug, options.fourvar, options.stoprnct)
 		global_def.BATCH = False
 		
 		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+			mpi.mpi_finalize()
 
 if __name__ == "__main__":
 	main()

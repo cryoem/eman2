@@ -32,6 +32,25 @@ from __future__ import print_function
 #
 #
 
+import EMAN2_cppwrap
+import EMAN2_meta
+import global_def
+import numpy
+import optparse
+import os
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import EMAN2_meta
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
 #  Implemented by PAP 03/02/09.  Based on Agarwal Acta Cryst. 1978, A34, 791.
 
 # PDB sample line
@@ -43,14 +62,14 @@ from __future__ import print_function
 
 
 from builtins import range
-from EMAN2 import *
-from sparx import *
-from optparse import OptionParser
-from math import *
-from global_def import *
-import global_def
-import os
-import sys
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from sparx import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT from math import *
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
 
 atomdefs={'H':(1.0,1.00794),'C':(6.0,12.0107),'A':(7.0,14.00674),'N':(7.0,14.00674),'O':(8.0,15.9994),'P':(15.0,30.973761),
 	'S':(16.0,32.066),'W':(18.0,1.00794*2.0+15.9994),'AU':(79.0,196.96655) }
@@ -62,7 +81,7 @@ def main():
 Converts a pdb file into an electron density map. 0,0,0 in PDB space will 
 map to the center of the volume."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = optparse.OptionParser(usage=usage,version=EMAN2_meta.EMANVERSION)
 
 	parser.add_option("--apix", "-A", type="float",        help="Angstrom/voxel", default=1.0)
 	parser.add_option("--box",  "-B", type="string",       help="Box size in pixels, <xyz> or <x,y,z>")
@@ -79,8 +98,8 @@ map to the center of the volume."""
 	#try: chains=options.chains
 	#except: 
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
 	chains = options.chains
 	if chains == '': chains = None
 	
@@ -96,14 +115,14 @@ map to the center of the volume."""
 
 	# read in initial-transformation file:
 	if(options.tr0 != "none"):
-		cols = read_text_file(options.tr0,-1)
+		cols = utilities.read_text_file(options.tr0,-1)
 		txlist=[]
 		for i in range(3):
 			txlist.append(cols[0][i])
 			txlist.append(cols[1][i])
 			txlist.append(cols[2][i])
 			txlist.append(cols[3][i])
-		tr0 = Transform(txlist)
+		tr0 = EMAN2_cppwrap.Transform(txlist)
 
 
 	# parse the pdb file and pull out relevant atoms
@@ -153,9 +172,9 @@ map to the center of the volume."""
 	infile.close()
 
 	if(options.center == "a"):
-		rad_gyr = sqrt((asig[0]+asig[1]+asig[2])/mass-(aavg[0]/mass)**2-(aavg[1]/mass)**2-(aavg[2]/mass)**2)
+		rad_gyr = numpy.sqrt((asig[0]+asig[1]+asig[2])/mass-(aavg[0]/mass)**2-(aavg[1]/mass)**2-(aavg[2]/mass)**2)
 	else:
-		rad_gyr = sqrt((asig[0]+asig[1]+asig[2])/natm-(aavg[0]/natm)**2-(aavg[1]/natm)**2-(aavg[2]/natm)**2)
+		rad_gyr = numpy.sqrt((asig[0]+asig[1]+asig[2])/natm-(aavg[0]/natm)**2-(aavg[1]/natm)**2-(aavg[2]/natm)**2)
 
 	if not options.quiet:
 		print("%d atoms; total charge = %d e-; mol mass = %.2f kDa; radius of gyration = %.2f A"%(natm,nelec,mass/1000.0,rad_gyr))
@@ -190,7 +209,7 @@ map to the center of the volume."""
 		if not options.quiet:
 			print("Applying initial transformation to PDB coordinates... ")
 		for i in range(len(atoms)):
-			atom_coords = Vec3f(atoms[i][1],atoms[i][2],atoms[i][3])
+			atom_coords = EMAN2_cppwrap.Vec3f(atoms[i][1],atoms[i][2],atoms[i][3])
 			new_atom_coords = tr0*atom_coords
 			atoms[i][1] = new_atom_coords[0]
 			atoms[i][2] = new_atom_coords[1]
@@ -222,7 +241,7 @@ map to the center of the volume."""
 			box[2]=int(spl[2])
 	except:
 		for i in range(3):
-			box[i]=int(2*max(fabs(amax[i]), fabs(amin[i]))/options.apix)
+			box[i]=int(2*max(numpy.fabs(amax[i]), numpy.fabs(amin[i]))/options.apix)
 			#  Increase the box size by 1/4.
 			box[i]+=box[i]//4
 
@@ -250,7 +269,7 @@ map to the center of the volume."""
 	for i in range(3): bigbox.append(box[i]*fcbig)
 
 	# initialize the final output volume
-	outmap=EMData(bigbox[0],bigbox[1],bigbox[2], True)
+	outmap=EMAN2_cppwrap.EMData(bigbox[0],bigbox[1],bigbox[2], True)
 	nc = []
 	for i in range(3):  nc.append( bigbox[i]//2 )
 	# fill in the atoms
@@ -295,9 +314,9 @@ map to the center of the volume."""
 			outmap.set_attr("apix_z",options.apix)
 			outmap.set_attr("pixel_size",options.apix)
 		else: print("Pixel_size is not set in the header!")
-		outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_HDF)
-	elif filextension == ".spi": outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
-	else:   ERROR("unknown image type","sxpdb2em",1)
+		outmap.write_image(args[1],0, EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF)
+	elif filextension == ".spi": outmap.write_image(args[1],0, EMAN2_cppwrap.EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+	else:   global_def.ERROR("unknown image type","sxpdb2em",1)
 				
 if __name__ == "__main__":
     main()

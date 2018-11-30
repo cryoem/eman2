@@ -32,21 +32,35 @@ from __future__ import print_function
 #
 #
 
+import applications
+import global_def
+import mpi
+import optparse
+import os
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
 
 from builtins import range
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
-	from global_def import SPARXVERSION
-	import global_def
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+	pass#IMPORTIMPORTIMPORT from global_def import SPARXVERSION
+	pass#IMPORTIMPORTIMPORT import global_def
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
 	
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	#parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
 	parser.add_option("--ou",                 type="float", 	     default= -1,                 help="outer radius for rotational 2D correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
 	parser.add_option("--rs",                 type="int",   		 default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
@@ -98,11 +112,11 @@ def main():
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
 		
-		from utilities import get_input_from_string, get_im
+		pass#IMPORTIMPORTIMPORT from utilities import get_input_from_string, get_im
 
-		xr = get_input_from_string(options.xr)
-		txs = get_input_from_string(options.txs)
-		y_restrict = get_input_from_string(options.y_restrict)
+		xr = utilities.get_input_from_string(options.xr)
+		txs = utilities.get_input_from_string(options.txs)
+		y_restrict = utilities.get_input_from_string(options.y_restrict)
 
 		irp = 1
 		if options.ou < 0:  oup = -1
@@ -120,23 +134,23 @@ def main():
 			y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
 
 		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init, mpi_finalize
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 
-		from applications import ihrsr
+		pass#IMPORTIMPORTIMPORT from applications import ihrsr
 		global_def.BATCH = True
 		if len(args) < 4:  mask = None
 		else:               mask = args[3]
-		ihrsr(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
+		applications.ihrsr(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
 		global_def.BATCH = False
 
 		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+			mpi.mpi_finalize()
 
 if __name__ == "__main__":
 	main()

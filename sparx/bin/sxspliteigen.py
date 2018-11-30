@@ -32,19 +32,33 @@ from __future__ import print_function
 #
 #
 
-from builtins import range
+import EMAN2_cppwrap
 import global_def
-from   global_def import *
+import numpy
+import optparse
+import os
+import sys
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+from builtins import range
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def import *
 
-from   optparse import OptionParser
+pass#IMPORTIMPORTIMPORT from   optparse import OptionParser
 
 
-from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
 
 
 def main():
 
-	import sys
+	pass#IMPORTIMPORTIMPORT import sys
 
 	arglist = []
 	for arg in sys.argv:
@@ -52,7 +66,7 @@ def main():
 
 	progname = os.path.basename(arglist[0])
 	usage = progname + " eigvol EIG_prefix (output volumes multiplied by sqrt(eigval), if set"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 
 	(options, args) = parser.parse_args( arglist[1:] )
 
@@ -60,21 +74,21 @@ def main():
 		print("usage: " + usage)
 		return None
 
-	from math import sqrt
-	nimage = EMUtil.get_image_count( args[0] )
+	pass#IMPORTIMPORTIMPORT from math import sqrt
+	nimage = EMAN2_cppwrap.EMUtil.get_image_count( args[0] )
 
 	for i in range(nimage) :
-	        data = EMData()
+	        data = EMAN2_cppwrap.EMData()
 	        data.read_image( args[0], i )
 
 	        eigval = data.get_attr_default( "eigval", 1.0 )
-	        Util.mul_scalar(data , sqrt(eigval) )
+	        EMAN2_cppwrap.Util.mul_scalar(data , numpy.sqrt(eigval) )
 
 	        fname = args[1] + ("%04d_pos.hdf" % (i+1) )
 	        data.write_image( fname )
 
 	        fname = args[1] + ("%04d_neg.hdf" % (i+1) )
-	        Util.mul_scalar(data , -1 )
+	        EMAN2_cppwrap.Util.mul_scalar(data , -1 )
 	        data.write_image( fname )
 
 

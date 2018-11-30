@@ -32,16 +32,38 @@ from __future__ import print_function
 #
 #
 from builtins import range
+import EMAN2_cppwrap
+import filter
+import fundamentals
 import global_def
-from   global_def import *
-from   EMAN2 import *
-from   sparx import *
-from global_def import SPARX_MPI_TAG_UNIVERSAL
+import morphology
+import mpi
+import optparse
+import os
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import filter
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def import *
+pass#IMPORTIMPORTIMPORT from   EMAN2 import *
+pass#IMPORTIMPORTIMPORT from   sparx import *
+pass#IMPORTIMPORTIMPORT from global_def import SPARX_MPI_TAG_UNIVERSAL
 
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT from optparse import OptionParser
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -50,7 +72,7 @@ def main():
 
 	    Locally filer a volume based on local resolution volume (sxlocres.py) within area outlined by the maskfile
 	"""
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 
 	parser.add_option("--radius",	type="int",		        default=-1, 	help="if there is no maskfile, sphere with r=radius will be used, by default the radius is nx/2-1")
 	parser.add_option("--falloff",	type="float",		    default=0.1,    help="falloff of tanl filter (default 0.1)")
@@ -63,23 +85,23 @@ def main():
 		sys.exit()
 
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
 
 	if options.MPI:
-		from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-		from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
-		from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
-		sys.argv = mpi_init(len(sys.argv),sys.argv)		
+		pass#IMPORTIMPORTIMPORT from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
+		pass#IMPORTIMPORTIMPORT from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
+		sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)		
 	
-		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-		myid = mpi_comm_rank(MPI_COMM_WORLD)
+		number_of_proc = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+		myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 		main_node = 0
 
 		if(myid == main_node):
 			#print sys.argv
-			vi = get_im(sys.argv[1])
-			ui = get_im(sys.argv[2])
+			vi = utilities.get_im(sys.argv[1])
+			ui = utilities.get_im(sys.argv[2])
 			#print   Util.infomask(ui, None, True)
 			radius = options.radius
 			nx = vi.get_xsize()
@@ -92,35 +114,35 @@ def main():
 			dis = [0,0,0]
 			vi = None
 			ui = None
-		dis = bcast_list_to_all(dis, myid, source_node = main_node)
+		dis = utilities.bcast_list_to_all(dis, myid, source_node = main_node)
 
 		if(myid != main_node):
 			nx = int(dis[0])
 			ny = int(dis[1])
 			nz = int(dis[2])
-		radius  = bcast_number_to_all(radius, main_node)
+		radius  = utilities.bcast_number_to_all(radius, main_node)
 		if len(args) == 3:
 			if( radius == -1 ):  radius = min(nx,ny,nz)//2 -1
-			m = model_circle( radius ,nx,ny,nz)
+			m = utilities.model_circle( radius ,nx,ny,nz)
 			outvol = args[2]
 
 		elif len(args) == 4:
-			if(myid == main_node): m = binarize(get_im(args[2]), 0.5)
-			else:  m = model_blank(nx,ny,nz)
+			if(myid == main_node): m = morphology.binarize(utilities.get_im(args[2]), 0.5)
+			else:  m = utilities.model_blank(nx,ny,nz)
 			outvol = args[3]
-			bcast_EMData_to_all(m, myid, main_node)
+			utilities.bcast_EMData_to_all(m, myid, main_node)
 
-		from filter import filterlocal
-		filteredvol = filterlocal(ui, vi, m, options.falloff, myid, main_node, number_of_proc)
+		pass#IMPORTIMPORTIMPORT from filter import filterlocal
+		filteredvol = filter.filterlocal(ui, vi, m, options.falloff, myid, main_node, number_of_proc)
 
 		if(myid == 0):   filteredvol.write_image(outvol)
 
-		from mpi import mpi_finalize
-		mpi_finalize()
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+		mpi.mpi_finalize()
 
 	else:
-		vi = get_im(args[0])
-		ui = get_im(args[1])  # resolution volume, values are assumed to be from 0 to 0.5
+		vi = utilities.get_im(args[0])
+		ui = utilities.get_im(args[1])  # resolution volume, values are assumed to be from 0 to 0.5
 
 		nn = vi.get_xsize()
 
@@ -129,30 +151,30 @@ def main():
 		if len(args) == 3:
 			radius = options.radius
 			if( radius == -1 ):  radius = nn//2 -1
-			m = model_circle( radius ,nn,nn,nn)
+			m = utilities.model_circle( radius ,nn,nn,nn)
 			outvol = args[2]
 
 		elif len(args) == 4:
-			m = binarize(get_im(args[2]), 0.5)
+			m = morphology.binarize(utilities.get_im(args[2]), 0.5)
 			outvol = args[3]
 
-		fftip(vi)  # this is the volume to be filtered
+		fundamentals.fftip(vi)  # this is the volume to be filtered
 
 		#  Round all resolution numbers to two digits
 		for x in range(nn):
 			for y in range(nn):
 				for z in range(nn):
 					ui.set_value_at_fast( x,y,z, round(ui.get_value_at(x,y,z), 2) )
-		st = Util.infomask(ui, m, True)
+		st = EMAN2_cppwrap.Util.infomask(ui, m, True)
 		
 
-		filteredvol = model_blank(nn,nn,nn)
+		filteredvol = utilities.model_blank(nn,nn,nn)
 		cutoff = max(st[2] - 0.01,0.0)
 		while(cutoff < st[3] ):
 			cutoff = round(cutoff + 0.01, 2)
-			pt = Util.infomask( threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)
+			pt = EMAN2_cppwrap.Util.infomask( morphology.threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)
 			if(pt[0] != 0.0):
-				vovo = fft(filt_tanl(vi, cutoff, falloff) )
+				vovo = fundamentals.fft(filter.filt_tanl(vi, cutoff, falloff) )
 				for x in range(nn):
 					for y in range(nn):
 						for z in range(nn):

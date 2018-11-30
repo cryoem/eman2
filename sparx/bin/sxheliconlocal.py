@@ -32,21 +32,35 @@ from __future__ import print_function
 #
 #
 
+import applications
+import global_def
+import mpi
+import optparse
+import os
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
 
 from builtins import range
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
-	from global_def import SPARXVERSION, ERROR
-	import global_def
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+	pass#IMPORTIMPORTIMPORT from global_def import SPARXVERSION, ERROR
+	pass#IMPORTIMPORTIMPORT import global_def
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --maxit=max_iter --CTF --snr=1.0  --sym=c1 --datasym=symdoc"
 	
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	#parser.add_option("--ir",                 type="float", 	     default= -1,                 help="Inner radius for psi angle search > 0 (set to 1) (Angstroms)")
 	parser.add_option("--ou",                 type="float", 	     default= -1,                 help="Outer radius for psi angle search < int(nx*pixel_size/2)-1 (Angstroms)")
 	parser.add_option("--rs",                 type="int",   		 default= 1,                  help="Step between rings in rotational correlation >0  (set to 1)" ) 
@@ -92,22 +106,22 @@ def main():
 		global_def.BATCH = True
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			ERROR("Please specify pixel size apix","sxheliconlocal",1)
+			global_def.ERROR("Please specify pixel size apix","sxheliconlocal",1)
 		if options.dp < 0 or options.dphi < 0:
-			ERROR("Please specify helical symmetry parameters dp and dphi","sxheliconlocal",1)
+			global_def.ERROR("Please specify helical symmetry parameters dp and dphi","sxheliconlocal",1)
 		if options.an <= 0 :
-			ERROR("Angular search range (an) has to be given.  Only local searches are permitted.","sxheliconlocal",1)
+			global_def.ERROR("Angular search range (an) has to be given.  Only local searches are permitted.","sxheliconlocal",1)
 
 		print(" This code is under development, some instabilities are possible 12/28/2014")
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
 		
-		from utilities import get_input_from_string, get_im
+		pass#IMPORTIMPORTIMPORT from utilities import get_input_from_string, get_im
 
-		xr = get_input_from_string(options.xr)
-		txs = get_input_from_string(options.txs)
-		y_restrict = get_input_from_string(options.y_restrict)
+		xr = utilities.get_input_from_string(options.xr)
+		txs = utilities.get_input_from_string(options.txs)
+		y_restrict = utilities.get_input_from_string(options.y_restrict)
 
 		irp = 1
 		if options.ou < 0:  oup = -1
@@ -124,35 +138,35 @@ def main():
 		for i in range(len(y_restrict)): y_restrict2 +=  str(float(y_restrict[i])/options.apix)+" "
 		y_restrict2 = y_restrict2[:-1]
 
-		from mpi import mpi_init, mpi_finalize
-		sys.argv = mpi_init(len(sys.argv), sys.argv)
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_init, mpi_finalize
+		sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 
-		from applications import localhelicon_MPI, localhelicon_MPInew, localhelicon_MPIming
+		pass#IMPORTIMPORTIMPORT from applications import localhelicon_MPI, localhelicon_MPInew, localhelicon_MPIming
 		if len(args) < 4:  mask = None
 		else:              mask = args[3]
-		if options.new:  localhelicon_MPInew(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
+		if options.new:  applications.localhelicon_MPInew(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
 			txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, \
 				options.dp, options.dphi, options.psi_max, \
 			rminp, rmaxp, options.fract, options.npad,options.sym, options.function,\
 			options.apix, options.debug, y_restrict2, options.searchit, options.slowIO)
-		elif options.snake:	localhelicon_MPIming(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
+		elif options.snake:	applications.localhelicon_MPIming(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
 			txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, \
 				options.dp, options.dphi, options.psi_max, \
 			rminp, rmaxp, options.fract, options.npad,options.sym, options.function,\
 			options.apix, options.debug, y_restrict2, options.searchit, options.snakeknots, options.slowIO)	
-		else:  localhelicon_MPI(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
+		else:  applications.localhelicon_MPI(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
 			txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, \
 				options.dp, options.dphi, options.psi_max, \
 			rminp, rmaxp, options.fract, options.npad,options.sym, options.function,\
 			options.apix, options.debug, y_restrict2, options.searchit, options.slowIO)
 		global_def.BATCH = False
 	
-		from mpi import mpi_finalize
-		mpi_finalize()
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+		mpi.mpi_finalize()
 
 if __name__ == "__main__":
 	main()

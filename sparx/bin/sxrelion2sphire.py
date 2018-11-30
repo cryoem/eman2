@@ -41,20 +41,43 @@ from __future__ import print_function
 # 
 # ========================================================================================
 
-from builtins import range
-from past.builtins import cmp
-from EMAN2 import *
-from sparx import *
-from sys import  *
+import EMAN2_cppwrap
+import EMAN2db
+import global_def
+import morphology
+import numpy
+import operator
+import optparse
 import os
 import sys
-from operator import itemgetter
-import shutil
-from EMAN2db import db_check_dict
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import EMAN2db
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import operator
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import shutil
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+from builtins import range
+from past.builtins import cmp
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from sparx import *
+pass#IMPORTIMPORTIMPORT from sys import  *
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT from operator import itemgetter
+pass#IMPORTIMPORTIMPORT import shutil
+pass#IMPORTIMPORTIMPORT from EMAN2db import db_check_dict
 
-from optparse import OptionParser
-import global_def
-from global_def import  *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import  *
 
 # ========================================================================================
 # Helper Functions
@@ -98,7 +121,7 @@ def mrk_table_stat(X):
 		var = (va - av*av/N)/float(N - 1)
 	sd = 0.0
 	if var > 0.0:
-		sd = sqrt(var)
+		sd = numpy.sqrt(var)
 	
 	return  avg, sd, mi, ma
 
@@ -132,7 +155,7 @@ def main():
 
 	progname = os.path.basename( arglist[0] )
 	usage = progname + ' input_star_file output_directory --relion_project_dir=DIR_PATH --star_section=SECTION_STRING --outputs_root=ROOT_NAME_STRING --box_size=BOX_SIZE --do_not_create_stack'
-	parser = OptionParser(usage, version=SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
 
 	parser.add_option('--relion_project_dir', type='string',         default=None,      help='RELION project directory: Path to RELION project directory associated with the RELION STAR file. By default, the program assume the current directory is the RELION project directory. (default none)')
 	parser.add_option('--star_section',       type='string',         default='data_',   help='Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_)')
@@ -462,9 +485,9 @@ def main():
 					else: 
 						sphire_cter_entry[idx_cter_phase_shift] = 0.0
 					
-					sphire_const_ac_phase_shift = ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude constrast in [%]
+					sphire_const_ac_phase_shift = morphology.ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude constrast in [%]
 					sphire_total_phase_shift = sphire_cter_entry[idx_cter_phase_shift] + sphire_const_ac_phase_shift
-					sphire_cter_entry[idx_cter_total_ac] = angle2ampcont(sphire_total_phase_shift)
+					sphire_cter_entry[idx_cter_total_ac] = morphology.angle2ampcont(sphire_total_phase_shift)
 					
 					sphire_cter_entry[idx_cter_vol] = float(tokens_line[relion_dict['_rlnVoltage'][idx_col] - 1])
 					sphire_cter_entry[idx_cter_cs] = float(tokens_line[relion_dict['_rlnSphericalAberration'][idx_col] - 1])
@@ -624,7 +647,7 @@ def main():
 					relion_max_prob_dist = float(tokens_line[relion_dict['_rlnMaxValueProbDistribution'][idx_col] - 1])
 					relion_norm_correct = float(tokens_line[relion_dict['_rlnNormCorrection'][idx_col] - 1])
 					
-					relion_trans3d = Transform({'phi':relion_rot, 'theta':relion_tilt, 'omega':relion_psi, 'tx':relion_tx, 'ty':relion_ty, 'type':'mrc', 'tz':0})
+					relion_trans3d = EMAN2_cppwrap.Transform({'phi':relion_rot, 'theta':relion_tilt, 'omega':relion_psi, 'tx':relion_tx, 'ty':relion_ty, 'type':'mrc', 'tz':0})
 					sphire_proj3d = relion_trans3d.get_params('spider')
 					# file_sphire_stack_proj3d.write('%12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n' % (sphire_proj3d['phi'], sphire_proj3d['theta'], sphire_proj3d['psi'], sphire_proj3d['tx'], sphire_proj3d['ty'], relion_max_prob_dist, relion_norm_correct))
 					
@@ -691,7 +714,7 @@ def main():
 							sphire_cter_entry_list = []
 							for idx_sphire_ctf in range(n_idx_sphire_ctf):
 								sphire_cter_entry_list.append(sphire_cter_entry[idx_sphire_ctf])
-							sphire_header['ctf'] = generate_ctf(sphire_cter_entry_list)
+							sphire_header['ctf'] = utilities.generate_ctf(sphire_cter_entry_list)
 							sphire_header['ctf_applied'] = 0
 							sphire_header['ptcl_source_apix'] = sphire_cter_entry[idx_cter_apix] # Store the original pixel size
 						if relion_category_dict['proj3d'][idx_is_category_found]:
@@ -866,7 +889,7 @@ def main():
 					sphire_cter_stats[idx_cter_cv_astig_amp] = sd / avg * 100 # use percentage
 				
 				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_astig_ang])
-				if sd > 0.0: sd = sqrt(sd)
+				if sd > 0.0: sd = numpy.sqrt(sd)
 				sphire_cter_stats[idx_cter_astig_ang] = avg
 				sphire_cter_stats[idx_cter_sd_astig_ang] = sd
 				
@@ -927,8 +950,8 @@ def main():
 						# NOTE: Toshio Moriya 2017/11/21
 						# The order of coordinates must be sorted with x-coordinates, then y-coordinates  in SPHIRE helical SPA box file
 						#
-						sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id].sort(key=itemgetter(1), reverse=False)
-						sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id].sort(key=itemgetter(0), reverse=False)
+						sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id].sort(key=operator.itemgetter(1), reverse=False)
+						sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id].sort(key=operator.itemgetter(0), reverse=False)
 						head_sphire_coordinates = sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id][0]
 						tail_sphire_coordinates = sphire_coordinates_dict[micrograph_dirname][micrograph_basename][sphire_filament_id][-1]
 						# MRK_DEBUG: file_coordinates.write('#helix: (%.1f, %.1f),(%.1f, %.1f),%.1f %d\n' % (head_sphire_coordinates[idx_ptcl_source_coord_x], head_sphire_coordinates[idx_ptcl_source_coord_y], tail_sphire_coordinates[idx_ptcl_source_coord_x], tail_sphire_coordinates[idx_ptcl_source_coord_y], box_size, sphire_filament_id))
@@ -1080,7 +1103,7 @@ def main():
 					
 					micrograph_baseroot = os.path.splitext(micrograph_basename)[0]
 					file_path_local_bdb_stack = 'bdb:{}#{}_ptcls'.format(dir_path_local_bdb_stacks, micrograph_baseroot)
-					local_bdb_stack = db_open_dict(file_path_local_bdb_stack)
+					local_bdb_stack = EMAN2db.db_open_dict(file_path_local_bdb_stack)
 
 					for sphire_header_id, sphire_header in enumerate(sphire_header_dict[micrograph_dirname][micrograph_basename]):
 						# Copy this particle image from local stack to new global stack
@@ -1088,9 +1111,9 @@ def main():
 						relion_local_stack_path = sphire_header['relion_local_stack_path']
 						sphire_local_particle_id = sphire_header['sphire_local_particle_id']
 						assert os.path.exists(relion_local_stack_path)
-						n_img_relion_local_stack = EMUtil.get_image_count(relion_local_stack_path)
+						n_img_relion_local_stack = EMAN2_cppwrap.EMUtil.get_image_count(relion_local_stack_path)
 						assert sphire_local_particle_id < n_img_relion_local_stack, '# Logical Error: The local particle ID must not exceed the number of images in the assocaited local particle stack.'
-						img_particle = get_im(relion_local_stack_path, sphire_local_particle_id)
+						img_particle = utilities.get_im(relion_local_stack_path, sphire_local_particle_id)
 						img_particles_dict = img_particle.get_attr_dict()
 						
 						# NOTE: 2015/10/19 Toshio Moriya
@@ -1117,7 +1140,7 @@ def main():
 							img_particles_dict['ctf_applied'] = sphire_header['ctf_applied']
 							img_particles_dict['ptcl_source_apix'] = sphire_header['ptcl_source_apix'] # Store the original pixel size
 						if relion_category_dict['proj3d'][idx_is_category_found] == True:
-							set_params_proj(img_particle, sphire_header['xform.projection'])
+							utilities.set_params_proj(img_particle, sphire_header['xform.projection'])
 							img_particles_dict['xform.projection'] = img_particle.get_attr('xform.projection')
 							# Add relion specific header entries
 							img_particles_dict['relion_max_prob_dist'] = sphire_header['relion_max_prob_dist']
@@ -1127,7 +1150,7 @@ def main():
 
 						# Write the particle image to local stack file
 						local_bdb_stack[sphire_header_id] = img_particles_dict
-					db_close_dict(file_path_local_bdb_stack)
+					EMAN2db.db_close_dict(file_path_local_bdb_stack)
 
 				# # NOTE: Toshio Moriya 2018/07/09
 				# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...

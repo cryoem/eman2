@@ -29,8 +29,40 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+import EMAN2_cppwrap
+import alignment
+import applications
+import copy
+import filter
+import fundamentals
+import global_def
+import morphology
+import mpi
+import numpy
+import numpy as np
+import random
+import time
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import alignment
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import copy
+pass#IMPORTIMPORTIMPORT import filter
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import numpy as np
+pass#IMPORTIMPORTIMPORT import projection
+pass#IMPORTIMPORTIMPORT import random
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import time
+pass#IMPORTIMPORTIMPORT import utilities
 from builtins import range
-from global_def import *
+pass#IMPORTIMPORTIMPORT from global_def import *
 
 def project(volume, params, radius=-1):
 	"""
@@ -44,18 +76,18 @@ def project(volume, params, radius=-1):
 		proj: generated 2-D projection
 	"""
         # angles phi, theta, psi
-	from fundamentals import rot_shift2D
-	from utilities import set_params_proj
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from utilities import set_params_proj
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 
-	if(radius>0):	myparams = {"transform":Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}), "radius":radius}
-	else:			myparams = {"transform":Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})}
+	if(radius>0):	myparams = {"transform":EMAN2_cppwrap.Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}), "radius":radius}
+	else:			myparams = {"transform":EMAN2_cppwrap.Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})}
 	proj = volume.project("pawel", myparams)
 	if(params[3]!=0. or params[4]!=0.):
-		params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
-		proj=Processor.EMFourierFilter(proj, params2)
+		params2 = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.SHIFT, "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
+		proj=EMAN2_cppwrap.Processor.EMFourierFilter(proj, params2)
 		#proj = rot_shift2D(proj, sx = params[3], sy = params[4], interpolation_method = "linear")
-	set_params_proj(proj, [params[0], params[1], params[2], -params[3], -params[4]])
+	utilities.set_params_proj(proj, [params[0], params[1], params[2], -params[3], -params[4]])
 	proj.set_attr_dict({ 'ctf_applied':0})
 	return  proj
 
@@ -74,7 +106,7 @@ def prl(vol, params, radius, stack = None):
 				either: an in-core stack of generated 2-D projection
 			stack
 	"""
-	from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 	for i in xrange(len(params)):
         	myparams = {"angletype":"SPIDER", "anglelist":params[i][0:3], "radius":radius}
         	proj = vol.project("pawel", myparams)
@@ -102,12 +134,12 @@ def prj(vol, params, stack = None):
 				either: an in-core stack of generated 2-D projections
 			stack
 	"""
-	from utilities  import set_params_proj
-	from projection import prep_vol
+	pass#IMPORTIMPORTIMPORT from utilities  import set_params_proj
+	pass#IMPORTIMPORTIMPORT from projection import prep_vol
 	volft,kb = prep_vol(vol)
 	for i in range(len(params)):
 		proj = prgs(volft, kb, params[i])
-		set_params_proj(proj, [params[i][0], params[i][1], params[i][2], -params[i][3], -params[i][4]])
+		utilities.set_params_proj(proj, [params[i][0], params[i][1], params[i][2], -params[i][3], -params[i][4]])
 		proj.set_attr_dict({ 'ctf_applied':0})
 		
 		if(stack):
@@ -133,11 +165,11 @@ def prgs(volft, kb, params, kbx=None, kby=None):
 			proj: generated 2-D projection
 	"""
 	#  params:  phi, theta, psi, sx, sy
-	from fundamentals import fft
-	from utilities import set_params_proj
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from utilities import set_params_proj
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 
-	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
+	R = EMAN2_cppwrap.Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
 	if kbx is None:
 		temp = volft.extract_plane(R,kb)
 	else:
@@ -147,11 +179,11 @@ def prgs(volft, kb, params, kbx=None, kby=None):
 	temp.center_origin_fft()
 
 	if(params[3]!=0. or params[4]!=0.):
-		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+		filt_params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.SHIFT,
 				  "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
-		temp=Processor.EMFourierFilter(temp, filt_params)
+		temp=EMAN2_cppwrap.Processor.EMFourierFilter(temp, filt_params)
 	temp.do_ift_inplace()
-	set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
+	utilities.set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
 	temp.set_attr_dict({'ctf_applied':0, 'npad':2})
 	temp.depad()
 	return temp
@@ -170,28 +202,28 @@ def prgl(volft, params, interpolation_method = 0, return_real = True):
 			proj: generated 2-D projection
 	"""
 	#  params:  phi, theta, psi, sx, sy
-	from fundamentals import fft
-	from utilities import set_params_proj, info
-	from EMAN2 import Processor
-	if(interpolation_method<0 or interpolation_method>1):  ERROR('Unsupported interpolation method', "interpolation_method", 1, 0)
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from utilities import set_params_proj, info
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	if(interpolation_method<0 or interpolation_method>1):  global_def.ERROR('Unsupported interpolation method', "interpolation_method", 1, 0)
 	npad = volft.get_attr_default("npad",1)
-	R = Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
+	R = EMAN2_cppwrap.Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
 	if(npad == 1):  temp = volft.extract_section(R, interpolation_method)
 	elif(npad == 2):  temp = volft.extract_section2(R, interpolation_method)
 	temp.fft_shuffle()
 	temp.center_origin_fft()
 
 	if(params[3]!=0. or params[4]!=0.):
-		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+		filt_params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.SHIFT,
 				  "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
-		temp = Processor.EMFourierFilter(temp, filt_params)
+		temp = EMAN2_cppwrap.Processor.EMFourierFilter(temp, filt_params)
 	if return_real:
 		temp.do_ift_inplace()
 		temp.set_attr_dict({'ctf_applied':0, 'npad':1})
 		temp.depad()
 	else:
 		temp.set_attr_dict({'ctf_applied':0, 'npad':1})
-	set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
+	utilities.set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
 	return temp
 
 def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
@@ -199,43 +231,43 @@ def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 	  Generate set of projections based on even angles
 	  The command returns list of ffts of projections
 	"""
-	from projection   import prep_vol, prgs
-	from applications import MPI_start_end
-	from utilities    import even_angles, model_blank
-	from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from projection   import prep_vol, prgs
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from utilities    import even_angles, model_blank
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	mode = "F"
-	ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Minus")
+	ref_angles = utilities.even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Minus")
 	cnx = nx//2 + 1
 	cny = nx//2 + 1
 	num_ref = len(ref_angles)
 
 	if MPI:
-		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-		myid = mpi_comm_rank( MPI_COMM_WORLD )
-		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+		myid = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
+		ncpu = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
 	else:
 		ncpu = 1
 		myid = 0
-	from applications import MPI_start_end
-	ref_start,ref_end = MPI_start_end( num_ref, ncpu, myid )
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	ref_start,ref_end = applications.MPI_start_end( num_ref, ncpu, myid )
 
 	prjref = []     # list of (image objects) reference projections in Fourier representation
 
 	for i in range(num_ref):
-		prjref.append(model_blank(nx, nx))  # I am not sure why is that necessary, why not put None's??
+		prjref.append(utilities.model_blank(nx, nx))  # I am not sure why is that necessary, why not put None's??
 
 	for i in range(ref_start, ref_end):
 		prjref[i] = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 
 	if MPI:
-		from utilities import bcast_EMData_to_all
+		pass#IMPORTIMPORTIMPORT from utilities import bcast_EMData_to_all
 		for i in range(num_ref):
 			for j in range(ncpu):
-				ref_start,ref_end = MPI_start_end(num_ref,ncpu,j)
+				ref_start,ref_end = applications.MPI_start_end(num_ref,ncpu,j)
 				if i >= ref_start and i < ref_end: rootid = j
-			bcast_EMData_to_all( prjref[i], myid, rootid )
+			utilities.bcast_EMData_to_all( prjref[i], myid, rootid )
 
 	for i in range(len(ref_angles)):
 		prjref[i].set_attr_dict({"phi": ref_angles[i][0], "theta": ref_angles[i][1],"psi": ref_angles[i][2]})
@@ -244,29 +276,29 @@ def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 
 
 def prgs1d( prjft, kb, params ):
-	from fundamentals import fft
-	from math import cos, sin, pi
-	from EMAN2 import Processor
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from math import cos, sin, pi
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
 
 	alpha = params[0]
 	shift = params[1]
 
-	tmp = alpha/180.0*pi
+	tmp = alpha/180.0*numpy.pi
 
-	nuxnew =  cos(tmp)
-	nuynew = -sin(tmp)
+	nuxnew =  numpy.cos(tmp)
+	nuynew = -numpy.sin(tmp)
 	
 	line = prjft.extractline(kb, nuxnew, nuynew)
-	line = fft(line)
+	line = fundamentals.fft(line)
 
 	M = line.get_xsize()/2
-	Util.cyclicshift( line, {"dx":M, "dy":0, "dz":0} )
-	line = Util.window( line, M, 1, 1, 0, 0, 0 )
+	EMAN2_cppwrap.Util.cyclicshift( line, {"dx":M, "dy":0, "dz":0} )
+	line = EMAN2_cppwrap.Util.window( line, M, 1, 1, 0, 0, 0 )
 
 	if shift!=0:
-		filt_params = {"filter_type" : Processor.fourier_filter_types.SHIFT,
+		filt_params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.SHIFT,
 		   	       "x_shift" : shift, "y_shift" : 0.0, "z_shift" : 0.0}
-		line = Processor.EMFourierFilter(temp, filt_params)
+		line = EMAN2_cppwrap.Processor.EMFourierFilter(temp, filt_params)
 
 	line.set_attr_dict( {'alpha':alpha, 's1x':shift} )
 	return line
@@ -314,7 +346,7 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 			# padd two times
 			N     = M*npad
 			# support of the window
-			kb    = Util.KaiserBessel(alpha, K, M/2, K/(2.*N), N)
+			kb    = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, M/2, K/(2.*N), N)
 			volft = vol.copy()
 			volft.divkbsinh(kb)
 			volft = volft.norm_pad(False, npad)
@@ -327,9 +359,9 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 			Ny     = My*npad
 			Nz     = Mz*npad
 			# support of the window
-			kbx    = Util.KaiserBessel(alpha, K, Mx/2, K/(2.*Nx), Nx)
-			kby    = Util.KaiserBessel(alpha, K, My/2, K/(2.*Ny), Ny)
-			kbz    = Util.KaiserBessel(alpha, K, Mz/2, K/(2.*Nz), Nz)
+			kbx    = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, Mx/2, K/(2.*Nx), Nx)
+			kby    = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, My/2, K/(2.*Ny), Ny)
+			kbz    = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, Mz/2, K/(2.*Nz), Nz)
 			volft = vol.copy()
 			volft.divkbsinh_rect(kbx,kby,kbz)
 			volft = volft.norm_pad(False, npad)
@@ -340,8 +372,8 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 	else:
 		# NN and trilinear
 		assert  interpolation_method >= 0
-		from utilities import pad
-		volft = pad(vol, Mx*npad, My*npad, My*npad, 0.0)
+		pass#IMPORTIMPORTIMPORT from utilities import pad
+		volft = utilities.pad(vol, Mx*npad, My*npad, My*npad, 0.0)
 		volft.set_attr("npad", npad)
 		volft.div_sinc(interpolation_method)
 		volft = volft.norm_pad(False, 1)
@@ -357,31 +389,31 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 	  Convert set of ffts of projections to Fourier rings with additional multiplication by a ctf
 	  The command returns list of rings
 	"""
-	from math         import sin, cos, pi
-	from fundamentals import fft
-	from alignment    import ringwe
-	from filter       import filt_ctf
+	pass#IMPORTIMPORTIMPORT from math         import sin, cos, pi
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from alignment    import ringwe
+	pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
 	mode = "F"
-	wr_four  = ringwe(numr, "F")
+	wr_four  = alignment.ringwe(numr, "F")
 	cnx = nx//2 + 1
 	cny = nx//2 + 1
-	qv = pi/180.0
+	qv = numpy.pi/180.0
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
 
 	for i in range( len(prjref) ):
-		cimage = Util.Polar2Dm(filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
-		Util.Normalize_ring(cimage, numr, 0 )
+		cimage = EMAN2_cppwrap.Util.Polar2Dm(filter.filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
+		EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
 
-		Util.Frngs(cimage, numr)
-		Util.Applyws(cimage, numr, wr_four)
+		EMAN2_cppwrap.Util.Frngs(cimage, numr)
+		EMAN2_cppwrap.Util.Applyws(cimage, numr, wr_four)
 		refrings.append(cimage)
 		phi   = prjref[i].get_attr('phi')
 		theta = prjref[i].get_attr('theta')
 		psi   = prjref[i].get_attr('psi')
-		n1 = sin(theta*qv)*cos(phi*qv)
-		n2 = sin(theta*qv)*sin(phi*qv)
-		n3 = cos(theta*qv)
+		n1 = numpy.sin(theta*qv)*numpy.cos(phi*qv)
+		n2 = numpy.sin(theta*qv)*numpy.sin(phi*qv)
+		n3 = numpy.cos(theta*qv)
 		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3, "phi": phi, "theta": theta,"psi": psi} )
 
 	return refrings
@@ -394,11 +426,11 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 # plot angles, map on half-sphere
 # agls: [[phi0, theta0, psi0], [phi1, theta1, psi1], ..., [phin, thetan, psin]]
 def plot_angles(agls, nx = 256):
-	from math      import cos, sin, fmod, pi, radians
-	from utilities import model_blank
+	pass#IMPORTIMPORTIMPORT from math      import cos, sin, fmod, pi, radians
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank
 
 	# var
-	im = model_blank(nx, nx)
+	im = utilities.model_blank(nx, nx)
 	"""
 	c  = 2
 	kc = 10
@@ -429,16 +461,16 @@ def plot_angles(agls, nx = 256):
 	# agsl: [phi, theta, psi]
 	ri = nx//2
 	rr = ri-1
-	conv = pi/180.0
+	conv = numpy.pi/180.0
 	for i in range(len(agls)):
 		if agls[i][1] > 90.0:
 			agls[i][0] = agls[i][0] + 180.0
 			agls[i][1] = 180.0 - float(agls[i][1])
 
-		rc  = rr*sin( radians(agls[i][1]))
-		rd  = radians(agls[i][0])
-		px  = ri + rc * cos( rd )
-		py  = ri + rc * sin( rd )
+		rc  = rr*numpy.sin( numpy.radians(agls[i][1]))
+		rd  = numpy.radians(agls[i][0])
+		px  = ri + rc * numpy.cos( rd )
+		py  = ri + rc * numpy.sin( rd )
 
 		px = min(max(int(px+0.5),0), nx-1)
 
@@ -471,8 +503,8 @@ def cml_refine_agls_wrap(vec_in, data, flag_weights = False):
 # cml refines angles with simplex
 # not used yet
 def cml_refine_agls(Prj, Ori, delta):
-	from copy      import deepcopy
-	from utilities import amoeba
+	pass#IMPORTIMPORTIMPORT from copy      import deepcopy
+	pass#IMPORTIMPORTIMPORT from utilities import amoeba
 	global g_n_prj
 	
 	scales = [delta] * (g_n_prj + 2)
@@ -481,9 +513,9 @@ def cml_refine_agls(Prj, Ori, delta):
 		# init vec_in
 		vec_in   = [Ori[4*iprj], Ori[4*iprj+1], Ori[4*iprj+2]]
 		# prepare vec_data
-		vec_data = [Prj, deepcopy(Ori), iprj]
+		vec_data = [Prj, copy.deepcopy(Ori), iprj]
 		# simplex
-		optvec, disc, niter = amoeba(vec_in, scales, cml_refine_agls_wrap_dev, data = vec_data)
+		optvec, disc, niter = utilities.amoeba(vec_in, scales, cml_refine_agls_wrap_dev, data = vec_data)
 		# assign new angles refine
 		Ori[4*iprj]   = (optvec[0]+360)%360
 		Ori[4*iprj+1] = optvec[1]
@@ -494,12 +526,12 @@ def cml_refine_agls(Prj, Ori, delta):
 
 # cml init list of rand_seed for trials version
 def cml_init_rnd(trials, rand_seed):
-	from random import seed, randrange
+	pass#IMPORTIMPORTIMPORT from random import seed, randrange
 
 	if trials == 1: return [rand_seed]
 	
-	if rand_seed > 0: seed(rand_seed)
-	else:             seed()
+	if rand_seed > 0: random.seed(rand_seed)
+	else:             random.seed()
 
 	r_min = 100
 	r_max = 1000000
@@ -509,9 +541,9 @@ def cml_init_rnd(trials, rand_seed):
 	rnd     = []
 	itrials = 0
 	while itrials < trials:
-		val_rnd = randrange(r_min, r_max)
-		val_f   = randrange(f_min, f_max)
-		val_o   = randrange(0, 2)
+		val_rnd = random.randrange(r_min, r_max)
+		val_f   = random.randrange(f_min, f_max)
+		val_o   = random.randrange(0, 2)
 		if val_o: val_rnd = int(val_rnd * val_f)
 		else:     val_rnd = int(val_rnd / float(val_f))
 		if val_rnd not in rnd:
@@ -524,8 +556,8 @@ def cml_init_rnd(trials, rand_seed):
 def cml_disc(Prj, Ori, Rot, flag_weights=True):
 	global g_n_prj, g_n_psi, g_n_lines, g_seq
 	if flag_weights:
-		cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
-		weights = Util.cml_weights(cml)
+		cml = EMAN2_cppwrap.Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
+		weights = EMAN2_cppwrap.Util.cml_weights(cml)
 		mw  = max(weights)
 		for i in range(g_n_lines): weights[i]  = mw - weights[i]
 		sw = sum(weights)
@@ -537,8 +569,8 @@ def cml_disc(Prj, Ori, Rot, flag_weights=True):
 				weights[i] *= weights[i]
 	else:   weights = [1.0] * g_n_lines
 
-	com  = Util.cml_line_insino_all(Rot, g_seq, g_n_prj, g_n_lines)
-	disc = Util.cml_disc(Prj, com, g_seq, weights, g_n_lines)
+	com  = EMAN2_cppwrap.Util.cml_line_insino_all(Rot, g_seq, g_n_prj, g_n_lines)
+	disc = EMAN2_cppwrap.Util.cml_disc(Prj, com, g_seq, weights, g_n_lines)
 
 	return disc
 
@@ -562,7 +594,7 @@ def cml_export_progress(outdir, ite, iprj, iagl, psi, disc, cmd):
 
 # display the list of angles for each iterations
 def cml_export_txtagls(outdir, outname, Ori, disc, title):
-	import time
+	pass#IMPORTIMPORTIMPORT import time
 	global g_n_prj, g_i_prj
 
 	angfile = open(outdir + '/' + outname, 'a')
@@ -575,7 +607,7 @@ def cml_export_txtagls(outdir, outname, Ori, disc, title):
 
 # init global variables used to a quick acces with many function of common-lines
 def cml_init_global_var(dpsi, delta, nprj, debug):
-	from utilities import even_angles
+	pass#IMPORTIMPORTIMPORT from utilities import even_angles
 
 	global g_anglst, g_d_psi, g_n_psi, g_i_prj, g_n_lines, g_n_prj, g_n_anglst, g_debug, g_seq
 	# TO FIX
@@ -584,7 +616,7 @@ def cml_init_global_var(dpsi, delta, nprj, debug):
 		v    = int(v + 0.5)
 		dpsi = 180 // v
 
-	g_anglst   = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
+	g_anglst   = utilities.even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
 	g_n_anglst = len(g_anglst)
 	g_d_psi    = dpsi
 	g_n_psi    = int(360 / dpsi)
@@ -603,16 +635,16 @@ def cml_init_global_var(dpsi, delta, nprj, debug):
 
 # export result obtain by the function find_struct
 def cml_export_struc(stack, outdir, irun, Ori):
-	from projection import plot_angles
-	from utilities  import set_params_proj, get_im
+	pass#IMPORTIMPORTIMPORT from projection import plot_angles
+	pass#IMPORTIMPORTIMPORT from utilities  import set_params_proj, get_im
 
 	global g_n_prj
 	
 	pagls = []
 	for i in range(g_n_prj):
-		data = get_im(stack, i)
+		data = utilities.get_im(stack, i)
 		p = [Ori[4*i], Ori[4*i+1], Ori[4*i+2], 0.0, 0.0]
-		set_params_proj(data, p)
+		utilities.set_params_proj(data, p)
 		data.write_image(outdir + '/structure_%03i.hdf' % irun, i)
 
 		# prepare angles to plot
@@ -624,36 +656,36 @@ def cml_export_struc(stack, outdir, irun, Ori):
 
 # open and transform projections to sinogram
 def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
-	from projection   import cml_sinogram
-	from utilities    import model_circle, get_params_proj, model_blank, get_im
-	from fundamentals import fftip
-	from filter       import filt_tanh
+	pass#IMPORTIMPORTIMPORT from projection   import cml_sinogram
+	pass#IMPORTIMPORTIMPORT from utilities    import model_circle, get_params_proj, model_blank, get_im
+	pass#IMPORTIMPORTIMPORT from fundamentals import fftip
+	pass#IMPORTIMPORTIMPORT from filter       import filt_tanh
 
 	# number of projections
-	if  type(stack) == type(""): nprj = EMUtil.get_image_count(stack)
+	if  type(stack) == type(""): nprj = EMAN2_cppwrap.EMUtil.get_image_count(stack)
 	else:                       nprj = len(stack)
 	Prj  = []                                          # list of projections
 	Ori  = [-1] * 4 * nprj                             # orientation intial (phi, theta, psi, index) for each projection
 
 	for i in range(nprj):
-		image = get_im(stack, i)
+		image = utilities.get_im(stack, i)
 
 		# read initial angles if given
-		try:	Ori[4*i], Ori[4*i+1], Ori[4*i+2], s2x, s2y = get_params_proj(image)
+		try:	Ori[4*i], Ori[4*i+1], Ori[4*i+2], s2x, s2y = utilities.get_params_proj(image)
 		except:	pass
 		
 		if(i == 0):
 			nx = image.get_xsize()
 			if(ou < 1): ou = nx // 2 - 1
 			diameter = int(2 * ou)
-			mask2D   = model_circle(ou, nx, nx)
-			if ir > 0:  mask2D -= model_circle(ir, nx, nx)
+			mask2D   = utilities.model_circle(ou, nx, nx)
+			if ir > 0:  mask2D -= utilities.model_circle(ir, nx, nx)
 
 		# normalize under the mask
-		[mean_a, sigma, imin, imax] = Util.infomask(image, mask2D, True)
+		[mean_a, sigma, imin, imax] = EMAN2_cppwrap.Util.infomask(image, mask2D, True)
 		image -= mean_a
-		Util.mul_scalar(image, 1.0/sigma)
-		Util.mul_img(image, mask2D)
+		EMAN2_cppwrap.Util.mul_scalar(image, 1.0/sigma)
+		EMAN2_cppwrap.Util.mul_img(image, mask2D)
 
 		# sinogram
 		sino = cml_sinogram(image, diameter, dpsi)
@@ -668,20 +700,20 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 		# process lines
 		nxe = sino.get_xsize()
 		nye = sino.get_ysize()
-		prj = model_blank(bdf, 2*nye)
-		pp = model_blank(nxe, 2*nye)
+		prj = utilities.model_blank(bdf, 2*nye)
+		pp = utilities.model_blank(nxe, 2*nye)
 		for li in range(nye):
 			# get the line li
-			line = Util.window(sino, nxe, 1, 1, 0, li-nye//2, 0)
+			line = EMAN2_cppwrap.Util.window(sino, nxe, 1, 1, 0, li-nye//2, 0)
 			# u2 (not improve the results)
 			#line = filt_tanh(line, ou / float(nx), ou / float(nx))
 			# normalize this line
-			[mean_l, sigma_l, imin, imax] = Util.infomask(line, None, True)
+			[mean_l, sigma_l, imin, imax] = EMAN2_cppwrap.Util.infomask(line, None, True)
 			line = (line - mean_l) / sigma_l
 			# fft
-			fftip(line)
+			fundamentals.fftip(line)
 			# filter (cut part of coef) and create mirror line
-			Util.cml_prepare_line(prj, line, ilf, ihf, li, nye)
+			EMAN2_cppwrap.Util.cml_prepare_line(prj, line, ilf, ihf, li, nye)
 
 		# store the projection
 		Prj.append(prj)
@@ -690,8 +722,8 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 
 # transform an image to sinogram (mirror include)
 def cml_sinogram(image2D, diameter, d_psi = 1):
-	from math         import cos, sin
-	from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from math         import cos, sin
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
 
 	M_PI  = 3.141592653589793238462643383279502884197
 
@@ -705,7 +737,7 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	alpha = 1.75
 	r     = M / 2
 	v     = K / 2.0 / N
-	kb     = Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
+	kb     = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
 	volft  = image2D.average_circ_sub()  	# ASTA - in spider
 	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
 	volft  = volft.norm_pad(False, npad)
@@ -716,22 +748,22 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	# get line projection
 	nangle = int(180.0 / d_psi)
 	dangle = M_PI / float(nangle)
-	e = EMData()
+	e = EMAN2_cppwrap.EMData()
 	e.set_size(diameter, nangle, 1)
 	offset = M - diameter // 2
 	for j in range(nangle):
-		nuxnew =  cos(dangle * j)
-		nuynew = -sin(dangle * j)
-		line   = fft(volft.extractline(kb, nuxnew, nuynew))
-		Util.cyclicshift(line, {"dx":M, "dy":0, "dz":0})
-		Util.set_line(e, j, line, offset, diameter)
+		nuxnew =  numpy.cos(dangle * j)
+		nuynew = -numpy.sin(dangle * j)
+		line   = fundamentals.fft(volft.extractline(kb, nuxnew, nuynew))
+		EMAN2_cppwrap.Util.cyclicshift(line, {"dx":M, "dy":0, "dz":0})
+		EMAN2_cppwrap.Util.set_line(e, j, line, offset, diameter)
 
 	return e 
 
 # transform an image to sinogram (mirror include)
 def cml_sinogram_shift(image2D, diameter, shifts = [0.0, 0.0], d_psi = 1):
-	from math         import cos, sin
-	from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from math         import cos, sin
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
 
 	M_PI  = 3.141592653589793238462643383279502884197
 
@@ -745,15 +777,15 @@ def cml_sinogram_shift(image2D, diameter, shifts = [0.0, 0.0], d_psi = 1):
 	alpha = 1.75
 	r     = M / 2
 	v     = K / 2.0 / N
-	kb     = Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
+	kb     = EMAN2_cppwrap.Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
 	volft  = image2D.average_circ_sub()  	# ASTA - in spider
 	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
 	volft  = volft.norm_pad(False, npad)
 	volft.do_fft_inplace()
 	#  Apply shift
-	from EMAN2 import Processor
-	params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : 2*shifts[0], "y_shift" : 2*shifts[1], "z_shift" : 0.0}
-	volft = Processor.EMFourierFilter(volft, params2)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params2 = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.SHIFT, "x_shift" : 2*shifts[0], "y_shift" : 2*shifts[1], "z_shift" : 0.0}
+	volft = EMAN2_cppwrap.Processor.EMFourierFilter(volft, params2)
 
 	volft.center_origin_fft()
 	volft.fft_shuffle()
@@ -761,53 +793,53 @@ def cml_sinogram_shift(image2D, diameter, shifts = [0.0, 0.0], d_psi = 1):
 	# get line projection
 	nangle = int(180.0 / d_psi)
 	dangle = M_PI / float(nangle)
-	e = EMData()
+	e = EMAN2_cppwrap.EMData()
 	e.set_size(diameter, nangle, 1)
 	offset = M - diameter // 2
 	for j in range(nangle):
-		nuxnew =  cos(dangle * j)
-		nuynew = -sin(dangle * j)
-		line   = fft(volft.extractline(kb, nuxnew, nuynew))
-		Util.cyclicshift(line, {"dx":M, "dy":0, "dz":0})
-		Util.set_line(e, j, line, offset, diameter)
+		nuxnew =  numpy.cos(dangle * j)
+		nuynew = -numpy.sin(dangle * j)
+		line   = fundamentals.fft(volft.extractline(kb, nuxnew, nuynew))
+		EMAN2_cppwrap.Util.cyclicshift(line, {"dx":M, "dy":0, "dz":0})
+		EMAN2_cppwrap.Util.set_line(e, j, line, offset, diameter)
 
 	return e 
 
 # write the head of the logfile
 def cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials, ncpu):
-	from utilities import print_msg
+	pass#IMPORTIMPORTIMPORT from utilities import print_msg
 
 	# call global var
 	global g_anglst, g_n_prj, g_d_psi, g_n_anglst
 
-	print_msg('Input stack                  : %s\n'     % stack)
-	print_msg('Number of projections        : %d\n'     % g_n_prj)
-	print_msg('Output directory             : %s\n'     % outdir)
-	print_msg('Angular step                 : %5.2f\n'  % delta)
-	print_msg('Sinogram angle accuracy      : %5.2f\n'  % g_d_psi)
-	print_msg('Inner particle radius        : %5.2f\n'  % ir)	
-	print_msg('Outer particle radius        : %5.2f\n'  % ou)
-	print_msg('Filter, minimum frequency    : %5.3f\n'  % lf)
-	print_msg('Filter, maximum frequency    : %5.3f\n'  % hf)
-	print_msg('Random seed                  : %i\n'     % rand_seed)
-	print_msg('Number of maximum iterations : %d\n'     % maxit)
-	print_msg('Start from given orientations: %s\n'     % given)
-	print_msg('Number of angles             : %i\n'     % g_n_anglst)
-	print_msg('Number of trials             : %i\n'     % trials)
-	print_msg('Number of cpus               : %i\n'     % ncpu)
-	print_msg('Use Voronoi weights          : %s\n\n'   % flag_weights)
+	utilities.print_msg('Input stack                  : %s\n'     % stack)
+	utilities.print_msg('Number of projections        : %d\n'     % g_n_prj)
+	utilities.print_msg('Output directory             : %s\n'     % outdir)
+	utilities.print_msg('Angular step                 : %5.2f\n'  % delta)
+	utilities.print_msg('Sinogram angle accuracy      : %5.2f\n'  % g_d_psi)
+	utilities.print_msg('Inner particle radius        : %5.2f\n'  % ir)	
+	utilities.print_msg('Outer particle radius        : %5.2f\n'  % ou)
+	utilities.print_msg('Filter, minimum frequency    : %5.3f\n'  % lf)
+	utilities.print_msg('Filter, maximum frequency    : %5.3f\n'  % hf)
+	utilities.print_msg('Random seed                  : %i\n'     % rand_seed)
+	utilities.print_msg('Number of maximum iterations : %d\n'     % maxit)
+	utilities.print_msg('Start from given orientations: %s\n'     % given)
+	utilities.print_msg('Number of angles             : %i\n'     % g_n_anglst)
+	utilities.print_msg('Number of trials             : %i\n'     % trials)
+	utilities.print_msg('Number of cpus               : %i\n'     % ncpu)
+	utilities.print_msg('Use Voronoi weights          : %s\n\n'   % flag_weights)
 
 # write the end of the logfile
 def cml_end_log(Ori):
-	from utilities import print_msg
+	pass#IMPORTIMPORTIMPORT from utilities import print_msg
 	global g_n_prj
-	print_msg('\n\n')
-	for i in range(g_n_prj): print_msg('Projection #%03i: phi %10.5f    theta %10.5f    psi %10.5f\n' % (i, Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
+	utilities.print_msg('\n\n')
+	for i in range(g_n_prj): utilities.print_msg('Projection #%03i: phi %10.5f    theta %10.5f    psi %10.5f\n' % (i, Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
 
 # find structure
 def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights):
-	from projection import cml_export_progress, cml_disc, cml_export_txtagls
-	import time, sys
+	pass#IMPORTIMPORTIMPORT from projection import cml_export_progress, cml_disc, cml_export_txtagls
+	pass#IMPORTIMPORTIMPORT import time, sys
 
 	# global vars
 	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug, g_n_lines, g_seq
@@ -862,11 +894,11 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 					# assign new orientation
 					Ori[ind]   = g_anglst[iagl][0]
 					Ori[ind+1] = g_anglst[iagl][1]
-					Rot        = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], 0.0)
+					Rot        = EMAN2_cppwrap.Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], 0.0)
 					# weights
 					if flag_weights:
-						cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
-						weights = Util.cml_weights(cml)
+						cml = EMAN2_cppwrap.Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
+						weights = EMAN2_cppwrap.Util.cml_weights(cml)
 						mw  = max(weights)
 						for i in range(g_n_lines): weights[i]  = mw - weights[i]
 						sw = sum(weights)
@@ -879,8 +911,8 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 					else:   weights = [1.0] * g_n_lines
 
 					# spin all psi
-					com = Util.cml_line_insino(Rot, iprj, g_n_prj)
-					res = Util.cml_spin_psi(Prj, com, weights, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
+					com = EMAN2_cppwrap.Util.cml_line_insino(Rot, iprj, g_n_prj)
+					res = EMAN2_cppwrap.Util.cml_spin_psi(Prj, com, weights, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
 
 					# select the best
 					if res[0] < best_disc:
@@ -907,7 +939,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 				Ori[ind+2]  = store_psi
 				Ori[ind+3]  = cur_agl
 
-			Rot = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], Ori[ind+2])
+			Rot = EMAN2_cppwrap.Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], Ori[ind+2])
 
 			if g_debug: cml_export_progress(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
 
@@ -937,12 +969,12 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 
 # find structure
 def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights, myid, main_node, number_of_proc):
-	from projection import cml_export_progress, cml_disc, cml_export_txtagls
-	import time, sys
-	from random import shuffle,random
+	pass#IMPORTIMPORTIMPORT from projection import cml_export_progress, cml_disc, cml_export_txtagls
+	pass#IMPORTIMPORTIMPORT import time, sys
+	pass#IMPORTIMPORTIMPORT from random import shuffle,random
 
-	from mpi import MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
-	from mpi import mpi_reduce, mpi_bcast, mpi_barrier
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, mpi_bcast, mpi_barrier
 
 	# global vars
 	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug, g_n_lines, g_seq
@@ -969,9 +1001,9 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 		# loop over i prj
 		change = False
 		tlistprj = listprj[:]
-		shuffle(tlistprj)
+		random.shuffle(tlistprj)
 		nnn = len(tlistprj)
-		tlistprj = mpi_bcast(tlistprj, nnn, MPI_INT, main_node, MPI_COMM_WORLD)
+		tlistprj = mpi.mpi_bcast(tlistprj, nnn, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 		tlistprj = list(map(int, tlistprj))
 		"""
 		if(ite>1 and ite%5 == 0  and ite<140):
@@ -1024,11 +1056,11 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 					# assign new orientation
 					Ori[ind]   = g_anglst[iagl][0]
 					Ori[ind+1] = g_anglst[iagl][1]
-					Rot        = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], 0.0)
+					Rot        = EMAN2_cppwrap.Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], 0.0)
 					# weights
 					if flag_weights:
-						cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
-						weights = Util.cml_weights(cml)
+						cml = EMAN2_cppwrap.Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
+						weights = EMAN2_cppwrap.Util.cml_weights(cml)
 						mw  = max(weights)
 						for i in range(g_n_lines): weights[i]  = mw - weights[i]
 						sw = sum(weights)
@@ -1040,11 +1072,11 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 								weights[i] *= weights[i]
 
 					# spin all psi
-					com = Util.cml_line_insino(Rot, iprj, g_n_prj)
+					com = EMAN2_cppwrap.Util.cml_line_insino(Rot, iprj, g_n_prj)
 					if flag_weights:
-						res = Util.cml_spin_psi(Prj, com, weights, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
+						res = EMAN2_cppwrap.Util.cml_spin_psi(Prj, com, weights, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
 					else:
-						res = Util.cml_spin_psi_now(Prj, com, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
+						res = EMAN2_cppwrap.Util.cml_spin_psi_now(Prj, com, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
 
 					# select the best
 					best_disc_list[iagl] = res[0]
@@ -1053,8 +1085,8 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 					if g_debug: cml_export_progress(outdir, ite, iprj, iagl, res[1], res[0], 'progress')
 				else:
 					if g_debug: cml_export_progress(outdir, ite, iprj, iagl, -1, -1, 'progress')
-			best_disc_list = mpi_reduce(best_disc_list, g_n_anglst, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			best_psi_list = mpi_reduce(best_psi_list, g_n_anglst, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			best_disc_list = mpi.mpi_reduce(best_disc_list, g_n_anglst, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+			best_psi_list = mpi.mpi_reduce(best_psi_list, g_n_anglst, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
 
 			best_psi = -1
 			best_iagl = -1
@@ -1066,8 +1098,8 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 						best_disc = best_disc_list[iagl]
 						best_psi = best_psi_list[iagl]
 						best_iagl = iagl
-			best_psi = mpi_bcast(best_psi, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			best_iagl = mpi_bcast(best_iagl, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			best_psi = mpi.mpi_bcast(best_psi, 1, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
+			best_iagl = mpi.mpi_bcast(best_iagl, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 			best_psi = float(best_psi[0])
 			best_iagl =  int(best_iagl[0])
 			
@@ -1088,7 +1120,7 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 				Ori[ind+2]  = store_psi
 				Ori[ind+3]  = cur_agl
 
-			Rot = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], Ori[ind+2])
+			Rot = EMAN2_cppwrap.Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], Ori[ind+2])
 
 			if g_debug: cml_export_progress(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
 
@@ -1114,18 +1146,18 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 				break
 		else:
 			period_ct = 0
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	return Ori, disc, ite
 
 
 # this function return the degree of colinearity of the orientations found (if colinear the value is close to zero)
 def cml2_ori_collinearity(Ori):
-	from math  import sin, cos, pi
-	from numpy import array, linalg, matrix, zeros, power
+	pass#IMPORTIMPORTIMPORT from math  import sin, cos, pi
+	pass#IMPORTIMPORTIMPORT from numpy import array, linalg, matrix, zeros, power
 
 	# ori 3d sphere map to 2d plan
-	rad2deg = 180.0 / pi
+	rad2deg = 180.0 / numpy.pi
 	deg2rad = 1.0 / rad2deg
 	nori    = len(Ori) // 4
 	lx, ly  = [], []
@@ -1134,25 +1166,25 @@ def cml2_ori_collinearity(Ori):
 		ph, th  = Ori[ind:ind+2]
 		ph     *= deg2rad
 		th     *= deg2rad
-		lx.append(sin(th) * sin(ph))
-		ly.append(sin(th) * cos(ph))
+		lx.append(numpy.sin(th) * numpy.sin(ph))
+		ly.append(numpy.sin(th) * numpy.cos(ph))
 
 	# direct least square fitting of ellipse (IEEE ICIP Pilu96)
-	D = zeros((nori, 6))
+	D = numpy.zeros((nori, 6))
 	for c in range(nori):
 		D[c, :] = [lx[c]*lx[c], lx[c]*ly[c], ly[c]*ly[c], lx[c], ly[c], 1.0]
-	D = matrix(D)
+	D = numpy.matrix(D)
 	S = D.transpose() * D
-	C = zeros((6, 6))
+	C = numpy.zeros((6, 6))
 	C[5, 5] =  0
 	C[0, 2] = -2
 	C[1, 2] =  1
 	C[2, 0] = -2
-	C = matrix(C)
-	val, vec = linalg.eig(S.getI() * C)
+	C = numpy.matrix(C)
+	val, vec = numpy.linalg.eig(S.getI() * C)
 	ell = vec[:, val.argmin()]
 	verr = D * ell
-	verr = power(verr, 2)
+	verr = morphology.power(verr, 2)
 	serr = sum(verr)
 
 	# sum squared error
@@ -1163,7 +1195,7 @@ def cml2_ori_collinearity(Ori):
 
 def generate_templates(volft, kb, x_half_size, y_half_size, psi_half_size, projection_location):
 	
-	import numpy as np
+	pass#IMPORTIMPORTIMPORT import numpy as np
 	
 	x_length = 2 * x_half_size + 1
 	y_length = 2 * y_half_size + 1

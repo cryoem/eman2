@@ -31,26 +31,59 @@ from __future__ import print_function
 #
 #
 
+import EMAN2_cppwrap
+import applications
+import filter
+import fundamentals
+import global_def
+import morphology
+import mpi
+import numpy
+import numpy.random
+import optparse
+import os
+import statistics
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import filter
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import numpy.random
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import random
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import statistics
+pass#IMPORTIMPORTIMPORT import string
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
 
 from builtins import range
-import numpy
-from numpy import linalg as LA
-from numpy import array, dot
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT from numpy import linalg as LA
+pass#IMPORTIMPORTIMPORT from numpy import array, dot
 
-from EMAN2 import *
-from sparx import *
-from mpi import *
-from math import sqrt
-from random import random
-import numpy.random
-import sys
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from sparx import *
+pass#IMPORTIMPORTIMPORT from mpi import *
+pass#IMPORTIMPORTIMPORT from math import sqrt
+pass#IMPORTIMPORTIMPORT from random import random
+pass#IMPORTIMPORTIMPORT import numpy.random
+pass#IMPORTIMPORTIMPORT import sys
 
-from os import system
-from sys import argv
-from sys import exit
-from string import atof,atoi
+pass#IMPORTIMPORTIMPORT from os import system
+pass#IMPORTIMPORTIMPORT from sys import argv
+pass#IMPORTIMPORTIMPORT from sys import exit
+pass#IMPORTIMPORTIMPORT from string import atof,atoi
 
-from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
 
 def mean_var_skew(data):
 	nsize=len(data)
@@ -79,7 +112,7 @@ def shift_gamma(F, gr):
 	fg = [0.0]*L
 	for i in range(L):
 		sp = 0.5*(2*i*ds)**gr
-		ip = sp/ds; i1 = int(floor(ip))
+		ip = sp/ds; i1 = int(numpy.floor(ip))
 		if i1<L-1:
 			fg[i] = F[i1]*(i1+1.0-ip)+F[i1+1]*(ip-i1)
 		else:
@@ -95,7 +128,7 @@ def create_CCFR_filter(pwu, pwp, fcrf, sg):
 	for i in range(lp):
 		#z = sqrt(pwp[i]/pwu[i])                 # T = |P|^2
 		#z = 1.0/sqrt(pwu[i])                    # T = |P|
-		z = exp(-i**2*csg)/sqrt(pwp[i]*pwu[i])   # T = Gaussian
+		z = numpy.exp(-i**2*csg)/numpy.sqrt(pwp[i]*pwu[i])   # T = Gaussian
 		if z>m: m=z
 		tpu.append(z)
 	for i in range(lp):
@@ -117,7 +150,7 @@ def create_noise_filter(pwG, FSC, q2):
 	L = len(pwG)
 	filt = [0.0]*L
 	for i in range(min(L,len(FSC))):
-		filt[i] = sqrt(pwG[i]*(1.0-FSC[i])/q2)
+		filt[i] = numpy.sqrt(pwG[i]*(1.0-FSC[i])/q2)
 	return filt
 
 
@@ -125,13 +158,13 @@ def map_adjustment(volg, FSC):
 	L = len(FSC)
 	filt_adj = [0.0]*L
 	for i in range(len(FSC)):
-		filt_adj[i] = sqrt(FSC[i])
-	volg_adj = filt_table(volg, filt_adj)
+		filt_adj[i] = numpy.sqrt(FSC[i])
+	volg_adj = filter.filt_table(volg, filt_adj)
 	return volg_adj
 
 
 def norm_factor_noise(nx, ny, nz):
-	pw = rops_table(model_gauss_noise(1.0, nx, ny, nz))
+	pw = fundamentals.rops_table(utilities.model_gauss_noise(1.0, nx, ny, nz))
 	start = len(pw)/10
 	# old way:
 	#oofactor = sqrt(sum(pw[start:])/len(pw[start:]))
@@ -140,7 +173,7 @@ def norm_factor_noise(nx, ny, nz):
 	for i in range(start,len(pw)):
 		s1 += pw[i]*i**2
 		s2 += i**2
-	oofactor = sqrt(s1/s2)
+	oofactor = numpy.sqrt(s1/s2)
 	return 1.0/oofactor
 
 
@@ -151,20 +184,20 @@ def create_noisy_map(vol, sigma_noise, filt, factor_noise):
 	if sigma_noise==0:
 		imgNoisy = vol.copy()
 	else:
-		imgNoisy = vol + filt_table(model_gauss_noise(sigma_noise*factor_noise, nx, ny, nz), filt)
+		imgNoisy = vol + filter.filt_table(utilities.model_gauss_noise(sigma_noise*factor_noise, nx, ny, nz), filt)
 	return imgNoisy
 
 
 def fsc_mask(vol, sigma, level_ratio):
-	vf = filt_gaussl(vol, sigma) 
-	minval = level_ratio*Util.infomask(vf, None, True)[3]
+	vf = filter.filt_gaussl(vol, sigma) 
+	minval = level_ratio*EMAN2_cppwrap.Util.infomask(vf, None, True)[3]
 	#return gauss_edge(binarize(vf, minval))
-	return binarize(vf, minval)
+	return morphology.binarize(vf, minval)
 
 
 def q2norm(fmask):
 	# normalized squared L^2-norm of fmask:
-	return Util.infomask(fmask*fmask, None, True)[0]
+	return EMAN2_cppwrap.Util.infomask(fmask*fmask, None, True)[0]
 
 	
 def compdisc(x, y, mask, discrep):
@@ -179,7 +212,7 @@ def ess_p(data,p=0.05):
 	if (p==0.0):
 		ip = 0
 	else:
-		i0 = int(floor(p*lend))
+		i0 = int(numpy.floor(p*lend))
 		if(i0==p*lend):
 			ip=i0-1
 		else:
@@ -206,7 +239,7 @@ def fitgamma(R,B,t,nu):
 
 	if f*fmid>0.0:
 		print("Error: inappropriate gamma bracket.")
-		mpi_finalize()
+		mpi.mpi_finalize()
 		exit(-1)
 
 	if f<0.0:
@@ -226,7 +259,7 @@ def fitgamma(R,B,t,nu):
 			return rtbis
 
 	print("Error: max number of iterations reached.")
-	mpi_finalize()
+	mpi.mpi_finalize()
 	exit(-2)
 
 
@@ -250,7 +283,7 @@ def fff(R,B,nu,gamma,s):
 	else:
 		u = 1.0-0.5*(2*(1-v))**nu
 	y = 0.5*u
-	fs = sqrt((1.0+R)/(1.0+R*exp(B*y**2/4)))
+	fs = numpy.sqrt((1.0+R)/(1.0+R*numpy.exp(B*y**2/4)))
 	if fs<=0.5:
 		u = 0.5*(2*fs)**nu
 	else:
@@ -287,7 +320,7 @@ def minfind(R,B,gamma,fcr):
 			return (nu1+nu2)/2.0
 
 	print("Error: max number of iterations reached.")
-	mpi_finalize()
+	mpi.mpi_finalize()
 	exit(-3)
 
 
@@ -458,17 +491,17 @@ def ellipsoid(piece):
 			c23 += ps*(y-yb)*(z-zb)
 	c23 /= mass
 
-	inmat = array([[c11,c12,c13],[c12,c22,c23],[c13,c23,c33]])
+	inmat = numpy.array([[c11,c12,c13],[c12,c22,c23],[c13,c23,c33]])
 
-	comat = LA.inv(inmat)
+	comat = numpy.LA.inv(inmat)
 
 	# inertia-ellipsoid map:
-	mask2 = model_blank(nx,nx,nx)
+	mask2 = utilities.model_blank(nx,nx,nx)
 	for x in range(nx):
 		for y in range(ny):
 			for z in range(nz):
-				v = array([x-xb,y-yb,z-zb])
-				mask2[x,y,z] = exp(-0.5*dot(v,dot(comat,v)))
+				v = numpy.array([x-xb,y-yb,z-zb])
+				mask2[x,y,z] = numpy.exp(-0.5*numpy.dot(v,numpy.dot(comat,v)))
 
 	# test:
 	#if myid == main_node:
@@ -532,8 +565,8 @@ def fitfcr(fcr1, R, B):
 
 def red(angle):
 	# reduces angle to the interval [-180,180]
-	from math import floor
-	return angle-360*floor((angle+180)/360)
+	pass#IMPORTIMPORTIMPORT from math import floor
+	return angle-360*numpy.floor((angle+180)/360)
 
 
 
@@ -541,7 +574,7 @@ def red(angle):
 progname = os.path.basename(sys.argv[0])
 usage = "mpirun [-np num_proc] [--host node[,node,...]] " + progname + "  map_file  segment_file [FSC_mask] [option_list]"
 
-parser = OptionParser(usage,version=SPARXVERSION)
+parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 parser.add_option("--res",      type="float",   default= -1.0, metavar="resolution",   help="Resolution of map. If given, the FSC will be adjusted. If not, the resolution will be deduced from the FSC.")
 parser.add_option("--R",        type="float",   default= 0.01, metavar="coeff_R",      help="R coefficient in the fitted FSC curve.")
 parser.add_option("--B",        type="float",   default= 500.0,metavar="coeff_B",      help="B coefficient in the fitted FSC curve.")
@@ -562,15 +595,15 @@ parser.add_option("--init_max",       action="store_true", default= False, help=
 
 (options, args) = parser.parse_args()    # by default it returns args = sys.argv[1:]
 
-sys.argv = mpi_init(len(sys.argv),sys.argv)
-myid = mpi_comm_rank(MPI_COMM_WORLD)
-ncpu = mpi_comm_size(MPI_COMM_WORLD)
+sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
+myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+ncpu = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
 main_node = 0
 
 if len(args) < 2 or len(args)>3:
 	print("usage:  " + usage)
 	print("Please run '" + progname + " -h' for detailed options")
-	mpi_finalize()
+	mpi.mpi_finalize()
 	exit(101)
 
 largeFile = args[0]
@@ -590,9 +623,9 @@ pix = options.pix
 if options.res>0.0:
 	resol = options.res
 	aau = pix/resol
-	gamres = 0.5*log(16/B*log((2*u0*(1+R)-1)/R))/log(2*aau)
+	gamres = 0.5*numpy.log(16/B*numpy.log((2*u0*(1+R)-1)/R))/numpy.log(2*aau)
 else:
-	aau = sqrt(4/B*log((2*u0*(1+R))/R))
+	aau = numpy.sqrt(4/B*numpy.log((2*u0*(1+R))/R))
 	resol = round(pix/aau,1)
 	gamres = 1.0
 
@@ -604,7 +637,7 @@ if fsc_rapid_fall:
 	if j1<=0 or j2<=j1:
 		print("Warning: input j1,j2 not valid. Will use default values.")
 		epsf = 0.1   # level under which the FSC is essentially 0
-		b1 = sqrt(4/B*log((u0*(1+R)-epsf)/R/epsf))
+		b1 = numpy.sqrt(4/B*numpy.log((u0*(1+R)-epsf)/R/epsf))
 		b2 = b1+0.25*(0.5-b1)
 
 sigNoise = options.sigN
@@ -691,18 +724,18 @@ nmatsout = 1000
 
 
 # segment map:
-img1_orig_0 = get_image(segFile)
+img1_orig_0 = utilities.get_image(segFile)
 
 nx = img1_orig_0.get_xsize()
 ny = img1_orig_0.get_ysize()
 nz = img1_orig_0.get_zsize()
 
 s = [0.0]*6
-s = center_of_gravity_phase(img1_orig_0)
+s = statistics.center_of_gravity_phase(img1_orig_0)
 
 for i in range(1,nx//2):
-	mask = cyclic_shift(model_circle(i, nx, ny, nz),int(s[3]),int(s[4]),int(s[5]))
-	if Util.infomask(img1_orig_0,mask,False)[3] == 0.0:
+	mask = fundamentals.cyclic_shift(utilities.model_circle(i, nx, ny, nz),int(s[3]),int(s[4]),int(s[5]))
+	if EMAN2_cppwrap.Util.infomask(img1_orig_0,mask,False)[3] == 0.0:
 		break
 radius = i   #smallest sphere that contains the segment
 
@@ -726,20 +759,20 @@ if nbox%2 ==0: nbox=nbox-1
 
 
 # target map:
-img2_orig = get_image(largeFile)
+img2_orig = utilities.get_image(largeFile)
 
 nx0 = img2_orig.get_xsize()
 ny0 = img2_orig.get_ysize()
 nz0 = img2_orig.get_zsize()
 
 if nover>1:
-	img1_orig_0 = fpol(img1_orig_0, nx0*nover, ny0*nover, nz0*nover, True)
+	img1_orig_0 = fundamentals.fpol(img1_orig_0, nx0*nover, ny0*nover, nz0*nover, True)
 
 if myid == main_node:
 	print("Radius of segment =",radius,"pix")
 
 if nover>1:
-	img2_orig = fpol(img2_orig, nx0*nover, ny0*nover, nz0*nover, True)
+	img2_orig = fundamentals.fpol(img2_orig, nx0*nover, ny0*nover, nz0*nover, True)
 
 # digitize FSC curve:
 sf0 = nx0//2
@@ -749,7 +782,7 @@ dn = 0.5/float(sf0)
 for j in range(sf1):
 	if j<=sf0:
 		n = j*dn
-		FSC[j] = u0*(1.0+R)/(1.0+R*exp(B*n**2/4))
+		FSC[j] = u0*(1.0+R)/(1.0+R*numpy.exp(B*n**2/4))
 	else:
 		FSC[j] = 0.0
 
@@ -763,7 +796,7 @@ if fsc_rapid_fall:
 		elif j>=j2: ff = 0.0
 		else:
 			x = float(j2-j1)*(1.0/(j2-j)-1.0/(j-j1))
-			ff = 1.0/(1.0+exp(x))
+			ff = 1.0/(1.0+numpy.exp(x))
 		FSC[j] *= ff
 
 # shift FSC to simulate desired resolution:
@@ -772,7 +805,7 @@ FSC = shift_gamma(FSC, gamres)
 # get sqrt(FSC) (for capping):
 sqrfsc = []
 for j in range(len(FSC)):
-	sqrfsc.append(sqrt(FSC[j]))
+	sqrfsc.append(numpy.sqrt(FSC[j]))
 
 # if user didn't provide an FSC mask, create one:
 if(not user_mask):
@@ -780,7 +813,7 @@ if(not user_mask):
 	fthr = 0.01  # threshold for binarizing the filtered map (ratio with max)
 	fmask = fsc_mask(img2_orig, sg, fthr)
 else:
-	fmask = get_image(maskFile)
+	fmask = utilities.get_image(maskFile)
 q2 = q2norm(fmask)
 if myid == main_node:
 	print("squared L^2 norm of FSC mask =", q2)
@@ -802,8 +835,8 @@ factor_noise = norm_factor_noise(nx0, ny0, nz0)
 # if using a synthetic map, apply envelope function and
 # add noise according to the given FSC:
 if synthetic and sim_noise:
-	img2_orig_e = filt_gaussl(img2_orig, aau)
-	pwEF = rops_table(img2_orig_e)
+	img2_orig_e = filter.filt_gaussl(img2_orig, aau)
+	pwEF = fundamentals.rops_table(img2_orig_e)
 	noise_filt_synth = create_noise_filter(pwEF, FSC, q2)
 	img2_orig_e = map_adjustment(img2_orig_e, FSC)
 	img2_orig = create_noisy_map(img2_orig_e, 1.0, noise_filt_synth, factor_noise)
@@ -811,17 +844,17 @@ if synthetic and sim_noise:
 	if myid == main_node:
 		# save this map, to be read back in as a real EM map
 		# (this avoids the problem mentioned above):
-		drop_image(img2_orig, "map_simulated.spi","s")
+		utilities.drop_image(img2_orig, "map_simulated.spi","s")
 
 		# fcr of the whole structure, for testing:
-		fcrwhole = fsc(img2_orig, img2_orig_e)[1]
+		fcrwhole = statistics.fsc(img2_orig, img2_orig_e)[1]
 		for i in range(len(fcrwhole)):
 			if FSC[i] == 0.0:
 				fcrwhole[i] = 0.0
 		filename = segName+"_"+str(resol)+"_fcrwhole.txt"
-		write_text_file(fcrwhole, filename)
+		utilities.write_text_file(fcrwhole, filename)
 
-	mpi_finalize()
+	mpi.mpi_finalize()
 	exit(111)
 
 
@@ -833,7 +866,7 @@ um = mask2*img2_orig
 pm = mask2*img1_orig_0
 
 # initial FCR curve:
-fcr = fsc(um, pm)[1]
+fcr = statistics.fsc(um, pm)[1]
 
 # cap fcr to sqrt(FSC):
 lf = len(fcr); fcr1 = [0.0]*lf
@@ -853,8 +886,8 @@ for i in range(lf):
 
 
 # get power spectra for filters:
-pwu = rops_table(um)
-pwp = rops_table(pm)
+pwu = fundamentals.rops_table(um)
+pwp = fundamentals.rops_table(pm)
 
 # create filter for initial fitting:
 sg = min(nx0,ny0,nz0)*aau   # sigma of Gaussian constraint on ccf
@@ -863,42 +896,42 @@ Wfilt = create_CCFR_filter(pwu, pwp, fcrf, sg)
 
 # filter target map or segment (to do the initial fitting):
 if filtseg:
-	img1_filt = filt_table(img1_orig_0, Wfilt)
+	img1_filt = filter.filt_table(img1_orig_0, Wfilt)
 	img2_filt = img2_orig.copy()
 else:
 	img1_filt = img1_orig_0.copy()
-	img2_filt = filt_table(img2_orig, Wfilt)
+	img2_filt = filter.filt_table(img2_orig, Wfilt)
 
 
 # apply restraint mask if requested:
 if imask:
-	img1_orig_1 = get_image(segFile)
+	img1_orig_1 = utilities.get_image(segFile)
 	if nover>1:
-		img1_orig_1 = fpol(img1_orig_1, nx0*nover, ny0*nover, nz0*nover, True)
-	blob = filt_gaussl(img1_orig_1, 0.1)
-	ithres = 0.03 * Util.infomask(blob, None, True)[3]
-	imaskvol = binarize(blob, ithres)
+		img1_orig_1 = fundamentals.fpol(img1_orig_1, nx0*nover, ny0*nover, nz0*nover, True)
+	blob = filter.filt_gaussl(img1_orig_1, 0.1)
+	ithres = 0.03 * EMAN2_cppwrap.Util.infomask(blob, None, True)[3]
+	imaskvol = morphology.binarize(blob, ithres)
 	img2_filt = img2_filt * imaskvol
 
 
 # shift maps by segment's COG, and window:
-img1_filt = Util.window(img1_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
-img2_filt = Util.window(img2_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
+img1_filt = EMAN2_cppwrap.Util.window(img1_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
+img2_filt = EMAN2_cppwrap.Util.window(img2_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
 
 
 names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z"]
 lpar = 6
 
-mask = model_circle(mask_rad, nbox, nbox, nbox)
+mask = utilities.model_circle(mask_rad, nbox, nbox, nbox)
 
 
 # prepare segment for gridding
 #(after this point, img1_filt MUST be used ONLY in rot_shift3D_grid):
-img1_filt,kb = prepi3D(img1_filt)
+img1_filt,kb = fundamentals.prepi3D(img1_filt)
 
 
 # this is done with 0 to be able to compute the initial bccc:
-x = rot_shift3D_grid(img1_filt, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, kb, "background", False)
+x = fundamentals.rot_shift3D_grid(img1_filt, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, kb, "background", False)
 
 bccc = compdisc(x, img2_filt, mask, discrep)
 
@@ -912,7 +945,7 @@ params = [0.0]*lpar
 bparams = [0.0]*lpar
 
 # shift to the center of mass of segment:
-tshift = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":s[3],"ty":s[4],"tz":s[5]})
+tshift = EMAN2_cppwrap.Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":s[3],"ty":s[4],"tz":s[5]})
 
 if myid == main_node:
 	ccparlist = [[0.0 for j in range(lpar+1)] for i in range(ncpu)]
@@ -930,13 +963,13 @@ for i in range(nt1):
 		if k<lpar-3: params[k] = shake_ang_1*(2.0*numpy.random.random()-1.0)
 		else: params[k] = shake_shift_1*(2.0*numpy.random.random()-1.0)
 
-	params = ali_vol_grid(img1_filt, params, img2_filt, ang_bracket, shift_bracket, mask_rad, discrep, kb, False)
+	params = applications.ali_vol_grid(img1_filt, params, img2_filt, ang_bracket, shift_bracket, mask_rad, discrep, kb, False)
 
 	# params are in the "xyz" convention, so get "spider" ones to do the rot:
-	tr = Transform({"type":"xyz","xtilt":params[0],"ytilt":params[1],"ztilt":params[2], "tx":params[3], "ty":params[4], "tz":params[5]})
+	tr = EMAN2_cppwrap.Transform({"type":"xyz","xtilt":params[0],"ytilt":params[1],"ztilt":params[2], "tx":params[3], "ty":params[4], "tz":params[5]})
 	qt = tr.get_params("spider")
 
-	x = rot_shift3D_grid(img1_filt,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'],1.0,kb,"background", False)
+	x = fundamentals.rot_shift3D_grid(img1_filt,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'],1.0,kb,"background", False)
 
 	tc = compdisc(x, img2_filt, mask, discrep)
 
@@ -958,12 +991,12 @@ if(init_median):
 	for j in range(lpar):
 		bparams[j] = ccparlist0[nt1/2][j+1]    # or (nt1-1)/2
 
-mpi_barrier(MPI_COMM_WORLD)
+mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 if myid == main_node:
 	for j in range(ncpu):
 		if(j != main_node):
-			cc_params = mpi_recv(lpar+1, MPI_FLOAT, j, j*100, MPI_COMM_WORLD)
+			cc_params = mpi.mpi_recv(lpar+1, mpi.MPI_FLOAT, j, j*100, mpi.MPI_COMM_WORLD)
 			if(init_median):
 				for k in range(lpar+1):
 					ccparlist[j][k] = float(cc_params[k])
@@ -977,9 +1010,9 @@ if myid == main_node:
 				for k in range(lpar):
 					ccparlist[j][k+1] = bparams[k]
 else:
-	mpi_send([bccc, bparams[0], bparams[1], bparams[2], bparams[3], bparams[4], bparams[5]], lpar+1, MPI_FLOAT, main_node, myid*100, MPI_COMM_WORLD)
+	mpi.mpi_send([bccc, bparams[0], bparams[1], bparams[2], bparams[3], bparams[4], bparams[5]], lpar+1, mpi.MPI_FLOAT, main_node, myid*100, mpi.MPI_COMM_WORLD)
 
-mpi_barrier(MPI_COMM_WORLD)
+mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 if myid == main_node:
 	if(init_median):
@@ -997,25 +1030,25 @@ if myid == main_node:
 		(bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5], bccc))
 	print()
 
-mpi_barrier(MPI_COMM_WORLD)
+mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-bparams = mpi_bcast(bparams, lpar, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+bparams = mpi.mpi_bcast(bparams, lpar, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 
 
 # transform with the resulting parameters:
-tsx_init = Transform({"type":"xyz","xtilt":float(bparams[0]),"ytilt":float(bparams[1]),"ztilt":float(bparams[2]),"tx":float(bparams[3]),"ty":float(bparams[4]),"tz":float(bparams[5])})
+tsx_init = EMAN2_cppwrap.Transform({"type":"xyz","xtilt":float(bparams[0]),"ytilt":float(bparams[1]),"ztilt":float(bparams[2]),"tx":float(bparams[3]),"ty":float(bparams[4]),"tz":float(bparams[5])})
 # transform in the original box:
 tsxp = tshift * tsx_init * tshift.inverse()
 qt = tsxp.get_params("spider")
 # best initial fit in original box:
-img1_orig_g,kb0 = prepi3D(img1_orig_0)
-x = rot_shift3D_grid(img1_orig_g, qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'], 1.0, kb0, "background", False)
+img1_orig_g,kb0 = fundamentals.prepi3D(img1_orig_0)
+x = fundamentals.rot_shift3D_grid(img1_orig_g, qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'], 1.0, kb0, "background", False)
 
 # test - write out best initial fit:
 if (myid == main_node):
 	if nover>1:
-		x = Util.decimate(x, nover, nover, nover)
-	drop_image(x, segName+"_"+str(resol)+"_init_fit.spi","s")
+		x = EMAN2_cppwrap.Util.decimate(x, nover, nover, nover)
+	utilities.drop_image(x, segName+"_"+str(resol)+"_init_fit.spi","s")
 #mpi_finalize(); exit(777)
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1024,7 +1057,7 @@ if (myid == main_node):
 mask2 = ellipsoid(x)
 um = mask2*img2_orig
 pm = mask2*x
-fcr = fsc(um, pm)[1]
+fcr = statistics.fsc(um, pm)[1]
 
 lf = len(fcr); fcr1 = [0.0]*lf
 for i in range(lf):
@@ -1039,12 +1072,12 @@ for i in range(lf):
 	if fcrf[i]>sqrfsc[i]:
 		fcrf[i] = sqrfsc[i]
 
-pwu = rops_table(um)
-pwp = rops_table(pm)
+pwu = fundamentals.rops_table(um)
+pwp = fundamentals.rops_table(pm)
 Wfilt = create_CCFR_filter(pwu, pwp, fcrf, sg)
 
 if filtseg:
-	img1_filt = filt_table(x, Wfilt)
+	img1_filt = filter.filt_table(x, Wfilt)
 else:
 	img1_filt = x.copy()
 
@@ -1063,15 +1096,15 @@ else:
 
 
 # window moved, filtered segment:
-img1_filt = Util.window(img1_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
+img1_filt = EMAN2_cppwrap.Util.window(img1_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
 
 # prepare moved segment for gridding:
 #(after this point, img1_init MUST be used ONLY in rot_shift3D_grid):
-img1_init,kbi = prepi3D(img1_filt)
+img1_init,kbi = fundamentals.prepi3D(img1_filt)
 
 
 # create filter to model noise:
-pwG = rops_table(img2_orig)
+pwG = fundamentals.rops_table(img2_orig)
 noise_filt = create_noise_filter(pwG, FSC, q2)
 
 # adjust target map so that the given FSC (and SSNR) are in
@@ -1094,9 +1127,9 @@ for j in range(lpar+1):
 nxc = img1_orig_0.get_xsize()
 nyc = img1_orig_0.get_ysize()
 nzc = img1_orig_0.get_zsize()
-cloud = model_blank(nxc, nyc, nzc)
+cloud = utilities.model_blank(nxc, nyc, nzc)
 if alpha != 0.0:
-	cloud2 = model_blank(nxc, nyc, nzc)
+	cloud2 = utilities.model_blank(nxc, nyc, nzc)
 
 
 # array to store sigmas at the end of each cycle:
@@ -1106,10 +1139,10 @@ for cycle in range(max_cycles):
 	lt = cycle*ncpu+myid
 	img2_noisy = create_noisy_map(img2_orig, sigNoise, noise_filt, factor_noise)
 	if (not filtseg):
-		img2_noisy = filt_table(img2_noisy, Wfilt)
+		img2_noisy = filter.filt_table(img2_noisy, Wfilt)
 	if imask:
 		img2_noisy = img2_noisy * imaskvol
-	img2_noisy = Util.window(img2_noisy, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
+	img2_noisy = EMAN2_cppwrap.Util.window(img2_noisy, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
 
 	bccc = -1.e10
 
@@ -1119,13 +1152,13 @@ for cycle in range(max_cycles):
 			if k<lpar-3: params[k] = shake_ang_2*(2.0*numpy.random.random()-1.0)
 			else: params[k] = shake_shift_2*(2.0*numpy.random.random()-1.0)
 
-		params = ali_vol_grid(img1_init, params, img2_noisy, ang_bracket, shift_bracket, mask_rad, discrep, kbi, False)
+		params = applications.ali_vol_grid(img1_init, params, img2_noisy, ang_bracket, shift_bracket, mask_rad, discrep, kbi, False)
 
 		# params are in the "xyz" convention, so get "spider" ones to do the rot:
-		tr = Transform({"type":"xyz","xtilt":params[0],"ytilt":params[1],"ztilt":params[2], "tx":params[3], "ty":params[4], "tz":params[5]})
+		tr = EMAN2_cppwrap.Transform({"type":"xyz","xtilt":params[0],"ytilt":params[1],"ztilt":params[2], "tx":params[3], "ty":params[4], "tz":params[5]})
 		qt = tr.get_params("spider")
 
-		x = rot_shift3D_grid(img1_init,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'],1.0,kbi,"background",False)
+		x = fundamentals.rot_shift3D_grid(img1_init,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'],1.0,kbi,"background",False)
 
 		tc = compdisc(x, img2_noisy, mask, discrep)
 
@@ -1143,7 +1176,7 @@ for cycle in range(max_cycles):
 	parfile.close()
 
 	# pixel motion from rotation
-	tsx = Transform({"type":"xyz","xtilt":bparams[0],"ytilt":bparams[1],"ztilt":bparams[2], "tx":bparams[3], "ty":bparams[4], "tz":bparams[5]})
+	tsx = EMAN2_cppwrap.Transform({"type":"xyz","xtilt":bparams[0],"ytilt":bparams[1],"ztilt":bparams[2], "tx":bparams[3], "ty":bparams[4], "tz":bparams[5]})
 	qts = tsx.get_params("spin")
 	rotp = red(qts['omega'])*radius*3.14159/180.
 
@@ -1154,14 +1187,14 @@ for cycle in range(max_cycles):
 	sumbp2[lpar] += rotp**2
 
 	N = (cycle+1)*ncpu
-	bp_mean  = mpi_reduce(sumbp,  lpar+1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	bp_sigma = mpi_reduce(sumbp2, lpar+1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	mpi_barrier(MPI_COMM_WORLD)
+	bp_mean  = mpi.mpi_reduce(sumbp,  lpar+1, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+	bp_sigma = mpi.mpi_reduce(sumbp2, lpar+1, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if myid == main_node:
 		for j in range(lpar+1):
 			bp_mean[j] = bp_mean[j]/N
-			bp_sigma[j] = sqrt((bp_sigma[j]- N*bp_mean[j]**2)/(N-1))
+			bp_sigma[j] = numpy.sqrt((bp_sigma[j]- N*bp_mean[j]**2)/(N-1))
 			sigmas[cycle][j] = bp_sigma[j]
 
 		if cycle>rave:
@@ -1188,7 +1221,7 @@ for cycle in range(max_cycles):
 	else:
 		to_break = 0
 	
-	to_break = mpi_bcast(to_break, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+	to_break = mpi.mpi_bcast(to_break, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
 	to_break = int(to_break[0])
 	if to_break == 1: break
 
@@ -1201,13 +1234,13 @@ if myid == main_node:
 	parmat = [[0.0 for j in range(lpar)] for i in range(N)]
 
 	for i in range(N):
-		paramsrows = read_text_row(segName+str(resol)+"_params_"+str(i)+".txt")
+		paramsrows = utilities.read_text_row(segName+str(resol)+"_params_"+str(i)+".txt")
 		for j in range(lpar):
 			parmat[i][j] = paramsrows[0][j]
 
 	# remove all individual parameter files:
 	for i in range(N):
-		system("rm "+segName+str(resol)+"_params_"+str(i)+".txt")
+		os.system("rm "+segName+str(resol)+"_params_"+str(i)+".txt")
 
 	# compute some more stats of the fitting parameters:
 	median = [0.0]*lpar; parlist = [0.0]*N; cp=[0.0]*lpar; wp=[0.0]*lpar
@@ -1232,7 +1265,7 @@ if myid == main_node:
 		# compute stats without outliers:
 		ave,var,skew = mean_var_skew(parlist_filt)
 		bp_mean[j]  = ave
-		bp_sigma[j] = sqrt(var)
+		bp_sigma[j] = numpy.sqrt(var)
 		bp_skew[j]  = skew
 
 	# put together all parameters in one file (after filtering outliers
@@ -1254,7 +1287,7 @@ if myid == main_node:
 			for j in range(lpar):
 				parmat[i][j] = (parmat[i][j]-bp_mean[j])*alpha+bp_mean[j]
 		# compose with init motion and write out line to parameter file:
-		tsx = Transform({"type":"xyz","xtilt":parmat[i][0],"ytilt":parmat[i][1],"ztilt":parmat[i][2],"tx":parmat[i][3],"ty":parmat[i][4],"tz":parmat[i][5]})
+		tsx = EMAN2_cppwrap.Transform({"type":"xyz","xtilt":parmat[i][0],"ytilt":parmat[i][1],"ztilt":parmat[i][2],"tx":parmat[i][3],"ty":parmat[i][4],"tz":parmat[i][5]})
 		tsx_comp = tsx * tsx_init
 		qtc = tsx_comp.get_params("xyz")
 		row = "%7.3f %7.3f %7.3f %7.3f %7.3f %7.3f\n" % (red(qtc['xtilt']), red(qtc['ytilt']), red(qtc['ztilt']), qtc['tx'],qtc['ty'],qtc['tz'])
@@ -1273,9 +1306,9 @@ if myid == main_node:
 	print("         skews: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
 		(bp_skew[0], bp_skew[1], bp_skew[2], bp_skew[3], bp_skew[4], bp_skew[5]))
 
-	sigma_tr  = sqrt(bp_sigma[lpar-3]**2+bp_sigma[lpar-2]**2+bp_sigma[lpar-1]**2)
-	sigma_mot = sqrt(sigma_tr**2+bp_sigma[lpar]**2)
-	skew_mot  = sqrt(bp_skew[3]**2+bp_skew[4]**2+bp_skew[5]**2)
+	sigma_tr  = numpy.sqrt(bp_sigma[lpar-3]**2+bp_sigma[lpar-2]**2+bp_sigma[lpar-1]**2)
+	sigma_mot = numpy.sqrt(sigma_tr**2+bp_sigma[lpar]**2)
+	skew_mot  = numpy.sqrt(bp_skew[3]**2+bp_skew[4]**2+bp_skew[5]**2)
 
 	print("  sigma_noise =",sigNoise)
 	print("  sigma_rot = %7.3f pix, sigma_shift = %7.3f pix, sigma_mot = %7.3f pix" % \
@@ -1283,13 +1316,13 @@ if myid == main_node:
 	print("   skew_mot = %7.3f" % (skew_mot))
 
 	# write out mean position:
-	tsx_mean = Transform({"type":"xyz","xtilt":float(bp_mean[0]),"ytilt":float(bp_mean[1]),"ztilt":float(bp_mean[2]),"tx":float(bp_mean[3]),"ty":float(bp_mean[4]),"tz":float(bp_mean[5])})
+	tsx_mean = EMAN2_cppwrap.Transform({"type":"xyz","xtilt":float(bp_mean[0]),"ytilt":float(bp_mean[1]),"ztilt":float(bp_mean[2]),"tx":float(bp_mean[3]),"ty":float(bp_mean[4]),"tz":float(bp_mean[5])})
 	tsxp = tshift * tsx_mean * tsx_init * tshift.inverse()
 	qt = tsxp.get_params("spider")
-	x = rot_shift3D(img1_orig_0,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'])
+	x = fundamentals.rot_shift3D(img1_orig_0,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'])
 	if nover>1:
-		x = Util.decimate(x, nover, nover, nover)
-	drop_image(x, segName+"_"+str(resol)+"_meanx.spi","s")
+		x = EMAN2_cppwrap.Util.decimate(x, nover, nover, nover)
+	utilities.drop_image(x, segName+"_"+str(resol)+"_meanx.spi","s")
 
 	# ... I think it's probably better to use sigma instead of width to define the ellipsoid:
 	for j in range(lpar):
@@ -1300,8 +1333,8 @@ if myid == main_node:
 		for j in range(lpar):
 			params[j] = parmat_filt[i][j]
 		# project motion onto surface of ellipsoid:
-		krot =   sqrt(((params[0]-cp[0])/wp[0])**2 + ((params[1]-cp[1])/wp[1])**2 + ((params[2]-cp[2])/wp[2])**2)
-		kshift = sqrt(((params[3]-cp[3])/wp[3])**2 + ((params[4]-cp[4])/wp[4])**2 + ((params[5]-cp[5])/wp[5])**2)
+		krot =   numpy.sqrt(((params[0]-cp[0])/wp[0])**2 + ((params[1]-cp[1])/wp[1])**2 + ((params[2]-cp[2])/wp[2])**2)
+		kshift = numpy.sqrt(((params[3]-cp[3])/wp[3])**2 + ((params[4]-cp[4])/wp[4])**2 + ((params[5]-cp[5])/wp[5])**2)
 		bp_delta[0] = (params[0]-cp[0])/krot;   bp_delta[1] = (params[1]-cp[1])/krot;
 		bp_delta[2] = (params[2]-cp[2])/krot;   bp_delta[3] = (params[3]-cp[3])/kshift;
 		bp_delta[4] = (params[4]-cp[4])/kshift; bp_delta[5] = (params[5]-cp[5])/kshift;
@@ -1319,12 +1352,12 @@ if myid == main_node:
 							tye = s4*bp_delta[4]+cp[4]
 							for s5 in [-1,1]:
 								tze = s5*bp_delta[5]+cp[5]
-								tsxe = Transform({"type":"xyz","xtilt":xte,"ytilt":yte,"ztilt":zte,"tx":txe,"ty":tye,"tz":tze})
+								tsxe = EMAN2_cppwrap.Transform({"type":"xyz","xtilt":xte,"ytilt":yte,"ztilt":zte,"tx":txe,"ty":tye,"tz":tze})
 								# total transformation in the original (non-windowed) volume:
 								tsxp = tshift * tsxe * tsx_init * tshift.inverse()
 								qt = tsxp.get_params("spider")
-								img4 = rot_shift3D(img1_orig_0,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'])
-								cloud = 0.5*(square_root(square(cloud-img4))+cloud+img4)   # max(cloud,img4)
+								img4 = fundamentals.rot_shift3D(img1_orig_0,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'])
+								cloud = 0.5*(morphology.square_root(morphology.square(cloud-img4))+cloud+img4)   # max(cloud,img4)
 								#do scaled cloud if requested:
 								if alpha != 0.0:
 									xte2 = s0*bp_delta[0]*alpha+cp[0]
@@ -1333,21 +1366,21 @@ if myid == main_node:
 									txe2 = s3*bp_delta[3]*alpha+cp[3]
 									tye2 = s4*bp_delta[4]*alpha+cp[4]
 									tze2 = s5*bp_delta[5]*alpha+cp[5]
-									tsxe2 = Transform({"type":"xyz","xtilt":xte2,"ytilt":yte2,"ztilt":zte2,"tx":txe2,"ty":tye2,"tz":tze2})
+									tsxe2 = EMAN2_cppwrap.Transform({"type":"xyz","xtilt":xte2,"ytilt":yte2,"ztilt":zte2,"tx":txe2,"ty":tye2,"tz":tze2})
 									# total transformation in the original (non-windowed) volume:
 									tsxp2 = tshift * tsxe2 * tsx_init * tshift.inverse()
 									qt2 = tsxp2.get_params("spider")
-									img5 = rot_shift3D(img1_orig_0,qt2['phi'],qt2['theta'],qt2['psi'],qt2['tx'],qt2['ty'],qt2['tz'])
-									cloud2 = 0.5*(square_root(square(cloud2-img5))+cloud2+img5)   # max(cloud2,img5)
+									img5 = fundamentals.rot_shift3D(img1_orig_0,qt2['phi'],qt2['theta'],qt2['psi'],qt2['tx'],qt2['ty'],qt2['tz'])
+									cloud2 = 0.5*(morphology.square_root(morphology.square(cloud2-img5))+cloud2+img5)   # max(cloud2,img5)
 
 	if nover>1:
-		cloud = Util.decimate(cloud, nover, nover, nover)
+		cloud = EMAN2_cppwrap.Util.decimate(cloud, nover, nover, nover)
 		if alpha != 0.0:
-			cloud2 = Util.decimate(cloud2, nover, nover, nover)
+			cloud2 = EMAN2_cppwrap.Util.decimate(cloud2, nover, nover, nover)
 
-	drop_image(cloud, segName+"_"+str(resol)+"_cloudx.spi", "s")
+	utilities.drop_image(cloud, segName+"_"+str(resol)+"_cloudx.spi", "s")
 	if alpha != 0.0:
-		drop_image(cloud2, segName+"_"+str(resol)+"_cloudx_scaled.spi", "s")
+		utilities.drop_image(cloud2, segName+"_"+str(resol)+"_cloudx_scaled.spi", "s")
 
-mpi_finalize()
+mpi.mpi_finalize()
 exit()

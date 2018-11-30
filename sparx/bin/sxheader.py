@@ -31,19 +31,31 @@ from __future__ import print_function
 #
 #
 
+import applications
+import global_def
+import optparse
+import os
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
-	from global_def import SPARXVERSION
-	import global_def
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+	pass#IMPORTIMPORTIMPORT from global_def import SPARXVERSION
+	pass#IMPORTIMPORTIMPORT import global_def
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
 	usage = progname + " stack --params='parm1 parm2 parm3 ...' --zero --one --set=number --randomize --rand_alpha --import=file --export=file --print --backup --suffix --restore --delete"
-	parser = OptionParser(usage, version=SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
 
 	parser.add_option("--params",	   type="string",       default=None,    help="parameter list")
 	parser.add_option("--zero",	       action="store_true", default=False,   help="set parameter to zero")
@@ -71,10 +83,10 @@ def main():
 		exit(-1)
 
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
-	from applications import header
-	header(args[0], options.params, options.zero, options.one, options.set, options.randomize, options.rand_alpha, options.fimport, options.fexport, \
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
+	pass#IMPORTIMPORTIMPORT from applications import header
+	applications.header(args[0], options.params, options.zero, options.one, options.set, options.randomize, options.rand_alpha, options.fimport, options.fexport, \
 	options.fprint, options.backup, options.suffix, options.restore, options.delete, options.consecutive)
 
 if __name__ == "__main__":

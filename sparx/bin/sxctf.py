@@ -32,26 +32,66 @@ from __future__ import print_function
 #
 #
 
+import EMAN2
+import EMAN2_cppwrap
+import EMAN2_meta
+import EMAN2db
+import Simplex
+import eman2_gui.emapplication as emapplication
+import eman2_gui.emimage2d as emimage2d
+import eman2_gui.emplot2d as emplot2d
+import eman2_gui.emsprworkflow as emsprworkflow
+import eman2_gui.valslider as valslider
+import fundamentals
+import global_def
+import morphology
+import numpy
+import optparse
+import os
+import sys
+import utilities
+import weakref
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import EMAN2_meta
+pass#IMPORTIMPORTIMPORT import EMAN2db
+pass#IMPORTIMPORTIMPORT import OpenGL
+pass#IMPORTIMPORTIMPORT import Simplex
+pass#IMPORTIMPORTIMPORT import eman2_gui.emapplication as emapplication
+pass#IMPORTIMPORTIMPORT import eman2_gui.emimage2d as emimage2d
+pass#IMPORTIMPORTIMPORT import eman2_gui.emplot2d as emplot2d
+pass#IMPORTIMPORTIMPORT import eman2_gui.emsprworkflow as emsprworkflow
+pass#IMPORTIMPORTIMPORT import eman2_gui.valslider as valslider
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+pass#IMPORTIMPORTIMPORT import weakref
 # e2ctf.py  10/29/2008 Steven Ludtke
 # This is a program for determining CTF parameters
 
 from builtins import range
 from builtins import object
-import global_def
-from global_def import *
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
 
-from EMAN2 import *
-from EMAN2db import db_open_dict, db_check_dict
-from sparx import *
-from optparse import OptionParser
-from OpenGL import GL,GLUT
-from numpy import *
-import os
-import sys
-import weakref
-from eman2_gui.emapplication import EMApp
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict, db_check_dict
+pass#IMPORTIMPORTIMPORT from sparx import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT from OpenGL import GL,GLUT
+pass#IMPORTIMPORTIMPORT from numpy import *
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import weakref
+pass#IMPORTIMPORTIMPORT from eman2_gui.emapplication import EMApp
 
-from Simplex import Simplex
+pass#IMPORTIMPORTIMPORT from Simplex import Simplex
 
 debug=False
 logid=None
@@ -74,7 +114,7 @@ operations are performed on oversampled images if specified (though final real-s
 size. Increasing padding during the particle picking process will improve the accuracy of phase-flipping, particularly for
 images far from focus."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = optparse.OptionParser(usage=usage,version=EMAN2_meta.EMANVERSION)
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
 	parser.add_option("--auto_fit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
@@ -98,8 +138,8 @@ images far from focus."""
 	if len(args)<1 : parser.error("Input image required")
 	
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
 
 	if options.auto_fit:
 		if options.voltage==0 : parser.error("Please specify voltage")
@@ -110,16 +150,16 @@ images far from focus."""
 
 	global sfcurve
 	if options.sf :
-		sfcurve=XYData()
+		sfcurve=EMAN2_cppwrap.XYData()
 		sfcurve.read_file(options.sf)
 
-	logid=E2init(sys.argv)
+	logid=EMAN2.E2init(sys.argv)
 
 #	if options.oversamp>1 : options.apix/=float(options.oversamp)
 
-	db_project=db_open_dict("bdb:project")
-	db_parms=db_open_dict("bdb:e2ctf.parms")
-	db_misc=db_open_dict("bdb:e2ctf.misc")
+	db_project=EMAN2db.db_open_dict("bdb:project")
+	db_parms=EMAN2db.db_open_dict("bdb:e2ctf.parms")
+	db_misc=EMAN2db.db_open_dict("bdb:e2ctf.misc")
 
 	options.filenames = args
 	### Power spectrum and CTF fitting
@@ -137,7 +177,7 @@ images far from focus."""
 		scales=[1.0]*len(img_sets)
 		if (len(img_sets)>3) :
 			incr=[0.2]*len(img_sets)
-			simp=Simplex(env_cmp,scales,incr)
+			simp=Simplex.Simplex(env_cmp,scales,incr)
 			scales=simp.minimize(maxiters=1000)[0]
 	#		print scales
 			print(" ")
@@ -152,7 +192,7 @@ images far from focus."""
 		envelope.sort()
 		envelope=[i for i in envelope if i[1]>0]	# filter out all negative peak values
 
-		db_misc=db_open_dict("bdb:e2ctf.misc")
+		db_misc=EMAN2db.db_open_dict("bdb:e2ctf.misc")
 		db_misc["envelope"]=envelope
 		#db_close_dict("bdb:e2ctf.misc")
 
@@ -164,9 +204,9 @@ images far from focus."""
 	if options.gui :
 		img_sets = get_gui_arg_img_sets(options.filenames)
 		if len(img_sets) == 0:
-			E2end(logid)
+			EMAN2.E2end(logid)
 			sys.exit(1)
-		app=EMApp()
+		app=emapplication.EMApp()
 		gui=GUIctf(app,img_sets)
 		gui.show_guis()
 		app.exec_()
@@ -179,7 +219,7 @@ images far from focus."""
 	#if options.phaseflip or options.wiener: # only put this if statement here to make the program flow obvious
 	#	write_e2ctf_output(options) # converted to a function so to work with the workflow
 
-	E2end(logid)
+	EMAN2.E2end(logid)
 
 def get_gui_arg_img_sets(filenames):
 	'''
@@ -187,16 +227,16 @@ def get_gui_arg_img_sets(filenames):
 	'''
 	
 	img_sets = []
-	if db_check_dict("bdb:e2ctf.parms"):
-		db_parms=db_open_dict("bdb:e2ctf.parms",ro=True)
+	if EMAN2db.db_check_dict("bdb:e2ctf.parms"):
+		db_parms=EMAN2db.db_open_dict("bdb:e2ctf.parms",ro=True)
 	else: return img_sets
 	for file in filenames:
-		name = base_name(file)
+		name = EMAN2.base_name(file)
 		if name not in db_parms:
 			print("error, you must first run auto fit before running the gui - there are no parameters for",name)
 			return []
 		img_set = db_parms[name]
-		ctf=EMAN2Ctf()
+		ctf=EMAN2_cppwrap.EMAN2Ctf()
 		ctf.from_string(img_set[0]) # convert to ctf object seeing as it's a string
 		img_set[0] = ctf
 		actual = [file]
@@ -210,9 +250,9 @@ def write_e2ctf_output(options):
 	global logid
 	
 	if options.phaseflip or options.wiener:
-		db_parms=db_open_dict("bdb:e2ctf.parms")
+		db_parms=EMAN2db.db_open_dict("bdb:e2ctf.parms")
 		for i,filename in enumerate(options.filenames):
-			name=base_name(filename)
+			name=EMAN2.base_name(filename)
 			if debug: print("Processing ",filename)
 
 			if options.phaseflip: phaseout="bdb:particles#"+name+"_ctf_flip"
@@ -232,10 +272,10 @@ def write_e2ctf_output(options):
 			if phaseout : print("Phase image out: ",phaseout,"\t", end=' ')
 			if wienerout : print("Wiener image out: ",wienerout, end=' ')
 			print("")
-			ctf=EMAN2Ctf()
+			ctf=EMAN2_cppwrap.EMAN2Ctf()
 			ctf.from_string(db_parms[name][0])
 			process_stack(filename,phaseout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert)
-			if logid : E2progress(logid,float(i+1)/len(options.filenames))
+			if logid : EMAN2.E2progress(logid,float(i+1)/len(options.filenames))
 			
 			
 	
@@ -244,20 +284,20 @@ def pspec_and_ctf_fit(options,debug=False):
 	global logid
 	img_sets=[]
 
-	db_parms=db_open_dict("bdb:e2ctf.parms")
+	db_parms=EMAN2db.db_open_dict("bdb:e2ctf.parms")
 
 	for i,filename in enumerate(options.filenames):
-		name=base_name(filename)
+		name=EMAN2.base_name(filename)
 
 		# compute the power spectra
 		if debug : print("Processing ",filename)
 		apix=options.apix
-		if apix<=0 : apix=EMData(filename,0,1)["apix_x"] 
+		if apix<=0 : apix=EMAN2_cppwrap.EMData(filename,0,1)["apix_x"] 
 		im_1d,bg_1d,im_2d,bg_2d=powspec_with_bg(filename,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp)
 		ds=1.0/(apix*im_2d.get_ysize())
 		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 
-		Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
+		EMAN2_cppwrap.Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
 
 		# Fit the CTF parameters
 		if debug : print("Fit CTF")
@@ -265,14 +305,14 @@ def pspec_and_ctf_fit(options,debug=False):
 		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,im_2d,bg_2d]
 
 		if debug:
-			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
-			Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
-			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
+			EMAN2_cppwrap.Util.save_data(0,ds,im_1d,"ctf.fg.txt")
+			EMAN2_cppwrap.Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
+			EMAN2_cppwrap.Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
 			
 		img_sets.append((filename,ctf,im_1d,bg_1d,im_2d,bg_2d))
-		if logid : E2progress(logid,float(i+1)/len(options.filenames))
+		if logid : EMAN2.E2progress(logid,float(i+1)/len(options.filenames))
 		
-	project_db = db_open_dict("bdb:project")
+	project_db = EMAN2db.db_open_dict("bdb:project")
 	project_db["global.microscope_voltage"] = options.voltage
 	project_db["global.microscope_cs"] = options.cs
 	project_db["global.apix"] = apix
@@ -312,35 +352,35 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 	oversamp will oversample as part of the processing, ostensibly permitting phase-flipping on a wider range of defocus values
 	"""
 	
-	im=EMData()
+	im=EMAN2_cppwrap.EMData()
 	im.read_image(stackfile,0) # can't use the constructor if bdb terminology is being used
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
-	n=EMUtil.get_image_count(stackfile)
+	n=EMAN2_cppwrap.EMUtil.get_image_count(stackfile)
 	lctf=None
 	
 	
 	for i in range(n):
-		im1 = EMData()
+		im1 = EMAN2_cppwrap.EMData()
 		im1.read_image(stackfile,i)
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
-		if type(ctf)==EMAN1Ctf : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
+		if type(ctf)==EMAN2_cppwrap.EMAN1Ctf : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
 		
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
-			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+			im1.clip_inplace(EMAN2_cppwrap.Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 		
 		fft1=im1.do_fft()
 			
 		if phaseflip :
 			if not lctf or not lctf.equal(ctf):
 				flipim=fft1.copy()
-				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+				ctf.compute_2d_complex(flipim,EMAN2_cppwrap.Ctf.CtfType.CTF_SIGN)
 			fft1.mult(flipim)
 			out=fft1.do_ift()
 			out["ctf"]=ctf
-			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
+			out.clip_inplace(EMAN2_cppwrap.Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert: out.mult(-1.0)
 			out.process("normalize.edgemean")
 			out.write_image(phaseflip,i)
@@ -348,7 +388,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 		if wiener :
 			if not lctf or not lctf.equal(ctf):
 				wienerim=fft1.copy()
-				ctf.compute_2d_complex(wienerim,Ctf.CtfType.CTF_WIENER_FILTER)
+				ctf.compute_2d_complex(wienerim,EMAN2_cppwrap.Ctf.CtfType.CTF_WIENER_FILTER)
 #				print wienerim.get_attr_dict()
 #				display(wienerim)
 #				print ctf.to_string()
@@ -358,7 +398,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 			fft1.mult(wienerim)
 			out=fft1.do_ift()
 			out["ctf"]=ctf
-			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
+			out.clip_inplace(EMAN2_cppwrap.Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert : out.mult(-1.0)
 			out.process("normalize.edgemean")
 			try: out.write_image(wiener,i)
@@ -380,10 +420,10 @@ def powspec(stackfile,mask=None,edgenorm=True,):
 	optionally apply a mask then compute the average
 	2-D power spectrum for the stack. Results returned as a 2-D FFT intensity/0 image"""
 	
-	n=EMUtil.get_image_count(stackfile)
+	n=EMAN2_cppwrap.EMUtil.get_image_count(stackfile)
 	
 	for i in range(n):
-		im=EMData(stackfile,i)
+		im=EMAN2_cppwrap.EMData(stackfile,i)
 		if edgenorm : im.process_inplace("normalize.edgemean")
 		if mask : im*=mask
 		imf=im.do_fft()
@@ -412,53 +452,53 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	
 	global masks
 	
-	im = EMData()
+	im = EMAN2_cppwrap.EMData()
 	im.read_image(stackfile,0)
 	ys=im.get_ysize()*oversamp
 	ys2=im.get_ysize()
-	n=EMUtil.get_image_count(stackfile)
+	n=EMAN2_cppwrap.EMUtil.get_image_count(stackfile)
 	if(radius == 0):  radius = ys2//2 - ys2//4
 	
 	# set up the inner and outer Gaussian masks
 	try:
 		mask1,ratio1,mask2,ratio2=masks[(ys,radius)]
 	except:
-		mask1=EMData(ys2,ys2,1)
+		mask1=EMAN2_cppwrap.EMData(ys2,ys2,1)
 		mask1.to_one()
 		#mask1.process_inplace("mask.gaussian",{"outer_radius":radius})
 		mask1.process_inplace("mask.gaussian",{"inner_radius":radius,"outer_radius":ys2//10})
 		mask2=mask1.copy()*-1+1
 #		mask1.process_inplace("mask.decayedge2d",{"width":4})
 		#mask2.process_inplace("mask.decayedge2d",{"width":4})
-		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		mask1.clip_inplace(EMAN2_cppwrap.Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		mask2.clip_inplace(EMAN2_cppwrap.Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
 		ratio2=mask2.get_attr("square_sum")/(ys*ys)
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
 		print("  RATIOS  ", ratio1, ratio2,"    ",radius)
 		#mask1.write_image("mask1.hdf",0)
 		#mask2.write_image("mask2.hdf",0)
-	pav1 = model_blank(ys2,ys2)
-	pva1 = model_blank(ys2,ys2)
-	pav2 = model_blank(ys2,ys2)
-	pva2 = model_blank(ys2,ys2)
+	pav1 = utilities.model_blank(ys2,ys2)
+	pva1 = utilities.model_blank(ys2,ys2)
+	pav2 = utilities.model_blank(ys2,ys2)
+	pva2 = utilities.model_blank(ys2,ys2)
 	pf = float(ys2*ys2)**2/4.0
 	fofo = []
 	for i in range(n):
-		im1 = EMData()
+		im1 = EMAN2_cppwrap.EMData()
 		im1.read_image(stackfile,i)
 #		im1=EMData(stackfile,i)
 		#info(im1)
 		#if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
-			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+			im1.clip_inplace(EMAN2_cppwrap.Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 		im2=im1.copy()
 
 		im1*=mask1
-		pp = periodogram(im1)*pf/ratio1
-		fofo.append(rot_avg_table(pp))
-		Util.add_img(pav1, pp)
-		Util.add_img2(pva1, pp)
+		pp = EMAN2_cppwrap.periodogram(im1)*pf/ratio1
+		fofo.append(fundamentals.rot_avg_table(pp))
+		EMAN2_cppwrap.Util.add_img(pav1, pp)
+		EMAN2_cppwrap.Util.add_img2(pva1, pp)
 		imf=im1.do_fft()
 		#print_col(imf,0)
 		imf.ri2inten()
@@ -473,9 +513,9 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		else: av1+=imf
 	
 		im2*=mask2
-		pp = periodogram(im2)*pf/ratio2
-		Util.add_img(pav2, pp)
-		Util.add_img2(pva2, pp)
+		pp = EMAN2_cppwrap.periodogram(im2)*pf/ratio2
+		EMAN2_cppwrap.Util.add_img(pav2, pp)
+		EMAN2_cppwrap.Util.add_img2(pva2, pp)
 		imf=im2.do_fft()
 		imf.ri2inten()
 		if i==0: av2=imf
@@ -494,14 +534,14 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
 	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
 	pav1 /= n
-	pva1 = square_root((pva1 - pav1*pav1*n)/(n-1)/n)
+	pva1 = morphology.square_root((pva1 - pav1*pav1*n)/(n-1)/n)
 	pav2 /= n
-	pva2 = square_root((pva2 - pav2*pav2*n)/(n-1)/n)
+	pva2 = morphology.square_root((pva2 - pav2*pav2*n)/(n-1)/n)
 	pav1.write_image("av1.hdf",0)
 	pav2.write_image("av2.hdf",0)
 	pva1.write_image("va1.hdf",0)
 	pva2.write_image("va2.hdf",0)
-	write_text_file([list(range(ys2//2+1)), rot_avg_table(pav1), rot_avg_table(pva1), rot_avg_table(pav2), rot_avg_table(pva2)],"pwsa.txt")
+	utilities.write_text_file([list(range(ys2//2+1)), fundamentals.rot_avg_table(pav1), fundamentals.rot_avg_table(pva1), fundamentals.rot_avg_table(pav2), fundamentals.rot_avg_table(pva2)],"pwsa.txt")
 	#write_text_file([range(ys2//2+1), fofo[0], fofo[1], fofo[2], fofo[3], fofo[4], fofo[5]],"ipwsa.txt")
 	return (av1_1d,av2_1d,av1,av2)
 
@@ -512,14 +552,14 @@ def bgedge2d(stackfile,width):
 	1-D power spectrum as a list of floats. This is not presently used in e2ctf since it
 	produces a heavily downsampled background curve, and is provided only for experimentation."""
 	
-	n=EMUtil.get_image_count(stackfile)
+	n=EMAN2_cppwrap.EMUtil.get_image_count(stackfile)
 	av=None
 	
 	for i in range(n):
-		im=EMData(stackfile,i)
+		im=EMAN2_cppwrap.EMData(stackfile,i)
 		
 		xs=im.get_xsize()		# x size of image
-		xst=int(floor(xs/ceil(xs/width)))	# step to use so we cover xs with width sized blocks
+		xst=int(numpy.floor(xs/numpy.ceil(xs/width)))	# step to use so we cover xs with width sized blocks
 		
 		# Build a list of all boxes around the edge
 		boxl=[]
@@ -531,7 +571,7 @@ def bgedge2d(stackfile,width):
 			boxl.append((xs-xst,y))
 			
 		for b in boxl:
-			r=im.get_clip(Region(b[0],b[1],width,width))
+			r=im.get_clip(EMAN2_cppwrap.Region(b[0],b[1],width,width))
 			imf=r.do_fft()
 			imf.ri2inten()
 			if av : av+=imf
@@ -557,7 +597,7 @@ def least_square(data,dolog=0):
 	"simple linear regression for y=mx+b on a list of (x,y) points. Use the C routine if you need speed."
 	sum,sum_x,sum_y,sum_xx,sum_xy=0,0,0,0,0
 	for d in data:
-		if dolog : y=log10(d[1])
+		if dolog : y=numpy.log10(d[1])
 		else : y=d[1]
 
 		sum_x+=d[0]
@@ -595,14 +635,14 @@ def sfact(s, specimen = "ribosome", mode = "original"):
 	mode = "nono"
 	if(specimen == "ribosome"):
 		if(mode == "original"):
-			cof = poly1d(
+			cof = numpy.poly1d(
 			[  1.74299751e+11,  -6.33552567e+11,	 1.03272555e+12  ,-9.96735886e+11  ,
 			   6.33473586e+11,  -2.78968406e+11,	  8.72441041e+10 , -1.95433202e+10 ,
 			   3.12563862e+09,  -3.52114681e+08,	  2.72836330e+07 , -1.40398308e+06 ,
 			   4.58118110e+04,  -9.16255616e+02,	  8.49640066e+00]
 			)
 		else:
-			cof = poly1d(
+			cof = numpy.poly1d(
 			[  1.73873409e+11 , -6.31788788e+11 ,  1.02940787e+12 , -9.92979623e+11,
 			   6.30617550e+11 , -2.77427902e+11 ,  8.66371847e+10 , -1.93662061e+10,
 			   3.08723052e+09 , -3.45958145e+08 ,  2.65619992e+07 , -1.34260182e+06,
@@ -610,14 +650,14 @@ def sfact(s, specimen = "ribosome", mode = "original"):
 			)
 	elif(specimen == "groel"):
 		if(mode == "original"):
-			cof = poly1d(
+			cof = numpy.poly1d(
 			[  1.94998954e+11,  -7.15063399e+11 ,  1.17442894e+12 , -1.13967832e+12,
 			   7.25788915e+11,  -3.18555091e+11 ,  9.84631356e+10 , -2.15159505e+10,
 			   3.28840050e+09,  -3.42603807e+08 ,  2.32975708e+07 , -9.69959192e+05,
 			   2.32759627e+04,  -3.90343922e+02 ,  3.47891555e+00]
 			)
 		else:
-			cof = poly1d(
+			cof = numpy.poly1d(
 			[  1.93687379e+11,  -7.10019987e+11,   1.16564309e+12 , -1.13050123e+12,
 			   7.19376677e+11,  -3.15388629e+11,   9.73246889e+10 , -2.12134190e+10,
 			   3.22868925e+09,  -3.33878805e+08,   2.23619961e+07 , -8.96805906e+05,
@@ -625,7 +665,7 @@ def sfact(s, specimen = "ribosome", mode = "original"):
 			)
 
 
-	return  exp(polyval(cof, s))
+	return  numpy.exp(numpy.polyval(cof, s))
 
 
 def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
@@ -638,7 +678,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	ys = im_2d.get_ysize()
 	ds = 1.0/(apix*ys)
 	
-	ctf=EMAN2Ctf()
+	ctf=EMAN2_cppwrap.EMAN2Ctf()
 	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":0.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
 	
 	sf = sfact([i*ds for i in range(ys)], "ribosome","nono")
@@ -651,7 +691,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		df=dfi/20.0
 		ctf.defocus=df
 		ctf.ampcont=ac
-		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+		cc=ctf.compute_1d(ys,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_AMP)
 		st=.04/ds
 		norm=0
 		for fz in range(len(cc)): 
@@ -664,7 +704,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
 		#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]
 		#for s in range(int(fz/ctf.CTFOS),ys/2): tot+=(cc[s*ctf.CTFOS]**2)*snr[s]
-		tot/=sqrt(totr)
+		tot/=numpy.sqrt(totr)
 		#tot/=totr
 		if tot>dfbest1[1] : dfbest1=(df,tot)
 		try :dfout.write("%1.2f\t%g\n"%(df,tot))
@@ -681,7 +721,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	for dfi in range(-10,10):			# loop over defocus
 		df=dfi/100.0+dfbest1[0]
 		ctf.defocus=df
-		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+		cc=ctf.compute_1d(ys,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_AMP)
 		st=.04/ds
 		norm=0
 		for fz in range(len(cc)): 
@@ -693,14 +733,14 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
 			totr+=cc[s]**4
 
-		tot/=sqrt(totr)
+		tot/=numpy.sqrt(totr)
 		if tot>dfbest[1] : 
 			dfbest=(df,tot)
 		if debug : dfout.write("%1.2f\t%g\n"%(df,tot))
 
 	ctf.defocus=dfbest[0]
-	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-	Util.save_data(0,ds,cc,"ctf.ctf.txt")
+	cc=ctf.compute_1d(ys,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_AMP)
+	EMAN2_cppwrap.Util.save_data(0,ds,cc,"ctf.ctf.txt")
 
 	if bgadj:
 		# now we try to construct a better background based on the CTF zeroes being zero
@@ -752,7 +792,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	print("  FREQ RANGE",s0,s1)
 	for b in range(1,len(bfs)-1):
 		ctf.bfactor=bfs[b]
-		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+		cc=ctf.compute_1d(ys,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_AMP)
 		sf = sfact([ds*i for i in range(len(cc))], "ribosome","original")
 		cc=[sf[i]*cc[i]**2 for i in range(len(cc))]
 
@@ -760,7 +800,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		a0,a1=0,0
 		for s in range(s0,s1):
 			a0 += cc[s]
-			a1 += fabs(im_1d[s]-bg_1d[s])
+			a1 += numpy.fabs(im_1d[s]-bg_1d[s])
 		if a1==0 : a1=1.0
 		a0/=a1
 		cc=[i/a0 for i in cc]
@@ -777,14 +817,14 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 	best=(best[0],bfs[best[1]])
 	for b in range(20):
 		ctf.bfactor=bfs[bb-1]*(1.0-b/20.0)+bfs[bb+1]*(b/20.0)
-		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+		cc=ctf.compute_1d(ys,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_AMP)
 		sf = sfact([i*ds for i in range(len(cc))], "ribosome","original")
 		cc=[sf[i]*cc[i]**2 for i in range(len(cc))]
 		# adjust the amplitude to match well
 		a0,a1=0,0
 		for s in range(s0,s1): 
 			a0+=cc[s]
-			a1+=fabs(im_1d[s]-bg_1d[s])
+			a1+=numpy.fabs(im_1d[s]-bg_1d[s])
 		if a1==0 : a1=1.0
 		a0/=a1
 		cc=[i/a0 for i in cc]
@@ -817,7 +857,7 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 	subtracted power spectrum"""
 	ys=len(bg_1d)
 	ds=ctf.dsbg
-	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+	cc=ctf.compute_1d(ys,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_AMP)
 	ret=[]
 	
 	for i in range(1,len(cc)-1):
@@ -830,7 +870,7 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
-	from eman2_gui.valslider import ValSlider
+	pass#IMPORTIMPORTIMPORT from eman2_gui.valslider import ValSlider
 except:
 	print("Warning: PyQt4 must be installed to use the --gui option")
 	class dummy(object):
@@ -848,12 +888,12 @@ class GUIctf(QtGui.QWidget):
 		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
 		try:
-			from eman2_gui.emimage2d import EMImage2DWidget
+			pass#IMPORTIMPORTIMPORT from eman2_gui.emimage2d import EMImage2DWidget
 		except:
 			print("Cannot import EMAN image GUI objects (EMImage2DWidget)")
 			sys.exit(1)
 		try: 
-			from eman2_gui.emplot2d import EMPlot2DWidget
+			pass#IMPORTIMPORTIMPORT from eman2_gui.emplot2d import EMPlot2DWidget
 		except:
 			print("Cannot import EMAN plot GUI objects (is matplotlib installed?)")
 			sys.exit(1)
@@ -861,14 +901,14 @@ class GUIctf(QtGui.QWidget):
 		self.app = weakref.ref(application)
 		
 		QtGui.QWidget.__init__(self,None)
-		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
+		self.setWindowIcon(QtGui.QIcon(EMAN2.get_image_directory() + "ctf.png"))
 		
 		self.data=data
 		self.curset=0
 		self.plotmode=0
 		
-		self.guiim=EMImage2DWidget(application=self.app())
-		self.guiplot=EMPlot2DWidget(application=self.app())
+		self.guiim=emimage2d.EMImage2DWidget(application=self.app())
+		self.guiplot=emplot2d.EMPlot2DWidget(application=self.app())
 		
 		self.guiim.mousedown.connect(self.imgmousedown)
 		self.guiim.mousedrag.connect(self.imgmousedrag)
@@ -909,22 +949,22 @@ class GUIctf(QtGui.QWidget):
 		#self.samp = ValSlider(self,(0,5.0),"Amp:",0)
 		#self.vbl.addWidget(self.samp)
 		
-		self.sdefocus=ValSlider(self,(0,5),"Defocus:",0,90)
+		self.sdefocus=valslider.ValSlider(self,(0,5),"Defocus:",0,90)
 		self.vbl.addWidget(self.sdefocus)
 		
-		self.sbfactor=ValSlider(self,(0,1600),"B factor:",0,90)
+		self.sbfactor=valslider.ValSlider(self,(0,1600),"B factor:",0,90)
 		self.vbl.addWidget(self.sbfactor)
 		
-		self.sampcont=ValSlider(self,(0,100),"% AC",0,90)
+		self.sampcont=valslider.ValSlider(self,(0,100),"% AC",0,90)
 		self.vbl.addWidget(self.sampcont)
 		
 #		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
 #		self.vbl.addWidget(self.sapix)
 		
-		self.svoltage=ValSlider(self,(0,500),"Voltage (kV):",0,90)
+		self.svoltage=valslider.ValSlider(self,(0,500),"Voltage (kV):",0,90)
 		self.vbl.addWidget(self.svoltage)
 		
-		self.scs=ValSlider(self,(0,5),"Cs (mm):",0,90)
+		self.scs=valslider.ValSlider(self,(0,5),"Cs (mm):",0,90)
 		self.vbl.addWidget(self.scs)
 		self.hbl_buttons = QtGui.QHBoxLayout()
 		self.saveparms = QtGui.QPushButton("Save parms")
@@ -962,12 +1002,12 @@ class GUIctf(QtGui.QWidget):
 			
 		val = self.curset
 		name = str(self.setlist.item(val).text())
-		name = base_name(name)
+		name = EMAN2.base_name(name)
 		
 #		if not db_check_dict(name):
 #			print "error, the db doesn't exist:",name
 #			
-		db_parms=db_open_dict("bdb:e2ctf.parms")
+		db_parms=EMAN2db.db_open_dict("bdb:e2ctf.parms")
 		ctf = self.data[val][1].to_string()
 		output = []
 		for i,val in enumerate(self.data[val]):
@@ -985,15 +1025,15 @@ class GUIctf(QtGui.QWidget):
 		val = self.curset
 		name = str(self.setlist.item(val).text())
 		data = [name]
-		name = base_name(name)
+		name = EMAN2.base_name(name)
 		
-		db_parms=db_open_dict("bdb:e2ctf.parms")
+		db_parms=EMAN2db.db_open_dict("bdb:e2ctf.parms")
 		if name not in db_parms:
 			print("error, ctf parameters do not exist for:",name)
 #			
 		
 		data.extend(db_parms[name])
-		ctf=EMAN2Ctf()
+		ctf=EMAN2_cppwrap.EMAN2Ctf()
 		ctf.from_string(data[1])
 		data[1] = ctf
 		
@@ -1003,8 +1043,8 @@ class GUIctf(QtGui.QWidget):
 #	def get_output_params(self):
 	
 	def on_output(self):
-		from eman2_gui.emsprworkflow import E2CTFOutputTaskGeneral
-		self.form = E2CTFOutputTaskGeneral()
+		pass#IMPORTIMPORTIMPORT from eman2_gui.emsprworkflow import E2CTFOutputTaskGeneral
+		self.form = emsprworkflow.E2CTFOutputTaskGeneral()
 		self.form.run_form()
 	
 	def show_guis(self):
@@ -1048,7 +1088,7 @@ class GUIctf(QtGui.QWidget):
 			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
 			self.guiplot.set_data((s,bgsub),"fg-bg",True,True)
 			
-			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
+			fit=ctf.compute_1d(len(s)*2,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_AMP)		# The fit curve
 			sf = sfact(s, "ribosome","nono")
 			fit=[sf[i]*fit[i]**2 for i in range(len(s))]		# squared * a generic structure factor
 
@@ -1061,7 +1101,7 @@ class GUIctf(QtGui.QWidget):
 					#rto+=fit[i]**2
 					#nrto+=bgsub[i]**2
 					rto+=fit[i]
-					nrto+=fabs(bgsub[i])
+					nrto+=numpy.fabs(bgsub[i])
 			if nrto==0 : rto=1.0
 			else : rto/=nrto
 			fit=[fit[i]/rto for i in range(len(s))]
@@ -1069,29 +1109,29 @@ class GUIctf(QtGui.QWidget):
 			self.guiplot.set_data((s,fit),"fit")
 			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")
 		elif self.plotmode==2:
-			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
+			snr=ctf.compute_1d(len(s)*2,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_SNR)		# The snr curve
 			self.guiplot.set_data((s,snr[:len(s)]),"snr",True)
 			self.guiplot.setAxisParms("s (1/A)","SNR (intensity ratio)")
 		elif self.plotmode==3:
-			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
+			snr=ctf.compute_1d(len(s)*2,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_SNR)		# The snr curve
 			self.guiplot.set_data((s,snr[:len(s)]),"snr",True)
-			ssnr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR_SMOOTH)		# The fit curve
+			ssnr=ctf.compute_1d(len(s)*2,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_SNR_SMOOTH)		# The fit curve
 			self.guiplot.set_data((s,ssnr[:len(s)]),"ssnr")
 			self.guiplot.setAxisParms("s (1/A)","SNR (intensity ratio)")
 		elif self.plotmode==4:
-			snr=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_SNR)		# The snr curve
+			snr=ctf.compute_1d(len(s)*2,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_SNR)		# The snr curve
 			for i in range(1,len(snr)): snr[i]=snr[i]*i+snr[i-1]			# integrate SNR*s
 #			for i in range(1,len(snr)): snr[i]/=snr[-1]				# normalize
 			for i in range(1,len(snr)): snr[i]/=len(snr)			# this way the relative quality of images can be compared
 			self.guiplot.set_data((s,snr[:len(s)]),"snr",True)
 			self.guiplot.setAxisParms("s (1/A)","Integrated SNR")
 		elif self.plotmode==5:
-			inten=[fabs(i) for i in ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)]		# The snr curve
+			inten=[numpy.fabs(i) for i in ctf.compute_1d(len(s)*2,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_AMP)]		# The snr curve
 			self.guiplot.set_data((s,inten[:len(s)]),"single",True)
 			all=[0 for i in inten]
 			for st in self.data:
 				print(st)
-				inten=[fabs(i) for i in st[1].compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)]
+				inten=[numpy.fabs(i) for i in st[1].compute_1d(len(s)*2,ds,EMAN2_cppwrap.Ctf.CtfType.CTF_AMP)]
 				for i in range(len(all)): all[i]+=inten[i]
 			self.guiplot.set_data((s,all[:len(s)]),"total")
 						

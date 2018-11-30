@@ -32,27 +32,45 @@ from __future__ import print_function
 #
 #
 
+import EMAN2_cppwrap
+import filter
+import os
+import projection
+import reconstruction
+import statistics
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import filter
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import projection
+pass#IMPORTIMPORTIMPORT import random
+pass#IMPORTIMPORTIMPORT import reconstruction
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import statistics
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
 from builtins import range
-from EMAN2  import *
-from sparx  import *
+pass#IMPORTIMPORTIMPORT from EMAN2  import *
+pass#IMPORTIMPORTIMPORT from sparx  import *
 
 
 #  TEST:  generate projections of a model, compute reconstructions and fsc curve.
 
-vol = EMData()
+vol = EMAN2_cppwrap.EMData()
 vol.read_image("../test/model001.tcp")
-info(vol)
+utilities.info(vol)
 nx = vol.get_xsize()
 delta = 10.0
 
-angles = even_angles(delta,0.,90.,0,359.99,"S")
+angles = utilities.even_angles(delta,0.,90.,0,359.99,"S")
 
 #angles=even_angles(delta_theta,0.,180.,0,359.99/2,"P")
 
-volft,kb = prep_vol(vol)
+volft,kb = projection.prep_vol(vol)
 
 stack_data = "data.hdf"
-import os
+pass#IMPORTIMPORTIMPORT import os
 os.system("rm -f  "+stack_data)
 #print  angles
 nangles = len(angles)
@@ -60,16 +78,16 @@ nangles = len(angles)
 ppp = []
 s2x=0
 s2y=0
-from random import random,randint
+pass#IMPORTIMPORTIMPORT from random import random,randint
 for i in range(nangles):
 	s2x = 4.0*randint(-1,1)
 	s2y = 4.0*randint(-1,1)
 	ppp.append([angles[i][0], angles[i][1], angles[i][2], s2x, s2y])
-	projo = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y])
+	projo = projection.prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -s2x, -s2y])
 	#apply CTF
 	defocus = randint(20,40)*1000.0
-	proj = filt_ctf(projo,defocus,2.0,300,2.5,0.1)
-	proj += model_gauss_noise(10.0, nx, nx)
+	proj = filter.filt_ctf(projo,defocus,2.0,300,2.5,0.1)
+	proj += utilities.model_gauss_noise(10.0, nx, nx)
 	# Set all parameters for the new 2D image
 	# three angles and two shifts to zero
 	proj.set_attr_dict({'phi':angles[i][0], 'theta':angles[i][1], 'psi':angles[i][2], 's2x':s2x, 's2y':s2y})
@@ -83,20 +101,20 @@ for i in range(nangles):
 del volft
 dropSpiderDoc("params.txt",ppp)
 del ppp
-from sys import exit
+pass#IMPORTIMPORTIMPORT from sys import exit
 snr = 2.0
 list_p = list(range(0,nangles,2))
-vol1   = recons3d_4nn_ctf(stack_data, list_p, snr)
+vol1   = reconstruction.recons3d_4nn_ctf(stack_data, list_p, snr)
 
 list_p = list(range(1,nangles,2))
-vol2   = recons3d_4nn_ctf(stack_data, list_p, snr)
+vol2   = reconstruction.recons3d_4nn_ctf(stack_data, list_p, snr)
 
-mask3d = model_circle(nx//2-5,nx,nx,nx)
+mask3d = utilities.model_circle(nx//2-5,nx,nx,nx)
 
-Util.mul_img(vol1, mask3d)
-Util.mul_img(vol2, mask3d)
+EMAN2_cppwrap.Util.mul_img(vol1, mask3d)
+EMAN2_cppwrap.Util.mul_img(vol2, mask3d)
 del mask3d
-fsc(vol1,vol2,0.5,"tdt.txt")
+statistics.fsc(vol1,vol2,0.5,"tdt.txt")
 del vol1, vol2
-volt = recons3d_4nn_ctf(stack_data, list(range(nangles)), snr)
+volt = reconstruction.recons3d_4nn_ctf(stack_data, list(range(nangles)), snr)
 dropImage(volt, "volt.spi", "s")   # to be displayed in chimera

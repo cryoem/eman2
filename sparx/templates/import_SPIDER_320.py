@@ -3,13 +3,23 @@ from __future__ import print_function
 
 # it is likely that the above line would have to be changed depending on python location
 
+import EMAN2_cppwrap
+import string
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import string
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
 from builtins import range
-from EMAN2 import *
-from sparx import *
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from sparx import *
 
-from sys import  *
-from string import *
-from math import sqrt
+pass#IMPORTIMPORTIMPORT from sys import  *
+pass#IMPORTIMPORTIMPORT from string import *
+pass#IMPORTIMPORTIMPORT from math import sqrt
 
 doc_home = "/home/ryan/"
 prj_home = "/home/ryan/Data_In/"
@@ -33,7 +43,7 @@ for ii in range(1) :
 
 	proj_in = prj_home + "ssspdbox320dcs2.dat"
 
-	nimage  = EMUtil.get_image_count( proj_in )
+	nimage  = EMAN2_cppwrap.EMUtil.get_image_count( proj_in )
 	#trans = read_txt_col(fn_tran)
 	#angl = read_txt_col(fn_angl)
 
@@ -42,7 +52,7 @@ for ii in range(1) :
 	prev_defocus = 0.
 
 	for iq in range(nimage):
-		defocus = atof( split( i_ctfs.readline() )[2] )
+		defocus = string.atof( split( i_ctfs.readline() )[2] )
 		if defocus != prev_defocus:
 			print("Defocus is ", defocus)
 		prev_defocus = defocus
@@ -68,20 +78,20 @@ for ii in range(1) :
 		#else :
 		#	psi = (psi + assb)%360.0
 
-		data = EMData()
+		data = EMAN2_cppwrap.EMData()
 		data.read_image( proj_in, i )
 		#  One could decimate the data here as spider images are usually oversampled.  This would require setting scale and adjusting
 		#  pixel size appropriately
 		#deci = Util.window(resample(data,scale),128,128,1,0,0,0)
 		deci = data
 		#set_params_proj(deci, [phi, theta, psi, sxnb, synb])
-		set_params_proj(deci, [0.,0.,0.,0.,0.])
+		utilities.set_params_proj(deci, [0.,0.,0.,0.,0.])
 		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 		# deci.set_attr_dict({'active':1, 'ctf_applied':0})
 		deci.set_attr_dict({'ctf_applied':0})
 
 		# Here, we convert the amp_contrast into the new convention
-		set_ctf(deci, [defocus, Cs, voltage, pixel, bfactor, amp_contrast])
+		utilities.set_ctf(deci, [defocus, Cs, voltage, pixel, bfactor, amp_contrast])
 
 		deci.write_image( proj_out, total_high_proj )
 

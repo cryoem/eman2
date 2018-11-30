@@ -31,14 +31,32 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+pass#IMPORTIMPORTIMPORT import os
+import global_def
+import inspect
+import morphology
+import mpi
+import optparse
 import os
+import string as str
 import sys
-from optparse import OptionParser
+import utilities
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import inspect
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import string as str
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
 
-import   global_def
-from     global_def import *
-from     inspect    import currentframe, getframeinfo
-from     utilities  import if_error_then_all_processes_exit_program
+pass#IMPORTIMPORTIMPORT import   global_def
+pass#IMPORTIMPORTIMPORT from     global_def import *
+pass#IMPORTIMPORTIMPORT from     inspect    import currentframe, getframeinfo
+pass#IMPORTIMPORTIMPORT from     utilities  import if_error_then_all_processes_exit_program
 
 global_def.BATCH = True
 
@@ -87,7 +105,7 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode
 
 """
-	parser = OptionParser(usage, version=SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
 	parser.add_option("--selection_list",	type="string",        default=None,   help="Micrograph selecting list: Specify path of a micrograph selection list text file for Selected Micrographs Mode. The file extension must be \'.txt\'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)")
 	parser.add_option("--wn",				type="int",           default=512,    help="CTF window size [pixels]: The size should be slightly larger than particle box size. This will be ignored in Stack Mode. (default 512)")
 	parser.add_option("--apix",				type="float",         default=-1.0,   help="Pixel size [A/Pixels]: The pixel size of input micrograph(s) or images in input particle stack. (default -1.0)")
@@ -126,11 +144,11 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 
 	main_mpi_proc = 0
 	if RUNNING_UNDER_MPI:
-		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_barrier, MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_barrier, MPI_COMM_WORLD
 
-		sys.argv = mpi_init(len(sys.argv), sys.argv)
-		my_mpi_proc_id = mpi_comm_rank(MPI_COMM_WORLD)
-		n_mpi_procs = mpi_comm_size(MPI_COMM_WORLD)
+		sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
+		my_mpi_proc_id = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+		n_mpi_procs = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
 		global_def.MPI = True
 
 	else:
@@ -141,8 +159,8 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	# Set up SPHIRE global definitions
 	# ------------------------------------------------------------------------------------
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
 
 	# Change the name log file for error message
 	original_logfilename = global_def.LOGFILE
@@ -160,11 +178,11 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	freq_stop  = -1.0
 	
 	if options.f_start >0.0: 
-		if options.f_start <=0.5: ERROR("f_start should be in Angstrom","sxcter", 1) # exclude abs frequencies and spatial frequencies
+		if options.f_start <=0.5: global_def.ERROR("f_start should be in Angstrom","sxcter", 1) # exclude abs frequencies and spatial frequencies
 		else: freq_start = 1./options.f_start
 		
 	if options.f_stop >0.0:
-		if options.f_stop  <=0.5: ERROR("f_stop should be in Angstrom","sxcter", 1) # exclude abs frequencies and spatial frequencies
+		if options.f_stop  <=0.5: global_def.ERROR("f_stop should be in Angstrom","sxcter", 1) # exclude abs frequencies and spatial frequencies
 		else: freq_stop = 1./options.f_stop
 
 	while True:
@@ -172,7 +190,7 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 		# Check the number of arguments. If OK, then prepare variables for them
 		# --------------------------------------------------------------------------------
 		if len(args) != 2:
-			error_status = ("Please check usage for number of arguments.\n Usage: " + usage + "\n" + "Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			error_status = ("Please check usage for number of arguments.\n Usage: " + usage + "\n" + "Please run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 
 		# NOTE: 2015/11/27 Toshio Moriya
@@ -188,21 +206,21 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 		# --------------------------------------------------------------------------------
 
 		break
-	if_error_then_all_processes_exit_program(error_status)
+	utilities.if_error_then_all_processes_exit_program(error_status)
 	#  Toshio, please see how to make it informative
 	assert input_image_path != None, " directory  missing  input_image_path"
 	assert output_directory != None, " directory  missing  output_directory"
 
 	if options.vpp == False :
 		wrong_params = False
-		import string as str
+		pass#IMPORTIMPORTIMPORT import string as str
 		vpp_options = ["--defocus_min","--defocus_max","--defocus_step","--phase_min","--phase_max","--phase_step"]
 		for command_token in sys.argv:
 			for vppo in vpp_options:
 				if str.find(command_token, vppo) > -1 : wrong_params = True
 				if wrong_params: break
 			if wrong_params: break
-		if wrong_params:  ERROR("Some options are valid only for Volta Phase Plate command  %s"%command_token,"sxcter",1,my_mpi_proc_id)
+		if wrong_params:  global_def.ERROR("Some options are valid only for Volta Phase Plate command  %s"%command_token,"sxcter",1,my_mpi_proc_id)
 
 	if my_mpi_proc_id == main_mpi_proc:
 		command_line = ""
@@ -214,29 +232,29 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 
 	if options.vpp:
 		vpp_options = [options.defocus_min,  options.defocus_max,  options.defocus_step,  options.phase_min,  options.phase_max,  options.phase_step]
-		from morphology import cter_vpp
-		result = cter_vpp(input_image_path, output_directory, options.selection_list, options.wn, \
+		pass#IMPORTIMPORTIMPORT from morphology import cter_vpp
+		result = morphology.cter_vpp(input_image_path, output_directory, options.selection_list, options.wn, \
 				options.apix, options.Cs, options.voltage, options.ac, freq_start, freq_stop, \
 				options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, \
 				options.check_consistency, options.stack_mode, options.debug_mode, program_name, vpp_options, \
 				RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 	elif options.pap:
-		from morphology import cter_pap
-		result = cter_pap(input_image_path, output_directory, options.selection_list, options.wn, \
+		pass#IMPORTIMPORTIMPORT from morphology import cter_pap
+		result = morphology.cter_pap(input_image_path, output_directory, options.selection_list, options.wn, \
 				options.apix, options.Cs, options.voltage, options.ac, freq_start, freq_stop, \
 				options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, \
 				options.check_consistency, options.stack_mode, options.debug_mode, program_name, \
 				RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 	else:
-		from morphology import cter_mrk
-		result = cter_mrk(input_image_path, output_directory, options.selection_list, options.wn, \
+		pass#IMPORTIMPORTIMPORT from morphology import cter_mrk
+		result = morphology.cter_mrk(input_image_path, output_directory, options.selection_list, options.wn, \
 				options.apix, options.Cs, options.voltage, options.ac, freq_start, freq_stop, \
 				options.kboot, options.overlap_x, options.overlap_y, options.edge_x, options.edge_y, \
 				options.check_consistency, options.stack_mode, options.debug_mode, program_name, \
 				RUNNING_UNDER_MPI, main_mpi_proc, my_mpi_proc_id, n_mpi_procs)
 
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if main_mpi_proc == my_mpi_proc_id:
 		if options.debug_mode:
@@ -257,9 +275,9 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	# Clean up MPI related variables
 	# ------------------------------------------------------------------------------------
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
-		from mpi import mpi_finalize
-		mpi_finalize()
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+		mpi.mpi_finalize()
 
 	sys.stdout.flush()
 	sys.exit(0)

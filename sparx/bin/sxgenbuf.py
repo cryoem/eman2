@@ -32,32 +32,47 @@ from __future__ import print_function
 #
 #
 
-from builtins import range
+import EMAN2_cppwrap
 import global_def
-from   global_def import *
+import optparse
+import os
+import sys
+import time
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import time
+pass#IMPORTIMPORTIMPORT import utilities
+from builtins import range
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def import *
 
-from   optparse import OptionParser
+pass#IMPORTIMPORTIMPORT from   optparse import OptionParser
 
 def genbuf( prjfile, bufprefix, beg, end, CTF, npad, verbose = 0 ):
-	from EMAN2  import newfile_store
-	from utilities import get_im
-	from time import time
-	import os
+	pass#IMPORTIMPORTIMPORT from EMAN2  import newfile_store
+	pass#IMPORTIMPORTIMPORT from utilities import get_im
+	pass#IMPORTIMPORTIMPORT from time import time
+	pass#IMPORTIMPORTIMPORT import os
 	if(verbose == 1):  finfo=open( os.path.join(outdir, "progress.txt"), "w" )
 	else:              finfo = None
-	start_time = time()
-	istore = newfile_store( bufprefix, npad, CTF )
+	start_time = time.time()
+	istore = EMAN2_cppwrap.newfile_store( bufprefix, npad, CTF )
 	for i in range( beg, end ):
-		prj = get_im( prjfile, i )
+		prj = utilities.get_im( prjfile, i )
 		istore.add_image( prj, prj.get_attr("xform.projection") )
 		if( not(finfo is None) and ((i%100==99 or i==end-1))):
-			finfo.write( "%6d buffered, time: %10.3f\n" % (i+1, time()-start_time) )
+			finfo.write( "%6d buffered, time: %10.3f\n" % (i+1, time.time()-start_time) )
 			finfo.flush()
 
 def main():
 
-	import sys
-	import os
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT import os
 
 	arglist = []
 	for arg in sys.argv:
@@ -65,7 +80,7 @@ def main():
 
 	progname = os.path.basename(arglist[0])
 	usage = progname + " prjstack bufprefix --npad --CTF --verbose"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--CTF",      action="store_true", default=False, help="use CTF")
 	parser.add_option("--npad",     type="int",          default=2,     help="times of padding")
 	parser.add_option("--verbose",  type="int",          default=0,     help="verbose level: 0 no, 1 yes")
@@ -79,11 +94,11 @@ def main():
 	prjfile = args[0]
 
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
 
 	bufprefix = args[1]
-	nprj = EMUtil.get_image_count( prjfile )
+	nprj = EMAN2_cppwrap.EMUtil.get_image_count( prjfile )
 	genbuf( prjfile, bufprefix, 0, nprj, options.CTF, options.npad, options.verbose )
 
 

@@ -32,18 +32,31 @@ from __future__ import print_function
 #
 #
 
+import EMAN2_cppwrap
+import global_def
+import optparse
+import os
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import user_functions
+pass#IMPORTIMPORTIMPORT import utilities
 
 from builtins import range
-import os
-import global_def
-from   global_def     import *
-from   user_functions import *
-from   optparse       import OptionParser
-import sys
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def     import *
+pass#IMPORTIMPORTIMPORT from   user_functions import *
+pass#IMPORTIMPORTIMPORT from   optparse       import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 
 def write_montage_file(stack, montage_file, N, gx, gy, bg, scale, number, begin_zero):
 
-	from utilities import model_blank
+	pass#IMPORTIMPORTIMPORT from utilities import model_blank
 
 	font = [ "0011100010001010000011000001100000110000011000001100000101000100011100",
 	         "0001000001100001010001001000000100000010000001000000100000010001111111",
@@ -58,10 +71,10 @@ def write_montage_file(stack, montage_file, N, gx, gy, bg, scale, number, begin_
 
 	if gy == -1: gy = gx
 
-	data = EMData.read_images(stack)
+	data = EMAN2_cppwrap.EMData.read_images(stack)
 	if scale:
 		for im in data:
-			st = Util.infomask(im, None, True)
+			st = EMAN2_cppwrap.Util.infomask(im, None, True)
 			im -= st[0]
 			im /= st[1]
 			
@@ -78,7 +91,7 @@ def write_montage_file(stack, montage_file, N, gx, gy, bg, scale, number, begin_
 	minn = 1.e+20
 	avgn = 0
 	for im in data:
-		st = Util.infomask(im, None, True)
+		st = EMAN2_cppwrap.Util.infomask(im, None, True)
 		avgn += st[0]
 		if st[3] > maxn: maxn = st[3]
 		if st[2] < minn: minn = st[2]
@@ -93,7 +106,7 @@ def write_montage_file(stack, montage_file, N, gx, gy, bg, scale, number, begin_
 	else:
 		bk = avgn
 	
-	montage = model_blank(NX, NY, 1, bk)
+	montage = utilities.model_blank(NX, NY, 1, bk)
 
 	for i in range(K):
 		col = i%N
@@ -112,7 +125,7 @@ def write_montage_file(stack, montage_file, N, gx, gy, bg, scale, number, begin_
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack montagefile --N=image_per_row --gx=gap_on_x_axis --gy=gap_on_y_axis --bg=background_option --scale --number --begin_zero"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--N",       type="int",  default=10,           help="number of images per row (default = 10)")
 	parser.add_option("--gx",      type="int",  default=0,            help="number of pixels of the gap on x-axis (default = 0)")
 	parser.add_option("--gy",      type="int",  default=-1,           help="number of pixels of the gap on y-axis (default = gx)")
@@ -126,8 +139,8 @@ def main():
 		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 		
 		global_def.BATCH = True
 		write_montage_file(args[0], args[1], options.N, options.gx, options.gy, options.bg, options.scale, options.number, options.begin_zero)

@@ -28,21 +28,56 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-from builtins import range
-import os, sys
-from optparse import OptionParser, SUPPRESS_HELP
-from copy import copy, deepcopy
+import EMAN2_cppwrap
+import EMAN2db
+import applications
+import filter
+import fundamentals
 import glob
-import shutil
-
-from EMAN2 import *
-from EMAN2db import *
-from sparx import *
-from applications import MPI_start_end
-from inspect import currentframe, getframeinfo
-from utilities import generate_ctf
 import global_def
-from global_def import *
+import inspect
+import mpi
+import numpy
+import optparse
+import os
+import shutil
+import sys
+import time
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import EMAN2db
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import copy
+pass#IMPORTIMPORTIMPORT import filter
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import glob
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import inspect
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import shutil
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import time
+pass#IMPORTIMPORTIMPORT import utilities
+from builtins import range
+pass#IMPORTIMPORTIMPORT import os, sys
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser, SUPPRESS_HELP
+pass#IMPORTIMPORTIMPORT from copy import copy, deepcopy
+pass#IMPORTIMPORTIMPORT import glob
+pass#IMPORTIMPORTIMPORT import shutil
+
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from EMAN2db import *
+pass#IMPORTIMPORTIMPORT from sparx import *
+pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+pass#IMPORTIMPORTIMPORT from inspect import currentframe, getframeinfo
+pass#IMPORTIMPORTIMPORT from utilities import generate_ctf
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
 
 # ========================================================================================
 # General Helper Functions
@@ -61,8 +96,8 @@ def get_cmd_line():
 # Get suffix of current time stamp
 # ----------------------------------------------------------------------------------------
 def get_time_stamp_suffix():
-	from time import strftime, localtime
-	time_stamp_suffix = strftime("%Y%m%d_%H%M%S", localtime())
+	pass#IMPORTIMPORTIMPORT from time import strftime, localtime
+	time_stamp_suffix = time.strftime("%Y%m%d_%H%M%S", time.localtime())
 	return time_stamp_suffix
 
 # ----------------------------------------------------------------------------------------
@@ -94,7 +129,7 @@ def mrk_resample2d(img, sub_rate, target_size = None):
 		sub_rate > 1.0, upsampling the image using new gridding interpolation.
 		(??? fit_to_fft will change the ouput image size to an fft_friendly size ???)
 	"""
-	from fundamentals import subsample, prepi
+	pass#IMPORTIMPORTIMPORT from fundamentals import subsample, prepi
 	
 	original_size = img.get_xsize()
 	assert (original_size > 1)
@@ -105,11 +140,11 @@ def mrk_resample2d(img, sub_rate, target_size = None):
 	if sub_rate == 1.0: 
 		resample_img = img.copy()
 	elif sub_rate < 1.0:
-		resample_img = subsample(img, sub_rate)
+		resample_img = fundamentals.subsample(img, sub_rate)
 	else:
 		assert (sub_rate > 1.0)
 		nn = int(original_size * sub_rate + 0.5)
-		resample_img, kb = prepi(Util.pad(img, nn, nn, 1, 0, 0, 0, "circumference"))
+		resample_img, kb = fundamentals.prepi(EMAN2_cppwrap.Util.pad(img, nn, nn, 1, 0, 0, 0, "circumference"))
 		resample_img = resample_img.rot_scale_conv_new(0.0, 0.0, 0.0, kb, sub_rate)
 	assert (resample_img is not None)
 	
@@ -125,9 +160,9 @@ def mrk_resample2d(img, sub_rate, target_size = None):
 	assert (target_size > 1)
 	
 	if resampled_size < target_size:
-		resample_img = Util.pad(resample_img, target_size, target_size, 1, 0, 0, 0, "circumference")
+		resample_img = EMAN2_cppwrap.Util.pad(resample_img, target_size, target_size, 1, 0, 0, 0, "circumference")
 	elif resampled_size > target_size:
-		resample_img = Util.window(resample_img, target_size, target_size, 1, 0, 0)
+		resample_img = EMAN2_cppwrap.Util.window(resample_img, target_size, target_size, 1, 0, 0)
 	else:
 		assert (resampled_size == target_size)
 	assert (resample_img.get_xsize() == target_size)
@@ -184,7 +219,7 @@ For negative staining data, use --skip_invert.
 	mpirun  -np  32  sxrewindow.py  './mic*.hdf'  'outdir_rebox/centered_rebox/mic*_centered_rebox.rbx'  outdir_rewindow  --box_size=64  --skip_invert
 
 """
-	parser = OptionParser(usage, version=SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
 	parser.add_option("--selection_list",      type="string",        default=None,      help="Micrograph selecting list: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be \'.txt\'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)")
 	parser.add_option("--box_size",            type="int",           default=256,       help="Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when mic_resample_ratio < 1.0. (default 256)")
 	parser.add_option("--skip_invert",         action="store_true",  default=False,     help="Skip invert image contrast: Use this option for negative staining data. By default, the image contrast is inverted for cryo data. (default False)")
@@ -206,12 +241,12 @@ For negative staining data, use --skip_invert.
 	
 	main_mpi_proc = 0
 	if RUNNING_UNDER_MPI:
-		from mpi import mpi_init
-		from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_init
+		pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 		
-		mpi_init(0, [])
-		my_mpi_proc_id = mpi_comm_rank(MPI_COMM_WORLD)
-		n_mpi_procs = mpi_comm_size(MPI_COMM_WORLD)
+		mpi.mpi_init(0, [])
+		my_mpi_proc_id = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+		n_mpi_procs = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
 	else:
 		my_mpi_proc_id = 0
 		n_mpi_procs = 1
@@ -220,8 +255,8 @@ For negative staining data, use --skip_invert.
 	# Set up SPHIRE global definitions
 	# ------------------------------------------------------------------------------------
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
 	
 	# Change the name log file for error message
 	original_logfilename = global_def.LOGFILE
@@ -250,7 +285,7 @@ For negative staining data, use --skip_invert.
 		# Check the number of arguments. If OK, then prepare variables for them
 		# --------------------------------------------------------------------------------
 		if error_status is None and len(args) != 3:
-			error_status = ("Please check usage for number of arguments.\n Usage: " + usage + "\n" + "Please run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			error_status = ("Please check usage for number of arguments.\n Usage: " + usage + "\n" + "Please run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		assert (len(args) == 3)
@@ -262,19 +297,19 @@ For negative staining data, use --skip_invert.
 		# Check error conditions of arguments
 		# --------------------------------------------------------------------------------
 		if error_status is None and mic_pattern[:len("bdb:")].lower() == "bdb":
-			error_status = ("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			error_status = ("BDB file can not be selected as input micrographs. Please convert the format, and restart the program. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		if error_status is None and mic_pattern.find("*") == -1:
-			error_status = ("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			error_status = ("Input micrograph file name pattern must contain wild card (*). Please check input_micrograph_pattern argument. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		if error_status is None and rebox_pattern.find("*") == -1:
-			error_status = ("Input rebox file name pattern must contain wild card (*). Please check input_rebox_pattern argument. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+			error_status = ("Input rebox file name pattern must contain wild card (*). Please check input_rebox_pattern argument. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		if error_status is None and os.path.exists(root_out_dir):
-			error_status = ("Output directory exists. Please change the name and restart the program.", getframeinfo(currentframe()))
+			error_status = ("Output directory exists. Please change the name and restart the program.", inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		# --------------------------------------------------------------------------------
@@ -282,15 +317,15 @@ For negative staining data, use --skip_invert.
 		# --------------------------------------------------------------------------------
 		if options.selection_list != None:
 			if error_status is None and not os.path.exists(options.selection_list): 
-				error_status = ("File specified by selection_list option does not exists. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+				error_status = ("File specified by selection_list option does not exists. Please check selection_list option. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 				break
 		
 		if error_status is None and (options.box_size <= 0):
-			error_status = ("Invalid option value: --box_size=%s. The box size must be an interger larger than zero. Please run %s -h for help." % (options.box_size, program_name), getframeinfo(currentframe()))
+			error_status = ("Invalid option value: --box_size=%s. The box size must be an interger larger than zero. Please run %s -h for help." % (options.box_size, program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		if error_status is None and (options.mic_resample_ratio <= 0.0 or options.mic_resample_ratio > 1.0):
-			error_status = ("Invalid option value: --mic_resample_ratio=%s. Please run %s -h for help." % (options.mic_resample_ratio, program_name), getframeinfo(currentframe()))
+			error_status = ("Invalid option value: --mic_resample_ratio=%s. Please run %s -h for help." % (options.mic_resample_ratio, program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		if ctf_params_src is not None:
@@ -298,16 +333,16 @@ For negative staining data, use --skip_invert.
 				assert (type(ctf_params_src) is str)
 				# This should be string for CTER partres (CTF parameter) file
 				if error_status is None and os.path.exists(ctf_params_src) == False:
-					error_status = ("Specified CTER partres file is not found. Please check --swap_ctf_params option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+					error_status = ("Specified CTER partres file is not found. Please check --swap_ctf_params option. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 					break
 			else:
 				assert (is_float(ctf_params_src))
 				if error_status is None and float(ctf_params_src) <= 0.0:
-					error_status = ("Specified pixel size is not larger than 0.0. Please check --swap_ctf_params option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+					error_status = ("Specified pixel size is not larger than 0.0. Please check --swap_ctf_params option. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 					break
 		
 		break
-	if_error_then_all_processes_exit_program(error_status)
+	utilities.if_error_then_all_processes_exit_program(error_status)
 	assert (mic_pattern != None)
 	assert (rebox_pattern != None)
 	assert (root_out_dir != None)
@@ -455,7 +490,7 @@ For negative staining data, use --skip_invert.
 		# Check error condition of input micrograph file path list
 		print("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 		if error_status is None and len(input_mic_path_list) == 0:
-			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), getframeinfo(currentframe()))
+			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		assert (len(input_mic_path_list) > 0)
 		
@@ -493,16 +528,16 @@ For negative staining data, use --skip_invert.
 				print(" ")
 				print("Checking the selection list...")
 				assert (os.path.exists(options.selection_list))
-				selected_mic_path_list = read_text_file(options.selection_list)
+				selected_mic_path_list = utilities.read_text_file(options.selection_list)
 				
 				# Check error condition of micrograph entry lists
 				print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), options.selection_list))
 				if error_status is None and len(selected_mic_path_list) == 0:
-					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 					break
 				assert (len(selected_mic_path_list) > 1)
 				if error_status is None and not isinstance(selected_mic_path_list[0], basestring):
-					error_status = ("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
+					error_status = ("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 					break
 			else:
 				print(" ")
@@ -525,7 +560,7 @@ For negative staining data, use --skip_invert.
 			mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
 			mic_id_substr = selected_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 			if error_status is None and selected_mic_basename != mic_basename_pattern.replace("*", mic_id_substr):
-				error_status = ("A micrograph name (%s) in the input directory (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please correct input micrograph path pattern. Run %s -h for help." % (selected_mic_basename, os.path.dirname(mic_pattern), mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), getframeinfo(currentframe()))
+				error_status = ("A micrograph name (%s) in the input directory (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please correct input micrograph path pattern. Run %s -h for help." % (selected_mic_basename, os.path.dirname(mic_pattern), mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), inspect.getframeinfo(inspect.currentframe()))
 				break
 			if not mic_id_substr in global_entry_dict:
 				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
@@ -549,7 +584,7 @@ For negative staining data, use --skip_invert.
 		# Check error condition of rebox file path list
 		print("Found %d rebox files in %s directory." % (len(rebox_path_list), os.path.dirname(rebox_pattern)))
 		if error_status is None and len(rebox_path_list) == 0:
-			error_status = ("No rebox files are found in the directory specified by rebox file path pattern (%s). Please check input_rebox_pattern argument. Run %s -h for help." % (os.path.dirname(rebox_pattern), program_name), getframeinfo(currentframe()))
+			error_status = ("No rebox files are found in the directory specified by rebox file path pattern (%s). Please check input_rebox_pattern argument. Run %s -h for help." % (os.path.dirname(rebox_pattern), program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		assert (len(rebox_path_list) > 0)
 		
@@ -579,12 +614,12 @@ For negative staining data, use --skip_invert.
 				print(" ")
 				print("Checking the CTER partres file...")
 				assert (os.path.exists(ctf_params_src))
-				cter_entry_list = read_text_row(ctf_params_src)
+				cter_entry_list = utilities.read_text_row(ctf_params_src)
 			
 				# Check error condition of CTER partres entry list
 				print("Found %d CTER partres entries in %s." % (len(cter_entry_list), ctf_params_src))
 				if error_status is None and len(cter_entry_list) == 0:
-					error_status = ("No CTER partres entries are found in %s. Please check input_ctf_params_source argument. Run %s -h for help." % (ctf_params_src, program_name), getframeinfo(currentframe()))
+					error_status = ("No CTER partres entries are found in %s. Please check input_ctf_params_source argument. Run %s -h for help." % (ctf_params_src, program_name), inspect.getframeinfo(inspect.currentframe()))
 					break
 				assert (len(cter_entry_list) > 0)
 			
@@ -593,7 +628,7 @@ For negative staining data, use --skip_invert.
 				# The following code is to support the old format of CTER partres file. It should be removed near future
 				# 
 				if error_status is None and len(cter_entry_list[0]) != n_idx_cter:
-					error_status = ("The number of columns (%d) has to be %d in %s." % (len(cter_entry_list[0]), n_idx_cter, ctf_params_src), getframeinfo(currentframe()))
+					error_status = ("The number of columns (%d) has to be %d in %s." % (len(cter_entry_list[0]), n_idx_cter, ctf_params_src), inspect.getframeinfo(inspect.currentframe()))
 					break
 				assert len(cter_entry_list[0]) == n_idx_cter
 			
@@ -610,7 +645,7 @@ For negative staining data, use --skip_invert.
 					mic_id_substr = cter_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 					# Between cter_mic_path and mic_path, directory paths might be different but the basenames should be same!
 					if error_status is None and cter_mic_basename != mic_basename_pattern.replace("*", mic_id_substr):
-						error_status = ("A micrograph name (%s) in the CTER partres file (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please check the CTER partres file and correct input micrograph path pattern. Run %s -h for help." % (cter_mic_basename, ctf_params_src, mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), getframeinfo(currentframe()))
+						error_status = ("A micrograph name (%s) in the CTER partres file (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please check the CTER partres file and correct input micrograph path pattern. Run %s -h for help." % (cter_mic_basename, ctf_params_src, mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), inspect.getframeinfo(inspect.currentframe()))
 						break
 					
 					# if(cter_entry[idx_cter_sd_astig_ang] > options.astigmatism_error):
@@ -806,7 +841,7 @@ For negative staining data, use --skip_invert.
 		# Check MPI error condition
 		# --------------------------------------------------------------------------------
 		if error_status is None and len(valid_mic_id_substr_list) < n_mpi_procs:
-			error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed)." % (n_mpi_procs, len(valid_mic_id_substr_list)), getframeinfo(currentframe()))
+			error_status = ("Number of MPI processes (%d) supplied by --np in mpirun cannot be greater than %d (number of valid micrographs that satisfy all criteria to be processed)." % (n_mpi_procs, len(valid_mic_id_substr_list)), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
 		break
@@ -815,7 +850,7 @@ For negative staining data, use --skip_invert.
 	# The following function takes care of the case when an if-statement uses break for occurence of an error.
 	# However, more elegant way is to use 'exception' statement of exception mechanism...
 	# 
-	if_error_then_all_processes_exit_program(error_status)
+	utilities.if_error_then_all_processes_exit_program(error_status)
 	
 	# ====================================================================================
 	# Obtain the list of micrograph id sustrings
@@ -826,7 +861,7 @@ For negative staining data, use --skip_invert.
 	# Prepare variables related to options
 	box_size = options.box_size
 	box_half = box_size // 2
-	mask2d = model_circle(box_size//2, box_size, box_size) # Create circular 2D mask to Util.infomask of particle images
+	mask2d = utilities.model_circle(box_size//2, box_size, box_size) # Create circular 2D mask to Util.infomask of particle images
 	mic_resample_ratio = options.mic_resample_ratio
 	
 	# Micrograph baseroot pattern (extension are removed from micrograph basename pattern)
@@ -845,13 +880,13 @@ For negative staining data, use --skip_invert.
 	unsliced_valid_serial_id_list = valid_mic_id_substr_list
 	mpi_proc_dir = root_out_dir
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		# All mpi processes should know global entry directory and valid micrograph id substring list
-		global_entry_dict = wrap_mpi_bcast(global_entry_dict, main_mpi_proc)
-		valid_mic_id_substr_list = wrap_mpi_bcast(valid_mic_id_substr_list, main_mpi_proc)
+		global_entry_dict = utilities.wrap_mpi_bcast(global_entry_dict, main_mpi_proc)
+		valid_mic_id_substr_list = utilities.wrap_mpi_bcast(valid_mic_id_substr_list, main_mpi_proc)
 		
 		# Slice the list of valid micrograph id substrings for this mpi process
-		mic_start, mic_end = MPI_start_end(len(valid_mic_id_substr_list), n_mpi_procs, my_mpi_proc_id)
+		mic_start, mic_end = applications.MPI_start_end(len(valid_mic_id_substr_list), n_mpi_procs, my_mpi_proc_id)
 		valid_mic_id_substr_list = valid_mic_id_substr_list[mic_start:mic_end]
 		
 		# generate subdirectories user root_out_dir, one for each process
@@ -876,7 +911,7 @@ For negative staining data, use --skip_invert.
 		os.mkdir(reject_out_of_boundary_dir)
 	
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD) # all MPI processes should wait until the directory is created by main process
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD) # all MPI processes should wait until the directory is created by main process
 		# 
 		# NOTE: 2017/12/12 Toshio Moriya
 		# To walk-around synchronisation problem between all MPI nodes and a file server,
@@ -910,7 +945,7 @@ For negative staining data, use --skip_invert.
 		# --------------------------------------------------------------------------------
 		rebox_path = global_entry_dict[mic_id_substr][subkey_rebox_path]
 		assert (os.path.exists(rebox_path))
-		rebox_list = read_text_row(rebox_path)
+		rebox_list = utilities.read_text_row(rebox_path)
 		
 		if (len(rebox_list) == 0):
 			print("For %s, the associate rebox file %s does not contain any entries. Skipping..." % (mic_basename, rebox_path))
@@ -955,7 +990,7 @@ For negative staining data, use --skip_invert.
 		mic_path = global_entry_dict[mic_id_substr][subkey_input_mic_path]
 		assert (mic_path == mic_pattern.replace("*", mic_id_substr))
 		try:
-			mic_img = get_im(mic_path)
+			mic_img = utilities.get_im(mic_path)
 		except:
 			print("Failed to read the associate micrograph %s for %s. The file might be corrupted. Skipping..." % (mic_path, mic_basename))
 			continue
@@ -963,14 +998,14 @@ For negative staining data, use --skip_invert.
 		# --------------------------------------------------------------------------------
 		# Move to the Fourier space processing
 		# --------------------------------------------------------------------------------
-		fftip(mic_img) # In-place fft
+		fundamentals.fftip(mic_img) # In-place fft
 		
 		# --------------------------------------------------------------------------------
 		# Apply the Gaussian high-pass Fourier filter to micrograph based on the (resampled) box size;
 		# Cut off frequency components lower than one that the (resampled) box size can express.
 		# Then, move back to the real space processing
 		# --------------------------------------------------------------------------------
-		mic_img = fft(filt_gaussh(mic_img, mic_resample_ratio / box_size))
+		mic_img = fundamentals.fft(filter.filt_gaussh(mic_img, mic_resample_ratio / box_size))
 		
 		# --------------------------------------------------------------------------------
 		# Resample micrograph, map rebox, and window segments from resampled micrograph using new rebox
@@ -979,14 +1014,14 @@ For negative staining data, use --skip_invert.
 		# NOTE: 2015/04/13 Toshio Moriya
 		# resample() efficiently takes care of the case mic_resample_ratio = 1.0 but
 		# it does not set apix_*. Even though it sets apix_* when mic_resample_ratio < 1.0...
-		mic_img = resample(mic_img, mic_resample_ratio)
+		mic_img = fundamentals.resample(mic_img, mic_resample_ratio)
 		
 		# --------------------------------------------------------------------------------
 		# If necessary, invert image contrast of this micrograph 
 		# --------------------------------------------------------------------------------
 		if not options.skip_invert:
-			mic_stats = Util.infomask(mic_img, None, True) # mic_stat[0:mean, 1:SD, 2:min, 3:max]
-			Util.mul_scalar(mic_img, -1.0)
+			mic_stats = EMAN2_cppwrap.Util.infomask(mic_img, None, True) # mic_stat[0:mean, 1:SD, 2:min, 3:max]
+			EMAN2_cppwrap.Util.mul_scalar(mic_img, -1.0)
 			mic_img += 2 * mic_stats[0]
 		
 		# --------------------------------------------------------------------------------
@@ -1050,7 +1085,7 @@ For negative staining data, use --skip_invert.
 				pp_def_error_accum  = 0.0
 			
 			# Create CTF object
-			ctf_obj = generate_ctf(ctf_entry)
+			ctf_obj = utilities.generate_ctf(ctf_entry)
 			
 			# Convert projection shifts to the original scale
 			if rebox_resample_ratio < 1.0:
@@ -1121,14 +1156,14 @@ For negative staining data, use --skip_invert.
 			resampled_box_half = box_half
 			if pp_mag_error_accum != 1.0:
 				### assert (pp_def_error_accum == 0.0) # For now, do not allow both parameters to be adjusted (Toshio 2018/03/25)
-				resampled_box_size = int(ceil(box_size / pp_mag_error_accum))
+				resampled_box_size = int(numpy.ceil(box_size / pp_mag_error_accum))
 				resampled_box_half = int(resampled_box_size // 2)
 				# print("MRK_DEBUG: pp_mag_error_accum := {}, resampled_box_size := {}, resampled_box_half := {}".format(pp_mag_error_accum, resampled_box_size, resampled_box_half))
 			
 			# Window a particle at this rebox
 			if( (0 <= x - resampled_box_half) and ( x + resampled_box_half < nx ) and (0 <= y - resampled_box_half) and ( y + resampled_box_half < ny ) ):
 				try:
-					particle_img = Util.window(mic_img, resampled_box_size, resampled_box_size, 1, x-x0, y-y0)
+					particle_img = EMAN2_cppwrap.Util.window(mic_img, resampled_box_size, resampled_box_size, 1, x-x0, y-y0)
 				except:
 					print("MRK_DEBUG: ")
 					print("MRK_DEBUG: mic_resample_ratio := {}, box_size := {}, box_half := {}".format(mic_resample_ratio, box_size, box_half))
@@ -1177,8 +1212,8 @@ For negative staining data, use --skip_invert.
 					print("MRK_DEBUG: ctf_obj.defocus := {}".format(ctf_obj.defocus))
 			
 			# Normalize this particle image
-			particle_img = ramp(particle_img)
-			particle_stats = Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
+			particle_img = fundamentals.ramp(particle_img)
+			particle_stats = EMAN2_cppwrap.Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
 			particle_img -= particle_stats[0]
 			try:
 				particle_img /= particle_stats[1]
@@ -1228,7 +1263,7 @@ For negative staining data, use --skip_invert.
 			particle_img.set_attr("ctf", ctf_obj)
 			particle_img.set_attr("ctf_applied", 0)
 			
-			set_params_proj(particle_img, proj_entry)
+			utilities.set_params_proj(particle_img, proj_entry)
 			
 			# Write the particle image to local stack file
 			# print("MRK_DEBUG: local_stack_path, local_particle_id", local_stack_path, local_particle_id)
@@ -1272,18 +1307,18 @@ For negative staining data, use --skip_invert.
 		
 		# Release the data base of local stack from this process
 		# so that the subprocess can access to the data base
-		db_close_dict(local_stack_path)
+		EMAN2db.db_close_dict(local_stack_path)
 	
 	# ------------------------------------------------------------------------------------
 	# Print out summary of processing
 	# ------------------------------------------------------------------------------------
 	if RUNNING_UNDER_MPI:
-		n_mic_process = mpi_reduce(n_mic_process, 1, MPI_INT, MPI_SUM, main_mpi_proc, MPI_COMM_WORLD)
-		n_mic_reject_no_rebox_entry = mpi_reduce(n_mic_reject_no_rebox_entry, 1, MPI_INT, MPI_SUM, main_mpi_proc, MPI_COMM_WORLD)
-		n_mic_reject_invalid_rebox_format = mpi_reduce(n_mic_reject_invalid_rebox_format, 1, MPI_INT, MPI_SUM, main_mpi_proc, MPI_COMM_WORLD)
-		n_global_rebox_detect = mpi_reduce(n_global_rebox_detect, 1, MPI_INT, MPI_SUM, main_mpi_proc, MPI_COMM_WORLD)
-		n_global_rebox_process = mpi_reduce(n_global_rebox_process, 1, MPI_INT, MPI_SUM, main_mpi_proc, MPI_COMM_WORLD)
-		n_global_rebox_reject_out_of_boundary = mpi_reduce(n_global_rebox_reject_out_of_boundary, 1, MPI_INT, MPI_SUM, main_mpi_proc, MPI_COMM_WORLD)
+		n_mic_process = mpi.mpi_reduce(n_mic_process, 1, mpi.MPI_INT, mpi.MPI_SUM, main_mpi_proc, mpi.MPI_COMM_WORLD)
+		n_mic_reject_no_rebox_entry = mpi.mpi_reduce(n_mic_reject_no_rebox_entry, 1, mpi.MPI_INT, mpi.MPI_SUM, main_mpi_proc, mpi.MPI_COMM_WORLD)
+		n_mic_reject_invalid_rebox_format = mpi.mpi_reduce(n_mic_reject_invalid_rebox_format, 1, mpi.MPI_INT, mpi.MPI_SUM, main_mpi_proc, mpi.MPI_COMM_WORLD)
+		n_global_rebox_detect = mpi.mpi_reduce(n_global_rebox_detect, 1, mpi.MPI_INT, mpi.MPI_SUM, main_mpi_proc, mpi.MPI_COMM_WORLD)
+		n_global_rebox_process = mpi.mpi_reduce(n_global_rebox_process, 1, mpi.MPI_INT, mpi.MPI_SUM, main_mpi_proc, mpi.MPI_COMM_WORLD)
+		n_global_rebox_reject_out_of_boundary = mpi.mpi_reduce(n_global_rebox_reject_out_of_boundary, 1, mpi.MPI_INT, mpi.MPI_SUM, main_mpi_proc, mpi.MPI_COMM_WORLD)
 	
 	# Print out the summary of all micrographs
 	if main_mpi_proc == my_mpi_proc_id:
@@ -1309,7 +1344,7 @@ For negative staining data, use --skip_invert.
 				shutil.rmtree(reject_out_of_boundary_dir, ignore_errors=True)
 	
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	
 	if main_mpi_proc == my_mpi_proc_id:
 		# NOTE: Toshio Moriya 2016/10/27
@@ -1339,7 +1374,7 @@ For negative staining data, use --skip_invert.
 			print("Please execute from the command line :  ", e2bdb_command)
 		else:
 			e2bdb_command = "e2bdb.py  " + root_out_dir + "  --makevstack=bdb:" + root_out_dir + "#data"
-			cmdexecute(e2bdb_command, printing_on_success = False)
+			utilities.cmdexecute(e2bdb_command, printing_on_success = False)
 		
 		print(" ")
 		print("DONE!!!")
@@ -1357,9 +1392,9 @@ For negative staining data, use --skip_invert.
 	# Clean up MPI related variables
 	# ------------------------------------------------------------------------------------
 	if RUNNING_UNDER_MPI:
-		mpi_barrier(MPI_COMM_WORLD)
-		from mpi import mpi_finalize
-		mpi_finalize()
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+		mpi.mpi_finalize()
 	
 	sys.stdout.flush()
 	sys.exit(0)

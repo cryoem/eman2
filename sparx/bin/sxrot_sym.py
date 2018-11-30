@@ -32,15 +32,27 @@ from __future__ import print_function
 #
 #
 
-import os
+import applications
 import global_def
-from global_def import *
-from optparse import OptionParser
+import optparse
+import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " input_filename output_filename --sym=Symmetry group --phi --theta --psi=The 3 Eulerian angles in degrees --r=Radius of mask --phirange --thetarange --psirange=A search scale for each angle --ftol --xtol = convergence criterion the function and angles values"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--sym",        type="string", default="c1", help="  String that specifies the point group symmetry. default = 'c1'")
 	parser.add_option("--phi",        type='float',default=0.0, help="  phi angle, default = 0")
 	parser.add_option("--theta",      type='float',default=0.0, help=" theta angle, default=0")
@@ -58,11 +70,11 @@ def main():
 		exit(1)
 	else:
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
-		from applications  import  rot_sym
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from applications  import  rot_sym
 		global_def.BATCH = True
-		rot_sym(args[0],args[1],options.sym,options.r,options.phi,options.theta,options.psi,options.phirange,options.thetarange,options.psirange,options.ftol,options.xtol)
+		applications.rot_sym(args[0],args[1],options.sym,options.r,options.phi,options.theta,options.psi,options.phirange,options.thetarange,options.psirange,options.ftol,options.xtol)
 		global_def.BATCH = False
 	
 if __name__ == "__main__":

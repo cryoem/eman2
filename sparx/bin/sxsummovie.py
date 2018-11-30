@@ -4,6 +4,22 @@ from __future__ import print_function
 # Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
 #
 
+import glob
+import global_def
+import numpy
+import optparse
+import os
+import subprocess
+import sys
+import time
+pass#IMPORTIMPORTIMPORT import glob
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import subprocess
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import time
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
 # so you are responsible for compliance with the licenses of these packages
@@ -24,23 +40,23 @@ from __future__ import print_function
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-from sys import argv
-from os import mkdir, path, system, remove, rmdir
-from glob import glob
-from numpy import genfromtxt
-import numpy
-import time
-import subprocess
-import global_def
-from global_def import SPARXVERSION, ERROR
-from optparse import OptionParser, SUPPRESS_HELP
-import os
+pass#IMPORTIMPORTIMPORT from sys import argv
+pass#IMPORTIMPORTIMPORT from os import mkdir, path, system, remove, rmdir
+pass#IMPORTIMPORTIMPORT from glob import glob
+pass#IMPORTIMPORTIMPORT from numpy import genfromtxt
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import time
+pass#IMPORTIMPORTIMPORT import subprocess
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import SPARXVERSION, ERROR
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser, SUPPRESS_HELP
+pass#IMPORTIMPORTIMPORT import os
 
 
 def main():
 
     # Parse the Options
-    progname = os.path.basename(argv[0])
+    progname = os.path.basename(sys.argv[0])
     usage = progname + """ summovie_path input_micrograph_pattern input_shift_pattern output_directory
     --selection_list
     --nr_frames=nr_frames
@@ -72,30 +88,30 @@ def main():
     outdir_summovie --nr_frames=24 --first=3 --last=15 --pixel_size=1.19 --nr_threads=1 --apply_dose_filter --voltage=300 --exposure_per_frame=2 --pre_exposure=0
     """
 
-    parser = OptionParser(usage, version=SPARXVERSION)
+    parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
     parser.add_option('--selection_list',     type='str',          default='',        help='Micrograph selecting list (SPHIRE specific): Specify a name of micrograph selection list text file. The file extension must be \'.txt\'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='Number of movie frames: The number of movie frames in each input micrograph. (default 3)')
     parser.add_option('--first',              type='int',          default=1,         help='First movie frame: First movie frame for summing. (default 1)')
     parser.add_option('--last',               type='int',          default=-1,        help='Last movie frame: Last movie frame for summing. (default -1)')
-    parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=SUPPRESS_HELP)
+    parser.add_option('--sum_suffix',         type='str',          default='_sum',    help=optparse.SUPPRESS_HELP)
     parser.add_option('--pixel_size',         type='float',        default=-1.0,      help='Pixel size [A]: The pixel size of input micrographs. (default required float)')
     parser.add_option('--nr_threads',         type='int',          default=1,         help='Number of threads: The number of threads summovie can use. The higher the faster, but it requires larger memory. (default 1)')
     parser.add_option('--apply_dose_filter',  action='store_true', default=False,     help='Apply dose filter step: Requires voltage, exposure per frame, and pre exposure options. (default False)')
     parser.add_option('--voltage',            type='float',        default=300.0,     help='Microscope voltage (dose filter) [kV]: The acceleration voltage of microscope used for imaging. (default 300.0)')
     parser.add_option('--exposure_per_frame', type='float',        default=2.0,       help='Per frame exposure (dose filter) [e/A^2]: The electron dose per frame in e/A^2. (default 2.0)')
     parser.add_option('--pre_exposure',       type='float',        default=0.0,       help='Pre-exposure (dose filter) [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging .(default 0.0)')
-    parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=SUPPRESS_HELP)
+    parser.add_option('--frc_suffix',         type='string',       default='_frc',    help=optparse.SUPPRESS_HELP)
     parser.add_option('--dont_restore_noise', action='store_true', default=False,     help='Do not restore noise power: Do not restore noise power. (default False)')
-    parser.add_option('--summovie_ready',     action='store_true', default=False,     help=SUPPRESS_HELP)
+    parser.add_option('--summovie_ready',     action='store_true', default=False,     help=optparse.SUPPRESS_HELP)
 
     # list of the options and the arguments
-    (options, args) = parser.parse_args(argv[1:])
+    (options, args) = parser.parse_args(sys.argv[1:])
 
     global_def.BATCH = True
 
     # If there arent enough arguments, stop the script
     if len(args) != 4:
-        ERROR("see usage " + usage, 1)
+        global_def.ERROR("see usage " + usage, 1)
 
     # Convert the realtive parts to absolute ones
     summovie_path = os.path.realpath(args[0]) # summovie_path
@@ -105,30 +121,30 @@ def main():
 
     # If the summovie executable file does not exists, stop the script
     if not os.path.exists(summovie_path):
-        ERROR(
+        global_def.ERROR(
             'Summovie directory does not exist, please change' +
             ' the name and restart the program.', 'sxsummovie.py', 1
             )
 
     # If the output directory exists, stop the script
     if os.path.exists(output_dir):
-        ERROR(
+        global_def.ERROR(
             'Output directory exists, please change' +
             ' the name and restart the program.', 'sxsummovie.py', 1
             )
 
     # If the input file does not exists, stop the script
-    file_list = glob(input_image)
-    shift_list = glob(input_shift)
+    file_list = glob.glob(input_image)
+    shift_list = glob.glob(input_shift)
 
     if not file_list:
-        ERROR(
+        global_def.ERROR(
             'Input micrograph file(s) does not exist, please change' +
             ' the name and restart the program.', 'sxsummovie.py', 1
             )
 
     if not shift_list:
-        ERROR(
+        global_def.ERROR(
             'Input shift file(s) does not exist, please change' +
             ' the name and restart the program.', 'sxsummovie.py', 1
             )
@@ -151,7 +167,7 @@ def main():
     input_shift_name = input_shift.split('*')
 
     if len(input_mic_name) != 2 or len(input_shift_name) != 2:
-        ERROR(
+        global_def.ERROR(
             'Too many wildcard arguments.' +
             'Please use exactly one * in the pattern.', 'sxsummovie.py',
             1
@@ -165,15 +181,15 @@ def main():
 
     # Create output directorys
     if not os.path.exists(output_dir):
-        mkdir(output_dir)
+        os.mkdir(output_dir)
     if not os.path.exists(output_path):
-        mkdir(output_path)
+        os.mkdir(output_path)
     if not os.path.exists(frc_path):
-        mkdir(frc_path)
+        os.mkdir(frc_path)
     if not os.path.exists(temp_path) and not options.summovie_ready:
-        mkdir(temp_path)
+        os.mkdir(temp_path)
     if not os.path.exists(log_path):
-        mkdir(log_path)
+        os.mkdir(log_path)
 
     # shift wildcard list
     shift_wildcard = [entry[len(input_shift_name[0]):-len(input_shift_name[-1])] \
@@ -190,9 +206,9 @@ def main():
     if selection_file:
         # Import list file
         try:
-            selection = genfromtxt(selection_file, dtype=None)
+            selection = numpy.genfromtxt(selection_file, dtype=None)
         except TypeError:
-            ERROR('no entrys in micrograph list file {0}'.format(selection_file), 'sxsummovie.py', 1)
+            global_def.ERROR('no entrys in micrograph list file {0}'.format(selection_file), 'sxsummovie.py', 1)
         # List of files which are in pattern and list
         mic_list = [
                 entry for entry in mic_list \
@@ -201,7 +217,7 @@ def main():
                 ]
         # If no match is there abort
         if len(mic_list) == 0:
-            ERROR(
+            global_def.ERROR(
                 'no files in {0} matched the micrograph file pattern:\n'.format(selection_file), 'sxsummovie.py',
                 1
                 )
@@ -242,9 +258,9 @@ def main():
 
     if not options.summovie_ready:
         # Remove temp folder
-        for entry in glob('{0}/*'.format(temp_path)):
-            remove(entry)
-        rmdir(temp_path)
+        for entry in glob.glob('{0}/*'.format(temp_path)):
+            os.remove(entry)
+        os.rmdir(temp_path)
 
     print('All Done!')
 
@@ -365,9 +381,9 @@ def run_summovie(
                 )
 
         # Remove temp summovie files
-        temp_summovie_files = glob('.SumMovie*')
+        temp_summovie_files = glob.glob('.SumMovie*')
         for entry in temp_summovie_files:
-            remove(entry)
+            os.remove(entry)
 
         with open(log_name, 'w') as f:
             with open(error_name, 'w') as e:
@@ -379,15 +395,15 @@ def run_summovie(
                     ).wait()
 
         # Remove temp summovie files
-        temp_summovie_files = glob('.SumMovie*')
+        temp_summovie_files = glob.glob('.SumMovie*')
         for entry in temp_summovie_files:
-            remove(entry)
+            os.remove(entry)
         if not opt['summovie_ready']:
             if os.path.exists(temp_name):
                 # Remove temp file
-                remove(temp_name)
+                os.remove(temp_name)
             else:
-                ERROR('e2proc2d.py error. File was not created:\n{0}'.format(inputfile), 'sxsummovie.py', 0)
+                global_def.ERROR('e2proc2d.py error. File was not created:\n{0}'.format(inputfile), 'sxsummovie.py', 0)
 
         time_list.append(time.time() - t1)
         
@@ -401,7 +417,7 @@ def run_summovie(
         if clean:
             print('SumMovie finished cleanly.')
         else:
-            ERROR(
+            global_def.ERROR(
                 'sum movie error. check the logfile for more information: {0}'.format(
                     log_name), 'sxsummovie.py', 0
                 )
@@ -456,7 +472,7 @@ def create_summovie_command(
 
     # Handle first and last case events
     if opt['first'] == 0:
-        ERROR(
+        global_def.ERROR(
             'SumMovie indexing starts with 1.\n' +
             '0 is not a valid entry for --first', 'sxsummovie.py', 1
             )
@@ -466,7 +482,7 @@ def create_summovie_command(
         first = opt['first']
 
     if opt['last'] == 0:
-        ERROR(
+        global_def.ERROR(
             'SumMovie indexing starts with 1.\n' +
             '0 is not a valid entry for --last', 'sxsummovie.py', 1
             )
@@ -476,13 +492,13 @@ def create_summovie_command(
         last = opt['last']
 
     if first > last:
-        ERROR(
+        global_def.ERROR(
             'First option musst be smaller equals last option!\n' + 
             'first: {0}; last: {1}'.format(first, last), 'sxsummovie.py', 1
             )
 
     if opt['nr_frames'] < last or last <= 0:
-        ERROR(
+        global_def.ERROR(
             '--last option {0} is out of range:\n'.format(last) + 
             'min: 1; max {0}'.format(
             opt['nr_frames']
@@ -490,7 +506,7 @@ def create_summovie_command(
             )
 
     if opt['nr_frames'] < first or first <= 0:
-        ERROR(
+        global_def.ERROR(
             '--first option {0} is out of range:\n'.format(first) + 
             'min: 1; max {0}'.format(
             opt['nr_frames']

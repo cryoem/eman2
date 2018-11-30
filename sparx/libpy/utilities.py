@@ -29,12 +29,84 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+import EMAN2_cppwrap
+import EMAN2db
+import applications
+import collections
+import copy
+import datetime
+import filter
+import fractions
+import fundamentals
+import global_def
+import heapq
+import inspect
+import json
+import math
+import morphology
+import mpi
+import numpy
+import operator
+import os
+import pickle
+import random
+import re
+import reconstruction
+import sets
+import six
+import socket
+import statistics
+import string
+import struct
+import sys
+import time
+import traceback
+import types
+import zlib
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import EMAN2db
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import collections
+pass#IMPORTIMPORTIMPORT import copy
+pass#IMPORTIMPORTIMPORT import datetime
+pass#IMPORTIMPORTIMPORT import filter
+pass#IMPORTIMPORTIMPORT import fractions
+pass#IMPORTIMPORTIMPORT import functools
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import heapq
+pass#IMPORTIMPORTIMPORT import inspect
+pass#IMPORTIMPORTIMPORT import json
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import operator
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import pickle
+pass#IMPORTIMPORTIMPORT import random
+pass#IMPORTIMPORTIMPORT import re
+pass#IMPORTIMPORTIMPORT import reconstruction
+pass#IMPORTIMPORTIMPORT import sets
+pass#IMPORTIMPORTIMPORT import six
+pass#IMPORTIMPORTIMPORT import socket
+pass#IMPORTIMPORTIMPORT import statistics
+pass#IMPORTIMPORTIMPORT import string
+pass#IMPORTIMPORTIMPORT import struct
+pass#IMPORTIMPORTIMPORT import subprocess
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import time
+pass#IMPORTIMPORTIMPORT import traceback
+pass#IMPORTIMPORTIMPORT import types
+pass#IMPORTIMPORTIMPORT import utilities
+pass#IMPORTIMPORTIMPORT import zlib
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
-from global_def import *
-from functools import reduce
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from functools import reduce
 
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
@@ -117,7 +189,7 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 
 	   Example:
 
-	       import amoeba
+	       pass#IMPORTIMPORTIMPORT import amoeba
 	       def afunc(var,data=None): return 1.0-var[0]*var[0]-var[1]*var[1]
 	       print amoeba.amoeba([0.25,0.25],[0.5,0.5],afunc)
 
@@ -227,7 +299,7 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	of lower level refinement.
 	"""
 	#print " ENTER AMOEBA MULTI LEVEL"
-	from mpi import mpi_comm_rank, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, MPI_COMM_WORLD
 	
 	nvar = len(var)       # number of variables in the minimization
 	nsimplex = nvar + 1   # number of vertices in the simplex
@@ -333,7 +405,7 @@ def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):
 
 	Uses analog of bisection method to decrease the bracketed interval.
 	"""
-	from utilities import bracketing
+	pass#IMPORTIMPORTIMPORT from utilities import bracketing
 	if brack is None:
 		xa,xb,xc,fa,fb,fc,funcalls = bracketing(func, args=args)
 	elif len(brack) == 2:
@@ -453,7 +525,7 @@ def ce_fit(inp_image, ref_image, mask_image):
 	     Usage : ce_fit(inp_image,ref_image,mask_image):
 	    	 A and B, number of iterations and the chi-square
 	"""
-	hist_res = Util.histc(ref_image, inp_image, mask_image)
+	hist_res = EMAN2_cppwrap.Util.histc(ref_image, inp_image, mask_image)
 	args = hist_res["args"]
 	scale = hist_res["scale"]
 	data = [hist_res['data'], inp_image, hist_res["ref_freq_bin"], mask_image, int(hist_res['size_img']), hist_res['hist_len']]
@@ -475,9 +547,9 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		7. binarize at ave+sigma and cross-correlate with a circle
 	        The function will return centered_image, and shifts
 	"""
-	from   utilities    import peak_search
-	from   fundamentals import fshift
-	import types
+	pass#IMPORTIMPORTIMPORT from   utilities    import peak_search
+	pass#IMPORTIMPORTIMPORT from   fundamentals import fshift
+	pass#IMPORTIMPORTIMPORT import types
 	if type(image_to_be_centered) == bytes: image_to_be_centered = get_im(image_to_be_centered)
 	if    center_method == 0 :  return  image_to_be_centered,0.,0.
 	elif  center_method == 1 :
@@ -485,17 +557,17 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		if searching_range > 0 :
 			if(abs(cs[0]) > searching_range):  cs[0]=0.0
 			if(abs(cs[1]) > searching_range):  cs[1]=0.0
-		return fshift(image_to_be_centered, -cs[0], -cs[1]), cs[0], cs[1]
+		return fundamentals.fshift(image_to_be_centered, -cs[0], -cs[1]), cs[0], cs[1]
 
 	elif center_method == 7:
-		from fundamentals import ccf, cyclic_shift
-		from morphology   import binarize
-		from utilities    import model_blank
-		from EMAN2        import rsconvolution
-		p = Util.infomask(image_to_be_centered,None,True)
-		cc = binarize(rsconvolution(binarize(image_to_be_centered,p[0]+p[1]),model_blank(5,5,1,1.0/(5.0*5.0))),0.5)
-		c = ccf(cc, self_defined_reference)
-		p = Util.infomask(c,None,True)[3]
+		pass#IMPORTIMPORTIMPORT from fundamentals import ccf, cyclic_shift
+		pass#IMPORTIMPORTIMPORT from morphology   import binarize
+		pass#IMPORTIMPORTIMPORT from utilities    import model_blank
+		pass#IMPORTIMPORTIMPORT from EMAN2        import rsconvolution
+		p = EMAN2_cppwrap.Util.infomask(image_to_be_centered,None,True)
+		cc = morphology.binarize(EMAN2_cppwrap.rsconvolution(morphology.binarize(image_to_be_centered,p[0]+p[1]),model_blank(5,5,1,1.0/(5.0*5.0))),0.5)
+		c = fundamentals.ccf(cc, self_defined_reference)
+		p = EMAN2_cppwrap.Util.infomask(c,None,True)[3]
 		nx = c.get_xsize()
 		ny = c .get_ysize()
 		cx = nx//2
@@ -514,60 +586,60 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		if searching_range > 0 :
 			if(abs(shiftx) > searching_range):  shiftx=0
 			if(abs(shifty) > searching_range):  shifty=0
-		return cyclic_shift(image_to_be_centered, -shiftx, -shifty), shiftx, shifty
+		return fundamentals.cyclic_shift(image_to_be_centered, -shiftx, -shifty), shiftx, shifty
 
 	elif center_method == 5:
-		from fundamentals import rot_avg_image,ccf
-		from math import sqrt
+		pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_image,ccf
+		pass#IMPORTIMPORTIMPORT from math import sqrt
 		not_centered = True
 		tmp_image = image_to_be_centered.copy()
 		shiftx = 0
 		shifty = 0
 		while (not_centered):
-			reference = rot_avg_image(tmp_image)
-			ccmap = ccf(tmp_image, reference)
-			if searching_range > 0:  ccmap = Util.window(ccmap, searching_range, searching_range, 1, 0, 0, 0)
+			reference = fundamentals.rot_avg_image(tmp_image)
+			ccmap = fundamentals.ccf(tmp_image, reference)
+			if searching_range > 0:  ccmap = EMAN2_cppwrap.Util.window(ccmap, searching_range, searching_range, 1, 0, 0, 0)
 			peak  = peak_search(ccmap)
-			centered_image = fshift(tmp_image, -peak[0][4], -peak[0][5])
-			if sqrt(peak[0][4]**2 + peak[0][5]**2) < 1. : not_centered = False
+			centered_image = fundamentals.fshift(tmp_image, -peak[0][4], -peak[0][5])
+			if numpy.sqrt(peak[0][4]**2 + peak[0][5]**2) < 1. : not_centered = False
 			else : tmp_image = centered_image.copy()
 			shiftx += peak[0][4]
 			shifty += peak[0][5]
 		return centered_image, shiftx, shifty
 
 	elif center_method == 6:
-		from morphology import threshold_to_minval
+		pass#IMPORTIMPORTIMPORT from morphology import threshold_to_minval
 		nx = image_to_be_centered.get_xsize()
 		ny = image_to_be_centered.get_ysize()
 		r = nx//2-2
 		mask = model_circle(r, nx, ny)
-		[mean, sigma, xmin, xmax] = Util.infomask(image_to_be_centered, mask, True)
-		new_image = threshold_to_minval(image_to_be_centered, mean+sigma)
+		[mean, sigma, xmin, xmax] = EMAN2_cppwrap.Util.infomask(image_to_be_centered, mask, True)
+		new_image = morphology.threshold_to_minval(image_to_be_centered, mean+sigma)
 		cs = new_image.phase_cog()
 		if searching_range > 0 :
 			if(abs(cs[0]) > searching_range):  cs[0]=0.0
 			if(abs(cs[1]) > searching_range):  cs[1]=0.0
-		return fshift(image_to_be_centered, -cs[0], -cs[1]), cs[0], cs[1]
+		return fundamentals.fshift(image_to_be_centered, -cs[0], -cs[1]), cs[0], cs[1]
 
 	else :
 		nx = image_to_be_centered.get_xsize()
 		ny = image_to_be_centered.get_ysize()
-		from fundamentals import ccf
+		pass#IMPORTIMPORTIMPORT from fundamentals import ccf
 		if center_method == 2 :
 			reference = model_gauss(Gauss_radius_inner, nx, ny)
 		if center_method == 3 :
 			do1 = model_gauss(Gauss_radius_outter, nx, ny)
 			do2 = model_gauss(Gauss_radius_inner,  nx, ny)
-			s = Util.infomask(do1, None, True)
+			s = EMAN2_cppwrap.Util.infomask(do1, None, True)
 			do1/= s[3]
-			s = Util.infomask(do2, None, True)
+			s = EMAN2_cppwrap.Util.infomask(do2, None, True)
 			do2/=s[3]
 			reference = do1 - do2
 		if center_method == 4:	reference = self_defined_reference
-		ccmap = ccf(image_to_be_centered, reference)
-		if searching_range > 1: ccmap = Util.window(ccmap, searching_range, searching_range, 1, 0, 0, 0)
+		ccmap = fundamentals.ccf(image_to_be_centered, reference)
+		if searching_range > 1: ccmap = EMAN2_cppwrap.Util.window(ccmap, searching_range, searching_range, 1, 0, 0, 0)
 		peak  = peak_search(ccmap)
-		return fshift(image_to_be_centered, -peak[0][4], -peak[0][5]), peak[0][4], peak[0][5]
+		return fundamentals.fshift(image_to_be_centered, -peak[0][4], -peak[0][5]), peak[0][4], peak[0][5]
 
 def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	"""Find the position of the commone line in 3D
@@ -576,9 +648,9 @@ def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	   Notice you don't need to enter psi's; they are irrelevant
 	"""
 
-	from math import pi, sqrt, cos, sin, asin, atan2
+	pass#IMPORTIMPORTIMPORT from math import pi, sqrt, cos, sin, asin, atan2
 
-	piOver=pi/180.0;
+	piOver=numpy.pi/180.0;
 	ph1 = phiA*piOver;
 	th1 = thetaA*piOver;
 	ph2 = phiB*piOver;
@@ -589,9 +661,9 @@ def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	#nz = sin(thetaAR)*sin(thetaBR)*sin(phiAR-phiBR);
 
 
-	nx = sin(th1)*cos(ph1)*sin(ph2)-sin(th2)*sin(ph1)*cos(ph2)
-	ny = sin(th1)*cos(th2)*cos(ph1)*cos(ph2)-cos(th1)*sin(th2)*cos(ph1)*cos(ph2)
-	nz = cos(th2)*sin(ph1)*cos(ph2)-cos(th1)*cos(ph1)*sin(ph2)
+	nx = numpy.sin(th1)*numpy.cos(ph1)*numpy.sin(ph2)-numpy.sin(th2)*numpy.sin(ph1)*numpy.cos(ph2)
+	ny = numpy.sin(th1)*numpy.cos(th2)*numpy.cos(ph1)*numpy.cos(ph2)-numpy.cos(th1)*numpy.sin(th2)*numpy.cos(ph1)*numpy.cos(ph2)
+	nz = numpy.cos(th2)*numpy.sin(ph1)*numpy.cos(ph2)-numpy.cos(th1)*numpy.cos(ph1)*numpy.sin(ph2)
 
 	norm = nx*nx + ny*ny + nz*nz
 
@@ -602,11 +674,11 @@ def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	if nz<0: nx=-nx; ny=-ny; nz=-nz;
 
 	#thetaCom = asin(nz/sqrt(norm))
-	phiCom    = asin(nz/sqrt(norm))
+	phiCom    = math.asin(nz/numpy.sqrt(norm))
 	#phiCom   = atan2(ny,nx)
-	thetaCom  = atan2(ny, nx)
+	thetaCom  = math.atan2(ny, nx)
 
-	return phiCom*180.0/pi , thetaCom*180.0/pi
+	return phiCom*180.0/numpy.pi , thetaCom*180.0/numpy.pi
 
 def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 	"""Print the composition of two transformations  T2*T1
@@ -619,8 +691,8 @@ def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 	       angles in degrees
 	"""
 
-	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":0,"scale":scale1})
-	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":0,"scale":scale2})
+	t1 = EMAN2_cppwrap.Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":0,"scale":scale1})
+	t2 = EMAN2_cppwrap.Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":0,"scale":scale2})
 	tt = t2*t1
 	d = tt.get_params("2D")
 	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], d[ "scale" ]
@@ -637,8 +709,8 @@ def compose_transform2m(alpha1=0.0, sx1=0., sy1=0.0, mirror1=0, scale1=1.0, alph
 	       angles in degrees
 	"""
 
-	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":scale1})
-	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":scale2})
+	t1 = EMAN2_cppwrap.Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":scale1})
+	t2 = EMAN2_cppwrap.Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":scale2})
 	tt = t2*t1
 	d = tt.get_params("2D")
 	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], int(d[ "mirror" ]+0.1), d[ "scale" ]
@@ -653,8 +725,8 @@ def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,
 		   angles in degrees
 	"""
 
-	R1 = Transform({"type":"spider","phi":float(phi1),"theta":float(theta1),"psi":float(psi1),"tx":float(sx1),"ty":float(sy1),"tz":float(sz1),"mirror":0,"scale":float(scale1)})
-	R2 = Transform({"type":"spider","phi":float(phi2),"theta":float(theta2),"psi":float(psi2),"tx":float(sx2),"ty":float(sy2),"tz":float(sz2),"mirror":0,"scale":float(scale2)})
+	R1 = EMAN2_cppwrap.Transform({"type":"spider","phi":float(phi1),"theta":float(theta1),"psi":float(psi1),"tx":float(sx1),"ty":float(sy1),"tz":float(sz1),"mirror":0,"scale":float(scale1)})
+	R2 = EMAN2_cppwrap.Transform({"type":"spider","phi":float(phi2),"theta":float(theta2),"psi":float(psi2),"tx":float(sx2),"ty":float(sy2),"tz":float(sz2),"mirror":0,"scale":float(scale2)})
 	Rcomp=R2*R1
 	d = Rcomp.get_params("spider")
 	return d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["scale"]
@@ -665,8 +737,8 @@ def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
 	"""
 
-	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":1.0})
-	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":1.0})
+	t1 = EMAN2_cppwrap.Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":1.0})
+	t2 = EMAN2_cppwrap.Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":1.0})
 	tt = t2*t1
 	"""
 	t1.printme()
@@ -684,7 +756,7 @@ def inverse_transform2(alpha, tx = 0.0, ty = 0.0, mirror = 0):
 	    Usage: nalpha, ntx, nty, mirror = inverse_transform2(alpha,tx,ty,mirror)
 	"""
 
-	t = Transform({"type":"2D","alpha":alpha,"tx":tx,"ty":ty,"mirror":mirror,"scale":1.0})
+	t = EMAN2_cppwrap.Transform({"type":"2D","alpha":alpha,"tx":tx,"ty":ty,"mirror":mirror,"scale":1.0})
 	t = t.inverse()
 	t = t.get_params("2D")
 	return t[ "alpha" ], t[ "tx" ], t[ "ty" ], int(t[ "mirror" ]+0.1)
@@ -696,7 +768,7 @@ def inverse_transform3(phi, theta=0.0, psi=0.0, tx=0.0, ty=0.0, tz=0.0, mirror =
 	       angles in degrees
 	"""
 
-	d = Transform({'type': 'spider', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': tx, 'ty': ty, 'tz': tz, "mirror":mirror,"scale":scale})
+	d = EMAN2_cppwrap.Transform({'type': 'spider', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': tx, 'ty': ty, 'tz': tz, "mirror":mirror,"scale":scale})
 	d = d.inverse()
 	d = d.get_params("spider")
 	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],int(d["mirror"]+0.1),d["scale"]
@@ -704,7 +776,7 @@ def inverse_transform3(phi, theta=0.0, psi=0.0, tx=0.0, ty=0.0, tz=0.0, mirror =
 def create_spider_doc(fname,spiderdoc):
 	"""Convert a text file that is composed of columns of numbers into spider doc file
 	"""
-	from string import atoi,atof
+	pass#IMPORTIMPORTIMPORT from string import atoi,atof
 	infile = open(fname,"r")
 	lines  = infile.readlines()
 	infile.close()
@@ -713,7 +785,7 @@ def create_spider_doc(fname,spiderdoc):
 	for line in lines:
 		data = line.split()
 	for i in range(0,nmc):
-		data[i] = atof(data[i])
+		data[i] = string.atof(data[i])
 		table.append(data)
 	drop_spider_doc(spiderdoc ,table)
 
@@ -726,12 +798,12 @@ def drop_image(imagename, destination, itype="h"):
 	"""
 
 	if type(destination) == type(""):
-		if(itype == "h"):    imgtype = EMUtil.ImageType.IMAGE_HDF
-		elif(itype == "s"):  imgtype = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
-		else:  ERROR("unknown image type","drop_image",1)
+		if(itype == "h"):    imgtype = EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF
+		elif(itype == "s"):  imgtype = EMAN2_cppwrap.EMUtil.ImageType.IMAGE_SINGLE_SPIDER
+		else:  global_def.ERROR("unknown image type","drop_image",1)
 		imagename.write_image(destination, 0, imgtype)
 	else:
-		ERROR("destination is not a file name","drop_image",1)
+		global_def.ERROR("destination is not a file name","drop_image",1)
 
 def drop_png_image(im, trg):
 	"""Write an image with the proper png save
@@ -739,14 +811,14 @@ def drop_png_image(im, trg):
 	"""
 
 	if trg[-4:] != '.png':
-		ERROR('destination name must be png extension', 'drop_png_image', 1)
+		global_def.ERROR('destination name must be png extension', 'drop_png_image', 1)
 
 	if isinstance(trg, str):
 		im['render_min'] = im['minimum']
 		im['render_max'] = im['maximum']
 		im.write_image(trg, 0)
 	else:
-		ERROR('destination is not a file name', 'drop_png_image', 1)
+		global_def.ERROR('destination is not a file name', 'drop_png_image', 1)
 
 def drop_spider_doc(filename, data, comment = None):
 	"""Create a spider-compatible "Doc" file.
@@ -756,8 +828,8 @@ def drop_spider_doc(filename, data, comment = None):
 	         and is written as a line into the doc file.
 	"""
 	outf = open(filename, "w")
-	from datetime import datetime
-	outf.write(" ;   %s   %s   %s\n" % (datetime.now().ctime(), filename, comment))
+	pass#IMPORTIMPORTIMPORT from datetime import datetime
+	outf.write(" ;   %s   %s   %s\n" % (datetime.datetime.now().ctime(), filename, comment))
 	count = 1  # start key from 1; otherwise, it is confusing...
 	for dat in data:
 		try:
@@ -804,9 +876,9 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		        it to generate cushion projections within an/2 of the border of unique zone
 	"""
 
-	from math      import pi, sqrt, cos, acos, tan, sin
-	from utilities import even_angles_cd
-	from string    import lower,split
+	pass#IMPORTIMPORTIMPORT from math      import pi, sqrt, cos, acos, tan, sin
+	pass#IMPORTIMPORTIMPORT from utilities import even_angles_cd
+	pass#IMPORTIMPORTIMPORT from string    import lower,split
 	angles = []
 	symmetryLower = symmetry.lower()
 	symmetry_string = symmetry.split()[0]
@@ -854,7 +926,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
 		# for helical, theta1 cannot be 0.0
 		if theta1 > 90.0:
-			ERROR('theta1 must be less than 90.0 for helical symmetry', 'even_angles', 1)
+			global_def.ERROR('theta1 must be less than 90.0 for helical symmetry', 'even_angles', 1)
 		if theta1 == 0.0: theta1 =90.0
 		theta_number = int((90.0 - theta1)/theta2)
 		#for helical, symmetry = s or scn
@@ -873,7 +945,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 					else:
 						k=int(359.99/4/cn/delta)
 				else:
-					ERROR("For helical strucutre, we only support scn and sdn symmetry","even_angles",1)
+					global_def.ERROR("For helical strucutre, we only support scn and sdn symmetry","even_angles",1)
 
 			else:
 				if (symmetry_string[1] =="c"):
@@ -885,10 +957,10 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 					angles.append([i*delta,90.0-j*theta2,90.0])
 
 	else:
-		ERROR("even_angles","Symmetry not supported: "+symmetry_string,0)
+		global_def.ERROR("even_angles","Symmetry not supported: "+symmetry_string,0)
 	'''
 	elif(symmetry_string[0]  == "o"):
-		from EMAN2 import parsesym
+		pass#IMPORTIMPORTIMPORT from EMAN2 import parsesym
 		if(method.lower() == "s"):  met = "saff"
 		elif(method.lower() == "p"): met = "even"
 		if(theta2 == 180.0):  inc_mirror = 1
@@ -1010,26 +1082,26 @@ def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method
 			  'S' assumes phi1<phi2 and phi2-phi1>> delta ;
 	   phiEQpsi  - set this to 'Minus', if you want psi=-phi;
 	"""
-	from math import pi, sqrt, cos, acos
+	pass#IMPORTIMPORTIMPORT from math import pi, sqrt, cos, acos
 	angles = []
 	if (method == 'P'):
-		temp = Util.even_angles(delta, theta1, theta2, phi1, phi2)
+		temp = EMAN2_cppwrap.Util.even_angles(delta, theta1, theta2, phi1, phi2)
 		#		                                              phi, theta, psi
 		for i in range(len(temp)/3): angles.append([temp[3*i],temp[3*i+1],temp[3*i+2]]);
 	else:              #elif (method == 'S'):
-		Deltaz  = cos(theta2*pi/180.0)-cos(theta1*pi/180.0)
-		s       = delta*pi/180.0
+		Deltaz  = numpy.cos(theta2*numpy.pi/180.0)-numpy.cos(theta1*numpy.pi/180.0)
+		s       = delta*numpy.pi/180.0
 		NFactor = 3.6/s
 		wedgeFactor = abs(Deltaz*(phi2-phi1)/720.0)
 		NumPoints   = int(NFactor*NFactor*wedgeFactor)
 		angles.append([phi1, theta1, 0.0])
-		z1 = cos(theta1*pi/180.0); 	phi=phi1            # initialize loop
+		z1 = numpy.cos(theta1*numpy.pi/180.0); 	phi=phi1            # initialize loop
 		for k in range(1,(NumPoints-1)):
 			z=z1 + Deltaz*k/(NumPoints-1)
-			r= sqrt(1-z*z)
+			r= numpy.sqrt(1-z*z)
 			phi = phi1+(phi + delta/r -phi1)%(abs(phi2-phi1))
 			#[k, phi,180*acos(z)/pi, 0]
-			angles.append([phi, 180*acos(z)/pi, 0.0])
+			angles.append([phi, 180*math.acos(z)/numpy.pi, 0.0])
 		#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
 	if (phiEQpsi == 'Minus'):
 		for k in range(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
@@ -1043,12 +1115,12 @@ def eigen_images_get(stack, eigenstack, mask, num, avg):
 		and Get eigen images
 	"""
 
-	from utilities import get_image
+	pass#IMPORTIMPORTIMPORT from utilities import get_image
 
-	a = Analyzers.get('pca_large')
-	e = EMData()
-	if(avg == 1): s = EMData()
-	nima = EMUtil.get_image_count(stack)
+	a = EMAN2_cppwrap.Analyzers.get('pca_large')
+	e = EMAN2_cppwrap.EMData()
+	if(avg == 1): s = EMAN2_cppwrap.EMData()
+	nima = EMAN2_cppwrap.EMUtil.get_image_count(stack)
 	for im in range(nima):
 		e.read_image(stack,im)
 		e *= mask
@@ -1058,8 +1130,8 @@ def eigen_images_get(stack, eigenstack, mask, num, avg):
 			else:      s += a
 	if(avg == 1): a -= s/nima
 	eigenimg = a.analyze()
-	if(num>= EMUtil.get_image_count(eigenimg)):
-		num=EMUtil.get_image_count(eigenimg)
+	if(num>= EMAN2_cppwrap.EMUtil.get_image_count(eigenimg)):
+		num=EMAN2_cppwrap.EMUtil.get_image_count(eigenimg)
 	for  i in range(num): eigenimg.write_image(eigenstack,i)
 
 def find_inplane_to_match(phiA,thetaA,phiB,thetaB,psiA=0,psiB=0):
@@ -1069,8 +1141,8 @@ def find_inplane_to_match(phiA,thetaA,phiB,thetaB,psiA=0,psiB=0):
 	"""
 	#from math import pi, sqrt, cos, acos, sin
 
-	RA   = Transform({'type': 'spider', 'phi': phiA, 'theta': thetaA, 'psi': psiA})
-	RB   = Transform({'type': 'spider', 'phi': phiB, 'theta': thetaB, 'psi': psiB})
+	RA   = EMAN2_cppwrap.Transform({'type': 'spider', 'phi': phiA, 'theta': thetaA, 'psi': psiA})
+	RB   = EMAN2_cppwrap.Transform({'type': 'spider', 'phi': phiB, 'theta': thetaB, 'psi': psiB})
 	RBT  = RB.transpose()
 	RABT = RA * RBT
 
@@ -1114,19 +1186,19 @@ def gauss_edge(sharp_edge_image, kernel_size = 7, gauss_standard_dev =3):
 		1. The sharp-edge image is convoluted with a gassian kernel
 		2. The convolution normalized
 	"""
-	from utilities import model_gauss
-	from EMAN2 import rsconvolution
+	pass#IMPORTIMPORTIMPORT from utilities import model_gauss
+	pass#IMPORTIMPORTIMPORT from EMAN2 import rsconvolution
 	nz = sharp_edge_image.get_ndim()
 	if(nz == 3):   kern = model_gauss(gauss_standard_dev, kernel_size , kernel_size, kernel_size)
 	elif(nz == 2):  kern = model_gauss(gauss_standard_dev, kernel_size , kernel_size)
 	else:          kern = model_gauss(gauss_standard_dev, kernel_size)
-	aves = Util.infomask(kern, None, False)
+	aves = EMAN2_cppwrap.Util.infomask(kern, None, False)
 	nx = kern.get_xsize()
 	ny = kern.get_ysize()
 	nz = kern.get_zsize()
 
 	kern /= (aves[0]*nx*ny*nz)
-	return  rsconvolution(sharp_edge_image, kern)
+	return  EMAN2_cppwrap.rsconvolution(sharp_edge_image, kern)
 
 def get_image(imagename, nx = 0, ny = 1, nz = 1, im = 0):
 	"""Read an image from the disk or assign existing object to the output.
@@ -1135,10 +1207,10 @@ def get_image(imagename, nx = 0, ny = 1, nz = 1, im = 0):
 	or     myimage = readImage(name_of_existing_image)
 	"""
 	if type(imagename) == type(""):
-	    e = EMData()
+	    e = EMAN2_cppwrap.EMData()
 	    e.read_image(imagename, im)
 	elif not imagename:
-	    e = EMData()
+	    e = EMAN2_cppwrap.EMData()
 	    if (nx > 0): e.set_size(nx, ny, nz)
 	else:
 	    e = imagename
@@ -1151,7 +1223,7 @@ def get_im(stackname, im = 0):
 	   or: myimage = get_im( data, im )
 	"""
 	if type(stackname) == type(""):
-		e = EMData()
+		e = EMAN2_cppwrap.EMData()
 		e.read_image(stackname, im)
 		return  e
 	else:
@@ -1164,26 +1236,26 @@ def get_image_data(img):
 		so if the NumPy array is altered then the image is altered
 		as well (and vice versa).
 	"""
-	from EMAN2 import EMNumPy
-	return EMNumPy.em2numpy(img)
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMNumPy
+	return EMAN2_cppwrap.EMNumPy.em2numpy(img)
 
 def get_sym(symmetry):
 	"""
 	get a list of point-group symmetry angles, symmetry="c3"
 	"""
-	from fundamentals import symclass
-	scl = symclass(symmetry)
+	pass#IMPORTIMPORTIMPORT from fundamentals import symclass
+	scl = fundamentals.symclass(symmetry)
 	return scl.symangles
 
 def get_symt(symmetry):
 	"""
 	get a list of point-group symmetry transformations, symmetry="c3"
 	"""
-	from fundamentals import symclass
-	scl = symclass(symmetry)
+	pass#IMPORTIMPORTIMPORT from fundamentals import symclass
+	scl = fundamentals.symclass(symmetry)
 	trans = []
 	for q in scl.symangles:
-		trans.append(Transform({"type":"spider","phi":q[0],"theta":q[1],"psi":q[2]}))
+		trans.append(EMAN2_cppwrap.Transform({"type":"spider","phi":q[0],"theta":q[1],"psi":q[2]}))
 	return trans
 
 def get_textimage(fname):
@@ -1195,23 +1267,23 @@ def get_textimage(fname):
 		and val is the floating point value of that point.  All points
 		not explicitly listed are set to zero.
 	"""
-	from string import atoi,atof
+	pass#IMPORTIMPORTIMPORT from string import atoi,atof
 	infile = open(fname)
 	lines = infile.readlines()
 	infile.close()
 	data = lines[0].split()
-	nx = atoi(data[0])
-	ny = atoi(data[1])
-	nz = atoi(data[2])
-	e = EMData()
+	nx = string.atoi(data[0])
+	ny = string.atoi(data[1])
+	nz = string.atoi(data[2])
+	e = EMAN2_cppwrap.EMData()
 	e.set_size(nx, ny, nz)
 	e.to_zero()
 	for line in lines[1:]:
 		data = line.split()
-		ix = atoi(data[0])
-		iy = atoi(data[1])
-		iz = atoi(data[2])
-		val = atof(data[3])
+		ix = string.atoi(data[0])
+		iy = string.atoi(data[1])
+		iz = string.atoi(data[2])
+		val = string.atof(data[3])
 		e[ix,iy,iz] = val
 	return e
 
@@ -1219,7 +1291,7 @@ def get_input_from_string(str_input):
 	"""
 		Extract input numbers from a given string
 	"""
-	import re
+	pass#IMPORTIMPORTIMPORT import re
 	qq = re.split(" |,",str_input)
 	for i in range(len(qq)-1, -1, -1):
 		if(qq[i] == ""):  del qq[i]
@@ -1231,7 +1303,7 @@ def get_input_from_string(str_input):
 
 def hist_func(args, data):
 	#Util.hist_comp_freq(float PA,float PB,int size_img, int hist_len, float *img_ptr, float *ref_freq_bin, float *mask_ptr, float ref_h_diff, float ref_h_min)
-	return Util.hist_comp_freq(args[0],args[1],data[4],data[5],data[1],data[2],data[3],data[0][0],data[0][1])
+	return EMAN2_cppwrap.Util.hist_comp_freq(args[0],args[1],data[4],data[5],data[1],data[2],data[3],data[0][0],data[0][1])
 
 def info(image, mask=None, Comment=""):
 	"""Calculate and print the descriptive statistics of an image.
@@ -1244,7 +1316,7 @@ def info(image, mask=None, Comment=""):
 	"""
 	if(Comment):  print(" ***  ", Comment)
 	e = get_image(image)
-	[mean, sigma, imin, imax] = Util.infomask(e, mask, True)
+	[mean, sigma, imin, imax] = EMAN2_cppwrap.Util.infomask(e, mask, True)
 	nx = e.get_xsize()
 	ny = e.get_ysize()
 	nz = e.get_zsize()
@@ -1268,7 +1340,7 @@ def model_circle(r, nx, ny, nz=1):
 	"""
 	Create a centered circle (or sphere) having radius r.
 	"""
-	e = EMData()
+	e = EMAN2_cppwrap.EMData()
 	e.set_size(nx, ny, nz)
 	e.process_inplace("testimage.circlesphere", {"radius":r, "fill":1})
 	return e
@@ -1277,7 +1349,7 @@ def model_square(d, nx, ny, nz=1):
 	"""
 	Create a centered square (or cube) with edge length of d.
 	"""
-	e = EMData()
+	e = EMAN2_cppwrap.EMData()
 	e.set_size(nx, ny, nz)
 	e.process_inplace("testimage.squarecube", {"edge_length":d, "fill":1})
 	return e
@@ -1287,7 +1359,7 @@ def model_gauss(xsigma, nx, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, 
 	Create an image of a Gaussian function with standard deviation "xsigma,ysigma,zsigma"
 	 and centered at (xcenter,ycenter,zcenter), by default the center is image center.
 	"""
-	e = EMData()
+	e = EMAN2_cppwrap.EMData()
 	e.set_size(nx, ny, nz)
 	if( ysigma  == None ) : ysigma = xsigma
 	if( zsigma  == None ) : zsigma = xsigma
@@ -1301,7 +1373,7 @@ def model_cylinder(radius, nx, ny, nz):
 	"""
 	 create a cylinder along z axis
 	"""
-	e = EMData()
+	e = EMAN2_cppwrap.EMData()
 	e.set_size(nx, ny, nz)
 	e.process_inplace("testimage.cylinder", {"radius":radius})
 	return  e
@@ -1311,7 +1383,7 @@ def model_gauss_noise(sigma, nx, ny=1, nz=1):
 	Create an image of noise having standard deviation "sigma",
 	and average 0.
 	"""
-	e = EMData()
+	e = EMAN2_cppwrap.EMData()
 	e.set_size(nx, ny, nz)
 	if(sigma == 0.0): e.to_zero()
 	else: e.process_inplace("testimage.noise.gauss", {"sigma":sigma})
@@ -1321,16 +1393,16 @@ def model_blank(nx, ny=1, nz=1, bckg = 0.0):
 	"""
 	Create a blank image.
 	"""
-	e = EMData()
+	e = EMAN2_cppwrap.EMData()
 	e.set_size(nx, ny, nz)
 	e.to_zero()
 	if( bckg != 0.0):  e+=bckg
 	return e
 
 def set_seed(sde):
-	from random import seed
-	seed(int(sde))
-	e = EMData()
+	pass#IMPORTIMPORTIMPORT from random import seed
+	random.seed(int(sde))
+	e = EMAN2_cppwrap.EMData()
 	e.set_size(1,1,1)
 	e.process_inplace("testimage.noise.gauss", {"sigma":1.0, "seed":int(sde)})
 
@@ -1439,7 +1511,7 @@ def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
 			elif ndim == 3 :
 				print('%10s%10s%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ","Z   ", "Peak/P_max", "X-NX/2", "Y-NY/2", "Z-NZ/2"))
 				print_list_format(peaks[1:], 8)
-			else:	ERROR("Image dimension extracted in peak_search is wrong", "Util.peak_search", 1)
+			else:	global_def.ERROR("Image dimension extracted in peak_search is wrong", "Util.peak_search", 1)
 		for i in range(nlist):
 			k=int((ndim+1)*i*2)
 			if   ndim == 1 :  p=[peaks[k+1], peaks[k+2], peaks[k+3], peaks[k+4]]
@@ -1665,10 +1737,10 @@ def print_image_slice_3d(input, num=0,direction="z"):
 
 
 def print_list_format(m, narray = 0):
-	from string 	import split
-	from math 	import sqrt
-	import string
-	import types
+	pass#IMPORTIMPORTIMPORT from string 	import split
+	pass#IMPORTIMPORTIMPORT from math 	import sqrt
+	pass#IMPORTIMPORTIMPORT import string
+	pass#IMPORTIMPORTIMPORT import types
 	"""
 		Print formated elements in a list to screen
 		The screen output is in the form of narray*int(len(m)/narray)
@@ -1681,9 +1753,9 @@ def print_list_format(m, narray = 0):
 		else				   : flist.append(  '%10s'%(m[i]))
 	if(narray > len(m)):
 		narray = 0
-		ERROR("improper input narray number, use default value", "print_list_foramt",0)
+		global_def.ERROR("improper input narray number, use default value", "print_list_foramt",0)
 	if(narray == 0 ):
-		num = int(sqrt(len(m)))
+		num = int(numpy.sqrt(len(m)))
 		if( len(m) % num != 0): lnum = int(len(m)/num) + 1
 		else: 			lnum = int(len(m)/num)
 	else:
@@ -1703,15 +1775,15 @@ def print_list_format(m, narray = 0):
 		print('%6d '%(i+1),plist[i])
 
 def pad(image_to_be_padded, new_nx, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0):
-	import types
+	pass#IMPORTIMPORTIMPORT import types
 	if type(background) != bytes: background = str(background)
-	if   background == "average"       :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "average")
-	elif background == "circumference" :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "circumference")
-	else:                                    image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz,  background  )
+	if   background == "average"       :     image_padded = EMAN2_cppwrap.Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "average")
+	elif background == "circumference" :     image_padded = EMAN2_cppwrap.Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "circumference")
+	else:                                    image_padded = EMAN2_cppwrap.Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz,  background  )
 	return  image_padded
 
 def read_spider_doc(fnam):
-	from string import atof, atoi
+	pass#IMPORTIMPORTIMPORT from string import atof, atoi
 	"""
 		spider doc file format:
 		key nrec record ...
@@ -1731,21 +1803,21 @@ def read_spider_doc(fnam):
 			#line_data.append(atoi(line[start:end]))		# 03/21/12 Anna: according to the previous version of this function this value was omitted
 			start= end+3
 			end  = start+6
-			line_data.append(atof(line[start:end]))
+			line_data.append(string.atof(line[start:end]))
 			colNo = (len(line)-end)/12 - 1
 			for i in range(colNo):
 				start= end+6
 				end  = start+7
-				line_data.append(atof(line[start:end]))
+				line_data.append(string.atof(line[start:end]))
 			data.append(line_data)
 			line = inf.readline()
 		else:												# old data format
 			if(line[5:6] == " "): ibeg = 6
 			else:  ibeg = 7
-			for irec in range(atoi(line[ibeg:ibeg+2])):
+			for irec in range(string.atoi(line[ibeg:ibeg+2])):
 			 	start= ibeg+2+irec*12
 			 	end  = ibeg+2+(irec+1)*12
-			 	line_data.append(atof(line[start:end]))
+			 	line_data.append(string.atof(line[start:end]))
 			data.append(line_data)
 			line = inf.readline()
 	return data
@@ -1768,7 +1840,7 @@ def read_text_row(fnam, format="", skip=";"):
 	    	len(data)/nc : number of lines (rows)
 	    	data: List of numbers from the doc file
  	"""
-	from string import split
+	pass#IMPORTIMPORTIMPORT from string import split
 
 	inf  = open(fnam, "r")
 	strg = inf.readline()
@@ -1812,7 +1884,7 @@ def write_text_row(data, file_name):
 	         First list will be written as a first line, second as a second, and so on...
 		 If only one list is given, the file will contain one line
 	"""
-	import types
+	pass#IMPORTIMPORTIMPORT import types
 	outf = open(file_name, "w")
 	if (type(data[0]) == list):
 		# It is a list of lists
@@ -1848,7 +1920,7 @@ def read_text_file(file_name, ncol = 0):
 		if ncol >= 0, just read the (ncol)-th column.
 	"""
 
-	from string import split
+	pass#IMPORTIMPORTIMPORT from string import split
 	inf = open(file_name, "r")
 	line = inf.readline()
 	data = []
@@ -1891,7 +1963,7 @@ def write_text_file(data, file_name):
 		outf.close()
 		return
 
-	import types
+	pass#IMPORTIMPORTIMPORT import types
 	outf = open(file_name, "w")
 	if (type(data[0]) == list):
 		# It is a list of lists
@@ -1920,16 +1992,16 @@ def write_text_file(data, file_name):
 	outf.close()
 
 def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk = True, saved_file_name = "image_in_reconstituted_mask.hdf"):
-	import types
+	pass#IMPORTIMPORTIMPORT import types
 	"""
 		Substitute masked area value with image average
 	"""
 	if type(image_mask_applied_file) == bytes:
-		nima = EMUtil.get_image_count(image_mask_applied_file)
+		nima = EMAN2_cppwrap.EMUtil.get_image_count(image_mask_applied_file)
 		if (nima > 1):
 			image_mask_applied = []
 			for ima in range(nima):
-				e = EMData()
+				e = EMAN2_cppwrap.EMData()
 				e.read_image(image_mask_applied_file, ima)
 				image_mask_applied.append(e)
 		else:
@@ -1953,15 +2025,15 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 	if  nima > 1:
 		image_in_reconstituted_mask = []
 		for i in range(nima):
-			tmp_image = Util.reconstitute_image_mask(image_mask_applied[i], new_mask)
+			tmp_image = EMAN2_cppwrap.Util.reconstitute_image_mask(image_mask_applied[i], new_mask)
 			image_in_reconstituted_mask.append (tmp_image)
 			if (save_file_on_disk ):  image_in_reconstituted_mask[i].write_image(saved_file_name, i)
 		if(not save_file_on_disk):  return  image_in_reconstituted_mask
 	else :
 		if(save_file_on_disk ):
-			image_in_reconstituted_mask = Util.reconstitute_image_mask(image_mask_applied, new_mask)
+			image_in_reconstituted_mask = EMAN2_cppwrap.Util.reconstitute_image_mask(image_mask_applied, new_mask)
 			image_in_reconstituted_mask.write_image(saved_file_name)
-		else:	return  Util.reconstitute_image_mask(image_mask_applied, new_mask)
+		else:	return  EMAN2_cppwrap.Util.reconstitute_image_mask(image_mask_applied, new_mask)
 
 def rotate_about_center(alpha, cx, cy):
 	"""Rotate about a different center
@@ -1979,22 +2051,22 @@ def rotate_about_center(alpha, cx, cy):
 def rotate_shift_params(paramsin, transf):
 	# moved from sxprocess.py
 	if len(paramsin[0])>3 :
-		from EMAN2 import Vec2f
-		t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2],"tx":transf[3],"ty":transf[4],"tz":transf[5],"mirror":0,"scale":1.0})
+		pass#IMPORTIMPORTIMPORT from EMAN2 import Vec2f
+		t = EMAN2_cppwrap.Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2],"tx":transf[3],"ty":transf[4],"tz":transf[5],"mirror":0,"scale":1.0})
 		t = t.inverse()
 		cpar = []
 		for params in paramsin:
-			d = Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
-			d.set_trans(Vec2f(-params[3], -params[4]))
+			d = EMAN2_cppwrap.Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
+			d.set_trans(EMAN2_cppwrap.Vec2f(-params[3], -params[4]))
 			c = d*t
 			u = c.get_params("spider")
 			cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
 	else:
-		t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2]})
+		t = EMAN2_cppwrap.Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2]})
 		t = t.inverse()
 		cpar = []
 		for params in paramsin:
-			d = Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
+			d = EMAN2_cppwrap.Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
 			c = d*t
 			u = c.get_params("spider")
 			cpar.append([u["phi"],u["theta"],u["psi"]])
@@ -2019,7 +2091,7 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 		if( Pixel_size_interpolated != Pixel_size_current):
 			length_interpolated = int(length_current*Pixel_size_current/Pixel_size_interpolated + 0.5)
 		else:
-			ERROR("Incorrect input parameters","reshape_1d",1)
+			global_def.ERROR("Incorrect input parameters","reshape_1d",1)
 			return []
 
 	if  Pixel_size_current == 0.:
@@ -2036,10 +2108,10 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 	return interpolated
 
 def estimate_3D_center(data):
-	from math import cos, sin, radians
-	from numpy import matrix
-	from numpy import linalg
-	import types
+	pass#IMPORTIMPORTIMPORT from math import cos, sin, radians
+	pass#IMPORTIMPORTIMPORT from numpy import matrix
+	pass#IMPORTIMPORTIMPORT from numpy import linalg
+	pass#IMPORTIMPORTIMPORT import types
 	if(type(data[0]) is list):
 		ali_params = data
 	else:
@@ -2053,34 +2125,34 @@ def estimate_3D_center(data):
 	b = []
 
 	for i in range(N):
-		phi_rad   = radians(ali_params[i][0])
-		theta_rad = radians(ali_params[i][1])
-		psi_rad   = radians(ali_params[i][2])
-		A.append([cos(psi_rad)*cos(theta_rad)*cos(phi_rad)-sin(psi_rad)*sin(phi_rad),
-			cos(psi_rad)*cos(theta_rad)*sin(phi_rad)+sin(psi_rad)*cos(phi_rad), -cos(psi_rad)*sin(theta_rad), 1, 0])
-		A.append([-sin(psi_rad)*cos(theta_rad)*cos(phi_rad)-cos(psi_rad)*sin(phi_rad),
-			-sin(psi_rad)*cos(theta_rad)*sin(phi_rad)+cos(psi_rad)*cos(phi_rad), sin(psi_rad)*sin(theta_rad), 0, 1])
+		phi_rad   = numpy.radians(ali_params[i][0])
+		theta_rad = numpy.radians(ali_params[i][1])
+		psi_rad   = numpy.radians(ali_params[i][2])
+		A.append([numpy.cos(psi_rad)*numpy.cos(theta_rad)*numpy.cos(phi_rad)-numpy.sin(psi_rad)*numpy.sin(phi_rad),
+			numpy.cos(psi_rad)*numpy.cos(theta_rad)*numpy.sin(phi_rad)+numpy.sin(psi_rad)*numpy.cos(phi_rad), -numpy.cos(psi_rad)*numpy.sin(theta_rad), 1, 0])
+		A.append([-numpy.sin(psi_rad)*numpy.cos(theta_rad)*numpy.cos(phi_rad)-numpy.cos(psi_rad)*numpy.sin(phi_rad),
+			-numpy.sin(psi_rad)*numpy.cos(theta_rad)*numpy.sin(phi_rad)+numpy.cos(psi_rad)*numpy.cos(phi_rad), numpy.sin(psi_rad)*numpy.sin(theta_rad), 0, 1])
 		b.append([ali_params[i][3]])
 		b.append([ali_params[i][4]])
 
-	A_matrix = matrix(A)
-	b_matrix = matrix(b)
+	A_matrix = numpy.matrix(A)
+	b_matrix = numpy.matrix(b)
 
-	K = linalg.solve(A_matrix.T*A_matrix, A_matrix.T*b_matrix)
+	K = numpy.linalg.solve(A_matrix.T*A_matrix, A_matrix.T*b_matrix)
 
 	return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
 
 
 def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm=None):
-	from math import cos, sin, radians
-	from numpy import matrix
-	from numpy import linalg
-	from mpi import MPI_COMM_WORLD
-	from mpi import mpi_recv, mpi_send, MPI_FLOAT
-	from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from math import cos, sin, radians
+	pass#IMPORTIMPORTIMPORT from numpy import matrix
+	pass#IMPORTIMPORTIMPORT from numpy import linalg
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_recv, mpi_send, MPI_FLOAT
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
 
 	if mpi_comm == None:
-		mpi_comm = MPI_COMM_WORLD
+		mpi_comm = mpi.MPI_COMM_WORLD
 
 	ali_params_series = []
 	for im in data:
@@ -2094,9 +2166,9 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm
 	if myid == main_node:
 		for proc in range(number_of_proc):
 			if proc != main_node:
-				image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
+				image_start_proc, image_end_proc = applications.MPI_start_end(nima, number_of_proc, proc)
 				n_params = (image_end_proc - image_start_proc)*5
-				temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, mpi_comm)
+				temp = mpi.mpi_recv(n_params, mpi.MPI_FLOAT, proc, proc, mpi_comm)
 				for nn in range(n_params):
 					ali_params_series.append(float(temp[nn]))
 
@@ -2109,33 +2181,33 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm
 		b = []
 
 		for i in range(N):
-			phi_rad   = radians(ali_params[i][0])
-			theta_rad = radians(ali_params[i][1])
-			psi_rad   = radians(ali_params[i][2])
-			A.append([cos(psi_rad)*cos(theta_rad)*cos(phi_rad)-sin(psi_rad)*sin(phi_rad),
-				cos(psi_rad)*cos(theta_rad)*sin(phi_rad)+sin(psi_rad)*cos(phi_rad), -cos(psi_rad)*sin(theta_rad), 1, 0])
-			A.append([-sin(psi_rad)*cos(theta_rad)*cos(phi_rad)-cos(psi_rad)*sin(phi_rad),
-				-sin(psi_rad)*cos(theta_rad)*sin(phi_rad)+cos(psi_rad)*cos(phi_rad), sin(psi_rad)*sin(theta_rad), 0, 1])
+			phi_rad   = numpy.radians(ali_params[i][0])
+			theta_rad = numpy.radians(ali_params[i][1])
+			psi_rad   = numpy.radians(ali_params[i][2])
+			A.append([numpy.cos(psi_rad)*numpy.cos(theta_rad)*numpy.cos(phi_rad)-numpy.sin(psi_rad)*numpy.sin(phi_rad),
+				numpy.cos(psi_rad)*numpy.cos(theta_rad)*numpy.sin(phi_rad)+numpy.sin(psi_rad)*numpy.cos(phi_rad), -numpy.cos(psi_rad)*numpy.sin(theta_rad), 1, 0])
+			A.append([-numpy.sin(psi_rad)*numpy.cos(theta_rad)*numpy.cos(phi_rad)-numpy.cos(psi_rad)*numpy.sin(phi_rad),
+				-numpy.sin(psi_rad)*numpy.cos(theta_rad)*numpy.sin(phi_rad)+numpy.cos(psi_rad)*numpy.cos(phi_rad), numpy.sin(psi_rad)*numpy.sin(theta_rad), 0, 1])
 			b.append([ali_params[i][3]])
 			b.append([ali_params[i][4]])
 
-		A_matrix = matrix(A)
-		b_matrix = matrix(b)
+		A_matrix = numpy.matrix(A)
+		b_matrix = numpy.matrix(b)
 
-		K = linalg.solve(A_matrix.T*A_matrix, A_matrix.T*b_matrix)
+		K = numpy.linalg.solve(A_matrix.T*A_matrix, A_matrix.T*b_matrix)
 		return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
 
 	else:
-		image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, myid)
+		image_start_proc, image_end_proc = applications.MPI_start_end(nima, number_of_proc, myid)
 		n_params = (image_end_proc - image_start_proc)*5
-		mpi_send(ali_params_series, n_params, MPI_FLOAT, main_node, myid, mpi_comm)
+		mpi.mpi_send(ali_params_series, n_params, mpi.MPI_FLOAT, main_node, myid, mpi_comm)
 
 		return 0.0, 0.0, 0.0, 0.0, 0.0
 
 
 def rotate_3D_shift(data, shift3d):
 
-	t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":-shift3d[0],"ty":-shift3d[1],"tz":-shift3d[2],"mirror":0,"scale":1.0})
+	t = EMAN2_cppwrap.Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":-shift3d[0],"ty":-shift3d[1],"tz":-shift3d[2],"mirror":0,"scale":1.0})
 
 	for i in range(len(data)):
 		d = data[i].get_attr('xform.projection')
@@ -2168,33 +2240,33 @@ def get_arb_params(img, par_str):
 ###------------------------------------------------------------------------------------------
 
 def start_time():
-	import time
+	pass#IMPORTIMPORTIMPORT import time
 	start_time = time.time()
 	return start_time
 
 def finish_time(start_time):
-	import time
+	pass#IMPORTIMPORTIMPORT import time
 	finish_time = time.time()
 	print(("Running time is"), finish_time-start_time)
 	return finish_time
 
 def ttime():
-	import time
+	pass#IMPORTIMPORTIMPORT import time
 	now = time.localtime(time.time())
 	return time.asctime(now)
 
 def running_time(start_time):
-	from utilities import print_msg
-	from time import time
-	time_run = int(time() - start_time)
+	pass#IMPORTIMPORTIMPORT from utilities import print_msg
+	pass#IMPORTIMPORTIMPORT from time import time
+	time_run = int(time.time() - start_time)
 	time_h   = time_run / 3600
 	time_m   = (time_run % 3600) / 60
 	time_s   = (time_run % 3600) % 60
 	print_msg('\nRunning time is: %s h %s min %s s\n\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
 
 def running_time_txt(start_time):
-	from time import time
-	time_run = int(time() - start_time)
+	pass#IMPORTIMPORTIMPORT from time import time
+	time_run = int(time.time() - start_time)
 	time_h   = time_run / 3600
 	time_m   = (time_run % 3600) / 60
 	time_s   = (time_run % 3600) % 60
@@ -2202,8 +2274,8 @@ def running_time_txt(start_time):
 
 '''
 def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
-	from numpy import array, shape, reshape
-	from mpi import MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_reduce, mpi_barrier
+	pass#IMPORTIMPORTIMPORT from numpy import array, shape, reshape
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_reduce, mpi_barrier
 
 	if comm == -1:  comm = MPI_COMM_WORLD
 	n = shape(data)
@@ -2224,24 +2296,24 @@ def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 '''
 
 def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
-	from numpy import shape, reshape
-	from mpi   import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
+	pass#IMPORTIMPORTIMPORT from numpy import shape, reshape
+	pass#IMPORTIMPORTIMPORT from mpi   import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
 
-	if comm == -1 or comm == None:  comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None:  comm = mpi.MPI_COMM_WORLD
 
 	array = get_image_data(data)
-	n     = shape(array)
+	n     = numpy.shape(array)
 	ntot  = 1
 	for i in n: ntot *= i
 	count = (75*4+2)*(75*4)**2
-	array1d = reshape( array, (ntot,))
+	array1d = numpy.reshape( array, (ntot,))
 	ntime = (ntot-1) /count + 1
 	for i in range(ntime):
 		block_begin = i*count
 		block_end   = min(block_begin + count, ntot)
 		block_size  = block_end - block_begin
-		tmpsum = mpi_reduce(array1d[block_begin:block_begin+block_size], block_size, MPI_FLOAT, MPI_SUM, main_node, comm)
-		mpi_barrier(comm)
+		tmpsum = mpi.mpi_reduce(array1d[block_begin:block_begin+block_size], block_size, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm)
+		mpi.mpi_barrier(comm)
 		if myid == main_node:
 			array1d[block_begin:block_end] = tmpsum[0:block_size]
 
@@ -2258,21 +2330,21 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 	header.
 
 	"""
-	from applications import MPI_start_end
-	from EMAN2 import EMNumPy
-	from numpy import concatenate, shape, array, split
-	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-	from numpy import reshape
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMNumPy
+	pass#IMPORTIMPORTIMPORT from numpy import concatenate, shape, array, split
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from numpy import reshape
 
-	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None: comm = mpi.MPI_COMM_WORLD
 
 	num_ref = len(list_of_em_objects)
-	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+	ncpu = mpi.mpi_comm_size(comm)	# Total number of processes, passed by --np option.
 
-	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
+	ref_start, ref_end = applications.MPI_start_end(num_ref, ncpu, myid)
 
 	for first_myid_process_that_has_em_elements in range(ncpu):
-		sim_start, sim_ref_end = MPI_start_end(num_ref, ncpu, first_myid_process_that_has_em_elements)
+		sim_start, sim_ref_end = applications.MPI_start_end(num_ref, ncpu, first_myid_process_that_has_em_elements)
 		if sim_start != sim_ref_end:
 			break
 	else:
@@ -2282,7 +2354,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 		# used for copying the header and other info
 
 		reference_em_object = list_of_em_objects[ref_start]
-		data = EMNumPy.em2numpy(reference_em_object)
+		data = EMAN2_cppwrap.EMNumPy.em2numpy(reference_em_object)
 		size_of_one_refring_assumed_common_to_all = data.size
 
 		nx = reference_em_object.get_xsize()
@@ -2307,23 +2379,23 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 		print("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(ncpu):
-		sender_ref_start, sender_ref_end = MPI_start_end(num_ref, ncpu, sender_id)
+		sender_ref_start, sender_ref_end = applications.MPI_start_end(num_ref, ncpu, sender_id)
 
 		if sender_id == myid:
 			if ref_start == ref_end:
 				continue
-			data = EMNumPy.em2numpy(list_of_em_objects[ref_start])  #array([], dtype = 'float32')
+			data = EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects[ref_start])  #array([], dtype = 'float32')
 			for i in range(ref_start+1,ref_end):
-				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects[i])])
+				data = numpy.concatenate([data, EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects[i])])
 		else:
 			if sender_ref_start == sender_ref_end:
 				continue
-			data = array([], dtype = 'float32')
+			data = numpy.array([], dtype = 'float32')
 
 		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
 
 		# size_of_refrings = mpi_bcast(size_of_refrings, 1, MPI_INT, sender_id, comm)
-		data = mpi_bcast(data, sender_size_of_refrings, MPI_FLOAT, sender_id, comm)
+		data = mpi.mpi_bcast(data, sender_size_of_refrings, mpi.MPI_FLOAT, sender_id, comm)
 		# print "Just sent %d float32 elements"%data.size
 
 		if myid != sender_id:
@@ -2334,11 +2406,11 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 				image_data = data[start_p:end_p]
 
 				if int(nz) != 1:
-					image_data = reshape(image_data, (nz, ny, nx))
+					image_data = numpy.reshape(image_data, (nz, ny, nx))
 				elif ny != 1:
-					image_data = reshape(image_data, (ny, nx))
+					image_data = numpy.reshape(image_data, (ny, nx))
 
-				em_object = EMNumPy.numpy2em(image_data)
+				em_object = EMAN2_cppwrap.EMNumPy.numpy2em(image_data)
 				em_object.set_attr_dict(em_dict)
 				list_of_em_objects[i] = em_object
 
@@ -2355,18 +2427,18 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 	header.
 
 	"""
-	from applications import MPI_start_end
-	from EMAN2 import EMNumPy
-	from numpy import concatenate, shape, array, split
-	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-	from numpy import reshape
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMNumPy
+	pass#IMPORTIMPORTIMPORT from numpy import concatenate, shape, array, split
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from numpy import reshape
 
-	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None: comm = mpi.MPI_COMM_WORLD
 
 	num_ref = len(list_of_em_objects)
-	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+	ncpu = mpi.mpi_comm_size(comm)	# Total number of processes, passed by --np option.
 
-	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
+	ref_start, ref_end = applications.MPI_start_end(num_ref, ncpu, myid)
 
 	# used for copying the header
 	reference_em_object = list_of_em_objects[ref_start]
@@ -2385,7 +2457,7 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 	is_fftpad = reference_em_object.get_attr_default("is_fftpad",1)
 	is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz%2)
 
-	data = EMNumPy.em2numpy(list_of_em_objects[ref_start])
+	data = EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects[ref_start])
 	size_of_one_refring_assumed_common_to_all = data.size
 
 	# n = shape(data)
@@ -2397,17 +2469,17 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 
 	for sender_id in range(ncpu):
 		if sender_id == myid:
-			data = EMNumPy.em2numpy(list_of_em_objects[ref_start])  #array([], dtype = 'float32')
+			data = EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects[ref_start])  #array([], dtype = 'float32')
 			for i in range(ref_start+1,ref_end):
-				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects[i])])
+				data = numpy.concatenate([data, EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects[i])])
 		else:
-			data = array([], dtype = 'float32')
+			data = numpy.array([], dtype = 'float32')
 
-		sender_ref_start, sender_ref_end = MPI_start_end(num_ref, ncpu, sender_id)
+		sender_ref_start, sender_ref_end = applications.MPI_start_end(num_ref, ncpu, sender_id)
 		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
 
 		# size_of_refrings = mpi_bcast(size_of_refrings, 1, MPI_INT, sender_id, comm)
-		data = mpi_bcast(data, sender_size_of_refrings, MPI_FLOAT, sender_id, comm)
+		data = mpi.mpi_bcast(data, sender_size_of_refrings, mpi.MPI_FLOAT, sender_id, comm)
 		# print "Just sent %d float32 elements"%data.size
 
 		if myid != sender_id:
@@ -2418,11 +2490,11 @@ def bcast_compacted_EMData_all_to_all___original(list_of_em_objects, myid, comm=
 				image_data = data[start_p:end_p]
 
 				if int(nz) != 1:
-					image_data = reshape(image_data, (nz, ny, nx))
+					image_data = numpy.reshape(image_data, (nz, ny, nx))
 				elif ny != 1:
-					image_data = reshape(image_data, (ny, nx))
+					image_data = numpy.reshape(image_data, (ny, nx))
 
-				em_object = EMNumPy.numpy2em(image_data)
+				em_object = EMAN2_cppwrap.EMNumPy.numpy2em(image_data)
 
 				# em_object.set_complex(is_complex)
 				em_object.set_ri(is_ri)
@@ -2455,17 +2527,17 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 	header.
 
 	"""
-	from applications import MPI_start_end
-	from EMAN2 import EMNumPy
-	from numpy import concatenate, shape, array, split
-	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-	from numpy import reshape
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMNumPy
+	pass#IMPORTIMPORTIMPORT from numpy import concatenate, shape, array, split
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from numpy import reshape
 
-	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None: comm = mpi.MPI_COMM_WORLD
 
-	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+	ncpu = mpi.mpi_comm_size(comm)	# Total number of processes, passed by --np option.
 
-	ref_start, ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
+	ref_start, ref_end = applications.MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
 	ref_end -= ref_start
 	ref_start = 0
 
@@ -2501,7 +2573,7 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 	# is_fftpad = reference_em_object.get_attr_default("is_fftpad",1)
 	# is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz%2)
 
-	data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
+	data = EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
 	size_of_one_refring_assumed_common_to_all = data.size
 
 	# n = shape(data)
@@ -2513,34 +2585,34 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 
 	for sender_id in range(1,ncpu):
 		if sender_id == myid:
-			data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])  #array([], dtype = 'float32')
+			data = EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])  #array([], dtype = 'float32')
 			str_to_send = str(list_of_em_objects_for_myid_process[ref_start].get_attr_dict())
 			em_dict_to_send_list = [list_of_em_objects_for_myid_process[ref_start].get_attr_dict()]
 			for i in range(ref_start+1,ref_end):
-				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])])
+				data = numpy.concatenate([data, EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])])
 				# str_to_send += str(list_of_em_objects_for_myid_process[i].get_attr_dict())
 				em_dict_to_send_list.append(list_of_em_objects_for_myid_process[i].get_attr_dict())
 
 		else:
-			data = array([], dtype = 'float32')
+			data = numpy.array([], dtype = 'float32')
 
-		sender_ref_start, sender_ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, sender_id)
+		sender_ref_start, sender_ref_end = applications.MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, sender_id)
 
 		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
 
-		from mpi import mpi_recv, mpi_send, mpi_barrier
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_recv, mpi_send, mpi_barrier
 		if myid == 0:
 			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
 			str_to_receive = wrap_mpi_recv(sender_id)
 			em_dict_list = eval(str_to_receive)
 			# print "em_dict_list", em_dict_list
-			data = mpi_recv(sender_size_of_refrings, MPI_FLOAT, sender_id, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			data = mpi.mpi_recv(sender_size_of_refrings, mpi.MPI_FLOAT, sender_id, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		elif sender_id == myid:
 			wrap_mpi_send(str(em_dict_to_send_list), 0)
 			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi.mpi_send(data, sender_size_of_refrings, mpi.MPI_FLOAT, 0, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 		# if myid != sender_id:
 		if myid == 0:
@@ -2551,11 +2623,11 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 				image_data = data[start_p:end_p]
 
 				if int(nz) != 1:
-					image_data = reshape(image_data, (nz, ny, nx))
+					image_data = numpy.reshape(image_data, (nz, ny, nx))
 				elif ny != 1:
-					image_data = reshape(image_data, (ny, nx))
+					image_data = numpy.reshape(image_data, (ny, nx))
 
-				em_object = EMNumPy.numpy2em(image_data)
+				em_object = EMAN2_cppwrap.EMNumPy.numpy2em(image_data)
 				em_object.set_attr_dict(em_dict_list[i - sender_ref_start])
 
 				# # em_object.set_complex(is_complex)
@@ -2574,7 +2646,7 @@ def gather_compacted_EMData_to_root_with_header_info_for_each_image(number_of_al
 				# list_of_em_objects[i] = em_object
 				list_of_em_objects_for_myid_process.append(em_object)
 
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_processes, list_of_em_objects_for_myid_process, myid, comm=-1):
 
@@ -2590,18 +2662,18 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	header.
 
 	"""
-	from applications import MPI_start_end
-	from EMAN2 import EMNumPy
-	from numpy import concatenate, shape, array, split
-	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-	from numpy import reshape
-	from mpi import mpi_recv, mpi_send, mpi_barrier
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMNumPy
+	pass#IMPORTIMPORTIMPORT from numpy import concatenate, shape, array, split
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from numpy import reshape
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_recv, mpi_send, mpi_barrier
 
-	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None: comm = mpi.MPI_COMM_WORLD
 
-	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+	ncpu = mpi.mpi_comm_size(comm)	# Total number of processes, passed by --np option.
 
-	ref_start, ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
+	ref_start, ref_end = applications.MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
 	ref_end -= ref_start
 	ref_start = 0
 	tag_for_send_receive = 123456
@@ -2623,7 +2695,7 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 	is_fftpad = reference_em_object.get_attr_default("is_fftpad",1)
 	is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz%2)
 
-	data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
+	data = EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
 	size_of_one_refring_assumed_common_to_all = data.size
 
 	# n = shape(data)
@@ -2635,24 +2707,24 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 
 	for sender_id in range(1,ncpu):
 		if sender_id == myid:
-			data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])  #array([], dtype = 'float32')
+			data = EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])  #array([], dtype = 'float32')
 			for i in range(ref_start+1,ref_end):
-				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])])
+				data = numpy.concatenate([data, EMAN2_cppwrap.EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])])
 		else:
-			data = array([], dtype = 'float32')
+			data = numpy.array([], dtype = 'float32')
 
-		sender_ref_start, sender_ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, sender_id)
+		sender_ref_start, sender_ref_end = applications.MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, sender_id)
 
 		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
 
 		if myid == 0:
 			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
-			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, tag_for_send_receive, MPI_COMM_WORLD)
+			data = mpi.mpi_recv(sender_size_of_refrings,mpi.MPI_FLOAT, sender_id, tag_for_send_receive, mpi.MPI_COMM_WORLD)
 		elif sender_id == myid:
 			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
-			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, tag_for_send_receive, MPI_COMM_WORLD)
+			mpi.mpi_send(data, sender_size_of_refrings, mpi.MPI_FLOAT, 0, tag_for_send_receive, mpi.MPI_COMM_WORLD)
 
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 		# if myid != sender_id:
 		if myid == 0:
@@ -2663,11 +2735,11 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 				image_data = data[start_p:end_p]
 
 				if int(nz) != 1:
-					image_data = reshape(image_data, (nz, ny, nx))
+					image_data = numpy.reshape(image_data, (nz, ny, nx))
 				elif ny != 1:
-					image_data = reshape(image_data, (ny, nx))
+					image_data = numpy.reshape(image_data, (ny, nx))
 
-				em_object = EMNumPy.numpy2em(image_data)
+				em_object = EMAN2_cppwrap.EMNumPy.numpy2em(image_data)
 
 				# em_object.set_complex(is_complex)
 				em_object.set_ri(is_ri)
@@ -2685,22 +2757,22 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 				# list_of_em_objects[i] = em_object
 				list_of_em_objects_for_myid_process.append(em_object)
 
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 
 def bcast_EMData_to_all(tavg, myid, source_node = 0, comm = -1):
-	from EMAN2 import EMNumPy
-	from numpy import array, shape, reshape
-	from mpi   import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMNumPy
+	pass#IMPORTIMPORTIMPORT from numpy import array, shape, reshape
+	pass#IMPORTIMPORTIMPORT from mpi   import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 
-	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
-	tavg_data = EMNumPy.em2numpy(tavg)
-	n = shape(tavg_data)
+	if comm == -1 or comm == None: comm = mpi.MPI_COMM_WORLD
+	tavg_data = EMAN2_cppwrap.EMNumPy.em2numpy(tavg)
+	n = numpy.shape(tavg_data)
 	ntot = 1
 	for i in n: ntot *= i
-	tavg_tmp = mpi_bcast(tavg_data, ntot, MPI_FLOAT, source_node, comm)
+	tavg_tmp = mpi.mpi_bcast(tavg_data, ntot, mpi.MPI_FLOAT, source_node, comm)
 	if(myid != source_node):
-		tavg_data1d = reshape(tavg_data,(ntot,))
+		tavg_data1d = numpy.reshape(tavg_data,(ntot,))
 		tavg_data1d[0:ntot] = tavg_tmp[0:ntot]
 
 '''
@@ -2720,8 +2792,8 @@ def bcast_EMData_to_all(img, myid, main_node = 0, comm = -1):
 	# need to broadcast the size of EMData() and two attributes: is_complex and is_ri.
 	# For all other attributes, you are on your own.
 
-	from numpy import reshape
-	from mpi import mpi_bcast, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from numpy import reshape
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_bcast, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
 
 	if comm == -1: comm = MPI_COMM_WORLD
 
@@ -2766,8 +2838,8 @@ def reduce_EMData_to_root(img, myid, main_node = 0, comm = -1):
 	# 	reduce_EMData_to_root(img, myid, main_node, comm)
 	# The latter is inconsistent with mpi_bcast() and difficult to implement efficiently
 
-	from numpy import reshape
-	from mpi   import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from numpy import reshape
+	pass#IMPORTIMPORTIMPORT from mpi   import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
 
 	if comm == -1: comm = MPI_COMM_WORLD
 
@@ -2798,9 +2870,9 @@ def reduce_EMData_to_root(img, myid, main_node = 0, comm = -1):
 '''
 
 def send_EMData(img, dst, tag, comm=-1):
-	from mpi import mpi_send, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_send, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
 
-	if comm == -1: comm = MPI_COMM_WORLD
+	if comm == -1: comm = mpi.MPI_COMM_WORLD
 	img_head = []
 	img_head.append(img.get_xsize())
 	img_head.append(img.get_ysize())
@@ -2815,12 +2887,12 @@ def send_EMData(img, dst, tag, comm=-1):
 	img_head.append(int(img.get_attr("apix_z")*10000))
 
 	head_tag = 2*tag
-	mpi_send(img_head, 11, MPI_INT, dst, head_tag, comm)
+	mpi.mpi_send(img_head, 11, mpi.MPI_INT, dst, head_tag, comm)
 
 	img_data = get_image_data(img)
 	data_tag = 2*tag+1
 	ntot = img_head[0]*img_head[1]*img_head[2]
-	mpi_send(img_data, ntot, MPI_FLOAT, dst, data_tag, comm)
+	mpi.mpi_send(img_data, ntot, mpi.MPI_FLOAT, dst, data_tag, comm)
 
 	'''
 	count = 100000
@@ -2837,14 +2909,14 @@ def send_EMData(img, dst, tag, comm=-1):
 	'''
 
 def recv_EMData(src, tag, comm=-1):
-	from mpi import mpi_recv, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
-	from numpy import reshape
-	from EMAN2 import EMNumPy
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_recv, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from numpy import reshape
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMNumPy
 
 
-	if comm==-1: comm = MPI_COMM_WORLD
+	if comm==-1: comm = mpi.MPI_COMM_WORLD
 	head_tag = 2*tag
-	img_head = mpi_recv(11, MPI_INT, src, head_tag, comm)
+	img_head = mpi.mpi_recv(11, mpi.MPI_INT, src, head_tag, comm)
 
 	nx = int(img_head[0])
 	ny = int(img_head[1])
@@ -2855,15 +2927,15 @@ def recv_EMData(src, tag, comm=-1):
 	data_tag = 2*tag+1
 	ntot = nx*ny*nz
 
-	img_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
+	img_data = mpi.mpi_recv(ntot, mpi.MPI_FLOAT, src, data_tag, comm)
 	if nz != 1:
-		img_data = reshape(img_data, (nz, ny, nx))
+		img_data = numpy.reshape(img_data, (nz, ny, nx))
 	elif ny != 1:
-		img_data = reshape(img_data, (ny, nx))
+		img_data = numpy.reshape(img_data, (ny, nx))
 	else:
 		pass
 
-	img = EMNumPy.numpy2em(img_data)
+	img = EMAN2_cppwrap.EMNumPy.numpy2em(img_data)
 	img.set_complex(is_complex)
 	img.set_ri(is_ri)
 	img.set_attr_dict({"changecount":int(img_head[5]),  "is_complex_x":int(img_head[6]),  "is_complex_ri":int(img_head[7]),  "apix_x":int(img_head[8])/10000.0,  "apix_y":int(img_head[9])/10000.0,  "apix_z":int(img_head[10])/10000.0})
@@ -2909,8 +2981,8 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 	Gather the a list of EMData on all nodes to the main node, we assume the list has the same length on each node.
 											It is a dangerous assumption, it will have to be changed  07/10/2015
 	"""
-	from mpi import MPI_COMM_WORLD, MPI_INT
-	from mpi import mpi_send, mpi_recv
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD, MPI_INT
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_send, mpi_recv
 
 	l = len(data)
 	gathered_data = []
@@ -2923,8 +2995,8 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 			else:
 				for k in range(l):
 					im = recv_EMData(i, i*l+k)
-					mem_len = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-					members = mpi_recv(int(mem_len[0]), MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+					mem_len = mpi.mpi_recv(1, mpi.MPI_INT, i, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+					members = mpi.mpi_recv(int(mem_len[0]), mpi.MPI_INT, i, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 					members = list(map(int, members))
 					im.set_attr('members', members)
 					gathered_data.append(im)
@@ -2932,17 +3004,17 @@ def gather_EMData(data, number_of_proc, myid, main_node):
 		for k in range(l):
 			send_EMData(data[k], main_node, myid*l+k)
 			mem = data[k].get_attr('members')
-			mpi_send(len(mem), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-			mpi_send(mem, len(mem), MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
+			mpi.mpi_send(len(mem), 1, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+			mpi.mpi_send(mem, len(mem), mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 	return gathered_data
 
 def send_string_to_all(str_to_send, source_node = 0):
-	from mpi import MPI_COMM_WORLD, MPI_INT, MPI_CHAR, mpi_bcast, mpi_comm_rank
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD, MPI_INT, MPI_CHAR, mpi_bcast, mpi_comm_rank
 
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 	str_to_send_len  = len(str_to_send)*int(myid == source_node)
-	str_to_send_len = mpi_bcast(str_to_send_len,1,MPI_INT,source_node,MPI_COMM_WORLD)[0]
-	str_to_send = mpi_bcast(str_to_send,str_to_send_len,MPI_CHAR,source_node,MPI_COMM_WORLD)
+	str_to_send_len = mpi.mpi_bcast(str_to_send_len,1,mpi.MPI_INT,source_node,mpi.MPI_COMM_WORLD)[0]
+	str_to_send = mpi.mpi_bcast(str_to_send,str_to_send_len,mpi.MPI_CHAR,source_node,mpi.MPI_COMM_WORLD)
 	return "".join(str_to_send)
 
 
@@ -2950,28 +3022,28 @@ def bcast_number_to_all(number_to_send, source_node = 0, mpi_comm = -1):
 	"""
 		number_to_send has to be pre-defined in each node
 	"""
-	from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
-	import types
-	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_bcast, MPI_INT, MPI_COMM_WORLD, MPI_FLOAT
+	pass#IMPORTIMPORTIMPORT import types
+	if mpi_comm == -1:  mpi_comm = mpi.MPI_COMM_WORLD
 	if    type(number_to_send) is int:
-		TMP = mpi_bcast(number_to_send, 1, MPI_INT,   source_node, mpi_comm)
+		TMP = mpi.mpi_bcast(number_to_send, 1, mpi.MPI_INT,   source_node, mpi_comm)
 		return int(TMP[0])
 	elif  type(number_to_send) is float:
-		TMP = mpi_bcast(number_to_send, 1, MPI_FLOAT, source_node, mpi_comm)
+		TMP = mpi.mpi_bcast(number_to_send, 1, mpi.MPI_FLOAT, source_node, mpi_comm)
 		return float(TMP[0])
 	elif  type(number_to_send) is bool:
 		if number_to_send: number_to_send = 1
 		else: number_to_send = 0
-		TMP = mpi_bcast(number_to_send, 1, MPI_INT, source_node, mpi_comm)
+		TMP = mpi.mpi_bcast(number_to_send, 1, mpi.MPI_INT, source_node, mpi_comm)
 		if TMP == 1:  return True
 		else:         return False
 	else:
 		print(" ERROR in bcast_number_to_all")
 
 def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
-	from mpi import mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
-	import   types
-	if mpi_comm == -1:  mpi_comm = MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
+	pass#IMPORTIMPORTIMPORT import   types
+	if mpi_comm == -1:  mpi_comm = mpi.MPI_COMM_WORLD
 	if(myid == source_node):
 		n = len(list_to_send)
 		# we will also assume all elements on the list are of the same type
@@ -2983,29 +3055,29 @@ def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
 		tp = 0
 	n = bcast_number_to_all(n, source_node = source_node, mpi_comm = mpi_comm)
 	tp = bcast_number_to_all(tp, source_node = source_node, mpi_comm = mpi_comm)
-	if( tp == 2 ): 	ERROR("Only list of the same type numbers can be brodcasted","bcast_list_to_all",1, myid)
+	if( tp == 2 ): 	global_def.ERROR("Only list of the same type numbers can be brodcasted","bcast_list_to_all",1, myid)
 	if(myid != source_node): list_to_send = [0]*n
 
 	if( tp == 0 ):
-		list_to_send = mpi_bcast(list_to_send, n, MPI_INT, source_node, mpi_comm)
+		list_to_send = mpi.mpi_bcast(list_to_send, n, mpi.MPI_INT, source_node, mpi_comm)
 		return [int(n) for n in list_to_send]
 	else:
-		list_to_send = mpi_bcast(list_to_send, n, MPI_FLOAT, source_node, mpi_comm)
+		list_to_send = mpi.mpi_bcast(list_to_send, n, mpi.MPI_FLOAT, source_node, mpi_comm)
 		return [float(n) for n in list_to_send]
 
 
 def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
-	import types
-	from  utilities import  get_arb_params, set_arb_params
-	from  mpi 	import mpi_recv
-	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT import types
+	pass#IMPORTIMPORTIMPORT from  utilities import  get_arb_params, set_arb_params
+	pass#IMPORTIMPORTIMPORT from  mpi 	import mpi_recv
+	pass#IMPORTIMPORTIMPORT from  mpi 	import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
 
 	#   hdf version!
 	# This is done on the main node, so for images from the main node, simply write headers
 
-	if comm == -1:  comm = MPI_COMM_WORLD
+	if comm == -1:  comm = mpi.MPI_COMM_WORLD
 
-	TransType = type(Transform())
+	TransType = type(EMAN2_cppwrap.Transform())
 	# prepare keys for float/int
 	value = get_arb_params(data[0], list_params)
 	ink = []
@@ -3024,14 +3096,14 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	headers = []
 	for n in range(number_of_proc):
 		if n != main_node:
-			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
-			value = mpi_recv(len_list*(dis[1]-dis[0]), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
+			dis = mpi.mpi_recv(2, mpi.MPI_INT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+			value = mpi.mpi_recv(len_list*(dis[1]-dis[0]), mpi.MPI_FLOAT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 			ldis.append([dis[0], dis[1]])
 			headers.append(value)
 			del  dis
 	del  value
 	for im in range(image_start, image_end):
-		data[im-image_start].write_image(stack, data[im-image_start].get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
+		data[im-image_start].write_image(stack, data[im-image_start].get_attr_default('ID', im), EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF, True)
 
 	for n in range(len(ldis)):
 		img_begin = ldis[n][0]
@@ -3050,7 +3122,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 					ilis += 1
 				else:
 					assert ink[il]==2
-					t = Transform()
+					t = EMAN2_cppwrap.Transform()
 					tmp = []
 					for iii in range(par_begin+ilis, par_begin+ilis+12):
 						tmp.append(float(header[iii]))
@@ -3063,22 +3135,22 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			else:
 				imm = nvalue[list_params.index('ID')]
 			# read head, set params, and write it
-			dummy = EMData()
+			dummy = EMAN2_cppwrap.EMData()
 			dummy.read_image(stack, imm, True)
 			set_arb_params(dummy, nvalue, list_params)
-			dummy.write_image(stack, dummy.get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
+			dummy.write_image(stack, dummy.get_attr_default('ID', im), EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF, True)
 
 def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = -1):
-	import types
-	from utilities import get_arb_params
-	from mpi 	   import mpi_send
-	from mpi 	   import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT import types
+	pass#IMPORTIMPORTIMPORT from utilities import get_arb_params
+	pass#IMPORTIMPORTIMPORT from mpi 	   import mpi_send
+	pass#IMPORTIMPORTIMPORT from mpi 	   import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
 
 	#  This function is called from a node other than the main node
 
-	if comm == -1: comm = MPI_COMM_WORLD
-	TransType = type(Transform())
-	mpi_send([image_start, image_end], 2, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
+	if comm == -1: comm = mpi.MPI_COMM_WORLD
+	TransType = type(EMAN2_cppwrap.Transform())
+	mpi.mpi_send([image_start, image_end], 2, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 	nvalue = []
 	for im in range(image_start, image_end):
 		value = get_arb_params(data[im-image_start], list_params)
@@ -3089,21 +3161,21 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 				m = value[il].get_matrix()
 				assert (len(m)==12)
 				for f in m: nvalue.append(f)
-	mpi_send(nvalue, len(nvalue), MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
+	mpi.mpi_send(nvalue, len(nvalue), mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 
 def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
-	import types
-	from  utilities import  get_arb_params, set_arb_params
-	from  mpi 	import mpi_recv
-	from  mpi 	import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
-	from EMAN2db import db_open_dict
+	pass#IMPORTIMPORTIMPORT import types
+	pass#IMPORTIMPORTIMPORT from  utilities import  get_arb_params, set_arb_params
+	pass#IMPORTIMPORTIMPORT from  mpi 	import mpi_recv
+	pass#IMPORTIMPORTIMPORT from  mpi 	import MPI_FLOAT, MPI_INT, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
 	#  bdb version!
 	# This is done on the main node, so for images from the main node, simply write headers
 
-	if comm == -1: comm = MPI_COMM_WORLD
+	if comm == -1: comm = mpi.MPI_COMM_WORLD
 
-	DB = db_open_dict(stack)
-	TransType = type(Transform())
+	DB = EMAN2db.db_open_dict(stack)
+	TransType = type(EMAN2_cppwrap.Transform())
 	# prepare keys for float/int
 	value = get_arb_params(data[0], list_params)
 	ink = []
@@ -3124,10 +3196,10 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	headers = []
 	for n in range(number_of_proc):
 		if n != main_node:
-			dis = mpi_recv(2, MPI_INT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
+			dis = mpi.mpi_recv(2, mpi.MPI_INT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 			img_begin = int(dis[0])
 			img_end = int(dis[1])
-			header = mpi_recv(len_list*(img_end-img_begin), MPI_FLOAT, n, SPARX_MPI_TAG_UNIVERSAL, comm)
+			header = mpi.mpi_recv(len_list*(img_end-img_begin), mpi.MPI_FLOAT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 			for im in range(img_begin, img_end):
 				par_begin = (im-img_begin)*len_list
 				nvalue = []
@@ -3141,7 +3213,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 						ilis += 1
 					else:
 						assert ink[il]==2
-						t = Transform()
+						t = EMAN2_cppwrap.Transform()
 						tmp = []
 						for iii in range(par_begin+ilis, par_begin+ilis+12):
 							tmp.append(float(header[iii]))
@@ -3162,7 +3234,7 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	DB.close()
 
 def check_attr(ima, num, params, default_value, action="Warning"):
-	from sys import exit
+	pass#IMPORTIMPORTIMPORT from sys import exit
 	attr_list = ima.get_attr_dict()
 	if (params in attr_list) == False:
 		if action=="Warning":
@@ -3175,10 +3247,10 @@ def check_attr(ima, num, params, default_value, action="Warning"):
 	else: return True
 
 def print_begin_msg(program_name, onscreen=False):
-	from time import localtime, strftime
+	pass#IMPORTIMPORTIMPORT from time import localtime, strftime
 	t = 100
 	stars = '*'*t
-	string = "Beginning of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
+	string = "Beginning of the program " + program_name + ": " + time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
 	s = (t-len(string))/2
 	spacing = ' '*s
 	if onscreen:
@@ -3191,10 +3263,10 @@ def print_begin_msg(program_name, onscreen=False):
 		print_msg(stars+"\n")
 
 def print_end_msg(program_name, onscreen=False):
-	from time import localtime, strftime
+	pass#IMPORTIMPORTIMPORT from time import localtime, strftime
 	t = 100
 	stars = '*'*t
-	string = "End of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
+	string = "End of the program " + program_name + ": " + time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
 	s = (t-len(string))/2
 	spacing = ' '*s
 	if onscreen:
@@ -3207,8 +3279,8 @@ def print_end_msg(program_name, onscreen=False):
 		print_msg(stars+"\n")
 
 def print_msg(msg):
-	import sys
-	import global_def
+	pass#IMPORTIMPORTIMPORT import sys
+	pass#IMPORTIMPORTIMPORT import global_def
 	if (global_def.IS_LOGFILE_OPEN == False):
 		global_def.LOGFILE_HANDLE = open(global_def.LOGFILE,"w")
 		global_def.IS_LOGFILE_OPEN = True
@@ -3220,7 +3292,7 @@ def print_msg(msg):
 	global_def.LOGFILE_HANDLE.flush()
 
 def read_fsc( filename ):
-	from string import split, atof
+	pass#IMPORTIMPORTIMPORT from string import split, atof
 	f = open( filename, 'r' )
 	fscc = None
 	line = f.readline()
@@ -3232,7 +3304,7 @@ def read_fsc( filename ):
 				fscc[i] = []
 
 		for i in range( len(items) ) :
-			fscc[i].append( atof(items[i]) )
+			fscc[i].append( string.atof(items[i]) )
 
 		line = f.readline()
 
@@ -3240,8 +3312,8 @@ def read_fsc( filename ):
 """
 #  This would not work on windows
 def memory_usage():
-	import os
-	from string import split
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT from string import split
 	return 0
 	file = "/proc/%d/status" % os.getpid()
 	f = open(file, 'r')
@@ -3264,10 +3336,10 @@ def circumference( img, inner = -1, outer = -1):
 		if( outer <= inner ):  outer = inner + 1
 	inner_sphere = model_circle(inner, nx, ny, nz)
 
-	[mean_a,sigma,imin,imax] = Util.infomask(img, model_circle(outer, nx, ny, nz) - inner_sphere, True)
+	[mean_a,sigma,imin,imax] = EMAN2_cppwrap.Util.infomask(img, model_circle(outer, nx, ny, nz) - inner_sphere, True)
 	inner_rest   = model_blank(nx, ny, nz, 1.0) - inner_sphere
-	Util.mul_img(inner_sphere, img)
-	return Util.addn_img(inner_sphere, Util.mult_scalar(inner_rest, mean_a ) )
+	EMAN2_cppwrap.Util.mul_img(inner_sphere, img)
+	return EMAN2_cppwrap.Util.addn_img(inner_sphere, EMAN2_cppwrap.Util.mult_scalar(inner_rest, mean_a ) )
 
 def copy_attr( pin, name, pot ):
 	pot.set_attr( name, pin.get_attr(name) )
@@ -3281,13 +3353,13 @@ def write_headers(filename, data, lima):
 	    i.e., header from data[k] will be written into file number lima[k]
 	  WARNING: this function will open and close DB library!
 	"""
-	from utilities import file_type
-	from EMAN2db import db_open_dict
+	pass#IMPORTIMPORTIMPORT from utilities import file_type
+	pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
 
 	ftp = file_type(filename)
 	if ftp == "bdb":
 		#  For unknown reasons this does not work on Linux, but works on Mac ??? Really?
-		DB = db_open_dict(filename)
+		DB = EMAN2db.db_open_dict(filename)
 		for i in range(len(lima)):
 			DB.set_header(lima[i], data[i])
 		DB.close()
@@ -3295,9 +3367,9 @@ def write_headers(filename, data, lima):
 		#	data[i].write_image(filename, lima[i])
 	elif ftp == "hdf":
 		for i in range(len(lima)):
-			data[i].write_image(filename, lima[i], EMUtil.ImageType.IMAGE_HDF, True)
+			data[i].write_image(filename, lima[i], EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF, True)
 	else:
-		ERROR("Unacceptable file format","write_headers",1)
+		global_def.ERROR("Unacceptable file format","write_headers",1)
 
 def write_header(filename, data, lima):
 	"""
@@ -3307,30 +3379,30 @@ def write_header(filename, data, lima):
 	    i.e., header from data will be written into file number lima
 	  WARNING: this function assums DB library is opened and will NOT close it!
 	"""
-	from utilities import file_type
-	from EMAN2db import db_open_dict
+	pass#IMPORTIMPORTIMPORT from utilities import file_type
+	pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
 
 	ftp = file_type(filename)
 	if ftp == "bdb":
-		DB = db_open_dict(filename)
+		DB = EMAN2db.db_open_dict(filename)
 		DB.set_header(lima, data)
 	elif ftp == "hdf":
-		data.write_image(filename, lima, EMUtil.ImageType.IMAGE_HDF, True)
+		data.write_image(filename, lima, EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF, True)
 	else:
-		ERROR("Unacceptable file format","write_headers",1)
+		global_def.ERROR("Unacceptable file format","write_headers",1)
 
 def file_type(name):
 	if(len(name)>4):
 		if(name[:4] == "bdb:"): return "bdb"
 		elif(name[-4:-3] == "."):  return name[-3:]
-	ERROR("Unacceptable file format","file_type",1)
+	global_def.ERROR("Unacceptable file format","file_type",1)
 
 def get_params2D(ima, xform = "xform.align2d"):
 	"""
 	  retrieve 2D alignment parameters from the header
 	  alpha, tx, ty, mirror, scale
 	"""
-	d = Util.get_transform_params(ima, xform, "2D")
+	d = EMAN2_cppwrap.Util.get_transform_params(ima, xform, "2D")
 	return d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]
 
 def set_params2D(ima, p, xform = "xform.align2d"):
@@ -3338,7 +3410,7 @@ def set_params2D(ima, p, xform = "xform.align2d"):
 	  set 2D alignment parameters in the header
 	  p = [alpha, tx, ty, mirror, scale]
 	"""
-	t = Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
+	t = EMAN2_cppwrap.Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
 	ima.set_attr(xform, t)
 
 def get_params3D(ima, xform = "xform.align3d"):
@@ -3346,7 +3418,7 @@ def get_params3D(ima, xform = "xform.align3d"):
 	  retrieve 3D alignment parameters from the header
 	  phi,theta, psi, tx, ty, tz, mirror,scale
 	"""
-	d = Util.get_transform_params(ima, xform, "spider")
+	d = EMAN2_cppwrap.Util.get_transform_params(ima, xform, "spider")
 	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]
 
 def set_params3D(ima, p, xform = "xform.align3d"):
@@ -3354,7 +3426,7 @@ def set_params3D(ima, p, xform = "xform.align3d"):
 	  set 3D alignment parameters in the header
 	  p = [phi,theta, psi, tx, ty, tz, mirror,scale]
 	"""
-	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":p[3],"ty":p[4],"tz":p[5],"mirror":p[6],"scale":p[7]})
+	t = EMAN2_cppwrap.Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":p[3],"ty":p[4],"tz":p[5],"mirror":p[6],"scale":p[7]})
 	ima.set_attr(xform, t)
 
 def get_params_proj(ima, xform = "xform.projection"):
@@ -3362,7 +3434,7 @@ def get_params_proj(ima, xform = "xform.projection"):
 	  retrieve projection alignment parameters from the header
 	  phi, theta, psi, s2x, s2y
 	"""
-	d = Util.get_transform_params(ima, xform, "spider")
+	d = EMAN2_cppwrap.Util.get_transform_params(ima, xform, "spider")
 	return  d["phi"],d["theta"],d["psi"],-d["tx"],-d["ty"]
 
 def set_params_proj(ima, p, xform = "xform.projection"):
@@ -3370,9 +3442,9 @@ def set_params_proj(ima, p, xform = "xform.projection"):
 	  set projection alignment parameters in the header
 	  p = [phi, theta, psi, s2x, s2y]
 	"""
-	from EMAN2 import Vec2f
-	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
-	t.set_trans(Vec2f(-p[3], -p[4]))
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Vec2f
+	t = EMAN2_cppwrap.Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
+	t.set_trans(EMAN2_cppwrap.Vec2f(-p[3], -p[4]))
 	ima.set_attr(xform, t)
 
 
@@ -3382,7 +3454,7 @@ def get_ctf(ima):
 	  order of returned parameters:
         defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle
 	"""
-	from EMAN2 import EMAN2Ctf
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMAN2Ctf
 	ctf_params = ima.get_attr("ctf")
 	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont, ctf_params.dfdiff, ctf_params.dfang
 
@@ -3399,7 +3471,7 @@ def generate_ctf(p):
         p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
 	    [ microns, mm, kV, Angstroms, A^2, microns, microns, radians]
 	"""
-	from EMAN2 import EMAN2Ctf
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMAN2Ctf
 
 	defocus      = p[0]
 	cs           = p[1]
@@ -3411,13 +3483,13 @@ def generate_ctf(p):
 	if defocus > 100:  # which means it is very likely in Angstrom, therefore we are using the old convention
 		defocus *= 1.0e-4
 
-	ctf = EMAN2Ctf()
+	ctf = EMAN2_cppwrap.EMAN2Ctf()
 	if(len(p) == 6):
 		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast})
 	elif(len(p) == 8):
 		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast,'dfdiff':p[6],'dfang':p[7]})
 	else:
-		ERROR("Incorrect number of entries on a list, cannot generate CTF","generate_ctf",0)
+		global_def.ERROR("Incorrect number of entries on a list, cannot generate CTF","generate_ctf",0)
 		return None
 	return ctf
 
@@ -3427,23 +3499,23 @@ def set_ctf(ima, p):
 	  order of parameters:
         p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
 	"""
-	from utilities import generate_ctf
+	pass#IMPORTIMPORTIMPORT from utilities import generate_ctf
 	ima.set_attr( "ctf", generate_ctf( p ) )
 
 def delete_bdb(name):
 	"""
 	  Delete bdb stack
 	"""
-	from EMAN2db import db_open_dict, db_remove_dict
-	a = db_open_dict(name)
-	db_remove_dict(name)
+	pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict, db_remove_dict
+	a = EMAN2db.db_open_dict(name)
+	EMAN2db.db_remove_dict(name)
 
 def disable_bdb_cache():
-	import EMAN2db
+	pass#IMPORTIMPORTIMPORT import EMAN2db
 	EMAN2db.BDB_CACHE_DISABLE = True
 
 def enable_bdb_cache():
-	import EMAN2db
+	pass#IMPORTIMPORTIMPORT import EMAN2db
 	EMAN2db.BDB_CACHE_DISABLE = False
 
 
@@ -3488,21 +3560,21 @@ def getang(n):
 	"""
 	get angle from a 2D normal vector
 	"""
-	from math import atan2, acos, degrees
-	return degrees(atan2(n[1],n[0]))%360.0, degrees(acos(n[2]))%360.0
+	pass#IMPORTIMPORTIMPORT from math import atan2, acos, degrees
+	return numpy.degrees(math.atan2(n[1],n[0]))%360.0, numpy.degrees(math.acos(n[2]))%360.0
 
 #  The other one is better written
 """
 getang3 = angle_between_projections_directions
 def getang3(p1,p2):
-	from utilities import getfvec, lacos
+	pass#IMPORTIMPORTIMPORT from utilities import getfvec, lacos
 	n1 = getfvec(p1[0],p1[1])
 	n2 = getfvec(p2[0],p2[1])
 	return lacos(n1[0]*n2[0]+n1[1]*n2[1]+n1[2]*n2[2])
 """
 
 def getvec( phi, tht ):
-	from math import radians,cos,sin
+	pass#IMPORTIMPORTIMPORT from math import radians,cos,sin
 
 	if tht > 180.0:
 		tht -= 180.0
@@ -3513,24 +3585,24 @@ def getvec( phi, tht ):
 
 	assert tht <=90.0
 
-	qt = radians(tht)
-	qp = radians(phi)
-	qs = sin(qt)
+	qt = numpy.radians(tht)
+	qp = numpy.radians(phi)
+	qs = numpy.sin(qt)
 
-	x = qs*cos(qp)
-	y = qs*sin(qp)
-	z = cos(qt)
+	x = qs*numpy.cos(qp)
+	y = qs*numpy.sin(qp)
+	z = numpy.cos(qt)
 
 	return (x,y,z)
 
 def getfvec( phi, tht ):
-	from math import radians,cos,sin
-	qt = radians(tht)
-	qp = radians(phi)
-	qs = sin(qt)
-	x = qs*cos(qp)
-	y = qs*sin(qp)
-	z = cos(qt)
+	pass#IMPORTIMPORTIMPORT from math import radians,cos,sin
+	qt = numpy.radians(tht)
+	qp = numpy.radians(phi)
+	qs = numpy.sin(qt)
+	x = qs*numpy.cos(qp)
+	y = qs*numpy.sin(qp)
+	z = numpy.cos(qt)
 
 	return (x,y,z)
 
@@ -3538,14 +3610,14 @@ def nearest_fang( vecs, phi, tht ):
 	"""
 		vecs = [ [x0,y0,z0], [x1,y1,z1], ...]
 	"""
-	from utilities import getfvec
+	pass#IMPORTIMPORTIMPORT from utilities import getfvec
 	vec = getfvec( phi, tht )
-	return  Util.nearest_fang(vecs, vec[0],vec[1],vec[2])[0]
+	return  EMAN2_cppwrap.Util.nearest_fang(vecs, vec[0],vec[1],vec[2])[0]
 
 def nearest_ang( vecs, phi, tht ) :
-	from utilities import getvec
+	pass#IMPORTIMPORTIMPORT from utilities import getvec
 	vec = getvec( phi, tht )
-	return  Util.nearest_ang(vecs, vec[0],vec[1],vec[2])
+	return  EMAN2_cppwrap.Util.nearest_ang(vecs, vec[0],vec[1],vec[2])
 	"""
 	best_s = -1.0
 	best_i = -1
@@ -3586,27 +3658,27 @@ def assign_projangles_slow(projangles, refangles):
 
 def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_class=None):
 	# 
-	from utilities import getfvec, angles_to_normals
+	pass#IMPORTIMPORTIMPORT from utilities import getfvec, angles_to_normals
 	#refnormal = normals[:]
 	assignments = [-1]*len(angles)
 	if( sym_class.sym[:2] == "c1"):
 		for i,q in enumerate(angles):
 			ref = getfvec(q[0],q[1])
-			assignments[i] = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
+			assignments[i] = EMAN2_cppwrap.Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
 	else:
 		for i,q in enumerate(angles):
 			ancordir = angles_to_normals(sym_class.symmetry_neighbors([q[:3]]))
-			assignments[i] = Util.nearest_fang_sym(ancordir, reference_normals, len(ancordir), howmany)
+			assignments[i] = EMAN2_cppwrap.Util.nearest_fang_sym(ancordir, reference_normals, len(ancordir), howmany)
 
 	return assignments
 
 
 def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 	# In both cases mirrored should be treated the same way as straight as they carry the same structural information
-	from utilities import getfvec, getvec
+	pass#IMPORTIMPORTIMPORT from utilities import getfvec, getvec
 	lookup = list(range(len(projangles)))
 	if( sym == "c1"):
-		from utilities import getvec
+		pass#IMPORTIMPORTIMPORT from utilities import getvec
 		refnormal = [None]*(len(projangles)*3)
 		for i in range(len(projangles)):
 			ref = getvec(projangles[i][0], projangles[i][1])
@@ -3620,18 +3692,18 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 		del lookup[whichone]
 		assignments = [-1]*howmany
 		for i in range(howmany):
-			k = Util.nearest_ang(refnormal, ref[0],ref[1],ref[2])
+			k = EMAN2_cppwrap.Util.nearest_ang(refnormal, ref[0],ref[1],ref[2])
 			assignments[i] = lookup[k]
 			for l in range(3): del refnormal[3*k+2-l]
 			del lookup[k]
 
 	elif( sym[:1] == "d" ):
-		from utilities import get_symt, getvec
-		from EMAN2 import Transform
+		pass#IMPORTIMPORTIMPORT from utilities import get_symt, getvec
+		pass#IMPORTIMPORTIMPORT from EMAN2 import Transform
 		t = get_symt(sym)
 		phir = 360.0/int(sym[1:])
 		for i in range(len(t)):  t[i] = t[i].inverse()
-		a = Transform({"type":"spider","phi":projangles[whichone][0], "theta":projangles[whichone][1]})
+		a = EMAN2_cppwrap.Transform({"type":"spider","phi":projangles[whichone][0], "theta":projangles[whichone][1]})
 		for l in range(len(t)):
 			q = a*t[l]
 			q = q.get_params("spider")
@@ -3647,7 +3719,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 			best = -1
 			for j in range(len(tempan)):
 				nearest = -1.
-				a = Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
+				a = EMAN2_cppwrap.Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
 				for l in range(len(t)):
 					q = a*t[l]
 					q = q.get_params("spider")
@@ -3664,8 +3736,8 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 			del tempan[best_j], lookup[best_j]
 
 	elif( sym[:1] == "c" ):
-		from utilities import get_symt, getvec
-		from EMAN2 import Transform
+		pass#IMPORTIMPORTIMPORT from utilities import get_symt, getvec
+		pass#IMPORTIMPORTIMPORT from EMAN2 import Transform
 		t = get_symt(sym)
 		#phir = 360.0/int(sym[1:])
 
@@ -3678,7 +3750,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 			best = -1
 			for j in range(len(tempan)):
 				nearest = -1.
-				a = Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
+				a = EMAN2_cppwrap.Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
 				for l in range(len(t)):
 					q = a*t[l]
 					q = q.get_params("spider")
@@ -3704,15 +3776,15 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 
 def nearest_full_k_projangles(reference_ang, angles, howmany = 1, sym_class=None):
 	# We assume angles can be on the list of normals
-	from utilities import getfvec, angles_to_normals
+	pass#IMPORTIMPORTIMPORT from utilities import getfvec, angles_to_normals
 	reference_normals = angles_to_normals(reference_ang)
 
 	if( sym_class == None or sym_class.sym[:2] == "c1"):
 		ref = getfvec(angles[0],angles[1])
-		assignments = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
+		assignments = EMAN2_cppwrap.Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
 	else:
 		ancordir = angles_to_normals(sym_class.symmetry_neighbors([angles[:3]]))
-		assignments = Util.nearest_fang_sym(ancordir, reference_normals, len(ancordir), howmany)
+		assignments = EMAN2_cppwrap.Util.nearest_fang_sym(ancordir, reference_normals, len(ancordir), howmany)
 
 	return assignments
 
@@ -3720,7 +3792,7 @@ def nearestk_to_refdir(refnormal, refdir, howmany = 1):
 	lookup = list(range(len(refnormal)))
 	assignments = [-1]*howmany
 	for i in range(howmany):
-		k = Util.nearest_ang(refnormal, refdir[0],refdir[1],refdir[2])
+		k = EMAN2_cppwrap.Util.nearest_ang(refnormal, refdir[0],refdir[1],refdir[2])
 		assignments[i] = lookup[k]
 		del refnormal[3*k+2], refnormal[3*k+1], refnormal[3*k+0], lookup[k]
 	return assignments
@@ -3732,7 +3804,7 @@ def nearestk_to_refdirs(refnormal, refdir, howmany = 1):
 	for j in range(len(refdir)):
 		assignment = [-1]*howmany
 		for i in range(howmany):
-			k = Util.nearest_ang(refnormal, refdir[j][0],refdir[j][1],refdir[j][2])
+			k = EMAN2_cppwrap.Util.nearest_ang(refnormal, refdir[j][0],refdir[j][1],refdir[j][2])
 			assignment[i] = lookup[k]
 			del refnormal[3*k+2], refnormal[3*k+1], refnormal[3*k+0], lookup[k]
 		assignments.append(assignment)
@@ -3788,7 +3860,7 @@ def assign_projangles(projangles, refangles, return_asg = False):
 		ref_ang[i*2] = refangles[i][0]
 		ref_ang[i*2+1] = refangles[i][1]
 
-	asg = Util.assign_projangles(proj_ang, ref_ang)
+	asg = EMAN2_cppwrap.Util.assign_projangles(proj_ang, ref_ang)
 	if return_asg: return asg
 	assignments = [[] for i in range(nref)]
 	for i in range(nproj):
@@ -3798,7 +3870,7 @@ def assign_projangles(projangles, refangles, return_asg = False):
 
 def assign_projangles_f(projangles, refangles, return_asg = False):
 
-	asg = Util.assign_projangles_f(projangles, refangles)
+	asg = EMAN2_cppwrap.Util.assign_projangles_f(projangles, refangles)
 	if return_asg: return asg
 	assignments = [[] for i in range(len(refangles))]
 	for i in range(len(projangles)):
@@ -3825,7 +3897,7 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 		qsti[i] = this
 	"""
 	#  Create a list that for each projdirs contains an index of the closest refdirs/neighbors
-	qsti = Util.assign_projdirs_f(projdirs, refdirs, neighbors)
+	qsti = EMAN2_cppwrap.Util.assign_projdirs_f(projdirs, refdirs, neighbors)
 	assignments = [[] for i in range(len(refdirs)/neighbors)]
 	for i in range(len(projdirs)):
 		assignments[qsti[i]].append(i)
@@ -3835,10 +3907,10 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 
 
 def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
-	from utilities import getvec, getfvec
-	from math import cos, pi, degrees, radians
+	pass#IMPORTIMPORTIMPORT from utilities import getvec, getfvec
+	pass#IMPORTIMPORTIMPORT from math import cos, pi, degrees, radians
 
-	cone = cos(radians(ant))
+	cone = numpy.cos(numpy.radians(ant))
 	la = []
 	if( symmetry == 'c1' ):
 		vec = getfvec( phi, tht )
@@ -3886,10 +3958,10 @@ def cone_ang( projangles, phi, tht, ant, symmetry = 'c1'):
 
 #  Push to C.  PAP  11/25/2016
 def cone_ang_f( projangles, phi, tht, ant, symmetry = 'c1'):
-	from utilities import getfvec
-	from math import cos, pi, degrees, radians
+	pass#IMPORTIMPORTIMPORT from utilities import getfvec
+	pass#IMPORTIMPORTIMPORT from math import cos, pi, degrees, radians
 
-	cone = cos(radians(ant))
+	cone = numpy.cos(numpy.radians(ant))
 	la = []
 	if( symmetry == 'c1' ):
 		vec = getfvec( phi, tht )
@@ -3943,7 +4015,7 @@ Util.cone_dirs_f(projdirs, ancordir, ant)
 Returns a list of projdirs indexes that are within ant degrees of ancordir
 ant in degrees
 def cone_dirs_f( projdirs, ancordir, ant):
-	from math import cos, pi, degrees, radians
+	pass#IMPORTIMPORTIMPORT from math import cos, pi, degrees, radians
 	#  ancordir contains a list of symmetry neighbors
 	#  Returns a list of projdirs indexes that are within ant degrees of ancordir
 	cone = cos(radians(ant))
@@ -3959,8 +4031,8 @@ def cone_dirs_f( projdirs, ancordir, ant):
 
 """
 def cone_ang_f_with_index( projangles, phi, tht, ant ):
-	from utilities import getvec
-	from math import cos, pi, degrees, radians
+	pass#IMPORTIMPORTIMPORT from utilities import getvec
+	pass#IMPORTIMPORTIMPORT from math import cos, pi, degrees, radians
 	# vec = getvec( phi, tht )
 	vec = getfvec( phi, tht )
 
@@ -3978,12 +4050,12 @@ def cone_ang_f_with_index( projangles, phi, tht, ant ):
 """
 
 def cone_ang_with_index( projangles, phi, tht, ant ):
-	from utilities import getvec
-	from math import cos, pi, degrees, radians
+	pass#IMPORTIMPORTIMPORT from utilities import getvec
+	pass#IMPORTIMPORTIMPORT from math import cos, pi, degrees, radians
 	# vec = getvec( phi, tht )
 	vec = getfvec( phi, tht )
 
-	cone = cos(radians(ant))
+	cone = numpy.cos(numpy.radians(ant))
 	la = []
 	index = []
 	for i in range( len(projangles) ):
@@ -3998,8 +4070,8 @@ def cone_ang_with_index( projangles, phi, tht, ant ):
 	return la, index
 '''
 def cone_vectors( normvectors, phi, tht, ant ):
-	from utilities import getvec
-	from math import cos, pi, degrees, radians
+	pass#IMPORTIMPORTIMPORT from utilities import getvec
+	pass#IMPORTIMPORTIMPORT from math import cos, pi, degrees, radians
 	vec = getvec( phi, tht )
 
 	cone = cos(radians(ant))
@@ -4014,7 +4086,7 @@ def cone_vectors( normvectors, phi, tht, ant ):
 
 #  Wrappers for new angular functions
 def angles_to_normals(angles):
-	temp = Util.angles_to_normals(angles)
+	temp = EMAN2_cppwrap.Util.angles_to_normals(angles)
 	return [[temp[l*3+i] for i in range(3)] for l in range(len(angles)) ]
 """
 def symmetry_related(angles, symmetry):  # replace by s.symmetry_related
@@ -4023,7 +4095,7 @@ def symmetry_related(angles, symmetry):  # replace by s.symmetry_related
 		nt = len(temp)/3
 		return [[temp[l*3+i] for i in xrange(3)] for l in xrange(nt) ]
 	else:
-		from EMAN2 import Transform
+		pass#IMPORTIMPORTIMPORT from EMAN2 import Transform
 		neighbors = []
 		junk = Transform({"type":"spider","phi":angles[0],"theta":angles[1],"psi":angles[2]})
 		junk = junk.get_sym_proj(symmetry)
@@ -4033,7 +4105,7 @@ def symmetry_related(angles, symmetry):  # replace by s.symmetry_related
 		return neighbors
 
 def symmetry_related_normals(angles, symmetry):
-	from EMAN2 import Transform
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Transform
 	neighbors = []
 	junk = Transform({"type":"spider","phi":angles[0],"theta":angles[1],"psi":angles[2]})
 	junk = junk.get_sym_proj(symmetry)
@@ -4043,10 +4115,10 @@ def symmetry_related_normals(angles, symmetry):
 """
 
 def angular_occupancy(params, angstep = 15., sym= "c1", method='S'):
-	from fundamentals import symclass
-	from utilities import nearest_fang, angles_to_normals
+	pass#IMPORTIMPORTIMPORT from fundamentals import symclass
+	pass#IMPORTIMPORTIMPORT from utilities import nearest_fang, angles_to_normals
 
-	smc  = symclass(sym)
+	smc  = fundamentals.symclass(sym)
 	eah  = smc.even_angles(angstep, inc_mirror=0, method=method)
 
 	leah = len(eah)
@@ -4098,14 +4170,14 @@ def angular_histogram(params, angstep = 15., sym= "c1", method='S'):
 	return  [len(q) for q in occupancy], eah
 
 def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c1"):
-	from fundamentals import symclass
+	pass#IMPORTIMPORTIMPORT from fundamentals import symclass
 	occupancy,eah = angular_occupancy(params, angstep, sym, method='S')
 
 	if(max_occupy > 0):
 		outo = []
-		from random import shuffle
+		pass#IMPORTIMPORTIMPORT from random import shuffle
 		for l,q in enumerate(occupancy):
-			shuffle(q)
+			random.shuffle(q)
 			q = q[:max_occupy]
 			outo += q
 			print("  %10d   %10d        %6.1f   %6.1f"%(l,len(q),eah[l][0],eah[l][1]))
@@ -4122,7 +4194,7 @@ def balance_angular_distribution(params, max_occupy = -1, angstep = 15., sym= "c
 def symmetry_neighbors(angles, symmetry):
 	#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
 	#  output is [[phi0,theta0,psi0],[phi0,theta0,psi0]_SYM1,...,[phi1,theta1,psi1],[phi1,theta1,psi1]_SYM1,...]
-	temp = Util.symmetry_neighbors(angles, symmetry)
+	temp = EMAN2_cppwrap.Util.symmetry_neighbors(angles, symmetry)
 	nt = len(temp)/3
 	return [[temp[l*3+i] for i in range(3)] for l in range(nt) ]
 	#  We could make it a list of lists
@@ -4143,9 +4215,9 @@ def rotation_between_anglesets(agls1, agls2):
 	  Note: all angles have to be in spider convention.
 	  For details see: Appendix in Penczek, P., Marko, M., Buttle, K. and Frank, J.:  Double-tilt electron tomography.  Ultramicroscopy 60:393-410, 1995.
 	"""
-	from math  import sin, cos, pi, sqrt, atan2, acos, atan, radians
-	from numpy import array, linalg, matrix
-	import types
+	pass#IMPORTIMPORTIMPORT from math  import sin, cos, pi, sqrt, atan2, acos, atan, radians
+	pass#IMPORTIMPORTIMPORT from numpy import array, linalg, matrix
+	pass#IMPORTIMPORTIMPORT import types
 
 	def ori2xyz(ori):
 		if(type(ori) == list):
@@ -4157,21 +4229,21 @@ def rotation_between_anglesets(agls1, agls2):
 			theta = d["theta"]
 			#psi   = d["psi"]
 
-		phi   = radians(phi)
-		theta = radians(theta)
-		sint = sin(theta)
-		x = sint * sin(phi)
-		y = sint * cos(phi)
-		z = cos(theta)
+		phi   = numpy.radians(phi)
+		theta = numpy.radians(theta)
+		sint = numpy.sin(theta)
+		x = sint * numpy.sin(phi)
+		y = sint * numpy.cos(phi)
+		z = numpy.cos(theta)
 
 		return [x, y, z]
 
 	N = len(agls1)
 	if N != len(agls2):
-		ERROR('rotation_between_anglesets', 'Both lists must have the same length',1)
+		global_def.ERROR('rotation_between_anglesets', 'Both lists must have the same length',1)
 		return -1
 	if N < 2:
-		ERROR('rotation_between_anglesets',  'At least two orientations are required in each list',1)
+		global_def.ERROR('rotation_between_anglesets',  'At least two orientations are required in each list',1)
 		return -1
 
 	U1 = [ori2xyz(q) for q in agls1]
@@ -4187,13 +4259,13 @@ def rotation_between_anglesets(agls1, agls2):
 				Suv[j+3*i] += (U2[s][i] * U1[s][j])
 
 	# create matrix N
-	N = array([[Suv[0]+Suv[4]+Suv[8], Suv[5]-Suv[7],    Suv[6]-Suv[2],                 Suv[1]-Suv[3]],
+	N = numpy.array([[Suv[0]+Suv[4]+Suv[8], Suv[5]-Suv[7],    Suv[6]-Suv[2],                 Suv[1]-Suv[3]],
 		   [Suv[5]-Suv[7],        Suv[0]-Suv[4]-Suv[8], Suv[1]+Suv[3],                 Suv[6]+Suv[2]],
 		   [Suv[6]-Suv[2],        Suv[1]+Suv[3],        -Suv[0]+Suv[4]-Suv[8],         Suv[5]+Suv[7]],
 		   [Suv[1]-Suv[3],        Suv[6]+Suv[2],        Suv[5]+Suv[7],         -Suv[0]-Suv[4]+Suv[8]]])
 
 	# eigenvector corresponding to the most positive eigenvalue
-	val, vec = linalg.eig(N)
+	val, vec = numpy.linalg.eig(N)
 	q0, qx, qy, qz = vec[:, val.argmax()]
 	# create quaternion Rot matrix
 	r = [
@@ -4202,8 +4274,8 @@ def rotation_between_anglesets(agls1, agls2):
 		[2*(qz*qy+q0*qx),                 2*(qz*qx-q0*qy),          q0*q0-qx*qx-qy*qy+qz*qz],
 		]
 
-	from fundamentals import recmat
-	return  recmat(r)
+	pass#IMPORTIMPORTIMPORT from fundamentals import recmat
+	return  fundamentals.recmat(r)
 
 def angle_between_projections_directions(proj1, proj2):
 	"""
@@ -4211,12 +4283,12 @@ def angle_between_projections_directions(proj1, proj2):
 	  INPUT: two lists: [phi1, theta1] , [phi2, theta2]
 	  OUTPUT: angle (in degrees)
 	"""
-	from math import sin, cos, acos, radians, degrees
-	from utilities import lacos
-	theta1 = radians(proj1[1])
-	theta2 = radians(proj2[1])
-	cp1cp2_sp1sp2 = cos(radians(proj1[0]) - radians(proj2[0]))
-	temp = sin(theta1) * sin(theta2) * cp1cp2_sp1sp2 + cos(theta1) * cos(theta2)
+	pass#IMPORTIMPORTIMPORT from math import sin, cos, acos, radians, degrees
+	pass#IMPORTIMPORTIMPORT from utilities import lacos
+	theta1 = numpy.radians(proj1[1])
+	theta2 = numpy.radians(proj2[1])
+	cp1cp2_sp1sp2 = numpy.cos(numpy.radians(proj1[0]) - numpy.radians(proj2[0]))
+	temp = numpy.sin(theta1) * numpy.sin(theta2) * cp1cp2_sp1sp2 + numpy.cos(theta1) * numpy.cos(theta2)
 	return lacos( temp )
 
 getang3 = angle_between_projections_directions
@@ -4232,8 +4304,8 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 	  OUTPUT: list of floats - angles in degrees (the n-th element of the list equals the angle between n-th projections directions from the anglesets)
 	  The third parameter (indexes) is optional and may be set to list of indexes. In that case only elements from given list are taken into account.
 	"""
-	from fundamentals import rotate_params
-	from utilities import rotation_between_anglesets, angle_between_projections_directions
+	pass#IMPORTIMPORTIMPORT from fundamentals import rotate_params
+	pass#IMPORTIMPORTIMPORT from utilities import rotation_between_anglesets, angle_between_projections_directions
 
 	if indexes != None:
 		new_ang1 = []
@@ -4245,13 +4317,13 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 		angleset2 = new_ang2
 
 	rot = rotation_between_anglesets(angleset1, angleset2)
-	angleset1 = rotate_params([angleset1[i] for i in range(len(angleset1))],[-rot[2],-rot[1],-rot[0]])
+	angleset1 = fundamentals.rotate_params([angleset1[i] for i in range(len(angleset1))],[-rot[2],-rot[1],-rot[0]])
 	return [angle_between_projections_directions(angleset1[i], angleset2[i]) for i in range(len(angleset1))]
 
 """
 Not used and possibly incorrect
 def phi_theta_to_xyz(ang):
-	from math import sin, cos, pi, radians
+	pass#IMPORTIMPORTIMPORT from math import sin, cos, pi, radians
 	phi   = radians( ang[0] )
 	theta = radians( ang[1] )
 	z = cos(theta)
@@ -4261,7 +4333,7 @@ def phi_theta_to_xyz(ang):
 
 
 def xyz_to_phi_theta(xyz):
-	from math import pi, acos, sqrt, degrees, atan2
+	pass#IMPORTIMPORTIMPORT from math import pi, acos, sqrt, degrees, atan2
 	theta = acos(xyz[2])
 	phi   = atan2(xyz[1], xyz[0])
 	return [ degrees(phi), degrees(theta), 0.0]
@@ -4269,7 +4341,7 @@ def xyz_to_phi_theta(xyz):
 # input: list of triplets (phi, theta, psi)
 # output: average triplet: (phi, theta, psi)
 def average_angles(angles):
-	from math import sqrt
+	pass#IMPORTIMPORTIMPORT from math import sqrt
 	# convert to x, y, z
 	ex = 0.0
 	ey = 0.0
@@ -4329,8 +4401,8 @@ def set_pixel_size(img, pixel_size):
 		img.set_attr("ctf", cc)
 
 def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, verbose = False):
-	from time import time
-	from math import exp, pi
+	pass#IMPORTIMPORTIMPORT from time import time
+	pass#IMPORTIMPORTIMPORT from math import exp, pi
 
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
@@ -4343,13 +4415,13 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
-		from utilities import lacos
+		pass#IMPORTIMPORTIMPORT from utilities import lacos
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
 		if v >= 0: return lacos(v), 0
 		else:      return lacos(-v), 1
 
-	t0 = time()
+	t0 = time.time()
 	proj_list = []
 	angles_list = []
 	N = len(proj_ang)
@@ -4411,7 +4483,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 				previous_group = -1
 				previous_zone = 0
 
-		t1 = time()
+		t1 = time.time()
 		v = []
 		index = []
 		if N_remain >= nref1*L:
@@ -4425,7 +4497,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 					proj_ang_list[nn*2+1] = proj_ang[i][1]
 					remain_index[nn] = i
 					nn += 1
-			asg = Util.assign_projangles(proj_ang_list, ref_ang_list)
+			asg = EMAN2_cppwrap.Util.assign_projangles(proj_ang_list, ref_ang_list)
 			assignments = [[] for i in range(nref)]
 			for i in range(N_remain):
 				assignments[asg[i]].append(i)
@@ -4449,7 +4521,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 					index.append(i)
 			max_group = 0
 
-		t2 = time()
+		t2 = time.time()
 		Nn = len(index)
 		density = [[0.0, 0] for i in range(Nn)]
 		if max_group != previous_group:
@@ -4457,7 +4529,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			for i in range(Nn-1):
 				for j in range(i+1, Nn):
 					diff = ang_diff(v[i], v[j])
-					q = exp(-c*(diff[0]/180.0*pi)**2)
+					q = numpy.exp(-c*(diff[0]/180.0*numpy.pi)**2)
 					diff_table[i][j] = q
 					diff_table[j][i] = q
 			diff_table_index = dict()
@@ -4466,14 +4538,14 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 		else:
 			print(Nn, False, end=' ')
 
-		t21 = time()
+		t21 = time.time()
 		for i in range(Nn):
 			density[i][0] = sum(diff_table[diff_table_index[index[i]]])
 			density[i][1] = i
-		t22 = time()
+		t22 = time.time()
 		density.sort(reverse=True)
 
-		t3 = time()
+		t3 = time.time()
 		dang = [[0.0, 0] for i in range(Nn)]
 		most_dense_point = density[0][1]
 		for i in range(Nn):
@@ -4483,7 +4555,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 		dang[most_dense_point][0] = -1.
 		dang.sort()
 
-		t4 = time()
+		t4 = time.time()
 		members = [0]*img_per_grp
 		for i in range(img_per_grp):
 			idd = index[dang[i][1]]
@@ -4509,17 +4581,17 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 		for i in range(N):
 			if proj_ang[i][4]:
 				proj_list[-1].append(i)
-	print("Total time used = ", time()-t0)
+	print("Total time used = ", time.time()-t0)
 
 	return proj_list, angles_list
 
 def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose = False):
-	from math import exp, pi
+	pass#IMPORTIMPORTIMPORT from math import exp, pi
 
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
-		from utilities import lacos
+		pass#IMPORTIMPORTIMPORT from utilities import lacos
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
 		if v >= 0: return lacos(v), 0
@@ -4554,7 +4626,7 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 	ref_ang_list.append(nref2)
 	ref_ang_list.append(nref3)
 	ref_ang_list.append(nref4)
-	proj_list = Util.group_proj_by_phitheta(proj_ang_list, ref_ang_list, img_per_grp)
+	proj_list = EMAN2_cppwrap.Util.group_proj_by_phitheta(proj_ang_list, ref_ang_list, img_per_grp)
 
 	proj_list2 = proj_list[:]
 	for i in range(len(proj_list2)): proj_list2[i] = abs(proj_list2[i])
@@ -4598,24 +4670,24 @@ def lacos(x):
 	"""
 		compute acos(x) in degrees after enforcing -1<=x<=1
 	"""
-	from math import degrees, acos
-	return  degrees(acos(max(-1.0,min(1.0,x))))
+	pass#IMPORTIMPORTIMPORT from math import degrees, acos
+	return  numpy.degrees(math.acos(max(-1.0,min(1.0,x))))
 
 def mulvec(v1,v2):
 	return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
 
 def nearest_proj(proj_ang, img_per_grp=100, List=[]):
-	from utilities import getfvec
-	from math import exp, pi
-	from sets import Set
-	from time import time
-	from random import randint
+	pass#IMPORTIMPORTIMPORT from utilities import getfvec
+	pass#IMPORTIMPORTIMPORT from math import exp, pi
+	pass#IMPORTIMPORTIMPORT from sets import Set
+	pass#IMPORTIMPORTIMPORT from time import time
+	pass#IMPORTIMPORTIMPORT from random import randint
 
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
-		from math import acos, degrees
-		from utilities import lacos
+		pass#IMPORTIMPORTIMPORT from math import acos, degrees
+		pass#IMPORTIMPORTIMPORT from utilities import lacos
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
 		if v >= 0: return lacos(v), 0
@@ -4716,8 +4788,8 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	dis        = [0.0]*img_per_grp
 	#dis2      = [0.0]*img_per_grp
 	mirror     = [0]*img_per_grp
-	S = Set()
-	T = Set()
+	S = sets.Set()
+	T = sets.Set()
 	#tt1 = time()
 	for i in range(len(List)):
 		k = List[i]
@@ -4880,7 +4952,7 @@ def groups_assignments(groups, n = -1):
 
 # parameters: list of integers, number of processors
 def chunks_distribution(chunks, procs):
-	from heapq import heappush, heappop
+	pass#IMPORTIMPORTIMPORT from heapq import heappush, heappop
 
 	# sort chunks in descending order
 	chunks.sort(reverse=True)
@@ -4890,15 +4962,15 @@ def chunks_distribution(chunks, procs):
 	heap = []
 	for p in range(procs):
 		results.append([])
-		heappush(heap, (0, p))
+		heapq.heappush(heap, (0, p))
 
 	# main calculations
 	# following chunks are added to the least loaded processors
 	for c in chunks:
-		s, p = heappop(heap)
+		s, p = heapq.heappop(heap)
 		results[p].append(c)
 		s += c[0]
-		heappush(heap, (s, p))
+		heapq.heappush(heap, (s, p))
 
 	return results
 
@@ -4951,7 +5023,7 @@ class iterImagesStack(object):
 	position = -1
 	def __init__(self, stack_name, list_of_indexes = None):
 		if list_of_indexes == None:
-			self.imagesIndexes = list(range(EMUtil.get_image_count(stack_name)))
+			self.imagesIndexes = list(range(EMAN2_cppwrap.EMUtil.get_image_count(stack_name)))
 		else:
 			self.imagesIndexes = list_of_indexes[:]
 		self.stackName = stack_name
@@ -4961,7 +5033,7 @@ class iterImagesStack(object):
 		return self.imagesIndexes[self.position]
 	def image(self):
 		if self.currentImage == None:
-			self.currentImage = EMData()
+			self.currentImage = EMAN2_cppwrap.EMData()
 			self.currentImage.read_image(self.stackName, self.imagesIndexes[self.position])
 		return self.currentImage
 	def goToNext(self):
@@ -4978,29 +5050,29 @@ class iterImagesStack(object):
 		return (self.position >= 0)
 
 
-from pickle import dumps,loads
-from zlib import compress,decompress
-from struct import pack,unpack
-import pickle
+pass#IMPORTIMPORTIMPORT from pickle import dumps,loads
+pass#IMPORTIMPORTIMPORT from zlib import compress,decompress
+pass#IMPORTIMPORTIMPORT from struct import pack,unpack
+pass#IMPORTIMPORTIMPORT import pickle
 
 def pack_message(data):
 	"""Convert data for transmission efficiently"""
 
 	if isinstance(data,str):
-		if len(data)>256 : return "C"+compress(data,1)
+		if len(data)>256 : return "C"+zlib.compress(data,1)
 		else : return "S"+data
 	else :
-		d2x=dumps(data,-1)
-		if len(d2x)>256 : return "Z"+compress(d2x,1)
+		d2x=pickle.dumps(data,-1)
+		if len(d2x)>256 : return "Z"+zlib.compress(d2x,1)
 		else : return "O"+d2x
 
 
 def unpack_message(msg):
 	"""Unpack a data payload prepared by pack_message"""
 
-	if msg[0]=="C" : return decompress((msg[1:]).tostring())
+	if msg[0]=="C" : return zlib.decompress((msg[1:]).tostring())
 	elif msg[0]=="S" : return (msg[1:]).tostring()
-	elif msg[0]=="Z" : return pickle.loads(decompress((msg[1:]).tostring()))
+	elif msg[0]=="Z" : return pickle.loads(zlib.decompress((msg[1:]).tostring()))
 	elif msg[0]=="O" : return pickle.loads((msg[1:]).tostring())
 	else :
 		print("ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20]))
@@ -5013,71 +5085,71 @@ def update_tag(communicator, target_rank):   # TODO - it doesn't work when commu
 	return 123456
 	global statistics_send_recv
 	if communicator not in statistics_send_recv:
-		from mpi import mpi_comm_size
-		statistics_send_recv[communicator] = [0] * mpi_comm_size(communicator)
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_size
+		statistics_send_recv[communicator] = [0] * mpi.mpi_comm_size(communicator)
 	statistics_send_recv[communicator][target_rank] += 1
 	return statistics_send_recv[communicator][target_rank]
 
 # ===================================== WRAPPER FOR MPI
 
 def wrap_mpi_send(data, destination, communicator = None):
-	from mpi import mpi_send, MPI_COMM_WORLD, MPI_CHAR
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_send, MPI_COMM_WORLD, MPI_CHAR
 
 	if communicator == None:
-		communicator = MPI_COMM_WORLD
+		communicator = mpi.MPI_COMM_WORLD
 
 	msg = pack_message(data)
 	tag = update_tag(communicator, destination)
 	#from mpi import mpi_comm_rank
 	#print communicator, mpi_comm_rank(communicator), "send to", destination, tag
-	mpi_send(msg, len(msg), MPI_CHAR, destination, tag, communicator) # int MPI_Send( void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm )
+	mpi.mpi_send(msg, len(msg), mpi.MPI_CHAR, destination, tag, communicator) # int MPI_Send( void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm )
 
 
 def wrap_mpi_recv(source, communicator = None):
-	from mpi import mpi_recv, MPI_COMM_WORLD, MPI_CHAR, mpi_probe, mpi_get_count
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_recv, MPI_COMM_WORLD, MPI_CHAR, mpi_probe, mpi_get_count
 
 	if communicator == None:
-		communicator = MPI_COMM_WORLD
+		communicator = mpi.MPI_COMM_WORLD
 
 	tag = update_tag(communicator, source)
 	#from mpi import mpi_comm_rank
 	#print communicator, mpi_comm_rank(communicator), "recv from", source, tag
-	mpi_probe(source, tag, communicator)
-	n = mpi_get_count(MPI_CHAR)
-	msg = mpi_recv(n, MPI_CHAR, source, tag, communicator)
+	mpi.mpi_probe(source, tag, communicator)
+	n = mpi.mpi_get_count(mpi.MPI_CHAR)
+	msg = mpi.mpi_recv(n, mpi.MPI_CHAR, source, tag, communicator)
 	return unpack_message(msg)
 
 
 def wrap_mpi_bcast(data, root, communicator = None):
-	from mpi import mpi_bcast, MPI_COMM_WORLD, mpi_comm_rank, MPI_CHAR
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_bcast, MPI_COMM_WORLD, mpi_comm_rank, MPI_CHAR
 
 	if communicator == None:
-		communicator = MPI_COMM_WORLD
+		communicator = mpi.MPI_COMM_WORLD
 
-	rank = mpi_comm_rank(communicator)
+	rank = mpi.mpi_comm_rank(communicator)
 
 	if rank == root:
 		msg = pack_message(data)
-		n = pack("I",len(msg))
+		n = struct.pack("I",len(msg))
 	else:
 		msg = None
 		n = None
 
-	n = mpi_bcast(n, 4, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
-	n=unpack("I",n)[0]
-	msg = mpi_bcast(msg, n, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
+	n = mpi.mpi_bcast(n, 4, mpi.MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
+	n=struct.unpack("I",n)[0]
+	msg = mpi.mpi_bcast(msg, n, mpi.MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
 	return unpack_message(msg)
 
 
 # data must be a python list (numpy array also should be implemented)
 def wrap_mpi_gatherv(data, root, communicator = None):
-	from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 
 	if communicator == None:
-		communicator = MPI_COMM_WORLD
+		communicator = mpi.MPI_COMM_WORLD
 
-	rank = mpi_comm_rank(communicator)
-	procs = mpi_comm_size(communicator)
+	rank = mpi.mpi_comm_rank(communicator)
+	procs = mpi.mpi_comm_size(communicator)
 
 	out_array = None
 	if rank == root:
@@ -5099,9 +5171,9 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 # def rearrange_ranks_of_processors_to_fit_round_robin_assignment():
 def rearrange_ranks_of_processors(mode):
 	
-	import socket
-	import mpi
-	from inspect import currentframe, getframeinfo
+	pass#IMPORTIMPORTIMPORT import socket
+	pass#IMPORTIMPORTIMPORT import mpi
+	pass#IMPORTIMPORTIMPORT from inspect import currentframe, getframeinfo
 	
 	mpi.mpi_init(0, [])
 	
@@ -5142,7 +5214,7 @@ def rearrange_ranks_of_processors(mode):
 	elif mode == "to fit by-node assignment":
 		new_rank = local_rank + no_of_groups * color
 	else:
-		error_status = ("Invalid mode for function 'rearrange_ranks_of_processors': %s"%mode, getframeinfo(currentframe()))
+		error_status = ("Invalid mode for function 'rearrange_ranks_of_processors': %s"%mode, inspect.getframeinfo(inspect.currentframe()))
 	if_error_then_all_processes_exit_program(error_status)
 	
 	# mpi.MPI_COMM_WORLD = mpi.mpi_comm_split(original_mpi_comm_world, color=0, key = new_rank)
@@ -5171,7 +5243,7 @@ def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank
 	masters_from_groups_vs_everything_else_comm = mpi_comm_split(mpi_comm, sh_my_rank == main_node, my_rank)
 	"""
 
-	from mpi import mpi_barrier
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_barrier
 
 	sh_my_ranks = [my_rank]
 	sh_my_ranks = wrap_mpi_gatherv(sh_my_ranks, main_node, shared_comm)
@@ -5182,7 +5254,7 @@ def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank
 		group_infos = [my_rank, sh_my_ranks]
 		group_infos = wrap_mpi_gatherv(group_infos, main_node, masters_from_groups_vs_everything_else_comm)
 
-	mpi_barrier(mpi_comm)
+	mpi.mpi_barrier(mpi_comm)
 
 	group_infos = wrap_mpi_bcast(group_infos, main_node, mpi_comm)
 
@@ -5203,14 +5275,14 @@ def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank
 
 
 def wrap_mpi_split_shared_memory(mpi_comm):
-	import socket
-	import os
-	from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split
+	pass#IMPORTIMPORTIMPORT import socket
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, mpi_comm_size, mpi_comm_split
 
 	hostname = socket.gethostname()
 
-	my_rank = mpi_comm_rank(mpi_comm)
-	mpi_size = mpi_comm_size(mpi_comm)
+	my_rank = mpi.mpi_comm_rank(mpi_comm)
+	mpi_size = mpi.mpi_comm_size(mpi_comm)
 
 	# local_rank = int(os.environ["OMPI_COMM_WORLD_LOCAL_RANK"])
 	# local_size = int(os.environ["OMPI_COMM_WORLD_LOCAL_SIZE"])
@@ -5244,7 +5316,7 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	key = local_rank
 
 	# shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
-	shared_comm = mpi_comm_split(mpi_comm, color, key)
+	shared_comm = mpi.mpi_comm_split(mpi_comm, color, key)
 
 	return shared_comm, color, key, no_of_processes_per_group, no_of_groups	
 
@@ -5257,20 +5329,20 @@ def wrap_mpi_split(comm, no_of_groups):
 	Consecutive global process ids have consecutive subgroup process ids.
 
 	"""
-	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split
-	nproc = mpi_comm_size(comm)
-	myid = mpi_comm_rank(comm)
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split
+	nproc = mpi.mpi_comm_size(comm)
+	myid = mpi.mpi_comm_rank(comm)
 
 	no_of_proc_per_group = nproc / no_of_groups
 	color = myid / no_of_proc_per_group
 	key = myid % no_of_proc_per_group
 
-	return mpi_comm_split(comm, color, key)
+	return mpi.mpi_comm_split(comm, color, key)
 	
 
 def get_dist(c1, c2):
-	from math import sqrt
-	d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+	pass#IMPORTIMPORTIMPORT from math import sqrt
+	d = numpy.sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
 	return d
 
 
@@ -5280,13 +5352,13 @@ def eliminate_moons(my_volume, moon_elimination_params):
 	moon_elimination_params[1] - pixel size in A
 	"""
 
-	from morphology import binarize
+	pass#IMPORTIMPORTIMPORT from morphology import binarize
 	histogram_threshold  =  my_volume.find_3d_threshold(moon_elimination_params[0], moon_elimination_params[1])*1.1
 	# clean11 88x88,  4.84 px/A 750 kDa
 
-	my_volume_binarized = binarize(my_volume, histogram_threshold)
+	my_volume_binarized = morphology.binarize(my_volume, histogram_threshold)
 	# my_volume_binarized.write_image ("my_volume_binarized.hdf")
-	my_volume_binarized_with_no_moons = Util.get_biggest_cluster(my_volume_binarized)
+	my_volume_binarized_with_no_moons = EMAN2_cppwrap.Util.get_biggest_cluster(my_volume_binarized)
 	# my_volume_binarized_with_no_moons.write_image("my_volume_binarized_with_no_moons.hdf")
 	volume_difference = my_volume_binarized - my_volume_binarized_with_no_moons
 	# volume_difference.write_image("volume_difference.hdf")
@@ -5295,7 +5367,7 @@ def eliminate_moons(my_volume, moon_elimination_params):
 		volume_difference.get_value_at(volume_difference.calc_min_index()) == 0:
 		return my_volume
 	else:
-		from utilities import gauss_edge
+		pass#IMPORTIMPORTIMPORT from utilities import gauss_edge
 		return gauss_edge(my_volume_binarized_with_no_moons) * my_volume
 
 		# from utilities   import model_blank
@@ -5304,16 +5376,16 @@ def eliminate_moons(my_volume, moon_elimination_params):
 	# this is only in master
 
 def combinations_of_n_taken_by_k(n, k):
-	from fractions import Fraction
-	return int(reduce(lambda x, y: x * y, (Fraction(n-i, i+1) for i in range(k)), 1))
+	pass#IMPORTIMPORTIMPORT from fractions import Fraction
+	return int(reduce(lambda x, y: x * y, (fractions.Fraction(n-i, i+1) for i in range(k)), 1))
 
 def cmdexecute(cmd, printing_on_success = True):
-	from   time import localtime, strftime
-	import subprocess
-	import os
+	pass#IMPORTIMPORTIMPORT from   time import localtime, strftime
+	pass#IMPORTIMPORTIMPORT import subprocess
+	pass#IMPORTIMPORTIMPORT import os
 	#outcome = subprocess.call(cmd, shell=True)
 	outcome = os.system(cmd)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 	if(outcome != 0):
 		print(line,"ERROR!!   Command failed:  ", cmd, " return code of failed command: ", outcome)
 		return 0
@@ -5322,7 +5394,7 @@ def cmdexecute(cmd, printing_on_success = True):
 		return 1
 
 def string_found_in_file(myregex, filename):
-	import re
+	pass#IMPORTIMPORTIMPORT import re
 	pattern = re.compile(myregex)
 	for line in open(filename):
 		if re.findall(pattern, line) != []:
@@ -5330,7 +5402,7 @@ def string_found_in_file(myregex, filename):
 	return False
 
 def random_string(length_of_randomstring = 16):
-	import random
+	pass#IMPORTIMPORTIMPORT import random
 	chars=list(map(chr, list(range(97, 123)))) # a..z
 	chars.extend(list(map(chr, list(range(65, 91))))) # A..Z
 	chars.extend(list(map(chr, list(range(48, 58))))) # 0..9
@@ -5340,7 +5412,7 @@ def random_string(length_of_randomstring = 16):
 	return random_string
 
 def get_latest_directory_increment_value(directory_location, directory_name, start_value = 1, myformat = "%03d"):
-	import os
+	pass#IMPORTIMPORTIMPORT import os
 	dir_count = start_value
 	while os.path.isdir(directory_location + directory_name + myformat%(dir_count)):
 		dir_count += 1
@@ -5349,20 +5421,20 @@ def get_latest_directory_increment_value(directory_location, directory_name, sta
 	return dir_count - 1
 
 def get_nonexistent_directory_increment_value(directory_location, directory_name, start_value = 1, myformat = "%03d"):
-	import os
+	pass#IMPORTIMPORTIMPORT import os
 	dir_count = start_value
 	while os.path.isdir(directory_location + directory_name + myformat%(dir_count)):
 		dir_count += 1
 	return dir_count
 
 def print_with_time_info(msg):
-	from time import localtime, strftime
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
+	pass#IMPORTIMPORTIMPORT from time import localtime, strftime
+	line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>" + msg
 	print(line)
 
 def if_error_then_all_processes_exit_program(error_status):
-	import sys, os
-	from utilities import print_msg
+	pass#IMPORTIMPORTIMPORT import sys, os
+	pass#IMPORTIMPORTIMPORT from utilities import print_msg
 
 	# if "OMPI_COMM_WORLD_SIZE" not in os.environ:
 	if len({"OMPI_COMM_WORLD_SIZE", "PMI_RANK", "PMI_ID", "SLURM_PROCID", "LAMRANK", "MPI_RANKID", "MP_CHILD", "MP_CHILD", "MP_CHILD"}.intersection(set(os.environ))) == 0:
@@ -5373,7 +5445,7 @@ def if_error_then_all_processes_exit_program(error_status):
 			return None
 		MPI_INT, MPI_COMM_WORLD = 0, 0
 	else:
-		from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
 
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	if error_status != None and error_status != 0:
@@ -5407,9 +5479,9 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 	# 10142015 --- preshift is set to True when doing 3-D sorting.
 	# chunk_id are set when data is read in
 
-	from fundamentals import resample, fshift
-	from filter import filt_ctf
-	from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from fundamentals import resample, fshift
+	pass#IMPORTIMPORTIMPORT from filter import filt_ctf
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
 
 	'''
 	if( myid == main_node ):
@@ -5433,7 +5505,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 			image_start = 0
 			image_end   = 1
 	else:
-		image_start, image_end = MPI_start_end(ndata, nproc, myid)
+		image_start, image_end = applications.MPI_start_end(ndata, nproc, myid)
 	lpartids  = lpartids[image_start:image_end]
 	#partstack = partstack[image_start:image_end]
 	#  Preprocess the data
@@ -5453,30 +5525,30 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 		if im ==0:
 			if data[im].get_xsize() > Tracker["constants"]["nnxo"]:
 				window_particle =True
-				from EMAN2 import Region
+				pass#IMPORTIMPORTIMPORT from EMAN2 import Region
 			else:
 				window_particle =False
 		phi,theta,psi,sx,sy = partstack[lpartids[im]][0], partstack[lpartids[im]][1], partstack[lpartids[im]][2], partstack[lpartids[im]][3], partstack[lpartids[im]][4]
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			ctf_params = data[im].get_attr("ctf")
-			st = Util.infomask(data[im], mask2D, False)
+			st = EMAN2_cppwrap.Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
-			data[im] = filt_ctf(data[im], ctf_params)
+			data[im] = filter.filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
 		if preshift:# always true
-			data[im] = fshift(data[im], sx, sy)
+			data[im] = fundamentals.fshift(data[im], sx, sy)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 			sx = 0.0
 			sy = 0.0
 		if window_particle:
 			mx = data[im].get_xsize()//2-Tracker["constants"]["nnxo"]//2
 			my = data[im].get_ysize()//2-Tracker["constants"]["nnxo"]//2
-			data[im] = data[im].get_clip(Region(mx,my,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]))
+			data[im] = data[im].get_clip(EMAN2_cppwrap.Region(mx,my,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"]))
 			data[im].set_attr('ctf_applied', 1)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 		#oldshifts[im] = [sx,sy]
 		#  resample will properly adjusts shifts and pixel size in ctf
-		data[im] = resample(data[im], shrinkage)
+		data[im] = fundamentals.resample(data[im], shrinkage)
 		#  We have to make sure the shifts are within correct range, shrinkage or not
 		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 		#  For local SHC set anchor
@@ -5509,11 +5581,11 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 
 	"""
 	#from fundamentals import resample
-	from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
-	from fundamentals import fdecimate, fshift, fft
-	from filter       import filt_ctf, filt_table
-	from applications import MPI_start_end
-	from math         import sqrt
+	pass#IMPORTIMPORTIMPORT from utilities    import get_im, model_gauss_noise, set_params_proj, get_params_proj
+	pass#IMPORTIMPORTIMPORT from fundamentals import fdecimate, fshift, fft
+	pass#IMPORTIMPORTIMPORT from filter       import filt_ctf, filt_table
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from math         import sqrt
 
 
 	if( myid == main_node ):
@@ -5614,7 +5686,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, bckgdata = None, myid =
 				st = Util.infomask(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
-				from morphology import cosinemask
+				pass#IMPORTIMPORTIMPORT from morphology import cosinemask
 				data[im] = cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
 		else:
 			#  if no bckgnoise, do simple masking instead
@@ -5653,7 +5725,7 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	# So, the lengths of partids and partstack are the same.
 	#  The read data is properly distributed among MPI threads.
 
-	from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
 
 	lpartids = read_text_file(partids)
 	ndata = len(lpartids)
@@ -5667,10 +5739,10 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 			image_start = 0
 			image_end   = 1
 	else:
-		image_start, image_end = MPI_start_end(ndata, nproc, myid)
+		image_start, image_end = applications.MPI_start_end(ndata, nproc, myid)
 	lpartids  = lpartids[image_start:image_end]
 	partstack = partstack[image_start:image_end]
-	data = EMData.read_images(stack, lpartids)
+	data = EMAN2_cppwrap.EMData.read_images(stack, lpartids)
 
 	for i in range(len(partstack)):
 		set_params_proj(data[i], partstack[i])
@@ -5680,7 +5752,7 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_of_vars = [], write_or_append = "w",
 	vars_that_will_show_only_size = []):
 
-	import json, types, collections
+	pass#IMPORTIMPORTIMPORT import json, types, collections
 
 	allowed_types = [type(None), bool, int, int, float, complex,
 					 str, bytes]
@@ -5713,28 +5785,29 @@ def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_o
 
 def print_program_start_information():
 
-	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
-	import os
-	from socket import gethostname
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT from socket import gethostname
 
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
+	myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+	mpi_size = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
 
 	if(myid == 0):
 		print("Location: " + os.getcwd())
 
-	print("MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid()))
+	print("MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + socket.gethostname() +  " proc_id: " + str(os.getpid()))
 
 
 
 def store_program_state(filename, state, stack):
-	import json
+	pass#IMPORTIMPORTIMPORT import json
 	with open(filename, "w") as fp:
 		json.dump(list(zip(stack, state)), fp, indent = 2)
 	fp.close()
 
 def restore_program_stack_and_state(file_name_of_saved_state):
-	import json; f = open(file_name_of_saved_state, 'r')
+	pass#IMPORTIMPORTIMPORT import json
+	f = open(file_name_of_saved_state, 'r')
 	saved_state_and_stack = json.load(f); f.close()
 	return list(zip(*saved_state_and_stack)[0]), list(zip(*saved_state_and_stack)[1])
 
@@ -5743,8 +5816,8 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 
 	"""
 
-	When used it needs: from inspect import currentframe, getframeinfo
-	Also: from utilities import program_state_stack
+	pass#IMPORTIMPORTIMPORT When used it needs: from inspect import currentframe, getframeinfo
+	pass#IMPORTIMPORTIMPORT Also: from utilities import program_state_stack
 
 	This function is used for restarting time consuming data processing programs/steps from the last saved point.
 
@@ -5773,13 +5846,13 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 
 	"""
 
-	from traceback import extract_stack
-	from mpi import mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD, MPI_INT
-	from utilities import if_error_then_all_processes_exit_program
-	import os
+	pass#IMPORTIMPORTIMPORT from traceback import extract_stack
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD, MPI_INT
+	pass#IMPORTIMPORTIMPORT from utilities import if_error_then_all_processes_exit_program
+	pass#IMPORTIMPORTIMPORT import os
 
 	def get_current_stack_info():
-		return [[x[0], x[2]] for x in extract_stack()[:-2]]
+		return [[x[0], x[2]] for x in traceback.extract_stack()[:-2]]
 
 	START_EXECUTING_FALSE = 0
 	START_EXECUTING_TRUE = 1
@@ -5807,7 +5880,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	error_status = 0
 
 	# not a real while, an if with the possibility of jumping with break
-	while mpi_comm_rank(MPI_COMM_WORLD) == 0:
+	while mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD) == 0:
 		if "file_name_of_saved_state" not in program_state_stack.__dict__:
 			if type(file_name_of_saved_state) != type(""):
 				print("Must provide the file name of saved state as a string in the first call of the function!")
@@ -5889,7 +5962,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 
 	if_error_then_all_processes_exit_program(error_status)
 
-	program_state_stack.start_executing = mpi_bcast(program_state_stack.start_executing, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	program_state_stack.start_executing = mpi.mpi_bcast(program_state_stack.start_executing, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)
 	program_state_stack.start_executing = int(program_state_stack.start_executing[0])
 
 	# print "program_state_stack.start_executing ", program_state_stack.start_executing
@@ -5902,7 +5975,7 @@ def qw(s):
 	return tuple(s.split())
 
 def list_prod(list_whose_elements_are_going_to_be_multiplied):
-	import operator
+	pass#IMPORTIMPORTIMPORT import operator
 	return reduce(operator.mul, list_whose_elements_are_going_to_be_multiplied)
 
 def calculate_space_size(x_half_size, y_half_size, psi_half_size):
@@ -5910,8 +5983,8 @@ def calculate_space_size(x_half_size, y_half_size, psi_half_size):
 
 
 def convert_json_fromunicode(data):
-	import  collections
-	import six
+	pass#IMPORTIMPORTIMPORT import  collections
+	pass#IMPORTIMPORTIMPORT import six
 	if isinstance(data, six.string_types):
 		return str(data)
 	elif isinstance(data, collections.Mapping):
@@ -5923,9 +5996,9 @@ def convert_json_fromunicode(data):
 
 """
 def debug_mpi_barrier(comm):
-	from mpi import mpi_barrier, mpi_comm_rank, mpi_bcast
-	from traceback import extract_stack
-	import sys
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_barrier, mpi_comm_rank, mpi_bcast
+	pass#IMPORTIMPORTIMPORT from traceback import extract_stack
+	pass#IMPORTIMPORTIMPORT import sys
 
 
 	# if mpi_comm_rank(comm) in range(4):
@@ -5937,9 +6010,9 @@ def debug_mpi_barrier(comm):
 
 
 def debug_mpi_bcast(newv, s, t, m, comm):
-	from mpi import mpi_comm_rank, mpi_bcast
-	from traceback import extract_stack
-	import sys
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, mpi_bcast
+	pass#IMPORTIMPORTIMPORT from traceback import extract_stack
+	pass#IMPORTIMPORTIMPORT import sys
 
 
 	rrr = mpi_bcast(newv, s, t, m, comm)
@@ -5954,23 +6027,23 @@ def debug_mpi_bcast(newv, s, t, m, comm):
 """
 
 def print_from_process(process_rank, message):
-	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
-	import os, sys
-	from socket import gethostname
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
+	pass#IMPORTIMPORTIMPORT import os, sys
+	pass#IMPORTIMPORTIMPORT from socket import gethostname
 
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
+	myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+	mpi_size = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
 
 	if(myid == process_rank):
-		print("MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid()) +\
+		print("MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + socket.gethostname() +  " proc_id: " + str(os.getpid()) +\
 			"message:::", message)
 	sys.stdout.flush()
 
 def mpi_exit():
-	from mpi import mpi_finalize
-	import sys
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+	pass#IMPORTIMPORTIMPORT import sys
 
-	mpi_finalize()
+	mpi.mpi_finalize()
 	sys.stdout.flush()
 	sys.exit()
 
@@ -5984,7 +6057,7 @@ def get_attr_stack(data_stack,attr_string):
 	return attr_value_list
 
 def get_sorting_attr_stack(data_stack):
-	from utilities import get_params_proj
+	pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
 	attr_value_list = []
 	for idat in range(len(data_stack)):
 		group                 = data_stack[idat].get_attr("group")
@@ -5993,14 +6066,14 @@ def get_sorting_attr_stack(data_stack):
 	return attr_value_list
 
 def get_sorting_params(Tracker,data):
-	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_row,wrap_mpi_bcast,even_angles
-	from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_barrier, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_row,wrap_mpi_bcast,even_angles
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
 	myid      = Tracker["constants"]["myid"]
 	main_node = Tracker["constants"]["main_node"]
 	nproc     = Tracker["constants"]["nproc"]
 	ndata     = Tracker["total_stack"]
-	mpi_comm  = MPI_COMM_WORLD
+	mpi_comm  = mpi.MPI_COMM_WORLD
 	if myid == main_node:
 		total_attr_value_list = []
 		for n in range(ndata):
@@ -6011,21 +6084,21 @@ def get_sorting_params(Tracker,data):
 		attr_value_list = get_attr_stack(data,"group")
 		attr_value_list = wrap_mpi_bcast(attr_value_list,inode)
 		if myid == main_node:
-			image_start,image_end = MPI_start_end(ndata,nproc,inode)
+			image_start,image_end = applications.MPI_start_end(ndata,nproc,inode)
 			total_attr_value_list = fill_in_mpi_list(total_attr_value_list,attr_value_list,image_start,image_end)
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list,main_node)
 	return total_attr_value_list
 
 def get_sorting_params_refine(Tracker,data,ndata):
-	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_row,wrap_mpi_bcast,even_angles
-	from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_barrier, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_row,wrap_mpi_bcast,even_angles
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
 	myid       = Tracker["constants"]["myid"]
 	main_node  = Tracker["constants"]["main_node"]
 	nproc      = Tracker["constants"]["nproc"]
 	#ndata     = Tracker["total_stack"]
-	mpi_comm   = MPI_COMM_WORLD
+	mpi_comm   = mpi.MPI_COMM_WORLD
 	if myid == main_node:
 		total_attr_value_list = []
 		for n in range(ndata):
@@ -6036,9 +6109,9 @@ def get_sorting_params_refine(Tracker,data,ndata):
 		attr_value_list = get_sorting_attr_stack(data)
 		attr_value_list = wrap_mpi_bcast(attr_value_list,inode)
 		if myid == main_node:
-			image_start,image_end = MPI_start_end(ndata,nproc,inode)
+			image_start,image_end = applications.MPI_start_end(ndata,nproc,inode)
 			total_attr_value_list = fill_in_mpi_list(total_attr_value_list, attr_value_list, image_start,image_end)
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list, main_node)
 	return total_attr_value_list
 
@@ -6132,18 +6205,18 @@ def print_upper_triangular_matrix(data_table_dict,N_indep,log_main):
 			log_main.add(msg)
 
 def print_a_line_with_timestamp(string_to_be_printed ):
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 	print((line,string_to_be_printed))
 	return string_to_be_printed
 
 def convertasi(asig,K):
-	from numpy import array
+	pass#IMPORTIMPORTIMPORT from numpy import array
 	p = []
 	for k in range(K):
 		l = []
 		for i in range(len(asig)):
 			if( asig[i ]== k ): l.append(i)
-		l = array(l,"int32")
+		l = numpy.array(l,"int32")
 		l.sort()
 		p.append(l)
 	return p
@@ -6162,7 +6235,7 @@ def prepare_ptp(data_list, K):
 	return ptp
 
 def print_dict(dict,theme):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 		print((line+theme))
 		spaces = "                           "
 		for key, value in sorted( dict.items() ):
@@ -6172,16 +6245,16 @@ def print_dict(dict,theme):
 def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	# this function is single processor
 	#  Get updated FSC curves, user can also provide a mask using radi variable
-	import types
-	from statistics import fsc
-	from utilities import model_circle, get_im
-	from filter import fit_tanh1
-	import os
+	pass#IMPORTIMPORTIMPORT import types
+	pass#IMPORTIMPORTIMPORT from statistics import fsc
+	pass#IMPORTIMPORTIMPORT from utilities import model_circle, get_im
+	pass#IMPORTIMPORTIMPORT from filter import fit_tanh1
+	pass#IMPORTIMPORTIMPORT import os
 	if(type(radi) == int):
 		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 		else:                     mask = get_im(mask_option)
 	else:  mask = radi
-	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
+	nfsc = statistics.fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
 	currentres = -1.0
 	ns = len(nfsc[1])
 	#  This is actual resolution, as computed by 2*f/(1+f)
@@ -6202,7 +6275,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
                         lowpass = nfsc[0][i-1]
                         break
         """
-	lowpass, falloff = fit_tanh1(nfsc, 0.01)
+	lowpass, falloff = filter.fit_tanh1(nfsc, 0.01)
 	return  round(lowpass,4), round(falloff,4), round(currentres,2)
 
 def partition_to_groups(alist, K):
@@ -6236,8 +6309,8 @@ def merge_groups(stable_members_list):
 	return alist
 
 def save_alist(Tracker,name_of_the_text_file,alist):
-	from utilities import write_text_file
-	import os
+	pass#IMPORTIMPORTIMPORT from utilities import write_text_file
+	pass#IMPORTIMPORTIMPORT import os
 	log       =Tracker["constants"]["log_main"]
 	myid      =Tracker["constants"]["myid"]
 	main_node =Tracker["constants"]["main_node"]
@@ -6248,8 +6321,8 @@ def save_alist(Tracker,name_of_the_text_file,alist):
 
 def margin_of_error(P, size_of_this_sampling):
 	# margin of an error, or radius of an error for a percentage
-	from math import sqrt
-	return sqrt(P*(1.-P)/size_of_this_sampling)
+	pass#IMPORTIMPORTIMPORT from math import sqrt
+	return numpy.sqrt(P*(1.-P)/size_of_this_sampling)
 
 def get_margin_of_error(this_group_of_data,Tracker):
 	ratio = margin_of_error(Tracker["P_chunk0"],len(this_group_of_data))
@@ -6257,10 +6330,10 @@ def get_margin_of_error(this_group_of_data,Tracker):
 	return abs(rate1-Tracker["P_chunk0"]),ratio,abs(rate2-Tracker["P_chunk1"]),ratio
 
 def do_two_way_comparison(Tracker):
-	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_file,write_text_file
-	from statistics import k_means_match_clusters_asg_new
-	import os
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_barrier, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_file,write_text_file
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_match_clusters_asg_new
+	pass#IMPORTIMPORTIMPORT import os
 	######
 	myid              = Tracker["constants"]["myid"]
 	main_node         = Tracker["constants"]["main_node"]
@@ -6276,9 +6349,9 @@ def do_two_way_comparison(Tracker):
 	if( Tracker["constants"]["indep_runs"]<2 ):
 		if myid ==main_node:
 			log_main.add(" Error! One single run cannot make two-way comparison")
-		from mpi import mpi_finalize
-		from sys import exit
-		mpi_finalize()
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+		pass#IMPORTIMPORTIMPORT from sys import exit
+		mpi.mpi_finalize()
 		exit()
 	else:
 		for iter_indep in range(Tracker["constants"]["indep_runs"]):  total_partition.append(Tracker["partition_dict"][iter_indep])
@@ -6305,7 +6378,7 @@ def do_two_way_comparison(Tracker):
 		scores                      = {}
 		for iptp in range(len(ptp)):
 			for jptp in range(len(ptp)):
-				newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[iptp], ptp[jptp])
+				newindeces, list_stable, nb_tot_objs = statistics.k_means_match_clusters_asg_new(ptp[iptp], ptp[jptp])
 				tt = 0.0
 				if myid ==main_node and iptp<jptp:
 					aline="Two-way comparison between independent run %3d and %3d"%(iptp,jptp)
@@ -6368,10 +6441,10 @@ def do_two_way_comparison(Tracker):
 		accounted_list = merge_groups(stable_class_list)
 		Tracker["this_accounted_list"]   =  accounted_list
 		Tracker["two_way_stable_member"] =  stable_class_list
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		save_alist(Tracker,"Accounted.txt", accounted_list)
 		update_full_dict(accounted_list,Tracker)# Update full_ID_dict for Kmeans
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		Tracker["this_unaccounted_dir"]     = workdir
 		Tracker["this_unaccounted_text"]    = os.path.join(workdir,"Unaccounted.txt")
 		Tracker["this_accounted_text"]      = os.path.join(workdir,"Accounted.txt")
@@ -6380,9 +6453,9 @@ def do_two_way_comparison(Tracker):
 		if myid==main_node:
 			log_main.add(" Selected indepedent runs      %5d and  %5d"%(run1,run2))
 			log_main.add(" Their pair-wise averaged rates are %5.2f  and %5.2f "%(rate1,rate2))
-		from math import sqrt
+		pass#IMPORTIMPORTIMPORT from math import sqrt
 		avg_two_ways        = avg_two_ways/total_pop
-		two_ways_std        = sqrt(avg_two_ways_square/total_pop-avg_two_ways**2)
+		two_ways_std        = numpy.sqrt(avg_two_ways_square/total_pop-avg_two_ways**2)
 		net_rate            = avg_two_ways-1./number_of_groups*100.
 		Tracker["net_rate"] = net_rate
 		if myid == main_node:
@@ -6397,7 +6470,7 @@ def do_two_way_comparison(Tracker):
 			print_upper_triangular_matrix(scores,Tracker["constants"]["indep_runs"],log_main)
 		del two_ways_stable_member_list
 		Tracker["score_of_this_comparison"]=(avg_two_ways,two_ways_std,net_rate)
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 def select_two_runs(summed_scores,two_way_dict):
 	summed_scores.sort()
@@ -6424,7 +6497,7 @@ def select_two_runs(summed_scores,two_way_dict):
 	return run1, run2, rate1, rate2
 
 def get_ali3d_params(ali3d_old_text_file,shuffled_list):
-	from utilities import read_text_row
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_row
 	ali3d_old = read_text_row(ali3d_old_text_file)
 	ali3d_new = []
 	for iptl in range(len(shuffled_list)):
@@ -6432,13 +6505,13 @@ def get_ali3d_params(ali3d_old_text_file,shuffled_list):
 	return ali3d_new
 
 def counting_projections(delta, ali3d_params, image_start):
-	from utilities import even_angles,angle_between_projections_directions
+	pass#IMPORTIMPORTIMPORT from utilities import even_angles,angle_between_projections_directions
 	sampled_directions = {}
 	angles=even_angles(delta,0,180)
 	for a in angles:
 		[phi0, theta0, psi0]=a
 		sampled_directions[(phi0,theta0)]=[]
-	from math import sqrt
+	pass#IMPORTIMPORTIMPORT from math import sqrt
 	for i in range(len(ali3d_params)):
 		[phi, theta, psi, s2x, s2y] = ali3d_params[i]
 		dis_min    = 9999.
@@ -6478,13 +6551,13 @@ def load_dict(dict_angle_main_node, unloaded_dict_angles):
 	return dict_angle_main_node
 
 def get_stat_proj(Tracker,delta,this_ali3d):
-	from mpi import mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_row,wrap_mpi_bcast,even_angles
-	from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_barrier, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_row,wrap_mpi_bcast,even_angles
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
 	myid      = Tracker["constants"]["myid"]
 	main_node = Tracker["constants"]["main_node"]
 	nproc     = Tracker["constants"]["nproc"]
-	mpi_comm  = MPI_COMM_WORLD
+	mpi_comm  = mpi.MPI_COMM_WORLD
 	if myid ==main_node:
 		ali3d_params=read_text_row(this_ali3d)
 		lpartids    = list(range(len(ali3d_params)))
@@ -6494,7 +6567,7 @@ def get_stat_proj(Tracker,delta,this_ali3d):
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
 	ali3d_params = wrap_mpi_bcast(ali3d_params, main_node)
 	ndata=len(ali3d_params)
-	image_start, image_end = MPI_start_end(ndata, nproc, myid)
+	image_start, image_end = applications.MPI_start_end(ndata, nproc, myid)
 	ali3d_params=ali3d_params[image_start:image_end]
 	sampled=counting_projections(delta,ali3d_params,image_start)
 	for inode in range(nproc):
@@ -6505,13 +6578,13 @@ def get_stat_proj(Tracker,delta,this_ali3d):
 		dlist=wrap_mpi_bcast(dlist,inode)
 		if myid ==main_node and inode != main_node:
 			sampled=load_dict(sampled,dlist)
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	return sampled
 
 def create_random_list(Tracker):
-	import copy
-	import random
-	from utilities import wrap_mpi_bcast
+	pass#IMPORTIMPORTIMPORT import copy
+	pass#IMPORTIMPORTIMPORT import random
+	pass#IMPORTIMPORTIMPORT from utilities import wrap_mpi_bcast
 
 	myid        = Tracker["constants"]["myid"]
 	main_node   = Tracker["constants"]["main_node"]
@@ -6537,11 +6610,11 @@ def get_number_of_groups(total_particles,number_of_images_per_group, round_off=.
 	return number_of_groups
 
 def recons_mref(Tracker):
-	from mpi import mpi_barrier, MPI_COMM_WORLD
-	import os
-	from time import sleep
-	from reconstruction import recons3d_4nn_ctf_MPI
-	from utilities import get_shrink_data_huang
+	pass#IMPORTIMPORTIMPORT from mpi import mpi_barrier, MPI_COMM_WORLD
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT from time import sleep
+	pass#IMPORTIMPORTIMPORT from reconstruction import recons3d_4nn_ctf_MPI
+	pass#IMPORTIMPORTIMPORT from utilities import get_shrink_data_huang
 	myid             = Tracker["constants"]["myid"]
 	main_node        = Tracker["constants"]["main_node"]
 	nproc            = Tracker["constants"]["nproc"]
@@ -6556,15 +6629,15 @@ def recons_mref(Tracker):
 		a_group_list = particle_list[(total_data*igrp)//number_of_groups:(total_data*(igrp+1))//number_of_groups]
 		a_group_list.sort()
 		Tracker["this_data_list"] = a_group_list
-		from utilities import write_text_file
+		pass#IMPORTIMPORTIMPORT from utilities import write_text_file
 		particle_list_file = os.path.join(Tracker["this_dir"], "iclass%d.txt"%igrp)
 		if myid ==main_node:
 			write_text_file(Tracker["this_data_list"],particle_list_file)
-		mpi_barrier(MPI_COMM_WORLD)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		data, old_shifts =  get_shrink_data_huang(Tracker,nxinit,particle_list_file,partstack,myid,main_node,nproc,preshift=True)
 		#vol=reconstruct_3D(Tracker,data)
-		mpi_barrier(MPI_COMM_WORLD)
-		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+		vol = reconstruction.recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
 		if myid ==main_node:
 			print("reconstructed %3d"%igrp)
 		ref_list.append(vol)
@@ -6573,9 +6646,9 @@ def recons_mref(Tracker):
 	return ref_list
 
 def apply_low_pass_filter(refvol,Tracker):
-	from filter import filt_tanl
+	pass#IMPORTIMPORTIMPORT from filter import filt_tanl
 	for iref in range(len(refvol)):
-		refvol[iref]=filt_tanl(refvol[iref],Tracker["low_pass_filter"],.1)
+		refvol[iref]=filter.filt_tanl(refvol[iref],Tracker["low_pass_filter"],.1)
 	return refvol
 
 def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
@@ -6640,7 +6713,7 @@ def count_chunk_members(chunk_dict, one_class):
 	else: return  float(N_chunk0)/n, float(N_chunk1)/n, n
 
 def get_two_chunks_from_stack(Tracker):
-	total_chunk = EMUtil.get_all_attributes(Tracker["orgstack"],"chunk_id")
+	total_chunk = EMAN2_cppwrap.EMUtil.get_all_attributes(Tracker["orgstack"],"chunk_id")
 	chunk_one = []
 	chunk_two = []
 	for index_of_total_chunk in range(len(total_chunk)):
@@ -6657,7 +6730,7 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 		if adjusted_fsc[1][i] < fsc_cutoff:
 			currentres = adjusted_fsc[0][i-1]
 			break
-	lowpass, falloff    = fit_tanh1(adjusted_fsc, 0.01)
+	lowpass, falloff    = filter.fit_tanh1(adjusted_fsc, 0.01)
 	lowpass             = round(lowpass,4)
 	falloff             = min(.1,falloff)
 	falloff             = round(falloff,4)
@@ -6667,8 +6740,8 @@ def set_filter_parameters_from_adjusted_fsc(n1,n2,Tracker):
 ##### from RSORT
 
 def get_class_members(sort3d_dir):
-	import os
-	from utilities import read_text_file
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_file
 	maximum_generations = 100
 	maximum_groups      = 100
 	class_list = []
@@ -6712,9 +6785,9 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 	#SORT3D_rootdirs                       =sys.argv[1]
 	# ad_hoc_number would be a number larger than the id simply for handling two_way comparison of non-equal number of groups from two partitions.
 	########
-	from string import split
-	from statistics import k_means_match_clusters_asg_new
-	from numpy import array
+	pass#IMPORTIMPORTIMPORT from string import split
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_match_clusters_asg_new
+	pass#IMPORTIMPORTIMPORT from numpy import array
 
 	sort3d_rootdir_list = SORT3D_rootdirs.split()
 	dict1              = []
@@ -6744,7 +6817,7 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 		new_li = []
 		for ili in range(len(li)):
 			li[ili].sort()
-			t= array(li[ili],'int32')
+			t= numpy.array(li[ili],'int32')
 			new_li.append(t)
 		avg_list = {}
 		total    = {}
@@ -6759,10 +6832,10 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 					log_main.add("the size is  %d"%len(a))
 				for jlj in range(len(lj)):
 					lj[jlj].sort()
-					t= array(lj[jlj],'int32')
+					t= numpy.array(lj[jlj],'int32')
 					new_lj.append(t)
 				ptp=[new_li,new_lj]
-				newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[0],ptp[1])
+				newindeces, list_stable, nb_tot_objs = statistics.k_means_match_clusters_asg_new(ptp[0],ptp[1])
 				log_main.add("*************************************************************")
 				log_main.add("the results of two P1 runs are: ")
 				for index in range(len(newindeces)):
@@ -6783,9 +6856,9 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 
 def two_way_comparison_single(partition_A, partition_B,Tracker):
 	###############
-	from statistics import k_means_match_clusters_asg_new
-	from utilities import count_chunk_members, margin_of_error
-	from numpy import array
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_match_clusters_asg_new
+	pass#IMPORTIMPORTIMPORT from utilities import count_chunk_members, margin_of_error
+	pass#IMPORTIMPORTIMPORT from numpy import array
 	#two_way_comparison_single
 	total_stack = Tracker["constants"]["total_stack"]
 	log_main    = Tracker["constants"]["log_main"]
@@ -6817,18 +6890,18 @@ def two_way_comparison_single(partition_A, partition_B,Tracker):
 	for index_of_class in range(number_of_class):
 		A = partition_A[index_of_class]
 		A.sort()
-		A= array(A,'int32')
+		A= numpy.array(A,'int32')
 		numpy32_A.append(A)
 		B= partition_B[index_of_class]
 		B.sort()
-		B = array(B,'int32')
+		B = numpy.array(B,'int32')
 		numpy32_B.append(B)
 		if myid ==main_node:
 			log_main.add("group %d  %d   %d"%(index_of_class,len(A), len(B)))
 	ptp    = [[],[]]
 	ptp[0] = numpy32_A
 	ptp[1] = numpy32_B
-	newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[0],ptp[1])
+	newindexes, list_stable, nb_tot_objs = statistics.k_means_match_clusters_asg_new(ptp[0],ptp[1])
 	if myid == main_node:
 		log_main.add(" reproducible percentage of the first partition %f"%(nb_tot_objs/float(total_A)*100.))
 		log_main.add(" reproducible percentage of the second partition %f"%(nb_tot_objs/float(total_B)*100.))
@@ -6868,13 +6941,13 @@ def get_leftover_from_stable(stable_list, N_total, smallest_group):
 	return leftover_list, new_stable
 
 def Kmeans_exhaustive_run(ref_vol_list,Tracker):
-	from applications import ali3d_mref_Kmeans_MPI
-	from utilities import write_text_file
-	from reconstruction import rec3D_two_chunks_MPI
-	from morphology import get_shrink_3dmask
-	from utilities import wrap_mpi_bcast
-	import os
-	from mpi import MPI_COMM_WORLD, mpi_barrier
+	pass#IMPORTIMPORTIMPORT from applications import ali3d_mref_Kmeans_MPI
+	pass#IMPORTIMPORTIMPORT from utilities import write_text_file
+	pass#IMPORTIMPORTIMPORT from reconstruction import rec3D_two_chunks_MPI
+	pass#IMPORTIMPORTIMPORT from morphology import get_shrink_3dmask
+	pass#IMPORTIMPORTIMPORT from utilities import wrap_mpi_bcast
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD, mpi_barrier
 	# npad 2 ---------------------------------------
 	npad                  = 2
 	myid                  = Tracker["constants"]["myid"]
@@ -6895,7 +6968,7 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	while empty_group ==1 and kmref<=5:## In case pctn of Kmeans jumps between 100% to 0%, stop the program
 		if myid ==main_node: log_main.add(" %d     Kmref run"%kmref)
 		outdir =os.path.join(workdir, "Kmref%d"%kmref)
-		empty_group, res_classes, data_list = ali3d_mref_Kmeans_MPI(ref_vol_list, outdir, final_list_text_file, Tracker)
+		empty_group, res_classes, data_list = applications.ali3d_mref_Kmeans_MPI(ref_vol_list, outdir, final_list_text_file, Tracker)
 		kmref +=1
 		if empty_group ==1:
 			if myid ==main_node:
@@ -6923,22 +6996,22 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 			else:
 				number_of_ref_class = 0
 			number_of_ref_class = wrap_mpi_bcast(number_of_ref_class,main_node)
-			mpi_barrier(MPI_COMM_WORLD)
+			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			ref_vol_list = []
-			if  Tracker["constants"]["mask3D"]: mask3D = get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
+			if  Tracker["constants"]["mask3D"]: mask3D = morphology.get_shrink_3dmask(Tracker["constants"]["nxinit"],Tracker["constants"]["mask3D"])
 			else: mask3D = None
 			Tracker["number_of_ref_class"] = number_of_ref_class
 			for igrp in range(len(new_class)):
 				data,old_shifts = get_shrink_data_huang(Tracker,Tracker["nxinit"],os.path.join(workdir,"final_class%d.txt"%igrp),Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
 				#volref = recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 				#volref = filt_tanl(volref, Tracker["low_pass_filter"],.1)
-				volref, fsc_kmref = rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
+				volref, fsc_kmref = reconstruction.rec3D_two_chunks_MPI(data,snr,Tracker["constants"]["sym"],mask3D,\
 			 os.path.join(outdir, "resolution_%02d_Kmref%04d"%(igrp,kmref)), myid, main_node, index=-1, npad=npad, finfo = None)
 				if myid !=main_node:
 					volref = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
-				bcast_EMData_to_all(volref, myid, main_node, MPI_COMM_WORLD)
+				bcast_EMData_to_all(volref, myid, main_node, mpi.MPI_COMM_WORLD)
 				ref_vol_list.append(volref)
-				mpi_barrier(MPI_COMM_WORLD)
+				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		else:
 			new_class    = []
 			for a in res_classes:
@@ -6949,33 +7022,33 @@ def Kmeans_exhaustive_run(ref_vol_list,Tracker):
 	return new_class
 
 def print_a_line_with_timestamp(string_to_be_printed ):
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 	print((line,string_to_be_printed))
 	return string_to_be_printed
 
 def split_a_group(workdir,list_of_a_group,Tracker):
 	### Using EQ-Kmeans and Kmeans to split a group
-	from utilities import wrap_mpi_bcast
-	from random import shuffle
-	from mpi import MPI_COMM_WORLD, mpi_barrier
-	from utilities import get_shrink_data_huang
-	from reconstructions import recons3d_4nn_ctf_MPI
-	from filter import filt_tanl
-	from applications import mref_ali3d_EQ_Kmeans
+	pass#IMPORTIMPORTIMPORT from utilities import wrap_mpi_bcast
+	pass#IMPORTIMPORTIMPORT from random import shuffle
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD, mpi_barrier
+	pass#IMPORTIMPORTIMPORT from utilities import get_shrink_data_huang
+	pass#IMPORTIMPORTIMPORT from reconstructions import recons3d_4nn_ctf_MPI
+	pass#IMPORTIMPORTIMPORT from filter import filt_tanl
+	pass#IMPORTIMPORTIMPORT from applications import mref_ali3d_EQ_Kmeans
 	################
 	myid        = Tracker["constants"]["myid"]
 	main_node   = Tracker["constants"]["main_node"]
 	nproc       = Tracker["constants"]["nproc"]
 	total_stack = len(list_of_a_group)
 	################
-	import copy
+	pass#IMPORTIMPORTIMPORT import copy
 	data_list [:] = list_of_a_group[:]
 	update_full_dict(data_list,Tracker)
 	this_particle_text_file = os.path.join(workdir,"full_class.txt")
 	if myid ==main_node: write_text_file(data_list,"full_class.txt")
 	# Compute the resolution of leftover
 	if myid == main_node:
-		shuffle(data_list)
+		random.shuffle(data_list)
 		l1=data_list[0:total_stack//2]
 		l2=data_list[total_stack//2:]
 		l1.sort()
@@ -6990,23 +7063,23 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 		for index in range(2):
 			partids = os.path.join(workdir,"Class_%d.txt"%index)
 			write_text_file(llist[index],partids)
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	################ create references for EQ-Kmeans
 	ref_list = []
 	for index in range(2):
 		partids = os.path.join(workdir,"Class_%d.txt"%index)
 		while not os.path.exists(partids):
 			#print  " my_id",myid
-			sleep(2)
-		mpi_barrier(MPI_COMM_WORLD)
+			time.sleep(2)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist = data,symmetry=Tracker["constants"]["sym"],finfo=None)
-		vol = filt_tanl(vol,Tracker["constants"]["low_pass_filter"],.1)
+		vol = reconstruction.recons3d_4nn_ctf_MPI(myid=myid,prjlist = data,symmetry=Tracker["constants"]["sym"],finfo=None)
+		vol = filter.filt_tanl(vol,Tracker["constants"]["low_pass_filter"],.1)
 		ref_list.append(vol)
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	### EQ-Kmeans
 	outdir = os.path.join(workdir,"EQ-Kmeans")
-	mref_ali3d_EQ_Kmeans(ref_list,outdir,this_particle_text_file,Tracker)
+	applications.mref_ali3d_EQ_Kmeans(ref_list,outdir,this_particle_text_file,Tracker)
 	res_EQ = partition_to_groups(Tracker["this_partition"],K=2)
 	new_class = []
 	for index in range(len(res_EQ)):
@@ -7015,20 +7088,20 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 		if myid ==main_node:
 			new_class_file = os.path.join(workdir,"new_class%d.txt"%index)
 			write_text_file(new_ID,new_class_file)
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	############# create references for Kmeans
 	ref_list = []
 	for index in range(2):
 		partids = os.path.join(workdir,"new_class%d.txt"%index)
 		while not os.path.exists(partids):
 			#print  " my_id",myid
-			sleep(2)
-		mpi_barrier(MPI_COMM_WORLD)
+			time.sleep(2)
+		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		data,old_shifts = get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],partids,Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-		vol = recons3d_4nn_ctf_MPI(myid=myid,prjlist = data,symmetry=Tracker["constants"]["sym"],finfo=None)
-		vol = filt_tanl(vol,Tracker["constants"]["low_pass_filter"],.1)
+		vol = reconstruction.recons3d_4nn_ctf_MPI(myid=myid,prjlist = data,symmetry=Tracker["constants"]["sym"],finfo=None)
+		vol = filter.filt_tanl(vol,Tracker["constants"]["low_pass_filter"],.1)
 		ref_list.append(vol)
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	#### Kmeans
 
 def search_lowpass(fsc):
@@ -7045,9 +7118,9 @@ def search_lowpass(fsc):
 
 
 def angular_distribution(inputfile, options, output):
-	ERROR("Code disabled, please use sxplot_projs_distrib.py instead","angular_distribution",1)
+	global_def.ERROR("Code disabled, please use sxplot_projs_distrib.py instead","angular_distribution",1)
 	"""
-	import numpy
+	pass#IMPORTIMPORTIMPORT import numpy
 
 	#print('Loading data')
 	# Import data
@@ -7059,8 +7132,8 @@ def angular_distribution(inputfile, options, output):
 	# The following two lines are in case there is no symmetry option in sxprocess, to be simiplified
 	try: sym = options.symmetry
 	except: sym = "c1"
-	from fundamentals import symclass
-	from utilities import read_text_row
+	pass#IMPORTIMPORTIMPORT from fundamentals import symclass
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_row
 	if( sym == "c0" ):
 		angs = read_text_row(inputfile)
 	else:
@@ -7184,10 +7257,10 @@ def tabessel(nx, nnxo, nbel = 5000):
 	radius = 1.9
 	alpha = 15
 	#order = 0
-	normk = Util.bessel0(0., radius, alpha)
+	normk = EMAN2_cppwrap.Util.bessel0(0., radius, alpha)
 	for i in range(nbel):
 		rr = i/float(nbel-1)/2.0
-		beltab[i] = Util.bessel0(rr, radius, alpha)/normk
+		beltab[i] = EMAN2_cppwrap.Util.bessel0(rr, radius, alpha)/normk
 	return beltab
 
 ####
@@ -7221,6 +7294,6 @@ def convert_to_float(value):
 	std::cout << goo<<std::endl;
 	return ival, and then in python covert it to float
 	"""
-	from struct import unpack
-	return unpack("!f", hex(value)[2:].zfill(8).decode('hex'))[0]
+	pass#IMPORTIMPORTIMPORT from struct import unpack
+	return struct.unpack("!f", hex(value)[2:].zfill(8).decode('hex'))[0]
 

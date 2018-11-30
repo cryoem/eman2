@@ -32,19 +32,31 @@ from __future__ import print_function
 #
 #
 
+import os
+import subprocess
+import sys
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import functools
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import subprocess
+pass#IMPORTIMPORTIMPORT import sys
 from builtins import range
 from builtins import object
-import sys
-import os
-from subprocess import *
-from functools import partial  # Use to connect event-source widget and event handler
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT from subprocess import *
+pass#IMPORTIMPORTIMPORT from functools import partial  # Use to connect event-source widget and event handler
 from PyQt4.Qt import *
 from PyQt4 import QtGui
 from PyQt4 import QtCore
-from EMAN2 import *
-from EMAN2_cppwrap import *
-from global_def import *
-from sparx import *
+pass#IMPORTIMPORTIMPORT from EMAN2 import *
+pass#IMPORTIMPORTIMPORT from EMAN2_cppwrap import *
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from sparx import *
 
 # ========================================================================================
 # Helper Functions
@@ -4179,7 +4191,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 # ========================================================================================
 
 def main():
-	from optparse import OptionParser
+	pass#IMPORTIMPORTIMPORT from optparse import OptionParser
 	
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ 

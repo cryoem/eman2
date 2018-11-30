@@ -30,26 +30,38 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
-import os
+pass#IMPORTIMPORTIMPORT import os
+import applications
 import global_def
-from optparse import OptionParser
+import optparse
+import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack "
-	parser = OptionParser(usage,version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	(options, args) = parser.parse_args(sys.argv[1:])
 	if len(args) != 1 :
     		print("usage: " + usage)
     		print("Please run '" + progname + " -h' for detailed options")
 	else:
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
-		from applications import wrapper_params_3D_to_2D
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from applications import wrapper_params_3D_to_2D
 		global_def.BATCH = True
-		wrapper_params_3D_to_2D(args[0])
+		applications.wrapper_params_3D_to_2D(args[0])
 		global_def.BATCH = False
 
 if __name__ == "__main__":

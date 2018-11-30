@@ -31,18 +31,46 @@ from __future__ import print_function
 #
 #
 
+import EMAN2_cppwrap
+import applications
+import global_def
+import math
+import numpy
+import optparse
+import os
+import pixel_error
+import random
+import statistics
+import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import pixel_error
+pass#IMPORTIMPORTIMPORT import random
+pass#IMPORTIMPORTIMPORT import sparx
+pass#IMPORTIMPORTIMPORT import statistics
+pass#IMPORTIMPORTIMPORT import subprocess
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import types
+pass#IMPORTIMPORTIMPORT import utilities
 #  VERSION 2  09/25/2014
 
 from builtins import range
-from   EMAN2 import *
-from   sparx import *
-import os
-import global_def
-from   global_def import *
-from   optparse import OptionParser
-import sys
-from   random import shuffle
-import subprocess
+pass#IMPORTIMPORTIMPORT from   EMAN2 import *
+pass#IMPORTIMPORTIMPORT from   sparx import *
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def import *
+pass#IMPORTIMPORTIMPORT from   optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT from   random import shuffle
+pass#IMPORTIMPORTIMPORT import subprocess
 
 
 
@@ -73,7 +101,7 @@ Rotations pair-wise
 #  data = [[alpha1,sx1,sy1], [alpha2,sx2,sy2], ...]
 def average2dtransform(data, return_avg_pixel_error=False):
 
-	from math import pi, sin, cos, radians, degrees
+	pass#IMPORTIMPORTIMPORT from math import pi, sin, cos, radians, degrees
 
 	L = len(data)
 
@@ -82,20 +110,20 @@ def average2dtransform(data, return_avg_pixel_error=False):
 	sx = 0.0
 	sy = 0.0
 	for j in range(L):
-		sum_cosa += cos(radians(data[j][0]))
-		sum_sina += sin(radians(data[j][0]))
+		sum_cosa += numpy.cos(numpy.radians(data[j][0]))
+		sum_sina += numpy.sin(numpy.radians(data[j][0]))
 		sx +=  data[j][1]
 		sy +=  data[j][2]
 	sx /= L
 	sy /= L
-	sqrtP = sqrt(sum_cosa**2+sum_sina**2)
+	sqrtP = numpy.sqrt(sum_cosa**2+sum_sina**2)
 
 	# Get ave transform params
-	H = Transform({"type":"2D"})
+	H = EMAN2_cppwrap.Transform({"type":"2D"})
 	H.set_matrix([sum_cosa/sqrtP, sum_sina/sqrtP, 0.0, sx, -sum_sina/sqrtP, sum_cosa/sqrtP, 0.0, sy, 0.0, 0.0, 1.0, 0.0])
 	dd = H.get_params("2D")
 
-	H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":0,"scale":1.0})
+	H = EMAN2_cppwrap.Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":0,"scale":1.0})
 	dd = H.get_params("2D")
 	if return_avg_pixel_error:
 		return sum(sqr_pixel_error)/N
@@ -114,7 +142,7 @@ def rotate_angles(angleset1, angleset2, rot, indexes=None):
 	  OUTPUT: list of floats - angles in degrees (the n-th element of the list equals the angle between n-th projections directions from the anglesets)
 	  The third parameter (indexes) is optional and may be set to list of indexes. In that case only elements from given list are taken into account.
 	"""
-	from EMAN2 import Transform, Vec2f
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Transform, Vec2f
 	
 	"""
 	if indexes != None:
@@ -142,7 +170,7 @@ def rotate_angles(angleset1, angleset2, rot, indexes=None):
 '''
 
 def apply_rotation(angleset1, qrot):
-	from EMAN2 import Transform, Vec2f
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Transform, Vec2f
 
 	"""
 	if indexes != None:
@@ -154,25 +182,25 @@ def apply_rotation(angleset1, qrot):
 		angleset1 = new_ang1
 		angleset2 = new_ang2
 	"""
-	import types
-	if(type(qrot) == list): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
+	pass#IMPORTIMPORTIMPORT import types
+	if(type(qrot) == list): rot = EMAN2_cppwrap.Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
 	else:                             rot = qrot
 	for i in range(len(angleset1)):
-		T1 = Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
-		T1.set_trans(Vec2f(-angleset1[i][3], -angleset1[i][4]))
+		T1 = EMAN2_cppwrap.Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
+		T1.set_trans(EMAN2_cppwrap.Vec2f(-angleset1[i][3], -angleset1[i][4]))
 		T = T1*rot
 		d = T.get_params("spider")
 		angleset1[i] = [d["phi"], d["theta"], d["psi"], -d["tx"], -d["ty"]]
 
 def apply_rotation_gaps(angleset1, qrot):
-	from EMAN2 import Transform, Vec2f
-	import types
-	if(type(qrot) == list): rot = Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Transform, Vec2f
+	pass#IMPORTIMPORTIMPORT import types
+	if(type(qrot) == list): rot = EMAN2_cppwrap.Transform({"type":"spider","phi":qrot[0],"theta":qrot[1],"psi":qrot[2]})
 	else:                             rot = qrot
 	for i in range(len(angleset1)):
 		if(len(angleset1[i]) > 1):
-			T1 = Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
-			T1.set_trans(Vec2f(-angleset1[i][3], -angleset1[i][4]))
+			T1 = EMAN2_cppwrap.Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
+			T1.set_trans(EMAN2_cppwrap.Vec2f(-angleset1[i][3], -angleset1[i][4]))
 			T = T1*rot
 			d = T.get_params("spider")
 			angleset1[i] = [d["phi"], d["theta"], d["psi"], -d["tx"], -d["ty"]]
@@ -194,21 +222,21 @@ def errors_per_image_original(nn, qt, asi, avgtrans, thresherr=1.0, radius = 1.0
 				fifi.append(qt[j][k])
 		assert(len(fifi) == 3)
 		nas = [0.0,0.0,0.0]
-		r1,r2,r3 = getfvec(avgtrans[k][0],avgtrans[k][1])
+		r1,r2,r3 = utilities.getfvec(avgtrans[k][0],avgtrans[k][1])
 		sacos = 0.0
 		sder = 0.0
 		ser3 = 0.0
 		for i in range(3):
 			#print i,fifi[i]
-			d = max_3D_pixel_error(fifi[i], avgtrans[k], r=radius)
+			d = pixel_error.max_3D_pixel_error(fifi[i], avgtrans[k], r=radius)
 			#if(d>10.):  print  "  LARGE ERROR",k,i,d,fifi[i], avgtrans[k]
 			ser3 += d
-			n1,n2,n3 = getfvec(fifi[i][0],fifi[i][1])
-			sacos += lacos(n1*r1+n2*r2+n3*r3)
-			sder += pixel_error_2D(fifi[i][2:], avgtrans[k][2:], r = 1.0)
+			n1,n2,n3 = utilities.getfvec(fifi[i][0],fifi[i][1])
+			sacos += utilities.lacos(n1*r1+n2*r2+n3*r3)
+			sder += pixel_error.pixel_error_2D(fifi[i][2:], avgtrans[k][2:], r = 1.0)
 		# average deviation in radians
 		sacos /= 3.0
-		sare   = tan(sacos)
+		sare   = numpy.tan(sacos)
 		sder  /= 3.0
 		ser3  /= 3
 		#print  k, ser3, sare, sder
@@ -228,21 +256,21 @@ def errors_per_image(params, avgtrans, thresherr=1.0, radius = 1.0):
 	for k in range(nn):
 		#  
 		nas = [0.0,0.0,0.0]
-		r1,r2,r3 = getfvec(avgtrans[k][0],avgtrans[k][1])
+		r1,r2,r3 = utilities.getfvec(avgtrans[k][0],avgtrans[k][1])
 		sacos = 0.0
 		sder = 0.0
 		ser3 = 0.0
 		for i in range(ll):
 			#print i,fifi[i]
-			d = max_3D_pixel_error(params[i][k], avgtrans[k], r=radius)
+			d = pixel_error.max_3D_pixel_error(params[i][k], avgtrans[k], r=radius)
 			#if(d>10.):  print  "  LARGE ERROR",k,i,d,fifi[i], avgtrans[k]
 			ser3 += d
-			n1,n2,n3 = getfvec(params[i][k][0],params[i][k][1])
-			sacos += lacos(n1*r1+n2*r2+n3*r3)
-			sder += pixel_error_2D(params[i][k][2:], avgtrans[k][2:], r = 1.0)
+			n1,n2,n3 = utilities.getfvec(params[i][k][0],params[i][k][1])
+			sacos += utilities.lacos(n1*r1+n2*r2+n3*r3)
+			sder += pixel_error.pixel_error_2D(params[i][k][2:], avgtrans[k][2:], r = 1.0)
 		# average deviation in radians
 		sacos /= ll
-		sare   = tan(sacos)
+		sare   = numpy.tan(sacos)
 		sder  /= ll
 		ser3  /= ll
 		#print  k, ser3, sare, sder
@@ -255,9 +283,9 @@ def errors_per_image(params, avgtrans, thresherr=1.0, radius = 1.0):
 
 def average_trans(params):
 	#  Compute average projection params and pixel errors
-	from utilities import getfvec
-	from pixel_error import max_3D_pixel_error
-	from math import sqrt, degrees, radians, acos
+	pass#IMPORTIMPORTIMPORT from utilities import getfvec
+	pass#IMPORTIMPORTIMPORT from pixel_error import max_3D_pixel_error
+	pass#IMPORTIMPORTIMPORT from math import sqrt, degrees, radians, acos
 	nn = lem(params[0])
 	avgtrans = [None]*nn
 	pixer   = [0.0]*nn
@@ -266,19 +294,19 @@ def average_trans(params):
 		if( sym == 1):
 			#pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 			for i in range(ll):
-				n1,n2,n3 = getfvec(params[i][j][0],params[i][j][1])
+				n1,n2,n3 = utilities.getfvec(params[i][j][0],params[i][j][1])
 				nas[0] += n1
 				nas[1] += n2
 				nas[2] += n3
 		else:
-			m1,m2,m3 = getfvec(params[0][j][0],params[0][j][1])
+			m1,m2,m3 = utilities.getfvec(params[0][j][0],params[0][j][1])
 			nas[0] = m1
 			nas[1] = m2
 			nas[2] = m3
 			for i in range(1,ll):
 				qnom = -1.e10
 				for j in range(-1,2,1):
-					t1,t2,t3 = getfvec(params[i][j][0]+j*qsym,params[i][j][1])
+					t1,t2,t3 = utilities.getfvec(params[i][j][0]+j*qsym,params[i][j][1])
 					nom = t1*m1 + t2*m2 + t3*m3
 					if(nom > qnom):
 						qnom = nom
@@ -293,15 +321,15 @@ def average_trans(params):
 				print(qnom, n1,n2,n3,nas)
 			#  To get the correct pixer phi angle has to be taken from the above!!
 
-		nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
+		nom = numpy.sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
 
 		if(nom < 1.e-6):
 			nphi   = 0.0
 			ntheta = 0.0
 		else:
-			ntheta = degrees(acos(nas[2]/nom))%360.0
-			if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
-			else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
+			ntheta = numpy.degrees(math.acos(nas[2]/nom))%360.0
+			if(sym>1 and ntheta>90.0):  nphi   = (numpy.degrees(math.atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
+			else:                       nphi   =  numpy.degrees(math.atan2( nas[1], nas[0] ))%qsym
 
 		#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
 		twod = average2dtransform([params[ii][j][2:] for ii in range(ll)])
@@ -314,7 +342,7 @@ def main():
 
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack outdir --phase=1 --ou=outer_radius|sxconsistency.py --phase=3 newlocal/main000 --ou=133 --thresherr=3.0 --params=paramsa outgrouparms"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--phase",     type= "int",         default= 1,       help="Phase =1 prepares resampled stacks, =2 analyzes consistency of orientation parameters")
 	parser.add_option("--ou",        type= "int",         default= -1,      help="outer radius for calculation of pixel error")
 	parser.add_option("--sym",       type="string",       default= "c1",    help="symmetry of the refined structure")
@@ -327,19 +355,19 @@ def main():
 	if options.phase == 1 and len(args) == 2:
 		inputbdb = args[0]
 		outdir   = args[1]
-		nn = EMUtil.get_image_count(inputbdb)
+		nn = EMAN2_cppwrap.EMUtil.get_image_count(inputbdb)
 		t = list(range(nn))
-		shuffle(t)
+		random.shuffle(t)
 		chunks = []
 		for i in range(4):
 			#  I use the MPI function here just to easily get the balanced load
-			j,k = MPI_start_end(nn, 4, i)
+			j,k = applications.MPI_start_end(nn, 4, i)
 			chunks.append(t[j:k])
 			chunks[i].sort()
-			write_text_file(chunks[i],os.path.join(outdir,'chunk%01d.txt'%i))
+			utilities.write_text_file(chunks[i],os.path.join(outdir,'chunk%01d.txt'%i))
 
 		del t
-		write_text_file([ len(chunks[i]) for i in range(4) ],os.path.join(outdir,'chunklengths.txt'))
+		utilities.write_text_file([ len(chunks[i]) for i in range(4) ],os.path.join(outdir,'chunklengths.txt'))
 
 		"""
 		pt = [[None]]*6
@@ -364,7 +392,7 @@ def main():
 		ndigits = options.ndigits  #for chc5 1, for ribo 4#4.0
 		prms = []
 		for i in range(6):
-			prms.append( read_text_row(os.path.join(outdir,options.params+"%01d.txt"%i)) )
+			prms.append( utilities.read_text_row(os.path.join(outdir,options.params+"%01d.txt"%i)) )
 			for j in range(len(prms[-1])):
 				for k in range(5):
 					prms[-1][j][k] = round(prms[-1][j][k], ndigits)
@@ -398,7 +426,7 @@ def main():
 			if isame: thesame += 1
 		qt = float(thesame)/nn
 		print("Proportion of the same orientations ",qt)
-		write_text_file([qt], os.path.join(outdir,howmanythesame) )
+		utilities.write_text_file([qt], os.path.join(outdir,howmanythesame) )
 
 	#########     PHASE 3
 	elif options.phase == 3 and len(args) == 2:
@@ -421,12 +449,12 @@ def main():
 		chunks = {}
 		chunklengths = {}
 		for i in range(4):
-			chunks[chr(65+i)] = list(map(int,read_text_file(os.path.join(outdir,options.chunk+"%01d.txt"%i))))
+			chunks[chr(65+i)] = list(map(int,utilities.read_text_file(os.path.join(outdir,options.chunk+"%01d.txt"%i))))
 			chunklengths[chr(65+i)] = len(chunks[chr(65+i)])
 
 
 		for i in range(6):
-			prms = read_text_row(os.path.join(outdir,options.params+"%01d.txt"%i))
+			prms = utilities.read_text_row(os.path.join(outdir,options.params+"%01d.txt"%i))
 			for q in blocks:
 				if q+chr(48+i) in params:
 					params[q+chr(48+i)] = prms[:chunklengths[q]]
@@ -447,14 +475,14 @@ def main():
 
 				nas = [0.0,0.0,0.0]
 				if( sym == 1):
-					pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
+					pixer[q[0][0]][j] = pixel_error.max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 					for i in range(2):
-						n1,n2,n3 = getfvec(fifi[i][0],fifi[i][1])
+						n1,n2,n3 = utilities.getfvec(fifi[i][0],fifi[i][1])
 						nas[0] += n1
 						nas[1] += n2
 						nas[2] += n3
 				else:
-					m1,m2,m3 = getfvec(fifi[0][0],fifi[0][1])
+					m1,m2,m3 = utilities.getfvec(fifi[0][0],fifi[0][1])
 					nas[0] = m1
 					nas[1] = m2
 					nas[2] = m3
@@ -464,7 +492,7 @@ def main():
 					for i in range(1,2):
 						qnom = -1.e10
 						for j in range(-1,2,1):
-							t1,t2,t3 = getfvec(fifi[i][0]+j*qsym,fifi[i][1])
+							t1,t2,t3 = utilities.getfvec(fifi[i][0]+j*qsym,fifi[i][1])
 							nom = t1*m1 + t2*m2 + t3*m3
 							if(nom > qnom):
 								qnom = nom
@@ -478,17 +506,17 @@ def main():
 						nas[2] += n3
 						print(qnom, n1,n2,n3,nas)
 					#  To get the correct pixer phi angle has to be taken from the above!!
-					pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
+					pixer[q[0][0]][j] = pixel_error.max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 
-				nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
+				nom = numpy.sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
 
 				if(nom < 1.e-6):
 					nphi   = 0.0
 					ntheta = 0.0
 				else:
-					ntheta = degrees(acos(nas[2]/nom))%360.0
-					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
-					else:                       nphi   = degrees(atan2( nas[1], nas[0] ))%qsym
+					ntheta = numpy.degrees(math.acos(nas[2]/nom))%360.0
+					if(sym>1 and ntheta>90.0):  nphi   = (numpy.degrees(math.atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
+					else:                       nphi   = numpy.degrees(math.atan2( nas[1], nas[0] ))%qsym
 
 				#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
 				twod = average2dtransform([fifi[0][2:],fifi[1][2:]])
@@ -506,7 +534,7 @@ def main():
 				print("  No good images within the pixel error threshold specified")
 				exit()
 		print(" tgood ", tgood)
-		hi = hist_list([pixer[q][k] for q in blocks for k in range(chunklengths[q])  ],16)
+		hi = statistics.hist_list([pixer[q][k] for q in blocks for k in range(chunklengths[q])  ],16)
 		for i in range(len(hi[0])):
 			print("%4d   %12.3f    %12.0f "%(i,hi[0][i],hi[1][i]))
 		#  Finished, store average orientation params and table of good images
@@ -526,8 +554,8 @@ def main():
 				else:
 					bad[i].append(chunks[q][k])
 					#[chunks[q][k],pixer[q][k],deprt, params[pairs[i][0]][k],params[pairs[i][1]][k],params[lefts[i]][k],avgtrans[q][k]])
-			write_text_file( good[i], os.path.join(outdir,"newgood%01d.txt"%i) )
-			write_text_file( bad[i],  os.path.join(outdir,"newbad%01d.txt"%i) )
+			utilities.write_text_file( good[i], os.path.join(outdir,"newgood%01d.txt"%i) )
+			utilities.write_text_file( bad[i],  os.path.join(outdir,"newbad%01d.txt"%i) )
 
 			#  write out parameters, for those in pairs write out average, for leftouts leave them as they were
 			#  These parameters refer to the original X files.
@@ -549,8 +577,8 @@ def main():
 								prmsgood.append(avgtrans[q][k])
 							else:
 								prmsbad.append(avgtrans[q][k])
-					write_text_row(prmsgood, os.path.join(outdir,"params-newgood%01d%01d.txt"%(i,ll)))
-					write_text_row(prmsbad, os.path.join(outdir, "params-newbad%01d%01d.txt"%(i,ll)))
+					utilities.write_text_row(prmsgood, os.path.join(outdir,"params-newgood%01d%01d.txt"%(i,ll)))
+					utilities.write_text_row(prmsbad, os.path.join(outdir, "params-newbad%01d%01d.txt"%(i,ll)))
 					ll += 1
 
 
@@ -560,7 +588,7 @@ def main():
 		ll = 0
 		for i in range(3):
 			for j in range(i+1,4):
-				write_text_file( good[i] + good[j], os.path.join(outdir,"newlili%01d.txt"%ll) )
+				utilities.write_text_file( good[i] + good[j], os.path.join(outdir,"newlili%01d.txt"%ll) )
 				ll += 1
 
 		#  write out parameters, for those in pairs write out average, for leftouts leave them as they were
@@ -574,12 +602,12 @@ def main():
 						prms += params[q+chr(48+i)]
 					except:
 						prms += avgtrans[q]
-			write_text_row(prms, os.path.join(outdir,outgrouparms+"%01d.txt"%i))
+			utilities.write_text_row(prms, os.path.join(outdir,outgrouparms+"%01d.txt"%i))
 
 
 		#  Write chunklengths
 		chunklengths = [len(good[i]) for i in range(4)]
-		write_text_file(chunklengths, os.path.join(outdir,"chunklengths.txt") )
+		utilities.write_text_file(chunklengths, os.path.join(outdir,"chunklengths.txt") )
 		"""
 		#  We do not use consecutive numbering anymore
 		#  Generate newx files from newgood, these contain consecutive (with gaps) numbering that allows to generate truncated X files from the previous X files
@@ -623,10 +651,10 @@ def main():
 		ll = 3 # this is hardwired as we have three groups.  however, I would like to keep the code general.
 		for jj in range(4):
 			params = [None for ii in range(ll)]
-			newbad = list(map(int, read_text_file(options.params+"%01d.txt"%jj) ))
+			newbad = list(map(int, utilities.read_text_file(options.params+"%01d.txt"%jj) ))
 			nn = len(newbad)
 			for ii in range(ll):
-				params[ii] = read_text_row(os.path.join(outdir,bp+"%01d%01d.txt"%(jj,ii)))
+				params[ii] = utilities.read_text_row(os.path.join(outdir,bp+"%01d%01d.txt"%(jj,ii)))
 				assert(nn == len(params[ii]) )
 
 			#  Compute average projection params and pixel errors
@@ -637,19 +665,19 @@ def main():
 				if( sym == 1):
 					#pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 					for i in range(ll):
-						n1,n2,n3 = getfvec(params[i][j][0],params[i][j][1])
+						n1,n2,n3 = utilities.getfvec(params[i][j][0],params[i][j][1])
 						nas[0] += n1
 						nas[1] += n2
 						nas[2] += n3
 				else:
-					m1,m2,m3 = getfvec(params[0][j][0],params[0][j][1])
+					m1,m2,m3 = utilities.getfvec(params[0][j][0],params[0][j][1])
 					nas[0] = m1
 					nas[1] = m2
 					nas[2] = m3
 					for i in range(1,ll):
 						qnom = -1.e10
 						for j in range(-1,2,1):
-							t1,t2,t3 = getfvec(params[i][j][0]+j*qsym,params[i][j][1])
+							t1,t2,t3 = utilities.getfvec(params[i][j][0]+j*qsym,params[i][j][1])
 							nom = t1*m1 + t2*m2 + t3*m3
 							if(nom > qnom):
 								qnom = nom
@@ -664,15 +692,15 @@ def main():
 						print(qnom, n1,n2,n3,nas)
 					#  To get the correct pixer phi angle has to be taken from the above!!
 
-				nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
+				nom = numpy.sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
 
 				if(nom < 1.e-6):
 					nphi   = 0.0
 					ntheta = 0.0
 				else:
-					ntheta = degrees(acos(nas[2]/nom))%360.0
-					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
-					else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
+					ntheta = numpy.degrees(math.acos(nas[2]/nom))%360.0
+					if(sym>1 and ntheta>90.0):  nphi   = (numpy.degrees(math.atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
+					else:                       nphi   =  numpy.degrees(math.atan2( nas[1], nas[0] ))%qsym
 
 				#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
 				twod = average2dtransform([params[ii][j][2:] for ii in range(ll)])
@@ -685,17 +713,17 @@ def main():
 				#print  chr(65+jj),j,perr[j][0],[[params[m][j][i] for i in xrange(2)] for m in xrange(ll)]
 				if( perr[j][0] <= thresherr ):  rescued.append([newbad[j],j])
 				else:							rejects.append([newbad[j],j])
-			if( len(rescued) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,"rescued%01d.txt"%jj))
-			else:                  		write_text_row(rescued,  os.path.join(outdir,"rescued%01d.txt"%jj))
+			if( len(rescued) == 0 ):    utilities.write_text_row([-1,-1],  os.path.join(outdir,"rescued%01d.txt"%jj))
+			else:                  		utilities.write_text_row(rescued,  os.path.join(outdir,"rescued%01d.txt"%jj))
 			#  We also have to write params.
 			if( len(rescued) != 0 ):
-				for ii in range(ll):  write_text_row([params[ii][rescued[k][1]] for k in range(len(rescued))]  ,  os.path.join(outdir,"params-rescued%01d%01d.txt"%(jj,ii)))
-			if( len(rejects) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
-			else:                  		write_text_row(rejects,  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
+				for ii in range(ll):  utilities.write_text_row([params[ii][rescued[k][1]] for k in range(len(rescued))]  ,  os.path.join(outdir,"params-rescued%01d%01d.txt"%(jj,ii)))
+			if( len(rejects) == 0 ):    utilities.write_text_row([-1,-1],  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
+			else:                  		utilities.write_text_row(rejects,  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
 			if( len(rejects) != 0 ):
-				for ii in range(ll):  write_text_row([params[ii][rejects[k][1]] for k in range(len(rejects))]  ,  os.path.join(outdir,"params-rejects%01d%01d.txt"%(jj,ii)))
+				for ii in range(ll):  utilities.write_text_row([params[ii][rejects[k][1]] for k in range(len(rejects))]  ,  os.path.join(outdir,"params-rejects%01d%01d.txt"%(jj,ii)))
 
-			hi = hist_list([perr[j][0]  for j in range(nn)  ], 16)
+			hi = statistics.hist_list([perr[j][0]  for j in range(nn)  ], 16)
 			print("Pixel errors for BAD GROUP  ",chr(65+jj))
 			for ii in range(len(hi[0])):
 				print("%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii]))
@@ -716,7 +744,7 @@ def main():
 			#newbad = map(int, read_text_file(options.params+"%01d.txt"%jj) )
 			#nn = len(newbad)
 			for ii in range(ll):
-				params[ii] = read_text_row(os.path.join(outdir,"params%01d.txt"%(ii)))
+				params[ii] = utilities.read_text_row(os.path.join(outdir,"params%01d.txt"%(ii)))
 				#assert(nn == len(params[ii]) )
 			nn = len(params[0])
 			newbad = list(range(nn))
@@ -728,19 +756,19 @@ def main():
 				if( sym == 1):
 					#pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 					for i in range(ll):
-						n1,n2,n3 = getfvec(params[i][j][0],params[i][j][1])
+						n1,n2,n3 = utilities.getfvec(params[i][j][0],params[i][j][1])
 						nas[0] += n1
 						nas[1] += n2
 						nas[2] += n3
 				else:
-					m1,m2,m3 = getfvec(params[0][j][0],params[0][j][1])
+					m1,m2,m3 = utilities.getfvec(params[0][j][0],params[0][j][1])
 					nas[0] = m1
 					nas[1] = m2
 					nas[2] = m3
 					for i in range(1,ll):
 						qnom = -1.e10
 						for j in range(-1,2,1):
-							t1,t2,t3 = getfvec(params[i][j][0]+j*qsym,params[i][j][1])
+							t1,t2,t3 = utilities.getfvec(params[i][j][0]+j*qsym,params[i][j][1])
 							nom = t1*m1 + t2*m2 + t3*m3
 							if(nom > qnom):
 								qnom = nom
@@ -755,21 +783,21 @@ def main():
 						print(qnom, n1,n2,n3,nas)
 					#  To get the correct pixer phi angle has to be taken from the above!!
 
-				nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
+				nom = numpy.sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
 
 				if(nom < 1.e-6):
 					nphi   = 0.0
 					ntheta = 0.0
 				else:
-					ntheta = degrees(acos(nas[2]/nom))%360.0
-					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
-					else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
+					ntheta = numpy.degrees(math.acos(nas[2]/nom))%360.0
+					if(sym>1 and ntheta>90.0):  nphi   = (numpy.degrees(math.atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
+					else:                       nphi   =  numpy.degrees(math.atan2( nas[1], nas[0] ))%qsym
 
 				#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
 				twod = average2dtransform([params[ii][j][2:] for ii in range(ll)])
 				avgtrans[j] = [nphi, ntheta, twod[0], twod[1], twod[2]]
 
-			write_text_row(avgtrans,  os.path.join(outdir,"avgtrans.txt"))
+			utilities.write_text_row(avgtrans,  os.path.join(outdir,"avgtrans.txt"))
 			perr =  errors_per_image(params, avgtrans, thresherr, radius )
 			rescued = []
 			rejects = []
@@ -777,17 +805,17 @@ def main():
 				#print  chr(65+jj),j,perr[j][0],[[params[m][j][i] for i in xrange(2)] for m in xrange(ll)]
 				if( perr[j][0] <= thresherr ):  rescued.append([newbad[j],j])
 				else:							rejects.append([newbad[j],j])
-			if( len(rescued) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,"rescued%01d.txt"%jj))
-			else:                  		write_text_row(rescued,  os.path.join(outdir,"rescued%01d.txt"%jj))
+			if( len(rescued) == 0 ):    utilities.write_text_row([-1,-1],  os.path.join(outdir,"rescued%01d.txt"%jj))
+			else:                  		utilities.write_text_row(rescued,  os.path.join(outdir,"rescued%01d.txt"%jj))
 			#  We also have to write params.
 			if( len(rescued) != 0 ):
-				for ii in range(ll):  write_text_row([params[ii][rescued[k][1]] for k in range(len(rescued))]  ,  os.path.join(outdir,"params-rescued%01d%01d.txt"%(jj,ii)))
-			if( len(rejects) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
-			else:                  		write_text_row(rejects,  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
+				for ii in range(ll):  utilities.write_text_row([params[ii][rescued[k][1]] for k in range(len(rescued))]  ,  os.path.join(outdir,"params-rescued%01d%01d.txt"%(jj,ii)))
+			if( len(rejects) == 0 ):    utilities.write_text_row([-1,-1],  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
+			else:                  		utilities.write_text_row(rejects,  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
 			if( len(rejects) != 0 ):
-				for ii in range(ll):  write_text_row([params[ii][rejects[k][1]] for k in range(len(rejects))]  ,  os.path.join(outdir,"params-rejects%01d%01d.txt"%(jj,ii)))
+				for ii in range(ll):  utilities.write_text_row([params[ii][rejects[k][1]] for k in range(len(rejects))]  ,  os.path.join(outdir,"params-rejects%01d%01d.txt"%(jj,ii)))
 
-			hi = hist_list([perr[j][0]  for j in range(nn)  ], 16)
+			hi = statistics.hist_list([perr[j][0]  for j in range(nn)  ], 16)
 			print("Pixel errors for BAD GROUP  ",chr(65+jj))
 			for ii in range(len(hi[0])):
 				print("%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii]))

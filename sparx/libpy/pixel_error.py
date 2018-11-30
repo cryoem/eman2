@@ -29,8 +29,33 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+import EMAN2_cppwrap
+import fundamentals
+import global_def
+import math
+import numpy
+import os
+import statistics
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import alignment
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import fundamentals
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import json
+pass#IMPORTIMPORTIMPORT import math
+pass#IMPORTIMPORTIMPORT import morphology
+pass#IMPORTIMPORTIMPORT import numpy
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import pixel_error
+pass#IMPORTIMPORTIMPORT import sets
+pass#IMPORTIMPORTIMPORT import statistics
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import types
+pass#IMPORTIMPORTIMPORT import utilities
 from builtins import range
-from global_def import *
+pass#IMPORTIMPORTIMPORT from global_def import *
 
 # Comment by Zhengfan Yang on 06/11/10
 # I decided to move everything related to pixel error to this file. Otherwise, they are
@@ -66,8 +91,8 @@ def pixel_error_2D(ali_params1, ali_params2, r = 1.0):
 	"""
 	Compute average squared 2D pixel error
 	"""
-	from math import radians, sin, pi, sqrt
-	return (sin(radians(ali_params1[0]-ali_params2[0])/2)*(2*r+1))**2 / 2 + (ali_params1[1]-ali_params2[1])**2 + (ali_params1[2]-ali_params2[2])**2
+	pass#IMPORTIMPORTIMPORT from math import radians, sin, pi, sqrt
+	return (numpy.sin(numpy.radians(ali_params1[0]-ali_params2[0])/2)*(2*r+1))**2 / 2 + (ali_params1[1]-ali_params2[1])**2 + (ali_params1[2]-ali_params2[2])**2
 
 
 def max_3D_pixel_error(t1, t2, r=1.0):
@@ -79,19 +104,19 @@ def max_3D_pixel_error(t1, t2, r=1.0):
 		t.set_trans(Vec2f(-tx, -ty))
 	Note the function is symmetric in t1, t2.
 	"""
-	from EMAN2 import Vec2f
-	import types
-	dummy = Transform()
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Vec2f
+	pass#IMPORTIMPORTIMPORT import types
+	dummy = EMAN2_cppwrap.Transform()
 	if( type(dummy) != type(t1)):
-		t = Transform({"type":"spider","phi":t1[0],"theta":t1[1],"psi":t1[2]})
-		t.set_trans(Vec2f(-t1[3], -t1[4]))
+		t = EMAN2_cppwrap.Transform({"type":"spider","phi":t1[0],"theta":t1[1],"psi":t1[2]})
+		t.set_trans(EMAN2_cppwrap.Vec2f(-t1[3], -t1[4]))
 	else: t = t1
 	if( type(dummy) != type(t2)):
-		u = Transform({"type":"spider","phi":t2[0],"theta":t2[1],"psi":t2[2]})
-		u.set_trans(Vec2f(-t2[3], -t2[4]))
+		u = EMAN2_cppwrap.Transform({"type":"spider","phi":t2[0],"theta":t2[1],"psi":t2[2]})
+		u.set_trans(EMAN2_cppwrap.Vec2f(-t2[3], -t2[4]))
 	else: u = t2
 
-	return EMData().max_3D_pixel_error(t, u, r)
+	return EMAN2_cppwrap.EMData().max_3D_pixel_error(t, u, r)
 
 
 def angle_ave(angle1):
@@ -99,17 +124,17 @@ def angle_ave(angle1):
 	This function computes average angle of a set of angles.
 	It also computes a measure of dispersion (incorrect).
 	'''
-	from math import cos, sin, pi, atan2, degrees, radians, sqrt
+	pass#IMPORTIMPORTIMPORT from math import cos, sin, pi, atan2, degrees, radians, sqrt
 
 	nima = len(angle1)
 
 	cosi = 0.0
 	sini = 0.0
 	for i in range(nima):
-		qt = radians( angle1[i] )
-		cosi += cos(qt)
-		sini += sin(qt)
-	alphai = degrees(atan2(sini, cosi))%360.0
+		qt = numpy.radians( angle1[i] )
+		cosi += numpy.cos(qt)
+		sini += numpy.sin(qt)
+	alphai = numpy.degrees(math.atan2(sini, cosi))%360.0
 	# what follows is not correct, it is just to give a measure of dispersion
 	stdv = 0.0
 	for i in range(nima):
@@ -117,7 +142,7 @@ def angle_ave(angle1):
 		if   qt >  180.0:   qt -= 360.
 		elif qt < -180.0:   qt += 360.
 		stdv += qt*qt
-	stdv = sqrt(stdv/nima)
+	stdv = numpy.sqrt(stdv/nima)
 
 	return alphai, stdv
 
@@ -127,22 +152,22 @@ def angle_diff(angle1, angle2):
 	This function determines the relative angle between two sets of angles.
 	The resulting angle has to be added (modulo 360) to the first set.
 	'''
-	from math import cos, sin, pi, atan2, degrees, radians
+	pass#IMPORTIMPORTIMPORT from math import cos, sin, pi, atan2, degrees, radians
 	
 	nima  = len(angle1)
 	nima2 = len(angle2)
 	if nima2 != nima:
-		ERROR("Error: List lengths do not agree!","angle_diff",1)
+		global_def.ERROR("Error: List lengths do not agree!","angle_diff",1)
 	else:
 		del nima2
 
 	cosi = 0.0
 	sini = 0.0
 	for i in range(nima):
-		qt = radians(angle2[i]-angle1[i])
-		cosi += cos( qt )
-		sini += sin( qt )
-	alphai = degrees(atan2(sini, cosi))%360.0
+		qt = numpy.radians(angle2[i]-angle1[i])
+		cosi += numpy.cos( qt )
+		sini += numpy.sin( qt )
+	alphai = numpy.degrees(math.atan2(sini, cosi))%360.0
 
 	return alphai
 
@@ -154,46 +179,46 @@ def angle_diff_sym(angle1, angle2, simi=1):
 	  Only sets that have theta in the same range (0,90), or (90,180) are included in calculation.
 	The resulting angle has to be added (modulo 360/simi) to the first set.
 	'''
-	from math import cos, sin, pi, atan2, degrees, radians
+	pass#IMPORTIMPORTIMPORT from math import cos, sin, pi, atan2, degrees, radians
 	
 	nima  = len(angle1)
 	if len(angle2) != nima:
-		ERROR( "List lengths do not agree!", "angle_diff_sym",1)
+		global_def.ERROR( "List lengths do not agree!", "angle_diff_sym",1)
 
 	cosi = 0.0
 	sini = 0.0
 	agree = 0
 	for i in range(nima):
 		if( ( (angle2[i][1] <90.0) and (angle1[i][1] <90.0) ) or ( (angle2[i][1] >90.0) and (angle1[i][1] >90.0) ) ):
-			qt = radians((angle2[i][0]-angle1[i][0])*simi)
-			cosi += cos( qt )
-			sini += sin( qt )
+			qt = numpy.radians((angle2[i][0]-angle1[i][0])*simi)
+			cosi += numpy.cos( qt )
+			sini += numpy.sin( qt )
 			agree += 1
 	if(agree == 0):  return 0.0
-	else:            return degrees(atan2(sini, cosi)/simi)%(360.0/simi)
+	else:            return numpy.degrees(math.atan2(sini, cosi)/simi)%(360.0/simi)
 
 def angle_error(ang1, ang2, delta_ang=0.0):
 	'''
 	This function calculates the error (variance) between two sets of angles after delta_ang (angle difference) is added to the
 	first sets. When the angle difference (delta_ang) is the true difference, this function will return maximum error.
 	'''
-	from math import cos, sin, pi, radians
+	pass#IMPORTIMPORTIMPORT from math import cos, sin, pi, radians
 	
 	erra = 0.0
 	errb = 0.0
-	delta_ang = radians( delta_ang )
+	delta_ang = numpy.radians( delta_ang )
 	for i in range(len(ang1)):
-		p2   = radians( ang2[i] )
-		p2_x = cos(p2)
-		p2_y = sin(p2)
-		p1   = radians( ang1[i] )
-		p1_x = cos(p1)
-		p1_y = sin(p1)
+		p2   = numpy.radians( ang2[i] )
+		p2_x = numpy.cos(p2)
+		p2_y = numpy.sin(p2)
+		p1   = numpy.radians( ang1[i] )
+		p1_x = numpy.cos(p1)
+		p1_y = numpy.sin(p1)
 
 		erra += p2_x*p1_x+p2_y*p1_y
 		errb += p2_y*p1_x-p2_x*p1_y
 
-	return erra*cos(delta_ang) + errb*sin(delta_ang)
+	return erra*numpy.cos(delta_ang) + errb*numpy.sin(delta_ang)
 
 
 def align_diff_params(ali_params1, ali_params2):
@@ -201,8 +226,8 @@ def align_diff_params(ali_params1, ali_params2):
 	This function determines the relative angle, shifts and mirrorness between
 	two sets of alignment parameters.	
 	'''
-	from math import cos, sin, pi
-	from utilities import combine_params2
+	pass#IMPORTIMPORTIMPORT from math import cos, sin, pi
+	pass#IMPORTIMPORTIMPORT from utilities import combine_params2
 	
 	nima = len(ali_params1)
 	nima2 = len(ali_params2)
@@ -254,7 +279,7 @@ def align_diff_params(ali_params1, ali_params2):
 			sx2 = ali_params2[i*4+1]
 			sy1 = ali_params1[i*4+2]
 			sy2 = ali_params2[i*4+2]
-			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, 0.0, 0.0, 0)
+			alpha12, sx12, sy12, mirror12 = utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, 0.0, 0.0, 0)
 			if mirror1 == 0: sxi += sx2-sx12
 			else: sxi -= sx2-sx12
 			syi += sy2-sy12
@@ -271,7 +296,7 @@ def align_diff(data1, data2=None, suffix="_ideal"):
 	This function determines the relative angle, shifts and mirrorness between
 	two list of data
 	'''
-	from utilities import get_params2D
+	pass#IMPORTIMPORTIMPORT from utilities import get_params2D
 	
 	nima = len(data1)
 
@@ -287,11 +312,11 @@ def align_diff(data1, data2=None, suffix="_ideal"):
 	ali_params1 = []
 	ali_params2 = []
 	for i in range(nima):
-		alpha1, sx1, sy1, mirror1, scale1 = get_params2D(data1[i])
+		alpha1, sx1, sy1, mirror1, scale1 = utilities.get_params2D(data1[i])
 		if data2 != None:
-			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i])
+			alpha2, sx2, sy2, mirror2, scale2 = utilities.get_params2D(data2[i])
 		else:
-			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data1[i], "xform.align2d"+suffix)
+			alpha2, sx2, sy2, mirror2, scale2 = utilities.get_params2D(data1[i], "xform.align2d"+suffix)
 		ali_params1.extend([alpha1, sx1, sy1, mirror1])
 		ali_params2.extend([alpha2, sx2, sy2, mirror2])
 
@@ -304,10 +329,10 @@ def align_diff_textfile(textfile1, textfile2):
 	This function (2D) determines the relative angle, shifts and mirrorness between
 	the two textfile of alignment parameters
 	'''
-	from utilities import read_text_row
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_row
 	
-	ali1 = read_text_row(textfile1, "", "")
-	ali2 = read_text_row(textfile2, "", "")
+	ali1 = utilities.read_text_row(textfile1, "", "")
+	ali2 = utilities.read_text_row(textfile2, "", "")
 
 	nima = len(ali1)
 	nima2 = len(ali2)
@@ -333,8 +358,8 @@ def ave_ali_err(data1, data2=None, r=25, suffix="_ideal"):
 	the two lists of data. It also calculates the mirror consistent
 	rate and average pixel error between two sets of parameters.
 	'''
-	from utilities import get_params2D, combine_params2
-	from math import sqrt, sin, pi
+	pass#IMPORTIMPORTIMPORT from utilities import get_params2D, combine_params2
+	pass#IMPORTIMPORTIMPORT from math import sqrt, sin, pi
 	
 	# Determine relative angle, shifts and mirror
 	alphai, sxi, syi, mirror = align_diff(data1, data2, suffix)
@@ -344,15 +369,15 @@ def ave_ali_err(data1, data2=None, r=25, suffix="_ideal"):
 	nima = len(data1)
 	mirror_same = 0
 	for i in range(nima):
-		alpha1, sx1, sy1, mirror1, scale1 = get_params2D(data1[i])
+		alpha1, sx1, sy1, mirror1, scale1 = utilities.get_params2D(data1[i])
 		if data2 != None:
-			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data2[i])
+			alpha2, sx2, sy2, mirror2, scale2 = utilities.get_params2D(data2[i])
 		else:
-			alpha2, sx2, sy2, mirror2, scale2 = get_params2D(data1[i], "xform.align2d"+suffix)
+			alpha2, sx2, sy2, mirror2, scale2 = utilities.get_params2D(data1[i], "xform.align2d"+suffix)
 		
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
-			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+			alpha12, sx12, sy12, mirror12 = utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 	
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
@@ -364,8 +389,8 @@ def ave_ali_err_params(ali_params1, ali_params2, r=25):
 	the two sets of alignment parameters. It also calculates the mirror consistent
 	rate and average pixel error between two sets of parameters.
 	'''
-	from utilities import combine_params2
-	from math import sqrt, sin, pi
+	pass#IMPORTIMPORTIMPORT from utilities import combine_params2
+	pass#IMPORTIMPORTIMPORT from math import sqrt, sin, pi
 
 	# Determine relative angle, shift and mirror
 	alphai, sxi, syi, mirror = align_diff_params(ali_params1, ali_params2)
@@ -380,7 +405,7 @@ def ave_ali_err_params(ali_params1, ali_params2, r=25):
 
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
-			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+			alpha12, sx12, sy12, mirror12 = utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
@@ -392,12 +417,12 @@ def ave_ali_err_textfile(textfile1, textfile2, r=25):
 	the two sets of alignment parameters. It also calculates the mirror consistent
 	rate and average pixel error between two sets of parameters.
 	'''
-	from utilities import combine_params2
-	from math import sqrt, sin, pi
-	from utilities import read_text_row
+	pass#IMPORTIMPORTIMPORT from utilities import combine_params2
+	pass#IMPORTIMPORTIMPORT from math import sqrt, sin, pi
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_row
 	
-	ali1 = read_text_row(textfile1, "", "")
-	ali2 = read_text_row(textfile2, "", "")
+	ali1 = utilities.read_text_row(textfile1, "", "")
+	ali2 = utilities.read_text_row(textfile2, "", "")
 
 	nima = len(ali1)
 	nima2 = len(ali2)
@@ -427,7 +452,7 @@ def ave_ali_err_textfile(textfile1, textfile2, r=25):
 		
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
-			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+			alpha12, sx12, sy12, mirror12 = utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 	
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
@@ -467,7 +492,7 @@ def calc_connect_list(multi_align_results, pixel_error_threshold = 5.0, mirror_c
 		[[1, 2, 5], [4, 6], [0, 7]]
 	You will also get the size of the largest connection in the list.
 	"""
-	import sets
+	pass#IMPORTIMPORTIMPORT import sets
 	
 	k = len(multi_align_results)
 	multi_align_results.sort()
@@ -502,8 +527,8 @@ def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 	the two sets of alignment parameters. It then determines whether each image is
 	stable or not and return this information as an int list. (1 is stable and 0 is unstable)
 	'''
-	from utilities import combine_params2
-	from math import sqrt, sin, pi
+	pass#IMPORTIMPORTIMPORT from utilities import combine_params2
+	pass#IMPORTIMPORTIMPORT from math import sqrt, sin, pi
 	
 	# Determine relative angle, shift and mirror
 	alphai, sxi, syi, mirror = align_diff_params(ali_params1, ali_params2)
@@ -515,7 +540,7 @@ def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 		alpha1, sx1, sy1, mirror1 = ali_params1[i*4:i*4+4]
 		alpha2, sx2, sy2, mirror2 = ali_params2[i*4:i*4+4]
 		if abs(mirror1-mirror2) == mirror:
-			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+			alpha12, sx12, sy12, mirror12 = utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			if pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r) < pixel_error_threshold: ali_list.append(1)
 			else: ali_list.append(0)
 		else: ali_list.append(0)
@@ -536,7 +561,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	# args - G, data - [T, d]
 	def func(args, data, return_avg_pixel_error=True):
 
-		from math import pi, sin, cos, radians, degrees
+		pass#IMPORTIMPORTIMPORT from math import pi, sin, cos, radians, degrees
 
 		ali_params = data[0]
 		d = data[1]
@@ -549,8 +574,8 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		cosa = [0.0]*L
 		sina = [0.0]*L
 		for i in range(L):
-			cosa[i] = cos(radians(args_list[i*3]))
-			sina[i] = sin(radians(args_list[i*3]))
+			cosa[i] = numpy.cos(numpy.radians(args_list[i*3]))
+			sina[i] = numpy.sin(numpy.radians(args_list[i*3]))
 		sqr_pixel_error = [0.0]*N
 		ave_params = []
 		for i in range(N):
@@ -560,23 +585,23 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 			sy = [0.0]*L
 			for j in range(L):
 				if int(ali_params[j][i*4+3]) == 0:
-					sum_cosa += cos(radians(args_list[j*3]+ali_params[j][i*4]))
-					sum_sina += sin(radians(args_list[j*3]+ali_params[j][i*4]))
+					sum_cosa += numpy.cos(numpy.radians(args_list[j*3]+ali_params[j][i*4]))
+					sum_sina += numpy.sin(numpy.radians(args_list[j*3]+ali_params[j][i*4]))
 					sx[j] =  args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] + ali_params[j][i*4+2]*sina[j]
 					sy[j] =  args_list[j*3+2] - ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 				else:
-					sum_cosa += cos(radians(-args_list[j*3]+ali_params[j][i*4]))
-					sum_sina += sin(radians(-args_list[j*3]+ali_params[j][i*4]))
+					sum_cosa += numpy.cos(numpy.radians(-args_list[j*3]+ali_params[j][i*4]))
+					sum_sina += numpy.sin(numpy.radians(-args_list[j*3]+ali_params[j][i*4]))
 					sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
 					sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
-			sqrtP = sqrt(sum_cosa**2+sum_sina**2)
+			sqrtP = numpy.sqrt(sum_cosa**2+sum_sina**2)
 			sqr_pixel_error[i] = max( 0.0, d*d/4.*(1-sqrtP/L) + sqerr(sx) + sqerr(sy) )
 			# Get ave transform params
-			H = Transform({"type":"2D"})
+			H = EMAN2_cppwrap.Transform({"type":"2D"})
 			H.set_matrix([sum_cosa/sqrtP, sum_sina/sqrtP, 0.0, sum(sx)/L, -sum_sina/sqrtP, sum_cosa/sqrtP, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])
 			dd = H.get_params("2D")
 			#  We are using here mirror of the LAST SET.
-			H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[L-1][i*4+3]),"scale":1.0})
+			H = EMAN2_cppwrap.Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[L-1][i*4+3]),"scale":1.0})
 			dd = H.get_params("2D")
 			ave_params.append([dd[ "alpha" ], dd[ "tx" ], dd[ "ty" ], dd[ "mirror" ]])
 		# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
@@ -589,8 +614,8 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	'''
 	def dfunc(args, data):
 
-	        from math import pi, sin, cos
-	        from numpy import zeros, array, float64
+	        pass#IMPORTIMPORTIMPORT from math import pi, sin, cos
+	        pass#IMPORTIMPORTIMPORT from numpy import zeros, array, float64
 
 	        g = zeros(args.shape, float64)
 
@@ -654,10 +679,10 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	        return g
 	'''
 
-	from statistics import k_means_stab_bbenum
-	from utilities import combine_params2
-	from numpy import array
-	from math import sqrt
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_stab_bbenum
+	pass#IMPORTIMPORTIMPORT from utilities import combine_params2
+	pass#IMPORTIMPORTIMPORT from numpy import array
+	pass#IMPORTIMPORTIMPORT from math import sqrt
 
 	# I decided not to use scipy in order to reduce the dependency, I wrote the C++ code instead
 	# from scipy import array, int32
@@ -673,10 +698,10 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		for j in range(nima):
 			if ali_params[i][j*4+3] == 0: mirror0.append(j)
 			else: mirror1.append(j)
-		mirror0 = array(mirror0, 'int32')
-		mirror1 = array(mirror1, 'int32')
+		mirror0 = numpy.array(mirror0, 'int32')
+		mirror1 = numpy.array(mirror1, 'int32')
 		all_part.append([mirror0, mirror1])
-	match, stab_part, CT_s, CT_t, ST, st = k_means_stab_bbenum(all_part, T=0, nguesses=1)
+	match, stab_part, CT_s, CT_t, ST, st = statistics.k_means_stab_bbenum(all_part, T=0, nguesses=1)
 	mir_stab_part = stab_part[0] + stab_part[1]
 
 	mir_stab_rate = len(mir_stab_part)/float(nima)
@@ -706,7 +731,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times the threshold
 	data = [ali_params_mir_stab, d]
-	pixel_error_before, ave_params = func(array(args), data, return_avg_pixel_error=False)
+	pixel_error_before, ave_params = func(numpy.array(args), data, return_avg_pixel_error=False)
 	#  We have to return mir_stab_rate (see above), even if the group does not survive it and the pixel error before cleaning,
 	#   see below, and in ISAC print the user the overall statistics (histograms?) 
 	#   so one can get on overall idea how good/bad data is.  PAP  01/25/2015
@@ -715,14 +740,14 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	cleaned_part = []
 	for j in range(nima2):
 		pixel_error_before[j] = max(0.0, pixel_error_before[j])  # prevent sqrt of 0
-		if sqrt(pixel_error_before[j]) > 3*err_thld:
+		if numpy.sqrt(pixel_error_before[j]) > 3*err_thld:
 			pass  #print "  removed ",3*err_thld,j,sqrt(pixel_error_before[j])
 		else:
 			cleaned_part.append(mir_stab_part[j])
 			for i in range(num_ali):
 				ali_params_cleaned[i].extend(ali_params_mir_stab[i][j*4:j*4+4])
 	nima3 = len(cleaned_part)
-	prever = sqrt(sum(pixel_error_before)/nima2)
+	prever = numpy.sqrt(sum(pixel_error_before)/nima2)
 	if nima3 <= 1:  return [], mir_stab_rate, prever
 
 	#print "  cleaned part  ",nima3
@@ -735,7 +760,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	# Use C++ code
 	ali_params_cleaned_list = []
 	for params in ali_params_cleaned: ali_params_cleaned_list.extend(params)
-	results = Util.multi_align_error(args, ali_params_cleaned_list, d)
+	results = EMAN2_cppwrap.Util.multi_align_error(args, ali_params_cleaned_list, d)
 	ps_lp = results[:-1]
 
 	# Negative val can happen in some rare cases, it should be due to rounding errors, 
@@ -748,7 +773,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	del ali_params_cleaned_list
 
-	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
+	if numpy.sqrt(val) > grp_err_thld: return [], mir_stab_rate, numpy.sqrt(val)
 
 	pixel_error_after, ave_params = func(ps_lp, data, return_avg_pixel_error=False)
 
@@ -757,7 +782,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	for i in range(nima):
 		if i in cleaned_part:
 			j = cleaned_part.index(i)
-			err = sqrt(pixel_error_after[j])
+			err = numpy.sqrt(pixel_error_after[j])
 			if err < err_thld:
 				stable_set.append([err, i, ave_params[j]])
 				val += err
@@ -773,7 +798,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 # args - G, data - [T, d]
 def ave2dtransform(args, data, return_avg_pixel_error=False):
 
-	from math import pi, sin, cos, radians, degrees
+	pass#IMPORTIMPORTIMPORT from math import pi, sin, cos, radians, degrees
 
 	ali_params = data[0]
 	d = data[1]
@@ -786,8 +811,8 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 	cosa = [0.0]*L
 	sina = [0.0]*L
 	for i in range(L):
-		cosa[i] = cos(radians(args_list[i*3]))
-		sina[i] = sin(radians(args_list[i*3]))
+		cosa[i] = numpy.cos(numpy.radians(args_list[i*3]))
+		sina[i] = numpy.sin(numpy.radians(args_list[i*3]))
 	sqr_pixel_error = [0.0]*N
 	ave_params = []
 	for i in range(N):
@@ -797,23 +822,23 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 		sy = [0.0]*L
 		for j in range(L):
 			if int(ali_params[j][i*4+3]) == 0:
-				sum_cosa += cos(radians(args_list[j*3]+ali_params[j][i*4]))
-				sum_sina += sin(radians(args_list[j*3]+ali_params[j][i*4]))
+				sum_cosa += numpy.cos(numpy.radians(args_list[j*3]+ali_params[j][i*4]))
+				sum_sina += numpy.sin(numpy.radians(args_list[j*3]+ali_params[j][i*4]))
 				sx[j] =  args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] + ali_params[j][i*4+2]*sina[j]
 				sy[j] =  args_list[j*3+2] - ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 			else:
-				sum_cosa += cos(radians(-args_list[j*3]+ali_params[j][i*4]))
-				sum_sina += sin(radians(-args_list[j*3]+ali_params[j][i*4]))
+				sum_cosa += numpy.cos(numpy.radians(-args_list[j*3]+ali_params[j][i*4]))
+				sum_sina += numpy.sin(numpy.radians(-args_list[j*3]+ali_params[j][i*4]))
 				sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
 				sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
-		sqrtP = sqrt(sum_cosa**2+sum_sina**2)
+		sqrtP = numpy.sqrt(sum_cosa**2+sum_sina**2)
 		sqr_pixel_error[i] = max( 0.0, d*d/4.*(1-sqrtP/L) + sqerr(sx) + sqerr(sy) )
 		# Get ave transform params
-		H = Transform({"type":"2D"})
+		H = EMAN2_cppwrap.Transform({"type":"2D"})
 		H.set_matrix([sum_cosa/sqrtP, sum_sina/sqrtP, 0.0, sum(sx)/L, -sum_sina/sqrtP, sum_cosa/sqrtP, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])
 		dd = H.get_params("2D")
 		#  We are using here mirror of the LAST SET.
-		H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[L-1][i*4+3]),"scale":1.0})
+		H = EMAN2_cppwrap.Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[L-1][i*4+3]),"scale":1.0})
 		dd = H.get_params("2D")
 		ave_params.append([dd[ "alpha" ], dd[ "tx" ], dd[ "ty" ], dd[ "mirror" ]])
 	# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
@@ -831,12 +856,12 @@ def rotate_angleset_to_match(agls1, agls2):
 	  Rotation itself is not returned.
 	  Makes sense only for no symmetry
 	"""
-	from utilities    import rotation_between_anglesets
-	from fundamentals import rotate_params
+	pass#IMPORTIMPORTIMPORT from utilities    import rotation_between_anglesets
+	pass#IMPORTIMPORTIMPORT from fundamentals import rotate_params
 
-	t1 = rotation_between_anglesets(agls1, agls2)
+	t1 = utilities.rotation_between_anglesets(agls1, agls2)
 
-	return rotate_params(agls1,[-t1[2],-t1[1],-t1[0]])
+	return fundamentals.rotate_params(agls1,[-t1[2],-t1[1],-t1[0]])
 
 def ordersegments(infilaments, ptclcoords):
 	'''
@@ -854,8 +879,8 @@ def ordersegments(infilaments, ptclcoords):
 	'''
 
 	def orderbymodule(xxp,yyp):
-		from math import atan,sin,cos,pi, atan2
-		from statistics import linreg
+		pass#IMPORTIMPORTIMPORT from math import atan,sin,cos,pi, atan2
+		pass#IMPORTIMPORTIMPORT from statistics import linreg
 		nq = len(xxp)
 		xs = sum(xxp)/nq
 		ys = sum(yyp)/nq
@@ -865,15 +890,15 @@ def ordersegments(infilaments, ptclcoords):
 			xp[i] = xxp[i] - xs
 			yp[i] = yyp[i] - ys
 		try:
-			a,b = linreg(xp,yp)
-			alpha = pi/4-atan(a)
+			a,b = statistics.linreg(xp,yp)
+			alpha = numpy.pi/4-math.atan(a)
 		except:
-			a,b = linreg([(xp[i]-yp[i]) for i in range(nq)], [(xp[i]+yp[i]) for i in range(nq)])
-			alpha = atan(a)
+			a,b = statistics.linreg([(xp[i]-yp[i]) for i in range(nq)], [(xp[i]+yp[i]) for i in range(nq)])
+			alpha = math.atan(a)
 			#print "except"
 
-		cs = cos(alpha)
-		ss = sin(alpha)
+		cs = numpy.cos(alpha)
+		ss = numpy.sin(alpha)
 		qm = 1.e23
 		dd = [[0.0, 0] for i in range(nq)]
 		for i in range(nq):
@@ -922,9 +947,9 @@ def ordersegments(infilaments, ptclcoords):
 
 
 def mapcoords(x, y, r, nx, ny):
-	from math 			import ceil, floor
-	from utilities 	import get_dist
-	import sys
+	pass#IMPORTIMPORTIMPORT from math 			import ceil, floor
+	pass#IMPORTIMPORTIMPORT from utilities 	import get_dist
+	pass#IMPORTIMPORTIMPORT import sys
 	'''
 	Input:
 	
@@ -951,35 +976,35 @@ def mapcoords(x, y, r, nx, ny):
 	if r > 1:
 		nbrhd = 1
 	else:
-		nbrhd = int(ceil(1.0/r))+1
+		nbrhd = int(numpy.ceil(1.0/r))+1
 			
 	allxnew = []
 	allynew = []
 	
 	for i in range(-nbrhd, nbrhd+1):
-		xold = Util.round(x + i)
+		xold = EMAN2_cppwrap.Util.round(x + i)
 		if xold < 0 or xold >= nx:
 			continue
 		# See if there is xnew in new image where xold == int(Util.round(xnew/r))
 		# If there is such a xnew, then xold == int(Util.round(xnew/r)) implies r*(xold-0.5) <= xnew < r*(xold+0.5)
-		lxnew = int(floor(r*(xold - 0.5)))
-		uxnew = int(ceil(r*(xold + 0.5))) 
+		lxnew = int(numpy.floor(r*(xold - 0.5)))
+		uxnew = int(numpy.ceil(r*(xold + 0.5))) 
 		for xn in range(lxnew, uxnew + 1):
-			if xold == Util.round(xn/r):
+			if xold == EMAN2_cppwrap.Util.round(xn/r):
 				allxnew.append(xn)
 				
 	for j in range(-nbrhd, nbrhd+1):
-		yold = Util.round(y + j)
+		yold = EMAN2_cppwrap.Util.round(y + j)
 		if yold < 0 or yold >= ny:
 			continue
-		lynew = int(floor(r*(yold - 0.5)))
-		uynew = int(ceil(r*(yold + 0.5)))
+		lynew = int(numpy.floor(r*(yold - 0.5)))
+		uynew = int(numpy.ceil(r*(yold + 0.5)))
 		for yn in range(lynew, uynew + 1):
-			if yold == Util.round(yn/r):
+			if yold == EMAN2_cppwrap.Util.round(yn/r):
 				allynew.append(yn)
 				
 	if len(allxnew) == 0 or len(allynew) == 0:
-		ERROR("Could not find mapping")
+		global_def.ERROR("Could not find mapping")
 	
 	mindist = -1
 	minxnew = -1
@@ -987,9 +1012,9 @@ def mapcoords(x, y, r, nx, ny):
 	
 	for xnew in allxnew:
 		for ynew in allynew:
-			xold = Util.round(xnew/r)
-			yold = Util.round(ynew/r)
-			dst = get_dist([x,y],[xold,yold])
+			xold = EMAN2_cppwrap.Util.round(xnew/r)
+			yold = EMAN2_cppwrap.Util.round(ynew/r)
+			dst = utilities.get_dist([x,y],[xold,yold])
 			if dst > mindist:
 				mindist = dst
 				minxnew = int(xnew)
@@ -1002,13 +1027,13 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 		stack        - contains coding of filaments and coordinates of segments ptcl_source_coord
 		fname_params - parameters whose consistency is tested
 	'''
-	from utilities import read_text_row, write_text_row, get_dist
-	from applications import ordersegments
-	from pixel_error import angle_diff
+	pass#IMPORTIMPORTIMPORT from utilities import read_text_row, write_text_row, get_dist
+	pass#IMPORTIMPORTIMPORT from applications import ordersegments
+	pass#IMPORTIMPORTIMPORT from pixel_error import angle_diff
 
 	filaments = ordersegments(stack)
-	ptclcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
-	params     = EMUtil.get_all_attributes(stack, 'xform.projection')
+	ptclcoords = EMAN2_cppwrap.EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+	params     = EMAN2_cppwrap.EMUtil.get_all_attributes(stack, 'xform.projection')
 	for i in range(len(params)):
 		d = params[i].get_params("spider")
 		params[i] = [d["phi"], d["theta"], d["psi"], -d["tx"], -d["ty"] ]
@@ -1058,7 +1083,7 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 			for j in range(ns): phig[j] = params[thetapsi1[j]][0]
 			totpsicons += ns
 			distances = [0.0]*ns
-			for i in range(1,ns):  distances[i] = get_dist( ptclcoords[thetapsi1[i]], ptclcoords[thetapsi1[0]] )
+			for i in range(1,ns):  distances[i] = utilities.get_dist( ptclcoords[thetapsi1[i]], ptclcoords[thetapsi1[0]] )
 			ganger = [0.0]*ns
 			terr = 1.e23
 			for idir in range(-1,2,2):
@@ -1109,14 +1134,14 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 	Output:
 		Returns full path name of file containing new box coordinates
 	"""
-	import os
-	from utilities 		import read_text_row
-	from pixel_error	import mapcoords
+	pass#IMPORTIMPORTIMPORT import os
+	pass#IMPORTIMPORTIMPORT from utilities 		import read_text_row
+	pass#IMPORTIMPORTIMPORT from pixel_error	import mapcoords
 	
 	fname = (hcoordsname.split('/'))[-1] # name of old coordinates files minus the path
 	newhcoordsname = os.path.join(outdir , newpref+fname) # full path name of new coordinates file to be created
 	f = open(newhcoordsname, 'w')
-	coords = read_text_row(hcoordsname) # old coordinates
+	coords = utilities.read_text_row(hcoordsname) # old coordinates
 	ncoords = len(coords)
 	newcoords=[]
 	w = coords[0][2]
@@ -1150,8 +1175,8 @@ def helical_params_err(params1, params2, fil_list):
 		Returns a list of lists, where each inner list is [fil_ID, avg_phi_err], where fil_ID
 		is filament name, and avg_phi_err is the average phi error for the filament.
 	'''
-	from pixel_error import angle_diff
-	from EMAN2 import Vec2f
+	pass#IMPORTIMPORTIMPORT from pixel_error import angle_diff
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Vec2f
 	nima = len(params1)
 	# Identify those where psi agrees
 	phi1 = []
@@ -1169,7 +1194,7 @@ def helical_params_err(params1, params2, fil_list):
 
 	fag = len(fil_psisame)
 
-	tflip = Transform({"type":"spider","theta":180.0})
+	tflip = EMAN2_cppwrap.Transform({"type":"spider","theta":180.0})
 	# Identify those where psi agrees
 	phi1 = []
 	phi2 = []
@@ -1178,8 +1203,8 @@ def helical_params_err(params1, params2, fil_list):
 	prot = []
 	pref = []
 	for i in range(nima):
-		t2 = Transform({"type":"spider","phi":params1[i][0],"theta":params1[i][1],"psi":params1[i][2]})
-		t2.set_trans( Vec2f( -params1[i][3], -params1[i][4] ) )
+		t2 = EMAN2_cppwrap.Transform({"type":"spider","phi":params1[i][0],"theta":params1[i][1],"psi":params1[i][2]})
+		t2.set_trans( EMAN2_cppwrap.Vec2f( -params1[i][3], -params1[i][4] ) )
 		t2 = t2*tflip
 		d = t2.get_params("spider")
 		p1r = [d["phi"], d["theta"], d["psi"], -d["tx"], -d["ty"]]
@@ -1247,7 +1272,7 @@ def helical_params_err(params1, params2, fil_list):
 def read_meridien_parameters():
 	# this is simple example how to read all orientation parameters ("smear") produced by Meririen
 	# Note this is just an example.  It works, but it is not really useful for anythin in particular.
-	import json
+	pass#IMPORTIMPORTIMPORT import json
 	main = 21
 
 
@@ -1332,9 +1357,9 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=1.0e23, r=1.0):
 		      3. Output is a list of lists: If the i-th corresponding pair of eulerian angles on agls2 and agls1 has pixel error (computed using max_3D_pixel_error) less than Threshold, then append the list 
 		       [i, p], where p is the pixel error, into the output list.
 	"""
-	from pixel_error import max_3D_pixel_error
-	from utilities   import read_text_file, rotation_between_anglesets
-	import types
+	pass#IMPORTIMPORTIMPORT from pixel_error import max_3D_pixel_error
+	pass#IMPORTIMPORTIMPORT from utilities   import read_text_file, rotation_between_anglesets
+	pass#IMPORTIMPORTIMPORT import types
 	
 	N = len(agls1)
 	if N != len(agls2):
@@ -1385,8 +1410,8 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=1.0e23, r=1.0):
 #  See symclass in fundamentals
 
 def reduce_angles_sym(ang, sym = 'c1'):
-	from utilities import get_symt
-	from EMAN2 import Vec2f, Transform, EMData
+	pass#IMPORTIMPORTIMPORT from utilities import get_symt
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Vec2f, Transform, EMData
 	ts = get_symt(sym)
 	ks = len(ts)
 	if(sym[0] == 'c'):
@@ -1447,8 +1472,8 @@ def reduce_angles_sym(ang, sym = 'c1'):
 		ERROR("Only C and D symmetries supported","reduce_angles_sym",1)
 
 def apply_sym_angles(ang, sym = 'c1'):
-	from utilities import get_symt
-	from EMAN2 import Vec2f, Transform, EMData
+	pass#IMPORTIMPORTIMPORT from utilities import get_symt
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Vec2f, Transform, EMData
 	na = len(ang)
 	ts = get_symt(sym)
 	ks = len(ts)
@@ -1472,7 +1497,7 @@ def apply_sym_angles(ang, sym = 'c1'):
 def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error_threshold = 1.0, individual_error_threshold = 1.0, print_individual = False):
 
 	def rot_shift(x, y, alpha, sx, sy):
-		from math import pi, sin, cos
+		pass#IMPORTIMPORTIMPORT from math import pi, sin, cos
 		cosi = cos(alpha/180.0*pi)
 		sini = sin(alpha/180.0*pi)
 		return x*cosi+y*sini+sx, -x*sini+y*cosi+sy
@@ -1492,7 +1517,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 		return avg_sqr_diff_from_mean/n
 
 	def transform_variance(args, data):
-		from math import sqrt
+		pass#IMPORTIMPORTIMPORT from math import sqrt
 	        x1 = 1.0
 	        y1 = 0.0
         	x2 = 0.0
@@ -1524,7 +1549,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	        return err
 		
 	def transform_variance2(args, data):
-		from math import sqrt
+		pass#IMPORTIMPORTIMPORT from math import sqrt
 	        x1 = 30.0
 	        y1 = 0.0
         	x2 = 0.0
@@ -1603,9 +1628,9 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 
 	        return err, err2, err3
 
-	from statistics import k_means_stab_bbenum
-	from utilities import combine_params2
-	from numpy import array
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_stab_bbenum
+	pass#IMPORTIMPORTIMPORT from utilities import combine_params2
+	pass#IMPORTIMPORTIMPORT from numpy import array
 
 	# Find out the subset which is mirror consistent over all runs
 	all_part = []
@@ -1672,12 +1697,12 @@ def estimate_stability(data1, data2, CTF=False, snr=1.0, last_ring=-1):
 	The third is the cross_correltion coefficient of two averages
 	"""
 
-	from statistics import sum_oe, ccc
-	from fundamentals import fft, rot_shift2D
-	from alignment import align2d
-	from utilities import get_params2D, combine_params2
-	from math import sin, pi, sqrt
-	from morphology import ctf_img
+	pass#IMPORTIMPORTIMPORT from statistics import sum_oe, ccc
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft, rot_shift2D
+	pass#IMPORTIMPORTIMPORT from alignment import align2d
+	pass#IMPORTIMPORTIMPORT from utilities import get_params2D, combine_params2
+	pass#IMPORTIMPORTIMPORT from math import sin, pi, sqrt
+	pass#IMPORTIMPORTIMPORT from morphology import ctf_img
 
 	PI_180 = pi/180
 	nima = len(data1)
@@ -1731,7 +1756,7 @@ def max_3D_pixel_error(t1, t2, r):
 		t.set_trans(Vec2f(-tx, -ty))
 	  Note the function is symmetric in t1, t2.
 	"""
-	from math import sin, cos, pi, sqrt
+	pass#IMPORTIMPORTIMPORT from math import sin, cos, pi, sqrt
 	t3 = t2*t1.inverse()
 	ddmax = 0.0
 	for i in xrange(int(r), int(r)+1):
@@ -1751,7 +1776,7 @@ def max_3D_pixel_errorA(t1, t2, r):
 		t.set_trans(Vec2f(-tx, -ty))
 	  Note the function is symmetric in t1, t2.
 	"""
-	from math import sin, cos, pi, sqrt
+	pass#IMPORTIMPORTIMPORT from math import sin, cos, pi, sqrt
 	t3 = t2*t1.inverse()
 	ddmax = 0.0
 	for i in xrange(int(r)+1):

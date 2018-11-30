@@ -1,19 +1,34 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-import global_def
-from global_def import *
-from optparse import OptionParser
-from EMAN2_cppwrap import *
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT from EMAN2_cppwrap import *
 
-import os
-import sys
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
 
       
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+import applications
+import global_def
+import mpi
+import optparse
+import os
+import sys
+import utilities
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " prj_stack .. average eigvol output_factcoords --rad=radius --neigvol=number_of_eigvol  --CTF"
-	parser = OptionParser(usage, version=SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
 	parser.add_option("--rad",       type="int",    default=-1,     help="radius of mask")
 	parser.add_option("--neigvol",   type="int",    default=-1,     help="number of eigvenvectors to use (default all)")
 	parser.add_option("--fl",        type="float",  default=0.0,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
@@ -36,20 +51,20 @@ def main():
 			print("Error: mask radius is not given")
 			sys.exit(-1)
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 
-		from utilities import get_im
+		pass#IMPORTIMPORTIMPORT from utilities import get_im
 		global_def.BATCH = True
-		if( get_im( stacks[0]).get_zsize() == 1 and get_im( eigvol).get_zsize() > 1):
-			from applications import factcoords_prj
-			factcoords_prj(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.CTF, options.MPI)
+		if( utilities.get_im( stacks[0]).get_zsize() == 1 and utilities.get_im( eigvol).get_zsize() > 1):
+			pass#IMPORTIMPORTIMPORT from applications import factcoords_prj
+			applications.factcoords_prj(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.CTF, options.MPI)
 		else:
-			from applications import factcoords_vol
-			factcoords_vol(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.MPI)
+			pass#IMPORTIMPORTIMPORT from applications import factcoords_vol
+			applications.factcoords_vol(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.MPI)
 		global_def.BATCH = False
 		
 

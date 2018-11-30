@@ -32,17 +32,31 @@ from __future__ import print_function
 #
 #
 
-
-import os
+import applications
 import global_def
-from   global_def import *
-from   optparse import OptionParser
+import mpi
+import optparse
+import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def import *
+pass#IMPORTIMPORTIMPORT from   optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 def main():
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stackfile outdir  <maskfile> --K1=Min_number_of_Cluster --K2=Max_number_of_Clusters --opt_method=K-means_method --trials=Number_of_trials_of_K-means --CTF --rand_seed=1000 --maxit=Maximum_number_of_iterations --F=simulated_annealing --T0=simulated_annealing --MPI --CUDA --debug"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--K1",          type="int",          default=2,          help="Mimimum number of clusters")
 	parser.add_option("--K2",          type="int",          default=3,          help="Maximum number of clusters")
 	parser.add_option("--trials",      type="int",          default=1,          help="Number of trials in K-means (default 1)")
@@ -71,16 +85,16 @@ def main():
 			sys.exit()
 
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
-		from applications import k_means_groups
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
+		pass#IMPORTIMPORTIMPORT from applications import k_means_groups
 		global_def.BATCH = True
-		k_means_groups(args[0], args[1], mask, "SSE", options.K1, options.K2, options.rand_seed, options.maxit, options.trials, options.CTF, 0.0, 0.0, options.MPI, False, options.debug)
+		applications.k_means_groups(args[0], args[1], mask, "SSE", options.K1, options.K2, options.rand_seed, options.maxit, options.trials, options.CTF, 0.0, 0.0, options.MPI, False, options.debug)
 		global_def.BATCH = False
 		
 		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+			mpi.mpi_finalize()
 			
 if __name__ == "__main__":
 		main()

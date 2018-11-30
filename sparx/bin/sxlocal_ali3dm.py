@@ -32,12 +32,26 @@ from __future__ import print_function
 #
 #
 
-
-import os
+import applications
 import global_def
-from   global_def import *
-from   optparse import OptionParser
+import mpi
+import optparse
+import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def import *
+pass#IMPORTIMPORTIMPORT from   optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 
 
 def main():
@@ -46,7 +60,7 @@ def main():
 		arglist.append( arg )
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack ref_vol outdir <maskfile> --ou=outer_radius --delta=angular_bracket --ts --nassign --nrefine --MPI --function --fourvar --maxit=max_iter ----termprec=percentage_to_stop --npad --debug --CTF --snr=SNR --sym=symmetry"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--ou",       type="float",        default=-1,            help="radius < int(nx/2)-1 (set to int(nx/2)-1)")
 	parser.add_option("--delta",    type="float",        default=2,             help="angular bracket (set to 2)")
 	parser.add_option("--ts",       type="float",        default=2.0,          help="shift bracket (set to 2)")
@@ -76,17 +90,17 @@ def main():
 			mask = args[3]
 
 		if(options.MPI):
-			from mpi import mpi_init
-			sys.argv = mpi_init( len(sys.argv), sys.argv )
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init
+			sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
 
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 
-		from applications import local_ali3dm_MPI
+		pass#IMPORTIMPORTIMPORT from applications import local_ali3dm_MPI
 		global_def.BATCH = True
 		if options.MPI:
-			local_ali3dm_MPI(args[0], args[1], args[2], mask, options.ou, options.delta,options.ts, options.maxit, options.nassign, options.nrefine, options.CTF, options.snr, options.sym,options.function, options.fourvar, options.npad, options.debug, options.termprec)
+			applications.local_ali3dm_MPI(args[0], args[1], args[2], mask, options.ou, options.delta,options.ts, options.maxit, options.nassign, options.nrefine, options.CTF, options.snr, options.sym,options.function, options.fourvar, options.npad, options.debug, options.termprec)
 		else:
 			print('ali3d_em serial version not implemented')
 

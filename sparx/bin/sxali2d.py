@@ -32,17 +32,36 @@ from __future__ import print_function
 #
 #
 
-
-import os
+import applications
 import global_def
-from   global_def     import *
-from   user_functions import *
-from   optparse       import OptionParser
+import logger
+import mpi
+import optparse
+import os
+import subprocess
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import logger
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import subprocess
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import user_functions
+pass#IMPORTIMPORTIMPORT import utilities
+
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def     import *
+pass#IMPORTIMPORTIMPORT from   user_functions import *
+pass#IMPORTIMPORTIMPORT from   optparse       import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --dst=delta --center=center --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --Ng=group_number --Function=user_function_name --CUDA --GPUID --MPI"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--ir",       type="float",  default=1,             help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type="float",  default=-1,            help="outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
 	parser.add_option("--rs",       type="float",  default=1,             help="step between rings in rotational correlation > 0 (set to 1)" ) 
@@ -75,9 +94,9 @@ def main():
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
 	elif(options.rotational):
-		from applications import ali2d_rotationaltop
+		pass#IMPORTIMPORTIMPORT from applications import ali2d_rotationaltop
 		global_def.BATCH = True
-		ali2d_rotationaltop(args[1], args[0], options.randomize, options.orient, options.ir, options.ou, options.rs, options.psi_max, options.mode, options.maxit)
+		applications.ali2d_rotationaltop(args[1], args[0], options.randomize, options.orient, options.ir, options.ou, options.rs, options.psi_max, options.mode, options.maxit)
 	else:
 		if args[1] == 'None': outdir = None
 		else:		          outdir = args[1]
@@ -87,24 +106,24 @@ def main():
 		
 
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 		
 		global_def.BATCH = True
 		if  options.MPI:
-			from applications import ali2d_base
-			from mpi import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-			sys.argv = mpi_init(len(sys.argv),sys.argv)
+			pass#IMPORTIMPORTIMPORT from applications import ali2d_base
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+			sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
 
-			number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-			myid = mpi_comm_rank(MPI_COMM_WORLD)
+			number_of_proc = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+			myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 			main_node = 0
 
 			if(myid == main_node):
-				import subprocess
-				from logger import Logger, BaseLogger_Files
+				pass#IMPORTIMPORTIMPORT import subprocess
+				pass#IMPORTIMPORTIMPORT from logger import Logger, BaseLogger_Files
 				#  Create output directory
-				log = Logger(BaseLogger_Files())
+				log = logger.Logger(logger.BaseLogger_Files())
 				log.prefix = os.path.join(outdir)
 				cmd = "mkdir "+log.prefix
 				outcome = subprocess.call(cmd, shell=True)
@@ -112,21 +131,21 @@ def main():
 			else:
 				outcome = 0
 				log = None
-			from utilities       import bcast_number_to_all
-			outcome  = bcast_number_to_all(outcome, source_node = main_node)
+			pass#IMPORTIMPORTIMPORT from utilities       import bcast_number_to_all
+			outcome  = utilities.bcast_number_to_all(outcome, source_node = main_node)
 			if(outcome == 1):
-				ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
+				global_def.ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
 
-			dummy = ali2d_base(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
+			dummy = applications.ali2d_base(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
 				options.ts, options.nomirror, options.dst, \
 				options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
 				options.function, random_method = options.random_method, log = log, \
-				number_of_proc = number_of_proc, myid = myid, main_node = main_node, mpi_comm = MPI_COMM_WORLD,\
+				number_of_proc = number_of_proc, myid = myid, main_node = main_node, mpi_comm = mpi.MPI_COMM_WORLD,\
 				write_headers = True)
 		else:
 			print(" Non-MPI is no more in use, try MPI option, please.")
 			"""
-			from applications import ali2d
+			pass#IMPORTIMPORTIMPORT from applications import ali2d
 			ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
 				options.ts, options.nomirror, options.dst, \
 				options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
@@ -136,8 +155,8 @@ def main():
 		global_def.BATCH = False
 
 		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+			mpi.mpi_finalize()
 
 if __name__ == "__main__":
 	main()

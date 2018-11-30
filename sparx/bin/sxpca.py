@@ -32,20 +32,35 @@ from __future__ import print_function
 #
 #
 
-from builtins import range
+import applications
 import global_def
-from global_def import *
-from optparse import OptionParser
-from EMAN2_cppwrap import *
-
+import mpi
+import optparse
 import os
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
+pass#IMPORTIMPORTIMPORT import applications
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+from builtins import range
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from global_def import *
+pass#IMPORTIMPORTIMPORT from optparse import OptionParser
+pass#IMPORTIMPORTIMPORT from EMAN2_cppwrap import *
+
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import sys
 
       
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + "  input_stack output_stack --subavg=average_image --rad=mask_radius --nvec=number_of_eigenvectors --incore --mask=maskfile --shuffle --usebuf --MPI"
-	parser = OptionParser(usage, version=SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
 	parser.add_option("--subavg",  type="string",       default="",    help="subtract average")
 	parser.add_option("--rad",     type="int",          default=-1,    help="radius of mask")
 	parser.add_option("--nvec",    type="int",          default=1,     help="number of eigenvectors")
@@ -66,25 +81,25 @@ def main():
 
 	isRoot = True
 	if options.MPI:
-		from mpi import mpi_init, mpi_comm_rank, MPI_COMM_WORLD
-		sys.argv = mpi_init( len(sys.argv), sys.argv )
-		isRoot = (mpi_comm_rank(MPI_COMM_WORLD) == 0)
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_init, mpi_comm_rank, MPI_COMM_WORLD
+		sys.argv = mpi.mpi_init( len(sys.argv), sys.argv )
+		isRoot = (mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD) == 0)
 		
 	if global_def.CACHE_DISABLE:
-		from utilities import disable_bdb_cache
-		disable_bdb_cache()
-	from applications import pca
+		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+		utilities.disable_bdb_cache()
+	pass#IMPORTIMPORTIMPORT from applications import pca
 	global_def.BATCH = True
 	vecs = []
-	vecs = pca(input_stacks, options.subavg, options.rad, options.nvec, options.incore, options.shuffle, not(options.genbuf), options.mask, options.MPI)
+	vecs = applications.pca(input_stacks, options.subavg, options.rad, options.nvec, options.incore, options.shuffle, not(options.genbuf), options.mask, options.MPI)
 	if isRoot:
 		for i in range(len(vecs)):
 			vecs[i].write_image(output_stack, i)
 	
 	global_def.BATCH = False
 	if options.MPI:
-		from mpi import mpi_finalize
-		mpi_finalize()
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+		mpi.mpi_finalize()
 
 
 if __name__ == "__main__":

@@ -32,17 +32,32 @@ from __future__ import print_function
 #
 #
 
-
-import os
 import global_def
-from   global_def import *
-from   optparse import OptionParser
+import mpi
+import optparse
+import os
+import statistics
 import sys
+import utilities
+pass#IMPORTIMPORTIMPORT import development
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT import mpi
+pass#IMPORTIMPORTIMPORT import optparse
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import statistics
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import utilities
+
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import global_def
+pass#IMPORTIMPORTIMPORT from   global_def import *
+pass#IMPORTIMPORTIMPORT from   optparse import OptionParser
+pass#IMPORTIMPORTIMPORT import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack outdir <maskfile> --K=2 --nb_part=5  --th_nobj=10 --rand_seed=10 --opt_method=SSE --maxit=1000 --normalize --CTF  --MPI"
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--K",              type="int",          default=2,         help="Number of classes for K-means (default 2)")
 	parser.add_option("--nb_part",        type="int",          default=5,         help="Number of partitions used to calculate the stability (default 5)")
 	#parser.add_option("--F",              type="float",        default=0.0,       help="Cooling factor in simulated annealing, <1.0")
@@ -72,31 +87,31 @@ def main():
 			sys.stderr.write('ERROR: nb_part must be > 1 partition\n\n')
 			sys.exit()
 		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
+			pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
+			utilities.disable_bdb_cache()
 
 		global_def.BATCH = True
 		if options.MPI:
-			from mpi import mpi_init
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_init
+			sys.argv = mpi.mpi_init(len(sys.argv), sys.argv)
 			'''if options.CUDA:
-				from  development import  k_means_stab_MPICUDA_stream_YANG
+				pass#IMPORTIMPORTIMPORT from  development import  k_means_stab_MPICUDA_stream_YANG
 				k_means_stab_MPICUDA_stream_YANG(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.maxit)
 			else:'''
-			from  statistics import  k_means_stab_MPI_stream
-			k_means_stab_MPI_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
+			pass#IMPORTIMPORTIMPORT from  statistics import  k_means_stab_MPI_stream
+			statistics.k_means_stab_MPI_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
 		else:
 			'''if options.CUDA:
-				from  development  import  k_means_stab_CUDA_stream
+				pass#IMPORTIMPORTIMPORT from  development  import  k_means_stab_CUDA_stream
 				k_means_stab_CUDA_stream(args[0], args[1], mask, options.K, options.nb_part, options.F, options.T0, options.th_nobj, options.rand_seed, options.maxit)
 			else:'''
 			
-			from  statistics  import  k_means_stab_stream
-			k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
+			pass#IMPORTIMPORTIMPORT from  statistics  import  k_means_stab_stream
+			statistics.k_means_stab_stream(args[0], args[1], mask, options.K, options.nb_part, 0.0, 0.0, options.th_nobj, options.rand_seed, "SSE", options.CTF, options.maxit)
 		global_def.BATCH = False
 
 		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
+			mpi.mpi_finalize()
 if __name__ == "__main__":
 	        main()

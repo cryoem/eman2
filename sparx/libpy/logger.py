@@ -2,6 +2,8 @@
 from __future__ import print_function
 from builtins import object
 
+pass#IMPORTIMPORTIMPORT import time
+import time
 class BaseLogger_Print(object):
 	
 	def logLine(self, prefix, line, *args, **kwargs):
@@ -36,13 +38,13 @@ class Logger(object):
 		self.file_name = file_name
 
 	def add(self, param1=None, param2=None, param3=None, param4=None, param5=None, param6=None, param7=None, param8=None, param9=None, param10=None):
-		from time import localtime, strftime
+		pass#IMPORTIMPORTIMPORT from time import localtime, strftime
 		
 		if self.base_logger == None:
 			return
 		
 		params = [param1, param2, param3, param4, param5, param6, param7, param8, param9, param10]
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 		for p in params:
 			if p != None:
 				line += " " + str(p)

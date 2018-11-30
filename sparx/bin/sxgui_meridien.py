@@ -16,19 +16,35 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import os.path
+import sys
+pass#IMPORTIMPORTIMPORT import json
+pass#IMPORTIMPORTIMPORT import matplotlib
+#pass#IMPORTIMPORTIMPORT matplotlib.use("Agg")
+pass#IMPORTIMPORTIMPORT import matplotlib.pyplot as plt
+pass#IMPORTIMPORTIMPORT import numpy as np
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import os.path
+pass#IMPORTIMPORTIMPORT import sys
 from builtins import range
 from builtins import object
 from PyQt4.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QString, QThreadPool, QTimer
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtGui import QDialog, QGridLayout, QTreeWidget, QMessageBox, QFontMetrics
-import matplotlib.pyplot as plt
+pass#IMPORTIMPORTIMPORT import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-import os
-import os.path
-import json
-import sys
-import numpy as np
+pass#IMPORTIMPORTIMPORT import os
+pass#IMPORTIMPORTIMPORT import os.path
+pass#IMPORTIMPORTIMPORT import json
+pass#IMPORTIMPORTIMPORT import sys
+pass#IMPORTIMPORTIMPORT import numpy as np
 
 
 class DriverFileReader(QObject):
