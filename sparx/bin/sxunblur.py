@@ -35,11 +35,12 @@ import global_def
 from global_def import SPARXVERSION, ERROR
 from optparse import OptionParser, SUPPRESS_HELP
 from sxsummovie import create_summovie_command
+import os
 
 def main():
 
     # Parse the Options
-    progname = path.basename(argv[0])
+    progname = os.path.basename(argv[0])
     usage = progname + """ unblur_path input_micrograph_pattern output_directory
     --summovie_path
     --selection_list
@@ -137,19 +138,19 @@ def main():
         ERROR("see usage " + usage, 1)
 
     # Convert the realtive parts to absolute ones
-    unblur_path = path.realpath(args[0]) # unblur_path
-    input_image = path.realpath(args[1]) # input_micrograph_pattern
-    output_dir = path.realpath(args[2])  # output_directory
+    unblur_path = os.path.realpath(args[0]) # unblur_path
+    input_image = os.path.realpath(args[1]) # input_micrograph_pattern
+    output_dir = os.path.realpath(args[2])  # output_directory
 
     # If the unblur executable file does not exists, stop the script
-    if not path.exists(unblur_path):
+    if not os.path.exists(unblur_path):
         ERROR(
             'Unblur directory does not exist, please change' +
             ' the name and restart the program.', 'sxunblur.py', 1
             )
 
     # If the output directory exists, stop the script
-    if path.exists(output_dir):
+    if os.path.exists(output_dir):
         ERROR(
             'Output directory exists, please change' +
             ' the name and restart the program.', 'sxunblur.py', 1
@@ -165,7 +166,7 @@ def main():
             )
 
     # If the skip_dose_filter option is false, the summovie path is necessary
-    if not options.skip_dose_filter and not path.exists(options.summovie_path):
+    if not options.skip_dose_filter and not os.path.exists(options.summovie_path):
         ERROR(
             'Path to the SumMovie executable is necessary when dose weighting is performed.',
             'sxunblur.py', 1
@@ -194,21 +195,21 @@ def main():
         input_dir = ''
 
     # Create output directorys
-    if not path.exists(output_dir):
+    if not os.path.exists(output_dir):
         mkdir(output_dir)
-    if not path.exists(uncorrected_path):
+    if not os.path.exists(uncorrected_path):
         mkdir(uncorrected_path)
-    if not path.exists(shift_path):
+    if not os.path.exists(shift_path):
         mkdir(shift_path)
-    if not path.exists(corrected_path):
+    if not os.path.exists(corrected_path):
         if not options.skip_dose_filter:
             mkdir(corrected_path)
-    if not path.exists(frc_path):
+    if not os.path.exists(frc_path):
         if options.expert_mode or not options.skip_dose_filter:
             mkdir(frc_path)
-    if not path.exists(temp_path) and not options.unblur_ready:
+    if not os.path.exists(temp_path) and not options.unblur_ready:
         mkdir(temp_path)
-    if not path.exists(log_path):
+    if not os.path.exists(log_path):
         mkdir(log_path)
 
     # Run unblur
@@ -271,7 +272,7 @@ def run_unblur(
         file_list = [
                 entry for entry in file_list \
                 if entry[len(input_dir):] in set_selection and \
-                path.exists(entry)
+                os.path.exists(entry)
                 ]
         # If no match is there abort
         if len(file_list) == 0:
@@ -518,7 +519,7 @@ def run_unblur(
             remove(entry)
 
         if not options.unblur_ready:
-            if path.exists(temp_name):
+            if os.path.exists(temp_name):
                 # Remove temp file
                 remove(temp_name)
             else:
