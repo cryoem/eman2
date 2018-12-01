@@ -352,9 +352,7 @@ class MainWindow(QtGui.QMainWindow):
         self.move((resolution.width() / 2) - (self.frameSize().width() / 2),
                   (resolution.height() / 2) - (self.frameSize().height() / 2))
 
-        """
-        Setting up menu bar
-        """
+        """Multiline Comment0"""
 
         close_action = QtGui.QAction('Close', self)
         close_action.setShortcut("Ctrl+Q")
@@ -379,9 +377,7 @@ class MainWindow(QtGui.QMainWindow):
         self.plotMenu.addAction(create_new_fsc_plot)
         self.plotMenu.addAction(create_new_overview_plot)
 
-        """
-        Setup other components
-        """
+        """Multiline Comment1"""
         self.layout = QGridLayout(central_widget)
         self.setMenuBar(self.mainMenu)
 

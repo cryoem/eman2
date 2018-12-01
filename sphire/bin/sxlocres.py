@@ -165,16 +165,7 @@ def main():
 		utilities.bcast_EMData_to_all(m, myid, main_node)
 
 		pass#IMPORTIMPORTIMPORT from statistics import locres
-		"""
-		res_overall = 0.5
-		if myid ==main_node:
-			fsc_curve = fsc(vi, ui)
-			for ifreq in xrange(len(fsc_curve[0])-1, -1, -1):
-				if fsc_curve[1][ifreq] > options.cutoff:
-					res_overall = fsc_curve[0][ifreq]
-					break
-		res_overall = bcast_number_to_all(res_overall, main_node)
-		"""
+		"""Multiline Comment0"""
 		freqvol, resolut = statistics.locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
 		if(myid == 0):
 			if res_overall !=-1.0:
@@ -215,14 +206,7 @@ def main():
 
 		vf = fundamentals.fft(vi)
 		uf = fundamentals.fft(ui)
-		"""		
-		res_overall = 0.5
-		fsc_curve = fsc(vi, ui)
-		for ifreq in xrange(len(fsc_curve[0])-1, -1, -1):
-			if fsc_curve[1][ifreq] > options.cutoff:
-				res_overall = fsc_curve[0][ifreq]
-				break
-		"""		
+		"""Multiline Comment1"""
 		lp = int(nn/2/options.step+0.5)
 		step = 0.5/lp
 

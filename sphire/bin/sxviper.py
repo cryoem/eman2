@@ -45,11 +45,7 @@ def main(args):
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  [output_directory] --ir=inner_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1"
-	usage += """
-
-stack			2D images in a stack file: (default required string)
-directory		output directory name: into which the results will be written (if it does not exist, it will be created, if it does exist, the results will be written possibly overwriting previous results) (default required string)
-"""
+	"""Multiline Comment0"""
 	
 	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
 	parser.add_option("--radius",                type="int",           default=29,         help="radius of the particle: has to be less than < int(nx/2)-1 (default 29)")

@@ -417,38 +417,7 @@ def main():
 		if myid == main_node: log_main.add("%-70s:  %d\n"%("Number of projection", nima))
 		img_begin, img_end = applications.MPI_start_end(nima, number_of_proc, myid)
 		
-		"""
-		if options.SND:
-			pass#IMPORTIMPORTIMPORT from projection		import prep_vol, prgs
-			pass#IMPORTIMPORTIMPORT from statistics		import im_diff
-			pass#IMPORTIMPORTIMPORT from utilities		import get_im, model_circle, get_params_proj, set_params_proj
-			pass#IMPORTIMPORTIMPORT from utilities		import get_ctf, generate_ctf
-			pass#IMPORTIMPORTIMPORT from filter			import filt_ctf
-		
-			imgdata = EMData.read_images(stack, range(img_begin, img_end))
-
-			if options.CTF:
-				vol = recons3d_4nn_ctf_MPI(myid, imgdata, 1.0, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
-			else:
-				vol = recons3d_4nn_MPI(myid, imgdata, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
-
-			bcast_EMData_to_all(vol, myid)
-			volft, kb = prep_vol(vol)
-
-			mask = model_circle(nx/2-2, nx, ny)
-			varList = []
-			for i in xrange(img_begin, img_end):
-				phi, theta, psi, s2x, s2y = get_params_proj(imgdata[i-img_begin])
-				ref_prj = prgs(volft, kb, [phi, theta, psi, -s2x, -s2y])
-				if options.CTF:
-					ctf_params = get_ctf(imgdata[i-img_begin])
-					ref_prj = filt_ctf(ref_prj, generate_ctf(ctf_params))
-				diff, A, B = im_diff(ref_prj, imgdata[i-img_begin], mask)
-				diff2 = diff*diff
-				set_params_proj(diff2, [phi, theta, psi, s2x, s2y])
-				varList.append(diff2)
-			mpi_barrier(MPI_COMM_WORLD)
-		"""
+		"""Multiline Comment0"""
 		
 		if options.VAR: # 2D variance images have no shifts
 			#varList   = EMData.read_images(stack, range(img_begin, img_end))
@@ -636,21 +605,7 @@ def main():
 			del image
 			if reg: del reg
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-			'''	
-			imgdata2 = EMData.read_images(stack, range(img_begin, img_end))
-			if options.fl > 0.0:
-				for k in xrange(len(imgdata2)):
-					imgdata2[k] = filt_tanl(imgdata2[k], options.fl, options.aa)
-			if options.CTF:
-				vol = recons3d_4nn_ctf_MPI(myid, imgdata2, 1.0, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
-			else:
-				vol = recons3d_4nn_MPI(myid, imgdata2, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
-			if myid == main_node:
-				vol.write_image("vol_ctf.hdf")
-				print_msg("Writing to the disk volume reconstructed from averages as		:  %s\n"%("vol_ctf.hdf"))
-			del vol, imgdata2
-			mpi_barrier(MPI_COMM_WORLD)
-			'''
+			"""Multiline Comment1"""
 			pass#IMPORTIMPORTIMPORT from applications import prepare_2d_forPCA
 			pass#IMPORTIMPORTIMPORT from utilities    import model_blank
 			pass#IMPORTIMPORTIMPORT from EMAN2        import Transform
@@ -708,22 +663,10 @@ def main():
 							cimage = fundamentals.fft(filter.filt_ctf(fundamentals.fft(utilities.pad(grp_imgdata[k], nx2, ny2, 1,0.0)),\
 							   grp_imgdata[k].get_attr("ctf"), binary=1))
 							grp_imgdata[k] = cimage.get_clip(reg1)
-				'''
-				if i < 10 and myid == main_node:
-					for k in xrange(10):
-						grp_imgdata[k].write_image("grp%03d.hdf"%i, k)
-				'''
-				"""
-				if myid == main_node and i==0:
-					for pp in xrange(len(grp_imgdata)):
-						grp_imgdata[pp].write_image("pp.hdf", pp)
-				"""
+				"""Multiline Comment2"""
+				"""Multiline Comment3"""
 				ave, grp_imgdata = applications.prepare_2d_forPCA(grp_imgdata)
-				"""
-				if myid == main_node and i==0:
-					for pp in xrange(len(grp_imgdata)):
-						grp_imgdata[pp].write_image("qq.hdf", pp)
-				"""
+				"""Multiline Comment4"""
 
 				var = utilities.model_blank(nx,ny)
 				for q in grp_imgdata:  EMAN2_cppwrap.Util.add_img2(var, q)
@@ -732,11 +675,7 @@ def main():
 				var = morphology.square_root(morphology.threshold(var))
 				#if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
 				#else:	            ave, var = avgvar(grp_imgdata, mode="a")
-				"""
-				if myid == main_node:
-					ave.write_image("avgv.hdf",i)
-					var.write_image("varv.hdf",i)
-				"""
+				"""Multiline Comment5"""
 
 				utilities.set_params_proj(ave, [phiM, thetaM, 0.0, 0.0, 0.0])
 				utilities.set_params_proj(var, [phiM, thetaM, 0.0, 0.0, 0.0])
@@ -749,11 +688,7 @@ def main():
 					for k in range(nvec):
 						utilities.set_params_proj(eig[k], [phiM, thetaM, 0.0, 0.0, 0.0])
 						eigList[k].append(eig[k])
-					"""
-					if myid == 0 and i == 0:
-						for k in xrange(nvec):
-							eig[k].write_image("eig.hdf", k)
-					"""
+					"""Multiline Comment6"""
 				if (myid == heavy_load_myid) and (i%100 == 0):
 					log_main.add(" ......%6.2f%%  "%(i/float(len(proj_list))*100.))		
 			del imgdata, grp_imgdata, cpar, dpar, all_proj, proj_angles, index, reg1
@@ -779,16 +714,7 @@ def main():
 							nl = int(nl[0])
 							for im in range(nl):
 								ave = utilities.recv_EMData(i, im+i+70000)
-								"""
-								nm = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-								nm = int(nm[0])
-								members = mpi_recv(nm, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-								ave.set_attr('members', map(int, members))
-								members = mpi_recv(nm, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-								ave.set_attr('pix_err', map(float, members))
-								members = mpi_recv(3, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-								ave.set_attr('refprojdir', map(float, members))
-								"""
+								"""Multiline Comment7"""
 								tmpvol=fundamentals.fpol(ave, nx,nx,1)								
 								tmpvol.write_image(os.path.join(options.output_dir, options.ave2D), km)
 								km += 1
@@ -796,18 +722,7 @@ def main():
 					mpi.mpi_send(len(aveList), 1, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 					for im in range(len(aveList)):
 						utilities.send_EMData(aveList[im], main_node,im+myid+70000)
-						"""
-						members = aveList[im].get_attr('members')
-						mpi_send(len(members), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-						mpi_send(members, len(members), MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-						members = aveList[im].get_attr('pix_err')
-						mpi_send(members, len(members), MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-						try:
-							members = aveList[im].get_attr('refprojdir')
-							mpi_send(members, 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-						except:
-							mpi_send([-999.0,-999.0,-999.0], 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
-						"""
+						"""Multiline Comment8"""
 
 			if options.ave3D:
 				pass#IMPORTIMPORTIMPORT from fundamentals import fpol
