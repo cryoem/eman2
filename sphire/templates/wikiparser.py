@@ -6,7 +6,7 @@ from __future__ import print_function
 # ========================================================================================
 
 import copy
-import global_def
+import sparx_global_def
 import os
 import sxgui_template
 pass#IMPORTIMPORTIMPORT import copy
@@ -56,7 +56,7 @@ class SXcmd_config(object):
 # Helper class used only in construct_token_list_from_*() functions
 class SXkeyword_map(object):
 	def __init__(self, priority, token_type):
-		if priority >= 100: global_def.ERROR("Priority should be lower than 100", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if priority >= 100: sparx_global_def.ERROR("Priority should be lower than 100", "%s in %s" % (__name__, os.path.basename(__file__)))
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		# class variables
 		self.priority = priority      # Priority of this keyword. Highest priority is 0. The type of higher priority will be used to avoid the conflict among keywords
@@ -403,7 +403,7 @@ def remove_MoinMoinWiki_makeup(target_text):
 		# Found a start of wiki makeup
 		item_tail = target_text.find(makeup_end)
 		if item_tail == -1:
-			global_def.ERROR("Wiki Format Warning: The string \"%s\" contains \"%s\" but not \"%s\". Removing \"%s\", but please check the format in Wiki document." % (target_text, makeup_begin, makeup_end, makeup_begin), "%s in %s" % (__name__, os.path.basename(__file__)))
+			sparx_global_def.ERROR("Wiki Format Warning: The string \"%s\" contains \"%s\" but not \"%s\". Removing \"%s\", but please check the format in Wiki document." % (target_text, makeup_begin, makeup_end, makeup_begin), "%s in %s" % (__name__, os.path.basename(__file__)))
 			target_text = target_text.replace(makeup_begin, "", 1)
 		else: # assert (item_tail > -1)
 			makeup_token = target_text[item_head:item_tail+len(makeup_end)]
@@ -431,7 +431,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 
 	print("Start parsing MoinMoinWiki document (%s as %s %s command) " % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role))
 
-	if sxcmd_config.format != "MoinMoinWiki": global_def.ERROR("Logical Error: Incorrect Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
+	if sxcmd_config.format != "MoinMoinWiki": sparx_global_def.ERROR("Logical Error: Incorrect Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	# Allocate memory for new SXcmd instance
 	sxcmd = sxgui_template.SXcmd(sxcmd_config.category, sxcmd_config.role, sxcmd_config.is_submittable)
@@ -462,7 +462,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 
 	# NOTE: 2015/11/11 Toshio Moriya
 	# This should be exception. Need to decide if this should be skipped or exit system.
-	if os.path.exists(sxcmd_config.wiki) == False: global_def.ERROR("Rutime Error: Wiki document is not found.", "%s in %s" % (__name__, os.path.basename(__file__)))
+	if os.path.exists(sxcmd_config.wiki) == False: sparx_global_def.ERROR("Rutime Error: Wiki document is not found.", "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	file_wiki = open(sxcmd_config.wiki,'r')
 
@@ -481,7 +481,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 				current_state = state_processing
 			# else: just ignore this line
 		else:
-			if current_state != state_processing: global_def.ERROR("Logical Error: This condition should not happen! State setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			if current_state != state_processing: sparx_global_def.ERROR("Logical Error: This condition should not happen! State setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
 			if line_wiki[0] == "=": # Assuming the section always starts with "="
 				# Reached the next section (might be not target)
 				current_section += 1 # Update current target section
@@ -493,7 +493,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 
 				if line_wiki.find(section_lists[current_section]) != -1:
 					# Found the current target section
-					if current_section >= len(section_lists): global_def.ERROR("Logical Error: This condition should not happen! Section setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
+					if current_section >= len(section_lists): sparx_global_def.ERROR("Logical Error: This condition should not happen! Section setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
 					current_state = state_processing
 				else:
 					# This section was not the current target. Go back to searching state
@@ -505,7 +505,7 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 					# Extract the name of sxscript
 					target_operator = "-"
 					item_tail = line_buffer.find(target_operator)
-					if item_tail == -1: global_def.ERROR("Wiki Format Error: '= Name =' section should contain only one valid line, and the line should starts from 'sx* - ' or 'e2* - ': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+					if item_tail == -1: sparx_global_def.ERROR("Wiki Format Error: '= Name =' section should contain only one valid line, and the line should starts from 'sx* - ' or 'e2* - ': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 					sxcmd_string = line_buffer[0:item_tail].strip()
 					sxcmd_string_token_list = sxcmd_string.split()
 					n_sxcmd_string_token_list = len(sxcmd_string_token_list)
@@ -513,12 +513,12 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 					if n_sxcmd_string_token_list == 2:
 						sxcmd.subname = sxcmd_string_token_list[1]
 					elif n_sxcmd_string_token_list > 2:
-						global_def.ERROR("Wiki Format Error: Command string should be only script file name or script file name plus subcommand", "%s in %s" % (__name__, os.path.basename(__file__)))
+						sparx_global_def.ERROR("Wiki Format Error: Command string should be only script file name or script file name plus subcommand", "%s in %s" % (__name__, os.path.basename(__file__)))
 					line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 					# Extract the label of this sxscript
 					target_operator = ":"
 					item_tail = line_buffer.find(target_operator)
-					if item_tail == -1: global_def.ERROR("Wiki Format Error: '= Name =' section should contain a label ended with ':' after 'sx* - ' or 'e2* - ': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+					if item_tail == -1: sparx_global_def.ERROR("Wiki Format Error: '= Name =' section should contain a label ended with ':' after 'sx* - ' or 'e2* - ': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 					sxcmd.label = line_buffer[0:item_tail].strip()
 					# Extract the short info about this sxscript (can be empty)
 					sxcmd.short_info = remove_MoinMoinWiki_makeup(line_buffer[item_tail + len(target_operator):].strip()) # Get the rest of line
@@ -528,10 +528,10 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 					if line_wiki[0:len("sx")] == "sx" or line_wiki[0:len("e2")] == "e2":
 						usage_token_list = line_wiki.split()
 						head_token_idx = 1
-						if usage_token_list[0] != sxcmd.name + ".py": global_def.ERROR("Wiki Format Error: First token should be script name with .py (sx*.py or e2*.py)", "%s in %s" % (__name__, os.path.basename(__file__)))
+						if usage_token_list[0] != sxcmd.name + ".py": sparx_global_def.ERROR("Wiki Format Error: First token should be script name with .py (sx*.py or e2*.py)", "%s in %s" % (__name__, os.path.basename(__file__)))
 						if sxcmd.subname != "":
 							head_token_idx = 2
-							if usage_token_list[1] != sxcmd.subname: global_def.ERROR("Wiki Format Error: Second token of this command should be subname", "%s in %s" % (__name__, os.path.basename(__file__)))
+							if usage_token_list[1] != sxcmd.subname: sparx_global_def.ERROR("Wiki Format Error: Second token of this command should be subname", "%s in %s" % (__name__, os.path.basename(__file__)))
 						# Register arguments and options
 						for usage_token in usage_token_list[head_token_idx:]:
 							# Check if --MPI is used in this script
@@ -582,32 +582,32 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 						key_base = line_buffer[0:item_tail]
 						if key_base == "MPI":
 							# ERROR("Warning: This line (%s) contains MPI flag. The flag will be removed in near future, so ignoring this line...'."  % (line_wiki), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
-							if sxcmd.mpi_support == False or sxcmd.mpi_add_flag == False: global_def.ERROR("Logical Error: Since MPI flag is found, the command should support MPI.", "%s in %s" % (__name__, os.path.basename(__file__)))
+							if sxcmd.mpi_support == False or sxcmd.mpi_add_flag == False: sparx_global_def.ERROR("Logical Error: Since MPI flag is found, the command should support MPI.", "%s in %s" % (__name__, os.path.basename(__file__)))
 							continue
 						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 						# check consistency between 'usage in command line' and this
-						if key_base not in list(sxcmd.token_dict.keys()): global_def.ERROR("Wiki Format Error: Key base (%s) is missing from 'usage in command line' in '= Usage ='." % key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+						if key_base not in list(sxcmd.token_dict.keys()): sparx_global_def.ERROR("Wiki Format Error: Key base (%s) is missing from 'usage in command line' in '= Usage ='." % key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 						# Get the reference to the command token object associated with this key base name
 						token = sxcmd.token_dict[key_base]
-						if token.key_base != key_base: global_def.ERROR("Logical Error: Registered command token with wrong key base name into the dictionary.", "%s in %s" % (__name__, os.path.basename(__file__)))
+						if token.key_base != key_base: sparx_global_def.ERROR("Logical Error: Registered command token with wrong key base name into the dictionary.", "%s in %s" % (__name__, os.path.basename(__file__)))
 						token.is_in_io = True # Set flag to tell this command token is find in input or output section
 						token.group = group  # Set group of command token according to the current subsection
 						# Extract label of command token
 						target_operator = ":"
 						item_tail = line_buffer.find(target_operator)
-						if item_tail == -1: global_def.ERROR("Wiki Format Error: This line (%s) is missing label. Please check the format in Wiki document." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+						if item_tail == -1: sparx_global_def.ERROR("Wiki Format Error: This line (%s) is missing label. Please check the format in Wiki document." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 						token.label = line_buffer[0:item_tail]
 						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 						# Extract help of command token before default value
 						target_operator = "(default"
 						item_tail = line_buffer.find(target_operator)
-						if item_tail == -1: global_def.ERROR("Wiki Format Error: This line (%s) is missing default setting. Please check the format in Wiki document." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+						if item_tail == -1: sparx_global_def.ERROR("Wiki Format Error: This line (%s) is missing default setting. Please check the format in Wiki document." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 						token.help = remove_MoinMoinWiki_makeup(line_buffer[0:item_tail])
 						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 						# Extract default value of command token
 						target_operator = ")"
 						item_tail = line_buffer.find(target_operator)
-						if item_tail == -1: global_def.ERROR("Wiki Format Error: This line (%s) is missing ')' for default setting. Please check the format in Wiki document." % line_wiki,"%s in %s" % (__name__, os.path.basename(__file__)))
+						if item_tail == -1: sparx_global_def.ERROR("Wiki Format Error: This line (%s) is missing ')' for default setting. Please check the format in Wiki document." % line_wiki,"%s in %s" % (__name__, os.path.basename(__file__)))
 						default_value = line_buffer[0:item_tail].strip() # make sure spaces & new line are not included at head and tail
 						if default_value.find("required") != -1:
 							# This is a required command token and should have value type instead of default value
@@ -686,13 +686,13 @@ def construct_token_list_from_MoinMoinWiki(sxcmd_config):
 						token.restore = token.default
 						# Ignore the rest of line ...
 				else:
-					global_def.ERROR("Logical Error: This section is invalid. Did you assign an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
+					sparx_global_def.ERROR("Logical Error: This section is invalid. Did you assign an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
 
-	if current_state != state_done: global_def.ERROR("Wiki Format Error: parser could not extract all information necessary (current state %d). Please check if the Wiki format has all required sections." % (current_state), "%s in %s" % (__name__, os.path.basename(__file__)))
+	if current_state != state_done: sparx_global_def.ERROR("Wiki Format Error: parser could not extract all information necessary (current state %d). Please check if the Wiki format has all required sections." % (current_state), "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	# Make sure there are no extra arguments or options in 'usage in command line' of '= Usage ='
 	for token in sxcmd.token_list:
-		if token.is_in_io == False: global_def.ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '= Usage ='." % token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.is_in_io == False: sparx_global_def.ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '= Usage ='." % token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	file_wiki.close()
 
@@ -742,7 +742,7 @@ def remove_DokuWiki_makeup(target_text):
 		# Found a start of wiki makeup
 		item_tail = target_text.find(makeup_end)
 		if item_tail == -1:
-			global_def.ERROR("Wiki Format Warning: The string \"%s\" contains \"%s\" but not \"%s\". Removing \"%s\", but please check the format in Wiki document." % (target_text, makeup_begin, makeup_end, makeup_begin), "%s in %s" % (__name__, os.path.basename(__file__)))
+			sparx_global_def.ERROR("Wiki Format Warning: The string \"%s\" contains \"%s\" but not \"%s\". Removing \"%s\", but please check the format in Wiki document." % (target_text, makeup_begin, makeup_end, makeup_begin), "%s in %s" % (__name__, os.path.basename(__file__)))
 			target_text = target_text.replace(makeup_begin, "", 1)
 		else: # assert (item_tail > -1)
 			makeup_token = target_text[item_head:item_tail+len(makeup_end)]
@@ -773,7 +773,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	print("Start parsing DokuWiki document (%s as %s %s command) " % (sxcmd_config.wiki, sxcmd_config.category, sxcmd_config.role))
 
-	if sxcmd_config.format != "DokuWiki": global_def.ERROR("Logical Error: Incorrect Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
+	if sxcmd_config.format != "DokuWiki": sparx_global_def.ERROR("Logical Error: Incorrect Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	# Allocate memory for new SXcmd instance
 	sxcmd = sxgui_template.SXcmd(sxcmd_config.category, sxcmd_config.role, sxcmd_config.is_submittable)
@@ -806,7 +806,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 
 	# NOTE: 2015/11/11 Toshio Moriya
 	# This should be exception. Need to decide if this should be skipped or exit system.
-	if os.path.exists(sxcmd_config.wiki) == False: global_def.ERROR("Runtime Error: Wiki document inot found.", "%s in %s" % (__name__, os.path.basename(__file__)))
+	if os.path.exists(sxcmd_config.wiki) == False: sparx_global_def.ERROR("Runtime Error: Wiki document inot found.", "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	file_wiki = open(sxcmd_config.wiki,'r')
 
@@ -833,7 +833,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 #				print("MRK_DEBUG: target_operator                   := %s" % (target_operator))
 #				print("MRK_DEBUG: line_wiki[:len(target_operator)]  := %s" % (line_wiki[:len(target_operator)]))
 #				print("MRK_DEBUG: line_wiki[-len(target_operator):] := %s" % (line_wiki[-len(target_operator):]))
-				global_def.ERROR("Wiki Format Error: The Wiki document must start from header section title defined by ===== COMMAND_NAME =====.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				sparx_global_def.ERROR("Wiki Format Error: The Wiki document must start from header section title defined by ===== COMMAND_NAME =====.", "%s in %s" % (__name__, os.path.basename(__file__)))
 			sxcmd_string = line_wiki.replace(target_operator, "").strip()
 			sxcmd_string_token_list = sxcmd_string.split()
 			n_sxcmd_string_token_list = len(sxcmd_string_token_list)
@@ -842,14 +842,14 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 			if n_sxcmd_string_token_list == 2:
 				sxcmd.subname = sxcmd_string_token_list[1]
 			elif n_sxcmd_string_token_list > 2:
-				global_def.ERROR("Wiki Format Error: Command string should be only a script file name or a script file name plus a subcommand", "%s in %s" % (__name__, os.path.basename(__file__)))
+				sparx_global_def.ERROR("Wiki Format Error: Command string should be only a script file name or a script file name plus a subcommand", "%s in %s" % (__name__, os.path.basename(__file__)))
 			current_state = state_processing_header
 		elif current_state == state_processing_header:
 			# Extract the label of this sxscript
 			line_buffer = line_wiki
 			target_operator = ":"
 			item_tail = line_buffer.find(target_operator)
-			if item_tail == -1: global_def.ERROR("Wiki Format Error: Header section body should contain a label ending with ':': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+			if item_tail == -1: sparx_global_def.ERROR("Wiki Format Error: Header section body should contain a label ending with ':': %s" % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 			sxcmd.label = line_buffer[0:item_tail].strip()
 			# Extract the short info about this sxscript (can be empty)
 			sxcmd.short_info = remove_DokuWiki_makeup(line_buffer[item_tail + len(target_operator):].strip()) # Get the rest of line
@@ -860,7 +860,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 				current_state = state_processing
 			# else: just ignore this line
 		else:
-			if current_state != state_processing: global_def.ERROR("Logical Error: This condition should not happen! State setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			if current_state != state_processing: sparx_global_def.ERROR("Logical Error: This condition should not happen! State setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
 			target_operator = "====="
 			if line_wiki[:len(target_operator)] == target_operator: # Assuming the section always starts with "======"
 #				print("MRK_DEBUG: line_wiki                          := %s" % (line_wiki))
@@ -877,7 +877,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 #				print("MRK_DEBUG: New section_lists[current_section] := %s" % (section_lists[current_section]))
 				if line_wiki.find(section_lists[current_section]) != -1:
 					# Found the current target section
-					if current_section >= len(section_lists): global_def.ERROR("Logical Error: This condition should not happen! Section setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
+					if current_section >= len(section_lists): sparx_global_def.ERROR("Logical Error: This condition should not happen! Section setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
 					current_state = state_processing
 				else:
 					# This section was not the current target. Go back to searching state
@@ -890,10 +890,10 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 					head_token_idx = 1
 					if line_wiki[0:len("sx")] == "sx" or line_wiki[0:len("e2")] == "e2":
 						usage_token_list_line = line_wiki.split()
-						if usage_token_list_line[0] != sxcmd.name + ".py": global_def.ERROR("Wiki Format Error: First token should be script name with .py (sx*.py or e2*.py)", "%s in %s" % (__name__, os.path.basename(__file__)))
+						if usage_token_list_line[0] != sxcmd.name + ".py": sparx_global_def.ERROR("Wiki Format Error: First token should be script name with .py (sx*.py or e2*.py)", "%s in %s" % (__name__, os.path.basename(__file__)))
 						if sxcmd.subname != "":
 							head_token_idx = 2
-							if usage_token_list_line[1] != sxcmd.subname: global_def.ERROR("Wiki Format Error: Second token of this command should be subname", "%s in %s" % (__name__, os.path.basename(__file__)))
+							if usage_token_list_line[1] != sxcmd.subname: sparx_global_def.ERROR("Wiki Format Error: Second token of this command should be subname", "%s in %s" % (__name__, os.path.basename(__file__)))
 						# Register arguments and options
 						for usage_token in usage_token_list_line[head_token_idx:]:
 							# Allocate memory for new command token
@@ -933,7 +933,7 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 						# The following can be removed when --MPI flag is removed from all sx*.py scripts
 						if key == "--MPI":
 							# ERROR("Warning: This line (%s) contains MPI flag. The flag will be removed in near future, so ignoring this line...'."  % (line_wiki), "%s in %s" % (__name__, os.path.basename(__file__)), action = 0)
-							if sxcmd.mpi_support == False: global_def.ERROR("Logical Error: Since MPI flag is found, the command should support MPI.", "%s in %s" % (__name__, os.path.basename(__file__)))
+							if sxcmd.mpi_support == False: sparx_global_def.ERROR("Logical Error: Since MPI flag is found, the command should support MPI.", "%s in %s" % (__name__, os.path.basename(__file__)))
 							sxcmd.mpi_add_flag = True
 							continue
 						# Allocate memory for new command token
@@ -957,19 +957,19 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 						# Extract label of command token
 						target_operator = ":"
 						item_tail = line_buffer.find(target_operator)
-						if item_tail == -1: global_def.ERROR("Wiki Format Error: This line (%s) is missing label. Please check the format in Wiki document." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+						if item_tail == -1: sparx_global_def.ERROR("Wiki Format Error: This line (%s) is missing label. Please check the format in Wiki document." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 						token.label = line_buffer[0:item_tail].strip()
 						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 						# Extract help of command token before default value
 						target_operator = "(default"
 						item_tail = line_buffer.find(target_operator)
-						if item_tail == -1: global_def.ERROR("Wiki Format Error: This line (%s) is missing default setting. Please check the format in Wiki document." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
+						if item_tail == -1: sparx_global_def.ERROR("Wiki Format Error: This line (%s) is missing default setting. Please check the format in Wiki document." % line_wiki, "%s in %s" % (__name__, os.path.basename(__file__)))
 						token.help = remove_DokuWiki_makeup(line_buffer[0:item_tail])
 						line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
 						# Extract default value of command token
 						target_operator = ")"
 						item_tail = line_buffer.find(target_operator)
-						if item_tail == -1: global_def.ERROR("Wiki Format Error: This line (%s) is missing ')' for default setting. Please check the format in Wiki document." % line_wiki,"%s in %s" % (__name__, os.path.basename(__file__)))
+						if item_tail == -1: sparx_global_def.ERROR("Wiki Format Error: This line (%s) is missing ')' for default setting. Please check the format in Wiki document." % line_wiki,"%s in %s" % (__name__, os.path.basename(__file__)))
 						default_value = line_buffer[0:item_tail].strip() # make sure spaces & new line are not included at head and tail
 						if default_value.find("required") != -1:
 							# This is a required command token and should have value type instead of default value
@@ -1070,9 +1070,9 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 					# else:
 						# This is not option entry. Ignore this line
 				else:
-					global_def.ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
+					sparx_global_def.ERROR("Logical Error: This section is invalid. Did you assigne an invalid section?", "%s in %s" % (__name__, os.path.basename(__file__)))
 
-	if current_state != state_done: global_def.ERROR("Wiki Format Error: parser could not extract all information necessary (current state %d). Please check if the Wiki format has all required sections." % (current_state), "%s in %s" % (__name__, os.path.basename(__file__)))
+	if current_state != state_done: sparx_global_def.ERROR("Wiki Format Error: parser could not extract all information necessary (current state %d). Please check if the Wiki format has all required sections." % (current_state), "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	for sxcmd_token_key_base in list(sxcmd.token_dict.keys()):
 		# Make sure there are no extra arguments or options in command token dictionary compared with command token list.
@@ -1081,36 +1081,36 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 			if sxcmd_token.key_base == sxcmd_token_key_base:
 				is_found = True
 				break
-		if not is_found: global_def.ERROR("Logical Error: Registered key base name in the command token dictionary is not found in the command token list.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if not is_found: sparx_global_def.ERROR("Logical Error: Registered key base name in the command token dictionary is not found in the command token list.", "%s in %s" % (__name__, os.path.basename(__file__)))
 		# Make sure there are no extra arguments or options in command token list compared with usage token list extracted from "usage in command line" of "====== Usage ======".
 		is_found = False
 		for usage_token in usage_token_list:
 			if usage_token.key_base == sxcmd_token_key_base:
 				is_found = True
 				break
-		if not is_found: global_def.ERROR("Wiki Format Error: An extra argument or option (%s) is found in the command token dictionary extracted from '===== Input =====' compared with 'usage in command line' of '====== Usage ======'." % sxcmd_token_key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+		if not is_found: sparx_global_def.ERROR("Wiki Format Error: An extra argument or option (%s) is found in the command token dictionary extracted from '===== Input =====' compared with 'usage in command line' of '====== Usage ======'." % sxcmd_token_key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	for sxcmd_token in sxcmd.token_list:
 		# Make sure there are no extra arguments or options in command token list compared with command token dictionary.
-		if sxcmd_token.key_base not in list(sxcmd.token_dict.keys()): global_def.ERROR("Logical Error: Registered key base name in the command token list is not registered as key base name in the command token dictionary.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if sxcmd_token.key_base not in list(sxcmd.token_dict.keys()): sparx_global_def.ERROR("Logical Error: Registered key base name in the command token list is not registered as key base name in the command token dictionary.", "%s in %s" % (__name__, os.path.basename(__file__)))
 		# Make sure there are no extra arguments or options in command token list compared with usage token list extracted from "usage in command line" of "====== Usage ======".
 		is_found = False
 		for usage_token in usage_token_list:
 			if usage_token.key_base == sxcmd_token.key_base:
 				is_found = True
 				break
-		if not is_found: global_def.ERROR("Wiki Format Error: An extra argument or option (%s) is found in the command token list extracted from '===== Input =====' compared with 'usage in command line' of '====== Usage ======'." % sxcmd_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+		if not is_found: sparx_global_def.ERROR("Wiki Format Error: An extra argument or option (%s) is found in the command token list extracted from '===== Input =====' compared with 'usage in command line' of '====== Usage ======'." % sxcmd_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	for usage_token in usage_token_list:
 		# Make sure there are no extra arguments or options in usage token list extracted from "usage in command line" of "====== Usage ======" compared with command token dictionary. 
-		if usage_token.key_base not in list(sxcmd.token_dict.keys()): global_def.ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token dictionary extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+		if usage_token.key_base not in list(sxcmd.token_dict.keys()): sparx_global_def.ERROR("Wiki Format Error: An extra argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token dictionary extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 		# Make sure there are no extra arguments or options in usage token list extracted from "usage in command line" of "====== Usage ======" compared with command token list. 
 		is_found = False
 		for sxcmd_token in sxcmd.token_list:
 			if sxcmd_token.key_base == sxcmd_token_key_base:
 				is_found = True
 				break
-		if not is_found: global_def.ERROR("Wiki Format Error: An additional argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token list extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
+		if not is_found: sparx_global_def.ERROR("Wiki Format Error: An additional argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token list extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	file_wiki.close()
 
@@ -1173,7 +1173,7 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 	# Using the first entry in token edit list as command mode token of this subset,
 	# get mode token from sxcmd (having a fullset of tokens)
 	mode_token_edit = sxsubcmd_config.token_edit_list[0]
-	if mode_token_edit.key_base not in list(fullset_token_dict.keys()): global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Key (%s) should exists." % (mode_token_edit.key_base), "%s in %s" % (__name__, os.path.basename(__file__)))
+	if mode_token_edit.key_base not in list(fullset_token_dict.keys()): sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Key (%s) should exists." % (mode_token_edit.key_base), "%s in %s" % (__name__, os.path.basename(__file__)))
 	mode_token = fullset_token_dict[mode_token_edit.key_base]
 
 	# Create mode name of this subset, append key base of mode token to mode_name of this command
@@ -1209,14 +1209,14 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 	# Reconstruct token list
 	for token_edit in sxsubcmd_config.token_edit_list:
 		# print "MRK_DEBUG: token_edit.key_base = %s" % (token_edit.key_base)
-		if token_edit.key_base is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Invalid None Key (%s)." % (token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token_edit.key_base == "": global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Invalid empty string Key (%s)." % (token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token_edit.key_base is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Invalid None Key (%s)." % (token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token_edit.key_base == "": sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Invalid empty string Key (%s)." % (token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
 		
 		token = None
 		if token_edit.key_base not in list(fullset_token_dict.keys()):
 			# token key base is not found in fullset. This must be an argument to be added
-			if token_edit.key_prefix is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Prefix (%s) for Key (%s) should NOT be None." % (token_edit.key_prefix, token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
-			if token_edit.key_prefix != "": global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Key (%s) should be argument (Prefix (%s) should be empty string)." % (token_edit.key_base, token_edit.key_prefix) , "%s in %s" % (__name__, os.path.basename(__file__)))
+			if token_edit.key_prefix is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Prefix (%s) for Key (%s) should NOT be None." % (token_edit.key_prefix, token_edit.key_base) , "%s in %s" % (__name__, os.path.basename(__file__)))
+			if token_edit.key_prefix != "": sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. Key (%s) should be argument (Prefix (%s) should be empty string)." % (token_edit.key_base, token_edit.key_prefix) , "%s in %s" % (__name__, os.path.basename(__file__)))
 			# token = token_edit
 			token = sxgui_template.SXcmd_token()
 			token.key_base = token_edit.key_base
@@ -1250,17 +1250,17 @@ def apply_sxsubcmd_config(sxsubcmd_config, sxcmd):
 			token.restore = token.default
 		
 		# Make sure all fields of token are not None
-		if token.key_base is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.key_base should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token.key_prefix is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.key_prefix should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token.label is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.label should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token.help is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.help should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token.group is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.group should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token.is_required is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.is_required should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token.is_locked is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.is_locked should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token.is_reversed is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.is_reversed should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token.default is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.default should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token.restore is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.restore should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
-		if token.type is None: global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.type should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.key_base is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.key_base should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.key_prefix is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.key_prefix should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.label is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.label should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.help is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.help should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.group is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.group should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.is_required is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.is_required should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.is_locked is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.is_locked should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.is_reversed is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.is_reversed should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.default is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.default should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.restore is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.restore should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
+		if token.type is None: sparx_global_def.ERROR("Logical Error: This condition should not happen! Subset command configuration must be incorrect. token.type should NOT be None.", "%s in %s" % (__name__, os.path.basename(__file__)))
 
 		sxcmd.token_list.append(token)
 		sxcmd.token_dict[token_edit.key_base] = (token)
@@ -2454,7 +2454,7 @@ def main(is_dev_mode = False, is_MoinMoinWiki_mode = False):
 
 	for sxcmd_config in sxcmd_config_list:
 		if not sxcmd_config.category in sxcmd_category_names:
-			global_def.ERROR("Logical Error: sxcmd_config for %s is using invalid category %s." % (sxcmd_config.wiki, sxcmd_config.category), "%s in %s" % (__name__, os.path.basename(__file__)))
+			sparx_global_def.ERROR("Logical Error: sxcmd_config for %s is using invalid category %s." % (sxcmd_config.wiki, sxcmd_config.category), "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	# --------------------------------------------------------------------------------
 	# Generate sxgui.py
@@ -2497,7 +2497,7 @@ def main(is_dev_mode = False, is_MoinMoinWiki_mode = False):
 					elif sxcmd_config.format == "DokuWiki":
 						sxcmd = construct_token_list_from_DokuWiki(sxcmd_config)
 					else:
-						global_def.ERROR("Logical Error: Invalid Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
+						sparx_global_def.ERROR("Logical Error: Invalid Wiki format %s! Check the sxcmd_config setting in this script." % (sxcmd_config.format), "%s in %s" % (__name__, os.path.basename(__file__)))
 
 					if sxcmd_config.subconfig != None:
 						apply_sxsubcmd_config(sxcmd_config.subconfig, sxcmd)
@@ -2506,12 +2506,12 @@ def main(is_dev_mode = False, is_MoinMoinWiki_mode = False):
 					insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name)
 			# else: do nothing
 		else:
-			if current_state != state_insertion: global_def.ERROR("Logical Error: This condition should not happen! State setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			if current_state != state_insertion: sparx_global_def.ERROR("Logical Error: This condition should not happen! State setting must be incorrect.", "%s in %s" % (__name__, os.path.basename(__file__)))
 			if line.find("# @@@@@ END_INSERTION @@@@@") != -1:
 				current_state = state_template
 			# else: do nothing
 
-	if current_state == state_insertion: global_def.ERROR("Script Template Format Error: START_INSERTION and END_INSERTION must be paired.", "%s in %s" % (__name__, os.path.basename(__file__)))
+	if current_state == state_insertion: sparx_global_def.ERROR("Script Template Format Error: START_INSERTION and END_INSERTION must be paired.", "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	output_file.close()
 
