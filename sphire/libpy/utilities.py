@@ -7297,3 +7297,93 @@ def convert_to_float(value):
 	pass#IMPORTIMPORTIMPORT from struct import unpack
 	return struct.unpack("!f", hex(value)[2:].zfill(8).decode('hex'))[0]
 
+def create_summovie_command(
+        temp_name,
+        micrograph_name,
+        shift_name,
+        frc_name,
+        opt
+        ):
+
+    # Handle first and last case events
+    if opt['first'] == 0:
+        global_def.ERROR(
+            'SumMovie indexing starts with 1.\n' +
+            '0 is not a valid entry for --first', 'sxsummovie.py', 1
+            )
+    elif opt['first'] < 0:
+        first = opt['nr_frames'] + opt['first'] + 1
+    else:
+        first = opt['first']
+
+    if opt['last'] == 0:
+        global_def.ERROR(
+            'SumMovie indexing starts with 1.\n' +
+            '0 is not a valid entry for --last', 'sxsummovie.py', 1
+            )
+    elif opt['last'] < 0:
+        last = opt['nr_frames'] + opt['last'] + 1
+    else:
+        last = opt['last']
+
+    if first > last:
+        global_def.ERROR(
+            'First option musst be smaller equals last option!\n' + 
+            'first: {0}; last: {1}'.format(first, last), 'sxsummovie.py', 1
+            )
+
+    if opt['nr_frames'] < last or last <= 0:
+        global_def.ERROR(
+            '--last option {0} is out of range:\n'.format(last) + 
+            'min: 1; max {0}'.format(
+            opt['nr_frames']
+            ), 'sxsummovie.py', 1
+            )
+
+    if opt['nr_frames'] < first or first <= 0:
+        global_def.ERROR(
+            '--first option {0} is out of range:\n'.format(first) + 
+            'min: 1; max {0}'.format(
+            opt['nr_frames']
+            ), 'sxsummovie.py', 1
+            )
+
+    # Command list
+    summovie_command = []
+
+    # Input file
+    summovie_command.append('{0}'.format(temp_name))
+    # Number of frames
+    summovie_command.append('{0}'.format(opt['nr_frames']))
+    # Sum file
+    summovie_command.append(micrograph_name)
+    # Shift file
+    summovie_command.append(shift_name)
+    # FRC file
+    summovie_command.append(frc_name),
+    # First frame
+    summovie_command.append('{0}'.format(first))
+    # Last frame
+    summovie_command.append('{0}'.format(last))
+    # Pixel size
+    summovie_command.append('{0}'.format(opt['pixel_size']))
+    # Dose correction
+    if not opt['apply_dose_filter']:
+        summovie_command.append('NO')
+    else:
+        summovie_command.append('YES')
+        # Exposure per frame
+        summovie_command.append('{0}'.format(opt['exposure_per_frame']))
+        # Acceleration voltage
+        summovie_command.append('{0}'.format(opt['voltage']))
+        # Pre exposure
+        summovie_command.append('{0}'.format(opt['pre_exposure']))
+        # Restore noise power
+        if opt['dont_restore_noise']:
+            summovie_command.append('NO')
+        else:
+            summovie_command.append('YES')
+
+    return summovie_command
+
+

@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import time
+import utilities
 pass#IMPORTIMPORTIMPORT import glob
 pass#IMPORTIMPORTIMPORT import global_def
 pass#IMPORTIMPORTIMPORT import numpy
@@ -394,7 +395,7 @@ def run_unblur(
                 'dont_restore_noise': options.dont_restore_noise,
                 'apply_dose_filter': False
             }
-            summovie_command = create_summovie_command(
+            summovie_command = utilities.create_summovie_command(
                 temp_name,
                 micrograph_name_skip,
                 shift_name,
