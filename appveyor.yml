@@ -10,7 +10,7 @@ platform:
     - x64
 
 install:
-    - python -m compileall -q .
+    - python -m compileall -q -x \'.*/unused/.*|.*/.git/.*\' .
     - set
     # Cywing's git breaks conda-build. (See https://github.com/conda-forge/conda-smithy-feedstock/pull/2.)
     - rmdir C:\cygwin /s /q
