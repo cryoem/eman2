@@ -58,7 +58,7 @@ pass#IMPORTIMPORTIMPORT from     global_def import *
 pass#IMPORTIMPORTIMPORT from     inspect    import currentframe, getframeinfo
 pass#IMPORTIMPORTIMPORT from     utilities  import if_error_then_all_processes_exit_program
 
-global_def.BATCH = True
+sparx_global_def.BATCH = True
 
 
 def main():

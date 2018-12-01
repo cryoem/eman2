@@ -178,8 +178,8 @@ if(Blockdata["no_of_groups"] > 1): Blockdata["main_shared_nodes"] = [Blockdata["
 else:  Blockdata["main_shared_nodes"] = [0, 1]
 Blockdata["nproc_previous"]  = 0
 # End of Blockdata: sorting requires at least three nodes, and the used number of nodes be integer times of three
-global_def.BATCH = True
-global_def.MPI   = True
+sparx_global_def.BATCH = True
+sparx_global_def.MPI   = True
 ##========================================================================================
 global _proc_status, _scale, is_unix_cluster
 try:			
