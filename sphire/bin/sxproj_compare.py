@@ -11,10 +11,10 @@ pass#IMPORTIMPORTIMPORT from statistics import ccc
 import EMAN2
 import EMAN2_cppwrap
 import EMAN2_meta
-import applications
+import sparx_applications
 import os
-import statistics
-import utilities
+import sparx_statistics
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2_meta
@@ -68,13 +68,13 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 	if inangles:
 		cmd6="sxheader.py %s --params=xform.projection --import=%s" % (classavgstack, inangles)
 		print cmd6
-		applications.header(classavgstack, 'xform.projection', fimport=inangles)
+		sparx_applications.header(classavgstack, 'xform.projection', fimport=inangles)
 	
 	cmd1="sxheader.py %s --params=xform.projection --export=%s" % (classavgstack, outangles) 
 	print cmd1
 	#os.system(cmd1)
 	try:
-		applications.header(classavgstack, 'xform.projection', fexport=outangles)
+		sparx_applications.header(classavgstack, 'xform.projection', fexport=outangles)
 	except RuntimeError:
 		print("\nERROR!! No projection angles found in class-average stack header!\n")
 		exit()
@@ -82,7 +82,7 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 	cmd2="sxproject3d.py %s %s --angles=%s" % (recon, projstack, outangles)
 	print cmd2
 	#os.system(cmd2)
-	applications.project3d(recon, stack=projstack, listagls=outangles)
+	sparx_applications.project3d(recon, stack=projstack, listagls=outangles)
 	
 	imgcounter = 0  # montage will have double the number of images as number of class-averages
 	result=[]
@@ -92,11 +92,11 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 	
 	for imgnum in xrange(nimg1):
 		#print imgnum
-		classimg = utilities.get_im(classavgstack, imgnum)
+		classimg = sparx_utilities.get_im(classavgstack, imgnum)
 		ccc1 = classimg.get_attr_default('cross-corr', -1.0)
-		prjimg = utilities.get_im(projstack,imgnum)
+		prjimg = sparx_utilities.get_im(projstack,imgnum)
 		ccc1 = prjimg.get_attr_default('cross-corr', -1.0)
-		cccoeff = statistics.ccc(prjimg,classimg)
+		cccoeff = sparx_statistics.ccc(prjimg,classimg)
 		#print imgnum, cccoeff
 		classimg.set_attr_dict({'cross-corr':cccoeff})
 		prjimg.set_attr_dict({'cross-corr':cccoeff})
@@ -114,10 +114,10 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 	
 	for imgnum in xrange(nimg2):
 		if (imgnum % 2 ==0):
-			prjimg = utilities.get_im(outstack,imgnum)
+			prjimg = sparx_utilities.get_im(outstack,imgnum)
 			meanccc1 = prjimg.get_attr_default('mean-cross-corr', -1.0)
 			prjimg.set_attr_dict({'mean-cross-corr':meanccc})
-			utilities.write_header(outstack,prjimg,imgnum)
+			sparx_utilities.write_header(outstack,prjimg,imgnum)
 		if (imgnum % 100) == 0:
 			print imgnum
 	

@@ -14,15 +14,15 @@ from __future__ import print_function
 #  07/21/2018 - Full size reconstruction after delta change
 from builtins import range
 import EMAN2_cppwrap
-import alignment
-import applications
-import filter
-import fundamentals
-import global_def
+import sparx_alignment
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
 import json
-import logger
+import sparx_logger
 import math
-import morphology
+import sparx_morphology
 import mpi
 import numpy
 import numpy as np
@@ -30,17 +30,17 @@ import numpy.random
 import operator
 import optparse
 import os
-import projection
+import sparx_projection
 import random
-import reconstruction
+import sparx_reconstruction
 import shutil
-import statistics
+import sparx_statistics
 import string
 import subprocess
 import sys
 import time
-import user_functions
-import utilities
+import sparx_user_functions
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import alignment
@@ -195,7 +195,7 @@ Blockdata["shared_comm"]		= mpi.mpi_comm_split_type(mpi.MPI_COMM_WORLD, mpi.MPI_
 Blockdata["myid_on_node"]		= mpi.mpi_comm_rank(Blockdata["shared_comm"])
 Blockdata["no_of_processes_per_group"] = mpi.mpi_comm_size(Blockdata["shared_comm"])
 masters_from_groups_vs_everything_else_comm = mpi.mpi_comm_split(mpi.MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
-Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = utilities.get_colors_and_subsets(Blockdata["main_node"], mpi.MPI_COMM_WORLD, Blockdata["myid"], \
+Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = sparx_utilities.get_colors_and_subsets(Blockdata["main_node"], mpi.MPI_COMM_WORLD, Blockdata["myid"], \
 		Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
 #  We need two nodes for processing of volumes
 if( Blockdata["no_of_groups"] > 1 ):  Blockdata["node_volume"] = [Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take two last nodes
@@ -212,8 +212,8 @@ def create_subgroup():
 	if( Blockdata["myid_on_node"] < Blockdata["ncpuspernode"] ): submyids = [Blockdata["myid"]]
 	else:  submyids = []
 
-	submyids = utilities.wrap_mpi_gatherv(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	submyids = utilities.wrap_mpi_bcast(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	submyids = sparx_utilities.wrap_mpi_gatherv(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	submyids = sparx_utilities.wrap_mpi_bcast(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	#if( Blockdata["myid"] == Blockdata["main_node"] ): print(submyids)
 	world_group = mpi.mpi_comm_group(mpi.MPI_COMM_WORLD)
 	subgroup = mpi.mpi_group_incl(world_group,len(submyids),submyids)
@@ -238,8 +238,8 @@ def create_zero_group():
 	if( Blockdata["myid_on_node"] == 0 ): submyids = [Blockdata["myid"]]
 	else:  submyids = []
 
-	submyids = utilities.wrap_mpi_gatherv(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	submyids = utilities.wrap_mpi_bcast(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	submyids = sparx_utilities.wrap_mpi_gatherv(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	submyids = sparx_utilities.wrap_mpi_bcast(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	#if( Blockdata["myid"] == Blockdata["main_node"] ): print(submyids)
 	world_group = mpi.mpi_comm_group(mpi.MPI_COMM_WORLD)
 	subgroup = mpi.mpi_group_incl(world_group,len(submyids),submyids)
@@ -583,7 +583,7 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 				for i in range(len(stmp)):  stmp[i] = round(stmp[i].defocus, 4)
 				defstmp = stmp[:]
 			else:
-				global_def.ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
+				sparx_global_def.ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
 	else:
 		try:
 			stmp_junk = EMAN2_cppwrap.EMUtil.get_all_attributes(Tracker["constants"]["stack"], "ptcl_source_image")
@@ -603,7 +603,7 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 					stmp[isub] = stmp_junk[asubset[isub]]
 					stmp[isub] = round(stmp[isub].defocus, 4)
 				defstmp[:] = stmp[:]
-			else:  global_def.ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
+			else:  sparx_global_def.ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
 	tt = [[stmp[i],i] for i in range(len(stmp))]
 	tt.sort()
 	tt.append([-1,-1])
@@ -678,8 +678,8 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 
 	cross_reference_txt = [[cross_reference_txt[j][temp[i][0]] for i in range(len(cross_reference_txt[0]))] for j in range(5)]
 
-	utilities.write_text_row(cross_reference_txt[0], os.path.join(Tracker["constants"]["masterdir"],"main000","groupids.txt") )
-	utilities.write_text_row([[sd[cross_reference_txt[0][i][j]][0] for j in range(len(cross_reference_txt[0][i]))]  for i in range(len(cross_reference_txt[0]))], os.path.join(Tracker["constants"]["masterdir"],"main000","micids.txt") )
+	sparx_utilities.write_text_row(cross_reference_txt[0], os.path.join(Tracker["constants"]["masterdir"],"main000","groupids.txt") )
+	sparx_utilities.write_text_row([[sd[cross_reference_txt[0][i][j]][0] for j in range(len(cross_reference_txt[0][i]))]  for i in range(len(cross_reference_txt[0]))], os.path.join(Tracker["constants"]["masterdir"],"main000","micids.txt") )
 
 	Tracker["constants"]["number_of_groups"] = len(cross_reference_txt[0])
 	#  split into two chunks by groups
@@ -692,11 +692,11 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 
 	#  Create output tables
 	for iproc in range(2):
-		utilities.write_text_row([cross_reference_txt[0][i] for i in lili[iproc]] , os.path.join(Tracker["constants"]["masterdir"],"main000","groupids_%03d.txt"%iproc) )
-		utilities.write_text_row([[sd[cross_reference_txt[0][i][j]][0] for j in range(len(cross_reference_txt[0][i]))]  for i in lili[iproc]], os.path.join(Tracker["constants"]["masterdir"],"main000","micids_%03d.txt"%iproc) )
+		sparx_utilities.write_text_row([cross_reference_txt[0][i] for i in lili[iproc]] , os.path.join(Tracker["constants"]["masterdir"],"main000","groupids_%03d.txt"%iproc) )
+		sparx_utilities.write_text_row([[sd[cross_reference_txt[0][i][j]][0] for j in range(len(cross_reference_txt[0][i]))]  for i in lili[iproc]], os.path.join(Tracker["constants"]["masterdir"],"main000","micids_%03d.txt"%iproc) )
 	del sd
 
-	utilities.write_text_file([len(cross_reference_txt[4][i]) for i in range(len(cross_reference_txt[4]))], os.path.join(Tracker["constants"]["masterdir"],"main000","number_of_particles_per_group.txt") )
+	sparx_utilities.write_text_file([len(cross_reference_txt[4][i]) for i in range(len(cross_reference_txt[4]))], os.path.join(Tracker["constants"]["masterdir"],"main000","number_of_particles_per_group.txt") )
 
 	q0 = []
 	g0 = []
@@ -715,9 +715,9 @@ def assign_particles_to_groups(minimum_group_size = 10, asubset= None):
 	#for iproc in range(2):
 	#	if( Tracker["nima_per_chunk"][iproc] < Blockdata["nproc"] ):  ERROR("Number of particles per chunk smaller than the number of CPUs","assign_particles_to_groups",1,Blockdata["myid"])
 	#write_text_file(q0, os.path.join(Tracker["constants"]["masterdir"],"main000","tchunk_0.txt") )
-	utilities.write_text_file(g0, os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_0.txt") )
+	sparx_utilities.write_text_file(g0, os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_0.txt") )
 	#write_text_file(q1, os.path.join(Tracker["constants"]["masterdir"],"main000","tchunk_1.txt") )
-	utilities.write_text_file(g1, os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_1.txt") )
+	sparx_utilities.write_text_file(g1, os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_1.txt") )
 	if asubset:
 		sq0 =[None]*len(q0)
 		sq1 =[None]*len(q1) 
@@ -755,7 +755,7 @@ def number_of_cones_to_delta(number_of_cones):
 				nren = len(Blockdata["symclass"].even_angles(i, theta1=1.0))
 				if(nren>number_of_cones): return float(i), nren
 
-		global_def.ERROR(  "number_of_cones_to_delta","should not be here",0)
+		sparx_global_def.ERROR(  "number_of_cones_to_delta","should not be here",0)
 		return -1, 0
 
 def find_assignments_of_refangles_to_angles(normals_set, ancor_angle, an):
@@ -764,20 +764,20 @@ def find_assignments_of_refangles_to_angles(normals_set, ancor_angle, an):
 
 	nang1 = len(normals_set) - 1
 	Blockdata["target_theta"] = ancor_angle[1]
-	u1,u2 = fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+	u1,u2 = sparx_fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
 	u1 = int(u1+0.5)
 
 	Blockdata["target_theta"] = max(0.0, ancor_angle[1] - 1.2*an )
-	u3,u4 = fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+	u3,u4 = sparx_fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
 	u3 = int(u3+0.5)
 	if(u3<10):  u3 = 0
 
 	Blockdata["target_theta"] = min(Blockdata["symclass"].brackets[1][3], ancor_angle[1] + 1.2*an )
-	u5,u6 = fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+	u5,u6 = sparx_fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
 	u5 = int(u5+0.5)
 	if(u5>nang1-10):  u5 = nang1+1
 
-	ancordir = utilities.angles_to_normals(Blockdata["symclass"].symmetry_neighbors([ancor_angle[:3]]))
+	ancordir = sparx_utilities.angles_to_normals(Blockdata["symclass"].symmetry_neighbors([ancor_angle[:3]]))
 	ltemp = EMAN2_cppwrap.Util.cone_dirs_f( normals_set[u3:u5], ancordir, an )
 	###ltemp = cone_dirs_f( normals_set[u3:u5], ancordir, an )#Util.cone_dirs_f( normals_set[u3:u5], ancordir, an )
 	#print(" us ",Blockdata["myid"],u1,u3,u5,m,"  ltemp ",ltemp)
@@ -798,26 +798,26 @@ def find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany)
 	while( qtl < howmany ):
 		an = bigger*max(delta*(howmany//2),delta)
 		Blockdata["target_theta"] = ancor_angle[1]
-		u1,u2 = fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+		u1,u2 = sparx_fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
 		u1 = int(u1+0.5)
 
 		Blockdata["target_theta"] = max(0.0, ancor_angle[1] - 1.1*an )
-		u3,u4 = fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+		u3,u4 = sparx_fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
 		u3 = int(u3+0.5)
 		if(u3<10):  u3 = 0
 
 		Blockdata["target_theta"] = min(Blockdata["symclass"].brackets[1][3], ancor_angle[1] + 1.1*an )
-		u5,u6 = fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
+		u5,u6 = sparx_fundamentals.goldsearch(auxiliary_funcdef, 0, nang1, tol=1.0e-2)
 		u5 = int(u5+0.5)
 		if(u5>nang1-10):  u5 = nang1+1
 		qtl = len(normals_set[u3:u5])
 		bigger *= 1.25
 		
 	if( Blockdata["symclass"].sym == "c1"):
-		ancordir = utilities.getfvec(ancor_angle[0],ancor_angle[1])
+		ancordir = sparx_utilities.getfvec(ancor_angle[0],ancor_angle[1])
 		ltemp = EMAN2_cppwrap.Util.nearest_fang_select(normals_set[u3:u5], ancordir[0], ancordir[1], ancordir[2], howmany)
 	else:
-		ancordir = utilities.angles_to_normals(Blockdata["symclass"].symmetry_neighbors([ancor_angle]))
+		ancordir = sparx_utilities.angles_to_normals(Blockdata["symclass"].symmetry_neighbors([ancor_angle]))
 		ltemp = EMAN2_cppwrap.Util.nearest_fang_sym(ancordir, normals_set[u3:u5], len(ancordir), howmany)
 	return  [qtemp+u3 for qtemp in ltemp]
 
@@ -841,26 +841,26 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		#tsd = model_blank(nv + nv//2,len(sd), 1, 1.0)
 		#tocp = model_blank(len(sd), 1, 1, 1.0)
 		if( myid == Blockdata["main_node"] ):
-			tsd = utilities.get_im(os.path.join(Tracker["previousoutputdir"],"bckgnoise.hdf"))
+			tsd = sparx_utilities.get_im(os.path.join(Tracker["previousoutputdir"],"bckgnoise.hdf"))
 			tsd.write_image(os.path.join(Tracker["directory"],"bckgnoise.hdf"))
 			nnx = tsd.get_xsize()
 			nny = tsd.get_ysize()
 		else:
 			nnx = 0
 			nny = 0
-		nnx = utilities.bcast_number_to_all(nnx, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
-		nny = utilities.bcast_number_to_all(nny, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
+		nnx = sparx_utilities.bcast_number_to_all(nnx, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
+		nny = sparx_utilities.bcast_number_to_all(nny, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
 		if( myid != Blockdata["main_node"] ):
-			tsd = utilities.model_blank(nnx,nny, 1, 1.0)
-		utilities.bcast_EMData_to_all(tsd, myid, source_node = Blockdata["main_node"], comm = mpi_comm)
+			tsd = sparx_utilities.model_blank(nnx,nny, 1, 1.0)
+		sparx_utilities.bcast_EMData_to_all(tsd, myid, source_node = Blockdata["main_node"], comm = mpi_comm)
 		"""Multiline Comment0"""
 
 	else:
 
 		if( myid == Blockdata["main_node"] ):
-			ngroups = len(utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "groupids.txt")))
+			ngroups = len(sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "groupids.txt")))
 		else: ngroups = 0
-		ngroups = utilities.bcast_number_to_all(ngroups, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
+		ngroups = sparx_utilities.bcast_number_to_all(ngroups, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
 
 		ndata = len(projdata)
 		nx = Tracker["constants"]["nnxo"]
@@ -868,8 +868,8 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		nv = mx//2+1
 		"""Multiline Comment1"""
 
-		mask = utilities.model_circle(Tracker["constants"]["radius"],nx,nx)
-		tsd = utilities.model_blank(nv + nv//2, ngroups)
+		mask = sparx_utilities.model_circle(Tracker["constants"]["radius"],nx,nx)
+		tsd = sparx_utilities.model_blank(nv + nv//2, ngroups)
 
 		#projdata, params = getalldata(partstack, params, myid, Blockdata["nproc"])
 		"""Multiline Comment2"""
@@ -877,16 +877,16 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 			Blockdata["accumulatepw"] = [[],[]]
 			doac = True
 		else:  doac = False
-		tocp = utilities.model_blank(ngroups)
-		tavg = utilities.model_blank(nx,nx)
+		tocp = sparx_utilities.model_blank(ngroups)
+		tavg = sparx_utilities.model_blank(nx,nx)
 		for i in range(ndata):  # apply_shift; info_mask; norm consistent with get_shrink_data
 			indx = projdata[i].get_attr("particle_group")
 			phi,theta,psi,sx,sy = params[i][0],params[i][1],params[i][2],params[i][3],params[i][4]
-			stmp = fundamentals.cyclic_shift( projdata[i], int(round(sx)), int(round(sy)))
+			stmp = sparx_fundamentals.cyclic_shift( projdata[i], int(round(sx)), int(round(sy)))
 			st = EMAN2_cppwrap.Util.infomask(stmp, mask, False)
 			stmp -=st[0]
 			stmp /=st[1]
-			temp = morphology.cosinemask(stmp, radius = Tracker["constants"]["radius"], s = 0.0)
+			temp = sparx_morphology.cosinemask(stmp, radius = Tracker["constants"]["radius"], s = 0.0)
 			EMAN2_cppwrap.Util.add_img(tavg, temp)
 			sig = EMAN2_cppwrap.Util.rotavg_fourier( temp )
 			#sig = rops(pad(((cyclic_shift( projdata[i], int(sx), int(round(sy)) ) - st[0])/st[1]), mx,mx,1,0.0))
@@ -897,9 +897,9 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 			tocp[indx] += 1
 
 		####for lll in range(len(Blockdata["accumulatepw"])):  print(myid,ndata,lll,len(Blockdata["accumulatepw"][lll]))
-		utilities.reduce_EMData_to_root(tsd, myid, Blockdata["main_node"],  mpi_comm)
-		utilities.reduce_EMData_to_root(tocp, myid, Blockdata["main_node"], mpi_comm)
-		utilities.reduce_EMData_to_root(tavg, myid, Blockdata["main_node"], mpi_comm)
+		sparx_utilities.reduce_EMData_to_root(tsd, myid, Blockdata["main_node"],  mpi_comm)
+		sparx_utilities.reduce_EMData_to_root(tocp, myid, Blockdata["main_node"], mpi_comm)
+		sparx_utilities.reduce_EMData_to_root(tavg, myid, Blockdata["main_node"], mpi_comm)
 		if( myid == Blockdata["main_node"]):
 			EMAN2_cppwrap.Util.mul_scalar(tavg, 1.0/float(sum(Tracker["nima_per_chunk"])))
 			sig = EMAN2_cppwrap.Util.rotavg_fourier( tavg )
@@ -922,12 +922,12 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 					tsd.set_value_at(k,i,tmp1[k])
 				tsd.set_value_at(0,i,1.0)
 			tsd.write_image(os.path.join(Tracker["directory"],"bckgnoise.hdf"))
-		utilities.bcast_EMData_to_all(tsd, myid, source_node = 0, comm = mpi_comm)
+		sparx_utilities.bcast_EMData_to_all(tsd, myid, source_node = 0, comm = mpi_comm)
 	nnx = tsd.get_xsize()
 	nny = tsd.get_ysize()
 	Blockdata["bckgnoise"] = []
 	for i in range(nny):
-		prj = utilities.model_blank(nnx)
+		prj = sparx_utilities.model_blank(nnx)
 		for k in range(nnx): prj[k] = tsd.get_value_at(k,i)
 		Blockdata["bckgnoise"].append(prj)  #  1.0/sigma^2
 	return
@@ -942,19 +942,19 @@ def getindexdata(partids, partstack, particle_groups, original_data=None, small_
 	if( mpi_comm < 0 ):  mpi_comm = mpi.MPI_COMM_WORLD
 	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
 	#  parameters
-	if( myid == 0 ):  partstack = utilities.read_text_row(partstack)
+	if( myid == 0 ):  partstack = sparx_utilities.read_text_row(partstack)
 	else:  			  partstack = 0
-	partstack = utilities.wrap_mpi_bcast(partstack, 0, mpi_comm)
+	partstack = sparx_utilities.wrap_mpi_bcast(partstack, 0, mpi_comm)
 	#  particles IDs
-	if( myid == 0 ):  partids = utilities.read_text_file(partids)
+	if( myid == 0 ):  partids = sparx_utilities.read_text_file(partids)
 	else:          	  partids = 0
-	partids = utilities.wrap_mpi_bcast(partids, 0, mpi_comm)
+	partids = sparx_utilities.wrap_mpi_bcast(partids, 0, mpi_comm)
 	#  Group assignments
-	if( myid == 0 ):	group_reference = utilities.read_text_file(particle_groups)
+	if( myid == 0 ):	group_reference = sparx_utilities.read_text_file(particle_groups)
 	else:          		group_reference = 0
-	group_reference = utilities.wrap_mpi_bcast(group_reference, 0, mpi_comm)
+	group_reference = sparx_utilities.wrap_mpi_bcast(group_reference, 0, mpi_comm)
 
-	im_start, im_end = applications.MPI_start_end(len(partstack), nproc, myid)
+	im_start, im_end = sparx_applications.MPI_start_end(len(partstack), nproc, myid)
 	partstack = partstack[im_start:im_end]
 	partids   = partids[im_start:im_end]
 	group_reference = group_reference[im_start:im_end]
@@ -983,7 +983,7 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 		line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 		print(  line, "Processing data  onx: %3d, nx: %3d, CTF: %s, applymask: %s, preshift: %s."%(Tracker["constants"]["nnxo"], nxinit, Tracker["constants"]["CTF"], apply_mask, preshift) )
 	#  Preprocess the data
-	mask2D  	= utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	mask2D  	= sparx_utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	nima 		= len(original_data)
 	shrinkage 	= nxinit/float(Tracker["constants"]["nnxo"])
 
@@ -1020,13 +1020,13 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 		if preshift:
 			#data[im] = fshift(original_data[im], sx, sy)
 			if nosmearing:
-				data[im]  = fundamentals.fshift(original_data[im], sx, sy)
+				data[im]  = sparx_fundamentals.fshift(original_data[im], sx, sy)
 				oldparams[im][3] = 0.0
 				oldparams[im][4] = 0.0
 			else:
 				sx = int(round(sx))
 				sy = int(round(sy))
-				data[im]  = fundamentals.cyclic_shift(original_data[im],sx,sy)
+				data[im]  = sparx_fundamentals.cyclic_shift(original_data[im],sx,sy)
 				#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 				oldparams[im][3] = sx
 				oldparams[im][4] = sy
@@ -1042,20 +1042,20 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 		if Blockdata["bckgnoise"]:
 			if apply_mask:
 				if Tracker["constants"]["hardmask"]:
-					data[im] = morphology.cosinemask(data[im],radius = Tracker["constants"]["radius"])
+					data[im] = sparx_morphology.cosinemask(data[im],radius = Tracker["constants"]["radius"])
 				else:
-					bckg = utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+					bckg = sparx_utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
 					bckg.set_attr("is_complex",1)
 					bckg.set_attr("is_fftpad",1)
-					bckg = fundamentals.fft(filter.filt_table(bckg, oneover[data[im].get_attr("particle_group")]))
+					bckg = sparx_fundamentals.fft(sparx_filter.filt_table(bckg, oneover[data[im].get_attr("particle_group")]))
 					#  Normalize bckg noise in real space, only region actually used.
 					st = EMAN2_cppwrap.Util.infomask(bckg, mask2D, False)
 					bckg -= st[0]
 					bckg /= st[1]
-					data[im] = morphology.cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
+					data[im] = sparx_morphology.cosinemask(data[im],radius = Tracker["constants"]["radius"], bckg = bckg)
 		else:
 			#  if no bckgnoise, do simple masking instead
-			if apply_mask:  data[im] = morphology.cosinemask(data[im],radius = Tracker["constants"]["radius"] )
+			if apply_mask:  data[im] = sparx_morphology.cosinemask(data[im],radius = Tracker["constants"]["radius"] )
 		#  resample will properly adjusts shifts and pixel size in ctf
 		#data[im] = resample(data[im], shrinkage)
 		#  return Fourier image
@@ -1067,12 +1067,12 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 			#print(Tracker["avgvaradj"][procid]/wnorm)		
 
 		#  FT
-		data[im] = fundamentals.fft(data[im])
+		data[im] = sparx_fundamentals.fft(data[im])
 		sig = EMAN2_cppwrap.Util.rotavg_fourier( data[im] )
 		Blockdata["accumulatepw"][procid][im] = sig[len(sig)//2:]+[0.0]
 
 		if Tracker["constants"]["CTF"] :
-			data[im] = fundamentals.fdecimate(data[im], nxinit*npad, nxinit*npad, 1, False, False)
+			data[im] = sparx_fundamentals.fdecimate(data[im], nxinit*npad, nxinit*npad, 1, False, False)
 			ctf_params = original_data[im].get_attr("ctf")
 			ctf_params.apix = ctf_params.apix/shrinkage
 			data[im].set_attr('ctf', ctf_params)
@@ -1081,19 +1081,19 @@ def get_shrink_data(nxinit, procid, original_data = None, oldparams = None, \
 			#	data[im].set_attr('ctf_applied', 1)
 			#else:
 			data[im].set_attr('ctf_applied', 0)
-			if return_real :  data[im] = fundamentals.fft(data[im])
+			if return_real :  data[im] = sparx_fundamentals.fft(data[im])
 		else:
 			ctf_params = original_data[im].get_attr_default("ctf", False)
 			if  ctf_params:
 				ctf_params.apix = ctf_params.apix/shrinkage
 				data[im].set_attr('ctf', ctf_params)
 				data[im].set_attr('ctf_applied', 0)
-			data[im] = fundamentals.fdecimate(data[im], nxinit*npad, nxinit*npad, 1, True, False)
+			data[im] = sparx_fundamentals.fdecimate(data[im], nxinit*npad, nxinit*npad, 1, True, False)
 			apix = Tracker["constants"]["pixel_size"]
 			data[im].set_attr('apix', apix/shrinkage)
 
 		#  We have to make sure the shifts are within correct range, shrinkage or not
-		utilities.set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
+		sparx_utilities.set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 		if not return_real:
 			data[im].set_attr("padffted",1)
 		data[im].set_attr("npad",npad)
@@ -1107,14 +1107,14 @@ def get_anger(angle1, angle2):
 	pass#IMPORTIMPORTIMPORT from math import acos, degrees
 	pass#IMPORTIMPORTIMPORT from utilities import lacos
 	pass#IMPORTIMPORTIMPORT from fundamentals import rotmatrix
-	A1 = fundamentals.rotmatrix(angle1[0],angle1[1],angle1[2])
+	A1 = sparx_fundamentals.rotmatrix(angle1[0],angle1[1],angle1[2])
 	ar = Blockdata["symclass"].symmetry_related(angle2)
 	axes_dis_min = 1.0e23
 	for q in ar:
-		A2 = fundamentals.rotmatrix(q[0],q[1],q[2])
+		A2 = sparx_fundamentals.rotmatrix(q[0],q[1],q[2])
 		axes_dis = 0.0
 		for i in range(3):
-			axes_dis += utilities.lacos(A1[i][0]*A2[i][0] + A1[i][1]*A2[i][1] + A1[i][2]*A2[i][2])
+			axes_dis += sparx_utilities.lacos(A1[i][0]*A2[i][0] + A1[i][1]*A2[i][1] + A1[i][2]*A2[i][2])
 		axes_dis_min = min(axes_dis_min, axes_dis/3.0)
 	return axes_dis_min
 
@@ -1131,7 +1131,7 @@ def checkstep(item, keepchecking):
 			doit = 1
 	else:
 		doit = 1
-	doit = utilities.bcast_number_to_all(doit, source_node = Blockdata["main_node"])
+	doit = sparx_utilities.bcast_number_to_all(doit, source_node = Blockdata["main_node"])
 	return doit, keepchecking
 
 def out_fsc(f):
@@ -1148,7 +1148,7 @@ def get_refangs_and_shifts():
 
 	refang = Blockdata["symclass"].even_angles(Tracker["delta"])
 	coarse = Blockdata["symclass"].even_angles(2*Tracker["delta"])
-	refang = Blockdata["symclass"].reduce_anglesets( fundamentals.rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]) )
+	refang = Blockdata["symclass"].reduce_anglesets( sparx_fundamentals.rotate_params(refang, [-0.5*Tracker["delta"], -0.5*Tracker["delta"], -0.5*Tracker["delta"]]) )
 
 	"""Multiline Comment9"""
 
@@ -1183,7 +1183,7 @@ def get_shifts_neighbors(rshifts, cs):
 	shiftneighbors = []
 	rad = Tracker["ts"]*1.5
 	for l,q in enumerate(rshifts):
-		if(utilities.get_dist(q, cs) <= rad): shiftneighbors.append(l)
+		if(sparx_utilities.get_dist(q, cs) <= rad): shiftneighbors.append(l)
 	return 	shiftneighbors
 
 def shakegrid(rshifts, qt):
@@ -1194,10 +1194,10 @@ def shakegrid(rshifts, qt):
 ###----------------
 
 def get_refvol(nxinit):
-	ref_vol = utilities.get_im(Tracker["refvol"])
+	ref_vol = sparx_utilities.get_im(Tracker["refvol"])
 	nnn = ref_vol.get_xsize()
 	if( nxinit != nnn ):
-		ref_vol = fundamentals.fdecimate(ref_vol, nxinit, nxinit, nxinit, True, False)
+		ref_vol = sparx_fundamentals.fdecimate(ref_vol, nxinit, nxinit, nxinit, True, False)
 	return ref_vol
 
 def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smearing = True, mpi_comm = -1):
@@ -1225,7 +1225,7 @@ def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, smea
 	"""Multiline Comment11"""
 	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 	if smearing:
-		tvol, tweight, trol = reconstruction.recons3d_trl_struct_MPI(myid = myid, main_node = Blockdata["nodes"][procid], prjlist = data, \
+		tvol, tweight, trol = sparx_reconstruction.recons3d_trl_struct_MPI(myid = myid, main_node = Blockdata["nodes"][procid], prjlist = data, \
 												paramstructure = newparams, refang = refang, rshifts_shrank = [[q[0]*shrinkage,q[1]*shrinkage] for q in rshifts], \
 												delta = Tracker["delta"], CTF = Tracker["constants"]["CTF"], upweighted = False, mpi_comm = mpi_comm, \
 												target_size = (2*Tracker["nxinit"]+3), avgnorm = Tracker["avgvaradj"][procid], norm_per_particle = norm_per_particle)
@@ -1295,13 +1295,13 @@ def steptwo(tvol, tweight, treg, cfsc = None, regularized = True):
 				limitres = i-1
 				break
 		if( limitres == 0 ): limitres = nr-2;
-		ovol = utilities.reshape_1d(cfsc, nr, 2*nr)
+		ovol = sparx_utilities.reshape_1d(cfsc, nr, 2*nr)
 		limitres = 2*min(limitres, Tracker["maxfrad"])  # 2 on account of padding, which is always on
 		maxr2 = limitres**2
 		for i in range(limitres+1, len(ovol), 1):   ovol[i] = 0.0
 		ovol[0] = 1.0
 		#print(" ovol  ", ovol)
-		it = utilities.model_blank(2*nr)
+		it = sparx_utilities.model_blank(2*nr)
 		for i in range(2*nr):  it[i] = ovol[i]
 		del ovol
 		#  Do not regularize first four
@@ -1321,17 +1321,17 @@ def steptwo(tvol, tweight, treg, cfsc = None, regularized = True):
 	#  Either pad or window in F space to 2*nnxo
 	nx = tvol.get_ysize()
 	if( nx > 2*Tracker["constants"]["nnxo"] ):
-		tvol = fundamentals.fdecimate(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], False, False)
+		tvol = sparx_fundamentals.fdecimate(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], False, False)
 	elif(nx < 2*Tracker["constants"]["nnxo"] ):
-		tvol = fundamentals.fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
+		tvol = sparx_fundamentals.fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
 
-	tvol = fundamentals.fft(tvol)
-	tvol = fundamentals.cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	tvol = sparx_fundamentals.fft(tvol)
+	tvol = sparx_fundamentals.cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	tvol.set_attr("npad",2)
 	tvol.div_sinc(1)
 	tvol.del_attr("npad")
 	tvol = EMAN2_cppwrap.Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	tvol = morphology.cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
+	tvol = sparx_morphology.cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
 
 	return tvol
 
@@ -1339,7 +1339,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	global Tracker, Blockdata
 	
 	n_iter = 10 # number of iterations for iterative process for doing map
-	if( Blockdata["color"] != color ):  return utilities.model_blank(1)  #  This should not be executed if called properly
+	if( Blockdata["color"] != color ):  return sparx_utilities.model_blank(1)  #  This should not be executed if called properly
 	if( Blockdata["myid_on_node"] == 0 ):
 		nz = tweight.get_zsize()
 		ny = tweight.get_ysize()
@@ -1356,13 +1356,13 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 					limitres = i-1
 					break
 			if( limitres == 0 ): limitres = nr-2;
-			ovol = utilities.reshape_1d(ovol, nr, 2*nr)
+			ovol = sparx_utilities.reshape_1d(ovol, nr, 2*nr)
 			limitres = 2*min(limitres, Tracker["maxfrad"])  # 2 on account of padding, which is always on
 			maxr2 = limitres**2
 			for i in range(limitres+1, len(ovol), 1):   ovol[i] = 0.0
 			ovol[0] = 1.0
 			#print(" ovol  ", ovol)
-			it = utilities.model_blank(2*nr)
+			it = sparx_utilities.model_blank(2*nr)
 			for i in range(2*nr):  it[i] = ovol[i]
 			del ovol
 			#  Do not regularize first four
@@ -1378,20 +1378,20 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 			tweight = tweight.symfvol(Tracker["constants"]["symmetry"], limitres)
 
 	else:
-		tvol = utilities.model_blank(1)
-		tweight = utilities.model_blank(1)
+		tvol = sparx_utilities.model_blank(1)
+		tweight = sparx_utilities.model_blank(1)
 		nz=0
 		ny=0
 		nx=0
 		maxr2=0
 
-	nx = utilities.bcast_number_to_all(nx, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	ny = utilities.bcast_number_to_all(ny, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	nz = utilities.bcast_number_to_all(nz, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	maxr2 = utilities.bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	nx = sparx_utilities.bcast_number_to_all(nx, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	ny = sparx_utilities.bcast_number_to_all(ny, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	nz = sparx_utilities.bcast_number_to_all(nz, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	maxr2 = sparx_utilities.bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
 
-	vol_data = utilities.get_image_data(tvol)
-	we_data = utilities.get_image_data(tweight)
+	vol_data = sparx_utilities.get_image_data(tvol)
+	we_data = sparx_utilities.get_image_data(tweight)
 	#  tvol is overwritten, meaning it is also an output
 	ifi = mpi.mpi_iterefa( vol_data.__array_interface__['data'][0] ,  we_data.__array_interface__['data'][0] , nx, ny, nz, maxr2, \
 			Tracker["constants"]["nnxo"], Blockdata["myid_on_node"], color, Blockdata["no_of_processes_per_group"],  Blockdata["shared_comm"], n_iter)
@@ -1401,17 +1401,17 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
 		if( nx > 2*Tracker["constants"]["nnxo"] ):
-			tvol = fundamentals.fdecimate(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], False, False)
+			tvol = sparx_fundamentals.fdecimate(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], False, False)
 		elif(nx < 2*Tracker["constants"]["nnxo"] ):
-			tvol = fundamentals.fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
+			tvol = sparx_fundamentals.fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
 
-		tvol = fundamentals.fft(tvol)
-		tvol = fundamentals.cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+		tvol = sparx_fundamentals.fft(tvol)
+		tvol = sparx_fundamentals.cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 		tvol.set_attr("npad",2)
 		tvol.div_sinc(1)
 		tvol.del_attr("npad")
 		tvol = EMAN2_cppwrap.Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-		tvol = morphology.cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
+		tvol = sparx_morphology.cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
 		return tvol
 	else:  return None
 
@@ -1461,14 +1461,14 @@ def calculate_2d_params_for_centering(kwargs):
 	Finished_initial_2d_alignment = 1
 	if(Blockdata["myid"] == Blockdata["main_node"]): 
 		if( os.path.exists(os.path.join(init2dir, "Finished_initial_2d_alignment.txt")) ): Finished_initial_2d_alignment = 0
-	Finished_initial_2d_alignment = utilities.bcast_number_to_all(Finished_initial_2d_alignment, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	Finished_initial_2d_alignment = sparx_utilities.bcast_number_to_all(Finished_initial_2d_alignment, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	if( Finished_initial_2d_alignment == 1 ):
 
 		if(Blockdata["myid"] == 0):
 			pass#IMPORTIMPORTIMPORT import subprocess
 			pass#IMPORTIMPORTIMPORT from logger import Logger, BaseLogger_Files
 			#  Create output directory
-			log2d = logger.Logger(logger.BaseLogger_Files())
+			log2d = sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 			log2d.prefix = os.path.join(init2dir)
 			cmd = "mkdir -p "+log2d.prefix
 			outcome = subprocess.call(cmd, shell=True)
@@ -1479,13 +1479,13 @@ def calculate_2d_params_for_centering(kwargs):
 			log2d = None
 
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			a = utilities.get_im(command_line_provided_stack_filename)
+			a = sparx_utilities.get_im(command_line_provided_stack_filename)
 			nnxo = a.get_xsize()
 		else:
 			nnxo = 0
-		nnxo = utilities.bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
+		nnxo = sparx_utilities.bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
 
-		image_start, image_end = applications.MPI_start_end(number_of_images_in_stack, Blockdata["nproc"], Blockdata["myid"])
+		image_start, image_end = sparx_applications.MPI_start_end(number_of_images_in_stack, Blockdata["nproc"], Blockdata["myid"])
 
 		original_images = EMAN2_cppwrap.EMData.read_images(command_line_provided_stack_filename, list(range(image_start,image_end)))
 		#  We assume the target radius will be 29, and xr = 1.  
@@ -1493,13 +1493,13 @@ def calculate_2d_params_for_centering(kwargs):
 
 		for im in range(len(original_images)):
 			if(shrink_ratio != 1.0):
-				original_images[im]  = fundamentals.resample(original_images[im], shrink_ratio)
+				original_images[im]  = sparx_fundamentals.resample(original_images[im], shrink_ratio)
 
 		nx = original_images[0].get_xsize()
 		# nx = int(nx*shrink_ratio + 0.5)
 
 		txrm = (nx - 2*(target_radius+1))//2
-		if(txrm < 0):  			global_def.ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, Blockdata["myid"])
+		if(txrm < 0):  			sparx_global_def.ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, Blockdata["myid"])
 		if(txrm/nxrsteps>0):
 			tss = ""
 			txr = ""
@@ -1514,14 +1514,14 @@ def calculate_2d_params_for_centering(kwargs):
 
 		# section ali2d_base
 
-		params2d = applications.ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
+		params2d = sparx_applications.ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
 							False, 90.0, center_method, 14, options_CTF, 1.0, False, \
 							"ref_ali2d", "", log2d, Blockdata["nproc"], Blockdata["myid"], Blockdata["main_node"], mpi_comm, write_headers = False)
 
 		del original_images
 
 		for i in range(len(params2d)):
-			alpha, sx, sy, mirror = utilities.combine_params2(0, params2d[i][1],params2d[i][2], 0, -params2d[i][0], 0, 0, 0)
+			alpha, sx, sy, mirror = sparx_utilities.combine_params2(0, params2d[i][1],params2d[i][2], 0, -params2d[i][0], 0, 0, 0)
 			sx /= shrink_ratio
 			sy /= shrink_ratio
 			params2d[i][0] = 0.0
@@ -1532,14 +1532,14 @@ def calculate_2d_params_for_centering(kwargs):
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 
-		params2d = utilities.wrap_mpi_gatherv(params2d, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		params2d = sparx_utilities.wrap_mpi_gatherv(params2d, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		if( Blockdata["myid"] == Blockdata["main_node"] ):		
-			utilities.write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
+			sparx_utilities.write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
 			return params2d
 		else:  return [0.0]
 	else:
 		if (Blockdata["myid"] == Blockdata["main_node"]):
-			params2d = utilities.read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
+			params2d = sparx_utilities.read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
 			print("Skipping 2d alignment since it was already done!")
 			return params2d
 		else:  return [0.0]
@@ -1567,7 +1567,7 @@ def Numrinit_local(first_ring, last_ring, skip=1, mode="F"):
 	for k in range(first_ring, last_ring+1, skip):
 		numr.append(k)
 		jp = int(dpi * 1.5*k)
-		ip = 2**(alignment.log2(jp))  # two times oversample each ring
+		ip = 2**(sparx_alignment.log2(jp))  # two times oversample each ring
 		ip=min(MAXFFT,ip)
 		#if ip >16 : ip/=2  #  subsample rings
 		#if (k+skip <= last_ring and jp > ip+ip//2): ip=min(MAXFFT,2*ip)
@@ -1622,7 +1622,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
-	wr = alignment.ringwe(numr, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
 	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
@@ -1636,7 +1636,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	nima = len(original_data)
 	mask = EMAN2_cppwrap.Util.unrollmask(Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
-	mask2D = utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	mask2D = sparx_utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
 
 	#  COARSE SEARCH CONSTANTS
@@ -1665,15 +1665,15 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
-		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = utilities.model_blank( nxvol,nyvol, nzvol)
+		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = sparx_utilities.model_blank( nxvol,nyvol, nzvol)
 
-		utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sparx_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
-		odo = projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
+		odo = sparx_projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMAN2_cppwrap.EMNumPy.em2numpy(odo)
 		nxvol = odo.get_xsize()
 		nyvol = odo.get_ysize()
@@ -1687,10 +1687,10 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sparx_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi.mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
@@ -1707,7 +1707,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	emnumpy1 = EMAN2_cppwrap.EMNumPy()
 	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
 	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-	crefim = EMAN2_cppwrap.Util.Polar2Dm(utilities.model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
+	crefim = EMAN2_cppwrap.Util.Polar2Dm(sparx_utilities.model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
 
 	#  BIG BUFFER (for n_coarse_ang polar arrays)
 	size_of_one_image = crefim.get_xsize()
@@ -1745,15 +1745,15 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
-			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = utilities.model_blank( nxvol,nyvol, nzvol)
+			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = sparx_utilities.model_blank( nxvol,nyvol, nzvol)
 
-			utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sparx_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
-			odo = projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
+			odo = sparx_projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMAN2_cppwrap.EMNumPy.em2numpy(odo)
 			nxvol = odo.get_xsize()
 			nyvol = odo.get_ysize()
@@ -1767,10 +1767,10 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sparx_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi.mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
@@ -1798,10 +1798,10 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 
 	at = time.time()
 
-	nang_start, nang_end = applications.MPI_start_end(n_coarse_ang, Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
+	nang_start, nang_end = sparx_applications.MPI_start_end(n_coarse_ang, Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
 
 	for i in range(nang_start, nang_end, 1):  # This will take care of process on a node less than nang.  Some loops will not be executed
-		temp = projection.prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
+		temp = sparx_projection.prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
 		crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
 		EMAN2_cppwrap.Util.Normalize_ring(crefim, numr, 0)
 		EMAN2_cppwrap.Util.Frngs(crefim, numr)
@@ -1830,7 +1830,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	refdirs = utilities.angles_to_normals(refang)
+	refdirs = sparx_utilities.angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
 	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
@@ -1845,7 +1845,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		if preshift:
 			sx = int(round(sx))
 			sy = int(round(sy))
-			dataimage  = fundamentals.cyclic_shift(original_data[im],sx,sy)
+			dataimage  = sparx_fundamentals.cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
 			oldparams[im][4] = sy
@@ -1860,17 +1860,17 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#  Do bckgnoise if exists
 		if apply_mask:
 			if Tracker["constants"]["hardmask"]:
-				dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"])
+				dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"])
 			else:
-				bckg = utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+				bckg = sparx_utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
 				bckg.set_attr("is_complex",1)
 				bckg.set_attr("is_fftpad",1)
-				bckg = fundamentals.fft(filter.filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
+				bckg = sparx_fundamentals.fft(sparx_filter.filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 				#  Normalize bckg noise in real space, only region actually used.
 				st = EMAN2_cppwrap.Util.infomask(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
-				dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
+				dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
 		#else:
 		#	#  if no bckgnoise, do simple masking instead
 		#	if apply_mask:  dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
@@ -1881,7 +1881,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		#	Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
 
 		###  FT
-		dataimage = fundamentals.fft(dataimage)
+		dataimage = sparx_fundamentals.fft(dataimage)
 		##sig = Util.rotavg_fourier( dataimage )
 		##accumulatepw[im] = sig[len(sig)//2:]+[0.0]
 
@@ -1891,20 +1891,20 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		if Tracker["constants"]["CTF"] :
 			ctf_params = dataimage.get_attr("ctf")
 			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
-			ctfa = morphology.ctf_img_real(Tracker["nxinit"], ctf_params)
+			ctfa = sparx_morphology.ctf_img_real(Tracker["nxinit"], ctf_params)
 			ctfs = ctfa
-		dataml = fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
+		dataml = sparx_fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
 		data = []
 		for iq in coarse_shifts:
 			xx = iq[0]*shrink
 			yy = iq[1]*shrink
-			dss = fundamentals.fshift(dataml, xx, yy)
+			dss = sparx_fundamentals.fshift(dataml, xx, yy)
 			dss.set_attr("is_complex",0)
 			data.append(dss)
 
 		#  This will get it to real space
 		#dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
-		dataimage = fundamentals.fpol(EMAN2_cppwrap.Util.mulnclreal(fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
+		dataimage = sparx_fundamentals.fpol(EMAN2_cppwrap.Util.mulnclreal(sparx_fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 
 		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
 			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time.time()-at)/60.))
@@ -1937,7 +1937,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
 					iang = ipsiandiang/100000
-					temp = projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp = sparx_projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(temp, temp, None))
 					#Util.mul_scalar(temp, 1.0/nrmref)
 
@@ -1955,12 +1955,12 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			"""Multiline Comment18"""
 			lit = 1
 			keepf = [keepf]
-			keepf = utilities.wrap_mpi_gatherv(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			keepf = sparx_utilities.wrap_mpi_gatherv(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			if( Blockdata["myid"] == 0 ):
 				keepf.sort()
 				keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
 			else:  keepf = 0
-			keepf = utilities.wrap_mpi_bcast(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			keepf = sparx_utilities.wrap_mpi_bcast(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			Tracker["keepfirst"] = int(keepf)
 			###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
 
@@ -1992,7 +1992,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
 					iang = ipsiandiang/100000
-					temp = projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp = sparx_projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 					nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(temp, temp, None))
 				peak = EMAN2_cppwrap.Util.innerproduct(data[ishift], temp, None)/nrmref
@@ -2087,7 +2087,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 				prevdir = ipsiandiang
 				ipsi = ipsiandiang%100000
 				iang = ipsiandiang/100000
-				temp = projection.prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
+				temp = sparx_projection.prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 				temp.set_attr("is_complex",0)
 				nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(temp, temp, None))
 				johi += 1
@@ -2097,7 +2097,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 				if( data[ishift] == None ):
 					xx = shifts[ishift][0]*shrink
 					yy = shifts[ishift][1]*shrink
-					data[ishift] = fundamentals.fshift(dataml, xx, yy)
+					data[ishift] = sparx_fundamentals.fshift(dataml, xx, yy)
 					data[ishift].set_attr("is_complex",0)
 
 				cod1[iln] = EMAN2_cppwrap.Util.innerproduct(data[ishift], temp, None)/nrmref
@@ -2203,7 +2203,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
-	wr = alignment.ringwe(numr, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
 	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
@@ -2217,7 +2217,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	nima = len(original_data)
 	mask = EMAN2_cppwrap.Util.unrollmask(Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
-	mask2D = utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	mask2D = sparx_utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
 
 	#  COARSE SEARCH CONSTANTS
@@ -2233,9 +2233,9 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	ny = Tracker["nxinit"]
 	nyp2 = ny/2
 	nxth = (Tracker["nxinit"]+2)/2
-	indx = utilities.model_blank(nxth, Tracker["nxinit"], 1, -1)
-	tfrac = utilities.model_blank(nxth, Tracker["nxinit"])
-	tcount = utilities.model_blank(nxth)
+	indx = sparx_utilities.model_blank(nxth, Tracker["nxinit"], 1, -1)
+	tfrac = sparx_utilities.model_blank(nxth, Tracker["nxinit"])
+	tcount = sparx_utilities.model_blank(nxth)
 	for iy in range(1, ny+1):
 		jy=iy-1
 		if(jy>nyp2): jy=jy-ny
@@ -2271,15 +2271,15 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
-		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = utilities.model_blank( nxvol,nyvol, nzvol)
+		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = sparx_utilities.model_blank( nxvol,nyvol, nzvol)
 
-		utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sparx_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
-		odo = projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
+		odo = sparx_projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMAN2_cppwrap.EMNumPy.em2numpy(odo)
 		nxvol = odo.get_xsize()
 		nyvol = odo.get_ysize()
@@ -2293,10 +2293,10 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sparx_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi.mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
@@ -2313,7 +2313,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	emnumpy1 = EMAN2_cppwrap.EMNumPy()
 	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
 	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
-	crefim = EMAN2_cppwrap.Util.Polar2Dm(utilities.model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
+	crefim = EMAN2_cppwrap.Util.Polar2Dm(sparx_utilities.model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
 
 	#  BIG BUFFER (for n_coarse_ang polar arrays)
 	size_of_one_image = crefim.get_xsize()
@@ -2351,15 +2351,15 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
-			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = utilities.model_blank( nxvol,nyvol, nzvol)
+			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = sparx_utilities.model_blank( nxvol,nyvol, nzvol)
 
-			utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sparx_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
-			odo = projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
+			odo = sparx_projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMAN2_cppwrap.EMNumPy.em2numpy(odo)
 			nxvol = odo.get_xsize()
 			nyvol = odo.get_ysize()
@@ -2373,10 +2373,10 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sparx_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi.mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
@@ -2402,10 +2402,10 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 	at = time.time()
 
-	nang_start, nang_end = applications.MPI_start_end(n_coarse_ang, Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
+	nang_start, nang_end = sparx_applications.MPI_start_end(n_coarse_ang, Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
 
 	for i in range(nang_start, nang_end, 1):  # This will take care of no of process on a node less than nang.  Some loops will not be executed
-		temp = projection.prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
+		temp = sparx_projection.prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
 		crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
 		EMAN2_cppwrap.Util.Frngs(crefim, numr)
 		EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
@@ -2446,7 +2446,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 
 		if( procid == 0 ):
 			Blockdata["totprob"] = [0.0]*nyb
-			Blockdata["newbckgnoise"] = utilities.model_blank(nxb,nyb)
+			Blockdata["newbckgnoise"] = sparx_utilities.model_blank(nxb,nyb)
 
 	accumulatepw = [None]*nima
 	norm_per_particle = [None]*nima
@@ -2458,7 +2458,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	refdirs = utilities.angles_to_normals(refang)
+	refdirs = sparx_utilities.angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
 	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
@@ -2473,7 +2473,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		if preshift:
 			sx = int(round(sx))
 			sy = int(round(sy))
-			dataimage  = fundamentals.cyclic_shift(original_data[im],sx,sy)
+			dataimage  = sparx_fundamentals.cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
 			oldparams[im][4] = sy
@@ -2488,17 +2488,17 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		#  Do bckgnoise if exists
 		if apply_mask:
 			if Tracker["constants"]["hardmask"]:
-				dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"])
+				dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"])
 			else:
-				bckg = utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+				bckg = sparx_utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
 				bckg.set_attr("is_complex",1)
 				bckg.set_attr("is_fftpad",1)
-				bckg = fundamentals.fft(filter.filt_table(bckg, oneover[particle_group]))
+				bckg = sparx_fundamentals.fft(sparx_filter.filt_table(bckg, oneover[particle_group]))
 				#  Normalize bckg noise in real space, only region actually used.
 				st = EMAN2_cppwrap.Util.infomask(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
-				dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
+				dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
 		#else:
 		#	#  if no bckgnoise, do simple masking instead
 		#	if apply_mask:  dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
@@ -2508,7 +2508,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			EMAN2_cppwrap.Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
 
 		###  FT
-		dataimage = fundamentals.fft(dataimage)
+		dataimage = sparx_fundamentals.fft(dataimage)
 		sig = EMAN2_cppwrap.Util.rotavg_fourier( dataimage )
 		accumulatepw[im] = sig[len(sig)//2:]+[0.0]
 
@@ -2525,21 +2525,21 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		if Tracker["constants"]["CTF"] :
 			ctf_params = dataimage.get_attr("ctf")
 			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
-			ctfa = morphology.ctf_img_real(Tracker["nxinit"], ctf_params)
+			ctfa = sparx_morphology.ctf_img_real(Tracker["nxinit"], ctf_params)
 			ctfs = ctfa
-		dataml = fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
+		dataml = sparx_fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
 		data = []
 		for iq in coarse_shifts:
 			xx = iq[0]*shrink
 			yy = iq[1]*shrink
-			dss = fundamentals.fshift(dataml, xx, yy)
+			dss = sparx_fundamentals.fshift(dataml, xx, yy)
 			dss.set_attr("is_complex",0)
 			data.append(dss)
 
 		#  This will get it to real space
 		#dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 		#  Here we can reuse dataml to save time.  It was not normalized, but it does not matter as dataimage is for POLAR.  PAP 08/06/2018
-		dataimage = fundamentals.fpol(EMAN2_cppwrap.Util.mulnclreal(EMAN2_cppwrap.Util.mulnclreal(dataml, EMAN2_cppwrap.Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
+		dataimage = sparx_fundamentals.fpol(EMAN2_cppwrap.Util.mulnclreal(EMAN2_cppwrap.Util.mulnclreal(dataml, EMAN2_cppwrap.Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 
 		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
 			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time.time()-at)/60.))
@@ -2572,7 +2572,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
 					iang = ipsiandiang/100000
-					temp = projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp = sparx_projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 				xod1[iln] = -EMAN2_cppwrap.Util.sqed(data[ishift], temp, ctfa, bckgnoise)  # peak
 				##xod2[iln] = hashparams
@@ -2603,12 +2603,12 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			#if( Blockdata["myid"] == 0 ):
 			#	keepf = max(int(float(keepf)*0.9),1)
 			keepf = [keepf]
-			keepf = utilities.wrap_mpi_gatherv(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			keepf = sparx_utilities.wrap_mpi_gatherv(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			if( Blockdata["myid"] == 0 ):
 				keepf.sort()
 				keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
 			else:  keepf = 0
-			keepf = utilities.wrap_mpi_bcast(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			keepf = sparx_utilities.wrap_mpi_bcast(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			Tracker["keepfirst"] = int(keepf)
 			###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
 				
@@ -2640,7 +2640,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
 					iang = ipsiandiang/100000
-					temp = projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp = sparx_projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 				peak = -EMAN2_cppwrap.Util.sqed(data[ishift], temp, ctfa, bckgnoise)
 				xod1[iln] = peak
@@ -2743,7 +2743,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 				prevdir = ipsiandiang
 				ipsi = ipsiandiang%100000
 				iang = ipsiandiang/100000
-				temp = projection.prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
+				temp = sparx_projection.prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 				temp.set_attr("is_complex",0)
 				johi += 1
 			while( ipsiandiang == cod2[iln]/1000 ):
@@ -2752,7 +2752,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 				if( data[ishift] == None ):
 					xx = shifts[ishift][0]*shrink
 					yy = shifts[ishift][1]*shrink
-					data[ishift] = fundamentals.fshift(dataml, xx, yy)
+					data[ishift] = sparx_fundamentals.fshift(dataml, xx, yy)
 					data[ishift].set_attr("is_complex",0)
 
 				##[peak,varadj] = Util.sqednorm(data[ishift], temp, ctfa, bckgnoise)
@@ -2830,7 +2830,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sparx_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	#  Compute statistics of smear -----------------
@@ -2878,7 +2878,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	# Reduce stuff
 	if( procid == 1 ):
 		Blockdata["totprob"] = mpi.mpi_reduce(Blockdata["totprob"], nyb, mpi.MPI_FLOAT, mpi.MPI_SUM, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		utilities.reduce_EMData_to_root(Blockdata["newbckgnoise"], Blockdata["myid"], Blockdata["main_node"])
+		sparx_utilities.reduce_EMData_to_root(Blockdata["newbckgnoise"], Blockdata["myid"], Blockdata["main_node"])
 		if( Blockdata["myid"] == 0 ):
 			for igrp in range(nyb):
 				Blockdata["newbckgnoise"][0, igrp] = 1.0
@@ -2888,7 +2888,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 					Blockdata["newbckgnoise"][i, igrp] = Blockdata["bckgnoise"][igrp][i]
 			Blockdata["newbckgnoise"].write_image(os.path.join(Tracker["directory"],"bckgnoise.hdf")) #  Write updated bckgnoise to current directory
 
-		utilities.bcast_EMData_to_all(Blockdata["newbckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"], comm = mpi.MPI_COMM_WORLD)
+		sparx_utilities.bcast_EMData_to_all(Blockdata["newbckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"], comm = mpi.MPI_COMM_WORLD)
 		for igrp in range(nyb):
 			for i in range(nxb):
 				Blockdata["bckgnoise"][igrp][i] = Blockdata["newbckgnoise"][i, igrp]
@@ -2939,7 +2939,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
-	wr = alignment.ringwe(numr, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
 	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
@@ -2953,7 +2953,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	nima = len(original_data)
 	mask = EMAN2_cppwrap.Util.unrollmask(Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
-	mask2D = utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	mask2D = sparx_utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
 
 	#  COARSE SEARCH CONSTANTS
@@ -2982,15 +2982,15 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
-		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = utilities.model_blank( nxvol,nyvol, nzvol)
+		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = sparx_utilities.model_blank( nxvol,nyvol, nzvol)
 
-		utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sparx_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
-		odo = projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
+		odo = sparx_projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMAN2_cppwrap.EMNumPy.em2numpy(odo)
 		nxvol = odo.get_xsize()
 		nyvol = odo.get_ysize()
@@ -3004,10 +3004,10 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sparx_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi.mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
@@ -3025,7 +3025,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	volprep = emnumpy1.register_numpy_to_emdata(volbuf)
 	volprep.set_attr_dict({'is_complex':1,  'is_complex_x': 0, 'is_fftodd': 0, 'is_fftpad': 1, 'is_shuffled': 1,'npad': 2})
 
-	crefim = EMAN2_cppwrap.Util.Polar2Dm(utilities.model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
+	crefim = EMAN2_cppwrap.Util.Polar2Dm(sparx_utilities.model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
 
 	#  BIG BUFFER (for n_coarse_ang polar arrays)
 	size_of_one_image = crefim.get_xsize()
@@ -3063,15 +3063,15 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
-			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = utilities.model_blank( nxvol,nyvol, nzvol)
+			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = sparx_utilities.model_blank( nxvol,nyvol, nzvol)
 
-			utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sparx_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
-			odo = projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
+			odo = sparx_projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMAN2_cppwrap.EMNumPy.em2numpy(odo)
 			nxvol = odo.get_xsize()
 			nyvol = odo.get_ysize()
@@ -3085,10 +3085,10 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sparx_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi.mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
@@ -3116,10 +3116,10 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 
 	at = time.time()
 
-	nang_start, nang_end = applications.MPI_start_end(n_coarse_ang, Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
+	nang_start, nang_end = sparx_applications.MPI_start_end(n_coarse_ang, Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
 
 	for i in range(nang_start, nang_end, 1):  # This will take care of process on a node less than nang.  Some loops will not be executed
-		temp = projection.prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
+		temp = sparx_projection.prgl(volprep,[ coarse_angles[i][0], coarse_angles[i][1],0.0, 0.0,0.0], 1, True)
 		crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
 		EMAN2_cppwrap.Util.Frngs(crefim, numr)
 		EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
@@ -3162,7 +3162,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	refdirs = utilities.angles_to_normals(refang)
+	refdirs = sparx_utilities.angles_to_normals(refang)
 
 	#if( Blockdata["myid"] == Blockdata["main_node"]):
 	#	print("  FIRST  nima, nang, npsi, nshift, n_coarse_ang, n_coarse_psi, len(list_of_coarse_shifts), lxod1 ",nima, nang,npsi,nshifts, n_coarse_ang,n_coarse_psi, len(coarse_shifts), lxod1)
@@ -3178,7 +3178,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		if preshift:
 			sx = int(round(sx))
 			sy = int(round(sy))
-			dataimage  = fundamentals.cyclic_shift(original_data[im],sx,sy)
+			dataimage  = sparx_fundamentals.cyclic_shift(original_data[im],sx,sy)
 			#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 			oldparams[im][3] = sx
 			oldparams[im][4] = sy
@@ -3194,17 +3194,17 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		#if Blockdata["bckgnoise"]:  # I think we should assume it always exists
 		if apply_mask:
 			if Tracker["constants"]["hardmask"]:
-				dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"])
+				dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"])
 			else:
-				bckg = utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+				bckg = sparx_utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
 				bckg.set_attr("is_complex",1)
 				bckg.set_attr("is_fftpad",1)
-				bckg = fundamentals.fft(filter.filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
+				bckg = sparx_fundamentals.fft(sparx_filter.filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 				#  Normalize bckg noise in real space, only region actually used.
 				st = EMAN2_cppwrap.Util.infomask(bckg, mask2D, False)
 				bckg -= st[0]
 				bckg /= st[1]
-				dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
+				dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
 		#else:
 		#	#  if no bckgnoise, do simple masking instead
 		#	if apply_mask:  dataimage = cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
@@ -3214,7 +3214,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			EMAN2_cppwrap.Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
 
 		###  FT
-		dataimage = fundamentals.fft(dataimage)
+		dataimage = sparx_fundamentals.fft(dataimage)
 		sig = EMAN2_cppwrap.Util.rotavg_fourier( dataimage )
 		accumulatepw[im] = sig[len(sig)//2:]+[0.0]
 
@@ -3231,21 +3231,21 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		if Tracker["constants"]["CTF"] :
 			ctf_params = dataimage.get_attr("ctf")
 			ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
-			ctfa = morphology.ctf_img_real(Tracker["nxinit"], ctf_params)
+			ctfa = sparx_morphology.ctf_img_real(Tracker["nxinit"], ctf_params)
 			ctfs = ctfa
-		dataml = fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
+		dataml = sparx_fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
 		data = []
 		for iq in coarse_shifts:
 			xx = iq[0]*shrink
 			yy = iq[1]*shrink
-			dss = fundamentals.fshift(dataml, xx, yy)
+			dss = sparx_fundamentals.fshift(dataml, xx, yy)
 			dss.set_attr("is_complex",0)
 			data.append(dss)
 
 		#  This will get it to real space
 		#dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 		#  Here we can reuse dataml to save time.  It was not normalized, but it does not matter as dataimage is for POLAR.  PAP 08/06/2018
-		dataimage = fundamentals.fpol(EMAN2_cppwrap.Util.mulnclreal(EMAN2_cppwrap.Util.mulnclreal(dataml, EMAN2_cppwrap.Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
+		dataimage = sparx_fundamentals.fpol(EMAN2_cppwrap.Util.mulnclreal(EMAN2_cppwrap.Util.mulnclreal(dataml, EMAN2_cppwrap.Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 
 		if( ( Blockdata["myid"] == Blockdata["main_node"])  and  (im%(max(1,nima/5)) == 0) and (im>0)):
 			print( "  Number of images :%7d   %5d  %5.1f"%(im,nima,float(im)/float(nima)*100.) + "%" +"   %10.1fmin"%((time.time()-at)/60.))
@@ -3278,7 +3278,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
 					iang = ipsiandiang/100000
-					temp = projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp = sparx_projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 				xod1[iln] = -EMAN2_cppwrap.Util.sqed(data[ishift], temp, ctfa, bckgnoise)  # peak
 				##xod2[iln] = hashparams
@@ -3310,12 +3310,12 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			#if( Blockdata["myid"] == 0 ):
 			#	keepf = max(int(float(keepf)*0.9),1)
 			keepf = [keepf]
-			keepf = utilities.wrap_mpi_gatherv(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			keepf = sparx_utilities.wrap_mpi_gatherv(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			if( Blockdata["myid"] == 0 ):
 				keepf.sort()
 				keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
 			else:  keepf = 0
-			keepf = utilities.wrap_mpi_bcast(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			keepf = sparx_utilities.wrap_mpi_bcast(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			Tracker["keepfirst"] = int(keepf)
 			###if( Blockdata["myid"] == 0 ):  print("  keepfirst first ",Tracker["keepfirst"])
 
@@ -3347,7 +3347,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 					pre_ipsiandiang = ipsiandiang
 					ipsi = ipsiandiang%100000
 					iang = ipsiandiang/100000
-					temp = projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+					temp = sparx_projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 					temp.set_attr("is_complex",0)
 				peak = -EMAN2_cppwrap.Util.sqed(data[ishift], temp, ctfa, bckgnoise)
 				xod1[iln] = peak
@@ -3456,7 +3456,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 				prevdir = ipsiandiang
 				ipsi = ipsiandiang%100000
 				iang = ipsiandiang/100000
-				temp = projection.prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
+				temp = sparx_projection.prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 				temp.set_attr("is_complex",0)
 				johi += 1
 			while( ipsiandiang == cod2[iln]/1000 ):
@@ -3465,7 +3465,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 				if( data[ishift] == None ):
 					xx = shifts[ishift][0]*shrink
 					yy = shifts[ishift][1]*shrink
-					data[ishift] = fundamentals.fshift(dataml, xx, yy)
+					data[ishift] = sparx_fundamentals.fshift(dataml, xx, yy)
 					data[ishift].set_attr("is_complex",0)
 
 				[peak,varadj] = EMAN2_cppwrap.Util.sqednorm(data[ishift], temp, ctfa, bckgnoise)
@@ -3528,7 +3528,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sparx_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	#  Compute statistics of smear -----------------
@@ -3625,7 +3625,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
-	wr = alignment.ringwe(numr, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
 	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
@@ -3641,7 +3641,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	nima = len(original_data)
 	mask = EMAN2_cppwrap.Util.unrollmask(Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
-	mask2D = utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	mask2D = sparx_utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
 
 	#  COARSE SEARCH CONSTANTS
@@ -3660,9 +3660,9 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	ny = Tracker["nxinit"]
 	nyp2 = ny/2
 	nxth = (Tracker["nxinit"]+2)/2
-	indx = utilities.model_blank(nxth, Tracker["nxinit"], 1, -1)
-	tfrac = utilities.model_blank(nxth, Tracker["nxinit"])
-	tcount = utilities.model_blank(nxth)
+	indx = sparx_utilities.model_blank(nxth, Tracker["nxinit"], 1, -1)
+	tfrac = sparx_utilities.model_blank(nxth, Tracker["nxinit"])
+	tcount = sparx_utilities.model_blank(nxth)
 	for iy in range(1, ny+1):
 		jy=iy-1
 		if(jy>nyp2): jy=jy-ny
@@ -3698,15 +3698,15 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
-		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = utilities.model_blank( nxvol,nyvol, nzvol)
+		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = sparx_utilities.model_blank( nxvol,nyvol, nzvol)
 
-		utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sparx_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
-		odo = projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
+		odo = sparx_projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMAN2_cppwrap.EMNumPy.em2numpy(odo)
 		nxvol = odo.get_xsize()
 		nyvol = odo.get_ysize()
@@ -3720,10 +3720,10 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sparx_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi.mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
@@ -3755,15 +3755,15 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
-			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = utilities.model_blank( nxvol,nyvol, nzvol)
+			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = sparx_utilities.model_blank( nxvol,nyvol, nzvol)
 
-			utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sparx_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
-			odo = projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
+			odo = sparx_projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMAN2_cppwrap.EMNumPy.em2numpy(odo)
 			nxvol = odo.get_xsize()
 			nyvol = odo.get_ysize()
@@ -3777,10 +3777,10 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sparx_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi.mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
@@ -3807,13 +3807,13 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  START CONES
 	#  This has to be systematically done per node
 	#
-	crefim = EMAN2_cppwrap.Util.Polar2Dm(utilities.model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
+	crefim = EMAN2_cppwrap.Util.Polar2Dm(sparx_utilities.model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
 	size_of_one_image = crefim.get_xsize()
 	#  We will assume half of the memory is available.  We will do it betteer later.
 	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
 	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
-	normals_set = utilities.angles_to_normals(coarse_angles)
+	normals_set = sparx_utilities.angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
 	if( n_coarse_ang <= numberofrefs_inmem ):
 		number_of_cones = 1
@@ -3835,7 +3835,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
 			#print(  " assignments_of_refangles_to_cones on myid ",Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
-			assignments_of_refangles_to_cones[i] = utilities.wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
+			assignments_of_refangles_to_cones[i] = sparx_utilities.wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
 			doit = 1
 			if( Blockdata["myid_on_node"] == 0 ):
 				assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
@@ -3843,11 +3843,11 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
 			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
-			assignments_of_refangles_to_cones[i] = utilities.wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
+			assignments_of_refangles_to_cones[i] = sparx_utilities.wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
 
 	else:
 
-		angledirs = utilities.angles_to_normals([u1[:3] for u1 in oldparams])
+		angledirs = sparx_utilities.angles_to_normals([u1[:3] for u1 in oldparams])
 
 		number_of_cones = max(2, int(n_coarse_ang/numberofrefs_inmem*1.5 + 0.5))
 		###if Blockdata["myid_on_node"] == 0:  print( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
@@ -3871,11 +3871,11 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			#if Blockdata["myid"] == 0:  print(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
 			assert(number_of_cones == len(cone_angles) )
 
-			conedirs = utilities.angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
+			conedirs = sparx_utilities.angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
 			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
 			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
 			#  assign data directions to cone_angles
-			assignments_to_cones = utilities.assign_projdirs_f(angledirs, conedirs, neighbors)
+			assignments_to_cones = sparx_utilities.assign_projdirs_f(angledirs, conedirs, neighbors)
 			###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
 			#  the above should have length of refdirs and each should have indexes of data that belong to this cone
 			del conedirs
@@ -3903,7 +3903,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					#if( Blockdata["myid"] == 19 ):  print(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
 				###if Blockdata["myid"] == 19:  print(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
-				assignments_of_refangles_to_cones[i] = utilities.wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
+				assignments_of_refangles_to_cones[i] = sparx_utilities.wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
 				###if Blockdata["myid"] == 0:  print(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
 				doit = 1
 				if( Blockdata["myid_on_node"] == 0 ):
@@ -3914,8 +3914,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						number_of_cones = int(number_of_cones*1.25)
 						#print(  " increased number_of_cones ",i,number_of_cones )
 						doit = 0
-				doit = utilities.bcast_number_to_all(doit, source_node = 0)
-				number_of_cones = utilities.bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
+				doit = sparx_utilities.bcast_number_to_all(doit, source_node = 0)
+				number_of_cones = sparx_utilities.bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
 				###if( Blockdata["myid"] == 19 ):  print(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
 				if( doit == 0 ):  break
 
@@ -3925,7 +3925,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
 			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
-			assignments_of_refangles_to_cones[i] = utilities.wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
+			assignments_of_refangles_to_cones[i] = sparx_utilities.wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
 			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			#if( myid == 1 ):
 			#	print " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
@@ -3985,7 +3985,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 
 		if( procid == 0 ):
 			Blockdata["totprob"] = [0.0]*nyb
-			Blockdata["newbckgnoise"] = utilities.model_blank(nxb,nyb)
+			Blockdata["newbckgnoise"] = sparx_utilities.model_blank(nxb,nyb)
 
 	accumulatepw = [0.0]*nima
 	norm_per_particle = [0.0]*nima
@@ -3996,7 +3996,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	refdirs = utilities.angles_to_normals(refang)
+	refdirs = sparx_utilities.angles_to_normals(refang)
 
 
 	#  We have to make sure the number of cones is the same on all nodes, this is due to the strange MPI problem
@@ -4019,13 +4019,13 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	for icone in range(max_number_of_cones):
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
-			nang_start, nang_end = applications.MPI_start_end(len(assignments_of_refangles_to_cones[icone]), Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
+			nang_start, nang_end = sparx_applications.MPI_start_end(len(assignments_of_refangles_to_cones[icone]), Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
 			#if(Blockdata["color"] == 1):
 			###print( " ZXZ11  ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],len(assignments_of_refangles_to_cones[icone]),nang_start, nang_end)
 
 			for i in range(nang_start, nang_end, 1):  # This will take care of no of process on a node less than nang.  Some loops will not be executed
 				ic = assignments_of_refangles_to_cones[icone][i]
-				temp = projection.prgl(volprep,[ coarse_angles[ic][0],coarse_angles[ic][1],0.0, 0.0,0.0], 1, True)
+				temp = sparx_projection.prgl(volprep,[ coarse_angles[ic][0],coarse_angles[ic][1],0.0, 0.0,0.0], 1, True)
 				crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
 				EMAN2_cppwrap.Util.Frngs(crefim, numr)
 				EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
@@ -4061,7 +4061,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					if preshift:
 						sx = int(round(sx))
 						sy = int(round(sy))
-						dataimage  = fundamentals.cyclic_shift(original_data[im],sx,sy)
+						dataimage  = sparx_fundamentals.cyclic_shift(original_data[im],sx,sy)
 						#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 						oldparams[im][3] = sx
 						oldparams[im][4] = sy
@@ -4078,27 +4078,27 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					if Blockdata["bckgnoise"]:
 						if apply_mask:
 							if Tracker["constants"]["hardmask"]:
-								dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"])
+								dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"])
 							else:
-								bckg = utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+								bckg = sparx_utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
 								bckg.set_attr("is_complex",1)
 								bckg.set_attr("is_fftpad",1)
-								bckg = fundamentals.fft(filter.filt_table(bckg, oneover[particle_group]))
+								bckg = sparx_fundamentals.fft(sparx_filter.filt_table(bckg, oneover[particle_group]))
 								#  Normalize bckg noise in real space, only region actually used.
 								st = EMAN2_cppwrap.Util.infomask(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
-								dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
+								dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
 					else:
 						#  if no bckgnoise, do simple masking instead
-						if apply_mask:  dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
+						if apply_mask:  dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
 
 					#  Apply varadj
 					if not nonorm:
 						EMAN2_cppwrap.Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
 
 					###  FT
-					dataimage = fundamentals.fft(dataimage)
+					dataimage = sparx_fundamentals.fft(dataimage)
 					sig = EMAN2_cppwrap.Util.rotavg_fourier( dataimage )
 					accumulatepw[im] = sig[len(sig)//2:]+[0.0]
 
@@ -4115,25 +4115,25 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					if Tracker["constants"]["CTF"] :
 						ctf_params = dataimage.get_attr("ctf")
 						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
-						ctfa = morphology.ctf_img_real(Tracker["nxinit"], ctf_params)
+						ctfa = sparx_morphology.ctf_img_real(Tracker["nxinit"], ctf_params)
 						ctfs = ctfa
 					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
 					##	dataimage.set_attr("is_complex",0)
 					##	dataimage.write_image("dataimagefft.hdf")
 					##	dataimage.set_attr("is_complex",1)
-					dataml = fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
+					dataml = sparx_fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
 					data = []
 					for iq in coarse_shifts:
 						xx = iq[0]*shrink
 						yy = iq[1]*shrink
-						dss = fundamentals.fshift(dataml, xx, yy)
+						dss = sparx_fundamentals.fshift(dataml, xx, yy)
 						dss.set_attr("is_complex",0)
 						data.append(dss)
 
 					#  This will get it to real space
 					#dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 					#  Here we can reuse dataml to save time.  It was not normalized, but it does not matter as dataimage is for POLAR.  PAP 08/06/2018
-					dataimage = fundamentals.fpol(EMAN2_cppwrap.Util.mulnclreal(EMAN2_cppwrap.Util.mulnclreal(dataml, EMAN2_cppwrap.Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
+					dataimage = sparx_fundamentals.fpol(EMAN2_cppwrap.Util.mulnclreal(EMAN2_cppwrap.Util.mulnclreal(dataml, EMAN2_cppwrap.Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 
 					# Compute max number of angles on the fly
 					lang = len(assignments_of_refangles_to_angles[im])
@@ -4188,7 +4188,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								ipsi = ipsiandiang%100000
 								iang = ipsiandiang/100000
 								##junk = time()
-								temp = projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+								temp = sparx_projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								##eat += time()-junk
 								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								temp.set_attr("is_complex",0)
@@ -4232,7 +4232,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					###mpi_barrier(MPI_COMM_WORLD)
 					###print("  STARTING5    ",Blockdata["myid"],keepf,MPI_COMM_WORLD)
 					mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-					keepf = utilities.wrap_mpi_gatherv(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+					keepf = sparx_utilities.wrap_mpi_gatherv(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 					###print("  STARTING6    ",Blockdata["myid"],keepf)
 					if( Blockdata["myid"] == 0 ):
 						keepf = [junk for junk in keepf if junk >0]
@@ -4243,7 +4243,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 							keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
 					else:  keepf = 0
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
-					keepf = utilities.wrap_mpi_bcast(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+					keepf = sparx_utilities.wrap_mpi_bcast(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 					#if(keepf == 0):
 					#	ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
 					#	mpi_finalize()
@@ -4296,7 +4296,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 								ipsi = ipsiandiang%100000
 								iang = ipsiandiang/100000
 								##junk = time()
-								temp = projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+								temp = sparx_projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								##eat += time()-junk
 								temp.set_attr("is_complex",0)
@@ -4454,7 +4454,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 							ipsi = ipsiandiang%100000
 							iang = ipsiandiang/100000
 							##junk = time()
-							temp = projection.prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
+							temp = sparx_projection.prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 							##eat += time()-junk
 							temp.set_attr("is_complex",0)
 							johi += 1
@@ -4464,7 +4464,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 							if( data[ishift] == None ):
 								xx = shifts[ishift][0]*shrink
 								yy = shifts[ishift][1]*shrink
-								data[ishift] = fundamentals.fshift(dataml, xx, yy)
+								data[ishift] = sparx_fundamentals.fshift(dataml, xx, yy)
 								data[ishift].set_attr("is_complex",0)
 							##junk = time()
 							#[peak,varadj] = Util.sqednorm(data[ishift], temp, ctfa, bckgnoise)
@@ -4572,7 +4572,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sparx_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	#  Compute statistics of smear -----------------
@@ -4624,7 +4624,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	# Reduce stuff
 	if( procid == 1 ):
 		Blockdata["totprob"] = mpi.mpi_reduce(Blockdata["totprob"], nyb, mpi.MPI_FLOAT, mpi.MPI_SUM, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		utilities.reduce_EMData_to_root(Blockdata["newbckgnoise"], Blockdata["myid"], Blockdata["main_node"])
+		sparx_utilities.reduce_EMData_to_root(Blockdata["newbckgnoise"], Blockdata["myid"], Blockdata["main_node"])
 		if( Blockdata["myid"] == 0 ):
 			for igrp in range(nyb):
 				Blockdata["newbckgnoise"][0, igrp] = 1.0
@@ -4634,7 +4634,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					Blockdata["newbckgnoise"][i, igrp] = Blockdata["bckgnoise"][igrp][i]
 			Blockdata["newbckgnoise"].write_image(os.path.join(Tracker["directory"],"bckgnoise.hdf")) #  Write updated bckgnoise to current directory
 
-		utilities.bcast_EMData_to_all(Blockdata["newbckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"], comm = mpi.MPI_COMM_WORLD)
+		sparx_utilities.bcast_EMData_to_all(Blockdata["newbckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"], comm = mpi.MPI_COMM_WORLD)
 		for igrp in range(nyb):
 			for i in range(nxb):
 				Blockdata["bckgnoise"][igrp][i] = Blockdata["newbckgnoise"][i, igrp]
@@ -4690,7 +4690,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	radius = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
 	mode = "F"
 	numr = Numrinit_local(1, radius, 1, mode)
-	wr = alignment.ringwe(numr, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 	cnx = float(Tracker["nxpolar"]//2 + 1)
 
 	##if(Blockdata["myid"] == Blockdata["main_node"]):  print("  RADIUS IN POLAR  ",radius,numr[-1])
@@ -4706,7 +4706,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	nima = len(original_data)
 	mask = EMAN2_cppwrap.Util.unrollmask(Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
-	mask2D = utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	mask2D = sparx_utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
 
 	#  COARSE SEARCH CONSTANTS
@@ -4742,15 +4742,15 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
-		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = utilities.model_blank( nxvol,nyvol, nzvol)
+		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = sparx_utilities.model_blank( nxvol,nyvol, nzvol)
 
-		utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sparx_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
-		odo = projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
+		odo = sparx_projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMAN2_cppwrap.EMNumPy.em2numpy(odo)
 		nxvol = odo.get_xsize()
 		nyvol = odo.get_ysize()
@@ -4764,10 +4764,10 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sparx_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi.mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
@@ -4799,15 +4799,15 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
-			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = utilities.model_blank( nxvol,nyvol, nzvol)
+			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = sparx_utilities.model_blank( nxvol,nyvol, nzvol)
 
-			utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sparx_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
-			odo = projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
+			odo = sparx_projection.prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMAN2_cppwrap.EMNumPy.em2numpy(odo)
 			nxvol = odo.get_xsize()
 			nyvol = odo.get_ysize()
@@ -4821,10 +4821,10 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sparx_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sparx_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sparx_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sparx_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi.mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
@@ -4853,13 +4853,13 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  START CONES
 	#  This has to be systematically done per node
 	#
-	crefim = EMAN2_cppwrap.Util.Polar2Dm(utilities.model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
+	crefim = EMAN2_cppwrap.Util.Polar2Dm(sparx_utilities.model_blank(Tracker["nxpolar"],Tracker["nxpolar"]), cnx, cnx, numr, mode)
 	size_of_one_image = crefim.get_xsize()
 	#  We will assume half of the memory is available.  We will do it betteer later.
 	numberofrefs_inmem = int(Tracker["constants"]["memory_per_node"]/4/((size_of_one_image*disp_unit)/1.0e9))
 	####if( Blockdata["myid_on_node"] == 0  ):  print( " MEMEST ", n_coarse_ang,numberofrefs_inmem)
 	#  number of references that will fit into one mode
-	normals_set = utilities.angles_to_normals(coarse_angles)
+	normals_set = sparx_utilities.angles_to_normals(coarse_angles)
 	Blockdata["angle_set"] = coarse_angles
 	if( n_coarse_ang <= numberofrefs_inmem ):
 		number_of_cones = 1
@@ -4881,7 +4881,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 			assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
 			#print(  " assignments_of_refangles_to_cones on myid ",Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
-			assignments_of_refangles_to_cones[i] = utilities.wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
+			assignments_of_refangles_to_cones[i] = sparx_utilities.wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
 			doit = 1
 			if( Blockdata["myid_on_node"] == 0 ):
 				assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
@@ -4889,11 +4889,11 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
 			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone",Blockdata["color"],Blockdata["myid"],i,len(q) )#,q
-			assignments_of_refangles_to_cones[i] = utilities.wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
+			assignments_of_refangles_to_cones[i] = sparx_utilities.wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
 
 	else:
 
-		angledirs = utilities.angles_to_normals([u1[:3] for u1 in oldparams])
+		angledirs = sparx_utilities.angles_to_normals([u1[:3] for u1 in oldparams])
 
 		number_of_cones = max(2, int(n_coarse_ang/numberofrefs_inmem*1.5 + 0.5))
 		###if Blockdata["myid_on_node"] == 0:  print( " LENGTHS  ",Blockdata["color"],nima,n_coarse_ang, numberofrefs_inmem,number_of_cones)
@@ -4917,11 +4917,11 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			#if Blockdata["myid"] == 0:  print(  "  number of cones ",number_of_cones,cone_delta, len(cone_angles))
 			assert(number_of_cones == len(cone_angles) )
 
-			conedirs = utilities.angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
+			conedirs = sparx_utilities.angles_to_normals(Blockdata["symclass"].symmetry_neighbors(cone_angles))
 			neighbors = len(conedirs)/len(cone_angles)  #  Symmetry related neighbors
 			#if Blockdata["myid"] == 0:  print(  "  neighbors  ",Blockdata["myid"],neighbors, cone_angles)
 			#  assign data directions to cone_angles
-			assignments_to_cones = utilities.assign_projdirs_f(angledirs, conedirs, neighbors)
+			assignments_to_cones = sparx_utilities.assign_projdirs_f(angledirs, conedirs, neighbors)
 			###print(  " assignments_to_cones ",Blockdata["myid"],len(assignments_to_cones),[len(q) for q in assignments_to_cones],assignments_to_cones[0])
 			#  the above should have length of refdirs and each should have indexes of data that belong to this cone
 			del conedirs
@@ -4949,7 +4949,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					#if( Blockdata["myid"] == 19 ):  print(  " doit0 ",Blockdata["myid"], i,assignments_of_refangles_to_cones[i],q,assignments_to_cones)
 					assignments_of_refangles_to_cones[i] = list(set(assignments_of_refangles_to_cones[i]))
 				###if Blockdata["myid"] == 19:  print(  " assignments_of_refangles_to_cones on myid ",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]), assignments_of_refangles_to_cones[i] )
-				assignments_of_refangles_to_cones[i] = utilities.wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
+				assignments_of_refangles_to_cones[i] = sparx_utilities.wrap_mpi_gatherv(assignments_of_refangles_to_cones[i], 0, Blockdata["shared_comm"])
 				###if Blockdata["myid"] == 0:  print(  " assignments_of_refangles_to_cones gatherv",Blockdata["color"],Blockdata["myid"],i,len(assignments_of_refangles_to_cones[i]) )
 				doit = 1
 				if( Blockdata["myid_on_node"] == 0 ):
@@ -4960,8 +4960,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						number_of_cones = int(number_of_cones*1.25)
 						#print(  " increased number_of_cones ",i,number_of_cones )
 						doit = 0
-				doit = utilities.bcast_number_to_all(doit, source_node = 0)
-				number_of_cones = utilities.bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
+				doit = sparx_utilities.bcast_number_to_all(doit, source_node = 0)
+				number_of_cones = sparx_utilities.bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
 				###if( Blockdata["myid"] == 19 ):  print(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
 				if( doit == 0 ):  break
 
@@ -4971,7 +4971,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 
 		for i,q in enumerate(assignments_of_refangles_to_cones):
 			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone IOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
-			assignments_of_refangles_to_cones[i] = utilities.wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
+			assignments_of_refangles_to_cones[i] = sparx_utilities.wrap_mpi_bcast(q, 0, Blockdata["shared_comm"])
 			###if( Blockdata["myid_on_node"] == 0 ): print( " which refangles belong to which cone XOUT ",Blockdata["color"],Blockdata["myid"],i,len(q))#,q
 			#if( myid == 1 ):
 			#	print " which refangles belong to which cone",myid,i,len(assignments_of_refangles_to_cones[i])#,q
@@ -5037,7 +5037,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	#  This is for auxiliary function searches.
 	Blockdata["angle_set"] = refang
 	#  Extract normals from rotation matrices
-	refdirs = utilities.angles_to_normals(refang)
+	refdirs = sparx_utilities.angles_to_normals(refang)
 
 
 	#  We have to make sure the number of cones is the same on all nodes, this is due to the strange MPI problem
@@ -5060,13 +5060,13 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	for icone in range(max_number_of_cones):
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		if( icone < number_of_cones ):  #  This is executed for individual number of cones, some nodes may have fewer.
-			nang_start, nang_end = applications.MPI_start_end(len(assignments_of_refangles_to_cones[icone]), Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
+			nang_start, nang_end = sparx_applications.MPI_start_end(len(assignments_of_refangles_to_cones[icone]), Blockdata["no_of_processes_per_group"], Blockdata["myid_on_node"])
 			#if(Blockdata["color"] == 1):
 			###print( " ZXZ11  ",Blockdata["color"],Blockdata["myid_on_node"],Blockdata["myid"],len(assignments_of_refangles_to_cones[icone]),nang_start, nang_end)
 
 			for i in range(nang_start, nang_end, 1):  # This will take care of no of process on a node less than nang.  Some loops will not be executed
 				ic = assignments_of_refangles_to_cones[icone][i]
-				temp = projection.prgl(volprep,[ coarse_angles[ic][0],coarse_angles[ic][1],0.0, 0.0,0.0], 1, True)
+				temp = sparx_projection.prgl(volprep,[ coarse_angles[ic][0],coarse_angles[ic][1],0.0, 0.0,0.0], 1, True)
 				crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
 				EMAN2_cppwrap.Util.Frngs(crefim, numr)
 				EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
@@ -5101,7 +5101,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					if preshift:
 						sx = int(round(sx))
 						sy = int(round(sy))
-						dataimage  = fundamentals.cyclic_shift(original_data[im],sx,sy)
+						dataimage  = sparx_fundamentals.cyclic_shift(original_data[im],sx,sy)
 						#  Put rounded shifts on the list, note image has the original floats - check whether it may cause problems
 						oldparams[im][3] = sx
 						oldparams[im][4] = sy
@@ -5118,27 +5118,27 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					if Blockdata["bckgnoise"]:
 						if apply_mask:
 							if Tracker["constants"]["hardmask"]:
-								dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"])
+								dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"])
 							else:
-								bckg = utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+								bckg = sparx_utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
 								bckg.set_attr("is_complex",1)
 								bckg.set_attr("is_fftpad",1)
-								bckg = fundamentals.fft(filter.filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
+								bckg = sparx_fundamentals.fft(sparx_filter.filt_table(bckg, oneover[dataimage.get_attr("particle_group")]))
 								#  Normalize bckg noise in real space, only region actually used.
 								st = EMAN2_cppwrap.Util.infomask(bckg, mask2D, False)
 								bckg -= st[0]
 								bckg /= st[1]
-								dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
+								dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"], bckg = bckg)
 					else:
 						#  if no bckgnoise, do simple masking instead
-						if apply_mask:  dataimage = morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
+						if apply_mask:  dataimage = sparx_morphology.cosinemask(dataimage,radius = Tracker["constants"]["radius"] )
 
 					#  Apply varadj
 					if not nonorm:
 						EMAN2_cppwrap.Util.mul_scalar(dataimage, Tracker["avgvaradj"][procid]/wnorm)
 
 					###  FT
-					dataimage = fundamentals.fft(dataimage)
+					dataimage = sparx_fundamentals.fft(dataimage)
 					sig = EMAN2_cppwrap.Util.rotavg_fourier( dataimage )
 					accumulatepw[im] = sig[len(sig)//2:]+[0.0]
 
@@ -5155,25 +5155,25 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					if Tracker["constants"]["CTF"] :
 						ctf_params = dataimage.get_attr("ctf")
 						ctf_params.apix = ctf_params.apix/(float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))
-						ctfa = morphology.ctf_img_real(Tracker["nxinit"], ctf_params)
+						ctfa = sparx_morphology.ctf_img_real(Tracker["nxinit"], ctf_params)
 						ctfs = ctfa
 					##if( ( Blockdata["myid"] == Blockdata["main_node"])   and firsti ):
 					##	dataimage.set_attr("is_complex",0)
 					##	dataimage.write_image("dataimagefft.hdf")
 					##	dataimage.set_attr("is_complex",1)
-					dataml = fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
+					dataml = sparx_fundamentals.fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False, False)
 					data = []
 					for iq in coarse_shifts:
 						xx = iq[0]*shrink
 						yy = iq[1]*shrink
-						dss = fundamentals.fshift(dataml, xx, yy)
+						dss = sparx_fundamentals.fshift(dataml, xx, yy)
 						dss.set_attr("is_complex",0)
 						data.append(dss)
 
 					#  This will get it to real space
 					#dataimage = fpol(Util.mulnclreal(Util.mulnclreal(fdecimate(dataimage, Tracker["nxinit"], Tracker["nxinit"], 1, False), Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 					#  Here we can reuse dataml to save time.  It was not normalized, but it does not matter as dataimage is for POLAR.  PAP 08/06/2018
-					dataimage = fundamentals.fpol(EMAN2_cppwrap.Util.mulnclreal(EMAN2_cppwrap.Util.mulnclreal(dataml, EMAN2_cppwrap.Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
+					dataimage = sparx_fundamentals.fpol(EMAN2_cppwrap.Util.mulnclreal(EMAN2_cppwrap.Util.mulnclreal(dataml, EMAN2_cppwrap.Util.muln_img(bckgn, ctfs)), mask ), Tracker["nxpolar"], Tracker["nxpolar"],1, True)
 					# Compute max number of angles on the fly
 					lang = len(assignments_of_refangles_to_angles[im])
 					###print("   BICONE icnm,im in enumerateassignments_to_cones[icone]  ",Blockdata["myid"],icone,icnm,im,lang)#,assignments_to_cones)
@@ -5227,7 +5227,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								ipsi = ipsiandiang%100000
 								iang = ipsiandiang/100000
 								##junk = time()
-								temp = projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+								temp = sparx_projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								##eat += time()-junk
 								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								temp.set_attr("is_complex",0)
@@ -5271,7 +5271,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					###mpi_barrier(MPI_COMM_WORLD)
 					###print("  STARTING5    ",Blockdata["myid"],keepf,MPI_COMM_WORLD)
 					mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-					keepf = utilities.wrap_mpi_gatherv(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+					keepf = sparx_utilities.wrap_mpi_gatherv(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 					###print("  STARTING6    ",Blockdata["myid"],keepf)
 					if( Blockdata["myid"] == 0 ):
 						keepf = [junk for junk in keepf if junk >0]
@@ -5282,9 +5282,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 							keepf = keepf[int(len(keepf)*Blockdata["rkeepf"])]
 					else:  keepf = 0
 					###print("  STARTING7    ",Blockdata["myid"],keepf)
-					keepf = utilities.wrap_mpi_bcast(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+					keepf = sparx_utilities.wrap_mpi_bcast(keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 					if(keepf == 0):
-						global_def.ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
+						sparx_global_def.ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
 						mpi.mpi_finalize()
 						exit()
 					###print("  STARTING8    ",Blockdata["myid"],keepf)
@@ -5335,7 +5335,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 								ipsi = ipsiandiang%100000
 								iang = ipsiandiang/100000
 								##junk = time()
-								temp = projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
+								temp = sparx_projection.prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
 								###   if( Blockdata["myid"] == Blockdata["main_node"] ):  print("  SELECTEDSTEPTWO  ",iln,refang[iang][0],refang[iang][1],refang[iang][2]+ipsi*Tracker["delta"],ishift,xod1[iln])
 								##eat += time()-junk
 								temp.set_attr("is_complex",0)
@@ -5492,7 +5492,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 							ipsi = ipsiandiang%100000
 							iang = ipsiandiang/100000
 							##junk = time()
-							temp = projection.prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
+							temp = sparx_projection.prgl(volinit,[ refang[iang][0],refang[iang][1],(refang[iang][2] + ipsi*Tracker["delta"])%360.0, 0.0,0.0], 1, False)
 							##eat += time()-junk
 							temp.set_attr("is_complex",0)
 							johi += 1
@@ -5502,7 +5502,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 							if( data[ishift] == None ):
 								xx = shifts[ishift][0]*shrink
 								yy = shifts[ishift][1]*shrink
-								data[ishift] = fundamentals.fshift(dataml, xx, yy)
+								data[ishift] = sparx_fundamentals.fshift(dataml, xx, yy)
 								data[ishift].set_attr("is_complex",0)
 							##junk = time()
 							[peak,varadj] = EMAN2_cppwrap.Util.sqednorm(data[ishift], temp, ctfa, bckgnoise)
@@ -5598,7 +5598,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sparx_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	#  Compute statistics of smear -----------------
@@ -5659,17 +5659,17 @@ def cerrs(params, ctfs, particle_groups):
 	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 	procid = 0
 	if(Blockdata["myid"] == Blockdata["nodes"][procid]):
-		ref_vol = utilities.get_im(Tracker["refvol"])
+		ref_vol = sparx_utilities.get_im(Tracker["refvol"])
 		nnn = ref_vol.get_xsize()
 		if(Tracker["nxinit"] != nnn ):
-			ref_vol = fundamentals.fdecimate(ref_vol,Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"], True, False)
+			ref_vol = sparx_fundamentals.fdecimate(ref_vol,Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"], True, False)
 	else:
 		#log = None
-		ref_vol = utilities.model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
+		ref_vol = sparx_utilities.model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	utilities.bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["nodes"][procid])
+	sparx_utilities.bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["nodes"][procid])
 	interpolation_method = 1
-	ref_vol = projection.prep_vol(ref_vol, npad = 2, interpolation_method = interpolation_method )
+	ref_vol = sparx_projection.prep_vol(ref_vol, npad = 2, interpolation_method = interpolation_method )
 
 	lb = Blockdata["bckgnoise"].get_xsize()
 	acc_rot = 0.0
@@ -5688,9 +5688,9 @@ def cerrs(params, ctfs, particle_groups):
 		psi1   = params[itry][2]
 		#// Get CTF for this particle
 		#   Get F1 = Proj(refvol; angles1, shifts=0)
-		F1 = projection.prgl(ref_vol,[ phi1, theta1, psi1, 0.0, 0.0], interpolation_method = 1, return_real= False)
+		F1 = sparx_projection.prgl(ref_vol,[ phi1, theta1, psi1, 0.0, 0.0], interpolation_method = 1, return_real= False)
 		ctfs[itry].apix = ctfs[itry].apix/shrinkage
-		ct = morphology.ctf_img_real(Tracker["nxinit"], ctfs[itry])
+		ct = sparx_morphology.ctf_img_real(Tracker["nxinit"], ctfs[itry])
 		EMAN2_cppwrap.Util.mul_img(ct, ct)
 		ctfsbckgnoise = EMAN2_cppwrap.Util.muln_img(EMAN2_cppwrap.Util.unroll1dpw(Tracker["nxinit"], [Blockdata["bckgnoise"][i,particle_groups[itry]] for i in range(lb)]), ct)
 
@@ -5745,8 +5745,8 @@ def cerrs(params, ctfs, particle_groups):
 						xshift = 0.0
 						yshift = yoff1 + sh_error
 
-				if (imode == 0):  F2 = projection.prgl(ref_vol,[ phi2, theta2, psi2, 0.0,0.0], 1, False)
-				else:             F2 = fundamentals.fshift(F1, xshift*shrinkage, yshift*shrinkage)
+				if (imode == 0):  F2 = sparx_projection.prgl(ref_vol,[ phi2, theta2, psi2, 0.0,0.0], 1, False)
+				else:             F2 = sparx_fundamentals.fshift(F1, xshift*shrinkage, yshift*shrinkage)
 
 				peak = EMAN2_cppwrap.Util.sqedac(F1, F2, ctfsbckgnoise)
 
@@ -5789,19 +5789,19 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		final_dir = Tracker["directory"]
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
 			try:
-				refang  = utilities.read_text_row( os.path.join(final_dir, "refang.txt"))
-				rshifts = utilities.read_text_row( os.path.join(final_dir, "rshifts.txt"))
+				refang  = sparx_utilities.read_text_row( os.path.join(final_dir, "refang.txt"))
+				rshifts = sparx_utilities.read_text_row( os.path.join(final_dir, "rshifts.txt"))
 			except:
 				carryon =0
 		else:
 			refang  = 0
 			rshifts = 0
-		carryon = utilities.bcast_number_to_all(carryon, source_node = Blockdata["main_node"], mpi_comm = comm)
+		carryon = sparx_utilities.bcast_number_to_all(carryon, source_node = Blockdata["main_node"], mpi_comm = comm)
 		if carryon == 0: 
-			global_def.ERROR("Failed to read refang and rshifts: %s %s "%(os.path.join(final_dir, "refang.txt"),\
+			sparx_global_def.ERROR("Failed to read refang and rshifts: %s %s "%(os.path.join(final_dir, "refang.txt"),\
 			  os.path.join(final_dir, "rshifts.txt")), "do_final_rec3d", 1, data["subgroup_myid"])
-		refang  = utilities.wrap_mpi_bcast(refang,  Blockdata["main_node"], comm)
-		rshifts = utilities.wrap_mpi_bcast(rshifts, Blockdata["main_node"], comm)
+		refang  = sparx_utilities.wrap_mpi_bcast(refang,  Blockdata["main_node"], comm)
+		rshifts = sparx_utilities.wrap_mpi_bcast(rshifts, Blockdata["main_node"], comm)
 
 		partids =[None, None]
 		if(Blockdata["subgroup_myid"] == Blockdata["main_node"]):
@@ -5810,10 +5810,10 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			l = 0
 			for procid in range(2):
 				partids[procid] = os.path.join(final_dir,"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]))
-				l += len(utilities.read_text_file(partids[procid]))
+				l += len(sparx_utilities.read_text_file(partids[procid]))
 		else:
 			l  = 0
-		l  = utilities.bcast_number_to_all(l, source_node = Blockdata["main_node"], mpi_comm = comm)
+		l  = sparx_utilities.bcast_number_to_all(l, source_node = Blockdata["main_node"], mpi_comm = comm)
 
 		norm_per_particle = [[],[]]
 		# get the previous number of CPUs
@@ -5823,7 +5823,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			  "oldparamstructure_%01d_%03d_%03d.json"%(procid,nproc_previous,\
 			    Tracker["mainiteration"]))):
 				nproc_previous += 1
-		nproc_previous = utilities.bcast_number_to_all(nproc_previous, source_node = \
+		nproc_previous = sparx_utilities.bcast_number_to_all(nproc_previous, source_node = \
 		  Blockdata["main_node"], mpi_comm = comm)
 
 		for procid in range(2):
@@ -5833,14 +5833,14 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			   "main%03d"%(Tracker["mainiteration"]-1),"params-chunk_%01d_%03d.txt"%(procid,\
 			     (Tracker["mainiteration"]-1)))
 			###
-			psize = len(utilities.read_text_file(partids[procid]))
+			psize = len(sparx_utilities.read_text_file(partids[procid]))
 			oldparamstructure[procid] = []			
-			im_start, im_end = applications.MPI_start_end(psize, Blockdata["subgroup_size"], Blockdata["subgroup_myid"])
+			im_start, im_end = sparx_applications.MPI_start_end(psize, Blockdata["subgroup_size"], Blockdata["subgroup_myid"])
 			istart_old_proc_id = -1
 			iend_old_proc_id   = -1
 			plist = []
 			for iproc_old in range(nproc_previous):
-				im_start_old, im_end_old = applications.MPI_start_end(psize, nproc_previous, iproc_old)
+				im_start_old, im_end_old = sparx_applications.MPI_start_end(psize, nproc_previous, iproc_old)
 				if (im_start>= im_start_old) and im_start <=im_end_old:
 					istart_old_proc_id = iproc_old
 				if (im_end>= im_start_old) and im_end <=im_end_old:
@@ -5851,7 +5851,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			for iproc_index_old in range(istart_old_proc_id, iend_old_proc_id+1):
 				with open(os.path.join(final_dir,"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%\
 				  (procid,iproc_index_old,Tracker["mainiteration"])),'r') as fout:
-					oldparamstructure_on_old_cpu = utilities.convert_json_fromunicode(json.load(fout))
+					oldparamstructure_on_old_cpu = sparx_utilities.convert_json_fromunicode(json.load(fout))
 				fout.close()
 				mlocal_id_on_old = ptl_on_this_cpu - plist[iproc_index_old][0]
 				while (mlocal_id_on_old<len(oldparamstructure_on_old_cpu)) and (ptl_on_this_cpu<im_end):
@@ -5922,41 +5922,41 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			try:
 				fout    = open(os.path.join(masterdir, "Tracker_final.json"),'r')
-				Tracker = utilities.convert_json_fromunicode(json.load(fout))
+				Tracker = sparx_utilities.convert_json_fromunicode(json.load(fout))
 				fout.close()
 				print("The best solution is %d  "%Tracker["constants"]["best"])
 				do_final_iter =  Tracker["constants"]["best"] # set the best as do_final iteration
 			except: carryon = 0
-		carryon = utilities.bcast_number_to_all(carryon)
+		carryon = sparx_utilities.bcast_number_to_all(carryon)
 		if carryon == 0: 
-			global_def.ERROR("Best resolution is not found, do_final will not be computed", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
-		do_final_iter = utilities.bcast_number_to_all(do_final_iter)
+			sparx_global_def.ERROR("Best resolution is not found, do_final will not be computed", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
+		do_final_iter = sparx_utilities.bcast_number_to_all(do_final_iter)
 	elif( do_final_iter_init == -1 ): do_final_iter = Tracker["constants"]["best"]
 	else:
 		do_final_iter = do_final_iter_init
 		if(Blockdata["myid"] == Blockdata["main_node"]): print("User selected %d iteration to compute the 3D reconstruction "%do_final_iter)
 		if do_final_iter<=2:
-			global_def.ERROR("The selected iteration should be larger than 2", "recons3d_final", 1, Blockdata["myid"])
+			sparx_global_def.ERROR("The selected iteration should be larger than 2", "recons3d_final", 1, Blockdata["myid"])
 			
 	final_dir = os.path.join(masterdir, "main%03d"%do_final_iter)
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check json file and load tracker
 		try:
 			with open(os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter),'r') as fout:
-				Tracker = utilities.convert_json_fromunicode(json.load(fout))
+				Tracker = sparx_utilities.convert_json_fromunicode(json.load(fout))
 			fout.close()
 		except: carryon = 0
 		if orgstack: Tracker["constants"]["stack"] = orgstack
 	else: Tracker = 0
-	carryon = utilities.bcast_number_to_all(carryon, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	carryon = sparx_utilities.bcast_number_to_all(carryon, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	if carryon == 0: 
-		global_def.ERROR("Failed to load Tracker file %s, program terminates "%os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter), "recons3d_final",1, Blockdata["myid"])
-	Tracker = utilities.wrap_mpi_bcast(Tracker,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		sparx_global_def.ERROR("Failed to load Tracker file %s, program terminates "%os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter), "recons3d_final",1, Blockdata["myid"])
+	Tracker = sparx_utilities.wrap_mpi_bcast(Tracker,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check stack 
-		try:  image = utilities.get_im(Tracker["constants"]["stack"],0)
+		try:  image = sparx_utilities.get_im(Tracker["constants"]["stack"],0)
 		except:carryon = 0
-	carryon = utilities.bcast_number_to_all(carryon, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	carryon = sparx_utilities.bcast_number_to_all(carryon, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	if carryon == 0: 
-		global_def.ERROR("The orignal data stack for reconstruction %s does not exist, final reconstruction terminates"%Tracker["constants"]["stack"],"recons3d_final", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("The orignal data stack for reconstruction %s does not exist, final reconstruction terminates"%Tracker["constants"]["stack"],"recons3d_final", 1, Blockdata["myid"])
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		#  Estimated volume size
@@ -5971,17 +5971,17 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 		nnprocs = 0
 		nogo = 0
 	
-	nogo =    utilities.bcast_number_to_all(nogo,    source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+	nogo =    sparx_utilities.bcast_number_to_all(nogo,    source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
 	if( nogo == 1 ):
-		global_def.ERROR("Insufficient memory to compute final reconstruction","recons3d_final", 1, Blockdata["myid"])
-	nnprocs = utilities.bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+		sparx_global_def.ERROR("Insufficient memory to compute final reconstruction","recons3d_final", 1, Blockdata["myid"])
+	nnprocs = sparx_utilities.bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
 	Blockdata["ncpuspernode"] 	= nnprocs
 	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 	create_subgroup()
 
 	oldparamstructure =[[],[]]
 	newparamstructure =[[],[]]
-	projdata          = [[utilities.model_blank(1,1)], [utilities.model_blank(1,1)]]
+	projdata          = [[sparx_utilities.model_blank(1,1)], [sparx_utilities.model_blank(1,1)]]
 	original_data     = [None,None]
 	oldparams         = [[],[]]
 	partids           = [None, None]
@@ -6007,7 +6007,7 @@ def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF
 	pass#IMPORTIMPORTIMPORT import datetime, types
 	pass#IMPORTIMPORTIMPORT import copy
 	imgsize = prjlist[0].get_ysize()  # It can be Fourier, so take y-size
-	refvol = utilities.model_blank(target_size)
+	refvol = sparx_utilities.model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
@@ -6023,16 +6023,16 @@ def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF
 		ct = prjlist[im].get_attr("ctf")
 		try: bckgn = prjlist[im].get_attr("bckgnoise")
 		except: bckgn = [1.0]*(Tracker["constants"]["nnxo"]//2)
-		if not upweighted:  prjlist[im] = filter.filt_table(prjlist[im], bckgn)
+		if not upweighted:  prjlist[im] = sparx_filter.filt_table(prjlist[im], bckgn)
 		prjlist[im].set_attr_dict( {"bckgnoise":bckgn, "ctf":ct})
-		phi,theta,psi,s2x,s2y                   = utilities.get_params_proj(prjlist[im], xform = "xform.projection")
+		phi,theta,psi,s2x,s2y                   = sparx_utilities.get_params_proj(prjlist[im], xform = "xform.projection")
 		junkphi, junktheta, junkpsi, js2x, js2y = parameters[im][0], parameters[im][1], parameters[im][2], parameters[im][3], parameters[im][4]
 		s2x = js2x-round(js2x)
 		s2y = js2y-round(js2y)
-		prjlist[im] = fundamentals.fshift(prjlist[im], s2x, s2y)
+		prjlist[im] = sparx_fundamentals.fshift(prjlist[im], s2x, s2y)
 		r.insert_slice(prjlist[im], EMAN2_cppwrap.Transform({"type":"spider","phi":phi, "theta":theta, "psi":psi}), 1.0)
-	utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 	if myid == main_node: dummy = r.finish(True)
 	mpi.mpi_barrier(mpi_comm)
 	if myid == main_node: return fftvol, weight, refvol
@@ -6109,9 +6109,9 @@ def update_memory_estimation():
 	else:
 		nnprocs = 0
 		nogo    = 0
-	nogo = utilities.bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
-	if( nogo == 1 ):  global_def.ERROR("Insufficient memory to continue refinement from subset","continue_from_subset", 1, Blockdata["myid"])
-	nnprocs = utilities.bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+	nogo = sparx_utilities.bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+	if( nogo == 1 ):  sparx_global_def.ERROR("Insufficient memory to continue refinement from subset","continue_from_subset", 1, Blockdata["myid"])
+	nnprocs = sparx_utilities.bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
 	Blockdata["ncpuspernode"] 	= nnprocs
 	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 	create_subgroup()
@@ -6218,7 +6218,7 @@ def update_tracker(shell_line_command):
 	if( (Blockdata["myid"] == Blockdata["main_node"])  and  (len(tempdict) > 0) ):
 		print_dict(tempdict, "Updated settings")
 
-	Blockdata["symclass"] = fundamentals.symclass(Tracker["constants"]["symmetry"])
+	Blockdata["symclass"] = sparx_fundamentals.symclass(Tracker["constants"]["symmetry"])
 	return 
 
 def rec3d_make_maps(compute_fsc = True, regularized = True):
@@ -6230,15 +6230,15 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 	if compute_fsc:
 		if(Blockdata["no_of_groups"] == 1):
 			if( Blockdata["myid"] == Blockdata["nodes"][0] ):
-				tvol0 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%03d.hdf"%(   Tracker["mainiteration"])))
-				tweight0 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%03d.hdf"%(Tracker["mainiteration"])))
-				tvol1 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%03d.hdf"%(   Tracker["mainiteration"])))
-				tweight1 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%03d.hdf"%(Tracker["mainiteration"])))
+				tvol0 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%03d.hdf"%(   Tracker["mainiteration"])))
+				tweight0 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%03d.hdf"%(Tracker["mainiteration"])))
+				tvol1 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%03d.hdf"%(   Tracker["mainiteration"])))
+				tweight1 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%03d.hdf"%(Tracker["mainiteration"])))
 				EMAN2_cppwrap.Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
 				shrank0 	= stepone(tvol0, tweight0)
 				shrank1 	= stepone(tvol1, tweight1)
 				#  Note shrank volumes are Fourier uncentered.
-				cfsc 		= statistics.fsc(shrank0, shrank1)[1]
+				cfsc 		= sparx_statistics.fsc(shrank0, shrank1)[1]
 				del shrank0, shrank1
 				if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
 					cfsc 	= cfsc[:Tracker["nxinit"]//2+1]
@@ -6252,16 +6252,16 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 			if(Blockdata["myid"] == Blockdata["nodes"][1]):  # It has to be 1 to avoid problem with tvol1 not closed on the disk
 				#--  memory_check(Blockdata["myid"],"first node, before stepone")
 				#  read volumes, shrink
-				tvol0 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"])))
-				tweight0 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%03d.hdf"%(Tracker["mainiteration"])))
-				tvol1 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"])))
-				tweight1 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%03d.hdf"%(Tracker["mainiteration"])))
+				tvol0 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"])))
+				tweight0 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%03d.hdf"%(Tracker["mainiteration"])))
+				tvol1 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"])))
+				tweight1 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%03d.hdf"%(Tracker["mainiteration"])))
 				EMAN2_cppwrap.Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
 				tag = 7007
-				utilities.send_EMData(tvol1,    Blockdata["nodes"][0], tag, mpi.MPI_COMM_WORLD)
-				utilities.send_EMData(tweight1, Blockdata["nodes"][0], tag, mpi.MPI_COMM_WORLD)
+				sparx_utilities.send_EMData(tvol1,    Blockdata["nodes"][0], tag, mpi.MPI_COMM_WORLD)
+				sparx_utilities.send_EMData(tweight1, Blockdata["nodes"][0], tag, mpi.MPI_COMM_WORLD)
 				shrank0 	= stepone(tvol0, tweight0)
-				utilities.send_EMData(shrank0,  Blockdata["nodes"][0], tag, mpi.MPI_COMM_WORLD)
+				sparx_utilities.send_EMData(shrank0,  Blockdata["nodes"][0], tag, mpi.MPI_COMM_WORLD)
 				del shrank0
 				lcfsc = 0
 				#--  memory_check(Blockdata["myid"],"first node, after stepone")
@@ -6269,14 +6269,14 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 				#--  memory_check(Blockdata["myid"],"second node, before stepone")
 				#  read volumes, shrink
 				tag = 7007
-				tvol1 		= utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
-				tweight1 	= utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
+				tvol1 		= sparx_utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
+				tweight1 	= sparx_utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
 				tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
 				shrank1 	= stepone(tvol1, tweight1)
 				#  Get shrank volume, do fsc, send it to all
-				shrank0 	= utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
+				shrank0 	= sparx_utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
 				#  Note shrank volumes are Fourier uncentered.
-				cfsc 		= statistics.fsc(shrank0, shrank1)[1]
+				cfsc 		= sparx_statistics.fsc(shrank0, shrank1)[1]
 				del shrank0, shrank1
 				if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
 					cfsc = cfsc[:Tracker["nxinit"]//2+1]
@@ -6287,11 +6287,11 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 				#  receive fsc
 				lcfsc = 0
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-		lcfsc = utilities.bcast_number_to_all(lcfsc)
+		lcfsc = sparx_utilities.bcast_number_to_all(lcfsc)
 		if( Blockdata["myid"] != Blockdata["nodes"][0]  ):  cfsc = [0.0]*lcfsc
-		cfsc = utilities.bcast_list_to_all(cfsc, Blockdata["myid"], Blockdata["nodes"][0])
+		cfsc = sparx_utilities.bcast_list_to_all(cfsc, Blockdata["myid"], Blockdata["nodes"][0])
 		if( Blockdata["myid"] == Blockdata["main_node"]):
-			utilities.write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
+			sparx_utilities.write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
 			out_fsc(cfsc)
 
 	# Now that we have the curve, do the reconstruction
@@ -6306,11 +6306,11 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					#--  memory_check(Blockdata["myid"],"first node, before steptwo")
 					#  compute filtered volume
 					if( Blockdata["myid_on_node"] == 0 ):
-						treg0 = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
+						treg0 = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
 					else:
-						tvol0    = utilities.model_blank(1)
-						tweight0 = utilities.model_blank(1)
-						treg0    = utilities.model_blank(1)
+						tvol0    = sparx_utilities.model_blank(1)
+						tweight0 = sparx_utilities.model_blank(1)
+						treg0    = sparx_utilities.model_blank(1)
 					tvol0 = steptwo_mpi(tvol0, tweight0, treg0, cfsc, True, color = Blockdata["node_volume"][1])		
 					del tweight0, treg0
 					if( Blockdata["myid_on_node"] == 0 ):
@@ -6321,10 +6321,10 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 								if(  i < Tracker["constants"]["inires"]+1 ):  cfsc[i]   = 1.0
 								if(  i == Tracker["constants"]["inires"]+1 ): cfsc[i]  	= 0.5
 								elif( i > Tracker["constants"]["inires"]+1 ): cfsc[i]  	= 0.0
-							tvol0 = filter.filt_table(tvol0, cfsc)
+							tvol0 = sparx_filter.filt_table(tvol0, cfsc)
 							if( Blockdata["no_of_groups"] > 1 ):  del cfsc
 
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						user_func = sparx_user_functions.factory[Tracker["constants"]["user_func"]]
 						#ref_data = [tvol0, Tracker, mainiteration]
 						ref_data = [tvol0, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -6337,12 +6337,12 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					#--  memory_check(Blockdata["myid"],"second node, before steptwo")
 					#  compute filtered volume
 					if( Blockdata["myid_on_node"] == 0 ):
-						treg1 = utilities.get_im(os.path.join(Tracker["directory"], "tempdir",\
+						treg1 = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir",\
 						   "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
 					else:
-						tvol1    = utilities.model_blank(1)
-						tweight1 = utilities.model_blank(1)
-						treg1    = utilities.model_blank(1)
+						tvol1    = sparx_utilities.model_blank(1)
+						tweight1 = sparx_utilities.model_blank(1)
+						treg1    = sparx_utilities.model_blank(1)
 					
 					tvol1 = steptwo_mpi(tvol1, tweight1, treg1, cfsc, True,  color = Blockdata["node_volume"][0])
 					del tweight1, treg1
@@ -6354,9 +6354,9 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 								if(  i < Tracker["constants"]["inires"]+1 ):   cfsc[i]  = 1.0
 								if(  i == Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.5
 								elif( i > Tracker["constants"]["inires"]+1 ):  cfsc[i]  = 0.0
-							tvol1 = filter.filt_table(tvol1, cfsc)
+							tvol1 = sparx_filter.filt_table(tvol1, cfsc)
 							del cfsc
-						user_func = user_functions.factory[Tracker["constants"]["user_func"]]
+						user_func = sparx_user_functions.factory[Tracker["constants"]["user_func"]]
 						#ref_data = [tvol1, Tracker, mainiteration]
 						ref_data = [tvol1, Tracker, Tracker["mainiteration"]]
 						#--  #--  memory_check(Blockdata["myid"],"first node, after masking")
@@ -6371,20 +6371,20 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 		if(Blockdata["no_of_groups"] == 1):
 			for iproc in range(2):
 				if(Blockdata["myid_on_node"] == 0):
-					tvol0 		= utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"]))))
-					tweight0 	= utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%(Tracker["mainiteration"]))))
-					tvol1 		= utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"]))))
-					tweight1 	= utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%(Tracker["mainiteration"]))))
+					tvol0 		= sparx_utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%(Tracker["mainiteration"]))))
+					tweight0 	= sparx_utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_0_%03d.hdf"%(Tracker["mainiteration"]))))
+					tvol1 		= sparx_utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%(Tracker["mainiteration"]))))
+					tweight1 	= sparx_utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir","tweight_1_%03d.hdf"%(Tracker["mainiteration"]))))
 					EMAN2_cppwrap.Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
-					treg  = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%03d.hdf"%((iproc, Tracker["mainiteration"]))))
+					treg  = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%03d.hdf"%((iproc, Tracker["mainiteration"]))))
 				else:
-					treg = utilities.model_blank(1)
+					treg = sparx_utilities.model_blank(1)
 					if iproc ==0:
-						tvol0 		= utilities.model_blank(1)
-						tweight0 	= utilities.model_blank(1)
+						tvol0 		= sparx_utilities.model_blank(1)
+						tweight0 	= sparx_utilities.model_blank(1)
 					else:
-						tvol1 		= utilities.model_blank(1)
-						tweight1 	= utilities.model_blank(1)
+						tvol1 		= sparx_utilities.model_blank(1)
+						tweight1 	= sparx_utilities.model_blank(1)
 				if iproc ==0 : 
 					tvol0 = steptwo_mpi(tvol0, tweight0, treg, None, False , color = Blockdata["node_volume"][0])
 				else:
@@ -6396,33 +6396,33 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 		else:
 			if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
 				# post-insertion operations, done only in main_node		
-				tvol0 		= utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%   Tracker["mainiteration"])))
-				tweight0 	= utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tweight_0_%03d.hdf"%Tracker["mainiteration"])))
-				tvol1 		= utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%   Tracker["mainiteration"])))
-				tweight1 	= utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tweight_1_%03d.hdf"%Tracker["mainiteration"])))
+				tvol0 		= sparx_utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_0_%03d.hdf"%   Tracker["mainiteration"])))
+				tweight0 	= sparx_utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tweight_0_%03d.hdf"%Tracker["mainiteration"])))
+				tvol1 		= sparx_utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tvol_1_%03d.hdf"%   Tracker["mainiteration"])))
+				tweight1 	= sparx_utilities.get_im(os.path.join(Tracker["directory"],os.path.join("tempdir", "tweight_1_%03d.hdf"%Tracker["mainiteration"])))
 				EMAN2_cppwrap.Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["constants"]["fuse_freq"])
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			
 			if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
 				tag = 7007
-				utilities.send_EMData(tvol1,    Blockdata["main_shared_nodes"][0], tag, mpi.MPI_COMM_WORLD)
-				utilities.send_EMData(tweight1, Blockdata["main_shared_nodes"][0], tag, mpi.MPI_COMM_WORLD)
+				sparx_utilities.send_EMData(tvol1,    Blockdata["main_shared_nodes"][0], tag, mpi.MPI_COMM_WORLD)
+				sparx_utilities.send_EMData(tweight1, Blockdata["main_shared_nodes"][0], tag, mpi.MPI_COMM_WORLD)
 				tvol0.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 				
 			elif(Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
 				tag = 7007
-				tvol1    	= utilities.recv_EMData(Blockdata["main_shared_nodes"][1], tag, mpi.MPI_COMM_WORLD)
-				tweight1    = utilities.recv_EMData(Blockdata["main_shared_nodes"][1], tag, mpi.MPI_COMM_WORLD)
+				tvol1    	= sparx_utilities.recv_EMData(Blockdata["main_shared_nodes"][1], tag, mpi.MPI_COMM_WORLD)
+				tweight1    = sparx_utilities.recv_EMData(Blockdata["main_shared_nodes"][1], tag, mpi.MPI_COMM_WORLD)
 				tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			
 			if( Blockdata["color"] == Blockdata["node_volume"][1]):
 				if( Blockdata["myid"] == Blockdata["main_shared_nodes"][1] ):
-					treg0 = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
+					treg0 = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_0_%03d.hdf"%(Tracker["mainiteration"])))
 				else:
-					tvol0 		= utilities.model_blank(1)
-					tweight0 	= utilities.model_blank(1)
-					treg0 		= utilities.model_blank(1)
+					tvol0 		= sparx_utilities.model_blank(1)
+					tweight0 	= sparx_utilities.model_blank(1)
+					treg0 		= sparx_utilities.model_blank(1)
 				tvol0 = steptwo_mpi(tvol0, tweight0, treg0, None, False , color = Blockdata["node_volume"][1])
 				del tweight0, treg0
 				if( Blockdata["myid_on_node"] == 0):
@@ -6430,11 +6430,11 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 					
 			elif( Blockdata["color"] == Blockdata["node_volume"][0]):
 				if( Blockdata["myid"] == Blockdata["main_shared_nodes"][0]):
-					treg1 = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
+					treg1 = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%03d.hdf"%(Tracker["mainiteration"])))
 				else:
-					tvol1 		= utilities.model_blank(1)
-					tweight1 	= utilities.model_blank(1)
-					treg1 		= utilities.model_blank(1)
+					tvol1 		= sparx_utilities.model_blank(1)
+					tweight1 	= sparx_utilities.model_blank(1)
+					treg1 		= sparx_utilities.model_blank(1)
 				tvol1 = steptwo_mpi(tvol1, tweight1, treg1, None, False , color = Blockdata["node_volume"][0])
 				del tweight1, treg1
 				if( Blockdata["myid_on_node"] == 0):
@@ -6471,27 +6471,27 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			shakenumber = numpy.random.uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
 		else:
 			shakenumber = 0.0
-		shakenumber = utilities.bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])
+		shakenumber = sparx_utilities.bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])
 		# it has to be rounded as the number written to the disk is rounded,
 		#  so if there is discrepancy one cannot reproduce iteration.
 		shakenumber = round(shakenumber,5)
 
 		rangle        = shakenumber*Tracker["delta"]
 		rshift        = shakenumber*Tracker["ts"]
-		refang        = Blockdata["symclass"].reduce_anglesets( fundamentals.rotate_params(refang, [-rangle,-rangle,-rangle]) )
-		coarse_angles = Blockdata["symclass"].reduce_anglesets( fundamentals.rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
+		refang        = Blockdata["symclass"].reduce_anglesets( sparx_fundamentals.rotate_params(refang, [-rangle,-rangle,-rangle]) )
+		coarse_angles = Blockdata["symclass"].reduce_anglesets( sparx_fundamentals.rotate_params(coarse_angles, [-rangle,-rangle,-rangle]) )
 		shakegrid(rshifts, rshift)
 		shakegrid(coarse_shifts, rshift)
 
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			utilities.write_text_row([[shakenumber, rangle, rshift]], os.path.join(Tracker["directory"] ,"randomize_search.txt") )
+			sparx_utilities.write_text_row([[shakenumber, rangle, rshift]], os.path.join(Tracker["directory"] ,"randomize_search.txt") )
 	else:
 		rangle = 0.0
 		rshift = 0.0
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		utilities.write_text_row( refang,  os.path.join(Tracker["directory"] , "refang.txt"))
-		utilities.write_text_row( rshifts, os.path.join(Tracker["directory"] , "rshifts.txt"))
+		sparx_utilities.write_text_row( refang,  os.path.join(Tracker["directory"] , "refang.txt"))
+		sparx_utilities.write_text_row( rshifts, os.path.join(Tracker["directory"] , "rshifts.txt"))
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	newparamstructure = [[],[]]
@@ -6520,7 +6520,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 				newparamstructure[procid], norm_per_particle[procid] = \
 						ali3D_local_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
 						preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
-			else:  global_def.ERROR("sxmeridien","Incorrect state  %s"%Tracker["state"],1,Blockdata["myid"])
+			else:  sparx_global_def.ERROR("sxmeridien","Incorrect state  %s"%Tracker["state"],1,Blockdata["myid"])
 			
 		elif continuation_mode:
 			if( (Tracker["state"] == "PRIMARY") ):
@@ -6535,7 +6535,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 				newparamstructure[procid], norm_per_particle[procid] = \
 						ali3D_local_polar(refang, rshifts, coarse_angles, coarse_shifts, procid, original_data[procid], oldparams[procid], \
 						preshift = True, apply_mask = True, nonorm = Tracker["constants"]["nonorm"], applyctf = True)
-			else:  global_def.ERROR("sxmeridien","Incorrect state  %s"%Tracker["state"],1,Blockdata["myid"])
+			else:  sparx_global_def.ERROR("sxmeridien","Incorrect state  %s"%Tracker["state"],1,Blockdata["myid"])
 		else: pass
 
 
@@ -6553,12 +6553,12 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-		params = utilities.wrap_mpi_gatherv(params, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		params = sparx_utilities.wrap_mpi_gatherv(params, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		#  store params
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 			print(line,"Executed successfully: ","Projection matching, state: %s, number of images:%7d"%(Tracker["state"],len(params)))
-			utilities.write_text_row(params, os.path.join(Tracker["directory"], "params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
+			sparx_utilities.write_text_row(params, os.path.join(Tracker["directory"], "params-chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
 		del params
 
 		projdata[procid] = []
@@ -6590,13 +6590,13 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 					json.dump(newparamstructure[procid], fout)
 					fout.close()
 				else:
-					dummy = utilities.wrap_mpi_recv(kproc, Blockdata["shared_comm"])
+					dummy = sparx_utilities.wrap_mpi_recv(kproc, Blockdata["shared_comm"])
 					fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,(Blockdata["color"]*Blockdata["no_of_processes_per_group"] + kproc),Tracker["mainiteration"])),'w')
 					json.dump(dummy, fout)
 					fout.close()
 					del dummy
 		else:
-			utilities.wrap_mpi_send(newparamstructure[procid], 0, Blockdata["shared_comm"])
+			sparx_utilities.wrap_mpi_send(newparamstructure[procid], 0, Blockdata["shared_comm"])
 
 		###fout = open(os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"],"oldparamstructure","oldparamstructure_%01d_%03d_%03d.json"%(procid,Blockdata["myid"],Tracker["mainiteration"])),'w')
 		###json.dump(newparamstructure[procid], fout)
@@ -6632,10 +6632,10 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		for procid in range(2):
 			cmd = "{} {} {}".format("cp -p", os.path.join(Tracker["previousoutputdir"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"]-1)), \
 									os.path.join(Tracker["directory"],"chunk_%01d_%03d.txt"%(procid,Tracker["mainiteration"])) )
-			junk = utilities.cmdexecute(cmd)
+			junk = sparx_utilities.cmdexecute(cmd)
 
-		pinids = utilities.read_text_file(partids[0])  + utilities.read_text_file(partids[1])
-		params = utilities.read_text_row(partstack[0]) + utilities.read_text_row(partstack[1])
+		pinids = sparx_utilities.read_text_file(partids[0])  + sparx_utilities.read_text_file(partids[1])
+		params = sparx_utilities.read_text_row(partstack[0]) + sparx_utilities.read_text_row(partstack[1])
 
 		assert(len(pinids) == len(params))
 
@@ -6644,8 +6644,8 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		del params
 		pinids.sort()
 
-		utilities.write_text_file([pinids[i][0] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"indexes_%03d.txt"%(Tracker["mainiteration"])))
-		utilities.write_text_row( [pinids[i][1] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"params_%03d.txt"%(Tracker["mainiteration"])))
+		sparx_utilities.write_text_file([pinids[i][0] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"indexes_%03d.txt"%(Tracker["mainiteration"])))
+		sparx_utilities.write_text_row( [pinids[i][1] for i in range(len(pinids))], os.path.join(Tracker["directory"] ,"params_%03d.txt"%(Tracker["mainiteration"])))
 		del pinids
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
@@ -6653,24 +6653,24 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		acc_rot = acc_trans = 1.e23
 	else:
 		if( Blockdata["myid"] == Blockdata["main_node"] ):
-			Blockdata["bckgnoise"]= utilities.get_im(os.path.join(Tracker["directory"],"bckgnoise.hdf"))
+			Blockdata["bckgnoise"]= sparx_utilities.get_im(os.path.join(Tracker["directory"],"bckgnoise.hdf"))
 			nnx = Blockdata["bckgnoise"].get_xsize()
 			nny = Blockdata["bckgnoise"].get_ysize()
 		else:
 			nnx = 0
 			nny = 0
-		nnx = utilities.bcast_number_to_all(nnx)
-		nny = utilities.bcast_number_to_all(nny)
+		nnx = sparx_utilities.bcast_number_to_all(nnx)
+		nny = sparx_utilities.bcast_number_to_all(nny)
 		if( Blockdata["myid"] != Blockdata["main_node"] ):
-			Blockdata["bckgnoise"] = utilities.model_blank(nnx,nny, 1, 1.0)
-		utilities.bcast_EMData_to_all(Blockdata["bckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"])
+			Blockdata["bckgnoise"] = sparx_utilities.model_blank(nnx,nny, 1, 1.0)
+		sparx_utilities.bcast_EMData_to_all(Blockdata["bckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"])
 
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			params = utilities.read_text_row(os.path.join(Tracker["directory"],"params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+utilities.read_text_row(os.path.join(Tracker["directory"],"params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
-			li     = utilities.read_text_file(os.path.join(Tracker["directory"],"chunk_0_%03d.txt"%(Tracker["mainiteration"])))+utilities.read_text_file(os.path.join(Tracker["directory"],"chunk_1_%03d.txt"%(Tracker["mainiteration"])))
+			params = sparx_utilities.read_text_row(os.path.join(Tracker["directory"],"params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+sparx_utilities.read_text_row(os.path.join(Tracker["directory"],"params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
+			li     = sparx_utilities.read_text_file(os.path.join(Tracker["directory"],"chunk_0_%03d.txt"%(Tracker["mainiteration"])))+sparx_utilities.read_text_file(os.path.join(Tracker["directory"],"chunk_1_%03d.txt"%(Tracker["mainiteration"])))
 			ctfs   = EMAN2_cppwrap.EMUtil.get_all_attributes(Tracker["constants"]["stack"],'ctf')
 			ctfs   = [ctfs[i] for i in li]
-			particle_groups = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_0.txt") ) + utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_1.txt") )
+			particle_groups = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_0.txt") ) + sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "particle_groups_1.txt") )
 			npart = 500/Blockdata["nproc"] + 1
 			li = list(range(len(ctfs)))
 			random.shuffle(li)
@@ -6682,24 +6682,24 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			params = 0
 			ctfs = 0
 			particle_groups = 0
-		params = utilities.wrap_mpi_bcast(params, Blockdata["main_node"])
-		ctfs   = utilities.wrap_mpi_bcast(ctfs,   Blockdata["main_node"])
-		particle_groups = utilities.wrap_mpi_bcast(particle_groups, Blockdata["main_node"])
+		params = sparx_utilities.wrap_mpi_bcast(params, Blockdata["main_node"])
+		ctfs   = sparx_utilities.wrap_mpi_bcast(ctfs,   Blockdata["main_node"])
+		particle_groups = sparx_utilities.wrap_mpi_bcast(particle_groups, Blockdata["main_node"])
 		#print(" A ",Blockdata["myid"] ,len(params),len(ctfs),len(particle_groups),len(params)/Blockdata["nproc"])
 		npart = len(params)/Blockdata["nproc"]
 		params = params[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
-		ctfs = [utilities.generate_ctf(ctfs[i]) for i in range(Blockdata["myid"]*npart,(Blockdata["myid"]+1)*npart)]
+		ctfs = [sparx_utilities.generate_ctf(ctfs[i]) for i in range(Blockdata["myid"]*npart,(Blockdata["myid"]+1)*npart)]
 		particle_groups = particle_groups[Blockdata["myid"]*npart:(Blockdata["myid"]+1)*npart]
 		Tracker["refvol"] = os.path.join(Tracker["directory"], "vol_0_%03d.hdf"%(Tracker["mainiteration"]))
 		#print(" B ",Blockdata["myid"] ,len(params),len(ctfs),len(particle_groups),npart)
 		cerrs(params, ctfs, particle_groups)
 		del params, ctfs, particle_groups
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			utilities.write_text_row( [[Tracker["acc_rot"], Tracker["acc_trans"]]], os.path.join(Tracker["directory"] ,"accuracy_%03d.txt"%(Tracker["mainiteration"])) )
+			sparx_utilities.write_text_row( [[Tracker["acc_rot"], Tracker["acc_trans"]]], os.path.join(Tracker["directory"] ,"accuracy_%03d.txt"%(Tracker["mainiteration"])) )
 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		anger, shifter = params_changes( utilities.read_text_row(os.path.join(Tracker["directory"],"params_%03d.txt"%(Tracker["mainiteration"]))), utilities.read_text_row(os.path.join(Tracker["previousoutputdir"],"params_%03d.txt"%(Tracker["mainiteration"]-1))) )
-		utilities.write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"])) )
+		anger, shifter = params_changes( sparx_utilities.read_text_row(os.path.join(Tracker["directory"],"params_%03d.txt"%(Tracker["mainiteration"]))), sparx_utilities.read_text_row(os.path.join(Tracker["previousoutputdir"],"params_%03d.txt"%(Tracker["mainiteration"]-1))) )
+		sparx_utilities.write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"])) )
 
 		line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 		print(line,"Average displacements for angular directions = %6.2f degrees; and shifts = %5.1f pixels"%(anger, shifter) )
@@ -6765,7 +6765,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 5.  mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py vton3 --do_final=21
 	
 	"""
-	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=sparx_global_def.SPARXVERSION)
 	parser.add_option("--do_final",           type="int",			 	default= -1,  help="Do unfiltered odd and even volume 3-D reconstruction from an existing meridien refinement with optional specified iteration")
 	parser.add_option("--local_refinement",    action="store_true",  default= False,  help="Perform local refinement starting from user-provided orientation parameters")
 
@@ -6831,13 +6831,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			else:
 				if(len(args) == 1): keepgoing2  = 0
 				restart_flag  = 0
-		restart_flag = utilities.bcast_number_to_all(restart_flag, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
-		keepgoing1   = utilities.bcast_number_to_all(keepgoing1,   source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
-		keepgoing2   = utilities.bcast_number_to_all(keepgoing2,   source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+		restart_flag = sparx_utilities.bcast_number_to_all(restart_flag, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+		keepgoing1   = sparx_utilities.bcast_number_to_all(keepgoing1,   source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+		keepgoing2   = sparx_utilities.bcast_number_to_all(keepgoing2,   source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
 		if keepgoing1== 0:
-			global_def.ERROR("To restart, meridien requires only the name of existing refinement directory.", "meridien",1, Blockdata["myid"])
+			sparx_global_def.ERROR("To restart, meridien requires only the name of existing refinement directory.", "meridien",1, Blockdata["myid"])
 		if keepgoing2 ==0:
-			global_def.ERROR("To start, meridien requires at least the stack name and the name of reference structure", "meridien",1, Blockdata["myid"])
+			sparx_global_def.ERROR("To start, meridien requires at least the stack name and the name of reference structure", "meridien",1, Blockdata["myid"])
 		if restart_flag ==1: restart_mode = True
 		else: restart_mode  = False
 		
@@ -6845,7 +6845,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		# Initialize MPI related variables
 		###  MPI SANITY CHECKES
 		if not balanced_processor_load_on_nodes:
-			global_def.ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.", "meridien",1, Blockdata["myid"])
+			sparx_global_def.ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.", "meridien",1, Blockdata["myid"])
 		if Blockdata["myid"]  == Blockdata["main_node"]:
 			line = ""
 			for a in sys.argv:
@@ -6854,8 +6854,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			print(line)
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
+		sparx_global_def.BATCH = True
+		sparx_global_def.MPI   = True
 		###  VARIOUS SANITY CHECKES <-----------------------
 		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 		#  For the time being we use all CPUs during refinement
@@ -6953,7 +6953,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 				print(line,"INITIALIZATION OF MERIDIEN")
-				a = utilities.get_im(orgstack)
+				a = sparx_utilities.get_im(orgstack)
 				nnxo = a.get_xsize()
 				if Tracker["constants"]["CTF"]:
 					i = a.get_attr('ctf')
@@ -6973,13 +6973,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			pass#IMPORTIMPORTIMPORT from EMAN2 import parsesym
 			#Blockdata["parsesym"] = parsesym(Tracker["constants"]["symmetry"])
 			#  Initialize symmetry
-			Blockdata["symclass"] = fundamentals.symclass(Tracker["constants"]["symmetry"])
+			Blockdata["symclass"] = sparx_fundamentals.symclass(Tracker["constants"]["symmetry"])
 
-			nnxo = utilities.bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
+			nnxo = sparx_utilities.bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
 			if( nnxo < 0 ):
-				global_def.ERROR("Incorrect image size  ", "meridien", 1, Blockdata["myid"])
-			pixel_size = utilities.bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
-			fq         = utilities.bcast_number_to_all(fq,         source_node = Blockdata["main_node"])
+				sparx_global_def.ERROR("Incorrect image size  ", "meridien", 1, Blockdata["myid"])
+			pixel_size = sparx_utilities.bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
+			fq         = sparx_utilities.bcast_number_to_all(fq,         source_node = Blockdata["main_node"])
 			Tracker["constants"]["nnxo"]         = nnxo
 			Tracker["constants"]["pixel_size"]   = pixel_size
 			Tracker["constants"]["fuse_freq"]    = fq
@@ -6995,20 +6995,20 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))):
 					checking_flag = 0
-			checking_flag = utilities.bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+			checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
 			if checking_flag==0:
-				global_def.ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
+				sparx_global_def.ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
 			
 			if( options.xr/options.ts<1.0 ): 
-				global_def.ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien", 1, Blockdata["myid"])
+				sparx_global_def.ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien", 1, Blockdata["myid"])
 			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
-				global_def.ERROR("Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"],\
+				sparx_global_def.ERROR("Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"],\
 				 2*(Tracker["currentres"] + Tracker["nxstep"])),"sxmeridien", 1, Blockdata["myid"])
 
 			if(Tracker["constants"]["radius"]  < 1):
 				Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
 			elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-				global_def.ERROR("Particle radius set too large!","sxmeridien", 1, Blockdata["myid"])
+				sparx_global_def.ERROR("Particle radius set too large!","sxmeridien", 1, Blockdata["myid"])
 			###<-----end of sanity check <----------------------
 			###<<<----------------------------- parse program
 		
@@ -7046,7 +7046,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				total_stack = EMAN2_cppwrap.EMUtil.get_image_count(Tracker["constants"]["stack"])
 			else:
 				total_stack = 0
-			total_stack = utilities.bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])
+			total_stack = sparx_utilities.bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])
 			# ------------------------------------------------------------------------------------
 			#  	Fresh start INITIALIZATION
 			initdir = os.path.join(Tracker["constants"]["masterdir"],"main000")
@@ -7062,7 +7062,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			target_radius = options.target_radius
 			# target_nx = options.target_nx
 			center_method = options.center_method
-			if (radi < 1):  global_def.ERROR("Particle radius has to be provided!", "sxisac", 1, Blockdata["myid"])
+			if (radi < 1):  sparx_global_def.ERROR("Particle radius has to be provided!", "sxisac", 1, Blockdata["myid"])
 
 			nxrsteps = 4
 
@@ -7107,7 +7107,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 			if( Blockdata["myid"] == Blockdata["main_node"] ):
 				os.mkdir(initdir)
-				utilities.write_text_file(list(range(total_stack)), partids)
+				sparx_utilities.write_text_file(list(range(total_stack)), partids)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 			#  store params
@@ -7117,41 +7117,41 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			for procid in range(2):  partstack[procid] = os.path.join(initdir,"params-chunk_%01d_000.txt"%procid)
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				l1, l2 = assign_particles_to_groups(minimum_group_size = 10)
-				utilities.write_text_file(l1,partids[0])
-				utilities.write_text_file(l2,partids[1])
+				sparx_utilities.write_text_file(l1,partids[0])
+				sparx_utilities.write_text_file(l2,partids[1])
 				if(options.initialshifts):
 					tp_list = EMAN2_cppwrap.EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
 					for i in range(len(tp_list)):
 						dp = tp_list[i].get_params("spider")
 						tp_list[i] = [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], 0.0, 1.0]
-					utilities.write_text_row(tp_list, os.path.join(initdir,"params_000.txt"))
-					utilities.write_text_row([tp_list[i] for i in l1], partstack[0])
-					utilities.write_text_row([tp_list[i] for i in l2], partstack[1])
+					sparx_utilities.write_text_row(tp_list, os.path.join(initdir,"params_000.txt"))
+					sparx_utilities.write_text_row([tp_list[i] for i in l1], partstack[0])
+					sparx_utilities.write_text_row([tp_list[i] for i in l2], partstack[1])
 					line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 					print(line,"Executed successfully: Imported initial parameters from the input stack")
 					del tp_list
 
 				else:
-					utilities.write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in l1], partstack[0])
-					utilities.write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in l2], partstack[1])
-					utilities.write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in range(len(l1)+len(l2))], os.path.join(initdir,"params_000.txt"))
+					sparx_utilities.write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in l1], partstack[0])
+					sparx_utilities.write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in l2], partstack[1])
+					sparx_utilities.write_text_row([[0,0,0,params2d[i][1],params2d[i][2], 0.0, 1.0] for i in range(len(l1)+len(l2))], os.path.join(initdir,"params_000.txt"))
 
 				del l1, l2
 
 				# Create reference models for each particle group
 				if(Tracker["constants"]["mask3D"] == None):
-					viv = filter.filt_table(morphology.cosinemask(utilities.get_im(volinit),radius = Tracker["constants"]["radius"]), [1.0]*Tracker["constants"]["inires"] + [0.5] + [0.0]*Tracker["constants"]["nnxo"])
+					viv = sparx_filter.filt_table(sparx_morphology.cosinemask(sparx_utilities.get_im(volinit),radius = Tracker["constants"]["radius"]), [1.0]*Tracker["constants"]["inires"] + [0.5] + [0.0]*Tracker["constants"]["nnxo"])
 				else:
-					viv = filter.filt_table(utilities.get_im(volinit)*utilities.get_im(Tracker["constants"]["mask3D"]), [1.0]*Tracker["constants"]["inires"] + [0.5] + [0.0]*Tracker["constants"]["nnxo"])
+					viv = sparx_filter.filt_table(sparx_utilities.get_im(volinit)*sparx_utilities.get_im(Tracker["constants"]["mask3D"]), [1.0]*Tracker["constants"]["inires"] + [0.5] + [0.0]*Tracker["constants"]["nnxo"])
 				# make a copy of original reference model for this particle group (procid)
 				for procid in range(2):
 					viv.write_image(os.path.join(initdir,"vol_%01d_%03d.hdf"%(procid,Tracker["mainiteration"])))
 				del viv
 			else:
 				Tracker["nima_per_chunk"] = [0,0]
-			Tracker["nima_per_chunk"][0] = utilities.bcast_number_to_all(Tracker["nima_per_chunk"][0], Blockdata["main_node"])
-			Tracker["nima_per_chunk"][1] = utilities.bcast_number_to_all(Tracker["nima_per_chunk"][1], Blockdata["main_node"])
-			Tracker["constants"]["number_of_groups"] = utilities.bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
+			Tracker["nima_per_chunk"][0] = sparx_utilities.bcast_number_to_all(Tracker["nima_per_chunk"][0], Blockdata["main_node"])
+			Tracker["nima_per_chunk"][1] = sparx_utilities.bcast_number_to_all(Tracker["nima_per_chunk"][1], Blockdata["main_node"])
+			Tracker["constants"]["number_of_groups"] = sparx_utilities.bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
 			del params2d
 
 			mainiteration 	= 0
@@ -7172,11 +7172,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			keepchecking 		= 1
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				fout 	= open(os.path.join(initdir,"Tracker_000.json"),'r')
-				Tracker = utilities.convert_json_fromunicode(json.load(fout))
+				Tracker = sparx_utilities.convert_json_fromunicode(json.load(fout))
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
 				fout.close()
 			else: Tracker = None
-			Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+			Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			mainiteration 	= 0
 			Tracker["mainiteration"] = mainiteration
 
@@ -7184,7 +7184,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 		# ------------------------------------------------------------------------------------
 		#  MAIN ITERATION
-		projdata       = [[utilities.model_blank(1,1)], [utilities.model_blank(1,1)]]
+		projdata       = [[sparx_utilities.model_blank(1,1)], [sparx_utilities.model_blank(1,1)]]
 		oldparams      = [[],[]]
 		currentparams  = [[],[]]
 		original_data  = [None, None]
@@ -7206,14 +7206,14 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					with open(os.path.join(Tracker["previousoutputdir"], \
 					  "Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') as fout:
-						Tracker = utilities.convert_json_fromunicode(json.load(fout))
+						Tracker = sparx_utilities.convert_json_fromunicode(json.load(fout))
 					fout.close()
 					#  It has to be repeated here as Tracker is from previous iteration, I see no other way.
 					Tracker["previousoutputdir"]	= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 					Tracker["mainiteration"]		= mainiteration
 					Tracker["directory"]			= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 				else: Tracker = None
-				Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+				Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 				### 
 				if restart_mode:
 					update_tracker(sys.argv[1:])
@@ -7235,15 +7235,15 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					shifter = 1.0e9
 				else:
 					if(Blockdata["myid"] == Blockdata["main_node"]):
-						fff = utilities.read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
-						[anger, shifter] = utilities.read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
+						fff = sparx_utilities.read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
+						[anger, shifter] = sparx_utilities.read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
 					else:
 						fff = []
 						anger   = 0.0
 						shifter = 0.0
-					fff = utilities.bcast_list_to_all(fff, Blockdata["myid"], source_node=Blockdata["main_node"])
-					anger   = utilities.bcast_number_to_all(anger,   source_node = Blockdata["main_node"])
-					shifter = utilities.bcast_number_to_all(shifter, source_node = Blockdata["main_node"])
+					fff = sparx_utilities.bcast_list_to_all(fff, Blockdata["myid"], source_node=Blockdata["main_node"])
+					anger   = sparx_utilities.bcast_number_to_all(anger,   source_node = Blockdata["main_node"])
+					shifter = sparx_utilities.bcast_number_to_all(shifter, source_node = Blockdata["main_node"])
 
 				keepgoing = AI( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
 
@@ -7264,10 +7264,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					doit2, keepchecking2 = checkstep(Tracker["directory"], li)
 					if(Blockdata["myid"] == Blockdata["main_node"] and doit2):
 						cmd = "{} {}".format("mkdir", Tracker["directory"])
-						junk = utilities.cmdexecute(cmd)
+						junk = sparx_utilities.cmdexecute(cmd)
 						cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"],"oldparamstructure"))
-						junk = utilities.cmdexecute(cmd)
-					if(not doit2):  global_def.ERROR("There was a gap in main directories, program cannot proceed","sxmeridien",1,Blockdata["myid"])
+						junk = sparx_utilities.cmdexecute(cmd)
+					if(not doit2):  sparx_global_def.ERROR("There was a gap in main directories, program cannot proceed","sxmeridien",1,Blockdata["myid"])
 
 					mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 					
@@ -7292,7 +7292,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 					
 					newparamstructure 			= [[],[]]
-					projdata          			= [[utilities.model_blank(1,1)], [utilities.model_blank(1,1)]]
+					projdata          			= [[sparx_utilities.model_blank(1,1)], [sparx_utilities.model_blank(1,1)]]
 					original_data     			= [None,None]
 					oldparams         			= [[],[]]
 					Blockdata["accumulatepw"]  	= [None, None]
@@ -7347,15 +7347,15 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			else:
 				if(len(args) == 1): keepgoing2  = 0
 				restart_flag  = 0
-		restart_flag = utilities.bcast_number_to_all(restart_flag, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
-		keepgoing1   = utilities.bcast_number_to_all(keepgoing1,   source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
-		keepgoing2   = utilities.bcast_number_to_all(keepgoing2,   source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+		restart_flag = sparx_utilities.bcast_number_to_all(restart_flag, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+		keepgoing1   = sparx_utilities.bcast_number_to_all(keepgoing1,   source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+		keepgoing2   = sparx_utilities.bcast_number_to_all(keepgoing2,   source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
 		
 		if keepgoing1== 0:
-			global_def.ERROR("To restart, meridien requires only the name of existing refinement directory.", "meridien local",1, Blockdata["myid"])
+			sparx_global_def.ERROR("To restart, meridien requires only the name of existing refinement directory.", "meridien local",1, Blockdata["myid"])
 			
 		if keepgoing2 ==0:
-			global_def.ERROR("To start, meridien requires at least the stack name and the name of reference structure", "meridien local",1, Blockdata["myid"])
+			sparx_global_def.ERROR("To start, meridien requires at least the stack name and the name of reference structure", "meridien local",1, Blockdata["myid"])
 			
 		if restart_flag ==1: restart_mode = True
 		else: restart_mode  = False
@@ -7364,7 +7364,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		# Initialize MPI related variables
 		###  MPI SANITY CHECKES
 		if not balanced_processor_load_on_nodes: 
-			global_def.ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.", "meridien",1, Blockdata["myid"])
+			sparx_global_def.ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.", "meridien",1, Blockdata["myid"])
 		if Blockdata["myid"]  == Blockdata["main_node"]:
 			line = ""
 			for a in sys.argv:
@@ -7373,11 +7373,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			print(line)
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
+		sparx_global_def.BATCH = True
+		sparx_global_def.MPI   = True
 		###  VARIOUS SANITY CHECKES <-----------------------
 		if( options.delta> 3.75 ):
-			global_def.ERROR("Local searches requested, delta cannot be larger than 3.73.", "meridien",1, Blockdata["myid"])
+			sparx_global_def.ERROR("Local searches requested, delta cannot be larger than 3.73.", "meridien",1, Blockdata["myid"])
 		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 		#  For the time being we use all CPUs during refinement
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
@@ -7475,7 +7475,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 				print(line,"INITIALIZATION OF LOCAL MERIDIEN")
-				a = utilities.get_im(orgstack)
+				a = sparx_utilities.get_im(orgstack)
 				nnxo = a.get_xsize()
 				if Tracker["constants"]["CTF"]:
 					i = a.get_attr('ctf')
@@ -7495,13 +7495,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			pass#IMPORTIMPORTIMPORT from EMAN2 import parsesym
 			#Blockdata["parsesym"] = parsesym(Tracker["constants"]["symmetry"])
 			#  Initialize symmetry
-			Blockdata["symclass"] = fundamentals.symclass(Tracker["constants"]["symmetry"])
+			Blockdata["symclass"] = sparx_fundamentals.symclass(Tracker["constants"]["symmetry"])
 
-			nnxo = utilities.bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
+			nnxo = sparx_utilities.bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
 			if( nnxo < 0 ):
-				global_def.ERROR("Incorrect image size  ", "meridien", 1, Blockdata["myid"])
-			pixel_size = utilities.bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
-			fq         = utilities.bcast_number_to_all(fq, source_node = Blockdata["main_node"])
+				sparx_global_def.ERROR("Incorrect image size  ", "meridien", 1, Blockdata["myid"])
+			pixel_size = sparx_utilities.bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
+			fq         = sparx_utilities.bcast_number_to_all(fq, source_node = Blockdata["main_node"])
 			Tracker["constants"]["nnxo"]         = nnxo
 			Tracker["constants"]["pixel_size"]   = pixel_size
 			Tracker["constants"]["fuse_freq"]    = fq
@@ -7518,21 +7518,21 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))):
 					checking_flag = 0
-			checking_flag = utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+			checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
 			if checking_flag==0:
-				global_def.ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
+				sparx_global_def.ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
 			
 			if( options.xr/options.ts<1.0 ): 
-				global_def.ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien", 1, Blockdata["myid"])
+				sparx_global_def.ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien", 1, Blockdata["myid"])
 			#HOHO
 			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
-				global_def.ERROR("Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"],\
+				sparx_global_def.ERROR("Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"],\
 				 2*(Tracker["currentres"] + Tracker["nxstep"])),"sxmeridien",1, Blockdata["myid"])
 
 			if(Tracker["constants"]["radius"]  < 1):
 				Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
 			elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-				global_def.ERROR("Particle radius set too large!","sxmeridien",1,Blockdata["myid"])
+				sparx_global_def.ERROR("Particle radius set too large!","sxmeridien",1,Blockdata["myid"])
 			###<-----end of sanity check <----------------------
 			###<<<----------------------------- parse program
 		
@@ -7580,12 +7580,12 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				total_stack = EMAN2_cppwrap.EMUtil.get_image_count(Tracker["constants"]["stack"])
 			else:
 				total_stack = 0
-			total_stack = utilities.bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])
+			total_stack = sparx_utilities.bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])
 			
 			# ------------------------------------------------------------------------------------
 			partids   = os.path.join(initdir, "indexes_000.txt")
 			if( Blockdata["myid"] == Blockdata["main_node"] ):
-				utilities.write_text_file(list(range(total_stack)), partids)
+				sparx_utilities.write_text_file(list(range(total_stack)), partids)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 			#  store params
@@ -7598,26 +7598,26 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				l1, l2 = assign_particles_to_groups(minimum_group_size = 10)
-				utilities.write_text_file(l1,partids[0])
-				utilities.write_text_file(l2,partids[1])
+				sparx_utilities.write_text_file(l1,partids[0])
+				sparx_utilities.write_text_file(l2,partids[1])
 				tp_list = EMAN2_cppwrap.EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
 				for i in range(len(tp_list)):
 					dp = tp_list[i].get_params("spider")
 					tp_list[i] = [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], 0.0, 1.0, 1.0]
 					
-				utilities.write_text_row(tp_list, os.path.join(initdir,"params_000.txt"))
-				utilities.write_text_row([tp_list[i] for i in l1], partstack[0])
-				utilities.write_text_row([tp_list[i] for i in l2], partstack[1])
+				sparx_utilities.write_text_row(tp_list, os.path.join(initdir,"params_000.txt"))
+				sparx_utilities.write_text_row([tp_list[i] for i in l1], partstack[0])
+				sparx_utilities.write_text_row([tp_list[i] for i in l2], partstack[1])
 
 				del tp_list
 				del l1, l2
 			else:
 				Tracker["nima_per_chunk"] = [0,0]
-			Tracker["nima_per_chunk"][0]             = utilities.bcast_number_to_all(Tracker["nima_per_chunk"][0],             Blockdata["main_node"])
-			Tracker["nima_per_chunk"][1]             = utilities.bcast_number_to_all(Tracker["nima_per_chunk"][1],             Blockdata["main_node"])
-			Tracker["constants"]["number_of_groups"] = utilities.bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
+			Tracker["nima_per_chunk"][0]             = sparx_utilities.bcast_number_to_all(Tracker["nima_per_chunk"][0],             Blockdata["main_node"])
+			Tracker["nima_per_chunk"][1]             = sparx_utilities.bcast_number_to_all(Tracker["nima_per_chunk"][1],             Blockdata["main_node"])
+			Tracker["constants"]["number_of_groups"] = sparx_utilities.bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
 
-			projdata       = [[utilities.model_blank(1,1)], [utilities.model_blank(1,1)]]
+			projdata       = [[sparx_utilities.model_blank(1,1)], [sparx_utilities.model_blank(1,1)]]
 			oldparams      = [[],[]]
 			currentparams  = [[],[]]
 			original_data  = [None, None]
@@ -7639,7 +7639,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 			Blockdata["bckgnoise"] 		= None
 			Blockdata["accumulatepw"] 	= [[],[]]
-			projdata                    = [[utilities.model_blank(1,1)], [utilities.model_blank(1,1)]]
+			projdata                    = [[sparx_utilities.model_blank(1,1)], [sparx_utilities.model_blank(1,1)]]
 			oldparams                   = [[],[]]
 			currentparams               = [[],[]]
 			original_data               = [None, None]
@@ -7647,11 +7647,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			keepchecking 		        = 1
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				with open(os.path.join(initdir,"Tracker_000.json"),'r') as fout:
-					Tracker = utilities.convert_json_fromunicode(json.load(fout))
+					Tracker = sparx_utilities.convert_json_fromunicode(json.load(fout))
 				fout.close()
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
 			else: Tracker = None
-			Tracker         = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+			Tracker         = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 			mainiteration 	= 0
 			Tracker["mainiteration"] = mainiteration
 		# ------------------------------------------------------------------------------------
@@ -7676,14 +7676,14 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					with open(os.path.join(Tracker["previousoutputdir"], \
 					  "Tracker_%03d.json"%(Tracker["mainiteration"]-1)),'r') as fout:
-						Tracker = utilities.convert_json_fromunicode(json.load(fout))
+						Tracker = sparx_utilities.convert_json_fromunicode(json.load(fout))
 					fout.close()
 					#  It has to be repeated here as Tracker is from previous iteration, I see no other way.
 					Tracker["previousoutputdir"]	= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 					Tracker["mainiteration"]		= mainiteration
 					Tracker["directory"]			= os.path.join(Tracker["constants"]["masterdir"],"main%03d"%Tracker["mainiteration"])
 				else: Tracker = None
-				Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+				Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 				### 
 				if restart_mode:
 					update_tracker(sys.argv[1:])
@@ -7702,19 +7702,19 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					fff = utilities.read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
+					fff = sparx_utilities.read_text_file(os.path.join(Tracker["previousoutputdir"],"driver_%03d.txt"%(Tracker["mainiteration"]-1)))
 					if(Tracker["mainiteration"] == 1):
 						anger   = 1.0e9
 						shifter = 1.0e9
 					else:				
-						[anger, shifter] = utilities.read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
+						[anger, shifter] = sparx_utilities.read_text_row( os.path.join(Tracker["previousoutputdir"] ,"error_thresholds_%03d.txt"%(Tracker["mainiteration"]-1)) )[0]
 				else:
 					fff = []
 					anger   = 0.0
 					shifter = 0.0
-				fff     = utilities.bcast_list_to_all(fff, Blockdata["myid"], source_node = Blockdata["main_node"])
-				anger   = utilities.bcast_number_to_all(anger,                source_node = Blockdata["main_node"])
-				shifter = utilities.bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
+				fff     = sparx_utilities.bcast_list_to_all(fff, Blockdata["myid"], source_node = Blockdata["main_node"])
+				anger   = sparx_utilities.bcast_number_to_all(anger,                source_node = Blockdata["main_node"])
+				shifter = sparx_utilities.bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
 
 				keepgoing = AI_continuation( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
 
@@ -7735,11 +7735,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					doit2, keepchecking2 = checkstep(Tracker["directory"], li)
 					if(Blockdata["myid"] == Blockdata["main_node"] and doit2):
 						cmd = "{} {}".format("mkdir", Tracker["directory"])
-						junk = utilities.cmdexecute(cmd)
+						junk = sparx_utilities.cmdexecute(cmd)
 						cmd = "{} {}".format("mkdir", os.path.join(Tracker["directory"],"oldparamstructure"))
-						junk = utilities.cmdexecute(cmd)
+						junk = sparx_utilities.cmdexecute(cmd)
 					if(not doit2):
-						global_def.ERROR("There was a gap in main directories, program cannot proceed","sxmeridien",1,Blockdata["myid"])
+						sparx_global_def.ERROR("There was a gap in main directories, program cannot proceed","sxmeridien",1,Blockdata["myid"])
 					mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 					#  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -7767,7 +7767,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 					
 					newparamstructure 			= [[],[]]
-					projdata          			= [[utilities.model_blank(1,1)], [utilities.model_blank(1,1)]]
+					projdata          			= [[sparx_utilities.model_blank(1,1)], [sparx_utilities.model_blank(1,1)]]
 					original_data     			= [None,None]
 					oldparams         			= [[],[]]
 					Blockdata["accumulatepw"]  	= [None, None]
@@ -7787,22 +7787,22 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		checking_flag = 1
 		orgstack      = None
 		if( len(args) == 3):
-			global_def.ERROR("do_final option requires only one or two arguments ","meridien", 1, Blockdata["myid"])
+			sparx_global_def.ERROR("do_final option requires only one or two arguments ","meridien", 1, Blockdata["myid"])
 
 		elif(len(args) == 2): # option for signal subtraction 
 			masterdir = args[1]
 			orgstack  = args[0]
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				if not os.path.exists(masterdir): checking_flag = 0
-			checking_flag = utilities.bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
-			if checking_flag ==0:  global_def.ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
+			checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
+			if checking_flag ==0:  sparx_global_def.ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
 			
 		elif(len(args) == 1):
 			masterdir 	= args[0]
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				if not os.path.exists(masterdir): checking_flag = 0
-			checking_flag = utilities.bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
-			if checking_flag ==0: global_def.ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
+			checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
+			if checking_flag ==0: sparx_global_def.ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
 			
 		else:
 			print( "usage: " + usage)
@@ -7810,7 +7810,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			return 1
 
 		if( options.do_final < 0):
-			global_def.ERROR("Incorrect iteration number in do_final  %d"%options.do_final,"meridien",1,Blockdata["myid"])
+			sparx_global_def.ERROR("Incorrect iteration number in do_final  %d"%options.do_final,"meridien",1,Blockdata["myid"])
 		#print(  orgstack,masterdir,volinit )
 		# ------------------------------------------------------------------------------------
 		# Initialize MPI related variables
@@ -7818,7 +7818,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		###print("  MPIINFO  ",Blockdata)
 		###  MPI SANITY CHECKES
 		if not balanced_processor_load_on_nodes: 
-			global_def.ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.","meridien", 1, Blockdata["myid"])
+			sparx_global_def.ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.","meridien", 1, Blockdata["myid"])
 		#if( Blockdata["no_of_groups"] < 2 ):  ERROR("To run, program requires cluster with at least two nodes.","meridien",1,Blockdata["myid"])
 		###
 		if Blockdata["myid"]  == Blockdata["main_node"]:
@@ -7829,8 +7829,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			print(line)
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
-		global_def.BATCH = True
-		global_def.MPI   = True
+		sparx_global_def.BATCH = True
+		sparx_global_def.MPI   = True
 
 		###  VARIOUS SANITY CHECKES <-----------------------
 		if( options.memory_per_node < 0.0 ):
@@ -7841,7 +7841,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		mpi.mpi_finalize()
 		exit()
 	else:
-		global_def.ERROR("Incorrect input options","meridien", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("Incorrect input options","meridien", 1, Blockdata["myid"])
 
 if __name__=="__main__":
 	main()

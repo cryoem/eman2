@@ -30,19 +30,19 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import alignment
-import applications
-import filter
-import fundamentals
-import global_def
+import sparx_alignment
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
 import imp
-import morphology
+import sparx_morphology
 import mpi
 import numpy
 import os
-import reconstruction
+import sparx_reconstruction
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import alignment

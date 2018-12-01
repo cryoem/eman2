@@ -33,18 +33,18 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import alignment
+import sparx_alignment
 import copy
-import fundamentals
-import global_def
+import sparx_fundamentals
+import sparx_global_def
 import numpy
 import numpy.random
 import optparse
 import os
-import statistics
+import sparx_statistics
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2jsondb
@@ -82,7 +82,7 @@ pass#IMPORTIMPORTIMPORT import  os
 pass#IMPORTIMPORTIMPORT from numpy import *
 
 def Distance(i1, i2, lccc):
-	return max(1.0 - lccc[statistics.mono(i1,i2)][0], 0.0)
+	return max(1.0 - lccc[sparx_statistics.mono(i1,i2)][0], 0.0)
 # 	return sqrt((R1[0]-R2[0])**2+(R1[1]-R2[1])**2)
 
 def TotalDistance(city, lccc):
@@ -251,7 +251,7 @@ def main():
 
 """
 
-	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=sparx_global_def.SPARXVERSION)
 	parser.add_option("--dd", action="store_true", help="Circular ordering without adjustment of orientations", default=False)
 	parser.add_option("--circular", action="store_true", help="Select circular ordering (first image has to be similar to the last)", default=False)
 	parser.add_option("--align", action="store_true", help="Compute all pairwise alignments and from the table of image similarities find the best chain", default=False)
@@ -267,7 +267,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	global_def.BATCH = True
+	sparx_global_def.BATCH = True
 
 					
 	if options.dd:
@@ -286,19 +286,19 @@ def main():
 		lccc = [None]*(lend*(lend-1)/2)
 
 		for i in range(lend-1):
-			v1 = utilities.get_im( stack, i )
+			v1 = sparx_utilities.get_im( stack, i )
 			if( i == 0 and nargs == 2):
 				nx = v1.get_xsize()
 				ny = v1.get_ysize()
 				nz = v1.get_ysize()
 				if options.ou < 1 : radius = nx//2-2
 				else:  radius = options.ou
-				mask = utilities.model_circle(radius, nx, ny, nz)
+				mask = sparx_utilities.model_circle(radius, nx, ny, nz)
 			else:
-				mask = utilities.get_im(args[2])
+				mask = sparx_utilities.get_im(args[2])
 				
 			for j in range(i+1, lend):
-				lccc[statistics.mono(i,j)] = [statistics.ccc(v1, utilities.get_im( stack, j ), mask), 0]
+				lccc[sparx_statistics.mono(i,j)] = [sparx_statistics.ccc(v1, sparx_utilities.get_im( stack, j ), mask), 0]
 
 
 		order = tsp(lccc)
@@ -308,7 +308,7 @@ def main():
 			exit()
 		print("Total sum of cccs :",TotalDistance(order, lccc))
 		print("ordering :",order)
-		for i in range(lend):  utilities.get_im(stack, order[i]).write_image( new_stack, i )
+		for i in range(lend):  sparx_utilities.get_im(stack, order[i]).write_image( new_stack, i )
 
 	elif options.align:
 		nargs = len(args)
@@ -327,7 +327,7 @@ def main():
 		
 		d = EMAN2_cppwrap.EMData.read_images(stack)
 		if(len(d)<6):
-			global_def.ERROR("Chains requires at least six images in the input stack to be executed", "sxchains.py", 1)
+			sparx_global_def.ERROR("Chains requires at least six images in the input stack to be executed", "sxchains.py", 1)
 
 		"""Multiline Comment1"""
 
@@ -335,7 +335,7 @@ def main():
 		ny = d[0].get_ysize()
 		if options.ou < 1 : radius = nx//2-2
 		else:  radius = options.ou
-		mask = utilities.model_circle(radius, nx, ny)
+		mask = sparx_utilities.model_circle(radius, nx, ny)
 
 		if(options.xr < 0):	xrng = 0
 		else:				xrng = options.xr
@@ -355,15 +355,15 @@ def main():
 				for j in range(i+1, lend):
 					#  j>i meaning mono entry (i,j) or (j,i) indicates T i->j (from smaller index to larger)
 					#alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng, yrng, step=options.ts, first_ring=options.ir, last_ring=radius, mode = "F")
-					alpha, sx, sy, mir, peak = alignment.align2d_scf(d[i],d[j], xrng, yrng, ou=radius)
-					lccc[statistics.mono(i,j)] = [statistics.ccc(d[j], fundamentals.rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), alpha, sx, sy, mir]
+					alpha, sx, sy, mir, peak = sparx_alignment.align2d_scf(d[i],d[j], xrng, yrng, ou=radius)
+					lccc[sparx_statistics.mono(i,j)] = [sparx_statistics.ccc(d[j], sparx_fundamentals.rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), alpha, sx, sy, mir]
 				#print "  %4d   %10.1f"%(i,time()-st)
 
 			if((not os.path.exists(options.pairwiseccc)) and (options.pairwiseccc != " ")):
 				pass#IMPORTIMPORTIMPORT from utilities import write_text_row
-				utilities.write_text_row([[initial,0,0,0,0]]+lccc, options.pairwiseccc)
+				sparx_utilities.write_text_row([[initial,0,0,0,0]]+lccc, options.pairwiseccc)
 		elif(os.path.exists(options.pairwiseccc)):
-			lccc = utilities.read_text_row(options.pairwiseccc)
+			lccc = sparx_utilities.read_text_row(options.pairwiseccc)
 			initial = int(lccc[0][0] + 0.1)
 			del lccc[0]
 
@@ -383,13 +383,13 @@ def main():
 			while len(indc) > 1:
 				maxcit = -111.
 				for i in range(len(indc)):
-						cuc = lccc[statistics.mono(indc[i], lsnake[-1][0])][0]
+						cuc = lccc[sparx_statistics.mono(indc[i], lsnake[-1][0])][0]
 						if cuc > maxcit:
 								maxcit = cuc
 								qi = indc[i]
 								#  Here we need transformation from the current to the previous,
 								#     meaning indc[i] -> lsnake[-1][0]
-								T = lccc[statistics.mono(indc[i], lsnake[-1][0])][1]
+								T = lccc[sparx_statistics.mono(indc[i], lsnake[-1][0])][1]
 								#  If direction is from larger to smaller index, the transformation has to be inverted
 								if( indc[i] > lsnake[-1][0] ):  T = T.inverse()
 								
@@ -399,9 +399,9 @@ def main():
 
 				del indc[indc.index(qi)]
 
-			T = lccc[statistics.mono(indc[-1], lsnake[-1][0])][1]
+			T = lccc[sparx_statistics.mono(indc[-1], lsnake[-1][0])][1]
 			if( indc[-1] > lsnake[-1][0]):  T = T.inverse()
-			lsnake.append([indc[-1], T, lccc[statistics.mono(indc[-1], lsnake[-1][0])][0]])
+			lsnake.append([indc[-1], T, lccc[sparx_statistics.mono(indc[-1], lsnake[-1][0])][0]])
 			print(" initial image and lsum  ",m,lsum)
 			#print lsnake
 			if(lsum > maxsum):
@@ -424,7 +424,7 @@ def main():
 			prms = trans[m].get_params("2D")
 			#print " %3d   %7.1f   %7.1f   %7.1f   %2d  %6.2f"%(snake[m][0], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], snake[m][2])
 			#rot_shift2D(d[snake[m][0]], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"]).write_image(new_stack, m)
-			fundamentals.rot_shift2D(d[snake[m][0]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(new_stack, m)
+			sparx_fundamentals.rot_shift2D(d[snake[m][0]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(new_stack, m)
 
 		order = tsp(lccc)
 		if(len(order) != lend):
@@ -443,7 +443,7 @@ def main():
 		for i in range(1,lend):
 			#  Here we need transformation from the current to the previous,
 			#     meaning order[i] -> order[i-1]]
-			T = lccc[statistics.mono(order[i], order[i-1])][1]
+			T = lccc[sparx_statistics.mono(order[i], order[i-1])][1]
 			#  If direction is from larger to smaller index, the transformation has to be inverted
 			if( order[i] > order[i-1] ):  T = T.inverse()
 			snake.append(T)
@@ -463,7 +463,7 @@ def main():
 		for m in range(lend):
 			prms = trans[m].get_params("2D")
 			#rot_shift2D(d[order[m]], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"]).write_image("metro.hdf", m)
-			fundamentals.rot_shift2D(d[order[m]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(args[2], m)
+			sparx_fundamentals.rot_shift2D(d[order[m]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(args[2], m)
 
 		"""Multiline Comment4"""
 		"""Multiline Comment5"""
@@ -489,8 +489,8 @@ def main():
 			print("Using 2D alignment parameters from header.")
 			ttt = d[0].get_attr('xform.params2d')
 			for i in range(len(d)):
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(d[i])
-				d[i] = fundamentals.rot_shift2D(d[i], alpha, sx, sy, mirror)
+				alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(d[i])
+				d[i] = sparx_fundamentals.rot_shift2D(d[i], alpha, sx, sy, mirror)
 		except:
 			pass
 
@@ -498,7 +498,7 @@ def main():
 		ny = d[0].get_ysize()
 		if options.radius < 1 : radius = nx//2-2
 		else:  radius = options.radius
-		mask = utilities.model_circle(radius, nx, ny)
+		mask = sparx_utilities.model_circle(radius, nx, ny)
 
 		init = options.initial
 		
@@ -512,7 +512,7 @@ def main():
 			while len(d) > 1:
 				maxcit = -111.
 				for i in range(len(d)):
-						cuc = statistics.ccc(d[i], temp, mask)
+						cuc = sparx_statistics.ccc(d[i], temp, mask)
 						if cuc > maxcit:
 								maxcit = cuc
 								qi = i
@@ -542,7 +542,7 @@ def main():
 					while len(indc) > 1:
 						maxcit = -111.
 						for i in range(len(indc)):
-								cuc = statistics.ccc(d[indc[i]], temp, mask)
+								cuc = sparx_statistics.ccc(d[indc[i]], temp, mask)
 								if cuc > maxcit:
 										maxcit = cuc
 										qi = indc[i]
@@ -587,7 +587,7 @@ def main():
 					while len(indc) > 1:
 						maxcit = -111.
 						for i in range(len(indc)):
-								cuc = statistics.ccc(d[indc[i]], temp, mask)
+								cuc = sparx_statistics.ccc(d[indc[i]], temp, mask)
 								if cuc > maxcit:
 										maxcit = cuc
 										qi = indc[i]

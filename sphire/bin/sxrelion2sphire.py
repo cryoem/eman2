@@ -43,14 +43,14 @@ from __future__ import print_function
 
 import EMAN2_cppwrap
 import EMAN2db
-import global_def
-import morphology
+import sparx_global_def
+import sparx_morphology
 import numpy
 import operator
 import optparse
 import os
 import sys
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2db
@@ -155,7 +155,7 @@ def main():
 
 	progname = os.path.basename( arglist[0] )
 	usage = progname + ' input_star_file output_directory --relion_project_dir=DIR_PATH --star_section=SECTION_STRING --outputs_root=ROOT_NAME_STRING --box_size=BOX_SIZE --do_not_create_stack'
-	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=sparx_global_def.SPARXVERSION)
 
 	parser.add_option('--relion_project_dir', type='string',         default=None,      help='RELION project directory: Path to RELION project directory associated with the RELION STAR file. By default, the program assume the current directory is the RELION project directory. (default none)')
 	parser.add_option('--star_section',       type='string',         default='data_',   help='Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_)')
@@ -485,9 +485,9 @@ def main():
 					else: 
 						sphire_cter_entry[idx_cter_phase_shift] = 0.0
 					
-					sphire_const_ac_phase_shift = morphology.ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude constrast in [%]
+					sphire_const_ac_phase_shift = sparx_morphology.ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude constrast in [%]
 					sphire_total_phase_shift = sphire_cter_entry[idx_cter_phase_shift] + sphire_const_ac_phase_shift
-					sphire_cter_entry[idx_cter_total_ac] = morphology.angle2ampcont(sphire_total_phase_shift)
+					sphire_cter_entry[idx_cter_total_ac] = sparx_morphology.angle2ampcont(sphire_total_phase_shift)
 					
 					sphire_cter_entry[idx_cter_vol] = float(tokens_line[relion_dict['_rlnVoltage'][idx_col] - 1])
 					sphire_cter_entry[idx_cter_cs] = float(tokens_line[relion_dict['_rlnSphericalAberration'][idx_col] - 1])
@@ -714,7 +714,7 @@ def main():
 							sphire_cter_entry_list = []
 							for idx_sphire_ctf in range(n_idx_sphire_ctf):
 								sphire_cter_entry_list.append(sphire_cter_entry[idx_sphire_ctf])
-							sphire_header['ctf'] = utilities.generate_ctf(sphire_cter_entry_list)
+							sphire_header['ctf'] = sparx_utilities.generate_ctf(sphire_cter_entry_list)
 							sphire_header['ctf_applied'] = 0
 							sphire_header['ptcl_source_apix'] = sphire_cter_entry[idx_cter_apix] # Store the original pixel size
 						if relion_category_dict['proj3d'][idx_is_category_found]:
@@ -1113,7 +1113,7 @@ def main():
 						assert os.path.exists(relion_local_stack_path)
 						n_img_relion_local_stack = EMAN2_cppwrap.EMUtil.get_image_count(relion_local_stack_path)
 						assert sphire_local_particle_id < n_img_relion_local_stack, '# Logical Error: The local particle ID must not exceed the number of images in the assocaited local particle stack.'
-						img_particle = utilities.get_im(relion_local_stack_path, sphire_local_particle_id)
+						img_particle = sparx_utilities.get_im(relion_local_stack_path, sphire_local_particle_id)
 						img_particles_dict = img_particle.get_attr_dict()
 						
 						# NOTE: 2015/10/19 Toshio Moriya
@@ -1140,7 +1140,7 @@ def main():
 							img_particles_dict['ctf_applied'] = sphire_header['ctf_applied']
 							img_particles_dict['ptcl_source_apix'] = sphire_header['ptcl_source_apix'] # Store the original pixel size
 						if relion_category_dict['proj3d'][idx_is_category_found] == True:
-							utilities.set_params_proj(img_particle, sphire_header['xform.projection'])
+							sparx_utilities.set_params_proj(img_particle, sphire_header['xform.projection'])
 							img_particles_dict['xform.projection'] = img_particle.get_attr('xform.projection')
 							# Add relion specific header entries
 							img_particles_dict['relion_max_prob_dist'] = sphire_header['relion_max_prob_dist']

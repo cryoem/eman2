@@ -30,26 +30,26 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import applications
-import filter
-import fundamentals
-import global_def
-import logger
-import morphology
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_logger
+import sparx_morphology
 import mpi
-import multi_shc
+import sparx_multi_shc
 import numpy
 import numpy as np
 import numpy.random
 import operator
-import pixel_error
-import projection
+import sparx_pixel_error
+import sparx_projection
 import scipy
-import statistics
+import sparx_statistics
 import sys
 import time
 import types
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import alignment
@@ -109,10 +109,10 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	if random_method == "SCF":
 		pass#IMPORTIMPORTIMPORT from fundamentals import fft, scf
 		pass#IMPORTIMPORTIMPORT from alignment import multalign2d_scf
-		frotim = [fundamentals.fft(tavg)]
+		frotim = [sparx_fundamentals.fft(tavg)]
 		xrng = int(xrng+0.5)
 		yrng = int(yrng+0.5)
-		cimage = EMAN2_cppwrap.Util.Polar2Dm(fundamentals.scf(tavg), cnx, cny, numr, mode)
+		cimage = EMAN2_cppwrap.Util.Polar2Dm(sparx_fundamentals.scf(tavg), cnx, cny, numr, mode)
 		EMAN2_cppwrap.Util.Frngs(cimage, numr)
 		EMAN2_cppwrap.Util.Applyws(cimage, numr, wr)
 	else:
@@ -132,7 +132,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		if CTF:
 			#Apply CTF to image
 			ctf_params = data[im].get_attr("ctf")
-			ima = filter.filt_ctf(data[im], ctf_params, True)
+			ima = sparx_filter.filt_ctf(data[im], ctf_params, True)
 		else:
 			ima = data[im]
 
@@ -143,9 +143,9 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		else:
 			nx = ima.get_xsize()
 			ny = ima.get_ysize()
-			alpha, sx, sy, mirror, dummy = utilities.get_params2D(data[im], ali_params)
-			alpha, sx, sy, dummy         = utilities.combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-			alphai, sxi, syi, scalei     = utilities.inverse_transform2(alpha, sx, sy)
+			alpha, sx, sy, mirror, dummy = sparx_utilities.get_params2D(data[im], ali_params)
+			alpha, sx, sy, dummy         = sparx_utilities.combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+			alphai, sxi, syi, scalei     = sparx_utilities.inverse_transform2(alpha, sx, sy)
 			#  introduce constraints on parameters to accomodate use of cs centering
 			sxi = min(max(sxi,-mashi),mashi)
 			syi = min(max(syi,-mashi),mashi)
@@ -173,34 +173,34 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 				syst = olo[2]
 				mirrort = int(olo[3])
 				# combine parameters and set them to the header, ignore previous angle and mirror
-				[alphan, sxn, syn, mn] = utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-				utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+				[alphan, sxn, syn, mn] = sparx_utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+				sparx_utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 				##set_params2D(data[im], [angt, sxst, syst, mirrort, 1.0], ali_params)
 				data[im].set_attr("previousmax",olo[5])
 			else:
 				# Did not find a better peak, but we have to set shifted parameters, as the average shifted
-				utilities.set_params2D(data[im], [alpha, sx, sy, mirror, 1.0], ali_params)
+				sparx_utilities.set_params2D(data[im], [alpha, sx, sy, mirror, 1.0], ali_params)
 				nope += 1
 				mn = 0
 				sxn = 0.0
 				syn = 0.0
 		elif random_method == "SCF":
 			sxst,syst,iref,angt,mirrort,totpeak = multalign2d_scf(data[im], [cimage], frotim, numr, xrng, yrng, ou = ou)
-			[alphan, sxn, syn, mn] = utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+			[alphan, sxn, syn, mn] = sparx_utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			sparx_utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		elif random_method == "PCP":
 			[angt, sxst, syst, mirrort, peakt] = ormq_fast(data[im], cimage, txrng, tyrng, step, numr, mode, delta)
 			sxst = rings[0][0][0].get_attr("sxi")
 			syst = rings[0][0][0].get_attr("syi")
 			print(sxst, syst,sx,sy)
-			dummy,sxs,sys, dummy = utilities.inverse_transform2(-angt,sx+sxst,sy+syst)
-			utilities.set_params2D(data[im][0][0], [angt, sxs, sys, mirrort, 1.0], ali_params)
+			dummy,sxs,sys, dummy = sparx_utilities.inverse_transform2(-angt,sx+sxst,sy+syst)
+			sparx_utilities.set_params2D(data[im][0][0], [angt, sxs, sys, mirrort, 1.0], ali_params)
 		else:
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi, delta)
 			# combine parameters and set them to the header, ignore previous angle and mirror
-			[alphan, sxn, syn, mn] = utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+			[alphan, sxn, syn, mn] = sparx_utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			sparx_utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 
 		if mn == 0: sx_sum += sxn
 		else:       sx_sum -= sxn
@@ -406,7 +406,7 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, numr, mode, delta = 0.0):
 					peak = qm
 					mirror = 1
 	"""Multiline Comment6"""
-	if( peak < -1.0e20): global_def.ERROR("ormq_fast","failed, most likely due to search ranges",1)
+	if( peak < -1.0e20): sparx_global_def.ERROR("ormq_fast","failed, most likely due to search ranges",1)
 	#return  ang, sx/2.0, sy/2.0, mirror, peak
 	return  ang, sx, sy, mirror, peak
 			
@@ -423,9 +423,9 @@ def prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step):
 		sts = EMAN2_cppwrap.Util.infomask(data[im], maskfile, False)
 		data[im] -= sts[0]
 		data[im] /= sts[1]
-		alpha, sx, sy, mirror, dummy = utilities.get_params2D(data[im])
+		alpha, sx, sy, mirror, dummy = sparx_utilities.get_params2D(data[im])
 		#alpha, sx, sy, dummy         = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-		alphai, sxi, syi, dummy      = utilities.combine_params2(0.0, sx, sy, 0, -alpha, 0,0, 0)
+		alphai, sxi, syi, dummy      = sparx_utilities.combine_params2(0.0, sx, sy, 0, -alpha, 0,0, 0)
 		#  introduce constraints on parameters to accomodate use of cs centering
 		sxi = min(max(sxi,-mashi),mashi)
 		syi = min(max(syi,-mashi),mashi)	
@@ -472,19 +472,19 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 		# generate list of Eulerian angles for reference projections
 		#  phi, theta, psi
 		if initial_theta and initial_phi :
-			ref_angles = utilities.even_angles(delta, theta1 = initial_theta, phi1 = initial_phi, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+			ref_angles = sparx_utilities.even_angles(delta, theta1 = initial_theta, phi1 = initial_phi, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 		else:
 			if initial_theta is None:
 				if(sym[:1] == "c" or sym[:1] == "d"):
-					ref_angles = utilities.even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+					ref_angles = sparx_utilities.even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 				else:
 					pass#IMPORTIMPORTIMPORT from fundamentals import symclass
-					psp = fundamentals.symclass(sym)
+					psp = sparx_fundamentals.symclass(sym)
 					ref_angles = psp.even_angles(delta)
 					del psp
 			else:
 				if delta_theta is None: delta_theta = 1.0
-				ref_angles = utilities.even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+				ref_angles = sparx_utilities.even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 
 
 	wr_four  = ringwe(numr, mode)
@@ -500,9 +500,9 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 		ncpu = 1
 		myid = 0
 
-	if(nz <1):  global_def.ERROR("Data size has to be given (nz)", "prepare_refrings", 1, myid)
+	if(nz <1):  sparx_global_def.ERROR("Data size has to be given (nz)", "prepare_refrings", 1, myid)
 	
-	ref_start, ref_end = applications.MPI_start_end(num_ref, ncpu, myid)
+	ref_start, ref_end = sparx_applications.MPI_start_end(num_ref, ncpu, myid)
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
 
@@ -515,7 +515,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 
 	if kbx is None:
 		for i in range(ref_start, ref_end):
-			prjref = projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+			prjref = sparx_projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 			cimage = EMAN2_cppwrap.Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 			EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
 			EMAN2_cppwrap.Util.Frngs(cimage, numr)
@@ -523,7 +523,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 			refrings[i] = cimage
 	else:
 		for i in range(ref_start, ref_end):
-			prjref = projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], kbx, kby)
+			prjref = sparx_projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], kbx, kby)
 			cimage = EMAN2_cppwrap.Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 			EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
 			EMAN2_cppwrap.Util.Frngs(cimage, numr)
@@ -532,10 +532,10 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 
 	if MPI:
 		pass#IMPORTIMPORTIMPORT from utilities import bcast_compacted_EMData_all_to_all
-		utilities.bcast_compacted_EMData_all_to_all(refrings, myid, comm=mpi_comm)
+		sparx_utilities.bcast_compacted_EMData_all_to_all(refrings, myid, comm=mpi_comm)
 
 	for i in range(len(ref_angles)):
-		n1,n2,n3 = utilities.getfvec(ref_angles[i][0], ref_angles[i][1])
+		n1,n2,n3 = sparx_utilities.getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 
 	return refrings
@@ -546,7 +546,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c
 
 	if finfo:
 		pass#IMPORTIMPORTIMPORT from utilities    import get_params_proj
-		phi, theta, psi, s2x, s2y = utilities.get_params_proj(data)
+		phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(data)
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 
@@ -593,9 +593,9 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c
 		pixel_error = +1.0e23
 		for ut in ts:
 			# we do not care which position minimizes the error
-			pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+			pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 	else:
-		pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+		pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 	
 
 	if finfo:
@@ -658,13 +658,13 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, 
 			pixel_error = +1.0e23
 			for ut in ts:
 				# we do not care which position minimizes the error
-				pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+				pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
-			pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+			pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
 			pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
-			phi, theta, psi, s2x, s2y = utilities.get_params_proj(data)
+			phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(data)
 			finfo.write( "New parameters: %6.2f %6.2f %6.2f %6.2f %6.2f   %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
 		return peak, pixel_error
@@ -680,7 +680,7 @@ def ali_vol_func(params, data):
 	#print  data[3]
 	#cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][6], params[0], params[1], params[2],params[3], params[4], params[5],1.0)
 	#print  cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale
-	x = fundamentals.rot_shift3D(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
+	x = sparx_fundamentals.rot_shift3D(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
 
 	res = -x.cmp("ccc", data[1], {"mask":data[2]})
 	#print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %10.5f" %(params[0], params[1], params[2],params[3], params[4], params[5], -res)
@@ -723,9 +723,9 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	if(ou<0):  ou = min(nx//2-1,ny//2-1)
 	if(yrng < 0):  yrng = xrng
 	if(ou<2):
-		global_def.ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
-	sci = fundamentals.scf(image)
-	scr = fundamentals.scf(refim)
+		sparx_global_def.ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
+	sci = sparx_fundamentals.scf(image)
+	scr = sparx_fundamentals.scf(refim)
 	first_ring = 1
 
 	#alpha1, sxs, sys, mirr, peak1 = align2d_no_mirror(scf(image), scr, last_ring=ou, mode="H")
@@ -745,7 +745,7 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	EMAN2_cppwrap.Util.Frngs(crefim, numr)
 	EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
 	alpha1, sxs, sys, mirr, peak1 = ornq(sci, crefim, [0.0], [0.0], 1.0, "H", numr, cnx, cny)
-	alpha2, sxs, sys, mirr, peak2 = ornq(fundamentals.mirror(sci), crefim, [0.0], [0.0], 1.0, "H", numr, cnx, cny)
+	alpha2, sxs, sys, mirr, peak2 = ornq(sparx_fundamentals.mirror(sci), crefim, [0.0], [0.0], 1.0, "H", numr, cnx, cny)
 
 
 	if(peak1>peak2):
@@ -756,12 +756,12 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 		alpha = -alpha2
 	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
 	nry = min( 2*(yrng+1)+1, (((ny-2)//2)*2+1) )
-	frotim = fundamentals.fft( refim )
-	ccf1 = EMAN2_cppwrap.Util.window(fundamentals.ccf(fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim),nrx,nry)
-	p1 = utilities.peak_search(ccf1)
+	frotim = sparx_fundamentals.fft( refim )
+	ccf1 = EMAN2_cppwrap.Util.window(sparx_fundamentals.ccf(sparx_fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim),nrx,nry)
+	p1 = sparx_utilities.peak_search(ccf1)
 	
-	ccf2 = EMAN2_cppwrap.Util.window(fundamentals.ccf(fundamentals.rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim),nrx,nry)
-	p2 = utilities.peak_search(ccf2)
+	ccf2 = EMAN2_cppwrap.Util.window(sparx_fundamentals.ccf(sparx_fundamentals.rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim),nrx,nry)
+	p2 = sparx_utilities.peak_search(ccf2)
 	#print p1
 	#print p2
 
@@ -784,7 +784,7 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 		ccf1 = ccf2
 	pass#IMPORTIMPORTIMPORT from utilities import model_blank
 	#print cx,cy
-	z = utilities.model_blank(3,3)
+	z = sparx_utilities.model_blank(3,3)
 	for i in range(3):
 		for j in range(3):
 			z[i,j] = ccf1[i+cx-1,j+cy-1]
@@ -808,8 +808,8 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	if(ou<0):  ou = min(nx//2-1,ny//2-1)
 	if(yrng < 0):  yrng = xrng
 	if(ou<2):
-		global_def.ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
-	sci = fundamentals.scf(image)
+		sparx_global_def.ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
+	sci = sparx_fundamentals.scf(image)
 	first_ring = 1
 	# center in SPIDER convention
 	cnx = nx//2+1
@@ -817,7 +817,7 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 
 	cimage = EMAN2_cppwrap.Util.Polar2Dm(sci, cnx, cny, numr, "H")
 	EMAN2_cppwrap.Util.Frngs(cimage, numr)
-	mimage = EMAN2_cppwrap.Util.Polar2Dm(fundamentals.mirror(sci), cnx, cny, numr, "H")
+	mimage = EMAN2_cppwrap.Util.Polar2Dm(sparx_fundamentals.mirror(sci), cnx, cny, numr, "H")
 	EMAN2_cppwrap.Util.Frngs(mimage, numr)
 
 	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
@@ -844,11 +844,11 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 			mirr = 1
 			alpha = -alpha2
 
-		ccf1 = EMAN2_cppwrap.Util.window(fundamentals.ccf(fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
-		p1 = utilities.peak_search(ccf1)
+		ccf1 = EMAN2_cppwrap.Util.window(sparx_fundamentals.ccf(sparx_fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
+		p1 = sparx_utilities.peak_search(ccf1)
 	
-		ccf2 = EMAN2_cppwrap.Util.window(fundamentals.ccf(fundamentals.rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
-		p2 = utilities.peak_search(ccf2)
+		ccf2 = EMAN2_cppwrap.Util.window(sparx_fundamentals.ccf(sparx_fundamentals.rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
+		p2 = sparx_utilities.peak_search(ccf2)
 		#print p1
 		#print p2
 
@@ -870,7 +870,7 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 			cy = int(p2[0][2])
 			ccf1 = ccf2
 		#print cx,cy
-		z = utilities.model_blank(3,3)
+		z = sparx_utilities.model_blank(3,3)
 		for i in range(3):
 			for j in range(3):
 				z[i,j] = ccf1[i+cx-1,j+cy-1]
@@ -949,7 +949,7 @@ def shc(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an = -
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
 		pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
-		z1,z2,z3,z4,z5 = utilities.get_params_proj(data, "xform.anchor")
+		z1,z2,z3,z4,z5 = sparx_utilities.get_params_proj(data, "xform.anchor")
 		finfo.write("Anc parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(z1,z2,z3,-z4,-z5))
 		finfo.flush()
 
@@ -982,14 +982,14 @@ def shc(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an = -
 		#  Find the pixel error that is minimum over symmetry transformations
 		pass#IMPORTIMPORTIMPORT from pixel_error import max_3D_pixel_error
 		if(sym == "nomirror" or sym == "c1"):
-			pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+			pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 		else:		
 			ts = t2.get_sym_proj(sym)
 			# only do it if it is not c1
 			pixel_error = +1.0e23
 			for ut in ts:
 				# we do not care which position minimizes the error
-				pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+				pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
@@ -1016,7 +1016,7 @@ def search_range(n, radius, shift, range, location = ""):
 	ql = cn+shift-radius -2   # lower end is positive
 	qe = n - cn-shift-radius    # upper end
 	if( ql < 0 or qe < 0 ):
-		global_def.ERROR("Shift of particle too large, results may be incorrect:  %4d   %3d   %f  %f  %f  %f  %f"%(n, cn, radius, shift, range, ql, qe),"search_range  "+location,0)
+		sparx_global_def.ERROR("Shift of particle too large, results may be incorrect:  %4d   %3d   %f  %f  %f  %f  %f"%(n, cn, radius, shift, range, ql, qe),"search_range  "+location,0)
 		ql = max(ql,0)
 		qe = max(qe,0)
 	# ???for mysterious reasons it has to be this way as C code changes the order of searches.

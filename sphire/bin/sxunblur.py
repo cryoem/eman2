@@ -5,14 +5,14 @@ from __future__ import print_function
 #
 
 import glob
-import global_def
+import sparx_global_def
 import numpy
 import optparse
 import os
 import subprocess
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import glob
 pass#IMPORTIMPORTIMPORT import global_def
 pass#IMPORTIMPORTIMPORT import numpy
@@ -118,7 +118,7 @@ def main():
     --iterations=10 --verbose --nr_threads=1
     """
 
-    parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
+    parser = optparse.OptionParser(usage, version=sparx_global_def.SPARXVERSION)
     parser.add_option('--summovie_path',      type='str',          default='',        help='summovie executable path (SPHIRE specific): Specify the file path of summovie executable. (default none)')
     parser.add_option('--selection_list',     type='str',          default='',        help='Micrograph selecting list (SPHIRE specific): Specify a name of micrograph selection list text file. The file extension must be \'.txt\'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='Number of movie frames: The number of movie frames in each input micrograph. (default 3)')
@@ -148,11 +148,11 @@ def main():
     # list of the options and the arguments
     (options, args) = parser.parse_args(sys.argv[1:])
 
-    global_def.BATCH = True
+    sparx_global_def.BATCH = True
 
     # If there arent enough arguments, stop the script
     if len(args) != 3:
-        global_def.ERROR("see usage " + usage, 1)
+        sparx_global_def.ERROR("see usage " + usage, 1)
 
     # Convert the realtive parts to absolute ones
     unblur_path = os.path.realpath(args[0]) # unblur_path
@@ -161,14 +161,14 @@ def main():
 
     # If the unblur executable file does not exists, stop the script
     if not os.path.exists(unblur_path):
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'Unblur directory does not exist, please change' +
             ' the name and restart the program.', 'sxunblur.py', 1
             )
 
     # If the output directory exists, stop the script
     if os.path.exists(output_dir):
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'Output directory exists, please change' +
             ' the name and restart the program.', 'sxunblur.py', 1
             )
@@ -177,14 +177,14 @@ def main():
     file_list = glob.glob(input_image)
 
     if not file_list:
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'Input file does not exist, please change' +
             ' the name and restart the program.', 'sxunblur.py', 1
             )
 
     # If the skip_dose_filter option is false, the summovie path is necessary
     if not options.skip_dose_filter and not os.path.exists(options.summovie_path):
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'Path to the SumMovie executable is necessary when dose weighting is performed.',
             'sxunblur.py', 1
             )
@@ -253,7 +253,7 @@ def main():
 
     print('All Done!')
 
-    global_def.BATCH = False
+    sparx_global_def.BATCH = False
 
 
 def run_unblur(
@@ -284,7 +284,7 @@ def run_unblur(
         try:
             set_selection = numpy.genfromtxt(mic_list, dtype=None)
         except TypeError:
-            global_def.ERROR('no entrys in list file {0}'.format(mic_list), 'sxunblur.py', 1)
+            sparx_global_def.ERROR('no entrys in list file {0}'.format(mic_list), 'sxunblur.py', 1)
         # List of files which are in pattern and list
         file_list = [
                 entry for entry in file_list \
@@ -293,7 +293,7 @@ def run_unblur(
                 ]
         # If no match is there abort
         if len(file_list) == 0:
-            global_def.ERROR(
+            sparx_global_def.ERROR(
                 'no files in {0} matched the file pattern:\n'.format(mic_list), 'sxunblur.py',
                 1
                 )
@@ -395,7 +395,7 @@ def run_unblur(
                 'dont_restore_noise': options.dont_restore_noise,
                 'apply_dose_filter': False
             }
-            summovie_command = utilities.create_summovie_command(
+            summovie_command = sparx_utilities.create_summovie_command(
                 temp_name,
                 micrograph_name_skip,
                 shift_name,
@@ -555,7 +555,7 @@ def run_unblur(
         if clean_unblur:
             print('UnBlur finished cleanly.')
         else:
-            global_def.ERROR(
+            sparx_global_def.ERROR(
                 'unblur error. check the logfile for more information: {0}'.format(
                     log_name
                     ), 'sxunblur.py', 0
@@ -564,7 +564,7 @@ def run_unblur(
         if clean_summovie:
             print('SumMovie finished cleanly.')
         else:
-            global_def.ERROR(
+            sparx_global_def.ERROR(
                 'summovie error. check the logfile for more information: {0}'.format(
                     log_name
                     ), 'sxunblur.py', 0

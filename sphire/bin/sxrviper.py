@@ -10,31 +10,31 @@ pass#IMPORTIMPORTIMPORT from mpi import MPI_SUM, mpi_reduce, mpi_init, mpi_final
 #	pass#IMPORTIMPORTIMPORT mpi_comm_split, mpi_bcast, MPI_INT, MPI_CHAR, MPI_FLOAT
 
 import EMAN2_cppwrap
-import applications
+import sparx_applications
 import copy
-import fundamentals
-import global_def
+import sparx_fundamentals
+import sparx_global_def
 import io
 import itertools
 import json
-import logger
+import sparx_logger
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import mpi
-import multi_shc
+import sparx_multi_shc
 import numpy as np
 import optparse
 import os
 import random
 import re
 import six
-import statistics
+import sparx_statistics
 import string
 import sys
 import time
-import user_functions
-import utilities
+import sparx_user_functions
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import applications
@@ -94,7 +94,7 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 	# generate all possible combinations of (no_of_viper_runs_analyzed_together - 1) taken (3 - 1) at a time
 	pass#IMPORTIMPORTIMPORT import itertools
 
-	number_of_additional_combinations_for_this_viper_iteration = utilities.combinations_of_n_taken_by_k(no_of_viper_runs_analyzed_together - 1,
+	number_of_additional_combinations_for_this_viper_iteration = sparx_utilities.combinations_of_n_taken_by_k(no_of_viper_runs_analyzed_together - 1,
 																		  no_of_viper_runs_analyzed_together_from_user_options - 1)
 
 	criterion_measure = [0.0] * number_of_additional_combinations_for_this_viper_iteration
@@ -180,12 +180,12 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 			if no_of_viper_runs_analyzed_together > MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER:
 				error_status = 1
 				print("RVIPER reached maximum number of VIPER runs analyzed together without finding a core set of stable projections for the current RVIPER iteration (%d)! Finishing."%rviper_iter)
-				cmd = "{} {}".format("mkdir ", masterdir + "MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER__Reached"); junk = utilities.cmdexecute(cmd)
+				cmd = "{} {}".format("mkdir ", masterdir + "MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER__Reached"); junk = sparx_utilities.cmdexecute(cmd)
 			else:
 				# No set of solutions has been found to make a selection for outlier elimination.
 				# A new independent viper run will be performed
 				no_of_viper_runs_analyzed_together_must_be_incremented = 1
-				cmd = "{} {}".format("rm ", mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json"); junk = utilities.cmdexecute(cmd)
+				cmd = "{} {}".format("rm ", mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json"); junk = sparx_utilities.cmdexecute(cmd)
 
 		else:
 			# Outliers are eliminated based on the viper runs contained in "list_of_independent_viper_run_indices_used_for_outlier_elimination"
@@ -198,7 +198,7 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 				found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination[1:], outlier_percentile, 
 					rviper_iter, masterdir, bdb_stack_location, outlier_index_threshold_method, angle_threshold, symc)
 
-	utilities.if_error_then_all_processes_exit_program(error_status)
+	sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 
 	no_of_viper_runs_analyzed_together_must_be_incremented = mpi.mpi_bcast(no_of_viper_runs_analyzed_together_must_be_incremented, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)[0]
 
@@ -220,9 +220,9 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 	mainoutputdir = masterdir + DIR_DELIM + main_iterations[0] + DIR_DELIM
 	p=[]
 	for i1 in list_of_projection_indices:
-		p.append(utilities.read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "params.txt"))
+		p.append(sparx_utilities.read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "params.txt"))
 
-	ti1, ti3, out = multi_shc.find_common_subset(p, 0, symmetry_class=symc)
+	ti1, ti3, out = sparx_multi_shc.find_common_subset(p, 0, symmetry_class=symc)
 	u = []
 	for i in range(len(ti3)):
 		u.append([ti3[i],i])
@@ -347,8 +347,8 @@ def measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_o
 
 	p = []
 	for i1 in list_of_viper_run_indices:
-		p.append(utilities.read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d" % (i1) + DIR_DELIM + "params.txt"))
-	subset, avg_diff_per_image, outp = multi_shc.find_common_subset(p, 0, symmetry_class = symc)
+		p.append(sparx_utilities.read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d" % (i1) + DIR_DELIM + "params.txt"))
+	subset, avg_diff_per_image, outp = sparx_multi_shc.find_common_subset(p, 0, symmetry_class = symc)
 
 	avg_diff_per_image.sort()
 	x1 = len(avg_diff_per_image)
@@ -394,9 +394,9 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	print("identify_outliers")
 	projs = []
 	for i1 in list_of_projection_indices:
-		projs.append(utilities.read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "params.txt"))
+		projs.append(sparx_utilities.read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "params.txt"))
 
-	subset, avg_diff_per_image, rotated_params = multi_shc.find_common_subset(projs, target_threshold = 0, symmetry_class = symc)
+	subset, avg_diff_per_image, rotated_params = sparx_multi_shc.find_common_subset(projs, target_threshold = 0, symmetry_class = symc)
 
 	error_values_and_indices = []
 	for i in range(len(avg_diff_per_image)):
@@ -435,27 +435,27 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	index_outliers.sort()
 	index_keep_images.sort()
 
-	utilities.write_text_file(index_outliers, mainoutputdir + "this_iteration_index_outliers.txt")
-	utilities.write_text_file(index_keep_images, mainoutputdir + "this_iteration_index_keep_images.txt")
+	sparx_utilities.write_text_file(index_outliers, mainoutputdir + "this_iteration_index_outliers.txt")
+	sparx_utilities.write_text_file(index_keep_images, mainoutputdir + "this_iteration_index_keep_images.txt")
 
 	#if len(index_outliers) < 3:
 		#return False
 
 	if len(index_outliers) > 0:
 		cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter - 1), "--makevstack=" + bdb_stack_location + "_outliers_%03d"%(rviper_iter), "--list=" + mainoutputdir  +  "this_iteration_index_outliers.txt")
-		junk = utilities.cmdexecute(cmd)
+		junk = sparx_utilities.cmdexecute(cmd)
 	cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter - 1), "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter), "--list=" + mainoutputdir +  "this_iteration_index_keep_images.txt")
-	junk = utilities.cmdexecute(cmd)
+	junk = sparx_utilities.cmdexecute(cmd)
 	dat = EMAN2_cppwrap.EMData.read_images(bdb_stack_location + "_%03d"%(rviper_iter - 1))
 
-	utilities.write_text_file([dat[i].get_attr("original_image_index")  for i in index_outliers],mainoutputdir + "index_outliers.txt")
-	utilities.write_text_file([dat[i].get_attr("original_image_index")  for i in index_keep_images],mainoutputdir + "index_keep_images.txt")
+	sparx_utilities.write_text_file([dat[i].get_attr("original_image_index")  for i in index_outliers],mainoutputdir + "index_outliers.txt")
+	sparx_utilities.write_text_file([dat[i].get_attr("original_image_index")  for i in index_keep_images],mainoutputdir + "index_keep_images.txt")
 
 	print("index_outliers:: " + str(index_outliers))
 
 	# write rotated param files
 	for i1 in range(len(list_of_projection_indices)):
-		utilities.write_text_row(rotated_params[i1], mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(list_of_projection_indices[i1]) + DIR_DELIM + "rotated_reduced_params.txt")
+		sparx_utilities.write_text_row(rotated_params[i1], mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(list_of_projection_indices[i1]) + DIR_DELIM + "rotated_reduced_params.txt")
 
 	return True
 
@@ -503,7 +503,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 		partstack.append(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "rotated_reduced_params.txt")
 	partids_file_name = mainoutputdir + "this_iteration_index_keep_images.txt"
 
-	lpartids = list(map(int, utilities.read_text_file(partids_file_name) ))
+	lpartids = list(map(int, sparx_utilities.read_text_file(partids_file_name) ))
 	n_projs = len(lpartids)
 
 
@@ -517,8 +517,8 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 
 			# for i in xrange(no_of_viper_runs_analyzed_together):
 			for idx, i in enumerate(list_of_independent_viper_run_indices_used_for_outlier_elimination):
-				projdata = utilities.getindexdata(bdb_stack_location + "_%03d"%(rviper_iter - 1), partids_file_name, partstack[idx], mpi_rank, mpi_subsize)
-				vol = multi_shc.do_volume(projdata, ali3d_options, 0, mpi_comm = mpi_subcomm)
+				projdata = sparx_utilities.getindexdata(bdb_stack_location + "_%03d"%(rviper_iter - 1), partids_file_name, partstack[idx], mpi_rank, mpi_subsize)
+				vol = sparx_multi_shc.do_volume(projdata, ali3d_options, 0, mpi_comm = mpi_subcomm)
 				del projdata
 				if( mpi_rank == 0):
 					vol.write_image(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
@@ -529,8 +529,8 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 		mpi.mpi_barrier(mpi_comm)
 	else:
 		for idx, i in enumerate(list_of_independent_viper_run_indices_used_for_outlier_elimination):
-			projdata = utilities.getindexdata(bdb_stack_location + "_%03d"%(rviper_iter - 1), partids_file_name, partstack[idx], mpi_rank, mpi_size)
-			vol = multi_shc.do_volume(projdata, ali3d_options, 0, mpi_comm = mpi_comm)
+			projdata = sparx_utilities.getindexdata(bdb_stack_location + "_%03d"%(rviper_iter - 1), partids_file_name, partstack[idx], mpi_rank, mpi_size)
+			vol = sparx_multi_shc.do_volume(projdata, ali3d_options, 0, mpi_comm = mpi_comm)
 			del projdata
 			if( mpi_rank == 0):
 				vol.write_image(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
@@ -547,25 +547,25 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 		vls = [None]*len(list_of_independent_viper_run_indices_used_for_outlier_elimination)
 		# for i in xrange(no_of_viper_runs_analyzed_together):
 		for idx, i in enumerate(list_of_independent_viper_run_indices_used_for_outlier_elimination):
-			vls[idx] = utilities.get_im(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
-			utilities.set_params3D(vls[idx],[0.,0.,0.,0.,0.,0.,0,1.0])
-		asa,sas = statistics.ave_var(vls)
+			vls[idx] = sparx_utilities.get_im(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
+			sparx_utilities.set_params3D(vls[idx],[0.,0.,0.,0.,0.,0.,0,1.0])
+		asa,sas = sparx_statistics.ave_var(vls)
 		# do the alignment
 		nx = asa.get_xsize()
 		radius = nx/2 - .5
-		st = EMAN2_cppwrap.Util.infomask(asa*asa, utilities.model_circle(radius,nx,nx,nx), True)
+		st = EMAN2_cppwrap.Util.infomask(asa*asa, sparx_utilities.model_circle(radius,nx,nx,nx), True)
 		goal = st[0]
 		going = True
 		while(going):
-			utilities.set_params3D(asa,[0.,0.,0.,0.,0.,0.,0,1.0])
+			sparx_utilities.set_params3D(asa,[0.,0.,0.,0.,0.,0.,0,1.0])
 			# for i in xrange(no_of_viper_runs_analyzed_together):
 			for idx, i in enumerate(list_of_independent_viper_run_indices_used_for_outlier_elimination):
-				o = applications.ali_vol(vls[idx],asa,7.0,5.,radius)  # range of angles and shifts, maybe should be adjusted
-				p = utilities.get_params3D(o)
+				o = sparx_applications.ali_vol(vls[idx],asa,7.0,5.,radius)  # range of angles and shifts, maybe should be adjusted
+				p = sparx_utilities.get_params3D(o)
 				del o
-				utilities.set_params3D(vls[idx],p)
-			asa,sas = statistics.ave_var(vls)
-			st = EMAN2_cppwrap.Util.infomask(asa*asa, utilities.model_circle(radius,nx,nx,nx), True)
+				sparx_utilities.set_params3D(vls[idx],p)
+			asa,sas = sparx_statistics.ave_var(vls)
+			st = EMAN2_cppwrap.Util.infomask(asa*asa, sparx_utilities.model_circle(radius,nx,nx,nx), True)
 			if(st[0] > goal):  goal = st[0]
 			else:  going = False
 		# over and out
@@ -632,7 +632,7 @@ def main():
 	usage = progname + " stack  [output_directory] --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
 	"""Multiline Comment0"""
 
-	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=sparx_global_def.SPARXVERSION)
 	parser.add_option("--radius",                type="int",           default=29,         help="radius of the particle: has to be less than < int(nx/2)-1 (default 29)")
 
 	parser.add_option("--ir",                    type="int",           default=1,          help="inner radius for rotational search: > 0 (default 1)")
@@ -763,17 +763,17 @@ def main():
 				masterdir = max(all_dirs, key=os.path.getmtime)
 				masterdir += DIR_DELIM
 
-	log = logger.Logger(logger.BaseLogger_Files())
+	log = sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 
 	error_status = 0	
 	if mpi_size % no_of_shc_runs_analyzed_together != 0:
-		global_def.ERROR('Number of processes needs to be a multiple of the number of quasi-independent runs (shc) within each viper run. '
+		sparx_global_def.ERROR('Number of processes needs to be a multiple of the number of quasi-independent runs (shc) within each viper run. '
 		'Total quasi-independent runs by default are 3, you can change it by specifying '
 		'--n_shc_runs option (in sxviper this option is called --nruns). Also, to improve communication time it is recommended that '
 		'the number of processes divided by the number of quasi-independent runs is a power '
 		'of 2 (e.g. 2, 4, 8 or 16 depending on how many physical cores each node has).', 'sxviper', 1)
 		error_status = 1
-	utilities.if_error_then_all_processes_exit_program(error_status)
+	sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 
 	#Create folder for all results or check if there is one created already
 	if(myid == main_node):
@@ -786,7 +786,7 @@ def main():
 
 		if not os.path.exists(masterdir):
 			cmd = "{} {}".format("mkdir", masterdir)
-			junk = utilities.cmdexecute(cmd)
+			junk = sparx_utilities.cmdexecute(cmd)
 
 		if ':' in args[0]:
 			bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
@@ -796,29 +796,29 @@ def main():
 				# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB" DIR_DELIM)
 				# junk = cmdexecute(cmd)
 				cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
-				junk = utilities.cmdexecute(cmd)
+				junk = sparx_utilities.cmdexecute(cmd)
 
 				pass#IMPORTIMPORTIMPORT from applications import header
 				try:
-					applications.header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
+					sparx_applications.header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
 					print("Images were already indexed!")
 				except KeyError:
 					print("Indexing images")
-					applications.header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
+					sparx_applications.header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
 		else:
 			filename = os.path.basename(args[0])
 			bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
 			if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
 				cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
-				junk = utilities.cmdexecute(cmd)
+				junk = sparx_utilities.cmdexecute(cmd)
 
 				pass#IMPORTIMPORTIMPORT from applications import header
 				try:
-					applications.header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
+					sparx_applications.header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
 					print("Images were already indexed!")
 				except KeyError:
 					print("Indexing images")
-					applications.header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
+					sparx_applications.header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
 
 	# send masterdir to all processes
 	dir_len  = len(masterdir)*int(myid == main_node)
@@ -828,7 +828,7 @@ def main():
 	if masterdir[-1] != DIR_DELIM:
 		masterdir += DIR_DELIM
 		
-	global_def.LOGFILE =  os.path.join(masterdir, global_def.LOGFILE)
+	sparx_global_def.LOGFILE =  os.path.join(masterdir, sparx_global_def.LOGFILE)
 	#print_program_start_information()
 	
 
@@ -846,23 +846,23 @@ def main():
 	bdb_stack_location = mpi.mpi_bcast(bdb_stack_location,dir_len,mpi.MPI_CHAR,main_node,mpi.MPI_COMM_WORLD)
 	bdb_stack_location = string.join(bdb_stack_location,"")
 
-	iteration_start = utilities.get_latest_directory_increment_value(masterdir, "main")
+	iteration_start = sparx_utilities.get_latest_directory_increment_value(masterdir, "main")
 
 	if (myid == main_node):
 		if (iteration_start < iteration_start_default):
-			global_def.ERROR('Starting iteration provided is greater than last iteration performed. Quiting program', 'sxviper', 1)
+			sparx_global_def.ERROR('Starting iteration provided is greater than last iteration performed. Quiting program', 'sxviper', 1)
 			error_status = 1
 	if iteration_start_default!=0:
 		iteration_start = iteration_start_default
 	if (myid == main_node):
 		if (number_of_rrr_viper_runs < iteration_start):
-			global_def.ERROR('Please provide number of rviper runs (--n_rv_runs) greater than number of iterations already performed.', 'sxviper', 1)
+			sparx_global_def.ERROR('Please provide number of rviper runs (--n_rv_runs) greater than number of iterations already performed.', 'sxviper', 1)
 			error_status = 1
 
-	utilities.if_error_then_all_processes_exit_program(error_status)
+	sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 
 	pass#IMPORTIMPORTIMPORT from fundamentals import symclass
-	symc = fundamentals.symclass(options.sym)
+	symc = sparx_fundamentals.symclass(options.sym)
 	
 
 	for rviper_iter in range(iteration_start, number_of_rrr_viper_runs + 1):
@@ -876,7 +876,7 @@ def main():
 			all_projs = None
 			subset = None
 
-		runs_iter = utilities.get_latest_directory_increment_value(masterdir + NAME_OF_MAIN_DIR + "%03d"%rviper_iter, DIR_DELIM + NAME_OF_RUN_DIR, start_value=0) - 1
+		runs_iter = sparx_utilities.get_latest_directory_increment_value(masterdir + NAME_OF_MAIN_DIR + "%03d"%rviper_iter, DIR_DELIM + NAME_OF_RUN_DIR, start_value=0) - 1
 		no_of_viper_runs_analyzed_together = max(runs_iter + 2, no_of_viper_runs_analyzed_together_from_user_options)
 
 		first_time_entering_the_loop_need_to_do_full_check_up = True
@@ -892,16 +892,16 @@ def main():
 			if (myid == main_node):
 				independent_run_dir = masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM + NAME_OF_RUN_DIR + "%03d" + DIR_DELIM)%(rviper_iter, runs_iter)
 				if run_get_already_processed_viper_runs:
-					cmd = "{} {}".format("mkdir -p", masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM)%(rviper_iter)); junk = utilities.cmdexecute(cmd)
-					cmd = "{} {}".format("rm -rf", independent_run_dir); junk = utilities.cmdexecute(cmd)
-					cmd = "{} {}".format("cp -r", get_already_processed_viper_runs() + " " +  independent_run_dir); junk = utilities.cmdexecute(cmd)
+					cmd = "{} {}".format("mkdir -p", masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM)%(rviper_iter)); junk = sparx_utilities.cmdexecute(cmd)
+					cmd = "{} {}".format("rm -rf", independent_run_dir); junk = sparx_utilities.cmdexecute(cmd)
+					cmd = "{} {}".format("cp -r", get_already_processed_viper_runs() + " " +  independent_run_dir); junk = sparx_utilities.cmdexecute(cmd)
 
-				if os.path.exists(independent_run_dir + "log.txt") and (utilities.string_found_in_file("Finish VIPER2", independent_run_dir + "log.txt")):
+				if os.path.exists(independent_run_dir + "log.txt") and (sparx_utilities.string_found_in_file("Finish VIPER2", independent_run_dir + "log.txt")):
 					this_run_is_NOT_complete = 0
 				else:
 					this_run_is_NOT_complete = 1
-					cmd = "{} {}".format("rm -rf", independent_run_dir); junk = utilities.cmdexecute(cmd)
-					cmd = "{} {}".format("mkdir -p", independent_run_dir); junk = utilities.cmdexecute(cmd)
+					cmd = "{} {}".format("rm -rf", independent_run_dir); junk = sparx_utilities.cmdexecute(cmd)
+					cmd = "{} {}".format("mkdir -p", independent_run_dir); junk = sparx_utilities.cmdexecute(cmd)
 
 				this_run_is_NOT_complete = mpi.mpi_bcast(this_run_is_NOT_complete,1,mpi.MPI_INT,main_node,mpi.MPI_COMM_WORLD)[0]
 				dir_len = len(independent_run_dir)
@@ -924,7 +924,7 @@ def main():
 
 				log.prefix = independent_run_dir
 
-				options.user_func = user_functions.factory[options.function]
+				options.user_func = sparx_user_functions.factory[options.function]
 
 				# for debugging purposes
 				#if (myid == main_node):
@@ -935,9 +935,9 @@ def main():
 					#junk = cmdexecute(cmd)
 
 				if (myid == main_node):
-					utilities.store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', locals(), exclude_list_of_vars=["usage"], 
+					sparx_utilities.store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', locals(), exclude_list_of_vars=["usage"], 
 						vars_that_will_show_only_size = ["subset"])
-					utilities.store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', options.__dict__, write_or_append='a')
+					sparx_utilities.store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', options.__dict__, write_or_append='a')
 
 				# mpi_barrier(mpi_comm)
 				# from mpi import mpi_finalize
@@ -946,7 +946,7 @@ def main():
 				# from sys import exit
 				# exit()
 
-				out_params, out_vol, out_peaks = multi_shc.multi_shc(all_projs, subset, no_of_shc_runs_analyzed_together, options,
+				out_params, out_vol, out_peaks = sparx_multi_shc.multi_shc(all_projs, subset, no_of_shc_runs_analyzed_together, options,
 				mpi_comm=mpi_comm, log=log, ref_vol=ref_vol)
 
 				# end of: if this_run_is_NOT_complete:

@@ -7,20 +7,20 @@ from __future__ import print_function
 #  
 
 import EMAN2_cppwrap
-import applications
-import filter
-import global_def
-import logger
-import morphology
+import sparx_applications
+import sparx_filter
+import sparx_global_def
+import sparx_logger
+import sparx_morphology
 import mpi
 import optparse
 import os
-import reconstruction
+import sparx_reconstruction
 import string
 import sys
 import time
-import user_functions
-import utilities
+import sparx_user_functions
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import applications
@@ -70,7 +70,7 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack  outdir  <mask> --focus=3Dmask --radius=outer_radius --delta=angular_step" +\
 	"--an=angular_neighborhood --maxit=max_iter  --CTF --sym=c1 --function=user_function --independent=indenpendent_runs  --number_of_images_per_group=number_of_images_per_group  --low_pass_filter=.25  --seed=random_seed"
-	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=sparx_global_def.SPARXVERSION)
 	parser.add_option("--focus",                         type   ="string",        default ='',                    help="bineary 3D mask for focused clustering ")
 	parser.add_option("--ir",                            type   = "int",          default =1, 	                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--radius",                        type   = "int",          default =-1,	                  help="particle radius in pixel for rotational correlation <nx-1 (set to the radius of the particle)")
@@ -116,7 +116,7 @@ def main():
 
 		orgstack                        =args[0]
 		masterdir                       =args[1]
-		global_def.BATCH = True
+		sparx_global_def.BATCH = True
 		#---initialize MPI related variables
 		pass#IMPORTIMPORTIMPORT from mpi import mpi_init, mpi_comm_size, MPI_COMM_WORLD, mpi_comm_rank,mpi_barrier,mpi_bcast, mpi_bcast, MPI_INT,MPI_CHAR
 		sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)
@@ -132,7 +132,7 @@ def main():
 		# Create the main log file
 		pass#IMPORTIMPORTIMPORT from logger import Logger,BaseLogger_Files
 		if myid ==main_node:
-			log_main=logger.Logger(logger.BaseLogger_Files())
+			log_main=sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 			log_main.prefix = masterdir+"/"
 		else:
 			log_main =None
@@ -237,10 +237,10 @@ def main():
 		if(myid == main_node):
 			line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
 			print((line+"Initialization of 3-D sorting"))
-			a = utilities.get_im(orgstack)
+			a = sparx_utilities.get_im(orgstack)
 			nnxo = a.get_xsize()
 			if( Tracker["nxinit"] > nnxo ):
-				global_def.ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxsort3d.py",1)
+				sparx_global_def.ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxsort3d.py",1)
 				nnxo = -1
 			else:
 				if Tracker["constants"]["CTF"]:
@@ -256,12 +256,12 @@ def main():
 			nnxo = 0
 			fq = 0.0
 			pixel_size = 1.0
-		nnxo = utilities.bcast_number_to_all(nnxo, source_node = main_node)
+		nnxo = sparx_utilities.bcast_number_to_all(nnxo, source_node = main_node)
 		if( nnxo < 0 ):
 			mpi.mpi_finalize()
 			exit()
-		pixel_size = utilities.bcast_number_to_all(pixel_size, source_node = main_node)
-		fq         = utilities.bcast_number_to_all(fq, source_node = main_node)
+		pixel_size = sparx_utilities.bcast_number_to_all(pixel_size, source_node = main_node)
+		fq         = sparx_utilities.bcast_number_to_all(fq, source_node = main_node)
 		if Tracker["constants"]["wn"]==0:
 			Tracker["constants"]["nnxo"]          = nnxo
 		else:
@@ -273,7 +273,7 @@ def main():
 		if(Tracker["constants"]["radius"] < 1):
 			Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
 		elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-			global_def.ERROR("Particle radius set too large!","sxsort3d.py",1,myid)
+			sparx_global_def.ERROR("Particle radius set too large!","sxsort3d.py",1,myid)
 ####-----------------------------------------------------------------------------------------
 		# Master directory
 		if myid == main_node:
@@ -291,7 +291,7 @@ def main():
 			pass#IMPORTIMPORTIMPORT import string
 			masterdir = string.join(masterdir,"")
 		if myid ==main_node:
-			utilities.print_dict(Tracker["constants"],"Permanent settings of 3-D sorting program")
+			sparx_utilities.print_dict(Tracker["constants"],"Permanent settings of 3-D sorting program")
 		######### create a vstack from input stack to the local stack in masterdir
 		# stack name set to default
 		Tracker["constants"]["stack"]       = "bdb:"+masterdir+"/rdata"
@@ -302,7 +302,7 @@ def main():
 			total_stack = EMAN2_cppwrap.EMUtil.get_image_count(Tracker["orgstack"])
 		else:
 			total_stack = 0
-		total_stack = utilities.bcast_number_to_all(total_stack, source_node = main_node)
+		total_stack = sparx_utilities.bcast_number_to_all(total_stack, source_node = main_node)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		pass#IMPORTIMPORTIMPORT from time import sleep
 		while not os.path.exists(masterdir):
@@ -319,27 +319,27 @@ def main():
 		# Compute the resolution 
 		#### make chunkdir dictionary for computing margin of error
 		pass#IMPORTIMPORTIMPORT import user_functions
-		user_func  = user_functions.factory[Tracker["constants"]["user_func"]]
+		user_func  = sparx_user_functions.factory[Tracker["constants"]["user_func"]]
 		chunk_dict = {}
 		chunk_list = []
 		if myid == main_node:
-			chunk_one = utilities.read_text_file(Tracker["constants"]["chunk0"])
-			chunk_two = utilities.read_text_file(Tracker["constants"]["chunk1"])
+			chunk_one = sparx_utilities.read_text_file(Tracker["constants"]["chunk0"])
+			chunk_two = sparx_utilities.read_text_file(Tracker["constants"]["chunk1"])
 		else:
 			chunk_one = 0
 			chunk_two = 0
-		chunk_one = utilities.wrap_mpi_bcast(chunk_one, main_node)
-		chunk_two = utilities.wrap_mpi_bcast(chunk_two, main_node)
+		chunk_one = sparx_utilities.wrap_mpi_bcast(chunk_one, main_node)
+		chunk_two = sparx_utilities.wrap_mpi_bcast(chunk_two, main_node)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		######################## Read/write bdb: data on main node ############################
 		if myid==main_node:
 			if(orgstack[:4] == "bdb:"):	cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
 			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
-			junk = utilities.cmdexecute(cmd)
+			junk = sparx_utilities.cmdexecute(cmd)
 			cmd = "{} {} {}".format("sxheader.py  --params=xform.projection", "--export="+Tracker["constants"]["ali3d"],orgstack)
-			junk = utilities.cmdexecute(cmd)
+			junk = sparx_utilities.cmdexecute(cmd)
 			cmd = "{} {} {}".format("sxheader.py  --params=ctf", "--export="+Tracker["constants"]["ctf_params"],orgstack)
-			junk = utilities.cmdexecute(cmd)
+			junk = sparx_utilities.cmdexecute(cmd)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)	   		   	
 		########-----------------------------------------------------------------------------
 		Tracker["total_stack"]              = total_stack
@@ -356,19 +356,19 @@ def main():
 			Tracker["focus3D"] = None
 		if myid == main_node:
 			if Tracker["constants"]["mask3D"]:
-				mask_3D = morphology.get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
+				mask_3D = sparx_morphology.get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["mask3D"])
 				mask_3D.write_image(Tracker["mask3D"])
 			if Tracker["constants"]["focus3Dmask"]:
-				mask_3D = morphology.get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
+				mask_3D = sparx_morphology.get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
 				st = EMAN2_cppwrap.Util.infomask(mask_3D, None, True)
-				if( st[0] == 0.0 ):  global_def.ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1)
+				if( st[0] == 0.0 ):  sparx_global_def.ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1)
 				mask_3D.write_image(Tracker["focus3D"])
 				del mask_3D
 		if Tracker["constants"]["PWadjustment"] !='':
 			PW_dict              = {}
-			nxinit_pwsp          = utilities.sample_down_1D_curve(Tracker["constants"]["nxinit"],Tracker["constants"]["nnxo"],Tracker["constants"]["PWadjustment"])
+			nxinit_pwsp          = sparx_utilities.sample_down_1D_curve(Tracker["constants"]["nxinit"],Tracker["constants"]["nnxo"],Tracker["constants"]["PWadjustment"])
 			Tracker["nxinit_PW"] = os.path.join(masterdir,"spwp.txt")
-			if myid == main_node:  utilities.write_text_file(nxinit_pwsp,Tracker["nxinit_PW"])
+			if myid == main_node:  sparx_utilities.write_text_file(nxinit_pwsp,Tracker["nxinit_PW"])
 			PW_dict[Tracker["constants"]["nnxo"]]   = Tracker["constants"]["PWadjustment"]
 			PW_dict[Tracker["constants"]["nxinit"]] = Tracker["nxinit_PW"]
 			Tracker["PW_dict"]                      = PW_dict
@@ -382,26 +382,26 @@ def main():
 		Tracker["P_chunk1"]   = len(chunk_two)/float(total_stack)
 		### create two volumes to estimate resolution
 		if myid == main_node:
-			for index in range(2): utilities.write_text_file(chunk_list[index],os.path.join(masterdir,"chunk%01d.txt"%index))
+			for index in range(2): sparx_utilities.write_text_file(chunk_list[index],os.path.join(masterdir,"chunk%01d.txt"%index))
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		vols = []
 		for index in range(2):
-			data,old_shifts = utilities.get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"], os.path.join(masterdir,"chunk%01d.txt"%index), Tracker["constants"]["partstack"],myid,main_node,nproc,preshift=True)
-			vol             = reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist=data,symmetry=Tracker["constants"]["sym"], finfo=None)
+			data,old_shifts = sparx_utilities.get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"], os.path.join(masterdir,"chunk%01d.txt"%index), Tracker["constants"]["partstack"],myid,main_node,nproc,preshift=True)
+			vol             = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist=data,symmetry=Tracker["constants"]["sym"], finfo=None)
 			if myid == main_node:
 				vol.write_image(os.path.join(masterdir, "vol%d.hdf"%index))
 			vols.append(vol)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		if myid ==main_node:
-			low_pass, falloff,currentres = utilities.get_resolution_mrk01(vols,Tracker["constants"]["radius"],Tracker["constants"]["nxinit"],masterdir,Tracker["mask3D"])
+			low_pass, falloff,currentres = sparx_utilities.get_resolution_mrk01(vols,Tracker["constants"]["radius"],Tracker["constants"]["nxinit"],masterdir,Tracker["mask3D"])
 			if low_pass >Tracker["constants"]["low_pass_filter"]: low_pass= Tracker["constants"]["low_pass_filter"]
 		else:
 			low_pass    =0.0
 			falloff     =0.0
 			currentres  =0.0
-		utilities.bcast_number_to_all(currentres,source_node = main_node)
-		utilities.bcast_number_to_all(low_pass,source_node   = main_node)
-		utilities.bcast_number_to_all(falloff,source_node    = main_node)
+		sparx_utilities.bcast_number_to_all(currentres,source_node = main_node)
+		sparx_utilities.bcast_number_to_all(low_pass,source_node   = main_node)
+		sparx_utilities.bcast_number_to_all(falloff,source_node    = main_node)
 		Tracker["currentres"]                      = currentres
 		Tracker["falloff"]                         = falloff
 		if Tracker["constants"]["low_pass_filter"] ==-1.0:
@@ -429,15 +429,15 @@ def main():
 			log_main.add("the user provided enforced low_pass_filter is %f"%Tracker["constants"]["low_pass_filter"])
 			#log_main.add("equivalent to %f Angstrom resolution"%(Tracker["constants"]["pixel_size"]/Tracker["constants"]["low_pass_filter"]))
 			for index in range(2):
-				filter.filt_tanl(utilities.get_im(os.path.join(masterdir,"vol%01d.hdf"%index)), Tracker["low_pass_filter"],Tracker["falloff"]).write_image(os.path.join(masterdir, "volf%01d.hdf"%index))
+				sparx_filter.filt_tanl(sparx_utilities.get_im(os.path.join(masterdir,"vol%01d.hdf"%index)), Tracker["low_pass_filter"],Tracker["falloff"]).write_image(os.path.join(masterdir, "volf%01d.hdf"%index))
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		pass#IMPORTIMPORTIMPORT from utilities import get_input_from_string
-		delta       = utilities.get_input_from_string(Tracker["constants"]["delta"])
+		delta       = sparx_utilities.get_input_from_string(Tracker["constants"]["delta"])
 		delta       = delta[0]
 		pass#IMPORTIMPORTIMPORT from utilities import even_angles
-		n_angles    = utilities.even_angles(delta, 0, 180)
+		n_angles    = sparx_utilities.even_angles(delta, 0, 180)
 		this_ali3d  = Tracker["constants"]["ali3d"]
-		sampled     = utilities.get_stat_proj(Tracker,delta,this_ali3d)
+		sampled     = sparx_utilities.get_stat_proj(Tracker,delta,this_ali3d)
 		if myid ==main_node:
 			nc = 0
 			for a in sampled:
@@ -448,7 +448,7 @@ def main():
 		number_of_images_per_group = Tracker["constants"]["number_of_images_per_group"]
 		if myid ==main_node: log_main.add("user provided number_of_images_per_group %d"%number_of_images_per_group)
 		Tracker["number_of_images_per_group"] = number_of_images_per_group
-		number_of_groups = utilities.get_number_of_groups(total_stack,number_of_images_per_group)
+		number_of_groups = sparx_utilities.get_number_of_groups(total_stack,number_of_images_per_group)
 		Tracker["number_of_groups"] =  number_of_groups
 		generation     =0
 		partition_dict ={}
@@ -464,7 +464,7 @@ def main():
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		list_to_be_processed = list(range(Tracker["constants"]["total_stack"]))
 		Tracker["this_data_list"] = list_to_be_processed
-		utilities.create_random_list(Tracker)
+		sparx_utilities.create_random_list(Tracker)
 		#################################
 		full_dict ={}
 		for iptl in range(Tracker["constants"]["total_stack"]):
@@ -473,23 +473,23 @@ def main():
 		################################# 	
 		for indep_run in range(Tracker["constants"]["indep_runs"]):
 			Tracker["this_particle_list"] = Tracker["this_indep_list"][indep_run]
-			ref_vol =  utilities.recons_mref(Tracker)
+			ref_vol =  sparx_utilities.recons_mref(Tracker)
 			if myid == main_node: log_main.add("independent run  %10d"%indep_run)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			Tracker["this_data_list"]          = list_to_be_processed
 			Tracker["total_stack"]             = len(Tracker["this_data_list"])
 			Tracker["this_particle_text_file"] = os.path.join(workdir,"independent_list_%03d.txt"%indep_run) # for get_shrink_data
-			if myid == main_node: utilities.write_text_file(Tracker["this_data_list"], Tracker["this_particle_text_file"])
+			if myid == main_node: sparx_utilities.write_text_file(Tracker["this_data_list"], Tracker["this_particle_text_file"])
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			outdir  = os.path.join(workdir, "EQ_Kmeans%03d"%indep_run)
-			ref_vol = utilities.apply_low_pass_filter(ref_vol,Tracker)
-			applications.mref_ali3d_EQ_Kmeans(ref_vol, outdir, Tracker["this_particle_text_file"], Tracker)
+			ref_vol = sparx_utilities.apply_low_pass_filter(ref_vol,Tracker)
+			sparx_applications.mref_ali3d_EQ_Kmeans(ref_vol, outdir, Tracker["this_particle_text_file"], Tracker)
 			partition_dict[indep_run]=Tracker["this_partition"]
 		Tracker["partition_dict"]    = partition_dict
 		Tracker["total_stack"]       = len(Tracker["this_data_list"])
 		Tracker["this_total_stack"]  = Tracker["total_stack"]
 		###############################
-		utilities.do_two_way_comparison(Tracker)
+		sparx_utilities.do_two_way_comparison(Tracker)
 		###############################
 		ref_vol_list = []
 		pass#IMPORTIMPORTIMPORT from time import sleep
@@ -498,9 +498,9 @@ def main():
 			Tracker["this_data_list"]      = Tracker["two_way_stable_member"][igrp]
 			Tracker["this_data_list_file"] = os.path.join(workdir,"stable_class%d.txt"%igrp)
 			if myid == main_node:
-				utilities.write_text_file(Tracker["this_data_list"], Tracker["this_data_list_file"])
-			data,old_shifts = utilities.get_shrink_data_huang(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"], Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
-			volref          = reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo = None)
+				sparx_utilities.write_text_file(Tracker["this_data_list"], Tracker["this_data_list_file"])
+			data,old_shifts = sparx_utilities.get_shrink_data_huang(Tracker,Tracker["nxinit"], Tracker["this_data_list_file"], Tracker["constants"]["partstack"], myid, main_node, nproc, preshift = True)
+			volref          = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo = None)
 			ref_vol_list.append(volref)
 			number_of_ref_class.append(len(Tracker["this_data_list"]))
 			if myid == main_node:
@@ -523,24 +523,24 @@ def main():
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		Tracker["this_data_list"]           = Tracker["this_accounted_list"]
 		outdir                              = os.path.join(workdir,"Kmref")  
-		empty_group, res_groups, final_list = applications.ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,Tracker["this_accounted_text"],Tracker)
-		Tracker["this_unaccounted_list"]    = utilities.get_complementary_elements(list_to_be_processed,final_list)
+		empty_group, res_groups, final_list = sparx_applications.ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,Tracker["this_accounted_text"],Tracker)
+		Tracker["this_unaccounted_list"]    = sparx_utilities.get_complementary_elements(list_to_be_processed,final_list)
 		if myid == main_node:
 			log_main.add("the number of particles not processed is %d"%len(Tracker["this_unaccounted_list"]))
-			utilities.write_text_file(Tracker["this_unaccounted_list"],Tracker["this_unaccounted_text"])
-		utilities.update_full_dict(Tracker["this_unaccounted_list"], Tracker)
+			sparx_utilities.write_text_file(Tracker["this_unaccounted_list"],Tracker["this_unaccounted_text"])
+		sparx_utilities.update_full_dict(Tracker["this_unaccounted_list"], Tracker)
 		#######################################
 		number_of_groups    = len(res_groups)
 		vol_list            = []
 		number_of_ref_class = []
 		for igrp in range(number_of_groups):
-			data,old_shifts = utilities.get_shrink_data_huang(Tracker, Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-			volref          = reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
+			data,old_shifts = sparx_utilities.get_shrink_data_huang(Tracker, Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+			volref          = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"], finfo=None)
 			vol_list.append(volref)
 
-			if( myid == main_node ):  npergroup = len(utilities.read_text_file(os.path.join(outdir,"Class%d.txt"%igrp)))
+			if( myid == main_node ):  npergroup = len(sparx_utilities.read_text_file(os.path.join(outdir,"Class%d.txt"%igrp)))
 			else:  npergroup = 0
-			npergroup = utilities.bcast_number_to_all(npergroup, main_node )
+			npergroup = sparx_utilities.bcast_number_to_all(npergroup, main_node )
 			number_of_ref_class.append(npergroup)
 
 		Tracker["number_of_ref_class"] = number_of_ref_class
@@ -567,7 +567,7 @@ def main():
 		Tracker["this_data_list"]    = Tracker["this_unaccounted_list"]   # reset parameters for the next round calculation
 		Tracker["total_stack"]       = len(Tracker["this_unaccounted_list"])
 		Tracker["this_total_stack"]  = Tracker["total_stack"]
-		number_of_groups             = utilities.get_number_of_groups(len(Tracker["this_unaccounted_list"]),number_of_images_per_group)
+		number_of_groups             = sparx_utilities.get_number_of_groups(len(Tracker["this_unaccounted_list"]),number_of_images_per_group)
 		Tracker["number_of_groups"]  =  number_of_groups
 		while number_of_groups >= 2 :
 			generation     +=1
@@ -583,16 +583,16 @@ def main():
 				cmd ="{} {}".format("mkdir",workdir)
 				os.system(cmd)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-			utilities.create_random_list(Tracker)
+			sparx_utilities.create_random_list(Tracker)
 			for indep_run in range(Tracker["constants"]["indep_runs"]):
 				Tracker["this_particle_list"] = Tracker["this_indep_list"][indep_run]
-				ref_vol                       = utilities.recons_mref(Tracker)
+				ref_vol                       = sparx_utilities.recons_mref(Tracker)
 				if myid == main_node:
 					log_main.add("independent run  %10d"%indep_run)
 					outdir = os.path.join(workdir, "EQ_Kmeans%03d"%indep_run)
 				Tracker["this_data_list"]   = Tracker["this_unaccounted_list"]
 				#ref_vol=apply_low_pass_filter(ref_vol,Tracker)
-				applications.mref_ali3d_EQ_Kmeans(ref_vol,outdir,Tracker["this_unaccounted_text"],Tracker)
+				sparx_applications.mref_ali3d_EQ_Kmeans(ref_vol,outdir,Tracker["this_unaccounted_text"],Tracker)
 				partition_dict[indep_run]   = Tracker["this_partition"]
 				Tracker["this_data_list"]   = Tracker["this_unaccounted_list"]
 				Tracker["total_stack"]      = len(Tracker["this_unaccounted_list"])
@@ -600,17 +600,17 @@ def main():
 				Tracker["this_total_stack"] = Tracker["total_stack"]
 			total_list_of_this_run          = Tracker["this_unaccounted_list"]
 			###############################
-			utilities.do_two_way_comparison(Tracker)
+			sparx_utilities.do_two_way_comparison(Tracker)
 			###############################
 			ref_vol_list        = []
 			number_of_ref_class = []
 			for igrp in range(len(Tracker["two_way_stable_member"])):
 				Tracker["this_data_list"]      = Tracker["two_way_stable_member"][igrp]
 				Tracker["this_data_list_file"] = os.path.join(workdir,"stable_class%d.txt"%igrp)
-				if myid == main_node: utilities.write_text_file(Tracker["this_data_list"], Tracker["this_data_list_file"])
+				if myid == main_node: sparx_utilities.write_text_file(Tracker["this_data_list"], Tracker["this_data_list_file"])
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-				data,old_shifts  = utilities.get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-				volref           = reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo= None)
+				data,old_shifts  = sparx_utilities.get_shrink_data_huang(Tracker,Tracker["constants"]["nxinit"],Tracker["this_data_list_file"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+				volref           = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo= None)
 				#volref = filt_tanl(volref, Tracker["constants"]["low_pass_filter"],.1)
 				if myid == main_node:volref.write_image(os.path.join(workdir,"vol_stable.hdf"),iref)
 				#volref = resample(volref,Tracker["shrinkage"])
@@ -620,19 +620,19 @@ def main():
 			Tracker["number_of_ref_class"]      = number_of_ref_class
 			Tracker["this_data_list"]           = Tracker["this_accounted_list"]
 			outdir                              = os.path.join(workdir,"Kmref")
-			empty_group, res_groups, final_list = applications.ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,Tracker["this_accounted_text"],Tracker)
+			empty_group, res_groups, final_list = sparx_applications.ali3d_mref_Kmeans_MPI(ref_vol_list,outdir,Tracker["this_accounted_text"],Tracker)
 			# calculate the 3-D structure of original image size for each group
 			number_of_groups                    =  len(res_groups)
-			Tracker["this_unaccounted_list"]    = utilities.get_complementary_elements(total_list_of_this_run,final_list)
+			Tracker["this_unaccounted_list"]    = sparx_utilities.get_complementary_elements(total_list_of_this_run,final_list)
 			if myid == main_node:
 				log_main.add("the number of particles not processed is %d"%len(Tracker["this_unaccounted_list"]))
-				utilities.write_text_file(Tracker["this_unaccounted_list"],Tracker["this_unaccounted_text"])
+				sparx_utilities.write_text_file(Tracker["this_unaccounted_list"],Tracker["this_unaccounted_text"])
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-			utilities.update_full_dict(Tracker["this_unaccounted_list"],Tracker)
+			sparx_utilities.update_full_dict(Tracker["this_unaccounted_list"],Tracker)
 			vol_list = []
 			for igrp in range(number_of_groups):
-				data,old_shifts = utilities.get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"], myid, main_node, nproc,preshift = True)
-				volref = reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo= None)
+				data,old_shifts = sparx_utilities.get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"], os.path.join(outdir,"Class%d.txt"%igrp), Tracker["constants"]["partstack"], myid, main_node, nproc,preshift = True)
+				volref = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo= None)
 				vol_list.append(volref)
 
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -655,13 +655,13 @@ def main():
 				log_main.add("number of accounted particles  %10d"%len(Tracker["this_accounted_list"]))
 			del vol_list
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-			number_of_groups            = utilities.get_number_of_groups(len(Tracker["this_unaccounted_list"]),number_of_images_per_group)
+			number_of_groups            = sparx_utilities.get_number_of_groups(len(Tracker["this_unaccounted_list"]),number_of_images_per_group)
 			Tracker["number_of_groups"] =  number_of_groups
 			Tracker["this_data_list"]   = Tracker["this_unaccounted_list"]
 			Tracker["total_stack"]      = len(Tracker["this_unaccounted_list"])
 		if Tracker["constants"]["unaccounted"]:
-			data,old_shifts = utilities.get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],Tracker["this_unaccounted_text"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
-			volref          = reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo= None)
+			data,old_shifts = sparx_utilities.get_shrink_data_huang(Tracker,Tracker["constants"]["nnxo"],Tracker["this_unaccounted_text"],Tracker["constants"]["partstack"],myid,main_node,nproc,preshift = True)
+			volref          = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid=myid, prjlist = data, symmetry=Tracker["constants"]["sym"],finfo= None)
 			nx_of_image     = volref.get_xsize()
 			if Tracker["constants"]["PWadjustment"]:
 				Tracker["PWadjustment"]=Tracker["PW_dict"][nx_of_image]

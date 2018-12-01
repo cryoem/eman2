@@ -32,21 +32,21 @@ from __future__ import print_function
 import EMAN2_cppwrap
 import EMAN2db
 import EMAN2jsondb
-import applications
-import filter
-import fundamentals
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
 import glob
-import global_def
+import sparx_global_def
 import inspect
-import morphology
+import sparx_morphology
 import mpi
 import optparse
 import os
 import shutil
-import statistics
+import sparx_statistics
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2db
@@ -94,11 +94,11 @@ pass#IMPORTIMPORTIMPORT from global_def import *
 # ========================================================================================
 def read_sphire_coords_file(coords_path):
 # 	coords_list = read_text_row(coords_path)
-	coords_list = utilities.read_text_row(coords_path, skip="#")
+	coords_list = sparx_utilities.read_text_row(coords_path, skip="#")
 	return coords_list
 
 def read_eman1_coords_file(coords_path):
-	coords_list = utilities.read_text_row(coords_path)
+	coords_list = sparx_utilities.read_text_row(coords_path)
 	for i in range(len(coords_list)):
 		coords_list[i] = [(coords_list[i][0] + coords_list[i][2] // 2), (coords_list[i][1] + coords_list[i][3] // 2)]
 	return coords_list
@@ -110,7 +110,7 @@ def read_eman2_coords_file(coords_path):
 	return coords_list
 
 def read_spider_coords_file(coords_path):
-	coords_list = utilities.read_text_row(coords_path)
+	coords_list = sparx_utilities.read_text_row(coords_path)
 	for i in range(len(coords_list)):
 		coords_list[i] = [coords_list[i][2], coords_list[i][3]]
 	return coords_list
@@ -192,7 +192,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	mpirun  -np  32  sxwindow.py  './mic*.hdf'  'info/mic*_info.json'  5.2  particles  --coordinates_format=eman2  --box_size=64  --skip_invert
 
 """
-	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=sparx_global_def.SPARXVERSION)
 	parser.add_option("--selection_list",      type="string",        default=None,      help="Micrograph selecting list: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be \'.txt\'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)")
 	parser.add_option("--coordinates_format",  type="string",        default="eman1",   help="Coordinate file format: Allowed values are \'sphire\', \'eman1\', \'eman2\', or \'spider\'. The sphire, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default eman1)")
 	parser.add_option("--box_size",            type="int",           default=256,       help="Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when resample_ratio < 1.0. (default 256)")
@@ -228,13 +228,13 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# ------------------------------------------------------------------------------------
 	# Set up SPHIRE global definitions
 	# ------------------------------------------------------------------------------------
-	if global_def.CACHE_DISABLE:
+	if sparx_global_def.CACHE_DISABLE:
 		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
-		utilities.disable_bdb_cache()
+		sparx_utilities.disable_bdb_cache()
 	
 	# Change the name log file for error message
-	original_logfilename = global_def.LOGFILE
-	global_def.LOGFILE = os.path.splitext(program_name)[0] + '_' + original_logfilename + '.txt'
+	original_logfilename = sparx_global_def.LOGFILE
+	sparx_global_def.LOGFILE = os.path.splitext(program_name)[0] + '_' + original_logfilename + '.txt'
 	
 	# ------------------------------------------------------------------------------------
 	# Print command line
@@ -320,7 +320,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			break
 		
 		break
-	utilities.if_error_then_all_processes_exit_program(error_status)
+	sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 	assert (mic_pattern != None)
 	assert (coords_pattern != None)
 	assert (ctf_params_src != None)
@@ -492,7 +492,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				print(" ")
 				print("Checking the selection list...")
 				assert (os.path.exists(options.selection_list))
-				selected_mic_path_list = utilities.read_text_file(options.selection_list)
+				selected_mic_path_list = sparx_utilities.read_text_file(options.selection_list)
 				
 				# Check error condition of micrograph entry lists
 				print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), options.selection_list))
@@ -574,7 +574,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			print(" ")
 			print("Checking the CTER partres file...")
 			assert (os.path.exists(ctf_params_src))
-			cter_entry_list = utilities.read_text_row(ctf_params_src)
+			cter_entry_list = sparx_utilities.read_text_row(ctf_params_src)
 			
 			# Check error condition of CTER partres entry list
 			print("Found %d CTER partres entries in %s." % (len(cter_entry_list), ctf_params_src))
@@ -657,7 +657,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 					cter_entry[idx_cter_max_freq]     = 0.5/old_cter_entry[idx_old_cter_apix] # Set to Nyquist frequency
 					cter_entry[idx_cter_reserved]     = 0.0
 					cter_entry[idx_cter_const_ac]     = 0.0
-					cter_entry[idx_cter_phase_shift]  = morphology.ampcont2angle(old_cter_entry[idx_old_cter_total_ac])
+					cter_entry[idx_cter_phase_shift]  = sparx_morphology.ampcont2angle(old_cter_entry[idx_old_cter_total_ac])
 					cter_entry[idx_cter_mic_name]     = old_cter_entry[idx_old_cter_mic_name]
 					assert (len(cter_entry) == n_idx_cter)
 				
@@ -864,7 +864,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# The following function takes care of the case when an if-statement uses break for occurence of an error.
 	# However, more elegant way is to use 'exception' statement of exception mechanism...
 	# 
-	utilities.if_error_then_all_processes_exit_program(error_status)
+	sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 	
 	# ====================================================================================
 	# Obtain the list of micrograph id sustrings
@@ -875,7 +875,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# Prepare variables related to options
 	box_size = options.box_size
 	box_half = box_size // 2
-	mask2d = utilities.model_circle(box_size//2, box_size, box_size) # Create circular 2D mask to Util.infomask of particle images
+	mask2d = sparx_utilities.model_circle(box_size//2, box_size, box_size) # Create circular 2D mask to Util.infomask of particle images
 	resample_ratio = options.resample_ratio
 	
 	# Prepare the function for reading coordinates files with the specified format.
@@ -914,11 +914,11 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	if RUNNING_UNDER_MPI:
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		# All mpi processes should know global entry directory and valid micrograph id substring list
-		global_entry_dict = utilities.wrap_mpi_bcast(global_entry_dict, main_mpi_proc)
-		valid_mic_id_substr_list = utilities.wrap_mpi_bcast(valid_mic_id_substr_list, main_mpi_proc)
+		global_entry_dict = sparx_utilities.wrap_mpi_bcast(global_entry_dict, main_mpi_proc)
+		valid_mic_id_substr_list = sparx_utilities.wrap_mpi_bcast(valid_mic_id_substr_list, main_mpi_proc)
 		
 		# Slice the list of valid micrograph id substrings for this mpi process
-		mic_start, mic_end = applications.MPI_start_end(len(valid_mic_id_substr_list), n_mpi_procs, my_mpi_proc_id)
+		mic_start, mic_end = sparx_applications.MPI_start_end(len(valid_mic_id_substr_list), n_mpi_procs, my_mpi_proc_id)
 		valid_mic_id_substr_list = valid_mic_id_substr_list[mic_start:mic_end]
 		
 		# generate subdirectories user root_out_dir, one for each process
@@ -1019,7 +1019,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		ctf_entry.append(cter_entry[idx_cter_astig_amp])
 		ctf_entry.append(cter_entry[idx_cter_astig_ang])
 		assert(len(ctf_entry) == 8)
-		ctf_obj = utilities.generate_ctf(ctf_entry) 
+		ctf_obj = sparx_utilities.generate_ctf(ctf_entry) 
 		
 		# --------------------------------------------------------------------------------
 		# Read micrograph
@@ -1027,7 +1027,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		mic_path = global_entry_dict[mic_id_substr][subkey_input_mic_path]
 		assert (mic_path == mic_pattern.replace("*", mic_id_substr))
 		try:
-			mic_img = utilities.get_im(mic_path)
+			mic_img = sparx_utilities.get_im(mic_path)
 		except:
 			print("Failed to read the associate micrograph %s for %s. The file might be corrupted. Skipping..." % (mic_path, mic_basename))
 			continue
@@ -1035,7 +1035,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# --------------------------------------------------------------------------------
 		# Move to the Fourier space processing
 		# --------------------------------------------------------------------------------
-		fundamentals.fftip(mic_img) # In-place fft
+		sparx_fundamentals.fftip(mic_img) # In-place fft
 		
 		# --------------------------------------------------------------------------------
 		# If necessary, apply the hyperbolic tangent low-pass Fourier filter based on the (resampled) CTF limit;
@@ -1043,7 +1043,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# --------------------------------------------------------------------------------
 		if options.limit_ctf:
 			# Comput absolute frequency of CTF limit (abs_ctf_limit) with the resampled pixel size
-			abs_ctf_limit, angstrom_ctf_limit = morphology.ctflimit(box_size, cter_entry[idx_cter_def], cter_entry[idx_cter_cs], cter_entry[idx_cter_vol], cter_entry[idx_cter_apix])
+			abs_ctf_limit, angstrom_ctf_limit = sparx_morphology.ctflimit(box_size, cter_entry[idx_cter_def], cter_entry[idx_cter_cs], cter_entry[idx_cter_vol], cter_entry[idx_cter_apix])
 			
 			# Adjust the CTF limit according to the resampling ratio and box size
 			if resample_ratio < 1.0:
@@ -1055,7 +1055,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			
 			# If ctf limit is lower than Nyquist frequency, apply the low pass filter with the cutoff at CTF limit frequencye.
 			if abs_ctf_limit < 0.5:
-				mic_img = filter.filt_tanl(mic_img, abs_ctf_limit, 0.01)
+				mic_img = sparx_filter.filt_tanl(mic_img, abs_ctf_limit, 0.01)
 				abs_ctf_limit_histogram.append(abs_ctf_limit)
 		
 		# --------------------------------------------------------------------------------
@@ -1063,7 +1063,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# Cut off frequency components lower than one that the (resampled) box size can express.
 		# Then, move back to the real space processing
 		# --------------------------------------------------------------------------------
-		mic_img = fundamentals.fft(filter.filt_gaussh(mic_img, resample_ratio / box_size))
+		mic_img = sparx_fundamentals.fft(sparx_filter.filt_gaussh(mic_img, resample_ratio / box_size))
 		
 		# --------------------------------------------------------------------------------
 		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
@@ -1072,7 +1072,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		# NOTE: 2015/04/13 Toshio Moriya
 		# resample() efficiently takes care of the case resample_ratio = 1.0 but
 		# it does not set apix_*. Even though it sets apix_* when resample_ratio < 1.0...
-		mic_img = fundamentals.resample(mic_img, resample_ratio)
+		mic_img = sparx_fundamentals.resample(mic_img, resample_ratio)
 		
 		# --------------------------------------------------------------------------------
 		# If necessary, invert image contrast of this micrograph 
@@ -1139,7 +1139,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				original_id = entry[idx_id]
 				particle_img = EMAN2_cppwrap.Util.window(*entry[idx_info])
 				# Normalize this particle image
-				particle_img = fundamentals.ramp(particle_img)
+				particle_img = sparx_fundamentals.ramp(particle_img)
 				particle_stats = EMAN2_cppwrap.Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
 				particle_img -= particle_stats[0]
 				try:
@@ -1241,7 +1241,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# ------------------------------------------------------------------------------------
 	if options.limit_ctf:
 		if RUNNING_UNDER_MPI:
-			abs_ctf_limit_histogram = utilities.wrap_mpi_gatherv(abs_ctf_limit_histogram, main_mpi_proc)
+			abs_ctf_limit_histogram = sparx_utilities.wrap_mpi_gatherv(abs_ctf_limit_histogram, main_mpi_proc)
 		
 		if my_mpi_proc_id == main_mpi_proc:
 			# Print out the summary of CTF limit absolute frequency
@@ -1253,7 +1253,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			n_bins = 10
 			if len(abs_ctf_limit_histogram) >= n_bins:
 				pass#IMPORTIMPORTIMPORT from statistics import hist_list
-				cutoff_region, cutoff_counts = statistics.hist_list(abs_ctf_limit_histogram, n_bins)
+				cutoff_region, cutoff_counts = sparx_statistics.hist_list(abs_ctf_limit_histogram, n_bins)
 				print("Histogram of CTF limit absolute frequency used for the filtering:")
 				print("      CTF limit       counts")
 				for bin_id in range(n_bins):
@@ -1311,7 +1311,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 			print("Please execute from the command line :  ", e2bdb_command)
 		else:
 			e2bdb_command = "e2bdb.py  " + root_out_dir + "  --makevstack=bdb:" + root_out_dir + "#data"
-			utilities.cmdexecute(e2bdb_command, printing_on_success = False)
+			sparx_utilities.cmdexecute(e2bdb_command, printing_on_success = False)
 		
 		print(" ")
 		print("DONE!!!")
@@ -1323,7 +1323,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 	# ------------------------------------------------------------------------------------
 	# Reset SPHIRE global definitions
 	# ------------------------------------------------------------------------------------
-	global_def.LOGFILE = original_logfilename
+	sparx_global_def.LOGFILE = original_logfilename
 	
 	# ------------------------------------------------------------------------------------
 	# Clean up MPI related variables

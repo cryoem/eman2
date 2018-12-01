@@ -30,13 +30,13 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import fundamentals
-import global_def
+import sparx_fundamentals
+import sparx_global_def
 import math
 import numpy
 import os
-import statistics
-import utilities
+import sparx_statistics
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import alignment
@@ -157,7 +157,7 @@ def angle_diff(angle1, angle2):
 	nima  = len(angle1)
 	nima2 = len(angle2)
 	if nima2 != nima:
-		global_def.ERROR("Error: List lengths do not agree!","angle_diff",1)
+		sparx_global_def.ERROR("Error: List lengths do not agree!","angle_diff",1)
 	else:
 		del nima2
 
@@ -183,7 +183,7 @@ def angle_diff_sym(angle1, angle2, simi=1):
 	
 	nima  = len(angle1)
 	if len(angle2) != nima:
-		global_def.ERROR( "List lengths do not agree!", "angle_diff_sym",1)
+		sparx_global_def.ERROR( "List lengths do not agree!", "angle_diff_sym",1)
 
 	cosi = 0.0
 	sini = 0.0
@@ -255,7 +255,7 @@ def align_diff_params(ali_params1, ali_params2):
 			sx2 = ali_params2[i*4+1]
 			sy1 = ali_params1[i*4+2]
 			sy2 = ali_params2[i*4+2]
-			alpha12, sx12, sy12, mirror12 = utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, 0.0, 0.0, 0)
+			alpha12, sx12, sy12, mirror12 = sparx_utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, 0.0, 0.0, 0)
 			if mirror1 == 0: sxi += sx2-sx12
 			else: sxi -= sx2-sx12
 			syi += sy2-sy12
@@ -352,7 +352,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		mirror0 = numpy.array(mirror0, 'int32')
 		mirror1 = numpy.array(mirror1, 'int32')
 		all_part.append([mirror0, mirror1])
-	match, stab_part, CT_s, CT_t, ST, st = statistics.k_means_stab_bbenum(all_part, T=0, nguesses=1)
+	match, stab_part, CT_s, CT_t, ST, st = sparx_statistics.k_means_stab_bbenum(all_part, T=0, nguesses=1)
 	mir_stab_part = stab_part[0] + stab_part[1]
 
 	mir_stab_rate = len(mir_stab_part)/float(nima)

@@ -45,6 +45,8 @@ from EMAN2_cppwrap import *
 from global_def import *
 from sparx import *
 from optparse import OptionParser
+from functools import partial  # Use to connect event-source widget and event handler
+from subprocess import *
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import functools

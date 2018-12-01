@@ -42,5 +42,4 @@ from sparx_applications    import *
 from sparx_user_functions  import *
 from sparx_global_def      import *
 from sparx_pixel_error     import *
-from sparx_development     import *
 from sparx_multi_shc       import *

@@ -33,15 +33,15 @@ from __future__ import print_function
 #
 from builtins import range
 import EMAN2_cppwrap
-import filter
-import fundamentals
-import global_def
-import morphology
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_morphology
 import mpi
 import optparse
 import os
 import sys
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import filter
@@ -72,7 +72,7 @@ def main():
 
 	    Locally filer a volume based on local resolution volume (sxlocres.py) within area outlined by the maskfile
 	"""
-	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=sparx_global_def.SPARXVERSION)
 
 	parser.add_option("--radius",	type="int",		        default=-1, 	help="if there is no maskfile, sphere with r=radius will be used, by default the radius is nx/2-1")
 	parser.add_option("--falloff",	type="float",		    default=0.1,    help="falloff of tanl filter (default 0.1)")
@@ -84,9 +84,9 @@ def main():
 		print("See usage " + usage)
 		sys.exit()
 
-	if global_def.CACHE_DISABLE:
+	if sparx_global_def.CACHE_DISABLE:
 		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
-		utilities.disable_bdb_cache()
+		sparx_utilities.disable_bdb_cache()
 
 	if options.MPI:
 		pass#IMPORTIMPORTIMPORT from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
@@ -100,8 +100,8 @@ def main():
 
 		if(myid == main_node):
 			#print sys.argv
-			vi = utilities.get_im(sys.argv[1])
-			ui = utilities.get_im(sys.argv[2])
+			vi = sparx_utilities.get_im(sys.argv[1])
+			ui = sparx_utilities.get_im(sys.argv[2])
 			#print   Util.infomask(ui, None, True)
 			radius = options.radius
 			nx = vi.get_xsize()
@@ -114,26 +114,26 @@ def main():
 			dis = [0,0,0]
 			vi = None
 			ui = None
-		dis = utilities.bcast_list_to_all(dis, myid, source_node = main_node)
+		dis = sparx_utilities.bcast_list_to_all(dis, myid, source_node = main_node)
 
 		if(myid != main_node):
 			nx = int(dis[0])
 			ny = int(dis[1])
 			nz = int(dis[2])
-		radius  = utilities.bcast_number_to_all(radius, main_node)
+		radius  = sparx_utilities.bcast_number_to_all(radius, main_node)
 		if len(args) == 3:
 			if( radius == -1 ):  radius = min(nx,ny,nz)//2 -1
-			m = utilities.model_circle( radius ,nx,ny,nz)
+			m = sparx_utilities.model_circle( radius ,nx,ny,nz)
 			outvol = args[2]
 
 		elif len(args) == 4:
-			if(myid == main_node): m = morphology.binarize(utilities.get_im(args[2]), 0.5)
-			else:  m = utilities.model_blank(nx,ny,nz)
+			if(myid == main_node): m = sparx_morphology.binarize(sparx_utilities.get_im(args[2]), 0.5)
+			else:  m = sparx_utilities.model_blank(nx,ny,nz)
 			outvol = args[3]
-			utilities.bcast_EMData_to_all(m, myid, main_node)
+			sparx_utilities.bcast_EMData_to_all(m, myid, main_node)
 
 		pass#IMPORTIMPORTIMPORT from filter import filterlocal
-		filteredvol = filter.filterlocal(ui, vi, m, options.falloff, myid, main_node, number_of_proc)
+		filteredvol = sparx_filter.filterlocal(ui, vi, m, options.falloff, myid, main_node, number_of_proc)
 
 		if(myid == 0):   filteredvol.write_image(outvol)
 
@@ -141,8 +141,8 @@ def main():
 		mpi.mpi_finalize()
 
 	else:
-		vi = utilities.get_im(args[0])
-		ui = utilities.get_im(args[1])  # resolution volume, values are assumed to be from 0 to 0.5
+		vi = sparx_utilities.get_im(args[0])
+		ui = sparx_utilities.get_im(args[1])  # resolution volume, values are assumed to be from 0 to 0.5
 
 		nn = vi.get_xsize()
 
@@ -151,14 +151,14 @@ def main():
 		if len(args) == 3:
 			radius = options.radius
 			if( radius == -1 ):  radius = nn//2 -1
-			m = utilities.model_circle( radius ,nn,nn,nn)
+			m = sparx_utilities.model_circle( radius ,nn,nn,nn)
 			outvol = args[2]
 
 		elif len(args) == 4:
-			m = morphology.binarize(utilities.get_im(args[2]), 0.5)
+			m = sparx_morphology.binarize(sparx_utilities.get_im(args[2]), 0.5)
 			outvol = args[3]
 
-		fundamentals.fftip(vi)  # this is the volume to be filtered
+		sparx_fundamentals.fftip(vi)  # this is the volume to be filtered
 
 		#  Round all resolution numbers to two digits
 		for x in range(nn):
@@ -168,13 +168,13 @@ def main():
 		st = EMAN2_cppwrap.Util.infomask(ui, m, True)
 		
 
-		filteredvol = utilities.model_blank(nn,nn,nn)
+		filteredvol = sparx_utilities.model_blank(nn,nn,nn)
 		cutoff = max(st[2] - 0.01,0.0)
 		while(cutoff < st[3] ):
 			cutoff = round(cutoff + 0.01, 2)
-			pt = EMAN2_cppwrap.Util.infomask( morphology.threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)
+			pt = EMAN2_cppwrap.Util.infomask( sparx_morphology.threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)
 			if(pt[0] != 0.0):
-				vovo = fundamentals.fft(filter.filt_tanl(vi, cutoff, falloff) )
+				vovo = sparx_fundamentals.fft(sparx_filter.filt_tanl(vi, cutoff, falloff) )
 				for x in range(nn):
 					for y in range(nn):
 						for z in range(nn):

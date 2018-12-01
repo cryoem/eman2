@@ -34,12 +34,12 @@ from __future__ import print_function
 
 import EMAN2_cppwrap
 import EMAN2_meta
-import global_def
+import sparx_global_def
 import numpy
 import optparse
 import os
 import sys
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2_meta
@@ -97,9 +97,9 @@ map to the center of the volume."""
 	if len(args)<2 : parser.error("Input and output files required")
 	#try: chains=options.chains
 	#except: 
-	if global_def.CACHE_DISABLE:
+	if sparx_global_def.CACHE_DISABLE:
 		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
-		utilities.disable_bdb_cache()
+		sparx_utilities.disable_bdb_cache()
 	chains = options.chains
 	if chains == '': chains = None
 	
@@ -115,7 +115,7 @@ map to the center of the volume."""
 
 	# read in initial-transformation file:
 	if(options.tr0 != "none"):
-		cols = utilities.read_text_file(options.tr0,-1)
+		cols = sparx_utilities.read_text_file(options.tr0,-1)
 		txlist=[]
 		for i in range(3):
 			txlist.append(cols[0][i])
@@ -300,7 +300,7 @@ map to the center of the volume."""
 		else: print("Pixel_size is not set in the header!")
 		outmap.write_image(args[1],0, EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF)
 	elif filextension == ".spi": outmap.write_image(args[1],0, EMAN2_cppwrap.EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
-	else:   global_def.ERROR("unknown image type","sxpdb2em",1)
+	else:   sparx_global_def.ERROR("unknown image type","sxpdb2em",1)
 				
 if __name__ == "__main__":
     main()

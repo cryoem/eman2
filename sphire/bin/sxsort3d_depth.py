@@ -6,29 +6,29 @@
 #  
 from __future__ import print_function
 import EMAN2_cppwrap
-import applications
+import sparx_applications
 import copy
-import filter
-import fundamentals
-import global_def
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
 import json
-import logger
-import morphology
+import sparx_logger
+import sparx_morphology
 import mpi
 import numpy
 import numpy as np
 import optparse
 import os
-import projection
+import sparx_projection
 import random
-import reconstruction
+import sparx_reconstruction
 import scipy
 import shutil
-import statistics
+import sparx_statistics
 import string
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import applications
@@ -163,7 +163,7 @@ Blockdata["shared_comm"]                    = mpi.mpi_comm_split_type(mpi.MPI_CO
 Blockdata["myid_on_node"]                   = mpi.mpi_comm_rank(Blockdata["shared_comm"])
 Blockdata["no_of_processes_per_group"]      = mpi.mpi_comm_size(Blockdata["shared_comm"])
 masters_from_groups_vs_everything_else_comm = mpi.mpi_comm_split(mpi.MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
-Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = utilities.get_colors_and_subsets(Blockdata["main_node"], mpi.MPI_COMM_WORLD, Blockdata["myid"], \
+Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = sparx_utilities.get_colors_and_subsets(Blockdata["main_node"], mpi.MPI_COMM_WORLD, Blockdata["myid"], \
          Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
          
 #  We need two nodes for processing of volumes
@@ -194,8 +194,8 @@ def create_subgroup():
 	# select a subset of myids to be in subdivision
 	if( Blockdata["myid_on_node"] < Blockdata["ncpuspernode"] ): submyids = [Blockdata["myid"]]
 	else:  submyids = []
-	submyids = utilities.wrap_mpi_gatherv(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	submyids = utilities.wrap_mpi_bcast(submyids,   Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	submyids = sparx_utilities.wrap_mpi_gatherv(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	submyids = sparx_utilities.wrap_mpi_bcast(submyids,   Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	world_group = mpi.mpi_comm_group(mpi.MPI_COMM_WORLD)
 	subgroup = mpi.mpi_group_incl(world_group,len(submyids),submyids)
 	Blockdata["subgroup_comm"] = mpi.mpi_comm_create(mpi.MPI_COMM_WORLD, subgroup)
@@ -215,8 +215,8 @@ def create_zero_group():
 	if( Blockdata["myid_on_node"] == 0 ): submyids = [Blockdata["myid"]]
 	else:  submyids = []
 
-	submyids = utilities.wrap_mpi_gatherv(submyids,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	submyids = utilities.wrap_mpi_bcast(submyids,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	submyids = sparx_utilities.wrap_mpi_gatherv(submyids,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	submyids = sparx_utilities.wrap_mpi_bcast(submyids,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	world_group = mpi.mpi_comm_group(mpi.MPI_COMM_WORLD)
 	subgroup    = mpi.mpi_group_incl(world_group,len(submyids),submyids)
 	Blockdata["group_zero_comm"] = mpi.mpi_comm_create(mpi.MPI_COMM_WORLD, subgroup)
@@ -246,9 +246,9 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 			os.mkdir(os.path.join(work_dir, "layer0"))
 		partition_per_box_per_layer_list = []
 		for iparti in range(0, 2**(depth_order+1), 2):
-			partition_per_box_per_layer_list.append([utilities.read_text_file(initial_id_file), None])
+			partition_per_box_per_layer_list.append([sparx_utilities.read_text_file(initial_id_file), None])
 	else: partition_per_box_per_layer_list = 0
-	partition_per_box_per_layer_list = utilities.wrap_mpi_bcast(partition_per_box_per_layer_list, Blockdata["main_node"])
+	partition_per_box_per_layer_list = sparx_utilities.wrap_mpi_bcast(partition_per_box_per_layer_list, Blockdata["main_node"])
 	keepchecking     = 1
 	bad_clustering   = 0
 	stat_list        = []
@@ -271,7 +271,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				keepchecking = check_sorting_state(depth_dir, keepchecking, log_main)
 				if keepchecking == 0: mark_sorting_state(depth_dir, False)
 		else: keepchecking = 0
-		keepchecking = utilities.bcast_number_to_all(keepchecking, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		keepchecking = sparx_utilities.bcast_number_to_all(keepchecking, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		## box loop
 		if keepchecking == 0:
 			checkingbox = 1
@@ -297,8 +297,8 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 							msg ="Pair %d is completed"%nbox
 							log_main.add(msg)
 				else: checkingbox = 0
-				checkingbox = utilities.bcast_number_to_all(checkingbox, Blockdata["main_node"], mpi.MPI_COMM_WORLD) 
-				Tracker     = utilities.wrap_mpi_bcast(Tracker,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+				checkingbox = sparx_utilities.bcast_number_to_all(checkingbox, Blockdata["main_node"], mpi.MPI_COMM_WORLD) 
+				Tracker     = sparx_utilities.wrap_mpi_bcast(Tracker,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 				# Code structure of the box
 				if checkingbox == 0:
 					bad_box = depth_clustering_box(nbox_dir, input_accounted_file, input_unaccounted_file, \
@@ -336,7 +336,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 				
 			if(Blockdata["myid"] != Blockdata["main_node"]):Tracker = 0
-			Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				mark_sorting_state(depth_dir, True)
 			if(bad_clustering  == 1):  break
@@ -405,7 +405,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 		log_main.add('                        Executing pair of quasi-independent sortings, pair number %d'%nbox)
 		log_main.add('----------------------------------------------------------------------------------------------------------------' )
 	else:Tracker = 0
-	Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)	
+	Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)	
 	### -------------->>>>> Initialization<<<<<------------------------------
 	ncluster         = 0
 	nruns            = 0
@@ -438,12 +438,12 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			time_box_start = time.time()
 			os.mkdir(within_box_run_dir)
-			utilities.write_text_file(unaccounted_list, unaccounted_file)# new starting point
+			sparx_utilities.write_text_file(unaccounted_list, unaccounted_file)# new starting point
 		if nruns >0:
 			assignment_list = create_nrandom_lists(unaccounted_file, current_number_of_groups, 2)
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			for indep in range(2):
-				utilities.write_text_row(assignment_list[indep], os.path.join(within_box_run_dir, \
+				sparx_utilities.write_text_row(assignment_list[indep], os.path.join(within_box_run_dir, \
 				   "independent_index_%03d.txt"%indep))
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
@@ -456,19 +456,19 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			os.mkdir(iter_dir)
 			for indep in range(2):
-				utilities.write_text_row(assignment_list[indep], \
+				sparx_utilities.write_text_row(assignment_list[indep], \
 				    os.path.join(iter_dir, "random_assignment_%03d.txt"%indep))
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
 		iter_id_init_file = os.path.join(iter_dir, "random_assignment_000.txt")
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			id_list          = utilities.read_text_file(os.path.join(within_box_run_dir, "independent_index_000.txt") , -1)
+			id_list          = sparx_utilities.read_text_file(os.path.join(within_box_run_dir, "independent_index_000.txt") , -1)
 			total_stack, current_number_of_groups = len(id_list[0]), int((np.unique(np.array(id_list[0]))).shape[0])
 		else:
 			total_stack              = 0
 			current_number_of_groups = 0
-		total_stack                  = utilities.bcast_number_to_all(total_stack,              Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		current_number_of_groups     = utilities.bcast_number_to_all(current_number_of_groups, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		total_stack                  = sparx_utilities.bcast_number_to_all(total_stack,              Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		current_number_of_groups     = sparx_utilities.bcast_number_to_all(current_number_of_groups, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		# Read raw data
 		original_data, norm_per_particle  = read_data_for_sorting(iter_id_init_file, params, previous_params)
 		if Tracker["nosmearing"]: parameterstructure  = None
@@ -484,7 +484,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('Sorting cutoff frequency:  %f'%(round(Tracker["freq_fsc143_cutoff"], 4)) +\
 			  '  Sorting image size:  %d'%(Tracker["nxinit"]))
-		Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		
 		### ----->>> preset variables in trackers <<<-------------------------------------
 		Tracker["total_stack"]         = total_stack
@@ -496,7 +496,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				calculate_grp_size_variation(log_main, state="run_init") 
 				set_minimum_group_size(log_main, printing_dres_table = True)# When total number of images changes
 			else: Tracker = 0
-			Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		###-------------------------------------------------------------------------------	
 		iter_previous_iter_ratio = 0.0
 		iter_current_iter_ratio  = 0.0
@@ -514,7 +514,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				precalculated_images_per_cpu = mem_calc_and_output_info(Tracker["constants"]["smearing_file"], \
 				 Tracker["nxinit"], iter_id_init_file,log_main)
 			else: precalculated_images_per_cpu = 0
-			precalculated_images_per_cpu = utilities.wrap_mpi_bcast(precalculated_images_per_cpu, \
+			precalculated_images_per_cpu = sparx_utilities.wrap_mpi_bcast(precalculated_images_per_cpu, \
 				 Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			Tracker["num_on_the_fly"] = precalculated_images_per_cpu
 				
@@ -553,7 +553,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				         
 				max_iter = min(max_iter, kmeans_iterations)	   
 				if Blockdata["myid"] == Blockdata["main_node"]:
-					utilities.write_text_row(tmp_final_list, os.path.join(iter_dir,\
+					sparx_utilities.write_text_row(tmp_final_list, os.path.join(iter_dir,\
 					    "partition_%03d.txt"%indep_run_iter))
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			
@@ -568,27 +568,27 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				Tracker            =  0
 				largest_size       =  0
 				cngroups           =  0
-			smallest_size       = utilities.bcast_number_to_all(smallest_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			largest_size        = utilities.bcast_number_to_all(largest_size,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			cngroups            = utilities.bcast_number_to_all(cngroups,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			unaccounted_list    = utilities.wrap_mpi_bcast(unaccounted_list,   Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			list_of_stable      = utilities.wrap_mpi_bcast(list_of_stable,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			Tracker             = utilities.wrap_mpi_bcast(Tracker,            Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			smallest_size       = sparx_utilities.bcast_number_to_all(smallest_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			largest_size        = sparx_utilities.bcast_number_to_all(largest_size,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			cngroups            = sparx_utilities.bcast_number_to_all(cngroups,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			unaccounted_list    = sparx_utilities.wrap_mpi_bcast(unaccounted_list,   Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			list_of_stable      = sparx_utilities.wrap_mpi_bcast(list_of_stable,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			Tracker             = sparx_utilities.wrap_mpi_bcast(Tracker,            Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			
 			accounted_file      = os.path.join(iter_dir, "Accounted.txt")
 			unaccounted_file    = os.path.join(iter_dir, "Core_set.txt")
 			
 			###### --------->>> Compute rand_index for two independent runs <<<--------------------
 			if Blockdata["myid"] == Blockdata["main_node"]:
-				core1      = utilities.read_text_file(os.path.join(iter_dir, "partition_000.txt"),  -1)
-				core2      = utilities.read_text_file(os.path.join(iter_dir, "partition_001.txt"),  -1)
+				core1      = sparx_utilities.read_text_file(os.path.join(iter_dir, "partition_000.txt"),  -1)
+				core2      = sparx_utilities.read_text_file(os.path.join(iter_dir, "partition_001.txt"),  -1)
 				core1      = core1[0]
 				core2      = core2[0]
 			else:
 				core1 = 0
 				core2 = 0
-			core1       = utilities.wrap_mpi_bcast(core1, Blockdata["main_node"])
-			core2       = utilities.wrap_mpi_bcast(core2, Blockdata["main_node"])
+			core1       = sparx_utilities.wrap_mpi_bcast(core1, Blockdata["main_node"])
+			core2       = sparx_utilities.wrap_mpi_bcast(core2, Blockdata["main_node"])
 			rand_index  = compute_rand_index_mpi(core1, core2)
 			#### ---------->>>>AI makes decisions for iter run <<<<-----------------------
 			if Blockdata["myid"] == Blockdata["main_node"]:
@@ -628,8 +628,8 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 											list_of_stable.append(unaccounted_list[0:gsize])
 											del unaccounted_list[0:gsize]
 										accounted_list, new_index = merge_classes_into_partition_list(list_of_stable)
-										utilities.write_text_row(new_index, accounted_file)
-										utilities.write_text_file(unaccounted_list, unaccounted_file)
+										sparx_utilities.write_text_row(new_index, accounted_file)
+										sparx_utilities.write_text_file(unaccounted_list, unaccounted_file)
 									else:
 										iter_init_K = len(list_of_stable) 
 										info_table.append('Reset number of groups to %d'%len(list_of_stable))
@@ -664,12 +664,12 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				quick_converge_counter = 0
 				Tracker                = 0
 				
-			reset_number_of_groups = utilities.bcast_number_to_all(reset_number_of_groups, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			iter_init_K            = utilities.bcast_number_to_all(iter_init_K,            Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			last_recompute         = utilities.bcast_number_to_all(last_recompute,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			converged              = utilities.bcast_number_to_all(converged,              Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			quick_converge_counter = utilities.bcast_number_to_all(quick_converge_counter, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			Tracker                = utilities.wrap_mpi_bcast(Tracker,                     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			reset_number_of_groups = sparx_utilities.bcast_number_to_all(reset_number_of_groups, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			iter_init_K            = sparx_utilities.bcast_number_to_all(iter_init_K,            Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			last_recompute         = sparx_utilities.bcast_number_to_all(last_recompute,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			converged              = sparx_utilities.bcast_number_to_all(converged,              Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			quick_converge_counter = sparx_utilities.bcast_number_to_all(quick_converge_counter, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			Tracker                = sparx_utilities.wrap_mpi_bcast(Tracker,                     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			######---------------------- Minimum group size checking ---------------------
 			"""Multiline Comment0"""
 			####------------------------------------------------------------>>> Case 1
@@ -686,7 +686,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					os.mkdir(iter_dir)
 					for indep in range(2):
-						utilities.write_text_file(new_assignment_list[indep], \
+						sparx_utilities.write_text_file(new_assignment_list[indep], \
 		  				os.path.join(iter_dir, "random_assignment_%03d.txt"%indep))
 		  				
 		  	if (reset_number_of_groups == 1): #----------------------------->>> Case 2
@@ -709,7 +709,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 					set_minimum_group_size(log_main, printing_dres_table = True)
 					os.mkdir(iter_dir)
 				else: Tracker = 0
-				Tracker             = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+				Tracker             = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 				new_assignment_list = []
 				for indep in range(2):
 					tmp_list = swap_accounted_with_unaccounted_elements_mpi(accounted_file, unaccounted_file, \
@@ -717,7 +717,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 					new_assignment_list.append(tmp_list)
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					for indep in range(2):
-						utilities.write_text_file(new_assignment_list[indep], \
+						sparx_utilities.write_text_file(new_assignment_list[indep], \
 						  os.path.join(iter_dir, "random_assignment_%03d.txt"%indep))     
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			if (converged ==1) and (reset_number_of_groups == 0):# Case 3 --------------->>>>  converged and finished
@@ -743,12 +743,12 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 			unaccounted_list = 0
 			new_clusters     = 0
 			Tracker          = 0
-		new_clusters     = utilities.bcast_number_to_all(new_clusters,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		ncluster         = utilities.bcast_number_to_all(ncluster,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		NACC             = utilities.bcast_number_to_all(NACC,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		NUACC            = utilities.bcast_number_to_all(NUACC,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		unaccounted_list = utilities.wrap_mpi_bcast(unaccounted_list,   Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		Tracker          = utilities.wrap_mpi_bcast(Tracker,            Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		new_clusters     = sparx_utilities.bcast_number_to_all(new_clusters,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		ncluster         = sparx_utilities.bcast_number_to_all(ncluster,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		NACC             = sparx_utilities.bcast_number_to_all(NACC,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		NUACC            = sparx_utilities.bcast_number_to_all(NUACC,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		unaccounted_list = sparx_utilities.wrap_mpi_bcast(unaccounted_list,   Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		Tracker          = sparx_utilities.wrap_mpi_bcast(Tracker,            Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		###-------------------------------------------------------------------------------------------
 		if new_clusters >0: 
 			no_cluster     = False
@@ -772,12 +772,12 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 			nruns       = 0
 			total_stack = 0
 			current_number_of_groups = 0
-		Tracker     = utilities.wrap_mpi_bcast(Tracker,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		nruns       = utilities.bcast_number_to_all(nruns,       Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		total_stack = utilities.bcast_number_to_all(total_stack, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		keepgoing   = utilities.bcast_number_to_all(keepgoing,   Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		Tracker     = sparx_utilities.wrap_mpi_bcast(Tracker,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		nruns       = sparx_utilities.bcast_number_to_all(nruns,       Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		total_stack = sparx_utilities.bcast_number_to_all(total_stack, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		keepgoing   = sparx_utilities.bcast_number_to_all(keepgoing,   Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		current_number_of_groups = \
-	     utilities.bcast_number_to_all(current_number_of_groups, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	     sparx_utilities.bcast_number_to_all(current_number_of_groups, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		if no_groups_runs >= 2: 
 			bad_clustering = 1
 			break
@@ -785,7 +785,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		partition = get_box_partition(work_dir, ncluster, unaccounted_list)
 	else: partition = 0
-	partition = utilities.wrap_mpi_bcast(partition, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	partition = sparx_utilities.wrap_mpi_bcast(partition, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		if ncluster > 0:
@@ -795,14 +795,14 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 			log_main.add('In independent box run  %d, no reproducible groups were found '%nbox)
 			bad_clustering = 1
 			partition      =['']
-		utilities.write_text_row(partition, os.path.join(work_dir, "partition.txt"))
+		sparx_utilities.write_text_row(partition, os.path.join(work_dir, "partition.txt"))
 		Tracker["number_of_groups"]  =  ncluster
 		Tracker["rand_index"]        = nruns_rand_index/(nruns+1) # nruns start from 0
 	else: 
 		bad_clustering = 0
 		Tracker        = 0
-	bad_clustering = utilities.bcast_number_to_all(bad_clustering, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	Tracker        = utilities.wrap_mpi_bcast(Tracker,             Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	bad_clustering = sparx_utilities.bcast_number_to_all(bad_clustering, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	Tracker        = sparx_utilities.wrap_mpi_bcast(Tracker,             Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	return bad_clustering
 ###----------------------------------------------end of box clustering
 def depth_box_initialization(box_dir, input_list1, input_list2, nbox, log_file):
@@ -834,8 +834,8 @@ def depth_box_initialization(box_dir, input_list1, input_list2, nbox, log_file):
 			msg = "Number of groups found in initialization: %d, the largest possible number of groups: %d"%\
 			  (number_of_groups, total_stack//img_per_grp)
 			log_file.add(msg)
-			utilities.write_text_row(input_list1,  os.path.join(box_dir, "previous_NACC.txt"))
-			utilities.write_text_file(input_list2, os.path.join(box_dir, "previous_NUACC.txt"))
+			sparx_utilities.write_text_row(input_list1,  os.path.join(box_dir, "previous_NACC.txt"))
+			sparx_utilities.write_text_file(input_list2, os.path.join(box_dir, "previous_NUACC.txt"))
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		new_assignment = []
 		for indep in range(2):
@@ -846,12 +846,12 @@ def depth_box_initialization(box_dir, input_list1, input_list2, nbox, log_file):
 			
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			for indep in range(2):
-				utilities.write_text_file(new_assignment[indep], \
+				sparx_utilities.write_text_file(new_assignment[indep], \
 				  os.path.join(box_dir, "independent_index_%03d.txt"%indep))
 			new_assignment = []
 			for indep in range(2):
-				new_assignment.append(utilities.read_text_row(os.path.join(box_dir,"independent_index_%03d.txt"%indep)))
-			id_list = utilities.read_text_file( os.path.join(box_dir, "independent_index_000.txt"), -1)
+				new_assignment.append(sparx_utilities.read_text_row(os.path.join(box_dir,"independent_index_%03d.txt"%indep)))
+			id_list = sparx_utilities.read_text_file( os.path.join(box_dir, "independent_index_000.txt"), -1)
 			if len(id_list)>1: id_list=id_list[0]
 			total_stack = len(id_list)
 			group_id = np.sort(np.unique(np.array(id_list, dtype=np.int32)))
@@ -867,10 +867,10 @@ def depth_box_initialization(box_dir, input_list1, input_list2, nbox, log_file):
 			total_stack      = 0
 			new_assignment   = 0
 			Tracker = 0
-		new_assignment   = utilities.wrap_mpi_bcast(new_assignment,        Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		number_of_groups = utilities.bcast_number_to_all(number_of_groups, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		total_stack      = utilities.bcast_number_to_all(total_stack,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		Tracker          = utilities.wrap_mpi_bcast(Tracker,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		new_assignment   = sparx_utilities.wrap_mpi_bcast(new_assignment,        Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		number_of_groups = sparx_utilities.bcast_number_to_all(number_of_groups, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		total_stack      = sparx_utilities.bcast_number_to_all(total_stack,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		Tracker          = sparx_utilities.wrap_mpi_bcast(Tracker,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		
 	else: #Tracker 1; layer 0;
 		if(Tracker["box_learning"]==1):# applicable only for not_freeze_groups
@@ -878,14 +878,14 @@ def depth_box_initialization(box_dir, input_list1, input_list2, nbox, log_file):
 			Tracker["total_stack"] = total_stack
 			number_of_groups       = total_stack//Tracker["current_img_per_grp"]
 			if number_of_groups <=1:
-				global_def.ERROR("Number_of_groups should be at least larger than 1", \
+				sparx_global_def.ERROR("Number_of_groups should be at least larger than 1", \
 				        "depth_box_initialization", 1, Blockdata["myid"])
 				
 			Tracker["current_img_per_grp"] = total_stack//number_of_groups
 			if (nbox >= 1):
 				if(Blockdata["myid"] == Blockdata["main_node"]):
 					with open(os.path.join(box_dir, "../", "nbox%d"%(nbox-1), "state.json"),'r') as fout:
-						dict = utilities.convert_json_fromunicode(json.load(fout))
+						dict = sparx_utilities.convert_json_fromunicode(json.load(fout))
 					fout.close()
 					del dict["done"]
 					if (dict["rand_index"] > learning_start_rindex):
@@ -900,11 +900,11 @@ def depth_box_initialization(box_dir, input_list1, input_list2, nbox, log_file):
 						set_minimum_group_size(log_file, printing_dres_table = False)
 					else: 
 						do_recompute = 1
-					utilities.write_text_file(input_list1, os.path.join(box_dir, "previous_all_indexes.txt"))
+					sparx_utilities.write_text_file(input_list1, os.path.join(box_dir, "previous_all_indexes.txt"))
 					log_file.add("Number of groups (K) is inhereted from the last box clustering")
 				else: Tracker = 0
-				Tracker          = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-				do_recompute     = utilities.bcast_number_to_all(do_recompute, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+				Tracker          = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+				do_recompute     = sparx_utilities.bcast_number_to_all(do_recompute, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 				number_of_groups = Tracker["number_of_groups"]
 				total_stack      = Tracker["total_stack"]
 				new_assignment   = create_nrandom_lists_from_given_pids(box_dir, os.path.join(box_dir, \
@@ -912,7 +912,7 @@ def depth_box_initialization(box_dir, input_list1, input_list2, nbox, log_file):
 			
 			if ((nbox == 0) or (do_recompute ==1)):
 				if number_of_groups<2: 
-					global_def.ERROR("Number_of_groups should be at least larger than 1", "depth_box_initialization", 1, Blockdata["myid"])
+					sparx_global_def.ERROR("Number_of_groups should be at least larger than 1", "depth_box_initialization", 1, Blockdata["myid"])
 				Tracker["total_stack"]         = total_stack
 				Tracker["number_of_groups"]    = number_of_groups
 				Tracker["current_img_per_grp"] = total_stack//number_of_groups
@@ -920,9 +920,9 @@ def depth_box_initialization(box_dir, input_list1, input_list2, nbox, log_file):
 				if (Blockdata["myid"] == Blockdata["main_node"]):	
 					calculate_grp_size_variation(log_file, state="box_init")
 					set_minimum_group_size(log_file, printing_dres_table = False)
-					utilities.write_text_file(input_list1, os.path.join(box_dir, "previous_all_indexes.txt"))
+					sparx_utilities.write_text_file(input_list1, os.path.join(box_dir, "previous_all_indexes.txt"))
 				else: Tracker = 0
-				Tracker        = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+				Tracker        = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 				new_assignment = create_nrandom_lists_from_given_pids(box_dir, os.path.join(box_dir, \
 					 "previous_all_indexes.txt"), number_of_groups, 2)
 		else:
@@ -930,7 +930,7 @@ def depth_box_initialization(box_dir, input_list1, input_list2, nbox, log_file):
 			number_of_groups       = total_stack//Tracker["current_img_per_grp"]
 			Tracker["total_stack"] = total_stack
 			if number_of_groups<2: 
-				global_def.ERROR("Number_of_groups should be at least larger than 1",\
+				sparx_global_def.ERROR("Number_of_groups should be at least larger than 1",\
 				     "depth_box_initialization", 1, Blockdata["myid"])
 			Tracker["number_of_groups"]    = number_of_groups
 			Tracker["current_img_per_grp"] = total_stack//number_of_groups
@@ -938,9 +938,9 @@ def depth_box_initialization(box_dir, input_list1, input_list2, nbox, log_file):
 			if (Blockdata["myid"] == Blockdata["main_node"]):	
 				calculate_grp_size_variation(log_file, state="box_init")
 				set_minimum_group_size(log_file, printing_dres_table = False)
-				utilities.write_text_file(input_list1, os.path.join(box_dir, "previous_all_indexes.txt"))
+				sparx_utilities.write_text_file(input_list1, os.path.join(box_dir, "previous_all_indexes.txt"))
 			else: Tracker = 0
-			Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			new_assignment = create_nrandom_lists_from_given_pids(box_dir, os.path.join(box_dir, \
 		     	 "previous_all_indexes.txt"), number_of_groups, 2)
 		      
@@ -993,7 +993,7 @@ def check_state_within_box_run(keepgoing, nruns, unaccounted_list, \
 def get_box_partition(box_dir, ncluster, unaccounted_list):
 	unaccounted_list = sorted(unaccounted_list)
 	if ncluster >=1:
-		clusters_in_box = [utilities.read_text_file(os.path.join(box_dir, \
+		clusters_in_box = [sparx_utilities.read_text_file(os.path.join(box_dir, \
 		      "Cluster_%03d.txt"%ic)) for ic in range(ncluster)]
 		if len(unaccounted_list)>0: clusters_in_box.append(unaccounted_list)
 		alist, plist = merge_classes_into_partition_list(clusters_in_box)
@@ -1004,7 +1004,7 @@ def check_sorting_state(current_dir, keepchecking, log_file):
 	pass#IMPORTIMPORTIMPORT import json
 	try:
 		with open(os.path.join(current_dir, "state.json"),'r') as fout:
-			current_state = utilities.convert_json_fromunicode(json.load(fout))
+			current_state = sparx_utilities.convert_json_fromunicode(json.load(fout))
 		fout.close()
 		if current_state["done"]:keepchecking = 1
 		else: keepchecking = 0
@@ -1046,16 +1046,16 @@ def read_tracker_mpi(current_dir):
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		try:
 			with open(os.path.join(current_dir, "Tracker.json"),'r') as fout:
-				Tracker = utilities.convert_json_fromunicode(json.load(fout))
+				Tracker = sparx_utilities.convert_json_fromunicode(json.load(fout))
 			fout.close()
 		except: open_tracker = 0
 	else: open_tracker = 0
-	open_tracker = utilities.bcast_number_to_all(open_tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	open_tracker = sparx_utilities.bcast_number_to_all(open_tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	###-----------------------------------------------------------------------------------
 	if open_tracker ==1:
 		if(Blockdata["myid"] != Blockdata["main_node"]): Tracker = 0
-		Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	else: global_def.ERROR("Fail to load tracker", "%s"%current_dir, 1, Blockdata["myid"])
+		Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	else: sparx_global_def.ERROR("Fail to load tracker", "%s"%current_dir, 1, Blockdata["myid"])
 	return
 ###---------------------------------------------------------------------------------------
 def check_sorting(total_data, keepsorting, log_file):
@@ -1083,8 +1083,8 @@ def check_sorting(total_data, keepsorting, log_file):
 		else:
 			log_file.add("Check_sorting: SORT3D is completed. ") 
 			keepsorting = 0
-	keepsorting = utilities.bcast_number_to_all(keepsorting, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	Tracker     = utilities.wrap_mpi_bcast(Tracker,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	keepsorting = sparx_utilities.bcast_number_to_all(keepsorting, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	Tracker     = sparx_utilities.wrap_mpi_bcast(Tracker,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	return keepsorting
 ###---------------------------------------------------------------------------------------			
 def print_matching_pairs(pair_list, log_file):
@@ -1127,7 +1127,7 @@ def create_masterdir():
 	else: 
 		restart = 0
 		li = 0
-	restart   = utilities.bcast_number_to_all(restart,       Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	restart   = sparx_utilities.bcast_number_to_all(restart,       Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	li        = mpi.mpi_bcast(li,       1,   mpi.MPI_INT,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)[0]
 	masterdir = mpi.mpi_bcast(masterdir,li,  mpi.MPI_CHAR, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	masterdir = string.join(masterdir,"")
@@ -1167,30 +1167,30 @@ def get_sorting_image_size(original_data, partids, number_of_groups, log_main):
 				img_per_grp  = Tracker["constants"]["total_stack"]//Tracker["constants"]["init_K"]
 			else:
 				img_per_grp  = Tracker["constants"]["img_per_grp"]
-			avg_fsc = statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+			avg_fsc = sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 		 		float(Tracker["constants"]["total_stack"]), img_per_grp)
 	else:
-		avg_fsc = statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+		avg_fsc = sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 		 	float(Tracker["constants"]["total_stack"]), Tracker["total_stack"]//number_of_groups)
 		 	
 	fsc143 = get_res143(avg_fsc)
 	if (fsc143 !=0): 
-		nxinit = fundamentals.smallprime(min((int(fsc143)+ max(int(Tracker["constants"]["nnxo"]*0.03), 5))*2, \
+		nxinit = sparx_fundamentals.smallprime(min((int(fsc143)+ max(int(Tracker["constants"]["nnxo"]*0.03), 5))*2, \
 		     Tracker["constants"]["nnxo"]))
-		nxinit = fundamentals.smallprime(nxinit-nxinit%2)
+		nxinit = sparx_fundamentals.smallprime(nxinit-nxinit%2)
 		nxinit = nxinit - nxinit%2
 	else:
-		global_def.ERROR("Program obtains wrong image size", "get_sorting_image_size", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("Program obtains wrong image size", "get_sorting_image_size", 1, Blockdata["myid"])
 		
 	if (Tracker["nosmearing"]) and (Tracker["constants"]["nxinit"] !=-1):
 		nxinit = Tracker["constants"]["nxinit"]
 		if (nxinit >Tracker["constants"]["nnxo"]):
-			global_def.ERROR("User provides wrong nxinit", "get_sorting_image_size", 1, Blockdata["myid"])
+			sparx_global_def.ERROR("User provides wrong nxinit", "get_sorting_image_size", 1, Blockdata["myid"])
 	Tracker["nxinit"] = nxinit
 	compute_noise(Tracker["nxinit"])
 	freq_fsc143_cutoff = float(fsc143)/float(nxinit)
 	if(Blockdata["myid"] == Blockdata["main_node"]): 
-		utilities.write_text_file(avg_fsc, os.path.join(Tracker["directory"], "fsc_image_size.txt"))
+		sparx_utilities.write_text_file(avg_fsc, os.path.join(Tracker["directory"], "fsc_image_size.txt"))
 	del avg_fsc
 	return nxinit, freq_fsc143_cutoff
 	
@@ -1200,18 +1200,18 @@ def compute_noise(image_size):
 	pass#IMPORTIMPORTIMPORT from fundamentals import fft
 	if Tracker["applybckgnoise"]: # from SPARX refinement only
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			tsd = utilities.get_im(Tracker["bckgnoise"]) # inverted power spectrum
+			tsd = sparx_utilities.get_im(Tracker["bckgnoise"]) # inverted power spectrum
 			nnx = tsd.get_xsize()
 			nny = tsd.get_ysize()
 		else:
 			nnx = 0
 			nny = 0
-		nnx = utilities.bcast_number_to_all(nnx, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		nny = utilities.bcast_number_to_all(nny, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		if( Blockdata["myid"] != Blockdata["main_node"]):tsd = utilities.model_blank(nnx, nny)
-		utilities.bcast_EMData_to_all(tsd, Blockdata["myid"], Blockdata["main_node"])
-		temp_image = utilities.model_blank(image_size, image_size)
-		temp_image = fundamentals.fft(temp_image)
+		nnx = sparx_utilities.bcast_number_to_all(nnx, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		nny = sparx_utilities.bcast_number_to_all(nny, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		if( Blockdata["myid"] != Blockdata["main_node"]):tsd = sparx_utilities.model_blank(nnx, nny)
+		sparx_utilities.bcast_EMData_to_all(tsd, Blockdata["myid"], Blockdata["main_node"])
+		temp_image = sparx_utilities.model_blank(image_size, image_size)
+		temp_image = sparx_fundamentals.fft(temp_image)
 		nx = temp_image.get_xsize()
 		ny = temp_image.get_ysize()
 		Blockdata["bckgnoise"]  = []
@@ -1224,8 +1224,8 @@ def compute_noise(image_size):
 		for im in range(len(Blockdata["bckgnoise"])): 
 			Blockdata["unrolldata"].append(EMAN2_cppwrap.Util.unroll1dpw(ny, Blockdata["bckgnoise"][im]))
 	else: # from datastack and relion
-		temp_image = utilities.model_blank(image_size, image_size)
-		temp_image = fundamentals.fft(temp_image)
+		temp_image = sparx_utilities.model_blank(image_size, image_size)
+		temp_image = sparx_fundamentals.fft(temp_image)
 		nx = temp_image.get_xsize()
 		ny = temp_image.get_ysize()
 		Blockdata["bckgnoise"]  = [1.0]*nx
@@ -1242,7 +1242,7 @@ def check_3dmask(log_main):
 	try: fuse_freq = Tracker["fuse_freq"]
 	except: Tracker["fuse_freq"] = int(Tracker["constants"]["pixel_size"]\
 	     *Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"]+0.5)
-	Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	dump_tracker(Tracker["constants"]["masterdir"])
 	Tracker["shrinkage"] = float(Tracker["nxinit"])/Tracker["constants"]["nnxo"]
 	
@@ -1304,7 +1304,7 @@ def do_analysis_on_identified_clusters(clusters, log_main):
 			
 def get_params_for_analysis(orgstack, ali3d_params, smearing_file, smearing_number):
 	if ali3d_params is not None:
-		ali3d_params   = utilities.read_text_file(ali3d_params, -1)
+		ali3d_params   = sparx_utilities.read_text_file(ali3d_params, -1)
 		try: norm_list = ali3d_params[7]
 		except: norm_list = None
 	if( orgstack is not None ):
@@ -1313,7 +1313,7 @@ def get_params_for_analysis(orgstack, ali3d_params, smearing_file, smearing_numb
 		for im in range(len(ctfs)): defo_list.append(ctfs[im].defocus)
 	else: defo_list = None
 	if smearing_file is not None:
-		try: smearing_list = utilities.read_text_file(smearing_file)
+		try: smearing_list = sparx_utilities.read_text_file(smearing_file)
 		except: smearing_list = None
 	else: smearing_list = None
 	return defo_list, smearing_list, norm_list
@@ -1432,7 +1432,7 @@ def do_one_way_anova_scipy(clusters, value_list, name_of_variable="variable", lo
 		return None, None, None
 	res_table_stat = []
 	for im in range(K):
-		alist = statistics.table_stat(replicas[im])
+		alist = sparx_statistics.table_stat(replicas[im])
 		res_table_stat.append(alist)
 	avgs =[]
 	global_mean = 0.0
@@ -1562,11 +1562,11 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 			os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 		try:
 			with open(os.path.join(Tracker["directory"],"freq_cutoff.json"),'r') as fout:
-				freq_cutoff_dict = utilities.convert_json_fromunicode(json.load(fout))
+				freq_cutoff_dict = sparx_utilities.convert_json_fromunicode(json.load(fout))
 			fout.close()
 		except: freq_cutoff_dict = 0
 	else: freq_cutoff_dict = 0
-	freq_cutoff_dict = utilities.wrap_mpi_bcast(freq_cutoff_dict, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+	freq_cutoff_dict = sparx_utilities.wrap_mpi_bcast(freq_cutoff_dict, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 	rest_time  = time.time()
 	
 	for index_of_groups in range(Tracker["number_of_groups"]):
@@ -1596,10 +1596,10 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 	total_size = sum(current_group_sizes)
 	for igrp in range(len(current_group_sizes)):
 		if Tracker["even_scale_fsc"]: 
-			fsc_groups[igrp] = statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+			fsc_groups[igrp] = sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 		     float(Tracker["constants"]["total_stack"]), total_size//len(current_group_sizes))
 		else:
-			fsc_groups[igrp] = statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+			fsc_groups[igrp] = sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 		     float(Tracker["constants"]["total_stack"]), current_group_sizes[igrp])
 	if Blockdata["no_of_groups"]>1:
 	 	# new starts
@@ -1610,15 +1610,15 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 				if Blockdata["myid"]== iproc:
 					if Blockdata["color"] == index_of_colors and Blockdata["myid_on_node"] == 0:
 						sub_main_node_list[index_of_colors] = Blockdata["myid"]
-					utilities.wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+					sparx_utilities.wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 				if Blockdata["myid"] == Blockdata["last_node"]:
-					dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+					dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 					for im in range(len(dummy)):
 						if dummy[im]>-1: sub_main_node_list[im] = dummy[im]
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-		utilities.wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+		sparx_utilities.wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 		if Tracker["number_of_groups"]%Blockdata["no_of_groups"]== 0: 
 			nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]
 		else: nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]+1
@@ -1638,20 +1638,20 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 				index_of_colors = big_loop_colors[iloop][im]
 			
 				if(Blockdata["myid"] == Blockdata["last_node"]):
-					tvol2    = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-					tweight2 = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-					treg2 	 = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+					tvol2    = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+					tweight2 = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+					treg2 	 = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
 					tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 					tag = 7007
-					utilities.send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
 				
 				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
 					tag      = 7007
-					tvol2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					tweight2 = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					treg2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tvol2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tweight2 = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					treg2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			
@@ -1663,9 +1663,9 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 				except: pass	
 				if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk 							
 					if(Blockdata["myid_on_node"] != 0): 
-						tvol2     = utilities.model_blank(1)
-						tweight2  = utilities.model_blank(1)
-						treg2     = utilities.model_blank(1)
+						tvol2     = sparx_utilities.model_blank(1)
+						tweight2  = sparx_utilities.model_blank(1)
+						treg2     = sparx_utilities.model_blank(1)
 					tvol2 = steptwo_mpi_reg(tvol2, tweight2, treg2,  fsc_groups[big_loop_groups[iloop][im]], \
 					         Tracker["freq_fsc143_cutoff"], 0.01, True, color = index_of_colors) # has to be False!!!
 					del tweight2, treg2
@@ -1676,10 +1676,10 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 				index_of_colors = big_loop_colors[iloop][im]
 				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
 					tag = 7007
-					utilities.send_EMData(tvol2, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 				elif(Blockdata["myid"] == Blockdata["last_node"]):
 					tag = 7007
-					tvol2    = utilities.recv_EMData(sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					tvol2    = sparx_utilities.recv_EMData(sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
 					tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
 					del tvol2
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -1691,14 +1691,14 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 	else:# loop over all groups for single node
 		for index_of_group in range(Tracker["number_of_groups"]):
 			if(Blockdata["myid_on_node"] == 0):
-				tvol2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-				tweight2 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-				treg2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+				tvol2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+				tweight2 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+				treg2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
 				tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 			else:
-				tvol2 		= utilities.model_blank(1)
-				tweight2 	= utilities.model_blank(1)
-				treg2		= utilities.model_blank(1)
+				tvol2 		= sparx_utilities.model_blank(1)
+				tweight2 	= sparx_utilities.model_blank(1)
+				treg2		= sparx_utilities.model_blank(1)
 			try: 
 				Tracker["freq_fsc143_cutoff"] = freq_cutoff_dict["Cluster_%03d.txt"%index_of_group]
 			except: pass
@@ -1711,9 +1711,9 @@ def do3d_fcm_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_particl
 				del tvol2
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	keepgoing = utilities.bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD) # always check 
-	Tracker   = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-	if not keepgoing: global_def.ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"])
+	keepgoing = sparx_utilities.bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD) # always check 
+	Tracker   = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+	if not keepgoing: sparx_global_def.ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"])
 	if(Blockdata["myid"] == 0) and Tracker["do_timing"]:  print("Reconstructions done    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
 	return
 ####--------------------------------------------------------------------------------------
@@ -1732,7 +1732,7 @@ def recons3d_trl_struct_group_nofsc_shifted_data_fcm_MPI(myid, main_node,\
 	pass#IMPORTIMPORTIMPORT import types
 	pass#IMPORTIMPORTIMPORT import datetime
 	if mpi_comm == None: mpi_comm = mpi.MPI_COMM_WORLD
-	refvol = utilities.model_blank(target_size)
+	refvol = sparx_utilities.model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
@@ -1775,7 +1775,7 @@ def recons3d_trl_struct_group_nofsc_shifted_data_fcm_MPI(myid, main_node,\
 					data = [None]*len(Tracker["rshifts"])
 					for ii in range(len(tdir)):
 						#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
-						lshifts = utilities.findall(tdir[ii], ipsiandiang)
+						lshifts = sparx_utilities.findall(tdir[ii], ipsiandiang)
 						toprab  = 0.0
 						for ki in range(len(lshifts)):toprab += probs[lshifts[ki]]
 						recdata = EMAN2_cppwrap.EMData(nny,nny,1,False)
@@ -1783,18 +1783,18 @@ def recons3d_trl_struct_group_nofsc_shifted_data_fcm_MPI(myid, main_node,\
 						for ki in range(len(lshifts)):
 							lpt = allshifts[lshifts[ki]]
 							if(data[lpt] == None):
-								data[lpt] = fundamentals.fshift(prjlist[im][0], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
+								data[lpt] = sparx_fundamentals.fshift(prjlist[im][0], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 								data[lpt].set_attr("is_complex",0)
 							EMAN2_cppwrap.Util.add_img(recdata, EMAN2_cppwrap.Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
 						recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1}) # preset already
-						recdata = filter.filt_table(recdata, bckgn)
+						recdata = sparx_filter.filt_table(recdata, bckgn)
 						ipsi = tdir[ii]%100000
 						iang = tdir[ii]/100000
 						recdata.set_attr_dict({"bckgnoise":bckgn, "ctf":ct})
 						r.insert_slice(recdata, EMAN2_cppwrap.Transform({"type":"spider", "phi":refang[iang][0], "theta":refang[iang][1], \
 						  "psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im]*umat[im][group_ID])		
-	utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 	if myid == main_node:dummy = r.finish(True)
 	mpi.mpi_barrier(mpi_comm)
 	if myid == main_node: return fftvol, weight, refvol
@@ -1819,8 +1819,8 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 	### 3. EMAN2 functions python native int;
 	
 	#==========---------- >>>>EQKmeans initialization ==========------------ 
-	log_main	             = logger.Logger()
-	log_main                 = logger.Logger(logger.BaseLogger_Files())
+	log_main	             = sparx_logger.Logger()
+	log_main                 = sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 	log_main.prefix          = Tracker["directory"]+"/"
 	number_of_groups         = Tracker["number_of_groups"]
 	stopercnt                = Tracker["stop_mgskmeans_percentage"]
@@ -1855,9 +1855,9 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 			mlist = 0
 			mdict = 0
 			minimum_group_size = 0
-		mlist = utilities.wrap_mpi_bcast(mlist, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		mdict = utilities.wrap_mpi_bcast(mdict, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		minimum_group_size = utilities.bcast_number_to_all(minimum_group_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		mlist = sparx_utilities.wrap_mpi_bcast(mlist, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		mdict = sparx_utilities.wrap_mpi_bcast(mdict, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		minimum_group_size = sparx_utilities.bcast_number_to_all(minimum_group_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		###-------------------------------------------------------------------------------
 	else: # freeze small groups
 		if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -1868,37 +1868,37 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 			mlist = 0
 			mdict = 0
 			minimum_group_size = 0
-		mlist = utilities.wrap_mpi_bcast(mlist, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		mdict = utilities.wrap_mpi_bcast(mdict, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		minimum_group_size = utilities.bcast_number_to_all(minimum_group_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		mlist = sparx_utilities.wrap_mpi_bcast(mlist, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		mdict = sparx_utilities.wrap_mpi_bcast(mdict, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		minimum_group_size = sparx_utilities.bcast_number_to_all(minimum_group_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	###-----------------------------------------------------------------------------------------------------
 	###-------------------------------->>>>> mask3D <<<<<<--------------------------------------------------
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		try:
 			if os.path.exists(Tracker["constants"]["mask3D"]): # prepare mask
-				mask3D = utilities.get_im(Tracker["constants"]["mask3D"])
-				if mask3D.get_xsize() != Tracker["nxinit"]: mask3D = fundamentals.fdecimate(mask3D, \
+				mask3D = sparx_utilities.get_im(Tracker["constants"]["mask3D"])
+				if mask3D.get_xsize() != Tracker["nxinit"]: mask3D = sparx_fundamentals.fdecimate(mask3D, \
 				    Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
 		except:
-			mask3D = utilities.model_circle(Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], \
+			mask3D = sparx_utilities.model_circle(Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], \
 			    Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"])
-			mask3D = fundamentals.fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
+			mask3D = sparx_fundamentals.fdecimate(mask3D, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
 	else:
-		mask3D = utilities.model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-	utilities.bcast_EMData_to_all(mask3D, Blockdata["myid"], Blockdata["main_node"])
+		mask3D = sparx_utilities.model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+	sparx_utilities.bcast_EMData_to_all(mask3D, Blockdata["myid"], Blockdata["main_node"])
 	###-----------------------------------------------------------------------------------------------------
 	
 	### ------------->>> get ptl_ids and intial assignment <<<-------------- 
 	if( Blockdata["myid"] == Blockdata["main_node"]):
-		lpartids = utilities.read_text_file(partids, -1)
+		lpartids = sparx_utilities.read_text_file(partids, -1)
 		if len(lpartids) == 1: iter_assignment = np.random.randint(0, number_of_groups, \
 		         size=len(lpartids[0]), dtype=np.int32)
 		else:                  iter_assignment = np.array(lpartids[0], dtype=np.int32)
 	else: iter_assignment = 0
-	iter_assignment                 = utilities.wrap_mpi_bcast(iter_assignment, Blockdata["main_node"]) # initial assignment
+	iter_assignment                 = sparx_utilities.wrap_mpi_bcast(iter_assignment, Blockdata["main_node"]) # initial assignment
 	Tracker["total_stack"]          = iter_assignment.shape[0]
 	nima                            = len(cdata) # local size
-	image_start, image_end          = applications.MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
+	image_start, image_end          = sparx_applications.MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
 	Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
 	rest_time  = time.time()
 	angle_step = get_angle_step_from_number_of_orien_groups(Tracker["orientation_groups"])
@@ -1929,7 +1929,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 	###-------------------------------------------------------------------------------------------------------------------------------	
 	proc_list = [[None, None] for iproc in range(Blockdata["nproc"])]
 	for iproc in range(Blockdata["nproc"]):
-		iproc_image_start, iproc_image_end = applications.MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
+		iproc_image_start, iproc_image_end = sparx_applications.MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], iproc)
 		proc_list[iproc] = [iproc_image_start, iproc_image_end]
 		
 	compute_noise(Tracker["nxinit"])
@@ -1962,12 +1962,12 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 			log_main.add(msg)
 			msg = "Iteration %3d: particle assignment changed ratio  %f "%(total_iter, changed_nptls)
 			log_main.add(msg)
-			utilities.write_text_file(np.copy(iter_assignment).tolist(), os.path.join(Tracker["directory"],\
+			sparx_utilities.write_text_file(np.copy(iter_assignment).tolist(), os.path.join(Tracker["directory"],\
 			     "assignment%03d.txt"%total_iter))
 			if changed_nptls< 50.0: do_partial_rec3d = 1
 			else:                   do_partial_rec3d = 0
 		else:do_partial_rec3d = 0
-		do_partial_rec3d = utilities.bcast_number_to_all(do_partial_rec3d, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		do_partial_rec3d = sparx_utilities.bcast_number_to_all(do_partial_rec3d, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		update_data_assignment(cdata, srdata, iter_assignment, proc_list, Tracker["nosmearing"], Blockdata["myid"])
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)####----------
 		acc_rest = time.time() - rest_time
@@ -2000,25 +2000,25 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 				max_iter       += 1
 				log_main.add('Minimum_grp_size is updated to %d'%minimum_group_size) 
 			else: move_up_counter = 0
-			minimum_group_size = utilities.bcast_number_to_all(minimum_group_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			do_move_one_up     = utilities.bcast_number_to_all(do_move_one_up,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			move_up_counter    = utilities.bcast_number_to_all(move_up_counter,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			max_iter           = utilities.bcast_number_to_all(max_iter,           Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			minimum_group_size = sparx_utilities.bcast_number_to_all(minimum_group_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			do_move_one_up     = sparx_utilities.bcast_number_to_all(do_move_one_up,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			move_up_counter    = sparx_utilities.bcast_number_to_all(move_up_counter,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			max_iter           = sparx_utilities.bcast_number_to_all(max_iter,           Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			minimum_group_size_ratio = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]),0.95)		
 			
 		#### Preprocess reference volumes--------- Compute distance	----------------------
 		dmat = [ None for im in range(number_of_groups)]	
 		for iref in range(number_of_groups):
 			if(Blockdata["myid"] == Blockdata["last_node"]):
-				ref_vol = utilities.get_im(os.path.join(Tracker["directory"],"vol_grp%03d_iter%03d.hdf"%(iref, total_iter)))
+				ref_vol = sparx_utilities.get_im(os.path.join(Tracker["directory"],"vol_grp%03d_iter%03d.hdf"%(iref, total_iter)))
 				nnn = ref_vol.get_xsize()
-				if(Tracker["nxinit"] != nnn): ref_vol = fundamentals.fdecimate(ref_vol, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
+				if(Tracker["nxinit"] != nnn): ref_vol = sparx_fundamentals.fdecimate(ref_vol, Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"], True, False)
 				stat = EMAN2_cppwrap.Util.infomask(ref_vol, mask3D, False)
 				ref_vol -= stat[0]
 				if stat[1]!= 0.0: EMAN2_cppwrap.Util.mul_scalar(ref_vol, 1.0/stat[1])
 				ref_vol *=mask3D
-			else: ref_vol = utilities.model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
-			utilities.bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["last_node"])
+			else: ref_vol = sparx_utilities.model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
+			sparx_utilities.bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["last_node"])
 			## Image comparison	
 			if Tracker["constants"]["comparison_method"] =="cross": ref_peaks = compare_two_images_cross(cdata, ref_vol, ctf_images)
 			else:                                                   ref_peaks = compare_two_images_eucd(cdata, ref_vol, fdata, ctf_images)
@@ -2044,15 +2044,15 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 			for im in range(local_peaks.shape[0]): dmatrix[im//nima][im%nima + image_start] = local_peaks[im]
 		else: dmatrix = 0
 		if Blockdata["myid"] != Blockdata["main_node"]:
-			utilities.wrap_mpi_send(local_peaks, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			sparx_utilities.wrap_mpi_send(local_peaks, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		else:
 			for iproc in range(Blockdata["nproc"]):
 				if iproc != Blockdata["main_node"]:
-					local_peaks = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+					local_peaks = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 					iproc_nima  = proc_list[iproc][1] - proc_list[iproc][0]
 					for im in range(len(local_peaks)): 
 						dmatrix[im/iproc_nima][im%iproc_nima + proc_list[iproc][0]] = local_peaks[im]
-		dmatrix = utilities.wrap_mpi_bcast(dmatrix, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		dmatrix = sparx_utilities.wrap_mpi_bcast(dmatrix, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		###-------------------------------------------------------------------------------
 		acc_rest = time.time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -2073,11 +2073,11 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 			if Tracker["do_timing"]:print("compute dmatrix of various orien groups step2 take  %f minutes"%(acc_rest/60.))
 		rest_time = time.time()
 		if Blockdata["myid"] != Blockdata["main_node"]: 
-			utilities.wrap_mpi_send(iter_assignment, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			sparx_utilities.wrap_mpi_send(iter_assignment, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		else:
 			for iproc in range(Blockdata["nproc"]):
 				if iproc != Blockdata["main_node"]:
-					dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+					dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 					iter_assignment[np.where(dummy>-1)] = dummy[np.where(dummy>-1)]
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		###-------------------------------------------------------------------------------
@@ -2106,14 +2106,14 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 			do_move_one_up     = 0
 			changed_nptls_list = 0
 			tmp_list           = 0
-		iter_assignment      = utilities.wrap_mpi_bcast(iter_assignment,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		best_assignment      = utilities.wrap_mpi_bcast(best_assignment,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		changed_nptls_list   = utilities.wrap_mpi_bcast(changed_nptls_list,       Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		tmp_list             = utilities.wrap_mpi_bcast(tmp_list,                 Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		keepgoing            = utilities.bcast_number_to_all(keepgoing,           Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		do_move_one_up       = utilities.bcast_number_to_all(do_move_one_up,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		freeze_changes       = utilities.bcast_number_to_all(freeze_changes,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		decrease_last_iter   = utilities.bcast_number_to_all(decrease_last_iter,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		iter_assignment      = sparx_utilities.wrap_mpi_bcast(iter_assignment,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		best_assignment      = sparx_utilities.wrap_mpi_bcast(best_assignment,          Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		changed_nptls_list   = sparx_utilities.wrap_mpi_bcast(changed_nptls_list,       Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		tmp_list             = sparx_utilities.wrap_mpi_bcast(tmp_list,                 Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		keepgoing            = sparx_utilities.bcast_number_to_all(keepgoing,           Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		do_move_one_up       = sparx_utilities.bcast_number_to_all(do_move_one_up,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		freeze_changes       = sparx_utilities.bcast_number_to_all(freeze_changes,      Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		decrease_last_iter   = sparx_utilities.bcast_number_to_all(decrease_last_iter,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		####======================== Fuzzy membership =====================================
 		#shake = tmp_list[-1]/100.* 0.25
 		#shake = 0.1*float(minimum_group_size)/max(mlist)*tmp_list[-1]/100.
@@ -2126,11 +2126,11 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		pe2   = get_PE(umat)
 		score_sub_list = np.array([pe1, pe2], dtype=np.float64)
 		if Blockdata["myid"] != Blockdata["main_node"]:
-			utilities.wrap_mpi_send(score_sub_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			sparx_utilities.wrap_mpi_send(score_sub_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		else:
 			for iproc in range(Blockdata["nproc"]):
 				if iproc !=Blockdata["main_node"]:
-					dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+					dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 					for im in range(2):score_sub_list[im] += dummy[im] 
 			score_sub_list = np.multiply(score_sub_list, 1./Tracker["total_stack"])
 			log_main.add("Simple PE: %f  Mixed PE: %f "%(score_sub_list[0], score_sub_list[1]))
@@ -2150,7 +2150,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 				log_main.add("Converge criterion reaches. Stop MGSKmeans.")
 		else:
 			if (total_iter >=iter_mstep + 3) and (100. not in changed_nptls_list[-3:]):
-				pave, pstd, pmin, pmax = statistics.table_stat(changed_nptls_list[-3:])
+				pave, pstd, pmin, pmax = sparx_statistics.table_stat(changed_nptls_list[-3:])
 				if Blockdata["myid"] == Blockdata["main_node"]:
 					log_main.add("Stat of changed_nptls within the last 3 iters: ")
 					log_main.add("%f  %f  %f  %f "%(pave, numpy.sqrt(pstd), pmin, pmax))
@@ -2171,14 +2171,14 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 	if mask3D: del mask3D
 	###-----------------------------------------------------------------------------------
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		lpartids = utilities.read_text_file(partids, -1)
+		lpartids = sparx_utilities.read_text_file(partids, -1)
 		if len(lpartids) ==1: lpartids =lpartids[0]
 		else: lpartids =lpartids[1]
-		utilities.write_text_file([partition.tolist(), lpartids], os.path.join(Tracker["directory"],"list.txt"))
+		sparx_utilities.write_text_file([partition.tolist(), lpartids], os.path.join(Tracker["directory"],"list.txt"))
 		shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
 		fplist  = np.array([partition, np.array(lpartids)], dtype = np.int32)
 	else: fplist = 0
-	fplist  = utilities.wrap_mpi_bcast(fplist, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	fplist  = sparx_utilities.wrap_mpi_bcast(fplist, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	#######-------------------------------------------------------------------------------
 	if(Blockdata["myid"] == Blockdata["last_node"]):
 		if clean_volumes:# always true unless in debug mode
@@ -2221,10 +2221,10 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 	for im in range(len(clusters)):
 		if glist[im] == 0: sublist.append(clusters[im])
 		else:              sublist1.append(clusters[im])
-	if len(sublist)>1: sstat = statistics.table_stat(sublist)
+	if len(sublist)>1: sstat = sparx_statistics.table_stat(sublist)
 	else:              sstat = [sublist[0], 0.0, sublist[0], sublist[0]]
 	log_file.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat[0], numpy.sqrt(sstat[1]), sstat[2], sstat[3]))
-	if len(sublist1)>1: sstat1 = statistics.table_stat(sublist1)
+	if len(sublist1)>1: sstat1 = sparx_statistics.table_stat(sublist1)
 	else:               sstat1 = [sublist1[0], 0.0, sublist1[0], sublist1[0]]
 	log_file.add('Avg %f  1*Std %f  Min %f  Max  %f'%(sstat1[0], numpy.sqrt(sstat1[1]), sstat1[2], sstat1[3]))
 	###-----------------------------------------------------------------------------------
@@ -2260,8 +2260,8 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 				clusters.append(len(groups[igrp]))
 			iter_assignment[:] = new_assi[:]
 	####==================================================================================
-	minres143 = get_res143(statistics.scale_fsc_datasetsize(global_fsc, global_total, minimum_grp_size))
-	ares143   = get_res143(statistics.scale_fsc_datasetsize(global_fsc, global_total, \
+	minres143 = get_res143(sparx_statistics.scale_fsc_datasetsize(global_fsc, global_total, minimum_grp_size))
+	ares143   = get_res143(sparx_statistics.scale_fsc_datasetsize(global_fsc, global_total, \
 	    len(iter_assignment)//number_of_groups))
 	#####---------------------------------------------------------------------------------
 	log_file.add('Group ID  group size fsc143  move up/down  size over min     min')
@@ -2271,7 +2271,7 @@ def AI_MGSKmeans(total_iters, iter_assignment, last_iter_assignment, best_assign
 	log_file.add('------------------                            ---------------------')
 	res_list = [ 0 for jl in range(number_of_groups)]
 	for il in range(len(clusters)):
-		cfsc = statistics.scale_fsc_datasetsize(global_fsc, len(iter_assignment), clusters[il])
+		cfsc = sparx_statistics.scale_fsc_datasetsize(global_fsc, len(iter_assignment), clusters[il])
 		res_list[il] = get_res143(cfsc)
 		log_file.add('%5d   %8d        %3d       %3d     %8d    %8d'%(il, clusters[il], res_list[il],\
 		    (res_list[il] - ares143), (clusters[il]-minimum_grp_size),  minimum_grp_size))
@@ -2418,11 +2418,11 @@ def get_shrink_data_sorting(partids, partstack, return_real = False, preshift = 
 	pass#IMPORTIMPORTIMPORT from filter			import filt_ctf
 	pass#IMPORTIMPORTIMPORT from applications	import MPI_start_end
 	pass#IMPORTIMPORTIMPORT from EMAN2          import Region, Vec2f
-	mask2D		= utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	mask2D		= sparx_utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	shrinkage 	= Tracker["nxinit"]/float(Tracker["constants"]["nnxo"])
 	radius 		= int(Tracker["constants"]["radius"] * shrinkage +0.5)	
 	if( Blockdata["myid"] == Blockdata["main_node"]):
-		lpartids = utilities.read_text_file(partids, -1)
+		lpartids = sparx_utilities.read_text_file(partids, -1)
 		if len(lpartids) == 1:
 			lpartids = lpartids[0]
 			groupids = len(lpartids)*[-1]
@@ -2432,22 +2432,22 @@ def get_shrink_data_sorting(partids, partstack, return_real = False, preshift = 
 	else:  	
 		lpartids   = 0
 		groupids   = 0
-	lpartids   = utilities.wrap_mpi_bcast(lpartids, Blockdata["main_node"])
-	groupids   = utilities.wrap_mpi_bcast(groupids, Blockdata["main_node"])
+	lpartids   = sparx_utilities.wrap_mpi_bcast(lpartids, Blockdata["main_node"])
+	groupids   = sparx_utilities.wrap_mpi_bcast(groupids, Blockdata["main_node"])
 	Tracker["total_stack"]  = len(lpartids)
-	if(Blockdata["myid"] == Blockdata["main_node"]): partstack = utilities.read_text_row(partstack)
+	if(Blockdata["myid"] == Blockdata["main_node"]): partstack = sparx_utilities.read_text_row(partstack)
 	else:  partstack = 0
-	partstack = utilities.wrap_mpi_bcast(partstack, Blockdata["main_node"])
+	partstack = sparx_utilities.wrap_mpi_bcast(partstack, Blockdata["main_node"])
 	
 	if(Tracker["total_stack"] < Blockdata["nproc"]):
-		global_def.ERROR("Wrong MPI settings!", "get_shrink_data_sorting", 1, Blockdata["myid"])
-	else: image_start, image_end = applications.MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
+		sparx_global_def.ERROR("Wrong MPI settings!", "get_shrink_data_sorting", 1, Blockdata["myid"])
+	else: image_start, image_end = sparx_applications.MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
 	lpartids  = lpartids[image_start:image_end]
 	groupids  = groupids[image_start:image_end]
 	nima      =	image_end - image_start
 	data      = [None]*nima
 	for im in range(nima):
-		data[im] = utilities.get_im(Tracker["constants"]["orgstack"], lpartids[im])	
+		data[im] = sparx_utilities.get_im(Tracker["constants"]["orgstack"], lpartids[im])	
 		try: phi, theta, psi, sx, sy, chunk_id, particle_group_id = \
 		      partstack[lpartids[im]][0], partstack[lpartids[im]][1],\
 		     partstack[lpartids[im]][2], partstack[lpartids[im]][3], partstack[lpartids[im]][4], \
@@ -2457,30 +2457,30 @@ def get_shrink_data_sorting(partids, partstack, return_real = False, preshift = 
 		       partstack[lpartids[im]][2], partstack[lpartids[im]][3], partstack[lpartids[im]][4], \
 		       partstack[lpartids[im]][5], -1		 
 		if preshift:# always true
-			data[im]  = fundamentals.fshift(data[im],sx,sy)
+			data[im]  = sparx_fundamentals.fshift(data[im],sx,sy)
 			sx = 0.0
 			sy = 0.0
 		st = EMAN2_cppwrap.Util.infomask(data[im], mask2D, False)
 		data[im] -= st[0]
 		data[im] /= st[1]
-		if apply_mask: data[im] = morphology.cosinemask(data[im],radius = Tracker["constants"]["radius"])
+		if apply_mask: data[im] = sparx_morphology.cosinemask(data[im],radius = Tracker["constants"]["radius"])
 		# FT
-		data[im] = fundamentals.fft(data[im])
+		data[im] = sparx_fundamentals.fft(data[im])
 		nny      = data[im].get_ysize()
 		if Tracker["constants"]["CTF"]:
 			ctf_params = data[im].get_attr("ctf")
-			data[im]   = fundamentals.fdecimate(data[im], Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
+			data[im]   = sparx_fundamentals.fdecimate(data[im], Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
 			ctf_params.apix = ctf_params.apix/shrinkage
 			data[im].set_attr('ctf', ctf_params)
 			data[im].set_attr('ctf_applied', 0)
-			if return_real :  data[im] = fundamentals.fft(data[im])
+			if return_real :  data[im] = sparx_fundamentals.fft(data[im])
 		else:
 			ctf_params = data[im].get_attr_default("ctf", False)
 			if  ctf_params:
 				ctf_params.apix = ctf_params.apix/shrinkage
 				data[im].set_attr('ctf', ctf_params)
 				data[im].set_attr('ctf_applied', 0)
-			data[im] = fundamentals.fdecimate(data[im], nxinit*npad, nxinit*npad, 1, True, False)
+			data[im] = sparx_fundamentals.fdecimate(data[im], nxinit*npad, nxinit*npad, 1, True, False)
 			apix     = Tracker["constants"]["pixel_size"]
 			data[im].set_attr('apix', apix/shrinkage)
 		if not return_real:	data[im].set_attr("padffted",1)
@@ -2508,7 +2508,7 @@ def read_data_for_sorting(partids, partstack, previous_partstack):
 	# functions:
 	# read in data
 	if( Blockdata["myid"] == Blockdata["main_node"]):
-		lpartids = utilities.read_text_file(partids, -1)
+		lpartids = sparx_utilities.read_text_file(partids, -1)
 		if len(lpartids) == 1: 
 			lpartids = lpartids[0]
 			groupids = [-1 for im in range(len(lpartids))]
@@ -2518,27 +2518,27 @@ def read_data_for_sorting(partids, partstack, previous_partstack):
 	else: 
 		lpartids   = 0
 		groupids   = 0
-	lpartids = utilities.wrap_mpi_bcast(lpartids, Blockdata["main_node"])
-	groupids = utilities.wrap_mpi_bcast(groupids, Blockdata["main_node"])
+	lpartids = sparx_utilities.wrap_mpi_bcast(lpartids, Blockdata["main_node"])
+	groupids = sparx_utilities.wrap_mpi_bcast(groupids, Blockdata["main_node"])
 	
 	Tracker["total_stack"] = len(lpartids)
-	if(Blockdata["myid"] == Blockdata["main_node"]):partstack = utilities.read_text_row(partstack)
+	if(Blockdata["myid"] == Blockdata["main_node"]):partstack = sparx_utilities.read_text_row(partstack)
 	else:  partstack = 0
-	partstack = utilities.wrap_mpi_bcast(partstack, Blockdata["main_node"])
-	if(Blockdata["myid"] == Blockdata["main_node"]): previous_partstack = utilities.read_text_row(previous_partstack)
+	partstack = sparx_utilities.wrap_mpi_bcast(partstack, Blockdata["main_node"])
+	if(Blockdata["myid"] == Blockdata["main_node"]): previous_partstack = sparx_utilities.read_text_row(previous_partstack)
 	else:  previous_partstack = 0
-	previous_partstack = utilities.wrap_mpi_bcast(previous_partstack, Blockdata["main_node"])
+	previous_partstack = sparx_utilities.wrap_mpi_bcast(previous_partstack, Blockdata["main_node"])
 	if(Tracker["total_stack"] < Blockdata["nproc"]):
-		global_def.ERROR("Number of processors in use is larger than the total number of images", \
+		sparx_global_def.ERROR("Number of processors in use is larger than the total number of images", \
 		  "get_data_and_prep", 1, Blockdata["myid"])
-	else: image_start, image_end = applications.MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
+	else: image_start, image_end = sparx_applications.MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
 	lpartids          = lpartids[image_start:image_end]
 	nima              = image_end - image_start
 	data              = [ None for im in range(nima)]
 	norm_per_particle = [ None for im in range(nima)]
 	groupids = groupids[image_start: image_end]
 	for im in range(nima):
-		image = utilities.get_im(Tracker["constants"]["orgstack"], lpartids[im])
+		image = sparx_utilities.get_im(Tracker["constants"]["orgstack"], lpartids[im])
 		try: phi, theta, psi, sx, sy, chunk_id, particle_group_id, mnorm = partstack[lpartids[im]][0], \
 		   partstack[lpartids[im]][1], partstack[lpartids[im]][2], \
 			partstack[lpartids[im]][3], partstack[lpartids[im]][4], partstack[lpartids[im]][5], \
@@ -2561,20 +2561,20 @@ def read_paramstructure_for_sorting(partids, paramstructure_dict_file, paramstru
 	global Tracker, Blockdata
 	pass#IMPORTIMPORTIMPORT from utilities    import read_text_row, read_text_file, wrap_mpi_bcast
 	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
-	if( Blockdata["myid"] == Blockdata["main_node"]):lcore = utilities.read_text_file(partids, -1)
+	if( Blockdata["myid"] == Blockdata["main_node"]):lcore = sparx_utilities.read_text_file(partids, -1)
 	else: lcore = 0
-	lcore   = utilities.wrap_mpi_bcast(lcore, Blockdata["main_node"])
+	lcore   = sparx_utilities.wrap_mpi_bcast(lcore, Blockdata["main_node"])
 	if len(lcore) == 1: lcore = lcore[0]
 	else: lcore = lcore[1]
 	psize   = len(lcore)
 	oldparamstructure  = []	
-	im_start, im_end   = applications.MPI_start_end(psize, Blockdata["nproc"], Blockdata["myid"])
+	im_start, im_end   = sparx_applications.MPI_start_end(psize, Blockdata["nproc"], Blockdata["myid"])
 	lcore              = lcore[im_start:im_end]
 	nima               = len(lcore)
 	if( Blockdata["myid"] == Blockdata["main_node"]):
-		tmp_list = utilities.read_text_row(paramstructure_dict_file)
+		tmp_list = sparx_utilities.read_text_row(paramstructure_dict_file)
 	else: tmp_list = 0
-	tmp_list = utilities.wrap_mpi_bcast(tmp_list, Blockdata["main_node"])
+	tmp_list = sparx_utilities.wrap_mpi_bcast(tmp_list, Blockdata["main_node"])
 	pdict    = {}
 	for im in range(len(lcore)):pdict[im] = tmp_list[lcore[im]]
 	oldparamstructure             =  []
@@ -2589,7 +2589,7 @@ def read_paramstructure_for_sorting(partids, paramstructure_dict_file, paramstru
 				  (chunk_id, jason_of_cpu_id, iteration))
 				if old_paramstructure_file != last_old_paramstructure_file:
 					fout = open(old_paramstructure_file,'r')
-					paramstructure = utilities.convert_json_fromunicode(json.load(fout))
+					paramstructure = sparx_utilities.convert_json_fromunicode(json.load(fout))
 					fout.close()
 				last_old_paramstructure_file = old_paramstructure_file
 				oldparamstructure.append(paramstructure[ptl_id_on_cpu])	
@@ -2612,14 +2612,14 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration):
 		if not os.path.exists(Tracker["paramstructure_dir"]):
 			os.mkdir(os.path.join(Tracker["constants"]["masterdir"], "main%03d"%selected_iteration))
 			os.mkdir(Tracker["paramstructure_dir"])
-		Tracker["refang"]  = utilities.read_text_row(os.path.join(old_refinement_iter_directory, "refang.txt"))
-		utilities.write_text_row(Tracker["refang"], os.path.join(Tracker["directory"], "refang.txt"))
-		Tracker["rshifts"] = utilities.read_text_row(os.path.join(old_refinement_iter_directory, "rshifts.txt"))
-		utilities.write_text_row(Tracker["refang"], os.path.join(Tracker["directory"], "rshifts.txt"))
-		my_last_params = utilities.read_text_file(os.path.join(old_refinement_previous_iter_directory, "params_%03d.txt"%(selected_iteration-1)), -1)
-		my_parstack    = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt"), -1)
+		Tracker["refang"]  = sparx_utilities.read_text_row(os.path.join(old_refinement_iter_directory, "refang.txt"))
+		sparx_utilities.write_text_row(Tracker["refang"], os.path.join(Tracker["directory"], "refang.txt"))
+		Tracker["rshifts"] = sparx_utilities.read_text_row(os.path.join(old_refinement_iter_directory, "rshifts.txt"))
+		sparx_utilities.write_text_row(Tracker["refang"], os.path.join(Tracker["directory"], "rshifts.txt"))
+		my_last_params = sparx_utilities.read_text_file(os.path.join(old_refinement_previous_iter_directory, "params_%03d.txt"%(selected_iteration-1)), -1)
+		my_parstack    = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt"), -1)
 		my_parstack[3:5]= my_last_params[3:5]
-		utilities.write_text_file( my_parstack, os.path.join(Tracker["constants"]["masterdir"], "previous_refinement_parameters.txt"))
+		sparx_utilities.write_text_file( my_parstack, os.path.join(Tracker["constants"]["masterdir"], "previous_refinement_parameters.txt"))
 		Tracker["previous_parstack"] = os.path.join(Tracker["constants"]["masterdir"], "previous_refinement_parameters.txt")
 		nproc_previous = 0
 		procid         = 0
@@ -2632,27 +2632,27 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration):
 	else: 
 		Tracker        = 0
 		nproc_previous = 0
-	Tracker        = utilities.wrap_mpi_bcast(Tracker,             Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	nproc_previous = utilities.bcast_number_to_all(nproc_previous, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	Tracker        = sparx_utilities.wrap_mpi_bcast(Tracker,             Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	nproc_previous = sparx_utilities.bcast_number_to_all(nproc_previous, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	Blockdata["nproc_previous"] = nproc_previous
 	oldparamstructure           =[[], []]
 	local_dict                  = {}
 	for procid in range(2):
 		smearing_list = []
 		if( Blockdata["myid"] == Blockdata["main_node"]):
-			lcore = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], \
+			lcore = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], \
 			     "chunk_%d.txt"%procid))
 		else: lcore = 0
-		lcore = utilities.wrap_mpi_bcast(lcore, Blockdata["main_node"], mpi.MPI_COMM_WORLD)	
+		lcore = sparx_utilities.wrap_mpi_bcast(lcore, Blockdata["main_node"], mpi.MPI_COMM_WORLD)	
 		psize = len(lcore)
 		oldparamstructure[procid] = []
-		im_start, im_end   = applications.MPI_start_end(psize, Blockdata["nproc"], Blockdata["myid"])
+		im_start, im_end   = sparx_applications.MPI_start_end(psize, Blockdata["nproc"], Blockdata["myid"])
 		local_lcore = lcore[im_start:im_end]
 		istart_old_proc_id = -1
 		iend_old_proc_id   = -1
 		plist              = []	
 		for iproc_old in range(nproc_previous):
-			im_start_old, im_end_old = applications.MPI_start_end(psize, Blockdata["nproc_previous"], iproc_old)
+			im_start_old, im_end_old = sparx_applications.MPI_start_end(psize, Blockdata["nproc_previous"], iproc_old)
 			if (im_start>= im_start_old) and im_start <=im_end_old: 
 				istart_old_proc_id = iproc_old
 			if (im_end  >= im_start_old) and im_end <=im_end_old: 
@@ -2665,7 +2665,7 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration):
 			   "main%03d"%selected_iteration, "oldparamstructure", \
 			      "oldparamstructure_%01d_%03d_%03d.json"%(procid, \
 			 iproc_index_old, selected_iteration)),'r') as fout:
-				oldparamstructure_on_old_cpu = utilities.convert_json_fromunicode(json.load(fout))
+				oldparamstructure_on_old_cpu = sparx_utilities.convert_json_fromunicode(json.load(fout))
 			fout.close()
 			mlocal_id_on_old = ptl_on_this_cpu - plist[iproc_index_old][0]
 			while (mlocal_id_on_old<len(oldparamstructure_on_old_cpu)) and (ptl_on_this_cpu<im_end):
@@ -2692,30 +2692,30 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration):
 	tchunk        = []
 	for procid in range(2):
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			chunk = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "chunk_%d.txt"%procid))
+			chunk = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "chunk_%d.txt"%procid))
 			chunk_size = len(chunk)
 			smearing_list =[ None for i in range(chunk_size) ]
 		else: chunk_size  = 0
-		chunk_size = utilities.bcast_number_to_all(chunk_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		chunk_size = sparx_utilities.bcast_number_to_all(chunk_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		local_smearing_list = []
 		for im in range(len(oldparamstructure[procid])):
 			local_smearing_list.append(len(oldparamstructure[procid][im][2]))
 			
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			im_start_old, im_end_old = applications.MPI_start_end(chunk_size, Blockdata["nproc"], Blockdata["main_node"])
+			im_start_old, im_end_old = sparx_applications.MPI_start_end(chunk_size, Blockdata["nproc"], Blockdata["main_node"])
 			for im in range(len(local_smearing_list)): 
 				smearing_list[im_start_old+im] = local_smearing_list[im]
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		if  Blockdata["myid"] != Blockdata["main_node"]:
-			utilities.wrap_mpi_send(local_smearing_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			sparx_utilities.wrap_mpi_send(local_smearing_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		else:
 			for iproc in range(Blockdata["nproc"]):
 				if iproc != Blockdata["main_node"]:
-					im_start_old, im_end_old = applications.MPI_start_end(chunk_size, Blockdata["nproc"], iproc)
-					dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+					im_start_old, im_end_old = sparx_applications.MPI_start_end(chunk_size, Blockdata["nproc"], iproc)
+					dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 					for idum in range(len(dummy)): smearing_list[idum + im_start_old] = dummy[idum]
 				else: pass
-			utilities.write_text_file(smearing_list, os.path.join(Tracker["constants"]["masterdir"], "smearing_%d.txt"%procid))
+			sparx_utilities.write_text_file(smearing_list, os.path.join(Tracker["constants"]["masterdir"], "smearing_%d.txt"%procid))
 			for im in range(len(chunk)):
 				smearing_dict[chunk[im]] =  smearing_list[im]
 			tchunk +=chunk
@@ -2726,7 +2726,7 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration):
 		all_smearing = [None]*len(tchunk)
 		for im in range(len(tchunk)): 
 			all_smearing[im] = smearing_dict[tchunk[im]]
-		utilities.write_text_file(all_smearing, os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"))
+		sparx_utilities.write_text_file(all_smearing, os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"))
 		full_dict_list = [ None for im in range(Tracker["constants"]["total_stack"])]
 		for key, value in list(local_dict.items()):
 			full_dict_list[key] = value
@@ -2735,9 +2735,9 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration):
 	
 	for icpu in range(Blockdata["nproc"]):
 		if Blockdata["myid"] == icpu and Blockdata["myid"] != Blockdata["main_node"]:
-			utilities.wrap_mpi_send(local_dict, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			sparx_utilities.wrap_mpi_send(local_dict, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		elif Blockdata["myid"] != icpu and Blockdata["myid"] == Blockdata["main_node"]:
-			local_dict = utilities.wrap_mpi_recv(icpu, mpi.MPI_COMM_WORLD)
+			local_dict = sparx_utilities.wrap_mpi_recv(icpu, mpi.MPI_COMM_WORLD)
 			for key, value in list(local_dict.items()):
 				full_dict_list[key] = value
 		else: pass
@@ -2745,7 +2745,7 @@ def copy_oldparamstructure_from_meridien_MPI(selected_iteration):
 	Tracker["paramstructure_dict"] = \
 	   os.path.join(Tracker["constants"]["masterdir"], "paramstructure_dict.txt")
 	if Blockdata["myid"] == Blockdata["main_node"]: 
-		utilities.write_text_row(full_dict_list, Tracker["paramstructure_dict"])
+		sparx_utilities.write_text_row(full_dict_list, Tracker["paramstructure_dict"])
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	return
 
@@ -2757,19 +2757,19 @@ def get_smearing_info(nproc_previous, selected_iteration, total_stack, my_dir, r
 	local_dict        = {}
 	for procid in range(2):
 		smearing_list = []
-		if( Blockdata["myid"] == Blockdata["main_node"]): lcore = utilities.read_text_file(\
+		if( Blockdata["myid"] == Blockdata["main_node"]): lcore = sparx_utilities.read_text_file(\
 		   os.path.join(my_dir, "chunk_%d.txt"%procid))
 		else: lcore = 0
-		lcore = utilities.wrap_mpi_bcast(lcore, Blockdata["main_node"], mpi.MPI_COMM_WORLD)	
+		lcore = sparx_utilities.wrap_mpi_bcast(lcore, Blockdata["main_node"], mpi.MPI_COMM_WORLD)	
 		psize = len(lcore)
 		oldparamstructure[procid] = []
-		im_start, im_end   = applications.MPI_start_end(psize, Blockdata["nproc"], Blockdata["myid"])
+		im_start, im_end   = sparx_applications.MPI_start_end(psize, Blockdata["nproc"], Blockdata["myid"])
 		local_lcore        = lcore[im_start:im_end]
 		istart_old_proc_id = -1
 		iend_old_proc_id   = -1
 		plist              = []	
 		for iproc_old in range(nproc_previous):
-			im_start_old, im_end_old = applications.MPI_start_end(psize, nproc_previous, iproc_old)
+			im_start_old, im_end_old = sparx_applications.MPI_start_end(psize, nproc_previous, iproc_old)
 			if (im_start>= im_start_old) and im_start <=im_end_old: istart_old_proc_id = iproc_old
 			if (im_end  >= im_start_old) and im_end <=im_end_old:   iend_old_proc_id   = iproc_old
 			plist.append([im_start_old, im_end_old])
@@ -2780,7 +2780,7 @@ def get_smearing_info(nproc_previous, selected_iteration, total_stack, my_dir, r
 			   "main%03d"%selected_iteration, "oldparamstructure", \
 			      "oldparamstructure_%01d_%03d_%03d.json"%(procid, \
 			 iproc_index_old, selected_iteration)),'r') as fout:
-				oldparamstructure_on_old_cpu = utilities.convert_json_fromunicode(json.load(fout))
+				oldparamstructure_on_old_cpu = sparx_utilities.convert_json_fromunicode(json.load(fout))
 			fout.close()
 			mlocal_id_on_old = ptl_on_this_cpu - plist[iproc_index_old][0]
 			while (mlocal_id_on_old<len(oldparamstructure_on_old_cpu)) and (ptl_on_this_cpu<im_end):
@@ -2798,28 +2798,28 @@ def get_smearing_info(nproc_previous, selected_iteration, total_stack, my_dir, r
 	tchunk        = []
 	for procid in range(2):
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			chunk = utilities.read_text_file(os.path.join(my_dir, "chunk_%d.txt"%procid))
+			chunk = sparx_utilities.read_text_file(os.path.join(my_dir, "chunk_%d.txt"%procid))
 			chunk_size = len(chunk)
 			smearing_list =[ None for i in range(chunk_size) ]
 		else: chunk_size  = 0
-		chunk_size = utilities.bcast_number_to_all(chunk_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		chunk_size = sparx_utilities.bcast_number_to_all(chunk_size, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		local_smearing_list = []
 		for im in range(len(oldparamstructure[procid])):
 			local_smearing_list.append(len(oldparamstructure[procid][im][2]))
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			im_start_old, im_end_old = applications.MPI_start_end(chunk_size, Blockdata["nproc"], Blockdata["main_node"])
+			im_start_old, im_end_old = sparx_applications.MPI_start_end(chunk_size, Blockdata["nproc"], Blockdata["main_node"])
 			for im in range(len(local_smearing_list)): smearing_list[im_start_old+im] = local_smearing_list[im]
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		if  Blockdata["myid"] != Blockdata["main_node"]:
-			utilities.wrap_mpi_send(local_smearing_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			sparx_utilities.wrap_mpi_send(local_smearing_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		else:
 			for iproc in range(Blockdata["nproc"]):
 				if iproc != Blockdata["main_node"]:
-					im_start_old, im_end_old = applications.MPI_start_end(chunk_size, Blockdata["nproc"], iproc)
-					dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+					im_start_old, im_end_old = sparx_applications.MPI_start_end(chunk_size, Blockdata["nproc"], iproc)
+					dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 					for idum in range(len(dummy)): smearing_list[idum + im_start_old] = dummy[idum]
 				else: pass
-			utilities.write_text_file(smearing_list, os.path.join(my_dir, "smearing_%d.txt"%procid))
+			sparx_utilities.write_text_file(smearing_list, os.path.join(my_dir, "smearing_%d.txt"%procid))
 			for im in range(len(chunk)): smearing_dict[chunk[im]] =  smearing_list[im]
 			tchunk +=chunk
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -2829,7 +2829,7 @@ def get_smearing_info(nproc_previous, selected_iteration, total_stack, my_dir, r
 		all_smearing = np.full(len(tchunk), 0.0, dtype=np.float32)
 		for im in range(len(tchunk)): all_smearing[im] = smearing_dict[tchunk[im]]
 	else: all_smearing = 0
-	all_smearing = utilities.wrap_mpi_bcast(all_smearing, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	all_smearing = sparx_utilities.wrap_mpi_bcast(all_smearing, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	return all_smearing
 ### 8
 def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshifts, delta, avgnorms, \
@@ -2842,7 +2842,7 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
 	if nosmearing:
 		for im in range(len(prjlist)):
 			prjlist[im].set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
-			if not upweighted:prjlist[im] = filter.filt_table(prjlist[im], prjlist[im].get_attr("bckgnoise"))
+			if not upweighted:prjlist[im] = sparx_filter.filt_table(prjlist[im], prjlist[im].get_attr("bckgnoise"))
 			prjlist[im].set_attr("wprob", 1.0)
 		return prjlist
 	else:
@@ -2867,7 +2867,7 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
 			data = [None]*len(rshifts_shrank)
 			for ii in range(len(tdir)):
 				#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
-				lshifts = utilities.findall(tdir[ii], ipsiandiang)
+				lshifts = sparx_utilities.findall(tdir[ii], ipsiandiang)
 				toprab  = 0.0
 				for ki in range(len(lshifts)):toprab += probs[lshifts[ki]]
 				recdata = EMAN2_cppwrap.EMData(nny,nny, 1, False)
@@ -2875,11 +2875,11 @@ def precalculate_shifted_data_for_recons3D(prjlist, paramstructure, refang, rshi
 				for ki in range(len(lshifts)):
 					lpt = allshifts[lshifts[ki]]
 					if(data[lpt] == None):
-						data[lpt] = fundamentals.fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
+						data[lpt] = sparx_fundamentals.fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 						data[lpt].set_attr("is_complex",0)
 					EMAN2_cppwrap.Util.add_img(recdata, EMAN2_cppwrap.Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
 				recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1}) # preset already
-				if not upweighted:recdata = filter.filt_table(recdata, bckgn)
+				if not upweighted:recdata = sparx_filter.filt_table(recdata, bckgn)
 				ipsi = tdir[ii]%100000
 				iang = tdir[ii]/100000
 				recdata.set_attr_dict({"wprob": toprab*avgnorm/norm_per_particle[im],\
@@ -2908,7 +2908,7 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 	# apply mask, and prepare focus projection if focus3D is specified
 	# return  1. cdata: data for image comparison, always in Fourier format
 	#         2. rdata: data for reconstruction, 4nn return real image
-	mask2D		= utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	mask2D		= sparx_utilities.model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	shrinkage 	= Tracker["nxinit"]/float(Tracker["constants"]["nnxo"])
 	radius      = int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	compute_noise(Tracker["nxinit"])
@@ -2923,13 +2923,13 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 		del temp
 	if Tracker["constants"]["focus3D"]: # focus mask is applied
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			focus3d    = utilities.get_im(Tracker["constants"]["focus3D"])
+			focus3d    = sparx_utilities.get_im(Tracker["constants"]["focus3D"])
 			focus3d_nx = focus3d.get_xsize()
 			if focus3d_nx != Tracker["nxinit"]: # So the decimated focus volume can be directly used
-				focus3d = fundamentals.resample(focus3d, float(Tracker["nxinit"])/float(focus3d_nx))
-		else: focus3d = utilities.model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
-		utilities.bcast_EMData_to_all(focus3d, Blockdata["myid"], Blockdata["main_node"])
-		focus3d = projection.prep_vol(focus3d, 1, 1)
+				focus3d = sparx_fundamentals.resample(focus3d, float(Tracker["nxinit"])/float(focus3d_nx))
+		else: focus3d = sparx_utilities.model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
+		sparx_utilities.bcast_EMData_to_all(focus3d, Blockdata["myid"], Blockdata["main_node"])
+		focus3d = sparx_projection.prep_vol(focus3d, 1, 1)
 	#  Preprocess the data
 	nima   = len(original_data)
 	cdata  = [None for im in range(nima)]
@@ -2941,11 +2941,11 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 		image = original_data[im].copy()
 		chunk_id          = image.get_attr("chunk_id")
 		particle_group_id = image.get_attr("particle_group")
-		phi,theta,psi,s2x,s2y = utilities.get_params_proj(image, xform = "xform.projection")
+		phi,theta,psi,s2x,s2y = sparx_utilities.get_params_proj(image, xform = "xform.projection")
 		[sx, sy]   = image.get_attr("previous_shifts")
 		[sx1, sy1] = image.get_attr("current_shifts")
-		rimage = fundamentals.cyclic_shift(image, int(round(sx)), int(round(sy)))
-		cimage = fundamentals.fshift(image, sx1, sy1)		
+		rimage = sparx_fundamentals.cyclic_shift(image, int(round(sx)), int(round(sy)))
+		cimage = sparx_fundamentals.fshift(image, sx1, sy1)		
 		st = EMAN2_cppwrap.Util.infomask(rimage, mask2D, False)
 		rimage -= st[0]
 		rimage /= st[1]
@@ -2956,39 +2956,39 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 		if Tracker["applybckgnoise"]:
 			if Tracker["applymask"]:
 				if Tracker["constants"]["hardmask"]: 
-					cimage = morphology.cosinemask(cimage, radius = Tracker["constants"]["radius"])
+					cimage = sparx_morphology.cosinemask(cimage, radius = Tracker["constants"]["radius"])
 				else:
-					bckg = utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
+					bckg = sparx_utilities.model_gauss_noise(1.0,Tracker["constants"]["nnxo"]+2,Tracker["constants"]["nnxo"])
 					bckg.set_attr("is_complex",1)
 					bckg.set_attr("is_fftpad",1)
-					bckg = fundamentals.fft(filter.filt_table(bckg, oneover[particle_group_id]))
+					bckg = sparx_fundamentals.fft(sparx_filter.filt_table(bckg, oneover[particle_group_id]))
 					#  Normalize bckg noise in real space, only region actually used.
 					st = EMAN2_cppwrap.Util.infomask(bckg, mask2D, False)
 					bckg -= st[0]
 					bckg /= st[1]
-					cimage = morphology.cosinemask(cimage,radius = Tracker["constants"]["radius"], bckg = bckg)
+					cimage = sparx_morphology.cosinemask(cimage,radius = Tracker["constants"]["radius"], bckg = bckg)
 		else:
-			if Tracker["applymask"]:cimage  = morphology.cosinemask(cimage, radius = Tracker["constants"]["radius"])
+			if Tracker["applymask"]:cimage  = sparx_morphology.cosinemask(cimage, radius = Tracker["constants"]["radius"])
 			else: pass
 		# FT
-		rimage  = fundamentals.fft(rimage)
-		cimage  = fundamentals.fft(cimage)
+		rimage  = sparx_fundamentals.fft(rimage)
+		cimage  = sparx_fundamentals.fft(cimage)
 		if Tracker["constants"]["CTF"] :
 			ctf_params = rimage.get_attr('ctf')
-			rimage      = fundamentals.fdecimate(rimage, Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
-			cimage      = fundamentals.fdecimate(cimage, Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
+			rimage      = sparx_fundamentals.fdecimate(rimage, Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
+			cimage      = sparx_fundamentals.fdecimate(cimage, Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, False, False)
 			ctf_params.apix = ctf_params.apix/shrinkage
 			rimage.set_attr('ctf', ctf_params)
 			rimage.set_attr('ctf_applied', 0)
-			if return_real :  rimage = fundamentals.fft(rimage)
+			if return_real :  rimage = sparx_fundamentals.fft(rimage)
 		else:
 			ctf_params = rimage.get_attr_default("ctf", False)
 			if ctf_params:
 				ctf_params.apix = ctf_params.apix/shrinkage
 				rimage.set_attr('ctf', ctf_params)
 				rimage.set_attr('ctf_applied', 0)
-			rimage  = fundamentals.fdecimate(rimage, nxinit*npad, nxinit*npad, 1, True, False)
-			cimage  = fundamentals.fdecimate(cimage, nxinit*npad, nxinit*npad, 1, True, False)
+			rimage  = sparx_fundamentals.fdecimate(rimage, nxinit*npad, nxinit*npad, 1, True, False)
+			cimage  = sparx_fundamentals.fdecimate(cimage, nxinit*npad, nxinit*npad, 1, True, False)
 			apix   = Tracker["constants"]["pixel_size"]
 			rimage.set_attr('apix', apix/shrinkage)
 		cimage.set_attr("padffted",1)
@@ -3008,15 +3008,15 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 			rdata[im].set_attr("bckgnoise",  Blockdata["bckgnoise"])
 			cdata[im].set_attr("bckgnoise",  Blockdata["bckgnoise"])                    
 		if Tracker["constants"]["focus3D"]:
-			focusmask = morphology.binarize(projection.prgl(focus3d, [phi, theta, psi, 0.0, 0.0], 1, True), 1)
-			cdata[im] = fundamentals.fft(focusmask*fundamentals.fft(cdata[im]))
+			focusmask = sparx_morphology.binarize(sparx_projection.prgl(focus3d, [phi, theta, psi, 0.0, 0.0], 1, True), 1)
+			cdata[im] = sparx_fundamentals.fft(focusmask*sparx_fundamentals.fft(cdata[im]))
 			fdata[im] = focusmask
 		cdata[im].set_attr("is_complex",0)
 		cdata[im].set_attr("particle_group", particle_group_id)
 		if Tracker["constants"]["CTF"]:
 			if im ==0: ny = cdata[im].get_ysize()
-			if not utilities.same_ctf(rdata[im].get_attr("ctf"), ctfa):
-				ctfs[im]   = morphology.ctf_img_real(ny, rdata[im].get_attr("ctf"))
+			if not sparx_utilities.same_ctf(rdata[im].get_attr("ctf"), ctfa):
+				ctfs[im]   = sparx_morphology.ctf_img_real(ny, rdata[im].get_attr("ctf"))
 			else: ctfs[im] = ctfs[im-1].copy()
 	return cdata, rdata, fdata, ctfs
 ##=====<----for 3D----->>>>
@@ -3036,7 +3036,7 @@ def downsize_data_for_rec3D(original_data, particle_size, return_real = False, n
 	#         2. rdata: data for reconstruction, 4nn return real image
 	nima       = len(original_data)
 	rdata      = [None for im in range(nima)]
-	mask2D     = utilities.model_circle(Tracker["constants"]["radius"],\
+	mask2D     = sparx_utilities.model_circle(Tracker["constants"]["radius"],\
 	   Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	shrinkage  = particle_size/float(Tracker["constants"]["nnxo"])
 	radius     = int(Tracker["constants"]["radius"] * shrinkage + 0.5)
@@ -3045,19 +3045,19 @@ def downsize_data_for_rec3D(original_data, particle_size, return_real = False, n
 		chunk_id = image.get_attr("chunk_id")
 		try: particle_group_id = image.get_attr("particle_group")
 		except: particle_group_id = -1
-		phi,theta,psi,s2x,s2y = utilities.get_params_proj(image, xform = "xform.projection")
+		phi,theta,psi,s2x,s2y = sparx_utilities.get_params_proj(image, xform = "xform.projection")
 		t = EMAN2_cppwrap.Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t.set_trans(EMAN2_cppwrap.Vec2f(0.0, 0.0))
 		[sx, sy] = image.get_attr("previous_shifts") # always for rec3D
-		if Tracker["nosmearing"]: image = fundamentals.fshift(image, s2x, s2y)
-		else: image = fundamentals.cyclic_shift(image, int(round(sx)), int(round(sy)))
+		if Tracker["nosmearing"]: image = sparx_fundamentals.fshift(image, s2x, s2y)
+		else: image = sparx_fundamentals.cyclic_shift(image, int(round(sx)), int(round(sy)))
 		st = EMAN2_cppwrap.Util.infomask(image, mask2D, False)
 		image -= st[0]
 		image /= st[1]
-		image  = fundamentals.fft(image)
+		image  = sparx_fundamentals.fft(image)
 		if Tracker["constants"]["CTF"]:
 			ctf_params = image.get_attr("ctf")
-			image = fundamentals.fdecimate(image, particle_size*npad, particle_size*npad, 1, False, False)
+			image = sparx_fundamentals.fdecimate(image, particle_size*npad, particle_size*npad, 1, False, False)
 			ctf_params.apix = ctf_params.apix/shrinkage
 			image.set_attr('ctf', ctf_params)
 			image.set_attr('ctf_applied', 0)
@@ -3067,7 +3067,7 @@ def downsize_data_for_rec3D(original_data, particle_size, return_real = False, n
 				ctf_params.apix = ctf_params.apix/shrinkage
 				image.set_attr('ctf', ctf_params)
 				image.set_attr('ctf_applied', 0)
-			image = fundamentals.fdecimate(image, particle_size*npad, particle_size*npad, 1, True, False)
+			image = sparx_fundamentals.fdecimate(image, particle_size*npad, particle_size*npad, 1, True, False)
 			apix  = Tracker["constants"]["pixel_size"]
 			image.set_attr('apix', apix/shrinkage)		
 		if not return_real:	
@@ -3088,7 +3088,7 @@ def compare_two_images_eucd(data, ref_vol, fdata, ctfimgs):
 	pass#IMPORTIMPORTIMPORT import numpy as np
 	peaks = np.zeros(shape = len(data), dtype=float)
 	ny      = data[0].get_ysize()
-	ref_vol = projection.prep_vol(ref_vol, npad = 2, interpolation_method = 1)
+	ref_vol = sparx_projection.prep_vol(ref_vol, npad = 2, interpolation_method = 1)
 	#ctfs    = EMAN2Ctf()
 	qt = float(Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"])
 	m = EMAN2_cppwrap.Util.unrollmask(ny)
@@ -3096,9 +3096,9 @@ def compare_two_images_eucd(data, ref_vol, fdata, ctfimgs):
 		#current_ctf = data[im].get_attr('ctf')
 		#if( not same_ctf(current_ctf,ctfs) ):
 		#	ctfs = ctf_img_real(ny, current_ctf)
-		phi, theta, psi, s2x, s2y = utilities.get_params_proj(data[im], xform = "xform.projection")
-		rtemp = projection.prgl(ref_vol,[phi, theta, psi, 0.0,0.0], 1, False)
-		if Tracker["constants"]["focus3D"]: rtemp = fundamentals.fft(fundamentals.fft(rtemp)*fdata[im])
+		phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(data[im], xform = "xform.projection")
+		rtemp = sparx_projection.prgl(ref_vol,[phi, theta, psi, 0.0,0.0], 1, False)
+		if Tracker["constants"]["focus3D"]: rtemp = sparx_fundamentals.fft(sparx_fundamentals.fft(rtemp)*fdata[im])
 		if Tracker["applybckgnoise"]:
 			peaks[im] = -EMAN2_cppwrap.Util.sqed(data[im], rtemp, ctfimgs[im], \
 			    Blockdata["unrolldata"][data[im].get_attr("particle_group")])/qt
@@ -3113,13 +3113,13 @@ def compare_two_images_cross(data, ref_vol, ctfimgs):
 	ny    = data[0].get_ysize()
 	m     = EMAN2_cppwrap.Util.unrollmask(ny)
 	peaks = np.zeros(shape = len(data), dtype=float)
-	volft = projection.prep_vol(ref_vol, 2, 1)
+	volft = sparx_projection.prep_vol(ref_vol, 2, 1)
 	at = time.time()
 	#  Ref is in reciprocal space
 	#ctfa = EMAN2Ctf()		
 	for im in range(len(data)):
-		phi, theta, psi, s2x, s2y = utilities.get_params_proj(data[im], xform = "xform.projection")
-		ref = projection.prgl( volft, [phi, theta, psi, 0.0, 0.0], 1, False)
+		phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(data[im], xform = "xform.projection")
+		ref = sparx_projection.prgl( volft, [phi, theta, psi, 0.0, 0.0], 1, False)
 		#current_ctf = data[im].get_attr('ctf')
 		#if not same_ctf(current_ctf, ctfa):
 		#	ctfa = current_ctf
@@ -3231,17 +3231,17 @@ def get_sorting_parti_from_stack(data):
 		total_plist = np.full(Tracker["total_stack"], -1, dtype=np.int32)
 	else: total_plist = 0
 	for myproc in range(Blockdata["nproc"]):
-		image_start,image_end = applications.MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], myproc)
+		image_start,image_end = sparx_applications.MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], myproc)
 		plist = 0
 		if Blockdata["myid"] == myproc:
 			plist = np.full(len(data), -1, dtype=np.int32)
 			for im in range(len(data)):
 				plist[im] = data[im].get_attr("group")
-		plist = utilities.wrap_mpi_bcast(plist, myproc, mpi.MPI_COMM_WORLD)
+		plist = sparx_utilities.wrap_mpi_bcast(plist, myproc, mpi.MPI_COMM_WORLD)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			total_plist[image_start:image_end] = plist
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	total_plist = utilities.wrap_mpi_bcast(total_plist, Blockdata["main_node"])
+	total_plist = sparx_utilities.wrap_mpi_bcast(total_plist, Blockdata["main_node"])
 	return total_plist
 
 def create_nrandom_lists(partids, number_of_groups, number_of_runs):
@@ -3254,7 +3254,7 @@ def create_nrandom_lists(partids, number_of_groups, number_of_runs):
 	
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		random_assignment = []
-		data_list = utilities.read_text_file(partids, -1)
+		data_list = sparx_utilities.read_text_file(partids, -1)
 		if len(data_list)==1: sorting_data_list = data_list[0]
 		else:                 sorting_data_list = data_list[1]
 		group_size = len(sorting_data_list)//number_of_groups
@@ -3279,7 +3279,7 @@ def create_nrandom_lists(partids, number_of_groups, number_of_runs):
 			del assignment
 			del ll
 	else: random_assignment = 0
-	random_assignment = utilities.wrap_mpi_bcast(random_assignment , Blockdata["main_node"])
+	random_assignment = sparx_utilities.wrap_mpi_bcast(random_assignment , Blockdata["main_node"])
 	return random_assignment
 
 def create_nrandom_lists_from_given_pids(work_dir, partids, number_of_groups, number_of_runs):
@@ -3292,7 +3292,7 @@ def create_nrandom_lists_from_given_pids(work_dir, partids, number_of_groups, nu
 	
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		random_assignment = []
-		data_list = utilities.read_text_file(partids, -1)
+		data_list = sparx_utilities.read_text_file(partids, -1)
 		if len(data_list)==1: sorting_data_list= data_list[0]
 		else: sorting_data_list = data_list[1]
 		group_size = len(sorting_data_list)//number_of_groups
@@ -3313,12 +3313,12 @@ def create_nrandom_lists_from_given_pids(work_dir, partids, number_of_groups, nu
 			assignment = []
 			for im in range(len(sorting_data_list)):
 				assignment.append([particle_dict[sorting_data_list[im]], sorting_data_list[im]])
-			utilities.write_text_row(assignment, os.path.join(work_dir,"independent_index_%03d.txt"%index_of_random))
+			sparx_utilities.write_text_row(assignment, os.path.join(work_dir,"independent_index_%03d.txt"%index_of_random))
 			random_assignment.append(assignment)
 			del assignment
 			del ll
 	else: random_assignment = 0
-	random_assignment = utilities.wrap_mpi_bcast(random_assignment, Blockdata["main_node"])
+	random_assignment = sparx_utilities.wrap_mpi_bcast(random_assignment, Blockdata["main_node"])
 	return  random_assignment
 	
 def assign_unaccounted_elements_mpi(glist, clusters, img_per_grp):
@@ -3337,14 +3337,14 @@ def assign_unaccounted_elements_mpi(glist, clusters, img_per_grp):
 	else:
 		glist    = 0
 		clusters = 0
-	clusters = utilities.wrap_mpi_bcast(clusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	glist    = utilities.wrap_mpi_bcast(glist,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	clusters = sparx_utilities.wrap_mpi_bcast(clusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	glist    = sparx_utilities.wrap_mpi_bcast(glist,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	
 	if len(glist) <= Blockdata["nproc"]*30:
 		if Blockdata["myid"]== Blockdata["main_node"]:
 			clusters = assign_unaccounted_inverse_proportion_to_size(glist, clusters, img_per_grp)
 		else: clusters = 0
-		clusters = utilities.wrap_mpi_bcast(clusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		clusters = sparx_utilities.wrap_mpi_bcast(clusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	else:
 		slist = []
 		clist = []
@@ -3353,7 +3353,7 @@ def assign_unaccounted_elements_mpi(glist, clusters, img_per_grp):
 				slist.append(max(1.- float(len(clusters[ic]))/float(img_per_grp), 0.05))
 			else: slist.append(0.05)
 		uplist = copy.deepcopy(glist)
-		image_start, image_end = applications.MPI_start_end(len(uplist), Blockdata["nproc"], Blockdata["myid"])
+		image_start, image_end = sparx_applications.MPI_start_end(len(uplist), Blockdata["nproc"], Blockdata["myid"])
 		uplist = uplist[image_start:image_end]
 		nsize  = len(uplist)//3
 		for ichunk in range(3):
@@ -3372,11 +3372,11 @@ def assign_unaccounted_elements_mpi(glist, clusters, img_per_grp):
 				else: continue
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			if Blockdata["myid"]!= Blockdata["main_node"]:
-				 utilities.wrap_mpi_send(clusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+				 sparx_utilities.wrap_mpi_send(clusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			else:
 				for iproc in range(Blockdata["nproc"]):
 					if iproc != Blockdata["main_node"]:
-						dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+						dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 						for ic in range(len(clusters)):clusters[ic]+=dummy[ic]
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			if Blockdata["myid"]== Blockdata["main_node"]:
@@ -3388,8 +3388,8 @@ def assign_unaccounted_elements_mpi(glist, clusters, img_per_grp):
 			else:
 				slist    = 0 
 				clusters = 0
-			slist    = utilities.wrap_mpi_bcast(slist,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			clusters = utilities.wrap_mpi_bcast(clusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			slist    = sparx_utilities.wrap_mpi_bcast(slist,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			clusters = sparx_utilities.wrap_mpi_bcast(clusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	return clusters
 """Multiline Comment3"""
 def refilling_global_scheme_mpi(clusters, unaccounted_list, number_of_clusters, log_file, swap_ratio):
@@ -3412,8 +3412,8 @@ def refilling_global_scheme_mpi(clusters, unaccounted_list, number_of_clusters, 
 		else:
 			unaccounted_list = 0
 			clusters         = 0
-		clusters         = utilities.wrap_mpi_bcast(clusters,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		unaccounted_list = utilities.wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		clusters         = sparx_utilities.wrap_mpi_bcast(clusters,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		unaccounted_list = sparx_utilities.wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	
 	avg_size = N//number_of_clusters
 	m = number_of_clusters - len(clusters)
@@ -3423,7 +3423,7 @@ def refilling_global_scheme_mpi(clusters, unaccounted_list, number_of_clusters, 
 			if len(clusters[ic]) > 2*avg_size:
 				large_clusters.append(clusters[ic])
 	else: large_clusters = 0
-	large_clusters = utilities.wrap_mpi_bcast(large_clusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	large_clusters = sparx_utilities.wrap_mpi_bcast(large_clusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	L = len(large_clusters)
 	if (m == 0) and (L == 0):
 		out_clusters = assign_unaccounted_elements_mpi(unaccounted_list, clusters, avg_size)
@@ -3497,8 +3497,8 @@ def fill_no_large_groups_and_unaccounted_to_m_and_rcluster_mpi(\
 					del clusters[ic][avg_size:]
 			random.shuffle(unaccounted_list)
 		else: unaccounted_list = 0
-		unaccounted_list = utilities.wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		clusters         = utilities.wrap_mpi_bcast(clusters,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		unaccounted_list = sparx_utilities.wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		clusters         = sparx_utilities.wrap_mpi_bcast(clusters,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		tmp_clusters = []
 		if m > 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
@@ -3507,8 +3507,8 @@ def fill_no_large_groups_and_unaccounted_to_m_and_rcluster_mpi(\
 					   select_fixed_size_cluster_from_alist(unaccounted_list, avg_size//2)
 					tmp_clusters.append(cluster)
 			else: tmp_clusters = 0
-			tmp_clusters     = utilities.wrap_mpi_bcast(tmp_clusters,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-			unaccounted_list = utilities.wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)	 
+			tmp_clusters     = sparx_utilities.wrap_mpi_bcast(tmp_clusters,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			unaccounted_list = sparx_utilities.wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)	 
 		if len(tmp_clusters)>0:
 			for cluster in tmp_clusters: clusters.append(cluster)
 		clusters = assign_unaccounted_elements_mpi(unaccounted_list, clusters, avg_size)
@@ -3555,17 +3555,17 @@ def swap_accounted_with_unaccounted_elements_mpi(accounted_file, \
 	pass#IMPORTIMPORTIMPORT import copy
 	checking_flag = 0
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		if len(utilities.read_text_row(accounted_file)) <= 1:checking_flag = 1
-	checking_flag = utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		if len(sparx_utilities.read_text_row(accounted_file)) <= 1:checking_flag = 1
+	checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	if checking_flag == 0:
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			clusters, npart  = split_partition_into_ordered_clusters(utilities.read_text_file(accounted_file, -1), False)
-			unaccounted_list = np.array(utilities.read_text_file(unaccounted_file), dtype = np.int32)
+			clusters, npart  = split_partition_into_ordered_clusters(sparx_utilities.read_text_file(accounted_file, -1), False)
+			unaccounted_list = np.array(sparx_utilities.read_text_file(unaccounted_file), dtype = np.int32)
 		else: 
 			clusters = 0
 			unaccounted_list = 0
-		clusters          = utilities.wrap_mpi_bcast(clusters,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		unaccounted_list  = utilities.wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		clusters          = sparx_utilities.wrap_mpi_bcast(clusters,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		unaccounted_list  = sparx_utilities.wrap_mpi_bcast(unaccounted_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		clusters = refilling_global_scheme_mpi(clusters, unaccounted_list.tolist(), \
 		   number_of_groups, log_file, swap_ratio)	
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -3574,7 +3574,7 @@ def swap_accounted_with_unaccounted_elements_mpi(accounted_file, \
 			assignment_list = np.array(assignment_list).transpose()
 			for jm in range(2):converted_assignment_list.append(assignment_list[jm].tolist())
 		else: converted_assignment_list = 0
-		converted_assignment_list = utilities.wrap_mpi_bcast(converted_assignment_list, \
+		converted_assignment_list = sparx_utilities.wrap_mpi_bcast(converted_assignment_list, \
 		    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	else: # there exits unaccounted
 		assignment_list = create_nrandom_lists(unaccounted_file, number_of_groups, 1)#MPI
@@ -3617,7 +3617,7 @@ def patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2):
 	else:
 		for im in range(len(ptp1)): ptp1[im] = np.array(ptp1[im],dtype = np.int32)
 		for im in range(len(ptp2)): ptp2[im] = np.array(ptp2[im],dtype = np.int32)
-	newindeces, list_stable, nb_tot_objs = statistics.k_means_match_clusters_asg_new(ptp1, ptp2)
+	newindeces, list_stable, nb_tot_objs = sparx_statistics.k_means_match_clusters_asg_new(ptp1, ptp2)
 	new_list_stable = []
 	for a in list_stable:
 		a.tolist()
@@ -3639,19 +3639,19 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 		log_main.add('----------------------------------------------------------------------------------------------------------------')
 		bad_clustering =  0
 		ipair      =      0
-		core1      = utilities.read_text_file(input_box_parti1, -1)
+		core1      = sparx_utilities.read_text_file(input_box_parti1, -1)
 		ptp1, tmp1 = split_partition_into_ordered_clusters(core1, False)
-		core2      = utilities.read_text_file(input_box_parti2, -1)
+		core2      = sparx_utilities.read_text_file(input_box_parti2, -1)
 		ptp2, tmp2 = split_partition_into_ordered_clusters(core2, False)
 	else:
 		ptp1  = 0
 		ptp2  = 0
 		core1 = 0
 		core2 = 0
-	ptp1  = utilities.wrap_mpi_bcast(ptp1,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	ptp2  = utilities.wrap_mpi_bcast(ptp2,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	core1 = utilities.wrap_mpi_bcast(core1, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	core2 = utilities.wrap_mpi_bcast(core2, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	ptp1  = sparx_utilities.wrap_mpi_bcast(ptp1,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	ptp2  = sparx_utilities.wrap_mpi_bcast(ptp2,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	core1 = sparx_utilities.wrap_mpi_bcast(core1, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	core2 = sparx_utilities.wrap_mpi_bcast(core2, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	rand_index = compute_rand_index_mpi(core1[0], core2[0])
 	if Blockdata["myid"]==Blockdata["main_node"]:
 		log_main.add('Rand index of two pairs of independent runs is  %5.4f'%rand_index)
@@ -3689,9 +3689,9 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 		
 		pass#IMPORTIMPORTIMPORT from math import sqrt
 		number_of_groups = Tracker["number_of_groups"]
-		ares143          = get_res143(statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+		ares143          = get_res143(sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 		   Tracker["constants"]["total_stack"], Tracker["total_stack"]//number_of_groups))
-		minres143        = get_res143(statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+		minres143        = get_res143(sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 		   Tracker["constants"]["total_stack"], (Tracker["minimum_grp_size"][0]+\
 		        Tracker["minimum_grp_size"][1])//2))
 		####
@@ -3702,7 +3702,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 		groups   = [ None for jl in range(len(list_stable))]
 		
 		for il in range(len(list_stable)):
-			cfsc = statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+			cfsc = sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 			   Tracker["constants"]["total_stack"], len(list_stable[il]))
 			res_list[il]  = get_res143(cfsc)
 			largest_size  = max(largest_size,  len(list_stable[il]))
@@ -3726,14 +3726,14 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 			any.tolist()
 			score3 = float((np.intersect1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)\
 				  /float((np.union1d(ptp1[newindeces[index_of_any][0]], ptp2[newindeces[index_of_any][1]])).size)*100.
-			cres = get_res143(statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+			cres = get_res143(sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 			   Tracker["constants"]["total_stack"], len(any)))  
 			decision_table[0][index_of_any] = len(any)
 			decision_table[1][index_of_any] = score3
 			decision_table[2][index_of_any] = cres
 			decision_table[3][index_of_any] = largest_size/float(len(any))#
 		for im in range(4):
-			decision_stat.append(statistics.table_stat(decision_table[im]))
+			decision_stat.append(sparx_statistics.table_stat(decision_table[im]))
 				####-----------------------------------------------------------------------------------------------------------		  
 		for indx in range(len(list_stable)):
 			any = np.sort(list_stable[indx])
@@ -3783,7 +3783,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 			new_list[:]   = tmp_new_list[:]
 			stat_list[:]  = tmp_stat_list[:]
 	else: nclass = 0
-	nclass = utilities.bcast_number_to_all(nclass,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	nclass = sparx_utilities.bcast_number_to_all(nclass,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	############### parse output
 	if nclass == 0:
 		### 
@@ -3801,12 +3801,12 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 			for im in range(number_of_groups):stat_list.append([0.,  0.,  0.])
 			log_main.add('================================================================================================================\n')
 		else: new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0
-		new_index          = utilities.wrap_mpi_bcast(new_index,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		unaccounted_list   = utilities.wrap_mpi_bcast(unaccounted_list,        Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		stat_list          = utilities.wrap_mpi_bcast(stat_list,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		bad_clustering     = utilities.bcast_number_to_all(bad_clustering,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		stop_generation    = utilities.bcast_number_to_all(stop_generation,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		Tracker            = utilities.wrap_mpi_bcast(Tracker,                 Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		new_index          = sparx_utilities.wrap_mpi_bcast(new_index,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		unaccounted_list   = sparx_utilities.wrap_mpi_bcast(unaccounted_list,        Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		stat_list          = sparx_utilities.wrap_mpi_bcast(stat_list,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		bad_clustering     = sparx_utilities.bcast_number_to_all(bad_clustering,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		stop_generation    = sparx_utilities.bcast_number_to_all(stop_generation,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		Tracker            = sparx_utilities.wrap_mpi_bcast(Tracker,                 Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		return new_index, unaccounted_list, bad_clustering, stop_generation, stat_list
 			
 	elif nclass == 1: # Force to stop this generation, and output the cluster; do not do any other box comparison
@@ -3823,16 +3823,16 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 			gendir   =  os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"])
 			
 			with open(os.path.join(box1_dir,"freq_cutoff.json"),'r') as fout:
-				freq_cutoff_dict1 = utilities.convert_json_fromunicode(json.load(fout))
+				freq_cutoff_dict1 = sparx_utilities.convert_json_fromunicode(json.load(fout))
 			fout.close()
 			
 			with open(os.path.join(box2_dir,"freq_cutoff.json"),'r') as fout:
-				freq_cutoff_dict2 = utilities.convert_json_fromunicode(json.load(fout))
+				freq_cutoff_dict2 = sparx_utilities.convert_json_fromunicode(json.load(fout))
 			fout.close()
 			
 			try:
 				with open(os.path.join(gendir,"freq_cutoff.json"),'r') as fout:
-					freq_cutoff_dict3 = utilities.convert_json_fromunicode(json.load(fout))
+					freq_cutoff_dict3 = sparx_utilities.convert_json_fromunicode(json.load(fout))
 				fout.close()
 				freq_cutoff_dict3 = {}
 			except: freq_cutoff_dict3 = {}
@@ -3849,11 +3849,11 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 			fout.close()
 			log_main.add('================================================================================================================\n')
 		else: new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0
-		unaccounted_list   = utilities.wrap_mpi_bcast(unaccounted_list,        Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		new_index          = utilities.wrap_mpi_bcast(new_index,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		stat_list          = utilities.wrap_mpi_bcast(stat_list,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		bad_clustering     = utilities.bcast_number_to_all(bad_clustering,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		stop_generation    = utilities.bcast_number_to_all(stop_generation,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		unaccounted_list   = sparx_utilities.wrap_mpi_bcast(unaccounted_list,        Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		new_index          = sparx_utilities.wrap_mpi_bcast(new_index,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		stat_list          = sparx_utilities.wrap_mpi_bcast(stat_list,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		bad_clustering     = sparx_utilities.bcast_number_to_all(bad_clustering,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		stop_generation    = sparx_utilities.bcast_number_to_all(stop_generation,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		return new_index, unaccounted_list.tolist(), bad_clustering, stop_generation, stat_list
 	else:
 		if Blockdata["myid"]==Blockdata["main_node"]:
@@ -3874,14 +3874,14 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 				box2_dir =  os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"], "layer%d"%Tracker["depth"], "nbox%d"%(nbox+1))
 				gendir   =  os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"])
 				with open(os.path.join(box1_dir,"freq_cutoff.json"),'r') as fout:
-					freq_cutoff_dict1 = utilities.convert_json_fromunicode(json.load(fout))
+					freq_cutoff_dict1 = sparx_utilities.convert_json_fromunicode(json.load(fout))
 				fout.close()
 				with open(os.path.join(box2_dir,"freq_cutoff.json"),'r') as fout:
-					freq_cutoff_dict2 = utilities.convert_json_fromunicode(json.load(fout))
+					freq_cutoff_dict2 = sparx_utilities.convert_json_fromunicode(json.load(fout))
 				fout.close()
 				try:
 					with open(os.path.join(gendir,"freq_cutoff.json"),'r') as fout:
-						freq_cutoff_dict3 = utilities.convert_json_fromunicode(json.load(fout))
+						freq_cutoff_dict3 = sparx_utilities.convert_json_fromunicode(json.load(fout))
 					fout.close()
 					freq_cutoff_dict3     = {}
 				except: freq_cutoff_dict3 = {}
@@ -3900,11 +3900,11 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 			else:
 				log_main.add('================================================================================================================\n')
 		else: new_index, unaccounted_list, bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0
-		unaccounted_list   = utilities.wrap_mpi_bcast(unaccounted_list,        Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		new_index          = utilities.wrap_mpi_bcast(new_index,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		stat_list          = utilities.wrap_mpi_bcast(stat_list,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		bad_clustering     = utilities.bcast_number_to_all(bad_clustering,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		stop_generation    = utilities.bcast_number_to_all(stop_generation,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		unaccounted_list   = sparx_utilities.wrap_mpi_bcast(unaccounted_list,        Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		new_index          = sparx_utilities.wrap_mpi_bcast(new_index,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		stat_list          = sparx_utilities.wrap_mpi_bcast(stat_list,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		bad_clustering     = sparx_utilities.bcast_number_to_all(bad_clustering,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		stop_generation    = sparx_utilities.bcast_number_to_all(stop_generation,    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		return new_index, unaccounted_list.tolist(), bad_clustering, stop_generation, stat_list
 		
 #### ------------------- >>>   within-box comparison <<< ---------------------------------
@@ -3922,9 +3922,9 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	log_list.append(' ')
 	log_list.append('----------------------------------------------------------------------------------------------------------------')	      
 	ipair      = 0
-	core1      = utilities.read_text_file(os.path.join(partition_dir, "partition_%03d.txt"%(2*ipair)),  -1)
+	core1      = sparx_utilities.read_text_file(os.path.join(partition_dir, "partition_%03d.txt"%(2*ipair)),  -1)
 	ptp1, tmp1 = split_partition_into_ordered_clusters(core1, False)
-	core2      = utilities.read_text_file(os.path.join(partition_dir, "partition_%03d.txt"%(2*ipair+1)),-1)
+	core2      = sparx_utilities.read_text_file(os.path.join(partition_dir, "partition_%03d.txt"%(2*ipair+1)),-1)
 	ptp2, tmp2 = split_partition_into_ordered_clusters(core2, False)
 	log_list.append('       Matching of sorting results of two quasi-independent runs')
 	# before comparison
@@ -3982,9 +3982,9 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 		smallest_size = min(smallest_size, len(list_stable[im]))
 		largest_size  = max(largest_size,  len(list_stable[im]))
 		groups[im]    = len(list_stable[im])
-	maxres143 = get_res143(statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"],\
+	maxres143 = get_res143(sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"],\
 	   Tracker["constants"]["total_stack"], largest_size))
-	minres143 = get_res143(statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"],\
+	minres143 = get_res143(sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"],\
 	   Tracker["constants"]["total_stack"], smallest_size))
 	
 	dtable, coid = AI_split_groups(groups)
@@ -4004,13 +4004,13 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 		  ptp2[newindeces[index_of_any][1]])).size)\
 			  /float((np.union1d(ptp1[newindeces[index_of_any][0]], \
 			     ptp2[newindeces[index_of_any][1]])).size)*100.
-		cres = get_res143(statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+		cres = get_res143(sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 		  Tracker["constants"]["total_stack"], len(any)))
 		decision_table[0][index_of_any] = len(any)
 		decision_table[1][index_of_any] = score3
 		decision_table[2][index_of_any] = cres
 		decision_table[3][index_of_any] = largest_size/float(len(any))
-	for im in range(4): decision_stat.append(statistics.table_stat(decision_table[im]))
+	for im in range(4): decision_stat.append(sparx_statistics.table_stat(decision_table[im]))
 	### ----------------------------------------------------------------------------------
 	log_list.append('--------------------------------------------------------')
 	log_list.append('               Post-matching results.                   ')
@@ -4054,8 +4054,8 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 	utmp = np.setdiff1d(full_list, np.array(accounted_list, dtype=np.int32))
 	if utmp.shape[0] >1: unaccounted_list = (np.sort(utmp)).tolist()
 	else:                unaccounted_list = utmp.tolist()
-	utilities.write_text_row(new_index,         os.path.join(partition_dir, "Accounted.txt"))
-	utilities.write_text_file(unaccounted_list, os.path.join(partition_dir, "Core_set.txt"))
+	sparx_utilities.write_text_row(new_index,         os.path.join(partition_dir, "Accounted.txt"))
+	sparx_utilities.write_text_file(unaccounted_list, os.path.join(partition_dir, "Core_set.txt"))
 	##------------------------------------------------------------------------------------
 	log_list.append('The overall reproducibility is %5.1f%%.'%current_iter_ratio)
 	log_list.append('The number of accounted for images: %d.  The number of core set images: %d.'%(len(accounted_list), len(unaccounted_list)))
@@ -4090,7 +4090,7 @@ def do_withinbox_two_way_comparison(partition_dir, nbox, nrun, niter):
 		  float(nlist[0]), 0.0, float(nlist[0]), float(nlist[0])))
 		  
 	for im in range(1, len(list_stable)): 
-		astat = statistics.table_stat(nlist[0:im+1])
+		astat = sparx_statistics.table_stat(nlist[0:im+1])
 		log_list.append("%3d    %12.3f    %12.3f   %12.3f    %12.3f "%(im+1,\
 		  astat[0], numpy.sqrt(astat[1]), astat[2], astat[3]))
 		  
@@ -4128,12 +4128,12 @@ def compute_rand_index_mpi(inassign_in1, inassign_in2):
 	del assign1, assign2
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	if (Blockdata["myid"] != Blockdata["main_node"]):
-		utilities.wrap_mpi_send(nomin, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		sparx_utilities.wrap_mpi_send(nomin, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	else:
 		for iproc in range(Blockdata["nproc"]):
 			if (iproc !=Blockdata["main_node"]):
-				nomin += utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
-	nomin = utilities.bcast_number_to_all(nomin,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+				nomin += sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+	nomin = sparx_utilities.bcast_number_to_all(nomin,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	return float(nomin)/num_all_pairs
 ### reproducibility 	
 def get_MGR_from_two_way_comparison(newindeces, clusters1, clusters2, N):
@@ -4220,7 +4220,7 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 			for j in range(k):new_clusters2.append(blist[plist2[j][0]:plist2[j][1]])
 			for j in range(k): new_clusters1[j] = np.sort(new_clusters1[j])
 			for j in range(k): new_clusters2[j] = np.sort(new_clusters2[j])
-			newindeces, list_stable, nb_tot_objs = statistics.k_means_match_clusters_asg_new(new_clusters1,new_clusters2)
+			newindeces, list_stable, nb_tot_objs = sparx_statistics.k_means_match_clusters_asg_new(new_clusters1,new_clusters2)
 			ts = []
 			for ii in range(len(newindeces)):
 				ts += list(set(new_clusters1[newindeces[ii][0]].tolist() + new_clusters2[newindeces[ii][1]].tolist()))
@@ -4231,12 +4231,12 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 					      new_clusters2[newindeces[j][1]])).size)/float((np.union1d(new_clusters1[newindeces[j][0]], \
 					      new_clusters2[newindeces[j][1]])).size)*100.)
 				except: pass		
-		svar +=statistics.table_stat(tlist)[0]
-		save +=statistics.table_stat(tlist)[1]
+		svar +=sparx_statistics.table_stat(tlist)[0]
+		save +=sparx_statistics.table_stat(tlist)[1]
 		for j in range(k):
-			try: gvar[j] +=statistics.table_stat(clist[j])[1]
+			try: gvar[j] +=sparx_statistics.table_stat(clist[j])[1]
 			except: gvar[j] +=0.0
-			try: gave[j] +=statistics.table_stat(clist[j])[0]
+			try: gave[j] +=sparx_statistics.table_stat(clist[j])[0]
 			except: gave[j] +=0.0
 			
 	save = mpi.mpi_reduce(save, 1, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD)
@@ -4244,19 +4244,19 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	
 	for iproc in range(1, Blockdata["nproc"]):
 		if Blockdata["myid"] == iproc:
-			utilities.wrap_mpi_send(gvar,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			sparx_utilities.wrap_mpi_send(gvar,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			
 		elif Blockdata["myid"] == Blockdata["main_node"]:
-			dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+			dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 			for im in range(len(dummy)): gvar[im]+=dummy[im]
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	for iproc in range(1, Blockdata["nproc"]):
 		if Blockdata["myid"] == iproc:
-			utilities.wrap_mpi_send(gave,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			sparx_utilities.wrap_mpi_send(gave,  Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			
 		elif Blockdata["myid"] == Blockdata["main_node"]:
-			dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+			dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 			for im  in  range(len(dummy)): gave[im]+=dummy[im]
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
@@ -4272,15 +4272,15 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	else:
 		gave = 0
 		gvar = 0
-	gave = utilities.wrap_mpi_bcast(gave, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	gvar = utilities.wrap_mpi_bcast(gvar, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	gave = sparx_utilities.wrap_mpi_bcast(gave, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	gvar = sparx_utilities.wrap_mpi_bcast(gvar, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	return gave, gvar
 ###------------------------------------------------
 def compare_two_iterations(assignment1, assignment2):
 	# compare two assignments during clustering, either iteratively or independently
 	pass#IMPORTIMPORTIMPORT import numpy as np
 	if len(assignment1) !=len(assignment2):
-		global_def.ERROR("Two assignments don't have the same length", "compare_two_iterations", 0, 0)
+		sparx_global_def.ERROR("Two assignments don't have the same length", "compare_two_iterations", 0, 0)
 	else:
 		N          = len(assignment1)
 		full_list  = np.array(range(N), dtype = np.int32)
@@ -4294,7 +4294,7 @@ def compare_two_iterations(assignment1, assignment2):
 	group2_ids  = np.unique(assignment2)
 	for im in range(group2_ids.shape[0]):
 		res2.append(np.sort(full_list[isin(assignment2, group2_ids[im])]))
-	newindeces, list_stable, nb_tot_objs = statistics.k_means_match_clusters_asg_new(res1, res2)
+	newindeces, list_stable, nb_tot_objs = sparx_statistics.k_means_match_clusters_asg_new(res1, res2)
 	del res1
 	del res2
 	return float(nb_tot_objs)/N, newindeces, list_stable
@@ -4344,10 +4344,10 @@ def parti_oriens(params, angstep, smc):
 	seaf = []
 	for q in eah+u:seaf += smc.symmetry_related(q)
 	lseaf = 2*leah
-	seaf = utilities.angles_to_normals(seaf)
+	seaf = sparx_utilities.angles_to_normals(seaf)
 	occupancy = [[] for i in range(leah)]
 	for i,q in enumerate(params):
-		l = utilities.nearest_fang(seaf,q[0],q[1])
+		l = sparx_utilities.nearest_fang(seaf,q[0],q[1])
 		l = l%lseaf
 		if(l>=leah):  l = l-leah
 		occupancy[l].append(i)
@@ -4360,8 +4360,8 @@ def get_angle_step_and_orien_groups_mpi(params_in, partids_in, angstep):
 #	     pass#IMPORTIMPORTIMPORT bcast_number_to_all, read_text_row, read_text_file
 	pass#IMPORTIMPORTIMPORT from fundamentals import symclass
 	if Blockdata["main_node"] == Blockdata["myid"]:
-		params  = utilities.read_text_row(params_in)
-		partids = utilities.read_text_file(partids_in, -1)
+		params  = sparx_utilities.read_text_row(params_in)
+		partids = sparx_utilities.read_text_file(partids_in, -1)
 		if len(partids) == 1: partids = partids[0]
 		else:                 partids = partids[1]
 		subparams = []
@@ -4384,7 +4384,7 @@ def get_angle_step_and_orien_groups_mpi(params_in, partids_in, angstep):
 			tmp = sorted(ptls_in_orien_groups[img])
 			ptls_in_orien_groups[img][:] = tmp[:]
 	else: ptls_in_orien_groups = 0
-	ptls_in_orien_groups = utilities.wrap_mpi_bcast( \
+	ptls_in_orien_groups = sparx_utilities.wrap_mpi_bcast( \
 	  ptls_in_orien_groups,Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	  
 	return ptls_in_orien_groups
@@ -4403,7 +4403,7 @@ def stepone(tvol, tweight):
 	
 def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0):
 	global Tracker, Blockdata
-	if( Blockdata["color"] != color ):return utilities.model_blank(1)  #  This should not be executed if called properly
+	if( Blockdata["color"] != color ):return sparx_utilities.model_blank(1)  #  This should not be executed if called properly
 	if( Blockdata["myid_on_node"] == 0 ):
 		nz = tweight.get_zsize()
 		ny = tweight.get_ysize()
@@ -4418,12 +4418,12 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 					limitres = i-1
 					break
 			if( limitres == 0 ): limitres = nr-2;
-			ovol = utilities.reshape_1d(cfsc, nr, 2*nr)
+			ovol = sparx_utilities.reshape_1d(cfsc, nr, 2*nr)
 			limitres = 2*min(limitres, Tracker["maxfrad"])  # 2 on account of padding, which is always on
 			maxr2 = limitres**2
 			for i in range(limitres+1, len(ovol), 1):   ovol[i] = 0.0
 			ovol[0] = 1.0
-			it = utilities.model_blank(2*nr)
+			it = sparx_utilities.model_blank(2*nr)
 			for i in range(2*nr):  it[i] = ovol[i]
 			del ovol
 			#  Do not regularize first four
@@ -4440,39 +4440,39 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 		EMAN2_cppwrap.Util.divclreal(tvol, tweight, 1.0e-5)
 
 	else:
-		tvol = utilities.model_blank(1)
-		tweight = utilities.model_blank(1)
+		tvol = sparx_utilities.model_blank(1)
+		tweight = sparx_utilities.model_blank(1)
 		nz    = 0
 		ny    = 0
 		nx    = 0
 		maxr2 = 0
-	nx    = utilities.bcast_number_to_all(nx, source_node = 0,    mpi_comm = Blockdata["shared_comm"])
-	ny    = utilities.bcast_number_to_all(ny, source_node = 0,    mpi_comm = Blockdata["shared_comm"])
-	nz    = utilities.bcast_number_to_all(nz, source_node = 0,    mpi_comm = Blockdata["shared_comm"])
-	maxr2 = utilities.bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	nx    = sparx_utilities.bcast_number_to_all(nx, source_node = 0,    mpi_comm = Blockdata["shared_comm"])
+	ny    = sparx_utilities.bcast_number_to_all(ny, source_node = 0,    mpi_comm = Blockdata["shared_comm"])
+	nz    = sparx_utilities.bcast_number_to_all(nz, source_node = 0,    mpi_comm = Blockdata["shared_comm"])
+	maxr2 = sparx_utilities.bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
 	"""Multiline Comment4"""
 	if( Blockdata["myid_on_node"] == 0 ):
 		print(" iterefa  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.0)
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
 		if( nx > 2*Tracker["constants"]["nnxo"]):
-			tvol = fundamentals.fdecimate(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], \
+			tvol = sparx_fundamentals.fdecimate(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], \
 			  2*Tracker["constants"]["nnxo"], False, False)
 		elif(nx < 2*Tracker["constants"]["nnxo"]):
-			tvol = fundamentals.fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], \
+			tvol = sparx_fundamentals.fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], \
 			   2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
-		tvol = fundamentals.fft(tvol)
-		tvol = fundamentals.cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+		tvol = sparx_fundamentals.fft(tvol)
+		tvol = sparx_fundamentals.cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 		tvol = EMAN2_cppwrap.Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 		tvol.div_sinc(1)
-		tvol = morphology.cosinemask(tvol, Tracker["constants"]["nnxo"]//2-1,5, None)
+		tvol = sparx_morphology.cosinemask(tvol, Tracker["constants"]["nnxo"]//2-1,5, None)
 		return tvol
 	else:  return None
 	
 def steptwo_mpi_reg(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa = 0.01, regularized = True, color = 0):
 	global Tracker, Blockdata
 	cutoff_freq2, aa = estimate_tanhl_params(cutoff_freq, aa, 2*Tracker["constants"]["nnxo"])
-	if( Blockdata["color"] != color ):return utilities.model_blank(1)  #  This should not be executed if called properly
+	if( Blockdata["color"] != color ):return sparx_utilities.model_blank(1)  #  This should not be executed if called properly
 	if( Blockdata["myid_on_node"] == 0 ):
 		nz = tweight.get_zsize()
 		ny = tweight.get_ysize()
@@ -4487,12 +4487,12 @@ def steptwo_mpi_reg(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa = 0
 					limitres = i-1
 					break
 			if( limitres == 0 ): limitres = nr-2;
-			ovol = utilities.reshape_1d(cfsc, nr, 2*nr)
+			ovol = sparx_utilities.reshape_1d(cfsc, nr, 2*nr)
 			limitres = 2*min(limitres, Tracker["maxfrad"])  # 2 on account of padding, which is always on
 			maxr2 = limitres**2
 			for i in range(limitres+1, len(ovol), 1):   ovol[i] = 0.0
 			ovol[0] = 1.0
-			it = utilities.model_blank(2*nr)
+			it = sparx_utilities.model_blank(2*nr)
 			for i in range(2*nr):  it[i] = ovol[i]
 			del ovol
 			#  Do not regularize first four
@@ -4508,41 +4508,41 @@ def steptwo_mpi_reg(tvol, tweight, treg, cfsc = None, cutoff_freq = 0.45, aa = 0
 			tweight = tweight.symfvol(Tracker["constants"]["symmetry"], limitres)
 		EMAN2_cppwrap.Util.divclreal(tvol, tweight, 1.0e-5)
 	else:
-		tvol = utilities.model_blank(1)
-		tweight = utilities.model_blank(1)
+		tvol = sparx_utilities.model_blank(1)
+		tweight = sparx_utilities.model_blank(1)
 		nz    = 0
 		ny    = 0
 		nx    = 0
 		maxr2 = 0
-	nx    = utilities.bcast_number_to_all(nx, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	ny    = utilities.bcast_number_to_all(ny, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	nz    = utilities.bcast_number_to_all(nz, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	maxr2 = utilities.bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	nx    = sparx_utilities.bcast_number_to_all(nx, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	ny    = sparx_utilities.bcast_number_to_all(ny, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	nz    = sparx_utilities.bcast_number_to_all(nz, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	maxr2 = sparx_utilities.bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
 	"""Multiline Comment5"""
 	if( Blockdata["myid_on_node"] == 0 ):
 		at = time.time()
 		#print(" iterefa  ",Blockdata["myid"],"   ",strftime("%a, %d %b %Y %H:%M:%S", localtime()),"   ",(time()-at)/60.0)
 		pass#IMPORTIMPORTIMPORT from filter import  filt_tanl
 		#  Either pad or window in F space to 2*nnxo
-		if not cfsc: tvol = filter.filt_tanl(tvol, cutoff_freq2, aa)
+		if not cfsc: tvol = sparx_filter.filt_tanl(tvol, cutoff_freq2, aa)
 		nx = tvol.get_ysize()
 		if( nx > 2*Tracker["constants"]["nnxo"]):
-			tvol = fundamentals.fdecimate(tvol, 2*Tracker["constants"]["nnxo"], \
+			tvol = sparx_fundamentals.fdecimate(tvol, 2*Tracker["constants"]["nnxo"], \
 			    2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"], False, False)
 		elif(nx < 2*Tracker["constants"]["nnxo"]):
-			tvol = fundamentals.fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"],\
+			tvol = sparx_fundamentals.fpol(tvol, 2*Tracker["constants"]["nnxo"], 2*Tracker["constants"]["nnxo"],\
 			  2*Tracker["constants"]["nnxo"], RetReal = False, normalize = False)
 		if Tracker["do_timing"]:
 			print(" pre fft  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.0)
 		fat = time.time()
-		tvol = fundamentals.fft(tvol)
+		tvol = sparx_fundamentals.fft(tvol)
 		if Tracker["do_timing"]: 
 			print(" fft  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", \
 		   time.localtime()),"   ",(time.time()-fat)/60.0, tvol.get_xsize(), tvol.get_ysize(), tvol.get_zsize())
-		tvol = fundamentals.cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+		tvol = sparx_fundamentals.cyclic_shift(tvol,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 		tvol = EMAN2_cppwrap.Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 		tvol.div_sinc(1)
-		tvol = morphology.cosinemask(tvol, Tracker["constants"]["nnxo"]//2-1,5, None)
+		tvol = sparx_morphology.cosinemask(tvol, Tracker["constants"]["nnxo"]//2-1,5, None)
 		if Tracker["do_timing"]:
 			print(" rec3d_rest  ",Blockdata["myid"],"   ", \
 		  time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.0)
@@ -4567,7 +4567,7 @@ def recons3d_4nnsorting_MPI(myid, main_node, prjlist, random_subset, CTF = True,
 	pass#IMPORTIMPORTIMPORT import datetime
 	if mpi_comm == None: mpi_comm = mpi.MPI_COMM_WORLD
 	imgsize = prjlist[0].get_ysize()  # It can be Fourier, so take y-size
-	refvol  = utilities.model_blank(target_size)
+	refvol  = sparx_utilities.model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 	if CTF: do_ctf = 1
 	else: do_ctf = 0
@@ -4579,26 +4579,26 @@ def recons3d_4nnsorting_MPI(myid, main_node, prjlist, random_subset, CTF = True,
 	r.setup()
 	#if norm_per_particle == None: norm_per_particle = len(prjlist)*[1.0]
 	for im in range(len(prjlist)):
-		phi, theta, psi, s2x, s2y = utilities.get_params_proj(prjlist[im], xform = "xform.projection") # shifts are already applied 
+		phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(prjlist[im], xform = "xform.projection") # shifts are already applied 
 		if random_subset == 2:
 			bckgn = target_size*[1.]
-			if prjlist[im].get_attr("is_complex") == 0:	prjlist[im] = fundamentals.fft(prjlist[im]) 
+			if prjlist[im].get_attr("is_complex") == 0:	prjlist[im] = sparx_fundamentals.fft(prjlist[im]) 
 			prjlist[im].set_attr_dict({"padffted":1, "is_complex":1})
-			if not upweighted:  prjlist[im] = filter.filt_table(prjlist[im], bckgn)
+			if not upweighted:  prjlist[im] = sparx_filter.filt_table(prjlist[im], bckgn)
 			prjlist[im].set_attr("bckgnoise", bckgn)
 			r.insert_slice(prjlist[im], EMAN2_cppwrap.Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi}), 1.0)
 		else:
 			if prjlist[im].get_attr("chunk_id") == random_subset:
 				#try:	bckgn = prjlist[im].get_attr("bckgnoise")
 				bckgn = target_size*[1.]
-				if prjlist[im].get_attr("is_complex")==0: prjlist[im] = fundamentals.fft(prjlist[im])
+				if prjlist[im].get_attr("is_complex")==0: prjlist[im] = sparx_fundamentals.fft(prjlist[im])
 				prjlist[im].set_attr_dict({"padffted":1, "is_complex":1})
-				if not upweighted:  prjlist[im] = filter.filt_table(prjlist[im], bckgn)
+				if not upweighted:  prjlist[im] = sparx_filter.filt_table(prjlist[im], bckgn)
 				prjlist[im].set_attr("bckgnoise", bckgn)
 				r.insert_slice(prjlist[im], EMAN2_cppwrap.Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi}), 1.0)		
 	#  clean stuff
-	utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 	if myid == main_node: dummy = r.finish(True)
 	mpi.mpi_barrier(mpi_comm)
 	if myid == main_node: return fftvol, weight, refvol
@@ -4622,7 +4622,7 @@ def recons3d_4nnsorting_group_MPI(myid, main_node, prjlist, random_subset, group
 	pass#IMPORTIMPORTIMPORT import datetime, types
 	if mpi_comm == None: mpi_comm = mpi.MPI_COMM_WORLD
 	imgsize = prjlist[0].get_ysize()  # It can be Fourier, so take y-size
-	refvol = utilities.model_blank(target_size)
+	refvol = sparx_utilities.model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
@@ -4635,29 +4635,29 @@ def recons3d_4nnsorting_group_MPI(myid, main_node, prjlist, random_subset, group
 	r = EMAN2_cppwrap.Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 	for im in range(len(prjlist)):
-		phi, theta, psi, s2x, s2y = utilities.get_params_proj(prjlist[im], xform = "xform.projection") # shifts are already applied
+		phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(prjlist[im], xform = "xform.projection") # shifts are already applied
 		if prjlist[im].get_attr("group") == group_ID:
 			if random_subset == 2:
 				try:	bckgn = prjlist[im].get_attr("bckgnoise")
 				except:	bckgn = target_size*[1.]
-				if prjlist[im].get_attr("is_complex") == 0:	image = fundamentals.fft(prjlist[im])
+				if prjlist[im].get_attr("is_complex") == 0:	image = sparx_fundamentals.fft(prjlist[im])
 				else: image =  prjlist[im].copy()
 				image.set_attr_dict({"padffted":1, "is_complex":1})
-				if not upweighted:  image = filter.filt_table(image, bckgn)
+				if not upweighted:  image = sparx_filter.filt_table(image, bckgn)
 				image.set_attr("bckgnoise", bckgn)
 				r.insert_slice(image, EMAN2_cppwrap.Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi}), 1.0)
 			else:
 				if prjlist[im].get_attr("chunk_id") == random_subset:
 					try:     bckgn = prjlist[im].get_attr("bckgnoise")
 					except:	 bckgn = target_size*[1.]
-					if prjlist[im].get_attr("is_complex")==0: image = fundamentals.fft(prjlist[im])
+					if prjlist[im].get_attr("is_complex")==0: image = sparx_fundamentals.fft(prjlist[im])
 					else: image =  prjlist[im].copy()
 					image.set_attr_dict({"padffted":1, "is_complex":1})
-					if not upweighted:  image = filter.filt_table(image, bckgn)              
+					if not upweighted:  image = sparx_filter.filt_table(image, bckgn)              
 					image.set_attr("bckgnoise", bckgn)
 					r.insert_slice(image, EMAN2_cppwrap.Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi}), 1.0)	
-	utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 	if myid == main_node: dummy = r.finish(True)
 	mpi.mpi_barrier(mpi_comm)
 	if myid == main_node: return fftvol, weight, refvol
@@ -4733,15 +4733,15 @@ def do3d_sorting_group_insertion(data, randomset=2):
 				if(Blockdata["myid"] == Blockdata["nodes"][procid]):
 					tvol.set_attr("is_complex",0)
 					tag =7007
-					utilities.send_EMData(tvol,    Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(tweight, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(trol,    Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol,    Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tweight, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(trol,    Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 					
 				elif Blockdata["myid"] == Blockdata["last_node"]:
 					tag =7007
-					tvol    = utilities.recv_EMData(Blockdata["nodes"][procid], tag, mpi.MPI_COMM_WORLD)
-					tweight = utilities.recv_EMData(Blockdata["nodes"][procid], tag, mpi.MPI_COMM_WORLD)
-					trol    = utilities.recv_EMData(Blockdata["nodes"][procid], tag, mpi.MPI_COMM_WORLD)
+					tvol    = sparx_utilities.recv_EMData(Blockdata["nodes"][procid], tag, mpi.MPI_COMM_WORLD)
+					tweight = sparx_utilities.recv_EMData(Blockdata["nodes"][procid], tag, mpi.MPI_COMM_WORLD)
+					trol    = sparx_utilities.recv_EMData(Blockdata["nodes"][procid], tag, mpi.MPI_COMM_WORLD)
 					tvol.write_image(os.path.join(Tracker["directory"],    "tempdir", "tvol_%d_%d.hdf"%(procid,    index_of_groups)))
 					tweight.write_image(os.path.join(Tracker["directory"], "tempdir", "tweight_%d_%d.hdf"%(procid, index_of_groups)))
 					trol.write_image(os.path.join(Tracker["directory"],    "tempdir", "trol_%d_%d.hdf"%(procid,    index_of_groups)))
@@ -4767,15 +4767,15 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 				if Blockdata["myid"]== iproc:
 					if Blockdata["color"] == index_of_colors and Blockdata["myid_on_node"] == 0:
 						sub_main_node_list[index_of_colors] = Blockdata["myid"]
-					utilities.wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+					sparx_utilities.wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 				if Blockdata["myid"] == Blockdata["last_node"]:
-					dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+					dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 					for im in range(len(dummy)):
 						if dummy[im]>-1: sub_main_node_list[im] = dummy[im]
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-		utilities.wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+		sparx_utilities.wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 		####		
 		if Tracker["number_of_groups"]%Blockdata["no_of_groups"] == 0: 
 			nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]
@@ -4795,18 +4795,18 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 				index_of_group  = big_loop_groups[iloop][im]
 				index_of_colors = big_loop_colors[iloop][im]
 				if(Blockdata["myid"] == Blockdata["last_node"]):
-					tvol2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
-					tweight2 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%d.hdf")%index_of_group)
-					treg2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
+					tvol2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
+					tweight2 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0_%d.hdf")%index_of_group)
+					treg2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0_%d.hdf")%index_of_group)
 					tag         = 7007
-					utilities.send_EMData(tvol2, sub_main_node_list[index_of_colors],    tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(treg2, sub_main_node_list[index_of_colors],    tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2, sub_main_node_list[index_of_colors],    tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(treg2, sub_main_node_list[index_of_colors],    tag, mpi.MPI_COMM_WORLD)
 				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
 					tag      = 7007
-					tvol2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					tweight2 = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					treg2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tvol2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tweight2 = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					treg2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
@@ -4816,9 +4816,9 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
 				if Blockdata["color"] == index_of_colors:
 					if( Blockdata["myid_on_node"] != 0):
-						tvol2 		= utilities.model_blank(1)
-						tweight2 	= utilities.model_blank(1)
-						treg2		= utilities.model_blank(1)
+						tvol2 		= sparx_utilities.model_blank(1)
+						tweight2 	= sparx_utilities.model_blank(1)
+						treg2		= sparx_utilities.model_blank(1)
 					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, Tracker["constants"]["fsc_curve"], \
 					   True, color = index_of_colors) # has to be False!!!
 					del tweight2, treg2
@@ -4830,10 +4830,10 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 				index_of_colors = big_loop_colors[iloop][im]
 				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
 					tag = 7007
-					utilities.send_EMData(tvol2, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 				elif(Blockdata["myid"] == Blockdata["last_node"]):
 					tag = 7007
-					tvol2 = utilities.recv_EMData(sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					tvol2 = sparx_utilities.recv_EMData(sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
 					tvol2.write_image(os.path.join(Tracker["directory"], \
 					  "vol_unfiltered_0_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
 					del tvol2
@@ -4844,18 +4844,18 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 				index_of_group  = big_loop_groups[iloop][im]
 				index_of_colors = big_loop_colors[iloop][im]
 				if(Blockdata["myid"] == Blockdata["last_node"]):
-					tvol2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%d.hdf")%index_of_group)
-					tweight2 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%d.hdf")%index_of_group)
-					treg2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%d.hdf"%index_of_group))
+					tvol2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1_%d.hdf")%index_of_group)
+					tweight2 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1_%d.hdf")%index_of_group)
+					treg2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_1_%d.hdf"%index_of_group))
 					tag      = 7007
-					utilities.send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
 				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
 					tag      = 7007
-					tvol2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					tweight2 = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					treg2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tvol2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tweight2 = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					treg2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
@@ -4865,9 +4865,9 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 				Tracker["maxfrad"] = Tracker["nxinit"]//2
 				if Blockdata["color"] == index_of_colors:
 					if( Blockdata["myid_on_node"] != 0):
-						tvol2 		= utilities.model_blank(1)
-						tweight2 	= utilities.model_blank(1)
-						treg2		= utilities.model_blank(1)
+						tvol2 		= sparx_utilities.model_blank(1)
+						tweight2 	= sparx_utilities.model_blank(1)
+						treg2		= sparx_utilities.model_blank(1)
 					tvol2 = steptwo_mpi(tvol2, tweight2, treg2, \
 					  Tracker["constants"]["fsc_curve"], True, color = index_of_colors) # has to be False!!!
 					del tweight2, treg2
@@ -4880,10 +4880,10 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 				index_of_colors = big_loop_colors[iloop][im]
 				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
 					tag = 7007
-					utilities.send_EMData(tvol2, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 				elif(Blockdata["myid"] == Blockdata["last_node"]):
 					tag = 7007
-					tvol2 = utilities.recv_EMData(sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					tvol2 = sparx_utilities.recv_EMData(sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
 					tvol2.write_image(os.path.join(Tracker["directory"], \
 					  "vol_unfiltered_1_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
 					del tvol2
@@ -4894,23 +4894,23 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 		for index_of_group in range(Tracker["number_of_groups"]):
 			for iprocid in range(2):
 				if(Blockdata["myid"] == Blockdata["last_node"]):
-					tvol2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_%d_%d.hdf")%(iprocid, index_of_group))
-					tweight2 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_%d_%d.hdf")%(iprocid, index_of_group))
-					treg2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%d.hdf"%(iprocid, index_of_group)))
+					tvol2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_%d_%d.hdf")%(iprocid, index_of_group))
+					tweight2 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_%d_%d.hdf")%(iprocid, index_of_group))
+					treg2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_%d_%d.hdf"%(iprocid, index_of_group)))
 					tag      = 7007
-					utilities.send_EMData(tvol2,    Blockdata["main_node"], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(tweight2, Blockdata["main_node"], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(treg2,    Blockdata["main_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2,    Blockdata["main_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tweight2, Blockdata["main_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(treg2,    Blockdata["main_node"], tag, mpi.MPI_COMM_WORLD)
 				elif (Blockdata["myid"] == Blockdata["main_node"]):
 					tag      = 7007
-					tvol2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					tweight2 = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					treg2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tvol2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tweight2 = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					treg2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 				if( Blockdata["myid"] != Blockdata["main_node"]):
-					tvol2 		= utilities.model_blank(1)
-					tweight2 	= utilities.model_blank(1)
-					treg2		= utilities.model_blank(1)
+					tvol2 		= sparx_utilities.model_blank(1)
+					tweight2 	= sparx_utilities.model_blank(1)
+					treg2		= sparx_utilities.model_blank(1)
 				tvol2 = steptwo_mpi(tvol2, tweight2, treg2, None, False, color = 0) # has to be False!!!
 				del tweight2, treg2
 				if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -4919,9 +4919,9 @@ def do3d_sorting_groups_trl_iter(data, iteration):
 					  "vol_unfiltered_%d_grp%03d_iter%03d.hdf"%(iprocid, index_of_group,iteration)))
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	keepgoing = utilities.bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD) # always check 
-	Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-	if keepgoing == 0: global_def.ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], \
+	keepgoing = sparx_utilities.bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD) # always check 
+	Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+	if keepgoing == 0: sparx_global_def.ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], \
 	   "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"]) 
 	return
 ###=======================================================================================
@@ -4956,7 +4956,7 @@ def import_data(log_main):
 	## ------- checking settings!--------
 	if not Tracker["search_mode"]:
 		if Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]<=1: 
-			global_def.ERROR("Your input parameter img_per_grp is too large", "sxsort3d_depth.py", 1,  Blockdata["myid"])
+			sparx_global_def.ERROR("Your input parameter img_per_grp is too large", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	return
 	
 def get_input_from_sparx_ref3d(log_main):# case one
@@ -4976,9 +4976,9 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	###-------------------------------
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if not os.path.exists (Tracker["constants"]["refinement_dir"]): checking_flag = 1
-	checking_flag = utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	if checking_flag ==1:
-		global_def.ERROR("SPARX refinement directory does not exist", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("SPARX refinement directory does not exist", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if Tracker["constants"]["niter_for_sorting"] == -1: # take the best solution to do sorting
 			niter_refinement = 0
@@ -4989,7 +4989,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			if niter_refinement !=0:
 				with open(os.path.join(Tracker["constants"]["refinement_dir"], \
 				   "main%03d"%niter_refinement, "Tracker_%03d.json"%niter_refinement),'r') as fout:
-					Tracker_refinement 	= utilities.convert_json_fromunicode(json.load(fout))
+					Tracker_refinement 	= sparx_utilities.convert_json_fromunicode(json.load(fout))
 				fout.close()
 				selected_iter = Tracker_refinement["constants"]["best"]
 			else: import_from_sparx_refinement = 0
@@ -4998,19 +4998,19 @@ def get_input_from_sparx_ref3d(log_main):# case one
 				with open(os.path.join(Tracker["constants"]["refinement_dir"],\
 				  "main%03d"%Tracker["constants"]["niter_for_sorting"], \
 				"Tracker_%03d.json"%Tracker["constants"]["niter_for_sorting"]),'r') as fout:
-					Tracker_refinement	= utilities.convert_json_fromunicode(json.load(fout))
+					Tracker_refinement	= sparx_utilities.convert_json_fromunicode(json.load(fout))
 				fout.close()
 				selected_iter = Tracker["constants"]["niter_for_sorting"]
 			except:	import_from_sparx_refinement = 0
 	else: selected_iter = -1
-	selected_iter = utilities.bcast_number_to_all(selected_iter, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	import_from_sparx_refinement = utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	selected_iter = sparx_utilities.bcast_number_to_all(selected_iter, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	import_from_sparx_refinement = sparx_utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:
-		global_def.ERROR("The best solution is not found","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("The best solution is not found","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
 		mpi.mpi_finalize()
 		exit()
-	Tracker_refinement = utilities.wrap_mpi_bcast(Tracker_refinement, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
+	Tracker_refinement = sparx_utilities.wrap_mpi_bcast(Tracker_refinement, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
 	# Check orgstack, set correct path
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		refinement_dir_path, refinement_dir_name = os.path.split(Tracker["constants"]["refinement_dir"])	
@@ -5019,15 +5019,15 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		else:
 			refinement_stack = os.path.join(refinement_dir_path, Tracker_refinement["constants"]["stack"]) # very rare case		
 		if not Tracker["constants"]["orgstack"]: Tracker["constants"]["orgstack"] = refinement_stack
-		try:    image = utilities.get_im(Tracker["constants"]["orgstack"], 0)
+		try:    image = sparx_utilities.get_im(Tracker["constants"]["orgstack"], 0)
 		except: import_from_sparx_refinement = 0
 		try:    total_stack = EMAN2_cppwrap.EMUtil.get_image_count(Tracker["constants"]["orgstack"])
 		except: total_stack = 0
 	else: total_stack = 0
-	import_from_sparx_refinement = utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	import_from_sparx_refinement = sparx_utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:
-		global_def.ERROR("The data stack is not accessible","get_input_from_sparx_ref3d",1, Blockdata["myid"])
-	total_stack = utilities.bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])			
+		sparx_global_def.ERROR("The data stack is not accessible","get_input_from_sparx_ref3d",1, Blockdata["myid"])
+	total_stack = sparx_utilities.bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])			
 	Tracker["constants"]["total_stack"] = total_stack
 	
 	# Now copy relevant refinement files to sorting directory:
@@ -5038,9 +5038,9 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			 "params_%03d.txt"%selected_iter), os.path.join(Tracker["constants"]["masterdir"], "sparx_refinement_params.txt"))
 		else: import_from_sparx_refinement = 0
 		Tracker["constants"]["selected_iter"] = selected_iter
-	import_from_sparx_refinement = utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	import_from_sparx_refinement = sparx_utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:
-		global_def.ERROR("The parameter file of the best solution is not accessible", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("The parameter file of the best solution is not accessible", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 		
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%selected_iter, "bckgnoise.hdf")):
@@ -5054,7 +5054,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 					"bckgnoise.hdf"), os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf"))
 					import_from_sparx_refinement = 1
 					break
-	import_from_sparx_refinement = utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	import_from_sparx_refinement = sparx_utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	
 	if import_from_sparx_refinement == 0:
 		Tracker["bckgnoise"] = None
@@ -5071,23 +5071,23 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		else: import_from_sparx_refinement = 0
 		
 		if import_from_sparx_refinement:
-			fsc_curve = utilities.read_text_row(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
+			fsc_curve = sparx_utilities.read_text_row(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
 		Tracker["constants"]["fsc_curve"] = \
-		  utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
+		  sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
 		# scale 2. * x / (1 + x)
 		"""Multiline Comment6"""
-	import_from_sparx_refinement = utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	import_from_sparx_refinement = sparx_utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:
-		global_def.ERROR("The driver of the best solution is not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("The driver of the best solution is not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt")):
 			shutil.copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt"), \
 			os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"))
 		else: import_from_sparx_refinement = 0
-	import_from_sparx_refinement = utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	import_from_sparx_refinement = sparx_utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	
 	if import_from_sparx_refinement == 0:
-		global_def.ERROR("The index file of the best solution are not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("The index file of the best solution are not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/chunk_0_000.txt")):
 			shutil.copyfile( os.path.join(Tracker["constants"]["refinement_dir"], "main000/chunk_0_000.txt"), \
@@ -5107,9 +5107,9 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			shutil.copyfile( os.path.join(Tracker["constants"]["refinement_dir"], "main000/particle_groups_1.txt"), \
 			os.path.join(Tracker["constants"]["masterdir"], "particle_groups_1.txt"))
 		else:import_from_sparx_refinement == 0
-	import_from_sparx_refinement = utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	import_from_sparx_refinement = sparx_utilities.bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:
-		global_def.ERROR("The chunk files and partice group files are not accessible","get_input_from_sparx_ref3d",1, Blockdata["myid"])
+		sparx_global_def.ERROR("The chunk files and partice group files are not accessible","get_input_from_sparx_ref3d",1, Blockdata["myid"])
 	
 	# copy all relavant parameters into sorting tracker
 	if Blockdata["myid"] == Blockdata["main_node"]:
@@ -5142,33 +5142,33 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	else: 
 		update_sym  = 0
 		Tracker     = 0 
-	Tracker    = utilities.wrap_mpi_bcast(Tracker,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	update_sym = utilities.bcast_number_to_all(update_sym, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	Tracker    = sparx_utilities.wrap_mpi_bcast(Tracker,         Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	update_sym = sparx_utilities.bcast_number_to_all(update_sym, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	
 	if update_sym ==1:
-		Blockdata["symclass"] = fundamentals.symclass(Tracker["constants"]["symmetry"])
+		Blockdata["symclass"] = sparx_fundamentals.symclass(Tracker["constants"]["symmetry"])
 		Tracker["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
 	
 	# Setting for margin error				
 	chunk_dict = {}
 	group_dict = {}
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		chunk_one = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"chunk_0.txt"))
-		chunk_two = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"chunk_1.txt"))
+		chunk_one = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"chunk_0.txt"))
+		chunk_two = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"chunk_1.txt"))
 	else:
 		chunk_one = 0
 		chunk_two = 0
-	chunk_one = utilities.wrap_mpi_bcast(chunk_one, Blockdata["main_node"])
-	chunk_two = utilities.wrap_mpi_bcast(chunk_two, Blockdata["main_node"])
+	chunk_one = sparx_utilities.wrap_mpi_bcast(chunk_one, Blockdata["main_node"])
+	chunk_two = sparx_utilities.wrap_mpi_bcast(chunk_two, Blockdata["main_node"])
 	#
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		chunk_one_group = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"particle_groups_0.txt"))
-		chunk_two_group = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"particle_groups_1.txt"))
+		chunk_one_group = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"particle_groups_0.txt"))
+		chunk_two_group = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"],"particle_groups_1.txt"))
 	else:
 		chunk_one_group = 0
 		chunk_two_group = 0
-	chunk_one_group = utilities.wrap_mpi_bcast(chunk_one_group, Blockdata["main_node"])
-	chunk_two_group = utilities.wrap_mpi_bcast(chunk_two_group, Blockdata["main_node"])
+	chunk_one_group = sparx_utilities.wrap_mpi_bcast(chunk_one_group, Blockdata["main_node"])
+	chunk_two_group = sparx_utilities.wrap_mpi_bcast(chunk_two_group, Blockdata["main_node"])
 	for index_of_element in range(len(chunk_one)): 
 		chunk_dict[chunk_one[index_of_element]] = 0
 		group_dict[chunk_one[index_of_element]] = chunk_one_group[index_of_element]
@@ -5178,17 +5178,17 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		chunk_ids = []
 		group_ids = []
-		partids   = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"),-1)
+		partids   = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"),-1)
 		partids   = partids[0]
 		Tracker["constants"]["total_stack"] = len(partids)
-		params = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "sparx_refinement_params.txt"),-1)
+		params = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "sparx_refinement_params.txt"),-1)
 		for index_of_particle in range(len(partids)): 
 			chunk_ids.append(chunk_dict[partids[index_of_particle]])
 			group_ids.append(group_dict[partids[index_of_particle]])
 		refinement_params = [params[0], params[1], params[2], params[3], params[4], chunk_ids, group_ids, params[7]]
-		utilities.write_text_file(refinement_params, os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt"))
+		sparx_utilities.write_text_file(refinement_params, os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt"))
 	else: Tracker["constants"]["total_stack"] = 0
-	Tracker["constants"]["total_stack"] = utilities.bcast_number_to_all(Tracker["constants"]["total_stack"], \
+	Tracker["constants"]["total_stack"] = sparx_utilities.bcast_number_to_all(Tracker["constants"]["total_stack"], \
 	    Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	Tracker["total_stack"]            = Tracker["constants"]["total_stack"]
 	Tracker["constants"]["partstack"] = os.path.join(Tracker["constants"]["masterdir"], "refinement_parameters.txt")
@@ -5205,15 +5205,15 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			number_of_groups  = Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]
 		else: number_of_groups = Tracker["constants"]["init_K"]
 			 
-		avg_fsc = statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+		avg_fsc = sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 			 float(Tracker["constants"]["total_stack"]), \
 			 float(Tracker["constants"]["total_stack"])//number_of_groups)
 		fsc143 = get_res143(avg_fsc)
 		if fsc143 !=0: 
 			nxinit = min((int(fsc143)+ max(int(Tracker["constants"]["nnxo"]*0.03), 5))*2, Tracker["constants"]["nnxo"])
 		else:
-			global_def.ERROR("Error in compute res143", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
-		nxinit = fundamentals.smallprime(nxinit)
+			sparx_global_def.ERROR("Error in compute res143", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		nxinit = sparx_fundamentals.smallprime(nxinit)
 		nxinit = nxinit - nxinit%2 
 		cdata_in_core =(Tracker["constants"]["total_stack"]*nxinit*nxinit*4.0)/1.e9/Blockdata["no_of_groups"]
 		if not Tracker["constants"]["focus3D"]:fdata_in_core = 0.0
@@ -5227,7 +5227,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 			log_main.add("---------->>> Smearing summary of %s  <<<----------"%Tracker["constants"]["refinement_dir"])
 			log_main.add("Iter   average smearing    precalculated data/node     Percents of memory/node")
 		else: iterations = 0
-		iterations = utilities.bcast_number_to_all(iterations, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		iterations = sparx_utilities.bcast_number_to_all(iterations, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		if Tracker["constants"]["memory_per_node"] ==-1.:
 			try:
 				mem_bytes = os.sysconf('SC_PAGE_SIZE')*os.sysconf('SC_PHYS_PAGES')# e.g. 4015976448
@@ -5248,7 +5248,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 				log_main.add("%5d        %5.1f             %7.1f GB                  %7.1f%% "%(iteration, savg, tdata, percnt))
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			log_main.add('================================================================================================================')
-			utilities.write_text_row(smearing_all_iters, os.path.join(Tracker["constants"]["masterdir"], "smearing_all.txt"))
+			sparx_utilities.write_text_row(smearing_all_iters, os.path.join(Tracker["constants"]["masterdir"], "smearing_all.txt"))
 	return import_from_sparx_refinement
 		
 def get_input_from_datastack(log_main):# Case three
@@ -5261,10 +5261,10 @@ def get_input_from_datastack(log_main):# Case three
 	import_from_data_stack = 1
 	pass#IMPORTIMPORTIMPORT import copy
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		image = utilities.get_im(Tracker["constants"]["orgstack"], 0)
+		image = sparx_utilities.get_im(Tracker["constants"]["orgstack"], 0)
 		Tracker["constants"]["nnxo"] = image.get_xsize()		
 		if( Tracker["nxinit"] > Tracker["constants"]["nnxo"]):
-				global_def.ERROR("Image size less than minimum permitted %d"%Tracker["nxinit"], \
+				sparx_global_def.ERROR("Image size less than minimum permitted %d"%Tracker["nxinit"], \
 				  "get_input_from_datastack",1, Blockdata["myid"])
 				nnxo = -1
 		else:
@@ -5278,19 +5278,19 @@ def get_input_from_datastack(log_main):# Case three
 		Tracker["constants"]["nnxo"]       = 0
 		Tracker["constants"]["pixel_size"] = 1.0
 	Tracker["constants"]["nnxo"] = \
-	    utilities.bcast_number_to_all(Tracker["constants"]["nnxo"], source_node = Blockdata["main_node"])
+	    sparx_utilities.bcast_number_to_all(Tracker["constants"]["nnxo"], source_node = Blockdata["main_node"])
 	if( Tracker["constants"]["nnxo"] < 0):
-		global_def.ERROR("Image size is negative", "get_input_from_datastack", 1, Blockdata["main_node"])
+		sparx_global_def.ERROR("Image size is negative", "get_input_from_datastack", 1, Blockdata["main_node"])
 	Tracker["constants"]["pixel_size"]	= \
-	    utilities.bcast_number_to_all(Tracker["constants"]["pixel_size"], source_node =  Blockdata["main_node"])
+	    sparx_utilities.bcast_number_to_all(Tracker["constants"]["pixel_size"], source_node =  Blockdata["main_node"])
 	if(Tracker["constants"]["radius"] < 1):
 		Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
 	elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-		global_def.ERROR("Particle radius set too large!", "get_input_from_datastack",1, Blockdata["myid"])
+		sparx_global_def.ERROR("Particle radius set too large!", "get_input_from_datastack",1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		total_stack = EMAN2_cppwrap.EMUtil.get_image_count(Tracker["constants"]["orgstack"])
 	else: total_stack = 0
-	total_stack = utilities.bcast_number_to_all(total_stack, Blockdata["main_node"])
+	total_stack = sparx_utilities.bcast_number_to_all(total_stack, Blockdata["main_node"])
 	# randomly assign two subsets
 	Tracker["constants"]["total_stack"]	  = total_stack
 	Tracker["constants"]["chunk_0"]		  = os.path.join(Tracker["constants"]["masterdir"],"chunk_0.txt")
@@ -5300,7 +5300,7 @@ def get_input_from_datastack(log_main):# Case three
 	Tracker["constants"]["smearing_file"] = os.path.join(os.path.join(Tracker["constants"]["masterdir"], "all_smearing.txt"))
 	
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		utilities.write_text_file(np.full(Tracker["constants"]["total_stack"], 1, dtype = np.int16).tolist(),\
+		sparx_utilities.write_text_file(np.full(Tracker["constants"]["total_stack"], 1, dtype = np.int16).tolist(),\
 		   Tracker["constants"]["smearing_file"])
 		   
 	Tracker["refang"], Tracker["rshifts"], Tracker["delta"] = None, None, None
@@ -5310,14 +5310,14 @@ def get_input_from_datastack(log_main):# Case three
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		chunk_dict  = {}
 		tlist = list(range(total_stack))
-		utilities.write_text_file(tlist, os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"))
+		sparx_utilities.write_text_file(tlist, os.path.join(Tracker["constants"]["masterdir"], "indexes.txt"))
 		random.shuffle(tlist)
 		chunk_one	= tlist[0:total_stack//2]
 		chunk_two	= tlist[total_stack//2:]
 		chunk_one	= sorted(chunk_one)
 		chunk_two	= sorted(chunk_two)
-		utilities.write_text_row(chunk_one,Tracker["constants"]["chunk_0"])
-		utilities.write_text_row(chunk_two,Tracker["constants"]["chunk_1"])
+		sparx_utilities.write_text_row(chunk_one,Tracker["constants"]["chunk_0"])
+		sparx_utilities.write_text_row(chunk_two,Tracker["constants"]["chunk_1"])
 		for particle in chunk_one: chunk_dict[particle] = 0
 		for particle in chunk_two: chunk_dict[particle] = 1
 		xform_proj_list = EMAN2_cppwrap.EMUtil.get_all_attributes(Tracker["constants"]["orgstack"], "xform.projection")
@@ -5325,12 +5325,12 @@ def get_input_from_datastack(log_main):# Case three
 			dp = xform_proj_list[index_of_particle].get_params("spider")
 			xform_proj_list[index_of_particle] = \
 			    [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], chunk_dict[index_of_particle]]
-		utilities.write_text_row(xform_proj_list, Tracker["constants"]["partstack"])
+		sparx_utilities.write_text_row(xform_proj_list, Tracker["constants"]["partstack"])
 	else:
 		chunk_one = 0
 		chunk_two = 0
-	chunk_one = utilities.wrap_mpi_bcast(chunk_one, Blockdata["main_node"])
-	chunk_two = utilities.wrap_mpi_bcast(chunk_two, Blockdata["main_node"])
+	chunk_one = sparx_utilities.wrap_mpi_bcast(chunk_one, Blockdata["main_node"])
+	chunk_two = sparx_utilities.wrap_mpi_bcast(chunk_two, Blockdata["main_node"])
 	for element in chunk_one: chunk_dict[element] = 0
 	for element in chunk_two: chunk_dict[element] = 1
 	chunk_list 				= [chunk_one, chunk_two]	
@@ -5338,7 +5338,7 @@ def get_input_from_datastack(log_main):# Case three
 	Tracker["nxinit"]     = Tracker["constants"]["nnxo"]
 	Tracker["shrinkage"]  = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 	Tracker["bckgnoise"]  =  None
-	temp = utilities.model_blank(Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"])
+	temp = sparx_utilities.model_blank(Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"])
 	nny  = temp.get_ysize()
 	Blockdata["bckgnoise"] = [1.0]*nny # set for initial recon3D of data from stack	
 	Tracker["fuse_freq"]   = int(Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/Tracker["constants"]["fuse_freq"] +0.5)
@@ -5356,51 +5356,51 @@ def get_input_from_datastack(log_main):# Case three
 	
 	if(Blockdata["no_of_groups"] == 1):
 		if( Blockdata["myid"] == Blockdata["main_node"]):
-			tvol0 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0.hdf"))
-			tweight0 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0.hdf"))
-			tvol1 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1.hdf"))
-			tweight1 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1.hdf"))
+			tvol0 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0.hdf"))
+			tweight0 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0.hdf"))
+			tvol1 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1.hdf"))
+			tweight1 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1.hdf"))
 			EMAN2_cppwrap.Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
 			shrank0 	= stepone(tvol0, tweight0)
 			shrank1 	= stepone(tvol1, tweight1)
 		    #  Note shrank volumes are Fourier uncentered.
-			cfsc 		= statistics.fsc(shrank0, shrank1)[1]
+			cfsc 		= sparx_statistics.fsc(shrank0, shrank1)[1]
 			del shrank0, shrank1
 			if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]): cfsc  = cfsc[:Tracker["nxinit"]]
 			for i in range(len(cfsc),Tracker["constants"]["nnxo"]//2+1): cfsc.append(0.0)
-			utilities.write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_global.txt"))
+			sparx_utilities.write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_global.txt"))
 			lcfsc  = len(cfsc)							
 			Tracker["constants"]["fsc_curve"]  = copy.copy(cfsc)
 			# scale 2. * x / (1 + x)
 			"""Multiline Comment7"""
 		else: Tracker = 0
-		Tracker = utilities.wrap_mpi_bcast(Tracker,Blockdata["nodes"][0], communicator = mpi.MPI_COMM_WORLD)
+		Tracker = sparx_utilities.wrap_mpi_bcast(Tracker,Blockdata["nodes"][0], communicator = mpi.MPI_COMM_WORLD)
 	else:
 		if(Blockdata["myid"] == Blockdata["nodes"][1]):  # It has to be 1 to avoid problem with tvol1 not closed on the disk
-			tvol0 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0.hdf"))
-			tweight0 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0.hdf"))
-			tvol1 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1.hdf"))
-			tweight1 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1.hdf"))
+			tvol0 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_0.hdf"))
+			tweight0 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_0.hdf"))
+			tvol1 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_1.hdf"))
+			tweight1 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_1.hdf"))
 			EMAN2_cppwrap.Util.fuse_low_freq(tvol0, tvol1, tweight0, tweight1, 2*Tracker["fuse_freq"])
 			tag = 7007
-			utilities.send_EMData(tvol1, Blockdata["nodes"][0],    tag, mpi.MPI_COMM_WORLD)
-			utilities.send_EMData(tweight1, Blockdata["nodes"][0], tag, mpi.MPI_COMM_WORLD)
+			sparx_utilities.send_EMData(tvol1, Blockdata["nodes"][0],    tag, mpi.MPI_COMM_WORLD)
+			sparx_utilities.send_EMData(tweight1, Blockdata["nodes"][0], tag, mpi.MPI_COMM_WORLD)
 			shrank0 	= stepone(tvol0, tweight0)
-			utilities.send_EMData(shrank0, Blockdata["nodes"][0], tag, mpi.MPI_COMM_WORLD)
+			sparx_utilities.send_EMData(shrank0, Blockdata["nodes"][0], tag, mpi.MPI_COMM_WORLD)
 			del shrank0
 			lcfsc = 0
 		
 		elif( Blockdata["myid"] == Blockdata["nodes"][0]):
 			tag = 7007
-			tvol1 		= utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
-			tweight1 	= utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
+			tvol1 		= sparx_utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
+			tweight1 	= sparx_utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
 			tvol1.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
 			shrank1 	= stepone(tvol1, tweight1)
 			#  Get shrank volume, do fsc, send it to all
-			shrank0 	= utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
+			shrank0 	= sparx_utilities.recv_EMData(Blockdata["nodes"][1], tag, mpi.MPI_COMM_WORLD)
 			#  Note shrank volumes are Fourier uncentered.
-			cfsc 		= statistics.fsc(shrank0, shrank1)[1]
-			utilities.write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_global.txt"))
+			cfsc 		= sparx_statistics.fsc(shrank0, shrank1)[1]
+			sparx_utilities.write_text_row(cfsc, os.path.join(Tracker["directory"], "fsc_global.txt"))
 			del shrank0, shrank1
 			if(Tracker["nxinit"]<Tracker["constants"]["nnxo"]):
 				cfsc  = cfsc[:Tracker["nxinit"]]
@@ -5409,7 +5409,7 @@ def get_input_from_datastack(log_main):# Case three
 			for ifreq in range(len(Tracker["constants"]["fsc_curve"])):
 				Tracker["constants"]["fsc_curve"][ifreq] = \
 				 Tracker["constants"]["fsc_curve"][ifreq]*2./(1.+Tracker["constants"]["fsc_curve"][ifreq])
-		Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["nodes"][0], communicator = mpi.MPI_COMM_WORLD)
+		Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["nodes"][0], communicator = mpi.MPI_COMM_WORLD)
 	return import_from_data_stack
 ####=======================================================================================================	
 ### functions for faked rec3d from subsets
@@ -5424,11 +5424,11 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 			os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 		try:
 			with open(os.path.join(Tracker["directory"],"freq_cutoff.json"),'r') as fout:
-				freq_cutoff_dict = utilities.convert_json_fromunicode(json.load(fout))
+				freq_cutoff_dict = sparx_utilities.convert_json_fromunicode(json.load(fout))
 			fout.close()
 		except: freq_cutoff_dict = 0
 	else: freq_cutoff_dict = 0
-	freq_cutoff_dict = utilities.wrap_mpi_bcast(freq_cutoff_dict, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+	freq_cutoff_dict = sparx_utilities.wrap_mpi_bcast(freq_cutoff_dict, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 	rest_time  = time.time()
 	for index_of_groups in range(Tracker["number_of_groups"]):
 		if partial_rec3d:
@@ -5467,10 +5467,10 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 	total_size = sum(current_group_sizes)
 	for igrp in range(len(current_group_sizes)):
 		if Tracker["even_scale_fsc"]: 
-			fsc_groups[igrp] = statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+			fsc_groups[igrp] = sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 		     float(Tracker["constants"]["total_stack"]), total_size//len(current_group_sizes))
 		else:
-			fsc_groups[igrp] = statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+			fsc_groups[igrp] = sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 		     float(Tracker["constants"]["total_stack"]), current_group_sizes[igrp])
 	if (Blockdata["no_of_groups"]>1):
 	 	# new starts
@@ -5481,15 +5481,15 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 				if (Blockdata["myid"]== iproc):
 					if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
 						sub_main_node_list[index_of_colors] = Blockdata["myid"]
-					utilities.wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+					sparx_utilities.wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 				if (Blockdata["myid"] == Blockdata["last_node"]):
-					dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+					dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 					for im in range(len(dummy)):
 						if (dummy[im]>-1): sub_main_node_list[im] = dummy[im]
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-		utilities.wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+		sparx_utilities.wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 		if Tracker["number_of_groups"]%Blockdata["no_of_groups"]== 0: 
 			nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]
 		else: nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]+1
@@ -5509,20 +5509,20 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 				index_of_colors = big_loop_colors[iloop][im]
 			
 				if(Blockdata["myid"] == Blockdata["last_node"]):
-					tvol2    = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-					tweight2 = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-					treg2 	 = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+					tvol2    = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+					tweight2 = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+					treg2 	 = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
 					tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 					tag = 7007
-					utilities.send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
 				
 				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
 					tag      = 7007
-					tvol2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					tweight2 = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					treg2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tvol2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tweight2 = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					treg2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			
@@ -5534,9 +5534,9 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 				except: pass	
 				if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk 							
 					if(Blockdata["myid_on_node"] != 0): 
-						tvol2     = utilities.model_blank(1)
-						tweight2  = utilities.model_blank(1)
-						treg2     = utilities.model_blank(1)
+						tvol2     = sparx_utilities.model_blank(1)
+						tweight2  = sparx_utilities.model_blank(1)
+						treg2     = sparx_utilities.model_blank(1)
 					tvol2 = steptwo_mpi_reg(tvol2, tweight2, treg2,  fsc_groups[big_loop_groups[iloop][im]], \
 					         Tracker["freq_fsc143_cutoff"], 0.01, True, color = index_of_colors) # has to be False!!!
 					del tweight2, treg2
@@ -5547,11 +5547,11 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 				index_of_colors = big_loop_colors[iloop][im]
 				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
 					tag = 7007
-					utilities.send_EMData(tvol2, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 					
 				elif(Blockdata["myid"] == Blockdata["last_node"]):
 					tag = 7007
-					tvol2    = utilities.recv_EMData(sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					tvol2    = sparx_utilities.recv_EMData(sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
 					tvol2.write_image(os.path.join(Tracker["directory"], "vol_grp%03d_iter%03d.hdf"%(index_of_group,iteration)))
 					del tvol2
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -5563,14 +5563,14 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 	else:# loop over all groups for single node
 		for index_of_group in range(Tracker["number_of_groups"]):
 			if(Blockdata["myid_on_node"] == 0):
-				tvol2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-				tweight2 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-				treg2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+				tvol2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+				tweight2 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+				treg2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
 				tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 			else:
-				tvol2 		= utilities.model_blank(1)
-				tweight2 	= utilities.model_blank(1)
-				treg2		= utilities.model_blank(1)
+				tvol2 		= sparx_utilities.model_blank(1)
+				tweight2 	= sparx_utilities.model_blank(1)
+				treg2		= sparx_utilities.model_blank(1)
 			try: 
 				Tracker["freq_fsc143_cutoff"] = freq_cutoff_dict["Cluster_%03d.txt"%index_of_group]
 			except: pass
@@ -5583,10 +5583,10 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 				del tvol2
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	keepgoing = utilities.bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD) # always check 
-	Tracker   = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+	keepgoing = sparx_utilities.bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD) # always check 
+	Tracker   = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 	if (not keepgoing):
-		global_def.ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"])
 	if(Blockdata["myid"] == 0) and Tracker["do_timing"]:
 		print("Reconstructions done    ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.)
 	return
@@ -5611,21 +5611,21 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
 	if not os.path.exists(refvol_file):
-		global_def.ERROR("refvol does not exist", "recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI", 1, myid)
+		sparx_global_def.ERROR("refvol does not exist", "recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI", 1, myid)
 	if not os.path.exists(fftvol_file):
-		global_def.ERROR("fftvol does not exist", "recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI", 1, myid)
+		sparx_global_def.ERROR("fftvol does not exist", "recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI", 1, myid)
 	if not os.path.exists(weight_file):
-		global_def.ERROR("weight does not exist", "recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI", 1, myid)
+		sparx_global_def.ERROR("weight does not exist", "recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI", 1, myid)
 	
 	#refvol
-	if myid == main_node: target_size = utilities.get_im(refvol_file).get_xsize()
+	if myid == main_node: target_size = sparx_utilities.get_im(refvol_file).get_xsize()
 	else: target_size = 0
-	target_size = utilities.bcast_number_to_all(target_size, main_node, mpi_comm)
-	refvol = utilities.model_blank(target_size)# set to zero
+	target_size = sparx_utilities.bcast_number_to_all(target_size, main_node, mpi_comm)
+	refvol = sparx_utilities.model_blank(target_size)# set to zero
 	
 	# fftvol
 	if (myid == main_node): 
-		fftvol = utilities.get_im(fftvol_file)
+		fftvol = sparx_utilities.get_im(fftvol_file)
 		fftvol.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1} )
 		fftvol /=float(nproc)
 		#Util.mult_scalar(fftvol, 1./float(Blockdata["nproc"]))
@@ -5636,15 +5636,15 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
 		nxfft = 0
 		nyfft = 0
 		nzfft = 0
-	nxfft = utilities.bcast_number_to_all(nxfft, main_node, mpi_comm)
-	nyfft = utilities.bcast_number_to_all(nyfft, main_node, mpi_comm)
-	nzfft = utilities.bcast_number_to_all(nzfft, main_node, mpi_comm)
-	if (myid!= main_node): fftvol = utilities.model_blank(nxfft, nyfft, nzfft)
-	utilities.bcast_EMData_to_all(fftvol, myid, main_node)
+	nxfft = sparx_utilities.bcast_number_to_all(nxfft, main_node, mpi_comm)
+	nyfft = sparx_utilities.bcast_number_to_all(nyfft, main_node, mpi_comm)
+	nzfft = sparx_utilities.bcast_number_to_all(nzfft, main_node, mpi_comm)
+	if (myid!= main_node): fftvol = sparx_utilities.model_blank(nxfft, nyfft, nzfft)
+	sparx_utilities.bcast_EMData_to_all(fftvol, myid, main_node)
 	
 	# weight
 	if (myid == main_node): 
-		weight = utilities.get_im(weight_file)
+		weight = sparx_utilities.get_im(weight_file)
 		weight /=float(nproc)
 		#Util.mult_scalar(weight, 1./float(Blockdata["nproc"]))
 		nxweight  = weight.get_xsize()
@@ -5654,11 +5654,11 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
 		nxweight = 0
 		nyweight = 0
 		nzweight = 0
-	nxweight = utilities.bcast_number_to_all(nxweight, main_node, mpi_comm)
-	nyweight = utilities.bcast_number_to_all(nyweight, main_node, mpi_comm)
-	nzweight = utilities.bcast_number_to_all(nzweight, main_node, mpi_comm)
-	if(myid != main_node): weight = utilities.model_blank(nxweight, nyweight, nzweight)
-	utilities.bcast_EMData_to_all(weight, myid, main_node)
+	nxweight = sparx_utilities.bcast_number_to_all(nxweight, main_node, mpi_comm)
+	nyweight = sparx_utilities.bcast_number_to_all(nyweight, main_node, mpi_comm)
+	nzweight = sparx_utilities.bcast_number_to_all(nzweight, main_node, mpi_comm)
+	if(myid != main_node): weight = sparx_utilities.model_blank(nxweight, nyweight, nzweight)
+	sparx_utilities.bcast_EMData_to_all(weight, myid, main_node)
 	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, \
 	  "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = EMAN2_cppwrap.Reconstructors.get("nn4_ctfws", params)
@@ -5714,7 +5714,7 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
 					data = [None]*len(Tracker["rshifts"])
 					for ii in range(len(tdir)):
 						#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
-						lshifts = utilities.findall(tdir[ii], ipsiandiang)
+						lshifts = sparx_utilities.findall(tdir[ii], ipsiandiang)
 						toprab  = 0.0
 						for ki in range(len(lshifts)):toprab += probs[lshifts[ki]]
 						recdata = EMAN2_cppwrap.EMData(nny,nny,1,False)
@@ -5722,11 +5722,11 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
 						for ki in range(len(lshifts)):
 							lpt = allshifts[lshifts[ki]]
 							if(data[lpt] == None):
-								data[lpt] = fundamentals.fshift(prjlist[im][0], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
+								data[lpt] = sparx_fundamentals.fshift(prjlist[im][0], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 								data[lpt].set_attr("is_complex",0)
 							EMAN2_cppwrap.Util.add_img(recdata, EMAN2_cppwrap.Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
 						recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1}) # preset already
-						recdata = filter.filt_table(recdata, bckgn)
+						recdata = sparx_filter.filt_table(recdata, bckgn)
 						ipsi = tdir[ii]%100000
 						iang = tdir[ii]/100000
 						recdata.set_attr_dict({"bckgnoise":bckgn, "ctf":ct})
@@ -5737,8 +5737,8 @@ def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, np
 							r.insert_slice(recdata, EMAN2_cppwrap.Transform({"type":"spider", "phi":refang[iang][0], \
 							  "theta":refang[iang][1], "psi":refang[iang][2]+ipsi*delta}), \
 							     toprab*avgnorm/norm_per_particle[im]*(-1.))
-	utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 	if myid == main_node:dummy = r.finish(True)
 	mpi.mpi_barrier(mpi_comm)
 	if myid == main_node: return fftvol, weight, refvol
@@ -5763,7 +5763,7 @@ def recons3d_trl_struct_group_nofsc_shifted_data_MPI(myid, main_node,\
 	pass#IMPORTIMPORTIMPORT import types
 	pass#IMPORTIMPORTIMPORT import datetime
 	if mpi_comm == None: mpi_comm = mpi.MPI_COMM_WORLD
-	refvol = utilities.model_blank(target_size)
+	refvol = sparx_utilities.model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
@@ -5806,7 +5806,7 @@ def recons3d_trl_struct_group_nofsc_shifted_data_MPI(myid, main_node,\
 					data = [None]*len(Tracker["rshifts"])
 					for ii in range(len(tdir)):
 						#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
-						lshifts = utilities.findall(tdir[ii], ipsiandiang)
+						lshifts = sparx_utilities.findall(tdir[ii], ipsiandiang)
 						toprab  = 0.0
 						for ki in range(len(lshifts)):toprab += probs[lshifts[ki]]
 						recdata = EMAN2_cppwrap.EMData(nny,nny,1,False)
@@ -5814,18 +5814,18 @@ def recons3d_trl_struct_group_nofsc_shifted_data_MPI(myid, main_node,\
 						for ki in range(len(lshifts)):
 							lpt = allshifts[lshifts[ki]]
 							if(data[lpt] == None):
-								data[lpt] = fundamentals.fshift(prjlist[im][0], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
+								data[lpt] = sparx_fundamentals.fshift(prjlist[im][0], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 								data[lpt].set_attr("is_complex",0)
 							EMAN2_cppwrap.Util.add_img(recdata, EMAN2_cppwrap.Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
 						recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1}) # preset already
-						recdata = filter.filt_table(recdata, bckgn)
+						recdata = sparx_filter.filt_table(recdata, bckgn)
 						ipsi = tdir[ii]%100000
 						iang = tdir[ii]/100000
 						recdata.set_attr_dict({"bckgnoise":bckgn, "ctf":ct})
 						r.insert_slice(recdata, EMAN2_cppwrap.Transform({"type":"spider", "phi":refang[iang][0], "theta":refang[iang][1], \
 						  "psi":refang[iang][2]+ipsi*delta}), toprab*avgnorm/norm_per_particle[im])		
-	utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 	if myid == main_node:dummy = r.finish(True)
 	mpi.mpi_barrier(mpi_comm)
 	if myid == main_node: return fftvol, weight, refvol
@@ -5854,7 +5854,7 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 	pass#IMPORTIMPORTIMPORT import copy
 	if mpi_comm == None: mpi_comm = mpi.MPI_COMM_WORLD
 	
-	refvol = utilities.model_blank(target_size)
+	refvol = sparx_utilities.model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
@@ -5896,7 +5896,7 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 					data = [None]*len(Tracker["rshifts"])
 					for ii in range(len(tdir)):
 						#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
-						lshifts = utilities.findall(tdir[ii], ipsiandiang)
+						lshifts = sparx_utilities.findall(tdir[ii], ipsiandiang)
 						toprab  = 0.0
 						for ki in range(len(lshifts)):  toprab += probs[lshifts[ki]]
 						recdata = EMAN2_cppwrap.EMData(nny,nny,1,False)
@@ -5904,11 +5904,11 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 						for ki in range(len(lshifts)):
 							lpt = allshifts[lshifts[ki]]
 							if( data[lpt] == None ):
-								data[lpt] = fundamentals.fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
+								data[lpt] = sparx_fundamentals.fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 								data[lpt].set_attr("is_complex",0)
 							EMAN2_cppwrap.Util.add_img(recdata, EMAN2_cppwrap.Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
 						recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd": fftodd, "is_complex_ri":1, "is_complex":1})
-						if not upweighted:  recdata = filter.filt_table(recdata, bckgn )
+						if not upweighted:  recdata = sparx_filter.filt_table(recdata, bckgn )
 						recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 						ipsi = tdir[ii]%100000
 						iang = tdir[ii]/100000
@@ -5933,7 +5933,7 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 						data = [None]*len(rshifts_shrank)
 						for ii in range(len(tdir)):
 							#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
-							lshifts = utilities.findall(tdir[ii], ipsiandiang)
+							lshifts = sparx_utilities.findall(tdir[ii], ipsiandiang)
 							toprab  = 0.0
 							for ki in range(len(lshifts)):  toprab += probs[lshifts[ki]]
 							recdata = EMAN2_cppwrap.EMData(nny,nny,1,False)
@@ -5941,11 +5941,11 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 							for ki in range(len(lshifts)):
 								lpt = allshifts[lshifts[ki]]
 								if( data[lpt] == None ):
-									data[lpt] = fundamentals.fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
+									data[lpt] = sparx_fundamentals.fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 									data[lpt].set_attr("is_complex",0)
 								EMAN2_cppwrap.Util.add_img(recdata, EMAN2_cppwrap.Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
 							recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":fftodd, "is_complex_ri":1, "is_complex":1})
-							if not upweighted:  recdata = filter.filt_table(recdata, bckgn )
+							if not upweighted:  recdata = sparx_filter.filt_table(recdata, bckgn )
 							recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 							ipsi = tdir[ii]%100000
 							iang = tdir[ii]/100000
@@ -5954,8 +5954,8 @@ def recons3d_trl_struct_group_MPI(myid, main_node, prjlist, random_subset, group
 							  toprab*avgnorm/norm_per_particle[im])
 	#  clean stuff
 	#if not nosmearing: del recdata, tdir, ipsiandiang, allshifts, probs
-	utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 	if not nosmearing: del rshifts_shrank
 	if myid == main_node:dummy = r.finish(True)
 	mpi.mpi_barrier(mpi_comm)
@@ -5975,11 +5975,11 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 			os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 		try:
 			with open(os.path.join(Tracker["directory"],"freq_cutoff.json"),'r') as fout:
-				freq_cutoff_dict = utilities.convert_json_fromunicode(json.load(fout))
+				freq_cutoff_dict = sparx_utilities.convert_json_fromunicode(json.load(fout))
 			fout.close()
 		except: freq_cutoff_dict = 0
 	else: freq_cutoff_dict = 0
-	freq_cutoff_dict = utilities.wrap_mpi_bcast(freq_cutoff_dict, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+	freq_cutoff_dict = sparx_utilities.wrap_mpi_bcast(freq_cutoff_dict, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 	for index_of_groups in range(Tracker["number_of_groups"]):
 		tvol, tweight, trol = recons3d_trl_struct_group_MPI(Blockdata["myid"], \
 		  Blockdata["last_node"], rdata, 2, index_of_groups, parameterstructure, norm_per_particle, \
@@ -6002,15 +6002,15 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 				if Blockdata["myid"]== iproc:
 					if Blockdata["color"] == index_of_colors and Blockdata["myid_on_node"] == 0:
 						sub_main_node_list[index_of_colors] = Blockdata["myid"]
-					utilities.wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+					sparx_utilities.wrap_mpi_send(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 				if Blockdata["myid"] == Blockdata["last_node"]:
-					dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+					dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 					for im in range(len(dummy)):
 						if dummy[im]>-1: sub_main_node_list[im] = dummy[im]
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-		utilities.wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
+		sparx_utilities.wrap_mpi_bcast(sub_main_node_list, Blockdata["last_node"], mpi.MPI_COMM_WORLD)
 		if Tracker["number_of_groups"]%Blockdata["no_of_groups"]== 0: 
 			nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]
 		else: nbig_loop = Tracker["number_of_groups"]//Blockdata["no_of_groups"]+1
@@ -6030,20 +6030,20 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 				index_of_colors = big_loop_colors[iloop][im]
 			
 				if(Blockdata["myid"] == Blockdata["last_node"]):
-					tvol2    = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-					tweight2 = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-					treg2 	 = utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+					tvol2    = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+					tweight2 = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+					treg2 	 = sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
 					tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 					tag = 7007
-					utilities.send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
-					utilities.send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tweight2, sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(treg2,    sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
 				
 				elif (Blockdata["myid"] == sub_main_node_list[index_of_colors]):
 					tag      = 7007
-					tvol2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					tweight2 = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
-					treg2    = utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tvol2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					tweight2 = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					treg2    = sparx_utilities.recv_EMData(Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			
@@ -6055,9 +6055,9 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 				except: pass	
 				if Blockdata["color"] == index_of_colors:  # It has to be 1 to avoid problem with tvol1 not closed on the disk 							
 					if(Blockdata["myid_on_node"] != 0): 
-						tvol2     = utilities.model_blank(1)
-						tweight2  = utilities.model_blank(1)
-						treg2     = utilities.model_blank(1)
+						tvol2     = sparx_utilities.model_blank(1)
+						tweight2  = sparx_utilities.model_blank(1)
+						treg2     = sparx_utilities.model_blank(1)
 					tvol2 = steptwo_mpi_reg(tvol2, tweight2, treg2, None, \
 					 Tracker["freq_fsc143_cutoff"], 0.01, False, color = index_of_colors) # has to be False!!!
 					del tweight2, treg2
@@ -6067,10 +6067,10 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 				index_of_colors = big_loop_colors[iloop][im]
 				if (Blockdata["color"] == index_of_colors) and (Blockdata["myid_on_node"] == 0):
 					tag = 7007
-					utilities.send_EMData(tvol2, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
+					sparx_utilities.send_EMData(tvol2, Blockdata["last_node"], tag, mpi.MPI_COMM_WORLD)
 				elif(Blockdata["myid"] == Blockdata["last_node"]):
 					tag = 7007
-					tvol2    = utilities.recv_EMData(sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
+					tvol2    = sparx_utilities.recv_EMData(sub_main_node_list[index_of_colors], tag, mpi.MPI_COMM_WORLD)
 					if Tracker["Core_set"]:
 						if index_of_group !=Tracker["number_of_groups"]-1:
 							tvol2.write_image(os.path.join(Tracker["directory"], "vol_cluster%03d.hdf"%index_of_group))
@@ -6084,14 +6084,14 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 	else:# loop over all groups for single node
 		for index_of_group in range(Tracker["number_of_groups"]):
 			if(Blockdata["myid_on_node"] == 0):
-				tvol2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
-				tweight2 	= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
-				treg2 		= utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
+				tvol2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tvol_2_%d.hdf")%index_of_group)
+				tweight2 	= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "tweight_2_%d.hdf")%index_of_group)
+				treg2 		= sparx_utilities.get_im(os.path.join(Tracker["directory"], "tempdir", "trol_2_%d.hdf"%index_of_group))
 				tvol2.set_attr_dict( {"is_complex":1, "is_fftodd":1, 'is_complex_ri': 1, 'is_fftpad': 1})
 			else:
-				tvol2 		= utilities.model_blank(1)
-				tweight2 	= utilities.model_blank(1)
-				treg2		= utilities.model_blank(1)
+				tvol2 		= sparx_utilities.model_blank(1)
+				tweight2 	= sparx_utilities.model_blank(1)
+				treg2		= sparx_utilities.model_blank(1)
 			try: 
 				Tracker["freq_fsc143_cutoff"] = freq_cutoff_dict["Cluster_%03d.txt"%index_of_group]
 			except: pass
@@ -6107,9 +6107,9 @@ def do3d_sorting_groups_nofsc_final(rdata, parameterstructure, norm_per_particle
 				del tvol2
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	keepgoing = utilities.bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD) # always check 
-	Tracker   = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-	if not keepgoing: global_def.ERROR("do3d_sorting_groups_nofsc_final  %s"%os.path.join(Tracker["directory"], \
+	keepgoing = sparx_utilities.bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD) # always check 
+	Tracker   = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+	if not keepgoing: sparx_global_def.ERROR("do3d_sorting_groups_nofsc_final  %s"%os.path.join(Tracker["directory"], \
 	     "tempdir"),"do3d_sorting_groups_nofsc_final", 1, Blockdata["myid"])
 	return
 #####=============================================================================
@@ -6166,8 +6166,8 @@ def sorting_main_mpi(log_main, not_include_unaccounted):
 		else: 
 			keepchecking = 0
 			Tracker      = 0
-		keepchecking = utilities.bcast_number_to_all(keepchecking, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		Tracker      = utilities.wrap_mpi_bcast(Tracker,           Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		keepchecking = sparx_utilities.bcast_number_to_all(keepchecking, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		Tracker      = sparx_utilities.wrap_mpi_bcast(Tracker,           Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		if keepchecking == 0: # new, do it
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				time_generation_start = time.time()
@@ -6183,7 +6183,7 @@ def sorting_main_mpi(log_main, not_include_unaccounted):
 				log_main.add('                                    SORT3D MULTI-LAYER   generation %d'%igen)
 				log_main.add('----------------------------------------------------------------------------------------------------------------')
 			else: within_generation_restart = 0
-			within_generation_restart = utilities.bcast_number_to_all(within_generation_restart, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			within_generation_restart = sparx_utilities.bcast_number_to_all(within_generation_restart, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			if within_generation_restart == 1: read_tracker_mpi(work_dir)
 			else: dump_tracker(work_dir)
 			output_list, bad_clustering, stat_list = depth_clustering(work_dir, depth_order, \
@@ -6205,9 +6205,9 @@ def sorting_main_mpi(log_main, not_include_unaccounted):
 					nclusters = 0
 					nuacc     = 0
 					
-				Tracker   = utilities.wrap_mpi_bcast(Tracker,        Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-				nclusters = utilities.bcast_number_to_all(nclusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-				nuacc     = utilities.bcast_number_to_all(nuacc,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+				Tracker   = sparx_utilities.wrap_mpi_bcast(Tracker,        Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+				nclusters = sparx_utilities.bcast_number_to_all(nclusters, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+				nuacc     = sparx_utilities.bcast_number_to_all(nuacc,     Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 				dump_tracker(work_dir)
 				if nclusters == 0:
 					if Blockdata["myid"] == Blockdata["main_node"]:
@@ -6220,8 +6220,8 @@ def sorting_main_mpi(log_main, not_include_unaccounted):
 						   time_of_generation_h, time_of_generation_m))
 					my_pids = os.path.join( work_dir, 'indexes_next_generation.txt')
 					if Blockdata["myid"] == Blockdata["main_node"]:
-						utilities.write_text_file(output_list[0][1], my_pids)
-						utilities.write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
+						sparx_utilities.write_text_file(output_list[0][1], my_pids)
+						sparx_utilities.write_text_row(stat_list, os.path.join(work_dir, 'gen_rep.txt'))
 						mark_sorting_state(work_dir, True)
 					mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 				keepsorting = check_sorting(nuacc, keepsorting, log_main)
@@ -6230,9 +6230,9 @@ def sorting_main_mpi(log_main, not_include_unaccounted):
 			read_tracker_mpi(work_dir)
 			my_pids  = os.path.join( work_dir, 'indexes_next_generation.txt') 
 			if Blockdata["myid"] == Blockdata["main_node"]: 
-				stat_list = utilities.read_text_row( os.path.join(work_dir, 'gen_rep.txt'))
+				stat_list = sparx_utilities.read_text_row( os.path.join(work_dir, 'gen_rep.txt'))
 			else: stat_list = 0
-			stat_list = utilities.wrap_mpi_bcast(stat_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			stat_list = sparx_utilities.wrap_mpi_bcast(stat_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			all_gen_stat_list.append(stat_list)
 			if Blockdata["myid"] == Blockdata["main_node"]:			
 				log_main.add('================================================================================================================')
@@ -6260,17 +6260,17 @@ def check_mpi_settings(log_main):
 	else:
 		number_of_groups =  Tracker["constants"]["init_K"]
 	if number_of_groups>=largest_K:
-		global_def.ERROR("User-provided img_per_grp is too small", "check_mpi_settings", 1, Blockdata["myid"])	
-	avg_fsc = statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
+		sparx_global_def.ERROR("User-provided img_per_grp is too small", "check_mpi_settings", 1, Blockdata["myid"])	
+	avg_fsc = sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], \
 	   float(Tracker["constants"]["total_stack"]), \
 	   float(Tracker["constants"]["total_stack"])//number_of_groups)
 	fsc143 = get_res143(avg_fsc)
 	if fsc143 !=0: # Empirical image size estimation
-		nxinit = fundamentals.smallprime(min((int(fsc143)+ max(int(Tracker["constants"]["nnxo"]*0.03), 5))*2, \
+		nxinit = sparx_fundamentals.smallprime(min((int(fsc143)+ max(int(Tracker["constants"]["nnxo"]*0.03), 5))*2, \
 		     Tracker["constants"]["nnxo"]))
-		nxinit = fundamentals.smallprime(nxinit-nxinit%2)
+		nxinit = sparx_fundamentals.smallprime(nxinit-nxinit%2)
 		nxinit = nxinit - nxinit%2
-	else: global_def.ERROR("Incorrect FSC0.143", "check_mpi_settings", 1, Blockdata["myid"])
+	else: sparx_global_def.ERROR("Incorrect FSC0.143", "check_mpi_settings", 1, Blockdata["myid"])
 	### pre-calculated 2D data: ----------------------------------------------------------
 	#1. Cdata(data for comparison)
 	#2. Rdata(data for rec3D) # smearing could dramatically increase data size
@@ -6305,7 +6305,7 @@ def check_mpi_settings(log_main):
 		volume_size_per_node = (4.*image_in_core_size**3*8.)*Blockdata["no_of_processes_per_group"]/1.e9
 		sorting_data_size_per_node += volume_size_per_node # memory peak 
 	except:
-		global_def.ERROR("Initial info is not provided", "check_mpi_settings", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("Initial info is not provided", "check_mpi_settings", 1, Blockdata["myid"])
 	try:
 		mem_bytes = os.sysconf('SC_PAGE_SIZE')*os.sysconf('SC_PHYS_PAGES')# e.g. 4015976448
 		mem_gib   = mem_bytes/(1024.**3) # e.g. 3.74
@@ -6338,10 +6338,10 @@ def check_mpi_settings(log_main):
 		log_main.add("Reserved memory for overhead loading per node(in GB):               %8.3f   "%sys_required_mem)
 		
 	if (total_memory - sys_required_mem - sorting_data_size_per_node ) <0.0:
-		global_def.ERROR("Insufficient memory to pass the sorting processs. Increase a node", "check_mpi_settings", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("Insufficient memory to pass the sorting processs. Increase a node", "check_mpi_settings", 1, Blockdata["myid"])
 		
 	if (total_memory - sys_required_mem - raw_data_size_per_node - 2*raw_data_size_per_node*ratio**2 ) <0.0: 
-		global_def.ERROR("Insufficient memory to read in the raw data to produce downsized data. Increase a node", \
+		sparx_global_def.ERROR("Insufficient memory to read in the raw data to produce downsized data. Increase a node", \
 		   "check_mpi_settings", 1, Blockdata["myid"])
 			
 	images_per_cpu = int(float(Tracker["constants"]["total_stack"])/Blockdata["nproc"])
@@ -6354,19 +6354,19 @@ def check_mpi_settings(log_main):
 		log_main.add("Number of images per processor:                                     %8d "%images_per_cpu)
 		
 	if( images_per_cpu < 5):
-		global_def.ERROR("Number of images per processor is less than 5", \
+		sparx_global_def.ERROR("Number of images per processor is less than 5", \
 		   "one may want to consider decreasing the number of processors used in MPI setting", \
 		   0, Blockdata["myid"])
 		   
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		avg_smearing_on_node = sum(utilities.read_text_file(Tracker["constants"]["smearing_file"]))//Blockdata["no_of_groups"]
+		avg_smearing_on_node = sum(sparx_utilities.read_text_file(Tracker["constants"]["smearing_file"]))//Blockdata["no_of_groups"]
 	else: avg_smearing_on_node = 0
-	avg_smearing_on_node  = utilities.bcast_number_to_all(avg_smearing_on_node, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	avg_smearing_on_node  = sparx_utilities.bcast_number_to_all(avg_smearing_on_node, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	avg_images_on_node    = Tracker["constants"]["total_stack"]//Blockdata["no_of_groups"]
 	precalculated_2D_data = raw_data_size_per_node*ratio**2*(max(avg_smearing_on_node/avg_images_on_node,1.) + 3.)
 	
 	if ((precalculated_2D_data - sys_required_mem)>total_memory) and (not Tracker["constants"]["compute_on_the_fly"]):
-		global_def.ERROR("The size of precalculated shifted 2D data is too large. Turn on the option compute_on_the_fly", \
+		sparx_global_def.ERROR("The size of precalculated shifted 2D data is too large. Turn on the option compute_on_the_fly", \
 		  "check_mpi_settings", 1, Blockdata["myid"])
 	else:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -6452,7 +6452,7 @@ def set_sorting_global_variables_mpi(log_file):
 		step = max(growing_size//1000, 20)
 		while (growing_size + step<Tracker["total_stack"]):
 			growing_size +=step
-			res = get_res143(statistics.scale_fsc_datasetsize(\
+			res = get_res143(sparx_statistics.scale_fsc_datasetsize(\
 			   Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], growing_size))
 			if res == previous_res: dict[str(res)][1] = growing_size
 			else: 
@@ -6467,7 +6467,7 @@ def set_sorting_global_variables_mpi(log_file):
 		set_minimum_group_size(log_file, printing_dres_table = True)
 		###-----------------------------------------------------------
 	else: Tracker = 0
-	Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	return
 ###---------------------------------------------------------------------------------------
 def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main):
@@ -6481,8 +6481,8 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 	log_main.add( "-------------------------------------------------------------")
 	
 	precalculated_images_per_cpu = np.full(Blockdata["nproc"], 0, dtype=np.int32)
-	smearing_list = np.array(utilities.read_text_file(smearing_file),       dtype=np.int32)
-	indx_list     = utilities.read_text_file(iter_id_init_file, -1)
+	smearing_list = np.array(sparx_utilities.read_text_file(smearing_file),       dtype=np.int32)
+	indx_list     = sparx_utilities.read_text_file(iter_id_init_file, -1)
 	if len(indx_list) ==1: indx_list= indx_list[0]
 	else:                  indx_list= indx_list[1]
 	indx_list = np.sort(np.array(indx_list, dtype = np.int32))
@@ -6502,7 +6502,7 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 	
 	if (tdata/Tracker["constants"]["memory_per_node"]*100.> 90.):
 		if (not Tracker["constants"]["compute_on_the_fly"]):
-			global_def.ERROR("More than 90% memory is used. Turn on compute_on_the_fly and rerun the program", \
+			sparx_global_def.ERROR("More than 90% memory is used. Turn on compute_on_the_fly and rerun the program", \
 			   "mem_calc_and_output_info", 1, Blockdata["myid"])
 			   
 	log_main.add("The data to be in core for sorting occupies %7.3f percents of memory;  average smearing is %5.1f"%\
@@ -6514,7 +6514,7 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 	
 	dict = [None for i in range(Blockdata["nproc"])]
 	for iproc in range(Blockdata["nproc"]):
-		image_start, image_end = applications.MPI_start_end(smearing_list.shape[0], Blockdata["nproc"],iproc)
+		image_start, image_end = sparx_applications.MPI_start_end(smearing_list.shape[0], Blockdata["nproc"],iproc)
 		smearings_on_nodes[iproc//Blockdata["no_of_processes_per_group"]] += \
 			np.sum(smearing_list[image_start:image_end])*(nxinit*nxinit*4.)/1.e9
 		smearings_per_cpu[iproc] = smearing_list[image_start:image_end]
@@ -6538,7 +6538,7 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 	log_main.add("Node       Number   Pecentage")
 	msg = ""
 	for im in range(Blockdata["nproc"]):
-		image_start, image_end = applications.MPI_start_end(smearing_list.shape[0], Blockdata["nproc"],im)
+		image_start, image_end = sparx_applications.MPI_start_end(smearing_list.shape[0], Blockdata["nproc"],im)
 		size       = image_end - image_start 
 		mem_on_cpu = mem_leftover
 		jm = 0
@@ -6575,8 +6575,8 @@ def copy_results(log_file, all_gen_stat_list):
 				for ic in range(value):
 					cluster_file = os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic)
 					shutil.copyfile(cluster_file, os.path.join(Tracker["constants"]["masterdir"], "Cluster_%03d.txt"%nclusters))
-					clusters.append(utilities.read_text_file(cluster_file))
-					cluster      = utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
+					clusters.append(sparx_utilities.read_text_file(cluster_file))
+					cluster      = sparx_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%ig, "Cluster_%03d.txt"%ic))
 					cluster_file = "Cluster_%03d.txt"%nclusters
 					vol_file     = "vol_cluster%03d.hdf"%nclusters
 					msg          = '{:>8} {:>8}   {:^24}        {:^6}          {:^6}          {:>5} {:^20} {:^20} '.format(nclusters, \
@@ -6590,7 +6590,7 @@ def copy_results(log_file, all_gen_stat_list):
 				try:
 					Unaccounted_file = os.path.join(Tracker["constants"]["masterdir"], \
 					   "generation_%03d"%Tracker["current_generation"], "Core_set.txt")
-					cluster = utilities.read_text_file(Unaccounted_file)
+					cluster = sparx_utilities.read_text_file(Unaccounted_file)
 					shutil.copyfile(Unaccounted_file, os.path.join(Tracker["constants"]["masterdir"], "Core_set.txt"))
 					cluster_file = "Core_set.txt"
 					if (Tracker["constants"]["num_core_set"]>0) and (len(cluster) > Tracker["constants"]["num_core_set"]): 
@@ -6632,7 +6632,7 @@ def output_clusters(output_dir, partition, unaccounted_list, \
 			smallest = min(smallest, len(any))
 		for ic in range(len(nclasses)):
 			if (largest/float(len(nclasses[ic]))< 3.0):# Can be adaptive when criterion is established.
-				utilities.write_text_file(nclasses[ic], os.path.join(output_dir,"Cluster_%03d.txt"%nc))
+				sparx_utilities.write_text_file(nclasses[ic], os.path.join(output_dir,"Cluster_%03d.txt"%nc))
 				nc +=1
 				identified_clusters.append(nclasses[ic])
 			else: unaccounted_list +=nclasses[ic]
@@ -6640,12 +6640,12 @@ def output_clusters(output_dir, partition, unaccounted_list, \
 		###------------------------------------------------------
 		if (len(unaccounted_list) > 1):
 			unaccounted_list = sorted(unaccounted_list)
-			utilities.write_text_file(unaccounted_list, os.path.join(output_dir, "Core_set.txt"))
+			sparx_utilities.write_text_file(unaccounted_list, os.path.join(output_dir, "Core_set.txt"))
 		nclasses = copy.deepcopy(identified_clusters)
 		del identified_clusters ###-------------------------------
 		if (len(unaccounted_list)>1): # output unaccounted as the last cluster
 			if (not not_include_unaccounted):
-				utilities.write_text_file(unaccounted_list, os.path.join(output_dir,"Cluster_%03d.txt"%nc))
+				sparx_utilities.write_text_file(unaccounted_list, os.path.join(output_dir,"Cluster_%03d.txt"%nc))
 		if not not_include_unaccounted: 
 			pass#IMPORTIMPORTIMPORT import copy
 			unclasses = copy.deepcopy(nclasses)
@@ -6653,12 +6653,12 @@ def output_clusters(output_dir, partition, unaccounted_list, \
 			alist, partition = merge_classes_into_partition_list(unclasses)
 			del unclasses
 		else: alist, partition = merge_classes_into_partition_list(nclasses)
-		utilities.write_text_row(partition, os.path.join(output_dir, "final_partition.txt"))
+		sparx_utilities.write_text_row(partition, os.path.join(output_dir, "final_partition.txt"))
 	else:
 		nc = 0
 		for ic in range(len(nclasses)): unaccounted_list +=nclasses[ic]
 		unaccounted_list = sorted(unaccounted_list)
-		utilities.write_text_file(unaccounted_list, os.path.join(output_dir, "Core_set.txt"))
+		sparx_utilities.write_text_file(unaccounted_list, os.path.join(output_dir, "Core_set.txt"))
 		nclasses = [[]]
 		log_main.add("Output  no clusters. ")
 	return nclasses, nc, len(unaccounted_list)
@@ -6682,13 +6682,13 @@ def compute_final_map(work_dir, log_main):
 		fout.close()
 		clusters = []
 		while os.path.exists(os.path.join(work_dir, "Cluster_%03d.txt"%number_of_groups)):
-			class_in = utilities.read_text_file(os.path.join(work_dir, "Cluster_%03d.txt"%number_of_groups))
+			class_in = sparx_utilities.read_text_file(os.path.join(work_dir, "Cluster_%03d.txt"%number_of_groups))
 			number_of_groups += 1
 			final_accounted_ptl +=len(class_in)
 			clusters.append(class_in)
 			del class_in
 		try: # check the unaccounted for particles
-			class_in = utilities.read_text_file(os.path.join(work_dir, "Core_set.txt"))
+			class_in = sparx_utilities.read_text_file(os.path.join(work_dir, "Core_set.txt"))
 			log_main.add('Core_set contains  %d images'%len(class_in))
 			log_main.add('Current minimum_grp_size is [%d,%d]'%(Tracker["minimum_grp_size"][0],\
 			    Tracker["minimum_grp_size"][1]))
@@ -6718,14 +6718,14 @@ def compute_final_map(work_dir, log_main):
 		if Tracker["Core_set"]:log_main.add("Core_set is reconstructed.")
 		else:                  log_main.add("Core_set is not reconstructed.")
 	else: Tracker = 0
-	number_of_groups = utilities.bcast_number_to_all(number_of_groups, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	Tracker          = utilities.wrap_mpi_bcast(Tracker,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	number_of_groups = sparx_utilities.bcast_number_to_all(number_of_groups, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	Tracker          = sparx_utilities.wrap_mpi_bcast(Tracker,               Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	if(number_of_groups == 0):
-		global_def.ERROR("No clusters  found, the program terminates.", "compute_final_map", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("No clusters  found, the program terminates.", "compute_final_map", 1, Blockdata["myid"])
 	compute_noise(Tracker["nxinit"])
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		alist, partition = merge_classes_into_partition_list(clusters)
-		utilities.write_text_row(partition, os.path.join(work_dir, "generation_partition.txt"))
+		sparx_utilities.write_text_row(partition, os.path.join(work_dir, "generation_partition.txt"))
 	parti_file      = os.path.join(work_dir, "generation_partition.txt")
 	params          = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
 	previous_params = Tracker["previous_parstack"]
@@ -6759,7 +6759,7 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, \
 	NACC        = 0
 	try:
 		with open(os.path.join(current_dir,"freq_cutoff.json"),'r') as fout:
-			freq_cutoff_dict = utilities.convert_json_fromunicode(json.load(fout))
+			freq_cutoff_dict = sparx_utilities.convert_json_fromunicode(json.load(fout))
 		fout.close()
 	except: freq_cutoff_dict = {}
 	
@@ -6767,7 +6767,7 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, \
 		any = np.sort(list_of_stable[index_of_any])
 		any.tolist()
 		new_list.append(any)
-		utilities.write_text_file(any, os.path.join(box_dir, "Cluster_%03d.txt"%ncluster))
+		sparx_utilities.write_text_file(any, os.path.join(box_dir, "Cluster_%03d.txt"%ncluster))
 		freq_cutoff_dict["Cluster_%03d.txt"%ncluster] = Tracker["freq_fsc143_cutoff"]
 		ncluster += 1
 		nc       += 1
@@ -6896,16 +6896,16 @@ def find_bounds(global_fsc, total_num, group_size):
 	step = max(group_size//1000, 5)
 	low_bound  = group_size
 	high_bound = group_size
-	cfsc       = statistics.scale_fsc_datasetsize(global_fsc, total_num, group_size)
+	cfsc       = sparx_statistics.scale_fsc_datasetsize(global_fsc, total_num, group_size)
 	res0       = get_res143(cfsc)
 	res_low    = res0
 	res_high   = res0
 	while (res_low == res0):
 		low_bound -=step
-		res_low = get_res143(statistics.scale_fsc_datasetsize(global_fsc, total_num, low_bound))
+		res_low = get_res143(sparx_statistics.scale_fsc_datasetsize(global_fsc, total_num, low_bound))
 	while (res_high == res0):
 		high_bound +=step
-		res_high = get_res143(statistics.scale_fsc_datasetsize(global_fsc, total_num, high_bound))
+		res_high = get_res143(sparx_statistics.scale_fsc_datasetsize(global_fsc, total_num, high_bound))
 	return res0, int(low_bound), min(int(high_bound), total_num)
 
 def get_current_max_diff(fsc_curve, org_total, NT, K):
@@ -6915,12 +6915,12 @@ def get_current_max_diff(fsc_curve, org_total, NT, K):
 	step       = max(min_size//1000, 5)
 	dres_table = []
 	pdres = -1 
-	res0 = get_res143(statistics.scale_fsc_datasetsize(fsc_curve, org_total, NT//K))
+	res0 = get_res143(sparx_statistics.scale_fsc_datasetsize(fsc_curve, org_total, NT//K))
 	while min_size >step:
 		min_size -=step
 		max_size +=step*(K-1)
-		res1 = get_res143(statistics.scale_fsc_datasetsize(fsc_curve, org_total, min_size))
-		res2 = get_res143(statistics.scale_fsc_datasetsize(fsc_curve, org_total, max_size))
+		res1 = get_res143(sparx_statistics.scale_fsc_datasetsize(fsc_curve, org_total, min_size))
+		res2 = get_res143(sparx_statistics.scale_fsc_datasetsize(fsc_curve, org_total, max_size))
 		dres = res2-res1
 		if dres == pdres:
 			del dres_table[len(dres_table)-1]
@@ -6986,15 +6986,15 @@ def calculate_grp_size_variation(log_file, state = "box_init"):
 		Tracker["current_img_per_grp"] = current_img_per_grp
 	#####
 	min_res, mlow, mhigh = find_bounds(\
-	   statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], \
+	   sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], \
 	   total_stack), total_stack, current_img_per_grp)
 	   
 	Tracker["img_per_grp"] = [mlow, mhigh, min_res, total_stack, number_of_groups]
 	mlow1  = total_stack//(Tracker["number_of_groups"]+1) -1
 	if number_of_groups>1: mhigh1 = min(total_stack//(Tracker["number_of_groups"]-1)+1, total_stack)
 	else:                  mhigh1 = total_stack//Tracker["number_of_groups"]
-	low_res1  = get_res143(statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], mlow1))
-	high_res1 = get_res143(statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], mhigh1))
+	low_res1  = get_res143(sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], mlow1))
+	high_res1 = get_res143(sparx_statistics.scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], mhigh1))
 	log_file.add("Images group size range [%d, %d]  (Fall into the same Fourier pixel) at FSC0.143  %5d   "%(mlow1, mhigh1, high_res1))
 	Tracker["img_per_grp"] = [max(mlow, mlow1),  mhigh1,  min_res, total_stack, Tracker["number_of_groups"]]
 	log_file.add("                                                                   ")
@@ -7058,7 +7058,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " --refinement_dir=masterdir_of_sxmeridien   --output_dir=sort3d_output --mask3D=mask.hdf --focus=binarymask.hdf  --radius=outer_radius " +\
 	"  --sym=c1  --img_per_grp=img_per_grp  --minimum_grp_size=minimum_grp_size "
-	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=sparx_global_def.SPARXVERSION)
 	parser.add_option("--refinement_dir", type ="string",  default ='',  help="sxmeridien 3-D refinement directory")
 	parser.add_option("--instack",        type ="string",  default ='',  help="file name, data stack for sorting provided by user. It applies when sorting starts from a given data stack")
 
@@ -7112,23 +7112,23 @@ def main():
 			if options.refinement_dir !='':
 				if not os.path.exists(options.refinement_dir): checking_flag = 1
 				
-		checking_flag = utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 		if checking_flag ==1:
-			global_def.ERROR("The specified refinement_dir does not exist", "sort3d", 1, Blockdata["myid"])
+			sparx_global_def.ERROR("The specified refinement_dir does not exist", "sort3d", 1, Blockdata["myid"])
 	
 		if options.focus !='':
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				if not os.path.exists(options.focus):  checking_flag = 1
-			checking_flag = utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			if checking_flag ==1:
-				global_def.ERROR("The specified focus mask file does not exist", "sort3d", 1, Blockdata["myid"])
+				sparx_global_def.ERROR("The specified focus mask file does not exist", "sort3d", 1, Blockdata["myid"])
 		
 		if options.mask3D !='':
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				if not os.path.exists(options.mask3D): checking_flag = 1
-			checking_flag = utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			if checking_flag ==1:
-				global_def.ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
+				sparx_global_def.ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
 				
 	
 		#--- Fill input parameters into dictionary Constants
@@ -7211,7 +7211,7 @@ def main():
 		###-------------------------------------------------------------------------------
 				
 		try : 
-			Blockdata["symclass"] = fundamentals.symclass(Tracker["constants"]["symmetry"])
+			Blockdata["symclass"] = sparx_fundamentals.symclass(Tracker["constants"]["symmetry"])
 			Tracker["orientation_groups"] = \
 			    max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
 		except: pass
@@ -7233,7 +7233,7 @@ def main():
 		#
 		continue_from_interuption = 0
 		continue_from_interuption = create_masterdir()
-		log_main                  = logger.Logger(logger.BaseLogger_Files())
+		log_main                  = sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 		log_main.prefix           = Tracker["constants"]["masterdir"]+"/"
 		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
@@ -7288,16 +7288,16 @@ def main():
 		if options.focus !='':
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				if not os.path.exists(options.focus):  checking_flag = 1
-			checking_flag = utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			if checking_flag ==1:
-				global_def.ERROR("The specified focus mask file does not exist", "sort3d", 1, Blockdata["myid"])
+				sparx_global_def.ERROR("The specified focus mask file does not exist", "sort3d", 1, Blockdata["myid"])
 		
 		if options.mask3D !='':
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				if not os.path.exists(options.mask3D): checking_flag = 1
-			checking_flag = utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+			checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 			if checking_flag ==1:
-				global_def.ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
+				sparx_global_def.ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
 					
 				
 		#--- Fill input parameters into dictionary Constants------------------------------
@@ -7386,7 +7386,7 @@ def main():
 		Tracker["nosmearing"]                      = True
 		checking_flag                              =  0 # reset
 		Blockdata["fftwmpi"]                       = True
-		Blockdata["symclass"]                      = fundamentals.symclass(Tracker["constants"]["symmetry"])
+		Blockdata["symclass"]                      = sparx_fundamentals.symclass(Tracker["constants"]["symmetry"])
 		Tracker["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)		
 		Blockdata["ncpuspernode"]     = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]          = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
@@ -7406,7 +7406,7 @@ def main():
 		
 		continue_from_interuption = 0
 		continue_from_interuption = create_masterdir()
-		log_main = logger.Logger(logger.BaseLogger_Files())
+		log_main = sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 		log_main.prefix = Tracker["constants"]["masterdir"]+"/"
 		if continue_from_interuption == 0:# Fresh run
 			if Blockdata["myid"] == Blockdata["main_node"]:

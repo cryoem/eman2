@@ -34,26 +34,26 @@ from __future__ import print_function
 
 import EMAN2_cppwrap
 import EMAN2db
-import alignment
-import applications
-import filter
-import fundamentals
-import global_def
-import isac
-import logger
+import sparx_alignment
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_isac
+import sparx_logger
 import mpi
 import numpy
 import numpy as np
 import optparse
 import os
-import pixel_error
+import sparx_pixel_error
 import random
-import statistics
+import sparx_statistics
 import string
 import subprocess
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2db
@@ -126,7 +126,7 @@ Blockdata["shared_comm"]		= mpi.mpi_comm_split_type(mpi.MPI_COMM_WORLD, mpi.MPI_
 Blockdata["myid_on_node"]		= mpi.mpi_comm_rank(Blockdata["shared_comm"])
 Blockdata["no_of_processes_per_group"] = mpi.mpi_comm_size(Blockdata["shared_comm"])
 masters_from_groups_vs_everything_else_comm = mpi.mpi_comm_split(mpi.MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
-Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = utilities.get_colors_and_subsets(Blockdata["main_node"], mpi.MPI_COMM_WORLD, Blockdata["myid"], \
+Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = sparx_utilities.get_colors_and_subsets(Blockdata["main_node"], mpi.MPI_COMM_WORLD, Blockdata["myid"], \
 		Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
 # end of Blockdata
 #indep_run = 0
@@ -151,8 +151,8 @@ def create_zero_group():
 	if( Blockdata["myid_on_node"] == 0 ): submyids = [Blockdata["myid"]]
 	else:  submyids = []
 
-	submyids = utilities.wrap_mpi_gatherv(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-	submyids = utilities.wrap_mpi_bcast(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	submyids = sparx_utilities.wrap_mpi_gatherv(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+	submyids = sparx_utilities.wrap_mpi_bcast(submyids, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 	#if( Blockdata["myid"] == Blockdata["main_node"] ): print(submyids)
 	world_group = mpi.mpi_comm_group(mpi.MPI_COMM_WORLD)
 	subgroup = mpi.mpi_group_incl(world_group,len(submyids),submyids)
@@ -197,7 +197,7 @@ def checkitem(item, mpi_comm = -1):
 		else: isthere = False
 	else: isthere = False
 	#print  "  checkitem0  ",Blockdata["myid"],isthere
-	isthere = utilities.bcast_number_to_all(isthere, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
+	isthere = sparx_utilities.bcast_number_to_all(isthere, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
 	mpi.mpi_barrier(mpi_comm)
 	return isthere
 
@@ -233,11 +233,11 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 	#mpi_barrier(MPI_COMM_WORLD)
 
 	if generation == 0:
-		global_def.ERROR("Generation should begin from 1, please reset it and restart the program", "iter_isac", 1, myid)
+		sparx_global_def.ERROR("Generation should begin from 1, please reset it and restart the program", "iter_isac", 1, myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	ali_params_dir = "ali_params_generation_%d"%generation
 	if os.path.exists(ali_params_dir):  
-		global_def.ERROR('Output directory %s for alignment parameters exists, please either change its name or delete it and restart the program'%ali_params_dir, "iter_isac", 1, myid)
+		sparx_global_def.ERROR('Output directory %s for alignment parameters exists, please either change its name or delete it and restart the program'%ali_params_dir, "iter_isac", 1, myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	
@@ -276,15 +276,15 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 
 	# Generate random averages for each group
 	if key == group_main_node:
-		refi = isac.generate_random_averages(data, K, 9023)
+		refi = sparx_isac.generate_random_averages(data, K, 9023)
 		#refi = generate_random_averages(data, K, Iter)
 		#refi = generate_random_averages(data, K, -1)
 		###for j in xrange(len(refi)):  refi[j].write_image("refim_%d.hdf"%color, j)
 	else:
-		refi = [utilities.model_blank(nx, nx) for i in range(K)]
+		refi = [sparx_utilities.model_blank(nx, nx) for i in range(K)]
 
 	for i in range(K):
-		utilities.bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
+		sparx_utilities.bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
 
 	#  create d[K*ndata] matrix 
 
@@ -327,7 +327,7 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 	if myid == main_node:
 		all_ali_params = [None]*len(data)
 		for i,im in enumerate(data):
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(im)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(im)
 			all_ali_params[i] = [alpha, sx, sy, mirror]
 		print("****************************************************************************************************")
 		print("*         Generation finished                 "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())+"                            *")
@@ -390,17 +390,17 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 	nima = len(alldata)
 	#  Explicitly force all parameters to be zero on input
-	for im in range(nima):  utilities.set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
+	for im in range(nima):  sparx_utilities.set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
 
 	#delay(myid," in isac_MPI_pap")
 
-	image_start, image_end = applications.MPI_start_end(nima, number_of_proc, myid)
+	image_start, image_end = sparx_applications.MPI_start_end(nima, number_of_proc, myid)
 
 	if maskfile:
 		pass#IMPORTIMPORTIMPORT import  types
-		if type(maskfile) is bytes:  mask = utilities.get_image(maskfile)
+		if type(maskfile) is bytes:  mask = sparx_utilities.get_image(maskfile)
 		else: mask = maskfile
-	else : mask = utilities.model_circle(last_ring, nx, nx)
+	else : mask = sparx_utilities.model_circle(last_ring, nx, nx)
 	if type(refim) == type(""):
 		refi = EMAN2_cppwrap.EMData.read_images(refim)
 	else:
@@ -426,8 +426,8 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 	mode = "F"
 	#precalculate rings
-	numr = alignment.Numrinit(first_ring, last_ring, rstep, mode)
-	wr = alignment.ringwe(numr, mode)
+	numr = sparx_alignment.Numrinit(first_ring, last_ring, rstep, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 
 	if rand_seed > -1:      random.seed(rand_seed)
 	else:                   random.seed(random.randint(1,2000111222))
@@ -466,26 +466,26 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		# begin MPI section
 		##if my_abs_id == main_node: print "begin MPI section = ", strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		for im in range(image_start, image_end):
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(alldata[im])
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(alldata[im])
 			##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
-			alphai, sxi, syi, scalei = utilities.inverse_transform2(alpha, sx, sy)
+			alphai, sxi, syi, scalei = sparx_utilities.inverse_transform2(alpha, sx, sy)
 			# If shifts are outside of the permissible range, reset them
 			if(abs(sxi)>mashi or abs(syi)>mashi):
 				sxi = 0.0
 				syi = 0.0
-				utilities.set_params2D(alldata[im],[0.0,0.0,0.0,0,1.0])
+				sparx_utilities.set_params2D(alldata[im],[0.0,0.0,0.0,0,1.0])
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
-			txrng = alignment.search_range(nx, ou, sxi, xrng, "ISAC2")
+			txrng = sparx_alignment.search_range(nx, ou, sxi, xrng, "ISAC2")
 			txrng = [txrng[1],txrng[0]]
-			tyrng = alignment.search_range(ny, ou, syi, yrng, "ISAC2")
+			tyrng = sparx_alignment.search_range(ny, ou, syi, yrng, "ISAC2")
 			tyrng = [tyrng[1],tyrng[0]]
 
 			# align current image to references
 			temp = EMAN2_cppwrap.Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			for iref in range(numref):
 				[alphan, sxn, syn, mn] = \
-				   utilities.combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
+				   sparx_utilities.combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
 				peak_list[iref][(im-image_start)*4+0] = alphan
 				peak_list[iref][(im-image_start)*4+1] = sxn
 				peak_list[iref][(im-image_start)*4+2] = syn
@@ -541,7 +541,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		members = [0]*numref
 		sx_sum = [0.0]*numref
 		sy_sum = [0.0]*numref
-		refi = [utilities.model_blank(nx,ny) for j in range(numref)]
+		refi = [sparx_utilities.model_blank(nx,ny) for j in range(numref)]
 		for im in range(image_start, image_end):
 			matchref = belongsto[im]
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
@@ -552,7 +552,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			else:	   sx_sum[matchref] -= sxn
 			sy_sum[matchref] += syn
 			# apply current parameters and add to the average
-			EMAN2_cppwrap.Util.add_img(refi[matchref], fundamentals.rot_shift2D(alldata[im], alphan, sxn, syn, mn))
+			EMAN2_cppwrap.Util.add_img(refi[matchref], sparx_fundamentals.rot_shift2D(alldata[im], alphan, sxn, syn, mn))
 			#			if CTF:
 			#				ctm = ctf_2(nx, ctf_params)
 			#				for i in xrange(lctf):  ctf2[matchref][it][i] += ctm[i]
@@ -582,29 +582,29 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			syn = float(peak_list[matchref][(im-image_start)*4+2])
 			mn = int(peak_list[matchref][(im-image_start)*4+3])
 			if mn == 0:
-				utilities.set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
+				sparx_utilities.set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
 			else:
-				utilities.set_params2D(alldata[im], [alphan, sxn+sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
+				sparx_utilities.set_params2D(alldata[im], [alphan, sxn+sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
 
 		del peak_list
 
 		for j in range(numref):
-			utilities.reduce_EMData_to_root(refi[j], myid, main_node, comm)
+			sparx_utilities.reduce_EMData_to_root(refi[j], myid, main_node, comm)
 			if myid == main_node:
 				# Golden rule when to do within group refinement
 				EMAN2_cppwrap.Util.mul_scalar(refi[j], 1.0/float(members[j]))
-				refi[j] = filter.filt_tanl(refi[j], fl, FF)
-				refi[j] = fundamentals.fshift(refi[j], -sx_sum[j], -sy_sum[j])
-				utilities.set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
+				refi[j] = sparx_filter.filt_tanl(refi[j], fl, FF)
+				refi[j] = sparx_fundamentals.fshift(refi[j], -sx_sum[j], -sy_sum[j])
+				sparx_utilities.set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
 
 		if myid == main_node:
 			#  this is most likely meant to center them, if so, it works poorly, 
 			#      it has to be checked and probably a better method used PAP 01/17/2015
-			dummy = applications.within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+			dummy = sparx_applications.within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
 			ref_ali_params = []
 			for j in range(numref):
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(refi[j])
-				refi[j] = fundamentals.rot_shift2D(refi[j], alpha, sx, sy, mirror)
+				alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(refi[j])
+				refi[j] = sparx_fundamentals.rot_shift2D(refi[j], alpha, sx, sy, mirror)
 				ref_ali_params.extend([alpha, sx, sy, mirror])
 		else:
 			ref_ali_params = [0.0]*(numref*4)
@@ -612,7 +612,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		ref_ali_params = list(map(float, ref_ali_params))
 
 		for j in range(numref):
-			utilities.bcast_EMData_to_all(refi[j], myid, main_node, comm)
+			sparx_utilities.bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
 		###if myid == main_node:
 		###	print  "  WRITING refaligned  for color:",color
@@ -622,10 +622,10 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		# Compensate the centering to averages
 		for im in range(image_start, image_end):
 			matchref = belongsto[im]
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(alldata[im])
-			alphan, sxn, syn, mirrorn = utilities.combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(alldata[im])
+			alphan, sxn, syn, mirrorn = sparx_utilities.combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
 				ref_ali_params[matchref*4+2], int(ref_ali_params[matchref*4+3]))
-			utilities.set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
+			sparx_utilities.set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
 
 		
 		fl += 0.05
@@ -644,11 +644,11 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 			# Broadcast the alignment parameters to all nodes
 			for i in range(number_of_proc):
-				im_start, im_end = applications.MPI_start_end(nima, number_of_proc, i)
+				im_start, im_end = sparx_applications.MPI_start_end(nima, number_of_proc, i)
 				if myid == i:
 					ali_params = []
 					for im in range(image_start, image_end):
-						alpha, sx, sy, mirror, scale = utilities.get_params2D(alldata[im])
+						alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(alldata[im])
 						ali_params.extend([alpha, sx, sy, mirror])
 				else:
 					ali_params = [0.0]*((im_end-im_start)*4)
@@ -659,7 +659,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					sx = ali_params[(im-im_start)*4+1]
 					sy = ali_params[(im-im_start)*4+2]
 					mirror = int(ali_params[(im-im_start)*4+3])
-					utilities.set_params2D(alldata[im], [alpha, sx, sy, mirror, 1.0])
+					sparx_utilities.set_params2D(alldata[im], [alpha, sx, sy, mirror, 1.0])
 
 			main_iter += 1
 
@@ -685,7 +685,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
 				randomize = True  # I think there is no reason not to be True
 				class_data = [alldata[im] for im in assign]
-				refi[j] = applications.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, \
+				refi[j] = sparx_applications.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, \
 												[xrng], [yrng], [step], dst, maxit, FH, FF, method = method)
 
 				if check_stability:
@@ -693,13 +693,13 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					ali_params = [[] for qq in range(stab_ali)]
 					for ii in range(stab_ali):
 						if ii > 0:  # The first one does not have to be repeated
-							dummy = applications.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
+							dummy = sparx_applications.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
 															dst, maxit, FH, FF, method = method)
 						for im in range(len(class_data)):
-							alpha, sx, sy, mirror, scale = utilities.get_params2D(class_data[im])
+							alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(class_data[im])
 							ali_params[ii].extend([alpha, sx, sy, mirror])
 
-					stable_set, mirror_consistent_rate, err = pixel_error.multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
+					stable_set, mirror_consistent_rate, err = sparx_pixel_error.multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 					gpixer.append(err)
 
 					#print  "Class %4d ...... Size of the group = %4d and of the stable subset = %4d  Mirror consistent rate = %5.3f  Average pixel error prior to class pruning = %10.2f"\
@@ -720,10 +720,10 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 						im = err[1]
 						stable_members.append(assign[im])
 						stable_data.append(class_data[im])
-						utilities.set_params2D( class_data[im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
+						sparx_utilities.set_params2D( class_data[im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
 					stable_members.sort()
 
-					refi[j] = filter.filt_tanl(statistics.ave_series(stable_data), FH, FF)
+					refi[j] = sparx_filter.filt_tanl(sparx_statistics.ave_series(stable_data), FH, FF)
 					refi[j].set_attr('members', stable_members)
 					refi[j].set_attr('n_objects', len(stable_members))
 					#print  "Class %4d ...... Size of the stable subset = %4d  "%(j, len(stable_members))
@@ -735,17 +735,17 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 			for im in range(nima):
 				done_on_node = belongsto[im]%number_of_proc
 				if myid == done_on_node:
-					alpha, sx, sy, mirror, scale = utilities.get_params2D(alldata[im])
+					alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(alldata[im])
 					ali_params = [alpha, sx, sy, mirror]
 				else:
 					ali_params = [0.0]*4
 				ali_params = mpi.mpi_bcast(ali_params, 4, mpi.MPI_FLOAT, done_on_node, comm)
 				ali_params = list(map(float, ali_params))
-				utilities.set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
+				sparx_utilities.set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
 
 
 			for j in range(numref):
-				utilities.bcast_EMData_to_all(refi[j], myid, j%number_of_proc, comm)
+				sparx_utilities.bcast_EMData_to_all(refi[j], myid, j%number_of_proc, comm)
 
 			terminate = 0
 			if check_stability:
@@ -755,15 +755,15 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					done_on_node = j%number_of_proc
 					if done_on_node != main_node:
 						if myid == main_node:
-							mem_len = mpi.mpi_recv(1, mpi.MPI_INT, done_on_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+							mem_len = mpi.mpi_recv(1, mpi.MPI_INT, done_on_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 							mem_len = int(mem_len[0])
-							members = mpi.mpi_recv(mem_len, mpi.MPI_INT, done_on_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+							members = mpi.mpi_recv(mem_len, mpi.MPI_INT, done_on_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 							members = list(map(int, members))
 							refi[j].set_attr_dict({'members': members,'n_objects': mem_len})
 						elif myid == done_on_node:
 							members = refi[j].get_attr('members')
-							mpi.mpi_send(len(members), 1, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
-							mpi.mpi_send(members, len(members), mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+							mpi.mpi_send(len(members), 1, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+							mpi.mpi_send(members, len(members), mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 
 				if myid == main_node:
 					#  compare with previous
@@ -782,17 +782,17 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 					if( (agreement>0.5) and (j > 0.0) and (j < 0.05) ): terminate = 1
 					previous_agreement = agreement
 					print(">>>  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
-				terminate = utilities.bcast_number_to_all(terminate, source_node = main_node)
+				terminate = sparx_utilities.bcast_number_to_all(terminate, source_node = main_node)
 
 
 			if( check_stability and ( (main_iter == max_iter) or (terminate == 1) ) ):
 				#  gather all pixers and print a histogram
 				pass#IMPORTIMPORTIMPORT from utilities import wrap_mpi_gatherv
-				gpixer = utilities.wrap_mpi_gatherv(gpixer, main_node, comm)
+				gpixer = sparx_utilities.wrap_mpi_gatherv(gpixer, main_node, comm)
 				if my_abs_id == main_node and color == 0:
 					pass#IMPORTIMPORTIMPORT from statistics   import hist_list
 					lhist = 12
-					region, histo = statistics.hist_list(gpixer, lhist)
+					region, histo = sparx_statistics.hist_list(gpixer, lhist)
 					print("\n=== Histogram of average within-class pixel errors prior to class pruning ===")
 					for lhx in range(lhist):  print("     %10.3f     %7d"%(region[lhx], histo[lhx]))
 					print("=============================================================================\n")
@@ -815,7 +815,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 		#del id_list
 		i = [refi[j].get_attr("n_objects") for j in range(numref)]
 		lhist = max(12, numref/2)
-		region, histo = statistics.hist_list(i, lhist)
+		region, histo = sparx_statistics.hist_list(i, lhist)
 		print("\n=== Histogram of group sizes ================================================")
 		for lhx in range(lhist):  print("     %10.1f     %7d"%(region[lhx], histo[lhx]))
 		print("=============================================================================\n")
@@ -830,7 +830,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if( Blockdata["myid"] == Blockdata["main_node"] ):
-		plist = utilities.read_text_file(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, \
+		plist = sparx_utilities.read_text_file(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, \
 			"generation%03d"%(generation_iter-1), "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter-1)))
 		nimastack = len(plist)
 		#print " ininimastack  ",nimastack
@@ -839,7 +839,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 		nimastack = 0
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	#print  " willbcast  ",Blockdata["myid"],nimastack,Blockdata["main_node"]
-	nimastack = utilities.bcast_number_to_all(nimastack, source_node = Blockdata["main_node"], mpi_comm=mpi.MPI_COMM_WORLD)
+	nimastack = sparx_utilities.bcast_number_to_all(nimastack, source_node = Blockdata["main_node"], mpi_comm=mpi.MPI_COMM_WORLD)
 	#if( Blockdata["myid"] == Blockdata["main_node"] ):  print  "  returned  ",nimastack
 	#print  " nimastack2  ",Blockdata["myid"],nimastack
 	# Bcast plist to all zero CPUs
@@ -850,7 +850,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 		# First check number of nodes, if only one, no reduction necessary.
 		#print  "  subgroup_myid   ",Blockdata["subgroup_myid"],Blockdata["no_of_groups"],nimastack
 		if(Blockdata["no_of_groups"] > 1):			
-			plist = utilities.bcast_list_to_all(plist, Blockdata["subgroup_myid"], source_node = 0, mpi_comm = Blockdata["subgroup_comm"])
+			plist = sparx_utilities.bcast_list_to_all(plist, Blockdata["subgroup_myid"], source_node = 0, mpi_comm = Blockdata["subgroup_comm"])
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	#mpi_finalize()
 	#exit()
@@ -883,7 +883,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 		#  read data on process 0 of each node
 		#print "  READING DATA FIRST :",Blockdata["myid"],Blockdata["stack_ali2d"],len(plist)
 		for i in range(nimastack):
-			bigbuffer.insert_clip(utilities.get_im(Blockdata["stack_ali2d"],plist[i]),(0,0,i))
+			bigbuffer.insert_clip(sparx_utilities.get_im(Blockdata["stack_ali2d"],plist[i]),(0,0,i))
 		del plist
 		#print "  ALL READ  ",Blockdata["myid"],Blockdata["myid_on_node"],target_nx
 
@@ -893,7 +893,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 	#img_buffer = [None]*nimastack
 	emnumpy3 = [None]*nimastack
 
-	msk = utilities.model_blank(target_nx, target_nx,1,1)
+	msk = sparx_utilities.model_blank(target_nx, target_nx,1,1)
 	for i in range(nimastack):
 		pointer_location = base_ptr + i*size_of_one_image*disp_unit
 		img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
@@ -933,8 +933,8 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 			nave_exist = EMAN2_cppwrap.EMUtil.get_image_count(os.path.join(Blockdata["masterdir"],"class_averages.hdf"))
 		else: nave_exist = 0
 		#  Read all parameters table from masterdir
-		all_parameters = utilities.read_text_row( os.path.join(Blockdata["masterdir"],"all_parameters.txt"))
-		plist = utilities.read_text_file(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, \
+		all_parameters = sparx_utilities.read_text_row( os.path.join(Blockdata["masterdir"],"all_parameters.txt"))
+		plist = sparx_utilities.read_text_file(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, \
 			"generation%03d"%(generation_iter-1), "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter-1)) )
 		#print "****************************************************************************************************",os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, \
 		#	"generation%03d"%(generation_iter-1), "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter-1))
@@ -964,41 +964,41 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 				bad += members
 
 		if(len(good)> 0):
-			utilities.write_text_row( all_parameters, os.path.join(Blockdata["masterdir"],"all_parameters.txt"))
+			sparx_utilities.write_text_row( all_parameters, os.path.join(Blockdata["masterdir"],"all_parameters.txt"))
 			good.sort()
 			#  Add currently assigned images to the overall list
 			if( os.path.exists( os.path.join(Blockdata["masterdir"], "processed_images.txt") ) ):
-				lprocessed = good + utilities.read_text_file(os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
+				lprocessed = good + sparx_utilities.read_text_file(os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
 				lprocessed.sort()
-				utilities.write_text_file(lprocessed, os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
+				sparx_utilities.write_text_file(lprocessed, os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
 			else:
-				utilities.write_text_file(good, os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
+				sparx_utilities.write_text_file(good, os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
 		
 		if(len(bad)> 0):
 			bad.sort()
-			utilities.write_text_file(bad, os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, \
+			sparx_utilities.write_text_file(bad, os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, \
 				"generation%03d"%(generation_iter), "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter)) )
 			
 			if( (int(len(bad)*1.2) < 2*options.img_per_grp) or ( (len(good) == 0) and (generation_iter == 1) ) ):
 				#  Insufficient number of images to keep processing bad set
 				#    or 
 				#  Program cannot produce any good averages from what is left at the beginning of new main
-				try:  lprocessed = utilities.read_text_file(os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
+				try:  lprocessed = sparx_utilities.read_text_file(os.path.join(Blockdata["masterdir"], "processed_images.txt" ))
 				except:  lprocessed = []
 				nprocessed = len(lprocessed)
 				leftout = sorted(list(set(range(Blockdata["total_nima"])) - set(lprocessed)))
-				utilities.write_text_file(leftout, os.path.join(Blockdata["masterdir"], "not_processed_images.txt" ))
+				sparx_utilities.write_text_file(leftout, os.path.join(Blockdata["masterdir"], "not_processed_images.txt" ))
 				# Check whether what remains can be still processed in a new main interation
 				if( ( len(leftout) < 2*options.img_per_grp) or ( (len(good) == 0) and (generation_iter == 1) ) ):
 					#    if the the number of remaining all bad too low full stop
 					keepdoing_main = False
 					keepdoing_generation = False
 					cmd = "{} {}".format("touch", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter, "finished"))
-					junk = utilities.cmdexecute(cmd)
+					junk = sparx_utilities.cmdexecute(cmd)
 					cmd = "{} {}".format("touch", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished"))
-					junk = utilities.cmdexecute(cmd)
+					junk = sparx_utilities.cmdexecute(cmd)
 					cmd = "{} {}".format("touch", os.path.join(Blockdata["masterdir"], "finished"))
-					junk = utilities.cmdexecute(cmd)
+					junk = sparx_utilities.cmdexecute(cmd)
 					print("*         There are no more images to form averages, program finishes     "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())+"     *")
 				else:
 					#  Will have to increase main, which means putting all bad left as new good, 
@@ -1006,9 +1006,9 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 					keepdoing_generation = False
 					#  Will have to increase main, which means putting all bad left as new good, 
 					cmd = "{} {}".format("touch", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter, "finished"))
-					junk = utilities.cmdexecute(cmd)
+					junk = sparx_utilities.cmdexecute(cmd)
 					cmd = "{} {}".format("touch", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished"))
-					junk = utilities.cmdexecute(cmd)
+					junk = sparx_utilities.cmdexecute(cmd)
 			else:
 				keepdoing_main = True
 				keepdoing_generation = True
@@ -1022,8 +1022,8 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 		keepdoing_generation = False
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-	keepdoing_main = utilities.bcast_number_to_all(keepdoing_main, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
-	keepdoing_generation = utilities.bcast_number_to_all(keepdoing_generation, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+	keepdoing_main = sparx_utilities.bcast_number_to_all(keepdoing_main, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
+	keepdoing_generation = sparx_utilities.bcast_number_to_all(keepdoing_generation, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
 
 	return keepdoing_main, keepdoing_generation
 
@@ -1033,7 +1033,7 @@ def main(args):
 			" --iter_reali=iter_reali --stab_ali=stab_ali --thld_err=thld_err"  +
 			" --rand_seed=rand_seed>" )
 	
-	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=sparx_global_def.SPARXVERSION)
 	parser.add_option("--radius",                type="int",           help="particle radius: there is no default, a sensible number has to be provided, units - pixels (default required int)")
 	parser.add_option("--target_radius",         type="int",           default=29,         help="target particle radius: actual particle radius on which isac will process data. Images will be shrinked/enlarged to achieve this radius (default 29)")
 	parser.add_option("--target_nx",             type="int",           default=76,         help="target particle image size: actual image size on which isac will process data. Images will be shrinked/enlarged according to target particle radius and then cut/padded to achieve target_nx size. When xr > 0, the final image size for isac processing is 'target_nx + xr - 1'  (default 76)")
@@ -1093,10 +1093,10 @@ def main(args):
 
 	options.new = False
 	
-	if global_def.CACHE_DISABLE:
+	if sparx_global_def.CACHE_DISABLE:
 		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
-		utilities.disable_bdb_cache()
-	global_def.BATCH = True
+		sparx_utilities.disable_bdb_cache()
+	sparx_global_def.BATCH = True
 	
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D, resample
 	pass#IMPORTIMPORTIMPORT from utilities import pad, combine_params2
@@ -1115,11 +1115,11 @@ def main(args):
 			Blockdata["masterdir"] = "isac_directory"+timestring
 			li = len(Blockdata["masterdir"])
 			cmd = "{} {}".format("mkdir", Blockdata["masterdir"])
-			junk = utilities.cmdexecute(cmd)
+			junk = sparx_utilities.cmdexecute(cmd)
 		else:
 			if not os.path.exists(Blockdata["masterdir"]):
 				cmd = "{} {}".format("mkdir", Blockdata["masterdir"])
-				junk = utilities.cmdexecute(cmd)
+				junk = sparx_utilities.cmdexecute(cmd)
 			li = 0
 	else:
 		li = 0
@@ -1167,7 +1167,7 @@ def main(args):
 
 	create_zero_group()
 
-	if options.CTF and options.VPP: global_def.ERROR("Options CTF and VPP cannot be used together", "isac2", 1, myid)
+	if options.CTF and options.VPP: sparx_global_def.ERROR("Options CTF and VPP cannot be used together", "isac2", 1, myid)
 
 	#  former options
 	indep_run = 0
@@ -1196,7 +1196,7 @@ def main(args):
 	target_radius  = options.target_radius
 	target_nx  = options.target_nx
 	center_method  = options.center_method
-	if(radi < 1):  global_def.ERROR("Particle radius has to be provided!","sxisac",1,myid)
+	if(radi < 1):  sparx_global_def.ERROR("Particle radius has to be provided!","sxisac",1,myid)
 
 	target_xr = options.xr
 	target_nx += target_xr - 1 # subtract one, which is default
@@ -1211,7 +1211,7 @@ def main(args):
 	if(myid == main_node): Blockdata["total_nima"] = EMAN2_cppwrap.EMUtil.get_image_count(Blockdata["stack"])
 	else: Blockdata["total_nima"] = 0
 
-	Blockdata["total_nima"] = utilities.bcast_number_to_all(Blockdata["total_nima"], source_node = main_node)
+	Blockdata["total_nima"] = sparx_utilities.bcast_number_to_all(Blockdata["total_nima"], source_node = main_node)
 
 	nxrsteps = 4
 
@@ -1223,7 +1223,7 @@ def main(args):
 			pass#IMPORTIMPORTIMPORT import subprocess
 			pass#IMPORTIMPORTIMPORT from logger import Logger, BaseLogger_Files
 			#  Create output directory
-			log2d = logger.Logger(logger.BaseLogger_Files())
+			log2d = sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 			log2d.prefix = os.path.join(init2dir)
 			cmd = "mkdir -p "+log2d.prefix
 			outcome = subprocess.call(cmd, shell=True)
@@ -1233,35 +1233,35 @@ def main(args):
 			log2d = None
 
 		if(myid == main_node):
-			a = utilities.get_im(Blockdata["stack"])
+			a = sparx_utilities.get_im(Blockdata["stack"])
 			nnxo = a.get_xsize()
 		else:
 			nnxo = 0
-		nnxo = utilities.bcast_number_to_all(nnxo, source_node = main_node)
+		nnxo = sparx_utilities.bcast_number_to_all(nnxo, source_node = main_node)
 
-		image_start, image_end = applications.MPI_start_end(Blockdata["total_nima"], nproc, myid)
+		image_start, image_end = sparx_applications.MPI_start_end(Blockdata["total_nima"], nproc, myid)
 
 		original_images = EMAN2_cppwrap.EMData.read_images(Blockdata["stack"], list(range(image_start,image_end)))
 		if options.VPP:
-			ntp = len(fundamentals.rops_table(original_images[0]))
+			ntp = len(sparx_fundamentals.rops_table(original_images[0]))
 			rpw = [0.0]*ntp
 			for q in original_images:
-				tpw = fundamentals.rops_table(q)
+				tpw = sparx_fundamentals.rops_table(q)
 				for i in range(ntp):  rpw[i] += numpy.sqrt(tpw[i])
 			del tpw
 			rpw = mpi.mpi_reduce(rpw, ntp, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
 			if(myid == 0):
 				rpw = [float(Blockdata["total_nima"]/q) for q in rpw]
 				rpw[0] = 1.0
-				utilities.write_text_file(rpw,os.path.join(Blockdata["masterdir"], "rpw.txt"))
+				sparx_utilities.write_text_file(rpw,os.path.join(Blockdata["masterdir"], "rpw.txt"))
 			else:  rpw = []
-			rpw = utilities.bcast_list_to_all(rpw, myid, source_node = main_node, mpi_comm = mpi.MPI_COMM_WORLD)
-			for i in range(len(original_images)):  original_images[i] = filter.filt_table(original_images[i], rpw)
+			rpw = sparx_utilities.bcast_list_to_all(rpw, myid, source_node = main_node, mpi_comm = mpi.MPI_COMM_WORLD)
+			for i in range(len(original_images)):  original_images[i] = sparx_filter.filt_table(original_images[i], rpw)
 			del rpw
 		else:
 			if(myid == 0):
-				ntp = len(fundamentals.rops_table(original_images[0]))
-				utilities.write_text_file([0.0]*ntp,os.path.join(Blockdata["masterdir"], "rpw.txt"))
+				ntp = len(sparx_fundamentals.rops_table(original_images[0]))
+				sparx_utilities.write_text_file([0.0]*ntp,os.path.join(Blockdata["masterdir"], "rpw.txt"))
 
 		if options.skip_prealignment:
 			params2d = [[0.0,0.0,0.0,0] for i in range(image_start, image_end)]
@@ -1271,13 +1271,13 @@ def main(args):
 
 			for im in range(len(original_images)):
 				if(shrink_ratio != 1.0):
-					original_images[im] = fundamentals.resample(original_images[im], shrink_ratio)
+					original_images[im] = sparx_fundamentals.resample(original_images[im], shrink_ratio)
 
 			nx = original_images[0].get_xsize()
 			# nx = int(nx*shrink_ratio + 0.5)
 
 			txrm = (nx - 2*(target_radius+1))//2
-			if(txrm < 0):  			global_def.ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
+			if(txrm < 0):  			sparx_global_def.ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
 			if(txrm/nxrsteps>0):
 				tss = ""
 				txr = ""
@@ -1293,14 +1293,14 @@ def main(args):
 			# section ali2d_base
 
 			if(Blockdata["myid"] == 0): print("* 2D alignment   "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
-			params2d = applications.ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
+			params2d = sparx_applications.ali2d_base(original_images, init2dir, None, 1, target_radius, 1, txr, txr, tss, \
 				False, 90.0, center_method, 14, options.CTF, 1.0, False, \
 				"ref_ali2d", "", log2d, nproc, myid, main_node, mpi.MPI_COMM_WORLD, write_headers = False)
 
 			del original_images
 
 			for i in range(len(params2d)):
-				alpha, sx, sy, mirror = utilities.combine_params2(0, params2d[i][1],params2d[i][2], 0, -params2d[i][0], 0, 0, 0)
+				alpha, sx, sy, mirror = sparx_utilities.combine_params2(0, params2d[i][1],params2d[i][2], 0, -params2d[i][0], 0, 0, 0)
 				sx /= shrink_ratio
 				sy /= shrink_ratio
 				params2d[i][0] = 0.0
@@ -1311,13 +1311,13 @@ def main(args):
 
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		tmp = params2d[:]
-		tmp = utilities.wrap_mpi_gatherv(tmp, main_node, mpi.MPI_COMM_WORLD)
+		tmp = sparx_utilities.wrap_mpi_gatherv(tmp, main_node, mpi.MPI_COMM_WORLD)
 		if( myid == main_node ):		
 			if options.skip_prealignment:
 				print("=========================================")
 				print("There is no alignment step, '%s' params are set to zero for later use."%os.path.join(init2dir, "initial2Dparams.txt"))
 				print("=========================================")
-			utilities.write_text_row(tmp,os.path.join(init2dir, "initial2Dparams.txt"))
+			sparx_utilities.write_text_row(tmp,os.path.join(init2dir, "initial2Dparams.txt"))
 		del tmp
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	
@@ -1337,142 +1337,142 @@ def main(args):
 			time.sleep(1)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
-		params = utilities.read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
+		params = sparx_utilities.read_text_row(os.path.join(init2dir, "initial2Dparams.txt"))
 		params = params[image_start:image_end]
 
 
-		msk = utilities.model_circle(radi, nx, nx)
+		msk = sparx_utilities.model_circle(radi, nx, nx)
 		if options.VPP:
-			if myid == 0:  rpw = utilities.read_text_file(os.path.join(Blockdata["masterdir"], "rpw.txt"))
+			if myid == 0:  rpw = sparx_utilities.read_text_file(os.path.join(Blockdata["masterdir"], "rpw.txt"))
 			else:  rpw = [0.0]
-			rpw = utilities.bcast_list_to_all(rpw, myid, source_node = main_node, mpi_comm = mpi.MPI_COMM_WORLD)
+			rpw = sparx_utilities.bcast_list_to_all(rpw, myid, source_node = main_node, mpi_comm = mpi.MPI_COMM_WORLD)
 		for im in range(nima):
 			st = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, False)
 			aligned_images[im] -= st[0]
 			if options.CTF:
-				aligned_images[im] = filter.filt_ctf(aligned_images[im], aligned_images[im].get_attr("ctf"), binary = True)
+				aligned_images[im] = sparx_filter.filt_ctf(aligned_images[im], aligned_images[im].get_attr("ctf"), binary = True)
 			elif options.VPP:
-				aligned_images[im] = fundamentals.fft(filter.filt_table(filter.filt_ctf(fundamentals.fft(aligned_images[im]), aligned_images[im].get_attr("ctf"), binary = True), rpw))
+				aligned_images[im] = sparx_fundamentals.fft(sparx_filter.filt_table(sparx_filter.filt_ctf(sparx_fundamentals.fft(aligned_images[im]), aligned_images[im].get_attr("ctf"), binary = True), rpw))
 		if options.VPP: del rpw
 		if(shrink_ratio < 1.0):
 			if    newx > target_nx  :
-				msk = utilities.model_circle(target_radius, target_nx, target_nx)
+				msk = sparx_utilities.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 					#aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-					aligned_images[im] = fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = fundamentals.resample(aligned_images[im], shrink_ratio)
+					aligned_images[im] = sparx_fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
+					aligned_images[im]  = sparx_fundamentals.resample(aligned_images[im], shrink_ratio)
 					aligned_images[im] = EMAN2_cppwrap.Util.window(aligned_images[im], target_nx, target_nx, 1)
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, True)
 					aligned_images[im] /= p[1]
 			elif  newx == target_nx :
-				msk = utilities.model_circle(target_radius, target_nx, target_nx)
+				msk = sparx_utilities.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = fundamentals.resample(aligned_images[im], shrink_ratio)
+					aligned_images[im] = sparx_fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
+					aligned_images[im]  = sparx_fundamentals.resample(aligned_images[im], shrink_ratio)
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, True)
 					aligned_images[im] /= p[1]
 			elif  newx < target_nx  :	
-				msk = utilities.model_circle(newx//2-2, newx,  newx)
+				msk = sparx_utilities.model_circle(newx//2-2, newx,  newx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = fundamentals.resample(aligned_images[im], shrink_ratio)
+					aligned_images[im] = sparx_fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
+					aligned_images[im]  = sparx_fundamentals.resample(aligned_images[im], shrink_ratio)
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, True)
 					aligned_images[im] /= p[1]
-					aligned_images[im] = utilities.pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+					aligned_images[im] = sparx_utilities.pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 		elif(shrink_ratio == 1.0):
 			if    newx > target_nx  :
-				msk = utilities.model_circle(target_radius, target_nx, target_nx)
+				msk = sparx_utilities.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
+					aligned_images[im] = sparx_fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					aligned_images[im] = EMAN2_cppwrap.Util.window(aligned_images[im], target_nx, target_nx, 1)
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, True)
 					aligned_images[im] /= p[1]
 			elif  newx == target_nx :
-				msk = utilities.model_circle(target_radius, target_nx, target_nx)
+				msk = sparx_utilities.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
+					aligned_images[im] = sparx_fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, True)
 					aligned_images[im] /= p[1]
 			elif  newx < target_nx  :			
-				msk = utilities.model_circle(newx//2-2, newx,  newx)
+				msk = sparx_utilities.model_circle(newx//2-2, newx,  newx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
+					aligned_images[im] = sparx_fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
 					#aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, True)
 					aligned_images[im] /= p[1]
-					aligned_images[im] = utilities.pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+					aligned_images[im] = sparx_utilities.pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 		elif(shrink_ratio > 1.0):
 			if    newx > target_nx  :
-				msk = utilities.model_circle(target_radius, target_nx, target_nx)
+				msk = sparx_utilities.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = fundamentals.resample(aligned_images[im], shrink_ratio)
+					aligned_images[im] = sparx_fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
+					aligned_images[im]  = sparx_fundamentals.resample(aligned_images[im], shrink_ratio)
 					aligned_images[im] = EMAN2_cppwrap.Util.window(aligned_images[im], target_nx, target_nx, 1)
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, True)
 					aligned_images[im] /= p[1]
 			elif  newx == target_nx :
-				msk = utilities.model_circle(target_radius, target_nx, target_nx)
+				msk = sparx_utilities.model_circle(target_radius, target_nx, target_nx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = fundamentals.resample(aligned_images[im], shrink_ratio)
+					aligned_images[im] = sparx_fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
+					aligned_images[im]  = sparx_fundamentals.resample(aligned_images[im], shrink_ratio)
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, True)
 					aligned_images[im] /= p[1]
 			elif  newx < target_nx  :
-				msk = utilities.model_circle(newx//2-2, newx,  newx)
+				msk = sparx_utilities.model_circle(newx//2-2, newx,  newx)
 				for im in range(nima):
 					#  Here we should use only shifts
 					#alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 					#alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
-					aligned_images[im] = fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
-					aligned_images[im]  = fundamentals.resample(aligned_images[im], shrink_ratio)
+					aligned_images[im] = sparx_fundamentals.rot_shift2D(aligned_images[im], 0, params[im][1], params[im][2], 0)
+					aligned_images[im]  = sparx_fundamentals.resample(aligned_images[im], shrink_ratio)
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, False)
 					aligned_images[im] -= p[0]
 					p = EMAN2_cppwrap.Util.infomask(aligned_images[im], msk, True)
 					aligned_images[im] /= p[1]
-					aligned_images[im] = utilities.pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+					aligned_images[im] = sparx_utilities.pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 		del msk
 	
-		utilities.gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
+		sparx_utilities.gather_compacted_EMData_to_root(Blockdata["total_nima"], aligned_images, myid)
 		#Blockdata["total_nima"] = bcast_number_to_all(Blockdata["total_nima"], source_node = main_node)
 	
 		if( Blockdata["myid"] == main_node ):
@@ -1487,7 +1487,7 @@ def main(args):
 			"""Multiline Comment2"""
 			fp.write(output_text); fp.flush() ;fp.close()
 			print(output_text)
-			junk = utilities.cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%Blockdata["stack_ali2d"])
+			junk = sparx_utilities.cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%Blockdata["stack_ali2d"])
 
 
 			fp = open(os.path.join(init2dir, "Finished_initial_2d_alignment.txt"), "w"); fp.flush() ;fp.close()
@@ -1500,7 +1500,7 @@ def main(args):
 		if( not os.path.exists( os.path.join(Blockdata["masterdir"], "main001", "generation000") ) ):
 			#  We do not create processed_images.txt selection file as it has to be initially empty
 			#  We do create all params filled with zeroes.
-			utilities.write_text_row([[0.0,0.0,0.0,-1] for i in range(Blockdata["total_nima"])], os.path.join(Blockdata["masterdir"], "all_parameters.txt") )
+			sparx_utilities.write_text_row([[0.0,0.0,0.0,-1] for i in range(Blockdata["total_nima"])], os.path.join(Blockdata["masterdir"], "all_parameters.txt") )
 			if(options.restart > -1): error=1
 		else:
 			if(options.restart == 0):
@@ -1511,7 +1511,7 @@ def main(args):
 					if( os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ) ) ):
 						if( not  os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished" ) ) ):
 							cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ))
-							junk = utilities.cmdexecute(cmd)
+							junk = sparx_utilities.cmdexecute(cmd)
 							keepdoing_main = False
 					else: keepdoing_main = False
 
@@ -1524,15 +1524,15 @@ def main(args):
 					while(keepdoing_main):
 						if( os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ) ) ):
 							cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ))
-							junk = utilities.cmdexecute(cmd)
+							junk = sparx_utilities.cmdexecute(cmd)
 							main_iter += 1
 						else: keepdoing_main = False
 			if( os.path.exists( os.path.join(Blockdata["masterdir"], "finished" ) ) ):				
 				cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "finished" ))
-				junk = utilities.cmdexecute(cmd)
+				junk = sparx_utilities.cmdexecute(cmd)
 
-	error = utilities.bcast_number_to_all(error, source_node = Blockdata["main_node"])
-	if(error == 1):  global_def.ERROR("isac2","cannot restart from unfinished main iteration  %d"%main_iter)
+	error = sparx_utilities.bcast_number_to_all(error, source_node = Blockdata["main_node"])
+	if(error == 1):  sparx_global_def.ERROR("isac2","cannot restart from unfinished main iteration  %d"%main_iter)
 					
 
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -1551,30 +1551,30 @@ def main(args):
 				generation_iter = 0
 				if( Blockdata["myid"] == 0):
 					cmd = "{} {}".format("mkdir", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter ))
-					junk = utilities.cmdexecute(cmd)
+					junk = sparx_utilities.cmdexecute(cmd)
 					cmd = "{} {}".format("mkdir", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter ))
-					junk = utilities.cmdexecute(cmd)
+					junk = sparx_utilities.cmdexecute(cmd)
 					if(main_iter>1):
 						#  It may be restart from unfinished main, so replace files in master
 						cmd = "{} {} {} {}".format("cp -Rp", \
 						os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "processed_images.txt" ), \
 						os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "class_averages.hdf" ), \
 						os.path.join(Blockdata["masterdir"]) )
-						junk = utilities.cmdexecute(cmd)
+						junk = sparx_utilities.cmdexecute(cmd)
 						junk = os.path.join(Blockdata["masterdir"], "main%03d"%(main_iter-1), "not_processed_images.txt" )
 						if( os.path.exists( junk ) ):
 							cmd = "{} {} {}".format("cp -Rp", \
 							junk, \
 							os.path.join(Blockdata["masterdir"]) )
-							junk = utilities.cmdexecute(cmd)
+							junk = sparx_utilities.cmdexecute(cmd)
 
 
 					if( os.path.exists( os.path.join(Blockdata["masterdir"], "not_processed_images.txt") ) ):
 						cmd = "{} {} {}".format("cp -Rp", os.path.join(Blockdata["masterdir"], "not_processed_images.txt" ), \
 						os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter, "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter) ))
-						junk = utilities.cmdexecute(cmd)
+						junk = sparx_utilities.cmdexecute(cmd)
 					else:
-						utilities.write_text_file(list(range(Blockdata["total_nima"])),\
+						sparx_utilities.write_text_file(list(range(Blockdata["total_nima"])),\
 						os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter, "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter) ))
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
@@ -1591,7 +1591,7 @@ def main(args):
 							#  rm -f THIS GENERATION
 							if( Blockdata["myid"] == 0):
 								cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter ))
-								junk = utilities.cmdexecute(cmd)
+								junk = sparx_utilities.cmdexecute(cmd)
 							mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 							okdo = True
 					else:
@@ -1600,7 +1600,7 @@ def main(args):
 					if okdo:
 						if( Blockdata["myid"] == 0):
 							cmd = "{} {}".format("mkdir", os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter ))
-							junk = utilities.cmdexecute(cmd)
+							junk = sparx_utilities.cmdexecute(cmd)
 						mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 						#print  "  WILLCALL  ",Blockdata["myid"]
 						#mpi_finalize()
@@ -1614,13 +1614,13 @@ def main(args):
 								os.path.join(Blockdata["masterdir"], "processed_images.txt" ), \
 								os.path.join(Blockdata["masterdir"], "class_averages.hdf" ), \
 								os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
-								junk = utilities.cmdexecute(cmd)
+								junk = sparx_utilities.cmdexecute(cmd)
 								junk = os.path.join(Blockdata["masterdir"], "not_processed_images.txt" )
 								if( os.path.exists( junk ) ):
 									cmd = "{} {} {}".format("cp -Rp", \
 									junk, \
 									os.path.join(Blockdata["masterdir"], "main%03d"%main_iter) )
-									junk = utilities.cmdexecute(cmd)
+									junk = sparx_utilities.cmdexecute(cmd)
 
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	if( Blockdata["myid"] == 0):
@@ -1628,9 +1628,9 @@ def main(args):
 			cmd = "{} {} {} {} {} {} {} {} {} {}".format("sxchains.py", os.path.join(Blockdata["masterdir"],"class_averages.hdf"),\
 			os.path.join(Blockdata["masterdir"],"junk.hdf"),os.path.join(Blockdata["masterdir"],"ordered_class_averages.hdf"),\
 			"--circular","--radius=%d"%target_radius , "--xr=%d"%(target_xr+1),"--yr=%d"%(target_yr+1),"--align", ">/dev/null")
-			junk = utilities.cmdexecute(cmd)
+			junk = sparx_utilities.cmdexecute(cmd)
 			cmd = "{} {}".format("rm -rf", os.path.join(Blockdata["masterdir"], "junk.hdf") )
-			junk = utilities.cmdexecute(cmd)
+			junk = sparx_utilities.cmdexecute(cmd)
 		else:
 			print(" ISAC could not find any stable class averaging, terminating...")
 

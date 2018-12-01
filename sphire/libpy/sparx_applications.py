@@ -31,32 +31,32 @@ from __future__ import print_function
 
 import EMAN2_cppwrap
 import EMAN2db
-import alignment
+import sparx_alignment
 import copy
-import filter
-import fundamentals
-import global_def
-import logger
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_logger
 import math
-import morphology
+import sparx_morphology
 import mpi
-import multi_shc
+import sparx_multi_shc
 import numpy
 import numpy.random
 import os
 import pickle
-import pixel_error
-import projection
+import sparx_pixel_error
+import sparx_projection
 import random
-import reconstruction
+import sparx_reconstruction
 import scipy.optimize
-import statistics
+import sparx_statistics
 import string
 import string as sting
 import sys
 import time
-import user_functions
-import utilities
+import sparx_user_functions
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2db
@@ -120,22 +120,22 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 	main_node = 0
 	
-	ftp = utilities.file_type(stack)
+	ftp = sparx_utilities.file_type(stack)
 	
 	if outdir:
-		if os.path.exists(outdir):  global_def.ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
+		if os.path.exists(outdir):  sparx_global_def.ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if myid == main_node:
 		if outdir:	os.mkdir(outdir)
 		pass#IMPORTIMPORTIMPORT import global_def
-		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
-		utilities.print_begin_msg("ali2d_MPI")
+		sparx_global_def.LOGFILE =  os.path.join(outdir, sparx_global_def.LOGFILE)
+		sparx_utilities.print_begin_msg("ali2d_MPI")
 
-	xrng        = utilities.get_input_from_string(xr)
+	xrng        = sparx_utilities.get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = utilities.get_input_from_string(yr)
-	step        = utilities.get_input_from_string(ts)
+	else          :  yrng = sparx_utilities.get_input_from_string(yr)
+	step        = sparx_utilities.get_input_from_string(ts)
 	
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
 	
@@ -162,11 +162,11 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	
 	else:
 		nima = 0
-	nima = utilities.bcast_number_to_all(nima, source_node = main_node)
+	nima = sparx_utilities.bcast_number_to_all(nima, source_node = main_node)
 	
 	if myid != main_node:
 		list_of_particles = [-1]*nima
-	list_of_particles = utilities.bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
+	list_of_particles = sparx_utilities.bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	list_of_particles = list_of_particles[image_start: image_end]
@@ -186,10 +186,10 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	else:
 		nx = 0
 		if CTF:	ctf_app = 0
-	nx = utilities.bcast_number_to_all(nx, source_node = main_node)
+	nx = sparx_utilities.bcast_number_to_all(nx, source_node = main_node)
 	if CTF:
-		ctf_app = utilities.bcast_number_to_all(ctf_app, source_node = main_node)
-		if ctf_app > 0:	global_def.ERROR("data cannot be ctf-applied", "ali2d_MPI", 1, myid)
+		ctf_app = sparx_utilities.bcast_number_to_all(ctf_app, source_node = main_node)
+		if ctf_app > 0:	sparx_global_def.ERROR("data cannot be ctf-applied", "ali2d_MPI", 1, myid)
 		phase_flip = True
 		pass#IMPORTIMPORTIMPORT from filter import filt_ctf
 	else:
@@ -200,58 +200,58 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	if last_ring == -1: last_ring = nx/2-2
 
 	if last_ring + max([max(xrng), max(yrng)]) > (nx-1) // 2:
-		global_def.ERROR('Shift or radius is too large - particle crosses image boundary', "ali2d_MPI", 1)
+		sparx_global_def.ERROR('Shift or radius is too large - particle crosses image boundary', "ali2d_MPI", 1)
 
 	if CUDA:
-		GPUID = utilities.get_input_from_string(GPUID)
+		GPUID = sparx_utilities.get_input_from_string(GPUID)
 		GPUID = list(map(int, GPUID))
 	
 	if myid == main_node:
-		utilities.print_msg("Input stack                 : %s\n"%(stack))
+		sparx_utilities.print_msg("Input stack                 : %s\n"%(stack))
 		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 		# print_msg("Number of active images     : %d\n"%(nima))
-		utilities.print_msg("Number of images            : %d\n"%(nima))
-		utilities.print_msg("Output directory            : %s\n"%(outdir))
-		utilities.print_msg("Inner radius                : %i\n"%(first_ring))
-		utilities.print_msg("Outer radius                : %i\n"%(last_ring))
-		utilities.print_msg("Ring step                   : %i\n"%(rstep))
-		utilities.print_msg("X search range              : %s\n"%(xrng))
-		utilities.print_msg("Y search range              : %s\n"%(yrng))
-		utilities.print_msg("Translational step          : %s\n"%(step))
-		utilities.print_msg("Disable checking mirror     : %s\n"%(nomirror))
-		utilities.print_msg("Discrete angle used         : %d\n"%(dst))
-		utilities.print_msg("Center type                 : %i\n"%(center))
-		utilities.print_msg("Maximum iteration           : %i\n"%(max_iter))
-		utilities.print_msg("Use Fourier variance        : %s\n"%(Fourvar))
+		sparx_utilities.print_msg("Number of images            : %d\n"%(nima))
+		sparx_utilities.print_msg("Output directory            : %s\n"%(outdir))
+		sparx_utilities.print_msg("Inner radius                : %i\n"%(first_ring))
+		sparx_utilities.print_msg("Outer radius                : %i\n"%(last_ring))
+		sparx_utilities.print_msg("Ring step                   : %i\n"%(rstep))
+		sparx_utilities.print_msg("X search range              : %s\n"%(xrng))
+		sparx_utilities.print_msg("Y search range              : %s\n"%(yrng))
+		sparx_utilities.print_msg("Translational step          : %s\n"%(step))
+		sparx_utilities.print_msg("Disable checking mirror     : %s\n"%(nomirror))
+		sparx_utilities.print_msg("Discrete angle used         : %d\n"%(dst))
+		sparx_utilities.print_msg("Center type                 : %i\n"%(center))
+		sparx_utilities.print_msg("Maximum iteration           : %i\n"%(max_iter))
+		sparx_utilities.print_msg("Use Fourier variance        : %s\n"%(Fourvar))
 		#print_msg("Number of groups            : %d\n"%(Ng))
-		utilities.print_msg("CTF correction              : %s\n"%(CTF))
-		utilities.print_msg("Phase flip                  : %s\n"%(phase_flip))
-		utilities.print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
+		sparx_utilities.print_msg("CTF correction              : %s\n"%(CTF))
+		sparx_utilities.print_msg("Phase flip                  : %s\n"%(phase_flip))
+		sparx_utilities.print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		if auto_stop:
-			utilities.print_msg("Stop iteration with         : criterion\n")
+			sparx_utilities.print_msg("Stop iteration with         : criterion\n")
 		else:
-			utilities.print_msg("Stop iteration with         : maxit\n")
+			sparx_utilities.print_msg("Stop iteration with         : maxit\n")
 
 		pass#IMPORTIMPORTIMPORT import user_functions
-		user_func = user_functions.factory[user_func_name]
+		user_func = sparx_user_functions.factory[user_func_name]
 
-		utilities.print_msg("User function               : %s\n"%(user_func_name))
-		utilities.print_msg("Number of processors used   : %d\n"%(number_of_proc))
-		utilities.print_msg("Using CUDA                  : %s\n"%(CUDA))
+		sparx_utilities.print_msg("User function               : %s\n"%(user_func_name))
+		sparx_utilities.print_msg("Number of processors used   : %d\n"%(number_of_proc))
+		sparx_utilities.print_msg("Using CUDA                  : %s\n"%(CUDA))
 		if CUDA:
-			utilities.print_msg("GPU IDs                     : %s\n"%(GPUID))
+			sparx_utilities.print_msg("GPU IDs                     : %s\n"%(GPUID))
 
 	if maskfile:
 		pass#IMPORTIMPORTIMPORT import  types
 		if type(maskfile) is bytes:  
-			if myid == main_node:		utilities.print_msg("Maskfile                    : %s\n\n"%(maskfile))
-			mask = utilities.get_image(maskfile)
+			if myid == main_node:		sparx_utilities.print_msg("Maskfile                    : %s\n\n"%(maskfile))
+			mask = sparx_utilities.get_image(maskfile)
 		else:
-			if myid == main_node: 		utilities.print_msg("Maskfile                    : user provided in-core mask\n\n")
+			if myid == main_node: 		sparx_utilities.print_msg("Maskfile                    : user provided in-core mask\n\n")
 			mask = maskfile
 	else:
-		if myid == main_node: 	utilities.print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
-		mask = utilities.model_circle(last_ring, nx, nx)
+		if myid == main_node: 	sparx_utilities.print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
+		mask = sparx_utilities.model_circle(last_ring, nx, nx)
 
 	cnx  = nx/2+1
 	cny  = cnx
@@ -267,7 +267,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		ctf_2_sum = None
 
 	pass#IMPORTIMPORTIMPORT from global_def import CACHE_DISABLE
-	if global_def.CACHE_DISABLE:
+	if sparx_global_def.CACHE_DISABLE:
 		data = EMAN2_cppwrap.EMData.read_images(stack, list_of_particles)
 	else:
 		for i in range(number_of_proc):
@@ -288,20 +288,20 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		data[im] -= st[0]
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
-			ctfimg = morphology.ctf_img(nx, ctf_params)
+			ctfimg = sparx_morphology.ctf_img(nx, ctf_params)
 			if CUDA:
 				all_ctf_params.extend([ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont])
 			EMAN2_cppwrap.Util.add_img2(ctf_2_sum, ctfimg)
 			EMAN2_cppwrap.Util.add_img_abs(ctf_abs_sum, ctfimg)
 		if CUDA:
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[im])
 			all_ali_params.extend([alpha, sx, sy, mirror])
 		if( random_method == "SHC" ):  data[im].set_attr('previousmax',1.0e-23)
-		if phase_flip:  data[im] = filter.filt_ctf(data[im], data[im].get_attr("ctf"), binary = True)
+		if phase_flip:  data[im] = sparx_filter.filt_ctf(data[im], data[im].get_attr("ctf"), binary = True)
 
 	if CTF:
-		utilities.reduce_EMData_to_root(ctf_2_sum, myid, main_node)
-		utilities.reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
+		sparx_utilities.reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+		sparx_utilities.reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
 		if myid == main_node:
 			adw_img = EMAN2_cppwrap.Util.mult_scalar(ctf_2_sum, snr)
 			EMAN2_cppwrap.Util.div_filter(adw_img, ctf_abs_sum)
@@ -309,8 +309,8 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 			adw_img += float(nima-Ng)/(nima-1)
 	else:  ctf_2_sum = None
 	# startup
-	numr = alignment.Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
-	wr = alignment.ringwe(numr, mode)
+	numr = sparx_alignment.Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
+	wr = sparx_alignment.ringwe(numr, mode)
 	
 	if myid == main_node:
 		# initialize data for the reference preparation function
@@ -346,12 +346,12 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 			if CTF:  R.filter_stack(all_ctf_params)
 
 		msg = "\nX range = %5.2f   Y range = %5.2f   Step = %5.2f\n"%(xrng[N_step], yrng[N_step], step[N_step])
-		if myid == main_node: utilities.print_msg(msg)
+		if myid == main_node: sparx_utilities.print_msg(msg)
 		for Iter in range(max_iter):
 			total_iter += 1
 			if CUDA:
-				ave1 = utilities.model_blank(nx, nx)
-				ave2 = utilities.model_blank(nx, nx)
+				ave1 = sparx_utilities.model_blank(nx, nx)
+				ave2 = sparx_utilities.model_blank(nx, nx)
 				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2)
 				# Comment by Zhengfan Yang on 02/01/10
 				# The reason for this step is that in CUDA 2-D FFT, the image is multipled by NX*NY times after
@@ -361,33 +361,33 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					ave1 /= (nx*2)**2
 					ave2 /= (nx*2)**2
 			else:
-				ave1, ave2 = statistics.sum_oe(data, "a", CTF, EMAN2_cppwrap.EMData())  # pass empty object to prevent calculation of ctf^2
-			utilities.reduce_EMData_to_root(ave1, myid, main_node)
-			utilities.reduce_EMData_to_root(ave2, myid, main_node)
+				ave1, ave2 = sparx_statistics.sum_oe(data, "a", CTF, EMAN2_cppwrap.EMData())  # pass empty object to prevent calculation of ctf^2
+			sparx_utilities.reduce_EMData_to_root(ave1, myid, main_node)
+			sparx_utilities.reduce_EMData_to_root(ave2, myid, main_node)
 			if myid == main_node:
-				utilities.print_msg("Iteration #%4d\n"%(total_iter))
+				sparx_utilities.print_msg("Iteration #%4d\n"%(total_iter))
 				if CTF: 
-					tavg_Ng = fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(EMAN2_cppwrap.Util.muln_img(fundamentals.fft(EMAN2_cppwrap.Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
-					tavg    = fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(fundamentals.fft(EMAN2_cppwrap.Util.addn_img(ave1, ave2)), ctf_2_sum))
+					tavg_Ng = sparx_fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(EMAN2_cppwrap.Util.muln_img(sparx_fundamentals.fft(EMAN2_cppwrap.Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
+					tavg    = sparx_fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(sparx_fundamentals.fft(EMAN2_cppwrap.Util.addn_img(ave1, ave2)), ctf_2_sum))
 				else:	 tavg = (ave1+ave2)/nima
 				if outdir:
 					tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 					if CTF:
 						tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
-					frsc = statistics.fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+					frsc = sparx_statistics.fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 				else:
-					frsc = statistics.fsc_mask(ave1, ave2, mask, 1.0)
+					frsc = sparx_statistics.fsc_mask(ave1, ave2, mask, 1.0)
 			else:
-				tavg =  utilities.model_blank(nx, nx)
+				tavg =  sparx_utilities.model_blank(nx, nx)
 			del ave1, ave2
 				
 			if Fourvar:  
-				utilities.bcast_EMData_to_all(tavg, myid, main_node)
-				vav, rvar = statistics.varf2d_MPI(myid, data, tavg, mask, "a", CTF)
+				sparx_utilities.bcast_EMData_to_all(tavg, myid, main_node)
+				vav, rvar = sparx_statistics.varf2d_MPI(myid, data, tavg, mask, "a", CTF)
 
 			if myid == main_node:
 				if Fourvar:
-					tavg    = fundamentals.fft(EMAN2_cppwrap.Util.divn_img(fundamentals.fft(tavg), vav))
+					tavg    = sparx_fundamentals.fft(EMAN2_cppwrap.Util.divn_img(sparx_fundamentals.fft(tavg), vav))
 					vav_r	= EMAN2_cppwrap.Util.pack_complex_to_real(vav)
 					if outdir:
 						vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
@@ -411,9 +411,9 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					tavg, cs = user_func(ref_data)
 					cs[0] = float(sx_sum)/nima
 					cs[1] = float(sy_sum)/nima
-					tavg = fundamentals.fshift(tavg, -cs[0], -cs[1])
+					tavg = sparx_fundamentals.fshift(tavg, -cs[0], -cs[1])
 					msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
-					utilities.print_msg(msg)
+					sparx_utilities.print_msg(msg)
 				else:
 					tavg, cs = user_func(ref_data)
 
@@ -425,7 +425,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					if auto_stop: 	again = 0
 				else:	a0 = a1
 			else:
-				tavg = utilities.model_blank(nx, nx)
+				tavg = sparx_utilities.model_blank(nx, nx)
 				cs = [0.0]*2
 
 			if auto_stop:
@@ -433,7 +433,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				if int(again[0]) == 0: break
 
 			if Fourvar:  del vav
-			utilities.bcast_EMData_to_all(tavg, myid, main_node)
+			sparx_utilities.bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi.mpi_bcast(cs, 2, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 			cs = list(map(float, cs))
 			if total_iter != max_iter*len(xrng):
@@ -442,7 +442,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				else:
 					old_ali_params = []
 					for im in range(len(data)):  
-						alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
+						alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[im])
 						old_ali_params.extend([alpha, sx, sy, mirror])
 
 				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
@@ -453,7 +453,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					sy_sum = all_ali_params[-1]
 					for im in range(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
 				else:
-					sx_sum, sy_sum, nope = alignment.ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+					sx_sum, sy_sum, nope = sparx_alignment.ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 												xrng[N_step], yrng[N_step], step[N_step], \
 												nomirror=nomirror, mode=mode, CTF=CTF, delta=delta, \
 												random_method = random_method)
@@ -476,9 +476,9 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 						sy = all_ali_params[im*4+2]
 						mirror = all_ali_params[im*4+3]
 					else:
-						alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
+						alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[im])
 						if old_ali_params[im*4+3] == mirror:
-							this_error = pixel_error.pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
+							this_error = sparx_pixel_error.pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
 							pixel_error += this_error
 							pixel_error_list.append(this_error)
 							mirror_consistent += 1
@@ -488,36 +488,36 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				pixel_error       = mpi.mpi_reduce(pixel_error, 1, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
 				pixel_error_list  = mpi.mpi_gatherv(pixel_error_list, len(data), mpi.MPI_FLOAT, recvcount, disp, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 				if myid == main_node:
-					utilities.print_msg("Mirror consistency rate = %8.4f%%\n"%(float(mirror_consistent)/nima*100))
+					sparx_utilities.print_msg("Mirror consistency rate = %8.4f%%\n"%(float(mirror_consistent)/nima*100))
 					if mirror_consistent!=0:
-						utilities.print_msg("Among the mirror-consistent images, average of pixel errors is %0.4f, and their distribution is:\n"%(float(pixel_error)/float(mirror_consistent)))
+						sparx_utilities.print_msg("Among the mirror-consistent images, average of pixel errors is %0.4f, and their distribution is:\n"%(float(pixel_error)/float(mirror_consistent)))
 						pixel_error_list = list(map(float, pixel_error_list))
 						for i in range(nima-1, -1, -1):
 							if pixel_error_list[i] < 0:  del pixel_error_list[i]
-						region, hist = statistics.hist_list(pixel_error_list, 20)	
+						region, hist = sparx_statistics.hist_list(pixel_error_list, 20)	
 						for p in range(20):
-							utilities.print_msg("      %10.6f: %5d\n"%(region[p], hist[p]))
-					utilities.print_msg("\n\n\n")
+							sparx_utilities.print_msg("      %10.6f: %5d\n"%(region[p], hist[p]))
+					sparx_utilities.print_msg("\n\n\n")
 		if CUDA: R.finish()
 
 	if CUDA:
 		for im in range(len(data)):
-			utilities.set_params2D(data[im], [all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], all_ali_params[im*4+3], 1.0])
+			sparx_utilities.set_params2D(data[im], [all_ali_params[im*4], all_ali_params[im*4+1], all_ali_params[im*4+2], all_ali_params[im*4+3], 1.0])
 
-	if myid == main_node and outdir:  utilities.drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
+	if myid == main_node and outdir:  sparx_utilities.drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	par_str = ["xform.align2d", "ID"]
 	if myid == main_node:
 		pass#IMPORTIMPORTIMPORT from utilities import file_type
-		if(utilities.file_type(stack) == "bdb"):
+		if(sparx_utilities.file_type(stack) == "bdb"):
 			pass#IMPORTIMPORTIMPORT from utilities import recv_attr_dict_bdb
-			utilities.recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+			sparx_utilities.recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 		else:
 			pass#IMPORTIMPORTIMPORT from utilities import recv_attr_dict
-			utilities.recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	else:           utilities.send_attr_dict(main_node, data, par_str, image_start, image_end)
-	if myid == main_node: utilities.print_end_msg("ali2d_MPI")
+			sparx_utilities.recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	else:           sparx_utilities.send_attr_dict(main_node, data, par_str, image_start, image_end)
+	if myid == main_node: sparx_utilities.print_end_msg("ali2d_MPI")
 
 
 
@@ -544,7 +544,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	if log == None:
 		pass#IMPORTIMPORTIMPORT from logger import Logger
-		log = logger.Logger()
+		log = sparx_logger.Logger()
 
 	if mpi_comm == None:
 		mpi_comm = mpi.MPI_COMM_WORLD
@@ -553,13 +553,13 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	if myid == main_node:
 		pass#IMPORTIMPORTIMPORT import global_def
-		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		sparx_global_def.LOGFILE =  os.path.join(outdir, sparx_global_def.LOGFILE)
 		log.add("Start  ali2d_MPI")
 
-	xrng        = utilities.get_input_from_string(xr)
+	xrng        = sparx_utilities.get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = utilities.get_input_from_string(yr)
-	step        = utilities.get_input_from_string(ts)
+	else          :  yrng = sparx_utilities.get_input_from_string(yr)
+	step        = sparx_utilities.get_input_from_string(ts)
 	
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
 	
@@ -575,7 +575,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 			total_nima = EMAN2_cppwrap.EMUtil.get_image_count(stack)
 		else:
 			total_nima = 0
-		total_nima = utilities.bcast_number_to_all(total_nima)
+		total_nima = sparx_utilities.bcast_number_to_all(total_nima)
 		list_of_particles = list(range(total_nima))
 
 		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
@@ -602,10 +602,10 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	else:
 		nx = 0
 		if CTF:	ctf_app = 0
-	nx = utilities.bcast_number_to_all(nx, source_node = main_node)
+	nx = sparx_utilities.bcast_number_to_all(nx, source_node = main_node)
 	if CTF:
-		ctf_app = utilities.bcast_number_to_all(ctf_app, source_node = main_node)
-		if ctf_app > 0:	global_def.ERROR("data cannot be ctf-applied", "ali2d_MPI", 1, myid)
+		ctf_app = sparx_utilities.bcast_number_to_all(ctf_app, source_node = main_node)
+		if ctf_app > 0:	sparx_global_def.ERROR("data cannot be ctf-applied", "ali2d_MPI", 1, myid)
 		phase_flip = True
 		pass#IMPORTIMPORTIMPORT from filter import filt_ctf
 	else:
@@ -616,7 +616,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	if last_ring == -1: last_ring = nx/2-2
 
 	if last_ring + max([max(xrng), max(yrng)]) > (nx-1) // 2:
-		global_def.ERROR('Shift or radius is too large - particle crosses image boundary', "ali2d_MPI", 1)
+		sparx_global_def.ERROR('Shift or radius is too large - particle crosses image boundary', "ali2d_MPI", 1)
 	
 	if myid == main_node:
 		# log.add("Input stack                 : %s"%(stack))
@@ -642,7 +642,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 			log.add("Stop iteration with         : maxit")
 
 		pass#IMPORTIMPORTIMPORT import user_functions
-		user_func = user_functions.factory[user_func_name]
+		user_func = sparx_user_functions.factory[user_func_name]
 
 		log.add("User function               : %s"%(user_func_name))
 		log.add("Number of processors used   : %d"%(number_of_proc))
@@ -651,13 +651,13 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 		pass#IMPORTIMPORTIMPORT import  types
 		if type(maskfile) is bytes:  
 			if myid == main_node:		log.add("Maskfile                    : %s"%(maskfile))
-			mask = utilities.get_image(maskfile)
+			mask = sparx_utilities.get_image(maskfile)
 		else:
 			if myid == main_node: 		log.add("Maskfile                    : user provided in-core mask")
 			mask = maskfile
 	else:
 		if myid == main_node: 	log.add("Maskfile                    : default, a circle with radius %i"%(last_ring))
-		mask = utilities.model_circle(last_ring, nx, nx)
+		mask = sparx_utilities.model_circle(last_ring, nx, nx)
 
 	cnx  = nx/2+1
 	cny  = cnx
@@ -674,20 +674,20 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	for im in range(nima):
 		data[im].set_attr('ID', list_of_particles[im])
-		utilities.set_params2D(data[im], [0.0, 0.0, 0.0, 0, 1.0], 'xform.align2d')
+		sparx_utilities.set_params2D(data[im], [0.0, 0.0, 0.0, 0, 1.0], 'xform.align2d')
 		st = EMAN2_cppwrap.Util.infomask(data[im], mask, False)
 		data[im] -= st[0]
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
-			ctfimg = morphology.ctf_img(nx, ctf_params)
+			ctfimg = sparx_morphology.ctf_img(nx, ctf_params)
 			EMAN2_cppwrap.Util.add_img2(ctf_2_sum, ctfimg)
 			EMAN2_cppwrap.Util.add_img_abs(ctf_abs_sum, ctfimg)
 		if( random_method == "SHC" ):  data[im].set_attr('previousmax',1.0e-23)
-		if phase_flip:  data[im] = filter.filt_ctf(data[im], data[im].get_attr("ctf"), binary = True)
+		if phase_flip:  data[im] = sparx_filter.filt_ctf(data[im], data[im].get_attr("ctf"), binary = True)
 
 	if CTF:
-		utilities.reduce_EMData_to_root(ctf_2_sum, myid, main_node)
-		utilities.reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
+		sparx_utilities.reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+		sparx_utilities.reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
 		if myid == main_node:
 			adw_img = EMAN2_cppwrap.Util.mult_scalar(ctf_2_sum, snr)
 			EMAN2_cppwrap.Util.div_filter(adw_img, ctf_abs_sum)
@@ -696,8 +696,8 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	else:  ctf_2_sum = None
 
 	# startup
-	numr = alignment.Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
-	wr = alignment.ringwe(numr, mode)
+	numr = sparx_alignment.Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
+	wr = sparx_alignment.ringwe(numr, mode)
 
 	if myid == main_node:
 		# initialize data for the reference preparation function
@@ -724,17 +724,17 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 		for Iter in range(max_iter):
 			total_iter += 1
-			ave1, ave2 = statistics.sum_oe(data, "a", CTF, EMAN2_cppwrap.EMData())  # pass empty object to prevent calculation of ctf^2
-			utilities.reduce_EMData_to_root(ave1, myid, main_node)
-			utilities.reduce_EMData_to_root(ave2, myid, main_node)
+			ave1, ave2 = sparx_statistics.sum_oe(data, "a", CTF, EMAN2_cppwrap.EMData())  # pass empty object to prevent calculation of ctf^2
+			sparx_utilities.reduce_EMData_to_root(ave1, myid, main_node)
+			sparx_utilities.reduce_EMData_to_root(ave2, myid, main_node)
 			sys.stdout.flush()
 			if myid == main_node:
 				log.add("Iteration #%4d"%(total_iter))
 				msg = "X range = %5.2f   Y range = %5.2f   Step = %5.2f"%(xrng[N_step], yrng[N_step], step[N_step])
 				log.add(msg)
 				if CTF: 
-					tavg_Ng = fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(EMAN2_cppwrap.Util.muln_img(fundamentals.fft(EMAN2_cppwrap.Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
-					tavg    = fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(fundamentals.fft(EMAN2_cppwrap.Util.addn_img(ave1, ave2)), ctf_2_sum))
+					tavg_Ng = sparx_fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(EMAN2_cppwrap.Util.muln_img(sparx_fundamentals.fft(EMAN2_cppwrap.Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
+					tavg    = sparx_fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(sparx_fundamentals.fft(EMAN2_cppwrap.Util.addn_img(ave1, ave2)), ctf_2_sum))
 				else:
 					tavg = (ave1+ave2)/total_nima
 				if outdir:
@@ -742,20 +742,20 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 					
 					if CTF:
 						tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
-					frsc = statistics.fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+					frsc = sparx_statistics.fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 				else:
-					frsc = statistics.fsc_mask(ave1, ave2, mask, 1.0)
+					frsc = sparx_statistics.fsc_mask(ave1, ave2, mask, 1.0)
 			else:
-				tavg =  utilities.model_blank(nx, nx)
+				tavg =  sparx_utilities.model_blank(nx, nx)
 			del ave1, ave2
 				
 			if Fourvar:  
-				utilities.bcast_EMData_to_all(tavg, myid, main_node)
-				vav, rvar = statistics.varf2d_MPI(myid, data, tavg, mask, "a", CTF)
+				sparx_utilities.bcast_EMData_to_all(tavg, myid, main_node)
+				vav, rvar = sparx_statistics.varf2d_MPI(myid, data, tavg, mask, "a", CTF)
 
 			if myid == main_node:
 				if Fourvar:
-					tavg    = fundamentals.fft(EMAN2_cppwrap.Util.divn_img(fundamentals.fft(tavg), vav))
+					tavg    = sparx_fundamentals.fft(EMAN2_cppwrap.Util.divn_img(sparx_fundamentals.fft(tavg), vav))
 					vav_r	= EMAN2_cppwrap.Util.pack_complex_to_real(vav)
 					if outdir:
 						vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
@@ -779,7 +779,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 					tavg, cs = user_func(ref_data)
 					cs[0] = float(sx_sum)/total_nima
 					cs[1] = float(sy_sum)/total_nima
-					tavg = fundamentals.fshift(tavg, -cs[0], -cs[1])
+					tavg = sparx_fundamentals.fshift(tavg, -cs[0], -cs[1])
 					msg = "Average center x =      %10.3f        Center y       = %10.3f"%(cs[0], cs[1])
 					log.add(msg)
 				else:
@@ -797,7 +797,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 					if auto_stop: 	again = 0
 				else:	a0 = a1
 			else:
-				tavg = utilities.model_blank(nx, nx)
+				tavg = sparx_utilities.model_blank(nx, nx)
 				cs = [0.0]*2
 
 			if auto_stop:
@@ -805,18 +805,18 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				if int(again[0]) == 0: break
 
 			if Fourvar:  del vav
-			utilities.bcast_EMData_to_all(tavg, myid, main_node)
+			sparx_utilities.bcast_EMData_to_all(tavg, myid, main_node)
 			cs = mpi.mpi_bcast(cs, 2, mpi.MPI_FLOAT, main_node, mpi_comm)
 			cs = list(map(float, cs))
 			if total_iter != max_iter*len(xrng):
 				old_ali_params = []
 				for im in range(nima):  
-					alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
+					alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[im])
 					old_ali_params.extend([alpha, sx, sy, mirror])
 
 				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 				else: delta = dst
-				sx_sum, sy_sum, nope = alignment.ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+				sx_sum, sy_sum, nope = sparx_alignment.ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 												xrng[N_step], yrng[N_step], step[N_step], \
 												nomirror=nomirror, mode=mode, CTF=CTF, delta=delta, \
 												random_method = random_method)
@@ -833,9 +833,9 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				mirror_consistent = 0
 				pixel_error_list  = [-1.0]*nima
 				for im in range(nima):
-					alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
+					alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[im])
 					if old_ali_params[im*4+3] == mirror:
-						this_error = pixel_error.pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
+						this_error = sparx_pixel_error.pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
 						pixel_error += this_error
 						pixel_error_list[im] = this_error
 						mirror_consistent += 1
@@ -850,28 +850,28 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 						pixel_error_list = list(map(float, pixel_error_list))
 						for i in range(total_nima-1, -1, -1):
 							if pixel_error_list[i] < 0:  del pixel_error_list[i]
-						region, hist = statistics.hist_list(pixel_error_list, 20)
+						region, hist = sparx_statistics.hist_list(pixel_error_list, 20)
 						for p in range(20):
 							log.add("      %14.2f: %6d"%(region[p], hist[p]))
 					log.add("\n\n")
 
-	if myid == main_node and outdir:  utilities.drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
+	if myid == main_node and outdir:  sparx_utilities.drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi.mpi_barrier(mpi_comm)
 	if write_headers:
 		par_str = ["xform.align2d", "ID"]
 		if myid == main_node:
 			pass#IMPORTIMPORTIMPORT from utilities import file_type
-			if(utilities.file_type(stack) == "bdb"):
+			if(sparx_utilities.file_type(stack) == "bdb"):
 				pass#IMPORTIMPORTIMPORT from utilities import recv_attr_dict_bdb
-				utilities.recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+				sparx_utilities.recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 			else:
 				pass#IMPORTIMPORTIMPORT from utilities import recv_attr_dict
-				utilities.recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-		else:           utilities.send_attr_dict(main_node, data, par_str, image_start, image_end)
+				sparx_utilities.recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		else:           sparx_utilities.send_attr_dict(main_node, data, par_str, image_start, image_end)
 	params = []
 	for im in range(nima):  
-		alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
+		alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[im])
 		params.append([alpha, sx, sy, mirror])
 	#params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 
@@ -909,7 +909,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 	if log == None:
 		pass#IMPORTIMPORTIMPORT from logger import Logger
-		log = logger.Logger()
+		log = sparx_logger.Logger()
 
 	number_of_proc = mpi.mpi_comm_size(mpi_comm)
 	myid           = mpi.mpi_comm_rank(mpi_comm)
@@ -919,15 +919,15 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		if os.path.exists(outdir):  nx = 1
 		else:  nx = 0
 	else:  nx = 0
-	ny = utilities.bcast_number_to_all(nx, source_node = main_node)
+	ny = sparx_utilities.bcast_number_to_all(nx, source_node = main_node)
 	
-	if ny == 1:  global_def.ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI", 1,myid)
+	if ny == 1:  sparx_global_def.ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI", 1,myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if myid == main_node:	
 		os.mkdir(outdir)
 		pass#IMPORTIMPORTIMPORT import global_def
-		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		sparx_global_def.LOGFILE =  os.path.join(outdir, sparx_global_def.LOGFILE)
 		log.add("Equal Kmeans-modified K-means  ")
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
@@ -945,18 +945,18 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		finfo = None
 		frec  = None
 
-	xrng        = utilities.get_input_from_string(xr)
+	xrng        = sparx_utilities.get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = utilities.get_input_from_string(yr)
-	step        = utilities.get_input_from_string(ts)
-	delta       = utilities.get_input_from_string(delta)
+	else          :  yrng = sparx_utilities.get_input_from_string(yr)
+	step        = sparx_utilities.get_input_from_string(ts)
+	delta       = sparx_utilities.get_input_from_string(delta)
 	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
 	if (an == "-1"):
 		an = []
 		for i in range(len(xrng)):   an.append(-1)
 	else:
 		pass#IMPORTIMPORTIMPORT from  alignment	    import proj_ali_incore_local
-		an      = utilities.get_input_from_string(an)
+		an      = sparx_utilities.get_input_from_string(an)
 
 	first_ring  = int(ir)
 	rstep       = int(rs)
@@ -971,7 +971,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 	if (myid == main_node):
 		pass#IMPORTIMPORTIMPORT import user_functions
-		user_func = user_functions.factory[user_func_name]
+		user_func = sparx_user_functions.factory[user_func_name]
 		log.add("mref_ali3d_MPI")
 		log.add("Input stack                               : %s"%(stack))
 		log.add("Reference volumes                         : %s"%(ref_vol))	
@@ -1001,13 +1001,13 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		log.add("User function                             : %s"%(user_func_name))
 
 	if(maskfile):
-		if(type(maskfile) is bytes): mask3D = utilities.get_image(maskfile)
+		if(type(maskfile) is bytes): mask3D = sparx_utilities.get_image(maskfile)
 		else: 	                                mask3D = maskfile
-	else        :  mask3D = utilities.model_circle(last_ring, nx, nx, nx)
+	else        :  mask3D = sparx_utilities.model_circle(last_ring, nx, nx, nx)
 
-	numr     = alignment.Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D   = utilities.model_circle(last_ring, nx, nx)
-	if(first_ring > 1):  mask2D -= utilities.model_circle(first_ring, nx, nx)
+	numr     = sparx_alignment.Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D   = sparx_utilities.model_circle(last_ring, nx, nx)
+	if(first_ring > 1):  mask2D -= sparx_utilities.model_circle(first_ring, nx, nx)
 
 
 	if( type(stack) is bytes ):
@@ -1015,7 +1015,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			total_nima = EMAN2_cppwrap.EMUtil.get_image_count( stack )
 		else:
 			total_nima = 0
-		total_nima = utilities.wrap_mpi_bcast(total_nima, main_node, mpi_comm)
+		total_nima = sparx_utilities.wrap_mpi_bcast(total_nima, main_node, mpi_comm)
 		list_of_particles = list(range(total_nima))
 		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 		# create a list of images for each node
@@ -1040,7 +1040,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	#  Initialize Particle ID and set group number to non-existant -1
 	for im in range(nima):
 		if( type(stack) is bytes ):
-			data[im] = utilities.get_im(stack, list_of_particles[im])
+			data[im] = sparx_utilities.get_im(stack, list_of_particles[im])
 			data[im].set_attr_dict({'ID':list_of_particles[im], 'group':-1})
 		else:
 			data[im] = stack[list_of_particles[im]]
@@ -1053,8 +1053,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		pass#IMPORTIMPORTIMPORT from reconstruction import rec3D_MPI
 		pass#IMPORTIMPORTIMPORT from statistics     import varf3d_MPI
 		#  Compute Fourier variance
-		vol, fscc = reconstruction.rec3D_MPI(data, snr, sym, utilities.model_circle(last_ring, nx, nx, nx), os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec, npad=npad)
-		varf = statistics.varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
+		vol, fscc = sparx_reconstruction.rec3D_MPI(data, snr, sym, sparx_utilities.model_circle(last_ring, nx, nx, nx), os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec, npad=npad)
+		varf = sparx_statistics.varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:   
 			varf = 1.0/varf
 			varf.write_image( os.path.join(outdir,"varf0000.hdf") )
@@ -1064,7 +1064,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	if myid == main_node:
 		refdata = [None]*7
 		for  iref in range(numref):
-			vol = utilities.get_im(ref_vol, iref).write_image(os.path.join(outdir, "vol0000.hdf"), iref)
+			vol = sparx_utilities.get_im(ref_vol, iref).write_image(os.path.join(outdir, "vol0000.hdf"), iref)
 		refdata[0] = numref
 		refdata[1] = outdir
 		refdata[2] = None
@@ -1077,7 +1077,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
 	if CTF:
-		if(data[0].get_attr_default("ctf_applied",0) > 0):  global_def.ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
+		if(data[0].get_attr_default("ctf_applied",0) > 0):  sparx_global_def.ERROR("mref_ali3d_MPI does not work for CTF-applied data", "mref_ali3d_MPI", 1, myid)
 		pass#IMPORTIMPORTIMPORT from reconstruction import rec3D_MPI
 	else:
 		pass#IMPORTIMPORTIMPORT from reconstruction import rec3D_MPI_noCTF
@@ -1100,11 +1100,11 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 	if(focus != None):
 		if(myid == main_node):
-			vol = utilities.get_im(focus)
+			vol = sparx_utilities.get_im(focus)
 		else:
-			vol =  utilities.model_blank(nx, nx, nx)
-		utilities.bcast_EMData_to_all(vol, myid, main_node)
-		focus, kb = projection.prep_vol(vol)
+			vol =  sparx_utilities.model_blank(nx, nx, nx)
+		sparx_utilities.bcast_EMData_to_all(vol, myid, main_node)
+		focus, kb = sparx_projection.prep_vol(vol)
 
 	Niter = int(lstp*maxit*(nassign + nrefine) )
 	for Iter in range(Niter):
@@ -1125,28 +1125,28 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			pixer = [ [  0.0     for im in range(nima) ] for iref in range(numref) ]
 			if(an[N_step] > 0):
 				pass#IMPORTIMPORTIMPORT from utilities    import even_angles
-				ref_angles = utilities.even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+				ref_angles = sparx_utilities.even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
 				# generate list of angles
 				pass#IMPORTIMPORTIMPORT from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
-				alignment.generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
+				sparx_alignment.generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
 				del ref_angles
 			else:  list_of_reference_angles = [[1.0,1.0]]
 
 		cs = [0.0]*3
 		for iref in range(numref):
 			if(myid == main_node):
-				volft = utilities.get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
+				volft = sparx_utilities.get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			else:
-				volft =  utilities.model_blank(nx, nx, nx)
-			utilities.bcast_EMData_to_all(volft, myid, main_node)
+				volft =  sparx_utilities.model_blank(nx, nx, nx)
+			sparx_utilities.bcast_EMData_to_all(volft, myid, main_node)
 
-			volft, kb = projection.prep_vol(volft)
+			volft, kb = sparx_projection.prep_vol(volft)
 			if CTF:
 				previous_defocus = -1.0
 				if runtype=="REFINEMENT":
 					start_time = time.time()
-					prjref = projection.prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
+					prjref = sparx_projection.prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
 					if(myid == 0):
 						log.add( "Calculation of projections: %d" % (time.time()-start_time) );start_time = time.time()
 					del volft, kb
@@ -1154,7 +1154,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			else:
 				if runtype=="REFINEMENT":
 					start_time = time.time()
-					refrings = alignment.prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
+					refrings = sparx_alignment.prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
 					if(myid == 0):
 						log.add( "Initial time to prepare rings: %d" % (time.time()-start_time) );start_time = time.time()
 					del volft, kb
@@ -1168,26 +1168,26 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 						if(ctf.defocus != previous_defocus):
 							previous_defocus = ctf.defocus
 							rstart_time = time.time()
-							refrings = projection.gen_rings_ctf( prjref, nx, ctf, numr)
+							refrings = sparx_projection.gen_rings_ctf( prjref, nx, ctf, numr)
 							if(myid == 0):
 								log.add( "Repeated time to prepare rings: %d" % (time.time()-rstart_time) );rstart_time = time.time()
 
 				if runtype=="ASSIGNMENT":
-					phi,tht,psi,s2x,s2y = utilities.get_params_proj(data[im])
-					ref = projection.prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
-					if CTF:  ref = filter.filt_ctf( ref, ctf )
-					if(focus != None):  mask2D = morphology.binarize( projection.prgs( focus, kb, [phi,tht,psi,-s2x,-s2y]) )  #  Should be precalculated!!
+					phi,tht,psi,s2x,s2y = sparx_utilities.get_params_proj(data[im])
+					ref = sparx_projection.prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
+					if CTF:  ref = sparx_filter.filt_ctf( ref, ctf )
+					if(focus != None):  mask2D = sparx_morphology.binarize( sparx_projection.prgs( focus, kb, [phi,tht,psi,-s2x,-s2y]) )  #  Should be precalculated!!
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					if not(finfo is None):
 						finfo.write( "ID, iref, peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
 					if(an[N_step] == -1):
-						peak, pixel_error = alignment.proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
+						peak, pixel_error = sparx_alignment.proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
 					else:
-						peak, pixel_error = alignment.proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
+						peak, pixel_error = sparx_alignment.proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
 																	xrng[N_step], yrng[N_step], step[N_step], an[N_step],sym=sym)
 					if not(finfo is None):
-						phi,tht,psi,s2x,s2y = utilities.get_params_proj(data[im])
+						phi,tht,psi,s2x,s2y = sparx_utilities.get_params_proj(data[im])
 						finfo.write( "ID, iref, peak,t rans: %6d %d %f %f %f %f %f %f\n"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
 						finfo.flush()
 
@@ -1220,11 +1220,11 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		#  The while loop over even angles delta should start here.
 		#  prepare reference directions
 		pass#IMPORTIMPORTIMPORT from utilities import even_angles, getvec
-		refa = utilities.even_angles(60.0)
+		refa = sparx_utilities.even_angles(60.0)
 		numrefang = len(refa)
 		refanorm = numpy.empty( (numrefang, 3), dtype = numpy.float32)
 		for i in range(numrefang):
-			tmp = utilities.getvec(refa[i][0], refa[i][1])
+			tmp = sparx_utilities.getvec(refa[i][0], refa[i][1])
 			for j in range(3):
 				refanorm[i][j] = tmp[j]
 		del  refa, tmp
@@ -1267,7 +1267,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			report_error = 0
 			for imrefa in range(numrefang):
 				pass#IMPORTIMPORTIMPORT from utilities import findall
-				N = utilities.findall(imrefa, assigntorefa)
+				N = sparx_utilities.findall(imrefa, assigntorefa)
 				current_nima = len(N)
 				if( current_nima >= numref and report_error == 0):
 					tasi = [[] for iref in range(numref)]
@@ -1332,8 +1332,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			assignment = []
 			report_error = 0
 
-		report_error = utilities.bcast_number_to_all(report_error, source_node = main_node)
-		if report_error == 1:  global_def.ERROR('Number of images within a group too small', "mref_ali3d_MPI", 1, myid)
+		report_error = sparx_utilities.bcast_number_to_all(report_error, source_node = main_node)
+		if report_error == 1:  sparx_global_def.ERROR('Number of images within a group too small', "mref_ali3d_MPI", 1, myid)
 		if myid == main_node:
 			assignment = [0]*total_nima
 			for iref in range(numref):
@@ -1382,13 +1382,13 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			pixer = pixer[0]
 
 			if(center == -1):
-				cs[0], cs[1], cs[2], dummy, dummy = utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
+				cs[0], cs[1], cs[2], dummy, dummy = sparx_utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f"%(cs[0], cs[1], cs[2])
 					log.add(msg)
 				cs = mpi.mpi_bcast(cs, 3, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
-				utilities.rotate_3D_shift(data, cs)
+				sparx_utilities.rotate_3D_shift(data, cs)
 			#output pixel errors
 			recvbuf = mpi.mpi_gatherv(pixer, nima, mpi.MPI_FLOAT, recvcount, disps, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -1396,7 +1396,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				recvbuf = list(map(float, recvbuf))
 				pass#IMPORTIMPORTIMPORT from statistics import hist_list
 				lhist = 20
-				region, histo = statistics.hist_list(recvbuf, lhist)
+				region, histo = sparx_statistics.hist_list(recvbuf, lhist)
 				if(region[0] < 0.0):  region[0] = 0.0
 				msg = "      Histogram of pixel errors\n      ERROR       number of particles"
 				log.add(msg)
@@ -1409,14 +1409,14 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		fscc = [None]*numref
 
 		if fourvar and runtype=="REFINEMENT":
-			sumvol = utilities.model_blank(nx, nx, nx)
+			sumvol = sparx_utilities.model_blank(nx, nx, nx)
 
 		start_time = time.time()
 		for iref in range(numref):
 			#  3D stuff
 			pass#IMPORTIMPORTIMPORT from time import localtime, strftime
-			if(CTF): volref, fscc[iref] = reconstruction.rec3D_MPI(data, snr, sym, utilities.model_circle(last_ring, nx, nx, nx), os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
-			else:    volref, fscc[iref] = reconstruction.rec3D_MPI_noCTF(data, sym, utilities.model_circle(last_ring, nx, nx, nx), os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			if(CTF): volref, fscc[iref] = sparx_reconstruction.rec3D_MPI(data, snr, sym, sparx_utilities.model_circle(last_ring, nx, nx, nx), os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			else:    volref, fscc[iref] = sparx_reconstruction.rec3D_MPI_noCTF(data, sym, sparx_utilities.model_circle(last_ring, nx, nx, nx), os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			if(myid == 0):
 				log.add( "Time to compute 3D: %d" % (time.time()-start_time) );start_time = time.time()
 
@@ -1428,7 +1428,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 		if runtype=="REFINEMENT":
 			if fourvar:
-				varf = statistics.varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%total_iter), None,sumvol,last_ring, 1.0, 1, CTF, 1, sym, myid)
+				varf = sparx_statistics.varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%total_iter), None,sumvol,last_ring, 1.0, 1, CTF, 1, sym, myid)
 				if myid == main_node:   
 					varf = 1.0/varf
 					varf.write_image( os.path.join(outdir,"varf%04d.hdf"%total_iter) )
@@ -1453,13 +1453,13 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				par_str = ['group', 'ID' ]
 			if myid == main_node:
 				pass#IMPORTIMPORTIMPORT from utilities import file_type
-				if(utilities.file_type(stack) == "bdb"):
+				if(sparx_utilities.file_type(stack) == "bdb"):
 					pass#IMPORTIMPORTIMPORT from utilities import recv_attr_dict_bdb
-					utilities.recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+					sparx_utilities.recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 				else:
 					pass#IMPORTIMPORTIMPORT from utilities import recv_attr_dict
-					utilities.recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-			else:		utilities.send_attr_dict(main_node, data, par_str, image_start, image_end)
+					sparx_utilities.recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+			else:		sparx_utilities.send_attr_dict(main_node, data, par_str, image_start, image_end)
 			if(myid == 0):
 				log.add( "Time to write headers: %d\n" % (time.time()-start_time) );start_time = time.time()
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -1499,15 +1499,15 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 	main_node = 0
 	if log == None:
 		pass#IMPORTIMPORTIMPORT from logger import Logger
-		log =logger.Logger()
+		log =sparx_logger.Logger()
 
-	if os.path.exists(outdir): global_def.ERROR('Output directory exists, please change the name and restart the program', "Kmref_ali3d_MPI ", 1, myid)
+	if os.path.exists(outdir): sparx_global_def.ERROR('Output directory exists, please change the name and restart the program', "Kmref_ali3d_MPI ", 1, myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if myid == main_node:	
 		os.mkdir(outdir)
 		pass#IMPORTIMPORTIMPORT import global_def
-		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		sparx_global_def.LOGFILE =  os.path.join(outdir, sparx_global_def.LOGFILE)
 		log.add("Kmref_ali3d_MPI - Traditional Kmeans clustering  !")
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
@@ -1525,18 +1525,18 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		finfo = None
 		frec  = None
 
-	xrng        = utilities.get_input_from_string(xr)
+	xrng        = sparx_utilities.get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = utilities.get_input_from_string(yr)
-	step        = utilities.get_input_from_string(ts)
-	delta       = utilities.get_input_from_string(delta)
+	else          :  yrng = sparx_utilities.get_input_from_string(yr)
+	step        = sparx_utilities.get_input_from_string(ts)
+	delta       = sparx_utilities.get_input_from_string(delta)
 	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
 	if an == "-1":
 		an = []
 		for i in range(len(xrng)):   an.append(-1)
 	else:
 		pass#IMPORTIMPORTIMPORT from  alignment	    import proj_ali_incore_local
-		an      = utilities.get_input_from_string(an)
+		an      = sparx_utilities.get_input_from_string(an)
 
 	first_ring  = int(ir)
 	rstep       = int(rs)
@@ -1549,11 +1549,11 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 	nx      = volref.get_xsize()
 	if last_ring < 0:	last_ring = nx//2 - 2
 
-	fscmask = utilities.model_circle(last_ring, nx, nx, nx)
+	fscmask = sparx_utilities.model_circle(last_ring, nx, nx, nx)
 
 	if myid == main_node:
 		pass#IMPORTIMPORTIMPORT import user_functions
-		user_func = user_functions.factory[user_func_name]
+		user_func = sparx_user_functions.factory[user_func_name]
 		log.add("Input stack                 : %s"%(stack))
 		log.add("Reference volumes           : %s"%(ref_vol))	
 		log.add("Number of reference volumes : %i"%(numref))
@@ -1580,12 +1580,12 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		log.add("User function               : %s"%(user_func_name))
 
 	if maskfile:
-		if type(maskfile) is bytes: mask3D = utilities.get_image(maskfile)
+		if type(maskfile) is bytes: mask3D = sparx_utilities.get_image(maskfile)
 		else: 	                                mask3D = maskfile
-	else        :  mask3D = utilities.model_circle(last_ring, nx, nx, nx)
+	else        :  mask3D = sparx_utilities.model_circle(last_ring, nx, nx, nx)
 
-	numr     = alignment.Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D   = utilities.model_circle(last_ring, nx, nx) - utilities.model_circle(first_ring, nx, nx)
+	numr     = sparx_alignment.Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D   = sparx_utilities.model_circle(last_ring, nx, nx) - sparx_utilities.model_circle(first_ring, nx, nx)
 
 	if myid == main_node:
 		nima =EMAN2_cppwrap.EMUtil.get_image_count( stack )
@@ -1593,12 +1593,12 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 	else:
 		nima = 0
 
-	nima = utilities.bcast_number_to_all(nima, source_node = main_node)
+	nima = sparx_utilities.bcast_number_to_all(nima, source_node = main_node)
 
 	if myid != main_node:
 		list_of_particles = [-1]*nima
 
-	list_of_particles = utilities.bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
+	list_of_particles = sparx_utilities.bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -1623,8 +1623,8 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		pass#IMPORTIMPORTIMPORT from reconstruction import rec3D_MPI
 		pass#IMPORTIMPORTIMPORT from statistics     import varf3d_MPI
 		#  Compute Fourier variance
-		vol, fscc = reconstruction.rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec, npad=npad)
-		varf = statistics.varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
+		vol, fscc = sparx_reconstruction.rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution0000"), myid, main_node, finfo=frec, npad=npad)
+		varf = sparx_statistics.varf3d_MPI(data, os.path.join(outdir, "ssnr0000"), None, vol, last_ring, 1.0, 1, CTF, 1, sym, myid)
 		if myid == main_node:   
 			varf = 1.0/varf
 			varf.write_image( os.path.join(outdir,"varf0000.hdf") )
@@ -1633,11 +1633,11 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 
 	if myid == main_node:
 		for  iref in range(numref):
-			utilities.get_im(ref_vol, iref).write_image(os.path.join(outdir, "volf0000.hdf"), iref)
+			sparx_utilities.get_im(ref_vol, iref).write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
 	if CTF:
-		if(data[0].get_attr("ctf_applied") > 0.0):  global_def.ERROR("Kmref_ali3d_MPI does not work for CTF-applied data", "Kmref_ali3d_MPI", 1, myid)
+		if(data[0].get_attr("ctf_applied") > 0.0):  sparx_global_def.ERROR("Kmref_ali3d_MPI does not work for CTF-applied data", "Kmref_ali3d_MPI", 1, myid)
 		pass#IMPORTIMPORTIMPORT from reconstruction import rec3D_MPI
 	else:
 		pass#IMPORTIMPORTIMPORT from reconstruction import rec3D_MPI_noCTF
@@ -1677,35 +1677,35 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 			pixer = [0.0]*nima
 			if(an[N_step] > 0):
 				pass#IMPORTIMPORTIMPORT from utilities    import even_angles
-				ref_angles = utilities.even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+				ref_angles = sparx_utilities.even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
 				# generate list of angles
 				pass#IMPORTIMPORTIMPORT from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
-				alignment.generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
+				sparx_alignment.generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
 				del ref_angles
 			else:  list_of_reference_angles = [[1.0,1.0]]
  
 		cs = [0.0]*3
 		for iref in range(numref):
 			if myid==main_node:
-				volft = utilities.get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
+				volft = sparx_utilities.get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			else:
-				volft=utilities.model_blank(nx,nx,nx)
-			utilities.bcast_EMData_to_all(volft, myid, main_node)
-			volft, kb = projection.prep_vol(volft)
+				volft=sparx_utilities.model_blank(nx,nx,nx)
+			sparx_utilities.bcast_EMData_to_all(volft, myid, main_node)
+			volft, kb = sparx_projection.prep_vol(volft)
 
 			if CTF:
 				previous_defocus = -1.0
 				if runtype=="REFINEMENT":
 					start_time = time.time()
-					prjref = projection.prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
+					prjref = sparx_projection.prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
 					if myid == main_node:
 						log.add( "Calculation of projections: %d" % (time.time()-start_time) );start_time = time.time()
 					del volft, kb
 			else:
 				if runtype=="REFINEMENT":
 					start_time = time.time()
-					refrings = alignment.prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
+					refrings = sparx_alignment.prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
 					if myid == main_node:
 						log.add( "Initial time to prepare rings: %d" % (time.time()-start_time) );start_time = time.time()
 					del volft, kb
@@ -1718,25 +1718,25 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 						if ctf.defocus != previous_defocus:
 							previous_defocus = ctf.defocus
 							rstart_time = time.time()
-							refrings = projection.gen_rings_ctf( prjref, nx, ctf, numr)
+							refrings = sparx_projection.gen_rings_ctf( prjref, nx, ctf, numr)
 							if myid == main_node:
 								log.add( "Repeated time to prepare rings: %d" % (time.time()-rstart_time) );rstart_time = time.time()
 
 				if runtype=="ASSIGNMENT":
-					phi,tht,psi,s2x,s2y = utilities.get_params_proj(data[im])
-					ref = projection.prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
-					if CTF:  ref = filter.filt_ctf( ref, ctf )
+					phi,tht,psi,s2x,s2y = sparx_utilities.get_params_proj(data[im])
+					ref = sparx_projection.prgs( volft, kb, [phi,tht,psi,-s2x,-s2y])
+					if CTF:  ref = sparx_filter.filt_ctf( ref, ctf )
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
 					if an[N_step] == -1:
-						peak, pixel_error = alignment.proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+						peak, pixel_error = sparx_alignment.proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 					else:
-						peak, pixel_error = alignment.proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr,\
+						peak, pixel_error = sparx_alignment.proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr,\
 																	xrng[N_step], yrng[N_step], step[N_step], an[N_step])
 					if not(finfo is None):
-						phi,tht,psi,s2x,s2y = utilities.get_params_proj(data[im])
+						phi,tht,psi,s2x,s2y = sparx_utilities.get_params_proj(data[im])
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f\n"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
 						finfo.flush()
 
@@ -1806,13 +1806,13 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 
 
 			if center == -1:
-				cs[0], cs[1], cs[2], dummy, dummy = utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
+				cs[0], cs[1], cs[2], dummy, dummy = sparx_utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f"%(cs[0], cs[1], cs[2])
 					log.add(msg)
 				cs = mpi.mpi_bcast(cs, 3, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
-				utilities.rotate_3D_shift(data, cs)
+				sparx_utilities.rotate_3D_shift(data, cs)
 			#output pixel errors
 			pass#IMPORTIMPORTIMPORT from mpi import mpi_gatherv
 			recvbuf = mpi.mpi_gatherv(pixer, nima, mpi.MPI_FLOAT, recvcount, disps, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
@@ -1821,7 +1821,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 				recvbuf = list(map(float, recvbuf))
 				pass#IMPORTIMPORTIMPORT from statistics import hist_list
 				lhist = 20
-				region, histo = statistics.hist_list(recvbuf, lhist)
+				region, histo = sparx_statistics.hist_list(recvbuf, lhist)
 				if region[0] < 0.0:  region[0] = 0.0
 				msg = "      Histogram of pixel errors\n      ERROR       number of particles"
 				log.add(msg)
@@ -1833,16 +1833,16 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 
 
 			for im in range(nima):
-				phi,theta,psi,tx,ty = utilities.get_params_proj(data[im])
+				phi,theta,psi,tx,ty = sparx_utilities.get_params_proj(data[im])
 				trans[im] = [phi,theta,psi,tx,ty]
 			if myid == main_node:
 				all_trans = []
 				for klm in range(number_of_proc):
 					if(klm == main_node):  all_trans.extend(copy.deepcopy(trans))
-					else:  all_trans.extend(utilities.wrap_mpi_recv(klm, mpi.MPI_COMM_WORLD))
-			else:  utilities.wrap_mpi_send(trans, main_node, mpi.MPI_COMM_WORLD)
+					else:  all_trans.extend(sparx_utilities.wrap_mpi_recv(klm, mpi.MPI_COMM_WORLD))
+			else:  sparx_utilities.wrap_mpi_send(trans, main_node, mpi.MPI_COMM_WORLD)
 			if myid == main_node:
-				utilities.write_text_row(all_trans, os.path.join(outdir, "params_%04d.txt"%(total_iter)) )
+				sparx_utilities.write_text_row(all_trans, os.path.join(outdir, "params_%04d.txt"%(total_iter)) )
 				del all_trans
 
 
@@ -1850,24 +1850,24 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 			all_trans = []
 			for klm in range(number_of_proc):
 				if(klm == main_node):  all_trans.extend(copy.deepcopy(assignment))
-				else:  all_trans.extend(utilities.wrap_mpi_recv(klm, mpi.MPI_COMM_WORLD))
-		else:  utilities.wrap_mpi_send(assignment, main_node, mpi.MPI_COMM_WORLD)
+				else:  all_trans.extend(sparx_utilities.wrap_mpi_recv(klm, mpi.MPI_COMM_WORLD))
+		else:  sparx_utilities.wrap_mpi_send(assignment, main_node, mpi.MPI_COMM_WORLD)
 		if myid == main_node:
-			utilities.write_text_file(all_trans, os.path.join(outdir, "assignment_%04d.txt"%(total_iter)) )
+			sparx_utilities.write_text_file(all_trans, os.path.join(outdir, "assignment_%04d.txt"%(total_iter)) )
 			del all_trans
 
 		#if CTF: del vol
 		fscc = [None]*numref
 
 		if fourvar and runtype=="REFINEMENT":
-			sumvol = utilities.model_blank(nx, nx, nx)
+			sumvol = sparx_utilities.model_blank(nx, nx, nx)
 
 		sart_time = time.time()
 		for iref in range(numref):
 			#  3D stuff
 			pass#IMPORTIMPORTIMPORT from time import localtime, strftime
-			if CTF: volref, fscc[iref] = reconstruction.rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d.txt"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
-			else:    volref, fscc[iref] = reconstruction.rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d.txt"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			if CTF: volref, fscc[iref] = sparx_reconstruction.rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d.txt"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			else:    volref, fscc[iref] = sparx_reconstruction.rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d.txt"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			if myid == main_node:
 				log.add( "Time to compute 3D: %d" % (time.time()-start_time) );start_time = time.time()
 
@@ -1879,7 +1879,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 
 		if runtype=="REFINEMENT":
 			if fourvar:
-				varf = statistics.varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%total_iter), None,sumvol,last_ring, 1.0, 1, CTF, 1, sym, myid)
+				varf = sparx_statistics.varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%total_iter), None,sumvol,last_ring, 1.0, 1, CTF, 1, sym, myid)
 				if myid == main_node:   
 					varf = 1.0/varf
 					varf.write_image( os.path.join(outdir,"varf%04d.hdf"%total_iter) )
@@ -1940,7 +1940,7 @@ def cpy(ins_list, ous):
 
 	pass#IMPORTIMPORTIMPORT from utilities import file_type
 
-	oextension = utilities.file_type(ous)	
+	oextension = sparx_utilities.file_type(ous)	
 
 	if oextension == "bdb":
 		pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
@@ -1952,7 +1952,7 @@ def cpy(ins_list, ous):
 		#print ins
 		nima = EMAN2_cppwrap.EMUtil.get_image_count(ins)
 		data = EMAN2_cppwrap.EMData()
-		iextension = utilities.file_type(ins)
+		iextension = sparx_utilities.file_type(ins)
 
 		if iextension == "bdb":
 			pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
@@ -2007,12 +2007,12 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		pass#IMPORTIMPORTIMPORT from projection   import prgl
 		pass#IMPORTIMPORTIMPORT from morphology   import ctf_img_real
 	if trillinear and realsp:
-		global_def.ERROR("Both relion mode and realsp mode are specified","project3d", 1)
+		sparx_global_def.ERROR("Both relion mode and realsp mode are specified","project3d", 1)
 	
 	if listagls is None:
-		angles = utilities.even_angles(delta, symmetry = symmetry, method = method, phiEqpsi = phiEqpsi)
+		angles = sparx_utilities.even_angles(delta, symmetry = symmetry, method = method, phiEqpsi = phiEqpsi)
 	elif(type(listagls) is bytes):
-		angles = utilities.read_text_row(listagls, "", "")
+		angles = sparx_utilities.read_text_row(listagls, "", "")
 	else:
 		angles = listagls
 
@@ -2023,7 +2023,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 	elif (type(listctfs) is bytes):
 		# a string, so assume this is a filename and try to open the file
 		try:
-			ctfs = utilities.read_text_row(listctfs, "", "")
+			ctfs = sparx_utilities.read_text_row(listctfs, "", "")
 		except:
 			ctfs = [None for ii in range(len(angles))]
 	else:
@@ -2058,12 +2058,12 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		if realsp:
 			volft = vol
 		elif trillinear:
-			volft = projection.prep_vol(vol, npad = 2, interpolation_method = 1)
+			volft = sparx_projection.prep_vol(vol, npad = 2, interpolation_method = 1)
 		else:
 			if(nx==nz&ny==nz):
-				volft, kb = projection.prep_vol(vol)
+				volft, kb = sparx_projection.prep_vol(vol)
 			else:
-				volft, kbx,kby,kbz = projection.prep_vol(vol)
+				volft, kbx,kby,kbz = sparx_projection.prep_vol(vol)
 	else:
 		vol = volume
 		if(mask):
@@ -2082,12 +2082,12 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		if realsp:
 			volft = vol
 		elif trillinear:
-			volft = projection.prep_vol(vol, npad = 2, interpolation_method = 1)
+			volft = sparx_projection.prep_vol(vol, npad = 2, interpolation_method = 1)
 		else:
 			if(nx==nz & ny==nz):
-				volft, kb = projection.prep_vol(vol)
+				volft, kb = sparx_projection.prep_vol(vol)
 			else:
-				volft, kbx,kby,kbz = projection.prep_vol(vol)
+				volft, kbx,kby,kbz = sparx_projection.prep_vol(vol)
 
 	if(type(stack) is bytes):
 		Disk = True
@@ -2102,29 +2102,29 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 	for i in range(len(angles)):
 		if(len(angles[i]) == 3):
 			if realsp:
-				proj = projection.project(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 10*nx)
+				proj = sparx_projection.project(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 10*nx)
 			elif trillinear:
-				if ctfs is not None: proj = projection.prgl(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, False)
-				else:                proj = projection.prgl(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, True)
+				if ctfs is not None: proj = sparx_projection.prgl(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, False)
+				else:                proj = sparx_projection.prgl(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 1, True)
 			else:
 				if(nx==nz & ny==nz):
-					proj = projection.prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
+					proj = sparx_projection.prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
 				else:
-					proj = projection.prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], kbx, kby)
-			utilities.set_params_proj(proj, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
+					proj = sparx_projection.prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], kbx, kby)
+			sparx_utilities.set_params_proj(proj, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
 		else:
 			if realsp:
-				proj = projection.project(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 10*nx)
+				proj = sparx_projection.project(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 10*nx)
 			elif trillinear:
-				if ctfs is not None: proj = projection.prgl(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, False)
-				else:                proj = projection.prgl(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, True)
+				if ctfs is not None: proj = sparx_projection.prgl(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, False)
+				else:                proj = sparx_projection.prgl(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 1, True)
 			else:
 				if(nx==nz&ny==nz):
-					proj = projection.prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]])
+					proj = sparx_projection.prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]])
 				else:
-					proj = projection.prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]],kbx,kby)
-			if trillinear:utilities.set_params_proj(proj, angles[i][0:5])
-			else:         utilities.set_params_proj(proj, angles[i])
+					proj = sparx_projection.prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]],kbx,kby)
+			if trillinear:sparx_utilities.set_params_proj(proj, angles[i][0:5])
+			else:         sparx_utilities.set_params_proj(proj, angles[i])
 		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 		# proj.set_attr_dict({'active':1})
 		
@@ -2134,7 +2134,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		if noise is not None:
 			try:
 				# no mask, so call w/ false
-				noise_ima = utilities.model_gauss_noise(noise_level, proj.get_xsize(), proj.get_ysize())
+				noise_ima = sparx_utilities.model_gauss_noise(noise_level, proj.get_xsize(), proj.get_ysize())
 			except:
 				pass
 			else:
@@ -2144,27 +2144,27 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		if ctfs is not None:
 			try:
 				pass#IMPORTIMPORTIMPORT from utilities import generate_ctf
-				if(len(ctfs[i]) == 6):    ctf = utilities.generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5]])
-				elif(len(ctfs[i]) == 8):  ctf = utilities.generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5], ctfs[i][6], ctfs[i][7]])
+				if(len(ctfs[i]) == 6):    ctf = sparx_utilities.generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5]])
+				elif(len(ctfs[i]) == 8):  ctf = sparx_utilities.generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5], ctfs[i][6], ctfs[i][7]])
 				else:  1.0/0.0
 			except:
 				# there are no ctf values, so ignore this and set no values
-				global_def.ERROR("Incorrect ctf values","project3d",1)
+				sparx_global_def.ERROR("Incorrect ctf values","project3d",1)
 			# setting of values worked, so apply ctf and set the header info correctly
 			if trillinear:
 				if ctfs is not None:
 					proj.set_attr_dict({"is_complex": 0})
-					EMAN2_cppwrap.Util.mulclreal(proj, morphology.ctf_img_real(proj.get_ysize(), ctf))
+					EMAN2_cppwrap.Util.mulclreal(proj, sparx_morphology.ctf_img_real(proj.get_ysize(), ctf))
 				proj.set_attr_dict({"padffted":1, "is_complex":1})
-				proj = fundamentals.fft(proj)
-			else: proj = filter.filt_ctf(proj,ctf)
+				proj = sparx_fundamentals.fft(proj)
+			else: proj = sparx_filter.filt_ctf(proj,ctf)
 			proj.set_attr( "ctf",ctf)
 			proj.set_attr( "ctf_applied",0)
 
 		# add second noise level that is not affected by CTF
 		if noise is not None:
 			try:
-				noise_ima = utilities.model_gauss_noise(noise_level, proj.get_xsize(), proj.get_ysize())
+				noise_ima = sparx_utilities.model_gauss_noise(noise_level, proj.get_xsize(), proj.get_ysize())
 			except:
 				pass
 			else:
@@ -2202,37 +2202,37 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 	pass#IMPORTIMPORTIMPORT from utilities    import amoeba, compose_transform3
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
 	
-	ref = utilities.get_image(refv)
+	ref = sparx_utilities.get_image(refv)
 	nx = ref.get_xsize()
 	ny = ref.get_ysize()
 	nz = ref.get_zsize()
-	if(radius != None):    mask = utilities.model_circle(radius, nx, ny, nz)
-	else:                  mask = utilities.model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
+	if(radius != None):    mask = sparx_utilities.model_circle(radius, nx, ny, nz)
+	else:                  mask = sparx_utilities.model_circle(float(min(nx, ny, nz)//2-2), nx, ny, nz)
 
 	#names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z", "scale"]
-	phi, theta, psi, s3x, s3y, s3z, mirror, scale = utilities.get_params3D(ref)
+	phi, theta, psi, s3x, s3y, s3z, mirror, scale = sparx_utilities.get_params3D(ref)
 	paramsr = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
 	# print  " params of the reference volume", paramsr
-	ref = fundamentals.rot_shift3D(ref, paramsr[0], paramsr[1], paramsr[2], paramsr[3], paramsr[4], paramsr[5], paramsr[7])
+	ref = sparx_fundamentals.rot_shift3D(ref, paramsr[0], paramsr[1], paramsr[2], paramsr[3], paramsr[4], paramsr[5], paramsr[7])
 
-	e = utilities.get_image(vol)
-	phi, theta, psi, s3x, s3y, s3z, mirror, scale =  utilities.get_params3D(e)
+	e = sparx_utilities.get_image(vol)
+	phi, theta, psi, s3x, s3y, s3z, mirror, scale =  sparx_utilities.get_params3D(e)
 	paramsv = [phi, theta, psi, s3x, s3y, s3z, mirror, scale]
-	e = fundamentals.rot_shift3D(e, phi, theta, psi, s3x, s3y, s3z, scale)
+	e = sparx_fundamentals.rot_shift3D(e, phi, theta, psi, s3x, s3y, s3z, scale)
 	# print  " input params ", paramsv
 	params = [phi, theta, psi, s3x, s3y, s3z]
 	data = [e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-	new_params = utilities.amoeba(new_params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], alignment.ali_vol_func, 1.e-4, 1.e-4, 500, data)
+	new_params = sparx_utilities.amoeba(new_params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], sparx_alignment.ali_vol_func, 1.e-4, 1.e-4, 500, data)
 	print("amoeba: func_value =",new_params[1], "iter =",new_params[2])
 
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= utilities.compose_transform3(paramsv[0], paramsv[1], paramsv[2], paramsv[3], paramsv[4], paramsv[5], paramsv[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= sparx_utilities.compose_transform3(paramsv[0], paramsv[1], paramsv[2], paramsv[3], paramsv[4], paramsv[5], paramsv[7], new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5],1.0)
 	# print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
-	utilities.set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
+	sparx_utilities.set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
 	if type(vol)==type(""):
 		pass#IMPORTIMPORTIMPORT from utilities import write_headers
-		utilities.write_headers( vol, [e], [0])
+		sparx_utilities.write_headers( vol, [e], [0])
 	else:
 		return e
 
@@ -2252,7 +2252,7 @@ def recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter
 	nnxo       = 0
 	if(myid == 0): nnxo = prjlist[0].get_ysize()
 	else:          nnxo = 0
-	nnxo = utilities.bcast_number_to_all(nnxo, source_node = 0)
+	nnxo = sparx_utilities.bcast_number_to_all(nnxo, source_node = 0)
 	
 	if verbose==0:
 		finfo = None
@@ -2269,7 +2269,7 @@ def recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter
 	pass#IMPORTIMPORTIMPORT from filter         import filt_table
 	pass#IMPORTIMPORTIMPORT from filter		    import filt_ctf
 	# reconstruction step 
-	refvol = utilities.model_blank(nnnx)
+	refvol = sparx_utilities.model_blank(nnnx)
 	refvol.set_attr("fudge", 1.0)
 	if CTF: do_ctf = 1
 	else:   do_ctf = 0
@@ -2285,31 +2285,31 @@ def recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter
 	is_complex = prjlist[0].get_attr("is_complex")
 	if chunk_id== -1:
 		for image in prjlist:
-			if not is_complex: image = fundamentals.fft(image)
-			image = filter.filt_ctf(image, image.get_attr("ctf"))
+			if not is_complex: image = sparx_fundamentals.fft(image)
+			image = sparx_filter.filt_ctf(image, image.get_attr("ctf"))
 			image.set_attr("padffted",1)
 			image.set_attr("npad",1)
 			image.set_attr("bckgnoise",m)
 			if (image.get_attr("group") == group): 
-				if not upweighted:  reconstruction.insert_slices_pdf(r, filter.filt_table(image, image.get_attr("bckgnoise")) )
-				else: reconstruction.insert_slices_pdf(r, image)
+				if not upweighted:  sparx_reconstruction.insert_slices_pdf(r, sparx_filter.filt_table(image, image.get_attr("bckgnoise")) )
+				else: sparx_reconstruction.insert_slices_pdf(r, image)
 	else:
 		for image in prjlist:
-			if not is_complex: image = fundamentals.fft(image)
-			image =filter.filt_ctf(image, image.get_attr("ctf"))
+			if not is_complex: image = sparx_fundamentals.fft(image)
+			image =sparx_filter.filt_ctf(image, image.get_attr("ctf"))
 			image.set_attr("padffted",1)
 			image.set_attr("npad",1)
 			image.set_attr("bckgnoise",m)
 			if (image.get_attr("group") == group) and (image.get_attr("chunk_id") == chunk_id): 
-				if not upweighted:  reconstruction.insert_slices_pdf(r, filter.filt_table(image, image.get_attr("bckgnoise")) )
-				else: reconstruction.insert_slices_pdf(r, image)		
+				if not upweighted:  sparx_reconstruction.insert_slices_pdf(r, sparx_filter.filt_table(image, image.get_attr("bckgnoise")) )
+				else: sparx_reconstruction.insert_slices_pdf(r, image)		
 
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )
 		finfo.flush()
 
-	utilities.reduce_EMData_to_root(fftvol, myid, 0, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, 0, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, 0, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, 0, comm=mpi_comm)
 
 	if not (finfo is None): 
 		finfo.write( "after reduce\n" )
@@ -2330,15 +2330,15 @@ def recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter
 		nx     = weight.get_xsize()
 		pass#IMPORTIMPORTIMPORT from utilities  import tabessel
 		pass#IMPORTIMPORTIMPORT from morphology import notzero
-		beltab = utilities.tabessel(ny, nnxo) # iterative process
-		nwe    = morphology.notzero(weight)
+		beltab = sparx_utilities.tabessel(ny, nnxo) # iterative process
+		nwe    = sparx_morphology.notzero(weight)
 		#Util.save_slices_on_disk(weight,"slices.hdf")
 		for i in range(niter):
 			cvv = EMAN2_cppwrap.Util.mulreal(nwe, weight)
 			#cvv = Util.read_slice_and_multiply(nwe,weight)
-			cvv = fundamentals.fft(cvv)
+			cvv = sparx_fundamentals.fft(cvv)
 			EMAN2_cppwrap.Util.mul_img_tabularized(cvv, nnxo, beltab)
-			cvv = fundamentals.fft(cvv)
+			cvv = sparx_fundamentals.fft(cvv)
 			EMAN2_cppwrap.Util.divabs(nwe, cvv)
 		pass#IMPORTIMPORTIMPORT import os
 		#os.system(" rm slices.hdf")
@@ -2346,14 +2346,14 @@ def recons3d_n_trl_MPI_one_node(prjlist, CTF, snr, sign, npad, sym, group, niter
 		pass#IMPORTIMPORTIMPORT from morphology   import cosinemask, threshold_outside
 		pass#IMPORTIMPORTIMPORT from fundamentals import fshift, fpol
 		
-		nwe    = morphology.threshold_outside(nwe, 0.0, 1.0e20)
+		nwe    = sparx_morphology.threshold_outside(nwe, 0.0, 1.0e20)
 		nx     = fftvol.get_ysize()
-		fftvol = fundamentals.fshift(fftvol,nx//2,nx//2,nx//2)
+		fftvol = sparx_fundamentals.fshift(fftvol,nx//2,nx//2,nx//2)
 		EMAN2_cppwrap.Util.mulclreal(fftvol, nwe)
-		fftvol = fundamentals.fft(fftvol) 
+		fftvol = sparx_fundamentals.fft(fftvol) 
 		fftvol = EMAN2_cppwrap.Util.window(fftvol, nnxo, nnxo, nnxo)
-		fftvol = fundamentals.fpol(fftvol, nnxo, nnxo, nnxo, True, False)
-		fftvol = morphology.cosinemask(fftvol, nnxo//2-1,5,None)
+		fftvol = sparx_fundamentals.fpol(fftvol, nnxo, nnxo, nnxo, True, False)
+		fftvol = sparx_morphology.cosinemask(fftvol, nnxo//2-1,5,None)
 		fftvol.div_sinc(1)
 		#fftvol.write_image(vol_stack)
 		return fftvol
@@ -2382,38 +2382,38 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 	else:
 		data_on_disk = False # input_stacks is a list of images not a file name
 		if MPI:
-			global_def.ERROR('MPI version for data in memory version is not implemented', "pca", 1)
+			sparx_global_def.ERROR('MPI version for data in memory version is not implemented', "pca", 1)
 
 	if mask_radius > 0 and maskfile !="":
-		global_def.ERROR('Error: mask radius and mask file cannot be used at the same time', "pca", 1)
+		sparx_global_def.ERROR('Error: mask radius and mask file cannot be used at the same time', "pca", 1)
 
 	if mask_radius >0:
 
 		if(verbose): print("Using spherical mask, rad=", mask_radius)
 
-		if maskfile!="":   global_def.ERROR('mask radius and mask file cannot be used at the same time', "pca", 1)
+		if maskfile!="":   sparx_global_def.ERROR('mask radius and mask file cannot be used at the same time', "pca", 1)
 		if data_on_disk:
-			data = utilities.get_im( input_stacks[0] )
+			data = sparx_utilities.get_im( input_stacks[0] )
 		else:
 			data = input_stacks[0]
-		mask = utilities.model_circle(mask_radius, data.get_xsize(), data.get_ysize(), data.get_zsize())
+		mask = sparx_utilities.model_circle(mask_radius, data.get_xsize(), data.get_ysize(), data.get_zsize())
 
 	elif(maskfile!="") :
 		if(verbose): print("Using mask: ", maskfile)
-		mask = utilities.get_image( maskfile )
+		mask = sparx_utilities.get_image( maskfile )
 	else:
 		data = EMAN2_cppwrap.EMData()
 		if data_on_disk:
 			data.read_image( input_stacks[0], 0, True)
 		else:
 			data = input_stacks[0]
-		mask = utilities.model_blank(data.get_xsize(), data.get_ysize(), data.get_zsize(), bckg=1.0)
+		mask = sparx_utilities.model_blank(data.get_xsize(), data.get_ysize(), data.get_zsize(), bckg=1.0)
 
-	pca = statistics.pcanalyzer(mask, nvec, incore, MPI)
+	pca = sparx_statistics.pcanalyzer(mask, nvec, incore, MPI)
 
 	if subavg != "":
 		if(verbose): print("Subtracting ", subavg, " from each image")
-		avg = utilities.get_image( subavg )
+		avg = sparx_utilities.get_image( subavg )
 		pca.setavg( avg )
 
 	if data_on_disk:
@@ -2427,7 +2427,7 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 		ncpu = 1
 
 	if genbuf:
-		if shuffle: global_def.ERROR('Shuffle works only with usebuf', "pca", 1)
+		if shuffle: sparx_global_def.ERROR('Shuffle works only with usebuf', "pca", 1)
 
 		if data_on_disk:
 			bgn,end = MPI_start_end( files.nimg(), ncpu, myid )
@@ -2436,7 +2436,7 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 		for i in range(bgn,end):
 			if data_on_disk:
 				fname, imgid = files.get( i )
-				data = utilities.get_im( fname, imgid)
+				data = sparx_utilities.get_im( fname, imgid)
 				if(verbose):  print("Inserting image %s, %4d" % (fname, imgid))
 			else:
 				data = input_stacks[i]
@@ -2479,7 +2479,7 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False):
 	if inmem:
 		img = data[0]
 	else:
-		img = utilities.get_im(data,0)
+		img = sparx_utilities.get_im(data,0)
 
 	nx = img.get_xsize()
 	ny = img.get_ysize()
@@ -2487,10 +2487,10 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False):
 	
 	if( output_stack == None):  outstack = [None]*n
 
-	mask = utilities.model_circle( nx//2-2, nx, ny)
+	mask = sparx_utilities.model_circle( nx//2-2, nx, ny)
 	if  CTF:
 		if(img.get_attr_default('ctf_applied', 0) > 0):
-			global_def.ERROR("data cannot be ctf-applied","prepare_2d_forPCA",1)
+			sparx_global_def.ERROR("data cannot be ctf-applied","prepare_2d_forPCA",1)
 		pass#IMPORTIMPORTIMPORT from fundamentals import fft, fftip, window2d
 		pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
 		pass#IMPORTIMPORTIMPORT from filter 	  import filt_ctf
@@ -2505,46 +2505,46 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False):
 			if inmem:
 				img = data[i].copy()
 			else:
-				img = utilities.get_im(data, i)
+				img = sparx_utilities.get_im(data, i)
 			ctf_params = img.get_attr("ctf")
 			if (mode == 'a'):
-				angle, sx, sy, mirror, scale = utilities.get_params2D(img)
-				img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
+				angle, sx, sy, mirror, scale = sparx_utilities.get_params2D(img)
+				img = sparx_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
 			st = EMAN2_cppwrap.Util.infomask(img, mask, False)
 			img -= st[0]
-			img = utilities.pad(img, nx2,ny2, 1, background = "circumference")
-			fundamentals.fftip(img)
-			EMAN2_cppwrap.Util.add_img(ave, filter.filt_ctf(img, ctf_params))
-			EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx2, ctf_params))
+			img = sparx_utilities.pad(img, nx2,ny2, 1, background = "circumference")
+			sparx_fundamentals.fftip(img)
+			EMAN2_cppwrap.Util.add_img(ave, sparx_filter.filt_ctf(img, ctf_params))
+			EMAN2_cppwrap.Util.add_img2(ctf_2_sum, sparx_morphology.ctf_img(nx2, ctf_params))
 		EMAN2_cppwrap.Util.div_filter(ave, ctf_2_sum)
 		for i in range(n):
 			if inmem:
 				img = data[i].copy()
 			else:
-				img = utilities.get_im(data, i)
+				img = sparx_utilities.get_im(data, i)
 			ctf_params = img.get_attr("ctf")
 			if (mode == 'a'):
-				angle, sx, sy, mirror, scale = utilities.get_params2D(img)
-				img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
+				angle, sx, sy, mirror, scale = sparx_utilities.get_params2D(img)
+				img = sparx_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
 			st = EMAN2_cppwrap.Util.infomask(img, mask, False)
 			img -= st[0]
-			img = utilities.pad(img, nx2,ny2, 1, background = "circumference")
-			fundamentals.fftip(img)
-			img = filter.filt_ctf(img-filter.filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
+			img = sparx_utilities.pad(img, nx2,ny2, 1, background = "circumference")
+			sparx_fundamentals.fftip(img)
+			img = sparx_filter.filt_ctf(img-sparx_filter.filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
 			EMAN2_cppwrap.Util.div_filter(img, ctf_2_sum)
-			img = fundamentals.window2d(fundamentals.fft(img),nx,ny)
-			utilities.set_params2D(img, [0.0,0.0,0.0,0,1.0])
+			img = sparx_fundamentals.window2d(sparx_fundamentals.fft(img),nx,ny)
+			sparx_utilities.set_params2D(img, [0.0,0.0,0.0,0,1.0])
 			if( output_stack == None):  outstack[i] = img
 			else:                       img.write_image(output_stack, i)
 	else:
-		ave  = utilities.model_blank( nx, ny)
+		ave  = sparx_utilities.model_blank( nx, ny)
 		for i in range(n):
 			if inmem:
 				img = data[i].copy()
 			else:
-				img = utilities.get_im(data, i)
-			angle, sx, sy, mirror, scale = utilities.get_params2D(img)
-			img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
+				img = sparx_utilities.get_im(data, i)
+			angle, sx, sy, mirror, scale = sparx_utilities.get_params2D(img)
+			img = sparx_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
 			st = EMAN2_cppwrap.Util.infomask(img, mask, False)
 			img -= st[0]
 			EMAN2_cppwrap.Util.add_img(ave, img)
@@ -2553,13 +2553,13 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False):
 			if inmem:
 				img = data[i].copy()
 			else:
-				img = utilities.get_im(data, i)
-			angle, sx, sy, mirror, scale = utilities.get_params2D(img)
-			img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
+				img = sparx_utilities.get_im(data, i)
+			angle, sx, sy, mirror, scale = sparx_utilities.get_params2D(img)
+			img = sparx_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
 			st = EMAN2_cppwrap.Util.infomask(img, mask, False)
 			img -= st[0]
 			EMAN2_cppwrap.Util.sub_img(img, ave)
-			utilities.set_params2D(img, [0.0,0.0,0.0,0,1.0])
+			sparx_utilities.set_params2D(img, [0.0,0.0,0.0,0,1.0])
 			if( output_stack == None):  outstack[i] = img
 			else:                       img.write_image(output_stack, i)
 	if( output_stack == None):  return ave, outstack
@@ -2608,7 +2608,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 	if fexport != None: fexp = open(fexport, 'w')
 
 	nimage = EMAN2_cppwrap.EMUtil.get_image_count(stack)
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == "bdb":
 		pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
 		DB = EMAN2db.db_open_dict(stack)
@@ -2699,7 +2699,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 					dfdiff = extract_value(parmvalues[il+6])
 					dfang = extract_value(parmvalues[il+7])
 					#set_ctf(img, [defocus, cs, voltage, apix, bfactor, ampcont])
-					ctf = utilities.generate_ctf([defocus, cs, voltage, apix, bfactor, ampcont, dfdiff, dfang]) 
+					ctf = sparx_utilities.generate_ctf([defocus, cs, voltage, apix, bfactor, ampcont, dfdiff, dfang]) 
 					if ext == "bdb":
 						DB.set_attr(i, "ctf", ctf)
 					elif ext == "hdf":
@@ -3018,7 +3018,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 					img = EMAN2_cppwrap.EMData()
 					img.read_image(stack, i, True)
 					img.del_attr(p)
-					utilities.write_header(stack, img, i)
+					sparx_utilities.write_header(stack, img, i)
 		#if zero or one or randomize or rand_alpha or backup or restore or delete:
 			#write_header(stack, img, i)
 			if fexport != None:
@@ -3072,12 +3072,12 @@ def refvol( vollist, fsclist, output, mask ):
 	fscs = [None]*nvol
 	vols = [None]*nvol
 	for i in range(nvol):
-		fscs[i] = utilities.read_fsc( fsclist[i] )
-		vols[i] = utilities.get_image( vollist[i] )
+		fscs[i] = sparx_utilities.read_fsc( fsclist[i] )
+		vols[i] = sparx_utilities.get_image( vollist[i] )
 		print('rawvol, resolution: ', vollist[i], fsclist[i])
 
-	m    = utilities.get_image( mask )
-	volfs = filter.filt_vols( vols, fscs, m )
+	m    = sparx_utilities.get_image( mask )
+	volfs = sparx_filter.filt_vols( vols, fscs, m )
 
 	for i in range(nvol):
 		volfs[i].write_image( output, i )
@@ -3102,22 +3102,22 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	nx = data[0].get_xsize()
 	if last_ring == -1:  last_ring = nx/2-2
 	if maskfile: mask = maskfile
-	else: mask = utilities.model_circle(last_ring, nx, nx)
+	else: mask = sparx_utilities.model_circle(last_ring, nx, nx)
 
 	if randomize :
 		for im in data:
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(im)
-			alphai, sxi, syi, mirrori    = utilities.inverse_transform2(alpha, sx, sy)
-			alphan, sxn, syn, mirrorn    = utilities.combine_params2(0.0, -sxi, -syi, 0, numpy.random.random()*360.0, 0.0, 0.0, random.randint(0, 1))
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(im)
+			alphai, sxi, syi, mirrori    = sparx_utilities.inverse_transform2(alpha, sx, sy)
+			alphan, sxn, syn, mirrorn    = sparx_utilities.combine_params2(0.0, -sxi, -syi, 0, numpy.random.random()*360.0, 0.0, 0.0, random.randint(0, 1))
 			#alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi+randint(-xrng[0],xrng[0]), -syi+randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
-			utilities.set_params2D(im, [alphan, sxn, syn, mirrorn, 1.0])
+			sparx_utilities.set_params2D(im, [alphan, sxn, syn, mirrorn, 1.0])
 
 
 	cnx = nx/2+1
 	cny = cnx
 	mode = "F"
-	numr = alignment.Numrinit(first_ring, last_ring, rstep, mode)
-	wr = alignment.ringwe(numr, mode)
+	numr = sparx_alignment.Numrinit(first_ring, last_ring, rstep, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 
 	sx_sum = 0.0
 	sy_sum = 0.0
@@ -3131,7 +3131,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		#     should be and, as a result, some are in wrong positions and overall pixel error is large.
 		#     Overall, Yang's method works much better, so I am leaving it at that.  PAP 01/22/2015
 		for im in data:  im.set_attr('previousmax', -1.0e23)
-		tavg = statistics.ave_series(data)
+		tavg = sparx_statistics.ave_series(data)
 		for N_step in range(len(xrng)):
 			nope = 0
 			Iter = 0
@@ -3139,13 +3139,13 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				total_iter += 1
 				Iter += 1
 				if( FH > 0.0):
-					tavg = filter.filt_tanl(fundamentals.fft(tavg), FH, FF)
+					tavg = sparx_filter.filt_tanl(sparx_fundamentals.fft(tavg), FH, FF)
 					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
 					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
-					tavg = fundamentals.fft(fundamentals.fshift(tavg, -cs[0], -cs[1]))
+					tavg = sparx_fundamentals.fft(sparx_fundamentals.fshift(tavg, -cs[0], -cs[1]))
 				else:
-					tavg = filter.filt_tanl(tavg, FH, FF)
-				sx_sum, sy_sum, nope = alignment.ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+					tavg = sparx_filter.filt_tanl(tavg, FH, FF)
+				sx_sum, sy_sum, nope = sparx_alignment.ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 															xrng[N_step], yrng[N_step], step[N_step], \
 															mode=mode, CTF=False, random_method = method)
 				#print  "  iteration  shc   %03d   %03d   %7.2f    %7.2f  "%(total_iter,nope,cs[0],cs[1])
@@ -3153,7 +3153,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				#for i in data:  print "  ",i.get_attr('previousmax'),
 				#print "  "
 				#tavg.write_image('tata.hdf',total_iter-1)
-				tavg = statistics.ave_series(data)
+				tavg = sparx_statistics.ave_series(data)
 		"""Multiline Comment49"""
 
 
@@ -3161,18 +3161,18 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		pass#IMPORTIMPORTIMPORT from alignent import prepref
 		pass#IMPORTIMPORTIMPORT from utilities import model_circle
 		stp = step[-1]
-		rings = alignment.prepref(data, utilities.model_circle(nx//2-1,nx,nx), cnx, cnx, numr, mode, xrng[0], xrng[0], stp)
+		rings = sparx_alignment.prepref(data, sparx_utilities.model_circle(nx//2-1,nx,nx), cnx, cnx, numr, mode, xrng[0], xrng[0], stp)
 		print(" rings  ",len(rings))
 		for im in range(len(data)):
 			rings[im][0][0].set_attr("inx",nx)
-		tavg = statistics.ave_series(data)
+		tavg = sparx_statistics.ave_series(data)
 		for N_step in range(len(xrng)):
 			print(" xrng ",xrng[N_step])
 			for Iter in range(max_iter):
 				total_iter += 1
 				if( FH > 0.0):
 					fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
-					tavg = filter.filt_tanl(tavg, fl, FF)
+					tavg = sparx_filter.filt_tanl(tavg, fl, FF)
 					"""Multiline Comment50"""
 				else:
 					"""Multiline Comment51"""
@@ -3180,13 +3180,13 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				#print  "  iteration  std   %03d   %7.2f    %7.2f  "%(total_iter,cs[0],cs[1])
 				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 				else:                                                 delta = dst
-				sx_sum, sy_sum, nope = alignment.ali2d_single_iter(rings, numr, wr, cs, tavg, cnx, cny, \
+				sx_sum, sy_sum, nope = sparx_alignment.ali2d_single_iter(rings, numr, wr, cs, tavg, cnx, cny, \
 															xrng[N_step], yrng[N_step], step[N_step], \
 															mode=mode, CTF=False, delta=delta, random_method = method)
 				for im in range(len(data)):
-					alpha, tx, ty, mirror, scale = utilities.get_params2D(rings[im][0][0])
-					utilities.set_params2D(data[im],[alpha, tx, ty, mirror, scale])
-				tavg = statistics.ave_series(data)
+					alpha, tx, ty, mirror, scale = sparx_utilities.get_params2D(rings[im][0][0])
+					sparx_utilities.set_params2D(data[im],[alpha, tx, ty, mirror, scale])
+				tavg = sparx_statistics.ave_series(data)
 				#print  "tata ",total_iter-1,Util.infomask(tavg,None,True)
 				#tavg.write_image('tata.hdf',total_iter-1)
 	else:
@@ -3196,9 +3196,9 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			ctf2 = EMAN2_cppwrap.EMData(nx, nx, 1, False)
 			cdata = []
 			for im in data:
-				ctt = morphology.ctf_img(nx, im.get_attr("ctf"))
+				ctt = sparx_morphology.ctf_img(nx, im.get_attr("ctf"))
 				EMAN2_cppwrap.Util.add_img2(ctf2, ctt)
-				cdata.append(fundamentals.fft(EMAN2_cppwrap.Util.muln_img(fundamentals.fft(im), ctt)))
+				cdata.append(sparx_fundamentals.fft(EMAN2_cppwrap.Util.muln_img(sparx_fundamentals.fft(im), ctt)))
 		else:
 			cdata = [None]*len(data)
 			for i in range(len(data)):
@@ -3207,11 +3207,11 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		for N_step in range(len(xrng)):
 			for Iter in range(max_iter):
 				total_iter += 1
-				tavg = statistics.ave_series(cdata)
-				if CTF: tavg = fundamentals.fft(EMAN2_cppwrap.Util.divn_img(fundamentals.fft(tavg), ctf2))
+				tavg = sparx_statistics.ave_series(cdata)
+				if CTF: tavg = sparx_fundamentals.fft(EMAN2_cppwrap.Util.divn_img(sparx_fundamentals.fft(tavg), ctf2))
 				if( FH > 0.0):
 					fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
-					tavg = filter.filt_tanl(tavg, fl, FF)
+					tavg = sparx_filter.filt_tanl(tavg, fl, FF)
 				"""Multiline Comment52"""
 				if total_iter == len(xrng)*max_iter:
 					if CTF:
@@ -3221,7 +3221,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				#print  "  iteration  std   %03d   %7.2f    %7.2f  "%(total_iter,cs[0],cs[1])
 				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 				else:                                                 delta = dst
-				sx_sum, sy_sum, nope = alignment.ali2d_single_iter(cdata, numr, wr, cs, tavg, cnx, cny, \
+				sx_sum, sy_sum, nope = sparx_alignment.ali2d_single_iter(cdata, numr, wr, cs, tavg, cnx, cny, \
 															xrng[N_step], yrng[N_step], step[N_step], \
 															mode=mode, CTF=False, delta=delta)
 				#for im in data:  print get_params2D(im)
@@ -3266,8 +3266,8 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 	npad      = 2
 	############################################################
 	pass#IMPORTIMPORTIMPORT from logger import Logger,BaseLogger_Files
-	log       = logger.Logger()
-	log   =logger.Logger(logger.BaseLogger_Files())
+	log       = sparx_logger.Logger()
+	log   =sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 	log.prefix=outdir+"/"
 	myid      = Tracker["constants"]["myid"]
 	main_node = Tracker["constants"]["main_node"]
@@ -3302,13 +3302,13 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		Tracker["PWadjustment"]=Tracker["constants"]["PWadjustment"]	
 	mpi_comm = mpi.MPI_COMM_WORLD
 	###--------------------------
-	if os.path.exists(outdir): global_def.ERROR('Output directory exists, please change the name and restart the program', "Kmref_ali3d_MPI ", 1, myid)
+	if os.path.exists(outdir): sparx_global_def.ERROR('Output directory exists, please change the name and restart the program', "Kmref_ali3d_MPI ", 1, myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	###
 	if myid == main_node:	
 		os.mkdir(outdir)
 		pass#IMPORTIMPORTIMPORT import global_def
-		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		sparx_global_def.LOGFILE =  os.path.join(outdir, sparx_global_def.LOGFILE)
 		log.add("Kmref_ali3d_MPI - Traditional Kmeans clustering  !")
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	######
@@ -3317,15 +3317,15 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		#print  " my_id",myid
 		time.sleep(2)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)	
-	data, old_shifts    = utilities.get_shrink_data_huang(Tracker,Tracker["nxinit"],this_data_list_file,Tracker["constants"]["partstack"],myid, main_node, number_of_proc, preshift = True)
+	data, old_shifts    = sparx_utilities.get_shrink_data_huang(Tracker,Tracker["nxinit"],this_data_list_file,Tracker["constants"]["partstack"],myid, main_node, number_of_proc, preshift = True)
 	if myid ==main_node:
-		list_of_particles     = utilities.read_text_file(this_data_list_file)
+		list_of_particles     = sparx_utilities.read_text_file(this_data_list_file)
 		total_nima            = len(list_of_particles)
 	else:   
 		total_nima            = 0
 		list_of_particles     = 0
-	total_nima = utilities.bcast_number_to_all(total_nima,main_node)
-	list_of_particles     = utilities.wrap_mpi_bcast(list_of_particles, main_node)
+	total_nima = sparx_utilities.bcast_number_to_all(total_nima,main_node)
+	list_of_particles     = sparx_utilities.wrap_mpi_bcast(list_of_particles, main_node)
 	
 	
 	pass#IMPORTIMPORTIMPORT from time import time
@@ -3341,18 +3341,18 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		finfo = None
 		frec  = None
 
-	xrng        = utilities.get_input_from_string(xr)
+	xrng        = sparx_utilities.get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = utilities.get_input_from_string(yr)
-	step        = utilities.get_input_from_string(ts)
-	delta       = utilities.get_input_from_string(delta)
+	else          :  yrng = sparx_utilities.get_input_from_string(yr)
+	step        = sparx_utilities.get_input_from_string(ts)
+	delta       = sparx_utilities.get_input_from_string(delta)
 	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
 	if an == "-1":
 		an = []
 		for i in range(len(xrng)):   an.append(-1)
 	else:
 		pass#IMPORTIMPORTIMPORT from  alignment	    import proj_ali_incore_local
-		an      = utilities.get_input_from_string(an)
+		an      = sparx_utilities.get_input_from_string(an)
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(int(ou)*shrinkage+.5)
@@ -3368,13 +3368,13 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		focus =      None
 
 
-	fscmask     = utilities.model_circle(last_ring, nx, nx, nx)
+	fscmask     = sparx_utilities.model_circle(last_ring, nx, nx, nx)
 	stack       = Tracker["constants"]["stack"]
 	pass#IMPORTIMPORTIMPORT import user_functions
-	user_func = user_functions.factory[user_func_name]
+	user_func = sparx_user_functions.factory[user_func_name]
 	if myid == main_node:
 		#import user_functions
-		#user_func = user_functions.factory[user_func_name]
+		#user_func = sparx_user_functions.factory[user_func_name]
 		log.add("Input stack                 : %s"%(stack))
 		#log.add("Reference volumes           : %s"%(ref_vol))	
 		log.add("Number of reference volumes : %i"%(numref))
@@ -3404,11 +3404,11 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		log.add("shrinkage is                              : %f"%shrinkage)
 		log.add("the text file for get_shrink_data is %s"%this_data_list_file)
 	if maskfile:
-		if type(maskfile) is bytes:  mask3D = morphology.get_shrink_3dmask(Tracker["nxinit"],maskfile)
+		if type(maskfile) is bytes:  mask3D = sparx_morphology.get_shrink_3dmask(Tracker["nxinit"],maskfile)
 		else: 	                                mask3D = maskfile
-	else:  mask3D = utilities.model_circle(last_ring, nx, nx, nx)
-	numr       = alignment.Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D     = utilities.model_circle(last_ring, nx, nx) - utilities.model_circle(first_ring, nx, nx)
+	else:  mask3D = sparx_utilities.model_circle(last_ring, nx, nx, nx)
+	numr       = sparx_alignment.Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D     = sparx_utilities.model_circle(last_ring, nx, nx) - sparx_utilities.model_circle(first_ring, nx, nx)
 	total_nima = len(Tracker["this_data_list"])
 	nima       = len(data)
 	#####
@@ -3449,27 +3449,27 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 			log.add("%d highres                   %f"%(iref, highres[iref]))
 			
 			if Tracker["mask3D"]:
-				mask3D          = utilities.get_im(Tracker["mask3D"])
+				mask3D          = sparx_utilities.get_im(Tracker["mask3D"])
 				stat            = EMAN2_cppwrap.Util.infomask(ref_list[iref], mask3D, False)
 				ref_list[iref] -= stat[0]
 				if stat[1]!=0.0: EMAN2_cppwrap.Util.mul_scalar(ref_list[iref], 1.0/stat[1])
 				else:
 					pass#IMPORTIMPORTIMPORT from morphology import erosion
-					bv = utilities.model_blank(3, 3, 3)
+					bv = sparx_utilities.model_blank(3, 3, 3)
 					bv +=1.
 					while stat[1]==0:
-						ermask = morphology.erosion(mask3D, bv)
+						ermask = sparx_morphology.erosion(mask3D, bv)
 						stat   = EMAN2_cppwrap.Util.infomask(ref_list[iref], ermask, False)
 					EMAN2_cppwrap.Util.mul_scalar(ref_list[iref], 1.0/stat[1])
 				
 			if(Tracker["constants"]["PWadjustment"]):
-				rt = utilities.read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
-				ro = fundamentals.rops_table(ref_list[iref])
+				rt = sparx_utilities.read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
+				ro = sparx_fundamentals.rops_table(ref_list[iref])
 				for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
-				ref_list[iref] = filter.filt_table(ref_list[iref],ro)
+				ref_list[iref] = sparx_filter.filt_table(ref_list[iref],ro)
 				
-			if (Tracker["constants"]["low_pass_filter"]==-1.):  ref_list[iref] = filter.filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
-			else:                                               ref_list[iref] = filter.filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
+			if (Tracker["constants"]["low_pass_filter"]==-1.):  ref_list[iref] = sparx_filter.filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+			else:                                               ref_list[iref] = sparx_filter.filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
 				
 			if Tracker["mask3D"]: EMAN2_cppwrap.Util.mul_img(ref_list[iref], mask3D)
 			ref_list[iref].write_image(os.path.join(outdir, "volf0000.hdf"), iref)
@@ -3498,13 +3498,13 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 
 	if(focus != None):
 		if(myid == main_node):
-			focus = morphology.get_shrink_3dmask(Tracker["nxinit"],focus)
+			focus = sparx_morphology.get_shrink_3dmask(Tracker["nxinit"],focus)
 		else:
-			focus =  utilities.model_blank(nx, nx, nx)
-		utilities.bcast_EMData_to_all(focus, myid, main_node)
+			focus =  sparx_utilities.model_blank(nx, nx, nx)
+		sparx_utilities.bcast_EMData_to_all(focus, myid, main_node)
 		st = EMAN2_cppwrap.Util.infomask(focus, None, True)
-		if( st[0] == 0.0 ):  global_def.ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
-		focus = projection.prep_vol(focus, 1, 1)
+		if( st[0] == 0.0 ):  sparx_global_def.ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
+		focus = sparx_projection.prep_vol(focus, 1, 1)
 
 
 	Niter = int(lstp*maxit*(nassign + nrefine) )
@@ -3526,35 +3526,35 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 			pixer = [0.0]*nima
 			if(an[N_step] > 0):
 				pass#IMPORTIMPORTIMPORT from utilities    import even_angles
-				ref_angles = utilities.even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+				ref_angles = sparx_utilities.even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
 				# generate list of angles
 				pass#IMPORTIMPORTIMPORT from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
-				alignment.generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
+				sparx_alignment.generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
 				del ref_angles
 			else:  list_of_reference_angles = [[1.0,1.0]]
 		cs = [0.0]*3
 		pass#IMPORTIMPORTIMPORT from fundamentals import fft
 		if( not focus ):
-			for im in range(nima):  data[im] = fundamentals.fft(data[im])
+			for im in range(nima):  data[im] = sparx_fundamentals.fft(data[im])
 
 		for iref in range(numref):
-			if myid==main_node: volft = utilities.get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
-			else:				volft=utilities.model_blank(nx,nx,nx)
-			utilities.bcast_EMData_to_all(volft, myid, main_node)
-			volft= projection.prep_vol(volft,1,1)
+			if myid==main_node: volft = sparx_utilities.get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
+			else:				volft=sparx_utilities.model_blank(nx,nx,nx)
+			sparx_utilities.bcast_EMData_to_all(volft, myid, main_node)
+			volft= sparx_projection.prep_vol(volft,1,1)
 			if CTF:
 				previous_defocus = -1.0
 				if runtype=="REFINEMENT":
 					start_time = time.time()
-					prjref = projection.prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
+					prjref = sparx_projection.prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
 					if myid == main_node:
 						log.add( "Calculation of projections: %d" % (time.time()-start_time) );start_time = time.time()
 					del volft, kb
 			else:
 				if runtype=="REFINEMENT":
 					start_time = time.time()
-					refrings = alignment.prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
+					refrings = sparx_alignment.prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
 					if myid == main_node:
 						log.add( "Initial time to prepare rings: %d" % (time.time()-start_time) );start_time = time.time()
 					del volft, kb
@@ -3567,26 +3567,26 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 						if ctf.defocus != previous_defocus:
 							previous_defocus = ctf.defocus
 							rstart_time = time.time()
-							refrings = projection.gen_rings_ctf( prjref, nx, ctf, numr)
+							refrings = sparx_projection.gen_rings_ctf( prjref, nx, ctf, numr)
 							if myid == main_node: log.add( "Repeated time to prepare rings: %d" % (time.time()-rstart_time) );rstart_time = time.time()
 				if runtype=="ASSIGNMENT":
-					phi,tht,psi,s2x,s2y = utilities.get_params_proj(data[im])
+					phi,tht,psi,s2x,s2y = sparx_utilities.get_params_proj(data[im])
 					"""Multiline Comment72"""
 					#  Standard distance
 					#  Ref is in reciprocal space
 					if CTF:
-						ref = filter.filt_ctf( projection.prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
+						ref = sparx_filter.filt_ctf( sparx_projection.prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
 					else:
-						ref = projection.prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
+						ref = sparx_projection.prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
 					pass#IMPORTIMPORTIMPORT from filter import filt_tophatl
 					pass#IMPORTIMPORTIMPORT from math import sqrt
-					ref = filter.filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
+					ref = sparx_filter.filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
 					ref.set_value_at(0,0,0.0)
 					nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(ref, ref, None))
 					if(focus):
-						mask2D = morphology.binarize( projection.prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						tempx = fundamentals.fft(data[im]*mask2D)
+						mask2D = sparx_morphology.binarize( sparx_projection.prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
+						tempx = sparx_fundamentals.fft(data[im]*mask2D)
 						tempx.set_attr("is_complex",0)
 						peak = EMAN2_cppwrap.Util.innerproduct(ref, tempx, None)
 					else:
@@ -3658,20 +3658,20 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 			ngroup  = 0
 		terminate   = mpi.mpi_bcast(terminate, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)
 		terminate   = int(terminate[0])
-		ngroup      = utilities.wrap_mpi_bcast(ngroup,main_node)
+		ngroup      = sparx_utilities.wrap_mpi_bcast(ngroup,main_node)
 		empty_group = mpi.mpi_bcast(empty_group, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)
 		empty_group = int(empty_group[0])
 		if empty_group ==1: break # program stops whenever empty_group appears!
 		if runtype=="REFINEMENT":
 			for im in range(nima):  data[im].set_attr('xform.projection', trans[im])
 			if center == -1:
-				cs[0], cs[1], cs[2], dummy, dummy = utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
+				cs[0], cs[1], cs[2], dummy, dummy = sparx_utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f"%(cs[0], cs[1], cs[2])
 					log.add(msg)
 				cs = mpi.mpi_bcast(cs, 3, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
-				utilities.rotate_3D_shift(data, cs)
+				sparx_utilities.rotate_3D_shift(data, cs)
 			#output pixel errors
 			pass#IMPORTIMPORTIMPORT from mpi import mpi_gatherv
 			recvbuf = mpi.mpi_gatherv(pixer, nima, mpi.MPI_FLOAT, recvcount, disps, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
@@ -3680,7 +3680,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 				recvbuf = list(map(float, recvbuf))
 				pass#IMPORTIMPORTIMPORT from statistics import hist_list
 				lhist = 20
-				region, histo = statistics.hist_list(recvbuf, lhist)
+				region, histo = sparx_statistics.hist_list(recvbuf, lhist)
 				if region[0] < 0.0:  region[0] = 0.0
 				msg = "      Histogram of pixel errors\n      ERROR       number of particles"
 				log.add(msg)
@@ -3692,7 +3692,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		#if CTF: del vol
 		fscc = [None]*numref
 		if fourvar and runtype=="REFINEMENT":
-			sumvol = utilities.model_blank(nx, nx, nx)
+			sumvol = sparx_utilities.model_blank(nx, nx, nx)
 		sart_time = time.time()
 	
 		#lowpass = 0.5
@@ -3702,7 +3702,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 		#Tracker["lowpass"] = lowpass
 
 		if( not focus ):
-			for im in range(nima):  data[im] = fundamentals.fft(data[im])
+			for im in range(nima):  data[im] = sparx_fundamentals.fft(data[im])
 
 		highres = []
 		lowpass_tmp =[]
@@ -3722,15 +3722,15 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 				chunk_id   = 1
 				volref1    = recons3d_n_trl_MPI_one_node(data, CTF, snr, sign, npad, sym, iref, niter, verbose, upweighted, compensate, chunk_id)
 				if myid == main_node:
-					fscc[iref] = statistics.fsc(volref0, volref1)
+					fscc[iref] = sparx_statistics.fsc(volref0, volref1)
 					volref  = volref0 + volref1
 					del volref1
 					del volref0
 				#chunk_id   = -1
 				#volref = recons3d_n_trl_MPI_one_node(data, CTF, snr, sign, npad, sym, iref, niter, verbose, upweighted, compensate, chunk_id)
 			else:
-				if CTF: volref, fscc[iref] = reconstruction.rec3D_two_chunks_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
-				else:   volref, fscc[iref] = reconstruction.rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+				if CTF: volref, fscc[iref] = sparx_reconstruction.rec3D_two_chunks_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+				else:   volref, fscc[iref] = sparx_reconstruction.rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			if myid == main_node:
 				log.add( "Time to compute 3D: %d" % (time.time()-start_time) );start_time = time.time()
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
@@ -3749,9 +3749,9 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 				Tracker["lowpass"] = 0.0
 				Tracker["falloff"] = 0.0
 				res   = 0.0
-			Tracker["lowpass"] = utilities.wrap_mpi_bcast(Tracker["lowpass"], main_node, mpi_comm)
-			Tracker["falloff"] = utilities.wrap_mpi_bcast(Tracker["falloff"], main_node, mpi_comm)
-			res = utilities.wrap_mpi_bcast(res, main_node, mpi_comm)
+			Tracker["lowpass"] = sparx_utilities.wrap_mpi_bcast(Tracker["lowpass"], main_node, mpi_comm)
+			Tracker["falloff"] = sparx_utilities.wrap_mpi_bcast(Tracker["falloff"], main_node, mpi_comm)
+			res = sparx_utilities.wrap_mpi_bcast(res, main_node, mpi_comm)
 			highres.append(int(res*Tracker["nxinit"]+ 0.5))
 			lowpass_tmp.append(Tracker["lowpass"])
 		Tracker["lowpass"]=min(lowpass_tmp)
@@ -3761,20 +3761,20 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 			if myid == main_node:
 				log.add("%d highres                   %f"%(iref, highres[iref]))
 				if Tracker["mask3D"]:
-					mask3D = utilities.get_im(Tracker["mask3D"])
+					mask3D = sparx_utilities.get_im(Tracker["mask3D"])
 					stat = EMAN2_cppwrap.Util.infomask(tmpref[iref], mask3D, False)
 					tmpref[iref] -= stat[0]
 					EMAN2_cppwrap.Util.mul_scalar(tmpref[iref], 1.0/stat[1])
 					
 				if(Tracker["constants"]["PWadjustment"]):
 				
-					rt = utilities.read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
-					ro = fundamentals.rops_table(tmpref[iref])
+					rt = sparx_utilities.read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
+					ro = sparx_fundamentals.rops_table(tmpref[iref])
 					for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
-					tmpref[iref] =filter.filt_table(tmpref[iref],ro)
+					tmpref[iref] =sparx_filter.filt_table(tmpref[iref],ro)
 
-				if (Tracker["constants"]["low_pass_filter"]==-1.):  tmpref[iref] = filter.filt_tanl(tmpref[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
-				else:                                               tmpref[iref] = filter.filt_tanl(tmpref[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter			
+				if (Tracker["constants"]["low_pass_filter"]==-1.):  tmpref[iref] = sparx_filter.filt_tanl(tmpref[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+				else:                                               tmpref[iref] = sparx_filter.filt_tanl(tmpref[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter			
 					
 				if Tracker["mask3D"]: EMAN2_cppwrap.Util.mul_img(tmpref[iref], mask3D)
 				tmpref[iref].write_image(os.path.join(outdir, "volf%04d.hdf"%( total_iter)), iref)
@@ -3782,7 +3782,7 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 
 		if runtype=="REFINEMENT":
 			if fourvar:
-				varf = statistics.varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%total_iter), None,sumvol,last_ring, 1.0, 1, CTF, 1, sym, myid)
+				varf = sparx_statistics.varf3d_MPI(data, os.path.join(outdir, "ssnr%04d"%total_iter), None,sumvol,last_ring, 1.0, 1, CTF, 1, sym, myid)
 				if myid == main_node:   
 					varf = 1.0/varf
 					varf.write_image( os.path.join(outdir,"varf%04d.hdf"%total_iter) )                            		
@@ -3825,16 +3825,16 @@ def ali3d_mref_Kmeans_MPI(ref_list, outdir, this_data_list_file, Tracker):
 	else: par_str = ['group', 'ID' ]
 	"""Multiline Comment75"""
 	if myid == main_node:log.add("Kmref_ali3d_MPI is done!")
-	final_list = utilities.get_sorting_params_refine(Tracker,data, total_nima)
-	group_list, ali3d_params_list = utilities.parsing_sorting_params(final_list)
-	res_groups = utilities.get_groups_from_partition(group_list, list_of_particles, numref)
-	final_group_list, res_groups = utilities.remove_small_groups(res_groups, Tracker["constants"]["smallest_group"])
+	final_list = sparx_utilities.get_sorting_params_refine(Tracker,data, total_nima)
+	group_list, ali3d_params_list = sparx_utilities.parsing_sorting_params(final_list)
+	res_groups = sparx_utilities.get_groups_from_partition(group_list, list_of_particles, numref)
+	final_group_list, res_groups = sparx_utilities.remove_small_groups(res_groups, Tracker["constants"]["smallest_group"])
 	if myid ==main_node:
 		nc = 0
-		utilities.write_text_file(group_list, os.path.join(outdir,"list2.txt"))
+		sparx_utilities.write_text_file(group_list, os.path.join(outdir,"list2.txt"))
 		for igrp in range(len(res_groups)):
 			if len(res_groups[igrp])>0:
-				utilities.write_text_file(res_groups[igrp], os.path.join(outdir,"Class%d.txt"%nc))
+				sparx_utilities.write_text_file(res_groups[igrp], os.path.join(outdir,"Class%d.txt"%nc))
 				nc +=1
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	Tracker["this_partition"]=final_list
@@ -3878,8 +3878,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	npad      = 2
 	#####################################################
 	pass#IMPORTIMPORTIMPORT from logger import Logger,BaseLogger_Files
-	log       = logger.Logger()
-	log   =logger.Logger(logger.BaseLogger_Files())
+	log       = sparx_logger.Logger()
+	log   =sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 	log.prefix=outdir+"/"
 	myid           = Tracker["constants"]["myid"]
 	main_node      = Tracker["constants"]["main_node"]
@@ -3918,29 +3918,29 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	####################################################
 	pass#IMPORTIMPORTIMPORT from time import sleep
 	#Tracker["applyctf"] = True # 
-	data, old_shifts = utilities.get_shrink_data_huang(Tracker, Tracker["nxinit"], particle_list_file, partstack, myid,main_node,number_of_proc,preshift=True)
+	data, old_shifts = sparx_utilities.get_shrink_data_huang(Tracker, Tracker["nxinit"], particle_list_file, partstack, myid,main_node,number_of_proc,preshift=True)
 	if myid ==main_node:
-		list_of_particles = utilities.read_text_file(particle_list_file)
+		list_of_particles = sparx_utilities.read_text_file(particle_list_file)
 		total_nima        =len(list_of_particles)
 	else:
 		total_nima = 0
 		list_of_particles = 0
-	total_nima            = utilities.bcast_number_to_all(total_nima,main_node)
-	list_of_particles     = utilities.wrap_mpi_bcast(list_of_particles, main_node)
+	total_nima            = sparx_utilities.bcast_number_to_all(total_nima,main_node)
+	list_of_particles     = sparx_utilities.wrap_mpi_bcast(list_of_particles, main_node)
 	
 	if myid == main_node:
 		if os.path.exists(outdir):  nx = 1
 		else:  nx = 0
 	else:  nx = 0
-	ny = utilities.bcast_number_to_all(nx, source_node = main_node)
+	ny = sparx_utilities.bcast_number_to_all(nx, source_node = main_node)
 	#image_start, image_end = MPI_start_end(total_data,number_of_proc, myid)
 	
-	if ny == 1:  global_def.ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_iter", 1,myid)
+	if ny == 1:  sparx_global_def.ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_iter", 1,myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	if myid == main_node:	
 		os.mkdir(outdir)
 		pass#IMPORTIMPORTIMPORT import global_def
-		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		sparx_global_def.LOGFILE =  os.path.join(outdir, sparx_global_def.LOGFILE)
 		log.add("Equal K-means  ")
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	pass#IMPORTIMPORTIMPORT from time import time
@@ -3954,18 +3954,18 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	else:
 		finfo = None
 		frec  = None
-	xrng        = utilities.get_input_from_string(xr)
+	xrng        = sparx_utilities.get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = utilities.get_input_from_string(yr)
-	step        = utilities.get_input_from_string(ts)
-	delta       = utilities.get_input_from_string(delta)
+	else          :  yrng = sparx_utilities.get_input_from_string(yr)
+	step        = sparx_utilities.get_input_from_string(ts)
+	delta       = sparx_utilities.get_input_from_string(delta)
 	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
 	if (an == "-1"):
 		an = []
 		for i in range(len(xrng)):   an.append(-1)
 	else:
 		pass#IMPORTIMPORTIMPORT from  alignment	    import proj_ali_incore_local
-		an      = utilities.get_input_from_string(an)
+		an      = sparx_utilities.get_input_from_string(an)
 
 	first_ring  = int(ir)
 	rstep       = int(rs)
@@ -3975,10 +3975,10 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 	nx      = ref_list[0].get_xsize()
 	if last_ring < 0:last_ring = nx//2 - 2
 	pass#IMPORTIMPORTIMPORT import user_functions
-	user_func = user_functions.factory[user_func_name]
+	user_func = sparx_user_functions.factory[user_func_name]
 	if (myid == main_node):
 		#import user_functions
-		#user_func = user_functions.factory[user_func_name]
+		#user_func = sparx_user_functions.factory[user_func_name]
 		log.add("mref_ali3d_MPI")
 		log.add("Input stack                               : %s"%(Tracker["constants"]["stack"]))
 		#log.add("Reference volumes                         : %s"%(ref_vol))	
@@ -4008,12 +4008,12 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		log.add("shrinkage is                              : %f"%shrinkage)
 		log.add("the particle id files for get_shrink_dat is %s"%particle_list_file) 
 	if(maskfile):
-		if(type(maskfile) is bytes): mask3D = morphology.get_shrink_3dmask(Tracker["nxinit"],maskfile) 
+		if(type(maskfile) is bytes): mask3D = sparx_morphology.get_shrink_3dmask(Tracker["nxinit"],maskfile) 
 		else: 	                                mask3D = maskfile
-	else        :  mask3D = utilities.model_circle(last_ring, nx, nx, nx)
-	numr     = alignment.Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D   = utilities.model_circle(last_ring, nx, nx)
-	if(first_ring > 1):  mask2D -= utilities.model_circle(first_ring,nx,nx)
+	else        :  mask3D = sparx_utilities.model_circle(last_ring, nx, nx, nx)
+	numr     = sparx_alignment.Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D   = sparx_utilities.model_circle(last_ring, nx, nx)
+	if(first_ring > 1):  mask2D -= sparx_utilities.model_circle(first_ring,nx,nx)
 	nima       = len(data) # local number of particles
 	
 	"""Multiline Comment76"""
@@ -4054,27 +4054,27 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			log.add("%d highres                   %f"%(iref, highres[iref]))
 			
 			if Tracker["mask3D"]:
-				mask3D = utilities.get_im(Tracker["mask3D"])
+				mask3D = sparx_utilities.get_im(Tracker["mask3D"])
 				stat   = EMAN2_cppwrap.Util.infomask(ref_list[iref], mask3D, False)
 				ref_list[iref] -= stat[0]
 				if stat[1]!=0.0: EMAN2_cppwrap.Util.mul_scalar(ref_list[iref], 1.0/stat[1])
 				else:
 					pass#IMPORTIMPORTIMPORT from morphology import erosion
-					bv = utilities.model_blank(3, 3, 3)
+					bv = sparx_utilities.model_blank(3, 3, 3)
 					bv +=1.
 					while stat[1]==0:
-						ermask = morphology.erosion(mask3D, bv)
+						ermask = sparx_morphology.erosion(mask3D, bv)
 						stat   = EMAN2_cppwrap.Util.infomask(ref_list[iref], ermask, False)
 					EMAN2_cppwrap.Util.mul_scalar(ref_list[iref], 1.0/stat[1])
 					
 			if(Tracker["constants"]["PWadjustment"] != ''):
-				rt = utilities.read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
-				ro = fundamentals.rops_table(ref_list[iref])
+				rt = sparx_utilities.read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
+				ro = sparx_fundamentals.rops_table(ref_list[iref])
 				for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
-				ref_list[iref] =filter.filt_table(ref_list[iref],ro)
+				ref_list[iref] =sparx_filter.filt_table(ref_list[iref],ro)
 				
-			if (Tracker["constants"]["low_pass_filter"]==-1.):  ref_list[iref] = filter.filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
-			else:                                               ref_list[iref] = filter.filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
+			if (Tracker["constants"]["low_pass_filter"]==-1.):  ref_list[iref] = sparx_filter.filt_tanl(ref_list[iref], Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+			else:                                               ref_list[iref] = sparx_filter.filt_tanl(ref_list[iref], min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
 							
 
 			if Tracker["mask3D"]: EMAN2_cppwrap.Util.mul_img(ref_list[iref], mask3D)
@@ -4102,13 +4102,13 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 
 	if(focus != None):
 		if(myid == main_node):
-			focus = morphology.get_shrink_3dmask(Tracker["nxinit"], focus)
+			focus = sparx_morphology.get_shrink_3dmask(Tracker["nxinit"], focus)
 		else:
-			focus =  utilities.model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
-		utilities.bcast_EMData_to_all(focus, myid, main_node)
+			focus =  sparx_utilities.model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
+		sparx_utilities.bcast_EMData_to_all(focus, myid, main_node)
 		st = EMAN2_cppwrap.Util.infomask(focus, None, True)
-		if( st[0] == 0.0 ):  global_def.ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
-		focus = projection.prep_vol(focus, 1, 1)
+		if( st[0] == 0.0 ):  sparx_global_def.ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1, myid)
+		focus = sparx_projection.prep_vol(focus, 1, 1)
 
 	Niter = int(lstp*maxit*(nassign + nrefine) )
 	for Iter in range(Niter):
@@ -4129,34 +4129,34 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			pixer = [ [  0.0     for im in range(nima) ] for iref in range(numref) ]
 			if(an[N_step] > 0):
 				pass#IMPORTIMPORTIMPORT from utilities    import even_angles
-				ref_angles = utilities.even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+				ref_angles = sparx_utilities.even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
 				# generate list of angles
 				pass#IMPORTIMPORTIMPORT from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
-				alignment.generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
+				sparx_alignment.generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
 				del ref_angles
 			else:  list_of_reference_angles = [[1.0,1.0]]
 		cs = [0.0]*3
 		pass#IMPORTIMPORTIMPORT from fundamentals import fft
 		if( not focus ):
-			for im in range(nima):  data[im] = fundamentals.fft(data[im])
+			for im in range(nima):  data[im] = sparx_fundamentals.fft(data[im])
 
 		for iref in range(numref):
-			if(myid == main_node):	volft = utilities.get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
-			else: 					volft =  utilities.model_blank(nx, nx, nx)
-			utilities.bcast_EMData_to_all(volft, myid, main_node)
-			volft = projection.prep_vol(volft, 1, 1)
+			if(myid == main_node):	volft = sparx_utilities.get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
+			else: 					volft =  sparx_utilities.model_blank(nx, nx, nx)
+			sparx_utilities.bcast_EMData_to_all(volft, myid, main_node)
+			volft = sparx_projection.prep_vol(volft, 1, 1)
 			if CTF:
 				previous_defocus=-1.0
 				if runtype=="REFINEMENT":
 					start_time = time.time()
-					prjref = projection.prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
+					prjref = sparx_projection.prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
 					if(myid == 0): log.add( "Calculation of projections: %d" % (time.time()-start_time) );start_time = time.time()
 					del volft, kb
 			else:
 				if runtype=="REFINEMENT":
 					start_time = time.time()
-					refrings = alignment.prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
+					refrings = sparx_alignment.prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
 					if(myid == 0): log.add( "Initial time to prepare rings: %d" % (time.time()-start_time) );start_time = time.time()
 					del volft, kb
 			start_time = time.time()
@@ -4167,27 +4167,27 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 						if(ctf.defocus != previous_defocus):
 							previous_defocus = ctf.defocus
 							rstart_time = time.time()
-							refrings = projection.gen_rings_ctf( prjref, nx, ctf, numr)
+							refrings = sparx_projection.gen_rings_ctf( prjref, nx, ctf, numr)
 							if(myid == 0): log.add( "Repeated time to prepare rings: %d" % (time.time()-rstart_time) );rstart_time = time.time()
 
 				if runtype=="ASSIGNMENT":
-					phi,tht,psi,s2x,s2y = utilities.get_params_proj(data[im])
+					phi,tht,psi,s2x,s2y = sparx_utilities.get_params_proj(data[im])
 					"""Multiline Comment77"""
 					#  Standard distance
 					#  Ref is in reciprocal space
 					if CTF:
-						ref = filter.filt_ctf( projection.prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
+						ref = sparx_filter.filt_ctf( sparx_projection.prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False), ctf )
 					else:
-						ref = projection.prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
+						ref = sparx_projection.prgl( volft, [phi,tht,psi,-s2x,-s2y], 1, False)
 					pass#IMPORTIMPORTIMPORT from filter import filt_tophatl
 					pass#IMPORTIMPORTIMPORT from math import sqrt
-					ref = filter.filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
+					ref = sparx_filter.filt_tophatl(ref, float(highres[iref])/(ref.get_ysize()))
 					ref.set_attr("is_complex",0)
 					ref.set_value_at(0,0,0.0)
 					nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(ref, ref, None))
 					if(focus):
-						mask2D = morphology.binarize( projection.prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
-						tempx = fundamentals.fft(data[im]*mask2D)
+						mask2D = sparx_morphology.binarize( sparx_projection.prgl( focus, [phi,tht,psi,-s2x,-s2y]), 1)
+						tempx = sparx_fundamentals.fft(data[im]*mask2D)
 						tempx.set_attr("is_complex",0)
 						peak = EMAN2_cppwrap.Util.innerproduct(ref, tempx, None)
 					else:
@@ -4204,12 +4204,12 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 						finfo.write( "ID, iref, peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
 					if(an[N_step] == -1):
-						peak, pixel_error = alignment.proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
+						peak, pixel_error = sparx_alignment.proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
 					else:
-						peak, pixel_error = alignment.proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
+						peak, pixel_error = sparx_alignment.proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
 																	xrng[N_step], yrng[N_step], step[N_step], an[N_step],sym=sym)
 					if not(finfo is None):
-						phi,tht,psi,s2x,s2y = utilities.get_params_proj(data[im])
+						phi,tht,psi,s2x,s2y = sparx_utilities.get_params_proj(data[im])
 						finfo.write( "ID, iref, peak,t rans: %6d %d %f %f %f %f %f %f\n"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
 						finfo.flush()
 
@@ -4234,12 +4234,12 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		#  The while loop over even angles delta should start here.
 		#  prepare reference directions
 		pass#IMPORTIMPORTIMPORT from utilities import even_angles, getvec
-		if   Tracker["constants"]["protein_shape"]=="g"  :refa = utilities.even_angles(60.0)     # globular proteins
-		elif Tracker["constants"]["protein_shape"]=="f"  :refa = utilities.even_angles(40.0, theta1=65, theta2=115) # filament proteins
+		if   Tracker["constants"]["protein_shape"]=="g"  :refa = sparx_utilities.even_angles(60.0)     # globular proteins
+		elif Tracker["constants"]["protein_shape"]=="f"  :refa = sparx_utilities.even_angles(40.0, theta1=65, theta2=115) # filament proteins
 		numrefang = len(refa)
 		refanorm = numpy.empty( (numrefang, 3), dtype = numpy.float32)
 		for i in range(numrefang):
-			tmp = utilities.getvec(refa[i][0], refa[i][1])
+			tmp = sparx_utilities.getvec(refa[i][0], refa[i][1])
 			for j in range(3):
 				refanorm[i][j] = tmp[j]
 		del  refa, tmp
@@ -4276,7 +4276,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			report_error = 0
 			for imrefa in range(numrefang):
 				pass#IMPORTIMPORTIMPORT from utilities import findall
-				N = utilities.findall(imrefa, assigntorefa)
+				N = sparx_utilities.findall(imrefa, assigntorefa)
 				current_nima = len(N)
 				if( current_nima >= numref and report_error == 0):
 					tasi = [[] for iref in range(numref)]
@@ -4338,8 +4338,8 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 		else:
 			assignment = []
 			report_error = 0
-		report_error = utilities.bcast_number_to_all(report_error, source_node = main_node)
-		if report_error == 1:  global_def.ERROR('Number of images within a group too small', "mref_ali3d_MPI", 1, myid)
+		report_error = sparx_utilities.bcast_number_to_all(report_error, source_node = main_node)
+		if report_error == 1:  sparx_global_def.ERROR('Number of images within a group too small', "mref_ali3d_MPI", 1, myid)
 		if myid == main_node:
 			assignment = [0]*total_nima
 			for iref in range(numref):
@@ -4381,7 +4381,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			ngroup = 0
 		terminate = mpi.mpi_bcast(terminate, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)
 		terminate = int(terminate[0])
-		ngroup = utilities.wrap_mpi_bcast(ngroup,main_node)
+		ngroup = sparx_utilities.wrap_mpi_bcast(ngroup,main_node)
 
 		if runtype=="REFINEMENT":
 			for im in range(nima):
@@ -4389,13 +4389,13 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				pixer[0][im] = pixer[assignment[im]][im]
 			pixer = pixer[0]
 			if(center == -1):
-				cs[0], cs[1], cs[2], dummy, dummy = utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
+				cs[0], cs[1], cs[2], dummy, dummy = sparx_utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f"%(cs[0], cs[1], cs[2])
 					log.add(msg)
 				cs = mpi.mpi_bcast(cs, 3, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
-				utilities.rotate_3D_shift(data, cs)
+				sparx_utilities.rotate_3D_shift(data, cs)
 			#output pixel errors
 			recvbuf = mpi.mpi_gatherv(pixer, nima, mpi.MPI_FLOAT, recvcount, disps, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -4403,7 +4403,7 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				recvbuf = list(map(float, recvbuf))
 				pass#IMPORTIMPORTIMPORT from statistics import hist_list
 				lhist = 20
-				region, histo = statistics.hist_list(recvbuf, lhist)
+				region, histo = sparx_statistics.hist_list(recvbuf, lhist)
 				if(region[0] < 0.0):  region[0] = 0.0
 				msg = "      Histogram of pixel errors\n      ERROR       number of particles"
 				log.add(msg)
@@ -4414,11 +4414,11 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			del recvbuf
 		fscc = [None]*numref
 		if fourvar and runtype=="REFINEMENT":
-			sumvol = utilities.model_blank(nx, nx, nx)
+			sumvol = sparx_utilities.model_blank(nx, nx, nx)
 		start_time = time.time()
 
 		if( not focus ):
-			for im in range(nima):  data[im] = fundamentals.fft(data[im])
+			for im in range(nima):  data[im] = sparx_fundamentals.fft(data[im])
 		highres = []
 		lowpass_tmp = []
 		tmpref =[]
@@ -4436,16 +4436,16 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				chunk_id   = 1
 				volref1    = recons3d_n_trl_MPI_one_node(data, CTF, snr, sign, npad, sym, iref, niter, verbose, upweighted, compensate, chunk_id)
 				if myid == main_node:
-					fscc[iref] = statistics.fsc(volref0, volref1)
+					fscc[iref] = sparx_statistics.fsc(volref0, volref1)
 					volref = volref1+volref0
 					del volref1
 					del volref0
 				#chunk_id   = -1
 				#volref = recons3d_n_trl_MPI_one_node(data, CTF, snr, sign, npad, sym, iref, niter, verbose, upweighted, compensate, chunk_id)
 			else:
-				if(CTF): volref, fscc[iref] = reconstruction.rec3D_two_chunks_MPI(data, snr, sym, mask3D,\
+				if(CTF): volref, fscc[iref] = sparx_reconstruction.rec3D_two_chunks_MPI(data, snr, sym, mask3D,\
 					os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
-				else:    volref, fscc[iref] = reconstruction.rec3D_MPI_noCTF(data, sym,mask3D,\
+				else:    volref, fscc[iref] = sparx_reconstruction.rec3D_MPI_noCTF(data, sym,mask3D,\
 					os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index=iref, npad=npad, finfo=frec)
 			if(myid == 0):
 				log.add( "Time to compute 3D: %d" % (time.time()-start_time) );start_time = time.time()
@@ -4468,12 +4468,12 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				Tracker["lowpass"] = 0.0
 				Tracker["lowpass"] = 0.0
 				res = 0.0
-			res = utilities.bcast_number_to_all(res, main_node)
+			res = sparx_utilities.bcast_number_to_all(res, main_node)
 			highres.append(int(res*Tracker["nxinit"]+ 0.5))
 			if myid ==main_node:
 				log.add("%d highres                   %f"%(iref, highres[iref]))
-			Tracker["lowpass"] = utilities.bcast_number_to_all(Tracker["lowpass"], main_node)
-			Tracker["falloff"] = utilities.bcast_number_to_all(Tracker["falloff"], main_node)
+			Tracker["lowpass"] = sparx_utilities.bcast_number_to_all(Tracker["lowpass"], main_node)
+			Tracker["falloff"] = sparx_utilities.bcast_number_to_all(Tracker["falloff"], main_node)
 			lowpass_tmp.append(Tracker["lowpass"])
 		Tracker["lowpass"] = min(lowpass_tmp)
 		if myid ==main_node:
@@ -4484,20 +4484,20 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 				volref =tmpref[iref]
 				if Tracker["mask3D"]: 
 				
-					mask3D = utilities.get_im(Tracker["mask3D"])
+					mask3D = sparx_utilities.get_im(Tracker["mask3D"])
 					stat = EMAN2_cppwrap.Util.infomask(volref, mask3D, False)
 					volref -= stat[0]
 					EMAN2_cppwrap.Util.mul_scalar(volref, 1.0/stat[1])
 					
 				if(Tracker["constants"]["PWadjustment"]):
 				
-					rt = utilities.read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
-					ro = fundamentals.rops_table(volref)
+					rt = sparx_utilities.read_text_file(Tracker["PW_dict"][Tracker["constants"]["nxinit"]])
+					ro = sparx_fundamentals.rops_table(volref)
 					for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["constants"]["upscale"]
-					volref =filter.filt_table(volref,ro)
+					volref =sparx_filter.filt_table(volref,ro)
 							
-				if (Tracker["constants"]["low_pass_filter"]==-1.):  volref = filter.filt_tanl(volref, Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
-				else:                                               volref = filter.filt_tanl(volref, min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
+				if (Tracker["constants"]["low_pass_filter"]==-1.):  volref = sparx_filter.filt_tanl(volref, Tracker["lowpass"], Tracker["falloff"])                                       # low pass from resolution 
+				else:                                               volref = sparx_filter.filt_tanl(volref, min(Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"],0.45), Tracker["falloff"]) # user define filter
 			
 	
 				if Tracker["mask3D"]: EMAN2_cppwrap.Util.mul_img(volref, mask3D)
@@ -4515,20 +4515,20 @@ def mref_ali3d_EQ_Kmeans(ref_list, outdir, particle_list_file, Tracker):
 			"""Multiline Comment84"""
 			if(myid == 0):log.add( "Time to write headers: %d\n" % (time.time()-start_time) );start_time = time.time()
 		else:
-			final_list = utilities.get_sorting_params_refine(Tracker, data, total_nima)
-			group_list, ali3d_params_list = utilities.parsing_sorting_params(final_list)
+			final_list = sparx_utilities.get_sorting_params_refine(Tracker, data, total_nima)
+			group_list, ali3d_params_list = sparx_utilities.parsing_sorting_params(final_list)
 			if myid ==main_node:
 				group_list_saved_file =os.path.join(outdir, "list2.txt")
-				utilities.write_text_file(group_list,group_list_saved_file)
+				sparx_utilities.write_text_file(group_list,group_list_saved_file)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			Tracker["this_partition"]=group_list
 			break
 	if terminate != 1:
-		final_list = utilities.get_sorting_params_refine(Tracker,data, total_nima)
-		group_list, ali3d_params_list = utilities.parsing_sorting_params(final_list)  
+		final_list = sparx_utilities.get_sorting_params_refine(Tracker,data, total_nima)
+		group_list, ali3d_params_list = sparx_utilities.parsing_sorting_params(final_list)  
 		if myid ==main_node:
 			group_list_saved_file =os.path.join(outdir, "list2.txt")
-			utilities.write_text_file(group_list,group_list_saved_file)
+			sparx_utilities.write_text_file(group_list,group_list_saved_file)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		Tracker["this_partition"]=group_list
 	### program finishes

@@ -6,21 +6,21 @@
 #  
 from __future__ import print_function
 import EMAN2_cppwrap
-import applications
-import filter
-import fundamentals
-import global_def
-import logger
-import morphology
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_logger
+import sparx_morphology
 import mpi
 import numpy
 import optparse
 import os
-import statistics
+import sparx_statistics
 import string
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import applications
@@ -78,25 +78,25 @@ def compute_average(mlist, radius, CTF):
 	pass#IMPORTIMPORTIMPORT from statistics   import fsc, sum_oe
 	if CTF:
 		avge, avgo, ctf_2_sume, ctf_2_sumo, params_list = \
-		     statistics.sum_oe(mlist, "a", CTF, None, True, True)
-		avge = morphology.cosinemask(fundamentals.fft(avge), radius)
-		avgo = morphology.cosinemask(fundamentals.fft(avgo), radius)
-		sumavge  = EMAN2_cppwrap.Util.divn_img(fundamentals.fft(avge), ctf_2_sume)
-		sumavgo  = EMAN2_cppwrap.Util.divn_img(fundamentals.fft(avgo), ctf_2_sumo)
-		frc = statistics.fsc(fundamentals.fft(sumavgo), fundamentals.fft(sumavge))
+		     sparx_statistics.sum_oe(mlist, "a", CTF, None, True, True)
+		avge = sparx_morphology.cosinemask(sparx_fundamentals.fft(avge), radius)
+		avgo = sparx_morphology.cosinemask(sparx_fundamentals.fft(avgo), radius)
+		sumavge  = EMAN2_cppwrap.Util.divn_img(sparx_fundamentals.fft(avge), ctf_2_sume)
+		sumavgo  = EMAN2_cppwrap.Util.divn_img(sparx_fundamentals.fft(avgo), ctf_2_sumo)
+		frc = sparx_statistics.fsc(sparx_fundamentals.fft(sumavgo), sparx_fundamentals.fft(sumavge))
 		frc[1][0] = 1.0
 		for ifreq in range(1, len(frc[0])):
 			frc[1][ifreq] = max(0.0, frc[1][ifreq])
 			frc[1][ifreq] = 2.*frc[1][ifreq]/(1.+frc[1][ifreq])
-		sumavg  =  EMAN2_cppwrap.Util.addn_img(fundamentals.fft(avgo), fundamentals.fft(avge))
+		sumavg  =  EMAN2_cppwrap.Util.addn_img(sparx_fundamentals.fft(avgo), sparx_fundamentals.fft(avge))
 		sumctf2 =  EMAN2_cppwrap.Util.addn_img(ctf_2_sume, ctf_2_sumo)	
 		EMAN2_cppwrap.Util.div_img(sumavg, sumctf2)
-		return fundamentals.fft(sumavg), frc, params_list
+		return sparx_fundamentals.fft(sumavg), frc, params_list
 	else:
-		avge, avgo, params_list = statistics.sum_oe(mlist, "a", False,  None, False, True)
-		avge = morphology.cosinemask(avge, radius)
-		avgo = morphology.cosinemask(avgo, radius)
-		frc = statistics.fsc(avgo, avge)
+		avge, avgo, params_list = sparx_statistics.sum_oe(mlist, "a", False,  None, False, True)
+		avge = sparx_morphology.cosinemask(avge, radius)
+		avgo = sparx_morphology.cosinemask(avgo, radius)
+		frc = sparx_statistics.fsc(avgo, avge)
 		frc[1][0] = 1.0
 		for ifreq in range(1, len(frc[0])):
 			frc[1][ifreq] = max(0.0, frc[1][ifreq])
@@ -113,7 +113,7 @@ def adjust_pw_to_model(image, pixel_size, roo):
 	c4 = -1.0
 	c5 = 1./5.
 	c6 = 0.25 # six params are fitted to Yifan channel model
-	rot1 = fundamentals.rops_table(image)
+	rot1 = sparx_fundamentals.rops_table(image)
 	fil  = [None]*len(rot1)
 	if roo is None: # adjusted to the analytic model, See Penczek Methods Enzymol 2010
 		pu = []
@@ -127,7 +127,7 @@ def adjust_pw_to_model(image, pixel_size, roo):
 		if roo[0]<0.1 or roo[0]>1.: s =sum(roo)
 		else:  s=1.0
 		for ifreq in range(len(rot1)):fil[ifreq] = numpy.sqrt(roo[ifreq]/(rot1[ifreq]*s))
-	return filter.filt_table(image, fil)
+	return sparx_filter.filt_table(image, fil)
 	
 def get_optimistic_res(frc):
 	nfh = 0
@@ -150,13 +150,13 @@ def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
 	if user_defined_Bfactor>0.0:
 		global_b = user_defined_Bfactor
 	else:
-		guinierline = fundamentals.rot_avg_table(morphology.power(EMAN2_cppwrap.periodogram(fundamentals.fft(avg)),.5))
+		guinierline = sparx_fundamentals.rot_avg_table(sparx_morphology.power(EMAN2_cppwrap.periodogram(sparx_fundamentals.fft(avg)),.5))
 		freq_max    =  1./(2.*pixel_size)
 		freq_min    =  1./B_start
-		b, junk, ifreqmin, ifreqmax = morphology.compute_bfactor(guinierline, freq_min, freq_max, pixel_size)
+		b, junk, ifreqmin, ifreqmax = sparx_morphology.compute_bfactor(guinierline, freq_min, freq_max, pixel_size)
 		#print(ifreqmin, ifreqmax)
 		global_b = b*4. #
-	return filter.filt_gaussinv(fundamentals.fft(avg), numpy.sqrt(2./global_b)), global_b
+	return sparx_filter.filt_gaussinv(sparx_fundamentals.fft(avg), numpy.sqrt(2./global_b)), global_b
 
 def main():
 	pass#IMPORTIMPORTIMPORT from optparse   import OptionParser
@@ -168,7 +168,7 @@ def main():
 	pass#IMPORTIMPORTIMPORT from global_def import ERROR
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
-	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=sparx_global_def.SPARXVERSION)
 	parser.add_option("--pw_adjustment", type ="string", default ='analytical_model',  \
 	   help="adjust power spectrum of 2-D averages to an analytic model. Other opions: no_adjustment; bfactor; a text file of 1D rotationally averaged PW")
 	#### Four options for --pw_adjustment: 	
@@ -230,7 +230,7 @@ def main():
 	Blockdata["myid_on_node"]                   = mpi.mpi_comm_rank(Blockdata["shared_comm"])
 	Blockdata["no_of_processes_per_group"]      = mpi.mpi_comm_size(Blockdata["shared_comm"])
 	masters_from_groups_vs_everything_else_comm = mpi.mpi_comm_split(mpi.MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
-	Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = utilities.get_colors_and_subsets(Blockdata["main_node"], mpi.MPI_COMM_WORLD, Blockdata["myid"], \
+	Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = sparx_utilities.get_colors_and_subsets(Blockdata["main_node"], mpi.MPI_COMM_WORLD, Blockdata["myid"], \
 			 Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
 	#  We need two nodes for processing of volumes
 	Blockdata["node_volume"] = [Blockdata["no_of_groups"]-3, Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take three last nodes
@@ -239,16 +239,16 @@ def main():
 	Blockdata["nodes"] = [Blockdata["node_volume"][0]*Blockdata["no_of_processes_per_group"],Blockdata["node_volume"][1]*Blockdata["no_of_processes_per_group"], \
 		 Blockdata["node_volume"][2]*Blockdata["no_of_processes_per_group"]]
 	# End of Blockdata: sorting requires at least three nodes, and the used number of nodes be integer times of three
-	global_def.BATCH = True
-	global_def.MPI   = True
+	sparx_global_def.BATCH = True
+	sparx_global_def.MPI   = True
 
 
 	if adjust_to_given_pw2:
 		checking_flag = 0
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			if not os.path.exists(options.pw_adjustment): checking_flag = 1
-		checking_flag = utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-		if checking_flag ==1: global_def.ERROR("User provided power spectrum does not exist", "sxcompute_isac_avg.py", 1, Blockdata["myid"])
+		checking_flag = sparx_utilities.bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+		if checking_flag ==1: sparx_global_def.ERROR("User provided power spectrum does not exist", "sxcompute_isac_avg.py", 1, Blockdata["myid"])
 	
 	Tracker                                   = {}
 	Constants		                          = {}
@@ -305,7 +305,7 @@ def main():
 	masterdir							= mpi.mpi_bcast(masterdir,li,mpi.MPI_CHAR,Blockdata["main_node"],mpi.MPI_COMM_WORLD)
 	masterdir                           = string.join(masterdir,"")
 	Tracker["constants"]["masterdir"]	= masterdir
-	log_main = logger.Logger(logger.BaseLogger_Files())
+	log_main = sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 	log_main.prefix = Tracker["constants"]["masterdir"]+"/"
 
 	while not os.path.exists(Tracker["constants"]["masterdir"]):
@@ -317,11 +317,11 @@ def main():
 		init_dict = {}
 		print(Tracker["constants"]["isac_dir"])
 		Tracker["directory"] = os.path.join(Tracker["constants"]["isac_dir"], "2dalignment")
-		core = utilities.read_text_row(os.path.join(Tracker["directory"], "initial2Dparams.txt"))
+		core = sparx_utilities.read_text_row(os.path.join(Tracker["directory"], "initial2Dparams.txt"))
 		for im in range(len(core)): init_dict[im]  = core[im]
 		del core
 	else: init_dict = 0
-	init_dict = utilities.wrap_mpi_bcast(init_dict, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
+	init_dict = sparx_utilities.wrap_mpi_bcast(init_dict, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
 	###
 	do_ctf = True
 	if options.noctf: do_ctf = False 
@@ -335,7 +335,7 @@ def main():
 		elif adjust_to_analytic_model: print("PW of averages is adjusted to analytic model")
 		else: print("PW of averages is not adjusted")
 		#Tracker["constants"]["orgstack"] = "bdb:"+ os.path.join(Tracker["constants"]["isac_dir"],"../","sparx_stack")
-		image = utilities.get_im(Tracker["constants"]["orgstack"], 0)
+		image = sparx_utilities.get_im(Tracker["constants"]["orgstack"], 0)
 		Tracker["constants"]["nnxo"] = image.get_xsize()
 		if Tracker["constants"]["pixel_size"] == -1.0:
 			print("Pixel size value is not provided by user. extracting it from ctf header entry of the original stack.")
@@ -343,12 +343,12 @@ def main():
 				ctf_params = image.get_attr("ctf")
 				Tracker["constants"]["pixel_size"] = ctf_params.apix
 			except: 
-				global_def.ERROR("Pixel size could not be extracted from the original stack.", "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
+				sparx_global_def.ERROR("Pixel size could not be extracted from the original stack.", "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
 		## Now fill in low-pass filter
 			
 		isac_shrink_path = os.path.join(Tracker["constants"]["isac_dir"], "README_shrink_ratio.txt")
 		if not os.path.exists(isac_shrink_path):
-			global_def.ERROR("%s does not exist in the specified ISAC run output directory"%(isac_shrink_path), "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
+			sparx_global_def.ERROR("%s does not exist in the specified ISAC run output directory"%(isac_shrink_path), "sxcompute_isac_avg.py", 1, Blockdata["myid"]) # action=1 - fatal error, exit
 		isac_shrink_file = open(isac_shrink_path, "r")
 		isac_shrink_lines = isac_shrink_file.readlines()
 		isac_shrink_ratio = float(isac_shrink_lines[5])  # 6th line: shrink ratio (= [target particle radius]/[particle radius]) used in the ISAC run
@@ -359,15 +359,15 @@ def main():
 		print("ISAC particle radius : {0}".format(isac_radius))
 		Tracker["ini_shrink"] = isac_shrink_ratio
 	else: Tracker["ini_shrink"] = 0.0
-	Tracker = utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
+	Tracker = sparx_utilities.wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
 
 	#print(Tracker["constants"]["pixel_size"], "pixel_size")	
 	x_range = max(Tracker["constants"]["xrange"], int(1./Tracker["ini_shrink"])+1)
 	y_range =  x_range
 
-	if(Blockdata["myid"] == Blockdata["main_node"]): parameters = utilities.read_text_row(os.path.join(Tracker["constants"]["isac_dir"], "all_parameters.txt"))
+	if(Blockdata["myid"] == Blockdata["main_node"]): parameters = sparx_utilities.read_text_row(os.path.join(Tracker["constants"]["isac_dir"], "all_parameters.txt"))
 	else: parameters = 0
-	parameters = utilities.wrap_mpi_bcast(parameters, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)		
+	parameters = sparx_utilities.wrap_mpi_bcast(parameters, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)		
 	params_dict = {}
 	list_dict   = {}
 	#parepare params_dict
@@ -381,13 +381,13 @@ def main():
 		print("Total computed number of averages in this run is %d"%navg)
 		for iavg in range(navg):
 			params_of_this_average = []
-			image   = utilities.get_im(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf"), iavg)
+			image   = sparx_utilities.get_im(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf"), iavg)
 			members = sorted(image.get_attr("members"))
 			memlist.append(members)
 			for im in range(len(members)):
 				abs_id =  members[im]
 				global_dict[abs_id] = [iavg, im]
-				P = utilities.combine_params2( init_dict[abs_id][0], init_dict[abs_id][1], init_dict[abs_id][2], init_dict[abs_id][3], \
+				P = sparx_utilities.combine_params2( init_dict[abs_id][0], init_dict[abs_id][1], init_dict[abs_id][2], init_dict[abs_id][3], \
 				parameters[abs_id][0], parameters[abs_id][1]/Tracker["ini_shrink"], parameters[abs_id][2]/Tracker["ini_shrink"], parameters[abs_id][3])
 				if parameters[abs_id][3] ==-1: 
 					print("WARNING: Image #{0} is an unaccounted particle with invalid 2D alignment parameters and should not be the member of any classes. Please check the consitency of input dataset.".format(abs_id)) # How to check what is wrong about mirror = -1 (Toshio 2018/01/11)
@@ -395,19 +395,19 @@ def main():
 				ptl_list.append(abs_id)
 			params_dict[iavg] = params_of_this_average
 			list_dict[iavg] = members
-			utilities.write_text_row(params_of_this_average, os.path.join(Tracker["constants"]["masterdir"], "params_avg", "params_avg_%03d.txt"%iavg))
+			sparx_utilities.write_text_row(params_of_this_average, os.path.join(Tracker["constants"]["masterdir"], "params_avg", "params_avg_%03d.txt"%iavg))
 		ptl_list.sort()
 		init_params = [ None for im in range(len(ptl_list))]
 		for im in range(len(ptl_list)):
 			init_params[im] = [ptl_list[im]] + params_dict[global_dict[ptl_list[im]][0]][global_dict[ptl_list[im]][1]]
-		utilities.write_text_row(init_params, os.path.join(Tracker["constants"]["masterdir"], "init_isac_params.txt"))
+		sparx_utilities.write_text_row(init_params, os.path.join(Tracker["constants"]["masterdir"], "init_isac_params.txt"))
 	else:  
 		params_dict = 0
 		list_dict   = 0
 		memlist     = 0
-	params_dict = utilities.wrap_mpi_bcast(params_dict, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
-	list_dict   = utilities.wrap_mpi_bcast(list_dict, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
-	memlist     = utilities.wrap_mpi_bcast(memlist, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
+	params_dict = sparx_utilities.wrap_mpi_bcast(params_dict, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
+	list_dict   = sparx_utilities.wrap_mpi_bcast(list_dict, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
+	memlist     = sparx_utilities.wrap_mpi_bcast(memlist, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
 	# Now computing!
 	del init_dict
 	tag_sharpen_avg = 1000
@@ -416,17 +416,17 @@ def main():
 	if B_enhance:
 		if Tracker["constants"]["low_pass_filter"] == -1.0: enforced_to_H1 = True
 	if navg <Blockdata["nproc"]:#  Each CPU do one average 
-		global_def.ERROR("number of nproc is larger than number of averages", "sxcompute_isac_avg.py", 1, Blockdata["myid"])
+		sparx_global_def.ERROR("number of nproc is larger than number of averages", "sxcompute_isac_avg.py", 1, Blockdata["myid"])
 	else:
 		FH_list  = [ [0, 0.0, 0.0] for im in range(navg)]
-		image_start,image_end = applications.MPI_start_end(navg, Blockdata["nproc"], Blockdata["myid"])
+		image_start,image_end = sparx_applications.MPI_start_end(navg, Blockdata["nproc"], Blockdata["myid"])
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			cpu_dict = {}
 			for iproc in range(Blockdata["nproc"]):
-				local_image_start, local_image_end = applications.MPI_start_end(navg, Blockdata["nproc"], iproc)
+				local_image_start, local_image_end = sparx_applications.MPI_start_end(navg, Blockdata["nproc"], iproc)
 				for im in range(local_image_start, local_image_end): cpu_dict [im] = iproc
 		else:  cpu_dict = 0
-		cpu_dict = utilities.wrap_mpi_bcast(cpu_dict, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
+		cpu_dict = sparx_utilities.wrap_mpi_bcast(cpu_dict, Blockdata["main_node"], communicator = mpi.MPI_COMM_WORLD)
 	
 		slist      = [None for im in range(navg)]
 		ini_list   = [None for im in range(navg)]
@@ -442,15 +442,15 @@ def main():
 			mlist = EMAN2_cppwrap.EMData.read_images(Tracker["constants"]["orgstack"], list_dict[iavg])
 			for im in range(len(mlist)):
 				#mlist[im]= get_im(Tracker["constants"]["orgstack"], list_dict[iavg][im])
-				utilities.set_params2D(mlist[im], params_dict[iavg][im], xform = "xform.align2d")
+				sparx_utilities.set_params2D(mlist[im], params_dict[iavg][im], xform = "xform.align2d")
 			new_avg, frc, plist = compute_average(mlist, Tracker["constants"]["radius"], do_ctf)
 			FH1 = get_optimistic_res(frc)
 			
 			if options.local_alignment:
-				new_average1 = applications.within_group_refinement([mlist[kik] for kik in range(0,len(mlist),2)], maskfile= None, randomize= False, ir=1.0,  \
+				new_average1 = sparx_applications.within_group_refinement([mlist[kik] for kik in range(0,len(mlist),2)], maskfile= None, randomize= False, ir=1.0,  \
 				 ou=Tracker["constants"]["radius"], rs=1.0, xrng=[x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
 				 dst=0.0, maxit=Tracker["constants"]["maxit"], FH=max(Tracker["constants"]["FH"], FH1), FF=0.02, method="")
-				new_average2 = applications.within_group_refinement([mlist[kik] for kik in range(1,len(mlist),2)], maskfile= None, randomize= False, ir=1.0, \
+				new_average2 = sparx_applications.within_group_refinement([mlist[kik] for kik in range(1,len(mlist),2)], maskfile= None, randomize= False, ir=1.0, \
 				 ou= Tracker["constants"]["radius"], rs=1.0, xrng=[ x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
 				 dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.02, method="")
 				new_avg, frc, plist = compute_average(mlist, Tracker["constants"]["radius"], do_ctf)
@@ -465,7 +465,7 @@ def main():
 				print("  %6d      %6.3f  %4.3f  %4.3f"%(iavg, gb, FH1, FH2))
 				
 			elif adjust_to_given_pw2: 
-				roo = utilities.read_text_file( Tracker["constants"]["modelpw"], -1)
+				roo = sparx_utilities.read_text_file( Tracker["constants"]["modelpw"], -1)
 				roo = roo[0] # always on the first column
 				new_avg = adjust_pw_to_model(new_avg, Tracker["constants"]["pixel_size"], roo)
 				print("  %6d      %4.3f  %4.3f  "%(iavg, FH1, FH2))
@@ -484,10 +484,10 @@ def main():
 				else: 
 					low_pass_filter = Tracker["constants"]["low_pass_filter"]
 					if low_pass_filter >=0.45: low_pass_filter =0.45 		
-				new_avg = filter.filt_tanl(new_avg, low_pass_filter, 0.02)
+				new_avg = sparx_filter.filt_tanl(new_avg, low_pass_filter, 0.02)
 			else:# No low pass filter but if enforced
-				if enforced_to_H1: new_avg = filter.filt_tanl(new_avg, FH1, 0.02)
-			if B_enhance: new_avg = fundamentals.fft(new_avg)
+				if enforced_to_H1: new_avg = sparx_filter.filt_tanl(new_avg, FH1, 0.02)
+			if B_enhance: new_avg = sparx_fundamentals.fft(new_avg)
 				
 			new_avg.set_attr("members",   list_dict[iavg])
 			new_avg.set_attr("n_objects", len(list_dict[iavg]))
@@ -499,7 +499,7 @@ def main():
 		for im in range(navg):
 			# avg
 			if cpu_dict[im] == Blockdata["myid"] and Blockdata["myid"] != Blockdata["main_node"]:
-				utilities.send_EMData(slist[im], Blockdata["main_node"],  tag_sharpen_avg)
+				sparx_utilities.send_EMData(slist[im], Blockdata["main_node"],  tag_sharpen_avg)
 			
 			elif cpu_dict[im] == Blockdata["myid"] and Blockdata["myid"] == Blockdata["main_node"]:
 				slist[im].set_attr("members", memlist[im])
@@ -507,30 +507,30 @@ def main():
 				slist[im].write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 			
 			elif cpu_dict[im] != Blockdata["myid"] and Blockdata["myid"] == Blockdata["main_node"]:
-				new_avg_other_cpu = utilities.recv_EMData(cpu_dict[im], tag_sharpen_avg)
+				new_avg_other_cpu = sparx_utilities.recv_EMData(cpu_dict[im], tag_sharpen_avg)
 				new_avg_other_cpu.set_attr("members", memlist[im])
 				new_avg_other_cpu.set_attr("n_objects", len(memlist[im]))
 				new_avg_other_cpu.write_image(os.path.join(Tracker["constants"]["masterdir"], "class_averages.hdf"), im)
 			
 			if options.local_alignment:
 				if cpu_dict[im] == Blockdata["myid"]:
-					utilities.write_text_row(plist_dict[im], os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg", "ali2d_local_params_avg_%03d.txt"%im))
+					sparx_utilities.write_text_row(plist_dict[im], os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params_avg", "ali2d_local_params_avg_%03d.txt"%im))
 				
 				if cpu_dict[im] == Blockdata["myid"] and cpu_dict[im]!= Blockdata["main_node"]:
-					utilities.wrap_mpi_send(plist_dict[im], Blockdata["main_node"], mpi.MPI_COMM_WORLD)
-					utilities.wrap_mpi_send(FH_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+					sparx_utilities.wrap_mpi_send(plist_dict[im], Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+					sparx_utilities.wrap_mpi_send(FH_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 				
 				elif cpu_dict[im]!= Blockdata["main_node"] and Blockdata["myid"] == Blockdata["main_node"]:
-					dummy = utilities.wrap_mpi_recv(cpu_dict[im], mpi.MPI_COMM_WORLD)
+					dummy = sparx_utilities.wrap_mpi_recv(cpu_dict[im], mpi.MPI_COMM_WORLD)
 					plist_dict[im] = dummy
-					dummy = utilities.wrap_mpi_recv(cpu_dict[im], mpi.MPI_COMM_WORLD)
+					dummy = sparx_utilities.wrap_mpi_recv(cpu_dict[im], mpi.MPI_COMM_WORLD)
 					FH_list[im] = dummy[im]
 			else:
 				if cpu_dict[im] == Blockdata["myid"] and cpu_dict[im]!= Blockdata["main_node"]:
-					utilities.wrap_mpi_send(FH_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
+					sparx_utilities.wrap_mpi_send(FH_list, Blockdata["main_node"], mpi.MPI_COMM_WORLD)
 				
 				elif cpu_dict[im]!= Blockdata["main_node"] and Blockdata["myid"] == Blockdata["main_node"]:
-					dummy = utilities.wrap_mpi_recv(cpu_dict[im], mpi.MPI_COMM_WORLD)
+					dummy = sparx_utilities.wrap_mpi_recv(cpu_dict[im], mpi.MPI_COMM_WORLD)
 					FH_list[im] = dummy[im]
 					
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -541,11 +541,11 @@ def main():
 			ali3d_local_params = [ None for im in range(len(ptl_list)) ]
 			for im in range(len(ptl_list)):
 				ali3d_local_params[im] = [ptl_list[im]] + plist_dict[global_dict[ptl_list[im]][0]][global_dict[ptl_list[im]][1]]
-			utilities.write_text_row(ali3d_local_params, os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params.txt"))
-			utilities.write_text_row(FH_list, os.path.join(Tracker["constants"]["masterdir"], "FH_list.txt"))
+			sparx_utilities.write_text_row(ali3d_local_params, os.path.join(Tracker["constants"]["masterdir"], "ali2d_local_params.txt"))
+			sparx_utilities.write_text_row(FH_list, os.path.join(Tracker["constants"]["masterdir"], "FH_list.txt"))
 	else:
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			utilities.write_text_row(FH_list, os.path.join(Tracker["constants"]["masterdir"], "FH_list.txt"))
+			sparx_utilities.write_text_row(FH_list, os.path.join(Tracker["constants"]["masterdir"], "FH_list.txt"))
 				
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)			
 	target_xr =3
@@ -554,9 +554,9 @@ def main():
 		cmd = "{} {} {} {} {} {} {} {} {} {}".format("sxchains.py", os.path.join(Tracker["constants"]["masterdir"],"class_averages.hdf"),\
 		os.path.join(Tracker["constants"]["masterdir"],"junk.hdf"),os.path.join(Tracker["constants"]["masterdir"],"ordered_class_averages.hdf"),\
 		"--circular","--radius=%d"%Tracker["constants"]["radius"] , "--xr=%d"%(target_xr+1),"--yr=%d"%(target_yr+1),"--align", ">/dev/null")
-		junk = utilities.cmdexecute(cmd)
+		junk = sparx_utilities.cmdexecute(cmd)
 		cmd = "{} {}".format("rm -rf", os.path.join(Tracker["constants"]["masterdir"], "junk.hdf") )
-		junk = utilities.cmdexecute(cmd)
+		junk = sparx_utilities.cmdexecute(cmd)
 		
 	pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
 	mpi.mpi_finalize()

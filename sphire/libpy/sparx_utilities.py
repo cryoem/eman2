@@ -31,19 +31,19 @@ from __future__ import print_function
 
 import EMAN2_cppwrap
 import EMAN2db
-import applications
+import sparx_applications
 import collections
 import copy
 import datetime
-import filter
+import sparx_filter
 import fractions
-import fundamentals
-import global_def
+import sparx_fundamentals
+import sparx_global_def
 import heapq
 import inspect
 import json
 import math
-import morphology
+import sparx_morphology
 import mpi
 import numpy
 import operator
@@ -51,11 +51,11 @@ import os
 import pickle
 import random
 import re
-import reconstruction
+import sparx_reconstruction
 import sets
 import six
 import socket
-import statistics
+import sparx_statistics
 import string
 import struct
 import sys
@@ -310,10 +310,10 @@ def drop_image(imagename, destination, itype="h"):
 	if type(destination) == type(""):
 		if(itype == "h"):    imgtype = EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF
 		elif(itype == "s"):  imgtype = EMAN2_cppwrap.EMUtil.ImageType.IMAGE_SINGLE_SPIDER
-		else:  global_def.ERROR("unknown image type","drop_image",1)
+		else:  sparx_global_def.ERROR("unknown image type","drop_image",1)
 		imagename.write_image(destination, 0, imgtype)
 	else:
-		global_def.ERROR("destination is not a file name","drop_image",1)
+		sparx_global_def.ERROR("destination is not a file name","drop_image",1)
 
 def drop_spider_doc(filename, data, comment = None):
 	"""Create a spider-compatible "Doc" file.
@@ -403,7 +403,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
 		# for helical, theta1 cannot be 0.0
 		if theta1 > 90.0:
-			global_def.ERROR('theta1 must be less than 90.0 for helical symmetry', 'even_angles', 1)
+			sparx_global_def.ERROR('theta1 must be less than 90.0 for helical symmetry', 'even_angles', 1)
 		if theta1 == 0.0: theta1 =90.0
 		theta_number = int((90.0 - theta1)/theta2)
 		#for helical, symmetry = s or scn
@@ -422,7 +422,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 					else:
 						k=int(359.99/4/cn/delta)
 				else:
-					global_def.ERROR("For helical strucutre, we only support scn and sdn symmetry","even_angles",1)
+					sparx_global_def.ERROR("For helical strucutre, we only support scn and sdn symmetry","even_angles",1)
 
 			else:
 				if (symmetry_string[1] =="c"):
@@ -434,7 +434,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 					angles.append([i*delta,90.0-j*theta2,90.0])
 
 	else:
-		global_def.ERROR("even_angles","Symmetry not supported: "+symmetry_string,0)
+		sparx_global_def.ERROR("even_angles","Symmetry not supported: "+symmetry_string,0)
 	"""Multiline Comment2"""
 
 
@@ -558,7 +558,7 @@ def get_symt(symmetry):
 	get a list of point-group symmetry transformations, symmetry="c3"
 	"""
 	pass#IMPORTIMPORTIMPORT from fundamentals import symclass
-	scl = fundamentals.symclass(symmetry)
+	scl = sparx_fundamentals.symclass(symmetry)
 	trans = []
 	for q in scl.symangles:
 		trans.append(EMAN2_cppwrap.Transform({"type":"spider","phi":q[0],"theta":q[1],"psi":q[2]}))
@@ -639,7 +639,7 @@ def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
 			elif ndim == 3 :
 				print('%10s%10s%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ","Z   ", "Peak/P_max", "X-NX/2", "Y-NY/2", "Z-NZ/2"))
 				print_list_format(peaks[1:], 8)
-			else:	global_def.ERROR("Image dimension extracted in peak_search is wrong", "Util.peak_search", 1)
+			else:	sparx_global_def.ERROR("Image dimension extracted in peak_search is wrong", "Util.peak_search", 1)
 		for i in range(nlist):
 			k=int((ndim+1)*i*2)
 			if   ndim == 1 :  p=[peaks[k+1], peaks[k+2], peaks[k+3], peaks[k+4]]
@@ -681,7 +681,7 @@ def print_list_format(m, narray = 0):
 		else				   : flist.append(  '%10s'%(m[i]))
 	if(narray > len(m)):
 		narray = 0
-		global_def.ERROR("improper input narray number, use default value", "print_list_foramt",0)
+		sparx_global_def.ERROR("improper input narray number, use default value", "print_list_foramt",0)
 	if(narray == 0 ):
 		num = int(numpy.sqrt(len(m)))
 		if( len(m) % num != 0): lnum = int(len(m)/num) + 1
@@ -922,7 +922,7 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 		if( Pixel_size_interpolated != Pixel_size_current):
 			length_interpolated = int(length_current*Pixel_size_current/Pixel_size_interpolated + 0.5)
 		else:
-			global_def.ERROR("Incorrect input parameters","reshape_1d",1)
+			sparx_global_def.ERROR("Incorrect input parameters","reshape_1d",1)
 			return []
 
 	if  Pixel_size_current == 0.:
@@ -961,7 +961,7 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm
 	if myid == main_node:
 		for proc in range(number_of_proc):
 			if proc != main_node:
-				image_start_proc, image_end_proc = applications.MPI_start_end(nima, number_of_proc, proc)
+				image_start_proc, image_end_proc = sparx_applications.MPI_start_end(nima, number_of_proc, proc)
 				n_params = (image_end_proc - image_start_proc)*5
 				temp = mpi.mpi_recv(n_params, mpi.MPI_FLOAT, proc, proc, mpi_comm)
 				for nn in range(n_params):
@@ -993,7 +993,7 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm
 		return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
 
 	else:
-		image_start_proc, image_end_proc = applications.MPI_start_end(nima, number_of_proc, myid)
+		image_start_proc, image_end_proc = sparx_applications.MPI_start_end(nima, number_of_proc, myid)
 		n_params = (image_end_proc - image_start_proc)*5
 		mpi.mpi_send(ali_params_series, n_params, mpi.MPI_FLOAT, main_node, myid, mpi_comm)
 
@@ -1074,10 +1074,10 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 	num_ref = len(list_of_em_objects)
 	ncpu = mpi.mpi_comm_size(comm)	# Total number of processes, passed by --np option.
 
-	ref_start, ref_end = applications.MPI_start_end(num_ref, ncpu, myid)
+	ref_start, ref_end = sparx_applications.MPI_start_end(num_ref, ncpu, myid)
 
 	for first_myid_process_that_has_em_elements in range(ncpu):
-		sim_start, sim_ref_end = applications.MPI_start_end(num_ref, ncpu, first_myid_process_that_has_em_elements)
+		sim_start, sim_ref_end = sparx_applications.MPI_start_end(num_ref, ncpu, first_myid_process_that_has_em_elements)
 		if sim_start != sim_ref_end:
 			break
 	else:
@@ -1112,7 +1112,7 @@ def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 		print("Sending refrings: size of data to broadcast is greater than 2GB")
 
 	for sender_id in range(ncpu):
-		sender_ref_start, sender_ref_end = applications.MPI_start_end(num_ref, ncpu, sender_id)
+		sender_ref_start, sender_ref_end = sparx_applications.MPI_start_end(num_ref, ncpu, sender_id)
 
 		if sender_id == myid:
 			if ref_start == ref_end:
@@ -1172,7 +1172,7 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 
 	ncpu = mpi.mpi_comm_size(comm)	# Total number of processes, passed by --np option.
 
-	ref_start, ref_end = applications.MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
+	ref_start, ref_end = sparx_applications.MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
 	ref_end -= ref_start
 	ref_start = 0
 	tag_for_send_receive = 123456
@@ -1212,7 +1212,7 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 		else:
 			data = numpy.array([], dtype = 'float32')
 
-		sender_ref_start, sender_ref_end = applications.MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, sender_id)
+		sender_ref_start, sender_ref_end = sparx_applications.MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, sender_id)
 
 		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
 
@@ -1375,7 +1375,7 @@ def bcast_list_to_all(list_to_send, myid, source_node = 0, mpi_comm = -1):
 		tp = 0
 	n = bcast_number_to_all(n, source_node = source_node, mpi_comm = mpi_comm)
 	tp = bcast_number_to_all(tp, source_node = source_node, mpi_comm = mpi_comm)
-	if( tp == 2 ): 	global_def.ERROR("Only list of the same type numbers can be brodcasted","bcast_list_to_all",1, myid)
+	if( tp == 2 ): 	sparx_global_def.ERROR("Only list of the same type numbers can be brodcasted","bcast_list_to_all",1, myid)
 	if(myid != source_node): list_to_send = [0]*n
 
 	if( tp == 0 ):
@@ -1416,8 +1416,8 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	headers = []
 	for n in range(number_of_proc):
 		if n != main_node:
-			dis = mpi.mpi_recv(2, mpi.MPI_INT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
-			value = mpi.mpi_recv(len_list*(dis[1]-dis[0]), mpi.MPI_FLOAT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+			dis = mpi.mpi_recv(2, mpi.MPI_INT, n, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+			value = mpi.mpi_recv(len_list*(dis[1]-dis[0]), mpi.MPI_FLOAT, n, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 			ldis.append([dis[0], dis[1]])
 			headers.append(value)
 			del  dis
@@ -1470,7 +1470,7 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 
 	if comm == -1: comm = mpi.MPI_COMM_WORLD
 	TransType = type(EMAN2_cppwrap.Transform())
-	mpi.mpi_send([image_start, image_end], 2, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+	mpi.mpi_send([image_start, image_end], 2, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 	nvalue = []
 	for im in range(image_start, image_end):
 		value = get_arb_params(data[im-image_start], list_params)
@@ -1481,7 +1481,7 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 				m = value[il].get_matrix()
 				assert (len(m)==12)
 				for f in m: nvalue.append(f)
-	mpi.mpi_send(nvalue, len(nvalue), mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+	mpi.mpi_send(nvalue, len(nvalue), mpi.MPI_FLOAT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 
 def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
 	pass#IMPORTIMPORTIMPORT import types
@@ -1516,10 +1516,10 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	headers = []
 	for n in range(number_of_proc):
 		if n != main_node:
-			dis = mpi.mpi_recv(2, mpi.MPI_INT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+			dis = mpi.mpi_recv(2, mpi.MPI_INT, n, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 			img_begin = int(dis[0])
 			img_end = int(dis[1])
-			header = mpi.mpi_recv(len_list*(img_end-img_begin), mpi.MPI_FLOAT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+			header = mpi.mpi_recv(len_list*(img_end-img_begin), mpi.MPI_FLOAT, n, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 			for im in range(img_begin, img_end):
 				par_begin = (im-img_begin)*len_list
 				nvalue = []
@@ -1588,15 +1588,15 @@ def print_end_msg(program_name, onscreen=False):
 def print_msg(msg):
 	pass#IMPORTIMPORTIMPORT import sys
 	pass#IMPORTIMPORTIMPORT import global_def
-	if (global_def.IS_LOGFILE_OPEN == False):
-		global_def.LOGFILE_HANDLE = open(global_def.LOGFILE,"w")
-		global_def.IS_LOGFILE_OPEN = True
-	if (global_def.BATCH):
-		global_def.LOGFILE_HANDLE.write(msg)
+	if (sparx_global_def.IS_LOGFILE_OPEN == False):
+		sparx_global_def.LOGFILE_HANDLE = open(sparx_global_def.LOGFILE,"w")
+		sparx_global_def.IS_LOGFILE_OPEN = True
+	if (sparx_global_def.BATCH):
+		sparx_global_def.LOGFILE_HANDLE.write(msg)
 	else:
 		sys.stdout.write(msg)
-		global_def.LOGFILE_HANDLE.write(msg)
-	global_def.LOGFILE_HANDLE.flush()
+		sparx_global_def.LOGFILE_HANDLE.write(msg)
+	sparx_global_def.LOGFILE_HANDLE.flush()
 
 def read_fsc( filename ):
 	pass#IMPORTIMPORTIMPORT from string import split, atof
@@ -1658,7 +1658,7 @@ def write_headers(filename, data, lima):
 		for i in range(len(lima)):
 			data[i].write_image(filename, lima[i], EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF, True)
 	else:
-		global_def.ERROR("Unacceptable file format","write_headers",1)
+		sparx_global_def.ERROR("Unacceptable file format","write_headers",1)
 
 def write_header(filename, data, lima):
 	"""
@@ -1678,13 +1678,13 @@ def write_header(filename, data, lima):
 	elif ftp == "hdf":
 		data.write_image(filename, lima, EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF, True)
 	else:
-		global_def.ERROR("Unacceptable file format","write_headers",1)
+		sparx_global_def.ERROR("Unacceptable file format","write_headers",1)
 
 def file_type(name):
 	if(len(name)>4):
 		if(name[:4] == "bdb:"): return "bdb"
 		elif(name[-4:-3] == "."):  return name[-3:]
-	global_def.ERROR("Unacceptable file format","file_type",1)
+	sparx_global_def.ERROR("Unacceptable file format","file_type",1)
 
 def get_params2D(ima, xform = "xform.align2d"):
 	"""
@@ -1778,7 +1778,7 @@ def generate_ctf(p):
 	elif(len(p) == 8):
 		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast,'dfdiff':p[6],'dfang':p[7]})
 	else:
-		global_def.ERROR("Incorrect number of entries on a list, cannot generate CTF","generate_ctf",0)
+		sparx_global_def.ERROR("Incorrect number of entries on a list, cannot generate CTF","generate_ctf",0)
 		return None
 	return ctf
 
@@ -1888,7 +1888,7 @@ def angular_occupancy(params, angstep = 15., sym= "c1", method='S'):
 	pass#IMPORTIMPORTIMPORT from fundamentals import symclass
 	pass#IMPORTIMPORTIMPORT from utilities import nearest_fang, angles_to_normals
 
-	smc  = fundamentals.symclass(sym)
+	smc  = sparx_fundamentals.symclass(sym)
 	eah  = smc.even_angles(angstep, inc_mirror=0, method=method)
 
 	leah = len(eah)
@@ -2006,10 +2006,10 @@ def rotation_between_anglesets(agls1, agls2):
 
 	N = len(agls1)
 	if N != len(agls2):
-		global_def.ERROR('rotation_between_anglesets', 'Both lists must have the same length',1)
+		sparx_global_def.ERROR('rotation_between_anglesets', 'Both lists must have the same length',1)
 		return -1
 	if N < 2:
-		global_def.ERROR('rotation_between_anglesets',  'At least two orientations are required in each list',1)
+		sparx_global_def.ERROR('rotation_between_anglesets',  'At least two orientations are required in each list',1)
 		return -1
 
 	U1 = [ori2xyz(q) for q in agls1]
@@ -2041,7 +2041,7 @@ def rotation_between_anglesets(agls1, agls2):
 		]
 
 	pass#IMPORTIMPORTIMPORT from fundamentals import recmat
-	return  fundamentals.recmat(r)
+	return  sparx_fundamentals.recmat(r)
 
 def angle_between_projections_directions(proj1, proj2):
 	"""
@@ -2554,7 +2554,7 @@ def eliminate_moons(my_volume, moon_elimination_params):
 	histogram_threshold  =  my_volume.find_3d_threshold(moon_elimination_params[0], moon_elimination_params[1])*1.1
 	# clean11 88x88,  4.84 px/A 750 kDa
 
-	my_volume_binarized = morphology.binarize(my_volume, histogram_threshold)
+	my_volume_binarized = sparx_morphology.binarize(my_volume, histogram_threshold)
 	# my_volume_binarized.write_image ("my_volume_binarized.hdf")
 	my_volume_binarized_with_no_moons = EMAN2_cppwrap.Util.get_biggest_cluster(my_volume_binarized)
 	# my_volume_binarized_with_no_moons.write_image("my_volume_binarized_with_no_moons.hdf")
@@ -2675,7 +2675,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 			image_start = 0
 			image_end   = 1
 	else:
-		image_start, image_end = applications.MPI_start_end(ndata, nproc, myid)
+		image_start, image_end = sparx_applications.MPI_start_end(ndata, nproc, myid)
 	lpartids  = lpartids[image_start:image_end]
 	#partstack = partstack[image_start:image_end]
 	#  Preprocess the data
@@ -2703,10 +2703,10 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 			ctf_params = data[im].get_attr("ctf")
 			st = EMAN2_cppwrap.Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
-			data[im] = filter.filt_ctf(data[im], ctf_params)
+			data[im] = sparx_filter.filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
 		if preshift:# always true
-			data[im] = fundamentals.fshift(data[im], sx, sy)
+			data[im] = sparx_fundamentals.fshift(data[im], sx, sy)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 			sx = 0.0
 			sy = 0.0
@@ -2718,7 +2718,7 @@ def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, 
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 		#oldshifts[im] = [sx,sy]
 		#  resample will properly adjusts shifts and pixel size in ctf
-		data[im] = fundamentals.resample(data[im], shrinkage)
+		data[im] = sparx_fundamentals.resample(data[im], shrinkage)
 		#  We have to make sure the shifts are within correct range, shrinkage or not
 		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 		#  For local SHC set anchor
@@ -2752,7 +2752,7 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 			image_start = 0
 			image_end   = 1
 	else:
-		image_start, image_end = applications.MPI_start_end(ndata, nproc, myid)
+		image_start, image_end = sparx_applications.MPI_start_end(ndata, nproc, myid)
 	lpartids  = lpartids[image_start:image_end]
 	partstack = partstack[image_start:image_end]
 	data = EMAN2_cppwrap.EMData.read_images(stack, lpartids)
@@ -2838,7 +2838,7 @@ def get_sorting_params_refine(Tracker,data,ndata):
 		attr_value_list = get_sorting_attr_stack(data)
 		attr_value_list = wrap_mpi_bcast(attr_value_list,inode)
 		if myid == main_node:
-			image_start,image_end = applications.MPI_start_end(ndata,nproc,inode)
+			image_start,image_end = sparx_applications.MPI_start_end(ndata,nproc,inode)
 			total_attr_value_list = fill_in_mpi_list(total_attr_value_list, attr_value_list, image_start,image_end)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	total_attr_value_list = wrap_mpi_bcast(total_attr_value_list, main_node)
@@ -2938,7 +2938,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 		else:                     mask = get_im(mask_option)
 	else:  mask = radi
-	nfsc = statistics.fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
+	nfsc = sparx_statistics.fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
 	currentres = -1.0
 	ns = len(nfsc[1])
 	#  This is actual resolution, as computed by 2*f/(1+f)
@@ -2951,7 +2951,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 		currentres = nfsc[0][i-1]
 
 	"""Multiline Comment24"""
-	lowpass, falloff = filter.fit_tanh1(nfsc, 0.01)
+	lowpass, falloff = sparx_filter.fit_tanh1(nfsc, 0.01)
 	return  round(lowpass,4), round(falloff,4), round(currentres,2)
 
 def partition_to_groups(alist, K):
@@ -3041,7 +3041,7 @@ def do_two_way_comparison(Tracker):
 		scores                      = {}
 		for iptp in range(len(ptp)):
 			for jptp in range(len(ptp)):
-				newindeces, list_stable, nb_tot_objs = statistics.k_means_match_clusters_asg_new(ptp[iptp], ptp[jptp])
+				newindeces, list_stable, nb_tot_objs = sparx_statistics.k_means_match_clusters_asg_new(ptp[iptp], ptp[jptp])
 				tt = 0.0
 				if myid ==main_node and iptp<jptp:
 					aline="Two-way comparison between independent run %3d and %3d"%(iptp,jptp)
@@ -3222,7 +3222,7 @@ def get_stat_proj(Tracker,delta,this_ali3d):
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
 	ali3d_params = wrap_mpi_bcast(ali3d_params, main_node)
 	ndata=len(ali3d_params)
-	image_start, image_end = applications.MPI_start_end(ndata, nproc, myid)
+	image_start, image_end = sparx_applications.MPI_start_end(ndata, nproc, myid)
 	ali3d_params=ali3d_params[image_start:image_end]
 	sampled=counting_projections(delta,ali3d_params,image_start)
 	for inode in range(nproc):
@@ -3284,7 +3284,7 @@ def recons_mref(Tracker):
 		data, old_shifts =  get_shrink_data_huang(Tracker,nxinit,particle_list_file,partstack,myid,main_node,nproc,preshift=True)
 		#vol=reconstruct_3D(Tracker,data)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-		vol = reconstruction.recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
+		vol = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid=myid,prjlist=data,symmetry=Tracker["constants"]["sym"],finfo=None)
 		if myid ==main_node:
 			print("reconstructed %3d"%igrp)
 		ref_list.append(vol)
@@ -3295,7 +3295,7 @@ def recons_mref(Tracker):
 def apply_low_pass_filter(refvol,Tracker):
 	pass#IMPORTIMPORTIMPORT from filter import filt_tanl
 	for iref in range(len(refvol)):
-		refvol[iref]=filter.filt_tanl(refvol[iref],Tracker["low_pass_filter"],.1)
+		refvol[iref]=sparx_filter.filt_tanl(refvol[iref],Tracker["low_pass_filter"],.1)
 	return refvol
 
 def get_groups_from_partition(partition, initial_ID_list, number_of_groups):
@@ -3361,7 +3361,7 @@ def get_number_of_groups(total_particles,number_of_images_per_group):
 	return number_of_groups
 
 def angular_distribution(inputfile, options, output):
-	global_def.ERROR("Code disabled, please use sxplot_projs_distrib.py instead","angular_distribution",1)
+	sparx_global_def.ERROR("Code disabled, please use sxplot_projs_distrib.py instead","angular_distribution",1)
 	"""
 	pass#IMPORTIMPORTIMPORT import numpy
 
@@ -3518,7 +3518,7 @@ def create_summovie_command(
 
     # Handle first and last case events
     if opt['first'] == 0:
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'SumMovie indexing starts with 1.\n' +
             '0 is not a valid entry for --first', 'sxsummovie.py', 1
             )
@@ -3528,7 +3528,7 @@ def create_summovie_command(
         first = opt['first']
 
     if opt['last'] == 0:
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'SumMovie indexing starts with 1.\n' +
             '0 is not a valid entry for --last', 'sxsummovie.py', 1
             )
@@ -3538,13 +3538,13 @@ def create_summovie_command(
         last = opt['last']
 
     if first > last:
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'First option musst be smaller equals last option!\n' + 
             'first: {0}; last: {1}'.format(first, last), 'sxsummovie.py', 1
             )
 
     if opt['nr_frames'] < last or last <= 0:
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             '--last option {0} is out of range:\n'.format(last) + 
             'min: 1; max {0}'.format(
             opt['nr_frames']
@@ -3552,7 +3552,7 @@ def create_summovie_command(
             )
 
     if opt['nr_frames'] < first or first <= 0:
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             '--first option {0} is out of range:\n'.format(first) + 
             'min: 1; max {0}'.format(
             opt['nr_frames']

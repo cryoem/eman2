@@ -33,24 +33,24 @@ from __future__ import print_function
 from builtins import range
 import EMAN2_cppwrap
 import EMAN2db
-import applications
-import filter
-import fundamentals
-import global_def
-import logger
-import morphology
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_logger
+import sparx_morphology
 import mpi
 import numpy
 import numpy as np
 import optparse
 import os
-import projection
-import reconstruction
+import sparx_projection
+import sparx_reconstruction
 import sets
-import statistics
+import sparx_statistics
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2db
@@ -105,15 +105,15 @@ def main():
 		# the final ali2d parameters already combine shifts operation first and rotation operation second for parameters converted from 3D
 		if mirror:
 			m = 1
-			alpha, sx, sy, scalen = utilities.compose_transform2(0, s2x, s2y, 1.0, 540.0-psi, 0, 0, 1.0)
+			alpha, sx, sy, scalen = sparx_utilities.compose_transform2(0, s2x, s2y, 1.0, 540.0-psi, 0, 0, 1.0)
 		else:
 			m = 0
-			alpha, sx, sy, scalen = utilities.compose_transform2(0, s2x, s2y, 1.0, 360.0-psi, 0, 0, 1.0)
+			alpha, sx, sy, scalen = sparx_utilities.compose_transform2(0, s2x, s2y, 1.0, 360.0-psi, 0, 0, 1.0)
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=  --aa=   --sym=symmetry --CTF"
-	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=sparx_global_def.SPARXVERSION)
 	
 	parser.add_option("--output_dir",   type="string"	   ,	default="./",				help="Output directory")
 	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="Write to the disk a stack of 2D averages")
@@ -159,16 +159,16 @@ def main():
 	pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
 
 	# Set up global variables related to bdb cache 
-	if global_def.CACHE_DISABLE:
+	if sparx_global_def.CACHE_DISABLE:
 		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
-		utilities.disable_bdb_cache()
+		sparx_utilities.disable_bdb_cache()
 	
 	# Set up global variables related to ERROR function
-	global_def.BATCH = True
+	sparx_global_def.BATCH = True
 	
 	# detect if program is running under MPI
 	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
-	if RUNNING_UNDER_MPI: global_def.MPI = True
+	if RUNNING_UNDER_MPI: sparx_global_def.MPI = True
 	
 	if options.symmetrize :
 		if RUNNING_UNDER_MPI:
@@ -177,7 +177,7 @@ def main():
 				try:	
 					number_of_proc = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
 					if( number_of_proc > 1 ):
-						global_def.ERROR("Cannot use more than one CPU for symmetry prepration","sx3dvariability",1)
+						sparx_global_def.ERROR("Cannot use more than one CPU for symmetry prepration","sx3dvariability",1)
 				except:
 					pass
 			except:
@@ -190,13 +190,13 @@ def main():
 		
 		pass#IMPORTIMPORTIMPORT from logger import Logger,BaseLogger_Files
 		if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
-		log_main=logger.Logger(logger.BaseLogger_Files())
+		log_main=sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 		log_main.prefix = os.path.join(options.output_dir, "./")
 		
 		instack = args[0]
 		sym = options.sym.lower()
 		if( sym == "c1" ):
-			global_def.ERROR("There is no need to symmetrize stack for C1 symmetry","sx3dvariability",1)
+			sparx_global_def.ERROR("There is no need to symmetrize stack for C1 symmetry","sx3dvariability",1)
 		
 		line =""
 		for a in sys.argv:
@@ -206,14 +206,14 @@ def main():
 		if(instack[:4] !="bdb:"):
 			if output_dir =="./": stack = "bdb:data"
 			else: stack = "bdb:"+options.output_dir+"/data"
-			utilities.delete_bdb(stack)
-			junk = utilities.cmdexecute("sxcpy.py  "+instack+"  "+stack)
+			sparx_utilities.delete_bdb(stack)
+			junk = sparx_utilities.cmdexecute("sxcpy.py  "+instack+"  "+stack)
 		else: stack = instack
 		
 		qt = EMAN2_cppwrap.EMUtil.get_all_attributes(stack,'xform.projection')
 
 		na = len(qt)
-		ts = utilities.get_symt(sym)
+		ts = sparx_utilities.get_symt(sym)
 		ks = len(ts)
 		angsa = [None]*na
 		
@@ -222,9 +222,9 @@ def main():
 			if options.output_dir!="./": Qfile = os.path.join(options.output_dir,"Q%1d"%k)
 			else: Qfile = os.path.join(options.output_dir, "Q%1d"%k)
 			#delete_bdb("bdb:Q%1d"%k)
-			utilities.delete_bdb("bdb:"+Qfile)
+			sparx_utilities.delete_bdb("bdb:"+Qfile)
 			#junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
-			junk = utilities.cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:"+Qfile)
+			junk = sparx_utilities.cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:"+Qfile)
 			#DB = db_open_dict("bdb:Q%1d"%k)
 			DB = EMAN2db.db_open_dict("bdb:"+Qfile)
 			for i in range(na):
@@ -236,15 +236,15 @@ def main():
 			#junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
 			#junk = cmdexecute("sxheader.py  bdb:Q%1d  --params=xform.projection  --import=ptsma%1d.txt"%(k,k))
 			DB.close()
-		if options.output_dir =="./": utilities.delete_bdb("bdb:sdata")
-		else: utilities.delete_bdb("bdb:" + options.output_dir + "/"+"sdata")
+		if options.output_dir =="./": sparx_utilities.delete_bdb("bdb:sdata")
+		else: sparx_utilities.delete_bdb("bdb:" + options.output_dir + "/"+"sdata")
 		#junk = cmdexecute("e2bdb.py . --makevstack=bdb:sdata --filt=Q")
 		sdata = "bdb:"+options.output_dir+"/"+"sdata"
 		print(sdata)
-		junk = utilities.cmdexecute("e2bdb.py   " + options.output_dir +"  --makevstack="+sdata +" --filt=Q")
+		junk = sparx_utilities.cmdexecute("e2bdb.py   " + options.output_dir +"  --makevstack="+sdata +" --filt=Q")
 		#junk = cmdexecute("ls  EMAN2DB/sdata*")
 		#a = get_im("bdb:sdata")
-		a = utilities.get_im(sdata)
+		a = sparx_utilities.get_im(sdata)
 		a.set_attr("variabilitysymmetry",sym)
 		#a.write_image("bdb:sdata")
 		a.write_image(sdata)
@@ -260,7 +260,7 @@ def main():
 		myid_on_node = mpi.mpi_comm_rank(shared_comm)
 		no_of_processes_per_group = mpi.mpi_comm_size(shared_comm)
 		masters_from_groups_vs_everything_else_comm = mpi.mpi_comm_split(mpi.MPI_COMM_WORLD, main_node == myid_on_node, myid_on_node)
-		color, no_of_groups, balanced_processor_load_on_nodes = utilities.get_colors_and_subsets(main_node, mpi.MPI_COMM_WORLD, myid, \
+		color, no_of_groups, balanced_processor_load_on_nodes = sparx_utilities.get_colors_and_subsets(main_node, mpi.MPI_COMM_WORLD, myid, \
 		    shared_comm, myid_on_node, masters_from_groups_vs_everything_else_comm)
 		overhead_loading = 1.0*no_of_processes_per_group
 		memory_per_node  = options.memory_per_node
@@ -283,44 +283,44 @@ def main():
 		options.squ  = 0.0
 
 		if options.fl > 0.0 and options.aa == 0.0:
-			global_def.ERROR("Fall off has to be given for the low-pass filter", "sx3dvariability", 1, myid)
+			sparx_global_def.ERROR("Fall off has to be given for the low-pass filter", "sx3dvariability", 1, myid)
 			
 		#if options.VAR and options.SND:
 		#	ERROR("Only one of var and SND can be set!", "sx3dvariability", myid)
 			
 		if options.VAR and (options.ave2D or options.ave3D or options.var2D): 
-			global_def.ERROR("When VAR is set, the program cannot output ave2D, ave3D or var2D", "sx3dvariability", 1, myid)
+			sparx_global_def.ERROR("When VAR is set, the program cannot output ave2D, ave3D or var2D", "sx3dvariability", 1, myid)
 			
 		#if options.SND and (options.ave2D or options.ave3D):
 		#	ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3dvariability", 1, myid)
 		
 		if options.nvec > 0 :
-			global_def.ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
+			sparx_global_def.ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
 			
 		if options.nvec > 0 and options.ave3D == None:
-			global_def.ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", 1, myid)
+			sparx_global_def.ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", 1, myid)
 		
 		if options.decimate>1.0 or options.decimate<0.0:
-			global_def.ERROR("Decimate rate should be a value between 0.0 and 1.0", "sx3dvariability", 1, myid)
+			sparx_global_def.ERROR("Decimate rate should be a value between 0.0 and 1.0", "sx3dvariability", 1, myid)
 		
 		if options.window < 0.0:
-			global_def.ERROR("Target window size should be always larger than zero", "sx3dvariability", 1, myid)
+			sparx_global_def.ERROR("Target window size should be always larger than zero", "sx3dvariability", 1, myid)
 			
 		if myid == main_node:
-			img  = utilities.get_image(stack, 0)
+			img  = sparx_utilities.get_image(stack, 0)
 			nx   = img.get_xsize()
 			ny   = img.get_ysize()
 			if(min(nx, ny) < options.window):   keepgoing = 0
-		keepgoing = utilities.bcast_number_to_all(keepgoing, main_node, mpi.MPI_COMM_WORLD)
-		if keepgoing == 0: global_def.ERROR("The target window size cannot be larger than the size of decimated image", "sx3dvariability", 1, myid)
+		keepgoing = sparx_utilities.bcast_number_to_all(keepgoing, main_node, mpi.MPI_COMM_WORLD)
+		if keepgoing == 0: sparx_global_def.ERROR("The target window size cannot be larger than the size of decimated image", "sx3dvariability", 1, myid)
 
 		pass#IMPORTIMPORTIMPORT import string
 		options.sym = options.sym.lower()
 		 
-		# if global_def.CACHE_DISABLE:
+		# if sparx_global_def.CACHE_DISABLE:
 		# 	from utilities import disable_bdb_cache
 		# 	disable_bdb_cache()
-		# global_def.BATCH = True
+		# sparx_global_def.BATCH = True
 		
 		if myid == main_node:
 			if options.output_dir !="./" and not os.path.exists(options.output_dir): os.mkdir(options.output_dir)
@@ -330,7 +330,7 @@ def main():
 		radiuspca   = options.radiuspca
 		pass#IMPORTIMPORTIMPORT from logger import Logger,BaseLogger_Files
 		#if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
-		log_main=logger.Logger(logger.BaseLogger_Files())
+		log_main=sparx_logger.Logger(sparx_logger.BaseLogger_Files())
 		log_main.prefix = os.path.join(options.output_dir, "./")
 
 		if myid == main_node:
@@ -361,23 +361,23 @@ def main():
 		symbaselen = 0
 		if myid == main_node:
 			nima = EMAN2_cppwrap.EMUtil.get_image_count(stack)
-			img  = utilities.get_image(stack)
+			img  = sparx_utilities.get_image(stack)
 			nx   = img.get_xsize()
 			ny   = img.get_ysize()
 			nnxo = nx
 			nnyo = ny
 			if options.sym != "c1" :
-				imgdata = utilities.get_im(stack)
+				imgdata = sparx_utilities.get_im(stack)
 				try:
 					i = imgdata.get_attr("variabilitysymmetry").lower()
 					if(i != options.sym):
-						global_def.ERROR("The symmetry provided does not agree with the symmetry of the input stack", "sx3dvariability", 1, myid)
+						sparx_global_def.ERROR("The symmetry provided does not agree with the symmetry of the input stack", "sx3dvariability", 1, myid)
 				except:
-					global_def.ERROR("Input stack is not prepared for symmetry, please follow instructions", "sx3dvariability", 1, myid)
+					sparx_global_def.ERROR("Input stack is not prepared for symmetry, please follow instructions", "sx3dvariability", 1, myid)
 				pass#IMPORTIMPORTIMPORT from utilities import get_symt
-				i = len(utilities.get_symt(options.sym))
+				i = len(sparx_utilities.get_symt(options.sym))
 				if((nima/i)*i != nima):
-					global_def.ERROR("The length of the input stack is incorrect for symmetry processing", "sx3dvariability", 1, myid)
+					sparx_global_def.ERROR("The length of the input stack is incorrect for symmetry processing", "sx3dvariability", 1, myid)
 				symbaselen = nima/i
 			else:  symbaselen = nima
 		else:
@@ -386,13 +386,13 @@ def main():
 			ny = 0
 			nnxo = 0
 			nnyo = 0
-		nima    = utilities.bcast_number_to_all(nima)
-		nx      = utilities.bcast_number_to_all(nx)
-		ny      = utilities.bcast_number_to_all(ny)
-		nnxo    = utilities.bcast_number_to_all(nnxo)
-		nnyo    = utilities.bcast_number_to_all(nnyo)
+		nima    = sparx_utilities.bcast_number_to_all(nima)
+		nx      = sparx_utilities.bcast_number_to_all(nx)
+		ny      = sparx_utilities.bcast_number_to_all(ny)
+		nnxo    = sparx_utilities.bcast_number_to_all(nnxo)
+		nnyo    = sparx_utilities.bcast_number_to_all(nnyo)
 		if options.window > max(nx, ny):
-			global_def.ERROR("Window size is larger than the original image size", "sx3dvariability", 1)
+			sparx_global_def.ERROR("Window size is larger than the original image size", "sx3dvariability", 1)
 		
 		if options.decimate == 1.:
 			if options.window !=0:
@@ -405,17 +405,17 @@ def main():
 			else:
 				nx = int(options.window*options.decimate+0.5)
 				ny = nx
-		symbaselen     = utilities.bcast_number_to_all(symbaselen)
+		symbaselen     = sparx_utilities.bcast_number_to_all(symbaselen)
 		if myid == main_node:
 			log_main.add("The targeted image size:    %5d"%nx)
 			pass#IMPORTIMPORTIMPORT from fundamentals import smallprime
-			if nx !=fundamentals.smallprime(nx):
+			if nx !=sparx_fundamentals.smallprime(nx):
 				log_main.add("The target image size does not consist of small prime numbers")
 			else:
 				log_main.add("The targeted image size consists of small prime numbers")
 		if radiuspca == -1: radiuspca = nx/2-2
 		if myid == main_node: log_main.add("%-70s:  %d\n"%("Number of projection", nima))
-		img_begin, img_end = applications.MPI_start_end(nima, number_of_proc, myid)
+		img_begin, img_end = sparx_applications.MPI_start_end(nima, number_of_proc, myid)
 		
 		"""Multiline Comment0"""
 		
@@ -429,9 +429,9 @@ def main():
 			else: reg = None
 			pass#IMPORTIMPORTIMPORT from fundamentals import subsample
 			for index_of_particle in range(img_begin,img_end):
-				image = utilities.get_im(stack, index_of_proj)
-				if reg: varList.append(fundamentals.subsample(image.get_clip(reg), options.decimate))
-				else:   varList.append(fundamentals.subsample(image, options.decimate))
+				image = sparx_utilities.get_im(stack, index_of_proj)
+				if reg: varList.append(sparx_fundamentals.subsample(image.get_clip(reg), options.decimate))
+				else:   varList.append(sparx_fundamentals.subsample(image, options.decimate))
 				
 		else:
 			pass#IMPORTIMPORTIMPORT from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
@@ -472,12 +472,12 @@ def main():
 					proj_angles_list[i][2] = proj_angles[i][3]
 					proj_angles_list[i][3] = proj_angles[i][4]
 			else: proj_angles_list = 0
-			proj_angles_list = utilities.wrap_mpi_bcast(proj_angles_list, main_node, mpi.MPI_COMM_WORLD)
+			proj_angles_list = sparx_utilities.wrap_mpi_bcast(proj_angles_list, main_node, mpi.MPI_COMM_WORLD)
 			proj_angles      = []
 			for i in range(nima):
 				proj_angles.append([proj_angles_list[i][0], proj_angles_list[i][1], proj_angles_list[i][2], int(proj_angles_list[i][3])])
 			del proj_angles_list
-			proj_list, mirror_list = utilities.nearest_proj(proj_angles, img_per_grp, range(img_begin, img_end))
+			proj_list, mirror_list = sparx_utilities.nearest_proj(proj_angles, img_per_grp, range(img_begin, img_end))
 			all_proj = sets.Set()
 			for im in proj_list:
 				for jm in im:
@@ -514,15 +514,15 @@ def main():
 			full_data = np.full((number_of_proc, 2), -1., dtype=np.float16)
 			full_data[myid] = orig_data_size, reduced_data_size
 			if myid != main_node: 
-				utilities.wrap_mpi_send(full_data, main_node, mpi.MPI_COMM_WORLD)
+				sparx_utilities.wrap_mpi_send(full_data, main_node, mpi.MPI_COMM_WORLD)
 			if myid == main_node:
 				for iproc in range(number_of_proc):
 					if iproc != main_node:
-						dummy = utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
+						dummy = sparx_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)
 						full_data[np.where(dummy>-1)] = dummy[np.where(dummy>-1)]
 				del dummy
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-			full_data = utilities.wrap_mpi_bcast(full_data, main_node, mpi.MPI_COMM_WORLD)
+			full_data = sparx_utilities.wrap_mpi_bcast(full_data, main_node, mpi.MPI_COMM_WORLD)
 			# find the CPU with heaviest load
 			minindx = np.argsort(full_data, 0)
 			heavy_load_myid = minindx[-1][1]
@@ -590,13 +590,13 @@ def main():
 			else: reg = None
 			pass#IMPORTIMPORTIMPORT from fundamentals import subsample
 			for index_of_proj in range(len(all_proj)):
-				image = utilities.get_im(stack, all_proj[index_of_proj])
+				image = sparx_utilities.get_im(stack, all_proj[index_of_proj])
 				if options.decimate>0:
 					ctf = image.get_attr("ctf")
 					ctf.apix = ctf.apix/options.decimate
 					image.set_attr("ctf", ctf)
-				if reg: imgdata.append(fundamentals.subsample(image.get_clip(reg), options.decimate))
-				else:   imgdata.append(fundamentals.subsample(image, options.decimate))
+				if reg: imgdata.append(sparx_fundamentals.subsample(image.get_clip(reg), options.decimate))
+				else:   imgdata.append(sparx_fundamentals.subsample(image, options.decimate))
 				if myid == heavy_load_myid and index_of_proj%100 ==0:
 					log_main.add(" ...... %6.2f%% "%(index_of_proj/float(len(all_proj))*100.))
 			if myid == heavy_load_myid:
@@ -610,7 +610,7 @@ def main():
 			pass#IMPORTIMPORTIMPORT from utilities    import model_blank
 			pass#IMPORTIMPORTIMPORT from EMAN2        import Transform
 			if not options.no_norm: 
-				mask = utilities.model_circle(nx/2-2, nx, nx)
+				mask = sparx_utilities.model_circle(nx/2-2, nx, nx)
 			nx2 = 2*nx
 			ny2 = 2*ny
 			mx1  = nx2//2 - nx//2
@@ -635,11 +635,11 @@ def main():
 					cpar = EMAN2_cppwrap.Util.get_transform_params(imgdata[mj], "xform.projection", "spider")
 					alpha, sx, sy, mirror = params_3D_2D_NEW(cpar["phi"], cpar["theta"],cpar["psi"], -cpar["tx"]*options.decimate, -cpar["ty"]*options.decimate, mirror_list[i][j])
 					if thetaM <= 90:
-						if mirror == 0:  alpha, sx, sy, scale = utilities.compose_transform2(alpha, sx, sy, 1.0, phiM - cpar["phi"], 0.0, 0.0, 1.0)
-						else:            alpha, sx, sy, scale = utilities.compose_transform2(alpha, sx, sy, 1.0, 180-(phiM - cpar["phi"]), 0.0, 0.0, 1.0)
+						if mirror == 0:  alpha, sx, sy, scale = sparx_utilities.compose_transform2(alpha, sx, sy, 1.0, phiM - cpar["phi"], 0.0, 0.0, 1.0)
+						else:            alpha, sx, sy, scale = sparx_utilities.compose_transform2(alpha, sx, sy, 1.0, 180-(phiM - cpar["phi"]), 0.0, 0.0, 1.0)
 					else:
-						if mirror == 0:  alpha, sx, sy, scale = utilities.compose_transform2(alpha, sx, sy, 1.0, -(phiM- cpar["phi"]), 0.0, 0.0, 1.0)
-						else:            alpha, sx, sy, scale = utilities.compose_transform2(alpha, sx, sy, 1.0, -(180-(phiM - cpar["phi"])), 0.0, 0.0, 1.0)
+						if mirror == 0:  alpha, sx, sy, scale = sparx_utilities.compose_transform2(alpha, sx, sy, 1.0, -(phiM- cpar["phi"]), 0.0, 0.0, 1.0)
+						else:            alpha, sx, sy, scale = sparx_utilities.compose_transform2(alpha, sx, sy, 1.0, -(180-(phiM - cpar["phi"])), 0.0, 0.0, 1.0)
 					imgdata[mj].set_attr("xform.align2d", EMAN2_cppwrap.Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mirror,"scale":1.0}))
 					grp_imgdata.append(imgdata[mj])
 				if not options.no_norm:
@@ -651,42 +651,42 @@ def main():
 					if options.CTF:
 						for k in range(img_per_grp):
 							ctf = grp_imgdata[k].get_attr("ctf")
-							cimage = fundamentals.fft(filter.filt_tanl(filter.filt_ctf(fundamentals.fft(utilities.pad(grp_imgdata[k], nx2, ny2, 1,0.0)),\
+							cimage = sparx_fundamentals.fft(sparx_filter.filt_tanl(sparx_filter.filt_ctf(sparx_fundamentals.fft(sparx_utilities.pad(grp_imgdata[k], nx2, ny2, 1,0.0)),\
 							    grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa))
 							grp_imgdata[k] = cimage.get_clip(reg1)							
 					else:
 						for k in range(img_per_grp):
-							grp_imgdata[k] = filter.filt_tanl(grp_imgdata[k], options.fl, options.aa)
+							grp_imgdata[k] = sparx_filter.filt_tanl(grp_imgdata[k], options.fl, options.aa)
 				else:
 					if options.CTF:
 						for k in range(img_per_grp):
-							cimage = fundamentals.fft(filter.filt_ctf(fundamentals.fft(utilities.pad(grp_imgdata[k], nx2, ny2, 1,0.0)),\
+							cimage = sparx_fundamentals.fft(sparx_filter.filt_ctf(sparx_fundamentals.fft(sparx_utilities.pad(grp_imgdata[k], nx2, ny2, 1,0.0)),\
 							   grp_imgdata[k].get_attr("ctf"), binary=1))
 							grp_imgdata[k] = cimage.get_clip(reg1)
 				"""Multiline Comment2"""
 				"""Multiline Comment3"""
-				ave, grp_imgdata = applications.prepare_2d_forPCA(grp_imgdata)
+				ave, grp_imgdata = sparx_applications.prepare_2d_forPCA(grp_imgdata)
 				"""Multiline Comment4"""
 
-				var = utilities.model_blank(nx,ny)
+				var = sparx_utilities.model_blank(nx,ny)
 				for q in grp_imgdata:  EMAN2_cppwrap.Util.add_img2(var, q)
 				EMAN2_cppwrap.Util.mul_scalar(var, 1.0/(len(grp_imgdata)-1))
 				# Switch to std dev
-				var = morphology.square_root(morphology.threshold(var))
+				var = sparx_morphology.square_root(sparx_morphology.threshold(var))
 				#if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
 				#else:	            ave, var = avgvar(grp_imgdata, mode="a")
 				"""Multiline Comment5"""
 
-				utilities.set_params_proj(ave, [phiM, thetaM, 0.0, 0.0, 0.0])
-				utilities.set_params_proj(var, [phiM, thetaM, 0.0, 0.0, 0.0])
+				sparx_utilities.set_params_proj(ave, [phiM, thetaM, 0.0, 0.0, 0.0])
+				sparx_utilities.set_params_proj(var, [phiM, thetaM, 0.0, 0.0, 0.0])
 
 				aveList.append(ave)
 				varList.append(var)
 
 				if nvec > 0:
-					eig = applications.pca(input_stacks=grp_imgdata, subavg="", mask_radius=radiuspca, nvec=nvec, incore=True, shuffle=False, genbuf=True)
+					eig = sparx_applications.pca(input_stacks=grp_imgdata, subavg="", mask_radius=radiuspca, nvec=nvec, incore=True, shuffle=False, genbuf=True)
 					for k in range(nvec):
-						utilities.set_params_proj(eig[k], [phiM, thetaM, 0.0, 0.0, 0.0])
+						sparx_utilities.set_params_proj(eig[k], [phiM, thetaM, 0.0, 0.0, 0.0])
 						eigList[k].append(eig[k])
 					"""Multiline Comment6"""
 				if (myid == heavy_load_myid) and (i%100 == 0):
@@ -710,30 +710,30 @@ def main():
 								aveList[im].write_image(os.path.join(options.output_dir, options.ave2D), km)
 								km += 1
 						else:
-							nl = mpi.mpi_recv(1, mpi.MPI_INT, i, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+							nl = mpi.mpi_recv(1, mpi.MPI_INT, i, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 							nl = int(nl[0])
 							for im in range(nl):
-								ave = utilities.recv_EMData(i, im+i+70000)
+								ave = sparx_utilities.recv_EMData(i, im+i+70000)
 								"""Multiline Comment7"""
-								tmpvol=fundamentals.fpol(ave, nx,nx,1)								
+								tmpvol=sparx_fundamentals.fpol(ave, nx,nx,1)								
 								tmpvol.write_image(os.path.join(options.output_dir, options.ave2D), km)
 								km += 1
 				else:
-					mpi.mpi_send(len(aveList), 1, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+					mpi.mpi_send(len(aveList), 1, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 					for im in range(len(aveList)):
-						utilities.send_EMData(aveList[im], main_node,im+myid+70000)
+						sparx_utilities.send_EMData(aveList[im], main_node,im+myid+70000)
 						"""Multiline Comment8"""
 
 			if options.ave3D:
 				pass#IMPORTIMPORTIMPORT from fundamentals import fpol
 				t5 = time.time()
 				if myid == main_node: log_main.add("Reconstruct ave3D ... ")
-				ave3D = reconstruction.recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad)
-				utilities.bcast_EMData_to_all(ave3D, myid)
+				ave3D = sparx_reconstruction.recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad)
+				sparx_utilities.bcast_EMData_to_all(ave3D, myid)
 				if myid == main_node:
-					if options.decimate != 1.0: ave3D = fundamentals.resample(ave3D, 1./options.decimate)
-					ave3D = fundamentals.fpol(ave3D, nnxo, nnxo, nnxo) # always to the orignal image size
-					utilities.set_pixel_size(ave3D, 1.0)
+					if options.decimate != 1.0: ave3D = sparx_fundamentals.resample(ave3D, 1./options.decimate)
+					ave3D = sparx_fundamentals.fpol(ave3D, nnxo, nnxo, nnxo) # always to the orignal image size
+					sparx_utilities.set_pixel_size(ave3D, 1.0)
 					ave3D.write_image(os.path.join(options.output_dir, options.ave3D))
 					log_main.add("%-70s:  %.2f\n"%("Ave3D reconstruction took [s]", time.time()-t5))
 					log_main.add("%-70s:  %s\n"%("The reconstructed ave3D is saved as ", options.ave3D))
@@ -745,24 +745,24 @@ def main():
 					if myid == main_node:log_main.add("Reconstruction eigenvolumes", k)
 					cont = True
 					ITER = 0
-					mask2d = utilities.model_circle(radiuspca, nx, nx)
+					mask2d = sparx_utilities.model_circle(radiuspca, nx, nx)
 					while cont:
 						#print "On node %d, iteration %d"%(myid, ITER)
-						eig3D = reconstruction.recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad)
-						utilities.bcast_EMData_to_all(eig3D, myid, main_node)
+						eig3D = sparx_reconstruction.recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad)
+						sparx_utilities.bcast_EMData_to_all(eig3D, myid, main_node)
 						if options.fl > 0.0:
-							eig3D = filter.filt_tanl(eig3D, options.fl, options.aa)
+							eig3D = sparx_filter.filt_tanl(eig3D, options.fl, options.aa)
 						if myid == main_node:
 							eig3D.write_image(os.path.join(options.outpout_dir, "eig3d_%03d.hdf"%(k, ITER)))
-						EMAN2_cppwrap.Util.mul_img( eig3D, utilities.model_circle(radiuspca, nx, nx, nx) )
-						eig3Df, kb = projection.prep_vol(eig3D)
+						EMAN2_cppwrap.Util.mul_img( eig3D, sparx_utilities.model_circle(radiuspca, nx, nx, nx) )
+						eig3Df, kb = sparx_projection.prep_vol(eig3D)
 						del eig3D
 						cont = False
 						icont = 0
 						for l in range(len(eigList[k])):
-							phi, theta, psi, s2x, s2y = utilities.get_params_proj(eigList[k][l])
-							proj = projection.prgs(eig3Df, kb, [phi, theta, psi, s2x, s2y])
-							cl = statistics.ccc(proj, eigList[k][l], mask2d)
+							phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(eigList[k][l])
+							proj = sparx_projection.prgs(eig3Df, kb, [phi, theta, psi, s2x, s2y])
+							cl = sparx_statistics.ccc(proj, eigList[k][l], mask2d)
 							if cl < 0.0:
 								icont += 1
 								cont = True
@@ -775,7 +775,7 @@ def main():
 							u = int(u[0])
 							log_main.add(" Eigenvector: ",k," number changed ",int(icont[0]))
 						else: u = 0
-						u = utilities.bcast_number_to_all(u, main_node)
+						u = sparx_utilities.bcast_number_to_all(u, main_node)
 						cont = bool(u)
 						ITER += 1
 
@@ -792,21 +792,21 @@ def main():
 					for i in range(number_of_proc):
 						if i == main_node :
 							for im in range(len(varList)):
-								tmpvol=fundamentals.fpol(varList[im], nx, nx,1)
+								tmpvol=sparx_fundamentals.fpol(varList[im], nx, nx,1)
 								tmpvol.write_image(os.path.join(options.output_dir, options.var2D), km)
 								km += 1
 						else:
-							nl = mpi.mpi_recv(1, mpi.MPI_INT, i, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+							nl = mpi.mpi_recv(1, mpi.MPI_INT, i, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 							nl = int(nl[0])
 							for im in range(nl):
-								ave = utilities.recv_EMData(i, im+i+70000)
-								tmpvol=fundamentals.fpol(ave, nx, nx,1)
+								ave = sparx_utilities.recv_EMData(i, im+i+70000)
+								tmpvol=sparx_fundamentals.fpol(ave, nx, nx,1)
 								tmpvol.write_image(os.path.join(options.output_dir, options.var2D), km)
 								km += 1
 				else:
-					mpi.mpi_send(len(varList), 1, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+					mpi.mpi_send(len(varList), 1, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 					for im in range(len(varList)):
-						utilities.send_EMData(varList[im], main_node, im+myid+70000)#  What with the attributes??
+						sparx_utilities.send_EMData(varList[im], main_node, im+myid+70000)#  What with the attributes??
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 		if options.var3D:
@@ -814,13 +814,13 @@ def main():
 			t6 = time.time()
 			# radiusvar = options.radius
 			# if( radiusvar < 0 ):  radiusvar = nx//2 -3
-			res = reconstruction.recons3d_4nn_MPI(myid, varList, symmetry = options.sym, npad=options.npad)
+			res = sparx_reconstruction.recons3d_4nn_MPI(myid, varList, symmetry = options.sym, npad=options.npad)
 			#res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)
 			if myid == main_node:
 				pass#IMPORTIMPORTIMPORT from fundamentals import fpol
-				if options.decimate != 1.0: res	= fundamentals.resample(res, 1./options.decimate)
-				res = fundamentals.fpol(res, nnxo, nnxo, nnxo)
-				utilities.set_pixel_size(res, 1.0)
+				if options.decimate != 1.0: res	= sparx_fundamentals.resample(res, 1./options.decimate)
+				res = sparx_fundamentals.fpol(res, nnxo, nnxo, nnxo)
+				sparx_utilities.set_pixel_size(res, 1.0)
 				res.write_image(os.path.join(options.output_dir, options.var3D))
 				log_main.add("%-70s:  %s\n"%("The reconstructed var3D is saved as ", options.var3D))
 				log_main.add("%-70s:  %.2f\n"%("Var3D reconstruction took [s]", time.time()-t6))
@@ -829,9 +829,9 @@ def main():
 		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
 		mpi.mpi_finalize()
 		
-		if RUNNING_UNDER_MPI: global_def.MPI = False
+		if RUNNING_UNDER_MPI: sparx_global_def.MPI = False
 
-		global_def.BATCH = False
+		sparx_global_def.BATCH = False
 
 if __name__=="__main__":
 	main()

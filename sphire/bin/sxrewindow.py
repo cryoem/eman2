@@ -30,11 +30,11 @@ from __future__ import print_function
 
 import EMAN2_cppwrap
 import EMAN2db
-import applications
-import filter
-import fundamentals
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
 import glob
-import global_def
+import sparx_global_def
 import inspect
 import mpi
 import numpy
@@ -43,7 +43,7 @@ import os
 import shutil
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2db
@@ -140,11 +140,11 @@ def mrk_resample2d(img, sub_rate, target_size = None):
 	if sub_rate == 1.0: 
 		resample_img = img.copy()
 	elif sub_rate < 1.0:
-		resample_img = fundamentals.subsample(img, sub_rate)
+		resample_img = sparx_fundamentals.subsample(img, sub_rate)
 	else:
 		assert (sub_rate > 1.0)
 		nn = int(original_size * sub_rate + 0.5)
-		resample_img, kb = fundamentals.prepi(EMAN2_cppwrap.Util.pad(img, nn, nn, 1, 0, 0, 0, "circumference"))
+		resample_img, kb = sparx_fundamentals.prepi(EMAN2_cppwrap.Util.pad(img, nn, nn, 1, 0, 0, 0, "circumference"))
 		resample_img = resample_img.rot_scale_conv_new(0.0, 0.0, 0.0, kb, sub_rate)
 	assert (resample_img is not None)
 	
@@ -219,7 +219,7 @@ For negative staining data, use --skip_invert.
 	mpirun  -np  32  sxrewindow.py  './mic*.hdf'  'outdir_rebox/centered_rebox/mic*_centered_rebox.rbx'  outdir_rewindow  --box_size=64  --skip_invert
 
 """
-	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=sparx_global_def.SPARXVERSION)
 	parser.add_option("--selection_list",      type="string",        default=None,      help="Micrograph selecting list: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be \'.txt\'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)")
 	parser.add_option("--box_size",            type="int",           default=256,       help="Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when mic_resample_ratio < 1.0. (default 256)")
 	parser.add_option("--skip_invert",         action="store_true",  default=False,     help="Skip invert image contrast: Use this option for negative staining data. By default, the image contrast is inverted for cryo data. (default False)")
@@ -254,13 +254,13 @@ For negative staining data, use --skip_invert.
 	# ------------------------------------------------------------------------------------
 	# Set up SPHIRE global definitions
 	# ------------------------------------------------------------------------------------
-	if global_def.CACHE_DISABLE:
+	if sparx_global_def.CACHE_DISABLE:
 		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
-		utilities.disable_bdb_cache()
+		sparx_utilities.disable_bdb_cache()
 	
 	# Change the name log file for error message
-	original_logfilename = global_def.LOGFILE
-	global_def.LOGFILE = os.path.splitext(program_name)[0] + '_' + original_logfilename + '.txt'
+	original_logfilename = sparx_global_def.LOGFILE
+	sparx_global_def.LOGFILE = os.path.splitext(program_name)[0] + '_' + original_logfilename + '.txt'
 	
 	# ------------------------------------------------------------------------------------
 	# Print command line
@@ -342,7 +342,7 @@ For negative staining data, use --skip_invert.
 					break
 		
 		break
-	utilities.if_error_then_all_processes_exit_program(error_status)
+	sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 	assert (mic_pattern != None)
 	assert (rebox_pattern != None)
 	assert (root_out_dir != None)
@@ -528,7 +528,7 @@ For negative staining data, use --skip_invert.
 				print(" ")
 				print("Checking the selection list...")
 				assert (os.path.exists(options.selection_list))
-				selected_mic_path_list = utilities.read_text_file(options.selection_list)
+				selected_mic_path_list = sparx_utilities.read_text_file(options.selection_list)
 				
 				# Check error condition of micrograph entry lists
 				print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), options.selection_list))
@@ -614,7 +614,7 @@ For negative staining data, use --skip_invert.
 				print(" ")
 				print("Checking the CTER partres file...")
 				assert (os.path.exists(ctf_params_src))
-				cter_entry_list = utilities.read_text_row(ctf_params_src)
+				cter_entry_list = sparx_utilities.read_text_row(ctf_params_src)
 			
 				# Check error condition of CTER partres entry list
 				print("Found %d CTER partres entries in %s." % (len(cter_entry_list), ctf_params_src))
@@ -850,7 +850,7 @@ For negative staining data, use --skip_invert.
 	# The following function takes care of the case when an if-statement uses break for occurence of an error.
 	# However, more elegant way is to use 'exception' statement of exception mechanism...
 	# 
-	utilities.if_error_then_all_processes_exit_program(error_status)
+	sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 	
 	# ====================================================================================
 	# Obtain the list of micrograph id sustrings
@@ -861,7 +861,7 @@ For negative staining data, use --skip_invert.
 	# Prepare variables related to options
 	box_size = options.box_size
 	box_half = box_size // 2
-	mask2d = utilities.model_circle(box_size//2, box_size, box_size) # Create circular 2D mask to Util.infomask of particle images
+	mask2d = sparx_utilities.model_circle(box_size//2, box_size, box_size) # Create circular 2D mask to Util.infomask of particle images
 	mic_resample_ratio = options.mic_resample_ratio
 	
 	# Micrograph baseroot pattern (extension are removed from micrograph basename pattern)
@@ -882,11 +882,11 @@ For negative staining data, use --skip_invert.
 	if RUNNING_UNDER_MPI:
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		# All mpi processes should know global entry directory and valid micrograph id substring list
-		global_entry_dict = utilities.wrap_mpi_bcast(global_entry_dict, main_mpi_proc)
-		valid_mic_id_substr_list = utilities.wrap_mpi_bcast(valid_mic_id_substr_list, main_mpi_proc)
+		global_entry_dict = sparx_utilities.wrap_mpi_bcast(global_entry_dict, main_mpi_proc)
+		valid_mic_id_substr_list = sparx_utilities.wrap_mpi_bcast(valid_mic_id_substr_list, main_mpi_proc)
 		
 		# Slice the list of valid micrograph id substrings for this mpi process
-		mic_start, mic_end = applications.MPI_start_end(len(valid_mic_id_substr_list), n_mpi_procs, my_mpi_proc_id)
+		mic_start, mic_end = sparx_applications.MPI_start_end(len(valid_mic_id_substr_list), n_mpi_procs, my_mpi_proc_id)
 		valid_mic_id_substr_list = valid_mic_id_substr_list[mic_start:mic_end]
 		
 		# generate subdirectories user root_out_dir, one for each process
@@ -945,7 +945,7 @@ For negative staining data, use --skip_invert.
 		# --------------------------------------------------------------------------------
 		rebox_path = global_entry_dict[mic_id_substr][subkey_rebox_path]
 		assert (os.path.exists(rebox_path))
-		rebox_list = utilities.read_text_row(rebox_path)
+		rebox_list = sparx_utilities.read_text_row(rebox_path)
 		
 		if (len(rebox_list) == 0):
 			print("For %s, the associate rebox file %s does not contain any entries. Skipping..." % (mic_basename, rebox_path))
@@ -990,7 +990,7 @@ For negative staining data, use --skip_invert.
 		mic_path = global_entry_dict[mic_id_substr][subkey_input_mic_path]
 		assert (mic_path == mic_pattern.replace("*", mic_id_substr))
 		try:
-			mic_img = utilities.get_im(mic_path)
+			mic_img = sparx_utilities.get_im(mic_path)
 		except:
 			print("Failed to read the associate micrograph %s for %s. The file might be corrupted. Skipping..." % (mic_path, mic_basename))
 			continue
@@ -998,14 +998,14 @@ For negative staining data, use --skip_invert.
 		# --------------------------------------------------------------------------------
 		# Move to the Fourier space processing
 		# --------------------------------------------------------------------------------
-		fundamentals.fftip(mic_img) # In-place fft
+		sparx_fundamentals.fftip(mic_img) # In-place fft
 		
 		# --------------------------------------------------------------------------------
 		# Apply the Gaussian high-pass Fourier filter to micrograph based on the (resampled) box size;
 		# Cut off frequency components lower than one that the (resampled) box size can express.
 		# Then, move back to the real space processing
 		# --------------------------------------------------------------------------------
-		mic_img = fundamentals.fft(filter.filt_gaussh(mic_img, mic_resample_ratio / box_size))
+		mic_img = sparx_fundamentals.fft(sparx_filter.filt_gaussh(mic_img, mic_resample_ratio / box_size))
 		
 		# --------------------------------------------------------------------------------
 		# Resample micrograph, map rebox, and window segments from resampled micrograph using new rebox
@@ -1014,7 +1014,7 @@ For negative staining data, use --skip_invert.
 		# NOTE: 2015/04/13 Toshio Moriya
 		# resample() efficiently takes care of the case mic_resample_ratio = 1.0 but
 		# it does not set apix_*. Even though it sets apix_* when mic_resample_ratio < 1.0...
-		mic_img = fundamentals.resample(mic_img, mic_resample_ratio)
+		mic_img = sparx_fundamentals.resample(mic_img, mic_resample_ratio)
 		
 		# --------------------------------------------------------------------------------
 		# If necessary, invert image contrast of this micrograph 
@@ -1085,7 +1085,7 @@ For negative staining data, use --skip_invert.
 				pp_def_error_accum  = 0.0
 			
 			# Create CTF object
-			ctf_obj = utilities.generate_ctf(ctf_entry)
+			ctf_obj = sparx_utilities.generate_ctf(ctf_entry)
 			
 			# Convert projection shifts to the original scale
 			if rebox_resample_ratio < 1.0:
@@ -1212,7 +1212,7 @@ For negative staining data, use --skip_invert.
 					print("MRK_DEBUG: ctf_obj.defocus := {}".format(ctf_obj.defocus))
 			
 			# Normalize this particle image
-			particle_img = fundamentals.ramp(particle_img)
+			particle_img = sparx_fundamentals.ramp(particle_img)
 			particle_stats = EMAN2_cppwrap.Util.infomask(particle_img, mask2d, False) # particle_stats[0:mean, 1:SD, 2:min, 3:max]
 			particle_img -= particle_stats[0]
 			try:
@@ -1263,7 +1263,7 @@ For negative staining data, use --skip_invert.
 			particle_img.set_attr("ctf", ctf_obj)
 			particle_img.set_attr("ctf_applied", 0)
 			
-			utilities.set_params_proj(particle_img, proj_entry)
+			sparx_utilities.set_params_proj(particle_img, proj_entry)
 			
 			# Write the particle image to local stack file
 			# print("MRK_DEBUG: local_stack_path, local_particle_id", local_stack_path, local_particle_id)
@@ -1361,7 +1361,7 @@ For negative staining data, use --skip_invert.
 			print("Please execute from the command line :  ", e2bdb_command)
 		else:
 			e2bdb_command = "e2bdb.py  " + root_out_dir + "  --makevstack=bdb:" + root_out_dir + "#data"
-			utilities.cmdexecute(e2bdb_command, printing_on_success = False)
+			sparx_utilities.cmdexecute(e2bdb_command, printing_on_success = False)
 		
 		print(" ")
 		print("DONE!!!")
@@ -1373,7 +1373,7 @@ For negative staining data, use --skip_invert.
 	# ------------------------------------------------------------------------------------
 	# Reset SPHIRE global definitions
 	# ------------------------------------------------------------------------------------
-	global_def.LOGFILE = original_logfilename
+	sparx_global_def.LOGFILE = original_logfilename
 	
 	# ------------------------------------------------------------------------------------
 	# Clean up MPI related variables

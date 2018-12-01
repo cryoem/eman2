@@ -5,14 +5,14 @@ from __future__ import print_function
 #
 
 import glob
-import global_def
+import sparx_global_def
 import numpy
 import optparse
 import os
 import subprocess
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import glob
 pass#IMPORTIMPORTIMPORT import global_def
 pass#IMPORTIMPORTIMPORT import numpy
@@ -89,7 +89,7 @@ def main():
     outdir_summovie --nr_frames=24 --first=3 --last=15 --pixel_size=1.19 --nr_threads=1 --apply_dose_filter --voltage=300 --exposure_per_frame=2 --pre_exposure=0
     """
 
-    parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
+    parser = optparse.OptionParser(usage, version=sparx_global_def.SPARXVERSION)
     parser.add_option('--selection_list',     type='str',          default='',        help='Micrograph selecting list (SPHIRE specific): Specify a name of micrograph selection list text file. The file extension must be \'.txt\'. If this is not provided, all files matched with the micrograph name pattern will be processed. (default none)')
     parser.add_option('--nr_frames',          type='int',          default=3,         help='Number of movie frames: The number of movie frames in each input micrograph. (default 3)')
     parser.add_option('--first',              type='int',          default=1,         help='First movie frame: First movie frame for summing. (default 1)')
@@ -108,11 +108,11 @@ def main():
     # list of the options and the arguments
     (options, args) = parser.parse_args(sys.argv[1:])
 
-    global_def.BATCH = True
+    sparx_global_def.BATCH = True
 
     # If there arent enough arguments, stop the script
     if len(args) != 4:
-        global_def.ERROR("see usage " + usage, 1)
+        sparx_global_def.ERROR("see usage " + usage, 1)
 
     # Convert the realtive parts to absolute ones
     summovie_path = os.path.realpath(args[0]) # summovie_path
@@ -122,14 +122,14 @@ def main():
 
     # If the summovie executable file does not exists, stop the script
     if not os.path.exists(summovie_path):
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'Summovie directory does not exist, please change' +
             ' the name and restart the program.', 'sxsummovie.py', 1
             )
 
     # If the output directory exists, stop the script
     if os.path.exists(output_dir):
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'Output directory exists, please change' +
             ' the name and restart the program.', 'sxsummovie.py', 1
             )
@@ -139,13 +139,13 @@ def main():
     shift_list = glob.glob(input_shift)
 
     if not file_list:
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'Input micrograph file(s) does not exist, please change' +
             ' the name and restart the program.', 'sxsummovie.py', 1
             )
 
     if not shift_list:
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'Input shift file(s) does not exist, please change' +
             ' the name and restart the program.', 'sxsummovie.py', 1
             )
@@ -168,7 +168,7 @@ def main():
     input_shift_name = input_shift.split('*')
 
     if len(input_mic_name) != 2 or len(input_shift_name) != 2:
-        global_def.ERROR(
+        sparx_global_def.ERROR(
             'Too many wildcard arguments.' +
             'Please use exactly one * in the pattern.', 'sxsummovie.py',
             1
@@ -209,7 +209,7 @@ def main():
         try:
             selection = numpy.genfromtxt(selection_file, dtype=None)
         except TypeError:
-            global_def.ERROR('no entrys in micrograph list file {0}'.format(selection_file), 'sxsummovie.py', 1)
+            sparx_global_def.ERROR('no entrys in micrograph list file {0}'.format(selection_file), 'sxsummovie.py', 1)
         # List of files which are in pattern and list
         mic_list = [
                 entry for entry in mic_list \
@@ -218,7 +218,7 @@ def main():
                 ]
         # If no match is there abort
         if len(mic_list) == 0:
-            global_def.ERROR(
+            sparx_global_def.ERROR(
                 'no files in {0} matched the micrograph file pattern:\n'.format(selection_file), 'sxsummovie.py',
                 1
                 )
@@ -265,7 +265,7 @@ def main():
 
     print('All Done!')
 
-    global_def.BATCH = False
+    sparx_global_def.BATCH = False
 
 
 def run_summovie(
@@ -330,7 +330,7 @@ def run_summovie(
             )
 
         # First build the summovie command
-        summovie_command = utilities.create_summovie_command(
+        summovie_command = sparx_utilities.create_summovie_command(
             temp_name,
             micrograph_name,
             shift_name,
@@ -404,7 +404,7 @@ def run_summovie(
                 # Remove temp file
                 os.remove(temp_name)
             else:
-                global_def.ERROR('e2proc2d.py error. File was not created:\n{0}'.format(inputfile), 'sxsummovie.py', 0)
+                sparx_global_def.ERROR('e2proc2d.py error. File was not created:\n{0}'.format(inputfile), 'sxsummovie.py', 0)
 
         time_list.append(time.time() - t1)
         
@@ -418,7 +418,7 @@ def run_summovie(
         if clean:
             print('SumMovie finished cleanly.')
         else:
-            global_def.ERROR(
+            sparx_global_def.ERROR(
                 'sum movie error. check the logfile for more information: {0}'.format(
                     log_name), 'sxsummovie.py', 0
                 )

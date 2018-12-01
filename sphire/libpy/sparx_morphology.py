@@ -31,12 +31,12 @@ from __future__ import print_function
 
 import EMAN2_cppwrap
 import EMAN2db
-import alignment
-import applications
-import filter
-import fundamentals
+import sparx_alignment
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
 import glob
-import global_def
+import sparx_global_def
 import inspect
 import math
 import mpi
@@ -44,12 +44,12 @@ import numpy
 import numpy as np
 import operator
 import os
-import pixel_error
-import projection
+import sparx_pixel_error
+import sparx_projection
 import random
-import statistics
+import sparx_statistics
 import sys
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2db
@@ -127,15 +127,15 @@ def dilation(f, mask = None, morphtype="BINARY"):
 		nx = f.get_xsize()
 		ny = f.get_ysize()
 		nz = f.get_zsize()
-		if(nz == 1):	mask = utilities.model_circle(2,5,5)
-		elif(nz >1):  mask = utilities.model_circle(2,5,5)
-		else:  global_def.ERROR("Command does not work for 1D images","dilation",1)
+		if(nz == 1):	mask = sparx_utilities.model_circle(2,5,5)
+		elif(nz >1):  mask = sparx_utilities.model_circle(2,5,5)
+		else:  sparx_global_def.ERROR("Command does not work for 1D images","dilation",1)
 
 	if morphtype=="BINARY":
 		return EMAN2_cppwrap.filt_dilation_(f, mask, EMAN2_cppwrap.morph_type.BINARY)
 	elif morphtype=="GRAYLEVEL":
 		return EMAN2_cppwrap.filt_dilation_(f, mask, EMAN2_cppwrap.morph_type.GRAYLEVEL)
-	else: global_def.ERROR("Unknown dilation type","dilation",1)
+	else: sparx_global_def.ERROR("Unknown dilation type","dilation",1)
 
 def erosion(f, mask = None, morphtype="BINARY"):
 	"""
@@ -163,15 +163,15 @@ def erosion(f, mask = None, morphtype="BINARY"):
 		nx = f.get_xsize()
 		ny = f.get_ysize()
 		nz = f.get_zsize()
-		if(nz == 1):	mask = utilities.model_circle(2,5,5)
-		elif(nz >1):  mask = utilities.model_circle(2,5,5)
-		else:  global_def.ERROR("Command does not work for 1D images","erosion",1)
+		if(nz == 1):	mask = sparx_utilities.model_circle(2,5,5)
+		elif(nz >1):  mask = sparx_utilities.model_circle(2,5,5)
+		else:  sparx_global_def.ERROR("Command does not work for 1D images","erosion",1)
 
 	if morphtype=="BINARY":
 		return EMAN2_cppwrap.filt_erosion_(f, mask, EMAN2_cppwrap.morph_type.BINARY)
 	elif morphtype=="GRAYLEVEL":
 		return EMAN2_cppwrap.filt_erosion_(f, mask, EMAN2_cppwrap.morph_type.GRAYLEVEL)
-	else: global_def.ERROR("Unknown erosion type","erosion",1)
+	else: sparx_global_def.ERROR("Unknown erosion type","erosion",1)
 
 def power(img, x = 3.0):
 	"""
@@ -195,7 +195,7 @@ def square_root(img):
 			output image.
 	"""
 	[a,b,c,d] = EMAN2_cppwrap.Util.infomask(img, None, False)
-	if(c<0.0):  global_def.ERROR("Cannot calculate square root of negative pixels","square_root",1)
+	if(c<0.0):  sparx_global_def.ERROR("Cannot calculate square root of negative pixels","square_root",1)
 	return img.process( "math.sqrt" )
 
 def square(img):
@@ -547,7 +547,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_wi
 	nx = vol.get_xsize()
 	ny = vol.get_ysize()
 	nz = vol.get_zsize()
-	mc = utilities.model_circle(nx//2, nx, ny, nz) - utilities.model_circle(nx//3, nx, ny, nz)
+	mc = sparx_utilities.model_circle(nx//2, nx, ny, nz) - sparx_utilities.model_circle(nx//3, nx, ny, nz)
 	s1 = EMAN2_cppwrap.Util.infomask(vol, mc, True) # flip true: find statistics under the mask (mask >0.5)
 	if threshold <= -9999.0:
 		# Use automatic mode
@@ -580,14 +580,14 @@ def get_shrink_3dmask(nxinit, mask_file_name):
 	pass#IMPORTIMPORTIMPORT from utilities import get_im
 	pass#IMPORTIMPORTIMPORT from fundamentals import resample
 	pass#IMPORTIMPORTIMPORT from morphology   import binarize
-	mask3d = utilities.get_im(mask_file_name)
+	mask3d = sparx_utilities.get_im(mask_file_name)
 	nx2 = nxinit
 	nx1 = mask3d.get_xsize()
 	if nx1 == nx2:
 		return mask3d
 	else:
 		shrinkage = float(nx2)/nx1
-		mask3d    = binarize(fundamentals.resample(mask3d,shrinkage),0.5) #added 0.5 here to fix binarization problem
+		mask3d    = binarize(sparx_fundamentals.resample(mask3d,shrinkage),0.5) #added 0.5 here to fix binarization problem
 		return mask3d
 
 
@@ -608,7 +608,7 @@ def get_biggest_cluster(mg):
 	s = EMAN2_cppwrap.Util.infomask(lg, None, True)
 	nnc = int(s[0]*nx*ny*nz)
 
-	cls = utilities.model_blank(nx,ny,nz)
+	cls = sparx_utilities.model_blank(nx,ny,nz)
 
 	l = []
 	grp = 0
@@ -695,9 +695,9 @@ def compute_bfactor(pws, freq_min, freq_max, pixel_size = 1.0):
 
 	# Linear regression will crash if min & max frequencies are only one apart
 	if idx_freq_max-idx_freq_min <= 1: 
-		global_def.ERROR("B_start is too high a resolution! Decrease it (under Advanced) and re-run the program! ", "compute_bfactor")
+		sparx_global_def.ERROR("B_start is too high a resolution! Decrease it (under Advanced) and re-run the program! ", "compute_bfactor")
 		
-	B, s = statistics.linreg(x[idx_freq_min:idx_freq_max], pws_log[idx_freq_min:idx_freq_max])
+	B, s = sparx_statistics.linreg(x[idx_freq_min:idx_freq_max], pws_log[idx_freq_min:idx_freq_max])
 	#print  B,s
 
 	ff = [0.0]*nr
@@ -873,7 +873,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			for error_message in error_message_list:  
 				print(("ERROR!!! %s" % (error_message)))
 		error_status = ("Detected %d error(s) related to arguments and options. Run %s -h for help. Exiting..." % (len(error_message_list), program_name), inspect.getframeinfo(inspect.currentframe()))
-	utilities.if_error_then_all_processes_exit_program(error_status)
+	sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 	if RUNNING_UNDER_MPI:
 		# Wait for all mpi processes to check error conditions, especially existence of output directory
 		# Without this barrier, main mpi process can create output directory before some child mpi process check this error.
@@ -988,7 +988,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				if os.path.splitext(selection_list)[1] == ".txt":
 					print(" ")
 					print("Checking the selection list...")
-					selected_mic_path_list = utilities.read_text_file(selection_list)
+					selected_mic_path_list = sparx_utilities.read_text_file(selection_list)
 				
 					# Check error condition of  entry lists
 					print(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
@@ -1147,7 +1147,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		# The following function takes care of the case when an if-statement uses break for occurence of an error.
 		# However, more elegant way is to use 'exception' statement of exception mechanism...
 		# 
-		utilities.if_error_then_all_processes_exit_program(error_status)
+		sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 		
 	else:
 		input_file_path_list.append(input_image_path)
@@ -1157,7 +1157,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
 		# All mpi processes should know input file path list
-		input_file_path_list = utilities.wrap_mpi_bcast(input_file_path_list, main_mpi_proc)
+		input_file_path_list = sparx_utilities.wrap_mpi_bcast(input_file_path_list, main_mpi_proc)
 	
 	# ====================================================================================
 	# Prepare input file path(s)
@@ -1203,7 +1203,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 	# Set up loop variables depending on the cter mode
 	if stack == None:
 		if RUNNING_UNDER_MPI:
-			set_start, set_end = applications.MPI_start_end(len(namics), n_mpi_procs, my_mpi_proc_id)
+			set_start, set_end = sparx_applications.MPI_start_end(len(namics), n_mpi_procs, my_mpi_proc_id)
 		else:
 			set_start = 0
 			set_end = len(namics)
@@ -1245,9 +1245,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				print("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
 				continue
 
-			mic = utilities.get_im(img_name)
+			mic = sparx_utilities.get_im(img_name)
 			try:
-				pw2 = fundamentals.tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+				pw2 = sparx_fundamentals.tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
 			except:
 				print("MRK_DEBUG: tilemic() in cter_mrk() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
@@ -1259,7 +1259,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			numFM = EMAN2_cppwrap.EMUtil.get_image_count(img_name)
 			pw2 = [None]*numFM
 			for i in range(numFM):
-				pw2.append(EMAN2_cppwrap.periodogram(utilities.get_im(img_name,i)))
+				pw2.append(EMAN2_cppwrap.periodogram(sparx_utilities.get_im(img_name,i)))
 
 		for i in range(len(pw2)):
 			pw2[i] = square_root(pw2[i])
@@ -1279,7 +1279,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		
 		allroo = []
 		for imi in range(nimi):
-			allroo.append(fundamentals.rot_avg_table(pw2[imi]))
+			allroo.append(sparx_fundamentals.rot_avg_table(pw2[imi]))
 		lenroo = len(allroo[0])
 		#print time(),nimi
 		
@@ -1289,7 +1289,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			else:
 				pass#IMPORTIMPORTIMPORT from random import randint
 				for imi in range(nimi): boot[imi] = random.randint(0, nimi - 1)
-			qa = utilities.model_blank(wn, wn)
+			qa = sparx_utilities.model_blank(wn, wn)
 			roo  = np.zeros(lenroo, np.float32)
 			sroo = np.zeros(lenroo, np.float32)
 			aroo = np.zeros(lenroo, np.float32)
@@ -1342,15 +1342,15 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				for i in range(len(freq)):  freq[i] = float(i) / wn / pixel_size
 #				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], "%s/ravg%05d.txt" % (output_directory, ifi))
 				fou = os.path.join(outravg, "%s_ravg_%02d.txt" % (img_basename_root, nboot))
-				utilities.write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], fou)
+				sparx_utilities.write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], fou)
 			#mpi_barrier(MPI_COMM_WORLD)
 			
 			#exit()
 			bg = baseline.tolist()
 			en = envelope.tolist()
 			
-			bckg = utilities.model_blank(wn, wn, 1, 1)
-			envl = utilities.model_blank(wn, wn, 1, 1)
+			bckg = sparx_utilities.model_blank(wn, wn, 1, 1)
+			envl = sparx_utilities.model_blank(wn, wn, 1, 1)
 			
 			pass#IMPORTIMPORTIMPORT from math import sqrt
 			nc = wn // 2
@@ -1367,7 +1367,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			#qa.write_image("rs1.hdf")
 			
-			mask = utilities.model_circle(istop - 1, wn, wn) * (utilities.model_blank(wn, wn, 1, 1.0) - utilities.model_circle(istart, wn, wn))
+			mask = sparx_utilities.model_circle(istop - 1, wn, wn) * (sparx_utilities.model_blank(wn, wn, 1, 1.0) - sparx_utilities.model_circle(istart, wn, wn))
 			qse = threshold((qa - bckg))#*envl
 			#(qse*mask).write_image("rs2.hdf")
 			#qse.write_image("rs3.hdf")
@@ -1380,8 +1380,8 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			cny = cnx
 			mode = "H"
 			istop = min(wn // 2 - 2, istop)    #2-26-2015@ming
-			numr = alignment.Numrinit(istart, istop, 1, mode)
-			wr = alignment.ringwe(numr, mode)
+			numr = sparx_alignment.Numrinit(istart, istop, 1, mode)
+			wr = sparx_alignment.ringwe(numr, mode)
 			
 			crefim = EMAN2_cppwrap.Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
 			EMAN2_cppwrap.Util.Frngs(crefim, numr)
@@ -1463,7 +1463,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				#bamp = 0.5
 				#bang = 277
 				
-				dama = utilities.amoeba([bdef, bamp], [0.2, 0.2], fupw_pap, 1.e-4, 1.e-4, 500, astdata)
+				dama = sparx_utilities.amoeba([bdef, bamp], [0.2, 0.2], fupw_pap, 1.e-4, 1.e-4, 500, astdata)
 				#dama = amoeba([bdef, bamp], [0.2, 0.2], fupw, 1.e-4, 1.e-4, 500, astdata)
 				if debug_mode:  print("AMOEBA    ", dama)
 				bdef = dama[0][0]
@@ -1498,7 +1498,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		#print " ttt ",time()-srtt
 		#from sys import exit
 		#exit()
-		ad1, ad2, ad3, ad4 = statistics.table_stat(adefocus) # return values: average, variance, minimum, maximum
+		ad1, ad2, ad3, ad4 = sparx_statistics.table_stat(adefocus) # return values: average, variance, minimum, maximum
 		if ad2 <= 0.0:
 			print(("    %s %s: Detected the variance less than zero (defocus statistics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
 			print(("           The program ignores this estimate..."))
@@ -1524,9 +1524,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			#print "adefocus",adefocus
 			#print  "aamplitu",aamplitu
 			#print "aangle",aangle
-			ad1, ad2, ad3, ad4 = statistics.table_stat(adefocus)
-			bd1, bd2, bd3, bd4 = statistics.table_stat(aamplitu)
-			cd1,cd2 = pixel_error.angle_ave([2*q for q in aangle])  # Have to use this trick as the function works for range [0,360]
+			ad1, ad2, ad3, ad4 = sparx_statistics.table_stat(adefocus)
+			bd1, bd2, bd3, bd4 = sparx_statistics.table_stat(aamplitu)
+			cd1,cd2 = sparx_pixel_error.angle_ave([2*q for q in aangle])  # Have to use this trick as the function works for range [0,360]
 			cd1/=2
 			cd2/=2
 			temp = 0.0
@@ -1543,7 +1543,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
 			reject_img_messages = []
 			try:
-				pwrot2 = rotavg_ctf( utilities.model_blank(wn, wn), ad1, Cs, voltage, pixel_size, bd1, cd1)
+				pwrot2 = rotavg_ctf( sparx_utilities.model_blank(wn, wn), ad1, Cs, voltage, pixel_size, bd1, cd1)
 			except:
 				reject_img_messages.append("    - Astigmatism amplitude (%f) is larger than defocus (%f) or defocus (%f) is negative." % (bd1, ad1, ad1))
 			
@@ -1558,7 +1558,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
 				import random as rqt
 				
-				supe = utilities.model_blank(wn, wn)
+				supe = sparx_utilities.model_blank(wn, wn)
 				niter = 1000
 				for it in range(niter):
 					EMAN2_cppwrap.Util.add_img(supe, EMAN2_cppwrap.Util.ctf_rimg(wn, wn, 1, ad1 + rqt.gauss(0.0,stdavad1), pixel_size, voltage, Cs, 0.0, wgh, bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
@@ -1573,13 +1573,13 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 						ibec = it
 						break
 				pass#IMPORTIMPORTIMPORT from morphology import ctf_1d
-				ct = utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, 0.0, 0.0])
+				ct = sparx_utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, 0.0, 0.0])
 				cq = ctf_1d(wn, ct)
 				
 				supe = [0.0] * ni
 				niter = 1000
 				for i in range(niter):
-					cq = utilities.generate_ctf([ad1 + rqt.gauss(0.0,stdavad1), Cs, voltage, pixel_size, 0.0, wgh, 0.0, 0.0])
+					cq = sparx_utilities.generate_ctf([ad1 + rqt.gauss(0.0,stdavad1), Cs, voltage, pixel_size, 0.0, wgh, 0.0, 0.0])
 					ci = ctf_1d(wn, cq)[:ni]
 					for l in range(ni):  supe[l] +=ci[l]
 				
@@ -1614,17 +1614,17 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				
 				"""Multiline Comment8"""
 				lnsb = len(subpw)
-				try:		crot1 = rotavg_ctf(ctf_rimg(wn, utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
+				try:		crot1 = rotavg_ctf(ctf_rimg(wn, sparx_utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		crot1 = [0.0] * lnsb
 				try:		pwrot1 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		pwrot1 = [0.0] * lnsb
-				try:		crot2 = rotavg_ctf(ctf_rimg(wn, utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
+				try:		crot2 = rotavg_ctf(ctf_rimg(wn, sparx_utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
 				except:		crot2 = [0.0] * lnsb
 				try:		pwrot2 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
 				except:		pwrot2 = [0.0] * lnsb
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
 				lnsb = min(len(crot2),len(pwrot1),len(crot2),len(pwrot2))
-				utilities.write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], pwrot1, crot1, pwrot2, crot2], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
+				sparx_utilities.write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], pwrot1, crot1, pwrot2, crot2], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
 				
 				#
 				# NOTE: 2016/03/23 Toshio Moriya
@@ -1691,11 +1691,11 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 #				#if ifi == 4 : break
 
 		if stack == None:
-			img_mic = utilities.get_im(namics[ifi])
+			img_mic = sparx_utilities.get_im(namics[ifi])
 			# create  thumbnail
 			nx = img_mic.get_xsize()
 			if nx > 512:
-				img_micthumb = fundamentals.resample(img_mic, 512.0/nx)
+				img_micthumb = sparx_fundamentals.resample(img_mic, 512.0/nx)
 			else:
 				img_micthumb = img_mic
 			fou = os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root))
@@ -1703,9 +1703,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 
 	if RUNNING_UNDER_MPI:
 		pass#IMPORTIMPORTIMPORT from utilities import wrap_mpi_gatherv
-		totresi = utilities.wrap_mpi_gatherv(totresi, 0, mpi.MPI_COMM_WORLD)
-		missing_img_names = utilities.wrap_mpi_gatherv(missing_img_names, 0, mpi.MPI_COMM_WORLD)
-		rejected_img_names = utilities.wrap_mpi_gatherv(rejected_img_names, 0, mpi.MPI_COMM_WORLD)
+		totresi = sparx_utilities.wrap_mpi_gatherv(totresi, 0, mpi.MPI_COMM_WORLD)
+		missing_img_names = sparx_utilities.wrap_mpi_gatherv(missing_img_names, 0, mpi.MPI_COMM_WORLD)
+		rejected_img_names = sparx_utilities.wrap_mpi_gatherv(rejected_img_names, 0, mpi.MPI_COMM_WORLD)
 	
 	if my_mpi_proc_id == main_mpi_proc:
 		outf = open(os.path.join(output_directory, "partres.txt"), "w")
@@ -1905,7 +1905,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			for error_message in error_message_list:  
 				print(("ERROR!!! %s" % (error_message)))
 		error_status = ("Detected %d error(s) related to arguments and options. Run %s -h for help. Exiting..." % (len(error_message_list), program_name), inspect.getframeinfo(inspect.currentframe()))
-	utilities.if_error_then_all_processes_exit_program(error_status)
+	sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 	if RUNNING_UNDER_MPI:
 		# Wait for all mpi processes to check error conditions, especially existence of output directory
 		# Without this barrier, main mpi process can create output directory before some child mpi process check this error.
@@ -2020,7 +2020,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				if os.path.splitext(selection_list)[1] == ".txt":
 					print(" ")
 					print("Checking the selection list...")
-					selected_mic_path_list = utilities.read_text_file(selection_list)
+					selected_mic_path_list = sparx_utilities.read_text_file(selection_list)
 				
 					# Check error condition of  entry lists
 					print(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
@@ -2179,7 +2179,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		# The following function takes care of the case when an if-statement uses break for occurence of an error.
 		# However, more elegant way is to use 'exception' statement of exception mechanism...
 		# 
-		utilities.if_error_then_all_processes_exit_program(error_status)
+		sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 		
 	else:
 		input_file_path_list.append(input_image_path)
@@ -2189,7 +2189,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
 		# All mpi processes should know input file path list
-		input_file_path_list = utilities.wrap_mpi_bcast(input_file_path_list, main_mpi_proc)
+		input_file_path_list = sparx_utilities.wrap_mpi_bcast(input_file_path_list, main_mpi_proc)
 	
 	# ====================================================================================
 	# Prepare input file path(s)
@@ -2235,7 +2235,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 	# Set up loop variables depending on the cter mode
 	if stack == None:
 		if RUNNING_UNDER_MPI:
-			set_start, set_end = applications.MPI_start_end(len(namics), n_mpi_procs, my_mpi_proc_id)
+			set_start, set_end = sparx_applications.MPI_start_end(len(namics), n_mpi_procs, my_mpi_proc_id)
 		else:
 			set_start = 0
 			set_end = len(namics)
@@ -2277,9 +2277,9 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				print("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
 				continue
 
-			mic = utilities.get_im(img_name)
+			mic = sparx_utilities.get_im(img_name)
 			try:
-				pw2 = fundamentals.tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+				pw2 = sparx_fundamentals.tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
 			except:
 				print("MRK_DEBUG: tilemic() in cter_pap() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
@@ -2291,7 +2291,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			numFM = EMAN2_cppwrap.EMUtil.get_image_count(img_name)
 			pw2 = [None]*numFM
 			for i in range(numFM):
-				pw2.append(EMAN2_cppwrap.periodogram(utilities.get_im(img_name,i)))
+				pw2.append(EMAN2_cppwrap.periodogram(sparx_utilities.get_im(img_name,i)))
 
 		if debug_mode: print("    %s %s: Process %04d started the processing. Detected %d image(s) in this %s file." % (img_type, img_name, ifi, numFM, img_type.lower()))
 		
@@ -2308,7 +2308,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		
 		allroo = []
 		for imi in range(nimi):
-			allroo.append(fundamentals.rot_avg_table(pw2[imi]))
+			allroo.append(sparx_fundamentals.rot_avg_table(pw2[imi]))
 		lenroo = len(allroo[0])
 		#print time(),nimi
 		
@@ -2318,7 +2318,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			else:
 				pass#IMPORTIMPORTIMPORT from random import randint
 				for imi in range(nimi): boot[imi] = random.randint(0, nimi - 1)
-			qa = utilities.model_blank(wn, wn)
+			qa = sparx_utilities.model_blank(wn, wn)
 			roo  = np.zeros(lenroo, np.float32)
 			sroo = np.zeros(lenroo, np.float32)
 			aroo = np.zeros(lenroo, np.float32)
@@ -2370,15 +2370,15 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				for i in range(len(freq)):  freq[i] = float(i) / wn / pixel_size
 #				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], "%s/ravg%05d.txt" % (output_directory, ifi))
 				fou = os.path.join(outravg, "%s_ravg_%02d.txt" % (img_basename_root, nboot))
-				utilities.write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], fou)
+				sparx_utilities.write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()], fou)
 			#mpi_barrier(MPI_COMM_WORLD)
 			
 			#exit()
 			bg = baseline.tolist()
 			en = envelope.tolist()
 			
-			bckg = utilities.model_blank(wn, wn, 1, 1)
-			envl = utilities.model_blank(wn, wn, 1, 1)
+			bckg = sparx_utilities.model_blank(wn, wn, 1, 1)
+			envl = sparx_utilities.model_blank(wn, wn, 1, 1)
 			
 			pass#IMPORTIMPORTIMPORT from math import sqrt
 			nc = wn // 2
@@ -2395,7 +2395,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			#qa.write_image("rs1.hdf")
 			
-			mask = utilities.model_circle(istop - 1, wn, wn) * (utilities.model_blank(wn, wn, 1, 1.0) - utilities.model_circle(istart, wn, wn))
+			mask = sparx_utilities.model_circle(istop - 1, wn, wn) * (sparx_utilities.model_blank(wn, wn, 1, 1.0) - sparx_utilities.model_circle(istart, wn, wn))
 			qse = threshold((qa - bckg))#*envl
 			#(qse*mask).write_image("rs2.hdf")
 			#qse.write_image("rs3.hdf")
@@ -2408,8 +2408,8 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			cny = cnx
 			mode = "H"
 			istop = min(wn // 2 - 2, istop)    #2-26-2015@ming
-			numr = alignment.Numrinit(istart, istop, 1, mode)
-			wr = alignment.ringwe(numr, mode)
+			numr = sparx_alignment.Numrinit(istart, istop, 1, mode)
+			wr = sparx_alignment.ringwe(numr, mode)
 			
 			crefim = EMAN2_cppwrap.Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
 			EMAN2_cppwrap.Util.Frngs(crefim, numr)
@@ -2486,7 +2486,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				#bamp = 0.5
 				#bang = 277
 				
-				dama = utilities.amoeba([bdef, bamp], [0.2, 0.2], fupw, 1.e-4, 1.e-4, 500, astdata)
+				dama = sparx_utilities.amoeba([bdef, bamp], [0.2, 0.2], fupw, 1.e-4, 1.e-4, 500, astdata)
 				if debug_mode:  print("AMOEBA    ", dama)
 				bdef = dama[0][0]
 				bamp = dama[0][1]
@@ -2519,7 +2519,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		#print " ttt ",time()-srtt
 		#from sys import exit
 		#exit()
-		ad1, ad2, ad3, ad4 = statistics.table_stat(adefocus) # return values: average, variance, minimum, maximum
+		ad1, ad2, ad3, ad4 = sparx_statistics.table_stat(adefocus) # return values: average, variance, minimum, maximum
 		if ad2 <= 0.0:
 			print(("    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
 			print(("           The program ignores this estimate..."))
@@ -2545,9 +2545,9 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			#print "adefocus",adefocus
 			#print  "aamplitu",aamplitu
 			#print "aangle",aangle
-			ad1, ad2, ad3, ad4 = statistics.table_stat(adefocus)
-			bd1, bd2, bd3, bd4 = statistics.table_stat(aamplitu)
-			cd1,cd2 = pixel_error.angle_ave([2*q for q in aangle])  # Have to use this trick as the function works for range [0,360]
+			ad1, ad2, ad3, ad4 = sparx_statistics.table_stat(adefocus)
+			bd1, bd2, bd3, bd4 = sparx_statistics.table_stat(aamplitu)
+			cd1,cd2 = sparx_pixel_error.angle_ave([2*q for q in aangle])  # Have to use this trick as the function works for range [0,360]
 			cd1/=2
 			cd2/=2
 			temp = 0.0
@@ -2564,7 +2564,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
 			reject_img_messages = []
 			try:
-				pwrot2 = rotavg_ctf( utilities.model_blank(wn, wn), ad1, Cs, voltage, pixel_size, bd1, cd1)
+				pwrot2 = rotavg_ctf( sparx_utilities.model_blank(wn, wn), ad1, Cs, voltage, pixel_size, bd1, cd1)
 			except:
 				reject_img_messages.append("    - Astigmatism amplitude (%f) is larger than defocus (%f) or defocus (%f) is negative." % (bd1, ad1, ad1))
 			
@@ -2579,7 +2579,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
 				import random as rqt
 				
-				supe = utilities.model_blank(wn, wn)
+				supe = sparx_utilities.model_blank(wn, wn)
 				niter = 1000
 				for it in range(niter):
 					EMAN2_cppwrap.Util.add_img(supe, EMAN2_cppwrap.Util.ctf_rimg(wn, wn, 1, ad1 + rqt.gauss(0.0,stdavad1), pixel_size, voltage, Cs, 0.0, wgh, bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
@@ -2594,13 +2594,13 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 						ibec = it
 						break
 				pass#IMPORTIMPORTIMPORT from morphology import ctf_1d
-				ct = utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, 0.0, 0.0])
+				ct = sparx_utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, 0.0, 0.0])
 				cq = ctf_1d(wn, ct)
 				
 				supe = [0.0] * ni
 				niter = 1000
 				for i in range(niter):
-					cq = utilities.generate_ctf([ad1 + rqt.gauss(0.0,stdavad1), Cs, voltage, pixel_size, 0.0, wgh, 0.0, 0.0])
+					cq = sparx_utilities.generate_ctf([ad1 + rqt.gauss(0.0,stdavad1), Cs, voltage, pixel_size, 0.0, wgh, 0.0, 0.0])
 					ci = ctf_1d(wn, cq)[:ni]
 					for l in range(ni):  supe[l] +=ci[l]
 				
@@ -2622,7 +2622,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				#if stdavad1 < 0.0: ERROR("Logical Error: Encountered unexpected defocus SD value (%f). Consult with the developer." % (stdavad1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 				cvavad1 = stdavad1 / ad1 * 100 # use percentage
 				
-				if bd1 < 0.0: global_def.ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				if bd1 < 0.0: sparx_global_def.ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 
 				bd1 = max(bd1, 1.0e-15)
 				
@@ -2642,17 +2642,17 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				
 				"""Multiline Comment12"""
 				lnsb = len(subpw)
-				try:		crot1 = rotavg_ctf(ctf_rimg(wn, utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
+				try:		crot1 = rotavg_ctf(ctf_rimg(wn, sparx_utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		crot1 = [0.0] * lnsb
 				try:		pwrot1 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		pwrot1 = [0.0] * lnsb
-				try:		crot2 = rotavg_ctf(ctf_rimg(wn, utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
+				try:		crot2 = rotavg_ctf(ctf_rimg(wn, sparx_utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, wgh, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
 				except:		crot2 = [0.0] * lnsb
 				try:		pwrot2 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
 				except:		pwrot2 = [0.0] * lnsb
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
 				lnsb = min(lnsb,len(crot2),len(pwrot1),len(crot2),len(pwrot2))
-				utilities.write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], pwrot1[:lnsb], crot1[:lnsb], pwrot2[:lnsb], crot2[:lnsb]], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
+				sparx_utilities.write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], pwrot1[:lnsb], crot1[:lnsb], pwrot2[:lnsb], crot2[:lnsb]], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
 				#
 				# NOTE: 2016/03/23 Toshio Moriya
 				# Compute mean of extrema differences (differences at peak & trough) between 
@@ -2718,11 +2718,11 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 #				#if ifi == 4 : break
 
 		if stack == None:
-			img_mic = utilities.get_im(namics[ifi])
+			img_mic = sparx_utilities.get_im(namics[ifi])
 			# create  thumbnail
 			nx = img_mic.get_xsize()
 			if nx > 512:
-				img_micthumb = fundamentals.resample(img_mic, 512.0/nx)
+				img_micthumb = sparx_fundamentals.resample(img_mic, 512.0/nx)
 			else:
 				img_micthumb = img_mic
 			fou = os.path.join(outmicthumb, "%s_thumb.hdf" % (img_basename_root))
@@ -2730,9 +2730,9 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 
 	if RUNNING_UNDER_MPI:
 		pass#IMPORTIMPORTIMPORT from utilities import wrap_mpi_gatherv
-		totresi = utilities.wrap_mpi_gatherv(totresi, 0, mpi.MPI_COMM_WORLD)
-		missing_img_names = utilities.wrap_mpi_gatherv(missing_img_names, 0, mpi.MPI_COMM_WORLD)
-		rejected_img_names = utilities.wrap_mpi_gatherv(rejected_img_names, 0, mpi.MPI_COMM_WORLD)
+		totresi = sparx_utilities.wrap_mpi_gatherv(totresi, 0, mpi.MPI_COMM_WORLD)
+		missing_img_names = sparx_utilities.wrap_mpi_gatherv(missing_img_names, 0, mpi.MPI_COMM_WORLD)
+		rejected_img_names = sparx_utilities.wrap_mpi_gatherv(rejected_img_names, 0, mpi.MPI_COMM_WORLD)
 	
 	if my_mpi_proc_id == main_mpi_proc:
 		outf = open(os.path.join(output_directory, "partres.txt"), "w")
@@ -2890,7 +2890,7 @@ def simpw1d(defocus, data):
 	#  data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 	# data[1] - envelope
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
-	ct = data[1]*np.array( ctf_2(data[2], utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
+	ct = data[1]*np.array( ctf_2(data[2], sparx_utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
 	return  -sum(data[0]*ct)/np.linalg.norm(ct,2)
 
@@ -2905,7 +2905,7 @@ def simpw1d_pap(defocus, data):
 	#  data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 	# data[1] - envelope
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
-	ct = np.array( ctf_1d(data[2], utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
+	ct = np.array( ctf_1d(data[2], sparx_utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
 	return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
 
@@ -2919,7 +2919,7 @@ def simpw1d_print(defocus, data):
 	#  data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 	# data[1] - envelope
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
-	ct = np.array( ctf_1d(data[2], utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
+	ct = np.array( ctf_1d(data[2], sparx_utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
 	for i in range(len(data[0])):  print(i,i+data[8],data[0][i],ct[i],data[1][i],data[0][i]/data[1][i])
 	return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
@@ -3031,11 +3031,11 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 				qm=qt
 				defi = dc
 		pass#IMPORTIMPORTIMPORT from utilities import write_text_row
-		utilities.write_text_row(toto,"toto1.txt")
+		sparx_utilities.write_text_row(toto,"toto1.txt")
 		print(" >>>>>>>>>  ",defi,simpw1d(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
 	#exit()
-	ctf2 = ctf_2(nx, utilities.generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]))
+	ctf2 = ctf_2(nx, sparx_utilities.generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]))
 
 	return def1, subpw, ctf2, baseline, envelope, i_start, i_stop
 
@@ -3135,11 +3135,11 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 				qm=qt
 				defi = dc
 		pass#IMPORTIMPORTIMPORT from utilities import write_text_row
-		utilities.write_text_row(toto,"toto1.txt")
+		sparx_utilities.write_text_row(toto,"toto1.txt")
 		print(" >>>>>>>>>  ",defi,simpw1d(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
 	#exit()
-	ctf2 = ctf_1d(nx, utilities.generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True)
+	ctf2 = ctf_1d(nx, sparx_utilities.generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True)
 
 	return def1, subpw, ctf2, baseline, envelope, i_start, i_stop
 
@@ -3158,10 +3158,10 @@ def fastigmatism3(amp, data):
 	cnx = data[2]//2+1
 	#qt = 0.5*nx**2
 	#B = 0.0
-	pc = ctf2_rimg(data[2], utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]) )
+	pc = ctf2_rimg(data[2], sparx_utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]) )
 	#st = Util.infomask(pc, data[9], True)
 	#Util.mul_scalar(pc, 1.0/st[0])
-	ang, sxs, sys, mirror, peak = alignment.ornq(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
+	ang, sxs, sys, mirror, peak = sparx_alignment.ornq(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
 	#print  ang, sxs, sys, mirror, peak
 	#exit()
 	data[8] = ang
@@ -3182,7 +3182,7 @@ def fastigmatism3_pap(amp, data):
 	cnx = data[2]//2+1
 	#qt = 0.5*nx**2
 	#B = 0.0
-	pc = ctf_rimg(data[2], utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]), sign = 0)
+	pc = ctf_rimg(data[2], sparx_utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]), sign = 0)
 	#st = Util.infomask(pc, data[9], True)
 	#Util.mul_scalar(pc, 1.0/st[0])
 	ang, sxs, sys, mirror, peak = ornq_vpp(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
@@ -3199,7 +3199,7 @@ def simctf2(dz, data):
 	#qt = 0.5*nx**2
 	#print  data
 	#print dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]
-	pc = ctf_rimg(data[2], utilities.generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
+	pc = ctf_rimg(data[2], sparx_utilities.generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
 	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
 	#print " simctf2   ",amp,-bcc
 	return  -bcc
@@ -3368,7 +3368,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			for error_message in error_message_list:  
 				print(("ERROR!!! %s" % (error_message)))
 		error_status = ("Detected %d error(s) related to arguments and options. Run %s -h for help. Exiting..." % (len(error_message_list), program_name), inspect.getframeinfo(inspect.currentframe()))
-	utilities.if_error_then_all_processes_exit_program(error_status)
+	sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 	if RUNNING_UNDER_MPI:
 		# Wait for all mpi processes to check error conditions, especially existence of output directory
 		# Without this barrier, main mpi process can create output directory before some child mpi process check this error.
@@ -3481,7 +3481,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				if os.path.splitext(selection_list)[1] == ".txt":
 					print(" ")
 					print("Checking the selection list...")
-					selected_mic_path_list = utilities.read_text_file(selection_list)
+					selected_mic_path_list = sparx_utilities.read_text_file(selection_list)
 				
 					# Check error condition of  entry lists
 					print(("Found %d microgarph entries in %s." % (len(selected_mic_path_list), selection_list)))
@@ -3640,7 +3640,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		# The following function takes care of the case when an if-statement uses break for occurence of an error.
 		# However, more elegant way is to use 'exception' statement of exception mechanism...
 		# 
-		utilities.if_error_then_all_processes_exit_program(error_status)
+		sparx_utilities.if_error_then_all_processes_exit_program(error_status)
 		
 	else:
 		input_file_path_list.append(input_image_path)
@@ -3650,7 +3650,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		
 		# All mpi processes should know input file path list
-		input_file_path_list = utilities.wrap_mpi_bcast(input_file_path_list, main_mpi_proc)
+		input_file_path_list = sparx_utilities.wrap_mpi_bcast(input_file_path_list, main_mpi_proc)
 
 	
 	# ====================================================================================
@@ -3697,7 +3697,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	# Set up loop variables depending on the cter mode
 	if stack == None:
 		if RUNNING_UNDER_MPI:
-			set_start, set_end = applications.MPI_start_end(len(namics), n_mpi_procs, my_mpi_proc_id)
+			set_start, set_end = sparx_applications.MPI_start_end(len(namics), n_mpi_procs, my_mpi_proc_id)
 		else:
 			set_start = 0
 			set_end = len(namics)
@@ -3735,9 +3735,9 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				missing_img_names.append(img_name)
 				print("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))
 				continue
-			mic = utilities.get_im(img_name)
+			mic = sparx_utilities.get_im(img_name)
 			try:
-				pw2 = fundamentals.tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
+				pw2 = sparx_fundamentals.tilemic(mic, win_size = wn, overlp_x = overlap_x, overlp_y = overlap_y, edge_x = edge_x, edge_y = edge_y)
 			except:
 				print("MRK_DEBUG: tilemic() in cter_vpp() raised an exception. The micrographs {} might have a problem. Please check it and remove it if necessary.".format(img_name))
 				raise
@@ -3750,7 +3750,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			numFM = EMAN2_cppwrap.EMUtil.get_image_count(img_name)
 			pw2 = [None]*numFM
 			for i in range(numFM):
-				pw2[i] = EMAN2_cppwrap.periodogram(utilities.get_im(img_name,i))
+				pw2[i] = EMAN2_cppwrap.periodogram(sparx_utilities.get_im(img_name,i))
 
 		for i in range(len(pw2)):
 			pw2[i] = square_root(pw2[i])
@@ -3772,7 +3772,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		
 		allroo = []
 		for imi in range(nimi):
-			allroo.append(fundamentals.rot_avg_table(pw2[imi]))
+			allroo.append(sparx_fundamentals.rot_avg_table(pw2[imi]))
 		lenroo = len(allroo[0])
 
 		for nboot in range(kboot):
@@ -3781,7 +3781,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			else:
 				pass#IMPORTIMPORTIMPORT from random import randint
 				for imi in range(nimi): boot[imi] = random.randint(0, nimi - 1)
-			qa = utilities.model_blank(wn, wn)
+			qa = sparx_utilities.model_blank(wn, wn)
 			roo  = np.zeros(lenroo, np.float32)
 			sroo = np.zeros(lenroo, np.float32)
 			aroo = np.zeros(lenroo, np.float32)
@@ -3832,8 +3832,8 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			bg = baseline.tolist()
 			en = envelope.tolist()
 
-			bckg = utilities.model_blank(wn, wn, 1, 1)
-			envl = utilities.model_blank(wn, wn, 1, 1)
+			bckg = sparx_utilities.model_blank(wn, wn, 1, 1)
+			envl = sparx_utilities.model_blank(wn, wn, 1, 1)
 
 			pass#IMPORTIMPORTIMPORT from math import sqrt
 			nc = wn // 2
@@ -3884,7 +3884,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		
 		#print  "  xxx2  ", nboot,(time()-at)/60.0
 
-		ad1, ad2, ad3, ad4 = statistics.table_stat(adefocus) # return values: average, variance, minimum, maximum
+		ad1, ad2, ad3, ad4 = sparx_statistics.table_stat(adefocus) # return values: average, variance, minimum, maximum
 		if ad2 <= 0.0:
 			print(("    %s %s: Detected the variance less than zero (defocus statics: avg = %f, var = %f, min = %f, max = %f)." % (img_type, img_name, ad1, ad2, ad3, ad4)))
 			print(("           The program ignores this estimate..."))
@@ -3912,13 +3912,13 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			#print "adefocus",adefocus
 			#print  "aamplitu",aamplitu
 			#print "aangle",aangle
-			ad1, ad2, ad3, ad4 = statistics.table_stat(adefocus)
+			ad1, ad2, ad3, ad4 = sparx_statistics.table_stat(adefocus)
 			#  compute statistics of ampcont using phase shifts instead
-			ed1, ed2 = pixel_error.angle_ave([2*ampcont2angle(q) for q in aampcont]) # Have to use this trick as the function works for range [0,360]
+			ed1, ed2 = sparx_pixel_error.angle_ave([2*ampcont2angle(q) for q in aampcont]) # Have to use this trick as the function works for range [0,360]
 			ed1/=2
 			ed2/=2
-			bd1, bd2, bd3, bd4 = statistics.table_stat(aamplitu)
-			cd1,cd2 = pixel_error.angle_ave([2*q for q in aangle])  # Have to use this trick as the function works for range [0,360]
+			bd1, bd2, bd3, bd4 = sparx_statistics.table_stat(aamplitu)
+			cd1,cd2 = sparx_pixel_error.angle_ave([2*q for q in aangle])  # Have to use this trick as the function works for range [0,360]
 			cd1/=2
 			cd2/=2
 			temp = 0.0
@@ -3936,7 +3936,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
 			reject_img_messages = []
 			try:
-				pwrot2 = rotavg_ctf( utilities.model_blank(wn, wn), ad1, Cs, voltage, pixel_size, bd1, cd1)
+				pwrot2 = rotavg_ctf( sparx_utilities.model_blank(wn, wn), ad1, Cs, voltage, pixel_size, bd1, cd1)
 			except:
 				reject_img_messages.append("    - Astigmatism amplitude (%f) is larger than defocus (%f) or defocus (%f) is negative." % (bd1, ad1, ad1))
 			"""Multiline Comment32"""
@@ -3954,7 +3954,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				#  NOW WE SWITCH PHASE SHIFT TO AMPLITUDE CONTRAST
 				ed1 = angle2ampcont(ed1)
 				#at = time()
-				supe = utilities.model_blank(wn, wn)
+				supe = sparx_utilities.model_blank(wn, wn)
 				niter = 1000
 				for it in range(niter):
 					EMAN2_cppwrap.Util.add_img(supe, EMAN2_cppwrap.Util.ctf_rimg(wn, wn, 1, ad1 + rqt.gauss(0.0,stdavad1), pixel_size, voltage, Cs, 0.0, ed1 + angle2ampcont(rqt.gauss(0.0,ed2)), bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
@@ -3973,13 +3973,13 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				if(ed2<0.0): ed2 = 180.0 - ed2
 
 				pass#IMPORTIMPORTIMPORT from morphology import ctf_1d
-				ct = utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, 0.0, 0.0])
+				ct = sparx_utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, 0.0, 0.0])
 				cq = ctf_1d(wn, ct)
 				#at = time()
 				supe = [0.0] * ni
 				niter = 1000
 				for i in range(niter):
-					cq = utilities.generate_ctf([ad1 + rqt.gauss(0.0,stdavad1), Cs, voltage, pixel_size, 0.0, ed1, 0.0, 0.0])
+					cq = sparx_utilities.generate_ctf([ad1 + rqt.gauss(0.0,stdavad1), Cs, voltage, pixel_size, 0.0, ed1, 0.0, 0.0])
 					ci = ctf_1d(wn, cq)[:ni]
 					for l in range(ni):  supe[l] +=ci[l]
 				
@@ -4003,7 +4003,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				cvavad1 = stdavad1 / ad1 * 100 # use percentage
 				
 				#if bd1 < 0.0: ERROR("Logical Error: Encountered unexpected astig. amp. value (%f). Consult with the developer." % (bd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
-				if stdavbd1 < 0.0: global_def.ERROR("Logical Error: Encountered unexpected astig. amp. SD value (%f). Consult with the developer." % (stdavbd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
+				if stdavbd1 < 0.0: sparx_global_def.ERROR("Logical Error: Encountered unexpected astig. amp. SD value (%f). Consult with the developer." % (stdavbd1), "%s in %s" % (__name__, os.path.basename(__file__))) # MRK_ASSERT
 
 				bd1 = max(bd1, 1.0e-15)
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
@@ -4024,17 +4024,17 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				#print  " error est2  ",(time()-at)/60.0
 				#print " ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1 ",ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1
 				lnsb = len(subpw)
-				try:		crot1 = rotavg_ctf(ctf_rimg(wn, utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
+				try:		crot1 = rotavg_ctf(ctf_rimg(wn, sparx_utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		crot1 = [0.0] * lnsb
 				try:		pwrot1 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, 0.0, 0.0)[:lnsb]
 				except:		pwrot1 = [0.0] * lnsb
-				try:		crot2 = rotavg_ctf(ctf_rimg(wn, utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
+				try:		crot2 = rotavg_ctf(ctf_rimg(wn, sparx_utilities.generate_ctf([ad1, Cs, voltage, pixel_size, temp, ed1, bd1, cd1]), sign=0), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
 				except:		crot2 = [0.0] * lnsb
 				try:		pwrot2 = rotavg_ctf(threshold(qa - bckg), ad1, Cs, voltage, pixel_size, bd1, cd1)[:lnsb]
 				except:		pwrot2 = [0.0] * lnsb
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
 				lnsb = min(lnsb,len(crot2),len(pwrot1),len(crot2),len(pwrot2))
-				utilities.write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], pwrot1[:lnsb], crot1[:lnsb], pwrot2[:lnsb], crot2[:lnsb]], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
+				sparx_utilities.write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], pwrot1[:lnsb], crot1[:lnsb], pwrot2[:lnsb], crot2[:lnsb]], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
 
 				#
 				#print  " error est3  ",(time()-at)/60.0
@@ -4082,11 +4082,11 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				#print  " error est4  ",(time()-at)/60.0
 
 		if stack == None:
-			img_mic = utilities.get_im(namics[ifi])
+			img_mic = sparx_utilities.get_im(namics[ifi])
 			# create  thumbnail
 			nx = img_mic.get_xsize()
 			if nx > 512:
-				img_micthumb = fundamentals.resample(img_mic, 512.0/nx)
+				img_micthumb = sparx_fundamentals.resample(img_mic, 512.0/nx)
 			else:
 				img_micthumb = img_mic
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
@@ -4095,9 +4095,9 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 
 	if RUNNING_UNDER_MPI:
 		pass#IMPORTIMPORTIMPORT from utilities import wrap_mpi_gatherv
-		totresi = utilities.wrap_mpi_gatherv(totresi, 0, mpi.MPI_COMM_WORLD)
-		missing_img_names = utilities.wrap_mpi_gatherv(missing_img_names, 0, mpi.MPI_COMM_WORLD)
-		rejected_img_names = utilities.wrap_mpi_gatherv(rejected_img_names, 0, mpi.MPI_COMM_WORLD)
+		totresi = sparx_utilities.wrap_mpi_gatherv(totresi, 0, mpi.MPI_COMM_WORLD)
+		missing_img_names = sparx_utilities.wrap_mpi_gatherv(missing_img_names, 0, mpi.MPI_COMM_WORLD)
+		rejected_img_names = sparx_utilities.wrap_mpi_gatherv(rejected_img_names, 0, mpi.MPI_COMM_WORLD)
 	
 	if my_mpi_proc_id == main_mpi_proc:
 		outf = open(os.path.join(output_directory, "partres.txt"), "w")
@@ -4243,8 +4243,8 @@ def defocusgett_vpp2(qse, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs
 	cnx = wn // 2 + 1
 	cny = cnx
 	mode = "H"
-	numr = alignment.Numrinit(i_start, i_stop-1, 1, mode)
-	wr = alignment.ringwe(numr, mode)
+	numr = sparx_alignment.Numrinit(i_start, i_stop-1, 1, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 
 	crefim = EMAN2_cppwrap.Util.Polar2Dm(qse, cnx, cny, numr, mode)
 	EMAN2_cppwrap.Util.Frngs(crefim, numr)
@@ -4257,7 +4257,7 @@ def defocusgett_vpp2(qse, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs
 	astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, bphs, bamp, bang]
 	initial_ast_ang = 0.0
 	xphase_shift = ampcont2angle(xampcont)
-	dama = utilities.amoeba([xdefc,xphase_shift,initial_ast_ang], [0.1, 2.0, 0.05], fupw_vpp, 1.e-4, 1.e-4, 500, astdata)
+	dama = sparx_utilities.amoeba([xdefc,xphase_shift,initial_ast_ang], [0.1, 2.0, 0.05], fupw_vpp, 1.e-4, 1.e-4, 500, astdata)
 	qma = -dama[-2]
 	if DEBug: print(" amoeba  %7.2f  %7.2f  %12.6g  %12.6g"%(dama[0][0],dama[0][1]%180.0,dama[0][2],qma))
 	dpefi = dama[0][0]
@@ -4318,7 +4318,7 @@ def fastigmatism3_vpp(amp, data):
 	cnx = data[2]//2+1
 	#qt = 0.5*nx**2
 	#B = 0.0
-	pc = ctf_rimg(data[2], utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, angle2ampcont(data[7]%180.0), amp, 0.0]), sign = 0. )
+	pc = ctf_rimg(data[2], sparx_utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, angle2ampcont(data[7]%180.0), amp, 0.0]), sign = 0. )
 	#st = pc.cmp("dot", pc, dict(negative = 0, mask = data[10], normalize = 0))
 	#Util.mul_scalar(pc, 1.0/st)
 	ang, sxs, sys, mirror, peak = ornq_vpp(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
@@ -4360,7 +4360,7 @@ def ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0
 			if qn >= peak:
 				sx = -ix
 				sy = -iy
-				ang = alignment.ang_n(retvals["tot"], mode, numr[-1])
+				ang = sparx_alignment.ang_n(retvals["tot"], mode, numr[-1])
 				peak = qn
 	# mirror is returned as zero for consistency
 	mirror = 0

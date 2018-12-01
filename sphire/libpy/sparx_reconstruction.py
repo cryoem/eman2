@@ -29,20 +29,20 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import filter
-import fundamentals
-import global_def
-import morphology
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_morphology
 import mpi
 import numpy
 import numpy.random
 import os
 import random
-import statistics
+import sparx_statistics
 import string
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import datetime
@@ -109,10 +109,10 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 		mpi_comm = mpi.MPI_COMM_WORLD
 
 	if type(prjlist) == list:
-		prjlist = utilities.iterImagesList(prjlist)
+		prjlist = sparx_utilities.iterImagesList(prjlist)
 
 	if not prjlist.goToNext():
-		global_def.ERROR("empty input list","recons3d_4nn_MPI",1)
+		sparx_global_def.ERROR("empty input list","recons3d_4nn_MPI",1)
 
 	imgsize = prjlist.image().get_xsize()
 	if prjlist.image().get_ysize() != imgsize:
@@ -148,7 +148,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 	while prjlist.goToNext():
 		prj = prjlist.image()
 		if dopad:
-			prj = utilities.pad(prj, imgsize,imgsize, 1, "circumference")
+			prj = sparx_utilities.pad(prj, imgsize,imgsize, 1, "circumference")
 		insert_slices(r, prj)
 		if( not (finfo is None) ):
 			nimg += 1
@@ -159,21 +159,21 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 		finfo.write( "Begin reducing ...\n" )
 		finfo.flush()
 
-	utilities.reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, comm=mpi_comm)
 
 	if myid == 0:  dummy = r.finish(True)
 	else:
 		pass#IMPORTIMPORTIMPORT from utilities import model_blank
 		if ( xysize == -1 and zsize == -1 ):
-			fftvol = utilities.model_blank(imgsize, imgsize, imgsize)
+			fftvol = sparx_utilities.model_blank(imgsize, imgsize, imgsize)
 		else:
 			if zsize == -1:
-				fftvol = utilities.model_blank(xysize, xysize, imgsize)
+				fftvol = sparx_utilities.model_blank(xysize, xysize, imgsize)
 			elif xysize == -1:
-				fftvol = utilities.model_blank(imgsize, imgsize, zsize)
+				fftvol = sparx_utilities.model_blank(imgsize, imgsize, zsize)
 			else:
-				fftvol = utilities.model_blank(xysize, xysize, zsize)
+				fftvol = sparx_utilities.model_blank(xysize, xysize, zsize)
 	return fftvol
 
 """Multiline Comment0"""
@@ -196,7 +196,7 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 	
 	if mpi_comm == None: mpi_comm = mpi.MPI_COMM_WORLD
 
-	refvol = utilities.model_blank(target_size)
+	refvol = sparx_utilities.model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 
 	if CTF: do_ctf = 1
@@ -231,7 +231,7 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 		data = [None]*nshifts
 		for ii in range(len(tdir)):
 			#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
-			lshifts = utilities.findall(tdir[ii], ipsiandiang)
+			lshifts = sparx_utilities.findall(tdir[ii], ipsiandiang)
 			toprab  = 0.0
 			for ki in range(len(lshifts)):  toprab += probs[lshifts[ki]]
 			recdata = EMAN2_cppwrap.EMData(nny,nny,1,False)
@@ -239,11 +239,11 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 			for ki in range(len(lshifts)):
 				lpt = allshifts[lshifts[ki]]
 				if( data[lpt] == None ):
-					data[lpt] = fundamentals.fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
+					data[lpt] = sparx_fundamentals.fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 					data[lpt].set_attr("is_complex",0)
 				EMAN2_cppwrap.Util.add_img(recdata, EMAN2_cppwrap.Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
 			recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
-			if not upweighted:  recdata = filter.filt_table(recdata, bckgn )
+			if not upweighted:  recdata = sparx_filter.filt_table(recdata, bckgn )
 			recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 			ipsi = tdir[ii]%100000
 			iang = tdir[ii]/100000
@@ -252,8 +252,8 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
 
 
-	utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 
 	if myid == main_node:
 		dummy = r.finish(True)
@@ -337,7 +337,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 		for i in range(len(list_proj)):
 			proj.read_image(stack_name, list_proj[i])
 			if dopad: 
-				proj = utilities.pad(proj, size, size, 1, "circumference")
+				proj = sparx_utilities.pad(proj, size, size, 1, "circumference")
 			insert_slices(r, proj)
 	else:
 		for i in range(len(list_proj)):
@@ -366,9 +366,9 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 		mpi_comm = mpi.MPI_COMM_WORLD
 
 	if type(prjlist) == list:
-		prjlist = utilities.iterImagesList(prjlist)
+		prjlist = sparx_utilities.iterImagesList(prjlist)
 	if not prjlist.goToNext():
-		global_def.ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
+		sparx_global_def.ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
 	imgsize = prjlist.image().get_xsize()
 	if prjlist.image().get_ysize() != imgsize:
 		imgsize = max(imgsize, prjlist.image().get_ysize())
@@ -425,7 +425,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 	while prjlist.goToNext():
 		prj = prjlist.image()
 		if dopad:
-			prj = utilities.pad(prj, imgsize, imgsize, 1, "circumference")
+			prj = sparx_utilities.pad(prj, imgsize, imgsize, 1, "circumference")
 		#if params:
 		insert_slices(r, prj)
 		if not (finfo is None):
@@ -437,8 +437,8 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 		finfo.write( "begin reduce\n" )
 		finfo.flush()
 
-	utilities.reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, comm=mpi_comm)
 
 	if not (finfo is None): 
 		finfo.write( "after reduce\n" )
@@ -449,14 +449,14 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 	else:
 		pass#IMPORTIMPORTIMPORT from utilities import model_blank
 		if ( xysize == -1 and zsize == -1 ):
-			fftvol = utilities.model_blank(imgsize, imgsize, imgsize)
+			fftvol = sparx_utilities.model_blank(imgsize, imgsize, imgsize)
 		else:
 			if zsize == -1:
-				fftvol = utilities.model_blank(xysize, xysize, imgsize)
+				fftvol = sparx_utilities.model_blank(xysize, xysize, imgsize)
 			elif xysize == -1:
-				fftvol = utilities.model_blank(imgsize, imgsize, zsize)
+				fftvol = sparx_utilities.model_blank(imgsize, imgsize, zsize)
 			else:
-				fftvol = utilities.model_blank(xysize, xysize, zsize)
+				fftvol = sparx_utilities.model_blank(xysize, xysize, zsize)
 	return fftvol
 
 
@@ -468,9 +468,9 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 	if mpi_comm == None:
 		mpi_comm = mpi.MPI_COMM_WORLD
 
-	if( len(prjlist) == 0 ):    global_def.ERROR("empty input list","recons3d_nn_SSNR_MPI",1)
+	if( len(prjlist) == 0 ):    sparx_global_def.ERROR("empty input list","recons3d_nn_SSNR_MPI",1)
 	imgsize = prjlist[0].get_xsize()
-	if prjlist[0].get_ysize() != imgsize:  global_def.ERROR("input data has to be square","recons3d_nn_SSNR_MPI",1)
+	if prjlist[0].get_ysize() != imgsize:  sparx_global_def.ERROR("input data has to be square","recons3d_nn_SSNR_MPI",1)
 	fftvol   = EMAN2_cppwrap.EMData()
 	weight   = EMAN2_cppwrap.EMData()
 	weight2  = EMAN2_cppwrap.EMData()
@@ -486,7 +486,7 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		r = EMAN2_cppwrap.Reconstructors.get("nnSSNR", params)
 	r.setup()
 
-	if prjlist[0].get_xsize() != imgsize or prjlist[0].get_ysize() != imgsize: global_def.ERROR("inconsistent image size","recons3d_nn_SSNR_MPI",1)
+	if prjlist[0].get_xsize() != imgsize or prjlist[0].get_ysize() != imgsize: sparx_global_def.ERROR("inconsistent image size","recons3d_nn_SSNR_MPI",1)
 	for prj in prjlist:
 		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 		# active = prj.get_attr_default('active', 1)
@@ -522,11 +522,11 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1 END
 
 	#from utilities import info
-	utilities.reduce_EMData_to_root(weight,  myid, 0, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(fftvol,  myid, 0, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight2, myid, 0, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight,  myid, 0, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol,  myid, 0, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight2, myid, 0, comm=mpi_comm)
 	if CTF:
-		utilities.reduce_EMData_to_root(weight3, myid, 0, comm=mpi_comm)
+		sparx_utilities.reduce_EMData_to_root(weight3, myid, 0, comm=mpi_comm)
 	if myid == 0 :
 		dummy = r.finish(True)		
 		outlist = [[] for i in range(6)]
@@ -580,8 +580,8 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 		finfo.write( "begin reduce half\n" )
 		finfo.flush()
 
-	utilities.reduce_EMData_to_root(fftvol_half, myid, main_node_half, mpi_comm)
-	utilities.reduce_EMData_to_root(weight_half, myid, main_node_half, mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol_half, myid, main_node_half, mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight_half, myid, main_node_half, mpi_comm)
 
 	if not(finfo is None):
 		finfo.write( "after reduce half\n" )
@@ -647,8 +647,8 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 		finfo.write( "begin reduce half\n" )
 		finfo.flush()
 
-	utilities.reduce_EMData_to_root(fftvol_half, myid, main_node_half, mpi_comm)
-	utilities.reduce_EMData_to_root(weight_half, myid, main_node_half, mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol_half, myid, main_node_half, mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight_half, myid, main_node_half, mpi_comm)
 
 	if not(finfo is None):
 		finfo.write( "after reduce half\n" )
@@ -775,37 +775,37 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 
 	nx = get_image_size(imgdata, myid)
 	if nx == 0:
-		global_def.ERROR("Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume", "rec3D", 0)
-		return utilities.model_blank( 2, 2, 2 ), None
+		sparx_global_def.ERROR("Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume", "rec3D", 0)
+		return sparx_utilities.model_blank( 2, 2, 2 ), None
 
 	fftvol_odd_file, weight_odd_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_odd, odd_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
 	fftvol_eve_file, weight_eve_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_eve, eve_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
 	del imgdata
 
 	if nproc == 1:
-		fftvol = utilities.get_image(fftvol_odd_file)
-		weight = utilities.get_image(weight_odd_file)
+		fftvol = sparx_utilities.get_image(fftvol_odd_file)
+		weight = sparx_utilities.get_image(weight_odd_file)
 		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 
-		fftvol = utilities.get_image(fftvol_eve_file)
-		weight = utilities.get_image(weight_eve_file)
+		fftvol = sparx_utilities.get_image(fftvol_eve_file)
+		weight = sparx_utilities.get_image(weight_eve_file)
 		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 
 		if( not mask3D ):
 			nx = volodd.get_xsize()
 			ny = volodd.get_ysize()
 			nz = volodd.get_zsize()
-			mask3D = utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
-		fscdat = statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
+			mask3D = sparx_utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
+		fscdat = sparx_statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve, mask3d
 
-		fftvol = utilities.get_image( fftvol_odd_file )
-		fftvol_tmp = utilities.get_image(fftvol_eve_file)
+		fftvol = sparx_utilities.get_image( fftvol_odd_file )
+		fftvol_tmp = sparx_utilities.get_image(fftvol_eve_file)
 		fftvol += fftvol_tmp
 		fftvol_tmp = None
 
-		weight = utilities.get_image( weight_odd_file )
-		weight_tmp = utilities.get_image(weight_eve_file)
+		weight = sparx_utilities.get_image( weight_odd_file )
+		weight_tmp = sparx_utilities.get_image(weight_eve_file)
 		weight += weight_tmp
 		weight_tmp = None
 
@@ -817,33 +817,33 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 
 	if nproc == 2:
 		if myid == main_node_odd:
-			fftvol = utilities.get_image( fftvol_odd_file )
-			weight = utilities.get_image( weight_odd_file )
+			fftvol = sparx_utilities.get_image( fftvol_odd_file )
+			weight = sparx_utilities.get_image( weight_odd_file )
 			volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
-			voleve = utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+			voleve = sparx_utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
 			
 			if( not mask3D ):
 				nx = volodd.get_xsize()
 				ny = volodd.get_ysize()
 				nz = volodd.get_zsize()
-				mask3D = utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
-			fscdat = statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
+				mask3D = sparx_utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
+			fscdat = sparx_statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 			del  volodd, voleve, mask3D
 		else:
 			assert myid == main_node_eve
-			fftvol = utilities.get_image( fftvol_eve_file )
-			weight = utilities.get_image( weight_eve_file )
+			fftvol = sparx_utilities.get_image( fftvol_eve_file )
+			weight = sparx_utilities.get_image( weight_eve_file )
 			voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
-			utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
+			sparx_utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
 
 		if myid == main_node_odd:
-			fftvol = utilities.get_image( fftvol_odd_file )
-			fftvol_tmp = utilities.recv_EMData( main_node_eve, tag_fftvol_eve, mpi_comm)
+			fftvol = sparx_utilities.get_image( fftvol_odd_file )
+			fftvol_tmp = sparx_utilities.recv_EMData( main_node_eve, tag_fftvol_eve, mpi_comm)
 			fftvol += fftvol_tmp
 			fftvol_tmp = None
 
-			weight = utilities.get_image( weight_odd_file )
-			weight_tmp = utilities.recv_EMData( main_node_eve, tag_weight_eve, mpi_comm)
+			weight = sparx_utilities.get_image( weight_odd_file )
+			weight_tmp = sparx_utilities.recv_EMData( main_node_eve, tag_weight_eve, mpi_comm)
 			weight += weight_tmp
 			weight_tmp = None
 
@@ -853,24 +853,24 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 			return volall,fscdat
 		else:
 			assert myid == main_node_eve
-			fftvol = utilities.get_image( fftvol_eve_file )
-			weight = utilities.get_image( weight_eve_file )
-			utilities.send_EMData(fftvol, main_node_odd, tag_fftvol_eve, mpi_comm)
-			utilities.send_EMData(weight, main_node_odd, tag_weight_eve, mpi_comm)
+			fftvol = sparx_utilities.get_image( fftvol_eve_file )
+			weight = sparx_utilities.get_image( weight_eve_file )
+			sparx_utilities.send_EMData(fftvol, main_node_odd, tag_fftvol_eve, mpi_comm)
+			sparx_utilities.send_EMData(weight, main_node_odd, tag_weight_eve, mpi_comm)
 			os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file )
-			return utilities.model_blank(nx,nx,nx), None
+			return sparx_utilities.model_blank(nx,nx,nx), None
 
 	# cases from all other number of processors situations
 	if myid == main_node_odd:
-		fftvol = utilities.get_image( fftvol_odd_file )
-		utilities.send_EMData(fftvol, main_node_eve, tag_fftvol_odd, mpi_comm)
+		fftvol = sparx_utilities.get_image( fftvol_odd_file )
+		sparx_utilities.send_EMData(fftvol, main_node_eve, tag_fftvol_odd, mpi_comm)
 
 		if not(finfo is None):
 			finfo.write("fftvol odd sent\n")
 			finfo.flush()
 
-		weight = utilities.get_image( weight_odd_file )
-		utilities.send_EMData(weight, main_node_all, tag_weight_odd, mpi_comm)
+		weight = sparx_utilities.get_image( weight_odd_file )
+		sparx_utilities.send_EMData(weight, main_node_all, tag_weight_odd, mpi_comm)
 
 		if not(finfo is None):
 			finfo.write("weight odd sent\n")
@@ -878,54 +878,54 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 
 		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 		del fftvol, weight
-		voleve = utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+		voleve = sparx_utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
 
 		if( not mask3D ):
 			nx = volodd.get_xsize()
 			ny = volodd.get_ysize()
 			nz = volodd.get_zsize()
-			mask3D = utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
+			mask3D = sparx_utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
 
-		fscdat = statistics.fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
+		fscdat = sparx_statistics.fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve, mask3D
-		volall = utilities.recv_EMData(main_node_all, tag_volall, mpi_comm)
+		volall = sparx_utilities.recv_EMData(main_node_all, tag_volall, mpi_comm)
 		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file )
 		return volall, fscdat
 
 	if myid == main_node_eve:
-		ftmp = utilities.recv_EMData(main_node_odd, tag_fftvol_odd, mpi_comm)
-		fftvol = utilities.get_image( fftvol_eve_file )
+		ftmp = sparx_utilities.recv_EMData(main_node_odd, tag_fftvol_odd, mpi_comm)
+		fftvol = sparx_utilities.get_image( fftvol_eve_file )
 		EMAN2_cppwrap.Util.add_img( ftmp, fftvol )
-		utilities.send_EMData(ftmp, main_node_all, tag_fftvol_eve, mpi_comm)
+		sparx_utilities.send_EMData(ftmp, main_node_all, tag_fftvol_eve, mpi_comm)
 		del ftmp
 
-		weight = utilities.get_image( weight_eve_file )
-		utilities.send_EMData(weight, main_node_all, tag_weight_eve, mpi_comm)
+		weight = sparx_utilities.get_image( weight_eve_file )
+		sparx_utilities.send_EMData(weight, main_node_all, tag_weight_eve, mpi_comm)
 
 		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
-		utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
+		sparx_utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
 		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
 
-		return utilities.model_blank(nx,nx,nx), None
+		return sparx_utilities.model_blank(nx,nx,nx), None
 
 
 	if myid == main_node_all:
-		fftvol = utilities.recv_EMData(main_node_eve, tag_fftvol_eve, mpi_comm)
+		fftvol = sparx_utilities.recv_EMData(main_node_eve, tag_fftvol_eve, mpi_comm)
 		if not(finfo is None):
 			finfo.write( "fftvol odd received\n" )
 			finfo.flush()
 
-		weight = utilities.recv_EMData(main_node_odd, tag_weight_odd, mpi_comm)
-		weight_tmp = utilities.recv_EMData(main_node_eve, tag_weight_eve, mpi_comm)
+		weight = sparx_utilities.recv_EMData(main_node_odd, tag_weight_odd, mpi_comm)
+		weight_tmp = sparx_utilities.recv_EMData(main_node_eve, tag_weight_eve, mpi_comm)
 		EMAN2_cppwrap.Util.add_img( weight, weight_tmp )
 		weight_tmp = None
 
 		volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
-		utilities.send_EMData(volall, main_node_odd, tag_volall, mpi_comm)
+		sparx_utilities.send_EMData(volall, main_node_odd, tag_volall, mpi_comm)
 
-		return utilities.model_blank(nx,nx,nx),None
+		return sparx_utilities.model_blank(nx,nx,nx),None
 
-	return utilities.model_blank(nx,nx,nx),None
+	return sparx_utilities.model_blank(nx,nx,nx),None
 
 
 def rec3D_MPI_noCTF(data, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 2, main_node = 0, \
@@ -979,22 +979,22 @@ def rec3D_MPI_noCTF(data, symmetry = "c1", mask3D = None, fsc_curve = None, myid
 	fftvol_eve_file,weight_eve_file = prepare_recons(data, symmetry, myid, main_node_eve, eve_start, 2, index, finfo, npad, mpi_comm=mpi_comm) 
 
 	if nproc == 1:
-		fftvol = utilities.get_image( fftvol_odd_file )
-		weight = utilities.get_image( weight_odd_file )
+		fftvol = sparx_utilities.get_image( fftvol_odd_file )
+		weight = sparx_utilities.get_image( weight_odd_file )
 		volodd = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 
-		fftvol = utilities.get_image( fftvol_eve_file )
-		weight = utilities.get_image( weight_eve_file )
+		fftvol = sparx_utilities.get_image( fftvol_eve_file )
+		weight = sparx_utilities.get_image( weight_eve_file )
 		voleve = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 
-		fscdat = statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
+		fscdat = sparx_statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve
 
-		fftvol = utilities.get_image( fftvol_odd_file )
-		EMAN2_cppwrap.Util.add_img( fftvol, utilities.get_image(fftvol_eve_file) )
+		fftvol = sparx_utilities.get_image( fftvol_odd_file )
+		EMAN2_cppwrap.Util.add_img( fftvol, sparx_utilities.get_image(fftvol_eve_file) )
 
-		weight = utilities.get_image( weight_odd_file )
-		EMAN2_cppwrap.Util.add_img( weight, utilities.get_image(weight_eve_file) )
+		weight = sparx_utilities.get_image( weight_odd_file )
+		EMAN2_cppwrap.Util.add_img( weight, sparx_utilities.get_image(weight_eve_file) )
 
 		volall = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file );
@@ -1003,27 +1003,27 @@ def rec3D_MPI_noCTF(data, symmetry = "c1", mask3D = None, fsc_curve = None, myid
 
 	if nproc == 2:
 		if myid == main_node_odd:
-			fftvol = utilities.get_image( fftvol_odd_file )
-			weight = utilities.get_image( weight_odd_file )
+			fftvol = sparx_utilities.get_image( fftvol_odd_file )
+			weight = sparx_utilities.get_image( weight_odd_file )
 			volodd = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
-			voleve = utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
-			fscdat = statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
+			voleve = sparx_utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+			fscdat = sparx_statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 			del  volodd, voleve
 		else:
 			assert myid == main_node_eve
-			fftvol = utilities.get_image( fftvol_eve_file )
-			weight = utilities.get_image( weight_eve_file )
+			fftvol = sparx_utilities.get_image( fftvol_eve_file )
+			weight = sparx_utilities.get_image( weight_eve_file )
 			voleve = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
-			utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
+			sparx_utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
 
 		if myid == main_node_odd:
-			fftvol = utilities.get_image( fftvol_odd_file )
-			fftvol_tmp = utilities.recv_EMData( main_node_eve, tag_fftvol_eve, mpi_comm)
+			fftvol = sparx_utilities.get_image( fftvol_odd_file )
+			fftvol_tmp = sparx_utilities.recv_EMData( main_node_eve, tag_fftvol_eve, mpi_comm)
 			EMAN2_cppwrap.Util.add_img( fftvol, fftvol_tmp )
 			fftvol_tmp = None
 
-			weight = utilities.get_image( weight_odd_file )
-			weight_tmp = utilities.recv_EMData( main_node_eve, tag_weight_eve, mpi_comm)
+			weight = sparx_utilities.get_image( weight_odd_file )
+			weight_tmp = sparx_utilities.recv_EMData( main_node_eve, tag_weight_eve, mpi_comm)
 			EMAN2_cppwrap.Util.add_img( weight, weight_tmp )
 			weight_tmp = None
 			volall = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
@@ -1031,24 +1031,24 @@ def rec3D_MPI_noCTF(data, symmetry = "c1", mask3D = None, fsc_curve = None, myid
 			return volall,fscdat
 		else:
 			assert myid == main_node_eve
-			fftvol = utilities.get_image( fftvol_eve_file )
-			utilities.send_EMData(fftvol, main_node_odd, tag_fftvol_eve, mpi_comm)
+			fftvol = sparx_utilities.get_image( fftvol_eve_file )
+			sparx_utilities.send_EMData(fftvol, main_node_odd, tag_fftvol_eve, mpi_comm)
 
-			weight = utilities.get_image( weight_eve_file )
-			utilities.send_EMData(weight, main_node_odd, tag_weight_eve, mpi_comm)
+			weight = sparx_utilities.get_image( weight_eve_file )
+			sparx_utilities.send_EMData(weight, main_node_odd, tag_weight_eve, mpi_comm)
 			os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
-			return utilities.model_blank(nx,nx,nx), None
+			return sparx_utilities.model_blank(nx,nx,nx), None
 	# cases from all other number of processors situations
 	if myid == main_node_odd:
-		fftvol = utilities.get_image( fftvol_odd_file )
-		utilities.send_EMData(fftvol, main_node_eve, tag_fftvol_odd, mpi_comm)
+		fftvol = sparx_utilities.get_image( fftvol_odd_file )
+		sparx_utilities.send_EMData(fftvol, main_node_eve, tag_fftvol_odd, mpi_comm)
 
 		if not(finfo is None):
 			finfo.write("fftvol odd sent\n")
 			finfo.flush()
 
-		weight = utilities.get_image( weight_odd_file )
-		utilities.send_EMData(weight, main_node_all, tag_weight_odd, mpi_comm)
+		weight = sparx_utilities.get_image( weight_odd_file )
+		sparx_utilities.send_EMData(weight, main_node_all, tag_weight_odd, mpi_comm)
 
 		if not(finfo is None):
 			finfo.write("weight odd sent\n")
@@ -1056,48 +1056,48 @@ def rec3D_MPI_noCTF(data, symmetry = "c1", mask3D = None, fsc_curve = None, myid
 
 		volodd = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
 		del fftvol, weight
-		voleve = utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
-		fscdat = statistics.fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
+		voleve = sparx_utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+		fscdat = sparx_statistics.fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve
-		volall = utilities.recv_EMData(main_node_all, tag_volall, mpi_comm)
+		volall = sparx_utilities.recv_EMData(main_node_all, tag_volall, mpi_comm)
 		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file );
 		return volall,fscdat
 
 	if myid == main_node_eve:
-		ftmp = utilities.recv_EMData(main_node_odd, tag_fftvol_odd, mpi_comm)
-		fftvol = utilities.get_image( fftvol_eve_file )
+		ftmp = sparx_utilities.recv_EMData(main_node_odd, tag_fftvol_odd, mpi_comm)
+		fftvol = sparx_utilities.get_image( fftvol_eve_file )
 		EMAN2_cppwrap.Util.add_img( ftmp, fftvol )
-		utilities.send_EMData(ftmp, main_node_all, tag_fftvol_eve, mpi_comm)
+		sparx_utilities.send_EMData(ftmp, main_node_all, tag_fftvol_eve, mpi_comm)
 		del ftmp
 
-		weight = utilities.get_image( weight_eve_file )
-		utilities.send_EMData(weight, main_node_all, tag_weight_eve, mpi_comm)
+		weight = sparx_utilities.get_image( weight_eve_file )
+		sparx_utilities.send_EMData(weight, main_node_all, tag_weight_eve, mpi_comm)
 
 		voleve = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
-		utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
+		sparx_utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
 		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
 
-		return utilities.model_blank(nx,nx,nx), None
+		return sparx_utilities.model_blank(nx,nx,nx), None
 
 
 	if myid == main_node_all:
-		fftvol = utilities.recv_EMData(main_node_eve, tag_fftvol_eve, mpi_comm)
+		fftvol = sparx_utilities.recv_EMData(main_node_eve, tag_fftvol_eve, mpi_comm)
 		if not(finfo is None):
 			finfo.write( "fftvol odd received\n" )
 			finfo.flush()
 
-		weight = utilities.recv_EMData(main_node_odd, tag_weight_odd, mpi_comm)
-		weight_tmp = utilities.recv_EMData(main_node_eve, tag_weight_eve, mpi_comm)
+		weight = sparx_utilities.recv_EMData(main_node_odd, tag_weight_odd, mpi_comm)
+		weight_tmp = sparx_utilities.recv_EMData(main_node_eve, tag_weight_eve, mpi_comm)
 		EMAN2_cppwrap.Util.add_img( weight, weight_tmp )
 		weight_tmp = None
 
 		volall = recons_from_fftvol(nx, fftvol, weight, symmetry, npad)
-		utilities.send_EMData(volall, main_node_odd, tag_volall, mpi_comm)
+		sparx_utilities.send_EMData(volall, main_node_odd, tag_volall, mpi_comm)
 
-		return utilities.model_blank(nx,nx,nx),None
+		return sparx_utilities.model_blank(nx,nx,nx),None
 
 
-	return utilities.model_blank(nx,nx,nx),None
+	return sparx_utilities.model_blank(nx,nx,nx),None
 	
 def prepare_recons_ctf_two_chunks(nx,data,snr,symmetry,myid,main_node_half,chunk_ID,finfo=None,npad=2,mpi_comm=None,smearstep = 0.0):
 	pass#IMPORTIMPORTIMPORT from random     import randint
@@ -1141,8 +1141,8 @@ def prepare_recons_ctf_two_chunks(nx,data,snr,symmetry,myid,main_node_half,chunk
 		finfo.write( "begin reduce half\n" )
 		finfo.flush()
 
-	utilities.reduce_EMData_to_root(fftvol_half, myid, main_node_half, mpi_comm)
-	utilities.reduce_EMData_to_root(weight_half, myid, main_node_half, mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol_half, myid, main_node_half, mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight_half, myid, main_node_half, mpi_comm)
 
 	if not(finfo is None):
 		finfo.write( "after reduce half\n" )
@@ -1220,37 +1220,37 @@ def rec3D_two_chunks_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_cu
 
 	nx = get_image_size(imgdata, myid)
 	if nx == 0:
-		global_def.ERROR("Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume", "rec3D", 0)
-		return utilities.model_blank( 2, 2, 2 ), None
+		sparx_global_def.ERROR("Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume", "rec3D", 0)
+		return sparx_utilities.model_blank( 2, 2, 2 ), None
 
 	fftvol_odd_file,weight_odd_file = prepare_recons_ctf_two_chunks(nx, imgdata, snr, symmetry, myid, main_node_odd, 0, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
 	fftvol_eve_file,weight_eve_file = prepare_recons_ctf_two_chunks(nx, imgdata, snr, symmetry, myid, main_node_eve, 1, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
 	del imgdata
 
 	if nproc == 1:
-		fftvol = utilities.get_image(fftvol_odd_file)
-		weight = utilities.get_image(weight_odd_file)
+		fftvol = sparx_utilities.get_image(fftvol_odd_file)
+		weight = sparx_utilities.get_image(weight_odd_file)
 		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 
-		fftvol = utilities.get_image(fftvol_eve_file)
-		weight = utilities.get_image(weight_eve_file)
+		fftvol = sparx_utilities.get_image(fftvol_eve_file)
+		weight = sparx_utilities.get_image(weight_eve_file)
 		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 
 		if( not mask3D ):
 			nx = volodd.get_xsize()
 			ny = volodd.get_ysize()
 			nz = volodd.get_zsize()
-			mask3D = utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
-		fscdat = statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
+			mask3D = sparx_utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
+		fscdat = sparx_statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve, mask3d
 
-		fftvol = utilities.get_image( fftvol_odd_file )
-		fftvol_tmp = utilities.get_image(fftvol_eve_file)
+		fftvol = sparx_utilities.get_image( fftvol_odd_file )
+		fftvol_tmp = sparx_utilities.get_image(fftvol_eve_file)
 		fftvol += fftvol_tmp
 		fftvol_tmp = None
 
-		weight = utilities.get_image( weight_odd_file )
-		weight_tmp = utilities.get_image(weight_eve_file)
+		weight = sparx_utilities.get_image( weight_odd_file )
+		weight_tmp = sparx_utilities.get_image(weight_eve_file)
 		weight += weight_tmp
 		weight_tmp = None
 
@@ -1262,33 +1262,33 @@ def rec3D_two_chunks_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_cu
 
 	if nproc == 2:
 		if myid == main_node_odd:
-			fftvol = utilities.get_image( fftvol_odd_file )
-			weight = utilities.get_image( weight_odd_file )
+			fftvol = sparx_utilities.get_image( fftvol_odd_file )
+			weight = sparx_utilities.get_image( weight_odd_file )
 			volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
-			voleve = utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+			voleve = sparx_utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
 			
 			if( not mask3D ):
 				nx = volodd.get_xsize()
 				ny = volodd.get_ysize()
 				nz = volodd.get_zsize()
-				mask3D = utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
-			fscdat = statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
+				mask3D = sparx_utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
+			fscdat = sparx_statistics.fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 			del  volodd, voleve, mask3D
 		else:
 			assert myid == main_node_eve
-			fftvol = utilities.get_image( fftvol_eve_file )
-			weight = utilities.get_image( weight_eve_file )
+			fftvol = sparx_utilities.get_image( fftvol_eve_file )
+			weight = sparx_utilities.get_image( weight_eve_file )
 			voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
-			utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
+			sparx_utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
 
 		if myid == main_node_odd:
-			fftvol = utilities.get_image( fftvol_odd_file )
-			fftvol_tmp = utilities.recv_EMData( main_node_eve, tag_fftvol_eve, mpi_comm)
+			fftvol = sparx_utilities.get_image( fftvol_odd_file )
+			fftvol_tmp = sparx_utilities.recv_EMData( main_node_eve, tag_fftvol_eve, mpi_comm)
 			fftvol += fftvol_tmp
 			fftvol_tmp = None
 
-			weight = utilities.get_image( weight_odd_file )
-			weight_tmp = utilities.recv_EMData( main_node_eve, tag_weight_eve, mpi_comm)
+			weight = sparx_utilities.get_image( weight_odd_file )
+			weight_tmp = sparx_utilities.recv_EMData( main_node_eve, tag_weight_eve, mpi_comm)
 			weight += weight_tmp
 			weight_tmp = None
 
@@ -1298,24 +1298,24 @@ def rec3D_two_chunks_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_cu
 			return volall,fscdat
 		else:
 			assert myid == main_node_eve
-			fftvol = utilities.get_image( fftvol_eve_file )
-			weight = utilities.get_image( weight_eve_file )
-			utilities.send_EMData(fftvol, main_node_odd, tag_fftvol_eve, mpi_comm)
-			utilities.send_EMData(weight, main_node_odd, tag_weight_eve, mpi_comm)
+			fftvol = sparx_utilities.get_image( fftvol_eve_file )
+			weight = sparx_utilities.get_image( weight_eve_file )
+			sparx_utilities.send_EMData(fftvol, main_node_odd, tag_fftvol_eve, mpi_comm)
+			sparx_utilities.send_EMData(weight, main_node_odd, tag_weight_eve, mpi_comm)
 			os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file )
-			return utilities.model_blank(nx,nx,nx), None
+			return sparx_utilities.model_blank(nx,nx,nx), None
 
 	# cases from all other number of processors situations
 	if myid == main_node_odd:
-		fftvol = utilities.get_image( fftvol_odd_file )
-		utilities.send_EMData(fftvol, main_node_eve, tag_fftvol_odd, mpi_comm)
+		fftvol = sparx_utilities.get_image( fftvol_odd_file )
+		sparx_utilities.send_EMData(fftvol, main_node_eve, tag_fftvol_odd, mpi_comm)
 
 		if not(finfo is None):
 			finfo.write("fftvol odd sent\n")
 			finfo.flush()
 
-		weight = utilities.get_image( weight_odd_file )
-		utilities.send_EMData(weight, main_node_all, tag_weight_odd, mpi_comm)
+		weight = sparx_utilities.get_image( weight_odd_file )
+		sparx_utilities.send_EMData(weight, main_node_all, tag_weight_odd, mpi_comm)
 
 		if not(finfo is None):
 			finfo.write("weight odd sent\n")
@@ -1323,52 +1323,52 @@ def rec3D_two_chunks_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_cu
 
 		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 		del fftvol, weight
-		voleve = utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+		voleve = sparx_utilities.recv_EMData(main_node_eve, tag_voleve, mpi_comm)
 
 		if( not mask3D ):
 			nx = volodd.get_xsize()
 			ny = volodd.get_ysize()
 			nz = volodd.get_zsize()
-			mask3D = utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
+			mask3D = sparx_utilities.model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
 
-		fscdat = statistics.fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
+		fscdat = sparx_statistics.fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve, mask3D
-		volall = utilities.recv_EMData(main_node_all, tag_volall, mpi_comm)
+		volall = sparx_utilities.recv_EMData(main_node_all, tag_volall, mpi_comm)
 		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file )
 		return volall, fscdat
 
 	if myid == main_node_eve:
-		ftmp = utilities.recv_EMData(main_node_odd, tag_fftvol_odd, mpi_comm)
-		fftvol = utilities.get_image( fftvol_eve_file )
+		ftmp = sparx_utilities.recv_EMData(main_node_odd, tag_fftvol_odd, mpi_comm)
+		fftvol = sparx_utilities.get_image( fftvol_eve_file )
 		EMAN2_cppwrap.Util.add_img( ftmp, fftvol )
-		utilities.send_EMData(ftmp, main_node_all, tag_fftvol_eve, mpi_comm)
+		sparx_utilities.send_EMData(ftmp, main_node_all, tag_fftvol_eve, mpi_comm)
 		del ftmp
 
-		weight = utilities.get_image( weight_eve_file )
-		utilities.send_EMData(weight, main_node_all, tag_weight_eve, mpi_comm)
+		weight = sparx_utilities.get_image( weight_eve_file )
+		sparx_utilities.send_EMData(weight, main_node_all, tag_weight_eve, mpi_comm)
 
 		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
-		utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
+		sparx_utilities.send_EMData(voleve, main_node_odd, tag_voleve, mpi_comm)
 		os.system( "rm -f " + fftvol_eve_file + " " + weight_eve_file );
 
-		return utilities.model_blank(nx,nx,nx), None
+		return sparx_utilities.model_blank(nx,nx,nx), None
 
 
 	if myid == main_node_all:
-		fftvol = utilities.recv_EMData(main_node_eve, tag_fftvol_eve, mpi_comm)
+		fftvol = sparx_utilities.recv_EMData(main_node_eve, tag_fftvol_eve, mpi_comm)
 		if not(finfo is None):
 			finfo.write( "fftvol odd received\n" )
 			finfo.flush()
 
-		weight = utilities.recv_EMData(main_node_odd, tag_weight_odd, mpi_comm)
-		weight_tmp = utilities.recv_EMData(main_node_eve, tag_weight_eve, mpi_comm)
+		weight = sparx_utilities.recv_EMData(main_node_odd, tag_weight_odd, mpi_comm)
+		weight_tmp = sparx_utilities.recv_EMData(main_node_eve, tag_weight_eve, mpi_comm)
 		EMAN2_cppwrap.Util.add_img( weight, weight_tmp )
 		weight_tmp = None
 
 		volall = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
-		utilities.send_EMData(volall, main_node_odd, tag_volall, mpi_comm)
+		sparx_utilities.send_EMData(volall, main_node_odd, tag_volall, mpi_comm)
 
-		return utilities.model_blank(nx,nx,nx),None
+		return sparx_utilities.model_blank(nx,nx,nx),None
 
-	return utilities.model_blank(nx,nx,nx),None
+	return sparx_utilities.model_blank(nx,nx,nx),None
 

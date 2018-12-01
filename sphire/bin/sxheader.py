@@ -31,12 +31,12 @@ from __future__ import print_function
 #
 #
 
-import applications
-import global_def
+import sparx_applications
+import sparx_global_def
 import optparse
 import os
 import sys
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import applications
 pass#IMPORTIMPORTIMPORT import global_def
 pass#IMPORTIMPORTIMPORT import optparse
@@ -55,7 +55,7 @@ def main():
 
 	progname = os.path.basename( arglist[0] )
 	usage = progname + " stack --params='parm1 parm2 parm3 ...' --zero --one --set=number --randomize --rand_alpha --import=file --export=file --print --backup --suffix --restore --delete"
-	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=sparx_global_def.SPARXVERSION)
 
 	parser.add_option("--params",	   type="string",       default=None,    help="parameter list")
 	parser.add_option("--zero",	       action="store_true", default=False,   help="set parameter to zero")
@@ -82,11 +82,11 @@ def main():
 		print("Error: no parameters given")
 		exit(-1)
 
-	if global_def.CACHE_DISABLE:
+	if sparx_global_def.CACHE_DISABLE:
 		pass#IMPORTIMPORTIMPORT from utilities import disable_bdb_cache
-		utilities.disable_bdb_cache()
+		sparx_utilities.disable_bdb_cache()
 	pass#IMPORTIMPORTIMPORT from applications import header
-	applications.header(args[0], options.params, options.zero, options.one, options.set, options.randomize, options.rand_alpha, options.fimport, options.fexport, \
+	sparx_applications.header(args[0], options.params, options.zero, options.one, options.set, options.randomize, options.rand_alpha, options.fimport, options.fexport, \
 	options.fprint, options.backup, options.suffix, options.restore, options.delete, options.consecutive)
 
 if __name__ == "__main__":

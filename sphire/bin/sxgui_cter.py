@@ -38,16 +38,16 @@ import eman2_gui.emimage2d as emimage2d
 import eman2_gui.emplot2d as emplot2d
 import eman2_gui.emshape as emshape
 import eman2_gui.valslider as valslider
-import global_def
-import morphology
+import sparx_global_def
+import sparx_morphology
 import numpy as np
 import optparse
 import os
 import scipy
-import statistics
+import sparx_statistics
 import sys
 import traceback
-import utilities
+import sparx_utilities
 import warnings
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
@@ -116,7 +116,7 @@ def main():
 	usage = progname + """  cter_ctf_file 
 	This GUI application is designed for the evaluation of micrographs using the parameters outputed by CTER.
 	"""
-	parser = optparse.OptionParser(usage, version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage, version=sparx_global_def.SPARXVERSION)
 	# No options!!! Does not need to call parser.add_option()
 	
 	(options, args) = parser.parse_args(sys.argv[1:])
@@ -1135,7 +1135,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.wplotrotavgfine.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.wplotrotavgcoarse.qt_parent.resize(child_win_width,child_win_height)
 		self.wplotrotavgcoarse.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
-		self.wimgmicthumb.set_data(utilities.model_blank(img_size,img_size, bckg=1.0)) # resize does not work if no image is set
+		self.wimgmicthumb.set_data(sparx_utilities.model_blank(img_size,img_size, bckg=1.0)) # resize does not work if no image is set
 		self.wimgmicthumb.qt_parent.resize(child_win_width,child_win_height)
 		self.wimgmicthumb.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.wimgmicthumb.scroll_to(-1 * img_size,-1 * img_size)
@@ -1288,7 +1288,7 @@ class SXGuiCter(QtGui.QWidget):
 			QtGui.QMessageBox.warning(None,"Warning","Invalid file extension for CTER partres file (%s). The file extension must be \".txt\"." % (file_path))
 			return
 		
-		new_entry_list = utilities.read_text_row(file_path)
+		new_entry_list = sparx_utilities.read_text_row(file_path)
 		if len(new_entry_list) == 0:
 			QtGui.QMessageBox.warning(self, "Warning", "Specified CTER partres file (%s) does not contain any entry. Please check the file." % (file_path))
 			return
@@ -1352,7 +1352,7 @@ class SXGuiCter(QtGui.QWidget):
 				# assume amplitude amplitude contrast is total amplitude constrast in [%], estimated as variable Volta phase shift. Conver it to [deg].
 				# Also, assuming constant amplitude contrast is zero since there is no information available in the old format.
 				#from morphology import ampcont2angle
-				total_phase_shift = morphology.ampcont2angle(new_entry_list[cter_id][self.idx_old_cter_ac])
+				total_phase_shift = sparx_morphology.ampcont2angle(new_entry_list[cter_id][self.idx_old_cter_ac])
 				
 				# Add extra items first to make sure indices match
 				extended_entry = []
@@ -1664,7 +1664,7 @@ class SXGuiCter(QtGui.QWidget):
 		assert len(val_list) >= n_bin, "MRK_DEBUG"
 		assert n_bin > 0, "MRK_DEBUG"
 		#from statistics import hist_list
-		hist_x_list, hist_y_list = statistics.hist_list(val_list, n_bin)
+		hist_x_list, hist_y_list = sparx_statistics.hist_list(val_list, n_bin)
 		
 		# Pad with zero for better visual impression...
 		hist_x_list += [max(val_list)]
@@ -1809,7 +1809,7 @@ class SXGuiCter(QtGui.QWidget):
 		assert os.path.exists(self.cter_pwrot_file_path), "MRK_DEBUG"
 		
 		# Now update the plots
-		self.rotinf_table = utilities.read_text_file(self.cter_pwrot_file_path, ncol=-1)
+		self.rotinf_table = sparx_utilities.read_text_file(self.cter_pwrot_file_path, ncol=-1)
 		
 		# print "MRK_DEBUG: Last entry of the 1st colum should be a micrograph name %s which is same as " % os.path.basename(self.rotinf_table[0][-1])
 		
