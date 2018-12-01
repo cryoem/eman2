@@ -1,42 +1,6 @@
 # For some reason these programs get stuck on MPI if I change the order of programs in the file.  Strange, PAP.
 from __future__ import print_function
 from builtins import range
-'''
-#  I do not know why this would make sense  PAP 04/20/2017
-def generate_uneven_projections_directions(count, half_sphere=False, output_filename=None, 
-										   density_ratio_on_poles_and_equator=1.0): 
-	"""
-	Generates set of uneven distributed projections directions with given size 
-	Returns: list of projections directions
-	"""
-	pass#IMPORTIMPORTIMPORT from random import random, uniform
-	pass#IMPORTIMPORTIMPORT from utilities import write_text_row
-	pass#IMPORTIMPORTIMPORT from math import sin, pi
-	max_theta = 180.0
-	if half_sphere: max_theta = 90.0
-	a1 = []
-	while len(a1) < count:
-		theta = uniform(0.0, max_theta)
-		if random() < abs(sin(theta/180.0*pi)):
-			if theta > 90.0:
-				angle_from_pole = 180.0 - theta
-			else:
-				angle_from_pole = theta
-			density_ratio = density_ratio_on_poles_and_equator + (angle_from_pole / 90.0) * (1.0 - density_ratio_on_poles_and_equator)
-			if density_ratio_on_poles_and_equator > 1.0:
-				density_ratio /= density_ratio_on_poles_and_equator
-			if random() < density_ratio:
-				a1.append( [uniform(0.0, 360.0), theta] )
-	for pos in a1:
-		for i in range(2,5):
-			if len(pos) <= i:
-				pos.append(0.0)
-			else:
-				pos[i] = 0.0
-	if output_filename != None and output_filename != "":
-		write_text_row(a1, output_filename)
-	return a1
-'''
 import EMAN2_cppwrap
 import EMAN2db
 import alignment
@@ -3328,4 +3292,40 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	#else:
 	#	return #None, None, None, None  # results for the other processes
 
+'''
+'''
+#  I do not know why this would make sense  PAP 04/20/2017
+def generate_uneven_projections_directions(count, half_sphere=False, output_filename=None, 
+										   density_ratio_on_poles_and_equator=1.0): 
+	"""
+	Generates set of uneven distributed projections directions with given size 
+	Returns: list of projections directions
+	"""
+	pass#IMPORTIMPORTIMPORT from random import random, uniform
+	pass#IMPORTIMPORTIMPORT from utilities import write_text_row
+	pass#IMPORTIMPORTIMPORT from math import sin, pi
+	max_theta = 180.0
+	if half_sphere: max_theta = 90.0
+	a1 = []
+	while len(a1) < count:
+		theta = uniform(0.0, max_theta)
+		if random() < abs(sin(theta/180.0*pi)):
+			if theta > 90.0:
+				angle_from_pole = 180.0 - theta
+			else:
+				angle_from_pole = theta
+			density_ratio = density_ratio_on_poles_and_equator + (angle_from_pole / 90.0) * (1.0 - density_ratio_on_poles_and_equator)
+			if density_ratio_on_poles_and_equator > 1.0:
+				density_ratio /= density_ratio_on_poles_and_equator
+			if random() < density_ratio:
+				a1.append( [uniform(0.0, 360.0), theta] )
+	for pos in a1:
+		for i in range(2,5):
+			if len(pos) <= i:
+				pos.append(0.0)
+			else:
+				pos[i] = 0.0
+	if output_filename != None and output_filename != "":
+		write_text_row(a1, output_filename)
+	return a1
 '''
