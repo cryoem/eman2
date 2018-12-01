@@ -16,7 +16,7 @@ if [ ! -z ${CIRCLECI} ];then
     source ${HOME}/miniconda2/bin/activate root
 fi
 
-python -m compileall -q . -x '.*/unused/.*'
+python -m compileall -q -x '.*/unused/.*|.*/.git/.*' .
 
 export CPU_COUNT=2
 
