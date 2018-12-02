@@ -276,7 +276,7 @@ def recursive_check(function_dict, module, key):
 # Extract all the internally used functions from the bin files
 print('Find unused functions in bin files')
 for name, values in used_functions['bin'].items():
-    if name in ('sxgui', 'sparx_user_functions', 'user_functions'):
+    if name in ('sxgui'):
         print('IGNORE', name)
         continue
     with open(os.path.join(tmp_bin_dir, '{0}.py'.format(name))) as read:
@@ -338,13 +338,18 @@ for key, vals in used_functions['lib'].items():
 
 # Removed unused functions
 print('Remove unused lib functions')
+shutil.copy2(os.path.join(tmp_lib_dir, '{0}.py'.format('sparx')), os.path.join(new_lib_dir, '{0}.py'.format('sparx')))
 for name in used_functions['lib']:
-    if not used_functions['lib'][name]['used']:
-        print('UNUSED', name)
-        continue
-
     with open(os.path.join(tmp_lib_dir, '{0}.py'.format(name))) as read:
         lines = read.readlines()
+
+    if not used_functions['lib'][name]['used']:
+        if name in ('sparx_user_functions', 'user_functions'):
+            with open(os.path.join(new_lib_dir, '{0}.py'.format(name)), 'w') as write:
+                write.write(''.join(lines))
+        else:
+            print('UNUSED', name)
+        continue
 
     used_lines = []
     unused_lines = []
