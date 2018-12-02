@@ -195,7 +195,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 	pass#IMPORTIMPORTIMPORT from utilities    import    model_blank, get_params2D, same_ctf
 	pass#IMPORTIMPORTIMPORT from fundamentals import    rot_shift2D, fft
 	pass#IMPORTIMPORTIMPORT from copy import deepcopy
-	if CTF: sparx_global_def.ERROR("This function was disabled as it does not treat astigmatism properly","sum_oe",1)
+	if CTF: sparx_global_def.ERROR("Debug test","sum_oe",0)
 	n      = len(data)
 	if return_params: params_list = [None]*n
 	if CTF:
