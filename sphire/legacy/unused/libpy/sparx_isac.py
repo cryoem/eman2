@@ -288,24 +288,24 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	random.seed(rand1 + rand2)
 
 	if main_iter%iter_reali != 0:
-		global_def.ERROR("main_iter should be a multiple of iter_reali, please reset them and restart the program", "iter_isac", 1, myid)
+		sparx_global_def.ERROR("main_iter should be a multiple of iter_reali, please reset them and restart the program", "iter_isac", 1, myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if generation == 0:
-		global_def.ERROR("Generation should begin from 1, please reset it and restart the program", "iter_isac", 1, myid)
+		sparx_global_def.ERROR("Generation should begin from 1, please reset it and restart the program", "iter_isac", 1, myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if indep_run < 2 or indep_run > 4:
-		global_def.ERROR("indep_run must equal 2, 3 or 4, please reset it and restart the program", "iter_isac", 1, myid)
+		sparx_global_def.ERROR("indep_run must equal 2, 3 or 4, please reset it and restart the program", "iter_isac", 1, myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if number_of_proc % indep_run != 0:
-		global_def.ERROR("Number of MPI processes must be a multiplicity of indep_run, please reset it and restart the program", "iter_isac", 1, myid)
+		sparx_global_def.ERROR("Number of MPI processes must be a multiplicity of indep_run, please reset it and restart the program", "iter_isac", 1, myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	ali_params_dir = "ali_params_generation_%d"%generation
 	if os.path.exists(ali_params_dir):  
-		global_def.ERROR('Output directory %s for alignment parameters exists, please either change its name or delete it and restart the program'%ali_params_dir, "iter_isac", 1, myid)
+		sparx_global_def.ERROR('Output directory %s for alignment parameters exists, please either change its name or delete it and restart the program'%ali_params_dir, "iter_isac", 1, myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	
@@ -360,12 +360,12 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	nx = int(nx[0])
 
 	if myid != main_node:
-		alldata = [utilities.model_blank(nx, nx) for i in range(ndata)]
+		alldata = [sparx_utilities.model_blank(nx, nx) for i in range(ndata)]
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	data = [None]*ndata
 	tdummy = EMAN2_cppwrap.Transform({"type":"2D"})
 	for im in range(ndata):
-		utilities.bcast_EMData_to_all(alldata[im], myid, main_node)
+		sparx_utilities.bcast_EMData_to_all(alldata[im], myid, main_node)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)  # has to be here, otherwise it chokes on our cluster.  PAP
 		# This is the absolute ID, the only time we use it is
 		# when setting the members of 4-way output. All other times, the id in 'members' is 
@@ -417,10 +417,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				#refi = generate_random_averages(data, K, -1)
 				###for j in xrange(len(refi)):  refi[j].write_image("refim_%d.hdf"%color, j)
 			else:
-				refi = [utilities.model_blank(nx, nx) for i in range(K)]
+				refi = [sparx_utilities.model_blank(nx, nx) for i in range(K)]
 
 			for i in range(K):
-				utilities.bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
+				sparx_utilities.bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
 
 			# Generate inital averages
 			###if myid == main_node: print "	 Generating initial averages ",color,myid,localtime()[:5]
@@ -432,7 +432,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			if match_initialization:                #  This is not executed at all.  It was always this way, at least since version 1.1 by Piotr
 				if key == group_main_node:          # as all refims are initialized the same way and also the flag is set to False!
 					###print "Begin gathering ...", myid, len(refi)  #  It will append data
-					refi = utilities.gather_EMData(refi, indep_run, myid, main_node)
+					refi = sparx_utilities.gather_EMData(refi, indep_run, myid, main_node)
 				if myid == main_node:
 					# Match all averages in the initialization and select good ones
 					#print "before matching, len = ", len(refi)
@@ -446,7 +446,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 						for i in range(defi):
 							current_refim.append(refi[random.randint(0, indep_run*K-1)].copy())
 				else:
-					current_refim = [utilities.model_blank(nx, nx) for i in range(K)]
+					current_refim = [sparx_utilities.model_blank(nx, nx) for i in range(K)]
 
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)	
 			else:
@@ -454,7 +454,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			# broadcast current_refim to all nodes
 			for i in range(K):
-				utilities.bcast_EMData_to_all(current_refim[i], myid, main_node)
+				sparx_utilities.bcast_EMData_to_all(current_refim[i], myid, main_node)
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 			###if key == group_main_node:
@@ -479,7 +479,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 				all_ali_params = [[] for i in range(4)]
 				for im in data:
-					alpha, sx, sy, mirror, scale = utilities.get_params2D(im)
+					alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(im)
 					all_ali_params[0].append(alpha)
 					all_ali_params[1].append(sx)
 					all_ali_params[2].append(sy)
@@ -489,12 +489,12 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 					final_ali_params_filename = ali_params_filename + "_" + str(mloop)
 					#if os.path.exists(final_ali_params_filename):
 					#	os.remove(final_ali_params_filename)
-					utilities.write_text_file(all_ali_params, final_ali_params_filename)
+					sparx_utilities.write_text_file(all_ali_params, final_ali_params_filename)
 				del all_ali_params
 
 				# gather the data from the group main node to the main node
 				if key == group_main_node:
-					refi = utilities.gather_EMData(refi, indep_run, myid, main_node)
+					refi = sparx_utilities.gather_EMData(refi, indep_run, myid, main_node)
 
 					###for i in xrange(len(refi)):
 					###	#  Each color has the same set of refim
@@ -504,9 +504,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 					if myid == main_node:
 						current_refim = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
 					else:
-						current_refim = [utilities.model_blank(nx, nx) for i in range(K)]
+						current_refim = [sparx_utilities.model_blank(nx, nx) for i in range(K)]
 					for k in range(K):
-						utilities.bcast_EMData_to_all(current_refim[k], myid, main_node)
+						sparx_utilities.bcast_EMData_to_all(current_refim[k], myid, main_node)
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 			del current_refim
 
@@ -593,15 +593,15 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		nrefim = 0
 	nrefim = mpi.mpi_bcast(nrefim, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)			# number of ref
 	nrefim = int(nrefim[0])
-	if(nrefim == 0):  global_def.ERROR("sxisac","Candidate averages do not exist",1,myid)
+	if(nrefim == 0):  sparx_global_def.ERROR("sxisac","Candidate averages do not exist",1,myid)
 
 	if myid != main_node:
-		refim = [utilities.model_blank(nx, nx) for i in range(nrefim)]
+		refim = [sparx_utilities.model_blank(nx, nx) for i in range(nrefim)]
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	nn = [0]*nrefim
 	for i in range(nrefim):
-		utilities.bcast_EMData_to_all(refim[i], myid, main_node)						   # ref + n_objects
+		sparx_utilities.bcast_EMData_to_all(refim[i], myid, main_node)						   # ref + n_objects
 		if myid == main_node: n_objects = refim[i].get_attr('n_objects')
 		else: n_objects = 0
 		n_objects = mpi.mpi_bcast(n_objects, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
@@ -673,10 +673,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				refim_left = generate_random_averages(data_left, K_left)
 				#for j in xrange(K_left):  refim_left[j].write_image("refim_left_%d.hdf"%color, j)
 			else:
-				refim_left = [utilities.model_blank(nx, nx) for i in range(K_left)]
+				refim_left = [sparx_utilities.model_blank(nx, nx) for i in range(K_left)]
 
 			for i in range(K_left):
-				utilities.bcast_EMData_to_all(refim_left[i], key, group_main_node, group_comm)		  # Within one SAC
+				sparx_utilities.bcast_EMData_to_all(refim_left[i], key, group_main_node, group_comm)		  # Within one SAC
 
 			# Generate initial averages for the unaccounted images
 			refim_left = isac_MPI(data_left, refim_left, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
@@ -715,7 +715,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 		all_ali_params = [[] for i in range(4)]
 		for im in alldata:
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(im)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(im)
 			all_ali_params[0].append(alpha)
 			all_ali_params[1].append(sx)			
 			all_ali_params[2].append(sy)
@@ -725,11 +725,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			final_ali_params_filename = ali_params_filename + "_" + str(mloop)
 			#if os.path.exists(final_ali_params_filename):
 			#	os.remove(final_ali_params_filename)
-			utilities.write_text_file(all_ali_params, final_ali_params_filename)
+			sparx_utilities.write_text_file(all_ali_params, final_ali_params_filename)
 
 		# gather refim to the main node
 		if key == group_main_node:
-			refim = utilities.gather_EMData(refim, indep_run, myid, main_node)
+			refim = sparx_utilities.gather_EMData(refim, indep_run, myid, main_node)
 #			for i in xrange(len(refim)):
 #				refim[i].write_image("log_mainPart_" + str(color) + "_" + str(mloop) + ".hdf", i)
 
@@ -760,9 +760,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				else:
 					refim_all = match_2_way(alldata, refim, indep_run, thld_grp, FH, FF, find_unique = False, wayness = wayness, suffix="_"+str(mloop) )
 			else:
-				refim_all = [utilities.model_blank(nx, nx) for i in range(K*indep_run)]
+				refim_all = [sparx_utilities.model_blank(nx, nx) for i in range(K*indep_run)]
 			for k in range(K*indep_run):
-				utilities.bcast_EMData_to_all(refim_all[k], myid, main_node)
+				sparx_utilities.bcast_EMData_to_all(refim_all[k], myid, main_node)
 				if myid == main_node: n_objects = refim_all[k].get_attr('n_objects')
 				else: n_objects = 0
 				n_objects = mpi.mpi_bcast(n_objects, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
@@ -834,7 +834,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				continue
 			print("Size of stable subset larger than the threshold, kept\n")
 
-			ave = utilities.recv_EMData(node_to_run, i+70000)
+			ave = sparx_utilities.recv_EMData(node_to_run, i+70000)
 			stable_members_ori = [0]*l_stable_members
 			for j in range(l_stable_members): stable_members_ori[j] = alldata_n[stable_members[j]]
 			ave.set_attr_dict({"members": stable_members_ori, "n_objects": l_stable_members})
@@ -855,8 +855,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 		print("In the second phase, we found %d stable and reproducible averages that account for %d particles.  "%(ave_num, len(members_acc)))
 		#  The following will write a zero-length file if the list is empty
-		utilities.write_text_file(members_acc, "generation_%d_accounted.txt"%generation)
-		utilities.write_text_file(members_unacc, "generation_%d_unaccounted.txt"%generation)
+		sparx_utilities.write_text_file(members_acc, "generation_%d_accounted.txt"%generation)
+		sparx_utilities.write_text_file(members_unacc, "generation_%d_unaccounted.txt"%generation)
 		print("******************************************************************************************")
 		print("*     End of the second phase             "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())+"            *")
 		print("******************************************************************************************")
@@ -880,13 +880,13 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			ali_params = [[] for j in range(stab_ali)]
 			for ii in range(stab_ali):
-				ave = applications.within_group_refinement(class_data, None, True, ir, ou, rs, [xr], [yr], [ts], \
+				ave = sparx_applications.within_group_refinement(class_data, None, True, ir, ou, rs, [xr], [yr], [ts], \
 												dst, maxit, FH, FF, method = alimethod)
 				for im in range(l_STB_PART):
-					alpha, sx, sy, mirror, scale = utilities.get_params2D(class_data[im])
+					alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(class_data[im])
 					ali_params[ii].extend([alpha, sx, sy, mirror])
 			if ou == -1:  ou = nx/2-2
-			stable_set, mirror_consistent_rate, pix_err = pixel_error.multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, ou*2)
+			stable_set, mirror_consistent_rate, pix_err = sparx_pixel_error.multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, ou*2)
 
 			l_stable_set = len(stable_set)
 			stable_set_id = [0]*l_stable_set
@@ -908,10 +908,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			mpi.mpi_send(pix_err, 1, mpi.MPI_FLOAT, main_node, i+60000, mpi.MPI_COMM_WORLD)
 
 			if l_stable_set > thld_grp:
-				utilities.send_EMData(ave, main_node, i+70000)		
+				sparx_utilities.send_EMData(ave, main_node, i+70000)		
 				ave_num = mpi.mpi_recv(1, mpi.MPI_INT, main_node, i+80000, mpi.MPI_COMM_WORLD)
 				ave_num = int(ave_num[0])
-				utilities.write_text_file([all_alpha, all_sx, all_sy, all_mirror], "%s/ali_params_%03d"%(ali_params_dir, ave_num))
+				sparx_utilities.write_text_file([all_alpha, all_sx, all_sy, all_mirror], "%s/ali_params_%03d"%(ali_params_dir, ave_num))
 
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	
@@ -973,16 +973,16 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	nima = len(alldata)
 	#  Explicitly force all parameters to be zero on input
-	for im in range(nima):  utilities.set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
+	for im in range(nima):  sparx_utilities.set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
 		
 	
-	image_start, image_end = applications.MPI_start_end(nima, number_of_proc, myid)
+	image_start, image_end = sparx_applications.MPI_start_end(nima, number_of_proc, myid)
 
 	if maskfile:
 		pass#IMPORTIMPORTIMPORT import  types
-		if type(maskfile) is bytes:  mask = utilities.get_image(maskfile)
+		if type(maskfile) is bytes:  mask = sparx_utilities.get_image(maskfile)
 		else: mask = maskfile
-	else : mask = utilities.model_circle(last_ring, nx, nx)
+	else : mask = sparx_utilities.model_circle(last_ring, nx, nx)
 	if type(refim) == type(""):
 		refi = EMAN2_cppwrap.EMData.read_images(refim)
 	else:
@@ -1008,8 +1008,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	mode = "F"
 	#precalculate rings
-	numr = alignment.Numrinit(first_ring, last_ring, rstep, mode)
-	wr = alignment.ringwe(numr, mode)
+	numr = sparx_alignment.Numrinit(first_ring, last_ring, rstep, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 	# reference images
 	#  for each node read its share of data
 	#data = EMData.read_images(stack, range(image_start, image_end))
@@ -1053,27 +1053,27 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		d = numpy.zeros(numref*nima, dtype=numpy.float32)
 		# begin MPI section
 		for im in range(image_start, image_end):
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(alldata[im])
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(alldata[im])
 			##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
-			alphai, sxi, syi, scalei = utilities.inverse_transform2(alpha, sx, sy)
+			alphai, sxi, syi, scalei = sparx_utilities.inverse_transform2(alpha, sx, sy)
 			# If shifts are outside of the permissible range, reset them
 			if(abs(sxi)>mashi or abs(syi)>mashi):
 				sxi = 0.0
 				syi = 0.0
-				utilities.set_params2D(alldata[im],[0.0,0.0,0.0,0,1.0])
+				sparx_utilities.set_params2D(alldata[im],[0.0,0.0,0.0,0,1.0])
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 			ny = nx
-			txrng = alignment.search_range(nx, ou, sxi, xrng, "ISAC")
+			txrng = sparx_alignment.search_range(nx, ou, sxi, xrng, "ISAC")
 			txrng = [txrng[1],txrng[0]]
-			tyrng = alignment.search_range(ny, ou, syi, yrng, "ISAC")
+			tyrng = sparx_alignment.search_range(ny, ou, syi, yrng, "ISAC")
 			tyrng = [tyrng[1],tyrng[0]]
 
 			# align current image to references
 			temp = EMAN2_cppwrap.Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			for iref in range(numref):
 				[alphan, sxn, syn, mn] = \
-				   utilities.combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
+				   sparx_utilities.combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
 				peak_list[iref][(im-image_start)*4+0] = alphan
 				peak_list[iref][(im-image_start)*4+1] = sxn
 				peak_list[iref][(im-image_start)*4+2] = syn
@@ -1122,7 +1122,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		members = [0]*numref
 		sx_sum = [0.0]*numref
 		sy_sum = [0.0]*numref
-		refi = [utilities.model_blank(nx,ny) for j in range(numref)]
+		refi = [sparx_utilities.model_blank(nx,ny) for j in range(numref)]
 		for im in range(image_start, image_end):
 			matchref = belongsto[im]
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
@@ -1133,7 +1133,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			else:	   sx_sum[matchref] -= sxn
 			sy_sum[matchref] += syn
 			# apply current parameters and add to the average
-			EMAN2_cppwrap.Util.add_img(refi[matchref], fundamentals.rot_shift2D(alldata[im], alphan, sxn, syn, mn))
+			EMAN2_cppwrap.Util.add_img(refi[matchref], sparx_fundamentals.rot_shift2D(alldata[im], alphan, sxn, syn, mn))
 #			if CTF:
 #				ctm = ctf_2(nx, ctf_params)
 #				for i in xrange(lctf):  ctf2[matchref][it][i] += ctm[i]
@@ -1163,29 +1163,29 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			syn = float(peak_list[matchref][(im-image_start)*4+2])
 			mn = int(peak_list[matchref][(im-image_start)*4+3])
 			if mn == 0:
-				utilities.set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
+				sparx_utilities.set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
 			else:
-				utilities.set_params2D(alldata[im], [alphan, sxn+sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
+				sparx_utilities.set_params2D(alldata[im], [alphan, sxn+sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
 
 		del peak_list
 
 		for j in range(numref):
-			utilities.reduce_EMData_to_root(refi[j], myid, main_node, comm)
+			sparx_utilities.reduce_EMData_to_root(refi[j], myid, main_node, comm)
 			if myid == main_node:
 				# Golden rule when to do within group refinement
 				EMAN2_cppwrap.Util.mul_scalar(refi[j], 1.0/float(members[j]))
-				refi[j] = filter.filt_tanl(refi[j], fl, FF)
-				refi[j] = fundamentals.fshift(refi[j], -sx_sum[j], -sy_sum[j])
-				utilities.set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
+				refi[j] = sparx_filter.filt_tanl(refi[j], fl, FF)
+				refi[j] = sparx_fundamentals.fshift(refi[j], -sx_sum[j], -sy_sum[j])
+				sparx_utilities.set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
 
 		if myid == main_node:
 			#  this is most likely meant to center them, if so, it works poorly, 
 			#      it has to be checked and probably a better method used PAP 01/17/2015
-			dummy = applications.within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+			dummy = sparx_applications.within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
 			ref_ali_params = []
 			for j in range(numref):
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(refi[j])
-				refi[j] = fundamentals.rot_shift2D(refi[j], alpha, sx, sy, mirror)
+				alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(refi[j])
+				refi[j] = sparx_fundamentals.rot_shift2D(refi[j], alpha, sx, sy, mirror)
 				ref_ali_params.extend([alpha, sx, sy, mirror])
 		else:
 			ref_ali_params = [0.0]*(numref*4)
@@ -1193,7 +1193,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		ref_ali_params = list(map(float, ref_ali_params))
 
 		for j in range(numref):
-			utilities.bcast_EMData_to_all(refi[j], myid, main_node, comm)
+			sparx_utilities.bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
 		###if myid == main_node:
 		###	print  "  WRITING refaligned  for color:",color
@@ -1203,10 +1203,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		# Compensate the centering to averages
 		for im in range(image_start, image_end):
 			matchref = belongsto[im]
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(alldata[im])
-			alphan, sxn, syn, mirrorn = utilities.combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(alldata[im])
+			alphan, sxn, syn, mirrorn = sparx_utilities.combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
 				ref_ali_params[matchref*4+2], int(ref_ali_params[matchref*4+3]))
-			utilities.set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
+			sparx_utilities.set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
 
 		do_within_group = 0
 		fl += 0.05
@@ -1224,11 +1224,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 			# Broadcast the alignment parameters to all nodes
 			for i in range(number_of_proc):
-				im_start, im_end = applications.MPI_start_end(nima, number_of_proc, i)
+				im_start, im_end = sparx_applications.MPI_start_end(nima, number_of_proc, i)
 				if myid == i:
 					ali_params = []
 					for im in range(image_start, image_end):
-						alpha, sx, sy, mirror, scale = utilities.get_params2D(alldata[im])
+						alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(alldata[im])
 						ali_params.extend([alpha, sx, sy, mirror])
 				else:
 					ali_params = [0.0]*((im_end-im_start)*4)
@@ -1239,7 +1239,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					sx = ali_params[(im-im_start)*4+1]
 					sy = ali_params[(im-im_start)*4+2]
 					mirror = int(ali_params[(im-im_start)*4+3])
-					utilities.set_params2D(alldata[im], [alpha, sx, sy, mirror, 1.0])
+					sparx_utilities.set_params2D(alldata[im], [alpha, sx, sy, mirror, 1.0])
 
 			main_iter += 1
 
@@ -1265,7 +1265,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 					randomize = True  # I think there is no reason not to be True
 					class_data = [alldata[im] for im in assign]
-					refi[j] = applications.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, \
+					refi[j] = sparx_applications.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, \
 													[xrng], [yrng], [step], dst, maxit, FH, FF, method = method)
 
 					if check_stability:
@@ -1273,13 +1273,13 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 						ali_params = [[] for qq in range(stab_ali)]
 						for ii in range(stab_ali):
 							if ii > 0:  # The first one does not have to be repeated
-								dummy = applications.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
+								dummy = sparx_applications.within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
 																dst, maxit, FH, FF, method = method)
 							for im in range(len(class_data)):
-								alpha, sx, sy, mirror, scale = utilities.get_params2D(class_data[im])
+								alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(class_data[im])
 								ali_params[ii].extend([alpha, sx, sy, mirror])
 
-						stable_set, mirror_consistent_rate, err = pixel_error.multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
+						stable_set, mirror_consistent_rate, err = sparx_pixel_error.multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 						if( main_iter == max_iter ):  gpixer.append(err)
 
 						###print  "Color %1d, class %4d ...... Size of the group = %4d and of the stable subset = %4d  Mirror consistent rate = %5.3f  Average pixel error prior to class pruning = %10.2f"\
@@ -1300,10 +1300,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							im = err[1]
 							stable_members.append(assign[im])
 							stable_data.append(class_data[im])
-							utilities.set_params2D( class_data[im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
+							sparx_utilities.set_params2D( class_data[im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
 						stable_members.sort()
 
-						refi[j] = filter.filt_tanl(statistics.ave_series(stable_data), FH, FF)
+						refi[j] = sparx_filter.filt_tanl(sparx_statistics.ave_series(stable_data), FH, FF)
 						refi[j].set_attr('members', stable_members)
 						refi[j].set_attr('n_objects', len(stable_members))
 						del stable_members
@@ -1312,11 +1312,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				if( check_stability and main_iter == max_iter ):
 					#  gather all pixers and print a histogram
 					pass#IMPORTIMPORTIMPORT from utilities import wrap_mpi_gatherv
-					gpixer = utilities.wrap_mpi_gatherv(gpixer, main_node, comm)
+					gpixer = sparx_utilities.wrap_mpi_gatherv(gpixer, main_node, comm)
 					if my_abs_id == main_node and color == 0:
 						pass#IMPORTIMPORTIMPORT from statistics   import hist_list
 						lhist = 12
-						region, histo = statistics.hist_list(gpixer, lhist)
+						region, histo = sparx_statistics.hist_list(gpixer, lhist)
 						print("\n=== Histogram of average within-class pixel errors prior to class pruning ===")
 						for lhx in range(lhist):  print("     %10.3f     %7d"%(region[lhx], histo[lhx]))
 						print("=============================================================================\n")
@@ -1326,22 +1326,22 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				for im in range(nima):
 					done_on_node = belongsto[im]%number_of_proc
 					if myid == done_on_node:
-						alpha, sx, sy, mirror, scale = utilities.get_params2D(alldata[im])
+						alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(alldata[im])
 						ali_params = [alpha, sx, sy, mirror]
 					else:
 						ali_params = [0.0]*4
 					ali_params = mpi.mpi_bcast(ali_params, 4, mpi.MPI_FLOAT, done_on_node, comm)
 					ali_params = list(map(float, ali_params))
-					utilities.set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
+					sparx_utilities.set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
 
 			else:
 				###if my_abs_id == main_node: print "Checking within group stability, new approach .......", localtime()[0:5]
 				# ================================================ more complicated approach is used - runs of within_group_refinement are scattered among MPI processes
-				refi = isac.isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
+				refi = sparx_isac.isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
 												dst, maxit, FH, FF, method, comm)
 
 			for j in range(numref):
-				utilities.bcast_EMData_to_all(refi[j], myid, j%number_of_proc, comm)
+				sparx_utilities.bcast_EMData_to_all(refi[j], myid, j%number_of_proc, comm)
 
 			if check_stability:
 				# In this case, we need to set the 'members' attr using stable members from the stability test
@@ -1349,15 +1349,15 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					done_on_node = j%number_of_proc
 					if done_on_node != main_node:
 						if myid == main_node:
-							mem_len = mpi.mpi_recv(1, mpi.MPI_INT, done_on_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+							mem_len = mpi.mpi_recv(1, mpi.MPI_INT, done_on_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 							mem_len = int(mem_len[0])
-							members = mpi.mpi_recv(mem_len, mpi.MPI_INT, done_on_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+							members = mpi.mpi_recv(mem_len, mpi.MPI_INT, done_on_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 							members = list(map(int, members))
 							refi[j].set_attr_dict({'members': members,'n_objects': mem_len})
 						elif myid == done_on_node:
 							members = refi[j].get_attr('members')
-							mpi.mpi_send(len(members), 1, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
-							mpi.mpi_send(members, len(members), mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+							mpi.mpi_send(len(members), 1, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
+							mpi.mpi_send(members, len(members), mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, comm)
 			###if myid == main_node:  print "within group alignment done. ", localtime()[0:5]
 			###if myid == main_node:
 			###	print  "  WRITING refrealigned  for color:",color
@@ -1416,7 +1416,7 @@ def match_independent_runs(data, refi, n_group, T):
 
 	#print Parts
 	#print "Before matching = ", localtime()[:5]
-	MATCH, STB_PART, CT_s, CT_t, ST, st = statistics.k_means_stab_bbenum(Parts, T=T, J=50, max_branching=40, stmult=0.1, branchfunc=2)
+	MATCH, STB_PART, CT_s, CT_t, ST, st = sparx_statistics.k_means_stab_bbenum(Parts, T=T, J=50, max_branching=40, stmult=0.1, branchfunc=2)
 	#print "After matching = ", localtime()[:5]
 
 	# I commented out next three, not much use printing them,  PAP.
@@ -1464,7 +1464,7 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 		
 	for irun in range(indep_run):
 		filename = "ali_params_%d"%run[irun] + suffix
-		all_ali_params = utilities.read_text_row(filename)
+		all_ali_params = sparx_utilities.read_text_row(filename)
 	
 		Parts = []
 		part = [] 
@@ -1493,7 +1493,7 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 			Parts.append(part)
 
 		#print Parts
-		MATCH, STB_PART, CT_s, CT_t, ST, st = statistics.k_means_stab_bbenum(Parts, T=thld_grp, J=50, max_branching=40, stmult=0.1, branchfunc=2)
+		MATCH, STB_PART, CT_s, CT_t, ST, st = sparx_statistics.k_means_stab_bbenum(Parts, T=thld_grp, J=50, max_branching=40, stmult=0.1, branchfunc=2)
 
 		cost_by_match_thresh = []
 		for i in range(len(CT_s)):
@@ -1506,12 +1506,12 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 				class_data = []
 				members_id = []
 				for im in STB_PART[i]:
-					utilities.set_params2D(data[im], [all_ali_params[im][0], all_ali_params[im][1], all_ali_params[im][2], int(all_ali_params[im][3]), 1.0])
+					sparx_utilities.set_params2D(data[im], [all_ali_params[im][0], all_ali_params[im][1], all_ali_params[im][2], int(all_ali_params[im][3]), 1.0])
 					class_data.append(data[im])
 					members_id.append(data[im].get_attr('ID'))
-				ave = statistics.ave_series(class_data)
+				ave = sparx_statistics.ave_series(class_data)
 				ave.set_attr_dict({"members": members_id, "n_objects": len(members_id)})
-				ave = filter.filt_tanl(ave, FH, FF)
+				ave = sparx_filter.filt_tanl(ave, FH, FF)
 				reproducible_avgs.append(ave)
 			else:
 				# put some dummy avgs here

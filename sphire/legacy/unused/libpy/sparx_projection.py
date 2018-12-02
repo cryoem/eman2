@@ -74,34 +74,6 @@ def prl(vol, params, radius, stack = None):
 				ind          = 4*i
 				Ori[ind+3]    = int(Ori[ind+3])
 		"""
-def project(volume, params, radius=-1):
-	"""
-		Name
-			project - calculate 2-D projection of a 3-D volume using trilinear interpolation
-		Input
-			vol: input volume, all dimensions have to be the same
-			params: input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by s2x,s2y
-		radius: radius of a sphere within which the projection of the volume will be calculated
-		Output
-		proj: generated 2-D projection
-	"""
-        # angles phi, theta, psi
-	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
-	pass#IMPORTIMPORTIMPORT from utilities import set_params_proj
-	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
-
-	if(radius>0):	myparams = {"transform":EMAN2_cppwrap.Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}), "radius":radius}
-	else:			myparams = {"transform":EMAN2_cppwrap.Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})}
-	proj = volume.project("pawel", myparams)
-	if(params[3]!=0. or params[4]!=0.):
-		params2 = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.SHIFT, "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
-		proj=EMAN2_cppwrap.Processor.EMFourierFilter(proj, params2)
-		#proj = rot_shift2D(proj, sx = params[3], sy = params[4], interpolation_method = "linear")
-	utilities.set_params_proj(proj, [params[0], params[1], params[2], -params[3], -params[4]])
-	proj.set_attr_dict({ 'ctf_applied':0})
-	return  proj
-
-"""Multiline Comment0"""
 def prj(vol, params, stack = None):
 	"""
 		Name
@@ -119,7 +91,7 @@ def prj(vol, params, stack = None):
 	volft,kb = prep_vol(vol)
 	for i in range(len(params)):
 		proj = prgs(volft, kb, params[i])
-		utilities.set_params_proj(proj, [params[i][0], params[i][1], params[i][2], -params[i][3], -params[i][4]])
+		sparx_utilities.set_params_proj(proj, [params[i][0], params[i][1], params[i][2], -params[i][3], -params[i][4]])
 		proj.set_attr_dict({ 'ctf_applied':0})
 		
 		if(stack):
@@ -129,55 +101,6 @@ def prj(vol, params, stack = None):
 			out.append(proj)
 	if(stack):  return
 	else:       return out
-
-def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
-	"""
-	  Generate set of projections based on even angles
-	  The command returns list of ffts of projections
-	"""
-	pass#IMPORTIMPORTIMPORT from projection   import prep_vol, prgs
-	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
-	pass#IMPORTIMPORTIMPORT from utilities    import even_angles, model_blank
-	pass#IMPORTIMPORTIMPORT from fundamentals import fft
-	# generate list of Eulerian angles for reference projections
-	#  phi, theta, psi
-	mode = "F"
-	ref_angles = utilities.even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Minus")
-	cnx = nx//2 + 1
-	cny = nx//2 + 1
-	num_ref = len(ref_angles)
-
-	if MPI:
-		pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-		myid = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
-		ncpu = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
-	else:
-		ncpu = 1
-		myid = 0
-	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
-	ref_start,ref_end = applications.MPI_start_end( num_ref, ncpu, myid )
-
-	prjref = []     # list of (image objects) reference projections in Fourier representation
-
-	for i in range(num_ref):
-		prjref.append(utilities.model_blank(nx, nx))  # I am not sure why is that necessary, why not put None's??
-
-	for i in range(ref_start, ref_end):
-		prjref[i] = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
-
-	if MPI:
-		pass#IMPORTIMPORTIMPORT from utilities import bcast_EMData_to_all
-		for i in range(num_ref):
-			for j in range(ncpu):
-				ref_start,ref_end = applications.MPI_start_end(num_ref,ncpu,j)
-				if i >= ref_start and i < ref_end: rootid = j
-			utilities.bcast_EMData_to_all( prjref[i], myid, rootid )
-
-	for i in range(len(ref_angles)):
-		prjref[i].set_attr_dict({"phi": ref_angles[i][0], "theta": ref_angles[i][1],"psi": ref_angles[i][2]})
-
-	return prjref
-
 
 def prgs1d( prjft, kb, params ):
 	pass#IMPORTIMPORTIMPORT from fundamentals import fft
@@ -193,7 +116,7 @@ def prgs1d( prjft, kb, params ):
 	nuynew = -numpy.sin(tmp)
 	
 	line = prjft.extractline(kb, nuxnew, nuynew)
-	line = fundamentals.fft(line)
+	line = sparx_fundamentals.fft(line)
 
 	M = line.get_xsize()/2
 	EMAN2_cppwrap.Util.cyclicshift( line, {"dx":M, "dy":0, "dz":0} )
@@ -207,53 +130,12 @@ def prgs1d( prjft, kb, params ):
 	line.set_attr_dict( {'alpha':alpha, 's1x':shift} )
 	return line
 
-def gen_rings_ctf( prjref, nx, ctf, numr):
-	"""
-	  Convert set of ffts of projections to Fourier rings with additional multiplication by a ctf
-	  The command returns list of rings
-	"""
-	pass#IMPORTIMPORTIMPORT from math         import sin, cos, pi
-	pass#IMPORTIMPORTIMPORT from fundamentals import fft
-	pass#IMPORTIMPORTIMPORT from alignment    import ringwe
-	pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
-	mode = "F"
-	wr_four  = alignment.ringwe(numr, "F")
-	cnx = nx//2 + 1
-	cny = nx//2 + 1
-	qv = numpy.pi/180.0
-
-	refrings = []     # list of (image objects) reference projections in Fourier representation
-
-	for i in range( len(prjref) ):
-		cimage = EMAN2_cppwrap.Util.Polar2Dm(filter.filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
-		EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
-
-		EMAN2_cppwrap.Util.Frngs(cimage, numr)
-		EMAN2_cppwrap.Util.Applyws(cimage, numr, wr_four)
-		refrings.append(cimage)
-		phi   = prjref[i].get_attr('phi')
-		theta = prjref[i].get_attr('theta')
-		psi   = prjref[i].get_attr('psi')
-		n1 = numpy.sin(theta*qv)*numpy.cos(phi*qv)
-		n2 = numpy.sin(theta*qv)*numpy.sin(phi*qv)
-		n3 = numpy.cos(theta*qv)
-		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3, "phi": phi, "theta": theta,"psi": psi} )
-
-	return refrings
-
-
-
-###############################################################################################
-## COMMON LINES NEW VERSION ###################################################################
-
-# plot angles, map on half-sphere
-# agls: [[phi0, theta0, psi0], [phi1, theta1, psi1], ..., [phin, thetan, psin]]
 def plot_angles(agls, nx = 256):
 	pass#IMPORTIMPORTIMPORT from math      import cos, sin, fmod, pi, radians
 	pass#IMPORTIMPORTIMPORT from utilities import model_blank
 
 	# var
-	im = utilities.model_blank(nx, nx)
+	im = sparx_utilities.model_blank(nx, nx)
 	"""Multiline Comment1"""
 	# for each angles plot on circle area
 	# agsl: [phi, theta, psi]
@@ -313,7 +195,7 @@ def cml_refine_agls(Prj, Ori, delta):
 		# prepare vec_data
 		vec_data = [Prj, copy.deepcopy(Ori), iprj]
 		# simplex
-		optvec, disc, niter = utilities.amoeba(vec_in, scales, cml_refine_agls_wrap_dev, data = vec_data)
+		optvec, disc, niter = sparx_utilities.amoeba(vec_in, scales, cml_refine_agls_wrap_dev, data = vec_data)
 		# assign new angles refine
 		Ori[4*iprj]   = (optvec[0]+360)%360
 		Ori[4*iprj+1] = optvec[1]
@@ -414,7 +296,7 @@ def cml_init_global_var(dpsi, delta, nprj, debug):
 		v    = int(v + 0.5)
 		dpsi = 180 // v
 
-	g_anglst   = utilities.even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
+	g_anglst   = sparx_utilities.even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
 	g_n_anglst = len(g_anglst)
 	g_d_psi    = dpsi
 	g_n_psi    = int(360 / dpsi)
@@ -440,9 +322,9 @@ def cml_export_struc(stack, outdir, irun, Ori):
 	
 	pagls = []
 	for i in range(g_n_prj):
-		data = utilities.get_im(stack, i)
+		data = sparx_utilities.get_im(stack, i)
 		p = [Ori[4*i], Ori[4*i+1], Ori[4*i+2], 0.0, 0.0]
-		utilities.set_params_proj(data, p)
+		sparx_utilities.set_params_proj(data, p)
 		data.write_image(outdir + '/structure_%03i.hdf' % irun, i)
 
 		# prepare angles to plot
@@ -466,18 +348,18 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 	Ori  = [-1] * 4 * nprj                             # orientation intial (phi, theta, psi, index) for each projection
 
 	for i in range(nprj):
-		image = utilities.get_im(stack, i)
+		image = sparx_utilities.get_im(stack, i)
 
 		# read initial angles if given
-		try:	Ori[4*i], Ori[4*i+1], Ori[4*i+2], s2x, s2y = utilities.get_params_proj(image)
+		try:	Ori[4*i], Ori[4*i+1], Ori[4*i+2], s2x, s2y = sparx_utilities.get_params_proj(image)
 		except:	pass
 		
 		if(i == 0):
 			nx = image.get_xsize()
 			if(ou < 1): ou = nx // 2 - 1
 			diameter = int(2 * ou)
-			mask2D   = utilities.model_circle(ou, nx, nx)
-			if ir > 0:  mask2D -= utilities.model_circle(ir, nx, nx)
+			mask2D   = sparx_utilities.model_circle(ou, nx, nx)
+			if ir > 0:  mask2D -= sparx_utilities.model_circle(ir, nx, nx)
 
 		# normalize under the mask
 		[mean_a, sigma, imin, imax] = EMAN2_cppwrap.Util.infomask(image, mask2D, True)
@@ -498,8 +380,8 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 		# process lines
 		nxe = sino.get_xsize()
 		nye = sino.get_ysize()
-		prj = utilities.model_blank(bdf, 2*nye)
-		pp = utilities.model_blank(nxe, 2*nye)
+		prj = sparx_utilities.model_blank(bdf, 2*nye)
+		pp = sparx_utilities.model_blank(nxe, 2*nye)
 		for li in range(nye):
 			# get the line li
 			line = EMAN2_cppwrap.Util.window(sino, nxe, 1, 1, 0, li-nye//2, 0)
@@ -509,7 +391,7 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 			[mean_l, sigma_l, imin, imax] = EMAN2_cppwrap.Util.infomask(line, None, True)
 			line = (line - mean_l) / sigma_l
 			# fft
-			fundamentals.fftip(line)
+			sparx_fundamentals.fftip(line)
 			# filter (cut part of coef) and create mirror line
 			EMAN2_cppwrap.Util.cml_prepare_line(prj, line, ilf, ihf, li, nye)
 
@@ -552,7 +434,7 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	for j in range(nangle):
 		nuxnew =  numpy.cos(dangle * j)
 		nuynew = -numpy.sin(dangle * j)
-		line   = fundamentals.fft(volft.extractline(kb, nuxnew, nuynew))
+		line   = sparx_fundamentals.fft(volft.extractline(kb, nuxnew, nuynew))
 		EMAN2_cppwrap.Util.cyclicshift(line, {"dx":M, "dy":0, "dz":0})
 		EMAN2_cppwrap.Util.set_line(e, j, line, offset, diameter)
 
@@ -597,7 +479,7 @@ def cml_sinogram_shift(image2D, diameter, shifts = [0.0, 0.0], d_psi = 1):
 	for j in range(nangle):
 		nuxnew =  numpy.cos(dangle * j)
 		nuynew = -numpy.sin(dangle * j)
-		line   = fundamentals.fft(volft.extractline(kb, nuxnew, nuynew))
+		line   = sparx_fundamentals.fft(volft.extractline(kb, nuxnew, nuynew))
 		EMAN2_cppwrap.Util.cyclicshift(line, {"dx":M, "dy":0, "dz":0})
 		EMAN2_cppwrap.Util.set_line(e, j, line, offset, diameter)
 
@@ -610,29 +492,29 @@ def cml_head_log(stack, outdir, delta, ir, ou, lf, hf, rand_seed, maxit, given, 
 	# call global var
 	global g_anglst, g_n_prj, g_d_psi, g_n_anglst
 
-	utilities.print_msg('Input stack                  : %s\n'     % stack)
-	utilities.print_msg('Number of projections        : %d\n'     % g_n_prj)
-	utilities.print_msg('Output directory             : %s\n'     % outdir)
-	utilities.print_msg('Angular step                 : %5.2f\n'  % delta)
-	utilities.print_msg('Sinogram angle accuracy      : %5.2f\n'  % g_d_psi)
-	utilities.print_msg('Inner particle radius        : %5.2f\n'  % ir)	
-	utilities.print_msg('Outer particle radius        : %5.2f\n'  % ou)
-	utilities.print_msg('Filter, minimum frequency    : %5.3f\n'  % lf)
-	utilities.print_msg('Filter, maximum frequency    : %5.3f\n'  % hf)
-	utilities.print_msg('Random seed                  : %i\n'     % rand_seed)
-	utilities.print_msg('Number of maximum iterations : %d\n'     % maxit)
-	utilities.print_msg('Start from given orientations: %s\n'     % given)
-	utilities.print_msg('Number of angles             : %i\n'     % g_n_anglst)
-	utilities.print_msg('Number of trials             : %i\n'     % trials)
-	utilities.print_msg('Number of cpus               : %i\n'     % ncpu)
-	utilities.print_msg('Use Voronoi weights          : %s\n\n'   % flag_weights)
+	sparx_utilities.print_msg('Input stack                  : %s\n'     % stack)
+	sparx_utilities.print_msg('Number of projections        : %d\n'     % g_n_prj)
+	sparx_utilities.print_msg('Output directory             : %s\n'     % outdir)
+	sparx_utilities.print_msg('Angular step                 : %5.2f\n'  % delta)
+	sparx_utilities.print_msg('Sinogram angle accuracy      : %5.2f\n'  % g_d_psi)
+	sparx_utilities.print_msg('Inner particle radius        : %5.2f\n'  % ir)	
+	sparx_utilities.print_msg('Outer particle radius        : %5.2f\n'  % ou)
+	sparx_utilities.print_msg('Filter, minimum frequency    : %5.3f\n'  % lf)
+	sparx_utilities.print_msg('Filter, maximum frequency    : %5.3f\n'  % hf)
+	sparx_utilities.print_msg('Random seed                  : %i\n'     % rand_seed)
+	sparx_utilities.print_msg('Number of maximum iterations : %d\n'     % maxit)
+	sparx_utilities.print_msg('Start from given orientations: %s\n'     % given)
+	sparx_utilities.print_msg('Number of angles             : %i\n'     % g_n_anglst)
+	sparx_utilities.print_msg('Number of trials             : %i\n'     % trials)
+	sparx_utilities.print_msg('Number of cpus               : %i\n'     % ncpu)
+	sparx_utilities.print_msg('Use Voronoi weights          : %s\n\n'   % flag_weights)
 
 # write the end of the logfile
 def cml_end_log(Ori):
 	pass#IMPORTIMPORTIMPORT from utilities import print_msg
 	global g_n_prj
-	utilities.print_msg('\n\n')
-	for i in range(g_n_prj): utilities.print_msg('Projection #%03i: phi %10.5f    theta %10.5f    psi %10.5f\n' % (i, Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
+	sparx_utilities.print_msg('\n\n')
+	for i in range(g_n_prj): sparx_utilities.print_msg('Projection #%03i: phi %10.5f    theta %10.5f    psi %10.5f\n' % (i, Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
 
 # find structure
 def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights):
@@ -964,7 +846,7 @@ def cml2_ori_collinearity(Ori):
 	val, vec = numpy.linalg.eig(S.getI() * C)
 	ell = vec[:, val.argmin()]
 	verr = D * ell
-	verr = morphology.power(verr, 2)
+	verr = sparx_morphology.power(verr, 2)
 	serr = sum(verr)
 
 	# sum squared error

@@ -665,7 +665,7 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 	if inmem:
 		img = data[0]
 	else:
-		img = utilities.get_im(data,0)
+		img = sparx_utilities.get_im(data,0)
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
@@ -686,8 +686,8 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 		data_nima = EMAN2_cppwrap.EMUtil.get_image_count(data)
 	if i2 == 0: i2 = data_nima-1
 
-	ave = utilities.model_blank(nx,ny,nz)
-	var = utilities.model_blank(nx,ny,nz)
+	ave = sparx_utilities.model_blank(nx,ny,nz)
+	var = sparx_utilities.model_blank(nx,ny,nz)
 	nima = 0
 	for i in range(i1, i2+1):
 		if not(use_odd) and i%2 == 1:
@@ -698,14 +698,14 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 		if inmem:
 			img = data[i]
 		else:
-			img = utilities.get_im(data, i)
+			img = sparx_utilities.get_im(data, i)
 		if (mode == 'a'):
 			if img2D:
-				angle, sx, sy, mirror, scale = utilities.get_params2D(img)
-				img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+				angle, sx, sy, mirror, scale = sparx_utilities.get_params2D(img)
+				img = sparx_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 			else:
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = utilities.get_params3D(img)
-				img = fundamentals.rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = sparx_utilities.get_params3D(img)
+				img = sparx_fundamentals.rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
 		EMAN2_cppwrap.Util.add_img(ave, img)
 		EMAN2_cppwrap.Util.add_img2(var, img)
 
@@ -749,15 +749,15 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 	if inmem:
 		img = data[0]
 	else:
-		img = utilities.get_im(data,0)
+		img = sparx_utilities.get_im(data,0)
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
 	if nz > 1:
-		global_def.ERROR("images must be 2D for CTF correction.....exiting","avgvar_ctf",1)
+		sparx_global_def.ERROR("images must be 2D for CTF correction.....exiting","avgvar_ctf",1)
 
 	if img.get_attr_default('ctf_applied', 0) == 1:
-		global_def.ERROR("data cannot be ctf-applied....exiting","avgvar_ctf",1)
+		sparx_global_def.ERROR("data cannot be ctf-applied....exiting","avgvar_ctf",1)
 
 	if mode == 'a':
 		pass#IMPORTIMPORTIMPORT from utilities import get_params2D
@@ -783,52 +783,52 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 		if not(use_even) and i%2 == 0: continue
 		nima += 1
 		if inmem: img = data[i].copy()
-		else: img = utilities.get_im(data, i)
+		else: img = sparx_utilities.get_im(data, i)
 
 		ctf_params = img.get_attr("ctf")
 
 		if(mode == 'a'):
-			angle, sx, sy, mirror, scale = utilities.get_params2D(img)
-			img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+			angle, sx, sy, mirror, scale = sparx_utilities.get_params2D(img)
+			img = sparx_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 			ctf_params.dfang += scipy.stats.alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 
-		img = utilities.pad(img, nx2, ny2, 1, background = "circumference")
-		fundamentals.fftip(img)
-		EMAN2_cppwrap.Util.add_img(ave, filter.filt_ctf(img, ctf_params))
-		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx2, ctf_params))
+		img = sparx_utilities.pad(img, nx2, ny2, 1, background = "circumference")
+		sparx_fundamentals.fftip(img)
+		EMAN2_cppwrap.Util.add_img(ave, sparx_filter.filt_ctf(img, ctf_params))
+		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, sparx_morphology.ctf_img(nx2, ctf_params))
 
 	ctf_2_sum += 1.0/snr
 	EMAN2_cppwrap.Util.div_filter(ave, ctf_2_sum)
 
 	# calculate variance in real space
 	#totv = model_blank(nx2, ny2, nz)
-	tvar = utilities.model_blank(nx, ny, nz)
+	tvar = sparx_utilities.model_blank(nx, ny, nz)
 	for i in range(i1, i2+1):
 		if not(use_odd) and i%2 == 1: continue
 		if not(use_even) and i%2 == 0: continue
 		if inmem: img = data[i].copy()
-		else: img = utilities.get_im(data, i)
+		else: img = sparx_utilities.get_im(data, i)
 
 		ctf_params = img.get_attr("ctf")
 
 		if (mode == 'a'):
-			angle, sx, sy, mirror, scale = utilities.get_params2D(img)
-			img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+			angle, sx, sy, mirror, scale = sparx_utilities.get_params2D(img)
+			img = sparx_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 			ctf_params.dfang += scipy.stats.alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 
-		img = utilities.pad(img, nx2, ny2, 1, background = "circumference")
-		fundamentals.fftip(img)
+		img = sparx_utilities.pad(img, nx2, ny2, 1, background = "circumference")
+		sparx_fundamentals.fftip(img)
 		#img = filt_ctf(img-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
-		img = img-filter.filt_ctf(ave, ctf_params, dopa)
+		img = img-sparx_filter.filt_ctf(ave, ctf_params, dopa)
 		#Util.div_filter(img, ctf_2_sum)
-		img = fundamentals.window2d(fundamentals.fft(img),nx,ny)
+		img = sparx_fundamentals.window2d(sparx_fundamentals.fft(img),nx,ny)
 		#Util.add_img(totv, img)
 		EMAN2_cppwrap.Util.add_img2(tvar, img)
 	#Util.mul_scalar(tvar, float(nima)*nima/(nima-1)) # the strange factor is due to the fact that division by ctf^2 is equivalent to division by nima
 	EMAN2_cppwrap.Util.mul_scalar(tvar, 1.0/float(nima))
-	return  fundamentals.window2d(fundamentals.fft(ave),nx,ny) , tvar#,(tvar - totv*totv/nima), tvar, totv,tavg
+	return  sparx_fundamentals.window2d(sparx_fundamentals.fft(ave),nx,ny) , tvar#,(tvar - totv*totv/nima), tvar, totv,tavg
 
 def add_oe_series(data, ali_params="xform.align2d"):
 	"""
@@ -839,11 +839,11 @@ def add_oe_series(data, ali_params="xform.align2d"):
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave1 = utilities.model_blank(nx,ny)
-	ave2 = utilities.model_blank(nx,ny)
+	ave1 = sparx_utilities.model_blank(nx,ny)
+	ave2 = sparx_utilities.model_blank(nx,ny)
 	for i in range(n):
-		alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
-		temp = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+		alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[i], ali_params)
+		temp = sparx_fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 		if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, temp)
 		else:         EMAN2_cppwrap.Util.add_img(ave2, temp)
 	return ave1, ave2
@@ -868,30 +868,30 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 		pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
 		pass#IMPORTIMPORTIMPORT from filter       import filt_ctf, filt_table
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			global_def.ERROR("data cannot be ctf-applied", "add_ave_varf", 1)
+			sparx_global_def.ERROR("data cannot be ctf-applied", "add_ave_varf", 1)
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
 		if get_ctf2: ctf_2_sum = EMAN2_cppwrap.EMData(nx, ny, 1, False)
 		ctf_params = data[i].get_attr("ctf")
 		for i in range(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
-				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[i], ali_params)
+				ima = sparx_fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
-				fundamentals.fftip(ima)
+				sparx_fundamentals.fftip(ima)
 				ctf_params.dfang += alpha
 				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 				#  Here we have a possible problem: varf works only if CTF is applied after rot/shift
 				#    while calculation of average (and in general principle) CTF should be applied before rot/shift
 				#    here we use the first possibility
 			else:
-				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
-				else:       ima = fundamentals.fft(data[i])
-			ima_filt = filter.filt_ctf(ima, ctf_params, dopad=False)
+				if  mask:   ima = sparx_fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:       ima = sparx_fundamentals.fft(data[i])
+			ima_filt = sparx_filter.filt_ctf(ima, ctf_params, dopad=False)
 			if(i%2 == 0):  EMAN2_cppwrap.Util.add_img(ave1, ima_filt)
 			else:          EMAN2_cppwrap.Util.add_img(ave2, ima_filt)
 			EMAN2_cppwrap.Util.add_img2(var, ima)
-			if get_ctf2: EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx, ctf_params))
+			if get_ctf2: EMAN2_cppwrap.Util.add_img2(ctf_2_sum, sparx_morphology.ctf_img(nx, ctf_params))
 		sumsq = EMAN2_cppwrap.Util.addn_img(ave1, ave2)
 		tavg = EMAN2_cppwrap.Util.divn_img(sumsq, ctf_2_sum)
 		EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
@@ -900,13 +900,13 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 	else:
 		for i in range(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
-				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[i], ali_params)
+				ima = sparx_fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
 				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
-				fundamentals.fftip(ima)
+				sparx_fundamentals.fftip(ima)
 			else:
-				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
-				else:       ima = fundamentals.fft(data[i])
+				if  mask:   ima = sparx_fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:       ima = sparx_fundamentals.fft(data[i])
 			if(i%2 == 0):   EMAN2_cppwrap.Util.add_img(ave1, ima)
 			else:           EMAN2_cppwrap.Util.add_img(ave2, ima)
 			EMAN2_cppwrap.Util.add_img2(var, ima)
@@ -919,97 +919,7 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(n-1))
 	var.set_value_at(0, 0, 1.0)
 	st = EMAN2_cppwrap.Util.infomask(var, None, True)
-	if st[2] < 0.0:  global_def.ERROR("Negative variance!", "add_ave_varf", 1)
-	return tavg, ave1, ave2, var, sumsq
-
-def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, ali_params = "xform.align2d", main_node = 0, comm = -1):
-	"""
-		Calculate sum of an image series and sum of squares in Fourier space
-		Since this is the MPI version, we need to reduce sum and sum of squares 
-		on the main node and calculate variance there.
-		mode - "a": use current alignment parameters
-		CTF  - if True, use CTF for calculations of the sum.
-	"""
-	pass#IMPORTIMPORTIMPORT from utilities    import    model_blank, get_params2D
-	pass#IMPORTIMPORTIMPORT from fundamentals import    rot_shift2D, fft, fftip
-	pass#IMPORTIMPORTIMPORT from utilities    import    reduce_EMData_to_root
-	pass#IMPORTIMPORTIMPORT from mpi          import    mpi_reduce, MPI_INT, MPI_SUM
-	
-	if comm == -1:
-		pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD
-		comm = mpi.MPI_COMM_WORLD
-
-	n = len(data)
-	nx = data[0].get_xsize()
-	ny = data[0].get_ysize()
-	ave1 = EMAN2_cppwrap.EMData(nx, ny, 1, False)
-	ave2 = EMAN2_cppwrap.EMData(nx, ny, 1, False)
-	var  = EMAN2_cppwrap.EMData(nx, ny, 1, False)
-	
-	if CTF:
-		pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
-		pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
-		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			global_def.ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
-		if ctf_2_sum:  get_ctf2 = False
-		else:          get_ctf2 = True
-		if get_ctf2: ctf_2_sum = EMAN2_cppwrap.EMData(nx, ny, 1, False)
-		ctf_params = data[i].get_attr("ctf")
-		for i in range(n):
-			if mode == "a":
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
-				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
-				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
-				fundamentals.fftip(ima)
-				ctf_params.dfang += alpha
-				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
-			else:
-				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
-				else:       ima = fundamentals.fft(data[i])
-			ima_filt = filter.filt_ctf(ima, ctf_params, dopad=False)
-			if(i%2 == 0):   EMAN2_cppwrap.Util.add_img(ave1, ima_filt)
-			else:           EMAN2_cppwrap.Util.add_img(ave2, ima_filt)
-			EMAN2_cppwrap.Util.add_img2(var, ima)
-			if get_ctf2: EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx, ctf_params))
-	else:
-		get_ctf2 = False
-		for i in range(n):
-			if mode == "a":
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
-				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
-				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
-				fundamentals.fftip(ima)
-			else:
-				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
-				else:       ima = fundamentals.fft(data[i])
-			if(i%2 == 0):   EMAN2_cppwrap.Util.add_img(ave1, ima)
-			else:           EMAN2_cppwrap.Util.add_img(ave2, ima)
-			EMAN2_cppwrap.Util.add_img2(var, ima)
-	utilities.reduce_EMData_to_root(ave1, myid, main_node, comm)
-	utilities.reduce_EMData_to_root(ave2, myid, main_node, comm)
-	utilities.reduce_EMData_to_root(var, myid, main_node, comm)
-	if get_ctf2: utilities.reduce_EMData_to_root(ctf_2_sum, myid, main_node, comm)
-	nima = n
-	nima = mpi.mpi_reduce(nima, 1, mpi.MPI_INT, mpi.MPI_SUM, main_node, comm)
-	if myid == main_node:
-		nima = int(nima)
-		sumsq = EMAN2_cppwrap.Util.addn_img(ave1, ave2)
-		if CTF:
-			tavg = EMAN2_cppwrap.Util.divn_img(sumsq, ctf_2_sum)
-			EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
-			EMAN2_cppwrap.Util.div_img(sumsq, ctf_2_sum)
-		else:
-			tavg = EMAN2_cppwrap.Util.mult_scalar(sumsq, 1.0/float(nima))
-			EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
-			EMAN2_cppwrap.Util.mul_scalar(sumsq, 1.0/float(nima))
-		EMAN2_cppwrap.Util.sub_img(var, sumsq)
-		EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(nima-1))
-		var.set_value_at(0, 0, 1.0)
-		st = EMAN2_cppwrap.Util.infomask(var, None, True)
-		if st[2] < 0.0:  global_def.ERROR("Negative variance!", "add_ave_varf_MPI", 1)
-	else:
-		tavg  = EMAN2_cppwrap.EMData()
-		sumsq = EMAN2_cppwrap.EMData()
+	if st[2] < 0.0:  sparx_global_def.ERROR("Negative variance!", "add_ave_varf", 1)
 	return tavg, ave1, ave2, var, sumsq
 
 def add_oe(data):
@@ -1021,8 +931,8 @@ def add_oe(data):
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
 	nz = data[0].get_zsize()
-	ave1 = utilities.model_blank(nx,ny,nz)
-	ave2 = utilities.model_blank(nx,ny,nz)
+	ave1 = sparx_utilities.model_blank(nx,ny,nz)
+	ave2 = sparx_utilities.model_blank(nx,ny,nz)
 	for i in range(n):
 		if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, data[i])
 		else:        EMAN2_cppwrap.Util.add_img(ave2, data[i])
@@ -1039,14 +949,14 @@ def ave_series_ctf(data, ctf2, mask = None):
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave = utilities.model_blank(nx,ny)
+	ave = sparx_utilities.model_blank(nx,ny)
 	for i in range(n):
-		alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
-		temp = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
+		alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[i])
+		temp = sparx_fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
 		EMAN2_cppwrap.Util.add_img(ave, temp)
 	if mask: EMAN2_cppwrap.Util.mul_img(ave, mask)
 
-	return filter.filt_table(ave, ctf2)
+	return sparx_filter.filt_table(ave, ctf2)
 
 """Multiline Comment0"""
 
@@ -1073,13 +983,13 @@ def ave_oe_series(stack):
 	ima.read_image(stack, 0, True)
 	nx = ima.get_xsize()
 	ny = ima.get_ysize()
-	ave1 = utilities.model_blank(nx,ny)
-	ave2 = utilities.model_blank(nx,ny)
+	ave1 = sparx_utilities.model_blank(nx,ny)
+	ave2 = sparx_utilities.model_blank(nx,ny)
 	for i in range(n):
 		ima = EMAN2_cppwrap.EMData()
 		ima.read_image(stack,i)
-		alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-		temp = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+		alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+		temp = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 		if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, temp)
 		else:        EMAN2_cppwrap.Util.add_img(ave2, temp)
 	return ave1/(n//2+(n%2)), ave2/(n//2)
@@ -1097,9 +1007,9 @@ def ave_oe_series_textfile(stack, textfile):
 	ima.read_image(stack, 0, True)
 	nx = ima.get_xsize()
 	ny = ima.get_ysize()
-	ave1 = utilities.model_blank(nx, ny)
-	ave2 = utilities.model_blank(nx, ny)
-	params = utilities.read_text_file(textfile, -1)
+	ave1 = sparx_utilities.model_blank(nx, ny)
+	ave2 = sparx_utilities.model_blank(nx, ny)
+	params = sparx_utilities.read_text_file(textfile, -1)
 	for i in range(n):
 		ima = EMAN2_cppwrap.EMData()
 		ima.read_image(stack, i)
@@ -1107,7 +1017,7 @@ def ave_oe_series_textfile(stack, textfile):
 		sx = params[1][i]
 		sy = params[2][i]
 		mirror = params[3][i]
-		temp = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+		temp = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 		if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, temp)
 		else:        EMAN2_cppwrap.Util.add_img(ave2, temp)
 	return ave1/(n/2+n%2), ave2/(n/2)
@@ -1126,15 +1036,15 @@ def ave_oe_series_indexed(stack, idx_ref):
 	ima.read_image(stack,0)
 	nx = ima.get_xsize()
 	ny = ima.get_ysize()
-	ave1 = utilities.model_blank(nx,ny)
-	ave2 = utilities.model_blank(nx,ny)
+	ave1 = sparx_utilities.model_blank(nx,ny)
+	ave2 = sparx_utilities.model_blank(nx,ny)
 	for i in range(n):
 		if i == 0: ima = EMAN2_cppwrap.EMData()
 		ima.read_image(stack, i)
 		if idx_ref == ima.get_attr('ref_num'):
 			ntot+=1
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			temp = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			temp = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			if i%2 == 0: EMAN2_cppwrap.Util.add_img(ave1, temp)
 			else:        EMAN2_cppwrap.Util.add_img(ave2, temp)
 	if ntot >= 0:	return ave1/(ntot/2+(ntot%2)), ave2/(ntot/2), ntot
@@ -1149,15 +1059,15 @@ def ave_var_series_one(data, skip, kb):
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave = utilities.model_blank(nx,ny)
-	var = utilities.model_blank(nx,ny)
+	ave = sparx_utilities.model_blank(nx,ny)
+	var = sparx_utilities.model_blank(nx,ny)
 	for i in range(n):
 		if( i!=skip):
 			alpha  = data[i].get_attr('alpha')
 			sx     = data[i].get_attr('sx')
 			sy     = data[i].get_attr('sy')
 			mirror = data[i].get_attr('mirror')
-			temp = fundamentals.rotshift2dg(data[i], alpha, sx, sy, kb)
+			temp = sparx_fundamentals.rotshift2dg(data[i], alpha, sx, sy, kb)
 			if  mirror: temp.process_inplace("xform.mirror", {"axis":'x'})
 			EMAN2_cppwrap.Util.add_img(ave, temp)
 			EMAN2_cppwrap.Util.add_img2(var, temp)
@@ -1179,7 +1089,7 @@ def add_series(stack, i1=0 ,i2=0):
 	if(i2==0):
 		if  type(stack) == type(""): i2 = EMAN2_cppwrap.EMUtil.get_image_count(stack)-1
 		else:                       i2 = len(stack)-1
-	ave = utilities.get_im(stack, i1)
+	ave = sparx_utilities.get_im(stack, i1)
 	var = ave*ave  #pow(ave,2.0)
 	nx = ave.get_xsize()
 	ny = ave.get_ysize()
@@ -1187,13 +1097,13 @@ def add_series(stack, i1=0 ,i2=0):
 
 	# process the remaining files
 	for index in range(i1+1,i2+1):
-		e = utilities.get_im(stack, index)
+		e = sparx_utilities.get_im(stack, index)
 		EMAN2_cppwrap.Util.add_img(ave, e)        #ave += e
 		EMAN2_cppwrap.Util.add_img2(var, e)       #var += e*e  #pow(e,2.0)
 
 	ii=i2-i1+1
 	ave = EMAN2_cppwrap.Util.mult_scalar(ave, 1.0/float(ii))  
-	e = utilities.model_blank(nx, ny, nz)
+	e = sparx_utilities.model_blank(nx, ny, nz)
 	EMAN2_cppwrap.Util.add_img2(e, ave)
 	var = EMAN2_cppwrap.Util.madn_scalar(var, e, -float(ii))
 	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(ii-1))
@@ -1211,14 +1121,14 @@ def add_series_class(stack, i1 = 0, i2 = 0):
 	"""
 	pass#IMPORTIMPORTIMPORT from utilities import model_blank, get_im
 	if(i2==0): i2 = EMAN2_cppwrap.EMUtil.get_image_count(stack)-1
-	e = utilities.get_im(stack, i1)
+	e = sparx_utilities.get_im(stack, i1)
 	kc = e.get_attr('nclass')
 	nx = e.get_xsize()
 	ny = e.get_ysize()
 	nz = e.get_zsize()
 	ave = []
 	var = []
-	e = utilities.model_blank(nx,ny,nz)
+	e = sparx_utilities.model_blank(nx,ny,nz)
 	for k in range(kc):
 		ave.append(e.copy())
 		var.append(e.copy())
@@ -1226,7 +1136,7 @@ def add_series_class(stack, i1 = 0, i2 = 0):
 	nclass = [0]*kc
 	# process files
 	for index in range(i1,i2+1):
-		e = utilities.get_im(stack, index)
+		e = sparx_utilities.get_im(stack, index)
 		g = e.get_attr('ref_num')
 		nclass[g] += 1
 		EMAN2_cppwrap.Util.add_img(ave[g], e)
@@ -1241,12 +1151,12 @@ def add_series_class(stack, i1 = 0, i2 = 0):
 			ave[k] = EMAN2_cppwrap.Util.mult_scalar(ave[k], 1.0/float(ii))         #ave[k] = ave[k]/ii
 			if(ii > 1):
 				#var[k] = (var[k] - ave[k]*ave[k]*ii) / (ii-1)
-				temp = utilities.model_blank(nx, ny, nz)
+				temp = sparx_utilities.model_blank(nx, ny, nz)
 				EMAN2_cppwrap.Util.add_img2(temp, ave[k])
 				var[k] = EMAN2_cppwrap.Util.madn_scalar(var[k], temp, -float(ii))
 				EMAN2_cppwrap.Util.mul_scalar(var[k], 1.0/float(ii-1))
 			else:
-				var[k] = utilities.model_blank(nx,ny,nz)
+				var[k] = sparx_utilities.model_blank(nx,ny,nz)
 
 	return ave, var, nclass
 
@@ -1268,7 +1178,7 @@ def add_series_class_mem(data, assign, kc):
 	nz = data[0].get_zsize()
 	ave = []
 	var = []
-	e = utilities.model_blank(nx,ny,nz)
+	e = sparx_utilities.model_blank(nx,ny,nz)
 	for k in range(kc):
 		ave.append(e.copy())
 		var.append(e.copy())
@@ -1289,7 +1199,7 @@ def add_series_class_mem(data, assign, kc):
 		ave[k] = EMAN2_cppwrap.Util.mult_scalar(ave[k], 1.0/float(ii))         #ave[k] = ave[k]/ii
 		if(ii > 1):
 			#var[k] = (var[k] - ave[k]*ave[k]*ii) / (ii-1)
-			temp = utilities.model_blank(nx, ny, nz)
+			temp = sparx_utilities.model_blank(nx, ny, nz)
 			EMAN2_cppwrap.Util.add_img2(temp, ave[k])
 			var[k] = EMAN2_cppwrap.Util.madn_scalar(var[k], temp, -float(ii))
 			EMAN2_cppwrap.Util.mul_scalar(var[k], 1.0/float(ii-1))
@@ -1314,17 +1224,17 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 		else:  i2 = len(stack)-1
 	nima = i2-i1+1
 
-	ima = utilities.get_im(stack, i1)
+	ima = sparx_utilities.get_im(stack, i1)
 	nx  = ima.get_xsize()
 	ny  = ima.get_ysize()
-	ave = utilities.model_blank(nx,ny)
-	var = utilities.model_blank(nx,ny)
+	ave = sparx_utilities.model_blank(nx,ny)
+	var = sparx_utilities.model_blank(nx,ny)
 	for i in range(i1, i2 + 1):
 		if i > i1:
-			ima = utilities.get_im(stack, i)
+			ima = sparx_utilities.get_im(stack, i)
 		if mode=="a":
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			out = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			out = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			EMAN2_cppwrap.Util.add_img(ave, out)
 			EMAN2_cppwrap.Util.add_img2(var, out)
 		else: 
@@ -1333,7 +1243,7 @@ def aves(stack, mode="a", i1 = 0, i2 = 0):
 	#var[k] = (var[k] - ave[k]*ave[k]*ii) / (ii-1)
 
 	ave = EMAN2_cppwrap.Util.mult_scalar(ave, 1.0/float(nima))
-	temp = utilities.model_blank(nx, ny)
+	temp = sparx_utilities.model_blank(nx, ny)
 	EMAN2_cppwrap.Util.add_img2(temp, ave)
 	var = EMAN2_cppwrap.Util.madn_scalar(var, temp, -float(nima))
 	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(nima-1))
@@ -1354,16 +1264,16 @@ def aveq(stack, mode="a", i1 = 0, i2 = 0):
 		else:  i2 = len(stack)-1
 	nima = i2-i1+1
 
-	ima = utilities.get_im(stack, i1)
+	ima = sparx_utilities.get_im(stack, i1)
 	nx  = ima.get_xsize()
 	ny  = ima.get_ysize()
-	ave = utilities.model_blank(nx,ny)
+	ave = sparx_utilities.model_blank(nx,ny)
 	for i in range(i1, i2 + 1):
 		if i > i1:
-			ima = utilities.get_im(stack, i)
+			ima = sparx_utilities.get_im(stack, i)
 		if mode=="a":
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			EMAN2_cppwrap.Util.add_img(ave, fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror))
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			EMAN2_cppwrap.Util.add_img(ave, sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror))
 		else: 
 			EMAN2_cppwrap.Util.add_img(ave, ima)
 
@@ -1385,51 +1295,51 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 	
 	if type(input_stack) == type(""):	n = EMAN2_cppwrap.EMUtil.get_image_count(input_stack)
 	else:  n = len(input_stack)
-	ima = utilities.get_im(input_stack, 0)
+	ima = sparx_utilities.get_im(input_stack, 0)
 	nx = ima.get_xsize()
 	ny = ima.get_xsize()
 	#if(interpolation_method=="fourier"):  npad = 2
 	#else:  npad = 1
 	npad = 1
 
-	if ima.get_attr_default('ctf_applied', -2) > 0:	global_def.ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', -2) > 0:	sparx_global_def.ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
 	nx2 = nx*npad
 	ny2 = ny*npad
-	ave       = utilities.model_blank(nx2,ny2)
+	ave       = sparx_utilities.model_blank(nx2,ny2)
 	ctf_2_sum = EMAN2_cppwrap.EMData(nx2, ny2, 1, False)
 	snrsqrt = numpy.sqrt(SNR)
 
 	for i in range(n):
-		ima = utilities.get_im(input_stack, i)
+		ima = sparx_utilities.get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
-		oc = filter.filt_ctf(utilities.pad(ima, nx2, ny2, background = 0.0), ctf_params, dopad=False)
+		oc = sparx_filter.filt_ctf(sparx_utilities.pad(ima, nx2, ny2, background = 0.0), ctf_params, dopad=False)
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			oc = fundamentals.rot_shift2D(oc, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			oc = sparx_fundamentals.rot_shift2D(oc, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		EMAN2_cppwrap.Util.mul_scalar(oc, SNR)
 		EMAN2_cppwrap.Util.add_img(ave, oc)
-		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, snrsqrt*morphology.ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
+		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, snrsqrt*sparx_morphology.ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
 	ctf_2_sum += 1.0
-	ave = fundamentals.fft(ave)
+	ave = sparx_fundamentals.fft(ave)
 	EMAN2_cppwrap.Util.div_filter(ave, ctf_2_sum)
 	# variance
 	var = EMAN2_cppwrap.EMData(nx,ny)
 	var.to_zero()
 	for i in range(n):
-		ima = utilities.get_im(input_stack, i)
+		ima = sparx_utilities.get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			ima = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
-		oc = filter.filt_ctf(ave, ctf_params, dopad=False)
-		EMAN2_cppwrap.Util.sub_img(ima, EMAN2_cppwrap.Util.window(fundamentals.fft(oc),nx,ny,1,0,0,0))
+		oc = sparx_filter.filt_ctf(ave, ctf_params, dopad=False)
+		EMAN2_cppwrap.Util.sub_img(ima, EMAN2_cppwrap.Util.window(sparx_fundamentals.fft(oc),nx,ny,1,0,0,0))
 		EMAN2_cppwrap.Util.add_img2(var, ima)
-	ave = EMAN2_cppwrap.Util.window(fundamentals.fft(ave),nx,ny,1,0,0,0)
+	ave = EMAN2_cppwrap.Util.window(sparx_fundamentals.fft(ave),nx,ny,1,0,0,0)
 	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/(n-1))
 	return ave, var
 
@@ -1444,13 +1354,13 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="line
 	pass#IMPORTIMPORTIMPORT from  filter 	   import filt_ctf, filt_table
 	pass#IMPORTIMPORTIMPORT from  utilities    import pad, get_params2D, get_im
 	pass#IMPORTIMPORTIMPORT from  math 	   import sqrt
-	global_def.ERROR("This function was disabled as it does not treat astigmatism properly","aves_adw",1)
+	sparx_global_def.ERROR("This function was disabled as it does not treat astigmatism properly","aves_adw",1)
 	if type(input_stack) == type(""):	n = EMAN2_cppwrap.EMUtil.get_image_count(input_stack)
 	else:  n = len(input_stack)
-	ima = utilities.get_im(input_stack, 0)
+	ima = sparx_utilities.get_im(input_stack, 0)
 	nx  = ima.get_xsize()
 
-	if ima.get_attr_default('ctf_applied', -2) > 0:	global_def.ERROR("data cannot be ctf-applied", "aves_wiener", 1)
+	if ima.get_attr_default('ctf_applied', -2) > 0:	sparx_global_def.ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
 	ctf_abs_sum = EMAN2_cppwrap.EMData(nx, nx, 1, False)
 	ctf_2_sum = EMAN2_cppwrap.EMData(nx, nx, 1, False)
@@ -1460,19 +1370,19 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="line
 	if Ng == -1: Ng = n
 
 	for i in range(n):
-		ima = utilities.get_im(input_stack, i)
+		ima = sparx_utilities.get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
 		ctf_rot = EMAN2_cppwrap.EMAN2Ctf()
 		ctf_rot.copy_from(ctf_params)
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			ima = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_rot.dfang += alpha
 			if mirror == 1:  ctf_rot.dfang = 270.0-ctf_rot.dfang
 
-		oc = filter.filt_ctf(fundamentals.fft(ima), ctf_params, dopad=False)
+		oc = sparx_filter.filt_ctf(sparx_fundamentals.fft(ima), ctf_params, dopad=False)
 		EMAN2_cppwrap.Util.add_img(Ave, oc)
-		ctfimg = morphology.ctf_img(nx, ctf_rot)
+		ctfimg = sparx_morphology.ctf_img(nx, ctf_rot)
 		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, ctfimg)
 		EMAN2_cppwrap.Util.add_img_abs(ctf_abs_sum, ctfimg)
 
@@ -1486,18 +1396,18 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="line
 	#Util.mul_scalar(ctf_2_sum, SNR)
 	#ctf_2_sum += 1.0
 
-	ave = fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(EMAN2_cppwrap.Util.muln_img(Ave, adw_img), ctf_2_sum))
+	ave = sparx_fundamentals.fft(EMAN2_cppwrap.Util.divn_filter(EMAN2_cppwrap.Util.muln_img(Ave, adw_img), ctf_2_sum))
 
 	# variance
 	var = EMAN2_cppwrap.EMData(nx, nx)
 	var.to_zero()
 	for i in range(n):
-		ima = utilities.get_im(input_stack, i)
+		ima = sparx_utilities.get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
-		oc = filter.filt_ctf(ave, ctf_params, dopad=False)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			ima = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
+		oc = sparx_filter.filt_ctf(ave, ctf_params, dopad=False)
 		EMAN2_cppwrap.Util.sub_img(ima, oc)
 		EMAN2_cppwrap.Util.add_img2(var, ima)
 	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/(n-1))
@@ -1533,19 +1443,19 @@ def ssnr2d(data, mask = None, mode=""):
 			ima = EMAN2_cppwrap.EMData()
 			ima.read_image(data, i)
 			if(mode == "a"):
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-				ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+				alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+				ima = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			if(mask):  EMAN2_cppwrap.Util.mul_img(ima, mask)
-			fim = fundamentals.fft(ima)
+			fim = sparx_fundamentals.fft(ima)
 		else:
 			if(mode == "a"):
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
-				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
-				if(mask):  fim = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(ima, mask))
-				else    :  fim = fundamentals.fft(ima)
+				alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[i])
+				ima = sparx_fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
+				if(mask):  fim = sparx_fundamentals.fft(EMAN2_cppwrap.Util.muln_img(ima, mask))
+				else    :  fim = sparx_fundamentals.fft(ima)
 			else:
-				if(mask):  fim = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
-				else:      fim = fundamentals.fft(data[i])
+				if(mask):  fim = sparx_fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:      fim = sparx_fundamentals.fft(data[i])
 		EMAN2_cppwrap.Util.add_img(sumsq, fim)
 		EMAN2_cppwrap.Util.add_img2(var, fim)
 	EMAN2_cppwrap.Util.mul_img(sumsq, sumsq.conjg())
@@ -1555,12 +1465,12 @@ def ssnr2d(data, mask = None, mode=""):
 	var = (var - sumsq/n)/(n-1)
 	ssnr   = sumsq/var/n - 1.0
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
-	rvar = fundamentals.rot_avg_table(var)
-	rsumsq = fundamentals.rot_avg_table(sumsq)
+	rvar = sparx_fundamentals.rot_avg_table(var)
+	rsumsq = sparx_fundamentals.rot_avg_table(sumsq)
 	rssnr = []
 	for i in range(len(rvar)):
 		if(rvar[i] > 0.0): qt = max(0.0, rsumsq[i]/rvar[i]/n - 1.0)
-		else:              global_def.ERROR("ssnr2d","rvar negative",1)
+		else:              sparx_global_def.ERROR("ssnr2d","rvar negative",1)
 		rssnr.append(qt)
 
 	return rssnr, rsumsq, rvar, ssnr, sumsq, var
@@ -1581,12 +1491,12 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=False):
 		ima = EMAN2_cppwrap.EMData()
 		ima.read_image(data, 0, True)
 		if ima.get_attr_default('ctf_applied', 1) == 1:
-			global_def.ERROR("data cannot be ctf-applied","ssnr2d",1)
+			sparx_global_def.ERROR("data cannot be ctf-applied","ssnr2d",1)
 		nx = ima.get_xsize()
 		ny = ima.get_ysize()
 	else:
 		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			global_def.ERROR("data cannot be ctf-applied","ssnr2d",1)
+			sparx_global_def.ERROR("data cannot be ctf-applied","ssnr2d",1)
 		n = len(data)
 		nx = data[0].get_xsize()
 		ny = data[0].get_ysize()
@@ -1607,15 +1517,15 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=False):
 			ima = data[i].copy()
 		ctf_params = ima.get_attr('ctf')
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			ima = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
-		if  dopa:  ima = utilities.pad(ima, nx2, ny2, 1, background = "circumference")
-		fundamentals.fftip(ima)
-		EMAN2_cppwrap.Util.add_img(sumsq, filter.filt_ctf(ima, ctf_params, dopa))
-		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx2, ctf_params))
+		if  dopa:  ima = sparx_utilities.pad(ima, nx2, ny2, 1, background = "circumference")
+		sparx_fundamentals.fftip(ima)
+		EMAN2_cppwrap.Util.add_img(sumsq, sparx_filter.filt_ctf(ima, ctf_params, dopa))
+		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, sparx_morphology.ctf_img(nx2, ctf_params))
 	#print("   NEW ")
 
 	ave = EMAN2_cppwrap.Util.divn_filter(sumsq, ctf_2_sum)
@@ -1629,15 +1539,15 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=False):
 			ima = data[i].copy()
 		ctf_params = ima.get_attr('ctf')
 		if mode == "a":
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			ima = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
-		if dopa:  ima = utilities.pad(ima, nx2, ny2, 1, background = "circumference")
-		fundamentals.fftip(ima)
+		if dopa:  ima = sparx_utilities.pad(ima, nx2, ny2, 1, background = "circumference")
+		sparx_fundamentals.fftip(ima)
 
-		ima = ima-filter.filt_ctf(ave, ctf_params, dopa)
+		ima = ima-sparx_filter.filt_ctf(ave, ctf_params, dopa)
 		EMAN2_cppwrap.Util.add_img2(var, ima)
 
 		#ima = filt_ctf(ima-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
@@ -1682,10 +1592,10 @@ def varf(data, mask = None, mode="a"):
 		else:
 			ima = data[i].copy()
 		if(mode == "a"):
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			ima = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask):  EMAN2_cppwrap.Util.mul_img(ima, mask)
-		fundamentals.fftip(ima)
+		sparx_fundamentals.fftip(ima)
 		EMAN2_cppwrap.Util.add_img(sumsq, ima)
 		EMAN2_cppwrap.Util.add_img2(var, ima)
 
@@ -1693,10 +1603,10 @@ def varf(data, mask = None, mode="a"):
 	EMAN2_cppwrap.Util.mad_scalar(var, sumsq, -1.0/float(n))
 	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(n-1))
 	st = EMAN2_cppwrap.Util.infomask(var, None, True)
-	if(st[2]<0.0):  global_def.ERROR("Negative variance!","varf",1)
+	if(st[2]<0.0):  sparx_global_def.ERROR("Negative variance!","varf",1)
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
 
-	return var, fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
+	return var, sparx_fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
 
 def varfctf(data, mask = None, mode="a", dopad = True):
 	'''
@@ -1715,13 +1625,13 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 		ima = EMAN2_cppwrap.EMData()
 		ima.read_image(data, 0, True)
 		if(ima.get_attr_default('ctf_applied', 1) == 1):
-			global_def.ERROR("data cannot be ctf-applied","varfctf",1)
+			sparx_global_def.ERROR("data cannot be ctf-applied","varfctf",1)
 		nx = ima.get_xsize()
 		ny = ima.get_ysize()
 		nz = ima.get_zsize()
 	else:
 		if(data[0].get_attr_default('ctf_applied', 1) == 1):
-			global_def.ERROR("data cannot be ctf-applied","varfctf",1)
+			sparx_global_def.ERROR("data cannot be ctf-applied","varfctf",1)
 		n = len(data)
 		nx = data[0].get_xsize()
 		ny = data[0].get_ysize()
@@ -1748,29 +1658,29 @@ def varfctf(data, mask = None, mode="a", dopad = True):
 			ima = data[i].copy()
 		ctf_params = ima.get_attr("ctf")
 		if(mode == "a"):
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			ima = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if(mask): EMAN2_cppwrap.Util.mul_img(ima, mask)
-		if dopad:  ima = utilities.pad(ima, nx2, ny2, nz2, background = "circumference")
-		fundamentals.fftip(ima)
-		oc = filter.filt_ctf(ima, ctf_params)
+		if dopad:  ima = sparx_utilities.pad(ima, nx2, ny2, nz2, background = "circumference")
+		sparx_fundamentals.fftip(ima)
+		oc = sparx_filter.filt_ctf(ima, ctf_params)
 		EMAN2_cppwrap.Util.add_img(sumsq, oc)
 		EMAN2_cppwrap.Util.add_img2(var, ima)
-		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx2, ctf_params, ny = ny2, nz = nz2))
+		EMAN2_cppwrap.Util.add_img2(ctf_2_sum, sparx_morphology.ctf_img(nx2, ctf_params, ny = ny2, nz = nz2))
 	EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
 	EMAN2_cppwrap.Util.div_filter(sumsq, ctf_2_sum)
 	EMAN2_cppwrap.Util.sub_img(var, sumsq)
 	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(n-1))
 	st = EMAN2_cppwrap.Util.infomask(var, None, True)
-	if(st[2]<0.0):  global_def.ERROR("Negative variance!","varfctf",1)
+	if(st[2]<0.0):  sparx_global_def.ERROR("Negative variance!","varfctf",1)
 	if dopad:  #  CHECK THIS< CAN IT BE DONE BETTER??
-		var = fundamentals.fft( fundamentals.cyclic_shift(fundamentals.window2d(fundamentals.cyclic_shift(fundamentals.fft(var), nx, ny, nz), nx, ny), -nx//2, -ny//2, -nz//2) )
+		var = sparx_fundamentals.fft( sparx_fundamentals.cyclic_shift(sparx_fundamentals.window2d(sparx_fundamentals.cyclic_shift(sparx_fundamentals.fft(var), nx, ny, nz), nx, ny), -nx//2, -ny//2, -nz//2) )
 
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
 
-	return var, fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
+	return var, sparx_fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
 
 def varf2d(data, ave, mask = None, mode="a"):
 	'''
@@ -1790,98 +1700,36 @@ def varf2d(data, ave, mask = None, mode="a"):
 		n = EMAN2_cppwrap.EMUtil.get_image_count(data)
 	else:
 		n = len(data)
-	ima = utilities.get_im(data)
+	ima = sparx_utilities.get_im(data)
 	nx = ima.get_xsize()
 	ny = ima.get_ysize()
 	nz = ima.get_zsize()
 	if(ima.get_attr_default('ctf_applied', 1) == 1):
-		global_def.ERROR("data cannot be ctf-applied","varf2d",1)
-	if(nz > 1): global_def.ERROR("data cannot be 3D","varf2d",1)
+		sparx_global_def.ERROR("data cannot be ctf-applied","varf2d",1)
+	if(nz > 1): sparx_global_def.ERROR("data cannot be 3D","varf2d",1)
 
 	var = EMAN2_cppwrap.EMData(nx, ny, nz, False)
 
 	for i in range(n):
-		ima = utilities.get_im(data, i)
+		ima = sparx_utilities.get_im(data, i)
 		ctf_params = ima.get_attr("ctf")
 		if(mode == "a"):
-			alpha, sx, sy, mirror, scale = utilities.get_params2D(ima)
-			ima = fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(ima)
+			ima = sparx_fundamentals.rot_shift2D(ima, alpha, sx, sy, mirror)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		if(mask): EMAN2_cppwrap.Util.mul_img(ima, mask)
-		oc = filter.filt_ctf(ave, ctf_params, dopad=True)
+		oc = sparx_filter.filt_ctf(ave, ctf_params, dopad=True)
 		#print i, "  changed  ctf  ",defocus,Util.infomask(oc, None, True)
-		EMAN2_cppwrap.Util.add_img2(var, fundamentals.fft(EMAN2_cppwrap.Util.subn_img(ima, oc)))
+		EMAN2_cppwrap.Util.add_img2(var, sparx_fundamentals.fft(EMAN2_cppwrap.Util.subn_img(ima, oc)))
 
 	EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(n-1))
 	st = EMAN2_cppwrap.Util.infomask(var, None, True)
-	if(st[2]<0.0):  global_def.ERROR("Negative variance!","varf2d",1)
+	if(st[2]<0.0):  sparx_global_def.ERROR("Negative variance!","varf2d",1)
 
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
 
-	return var, fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
-
-def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node = 0, comm = -1):
-	"""
-	Calculate variance in Fourier space for 2D images optionally including ctf correction
-	ave is the Wiener average of data
-	If mode = "a" apply alignment parameters
-	This command is for Wiener average, i.e., A = sum_k (CTF_k SNR_k F_k) / [sum_k ( CTF_k^2 SNR_k) + 1]
-	"""
-	pass#IMPORTIMPORTIMPORT from utilities    import    model_blank, get_params2D
-	pass#IMPORTIMPORTIMPORT from fundamentals import    rot_shift2D, fft, fftip
-	pass#IMPORTIMPORTIMPORT from utilities    import    reduce_EMData_to_root
-	pass#IMPORTIMPORTIMPORT from mpi          import    mpi_reduce, MPI_INT, MPI_SUM
-	
-	if comm == -1:
-		pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD
-		comm = mpi.MPI_COMM_WORLD
-
-	n = len(data)
-	nx = data[0].get_xsize()
-	ny = data[0].get_ysize()
-	var  = EMAN2_cppwrap.EMData(nx, ny, 1, False)
-	
-	if CTF:
-		pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
-		pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
-		if data[0].get_attr_default('ctf_applied', 1) == 1:
-			global_def.ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
-		for i in range(n):
-			ctf_params = data[i].get_attr("ctf")
-			if(mode == "a"):
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
-				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
-				ctf_params.dfang += alpha
-				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
-			else:
-				ima = data[i].copy()
-			if(mask): EMAN2_cppwrap.Util.mul_img(ima, mask)
-			oc = filter.filt_ctf(ave, ctf_params, dopad=True)
-			EMAN2_cppwrap.Util.add_img2(var, fundamentals.fft(EMAN2_cppwrap.Util.subn_img(ima, oc)))
-	else:
-		for i in range(n):
-			if mode == "a":
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
-				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
-				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
-				fundamentals.fftip(ima)
-			else:
-				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
-				else:       ima = fundamentals.fft(data[i])
-			EMAN2_cppwrap.Util.add_img2(var, ima)
-	utilities.reduce_EMData_to_root(var, myid, main_node, comm)
-	nima = n
-	nima = mpi.mpi_reduce(nima, 1, mpi.MPI_INT, mpi.MPI_SUM, main_node, comm)
-	if myid == main_node:
-		EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(nima-1))
-		if var.get_value_at(0, 0) < 0.0:	var.set_value_at(0, 0, 0.0)		
-		st = EMAN2_cppwrap.Util.infomask(var, None, True)
-		if st[2] < 0.0:  global_def.ERROR("Negative variance!", "varf2_MPI", 1)
-		pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
-		return var, fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
-	else:
-		return  EMAN2_cppwrap.EMData(), [0]  # return minimum what has to be returned, but no meaning.
+	return var, sparx_fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
 
 def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1"):
 	"""
@@ -1896,7 +1744,7 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	pass#IMPORTIMPORTIMPORT from utilities      import   model_blank
 	pass#IMPORTIMPORTIMPORT from projection     import   prep_vol, prgs
 
-	[ssnr1, vol_ssnr1] = reconstruction.recons3d_nn_SSNR(prjlist, mask2D, rw, npad, sign, sym, CTF)
+	[ssnr1, vol_ssnr1] = sparx_reconstruction.recons3d_nn_SSNR(prjlist, mask2D, rw, npad, sign, sym, CTF)
 
 	nx  = prjlist[0].get_xsize()
 	if ou == -1: radius = int(nx/2) - 1
@@ -1904,25 +1752,25 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	if(reference_structure == None):
 		if CTF :
 			snr = 1.0#e20
-			reference_structure = reconstruction.recons3d_4nn_ctf(prjlist, list(range(prjlist)), snr, sign, sym, 0, npad)
+			reference_structure = sparx_reconstruction.recons3d_4nn_ctf(prjlist, list(range(prjlist)), snr, sign, sym, 0, npad)
 		else  :
-			reference_structure = reconstruction.recons3d_4nn(prjlist, list(range(prjlist)), sym, npad)
+			reference_structure = sparx_reconstruction.recons3d_4nn(prjlist, list(range(prjlist)), sym, npad)
 
-	volft,kb = projection.prep_vol(reference_structure)
+	volft,kb = sparx_projection.prep_vol(reference_structure)
 	del reference_structure
 	pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
 	pass#IMPORTIMPORTIMPORT if CTF: from filter import filt_ctf
 	re_prjlist = []
 	for prj in prjlist:
-		phi,theta,psi,tx,ty = utilities.get_params_proj(prj)
-		proj = projection.prgs(volft, kb, [phi,theta,psi,-tx,-ty])
+		phi,theta,psi,tx,ty = sparx_utilities.get_params_proj(prj)
+		proj = sparx_projection.prgs(volft, kb, [phi,theta,psi,-tx,-ty])
 		if CTF:
 			ctf_params = prj.get_attr("ctf")			
-			proj = filter.filt_ctf(proj, ctf_params)
+			proj = sparx_filter.filt_ctf(proj, ctf_params)
 			proj.set_attr('sign', 1)
 		re_prjlist.append(proj)
 	del volft
-	[ssnr2, vol_ssnr2] = reconstruction.recons3d_nn_SSNR(re_prjlist, mask2D, rw, npad, sign, sym, CTF)
+	[ssnr2, vol_ssnr2] = sparx_reconstruction.recons3d_nn_SSNR(re_prjlist, mask2D, rw, npad, sign, sym, CTF)
 
 	outf = open(ssnr_text_file, "w")
 	for i in range(len(ssnr2[0])):
@@ -1962,129 +1810,6 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	#from morphology import threshold_to_minval
 	#return  threshold_to_minval(Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
 
-def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0, mpi_comm = None):
-	"""
-	  Calculate variance in Fourier space of an object reconstructed from projections
-
-	  Known problems: properly speaking, the SSNR has to be calculated using snr=inf and this is what recons3d_nn_SSNR_MPI does.
-	  So, when one computes reference structure, snr should be 1.0e20.  However, when the reference structure is passed
-	  from the reconstruction program, it was computed using different snr.  I tested it and in practice there is no difference,
-	  as this only changes the background variance due to reconstruction algorithm, which is much lower anyway.  PAP.
-	"""
-	pass#IMPORTIMPORTIMPORT from reconstruction import   recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
-	pass#IMPORTIMPORTIMPORT from utilities      import   bcast_EMData_to_all, model_blank
-	pass#IMPORTIMPORTIMPORT from projection     import   prep_vol, prgs
-	pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD
-	
-	if mpi_comm == None:
-		mpi_comm = mpi.MPI_COMM_WORLD
-	
-	if myid == 0: [ssnr1, vol_ssnr1] = reconstruction.recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
-	else:                              reconstruction.recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
-
-	nx  = prjlist[0].get_xsize()
-	if ou == -1: radius = int(nx/2) - 2
-	else:        radius = int(ou)
-	if(reference_structure == None):
-		if CTF :
-			snr = 1.0#e20
-			if myid == 0 :
-				reference_structure = reconstruction.recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
-			else :
-				reconstruction.recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
-				reference_structure = utilities.model_blank(nx, nx, nx)
-		else  :
-			if myid == 0 :
-				reference_structure = reconstruction.recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
-			else :
-				reconstruction.recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
-				reference_structure = utilities.model_blank(nx, nx, nx)
-		utilities.bcast_EMData_to_all(reference_structure, myid, 0, mpi_comm)
-	#if myid == 0:  reference_structure.write_image("refer.hdf",0)
-	#vol *= model_circle(radius, nx, nx, nx)
-	volft,kb = projection.prep_vol(reference_structure)
-	del reference_structure
-	pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
-	pass#IMPORTIMPORTIMPORT if CTF: from filter import filt_ctf
-	re_prjlist = []
-	for prj in prjlist:
-		phi,theta,psi,tx,ty = utilities.get_params_proj(prj)
-		proj = projection.prgs(volft, kb, [phi,theta,psi,-tx,-ty])
-		if CTF:
-			ctf_params = prj.get_attr("ctf")
-			proj = filter.filt_ctf(proj, ctf_params)
-			proj.set_attr('sign', 1)
-		re_prjlist.append(proj)
-	del volft
-	if myid == 0: [ssnr2, vol_ssnr2] = reconstruction.recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
-	else:                              reconstruction.recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
-	del re_prjlist
-
-	if myid == 0 and ssnr_text_file != None:
-		outf = open(ssnr_text_file, "w")
-		for i in range(len(ssnr2[0])):
-			datstrings = []
-			datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
-			datstrings.append("  %15e" % ssnr1[1][i])    # SSNR
-			datstrings.append("  %15e" % ssnr1[2][i])    # variance
-			datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
-			datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
-			datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
-			datstrings.append("  %15e" % ssnr2[1][i])    # SSNR
-			datstrings.append("  %15e" % ssnr2[2][i])    # variance
-			datstrings.append("  %15e" % ssnr2[5][i])    # square of signal
-			datstrings.append("\n")
-			outf.write("".join(datstrings))
-		outf.close()
-	if myid == 0:
-		vol_ssnr1 = EMAN2_cppwrap.Util.subn_img(EMAN2_cppwrap.Util.pack_complex_to_real(vol_ssnr1), EMAN2_cppwrap.Util.pack_complex_to_real(vol_ssnr2))
-		del  vol_ssnr2
-		# what follows is a risky business.  There should be a better way to deal with negative values. but for the time being...
-		nc = nx//2
-		r2 = radius**2
-		for i in range(nx):
-			for j in range(nx):
-				for k in range(nx):
-					if( ( (i-nc)**2+(j-nc)**2+(k-nc)**2) <r2):
-						if( vol_ssnr1.get_value_at(i,j,k) <= 0.0):
-							bm = -1.0
-							for i1 in range(-1,2):
-								for i2 in range(-1,2):
-									for i3 in range(-1,2):
-										tm = vol_ssnr1.get_value_at(i+i1,j+i2,k+i3)
-										if(tm > bm):
-											bm = tm
-							vol_ssnr1.set_value_at(i,j,k,bm)
-										
-					else:  vol_ssnr1.set_value_at(i,j,k, 1.0)
-		return  vol_ssnr1
-		#from morphology import threshold_to_minval
-		#return  threshold_to_minval( Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
-	else:  return  utilities.model_blank(2,2,2)
-
-
-def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
-	""" 
-	        Compute fsc using mask and normalization.
-
-		Usage: [frsc =] fsc(image1, image2 [, mask, w, filename])
-
-		If no mask is provided, using circular mask with R=nx//2
-
-	"""
-	pass#IMPORTIMPORTIMPORT from statistics import fsc
-	pass#IMPORTIMPORTIMPORT from morphology import binarize
-	pass#IMPORTIMPORTIMPORT from utilities  import model_circle
-	nx = img1.get_xsize()
-	ny = img1.get_ysize()
-	nz = img1.get_zsize()
-	if( mask == None):  mask = utilities.model_circle(nx//2, nx, ny, nz)
-	m = morphology.binarize(mask, 0.5)
-	s1 = EMAN2_cppwrap.Util.infomask(img1, m, True)
-	s2 = EMAN2_cppwrap.Util.infomask(img2, m, True)
-	return fsc((img1-s1[0])*mask, (img2-s2[0])*mask, w, filename)
-
-
 def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 
 	"""
@@ -2105,7 +1830,7 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 			if(ir+1==int(params[im][4])):
 				ncnt+=1
 				ima.read_image(imgstack,im)
-				out = fundamentals.rot_shift2D(ima, params[im][0], params[im][1], params[im][2], params[im][3])
+				out = sparx_fundamentals.rot_shift2D(ima, params[im][0], params[im][1], params[im][2], params[im][3])
 				if(ncnt<=2):
 					if(ncnt%2==0): refimge=out
 					if(ncnt%2==1): refimgo=out
@@ -2115,12 +1840,12 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 		if(center):
 			if(ncnt>=2):
 				tavg= (refimgo*(int(ncnt/2)+(ncnt%2)) + refimge*int(ncnt/2))/ncnt
-				utilities.drop_image(tavg,"tavg.spi")
+				sparx_utilities.drop_image(tavg,"tavg.spi")
 				cs[ir] = tavg.phase_cog()
-				refimg = fundamentals.fshift(tavg, -cs[ir][0], -cs[ir][1])
+				refimg = sparx_fundamentals.fshift(tavg, -cs[ir][0], -cs[ir][1])
 			else:
 				cs[ir] = refimgo.phase_cog()
-				refimg = fundamentals.fshift(refimgo, -cs[ir][0], -cs[ir][1])				
+				refimg = sparx_fundamentals.fshift(refimgo, -cs[ir][0], -cs[ir][1])				
 		else:
 			if(ncnt>=2):
 				refimg= (refimgo*(int(ncnt/2)+(ncnt%2)) + refimge*int(ncnt/2))/ncnt
@@ -2144,7 +1869,7 @@ def get_1dpw_table_stack(stack):
 	if  type(stack) == type(""): nima = EMAN2_cppwrap.EMUtil.get_image_count(stack)
 	else:                       nima = len(stack)
 	for i in range(nima):
-		img = utilities.get_im(stack,i)
+		img = sparx_utilities.get_im(stack,i)
 		e  = EMAN2_cppwrap.periodogram(img)
 		ro = e.rotavg()
 		if(i==0): rosum = ro.copy()
@@ -2158,20 +1883,20 @@ def get_1dpw_table_stack(stack):
 def im_diff(im1, im2, mask = None):
 	pass#IMPORTIMPORTIMPORT import types
 	pass#IMPORTIMPORTIMPORT from utilities import model_circle, get_im
-	if type(im1) == bytes : im1 = utilities.get_im(im1)
-	if type(im2) == bytes : im2 = utilities.get_im(im2)
+	if type(im1) == bytes : im1 = sparx_utilities.get_im(im1)
+	if type(im2) == bytes : im2 = sparx_utilities.get_im(im2)
 	nx = im1.get_xsize()
 	ny = im1.get_ysize()
 	nz = im1.get_zsize()
 	if mask != None :
-		if   type(mask) == float or type(mask) == int: m = utilities.model_circle(mask, nx, ny, nz)
-		elif type(mask) == bytes:   m = utilities.get_im(mask)
+		if   type(mask) == float or type(mask) == int: m = sparx_utilities.model_circle(mask, nx, ny, nz)
+		elif type(mask) == bytes:   m = sparx_utilities.get_im(mask)
 		else: m = mask
 	else:
 		if   im1.get_ndim() == 3: radius = min(nx,ny,nz)//2 - 1
 		elif im1.get_ndim() == 2: radius = min(nx,ny)//2    - 1
 		else:                     radius = int(nx)//2       - 1
-		m = utilities.model_circle(radius, nx, ny, nz)
+		m = sparx_utilities.model_circle(radius, nx, ny, nz)
 	l = EMAN2_cppwrap.Util.im_diff(im1, im2, m)
 	return  l["imdiff"], l["A"], l["B"]
 
@@ -2196,7 +1921,7 @@ def k_means_init_asg_rnd(N, K):
 			k -= 1 
 			if nc[k] <= 1:
 				flag = 0
-				if retrial == 0: global_def.ERROR('Empty class in the initialization', 'k_means_SSE', 1)
+				if retrial == 0: sparx_global_def.ERROR('Empty class in the initialization', 'k_means_SSE', 1)
 				for k in range(K): nc[k] = 0
 		if flag == 1:
 			retrial = 0
@@ -2286,13 +2011,13 @@ def k_means_locasg2glbasg(ASG, LUT, N):
 def k_means_init_open_im(stack, maskname):
 	pass#IMPORTIMPORTIMPORT from utilities import get_image, get_im, model_blank, file_type
 
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
 	# open mask if defined
 	if maskname != None:
-		mask = utilities.get_image(maskname)
+		mask = sparx_utilities.get_image(maskname)
 		im   = EMAN2_cppwrap.Util.compress_image_mask(mask, mask)
 		m    = im.get_xsize()
 		del im
@@ -2302,7 +2027,7 @@ def k_means_init_open_im(stack, maskname):
 			line = open(stack, 'r').readline()
 			m    = len(line.split())
 		else:
-			im = utilities.get_im(stack, 0)
+			im = sparx_utilities.get_im(stack, 0)
 			m  = im.get_xsize() * im.get_ysize() * im.get_zsize()
 			del im
 
@@ -2358,7 +2083,7 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 		pass#IMPORTIMPORTIMPORT from fundamentals 	import fftip
 		pass#IMPORTIMPORTIMPORT from utilities          import get_arb_params
 
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 	N   = len(lim)
@@ -2371,7 +2096,7 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 		nx   = len(data[0].split())
 		for idi in lim:
 			line = data[idi]
-			im   = utilities.model_blank(nx)
+			im   = sparx_utilities.model_blank(nx)
 			line = line.split()
 			for i in range(nx):
 				val = float(line[i])
@@ -2392,15 +2117,15 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 			ctf	    = [[] for i in range(N)]
 			ctf2	    = [[] for i in range(N)]
 			ctf_params  = im.get_attr( "ctf" )
-			if im.get_attr("ctf_applied")>0.0: global_def.ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
+			if im.get_attr("ctf_applied")>0.0: sparx_global_def.ERROR('K-means cannot be performed on CTF-applied images', 'k_means', 1)
 
 		IM = im.read_images(stack, lim)
 		for i in range(N):
 		# 3D object
 			if nz > 1:
 				try:
-					phi, theta, psi, s3x, s3y, s3z, mirror, scale = utilities.get_params3D(IM[i])
-					IM[i]  = fundamentals.rot_shift3D(IM[i], phi, theta, psi, s3x, s3y, s3z, scale)
+					phi, theta, psi, s3x, s3y, s3z, mirror, scale = sparx_utilities.get_params3D(IM[i])
+					IM[i]  = sparx_fundamentals.rot_shift3D(IM[i], phi, theta, psi, s3x, s3y, s3z, scale)
 					if mirror: IM[i].process_inplace('xform.mirror', {'axis':'x'})
 				except:
 					#ERROR('K-MEANS no 3D alignment parameters found', "k_means_open_im", 1)
@@ -2409,8 +2134,8 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 			# 2D object
 			elif ny > 1:
 				try:
-					alpha, sx, sy, mirror, scale = utilities.get_params2D(IM[i])
-					IM[i] = fundamentals.rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
+					alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(IM[i])
+					IM[i] = sparx_fundamentals.rot_shift2D(IM[i], alpha, sx, sy, mirror, scale)
 				except: 
 					#ERROR('K-MEANS no 2D alignment parameters found', "k_means_open_im", 1)
 					#sys.exit()
@@ -2419,8 +2144,8 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 			# obtain ctf
 			if CTF:
 				ctf_params = IM[i].get_attr( "ctf" )
-				ctf[i]     = morphology.ctf_1d(nx, ctf_params)
-				ctf2[i]    = morphology.ctf_2(nx, ctf_params)
+				ctf[i]     = sparx_morphology.ctf_1d(nx, ctf_params)
+				ctf2[i]    = sparx_morphology.ctf_2(nx, ctf_params)
 
 			if flagnorm:
 				# normalize
@@ -2434,7 +2159,7 @@ def k_means_open_im(stack, mask, CTF, lim, flagnorm = False):
 				else:	IM[i] = EMAN2_cppwrap.Util.compress_image_mask(IM[i], mask)
 
 			# fft
-			if CTF: fundamentals.fftip(IM[i])
+			if CTF: sparx_fundamentals.fftip(IM[i])
 
 			# mem the original size
 			if i == 0:
@@ -2462,29 +2187,29 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 	if ncpu > 1: methodhead = method + ' MPI'
 	else:        methodhead = method
 
-	utilities.print_msg('\n************* k-means %s *************\n' % methodhead)
-	utilities.print_msg('Input stack                 : %s\n'     % stackname)
-	utilities.print_msg('Number of images            : %i\n'     % N)
-	utilities.print_msg('Maskfile                    : %s\n'     % maskname)
-	utilities.print_msg('Number of pixels under mask : %i\n'     % m)
-	utilities.print_msg('Number of clusters          : %s\n'     % Ks)
-	utilities.print_msg('Number of trials            : %i\n'     % trials)
-	utilities.print_msg('Maximum iteration           : %i\n'     % maxit)
-	utilities.print_msg('Data with CTF               : %s\n'     % CTF)
-	utilities.print_msg('Criterion                   : %s\n'     % crit)
-	utilities.print_msg('Optimization method         : %s\n'     % method)
+	sparx_utilities.print_msg('\n************* k-means %s *************\n' % methodhead)
+	sparx_utilities.print_msg('Input stack                 : %s\n'     % stackname)
+	sparx_utilities.print_msg('Number of images            : %i\n'     % N)
+	sparx_utilities.print_msg('Maskfile                    : %s\n'     % maskname)
+	sparx_utilities.print_msg('Number of pixels under mask : %i\n'     % m)
+	sparx_utilities.print_msg('Number of clusters          : %s\n'     % Ks)
+	sparx_utilities.print_msg('Number of trials            : %i\n'     % trials)
+	sparx_utilities.print_msg('Maximum iteration           : %i\n'     % maxit)
+	sparx_utilities.print_msg('Data with CTF               : %s\n'     % CTF)
+	sparx_utilities.print_msg('Criterion                   : %s\n'     % crit)
+	sparx_utilities.print_msg('Optimization method         : %s\n'     % method)
 	if SA:
-		utilities.print_msg('Simulated annealing          : ON\n')
+		sparx_utilities.print_msg('Simulated annealing          : ON\n')
 		#if SA2: print_msg('   select neighbour         : closer according T\n')
 		#else: 	 print_msg('   select neighbour         : randomly\n')
-		utilities.print_msg('   T0                       : %f\n' % T0)
-		utilities.print_msg('   F                        : %f\n' % F)
+		sparx_utilities.print_msg('   T0                       : %f\n' % T0)
+		sparx_utilities.print_msg('   F                        : %f\n' % F)
 	else:
-		utilities.print_msg('Simulated annealing          : OFF\n')
-	utilities.print_msg('Random seed                 : %i\n'     % rnd)
-	utilities.print_msg('Initialization method       : %s\n'     % init_method)
-	utilities.print_msg('Number of CPUs              : %i\n'     % ncpu)
-	utilities.print_msg('Output seed names           : %s\n\n'   % outname)
+		sparx_utilities.print_msg('Simulated annealing          : OFF\n')
+	sparx_utilities.print_msg('Random seed                 : %i\n'     % rnd)
+	sparx_utilities.print_msg('Initialization method       : %s\n'     % init_method)
+	sparx_utilities.print_msg('Number of CPUs              : %i\n'     % ncpu)
+	sparx_utilities.print_msg('Output seed names           : %s\n\n'   % outname)
 
 # K-means write results output directory
 def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
@@ -2500,22 +2225,22 @@ def k_means_export(Cls, crit, assign, out_seedname, part = -1, TXT = False):
 		Je += Cls['Ji'][k]
 		if Cls['n'][k] > 16000:
 			flagHDF = True
-			utilities.print_msg('\nWARNING: limitation of number attributes in hdf format, the results will be export in separate text files\n')
+			sparx_utilities.print_msg('\nWARNING: limitation of number attributes in hdf format, the results will be export in separate text files\n')
 
-	utilities.print_msg('\n\n_Details____________________________________________________\n')
-	utilities.print_msg('\n\t%s\t%11.6e\n\n' % ('The total Sum of Squares Error (Je) = ', Je))
+	sparx_utilities.print_msg('\n\n_Details____________________________________________________\n')
+	sparx_utilities.print_msg('\n\t%s\t%11.6e\n\n' % ('The total Sum of Squares Error (Je) = ', Je))
 
 	for name in crit['name']:
-		if name   == 'C': utilities.print_msg('\t%s\t%11.4e\n' % ('Criteria Coleman', crit['C']))
-		elif name == 'H': utilities.print_msg('\t%s\t%11.4e\n' % ('Criteria Harabasz', crit['H']))
-		elif name == 'D': utilities.print_msg('\t%s\t%11.4e\n' % ('Criteria Davies-Bouldin', crit['D']))
-		else:             global_def.ERROR('Kind of criterion k-means unknown', 'k_means_out_res', 0)	
-	utilities.print_msg('\n')
+		if name   == 'C': sparx_utilities.print_msg('\t%s\t%11.4e\n' % ('Criteria Coleman', crit['C']))
+		elif name == 'H': sparx_utilities.print_msg('\t%s\t%11.4e\n' % ('Criteria Harabasz', crit['H']))
+		elif name == 'D': sparx_utilities.print_msg('\t%s\t%11.4e\n' % ('Criteria Davies-Bouldin', crit['D']))
+		else:             sparx_global_def.ERROR('Kind of criterion k-means unknown', 'k_means_out_res', 0)	
+	sparx_utilities.print_msg('\n')
 
 	for k in range(Cls['k']):
-		utilities.print_msg('\t%s\t%d\t%s\t%d' % ('Cluster no:', k, 'No of Objects = ', Cls['n'][k]))
-		if(Cls['n'][k] > 1): utilities.print_msg('\t%s\t%11.6e\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k], ' Variance', Cls['Ji'][k] / float(Cls['n'][k]-1)))
-		else:               utilities.print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
+		sparx_utilities.print_msg('\t%s\t%d\t%s\t%d' % ('Cluster no:', k, 'No of Objects = ', Cls['n'][k]))
+		if(Cls['n'][k] > 1): sparx_utilities.print_msg('\t%s\t%11.6e\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k], ' Variance', Cls['Ji'][k] / float(Cls['n'][k]-1)))
+		else:               sparx_utilities.print_msg('\t%s\t%11.6e\n' % ('Sum of Squares Error Ji', Cls['Ji'][k]))
 
 		lassign = []
 		for i in range(len(assign)):
@@ -2571,10 +2296,10 @@ def k_means_criterion(Cls, crit_name=''):
 	
 	# if complex need buf complex
 	if Cls['ave'][0].is_complex():
-		buf  = utilities.model_blank(nx, ny, nz)
+		buf  = sparx_utilities.model_blank(nx, ny, nz)
 		buf.set_complex(1)
 	else:	
-		buf  = utilities.model_blank(nx, ny, nz)
+		buf  = sparx_utilities.model_blank(nx, ny, nz)
 				
 	# Criterion
 	Crit         = {}
@@ -2638,7 +2363,7 @@ def k_means_criterion(Cls, crit_name=''):
 			Crit['D'] = DB / Cls['k']			
 
 		else:
-			global_def.ERROR("Criterion type for K-means unknown","k_means_criterion",1)
+			sparx_global_def.ERROR("Criterion type for K-means unknown","k_means_criterion",1)
 	# return the results
 	return Crit
 
@@ -2698,7 +2423,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 	if mask != None:
 		if isinstance(mask, str):
-			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			sparx_global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
 	t_start = time.time()
@@ -2708,8 +2433,8 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		nx  = im_M[0].get_attr('or_nx')
 		ny  = im_M[0].get_attr('or_ny')
 		nz  = im_M[0].get_attr('or_nz')
-		buf = utilities.model_blank(nx, ny, nz)
-		fundamentals.fftip(buf)		
+		buf = sparx_utilities.model_blank(nx, ny, nz)
+		sparx_fundamentals.fftip(buf)		
 		nx   = im_M[0].get_xsize()
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
@@ -2719,7 +2444,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
 		norm = nx * ny * nz
-		buf  = utilities.model_blank(nx, ny, nz)
+		buf  = sparx_utilities.model_blank(nx, ny, nz)
 
 	# Variables			
 	if rand_seed > 0:  random.seed(rand_seed)
@@ -2777,16 +2502,16 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 				
 				# compute average first step
-				CTFxF = filter.filt_table(im_M[im], ctf[im])
+				CTFxF = sparx_filter.filt_table(im_M[im], ctf[im])
 				EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 						
 			for k in range(K):
 				for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-				Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
+				Cls['ave'][k] = sparx_filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 			# compute Ji and Je
 			for n in range(N):
-				CTFxAve               = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+				CTFxAve               = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 			Je = 0
 			for k in range(K):        Je = Cls['Ji'][k]
@@ -2809,8 +2534,8 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 		if DEBUG: print('init Je', Je)
 		
-		utilities.print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-		utilities.print_msg('Criterion: %11.6e \n' % Je)
+		sparx_utilities.print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+		sparx_utilities.print_msg('Criterion: %11.6e \n' % Je)
 
 		while change and watch_dog < maxit:
 			ite       += 1
@@ -2822,7 +2547,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			for im in range(N):
 				if CTF:
 					CTFxAVE = []
-					for k in range(K): CTFxAVE.append(filter.filt_table(Cls['ave'][k], ctf[im]))
+					for k in range(K): CTFxAVE.append(sparx_filter.filt_table(Cls['ave'][k], ctf[im]))
 					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAVE)
 				else:
 					res = EMAN2_cppwrap.Util.min_dist_real(im_M[im], Cls['ave'])
@@ -2861,7 +2586,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			# manage empty cluster
 			for k in range(K):
 				if Cls['n'][k] <= 1:
-					utilities.print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
+					sparx_utilities.print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
 					flag_empty = True
 					break
 			if flag_empty: break
@@ -2881,16 +2606,16 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 
 					# compute average first step
-					CTFxF = filter.filt_table(im_M[im], ctf[im])
+					CTFxF = sparx_filter.filt_table(im_M[im], ctf[im])
 					EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 
 				for k in range(K):
 					for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-					Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
+					Cls['ave'][k] = sparx_filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 				# compute Ji and Je
 				for n in range(N):
-					CTFxAve               = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+					CTFxAve               = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 				Je = 0
 				for k in range(K):       Je += Cls['Ji'][k]
@@ -2913,11 +2638,11 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				if thd < 1.0e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
 				if T < 0.009 and ct_pert < 5: SA = False
-				utilities.print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
+				sparx_utilities.print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
 				if DEBUG: print('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert))
 			else:
 				if thd < 1.0e-8: watch_dog = maxit
-				utilities.print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
+				sparx_utilities.print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
 				if DEBUG: print('> iteration: %5d    criterion: %11.6e' % (ite, Je))
 
 			old_Je = Je
@@ -2928,7 +2653,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				MemCls[ntrials-1]    = copy.deepcopy(Cls)
 				MemJe[ntrials-1]     = copy.deepcopy(Je)
 				MemAssign[ntrials-1] = copy.deepcopy(assign)
-				utilities.print_msg('# Criterion: %11.6e \n' % Je)
+				sparx_utilities.print_msg('# Criterion: %11.6e \n' % Je)
 				ALL_EMPTY = False
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -2941,11 +2666,11 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					if ntrials == trials:
 						#print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 						#sys.exit()
-						utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
+						sparx_utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
 						
-					else:	utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+					else:	sparx_utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
-					utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					sparx_utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
 				wd_trials = 0
 			else:
@@ -2955,7 +2680,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	
 	if trials > 1:
 		if ALL_EMPTY:
-			utilities.print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+			sparx_utilities.print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
 			sys.exit()
 						
 	# if severals trials choose the best
@@ -2975,7 +2700,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	if CTF:
 		# compute Ji and the variance S (F - CTF * Ave)**2
 		for n in range(N):
-			CTFxAve   	      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])	
+			CTFxAve   	      = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])	
 			Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 			
 			buf.to_zero()
@@ -3009,9 +2734,9 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			Cls['var'][k].depad()
 
 	# information display
-	utilities.running_time(t_start)
-	utilities.print_msg('Criterion = %11.6e \n' % Je)
-	for k in range(K):	utilities.print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
+	sparx_utilities.running_time(t_start)
+	sparx_utilities.print_msg('Criterion = %11.6e \n' % Je)
+	for k in range(K):	sparx_utilities.print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 
 	# to debug
 	if DEBUG: print(Cls['n'])
@@ -3050,7 +2775,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 	if mask != None:
 		if isinstance(mask, str):
-			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			sparx_global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
 
@@ -3061,8 +2786,8 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		nx  = im_M[0].get_attr('or_nx')
 		ny  = im_M[0].get_attr('or_ny')
 		nz  = im_M[0].get_attr('or_nz')
-		buf = utilities.model_blank(nx, ny, nz)
-		fundamentals.fftip(buf)		
+		buf = sparx_utilities.model_blank(nx, ny, nz)
+		sparx_fundamentals.fftip(buf)		
 		nx   = im_M[0].get_xsize()
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
@@ -3072,7 +2797,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
 		norm = nx * ny * nz
-		buf  = utilities.model_blank(nx, ny, nz)
+		buf  = sparx_utilities.model_blank(nx, ny, nz)
 
 	# Variables
 	if(rand_seed > 0):  random.seed(rand_seed)
@@ -3129,17 +2854,17 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 				
 				# compute average first step
-				CTFxF = filter.filt_table(im_M[im], ctf[im])
+				CTFxF = sparx_filter.filt_table(im_M[im], ctf[im])
 				EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 
 			for k in range(K):
 				valCTF = [0] * len_ctm
 				for i in range(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-				Cls['ave'][k] = filter.filt_table(Cls['ave'][k], valCTF)
+				Cls['ave'][k] = sparx_filter.filt_table(Cls['ave'][k], valCTF)
 
 			## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 			for n in range(N):
-				CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+				CTFxAve		      = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 			Je = 0
 			for k in range(K):	  Je += Cls['Ji'][k]
@@ -3162,8 +2887,8 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 		if DEBUG: print('init Je', Je)
 
-		utilities.print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-		utilities.print_msg('Criterion: %11.6e \n' % Je)
+		sparx_utilities.print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+		sparx_utilities.print_msg('Criterion: %11.6e \n' % Je)
 
 		while change and watch_dog < maxit:
 			ite       += 1
@@ -3183,7 +2908,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					# CTF: (F - CTFxAve)**2
 					CTFxAve = []
 					for k in range(K):
-						tmp = filter.filt_table(Cls['ave'][k], ctf[im])
+						tmp = sparx_filter.filt_table(Cls['ave'][k], ctf[im])
 						CTFxAve.append(tmp.copy())
 					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAve)
 				else:
@@ -3234,12 +2959,12 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 							valCTF[i] = Cls_ctf2[assign_from][i] - ctf2[im][i]
 							valCTF[i] = ctf[im][i] / valCTF[i]
 						# compute CTFxAve
-						CTFxAve = filter.filt_table(Cls['ave'][assign_from], ctf[im])
+						CTFxAve = sparx_filter.filt_table(Cls['ave'][assign_from], ctf[im])
 						# compute F - CTFxAve
 						buf.to_zero()
 						buf = EMAN2_cppwrap.Util.subn_img(im_M[im], CTFxAve) 
 						# compute valCTF * (F - CTFxAve)
-						buf = filter.filt_table(buf, valCTF)
+						buf = sparx_filter.filt_table(buf, valCTF)
 						# sub the value at the average
 						EMAN2_cppwrap.Util.sub_img(Cls['ave'][assign_from], buf)
 
@@ -3248,12 +2973,12 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 						for i in range(len_ctm):
 							valCTF[i] = ctf[im][i] / (Cls_ctf2[assign_to][i] + ctf2[im][i])
 						# compute CTFxAve
-						CTFxAve = filter.filt_table(Cls['ave'][assign_to], ctf[im])
+						CTFxAve = sparx_filter.filt_table(Cls['ave'][assign_to], ctf[im])
 						# compute F - CTFxAve
 						buf.to_zero()
 						buf = EMAN2_cppwrap.Util.subn_img(im_M[im], CTFxAve) 
 						# compute valCTF * (F - CTFxAve)
-						buf = filter.filt_table(buf, valCTF)
+						buf = sparx_filter.filt_table(buf, valCTF)
 						# add the value at the average
 						EMAN2_cppwrap.Util.add_img(Cls['ave'][assign_to], buf)
 					else:
@@ -3281,7 +3006,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					# empty cluster control
 					
 					if Cls['n'][assign_from] <= 1:
-						utilities.print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
+						sparx_utilities.print_msg('>>> WARNING: Empty cluster, restart with new partition %d.\n\n' % wd_trials)
 						flag_empty = True
 												
 					change = True
@@ -3296,7 +3021,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
-					CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+					CTFxAve		      = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
@@ -3316,11 +3041,11 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				if thd < 1e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
 				if T < 0.009: SA = False
-				utilities.print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
+				sparx_utilities.print_msg('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d\n' % (ite, Je, T, ct_pert))
 				if DEBUG: print('> iteration: %5d    criterion: %11.6e    T: %13.8f  ct disturb: %5d' % (ite, Je, T, ct_pert))
 			else:
 				if thd < 1e-8: watch_dog = maxit
-				utilities.print_msg('> iteration: %5d    criterion: %11.6e\n'%(ite, Je))
+				sparx_utilities.print_msg('> iteration: %5d    criterion: %11.6e\n'%(ite, Je))
 				if DEBUG: print('> iteration: %5d    criterion: %11.6e'%(ite, Je))
 
 			old_Je = Je
@@ -3335,16 +3060,16 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					# compute Sum ctf2
 					for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 					# compute average first step
-					CTFxF = filter.filt_table(im_M[im], ctf[im])
+					CTFxF = sparx_filter.filt_table(im_M[im], ctf[im])
 					EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 				for k in range(K):
 					valCTF = [0] * len_ctm
 					for i in range(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-					Cls['ave'][k] = filter.filt_table(Cls['ave'][k], valCTF)
+					Cls['ave'][k] = sparx_filter.filt_table(Cls['ave'][k], valCTF)
 				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
-					CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+					CTFxAve		      = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
@@ -3366,7 +3091,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				MemCls[ntrials-1]    = copy.deepcopy(Cls)
 				MemJe[ntrials-1]     = copy.deepcopy(Je)
 				MemAssign[ntrials-1] = copy.deepcopy(assign)
-				utilities.print_msg('# Criterion: %11.6e \n' % Je)
+				sparx_utilities.print_msg('# Criterion: %11.6e \n' % Je)
 				ALL_EMPTY = False
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -3380,10 +3105,10 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					if ntrials == trials:
 						#print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 						#sys.exit()
-						utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
-					else:	utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+						sparx_utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty. \n\n')
+					else:	sparx_utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
-					utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					sparx_utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
 				wd_trials = 0
 			else:
@@ -3391,7 +3116,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 	if trials > 1:
 		if ALL_EMPTY:
-			utilities.print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+			sparx_utilities.print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
 			sys.exit()
 
 	# if severals trials choose the best
@@ -3413,7 +3138,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		for k in range(K): Cls['var'][k] = buf.copy()
 		
 		for n in range(N):
-			CTFxAve = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+			CTFxAve = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 			
 			buf.to_zero()
 			buf     = EMAN2_cppwrap.Util.subn_img(im_M[n], CTFxAve)
@@ -3443,9 +3168,9 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			Cls['var'][k].depad()
 
 	# information display
-	utilities.running_time(t_start)
-	utilities.print_msg('Criterion = %11.6e \n' % Je)
-	for k in range(K):	utilities.print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
+	sparx_utilities.running_time(t_start)
+	sparx_utilities.print_msg('Criterion = %11.6e \n' % Je)
+	for k in range(K):	sparx_utilities.print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 	
 	# to debug
 	if DEBUG: print(Cls['n'])
@@ -3470,10 +3195,10 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 	if myid == main_node:
 		je_return = [0.0]*(ncpu)
 		for n1 in range(ncpu):
-			if n1 != main_node: je_return[n1]	=	mpi.mpi_recv(1, mpi.MPI_FLOAT, n1, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+			if n1 != main_node: je_return[n1]	=	mpi.mpi_recv(1, mpi.MPI_FLOAT, n1, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 			else:               je_return[main_node]  = Je
 	else:
-		mpi.mpi_send(Je, 1, mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+		mpi.mpi_send(Je, 1, mpi.MPI_FLOAT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 	n_best = -1
 	if(myid == main_node):
 		je_return = list(map(float, je_return))
@@ -3490,18 +3215,18 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 					n_best = i
 		#print "main_node n_best===", n_best
 
-	n_best = utilities.bcast_number_to_all(n_best,   source_node = main_node)
+	n_best = sparx_utilities.bcast_number_to_all(n_best,   source_node = main_node)
 
 	if( n_best >=0):
 		
 		if myid == main_node:
 			assign_return = [0]*(N)
 			if n_best == main_node: assign_return[0:N-1] = assign[0:N-1] 
-			else: assign_return = mpi.mpi_recv(N, mpi.MPI_INT, n_best, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+			else: assign_return = mpi.mpi_recv(N, mpi.MPI_INT, n_best, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
 		else:
 			if n_best == myid:
-				mpi.mpi_send(assign, N, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+				mpi.mpi_send(assign, N, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
 		if myid == main_node:	
 			r_Cls={}
@@ -3516,21 +3241,21 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 
 			if n_best == main_node: r_Cls['n'] = Cls['n'] 
 			else:
-				r_Cls['n'] = mpi.mpi_recv(K, mpi.MPI_INT, n_best, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+				r_Cls['n'] = mpi.mpi_recv(K, mpi.MPI_INT, n_best, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 				r_Cls['n'] = list(map(int, r_Cls['n']))
 
 		else:
 			if n_best == myid:
-				mpi.mpi_send(Cls['n'], K, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+				mpi.mpi_send(Cls['n'], K, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		# get 'Ji'
 		if myid == main_node:
 
 			if n_best == main_node: r_Cls['Ji'] = Cls['Ji'] 
-			else: r_Cls['Ji'] = mpi.mpi_recv(K, mpi.MPI_FLOAT, n_best, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+			else: r_Cls['Ji'] = mpi.mpi_recv(K, mpi.MPI_FLOAT, n_best, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
 		else:
 			if n_best == myid:
-				mpi.mpi_send(Cls['Ji'], K, mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+				mpi.mpi_send(Cls['Ji'], K, mpi.MPI_FLOAT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
 
 		for k in range( K):
@@ -3542,13 +3267,13 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 					r_Cls['ave'][k] = Cls['ave'][k] 
 					r_Cls['var'][k] = Cls['var'][k]
 				else: 
-					r_Cls['ave'][k] = utilities.recv_EMData( n_best, tag_cls_ave )
-					r_Cls['var'] [k]= utilities.recv_EMData( n_best, tag_cls_var )
+					r_Cls['ave'][k] = sparx_utilities.recv_EMData( n_best, tag_cls_ave )
+					r_Cls['var'] [k]= sparx_utilities.recv_EMData( n_best, tag_cls_var )
 
 			else:
 				if n_best == myid:
-					utilities.send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
-					utilities.send_EMData( Cls['var'][k], main_node, tag_cls_var )	
+					sparx_utilities.send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
+					sparx_utilities.send_EMData( Cls['var'][k], main_node, tag_cls_var )	
 
 
 			mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -3592,9 +3317,9 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			if n == main_node:
 				r_assign[ n ] = assign
 			else:
-				r_assign[ n ] = mpi.mpi_recv(N, mpi.MPI_INT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+				r_assign[ n ] = mpi.mpi_recv(N, mpi.MPI_INT, n, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 	else:
-		mpi.mpi_send(assign, N, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+		mpi.mpi_send(assign, N, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		
 	
 	if  myid == main_node:
@@ -3619,11 +3344,11 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			if n == main_node:
 				(r_cls[n])['n'] = Cls['n']
 			else:
-				(r_cls[n])['n'] = mpi.mpi_recv(K, mpi.MPI_INT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+				(r_cls[n])['n'] = mpi.mpi_recv(K, mpi.MPI_INT, n, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		
 		else:
 			if myid == n:
-				mpi.mpi_send(Cls['n'], K, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)	
+				mpi.mpi_send(Cls['n'], K, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)	
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	"""Multiline Comment8"""
 	if myid == main_node:
@@ -3631,9 +3356,9 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 			if n == main_node:
 				(r_cls[n])['Ji'] = Cls['Ji']
 			else:
-				(r_cls[n])['Ji'] = mpi.mpi_recv(K, mpi.MPI_FLOAT, n, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+				(r_cls[n])['Ji'] = mpi.mpi_recv(K, mpi.MPI_FLOAT, n, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 	else:
-		mpi.mpi_send(Cls['Ji'], K, mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+		mpi.mpi_send(Cls['Ji'], K, mpi.MPI_FLOAT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		
 
 	for k in range( K):	
@@ -3645,12 +3370,12 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 					(r_cls[n])['ave'][k] = Cls['ave'][k]
 					(r_cls[n])['var'][k] = Cls['var'][k]
 				else:
-					(r_cls[n])['ave'][k] = utilities.recv_EMData( n, tag_cls_ave )
-					(r_cls[n])['var'][k] = utilities.recv_EMData( n, tag_cls_var )
+					(r_cls[n])['ave'][k] = sparx_utilities.recv_EMData( n, tag_cls_ave )
+					(r_cls[n])['var'][k] = sparx_utilities.recv_EMData( n, tag_cls_var )
 
 		else:
-			utilities.send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
-			utilities.send_EMData( Cls['var'][k], main_node, tag_cls_var )	
+			sparx_utilities.send_EMData( Cls['ave'][k], main_node, tag_cls_ave )	
+			sparx_utilities.send_EMData( Cls['var'][k], main_node, tag_cls_var )	
 
 
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -3693,7 +3418,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 
 	if mask != None:
 		if isinstance(mask, str):
-			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			sparx_global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
 
@@ -3704,8 +3429,8 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 		nx  = im_M[0].get_attr('or_nx')
 		ny  = im_M[0].get_attr('or_ny')
 		nz  = im_M[0].get_attr('or_nz')
-		buf = utilities.model_blank(nx, ny, nz)
-		fundamentals.fftip(buf)		
+		buf = sparx_utilities.model_blank(nx, ny, nz)
+		sparx_fundamentals.fftip(buf)		
 		nx   = im_M[0].get_xsize()
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
@@ -3715,7 +3440,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
 		norm = nx * ny * nz
-		buf  = utilities.model_blank(nx, ny, nz)
+		buf  = sparx_utilities.model_blank(nx, ny, nz)
 
 	# Variables
 	if(rand_seed > 0):  random.seed(rand_seed)
@@ -3775,17 +3500,17 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 				
 				# compute average first step
-				CTFxF = filter.filt_table(im_M[im], ctf[im])
+				CTFxF = sparx_filter.filt_table(im_M[im], ctf[im])
 				EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 
 			for k in range(K):
 				valCTF = [0] * len_ctm
 				for i in range(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-				Cls['ave'][k] = filter.filt_table(Cls['ave'][k], valCTF)
+				Cls['ave'][k] = sparx_filter.filt_table(Cls['ave'][k], valCTF)
 
 			## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 			for n in range(N):
-				CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+				CTFxAve		      = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 			Je = 0
 			for k in range(K):	  Je += Cls['Ji'][k]
@@ -3829,7 +3554,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 					# CTF: (F - CTFxAve)**2
 					CTFxAve = []
 					for k in range(K):
-						tmp = filter.filt_table(Cls['ave'][k], ctf[im])
+						tmp = sparx_filter.filt_table(Cls['ave'][k], ctf[im])
 						CTFxAve.append(tmp.copy())
 					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAve)
 				else:
@@ -3880,12 +3605,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 							valCTF[i] = Cls_ctf2[assign_from][i] - ctf2[im][i]
 							valCTF[i] = ctf[im][i] / valCTF[i]
 						# compute CTFxAve
-						CTFxAve = filter.filt_table(Cls['ave'][assign_from], ctf[im])
+						CTFxAve = sparx_filter.filt_table(Cls['ave'][assign_from], ctf[im])
 						# compute F - CTFxAve
 						buf.to_zero()
 						buf = EMAN2_cppwrap.Util.subn_img(im_M[im], CTFxAve) 
 						# compute valCTF * (F - CTFxAve)
-						buf = filter.filt_table(buf, valCTF)
+						buf = sparx_filter.filt_table(buf, valCTF)
 						# sub the value at the average
 						EMAN2_cppwrap.Util.sub_img(Cls['ave'][assign_from], buf)
 
@@ -3894,12 +3619,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 						for i in range(len_ctm):
 							valCTF[i] = ctf[im][i] / (Cls_ctf2[assign_to][i] + ctf2[im][i])
 						# compute CTFxAve
-						CTFxAve = filter.filt_table(Cls['ave'][assign_to], ctf[im])
+						CTFxAve = sparx_filter.filt_table(Cls['ave'][assign_to], ctf[im])
 						# compute F - CTFxAve
 						buf.to_zero()
 						buf = EMAN2_cppwrap.Util.subn_img(im_M[im], CTFxAve) 
 						# compute valCTF * (F - CTFxAve)
-						buf = filter.filt_table(buf, valCTF)
+						buf = sparx_filter.filt_table(buf, valCTF)
 						# add the value at the average
 						EMAN2_cppwrap.Util.add_img(Cls['ave'][assign_to], buf)
 					else:
@@ -3941,7 +3666,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
-					CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+					CTFxAve		      = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
@@ -3980,16 +3705,16 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 					# compute Sum ctf2
 					for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 					# compute average first step
-					CTFxF = filter.filt_table(im_M[im], ctf[im])
+					CTFxF = sparx_filter.filt_table(im_M[im], ctf[im])
 					EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 				for k in range(K):
 					valCTF = [0] * len_ctm
 					for i in range(len_ctm):	valCTF[i] = 1.0 / float(Cls_ctf2[k][i])
-					Cls['ave'][k] = filter.filt_table(Cls['ave'][k], valCTF)
+					Cls['ave'][k] = sparx_filter.filt_table(Cls['ave'][k], valCTF)
 				## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
-					CTFxAve		      = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+					CTFxAve		      = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
@@ -4041,7 +3766,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 		for k in range(K): Cls['var'][k] = buf.copy()
 		
 		for n in range(N):
-			CTFxAve = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+			CTFxAve = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 			
 			buf.to_zero()
 			buf     = EMAN2_cppwrap.Util.subn_img(im_M[n], CTFxAve)
@@ -4125,7 +3850,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 	if mask != None:
 		if isinstance(mask, str):
-			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			sparx_global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	
 	# [id]   part of code different for each node
@@ -4140,8 +3865,8 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		nx  = im_M[N_start].get_attr('or_nx')
 		ny  = im_M[N_start].get_attr('or_ny')
 		nz  = im_M[N_start].get_attr('or_nz')
-		buf = utilities.model_blank(nx, ny, nz)
-		fundamentals.fftip(buf)		
+		buf = sparx_utilities.model_blank(nx, ny, nz)
+		sparx_fundamentals.fftip(buf)		
 		nx   = im_M[N_start].get_xsize()
 		ny   = im_M[N_start].get_ysize()
 		nz   = im_M[N_start].get_zsize()
@@ -4151,7 +3876,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		ny   = im_M[N_start].get_ysize()
 		nz   = im_M[N_start].get_zsize()
 		norm = nx * ny * nz
-		buf  = utilities.model_blank(nx, ny, nz)
+		buf  = sparx_utilities.model_blank(nx, ny, nz)
 	
 	# [all] define parameters
 	if rand_seed > 0: random.seed(rand_seed)
@@ -4209,7 +3934,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					if Cls['n'][k] <= 1:
 						flag = 0
 						if retrial == 0:
-							utilities.print_msg('Empty class in the initialization k_means_cla_MPI\n')
+							sparx_utilities.print_msg('Empty class in the initialization k_means_cla_MPI\n')
 							FLAG_EXIT = 1
 							flag      = 1
 						for k in range(K):
@@ -4243,7 +3968,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				for i in range(len_ctm):
 					Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
 				# ave
-				CTFxF = filter.filt_table(im_M[im], ctf[im])
+				CTFxF = sparx_filter.filt_table(im_M[im], ctf[im])
 				EMAN2_cppwrap.Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
 
 			# [sync] waiting the result
@@ -4255,15 +3980,15 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				Cls_ctf2[k] = mpi.mpi_bcast(Cls_ctf2[k],  len_ctm, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 				Cls_ctf2[k] = list(map(float, Cls_ctf2[k]))    # convert array gave by MPI to list
 
-				utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-				utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+				sparx_utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+				sparx_utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
 				for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / Cls_ctf2[k][i]
-				Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
+				Cls['ave'][k] = sparx_filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 			# [id] compute Ji
 			for im in range(N_start, N_stop):
-				CTFxAve = filter.filt_table(Cls['ave'][int(assign[im])], ctf[im])
+				CTFxAve = sparx_filter.filt_table(Cls['ave'][int(assign[im])], ctf[im])
 				Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
 
 		else:
@@ -4275,8 +4000,8 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 			# [all] compute global sum, broadcast the results and obtain the average
 			for k in range(K):
-				utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-				utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+				sparx_utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+				sparx_utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 				Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 			# [id] compute Ji
@@ -4300,8 +4025,8 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		old_Je    = 0
 		change    = 1
 		if myid == main_node:
-			utilities.print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
-			utilities.print_msg('Criterion: %11.6e \n' % Je)
+			sparx_utilities.print_msg('\n__ Trials: %2d _________________________________%s\n'%(ntrials, time.strftime('%a_%d_%b_%Y_%H_%M_%S', time.localtime())))
+			sparx_utilities.print_msg('Criterion: %11.6e \n' % Je)
 		
 		while change and watch_dog < maxit:
 			ite       += 1
@@ -4318,7 +4043,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				if CTF:
 					CTFxAve = []
 					for k in range(K):
-						tmp = filter.filt_table(Cls['ave'][k], ctf[im])
+						tmp = sparx_filter.filt_table(Cls['ave'][k], ctf[im])
 						CTFxAve.append(tmp.copy())
 					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAve)
 				else:
@@ -4368,7 +4093,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			FLAG_EMPTY = 0
 			for k in range(K):
 				if Cls['n'][k] <= 1:
-					if myid == main_node: utilities.print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
+					if myid == main_node: sparx_utilities.print_msg('>>> WARNING: Empty cluster, restart with new partition.\n\n')
 					FLAG_EMPTY = 1
 					break
 				
@@ -4390,7 +4115,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					for i in range(len_ctm):
 						Cls_ctf2[int(assign[im])][i] += ctf2[im][i]
 					# ave
-					CTFxF = filter.filt_table(im_M[im], ctf[im])
+					CTFxF = sparx_filter.filt_table(im_M[im], ctf[im])
 					EMAN2_cppwrap.Util.add_img(Cls['ave'][int(assign[im])], CTFxF)
 				
 				# [sync] waiting the result
@@ -4402,15 +4127,15 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					Cls_ctf2[k] = mpi.mpi_bcast(Cls_ctf2[k], len_ctm, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 					Cls_ctf2[k] = list(map(float, Cls_ctf2[k])) # convert array gave by MPI to list
 
-					utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-					utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+					sparx_utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+					sparx_utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 					
 					for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-					Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
+					Cls['ave'][k] = sparx_filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 				# [id] compute Ji
 				for im in range(N_start, N_stop):
-					CTFxAve = filter.filt_table(Cls['ave'][int(assign[im])], ctf[im])
+					CTFxAve = sparx_filter.filt_table(Cls['ave'][int(assign[im])], ctf[im])
 					Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
 			
 			else:			
@@ -4422,8 +4147,8 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 
 				# [all] compute global sum, broadcast the results and obtain the average
 				for k in range(K):
-					utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-					utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+					sparx_utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+					sparx_utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 					Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 				# [id] compute Ji
@@ -4451,11 +4176,11 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				T *= F
 				if T < 0.009 and ct_pert < 5: SA = False
 				#[id] informations display
-				if myid == main_node: utilities.print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
+				if myid == main_node: sparx_utilities.print_msg('> iteration: %5d    criterion: %11.6e   T: %13.8f  disturb:  %5d\n' % (ite, Je, T, ct_pert))
 			else:
 				if thd < 1e-8:	change = 0
 				# [id] informations display
-				if myid == main_node: utilities.print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
+				if myid == main_node: sparx_utilities.print_msg('> iteration: %5d    criterion: %11.6e\n' % (ite, Je))
 				
 			old_Je = Je
 			
@@ -4473,7 +4198,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				MemCls[ntrials-1]    = copy.deepcopy(Cls)
 				MemJe[ntrials-1]     = copy.deepcopy(Je)
 				MemAssign[ntrials-1] = copy.deepcopy(assign)
-				if myid == main_node: utilities.print_msg('# Criterion: %11.6e \n' % Je)
+				if myid == main_node: sparx_utilities.print_msg('# Criterion: %11.6e \n' % Je)
 				ALL_EMPTY = False
 			# set to zero watch dog trials
 			wd_trials = 0
@@ -4486,12 +4211,12 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					if ntrials == trials:
 						#if myid == main_node: print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 						#sys.exit()
-						if myid == main_node: utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty.\n\n')
+						if myid == main_node: sparx_utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty.\n\n')
 					else:
-						if myid == main_node: utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
+						if myid == main_node: sparx_utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, start the next trial.\n\n')
 				else:
 					
-					if myid == main_node: utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+					if myid == main_node: sparx_utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 					sys.exit()
 				wd_trials = 0
 			else:
@@ -4499,7 +4224,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	
 	if trials > 1:
 		if ALL_EMPTY:
-			if myid == main_node: utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
+			if myid == main_node: sparx_utilities.print_msg('>>> WARNING: After ran 10 times with different partitions, one cluster is still empty, STOP k-means.\n\n')
 			sys.exit()
 			
 	# if severals trials choose the best
@@ -4518,7 +4243,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	if CTF:
 		# [id] compute Ji and the variance S (F - CTFxAve)**2
 		for im in range(N_start, N_stop):
-			CTFxAve = filter.filt_table(Cls['ave'][int(assign[im])], ctf[im])
+			CTFxAve = sparx_filter.filt_table(Cls['ave'][int(assign[im])], ctf[im])
 			Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
 			
 			buf.to_zero()
@@ -4533,7 +4258,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		Cls['Ji'] = mpi.mpi_bcast(Cls['Ji'],  K, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 		Cls['Ji'] = list(map(float, Cls['Ji']))
 		for k in range(K):
-			utilities.reduce_EMData_to_root(Cls['var'][k], myid, main_node)
+			sparx_utilities.reduce_EMData_to_root(Cls['var'][k], myid, main_node)
 			
 	else:
 		# [id] compute Ji and the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)	
@@ -4549,7 +4274,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		Cls['Ji'] = mpi.mpi_bcast(Cls['Ji'],  K, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 		Cls['Ji'] = list(map(float, Cls['Ji']))
 		
-		for k in range(K): utilities.reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
+		for k in range(K): sparx_utilities.reduce_EMData_to_root(Cls['var'][k], myid, main_node)	
 		
 		# [main] caclculate the variance for each cluster
 		if myid == main_node:
@@ -4586,9 +4311,9 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			
 	# [main_node] information display
 	if myid == main_node:
-		utilities.running_time(t_start)
-		utilities.print_msg('Criterion = %11.6e \n' % Je)
-		for k in range(K):	utilities.print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
+		sparx_utilities.running_time(t_start)
+		sparx_utilities.print_msg('Criterion = %11.6e \n' % Je)
+		for k in range(K):	sparx_utilities.print_msg('Cls[%i]: %i\n'%(k, Cls['n'][k]))
 
 	# [all] waiting all nodes
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -4641,7 +4366,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 				T      = Kmeans.get_T()
 				ct     = Kmeans.get_ct_im_mv()
 
-				utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+				sparx_utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
 				if ct == 0: memct += 1
 				else:       memct  = 0
 				T *= F
@@ -4650,7 +4375,7 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 			else:   
 				status = Kmeans.one_iter()
 				ct     = Kmeans.get_ct_im_mv()
-				utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+				sparx_utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
 				if status == 255: break
 
 			ite += 1
@@ -4665,8 +4390,8 @@ def k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdi
 			k_means_cuda_error(status)
 			exit()
 
-		utilities.running_time(t_start)
-		utilities.print_msg('Number of iterations        : %i\n' % ite)	
+		sparx_utilities.running_time(t_start)
+		sparx_utilities.print_msg('Number of iterations        : %i\n' % ite)	
 		Ji   = Kmeans.compute_ji()
 		crit = Kmeans.compute_criterion(Ji)
 		AVE  = Kmeans.get_AVE()
@@ -4727,7 +4452,7 @@ def k_means_SSE_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, o
 				T      = Kmeans.get_T()
 				ct     = Kmeans.get_ct_im_mv()
 
-				utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
+				sparx_utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d\n' % (ite, T, ct))
 				if ct == 0: memct += 1
 				else:       memct  = 0
 				T *= F
@@ -4736,7 +4461,7 @@ def k_means_SSE_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, o
 			else:   
 				status = Kmeans.one_iter_SSE()
 				ct     = Kmeans.get_ct_im_mv()
-				utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+				sparx_utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
 				
 				if status == 255: break
 
@@ -4753,8 +4478,8 @@ def k_means_SSE_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, o
 			exit()
 
 		#Kmeans.AVE_to_host()
-		utilities.running_time(t_start)
-		utilities.print_msg('Number of iterations        : %i\n' % ite)	
+		sparx_utilities.running_time(t_start)
+		sparx_utilities.print_msg('Number of iterations        : %i\n' % ite)	
 		Ji   = Kmeans.compute_ji()
 		crit = Kmeans.compute_criterion(Ji)
 		AVE  = Kmeans.get_AVE()
@@ -4794,7 +4519,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 	#if myid == main_node: t1 = time()
 	# Init memory
 	Kmeans                = MPICUDA_kmeans()
-	N_start, N_stop       = applications.MPI_start_end(N, ncpu, myid)
+	N_start, N_stop       = sparx_applications.MPI_start_end(N, ncpu, myid)
 	lut                   = LUT[N_start:N_stop]
 	n                     = len(lut)
 
@@ -4804,7 +4529,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 	for im in range(ncpu):
 		if im == main_node:  disps.append(0)
 		else:                disps.append(disps[im-1] + recvcount[im-1])
-		ib, ie = applications.MPI_start_end(N, ncpu, im)
+		ib, ie = sparx_applications.MPI_start_end(N, ncpu, im)
 		recvcount.append(ie - ib)
 
 	status = Kmeans.setup(m, N, n, K, N_start) 
@@ -4861,7 +4586,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 				if ct == 0: ctconv += 1
 				else:       ctconv  = 0
 				if myid == main_node:
-					utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d %5d\n' % (ite, T, ct, ctconv))
+					sparx_utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d %5d\n' % (ite, T, ct, ctconv))
 				T *= F
 				Kmeans.set_T(T)
 				
@@ -4872,7 +4597,7 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 				
 				ct     = Kmeans.get_ct_im_mv()
 				if myid == main_node:
-					utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+					sparx_utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
 				if status != 0: stop = 1
 			stop = mpi.mpi_reduce(stop, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, mpi.MPI_COMM_WORLD)
 			stop = mpi.mpi_bcast(stop, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD)
@@ -4920,8 +4645,8 @@ def k_means_CUDA_MPI(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, m
 			exit()
 
 		if myid == main_node:
-			utilities.running_time(tstart)
-			utilities.print_msg('Number of iterations        : %i\n' % ite)
+			sparx_utilities.running_time(tstart)
+			sparx_utilities.print_msg('Number of iterations        : %i\n' % ite)
 		ji   = Kmeans.compute_ji()
 		Ji   = mpi.mpi_reduce(ji, K, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
 		Ji   = mpi.mpi_bcast(Ji, K, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
@@ -4954,7 +4679,7 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 
 	# Init memory
 	Kmeans                = MPICUDA_kmeans()
-	N_start, N_stop       = applications.MPI_start_end(N, ncpu, myid)
+	N_start, N_stop       = sparx_applications.MPI_start_end(N, ncpu, myid)
 	lut                   = LUT[N_start:N_stop]
 	n                     = len(lut)
 
@@ -4964,7 +4689,7 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 	for im in range(ncpu):
 		if im == main_node:  disps.append(0)
 		else:                disps.append(disps[im-1] + recvcount[im-1])
-		ib, ie = applications.MPI_start_end(N, ncpu, im)
+		ib, ie = sparx_applications.MPI_start_end(N, ncpu, im)
 		recvcount.append(ie - ib)
 
 	status = Kmeans.setup(m, N, n, K, N_start) 
@@ -5019,7 +4744,7 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 			if ct == 0: ctconv += 1
 			else:       ctconv  = 0
 			if myid == main_node:
-				utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d %5d\n' % (ite, T, ct, ctconv))
+				sparx_utilities.print_msg('> iteration: %5d    T: %13.8f    ct disturb: %5d %5d\n' % (ite, T, ct, ctconv))
 			T *= F
 			Kmeans.set_T(T)
 			
@@ -5029,7 +4754,7 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 			status = Kmeans.one_iter()
 			ct     = Kmeans.get_ct_im_mv()
 			if myid == main_node:
-				utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
+				sparx_utilities.print_msg('> iteration: %5d                        ct disturb: %5d\n' % (ite, ct))
 			if status != 0: stop = 1
 		stop = mpi.mpi_reduce(stop, 1, mpi.MPI_INT, mpi.MPI_LOR, main_node, comm)
 		stop = mpi.mpi_bcast(stop, 1, mpi.MPI_INT, main_node, comm)
@@ -5076,8 +4801,8 @@ def k_means_CUDA_MPI_YANG(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_se
 		exit(5)
 
 	if myid == main_node:
-		utilities.running_time(tstart)
-		utilities.print_msg('Number of iterations        : %i\n' % ite)
+		sparx_utilities.running_time(tstart)
+		sparx_utilities.print_msg('Number of iterations        : %i\n' % ite)
 	ji   = Kmeans.compute_ji()
 	Ji   = mpi.mpi_reduce(ji, K, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm)
 	Ji   = mpi.mpi_bcast(Ji, K, mpi.MPI_FLOAT, main_node, comm)
@@ -5129,13 +4854,13 @@ def k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed
 	pass#IMPORTIMPORTIMPORT from statistics  import k_means_init_open_im
 	pass#IMPORTIMPORTIMPORT import os, sys, time
 
-	if os.path.exists(outdir): global_def.ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_serial", 1)
+	if os.path.exists(outdir): sparx_global_def.ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_serial", 1)
 	os.mkdir(outdir)
 
 	t_start = time.time()
-	utilities.print_begin_msg('k-means groups')	
+	sparx_utilities.print_begin_msg('k-means groups')	
 
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 	LUT, mask, N, m, Ntot = k_means_init_open_im(stack, maskname)
@@ -5157,16 +4882,16 @@ def k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed
 	# Compute the criterion and format
 	for K in KK:
 		
-		utilities.print_msg('\n')
-		utilities.print_msg('| K=%d |====================================================================\n' % K)
+		sparx_utilities.print_msg('\n')
+		sparx_utilities.print_msg('| K=%d |====================================================================\n' % K)
 
 		try:
 			if opt_method   == 'cla': [Cls, assign] = k_means_cla(IM, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
 			elif opt_method == 'SSE': [Cls, assign] = k_means_SSE(IM, mask, K, rand_seed, maxit, trials, [CTF, ctf, ctf2], F, T0, DEBUG)
-			else:			  global_def.ERROR('Kind of k-means unknown', 'k_means_groups', 1)
+			else:			  sparx_global_def.ERROR('Kind of k-means unknown', 'k_means_groups', 1)
 
 		except SystemExit:
-			global_def.ERROR('Empty cluster, number of groups too high %d'%K, 'k_means_groups', 1)
+			sparx_global_def.ERROR('Empty cluster, number of groups too high %d'%K, 'k_means_groups', 1)
 		
 		crit = k_means_criterion(Cls, 'CHD')
 
@@ -5182,8 +4907,8 @@ def k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed
 		
 	# gnuplot script
 	k_means_groups_gnuplot(outdir + '/' + outdir + '.p', outdir, C, DB, H)
-	utilities.running_time(t_start)
-	utilities.print_end_msg('k-means groups')
+	sparx_utilities.running_time(t_start)
+	sparx_utilities.print_end_msg('k-means groups')
 
 # to figure out the number of clusters CUDA version
 def k_means_groups_CUDA(stack, outdir, maskname, K1, K2, rand_seed, maxit, F, T0):
@@ -5192,18 +4917,18 @@ def k_means_groups_CUDA(stack, outdir, maskname, K1, K2, rand_seed, maxit, F, T0
 	pass#IMPORTIMPORTIMPORT from statistics  import k_means_groups_gnuplot, k_means_CUDA
 	pass#IMPORTIMPORTIMPORT import time, os, sys
 
-	if os.path.exists(outdir): global_def.ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_CUDA", 1)
+	if os.path.exists(outdir): sparx_global_def.ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_CUDA", 1)
 	os.mkdir(outdir)
 	t_start = time.time()
 	
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
 	# init to open images
 	LUT, mask, N, m, Ntot = k_means_cuda_init_open_im(stack, maskname)
 	# write logfile
-	utilities.print_begin_msg('k-means groups')
+	sparx_utilities.print_begin_msg('k-means groups')
 	k_means_cuda_headlog(stack, outdir, 'cuda', N, [K1, K2], maskname, maxit, T0, F, rand_seed, 1, m)
 
 	# init
@@ -5219,8 +4944,8 @@ def k_means_groups_CUDA(stack, outdir, maskname, K1, K2, rand_seed, maxit, F, T0
 		
 	# Compute the criterion and format
 	for K in KK:
-		utilities.print_msg('\n')
-		utilities.print_msg('| K=%d |====================================================================\n' % K)
+		sparx_utilities.print_msg('\n')
+		sparx_utilities.print_msg('| K=%d |====================================================================\n' % K)
 
 		#try:
 		crit = k_means_CUDA(stack, mask, LUT, m, N, Ntot, K, maxit, F, T0, rand_seed, outdir, TXT, 1)
@@ -5241,8 +4966,8 @@ def k_means_groups_CUDA(stack, outdir, maskname, K1, K2, rand_seed, maxit, F, T0
 	k_means_groups_gnuplot(outdir + '/' + outdir + '.p', outdir, C, DB, H)
 		
 	# runtime
-	utilities.running_time(t_start)
-	utilities.print_end_msg('k-means groups')
+	sparx_utilities.running_time(t_start)
+	sparx_utilities.print_end_msg('k-means groups')
 
 # to figure out the number of clusters MPI version
 def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, maxit, trials, CTF, F, T0, flagnorm):
@@ -5259,11 +4984,11 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 	myid      = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 	main_node = 0
 	
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 	
-	if os.path.exists(outdir): global_def.ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1, myid)
+	if os.path.exists(outdir): sparx_global_def.ERROR('Output directory exists, please change the name and restart the program', "k_means_groups_MPI", 1, myid)
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	
 	if myid == main_node:
@@ -5294,8 +5019,8 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 	# get some criterion
 	for K in KK:
 		if myid == main_node:
-			utilities.print_msg('\n')
-			utilities.print_msg('| K=%d |====================================================================\n' % K)
+			sparx_utilities.print_msg('\n')
+			sparx_utilities.print_msg('| K=%d |====================================================================\n' % K)
 			t_start1 = time.time()
 
 		
@@ -5306,14 +5031,14 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 
 		pass#IMPORTIMPORTIMPORT from statistics import k_means_SSE_combine
 		[ assign_return, r_Cls, je_return, n_best] = k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node)
-		if myid == main_node: utilities.running_time(t_start1)
+		if myid == main_node: sparx_utilities.running_time(t_start1)
 		n_best_get = 0
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		if myid == main_node:
 			for n1 in range(ncpu):
-				if n1 != main_node: mpi.mpi_send(n_best, 1, mpi.MPI_INT, n1, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD) 
+				if n1 != main_node: mpi.mpi_send(n_best, 1, mpi.MPI_INT, n1, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD) 
 				else:               n_best_get  = n_best
-		else: n_best_get	=	mpi.mpi_recv(1, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+		else: n_best_get	=	mpi.mpi_recv(1, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 		n_best_get = int(n_best_get)
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		#print "myid==",myid," n_best==", n_best_get
@@ -5321,14 +5046,14 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 		if myid == main_node:
 
 			if n_best == -1:
-				utilities.print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
+				sparx_utilities.print_msg('>>> WARNING: All trials resulted in empty clusters, STOP k-means.\n\n')
 				#print "assign_return===", assign_return[10:20], "cls_n return==", r_Cls['n'], "Ji==", r_Cls['Ji'], "ave size ==", r_Cls['ave'][0].get_xsize()
 			else:
 				for i in range( ncpu ):
 					if( je_return[i] <0 ):
-						utilities.print_msg('> Trials: %5d    resulted in empty clusters  \n' % (i) )
+						sparx_utilities.print_msg('> Trials: %5d    resulted in empty clusters  \n' % (i) )
 					else:
-						utilities.print_msg('> Trials: %5d    criterion: %11.6e  \n' % (i, je_return[i]) )
+						sparx_utilities.print_msg('> Trials: %5d    criterion: %11.6e  \n' % (i, je_return[i]) )
 				crit = k_means_criterion(r_Cls, 'CHD')
 				#glb_assign = k_means_locasg2glbasg(assign_return, LUT, Ntot)
 				#k_means_export(r_Cls, crit, glb_assign, outdir, -1, TXT)
@@ -5356,8 +5081,8 @@ def k_means_groups_MPI(stack, outdir, maskname, opt_method, K1, K2, rand_seed, m
 	# gnuplot script
 	if myid == main_node:
 		k_means_groups_gnuplot(outdir + '/' + outdir + '.p', outdir, C, DB, H)
-		utilities.running_time(t_start)
-		utilities.print_end_msg('k-means groups')
+		sparx_utilities.running_time(t_start)
+		sparx_utilities.print_end_msg('k-means groups')
 
 ## K-MEANS CUDA ###########################################################################
 # 2009-02-20 15:39:43
@@ -5375,14 +5100,14 @@ def k_means_cuda_error(status):
 	#   6 - error to select the device
 	# 255 - k-means done
 	if status == 0 or status == 255: return
-	utilities.print_msg('============================================\n')
-	if   status == 1: utilities.print_msg('* ERROR: allocation host memory            *\n')
-	elif status == 2: utilities.print_msg('* ERROR: allocation device memory          *\n')
-	elif status == 3: utilities.print_msg('* ERROR: system device                     *\n')
-	elif status == 4: utilities.print_msg('* ERROR: random assignment (empty class)   *\n')
-	elif status == 5: utilities.print_msg('* ERROR: classification return empty class *\n')
-	elif status == 6: utilities.print_msg('* ERROR: fail to select the device         *\n')
-	utilities.print_msg('============================================\n')
+	sparx_utilities.print_msg('============================================\n')
+	if   status == 1: sparx_utilities.print_msg('* ERROR: allocation host memory            *\n')
+	elif status == 2: sparx_utilities.print_msg('* ERROR: allocation device memory          *\n')
+	elif status == 3: sparx_utilities.print_msg('* ERROR: system device                     *\n')
+	elif status == 4: sparx_utilities.print_msg('* ERROR: random assignment (empty class)   *\n')
+	elif status == 5: sparx_utilities.print_msg('* ERROR: classification return empty class *\n')
+	elif status == 6: sparx_utilities.print_msg('* ERROR: fail to select the device         *\n')
+	sparx_utilities.print_msg('============================================\n')
 
 # k-means write the head of the logfile for CUDA
 def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, F, rnd, ncpu, m):
@@ -5424,50 +5149,50 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 	device     = '%5.2f %sB' % (device, txt[ie_device])
 	host       = '%5.2f %sB' % (host,   txt[ie_host])
 
-	utilities.print_msg('\n************* k-means %s *************\n' % methodhead)
-	utilities.print_msg('Input stack                 : %s\n'     % stackname)
-	utilities.print_msg('Number of images            : %i\n'     % N)
-	utilities.print_msg('Maskfile                    : %s\n'     % maskname)
-	utilities.print_msg('Number of pixels under mask : %i\n'     % m)
-	utilities.print_msg('Number of clusters          : %s\n'     % txtK)
-	utilities.print_msg('Maximum iteration           : %i\n'     % maxit)
-	utilities.print_msg('Criterion                   : CHD\n'    )
-	utilities.print_msg('Optimization method         : %s\n'     % method)
+	sparx_utilities.print_msg('\n************* k-means %s *************\n' % methodhead)
+	sparx_utilities.print_msg('Input stack                 : %s\n'     % stackname)
+	sparx_utilities.print_msg('Number of images            : %i\n'     % N)
+	sparx_utilities.print_msg('Maskfile                    : %s\n'     % maskname)
+	sparx_utilities.print_msg('Number of pixels under mask : %i\n'     % m)
+	sparx_utilities.print_msg('Number of clusters          : %s\n'     % txtK)
+	sparx_utilities.print_msg('Maximum iteration           : %i\n'     % maxit)
+	sparx_utilities.print_msg('Criterion                   : CHD\n'    )
+	sparx_utilities.print_msg('Optimization method         : %s\n'     % method)
 	if SA:
-		utilities.print_msg('Simulated annealing          : ON\n')
-		utilities.print_msg('   F                        : %f\n' % F)
-		if T0 != -1: utilities.print_msg('   T0                       : %f\n' % T0)
-		else:        utilities.print_msg('   T0                       : AUTO\n')
+		sparx_utilities.print_msg('Simulated annealing          : ON\n')
+		sparx_utilities.print_msg('   F                        : %f\n' % F)
+		if T0 != -1: sparx_utilities.print_msg('   T0                       : %f\n' % T0)
+		else:        sparx_utilities.print_msg('   T0                       : AUTO\n')
 
 	else:
-		utilities.print_msg('Simulated annealing          : OFF\n')
-	utilities.print_msg('Random seed                 : %s\n'     % txtrnd)
-	utilities.print_msg('Number of Cs              : %i\n'     % ncpu)
-	utilities.print_msg('Output seed names           : %s\n'     % outname)
-	utilities.print_msg('Memory on device            : %s\n'     % device)
-	utilities.print_msg('Memory on host              : %s\n\n'   % host)
+		sparx_utilities.print_msg('Simulated annealing          : OFF\n')
+	sparx_utilities.print_msg('Random seed                 : %s\n'     % txtrnd)
+	sparx_utilities.print_msg('Number of Cs              : %i\n'     % ncpu)
+	sparx_utilities.print_msg('Output seed names           : %s\n'     % outname)
+	sparx_utilities.print_msg('Memory on device            : %s\n'     % device)
+	sparx_utilities.print_msg('Memory on host              : %s\n\n'   % host)
 
 # k-means, prepare to open images later
 def k_means_cuda_init_open_im(stack, maskname):
 	pass#IMPORTIMPORTIMPORT from utilities import get_image, get_im, model_blank, file_type
 	pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
 
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
 	# open mask if defined
-	if maskname != None: mask = utilities.get_image(maskname)
+	if maskname != None: mask = sparx_utilities.get_image(maskname)
 	else:
 		# anyway image must be a flat image
 		if TXT:
 			line = open(stack, 'r').readline()
 			nx   = len(line.split())
-			mask = utilities.model_blank(nx)
+			mask = sparx_utilities.model_blank(nx)
 			mask.to_one()
 		else:
-			im = utilities.get_im(stack, 0)
-			mask = utilities.model_blank(im.get_xsize(), im.get_ysize(), im.get_zsize())
+			im = sparx_utilities.get_im(stack, 0)
+			mask = sparx_utilities.model_blank(im.get_xsize(), im.get_ysize(), im.get_zsize())
 			mask.to_one()
 			del im
 
@@ -5520,7 +5245,7 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
 	pass#IMPORTIMPORTIMPORT from utilities     import get_params2D, get_params3D, get_im, file_type, model_blank
 	pass#IMPORTIMPORTIMPORT from fundamentals  import rot_shift2D, rot_shift3D
 	
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
@@ -5530,7 +5255,7 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
 		data = open(stack, 'r').readlines()
 		nx   = len(data[0].split())
 		for line in data:
-			im   = utilities.model_blank(nx)
+			im   = sparx_utilities.model_blank(nx)
 			line = line.split()
 			for i in range(nx):
 				val = float(line[i])
@@ -5542,7 +5267,7 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
 		return
 
 	# some parameters
-	image = utilities.get_im(stack, 0)
+	image = sparx_utilities.get_im(stack, 0)
 	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
@@ -5552,24 +5277,24 @@ def k_means_cuda_open_im(KmeansCUDA, stack, lim, mask, flagnorm = False):
 	# even if it takes more time
 	c = 0
 	for i in lim:
-		image = utilities.get_im(stack, i)
+		image = sparx_utilities.get_im(stack, i)
 		
 		# 3D object
 		if nz > 1:
 			try:
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = utilities.get_params3D(image)
-				image = fundamentals.rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = sparx_utilities.get_params3D(image)
+				image = sparx_fundamentals.rot_shift3D(image, phi, theta, psi, s3x, s3y, s3z, scale)
 				if mirror: image.process_inplace('xfrom.mirror', {'axis':'x'})
 			except:
-				global_def.ERROR('K-MEANS no 3D alignment parameters found', "k_means_cuda_open_im", 1)
+				sparx_global_def.ERROR('K-MEANS no 3D alignment parameters found', "k_means_cuda_open_im", 1)
 				sys.exit()
 		# 2D object
 		elif ny > 1:
 			try:
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(image)
-				image = fundamentals.rot_shift2D(image, alpha, sx, sy, mirror, scale)
+				alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(image)
+				image = sparx_fundamentals.rot_shift2D(image, alpha, sx, sy, mirror, scale)
 			except: 
-				global_def.ERROR('K_MEANS no 2D alignment parameters found', "k_means_cuda_open_im", 1)
+				sparx_global_def.ERROR('K_MEANS no 2D alignment parameters found', "k_means_cuda_open_im", 1)
 				sys.exit()
 
 		if flagnorm:
@@ -5595,12 +5320,12 @@ def k_means_cuda_info(INFO):
 	time_m   = (time_run % 3600) / 60
 	time_s   = (time_run % 3600) % 60
 	
-	utilities.print_msg('Running time is             : %s h %s min %s s\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
-	utilities.print_msg('Number of iterations        : %i\n' % INFO['noi'])
-	utilities.print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % INFO['Je'])
-	utilities.print_msg('Criteria Coleman is         : %11.6e\n' % INFO['C'])
-	utilities.print_msg('Criteria Harabasz is        : %11.6e\n' % INFO['H'])
-	utilities.print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % INFO['DB'])
+	sparx_utilities.print_msg('Running time is             : %s h %s min %s s\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
+	sparx_utilities.print_msg('Number of iterations        : %i\n' % INFO['noi'])
+	sparx_utilities.print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % INFO['Je'])
+	sparx_utilities.print_msg('Criteria Coleman is         : %11.6e\n' % INFO['C'])
+	sparx_utilities.print_msg('Criteria Harabasz is        : %11.6e\n' % INFO['H'])
+	sparx_utilities.print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % INFO['DB'])
 
 # K-means write results output directory
 def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT = False):
@@ -5609,10 +5334,10 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT 
 	if not os.path.exists(out_seedname): os.mkdir(out_seedname)
 
 	Je, C, H, DB = crit
-	utilities.print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % Je)
-	utilities.print_msg('Criteria Coleman is         : %11.6e\n' % C)
-	utilities.print_msg('Criteria Harabasz is        : %11.6e\n' % H)
-	utilities.print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % DB)
+	sparx_utilities.print_msg('Partition criterion is      : %11.6e (total sum of squares error)\n' % Je)
+	sparx_utilities.print_msg('Criteria Coleman is         : %11.6e\n' % C)
+	sparx_utilities.print_msg('Criteria Harabasz is        : %11.6e\n' % H)
+	sparx_utilities.print_msg('Criteria Davies-Bouldin is  : %11.6e\n' % DB)
 
 	# prepare list of images id for each group
 	K   = max(PART) + 1
@@ -5625,12 +5350,12 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT 
 	flagHDF = False
 	for k in range(K):
 		if len(GRP[k]) > 16000: flagHDF = True
-	if flagHDF: utilities.print_msg('\nWARNING: limitation of number attributes in hdf format, the results will be export in separate text files\n')
+	if flagHDF: sparx_utilities.print_msg('\nWARNING: limitation of number attributes in hdf format, the results will be export in separate text files\n')
 
 	# write the details of the clustering
-	utilities.print_msg('\n-- Details ----------------------------\n')
+	sparx_utilities.print_msg('\n-- Details ----------------------------\n')
 	for k in range(K):
-		utilities.print_msg('\t%s\t%d\t%s\t%d\n' % ('Cluster no:', k, 'No of Objects = ', len(GRP[k])))
+		sparx_utilities.print_msg('\t%s\t%d\t%s\t%d\n' % ('Cluster no:', k, 'No of Objects = ', len(GRP[k])))
 
 		# reconstitute averages
 		AVE = EMAN2_cppwrap.Util.reconstitute_image_mask(FLATAVE[k], mask)
@@ -5651,7 +5376,7 @@ def k_means_cuda_export(PART, FLATAVE, out_seedname, mask, crit, part = -1, TXT 
 
 		if part == -1: AVE.write_image(os.path.join(out_seedname, 'averages.hdf'), k)
 		else:          AVE.write_image(os.path.join(out_seedname, 'averages_%02i.hdf' % part), k)
-	utilities.print_msg('\n')
+	sparx_utilities.print_msg('\n')
 
 ## K-MEANS STABILITY ######################################################################
 # 2008-12-18 11:35:11 
@@ -5678,7 +5403,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 
 	if mask != None:
 		if isinstance(mask, str):
-			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			sparx_global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
 
@@ -5689,8 +5414,8 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 		nx  = im_M[0].get_attr('or_nx')
 		ny  = im_M[0].get_attr('or_ny')
 		nz  = im_M[0].get_attr('or_nz')
-		buf = utilities.model_blank(nx, ny, nz)
-		fundamentals.fftip(buf)		
+		buf = sparx_utilities.model_blank(nx, ny, nz)
+		sparx_fundamentals.fftip(buf)		
 		nx   = im_M[0].get_xsize()
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
@@ -5700,7 +5425,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 		ny   = im_M[0].get_ysize()
 		nz   = im_M[0].get_zsize()
 		norm = nx * ny * nz
-		buf  = utilities.model_blank(nx, ny, nz)
+		buf  = sparx_utilities.model_blank(nx, ny, nz)
 
 	# Variables			
 	if rand_seed > 0:  random.seed(rand_seed)
@@ -5756,16 +5481,16 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 			for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 
 			# compute average first step
-			CTFxF = filter.filt_table(im_M[im], ctf[im])
+			CTFxF = sparx_filter.filt_table(im_M[im], ctf[im])
 			EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 
 		for k in range(K):
 			for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-			Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
+			Cls['ave'][k] = sparx_filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 		# compute Ji and Je
 		for n in range(N):
-			CTFxAve               = filter.filt_table(Cls['ave'][assign[n]], ctf[n])
+			CTFxAve               = sparx_filter.filt_table(Cls['ave'][assign[n]], ctf[n])
 			Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
 		Je = 0
 		for k in range(K):        Je = Cls['Ji'][k]
@@ -5794,7 +5519,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 			for im in range(N):
 				if CTF:
 					CTFxAVE = []
-					for k in range(K): CTFxAVE.append(filter.filt_table(Cls['ave'][k], ctf[im]))
+					for k in range(K): CTFxAVE.append(sparx_filter.filt_table(Cls['ave'][k], ctf[im]))
 					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAVE)
 				else:
 					res = EMAN2_cppwrap.Util.min_dist_real(im_M[im], Cls['ave'])
@@ -5815,7 +5540,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 				mindJe = min(dJe)
 				scale  = max(dJe) - mindJe
 				for k in range(K): dJe[k] = (dJe[k] - mindJe) / scale
-				select = alignment.select_k(dJe, T)
+				select = sparx_alignment.select_k(dJe, T)
 
 				if select != res['pos']:
 					ct_pert    += 1
@@ -5859,7 +5584,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 
 	if mask != None:
 		if isinstance(mask, str):
-			global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
+			sparx_global_def.ERROR('Mask must be an image, not a file name!', 'k-means', 1)
 
 	N = len(im_M)
 
@@ -5870,8 +5595,8 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 		nx  = im_M[N_start].get_attr('or_nx')
 		ny  = im_M[N_start].get_attr('or_ny')
 		nz  = im_M[N_start].get_attr('or_nz')
-		buf = utilities.model_blank(nx, ny, nz)
-		fundamentals.fftip(buf)		
+		buf = sparx_utilities.model_blank(nx, ny, nz)
+		sparx_fundamentals.fftip(buf)		
 		nx   = im_M[N_start].get_xsize()
 		ny   = im_M[N_start].get_ysize()
 		nz   = im_M[N_start].get_zsize()
@@ -5881,7 +5606,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 		ny   = im_M[N_start].get_ysize()
 		nz   = im_M[N_start].get_zsize()
 		norm = nx * ny * nz
-		buf  = utilities.model_blank(nx, ny, nz)
+		buf  = sparx_utilities.model_blank(nx, ny, nz)
 
 	# Variables			
 	if rand_seed > 0:  random.seed(rand_seed)
@@ -5953,7 +5678,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			for i in range(len_ctm):	Cls_ctf2[assign[im]][i] += ctf2[im][i]
 
 			# compute average first step
-			CTFxF = filter.filt_table(im_M[im], ctf[im])
+			CTFxF = sparx_filter.filt_table(im_M[im], ctf[im])
 			EMAN2_cppwrap.Util.add_img(Cls['ave'][assign[im]], CTFxF)
 
 		# sync
@@ -5962,11 +5687,11 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			Cls_ctf2[k] = mpi.mpi_reduce(Cls_ctf2[k], len_ctm, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD)
 			Cls_ctf2[k] = mpi.mpi_bcast(Cls_ctf2[k],  len_ctm, mpi.MPI_FLOAT, main_node, mpi.MPI_COMM_WORLD)
 			Cls_ctf2[k] = list(map(float, Cls_ctf2[k]))    # convert array gave by MPI to list
-			utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
-			utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+			sparx_utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node)
+			sparx_utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 
 			for i in range(len_ctm):	Cls_ctf2[k][i] = 1.0 / float(Cls_ctf2[k][i])
-			Cls['ave'][k] = filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
+			Cls['ave'][k] = sparx_filter.filt_table(Cls['ave'][k], Cls_ctf2[k])
 
 	else:
 		# [id] Calculates averages, first calculate local sum
@@ -5977,8 +5702,8 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 
 		# [all] compute global sum, broadcast the results and obtain the average
 		for k in range(K):
-			utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
-			utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
+			sparx_utilities.reduce_EMData_to_root(Cls['ave'][k], myid, main_node) 
+			sparx_utilities.bcast_EMData_to_all(Cls['ave'][k], myid, main_node)
 			Cls['ave'][k] = EMAN2_cppwrap.Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 	## Clustering		
@@ -5995,7 +5720,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 			for im in range(N_start, N_stop):
 				if CTF:
 					CTFxAVE = []
-					for k in range(K): CTFxAVE.append(filter.filt_table(Cls['ave'][k], ctf[im]))
+					for k in range(K): CTFxAVE.append(sparx_filter.filt_table(Cls['ave'][k], ctf[im]))
 					res = EMAN2_cppwrap.Util.min_dist_four(im_M[im], CTFxAVE)
 				else:
 					res = EMAN2_cppwrap.Util.min_dist_real(im_M[im], Cls['ave'])
@@ -6016,7 +5741,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 				mindJe = min(dJe)
 				scale  = max(dJe) - mindJe
 				for k in range(K): dJe[k] = (dJe[k] - mindJe) / scale
-				select = alignment.select_k(dJe, T)
+				select = sparx_alignment.select_k(dJe, T)
 
 				if select != res['pos']:
 					ct_pert    += 1
@@ -6057,12 +5782,12 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 	pass#IMPORTIMPORTIMPORT from statistics  import k_means_stab_asg2part, k_means_stab_pwa, k_means_stab_export, k_means_stab_export_txt, k_means_stab_H, k_means_stab_bbenum
 	pass#IMPORTIMPORTIMPORT import sys, logging, os, pickle
 	
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
 	# create a directory
-	if os.path.exists(outdir):  global_def.ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+	if os.path.exists(outdir):  sparx_global_def.ERROR('Output directory exists, please change the name and restart the program', " ", 1)
 	os.mkdir(outdir)
 
 	# create main log
@@ -6096,7 +5821,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 		sys.exit()
 
 	# loop over partition
-	utilities.print_begin_msg('k-means')
+	sparx_utilities.print_begin_msg('k-means')
 	for n in range(npart):
 		# info
 		logging.info('...... Start partition: %d' % (n + 1))
@@ -6120,7 +5845,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 		k_means_export(Cls, crit, glb_assign, outdir, n, TXT)
 				
 	# end of classification
-	utilities.print_end_msg('k-means')
+	sparx_utilities.print_end_msg('k-means')
 
 	# convert all assignment to partition
 	logging.info('... Matching')
@@ -6167,7 +5892,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	main_node = 0
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	npart = ncpu
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == 'txt': TXT = True
 	else:            TXT = False
 
@@ -6175,7 +5900,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	if myid == main_node:
 		if os.path.exists(outdir):
 			nx = 1
-			global_def.ERROR('Output directory exists, please change the name and restart the program', " k_means_mpi", 0)
+			sparx_global_def.ERROR('Output directory exists, please change the name and restart the program', " k_means_mpi", 0)
 		else:
 			os.system( "mkdir " + outdir )
 	nx = mpi.mpi_bcast(nx, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)
@@ -6221,7 +5946,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 
 	# loop over partition
 	if myid == main_node: 
-		utilities.print_begin_msg('k-means')
+		sparx_utilities.print_begin_msg('k-means')
 		t_start = time.time()
 	
 	[Cls, assign, Je] = k_means_SSE_MPI(IM, mask, K, rnd[myid], maxit,1, [CTF, ctf, ctf2], F, T0, False, "rnd", myid = myid, main_node = main_node, jumping = 0) # no jumping
@@ -6230,10 +5955,10 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	if myid == main_node:
 		je_return = [0.0]*(ncpu)
 		for n1 in range(ncpu):
-			if n1 != main_node: je_return[n1]	=	mpi.mpi_recv(1, mpi.MPI_FLOAT, n1, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+			if n1 != main_node: je_return[n1]	=	mpi.mpi_recv(1, mpi.MPI_FLOAT, n1, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 			else:               je_return[main_node]  = Je
 	else:
-		mpi.mpi_send(Je, 1, mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+		mpi.mpi_send(Je, 1, mpi.MPI_FLOAT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 
 	
 	n_best = 0
@@ -6245,15 +5970,15 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 	if myid == main_node:
 		for n1 in range(ncpu):
-			if n1 != main_node: mpi.mpi_send(n_best, 1, mpi.MPI_INT, n1, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD) 
+			if n1 != main_node: mpi.mpi_send(n_best, 1, mpi.MPI_INT, n1, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD) 
 			else:               n_best  = n_best
-	else: n_best	=	mpi.mpi_recv(1, mpi.MPI_INT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+	else: n_best	=	mpi.mpi_recv(1, mpi.MPI_INT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 	n_best = int(n_best)		
 	#print "myid ==", myid, "n_best==", n_best
 	mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 	if n_best == -1: 
 		if myid == main_node:
-			utilities.print_msg('>> K is too big and resulted empty cluters, stop k-means  \n' )
+			sparx_utilities.print_msg('>> K is too big and resulted empty cluters, stop k-means  \n' )
 		sys.exit()
 	
 	[r_assign, r_cls] = k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node)
@@ -6264,7 +5989,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 			k_means_headlog(stack, outdir, opt_method, N, K, 
 						      '', maskname, 1, maxit, CTF, T0, 
 						      F, rnd[n], ncpu, m)
-			utilities.print_msg('\n>>>>>>>>partion:       %5d'%(n+1))
+			sparx_utilities.print_msg('\n>>>>>>>>partion:       %5d'%(n+1))
 			crit       = k_means_criterion(r_cls[n], 'CHD')
 			glb_assign = k_means_locasg2glbasg(r_assign[n], LUT, Ntot)
 			k_means_export(r_cls[n], crit, glb_assign, outdir, n, TXT)
@@ -6273,8 +5998,8 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 			
 	if myid == main_node:
 		# end of classification
-		utilities.running_time(t_start)
-		utilities.print_end_msg('k-means')
+		sparx_utilities.running_time(t_start)
+		sparx_utilities.print_end_msg('k-means')
 
 		# convert all assignments to partition
 		logging.info('... Matching')
@@ -6569,7 +6294,7 @@ def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 	im.read_image(stack, 0)
 	nx   = im.get_xsize()
 	ny   = im.get_ysize()
-	imbk = utilities.model_blank(nx, ny)
+	imbk = sparx_utilities.model_blank(nx, ny)
 	AVE  = []
 	lrej = []
 	Kr   = 0
@@ -6586,16 +6311,16 @@ def k_means_stab_export(PART, stack, outdir, th_nobj, CTF = False):
 		if nobjs >= th_nobj:
 			if CTF:
 				data = []
-				for ID in PART[k]: data.append(utilities.get_im(stack, int(ID)))
+				for ID in PART[k]: data.append(sparx_utilities.get_im(stack, int(ID)))
 				AVE[ck], dum, dum, dum, dum = add_ave_varf(data, None, 'a', True)
-				fundamentals.fftip(AVE[ck])
+				sparx_fundamentals.fftip(AVE[ck])
 				AVE[ck].depad()
 			else:
 				for ID in PART[k]:
 					im.read_image(stack, int(ID))
 					if im.get_ysize() > 1:
-						alpha, sx, sy, mirror, scale = utilities.get_params2D(im)
-						im = fundamentals.rot_shift2D(im, alpha, sx, sy, mirror)
+						alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(im)
+						im = sparx_fundamentals.rot_shift2D(im, alpha, sx, sy, mirror)
 
 					EMAN2_cppwrap.Util.add_img(AVE[ck], im)
 				EMAN2_cppwrap.Util.mul_scalar(AVE[ck], 1.0 / float(nobjs))
@@ -6618,7 +6343,7 @@ def k_means_stab_init_tag(stack):
 	pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
 	
 	N   = EMAN2_cppwrap.EMUtil.get_image_count(stack)
-	ext = utilities.file_type(stack)
+	ext = sparx_utilities.file_type(stack)
 	if ext == 'bdb':
 		DB = EMAN2db.db_open_dict(stack)
 		for n in range(N):
@@ -6631,7 +6356,7 @@ def k_means_stab_init_tag(stack):
 			im.read_image(stack, n, True)
 			im.set_attr('stab_active', 1)
 			im.set_attr('stab_part', -2)
-			utilities.write_header(stack, im, n) 
+			sparx_utilities.write_header(stack, im, n) 
 
 # Convert local all assignment to absolute all partition
 def k_means_stab_asg2part(outdir, npart):
@@ -6651,7 +6376,7 @@ def k_means_stab_asg2part(outdir, npart):
 		for n in range(npart):
 			part = []
 			for k in range(K):
-				lid = utilities.read_text_file(os.path.join(outdir, 'kmeans_part_%02i_grp_%03i.txt' % (n+1, k+1)), 0)
+				lid = sparx_utilities.read_text_file(os.path.join(outdir, 'kmeans_part_%02i_grp_%03i.txt' % (n+1, k+1)), 0)
 				lid = numpy.array(lid, 'int32')
 				lid.sort()
 				part.append(lid.copy())
@@ -6662,7 +6387,7 @@ def k_means_stab_asg2part(outdir, npart):
 			K    = EMAN2_cppwrap.EMUtil.get_image_count(name)
 			part = []
 			for k in range(K):
-				im  = utilities.get_im(name, k)
+				im  = sparx_utilities.get_im(name, k)
 				lid = im.get_attr('members')
 				lid = numpy.array(lid, 'int32')
 				lid.sort()
@@ -6724,7 +6449,7 @@ def k_means_stab_gather(nb_run, maskname, outdir):
 		if os.path.exists(name):
 			N = EMAN2_cppwrap.EMUtil.get_image_count(name)
 			if nr == 1:
-				if maskname != None: mask = utilities.get_image(maskname)
+				if maskname != None: mask = sparx_utilities.get_image(maskname)
 				else: mask   = None
 			for n in range(N):
 				im.read_image(name, n)
@@ -6747,16 +6472,16 @@ def k_means_extract_class_ali(stack_name, ave_name, dir):
 	K = EMAN2_cppwrap.EMUtil.get_image_count(ave_name)
 	# all images are not open, I assume we pick up only few images (from stable_averages)
 	for k in range(K):
-		im  = utilities.get_im(ave_name, k)
+		im  = sparx_utilities.get_im(ave_name, k)
 		lid = im.get_attr('members')
 		# if there are only one image in member 
 		if not isinstance(lid, list): lid = [lid]
 		trg = os.path.join(dir, 'class_%03i.hdf' % k)
 		for i, item in enumerate(lid):
-			im = utilities.get_im(stack_name, item)
-			alpha, sx, sy, mir, scale = utilities.get_params2D(im, 'xform.align2d')
-			im = fundamentals.rot_shift2D(im, alpha, sx, sy, mir, scale)
-			utilities.set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0], 'xform.align2d')
+			im = sparx_utilities.get_im(stack_name, item)
+			alpha, sx, sy, mir, scale = sparx_utilities.get_params2D(im, 'xform.align2d')
+			im = sparx_fundamentals.rot_shift2D(im, alpha, sx, sy, mir, scale)
+			sparx_utilities.set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0], 'xform.align2d')
 			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 			# im.set_attr('active', 1)
 			im.write_image(trg, i)
@@ -6769,19 +6494,19 @@ def k_means_class_pixerror(class_name, dir, ou, xr, ts, maxit, fun, CTF=False, s
 	pass#IMPORTIMPORTIMPORT import os
 	name = class_name.split('.')[0]
 	file = os.path.join(dir, class_name)
-	applications.header(file, 'xform.align2d', randomize=True)
-	applications.ali2d(file, os.path.join(dir, '%s_01' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
+	sparx_applications.header(file, 'xform.align2d', randomize=True)
+	sparx_applications.ali2d(file, os.path.join(dir, '%s_01' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
 		CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=False)
-	applications.header(file, 'xform.align2d', backup=True, suffix='_round1')
-	applications.header(file, 'xform.align2d', randomize=True)
-	applications.ali2d(file, os.path.join(dir, '%s_02' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
+	sparx_applications.header(file, 'xform.align2d', backup=True, suffix='_round1')
+	sparx_applications.header(file, 'xform.align2d', randomize=True)
+	sparx_applications.ali2d(file, os.path.join(dir, '%s_02' % name), ou=ou, xr=xr, ts=ts, maxit=maxit,
 		CTF=CTF, snr=snr, Fourvar=Fourvar, user_func_name=fun, MPI=False)
 
 	data1 = EMAN2_cppwrap.EMData.read_images(file)
-	applications.header(file, 'xform.align2d_round1', restore=True)
+	sparx_applications.header(file, 'xform.align2d_round1', restore=True)
 	data2 = EMAN2_cppwrap.EMData.read_images(file)
 
-	stab_mirror, list_pix_err, ccc = pixel_error.estimate_stability(data1, data2, CTF, snr, ou)
+	stab_mirror, list_pix_err, ccc = sparx_pixel_error.estimate_stability(data1, data2, CTF, snr, ou)
 	ave_pix_err = sum(list_pix_err) / float(len(list_pix_err))
 
 	ave, var = aves(file, 'a')
@@ -6893,7 +6618,7 @@ def isc_ave_huge(ave_tiny, org_data, ave_huge):
 	pass#IMPORTIMPORTIMPORT from utilities    import get_im, get_params2D, model_blank
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 	pass#IMPORTIMPORTIMPORT from sys import exit
-	im = utilities.get_im(org_data, 0)
+	im = sparx_utilities.get_im(org_data, 0)
 	nx = im.get_xsize()
 	ny = im.get_ysize()
 	D  = EMAN2_cppwrap.EMData.read_images(org_data)
@@ -6902,10 +6627,10 @@ def isc_ave_huge(ave_tiny, org_data, ave_huge):
 	for k in range(K):
 		asg = A[k].get_attr('members')
 		asg = list(map(int, asg))
-		ave = utilities.model_blank(nx, ny)
+		ave = sparx_utilities.model_blank(nx, ny)
 		for id in asg:
-			a, sx, sy, mir, sc = utilities.get_params2D(D[id])
-			im = fundamentals.rot_shift2D(D[id], a, sx, sy, mir, sc)
+			a, sx, sy, mir, sc = sparx_utilities.get_params2D(D[id])
+			im = sparx_fundamentals.rot_shift2D(D[id], a, sx, sy, mir, sc)
 			EMAN2_cppwrap.Util.add_img(ave, im)
 		EMAN2_cppwrap.Util.mul_scalar(ave, 1.0 / float(len(asg)))
 
@@ -7500,7 +7225,7 @@ def kmn(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 	nx = tave.get_xsize()
 	a0 = EMAN2_cppwrap.Util.ener(tave, numr)
 	msg = "Initial criterion = %20.7e\n"%(a0)
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 
 	# do the alignment
 	for Iter in range(max_iter):
@@ -7544,14 +7269,14 @@ def kmn(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				again = True
 		if (again):
 			# calculate total average using current alignment parameters
-			tave = utilities.model_blank(nx)
+			tave = sparx_utilities.model_blank(nx)
 			for im in range(nima):
 				alpha  = data[im].get_attr('alpha')
 				mirror = data[im].get_attr('mirror')
 				EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
 			a1 = EMAN2_cppwrap.Util.ener(tave, numr)
 			msg = "ITERATION #%3d        criterion = %20.7e\n"%(Iter+1,a1)
-			utilities.print_msg(msg)
+			sparx_utilities.print_msg(msg)
 			if (a1 <= a0):  break
 			else:          a0 = a1
 		else:  break
@@ -7593,7 +7318,7 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 	nx = tave.get_xsize()
 	a0 = EMAN2_cppwrap.Util.ener(tave, numr)
 	msg = "Initial criterion = %-20.7e\n"%(a0)
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 
 	# do the alignment
 	for Iter in range(max_iter):
@@ -7637,14 +7362,14 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				again = True
 		if (again):
 			# calculate total average using current alignment parameters
-			tave = utilities.model_blank(nx)
+			tave = sparx_utilities.model_blank(nx)
 			for im in range(nima):
 				alpha  = data[im].get_attr('alpha')
 				mirror = data[im].get_attr('mirror')
 				EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
 			a1 = EMAN2_cppwrap.Util.ener(tave, numr)
 			msg = "ITERATION #%3d        criterion = %20.7e\n"%(Iter+1,a1)
-			utilities.print_msg(msg)
+			sparx_utilities.print_msg(msg)
 			if (a1 <= a0):  break
 			else:          a0 = a1
 		else:  break
@@ -7658,11 +7383,11 @@ def kmn_a(data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 		alpha = data[im].get_attr('alpha')
 		all_alpha.append(alpha)
 	alpha_range = [2.0]*nima
-	ps = utilities.amoeba(all_alpha, alpha_range, multi_search_func, 1.e-4, 1.e-4, 1000, amoeba_data)
+	ps = sparx_utilities.amoeba(all_alpha, alpha_range, multi_search_func, 1.e-4, 1.e-4, 1000, amoeba_data)
 	for im in range(nima):
 		data[im].set_attr_dict({'alpha': ps[0][im]})
 	msg = "Final criterion = %20.7e\n"%(ps[1])
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 
 
 def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed = 1000):
@@ -7719,7 +7444,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			jtot=ps[2]/2
 			q=EMAN2_cppwrap.Processor.EMFourierFilter(line,parline)
 			amoeba_data.insert(0,q)
-			ps = utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+			ps = sparx_utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 			del amoeba_data[0]
 			jtot=ps[0][0]*2
 			qn=ps[1]
@@ -7732,7 +7457,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			mtot=ps[2]/2
 			q=EMAN2_cppwrap.Processor.EMFourierFilter(line,parline)
 			amoeba_data.insert(0,q)
-			ps = utilities.amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+			ps = sparx_utilities.amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 			del amoeba_data[0]
 			mtot=ps[0][0]*2
 			qm=ps[1]
@@ -7755,7 +7480,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			jtot=ps[2]/2
 			q=EMAN2_cppwrap.Processor.EMFourierFilter(line_s,parline)
 			amoeba_data.insert(0,q)
-			ps = utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+			ps = sparx_utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 			del amoeba_data[0]
 			jtot=ps[0][0]*2
 			qn=ps[1]
@@ -7772,7 +7497,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 	nx = tave.get_xsize()
 	a0 = EMAN2_cppwrap.Util.ener(tave, numr)
 	msg = "Initial criterion = %-20.7e\n"%(a0)
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 	
 	# do the alignment
 	for Iter in range(max_iter):
@@ -7802,7 +7527,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				jtot=ps[2]/2
 				q=EMAN2_cppwrap.Processor.EMFourierFilter(line,parline)
 				amoeba_data.insert(0,q)
-				ps = utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+				ps = sparx_utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 				del amoeba_data[0]
 				jtot=ps[0][0]*2
 				qn=ps[1]
@@ -7815,7 +7540,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				mtot=ps[2]/2
 				q=EMAN2_cppwrap.Processor.EMFourierFilter(line,parline)
 				amoeba_data.insert(0,q)
-				ps = utilities.amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+				ps = sparx_utilities.amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 				del amoeba_data[0]
 				mtot=ps[0][0]*2
 				qm=ps[1]
@@ -7838,7 +7563,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				jtot=ps[2]/2
 				q=EMAN2_cppwrap.Processor.EMFourierFilter(line_s,parline)
 				amoeba_data.insert(0,q)
-				ps = utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
+				ps = sparx_utilities.amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
 				del amoeba_data[0]
 				jtot=ps[0][0]*2
 				qn=ps[1]
@@ -7857,14 +7582,14 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				again = True
 		if (again):
 			# calculate total average using current alignment parameters
-			tave = utilities.model_blank(nx)
+			tave = sparx_utilities.model_blank(nx)
 			for im in range(nima):  
 				alpha  = data[im].get_attr('alpha')
 				mirror = data[im].get_attr('mirror')
 				EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha, mirror, numr)
 			a1 = EMAN2_cppwrap.Util.ener(tave, numr)
 			msg = "ITERATION #%3d        criterion = %20.7e\n"%(Iter+1,a1)
-			utilities.print_msg(msg)
+			sparx_utilities.print_msg(msg)
 			if (a1 <= a0):  break
 			else:          a0 = a1
 		else:  break
@@ -7877,10 +7602,10 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 		sx    =  data[im].get_attr('sx')
 		sy    =  data[im].get_attr('sy')
 		mirror =  data[im].get_attr('mirror')
-		alpha = alignment.ang_n(alpha+1, mode, maxrin)
+		alpha = sparx_alignment.ang_n(alpha+1, mode, maxrin)
 		#  here the original angle is irrelevant, used only to determine proper shifts
-		alpha_original_n, sxn, syn, mir = utilities.combine_params2(0, -sx, -sy, 0, -alpha_original, 0,0,0)
-		alphan, sxn, syn, mir           = utilities.combine_params2(0, -sxn, -syn, 0, alpha, 0,0, mirror)
+		alpha_original_n, sxn, syn, mir = sparx_utilities.combine_params2(0, -sx, -sy, 0, -alpha_original, 0,0,0)
+		alphan, sxn, syn, mir           = sparx_utilities.combine_params2(0, -sxn, -syn, 0, alpha, 0,0, mirror)
 		temp.read_image(stack, im, True)
 		#if(CTF and data_had_ctf == 0):   temp.set_attr('ctf_applied', 0)
 		temp.set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror': mir})
@@ -7905,7 +7630,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 	new_alpha = []
 
 	for Iter in range(10):
-		tave = utilities.model_blank(nx)
+		tave = sparx_utilities.model_blank(nx)
 		all_alpha = []
 		for im in range(nima):
 			alpha = data[im].get_attr('alpha')
@@ -7915,11 +7640,11 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			EMAN2_cppwrap.Util.update_fav(tave, data[im], alpha+shake, 0, numr)
 		amoeba_data.append(tave)
 		amoeba_data.append(all_alpha)		
-		ps = utilities.amoeba(all_alpha, alpha_range, multi_search_func, 1.e-4, 1.e-4, 10000, amoeba_data)
+		ps = sparx_utilities.amoeba(all_alpha, alpha_range, multi_search_func, 1.e-4, 1.e-4, 10000, amoeba_data)
 		dummy = amoeba_data.pop()
 		dummy = amoeba_data.pop()
 		msg = "Trial %2d of amoeba:   criterion = %20.7e    Iteration = %4d\n"%(Iter+1, ps[1], ps[2])
-		utilities.print_msg(msg)				
+		sparx_utilities.print_msg(msg)				
 		if ps[1]>a0:
 			a0 = ps[1]			
 			new_alpha = ps[0]
@@ -7933,10 +7658,10 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			sx    =  data[im].get_attr('sx')
 			sy    =  data[im].get_attr('sy')
 			mirror =  data[im].get_attr('mirror')
-			alpha = alignment.ang_n(alpha+1, mode, maxrin)
+			alpha = sparx_alignment.ang_n(alpha+1, mode, maxrin)
 			#  here the original angle is irrelevant, used only to determine proper shifts
-			alpha_original_n, sxn, syn, mir = utilities.combine_params2(0, -sx, -sy, 0, -alpha_original, 0,0,0)
-			alphan, sxn, syn, mir           = utilities.combine_params2(0, -sxn, -syn, 0, alpha, 0,0, mirror)
+			alpha_original_n, sxn, syn, mir = sparx_utilities.combine_params2(0, -sx, -sy, 0, -alpha_original, 0,0,0)
+			alphan, sxn, syn, mir           = sparx_utilities.combine_params2(0, -sxn, -syn, 0, alpha, 0,0, mirror)
 			temp.read_image(stack, im, True)
 			#if(CTF and data_had_ctf == 0):   temp.set_attr('ctf_applied', 0)
 			temp.set_attr_dict({'alpha':alphan, 'sx':sxn, 'sy':syn, 'mirror': mir})
@@ -7949,7 +7674,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 		data[im].set_attr_dict({'alpha': new_alpha[im]})
 		
 	msg = "Final criterion = %-20.7e\n"%(a0)
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 	
 
 def multi_search_func(args, data):
@@ -7976,7 +7701,7 @@ def multi_search_func(args, data):
 			EMAN2_cppwrap.Util.update_fav(tave, fdata[im], args[im], 0, numr)
 	else:
 		nx = tave.get_xsize()
-		tave = utilities.model_blank(nx)
+		tave = sparx_utilities.model_blank(nx)
 		for im in range(nima):
 			EMAN2_cppwrap.Util.update_fav(tave, fdata[im], args[im], 0, numr)
 			
@@ -8024,7 +7749,7 @@ def kmn_ctf(data, ref_data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 	nx = tave.get_xsize()
 	a0 = EMAN2_cppwrap.Util.ener(tave, numr)
 	msg = "Initial criterion = %-20.7e\n"%(a0)
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 
 	# do the alignment
 	for Iter in range(max_iter):
@@ -8068,14 +7793,14 @@ def kmn_ctf(data, ref_data, numr, wr, cm = 0, max_iter = 10, this_seed = 1000):
 				again = True
 		if(again):
 			# calculate total average using current alignment parameters
-			tave = utilities.model_blank(nx)
+			tave = sparx_utilities.model_blank(nx)
 			for im in range(nima):  
 				alpha  = data[im].get_attr('alpha')
 				mirror =  data[im].get_attr('mirror')
 				EMAN2_cppwrap.Util.update_fav(tave, ref_data[im], alpha, mirror, numr)
 			a1 = EMAN2_cppwrap.Util.ener(tave, numr)
 			msg = "ITERATION #%3d        criterion = %20.7e\n"%(Iter+1,a1)
-			utilities.print_msg(msg)
+			sparx_utilities.print_msg(msg)
 			if(a1 <= a0):  break
 			else:          a0 = a1
 		else:  break
@@ -8181,7 +7906,7 @@ def kmnr(data, assign, nima, k, numr, wr, cm = 0, max_iter = 10, this_seed = 100
 				again = True
 		if(again):
 			# calculate total average using current alignment parameters
-			tave = utilities.model_blank(nr)
+			tave = sparx_utilities.model_blank(nr)
 			for imi in range(nima):
 				if not MPI: im = lob[imi]
 				else:       im = rnd[imi]
@@ -8213,7 +7938,7 @@ def Wiener_CSQ(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
 	#Calculate averages
 	for im in range(N):
 		k = assign[im]
-		avec = filter.filt_table( data[im], ctf1[im] )  # multiply data by the CTF
+		avec = sparx_filter.filt_table( data[im], ctf1[im] )  # multiply data by the CTF
 		EMAN2_cppwrap.Util.add_img(Cls[k].C, avec)
 		for i in range(lctf): ctf_2[k][i] += ctf2[im][i]
 		Cls[k].n +=1
@@ -8221,16 +7946,16 @@ def Wiener_CSQ(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
 	# check whether there are empty classes
 	for k in range(K):
 		if(Cls[k].n == 0):
-			global_def.ERROR("empty class", "Wiener_CSQ", 0)
+			sparx_global_def.ERROR("empty class", "Wiener_CSQ", 0)
 			return  [],[]
 
 	ctf_temp = [0.0]*lctf
 	for k in range(K):
 		for i in range(lctf): ctf_temp[i] = 1.0/(ctf_2[k][i] + 1.0/snr)
-		avek = filter.filt_table( Cls[k].C, ctf_temp )
+		avek = sparx_filter.filt_table( Cls[k].C, ctf_temp )
 		for im in range(len(data)):
 			if(k == assign[im]):
-				Cls[k].SSE += data[im].cmp("SqEuclidean", filter.filt_table( avek, ctf1[im] ))
+				Cls[k].SSE += data[im].cmp("SqEuclidean", sparx_filter.filt_table( avek, ctf1[im] ))
 
 	return Cls, ctf_2
 	
@@ -8248,7 +7973,7 @@ def Wiener_sse(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
 
 	#Calculate averages
 	for im in range(N):
-		ctf_x = filter.filt_table( data[im], ctf1[im] )
+		ctf_x = sparx_filter.filt_table( data[im], ctf1[im] )
 		k = assign[im]
 		EMAN2_cppwrap.Util.add_img(Cls[k].C, ctf_x)
 		#Cls[k].C += ctf_x
@@ -8259,16 +7984,16 @@ def Wiener_sse(data, K, assign, Cls, ctf1, ctf2, snr = 1.0):
 	for k in range(K):
 		if(Cls[k].n == 0):
 			return  []
-			global_def.ERROR("empty class", "Wiener_sse", 1)
+			sparx_global_def.ERROR("empty class", "Wiener_sse", 1)
 
 	#  Calculate partial SSEs and total SSE
 	for k in range(K):
 		for i in range(lctf):  ctf_2[k][i] = 1.0/(ctf_2[k][i] + 1.0/snr)
-		Cls[k].C = filter.filt_table( Cls[k].C, ctf_2[k] )
+		Cls[k].C = sparx_filter.filt_table( Cls[k].C, ctf_2[k] )
 
 	for im in range(len(data)):
 		k = assign[im]
-		ctf_x = filter.filt_table( Cls[k].C, ctf1[k] )
+		ctf_x = sparx_filter.filt_table( Cls[k].C, ctf1[k] )
 		Cls[k].SSE += data[im].cmp("SqEuclidean", ctf_x)
 
 	return Cls
@@ -8361,23 +8086,6 @@ def histogram2d(datai, dataj, nbini, nbinj):
 
 	return region,hist
 
-def linreg(X, Y):
-	"""
-	  Linear regression y=ax+b
-	"""
-	Sx = Sy = Sxx = Syy = Sxy = 0.0
-	N = len(X)
-	for x, y in map(None, X, Y):
-		Sx  += x
-		Sy  += y
-		Sxx += x*x
-		Syy += y*y
-		Sxy += x*y
-	det = Sxx * N - Sx * Sx
-	a, b = (Sxy * N - Sy * Sx)/det, (Sxx * Sy - Sx * Sxy)/det
-	"""Multiline Comment14"""
-	return a,b
-
 def get_power_spec(stack_file, start_particle, end_particle):
 	"""
 		Name
@@ -8395,13 +8103,13 @@ def get_power_spec(stack_file, start_particle, end_particle):
 	pass#IMPORTIMPORTIMPORT from fundamentals import rops_table
 	pass#IMPORTIMPORTIMPORT from utilities import get_im
 
-	ima = utilities.get_im(stack_file, start_particle)
-	PSrot_avg = fundamentals.rops_table(ima)
+	ima = sparx_utilities.get_im(stack_file, start_particle)
+	PSrot_avg = sparx_fundamentals.rops_table(ima)
 	nnn = len(PSrot_avg)
 	q= end_particle-start_particle+1
 	for i in range(start_particle+1, end_particle+1):
-		ima = utilities.get_im(stack_file, i)
-		PSrot = fundamentals.rops_table(ima)
+		ima = sparx_utilities.get_im(stack_file, i)
+		PSrot = sparx_fundamentals.rops_table(ima)
 		for y in range(nnn): PSrot_avg[y] += PSrot[y]
 	for y in range(nnn): PSrot_avg[y] /= q
 	return PSrot_avg
@@ -8499,7 +8207,7 @@ class def_variancer(object):
 	def __init__(self, nx, ny, nz):
 		pass#IMPORTIMPORTIMPORT from utilities import model_blank
 		self.nimg = 0
-		self.sum1 = utilities.model_blank(nx, ny, nz)
+		self.sum1 = sparx_utilities.model_blank(nx, ny, nz)
 		self.imgs = []
 
 	def insert(self, img):
@@ -8513,21 +8221,21 @@ class def_variancer(object):
 		pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 		avg = self.sum1.copy()
 
-		utilities.reduce_EMData_to_root( avg, myid, rootid )
+		sparx_utilities.reduce_EMData_to_root( avg, myid, rootid )
 		nimg = mpi.mpi_reduce( self.nimg, 1, mpi.MPI_INT, mpi.MPI_SUM, rootid, mpi.MPI_COMM_WORLD)
 
 		if myid==rootid:
 			nimg = int(nimg[0])
 			avg /= nimg
 
-		utilities.bcast_EMData_to_all( avg, myid, rootid )
+		sparx_utilities.bcast_EMData_to_all( avg, myid, rootid )
 
 		var = avg.copy()
 		var.to_zero()
 		for img in self.imgs:
 			EMAN2_cppwrap.Util.add_img2( var, EMAN2_cppwrap.Util.subn_img(img, avg) )
 
-		utilities.reduce_EMData_to_root( var, myid, rootid )
+		sparx_utilities.reduce_EMData_to_root( var, myid, rootid )
 		if myid == rootid:
 			var /= (nimg-1)
 			var.set_attr( "nimg", nimg )
@@ -8542,7 +8250,7 @@ class def_variancer(object):
 
 		cpy1 = self.sum1.copy()
 
-		utilities.reduce_EMData_to_root( cpy1, myid, rootid )
+		sparx_utilities.reduce_EMData_to_root( cpy1, myid, rootid )
 		
 		nimg = mpi.mpi_reduce( self.nimg, 1, mpi.MPI_INT, mpi.MPI_SUM, rootid, mpi.MPI_COMM_WORLD)
 		
@@ -8581,7 +8289,7 @@ class inc_variancer(object):
 	def insert(self, img):
 		pass#IMPORTIMPORTIMPORT from numpy import reshape
 		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
-		data = numpy.reshape( utilities.get_image_data(img), (self.ntot,) )
+		data = numpy.reshape( sparx_utilities.get_image_data(img), (self.ntot,) )
 		self.sum1 += data
 		self.sum2 += (data*data)
 		self.nimg += 1
@@ -8602,10 +8310,10 @@ class inc_variancer(object):
 
 			nimg = int(sum_nimg[0])
 
-			avg = utilities.model_blank( self.nx, self.ny, self.nz )
-			var = utilities.model_blank( self.nx, self.ny, self.nz )
-			vdata = numpy.reshape( utilities.get_image_data(var), (self.ntot,) )
-			adata = numpy.reshape( utilities.get_image_data(avg), (self.ntot,) )
+			avg = sparx_utilities.model_blank( self.nx, self.ny, self.nz )
+			var = sparx_utilities.model_blank( self.nx, self.ny, self.nz )
+			vdata = numpy.reshape( sparx_utilities.get_image_data(var), (self.ntot,) )
+			adata = numpy.reshape( sparx_utilities.get_image_data(avg), (self.ntot,) )
 	
 			
 			for i in range(self.ntot):
@@ -8630,7 +8338,7 @@ class inc_variancer(object):
 		del sum2
 		del cpy1
 		del cpy2
-		return utilities.model_blank(self.nx,self.ny,self.nz), utilities.model_blank(self.nx,self.ny,self.nz)
+		return sparx_utilities.model_blank(self.nx,self.ny,self.nz), sparx_utilities.model_blank(self.nx,self.ny,self.nz)
 
 
 	def mpi_getavg(self, myid, rootid ):
@@ -8645,8 +8353,8 @@ class inc_variancer(object):
 			sum_nimg = int( sum_nimg[0] )
 			cpy1 /= sum_nimg
 
-			avg = utilities.model_blank( self.nx, self.ny, self.nz )
-			adata = utilities.get_image_data(numpy.var).reshape( [self.ntot] ).astype( numpy.float32 )
+			avg = sparx_utilities.model_blank( self.nx, self.ny, self.nz )
+			adata = sparx_utilities.get_image_data(numpy.var).reshape( [self.ntot] ).astype( numpy.float32 )
 
 			adata[0:self.ntot] = cpy1[0:self.ntot]
 			avg.set_attr( "nimg", sum_nimg )
@@ -8843,299 +8551,6 @@ def cluster_equalsize(d, m):
 	return  groupping,cent,disp
 
 
-class pcanalyzer(object):
-	def __init__(self, mask, nvec=3, incore=False, MPI=False, scratch=None):
-		pass#IMPORTIMPORTIMPORT import os
-		self.mask = mask.copy()
-		if MPI:
-			pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, MPI_COMM_WORLD
-			self.myid = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
-			if( scratch == None):
-				self.file = os.path.join("." , "maskedimg%04d.bin" % self.myid )
-			else:
-				self.file = os.path.join(scratch , "maskedimg%04d.bin" % self.myid )
-			self.MPI  = True
-		else:
-			if( scratch == None):
-				self.file = os.path.join("." , "maskedimg.bin" )
-			else:
-				self.file = os.path.join(scratch , "maskedimg.bin" )
-			self.MPI  = False
-			self.myid = 0
-		#self.sdir   = "."
-		self.nimg   = 0
-		self.nvec   = nvec
-		self.fw     = None
-		self.fr     = None
-		self.avgdat = None
-		self.myBuff = []
-		self.myBuffPos = 0
-		self.incore = incore
-
-	def writedat( self, data ):
-		pass#IMPORTIMPORTIMPORT import array
-		if not self.incore:
-			if self.fw is None:
-				self.fw = open( self.file, "wb" )
-			data.tofile( self.fw )
-		else:
-			if len(self.myBuff) <= self.myBuffPos:
-				self.myBuff.append(data.copy())
-				self.myBuffPos = len(self.myBuff)
-			else:
-				self.myBuff[self.myBuffPos] = data.copy()
-				self.myBuffPos += 1
-
-	def read_dat( self, data ):
-		pass#IMPORTIMPORTIMPORT from numpy import fromfile, float32
-		if not self.incore:
-			if not(self.fw is None) and not( self.fw.closed ):
-				self.fw.close()
-			if self.fr is None:
-				self.fr = open( self.file, "rb" )
-			assert not(self.fr is None) and not self.fr.closed
-			EMAN2_cppwrap.Util.readarray( self.fr, data, self.ncov )
-		else:
-			data[:] = self.myBuff[self.myBuffPos]
-			self.myBuffPos += 1
-		if not(self.avgdat is None):
-			data -= self.avgdat
-
-	def close_dat( self ):
-		if not self.incore:
-			if not(self.fw is None) and not( self.fw.closed ):
-				self.fw.close()
-			self.fw = None
-			if not(self.fr is None) and not( self.fr.closed ):
-				self.fr.close()
-			self.fr = None	
-		else:
-			self.myBuffPos = 0
-
-	def usebuf( self ):
-		nx = self.mask.get_xsize()
-		ny = self.mask.get_ysize()
-		nz = self.mask.get_zsize()
-
-		self.ncov = 0
-		for ix in range(nx):
-			for iy in range(ny):
-				for iz in range(nz):
-					if( self.mask.get_value_at(ix,iy,iz) >= 0.5 ):
-						self.ncov += 1
-		pass#IMPORTIMPORTIMPORT import os
-		size = os.stat( self.file )[6]
-		self.nimg = size/(self.ncov*4)
-		assert self.nimg * self.ncov*4 == size
-		self.bufused = True
-
-	def shuffle( self ):
-		assert self.bufused
-		pass#IMPORTIMPORTIMPORT from random import shuffle, seed
-		pass#IMPORTIMPORTIMPORT from numpy  import zeros, float32, array
-		pass#IMPORTIMPORTIMPORT from string import replace
-		random.seed( 10000 + 10*self.myid )
-
-		shfflfile = string.replace( self.file, "masked", "shuffled" )
-
-		#print self.myid, "shuffling"
-		sumdata = numpy.zeros( (self.ncov), numpy.float32 )
-		imgdata = numpy.zeros( (self.ncov), numpy.float32 )
-		if not self.incore: 
-			self.fr = open( self.file, "rb" )
-		self.avgdata = None
-
-		if not self.incore: 
-			fw = open( shfflfile, "wb" )
-		for i in range(self.nimg):
-			self.read_dat( imgdata )
-			random.shuffle( imgdata )
-			sumdata += imgdata
-			if not self.incore:
-				imgdata.tofile( fw )
-			else:
-				self.myBuff[self.myBuffPos-1] = imgdata.copy()
-
-		if not self.incore: 
-			self.fr.close()
-			fw.close()
-		else:
-			self.close_dat()
-		
-		if self.MPI:
-			pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
-			sumdata = mpi.mpi_reduce( sumdata, self.ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
-			sumdata = mpi.mpi_bcast(  sumdata, self.ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
-			sumdata = numpy.array(sumdata, numpy.float32)
- 
-			sumnimg = mpi.mpi_reduce( self.nimg, 1, mpi.MPI_INT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
-			sumnimg = mpi.mpi_bcast(  sumnimg,   1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD )
-		else:
-			sumnimg = self.nimg
-
-		self.file = shfflfile
-		self.avgdat = sumdata[:]/float(sumnimg)
-		#print "done shuffling,nimg:", float(sumnimg)
-
-
-
-	def setavg( self, avg ):
-		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32
-		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
-		tmpimg = EMAN2_cppwrap.Util.compress_image_mask( avg, self.mask )
-		avgdat = utilities.get_image_data(tmpimg)
-		self.avgdat = numpy.zeros( (len(avgdat)), numpy.float32 )
-		self.avgdat[:] = avgdat[:]
-
-	def insert( self, img ):
-		assert self.mask.get_xsize()==img.get_xsize()
-		assert self.mask.get_ysize()==img.get_ysize()
-		assert self.mask.get_zsize()==img.get_zsize()
-
-		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
-		tmpimg = EMAN2_cppwrap.Util.compress_image_mask( img, self.mask )
-		tmpdat = utilities.get_image_data(tmpimg)
-		if self.incore:
-			self.myBuffPos = len(self.myBuff)
-		self.writedat( tmpdat )
-		if self.incore:
-			self.close_dat()                                   #   WRITEDAT
-		self.nimg +=1
-		self.ncov = tmpimg.get_xsize()
-
-	def analyze( self ):
-		#if self.myid==0:
-		#	print "analyze: ", self.ncov, " nvec: ", self.nvec
-		pass#IMPORTIMPORTIMPORT from time import time
-		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32, int32, int64
-		ncov = self.ncov
-		kstep = self.nvec + 20 # the choice of kstep is purely heuristic
-
-		diag    = numpy.zeros( (kstep), numpy.float32 )
-		subdiag = numpy.zeros( (kstep), numpy.float32 )
-		vmat    = numpy.zeros( (kstep, ncov), numpy.float32 )
-
-		lanczos_start = time.time()
-		kstep = self.lanczos( kstep, diag, subdiag, vmat )
-		#print 'time for lanczos: ', time() - lanczos_start
-		if not self.MPI or self.myid==0:
-			qmat = numpy.zeros( (kstep,kstep), numpy.float32 )
-			lfwrk = 100 + 4*kstep + kstep*kstep
-			liwrk =   3 + 5*kstep
-
-			fwork = numpy.zeros( (lfwrk), numpy.float32 )
-			iwork = numpy.zeros( (liwrk), numpy.int32 )
-			info = EMAN2_cppwrap.Util.sstevd( "V", kstep, diag, subdiag, qmat, kstep, fwork, lfwrk, iwork, liwrk)
-
-			eigval = numpy.zeros( (self.nvec), numpy.float32 )
-			for j in range(self.nvec):
-				eigval[j] = diag[kstep-j-1]
-
-			pass#IMPORTIMPORTIMPORT from utilities import model_blank, get_image_data
-			eigimgs = []
-			for j in range(self.nvec):
-				tmpimg = utilities.model_blank(ncov, 1, 1)
-				eigvec = utilities.get_image_data( tmpimg )
-				trans = 'N'
-				EMAN2_cppwrap.Util.sgemv( trans, ncov, kstep, 1.0, vmat, ncov, qmat[kstep-j-1], 1, 0.0, eigvec, 1 );
-
-				eigimg = EMAN2_cppwrap.Util.reconstitute_image_mask(tmpimg, self.mask)
-				eigimg.set_attr( "eigval", float(eigval[j])/(self.nimg - 1) )
-				eigimgs.append( eigimg )
-
-			return eigimgs
-
-
-	def lanczos( self, kstep, diag, subdiag, V ):
-		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32, array
-		pass#IMPORTIMPORTIMPORT from time import time
-
-		all_start = time.time()
-
-		ncov = self.ncov
-		v0 = numpy.zeros( (ncov), numpy.float32)
-		Av = numpy.zeros( (ncov), numpy.float32)
-
-		hvec = numpy.zeros( (kstep), numpy.float32 )
-		htmp = numpy.zeros( (kstep), numpy.float32 )
-		imgdata = numpy.zeros( (ncov), numpy.float32 )
-
-		for i in range(ncov):
-			v0[i] = 1.0
-
-		beta = EMAN2_cppwrap.Util.snrm2(ncov, v0, 1)
-		for i in range(ncov):
-			V[0][i] = v0[i]/beta
-
-		for i in range(self.nimg):
-			self.read_dat(imgdata)                                     #  READ_DAT			
-			alpha = EMAN2_cppwrap.Util.sdot( ncov, imgdata, 1, V[0], 1 )
-			EMAN2_cppwrap.Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
-		self.close_dat()
-
-		if self.MPI:
-			pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
-			Av = mpi.mpi_reduce( Av, ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
-			Av = mpi.mpi_bcast(  Av, ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
-			Av = numpy.array(Av, numpy.float32)
-		#print 'iter 0: ', time() - all_start
-
-
-		diag[0] = EMAN2_cppwrap.Util.sdot( ncov, V[0], 1, Av, 1 )
-		alpha = -diag[0]
-		EMAN2_cppwrap.Util.saxpy( ncov, float(alpha), V[0], 1, Av, 1 )
-
-		TOL = 1.0e-7
-		for iter in range(1, kstep):
-			iter_start = time.time()
-			beta = EMAN2_cppwrap.Util.snrm2(ncov, Av, 1)
-			if( beta < TOL ):
-				kstep = iter+1
-				break
-
-			subdiag[iter-1] = beta
-			for i in range(ncov):
-				V[iter][i] = Av[i]/beta
-
-			Av[:] = 0.0
-
-			for i in range(self.nimg):
-				self.read_dat( imgdata )                                #READ_DAT
-				alpha = EMAN2_cppwrap.Util.sdot( ncov, imgdata, 1, V[iter], 1 )
-				EMAN2_cppwrap.Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
-			self.close_dat()
-
-
-			if self.MPI:
-				Av = mpi.mpi_reduce( Av, ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
-				Av = mpi.mpi_bcast(  Av, ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
-				Av = numpy.array(Av, numpy.float32)
-
-			trans = 'T'
-			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
-			              0.0, hvec, 1 )
-
-			trans = 'N'
-			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, hvec, 1,
-			              1.0,     Av, 1 )
-
-			trans = 'T'
-			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
-			              0.0,   htmp, 1 )
-
-			EMAN2_cppwrap.Util.saxpy(iter+1, 1.0, htmp, 1, hvec, 1)
-
-			trans = 'N'
-			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, htmp, 1,
-			              1.0,     Av, 1 )
-
-			diag[iter] = hvec[iter]
-
-			#print 'iter, time, overall_time: ', iter, time()-iter_start, time()-all_start
-		return kstep
-
-
-
 class pcanalyzebck(object):
 	def __init__(self, mask, nvec, dataw, list_of_particles, dm, variance, fl, aa, MPI=False ):
 		pass#IMPORTIMPORTIMPORT import os
@@ -9167,16 +8582,16 @@ class pcanalyzebck(object):
 	def get_dat( self, k ):
 		pass#IMPORTIMPORTIMPORT from reconstruction import backproject_swbp
 		pass#IMPORTIMPORTIMPORT from filter  import filt_tanl
-		vb = EMAN2_cppwrap.Util.divn_img(reconstruction.backproject_swbp(self.dataw[k], self.list_of_particles[k], self.dm), self.variance)
+		vb = EMAN2_cppwrap.Util.divn_img(sparx_reconstruction.backproject_swbp(self.dataw[k], self.list_of_particles[k], self.dm), self.variance)
 		if(self.fl > 0.0):
-			vb = filter.filt_tanl(vb, self.fl, self.aa)
+			vb = sparx_filter.filt_tanl(vb, self.fl, self.aa)
 		#vb -= pc[0]
 		#vb *= (refstat[1]/pc[1])
 		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32
 		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
 
 		tmpimg = EMAN2_cppwrap.Util.compress_image_mask( vb, self.mask )
-		data = utilities.get_image_data(tmpimg)
+		data = sparx_utilities.get_image_data(tmpimg)
 		if not(self.avgdat is None):
 			data -= self.avgdat
 		return data
@@ -9204,7 +8619,7 @@ class pcanalyzebck(object):
 		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32
 		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
 		tmpimg = EMAN2_cppwrap.Util.compress_image_mask( avg, self.mask )
-		avgdat = utilities.get_image_data(tmpimg)
+		avgdat = sparx_utilities.get_image_data(tmpimg)
 		self.avgdat = numpy.zeros( (len(avgdat)), numpy.float32 )
 		self.avgdat[:] = avgdat[:]
 
@@ -9241,8 +8656,8 @@ class pcanalyzebck(object):
 			pass#IMPORTIMPORTIMPORT from utilities import model_blank, get_image_data
 			eigimgs = []
 			for j in range(self.nvec):
-				tmpimg = utilities.model_blank(ncov, 1, 1)
-				eigvec = utilities.get_image_data( tmpimg )
+				tmpimg = sparx_utilities.model_blank(ncov, 1, 1)
+				eigvec = sparx_utilities.get_image_data( tmpimg )
 				trans = 'N'
 				EMAN2_cppwrap.Util.sgemv( trans, ncov, kstep, 1.0, vmat, ncov, qmat[kstep-j-1], 1, 0.0, eigvec, 1 );
 
@@ -9346,313 +8761,6 @@ class pcanalyzebck(object):
 
 
 
-def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1,do_mpi=False, K=-1,cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
-	pass#IMPORTIMPORTIMPORT from statistics import k_means_match_clusters_asg_new
-	"""
-		
-		Input:
-			PART:   list of list of arrays. So PART[0] corresponds to the first partition, PART[1] the second partition and so on. 
-				Each partition is a list of arrays of distinct integers sorted in ascending order. The arrays corresponds
-				to classes, so PART[i][j] is the j-th class of the i-th partition. 
-				
-				Example of how to construct a partition:
-					K    = EMUtil.get_image_count(stack_name)
-					part0 = []
-					for k in xrange(K):
-						im  = get_im(stack_name, k)
-						lid = im.get_attr('members')
-						lid = array(lid, 'int32')
-						lid.sort()
-						part0.append(lid.copy())
-						
-			K:	Number of classes in the first partition.
-	
-			T:      An integer. It is the threshold such that the stable sets corresponding to the matches in the output have size larger than T. 
-				Specifically, if there are say four partitions, and the i-th match in the output, i.e., MATCH[i], is [2,12,1,5], then
-				the 2nd class of the first partition, 12th class of the second, first class of the third, and fifth class of the
-				fourth have at least T elements in common.
-			
-			nguesses: Not used anymore. I'm going to remove it.
-			
-			J:	An integer. In the branching matching algorithm we use, each step corresponds to choosing a match to add to the 
-				collection of matches we will eventually output. 
-				Since at each step there are many different possibilities and 
-				it is generally not feasible to branch on them all, we consider only J matches with the largest weights in choosing which matches to branch on.
-				See branchfunc below for more details.
-				Intuitively, a larger J should give better results. 
-				If J=1, the algorithm defaults to the greedy algorithm, i.e, at each step, we choose the match which has the largest cost and add it to the collection of matches to output.
-			        
-			
-			branchfunc: An integer. Determines which branching function should be used. 
-			
-				    Roughly speaking, the algorithm we use builds up the collection of matches iteratively. During each step, we determine
-				    the next match that should be added to the collection. Since there are many possibilities, the role of the branching function
-				    is to determine both how many and which possibilities to explore.
-				    
-				    The branching functions chooses the possibilities to explore from the 
-				    J matches with the largest weights.
-				    
-				    There are two possible choices for branchfunc: 2 or 4
-				    
-				    branchfunc = 2:  The J matches are considered in order according to weight, beginning with the match with the largest weight. 
-				    	             Always branches on the current match with the largest weight. 
-						     Branch on the match with the second largest weight only if it is infeasible with the match with the largest weight.
-				    	             Similarly, for each subsequent match, only branch on it if it is infeasible with at least LIM of the matches which have already been chosen to branch on.
-						    
-						    
-				    branchfunc = 4:  The J matches are considered in order according to weight, beginning with the match with the largest weight. 
-				    		     We branch based on distribution of the cost of the J largest matches. 
-				    		     Let stdev be the standard deviation of the weights of the J matches. 
-						     We always branch on the match with the largest weight.
-						     For the remaining J-1 matches, we branch on those which are within stmult*stdev of the weight of match with the largest weight.
-						     	 	
-				    	
-			LIM: 	An integer smaller than J. See explanation for branchfunc above.
-				  	
-			max_branching: This is an upper bound on the maximum number of branches to explore. See explanation for branchfunc above. This is to ensure we get a result in reasonable time. Intuitively, the larger max_branching is, the likelihood of getting a better result (i.e, a collection of matches with a large total weight) is increased.  
-	
-			stmult: An integer. See explanation for branchfunc above.
-	
-		Output: MATCH, STB_PART, CT_s, CT_t, ST, st
-			
-			If there are exactly two partitions, i.e., len(PART) == 2, then the matching will be computed using Hungarian algorithm, and those matches for which the corresponding stable set has size greater than T will be output. If T==0, then the output matches will be optimal.
-			
-			(EDIT 10/11/11: If there are exactly two partitions, i.e., len(PART) == 2, then the matching will be computed using Hungarian algorithm such that ONLY matches with weights greater than T are considered during the course of the algorithm. This means the matching computed using the Hungarian algorithm will contain only matches with weight greater than T. See k_means_match_clusters_asg_new.) 
-			
-			MATCH: A list of arrays. Each array has len(PART) elements, and the i-th element corresponds to a class in the i-th partition. 
-			       So MATCH[0][0] is an index into PART[0], MATCH[0][1] is an index into PART[1], etc.
-			    
-			STB_PART: A list of lists. The stable set corresponding to the i-th MATCH, i.e., MATCH[i], is stored in STB_PART[MATCH[i][0]]. 
-			
-			CT_s:   A list of integers. The size of the stable set corresponding to  the i-th MATCH, i.e., MATCH[i], is stored in CT_s[MATCH[i][0]].
-				The quality of the output collection of matches, i.e., MATCH, can be determined by summing CT_s. The larger the better.
-			
-			CT_t:	A list of integers. The number of elements in the union of the classes in the i-th match is stored in CT_t[MATCH[i][0]].
-			
-			st:     st = 100.0 * sum(CT_s) / float(sum(CT_t)) 
-			
-			ST:	ST[k] = 100.0 * CT_s[k] / float(CT_t[k])	
-	
-	"""
-	
-	pass#IMPORTIMPORTIMPORT from copy import deepcopy
-	pass#IMPORTIMPORTIMPORT from numpy import array, append
-
-	MATCH=[]
-	np = len(PART)
-	# do MPI_init: compute pruned partitions and Njobs top matches and return
-	#if doMPI_init:
-	#	newParts,topMatches,class_dim, num_found=k_means_match_bbenum(PART,T=T, J=J, nguesses=nguesses, DoMPI_init=True,Njobs=njobs)
-	#	return newParts, topMatches, class_dim,num_found
-	
-	#if do_mpi:
-	#	MATCH,cost= k_means_match_bbenum(PART, T=T, J=J, nguesses=nguesses, DoMPI=True, K=K, np=np,c_dim=cdim, N_start=nstart,N_stop=nstop,topMatches=top_Matches)
-	#	return MATCH,cost
-			
-	if np > 2:
-		MATCH= k_means_match_bbenum(PART, T=T, J=J, max_branching=max_branching, stmult=stmult, branchfunc=branchfunc, LIM=LIM, nguesses=nguesses, DoMPI=False)
-
-	
-	list_stb=[]
-	tot_n=0
-	if np == 2:
-		# First make sure the two partitions have the same number of classes. If not, pad the one with less with junk.
-		K1 = len(PART[0])
-		K2 = len(PART[1])
-		maxK = max(K1, K2)
-		if K1 < maxK or K2 < maxK:
-			# ffind garbage value to pad empty classes with
-			garbage_value = 923456
-			garbage_incr=1
-			for i in range(np):
-				K = len(PART[i])
-				for j in range(K):
-					pSize = PART[i][j].size
-					if pSize >= 1:
-						for p in range(pSize):
-							if PART[i][j][p] >= garbage_value:
-								garbage_value = PART[i][j][p] + garbage_incr
-			for i in range(np):
-				if len(PART[i]) < maxK:
-					# pad with empty arrays
-					df = maxK - len(PART[i])
-					for pd in range(df):
-						PART[i].append(numpy.array([garbage_value, garbage_value+1],'int32'))
-						garbage_value = garbage_value + 2
-						
-		# now call 
-		MATCH, list_stb, tot_n = k_means_match_clusters_asg_new(PART[0], PART[1], T)
-			
-							
-	K=len(PART[0])		
-	
-	STB_PART = [[] for i in range(K)]
-	nm       = len(MATCH)
-	CT_t     = [0] * K
-	CT_s     = [0] * K
-	ST       = [0] * K
-	ct_t     = 0
-	ct_s     = 0
-	st       = 0
-
-
-	for k in range(nm):
-		kk   = int(MATCH[k][0]) # due to numpy obj
-		vmax = [0] * np
-		vmin = [0] * np
-		for i in range(np):
-		    vmax[i] = max(PART[i][int(MATCH[k][i])])
-		    vmin[i] = min(PART[i][int(MATCH[k][i])])
-
-		vmax = int(max(vmax))
-		vmin = int(min(vmin))
-		vd   = vmax - vmin + 1
-
-		asg = [0] * vd
-		for i in range(np):
-		    for item in PART[i][int(MATCH[k][i])]: asg[int(item) - vmin] += 1
-
-		stb  = []
-		for i in range(vd):
-			if asg[i] != 0:
-				CT_t[kk] += 1
-				if asg[i] == np:
-					CT_s[kk] += 1
-					stb.append(i + vmin)
-
-		STB_PART[kk] = copy.deepcopy(stb)
-
-	for k in range(K):
-		if CT_t[k] == 0: continue
-		ST[k] = 100.0 * CT_s[k] / float(CT_t[k])
-
-	if sum(CT_t) == 0:
-		st = 0
-	else:   st = 100.0 * sum(CT_s) / float(sum(CT_t))
-
-	if np == 2:
-		if sum(CT_s) != tot_n:
-			print(sum(CT_s), tot_n)
-			print("something wrong!!")
-			sys.exit()
-
-	return MATCH, STB_PART, CT_s, CT_t, ST, st
-
-# DO NOT copy memory - could lead to crashes	
-# This is the wrapper function for bb_enumerateMPI. It packages the arguments and formats the output....
-def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesses=5, branchfunc=2, LIM=-1, DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1, c_dim=[],N_start=-1, N_stop=-1, topMatches=[]):	
-	pass#IMPORTIMPORTIMPORT from numpy import array, append, insert,sort
-	
-	MATCH=[]
-	output=[]
-	
-	
-	if DoMPI==True and DoMPI_init==False:
-		print("Not supporting MPI currently")
-		#if len(levels)<1:	
-		#	for i in xrange(K):
-		#		levels.append(1)
-
-		#ar_levels = array(levels, 'int32')
-		#ar_class_dim	= array(c_dim,'int32')	
-		#ar_newParts = array(PART, 'int32')
-		#firstmatches = topMatches[N_start*(np+1):(N_stop+1)*(np+1)]
-		#output=Util.branchMPIpy(ar_newParts,ar_class_dim,np,K,T,ar_levels,K,nguesses,N_stop-N_start+1, array(firstmatches, 'int32'))
-	else:
-		LARGEST_CLASS = 0
-		np=len(PART)
-		
-		#ar_argParts = array([],'int32')
-		onedParts = []
-		class_dim=[]
-		
-		# figure out the garbage value to pad empty classes with
-		
-		garbage_value = 923456
-		garbage_incr = 10
-		for i in range(np):
-			K = len(PART[i])
-			for j in range(K):
-				pSize = PART[i][j].size
-				if pSize > LARGEST_CLASS:
-					LARGEST_CLASS = pSize
-				if pSize >= 1:
-					for p in range(pSize):
-						if PART[i][j][p] >= garbage_value:
-							garbage_value = PART[i][j][p] + garbage_incr
-		
-		# deal with the case where not all the partitions have the same number of classes
-		max_K = len(PART[0])
-		for i in range(np):
-			if len(PART[i]) > max_K:
-				max_K = len(PART[i])
-		for i in range(np):
-			if not(len(PART[i]) == max_K):
-				# pad with empty arrays
-				df = max_K - len(PART[i])
-				for j in range(df):
-					PART[i].append(numpy.array([garbage_value, garbage_value+1],'int32'))
-					garbage_value = garbage_value + 2	
-					
-		
-		K = len(PART[0])		
-		# serialize all the arguments in preparation for passing into c++ function
-		
-		
-		for i in range(np):
-			for j in range(K):
-				pSize = PART[i][j].size
-					
-				onedParts.append(j)
-				onedParts.append(0)
-				zero_pad = 0
-				if pSize > 0:
-					for p in range(pSize):
-						onedParts.append(PART[i][j][p])	
-				else:
-					# pad with garbage value
-					zero_pad=2
-					onedParts.append(garbage_value)
-					onedParts.append(garbage_value+1)
-					garbage_value = garbage_value + zero_pad
-						
-				class_dim.append(pSize + zero_pad + 2)
-				
-				#ar_argParts = append(ar_argParts,[j,0])
-				#ar_argParts=append(ar_argParts,PART[i][j])
-		ar_argParts = numpy.array(onedParts,'int32')
-		ar_class_dim = numpy.array(class_dim,'int32')
-		
-
-		# Single processor version
-		output = EMAN2_cppwrap.Util.bb_enumerateMPI(ar_argParts, ar_class_dim,np,K,T, nguesses,LARGEST_CLASS, J, max_branching, stmult, branchfunc, LIM)
-		
-	# first element of output is the total  cost of the solution, second element is the number of matches
-	# in the output solution, and then follows the list of matches.
-	
-	# convert each match into an array and insert into MATCH
-	num_matches = output[1]
-	
-	for j in range(num_matches):
-		# get the j-th match
-		ar_match = numpy.array(output[j*np + 2: j*np + 2+np],'int32')
-		MATCH.append(ar_match)
-		
-	# order Matches in Match by group in first partition
-	outMATCH=[]
-	for j in range(num_matches):
-		amatch=[]
-		for js in range(len(MATCH[j])):
-			amatch.append(MATCH[j][js])
-		outMATCH.append(amatch)
-	outMATCH.sort()
-			
-	if DoMPI:
-		print("Not supporting MPI currently")
-		return outMATCH, output[0]
-	else:
-		return outMATCH
-# match is a list, where every five tuple corresponds to a match
 def k_means_stab_getinfo(PART, match):
 	
 	pass#IMPORTIMPORTIMPORT from copy import deepcopy
@@ -9752,7 +8860,7 @@ def fit_ctf(crossresolution, ctf_params, rangedef = -1.0, i1 = 0, i2 = 0, chisqu
 	nstep = 21
 	for j in range(21):
 		defi = ctf_params[0]-rangedef + rangedef*0.1*j
-		ctf = morphology.ctf_1d(nx, utilities.generate_ctf([defi]+ctf_params[1:]))
+		ctf = sparx_morphology.ctf_1d(nx, sparx_utilities.generate_ctf([defi]+ctf_params[1:]))
 		disc = 0.0
 		if chisquare:
 			for k in range(i1,i2):

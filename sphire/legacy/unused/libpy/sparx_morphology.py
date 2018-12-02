@@ -511,7 +511,7 @@ def threshold_to_minval(img, minval = 0.0):
 	"""
 	return img.process( "threshold.belowtominval", {"minval": minval } )
 
-def threshold_outside_deprecated(img, minval, maxval):
+def threshold_outside_dep(img, minval, maxval):
 	"""
 		Name
 			threshold_outside - replace values outside given thresholds by respective threshold values
@@ -554,17 +554,6 @@ def threshold_maxval(img, maxval = 0.0):
 	st = EMAN2_cppwrap.Util.infomask(img, None, True)
 	return img.process( "threshold.clampminmax", {"minval": st[2], "maxval": maxval } )
 
-def notzero(img):
-	"""
-		Name
-			notzero - replace values that are not zero by 1.0
-		Input
-			img: input image
-		Output
-			binary image.
-	"""
-	return img.process( "threshold.notzero" )
-
 def linchange(a, fct):
 	"""
 	reinterpolate a line given as a list by a factor of fct.
@@ -586,32 +575,6 @@ def linchange(a, fct):
 
 
 ## CTF related functions
-def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
-	"""
-		Generate a 1-2-3-D complex image containing the CTF.
-	 	Default is 2D output.
-	  	Input
-			nx: x image size.
-			ctf: ctf object, see CTF_info for description.
-			sign: sign of the CTF.
-			ny: y image size
-			nz: z image size 
-		Output
-			ctfimg: complex image containing CTF.
-	"""
-	dict = ctf.to_dict()
-	dz = dict["defocus"]
-	cs = dict["cs"]
-	voltage = dict["voltage"]
-	pixel_size = dict["apix"]
-	b_factor = dict["bfactor"]
-	ampcont = dict["ampcont"]
-	dza = dict["dfdiff"]
-	azz = dict["dfang"]
-
-	if(ny < 1):  ny = nx
-	return  EMAN2_cppwrap.Util.ctf_img(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
-
 def compare_ctfs(nx, ctf1, ctf2):
 	sign = 1.0
 	dict       = ctf1.to_dict()
@@ -634,7 +597,7 @@ def compare_ctfs(nx, ctf1, ctf2):
 	dza        = dict["dfdiff"]
 	azz        = dict["dfang"]
 	if(pixel_size != pixel_size2):
-		global_def.ERROR("CTFs have different pixel sizes, pixel size from the first one used", "compare_ctfs", 0)
+		sparx_global_def.ERROR("CTFs have different pixel sizes, pixel size from the first one used", "compare_ctfs", 0)
 	cim2 = EMAN2_cppwrap.Util.ctf_rimg(nx, 1, 1, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
 	for i in range(nx//2,nx):
 		if(cim1.get_value_at(i)*cim2.get_value_at(i) < 0.0):
@@ -668,10 +631,10 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 	roo     = []
 	res     = []
 	if(docf == "a"):
-		TMP_roo = utilities.read_text_row(fnam_roo, "a", skip)
+		TMP_roo = sparx_utilities.read_text_row(fnam_roo, "a", skip)
 		for i in range(len(TMP_roo)):	roo.append(TMP_roo[i][1])
 	else:
-		TMP_roo=utilities.read_text_row(fnam_roo,"s",";")
+		TMP_roo=sparx_utilities.read_text_row(fnam_roo,"s",";")
 		for i in range(len(TMP_roo)):	roo.append(TMP_roo[i][2])
 	Res_roo = []
 	Res_TE  = []	
@@ -723,16 +686,16 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 	defocus = defocus_guess(Res_roo, Res_TE, voltage, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
 
 	nx  = int(len(Res_roo)*2)
-	ctf = ctf_2(nx, utilities.generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, wgh]))
+	ctf = ctf_2(nx, sparx_utilities.generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, wgh]))
 	if (parent is not None):
 		parent.ctf_data=[roo, Res_roo, Res_TE]
 		parent.i_start = i_start
 		parent.i_stop = i_stop
 		pass#IMPORTIMPORTIMPORT from utilities import write_text_file
-		utilities.write_text_file([roo, Res_roo, Res_TE, ctf], "procpw.txt")
+		sparx_utilities.write_text_file([roo, Res_roo, Res_TE, ctf], "procpw.txt")
 	else:
 		pass#IMPORTIMPORTIMPORT from utilities import write_text_file
-		utilities.write_text_file([roo, Res_roo, Res_TE, ctf], "procpw.txt")
+		sparx_utilities.write_text_file([roo, Res_roo, Res_TE, ctf], "procpw.txt")
 	return defocus
 
 def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a" ,skip="#", round_off=1, nr1=3, nr2=6):
@@ -748,12 +711,12 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 	roo     = []
 	res     = []
 	if docf == "a":
-		TMP_roo = utilities.read_text_row(fnam_roo, "a", skip)
+		TMP_roo = sparx_utilities.read_text_row(fnam_roo, "a", skip)
 		for i in range(len(TMP_roo)): # remove first record
 			roo.append(TMP_roo[i][1])
 	else:
 		skip = ";"
-		TMP_roo = utilities.read_text_row(fnam_roo, "s", skip)
+		TMP_roo = sparx_utilities.read_text_row(fnam_roo, "s", skip)
 		for i in range(len(TMP_roo)): # remove first record
 			roo.append(TMP_roo[i][2])
 	Res_roo = []
@@ -772,7 +735,7 @@ def defocus_get_Eudis(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0,
 	#
 	defocus=defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
 	nx  = int(len(roo)*2)
-	ctf = ctf_2(nx, utilities.generate_ctf([defocus,Cs,voltage,Pixel_size, 0.0, wgh]))
+	ctf = ctf_2(nx, sparx_utilities.generate_ctf([defocus,Cs,voltage,Pixel_size, 0.0, wgh]))
 	for i in range(len(Res_TE)):
 		ctf[i]=ctf[i]*Res_TE[i]
 	dis = defocus_L2_euc(ctf, Res_roo, i_start, i_stop)
@@ -782,13 +745,13 @@ def defocus_L2_euc(v1,v2, ist,istp):
 	pass#IMPORTIMPORTIMPORT from math import sqrt
 	dis    = 0.0
 	pw_sum = 0.0
-	if ist == istp :	global_def.ERROR("No pw2 curve is included  ", "defocus_L2_euc", 0)
+	if ist == istp :	sparx_global_def.ERROR("No pw2 curve is included  ", "defocus_L2_euc", 0)
 	else:			tfeq = istp-ist
 	for i in range(ist,istp,1):
 		dis+=    (v1[i]-v2[2])**2
 		pw_sum+= (v1[i])**2
-	if pw_sum <= 0:		global_def.ERROR("negative or zero power ", "defocus_L2_euc", 1)
-	if dis    <= 0:		global_def.ERROR("bad fitting, change options settings and try again  ", "defocus_L2_euc", 0)
+	if pw_sum <= 0:		sparx_global_def.ERROR("negative or zero power ", "defocus_L2_euc", 1)
+	if dis    <= 0:		sparx_global_def.ERROR("bad fitting, change options settings and try again  ", "defocus_L2_euc", 0)
 	else:
 		res = numpy.sqrt(dis)/numpy.sqrt(pw_sum)/tfeq	
 		return res
@@ -828,7 +791,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, ampcont=10.0, istart=0,
 	while (step >= cut_off):
 		for i_dz in range(nloop):
 			dz     = dz_low + step*i_dz
-			ctf    = ctf_2(nx, utilities.generate_ctf([dz, Cs, volt, Pixel_size, 0.0, ampcont]))
+			ctf    = ctf_2(nx, sparx_utilities.generate_ctf([dz, Cs, volt, Pixel_size, 0.0, ampcont]))
 			diff   = 0.0
 			if defocus_estimation_method == 1:
 				for ifreq in range(istart, istop, 1):
@@ -894,7 +857,7 @@ def defocus_guess1(Res_roo, Res_TE, volt, Cs, Pixel_size, ampcont=10.0, istart=0
 	while (step >= cut_off):
 		for i_dz in range(nloop):
 			dz     = dz_low + step*i_dz
-			ctf    = ctf_1d(nx, utilities.generate_ctf([dz, Cs, volt, Pixel_size, 0.0, ampcont]))
+			ctf    = ctf_1d(nx, sparx_utilities.generate_ctf([dz, Cs, volt, Pixel_size, 0.0, ampcont]))
 			diff   = 0.0
 			if defocus_estimation_method == 1:
 				for ifreq in range(istart, istop, 1):
@@ -935,7 +898,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 	pass#IMPORTIMPORTIMPORT from utilities import set_arb_params, get_image
 	if writetodoc[0]   != "a" and writetodoc[0]   != "l" and writetodoc[0] != "a": 	writetodoc= "a"
 	if print_screen[0] != "p" and print_screen[0] != "n"			     : 	print_screen = "n"
-	if os.path.exists(indir) == False: 	global_def.ERROR("roodir doesn't exist", "defocus_get_fast",1)
+	if os.path.exists(indir) == False: 	sparx_global_def.ERROR("roodir doesn't exist", "defocus_get_fast",1)
 	ctf_dicts = ["defocus", "Pixel_size", "voltage", "Cs", "amp_contrast", "B_factor", "sign"] 
 	flist = os.listdir(indir)
 	res   = []
@@ -999,7 +962,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 					defocus = defocus_get(fnam_roo, volt, Pixel_size, Cs, wgh, istart, istop, docf, skip, round_off, nr1, nr2)
 					if(print_screen == "p" or print_screen == "P"): print("defocus",defocus,"Euclidean distance", inspect.dis, "starting feq", istart, "stop freq", istop,"P R E", nr1,"P R B", nr2)
 					if(defocus < dz_max): 				break
-			if(defocus >= dz_max): 					global_def.ERROR("defocus_get_fast fails at estimating defocus", fnam, action = 0)
+			if(defocus >= dz_max): 					sparx_global_def.ERROR("defocus_get_fast fails at estimating defocus", fnam, action = 0)
 			print("", flist[i], '%5d'%(defocus)) 	# screen output, give the user a general impression about estimated defoci
 			if(writetodoc[0] == "w" or writetodoc[0] != "l"):	out.write("%d\t%5d\t%s\n" % (ncount,defocus,flist[i]))
 			if(writetodoc[0] == "l"):				res.append(defocus)
@@ -1007,12 +970,12 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 				ctf_param = [defocus, Pixel_size, volt, Cs, wgh, 0, 1]
 				mic_name  = os.path.join(micdir,""+ fnam_root+ ".hdf")
 				if os.path.exists(mic_name) :
-					e = utilities.get_image (mic_name)
+					e = sparx_utilities.get_image (mic_name)
 					U______set_arb_params(e, ctf_param, ctf_dicts)  # THIS IS INCORRECT< PLEASE CHANGE
 					e.write_image(mic_name,0, EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF, True)
 					print("ctf parameters is written back into headers of ", mic_name)
 				#else :  print  mic_name, " Not found"
-	if(len(res) == 0 and  writetodoc == "l" ):				global_def.ERROR("No input file is found, check the input directory of file prefix", indir, 1)
+	if(len(res) == 0 and  writetodoc == "l" ):				sparx_global_def.ERROR("No input file is found, check the input directory of file prefix", indir, 1)
 	else:
 		if(writetodoc[0] == "a"):
 			out.close()
@@ -1029,7 +992,7 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 	"""
 	pass#IMPORTIMPORTIMPORT import os
 	pass#IMPORTIMPORTIMPORT import sys
-	if os.path.exists(indir) == False: 	global_def.ERROR("roodir doesn't exist", "defocus_get_fast",1)
+	if os.path.exists(indir) == False: 	sparx_global_def.ERROR("roodir doesn't exist", "defocus_get_fast",1)
 	flist = os.listdir(indir)
 	for i, v in enumerate(flist):
 		micname                  = os.path.join(indir,v)
@@ -1037,7 +1000,7 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 		if(filename[0:len(prefix_of_)] == prefix_of_):
 			mic_name_list.append(micname)
 			nima += 1
-	if nima < 1: 	global_def.ERROR("No  is found, check either directory or prefix of s is correctly given","pw2sp",1)
+	if nima < 1: 	sparx_global_def.ERROR("No  is found, check either directory or prefix of s is correctly given","pw2sp",1)
 	
 	sys.argv       = mpi.mpi_init(len(sys.argv),sys.argv)
 	number_of_proc = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
@@ -1120,11 +1083,11 @@ def defocus_get_fast_MPI(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wg
 				defocus = defocus_get(fnam_roo, volt, Pixel_size, Cs, wgh, istart, istop, docf, skip, round_off, nr1, nr2)
 				if(print_screen == "p" or print_screen == "P"): print("defocus",defocus,"Euclidean distance", inspect.dis, "starting feq", istart, "stop freq", istop,"P R E", nr1,"P R B", nr2)
 				if(defocus < dz_max): 				break
-		if(defocus >= dz_max): 					global_def.ERROR("defocus_get_fast fails at estimating defocus", fnam, action = 0)
+		if(defocus >= dz_max): 					sparx_global_def.ERROR("defocus_get_fast fails at estimating defocus", fnam, action = 0)
 		print("", flist[i], '%10.3g'(defocus)) 	# screen output, give the user a general impression about estimated defoci
 		if(writetodoc[0] == "w" or writetodoc[0] != "l"):	out.write("%d\t%f\t%s\n" % (ncount,defocus,flist[i]))
 		if(writetodoc[0] == "l"):				res.append(defocus)
-	if(len(res) == 0 and  writetodoc == "l" ):				global_def.ERROR("No input file is found, check the input directory of file prefix", indir, 1)
+	if(len(res) == 0 and  writetodoc == "l" ):				sparx_global_def.ERROR("No input file is found, check the input directory of file prefix", indir, 1)
 	else:
 		if writetodoc[0] == "a":
 			out.close()
@@ -1144,7 +1107,7 @@ def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 	pass#IMPORTIMPORTIMPORT import os
 	if writetodoc[0]   != "a" and writetodoc[0]   != "l" and writetodoc[0] != "a" : writetodoc   = "a"
 	if print_screen[0] != "p" and print_screen[0] != "n": 				print_screen = "n" 
-	if os.path.exists(indir) == False: 	global_def.ERROR("roodir doesn't exist", "defocus_get_slow",1)
+	if os.path.exists(indir) == False: 	sparx_global_def.ERROR("roodir doesn't exist", "defocus_get_slow",1)
 	flist=os.listdir(indir)
 	res  = []
 	f_l  = f_l0
@@ -1186,11 +1149,11 @@ def defocus_get_slow(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 						if(Mdis>dis):
 							defo = defocus
 							Mdis = dis
-			if(defo >= dz_max): 	global_def.ERROR("defo_get_s fails at estimating defocus from ", fnam, 0)
+			if(defo >= dz_max): 	sparx_global_def.ERROR("defo_get_s fails at estimating defocus from ", fnam, 0)
 			else:				print("", flist[i], defo) # screen output, give the user a general impression about estimated defoci		
 			if writetodoc    == "w" or writetodoc[0] == "a":out.write("%d\t%f\t%s\n" % (ncount, defo, fdefo_nam))
 			if writetodoc[0] == "l" : 	res.append(defo)
-	if  len(res) == 0 and writetodoc == "l" :  global_def.ERROR("No input file, check the input directory", indir, 1)
+	if  len(res) == 0 and writetodoc == "l" :  sparx_global_def.ERROR("No input file, check the input directory", indir, 1)
 	else:
 		if writetodoc[0] == "a":
 			out.close()
@@ -1208,7 +1171,7 @@ def flcc(t, e):
 	tmp        = EMAN2_cppwrap.EMData()
 	mic_avg_sq = EMAN2_cppwrap.EMData()
 	mic_sq     = EMAN2_cppwrap.EMData()
-	mask       = utilities.model_blank(t.get_xsize(), t.get_ysize(), 1)	
+	mask       = sparx_utilities.model_blank(t.get_xsize(), t.get_ysize(), 1)	
 	mask       +=1. 
 	[mean_t, sigma_t, imin_t, imax_t] = EMAN2_cppwrap.Util.infomask(t,None,False)
 	nx         = e.get_xsize()
@@ -1218,13 +1181,13 @@ def flcc(t, e):
 	t          = (t-mean_t)/sigma_t # normalize the template such that the average of template is zero.
 	t_pad      = EMAN2_cppwrap.Util.pad(t,    nx, ny, 1, {"background":0}, 0, 0, 0)
 	m_pad      = EMAN2_cppwrap.Util.pad(mask, nx, ny, 1, {"background":0}, 0, 0, 0) # create a mask (blank, value=1 )file and pad to size of mic   	 	
-	tmp        = fundamentals.ccf(e, m_pad)/n_pixele # calculate the local average
+	tmp        = sparx_fundamentals.ccf(e, m_pad)/n_pixele # calculate the local average
 	mic_avg_sq = tmp*tmp    # calculate average square
 	tmp        = e*e
-	mic_sq     = fundamentals.ccf(tmp,m_pad)/n_pixelt 	  # calculate the average of squared mic	       
+	mic_sq     = sparx_fundamentals.ccf(tmp,m_pad)/n_pixelt 	  # calculate the average of squared mic	       
 	tmp        = mic_sq-mic_avg_sq*n_pixelt   #  
 	mic_var    = tmp.get_pow(.5)              # Calculate the local variance of the image 
-	cc_map     = fundamentals.ccf(e,t_pad)
+	cc_map     = sparx_fundamentals.ccf(e,t_pad)
 	cc_map    /= (mic_var*n_pixelt) # Normalize the cross correlation map 
 	return cc_map
 
@@ -1376,7 +1339,7 @@ def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_st
 	pass#IMPORTIMPORTIMPORT from morphology import binarize, dilation
 	nx = img.get_xsize()
 	ny = img.get_ysize()
-	mc = utilities.model_circle(nx//2, nx, ny) - utilities.model_circle(nx//3, nx, ny)
+	mc = sparx_utilities.model_circle(nx//2, nx, ny) - sparx_utilities.model_circle(nx//3, nx, ny)
 	s1 = EMAN2_cppwrap.Util.infomask(img, mc, True)
 	mask = EMAN2_cppwrap.Util.get_biggest_cluster(binarize(img, s1[0]+s1[1]*nsigma))
 	for i in range(ndilation):   mask = dilation(mask)
@@ -1388,14 +1351,14 @@ def adaptive_mask_mass(vol, mass=2000, Pixel_size=3.6):
 	pass#IMPORTIMPORTIMPORT from morphology import binarize, threshold, dilation
 	pass#IMPORTIMPORTIMPORT from filter     import filt_gaussl
 	nx = vol.get_xsize()
-	a = filter.filt_gaussl(vol, 0.15, True)
+	a = sparx_filter.filt_gaussl(vol, 0.15, True)
 	TH = a.find_3d_threshold(mass, Pixel_size)
 	a = binarize(a,TH)
 	d = a.delete_disconnected_regions(0,0,0)
 
-	d = dilation(d, utilities.model_blank(3,3,3,1.0), "BINARY")
+	d = dilation(d, sparx_utilities.model_blank(3,3,3,1.0), "BINARY")
 	#d = filt_dilation(d, model_blank(3,3,3,1.0), "BINARY")
-	d = utilities.gauss_edge(d)
+	d = sparx_utilities.gauss_edge(d)
 	return d
 	#Util.mul_img(vol, d)
 	#return threshold(vol, 0.0)
@@ -1437,7 +1400,7 @@ def simpw2d(defocus, data2d):
 	
 	defocust = max(min(defocus, 6.0), 0.01)
 	data2d[7] = max(min(data2d[7],99.0), 1.0)
-	ct = ctf_rimg(data2d[0], utilities.generate_ctf([defocust, data2d[3], data2d[4], data2d[5], data2d[6], data2d[7], data2d[8], data2d[9]]), sign=0, ny=data2d[0])
+	ct = ctf_rimg(data2d[0], sparx_utilities.generate_ctf([defocust, data2d[3], data2d[4], data2d[5], data2d[6], data2d[7], data2d[8], data2d[9]]), sign=0, ny=data2d[0])
 	q2 = ct.cmp("dot", ct, dict(negative = 0, mask = data2d[10], normalize = 0))#Util.infomask(ct*ct, data2d[10], True)[0]
 	q1 = ct.cmp("dot", data2d[1], dict(negative = 0, mask = data2d[10], normalize = 0))
 	"""Multiline Comment13"""
@@ -1452,9 +1415,9 @@ def simpw1dc(defocus, data):
 	#[defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
 	#  data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 	# data[1] - envelope
-	ct = data[1]*np.array( ctf_2(data[2], utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
+	ct = data[1]*np.array( ctf_2(data[2], sparx_utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
 	print(" 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2))
-	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2),ctf_2(data[2], utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))
+	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2),ctf_2(data[2], sparx_utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))
 
 def simpw2dc(defocus, data2d):
 	pass#IMPORTIMPORTIMPORT from utilities import generate_ctf
@@ -1468,7 +1431,7 @@ def simpw2dc(defocus, data2d):
 	#  data2d = [nx, experimental_pw, defocus, Cs, voltage, Pixel_size, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle, mask]
 	
 
-	ct = ctf2_rimg(data2d[0], utilities.generate_ctf([defocus, data2d[3], data2d[4], data2d[5], data2d[6], data2d[7], data2d[8], data2d[9]]), ny=data2d[0])
+	ct = ctf2_rimg(data2d[0], sparx_utilities.generate_ctf([defocus, data2d[3], data2d[4], data2d[5], data2d[6], data2d[7], data2d[8], data2d[9]]), ny=data2d[0])
 	pass#IMPORTIMPORTIMPORT from utilities import info
 	q1 = ct.cmp("dot", data2d[1], dict(negative = 0, mask = data2d[10], normalize = 0))
 	q2 = numpy.sqrt(ct.cmp("dot", ct, dict(negative = 0, mask = data2d[10], normalize = 0)))
@@ -1520,7 +1483,7 @@ def defocus_guessn(roo, volt, Cs, Pixel_size, ampcont, istart, i_stop):
 	goal = -1.e23
 	for d in range(20000,56000,10):
 		dz = d/10000.
-		ct = np.array( ctf_2(nx, utilities.generate_ctf([dz, Cs, volt, Pixel_size, 0.0, ampcont]))[:nn], np.float32)
+		ct = np.array( ctf_2(nx, sparx_utilities.generate_ctf([dz, Cs, volt, Pixel_size, 0.0, ampcont]))[:nn], np.float32)
 		ct = (ct - sum(ct)/nn)*envelope
 		g = sum(ct[istart:]*operator.sub[istart:])/sum(ct[istart:])
 		#print d,dz,g
@@ -1530,7 +1493,7 @@ def defocus_guessn(roo, volt, Cs, Pixel_size, ampcont, istart, i_stop):
 			#print " ****************************************** ", defocus, goal,istart
 	#from utilities import write_text_file
 	#write_text_file([sub,envelope,ct,temp],"oto.txt")
-	ct = np.array( ctf_2(nx, utilities.generate_ctf([defocus, Cs, volt, Pixel_size, 0.0, ampcont]))[:nn], np.float32)
+	ct = np.array( ctf_2(nx, sparx_utilities.generate_ctf([defocus, Cs, volt, Pixel_size, 0.0, ampcont]))[:nn], np.float32)
 	temp = ct
 	ct = (ct - sum(ct)/nn)*envelope
 	for i in range(nn):  print(operator.sub[i],envelope[i],ct[i],temp[i])
@@ -1571,7 +1534,7 @@ def defocusget_from_crf(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=10.,
 	defocus = defocus_guess1(roo, TE, voltage, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
 
 	nx  = int(len(roo)*2)
-	ctf = ctf_1d(nx, utilities.generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, ampcont]))
+	ctf = ctf_1d(nx, sparx_utilities.generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, ampcont]))
 
 	#from utilities import write_text_file
 	#write_text_file([range(len(roo)), roo, ctf, TE], "procrf.txt")
@@ -1585,7 +1548,7 @@ def make_real(t):
 
 	nx = t.get_ysize()
 	ny2 = nx//2
-	q = utilities.model_blank(nx,nx)
+	q = sparx_utilities.model_blank(nx,nx)
 	for iy in range(0,nx):
 		jy = ny2-iy
 		if(jy<0): jy += nx
@@ -1608,7 +1571,7 @@ def fastigmatism(amp, data):
 	bcc = -1.0
 	for j in range(90):
 		ang = j
-		pc = ctf2_rimg(nx, utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, ang]) )
+		pc = ctf2_rimg(nx, sparx_utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, ang]) )
 		cuc = (pc*data[1]).cmp("dot", data[0], {"mask":data[2], "negative":0, "normalize":1})
 		if( cuc > bcc ):
 			bcc = cuc
@@ -1631,7 +1594,7 @@ def fastigmatism1(amp, data):
 	bcc = -1.0
 	for j in range(90):
 		ang = j
-		pc = ctf_rimg(nx, utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, ang]) )
+		pc = ctf_rimg(nx, sparx_utilities.generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, ang]) )
 		cuc = (pc*data[1]).cmp("dot", data[0], {"mask":data[2], "negative":0, "normalize":1})
 		if( cuc > bcc ):
 			bcc = cuc
@@ -1654,7 +1617,7 @@ def simctf(amp, data):
 	
 	nx = data[2]
 	qt = 0.5*nx**2
-	pc = ctf_rimg(nx, utilities.generate_ctf([amp, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
+	pc = ctf_rimg(nx, sparx_utilities.generate_ctf([amp, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
 	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
 	return  -bcc
 
@@ -1664,19 +1627,19 @@ def simctf2out(dz, data):
 	
 	nx = data[2]
 	qt = 0.5*nx**2
-	pc = ctf2_rimg(nx, utilities.generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
+	pc = ctf2_rimg(nx, sparx_utilities.generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
 	pc.write_image("ocou2.hdf")
 	normpw = localvariance(  data[0]   , nx//8, 0)#has to be changed
 
 	(normpw*data[1]).write_image("ocou1.hdf")
-	mm = utilities.pad(utilities.model_blank(nx//2,nx,1,1.0),nx,nx,1,0.0,-nx//4)
+	mm = sparx_utilities.pad(sparx_utilities.model_blank(nx//2,nx,1,1.0),nx,nx,1,0.0,-nx//4)
 	s = EMAN2_cppwrap.Util.infomask(pc, None, True)
 	pc -= s[0]
 	pc /= s[1]
-	dout = utilities.model_blank(nx,nx)
+	dout = sparx_utilities.model_blank(nx,nx)
 	dout += pc*mm
 	s = EMAN2_cppwrap.Util.infomask(normpw, data[1], True)
-	dout += ((normpw-s[0])/s[1])*(utilities.model_blank(nx,nx,1,1)-mm)*data[1]
+	dout += ((normpw-s[0])/s[1])*(sparx_utilities.model_blank(nx,nx,1,1)-mm)*data[1]
 	dout.write_image("ocou3.hdf")
 	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
 	#print " simctf2   ",amp,-bcc
@@ -1690,7 +1653,7 @@ def simpw1d_crf(defocus, data):
 	
 	#[defocus, Cs, volt, Pixel_size, 0.0, ampcont]
 	# data[1] - envelope
-	ct = data[1]*np.array( ctf_1d(data[2], utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
+	ct = data[1]*np.array( ctf_1d(data[2], sparx_utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
 	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2)
 
 def linregnp(y):
@@ -1788,11 +1751,11 @@ def defocusgett_crf(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 			if(qt<qm):
 				qm=qt
 				defi = dc
-		utilities.write_text_row(toto,"toto1.txt")
+		sparx_utilities.write_text_row(toto,"toto1.txt")
 		print(" >>>>>>>>>  ",defi,simpw1d_crf(defi, data))#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi
 	#exit()
-	ctf1d = ctf_1d(nx, utilities.generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]))
+	ctf1d = ctf_1d(nx, sparx_utilities.generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]))
 
 	return def1, ctf1d, None, envelope, i_start, i_stop
 
@@ -1830,7 +1793,7 @@ def envelopegett_crf(defold, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, amp
 		newstop,fnewstop = ctflimit(nx, defold, Cs, voltage, Pixel_size)
 		if DEBug:  print("newstop  ",int(newstop*0.7),fnewstop*0.7,i_stop)
 	
-	ctf1d = ctf_1d(nx, utilities.generate_ctf([defold, Cs, voltage, Pixel_size, 0.0, ampcont]))
+	ctf1d = ctf_1d(nx, sparx_utilities.generate_ctf([defold, Cs, voltage, Pixel_size, 0.0, ampcont]))
 
 	return envelope, i_start, i_stop
 
@@ -1879,13 +1842,13 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 
 	#ll = read_text_file("lookup",-1)
 	#ll = [[367], [12031], [25]]
-	ll = utilities.read_text_file("lookup")
+	ll = sparx_utilities.read_text_file("lookup")
 
 	#set_start, set_end = MPI_start_end(len(ll[0]), ncpu, myid)
 	#for k in xrange(3):
 	#	ll[k] = map(int,ll[k])[set_start:set_end]
 
-	volft,kb = projection.prep_vol(utilities.get_im(refvol))
+	volft,kb = sparx_projection.prep_vol(sparx_utilities.get_im(refvol))
 
 
 	totresi = []
@@ -1898,7 +1861,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 		nx = d[0].get_xsize()
 		ny2 = nx//2
 		if UseOldDef:
-			defold, csi, volti, apixi, bfcti, ampconti, astampi, astangi = utilities.get_ctf(d[0])
+			defold, csi, volti, apixi, bfcti, ampconti, astampi, astangi = sparx_utilities.get_ctf(d[0])
 			if DEBug:  print(" USING OLD CTF  ",defold, csi, volti, apixi, bfcti, ampconti, astampi, astangi)
 
 		fa  = [None]*nimi
@@ -1906,17 +1869,17 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 		fbc = [None]*nimi
 
 		for imi in range(nimi):
-			phi,theta,psi,tx,ty = utilities.get_params_proj(d[imi])
+			phi,theta,psi,tx,ty = sparx_utilities.get_params_proj(d[imi])
 			# next is test
 			#psi = 0.0
 			#d[imi] = prgs(volft, kb, [phi,theta,psi,-tx,-ty])
 			####
-			fa[imi] = fundamentals.fft( d[imi] )
+			fa[imi] = sparx_fundamentals.fft( d[imi] )
 			#prgs(volft, kb, [phi,theta,psi,-tx,-ty]).write_image("bdb:projs",imi)
 			#fb[imi] = filt_ctf(fa[imi] , generate_ctf([1.9, Cs, voltage, Pixel_size, 0.0, wgh, 0.9, 177.]),False) + fft(model_gauss_noise(2., nx,nx)) #!!!!!!!!!!fft(get_im("bdb:projs",imi))  #
 	
 			#  next modified for test
-			fb[imi] = fundamentals.fft( projection.prgs(volft, kb, [phi,theta,psi,-tx,-ty]) )   #fa[imi].copy()#
+			fb[imi] = sparx_fundamentals.fft( sparx_projection.prgs(volft, kb, [phi,theta,psi,-tx,-ty]) )   #fa[imi].copy()#
 			#fbc[imi] = fb[imi].conjg()  #  THIS IS WRONG PAP 06/19/2018
 			# next is test
 			#fa[imi] = filt_ctf(fa[imi] , generate_ctf([defold, Cs, voltage, Pixel_size, 0.0, wgh, 0.9, 77.]),False) + fft(model_gauss_noise(2., nx,nx)) 
@@ -1933,14 +1896,14 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 					pass#IMPORTIMPORTIMPORT from random import randint
 					for imi in range(nimi): boot[imi] = random.randint(0,nimi-1)
 	
-				qs = utilities.model_blank(nx,nx)
-				qa = utilities.model_blank(nx,nx)
-				qb = utilities.model_blank(nx,nx)
+				qs = sparx_utilities.model_blank(nx,nx)
+				qa = sparx_utilities.model_blank(nx,nx)
+				qb = sparx_utilities.model_blank(nx,nx)
 				crf1d = []
 				for imboot in range(nimi):
 					imi = boot[imboot]
 		
-					temp = statistics.fsc(fa[imi],fb[imi])[1]
+					temp = sparx_statistics.fsc(fa[imi],fb[imi])[1]
 					if( len(crf1d) == 0 ): crf1d = [0.0]*len(temp)
 					for k in range(len(temp)):  crf1d[k] += temp[k]
 					t  = make_real( EMAN2_cppwrap.Util.muln_img(fa[imi], fbc[imi]) )
@@ -1967,7 +1930,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 							tqa[ir+1] +=       dr*qqa
 				for i in range(nc+1): tqa[i] = numpy.sqrt(max(tqa[i],0.0))
 
-				divs = utilities.model_blank(nx, nx, 1, 1.0)
+				divs = sparx_utilities.model_blank(nx, nx, 1, 1.0)
 				for i in range(nx):
 					for j in range(nx):
 						r = numpy.sqrt((i-nc)**2 + (j-nc)**2)
@@ -1982,7 +1945,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				#if(nboot == 0): qs.write_image("rs2.hdf")
 
 
-				sroo = fundamentals.rot_avg_table(qs)
+				sroo = sparx_fundamentals.rot_avg_table(qs)
 				lenroo = len(sroo)
 				#  Find a break point
 				bp = 1.e23
@@ -2007,7 +1970,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 					if DEBug:
 						freq = list(range(len(crf1d)))
 						for i in range(len(crf1d)):  freq[i] = float(i)/nx/Pixel_size
-						utilities.write_text_file([freq, crf1d, ctf1d, envelope.tolist()],"ravg%05d.txt"%ifi)
+						sparx_utilities.write_text_file([freq, crf1d, ctf1d, envelope.tolist()],"ravg%05d.txt"%ifi)
 				#mpi_barrier(MPI_COMM_WORLD)
 				#   NOT USING ENVELOPE!
 				"""Multiline Comment25"""
@@ -2023,7 +1986,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				#qse = ctf2_rimg(nx, generate_ctf([defc,Cs,voltage,Pixel_size,0.0,wgh, bang, 37.0]) )
 				#qse.write_image("rs3.hdf")
 
-				mask = utilities.model_circle(istop-1,nx,nx)*(utilities.model_blank(nx,nx,1,1.0)-utilities.model_circle(istart,nx,nx))
+				mask = sparx_utilities.model_circle(istop-1,nx,nx)*(sparx_utilities.model_blank(nx,nx,1,1.0)-sparx_utilities.model_circle(istart,nx,nx))
 				qse = qs #* envl
 				#if(nboot == 0): (qs*mask).write_image("rs5.hdf")
 
@@ -2031,8 +1994,8 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				cnx = nx//2+1
 				cny = cnx
 				mode = "H"
-				numr = alignment.Numrinit(istart, istop, 1, mode)
-				wr   = alignment.ringwe(numr, mode)
+				numr = sparx_alignment.Numrinit(istart, istop, 1, mode)
+				wr   = sparx_alignment.ringwe(numr, mode)
 
 				crefim = EMAN2_cppwrap.Util.Polar2Dm(qse, cnx, cny, numr, mode)
 				EMAN2_cppwrap.Util.Frngs(crefim, numr)
@@ -2082,7 +2045,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 					#print " ttt ",time()-srtt
 					#bamp = 0.5
 					#bang = 277
-					dama = utilities.amoeba([bdef, bamp],[0.2,0.2], fufu, 1.e-4,1.e-4,500, astdata)
+					dama = sparx_utilities.amoeba([bdef, bamp],[0.2,0.2], fufu, 1.e-4,1.e-4,500, astdata)
 
 					if DEBug:  print("AMOEBA    ",nboot,dama)
 					bdef = dama[0][0]
@@ -2105,7 +2068,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 			#print " ttt ",time()-srtt
 			#from sys import exit
 			#exit()
-			ad1,ad2,ad3,ad4 = statistics.table_stat(adefocus)
+			ad1,ad2,ad3,ad4 = sparx_statistics.table_stat(adefocus)
 			reject = []
 			thr = 3*numpy.sqrt(ad3)
 			for i in range(len(adefocus)):
@@ -2124,9 +2087,9 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				#print "adefocus",adefocus
 				#print  "aamplitu",aamplitu
 				#print "aangle",aangle
-				ad1,ad2,ad3,ad4 = statistics.table_stat(adefocus)
-				bd1,bd2,bd3,bd4 = statistics.table_stat(aamplitu)
-				cd1,cd2 = pixel_error.angle_ave([2*q for q in aangle])  # Have to use this trick as the function works for range [0,360]
+				ad1,ad2,ad3,ad4 = sparx_statistics.table_stat(adefocus)
+				bd1,bd2,bd3,bd4 = sparx_statistics.table_stat(aamplitu)
+				cd1,cd2 = sparx_pixel_error.angle_ave([2*q for q in aangle])  # Have to use this trick as the function works for range [0,360]
 				cd1/=2
 				cd2/=2
 				temp = 0.0
@@ -2137,11 +2100,11 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				#ctf_rimg(nx,generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])).write_image("ctf1.hdf")
 				lnsb = len(crf1d)
 	
-				try:		crot2 = rotavg_ctf(ctf_rimg(nx,utilities.generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, bd1, cd1)[:lnsb]
+				try:		crot2 = rotavg_ctf(ctf_rimg(nx,sparx_utilities.generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, bd1, cd1)[:lnsb]
 				except:     crot2 = [0.0]*lnsb
 				try:		pwrot2 = rotavg_ctf(qs, ad1, Cs, voltage, Pixel_size, bd1, cd1)[:lnsb]
 				except:     pwrot2 = [0.0]*lnsb
-				try:		crot1 = rotavg_ctf(ctf_rimg(nx,utilities.generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, 0.0, 0.0)[:lnsb]
+				try:		crot1 = rotavg_ctf(ctf_rimg(nx,sparx_utilities.generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, 0.0, 0.0)[:lnsb]
 				except:     crot1 = [0.0]*lnsb
 				try:		pwrot1 = rotavg_ctf(qs, ad1, Cs, voltage, Pixel_size, 0.0, 0.0)[:lnsb]
 				except:     pwrot1 = [0.0]*lnsb
@@ -2150,7 +2113,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				#fou = "crfrot/rotinf%05d_%06d.txt"%(ll[0][ifi],ll[1][ifi])
 				fou = "crfrot/rotinf%05d.txt"%(ll[ifi])
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
-				utilities.write_text_file([list(range(len(crot1))), freq, pwrot1, crot1, pwrot2, crot2],fou)
+				sparx_utilities.write_text_file([list(range(len(crot1))), freq, pwrot1, crot1, pwrot2, crot2],fou)
 				cmd = "echo "+"    "+namics+"  >>  "+fou
 				os.system(cmd)
 		else:  #except:
@@ -2221,9 +2184,9 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 	wn = 512
 	pass#IMPORTIMPORTIMPORT from utilities import model_circle, model_blank, amoeba
 	pass#IMPORTIMPORTIMPORT from alignment import Numrinit, ringwe
-	mask = utilities.model_circle(i_stop - 1, wn, wn) * (utilities.model_blank(wn, wn, 1, 1.0) - utilities.model_circle(i_start, wn, wn))
+	mask = sparx_utilities.model_circle(i_stop - 1, wn, wn) * (sparx_utilities.model_blank(wn, wn, 1, 1.0) - sparx_utilities.model_circle(i_start, wn, wn))
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
-	zizi = fundamentals.rot_avg_table(qse)[i_start:i_stop]
+	zizi = sparx_fundamentals.rot_avg_table(qse)[i_start:i_stop]
 	pass#IMPORTIMPORTIMPORT from utilities import write_text_file
 	dudi = subpw[i_start:i_stop]
 	#print dudi.tolist()
@@ -2232,8 +2195,8 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 	cnx = wn // 2 + 1
 	cny = cnx
 	mode = "H"
-	numr = alignment.Numrinit(i_start, i_stop, 1, mode)
-	wr = alignment.ringwe(numr, mode)
+	numr = sparx_alignment.Numrinit(i_start, i_stop, 1, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 	
 	crefim = EMAN2_cppwrap.Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
 	print("  CREFIM    ",EMAN2_cppwrap.Util.infomask(qse*mask,None,True),EMAN2_cppwrap.Util.infomask(crefim,None,True))
@@ -2263,7 +2226,7 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 			ju1 = dc # defocus
 			ju2 = float(a) # amp contrast
 			ju3 = 0.0  # astigma amp
-			dama = utilities.amoeba([ju1,ju2,ju3], [0.005, 2.0, 0.002], fupw_vpp, 1.e-4, 1.e-4, 200, astdata)
+			dama = sparx_utilities.amoeba([ju1,ju2,ju3], [0.005, 2.0, 0.002], fupw_vpp, 1.e-4, 1.e-4, 200, astdata)
 			data2d[7] = float(a)
 			zigi = simpw2d(dc, data2d)
 			qma = -dama[-2]
@@ -2283,7 +2246,7 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 				ampcont = data[7]
 	if DEBug:
 		pass#IMPORTIMPORTIMPORT from utilities import write_text_row
-		utilities.write_text_row(toto,"toto1.txt")
+		sparx_utilities.write_text_row(toto,"toto1.txt")
 		print(" repi3  ",dp,dpefi,dpmpcont)
 		print(" resi2  ",qm,defi,ampcont)
 		print(" resi1  ",dm,ddefi,dampcont)
@@ -2292,14 +2255,14 @@ def Xdefocusgett_vpp2(qse, roo, nx, xdefc, xampcont, voltage=300.0, Pixel_size=1
 		#def1 = defi
 	#exit()
 	pass#IMPORTIMPORTIMPORT from morphology import ctf2_rimg, ctf_rimg, square_root
-	ctf2 = ctf_rimg(nx, utilities.generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), sign=0)
-	cq = ctf_1d(nx, utilities.generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True)[20:150]
+	ctf2 = ctf_rimg(nx, sparx_utilities.generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), sign=0)
+	cq = ctf_1d(nx, sparx_utilities.generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True)[20:150]
 	qse.write_image("qse.hdf")
 	ctf2.write_image("c1.hdf")
-	ctf22 = ctf_rimg(nx, utilities.generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), sign=0)
-	ci = ctf_1d(nx, utilities.generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), doabs = True)[20:150]
-	dq = ctf_1d(nx, utilities.generate_ctf([dpefi, Cs, voltage, Pixel_size, 0.0, dpmpcont]), doabs = True)[20:150]
-	utilities.write_text_file([dudi.tolist(),zizi,cq,ci,dq],"pwds.txt")
+	ctf22 = ctf_rimg(nx, sparx_utilities.generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), sign=0)
+	ci = ctf_1d(nx, sparx_utilities.generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), doabs = True)[20:150]
+	dq = ctf_1d(nx, sparx_utilities.generate_ctf([dpefi, Cs, voltage, Pixel_size, 0.0, dpmpcont]), doabs = True)[20:150]
+	sparx_utilities.write_text_file([dudi.tolist(),zizi,cq,ci,dq],"pwds.txt")
 	ctf22.write_image("c2.hdf")
 	"""Multiline Comment38"""
 	return defi, ampcont, subpw, ctf2, baseline, envelope, i_start, i_stop
@@ -2352,9 +2315,9 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 	wn = 512
 	pass#IMPORTIMPORTIMPORT from utilities import model_circle, model_blank, amoeba
 	pass#IMPORTIMPORTIMPORT from alignment import Numrinit, ringwe
-	mask = utilities.model_circle(i_stop - 1, wn, wn) * (utilities.model_blank(wn, wn, 1, 1.0) - utilities.model_circle(i_start, wn, wn))
+	mask = sparx_utilities.model_circle(i_stop - 1, wn, wn) * (sparx_utilities.model_blank(wn, wn, 1, 1.0) - sparx_utilities.model_circle(i_start, wn, wn))
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
-	zizi = fundamentals.rot_avg_table(qse)[i_start:i_stop]
+	zizi = sparx_fundamentals.rot_avg_table(qse)[i_start:i_stop]
 	pass#IMPORTIMPORTIMPORT from utilities import write_text_file
 	dudi = subpw[i_start:i_stop]
 	#print dudi.tolist()
@@ -2363,8 +2326,8 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 	cnx = wn // 2 + 1
 	cny = cnx
 	mode = "H"
-	numr = alignment.Numrinit(i_start, i_stop, 1, mode)
-	wr = alignment.ringwe(numr, mode)
+	numr = sparx_alignment.Numrinit(i_start, i_stop, 1, mode)
+	wr = sparx_alignment.ringwe(numr, mode)
 	
 	crefim = EMAN2_cppwrap.Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
 	EMAN2_cppwrap.Util.Frngs(crefim, numr)
@@ -2392,7 +2355,7 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 			ju1 = dc # defocus
 			ju2 = float(a) # amp contrast
 			ju3 = 0.0  # astigma amp
-			dama = utilities.amoeba([ju1,ju2,ju3], [0.002, 0.001, 0.002], fupw_vpp, 1.e-4, 1.e-4, 1, astdata)
+			dama = sparx_utilities.amoeba([ju1,ju2,ju3], [0.002, 0.001, 0.002], fupw_vpp, 1.e-4, 1.e-4, 1, astdata)
 			data2d[7] = float(a)
 			zigi = simpw2d(dc, data2d)
 			qma = dama[-2]/42.
@@ -2412,7 +2375,7 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 				ampcont = data[7]
 	if DEBug:
 		pass#IMPORTIMPORTIMPORT from utilities import write_text_row
-		utilities.write_text_row(toto,"toto1.txt")
+		sparx_utilities.write_text_row(toto,"toto1.txt")
 		print(" repi3  ",dp,dpefi,dpmpcont)
 		print(" resi2  ",qm,defi,ampcont)
 		print(" resi1  ",dm,ddefi,dampcont)
@@ -2421,14 +2384,14 @@ def Xdefocusgett_vpp22(qse, roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, f_st
 		#def1 = defi
 	#exit()
 	pass#IMPORTIMPORTIMPORT from morphology import ctf2_rimg, ctf_rimg, square_root
-	ctf2 = ctf_rimg(nx, utilities.generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), sign=0)
-	cq = ctf_1d(nx, utilities.generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True)[20:150]
+	ctf2 = ctf_rimg(nx, sparx_utilities.generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), sign=0)
+	cq = ctf_1d(nx, sparx_utilities.generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont]), doabs = True)[20:150]
 	qse.write_image("qse.hdf")
 	ctf2.write_image("c1.hdf")
-	ctf22 = ctf_rimg(nx, utilities.generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), sign=0)
-	ci = ctf_1d(nx, utilities.generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), doabs = True)[20:150]
-	dq = ctf_1d(nx, utilities.generate_ctf([dpefi, Cs, voltage, Pixel_size, 0.0, dpmpcont]), doabs = True)[20:150]
-	utilities.write_text_file([dudi.tolist(),zizi,cq,ci,dq],"pwds.txt")
+	ctf22 = ctf_rimg(nx, sparx_utilities.generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), sign=0)
+	ci = ctf_1d(nx, sparx_utilities.generate_ctf([ddefi, Cs, voltage, Pixel_size, 0.0, dampcont]), doabs = True)[20:150]
+	dq = ctf_1d(nx, sparx_utilities.generate_ctf([dpefi, Cs, voltage, Pixel_size, 0.0, dpmpcont]), doabs = True)[20:150]
+	sparx_utilities.write_text_file([dudi.tolist(),zizi,cq,ci,dq],"pwds.txt")
 	ctf22.write_image("c2.hdf")
 	"""Multiline Comment40"""
 	return defi, ampcont, subpw, ctf2, baseline, envelope, i_start, i_stop

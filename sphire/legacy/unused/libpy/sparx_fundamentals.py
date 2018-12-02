@@ -328,15 +328,6 @@ def __buildweights(m, kb):
 
 # shortcuts to Fourier product functions
 # Correlation functions
-def ccf(e, f, center=True):
-	"""
-	Return the circulant cross-correlation function of images e and f.
-	Input images may be real or complex.  Output image is real.
-	1-D, 2-D, or 3-D images supported.
-	"""
-	pass#IMPORTIMPORTIMPORT from EMAN2 import correlation, fp_flag
-	return EMAN2_cppwrap.correlation(e,f,EMAN2_cppwrap.fp_flag.CIRCULANT, center)
-
 def ccfn(e, f, center=True):
 	"""
 		Name
@@ -492,19 +483,6 @@ def cnvnpl(e, f, center=True):
     
     
 # Selfcorrelation functions
-def scf(e, center=True):
-	"""
-		Name
-			scf - calculate the circulant self-correlation function of an image
-		Input
-			e: input image, can be either real or Fourier
-			center: if set to True (default), the origin of the result is at the center
-		Output
-			circulant self-correlation function of the input image. Real.
-	"""
-	pass#IMPORTIMPORTIMPORT from EMAN2 import self_correlation, fp_flag
-	return EMAN2_cppwrap.self_correlation(e, EMAN2_cppwrap.fp_flag.CIRCULANT, center)
-
 def scfn(e, center=True):
 	"""
 		Name
@@ -594,14 +572,14 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 	pass#IMPORTIMPORTIMPORT from filter       import filt_btwl
 	pass#IMPORTIMPORTIMPORT from fundamentals import smallprime
 	pass#IMPORTIMPORTIMPORT from utilities    import get_image
-	if type(img)     == str:	img=utilities.get_image(img)
+	if type(img)     == str:	img=sparx_utilities.get_image(img)
 	nz       = img.get_zsize()
-	if( nz > 1):                    global_def.ERROR("This command works only for 2-D images", "image_decimate", 1)
-	if decimation    <= 1  : 	global_def.ERROR("Improper decimation ratio", "image_decimate", 1)
+	if( nz > 1):                    sparx_global_def.ERROR("This command works only for 2-D images", "image_decimate", 1)
+	if decimation    <= 1  : 	sparx_global_def.ERROR("Improper decimation ratio", "image_decimate", 1)
 	if(decimation    == 1.0): 	return  img.copy()
 	if frequency_low <= 0  :	
 		frequency_low     = 0.5/decimation-0.02
-		if frequency_low <= 0 : global_def.ERROR("Butterworth pass-band frequency is too low","image_decimation",1)			
+		if frequency_low <= 0 : sparx_global_def.ERROR("Butterworth pass-band frequency is too low","image_decimation",1)			
 		frequency_high    = min(0.5/decimation + 0.02, 0.499)
 	if fit_to_fft:
 		nx       = img.get_xsize()
@@ -609,9 +587,9 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 		nx_fft_m = smallprime(nx)
 		ny_fft_m = smallprime(ny)
 		e        = EMAN2_cppwrap.Util.window(img, nx_fft_m, ny_fft_m, 1, 0,0,0)
-		e        = filter.filt_btwl(e, frequency_low, frequency_high)
+		e        = sparx_filter.filt_btwl(e, frequency_low, frequency_high)
 	else:
-		e        = filter.filt_btwl(img, frequency_low, frequency_high)
+		e        = sparx_filter.filt_btwl(img, frequency_low, frequency_high)
 	return EMAN2_cppwrap.Util.decimate(e, int(decimation), int(decimation), 1)
 
 def fdownsample(img, sub_rate=0.5, RetReal = True):
@@ -628,13 +606,13 @@ def fdownsample(img, sub_rate=0.5, RetReal = True):
 
 	if type(img) == str:
 		pass#IMPORTIMPORTIMPORT from utilities    import get_image
-		img = utilities.get_image(img)
+		img = sparx_utilities.get_image(img)
 	nx = img.get_xsize()
 	if img.is_complex():
 		nx -= (2-nx%2)
 	ny = img.get_ysize()
 	nz = img.get_zsize()
-	if( ny == 1):  global_def.ERROR("Only 2D or 3D images allowed","resample",1)
+	if( ny == 1):  sparx_global_def.ERROR("Only 2D or 3D images allowed","resample",1)
 	if sub_rate == 1.0: return  img.copy()
 	elif sub_rate < 1.0:
 		nnx = int(nx*sub_rate+0.5)
@@ -642,28 +620,28 @@ def fdownsample(img, sub_rate=0.5, RetReal = True):
 		nnz = int(nz*sub_rate+0.5)
 		e = fdecimate(img, nnx, nny, nnz, RetReal = RetReal)
 	else:  #  sub_rate>1
-		global_def.ERROR("fdownsample","upscaling not implemented",1)
+		sparx_global_def.ERROR("fdownsample","upscaling not implemented",1)
 		"""Multiline Comment0"""
 
 	# Automatically adjust pixel size for ctf parameters
 	pass#IMPORTIMPORTIMPORT from utilities import get_pixel_size, set_pixel_size
-	apix = utilities.get_pixel_size(e)
+	apix = sparx_utilities.get_pixel_size(e)
 	apix /= sub_rate
-	utilities.set_pixel_size(e, apix)
+	sparx_utilities.set_pixel_size(e, apix)
 	cc = e.get_attr_default("xform.projection", None)
 	if cc:
 		cp = cc.get_params("spider")
 		cp["tx"] *= sub_rate
 		cp["ty"] *= sub_rate
 		pass#IMPORTIMPORTIMPORT from utilities import set_params_proj
-		utilities.set_params_proj(e, [cp["phi"], cp["theta"], cp["psi"], -cp["tx"], -cp["ty"]]) # have to invert as set inverts them again
+		sparx_utilities.set_params_proj(e, [cp["phi"], cp["theta"], cp["psi"], -cp["tx"], -cp["ty"]]) # have to invert as set inverts them again
 	cc = e.get_attr_default("xform.align2d", None)
 	if cc:
 		cp = cc.get_params("2D")
 		cp["tx"] *= sub_rate
 		cp["ty"] *= sub_rate
 		pass#IMPORTIMPORTIMPORT from utilities import set_params2D
-		utilities.set_params2D(e, [cp["alpha"], cp["tx"], cp["ty"], cp["mirror"], cp["scale"]])
+		sparx_utilities.set_params2D(e, [cp["alpha"], cp["tx"], cp["ty"], cp["mirror"], cp["scale"]])
 
 	return 	e
 
@@ -743,7 +721,7 @@ def rot_avg_image(image_to_be_averaged):
 	"""
 	pass#IMPORTIMPORTIMPORT import types
 	pass#IMPORTIMPORTIMPORT from utilities import get_im
-	if type(image_to_be_averaged) is bytes: image_to_be_averaged = utilities.get_im(image_to_be_averaged)
+	if type(image_to_be_averaged) is bytes: image_to_be_averaged = sparx_utilities.get_im(image_to_be_averaged)
 	return image_to_be_averaged.rotavg_i()
 
 def ro_textfile(e, filename, helpful_string=""):
@@ -808,13 +786,13 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 			tmp1 = EMAN2_cppwrap.periodogram(e)
 			tmp  = tmp1.rotavg()
 			if im == 0:
-				sum_ima  = utilities.model_blank(tmp.get_xsize())
+				sum_ima  = sparx_utilities.model_blank(tmp.get_xsize())
 				sum_ima += tmp
 			else :  sum_ima += tmp
 		table = []
 		nr = sum_ima.get_xsize()
 		for ir in range(nr):  table.append([sum_ima.get_value_at(ir)])
-		utilities.drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
+		sparx_utilities.drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
 
 
 def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
@@ -880,7 +858,7 @@ def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, s
 		'wrap': option for using wraparound pixels during translations
 	"""
 
-	if scale == 0.0 :  global_def.ERROR("scale=0 not allowed", "rot_shift3D_grid", 1)
+	if scale == 0.0 :  sparx_global_def.ERROR("scale=0 not allowed", "rot_shift3D_grid", 1)
 
 	if mode == "cyclic":
 		pass#IMPORTIMPORTIMPORT from math import radians
@@ -900,7 +878,7 @@ def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, s
 		# gridding rotation
 		#if  mirror: o.process_inplace("xform.mirror", {"axis":'x'})
 		return o.rot_scale_conv_new_background_3D(numpy.radians(phi), numpy.radians(theta), numpy.radians(psi), sx, sy, sz, kb, scale, wrap)	
-	else: global_def.ERROR("rot_shift3D_grid mode not valid", "rot_shift3D_grid", 1)
+	else: sparx_global_def.ERROR("rot_shift3D_grid mode not valid", "rot_shift3D_grid", 1)
 
 
 def sinc2inv(nx):
@@ -933,7 +911,7 @@ def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	ny_fft = smallprime(ny)
 	x_gaussian_hi = 1./win_size
 	pass#IMPORTIMPORTIMPORT from filter    import filt_gaussh
-	e_fil = filter.filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
+	e_fil = sparx_filter.filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
 	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
 	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
 	x26 = int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
@@ -977,7 +955,7 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 	pass#IMPORTIMPORTIMPORT from utilities import drop_image, rot_image
 	# The input img is rotated such that tilt axis is vertical
 	img2  = rot_image(img1,theta, 0, 0, 1.0,1.0)	
-	e_fil = filter.filt_gaussh(img2, x_gaussian_hi)
+	e_fil = sparx_filter.filt_gaussh(img2, x_gaussian_hi)
 	del img1
 	del img2
 	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
@@ -997,35 +975,6 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 		# drop_image(pw2,"band%03d"%(ix))
 		pw2_band.append(pw2)	
 	return 	pw2_band
-
-
-def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
-	""" 
-		Calculate set of periodograms for tiles.  Returns a list.
-	"""
-	pass#IMPORTIMPORTIMPORT from fundamentals import window2d, ramp
-	pass#IMPORTIMPORTIMPORT from EMAN2 import periodogram
-	nx = img.get_xsize()
-	ny = img.get_ysize()
-	nx_fft = smallprime(nx)
-	ny_fft = smallprime(ny)
-	x_gaussian_hi = 1./win_size
-	pass#IMPORTIMPORTIMPORT from filter    import filt_gaussh
-	e_fil = filter.filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
-	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
-	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
-	x26 = int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
-	x29 = int(x39*((ny-2*edge_y)/win_size-1)+1)  # number of pieces vertical dim.(Y)
-	pw2 = []
-	for iy in range(1, x29+1):	
-		x21 = (win_size/x39)*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
-		for ix in  range(1, x26+1):			 
-			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
-			wi  = ramp( window2d(e_fil, win_size, win_size, "l", x22, x21) )
-			st = EMAN2_cppwrap.Util.infomask(wi, None, True)
-			wi = (wi - st[0])/st[1]*win_size
-			pw2.append(EMAN2_cppwrap.periodogram(wi))
-	return  pw2
 
 
 def bracket(f,x1,h):

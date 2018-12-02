@@ -535,7 +535,7 @@ def estimate_stability(data1, data2, CTF=False, snr=1.0, last_ring=-1):
 		if mirror1 == mirror2n:
 			consistent += 1
 			this_pixel_error = abs(sin((alpha1-alpha2n)*PI_180/2))*last_ring*2+sqrt((sx1-sx2n)**2+(sy1-sy2n)**2)
-			pixel_error.append(this_pixel_error)
+			sparx_pixel_error.append(this_pixel_error)
 
 	return consistent/float(nima), pixel_error, ccc(ave21, ave1)
 
@@ -581,92 +581,6 @@ def max_3D_pixel_errorA(t1, t2, r):
 			if dd > ddmax: ddmax=dd
 	return sqrt(ddmax)
 '''
-def pixel_error_2D(ali_params1, ali_params2, r = 1.0):
-	"""
-	Compute average squared 2D pixel error
-	"""
-	pass#IMPORTIMPORTIMPORT from math import radians, sin, pi, sqrt
-	return (numpy.sin(numpy.radians(ali_params1[0]-ali_params2[0])/2)*(2*r+1))**2 / 2 + (ali_params1[1]-ali_params2[1])**2 + (ali_params1[2]-ali_params2[2])**2
-
-
-def max_3D_pixel_error(t1, t2, r=1.0):
-	"""
-	Compute maximum pixel error between two sets of orientation parameters
-	assuming object has radius r, t1 is the projection transformation
-	of the first projection and t2 of the second one, respectively:
-		t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-		t.set_trans(Vec2f(-tx, -ty))
-	Note the function is symmetric in t1, t2.
-	"""
-	pass#IMPORTIMPORTIMPORT from EMAN2 import Vec2f
-	pass#IMPORTIMPORTIMPORT import types
-	dummy = EMAN2_cppwrap.Transform()
-	if( type(dummy) != type(t1)):
-		t = EMAN2_cppwrap.Transform({"type":"spider","phi":t1[0],"theta":t1[1],"psi":t1[2]})
-		t.set_trans(EMAN2_cppwrap.Vec2f(-t1[3], -t1[4]))
-	else: t = t1
-	if( type(dummy) != type(t2)):
-		u = EMAN2_cppwrap.Transform({"type":"spider","phi":t2[0],"theta":t2[1],"psi":t2[2]})
-		u.set_trans(EMAN2_cppwrap.Vec2f(-t2[3], -t2[4]))
-	else: u = t2
-
-	return EMAN2_cppwrap.EMData().max_3D_pixel_error(t, u, r)
-
-
-def angle_ave(angle1):
-	'''
-	This function computes average angle of a set of angles.
-	It also computes a measure of dispersion (incorrect).
-	'''
-	pass#IMPORTIMPORTIMPORT from math import cos, sin, pi, atan2, degrees, radians, sqrt
-
-	nima = len(angle1)
-
-	cosi = 0.0
-	sini = 0.0
-	for i in range(nima):
-		qt = numpy.radians( angle1[i] )
-		cosi += numpy.cos(qt)
-		sini += numpy.sin(qt)
-	alphai = numpy.degrees(math.atan2(sini, cosi))%360.0
-	# what follows is not correct, it is just to give a measure of dispersion
-	stdv = 0.0
-	for i in range(nima):
-		qt = angle1[i] - alphai
-		if   qt >  180.0:   qt -= 360.
-		elif qt < -180.0:   qt += 360.
-		stdv += qt*qt
-	stdv = numpy.sqrt(stdv/nima)
-
-	return alphai, stdv
-
-
-def angle_diff_sym(angle1, angle2, simi=1):
-	'''
-	This function determines the relative angle around Z axis (phi) between two sets of angles
-	   taking into account point group symmetry with multiplicity simi.
-	The input has to be in the form [[phi0,theta0], [phi1,theta1], ...]
-	  Only sets that have theta in the same range (0,90), or (90,180) are included in calculation.
-	The resulting angle has to be added (modulo 360/simi) to the first set.
-	'''
-	pass#IMPORTIMPORTIMPORT from math import cos, sin, pi, atan2, degrees, radians
-	
-	nima  = len(angle1)
-	if len(angle2) != nima:
-		global_def.ERROR( "List lengths do not agree!", "angle_diff_sym",1)
-
-	cosi = 0.0
-	sini = 0.0
-	agree = 0
-	for i in range(nima):
-		if( ( (angle2[i][1] <90.0) and (angle1[i][1] <90.0) ) or ( (angle2[i][1] >90.0) and (angle1[i][1] >90.0) ) ):
-			qt = numpy.radians((angle2[i][0]-angle1[i][0])*simi)
-			cosi += numpy.cos( qt )
-			sini += numpy.sin( qt )
-			agree += 1
-	if(agree == 0):  return 0.0
-	else:            return numpy.degrees(math.atan2(sini, cosi)/simi)%(360.0/simi)
-
 def angle_error(ang1, ang2, delta_ang=0.0):
 	'''
 	This function calculates the error (variance) between two sets of angles after delta_ang (angle difference) is added to the
@@ -713,11 +627,11 @@ def align_diff(data1, data2=None, suffix="_ideal"):
 	ali_params1 = []
 	ali_params2 = []
 	for i in range(nima):
-		alpha1, sx1, sy1, mirror1, scale1 = utilities.get_params2D(data1[i])
+		alpha1, sx1, sy1, mirror1, scale1 = sparx_utilities.get_params2D(data1[i])
 		if data2 != None:
-			alpha2, sx2, sy2, mirror2, scale2 = utilities.get_params2D(data2[i])
+			alpha2, sx2, sy2, mirror2, scale2 = sparx_utilities.get_params2D(data2[i])
 		else:
-			alpha2, sx2, sy2, mirror2, scale2 = utilities.get_params2D(data1[i], "xform.align2d"+suffix)
+			alpha2, sx2, sy2, mirror2, scale2 = sparx_utilities.get_params2D(data1[i], "xform.align2d"+suffix)
 		ali_params1.extend([alpha1, sx1, sy1, mirror1])
 		ali_params2.extend([alpha2, sx2, sy2, mirror2])
 
@@ -732,8 +646,8 @@ def align_diff_textfile(textfile1, textfile2):
 	'''
 	pass#IMPORTIMPORTIMPORT from utilities import read_text_row
 	
-	ali1 = utilities.read_text_row(textfile1, "", "")
-	ali2 = utilities.read_text_row(textfile2, "", "")
+	ali1 = sparx_utilities.read_text_row(textfile1, "", "")
+	ali2 = sparx_utilities.read_text_row(textfile2, "", "")
 
 	nima = len(ali1)
 	nima2 = len(ali2)
@@ -770,15 +684,15 @@ def ave_ali_err(data1, data2=None, r=25, suffix="_ideal"):
 	nima = len(data1)
 	mirror_same = 0
 	for i in range(nima):
-		alpha1, sx1, sy1, mirror1, scale1 = utilities.get_params2D(data1[i])
+		alpha1, sx1, sy1, mirror1, scale1 = sparx_utilities.get_params2D(data1[i])
 		if data2 != None:
-			alpha2, sx2, sy2, mirror2, scale2 = utilities.get_params2D(data2[i])
+			alpha2, sx2, sy2, mirror2, scale2 = sparx_utilities.get_params2D(data2[i])
 		else:
-			alpha2, sx2, sy2, mirror2, scale2 = utilities.get_params2D(data1[i], "xform.align2d"+suffix)
+			alpha2, sx2, sy2, mirror2, scale2 = sparx_utilities.get_params2D(data1[i], "xform.align2d"+suffix)
 		
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
-			alpha12, sx12, sy12, mirror12 = utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+			alpha12, sx12, sy12, mirror12 = sparx_utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 	
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
@@ -806,7 +720,7 @@ def ave_ali_err_params(ali_params1, ali_params2, r=25):
 
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
-			alpha12, sx12, sy12, mirror12 = utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+			alpha12, sx12, sy12, mirror12 = sparx_utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
@@ -822,8 +736,8 @@ def ave_ali_err_textfile(textfile1, textfile2, r=25):
 	pass#IMPORTIMPORTIMPORT from math import sqrt, sin, pi
 	pass#IMPORTIMPORTIMPORT from utilities import read_text_row
 	
-	ali1 = utilities.read_text_row(textfile1, "", "")
-	ali2 = utilities.read_text_row(textfile2, "", "")
+	ali1 = sparx_utilities.read_text_row(textfile1, "", "")
+	ali2 = sparx_utilities.read_text_row(textfile2, "", "")
 
 	nima = len(ali1)
 	nima2 = len(ali2)
@@ -853,7 +767,7 @@ def ave_ali_err_textfile(textfile1, textfile2, r=25):
 		
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
-			alpha12, sx12, sy12, mirror12 = utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+			alpha12, sx12, sy12, mirror12 = sparx_utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 	
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
@@ -941,7 +855,7 @@ def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 		alpha1, sx1, sy1, mirror1 = ali_params1[i*4:i*4+4]
 		alpha2, sx2, sy2, mirror2 = ali_params2[i*4:i*4+4]
 		if abs(mirror1-mirror2) == mirror:
-			alpha12, sx12, sy12, mirror12 = utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
+			alpha12, sx12, sy12, mirror12 = sparx_utilities.combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
 			if pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r) < pixel_error_threshold: ali_list.append(1)
 			else: ali_list.append(0)
 		else: ali_list.append(0)
@@ -1013,9 +927,9 @@ def rotate_angleset_to_match(agls1, agls2):
 	pass#IMPORTIMPORTIMPORT from utilities    import rotation_between_anglesets
 	pass#IMPORTIMPORTIMPORT from fundamentals import rotate_params
 
-	t1 = utilities.rotation_between_anglesets(agls1, agls2)
+	t1 = sparx_utilities.rotation_between_anglesets(agls1, agls2)
 
-	return fundamentals.rotate_params(agls1,[-t1[2],-t1[1],-t1[0]])
+	return sparx_fundamentals.rotate_params(agls1,[-t1[2],-t1[1],-t1[0]])
 
 def ordersegments(infilaments, ptclcoords):
 	'''
@@ -1044,10 +958,10 @@ def ordersegments(infilaments, ptclcoords):
 			xp[i] = xxp[i] - xs
 			yp[i] = yyp[i] - ys
 		try:
-			a,b = statistics.linreg(xp,yp)
+			a,b = sparx_statistics.linreg(xp,yp)
 			alpha = numpy.pi/4-math.atan(a)
 		except:
-			a,b = statistics.linreg([(xp[i]-yp[i]) for i in range(nq)], [(xp[i]+yp[i]) for i in range(nq)])
+			a,b = sparx_statistics.linreg([(xp[i]-yp[i]) for i in range(nq)], [(xp[i]+yp[i]) for i in range(nq)])
 			alpha = math.atan(a)
 			#print "except"
 
@@ -1158,7 +1072,7 @@ def mapcoords(x, y, r, nx, ny):
 				allynew.append(yn)
 				
 	if len(allxnew) == 0 or len(allynew) == 0:
-		global_def.ERROR("Could not find mapping")
+		sparx_global_def.ERROR("Could not find mapping")
 	
 	mindist = -1
 	minxnew = -1
@@ -1168,7 +1082,7 @@ def mapcoords(x, y, r, nx, ny):
 		for ynew in allynew:
 			xold = EMAN2_cppwrap.Util.round(xnew/r)
 			yold = EMAN2_cppwrap.Util.round(ynew/r)
-			dst = utilities.get_dist([x,y],[xold,yold])
+			dst = sparx_utilities.get_dist([x,y],[xold,yold])
 			if dst > mindist:
 				mindist = dst
 				minxnew = int(xnew)
@@ -1237,7 +1151,7 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 			for j in range(ns): phig[j] = params[thetapsi1[j]][0]
 			totpsicons += ns
 			distances = [0.0]*ns
-			for i in range(1,ns):  distances[i] = utilities.get_dist( ptclcoords[thetapsi1[i]], ptclcoords[thetapsi1[0]] )
+			for i in range(1,ns):  distances[i] = sparx_utilities.get_dist( ptclcoords[thetapsi1[i]], ptclcoords[thetapsi1[0]] )
 			ganger = [0.0]*ns
 			terr = 1.e23
 			for idir in range(-1,2,2):
@@ -1295,7 +1209,7 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 	fname = (hcoordsname.split('/'))[-1] # name of old coordinates files minus the path
 	newhcoordsname = os.path.join(outdir , newpref+fname) # full path name of new coordinates file to be created
 	f = open(newhcoordsname, 'w')
-	coords = utilities.read_text_row(hcoordsname) # old coordinates
+	coords = sparx_utilities.read_text_row(hcoordsname) # old coordinates
 	ncoords = len(coords)
 	newcoords=[]
 	w = coords[0][2]
