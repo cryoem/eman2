@@ -1484,7 +1484,18 @@ def main(args):
 			DB.close()
 	
 			fp = open(os.path.join(Blockdata["masterdir"],"README_shrink_ratio.txt"), "w")
-			"""Multiline Comment2"""
+			output_text = """
+						Since for processing purposes isac changes the image dimensions,
+						adjustment of pixel size needs to be made in subsequent steps, (e.g.
+						running sxviper.py). The shrink ratio and radius used for this particular isac run is
+						--------
+						%.5f
+						%.5f
+						--------
+						To get the pixel size for the isac output the user needs to divide
+						the original pixel size by the above value. This info is saved in
+						the following file: README_shrink_ratio.txt
+						"""%(shrink_ratio, radi)
 			fp.write(output_text); fp.flush() ;fp.close()
 			print(output_text)
 			junk = sparx_utilities.cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%Blockdata["stack_ali2d"])

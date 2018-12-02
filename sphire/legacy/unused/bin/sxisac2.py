@@ -42,15 +42,3 @@ def create_subgroup_within_group(mpi_comm):
 			#  Each color has the same set of refim
 			refi[i].write_image("class_averages.hdf", i)
 	"""
-output_text = """3
-			Since for processing purposes isac changes the image dimensions,
-			adjustment of pixel size needs to be made in subsequent steps, (e.g.
-			running sxviper.py). The shrink ratio and radius used for this particular isac run is
-			--------
-			%.5f
-			%.5f
-			--------
-			To get the pixel size for the isac output the user needs to divide
-			the original pixel size by the above value. This info is saved in
-			the following file: README_shrink_ratio.txt
-			"""%(shrink_ratio, radi)
