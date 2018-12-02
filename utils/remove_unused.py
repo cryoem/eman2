@@ -67,7 +67,7 @@ IMPORT_RE = re.compile('^(?:def|class)\s+([^\(]+)')
 END_RE = re.compile('^(?:\w|"|\')')
 CONSTANT_RE = re.compile('^(\w+)')
 START_RE = re.compile('^(?:def)')
-SPARX_FUNC_RE = re.compile('[^\w]({0})\.([\w]+)'.format('|'.join([
+SPARX_FUNC_RE = re.compile('(?:(?<=[^\w])|^)({0})\.([\w]+)'.format('|'.join([
     os.path.splitext(os.path.basename(entry))[0]
     for entry in glob.glob('{0}/*.py'.format(lib_dir))
     if 'sparx.py' not in entry
@@ -243,10 +243,12 @@ def recursive_check(function_dict, module, key):
             IGNORED.append((module,key))
         return None
     else:
+        if module == 'sparx_morphology':
+            print(key)
         function_dict[module]['used'].append(key)
         function_dict[module]['used'] = list(set(function_dict[module]['used']))
 
-    current_func_re = re.compile('[^\w]({0})[^\w]+'.format('|'.join([
+    current_func_re = re.compile('(?:(?<=[^\w])|^)({0})(?=[^\w]|$)'.format('|'.join([
         entry
         for entry in function_dict[module]
         if entry not in ('used', 'functions')
