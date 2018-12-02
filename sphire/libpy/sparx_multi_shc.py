@@ -48,14 +48,6 @@ pass#IMPORTIMPORTIMPORT import sys
 pass#IMPORTIMPORTIMPORT import time
 pass#IMPORTIMPORTIMPORT import types
 pass#IMPORTIMPORTIMPORT import utilities
-"""
-def mult_transform(v1, v2):
-	pass#IMPORTIMPORTIMPORT from EMAN2 import Transform
-	T1 = Transform({"type":"spider","phi":v1[0],"theta":v1[1],"psi":v1[2],"tx":v1[3],"ty":v1[4],"tz":0.0,"mirror":0,"scale":1.0})
-	T = T1*v2
-	return [ T.get_params("spider")["phi"], T.get_params("spider")["theta"], T.get_params("spider")["psi"], T.get_params("spider")["tx"], T.get_params("spider")["ty"]  ]
-"""
-
 def orient_params(params, refparams, indexes=None, symmetry_class = None):
 	#
 	#  The assumption here is that the angles are within the unique region
@@ -3329,3 +3321,11 @@ def generate_uneven_projections_directions(count, half_sphere=False, output_file
 		write_text_row(a1, output_filename)
 	return a1
 '''
+"""
+def mult_transform(v1, v2):
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Transform
+	T1 = Transform({"type":"spider","phi":v1[0],"theta":v1[1],"psi":v1[2],"tx":v1[3],"ty":v1[4],"tz":0.0,"mirror":0,"scale":1.0})
+	T = T1*v2
+	return [ T.get_params("spider")["phi"], T.get_params("spider")["theta"], T.get_params("spider")["psi"], T.get_params("spider")["tx"], T.get_params("spider")["ty"]  ]
+"""
+
