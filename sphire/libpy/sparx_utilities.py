@@ -1589,7 +1589,7 @@ def print_msg(msg):
 	pass#IMPORTIMPORTIMPORT import sys
 	pass#IMPORTIMPORTIMPORT import global_def
 	if (sparx_global_def.IS_LOGFILE_OPEN == False):
-		sparx_sparx_global_def.LOGFILE_HANDLE = open(sparx_global_def.LOGFILE,"w")
+		sparx_global_def.LOGFILE_HANDLE = open(sparx_global_def.LOGFILE,"w")
 		sparx_global_def.IS_LOGFILE_OPEN = True
 	if (sparx_global_def.BATCH):
 		sparx_global_def.LOGFILE_HANDLE.write(msg)
