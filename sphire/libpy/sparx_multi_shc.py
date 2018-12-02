@@ -39,25 +39,25 @@ def generate_uneven_projections_directions(count, half_sphere=False, output_file
 '''
 import EMAN2_cppwrap
 import EMAN2db
-import alignment
-import applications
+import sparx_alignment
+import sparx_applications
 import copy
-import filter
-import fundamentals
-import global_def
-import logger
-import morphology
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_logger
+import sparx_morphology
 import mpi
-import multi_shc
+import sparx_multi_shc
 import numpy
 import numpy.random
-import pixel_error
-import projection
+import sparx_pixel_error
+import sparx_projection
 import random
-import reconstruction
-import statistics
+import sparx_reconstruction
+import sparx_statistics
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2db
@@ -111,22 +111,22 @@ def orient_params(params, refparams, indexes=None, symmetry_class = None):
 	if(symmetry_class.sym[0] == "c" and symmetry_class.nsym>1):
 		pass#IMPORTIMPORTIMPORT from copy import deepcopy
 		divic = 360.0/symmetry_class.nsym
-		phi = pixel_error.angle_diff_sym([params[j] for j in tindexes], [refparams[j] for j in tindexes], symmetry_class.nsym)
+		phi = sparx_pixel_error.angle_diff_sym([params[j] for j in tindexes], [refparams[j] for j in tindexes], symmetry_class.nsym)
 		out = copy.deepcopy(params)
 		for j in range(n):
 			out[j][0] = (out[j][0]+phi)%divic
 		# mirror checking
-		psi_diff = pixel_error.angle_diff( [out[j][2] for j in tindexes], [refparams[j][2] for j in tindexes] )
+		psi_diff = sparx_pixel_error.angle_diff( [out[j][2] for j in tindexes], [refparams[j][2] for j in tindexes] )
 		if(abs(psi_diff-180.0) <90.0):
 			for j in range(n):
 				# apply mirror
 				out[j][2] = (out[j][2] + 180.0) % 360.0
 	elif(symmetry_class.sym[0] == "c"):
-		t1,t2,t3 = utilities.rotation_between_anglesets([params[j] for j in tindexes], [refparams[j] for j in tindexes])
-		out = fundamentals.rotate_params([params[i][:3] for i in range(n)],[-t3,-t2,-t1])
+		t1,t2,t3 = sparx_utilities.rotation_between_anglesets([params[j] for j in tindexes], [refparams[j] for j in tindexes])
+		out = sparx_fundamentals.rotate_params([params[i][:3] for i in range(n)],[-t3,-t2,-t1])
 		out = [out[i]+params[i][3:]  for i in range(n)]  # reattach shifts
 		# mirror checking
-		psi_diff = pixel_error.angle_diff( [out[j][2] for j in tindexes], [refparams[j][2] for j in tindexes] )
+		psi_diff = sparx_pixel_error.angle_diff( [out[j][2] for j in tindexes], [refparams[j][2] for j in tindexes] )
 		if(abs(psi_diff-180.0) <90.0):
 			for j in range(n):
 				# apply mirror
@@ -168,7 +168,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 				for l in range(k+1,sc):
 					neisym = symmetry_class.symmetry_neighbors([outp[l][i][:3]])
 					dmin = 180.0
-					for q in neisym: dmin = min(dmin, utilities.getang3(q, outp[k][i]))
+					for q in neisym: dmin = min(dmin, sparx_utilities.getang3(q, outp[k][i]))
 					qt += dmin
 			avg_diff_per_image[i] = (qt/sc/(sc-1)/2.0)
 
@@ -184,7 +184,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 			for i in subset: avg_diff_per_image[i] = 0.0
 			outp = [copy.deepcopy(projs[0])]
 			for i in range(sc-1,-1,-1):
-				tv = utilities.angles_to_normals(projs[i])
+				tv = sparx_utilities.angles_to_normals(projs[i])
 
 				for j in range(i+1,sc):
 					out = orient_params(projs[j], projs[i], subset, symmetry_class = symmetry_class)
@@ -193,8 +193,8 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 						for k in subset:
 							mind = 1.0e23
 							for l in range(symmetry_class.nsym):
-								u1,u2,u3 = utilities.getfvec(out[k][0] + l*divic, out[k][1])
-								qt = utilities.lacos(tv[k][0]*u1+tv[k][1]*u2+tv[k][2]*u3)
+								u1,u2,u3 = sparx_utilities.getfvec(out[k][0] + l*divic, out[k][1])
+								qt = sparx_utilities.lacos(tv[k][0]*u1+tv[k][1]*u2+tv[k][2]*u3)
 								mind = min(mind, qt)
 							avg_diff_per_image[k] += mind
 							#print  "avg_diff_per_image  %3d  %8.2f="%(k,avg_diff_per_image[k]),\
@@ -202,8 +202,8 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 					else:
 						# for k in xrange(n):
 						for k in subset:
-							u1,u2,u3 = utilities.getfvec(out[k][0], out[k][1])
-							avg_diff_per_image[k] += utilities.lacos(tv[k][0]*u1+tv[k][1]*u2+tv[k][2]*u3)
+							u1,u2,u3 = sparx_utilities.getfvec(out[k][0], out[k][1])
+							avg_diff_per_image[k] += sparx_utilities.lacos(tv[k][0]*u1+tv[k][1]*u2+tv[k][2]*u3)
 							# print  "avg_diff_per_image  %3d  %8.2f %8.6f="%(k,avg_diff_per_image[k], tv[k][0]*u1+tv[k][1]*u2+tv[k][2]*u3),\
 							# "  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"%( projs[i][k][0],projs[i][k][1],projs[i][k][2],out[k][0],out[k][1],out[k][2])
 					if(i == 0):
@@ -222,7 +222,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 					for l in range(k+1,sc):
 						neisym = symmetry_class.symmetry_neighbors([outp[l][i][:3]])
 						dmin = 180.0
-						for q in neisym: dmin = min(dmin, utilities.getang3(q,outp[k][i]))
+						for q in neisym: dmin = min(dmin, sparx_utilities.getang3(q,outp[k][i]))
 						qt += dmin
 				avg_diff_per_image[i] = (qt/sc/(sc-1)/2.0)
 				#k = subset[i]
@@ -234,7 +234,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, symme
 			pass#IMPORTIMPORTIMPORT from pixel_error import angle_diff
 			outp = copy.deepcopy(projs)
 			for l in range(1,sc):
-				psi_diff = pixel_error.angle_diff( [outp[l][j][2] for j in subset], [outp[0][j][2] for j in subset] )
+				psi_diff = sparx_pixel_error.angle_diff( [outp[l][j][2] for j in subset], [outp[0][j][2] for j in subset] )
 				#  adjust psi if necessary
 				if(abs(psi_diff-180.0) <90.0):
 					for j in range(n):
@@ -322,7 +322,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 
 	if log == None:
 		pass#IMPORTIMPORTIMPORT from logger import Logger
-		log = logger.Logger()
+		log = sparx_logger.Logger()
 
 	number_of_proc = mpi.mpi_comm_size(mpi_comm)
 	myid           = mpi.mpi_comm_rank(mpi_comm)
@@ -332,7 +332,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 		log.add("Start VIPER1")
 
 	if number_of_proc < number_of_runs:
-		global_def.ERROR("number_of_proc < number_of_runs","VIPER1",1,myid)
+		sparx_global_def.ERROR("number_of_proc < number_of_runs","VIPER1",1,myid)
 
 	# if an != "-1":
 	# 	ERROR("Option an not used","VIPER1",1,myid)
@@ -342,22 +342,22 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 	# mpi_subsize = mpi_comm_size(mpi_subcomm)
 	# mpi_subroots = range(number_of_runs)
 
-	mpi_subcomm = utilities.wrap_mpi_split(mpi_comm, number_of_runs)
+	mpi_subcomm = sparx_utilities.wrap_mpi_split(mpi_comm, number_of_runs)
 	mpi_subrank = mpi.mpi_comm_rank(mpi_subcomm)
 	mpi_subsize = mpi.mpi_comm_size(mpi_subcomm)
 	# do not make any assumptions about the subroots, collect the rank_id as they are already assigned
 	if mpi_subrank == 0:
-		mpi_subroots = utilities.wrap_mpi_gatherv([myid], 0, mpi_comm)
+		mpi_subroots = sparx_utilities.wrap_mpi_gatherv([myid], 0, mpi_comm)
 	else:
-		mpi_subroots = utilities.wrap_mpi_gatherv([], 0, mpi_comm)
-	mpi_subroots = utilities.wrap_mpi_bcast(mpi_subroots, main_node, mpi_comm)
+		mpi_subroots = sparx_utilities.wrap_mpi_gatherv([], 0, mpi_comm)
+	mpi_subroots = sparx_utilities.wrap_mpi_bcast(mpi_subroots, main_node, mpi_comm)
 
 
-	xrng        = utilities.get_input_from_string(xr)
+	xrng        = sparx_utilities.get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = utilities.get_input_from_string(yr)
-	step        = utilities.get_input_from_string(ts)
-	delta       = utilities.get_input_from_string(delta)
+	else          :  yrng = sparx_utilities.get_input_from_string(yr)
+	step        = sparx_utilities.get_input_from_string(ts)
+	delta       = sparx_utilities.get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
 	"""
 	if an == "-1":
@@ -378,8 +378,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 
 	cnx = nx//2 + 1
 	cny = cnx
-	numr	= alignment.Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D  = utilities.model_circle(last_ring,nx,nx) - utilities.model_circle(first_ring,nx,nx)
+	numr	= sparx_alignment.Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D  = sparx_utilities.model_circle(last_ring,nx,nx) - sparx_utilities.model_circle(first_ring,nx,nx)
 
 	if myid == main_node:
 		list_of_particles = list(range(len(stack)))
@@ -387,11 +387,11 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 	else:
 		list_of_particles = None
 		total_nima = None
-	total_nima = utilities.wrap_mpi_bcast(total_nima, main_node, mpi_comm)
-	list_of_particles = utilities.wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
+	total_nima = sparx_utilities.wrap_mpi_bcast(total_nima, main_node, mpi_comm)
+	list_of_particles = sparx_utilities.wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
 	nima = len(list_of_particles)
 
-	image_start, image_end = applications.MPI_start_end(total_nima, mpi_subsize, mpi_subrank)
+	image_start, image_end = sparx_applications.MPI_start_end(total_nima, mpi_subsize, mpi_subrank)
 	#print "  image_start, image_end  ", myid,image_start, image_end
 
 	data = [ stack[im] for im in list_of_particles ]
@@ -402,7 +402,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 			ctf_params = data[im].get_attr("ctf")
 			st = EMAN2_cppwrap.Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
-			data[im] = filter.filt_ctf(data[im], ctf_params)
+			data[im] = sparx_filter.filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
 
 	cs = [0.0]*3
@@ -432,10 +432,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 
 			#=========================================================================
 			# build references
-			volft, kb = projection.prep_vol(vol)
+			volft, kb = sparx_projection.prep_vol(vol)
 			#  We generate mirrored versions as well MAJOR CHANGE PAP 04/20/2017
 			reference_angles = symmetry_class.even_angles(delta[N_step])
-			refrings = alignment.prepare_refrings(volft, kb, nx, -1.0, reference_angles, "", numr, MPI=mpi_subcomm)
+			refrings = sparx_alignment.prepare_refrings(volft, kb, nx, -1.0, reference_angles, "", numr, MPI=mpi_subcomm)
 			del volft, kb
 			#=========================================================================
 
@@ -451,9 +451,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 				vecs = [[refrings[lr].get_attr("n1"), refrings[lr].get_attr("n2"), refrings[lr].get_attr("n3")] for lr in range(len(refrings))]
 				for im in range(nima):
 					#  For testing purposes make sure that directions did not change
-					t1,t2,t3,t4,t5 = utilities.get_params_proj( data[im] )
+					t1,t2,t3,t4,t5 = sparx_utilities.get_params_proj( data[im] )
 					pass#IMPORTIMPORTIMPORT from utilities import nearest_fang
-					iqa = utilities.nearest_fang( vecs, t1, t2 ) # Here I could use more sophisticated distance for symmetries
+					iqa = sparx_utilities.nearest_fang( vecs, t1, t2 ) # Here I could use more sophisticated distance for symmetries
 					#if myid == 0 : 
 					#print "  XXXX  ",myid,total_iter,im,iqa,t1,t2, reference_angles[iqa]
 					#if total_iter>3:
@@ -498,26 +498,26 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 						proj_ids = proj_ids_to_process[:]
 				else:
 					proj_ids = None
-				proj_ids = utilities.wrap_mpi_bcast(proj_ids, 0, mpi_subcomm)
+				proj_ids = sparx_utilities.wrap_mpi_bcast(proj_ids, 0, mpi_subcomm)
 				if len(proj_ids) == 0:
 					break
 				if mpi_subrank < len(proj_ids):
 					# -------- alignment
 					im = proj_ids[mpi_subrank]
-					peak, pixel_error, checked_refs, iref = alignment.shc(data[im], refrings, [[1.0,1.0]], numr, xrng[N_step], yrng[N_step], step[N_step], sym = "nomirror")
+					peak, pixel_error, checked_refs, iref = sparx_alignment.shc(data[im], refrings, [[1.0,1.0]], numr, xrng[N_step], yrng[N_step], step[N_step], sym = "nomirror")
 					# -------- gather results to root
-					vector_assigned_refs = utilities.wrap_mpi_gatherv([iref], 0, mpi_subcomm)
-					vector_previousmax   = utilities.wrap_mpi_gatherv([data[im].get_attr("previousmax")], 0, mpi_subcomm)
-					vector_xformprojs    = utilities.wrap_mpi_gatherv([data[im].get_attr("xform.projection")], 0, mpi_subcomm)
-					vector_pixel_error   = utilities.wrap_mpi_gatherv([pixel_error], 0, mpi_subcomm)
-					vector_checked_ref   = utilities.wrap_mpi_gatherv([checked_refs], 0, mpi_subcomm)
+					vector_assigned_refs = sparx_utilities.wrap_mpi_gatherv([iref], 0, mpi_subcomm)
+					vector_previousmax   = sparx_utilities.wrap_mpi_gatherv([data[im].get_attr("previousmax")], 0, mpi_subcomm)
+					vector_xformprojs    = sparx_utilities.wrap_mpi_gatherv([data[im].get_attr("xform.projection")], 0, mpi_subcomm)
+					vector_pixel_error   = sparx_utilities.wrap_mpi_gatherv([pixel_error], 0, mpi_subcomm)
+					vector_checked_ref   = sparx_utilities.wrap_mpi_gatherv([checked_refs], 0, mpi_subcomm)
 				else:
 					# -------- no projection assigned, send to root empty lists
-					vector_assigned_refs = utilities.wrap_mpi_gatherv([], 0, mpi_subcomm)
-					vector_previousmax   = utilities.wrap_mpi_gatherv([], 0, mpi_subcomm)
-					vector_xformprojs    = utilities.wrap_mpi_gatherv([], 0, mpi_subcomm)
-					vector_pixel_error   = utilities.wrap_mpi_gatherv([], 0, mpi_subcomm)
-					vector_checked_ref   = utilities.wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_assigned_refs = sparx_utilities.wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_previousmax   = sparx_utilities.wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_xformprojs    = sparx_utilities.wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_pixel_error   = sparx_utilities.wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_checked_ref   = sparx_utilities.wrap_mpi_gatherv([], 0, mpi_subcomm)
 				# -------- merge results
 				if mpi_subrank == 0:
 					used_refs = set()
@@ -537,9 +537,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 				else:
 					used_refs = None
 				# ------- broadcast results
-				used_refs = utilities.wrap_mpi_bcast(used_refs, 0, mpi_subcomm)
-				vector_previousmax = utilities.wrap_mpi_bcast(vector_previousmax, 0, mpi_subcomm)
-				vector_xformprojs  = utilities.wrap_mpi_bcast(vector_xformprojs, 0, mpi_subcomm)
+				used_refs = sparx_utilities.wrap_mpi_bcast(used_refs, 0, mpi_subcomm)
+				vector_previousmax = sparx_utilities.wrap_mpi_bcast(vector_previousmax, 0, mpi_subcomm)
+				vector_xformprojs  = sparx_utilities.wrap_mpi_bcast(vector_xformprojs, 0, mpi_subcomm)
 				# ------- delete used references
 				for ir in used_refs:  del refrings[ir]
 				# ------- set projections parameters
@@ -556,15 +556,15 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 			#=========================================================================
 			#output pixel errors, check stop criterion
 			if mpi_subrank == 0:
-				all_pixer          = utilities.wrap_mpi_gatherv(pixer, 0, mpi_comm)
-				total_checked_refs = utilities.wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
+				all_pixer          = sparx_utilities.wrap_mpi_gatherv(pixer, 0, mpi_comm)
+				total_checked_refs = sparx_utilities.wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
 			else:
-				all_pixer          = utilities.wrap_mpi_gatherv([], 0, mpi_comm)
-				total_checked_refs = utilities.wrap_mpi_gatherv([], main_node, mpi_comm)
+				all_pixer          = sparx_utilities.wrap_mpi_gatherv([], 0, mpi_comm)
+				total_checked_refs = sparx_utilities.wrap_mpi_gatherv([], main_node, mpi_comm)
 			if myid == main_node:
 				total_checked_refs = sum(total_checked_refs)
 				lhist = 20
-				region, histo = statistics.hist_list(all_pixer, lhist)
+				region, histo = sparx_statistics.hist_list(all_pixer, lhist)
 				log.add("= Pixel error        Number of images in all runs")
 				for lhx in range(lhist):
 					msg = " %10.3f                  %7d"%(region[lhx], histo[lhx])
@@ -580,14 +580,14 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 				# terminate          = ( percent_of_pixerr_below_one > 0.9 )  #  TODO - parameter ?
 				log.add("=================================================")
 				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%","   Mutations: ",orient_and_shuffle)
-			orient_and_shuffle = utilities.wrap_mpi_bcast(orient_and_shuffle, 0, mpi_comm)
+			orient_and_shuffle = sparx_utilities.wrap_mpi_bcast(orient_and_shuffle, 0, mpi_comm)
 			#=========================================================================
 
 			#=========================================================================
 			# centering, for d unnecessary, for cn, n>1 only z can move
 			if center == -1 and symmetry_class.sym[0] == 'c':
 				pass#IMPORTIMPORTIMPORT from utilities      import estimate_3D_center_MPI, rotate_3D_shift
-				cs[0], cs[1], cs[2], dummy, dummy = utilities.estimate_3D_center_MPI(data[image_start:image_end], total_nima, mpi_subrank, mpi_subsize, 0, mpi_comm=mpi_subcomm) #estimate_3D_center_MPI(data, number_of_runs*total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
+				cs[0], cs[1], cs[2], dummy, dummy = sparx_utilities.estimate_3D_center_MPI(data[image_start:image_end], total_nima, mpi_subrank, mpi_subsize, 0, mpi_comm=mpi_subcomm) #estimate_3D_center_MPI(data, number_of_runs*total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					log.add(msg)
@@ -597,7 +597,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 						log.add("For symmetry group cn (n>1), we only center the volume in z-direction\n")
 				cs = mpi.mpi_bcast(cs, 3, mpi.MPI_FLOAT, main_node, mpi_subcomm)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
-				utilities.rotate_3D_shift(data, cs)
+				sparx_utilities.rotate_3D_shift(data, cs)
 			#===================== CORRECT PARAMETERS ON DATA =======================
 
 			mpi.mpi_barrier(mpi_comm)
@@ -619,13 +619,13 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 			if orient_and_shuffle:   #  DO orient
 				params = []
 				for im in data:
-					phi, theta, psi, sx, sy = utilities.get_params_proj(im)
+					phi, theta, psi, sx, sy = sparx_utilities.get_params_proj(im)
 					params.append([phi, theta, psi, sx, sy])
 				# if myid == 2:  print  " initial params before orient  ",myid,[get_params_proj(data[i]) for i in xrange(4)]
 
 				# ------ orientation - begin
 				#  Send solution from the main process of the first group to all processes in all groups
-				params_0 = utilities.wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
+				params_0 = sparx_utilities.wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if (mpi_subrank == 0) and (myid != 0):
 					#  This is done on the main node of each group (master node for MPI_COMM_WORLD skips it)
 					#  Minimal length of the subset is set to 1/3 of the number of parameters
@@ -638,7 +638,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 					# if myid == 2:  print  " params before orient  ",myid,params[:4],params[-4:]
 					#write_text_row(params_0,"bparamszero%04d%04d.txt"%(myid,total_iter))
 					#write_text_row(params,"bparams%04d%04d.txt"%(myid,total_iter))
-				params = utilities.wrap_mpi_bcast(params, 0, mpi_subcomm)
+				params = sparx_utilities.wrap_mpi_bcast(params, 0, mpi_subcomm)
 				# if myid == 2:  print  " params after wrap_mpi_bcast  ",myid,params[:4],params[-4:]
 				# ------ orientation - end
 
@@ -651,14 +651,14 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 
 				#temp = [None]*nima
 				#for i in xrange(nima): temp[i] = data[i].get_attr("xform.projection")
-				for i in range(nima):  utilities.set_params_proj(data[i], params[i])
+				for i in range(nima):  sparx_utilities.set_params_proj(data[i], params[i])
 				vol = do_volume(data[image_start:image_end], ali3d_options, 0, mpi_subcomm)
 				#for i in xrange(nima): data[i].set_attr("xform.projection",temp[i])
 				#del temp
 
 
 				if mpi_subrank == 0:
-					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = utilities.model_circle(last_ring, nx, nx, nx)))
+					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = sparx_utilities.model_circle(last_ring, nx, nx, nx)))
 					# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
 					#print  " Right after reconstruction of oriented parameters L2", myid, total_iter,L2
 					#vol.write_image("recvolf%04d%04d.hdf"%(myid,total_iter))
@@ -676,12 +676,12 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 							all_L2s.append(L2)
 							all_params.append(copy.deepcopy(params))
 						else:
-							all_L2s.append(utilities.wrap_mpi_recv(sr, mpi_comm))
-							all_params.append(utilities.wrap_mpi_recv(sr, mpi_comm))
+							all_L2s.append(sparx_utilities.wrap_mpi_recv(sr, mpi_comm))
+							all_params.append(sparx_utilities.wrap_mpi_recv(sr, mpi_comm))
 				else:
 					if mpi_subrank == 0:
-						utilities.wrap_mpi_send(L2, 0, mpi_comm)
-						utilities.wrap_mpi_send(params, 0, mpi_comm)
+						sparx_utilities.wrap_mpi_send(L2, 0, mpi_comm)
+						sparx_utilities.wrap_mpi_send(params, 0, mpi_comm)
 
 				# ---------------------------------
 
@@ -719,7 +719,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 						#  ---  Stopping criterion
 						pass#IMPORTIMPORTIMPORT from statistics import table_stat
 						pass#IMPORTIMPORTIMPORT from math import sqrt
-						q1,q2,q3,q4 = statistics.table_stat([GA[i][0] for i in range(number_of_runs)])
+						q1,q2,q3,q4 = sparx_statistics.table_stat([GA[i][0] for i in range(number_of_runs)])
 						# Terminate if variation of L2 norms less than (L2threshold*100)% of their average
 						crit = numpy.sqrt(max(q2,0.0))/q1
 						for i in range(number_of_runs):
@@ -752,7 +752,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 							#  random reference projection:
 							itmp = numpy.random.randint(0,total_nima-1)
 							#print  "  nearest_many_full_k_projangles  ",total_nima,itmp,ipl,ip,len(GA[ipl[ip]][1]),GA[ipl[ip]][1][itmp],GA[ipl[ip]][1]
-							keepset = utilities.nearest_many_full_k_projangles(utilities.angles_to_normals(GA[ipl[ip]][1]), [GA[ipl[ip]][1][itmp]], howmany = total_nima/2, sym_class = symmetry_class)[0]
+							keepset = sparx_utilities.nearest_many_full_k_projangles(sparx_utilities.angles_to_normals(GA[ipl[ip]][1]), [GA[ipl[ip]][1][itmp]], howmany = total_nima/2, sym_class = symmetry_class)[0]
 							#print  "  keepset  ",total_nima,len(keepset),itmp,keepset
 							otherset = set(range(total_nima)) - set(keepset)
 							otherset = [i for i in otherset]
@@ -795,7 +795,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 							all_params[-1-i] = [[numpy.random.random()*360.0,numpy.random.random()*180.0,numpy.random.random()*360.0,0.0,0.0]\
 										 for j in range(total_nima)]
 
-				terminate = utilities.wrap_mpi_bcast(terminate, main_node, mpi_comm)
+				terminate = sparx_utilities.wrap_mpi_bcast(terminate, main_node, mpi_comm)
 				if not terminate:
 
 					storevol = True
@@ -807,14 +807,14 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 							if sr == myid:
 								params = all_params[i]
 							else:
-								utilities.wrap_mpi_send(all_params[i], sr, mpi_comm)
+								sparx_utilities.wrap_mpi_send(all_params[i], sr, mpi_comm)
 					else:
 						if mpi_subrank == 0:
-							params = utilities.wrap_mpi_recv(0, mpi_comm)
+							params = sparx_utilities.wrap_mpi_recv(0, mpi_comm)
 
-					params = utilities.wrap_mpi_bcast(params, 0, mpi_subcomm)
+					params = sparx_utilities.wrap_mpi_bcast(params, 0, mpi_subcomm)
 					for i in range(nima):
-						utilities.set_params_proj(data[i], params[i])
+						sparx_utilities.set_params_proj(data[i], params[i])
 					"""
 					#=========================================================================
 					# volume reconstruction
@@ -849,10 +849,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 
 				if len(ali3d_options.moon_elimination) > 0:
 					pass#IMPORTIMPORTIMPORT from utilities import eliminate_moons
-					vol = utilities.eliminate_moons(vol, ali3d_options.moon_elimination)
+					vol = sparx_utilities.eliminate_moons(vol, ali3d_options.moon_elimination)
 
 				if mpi_subrank == 0:
-					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = utilities.model_circle(last_ring, nx, nx, nx)))
+					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = sparx_utilities.model_circle(last_ring, nx, nx, nx)))
 					# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
 					#print  " Right after reconstruction L2", myid, total_iter,L2
 					#if storevol:   vol.write_image("mutated%04d%04d.hdf"%(myid,total_iter))
@@ -970,7 +970,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 
 	if log == None:
 		pass#IMPORTIMPORTIMPORT from logger import Logger
-		log = logger.Logger()
+		log = sparx_logger.Logger()
 
 	number_of_proc = mpi.mpi_comm_size(mpi_comm)
 	myid           = mpi.mpi_comm_rank(mpi_comm)
@@ -979,14 +979,14 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	if myid == main_node:
 		log.add("Start VIPER2")
 
-	xrng        = utilities.get_input_from_string(xr)
+	xrng        = sparx_utilities.get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = utilities.get_input_from_string(yr)
-	step        = utilities.get_input_from_string(ts)
-	delta       = utilities.get_input_from_string(delta)
+	else          :  yrng = sparx_utilities.get_input_from_string(yr)
+	step        = sparx_utilities.get_input_from_string(ts)
+	delta       = sparx_utilities.get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
 
-	symmetry_class = fundamentals.symclass(sym)
+	symmetry_class = sparx_fundamentals.symclass(sym)
 
 	# if an != "-1":
 	# 	ERROR("Option an not used","VIPER1",1,myid)
@@ -1007,8 +1007,8 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	nx      = vol.get_xsize()
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
-	numr	= alignment.Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D  = utilities.model_circle(last_ring,nx,nx) - utilities.model_circle(first_ring,nx,nx)
+	numr	= sparx_alignment.Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D  = sparx_utilities.model_circle(last_ring,nx,nx) - sparx_utilities.model_circle(first_ring,nx,nx)
 
 	if myid == main_node:
 		list_of_particles = list(range(len(stack)))
@@ -1016,8 +1016,8 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	else:
 		list_of_particles = None
 		total_nima = None
-	total_nima = utilities.wrap_mpi_bcast(total_nima, main_node, mpi_comm)
-	list_of_particles = utilities.wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
+	total_nima = sparx_utilities.wrap_mpi_bcast(total_nima, main_node, mpi_comm)
+	list_of_particles = sparx_utilities.wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
 
 	#old_mpi_comm = mpi_comm
 	#mpi_size = mpi_comm_size(mpi_comm)
@@ -1039,7 +1039,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	myid           = mpi.mpi_comm_rank(mpi_comm)
 
 
-	image_start, image_end = applications.MPI_start_end(total_nima, number_of_proc, myid)
+	image_start, image_end = sparx_applications.MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
 	list_of_particles = list_of_particles[image_start: image_end]
 	nima = len(list_of_particles)
@@ -1052,7 +1052,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 			ctf_params = data[im].get_attr("ctf")
 			st = EMAN2_cppwrap.Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
-			data[im] = filter.filt_ctf(data[im], ctf_params)
+			data[im] = sparx_filter.filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
 
 
@@ -1065,7 +1065,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	if myid == main_node:
 		start_time = time.time()
 		#qvol.write_image("vitera.hdf")
-		L2 = qvol.cmp("dot", qvol, dict(negative = 0, mask = utilities.model_circle(last_ring, nx, nx, nx)))
+		L2 = qvol.cmp("dot", qvol, dict(negative = 0, mask = sparx_utilities.model_circle(last_ring, nx, nx, nx)))
 		log.add("3D reconstruction time = %f\n"%(time.time()-start_time)," START  L2 norm:  %f"%L2)
 		start_time = time.time()
 	del qvol
@@ -1075,14 +1075,14 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	pass#IMPORTIMPORTIMPORT from alignment import ringwe
 	cnx = nx//2 + 1
 	cny = nx//2 + 1
-	wr_four  = alignment.ringwe(numr, "F")
+	wr_four  = sparx_alignment.ringwe(numr, "F")
 	pass#IMPORTIMPORTIMPORT from math import pi, sin, cos
 	qv = numpy.pi/180.
-	volft, kb = projection.prep_vol(ref_vol)
+	volft, kb = sparx_projection.prep_vol(ref_vol)
 	pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
 	for im in range(nima):
-		phi,theta,psi,tx,ty = utilities.get_params_proj(data[im])
-		refrings = projection.prgs(volft, kb, [phi,theta,psi, 0.0, 0.0])
+		phi,theta,psi,tx,ty = sparx_utilities.get_params_proj(data[im])
+		refrings = sparx_projection.prgs(volft, kb, [phi,theta,psi, 0.0, 0.0])
 		refrings = EMAN2_cppwrap.Util.Polar2Dm(refrings, cnx, cny, numr, "F")
 		EMAN2_cppwrap.Util.Normalize_ring(refrings, numr, 0 )
 		EMAN2_cppwrap.Util.Frngs(refrings, numr)
@@ -1148,7 +1148,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 
 	if myid == main_node:
 		#ref_vol.write_image("viterb.hdf")
-		L2 = ref_vol.cmp("dot", ref_vol, dict(negative = 0, mask = utilities.model_circle(last_ring, nx, nx, nx)))
+		L2 = ref_vol.cmp("dot", ref_vol, dict(negative = 0, mask = sparx_utilities.model_circle(last_ring, nx, nx, nx)))
 		log.add("3D reconstruction time = %f\n"%(time.time()-start_time),"   L2 norm:  %f"%L2)
 		start_time = time.time()
 
@@ -1177,10 +1177,10 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 
 			#=========================================================================
 			# build references
-			volft, kb = projection.prep_vol(vol)
+			volft, kb = sparx_projection.prep_vol(vol)
 			#  For the local SHC it is essential reference projections have psi zero, as otherwise it will get messed up.
 			reference_angles = symmetry_class.even_angles(delta[N_step], phiEqpsi = "Zero")
-			refrings = alignment.prepare_refrings(volft, kb, nx, -1.0, reference_angles, "", numr, MPI=mpi_comm)
+			refrings = sparx_alignment.prepare_refrings(volft, kb, nx, -1.0, reference_angles, "", numr, MPI=mpi_comm)
 			del volft, kb
 			#=========================================================================
 
@@ -1197,7 +1197,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 			for im in range(nima):
 				#peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], number_of_runs=number_of_runs)
 				# previousmax is set in shc
-				peak, pixer[im], checked_refs, iref = alignment.shc(data[im], refrings, [[1.0,1.0]], numr, xrng[N_step], yrng[N_step], step[N_step], sym = "nomirror") # cannot use 'an' here
+				peak, pixer[im], checked_refs, iref = sparx_alignment.shc(data[im], refrings, [[1.0,1.0]], numr, xrng[N_step], yrng[N_step], step[N_step], sym = "nomirror") # cannot use 'an' here
 				number_of_checked_refs += checked_refs
 			#=========================================================================
 			mpi.mpi_barrier(mpi_comm)
@@ -1207,27 +1207,27 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 
 			#=========================================================================
 			#output pixel errors, check stop criterion
-			all_pixer = utilities.wrap_mpi_gatherv(pixer, 0, mpi_comm)
-			total_checked_refs = utilities.wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
+			all_pixer = sparx_utilities.wrap_mpi_gatherv(pixer, 0, mpi_comm)
+			total_checked_refs = sparx_utilities.wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
 			terminate = 0
 			if myid == main_node:
 				total_checked_refs = sum(total_checked_refs)
 				lhist = 20
-				region, histo = statistics.hist_list(all_pixer, lhist)
+				region, histo = sparx_statistics.hist_list(all_pixer, lhist)
 				log.add("=========================")
 				for lhx in range(lhist):
 					msg = " %10.3f     %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
 				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
 					terminate = 1
-			terminate = utilities.wrap_mpi_bcast(terminate, main_node, mpi_comm)
+			terminate = sparx_utilities.wrap_mpi_bcast(terminate, main_node, mpi_comm)
 			#=========================================================================
 
 			#=========================================================================
 			# centering
 			if center == -1 and sym[0] == 'c':
 				pass#IMPORTIMPORTIMPORT from utilities      import estimate_3D_center_MPI, rotate_3D_shift
-				cs[0], cs[1], cs[2], dummy, dummy = utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
+				cs[0], cs[1], cs[2], dummy, dummy = sparx_utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					log.add(msg)
@@ -1237,7 +1237,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 						log.add("For symmetry group cn (n>1), we only center the volume in z-direction\n")
 				cs = mpi.mpi_bcast(cs, 3, mpi.MPI_FLOAT, main_node, mpi_comm)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
-				utilities.rotate_3D_shift(data, cs)
+				sparx_utilities.rotate_3D_shift(data, cs)
 			#=========================================================================
 
 			#=========================================================================
@@ -1250,7 +1250,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 			# log
 			if myid == main_node:
 				#vol.write_image("viter%03d.hdf"%total_iter)
-				L2 = vol.cmp("dot", vol, dict(negative = 0, mask = utilities.model_circle(last_ring, nx, nx, nx)))
+				L2 = vol.cmp("dot", vol, dict(negative = 0, mask = sparx_utilities.model_circle(last_ring, nx, nx, nx)))
 				log.add("3D reconstruction time = %f\n"%(time.time()-start_time),"   L2 norm:  %f"%L2)
 				start_time = time.time()
 			#=========================================================================
@@ -1260,19 +1260,19 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = N
 	params = []
 	previousmax = []
 	for im in data:
-		t = utilities.get_params_proj(im)
+		t = sparx_utilities.get_params_proj(im)
 		p = im.get_attr("previousmax")
 		params.append( [t[0], t[1], t[2], t[3], t[4]] )
 		previousmax.append(p)
 	assert(nima == len(params))
-	params = utilities.wrap_mpi_gatherv(params, 0, mpi_comm)
+	params = sparx_utilities.wrap_mpi_gatherv(params, 0, mpi_comm)
 	if myid == 0:
 		assert(total_nima == len(params))
-	previousmax = utilities.wrap_mpi_gatherv(previousmax, 0, mpi_comm)
+	previousmax = sparx_utilities.wrap_mpi_gatherv(previousmax, 0, mpi_comm)
 	if myid == 0:
 		assert(total_nima == len(previousmax))
 
-	par_r = utilities.wrap_mpi_gatherv(par_r, 0, mpi_comm)
+	par_r = sparx_utilities.wrap_mpi_gatherv(par_r, 0, mpi_comm)
 
 	## if there are fewer images than processors then synchronize
 	## with the other group of processors that did not do any work
@@ -1305,13 +1305,13 @@ def volume_reconstruction(data, options, mpi_comm):
 	center    = options.center
 	#=========================================================================
 	# volume reconstruction
-	if CTF: vol = reconstruction.recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
-	else:   vol = reconstruction.recons3d_4nn_MPI    (myid, data,      symmetry=sym, snr=snr, npad=npad, mpi_comm=mpi_comm)
+	if CTF: vol = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
+	else:   vol = sparx_reconstruction.recons3d_4nn_MPI    (myid, data,      symmetry=sym, snr=snr, npad=npad, mpi_comm=mpi_comm)
 
 	if myid == 0:
 		nx = data[0].get_xsize()
 		last_ring   = int(options.ou)
-		mask3D = utilities.model_circle(last_ring, nx, nx, nx)
+		mask3D = sparx_utilities.model_circle(last_ring, nx, nx, nx)
 		ref_data = [ mask3D, max(center,0), None, None, None, None ]
 		ref_data[2] = vol
 		ref_data[3] = None #fscc
@@ -1321,7 +1321,7 @@ def volume_reconstruction(data, options, mpi_comm):
 
 
 	# broadcast volume
-	utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	sparx_utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
 	return vol
 
@@ -1340,12 +1340,12 @@ def volume_recsp(data, options):
 	center    = options.center
 	#=========================================================================
 	# volume reconstruction
-	if CTF: vol = reconstruction.recons3d_4nn_ctf(data, snr, symmetry=sym, npad=npad)
-	else:   vol = reconstruction.recons3d_4nn(data,      symmetry=sym, npad=npad)
+	if CTF: vol = sparx_reconstruction.recons3d_4nn_ctf(data, snr, symmetry=sym, npad=npad)
+	else:   vol = sparx_reconstruction.recons3d_4nn(data,      symmetry=sym, npad=npad)
 
 	nx = data[0].get_xsize()
 	last_ring   = int(options.ou)
-	mask3D = utilities.model_circle(last_ring, nx, nx, nx)
+	mask3D = sparx_utilities.model_circle(last_ring, nx, nx, nx)
 	ref_data = [ mask3D, max(center,0), None, None, None, None ]
 	ref_data[2] = vol
 	ref_data[3] = None #fscc
@@ -1386,17 +1386,17 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	mpi_size = mpi.mpi_comm_size(mpi_comm)
 
 	global BATCH, MPI
-	global_def.BATCH = True
-	global_def.MPI   = True
-	if(mpi_size < runs_count):  global_def.ERROR("multi_shc","mpi_size < runs_count",1,mpi_rank)
+	sparx_global_def.BATCH = True
+	sparx_global_def.MPI   = True
+	if(mpi_size < runs_count):  sparx_global_def.ERROR("multi_shc","mpi_size < runs_count",1,mpi_rank)
 
 	if log == None:
 		pass#IMPORTIMPORTIMPORT from logger import Logger
-		log = logger.Logger()
+		log = sparx_logger.Logger()
 
 
 	#  Initialize symmetries
-	symmetry_class = fundamentals.symclass(ali3d_options.sym)
+	symmetry_class = sparx_fundamentals.symclass(ali3d_options.sym)
 
 	error = 0
 	projections = []
@@ -1409,20 +1409,20 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			random.shuffle(prms)
 			for i in subset:
 				prms[i][2] = numpy.random.random()*360.0
-				utilities.set_params_proj(all_projs[i], prms[i]+[0.,0.])
+				sparx_utilities.set_params_proj(all_projs[i], prms[i]+[0.,0.])
 				#all_projs[i].set_attr("stable", 0)
 				all_projs[i].set_attr("previousmax", -1.e23)
 				projections.append(all_projs[i])
 		del prms
 
-	error = utilities.bcast_number_to_all(error, source_node = 0)
-	if(error == 1): global_def.ERROR("multi_shc","Angular step too large, decrease delta", 1, mpi_rank)
+	error = sparx_utilities.bcast_number_to_all(error, source_node = 0)
+	if(error == 1): sparx_global_def.ERROR("multi_shc","Angular step too large, decrease delta", 1, mpi_rank)
 
 
 	###from sys import exit
 	#if mpi_rank == 0:   print "  NEW   ",mpi_rank
 	###exit()
-	projections = utilities.wrap_mpi_bcast(projections, 0, mpi_comm)
+	projections = sparx_utilities.wrap_mpi_bcast(projections, 0, mpi_comm)
 
 	n_projs = len(projections)
 
@@ -1433,15 +1433,15 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			mpi_subsize = mpi.mpi_comm_size(mpi_subcomm)
 			mpi_subrank = mpi.mpi_comm_rank(mpi_subcomm)
 			if (mpi_rank < n_projs):
-				proj_begin, proj_end = applications.MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
+				proj_begin, proj_end = sparx_applications.MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
 				ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
 			else:
 				pass#IMPORTIMPORTIMPORT from utilities import model_blank
 				nx = projections[0].get_xsize()
-				ref_vol = utilities.model_blank(nx,nx,nx)
-			utilities.bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
+				ref_vol = sparx_utilities.model_blank(nx,nx,nx)
+			sparx_utilities.bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
 		else:
-			proj_begin, proj_end = applications.MPI_start_end(n_projs, mpi_size, mpi_rank)
+			proj_begin, proj_end = sparx_applications.MPI_start_end(n_projs, mpi_size, mpi_rank)
 			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_comm)
 
 	# Each node keeps all projection data, this would not work for large datasets
@@ -1476,8 +1476,8 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		temp = []
 		pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
 		for i in range(n_projs):
-			utilities.set_params_proj( projections[i], out_params[i] )
-		utilities.write_text_row(out_params, log.prefix + "refparams2.txt")
+			sparx_utilities.set_params_proj( projections[i], out_params[i] )
+		sparx_utilities.write_text_row(out_params, log.prefix + "refparams2.txt")
 		"""
 		log.add("  WILL RECONSTRUCT  ")
 		pass#IMPORTIMPORTIMPORT from utilities import model_circle
@@ -1494,7 +1494,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	"""
 	# proj_begin, proj_end  = MPI_start_end(n_projs, mpi_size, mpi_rank)
 
-	projections = utilities.wrap_mpi_bcast(projections, 0, mpi_comm)
+	projections = sparx_utilities.wrap_mpi_bcast(projections, 0, mpi_comm)
 	pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
 
 	if (mpi_size > n_projs):
@@ -1503,22 +1503,22 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		mpi_subsize = mpi.mpi_comm_size(mpi_subcomm)
 		mpi_subrank = mpi.mpi_comm_rank(mpi_subcomm)
 		if (mpi_rank < n_projs):
-			proj_begin, proj_end = applications.MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
+			proj_begin, proj_end = sparx_applications.MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
 			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
 		else:
 			pass#IMPORTIMPORTIMPORT from utilities import model_blank
 			nx = projections[0].get_xsize()
-			ref_vol = utilities.model_blank(nx,nx,nx)
-		utilities.bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
+			ref_vol = sparx_utilities.model_blank(nx,nx,nx)
+		sparx_utilities.bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
 	else:
-		proj_begin, proj_end = applications.MPI_start_end(n_projs, mpi_size, mpi_rank)
+		proj_begin, proj_end = sparx_applications.MPI_start_end(n_projs, mpi_size, mpi_rank)
 		ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_comm)
 
 	if mpi_rank == 0:
 		ref_vol.write_image(log.prefix + "refvol2.hdf")
 		pass#IMPORTIMPORTIMPORT from utilities import model_circle
 		nx = ref_vol.get_xsize()
-		L2 = ref_vol.cmp("dot", ref_vol, dict(negative = 0, mask = utilities.model_circle(ali3d_options.ou, nx,nx,nx)))
+		L2 = ref_vol.cmp("dot", ref_vol, dict(negative = 0, mask = sparx_utilities.model_circle(ali3d_options.ou, nx,nx,nx)))
 		log.add(" L2 norm of reference volume:  %f"%L2)
 
 	"""
@@ -1552,9 +1552,9 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 
 
 	if mpi_rank == 0:
-		utilities.write_text_file(previousmax, log.prefix + "previousmax.txt")
-		utilities.write_text_row(out_params, log.prefix + "params.txt")
-		utilities.drop_image(out_vol, log.prefix + "volf.hdf")
+		sparx_utilities.write_text_file(previousmax, log.prefix + "previousmax.txt")
+		sparx_utilities.write_text_row(out_params, log.prefix + "params.txt")
+		sparx_utilities.drop_image(out_vol, log.prefix + "volf.hdf")
 
 	return out_params, out_vol, None#, out_peaks
 
@@ -1575,7 +1575,7 @@ def mirror_and_reduce_dsym(params, indexes, symmetry_class):
 	symphi = 360.0/symmetry_class.nsym*2
 	#  For each set we have four positions to consider: straight, straight psi mirrored, phi+bdb, phi+bdb and psi mirrored
 	for i in range(1,sc):
-		psi_diff = pixel_error.angle_diff( [params[i][j][2] for j in indexes], [params[0][j][2] for j in indexes] )
+		psi_diff = sparx_pixel_error.angle_diff( [params[i][j][2] for j in indexes], [params[0][j][2] for j in indexes] )
 		#  adjust psi if necessary
 		if(abs(psi_diff-180.0) <90.0):
 			for j in range(ns):
@@ -1589,12 +1589,12 @@ def mirror_and_reduce_dsym(params, indexes, symmetry_class):
 		for j in indexes:
 			neisym = symmetry_class.symmetry_neighbors([params[i][j][:3]])
 			dmin = 180.0
-			for q in neisym: dmin = min(dmin, utilities.getang3(q,params[0][j]))
+			for q in neisym: dmin = min(dmin, sparx_utilities.getang3(q,params[0][j]))
 			per1 += dmin
 			temp = symmetry_class.reduce_anglesets([params[i][j][0]+bbdb,params[i][j][1],params[i][j][2]] )
 			neisym = symmetry_class.symmetry_neighbors([temp])
 			dmin = 180.0
-			for q in neisym: dmin = min(dmin, utilities.getang3(q,params[0][j]))
+			for q in neisym: dmin = min(dmin, sparx_utilities.getang3(q,params[0][j]))
 			per2 += dmin
 
 		if(per2<per1):
@@ -1632,7 +1632,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 	syi = dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	global_def.ERROR("proj_ali_incore_multi","Needs corrections",1)
+	sparx_global_def.ERROR("proj_ali_incore_multi","Needs corrections",1)
 	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
 	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
 	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
@@ -1664,7 +1664,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 			peak   = params[i][0]/ws
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 			# What that means is that one has to change the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-			angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+			angb, sxb, syb, ct = sparx_utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 			"""
 			if  mirror:
 				phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
@@ -1775,7 +1775,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			pass#IMPORTIMPORTIMPORT from utilities import findall
 			i = 0
 			while(i<peaks_count):
-				ll = utilities.findall(taken[i], taken)
+				ll = sparx_utilities.findall(taken[i], taken)
 				if(len(ll) > 1):
 					print("  PROBLEM, found the same orientation more than once !  ")
 					for k in range(len(params)):  print(params[k])
@@ -1800,7 +1800,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 
 			# The ormqip returns parameters such that the transformation is applied first, the mir operation second.
 			# What that means is that one has to change the the Eulerian angles so they point into mired direction: phi+180, 180-theta, 180-psi
-			angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+			angb, sxb, syb, ct = sparx_utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 			if  mir:
 				phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 				theta = 180.0-refrings[iref].get_attr("theta")
@@ -1825,7 +1825,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				data.set_attr("xform.projection" + str(i), t2)
 				data.set_attr("weight" + str(i), params[i][0]/ws)
 			pass#IMPORTIMPORTIMPORT from pixel_error import max_3D_pixel_error
-			pixel_error += pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+			pixel_error += sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 			#  preserve params, they might be needed if peaks_count<nsoft
 			params[i] = [params[i][0], phi, theta, psi, s2x, s2y, iref]
 
@@ -1861,7 +1861,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			pass#IMPORTIMPORTIMPORT from utilities import getfvec
 			t1 = data.get_attr("xform.projection")
 			dp = t1.get_params("spider")
-			n1,n2,n3 = utilities.getfvec(dp["phi"],dp["theta"])
+			n1,n2,n3 = sparx_utilities.getfvec(dp["phi"],dp["theta"])
 			datanvec = [n1,n2,n3]
 			if(int(sym[1:]) >1):
 				iq = len(tempref)
@@ -1873,11 +1873,11 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				for i in range(iq):
 					phi   = tempref[i].get_attr("phi")
 					theta = tempref[i].get_attr("theta")
-					n1,n2,n3 = utilities.getfvec(phi-dphi,theta)
+					n1,n2,n3 = sparx_utilities.getfvec(phi-dphi,theta)
 					refvecs[3*i+0] = n1
 					refvecs[3*i+1] = n2
 					refvecs[3*i+2] = n3
-					n1,n2,n3 = utilities.getfvec(phi+dphi,theta)
+					n1,n2,n3 = sparx_utilities.getfvec(phi+dphi,theta)
 					refvecs[3*i+0+iq6] = n1
 					refvecs[3*i+1+iq6] = n2
 					refvecs[3*i+2+iq6] = n3
@@ -1898,10 +1898,10 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 					refvecs[3*i+1] = n2
 					refvecs[3*i+2] = n3
 			pass#IMPORTIMPORTIMPORT from utilities import nearestk_to_refdir
-			nrst = utilities.nearestk_to_refdir(refvecs, datanvec, howmany = bsoft-peaks_count)
+			nrst = sparx_utilities.nearestk_to_refdir(refvecs, datanvec, howmany = bsoft-peaks_count)
 			del refvecs
 			#  it does not use mir, do it by hand
-			if( dp["theta"] > 90.0 ):  tdata = fundamentals.mirror(data)
+			if( dp["theta"] > 90.0 ):  tdata = sparx_fundamentals.mirror(data)
 			else:                      tdata = data.copy()
 			#  delete from tdata higher xform and weight and keep only base one as it will be used to do orientation search.
 			#  In addition, zero shifts as here we always search around the origin to prevent sliding away.
@@ -2019,7 +2019,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 
 	if log == None:
 		pass#IMPORTIMPORTIMPORT from logger import Logger
-		log = logger.Logger()
+		log = sparx_logger.Logger()
 
 	number_of_proc = mpi.mpi_comm_size(mpi_comm)
 	myid           = mpi.mpi_comm_rank(mpi_comm)
@@ -2028,16 +2028,16 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 	if myid == main_node:
 		log.add("Start ali3d_multishc_soft")
 
-	xrng        = utilities.get_input_from_string(xr)
+	xrng        = sparx_utilities.get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = utilities.get_input_from_string(yr)
-	step        = utilities.get_input_from_string(ts)
-	delta       = utilities.get_input_from_string(delta)
+	else          :  yrng = sparx_utilities.get_input_from_string(yr)
+	step        = sparx_utilities.get_input_from_string(ts)
+	delta       = sparx_utilities.get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
 	if an == "-1":
 		an = [-1] * lstp
 	else:
-		an = utilities.get_input_from_string(an)
+		an = sparx_utilities.get_input_from_string(an)
 
 	first_ring  = int(ir)
 	rstep       = int(rs)
@@ -2045,17 +2045,17 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 	max_iter    = int(ali3d_options.maxit)
 	center      = int(center)
 
-	if( type(ref_vol) is bytes ):  vol = utilities.get_im(ref_vol)
+	if( type(ref_vol) is bytes ):  vol = sparx_utilities.get_im(ref_vol)
 	else:	vol = ref_vol
 	nx      = vol.get_xsize()
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
-	numr	= alignment.Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D  = utilities.model_circle(last_ring,nx,nx) - utilities.model_circle(first_ring,nx,nx)
+	numr	= sparx_alignment.Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D  = sparx_utilities.model_circle(last_ring,nx,nx) - sparx_utilities.model_circle(first_ring,nx,nx)
 
 	if( type(stack) is bytes ):
 		if myid == main_node:
-			if utilities.file_type(stack) == "bdb":
+			if sparx_utilities.file_type(stack) == "bdb":
 				pass#IMPORTIMPORTIMPORT from EMAN2db import db_open_dict
 				dummy = EMAN2db.db_open_dict(stack, True)
 			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
@@ -2079,10 +2079,10 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 		else:
 			list_of_particles = None
 			total_nima = None
-	total_nima = utilities.wrap_mpi_bcast(total_nima, main_node, mpi_comm)
-	list_of_particles = utilities.wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
+	total_nima = sparx_utilities.wrap_mpi_bcast(total_nima, main_node, mpi_comm)
+	list_of_particles = sparx_utilities.wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
 
-	image_start, image_end = applications.MPI_start_end(total_nima, number_of_proc, myid)
+	image_start, image_end = sparx_applications.MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
 	list_of_particles = list_of_particles[image_start: image_end]
 	nima = len(list_of_particles)
@@ -2096,7 +2096,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			ctf_params = data[im].get_attr("ctf")
 			st = EMAN2_cppwrap.Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
-			data[im] = filter.filt_ctf(data[im], ctf_params)
+			data[im] = sparx_filter.filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
 
 	pixer = [0.0]*nima
@@ -2121,8 +2121,8 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 
 			#=========================================================================
 			# build references
-			volft, kb = projection.prep_vol(vol)
-			refrings = alignment.prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm)
+			volft, kb = sparx_projection.prep_vol(vol)
+			refrings = sparx_alignment.prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm)
 			del volft, kb
 			#=========================================================================
 
@@ -2136,7 +2136,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 				for im in range(nima):
 					previousmax = data[im].get_attr_default("previousmax", -1.0e23)
 					if(previousmax == -1.0e23):
-						peak, pixer[im] = alignment.proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],10.0, sym=sym)
+						peak, pixer[im] = sparx_alignment.proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],10.0, sym=sym)
 						data[im].set_attr("previousmax", peak*0.9)
 				if myid == main_node:
 					log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time.time()-start_time))
@@ -2151,7 +2151,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			#number_of_checked_refs = 0
 			par_r = [0]*max(2,(nsoft+1))
 			for im in range(nima):
-				global_def.ERROR("shc_multi","Needs corrections")
+				sparx_global_def.ERROR("shc_multi","Needs corrections")
 				peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step],\
 																			an[N_step], nsoft, sym)
 				#number_of_checked_refs += checked_refs
@@ -2169,7 +2169,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 
 			#=========================================================================
 			#output pixel errors, check stop criterion
-			all_pixer = utilities.wrap_mpi_gatherv(pixer, 0, mpi_comm)
+			all_pixer = sparx_utilities.wrap_mpi_gatherv(pixer, 0, mpi_comm)
 			par_r = mpi.mpi_reduce(par_r, len(par_r), mpi.MPI_INT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD)
 			#total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
 			terminate = 0
@@ -2182,7 +2182,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 				log.add("_______________________________________________________")
 
 				lhist = 20
-				region, histo = statistics.hist_list(all_pixer, lhist)
+				region, histo = sparx_statistics.hist_list(all_pixer, lhist)
 				log.add("=========== Histogram of pixel errors ==============")
 				for lhx in range(lhist):
 					msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
@@ -2192,14 +2192,14 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 					terminate = 1
 					log.add("...............")
 					log.add(">>>>>>>>>>>>>>>   Will terminate due to small pixel errors")
-			terminate = utilities.wrap_mpi_bcast(terminate, main_node, mpi_comm)
+			terminate = sparx_utilities.wrap_mpi_bcast(terminate, main_node, mpi_comm)
 			#=========================================================================
 
 			#=========================================================================
 			# centering
 			if center == -1 and sym[0] == 'c':
 				pass#IMPORTIMPORTIMPORT from utilities      import estimate_3D_center_MPI, rotate_3D_shift
-				cs[0], cs[1], cs[2], dummy, dummy = utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
+				cs[0], cs[1], cs[2], dummy, dummy = sparx_utilities.estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 					log.add(msg)
@@ -2209,7 +2209,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 						log.add("For symmetry group cn (n>1), we only center the volume in z-direction\n")
 				cs = mpi.mpi_bcast(cs, 3, mpi.MPI_FLOAT, main_node, mpi_comm)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
-				utilities.rotate_3D_shift(data, cs)
+				sparx_utilities.rotate_3D_shift(data, cs)
 			#=========================================================================
 
 			#=========================================================================
@@ -2231,19 +2231,19 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 				params = []
 				previousmax = []
 				for im in data:
-					t = utilities.get_params_proj(im)
+					t = sparx_utilities.get_params_proj(im)
 					params.append( [t[0], t[1], t[2], t[3], t[4]] )
 					#if(t[3] >0.0 or t[4]>0.0):  print  "  ERRROR  ",t
 					previousmax.append(im.get_attr("previousmax"))
 				assert(nima == len(params))
-				params = utilities.wrap_mpi_gatherv(params, 0, mpi_comm)
+				params = sparx_utilities.wrap_mpi_gatherv(params, 0, mpi_comm)
 				if myid == 0:
 					assert(total_nima == len(params))
-				previousmax = utilities.wrap_mpi_gatherv(previousmax, 0, mpi_comm)
+				previousmax = sparx_utilities.wrap_mpi_gatherv(previousmax, 0, mpi_comm)
 				if myid == main_node:
 					pass#IMPORTIMPORTIMPORT from utilities import write_text_row, write_text_file
-					utilities.write_text_row(params, "soft/params%04d.txt"%total_iter)
-					utilities.write_text_file(previousmax, "soft/previousmax%04d.txt"%total_iter)
+					sparx_utilities.write_text_row(params, "soft/params%04d.txt"%total_iter)
+					sparx_utilities.write_text_file(previousmax, "soft/previousmax%04d.txt"%total_iter)
 				del previousmax, params
 				i = 1
 				while data[0].has_attr("xform.projection" + str(i)):
@@ -2253,7 +2253,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 
 						try:
 							#print  im.get_attr("xform.projection" + str(i))
-							t = utilities.get_params_proj(im,"xform.projection" + str(i))
+							t = sparx_utilities.get_params_proj(im,"xform.projection" + str(i))
 						except:
 							print(" NO XFORM  ",myid, i,im.get_attr('ID'))
 							pass#IMPORTIMPORTIMPORT from sys import exit
@@ -2262,11 +2262,11 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 						params.append( [t[0], t[1], t[2], t[3], t[4]] )
 						#if(t[3] >0.0 or t[4]>0.0):  print  "  ERRROR  ",i,t
 					assert(nima == len(params))
-					params = utilities.wrap_mpi_gatherv(params, 0, mpi_comm)
+					params = sparx_utilities.wrap_mpi_gatherv(params, 0, mpi_comm)
 					if myid == 0:
 						assert(total_nima == len(params))
 					if myid == main_node:
-						utilities.write_text_row(params, "soft/params-%04d-%04d.txt"%(i,total_iter))
+						sparx_utilities.write_text_row(params, "soft/params-%04d-%04d.txt"%(i,total_iter))
 					del previousmax, params
 					i+=1
 
@@ -2298,8 +2298,8 @@ def do_volume(data, options, iter, mpi_comm):
 	#=========================================================================
 	# volume reconstruction
 	if( type(data) == list ):
-		if CTF: vol = reconstruction.recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
-		else:   vol = reconstruction.recons3d_4nn_MPI    (myid, data,      symmetry=sym, snr=snr, npad=npad, mpi_comm=mpi_comm)
+		if CTF: vol = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
+		else:   vol = sparx_reconstruction.recons3d_4nn_MPI    (myid, data,      symmetry=sym, snr=snr, npad=npad, mpi_comm=mpi_comm)
 	else:
 		vol = data
 
@@ -2311,52 +2311,52 @@ def do_volume(data, options, iter, mpi_comm):
 		nx = vol.get_xsize()
 		if(options.mask3D == None):
 			last_ring   = int(options.ou)
-			mask3D = utilities.model_circle(last_ring, nx, nx, nx)
+			mask3D = sparx_utilities.model_circle(last_ring, nx, nx, nx)
 		elif(options.mask3D == "auto"):
 			pass#IMPORTIMPORTIMPORT from utilities import adaptive_mask
-			mask3D = morphology.adaptive_mask(vol)
+			mask3D = sparx_morphology.adaptive_mask(vol)
 		else:
-			if( type(options.mask3D) == bytes ):  mask3D = utilities.get_im(options.mask3D)
+			if( type(options.mask3D) == bytes ):  mask3D = sparx_utilities.get_im(options.mask3D)
 			else:  mask3D = (options.mask3D).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm):
 				pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
-				mask3D = EMAN2_cppwrap.Util.window(fundamentals.rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
+				mask3D = EMAN2_cppwrap.Util.window(sparx_fundamentals.rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
 				nxm = mask3D.get_xsize()
 				assert(nx == nxm)
 
 		stat = EMAN2_cppwrap.Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
-		vol = morphology.threshold(vol)
+		vol = sparx_morphology.threshold(vol)
 		#Util.mul_img(vol, mask3D)
 		if( options.pwreference ):
 			pass#IMPORTIMPORTIMPORT from utilities    import read_text_file
 			pass#IMPORTIMPORTIMPORT from fundamentals import rops_table, fftip, fft
-			rt = utilities.read_text_file( options.pwreference )
-			fundamentals.fftip(vol)
-			ro = fundamentals.rops_table(vol)
+			rt = sparx_utilities.read_text_file( options.pwreference )
+			sparx_fundamentals.fftip(vol)
+			ro = sparx_fundamentals.rops_table(vol)
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 			for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
 			if( type(options.fl) == list ):
-				vol = fundamentals.fft( filter.filt_table( filter.filt_table(vol, options.fl), ro) )
+				vol = sparx_fundamentals.fft( sparx_filter.filt_table( sparx_filter.filt_table(vol, options.fl), ro) )
 			else:
-				vol = fundamentals.fft( filter.filt_table( filter.filt_tanl(vol, options.fl, options.aa), ro) )
+				vol = sparx_fundamentals.fft( sparx_filter.filt_table( sparx_filter.filt_tanl(vol, options.fl, options.aa), ro) )
 		else:
 			if( type(options.fl) == list ):
-				vol = filter.filt_table(vol, options.fl)
+				vol = sparx_filter.filt_table(vol, options.fl)
 			else:
-				vol = filter.filt_tanl(vol, options.fl, options.aa)
+				vol = sparx_filter.filt_tanl(vol, options.fl, options.aa)
 		stat = EMAN2_cppwrap.Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
-		vol = morphology.threshold(vol)
-		vol = filter.filt_btwl(vol, 0.38, 0.5)
+		vol = sparx_morphology.threshold(vol)
+		vol = sparx_filter.filt_btwl(vol, 0.38, 0.5)
 		EMAN2_cppwrap.Util.mul_img(vol, mask3D)
 		del mask3D
 		# vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
-	utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	sparx_utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
 	return vol
 
@@ -2377,15 +2377,15 @@ def no_of_processors_restricted_by_data__do_volume(projections, ali3d_options, i
 		mpi_subsize = mpi.mpi_comm_size(mpi_subcomm)
 		mpi_subrank = mpi.mpi_comm_rank(mpi_subcomm)
 		if (mpi_rank < n_projs):
-			proj_begin, proj_end = applications.MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
+			proj_begin, proj_end = sparx_applications.MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
 			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
 		else:
 			pass#IMPORTIMPORTIMPORT from utilities import model_blank
 			nx = projections[0].get_xsize()
-			ref_vol = utilities.model_blank(nx,nx,nx)
-		utilities.bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
+			ref_vol = sparx_utilities.model_blank(nx,nx,nx)
+		sparx_utilities.bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
 	else:
-		proj_begin, proj_end = applications.MPI_start_end(n_projs, mpi_size, mpi_rank)
+		proj_begin, proj_end = sparx_applications.MPI_start_end(n_projs, mpi_size, mpi_rank)
 		ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_comm)
 
 	return ref_vol

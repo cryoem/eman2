@@ -30,19 +30,19 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import alignment
-import applications
-import filter
-import fundamentals
-import global_def
+import sparx_alignment
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
 import imp
-import morphology
+import sparx_morphology
 import mpi
 import numpy
 import os
-import reconstruction
+import sparx_reconstruction
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import alignment
@@ -87,19 +87,19 @@ def ref_ali2d( ref_data ):
 	#  apply filtration (FRC) to reference image:
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
-	utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
-	fl, aa = filter.fit_tanh(ref_data[3])
+	sparx_utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
+	fl, aa = sparx_filter.fit_tanh(ref_data[3])
 	aa = min(aa, 0.2)
 	fl = max(min(0.4,fl),0.12)
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 	st = EMAN2_cppwrap.Util.infomask(ref_data[2], ref_data[0], True)
-	tavg = filter.filt_tanl((ref_data[2]-st[0])*ref_data[0], fl, aa)
+	tavg = sparx_filter.filt_tanl((ref_data[2]-st[0])*ref_data[0], fl, aa)
 	cs = [0.0]*2
 	if(ref_data[1] > 0):
-		tavg, cs[0], cs[1] = utilities.center_2D(tavg, ref_data[1], self_defined_reference = ref_data[0])
+		tavg, cs[0], cs[1] = sparx_utilities.center_2D(tavg, ref_data[1], self_defined_reference = ref_data[0])
 		msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
-		utilities.print_msg(msg)
+		sparx_utilities.print_msg(msg)
 	return  tavg, cs
 
 def ref_ali2d_c( ref_data ):
@@ -116,17 +116,17 @@ def ref_ali2d_c( ref_data ):
 	#  apply filtration (FRC) to reference image:
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
-	utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
+	sparx_utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
 	fl = min(0.1+ref_ali2d_counter*0.003, 0.4)
 	aa = 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	tavg = filter.filt_tanl(ref_data[2], fl, aa)
+	sparx_utilities.print_msg(msg)
+	tavg = sparx_filter.filt_tanl(ref_data[2], fl, aa)
 	cs = [0.0]*2
 	if(ref_data[1] > 0):
-		tavg, cs[0], cs[1] = utilities.center_2D(tavg, ref_data[1])
+		tavg, cs[0], cs[1] = sparx_utilities.center_2D(tavg, ref_data[1])
 		msg = "Center x = %10.3f, y       = %10.3f\n"%(cs[0], cs[1])
-		utilities.print_msg(msg)
+		sparx_utilities.print_msg(msg)
 	return  tavg, cs
 
 def julien( ref_data ):
@@ -144,17 +144,17 @@ def julien( ref_data ):
         global  ref_ali2d_counter
         ref_ali2d_counter += 1
         ref_ali2d_counter  = ref_ali2d_counter % 50
-        utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
+        sparx_utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
         fl = min(0.1+ref_ali2d_counter*0.003, 0.4)
         aa = 0.1
         msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-        utilities.print_msg(msg)
-        tavg = filter.filt_tanl(ref_data[2], fl, aa)
+        sparx_utilities.print_msg(msg)
+        tavg = sparx_filter.filt_tanl(ref_data[2], fl, aa)
         cs = [0.0]*2
         if ref_data[1] > 0:
-                tavg, cs[0], cs[1] = utilities.center_2D(tavg, ref_data[1])
+                tavg, cs[0], cs[1] = sparx_utilities.center_2D(tavg, ref_data[1])
                 msg = "Center x = %10.3f, y       = %10.3f\n"%(cs[0], cs[1])
-                utilities.print_msg(msg)
+                sparx_utilities.print_msg(msg)
         return  tavg, cs
 
 def ref_ali2d_m( ref_data ):
@@ -171,17 +171,17 @@ def ref_ali2d_m( ref_data ):
 	#  apply filtration (FRC) to reference image:
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
-	utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
+	sparx_utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
 	fl = 0.4
 	aa = 0.2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	tavg = filter.filt_tanl(ref_data[2], fl, aa)
+	sparx_utilities.print_msg(msg)
+	tavg = sparx_filter.filt_tanl(ref_data[2], fl, aa)
 	cs = [0.0]*2
 	if(ref_data[1] > 0):
-		tavg, cs[0], cs[1] = utilities.center_2D(tavg, ref_data[1])
+		tavg, cs[0], cs[1] = sparx_utilities.center_2D(tavg, ref_data[1])
 		msg = "Center x = %10.3f, y = %10.3f\n"%(cs[0], cs[1])
-		utilities.print_msg(msg)
+		sparx_utilities.print_msg(msg)
 	return  tavg, cs
 
 def ref_ali3dm( refdata ):
@@ -199,8 +199,8 @@ def ref_ali3dm( refdata ):
 
 	print('filter every volume at (0.4, 0.1)')
 	for iref in range(numref):
-		v = utilities.get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
-		v = filter.filt_tanl(v, 0.4, 0.1)
+		v = sparx_utilities.get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
+		v = sparx_filter.filt_tanl(v, 0.4, 0.1)
 		v *= mask
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%total_iter), iref)
 		
@@ -223,8 +223,8 @@ def ref_sort3d(refdata):
 	print((line+theme))
 	print('filter every volume at (%f, 0.1)'%low_pass_filter)
 	for iref in range(numref):
-		v = utilities.get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
-		v = filter.filt_tanl(v, low_pass_filter, 0.1)
+		v = sparx_utilities.get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
+		v = sparx_filter.filt_tanl(v, low_pass_filter, 0.1)
 		v *= mask
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%total_iter), iref)
 
@@ -245,7 +245,7 @@ def ref_ali3dm_ali_50S( refdata ):
 	flmin = 1.0
 	flmax = -1.0
 	for iref in range(numref):
-		fl, aa = filter.fit_tanh( fscc[iref] )
+		fl, aa = sparx_filter.fit_tanh( fscc[iref] )
 		if (fl < flmin):
 			flmin = fl
 			aamin = aa
@@ -256,16 +256,16 @@ def ref_ali3dm_ali_50S( refdata ):
 		# filter to minimum resolution
 	print('flmin,aamin:', flmin, aamin)
 	for iref in range(numref):
-		v = utilities.get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
-		v = filter.filt_tanl(v, flmin, aamin)
+		v = sparx_utilities.get_im(os.path.join(outdir, "vol%04d.hdf"%total_iter), iref)
+		v = sparx_filter.filt_tanl(v, flmin, aamin)
 		
 		if ali50s:
 			pass#IMPORTIMPORTIMPORT from utilities    import get_params3D, set_params3D, combine_params3
 			pass#IMPORTIMPORTIMPORT from applications import ali_vol_shift, ali_vol_rotate
 			if iref==0:
-				v50S_ref = alignment.alivol_mask_getref( v, mask_50S )
+				v50S_ref = sparx_alignment.alivol_mask_getref( v, mask_50S )
 			else:
-				v = alignment.alivol_mask( v, v50S_ref, mask_50S )
+				v = sparx_alignment.alivol_mask( v, v50S_ref, mask_50S )
 
 		if not(varf is None):
 			print('filtering by fourier variance')
@@ -287,7 +287,7 @@ def ref_random( ref_data ):
 	#  apply filtration (FRC) to reference image:
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
-	utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
+	sparx_utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
 	"""
 	fl, aa = fit_tanh(ref_data[3])
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
@@ -304,7 +304,7 @@ def ref_random( ref_data ):
 	#ref_data[0] = adaptive_mask(tavg)
 	#  CENTER
 	cs = [0.0]*2
-	tavg, cs[0], cs[1] = utilities.center_2D(ref_data[2], ref_data[1])
+	tavg, cs[0], cs[1] = sparx_utilities.center_2D(ref_data[2], ref_data[1])
 	'''
 	pass#IMPORTIMPORTIMPORT from math import exp
 	nx = tavg.get_xsize()
@@ -320,7 +320,7 @@ def ref_random( ref_data ):
 	'''
 	if(ref_data[1] > 0):
 		msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
-		utilities.print_msg(msg)
+		sparx_utilities.print_msg(msg)
 	return  tavg, cs
 
 def ref_ali3d( ref_data ):
@@ -341,7 +341,7 @@ def ref_ali3d( ref_data ):
 	ref_ali2d_counter += 1
 
 	fl = ref_data[2].cmp("dot",ref_data[2], {"negative":0, "mask":ref_data[0]} )
-	utilities.print_msg("ref_ali3d    Step = %5d        GOAL = %10.3e\n"%(ref_ali2d_counter,fl))
+	sparx_utilities.print_msg("ref_ali3d    Step = %5d        GOAL = %10.3e\n"%(ref_ali2d_counter,fl))
 
 	cs = [0.0]*3
 	#filt = filt_from_fsc(fscc, 0.05)
@@ -364,17 +364,17 @@ def ref_ali3d( ref_data ):
 	EMAN2_cppwrap.Util.mul_scalar(volf, 1.0/stat[1])
 	#volf = threshold(volf)
 	EMAN2_cppwrap.Util.mul_img(volf, ref_data[0])
-	fl, aa = filter.fit_tanh(ref_data[3])
+	fl, aa = sparx_filter.fit_tanh(ref_data[3])
 	#fl = 0.4
 	#aa = 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	volf = filter.filt_tanl(volf, fl, aa)
+	sparx_utilities.print_msg(msg)
+	volf = sparx_filter.filt_tanl(volf, fl, aa)
 	if ref_data[1] == 1:
 		cs = volf.phase_cog()
 		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-		utilities.print_msg(msg)
-		volf  = fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
+		sparx_utilities.print_msg(msg)
+		volf  = sparx_fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
 
 def helical( ref_data ):
@@ -388,7 +388,7 @@ def helical( ref_data ):
 
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
-	utilities.print_msg("helical   #%6d\n"%(ref_ali2d_counter))
+	sparx_utilities.print_msg("helical   #%6d\n"%(ref_ali2d_counter))
 	stat = EMAN2_cppwrap.Util.infomask(ref_data[0], None, True)
 	volf = ref_data[0] - stat[0]
 	nx = volf.get_xsize()
@@ -397,12 +397,12 @@ def helical( ref_data ):
 	#for i in xrange(nz):
 	#	volf.insert_clip(filt_tanl(volf.get_clip(Region(0,0,i,nx,ny,1)),0.4,0.1),[0,0,i])
 
-	volf = morphology.threshold(volf)
+	volf = sparx_morphology.threshold(volf)
 	fl = 0.45#0.17
 	aa = 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	volf = filter.filt_tanl(volf, fl, aa)
+	sparx_utilities.print_msg(msg)
+	volf = sparx_filter.filt_tanl(volf, fl, aa)
 	return  volf#,[0.,0.,0.]
 
 def helical2( ref_data ):
@@ -416,7 +416,7 @@ def helical2( ref_data ):
 
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
-	utilities.print_msg("helical2   #%6d\n"%(ref_ali2d_counter))
+	sparx_utilities.print_msg("helical2   #%6d\n"%(ref_ali2d_counter))
 	volf = ref_data[0]
 	#stat = Util.infomask(ref_data[1], None, True)
 	#volf = ref_data[0] - stat[0]
@@ -424,8 +424,8 @@ def helical2( ref_data ):
 	fl = 0.17
 	aa = 0.2
 	msg = "Tangent filter:  cut-off frequency = %10.3f	  fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	volf = filter.filt_tanl(volf, fl, aa)
+	sparx_utilities.print_msg(msg)
+	volf = sparx_filter.filt_tanl(volf, fl, aa)
 	return  volf
 
 
@@ -443,25 +443,25 @@ def reference3( ref_data ):
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
 
-	utilities.print_msg("reference3\n")
+	sparx_utilities.print_msg("reference3\n")
 	cs = [0.0]*3
 
 	stat = EMAN2_cppwrap.Util.infomask(ref_data[2], ref_data[0], False)
 	volf = ref_data[2] - stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(volf, 1.0/stat[1])
-	volf = morphology.threshold(volf)
+	volf = sparx_morphology.threshold(volf)
 	EMAN2_cppwrap.Util.mul_img(volf, ref_data[0])
 	#fl, aa = fit_tanh1(ref_data[3], 0.1)
 	fl = 0.2
 	aa = 0.2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	volf = filter.filt_tanl(volf, fl, aa)
+	sparx_utilities.print_msg(msg)
+	volf = sparx_filter.filt_tanl(volf, fl, aa)
 	if ref_data[1] == 1:
 		cs = volf.phase_cog()
 		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-		utilities.print_msg(msg)
-		volf  = fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
+		sparx_utilities.print_msg(msg)
+		volf  = sparx_fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
 
 def reference4( ref_data ):
@@ -484,19 +484,19 @@ def reference4( ref_data ):
 	stat = EMAN2_cppwrap.Util.infomask(ref_data[2], ref_data[0], False)
 	volf = ref_data[2] - stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(volf, 1.0/stat[1])
-	volf = morphology.threshold(volf)
+	volf = sparx_morphology.threshold(volf)
 	#Util.mul_img(volf, ref_data[0])
 	#fl, aa = fit_tanh(ref_data[3])
 	fl = 0.25
 	aa = 0.1
 	#msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	#print_msg(msg)
-	volf = fundamentals.fft(filter.filt_gaussl(filter.filt_tanl(fundamentals.fft(volf),0.35,0.2),0.3))
+	volf = sparx_fundamentals.fft(sparx_filter.filt_gaussl(sparx_filter.filt_tanl(sparx_fundamentals.fft(volf),0.35,0.2),0.3))
 	if ref_data[1] == 1:
 		cs = volf.phase_cog()
 		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-		utilities.print_msg(msg)
-		volf  = fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
+		sparx_utilities.print_msg(msg)
+		volf  = sparx_fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
 
 def ref_aliB_cone( ref_data ):
@@ -514,30 +514,30 @@ def ref_aliB_cone( ref_data ):
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
 
-	utilities.print_msg("ref_aliB_cone\n")
+	sparx_utilities.print_msg("ref_aliB_cone\n")
 	#cs = [0.0]*3
 
 	stat = EMAN2_cppwrap.Util.infomask(ref_data[2], None, True)
 	volf = ref_data[2] - stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(volf, 1.0/stat[1])
 
-	volf = morphology.threshold(volf)
+	volf = sparx_morphology.threshold(volf)
 	EMAN2_cppwrap.Util.mul_img(volf, ref_data[0])
 
 	pass#IMPORTIMPORTIMPORT from  fundamentals  import  rops_table
-	pwem = fundamentals.rops_table(volf)
+	pwem = sparx_fundamentals.rops_table(volf)
 	ftb = []
 	for idum in range(len(pwem)):
 		ftb.append(numpy.sqrt(ref_data[1][idum]/pwem[idum]))
 	pass#IMPORTIMPORTIMPORT from filter import filt_table
-	volf = filter.filt_table(volf, ftb)
+	volf = sparx_filter.filt_table(volf, ftb)
 
-	fl, aa = filter.fit_tanh(ref_data[3])
+	fl, aa = sparx_filter.fit_tanh(ref_data[3])
 	#fl = 0.41
 	#aa = 0.15
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	volf = filter.filt_tanl(volf, fl, aa)
+	sparx_utilities.print_msg(msg)
+	volf = sparx_filter.filt_tanl(volf, fl, aa)
 	stat = EMAN2_cppwrap.Util.infomask(volf, None, True)
 	volf -= stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(volf, 1.0/stat[1])
@@ -569,19 +569,19 @@ def ref_7grp( ref_data ):
 	stat = EMAN2_cppwrap.Util.infomask(ref_data[2], None, False)
 	volf = ref_data[2] - stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(volf, 1.0/stat[1])
-	volf = EMAN2_cppwrap.Util.muln_img(morphology.threshold(volf), ref_data[0])
+	volf = EMAN2_cppwrap.Util.muln_img(sparx_morphology.threshold(volf), ref_data[0])
 
-	fl, aa = filter.fit_tanh(ref_data[3])
+	fl, aa = sparx_filter.fit_tanh(ref_data[3])
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	volf = filter.filt_tanl(volf, fl, aa)
+	sparx_utilities.print_msg(msg)
+	volf = sparx_filter.filt_tanl(volf, fl, aa)
 	if(ref_data[1] == 1):
 		cs    = volf.phase_cog()
 		msg = "Center x =	%10.3f        Center y       = %10.3f        Center z       = %10.3f\n"%(cs[0], cs[1], cs[2])
-		utilities.print_msg(msg)
-		volf  = fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
+		sparx_utilities.print_msg(msg)
+		volf  = sparx_fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
 	B_factor = 10.0
-	volf = filter.filt_gaussinv( volf, 10.0 )
+	volf = sparx_filter.filt_gaussinv( volf, 10.0 )
 	return  volf,cs
 
 def spruce_up( ref_data ):
@@ -597,31 +597,31 @@ def spruce_up( ref_data ):
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
 
-	utilities.print_msg("Changed4 spruce_up\n")
+	sparx_utilities.print_msg("Changed4 spruce_up\n")
 	cs = [0.0]*3
 
 	stat = EMAN2_cppwrap.Util.infomask(ref_data[2], None, True)
 	volf = ref_data[2] - stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(volf, 1.0/stat[1])
-	volf = morphology.threshold(volf)
+	volf = sparx_morphology.threshold(volf)
 	# Apply B-factor
 	pass#IMPORTIMPORTIMPORT from filter import filt_gaussinv
 	pass#IMPORTIMPORTIMPORT from math import sqrt
 	B = 1.0/numpy.sqrt(2.*14.0)
-	volf = filter.filt_gaussinv(volf, B, False)
+	volf = sparx_filter.filt_gaussinv(volf, B, False)
 	nx = volf.get_xsize()
 	pass#IMPORTIMPORTIMPORT from utilities import model_circle
-	stat = EMAN2_cppwrap.Util.infomask(volf, utilities.model_circle(nx//2-2,nx,nx,nx)-utilities.model_circle(nx//2-6,nx,nx,nx), True)
+	stat = EMAN2_cppwrap.Util.infomask(volf, sparx_utilities.model_circle(nx//2-2,nx,nx,nx)-sparx_utilities.model_circle(nx//2-6,nx,nx,nx), True)
 
 	volf -= stat[0]
 	EMAN2_cppwrap.Util.mul_img(volf, ref_data[0])
-	fl, aa = filter.fit_tanh(ref_data[3])
+	fl, aa = sparx_filter.fit_tanh(ref_data[3])
 	#fl = 0.35
 	#aa = 0.1
 	aa /= 2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	volf = filter.filt_tanl(volf, fl, aa)
+	sparx_utilities.print_msg(msg)
+	volf = sparx_filter.filt_tanl(volf, fl, aa)
 	return  volf, cs
 
 def spruce_up_variance( ref_data ):
@@ -643,7 +643,7 @@ def spruce_up_variance( ref_data ):
 	fscc   = ref_data[3]
 	varf   = ref_data[4]
 
-	utilities.print_msg("spruce_up with variance\n")
+	sparx_utilities.print_msg("spruce_up with variance\n")
 	cs = [0.0]*3
 
 	if not(varf is None):
@@ -653,8 +653,8 @@ def spruce_up_variance( ref_data ):
 	fl = 0.22
 	aa = 0.15
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	volf = filter.filt_tanl(volf, fl, aa)
+	sparx_utilities.print_msg(msg)
+	volf = sparx_filter.filt_tanl(volf, fl, aa)
 
 	stat = EMAN2_cppwrap.Util.infomask(volf, None, True)
 	volf = volf - stat[0]
@@ -662,14 +662,14 @@ def spruce_up_variance( ref_data ):
 
 	pass#IMPORTIMPORTIMPORT from utilities import model_circle
 	nx = volf.get_xsize()
-	stat = EMAN2_cppwrap.Util.infomask(volf, utilities.model_circle(nx//2-2,nx,nx,nx)-utilities.model_circle(nx//2-6,nx,nx,nx), True)
+	stat = EMAN2_cppwrap.Util.infomask(volf, sparx_utilities.model_circle(nx//2-2,nx,nx,nx)-sparx_utilities.model_circle(nx//2-6,nx,nx,nx), True)
 
 	volf -= stat[0]
 	EMAN2_cppwrap.Util.mul_img(volf, mask)
 
-	volf = morphology.threshold(volf)
+	volf = sparx_morphology.threshold(volf)
 	
-	volf = filter.filt_gaussl(volf, 0.4)
+	volf = sparx_filter.filt_gaussl(volf, 0.4)
 	return  volf, cs
 
 def minfilt( fscc ):
@@ -678,7 +678,7 @@ def minfilt( fscc ):
 	flmin = 1.0
 	flmax = -1.0
 	for iref in range(numref):
-		fl, aa = filter.fit_tanh( fscc[iref] )
+		fl, aa = sparx_filter.fit_tanh( fscc[iref] )
 		if (fl < flmin):
 			flmin = fl
 			aamin = aa
@@ -714,32 +714,32 @@ def ref_ali3dm_new( refdata ):
 		flmin, aamin, idmin = minfilt( fscc )
 		aamin /= 2.0
 	msg = "Minimum tangent filter derived from volume %2d:  cut-off frequency = %10.3f, fall-off = %10.3f\n"%(idmin, flmin, aamin)
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 
 	vol = []
 	for i in range(numref):
-		vol.append(utilities.get_im( os.path.join(outdir, "vol%04d.hdf"%total_iter), i ))
+		vol.append(sparx_utilities.get_im( os.path.join(outdir, "vol%04d.hdf"%total_iter), i ))
 		stat = EMAN2_cppwrap.Util.infomask( vol[i], mask, False )
 		vol[i] -= stat[0]
 		vol[i] /= stat[1]
 		vol[i] *= mask
-		vol[i] = morphology.threshold(vol[i])
+		vol[i] = sparx_morphology.threshold(vol[i])
 	del stat
 
-	reftab = fundamentals.rops_table( vol[idmin] )
+	reftab = sparx_fundamentals.rops_table( vol[idmin] )
 	for i in range(numref):
 		if(i != idmin):
-			vtab = fundamentals.rops_table( vol[i] )
+			vtab = sparx_fundamentals.rops_table( vol[i] )
 			ftab = [None]*len(vtab)
 			for j in range(len(vtab)):
 		        	ftab[j] = numpy.sqrt( reftab[j]/vtab[j] )
-			vol[i] = filter.filt_table( vol[i], ftab )
+			vol[i] = sparx_filter.filt_table( vol[i], ftab )
 
 	if ali50S:
-		vol = alignment.ali_nvol(vol, utilities.get_im( "mask-50S.spi" ))
+		vol = sparx_alignment.ali_nvol(vol, sparx_utilities.get_im( "mask-50S.spi" ))
 	for i in range(numref):
 		if(not (varf is None) ):   vol[i] = vol[i].filter_by_image( varf )
-		filter.filt_tanl( vol[i], flmin, aamin ).write_image( os.path.join(outdir, "volf%04d.hdf" % total_iter), i )
+		sparx_filter.filt_tanl( vol[i], flmin, aamin ).write_image( os.path.join(outdir, "volf%04d.hdf" % total_iter), i )
 
 def spruce_up_var_m( refdata ):
 	pass#IMPORTIMPORTIMPORT from utilities  import print_msg
@@ -757,7 +757,7 @@ def spruce_up_var_m( refdata ):
 	ali50S     = refdata[6]
 
 	if ali50S:
-		mask_50S = utilities.get_im( "mask-50S.spi" )
+		mask_50S = sparx_utilities.get_im( "mask-50S.spi" )
 
 
 	if fscc is None:
@@ -768,23 +768,23 @@ def spruce_up_var_m( refdata ):
 		aamin = aamin
 
 	msg = "Minimum tangent filter:  cut-off frequency = %10.3f     fall-off = %10.3f\n"%(fflmin, aamin)
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 
 	for i in range(numref):
-		volf = utilities.get_im( os.path.join(outdir, "vol%04d.hdf"% total_iter) , i )
+		volf = sparx_utilities.get_im( os.path.join(outdir, "vol%04d.hdf"% total_iter) , i )
 		if(not (varf is None) ):   volf = volf.filter_by_image( varf )
-		volf = filter.filt_tanl(volf, flmin, aamin)
+		volf = sparx_filter.filt_tanl(volf, flmin, aamin)
 		stat = EMAN2_cppwrap.Util.infomask(volf, mask, True)
 		volf -= stat[0]
 		EMAN2_cppwrap.Util.mul_scalar(volf, 1.0/stat[1])
 
 		nx = volf.get_xsize()
-		stat = EMAN2_cppwrap.Util.infomask(volf,utilities.model_circle(nx//2-2,nx,nx,nx)-utilities.model_circle(nx//2-6,nx,nx,nx), True)
+		stat = EMAN2_cppwrap.Util.infomask(volf,sparx_utilities.model_circle(nx//2-2,nx,nx,nx)-sparx_utilities.model_circle(nx//2-6,nx,nx,nx), True)
 		volf -= stat[0]
 		EMAN2_cppwrap.Util.mul_img( volf, mask )
 
-		volf = morphology.threshold(volf)
-		volf = filter.filt_gaussl( volf, 0.4)
+		volf = sparx_morphology.threshold(volf)
+		volf = sparx_filter.filt_gaussl( volf, 0.4)
 
 		if ali50S:
 			if i==0:
@@ -796,8 +796,8 @@ def spruce_up_var_m( refdata ):
 				v50S_i = volf.copy()
 				v50S_i *= mask_50S
 
-				params = applications.ali_vol_3(v50S_i, v50S_0, 10.0, 0.5, mask=mask_50S)
-				volf = fundamentals.rot_shift3D( volf, params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
+				params = sparx_applications.ali_vol_3(v50S_i, v50S_0, 10.0, 0.5, mask=mask_50S)
+				volf = sparx_fundamentals.rot_shift3D( volf, params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
 
 		volf.write_image( os.path.join(outdir, "volf%04d.hdf"%total_iter), i )
 
@@ -815,12 +815,12 @@ def steady( ref_data ):
 	#  apply filtration (FRC) to reference image:
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
-	utilities.print_msg("steady   #%6d\n"%(ref_ali2d_counter))
+	sparx_utilities.print_msg("steady   #%6d\n"%(ref_ali2d_counter))
 	fl = 0.12 + (ref_ali2d_counter//3)*0.1
 	aa = 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
-	tavg = filter.filt_tanl(ref_data[2], fl, aa)
+	sparx_utilities.print_msg(msg)
+	tavg = sparx_filter.filt_tanl(ref_data[2], fl, aa)
 	cs = [0.0]*2
 	return  tavg, cs
 
@@ -847,10 +847,10 @@ def constant( ref_data ):
 	#print_msg(msg)
 	pass#IMPORTIMPORTIMPORT from utilities import model_circle
 	nx = ref_data[2].get_xsize()
-	stat = EMAN2_cppwrap.Util.infomask(ref_data[2], utilities.model_circle(nx//2-2,nx,nx), False)
+	stat = EMAN2_cppwrap.Util.infomask(ref_data[2], sparx_utilities.model_circle(nx//2-2,nx,nx), False)
 	ref_data[2] -= stat[0]
 	#tavg = filt_tanl(threshold(ref_data[2]), fl, aa)
-	tavg = filter.filt_tanl(ref_data[2], fl, aa)
+	tavg = sparx_filter.filt_tanl(ref_data[2], fl, aa)
 	cs = [0.0]*2
 	return  tavg, cs
 
@@ -873,50 +873,50 @@ def temp_dovolume( ref_data ):
 	ref_ali2d_counter += 1
 
 	fl = ref_data[2].cmp("dot",ref_data[2], {"negative":0, "mask":ref_data[0]} )
-	utilities.print_msg("do_volume user function    Step = %5d        GOAL = %10.3e\n"%(ref_ali2d_counter,fl))
+	sparx_utilities.print_msg("do_volume user function    Step = %5d        GOAL = %10.3e\n"%(ref_ali2d_counter,fl))
 
 	stat = EMAN2_cppwrap.Util.infomask(ref_data[2], ref_data[0], False)
 	vol = ref_data[2] - stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
-	vol = morphology.threshold(vol)
+	vol = sparx_morphology.threshold(vol)
 	#Util.mul_img(vol, ref_data[0])
 	try:
-		aa = utilities.read_text_row("flaa.txt")[0]
+		aa = sparx_utilities.read_text_row("flaa.txt")[0]
 		fl = aa[0]
 		aa=aa[1]
 	except:
 		fl = 0.12
 		aa = 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 
 	pass#IMPORTIMPORTIMPORT from utilities    import read_text_file
 	pass#IMPORTIMPORTIMPORT from fundamentals import rops_table, fftip, fft
 	pass#IMPORTIMPORTIMPORT from filter       import filt_table, filt_btwl
-	fundamentals.fftip(vol)
+	sparx_fundamentals.fftip(vol)
 	try:
-		rt = utilities.read_text_file( "pwreference.txt" )
-		ro = fundamentals.rops_table(vol)
+		rt = sparx_utilities.read_text_file( "pwreference.txt" )
+		ro = sparx_fundamentals.rops_table(vol)
 		#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 		for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
-		vol = fundamentals.fft( filter.filt_table( filter.filt_tanl(vol, fl, aa), ro) )
+		vol = sparx_fundamentals.fft( sparx_filter.filt_table( sparx_filter.filt_tanl(vol, fl, aa), ro) )
 		msg = "Power spectrum adjusted\n"
-		utilities.print_msg(msg)
+		sparx_utilities.print_msg(msg)
 	except:
-		vol = fundamentals.fft( filter.filt_tanl(vol, fl, aa) )
+		vol = sparx_fundamentals.fft( sparx_filter.filt_tanl(vol, fl, aa) )
 
 	stat = EMAN2_cppwrap.Util.infomask(vol, ref_data[0], False)
 	vol -= stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
-	vol = morphology.threshold(vol)
-	vol = filter.filt_btwl(vol, 0.38, 0.5)
+	vol = sparx_morphology.threshold(vol)
+	vol = sparx_filter.filt_btwl(vol, 0.38, 0.5)
 	EMAN2_cppwrap.Util.mul_img(vol, ref_data[0])
 
 	if ref_data[1] == 1:
 		cs = volf.phase_cog()
 		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-		utilities.print_msg(msg)
-		volf  = fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
+		sparx_utilities.print_msg(msg)
+		volf  = sparx_fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
 	else:  	cs = [0.0]*3
 
 	return  vol, cs
@@ -940,50 +940,50 @@ def dovolume( ref_data ):
 	ref_ali2d_counter += 1
 
 	fl = ref_data[2].cmp("dot",ref_data[2], {"negative":0, "mask":ref_data[0]} )
-	utilities.print_msg("do_volume user function    Step = %5d        GOAL = %10.3e\n"%(ref_ali2d_counter,fl))
+	sparx_utilities.print_msg("do_volume user function    Step = %5d        GOAL = %10.3e\n"%(ref_ali2d_counter,fl))
 
 	stat = EMAN2_cppwrap.Util.infomask(ref_data[2], ref_data[0], False)
 	vol = ref_data[2] - stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
-	vol = morphology.threshold(vol)
+	vol = sparx_morphology.threshold(vol)
 	#Util.mul_img(vol, ref_data[0])
 	try:
-		aa = utilities.read_text_row("flaa.txt")[0]
+		aa = sparx_utilities.read_text_row("flaa.txt")[0]
 		fl = aa[0]
 		aa=aa[1]
 	except:
 		fl = 0.4
 		aa = 0.2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	utilities.print_msg(msg)
+	sparx_utilities.print_msg(msg)
 
 	pass#IMPORTIMPORTIMPORT from utilities    import read_text_file
 	pass#IMPORTIMPORTIMPORT from fundamentals import rops_table, fftip, fft
 	pass#IMPORTIMPORTIMPORT from filter       import filt_table, filt_btwl
-	fundamentals.fftip(vol)
+	sparx_fundamentals.fftip(vol)
 	try:
-		rt = utilities.read_text_file( "pwreference.txt" )
-		ro = fundamentals.rops_table(vol)
+		rt = sparx_utilities.read_text_file( "pwreference.txt" )
+		ro = sparx_fundamentals.rops_table(vol)
 		#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 		for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
-		vol = fundamentals.fft( filter.filt_table( filter.filt_tanl(vol, fl, aa), ro) )
+		vol = sparx_fundamentals.fft( sparx_filter.filt_table( sparx_filter.filt_tanl(vol, fl, aa), ro) )
 		msg = "Power spectrum adjusted\n"
-		utilities.print_msg(msg)
+		sparx_utilities.print_msg(msg)
 	except:
-		vol = fundamentals.fft( filter.filt_tanl(vol, fl, aa) )
+		vol = sparx_fundamentals.fft( sparx_filter.filt_tanl(vol, fl, aa) )
 
 	stat = EMAN2_cppwrap.Util.infomask(vol, ref_data[0], False)
 	vol -= stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
-	vol = morphology.threshold(vol)
-	vol = filter.filt_btwl(vol, 0.38, 0.5)
+	vol = sparx_morphology.threshold(vol)
+	vol = sparx_filter.filt_btwl(vol, 0.38, 0.5)
 	EMAN2_cppwrap.Util.mul_img(vol, ref_data[0])
 
 	if ref_data[1] == 1:
 		cs = volf.phase_cog()
 		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-		utilities.print_msg(msg)
-		volf  = fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
+		sparx_utilities.print_msg(msg)
+		volf  = sparx_fundamentals.fshift(volf, -cs[0], -cs[1], -cs[2])
 	else:  	cs = [0.0]*3
 
 	return  vol, cs
@@ -1004,8 +1004,8 @@ def do_volume_mask(ref_data):
 	mainiteration	= ref_data[2]
 
 
-	if(Tracker["constants"]["mask3D"] == None):  vol = morphology.cosinemask(vol, radius = Tracker["constants"]["radius"])
-	else:  EMAN2_cppwrap.Util.mul_img(vol, utilities.get_im(Tracker["constants"]["mask3D"]))
+	if(Tracker["constants"]["mask3D"] == None):  vol = sparx_morphology.cosinemask(vol, radius = Tracker["constants"]["radius"])
+	else:  EMAN2_cppwrap.Util.mul_img(vol, sparx_utilities.get_im(Tracker["constants"]["mask3D"]))
 
 	return vol
 
@@ -1040,10 +1040,10 @@ def do_volume_mrk02(ref_data):
 	# volume reconstruction
 	if( type(data) == list ):
 		if Tracker["constants"]["CTF"]:
-			vol = reconstruction.recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
+			vol = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
 					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
 		else:
-			vol = reconstruction.recons3d_4nn_MPI    (myid, data,\
+			vol = sparx_reconstruction.recons3d_4nn_MPI    (myid, data,\
 					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm)
 	else:
 		vol = data
@@ -1055,30 +1055,30 @@ def do_volume_mrk02(ref_data):
 		pass#IMPORTIMPORTIMPORT import types
 		nx = vol.get_xsize()
 		if(Tracker["constants"]["mask3D"] == None):
-			mask3D = utilities.model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
+			mask3D = sparx_utilities.model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
 		elif(Tracker["constants"]["mask3D"] == "auto"):
 			pass#IMPORTIMPORTIMPORT from utilities import adaptive_mask
-			mask3D = morphology.adaptive_mask(vol)
+			mask3D = sparx_morphology.adaptive_mask(vol)
 		else:
-			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = utilities.get_im(Tracker["constants"]["mask3D"])
+			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = sparx_utilities.get_im(Tracker["constants"]["mask3D"])
 			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm):
 				pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
-				mask3D = EMAN2_cppwrap.Util.window(fundamentals.rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
+				mask3D = EMAN2_cppwrap.Util.window(sparx_fundamentals.rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
 				nxm = mask3D.get_xsize()
 				assert(nx == nxm)
 
 		stat = EMAN2_cppwrap.Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
-		vol = morphology.threshold(vol)
+		vol = sparx_morphology.threshold(vol)
 		EMAN2_cppwrap.Util.mul_img(vol, mask3D)
 		if( Tracker["PWadjustment"] ):
 			pass#IMPORTIMPORTIMPORT from utilities    import read_text_file, write_text_file
-			rt = utilities.read_text_file( Tracker["PWadjustment"] )
-			fundamentals.fftip(vol)
-			ro = fundamentals.rops_table(vol)
+			rt = sparx_utilities.read_text_file( Tracker["PWadjustment"] )
+			sparx_fundamentals.fftip(vol)
+			ro = sparx_fundamentals.rops_table(vol)
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 			for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["upscale"]
 			#write_text_file(rops_table(filt_table( vol, ro),1),"foo.txt")
@@ -1091,12 +1091,12 @@ def do_volume_mrk02(ref_data):
 
 			if local_filter:
 				# skip low-pass filtration
-				vol = fundamentals.fft( filter.filt_table( vol, ro) )
+				vol = sparx_fundamentals.fft( sparx_filter.filt_table( vol, ro) )
 			else:
 				if( type(Tracker["lowpass"]) == list ):
-					vol = fundamentals.fft( filter.filt_table( filter.filt_table(vol, Tracker["lowpass"]), ro) )
+					vol = sparx_fundamentals.fft( sparx_filter.filt_table( sparx_filter.filt_table(vol, Tracker["lowpass"]), ro) )
 				else:
-					vol = fundamentals.fft( filter.filt_table( filter.filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"]), ro) )
+					vol = sparx_fundamentals.fft( sparx_filter.filt_table( sparx_filter.filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"]), ro) )
 			del ro
 		else:
 			if Tracker["constants"]["sausage"]:
@@ -1106,56 +1106,56 @@ def do_volume_mrk02(ref_data):
 				pass#IMPORTIMPORTIMPORT from math import exp
 				for i in range(len(ro)):  ro[i] = \
 				  (1.0+1.0*numpy.exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.10)/0.025)**2)+1.0*numpy.exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.215)/0.025)**2))
-				fundamentals.fftip(vol)
-				filter.filt_table(vol, ro)
+				sparx_fundamentals.fftip(vol)
+				sparx_filter.filt_table(vol, ro)
 				del ro
 			if not local_filter:
 				if( type(Tracker["lowpass"]) == list ):
-					vol = filter.filt_table(vol, Tracker["lowpass"])
+					vol = sparx_filter.filt_table(vol, Tracker["lowpass"])
 				else:
-					vol = filter.filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
-			if Tracker["constants"]["sausage"]: vol = fundamentals.fft(vol)
+					vol = sparx_filter.filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
+			if Tracker["constants"]["sausage"]: vol = sparx_fundamentals.fft(vol)
 
 	if local_filter:
 		pass#IMPORTIMPORTIMPORT from morphology import binarize
 		if(myid == 0): nx = mask3D.get_xsize()
 		else:  nx = 0
-		nx = utilities.bcast_number_to_all(nx, source_node = 0)
+		nx = sparx_utilities.bcast_number_to_all(nx, source_node = 0)
 		#  only main processor needs the two input volumes
 		if(myid == 0):
-			mask = morphology.binarize(mask3D, 0.5)
-			locres = utilities.get_im(Tracker["local_filter"])
+			mask = sparx_morphology.binarize(mask3D, 0.5)
+			locres = sparx_utilities.get_im(Tracker["local_filter"])
 			lx = locres.get_xsize()
 			if(lx != nx):
 				if(lx < nx):
 					pass#IMPORTIMPORTIMPORT from fundamentals import fdecimate, rot_shift3D
-					mask = EMAN2_cppwrap.Util.window(fundamentals.rot_shift3D(mask,scale=float(lx)/float(nx)),lx,lx,lx)
-					vol = fundamentals.fdecimate(vol, lx,lx,lx)
-				else:  global_def.ERROR("local filter cannot be larger than input volume","user function",1)
+					mask = EMAN2_cppwrap.Util.window(sparx_fundamentals.rot_shift3D(mask,scale=float(lx)/float(nx)),lx,lx,lx)
+					vol = sparx_fundamentals.fdecimate(vol, lx,lx,lx)
+				else:  sparx_global_def.ERROR("local filter cannot be larger than input volume","user function",1)
 			stat = EMAN2_cppwrap.Util.infomask(vol, mask, False)
 			vol -= stat[0]
 			EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
 		else:
 			lx = 0
-			locres = utilities.model_blank(1,1,1)
-			vol = utilities.model_blank(1,1,1)
-		lx = utilities.bcast_number_to_all(lx, source_node = 0)
-		if( myid != 0 ):  mask = utilities.model_blank(lx,lx,lx)
-		utilities.bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
+			locres = sparx_utilities.model_blank(1,1,1)
+			vol = sparx_utilities.model_blank(1,1,1)
+		lx = sparx_utilities.bcast_number_to_all(lx, source_node = 0)
+		if( myid != 0 ):  mask = sparx_utilities.model_blank(lx,lx,lx)
+		sparx_utilities.bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
 		pass#IMPORTIMPORTIMPORT from filter import filterlocal
-		vol = filter.filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
+		vol = sparx_filter.filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
 
 		if myid == 0:
 			if(lx < nx):
 				pass#IMPORTIMPORTIMPORT from fundamentals import fpol
-				vol = fundamentals.fpol(vol, nx,nx,nx)
-			vol = morphology.threshold(vol)
-			vol = filter.filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
+				vol = sparx_fundamentals.fpol(vol, nx,nx,nx)
+			vol = sparx_morphology.threshold(vol)
+			vol = sparx_filter.filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
 			EMAN2_cppwrap.Util.mul_img(vol, mask3D)
 			del mask3D
 			# vol.write_image('toto%03d.hdf'%iter)
 		else:
-			vol = utilities.model_blank(nx,nx,nx)
+			vol = sparx_utilities.model_blank(nx,nx,nx)
 	else:
 		if myid == 0:
 			#from utilities import write_text_file
@@ -1163,13 +1163,13 @@ def do_volume_mrk02(ref_data):
 			stat = EMAN2_cppwrap.Util.infomask(vol, mask3D, False)
 			vol -= stat[0]
 			EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
-			vol = morphology.threshold(vol)
-			vol = filter.filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
+			vol = sparx_morphology.threshold(vol)
+			vol = sparx_filter.filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
 			EMAN2_cppwrap.Util.mul_img(vol, mask3D)
 			del mask3D
 			# vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
-	utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	sparx_utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
 	return vol
 
@@ -1204,10 +1204,10 @@ def do_volume_mrk03(ref_data):
 		if Tracker["constants"]["CTF"]:
 			#vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
 			#		symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
-			vol = reconstruction.recons3d_4nnw_MPI(myid, data, Tracker["bckgnoise"], Tracker["constants"]["snr"], \
+			vol = sparx_reconstruction.recons3d_4nnw_MPI(myid, data, Tracker["bckgnoise"], Tracker["constants"]["snr"], \
 				symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
 		else:
-			vol = reconstruction.recons3d_4nn_MPI    (myid, data,\
+			vol = sparx_reconstruction.recons3d_4nn_MPI    (myid, data,\
 					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm)
 	else:
 		vol = data
@@ -1219,66 +1219,66 @@ def do_volume_mrk03(ref_data):
 		pass#IMPORTIMPORTIMPORT import types
 		nx = vol.get_xsize()
 		if(Tracker["constants"]["mask3D"] == None):
-			mask3D = utilities.model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
+			mask3D = sparx_utilities.model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
 		elif(Tracker["constants"]["mask3D"] == "auto"):
 			pass#IMPORTIMPORTIMPORT from utilities import adaptive_mask
-			mask3D = morphology.adaptive_mask(vol)
+			mask3D = sparx_morphology.adaptive_mask(vol)
 		else:
-			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = utilities.get_im(Tracker["constants"]["mask3D"])
+			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = sparx_utilities.get_im(Tracker["constants"]["mask3D"])
 			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm ):
 				pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
-				mask3D = EMAN2_cppwrap.Util.window(fundamentals.rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
+				mask3D = EMAN2_cppwrap.Util.window(sparx_fundamentals.rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
 				nxm = mask3D.get_xsize()
 				assert(nx == nxm)
 
 		if not local_filter:
 			if( type(Tracker["lowpass"]) == list ):
-				vol = filter.filt_table(vol, Tracker["lowpass"])
+				vol = sparx_filter.filt_table(vol, Tracker["lowpass"])
 			else:
-				vol = filter.filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
+				vol = sparx_filter.filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
 
 	if local_filter:
 		pass#IMPORTIMPORTIMPORT from morphology import binarize
 		if(myid == 0): nx = mask3D.get_xsize()
 		else:  nx = 0
-		if( nproc > 1 ): nx = utilities.bcast_number_to_all(nx, source_node = 0)
+		if( nproc > 1 ): nx = sparx_utilities.bcast_number_to_all(nx, source_node = 0)
 		#  only main processor needs the two input volumes
 		if(myid == 0):
-			mask = morphology.binarize(mask3D, 0.5)
-			locres = utilities.get_im(Tracker["local_filter"])
+			mask = sparx_morphology.binarize(mask3D, 0.5)
+			locres = sparx_utilities.get_im(Tracker["local_filter"])
 			lx = locres.get_xsize()
 			if(lx != nx):
 				if(lx < nx):
 					pass#IMPORTIMPORTIMPORT from fundamentals import fdecimate, rot_shift3D
-					mask = EMAN2_cppwrap.Util.window(fundamentals.rot_shift3D(mask,scale=float(lx)/float(nx)),lx,lx,lx)
-					vol = fundamentals.fdecimate(vol, lx,lx,lx)
-				else:  global_def.ERROR("local filter cannot be larger than input volume","user function",1)
+					mask = EMAN2_cppwrap.Util.window(sparx_fundamentals.rot_shift3D(mask,scale=float(lx)/float(nx)),lx,lx,lx)
+					vol = sparx_fundamentals.fdecimate(vol, lx,lx,lx)
+				else:  sparx_global_def.ERROR("local filter cannot be larger than input volume","user function",1)
 			stat = EMAN2_cppwrap.Util.infomask(vol, mask, False)
 			vol -= stat[0]
 			EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
 		else:
 			lx = 0
-			locres = utilities.model_blank(1,1,1)
-			vol = utilities.model_blank(1,1,1)
+			locres = sparx_utilities.model_blank(1,1,1)
+			vol = sparx_utilities.model_blank(1,1,1)
 		if( nproc > 1 ):
-			lx = utilities.bcast_number_to_all(lx, source_node = 0)
-			if( myid != 0 ):  mask = utilities.model_blank(lx,lx,lx)
-			utilities.bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
+			lx = sparx_utilities.bcast_number_to_all(lx, source_node = 0)
+			if( myid != 0 ):  mask = sparx_utilities.model_blank(lx,lx,lx)
+			sparx_utilities.bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
 		pass#IMPORTIMPORTIMPORT from filter import filterlocal
-		vol = filter.filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
+		vol = sparx_filter.filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
 
 		if myid == 0:
 			if(lx < nx):
 				pass#IMPORTIMPORTIMPORT from fundamentals import fpol
-				vol = fundamentals.fpol(vol, nx,nx,nx)
-			vol = morphology.threshold(vol)
+				vol = sparx_fundamentals.fpol(vol, nx,nx,nx)
+			vol = sparx_morphology.threshold(vol)
 			EMAN2_cppwrap.Util.mul_img(vol, mask3D)
 			del mask3D
 			# vol.write_image('toto%03d.hdf'%iter)
 		else:
-			vol = utilities.model_blank(nx,nx,nx)
+			vol = sparx_utilities.model_blank(nx,nx,nx)
 	else:
 		if myid == 0:
 			#from utilities import write_text_file
@@ -1290,7 +1290,7 @@ def do_volume_mrk03(ref_data):
 			# vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
 	if( nproc > 1 ):
-		utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+		sparx_utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 		#  Deal with mask 3D and MPI
 		#=========================================================================
 		return  vol, None
@@ -1327,11 +1327,11 @@ def do_volume_mrk04(ref_data):
 	# volume reconstruction
 	if( type(data) == list ):
 		if Tracker["constants"]["CTF"]:
-			global_def.ERROR("should not be here","mrk04",1)
-			vol = reconstruction.recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
+			sparx_global_def.ERROR("should not be here","mrk04",1)
+			vol = sparx_reconstruction.recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
 					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
 		else:
-			vol = reconstruction.recons3d_4nn_MPI    (myid, data,\
+			vol = sparx_reconstruction.recons3d_4nn_MPI    (myid, data,\
 					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm)
 	else:
 		vol = data
@@ -1343,67 +1343,67 @@ def do_volume_mrk04(ref_data):
 		pass#IMPORTIMPORTIMPORT import types
 		nx = vol.get_xsize()
 		if(Tracker["constants"]["mask3D"] == None):
-			mask3D = utilities.model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
+			mask3D = sparx_utilities.model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
 		elif(Tracker["constants"]["mask3D"] == "auto"):
 			pass#IMPORTIMPORTIMPORT from utilities import adaptive_mask
-			mask3D = morphology.adaptive_mask(vol)
+			mask3D = sparx_morphology.adaptive_mask(vol)
 		else:
-			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = utilities.get_im(Tracker["constants"]["mask3D"])
+			if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = sparx_utilities.get_im(Tracker["constants"]["mask3D"])
 			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm):
 				pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
-				mask3D = EMAN2_cppwrap.Util.window(fundamentals.rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
+				mask3D = EMAN2_cppwrap.Util.window(sparx_fundamentals.rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
 				nxm = mask3D.get_xsize()
 				assert(nx == nxm)
 
 		stat = EMAN2_cppwrap.Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
-		vol = morphology.threshold(vol)
+		vol = sparx_morphology.threshold(vol)
 		EMAN2_cppwrap.Util.mul_img(vol, mask3D)
 
 	if local_filter:
 		pass#IMPORTIMPORTIMPORT from morphology import binarize
 		if(myid == 0): nx = mask3D.get_xsize()
 		else:  nx = 0
-		if( nproc > 1 ):  nx = utilities.bcast_number_to_all(nx, source_node = 0)
+		if( nproc > 1 ):  nx = sparx_utilities.bcast_number_to_all(nx, source_node = 0)
 		#  only main processor needs the two input volumes
 		if(myid == 0):
-			mask = morphology.binarize(mask3D, 0.5)
-			locres = utilities.get_im(Tracker["local_filter"])
+			mask = sparx_morphology.binarize(mask3D, 0.5)
+			locres = sparx_utilities.get_im(Tracker["local_filter"])
 			lx = locres.get_xsize()
 			if(lx != nx):
 				if(lx < nx):
 					pass#IMPORTIMPORTIMPORT from fundamentals import fdecimate, rot_shift3D
-					mask = EMAN2_cppwrap.Util.window(fundamentals.rot_shift3D(mask,scale=float(lx)/float(nx)),lx,lx,lx)
-					vol = fundamentals.fdecimate(vol, lx,lx,lx)
-				else:  global_def.ERROR("local filter cannot be larger than input volume","user function",1)
+					mask = EMAN2_cppwrap.Util.window(sparx_fundamentals.rot_shift3D(mask,scale=float(lx)/float(nx)),lx,lx,lx)
+					vol = sparx_fundamentals.fdecimate(vol, lx,lx,lx)
+				else:  sparx_global_def.ERROR("local filter cannot be larger than input volume","user function",1)
 			stat = EMAN2_cppwrap.Util.infomask(vol, mask, False)
 			vol -= stat[0]
 			EMAN2_cppwrap.Util.mul_scalar(vol, 1.0/stat[1])
 		else:
 			lx = 0
-			locres = utilities.model_blank(1,1,1)
-			vol = utilities.model_blank(1,1,1)
+			locres = sparx_utilities.model_blank(1,1,1)
+			vol = sparx_utilities.model_blank(1,1,1)
 		if( nproc > 1 ):
-			lx = utilities.bcast_number_to_all(lx, source_node = 0)
-			if( myid != 0 ):  mask = utilities.model_blank(lx,lx,lx)
-			utilities.bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
+			lx = sparx_utilities.bcast_number_to_all(lx, source_node = 0)
+			if( myid != 0 ):  mask = sparx_utilities.model_blank(lx,lx,lx)
+			sparx_utilities.bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
 		pass#IMPORTIMPORTIMPORT from filter import filterlocal
-		vol = filter.filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
+		vol = sparx_filter.filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
 
 		if myid == 0:
 			if(lx < nx):
 				pass#IMPORTIMPORTIMPORT from fundamentals import fpol
-				vol = fundamentals.fpol(vol, nx,nx,nx)
-			vol = morphology.threshold(vol)
-			vol = filter.filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
+				vol = sparx_fundamentals.fpol(vol, nx,nx,nx)
+			vol = sparx_morphology.threshold(vol)
+			vol = sparx_filter.filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
 			EMAN2_cppwrap.Util.mul_img(vol, mask3D)
 			del mask3D
 			# vol.write_image('toto%03d.hdf'%iter)
 		else:
-			vol = utilities.model_blank(nx,nx,nx)
+			vol = sparx_utilities.model_blank(nx,nx,nx)
 	else:
 		pass
 		"""
@@ -1420,7 +1420,7 @@ def do_volume_mrk04(ref_data):
 			# vol.write_image('toto%03d.hdf'%iter)
 		"""
 	# broadcast volume
-	if( nproc > 1 ):  utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	if( nproc > 1 ):  sparx_utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
 	return vol
 
@@ -1447,17 +1447,17 @@ def do_volume_mrk05(ref_data):
 	pass#IMPORTIMPORTIMPORT import types
 	nx = vol.get_xsize()
 	if(Tracker["constants"]["mask3D"] == None):
-		mask3D = utilities.model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
+		mask3D = sparx_utilities.model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
 	elif(Tracker["constants"]["mask3D"] == "auto"):
 		pass#IMPORTIMPORTIMPORT from utilities import adaptive_mask
-		mask3D = morphology.adaptive_mask(vol)
+		mask3D = sparx_morphology.adaptive_mask(vol)
 	else:
-		if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = utilities.get_im(Tracker["constants"]["mask3D"])
+		if( type(Tracker["constants"]["mask3D"]) == bytes ):  mask3D = sparx_utilities.get_im(Tracker["constants"]["mask3D"])
 		else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
 		nxm = mask3D.get_xsize()
 		if( nx != nxm):
 			pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
-			mask3D = EMAN2_cppwrap.Util.window(fundamentals.rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
+			mask3D = EMAN2_cppwrap.Util.window(sparx_fundamentals.rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
 			nxm = mask3D.get_xsize()
 			assert(nx == nxm)
 

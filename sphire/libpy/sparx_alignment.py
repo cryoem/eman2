@@ -30,26 +30,26 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import applications
-import filter
-import fundamentals
-import global_def
-import logger
-import morphology
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_logger
+import sparx_morphology
 import mpi
-import multi_shc
+import sparx_multi_shc
 import numpy
 import numpy as np
 import numpy.random
 import operator
-import pixel_error
-import projection
+import sparx_pixel_error
+import sparx_projection
 import scipy
-import statistics
+import sparx_statistics
 import sys
 import time
 import types
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import alignment
@@ -163,10 +163,10 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	if random_method == "SCF":
 		pass#IMPORTIMPORTIMPORT from fundamentals import fft, scf
 		pass#IMPORTIMPORTIMPORT from alignment import multalign2d_scf
-		frotim = [fundamentals.fft(tavg)]
+		frotim = [sparx_fundamentals.fft(tavg)]
 		xrng = int(xrng+0.5)
 		yrng = int(yrng+0.5)
-		cimage = EMAN2_cppwrap.Util.Polar2Dm(fundamentals.scf(tavg), cnx, cny, numr, mode)
+		cimage = EMAN2_cppwrap.Util.Polar2Dm(sparx_fundamentals.scf(tavg), cnx, cny, numr, mode)
 		EMAN2_cppwrap.Util.Frngs(cimage, numr)
 		EMAN2_cppwrap.Util.Applyws(cimage, numr, wr)
 	else:
@@ -186,7 +186,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		if CTF:
 			#Apply CTF to image
 			ctf_params = data[im].get_attr("ctf")
-			ima = filter.filt_ctf(data[im], ctf_params, True)
+			ima = sparx_filter.filt_ctf(data[im], ctf_params, True)
 		else:
 			ima = data[im]
 
@@ -197,9 +197,9 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		else:
 			nx = ima.get_xsize()
 			ny = ima.get_ysize()
-			alpha, sx, sy, mirror, dummy = utilities.get_params2D(data[im], ali_params)
-			alpha, sx, sy, dummy         = utilities.combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-			alphai, sxi, syi, scalei     = utilities.inverse_transform2(alpha, sx, sy)
+			alpha, sx, sy, mirror, dummy = sparx_utilities.get_params2D(data[im], ali_params)
+			alpha, sx, sy, dummy         = sparx_utilities.combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+			alphai, sxi, syi, scalei     = sparx_utilities.inverse_transform2(alpha, sx, sy)
 			#  introduce constraints on parameters to accomodate use of cs centering
 			sxi = min(max(sxi,-mashi),mashi)
 			syi = min(max(syi,-mashi),mashi)
@@ -233,34 +233,34 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 				syst = olo[2]
 				mirrort = int(olo[3])
 				# combine parameters and set them to the header, ignore previous angle and mirror
-				[alphan, sxn, syn, mn] = utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-				utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+				[alphan, sxn, syn, mn] = sparx_utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+				sparx_utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 				##set_params2D(data[im], [angt, sxst, syst, mirrort, 1.0], ali_params)
 				data[im].set_attr("previousmax",olo[5])
 			else:
 				# Did not find a better peak, but we have to set shifted parameters, as the average shifted
-				utilities.set_params2D(data[im], [alpha, sx, sy, mirror, 1.0], ali_params)
+				sparx_utilities.set_params2D(data[im], [alpha, sx, sy, mirror, 1.0], ali_params)
 				nope += 1
 				mn = 0
 				sxn = 0.0
 				syn = 0.0
 		elif random_method == "SCF":
 			sxst,syst,iref,angt,mirrort,totpeak = multalign2d_scf(data[im], [cimage], frotim, numr, xrng, yrng, ou = ou)
-			[alphan, sxn, syn, mn] = utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+			[alphan, sxn, syn, mn] = sparx_utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			sparx_utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		elif random_method == "PCP":
 			[angt, sxst, syst, mirrort, peakt] = ormq_fast(data[im], cimage, txrng, tyrng, step, numr, mode, delta)
 			sxst = rings[0][0][0].get_attr("sxi")
 			syst = rings[0][0][0].get_attr("syi")
 			print(sxst, syst,sx,sy)
-			dummy,sxs,sys, dummy = utilities.inverse_transform2(-angt,sx+sxst,sy+syst)
-			utilities.set_params2D(data[im][0][0], [angt, sxs, sys, mirrort, 1.0], ali_params)
+			dummy,sxs,sys, dummy = sparx_utilities.inverse_transform2(-angt,sx+sxst,sy+syst)
+			sparx_utilities.set_params2D(data[im][0][0], [angt, sxs, sys, mirrort, 1.0], ali_params)
 		else:
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi, delta)
 			# combine parameters and set them to the header, ignore previous angle and mirror
-			[alphan, sxn, syn, mn] = utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+			[alphan, sxn, syn, mn] = sparx_utilities.combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			sparx_utilities.set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 
 		if mn == 0: sx_sum += sxn
 		else:       sx_sum -= sxn
@@ -352,7 +352,7 @@ def crit2d(args, data):
 	#from utilities import info
 	pass#IMPORTIMPORTIMPORT from fundamentals import rtshgkb
 	mn = data[4].get_attr('mirror')
-	temp = fundamentals.rtshgkb(data[4], args[0], args[1], args[2], data[0])
+	temp = sparx_fundamentals.rtshgkb(data[4], args[0], args[1], args[2], data[0])
 	if  mn: temp.process_inplace("xform.mirror", {"axis":'x'})
 	#temp2 = data[3] + temp/data[2]
 	temp2 = EMAN2_cppwrap.Util.madn_scalar(data[3], temp, 1.0/data[2]) 
@@ -393,12 +393,12 @@ def eqproj_cascaded_ccc_fitness_function(args, data):
 	refprj.depad()
 
 	if ts==0.0:
-		return statistics.ccc(prj, refprj, mask2D), shift
+		return sparx_statistics.ccc(prj, refprj, mask2D), shift
 
 	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
 	EMAN2_cppwrap.Util.mul_img(refprj, mask2D)
 
-	product = fundamentals.ccf(fundamentals.fpol(refprj, MM, MM, 1, False), data[4])
+	product = sparx_fundamentals.ccf(sparx_fundamentals.fpol(refprj, MM, MM, 1, False), data[4])
 	nx = product.get_ysize()
 	sx = nx//2
 	sy = sx
@@ -409,14 +409,14 @@ def eqproj_cascaded_ccc_fitness_function(args, data):
 	ts2 = 2*ts
 	data2 = [product, kb, 1.1*ts2, sx]
 	size_of_ccf = 2*int(ts+1.5)+1
-	pk = utilities.peak_search(EMAN2_cppwrap.Util.window(product, size_of_ccf, size_of_ccf,1,0,0,0))
+	pk = sparx_utilities.peak_search(EMAN2_cppwrap.Util.window(product, size_of_ccf, size_of_ccf,1,0,0,0))
 	# adjust pk to correspond to large ccf
 	# print  " pk ",pk
 	pk[0][1] = sx + pk[0][4]
 	pk[0][2] = sy + pk[0][5]
 	#print  " pk ",pk
 	# step in amoeba should be vicinity of the peak, within one pixel or even less.
-	ps = utilities.amoeba([pk[0][1], pk[0][2]], [1.1, 1.1], twoD_fine_search, 1.e-4, 1.e-4, 1, data2)
+	ps = sparx_utilities.amoeba([pk[0][1], pk[0][2]], [1.1, 1.1], twoD_fine_search, 1.e-4, 1.e-4, 1, data2)
 	#print  " ps ",ps,[sx,sy], data2, shift
 	#print  " if ",abs(sx-ps[0][0]),abs(sy-ps[0][1]),ts2
 	if(  abs(sx-ps[0][0]) >= ts2 or abs(sy-ps[0][1]) >= ts2 ):
@@ -472,7 +472,7 @@ def objective_function_just_ccc_has_maximum(args, data):
 	# refprj.set_attr_dict({'npad':2})
 	# refprj.depad()
 
-	reference_projection = projection.prgl(volft, args[0:5], interpolation_method = 1, return_real = True)
+	reference_projection = sparx_projection.prgl(volft, args[0:5], interpolation_method = 1, return_real = True)
 	reference_projection.set_attr("is_complex",0)
 
 	# peak = Util.innerproduct(temp, emimage[im])
@@ -505,7 +505,7 @@ def objective_function_just_ccc_has_minimum(args, data):
 	# prj	    = data[2]
 	
 
-	reference_projection = projection.prgl(data[0], args[0:5], interpolation_method = 1, return_real = False)
+	reference_projection = sparx_projection.prgl(data[0], args[0:5], interpolation_method = 1, return_real = False)
 	reference_projection.set_attr("is_complex",0)
 
 	norm_of_reference_projection = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(reference_projection, reference_projection, None))
@@ -531,7 +531,7 @@ def objective_function_just_ccc_has_minimum_reduced(args, data):
 	# prj	    = data[2]
 
 	args1 = np.append(args, data[5])
-	reference_projection = projection.prgl(data[0], args1 , interpolation_method = 1, return_real = False)
+	reference_projection = sparx_projection.prgl(data[0], args1 , interpolation_method = 1, return_real = False)
 	reference_projection.set_attr("is_complex",0)
 
 	norm_of_reference_projection = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(reference_projection, reference_projection, None))
@@ -589,7 +589,7 @@ def objective_function_just_ccc_has_minimum_reduced_only_shifts(args, data):
 	args1 = np.append(data[5], args)
 	
 	
-	reference_projection = projection.prgl(volft, args1 , interpolation_method = 1, return_real = True)
+	reference_projection = sparx_projection.prgl(volft, args1 , interpolation_method = 1, return_real = True)
 	reference_projection.set_attr("is_complex",0)
 
 	# peak = Util.innerproduct(temp, emimage[im])
@@ -649,7 +649,7 @@ def objective_function_just_ccc_has_minimum2(args, data):
 	# refprj.set_attr_dict({'npad':2})
 	# refprj.depad()
 
-	reference_projection = projection.prgl(volft, args[0:5], interpolation_method = 1, return_real = True)
+	reference_projection = sparx_projection.prgl(volft, args[0:5], interpolation_method = 1, return_real = True)
 	reference_projection.set_attr("is_complex",0)
 
 	# peak = Util.innerproduct(temp, emimage[im])
@@ -714,7 +714,7 @@ def objective_function_just_ccc_has_maximum___old(args, data):
 	refprj.set_attr_dict({'npad':2})
 	refprj.depad()
 
-	return statistics.ccc(prj, refprj, mask2D)
+	return sparx_statistics.ccc(prj, refprj, mask2D)
 	
 
 
@@ -744,7 +744,7 @@ def objective_function_just_ccc_rewrite(params, volft, kb, data_im, mask2D):
 	refprj.set_attr_dict({'npad':2})
 	refprj.depad()
 
-	return -statistics.ccc(data_im, refprj, mask2D)
+	return -sparx_statistics.ccc(data_im, refprj, mask2D)
 
 
 def eqproj_cascaded_ccc(args, data):
@@ -778,12 +778,12 @@ def eqproj_cascaded_ccc(args, data):
 	refprj.depad()
 
 	if ts==0.0:
-		return statistics.ccc(prj, refprj, mask2D), shift
+		return sparx_statistics.ccc(prj, refprj, mask2D), shift
 
 	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
 	EMAN2_cppwrap.Util.mul_img(refprj, mask2D)
 
-	product = fundamentals.ccf(fundamentals.fpol(refprj, MM, MM, 1, False), data[4])
+	product = sparx_fundamentals.ccf(sparx_fundamentals.fpol(refprj, MM, MM, 1, False), data[4])
 	nx = product.get_ysize()
 	sx = nx//2
 	sy = sx
@@ -796,14 +796,14 @@ def eqproj_cascaded_ccc(args, data):
 	ts2 = 2*ts
 	data2 = [product, kb, 1.1*ts2, sx]
 	size_of_ccf = 2*int(ts+1.5)+1
-	pk = utilities.peak_search(EMAN2_cppwrap.Util.window(product, size_of_ccf, size_of_ccf,1,0,0,0))
+	pk = sparx_utilities.peak_search(EMAN2_cppwrap.Util.window(product, size_of_ccf, size_of_ccf,1,0,0,0))
 	# adjust pk to correspond to large ccf
 	# print  " pk ",pk
 	pk[0][1] = sx + pk[0][4]
 	pk[0][2] = sy + pk[0][5]
 	#print  " pk ",pk
 	# step in amoeba should be vicinity of the peak, within one pixel or even less.
-	ps = utilities.amoeba([pk[0][1], pk[0][2]], [1.1, 1.1], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
+	ps = sparx_utilities.amoeba([pk[0][1], pk[0][2]], [1.1, 1.1], twoD_fine_search, 1.e-4, 1.e-4, 500, data2)
 	#print  " ps ",ps,[sx,sy], data2, shift
 	#print  " if ",abs(sx-ps[0][0]),abs(sy-ps[0][1]),ts2
 	if(  abs(sx-ps[0][0]) >= ts2 or abs(sy-ps[0][1]) >= ts2 ):
@@ -825,7 +825,7 @@ def eqproj(args, data):
 	#print  " AMOEBA ",args
 	#  data: 0 - volkb,  1 - kb, 2 - image,  3 - mask,
 	#  args: 0 - phi, 1 - theta, 2 - psi, 3 - sx, 4 - sy
-	prj = projection.prgs(data[0], data[1], args)
+	prj = sparx_projection.prgs(data[0], data[1], args)
 
 	# the idea is for the mask to "follow" the projection
 	#isx = int(args[3]+100000.5)-100000 # this is a strange trick to take care of negative sx
@@ -861,22 +861,22 @@ def eqprojDot(args, data):
 	ou  = data[6]
 
 	tmp = img.process( "normalize.mask", {"mask":msk, "no_sigma":0} )
-	ref = projection.project( vol, [phi,tht,psi,-s2x,-s2y], ou )
+	ref = sparx_projection.project( vol, [phi,tht,psi,-s2x,-s2y], ou )
 	if CTF:
 		ctf = img.get_attr( "ctf" )
-		ref = filter.filt_ctf( ref, ctf )
+		ref = sparx_filter.filt_ctf( ref, ctf )
 	return ref.cmp( "dot", tmp, {"mask":msk, "negative":0} )
 
 def eqprojEuler(args, data):
 	pass#IMPORTIMPORTIMPORT from projection import prgs
-	prj = projection.prgs(data[0], data[1], [args[0], args[1], args[2], data[3], data[4]])
+	prj = sparx_projection.prgs(data[0], data[1], [args[0], args[1], args[2], data[3], data[4]])
 	v = prj.cmp("ccc", data[2], {"mask":data[5], "negative":0})
 	return v
 
 def symm_func(args, data):
 	pass#IMPORTIMPORTIMPORT from utilities import sym_vol
 	pass#IMPORTIMPORTIMPORT from fundamentals  import  rot_shift3D
-	sym = utilities.sym_vol(fundamentals.rot_shift3D(data[0], args[0], args[1], args[2]), data[2])
+	sym = sparx_utilities.sym_vol(sparx_fundamentals.rot_shift3D(data[0], args[0], args[1], args[2]), data[2])
 	avg = sym.cmp("dot",sym,{"mask":data[1], "negative":0})
 	print(avg, args)
 	return avg
@@ -887,7 +887,7 @@ def find_symm(vol, mask, sym_gp, phi, theta, psi, scale, ftolerance, xtolerance)
 	pass#IMPORTIMPORTIMPORT from alignment import symm_func
 	args   = [phi, theta, psi]
 	data   = [vol, mask, sym_gp]
-	result = utilities.amoeba(args, scale, symm_func, ftolerance, xtolerance, 500, data)
+	result = sparx_utilities.amoeba(args, scale, symm_func, ftolerance, xtolerance, 500, data)
 
 	return result
 
@@ -1141,7 +1141,7 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, numr, mode, delta = 0.0):
 	sxs = sx*co - sy*so
 	sys = sx*so + sy*co
 	"""
-	if( peak < -1.0e20): global_def.ERROR("ormq_fast","failed, most likely due to search ranges",1)
+	if( peak < -1.0e20): sparx_global_def.ERROR("ormq_fast","failed, most likely due to search ranges",1)
 	#return  ang, sx/2.0, sy/2.0, mirror, peak
 	return  ang, sx, sy, mirror, peak
 			
@@ -1158,9 +1158,9 @@ def prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step):
 		sts = EMAN2_cppwrap.Util.infomask(data[im], maskfile, False)
 		data[im] -= sts[0]
 		data[im] /= sts[1]
-		alpha, sx, sy, mirror, dummy = utilities.get_params2D(data[im])
+		alpha, sx, sy, mirror, dummy = sparx_utilities.get_params2D(data[im])
 		#alpha, sx, sy, dummy         = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-		alphai, sxi, syi, dummy      = utilities.combine_params2(0.0, sx, sy, 0, -alpha, 0,0, 0)
+		alphai, sxi, syi, dummy      = sparx_utilities.combine_params2(0.0, sx, sy, 0, -alpha, 0,0, 0)
 		#  introduce constraints on parameters to accomodate use of cs centering
 		sxi = min(max(sxi,-mashi),mashi)
 		syi = min(max(syi,-mashi),mashi)	
@@ -1198,10 +1198,10 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	tyrng = [tyrng[1],tyrng[0]]
 	EMAN2_cppwrap.Util.multiref_peaks_ali2d(image, crefim, txrng, tyrng, step, mode, numr, cnx, cny, ccfs, ccfm)
 
-	peaks = utilities.peak_search(ccfs, 1000)
+	peaks = sparx_utilities.peak_search(ccfs, 1000)
 	for i in range(len(peaks)):	peaks[i].append(0)
 
-	peakm = utilities.peak_search(ccfm, 1000)
+	peakm = sparx_utilities.peak_search(ccfm, 1000)
 	for i in range(len(peakm)):	peakm[i].append(1)
 	peaks += peakm
 
@@ -1709,19 +1709,19 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 		# generate list of Eulerian angles for reference projections
 		#  phi, theta, psi
 		if initial_theta and initial_phi :
-			ref_angles = utilities.even_angles(delta, theta1 = initial_theta, phi1 = initial_phi, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+			ref_angles = sparx_utilities.even_angles(delta, theta1 = initial_theta, phi1 = initial_phi, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 		else:
 			if initial_theta is None:
 				if(sym[:1] == "c" or sym[:1] == "d"):
-					ref_angles = utilities.even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+					ref_angles = sparx_utilities.even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 				else:
 					pass#IMPORTIMPORTIMPORT from fundamentals import symclass
-					psp = fundamentals.symclass(sym)
+					psp = sparx_fundamentals.symclass(sym)
 					ref_angles = psp.even_angles(delta)
 					del psp
 			else:
 				if delta_theta is None: delta_theta = 1.0
-				ref_angles = utilities.even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+				ref_angles = sparx_utilities.even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 
 
 	wr_four  = ringwe(numr, mode)
@@ -1737,9 +1737,9 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 		ncpu = 1
 		myid = 0
 
-	if(nz <1):  global_def.ERROR("Data size has to be given (nz)", "prepare_refrings", 1, myid)
+	if(nz <1):  sparx_global_def.ERROR("Data size has to be given (nz)", "prepare_refrings", 1, myid)
 	
-	ref_start, ref_end = applications.MPI_start_end(num_ref, ncpu, myid)
+	ref_start, ref_end = sparx_applications.MPI_start_end(num_ref, ncpu, myid)
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
 
@@ -1752,7 +1752,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 
 	if kbx is None:
 		for i in range(ref_start, ref_end):
-			prjref = projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+			prjref = sparx_projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 			cimage = EMAN2_cppwrap.Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 			EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
 			EMAN2_cppwrap.Util.Frngs(cimage, numr)
@@ -1760,7 +1760,7 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 			refrings[i] = cimage
 	else:
 		for i in range(ref_start, ref_end):
-			prjref = projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], kbx, kby)
+			prjref = sparx_projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], kbx, kby)
 			cimage = EMAN2_cppwrap.Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 			EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
 			EMAN2_cppwrap.Util.Frngs(cimage, numr)
@@ -1769,10 +1769,10 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 
 	if MPI:
 		pass#IMPORTIMPORTIMPORT from utilities import bcast_compacted_EMData_all_to_all
-		utilities.bcast_compacted_EMData_all_to_all(refrings, myid, comm=mpi_comm)
+		sparx_utilities.bcast_compacted_EMData_all_to_all(refrings, myid, comm=mpi_comm)
 
 	for i in range(len(ref_angles)):
-		n1,n2,n3 = utilities.getfvec(ref_angles[i][0], ref_angles[i][1])
+		n1,n2,n3 = sparx_utilities.getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 
 	return refrings
@@ -1806,10 +1806,10 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		# generate list of Eulerian angles for reference projections
 		#  phi, theta, psi
 		if initial_theta is None:
-			ref_angles = utilities.even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+			ref_angles = sparx_utilities.even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 		else:
 			if delta_theta is None: delta_theta = 1.0
-			ref_angles = utilities.even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+			ref_angles = sparx_utilities.even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 	wr_four  = ringwe(numr, mode)
 	cnx = nz//2 + 1
 	cny = nz//2 + 1
@@ -1823,14 +1823,14 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		ncpu = 1
 		myid = 0
 	
-	ref_start, ref_end = applications.MPI_start_end(num_ref, ncpu, myid)
+	ref_start, ref_end = sparx_applications.MPI_start_end(num_ref, ncpu, myid)
 
 	projections = [None]*num_ref     # list of (image objects) reference projections
 	refrings    = [None]*num_ref     # list of (image objects) reference projections in Fourier/polar representation
 	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
 	cimage = EMAN2_cppwrap.EMData(nz,nz,1,False)  #  FT blank
 
-	mask2D = utilities.model_circle(numr[-3], nz,nz)
+	mask2D = sparx_utilities.model_circle(numr[-3], nz,nz)
 
 	for i in range(num_ref):
 		prjref = EMAN2_cppwrap.EMData()
@@ -1839,14 +1839,14 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		projections[i] = cimage.copy()
 
 	for i in range(ref_start, ref_end):
-		prjref = projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+		prjref = sparx_projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 		
 		st = EMAN2_cppwrap.Util.infomask(prjref, None, True)
 		prjref -= st[0]
 		st = EMAN2_cppwrap.Util.infomask(prjref, mask2D, True)
 		prjref /= st[1]
-		fundamentals.fftip( prjref )
-		cimage = EMAN2_cppwrap.Util.Polar2Dm(fundamentals.scf(prjref), cnx, cny, numr, mode)  # currently set to quadratic....
+		sparx_fundamentals.fftip( prjref )
+		cimage = EMAN2_cppwrap.Util.Polar2Dm(sparx_fundamentals.scf(prjref), cnx, cny, numr, mode)  # currently set to quadratic....
 		EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
 		EMAN2_cppwrap.Util.Frngs(cimage, numr)
 		EMAN2_cppwrap.Util.Applyws(cimage, numr, wr_four)
@@ -1856,12 +1856,12 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 	if MPI:
 		pass#IMPORTIMPORTIMPORT from utilities import bcast_compacted_EMData_all_to_all
 		pass#IMPORTIMPORTIMPORT from utilities import info
-		utilities.bcast_compacted_EMData_all_to_all(projections, myid, comm=mpi_comm)
-		utilities.bcast_compacted_EMData_all_to_all(refrings, myid, comm=mpi_comm)
+		sparx_utilities.bcast_compacted_EMData_all_to_all(projections, myid, comm=mpi_comm)
+		sparx_utilities.bcast_compacted_EMData_all_to_all(refrings, myid, comm=mpi_comm)
 
 	#dd = {'is_complex':1, 'is_fftodd':nz%2, 'is_fftpad':1}
 	for i in range(num_ref):
-		n1,n2,n3 = utilities.getfvec(ref_angles[i][0], ref_angles[i][1])
+		n1,n2,n3 = sparx_utilities.getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 		projections[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 		#projections[i].set_attr_dict( dd )
@@ -1911,7 +1911,7 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 		ncpu = 1
 		myid = 0
 	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
-	ref_start, ref_end = applications.MPI_start_end(num_ref, ncpu, myid)
+	ref_start, ref_end = sparx_applications.MPI_start_end(num_ref, ncpu, myid)
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
 
@@ -1924,7 +1924,7 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 
 	if kbx is None:
 		for i in range(ref_start, ref_end):
-			prjref = projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+			prjref = sparx_projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 			EMAN2_cppwrap.Util.mul_img(prjref, segmask )
 			cimage = EMAN2_cppwrap.Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 			EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
@@ -1938,9 +1938,9 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 		pass#IMPORTIMPORTIMPORT from utilities import bcast_EMData_to_all
 		for i in range(num_ref):
 			for j in range(ncpu):
-				ref_start, ref_end = applications.MPI_start_end(num_ref, ncpu, j)
+				ref_start, ref_end = sparx_applications.MPI_start_end(num_ref, ncpu, j)
 				if i >= ref_start and i < ref_end: rootid = j
-			utilities.bcast_EMData_to_all(refrings[i], myid, rootid)
+			sparx_utilities.bcast_EMData_to_all(refrings[i], myid, rootid)
 
 	for i in range(num_ref):
 		q0 = numpy.radians(ref_angles[i][0])
@@ -1963,13 +1963,13 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 	ref_proj_rings = []     # list of (image objects) reference projections in Fourier representation
 	for i in range(len(ref_angles)):
 		#prjref = project(volref, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], last_ring)
-		prjref = projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+		prjref = sparx_projection.prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 		cimage = EMAN2_cppwrap.Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 		EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
 		EMAN2_cppwrap.Util.Frngs(cimage, numr)
 		EMAN2_cppwrap.Util.Applyws(cimage, numr, wr)
 		ref_proj_rings.append(cimage)
-		n1,n2,n3 = utilities.getfvec(ref_angles[i][0], ref_angles[i][1])
+		n1,n2,n3 = sparx_utilities.getfvec(ref_angles[i][0], ref_angles[i][1])
 		ref_proj_rings[-1].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 
 	return ref_proj_rings
@@ -1980,7 +1980,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c
 
 	if finfo:
 		pass#IMPORTIMPORTIMPORT from utilities    import get_params_proj
-		phi, theta, psi, s2x, s2y = utilities.get_params_proj(data)
+		phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(data)
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 
@@ -2027,9 +2027,9 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c
 		pixel_error = +1.0e23
 		for ut in ts:
 			# we do not care which position minimizes the error
-			pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+			pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 	else:
-		pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+		pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 	
 
 	if finfo:
@@ -2044,7 +2044,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym
 
 	if finfo:
 		pass#IMPORTIMPORTIMPORT from utilities    import get_params_proj
-		phi, theta, psi, s2x, s2y = utilities.get_params_proj(data)
+		phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(data)
 		finfo.write("Old parameters: %7.2f  %7.2f  %7.2f  %7.2f  %7.2f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 
@@ -2093,9 +2093,9 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym
 		pixel_error = +1.0e23
 		for ut in ts:
 			# we do not care which position minimizes the error
-			pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+			pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 	else:
-		pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+		pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 
 	if finfo:
 		finfo.write( "New parameters: %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %11.3e  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -2157,13 +2157,13 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, 
 			pixel_error = +1.0e23
 			for ut in ts:
 				# we do not care which position minimizes the error
-				pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+				pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
-			pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+			pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
 			pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
-			phi, theta, psi, s2x, s2y = utilities.get_params_proj(data)
+			phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(data)
 			finfo.write( "New parameters: %6.2f %6.2f %6.2f %6.2f %6.2f   %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
 		return peak, pixel_error
@@ -2237,9 +2237,9 @@ def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles, numr, x
 			pixel_error = +1.0e23
 			for ut in ts:
 				# we do not care which position minimizes the error
-				pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+				pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
-			pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+			pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 
 
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
@@ -2255,7 +2255,7 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	pass#IMPORTIMPORTIMPORT from alignment import search_range
 	pass#IMPORTIMPORTIMPORT from utilities    import compose_transform2
 	pass#IMPORTIMPORTIMPORT from EMAN2 import Vec2f
-	global_def.ERROR("proj_ali_incore_delta","OBSOLETED",1)
+	sparx_global_def.ERROR("proj_ali_incore_delta","OBSOLETED",1)
 
 	mode = "F"
 	#  center is in SPIDER convention
@@ -2284,7 +2284,7 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	#ang = (ang+360.0)%360.0
 	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-	angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+	angb, sxb, syb, ct = sparx_utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 	if mirror:
 		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 		theta = 180.0-refrings[iref].get_attr("theta")
@@ -2306,9 +2306,9 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 		pixel_error = +1.0e23
 		for ut in ts:
 			# we do not care which position minimizes the error
-			pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+			pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 	else:
-		pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+		pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 
 	if finfo:
 		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -2326,9 +2326,9 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	#from utilities   import set_params_proj, get_params_proj
 	pass#IMPORTIMPORTIMPORT from EMAN2 import Vec2f
 	pass#IMPORTIMPORTIMPORT from math         import cos, sin, pi
-	global_def.ERROR("proj_ali_incore_local_psi","OBSOLETED",1)
+	sparx_global_def.ERROR("proj_ali_incore_local_psi","OBSOLETED",1)
 	if finfo:
-		phi, theta, psi, s2x, s2y = utilities.get_params_proj(data)
+		phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(data)
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 
@@ -2362,7 +2362,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = sparx_utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
@@ -2385,9 +2385,9 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 			pixel_error = +1.0e23
 			for ut in ts:
 				# we do not care which position minimizes the error
-				pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+				pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
-			pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+			pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
@@ -2446,9 +2446,9 @@ def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, c
 	newpar = [None]*len(data)
 	for i in range(nang):
 		###if myid == main_node:  print "  Angle :",i,time()-at
-		if kb3D:  temp = projection.prgs(volprep, kb3D, [refang[i][0],refang[i][1],0.0, 0.0,0.0])
-		else:     temp = projection.prgl(volprep,[ refang[i][0],refang[i][1],0.0, 0.0,0.0], 1, True)
-		crefim,kb = fundamentals.prep_refim_gridding(temp, wr, numr)
+		if kb3D:  temp = sparx_projection.prgs(volprep, kb3D, [refang[i][0],refang[i][1],0.0, 0.0,0.0])
+		else:     temp = sparx_projection.prgl(volprep,[ refang[i][0],refang[i][1],0.0, 0.0,0.0], 1, True)
+		crefim,kb = sparx_fundamentals.prep_refim_gridding(temp, wr, numr)
 		for kl,emimage in enumerate(data):
 			psi, sxs, sys, mirror, peak = ornq_gridding(emimage, crefim, shifts, shrink, kb, "F", numr, cnx, cnx, deltapsi = delta_psi)
 			#print  "%4d     %12.3e     %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(i,peak,refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink)
@@ -2532,8 +2532,8 @@ def ali3D_direct(data, volprep, refang, delta_psi, shifts, myid, main_node, lent
 		for j in range(npsi):
 			iangpsi = j*1000 + iang
 			psi = j*delta_psi
-			if kb3D:  temp = fundamentals.fft(projection.prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
-			else:     temp = projection.prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
+			if kb3D:  temp = sparx_fundamentals.fft(sparx_projection.prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
+			else:     temp = sparx_projection.prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
 			temp.set_attr("is_complex",0)
 			nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(temp, temp, None))
 			for kl,emimage in enumerate(data):
@@ -2621,8 +2621,8 @@ def ali3D_direct_preselect(data, volprep, oldcodedparams, refang, delta_psi, shi
 		for j in range(npsi):
 			iangpsi = j + iang
 			psi = j*delta_psi
-			if kb3D:  temp = fundamentals.fft(projection.prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
-			else:     temp = projection.prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
+			if kb3D:  temp = sparx_fundamentals.fft(sparx_projection.prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
+			else:     temp = sparx_projection.prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
 			temp.set_attr("is_complex",0)
 			nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(temp, temp))
 			for kl,emimage in enumerate(data):
@@ -2698,7 +2698,7 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 	ac = numpy.cos(numpy.radians(an))
 	dvec = [None]*len(data)
 	for kl in range(len(data)):
-		dvec[kl] = utilities.getfvec(oldangs[kl][0], oldangs[kl][1])
+		dvec[kl] = sparx_utilities.getfvec(oldangs[kl][0], oldangs[kl][1])
 	
 
 	at = time.time()
@@ -2709,12 +2709,12 @@ def ali3D_direct_local(data, volprep, refang, delta_psi, shifts, an, oldangs, my
 	for i in range(nang):
 		#if myid == main_node:  print "  Angle :",i,time()-at
 		iang = i*100000000
-		rdir = utilities.getfvec(refang[i][0],refang[i][1])
+		rdir = sparx_utilities.getfvec(refang[i][0],refang[i][1])
 		for j in range(npsi):
 			iangpsi = j*1000 + iang
 			psi = j*delta_psi
-			if kb3D:  temp = fundamentals.fft(projection.prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
-			else:     temp = projection.prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
+			if kb3D:  temp = sparx_fundamentals.fft(sparx_projection.prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
+			else:     temp = sparx_projection.prgl(volprep,[ refang[i][0],refang[i][1],psi, 0.0,0.0], 1, False)
 			temp.set_attr("is_complex",0)
 			nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(temp, temp))
 			for kl,emimage in enumerate(data):
@@ -2761,7 +2761,7 @@ def proj_ali_incore_direct(data, ref_angs, numr, xrng, yrng, step, finfo=None, s
 
 	if finfo:
 		pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
-		phi, theta, psi, s2x, s2y = utilities.get_params_proj(data)
+		phi, theta, psi, s2x, s2y = sparx_utilities.get_params_proj(data)
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 
@@ -2808,9 +2808,9 @@ def proj_ali_incore_direct(data, ref_angs, numr, xrng, yrng, step, finfo=None, s
 		pixel_error = +1.0e23
 		for ut in ts:
 			# we do not care which position minimizes the error
-			pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+			pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 	else:
-		pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+		pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 	
 
 	if finfo:
@@ -2835,7 +2835,7 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	phi, theta, psi, sxi, syi = utilities.get_params_proj(data)
+	phi, theta, psi, sxi, syi = sparx_utilities.get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -2853,7 +2853,7 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = sparx_utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
@@ -2887,7 +2887,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = numpy.cos(numpy.radians(an))
-	phi, theta, psi, sxi, syi = utilities.get_params_proj(data)
+	phi, theta, psi, sxi, syi = sparx_utilities.get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -2906,7 +2906,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = sparx_utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
@@ -2940,7 +2940,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	phi, theta, psi, sxi, syi = utilities.get_params_proj(data)
+	phi, theta, psi, sxi, syi = sparx_utilities.get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -2956,7 +2956,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
-		angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = sparx_utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
@@ -2985,7 +2985,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = numpy.cos(numpy.radians(an))
-	phi, theta, psi, sxi, syi = utilities.get_params_proj(data)
+	phi, theta, psi, sxi, syi = sparx_utilities.get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -3000,7 +3000,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		EMAN2_cppwrap.Util.multiref_polar_ali_helical_90_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
-		angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = sparx_utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
@@ -3030,7 +3030,7 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = numpy.cos(numpy.radians(an))
-	phi, theta, psi, sxi, syi = utilities.get_params_proj(data)
+	phi, theta, psi, sxi, syi = sparx_utilities.get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -3049,7 +3049,7 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = sparx_utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
@@ -3086,7 +3086,7 @@ def proj_ali_helicon_90_local_direct(data, refrings, xrng, yrng, \
 	#cnx  = nx//2 + 1
 	#cny  = ny//2 + 1
 	ant = numpy.cos(numpy.radians(an))
-	phi, theta, psi, tx, ty = utilities.get_params_proj(data)
+	phi, theta, psi, tx, ty = sparx_utilities.get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -3145,7 +3145,7 @@ def proj_ali_helicon_90_local_direct1(data, refrings, xrng, yrng, \
 	#cnx  = nx//2 + 1
 	#cny  = ny//2 + 1
 
-	phi, theta, psi, tx, ty = utilities.get_params_proj(data)
+	phi, theta, psi, tx, ty = sparx_utilities.get_params_proj(data)
 
 	#  directali will do fft of the input image and 180 degs rotation, if necessary.  Eventually, this would have to be pulled up.
 	angb, tx,ty, tp = directaligridding1(data, kb, refrings, psi_max, psi_step, xrng, yrng, stepx, stepy, direction)
@@ -3177,7 +3177,7 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = numpy.cos(an*numpy.pi/180.0)
-	phi, theta, psi, sxi, syi = utilities.get_params_proj(data)
+	phi, theta, psi, sxi, syi = sparx_utilities.get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -3192,7 +3192,7 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		EMAN2_cppwrap.Util.multiref_polar_ali_helicon_90_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
-		angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = sparx_utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
@@ -3214,7 +3214,7 @@ def ali_vol_func(params, data):
 	#print  data[3]
 	#cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][6], params[0], params[1], params[2],params[3], params[4], params[5],1.0)
 	#print  cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale
-	x = fundamentals.rot_shift3D(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
+	x = sparx_fundamentals.rot_shift3D(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
 
 	res = -x.cmp("ccc", data[1], {"mask":data[2]})
 	#print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %10.5f" %(params[0], params[1], params[2],params[3], params[4], params[5], -res)
@@ -3228,18 +3228,18 @@ def ali_vol_func_julio(params, data):
 	#print  data[3]
 	#cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][6], params[0], params[1], params[2],params[3], params[4], params[5],1.0)
 	#print  cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale
-	x = fundamentals.rot_shift3D(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
+	x = sparx_fundamentals.rot_shift3D(data[0], params[0], params[1], params[2], params[3], params[4], params[5], 1.0)
 
 	if (data[3] == None):
 		mask = data[2]
 	elif (data[3] > 0.0):
-		mask = morphology.binarize(x, data[3])
+		mask = sparx_morphology.binarize(x, data[3])
 	else:
-		mask = fundamentals.cyclic_shift(data[2], int(round(params[3],0)), int(round(params[4],0)), int(round(params[5],0)))
+		mask = sparx_fundamentals.cyclic_shift(data[2], int(round(params[3],0)), int(round(params[4],0)), int(round(params[5],0)))
 
 	if (data[5] > 1):
 		pass#IMPORTIMPORTIMPORT from EMAN2 import rsconvolution
-		gker = utilities.model_gauss(1, 7, 7, 7)
+		gker = sparx_utilities.model_gauss(1, 7, 7, 7)
 		x = EMAN2_cppwrap.rsconvolution(x, gker)
 		x = EMAN2_cppwrap.Util.decimate(x, data[5], data[5], data[5])
 		mask = EMAN2_cppwrap.Util.decimate(mask, data[5], data[5], data[5])
@@ -3264,14 +3264,14 @@ def ali_vol_func_grid(params, data):
 	tr = EMAN2_cppwrap.Transform({"type":"xyz","xtilt":params[0],"ytilt":params[1],"ztilt":params[2], "tx":params[3], "ty":params[4], "tz":params[5]})
 	qt = tr.get_params("spider")
 
-	x = fundamentals.rot_shift3D_grid(data[0], qt['phi'], qt['theta'], qt['psi'], qt['tx'], qt['ty'], qt['tz'], 1.0, data[5], "background", data[6])
+	x = sparx_fundamentals.rot_shift3D_grid(data[0], qt['phi'], qt['theta'], qt['psi'], qt['tx'], qt['ty'], qt['tz'], 1.0, data[5], "background", data[6])
 
 	if (data[3] == None):
 		mask = data[2]
 	elif (data[3] > 0.0):
-		mask = morphology.binarize(x, data[3])
+		mask = sparx_morphology.binarize(x, data[3])
 	else:
-		mask = fundamentals.cyclic_shift(data[2], int(round(params[3],0)), int(round(params[4],0)), int(round(params[5],0)))
+		mask = sparx_fundamentals.cyclic_shift(data[2], int(round(params[3],0)), int(round(params[4],0)), int(round(params[5],0)))
 
 	res = -x.cmp(data[4], data[1], {"mask":mask, "normalize":0})
 	return res
@@ -3283,7 +3283,7 @@ def ali_vol_func_nopsi(params, data):
 	#print  data[3]
 	#cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][6], params[0], params[1], params[2],params[3], params[4], params[5],1.0)
 	#print  cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale
-	x = fundamentals.rot_shift3D(data[0], params[0], params[1], 0.0, params[2], params[3], params[4], 1.0)
+	x = sparx_fundamentals.rot_shift3D(data[0], params[0], params[1], 0.0, params[2], params[3], params[4], 1.0)
 	#res = -x.cmp("ccc", data[1], {"mask":data[2]})
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
 	#print  " %9.3f %9.3f %9.3f %9.3f %9.3f  %10.5f" %(params[0], params[1], params[2],params[3], params[4], -res)
@@ -3292,8 +3292,8 @@ def ali_vol_func_nopsi(params, data):
 def ali_vol_func_rotate(params, data):
 	pass#IMPORTIMPORTIMPORT from utilities    import compose_transform3
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= utilities.compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], params[0], params[1], params[2],0.0,0.0,0.0,1.0)
-	x = fundamentals.rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= sparx_utilities.compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], params[0], params[1], params[2],0.0,0.0,0.0,1.0)
+	x = sparx_fundamentals.rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
 	#print  " %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2], -res)
 	return res
@@ -3301,8 +3301,8 @@ def ali_vol_func_rotate(params, data):
 def ali_vol_func_shift(params, data):
 	pass#IMPORTIMPORTIMPORT from utilities    import compose_transform3
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= utilities.compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], 0.0,0.0,0.0, params[0], params[1], params[2],1.0)
-	x = fundamentals.rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= sparx_utilities.compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], 0.0,0.0,0.0, params[0], params[1], params[2],1.0)
+	x = sparx_fundamentals.rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
 	#print  " %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2], -res)
 	return res
@@ -3310,8 +3310,8 @@ def ali_vol_func_shift(params, data):
 def ali_vol_func_scale(params, data):
 	pass#IMPORTIMPORTIMPORT from utilities    import compose_transform3
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= utilities.compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], params[0], params[1], params[2], params[3], params[4], params[5], params[6])
-	x = fundamentals.rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= sparx_utilities.compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+	x = sparx_fundamentals.rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
 	#print  " %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f %9.3f  %12.3e" %(params[0], params[1], params[2],params[3], params[4], params[5], params[6], -res)
 	return res
@@ -3319,8 +3319,8 @@ def ali_vol_func_scale(params, data):
 def ali_vol_func_only_scale(params, data):
 	pass#IMPORTIMPORTIMPORT from utilities    import compose_transform3
 	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift3D
-	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= utilities.compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], 0.0,0.0,0.0,0.0,0.0,0.0, params[0])
-	x = fundamentals.rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
+	cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale= sparx_utilities.compose_transform3(data[3][0], data[3][1], data[3][2], data[3][3], data[3][4], data[3][5], data[3][7], 0.0,0.0,0.0,0.0,0.0,0.0, params[0])
+	x = sparx_fundamentals.rot_shift3D(data[0], cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale)
 	res = -x.cmp(data[4], data[1], {"mask":data[2]})
 	#print  " %9.3f  %12.3e" %(params[0], -res)
 	return res
@@ -3344,7 +3344,7 @@ def helios(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0, rmin = 0
 	#print  " input params ",params
 	data=[vol, params, pixel_size, section_use, radius, rmin]
 	new_params = [dp, dphi]
-	new_params = utilities.amoeba(new_params, [0.05*dp, 0.05*abs(dphi)], helios_func, 1.0e-2, 1.0e-2, 50, data)
+	new_params = sparx_utilities.amoeba(new_params, [0.05*dp, 0.05*abs(dphi)], helios_func, 1.0e-2, 1.0e-2, 50, data)
 	#print  " new params ", new_params[0], new_params[1]
 	return  vol.helicise(pixel_size, new_params[0][0], new_params[0][1], section_use, radius), new_params[0][0], new_params[0][1]
 
@@ -3472,9 +3472,9 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 		sx     = data[im].get_attr('sx')
 		sy     = data[im].get_attr('sy')
 		mirror = data[im].get_attr('mirror')
-		ddata  = fundamentals.prepg(data[im], kb)
+		ddata  = sparx_fundamentals.prepg(data[im], kb)
 		ddata.set_attr_dict({'alpha': alpha, 'sx':sx, 'sy':sy, 'mirror': mirror})
-		temp   = fundamentals.rtshgkb(ddata, alpha, sx, sy, kb)
+		temp   = sparx_fundamentals.rtshgkb(ddata, alpha, sx, sy, kb)
 		if  mirror: temp.process_inplace("xform.mirror", {"axis":'x'})
 		#  Subtract current image from the average
 		refim = EMAN2_cppwrap.Util.madn_scalar(tavg, temp, -1.0/float(nima)) 
@@ -3482,13 +3482,13 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 		stuff.append(ddata)  # curent image
 		# perform amoeba alignment
 		params = [alpha, sx, sy]
-		outparams =  utilities.amoeba(params, weights, crit2d, 1.e-4, 1.e-4, 500, stuff)
+		outparams =  sparx_utilities.amoeba(params, weights, crit2d, 1.e-4, 1.e-4, 500, stuff)
 		del stuff[3]
 		del stuff[3]
 		# set parameters to the header
 		data[im].set_attr_dict({'alpha':outparams[0][0], 'sx':outparams[0][1], 'sy':outparams[0][2],'mirror': mirror})
 		# update the average
-		temp = fundamentals.rtshgkb(ddata, outparams[0][0], outparams[0][1], outparams[0][2], kb)
+		temp = sparx_fundamentals.rtshgkb(ddata, outparams[0][0], outparams[0][1], outparams[0][2], kb)
 		if  mirror: temp.process_inplace("xform.mirror",{"axis":'x'})
 		#check whether the criterion actually increased
 		# add current image to the average
@@ -3567,9 +3567,9 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	if(ou<0):  ou = min(nx//2-1,ny//2-1)
 	if(yrng < 0):  yrng = xrng
 	if(ou<2):
-		global_def.ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
-	sci = fundamentals.scf(image)
-	scr = fundamentals.scf(refim)
+		sparx_global_def.ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
+	sci = sparx_fundamentals.scf(image)
+	scr = sparx_fundamentals.scf(refim)
 	first_ring = 1
 
 	#alpha1, sxs, sys, mirr, peak1 = align2d_no_mirror(scf(image), scr, last_ring=ou, mode="H")
@@ -3589,7 +3589,7 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	EMAN2_cppwrap.Util.Frngs(crefim, numr)
 	EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
 	alpha1, sxs, sys, mirr, peak1 = ornq(sci, crefim, [0.0], [0.0], 1.0, "H", numr, cnx, cny)
-	alpha2, sxs, sys, mirr, peak2 = ornq(fundamentals.mirror(sci), crefim, [0.0], [0.0], 1.0, "H", numr, cnx, cny)
+	alpha2, sxs, sys, mirr, peak2 = ornq(sparx_fundamentals.mirror(sci), crefim, [0.0], [0.0], 1.0, "H", numr, cnx, cny)
 
 
 	if(peak1>peak2):
@@ -3600,12 +3600,12 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 		alpha = -alpha2
 	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
 	nry = min( 2*(yrng+1)+1, (((ny-2)//2)*2+1) )
-	frotim = fundamentals.fft( refim )
-	ccf1 = EMAN2_cppwrap.Util.window(fundamentals.ccf(fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim),nrx,nry)
-	p1 = utilities.peak_search(ccf1)
+	frotim = sparx_fundamentals.fft( refim )
+	ccf1 = EMAN2_cppwrap.Util.window(sparx_fundamentals.ccf(sparx_fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim),nrx,nry)
+	p1 = sparx_utilities.peak_search(ccf1)
 	
-	ccf2 = EMAN2_cppwrap.Util.window(fundamentals.ccf(fundamentals.rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim),nrx,nry)
-	p2 = utilities.peak_search(ccf2)
+	ccf2 = EMAN2_cppwrap.Util.window(sparx_fundamentals.ccf(sparx_fundamentals.rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim),nrx,nry)
+	p2 = sparx_utilities.peak_search(ccf2)
 	#print p1
 	#print p2
 
@@ -3628,7 +3628,7 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 		ccf1 = ccf2
 	pass#IMPORTIMPORTIMPORT from utilities import model_blank
 	#print cx,cy
-	z = utilities.model_blank(3,3)
+	z = sparx_utilities.model_blank(3,3)
 	for i in range(3):
 		for j in range(3):
 			z[i,j] = ccf1[i+cx-1,j+cy-1]
@@ -3652,8 +3652,8 @@ def multalign2dscf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	if(ou<0):  ou = min(nx//2-1,ny//2-1)
 	if(yrng < 0):  yrng = xrng
 	if(ou<2):
-		global_def.ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
-	sci = fundamentals.scf(image)
+		sparx_global_def.ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
+	sci = sparx_fundamentals.scf(image)
 	first_ring = 1
 	# center in SPIDER convention
 	cnx = nx//2+1
@@ -3661,7 +3661,7 @@ def multalign2dscf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 
 	cimage = EMAN2_cppwrap.Util.Polar2Dm(sci, cnx, cny, numr, "H")
 	EMAN2_cppwrap.Util.Frngs(cimage, numr)
-	mimage = EMAN2_cppwrap.Util.Polar2Dm(fundamentals.mirror(sci), cnx, cny, numr, "H")
+	mimage = EMAN2_cppwrap.Util.Polar2Dm(sparx_fundamentals.mirror(sci), cnx, cny, numr, "H")
 	EMAN2_cppwrap.Util.Frngs(mimage, numr)
 
 	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
@@ -3678,8 +3678,8 @@ def multalign2dscf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 		#print  alpha1, peak1
 		#print  alpha2, peak2
 
-		ccf1 = EMAN2_cppwrap.Util.window(fundamentals.ccf(fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, numpy.mirr), frotim[iki]), nrx, nry)
-		p1 = utilities.peak_search(ccf1)
+		ccf1 = EMAN2_cppwrap.Util.window(sparx_fundamentals.ccf(sparx_fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, numpy.mirr), frotim[iki]), nrx, nry)
+		p1 = sparx_utilities.peak_search(ccf1)
 
 		sxs = -p1[0][4]
 		sys = -p1[0][5]
@@ -3688,7 +3688,7 @@ def multalign2dscf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 		peak = p1[0][0]
 
 		#print cx,cy
-		z = utilities.model_blank(3,3)
+		z = sparx_utilities.model_blank(3,3)
 		for i in range(3):
 			for j in range(3):
 				z[i,j] = ccf1[i+cx-1,j+cy-1]
@@ -3717,8 +3717,8 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	if(ou<0):  ou = min(nx//2-1,ny//2-1)
 	if(yrng < 0):  yrng = xrng
 	if(ou<2):
-		global_def.ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
-	sci = fundamentals.scf(image)
+		sparx_global_def.ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
+	sci = sparx_fundamentals.scf(image)
 	first_ring = 1
 	# center in SPIDER convention
 	cnx = nx//2+1
@@ -3726,7 +3726,7 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 
 	cimage = EMAN2_cppwrap.Util.Polar2Dm(sci, cnx, cny, numr, "H")
 	EMAN2_cppwrap.Util.Frngs(cimage, numr)
-	mimage = EMAN2_cppwrap.Util.Polar2Dm(fundamentals.mirror(sci), cnx, cny, numr, "H")
+	mimage = EMAN2_cppwrap.Util.Polar2Dm(sparx_fundamentals.mirror(sci), cnx, cny, numr, "H")
 	EMAN2_cppwrap.Util.Frngs(mimage, numr)
 
 	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
@@ -3753,11 +3753,11 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 			mirr = 1
 			alpha = -alpha2
 
-		ccf1 = EMAN2_cppwrap.Util.window(fundamentals.ccf(fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
-		p1 = utilities.peak_search(ccf1)
+		ccf1 = EMAN2_cppwrap.Util.window(sparx_fundamentals.ccf(sparx_fundamentals.rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
+		p1 = sparx_utilities.peak_search(ccf1)
 	
-		ccf2 = EMAN2_cppwrap.Util.window(fundamentals.ccf(fundamentals.rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
-		p2 = utilities.peak_search(ccf2)
+		ccf2 = EMAN2_cppwrap.Util.window(sparx_fundamentals.ccf(sparx_fundamentals.rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
+		p2 = sparx_utilities.peak_search(ccf2)
 		#print p1
 		#print p2
 
@@ -3779,7 +3779,7 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 			cy = int(p2[0][2])
 			ccf1 = ccf2
 		#print cx,cy
-		z = utilities.model_blank(3,3)
+		z = sparx_utilities.model_blank(3,3)
 		for i in range(3):
 			for j in range(3):
 				z[i,j] = ccf1[i+cx-1,j+cy-1]
@@ -3867,31 +3867,31 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	
 	nx = image.get_xsize()
 	if(ou<0):  ou = nx//2-1
-	mask = utilities.model_circle(ou,nx,nx)
+	mask = sparx_utilities.model_circle(ou,nx,nx)
 	nk = int(psimax/psistep)
 	nm = 2*nk+1
 	nc = nk + 1
 	refs = [None]*nm*2
 	for i in range(nm):
-		refs[2*i] = fundamentals.fft(fundamentals.rot_shift2D(refim, (i-nc)*psistep)*mask)
-		refs[2*i+1] = fundamentals.fft(fundamentals.rot_shift2D(refim, (i-nc)*psistep+180.0)*mask)
-	ims = fundamentals.fft(image)
+		refs[2*i] = sparx_fundamentals.fft(sparx_fundamentals.rot_shift2D(refim, (i-nc)*psistep)*mask)
+		refs[2*i+1] = sparx_fundamentals.fft(sparx_fundamentals.rot_shift2D(refim, (i-nc)*psistep+180.0)*mask)
+	ims = sparx_fundamentals.fft(image)
 	ama = -1.e23
 	bang = 0.
 	bsx = 0.
 	bsy = 0.
 	for i in range(1,nm*2):
-		c = fundamentals.ccf(ims, refs[i])
+		c = sparx_fundamentals.ccf(ims, refs[i])
 		#c.write_image('rer.hdf')
 		#exit()
 		w = EMAN2_cppwrap.Util.window(c,2*xrng+1,2*yrng+1)
-		pp =utilities.peak_search(w)[0]
+		pp =sparx_utilities.peak_search(w)[0]
 		px = int(pp[4])
 		py = int(pp[5])
 		if( pp[0] == 1.0 and px == 0 and py == 0):
 			pass #XSH, YSH, PEAKV = 0.,0.,0.
 		else:
-			ww = utilities.model_blank(3,3)
+			ww = sparx_utilities.model_blank(3,3)
 			ux = int(pp[1])
 			uy = int(pp[2])
 			for k in range(3):
@@ -3907,7 +3907,7 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	# returned parameters have to be inverted
 	bang = (bang//2-nc)*psistep + 180.*(bang%2)
 	print(bang,bsx,bsy)
-	bang, bsx, bsy, i = utilities.inverse_transform2(bang, bsx, bsy)
+	bang, bsx, bsy, i = sparx_utilities.inverse_transform2(bang, bsx, bsy)
 	return bang, bsx, bsy, ama
 
 
@@ -3919,38 +3919,38 @@ def align2d_direct3(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, 
 	
 	nx = input_images[0].get_xsize()
 	if(ou<0):  ou = nx//2-1
-	mask = utilities.model_circle(ou,nx,nx)
+	mask = sparx_utilities.model_circle(ou,nx,nx)
 	nk = int(psimax/psistep)
 	nm = 2*nk+1
 	nc = nk + 1
 	refs = [None]*nm*2
 	for i in range(nm):
-		temp = fundamentals.rot_shift2D(refim, (i-nc)*psistep)*mask
-		refs[2*i] = [fundamentals.fft(temp), fundamentals.fft(fundamentals.mirror(temp))]
-		temp = fundamentals.rot_shift2D(refim, (i-nc)*psistep+180.0)*mask
-		refs[2*i+1] = [fundamentals.fft(temp), fundamentals.fft(fundamentals.mirror(temp))]
+		temp = sparx_fundamentals.rot_shift2D(refim, (i-nc)*psistep)*mask
+		refs[2*i] = [sparx_fundamentals.fft(temp), sparx_fundamentals.fft(sparx_fundamentals.mirror(temp))]
+		temp = sparx_fundamentals.rot_shift2D(refim, (i-nc)*psistep+180.0)*mask
+		refs[2*i+1] = [sparx_fundamentals.fft(temp), sparx_fundamentals.fft(sparx_fundamentals.mirror(temp))]
 	del temp
 
 	results = []
 	mir = 0
 	for image in input_images:
-		if CTF:  ims = filter.filt_ctf(fundamentals.fft(image), image.get_attr("ctf"))
-		else:    ims = fundamentals.fft(image)
+		if CTF:  ims = sparx_filter.filt_ctf(sparx_fundamentals.fft(image), image.get_attr("ctf"))
+		else:    ims = sparx_fundamentals.fft(image)
 		ama = -1.e23
 		bang = 0.
 		bsx = 0.
 		bsy = 0.
 		for i in range(nm*2):
 			for mirror_flag in [0, 1]:
-				c = fundamentals.ccf(ims, refs[i][mirror_flag])
+				c = sparx_fundamentals.ccf(ims, refs[i][mirror_flag])
 				w = EMAN2_cppwrap.Util.window(c,2*xrng+1,2*yrng+1)
-				pp =utilities.peak_search(w)[0]
+				pp =sparx_utilities.peak_search(w)[0]
 				px = int(pp[4])
 				py = int(pp[5])
 				if( pp[0] == 1.0 and px == 0 and py == 0):
 					pass #XSH, YSH, PEAKV = 0.,0.,0.
 				else:
-					ww = utilities.model_blank(3,3)
+					ww = sparx_utilities.model_blank(3,3)
 					ux = int(pp[1])
 					uy = int(pp[2])
 					for k in range(3):
@@ -3966,7 +3966,7 @@ def align2d_direct3(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, 
 						mir = mirror_flag
 		# returned parameters have to be inverted
 		bang = (bang//2-nc)*psistep + 180.*(bang%2)
-		bang, bsx, bsy, _ = utilities.inverse_transform2(bang, (1 - 2*mir)*bsx, bsy, mir)
+		bang, bsx, bsy, _ = sparx_utilities.inverse_transform2(bang, (1 - 2*mir)*bsx, bsy, mir)
 		results.append([bang, bsx, bsy, mir, ama])
 	return results
 
@@ -3978,29 +3978,29 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 
 	nx = image.get_xsize()
 	if(ou<0):  ou = nx//2-1
-	mask = utilities.model_circle(ou,nx,nx)
+	mask = sparx_utilities.model_circle(ou,nx,nx)
 	nk = int(psimax/psistep)
 	nm = 2*nk+1
 	nc = nk + 1
 	refs = [None]*nm
 	for i in range(nm):
-		refs[i] = fundamentals.fft(fundamentals.rot_shift2D(refim, (i-nc)*psistep)*mask)
-	ims = fundamentals.fft(image)
-	imr = fundamentals.fft(fundamentals.rot_shift2D(image, 180.0))
+		refs[i] = sparx_fundamentals.fft(sparx_fundamentals.rot_shift2D(refim, (i-nc)*psistep)*mask)
+	ims = sparx_fundamentals.fft(image)
+	imr = sparx_fundamentals.fft(sparx_fundamentals.rot_shift2D(image, 180.0))
 	ama  = -1.0e23
 	bang = 0.0
 	bsx  = 0.0
 	bsy  = 0.0
 	for i in range(nm):
-		c = fundamentals.ccf(ims, refs[i])
+		c = sparx_fundamentals.ccf(ims, refs[i])
 		w = EMAN2_cppwrap.Util.window(c,2*xrng+1,2*yrng+1)
-		pp =utilities.peak_search(w)[0]
+		pp =sparx_utilities.peak_search(w)[0]
 		px = int(pp[4])
 		py = int(pp[5])
 		if( pp[0] == 1.0 and px == 0 and py == 0):
 			pass #XSH, YSH, PEAKV = 0.,0.,0.
 		else:
-			ww = utilities.model_blank(3,3)
+			ww = sparx_utilities.model_blank(3,3)
 			ux = int(pp[1])
 			uy = int(pp[2])
 			for k in range(3):
@@ -4014,18 +4014,18 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 				bsy = py+round(YSH,2)
 				bang = i
 				rt180 = 0.
-		c = fundamentals.ccf(imr, refs[i])
+		c = sparx_fundamentals.ccf(imr, refs[i])
 		#c.write_image('imr.hdf')
 		#exit()
-		c = fundamentals.rot_shift2D(c,180)
+		c = sparx_fundamentals.rot_shift2D(c,180)
 		w = EMAN2_cppwrap.Util.window(c,2*xrng+1,2*yrng+1)
-		pp =utilities.peak_search(w)[0]
+		pp =sparx_utilities.peak_search(w)[0]
 		px = int(pp[4])
 		py = int(pp[5])
 		if( pp[0] == 1.0 and px == 0 and py == 0):
 			pass #XSH, YSH, PEAKV = 0.,0.,0.
 		else:
-			ww = utilities.model_blank(3,3)
+			ww = sparx_utilities.model_blank(3,3)
 			ux = int(pp[1])
 			uy = int(pp[2])
 			for k in range(3):
@@ -4042,7 +4042,7 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	# returned parameters have to be inverted
 	bang = 180-(bang//2-nc)*psistep
 	print(bang, bsx, bsy,rt180)
-	bang, bsx, bsy, i = utilities.inverse_transform2(bang, bsx, bsy)
+	bang, bsx, bsy, i = sparx_utilities.inverse_transform2(bang, bsx, bsy)
 	return bang, bsx, bsy, ama
 
 
@@ -4060,9 +4060,9 @@ def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_r
 	MAX_XRNG = nx/2
 	MAX_YRNG=ny/2
 	if xrng >= MAX_XRNG:
-		global_def.ERROR('Translation search range in x is at most %d'%MAX_XRNG, "align2d ", 1)
+		sparx_global_def.ERROR('Translation search range in x is at most %d'%MAX_XRNG, "align2d ", 1)
 	if yrng >= MAX_YRNG:
-		global_def.ERROR('Translation search range in y is at most %d'%MAX_YRNG, "align2d ", 1)
+		sparx_global_def.ERROR('Translation search range in y is at most %d'%MAX_YRNG, "align2d ", 1)
 	if(last_ring == 0):  last_ring = nx/2-2-int(max(xrng,yrng))
 	# center in SPIDER convention
 	cnx = nx//2+1
@@ -4128,7 +4128,7 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	refi = refim.FourInterpol(N,N,1,0)  
 	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
 	q = EMAN2_cppwrap.Processor.EMFourierFilter(refi,params)
-	refi = fundamentals.fft(q)
+	refi = sparx_fundamentals.fft(q)
 	crefim = EMAN2_cppwrap.Util.Polar2Dmi(refi,cnx,cny,numr,mode,kb)
 
 	EMAN2_cppwrap.Util.Frngs(crefim, numr)
@@ -4155,18 +4155,18 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 	try:
 		wn = len(refs)
 		if(wn != nr):
-			global_def.ERROR("Incorrect number of reference images","directali",1)
+			sparx_global_def.ERROR("Incorrect number of reference images","directali",1)
 		ref = refs
 	except:
 		ref = [None]*nr
-		for i in range(nr):  ref[i] = fundamentals.fft(fundamentals.rot_shift2D(refs,(i-nc)*psistep))
+		for i in range(nr):  ref[i] = sparx_fundamentals.fft(sparx_fundamentals.rot_shift2D(refs,(i-nc)*psistep))
 
 	#  Have to add 1 as otherwise maximum on the edge of the window will not be found
 	wnx = 2*(xrng+1) + 1
 	wny = 2*(yrng+1) + 1
 
-	if updown == "both" or updown == "up" :    ima = fundamentals.fft(inima)
-	if updown == "both" or updown == "down" :  imm = fundamentals.fft(fundamentals.rot_shift2D(inima,180.0, interpolation_method = 'linear'))
+	if updown == "both" or updown == "up" :    ima = sparx_fundamentals.fft(inima)
+	if updown == "both" or updown == "down" :  imm = sparx_fundamentals.fft(sparx_fundamentals.rot_shift2D(inima,180.0, interpolation_method = 'linear'))
 
 	print(" in ali  ", psimax, psistep, xrng, yrng, wnx, wny, nr,updown) 
 	ma1  = -1.e23
@@ -4183,9 +4183,9 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 	"""
 	for i in range(nr):
 		if updown == "both" or updown == "up" :
-			c = fundamentals.ccf(ima,ref[i])
+			c = sparx_fundamentals.ccf(ima,ref[i])
 			w = EMAN2_cppwrap.Util.window(c, wnx, wny)
-			pp = utilities.peak_search(w)[0]
+			pp = sparx_utilities.peak_search(w)[0]
 			px = int(pp[4])
 			py = int(pp[5])
 			print('  peak   ',i,pp)
@@ -4197,7 +4197,7 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 					ma2  = PEAKV
 					oma2 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 			else:
-				ww = utilities.model_blank(3,3)
+				ww = sparx_utilities.model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in range(3):
@@ -4214,9 +4214,9 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 					ma2  = PEAKV
 					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
 		if updown == "both" or updown == "down" :
-			c = fundamentals.ccf(imm,ref[i])
+			c = sparx_fundamentals.ccf(imm,ref[i])
 			w = EMAN2_cppwrap.Util.window(c, wnx, wny)
-			pp = utilities.peak_search(w)[0]
+			pp = sparx_utilities.peak_search(w)[0]
 			px = int(pp[4])
 			py = int(pp[5])
 			if( pp[0] == 1.0 and px == 0 and py == 0):
@@ -4226,7 +4226,7 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 					ma4  = PEAKV
 					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 			else:
-				ww = utilities.model_blank(3,3)
+				ww = sparx_utilities.model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in range(3):
@@ -4252,7 +4252,7 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 		print oma2
 		print  "        %6.2f %6.2f  %6.2f"%(oma2[-1],oma2[-4],oma2[-3])
 		"""
-		nalpha, ntx, nty, mirror = utilities.inverse_transform2(oma2[-1],oma2[-4],oma2[-3],0)
+		nalpha, ntx, nty, mirror = sparx_utilities.inverse_transform2(oma2[-1],oma2[-4],oma2[-3],0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 		peak = oma2[-2]
 	else:
@@ -4260,9 +4260,9 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 		print oma3
 		print oma4
 		"""
-		nalpha, ntx, nty, junk = utilities.compose_transform2(oma4[-1],oma4[-4],oma4[-3],1.0,180.,0,0,1)
+		nalpha, ntx, nty, junk = sparx_utilities.compose_transform2(oma4[-1],oma4[-4],oma4[-3],1.0,180.,0,0,1)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
-		nalpha, ntx, nty, mirror = utilities.inverse_transform2(nalpha, ntx, nty,0)
+		nalpha, ntx, nty, mirror = sparx_utilities.inverse_transform2(nalpha, ntx, nty,0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 		peak = oma4[-2]
 	return  nalpha, ntx, nty, peak
@@ -4286,12 +4286,12 @@ def preparerefsgrid(refs, psimax=1.0, psistep=1.0):
 	nc = nr//2
 
 	ref = [None]*nr
-	ima,kb = fundamentals.prepi(refs)
+	ima,kb = sparx_fundamentals.prepi(refs)
 	pass#IMPORTIMPORTIMPORT from math import radians
 	psisteprad = numpy.radians(psistep)
 	for i in range(nr):
 		# gridding rotation
-		ref[i] = fundamentals.fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
+		ref[i] = sparx_fundamentals.fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
 
 	return  ref
 
@@ -4318,7 +4318,7 @@ def preparerefsgrid1(refs, psimax=1.0, psistep=1.0):
 
 	
 	ref = [None]*nr
-	ima,kb = fundamentals.prepi(refs)
+	ima,kb = sparx_fundamentals.prepi(refs)
 	pass#IMPORTIMPORTIMPORT from math import radians
 	psisteprad = numpy.radians(psistep)
 # if psimax > 0:
@@ -4326,7 +4326,7 @@ def preparerefsgrid1(refs, psimax=1.0, psistep=1.0):
 # 		enr = nr + bnr
 	for i in range(0,nr):
 		# gridding rotation
-		ref[i] = fundamentals.fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
+		ref[i] = sparx_fundamentals.fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
 
 # 	if psimax == 0:
 # 		ref[0] = fft(ima.rot_scale_conv_new_background_twice(radians(reduced_psiref), 0.,0., kb, 1.))
@@ -4367,7 +4367,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 	try:
 		wn = len(refs)
 		if(wn != nr):
-			global_def.ERROR("Incorrect number of reference images","directali",1)
+			sparx_global_def.ERROR("Incorrect number of reference images","directali",1)
 		"""
 		N = refs[0].get_ysize()  # assumed square image
 		# prepare 
@@ -4382,12 +4382,12 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 		ref = refs
 	except:
 		ref = [None]*nr
-		ima,kb = fundamentals.prepi(refs)
+		ima,kb = sparx_fundamentals.prepi(refs)
 		pass#IMPORTIMPORTIMPORT from math import radians
 		psisteprad = numpy.radians(psistep)
 		for i in range(nr):
 			# gridding rotation
-			ref[i] = fundamentals.fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
+			ref[i] = sparx_fundamentals.fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
 			"""
 			ref[i] = rot_shift2D(refs,(i-nc)*psistep, interpolation_method = 'gridding')
 			ref[i] = ref[i].FourInterpol(N, N, 1,0)
@@ -4399,7 +4399,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 	rny   = int((yrng/stepy+0.5))
 	wnx = 2*rnx + 1
 	wny = 2*rny + 1
-	w = utilities.model_blank( wnx, wny)
+	w = sparx_utilities.model_blank( wnx, wny)
 	stepxx = 2*stepx
 	stepyy = 2*stepy
 	nic = N//2
@@ -4411,14 +4411,14 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 		ima = EMAN2_cppwrap.Processor.EMFourierFilter(ima,params)
 
 	if updown == "both" or updown == "down" :
-		imm = fundamentals.rot_shift2D(inima,180.0, interpolation_method = 'linear')
+		imm = sparx_fundamentals.rot_shift2D(inima,180.0, interpolation_method = 'linear')
 		imm = imm.FourInterpol(N, N, 1,0)
 		imm = EMAN2_cppwrap.Processor.EMFourierFilter(imm, params)
 
 	#fft(ima).write_image('imap.hdf')
 	pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
 	e1 = ref[0]['phi']
-	f1,e2,e3,e4,e5 = utilities.get_params_proj(inima)
+	f1,e2,e3,e4,e5 = sparx_utilities.get_params_proj(inima)
 	print(" in ali  ", e1,f1,psimax, psistep, xrng, yrng, wnx, wny, rnx, rny, stepxx, stepyy, nr,updown) 
 	ma1  = -1.e23
 	ma2  = -1.e23
@@ -4434,7 +4434,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 	"""
 	for i in range(nr):
 		if updown == "both" or updown == "up" :
-			c = fundamentals.ccf(ima,ref[i])
+			c = sparx_fundamentals.ccf(ima,ref[i])
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
 			#for q in p: print q
@@ -4442,7 +4442,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
 
-			pp = utilities.peak_search(w)[0]
+			pp = sparx_utilities.peak_search(w)[0]
 			#print '  peak   ',i,pp
 			#from sys import exit
 			#exit()
@@ -4463,7 +4463,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
 				"""
 			else:
-				ww = utilities.model_blank(3,3)
+				ww = sparx_utilities.model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in range(3):
@@ -4480,11 +4480,11 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 					ma2  = PEAKV
 					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
 		if updown == "both" or updown == "down" :
-			c = fundamentals.ccf(imm,ref[i])
+			c = sparx_fundamentals.ccf(imm,ref[i])
 			for iy in range(-rny, rny + 1):
 				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
-			pp = utilities.peak_search(w)[0]
+			pp = sparx_utilities.peak_search(w)[0]
 			px = int(pp[4])
 			py = int(pp[5])
 			if( pp[0] == 1.0 and px == 0 and py == 0):
@@ -4498,7 +4498,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 				"""
 			else:
-				ww = utilities.model_blank(3,3)
+				ww = sparx_utilities.model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in range(3):
@@ -4524,7 +4524,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 		print oma2
 		print  "        %6.2f %6.2f  %6.2f"%(oma2[-1],oma2[-4],oma2[-3])
 		"""
-		nalpha, ntx, nty, mirror = utilities.inverse_transform2(oma2[-1],oma2[-4]*stepx,oma2[-3]*stepy,0)
+		nalpha, ntx, nty, mirror = sparx_utilities.inverse_transform2(oma2[-1],oma2[-4]*stepx,oma2[-3]*stepy,0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 		peak = oma2[-2]
 	else:
@@ -4532,9 +4532,9 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 		print oma3
 		print oma4
 		"""
-		nalpha, ntx, nty, junk = utilities.compose_transform2(oma4[-1],oma4[-4]*stepx,oma4[-3]*stepy,1.0,180.,0,0,1)
+		nalpha, ntx, nty, junk = sparx_utilities.compose_transform2(oma4[-1],oma4[-4]*stepx,oma4[-3]*stepy,1.0,180.,0,0,1)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
-		nalpha, ntx, nty, mirror = utilities.inverse_transform2(nalpha, ntx, nty,0)
+		nalpha, ntx, nty, mirror = sparx_utilities.inverse_transform2(nalpha, ntx, nty,0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 		peak = oma4[-2]
 	return  nalpha, ntx, nty, peak
@@ -4576,7 +4576,7 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 	rny   = int((yrng/stepy+0.5))
 	wnx = 2*rnx + 1
 	wny = 2*rny + 1
-	w = utilities.model_blank( wnx, wny)
+	w = sparx_utilities.model_blank( wnx, wny)
 	stepxx = 2*stepx
 	stepyy = 2*stepy
 	nic = N//2
@@ -4611,7 +4611,7 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 	"""
 	for i in range(nr):
 		if updown == "both" or updown == "up" :
-			c = fundamentals.ccf(ima,ref[i])
+			c = sparx_fundamentals.ccf(ima,ref[i])
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
 			#for q in p: print q
@@ -4619,7 +4619,7 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
 
-			pp = utilities.peak_search(w)[0]
+			pp = sparx_utilities.peak_search(w)[0]
 			#print '  peak   ',i,pp
 			#from sys import exit
 			#exit()
@@ -4640,7 +4640,7 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
 				"""
 			else:
-				ww = utilities.model_blank(3,3)
+				ww = sparx_utilities.model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in range(3):
@@ -4657,11 +4657,11 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 					ma2  = PEAKV
 					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
 		if updown == "both" or updown == "down" :
-			c = fundamentals.ccf(imm,ref[i])
+			c = sparx_fundamentals.ccf(imm,ref[i])
 			for iy in range(-rny, rny + 1):
 				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
-			pp = utilities.peak_search(w)[0]
+			pp = sparx_utilities.peak_search(w)[0]
 			px = int(pp[4])
 			py = int(pp[5])
 			if( pp[0] == 1.0 and px == 0 and py == 0):
@@ -4675,7 +4675,7 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 				"""
 			else:
-				ww = utilities.model_blank(3,3)
+				ww = sparx_utilities.model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in range(3):
@@ -4714,12 +4714,12 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 		#print oma3
 		#print oma4
 
-		nalpha, ntx, nty, junk = utilities.compose_transform2(-oma4[-1],oma4[-4]*stepx,oma4[-3]*stepy,1.0,180.,0,0,1)
+		nalpha, ntx, nty, junk = sparx_utilities.compose_transform2(-oma4[-1],oma4[-4]*stepx,oma4[-3]*stepy,1.0,180.,0,0,1)
 		#nalpha = oma4[-1] + 180.0
 		#ntx    = oma4[-4]*stepx
 		#nty    = oma4[-3]*stepy
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
-		nalpha, ntx, nty, mirror = utilities.inverse_transform2(nalpha, ntx, nty, 0)
+		nalpha, ntx, nty, mirror = sparx_utilities.inverse_transform2(nalpha, ntx, nty, 0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	return  nalpha, ntx, nty, peak
 
@@ -4782,7 +4782,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	wnx = 2*rnx + 1
 	wny = 2*rny + 1
 
-	w = utilities.model_blank( wnx, wny)
+	w = sparx_utilities.model_blank( wnx, wny)
 	stepxx = 2*stepx
 	stepyy = 2*stepy
 	
@@ -4824,7 +4824,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	
 	for i in range(bnr, enr):
 		if updown == "up" :
-			c = fundamentals.ccf(ima,ref[nc+i])
+			c = sparx_fundamentals.ccf(ima,ref[nc+i])
 			#print "compute ccf time", time() - startc
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
@@ -4833,7 +4833,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
 	
-			pp = utilities.peak_search(w)[0]
+			pp = sparx_utilities.peak_search(w)[0]
 			
 			#print "find peak time", time()-startpp
 			#print '  peak   ',i,pp
@@ -4856,7 +4856,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
 				"""
 			else:
-				ww = utilities.model_blank(3,3)
+				ww = sparx_utilities.model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in range(3):
@@ -4876,11 +4876,11 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 					# if psimax == 0: 
 # 						oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,reduced_psiref]
 		if updown == "down" :
-			c = fundamentals.ccf(imm,ref[nc+i])
+			c = sparx_fundamentals.ccf(imm,ref[nc+i])
 			for iy in range(-rny, rny + 1):
 				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
-			pp = utilities.peak_search(w)[0]
+			pp = sparx_utilities.peak_search(w)[0]
 			px = int(pp[4])
 			py = int(pp[5])
 			if( pp[0] == 1.0 and px == 0 and py == 0):
@@ -4894,7 +4894,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 				"""
 			else:
-				ww = utilities.model_blank(3,3)
+				ww = sparx_utilities.model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in range(3):
@@ -4937,12 +4937,12 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 		#print oma3
 		#print oma4
 
-		nalpha, ntx, nty, junk = utilities.compose_transform2(-oma4[-1], oma4[-4]*stepx + txref,oma4[-3]*stepy + tyref,1.0,180.,0,0,1)
+		nalpha, ntx, nty, junk = sparx_utilities.compose_transform2(-oma4[-1], oma4[-4]*stepx + txref,oma4[-3]*stepy + tyref,1.0,180.,0,0,1)
 		#nalpha = oma4[-1] + 180.0
 		#ntx    = oma4[-4]*stepx
 		#nty    = oma4[-3]*stepy
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
-		nalpha, ntx, nty, mirror = utilities.inverse_transform2(nalpha, ntx, nty, 0)
+		nalpha, ntx, nty, mirror = sparx_utilities.inverse_transform2(nalpha, ntx, nty, 0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	#print  "OUT        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	return  nalpha, ntx, nty, peak
@@ -4999,7 +4999,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	rny   = int(round(yrng/stepy))
 	wnx = 2*rnx + 1
 	wny = 2*rny + 1
-	w = utilities.model_blank( wnx, wny)
+	w = sparx_utilities.model_blank( wnx, wny)
 	stepxx = 2*stepx
 	stepyy = 2*stepy
 	nicx = N//2 - 2*txref #  here one would have to add or subtract the old value.
@@ -5034,13 +5034,13 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	exit()
 	"""
 	#print "wnx wny enr-bnr", wnx,wny,enr-bnr
-	ccf3dimg = utilities.model_blank(wnx, wny, enr-bnr)
+	ccf3dimg = sparx_utilities.model_blank(wnx, wny, enr-bnr)
 	if ( rny == 0 ) : 
 		print("rny = 0 return---------------")
 		return  0.0, 0.0, 0.0, -1.e23, ccf3dimg     ## do nothing for rny=0 @ming
 	for i in range(bnr, enr, 1):
 		if updown == "up" :
-			c = fundamentals.ccf(ima,ref[i])
+			c = sparx_fundamentals.ccf(ima,ref[i])
 			#c.write_image('gcc.hdf')
 			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
 			#for q in p: print q
@@ -5052,7 +5052,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 				for k in range(wny):
 					ccf3dimg.set_value_at(j,k,i-bnr,w[j,k])
 
-			pp = utilities.peak_search(w)[0]
+			pp = sparx_utilities.peak_search(w)[0]
 			#print '  peak   ',i,pp
 			#from sys import exit
 			#exit()
@@ -5074,7 +5074,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 					oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)]
 				
 			else:
-				ww = utilities.model_blank(3,3)
+				ww = sparx_utilities.model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in range(3):
@@ -5094,7 +5094,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 					
 				#print "wnx, wny, pp, oma2", wnx, wny, pp, oma2	
 		if updown == "down" :
-			c = fundamentals.ccf(imm,ref[i])
+			c = sparx_fundamentals.ccf(imm,ref[i])
 			for iy in range(-rny, rny + 1):
 				for ix in range(-rnx, rnx + 1):
 					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
@@ -5103,7 +5103,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 				for k in range(wny):
 					 ccf3dimg.set_value_at(j,k,i-bnr,w[j,k])
 
-			pp = utilities.peak_search(w)[0]
+			pp = sparx_utilities.peak_search(w)[0]
 			px = int(pp[4])
 			py = int(pp[5])
 			if( pp[0] == 1.0 and px == 0 and py == 0):
@@ -5118,7 +5118,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 					oma4 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)]
 				
 			else:
-				ww = utilities.model_blank(3,3)
+				ww = sparx_utilities.model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in range(3):
@@ -5245,7 +5245,7 @@ def alignment3Dsnake(partition, snakeknots, nsegs, initialori, ctx, psistep, ste
 	maxi = 5000
 	scale = [nc*1.0]*len(TCK[0][1])+[rnx*1.0]*len(TCK[1][1])+[rny*1.0]*len(TCK[2][1])
 	print("begin amoeba refine... number of segments=%d, number of amoeba parameters for x-shift =%d"%(nsegs, len(sx))) #, params0
-	params,fval, numit=utilities.amoeba(params, scale, flexhelicalali, ftol, xtol, maxi, [ctx,params0, 0.0, TCK, nsegs])
+	params,fval, numit=sparx_utilities.amoeba(params, scale, flexhelicalali, ftol, xtol, maxi, [ctx,params0, 0.0, TCK, nsegs])
 	print("after amoeba refine, iter_num=%d"%numit)#, params
 	##4. get alignment parameters from refined b-spline coefficients.
 	pass#IMPORTIMPORTIMPORT import numpy as np
@@ -5272,8 +5272,8 @@ def alignment3Dsnake(partition, snakeknots, nsegs, initialori, ctx, psistep, ste
 			neworient[im][1] =  valx[im]*stepx - txref[im]
 			neworient[im][2] =  valy[im]*stepy - tyref[im]	
 		if updown == "down" :
-			nalpha, ntx, nty, junk = utilities.compose_transform2(-valang[im]*psistep, valx[im]*stepx - txref[im],valy[im]*stepy - tyref[im],1.0,180.,0,0,1)
-			nalpha, ntx, nty, mirror = utilities.inverse_transform2(nalpha, ntx, nty, 0)
+			nalpha, ntx, nty, junk = sparx_utilities.compose_transform2(-valang[im]*psistep, valx[im]*stepx - txref[im],valy[im]*stepy - tyref[im],1.0,180.,0,0,1)
+			nalpha, ntx, nty, mirror = sparx_utilities.inverse_transform2(nalpha, ntx, nty, 0)
 			neworient[im][0] = nalpha
 			neworient[im][1] = ntx
 			neworient[im][2] = nty			
@@ -5386,9 +5386,9 @@ def ali_nvol(v, mask):
 	ocrit = 1.0e20
 	gogo = True
 	niter = 0
-	for l in range(len(v)):  utilities.set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
+	for l in range(len(v)):  sparx_utilities.set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
 	while(gogo):
-		ave,var = statistics.ave_var(v)
+		ave,var = sparx_statistics.ave_var(v)
 		p = EMAN2_cppwrap.Util.infomask(var, mask, True)
 		crit = p[1]
 		if((crit-ocrit)/(crit+ocrit)/2.0 > -1.0e-2 or niter > 10):  gogo = False
@@ -5396,16 +5396,16 @@ def ali_nvol(v, mask):
 		ocrit = crit
 		ref = alivol_mask_getref(ave, mask)
 		for l in range(len(v)):
-			ophi,otht,opsi,os3x,os3y,os3z,dum, dum = utilities.get_params3D(v[l])
-			vor = fundamentals.rot_shift3D(v[l], ophi,otht,opsi,os3x,os3y,os3z )
+			ophi,otht,opsi,os3x,os3y,os3z,dum, dum = sparx_utilities.get_params3D(v[l])
+			vor = sparx_fundamentals.rot_shift3D(v[l], ophi,otht,opsi,os3x,os3y,os3z )
 			phi,tht,psi,s3x,s3y,s3z = alivol_mask(vor, ref, mask)
-			phi,tht,psi,s3x,s3y,s3z,scale = utilities.compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,ophi,otht,opsi,os3x,os3y,os3z,1.0)
-			utilities.set_params3D(v[l],  (phi,tht,psi,s3x,s3y,s3z,0,1.0))
+			phi,tht,psi,s3x,s3y,s3z,scale = sparx_utilities.compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,ophi,otht,opsi,os3x,os3y,os3z,1.0)
+			sparx_utilities.set_params3D(v[l],  (phi,tht,psi,s3x,s3y,s3z,0,1.0))
 			#print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
 	for l in range(len(v)):
-		ophi,otht,opsi,os3x,os3y,os3z,dum,dum = utilities.get_params3D(v[l])
+		ophi,otht,opsi,os3x,os3y,os3z,dum,dum = sparx_utilities.get_params3D(v[l])
 		print(l,ophi,otht,opsi,os3x,os3y,os3z)
-		v[l] = fundamentals.rot_shift3D( v[l], ophi,otht,opsi,os3x,os3y,os3z )
+		v[l] = sparx_fundamentals.rot_shift3D( v[l], ophi,otht,opsi,os3x,os3y,os3z )
 		v[l].del_attr("xform.align3d")
 	return v
 
@@ -5414,7 +5414,7 @@ def alivol_mask_getref( v, mask ):
 	v50S_ref = v.copy()
 	v50S_ref *= mask
 	cnt = v50S_ref.phase_cog()
-	utilities.set_params3D( v50S_ref, (0.0,0.0,0.0,-cnt[0],-cnt[1],-cnt[2],0,1.0) )
+	sparx_utilities.set_params3D( v50S_ref, (0.0,0.0,0.0,-cnt[0],-cnt[1],-cnt[2],0,1.0) )
 	return v50S_ref
 
 def alivol_mask( v, vref, mask ):
@@ -5423,15 +5423,15 @@ def alivol_mask( v, vref, mask ):
 	v50S_i = v.copy()
 	v50S_i *= mask
 	cnt = v50S_i.phase_cog()
-	utilities.set_params3D( v50S_i,   (0.0,0.0,0.0,-cnt[0],-cnt[1],-cnt[2],0,1.0) )
+	sparx_utilities.set_params3D( v50S_i,   (0.0,0.0,0.0,-cnt[0],-cnt[1],-cnt[2],0,1.0) )
 
-	v50S_i = applications.ali_vol_shift( v50S_i, vref, 1.0 )
-	v50S_i = applications.ali_vol_rotate(v50S_i, vref, 5.0 )
-	v50S_i = applications.ali_vol_shift( v50S_i, vref, 0.5 )
-	v50S_i = applications.ali_vol_rotate(v50S_i, vref, 1.0 )
-	phi,tht,psi,s3x,s3y,s3z,mirror,scale = utilities.get_params3D( v50S_i )
-	dun,dum,dum,cnx,cny,cnz,mirror,scale = utilities.get_params3D( vref )
-	phi,tht,psi,s3x,s3y,s3z,scale = utilities.compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,0.0,0.0,0.0,-cnx,-cny,-cnz,1.0)
+	v50S_i = sparx_applications.ali_vol_shift( v50S_i, vref, 1.0 )
+	v50S_i = sparx_applications.ali_vol_rotate(v50S_i, vref, 5.0 )
+	v50S_i = sparx_applications.ali_vol_shift( v50S_i, vref, 0.5 )
+	v50S_i = sparx_applications.ali_vol_rotate(v50S_i, vref, 1.0 )
+	phi,tht,psi,s3x,s3y,s3z,mirror,scale = sparx_utilities.get_params3D( v50S_i )
+	dun,dum,dum,cnx,cny,cnz,mirror,scale = sparx_utilities.get_params3D( vref )
+	phi,tht,psi,s3x,s3y,s3z,scale = sparx_utilities.compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,0.0,0.0,0.0,-cnx,-cny,-cnz,1.0)
 	return phi,tht,psi,s3x,s3y,s3z
 
 def ali_mvol(v, mask):
@@ -5443,10 +5443,10 @@ def ali_mvol(v, mask):
 	ocrit = 1.0e20
 	gogo = True
 	niter = 0
-	for l in range(len(v)):  utilities.set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
+	for l in range(len(v)):  sparx_utilities.set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
 	while(gogo):
-		ave,var = statistics.ave_var(v)
-		utilities.set_params3D( ave,   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
+		ave,var = sparx_statistics.ave_var(v)
+		sparx_utilities.set_params3D( ave,   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
 		p = EMAN2_cppwrap.Util.infomask(var, mask, True)
 		crit = p[1]
 		if((crit-ocrit)/(crit+ocrit)/2.0 > -1.0e-2 or niter > 10):  gogo = False
@@ -5454,16 +5454,16 @@ def ali_mvol(v, mask):
 		ocrit = crit
 		ave *= mask
 		for l in range(len(v)):
-			ophi,otht,opsi,os3x,os3y,os3z,dum, dum = utilities.get_params3D(v[l])
-			vor = fundamentals.rot_shift3D(v[l], ophi,otht,opsi,os3x,os3y,os3z )
+			ophi,otht,opsi,os3x,os3y,os3z,dum, dum = sparx_utilities.get_params3D(v[l])
+			vor = sparx_fundamentals.rot_shift3D(v[l], ophi,otht,opsi,os3x,os3y,os3z )
 			phi,tht,psi,s3x,s3y,s3z = alivol_m(vor, ave, mask)
-			phi,tht,psi,s3x,s3y,s3z,scale = utilities.compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,ophi,otht,opsi,os3x,os3y,os3z,1.0)
-			utilities.set_params3D(v[l],  (phi,tht,psi,s3x,s3y,s3z,0,1.0))
+			phi,tht,psi,s3x,s3y,s3z,scale = sparx_utilities.compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,ophi,otht,opsi,os3x,os3y,os3z,1.0)
+			sparx_utilities.set_params3D(v[l],  (phi,tht,psi,s3x,s3y,s3z,0,1.0))
 			#print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
 	for l in range(len(v)):
-		ophi,otht,opsi,os3x,os3y,os3z,dum,dum = utilities.get_params3D(v[l])
+		ophi,otht,opsi,os3x,os3y,os3z,dum,dum = sparx_utilities.get_params3D(v[l])
 		print(i,ophi,otht,opsi,os3x,os3y,os3z)
-		v[l] = fundamentals.rot_shift3D( v[l], ophi,otht,opsi,os3x,os3y,os3z )
+		v[l] = sparx_fundamentals.rot_shift3D( v[l], ophi,otht,opsi,os3x,os3y,os3z )
 		v[l].del_attr("xform.align3d")
 	return v
 
@@ -5472,13 +5472,13 @@ def alivol_m( v, vref, mask ):
 	pass#IMPORTIMPORTIMPORT from applications import ali_vol_shift, ali_vol_rotate
 	vola = v.copy()
 	vola *= mask
-	utilities.set_params3D( vola,   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0) )
+	sparx_utilities.set_params3D( vola,   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0) )
 
-	vola = applications.ali_vol_shift( vola, vref, 1.0 )
-	vola = applications.ali_vol_rotate(vola, vref, 5.0 )
-	vola = applications.ali_vol_shift( vola, vref, 0.5 )
-	vola = applications.ali_vol_rotate(vola, vref, 1.0 )
-	phi,tht,psi,s3x,s3y,s3z,mirror,scale = utilities.get_params3D( vola )
+	vola = sparx_applications.ali_vol_shift( vola, vref, 1.0 )
+	vola = sparx_applications.ali_vol_rotate(vola, vref, 5.0 )
+	vola = sparx_applications.ali_vol_shift( vola, vref, 0.5 )
+	vola = sparx_applications.ali_vol_rotate(vola, vref, 1.0 )
+	phi,tht,psi,s3x,s3y,s3z,mirror,scale = sparx_utilities.get_params3D( vola )
 	return phi,tht,psi,s3x,s3y,s3z
 
 
@@ -5602,7 +5602,7 @@ def shc(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an = -
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
 		pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
-		z1,z2,z3,z4,z5 = utilities.get_params_proj(data, "xform.anchor")
+		z1,z2,z3,z4,z5 = sparx_utilities.get_params_proj(data, "xform.anchor")
 		finfo.write("Anc parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(z1,z2,z3,-z4,-z5))
 		finfo.flush()
 
@@ -5647,14 +5647,14 @@ def shc(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an = -
 		#  Find the pixel error that is minimum over symmetry transformations
 		pass#IMPORTIMPORTIMPORT from pixel_error import max_3D_pixel_error
 		if(sym == "nomirror" or sym == "c1"):
-			pixel_error = pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
+			pixel_error = sparx_pixel_error.max_3D_pixel_error(t1, t2, numr[-3])
 		else:		
 			ts = t2.get_sym_proj(sym)
 			# only do it if it is not c1
 			pixel_error = +1.0e23
 			for ut in ts:
 				# we do not care which position minimizes the error
-				pixel_error = min(pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+				pixel_error = min(sparx_pixel_error.max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
@@ -5706,16 +5706,16 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 
 	if log == None:
 		pass#IMPORTIMPORTIMPORT from logger import Logger
-		log = logger.Logger()
+		log = sparx_logger.Logger()
 
 	if myid == main_node:
 		log.add("Start 3D centering")
 
-	xrng        = int(utilities.get_input_from_string(xr)[0])
+	xrng        = int(sparx_utilities.get_input_from_string(xr)[0])
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = int(utilities.get_input_from_string(yr)[0])
-	step        = utilities.get_input_from_string(ts)
-	delta       = utilities.get_input_from_string(delta)
+	else          :  yrng = int(sparx_utilities.get_input_from_string(yr)[0])
+	step        = sparx_utilities.get_input_from_string(ts)
+	delta       = sparx_utilities.get_input_from_string(delta)
 	lstp = 1 #min(len(xrng), len(yrng), len(step), len(delta))
 	"""
 	if an == "-1":
@@ -5758,28 +5758,28 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	if ref_vol:
 		if type(ref_vol) is bytes:
 			if myid == main_node:
-				vol = utilities.get_im(ref_vol)
+				vol = sparx_utilities.get_im(ref_vol)
 				i = vol.get_xsize()
 				if( shrinkage < 1.0 ):
 					if( i != nx ):
-						vol = fundamentals.resample(vol, shrinkage)
+						vol = sparx_fundamentals.resample(vol, shrinkage)
 			else:
-				vol = utilities.model_blank(nx, nx, nx)
+				vol = sparx_utilities.model_blank(nx, nx, nx)
 		else:
 			if myid == main_node:
 				i = ref_vol.get_xsize()
 				if( shrinkage < 1.0 ):
 					if( i != nx ):
-						vol = fundamentals.resample(ref_vol, shrinkage)
+						vol = sparx_fundamentals.resample(ref_vol, shrinkage)
 				else:
 					vol = ref_vol.copy()
 			else:
-				vol = utilities.model_blank(nx, nx, nx)
-		utilities.bcast_EMData_to_all(vol, myid, main_node)
+				vol = sparx_utilities.model_blank(nx, nx, nx)
+		sparx_utilities.bcast_EMData_to_all(vol, myid, main_node)
 		del ref_vol
-		vol = multi_shc.do_volume(vol, ali3d_options, 0, mpi_comm)
+		vol = sparx_multi_shc.do_volume(vol, ali3d_options, 0, mpi_comm)
 	else:
-		vol = multi_shc.do_volume(data, ali3d_options, 0, mpi_comm)
+		vol = sparx_multi_shc.do_volume(data, ali3d_options, 0, mpi_comm)
 
 	N_step = 0
 	# log
@@ -5800,7 +5800,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 
 	#=========================================================================
 	# build references
-	volft, kb = projection.prep_vol(vol)
+	volft, kb = sparx_projection.prep_vol(vol)
 	refrings, ftprojections = prepare_refrings_projections(volft, kb, nx, delta[N_step], ref_a, sym, "H", numr, MPI=mpi_comm, phiEqpsi = "Zero")
 	#from fundamentals import fft
 	#for i in xrange(len(ftprojections)):  fft(ftprojections[i]).write_image("template%03d.hdf"%myid, i)
@@ -5817,7 +5817,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	params = [None]*nima
 	for im in range(nima):
 		newsx,newsy,iref,talpha,tmirr,totpeak = multalign2d_scf(data[im], refrings, ftprojections, numr, xrng, yrng, last_ring)
-		dummy, dummy, talpha, newsx, newsy = utilities.params_2D_3D(talpha, newsx, newsy, tmirr)
+		dummy, dummy, talpha, newsx, newsy = sparx_utilities.params_2D_3D(talpha, newsx, newsy, tmirr)
 		params[im] = [talpha, newsx/shrinkage, newsy/shrinkage, iref]
 
 	#=========================================================================
@@ -5845,7 +5845,7 @@ def search_range(n, radius, shift, range, location = ""):
 	ql = cn+shift-radius -2   # lower end is positive
 	qe = n - cn-shift-radius    # upper end
 	if( ql < 0 or qe < 0 ):
-		global_def.ERROR("Shift of particle too large, results may be incorrect:  %4d   %3d   %f  %f  %f  %f  %f"%(n, cn, radius, shift, range, ql, qe),"search_range  "+location,0)
+		sparx_global_def.ERROR("Shift of particle too large, results may be incorrect:  %4d   %3d   %f  %f  %f  %f  %f"%(n, cn, radius, shift, range, ql, qe),"search_range  "+location,0)
 		ql = max(ql,0)
 		qe = max(qe,0)
 	# ???for mysterious reasons it has to be this way as C code changes the order of searches.
