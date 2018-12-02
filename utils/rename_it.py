@@ -26,6 +26,7 @@ SPARX_FUNC_RE_3 = re.compile(sequence)
 ok_set = (
     'global_def.MPI',
     'global_def.BATCH',
+    'global_def.interpolation_method_2D',
     'global_def.LOGFILE_HANDLE',
     'global_def.IS_LOGFILE_OPEN',
     'global_def.LOGFILE',

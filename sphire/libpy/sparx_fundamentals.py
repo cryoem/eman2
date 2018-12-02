@@ -417,7 +417,7 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 
 	if scale == 0.0 :  sparx_global_def.ERROR("0 scale factor encountered","rot_shift2D", 1)
 	if(interpolation_method):  use_method = interpolation_method
-	else:  use_method = global_def.interpolation_method_2D
+	else:  use_method = sparx_global_def.interpolation_method_2D
 
 	if(use_method == "linear" and mode == "cyclic"):
 		T  = EMAN2_cppwrap.Transform({'type': 'SPIDER', 'psi': angle, 'tx': sx, 'ty': sy, 'scale':scale})
