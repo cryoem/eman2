@@ -554,6 +554,17 @@ def threshold_maxval(img, maxval = 0.0):
 	st = EMAN2_cppwrap.Util.infomask(img, None, True)
 	return img.process( "threshold.clampminmax", {"minval": st[2], "maxval": maxval } )
 
+def notzero(img):
+	"""
+		Name
+			notzero - replace values that are not zero by 1.0
+		Input
+			img: input image
+		Output
+			binary image.
+	"""
+	return img.process( "threshold.notzero" )
+
 def linchange(a, fct):
 	"""
 	reinterpolate a line given as a list by a factor of fct.
@@ -575,6 +586,32 @@ def linchange(a, fct):
 
 
 ## CTF related functions
+def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
+	"""
+		Generate a 1-2-3-D complex image containing the CTF.
+	 	Default is 2D output.
+	  	Input
+			nx: x image size.
+			ctf: ctf object, see CTF_info for description.
+			sign: sign of the CTF.
+			ny: y image size
+			nz: z image size 
+		Output
+			ctfimg: complex image containing CTF.
+	"""
+	dict = ctf.to_dict()
+	dz = dict["defocus"]
+	cs = dict["cs"]
+	voltage = dict["voltage"]
+	pixel_size = dict["apix"]
+	b_factor = dict["bfactor"]
+	ampcont = dict["ampcont"]
+	dza = dict["dfdiff"]
+	azz = dict["dfang"]
+
+	if(ny < 1):  ny = nx
+	return  EMAN2_cppwrap.Util.ctf_img(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
+
 def compare_ctfs(nx, ctf1, ctf2):
 	sign = 1.0
 	dict       = ctf1.to_dict()
@@ -1619,19 +1656,6 @@ def simctf(amp, data):
 	qt = 0.5*nx**2
 	pc = ctf_rimg(nx, utilities.generate_ctf([amp, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
 	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
-	return  -bcc
-
-def simctf2_pap(dz, data):
-	pass#IMPORTIMPORTIMPORT from morphology import ctf_rimg
-	pass#IMPORTIMPORTIMPORT from utilities import generate_ctf
-	
-	#nx = data[2]
-	#qt = 0.5*nx**2
-	#print  data
-	#print dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]
-	pc = ctf_rimg(data[2], utilities.generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]), sign=0)
-	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
-	#print " simctf2   ",amp,-bcc
 	return  -bcc
 
 def simctf2out(dz, data):

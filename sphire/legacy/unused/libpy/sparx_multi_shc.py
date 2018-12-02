@@ -6,13 +6,6 @@
 	else: # o, t, i
 	"""
 """2
-def mult_transform(v1, v2):
-	pass#IMPORTIMPORTIMPORT from EMAN2 import Transform
-	T1 = Transform({"type":"spider","phi":v1[0],"theta":v1[1],"psi":v1[2],"tx":v1[3],"ty":v1[4],"tz":0.0,"mirror":0,"scale":1.0})
-	T = T1*v2
-	return [ T.get_params("spider")["phi"], T.get_params("spider")["theta"], T.get_params("spider")["psi"], T.get_params("spider")["tx"], T.get_params("spider")["ty"]  ]
-"""
-"""3
 
 def shuffle_configurations(params):
 	pass#IMPORTIMPORTIMPORT from random import shuffle
@@ -29,13 +22,13 @@ def shuffle_configurations(params):
 
 	return new_params
 """
-"""4
+"""3
 	if an == "-1":
 		an = [-1] * lstp
 	else:
 		an = get_input_from_string(an)
 	"""
-"""5
+"""4
 			params = []
 			for im in data:
 				phi, theta, psi, sx, sy = get_params_proj(im)
@@ -46,7 +39,7 @@ def shuffle_configurations(params):
 				pass#IMPORTIMPORTIMPORT from utilities import write_text_row
 				write_text_row(params, "qparams%04d%04d.hdf"%(myid,total_iter) )
 			"""
-"""6
+"""5
 							for i in xrange(total_nima):
 								print  i,newparms1[i],GA[ipl[ip]][1][i]
 							for i in xrange(total_nima):
@@ -55,7 +48,7 @@ def shuffle_configurations(params):
 								GA[ipl[ip]][1][i]   = newparms1[i]
 								GA[ipl[ip+1]][1][i] = newparms2[i]
 							"""
-"""7
+"""6
 					#=========================================================================
 					# volume reconstruction
 					mpi_barrier(mpi_comm)
@@ -72,7 +65,7 @@ def shuffle_configurations(params):
 					##	from utilities import write_text_row
 					##	write_text_row(GA[0][1], "qparams%04d%04d.txt"%(myid,total_iter) )
 					"""
-"""8
+"""7
 			#VERIFY GA
 			if myid == 0:
 				temp = [None]*nima
@@ -85,7 +78,7 @@ def shuffle_configurations(params):
 					print  "GA VERIFY  ",k,GA[k][0],LL2,GA[k][1][:4],GA[k][1][-5:]
 				for i in xrange(nima): data[i].set_attr("xform.projection",temp[i])
 			"""
-"""9
+"""8
 			# Send params back
 			if myid == 0:
 				#print  all_params
@@ -129,7 +122,7 @@ def shuffle_configurations(params):
 				log.add("Time of verification = %f\n"%(time()-start_time))
 				start_time = time()
 			"""
-"""10
+"""9
 		refrings = [refrings]
 		n1 = sin(theta*qv)*cos(phi*qv)
 		n2 = sin(theta*qv)*sin(phi*qv)
@@ -139,7 +132,7 @@ def shuffle_configurations(params):
 		refrings[0].set_attr("theta", theta)
 		refrings[0].set_attr("psi",   psi)
 		"""
-"""11
+"""10
 	pass#IMPORTIMPORTIMPORT from projection   import prep_vol, prgs
 	pass#IMPORTIMPORTIMPORT from alignment import ringwe
 	cnx = nx//2 + 1
@@ -170,7 +163,7 @@ def shuffle_configurations(params):
 		data[im].set_attr("previousmax", peak)
 		print  "peak ",myid,im,data[im].get_attr("ID"), peak,pixer,get_params_proj(data[im])
 	"""
-"""12
+"""11
 Order of functions:
 multi_shc - main
   compute initial volume
@@ -181,11 +174,11 @@ multi_shc - main
   	stores volume viterb.hdf
   
 """
-"""13
+"""12
 	if mpi_rank == 0:
 		assert(len(out_params) == runs_count)
 	"""
-"""14
+"""13
 		write_text_file(subset, log.prefix + "indexes.txt")
 		for i in xrange(len(out_params)):
 			write_text_row(out_params[i], log.prefix + "run_" + str(i) + "_params.txt")
@@ -206,7 +199,7 @@ multi_shc - main
 			projections[iP].set_attr("stable", 1)
 			set_params_proj( projections[iP], out_params[0][iP] )
 		"""
-"""15
+"""14
 		log.add("  WILL RECONSTRUCT  ")
 		pass#IMPORTIMPORTIMPORT from utilities import model_circle
 		tvol = volume_recsp(projections, ali3d_options)
@@ -216,11 +209,11 @@ multi_shc - main
 			proj_begin, proj_end  = MPI_start_end(n_projs, mpi_size, k)
 			print  " from within   ",k,proj_begin,get_params_proj(projections[proj_begin])
 		"""
-"""16
+"""15
 	else:
 		temp_projs = None
 	"""
-"""17
+"""16
 	if mpi_rank == 17:
 		temp = []
 		pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
@@ -232,7 +225,7 @@ multi_shc - main
 			#set_params_proj( projections[i], out_params[i] )
 		write_text_row(temp, log.prefix + "refparams17.txt")
 	"""
-"""18
+"""17
 			if  mirror:
 				phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 				theta = 180.0-refrings[iref].get_attr("theta")
@@ -241,12 +234,12 @@ multi_shc - main
 				s2y   = syb - dp["ty"]
 			else:
 			"""
-"""19
+"""18
 		peak = peaks[0]  # It is not used anywhere, but set it to the maximum.
 
 	return peak, pixel_error, peaks_count, ws
 	"""
-"""20
+"""19
 		# remove old xform.projection
 		i = max(peaks_count, 1)
 		while data.has_attr("xform.projection" + str(i)):
@@ -257,7 +250,7 @@ multi_shc - main
 			data.del_attr("weight" + str(i))
 			i += 1
 		"""
-"""21
+"""20
 # Not used anymore
 def calculate_matrix_rot(projs):
 	pass#IMPORTIMPORTIMPORT from utilities import rotation_between_anglesets
@@ -730,7 +723,7 @@ def Xali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, 
 
 
 """
-'''22
+'''21
 # parameters: list of (all) projections | reference volume is optional, if provided might be shrank| ...
 #  The alignment done depends on nsoft:
 # 			 nsoft = 0 & an = -1: exhaustive deterministic
@@ -1191,7 +1184,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	#	return #None, None, None, None  # results for the other processes
 
 '''
-'''23
+'''22
 #  I do not know why this would make sense  PAP 04/20/2017
 def generate_uneven_projections_directions(count, half_sphere=False, output_filename=None, 
 										   density_ratio_on_poles_and_equator=1.0): 
@@ -1227,6 +1220,13 @@ def generate_uneven_projections_directions(count, half_sphere=False, output_file
 		write_text_row(a1, output_filename)
 	return a1
 '''
+"""23
+def mult_transform(v1, v2):
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Transform
+	T1 = Transform({"type":"spider","phi":v1[0],"theta":v1[1],"psi":v1[2],"tx":v1[3],"ty":v1[4],"tz":0.0,"mirror":0,"scale":1.0})
+	T = T1*v2
+	return [ T.get_params("spider")["phi"], T.get_params("spider")["theta"], T.get_params("spider")["psi"], T.get_params("spider")["tx"], T.get_params("spider")["ty"]  ]
+"""
 def volume_reconstruction(data, options, mpi_comm):
 	pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank
 	pass#IMPORTIMPORTIMPORT from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
@@ -1294,7 +1294,7 @@ def volume_recsp(data, options):
 	return vol
 
 
-"""Multiline Comment11"""
+"""Multiline Comment10"""
 
 # all_projs and subset must be set only for root (MPI rank == 0)
 # remaining parameters must be set for all
@@ -1361,7 +1361,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 			# What that means is that one has to change the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 			angb, sxb, syb, ct = utilities.compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
-			"""Multiline Comment17"""
+			"""Multiline Comment16"""
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
@@ -1396,7 +1396,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 			i += 1
 		#pixel_error /= peaks_count
 	return ws
-	"""Multiline Comment18"""
+	"""Multiline Comment17"""
 
 def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None):
 	pass#IMPORTIMPORTIMPORT from utilities    import compose_transform2
@@ -1651,7 +1651,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 						data.get_attr("weight" + str(i)) ) )
 				finfo.flush()
 				i += 1
-		"""Multiline Comment19"""
+		"""Multiline Comment18"""
 		pixel_error /= peaks_count
 		peak = params[0][0]  # It is not used anywhere, but set it to the maximum.
 	
@@ -1984,10 +1984,12 @@ def no_of_processors_restricted_by_data__do_volume(projections, ali3d_options, i
 	return ref_vol
 
 
+"""Multiline Comment19"""
+
+
+
+
 """Multiline Comment20"""
-
-
-
-
 """Multiline Comment21"""
 """Multiline Comment22"""
+

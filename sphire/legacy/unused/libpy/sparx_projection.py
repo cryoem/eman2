@@ -74,6 +74,34 @@ def prl(vol, params, radius, stack = None):
 				ind          = 4*i
 				Ori[ind+3]    = int(Ori[ind+3])
 		"""
+def project(volume, params, radius=-1):
+	"""
+		Name
+			project - calculate 2-D projection of a 3-D volume using trilinear interpolation
+		Input
+			vol: input volume, all dimensions have to be the same
+			params: input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by s2x,s2y
+		radius: radius of a sphere within which the projection of the volume will be calculated
+		Output
+		proj: generated 2-D projection
+	"""
+        # angles phi, theta, psi
+	pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
+	pass#IMPORTIMPORTIMPORT from utilities import set_params_proj
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+
+	if(radius>0):	myparams = {"transform":EMAN2_cppwrap.Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}), "radius":radius}
+	else:			myparams = {"transform":EMAN2_cppwrap.Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})}
+	proj = volume.project("pawel", myparams)
+	if(params[3]!=0. or params[4]!=0.):
+		params2 = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.SHIFT, "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
+		proj=EMAN2_cppwrap.Processor.EMFourierFilter(proj, params2)
+		#proj = rot_shift2D(proj, sx = params[3], sy = params[4], interpolation_method = "linear")
+	utilities.set_params_proj(proj, [params[0], params[1], params[2], -params[3], -params[4]])
+	proj.set_attr_dict({ 'ctf_applied':0})
+	return  proj
+
+"""Multiline Comment0"""
 def prj(vol, params, stack = None):
 	"""
 		Name
@@ -101,6 +129,55 @@ def prj(vol, params, stack = None):
 			out.append(proj)
 	if(stack):  return
 	else:       return out
+
+def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
+	"""
+	  Generate set of projections based on even angles
+	  The command returns list of ffts of projections
+	"""
+	pass#IMPORTIMPORTIMPORT from projection   import prep_vol, prgs
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	pass#IMPORTIMPORTIMPORT from utilities    import even_angles, model_blank
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
+	# generate list of Eulerian angles for reference projections
+	#  phi, theta, psi
+	mode = "F"
+	ref_angles = utilities.even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Minus")
+	cnx = nx//2 + 1
+	cny = nx//2 + 1
+	num_ref = len(ref_angles)
+
+	if MPI:
+		pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+		myid = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
+		ncpu = mpi.mpi_comm_size( mpi.MPI_COMM_WORLD )
+	else:
+		ncpu = 1
+		myid = 0
+	pass#IMPORTIMPORTIMPORT from applications import MPI_start_end
+	ref_start,ref_end = applications.MPI_start_end( num_ref, ncpu, myid )
+
+	prjref = []     # list of (image objects) reference projections in Fourier representation
+
+	for i in range(num_ref):
+		prjref.append(utilities.model_blank(nx, nx))  # I am not sure why is that necessary, why not put None's??
+
+	for i in range(ref_start, ref_end):
+		prjref[i] = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+
+	if MPI:
+		pass#IMPORTIMPORTIMPORT from utilities import bcast_EMData_to_all
+		for i in range(num_ref):
+			for j in range(ncpu):
+				ref_start,ref_end = applications.MPI_start_end(num_ref,ncpu,j)
+				if i >= ref_start and i < ref_end: rootid = j
+			utilities.bcast_EMData_to_all( prjref[i], myid, rootid )
+
+	for i in range(len(ref_angles)):
+		prjref[i].set_attr_dict({"phi": ref_angles[i][0], "theta": ref_angles[i][1],"psi": ref_angles[i][2]})
+
+	return prjref
+
 
 def prgs1d( prjft, kb, params ):
 	pass#IMPORTIMPORTIMPORT from fundamentals import fft
@@ -130,6 +207,47 @@ def prgs1d( prjft, kb, params ):
 	line.set_attr_dict( {'alpha':alpha, 's1x':shift} )
 	return line
 
+def gen_rings_ctf( prjref, nx, ctf, numr):
+	"""
+	  Convert set of ffts of projections to Fourier rings with additional multiplication by a ctf
+	  The command returns list of rings
+	"""
+	pass#IMPORTIMPORTIMPORT from math         import sin, cos, pi
+	pass#IMPORTIMPORTIMPORT from fundamentals import fft
+	pass#IMPORTIMPORTIMPORT from alignment    import ringwe
+	pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
+	mode = "F"
+	wr_four  = alignment.ringwe(numr, "F")
+	cnx = nx//2 + 1
+	cny = nx//2 + 1
+	qv = numpy.pi/180.0
+
+	refrings = []     # list of (image objects) reference projections in Fourier representation
+
+	for i in range( len(prjref) ):
+		cimage = EMAN2_cppwrap.Util.Polar2Dm(filter.filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
+		EMAN2_cppwrap.Util.Normalize_ring(cimage, numr, 0 )
+
+		EMAN2_cppwrap.Util.Frngs(cimage, numr)
+		EMAN2_cppwrap.Util.Applyws(cimage, numr, wr_four)
+		refrings.append(cimage)
+		phi   = prjref[i].get_attr('phi')
+		theta = prjref[i].get_attr('theta')
+		psi   = prjref[i].get_attr('psi')
+		n1 = numpy.sin(theta*qv)*numpy.cos(phi*qv)
+		n2 = numpy.sin(theta*qv)*numpy.sin(phi*qv)
+		n3 = numpy.cos(theta*qv)
+		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3, "phi": phi, "theta": theta,"psi": psi} )
+
+	return refrings
+
+
+
+###############################################################################################
+## COMMON LINES NEW VERSION ###################################################################
+
+# plot angles, map on half-sphere
+# agls: [[phi0, theta0, psi0], [phi1, theta1, psi1], ..., [phin, thetan, psin]]
 def plot_angles(agls, nx = 256):
 	pass#IMPORTIMPORTIMPORT from math      import cos, sin, fmod, pi, radians
 	pass#IMPORTIMPORTIMPORT from utilities import model_blank

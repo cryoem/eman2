@@ -581,6 +581,92 @@ def max_3D_pixel_errorA(t1, t2, r):
 			if dd > ddmax: ddmax=dd
 	return sqrt(ddmax)
 '''
+def pixel_error_2D(ali_params1, ali_params2, r = 1.0):
+	"""
+	Compute average squared 2D pixel error
+	"""
+	pass#IMPORTIMPORTIMPORT from math import radians, sin, pi, sqrt
+	return (numpy.sin(numpy.radians(ali_params1[0]-ali_params2[0])/2)*(2*r+1))**2 / 2 + (ali_params1[1]-ali_params2[1])**2 + (ali_params1[2]-ali_params2[2])**2
+
+
+def max_3D_pixel_error(t1, t2, r=1.0):
+	"""
+	Compute maximum pixel error between two sets of orientation parameters
+	assuming object has radius r, t1 is the projection transformation
+	of the first projection and t2 of the second one, respectively:
+		t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+		t.set_trans(Vec2f(-tx, -ty))
+	Note the function is symmetric in t1, t2.
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Vec2f
+	pass#IMPORTIMPORTIMPORT import types
+	dummy = EMAN2_cppwrap.Transform()
+	if( type(dummy) != type(t1)):
+		t = EMAN2_cppwrap.Transform({"type":"spider","phi":t1[0],"theta":t1[1],"psi":t1[2]})
+		t.set_trans(EMAN2_cppwrap.Vec2f(-t1[3], -t1[4]))
+	else: t = t1
+	if( type(dummy) != type(t2)):
+		u = EMAN2_cppwrap.Transform({"type":"spider","phi":t2[0],"theta":t2[1],"psi":t2[2]})
+		u.set_trans(EMAN2_cppwrap.Vec2f(-t2[3], -t2[4]))
+	else: u = t2
+
+	return EMAN2_cppwrap.EMData().max_3D_pixel_error(t, u, r)
+
+
+def angle_ave(angle1):
+	'''
+	This function computes average angle of a set of angles.
+	It also computes a measure of dispersion (incorrect).
+	'''
+	pass#IMPORTIMPORTIMPORT from math import cos, sin, pi, atan2, degrees, radians, sqrt
+
+	nima = len(angle1)
+
+	cosi = 0.0
+	sini = 0.0
+	for i in range(nima):
+		qt = numpy.radians( angle1[i] )
+		cosi += numpy.cos(qt)
+		sini += numpy.sin(qt)
+	alphai = numpy.degrees(math.atan2(sini, cosi))%360.0
+	# what follows is not correct, it is just to give a measure of dispersion
+	stdv = 0.0
+	for i in range(nima):
+		qt = angle1[i] - alphai
+		if   qt >  180.0:   qt -= 360.
+		elif qt < -180.0:   qt += 360.
+		stdv += qt*qt
+	stdv = numpy.sqrt(stdv/nima)
+
+	return alphai, stdv
+
+
+def angle_diff_sym(angle1, angle2, simi=1):
+	'''
+	This function determines the relative angle around Z axis (phi) between two sets of angles
+	   taking into account point group symmetry with multiplicity simi.
+	The input has to be in the form [[phi0,theta0], [phi1,theta1], ...]
+	  Only sets that have theta in the same range (0,90), or (90,180) are included in calculation.
+	The resulting angle has to be added (modulo 360/simi) to the first set.
+	'''
+	pass#IMPORTIMPORTIMPORT from math import cos, sin, pi, atan2, degrees, radians
+	
+	nima  = len(angle1)
+	if len(angle2) != nima:
+		global_def.ERROR( "List lengths do not agree!", "angle_diff_sym",1)
+
+	cosi = 0.0
+	sini = 0.0
+	agree = 0
+	for i in range(nima):
+		if( ( (angle2[i][1] <90.0) and (angle1[i][1] <90.0) ) or ( (angle2[i][1] >90.0) and (angle1[i][1] >90.0) ) ):
+			qt = numpy.radians((angle2[i][0]-angle1[i][0])*simi)
+			cosi += numpy.cos( qt )
+			sini += numpy.sin( qt )
+			agree += 1
+	if(agree == 0):  return 0.0
+	else:            return numpy.degrees(math.atan2(sini, cosi)/simi)%(360.0/simi)
+
 def angle_error(ang1, ang2, delta_ang=0.0):
 	'''
 	This function calculates the error (variance) between two sets of angles after delta_ang (angle difference) is added to the

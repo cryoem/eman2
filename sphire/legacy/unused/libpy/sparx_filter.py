@@ -45,6 +45,23 @@ def filt_median(f, nx, ny, nz = 1, kernelshape = "BLOCK"):
 	else: print("Unknown kernel shape.")
 
 # Fourier filters
+def filt_tophatl(e, freq, pad = False):
+	"""
+		Name
+			filt_tophatl - top-hat low-pass Fourier filter (truncation of a Fourier series)
+		Input
+			e: input image (can be either real or Fourier)
+			freq: stop-band frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+		"cutoff_abs" : freq, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
 def filt_tophath(e, freq, pad = False):
 	"""
 		Name
@@ -120,6 +137,24 @@ def filt_gausso(e, sigma, value, pad = False):
 
 
 
+def filt_btwl(e, freql, freqh, pad = False):
+	"""
+		Name
+			filt_btwl - Butterworth low-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low - pass-band frequency
+			freqh: high - stop-band frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.BUTTERWORTH_LOW_PASS,
+		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
 def filt_btwh(e, freql, freqh, pad = False):
 	"""
 		Name
@@ -444,6 +479,100 @@ def filt_from_fsc_bwt(dres, low = 0.1):
 	return  filtc
 
 
+def fit_tanh(dres, low = 0.1):
+	"""
+		dres - list produced by the fsc funcion
+		dres[0] - absolute frequencies
+		dres[1] - fsc, because it was calculated from the dataset split into halves, convert it to full using rn = 2r/(1+r)
+		dres[2] - number of points use to calculate fsc coeff
+		low cutoff of the fsc curve
+		return parameters of the tanh filter: freq - cutoff frequency at which filter value is 0.5, and fall_off, the 'width' of the filter
+	"""
+	def fit_tanh_func(args, data):
+		pass#IMPORTIMPORTIMPORT from math import pi, tanh
+		v = 0.0
+
+		if(data[1][0] < 0.0 ):
+			data[1][0] *= -1.0
+
+		for i in range(len(data[0])):
+			fsc =  2*data[1][i]/(1.0+data[1][i])
+			if args[0]==0 or args[1]==0: qt=0
+			else: qt  = fsc - 0.5*( numpy.tanh(numpy.pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - numpy.tanh(numpy.pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
+			v  -= qt*qt
+		#print args,v
+		return v
+
+	setzero = False
+	for i in range(1,len(dres[0])):
+		if not setzero:
+			if(2*dres[1][i]/(1.0+dres[1][i]) <low):  setzero = True
+		if setzero:  dres[1][i] = 0.0
+
+	freq = -1.0
+	for i in range(1,len(dres[0])-1):
+		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < 0.5):
+			freq = dres[0][i-1]
+			break
+	if freq < 0.0:
+		# the curve never falls below 0.5, most likely something's wrong; however, return reasonable values
+		freq = 0.4
+		fall_off = 0.2
+		return freq, fall_off
+
+	pass#IMPORTIMPORTIMPORT from utilities import amoeba
+	args   = [freq, 0.1]
+	scale  = [0.05, 0.05]
+	result = utilities.amoeba(args, scale, fit_tanh_func, data = dres)
+
+	"""Multiline Comment0"""
+	return result[0][0], result[0][1]
+	
+
+def fit_tanh1(dres, low = 0.1):
+	"""
+		dres - list produced by the fsc funcion
+		dres[0] - absolute frequencies
+		dres[1] - fsc, to be conservative, do not use factor of 2.
+		dres[2] - number of points use to calculate fsc coeff
+		low cutoff of the fsc curve
+		return parameters of the tanh filter: freq - cutoff frequency at which filter value is 0.5, and fall_off, the 'width' of the filter
+	"""
+	def fit_tanh_func(args, data):
+		pass#IMPORTIMPORTIMPORT from math import pi, tanh
+		v = 0.0
+		for i in range(len(data[0])):
+			fsc =  data[1][i]
+			if args[0]==0 or args[1]==0: qt=0
+			else: qt  = fsc - 0.5*( numpy.tanh(numpy.pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - numpy.tanh(numpy.pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
+			v  -= qt*qt
+		#print args,v
+		return v
+
+	setzero = False
+	for i in range(1,len(dres[0])):
+		if not setzero:
+			if(dres[1][i] <low):  setzero = True
+		if setzero:  dres[1][i] = 0.0
+
+	freq = -1.0
+	for i in range(1,len(dres[0])-1):
+		if ( dres[1][i] < 0.5):
+			freq = dres[0][i-1]
+			break
+	if(freq < 0.0):
+		# the curve never falls below 0.5, most likely something's wrong; however, return reasonable values
+		freq = 0.2
+		fall_off = 0.2
+		return freq, fall_off
+	pass#IMPORTIMPORTIMPORT from utilities import amoeba
+	args   = [freq, 0.1]
+	scale  = [0.05, 0.05]
+	result = utilities.amoeba(args, scale, fit_tanh_func, data = dres)
+
+	"""Multiline Comment1"""
+	return result[0][0], result[0][1]
+
 def tanhfilter(nx, fl, aa):
 	#  generate discretized tanh filter
 	pass#IMPORTIMPORTIMPORT from math import pi, tanh
@@ -495,4 +624,39 @@ def filt_matched(ima, SNR, Pref):
 	res.append(TMP2)
 	del HM
 	return res	
+
+def filt_vols( vols, fscs, mask3D ):
+	pass#IMPORTIMPORTIMPORT from math          import sqrt
+	pass#IMPORTIMPORTIMPORT from filter        import fit_tanh, filt_tanl, filt_table
+	pass#IMPORTIMPORTIMPORT from fundamentals  import rops_table
+	pass#IMPORTIMPORTIMPORT from morphology    import threshold
+
+	flmin = 1.0
+	flmax = -1.0
+	nvol = len(vols)
+	for i in range(nvol):
+		fl, aa = fit_tanh( fscs[i] )
+		if (fl < flmin):
+			flmin = fl
+			aamin = aa
+		if (fl > flmax):
+			flmax = fl
+			idmax = i
+	print(" Filter tanl, parameters: ",flmin-0.05, "  ",  aamin)
+	volmax = vols[idmax]
+	volmax = filt_tanl( volmax, flmin-0.05, aamin )
+	pmax = fundamentals.rops_table( volmax )
+
+	for i in range(nvol):
+		ptab = fundamentals.rops_table( vols[i] )
+		for j in range( len(ptab) ):
+			ptab[j] = numpy.sqrt( pmax[j]/ptab[j] )
+
+		vols[i] = filt_table( vols[i], ptab )
+		#stat = Util.infomask( vols[i], mask3D, False )
+		#volf -= stat[0]
+		EMAN2_cppwrap.Util.mul_img( vols[i], mask3D )
+		#volf = threshold( volf )
+
+	return vols
 

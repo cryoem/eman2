@@ -922,6 +922,96 @@ def add_ave_varf(data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, a
 	if st[2] < 0.0:  global_def.ERROR("Negative variance!", "add_ave_varf", 1)
 	return tavg, ave1, ave2, var, sumsq
 
+def add_ave_varf_MPI(myid, data, mask = None, mode = "a", CTF = False, ctf_2_sum = None, ali_params = "xform.align2d", main_node = 0, comm = -1):
+	"""
+		Calculate sum of an image series and sum of squares in Fourier space
+		Since this is the MPI version, we need to reduce sum and sum of squares 
+		on the main node and calculate variance there.
+		mode - "a": use current alignment parameters
+		CTF  - if True, use CTF for calculations of the sum.
+	"""
+	pass#IMPORTIMPORTIMPORT from utilities    import    model_blank, get_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import    rot_shift2D, fft, fftip
+	pass#IMPORTIMPORTIMPORT from utilities    import    reduce_EMData_to_root
+	pass#IMPORTIMPORTIMPORT from mpi          import    mpi_reduce, MPI_INT, MPI_SUM
+	
+	if comm == -1:
+		pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD
+		comm = mpi.MPI_COMM_WORLD
+
+	n = len(data)
+	nx = data[0].get_xsize()
+	ny = data[0].get_ysize()
+	ave1 = EMAN2_cppwrap.EMData(nx, ny, 1, False)
+	ave2 = EMAN2_cppwrap.EMData(nx, ny, 1, False)
+	var  = EMAN2_cppwrap.EMData(nx, ny, 1, False)
+	
+	if CTF:
+		pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
+		pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
+		if data[0].get_attr_default('ctf_applied', 1) == 1:
+			global_def.ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
+		if ctf_2_sum:  get_ctf2 = False
+		else:          get_ctf2 = True
+		if get_ctf2: ctf_2_sum = EMAN2_cppwrap.EMData(nx, ny, 1, False)
+		ctf_params = data[i].get_attr("ctf")
+		for i in range(n):
+			if mode == "a":
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
+				fundamentals.fftip(ima)
+				ctf_params.dfang += alpha
+				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
+			else:
+				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:       ima = fundamentals.fft(data[i])
+			ima_filt = filter.filt_ctf(ima, ctf_params, dopad=False)
+			if(i%2 == 0):   EMAN2_cppwrap.Util.add_img(ave1, ima_filt)
+			else:           EMAN2_cppwrap.Util.add_img(ave2, ima_filt)
+			EMAN2_cppwrap.Util.add_img2(var, ima)
+			if get_ctf2: EMAN2_cppwrap.Util.add_img2(ctf_2_sum, morphology.ctf_img(nx, ctf_params))
+	else:
+		get_ctf2 = False
+		for i in range(n):
+			if mode == "a":
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i], ali_params)
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
+				fundamentals.fftip(ima)
+			else:
+				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:       ima = fundamentals.fft(data[i])
+			if(i%2 == 0):   EMAN2_cppwrap.Util.add_img(ave1, ima)
+			else:           EMAN2_cppwrap.Util.add_img(ave2, ima)
+			EMAN2_cppwrap.Util.add_img2(var, ima)
+	utilities.reduce_EMData_to_root(ave1, myid, main_node, comm)
+	utilities.reduce_EMData_to_root(ave2, myid, main_node, comm)
+	utilities.reduce_EMData_to_root(var, myid, main_node, comm)
+	if get_ctf2: utilities.reduce_EMData_to_root(ctf_2_sum, myid, main_node, comm)
+	nima = n
+	nima = mpi.mpi_reduce(nima, 1, mpi.MPI_INT, mpi.MPI_SUM, main_node, comm)
+	if myid == main_node:
+		nima = int(nima)
+		sumsq = EMAN2_cppwrap.Util.addn_img(ave1, ave2)
+		if CTF:
+			tavg = EMAN2_cppwrap.Util.divn_img(sumsq, ctf_2_sum)
+			EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
+			EMAN2_cppwrap.Util.div_img(sumsq, ctf_2_sum)
+		else:
+			tavg = EMAN2_cppwrap.Util.mult_scalar(sumsq, 1.0/float(nima))
+			EMAN2_cppwrap.Util.mul_img(sumsq, sumsq)
+			EMAN2_cppwrap.Util.mul_scalar(sumsq, 1.0/float(nima))
+		EMAN2_cppwrap.Util.sub_img(var, sumsq)
+		EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(nima-1))
+		var.set_value_at(0, 0, 1.0)
+		st = EMAN2_cppwrap.Util.infomask(var, None, True)
+		if st[2] < 0.0:  global_def.ERROR("Negative variance!", "add_ave_varf_MPI", 1)
+	else:
+		tavg  = EMAN2_cppwrap.EMData()
+		sumsq = EMAN2_cppwrap.EMData()
+	return tavg, ave1, ave2, var, sumsq
+
 def add_oe(data):
 	"""
 		Calculate odd and even sum of an image series
@@ -1731,6 +1821,68 @@ def varf2d(data, ave, mask = None, mode="a"):
 
 	return var, fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
 
+def varf2d_MPI(myid, data, ave, mask = None, mode = "a", CTF = False, main_node = 0, comm = -1):
+	"""
+	Calculate variance in Fourier space for 2D images optionally including ctf correction
+	ave is the Wiener average of data
+	If mode = "a" apply alignment parameters
+	This command is for Wiener average, i.e., A = sum_k (CTF_k SNR_k F_k) / [sum_k ( CTF_k^2 SNR_k) + 1]
+	"""
+	pass#IMPORTIMPORTIMPORT from utilities    import    model_blank, get_params2D
+	pass#IMPORTIMPORTIMPORT from fundamentals import    rot_shift2D, fft, fftip
+	pass#IMPORTIMPORTIMPORT from utilities    import    reduce_EMData_to_root
+	pass#IMPORTIMPORTIMPORT from mpi          import    mpi_reduce, MPI_INT, MPI_SUM
+	
+	if comm == -1:
+		pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD
+		comm = mpi.MPI_COMM_WORLD
+
+	n = len(data)
+	nx = data[0].get_xsize()
+	ny = data[0].get_ysize()
+	var  = EMAN2_cppwrap.EMData(nx, ny, 1, False)
+	
+	if CTF:
+		pass#IMPORTIMPORTIMPORT from filter       import filt_ctf
+		pass#IMPORTIMPORTIMPORT from morphology   import ctf_img
+		if data[0].get_attr_default('ctf_applied', 1) == 1:
+			global_def.ERROR("data cannot be ctf-applied", "add_ave_varf_MPI", 1)
+		for i in range(n):
+			ctf_params = data[i].get_attr("ctf")
+			if(mode == "a"):
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
+				ctf_params.dfang += alpha
+				if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
+			else:
+				ima = data[i].copy()
+			if(mask): EMAN2_cppwrap.Util.mul_img(ima, mask)
+			oc = filter.filt_ctf(ave, ctf_params, dopad=True)
+			EMAN2_cppwrap.Util.add_img2(var, fundamentals.fft(EMAN2_cppwrap.Util.subn_img(ima, oc)))
+	else:
+		for i in range(n):
+			if mode == "a":
+				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
+				ima = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror, scale, "quadratic")
+				if mask:  EMAN2_cppwrap.Util.mul_img(ima, mask)
+				fundamentals.fftip(ima)
+			else:
+				if  mask:   ima = fundamentals.fft(EMAN2_cppwrap.Util.muln_img(data[i], mask))
+				else:       ima = fundamentals.fft(data[i])
+			EMAN2_cppwrap.Util.add_img2(var, ima)
+	utilities.reduce_EMData_to_root(var, myid, main_node, comm)
+	nima = n
+	nima = mpi.mpi_reduce(nima, 1, mpi.MPI_INT, mpi.MPI_SUM, main_node, comm)
+	if myid == main_node:
+		EMAN2_cppwrap.Util.mul_scalar(var, 1.0/float(nima-1))
+		if var.get_value_at(0, 0) < 0.0:	var.set_value_at(0, 0, 0.0)		
+		st = EMAN2_cppwrap.Util.infomask(var, None, True)
+		if st[2] < 0.0:  global_def.ERROR("Negative variance!", "varf2_MPI", 1)
+		pass#IMPORTIMPORTIMPORT from fundamentals import rot_avg_table
+		return var, fundamentals.rot_avg_table(EMAN2_cppwrap.Util.pack_complex_to_real(var))
+	else:
+		return  EMAN2_cppwrap.EMData(), [0]  # return minimum what has to be returned, but no meaning.
+
 def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1"):
 	"""
 	  Calculate variance in Fourier space of an object reconstructed from projections
@@ -1809,6 +1961,129 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	return vol_ssnr1
 	#from morphology import threshold_to_minval
 	#return  threshold_to_minval(Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
+
+def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0, mpi_comm = None):
+	"""
+	  Calculate variance in Fourier space of an object reconstructed from projections
+
+	  Known problems: properly speaking, the SSNR has to be calculated using snr=inf and this is what recons3d_nn_SSNR_MPI does.
+	  So, when one computes reference structure, snr should be 1.0e20.  However, when the reference structure is passed
+	  from the reconstruction program, it was computed using different snr.  I tested it and in practice there is no difference,
+	  as this only changes the background variance due to reconstruction algorithm, which is much lower anyway.  PAP.
+	"""
+	pass#IMPORTIMPORTIMPORT from reconstruction import   recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
+	pass#IMPORTIMPORTIMPORT from utilities      import   bcast_EMData_to_all, model_blank
+	pass#IMPORTIMPORTIMPORT from projection     import   prep_vol, prgs
+	pass#IMPORTIMPORTIMPORT from mpi import MPI_COMM_WORLD
+	
+	if mpi_comm == None:
+		mpi_comm = mpi.MPI_COMM_WORLD
+	
+	if myid == 0: [ssnr1, vol_ssnr1] = reconstruction.recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+	else:                              reconstruction.recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+
+	nx  = prjlist[0].get_xsize()
+	if ou == -1: radius = int(nx/2) - 2
+	else:        radius = int(ou)
+	if(reference_structure == None):
+		if CTF :
+			snr = 1.0#e20
+			if myid == 0 :
+				reference_structure = reconstruction.recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
+			else :
+				reconstruction.recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
+				reference_structure = utilities.model_blank(nx, nx, nx)
+		else  :
+			if myid == 0 :
+				reference_structure = reconstruction.recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
+			else :
+				reconstruction.recons3d_4nn_MPI(myid, prjlist, sym, snr = snr, mpi_comm=mpi_comm)
+				reference_structure = utilities.model_blank(nx, nx, nx)
+		utilities.bcast_EMData_to_all(reference_structure, myid, 0, mpi_comm)
+	#if myid == 0:  reference_structure.write_image("refer.hdf",0)
+	#vol *= model_circle(radius, nx, nx, nx)
+	volft,kb = projection.prep_vol(reference_structure)
+	del reference_structure
+	pass#IMPORTIMPORTIMPORT from utilities import get_params_proj
+	pass#IMPORTIMPORTIMPORT if CTF: from filter import filt_ctf
+	re_prjlist = []
+	for prj in prjlist:
+		phi,theta,psi,tx,ty = utilities.get_params_proj(prj)
+		proj = projection.prgs(volft, kb, [phi,theta,psi,-tx,-ty])
+		if CTF:
+			ctf_params = prj.get_attr("ctf")
+			proj = filter.filt_ctf(proj, ctf_params)
+			proj.set_attr('sign', 1)
+		re_prjlist.append(proj)
+	del volft
+	if myid == 0: [ssnr2, vol_ssnr2] = reconstruction.recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+	else:                              reconstruction.recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+	del re_prjlist
+
+	if myid == 0 and ssnr_text_file != None:
+		outf = open(ssnr_text_file, "w")
+		for i in range(len(ssnr2[0])):
+			datstrings = []
+			datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
+			datstrings.append("  %15e" % ssnr1[1][i])    # SSNR
+			datstrings.append("  %15e" % ssnr1[2][i])    # variance
+			datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
+			datstrings.append("  %15f" % ssnr1[4][i])    # number of added Fourier points
+			datstrings.append("  %15e" % ssnr1[5][i])    # square of signal
+			datstrings.append("  %15e" % ssnr2[1][i])    # SSNR
+			datstrings.append("  %15e" % ssnr2[2][i])    # variance
+			datstrings.append("  %15e" % ssnr2[5][i])    # square of signal
+			datstrings.append("\n")
+			outf.write("".join(datstrings))
+		outf.close()
+	if myid == 0:
+		vol_ssnr1 = EMAN2_cppwrap.Util.subn_img(EMAN2_cppwrap.Util.pack_complex_to_real(vol_ssnr1), EMAN2_cppwrap.Util.pack_complex_to_real(vol_ssnr2))
+		del  vol_ssnr2
+		# what follows is a risky business.  There should be a better way to deal with negative values. but for the time being...
+		nc = nx//2
+		r2 = radius**2
+		for i in range(nx):
+			for j in range(nx):
+				for k in range(nx):
+					if( ( (i-nc)**2+(j-nc)**2+(k-nc)**2) <r2):
+						if( vol_ssnr1.get_value_at(i,j,k) <= 0.0):
+							bm = -1.0
+							for i1 in range(-1,2):
+								for i2 in range(-1,2):
+									for i3 in range(-1,2):
+										tm = vol_ssnr1.get_value_at(i+i1,j+i2,k+i3)
+										if(tm > bm):
+											bm = tm
+							vol_ssnr1.set_value_at(i,j,k,bm)
+										
+					else:  vol_ssnr1.set_value_at(i,j,k, 1.0)
+		return  vol_ssnr1
+		#from morphology import threshold_to_minval
+		#return  threshold_to_minval( Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
+	else:  return  utilities.model_blank(2,2,2)
+
+
+def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
+	""" 
+	        Compute fsc using mask and normalization.
+
+		Usage: [frsc =] fsc(image1, image2 [, mask, w, filename])
+
+		If no mask is provided, using circular mask with R=nx//2
+
+	"""
+	pass#IMPORTIMPORTIMPORT from statistics import fsc
+	pass#IMPORTIMPORTIMPORT from morphology import binarize
+	pass#IMPORTIMPORTIMPORT from utilities  import model_circle
+	nx = img1.get_xsize()
+	ny = img1.get_ysize()
+	nz = img1.get_zsize()
+	if( mask == None):  mask = utilities.model_circle(nx//2, nx, ny, nz)
+	m = morphology.binarize(mask, 0.5)
+	s1 = EMAN2_cppwrap.Util.infomask(img1, m, True)
+	s2 = EMAN2_cppwrap.Util.infomask(img2, m, True)
+	return fsc((img1-s1[0])*mask, (img2-s2[0])*mask, w, filename)
+
 
 def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 
@@ -8086,6 +8361,23 @@ def histogram2d(datai, dataj, nbini, nbinj):
 
 	return region,hist
 
+def linreg(X, Y):
+	"""
+	  Linear regression y=ax+b
+	"""
+	Sx = Sy = Sxx = Syy = Sxy = 0.0
+	N = len(X)
+	for x, y in map(None, X, Y):
+		Sx  += x
+		Sy  += y
+		Sxx += x*x
+		Syy += y*y
+		Sxy += x*y
+	det = Sxx * N - Sx * Sx
+	a, b = (Sxy * N - Sy * Sx)/det, (Sxx * Sy - Sx * Sxy)/det
+	"""Multiline Comment14"""
+	return a,b
+
 def get_power_spec(stack_file, start_particle, end_particle):
 	"""
 		Name
@@ -8551,6 +8843,299 @@ def cluster_equalsize(d, m):
 	return  groupping,cent,disp
 
 
+class pcanalyzer(object):
+	def __init__(self, mask, nvec=3, incore=False, MPI=False, scratch=None):
+		pass#IMPORTIMPORTIMPORT import os
+		self.mask = mask.copy()
+		if MPI:
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, MPI_COMM_WORLD
+			self.myid = mpi.mpi_comm_rank( mpi.MPI_COMM_WORLD )
+			if( scratch == None):
+				self.file = os.path.join("." , "maskedimg%04d.bin" % self.myid )
+			else:
+				self.file = os.path.join(scratch , "maskedimg%04d.bin" % self.myid )
+			self.MPI  = True
+		else:
+			if( scratch == None):
+				self.file = os.path.join("." , "maskedimg.bin" )
+			else:
+				self.file = os.path.join(scratch , "maskedimg.bin" )
+			self.MPI  = False
+			self.myid = 0
+		#self.sdir   = "."
+		self.nimg   = 0
+		self.nvec   = nvec
+		self.fw     = None
+		self.fr     = None
+		self.avgdat = None
+		self.myBuff = []
+		self.myBuffPos = 0
+		self.incore = incore
+
+	def writedat( self, data ):
+		pass#IMPORTIMPORTIMPORT import array
+		if not self.incore:
+			if self.fw is None:
+				self.fw = open( self.file, "wb" )
+			data.tofile( self.fw )
+		else:
+			if len(self.myBuff) <= self.myBuffPos:
+				self.myBuff.append(data.copy())
+				self.myBuffPos = len(self.myBuff)
+			else:
+				self.myBuff[self.myBuffPos] = data.copy()
+				self.myBuffPos += 1
+
+	def read_dat( self, data ):
+		pass#IMPORTIMPORTIMPORT from numpy import fromfile, float32
+		if not self.incore:
+			if not(self.fw is None) and not( self.fw.closed ):
+				self.fw.close()
+			if self.fr is None:
+				self.fr = open( self.file, "rb" )
+			assert not(self.fr is None) and not self.fr.closed
+			EMAN2_cppwrap.Util.readarray( self.fr, data, self.ncov )
+		else:
+			data[:] = self.myBuff[self.myBuffPos]
+			self.myBuffPos += 1
+		if not(self.avgdat is None):
+			data -= self.avgdat
+
+	def close_dat( self ):
+		if not self.incore:
+			if not(self.fw is None) and not( self.fw.closed ):
+				self.fw.close()
+			self.fw = None
+			if not(self.fr is None) and not( self.fr.closed ):
+				self.fr.close()
+			self.fr = None	
+		else:
+			self.myBuffPos = 0
+
+	def usebuf( self ):
+		nx = self.mask.get_xsize()
+		ny = self.mask.get_ysize()
+		nz = self.mask.get_zsize()
+
+		self.ncov = 0
+		for ix in range(nx):
+			for iy in range(ny):
+				for iz in range(nz):
+					if( self.mask.get_value_at(ix,iy,iz) >= 0.5 ):
+						self.ncov += 1
+		pass#IMPORTIMPORTIMPORT import os
+		size = os.stat( self.file )[6]
+		self.nimg = size/(self.ncov*4)
+		assert self.nimg * self.ncov*4 == size
+		self.bufused = True
+
+	def shuffle( self ):
+		assert self.bufused
+		pass#IMPORTIMPORTIMPORT from random import shuffle, seed
+		pass#IMPORTIMPORTIMPORT from numpy  import zeros, float32, array
+		pass#IMPORTIMPORTIMPORT from string import replace
+		random.seed( 10000 + 10*self.myid )
+
+		shfflfile = string.replace( self.file, "masked", "shuffled" )
+
+		#print self.myid, "shuffling"
+		sumdata = numpy.zeros( (self.ncov), numpy.float32 )
+		imgdata = numpy.zeros( (self.ncov), numpy.float32 )
+		if not self.incore: 
+			self.fr = open( self.file, "rb" )
+		self.avgdata = None
+
+		if not self.incore: 
+			fw = open( shfflfile, "wb" )
+		for i in range(self.nimg):
+			self.read_dat( imgdata )
+			random.shuffle( imgdata )
+			sumdata += imgdata
+			if not self.incore:
+				imgdata.tofile( fw )
+			else:
+				self.myBuff[self.myBuffPos-1] = imgdata.copy()
+
+		if not self.incore: 
+			self.fr.close()
+			fw.close()
+		else:
+			self.close_dat()
+		
+		if self.MPI:
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+			sumdata = mpi.mpi_reduce( sumdata, self.ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
+			sumdata = mpi.mpi_bcast(  sumdata, self.ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
+			sumdata = numpy.array(sumdata, numpy.float32)
+ 
+			sumnimg = mpi.mpi_reduce( self.nimg, 1, mpi.MPI_INT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
+			sumnimg = mpi.mpi_bcast(  sumnimg,   1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD )
+		else:
+			sumnimg = self.nimg
+
+		self.file = shfflfile
+		self.avgdat = sumdata[:]/float(sumnimg)
+		#print "done shuffling,nimg:", float(sumnimg)
+
+
+
+	def setavg( self, avg ):
+		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32
+		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
+		tmpimg = EMAN2_cppwrap.Util.compress_image_mask( avg, self.mask )
+		avgdat = utilities.get_image_data(tmpimg)
+		self.avgdat = numpy.zeros( (len(avgdat)), numpy.float32 )
+		self.avgdat[:] = avgdat[:]
+
+	def insert( self, img ):
+		assert self.mask.get_xsize()==img.get_xsize()
+		assert self.mask.get_ysize()==img.get_ysize()
+		assert self.mask.get_zsize()==img.get_zsize()
+
+		pass#IMPORTIMPORTIMPORT from utilities import get_image_data
+		tmpimg = EMAN2_cppwrap.Util.compress_image_mask( img, self.mask )
+		tmpdat = utilities.get_image_data(tmpimg)
+		if self.incore:
+			self.myBuffPos = len(self.myBuff)
+		self.writedat( tmpdat )
+		if self.incore:
+			self.close_dat()                                   #   WRITEDAT
+		self.nimg +=1
+		self.ncov = tmpimg.get_xsize()
+
+	def analyze( self ):
+		#if self.myid==0:
+		#	print "analyze: ", self.ncov, " nvec: ", self.nvec
+		pass#IMPORTIMPORTIMPORT from time import time
+		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32, int32, int64
+		ncov = self.ncov
+		kstep = self.nvec + 20 # the choice of kstep is purely heuristic
+
+		diag    = numpy.zeros( (kstep), numpy.float32 )
+		subdiag = numpy.zeros( (kstep), numpy.float32 )
+		vmat    = numpy.zeros( (kstep, ncov), numpy.float32 )
+
+		lanczos_start = time.time()
+		kstep = self.lanczos( kstep, diag, subdiag, vmat )
+		#print 'time for lanczos: ', time() - lanczos_start
+		if not self.MPI or self.myid==0:
+			qmat = numpy.zeros( (kstep,kstep), numpy.float32 )
+			lfwrk = 100 + 4*kstep + kstep*kstep
+			liwrk =   3 + 5*kstep
+
+			fwork = numpy.zeros( (lfwrk), numpy.float32 )
+			iwork = numpy.zeros( (liwrk), numpy.int32 )
+			info = EMAN2_cppwrap.Util.sstevd( "V", kstep, diag, subdiag, qmat, kstep, fwork, lfwrk, iwork, liwrk)
+
+			eigval = numpy.zeros( (self.nvec), numpy.float32 )
+			for j in range(self.nvec):
+				eigval[j] = diag[kstep-j-1]
+
+			pass#IMPORTIMPORTIMPORT from utilities import model_blank, get_image_data
+			eigimgs = []
+			for j in range(self.nvec):
+				tmpimg = utilities.model_blank(ncov, 1, 1)
+				eigvec = utilities.get_image_data( tmpimg )
+				trans = 'N'
+				EMAN2_cppwrap.Util.sgemv( trans, ncov, kstep, 1.0, vmat, ncov, qmat[kstep-j-1], 1, 0.0, eigvec, 1 );
+
+				eigimg = EMAN2_cppwrap.Util.reconstitute_image_mask(tmpimg, self.mask)
+				eigimg.set_attr( "eigval", float(eigval[j])/(self.nimg - 1) )
+				eigimgs.append( eigimg )
+
+			return eigimgs
+
+
+	def lanczos( self, kstep, diag, subdiag, V ):
+		pass#IMPORTIMPORTIMPORT from numpy import zeros, float32, array
+		pass#IMPORTIMPORTIMPORT from time import time
+
+		all_start = time.time()
+
+		ncov = self.ncov
+		v0 = numpy.zeros( (ncov), numpy.float32)
+		Av = numpy.zeros( (ncov), numpy.float32)
+
+		hvec = numpy.zeros( (kstep), numpy.float32 )
+		htmp = numpy.zeros( (kstep), numpy.float32 )
+		imgdata = numpy.zeros( (ncov), numpy.float32 )
+
+		for i in range(ncov):
+			v0[i] = 1.0
+
+		beta = EMAN2_cppwrap.Util.snrm2(ncov, v0, 1)
+		for i in range(ncov):
+			V[0][i] = v0[i]/beta
+
+		for i in range(self.nimg):
+			self.read_dat(imgdata)                                     #  READ_DAT			
+			alpha = EMAN2_cppwrap.Util.sdot( ncov, imgdata, 1, V[0], 1 )
+			EMAN2_cppwrap.Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
+		self.close_dat()
+
+		if self.MPI:
+			pass#IMPORTIMPORTIMPORT from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
+			Av = mpi.mpi_reduce( Av, ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
+			Av = mpi.mpi_bcast(  Av, ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
+			Av = numpy.array(Av, numpy.float32)
+		#print 'iter 0: ', time() - all_start
+
+
+		diag[0] = EMAN2_cppwrap.Util.sdot( ncov, V[0], 1, Av, 1 )
+		alpha = -diag[0]
+		EMAN2_cppwrap.Util.saxpy( ncov, float(alpha), V[0], 1, Av, 1 )
+
+		TOL = 1.0e-7
+		for iter in range(1, kstep):
+			iter_start = time.time()
+			beta = EMAN2_cppwrap.Util.snrm2(ncov, Av, 1)
+			if( beta < TOL ):
+				kstep = iter+1
+				break
+
+			subdiag[iter-1] = beta
+			for i in range(ncov):
+				V[iter][i] = Av[i]/beta
+
+			Av[:] = 0.0
+
+			for i in range(self.nimg):
+				self.read_dat( imgdata )                                #READ_DAT
+				alpha = EMAN2_cppwrap.Util.sdot( ncov, imgdata, 1, V[iter], 1 )
+				EMAN2_cppwrap.Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
+			self.close_dat()
+
+
+			if self.MPI:
+				Av = mpi.mpi_reduce( Av, ncov, mpi.MPI_FLOAT, mpi.MPI_SUM, 0, mpi.MPI_COMM_WORLD )
+				Av = mpi.mpi_bcast(  Av, ncov, mpi.MPI_FLOAT, 0, mpi.MPI_COMM_WORLD )
+				Av = numpy.array(Av, numpy.float32)
+
+			trans = 'T'
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
+			              0.0, hvec, 1 )
+
+			trans = 'N'
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, hvec, 1,
+			              1.0,     Av, 1 )
+
+			trans = 'T'
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1,  1.0, V, ncov, Av, 1,
+			              0.0,   htmp, 1 )
+
+			EMAN2_cppwrap.Util.saxpy(iter+1, 1.0, htmp, 1, hvec, 1)
+
+			trans = 'N'
+			EMAN2_cppwrap.Util.sgemv( trans, ncov, iter+1, -1.0, V, ncov, htmp, 1,
+			              1.0,     Av, 1 )
+
+			diag[iter] = hvec[iter]
+
+			#print 'iter, time, overall_time: ', iter, time()-iter_start, time()-all_start
+		return kstep
+
+
+
 class pcanalyzebck(object):
 	def __init__(self, mask, nvec, dataw, list_of_particles, dm, variance, fl, aa, MPI=False ):
 		pass#IMPORTIMPORTIMPORT import os
@@ -8761,6 +9346,313 @@ class pcanalyzebck(object):
 
 
 
+def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0.25, branchfunc=2, LIM=-1, doMPI_init=False, njobs=-1,do_mpi=False, K=-1,cdim=[],nstart=-1, nstop=-1, top_Matches=[]):
+	pass#IMPORTIMPORTIMPORT from statistics import k_means_match_clusters_asg_new
+	"""
+		
+		Input:
+			PART:   list of list of arrays. So PART[0] corresponds to the first partition, PART[1] the second partition and so on. 
+				Each partition is a list of arrays of distinct integers sorted in ascending order. The arrays corresponds
+				to classes, so PART[i][j] is the j-th class of the i-th partition. 
+				
+				Example of how to construct a partition:
+					K    = EMUtil.get_image_count(stack_name)
+					part0 = []
+					for k in xrange(K):
+						im  = get_im(stack_name, k)
+						lid = im.get_attr('members')
+						lid = array(lid, 'int32')
+						lid.sort()
+						part0.append(lid.copy())
+						
+			K:	Number of classes in the first partition.
+	
+			T:      An integer. It is the threshold such that the stable sets corresponding to the matches in the output have size larger than T. 
+				Specifically, if there are say four partitions, and the i-th match in the output, i.e., MATCH[i], is [2,12,1,5], then
+				the 2nd class of the first partition, 12th class of the second, first class of the third, and fifth class of the
+				fourth have at least T elements in common.
+			
+			nguesses: Not used anymore. I'm going to remove it.
+			
+			J:	An integer. In the branching matching algorithm we use, each step corresponds to choosing a match to add to the 
+				collection of matches we will eventually output. 
+				Since at each step there are many different possibilities and 
+				it is generally not feasible to branch on them all, we consider only J matches with the largest weights in choosing which matches to branch on.
+				See branchfunc below for more details.
+				Intuitively, a larger J should give better results. 
+				If J=1, the algorithm defaults to the greedy algorithm, i.e, at each step, we choose the match which has the largest cost and add it to the collection of matches to output.
+			        
+			
+			branchfunc: An integer. Determines which branching function should be used. 
+			
+				    Roughly speaking, the algorithm we use builds up the collection of matches iteratively. During each step, we determine
+				    the next match that should be added to the collection. Since there are many possibilities, the role of the branching function
+				    is to determine both how many and which possibilities to explore.
+				    
+				    The branching functions chooses the possibilities to explore from the 
+				    J matches with the largest weights.
+				    
+				    There are two possible choices for branchfunc: 2 or 4
+				    
+				    branchfunc = 2:  The J matches are considered in order according to weight, beginning with the match with the largest weight. 
+				    	             Always branches on the current match with the largest weight. 
+						     Branch on the match with the second largest weight only if it is infeasible with the match with the largest weight.
+				    	             Similarly, for each subsequent match, only branch on it if it is infeasible with at least LIM of the matches which have already been chosen to branch on.
+						    
+						    
+				    branchfunc = 4:  The J matches are considered in order according to weight, beginning with the match with the largest weight. 
+				    		     We branch based on distribution of the cost of the J largest matches. 
+				    		     Let stdev be the standard deviation of the weights of the J matches. 
+						     We always branch on the match with the largest weight.
+						     For the remaining J-1 matches, we branch on those which are within stmult*stdev of the weight of match with the largest weight.
+						     	 	
+				    	
+			LIM: 	An integer smaller than J. See explanation for branchfunc above.
+				  	
+			max_branching: This is an upper bound on the maximum number of branches to explore. See explanation for branchfunc above. This is to ensure we get a result in reasonable time. Intuitively, the larger max_branching is, the likelihood of getting a better result (i.e, a collection of matches with a large total weight) is increased.  
+	
+			stmult: An integer. See explanation for branchfunc above.
+	
+		Output: MATCH, STB_PART, CT_s, CT_t, ST, st
+			
+			If there are exactly two partitions, i.e., len(PART) == 2, then the matching will be computed using Hungarian algorithm, and those matches for which the corresponding stable set has size greater than T will be output. If T==0, then the output matches will be optimal.
+			
+			(EDIT 10/11/11: If there are exactly two partitions, i.e., len(PART) == 2, then the matching will be computed using Hungarian algorithm such that ONLY matches with weights greater than T are considered during the course of the algorithm. This means the matching computed using the Hungarian algorithm will contain only matches with weight greater than T. See k_means_match_clusters_asg_new.) 
+			
+			MATCH: A list of arrays. Each array has len(PART) elements, and the i-th element corresponds to a class in the i-th partition. 
+			       So MATCH[0][0] is an index into PART[0], MATCH[0][1] is an index into PART[1], etc.
+			    
+			STB_PART: A list of lists. The stable set corresponding to the i-th MATCH, i.e., MATCH[i], is stored in STB_PART[MATCH[i][0]]. 
+			
+			CT_s:   A list of integers. The size of the stable set corresponding to  the i-th MATCH, i.e., MATCH[i], is stored in CT_s[MATCH[i][0]].
+				The quality of the output collection of matches, i.e., MATCH, can be determined by summing CT_s. The larger the better.
+			
+			CT_t:	A list of integers. The number of elements in the union of the classes in the i-th match is stored in CT_t[MATCH[i][0]].
+			
+			st:     st = 100.0 * sum(CT_s) / float(sum(CT_t)) 
+			
+			ST:	ST[k] = 100.0 * CT_s[k] / float(CT_t[k])	
+	
+	"""
+	
+	pass#IMPORTIMPORTIMPORT from copy import deepcopy
+	pass#IMPORTIMPORTIMPORT from numpy import array, append
+
+	MATCH=[]
+	np = len(PART)
+	# do MPI_init: compute pruned partitions and Njobs top matches and return
+	#if doMPI_init:
+	#	newParts,topMatches,class_dim, num_found=k_means_match_bbenum(PART,T=T, J=J, nguesses=nguesses, DoMPI_init=True,Njobs=njobs)
+	#	return newParts, topMatches, class_dim,num_found
+	
+	#if do_mpi:
+	#	MATCH,cost= k_means_match_bbenum(PART, T=T, J=J, nguesses=nguesses, DoMPI=True, K=K, np=np,c_dim=cdim, N_start=nstart,N_stop=nstop,topMatches=top_Matches)
+	#	return MATCH,cost
+			
+	if np > 2:
+		MATCH= k_means_match_bbenum(PART, T=T, J=J, max_branching=max_branching, stmult=stmult, branchfunc=branchfunc, LIM=LIM, nguesses=nguesses, DoMPI=False)
+
+	
+	list_stb=[]
+	tot_n=0
+	if np == 2:
+		# First make sure the two partitions have the same number of classes. If not, pad the one with less with junk.
+		K1 = len(PART[0])
+		K2 = len(PART[1])
+		maxK = max(K1, K2)
+		if K1 < maxK or K2 < maxK:
+			# ffind garbage value to pad empty classes with
+			garbage_value = 923456
+			garbage_incr=1
+			for i in range(np):
+				K = len(PART[i])
+				for j in range(K):
+					pSize = PART[i][j].size
+					if pSize >= 1:
+						for p in range(pSize):
+							if PART[i][j][p] >= garbage_value:
+								garbage_value = PART[i][j][p] + garbage_incr
+			for i in range(np):
+				if len(PART[i]) < maxK:
+					# pad with empty arrays
+					df = maxK - len(PART[i])
+					for pd in range(df):
+						PART[i].append(numpy.array([garbage_value, garbage_value+1],'int32'))
+						garbage_value = garbage_value + 2
+						
+		# now call 
+		MATCH, list_stb, tot_n = k_means_match_clusters_asg_new(PART[0], PART[1], T)
+			
+							
+	K=len(PART[0])		
+	
+	STB_PART = [[] for i in range(K)]
+	nm       = len(MATCH)
+	CT_t     = [0] * K
+	CT_s     = [0] * K
+	ST       = [0] * K
+	ct_t     = 0
+	ct_s     = 0
+	st       = 0
+
+
+	for k in range(nm):
+		kk   = int(MATCH[k][0]) # due to numpy obj
+		vmax = [0] * np
+		vmin = [0] * np
+		for i in range(np):
+		    vmax[i] = max(PART[i][int(MATCH[k][i])])
+		    vmin[i] = min(PART[i][int(MATCH[k][i])])
+
+		vmax = int(max(vmax))
+		vmin = int(min(vmin))
+		vd   = vmax - vmin + 1
+
+		asg = [0] * vd
+		for i in range(np):
+		    for item in PART[i][int(MATCH[k][i])]: asg[int(item) - vmin] += 1
+
+		stb  = []
+		for i in range(vd):
+			if asg[i] != 0:
+				CT_t[kk] += 1
+				if asg[i] == np:
+					CT_s[kk] += 1
+					stb.append(i + vmin)
+
+		STB_PART[kk] = copy.deepcopy(stb)
+
+	for k in range(K):
+		if CT_t[k] == 0: continue
+		ST[k] = 100.0 * CT_s[k] / float(CT_t[k])
+
+	if sum(CT_t) == 0:
+		st = 0
+	else:   st = 100.0 * sum(CT_s) / float(sum(CT_t))
+
+	if np == 2:
+		if sum(CT_s) != tot_n:
+			print(sum(CT_s), tot_n)
+			print("something wrong!!")
+			sys.exit()
+
+	return MATCH, STB_PART, CT_s, CT_t, ST, st
+
+# DO NOT copy memory - could lead to crashes	
+# This is the wrapper function for bb_enumerateMPI. It packages the arguments and formats the output....
+def k_means_match_bbenum(PART, T=10, J=1, max_branching=40, stmult=0.25, nguesses=5, branchfunc=2, LIM=-1, DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1, c_dim=[],N_start=-1, N_stop=-1, topMatches=[]):	
+	pass#IMPORTIMPORTIMPORT from numpy import array, append, insert,sort
+	
+	MATCH=[]
+	output=[]
+	
+	
+	if DoMPI==True and DoMPI_init==False:
+		print("Not supporting MPI currently")
+		#if len(levels)<1:	
+		#	for i in xrange(K):
+		#		levels.append(1)
+
+		#ar_levels = array(levels, 'int32')
+		#ar_class_dim	= array(c_dim,'int32')	
+		#ar_newParts = array(PART, 'int32')
+		#firstmatches = topMatches[N_start*(np+1):(N_stop+1)*(np+1)]
+		#output=Util.branchMPIpy(ar_newParts,ar_class_dim,np,K,T,ar_levels,K,nguesses,N_stop-N_start+1, array(firstmatches, 'int32'))
+	else:
+		LARGEST_CLASS = 0
+		np=len(PART)
+		
+		#ar_argParts = array([],'int32')
+		onedParts = []
+		class_dim=[]
+		
+		# figure out the garbage value to pad empty classes with
+		
+		garbage_value = 923456
+		garbage_incr = 10
+		for i in range(np):
+			K = len(PART[i])
+			for j in range(K):
+				pSize = PART[i][j].size
+				if pSize > LARGEST_CLASS:
+					LARGEST_CLASS = pSize
+				if pSize >= 1:
+					for p in range(pSize):
+						if PART[i][j][p] >= garbage_value:
+							garbage_value = PART[i][j][p] + garbage_incr
+		
+		# deal with the case where not all the partitions have the same number of classes
+		max_K = len(PART[0])
+		for i in range(np):
+			if len(PART[i]) > max_K:
+				max_K = len(PART[i])
+		for i in range(np):
+			if not(len(PART[i]) == max_K):
+				# pad with empty arrays
+				df = max_K - len(PART[i])
+				for j in range(df):
+					PART[i].append(numpy.array([garbage_value, garbage_value+1],'int32'))
+					garbage_value = garbage_value + 2	
+					
+		
+		K = len(PART[0])		
+		# serialize all the arguments in preparation for passing into c++ function
+		
+		
+		for i in range(np):
+			for j in range(K):
+				pSize = PART[i][j].size
+					
+				onedParts.append(j)
+				onedParts.append(0)
+				zero_pad = 0
+				if pSize > 0:
+					for p in range(pSize):
+						onedParts.append(PART[i][j][p])	
+				else:
+					# pad with garbage value
+					zero_pad=2
+					onedParts.append(garbage_value)
+					onedParts.append(garbage_value+1)
+					garbage_value = garbage_value + zero_pad
+						
+				class_dim.append(pSize + zero_pad + 2)
+				
+				#ar_argParts = append(ar_argParts,[j,0])
+				#ar_argParts=append(ar_argParts,PART[i][j])
+		ar_argParts = numpy.array(onedParts,'int32')
+		ar_class_dim = numpy.array(class_dim,'int32')
+		
+
+		# Single processor version
+		output = EMAN2_cppwrap.Util.bb_enumerateMPI(ar_argParts, ar_class_dim,np,K,T, nguesses,LARGEST_CLASS, J, max_branching, stmult, branchfunc, LIM)
+		
+	# first element of output is the total  cost of the solution, second element is the number of matches
+	# in the output solution, and then follows the list of matches.
+	
+	# convert each match into an array and insert into MATCH
+	num_matches = output[1]
+	
+	for j in range(num_matches):
+		# get the j-th match
+		ar_match = numpy.array(output[j*np + 2: j*np + 2+np],'int32')
+		MATCH.append(ar_match)
+		
+	# order Matches in Match by group in first partition
+	outMATCH=[]
+	for j in range(num_matches):
+		amatch=[]
+		for js in range(len(MATCH[j])):
+			amatch.append(MATCH[j][js])
+		outMATCH.append(amatch)
+	outMATCH.sort()
+			
+	if DoMPI:
+		print("Not supporting MPI currently")
+		return outMATCH, output[0]
+	else:
+		return outMATCH
+# match is a list, where every five tuple corresponds to a match
 def k_means_stab_getinfo(PART, match):
 	
 	pass#IMPORTIMPORTIMPORT from copy import deepcopy

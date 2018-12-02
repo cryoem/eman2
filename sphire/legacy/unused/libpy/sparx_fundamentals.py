@@ -328,6 +328,15 @@ def __buildweights(m, kb):
 
 # shortcuts to Fourier product functions
 # Correlation functions
+def ccf(e, f, center=True):
+	"""
+	Return the circulant cross-correlation function of images e and f.
+	Input images may be real or complex.  Output image is real.
+	1-D, 2-D, or 3-D images supported.
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import correlation, fp_flag
+	return EMAN2_cppwrap.correlation(e,f,EMAN2_cppwrap.fp_flag.CIRCULANT, center)
+
 def ccfn(e, f, center=True):
 	"""
 		Name
@@ -483,6 +492,19 @@ def cnvnpl(e, f, center=True):
     
     
 # Selfcorrelation functions
+def scf(e, center=True):
+	"""
+		Name
+			scf - calculate the circulant self-correlation function of an image
+		Input
+			e: input image, can be either real or Fourier
+			center: if set to True (default), the origin of the result is at the center
+		Output
+			circulant self-correlation function of the input image. Real.
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import self_correlation, fp_flag
+	return EMAN2_cppwrap.self_correlation(e, EMAN2_cppwrap.fp_flag.CIRCULANT, center)
+
 def scfn(e, center=True):
 	"""
 		Name
@@ -977,6 +999,35 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 	return 	pw2_band
 
 
+def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
+	""" 
+		Calculate set of periodograms for tiles.  Returns a list.
+	"""
+	pass#IMPORTIMPORTIMPORT from fundamentals import window2d, ramp
+	pass#IMPORTIMPORTIMPORT from EMAN2 import periodogram
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nx_fft = smallprime(nx)
+	ny_fft = smallprime(ny)
+	x_gaussian_hi = 1./win_size
+	pass#IMPORTIMPORTIMPORT from filter    import filt_gaussh
+	e_fil = filter.filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
+	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
+	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
+	x26 = int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
+	x29 = int(x39*((ny-2*edge_y)/win_size-1)+1)  # number of pieces vertical dim.(Y)
+	pw2 = []
+	for iy in range(1, x29+1):	
+		x21 = (win_size/x39)*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
+		for ix in  range(1, x26+1):			 
+			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
+			wi  = ramp( window2d(e_fil, win_size, win_size, "l", x22, x21) )
+			st = EMAN2_cppwrap.Util.infomask(wi, None, True)
+			wi = (wi - st[0])/st[1]*win_size
+			pw2.append(EMAN2_cppwrap.periodogram(wi))
+	return  pw2
+
+
 def bracket(f,x1,h):
 	c = 1.618033989 
 	f1 = f(x1)
@@ -996,24 +1047,3 @@ def bracket(f,x1,h):
 		f1 = f2; f2 = f3
 	print("Bracket did not find a mimimum")        
  
-def mulmat(m1,m2):
-	mat = [[0.0]*3,[0.0]*3,[0.0]*3]
-	"""
-	for i in range(3):
-		for j in range(3):
-			for k in range(3):
-				mat[i][j] += m1[i][k]*m2[k][j]
-			#mat[i][j] = round(mat[i][j],8)
-	"""
-	mat[0][0] = m1[0][0]*m2[0][0] + m1[0][1]*m2[1][0] + m1[0][2]*m2[2][0]
-	mat[0][1] = m1[0][0]*m2[0][1] + m1[0][1]*m2[1][1] + m1[0][2]*m2[2][1]
-	mat[0][2] = m1[0][0]*m2[0][2] + m1[0][1]*m2[1][2] + m1[0][2]*m2[2][2]
-	mat[1][0] = m1[1][0]*m2[0][0] + m1[1][1]*m2[1][0] + m1[1][2]*m2[2][0]
-	mat[1][1] = m1[1][0]*m2[0][1] + m1[1][1]*m2[1][1] + m1[1][2]*m2[2][1]
-	mat[1][2] = m1[1][0]*m2[0][2] + m1[1][1]*m2[1][2] + m1[1][2]*m2[2][2]
-	mat[2][0] = m1[2][0]*m2[0][0] + m1[2][1]*m2[1][0] + m1[2][2]*m2[2][0]
-	mat[2][1] = m1[2][0]*m2[0][1] + m1[2][1]*m2[1][1] + m1[2][2]*m2[2][1]
-	mat[2][2] = m1[2][0]*m2[0][2] + m1[2][1]*m2[1][2] + m1[2][2]*m2[2][2]
-
-	return mat
-
