@@ -243,8 +243,6 @@ def recursive_check(function_dict, module, key):
             IGNORED.append((module,key))
         return None
     else:
-        if module == 'sparx_morphology':
-            print(key)
         function_dict[module]['used'].append(key)
         function_dict[module]['used'] = list(set(function_dict[module]['used']))
 
@@ -278,6 +276,9 @@ def recursive_check(function_dict, module, key):
 # Extract all the internally used functions from the bin files
 print('Find unused functions in bin files')
 for name, values in used_functions['bin'].items():
+    if name in ('sxgui', 'sparx_user_functions', 'user_functions'):
+        print('IGNORE', name)
+        continue
     with open(os.path.join(tmp_bin_dir, '{0}.py'.format(name))) as read:
         lines = read.readlines()
 
