@@ -6032,7 +6032,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 				#data[5] = [(random()-0.5)*2,(random()-0.5)*2]  #  HERE !!!!!!!!!!!
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*numpy.pi))
-				optm_params = sparx_utilities.amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], alignment.eqproj_cascaded_ccc, 1.0, 1.e-2, 500, data)
+				optm_params = sparx_utilities.amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], sparx_alignment.eqproj_cascaded_ccc, 1.0, 1.e-2, 500, data)
 				optm_params[0].append(optm_params[3][0])
 				optm_params[0].append(optm_params[3][1])
 				optm_params[0][3] *= -1
@@ -9775,7 +9775,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 					refdata[5] = [-s2x,-s2y]
 					refdata[6] = ts
 					weight_phi = max(delta, delta*abs((tht-90.0)/180.0*numpy.pi))
-					[ang,peak,qiter,sft] = sparx_utilities.amoeba_multi_level([phi,tht,psi],[weight_phi,delta,weight_phi],alignment.eqproj_cascaded_ccc, 1.0,1.e-2, 500, refdata)
+					[ang,peak,qiter,sft] = sparx_utilities.amoeba_multi_level([phi,tht,psi],[weight_phi,delta,weight_phi],sparx_alignment.eqproj_cascaded_ccc, 1.0,1.e-2, 500, refdata)
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],krf,peak,ang[0],ang[1],ang[2],-sft[0],-sft[1]) )
 						finfo.flush()
@@ -10170,7 +10170,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 					refdata[5] = [-s2x,-s2y]
 					refdata[6] = ts
 					weight_phi = max(delta, delta*abs((tht-90.0)/180.0*numpy.pi))
-					[ang,peak,qiter,sft] = sparx_utilities.amoeba_multi_level([phi,tht,psi],[weight_phi,delta,weight_phi],alignment.eqproj_cascaded_ccc, 1.0,1.e-2, 500, refdata)
+					[ang,peak,qiter,sft] = sparx_utilities.amoeba_multi_level([phi,tht,psi],[weight_phi,delta,weight_phi],sparx_alignment.eqproj_cascaded_ccc, 1.0,1.e-2, 500, refdata)
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],krf,peak,ang[0],ang[1],ang[2],-sft[0],-sft[1]) )
 						finfo.flush()
@@ -10537,7 +10537,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 			
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*numpy.pi))
 
-				optm_params = sparx_utilities.amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], alignment.eqproj_cascaded_ccc, 1.e-4, 1.e-4, 500, data)
+				optm_params = sparx_utilities.amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], sparx_alignment.eqproj_cascaded_ccc, 1.e-4, 1.e-4, 500, data)
 				optm_params[0].append(optm_params[3][0])
 				optm_params[0].append(optm_params[3][1])
 				optm_params[0][3] *= -1
@@ -10847,7 +10847,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 				#data[5] = [(random()-0.5)*2,(random()-0.5)*2]  #  HERE !!!!!!!!!!!
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*numpy.pi))
-				optm_params = sparx_utilities.amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], alignment.eqproj_cascaded_ccc, 1.0, 1.e-2, 500, data)
+				optm_params = sparx_utilities.amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], sparx_alignment.eqproj_cascaded_ccc, 1.0, 1.e-2, 500, data)
 				optm_params[0].append(optm_params[3][0])
 				optm_params[0].append(optm_params[3][1])
 				optm_params[0][3] *= -1
@@ -11208,14 +11208,14 @@ def local_ali3d_MPI_scipy_minimization(stack, outdir, maskfile, ou = -1,  delta 
 				atparams_for_minimize = atparams + data[5]
 				
 				total_number_of_function_calls = 0
-				res = scipy.optimize.minimize(alignment.objective_function_just_ccc_has_minimum, atparams_for_minimize, (data,), method='COBYLA')
+				res = scipy.optimize.minimize(sparx_alignment.objective_function_just_ccc_has_minimum, atparams_for_minimize, (data,), method='COBYLA')
 				total_number_of_function_calls += res.nfev
 				result = res.x.tolist()
 				data[5] = result[3:5]
-				res = scipy.optimize.minimize(alignment.objective_function_just_ccc_has_minimum_reduced, result[0:3], (data,), method='COBYLA')
+				res = scipy.optimize.minimize(sparx_alignment.objective_function_just_ccc_has_minimum_reduced, result[0:3], (data,), method='COBYLA')
 				total_number_of_function_calls += res.nfev
 				result = res.x.tolist() + data[5]
-				res = scipy.optimize.minimize(alignment.objective_function_just_ccc_has_minimum, result, (data,), method='COBYLA')
+				res = scipy.optimize.minimize(sparx_alignment.objective_function_just_ccc_has_minimum, result, (data,), method='COBYLA')
 				total_number_of_function_calls += res.nfev
 
 				optm_params = [[], 0, 0, 0]
@@ -23137,7 +23137,7 @@ def slocal_ali3d_base_old(stack, templatevol, Tracker, mpi_comm = None, log= Non
 				#data[5] = [(random()-0.5)*2,(random()-0.5)*2]  #  HERE !!!!!!!!!!!
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*numpy.pi))
-				optm_params = sparx_utilities.amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], alignment.eqproj_cascaded_ccc, 1.0, 1.e-2, 500, data)
+				optm_params = sparx_utilities.amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], sparx_alignment.eqproj_cascaded_ccc, 1.0, 1.e-2, 500, data)
 				optm_params[0].append(optm_params[3][0])
 				optm_params[0].append(optm_params[3][1])
 				optm_params[0][3] *= -1

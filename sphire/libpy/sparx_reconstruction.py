@@ -683,7 +683,7 @@ def recons3d_4nnw_MPI(myid, prjlist, bckgdata, snr = 1.0, sign=1, symmetry="c1",
 			nimg += 1
 			finfo.write(" %4d inserted\n" %(nimg) )
 			finfo.flush()
-	del utilities.pad
+	del sparx_utilities.pad
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )
 		finfo.flush()
@@ -1798,7 +1798,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 			nimg += 1
 			finfo.write(" %4d inserted\n" %(nimg) )
 			finfo.flush()
-	del utilities.pad
+	del sparx_utilities.pad
 	if not (finfo is None): 
 		finfo.write( "begin reduce\n" )
 		finfo.flush()
