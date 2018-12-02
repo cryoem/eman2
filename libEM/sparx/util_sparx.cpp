@@ -12412,18 +12412,18 @@ void Util::cyclicshift(EMData *image, Dict params) {
 	// x-reverses
 	if (mx != 0) {
 		for (int iz = 0; iz < nz; iz++)
-	               for (int iy = 0; iy < ny; iy++) {
+			for (int iy = 0; iy < ny; iy++) {
 				// reverses for column iy
-	        		size_t offset = nx*iy + (size_t)nx*ny*iz; // starting location for column iy in slice iz
+				size_t offset = nx*iy + (size_t)nx*ny*iz; // starting location for column iy in slice iz
 				reverse(&data[offset],&data[offset+mx]);
 				reverse(&data[offset+mx],&data[offset+nx]);
 				reverse(&data[offset],&data[offset+nx]);
-	        	}
+			}
 	}
 	// y-reverses
 	if (my != 0) {
 		for (int iz = 0; iz < nz; iz++) {
-	        	size_t offset = (size_t)nx*ny*iz;
+			size_t offset = (size_t)nx*ny*iz;
 			colreverse(&data[offset], &data[offset + my*nx], nx);
 			colreverse(&data[offset + my*nx], &data[offset + ny*nx], nx);
 			colreverse(&data[offset], &data[offset + ny*nx], nx);
@@ -29557,7 +29557,9 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-
+	cout <<"   Source modification date: 11/24/2018" <<  endl;
+/*
+This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;
         int i;
         int nx,ny,nz;
@@ -29587,8 +29589,7 @@ void Util::version()
         fftwf_destroy_plan(plan);
 
 	fftwf_cleanup_threads();
-
-	cout <<"   Source modification date: 11/01/2018" <<  endl;
+*/
 }
 
 
@@ -30342,8 +30343,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				int ty=tz+(iy-cy)*(iy-cy);				
 				for (int ix =0; ix<nx; ix++) {
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
-					if (r>=radius_p)
-						cmasked_ptr(ix,iy,iz) = bckg_ptr(ix,iy,iz);
+					if (r>=radius_p) cmasked_ptr(ix,iy,iz) = bckg_ptr(ix,iy,iz);
 					if (r>=radius && r<radius_p) {
 						float temp = (0.5+0.5*cos(pi*(radius_p-r)/cosine_width));
 						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(bckg_ptr(ix,iy,iz)-img_ptr(ix,iy,iz));
@@ -30352,36 +30352,31 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				}
 			}
 		}
-	} else 
-	{
-	  if (s==999999.)
-	  
-	  {
-		float u =0.0f;
-		s1 =0.0f;
-	  	for (int iz=0; iz<nz; iz++) {
-			int tz =(iz-cz)*(iz-cz);
-			for (int iy=0; iy<ny; iy++) {
-				int ty=tz+(iy-cy)*(iy-cy);
-				for (int ix=0; ix<nx; ix++) {
-					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
-					if (r>=radius_p) {	
-						u +=1.0f;
-						s1 +=img_ptr(ix,iy,iz);
+	} else {
+		if (s==999999.) {
+			float u =0.0f;
+			s1 =0.0f;
+			for (int iz=0; iz<nz; iz++) {
+				int tz =(iz-cz)*(iz-cz);
+				for (int iy=0; iy<ny; iy++) {
+					int ty=tz+(iy-cy)*(iy-cy);
+					for (int ix=0; ix<nx; ix++) {
+						float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
+						if (r>=radius_p) {	
+							u +=1.0f;
+							s1 +=img_ptr(ix,iy,iz);
+						}
+						if ( r>=radius && r<radius_p) {
+							float temp = (0.5+0.5*cos(QUADPI*(radius_p-r)/cosine_width));
+							u += temp;
+							s1 += img_ptr(ix,iy,iz)*temp;
+						}
+						if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
 					}
-					if ( r>=radius && r<radius_p) {
-						float temp = (0.5+0.5*cos(QUADPI*(radius_p-r)/cosine_width));
-						u += temp;
-						s1 += img_ptr(ix,iy,iz)*temp;
-					}
-					if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
 				}
-			  }
-		   }
-		 s1 /= u;
-	   }
-	else
-		s1=s;
+			}
+			s1 /= u;
+		} else s1=s;
 
 		for (int iz=0; iz<nz; iz++) {
 			int tz =(iz-cz)*(iz-cz);
@@ -30392,12 +30387,13 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 					if (r>=radius_p)  cmasked_ptr (ix,iy,iz) = s1;
 					if (r>=radius && r<radius_p) {
 						float temp = (0.5 + 0.5*cos(QUADPI*(radius_p-r)/cosine_width));
-						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(s1-img_ptr(ix,iy,iz)); }
+						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(s1-img_ptr(ix,iy,iz));
+					}
 					if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
 				}
 			}
-		}//iz
-	}//else
+		}
+	}
 	cmasked->update();
 	EXITFUNC;
 	return cmasked;
@@ -32491,7 +32487,6 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 {
 	ENTERFUNC;
-	// ONLY FOR COMPLEX DATA
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
@@ -32502,14 +32497,22 @@ float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
 		for (size_t i=0;i<size;++i) ip += img_ptr[i]*(double)img1_ptr[i];
 	} else {
 		float *pmask = mask->get_data();
-		for (size_t i=0;i<size/2;++i) {
+		// Here for real data, meaning mask has the size of images
+		int tnx=mask->get_xsize(),tny=mask->get_ysize(),tnz=mask->get_zsize();
+		size_t mask_size = (size_t)tnx*tny*tnz;
+		if( mask_size == size ) {
+			for (size_t i=0;i<size;++i) ip += img_ptr[i]*(double)img1_ptr[i]*pmask[i];
+		} else if(mask_size == size/2) {
+			// ONLY FOR COMPLEX DATA
+			for (size_t i=0;i<size/2;++i) {
 
-			//if( pmask[i] > 0.5f)  {
-			int lol = i*2;
-			//	ip += img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1];
-			ip += (img_ptr[lol]*(double)img1_ptr[lol]+img_ptr[lol+1]*(double)img1_ptr[lol+1])*pmask[i];
-			//}
-		}
+				//if( pmask[i] > 0.5f)  {
+				int lol = i*2;
+				//	ip += img_ptr[lol]*img1_ptr[lol]+img_ptr[lol+1]*img1_ptr[lol+1];
+				ip += (img_ptr[lol]*(double)img1_ptr[lol]+img_ptr[lol+1]*(double)img1_ptr[lol+1])*pmask[i];
+				//}
+			}
+		} else throw ImageDimensionException("The dimension of the image does not match the dimension of the mask!");
 	}
 	float sp = (float)ip;
 	return sp;

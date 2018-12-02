@@ -1431,7 +1431,7 @@ def steptwo(tvol, tweight, treg, cfsc = None, regularized = True):
 	tvol.div_sinc(1)
 	tvol.del_attr("npad")
 	tvol = Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	tvol = cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
+	tvol = cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1-5,5, None) # clean artifacts in corners
 
 	return tvol
 
@@ -1511,7 +1511,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 		tvol.div_sinc(1)
 		tvol.del_attr("npad")
 		tvol = Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-		tvol = cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
+		tvol = cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1-5,5, None) # clean artifacts in corners
 		return tvol
 	else:  return None
 
@@ -1891,9 +1891,9 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 						###if kb3D:  rtemp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
 						###else:     
 						temp = prgl(volprep,[ refang[itemp][0],refang[itemp][1],psi, 0.0,0.0], 1, False)
-						temp.set_attr("is_complex",0)
 						Util.mulclreal(temp, mask)
 						nrmref = sqrt(Util.innerproduct(temp, temp, None))
+						temp.set_attr("is_complex",0)
 						Util.mul_scalar(temp, 1.0/nrmref)
 						bigbuffer.insert_clip(temp,(0,0,(itemp-i)*npsi+j))
 	
@@ -1911,6 +1911,7 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 			img_buffer = img_buffer.reshape(ny, nxt)
 			#temp = EMNumPy.numpy2em(img_buffer)
 			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
+			temp.set_attr("is_complex",1)
 
 			#temp *= (1000.0/nrmref)
 			#nrmref = 1000.
@@ -2115,9 +2116,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 						###if kb3D:  rtemp = fft(prgs(volprep, kb3D, [refang[i][0],refang[i][1],psi, 0.0,0.0]))
 						###else:
 						temp = prgl(volprep,[ coarse_angles[itemp][0],coarse_angles[itemp][1],psi, 0.0,0.0], 1, False)
-						temp.set_attr("is_complex",0)
 						Util.mulclreal(temp, mask)
 						nrmref = sqrt(Util.innerproduct(temp, temp, None))
+						temp.set_attr("is_complex",0)
 						Util.mul_scalar(temp, 1.0/nrmref)
 						bigbuffer.insert_clip(temp,(0,0,(itemp-i)*npsi+j))
 
@@ -2135,6 +2136,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 			img_buffer = img_buffer.reshape(ny, nxt)
 			#temp = EMNumPy.numpy2em(img_buffer)
 			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
+			temp.set_attr("is_complex",1)
 
 			#temp *= (1000.0/nrmref)
 			#nrmref = 1000.
@@ -2152,9 +2154,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 			for j in range(npsi):
 				psi = (refang[i][2] + j*Tracker["delta"])%360.0
 				temp = prgl(volprep,[ refang[itemp][0],refang[itemp][1],psi, 0.0,0.0], 1, False)
-				temp.set_attr("is_complex",0)
 				Util.mulclreal(temp, mask)
 				nrmref = sqrt(Util.innerproduct(temp, temp, None))
+				temp.set_attr("is_complex",0)
 				Util.mul_scalar(temp, 1.0/nrmref)
 				bigbuffer.insert_clip(temp,(0,0,itemp*npsi+j))
 
@@ -2186,6 +2188,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 				img_buffer = img_buffer.reshape(ny, nxt)
 				#temp = EMNumPy.numpy2em(img_buffer)
 				temp = emnumpy3.register_numpy_to_emdata(img_buffer)
+				temp.set_attr("is_complex",1)
 
 				newpar[kl][2][0][1] = -1.0e23
 				for i4 in range(len(tshifts)):
@@ -2588,7 +2591,6 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 					ipsi = ipsiandiang%100000
 					iang = ipsiandiang/100000
 					temp = prgl(volinit,[coarse_angles[iang][0],coarse_angles[iang][1],(coarse_angles[iang][2] + ipsi*coarse_delta)%360.0, 0.0,0.0], 1, False)
-					temp.set_attr("is_complex",0)
 					nrmref = sqrt(Util.innerproduct(temp, temp, None))
 					#Util.mul_scalar(temp, 1.0/nrmref)
 

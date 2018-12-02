@@ -461,6 +461,7 @@ def main():
 		if options.sym==None or len(options.sym)==0 : options.sym="c1"
 		try:
 			sym=parsesym(options.sym).get_syms()
+			if options.verbose: print("Using symmetry: ",options.sym)
 		except:
 			print("Symmetry parsing error! ",options.sym)
 			sys.exit(1)

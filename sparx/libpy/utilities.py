@@ -613,6 +613,8 @@ def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 		Here  if v's are vectors:   vnew = T2*T1 vold
 		     with T1 described by alpha1, sx1, scale1 etc.
 
+	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
+
 	    Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
 	       angles in degrees
 	"""
@@ -628,6 +630,8 @@ def compose_transform2m(alpha1=0.0, sx1=0., sy1=0.0, mirror1=0, scale1=1.0, alph
 	"""Print the composition of two transformations  T2*T1
 		Here  if v's are vectors:   vnew = T2*T1 vold
 		     with T1 described by alpha1, sx1, scale1 etc.
+
+	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
 
 	    Usage: compose_transform2(alpha1,sx1,sy1,mirror1,scale1,alpha2,sx2,sy2,mirror2,scale2)
 	       angles in degrees
@@ -657,12 +661,20 @@ def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,
 
 def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	"""
-	  Combine 2D alignent parameters including mirror: tt = t2*t1
+	  Combine 2D alignment parameters including mirror: Tnew = T2*T1
+	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
 	"""
 
 	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":1.0})
 	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":1.0})
 	tt = t2*t1
+	"""
+	t1.printme()
+	print(" ")
+	t2.printme()
+	print(" ")
+	tt.printme()
+	"""
 	d = tt.get_params("2D")
 	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], int(d[ "mirror" ]+0.1)
 
@@ -1250,36 +1262,6 @@ def info(image, mask=None, Comment=""):
 
 	print("avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax))
 	return mean, sigma, imin, imax, nx, ny, nz
-
-def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_high=0):
-	from filter import filt_btwl
-	from fundamentals import smallprime, window2d
-	from utilities import get_image
-	"""
-		Window image to FFT-friendly size, apply Butterworth low pass filter,
-		and decimate 2D image
-	"""
-	if type(img)     == str :	img=get_image(img)
-	if decimation    <= 1   :  	ERROR("Improper decimation ratio", "image_decimation", 1)
-	if frequency_low <= 0   :
-		frequency_low  = .5/decimation- .05
-		if frequency_low <= 0: ERROR("Butterworth passband frequency is too low", "image_decimation", 1)
-		frequency_high = .5/decimation+ .05
-	if fit_to_fft :
-		nx_d = (img.get_xsize())/int(decimation)
-		ny_d = (img.get_ysize())/int(decimation)
-		nx_fft_d = smallprime(int(nx_d))
-		ny_fft_d = smallprime(int(ny_d))
-		nx_fft_m = nx_fft_d*int(decimation)
-		ny_fft_m = ny_fft_d*int(decimation)
-		e   = window2d(img, nx_fft_m, ny_fft_m, "l")
-		e1  = filt_btwl(e, frequency_low, frequency_high)
-		img = Util.decimate(e1, int(decimation), int(decimation), 1)
-	else:
-
-		e1  = filt_btwl(img, frequency_low, frequency_high)
-		img = Util.decimate(e1, int(decimation), int(decimation), 1)
-	return  img
 
 #### -----M--------
 def model_circle(r, nx, ny, nz=1):
@@ -3346,7 +3328,7 @@ def file_type(name):
 def get_params2D(ima, xform = "xform.align2d"):
 	"""
 	  retrieve 2D alignment parameters from the header
-	  alpha tx ty mirror scale
+	  alpha, tx, ty, mirror, scale
 	"""
 	d = Util.get_transform_params(ima, xform, "2D")
 	return d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]
@@ -3354,7 +3336,7 @@ def get_params2D(ima, xform = "xform.align2d"):
 def set_params2D(ima, p, xform = "xform.align2d"):
 	"""
 	  set 2D alignment parameters in the header
-	  alpha tx ty mirror scale
+	  p = [alpha, tx, ty, mirror, scale]
 	"""
 	t = Transform({"type":"2D","alpha":p[0],"tx":p[1],"ty":p[2],"mirror":p[3],"scale":p[4]})
 	ima.set_attr(xform, t)
@@ -3362,7 +3344,7 @@ def set_params2D(ima, p, xform = "xform.align2d"):
 def get_params3D(ima, xform = "xform.align3d"):
 	"""
 	  retrieve 3D alignment parameters from the header
-	  phi  theta  psi  tx  ty  tz mirror scale
+	  phi,theta, psi, tx, ty, tz, mirror,scale
 	"""
 	d = Util.get_transform_params(ima, xform, "spider")
 	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]
@@ -3370,7 +3352,7 @@ def get_params3D(ima, xform = "xform.align3d"):
 def set_params3D(ima, p, xform = "xform.align3d"):
 	"""
 	  set 3D alignment parameters in the header
-	  phi  theta  psi  tx  ty  tz mirror scale
+	  p = [phi,theta, psi, tx, ty, tz, mirror,scale]
 	"""
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":p[3],"ty":p[4],"tz":p[5],"mirror":p[6],"scale":p[7]})
 	ima.set_attr(xform, t)
@@ -3378,7 +3360,7 @@ def set_params3D(ima, p, xform = "xform.align3d"):
 def get_params_proj(ima, xform = "xform.projection"):
 	"""
 	  retrieve projection alignment parameters from the header
-	  phi  theta  psi  s2x  s2y
+	  phi, theta, psi, s2x, s2y
 	"""
 	d = Util.get_transform_params(ima, xform, "spider")
 	return  d["phi"],d["theta"],d["psi"],-d["tx"],-d["ty"]
@@ -3386,7 +3368,7 @@ def get_params_proj(ima, xform = "xform.projection"):
 def set_params_proj(ima, p, xform = "xform.projection"):
 	"""
 	  set projection alignment parameters in the header
-	  phi  theta  psi  s2x  s2y
+	  p = [phi, theta, psi, s2x, s2y]
 	"""
 	from EMAN2 import Vec2f
 	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
@@ -3398,7 +3380,7 @@ def get_ctf(ima):
 	"""
 	  recover numerical values of CTF parameters from EMAN2 CTF object stored in a header of the input image
 	  order of returned parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
+        defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle
 	"""
 	from EMAN2 import EMAN2Ctf
 	ctf_params = ima.get_attr("ctf")
@@ -3414,7 +3396,7 @@ def generate_ctf(p):
 	"""
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+        p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
 	    [ microns, mm, kV, Angstroms, A^2, microns, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
@@ -3443,7 +3425,7 @@ def set_ctf(ima, p):
 	"""
 	  set EMAN2 CTF object in the header of input image using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
+        p = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
 	"""
 	from utilities import generate_ctf
 	ima.set_attr( "ctf", generate_ctf( p ) )

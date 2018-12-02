@@ -125,6 +125,17 @@ bool LstFastIO::is_valid(const void *first_block)
 		result = Util::check_file_by_magic(first_block, MAGIC);
 	}
 
+	if (result) {
+		for (int i=0; i<1024; i++) {
+			char c = ((const char *)first_block)[i];
+			if (c==0) break;
+			if (c==13) { 
+//				printf("%1024s\n",(const char *)first_block);
+				printf("ERROR: .lst file contains \\r at pos %d. This should never happen. (If you edit a .lst file with a text editor on Windows, it will corrup the file). Aborting program.\n",i); 
+				exit(1);
+			}
+		}
+	}
 	EXITFUNC;
 	return result;
 }

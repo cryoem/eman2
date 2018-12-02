@@ -175,6 +175,8 @@ const string RealToFFTProcessor::NAME = "math.realtofft";
 const string SigmaZeroEdgeProcessor::NAME = "mask.zeroedgefill";
 const string WedgeFillProcessor::NAME = "mask.wedgefill";
 const string FFTPeakProcessor::NAME = "mask.fft.peak";
+const string FFTConeProcessor::NAME = "mask.fft.cone";
+const string FFTWedgeProcessor::NAME = "mask.fft.wedge";
 const string BeamstopProcessor::NAME = "mask.beamstop";
 const string MeanZeroEdgeProcessor::NAME = "mask.dampedzeroedgefill";
 const string AverageXProcessor::NAME = "math.averageovery";
@@ -430,6 +432,8 @@ template <> Factory < Processor >::Factory()
 	force_add<SigmaZeroEdgeProcessor>();
 	force_add<WedgeFillProcessor>();
 	force_add<FFTPeakProcessor>();
+	force_add<FFTConeProcessor>();
+	force_add<FFTWedgeProcessor>();
 	force_add<RampProcessor>();
 
 	force_add<BeamstopProcessor>();
@@ -945,6 +949,85 @@ void FFTPeakProcessor::process_inplace(EMData * image)
 		}
 	}
 	
+	
+	if (fft!=image) {
+		EMData *ift=fft->do_ift();
+		memcpy(image->get_data(),ift->get_data(),(nx-2)*ny*nz*sizeof(float));
+		delete fft;
+		delete ift;
+	}
+	image->update();
+
+//	image->update();
+}
+
+void FFTConeProcessor::process_inplace(EMData * image)
+{
+	EMData *fft;
+
+	if (!image) throw InvalidParameterException("FFTConeProcessor: no image provided");
+	if (!image->is_complex()) fft = image->do_fft();
+	else fft = image;
+
+
+	int nx=fft->get_xsize();
+	int ny=fft->get_ysize();
+	int nz=fft->get_zsize();
+	if (nz==1) throw ImageDimensionException("FFTConeProcessor only works on 3-D images");
+	
+	float angle = (float)params.set_default("angle",15.0f);
+	float rmin = (float)params.set_default("rmin",1.0f);
+	
+	for (int z=-nz/2; z<nz/2; z++) {
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<nx/2; x++) {
+				float ang=0;
+				if (x!=0 ||y!=0) ang=90.0-atan(fabs(float(z)/nz)/hypot(float(x)/nx,float(y)/ny))*180.0/M_PI;
+				if (ang>angle || Util::hypot3(x,y,z)<rmin) continue;
+				fft->set_complex_at(x,y,z,0.0f);
+			}
+		}
+	}	
+	
+	if (fft!=image) {
+		EMData *ift=fft->do_ift();
+		memcpy(image->get_data(),ift->get_data(),(nx-2)*ny*nz*sizeof(float));
+		delete fft;
+		delete ift;
+	}
+	image->update();
+
+//	image->update();
+}
+
+void FFTWedgeProcessor::process_inplace(EMData * image)
+{
+	EMData *fft;
+
+	if (!image) throw InvalidParameterException("FFTWedgeProcessor: no image provided");
+	if (!image->is_complex()) fft = image->do_fft();
+	else fft = image;
+
+
+	int nx=fft->get_xsize();
+	int ny=fft->get_ysize();
+	int nz=fft->get_zsize();
+	if (nz==1) throw ImageDimensionException("FFTWedgeProcessor only works on 3-D images");
+	
+	float anglemin = (float)params.set_default("anglemin",-30.0f);
+	float anglemax = (float)params.set_default("anglemax",30.0f);
+	float rmin = (float)params.set_default("rmin",1.0f);
+	
+	for (int z=-nz/2; z<nz/2; z++) {
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<nx/2; x++) {
+				float ang=90.0f;
+				if (z!=0) ang=atan((float(y)/ny)/fabs(float(z)/nz))*180.0/M_PI;
+				if (ang<anglemin||ang>anglemax || Util::hypot3(x,y,z)<rmin) continue;
+				fft->set_complex_at(x,y,z,0.0f);
+			}
+		}
+	}	
 	
 	if (fft!=image) {
 		EMData *ift=fft->do_ift();
@@ -2681,7 +2764,7 @@ void FFTResampleProcessor::process_inplace(EMData * image)
 
 	image->set_size(nnx,nny,nnz);
 	memcpy(image->get_data(),result->get_data(),nnx*nny*nnz*sizeof(float));
-	result->scale_pixel((float)nx/(float)nnx);
+	image->scale_pixel((float)nx/(float)nnx);
 	image->update();
 	delete result;
 
