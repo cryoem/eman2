@@ -2614,23 +2614,28 @@ def if_error_then_all_processes_exit_program(error_status):
 
 	# if "OMPI_COMM_WORLD_SIZE" not in os.environ:
 	if len({"OMPI_COMM_WORLD_SIZE", "PMI_RANK", "PMI_ID", "SLURM_PROCID", "LAMRANK", "MPI_RANKID", "MP_CHILD", "MP_CHILD", "MP_CHILD"}.intersection(set(os.environ))) == 0:
-		def mpi_comm_rank(n): return 0
-		def mpi_bcast(*largs):
+		def my_mpi_comm_rank(n): return 0
+		def my_mpi_bcast(*largs):
 			return [largs[0]]
-		def mpi_finalize():
+		def my_mpi_finalize():
 			return None
-		MPI_INT, MPI_COMM_WORLD = 0, 0
+		MY_MPI_INT, MY_MPI_COMM_WORLD = 0, 0
 	else:
 		pass#IMPORTIMPORTIMPORT from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+		my_mpi_comm_rank = mpi.mpi_comm_rank
+		my_mpi_bcast = mpi.mpi_bcast
+		my_mpi_finalize = mpi.mpi_finalize
+		MY_MPI_INT = mpi.MPI_INT
+		MY_MPI_COMM_WORLD = mpi.MPI_COMM_WORLD
 
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	myid = my_mpi_comm_rank(MY_MPI_COMM_WORLD)
 	if error_status != None and error_status != 0:
 		error_status_info = error_status
 		error_status = 1
 	else:
 		error_status = 0
 
-	error_status = mpi_bcast(error_status, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	error_status = my_mpi_bcast(error_status, 1, MY_MPI_INT, 0, MY_MPI_COMM_WORLD)
 	error_status = int(error_status[0])
 
 	if error_status > 0:
@@ -2644,7 +2649,7 @@ def if_error_then_all_processes_exit_program(error_status):
 					print_msg("** Location: %s\n"%(frameinfo.filename + ":" + str(frameinfo.lineno)))
 					print_msg("***********************************\n")
 		sys.stdout.flush()
-		mpi_finalize()
+		my_mpi_finalize()
 		exit() # sys.exit(1)
 
 def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
