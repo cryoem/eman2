@@ -288,12 +288,7 @@ def ref_random( ref_data ):
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
 	utilities.print_msg("ref_ali2d   #%6d\n"%(ref_ali2d_counter))
-	"""
-	fl, aa = fit_tanh(ref_data[3])
-	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	print_msg(msg)
-	tavg = filt_tanl(ref_data[2], fl, aa)
-	"""	
+	"""Multiline Comment0"""
 	# ONE CAN USE BUTTERWORTH FILTER
 	#lowfq, highfq = filt_params( ref_data[3], low = 0.1)
 	#tavg  = filt_btwl( ref_data[2], lowfq, highfq)
@@ -305,19 +300,7 @@ def ref_random( ref_data ):
 	#  CENTER
 	cs = [0.0]*2
 	tavg, cs[0], cs[1] = utilities.center_2D(ref_data[2], ref_data[1])
-	'''
-	pass#IMPORTIMPORTIMPORT from math import exp
-	nx = tavg.get_xsize()
-	ft = []
-	good = True
-	for i in xrange(nx):
-		if(good):
-			ex = exp((float(i)/float(nx))**2/2.0/0.12**2)
-			if(ex>100.): good = False
-		ft.append(ex)
-	pass#IMPORTIMPORTIMPORT from filter import filt_table
-	tavg = filt_table(tavg, ft)
-	'''
+	"""Multiline Comment1"""
 	if(ref_data[1] > 0):
 		msg = "Center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
 		utilities.print_msg(msg)
@@ -541,13 +524,7 @@ def ref_aliB_cone( ref_data ):
 	stat = EMAN2_cppwrap.Util.infomask(volf, None, True)
 	volf -= stat[0]
 	EMAN2_cppwrap.Util.mul_scalar(volf, 1.0/stat[1])
-	"""
-	if(ref_data[1] == 1):
-		cs    = volf.phase_cog()
-		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-		print_msg(msg)
-		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
-	"""
+	"""Multiline Comment2"""
 	return  volf
 
 def ref_7grp( ref_data ):
@@ -1406,19 +1383,7 @@ def do_volume_mrk04(ref_data):
 			vol = utilities.model_blank(nx,nx,nx)
 	else:
 		pass
-		"""
-		if myid == 0:
-			#from utilities import write_text_file
-			#write_text_file(rops_table(vol,1),"goo.txt")
-			stat = Util.infomask(vol, mask3D, False)
-			vol -= stat[0]
-			Util.mul_scalar(vol, 1.0/stat[1])
-			vol = threshold(vol)
-			vol = filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
-			Util.mul_img(vol, mask3D)
-			del mask3D
-			# vol.write_image('toto%03d.hdf'%iter)
-		"""
+		"""Multiline Comment3"""
 	# broadcast volume
 	if( nproc > 1 ):  utilities.bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
