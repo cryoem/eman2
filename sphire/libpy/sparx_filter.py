@@ -30,11 +30,11 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import fundamentals
-import morphology
+import sparx_fundamentals
+import sparx_morphology
 import mpi
 import numpy
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import filter
@@ -221,34 +221,34 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 		falloff = 0.0
 		radius  = 0
 		dis = [0,0,0]
-	falloff = utilities.bcast_number_to_all(falloff, main_node)
-	dis = utilities.bcast_list_to_all(dis, myid, source_node = main_node)
+	falloff = sparx_utilities.bcast_number_to_all(falloff, main_node)
+	dis = sparx_utilities.bcast_list_to_all(dis, myid, source_node = main_node)
 
 	if(myid != main_node):
 		nx = int(dis[0])
 		ny = int(dis[1])
 		nz = int(dis[2])
 
-		vi = utilities.model_blank(nx,ny,nz)
-		ui = utilities.model_blank(nx,ny,nz)
+		vi = sparx_utilities.model_blank(nx,ny,nz)
+		ui = sparx_utilities.model_blank(nx,ny,nz)
 
-	utilities.bcast_EMData_to_all(vi, myid, main_node)
-	utilities.bcast_EMData_to_all(ui, myid, main_node)
+	sparx_utilities.bcast_EMData_to_all(vi, myid, main_node)
+	sparx_utilities.bcast_EMData_to_all(ui, myid, main_node)
 
-	fundamentals.fftip(vi)  #  volume to be filtered
+	sparx_fundamentals.fftip(vi)  #  volume to be filtered
 
 	st = EMAN2_cppwrap.Util.infomask(ui, m, True)
 
 
-	filteredvol = utilities.model_blank(nx,ny,nz)
+	filteredvol = sparx_utilities.model_blank(nx,ny,nz)
 	cutoff = max(st[2] - 0.01,0.0)
 	while(cutoff < st[3] ):
 		cutoff = round(cutoff + 0.01, 2)
 		#if(myid == main_node):  print  cutoff,st
-		pt = EMAN2_cppwrap.Util.infomask( morphology.threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)  # Ideally, one would want to check only slices in question...
+		pt = EMAN2_cppwrap.Util.infomask( sparx_morphology.threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)  # Ideally, one would want to check only slices in question...
 		if(pt[0] != 0.0):
 			#print cutoff,pt[0]
-			vovo = fundamentals.fft( filt_tanl(vi, cutoff, falloff) )
+			vovo = sparx_fundamentals.fft( filt_tanl(vi, cutoff, falloff) )
 			for z in range(myid, nz, number_of_proc):
 				for x in range(nx):
 					for y in range(ny):
@@ -257,5 +257,5 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 								filteredvol.set_value_at_fast(x,y,z,vovo.get_value_at(x,y,z))
 
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-	utilities.reduce_EMData_to_root(filteredvol, myid, main_node, mpi.MPI_COMM_WORLD)
+	sparx_utilities.reduce_EMData_to_root(filteredvol, myid, main_node, mpi.MPI_COMM_WORLD)
 	return filteredvol

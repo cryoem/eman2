@@ -30,19 +30,19 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import alignment
-import applications
+import sparx_alignment
+import sparx_applications
 import copy
-import filter
-import fundamentals
-import global_def
-import morphology
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_morphology
 import mpi
 import numpy
 import numpy as np
 import random
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import alignment
@@ -97,7 +97,7 @@ def prgs(volft, kb, params, kbx=None, kby=None):
 				  "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
 		temp=EMAN2_cppwrap.Processor.EMFourierFilter(temp, filt_params)
 	temp.do_ift_inplace()
-	utilities.set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
+	sparx_utilities.set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
 	temp.set_attr_dict({'ctf_applied':0, 'npad':2})
 	temp.depad()
 	return temp
@@ -119,7 +119,7 @@ def prgl(volft, params, interpolation_method = 0, return_real = True):
 	pass#IMPORTIMPORTIMPORT from fundamentals import fft
 	pass#IMPORTIMPORTIMPORT from utilities import set_params_proj, info
 	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
-	if(interpolation_method<0 or interpolation_method>1):  global_def.ERROR('Unsupported interpolation method', "interpolation_method", 1, 0)
+	if(interpolation_method<0 or interpolation_method>1):  sparx_global_def.ERROR('Unsupported interpolation method', "interpolation_method", 1, 0)
 	npad = volft.get_attr_default("npad",1)
 	R = EMAN2_cppwrap.Transform({"type":"spider", "phi":params[0], "theta":params[1], "psi":params[2]})
 	if(npad == 1):  temp = volft.extract_section(R, interpolation_method)
@@ -137,7 +137,7 @@ def prgl(volft, params, interpolation_method = 0, return_real = True):
 		temp.depad()
 	else:
 		temp.set_attr_dict({'ctf_applied':0, 'npad':1})
-	utilities.set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
+	sparx_utilities.set_params_proj(temp, [params[0], params[1], params[2], -params[3], -params[4]])
 	return temp
 
 def prg(volume, params):
@@ -210,7 +210,7 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 		# NN and trilinear
 		assert  interpolation_method >= 0
 		pass#IMPORTIMPORTIMPORT from utilities import pad
-		volft = utilities.pad(vol, Mx*npad, My*npad, My*npad, 0.0)
+		volft = sparx_utilities.pad(vol, Mx*npad, My*npad, My*npad, 0.0)
 		volft.set_attr("npad", npad)
 		volft.div_sinc(interpolation_method)
 		volft = volft.norm_pad(False, 1)

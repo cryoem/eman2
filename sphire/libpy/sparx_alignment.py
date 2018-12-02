@@ -30,26 +30,26 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import applications
-import filter
-import fundamentals
-import global_def
-import logger
-import morphology
+import sparx_applications
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_logger
+import sparx_morphology
 import mpi
-import multi_shc
+import sparx_multi_shc
 import numpy
 import numpy as np
 import numpy.random
 import operator
-import pixel_error
-import projection
+import sparx_pixel_error
+import sparx_projection
 import scipy
-import statistics
+import sparx_statistics
 import sys
 import time
 import types
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import alignment

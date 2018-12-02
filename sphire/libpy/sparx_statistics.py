@@ -31,29 +31,29 @@ from __future__ import print_function
 
 import EMAN2_cppwrap
 import EMAN2db
-import alignment
-import applications
+import sparx_alignment
+import sparx_applications
 import configparser
 import copy
-import filter
-import fundamentals
-import global_def
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
 import logging
-import morphology
+import sparx_morphology
 import mpi
 import numpy
 import numpy.random
 import os
-import pixel_error
-import projection
+import sparx_pixel_error
+import sparx_projection
 import random
 import random as rdq
-import reconstruction
+import sparx_reconstruction
 import scipy.stats
 import string
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import EMAN2db
@@ -105,7 +105,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 	pass#IMPORTIMPORTIMPORT from utilities    import    model_blank, get_params2D, same_ctf
 	pass#IMPORTIMPORTIMPORT from fundamentals import    rot_shift2D, fft
 	pass#IMPORTIMPORTIMPORT from copy import deepcopy
-	if CTF: global_def.ERROR("This function was disabled as it does not treat astigmatism properly","sum_oe",1)
+	if CTF: sparx_global_def.ERROR("This function was disabled as it does not treat astigmatism properly","sum_oe",1)
 	n      = len(data)
 	if return_params: params_list = [None]*n
 	if CTF:
@@ -116,29 +116,29 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 		ctf_2_sumo = EMAN2_cppwrap.EMData(origin_size, origin_size, 1, False)
 		ctf_2_sume = EMAN2_cppwrap.EMData(origin_size, origin_size, 1, False)
 
-		if data[0].get_attr_default('ctf_applied', 1) == 1:  global_def.ERROR("data cannot be ctf-applied", "sum_oe", 1)
+		if data[0].get_attr_default('ctf_applied', 1) == 1:  sparx_global_def.ERROR("data cannot be ctf-applied", "sum_oe", 1)
 		if ctf_2_sum:  get_ctf2 = False
 		else:          get_ctf2 = True
 		for im in range(n):
 			current_ctf = data[im].get_attr("ctf")
 			if im == 0: 
 				myctf = copy.deepcopy(current_ctf)
-				ctt = morphology.ctf_img(origin_size, myctf)
+				ctt = sparx_morphology.ctf_img(origin_size, myctf)
 			else:
-				if not utilities.same_ctf(current_ctf, myctf):
+				if not sparx_utilities.same_ctf(current_ctf, myctf):
 					myctf = copy.deepcopy(current_ctf)
-					ctt   = morphology.ctf_img(origin_size, myctf)
+					ctt   = sparx_morphology.ctf_img(origin_size, myctf)
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
-				ima = fundamentals.rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
+				alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[im])
+				ima = sparx_fundamentals.rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
 				if return_params:
 					params_list[im]= [alpha, sx, sy, mirror, scale]
 			else:
 				ima = data[im]
 				if return_params:
-					alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
+					alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[im])
 					params_list[im]= [alpha, sx, sy, mirror, scale]
-			ima = fundamentals.fft(ima)
+			ima = sparx_fundamentals.fft(ima)
 			EMAN2_cppwrap.Util.mul_img(ima, ctt)
 			if im%2 == 0:	
 				EMAN2_cppwrap.Util.add_img(ave1, ima)
@@ -149,18 +149,18 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 	else:
 		nx     = data[0].get_xsize()
 		ny     = data[0].get_ysize()
-		ave1   = utilities.model_blank(nx, ny, 1) 
-		ave2   = utilities.model_blank(nx, ny, 1)
+		ave1   = sparx_utilities.model_blank(nx, ny, 1) 
+		ave2   = sparx_utilities.model_blank(nx, ny, 1)
 		for im in range(n):
 			if mode == "a":
-				alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
-				ima = fundamentals.rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
+				alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[im])
+				ima = sparx_fundamentals.rot_shift2D(data[im], alpha, sx, sy, mirror, scale, "quadratic")
 				if return_params:
 					params_list[im]= [alpha, sx, sy, mirror, scale]
 			else:
 				ima = data[im]
 				if return_params:
-					alpha, sx, sy, mirror, scale = utilities.get_params2D(data[im])
+					alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[im])
 					params_list[im]= [alpha, sx, sy, mirror, scale]
 			if im%2 == 0:	EMAN2_cppwrap.Util.add_img(ave1, ima)
 			else:	        EMAN2_cppwrap.Util.add_img(ave2, ima)
@@ -169,7 +169,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 		if get_ctf2:
 			if not ctf_eo_sum:# Old usage
 				ctf_2_sum  = EMAN2_cppwrap.Util.addn_img(ctf_2_sume, ctf_2_sumo)
-				return fundamentals.fft(ave1), fundamentals.fft(ave2), ctf_2_sum
+				return sparx_fundamentals.fft(ave1), sparx_fundamentals.fft(ave2), ctf_2_sum
 			else: # return Fourier images
 				if return_params: return ave1, ave2, ctf_2_sume, ctf_2_sumo, params_list 
 				else: return ave1, ave2, ctf_2_sume, ctf_2_sumo
@@ -191,7 +191,7 @@ def ave_var(data, mode = "a", listID=None):
 	else:                       n = len(data)
 	if listID == None:
 		listID = list(range(n))
-	img = utilities.get_im(data, 0)
+	img = sparx_utilities.get_im(data, 0)
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
@@ -205,18 +205,18 @@ def ave_var(data, mode = "a", listID=None):
 			pass#IMPORTIMPORTIMPORT from fundamentals import rot_shift2D
 			pass#IMPORTIMPORTIMPORT from utilities import get_params2D
 
-	ave = utilities.model_blank(nx,ny,nz)
-	var = utilities.model_blank(nx,ny,nz)
+	ave = sparx_utilities.model_blank(nx,ny,nz)
+	var = sparx_utilities.model_blank(nx,ny,nz)
 	nlistID = len(listID)
 	for i in range(nlistID):
-		img = utilities.get_im(data,listID[i])
+		img = sparx_utilities.get_im(data,listID[i])
 		if(mode == "a"):
 			if(nz > 1):
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = utilities.get_params3D(img)
-				img = fundamentals.rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = sparx_utilities.get_params3D(img)
+				img = sparx_fundamentals.rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
 			else:
-				angle, sx, sy, mirror, scale = utilities.get_params2D(img)
-				img = fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
+				angle, sx, sy, mirror, scale = sparx_utilities.get_params2D(img)
+				img = sparx_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale)
 		EMAN2_cppwrap.Util.add_img(ave, img)
 		EMAN2_cppwrap.Util.add_img2(var, img)
 	EMAN2_cppwrap.Util.mul_scalar(ave, 1.0 /float(nlistID) )
@@ -233,10 +233,10 @@ def ave_series(data, pave = True, mask = None):
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
-	ave = utilities.model_blank(nx, ny)
+	ave = sparx_utilities.model_blank(nx, ny)
 	for i in range(n):
-		alpha, sx, sy, mirror, scale = utilities.get_params2D(data[i])
-		temp = fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
+		alpha, sx, sy, mirror, scale = sparx_utilities.get_params2D(data[i])
+		temp = sparx_fundamentals.rot_shift2D(data[i], alpha, sx, sy, mirror)
 		EMAN2_cppwrap.Util.add_img(ave, temp)
 	if mask: EMAN2_cppwrap.Util.mul_img(ave, mask)
 	if pave:  EMAN2_cppwrap.Util.mul_scalar(ave, 1.0/float(n))
@@ -290,7 +290,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 	ny = m.get_ysize()
 	nz = m.get_zsize()
 
-	mc = utilities.model_blank(nx,ny,nz,1.0)-m
+	mc = sparx_utilities.model_blank(nx,ny,nz,1.0)-m
 
 	if(myid == main_node):
 		st = EMAN2_cppwrap.Util.infomask(vi,m,True)
@@ -299,14 +299,14 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 		st = EMAN2_cppwrap.Util.infomask(ui,m,True)
 		ui -= st[1]
 
-	utilities.bcast_EMData_to_all(vi, myid, main_node)
-	utilities.bcast_EMData_to_all(ui, myid, main_node)
+	sparx_utilities.bcast_EMData_to_all(vi, myid, main_node)
+	sparx_utilities.bcast_EMData_to_all(ui, myid, main_node)
 
-	vf = fundamentals.fft(vi)
-	uf = fundamentals.fft(ui)
+	vf = sparx_fundamentals.fft(vi)
+	uf = sparx_fundamentals.fft(ui)
 
 	if(myid == 0):
-		freqvol = utilities.model_blank(nx,ny,nz)
+		freqvol = sparx_utilities.model_blank(nx,ny,nz)
 		resolut = []
 	lp = int(max(nx,ny,nz)/2/step+0.5)
 	step = 0.5/lp
@@ -320,20 +320,20 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 		#print number_of_proc,myid,lp,i,step,fl,fh,freq
 
 		if i>0 :
-			v = fundamentals.fft(filter.filt_tophatb( vf, fl, fh))
-			u = fundamentals.fft(filter.filt_tophatb( uf, fl, fh))
+			v = sparx_fundamentals.fft(sparx_filter.filt_tophatb( vf, fl, fh))
+			u = sparx_fundamentals.fft(sparx_filter.filt_tophatb( uf, fl, fh))
 			tmp1 = EMAN2_cppwrap.Util.muln_img(v,v)
 			tmp2 = EMAN2_cppwrap.Util.muln_img(u,u)
 			tmp3 = EMAN2_cppwrap.Util.muln_img(u,v)
-			do = EMAN2_cppwrap.Util.infomask(morphology.square_root(morphology.threshold(EMAN2_cppwrap.Util.muln_img(tmp1,tmp2))),m,True)[0]
+			do = EMAN2_cppwrap.Util.infomask(sparx_morphology.square_root(sparx_morphology.threshold(EMAN2_cppwrap.Util.muln_img(tmp1,tmp2))),m,True)[0]
 			dp = EMAN2_cppwrap.Util.infomask(tmp3,m,True)[0]
 			#print "dpdo   ",myid,dp,do
 			if do == 0.0: dis = [freq, 0.0]
 			else:  dis = [freq, dp/do]
 		else:
-			tmp1 = utilities.model_blank(nx,ny,nz,1.0)
-			tmp2 = utilities.model_blank(nx,ny,nz,1.0)
-			tmp3 = utilities.model_blank(nx,ny,nz,1.0)
+			tmp1 = sparx_utilities.model_blank(nx,ny,nz,1.0)
+			tmp2 = sparx_utilities.model_blank(nx,ny,nz,1.0)
+			tmp3 = sparx_utilities.model_blank(nx,ny,nz,1.0)
 			dis = [freq, 1.0]
 
 
@@ -343,7 +343,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 
 		EMAN2_cppwrap.Util.mul_img(tmp1,tmp2)
 
-		tmp1 = morphology.square_root(morphology.threshold(tmp1))
+		tmp1 = sparx_morphology.square_root(sparx_morphology.threshold(tmp1))
 
 		EMAN2_cppwrap.Util.mul_img(tmp1,m)
 		EMAN2_cppwrap.Util.add_img(tmp1,mc)
@@ -363,9 +363,9 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 				if(k != main_node):
 					#print " start receiving",myid,i
 					tag_node = k+1001
-					dis = mpi.mpi_recv(2, mpi.MPI_FLOAT, k, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+					dis = mpi.mpi_recv(2, mpi.MPI_FLOAT, k, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 					#print  "received ",myid,dis
-					tmp3 = utilities.recv_EMData(k, tag_node)
+					tmp3 = sparx_utilities.recv_EMData(k, tag_node)
 					#print  "received ",myid
 				if(dis[0] <=0.5):  resolut.append(dis)
 				fl = step*(i+k)
@@ -382,12 +382,12 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 		else:
 			tag_node = myid+1001
 			#print   "sent from", myid,dis
-			mpi.mpi_send(dis, 2, mpi.MPI_FLOAT, main_node, global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
+			mpi.mpi_send(dis, 2, mpi.MPI_FLOAT, main_node, sparx_global_def.SPARX_MPI_TAG_UNIVERSAL, mpi.MPI_COMM_WORLD)
 			#print   "sending EMD from", myid
-			utilities.send_EMData(tmp3, main_node, tag_node)
+			sparx_utilities.send_EMData(tmp3, main_node, tag_node)
 			#print   "sent EMD from",myid
 
-		bailout = utilities.bcast_number_to_all(bailout, main_node)
+		bailout = sparx_utilities.bcast_number_to_all(bailout, main_node)
 		if(bailout == 1):  break
 
 	mpi.mpi_barrier(mpi.MPI_COMM_WORLD)

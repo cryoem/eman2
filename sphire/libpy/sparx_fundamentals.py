@@ -30,12 +30,12 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import filter
-import global_def
+import sparx_filter
+import sparx_global_def
 import math
 import numpy
 import os
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import filter
@@ -185,11 +185,11 @@ def resample(img, sub_rate=0.5):
 
 	if type(img) == str:
 		pass#IMPORTIMPORTIMPORT from utilities    import get_image
-		img = utilities.get_image(img)
+		img = sparx_utilities.get_image(img)
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
-	if( ny == 1):  global_def.ERROR("Only 2D or 3D images allowed","resample",1)
+	if( ny == 1):  sparx_global_def.ERROR("Only 2D or 3D images allowed","resample",1)
 	if sub_rate == 1.0: return  img.copy()
 	elif sub_rate < 1.0:
 		e = subsample(img, sub_rate)
@@ -221,23 +221,23 @@ def resample(img, sub_rate=0.5):
 
 	# Automatically adjust pixel size for ctf parameters
 	pass#IMPORTIMPORTIMPORT from utilities import get_pixel_size, set_pixel_size
-	apix = utilities.get_pixel_size(e)
+	apix = sparx_utilities.get_pixel_size(e)
 	apix /= sub_rate
-	utilities.set_pixel_size(e, apix)
+	sparx_utilities.set_pixel_size(e, apix)
 	cc = e.get_attr_default("xform.projection", None)
 	if cc:
 		cp = cc.get_params("spider")
 		cp["tx"] *= sub_rate
 		cp["ty"] *= sub_rate
 		pass#IMPORTIMPORTIMPORT from utilities import set_params_proj
-		utilities.set_params_proj(e, [cp["phi"], cp["theta"], cp["psi"], -cp["tx"], -cp["ty"]]) # have to invert as set inverts them again
+		sparx_utilities.set_params_proj(e, [cp["phi"], cp["theta"], cp["psi"], -cp["tx"], -cp["ty"]]) # have to invert as set inverts them again
 	cc = e.get_attr_default("xform.align2d", None)
 	if cc:
 		cp = cc.get_params("2D")
 		cp["tx"] *= sub_rate
 		cp["ty"] *= sub_rate
 		pass#IMPORTIMPORTIMPORT from utilities import set_params2D
-		utilities.set_params2D(e, [cp["alpha"], cp["tx"], cp["ty"], cp["mirror"], cp["scale"]])
+		sparx_utilities.set_params2D(e, [cp["alpha"], cp["tx"], cp["ty"], cp["mirror"], cp["scale"]])
 
 	return 	e
 	
@@ -371,7 +371,7 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 
 	image1 = image.copy()  # This step is needed, otherwise image will be changed outside the function
 	# invert shifts
-	_, tsx, tsy, _ = utilities.compose_transform2(0.,sx,sy,1,-ang,0,0,1)
+	_, tsx, tsy, _ = sparx_utilities.compose_transform2(0.,sx,sy,1,-ang,0,0,1)
 	# split shift into integer and fractional parts
 	isx = int(tsx)
 	fsx = tsx - isx
@@ -380,7 +380,7 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	# shift image to the center
 	EMAN2_cppwrap.Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
 	# bring back fractional shifts
-	_, tsx, tsy, _ = utilities.compose_transform2(0.,fsx,fsy,1,ang,0,0,1)
+	_, tsx, tsy, _ = sparx_utilities.compose_transform2(0.,fsx,fsy,1,ang,0,0,1)
 	# divide out gridding weights
 	image1.divkbsinh(kb)
 	# pad and center image, then FFT
@@ -415,7 +415,7 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		
 	"""
 
-	if scale == 0.0 :  global_def.ERROR("0 scale factor encountered","rot_shift2D", 1)
+	if scale == 0.0 :  sparx_global_def.ERROR("0 scale factor encountered","rot_shift2D", 1)
 	if(interpolation_method):  use_method = interpolation_method
 	else:  use_method = global_def.interpolation_method_2D
 
@@ -462,7 +462,7 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		img = img.fourier_rotate_shift2d(angle, sx, sy, 2)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
-	else:	global_def.ERROR("rot_shift_2D interpolation method is incorrectly set", "rot_shift_2D", 1)
+	else:	sparx_global_def.ERROR("rot_shift_2D interpolation method is incorrectly set", "rot_shift_2D", 1)
 
 def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scale = 1.0, mode="background"):
 	"""
@@ -478,7 +478,7 @@ def rot_shift3D(image, phi = 0, theta = 0, psi = 0, sx = 0, sy = 0, sz = 0, scal
 			The rotated, shifted, and scaled output 3D volume
 	"""
 
-	if scale == 0.0 :  global_def.ERROR("0 scale factor encountered","rot_shift3D", 1)
+	if scale == 0.0 :  sparx_global_def.ERROR("0 scale factor encountered","rot_shift3D", 1)
 	T1 = EMAN2_cppwrap.Transform({'scale':scale})
 	T2 = EMAN2_cppwrap.Transform({'type': 'SPIDER', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': sx, 'ty': sy, 'tz': sz})
 	T  = T1*T2
@@ -557,7 +557,7 @@ def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 		mx = ix-isize_x//2
 		my = iy-isize_y//2
 		reg = EMAN2_cppwrap.Region(mx, my, isize_x, isize_y)
-	else:  global_def.ERROR("Unknown window2d option","window2d",1)
+	else:  sparx_global_def.ERROR("Unknown window2d option","window2d",1)
 	return img.get_clip(reg)
 
 # GOLDEN SEARCH CODE
@@ -719,7 +719,7 @@ class symclass(object):
 		self.sym = sym.lower()
 		if(self.sym[0] == "c"):
 			self.nsym = int(self.sym[1:])
-			if(self.nsym<1):  global_def.ERROR("For Cn symmetry, we need n>0","symclass",1)
+			if(self.nsym<1):  sparx_global_def.ERROR("For Cn symmetry, we need n>0","symclass",1)
 			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym,180.0,360./self.nsym,180.0]]
 			self.symangles = []
 			for i in range(self.nsym):
@@ -727,7 +727,7 @@ class symclass(object):
 
 		elif(self.sym[0] == "d"):
 			self.nsym = 2*int(self.sym[1:])
-			if(self.nsym<1):  global_def.ERROR("For Dn symmetry, we need n>0","symclass",1)
+			if(self.nsym<1):  sparx_global_def.ERROR("For Dn symmetry, we need n>0","symclass",1)
 			self.brackets = [[360./self.nsym,90.0,360./self.nsym,90.0],[360./self.nsym*2,90.0,360./self.nsym*2,90.0]]
 			self.symangles = []
 			for i in range(self.nsym/2):
@@ -781,7 +781,7 @@ class symclass(object):
 					self.symangles.append([float(l1),lvl2,float(l2)])
 			for i in range(0,288+1,72):  self.symangles.append([0.0,180.0,float(i)])
 		
-		else:  global_def.ERROR("Unknown symmetry","symclass",1)
+		else:  sparx_global_def.ERROR("Unknown symmetry","symclass",1)
 
 		#
 		self.transform = []
@@ -846,7 +846,7 @@ class symclass(object):
 			else:
 				#print "phi",self.brackets
 				return False
-		else:  global_def.ERROR("unknown symmetry","symclass: is_in_subunit",1)
+		else:  sparx_global_def.ERROR("unknown symmetry","symclass: is_in_subunit",1)
 
 	def symmetry_related(self, angles):
 		"""
@@ -1095,7 +1095,7 @@ class symclass(object):
 		if(phi2_org < 0.0):  phi2_org = self.brackets[1][0] - 1.0e-7 # exclude right border of unit
 		theta2_org = theta2
 		if(theta2_org < 0.0): theta2_org = self.brackets[1][3]
-		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  global_def.ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta),1)
+		if(phi2<phi1 or theta2<theta1 or delta <= 0.0):  sparx_global_def.ERROR("even_angles","incorrect parameters (phi1,phi2,theta1,theta2,delta): %f   %f   %f   %f   %f"%(phi1,phi2,theta1,theta2,delta),1)
 		if(phi1 < 0.0):  phi1 = 0.0
 		if(phi2 < 0.0):  phi2 = self.brackets[inc_mirror][0] - 1.0e-7 # exclude right border of unit
 		if(theta1 < 0.0): theta1 = 0.0

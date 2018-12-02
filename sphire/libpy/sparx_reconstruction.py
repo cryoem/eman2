@@ -29,20 +29,20 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import filter
-import fundamentals
-import global_def
-import morphology
+import sparx_filter
+import sparx_fundamentals
+import sparx_global_def
+import sparx_morphology
 import mpi
 import numpy
 import numpy.random
 import os
 import random
-import statistics
+import sparx_statistics
 import string
 import sys
 import time
-import utilities
+import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import datetime
@@ -96,10 +96,10 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 		mpi_comm = mpi.MPI_COMM_WORLD
 
 	if type(prjlist) == list:
-		prjlist = utilities.iterImagesList(prjlist)
+		prjlist = sparx_utilities.iterImagesList(prjlist)
 
 	if not prjlist.goToNext():
-		global_def.ERROR("empty input list","recons3d_4nn_MPI",1)
+		sparx_global_def.ERROR("empty input list","recons3d_4nn_MPI",1)
 
 	imgsize = prjlist.image().get_xsize()
 	if prjlist.image().get_ysize() != imgsize:
@@ -135,7 +135,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 	while prjlist.goToNext():
 		prj = prjlist.image()
 		if dopad:
-			prj = utilities.pad(prj, imgsize,imgsize, 1, "circumference")
+			prj = sparx_utilities.pad(prj, imgsize,imgsize, 1, "circumference")
 		insert_slices(r, prj)
 		if( not (finfo is None) ):
 			nimg += 1
@@ -146,21 +146,21 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", finfo=None, snr = 1.0, npad=2
 		finfo.write( "Begin reducing ...\n" )
 		finfo.flush()
 
-	utilities.reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, comm=mpi_comm)
 
 	if myid == 0:  dummy = r.finish(True)
 	else:
 		pass#IMPORTIMPORTIMPORT from utilities import model_blank
 		if ( xysize == -1 and zsize == -1 ):
-			fftvol = utilities.model_blank(imgsize, imgsize, imgsize)
+			fftvol = sparx_utilities.model_blank(imgsize, imgsize, imgsize)
 		else:
 			if zsize == -1:
-				fftvol = utilities.model_blank(xysize, xysize, imgsize)
+				fftvol = sparx_utilities.model_blank(xysize, xysize, imgsize)
 			elif xysize == -1:
-				fftvol = utilities.model_blank(imgsize, imgsize, zsize)
+				fftvol = sparx_utilities.model_blank(imgsize, imgsize, zsize)
 			else:
-				fftvol = utilities.model_blank(xysize, xysize, zsize)
+				fftvol = sparx_utilities.model_blank(xysize, xysize, zsize)
 	return fftvol
 
 """Multiline Comment0"""
@@ -183,7 +183,7 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 	
 	if mpi_comm == None: mpi_comm = mpi.MPI_COMM_WORLD
 
-	refvol = utilities.model_blank(target_size)
+	refvol = sparx_utilities.model_blank(target_size)
 	refvol.set_attr("fudge", 1.0)
 
 	if CTF: do_ctf = 1
@@ -218,7 +218,7 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 		data = [None]*nshifts
 		for ii in range(len(tdir)):
 			#  Find the number of times given projection direction appears on the list, it is the number of different shifts associated with it.
-			lshifts = utilities.findall(tdir[ii], ipsiandiang)
+			lshifts = sparx_utilities.findall(tdir[ii], ipsiandiang)
 			toprab  = 0.0
 			for ki in range(len(lshifts)):  toprab += probs[lshifts[ki]]
 			recdata = EMAN2_cppwrap.EMData(nny,nny,1,False)
@@ -226,11 +226,11 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 			for ki in range(len(lshifts)):
 				lpt = allshifts[lshifts[ki]]
 				if( data[lpt] == None ):
-					data[lpt] = fundamentals.fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
+					data[lpt] = sparx_fundamentals.fshift(prjlist[im], rshifts_shrank[lpt][0], rshifts_shrank[lpt][1])
 					data[lpt].set_attr("is_complex",0)
 				EMAN2_cppwrap.Util.add_img(recdata, EMAN2_cppwrap.Util.mult_scalar(data[lpt], probs[lshifts[ki]]/toprab))
 			recdata.set_attr_dict({"padffted":1, "is_fftpad":1,"is_fftodd":0, "is_complex_ri":1, "is_complex":1})
-			if not upweighted:  recdata = filter.filt_table(recdata, bckgn )
+			if not upweighted:  recdata = sparx_filter.filt_table(recdata, bckgn )
 			recdata.set_attr_dict( {"bckgnoise":bckgn, "ctf":ct} )
 			ipsi = tdir[ii]%100000
 			iang = tdir[ii]/100000
@@ -239,8 +239,8 @@ def recons3d_trl_struct_MPI(myid, main_node, prjlist, paramstructure, refang, rs
 	del bckgn, recdata, tdir, ipsiandiang, allshifts, probs
 
 
-	utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, main_node, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, main_node, comm=mpi_comm)
 
 	if myid == main_node:
 		dummy = r.finish(True)
@@ -324,7 +324,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 		for i in range(len(list_proj)):
 			proj.read_image(stack_name, list_proj[i])
 			if dopad: 
-				proj = utilities.pad(proj, size, size, 1, "circumference")
+				proj = sparx_utilities.pad(proj, size, size, 1, "circumference")
 			insert_slices(r, proj)
 	else:
 		for i in range(len(list_proj)):
@@ -353,9 +353,9 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 		mpi_comm = mpi.MPI_COMM_WORLD
 
 	if type(prjlist) == list:
-		prjlist = utilities.iterImagesList(prjlist)
+		prjlist = sparx_utilities.iterImagesList(prjlist)
 	if not prjlist.goToNext():
-		global_def.ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
+		sparx_global_def.ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
 	imgsize = prjlist.image().get_xsize()
 	if prjlist.image().get_ysize() != imgsize:
 		imgsize = max(imgsize, prjlist.image().get_ysize())
@@ -412,7 +412,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 	while prjlist.goToNext():
 		prj = prjlist.image()
 		if dopad:
-			prj = utilities.pad(prj, imgsize, imgsize, 1, "circumference")
+			prj = sparx_utilities.pad(prj, imgsize, imgsize, 1, "circumference")
 		#if params:
 		insert_slices(r, prj)
 		if not (finfo is None):
@@ -424,8 +424,8 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 		finfo.write( "begin reduce\n" )
 		finfo.flush()
 
-	utilities.reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
-	utilities.reduce_EMData_to_root(weight, myid, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
+	sparx_utilities.reduce_EMData_to_root(weight, myid, comm=mpi_comm)
 
 	if not (finfo is None): 
 		finfo.write( "after reduce\n" )
@@ -436,14 +436,14 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", finfo=
 	else:
 		pass#IMPORTIMPORTIMPORT from utilities import model_blank
 		if ( xysize == -1 and zsize == -1 ):
-			fftvol = utilities.model_blank(imgsize, imgsize, imgsize)
+			fftvol = sparx_utilities.model_blank(imgsize, imgsize, imgsize)
 		else:
 			if zsize == -1:
-				fftvol = utilities.model_blank(xysize, xysize, imgsize)
+				fftvol = sparx_utilities.model_blank(xysize, xysize, imgsize)
 			elif xysize == -1:
-				fftvol = utilities.model_blank(imgsize, imgsize, zsize)
+				fftvol = sparx_utilities.model_blank(imgsize, imgsize, zsize)
 			else:
-				fftvol = utilities.model_blank(xysize, xysize, zsize)
+				fftvol = sparx_utilities.model_blank(xysize, xysize, zsize)
 	return fftvol
 
 
