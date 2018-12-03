@@ -1022,3 +1022,19 @@ class TestSymClassIsInSubunitTet:
                 assert expected_results[idx]
                 assert results[idx]
         assert expected_results == results
+
+
+
+########
+########
+########
+
+
+class TestSymClassIsInSubunitWrong:
+
+    output_template_angles = 'Got: {0} ; Expected: {1} ; Angle: {2}'
+
+    def test_wrong_sym_crashes_problem(self):
+        symclass = fu.symclass('c1')
+        symclass.sym = 'foobar'
+        assert symclass.is_in_subunit(0, 0) is None
