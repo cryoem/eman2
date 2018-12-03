@@ -109,7 +109,7 @@ class TestSymClassInitC:
         print(symclass.symatrix)
         symatrix = []
         for args in symclass.symangles:
-            symatrix.append(fu.rotmatrix(args[0],args[1],args[2]))
+            symatrix.append(self.rotmatrix(args[0],args[1],args[2]))
         assert symclass.symatrix == symatrix
 
     def test_c5_should_return_correct_symatrix(self):
@@ -117,8 +117,36 @@ class TestSymClassInitC:
         print(symclass.symatrix)
         symatrix = []
         for args in symclass.symangles:
-            symatrix.append(fu.rotmatrix(args[0],args[1],args[2]))
+            symatrix.append(self.rotmatrix(args[0],args[1],args[2]))
         assert symclass.symatrix == symatrix
+
+    @staticmethod
+    def rotmatrix(phi,theta,psi):
+        rphi   = numpy.radians(phi)
+        rtheta = numpy.radians(theta)
+        rpsi   = numpy.radians(psi)
+        cosphi = numpy.cos(rphi)
+        sinphi = numpy.sin(rphi)
+        costheta = numpy.cos(rtheta)
+        sintheta = numpy.sin(rtheta)
+        cospsi = numpy.cos(rpsi)
+        sinpsi = numpy.sin(rpsi)
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+
+        mat[0][0] =  cospsi*costheta*cosphi - sinpsi*sinphi
+        mat[1][0] = -sinpsi*costheta*cosphi - cospsi*sinphi
+        mat[2][0] =            sintheta*cosphi
+
+
+        mat[0][1] =  cospsi*costheta*sinphi + sinpsi*cosphi
+        mat[1][1] = -sinpsi*costheta*sinphi + cospsi*cosphi
+        mat[2][1] =            sintheta*sinphi
+
+
+        mat[0][2] = -cospsi*sintheta
+        mat[1][2] =  sinpsi*sintheta
+        mat[2][2] =            costheta
+        return mat
 
 
 ########
@@ -213,7 +241,7 @@ class TestSymClassInitD:
         print(symclass.symatrix)
         symatrix = []
         for args in symclass.symangles:
-            symatrix.append(fu.rotmatrix(args[0],args[1],args[2]))
+            symatrix.append(self.rotmatrix(args[0],args[1],args[2]))
         assert symclass.symatrix == symatrix
 
     def test_d5_should_return_correct_symatrix(self):
@@ -221,8 +249,36 @@ class TestSymClassInitD:
         print(symclass.symatrix)
         symatrix = []
         for args in symclass.symangles:
-            symatrix.append(fu.rotmatrix(args[0],args[1],args[2]))
+            symatrix.append(self.rotmatrix(args[0],args[1],args[2]))
         assert symclass.symatrix == symatrix
+
+    @staticmethod
+    def rotmatrix(phi,theta,psi):
+        rphi   = numpy.radians(phi)
+        rtheta = numpy.radians(theta)
+        rpsi   = numpy.radians(psi)
+        cosphi = numpy.cos(rphi)
+        sinphi = numpy.sin(rphi)
+        costheta = numpy.cos(rtheta)
+        sintheta = numpy.sin(rtheta)
+        cospsi = numpy.cos(rpsi)
+        sinpsi = numpy.sin(rpsi)
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+
+        mat[0][0] =  cospsi*costheta*cosphi - sinpsi*sinphi
+        mat[1][0] = -sinpsi*costheta*cosphi - cospsi*sinphi
+        mat[2][0] =            sintheta*cosphi
+
+
+        mat[0][1] =  cospsi*costheta*sinphi + sinpsi*cosphi
+        mat[1][1] = -sinpsi*costheta*sinphi + cospsi*cosphi
+        mat[2][1] =            sintheta*sinphi
+
+
+        mat[0][2] = -cospsi*sintheta
+        mat[1][2] =  sinpsi*sintheta
+        mat[2][2] =            costheta
+        return mat
 
 
 ########
@@ -288,8 +344,36 @@ class TestSymClassInitOct:
         print(symclass.symatrix)
         symatrix = []
         for args in symclass.symangles:
-            symatrix.append(fu.rotmatrix(args[0],args[1],args[2]))
+            symatrix.append(self.rotmatrix(args[0],args[1],args[2]))
         assert symclass.symatrix == symatrix
+
+    @staticmethod
+    def rotmatrix(phi,theta,psi):
+        rphi   = numpy.radians(phi)
+        rtheta = numpy.radians(theta)
+        rpsi   = numpy.radians(psi)
+        cosphi = numpy.cos(rphi)
+        sinphi = numpy.sin(rphi)
+        costheta = numpy.cos(rtheta)
+        sintheta = numpy.sin(rtheta)
+        cospsi = numpy.cos(rpsi)
+        sinpsi = numpy.sin(rpsi)
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+
+        mat[0][0] =  cospsi*costheta*cosphi - sinpsi*sinphi
+        mat[1][0] = -sinpsi*costheta*cosphi - cospsi*sinphi
+        mat[2][0] =            sintheta*cosphi
+
+
+        mat[0][1] =  cospsi*costheta*sinphi + sinpsi*cosphi
+        mat[1][1] = -sinpsi*costheta*sinphi + cospsi*cosphi
+        mat[2][1] =            sintheta*sinphi
+
+
+        mat[0][2] = -cospsi*sintheta
+        mat[1][2] =  sinpsi*sintheta
+        mat[2][2] =            costheta
+        return mat
 
 
 ########
@@ -351,8 +435,36 @@ class TestSymClassInitTet:
         print(symclass.symatrix)
         symatrix = []
         for args in symclass.symangles:
-            symatrix.append(fu.rotmatrix(args[0],args[1],args[2]))
+            symatrix.append(self.rotmatrix(args[0],args[1],args[2]))
         assert symclass.symatrix == symatrix
+
+    @staticmethod
+    def rotmatrix(phi,theta,psi):
+        rphi   = numpy.radians(phi)
+        rtheta = numpy.radians(theta)
+        rpsi   = numpy.radians(psi)
+        cosphi = numpy.cos(rphi)
+        sinphi = numpy.sin(rphi)
+        costheta = numpy.cos(rtheta)
+        sintheta = numpy.sin(rtheta)
+        cospsi = numpy.cos(rpsi)
+        sinpsi = numpy.sin(rpsi)
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+
+        mat[0][0] =  cospsi*costheta*cosphi - sinpsi*sinphi
+        mat[1][0] = -sinpsi*costheta*cosphi - cospsi*sinphi
+        mat[2][0] =            sintheta*cosphi
+
+
+        mat[0][1] =  cospsi*costheta*sinphi + sinpsi*cosphi
+        mat[1][1] = -sinpsi*costheta*sinphi + cospsi*cosphi
+        mat[2][1] =            sintheta*sinphi
+
+
+        mat[0][2] = -cospsi*sintheta
+        mat[1][2] =  sinpsi*sintheta
+        mat[2][2] =            costheta
+        return mat
 
 
 ########
@@ -419,8 +531,36 @@ class TestSymClassInitIcos:
         print(symclass.symatrix)
         symatrix = []
         for args in symclass.symangles:
-            symatrix.append(fu.rotmatrix(args[0],args[1],args[2]))
+            symatrix.append(self.rotmatrix(args[0],args[1],args[2]))
         assert symclass.symatrix == symatrix
+
+    @staticmethod
+    def rotmatrix(phi,theta,psi):
+        rphi   = numpy.radians(phi)
+        rtheta = numpy.radians(theta)
+        rpsi   = numpy.radians(psi)
+        cosphi = numpy.cos(rphi)
+        sinphi = numpy.sin(rphi)
+        costheta = numpy.cos(rtheta)
+        sintheta = numpy.sin(rtheta)
+        cospsi = numpy.cos(rpsi)
+        sinpsi = numpy.sin(rpsi)
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+
+        mat[0][0] =  cospsi*costheta*cosphi - sinpsi*sinphi
+        mat[1][0] = -sinpsi*costheta*cosphi - cospsi*sinphi
+        mat[2][0] =            sintheta*cosphi
+
+
+        mat[0][1] =  cospsi*costheta*sinphi + sinpsi*cosphi
+        mat[1][1] = -sinpsi*costheta*sinphi + cospsi*cosphi
+        mat[2][1] =            sintheta*sinphi
+
+
+        mat[0][2] = -cospsi*sintheta
+        mat[1][2] =  sinpsi*sintheta
+        mat[2][2] =            costheta
+        return mat
 
 
 ########
@@ -1038,3 +1178,271 @@ class TestSymClassIsInSubunitWrong:
         symclass = fu.symclass('c1')
         symclass.sym = 'foobar'
         assert symclass.is_in_subunit(0, 0) is None
+
+
+
+########
+########
+########
+
+
+class TestSymClassSymmetryRelatedC:
+
+    def test_c1_sym_zero(self):
+        symclass = fu.symclass('c1')
+        result = symclass.symmetry_related([0, 0, 0])
+        print(result)
+        assert result == [[0, 0, 0]]
+
+    def test_c5_sym_zero(self):
+        symclass = fu.symclass('c5')
+        result = symclass.symmetry_related([0, 0, 0])
+        print(result)
+        assert result == [[0, 0, 0]]
+
+    def test_c1_sym_180(self):
+        symclass = fu.symclass('c1')
+        result = symclass.symmetry_related([0, 180, 0])
+        print(result)
+        assert result == [[0, 180, 0]]
+
+    def test_c5_sym_180(self):
+        symclass = fu.symclass('c5')
+        result = symclass.symmetry_related([0, 180, 0])
+        print(result)
+        assert result == [[0, 180, 0]]
+
+    def test_c1_sym_90(self):
+        symclass = fu.symclass('c1')
+        result = symclass.symmetry_related([0, 90, 0])
+        print(result)
+        assert result == [[0, 90, 0]]
+
+    def test_c5_sym_90(self):
+        symclass = fu.symclass('c5')
+        result = symclass.symmetry_related([0, 90, 0])
+        print(result)
+        assert result == [[0, 90, 0], [72, 90, 0], [72*2, 90, 0], [72*3, 90, 0], [72*4, 90, 0]]
+
+
+
+########
+########
+########
+
+
+class TestSymClassSymmetryRelatedD:
+
+    def test_d4_sym_zero(self):
+        symclass = fu.symclass('d4')
+        result = symclass.symmetry_related([0, 0, 0])
+        print(result)
+        assert result == [[0, 0, 0], [0, 180, 0]]
+
+    def test_d5_sym_zero(self):
+        symclass = fu.symclass('d5')
+        result = symclass.symmetry_related([0, 0, 0])
+        print(result)
+        assert result == [[0, 0, 0], [0, 180, 180]]
+
+    def test_d1_sym_90(self):
+        symclass = fu.symclass('d1')
+        result = symclass.symmetry_related([0, 90, 0])
+        print(result)
+        assert result == [[0, 90, 0]]
+
+    def test_d4_sym_90(self):
+        symclass = fu.symclass('d4')
+        result = symclass.symmetry_related([0, 90, 0])
+        print(result)
+        expected_results = [[90*i, 90, 0] for i in range(4)]
+        assert result == expected_results
+
+    def test_d5_sym_90(self):
+        symclass = fu.symclass('d5')
+        result = symclass.symmetry_related([0, 90, 0])
+        print(result)
+        expected_results = [[72*i, 90, 0] for i in range(5)]
+        assert result == expected_results
+
+    def test_d1_sym_45(self):
+        symclass = fu.symclass('d1')
+        result = symclass.symmetry_related([0, 45, 0])
+        print(result)
+        assert sorted(result) == [[0, 45, 0], [0, 45+90, 180]]
+
+    def test_d4_sym_45(self):
+        symclass = fu.symclass('d4')
+        result = symclass.symmetry_related([0, 45, 0])
+        print(result)
+        expected_results = [[90*i, 45, 0] for i in range(4)]
+        expected_results.extend([[90*i, 45+90, 0] for i in range(4)])
+        assert sorted(result) == sorted(expected_results)
+
+    def test_d5_sym_45(self):
+        symclass = fu.symclass('d5')
+        result = symclass.symmetry_related([0, 45, 0])
+        print(result)
+        expected_results = [[72*i, 45, 0] for i in range(5)]
+        expected_results.extend([[72*i, 45+90, 180] for i in range(5)])
+        assert sorted(result) == sorted(expected_results)
+
+
+
+
+
+########
+########
+########
+
+
+class TestSymClassSymmetryRelatedTetIcosOct:
+
+    @staticmethod
+    def recmat(mat):
+        pass#IMPORTIMPORTIMPORT from math import acos,asin,atan2,degrees,pi
+        def sign(x):
+            if( x >= 0.0 ): return 1
+            else:  return -1
+        """
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+        # limit precision
+        for i in range(3):
+            for j in range(3):
+                mat[i][j] = inmat[i][j]
+                #if(abs(inmat[i][j])<1.0e-8):  mat[i][j] = 0.0
+                #else: mat[i][j] = inmat[i][j]
+        for i in range(3):
+            for j in range(3):  print  "     %14.8f"%mat[i][j],
+            print ""
+        """
+        if(mat[2][2] == 1.0):
+            theta = 0.0
+            psi = 0.0
+            if( mat[0][0] == 0.0 ):
+                phi = math.asin(mat[0][1])
+            else:
+                phi = math.atan2(mat[0][1],mat[0][0])
+        elif(mat[2][2] == -1.0):
+            theta = numpy.pi
+            psi = 0.0
+            if(mat[0][0] == 0.0):
+                phi = math.asin(-mat[0][1])
+            else:
+                phi = math.atan2(-mat[0][1],-mat[0][0])
+        else:
+            theta = math.acos(mat[2][2])
+            st = sign(theta)
+            #print theta,st,mat[2][0]
+            if(mat[2][0] == 0.0):
+                if( st != sign(mat[2][1]) ):
+                    phi = 1.5*numpy.pi
+                else:
+                    phi = 0.5*numpy.pi
+            else:
+                phi = math.atan2(st*mat[2][1], st*mat[2][0])
+
+            #print theta,st,mat[0][2],mat[1][2]
+            if(mat[0][2] == 0.0):
+                if( st != sign(mat[1][2]) ):
+                    psi = 1.5*numpy.pi
+                else:
+                    psi = 0.5*numpy.pi
+            else:
+                psi = math.atan2(st*mat[1][2], -st*mat[0][2])
+        #pi2 = 2*pi
+        #return  degrees(round(phi%pi2,8)),degrees(round(theta%pi2,8)),degrees(round(psi%pi2,8))
+        #return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
+        return  numpy.degrees(phi)%360.0,numpy.degrees(theta)%360.0,numpy.degrees(psi)%360.0
+
+    @staticmethod
+    def mulmat(m1,m2):
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+        """
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    mat[i][j] += m1[i][k]*m2[k][j]
+                #mat[i][j] = round(mat[i][j],8)
+        """
+        mat[0][0] = m1[0][0]*m2[0][0] + m1[0][1]*m2[1][0] + m1[0][2]*m2[2][0]
+        mat[0][1] = m1[0][0]*m2[0][1] + m1[0][1]*m2[1][1] + m1[0][2]*m2[2][1]
+        mat[0][2] = m1[0][0]*m2[0][2] + m1[0][1]*m2[1][2] + m1[0][2]*m2[2][2]
+        mat[1][0] = m1[1][0]*m2[0][0] + m1[1][1]*m2[1][0] + m1[1][2]*m2[2][0]
+        mat[1][1] = m1[1][0]*m2[0][1] + m1[1][1]*m2[1][1] + m1[1][2]*m2[2][1]
+        mat[1][2] = m1[1][0]*m2[0][2] + m1[1][1]*m2[1][2] + m1[1][2]*m2[2][2]
+        mat[2][0] = m1[2][0]*m2[0][0] + m1[2][1]*m2[1][0] + m1[2][2]*m2[2][0]
+        mat[2][1] = m1[2][0]*m2[0][1] + m1[2][1]*m2[1][1] + m1[2][2]*m2[2][1]
+        mat[2][2] = m1[2][0]*m2[0][2] + m1[2][1]*m2[1][2] + m1[2][2]*m2[2][2]
+
+        return mat
+
+    @staticmethod
+    def rotmatrix(phi,theta,psi):
+        rphi   = numpy.radians(phi)
+        rtheta = numpy.radians(theta)
+        rpsi   = numpy.radians(psi)
+        cosphi = numpy.cos(rphi)
+        sinphi = numpy.sin(rphi)
+        costheta = numpy.cos(rtheta)
+        sintheta = numpy.sin(rtheta)
+        cospsi = numpy.cos(rpsi)
+        sinpsi = numpy.sin(rpsi)
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+
+        mat[0][0] =  cospsi*costheta*cosphi - sinpsi*sinphi
+        mat[1][0] = -sinpsi*costheta*cosphi - cospsi*sinphi
+        mat[2][0] =            sintheta*cosphi
+
+
+        mat[0][1] =  cospsi*costheta*sinphi + sinpsi*cosphi
+        mat[1][1] = -sinpsi*costheta*sinphi + cospsi*cosphi
+        mat[2][1] =            sintheta*sinphi
+
+
+        mat[0][2] = -cospsi*sintheta
+        mat[1][2] =  sinpsi*sintheta
+        mat[2][2] =            costheta
+        return mat
+
+    def test_returns_correct_tet(self):
+        symclass = fu.symclass('tet')
+        angles = [0, 0, 0]
+        return_value = symclass.symmetry_related(angles)
+
+        expected_return = [angles]
+        mat = self.rotmatrix(angles[0],angles[1],angles[2])
+        for l in range(1, 12):
+            p1,p2,p3 = self.recmat( self.mulmat( mat , symclass.symatrix[l]) )
+            expected_return.append([p1,p2,p3])
+        print(expected_return)
+        print(return_value)
+        assert expected_return == return_value
+
+    def test_returns_correct_oct(self):
+        symclass = fu.symclass('oct')
+        angles = [0, 0, 0]
+        return_value = symclass.symmetry_related(angles)
+
+        expected_return = [angles]
+        mat = self.rotmatrix(angles[0],angles[1],angles[2])
+        for l in range(1, 24):
+            p1,p2,p3 = self.recmat( self.mulmat( mat , symclass.symatrix[l]) )
+            expected_return.append([p1,p2,p3])
+        print(expected_return)
+        print(return_value)
+        assert expected_return == return_value
+
+    def test_returns_correct_oct(self):
+        symclass = fu.symclass('icos')
+        angles = [0, 0, 0]
+        return_value = symclass.symmetry_related(angles)
+
+        expected_return = [angles]
+        mat = self.rotmatrix(angles[0],angles[1],angles[2])
+        for l in range(1, 60):
+            p1,p2,p3 = self.recmat( self.mulmat( mat , symclass.symatrix[l]) )
+            expected_return.append([p1,p2,p3])
+        print(expected_return)
+        print(return_value)
+        assert expected_return == return_value

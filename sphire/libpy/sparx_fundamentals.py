@@ -940,15 +940,21 @@ class symclass(object):
 		redang = [angles[:]]
 		if(self.sym[0] == "c"):
 			qt = 360.0/self.nsym
-			for l in range(1,self.nsym):
-				redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
+			if angles[1] != 0 and angles[1] != 180:
+				for l in range(1,self.nsym):
+					redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
 		elif(self.sym[0] == "d"):
 			nsm = self.nsym/2
 			qt = 360.0/nsm
-			for l in range(1,nsm):
-				redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
-			for l in range(nsm,self.nsym):
-				redang.append([(360.0-redang[l-nsm][0])%360.0, 180.0-angles[1], (angles[2]+180.0*(nsm%2))%360.0])
+			if angles[1] == 0:
+				redang.append([0, 180, (angles[2]+180.0*(nsm%2))%360.0])
+			else:
+				for l in range(1, nsm):
+					redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
+				if angles[1] != 90:
+					for l in range(nsm, self.nsym):
+						redang.append([(360.0-redang[l-nsm][0])%360.0, 180.0-angles[1], (angles[2]+180.0*(nsm%2))%360.0])
+
 		else:
 			pass#IMPORTIMPORTIMPORT from fundamentals import rotmatrix, recmat, mulmat
 			mat = rotmatrix(angles[0],angles[1],angles[2])
