@@ -1331,7 +1331,7 @@ def steptwo(tvol, tweight, treg, cfsc = None, regularized = True):
 	tvol.div_sinc(1)
 	tvol.del_attr("npad")
 	tvol = EMAN2_cppwrap.Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-	tvol = sparx_morphology.cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
+	tvol = sparx_morphology.cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1-5,5, None) # clean artifacts in corners
 
 	return tvol
 
@@ -1411,7 +1411,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 		tvol.div_sinc(1)
 		tvol.del_attr("npad")
 		tvol = EMAN2_cppwrap.Util.window(tvol, Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-		tvol = sparx_morphology.cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1,5, None) # clean artifacts in corners
+		tvol = sparx_morphology.cosinemask(tvol,Tracker["constants"]["nnxo"]//2-1-5,5, None) # clean artifacts in corners
 		return tvol
 	else:  return None
 
