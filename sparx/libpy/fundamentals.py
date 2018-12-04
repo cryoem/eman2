@@ -694,7 +694,7 @@ def prepf(image, npad = 2):
 	cimage.do_fft_inplace()
 	cimage.center_origin_fft()
 	cimage.fft_shuffle()
-	cimage.set_attr("npad",npad)
+	cimage.set_attr_dict({"npad":npad,"prepf":1})
 	return cimage
 
 def prepi(image, RetReal = True):
@@ -1137,6 +1137,8 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	elif(use_method == "fourier"):
+		if img.is_complex() :
+			if img.get_attr_default("prepf",0) != 1:  ERROR("Incorrect input image Fourier format","rot_shift2D fourier method",1)
 		img = img.fourier_rotate_shift2d(angle, sx, sy, 2)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
