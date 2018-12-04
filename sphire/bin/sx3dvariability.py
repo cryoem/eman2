@@ -204,7 +204,7 @@ def main():
 		log_main.add(line)
 	
 		if(instack[:4] !="bdb:"):
-			if output_dir =="./": stack = "bdb:data"
+			if options.output_dir =="./": stack = "bdb:data"
 			else: stack = "bdb:"+options.output_dir+"/data"
 			sparx_utilities.delete_bdb(stack)
 			junk = sparx_utilities.cmdexecute("sxcpy.py  "+instack+"  "+stack)
@@ -420,7 +420,7 @@ def main():
 		"""Multiline Comment0"""
 		
 		if options.VAR: # 2D variance images have no shifts
-			#varList   = EMData.read_images(stack, range(img_begin, img_end))
+			varList   = EMAN2_cppwrap.EMData.read_images(stack, range(img_begin, img_end))
 			pass#IMPORTIMPORTIMPORT from EMAN2 import Region
 			if options.window > 0:
 				mx = nnxo//2 - options.window//2
@@ -429,7 +429,7 @@ def main():
 			else: reg = None
 			pass#IMPORTIMPORTIMPORT from fundamentals import subsample
 			for index_of_particle in range(img_begin,img_end):
-				image = sparx_utilities.get_im(stack, index_of_proj)
+				image = sparx_utilities.get_im(stack, index_of_particle)
 				if reg: varList.append(sparx_fundamentals.subsample(image.get_clip(reg), options.decimate))
 				else:   varList.append(sparx_fundamentals.subsample(image, options.decimate))
 				
