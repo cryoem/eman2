@@ -139,7 +139,7 @@ def main(args):
 			params_3d_subset_data['_rlnRandomSubset'][chunk_import] = idx
 			params_import.extend(chunk_import.tolist())
 		output_dtype.extend(params_3d_subset_data.dtype.descr)
-		params_3d_subset_data = params_3d_subset_data[params_index_data]
+		params_3d_subset_data = params_3d_subset_data[chunk_import]
 		assert params_3d_subset_data.shape[0] == params_3d_data.shape[0]
 		assert np.unique(params_import).shape[0] == params_3d_data.shape[0]
 
@@ -407,7 +407,7 @@ def sanity_checks(args):
 
 	if not args.particle_stack and not args.partres_file:
 			sparx_global_def.ERROR(
-				'Particle_stack or partres_file option needs to be present!'.format(option),
+				'Particle_stack or partres_file option needs to be present!',
 				'sxsphire2relion',
 				1
 				)
