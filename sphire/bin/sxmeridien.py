@@ -5799,7 +5799,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		carryon = sparx_utilities.bcast_number_to_all(carryon, source_node = Blockdata["main_node"], mpi_comm = comm)
 		if carryon == 0: 
 			sparx_global_def.ERROR("Failed to read refang and rshifts: %s %s "%(os.path.join(final_dir, "refang.txt"),\
-			  os.path.join(final_dir, "rshifts.txt")), "do_final_rec3d", 1, data["subgroup_myid"])
+			  os.path.join(final_dir, "rshifts.txt")), "do_final_rec3d", 1, Blockdata["subgroup_myid"])
 		refang  = sparx_utilities.wrap_mpi_bcast(refang,  Blockdata["main_node"], comm)
 		rshifts = sparx_utilities.wrap_mpi_bcast(rshifts, Blockdata["main_node"], comm)
 
@@ -6013,7 +6013,7 @@ def recons3d_trl_struct_MPI_nosmearing(myid, main_node, prjlist, parameters, CTF
 	else:   do_ctf = 0
 	fftvol = EMAN2_cppwrap.EMData()
 	weight = EMAN2_cppwrap.EMData()
-	try:    qt = projlist[0].get_attr("qt")
+	try:    qt = prjlist[0].get_attr("qt")
 	except: qt = 1.0
 	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
 	r = EMAN2_cppwrap.Reconstructors.get( "nn4_ctfw", params )
@@ -6390,8 +6390,8 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 				else:
 					tvol1 = steptwo_mpi(tvol1, tweight1, treg, None, False , color = Blockdata["node_volume"][0])
 				if( Blockdata["myid_on_node"] == 0):
-					if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
-					else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"],         "vol_%d_unfil_%03d.hdf"%(iproc, final_iter)))
+					if iproc ==0: tvol0.write_image(os.path.join(Tracker["constants"]["masterdir"], "vol_%d_unfil_%03d.hdf"%(iproc, Tracker["mainiteration"])))
+					else: tvol1.write_image(os.path.join(Tracker["constants"]["masterdir"],         "vol_%d_unfil_%03d.hdf"%(iproc, Tracker["mainiteration"])))
 				mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		else:
 			if(Blockdata["myid"] == Blockdata["main_shared_nodes"][1]):
