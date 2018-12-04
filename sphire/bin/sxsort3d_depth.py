@@ -2480,7 +2480,7 @@ def get_shrink_data_sorting(partids, partstack, return_real = False, preshift = 
 				ctf_params.apix = ctf_params.apix/shrinkage
 				data[im].set_attr('ctf', ctf_params)
 				data[im].set_attr('ctf_applied', 0)
-			data[im] = sparx_fundamentals.fdecimate(data[im], nxinit*npad, nxinit*npad, 1, True, False)
+			data[im] = sparx_fundamentals.fdecimate(data[im], Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, True, False)
 			apix     = Tracker["constants"]["pixel_size"]
 			data[im].set_attr('apix', apix/shrinkage)
 		if not return_real:	data[im].set_attr("padffted",1)
@@ -2987,8 +2987,8 @@ def downsize_data_for_sorting(original_data, return_real = False, preshift = Tru
 				ctf_params.apix = ctf_params.apix/shrinkage
 				rimage.set_attr('ctf', ctf_params)
 				rimage.set_attr('ctf_applied', 0)
-			rimage  = sparx_fundamentals.fdecimate(rimage, nxinit*npad, nxinit*npad, 1, True, False)
-			cimage  = sparx_fundamentals.fdecimate(cimage, nxinit*npad, nxinit*npad, 1, True, False)
+			rimage  = sparx_fundamentals.fdecimate(rimage, Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, True, False)
+			cimage  = sparx_fundamentals.fdecimate(cimage, Tracker["nxinit"]*npad, Tracker["nxinit"]*npad, 1, True, False)
 			apix   = Tracker["constants"]["pixel_size"]
 			rimage.set_attr('apix', apix/shrinkage)
 		cimage.set_attr("padffted",1)
@@ -4452,7 +4452,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	maxr2 = sparx_utilities.bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
 	"""Multiline Comment4"""
 	if( Blockdata["myid_on_node"] == 0 ):
-		print(" iterefa  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time()-at)/60.0)
+		print(" iterefa  ",Blockdata["myid"],"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),"   ",(time.time())/60.0)
 		#  Either pad or window in F space to 2*nnxo
 		nx = tvol.get_ysize()
 		if( nx > 2*Tracker["constants"]["nnxo"]):
@@ -4628,7 +4628,7 @@ def recons3d_4nnsorting_group_MPI(myid, main_node, prjlist, random_subset, group
 	else:   do_ctf = 0
 	fftvol = EMAN2_cppwrap.EMData()
 	weight = EMAN2_cppwrap.EMData()
-	try:    qt = projlist[0].get_attr("qt")
+	try:    qt = prjlist[0].get_attr("qt")
 	except: qt = 1.0
 	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", \
 	   "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
@@ -6758,7 +6758,7 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, \
 	nc          = 0
 	NACC        = 0
 	try:
-		with open(os.path.join(current_dir,"freq_cutoff.json"),'r') as fout:
+		with open(os.path.join(box_dir,"freq_cutoff.json"),'r') as fout:
 			freq_cutoff_dict = sparx_utilities.convert_json_fromunicode(json.load(fout))
 		fout.close()
 	except: freq_cutoff_dict = {}
