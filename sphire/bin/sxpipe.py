@@ -2657,7 +2657,7 @@ def desymmetrize(args):
 	try: 
 		img_header = input_bdb_stack.get(0, nodata=1).get_attr_dict() # Need only header information
 	except:
-		sparx_global_def.ERROR("Failed to read image header of particle #%d from %s. Aborting..."%(symmetrized_particle_id, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
+		sparx_global_def.ERROR("Failed to read image header of particle #%d from %s. Aborting..."%(0, args.input_bdb_stack_path), subcommand_name) # action=1 - fatal error, exit
 	
 	symmetry_type = ""
 	n_symmetry = 0
