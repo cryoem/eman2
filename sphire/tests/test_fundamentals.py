@@ -1288,9 +1288,6 @@ class TestSymClassSymmetryRelatedD:
         assert sorted(result) == sorted(expected_results)
 
 
-
-
-
 ########
 ########
 ########
@@ -1446,3 +1443,185 @@ class TestSymClassSymmetryRelatedTetIcosOct:
         print(expected_return)
         print(return_value)
         assert expected_return == return_value
+
+
+########
+########
+########
+
+
+class TestSymClassSymmetryRelated:
+
+    def my_method(self, angles, sym, symatrix):
+        if( sym[0] == "c" or sym[0] == "d" ):
+            temp = EMAN2_cppwrap.Util.symmetry_neighbors(angles, sym)
+            nt = len(temp)//3
+            return [[temp[l*3],temp[l*3+1],0.0] for l in range(nt) ]
+        #  Note symmetry neighbors below refer to the particular order 
+        #   in which this class generates symmetry matrices
+        neighbors = {}
+        neighbors["oct"]  = [1,2,3,8,9,12,13]
+        neighbors["tet"]  = [1,2,3,4,6,7]
+        neighbors["icos"] = [1,2,3,4,6,7,11,12]
+        sang = [[] for l in range(len(angles)*(len(neighbors[sym])+1))]
+        for i,q in enumerate(angles):  sang[i*(len(neighbors[sym])+1)] = angles[i][:]
+        pass#IMPORTIMPORTIMPORT from fundamentals import rotmatrix, recmat, mulmat
+        for i,q in enumerate(angles):
+            mat = self.rotmatrix(q[0],q[1],q[2])
+            for j,l in enumerate(neighbors[sym]):
+                p1,p2,p3 = self.recmat( self.mulmat( mat , symatrix[l]) )
+                sang[i*(len(neighbors[sym])+1) + (j+1)] = [p1,p2,0.0]
+        return sang
+
+    @staticmethod
+    def recmat(mat):
+        pass#IMPORTIMPORTIMPORT from math import acos,asin,atan2,degrees,pi
+        def sign(x):
+            if( x >= 0.0 ): return 1
+            else:  return -1
+        """
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+        # limit precision
+        for i in range(3):
+            for j in range(3):
+                mat[i][j] = inmat[i][j]
+                #if(abs(inmat[i][j])<1.0e-8):  mat[i][j] = 0.0
+                #else: mat[i][j] = inmat[i][j]
+        for i in range(3):
+            for j in range(3):  print  "     %14.8f"%mat[i][j],
+            print ""
+        """
+        if(mat[2][2] == 1.0):
+            theta = 0.0
+            psi = 0.0
+            if( mat[0][0] == 0.0 ):
+                phi = math.asin(mat[0][1])
+            else:
+                phi = math.atan2(mat[0][1],mat[0][0])
+        elif(mat[2][2] == -1.0):
+            theta = numpy.pi
+            psi = 0.0
+            if(mat[0][0] == 0.0):
+                phi = math.asin(-mat[0][1])
+            else:
+                phi = math.atan2(-mat[0][1],-mat[0][0])
+        else:
+            theta = math.acos(mat[2][2])
+            st = sign(theta)
+            #print theta,st,mat[2][0]
+            if(mat[2][0] == 0.0):
+                if( st != sign(mat[2][1]) ):
+                    phi = 1.5*numpy.pi
+                else:
+                    phi = 0.5*numpy.pi
+            else:
+                phi = math.atan2(st*mat[2][1], st*mat[2][0])
+
+            #print theta,st,mat[0][2],mat[1][2]
+            if(mat[0][2] == 0.0):
+                if( st != sign(mat[1][2]) ):
+                    psi = 1.5*numpy.pi
+                else:
+                    psi = 0.5*numpy.pi
+            else:
+                psi = math.atan2(st*mat[1][2], -st*mat[0][2])
+        #pi2 = 2*pi
+        #return  degrees(round(phi%pi2,8)),degrees(round(theta%pi2,8)),degrees(round(psi%pi2,8))
+        #return  degrees(round(phi,10)%pi2)%360.0,degrees(round(theta,10)%pi2)%360.0,degrees(round(psi,10)%pi2)%360.0
+        return  numpy.degrees(phi)%360.0,numpy.degrees(theta)%360.0,numpy.degrees(psi)%360.0
+
+    @staticmethod
+    def mulmat(m1,m2):
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+        """
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    mat[i][j] += m1[i][k]*m2[k][j]
+                #mat[i][j] = round(mat[i][j],8)
+        """
+        mat[0][0] = m1[0][0]*m2[0][0] + m1[0][1]*m2[1][0] + m1[0][2]*m2[2][0]
+        mat[0][1] = m1[0][0]*m2[0][1] + m1[0][1]*m2[1][1] + m1[0][2]*m2[2][1]
+        mat[0][2] = m1[0][0]*m2[0][2] + m1[0][1]*m2[1][2] + m1[0][2]*m2[2][2]
+        mat[1][0] = m1[1][0]*m2[0][0] + m1[1][1]*m2[1][0] + m1[1][2]*m2[2][0]
+        mat[1][1] = m1[1][0]*m2[0][1] + m1[1][1]*m2[1][1] + m1[1][2]*m2[2][1]
+        mat[1][2] = m1[1][0]*m2[0][2] + m1[1][1]*m2[1][2] + m1[1][2]*m2[2][2]
+        mat[2][0] = m1[2][0]*m2[0][0] + m1[2][1]*m2[1][0] + m1[2][2]*m2[2][0]
+        mat[2][1] = m1[2][0]*m2[0][1] + m1[2][1]*m2[1][1] + m1[2][2]*m2[2][1]
+        mat[2][2] = m1[2][0]*m2[0][2] + m1[2][1]*m2[1][2] + m1[2][2]*m2[2][2]
+
+        return mat
+
+    @staticmethod
+    def rotmatrix(phi,theta,psi):
+        rphi   = numpy.radians(phi)
+        rtheta = numpy.radians(theta)
+        rpsi   = numpy.radians(psi)
+        cosphi = numpy.cos(rphi)
+        sinphi = numpy.sin(rphi)
+        costheta = numpy.cos(rtheta)
+        sintheta = numpy.sin(rtheta)
+        cospsi = numpy.cos(rpsi)
+        sinpsi = numpy.sin(rpsi)
+        mat = [[0.0]*3,[0.0]*3,[0.0]*3]
+
+        mat[0][0] =  cospsi*costheta*cosphi - sinpsi*sinphi
+        mat[1][0] = -sinpsi*costheta*cosphi - cospsi*sinphi
+        mat[2][0] =            sintheta*cosphi
+
+
+        mat[0][1] =  cospsi*costheta*sinphi + sinpsi*cosphi
+        mat[1][1] = -sinpsi*costheta*sinphi + cospsi*cosphi
+        mat[2][1] =            sintheta*sinphi
+
+
+        mat[0][2] = -cospsi*sintheta
+        mat[1][2] =  sinpsi*sintheta
+        mat[2][2] =            costheta
+        return mat
+
+    def test_c_sym(self):
+        symclass = fu.symclass('c4')
+        angles = [[idx1, idx2, 0] for idx1 in range(90) for idx2 in range(90)]
+        expected_return_values = self.my_method(angles, symclass.sym, symclass.symatrix)
+        return_values = symclass.symmetry_neighbors(angles)
+        assert return_values == expected_return_values
+
+    def test_d_sym(self):
+        symclass = fu.symclass('d4')
+        angles = [[idx1, idx2, 0] for idx1 in range(90) for idx2 in range(90)]
+        expected_return_values = self.my_method(angles, symclass.sym, symclass.symatrix)
+        return_values = symclass.symmetry_neighbors(angles)
+        assert return_values == expected_return_values
+
+    def test_tet_sym(self):
+        symclass = fu.symclass('tet')
+        angles = [[idx1, idx2, 0] for idx1 in range(50) for idx2 in range(90)]
+        expected_return_values = self.my_method(angles, symclass.sym, symclass.symatrix)
+        return_values = symclass.symmetry_neighbors(angles)
+        assert return_values == expected_return_values
+
+    def test_oct_sym(self):
+        symclass = fu.symclass('oct')
+        angles = [[idx1, idx2, 0] for idx1 in range(40) for idx2 in range(90)]
+        expected_return_values = self.my_method(angles, symclass.sym, symclass.symatrix)
+        return_values = symclass.symmetry_neighbors(angles)
+        assert return_values == expected_return_values
+
+    def test_icos_sym(self):
+        symclass = fu.symclass('icos')
+        angles = [[idx1, idx2, 0] for idx1 in range(30) for idx2 in range(90)]
+        expected_return_values = self.my_method(angles, symclass.sym, symclass.symatrix)
+        return_values = symclass.symmetry_neighbors(angles)
+        assert return_values == expected_return_values
+
+
+########
+########
+########
+
+
+class TestReduceAnglesets:
+
+    def test_c_sym_no_mirror(self):
+        angles = [[idx1, idx2, 0] for idx1 in range(360) for idx2 in range(181)]
