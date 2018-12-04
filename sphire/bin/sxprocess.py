@@ -851,7 +851,7 @@ def main():
 		if nargs == 2:  mask_file_name = args[1] # args[1]: output 3D mask file path
 		else:           mask_file_name = "adaptive_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
 
-		if( options.fl > 0.0 ):  inputvol =sparx_filter.filt_tanl(inputvol,options.fl/option.pixel_size, options.aa)
+		if( options.fl > 0.0 ):  inputvol =sparx_filter.filt_tanl(inputvol,options.fl/options.pixel_size, options.aa)
 		if( options.mol_mass> 0.0 ): density_threshold = inputvol.find_3d_threshold(options.mol_mass, options.pixel_size)
 		else: density_threshold = options.threshold
 		if options.edge_type == "cosine": mode = "C"
@@ -979,7 +979,7 @@ def main():
 					global_b = b*4
 					log_main.add( "The estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
 				else:
-					global_b = option.B_enhance
+					global_b = options.B_enhance
 					log_main.add( "User provided B_factor is %f"%global_b)
 				sigma_of_inverse = numpy.sqrt(2./global_b)
 				e1 = sparx_filter.filt_gaussinv(e1,sigma_of_inverse)
@@ -987,7 +987,7 @@ def main():
 					log_main.add("Low-pass filter ff %   aa  %f"%(options.fl, options.aa))
 					e1 =sparx_filter.filt_tanl(e1,options.fl, options.aa)
 				elif options.fl > 0.5:
-					e1 =sparx_filter.filt_tanl(e1,options.fl/option.pixel_size, options.aa)
+					e1 =sparx_filter.filt_tanl(e1,options.fl/options.pixel_size, options.aa)
 				e1.write_image(options.output)
 
 		else: # 3D case High pass filter should always come along with low-pass filter. 
