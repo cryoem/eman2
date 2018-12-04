@@ -1381,7 +1381,9 @@ def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 		Three ways of windowing out a portion of an image:
 		1. "c" Get the central part: "c" ( default setting )
 		2. "l" Get clip starts from the top left corner
-		3. "a" Get clip with arbitrary point (ix, iy) as the image center point ( nx//2,ny//2 corresponds to image center )
+		3. "a" Get clip with arbitrary point (ix, iy) used as the input image center point 
+				in case 1, 0,0 corresponds to image center
+				in case 2, nx//2,ny//2 corresponds to image center
 	"""
 	lx = img.get_xsize()
 	ly = img.get_ysize()
