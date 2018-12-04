@@ -124,10 +124,10 @@ def ERROR(message, where, action = 1, myid = 0):
 			mpi.mpi_finalize()
 			MPI = False
 			BATCH = False
-			exit()
+			exit(1)
 		else:
 			BATCH = False
-			exit()
+			exit(1)
 
 
 
