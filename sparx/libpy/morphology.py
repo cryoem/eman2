@@ -1382,7 +1382,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_wi
 		Output
 			mask: The mask will have values one, zero, with cosine smooth transition between two regions.
 	"""
-	from utilities  importmodel_circle
+	from utilities  import model_circle
 	from morphology import binarize, dilation
 	nx = vol.get_xsize()
 	ny = vol.get_ysize()
