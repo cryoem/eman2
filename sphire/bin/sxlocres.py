@@ -39,6 +39,7 @@ import sparx_global_def
 import sparx_morphology
 import mpi
 import optparse
+import numpy
 import os
 import sparx_statistics
 import sys
@@ -170,7 +171,18 @@ def main():
 		pass#IMPORTIMPORTIMPORT from statistics import locres
 		"""Multiline Comment0"""
 		freqvol, resolut = sparx_statistics.locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
+
 		if(myid == 0):
+			# Remove outliers based on the Interquartile range
+			data_freqvol = freqvol.get_3dview()
+			mask = data_freqvol != 0
+			percentile_25 = numpy.percentile(data_freqvol[mask], 25)
+			percentile_75 = numpy.percentile(data_freqvol[mask], 75)
+			iqr = percentile_75 - percentile_25
+			mask_low_pass = data_freqvol > percentile_75 + 4*iqr
+			mask_high_pass = data_freqvol < percentile_25 - 4*iqr
+			data_freqvol[mask & mask_low_pass] = numpy.max(data_freqvol[mask & ~mask_low_pass])
+			data_freqvol[mask & mask_high_pass] = numpy.min(data_freqvol[mask & ~mask_high_pass])
 			outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
 			if res_overall !=-1.0:
 				for ifreq in range(len(resolut)):
@@ -270,6 +282,16 @@ def main():
 									bailout = False
 			if(bailout):  break
 		#print(len(resolut))
+		# remove outliers
+		data_freqvol = freqvol.get_3dview()
+		mask = data_freqvol != 0
+		percentile_25 = numpy.percentile(data_freqvol[mask], 25)
+		percentile_75 = numpy.percentile(data_freqvol[mask], 75)
+		iqr = percentile_75 - percentile_25
+		mask_low_pass = data_freqvol > percentile_75 + 4*iqr
+		mask_high_pass = data_freqvol < percentile_25 - 4*iqr
+		data_freqvol[mask & mask_low_pass] = numpy.max(data_freqvol[mask & ~mask_low_pass])
+		data_freqvol[mask & mask_high_pass] = numpy.min(data_freqvol[mask & ~mask_high_pass])
 		outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
 		if res_overall !=-1.0:
 			for ifreq in range(len(resolut)):
