@@ -746,7 +746,7 @@ class SXCmdWidget(QWidget):
 		# Loop through all command tokens
 		for sxcmd_token in self.sxcmd.token_list:
 			# First, handle very special cases
-			if not sxcmd_token.widget.isEnabled():
+			if not sxcmd_token.widget.isEnabled() and not sxcmd_token.is_locked:
 				continue
 			elif sxcmd_token.type == "user_func":
 				user_func_name_index = 0
