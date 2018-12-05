@@ -1214,7 +1214,7 @@ def flcc(t, e):
 ##-----------------------------img formation parameters related functions---------------------------------
 def imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1):
 	"""
-		Extract image formation parameters using contrained simplex method
+		Extract image formation parameters using constrained simplex method
 		The output is a list of list, which contains the following four elements:
 		1. frequencies in 1/Angstrom
 		2. fitted curve, either background noise or envelope function
