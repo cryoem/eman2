@@ -30411,7 +30411,6 @@ EMData* Util::soft_edge(EMData* img, int edge_width, string mode)
 
 	if (!img)  throw NullPointerException("NULL input image");
 
-	if(img->get_ndim()<3) throw ImageDimensionException(" surface_mask is only applicable to 3-D volume");
 	int ntab = 100;
 	vector<float> tabf(ntab+1);
 	if( mode == "C" ) {
@@ -30428,7 +30427,9 @@ EMData* Util::soft_edge(EMData* img, int edge_width, string mode)
 	float* smask_ptr = smask->get_data();
 	
 	int edge_width2 = edge_width * edge_width;
-	int edge_width3 = edge_width2 * edge_width;
+	int edge_width3;
+	if( nz > 1) edge_width3 = edge_width2 * edge_width;
+	else edge_width3 = edge_width2;
 	for (int iz=0; iz<nz; iz++) {
 		for (int iy=0; iy<ny; iy++) {
 			for (int ix=0; ix<nx; ix++) {
