@@ -43,6 +43,7 @@ parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFo
 parser.add_argument('submission_command', type=str, help='Submission command, e.g., qsub, qsub -V, sbatch, bash')
 parser.add_argument('pipeline_directory', type=str, help='Directory containin the pipeline submission files')
 parser.add_argument('--hold_flag', type=str, default=None, help='Hold flag for the submission command, e.g. -hold_jid')
+parser.add_argument('--first_hold_number', type=str, default=None, help='Wait number of an already running job')
 args = parser.parse_args()
 
 sparx_global_def.BATCH = True
@@ -56,10 +57,13 @@ qsub_dict = {
 if args.submission_command.split()[0] not in qsub_dict and args.hold_flag:
     sparx_global_def.ERROR('Qsub return output not known! Please contact the SPHIRE authors!', 'sxbatch.py', 1)
 
-prev_hold = 'aaa'
+if args.first_hold_number:
+    prev_hold = args.first_hold_number
+else:
+    prev_hold = 'aaa'
 for idx, file_name in enumerate(sorted(glob.glob('{0}/*'.format(args.pipeline_directory)))):
     command = args.submission_command.split()
-    if args.hold_flag and idx != 0:
+    if args.hold_flag and (idx != 0 or args.first_hold_number):
         command.append(args.hold_flag)
         command.append(prev_hold)
     else:
