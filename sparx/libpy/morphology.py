@@ -1382,7 +1382,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_wi
 		Output
 			mask: The mask will have values one, zero, with cosine smooth transition between two regions.
 	"""
-	from utilities  import gauss_edge, model_circle
+	from utilities  importmodel_circle
 	from morphology import binarize, dilation
 	nx = vol.get_xsize()
 	ny = vol.get_ysize()
@@ -1405,6 +1405,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_wi
 	mask = Util.soft_edge(mask, edge_width, "C")
 	return mask
 
+'''
 def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
 	"""
 		Name
@@ -1425,6 +1426,7 @@ def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_st
 	for i in range(ndilation):   mask = dilation(mask)
 	#mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
 	return mask
+'''
 
 def cosinemask(im, radius = -1, cosine_width = 5, bckg = None, s=999999.0):
 	"""
