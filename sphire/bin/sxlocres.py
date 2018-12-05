@@ -63,17 +63,20 @@ pass#IMPORTIMPORTIMPORT from	sparx import *
 pass#IMPORTIMPORTIMPORT from	global_def import SPARX_MPI_TAG_UNIVERSAL
 
 #Transforms the local resolution file from frequency units to angstroms.
-def makeAngRes(freqvol, nx, ny, nz, pxSize):
+def makeAngRes(freqvol, nx, ny, nz, pxSize, freq_to_real=True):
 	if (pxSize == 1.0):
 		print("Using a value of 1 for the pixel size. Are you sure this is correct?")
 
 	outAngResVol = sparx_utilities.model_blank(nx,ny,nz)
-	for x in range(nx):
-		for y in range(ny):
-			for z in range(nz):
-				#All voxels to apix/ absolute Resolution. If 0 then leave as it is.
-				qt = freqvol.get_value_at(x,y,z)
-				if(qt > 0.0): outAngResVol.set_value_at_fast(x,y,z, pxSize/qt )
+	data_in = freqvol.get_3dview()
+	data_out = outAngResVol.get_3dview()
+
+	if freq_to_real:
+		mask = data_in > 0.0
+		data_out[mask] = pxSize / data_in[mask]
+	else:
+		mask = data_in >= 2 * pxSize
+		data_out[mask] = pxSize / data_in[mask]
 
 	return outAngResVol
 
@@ -168,19 +171,27 @@ def main():
 		"""Multiline Comment0"""
 		freqvol, resolut = sparx_statistics.locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
 		if(myid == 0):
+			outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
 			if res_overall !=-1.0:
-				freqvol += (res_overall- EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
 				for ifreq in range(len(resolut)):
 					if resolut[ifreq][0] >res_overall:
 						 break
 				for jfreq in range(ifreq, len(resolut)):
 					resolut[jfreq][1] = 0.0	
-			freqvol.write_image(outvol)
-			
-			if(options.out_ang_res):
-				outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
-				outAngResVol = makeAngRes(freqvol, nx, ny, nz, options.apix)
-				outAngResVol.write_image(outAngResVolName)
+
+				overall_res_ang = options.apix / float(res_overall)
+				mean_ang = options.apix / float(EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
+				volume_out_ang = makeAngRes(freqvol, nx, ny, nz, options.apix)
+				volume_out_ang += (overall_res_ang - mean_ang)
+				if options.out_ang_res:
+					volume_out_ang.write_image(outAngResVolName)
+				volume_out = makeAngRes(volume_out_ang, nx, ny, nz, options.apix, False)
+				volume_out.write_image(outvol)
+			else:
+				freqvol.write_image(outvol)
+				if(options.out_ang_res):
+					outAngResVol = makeAngRes(freqvol, nx, ny, nz, options.apix)
+					outAngResVol.write_image(outAngResVolName)
 
 			if(options.fsc != None): sparx_utilities.write_text_row(resolut, options.fsc)
 		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
@@ -259,19 +270,27 @@ def main():
 									bailout = False
 			if(bailout):  break
 		#print(len(resolut))
+		outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
 		if res_overall !=-1.0:
-			freqvol += (res_overall- EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
 			for ifreq in range(len(resolut)):
-				if resolut[ifreq][1] >res_overall:
+				if resolut[ifreq][0] >res_overall:
 					 break
 			for jfreq in range(ifreq, len(resolut)):
-				resolut[jfreq][2] = 0.0	
-		freqvol.write_image(outvol)
-		
-		if(options.out_ang_res):			
-			outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
-			outAngResVol = makeAngRes(freqvol, nn, nn, nn, options.apix)
-			outAngResVol.write_image(outAngResVolName)
+				resolut[jfreq][1] = 0.0	
+
+			overall_res_ang = options.apix / float(res_overall)
+			mean_ang = options.apix / float(EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
+			volume_out_ang = makeAngRes(freqvol, nn, nn, nn, options.apix)
+			volume_out_ang += (overall_res_ang - mean_ang)
+			if options.out_ang_res:
+				volume_out_ang.write_image(outAngResVolName)
+			volume_out = makeAngRes(volume_out_ang, nn, nn, nn, options.apix, False)
+			volume_out.write_image(outvol)
+		else:
+			freqvol.write_image(outvol)
+			if(options.out_ang_res):
+				outAngResVol = makeAngRes(freqvol, nn, nn, nn, options.apix)
+				outAngResVol.write_image(outAngResVolName)
 
 		if(options.fsc != None): sparx_utilities.write_text_row(resolut, options.fsc)
 
