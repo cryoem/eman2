@@ -3441,9 +3441,10 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 		#print  " Criterium on the fly ", tave.cmp("dot", tave, {"negative":0,"mask":mask})
 
 
-def align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
+def align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1.0, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
 	     quadratic interpolation
+	     xrng[k,m] - translation search will be performed in range [-k,m] in steps equal step, which can non-integer
 	     Output: ang, sxs, sys, mirror, peak
 	"""
 	#from utilities import print_col
