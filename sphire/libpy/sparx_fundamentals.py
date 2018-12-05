@@ -850,17 +850,39 @@ class symclass(object):
 		        False otherwise.
 		"""
 		pass#IMPORTIMPORTIMPORT from math import degrees, radians, sin, cos, tan, atan, acos, sqrt
-		if( (self.sym[0] == "c")  or  (self.sym[0] == "d" and (self.nsym//2)%2 == 0) ):
-			if((phi>= 0.0 and phi<self.brackets[inc_mirror][0]) and (theta<=self.brackets[inc_mirror][1])):  return True
-			else:  return False
-		elif( self.sym[0] == "d" and (self.nsym//2)%2 == 1 ):
-			if(theta<=self.brackets[inc_mirror][1]):
-				phib = 360.0/self.nsym
-				if( phi>=0.0 and phi<self.brackets[1][0] ):
-					if(inc_mirror==1):  return True
-					elif( (phi>= 0.0 and phi<phib/2) or (phi>= phib and phi<(phib+phib/2)) ): return True
-			return False
-			
+		if self.sym[0] == "c":
+			if phi >= 0.0 and phi < self.brackets[inc_mirror][0] and theta <= self.brackets[inc_mirror][1]:
+				return True
+			elif theta == 180 and inc_mirror:
+				return True
+			elif theta == 0:
+				return True
+			else:
+				return False
+
+		elif self.sym[0] == "d" and (self.nsym//2) % 2 == 0:
+			if phi >= 0.0 and phi < self.brackets[inc_mirror][0] and theta <= self.brackets[inc_mirror][1]:
+				return True
+			elif theta == 0:
+				return True
+			else:
+				return False
+
+		elif self.sym[0] == "d" and (self.nsym//2) % 2 == 1:
+			if theta <= self.brackets[inc_mirror][1]:
+				phib = 360.0 / self.nsym
+				if phi >= 0.0 and phi < self.brackets[1][0]:
+					if inc_mirror == 1:
+						return True
+					elif (phi >= phib / 2 and phi < phib) or (phi >= phib and phi <= phib + phib / 2):
+						return True
+					elif theta == 0:
+						return True
+			if theta == 0:
+				return True
+			else:
+				return False
+
 		elif( (self.sym[:3] == "oct")  or  (self.sym[:4] == "icos") ):
 			if( phi>= 0.0 and phi<self.brackets[inc_mirror][0] and theta<=self.brackets[inc_mirror][3] ):
 				tmphi = min(phi, self.brackets[inc_mirror][2]-phi)
@@ -871,6 +893,8 @@ class symclass(object):
 				#print(  "  baldwin_lower_alt_bound ",self.brackets,baldwin_lower_alt_bound,theta)
 				if(baldwin_lower_alt_bound>theta): return True
 				else: return False
+			elif theta == 0:
+				return True
 			else:
 				#print "phi",self.brackets
 				return False
@@ -893,7 +917,11 @@ class symclass(object):
 						#print(  "  baldwin_upper_alt_bound ",phi,theta,baldwin_upper_alt_bound,self.brackets[inc_mirror])
 						if(baldwin_upper_alt_bound<theta): return False
 						else:  return True
+				elif theta == 0:
+					return True
 				else: return False
+			elif theta == 0:
+				return True
 			else:
 				#print "phi",self.brackets
 				return False
@@ -912,15 +940,21 @@ class symclass(object):
 		redang = [angles[:]]
 		if(self.sym[0] == "c"):
 			qt = 360.0/self.nsym
-			for l in range(1,self.nsym):
-				redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
+			if angles[1] != 0 and angles[1] != 180:
+				for l in range(1,self.nsym):
+					redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
 		elif(self.sym[0] == "d"):
 			nsm = self.nsym/2
 			qt = 360.0/nsm
-			for l in range(1,nsm):
-				redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
-			for l in range(nsm,self.nsym):
-				redang.append([(360.0-redang[l-nsm][0])%360.0, 180.0-angles[1], (angles[2]+180.0*(nsm%2))%360.0])
+			if angles[1] == 0:
+				redang.append([0, 180, (angles[2]+180.0*(nsm%2))%360.0])
+			else:
+				for l in range(1, nsm):
+					redang.append([(angles[0]+l*qt)%360.0, angles[1], angles[2]])
+				if angles[1] != 90:
+					for l in range(nsm, self.nsym):
+						redang.append([(360.0-redang[l-nsm][0])%360.0, 180.0-angles[1], (angles[2]+180.0*(nsm%2))%360.0])
+
 		else:
 			pass#IMPORTIMPORTIMPORT from fundamentals import rotmatrix, recmat, mulmat
 			mat = rotmatrix(angles[0],angles[1],angles[2])
