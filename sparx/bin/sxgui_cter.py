@@ -92,7 +92,7 @@ def main():
 	
 	# Make sure main window is shown, raised, and activated upon startup.
 	# gui=SXGuiCter(cter_ctf_file)
-	gui=SXGuiCter()
+	gui = SXGuiCter()
 	gui.show()
 	gui.raise_()
 	gui.activateWindow()
@@ -155,6 +155,25 @@ class SXPlot2DWidget(EMPlot2DWidget):
 		if event.button()==Qt.LeftButton:
 			self.mouseup.emit(event)  #self.emit(QtCore.SIGNAL("mouseup"),event)
 
+class SXLogoButton(QtGui.QLabel):
+	def __init__(self, imagename, logo_width, parent = None):
+		super(SXLogoButton, self).__init__(parent)
+
+		# Width of logo image
+		logo_file_path = '{0}{1}'.format(get_image_directory(), imagename)
+
+		# Style of widget
+		self.setFixedSize(logo_width, logo_width)
+		self.customButtonStyle = """
+			SXLogoButton {{background-color: rgba(0, 0, 0, 0); border: 0px solid black; border-radius: 0px; image: url("{0}");}}
+			""".format(logo_file_path)
+
+		# Set style and add click event
+		self.setStyleSheet(self.customButtonStyle)
+		
+	def add_sxmenu_item_btn_widget(self, sxmenu_item_btn_subarea_widget):
+		sxmenu_item_btn_subarea_widget.addWidget(self)
+		
 class SXGuiCter(QtGui.QWidget):
 # 	def __init__(self, cter_ctf_file = None):
 	def __init__(self):
@@ -168,7 +187,6 @@ class SXGuiCter(QtGui.QWidget):
 			#print("Cannot import EMAN image GUI objects (EMImage2DWidget)")
 			#sys.exit(1)
 		
-# 		QtGui.QWidget.__init__(self,None)
 		super(SXGuiCter, self).__init__(None)
 		
 ###		# MRK_TEST: Flags to test experimental functions
@@ -236,6 +254,82 @@ class SXGuiCter(QtGui.QWidget):
 #			
 		self.installEventFilter(self) # Necessary for self.eventFilter()
 		
+		# Enumerate indices
+		self.enumerate_params_old()
+		self.enumerate_params_new()
+		self.map_value_items()
+		self.enumerate_1drot_indices()
+		self.enumerate_sort_indices()
+		self.enumerate_map_list_indices()
+		self.map_sorted_items()
+		self.enumerate_histograms()
+		self.enumerate_histogram_pulldowns()
+		self.map_histogram_items()
+		self.enumerate_threshold_controls()
+		self.enumerate_threshold_map_indices()
+		self.map_threshold_control()
+		self.enumerate_1drot_graphs()
+		self.enumerate_graph_items()
+		self.map_display_checkboxes()
+		self.enumerate_threshold_status()
+		self.enumerate_threshold_entries()
+		self.map_threshold_status()
+		
+		self.initialize_paths()
+		self.initialize_sorting()
+		
+		self.child_status_list = []  # NOT USED?
+		
+		self.set_default_display()
+		
+		self.initialize_popup_windows()
+		
+		# Emit signals
+#		self.wfft.connect(self.wfft,QtCore.SIGNAL("mousedown"),self.fftmousedown)
+#		self.wfft.connect(self.wfft,QtCore.SIGNAL("mousedrag"),self.fftmousedrag)
+#		self.wfft.connect(self.wfft,QtCore.SIGNAL("mouseup")  ,self.fftmouseup)
+#		self.wimgmicthumb.connect(self.wimgmicthumb,QtCore.SIGNAL("mousedown"),self.imgmicthumbmousedown)
+#		self.wimgmicthumb.connect(self.wimgmicthumb,QtCore.SIGNAL("mousedrag"),self.imgmicthumbmousedrag)
+#		self.wimgmicthumb.connect(self.wimgmicthumb,QtCore.SIGNAL("mouseup")  ,self.imgmicthumbmouseup)
+#		self.wplotrotavgcoarse.connect(self.wplotrotavgcoarse,QtCore.SIGNAL("mousedown"),self.plotmousedown)
+#		self.wplotrotavgfine.connect(self.wplotrotavgfine,QtCore.SIGNAL("mousedown"),self.plotmousedown)
+		self.whistparam.mouseup.connect(self.histparammouseup)  #self.whistparam.connect(self.whistparam,QtCore.SIGNAL("mouseup"),self.histparammouseup)
+		self.wscatterparam.mouseup.connect(self.plotparammouseup)  #self.wscatterparam.connect(self.wscatterparam,QtCore.SIGNAL("mouseup"),self.plotparammouseup)
+		
+		self.draw_main_window()
+		self.signal_handler()
+		self.set_size_popup_windows()
+		
+		# Try to recover sizes & positions of windows of the previous GUI session
+		E2loadappwin("sxgui_cter","main",self)
+		E2loadappwin("sxgui_cter","fft",self.wfft.qt_parent)
+		E2loadappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
+		E2loadappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
+		E2loadappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
+		E2loadappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
+		E2loadappwin("sxgui_cter","plotparam",self.wscatterparam.qt_parent)
+		
+#		if self.cter_entry_list:
+# #			self.wfft.show()
+#			self.whistparam.show()
+#			self.wplotrotavgcoarse.show()
+		
+		### This section is responsible for background updates
+		self.busy = False
+#		self.needupdate = True
+		self.needredisp = False
+#		self.procthread = None
+#		self.errors = None # used to communicate errors back from the reprocessing thread
+		
+		self.timer = QTimer()
+		self.timer.timeout.connect(self.timeOut)
+		self.timer.start(100)
+		
+#		# Finally, read CTER partres file if necessary
+#		if cter_ctf_file != None:
+#			self.readCterPartresFile(os.path.relpath(cter_ctf_file))
+		
+	def enumerate_params_old(self):
 		#
 		# NOTE: 2017/11/22 Toshio Moriya
 		# The following code is to support the old format of CTER partres file. It should be removed near future
@@ -263,6 +357,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_old_cter_mic_name     = i_enum # micrograph name
 		i_enum += 1; self.n_idx_old_cter            = i_enum
 
+	def enumerate_params_new(self):
 		# Define enumerators for mapping of parameter value items (line edit widgets)
 		i_enum = -1
 		i_enum += 1; self.idx_cter_id               = i_enum # <extra> entry id
@@ -302,6 +397,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_cter_item_widget  =  i_enum
 		i_enum += 1; self.n_idx_cter_item       =  i_enum
 		
+	def map_value_items(self):
 		# Map parameter value items (line edit widgets)
 		self.value_map_list = [None] * self.n_idx_cter
 		self.value_map_list[self.idx_cter_id]           = ["CTER ID", None]
@@ -332,6 +428,7 @@ class SXGuiCter(QtGui.QWidget):
 ###		if self.is_enable_max_power == True: 
 ###			self.value_map_list[self.idx_cter_max_power] = ["Max Power", None] # MRK_TEST:
 		
+	def enumerate_1drot_indices(self):
 		# Define enumerators for curves of 1D power spectrum & CTF fitting plot
 		i_enum = -1
 		i_enum += 1; self.idx_rotinf_cter_id        = i_enum # line number == cter id
@@ -344,6 +441,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_rotinf_fit_envelope   = i_enum # fitted rotational average, with envelope applied
 		i_enum += 1; self.n_idx_rotinf              = i_enum
 		
+	def enumerate_sort_indices(self):
 		# Define enumerators for mapping of sorting items (combo box widget)
 		i_enum = -1
 		i_enum += 1; self.idx_sort_id           = i_enum
@@ -368,11 +466,13 @@ class SXGuiCter(QtGui.QWidget):
 ###			i_enum += 1; self.idx_sort_max_power = i_enum # MRK_TEST:
 		i_enum += 1; self.n_idx_sort            = i_enum
 		
+	def enumerate_map_list_indices(self):
 		# Define enumerators for items of each entry in sort_map_list
 		i_enum = -1
 		i_enum += 1; self.idx_sort_item_idx_cter =  i_enum
 		i_enum += 1; self.n_idx_sort_item        =  i_enum
 		
+	def map_sorted_items(self):
 		# Map sorting items (combo box widget)
 		# Includes mapping from idx_sort to idx_cter
 		self.sort_map_list = [None] * self.n_idx_sort
@@ -397,6 +497,7 @@ class SXGuiCter(QtGui.QWidget):
 ###		if self.is_enable_max_power == True: 
 ###			self.sort_map_list[self.idx_sort_max_power] = [self.idx_cter_max_power] # MRK_TEST:
 		
+	def enumerate_histograms(self):
 		# Define enumerators for mapping of histogram items (combo box widget) and threshold setting (line edit widgets)
 		i_enum = -1
 		i_enum += 1; self.idx_hist_def          = i_enum
@@ -419,6 +520,7 @@ class SXGuiCter(QtGui.QWidget):
 ###			i_enum += 1; self.idx_hist_max_power = i_enum  # MRK_TEST:
 		i_enum += 1; self.n_idx_hist            = i_enum
 		
+	def enumerate_histogram_pulldowns(self):
 		# Define enumerators for items of each entry in hist_map_list
 		i_enum = -1
 		i_enum += 1; self.idx_hist_item_idx_cter                = i_enum
@@ -435,6 +537,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_hist_item_apply_widget_upper      = i_enum
 		i_enum += 1; self.n_idx_hist_item                       = i_enum
 		
+	def map_histogram_items(self):
 		# Map histogram items (combo box widget) and threshold setting (line edit widgets)
 		# Includes mapping from idx_hist to idx_cter and idx_sort
 		self.hist_map_list = [None] * self.n_idx_hist
@@ -457,6 +560,7 @@ class SXGuiCter(QtGui.QWidget):
 ###		if self.is_enable_max_power == True: 
 ###			sself.hist_map_list[self.idx_hist_max_power] = [self.idx_cter_max_power, self.idx_sort_max_power, 0, 99999, 0, 99999, None, None, 0, 99999, None, None] # MRK_TEST:
 		
+	def enumerate_threshold_controls(self):
 		# Define enumerators for threshold control selection
 		i_enum = -1
 		i_enum += 1; self.idx_threshold_control_lower     = i_enum
@@ -464,18 +568,21 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_threshold_control_edit_only = i_enum
 		i_enum += 1; self.n_idx_threshold_control         = i_enum
 		
+	def enumerate_threshold_map_indices(self):
 		# Define enumerators for items of each entry in threshold_control_map_list
 		i_enum = -1
 		i_enum += 1; self.idx_threshold_control_item_label = i_enum
 		i_enum += 1; self.idx_threshold_control_item_color = i_enum
 		i_enum += 1; self.n_idx_threshold_control_item     = i_enum
 		
+	def map_threshold_control(self):
 		# Mapping for threshold control (combo box widget)
 		self.threshold_control_map_list = [None] * self.n_idx_threshold_control
 		self.threshold_control_map_list[self.idx_threshold_control_lower]     = ["Lower (blue)", "blue"]
 		self.threshold_control_map_list[self.idx_threshold_control_upper]     = ["Upper (red)", "red"]
 		self.threshold_control_map_list[self.idx_threshold_control_edit_only] = ["Edit Only", "black"]
 		
+	def enumerate_1drot_graphs(self):
 		# Define enumerators for display curve selection of 1D power spectrum & CTF fitting plot
 		i_enum = -1
 		i_enum += 1; self.idx_graph_exp_no_astig   = i_enum
@@ -486,6 +593,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_graph_fit_envelope   = i_enum
 		i_enum += 1; self.n_idx_graph              = i_enum
 		
+	def enumerate_graph_items(self):
 		# Define enumerators for items of each entry in graph_map_list
 		i_enum = -1
 		i_enum += 1; self.idx_graph_item_name   = i_enum
@@ -494,6 +602,7 @@ class SXGuiCter(QtGui.QWidget):
 		i_enum += 1; self.idx_graph_item_widget = i_enum
 		i_enum += 1; self.n_idx_graph_item      = i_enum
 		
+	def map_display_checkboxes(self):
 		# Map for graph display setting (check box widgets)
 		self.graph_map_list = [None] * self.n_idx_graph
 		self.graph_map_list[self.idx_graph_exp_no_astig]   = ["exp_no_astig",   "Exp. No Astig (Black)",   self.idx_rotinf_exp_no_astig,   None]
@@ -503,29 +612,34 @@ class SXGuiCter(QtGui.QWidget):
 		self.graph_map_list[self.idx_graph_exp_background] = ["exp_background", "Exp. No Backg. (Olive)",  self.idx_rotinf_exp_background, None]
 		self.graph_map_list[self.idx_graph_fit_envelope]   = ["fit_envelope",   "Fit. Envelope (Cyan)",    self.idx_rotinf_fit_envelope,   None]
 		
+	def enumerate_threshold_status(self):
 		# Define enumerators for threshold apply status
 		i_enum = -1
 		i_enum += 1; self.idx_thresholdset_unapplied = i_enum
 		i_enum += 1; self.idx_thresholdset_applied   = i_enum
 		i_enum += 1; self.n_idx_thresholdset         = i_enum
 		
+	def enumerate_threshold_entries(self):
 		# Define enumerators for items of each entry in thresholdset_map_list
 		i_enum = -1
 		i_enum += 1; self.idx_thresholdset_item_label  = i_enum
 		i_enum += 1; self.n_idx_thresholdset_item      = i_enum
 		
+	def map_threshold_status(self):
 		# Map for threshold set (combo box widget)
 		self.thresholdset_map_list = [None] * self.n_idx_thresholdset
 		self.thresholdset_map_list[self.idx_thresholdset_unapplied] = ["Unapplied"]
 		self.thresholdset_map_list[self.idx_thresholdset_applied]   = ["Applied"]
 		
+	def initialize_paths(self):
 		self.cter_partres_file_path  = None
 		self.cter_entry_list         = None
 		self.cter_mic_file_path      = None
 		self.cter_micthumb_file_path = None
 		self.cter_pwrot_file_path    = None
-		#self.cter_fft_file_path      = None
+		self.cter_fft_file_path      = None
 		
+	def initialize_sorting(self):
 		self.curentry = None
 		self.cursortidx = 0
 		self.cursortorder = False
@@ -535,30 +649,32 @@ class SXGuiCter(QtGui.QWidget):
 		self.curentryperbin = 10
 		self.cursyncsort = False
 		self.curthresholdset = 0
-		
-		self.child_status_list = [] 
-		
+	
+	def set_default_display(self):
 		self.curplotrotavgdisplay = False  # True  # (now off by default)
 		self.curplotrotzoomdisplay = True
 		self.curimgmicthumbdisplay = False  # True  # (now off by default)
 		#self.curhistdisable = False
-		self.curhistogramdisplay = False  # True  # (now off by default)
+		self.curhistogramdisplay = True
 		self.curscatterdisplay = True
 		self.curplotfixscale = 1.1  # 5  (applied envelope and subtracted background -- can still override from GUI)
+		self.curfftdisplay = False
 		
+	def initialize_popup_windows(self):
 		# NOTE: 2016/03/09 Toshio Moriya
 		# To set window flags of EMGLWidget (SXPlot2DWidget and EMImage2DWidget) window,
 		# we have to go through its qt_parent attribute to call setWindowTitle()...
 		# 
-#		self.wfft=EMImage2DWidget()
-#		self.wfft.setWindowTitle("sxgui_cter - 2D FFT")
-#		self.wfft.mmode="app"
-#		self.wfft.qt_parent.setWindowFlags((self.qt_parent.wfft.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
-#		self.is_wfft_minimized = False
+		self.wfft=EMImage2DWidget()
+		self.wfft.setWindowTitle("sxgui_cter - 2D FFT")
+		self.wfft.mmode="app"  # NOT USED?
+		#self.wfft.qt_parent.setWindowFlags((self.qt_parent.wfft.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		self.wfft.qt_parent.setWindowFlags((self.wfft.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
+		self.is_wfft_minimized = False
 		
 		self.wimgmicthumb=EMImage2DWidget()
 		self.wimgmicthumb.setWindowTitle("sxgui_cter - Micrograph Thumbnail")
-		self.wimgmicthumb.mmode="app"
+		self.wimgmicthumb.mmode="app"  # NOT USED?
 		self.wimgmicthumb.qt_parent.setWindowFlags((self.wimgmicthumb.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 		self.is_wimgmicthumb_minimized = False
 		
@@ -581,451 +697,353 @@ class SXGuiCter(QtGui.QWidget):
 		self.wscatterparam.setWindowTitle("sxgui_cter - Sort Plot")
 		self.wscatterparam.qt_parent.setWindowFlags((self.wscatterparam.qt_parent.windowFlags()| Qt.CustomizeWindowHint) & ~Qt.WindowMinimizeButtonHint) # Disabled minimize icon button in window title bar
 		self.is_wscatterparam_minimized = False
+	
+	def draw_main_window(self):
+		# Place layout inside QWidget
+		templayout = QtGui.QHBoxLayout(self)
+		templayout.setContentsMargins(0,0,0,0)
+		mainwidget = QtGui.QWidget(self)
+		mainwidget.setObjectName("MainWidgetObject")
 		
-#		self.wfft.connect(self.wfft,QtCore.SIGNAL("mousedown"),self.fftmousedown)
-#		self.wfft.connect(self.wfft,QtCore.SIGNAL("mousedrag"),self.fftmousedrag)
-#		self.wfft.connect(self.wfft,QtCore.SIGNAL("mouseup")  ,self.fftmouseup)
-#		self.wimgmicthumb.connect(self.wimgmicthumb,QtCore.SIGNAL("mousedown"),self.imgmicthumbmousedown)
-#		self.wimgmicthumb.connect(self.wimgmicthumb,QtCore.SIGNAL("mousedrag"),self.imgmicthumbmousedrag)
-#		self.wimgmicthumb.connect(self.wimgmicthumb,QtCore.SIGNAL("mouseup")  ,self.imgmicthumbmouseup)
-#		self.wplotrotavgcoarse.connect(self.wplotrotavgcoarse,QtCore.SIGNAL("mousedown"),self.plotmousedown)
-#		self.wplotrotavgfine.connect(self.wplotrotavgfine,QtCore.SIGNAL("mousedown"),self.plotmousedown)
-		self.whistparam.mouseup.connect(self.histparammouseup)  #self.whistparam.connect(self.whistparam,QtCore.SIGNAL("mouseup"),self.histparammouseup)
-		self.wscatterparam.mouseup.connect(self.plotparammouseup)  #self.wscatterparam.connect(self.wscatterparam,QtCore.SIGNAL("mouseup"),self.plotparammouseup)
-		
-		# This object is itself a widget we need to set up
-		self.gbl = QtGui.QGridLayout(self)
-		self.gbl.setMargin(8)
-		self.gbl.setSpacing(6)
+		# Color scheme
+		background_image_file_path = '{0}sxgui_background.png'.format(get_image_directory())
+		mainwidget.setStyleSheet("QWidget#MainWidgetObject {{background-image: url('{0}')}}".format(background_image_file_path))
+		mainlayout = QtGui.QHBoxLayout(mainwidget)
+		mainlayout.setContentsMargins(12,12,12,12)
+		templayout.addWidget(mainwidget)
 		
 		# --------------------------------------------------------------------------------
 		# Columns 1-3
 		# --------------------------------------------------------------------------------
-		grid_col = 0;
-		col_span_label = 1
-		col_span_edit = 2
-		col_span_sublabel = 2
-		col_span_subedit = 1
-		assert col_span_label + col_span_edit == col_span_sublabel + col_span_subedit, "MRK_DEBUG"
-		col_span = col_span_label + col_span_edit
-		grid_row = 0
 		
-		labelwidth=70
-		editwidth=100
-		sublabelwidth=140
+		leftwidget = QtGui.QWidget(self)
+		leftwidget.setObjectName("LeftWidgetObject")
+		leftwidget.setStyleSheet("QWidget#LeftWidgetObject {background-color: rgba(229, 229, 229, 208); border-radius: 15px;}")
 		
-		self.pbopencter=QtGui.QPushButton("Open CTER partres file")
-		self.gbl.addWidget(self.pbopencter,grid_row,grid_col,1,col_span)
-		grid_row += 1
+		leftcolumn = QtGui.QVBoxLayout(leftwidget)
+		leftcolumn.setContentsMargins(0,10,0,10)
+		mainlayout.addWidget(leftwidget)
 		
-		## Make space
-		#grid_row+=1
+		labelwidth = 90
+		editwidth = 100
+		sublabelwidth = 140
 		
-		temp_label=QtGui.QLabel("<b>Selection Summary:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
-		grid_row += 1
+		self.pbopencter = QtGui.QPushButton("Open CTER partres file")
+		#self.pbopencter.setStyleSheet("QPushButton {color:gray; }")  # (This doesn't do anything.)
+		leftcolumn.addWidget(self.pbopencter)
 		
-		temp_label=QtGui.QLabel("Num. of entries",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
-		self.vbnentry=ValBox(self,(0,10000),None,0)
-		self.vbnentry.setEnabled(False)
-		self.vbnentry.intonly=True
-		self.vbnentry.text.setStyleSheet("color: rgb(127,127,127);")
-		self.gbl.addWidget(self.vbnentry,grid_row,grid_col+col_span_label,1,col_span_edit)
-		grid_row+=1
+		self.add_centered_label("<b>Selection Summary:</b>", leftcolumn)
 		
-		temp_label=QtGui.QLabel("Unchecked",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
-		self.vbuncheckcounts=ValBox(self,(0,1000000),None,0)
-		self.vbuncheckcounts.setEnabled(False)
-		self.vbuncheckcounts.intonly=True
-		self.vbuncheckcounts.text.setStyleSheet("color: rgb(0,0,0);")
-		self.gbl.addWidget(self.vbuncheckcounts,grid_row,grid_col+col_span_label,1,col_span_edit)
-		grid_row+=1
+		self.vbnentry = ValBox(self,(0,10000),None,0)
+		self.add_label_with_value("Num. of entries", self.vbnentry, leftcolumn)
 		
-		temp_label=QtGui.QLabel("Ratio",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
-		self.vbuncheckratio=ValBox(self,(0,1.0),None,0)
-		self.vbuncheckratio.setEnabled(False)
-		self.vbuncheckratio.text.setStyleSheet("color: rgb(0,0,0);")
-		self.gbl.addWidget(self.vbuncheckratio,grid_row,grid_col+col_span_label,1,col_span_edit)
-		grid_row+=1
+		self.vbuncheckcounts = ValBox(self,(0,1000000),None,0)
+		self.add_label_with_value("Unchecked", self.vbuncheckcounts, leftcolumn, style_sheet="color: rgb(0,0,0);")
 		
-		# Make space
-		grid_row+=1
+		self.vbuncheckratio = ValBox(self,(0,1.0),None,0)
+		self.add_label_with_value("Ratio", self.vbuncheckratio, leftcolumn, style_sheet="color: rgb(0,0,0);", intonly=False)
+
+		self.add_centered_label("", leftcolumn)  # spacer
+		self.add_centered_label("<b>Electron Microscopy:</b>", leftcolumn)
 		
-		temp_label=QtGui.QLabel("<b>Electron Microscopy:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
-		grid_row += 1
+		# Voltage
+		self.add_label_with_cter_param(self.idx_cter_vol, leftcolumn, 0, 500, style_sheet = "color: rgb(127,127,127);", labelwidth=labelwidth)
 		
-		self.add_value_widget(self.idx_cter_vol,0,500,grid_row,grid_col,col_span_label,col_span_edit, style_sheet = "color: rgb(127,127,127);", labelwidth=labelwidth)
-		grid_row+=1
+		# Spherical aberration
+		self.add_label_with_cter_param(self.idx_cter_cs, leftcolumn, 0, 5, style_sheet = "color: rgb(127,127,127);",labelwidth=labelwidth)
 		
-		self.add_value_widget(self.idx_cter_cs,0,5,grid_row,grid_col,col_span_label,col_span_edit, style_sheet = "color: rgb(127,127,127);",labelwidth=labelwidth)
-		grid_row+=1
+		# Pixel size
+		self.add_label_with_cter_param(self.idx_cter_apix, leftcolumn, 0,500, style_sheet = "color: rgb(127,127,127);",labelwidth=labelwidth)
 		
-		self.add_value_widget(self.idx_cter_apix,0,500,grid_row,grid_col,col_span_label,col_span_edit, style_sheet = "color: rgb(127,127,127);",labelwidth=labelwidth)
-		grid_row+=1
+		self.add_centered_label("", leftcolumn)  # spacer
+		self.add_centered_label("<b>Display Windows:</b>", leftcolumn)
 		
-		# Make space
-		grid_row+=1
+		self.cbrotavgdisplay = CheckBox(None,None,self.curplotrotavgdisplay)
+		self.add_label_with_checkbox("Rot. Avg. Plot", self.cbrotavgdisplay, leftcolumn, labelwidth=sublabelwidth)
 		
-		temp_label=QtGui.QLabel("<b>Display Windows:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
-		grid_row += 1
+		self.cbrotzoomdisplay = CheckBox(None,None,self.curplotrotzoomdisplay)
+		self.add_label_with_checkbox("Rot. Avg. Plot Zoom", self.cbrotzoomdisplay, leftcolumn, labelwidth=sublabelwidth)
 		
-		temp_label=QtGui.QLabel("Rot. Avg. Plot",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.cbrotavgdisplay=CheckBox(None,None,self.curplotrotavgdisplay)
-		# self.cbrotavgdisplay.setEnabled(self.cbrotavgdisplay)
-		self.gbl.addWidget(self.cbrotavgdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
-		grid_row+=1
+		self.cbhistogramdisplay = CheckBox(None,None,self.curhistogramdisplay)
+		self.add_label_with_checkbox("Histogram", self.cbhistogramdisplay, leftcolumn, labelwidth=sublabelwidth)
 		
-		temp_label=QtGui.QLabel("Rot. Avg. Plot Zoom",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.cbrotzoomdisplay=CheckBox(None,None,self.curplotrotzoomdisplay)
-		self.gbl.addWidget(self.cbrotzoomdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
-		grid_row+=1
+		self.cbscatterdisplay = CheckBox(None,None,self.curscatterdisplay)
+		self.add_label_with_checkbox("Sort Plot", self.cbscatterdisplay, leftcolumn, labelwidth=sublabelwidth)
 		
-		temp_label=QtGui.QLabel("Histogram",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.cbhistogramdisplay=CheckBox(None,None,self.curhistogramdisplay)
-		self.gbl.addWidget(self.cbhistogramdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
-		grid_row+=1
+		self.cbmicthumbdisplay = CheckBox(None,None,self.curimgmicthumbdisplay)
+		self.add_label_with_checkbox("Micrograph Thumbnail", self.cbmicthumbdisplay, leftcolumn, labelwidth=sublabelwidth)
 		
-		temp_label=QtGui.QLabel("Sort Plot",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.cbscatterdisplay=CheckBox(None,None,self.curscatterdisplay)
-		self.gbl.addWidget(self.cbscatterdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
-		grid_row+=1
+		self.cbfftdisplay = CheckBox(None,None,self.curfftdisplay)
+		self.add_label_with_checkbox("2D Power Spectrum", self.cbfftdisplay, leftcolumn, labelwidth=sublabelwidth)
 		
-		temp_label=QtGui.QLabel("Micrograph Thumbnail",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.cbmicthumbdisplay=CheckBox(None,None,self.curimgmicthumbdisplay)
-		# self.cbmicthumbdisplay.setEnabled(self.curimgmicthumbdisplay)
-		self.gbl.addWidget(self.cbmicthumbdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
-		grid_row+=1
-		
-		#temp_label=QtGui.QLabel("2D Power Spectrum",self)
-		#temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		#temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		#self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		#self.cbfftdisplay=CheckBox(None,None,self.curfftdisplay)
-		#self.gbl.addWidget(self.cbfftdisplay,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
-		#grid_row+=1
-		
-		# Make space
-		grid_row+=1
-		
-		temp_label=QtGui.QLabel("<b>Display Curves:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span)
-		grid_row += 1
+		self.add_centered_label("", leftcolumn)  # spacer
+		self.add_centered_label("<b>Display Curves:</b>", leftcolumn)
 		
 		for idx_graph in range(self.n_idx_graph):
-			temp_label=QtGui.QLabel(self.graph_map_list[idx_graph][self.idx_graph_item_label],self)
-			temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-			temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-			self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_sublabel)
-			self.graph_map_list[idx_graph][self.idx_graph_item_widget]=CheckBox(None,None,True)
-			self.gbl.addWidget(self.graph_map_list[idx_graph][self.idx_graph_item_widget],grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
-			grid_row += 1
+			self.graph_map_list[idx_graph][self.idx_graph_item_widget] = CheckBox(None,None,True)
+			self.add_label_with_checkbox(self.graph_map_list[idx_graph][self.idx_graph_item_label], 
+					self.graph_map_list[idx_graph][self.idx_graph_item_widget], leftcolumn, labelwidth=sublabelwidth)
 		
-		temp_label=QtGui.QLabel("Plot Fix Scale",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col, 1, col_span_sublabel)
-		self.vbplotfixscale=ValBox(self,(0,99999),None,self.curplotfixscale)  # default <- self.curplotfixscale
-		self.gbl.addWidget(self.vbplotfixscale,grid_row,grid_col+col_span_sublabel,1,col_span_subedit)
-		grid_row += 1
+		self.vbplotfixscale = ValBox(self,(0,99999),None,self.curplotfixscale)  # default <- self.curplotfixscale
+		self.add_label_with_value("Plot Fix Scale", self.vbplotfixscale, leftcolumn, labelwidth=sublabelwidth, 
+							enabled=True, intonly=False, style_sheet="color: rgb(0,0,0);")
 		
-		self.pbrefreshgraphs=QtGui.QPushButton("Refresh Graphs")
+		self.add_centered_label("", leftcolumn)  # spacer
+		
+		self.pbrefreshgraphs = QtGui.QPushButton("Refresh Graphs")
 		self.pbrefreshgraphs.setEnabled(False)
-		self.gbl.addWidget(self.pbrefreshgraphs,grid_row,grid_col,1,col_span)
-		grid_row += 1
+		leftcolumn.addWidget(self.pbrefreshgraphs)
+		
+		leftcolumn.addStretch(1)
 		
 		# --------------------------------------------------------------------------------
-		# Columns 4
+		# 2nd column
 		# --------------------------------------------------------------------------------
-		grid_col += col_span
-		col_span = 1
-		grid_row = 0
+		
+		secondcolumn = QtGui.QVBoxLayout()
+		secondcolumn.setContentsMargins(0,0,0,0)
+		mainlayout.addLayout(secondcolumn)
 		
 		# plot list and plot mode combobox
 		row_span_entry_list = 27  # length of file list (QListWidget)
-		self.lbentry=SXListWidget(self) # self.lbentry=e2ctf.MyListWidget(self)
+		self.lbentry = SXListWidget(self)
 		self.lbentry.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		self.lbentry.setMinimumWidth(220)
-		self.gbl.addWidget(self.lbentry,grid_row,grid_col,row_span_entry_list,col_span)
-		grid_row += row_span_entry_list
+		secondcolumn.addWidget(self.lbentry)
 		
-		grid_row_entry_list = grid_row - 1
-		grid_col_entry_list = grid_col
+		labelwidth = 180
+		editwidth = 100
+		sublabelwidth = editwidth
+		sidemargin = 10
+		topmargin = 3
+		bottommargin = 3
+		borderwidth = 1
 		
 		# --------------------------------------------------------------------------------
-		# Columns 5-7 (for Micrograph/CTER partres entry), 7-8 (for Unapplied Threshold), 9-10 (for Applied Threshold)
+		# The main big layout (VBox), I'll split up into 4 HBoxLayouts: upper, threshold, bottom, menu
 		# --------------------------------------------------------------------------------
-		grid_col += col_span
-		col_span_1st_label = 2
-		col_span_1st_edit = 1
-		col_span_1st_subspace = 1
-		col_span_1st_sublabel = 1
-		col_span_1st_subedit = 1
-		col_span_2nd_sublabel = col_span_1st_sublabel
-		col_span_2nd_subedit = col_span_1st_subedit
-		col_span_3rd_sublabel = col_span_1st_sublabel
-		col_span_3rd_subedit = col_span_1st_subedit
-		assert col_span_1st_label + col_span_1st_edit == col_span_1st_subspace + col_span_1st_sublabel + col_span_1st_subedit, "MRK_DEBUG"
-		col_span_1st = col_span_1st_label + col_span_1st_edit
-		col_span_1st_sub = col_span_1st_sublabel + col_span_1st_subedit
-		col_span_2nd = 2
-		col_span_3rd = 2
-		col_span = col_span_1st + col_span_2nd + col_span_3rd
-		grid_row = 0  # initialize
+
+		biglayout = QtGui.QVBoxLayout()
+		biglayout.setContentsMargins(0,0,0,0)
+		mainlayout.addLayout(biglayout)
 		
-		grid_col_1st = grid_col
-		grid_col_1st_sub = grid_col + col_span_1st_subspace
-		grid_col_2nd = grid_col_1st + col_span_1st
-		grid_col_3rd = grid_col_2nd + col_span_2nd
+		cterwidget = QtGui.QWidget(self)
+		cterwidget.setObjectName("CterWidgetObject")
+		cterwidget.setStyleSheet("QWidget#CterWidgetObject {background-color: rgba(229, 229, 229, 208); border-radius: 15px;}")
+		biglayout.addWidget(cterwidget)
 		
-		labelwidth=180 # labelwidth=160
-		editwidth=100
-		sublabelwidth=editwidth
+		chartlayout = QtGui.QVBoxLayout(cterwidget)
+		chartlayout.setContentsMargins(0,10,10,10)
 		
-		temp_label=QtGui.QLabel("<b>Current Entry Info:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sub)
-		grid_row += 1
+		upperlayout = QtGui.QHBoxLayout()
+		upperlayout.setContentsMargins(0,0,0,0)
+		chartlayout.addLayout(upperlayout)
 		
-		temp_label=QtGui.QLabel("Sorted ID",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col_1st,1,col_span_1st_label)
-		self.ssortedid=ValBox(self,(0,10000),None,0)
-		self.ssortedid.setEnabled(False)
-		self.ssortedid.intonly=True
-		self.ssortedid.text.setStyleSheet("color: rgb(0,0,0);")
-		self.ssortedid.text.setMinimumSize(QtCore.QSize(editwidth,0))
-		self.gbl.addWidget(self.ssortedid,grid_row,grid_col_1st+col_span_1st_label,1,col_span_1st_edit)
-		grid_row+=1
+		first2rowslayout = QtGui.QVBoxLayout()
+		first2rowslayout.setContentsMargins(0,0,0,0)
+		upperlayout.addLayout(first2rowslayout)
 		
-		self.add_value_widget(self.idx_cter_id,0,10000,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit,intonly=True,labelwidth=labelwidth,editwidth=editwidth)
-		grid_row+=1
+		self.add_centered_label("<b>Current Entry Info:</b>", first2rowslayout, labelwidth=350)  # hardwired labelwidth
+		
+		self.ssortedid = ValBox(self,(0,10000),None,0)
+		self.add_label_with_value("Sorted ID", self.ssortedid, first2rowslayout, style_sheet="color: rgb(0,0,0);", labelwidth=labelwidth, editwidth=editwidth)
+		
+		self.add_label_with_cter_param(self.idx_cter_id, first2rowslayout, 0,10000, intonly=True, labelwidth=labelwidth, editwidth=editwidth)
+		
+		# Add image
+		logolayout = QtGui.QVBoxLayout()
+		logolayout.setContentsMargins(0,0,0,0)
+		upperlayout.addLayout(logolayout)
+		
+		logo = SXLogoButton("sxgui_pictograph_cter.png", 64, parent=self)
+		logo.add_sxmenu_item_btn_widget(logolayout)
+		
+		# Layout for thresholds and column labels
+		threshlayout = QtGui.QHBoxLayout()
+		threshlayout.maximumSize()
+		chartlayout.addLayout(threshlayout)
+		
+		# Draw borderless box to preserve spacing
+		cterFrame = QtGui.QWidget(self)
+		cterFrame.setContentsMargins(0,0,0,0)
+		cterFrame.setStyleSheet("border: %spx solid transparent;" % borderwidth)
+		threshlayout.addWidget(cterFrame)
+		
+		# Layout for CTER columns: select through phase shift
+		cterlayout = QtGui.QVBoxLayout(cterFrame)
+		cterlayout.setContentsMargins(0,0,0,bottommargin)
 		
 		# Selection flag
-		self.add_value_widget(self.idx_cter_select,0,1,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit,intonly=True,labelwidth=labelwidth,editwidth=editwidth)
+		self.add_label_with_cter_param(self.idx_cter_select, cterlayout, 0, 1, intonly=True, labelwidth=labelwidth, editwidth=editwidth)
 
 		# Draw boxes around limits
-		unappliedLimitFrame = QtGui.QFrame()  # QGridLayout doesn't have borders, so I'm enclosing it inside a QFrame, which can
-		unappliedLimitFrame.setStyleSheet("border: 1px solid rgb(0,0,0);")
-		#unappliedLimitFrame.setContentsMargins(0,0,0,4)
-		self.unapplied_grid = QtGui.QGridLayout()
-		#self.unapplied_grid.setMargin(8)
-		#self.unapplied_grid.setSpacing(6)
-		##self.unapplied_grid.setVerticalSpacing(6)
+		unappliedLimitFrame = QtGui.QWidget(self)  # QGridLayout doesn't have borders, so I'm enclosing it inside a QFrame, which can
+		unappliedLimitFrame.setContentsMargins(0,0,0,0)
+		unappliedLimitFrame.setStyleSheet("border: %spx solid rgb(0,0,0);" % borderwidth)
+		threshlayout.addWidget(unappliedLimitFrame)
 		
-		appliedLimitFrame = QtGui.QFrame()  # QGridLayout doesn't have borders, so I'm enclosing it inside a QFrame, which can
-		appliedLimitFrame.setStyleSheet("border: 1px solid rgb(0,0,0);")
-		self.applied_grid = QtGui.QGridLayout()
-		#self.applied_grid.setMargin(8)
-		#self.applied_grid.setSpacing(6)
-		##self.applied_grid.setVerticalSpacing(6)
-		limit_row = 0
+		# Layout for unapplied threshholds
+		unappliedlayout = QtGui.QVBoxLayout(unappliedLimitFrame)
+		unappliedlayout.setObjectName("unappliedlayout")
+		unappliedlayout.setContentsMargins(sidemargin,topmargin,sidemargin,bottommargin)
 		
-		temp_label=QtGui.QLabel("<b>Unapplied Thresholds:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		temp_label.setStyleSheet("border: 0px;")
-		self.unapplied_grid.addWidget(temp_label,0,0,1,col_span_2nd)  ####self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,col_span_2nd)
-		limit_top_row = grid_row
-		temp_label=QtGui.QLabel("<b>Applied Thresholds:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		temp_label.setStyleSheet("border: 0px;")
-		self.applied_grid.addWidget(temp_label,0,0,1,col_span_3rd)  ####self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,col_span_3rd)
+		self.add_centered_label("<b>Unapplied Thresholds:</b>", unappliedlayout, style_sheet="border: 0px;")
 		
-		limit_row+=1
-		grid_row +=1
+		# Applied limits
+		appliedLimitFrame = QtGui.QWidget(self)  # QGridLayout doesn't have borders, so I'm enclosing it inside a QFrame, which can
+		appliedLimitFrame.setStyleSheet("border: %spx solid rgb(0,0,0);" % borderwidth)
+		threshlayout.addWidget(appliedLimitFrame)
+		
+		# Layout for applied threshholds
+		appliedlayout = QtGui.QVBoxLayout(appliedLimitFrame)
+		appliedlayout.setObjectName("appliedlayout")
+		appliedlayout.setContentsMargins(sidemargin,topmargin,sidemargin,bottommargin)
+		
+		self.add_centered_label("<b>Applied Thresholds:</b>", appliedlayout, style_sheet="border: 0px;")
 		
 		# Write table of thresholds 
 		for idx_hist in range(self.n_idx_hist):
-			self.add_value_widget_with_label(idx_hist,grid_row,grid_col_1st,col_span_1st_label, col_span_1st_edit)
-			self.add_widgets_unapplied_threshold(idx_hist, limit_row, 0, labelwidth=labelwidth, editwidth=editwidth)
-			self.add_widgets_applied_threshold(  idx_hist, limit_row, 0, labelwidth=labelwidth, editwidth=editwidth)
-			grid_row += 1
-			limit_row+=1
+			#print("MRK_DEBUG", idx_hist, self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter], self.value_map_list[idx_cter][0], self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_lower], self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_upper])
+			self.add_value_widget_with_label(idx_hist, cterlayout, labelwidth=labelwidth)#, editwidth=5)
+			self.add_widgets_unapplied_threshold(idx_hist, unappliedlayout, labelwidth=labelwidth, editwidth=editwidth)
+			self.add_widgets_applied_threshold(  idx_hist, appliedlayout, labelwidth=labelwidth, editwidth=editwidth)
 			
-		margin = 7
-		self.unapplied_grid.setContentsMargins(margin,1,margin,0)  # format: left, top, right, bottom
-		unappliedLimitFrame.setLayout(self.unapplied_grid)
-		self.gbl.addWidget(unappliedLimitFrame, limit_top_row,grid_col_2nd, 15, 2) 
+		# Last two CTER rows
+		last2rowFrame = QtGui.QWidget(self)
+		last2rowFrame.setContentsMargins(0,0,0,0)
+		last2rowFrame.setStyleSheet("border: %spx solid transparent;" % borderwidth)
+		chartlayout.addWidget(last2rowFrame)
+		last2rowlayout = QtGui.QVBoxLayout(last2rowFrame)
+		last2rowlayout.setContentsMargins(0,0,0,0)
 		
-		self.applied_grid.setContentsMargins(margin,1,margin,0)  # format: left, top, right, bottom
-		appliedLimitFrame.setLayout(self.applied_grid)
-		self.gbl.addWidget(appliedLimitFrame, limit_top_row,grid_col_3rd, 15, 2) 
+		# Amplitude contrast and B-factor (These used to be grayed out.)
+		self.add_label_with_cter_param(self.idx_cter_const_ac, last2rowlayout, 0,1600, 
+								 labelwidth=labelwidth, editwidth=editwidth, enabled=False, style_sheet = "color: rgb(127,127,127);")
+		self.add_label_with_cter_param(self.idx_cter_bfactor, last2rowlayout, 0,1600, 
+								 labelwidth=labelwidth, editwidth=editwidth, enabled=False, style_sheet = "color: rgb(127,127,127);")
 		
-		self.hist_map_list[0][self.idx_hist_item_unapply_widget_lower].setEnabled(True)
-		# self.hist_map_list[0][self.idx_hist_item_unapply_widget_upper].setEnabled(True)
+		# ---------------------------------
+		# Settings layout
+		# ---------------------------------
 		
-		self.add_value_widget(self.idx_cter_const_ac,0,1600,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit, style_sheet = "color: rgb(127,127,127);",labelwidth=labelwidth,editwidth=editwidth)
-		grid_row+=1
+		settingswidget = QtGui.QWidget(self)
+		settingswidget.setObjectName("SettingsWidgetObject")
+		settingswidget.setStyleSheet("QWidget#SettingsWidgetObject {background-color: rgba(229, 229, 229, 208); border-radius: 15px;}")
 		
-		self.add_value_widget(self.idx_cter_bfactor,0,1600,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit, style_sheet = "color: rgb(127,127,127);",labelwidth=labelwidth,editwidth=editwidth)
-		grid_row+=1
+		settingslayout = QtGui.QHBoxLayout(settingswidget)
+		#biglayout.addLayout(settingslayout)
+		biglayout.addWidget(settingswidget)
 		
-		# make space
-		grid_row += 1
+		# There will be three VBox layouts: sort, histogram/plot, and save/load
+		sortlayout = QtGui.QVBoxLayout()
+		sortlayout.setContentsMargins(0,0,0,0)
+		settingslayout.addLayout(sortlayout)
 		
-		temp_label=QtGui.QLabel("<b>Sort CTER Partres Entries:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sub)
+		self.add_centered_label("<b>Sort CTER Partres Entries:</b>", sortlayout)
 		
-		temp_label=QtGui.QLabel("<b>Histogram & Plot Settings:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,col_span_2nd)
-		
-		temp_label=QtGui.QLabel("<b>Save/Load Thresholds:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,col_span_3rd)
-		grid_row += 1
-		
+		# ---------------------------------
 		# Pulldown menu options for sorting
+		# ---------------------------------
+		
 		self.ssort=QtGui.QComboBox(self)
 		for map_entry in self.sort_map_list:
 			idx_cter = map_entry[self.idx_sort_item_idx_cter]
 			self.ssort.addItem(self.value_map_list[idx_cter][self.idx_cter_item_label])
-			#print('self.sort_map_list',map_entry[self.idx_sort_item_idx_cter], self.value_map_list[idx_cter][self.idx_cter_item_label])
 		self.ssort.setCurrentIndex(self.cursortidx)
-		self.gbl.addWidget(self.ssort,grid_row,grid_col_1st_sub,1,col_span_1st_sub)
+		sortlayout.addWidget(self.ssort)
+		
+		# Checkbox to reverse order
+		self.cbsortorder = CheckBox(None,None,self.cursortorder)
+		self.add_label_with_checkbox("Descending", self.cbsortorder, sortlayout, labelwidth=sublabelwidth)
+		
+		# Checkbox to list deselected files first
+		self.cbsortselect = CheckBox(None,None,self.cursortselect)
+		self.add_label_with_checkbox("Sort Select", self.cbsortselect, sortlayout, labelwidth=sublabelwidth)
+		
+		sortlayout.addStretch(1)
+		#self.add_centered_label("", sortlayout)  # spacer
+		
+		self.pbreapplysort = QtGui.QPushButton("Reapply Sort")
+		self.pbreapplysort.setEnabled(False)
+		sortlayout.addWidget(self.pbreapplysort)
+		
+		# ---------------------------------
+		# Histogram & Plot Settings
+		# ---------------------------------
+
+		histplotlayout = QtGui.QVBoxLayout()
+		#histplotlayout.setContentsMargins(0,3,0,0)  # I don't know why these are needed to align the layouts in the HBox
+		histplotlayout.setContentsMargins(0,0,0,0)  # I don't know why these are needed to align the layouts in the HBox
+		settingslayout.addLayout(histplotlayout)
+		
+		self.add_centered_label("<b>Histogram & Plot Settings:</b>", histplotlayout)
 		
 		# Pulldown menu options for histogram
-		self.shist=QtGui.QComboBox(self)
+		self.shist = QtGui.QComboBox(self)
+		self.shist.setMaximumWidth(250)
 		for map_entry in self.hist_map_list:
 			idx_cter = map_entry[self.idx_hist_item_idx_cter]
 			self.shist.addItem(self.value_map_list[idx_cter][self.idx_cter_item_label])
-			#print('self.hist_map_list', map_entry[self.idx_hist_item_idx_cter], self.value_map_list[idx_cter][self.idx_cter_item_label])
 		self.shist.setCurrentIndex(self.curhistidx)
-		self.gbl.addWidget(self.shist,grid_row,grid_col_2nd,1,col_span_2nd)
+		histplotlayout.addWidget(self.shist)
+		
+		# Pulldown menu to move lower/upper threshold
+		self.add_label_with_pulldown("Move Threshold", histplotlayout, labelwidth=100, menuwidth=140)
+		
+		# Checkbox to sort according to histogrammed/plotted values
+		self.cbsyncsort = CheckBox(None,None,self.cursyncsort)
+		self.add_label_with_checkbox("Sync. w/Sort", self.cbsyncsort, histplotlayout, labelwidth=95)
+		
+		self.vsentryperbin = self.add_label_with_param("counts/bin", histplotlayout, 0,10000, labelwidth=95, intonly=True)
+		
+		histplotlayout.addStretch(1)
+		
+		self.pbapplyallthreshold = QtGui.QPushButton("Apply All Thresholds")
+		self.pbapplyallthreshold.setMaximumWidth(250)
+		self.pbapplyallthreshold.setEnabled(False)
+		histplotlayout.addWidget(self.pbapplyallthreshold)
+		
+		# ---------------------------------
+		# Save/Load thresholds
+		# ---------------------------------
+
+		saveloadlayout = QtGui.QVBoxLayout()
+		saveloadlayout.setContentsMargins(0,0,0,0)
+		saveloadlayout.setSpacing(8.5)
+		settingslayout.addLayout(saveloadlayout)
+		
+		self.add_centered_label("<b>Save/Load Thresholds:</b>", saveloadlayout)
 		
 		# Pulldown menu to save unapplied/applied thresholds
 		self.sthresholdset=QtGui.QComboBox(self)
 		for map_entry in self.thresholdset_map_list:
 			self.sthresholdset.addItem(map_entry[self.idx_thresholdset_item_label])
-			#print('self.thresholdset_map_list', map_entry, map_entry[self.idx_thresholdset_item_label])
 		self.sthresholdset.setCurrentIndex(self.curthresholdset)
-		self.gbl.addWidget(self.sthresholdset,grid_row,grid_col_3rd,1,col_span_3rd)
-		grid_row += 1
-		
-		# Buttons are listed here as rows, and then the row number is incremented
-		
-		# Checkbox to reverse order
-		temp_label=QtGui.QLabel("Descending",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sublabel)
-		self.cbsortorder=CheckBox(None,None,self.cursortorder)
-		self.gbl.addWidget(self.cbsortorder,grid_row,grid_col_1st_sub+col_span_1st_sublabel,1,col_span_1st_subedit)
-		
-		# Pulldown menu to move lower/upper threshold
-		temp_label=QtGui.QLabel("Move Threshold",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,col_span_2nd_sublabel)
-		self.sthresholdcontrol=QtGui.QComboBox(self)
-		# self.sthresholdcontrol.setStyleSheet("color: rgb(255,0,0);") # NOTE: Toshio Moriya 2016/01/22 Unfortunately, this will over write the individual item color...
-		for idx_threshold_control in range(self.n_idx_threshold_control):
-			map_entry = self.threshold_control_map_list[idx_threshold_control]
-			self.sthresholdcontrol.addItem(map_entry[self.idx_threshold_control_item_label])
-			self.sthresholdcontrol.setItemData(idx_threshold_control, QtGui.QColor(map_entry[self.idx_threshold_control_item_color]), Qt.TextColorRole);
-		self.sthresholdcontrol.setCurrentIndex(self.curthresholdcontrol)
-		self.gbl.addWidget(self.sthresholdcontrol,grid_row,grid_col_2nd+col_span_2nd_sublabel,1,col_span_2nd_subedit)
+		saveloadlayout.addWidget(self.sthresholdset)
 		
 		# Save/Load threshold buttons
-		self.pbsavethresholdset=QtGui.QPushButton("Save")
-		self.pbsavethresholdset.setEnabled(False)
-		self.gbl.addWidget(self.pbsavethresholdset,grid_row,grid_col_3rd,1,col_span_3rd_sublabel)
-		self.pbloadthresholdset=QtGui.QPushButton("Load")
-		self.pbloadthresholdset.setEnabled(False)
-		self.gbl.addWidget(self.pbloadthresholdset,grid_row,grid_col_3rd+col_span_3rd_sublabel,1,col_span_3rd_subedit)
-		grid_row += 1
+		self.pbsavethresholdset = QtGui.QPushButton("Save")
+		self.pbloadthresholdset = QtGui.QPushButton("Load")
+		self.add_two_buttons(self.pbsavethresholdset, self.pbloadthresholdset, saveloadlayout)
 		
-		# Checkbox to list deselected files first
-		temp_label=QtGui.QLabel("Sort Select",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col_1st_sub,1,col_span_1st_sublabel)
-		self.cbsortselect=CheckBox(None,None,self.cursortselect)
-		self.gbl.addWidget(self.cbsortselect,grid_row,grid_col_1st_sub+col_span_1st_sublabel,1,col_span_1st_subedit)
-		
-		# Checkbox to sort according to histogrammed/plotted values
-		temp_label=QtGui.QLabel("Sync. w/Sort",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd,1,col_span_2nd_sublabel)
-		self.cbsyncsort=CheckBox(None,None,self.cursyncsort)
-		self.gbl.addWidget(self.cbsyncsort,grid_row,grid_col_2nd+col_span_2nd_sublabel,1,col_span_2nd_subedit)
-		
-		temp_label=QtGui.QLabel("<b>Save Selection:</b>",self)
-		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,col_span_3rd)
-		grid_row += 1
-		
-		temp_label=QtGui.QLabel("counts/bin",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col_2nd, 1, col_span_2nd_sublabel)
-		self.vsentryperbin=ValBox(self,(0,10000),None,self.curentryperbin)
-		self.vsentryperbin.setIntonly(True)
-		self.gbl.addWidget(self.vsentryperbin,grid_row,grid_col_2nd+col_span_2nd_sublabel,1,col_span_2nd_subedit)
+		self.add_centered_label("<b>Save Selection:</b>", saveloadlayout)
 		
 		# Prefix for output files
-		temp_label=QtGui.QLabel("File Suffix",self)
-		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(sublabelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col_3rd,1,col_span_3rd_sublabel)
-		self.vfilesuffix=StringBox(self,None,"Trial00")
-		self.gbl.addWidget(self.vfilesuffix,grid_row,grid_col_3rd+col_span_3rd_sublabel,1,col_span_3rd_subedit)
-		grid_row += 1
+		self.vfilesuffix = StringBox(self,None,"Trial00")
+		self.add_label_with_textbox("File Suffix", self.vfilesuffix, saveloadlayout)
 		
-		self.pbreapplysort=QtGui.QPushButton("Reapply Sort")
-		self.pbreapplysort.setEnabled(False)
-		self.gbl.addWidget(self.pbreapplysort,grid_row,grid_col_1st_sub,1,col_span_1st_sub)
+		saveloadlayout.addStretch(1)
 		
-		self.pbapplyallthreshold=QtGui.QPushButton("Apply All Thresholds")
-		self.pbapplyallthreshold.setEnabled(False)
-		self.gbl.addWidget(self.pbapplyallthreshold,grid_row,grid_col_2nd,1,col_span_2nd)
-		
-		self.pbsaveselection=QtGui.QPushButton("Save Selection")
+		self.pbsaveselection = QtGui.QPushButton("Save Selection")
 		self.pbsaveselection.setEnabled(False)
-		self.gbl.addWidget(self.pbsaveselection,grid_row,grid_col_3rd,1,col_span_3rd)
-		grid_row += 1
+		saveloadlayout.addWidget(self.pbsaveselection)
 		
-		# --------------------------------------------------------------------------------
-		# Set spacer for global grid layout
-		# --------------------------------------------------------------------------------
-		self.gbl.setRowStretch(grid_row_entry_list, self.gbl.rowStretch(grid_row_entry_list) + 1) # Give a priority to the last empty row of the entry box list for stretching
-		self.gbl.setColumnStretch(grid_col_entry_list, self.gbl.columnStretch(grid_col_entry_list) + 1) # Give a priority to the entry list box column for stretching
+		# Pads at the bottom
+		biglayout.addStretch(1)
 		
-		# --------------------------------------------------------------------------------
-		# Set signal handler
-		# --------------------------------------------------------------------------------
+		self.setWindowTitle("sxgui_cter - Control Panel")
+		
+	def signal_handler(self):
 		self.pbopencter.clicked[bool].connect(self.openCterPartres)
 		
 		self.cbrotavgdisplay.valueChanged.connect(self.newRotAvgDisplay)
@@ -1033,7 +1051,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.cbmicthumbdisplay.valueChanged.connect(self.newMicThumbDisplay)
 		self.cbhistogramdisplay.valueChanged.connect(self.newHistogramDisplay)
 		self.cbscatterdisplay.valueChanged.connect(self.newScatterDisplay)
-		#self.cbfftdisplay.valueChanged.connect(self.newFFTDisplay)
+		self.cbfftdisplay.valueChanged.connect(self.newFFTDisplay)
 		
 		for idx_graph in range(self.n_idx_graph):
 			self.graph_map_list[idx_graph][self.idx_graph_item_widget].valueChanged.connect(self.updatePlotVisibility)
@@ -1049,13 +1067,9 @@ class SXGuiCter(QtGui.QWidget):
 		self.cbsortselect.valueChanged.connect(self.newSortSelect)
 		self.pbreapplysort.clicked[bool].connect(self.reapplySort)
 		
-		for idx_hist in range(self.n_idx_hist):
-			self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].valueChanged.connect(self.newThresholdLower)
-			self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].valueChanged.connect(self.newThresholdUpper)
-			# QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],QtCore.SIGNAL("valueChanged"),self.updateHist)
-			# QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],QtCore.SIGNAL("valueChanged"),self.updatePlotParam)
-			# QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper],QtCore.SIGNAL("valueChanged"),self.updateHist)
-			# QtCore.QObject.connect(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper],QtCore.SIGNAL("valueChanged"),self.updatePlotParam)
+		#for idx_hist in range(self.n_idx_hist):
+			#self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].valueChanged.connect(self.newThresholdLower)
+			#self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].valueChanged.connect(self.newThresholdUpper)
 		
 		self.shist.currentIndexChanged[int].connect(self.newHistogramRow)
 		self.sthresholdcontrol.currentIndexChanged[int].connect(self.newThresholdControl)
@@ -1069,8 +1083,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		self.pbsaveselection.clicked[bool].connect(self.saveSelection)
 		
-		self.setWindowTitle("sxgui_cter - Control Panel")
-		
+	def set_size_popup_windows(self):
 		# Set default sizes & positions of windows in case this is the first time to run in this project directory
 		# (I figured these values out by printing the width and height in resize event)
 		main_win_width = 1166
@@ -1083,6 +1096,7 @@ class SXGuiCter(QtGui.QWidget):
 		win_top = 0
 		win_left_shift = 30
 		win_top_shift = 30
+		
 		self.resize(main_win_width, main_win_height)
 		self.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.wscatterparam.qt_parent.resize(child_win_width,child_win_height)
@@ -1097,6 +1111,10 @@ class SXGuiCter(QtGui.QWidget):
 		self.wimgmicthumb.qt_parent.resize(child_win_width,child_win_height)
 		self.wimgmicthumb.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
 		self.wimgmicthumb.scroll_to(-1 * img_size,-1 * img_size)
+		self.wfft.set_data(model_blank(img_size,img_size, bckg=1.0)) # resize does not work if no image is set
+		self.wfft.qt_parent.resize(child_win_width,child_win_height)
+		self.wfft.qt_parent.move(win_left, win_top); win_left += win_left_shift; win_top += win_top_shift
+		self.wfft.scroll_to(-1 * img_size,-1 * img_size)
 		
 #		# The following are obsolete after 2016/07/04
 #		win_height = 512  # Let use the same height for all windows
@@ -1137,105 +1155,179 @@ class SXGuiCter(QtGui.QWidget):
 #		self.wimgmicthumb.scroll_to(-1 * img_size,-1 * img_size)
 #		# self.wimgmicthumb.set_scale(scale_factor)
 		
-		# Try to recover sizes & positions of windows of the previous GUI session
-		E2loadappwin("sxgui_cter","main",self)
-#		E2loadappwin("sxgui_cter","fft",self.wfft.qt_parent)
-		E2loadappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
-		E2loadappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
-		E2loadappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
-		E2loadappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
-		E2loadappwin("sxgui_cter","plotparam",self.wscatterparam.qt_parent)
-		
-#		if self.cter_entry_list:
-# #			self.wfft.show()
-#			self.whistparam.show()
-#			self.wplotrotavgcoarse.show()
-		
-		### This section is responsible for background updates
-		self.busy = False
-#		self.needupdate = True
-		self.needredisp = False
-#		self.procthread = None
-#		self.errors = None # used to communicate errors back from the reprocessing thread
-		
-		self.timer=QTimer()
-		self.timer.timeout.connect(self.timeOut)
-		self.timer.start(100)
-		
-#		# Finally, read CTER partres file if necessary
-#		if cter_ctf_file != None:
-#			self.readCterPartresFile(os.path.relpath(cter_ctf_file))
-		
-	#def paintEvent(self, event):
-		#"""Draw boxes around grouped fields"""
-		#qp = QtGui.QPainter()
-		#qp.begin(self)
-		#qp.drawRect(758,90,232,438)
-		#qp.drawRect(990,90,212,438)
-		#qp.end()
 	
-	def add_value_widget(self, idx_cter, val_min, val_max, grid_row, grid_col, col_span_label, col_span_edit, intonly = False, style_sheet = "color: rgb(0,0,0);", labelwidth = 80, editwidth = 80):
-		# Add row label
-		param_label = self.value_map_list[idx_cter][self.idx_cter_item_label]
-		temp_label=QtGui.QLabel(param_label,self)
+	def add_centered_label(self, labeltext, target, labelwidth=None, style_sheet=None):
+		temp_label = QtGui.QLabel(labeltext,self)
+		temp_label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+		if labelwidth: temp_label.setMaximumWidth(labelwidth)
+		if style_sheet: temp_label.setStyleSheet("border: 0px;")
+		target.addWidget(temp_label)
+		
+	def add_label_with_value(self, labeltext, valueentry, target, 
+						  labelwidth=90, enabled=False, intonly=True, style_sheet="color: rgb(127,127,127);", editwidth=80, maxwidth=100):
+		# Label
+		temp_hbox = QtGui.QHBoxLayout()
+		temp_hbox.setContentsMargins(0,0,0,0)
+		temp_label = QtGui.QLabel(labeltext, self)
 		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
-		self.gbl.addWidget(temp_label,grid_row,grid_col,1,col_span_label)
+		#temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
+		temp_label.setFixedSize(QtCore.QSize(labelwidth,20))
+		#temp_label.setMaximumWidth(labelwidth)
+		temp_hbox.addWidget(temp_label)
 		
+		# Value
+		valueentry.setEnabled(enabled)
+		valueentry.intonly = intonly
+		valueentry.text.setStyleSheet(style_sheet)
+		valueentry.text.setMinimumSize(QtCore.QSize(editwidth,0))
+		valueentry.text.setMaximumWidth(maxwidth)
+		temp_hbox.addWidget(valueentry)
+		temp_hbox.addStretch(1)
+		target.addLayout(temp_hbox, 0)
+		
+	def add_label_with_param(self, labeltext, target, val_min, val_max, 
+						  intonly = False, style_sheet = "color: rgb(0,0,0);", labelwidth=80, editwidth=80, maxwidth=100, enabled=False):
+		# Label
+		temp_hbox = QtGui.QHBoxLayout()
+		temp_hbox.setContentsMargins(0,0,0,0)
+		temp_label = QtGui.QLabel(labeltext,self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setFixedSize(QtCore.QSize(labelwidth,20))
+		temp_hbox.addWidget(temp_label)
+		
+		# Value
 		val_default = val_min
-		val_widget = ValBox(self,(val_min,val_max),None,val_default)
-		val_widget.setEnabled(False)
-		val_widget.intonly=intonly
-		val_widget.text.setStyleSheet(style_sheet)
-		val_widget.text.setMinimumSize(QtCore.QSize(editwidth,0))
-		self.gbl.addWidget(val_widget,grid_row,grid_col+col_span_label,1,col_span_edit)
-		self.value_map_list[idx_cter][self.idx_cter_item_widget] = val_widget
+		valueentry = ValBox(self,(val_min,val_max),None,val_default)
+		valueentry.setEnabled(enabled)
+		valueentry.intonly = intonly
+		valueentry.text.setStyleSheet(style_sheet)
+		valueentry.text.setMinimumSize(QtCore.QSize(editwidth,0))
+		valueentry.text.setMaximumWidth(maxwidth)
+		temp_hbox.addWidget(valueentry)
+		temp_hbox.addStretch(1)
+		target.addLayout(temp_hbox, 0)
+
+		return valueentry
 	
-	def add_value_widget_with_label(self, idx_hist, grid_row, grid_col_1st, col_span_1st_label, col_span_1st_edit, intonly = False, labelwidth = 80):
+	def add_label_with_cter_param(self, idx_cter, target, val_min, val_max, 
+						  intonly = False, style_sheet = "color: rgb(0,0,0);", labelwidth=80, editwidth=80, maxwidth=100, enabled=False):
+		
+		# Specific for self.value_map_list, calls add_label_with_param()
+		labeltext = self.value_map_list[idx_cter][self.idx_cter_item_label]
+		self.value_map_list[idx_cter][self.idx_cter_item_widget] = self.add_label_with_param(labeltext, target, val_min, val_max, 
+							intonly=intonly, style_sheet=style_sheet, labelwidth=labelwidth, editwidth=editwidth, maxwidth=maxwidth, enabled=enabled)
+	
+	def add_value_widget_with_label(self, idx_hist, target, intonly = False, labelwidth=80, editwidth=80):
+		# Specific for CTER parameters select to phase shift, calls add_label_with_cter_param()
 		val_min = self.hist_map_list[idx_hist][self.idx_hist_item_val_min]
 		val_max = self.hist_map_list[idx_hist][self.idx_hist_item_val_max]
 		
 		# Add widget for parameter value
-		self.add_value_widget(self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter],val_min,val_max,grid_row,grid_col_1st,col_span_1st_label,col_span_1st_edit,intonly=intonly,labelwidth=labelwidth)
-		# (Am not merging with add_value_widget because it is used elsewhere)
+		self.add_label_with_cter_param(self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter], target, val_min, val_max, 
+							intonly=intonly, labelwidth=labelwidth, editwidth=editwidth)
 		
-	def add_widgets_unapplied_threshold(self, idx_hist, grid_row, grid_col_2nd, labelwidth = 80, editwidth = 80):
+	def add_label_with_checkbox(self, labeltext, checkbutton, target, labelwidth=140):
+		temp_hbox = QtGui.QHBoxLayout()
+		temp_hbox.setContentsMargins(0,0,0,0)
+		temp_label = QtGui.QLabel(labeltext, self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setFixedSize(QtCore.QSize(labelwidth,20))
+		temp_hbox.addWidget(temp_label)
+		
+		temp_hbox.addWidget(checkbutton)
+		target.addLayout(temp_hbox, 0)
+	
+	def add_widgets_unapplied_threshold(self, idx_hist, target, labelwidth = 80, editwidth = 80):
 		val_min = self.hist_map_list[idx_hist][self.idx_hist_item_val_min]
 		val_max = self.hist_map_list[idx_hist][self.idx_hist_item_val_max]
 		
+		# Label
+		temp_hbox = QtGui.QHBoxLayout()
+		temp_hbox.setContentsMargins(0,0,0,0)
+		
 		# Add widget for unapplied thresholds
-		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower]=ValBox(self,(val_min,val_max),None,val_min,labelwidth)
+		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower] = ValBox(self,(val_min,val_max),None,val_min,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].setEnabled(False)
-		self.unapplied_grid.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],grid_row,grid_col_2nd)
+		temp_hbox.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower])
+		
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower].text.setMinimumSize(QtCore.QSize(editwidth,0))
-		self.gbl.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_lower],grid_row,grid_col_2nd)
-		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper]=ValBox(self,(val_min,val_max),None,val_max,labelwidth)
+		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper] = ValBox(self,(val_min,val_max),None,val_max,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].text.setStyleSheet("color: rgb(255,0,0);")
 		self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper].text.setMinimumSize(QtCore.QSize(editwidth,0))
-		self.unapplied_grid.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper],grid_row,grid_col_2nd+1)
+		temp_hbox.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_unapply_widget_upper])
+		target.addLayout(temp_hbox, 0)
 		
-	def add_widgets_applied_threshold(self, idx_hist, grid_row, grid_col_3rd, labelwidth = 80, editwidth = 80):
+	def add_widgets_applied_threshold(self, idx_hist, target, labelwidth = 80, editwidth = 80):
 		val_min = self.hist_map_list[idx_hist][self.idx_hist_item_val_min]
 		val_max = self.hist_map_list[idx_hist][self.idx_hist_item_val_max]
 		
+		# Label
+		temp_hbox = QtGui.QHBoxLayout()
+		temp_hbox.setContentsMargins(0,0,0,0)
+		
 		# Add widget for applied thresholds
-		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower]=ValBox(self,(val_min,val_max),None,val_min,labelwidth)
+		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower] = ValBox(self,(val_min,val_max),None,val_min,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].text.setStyleSheet("color: rgb(0,0,255);")
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower].text.setMinimumSize(QtCore.QSize(editwidth,0))
-		self.applied_grid.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower],grid_row,grid_col_3rd)
-		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper]=ValBox(self,(val_min,val_max),None,val_max,labelwidth)
+		temp_hbox.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_lower])
+		
+		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper] = ValBox(self,(val_min,val_max),None,val_max,labelwidth)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].setEnabled(False)
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].text.setStyleSheet("color: rgb(255,0,0);")
 		self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper].text.setMinimumSize(QtCore.QSize(editwidth,0))
-		self.applied_grid.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper],grid_row,grid_col_3rd+1)
+		temp_hbox.addWidget(self.hist_map_list[idx_hist][self.idx_hist_item_apply_widget_upper])
+		target.addLayout(temp_hbox, 0)
 		
+	def add_label_with_pulldown(self, labeltext, target, 
+						  labelwidth=90, menuwidth=100):
+		# Label
+		temp_hbox = QtGui.QHBoxLayout()
+		temp_hbox.setContentsMargins(0,0,0,0)
+		temp_label = QtGui.QLabel(labeltext, self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		temp_label.setFixedSize(QtCore.QSize(labelwidth,20))
+		temp_hbox.addWidget(temp_label)
+		
+		# Pulldown/ComboBox (may want to generalize this someday)
+		self.sthresholdcontrol = QtGui.QComboBox(self)
+		self.sthresholdcontrol.setMaximumWidth(menuwidth)
+		#self.sthresholdcontrol.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		for idx_threshold_control in range(self.n_idx_threshold_control):
+			map_entry = self.threshold_control_map_list[idx_threshold_control]
+			self.sthresholdcontrol.addItem(map_entry[self.idx_threshold_control_item_label])
+			self.sthresholdcontrol.setItemData(idx_threshold_control, QtGui.QColor(map_entry[self.idx_threshold_control_item_color]), Qt.TextColorRole);
+		self.sthresholdcontrol.setCurrentIndex(self.curthresholdcontrol)
+		temp_hbox.addWidget(self.sthresholdcontrol)
+			
+		target.addLayout(temp_hbox, 0)
+	
+	def add_two_buttons(self, button1, button2, target):
+		temp_hbox = QtGui.QHBoxLayout()
+		temp_hbox.setContentsMargins(0,0,0,0)
+		button1.setEnabled(False)
+		temp_hbox.addWidget(button1)
+		button2.setEnabled(False)
+		temp_hbox.addWidget(button2)
+		target.addLayout(temp_hbox, 0)
+	
+	def add_label_with_textbox(self, labeltext, stringbox, target, labelwidth=140):#, valueentry, target, labelwidth=90):
+		# Label
+		temp_hbox = QtGui.QHBoxLayout()
+		temp_hbox.setContentsMargins(0,0,0,0)
+		temp_label = QtGui.QLabel(labeltext, self)
+		temp_label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		#temp_label.setMinimumSize(QtCore.QSize(labelwidth,20))
+		temp_hbox.addWidget(temp_label)
+		temp_hbox.addWidget(stringbox)
+		target.addLayout(temp_hbox, 0)
+	
 	def readCterPartresFile(self, file_path):
 		"""Read all entries from a CTER partres file into the list box"""
 		
 		if not os.path.exists(file_path):
-			QtGui.QMessageBox.warning(None,"Warning","Can not find CTER partres file (%s). Please check the file path." % (file_path))
+			QtGui.QMessageBox.warning(None,"Warning","Cannot find CTER partres file (%s). Please check the file path." % (file_path))
 			return
 		
 		if os.path.basename(file_path).find("partres") == -1:
@@ -1503,7 +1595,7 @@ class SXGuiCter(QtGui.QWidget):
 				self.graph_map_list[idx_graph][self.idx_graph_item_widget].setEnabled(False)
 			self.vbplotfixscale.setEnabled(False)
 			# Error message of this condition should be displayed at the end of this function for smooth visual presentation
-			# QtGui.QMessageBox.warning(None,"Warning","Can not find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nPower spectrum rotational average plots display option is disabled for this session." % (cter_pwrot_dir, self.cter_partres_file_path))
+			# QtGui.QMessageBox.warning(None,"Warning","Cannot find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nPower spectrum rotational average plots display option is disabled for this session." % (cter_pwrot_dir, self.cter_partres_file_path))
 		
 		cter_micthumb_dir = os.path.join(os.path.dirname(self.cter_partres_file_path), "micthumb")
 		# print "MRK_DEBUG: cter_micthumb_dir = \"%s\" in readCterPartresFile() "% (cter_micthumb_dir)
@@ -1514,15 +1606,14 @@ class SXGuiCter(QtGui.QWidget):
 			# if self.cbmicthumbdisplay.getEnabled() != self.curimgmicthumbdisplay: # MRK_NOTE: 2016/03/22 Toshio Moriya: This method does not work as I expected
 			self.cbmicthumbdisplay.setEnabled(False)
 			# Error message of this condition should be displayed at the end of this function for smooth visual presentation
-			# QtGui.QMessageBox.warning(None,"Warning","Can not find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nMicrograph thumbnail display option is disabled for this session." % (cter_micthumb_dir, self.cter_partres_file_path))
+			# QtGui.QMessageBox.warning(None,"Warning","Cannot find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nMicrograph thumbnail display option is disabled for this session." % (cter_micthumb_dir, self.cter_partres_file_path))
 			
 		# NOTE: 2016/01/03 Toshio Moriya
 		# Force update related plots to hide too much scaling delay...
 		self.updateImgMicThumb(False)
 		self.updateHist()
 		self.updatePlotParam()
-		#self.updateFFT()
-		#print('readCterPartresFile')
+		self.updateFFT()
 		####self.updatePlotCurves()  # REDUNDANT?
 		
 ###		print("MRK_DEBUG: ")
@@ -1562,6 +1653,14 @@ class SXGuiCter(QtGui.QWidget):
 				self.wimgmicthumb.hide()
 ###		print("MRK_DEBUG: readCterPartresFile(): self.wimgmicthumb.isVisible() = ", self.wimgmicthumb.isVisible())
 		
+		if self.curfftdisplay:
+			if not self.wfft.isVisible():
+				self.wfft.show()
+		else:
+			assert not self.curfftdisplay, "MRK_DEBUG"
+			if self.wfft.isVisible():
+				self.wfft.hide()
+		
 		self.busy = False
 		self.needredisp = True
 		
@@ -1573,12 +1672,12 @@ class SXGuiCter(QtGui.QWidget):
 		
 		if not os.path.exists(cter_pwrot_dir):
 			QtGui.QMessageBox.warning(None,"Warning",
-							 "Can not find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nPower spectrum rotational average plots display option is disabled for this session." 
+							 "Cannot find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nPower spectrum rotational average plots display option is disabled for this session." 
 							 % (cter_pwrot_dir, self.cter_partres_file_path))
 
 		if not os.path.exists(cter_micthumb_dir):
 			QtGui.QMessageBox.warning(None,"Warning",
-							 "Can not find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nMicrograph thumbnail display option is disabled for this session." 
+							 "Cannot find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nMicrograph thumbnail display option is disabled for this session." 
 							 % (cter_micthumb_dir, self.cter_partres_file_path))
 
 #		assert self.isVisible(), "MRK_DEBUG"
@@ -1760,8 +1859,10 @@ class SXGuiCter(QtGui.QWidget):
 				self.wplotrotavgcoarse.hide()
 			if self.wplotrotavgfine.isVisible():
 				self.wplotrotavgfine.hide()
+			if self.wfft.isVisible():
+				self.wfft.hide()
 			if error_display and os.path.exists(os.path.dirname(self.cter_pwrot_file_path)):
-				QtGui.QMessageBox.warning(None,"Warning","Can not find file cter_pwrot_file_path (%s). Please check the contents of pwrot directory. \n\nPlots will not be shown." 
+				QtGui.QMessageBox.warning(None,"Warning","Cannot find file cter_pwrot_file_path (%s). Please check the contents of pwrot directory. \n\nPlots will not be shown." 
 							  % (self.cter_pwrot_file_path))
 			return
 		assert os.path.exists(self.cter_pwrot_file_path), "MRK_DEBUG"
@@ -2137,7 +2238,7 @@ class SXGuiCter(QtGui.QWidget):
 			if self.wimgmicthumb.isVisible():
 				self.wimgmicthumb.hide()
 			if error_display and os.path.exists(os.path.dirname(self.cter_micthumb_file_path)):
-				QtGui.QMessageBox.warning(None,"Warning","Can not find micrograph thumbnail (%s). Please check your micrograph thumbnail directory. \n\nMicrograph thumbnail will not be shown." % (self.cter_micthumb_file_path))
+				QtGui.QMessageBox.warning(None,"Warning","Cannot find micrograph thumbnail (%s). Please check your micrograph thumbnail directory. \n\nMicrograph thumbnail will not be shown." % (self.cter_micthumb_file_path))
 			return
 		assert os.path.exists(self.cter_micthumb_file_path), "MRK_DEBUG"
 		
@@ -2150,7 +2251,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 #		# print "MRK_DEBUG: self.cter_mic_file_path =\"%s\" in updateImgMicThumb() "% (self.cter_mic_file_path)
 #		if not os.path.exists(self.cter_mic_file_path):
-#			QtGui.QMessageBox.warning(None,"Warning","Can not find micrograph (%s). Please check your micrograph directory. \n\nA blank image is shown." % (self.cter_mic_file_path))
+#			QtGui.QMessageBox.warning(None,"Warning","Cannot find micrograph (%s). Please check your micrograph directory. \n\nA blank image is shown." % (self.cter_mic_file_path))
 #			mic_img = EMData() # Set empty image...
 #			img_size = 4096 # Use the most typical image size?!!!
 #			mic_img = model_blank(img_size,img_size, bckg=1.0)
@@ -2187,13 +2288,18 @@ class SXGuiCter(QtGui.QWidget):
 	def updateFFT(self, error_display = True):
 		if not self.curfftdisplay: return # FFT display is unchecked
 		if self.wfft == None: return # it's closed/not visible
-		if self.cter_fft_file_path == None: return # no cter entry is selected
+		if self.cter_fft_file_path == None: 
+			# Try directory of partres file
+			pwsdir = os.path.join(os.path.dirname(self.cter_partres_file_path), "power2d")
+			#if os.path.exists(pwsdir): self.cter_fft_file_path = pwsdir
+			print("MRK_DEBUG: pwsdir", pwsdir)
+			return
 		
 		if not os.path.exists(self.cter_fft_file_path):
 			if self.wfft.isVisible():
 				self.wfft.hide()
 			if error_display and os.path.exists(os.path.dirname(self.cter_fft_file_path)):
-				QtGui.QMessageBox.warning(None,"Warning","Can not find power spectrum (%s). Please check your power spectrum directory. \n\nPower spectrum will not be shown." % (self.cter_micthumb_file_path))
+				QtGui.QMessageBox.warning(None,"Warning","Cannot find power spectrum (%s). Please check your power spectrum directory. \n\nPower spectrum will not be shown." % (self.cter_micthumb_file_path))
 			return
 		assert os.path.exists(self.cter_fft_file_path), "MRK_DEBUG"
 		
@@ -2211,20 +2317,30 @@ class SXGuiCter(QtGui.QWidget):
 			self.curfftdisplay = val
 		else: 
 			assert self.curfftdisplay == val, "MRK_DEBUG"
-			# The status did not change, there is nothing to do nothing
+			# The status did not change, there is nothing to do 
 			return
 		
-		if self.cter_fft_file_path == None: return # no cter entry is selected
+		if self.cter_fft_file_path == None: 
+			return # no cter entry is selected
 		
 		if not os.path.exists(self.cter_fft_file_path):
 			assert not self.wfft.isVisible(), "MRK_DEBUG"
+			pwsdir = os.path.join(os.path.dirname(self.cter_partres_file_path), "power2d")
+			#print("cter_fft_file_path exists: ", os.path.exists(self.cter_fft_file_path))
+			QtGui.QMessageBox.warning(None,"Warning",
+							 "Cannot find \"%s\" sub-directory associated with specified CTER partres file (%s). Please check your project directory. \n\nPower-spectrum display option is disabled for this session." 
+							 % (pwsdir, self.cter_partres_file_path))
+			#print("curfftdisplay", self.curfftdisplay)
+			self.curfftdisplay = False
+			self.cbfftdisplay.setValue(False)
+			self.cbfftdisplay.setEnabled(False)
 			return
 		assert os.path.exists(self.cter_fft_file_path), "MRK_DEBUG"
 		
 		if self.curfftdisplay and not self.wfft.isVisible():
 			self.wfft.show()
 			self.needredisp = True
-		elif not self.curimgmicthumbdisplay and self.wimgmicthumb.isVisible():
+		elif not self.curfftdisplay and self.wfft.isVisible():
 			self.wfft.hide()
 		
 	def newEntry(self,currow):
@@ -2246,13 +2362,14 @@ class SXGuiCter(QtGui.QWidget):
 		mic_basename_root = os.path.splitext(os.path.basename(new_cter_mic_file_path))[0]
 		new_cter_micthumb_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "micthumb", "%s_thumb.hdf" % (mic_basename_root))
 		new_cter_pwrot_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "pwrot", "%s_rotinf.txt" % (mic_basename_root))
-		#ADD FFT PATH HERE
+		new_cter_fft_file_path = os.path.join(os.path.dirname(self.cter_partres_file_path), "power2d", "%s_pws.hdf" % (mic_basename_root))
 			
 		# Changing row does not always change the pwrot file path after resorting of the cter entry list
 		# If same, skip the following processes
 		if self.cter_pwrot_file_path == new_cter_pwrot_file_path: 
 			assert self.cter_micthumb_file_path == new_cter_micthumb_file_path, "MRK_DEBUG"
 			assert self.cter_mic_file_path == new_cter_mic_file_path, "MRK_DEBUG"
+			assert self.cter_fft_file_path == new_cter_fft_file_path, "MRK_DEBUG"
 			return
 		
 		# now set the new item
@@ -2262,6 +2379,8 @@ class SXGuiCter(QtGui.QWidget):
 		self.cter_micthumb_file_path = new_cter_micthumb_file_path
 		assert self.cter_mic_file_path != new_cter_mic_file_path , "MRK_DEBUG"
 		self.cter_mic_file_path = new_cter_mic_file_path
+		assert self.cter_fft_file_path != new_cter_fft_file_path , "MRK_DEBUG"
+		self.cter_fft_file_path = new_cter_fft_file_path
 		
 		# print "MRK_DEBUG: Row No. %d (CTER partres entry No. %d) is selected from cter entry list box" % (self.curentry, self.cter_entry_list[self.curentry][self.idx_cter_id])
 		
@@ -2285,6 +2404,7 @@ class SXGuiCter(QtGui.QWidget):
 			lower_threshold = round(self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_lower], self.round_ndigits)
 			upper_threshold = round(self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_upper], self.round_ndigits)
 			idx_cter = self.hist_map_list[idx_hist][self.idx_hist_item_idx_cter]
+			#print("MRK_DEBUG", idx_hist, self.value_map_list[idx_cter][0], self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_lower], self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_upper])
 			param_val = round(self.cter_entry_list[self.curentry][idx_cter], self.round_ndigits)
 			assert self.value_map_list[idx_cter][self.idx_cter_item_widget] is not None, "MRK_DEBUG: A widget must be assigned to this item since it is a histogram item"
 			if lower_threshold < upper_threshold:
@@ -2298,6 +2418,8 @@ class SXGuiCter(QtGui.QWidget):
 			else:
 				assert lower_threshold == upper_threshold, "MRK_DEBUG"
 				assert lower_threshold == param_val and param_val == upper_threshold, "MRK_DEBUG"
+				##print(self.value_map_list[idx_cter][self.idx_cter_item_widget].text.text())
+				#print("MRK_DEBUG", idx_hist, self.value_map_list[idx_cter][0], self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_lower], self.hist_map_list[idx_hist][self.idx_hist_item_apply_threshold_upper])
 				self.value_map_list[idx_cter][self.idx_cter_item_widget].text.setStyleSheet("color: rgb(127,127,127);")
 		
 #		self.wfft.setWindowTitle("sxgui_cter - 2D FFT - "+fsp.split("/")[-1])
@@ -2787,9 +2909,9 @@ class SXGuiCter(QtGui.QWidget):
 		
 		if self.cter_entry_list != None:
 			is_child_shown = False
-#			if not self.wfft.isVisible() and self.is_wfft_minimized:
-#				self.wfft.show()
-#				is_child_shown = True
+			if not self.wfft.isVisible() and self.is_wfft_minimized:
+				self.wfft.show()
+				is_child_shown = True
 			if not self.wimgmicthumb.isVisible() and self.curimgmicthumbdisplay and not self.is_wimgmicthumb_minimized and os.path.exists(self.cter_micthumb_file_path):
 				self.wimgmicthumb.show()
 				is_child_shown = True
@@ -2815,6 +2937,7 @@ class SXGuiCter(QtGui.QWidget):
 		self.updateHist()
 		self.updatePlotParam()
 		self.updatePlotCurves()
+		self.updateFFT()
 		
 		self.busy = False
 		
@@ -2847,9 +2970,9 @@ class SXGuiCter(QtGui.QWidget):
 				# Minimize icon button of child window should be disabled
 				#
 				if self.cter_entry_list != None:
-					# if self.wfft.isVisible() and not self.is_wfft_minimized:
-					# 	self.wfft.hide()
-					# 	self.is_wfft_minimized = True
+					if self.wfft.isVisible() and not self.is_wfft_minimized:
+						self.wfft.hide()
+						self.is_wfft_minimized = True
 					if self.wimgmicthumb.isVisible() and not self.is_wimgmicthumb_minimized:
 						assert self.curimgmicthumbdisplay, "MRK_DEBUG"
 						self.wimgmicthumb.hide()
@@ -2880,10 +3003,10 @@ class SXGuiCter(QtGui.QWidget):
 				# Minimize icon button of child window should be disabled
 				#
 				if self.cter_entry_list != None:
-					# if self.is_wfft_minimized == True:
-					# 	assert self.wfft.isVisible() == False and self.curfftdisplay == True, "MRK_DEBUG"
-					# 	self.wfft.show()
-					# 	self.is_wfft_minimized = False
+					if self.is_wfft_minimized == True:
+						assert self.wfft.isVisible() == False and self.curfftdisplay == True, "MRK_DEBUG"
+						self.wfft.show()
+						self.is_wfft_minimized = False
 					if self.is_wimgmicthumb_minimized:
 						assert not self.wimgmicthumb.isVisible() and self.curimgmicthumbdisplay, "MRK_DEBUG"
 						self.wimgmicthumb.show()
@@ -2917,8 +3040,8 @@ class SXGuiCter(QtGui.QWidget):
 			# we have to go through its qt_parent attribute to call raise_()...
 			# 
 			if self.cter_entry_list != None:
-				# if self.wfft.isVisible() == True:
-				#	self.wfft.qt_parent.raise_()
+				if self.wfft.isVisible() == True:
+					self.wfft.qt_parent.raise_()
 				if self.wimgmicthumb.isVisible() == True:
 					self.wimgmicthumb.qt_parent.raise_()
 				if self.wplotrotavgcoarse.isVisible() == True:
@@ -2944,7 +3067,7 @@ class SXGuiCter(QtGui.QWidget):
 		# Save current window layout
 		E2saveappwin("sxgui_cter","main",self)
 		if self.cter_entry_list != None:
-#			E2saveappwin("sxgui_cter","fft",self.wfft.qt_parent)
+			E2saveappwin("sxgui_cter","fft",self.wfft.qt_parent)
 			E2saveappwin("sxgui_cter","imgmicthumb",self.wimgmicthumb.qt_parent)
 			E2saveappwin("sxgui_cter","plotcoarse",self.wplotrotavgcoarse.qt_parent)
 			E2saveappwin("sxgui_cter","plotfine",self.wplotrotavgfine.qt_parent)
@@ -2952,8 +3075,7 @@ class SXGuiCter(QtGui.QWidget):
 			E2saveappwin("sxgui_cter","histparam",self.whistparam.qt_parent)
 		
 		# close all child windows
-		# if self.wfft:
-		# 	self.wfft.close()
+		if self.wfft: self.wfft.close()
 		if self.wimgmicthumb: self.wimgmicthumb.close()
 		if self.wplotrotavgcoarse: self.wplotrotavgcoarse.close()
 		if self.wplotrotavgfine: self.wplotrotavgfine.close()
