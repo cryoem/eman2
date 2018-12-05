@@ -57,17 +57,19 @@ if args.submission_command.split()[0] not in qsub_dict and args.hold_flag:
     sparx_global_def.ERROR('Qsub return output not known! Please contact the SPHIRE authors!', 'sxbatch.py', 1)
 
 prev_hold = 'aaa'
-for file_name in sorted(glob.glob('{0}/*'.format(args.pipeline_directory))):
+for idx, file_name in enumerate(sorted(glob.glob('{0}/*'.format(args.pipeline_directory)))):
     command = args.submission_command.split()
-    if args.hold_flag:
+    if args.hold_flag and idx != 0:
         command.append(args.hold_flag)
         command.append(prev_hold)
     else:
         pass
     command.append(file_name)
     if args.hold_flag:
+        print(' '.join(command))
         stdout = subprocess.check_output(command)
-        prev_hold = int(qsub_dict[command[0]].match(stdout))
+        print(stdout)
+        prev_hold = qsub_dict[command[0]].match(stdout).group(1)
     else:
         subprocess.Popen(command).wait()
 
