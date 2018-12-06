@@ -174,15 +174,6 @@ def main():
 
 		if(myid == 0):
 			# Remove outliers based on the Interquartile range
-			data_freqvol = freqvol.get_3dview()
-			mask = data_freqvol != 0
-			percentile_25 = numpy.percentile(data_freqvol[mask], 25)
-			percentile_75 = numpy.percentile(data_freqvol[mask], 75)
-			iqr = percentile_75 - percentile_25
-			mask_low_pass = data_freqvol > percentile_75 + 4*iqr
-			mask_high_pass = data_freqvol < percentile_25 - 4*iqr
-			data_freqvol[mask & mask_low_pass] = numpy.max(data_freqvol[mask & ~mask_low_pass])
-			data_freqvol[mask & mask_high_pass] = numpy.min(data_freqvol[mask & ~mask_high_pass])
 			outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
 			if res_overall !=-1.0:
 				for ifreq in range(len(resolut)):
@@ -195,6 +186,8 @@ def main():
 				mean_ang = options.apix / float(EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
 				volume_out_ang = makeAngRes(freqvol, nx, ny, nz, options.apix)
 				volume_out_ang += (overall_res_ang - mean_ang)
+				data_volume_out_ang = volume_out_ang.get_3dview()
+				data_volume_out_ang[data_volume_out_ang < 0] = 0
 				if options.out_ang_res:
 					volume_out_ang.write_image(outAngResVolName)
 				volume_out = makeAngRes(volume_out_ang, nx, ny, nz, options.apix, False)
@@ -283,15 +276,6 @@ def main():
 			if(bailout):  break
 		#print(len(resolut))
 		# remove outliers
-		data_freqvol = freqvol.get_3dview()
-		mask = data_freqvol != 0
-		percentile_25 = numpy.percentile(data_freqvol[mask], 25)
-		percentile_75 = numpy.percentile(data_freqvol[mask], 75)
-		iqr = percentile_75 - percentile_25
-		mask_low_pass = data_freqvol > percentile_75 + 4*iqr
-		mask_high_pass = data_freqvol < percentile_25 - 4*iqr
-		data_freqvol[mask & mask_low_pass] = numpy.max(data_freqvol[mask & ~mask_low_pass])
-		data_freqvol[mask & mask_high_pass] = numpy.min(data_freqvol[mask & ~mask_high_pass])
 		outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
 		if res_overall !=-1.0:
 			for ifreq in range(len(resolut)):
@@ -304,6 +288,8 @@ def main():
 			mean_ang = options.apix / float(EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
 			volume_out_ang = makeAngRes(freqvol, nn, nn, nn, options.apix)
 			volume_out_ang += (overall_res_ang - mean_ang)
+			data_volume_out_ang = volume_out_ang.get_3dview()
+			data_volume_out_ang[data_volume_out_ang < 0] = 0
 			if options.out_ang_res:
 				volume_out_ang.write_image(outAngResVolName)
 			volume_out = makeAngRes(volume_out_ang, nn, nn, nn, options.apix, False)
