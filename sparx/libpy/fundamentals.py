@@ -694,7 +694,7 @@ def prepf(image, npad = 2):
 	cimage.do_fft_inplace()
 	cimage.center_origin_fft()
 	cimage.fft_shuffle()
-	cimage.set_attr("npad",npad)
+	cimage.set_attr_dict({"npad":npad,"prepf":1})
 	return cimage
 
 def prepi(image, RetReal = True):
@@ -1137,6 +1137,8 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	elif(use_method == "fourier"):
+		if img.is_complex() :
+			if img.get_attr_default("prepf",0) != 1:  ERROR("Incorrect input image Fourier format","rot_shift2D fourier method",1)
 		img = img.fourier_rotate_shift2d(angle, sx, sy, 2)
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
@@ -1379,7 +1381,9 @@ def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 		Three ways of windowing out a portion of an image:
 		1. "c" Get the central part: "c" ( default setting )
 		2. "l" Get clip starts from the top left corner
-		3. "a" Get clip with arbitrary point (ix, iy) as the image center point ( nx//2,ny//2 corresponds to image center )
+		3. "a" Get clip with arbitrary point (ix, iy) used as the input image center point 
+				in case 1, 0,0 corresponds to image center
+				in case 2, nx//2,ny//2 corresponds to image center
 	"""
 	lx = img.get_xsize()
 	ly = img.get_ysize()
