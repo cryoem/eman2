@@ -130,12 +130,12 @@ def main():
 	usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--pw_adjustment", type ="string", default ='analytical_model',  \
-	   help="adjust power spectrum of 2-D averages to an analytic model. Other opions: no_adjustment; bfactor; a text file of 1D rotationally averaged PW")
+	   help="adjust power spectrum of 2-D averages. Four available options (specified as a keyword): analytical_model, no_adjustment; bfactor; adjust_to_given_pw2 by providing name of a filew containing reference 1D rotationally averaged PW")
 	#### Four options for --pw_adjustment: 	
-	# 1> analytical_model(default); 
+	# 1> analytical_model( default); 
 	# 2> no_adjustment;
 	# 3> bfactor;
-	# 4> adjust_to_given_pw2(user has to provide a text file that contains 1D rotationally averaged PW)
+	# 4> adjust_to_given_pw2 (user has to provide a text file that contains 1D rotationally averaged PW)
 
 	# options in common
 	parser.add_option("--isac_dir",              type   ="string",         default ='',     help="ISAC run output directory, input directory for this command")
@@ -145,10 +145,10 @@ def main():
 	parser.add_option("--stack",                 type   ="string",         default ="",     help= "data stack used in ISAC")
 	parser.add_option("--radius",                type   ="int",            default =-1,     help= "radius")
 	parser.add_option("--xr",                    type   ="float",          default =-1.0,   help= "local alignment search range")
-	parser.add_option("--ts",                    type   ="float",          default =1.0,    help= "local alignment search step")
+	#parser.add_option("--ts",                    type   ="float",          default =1.0,    help= "local alignment search step")
 	parser.add_option("--fh",                    type   ="float",          default =-1.0,   help= "local alignment high frequencies limit")
 	#parser.add_option("--maxit",                 type   ="int",            default =5,      help= "local alignment iterations")
-	parser.add_option("--navg",                  type   ="int",            default =1000000,     help= "number of aveages")
+	parser.add_option("--navg",                  type   ="int",            default =1000000,     help= "number of averages")
 	parser.add_option("--local_alignment",       action ="store_true",     default =False,  help= "do local alignment")
 	parser.add_option("--noctf",                 action ="store_true",     default =False,  help="no ctf correction, useful for negative stained data. always ctf for cryo data")
 	parser.add_option("--B_start",  type   ="float",  default = 45.0,  help="start frequency (Angstrom) of power spectrum for B_factor estimation")
