@@ -17974,6 +17974,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, CTF=False, delta=delta)
 
 '''
+'''
 def Xwithin_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF, method = ""):
 
 	# Comment by Zhengfan Yang 03/11/11
@@ -18192,7 +18193,7 @@ def Xwithin_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, 
 
 	return tavg
 
-
+'''
 
 
 #  Version before I started messing with centering of averages  PAP 07/10/2015
@@ -18500,6 +18501,230 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 
 	return tavg, params
 '''
+
+
+
+
+##############################################################################################
+def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
+
+	#  There are two functions internal to the alignment
+	def current_ave(mstack, SNR, fl=0.47, aa=0.01):
+		"""
+		[
+		0	original prepf of CTF-multiplied image, shift-eliminated, mirrored, but no (1-2*mir)*alpha applied  CONST
+		1	[original params alpha_o, sx_o, sy_o, mir_o]  CONST
+		2	CTF object  CONST
+		3	[current params alpha_c, sx_c, sy_c, 0]  # we do not change mir so we keep it at zero
+		4	FT of CTF-multiplied image, shift-eliminated, mirrored, with (1-2*mir)*alpha applied  CONST
+		5	CTF^2 in the current combined orientation
+		6	current ccc
+		7	FT of current CTF-multiplied image, shift-eliminated, mirrored, in the current orientation, to be used for AVE
+		]
+
+
+		global settings
+		current sum of images
+		current sum of CTF^2
+		"""
+		nx = mstack[0][7].get_ysize()  # Input is Fourier file
+		nima = len(mstack)
+		tima = list(range(nima))
+		shuffle(tima)
+		mask = Util.unrollmask(nx)
+
+		sqct2 = []
+		sqave = []
+		parts = []
+		for isub in range(2):
+			ib = isub*nima//2
+			ie = (isub+1)*nima//2
+			print(" isub   ",isub,ib,ie,nima)
+			qave = mstack[ib][7].copy()
+			qct2 = mstack[ib][5].copy()
+			for i in range(ib+1,ie):
+				Util.add_img( qave, mstack[i][7] )
+				Util.add_img( qct2, mstack[i][5] )
+
+			qct2 += 1.0/SNR
+			sqave.append(qave)
+			sqct2.append(qct2)
+			diva = model_blank(qct2.get_xsize(), qct2.get_ysize(), 1, 1.0)
+			Util.div_img(diva, qct2)
+			parts.append(Util.mulnclreal(qave, diva))
+
+		fff = fsc(parts[0],parts[1])
+		ffm = fsc(adaptive_mask(fft(parts[0])),adaptive_mask(fft(parts[1])))
+		#fl1 = -1.0
+		fl2 = -1.0
+		for i,q in enumerate(fff[1][1:]):
+			#print("UUU:  %3d   %6.4f     %6.2f   %6.2f"%(i,fff[0][i],q,ffm[1][i]))
+			#if(fl1<0.0):
+			#	if(q<0.1):  fl1 = fff[0][i-1]
+			#if(fl2<0.0):
+			if(ffm[1][i]<0.1):
+				fl2 = ffm[0][i-1]
+				break
+		
+		if(fl2 == -1.0):  fl2 = fl
+		#print("  FSC     %6.4f   %6.4f"%(fl1,fl2))
+
+		qave = Util.addn_img(sqave[0],sqave[1])
+		qct2 = Util.addn_img(sqct2[0],sqct2[1])
+		diva = model_blank(qct2.get_xsize(), qct2.get_ysize(), 1, 1.0)
+		Util.div_img(diva, qct2)
+		Util.mulclreal(qave, diva)
+		if(fl > 0.0):  qave = filt_tanl(qave, fl2, aa)
+
+		L2 = Util.innerproduct(qave, qave, None)
+		return qave, L2, fl2
+
+	def iteration_2Dshc(mstack, ave, shifts, angles):
+		from random import shuffle
+		nx = mstack[0][4].get_ysize()  # Input is Fourier file
+
+		nima = len(mstack)
+		kl = 2*shifts+1
+		# prepare rotated average in Fourier space
+		fave = prepf(ave)
+		sfave = []
+		for a in angles:
+			sfave.append(rot_shift2D(fave,a,interpolation_method="fourier"))
+		del fave
+		window_indexes = []
+		for i in range(kl):
+			for j in range(kl):
+				window_indexes.append([i,j])
+
+		npeak = 0
+		got_better = False
+		for i in range(nima):
+			previous = mstack[i][6]
+			tangle = list(range(len(angles)))
+			shuffle(tangle)
+			image_got_better = False
+			for ia in tangle:
+				if image_got_better:  break
+				temp = window2d(ccf(sfave[ia],mstack[i][4]), kl, kl)
+				#  If no candidate here, do nothing
+				if(temp["maximum"] > mstack[i][6]):
+					shuffle(window_indexes)
+					for ti in window_indexes:
+						#print("SHC:  ",i,ia,-angles[ia],ix-shifts,iy-shifts,temp[ti[0],ti[1]])
+						if( temp[ti[0],ti[1]] >  mstack[i][6]):
+							image_got_better = True
+							mstack[i][6] = temp[ti[0],ti[1]]
+							six = ti[0]-shifts
+							siy = ti[1]-shifts
+							alphaf = -angles[ia]
+							break
+						npeak += 1
+
+			if image_got_better: # The reason to have this if here is that it makes it easy to switch between exhaust and SHC 
+				alphan, six, siy, _  = combine_params2((1-2*mstack[i][1][3])*mstack[i][1][0],0,0,0,alphaf, six, siy, 0)
+				if((mstack[i][3][0]!=alphan) or (mstack[i][3][1]!=six) or (mstack[i][3][2]!=siy) ):
+					mstack[i][3][0]=alphan; mstack[i][3][1]=six; mstack[i][3][2]=siy
+					mstack[i][7] = rot_shift2D(mstack[i][0],mstack[i][3][0],mstack[i][3][1],mstack[i][3][2], interpolation_method="fourier")
+					ctf_rot = EMAN2Ctf()
+					ctf_rot.copy_from(mstack[i][2])
+					if mir == 0:  ctf_rot.dfang = ctf_rot.dfang + mstack[i][1][0] + alphaf
+					else:         ctf_rot.dfang = 270.0 - ctf_rot.dfang - mstack[i][1][0] + alphaf
+					mstack[i][5] = square(ctf_img_real(nx, ctf_rot))
+					got_better = True
+			"""
+					print("GBT: %6d    %12.1f    %12.1f   %6.2f   %6.2f   %6.2f"%(i,previous,mstack[i][6],mstack[i][3][0],mstack[i][3][1],mstack[i][3][2]))
+				else:
+					print("GBC: %6d    %12.1f    %12.1f   %6.2f   %6.2f   %6.2f"%(i,previous,mstack[i][6],mstack[i][3][0],mstack[i][3][1],mstack[i][3][2]))
+			else: print("NBT: %6d    %12.1f    %12.1f"%(i,previous,mstack[i][6]))
+			"""
+
+		return  got_better
+
+	nx = data[0].get_xsize()
+	nima = len(data)
+	cosine_mask = cosinemask(model_blank(nx,nx,1,1.0),ou,s=0.0)
+	outside_mask = model_blank(nx,nx,1,1.0)-cosine_mask
+
+	mstack = []
+	pwrot = []
+	for i in range(nima):
+		ima = data[i].copy()
+		if  CTF:  ctf_params = ima.get_attr("ctf")
+		else:  ctf_params = generate_ctf([1.0e-5,0.0,300.,1.0,0.,100.,0.,0]) # fake, values approximately one.
+		ctf_rot = EMAN2Ctf()
+		ctf_rot.copy_from(ctf_params)
+		ctc = ctf_img_real(nx, ctf_params)
+		alpha, sx, sy, mir, _ = get_params2D(ima)
+		# Eliminate shifts
+		_, sx_c, sy_c, _ = combine_params2(0.0, sx, sy, 0, -alpha, 0.0, 0.0, 0)
+		ima = fshift(ima, sx_c, sy_c)
+		st = Util.infomask(ima, cosine_mask, True)
+		ima -= st[0]
+		ima /= st[1]
+		pwrot.append(rops_table(Util.muln_img(ima, outside_mask)))
+		#  Now that the image is centered, normalize and apply mask
+		Util.mul_img(ima, cosine_mask)
+		ima = fft(Util.mulnclreal(fft(ima), ctc))
+		if  mir: ima.process_inplace("xform.mirror", {"axis":'x'})
+	
+		qt = prepf(ima)
+		#  Now deal with parameters
+		alpha_c = sx_c = sy_c = 0.0
+		if True:
+			# this randomizes input parameters to get bland starting point, not really necessary since we are using SHC.
+			alpha_i = randint(-5,5)
+			sx_i = randint(-5,5)
+			sy_i = randint(-5,5)
+			_,sx_c,sy_c,_=combine_params2(0.0, sx_i,sy_i,0 , -alpha_i,0,0,0)
+			alpha_c = alpha_i
+		alpha_e, sx_e, sy_e, _  = combine_params2((1-2*mir)*alpha,0,0,0,alpha_c, sx_c, sy_c, 0)
+		if mir == 0: ctf_rot.dfang = ctf_rot.dfang + alpha + alpha_c
+		else: ctf_rot.dfang = 270.0 - ctf_rot.dfang - alpha + alpha_c
+		ctc = square(ctf_img_real(nx, ctf_rot))
+		mstack.append([qt, [alpha, sx, sy, mir], ctf_params, [alpha_e, sx_e, sy_e, 0], rot_shift2D(qt, (1-2*mir)*alpha, interpolation_method="fourier"), ctc, -1.0e23, rot_shift2D(qt,  alpha_e, sx_e, sy_e, interpolation_method="fourier") ]  )
+
+	avp = [0.0]*(len(pwrot[0]))
+	#svp = [0.0]*(len(pwrot[0]))
+	for i in range(len(pwrot)):
+		for j,q in enumerate(pwrot[i]):
+			avp[j] += q
+
+	avp[0] = avp[1]
+	for i in range(1,len(avp)):  avp[i] = sqrt(avp[0]/avp[i])
+	avp[0] = avp[1]
+	#  We may want to output the noise shaping function
+	#write_text_file([avp],"asvp.txt")
+
+	del pwrot
+
+	qave, L2, fl2 = current_ave(mstack, SNR, 0.1)
+	got_better = True
+
+	shifts = max(xrange,yrange)
+	angles = list(range(-arange,arange+1,1))
+
+	iter = 0
+	while got_better:
+		avem = Util.muln_img(fft(filt_table(qave,avp)),cosine_mask)
+		got_better = iteration_2Dshc(mstack, avem, shifts, angles)
+		if got_better:
+			qave, L2, fl2 = current_ave(mstack, SNR, fl2, aa)
+			iter += 1
+			#print("L2  ITERATION  %4d:"%iter,"   FL: %6.4f    %12.1f"%(fl2,L2),shc)
+			#fft(qave).write_image("qave%03d.hdf"%iter)
+	fipar = []
+	for i in range(nima):
+		# get the shift applied before anything happened
+		_, sx_c, sy_c, _ = combine_params2(0.0, mstack[i][1][1], mstack[i][1][2], 0, -mstack[i][1][0], 0.0, 0.0, 0)
+		#  combine them with mirror and subsequent alignment parameters
+		alpha_e, sx_e, sy_e, mir_e = combine_params2(0.0, sx_c, sy_c, mstack[i][1][3], mstack[i][3][0], mstack[i][3][1], mstack[i][3][2], 0 )
+		fipar.append([alpha_e, sx_e, sy_e, mir_e])
+	fl=-1.0
+	qave, _, _ = current_ave(mstack, SNR, fl, aa)
+	return  fft(qave), fipar, fl2
+
+
+
 def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, fract, rmax, rmin, maskfile = None, \
 	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", \
 	    npad = 2, debug = False, nearby=3):
