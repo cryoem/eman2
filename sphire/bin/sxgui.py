@@ -47,6 +47,7 @@ from sparx import *
 from optparse import OptionParser
 from functools import partial  # Use to connect event-source widget and event handler
 from subprocess import *
+import re
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
 pass#IMPORTIMPORTIMPORT import functools
@@ -746,7 +747,17 @@ class SXCmdWidget(QWidget):
 		# Loop through all command tokens
 		for sxcmd_token in self.sxcmd.token_list:
 			# First, handle very special cases
-			if not sxcmd_token.widget.isEnabled() and not sxcmd_token.is_locked:
+			if not isinstance(sxcmd_token.widget, list):
+				widgets = [sxcmd_token.widget]
+			else:
+				widgets = sxcmd_token.widget
+
+			do_continue = False
+			if not sxcmd_token.is_locked:
+				for widget in widgets:
+					if not widget.isEnabled():
+						do_continue = True
+			if do_continue:
 				continue
 			elif sxcmd_token.type == "user_func":
 				user_func_name_index = 0
@@ -930,7 +941,7 @@ class SXCmdWidget(QWidget):
 
 		return cmd_line
 
-	def execute_cmd_line(self):
+	def execute_cmd_line(self, execute=True, output_dir='.', number=None):
 		# Disable the run command button
 		execute_btn = self.sender()
 		execute_btn.setEnabled(False)
@@ -970,7 +981,10 @@ class SXCmdWidget(QWidget):
 					QMessageBox.warning(self, "Invalid parameter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
 					return
 				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
-				file_name_qsub_script = "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh"
+				if number is not None:
+					file_name_qsub_script = os.path.join(output_dir, "{0:04d}_".format(number) + "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
+				else:
+					file_name_qsub_script = os.path.join(output_dir, "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
 				file_qsub_script = open(file_name_qsub_script,"w")
 				for line_io in file_template:
 					if line_io.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -988,8 +1002,15 @@ class SXCmdWidget(QWidget):
 				cmd_line = str(self.sxcmd_tab_main.qsub_cmd_edit.text()) + " " + file_name_qsub_script
 				print("Wrote the following command line in the queue submission script: ")
 				print(cmd_line_in_script)
-				print("Submitted a job by the following command: ")
-				print(cmd_line)
+				if execute:
+					print("Submitted a job by the following command: ")
+					print(cmd_line)
+				else:
+					print("Saved command to: ")
+					print(file_name_qsub_script)
+			elif self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Unchecked and not execute:
+				QMessageBox.warning(self, "Qsub template needs to be specified for pipeline option", "Qsub template needs to be specified for pipeline option")
+				return
 			else:
 				# Case 2: queue submission is disabled (MPI can be supported or unsupported)
 				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -997,18 +1018,37 @@ class SXCmdWidget(QWidget):
 				print(cmd_line)
 
 			# Execute the generated command line
-			process = subprocess.Popen(cmd_line, shell=True)
-			### self.process_started.emit(process.pid)
-			if self.sxcmd.is_submittable == False:
-				assert(self.sxcmd.mpi_support == False)
-				# Register to This is a GUI application
-				self.child_application_list.append(process)
+			if execute:
+				process = subprocess.Popen(cmd_line, shell=True)
+				### self.process_started.emit(process.pid)
+				if self.sxcmd.is_submittable == False:
+					assert(self.sxcmd.mpi_support == False)
+					# Register to This is a GUI application
+					self.child_application_list.append(process)
 
 			# Save the current state of GUI settings
 			if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
 				os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
 			self.write_params(self.gui_settings_file_path)
 		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
+
+	def add_to_pipeline(self):
+		name = QtGui.QFileDialog.getExistingDirectory(self, 'Pipeline output directory', SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog)
+		if isinstance(name, tuple):
+			dir_name = str(name[0])
+		else:
+			dir_name = str(name)
+		if dir_name:
+			number_match = re.compile('(\d{4})_')
+			number = -1
+			for file_name in sorted(os.listdir(dir_name)):
+				try:
+					number = number_match.match(file_name).group(1)
+				except AttributeError:
+					QMessageBox.warning(self, "Invalid file in pipeline directory", "There is a file in the pipeline directory not starting with four digits. Abort...")
+					return
+
+			self.execute_cmd_line(execute=False, output_dir=dir_name, number=int(number)+1)
 
 	def print_cmd_line(self):
 		# Generate command line
@@ -2557,6 +2597,14 @@ class SXCmdTab(QWidget):
 			self.cmd_line_btn.setToolTip('<FONT>'+"Generate command line from gui parameter settings and automatically save settings"+'</FONT>')
 			self.cmd_line_btn.clicked.connect(self.sxcmdwidget.print_cmd_line)
 			submit_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
+
+			grid_row += 1
+
+			self.pipe_line_btn = QPushButton("Add to pipeline folder")
+			self.pipe_line_btn.setMinimumWidth(btn_min_width)
+			self.pipe_line_btn.setToolTip('<FONT>'+"Generate executable files that and add them to the queue folder."+'</FONT>')
+			self.pipe_line_btn.clicked.connect(self.sxcmdwidget.add_to_pipeline)
+			submit_layout.addWidget(self.pipe_line_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
 
 			grid_row += 1
 
@@ -4202,6 +4250,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "sxbatch"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Batch pipeline execution"; sxcmd.short_info = "Run jobs that wait with the execution on each other."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_cter"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "submission_command"; token.key_prefix = ""; token.label = "Submission command"; token.help = "Submission command, e.g., qsub, qsub -V, sbatch, bash "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "pipeline_directory"; token.key_prefix = ""; token.label = "Pipeline directory"; token.help = "Directory containin the pipeline submission files "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "hold_flag"; token.key_prefix = "--"; token.label = "Hold flag"; token.help = "Hold flag for the submission command, e.g. -hold_jid, --wait; Default is None and should be used in combination with a local execution with bash "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "first_hold_number"; token.key_prefix = "--"; token.label = "First hold number"; token.help = "Wait number for the first jobs that is submitted. By default, the first job will not wait for others "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "e2boxer_old"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Particle Coordinates"; sxcmd.short_info = "Generate files containing particle coordinates for all input micrographs by picking particles manual and/or automatically."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_micrograph_list"; token.key_prefix = ""; token.label = "Input micrographs"; token.help = "Wild cards (e.g. *) can be used to specify a list of micrographs. Not recommended if their number is very large. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "mic_one_list"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "boxsize"; token.key_prefix = "--"; token.label = "Box size [Pixels]"; token.help = "Box size for extraction of particle images. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "-1"; token.restore = "-1"; token.type = "box"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -4297,6 +4353,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "sxbatch"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Batch pipeline execution"; sxcmd.short_info = "Run jobs that wait with the execution on each other."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_window"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "submission_command"; token.key_prefix = ""; token.label = "Submission command"; token.help = "Submission command, e.g., qsub, qsub -V, sbatch, bash "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "pipeline_directory"; token.key_prefix = ""; token.label = "Pipeline directory"; token.help = "Directory containin the pipeline submission files "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "hold_flag"; token.key_prefix = "--"; token.label = "Hold flag"; token.help = "Hold flag for the submission command, e.g. -hold_jid, --wait; Default is None and should be used in combination with a local execution with bash "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "first_hold_number"; token.key_prefix = "--"; token.label = "First hold number"; token.help = "Wait number for the first jobs that is submitted. By default, the first job will not wait for others "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "sxisac2"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "ISAC2 - 2D Clustering"; sxcmd.short_info = "Iterative Stable Alignment and Clustering (ISAC) of a 2D image stack."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "stack_file"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "The images must to be square (nx=ny). The stack can be either in bdb or hdf format. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "bdb2d_stack"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "The automatically-created output directory will contain results. If the directory already exists, results will be written there, possibly overwriting previous runs. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output_continue"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -4361,6 +4425,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Display a stack in a single image view. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "fullrange"; token.key_prefix = "--"; token.label = "Use full range of pixel values"; token.help = "Instead of default auto-contrast, use full range of pixel values for the display of particles stacks and 2D images. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Accepted values 0-9. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "0"; token.restore = "0"; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+
+		sxcmd_list.append(sxcmd)
+
+		sxcmd = SXcmd(); sxcmd.name = "sxbatch"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Batch pipeline execution"; sxcmd.short_info = "Run jobs that wait with the execution on each other."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "submission_command"; token.key_prefix = ""; token.label = "Submission command"; token.help = "Submission command, e.g., qsub, qsub -V, sbatch, bash "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "pipeline_directory"; token.key_prefix = ""; token.label = "Pipeline directory"; token.help = "Directory containin the pipeline submission files "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "hold_flag"; token.key_prefix = "--"; token.label = "Hold flag"; token.help = "Hold flag for the submission command, e.g. -hold_jid, --wait; Default is None and should be used in combination with a local execution with bash "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "first_hold_number"; token.key_prefix = "--"; token.label = "First hold number"; token.help = "Wait number for the first jobs that is submitted. By default, the first job will not wait for others "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 
 		sxcmd_list.append(sxcmd)
 
@@ -4512,6 +4584,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "particle_radius"; token.key_prefix = "--"; token.label = "Particle radius [Pixels]"; token.help = "Particle radius "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "120"; token.restore = "120"; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "method"; token.key_prefix = "--"; token.label = "Distribution method"; token.help = "Method used to create the reference angles (S or P) "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "S"; token.restore = "S"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "dpi"; token.key_prefix = "--"; token.label = "Plot DPI"; token.help = "Dpi for the legend plot "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "72"; token.restore = "72"; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+
+		sxcmd_list.append(sxcmd)
+
+		sxcmd = SXcmd(); sxcmd.name = "sxbatch"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Batch pipeline execution"; sxcmd.short_info = "Run jobs that wait with the execution on each other."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_viper"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "submission_command"; token.key_prefix = ""; token.label = "Submission command"; token.help = "Submission command, e.g., qsub, qsub -V, sbatch, bash "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "pipeline_directory"; token.key_prefix = ""; token.label = "Pipeline directory"; token.help = "Directory containin the pipeline submission files "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "hold_flag"; token.key_prefix = "--"; token.label = "Hold flag"; token.help = "Hold flag for the submission command, e.g. -hold_jid, --wait; Default is None and should be used in combination with a local execution with bash "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "first_hold_number"; token.key_prefix = "--"; token.label = "First hold number"; token.help = "Wait number for the first jobs that is submitted. By default, the first job will not wait for others "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 
 		sxcmd_list.append(sxcmd)
 
@@ -4711,6 +4791,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "max_occupy"; token.key_prefix = "--"; token.label = "Maximum orientations per reference angle"; token.help = "Maximum number of particles per reference angle. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "angstep"; token.key_prefix = "--"; token.label = "Angular increment"; token.help = "Angular step of reference angles. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "15"; token.restore = "15"; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "symmetry"; token.key_prefix = "--"; token.label = "Point-group symmetry"; token.help = "angular step of reference angles, i.e., number of bins of angular histogram. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "c1"; token.restore = "c1"; token.type = "sym"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+
+		sxcmd_list.append(sxcmd)
+
+		sxcmd = SXcmd(); sxcmd.name = "sxbatch"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Batch pipeline execution"; sxcmd.short_info = "Run jobs that wait with the execution on each other."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "submission_command"; token.key_prefix = ""; token.label = "Submission command"; token.help = "Submission command, e.g., qsub, qsub -V, sbatch, bash "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "pipeline_directory"; token.key_prefix = ""; token.label = "Pipeline directory"; token.help = "Directory containin the pipeline submission files "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "hold_flag"; token.key_prefix = "--"; token.label = "Hold flag"; token.help = "Hold flag for the submission command, e.g. -hold_jid, --wait; Default is None and should be used in combination with a local execution with bash "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "first_hold_number"; token.key_prefix = "--"; token.label = "First hold number"; token.help = "Wait number for the first jobs that is submitted. By default, the first job will not wait for others "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 
 		sxcmd_list.append(sxcmd)
 
@@ -4950,19 +5038,27 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "sxbatch"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Batch pipeline execution"; sxcmd.short_info = "Run jobs that wait with the execution on each other."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_sort3d"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "submission_command"; token.key_prefix = ""; token.label = "Submission command"; token.help = "Submission command, e.g., qsub, qsub -V, sbatch, bash "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "pipeline_directory"; token.key_prefix = ""; token.label = "Pipeline directory"; token.help = "Directory containin the pipeline submission files "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "hold_flag"; token.key_prefix = "--"; token.label = "Hold flag"; token.help = "Hold flag for the submission command, e.g. -hold_jid, --wait; Default is None and should be used in combination with a local execution with bash "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "first_hold_number"; token.key_prefix = "--"; token.label = "First hold number"; token.help = "Wait number for the first jobs that is submitted. By default, the first job will not wait for others "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "sxlocres"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Local Resolution"; sxcmd.short_info = "Compute local resolution of a map."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First half-map"; token.help = "A sub-map computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second half-map"; token.help = "A sub-map computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "3D mask"; token.help = "Defines the region for which local resolution will be computed. It is advisable to eliminate irrelevant regions surrounding the structure. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "outputfile"; token.key_prefix = ""; token.label = "Output volume"; token.help = "Each voxel contains the associated resolution. It is expressed in absolute frequency units. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "3D mask"; token.help = "Defines the region for which local resolution will be computed. It is advisable to eliminate irrelevant regions surrounding the structure. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Mask radius [Pixels]"; token.help = "In case no mask is provided, a hard sphere of this radius will be used. By default, radius = box_size/2 - (--wn). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['maskfile', 'none', 'False']; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('maskfile', []).append([token.key_base, 'none', 'False'])
 		token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "Window size [Pixels]"; token.help = "Size of window within which local real-space CCC (equivalent to FSC) is computed. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "7"; token.restore = "7"; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "step"; token.key_prefix = "--"; token.label = "Fourier shell step size [Pixels]"; token.help = "Values larger than 1.0 increase the speed and stability of the local resolution map, but decrease its reciprocal space resolvability. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "1.0"; token.restore = "1.0"; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "cutoff"; token.key_prefix = "--"; token.label = "Local resolution criterion"; token.help = "Specify the resolution cut-off of the local resolution map. The map will contain, for each voxel, the value of spatical frequency at which local resolution at this voxel dropped below the specified cut-off level.  Low values (say 0.14) result in a noisy and tus difficult to interpret local resolution map. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "0.5"; token.restore = "0.5"; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Mask radius [Pixels]"; token.help = "In case no mask is provided, a hard sphere of this radius will be used. By default, radius = box_size/2 - (--wn). "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "-1"; token.restore = "-1"; token.type = "radius"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "cutoff"; token.key_prefix = "--"; token.label = "Local resolution criterion"; token.help = "Specify the resolution cut-off of the local resolution map. The map will contain, for each voxel, the value of spatical frequency at which local resolution at this voxel dropped below the specified cut-off level.  Low values (say 0.14) result in a noisy and tus difficult to interpret local resolution map. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "0.143"; token.restore = "0.143"; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "fsc"; token.key_prefix = "--"; token.label = "FSC output file"; token.help = "Contains the overall FSC curve computed by rotational averaging of local resolution values. It is truncated to --res_overall. By default, the program does not save the FSC curve. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "no curve"; token.restore = "no curve"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "res_overall"; token.key_prefix = "--"; token.label = "Overall resolution [1/Pixel]"; token.help = "Specify overall (or global) resolution in absolute frequency (&gt;=0.0 and &lt;=0.5) for calibration of the average local resolution. Use the absolute frequency corresponding to the standard FSC resolution estimation. See Description section in the wiki page for details. By default, the program will not calibrate the average local resolution. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "out_ang_res"; token.key_prefix = "--"; token.label = "Save Angstrom local resolution"; token.help = "Additionally creates a local resolution file in Angstroms. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "Pixel size of half-maps [A]"; token.help = "Effective only with --out_ang_res options. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['out_ang_res', 'True', 'False']; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('out_ang_res', []).append([token.key_base, 'True', 'False'])
+		token = SXcmd_token(); token.key_base = "apix"; token.key_prefix = "--"; token.label = "Pixel size of half-maps [A]"; token.help = "Effective only with --out_ang_res options. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "1.0"; token.restore = "1.0"; token.type = "apix"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "out_ang_res"; token.key_prefix = "--"; token.label = "Save Angstrom local resolution"; token.help = "Additionally creates a local resolution file in Angstroms. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "res_overall"; token.key_prefix = "--"; token.label = "Overall resolution [1/Pixel]"; token.help = "Specify overall (or global) resolution in absolute frequency (&gt;=0.0 and &lt;=0.5) for calibration of the average local resolution. Use the absolute frequency corresponding to the standard FSC resolution estimation. See Description section in the wiki page for details. By default, the program will not calibrate the average local resolution. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "-1.0"; token.restore = "-1.0"; token.type = "abs_freq"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 
 		sxcmd_list.append(sxcmd)
 
@@ -5040,6 +5136,14 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
+		sxcmd = SXcmd(); sxcmd.name = "sxbatch"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Batch pipeline execution"; sxcmd.short_info = "Run jobs that wait with the execution on each other."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "submission_command"; token.key_prefix = ""; token.label = "Submission command"; token.help = "Submission command, e.g., qsub, qsub -V, sbatch, bash "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "pipeline_directory"; token.key_prefix = ""; token.label = "Pipeline directory"; token.help = "Directory containin the pipeline submission files "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "hold_flag"; token.key_prefix = "--"; token.label = "Hold flag"; token.help = "Hold flag for the submission command, e.g. -hold_jid, --wait; Default is None and should be used in combination with a local execution with bash "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "first_hold_number"; token.key_prefix = "--"; token.label = "First hold number"; token.help = "Wait number for the first jobs that is submitted. By default, the first job will not wait for others "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "sxunblur"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Micrograph Movie Alignment"; sxcmd.short_info = "Align frames of micrograph movies with Unblur & Summovie."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "unblur_path"; token.key_prefix = ""; token.label = "Unblur executable path"; token.help = "Specify the file path of Unblur executable. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "exe"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "input_micrograph_pattern"; token.key_prefix = ""; token.label = "Input movie path pattern"; token.help = "Specify path pattern of input micrograph movies with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ('). (Note: sxgui.py automatically adds single quotes (')). bdb files cannot be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "mic_stack"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -5106,6 +5210,22 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "destination_directory"; token.key_prefix = ""; token.label = "Destination directory"; token.help = "The micrographs/movies in selecting list will be moved to this directory. It cannot be an existing one. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "reverse"; token.key_prefix = "--"; token.label = "Reverse operation"; token.help = "Move back micrographs/movies from the destination directory to the source directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "check_consistency"; token.key_prefix = "--"; token.label = "Check consistency of dataset"; token.help = "Create a text file containing the list of micrograph/movie ID entries might have inconsitency among the provided dataset. (i.e. mic_consistency_check_info.txt). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = False; token.restore = False; token.type = "bool"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+
+		sxcmd_list.append(sxcmd)
+
+		sxcmd = SXcmd(); sxcmd.name = "sxbatch"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Batch pipeline execution"; sxcmd.short_info = "Run jobs that wait with the execution on each other."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_movie"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "submission_command"; token.key_prefix = ""; token.label = "Submission command"; token.help = "Submission command, e.g., qsub, qsub -V, sbatch, bash "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "pipeline_directory"; token.key_prefix = ""; token.label = "Pipeline directory"; token.help = "Directory containin the pipeline submission files "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "hold_flag"; token.key_prefix = "--"; token.label = "Hold flag"; token.help = "Hold flag for the submission command, e.g. -hold_jid, --wait; Default is None and should be used in combination with a local execution with bash "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "first_hold_number"; token.key_prefix = "--"; token.label = "First hold number"; token.help = "Wait number for the first jobs that is submitted. By default, the first job will not wait for others "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+
+		sxcmd_list.append(sxcmd)
+
+		sxcmd = SXcmd(); sxcmd.name = "sxbatch"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Batch pipeline execution"; sxcmd.short_info = "Run jobs that wait with the execution on each other."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
+		token = SXcmd_token(); token.key_base = "submission_command"; token.key_prefix = ""; token.label = "Submission command"; token.help = "Submission command, e.g., qsub, qsub -V, sbatch, bash "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "pipeline_directory"; token.key_prefix = ""; token.label = "Pipeline directory"; token.help = "Directory containin the pipeline submission files "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = ""; token.restore = ""; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "hold_flag"; token.key_prefix = "--"; token.label = "Hold flag"; token.help = "Hold flag for the submission command, e.g. -hold_jid, --wait; Default is None and should be used in combination with a local execution with bash "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "first_hold_number"; token.key_prefix = "--"; token.label = "First hold number"; token.help = "Wait number for the first jobs that is submitted. By default, the first job will not wait for others "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.dependency_group = ['', '', '']; token.default = "none"; token.restore = "none"; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 
 		sxcmd_list.append(sxcmd)
 
@@ -5487,7 +5607,7 @@ def main():
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 
 	# Initialise a singleton class for look & feel constants
-	version_string = '1.2_rc3'
+	version_string = '1.2_rc4'
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
