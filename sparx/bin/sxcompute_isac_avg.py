@@ -147,7 +147,7 @@ def main():
 	parser.add_option("--xr",                    type   ="float",          default =-1.0,   help= "local alignment search range")
 	parser.add_option("--ts",                    type   ="float",          default =1.0,    help= "local alignment search step")
 	parser.add_option("--fh",                    type   ="float",          default =-1.0,   help= "local alignment high frequencies limit")
-	parser.add_option("--maxit",                 type   ="int",            default =5,      help= "local alignment iterations")
+	#parser.add_option("--maxit",                 type   ="int",            default =5,      help= "local alignment iterations")
 	parser.add_option("--navg",                  type   ="int",            default =1000000,     help= "number of aveages")
 	parser.add_option("--local_alignment",       action ="store_true",     default =False,  help= "do local alignment")
 	parser.add_option("--noctf",                 action ="store_true",     default =False,  help="no ctf correction, useful for negative stained data. always ctf for cryo data")
@@ -221,7 +221,7 @@ def main():
 	Constants["xstep"]                        = options.ts
 	Constants["FH"]                           = options.fh
 	Constants["low_pass_filter"]              = options.fl
-	Constants["maxit"]                        = options.maxit
+	#Constants["maxit"]                        = options.maxit
 	Constants["navg"]                         = options.navg
 	Constants["B_start"]                      = options.B_start
 	Constants["Bfactor"]                      = options.Bfactor
@@ -322,8 +322,8 @@ def main():
 	Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 
 	#print(Tracker["constants"]["pixel_size"], "pixel_size")	
-	x_range = max(Tracker["constants"]["xrange"], int(1./Tracker["ini_shrink"])+1)
-	y_range =  x_range
+	x_range = max(Tracker["constants"]["xrange"], int(1./Tracker["ini_shrink"]+0.99999) )
+	a_range = y_range = x_range
 
 	if(Blockdata["myid"] == Blockdata["main_node"]): parameters = read_text_row(os.path.join(Tracker["constants"]["isac_dir"], "all_parameters.txt"))
 	else: parameters = 0
@@ -403,10 +403,9 @@ def main():
 			for im in range(len(mlist)):
 				#mlist[im]= get_im(Tracker["constants"]["orgstack"], list_dict[iavg][im])
 				set_params2D(mlist[im], params_dict[iavg][im], xform = "xform.align2d")
-			new_avg, frc, plist = compute_average(mlist, Tracker["constants"]["radius"], do_ctf)
-			FH1 = get_optimistic_res(frc)
 			
 			if options.local_alignment:
+				"""
 				new_average1 = within_group_refinement([mlist[kik] for kik in range(0,len(mlist),2)], maskfile= None, randomize= False, ir=1.0,  \
 				 ou=Tracker["constants"]["radius"], rs=1.0, xrng=[x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
 				 dst=0.0, maxit=Tracker["constants"]["maxit"], FH=max(Tracker["constants"]["FH"], FH1), FF=0.02, method="")
@@ -414,9 +413,15 @@ def main():
 				 ou= Tracker["constants"]["radius"], rs=1.0, xrng=[ x_range], yrng=[y_range], step=[Tracker["constants"]["xstep"]], \
 				 dst=0.0, maxit=Tracker["constants"]["maxit"], FH = max(Tracker["constants"]["FH"], FH1), FF=0.02, method="")
 				new_avg, frc, plist = compute_average(mlist, Tracker["constants"]["radius"], do_ctf)
+				"""
+				new_avg, plist, FH2 = refinement_2d_local(mlist, Tracker["constants"]["radius"], a_range,x_range, y_range, CTF = do_ctf, SNR=1.0e10)
+
 				plist_dict[iavg] = plist
-				FH2 = get_optimistic_res(frc)
-			else: FH2 = 0.0
+				FH1 = -1.0
+			else:
+				new_avg, frc, plist = compute_average(mlist, Tracker["constants"]["radius"], do_ctf)
+				FH1 = get_optimistic_res(frc)
+				FH2 = -1.0
 			#write_text_file(frc, os.path.join(Tracker["constants"]["masterdir"], "fsc%03d.txt"%iavg))
 			FH_list[iavg] = [iavg, FH1, FH2]
 			
