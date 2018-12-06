@@ -218,7 +218,6 @@ def main():
 	Constants["orgstack"]                     = options.stack
 	Constants["radius"]                       = options.radius
 	Constants["xrange"]                       = options.xr
-	#Constants["xstep"]                        = options.ts
 	Constants["FH"]                           = options.fh
 	Constants["low_pass_filter"]              = options.fl
 	#Constants["maxit"]                        = options.maxit
