@@ -18507,6 +18507,14 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 
 ##############################################################################################
 def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
+	from morphology import cosinemask, square, ctf_img_real, adaptive_mask
+	from utilities import get_params2D, model_blank, combine_params2, generate_ctf
+	from filter import filt_tanl, filt_table
+	from fundamentals import rot_shift2D, ccf, window2d, fshift, rops_table, prepf, fft
+	from statistics import fsc
+	from EMAN2 import EMAN2Ctf
+	from math import sqrt
+	from random import shuffle, randint
 
 	#  There are two functions internal to the alignment
 	def current_ave(mstack, SNR, fl=0.47, aa=0.01):
@@ -18539,7 +18547,6 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 		for isub in range(2):
 			ib = isub*nima//2
 			ie = (isub+1)*nima//2
-			print(" isub   ",isub,ib,ie,nima)
 			qave = mstack[ib][7].copy()
 			qct2 = mstack[ib][5].copy()
 			for i in range(ib+1,ie):
@@ -18700,9 +18707,9 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 	qave, L2, fl2 = current_ave(mstack, SNR, 0.1)
 	got_better = True
 
-	shifts = max(xrange,yrange)
+	shifts = max(xrng,yrng)
 	angles = list(range(-arange,arange+1,1))
-
+	aa = 0.02
 	iter = 0
 	while got_better:
 		avem = Util.muln_img(fft(filt_table(qave,avp)),cosine_mask)
