@@ -941,6 +941,7 @@ class SXCmdWidget(QWidget):
 
 		return cmd_line
 
+	@QtCore.pyqtSlot()
 	def execute_cmd_line(self, execute=True, output_dir='.', number=None):
 		# Disable the run command button
 		execute_btn = self.sender()
@@ -973,6 +974,7 @@ class SXCmdWidget(QWidget):
 			if self.sxcmd.mpi_support:
 				np = int(str(self.sxcmd_tab_main.mpi_nproc_edit.text()))
 
+			print(execute)
 			if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template

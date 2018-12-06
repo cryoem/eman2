@@ -41,13 +41,13 @@ import os
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('submission_command', type=str, help='Submission command, e.g., qsub, qsub -V, sbatch, bash')
-parser.add_argument('pipeline_directory', type=str, help='Directory containin the pipeline submission files')
+parser.add_argument('input_run_dir', type=str, help='Directory containin the pipeline submission files')
 parser.add_argument('--hold_flag', type=str, default=None, help='Hold flag for the submission command, e.g. -hold_jid')
 parser.add_argument('--first_hold_number', type=str, default=None, help='Wait number of an already running job')
 args = parser.parse_args()
 
 sparx_global_def.BATCH = True
-if not os.path.exists(args.pipeline_directory):
+if not os.path.exists(args.input_run_dir):
     sparx_global_def.ERROR('Input directory does not exist!', 'sxbatch.py', 1)
 
 qsub_dict = {
@@ -61,7 +61,7 @@ if args.first_hold_number:
     prev_hold = args.first_hold_number
 else:
     prev_hold = 'aaa'
-for idx, file_name in enumerate(sorted(glob.glob('{0}/*'.format(args.pipeline_directory)))):
+for idx, file_name in enumerate(sorted(glob.glob('{0}/*'.format(args.input_run_dir)))):
     command = args.submission_command.split()
     if args.hold_flag and (idx != 0 or args.first_hold_number):
         command.append(args.hold_flag)
