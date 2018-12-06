@@ -631,7 +631,7 @@ def make_tile(args):
 		
 	
 	threed=recon.finish(True)
-	threed.write_image("tmp3d00.hdf", -1)
+	#threed.write_image("tmp3d00.hdf", -1)
 	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	#threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
