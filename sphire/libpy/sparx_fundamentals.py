@@ -34,7 +34,6 @@ import sparx_filter
 import sparx_global_def
 import math
 import numpy
-import os
 import sparx_utilities
 pass#IMPORTIMPORTIMPORT import EMAN2
 pass#IMPORTIMPORTIMPORT import EMAN2_cppwrap
@@ -1190,7 +1189,7 @@ class symclass(object):
 		if(self.sym[0] != "s"):
 			"""Multiline Comment6"""
 			angles = []
-			is_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
+			zzis_platonic_sym = self.sym[0] == "o" or self.sym[0] == "t" or self.sym[0] == "i"
 			if (method == 'P'):
 				theta = theta1
 				while(theta <= theta2):
