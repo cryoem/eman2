@@ -30,6 +30,7 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 	
 	# Get number of images
 	nimg0 = EMUtil.get_image_count(classavgstack)
+	nx = recon.get_xsize()
 	#print("nimg0: %s" % nimg0)
 	
 	# In case class averages include discarded images, apply selection file
@@ -52,12 +53,12 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 	
 	# Import Euler angles
 	if inangles:
-		cmd6="sxheader.py %s --params=xform.projection --import=%s" % (classavgstack, inangles)
-		print cmd6
+		#cmd6="sxheader.py %s --params=xform.projection --import=%s" % (classavgstack, inangles)
+		#print cmd6
 		header(classavgstack, 'xform.projection', fimport=inangles)
 	
-	cmd1="sxheader.py %s --params=xform.projection --export=%s" % (classavgstack, outangles) 
-	print cmd1
+	#cmd1="sxheader.py %s --params=xform.projection --export=%s" % (classavgstack, outangles) 
+	#print cmd1
 	#os.system(cmd1)
 	try:
 		header(classavgstack, 'xform.projection', fexport=outangles)
@@ -65,38 +66,50 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 		print("\nERROR!! No projection angles found in class-average stack header!\n")
 		exit()
 	
-	cmd2="sxproject3d.py %s %s --angles=%s" % (recon, projstack, outangles)
-	print cmd2
+	#cmd2="sxproject3d.py %s %s --angles=%s" % (recon, projstack, outangles)
+	#print cmd2
 	#os.system(cmd2)
-	project3d(recon, stack=projstack, listagls=outangles)
-	
-	imgcounter = 0  # montage will have double the number of images as number of class-averages
+	#  Here if you want to be fancy, there should be an option to chose the projection method,
+	#  the mechanism can be copied from sxproject3d.py  PAP
+	#project3d(recon, stack=projstack, listagls=outangles)
+	recon = prep_vol( recon, npad = 2, interpolation_method = 1 )
+
 	result=[]
-	
+	#  Here you need actual radius to compute proper ccc's, but if you do, you have to deal with translations, PAP
+	mask = model_circle(nx//2-2,nx,nx)
 	# Number of images may have changed
 	nimg1   = EMUtil.get_image_count(classavgstack)
-	
-	for imgnum in xrange(nimg1):
+	outangles = read_text_row(outangles)
+	for imgnum in range(nimg1):
 		#print imgnum
 		classimg = get_im(classavgstack, imgnum)
-		ccc1 = classimg.get_attr_default('cross-corr', -1.0)
-		prjimg = get_im(projstack,imgnum)
-		ccc1 = prjimg.get_attr_default('cross-corr', -1.0)
-		cccoeff = ccc(prjimg,classimg)
+		rops_dst = rops_table(classimg*mask)
+		#ccc1 = classimg.get_attr_default('cross-corr', -1.0)
+		#prjimg = get_im(projstack,imgnum)
+		#ccc1 = prjimg.get_attr_default('cross-corr', -1.0)
+		prjimg = prgl(recon, outangles[imgnum], 1, False)
+		rops_src = rops_table(prjimg)
+		table = [0.0]*len(rops_dst)
+		for j in range( len(rops_dst) ):
+			table[j] = sqrt( rops_dst[j]/rops_src[j] )
+		#  Note I am setting power spectrum of reprojection to the data.
+		#  Since data has an envelope, it would make more sense to set data to reconstruction,
+		#  but to do it one would have to know the actual resolution of the data. 
+		#  you can check sxprocess.py --adjpw to see how this is done properly  PAP
+		prjimg = fft(filt_table(prjimg, table))
+
+		cccoeff = ccc(prjimg, classimg, mask)
 		#print imgnum, cccoeff
 		classimg.set_attr_dict({'cross-corr':cccoeff})
 		prjimg.set_attr_dict({'cross-corr':cccoeff})
-		prjimg.write_image(outstack,imgcounter)
-		imgcounter += 1
-		classimg.write_image(outstack, imgcounter)
-		imgcounter += 1
+		prjimg.write_image(outstack,2*imgnum)
+		classimg.write_image(outstack, 2*imgnum+1)
 		result.append(cccoeff)
-	result1 = sum(result)
-	#print result1
+	del outangles
+	meanccc = sum(result)/nimg1
+	print("Average CCC is %s" % meanccc)
 
 	nimg2   = EMUtil.get_image_count(outstack)
-	meanccc = result1/nimg1
-	print("Mean CCC is %s" % meanccc)
 	
 	for imgnum in xrange(nimg2):
 		if (imgnum % 2 ==0):
@@ -112,13 +125,17 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 		os.remove(normstack)
 		print("rm %s" % normstack)
 		
-	cmd5="e2proc2d.py %s %s --process=normalize" % (outstack, normstack)
-	print cmd5
-	os.system(cmd5)
+
+
+	#  Why would you want to do it?  If you do, it should have been done during ccc calculations,
+	#  otherwise what is see is not corresponding to actual data, thus misleading.  PAP
+	#cmd5="e2proc2d.py %s %s --process=normalize" % (outstack, normstack)
+	#print cmd5
+	#os.system(cmd5)
 	
 	# Optionally pop up e2display
 	if displayYN:
-		cmd8 = "e2display.py %s" % normstack
+		cmd8 = "e2display.py %s" % outstack
 		print cmd8
 		os.system(cmd8)
 	
