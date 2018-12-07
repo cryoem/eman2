@@ -331,8 +331,7 @@ def main():
 	list_dict   = {}
 	#parepare params_dict
 
-	#navg = min(Tracker["constants"]["navg"]*Blockdata["nproc"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
-	navg = Tracker["constants"]["navg"]
+	navg = min(Tracker["constants"]["navg"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
 	global_dict = {}
 	ptl_list    = []
 	memlist     = []
@@ -440,7 +439,7 @@ def main():
 
 			elif no_adjustment: pass
 			
-			if Tracker["constants"]["low_pass_filter"] != -1.0:
+			if Tracker["constants"]["low_pass_filter"] != -1.0 :
 				if Tracker["constants"]["low_pass_filter"] == 0.0: low_pass_filter = FH1
 				elif Tracker["constants"]["low_pass_filter"] == 1.0: 
 					low_pass_filter = FH2
@@ -450,7 +449,7 @@ def main():
 					if low_pass_filter >=0.45: low_pass_filter =0.45 		
 				new_avg = filt_tanl(new_avg, low_pass_filter, 0.02)
 			else:# No low pass filter but if enforced
-				if enforced_to_H1: new_avg = filt_tanl(new_avg, FH1, 0.02)
+				if enforced_to_H1 and False: new_avg = filt_tanl(new_avg, FH1, 0.02)
 			if B_enhance: new_avg = fft(new_avg)
 				
 			new_avg.set_attr("members",   list_dict[iavg])
