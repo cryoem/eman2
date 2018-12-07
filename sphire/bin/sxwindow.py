@@ -115,6 +115,24 @@ def read_spider_coords_file(coords_path):
 		coords_list[i] = [coords_list[i][2], coords_list[i][3]]
 	return coords_list
 
+def read_helix_cryolo_coords_file(coords_path):
+	with open(coords_path) as read:
+		lines = read.readlines()
+	filament_name = '{0}_{{0}}'.format(os.path.basename(coords_path))
+	filament_number = -1
+	coords_list = []
+	for line in lines:
+		if not line.strip():
+			continue
+		if line.startswith('#helix'):
+			filament_number += 1
+		elif line.startswith('#'):
+			continue
+		else:
+			box_x, box_y = line.strip().split()[:2]
+			coords_list.append([float(box_x), float(box_y), filament_name.format(filament_number)])
+	return coords_list
+
 # ========================================================================================
 #  Helper functions
 # ========================================================================================
@@ -307,7 +325,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				error_status = ("File specified by selection_list option does not exists. Please check selection_list option. Run %s -h for help." % (program_name), inspect.getframeinfo(inspect.currentframe()))
 				break
 		
-		if error_status is None and options.coordinates_format.lower() not in ["sphire", "eman1", "eman2", "spider"]:
+		if error_status is None and options.coordinates_format.lower() not in ["sphire", "eman1", "eman2", "spider", "helix_cryolo"]:
 			error_status = ("Invalid option value: --coordinates_format=%s. Please run %s -h for help." % (options.coordinates_format, program_name), inspect.getframeinfo(inspect.currentframe()))
 			break
 		
@@ -890,6 +908,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		read_coords_file = read_eman2_coords_file
 	elif coords_format == "spider":
 		read_coords_file = read_spider_coords_file
+	elif coords_format == "helix_cryolo":
+		read_coords_file = read_helix_cryolo_coords_file
 	else: 
 		assert (False) # Unreachable code
 	assert (read_coords_file != None)
@@ -1159,6 +1179,11 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				particle_img_dict["ptcl_source_coord"] = [int(coords_list[original_id][0]), int(coords_list[original_id][1])]
 				particle_img_dict["ptcl_source_coord_id"] = coords_id
 				particle_img_dict["ptcl_source_box_id"] = original_id
+				particle_img_dict["ptcl_source_box_id"] = original_id
+				try:
+					particle_img_dict["filament"] = coords_list[original_id][2]
+				except IndexError:
+					pass
 				particle_img_dict['data_n'] = coords_id  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
 				particle_img_dict["data_path"] = '../' + local_mrcs_name
 				particle_img_dict["resample_ratio"] = resample_ratio
