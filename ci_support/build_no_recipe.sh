@@ -18,7 +18,7 @@ if [ ! -z ${CIRCLECI} ];then
     source ${HOME}/miniconda2/bin/activate root
 fi
 
-python -m compileall -q -x '.*/unused/.*|.*/.git/.*' .
+python -m compileall -q -x unused .
 
 # Build and install eman2
 rm -vf ${CONDA_PREFIX}/bin/e2*.py
