@@ -126,24 +126,6 @@ def mrk_table_stat(X):
 	return  avg, sd, mi, ma
 
 
-# ----------------------------------------------------------------------------------------
-# Create relative path of path p2 to p1
-# ----------------------------------------------------------------------------------------
-def makerelpath(p1,p2):
-	"""Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
-	
-	p1s=[i for i in os.path.realpath(p1).split("/") if len(i)>0]
-	p2s=[i for i in os.path.realpath(p2).split("/") if len(i)>0]
-
-	for dv in range(min(len(p1s),len(p2s))):
-		if p1s[dv]!=p2s[dv] : break
-	else: dv+=1
-
-	p1s=p1s[dv:]
-	p2s=p2s[dv:]
-	
-	return "../"*len(p1s)+"/".join(p2s)
-
 # ========================================================================================
 # Main function
 # ========================================================================================
@@ -1123,7 +1105,7 @@ def main():
 						img_particles_dict['ptcl_source_coord'] = sphire_header['ptcl_source_coord'] # No conversion is necessary from RELION to SPHIRE formats
 						img_particles_dict['ptcl_source_coord_id'] = sphire_header['ptcl_source_coord_id']
 						img_particles_dict['data_n'] = sphire_header['data_n']  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
-						img_particles_dict['data_path'] = makerelpath(dir_path_local_bdb_stacks + '/EMAN2DB', relion_local_stack_path)  # NOTE: Markus Stabrin 2018/09/17: Link to existing mrcs stack
+						img_particles_dict['data_path'] = os.path.relpath(relion_local_stack_path, os.path.join(dir_path_local_bdb_stacks, 'EMAN2DB'))  # NOTE: Markus Stabrin 2018/09/17: Link to existing mrcs stack
 						img_particles_dict['resample_ratio'] = sphire_header['resample_ratio']
 						# 
 						# NOTE: 2017/12/05 Toshio Moriya 
