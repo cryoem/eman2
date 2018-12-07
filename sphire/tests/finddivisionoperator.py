@@ -20,11 +20,13 @@ FUNCDEF_RE = re.compile('^.*(?:def|class)\s+([^\(]+)')
 
 DIVLINE_RE =  re.compile('(/)(?:(?=.*)|$)')
 DIVEQUALSIGN_RE = re.compile('(/=)(?:(?=.*)|$)')
+GREATEREQUAL_RE = re.compile('(>=)')
 BRACKETS_RE = re.compile('\(')
 STARSIGN_RE = re.compile('\*')
 DOUBLESLASH_RE = re.compile('//')
 ROUNDINT_RE = re.compile('int')
 SELFBRACKETS_RE = re.compile('self.brackets')
+EQUALSIGN_RE = re.compile('=')
 
 with open('sphire/tests/testdivisionchange.py') as read:
     lines = read.readlines()
@@ -44,11 +46,14 @@ with open('sphire/tests/testdivisionchange.py') as read:
         is_division = DIVLINE_RE.findall(line)
         is_comment = COMMENT_RE.match(line)
         is_divequalsign = DIVEQUALSIGN_RE.findall(line)
+        is_greaterqual = GREATEREQUAL_RE.findall(line)
         is_bracket = BRACKETS_RE.findall(line)
         is_starsign = STARSIGN_RE.findall(line)
         is_doubleslash = DOUBLESLASH_RE.findall(line)
         is_roundint = ROUNDINT_RE.findall(line)
         is_selfbrackets = SELFBRACKETS_RE.findall(line)
+        is_equalsign = EQUALSIGN_RE.findall(line)
+
 
         is_usage = bool('usage =' in line or 'usage=' in line)
         is_doc = False
@@ -100,7 +105,7 @@ with open('sphire/tests/testdivisionchange.py') as read:
                 ok = True
         if not comment1 and not comment2 and not ok:
             for i in is_division:
-                if len(line) > 80:   # if length of lines is greater than 50 thats means I have to handle those lines manually
+                if len(line) < 1:   # if length of lines is greater than 50 thats means I have to handle those lines manually
                     continue
                 if is_divequalsign:
                     string = re.match('^(\s*)', line).group(1)
@@ -112,48 +117,91 @@ with open('sphire/tests/testdivisionchange.py') as read:
 
 
                 #  #### For one / operator #######
-                elif line.count('/') == 1 and not is_bracket and not is_starsign and not is_roundint:
+                elif line.count('/') == 1 and not is_bracket and not is_starsign and not is_roundint \
+                        and not line.strip().split()[0] == 'wedgeFactor' and not line.strip().split()[0] == 'theta' and not line.split()[4] == 'self.nsym':
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
-                    print(line.partition('#')[0],'\n')
-                    print('new syntex', string + line.split()[0] + ' ' + line.split()[1] + ' ' + "old_div" + '(' + line.split()[2] + ', ' + line.partition('#')[0].rstrip().split('/')[1] + ')')
+                    # print(line.partition('#')[0],'\n')
+                    print('new syntex', string + line.split()[0] + ' ' + line.split()[1] + ' ' + "old_div" + '(' + line.split()[2] \
+                          + ', ' + line.partition('#')[0].rstrip().split('/')[1] + ')')
                     print('\n')
-                    # print(line.split('(') , 'length of split is ' , len(line.split('(') ) )
+                    lines[idx] = string + line.split()[0] + ' ' + line.split()[1] + ' ' + "old_div" + '(' + line.split()[2] \
+                          + ', ' + line.partition('#')[0].rstrip().split('/')[1] + ')' + '\n'
+
+                elif line.count('/') == 1 and not is_bracket and not is_starsign and not is_roundint \
+                         and not line.strip().split()[0] == 'wedgeFactor' and not line.strip().split()[0] == 'theta' and line.split()[4] == 'self.nsym':
+                    string = re.match('^(\s*)', line).group(1)
+                    print('old syntex', line)
+                    print('new syntex',
+                          string + line.split()[0] + ' ' + line.split()[1] + ' ' + "old_div" + '(' + line.split()[2] \
+                          + ', ' +  line.split()[4] +  ')' + line.partition('#')[0].rstrip().split('self.nsym')[1] )
                     print('\n')
+                    lines[idx] = string + line.split()[0] + ' ' + line.split()[1] + ' ' + "old_div" + '(' + line.split()[2] \
+                          + ', ' +  line.split()[4] +  ')' + line.partition('#')[0].rstrip().split('self.nsym')[1] + '\n'
 
                 elif line.count('/') == 1 and not is_bracket and is_starsign and not is_roundint \
-                        and not is_selfbrackets and not line.strip().split('.append')[0] == 'self.symangles':
+                        and not is_selfbrackets and not line.strip().split('.append')[0] == 'self.symangles' \
+                        and not line.strip().split()[0] == 'wedgeFactor' and not line.strip().split()[0] == 'theta':
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
-                    print('new syntex',
-                          line.split('*')[0] + '* ' + "old_div" + '(' + line.split('*')[1].split('/')[0] + ', ' + line.partition('#')[0].rstrip().split('/')[1]+ ')')
+                    print('new syntex', line.split('*')[0] + '* ' + "old_div" + '(' + line.split('*')[1].split('/')[0] \
+                          + ', ' + line.partition('#')[0].rstrip().split('/')[1]+ ')')
                     print('\n')
+                    lines[idx] = line.split('*')[0] + '* ' + "old_div" + '(' + line.split('*')[1].split('/')[0] + ', ' + \
+                                 line.partition('#')[0].rstrip().split('/')[1] + ')' + '\n'
 
                 elif line.count('/') == 1 and is_bracket and is_starsign and not is_roundint \
-                        and not is_selfbrackets and not line.strip().split('.append')[0] == 'self.symangles':
+                        and not is_selfbrackets and not line.strip().split('.append')[0] == 'self.symangles' \
+                        and not line.strip().split()[0] == 'wedgeFactor' and not line.strip().split()[0] == 'theta' \
+                        and is_equalsign:
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
-                    print(line.strip().split('.append'))
-                    print('new syntex', string + line.split()[0] + ' = ' + "old_div" + '(' + line.split('=')[1].split('/')[0] + ',' + line.rstrip().split('=')[1].split('/')[1] + ')')
 
-                #### For one / operator #######
+                    print('new syntex', string + line.split()[0] + ' = ' + "old_div" + '(' + line.split('=')[1].split('/')[0] \
+                          + ',' + line.split()[6] + ')' + line.split()[7] + line.split()[8] )
+                    print('\n')
+                    lines[idx] = string + line.split()[0] + ' = ' + "old_div" + '(' + line.split('=')[1].split('/')[0] + ',' \
+                                 + line.partition('#')[0].rstrip().split('=')[1].split('/')[1] + ')' + '\n'
+
+
+                #### For two / operator #######
+
+
                 elif line.count('/') == 2 and not is_bracket and not is_starsign and not is_doubleslash \
-                        and not is_roundint and not is_selfbrackets and not line.strip().split('.append')[0] == 'self.symangles':
+                        and not is_roundint and not is_selfbrackets  and not line.strip().split('.append')[0] == 'self.symangles' \
+                        and not line.rstrip().split()[-1] == 'self.nsym' and is_equalsign:
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
                     # print(line.split())
                     print('new syntex',
-                          string + line.split()[0] + ' ' + line.split()[1] + ' ' +
-                          "old_div" + '(' +
-                          "old_div" + '(' + line.split()[2] + ', ' + line.split('/').split('/')[4] + ')'
+                          string + line.split()[0] + ' ' + line.split()[1] + ' ' + "old_div" + '(' + \
+                          "old_div" + '(' + line.split()[2] + ', ' + line.split('/')[1] + ')' \
                           + ',' + line.strip().split('/')[-1] + ')')
                     print('\n')
+                    lines[idx] = string + line.split()[0] + ' ' + line.split()[1] + ' ' + "old_div" + '(' + \
+                          "old_div" + '(' + line.split()[2] + ', ' + line.split('/')[1] + ')' \
+                          + ',' + line.strip().split('/')[-1] + ')' + '\n'
 
+                elif line.count('/') == 2    and not is_bracket and not is_starsign and not is_doubleslash \
+                        and not is_roundint and not is_selfbrackets  and not line.strip().split('.append')[0] == 'self.symangles' \
+                        and line.rstrip().split()[-1] == 'self.nsym' and is_equalsign:
+                    string = re.match('^(\s*)', line).group(1)
+                    print('old syntex', line)
+                    print('\n')
+                    print('new syntex',
+                          string + line.split()[0] + ' ' + line.split()[1] + ' ' + \
+                          "old_div" + '(' + line.split()[2] + ', ' + line.split()[4] + ')' \
+                          + ' ' + line.split()[5]  + ' ' + line.split()[6] + ' ' + line.split()[7] + ' ' + "old_div" + '(' + line.split()[8] + ', ' + line.split()[10] + ')' + ')')
+                    print('\n')
+                    lines[idx] = string + line.split()[0] + ' ' + line.split()[1] + ' ' + \
+                          "old_div" + '(' + line.split()[2] + ', ' + line.split()[4] + ')' \
+                          + ' ' + line.split()[5]  + ' ' + line.split()[6] + ' ' + line.split()[7] + \
+                                 ' ' + "old_div" + '(' + line.split()[8] + ', ' + line.split()[10] + ')' + ')' + '\n'
 
-                elif line.count('/') == 2 and not is_bracket and not is_starsign and is_doubleslash and not is_roundint:
+                elif line.count('/') == 2 and not is_bracket and not is_starsign and is_doubleslash and not is_roundint and is_equalsign:
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
@@ -161,9 +209,11 @@ with open('sphire/tests/testdivisionchange.py') as read:
                           string + line.split()[0] + ' = ' +
                           "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' + line.strip().split('=')[1].split('//')[1] + ')')
                     print('\n')
+                    lines[idx] = string + line.split()[0] + ' = ' + \
+                          "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' + line.strip().split('=')[1].split('//')[1] + ')' + '\n'
 
 
-                elif line.count('/') == 2 and not is_bracket and is_starsign and not is_doubleslash and not is_roundint:
+                elif line.count('/') == 2 and not is_bracket and is_starsign and not is_doubleslash and not is_roundint and is_equalsign:
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
@@ -172,9 +222,12 @@ with open('sphire/tests/testdivisionchange.py') as read:
                           "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' +
                           line.strip().split('=')[1].split('//')[1] + ')')
                     print('\n')
+                    lines[idx] = string + line.split()[0] + ' = ' + \
+                          "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' + \
+                          line.strip().split('=')[1].split('//')[1] + ')' + '\n'
 
 
-                elif line.count('/') == 2 and not is_bracket and is_starsign and is_doubleslash and not is_roundint:
+                elif line.count('/') == 2 and not is_bracket and is_starsign and is_doubleslash and not is_roundint and is_equalsign:
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
@@ -183,8 +236,12 @@ with open('sphire/tests/testdivisionchange.py') as read:
                           "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' +
                           line.strip().split('=')[1].split('//')[1] + ')')
                     print('\n')
+                    lines[idx] = string + line.split()[0] + ' = ' + \
+                          "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' + \
+                          line.strip().split('=')[1].split('//')[1] + ')' + '\n'
 
-                elif line.count('/') == 2 and is_bracket and not is_starsign and not is_doubleslash and not is_roundint:
+                elif line.count('/') == 2 and is_bracket and not is_starsign and not is_doubleslash and not is_roundint \
+                        and not line.strip().split()[0] == 'elif' and not line.strip().split()[0] == 'if' and is_equalsign:
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
@@ -193,9 +250,12 @@ with open('sphire/tests/testdivisionchange.py') as read:
                           "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' +
                           line.strip().split('=')[1].split('//')[1] + ')')
                     print('\n')
+                    lines[idx] = string + line.split()[0] + ' = ' + \
+                          "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' + \
+                          line.strip().split('=')[1].split('//')[1] + ')' + '\n'
 
                 elif line.count('/') == 2 and is_bracket and not is_starsign and is_doubleslash and not is_roundint \
-                      and not line.strip().split()[0] == 'elif' and not line.strip().split()[0] == 'if':
+                      and not line.strip().split()[0] == 'elif' and not line.strip().split()[0] == 'if' and is_equalsign:
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
@@ -204,8 +264,12 @@ with open('sphire/tests/testdivisionchange.py') as read:
                           "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' +
                           line.strip().split('=')[1].split('//')[1] + ')')
                     print('\n')
+                    lines[idx] = string + line.split()[0] + ' = ' + \
+                          "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' + \
+                          line.strip().split('=')[1].split('//')[1] + ')' + '\n'
 
-                elif line.count('/') == 2 and is_bracket and is_starsign and not is_doubleslash and not is_roundint:
+                elif line.count('/') == 2 and is_bracket and is_starsign and not is_doubleslash and not is_roundint \
+                        and not line.strip().split()[0] == 'elif' and not line.strip().split()[0] == 'if' and is_equalsign:
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
@@ -214,9 +278,11 @@ with open('sphire/tests/testdivisionchange.py') as read:
                           "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' +
                           line.strip().split('=')[1].split('//')[1] + ')')
                     print('\n')
+                    lines[idx] = string + line.split()[0] + ' = ' + \
+                          "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' + \
+                          line.strip().split('=')[1].split('//')[1] + ')' + '\n'
 
-
-                elif line.count('/') == 2 and is_bracket and is_starsign and is_doubleslash and not is_roundint:
+                elif line.count('/') == 2 and is_bracket and is_starsign and is_doubleslash and not is_roundint and is_equalsign:
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
@@ -225,82 +291,86 @@ with open('sphire/tests/testdivisionchange.py') as read:
                           "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' +
                           line.strip().split('=')[1].split('//')[1] + ')')
                     print('\n')
+                    lines[idx] = string + line.split()[0] + ' = ' + \
+                          "old_div" + '(' + line.split('=')[1].split('//')[0] + ', ' + \
+                          line.strip().split('=')[1].split('//')[1] + ')' + '\n'
 
-                elif line.count('/') == 2 or is_selfbrackets or line.strip().split('.append')[0] == 'self.symangles':
+                elif line.strip().split()[0] == 'if' and is_doubleslash and is_bracket:
+                    string = re.match('^(\s*)', line).group(1)
+                    # print('with if statement on line', idx + 1)
+                    print('old_syntex', line )
+                    print('\n')
+                    print('new_syntex',  string + line.split()[0]  + ' (' + "old_div" + '(' + line.split()[1].split('(')[-1] + ',' + \
+                          line.split('//')[1].split(')')[0]  + ')' + line.rstrip().split(')')[1] + '):')
+                    print('\n')
+                    lines[idx] = string + line.split()[0]  + ' (' + "old_div" + '(' + line.split()[1].split('(')[-1] + ',' + \
+                          line.split('//')[1].split(')')[0]  + ')' + line.rstrip().split(')')[1] + '):' + '\n'
 
-                    print( 'Last case scenario', line.split())
+                elif line.count('/') == 1 and is_bracket and is_greaterqual and line.strip().split()[0] == 'if' :
+                    string = re.match('^(\s*)', line).group(1)
+                    print('old syntex', line)
+                    print('\n')
+                    print('new syntex', string + line.split()[0]  + ' ' + line.strip().split()[1] + ' ' + line.strip().split()[2]  + \
+                          ' (' + "old_div" + '(' + line.strip().split()[3] +',' + line.rstrip().partition('if')[2].split('/')[1].replace(':',')):') )
+                    print('\n')
+                    lines[idx] = string + line.split()[0]  + ' ' + line.strip().split()[1] + ' ' + line.strip().split()[2]  + \
+                          ' (' + "old_div" + '(' + line.strip().split()[3] +',' + line.rstrip().partition('if')[2].split('/')[1].replace(':',')):') + '\n'
 
-
-                elif line.strip().split()[0] == 'elif' or line.strip().split()[0] == 'if':
-                    print ( 'with elif statement' , line.split())
-
-                # elif len(line) > 80 and len(line)< 100 and not is_roundint:
-                #      print(line)
-                #      print('\n')
-                #      print(line.split() )
-                #      print('\n')
-                #      print(len(line) , '\n')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    # if line.count('/') == 1 and not is_bracket and is_starsign:
-                    #     string = re.match('^(\s*)', line).group(1)
-                    #     print('old syntex', line)
-                    #     print('\n')
-                    #     print('new syntex',
-                    #           line.split('*')[0] + '* ' + "old_div" + '(' + line.split('*')[1].split('/')[0] + ', ' + line.split('*')[1].rstrip().split('/')[1] + ')')
-                    #     print('\n')
-                    #
-                    # elif line.count('/') == 1 and is_bracket and is_starsign:
-                    #     string = re.match('^(\s*)', line).group(1)
-                    #     print('old syntex', line)
-                    #     print('\n')
-                    #     print('new syntex', string + line.split()[0] + ' = ' + "old_div" + '(' + line.split('=')[1].split('/')[0] + ',' + line.rstrip().split('=')[1].split('/')[1] + ')')
-                    #     print
+                elif line.count('/') > 2  and is_bracket and is_greaterqual and line.strip().split()[0] == 'if':
+                    print('\n')
+                    print('old_syntex', line)
+                    print('new syntex', line.rstrip().split('/')[0].partition('360.0')[0]  + ' (' + "old_div" + '('  + "old_div" + '(' + \
+                          line.rstrip().split('/')[0].partition('360.0')[1] + ',' +  line.strip().split('/')[1] + ')' + ',' + \
+                          line.strip().split('/')[2].split()[0] + ')' + line.strip().split('/')[2].partition('360')[0].rstrip().replace('2', '') + \
+                          ' (' + "old_div" + '(' + line.strip().split('/')[2].split()[-1] + ',' + line.strip().split('/')[3].partition(')')[0]  + ')' + '):' )
+                    print('\n')
+                    lines[idx] = line.rstrip().split('/')[0].partition('360.0')[0]  + ' (' + "old_div" + '('  + "old_div" + '(' + \
+                          line.rstrip().split('/')[0].partition('360.0')[1] + ',' +  line.strip().split('/')[1] + ')' + ',' + \
+                          line.strip().split('/')[2].split()[0] + ')' + line.strip().split('/')[2].partition('360')[0].rstrip().replace('2', '') + \
+                          ' (' + "old_div" + '(' + line.strip().split('/')[2].split()[-1] + ',' + line.strip().split('/')[3].partition(')')[0]  + ')' + '):' + '\n'
 
 
+                elif line.strip().split()[0] == 'elif' and is_doubleslash and is_bracket:
+                    print('old_syntex', line )
+                    print('\n')
+                    print('new_syntex', line.partition('and')[0] + line.partition('and')[1]  ,
+                          ' (' + "old_div" + '(' + line.rstrip().split()[5].split('(')[1] + ',' +  line.split()[7] + ')' + line.partition('2)')[2])
+                    print('\n')
+                    lines[idx] = line.partition('and')[0] + line.partition('and')[1]  , \
+                          ' (' + "old_div" + '(' + line.rstrip().split()[5].split('(')[1] + ',' +  line.split()[7] + ')' + line.partition('2)')[2] + '\n'
+
+                elif line.count('/') == 1 and is_bracket and is_greaterqual and line.strip().split()[0] == 'elif':
+                    # print('with elif statement on line', idx + 1)
+                    print('old syntex', line)
+                    print('\n')
+                    print('new syntex', line.split()[0] + ' ' + line.strip().split()[1] + ' ' + line.strip().split()[2] + \
+                          ' (' + "old_div" + '(' + line.strip().split()[3] + ',' + \
+                          line.rstrip().partition('if')[2].split('/')[1].replace(':', ')):'))
+                    print('\n')
+                    lines[idx] =  line.split()[0] + ' ' + line.strip().split()[1] + ' ' + line.strip().split()[2] + \
+                          ' (' + "old_div" + '(' + line.strip().split()[3] + ',' + \
+                          line.rstrip().partition('if')[2].split('/')[1].replace(':', ')):') + '\n'
 
 
+                elif is_selfbrackets:
+                    print('ignore selfbrackets on line', idx + 1)
 
 
+                elif line.strip().split('.append')[0] == 'self.symangles':
+                    print('ignore self.symangles on line', idx + 1)
 
 
+                elif line.strip().split()[0] == 'wedgeFactor':
+                    print('ignore wedgeFactor command on line', idx+1)
+
+                elif line.strip().split()[0] == 'theta':
+                    print('ignore theta command on line', idx+1)
+
+                elif not is_equalsign:
+                    print ('equal sign is missing on line', idx+1)
 
 
-
-
-
-
-# with open('sphire/tests/testdivisionchangenew.py','w') as newfile:
-#     for idx, line in enumerate(lines[:]):
-#         # print(lines[idx])
-#         newfile.write(str(line))
-
-
-
-
-
-
-    # RE1 = re.compile('(/)(?:(?=.*)|$)')
-    # RE2 = re.compile('^\s*#')
-    # RE3 = re.compile('"""')
-
-
-    # match1 = RE1.findall(line)
-    # match2 = RE2.match(line)
-    # match3 = RE3.match(line)
-    # if (match2 or match3):
-    #     continue
-    # for i in match1:
-    #     print(i, idx+1, len(line),line)
+with open('sphire/tests/testdivisionchangenew.py','w') as newfile:
+    for idx, line in enumerate(lines[:]):
+        # print(lines[idx])
+        newfile.write(str(line))
