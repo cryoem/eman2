@@ -169,7 +169,6 @@ def main():
 	from utilities 		import get_im, bcast_number_to_all, write_text_file,read_text_file,wrap_mpi_bcast, write_text_row
 	from utilities 		import cmdexecute
 	from filter			import filt_tanl
-	from time           import sleep
 	from logger         import Logger,BaseLogger_Files
 	import user_functions
 	import string
@@ -331,7 +330,8 @@ def main():
 	list_dict   = {}
 	#parepare params_dict
 
-	navg = min(Tracker["constants"]["navg"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
+	#navg = min(Tracker["constants"]["navg"]*Blockdata["nproc"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
+	navg = Tracker["constants"]["navg"]
 	global_dict = {}
 	ptl_list    = []
 	memlist     = []
@@ -439,7 +439,7 @@ def main():
 
 			elif no_adjustment: pass
 			
-			if Tracker["constants"]["low_pass_filter"] != -1.0 :
+			if Tracker["constants"]["low_pass_filter"] != -1.0:
 				if Tracker["constants"]["low_pass_filter"] == 0.0: low_pass_filter = FH1
 				elif Tracker["constants"]["low_pass_filter"] == 1.0: 
 					low_pass_filter = FH2
@@ -449,12 +449,14 @@ def main():
 					if low_pass_filter >=0.45: low_pass_filter =0.45 		
 				new_avg = filt_tanl(new_avg, low_pass_filter, 0.02)
 			else:# No low pass filter but if enforced
-				if enforced_to_H1 and False: new_avg = filt_tanl(new_avg, FH1, 0.02)
+				if enforced_to_H1: new_avg = filt_tanl(new_avg, FH1, 0.02)
 			if B_enhance: new_avg = fft(new_avg)
 				
 			new_avg.set_attr("members",   list_dict[iavg])
 			new_avg.set_attr("n_objects", len(list_dict[iavg]))
 			slist[iavg]    = new_avg
+			print(strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>",  "Refined average %7d"%iavg)
+			
 		## send to main node to write
 		mpi_barrier(MPI_COMM_WORLD)
 

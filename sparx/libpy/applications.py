@@ -18718,7 +18718,7 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 			qave, L2, q = current_ave(mstack, SNR, fl2, aa)
 			fl2 = max(q,fl2)
 			iter += 1
-			print("L2  ITERATION  %4d:"%iter,"   FL: %6.4f    %12.1f"%(fl2,L2))
+			#print("L2  ITERATION  %4d:"%iter,"   FL: %6.4f    %12.1f"%(fl2,L2))
 			#fft(qave).write_image("qave%03d.hdf"%iter)
 	fipar = []
 	for i in range(nima):
