@@ -1,21 +1,47 @@
 #!/usr/bin/env python
 import os
-from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
+import EMAN2
+#from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
 from applications import header, project3d
-from utilities import get_im, write_header
+from utilities import get_im, write_header, model_circle, read_text_row
 from statistics import ccc
+from fundamentals import rops_table, fft
+from projection import prep_vol, prgl
+from math import sqrt
+from filter import filt_table
 
 # TO DO:
 #	resize the class-averages and re-projections if they have different sizes?
 
-def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displayYN=False, 
+USAGE = """
+Write to the same directory as the input images:
+sxproj_compare.py <input_imgs> <input_volume>
+
+Write to a specific directory:
+sxproj_compare.py <input_imgs> <input_volume> --outdir <output_directory>
+
+Supply a file with projection angles if not present in the header of the input images:
+sxproj_compare.py <input_imgs> <input_volume> --angles <angles_file>
+
+Some input images may have been assigned projection angles, so include an image selection file:
+sxproj_compare.py <input_imgs> <input_volume> --angles <angles_file> --select <img_selection_file>
+
+Choose interpolation method for re-projection of input volume:
+sxproj_compare.py <input_imgs> <input_volume> --prjmethod <interpolation_method>
+Valid are options are: trilinear (default), gridding, and nn (nearest neighbor)
+
+Automatically open a montage of output images:
+sxproj_compare.py <input_imgs> <input_volume> --display
+"""
+	
+def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, prjmethod='trilinear', displayYN=False, 
 			 projstack='proj.hdf', outangles='angles.txt', outstack='comp-proj-reproj.hdf', normstack='comp-proj-reproj-norm.hdf'):
 	
-	print
+	print("\n%s, Modified 2018-12-07\n" % __file__)
 	
 	# Check if inputs exist
 	check(classavgstack)
-	check(recon)
+	check(reconfile)
 	
 	# Create directory if it doesn't exist
 	if not os.path.isdir(outdir):
@@ -29,9 +55,9 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 	normstack = os.path.join(outdir, normstack)
 	
 	# Get number of images
-	nimg0 = EMUtil.get_image_count(classavgstack)
+	nimg0 = EMAN2.EMUtil.get_image_count(classavgstack)
+	recon = EMAN2.EMData(reconfile)
 	nx = recon.get_xsize()
-	#print("nimg0: %s" % nimg0)
 	
 	# In case class averages include discarded images, apply selection file
 	if selectdoc:
@@ -53,50 +79,65 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 	
 	# Import Euler angles
 	if inangles:
-		#cmd6="sxheader.py %s --params=xform.projection --import=%s" % (classavgstack, inangles)
-		#print cmd6
+		cmd6 = "sxheader.py %s --params=xform.projection --import=%s" % (classavgstack, inangles)
+		print cmd6
 		header(classavgstack, 'xform.projection', fimport=inangles)
 	
-	#cmd1="sxheader.py %s --params=xform.projection --export=%s" % (classavgstack, outangles) 
-	#print cmd1
-	#os.system(cmd1)
 	try:
 		header(classavgstack, 'xform.projection', fexport=outangles)
+		cmd1 = "sxheader.py %s --params=xform.projection --export=%s" % (classavgstack, outangles) 
+		print cmd1
 	except RuntimeError:
 		print("\nERROR!! No projection angles found in class-average stack header!\n")
+		print('Usage:', USAGE)
 		exit()
 	
 	#cmd2="sxproject3d.py %s %s --angles=%s" % (recon, projstack, outangles)
 	#print cmd2
 	#os.system(cmd2)
+	
 	#  Here if you want to be fancy, there should be an option to chose the projection method,
 	#  the mechanism can be copied from sxproject3d.py  PAP
+	if prjmethod=='trilinear':
+		method_num = 1
+	elif prjmethod=='gridding':
+		method_num = -1
+	elif prjmethod=='nn':
+		method_num = 0
+	else:
+		print("\nERROR!! Valid projection methods are: trilinear (default), gridding, and nn (nearest neighbor).")
+		print('Usage:', USAGE)
+		exit()
+	
 	#project3d(recon, stack=projstack, listagls=outangles)
-	recon = prep_vol( recon, npad = 2, interpolation_method = 1 )
+	recon = prep_vol(recon, npad = 2, interpolation_method = 1)
 
 	result=[]
 	#  Here you need actual radius to compute proper ccc's, but if you do, you have to deal with translations, PAP
 	mask = model_circle(nx//2-2,nx,nx)
+	
 	# Number of images may have changed
-	nimg1   = EMUtil.get_image_count(classavgstack)
+	nimg1   = EMAN2.EMUtil.get_image_count(classavgstack)
 	outangles = read_text_row(outangles)
 	for imgnum in range(nimg1):
-		#print imgnum
+		# get class average
 		classimg = get_im(classavgstack, imgnum)
-		rops_dst = rops_table(classimg*mask)
-		#ccc1 = classimg.get_attr_default('cross-corr', -1.0)
-		#prjimg = get_im(projstack,imgnum)
-		#ccc1 = prjimg.get_attr_default('cross-corr', -1.0)
+		
+		# compute re-projection
 		prjimg = prgl(recon, outangles[imgnum], 1, False)
+		
+		# calculate 1D power spectra
+		rops_dst = rops_table(classimg*mask)  
 		rops_src = rops_table(prjimg)
-		table = [0.0]*len(rops_dst)
-		for j in range( len(rops_dst) ):
-			table[j] = sqrt( rops_dst[j]/rops_src[j] )
-		#  Note I am setting power spectrum of reprojection to the data.
+		
+		#  Set power spectrum of reprojection to the data.
 		#  Since data has an envelope, it would make more sense to set data to reconstruction,
 		#  but to do it one would have to know the actual resolution of the data. 
 		#  you can check sxprocess.py --adjpw to see how this is done properly  PAP
-		prjimg = fft(filt_table(prjimg, table))
+		table = [0.0]*len(rops_dst)  # initialize table
+		for j in range( len(rops_dst) ):
+			table[j] = sqrt( rops_dst[j]/rops_src[j] )
+		prjimg = fft(filt_table(prjimg, table))  # match FFT amplitdes of re-projection and class average
 
 		cccoeff = ccc(prjimg, classimg, mask)
 		#print imgnum, cccoeff
@@ -109,7 +150,7 @@ def runcheck(classavgstack, recon, outdir, inangles=None, selectdoc=None, displa
 	meanccc = sum(result)/nimg1
 	print("Average CCC is %s" % meanccc)
 
-	nimg2   = EMUtil.get_image_count(outstack)
+	nimg2 = EMAN2.EMUtil.get_image_count(outstack)
 	
 	for imgnum in xrange(nimg2):
 		if (imgnum % 2 ==0):
@@ -148,21 +189,14 @@ def check(file):
 
 	
 if __name__ == "__main__":
-	usage = """
-	sxproj_compare.py <input_imgs> <input_volume>
-	sxproj_compare.py <input_imgs> <input_volume> --outdir <output_directory>
-	sxproj_compare.py <input_imgs> <input_volume> --outdir <output_directory> --angles <angles_file>
-	sxproj_compare.py <input_imgs> <input_volume> --outdir <output_directory> --angles <angles_file> --select <img_selection_file>
-	sxproj_compare.py <input_imgs> <input_volume> --outdir <output_directory> --angles <angles_file> --select <img_selection_file> --display
-	"""
-	
 	# Command-line arguments
-	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser = EMAN2.EMArgumentParser(usage=USAGE,version=EMAN2.EMANVERSION)
 	parser.add_argument('classavgs', help='Input class averages')
 	parser.add_argument('vol3d', help='Input 3D reconstruction')
 	parser.add_argument('--outdir', "-o", type=str, help='Output directory')
 	parser.add_argument('--angles', "-a", type=str, help='Angles files, which will be imported into the header of the class-average stack')
 	parser.add_argument('--select', "-s", type=str, help='Selection file for included classes. RVIPER may exclude some images from the reconstruction.')
+	parser.add_argument('--prjmethod', "-p", type=str, default='trilinear', help='Projection method: trilinear (default), gridding, nn (nearest neighbor)')
 	parser.add_argument('--display', "-d", action="store_true", help='Automatically open montage in e2display')
 	
 	(options, args) = parser.parse_args()
@@ -176,4 +210,5 @@ if __name__ == "__main__":
 		outdir = options.outdir
 	#print("outdir: %s" % outdir)
 
-	runcheck(options.classavgs, options.vol3d, outdir, inangles=options.angles, selectdoc=options.select, displayYN=options.display)
+	runcheck(options.classavgs, options.vol3d, outdir, 
+		  inangles=options.angles, selectdoc=options.select, prjmethod=options.prjmethod, displayYN=options.display)
