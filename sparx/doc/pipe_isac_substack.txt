@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxpipe isac_substack =====
-ISAC2 Stack Subset: Create virtual subset stack consisting from ISAC2 accounted particles by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alingment parameters. In addition, it stores the 2D alingment parameters to stack header.
+ISAC2 Stack Subset: Create a virtual subset stack consisting of particles acounted for by ISAC2 by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a selection file containing the retrieved original image numbers and 2D alignment parameters. In addition, it stores the 2D alignment parameters to the stack header.
 
 \\
 ===== Usage =====
@@ -17,7 +17,7 @@ sxpipe isac_substack does not support MPI.
 
   sxpipe.py isac_substack 'bdb:outdir_window#data' 'outdir_pipe_sac_substack' --isac_class_avgs_path='ordered_class_averages_selected.hdf'
 
-\\
+\
 ===== Input =====
 === Main Parameters ===
   ; input_bdb_stack_path : Input bdb image stack: Specify the same bdb image stack used for the associated ISAC2 run. (default required string)
