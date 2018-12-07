@@ -18715,7 +18715,7 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 		avem = Util.muln_img(fft(filt_table(qave,avp)),cosine_mask)
 		got_better = iteration_2Dshc(mstack, avem, shifts, angles)
 		if got_better:
-			qave, L2, fl2 = current_ave(mstack, SNR, fl2, aa)
+			#qave, L2, fl2 = current_ave(mstack, SNR, fl2, aa)
 			iter += 1
 			#print("L2  ITERATION  %4d:"%iter,"   FL: %6.4f    %12.1f"%(fl2,L2),shc)
 			#fft(qave).write_image("qave%03d.hdf"%iter)
