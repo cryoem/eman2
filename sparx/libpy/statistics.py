@@ -1123,8 +1123,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 		Util.add_img(ave, oc)
 		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
 	ctf_2_sum += 1.0
-	ave = fft(ave)
-	Util.div_filter(ave, ctf_2_sum)
+	ave = Util.divn_filter(fft(ave), ctf_2_sum)  # result in Fourier space
 	# variance
 	var = EMData(nx,ny)
 	var.to_zero()
@@ -1136,8 +1135,12 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 			ima = rot_shift2D(ima, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
 			ctf_params.dfang += alpha
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
+		'''
 		oc = filt_ctf(ave, ctf_params, dopad=False)
-		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
+		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))  # no windowing necessary?
+		'''
+		#  Subtract in Fourier space, multiply again by the ctf, divide by the ctf^2, fft, square in real space
+		ima = fft(Util.divn_filter(filt_ctf(Util.subn_img(fft(ima), filt_ctf(ave, ctf_params, dopad=False)), ctf_params, dopad=False), ctf_2_sum))
 		Util.add_img2(var, ima)
 	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
 	Util.mul_scalar(var, 1.0/(n-1))
