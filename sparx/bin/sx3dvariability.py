@@ -51,7 +51,7 @@ nohup mpirun -np  64   --hostfile ./node4567.txt  sx3dvariability.py bdb:data/da
  1. Always use small decimation rate in the first run if one has no clue about the 3D \
    variability of the data. In addition, one can skip low pass filteration when decimation \
    rate is small and this can significantly speed up computation.
- 2. Check the decimated image size. It is better that the targeted decimation image size
+ 2. Check the decimated image size. It is better that the target decimation image size
     consists of smallprimes, 2, 3, 5...
  3. The program estimates the possible largest decimation rate.
 """
@@ -363,12 +363,12 @@ def main():
 				ny = nx
 		symbaselen     = bcast_number_to_all(symbaselen)
 		if myid == main_node:
-			log_main.add("The targeted image size:    %5d"%nx)
+			log_main.add("The target image size:    %5d"%nx)
 			from fundamentals import smallprime
 			if nx !=smallprime(nx):
 				log_main.add("The target image size is not a product of small prime numbers")
 			else:
-				log_main.add("The targeted image size is a product of small prime numbers")
+				log_main.add("The target image size is a product of small prime numbers")
 		if radiuspca == -1: radiuspca = nx/2-2
 		if myid == main_node: log_main.add("%-70s:  %d\n"%("Number of projection", nima))
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
@@ -575,6 +575,7 @@ def main():
 				reg = Region(mx, my, options.window, options.window)
 			else: reg = None
 			from fundamentals import subsample
+			log_main.add("  PARAMS   %6.2f   %d"%(options.decimate,nx))
 			for index_of_proj in range(len(all_proj)):
 				image = get_im(stack, all_proj[index_of_proj])
 				if options.decimate>0:
