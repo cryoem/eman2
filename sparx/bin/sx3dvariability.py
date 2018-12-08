@@ -93,7 +93,7 @@ def main():
 	parser.add_option("--decimate",     type="float",           default=0.25,               help="Image decimate rate, a number less than 1. (Default is 0.25)")
 	parser.add_option("--window",       type="int",             default=0,                  help="Target image size relative to original image size. (Default value is zero.)")
 	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
-	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="Number of eigenvectors, (Default = 0 meaning no PCA calculated)")
+	#parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="Number of eigenvectors, (Default = 0 meaning no PCA calculated)")
 	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
 	parser.add_option("--memory_per_node", type="float",        default=-1.0,               help="Available memory per node, (Default value is -1. Program will assign 2 GB for each CPU)")
 
@@ -133,7 +133,7 @@ def main():
 				try:	
 					number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 					if( number_of_proc > 1 ):
-						ERROR("Cannot use more than one CPU for symmetry prepration","sx3dvariability",1)
+						ERROR("Cannot use more than one CPU for symmetry preparation","sx3dvariability",1)
 				except:
 					pass
 			except:
@@ -232,7 +232,7 @@ def main():
 		t0 = time()	
 		# obsolete flags
 		options.MPI  = True
-		options.nvec = 0
+		#options.nvec = 0
 		options.radiuspca = -1
 		options.iter = 40
 		options.abs  = 0.0
@@ -250,11 +250,11 @@ def main():
 		#if options.SND and (options.ave2D or options.ave3D):
 		#	ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3dvariability", 1, myid)
 		
-		if options.nvec > 0 :
-			ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
+		#if options.nvec > 0 :
+		#	ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
 			
-		if options.nvec > 0 and options.ave3D == None:
-			ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", 1, myid)
+		#if options.nvec > 0 and options.ave3D == None:
+		#	ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", 1, myid)
 		
 		if options.decimate>1.0 or options.decimate<0.0:
 			ERROR("Decimate rate should be a value between 0.0 and 1.0", "sx3dvariability", 1, myid)
@@ -282,7 +282,7 @@ def main():
 			if options.output_dir !="./" and not os.path.exists(options.output_dir): os.mkdir(options.output_dir)
 	
 		img_per_grp = options.img_per_grp
-		nvec        = options.nvec
+		#nvec        = options.nvec
 		radiuspca   = options.radiuspca
 		from logger import Logger,BaseLogger_Files
 		#if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
@@ -366,9 +366,9 @@ def main():
 			log_main.add("The targeted image size:    %5d"%nx)
 			from fundamentals import smallprime
 			if nx !=smallprime(nx):
-				log_main.add("The target image size does not consist of small prime numbers")
+				log_main.add("The target image size is not a product of small prime numbers")
 			else:
-				log_main.add("The targeted image size consists of small prime numbers")
+				log_main.add("The targeted image size is a product of small prime numbers")
 		if radiuspca == -1: radiuspca = nx/2-2
 		if myid == main_node: log_main.add("%-70s:  %d\n"%("Number of projection", nima))
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
@@ -482,14 +482,13 @@ def main():
 
 			if myid == main_node:
 				log_main.add("...... Calculating the stack of 2D variances \n")
-				log_main.add("Now calculating the stack of 2D variances")
 			# Memory estimation. There are two memory consumption peaks
 			# peak 1. Compute ave, var; 
 			# peak 2. Var volume reconstruction;
 			# proj_params = [0.0]*(nima*5)
 			aveList = []
 			varList = []				
-			if nvec > 0: eigList = [[] for i in range(nvec)]
+			#if nvec > 0: eigList = [[] for i in range(nvec)]
 			dnumber  = len(all_proj)# all neighborhood set for assigned to myid
 			pnumber  = len(proj_list)*2. +img_per_grp # aveList and varList 
 			tnumber  =   dnumber+pnumber
@@ -549,16 +548,16 @@ def main():
 				max_decimate = 1./np.amax(mem_on_node_orig)
 				from math import sqrt
 				max_decimate = sqrt(max_decimate)
-				if max_decimate>1.0:log_main.add("Memory can afford 2D ave and var computation without image decimation")
-				else:log_main.add("Memory can afford computation with the largest image decimate for 2D ave and var of %6.3f "%max_decimate)
+				if max_decimate>1.0:log_main.add("Memory is sufficient for 2D ave and var computation without image decimation")
+				else:log_main.add("Memory limitation requires decimation of data by a factor of %6.3f "%max_decimate)
 				if not run_with_current_setting:
-					log_main.add("Warning: memory might not afford the computation with the currently used image decimation")
+					log_main.add("Warning: insufficient memory for calculations using the set image decimation")
 				recons3d_decimate_ratio =(memory_per_node - overhead_loading)/\
 				     ((vol_size1 + proj_size)*no_of_processes_per_group)
 				if recons3d_decimate_ratio< 1.:
-					log_main.add("Memory can afford var3D/ave3D reconstruction with image decimate %6.3f"%recons3d_decimate_ratio)
+					log_main.add("Memory limitation requires var3D/ave3D reconstruction with image decimation using factor of %6.3f"%recons3d_decimate_ratio)
 				else:
-					log_main.add("Memory can afford var3D/ave3D reconstruction without image decimation") 
+					log_main.add("Memory is sufficient for var3D/ave3D reconstruction without image decimation") 
 			del full_data
 			if myid == main_node: del mem_on_node_orig, mem_on_node_current, minindx
 			mpi_barrier(MPI_COMM_WORLD)
@@ -588,7 +587,7 @@ def main():
 					log_main.add(" ...... %6.2f%% "%(index_of_proj/float(len(all_proj))*100.))
 			if myid == heavy_load_myid:
 				log_main.add("All_proj data reading and preprocessing cost %7.2f m"%((time()-ttt)/60.))
-				log_main.add("Wait till reading jobs on all cpu done...")
+				log_main.add("Wait untill reading on all CPUs done...")
 			del image
 			if reg: del reg
 			mpi_barrier(MPI_COMM_WORLD)
@@ -612,11 +611,6 @@ def main():
 			from EMAN2        import Transform
 			if not options.no_norm: 
 				mask = model_circle(nx/2-2, nx, nx)
-			nx2 = 2*nx
-			ny2 = 2*ny
-			mx1  = nx2//2 - nx//2
-			my1  = ny2//2 - ny//2
-			reg1 = Region(mx1, my1, nx, ny)
 			if options.CTF: 
 				from utilities import pad
 				from filter import filt_ctf
@@ -649,21 +643,8 @@ def main():
 						grp_imgdata[k] -= ave
 						grp_imgdata[k] /= std
 				if options.fl > 0.0:
-					if options.CTF:
-						for k in range(img_per_grp):
-							ctf = grp_imgdata[k].get_attr("ctf")
-							cimage = fft(filt_tanl(filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)),\
-							    grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa))
-							grp_imgdata[k] = cimage.get_clip(reg1)							
-					else:
-						for k in range(img_per_grp):
-							grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
-				else:
-					if options.CTF:
-						for k in range(img_per_grp):
-							cimage = fft(filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)),\
-							   grp_imgdata[k].get_attr("ctf"), binary=1))
-							grp_imgdata[k] = cimage.get_clip(reg1)
+					for k in range(img_per_grp):
+						grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
 				'''
 				if i < 10 and myid == main_node:
 					for k in xrange(10):
@@ -674,17 +655,18 @@ def main():
 					for pp in xrange(len(grp_imgdata)):
 						grp_imgdata[pp].write_image("pp.hdf", pp)
 				"""
-				ave, grp_imgdata = prepare_2d_forPCA(grp_imgdata)
+				#ave, grp_imgdata = prepare_2d_forPCA(grp_imgdata)
 				"""
 				if myid == main_node and i==0:
 					for pp in xrange(len(grp_imgdata)):
 						grp_imgdata[pp].write_image("qq.hdf", pp)
 				"""
 
-				var = model_blank(nx,ny)
-				for q in grp_imgdata:  Util.add_img2(var, q)
-				Util.mul_scalar(var, 1.0/(len(grp_imgdata)-1))
+				#var = model_blank(nx,ny)
+				#for q in grp_imgdata:  Util.add_img2(var, q)
+				#Util.mul_scalar(var, 1.0/(len(grp_imgdata)-1))
 				# Switch to std dev
+				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e10, interpolation_method = "fourier")
 				var = square_root(threshold(var))
 				#if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
 				#else:	            ave, var = avgvar(grp_imgdata, mode="a")
@@ -700,6 +682,7 @@ def main():
 				aveList.append(ave)
 				varList.append(var)
 
+				'''
 				if nvec > 0:
 					eig = pca(input_stacks=grp_imgdata, subavg="", mask_radius=radiuspca, nvec=nvec, incore=True, shuffle=False, genbuf=True)
 					for k in range(nvec):
@@ -710,15 +693,16 @@ def main():
 						for k in xrange(nvec):
 							eig[k].write_image("eig.hdf", k)
 					"""
+				'''
 				if (myid == heavy_load_myid) and (i%100 == 0):
 					log_main.add(" ......%6.2f%%  "%(i/float(len(proj_list))*100.))		
 			del imgdata, grp_imgdata, cpar, dpar, all_proj, proj_angles, index, reg1
 			if options.CTF: del cimage
 			if not options.no_norm: del mask
 			if myid == main_node: del tab
-			#  To this point, all averages, variances, and eigenvectors are computed
+			#  At this point, all averages and variances are computed
 			if (myid == heavy_load_myid):
-				log_main.add("Computing aveList and varList cost %7.2f m"%((time()-ttt)/60.))
+				log_main.add("Computing aveList and varList took %7.2f m"%((time()-ttt)/60.))
 			mpi_barrier(MPI_COMM_WORLD) # synchronize all cpus
 			if options.ave2D:
 				from fundamentals import fpol
@@ -781,6 +765,7 @@ def main():
 					
 			mpi_barrier(MPI_COMM_WORLD)		
 			del ave, var, proj_list, stack, alpha, sx, sy, mirror, aveList
+			'''
 			if nvec > 0:
 				for k in range(nvec):
 					if myid == main_node:log_main.add("Reconstruction eigenvolumes", k)
@@ -823,7 +808,7 @@ def main():
 					del eig3Df, kb
 					mpi_barrier(MPI_COMM_WORLD)
 				del eigList, mask2d
-
+			'''
 			if options.ave3D: del ave3D
 			if options.var2D:
 				from fundamentals import fpol 
