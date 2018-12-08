@@ -50,14 +50,16 @@ nohup mpirun -np  64   --hostfile ./node4567.txt  sx3dvariability.py bdb:data/da
       --CTF>var3d/printout &
       
  1. The order of applying the input parameters is:  1. window; 2. decimation. The low-pass 
-    filter is applied to the decimated images and is equivalent to the low-pass filter of 
-    decimate*fl with respetive to the original image size.
+    filter is with absolute frequency unit and applied to the decimated images. So, it is 
+    equivalent to the low-pass filter of decimate*fl with respetive to the original image 
+    size.
     
  2. Always use small decimation rate in the first run if there is no prior info about 3D \
    variability analysis of the data and the memory requirement. In addition, one can skip 
    the low-pass filteration when decimation rate is small, which significantly speeds up computation.
    
- 3. It is better that the target decimation image size is a product of small primes such as 2, 3, 5...
+ 3. The program will check the user provided parameters such that the final image size is a 
+    product of small primes such as 2, 3, 5...
  
 """
 def main():
@@ -395,8 +397,8 @@ def main():
 				else:
 					nx = smallprime(current_window*current_decimate+0.5)
 					ny = nx
-					current_window = nx
-					if myid == main_node:
+					current_window = int(nx/current_decimate+0.5)
+					if (myid == main_node):
 						log_main.add("The window size is updated to %d."%current_window)
 						
 		if radiuspca == -1: radiuspca = nx/2-2
@@ -561,15 +563,17 @@ def main():
 				reg = Region(mx, my, current_window, current_window)
 			else: reg = None
 			from fundamentals import subsample
-			log_main.add("  PARAMS   %6.2f   %d"%(current_decimate,nx))
+			log_main.add("  PARAMS   %6.2f   %d   %d"%(current_decimate,nx,current_window))
 			for index_of_proj in range(len(all_proj)):
 				image = get_im(stack, all_proj[index_of_proj])
 				if current_decimate>0:
 					ctf = image.get_attr("ctf")
 					ctf.apix = ctf.apix/current_decimate
 					image.set_attr("ctf", ctf)
-				if reg: imgdata.append(subsample(image.get_clip(reg), current_decimate))
-				else:   imgdata.append(subsample(image, current_decimate))
+				#if reg: imgdata.append(subsample(image.get_clip(reg), options.decimate))
+				#else:   imgdata.append(subsample(image, options.decimate))
+				if reg: imgdata.append(fdecimate(window2d(image,current_window,current_window), nx,ny))
+				else:   imgdata.append(fdecimate(image, nx,ny))
 				if myid == heavy_load_myid and index_of_proj%100 ==0:
 					log_main.add(" ...... %6.2f%% "%(index_of_proj/float(len(all_proj))*100.))
 			if myid == heavy_load_myid:
