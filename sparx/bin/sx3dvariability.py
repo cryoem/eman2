@@ -575,15 +575,17 @@ def main():
 				reg = Region(mx, my, options.window, options.window)
 			else: reg = None
 			from fundamentals import subsample
-			log_main.add("  PARAMS   %6.2f   %d"%(options.decimate,nx))
+			log_main.add("  PARAMS   %6.2f   %d   %d"%(options.decimate,nx,options.window))
 			for index_of_proj in range(len(all_proj)):
 				image = get_im(stack, all_proj[index_of_proj])
 				if options.decimate>0:
 					ctf = image.get_attr("ctf")
 					ctf.apix = ctf.apix/options.decimate
 					image.set_attr("ctf", ctf)
-				if reg: imgdata.append(subsample(image.get_clip(reg), options.decimate))
-				else:   imgdata.append(subsample(image, options.decimate))
+				#if reg: imgdata.append(subsample(image.get_clip(reg), options.decimate))
+				#else:   imgdata.append(subsample(image, options.decimate))
+				if reg: imgdata.append(fdecimate(window2d(image,options.window,options.window), nx,ny))
+				else:   imgdata.append(fdecimate(image, nx,ny))
 				if myid == heavy_load_myid and index_of_proj%100 ==0:
 					log_main.add(" ...... %6.2f%% "%(index_of_proj/float(len(all_proj))*100.))
 			if myid == heavy_load_myid:
