@@ -1882,6 +1882,10 @@ class SXGuiCter(QtGui.QWidget):
 		# global_min = float("inf")
 		# global_max = float("-inf")
 		
+		# Subtract background and apply envelope
+		newCurveList = self.fitSpline()
+		self.rotinf_table = self.rotinf_table + newCurveList
+		
 		# Spatial frequency
 		spFreqList = self.rotinf_table[self.idx_rotinf_freq]
 		
@@ -1890,7 +1894,7 @@ class SXGuiCter(QtGui.QWidget):
 			# List of plots, containing: label, title, index, checkboxValue
 			plotList = self.graph_map_list[idx_graph]
 			
-			# Partres file has 4 columns
+			# Partres file has 4 columns, and the last two plots are the splinefit curves
 			columnValues = self.rotinf_table[plotList[self.idx_graph_idx_rotinf]]
 		
 			self.wplotrotavgcoarse.set_data((spFreqList,columnValues), plotList[self.idx_graph_item_name], quiet=False, color=idx_graph, linetype=0)
@@ -1973,6 +1977,125 @@ class SXGuiCter(QtGui.QWidget):
 		# Update plot
 		self.updatePlotVisibility()
 	
+	def fitSpline(self, bkgdSmooth=0.15, envSmooth=0):
+		"""Subtract background from experimental curve and apply envelope to theoretical curve 
+		by fitting relative extrema to a spline"""
+		
+		# fit_with_astig
+		fitWAstig = self.rotinf_table[self.graph_map_list[self.idx_graph_fit_with_astig][self.idx_graph_idx_rotinf]]
+		#print('fitWAstig', len(fitWAstig), type(fitWAstig), fitWAstig)
+		#print('fitWAstig', type(fitWAstig[-1]), fitWAstig[-1])
+		
+		# exp_with_astig
+		expWAstig = self.rotinf_table[self.graph_map_list[self.idx_graph_exp_with_astig][self.idx_graph_idx_rotinf]]
+		#print('expWAstig', len(expWAstig), type(expWAstig), expWAstig)
+		#print('expWAstig', type(expWAstig[-1]), expWAstig[-1])
+		
+		# Spatial frequency
+		spFreqList = self.rotinf_table[self.idx_rotinf_freq]
+		#print('spFreqList', len(spFreqList), type(spFreqList), spFreqList)
+		#print('spFreqList', type(spFreqList[-1]), spFreqList[-1])
+		
+		#spFreqList = self.rotinf_table[self.graph_map_list[0][self.idx_graph_idx_rotinf]]
+		#print('expWAstig', len(expWAstig), type(expWAstig), expWAstig)
+		
+		# initialize extrema
+		expMaxX = []
+		expMaxY = []
+		fitMinX = []
+		fitMinY = []
+		expMinX = []
+		expMinY = []
+
+		# Search experimental and theoretical curves for extrema
+		for key in range(2, len(spFreqList) - 2):
+			## Check if fitted curve is at a maximum
+			#if not fitWAstig[key] > fitWAstig[key-2] and fitWAstig[key] > fitWAstig[key+2]:
+				## remember value
+				#firstMaxKey = key  # not used yet
+				##print('First max.', key, spFreqList[key], fitWAstig[key], expWAstig[key])
+				
+			# Check if experimental curve is at a minimum  (skipping low-resolution values)
+			if expWAstig[key] < expWAstig[key-2] and expWAstig[key] < expWAstig[key+2]:
+				expMinX.append(spFreqList[key])
+				expMinY.append(expWAstig[key])
+				#print('Minimum', key, spFreqList[key], fitWAstig[key], expWAstig[key])
+			
+			# Check if experimental curve is at a maximum
+			if expWAstig[key] > expWAstig[key-2] and expWAstig[key] > expWAstig[key+2]:
+				expMaxX.append(spFreqList[key])
+				expMaxY.append(expWAstig[key])
+				#print('Maximum',spFreqList[key],expWAstig[key],expWAstig[key-1],expWAstig[key+1])
+			
+			# Check if fitted curve is at a minimum
+			if fitWAstig[key] < fitWAstig[key-1] and fitWAstig[key] < fitWAstig[key+1]:
+				fitMinX.append(spFreqList[key])
+				fitMinY.append(fitWAstig[key])
+				#print('Rel. minimum', key, spFreqList[key], fitWAstig[key], expWAstig[key])
+				
+		# Change to arrays
+		expMaxXNP = np.array(expMaxX)
+		expMaxYNP = np.array(expMaxY)
+		fitMinXNP = np.array(fitMinX)
+		fitMinYNP = np.array(fitMinY)
+		expMinXNP = np.array(expMinX)
+		expMinYNP = np.array(expMinY)
+
+		xNP = np.array(spFreqList)
+		#print("xNP",xNP)
+
+		# Splinefit extrema
+		fitMinTck = interpolate.splrep(fitMinXNP, fitMinYNP, s=bkgdSmooth)  # s==smoothing factor
+		expMaxTck = interpolate.splrep(expMaxXNP, expMaxYNP, s=envSmooth)
+
+		# Evaluate splines
+		fitMinSpline = interpolate.splev(xNP, fitMinTck)
+		#print("fitMinSpline", type(fitMinSpline), len(fitMinSpline), fitMinSpline)
+		expMaxSpline = interpolate.splev(xNP, expMaxTck)  # not used
+		expMinSpline = []
+		expMin = min(expWAstig[3:])  # value at origin will be zero
+
+		## Exponential fit (NOT USED)
+		##envelopeExp = optimize.curve_fit(lambda t,a,b: a*np.exp(b*t),  expMaxXNP,  expMaxYNP)
+		##print('envelopeExp', float(envelopeExp[0][0]), type(float(envelopeExp[0][0])), float(envelopeExp[0][1]), type(float(envelopeExp[0][1])))
+		#envelopeExp = optimize.curve_fit(lambda t,a,b,c: a*np.exp(b*t)+c,  expMaxXNP,  expMaxYNP)[0]  # 2nd element is numpy.array
+		##print('envelopeExp', envelopeExp[0], type(envelopeExp[0]), envelopeExp[1], type(envelopeExp[1]), envelopeExp[2], type(envelopeExp[2]))
+
+		# will subtract background and apply envelope
+		expSubtract = []
+		theorEnv  = []
+
+		# Subtract minimum and multiply by envelope
+		for key in range(0, len(spFreqList)):
+			expMinSpline.append(expMin)
+			diff = expWAstig[key] - expMinSpline[key]
+			#print(spFreq[key],float(diff))
+			expSubtract.append(diff)
+			
+			interp = (fitWAstig[key] - fitMinSpline[key]) * diff
+
+			##exponential = envelopeExp[0]*np.exp(envelopeExp[1]*spFreqList[key]) + envelopeExp[2]
+			#exponential = fitWAstig[key]*envelopeExp[0]*np.exp(envelopeExp[1]*spFreqList[key])
+			##print('exponential', key, spFreqList[key], diff, exponential, type(exponential))
+			
+			theorEnv.append(interp)
+
+		## Make sure splinefit-corrected experimental curve stays above zero (NOT USED, didn't like)
+		#minExpSpline = min(expMinSpline[1:])  # origin might have a funny value
+		##print("minExpSpline",minExpSpline)
+		##print(type(expSubtract))
+		#maxExpSpline = max(expSubtract[3:])  # origin might have a funny value
+		##print('maxExpSpline',maxExpSpline)
+		##print('firstMaxKey', firstMaxKey, expSubtract[firstMaxKey])
+		#maxTheorSubtract = max(theorEnv)
+		##print('maxTheorSubtract',maxTheorSubtract)
+		
+		combinedList = []
+		combinedList.append(expSubtract)
+		combinedList.append(theorEnv)
+		#print('combinedList',len(combinedList))
+		
+		return combinedList
 		
 	def newRotAvgDisplay(self,val=None):
 		"""Change rotational average plot display status."""
