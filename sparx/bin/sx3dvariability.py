@@ -48,12 +48,17 @@ Instruction:
 nohup mpirun -np  64   --hostfile ./node4567.txt  sx3dvariability.py bdb:data/data \
   --output_dir=var3d  --window=300 --var3D=var.hdf --img_per_grp=100 \
       --CTF>var3d/printout &
- 1. Always use small decimation rate in the first run if one has no clue about the 3D \
-   variability of the data. In addition, one can skip low pass filteration when decimation \
-   rate is small and this can significantly speed up computation.
- 2. Check the decimated image size. It is better that the target decimation image size
-    consists of smallprimes, 2, 3, 5...
- 3. The program estimates the possible largest decimation rate.
+      
+ 1. The order of applying the input parameters is:  1. window; 2. decimation. The low-pass 
+    filter is applied to the decimated images and is equivalent to the low-pass filter of 
+    decimate*fl with respetive to the original image size.
+    
+ 2. Always use small decimation rate in the first run if there is no prior info about 3D \
+   variability analysis of the data and the memory requirement. In addition, one can skip 
+   the low-pass filteration when decimation rate is small, which significantly speeds up computation.
+   
+ 3. It is better that the target decimation image size is a product of small primes such as 2, 3, 5...
+ 
 """
 def main():
 
@@ -81,7 +86,7 @@ def main():
 	#parser.add_option("--radius", 	    type="int"         ,	default=-1   ,				help="radius for 3D variability" )
 	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="Number of time to pad the original images.(Default is 2 times padding)")
 	parser.add_option("--sym" , 		type="string"      ,	default="c1",				help="Symmetry. (Default is no symmetry)")
-	parser.add_option("--fl",			type="float"       ,	default=0.0,				help="Low pass filter cutoff in absolute frequency (0.0 - 0.5) and is applied to decimated image. (Default - no filtration)")
+	parser.add_option("--fl",			type="float"       ,	default=0.0,				help="Low pass filter cutoff in absolute frequency (0.0 - 0.5) and is applied to decimated images. (Default - no filtration)")
 	parser.add_option("--aa",			type="float"       ,	default=0.02 ,				help="Fall off of the filter. Use default value if user has no clue about falloff (Default value is 0.02)")
 	parser.add_option("--CTF",			action="store_true",	default=False,				help="Use CFT correction.(Default is no CTF correction)")
 	#parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version")
@@ -90,12 +95,12 @@ def main():
 	#parser.add_option("--abs", 		type="float"   ,        default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	#parser.add_option("--squ", 		type="float"   ,	    default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="Stack of input consists of 2D variances (Default False)")
-	parser.add_option("--decimate",     type="float",           default=0.25,               help="Image decimate rate, a number less than 1. (Default is 0.25)")
-	parser.add_option("--window",       type="int",             default=0,                  help="Target image size relative to original image size. (Default value is zero.)")
+	parser.add_option("--decimate",     type  ="float",         default=0.25,               help="Image decimate rate, a number less than 1. (Default is 0.25)")
+	parser.add_option("--window",       type  ="int",           default=0,                  help="Target image size relative to original image size. (Default value is zero.)")
 	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
 	#parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="Number of eigenvectors, (Default = 0 meaning no PCA calculated)")
 	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
-	parser.add_option("--memory_per_node", type="float",        default=-1.0,               help="Available memory per node, (Default value is -1. Program will assign 2 GB for each CPU)")
+	#parser.add_option("--memory_per_node", type="float",        default=-1.0,               help="Available memory per node, (Default value is -1. Program will assign 2 GB for each CPU)")
 
 	(options,args) = parser.parse_args()
 	#####
@@ -105,10 +110,10 @@ def main():
 	from applications   import MPI_start_end
 	from reconstruction import recons3d_em, recons3d_em_MPI
 	from reconstruction	import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
-	from utilities import print_begin_msg, print_end_msg, print_msg
-	from utilities import read_text_row, get_image, get_im
-	from utilities import bcast_EMData_to_all, bcast_number_to_all
-	from utilities import get_symt
+	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from utilities      import read_text_row, get_image, get_im
+	from utilities      import bcast_EMData_to_all, bcast_number_to_all
+	from utilities      import get_symt
 
 	#  This is code for handling symmetries by the above program.  To be incorporated. PAP 01/27/2015
 
@@ -218,10 +223,13 @@ def main():
 		masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, main_node == myid_on_node, myid_on_node)
 		color, no_of_groups, balanced_processor_load_on_nodes = get_colors_and_subsets(main_node, MPI_COMM_WORLD, myid, \
 		    shared_comm, myid_on_node, masters_from_groups_vs_everything_else_comm)
-		overhead_loading = 1.0*no_of_processes_per_group
-		memory_per_node  = options.memory_per_node
-		if memory_per_node == -1.: memory_per_node = 2.*no_of_processes_per_group
+		#overhead_loading = 1.0*no_of_processes_per_group
+		#memory_per_node  = options.memory_per_node
+		#if memory_per_node == -1.: memory_per_node = 2.*no_of_processes_per_group
 		keepgoing = 1
+		
+		current_window   = options.window
+		current_decimate = options.decimate
 		
 		if len(args) == 1: stack = args[0]
 		else:
@@ -256,17 +264,17 @@ def main():
 		#if options.nvec > 0 and options.ave3D == None:
 		#	ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", 1, myid)
 		
-		if options.decimate>1.0 or options.decimate<0.0:
+		if current_decimate>1.0 or current_decimate<0.0:
 			ERROR("Decimate rate should be a value between 0.0 and 1.0", "sx3dvariability", 1, myid)
 		
-		if options.window < 0.0:
+		if current_window < 0.0:
 			ERROR("Target window size should be always larger than zero", "sx3dvariability", 1, myid)
 			
 		if myid == main_node:
 			img  = get_image(stack, 0)
 			nx   = img.get_xsize()
 			ny   = img.get_ysize()
-			if(min(nx, ny) < options.window):   keepgoing = 0
+			if(min(nx, ny) < current_window):   keepgoing = 0
 		keepgoing = bcast_number_to_all(keepgoing, main_node, MPI_COMM_WORLD)
 		if keepgoing == 0: ERROR("The target window size cannot be larger than the size of decimated image", "sx3dvariability", 1, myid)
 
@@ -308,10 +316,10 @@ def main():
 			else:             log_main.add("CTF correction       : False ")
 			
 			log_main.add("Image per group      : %5d"%options.img_per_grp)
-			log_main.add("Image decimate rate  : %4.3f"%options.decimate)
+			log_main.add("Image decimate rate  : %4.3f"%current_decimate)
 			log_main.add("Low pass filter      : %4.3f"%options.fl)
-			log_main.add("Current low pass filter is equivalent to cutoff frequency %4.3f for original image size"%round((options.fl*options.decimate),3))
-			log_main.add("Window size          : %5d "%options.window)
+			log_main.add("Current low pass filter is equivalent to cutoff frequency %4.3f for original image size"%round((options.fl*current_decimate),3))
+			log_main.add("Window size          : %5d "%current_window)
 			log_main.add("sx3dvariability begins")
 	
 		symbaselen = 0
@@ -347,28 +355,50 @@ def main():
 		ny      = bcast_number_to_all(ny)
 		nnxo    = bcast_number_to_all(nnxo)
 		nnyo    = bcast_number_to_all(nnyo)
-		if options.window > max(nx, ny):
+		if current_window > max(nx, ny):
 			ERROR("Window size is larger than the original image size", "sx3dvariability", 1)
 		
-		if options.decimate == 1.:
-			if options.window !=0:
-				nx = options.window
-				ny = options.window
+		if current_decimate == 1.:
+			if current_window !=0:
+				nx = current_window
+				ny = current_window
 		else:
-			if options.window == 0:
-				nx = int(nx*options.decimate+0.5)
-				ny = int(ny*options.decimate+0.5)
+			if current_window == 0:
+				nx = int(nx*current_decimate+0.5)
+				ny = int(ny*current_decimate+0.5)
 			else:
-				nx = int(options.window*options.decimate+0.5)
+				nx = int(current_window*current_decimate+0.5)
 				ny = nx
-		symbaselen     = bcast_number_to_all(symbaselen)
-		if myid == main_node:
-			log_main.add("The target image size:    %5d"%nx)
-			from fundamentals import smallprime
-			if nx !=smallprime(nx):
+		symbaselen = bcast_number_to_all(symbaselen)
+		
+		# check FFT prime number
+		from fundamentals import smallprime
+		is_fft_friendly = (nx == smallprime(nx))
+		
+		if not is_fft_friendly:
+			if myid == main_node:
 				log_main.add("The target image size is not a product of small prime numbers")
+				log_main.add("Program adjusts the input settings!")
+			### two cases
+			if current_decimate == 1.:
+				nx = smallprime(nx)
+				ny = nx
+				current_window = nx # update
+				if myid == main_node:
+					log_main.add("The window size is updated to %d."%current_window)
 			else:
-				log_main.add("The target image size is a product of small prime numbers")
+				if current_window == 0:
+					nx = smallprime(int(nx*current_decimate+0.5))
+					current_decimate = float(nx)/nnxo
+					ny = nx
+					log_main.add("The decimate rate is updated to %f."%current_decimate)
+				else:
+					nx = smallprime(current_window*current_decimate+0.5)
+					ny = nx
+					current_window = nx
+					if myid == main_node:
+						log_main.add("The window size is updated to %d."%current_window)
+						
 		if radiuspca == -1: radiuspca = nx/2-2
 		if myid == main_node: log_main.add("%-70s:  %d\n"%("Number of projection", nima))
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
@@ -409,16 +439,16 @@ def main():
 		if options.VAR: # 2D variance images have no shifts
 			#varList   = EMData.read_images(stack, range(img_begin, img_end))
 			from EMAN2 import Region
-			if options.window > 0:
-				mx = nnxo//2 - options.window//2
-				my = nnyo//2 - options.window//2
-				reg = Region(mx, my, options.window, options.window)
+			if current_window > 0:
+				mx = nnxo//2 - current_window//2
+				my = nnyo//2 - current_window//2
+				reg = Region(mx, my, current_window, current_window)
 			else: reg = None
 			from fundamentals import subsample
 			for index_of_particle in range(img_begin,img_end):
 				image = get_im(stack, index_of_proj)
-				if reg: varList.append(subsample(image.get_clip(reg), options.decimate))
-				else:   varList.append(subsample(image, options.decimate))
+				if reg: varList.append(subsample(image.get_clip(reg), current_decimate))
+				else:   varList.append(subsample(image, current_decimate))
 				
 		else:
 			from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
@@ -490,7 +520,7 @@ def main():
 			varList = []				
 			#if nvec > 0: eigList = [[] for i in range(nvec)]
 			dnumber  = len(all_proj)# all neighborhood set for assigned to myid
-			pnumber  = len(proj_list)*2. +img_per_grp # aveList and varList 
+			pnumber  = len(proj_list)*2. + img_per_grp # aveList and varList 
 			tnumber  =   dnumber+pnumber
 			vol_size2 =  nx**3*4.*8/1.e9
 			vol_size1 =  2.*nnxo**3*4.*8/1.e9
@@ -499,8 +529,7 @@ def main():
 			reduced_data_size = nx*nx*4.*tnumber/1.e9
 			full_data = np.full((number_of_proc, 2), -1., dtype=np.float16)
 			full_data[myid] = orig_data_size, reduced_data_size
-			if myid != main_node: 
-				wrap_mpi_send(full_data, main_node, MPI_COMM_WORLD)
+			if myid != main_node: wrap_mpi_send(full_data, main_node, MPI_COMM_WORLD)
 			if myid == main_node:
 				for iproc in range(number_of_proc):
 					if iproc != main_node:
@@ -510,56 +539,13 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 			full_data = wrap_mpi_bcast(full_data, main_node, MPI_COMM_WORLD)
 			# find the CPU with heaviest load
-			minindx = np.argsort(full_data, 0)
+			minindx         = np.argsort(full_data, 0)
 			heavy_load_myid = minindx[-1][1]
+			total_mem       = sum(full_data)
 			if myid == main_node:
-				log_main.add("Number of images computed on each CPU:")
-				log_main.add("CPU    orig size     reduced size")
-				msg =""
-				mem_on_node_orig    = np.full(no_of_groups, 0.0, dtype=np.float16)
-				mem_on_node_current = np.full(no_of_groups, 0.0, dtype=np.float16)
-				for iproc in range(number_of_proc):
-					msg += "%5d   %8.3f GB  %8.3f GB"%(iproc, full_data[iproc][0], full_data[iproc][1])+"; "
-					if (iproc%3 == 2):
-						log_main.add(msg)
-						msg =""
-					mem_on_node_orig[iproc//no_of_processes_per_group]    += full_data[iproc][0]
-					mem_on_node_current[iproc//no_of_processes_per_group] += full_data[iproc][1]
-				if number_of_proc%3 !=0:log_main.add(msg)
-				try:
-					mem_bytes = os.sysconf('SC_PAGE_SIZE')*os.sysconf('SC_PHYS_PAGES')# e.g. 4015976448
-					mem_gib   = mem_bytes/(1024.**3)
-					log_main.add("Available memory information provided by the operating system: %5.1f GB"%mem_gib)
-					if mem_gib >memory_per_node: memory_per_node = mem_gib
-				except: 
-					mem_gib= None
-				log_main.add("Estimated memory to be used per node:")
-				msg = ""
-				run_with_current_setting = True
-				for inode in range(no_of_groups):
-					msg += "%5d   %8.3f GB  %8.3f GB"%(inode, mem_on_node_orig[inode], mem_on_node_current[inode])+";"
-					if mem_on_node_current[inode] > (memory_per_node -   overhead_loading): run_with_current_setting = False
-					if (inode%3 == 2):
-						log_main.add(msg)
-						msg =""
-				if no_of_groups%3 !=0:log_main.add(msg)
-				## Estimate maximum decimate ratio:
-				mem_on_node_orig = np.divide(mem_on_node_orig,(memory_per_node - overhead_loading))
-				max_decimate = 1./np.amax(mem_on_node_orig)
-				from math import sqrt
-				max_decimate = sqrt(max_decimate)
-				if max_decimate>1.0:log_main.add("Memory is sufficient for 2D ave and var computation without image decimation")
-				else:log_main.add("Memory limitation requires decimation of data by a factor of %6.3f "%max_decimate)
-				if not run_with_current_setting:
-					log_main.add("Warning: insufficient memory for calculations using the set image decimation")
-				recons3d_decimate_ratio =(memory_per_node - overhead_loading)/\
-				     ((vol_size1 + proj_size)*no_of_processes_per_group)
-				if recons3d_decimate_ratio< 1.:
-					log_main.add("Memory limitation requires var3D/ave3D reconstruction with image decimation using factor of %6.3f"%recons3d_decimate_ratio)
-				else:
-					log_main.add("Memory is sufficient for var3D/ave3D reconstruction without image decimation") 
+				log_main.add("Total memory = 4.*nx*nx*(nproj + navg +nvar+ img_per_grp): \n %f"%total_mem[1])
+			
 			del full_data
-			if myid == main_node: del mem_on_node_orig, mem_on_node_current, minindx
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == heavy_load_myid:
 				log_main.add("Begin reading and preprocessing images on processor. Wait... ")
@@ -569,21 +555,21 @@ def main():
 			#if myid==0: print(get_im(stack, 0).get_attr_dict())
 			# Compute region
 			from EMAN2 import Region
-			if options.window > 0:
-				mx  = nnxo//2 - options.window//2
-				my  = nnyo//2 - options.window//2
-				reg = Region(mx, my, options.window, options.window)
+			if current_window > 0:
+				mx  = nnxo//2 - current_window//2
+				my  = nnyo//2 - current_window//2
+				reg = Region(mx, my, current_window, current_window)
 			else: reg = None
 			from fundamentals import subsample
-			log_main.add("  PARAMS   %6.2f   %d"%(options.decimate,nx))
+			log_main.add("  PARAMS   %6.2f   %d"%(current_decimate,nx))
 			for index_of_proj in range(len(all_proj)):
 				image = get_im(stack, all_proj[index_of_proj])
-				if options.decimate>0:
+				if current_decimate>0:
 					ctf = image.get_attr("ctf")
-					ctf.apix = ctf.apix/options.decimate
+					ctf.apix = ctf.apix/current_decimate
 					image.set_attr("ctf", ctf)
-				if reg: imgdata.append(subsample(image.get_clip(reg), options.decimate))
-				else:   imgdata.append(subsample(image, options.decimate))
+				if reg: imgdata.append(subsample(image.get_clip(reg), current_decimate))
+				else:   imgdata.append(subsample(image, current_decimate))
 				if myid == heavy_load_myid and index_of_proj%100 ==0:
 					log_main.add(" ...... %6.2f%% "%(index_of_proj/float(len(all_proj))*100.))
 			if myid == heavy_load_myid:
@@ -624,12 +610,12 @@ def main():
 				if ki >= symbaselen:  continue
 				mi = index[ki]
 				dpar = Util.get_transform_params(imgdata[mi], "xform.projection", "spider")
-				phiM, thetaM, psiM, s2xM, s2yM  = dpar["phi"],dpar["theta"],dpar["psi"],-dpar["tx"]*options.decimate,-dpar["ty"]*options.decimate
+				phiM, thetaM, psiM, s2xM, s2yM  = dpar["phi"],dpar["theta"],dpar["psi"],-dpar["tx"]*current_decimate,-dpar["ty"]*current_decimate
 				grp_imgdata = []
 				for j in range(img_per_grp):
 					mj = index[proj_angles[proj_list[i][j]][3]]
 					cpar = Util.get_transform_params(imgdata[mj], "xform.projection", "spider")
-					alpha, sx, sy, mirror = params_3D_2D_NEW(cpar["phi"], cpar["theta"],cpar["psi"], -cpar["tx"]*options.decimate, -cpar["ty"]*options.decimate, mirror_list[i][j])
+					alpha, sx, sy, mirror = params_3D_2D_NEW(cpar["phi"], cpar["theta"],cpar["psi"], -cpar["tx"]*current_decimate, -cpar["ty"]*current_decimate, mirror_list[i][j])
 					if thetaM <= 90:
 						if mirror == 0:  alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, phiM - cpar["phi"], 0.0, 0.0, 1.0)
 						else:            alpha, sx, sy, scale = compose_transform2(alpha, sx, sy, 1.0, 180-(phiM - cpar["phi"]), 0.0, 0.0, 1.0)
@@ -757,7 +743,7 @@ def main():
 				ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad)
 				bcast_EMData_to_all(ave3D, myid)
 				if myid == main_node:
-					if options.decimate != 1.0: ave3D = resample(ave3D, 1./options.decimate)
+					if current_decimate != 1.0: ave3D = resample(ave3D, 1./current_decimate)
 					ave3D = fpol(ave3D, nnxo, nnxo, nnxo) # always to the orignal image size
 					set_pixel_size(ave3D, 1.0)
 					ave3D.write_image(os.path.join(options.output_dir, options.ave3D))
@@ -845,7 +831,7 @@ def main():
 			#res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)
 			if myid == main_node:
 				from fundamentals import fpol
-				if options.decimate != 1.0: res	= resample(res, 1./options.decimate)
+				if current_decimate != 1.0: res	= resample(res, 1./current_decimate)
 				res = fpol(res, nnxo, nnxo, nnxo)
 				set_pixel_size(res, 1.0)
 				res.write_image(os.path.join(options.output_dir, options.var3D))
