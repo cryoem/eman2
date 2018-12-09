@@ -565,11 +565,11 @@ def main():
 					imgdata[-1].set_attr("ctf", ctf)
 				if myid == heavy_load_myid and index_of_proj%100 ==0:
 					log_main.add(" ...... %6.2f%% "%(index_of_proj/float(len(all_proj))*100.))
+			mpi_barrier(MPI_COMM_WORLD)
 			if myid == heavy_load_myid:
 				log_main.add("All_proj data reading and preprocessing cost %7.2f m"%((time()-ttt)/60.))
 				log_main.add("Wait untill reading on all CPUs done...")
 			del image
-			mpi_barrier(MPI_COMM_WORLD)
 			'''	
 			imgdata2 = EMData.read_images(stack, range(img_begin, img_end))
 			if options.fl > 0.0:
@@ -676,13 +676,12 @@ def main():
 				if (myid == heavy_load_myid) and (i%100 == 0):
 					log_main.add(" ......%6.2f%%  "%(i/float(len(proj_list))*100.))		
 			del imgdata, grp_imgdata, cpar, dpar, all_proj, proj_angles, index
-			if options.CTF: del cimage
 			if not options.no_norm: del mask
 			if myid == main_node: del tab
 			#  At this point, all averages and variances are computed
+			mpi_barrier(MPI_COMM_WORLD)
 			if (myid == heavy_load_myid):
 				log_main.add("Computing aveList and varList took %7.2f m"%((time()-ttt)/60.))
-			mpi_barrier(MPI_COMM_WORLD) # synchronize all cpus
 			if options.ave2D:
 				from fundamentals import fpol
 				if myid == main_node:
