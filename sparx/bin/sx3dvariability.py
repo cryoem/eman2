@@ -320,7 +320,9 @@ def main():
 			log_main.add("Image per group      : %5d"%options.img_per_grp)
 			log_main.add("Image decimate rate  : %4.3f"%current_decimate)
 			log_main.add("Low pass filter      : %4.3f"%options.fl)
-			log_main.add("Current low pass filter is equivalent to cutoff frequency %4.3f for original image size"%round((options.fl*current_decimate),3))
+			current_fl = options.fl
+			if current_fl == 0.0: current_fl = 0.5
+			log_main.add("Current low pass filter is equivalent to cutoff frequency %4.3f for original image size"%round((current_fl*current_decimate),3))
 			log_main.add("Window size          : %5d "%current_window)
 			log_main.add("sx3dvariability begins")
 	
@@ -393,13 +395,17 @@ def main():
 					nx = smallprime(int(nx*current_decimate+0.5))
 					current_decimate = float(nx)/nnxo
 					ny = nx
-					log_main.add("The decimate rate is updated to %f."%current_decimate)
+					if (myid == main_node):
+						log_main.add("The decimate rate is updated to %f."%current_decimate)
 				else:
-					nx = smallprime(current_window*current_decimate+0.5)
+					nx = smallprime(int(current_window*current_decimate+0.5))
 					ny = nx
 					current_window = int(nx/current_decimate+0.5)
 					if (myid == main_node):
 						log_main.add("The window size is updated to %d."%current_window)
+						
+		if myid == main_node:
+			log_main.add("The target image size is %d"%nx)
 						
 		if radiuspca == -1: radiuspca = nx/2-2
 		if myid == main_node: log_main.add("%-70s:  %d\n"%("Number of projection", nima))
