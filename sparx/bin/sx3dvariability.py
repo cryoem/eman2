@@ -508,7 +508,7 @@ def main():
 			if myid == main_node:
 				log_main.add("%-70s:  %.2f\n"%("Finding neighboring projections lasted [s]", time()-t2))
 				log_main.add("%-70s:  %d\n"%("Number of groups processed on the main node", len(proj_list)))
-				log_main.add("Grouping projections took: ", (time()-t2)/60	, "[min]")
+				log_main.add("Grouping projections took:  %12.1f [m]"%((time()-t2)/60.))
 				log_main.add("Number of groups on main node: ", len(proj_list))
 			mpi_barrier(MPI_COMM_WORLD)
 
@@ -545,7 +545,7 @@ def main():
 			heavy_load_myid = minindx[-1][1]
 			total_mem       = sum(full_data)
 			if myid == main_node:
-				log_main.add("Total memory(GB) = 4.*nx*nx*(nproj + navg +nvar+ img_per_grp)/1e9 + overhead_loading: \n %f"%total_mem[1])
+				log_main.add("Total memory) = 4.0*nx*nx*(nproj + navg +nvar+ img_per_grp)/1.0e9 + overhead: %12.3f [GB]"%total_mem[1])
 			del full_data
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == heavy_load_myid:
@@ -681,7 +681,7 @@ def main():
 			#  At this point, all averages and variances are computed
 			mpi_barrier(MPI_COMM_WORLD)
 			if (myid == heavy_load_myid):
-				log_main.add("Computing aveList and varList took %7.2f m"%((time()-ttt)/60.))
+				log_main.add("Computing aveList and varList took %12.1f [m]"%((time()-ttt)/60.))
 			if options.ave2D:
 				from fundamentals import fpol
 				if myid == main_node:
@@ -738,7 +738,7 @@ def main():
 					ave3D = fpol(ave3D, nnxo, nnxo, nnxo) # always to the orignal image size
 					set_pixel_size(ave3D, 1.0)
 					ave3D.write_image(os.path.join(options.output_dir, options.ave3D))
-					log_main.add("%-70s:  %.2f\n"%("Ave3D reconstruction took [s]", time()-t5))
+					log_main.add("%-70s:  %.2f\n"%("Ave3D reconstruction took %12.1f [m]"%((time()-t5)/60.0)))
 					log_main.add("%-70s:  %s\n"%("The reconstructed ave3D is saved as ", options.ave3D))
 					
 			mpi_barrier(MPI_COMM_WORLD)		
@@ -827,8 +827,8 @@ def main():
 				set_pixel_size(res, 1.0)
 				res.write_image(os.path.join(options.output_dir, options.var3D))
 				log_main.add("%-70s:  %s\n"%("The reconstructed var3D is saved as ", options.var3D))
-				log_main.add("%-70s:  %.2f\n"%("Var3D reconstruction took [s]", time()-t6))
-				log_main.add("%-70s:  %.2f\n"%("Total computation time [m]", (time()-t0)/60.))
+				log_main.add("%-70s:  %.2f\n"%("Var3D reconstruction took %f12.1 [m]"%((time()-t6)/60.0)))
+				log_main.add("%-70s:  %.2f\n"%("Total computation time %f12.1 [m]"%((time()-t0)/60.0)))
 				log_main.add("sx3dvariability finishes")
 		from mpi import mpi_finalize
 		mpi_finalize()
