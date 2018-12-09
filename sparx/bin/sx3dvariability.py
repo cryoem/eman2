@@ -447,16 +447,10 @@ def main():
 		if options.VAR: # 2D variance images have no shifts
 			#varList   = EMData.read_images(stack, range(img_begin, img_end))
 			from EMAN2 import Region
-			if current_window > 0:
-				mx = nnxo//2 - current_window//2
-				my = nnyo//2 - current_window//2
-				reg = Region(mx, my, current_window, current_window)
-			else: reg = None
-			from fundamentals import subsample
 			for index_of_particle in range(img_begin,img_end):
 				image = get_im(stack, index_of_proj)
-				if reg: varList.append(subsample(image.get_clip(reg), current_decimate))
-				else:   varList.append(subsample(image, current_decimate))
+				if current_window > 0: varList.append(fdecimate(window2d(image,current_window,current_window), nx,ny))
+				else:   varList.append(fdecimate(image, nx,ny))
 				
 		else:
 			from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
@@ -559,21 +553,11 @@ def main():
 				ttt = time()
 			#imgdata = EMData.read_images(stack, all_proj)			
 			imgdata = []
-			#if myid==0: print(get_im(stack, 0).get_attr_dict())
-			# Compute region
-			from EMAN2 import Region
-			if current_window > 0:
-				mx  = nnxo//2 - current_window//2
-				my  = nnyo//2 - current_window//2
-				reg = Region(mx, my, current_window, current_window)
-			else: reg = None
-			from fundamentals import subsample
-			log_main.add("  PARAMS   %6.2f   %d   %d"%(current_decimate,nx,current_window))
 			for index_of_proj in range(len(all_proj)):
 				image = get_im(stack, all_proj[index_of_proj])
 				#if reg: imgdata.append(subsample(image.get_clip(reg), options.decimate))
 				#else:   imgdata.append(subsample(image, options.decimate))
-				if reg: imgdata.append(fdecimate(window2d(image,current_window,current_window), nx,ny))
+				if( current_window > 0): imgdata.append(fdecimate(window2d(image,current_window,current_window), nx,ny))
 				else:   imgdata.append(fdecimate(image, nx,ny))
 				if options.decimate>0.0:
 					ctf = image.get_attr("ctf")
@@ -585,7 +569,6 @@ def main():
 				log_main.add("All_proj data reading and preprocessing cost %7.2f m"%((time()-ttt)/60.))
 				log_main.add("Wait untill reading on all CPUs done...")
 			del image
-			if reg: del reg
 			mpi_barrier(MPI_COMM_WORLD)
 			'''	
 			imgdata2 = EMData.read_images(stack, range(img_begin, img_end))
@@ -662,7 +645,7 @@ def main():
 				#for q in grp_imgdata:  Util.add_img2(var, q)
 				#Util.mul_scalar(var, 1.0/(len(grp_imgdata)-1))
 				# Switch to std dev
-				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e10, interpolation_method = "fourier")
+				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e10, interpolation_method = "linear")
 				var = square_root(threshold(var))
 				#if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
 				#else:	            ave, var = avgvar(grp_imgdata, mode="a")
@@ -692,7 +675,7 @@ def main():
 				'''
 				if (myid == heavy_load_myid) and (i%100 == 0):
 					log_main.add(" ......%6.2f%%  "%(i/float(len(proj_list))*100.))		
-			del imgdata, grp_imgdata, cpar, dpar, all_proj, proj_angles, index, reg1
+			del imgdata, grp_imgdata, cpar, dpar, all_proj, proj_angles, index
 			if options.CTF: del cimage
 			if not options.no_norm: del mask
 			if myid == main_node: del tab
