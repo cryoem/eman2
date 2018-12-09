@@ -225,7 +225,7 @@ def main():
 		masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, main_node == myid_on_node, myid_on_node)
 		color, no_of_groups, balanced_processor_load_on_nodes = get_colors_and_subsets(main_node, MPI_COMM_WORLD, myid, \
 		    shared_comm, myid_on_node, masters_from_groups_vs_everything_else_comm)
-		#overhead_loading = 1.0*no_of_processes_per_group
+		overhead_loading = 0.5*number_of_proc
 		#memory_per_node  = options.memory_per_node
 		#if memory_per_node == -1.: memory_per_node = 2.*no_of_processes_per_group
 		keepgoing = 1
@@ -545,7 +545,7 @@ def main():
 			heavy_load_myid = minindx[-1][1]
 			total_mem       = sum(full_data)
 			if myid == main_node:
-				log_main.add("Total memory = 4.*nx*nx*(nproj + navg +nvar+ img_per_grp): \n %f"%total_mem[1])
+				log_main.add("Total memory(GB) = 4.*nx*nx*(nproj + navg +nvar+ img_per_grp)/1e9 + overhead_loading: \n %f"%total_mem[1])
 			
 			del full_data
 			mpi_barrier(MPI_COMM_WORLD)
