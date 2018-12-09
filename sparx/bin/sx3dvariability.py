@@ -547,29 +547,32 @@ def main():
 			if myid == main_node:
 				log_main.add("Total memory) = 4.0*nx*nx*(nproj + navg +nvar+ img_per_grp)/1.0e9 + overhead: %12.3f [GB]"%total_mem[1])
 			del full_data
-			mpi_barrier(MPI_COMM_WORLD)
+			#mpi_barrier(MPI_COMM_WORLD)
 			if myid == heavy_load_myid:
 				log_main.add("Begin reading and preprocessing images on processor. Wait... ")
 				ttt = time()
-			#imgdata = EMData.read_images(stack, all_proj)			
-			imgdata = []
+			imgdata = EMData.read_images(stack, all_proj)			
+			#imgdata = []
+			if myid == heavy_load_myid:
+				log_main.add("Data reading is done. Preprocessing starts! ")
 			for index_of_proj in range(len(all_proj)):
-				image = get_im(stack, all_proj[index_of_proj])
+				#image = get_im(stack, all_proj[index_of_proj])
 				#if reg: imgdata.append(subsample(image.get_clip(reg), options.decimate))
 				#else:   imgdata.append(subsample(image, options.decimate))
-				if( current_window > 0): imgdata.append(fdecimate(window2d(image,current_window,current_window), nx,ny))
-				else:   imgdata.append(fdecimate(image, nx,ny))
-				if options.decimate>0.0:
-					ctf = image.get_attr("ctf")
+				if( current_window > 0): imgdata[index_of_proj] = fdecimate(window2d(imgdata[index_of_proj],current_window,current_window), nx, ny))
+				else:                    imgdata[index_of_proj] = fdecimate(imgdata[index_of_proj], nx, ny))
+				if current_decimate> 0.0:
+					ctf = imgdata[index_of_proj].get_attr("ctf")
 					ctf.apix = ctf.apix/options.decimate
-					imgdata[-1].set_attr("ctf", ctf)
-				if myid == heavy_load_myid and index_of_proj%100 ==0:
+					imgdata[index_of_proj].set_attr("ctf", ctf)
+					
+				if myid == heavy_load_myid and index_of_proj%100 == 0:
 					log_main.add(" ...... %6.2f%% "%(index_of_proj/float(len(all_proj))*100.))
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == heavy_load_myid:
-				log_main.add("All_proj data reading and preprocessing cost %7.2f m"%((time()-ttt)/60.))
+				log_main.add("All_proj preprocessing cost %7.2f m"%((time()-ttt)/60.))
 				log_main.add("Wait untill reading on all CPUs done...")
-			del image
+			#del image
 			'''	
 			imgdata2 = EMData.read_images(stack, range(img_begin, img_end))
 			if options.fl > 0.0:
