@@ -1098,22 +1098,17 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 	ima = get_im(input_stack, 0)
 	nx = ima.get_xsize()
 	ny = ima.get_xsize()
-	#if(interpolation_method=="fourier"):  npad = 2
-	#else:  npad = 1
-	npad = 1
 
 	if ima.get_attr_default('ctf_applied', -2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
-	nx2 = nx*npad
-	ny2 = ny*npad
-	ave       = model_blank(nx2,ny2)
-	ctf_2_sum = EMData(nx2, ny2, 1, False)
+	ave       = model_blank(nx,ny)
+	ctf_2_sum = EMData(nx, ny, 1, False)
 	snrsqrt = sqrt(SNR)
 
 	for i in range(n):
 		ima = get_im(input_stack, i)
 		ctf_params = ima.get_attr("ctf")
-		oc = filt_ctf(pad(ima, nx2, ny2, background = 0.0), ctf_params, dopad=False)
+		oc = filt_ctf(ima, ctf_params, dopad=False)
 		if mode == "a":
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
 			oc = rot_shift2D(oc, alpha, sx, sy, mirror, interpolation_method=interpolation_method)
@@ -1121,7 +1116,7 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 			if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
 		Util.mul_scalar(oc, SNR)
 		Util.add_img(ave, oc)
-		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
+		Util.add_img2(ctf_2_sum, snrsqrt*ctf_img(nx, ctf_params, ny = ny, nz = 1))
 	ctf_2_sum += 1.0
 	ave = Util.divn_filter(fft(ave), ctf_2_sum)  # result in Fourier space
 	# variance
@@ -1140,11 +1135,12 @@ def aves_wiener(input_stack, mode="a", SNR=1.0, interpolation_method="linear"):
 		Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))  # no windowing necessary?
 		'''
 		#  Subtract in Fourier space, multiply again by the ctf, divide by the ctf^2, fft, square in real space
-		ima = fft(Util.divn_filter(filt_ctf(Util.subn_img(fft(ima), filt_ctf(ave, ctf_params, dopad=False)), ctf_params, dopad=False), ctf_2_sum))
-		Util.add_img2(var, ima)
-	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
-	Util.mul_scalar(var, 1.0/(n-1))
-	return ave, var
+		ima = Util.divn_filter(filt_ctf(Util.subn_img(fft(ima), filt_ctf(ave, ctf_params, dopad=False)), ctf_params, dopad=False), ctf_2_sum)
+		Util.mul_scalar(ima, SNR)
+		Util.add_img2(var, fft(ima))
+	#ave = Util.window(fft(ave),nx,ny,1,0,0,0)
+	#Util.mul_scalar(var, 1.0/(n-1))
+	return fft(ave), var
 
 def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1, interpolation_method="linear"):
 	"""
