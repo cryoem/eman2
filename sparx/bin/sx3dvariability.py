@@ -102,7 +102,7 @@ def main():
 	#parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
 	#parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="Number of eigenvectors, (Default = 0 meaning no PCA calculated)")
 	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
-	#parser.add_option("--memory_per_node", type="float",        default=-1.0,               help="Available memory per node, (Default value is -1. Program will assign 2 GB for each CPU)")
+	parser.add_option("--overhead",     type  ="float",         default=0.5,                help="python overhead per CPU.")
 
 	(options,args) = parser.parse_args()
 	#####
@@ -225,7 +225,7 @@ def main():
 		masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, main_node == myid_on_node, myid_on_node)
 		color, no_of_groups, balanced_processor_load_on_nodes = get_colors_and_subsets(main_node, MPI_COMM_WORLD, myid, \
 		    shared_comm, myid_on_node, masters_from_groups_vs_everything_else_comm)
-		overhead_loading = 0.5*number_of_proc
+		overhead_loading = options.overhead*number_of_proc
 		#memory_per_node  = options.memory_per_node
 		#if memory_per_node == -1.: memory_per_node = 2.*no_of_processes_per_group
 		keepgoing = 1
