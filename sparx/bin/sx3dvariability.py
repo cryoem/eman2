@@ -700,8 +700,10 @@ def main():
 						dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
 						txform_proj[nc:len(dummy)] = dummy[:]
 						nc +=len(dummy)
-						
+					write_text_file(txform_proj, os.path.join(options.output_dir, "params.txt"))
+					del txform_proj
 				del xform_proj_for_2D
+				mpi_barrier(MPI_COMM_WORLD)
 				from fundamentals import fpol
 				from applications import header
 				if myid == main_node:
@@ -747,8 +749,8 @@ def main():
 							mpi_send([-999.0,-999.0,-999.0], 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						"""
 				if myid == main_node:
-					header(os.path.join(options.output_dir, options.ave2D), params='xform.projection', fimport = txform_proj)
-					if not options.var2D: del txform_proj
+					header(os.path.join(options.output_dir, options.ave2D), params='xform.projection',\
+					    fimport = os.path.join(options.output_dir, "params.txt"))
 				mpi_barrier(MPI_COMM_WORLD)	
 			if options.ave3D:
 				from fundamentals import fpol
@@ -837,8 +839,8 @@ def main():
 						send_EMData(varList[im], main_node, im+myid+70000)#  What with the attributes??
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == main_node:
-				header(os.path.join(options.output_dir, options.ave2D), params = 'xform.projection', fimport = txform_proj)
-				del txform_proj
+				header(os.path.join(options.output_dir, options.var2D), params = 'xform.projection',\
+				 fimport = os.path.join(options.output_dir, "params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
 		if options.var3D:
 			if myid == main_node: log_main.add("Reconstruct var3D ...")
