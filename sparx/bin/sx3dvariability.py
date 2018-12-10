@@ -595,6 +595,8 @@ def main():
 			if myid == heavy_load_myid:
 				log_main.add("Start computing 2D aveList and varList. Wait...")
 				ttt = time()
+			inner=nx//2-4
+			outer=inner+2
 			for i in range(len(proj_list)):
 				ki = proj_angles[proj_list[i][0]][3]
 				if ki >= symbaselen:  continue
@@ -643,8 +645,8 @@ def main():
 				#for q in grp_imgdata:  Util.add_img2(var, q)
 				#Util.mul_scalar(var, 1.0/(len(grp_imgdata)-1))
 				# Switch to std dev
-				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e10, interpolation_method = "fourier")
-				var = square_root(threshold(var))
+				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e10, interpolation_method = "linear")
+				var = square_root(threshold(circumference(var,inner,outer)))
 				"""
 				if myid == main_node:
 					ave.write_image("avgv.hdf",i)
