@@ -825,7 +825,7 @@ class symclass(object):
             self.nsym = int(self.sym[1:])
             if (self.nsym < 1):  sparx_global_def.ERROR("For Cn symmetry, we need n>0", "symclass", 1)
             self.brackets = [[ old_div(360., self.nsym), 90.0, old_div(360., self.nsym), 90.0],
-                             [ old_div(360., self.nsym), 180.0, old_div(360., self.nsym) 180.0]]
+                             [ old_div(360., self.nsym), 180.0, old_div(360., self.nsym), 180.0]]
             self.symangles = []
             for i in range(self.nsym):
                 self.symangles.append([0.0, 0.0, i * old_div(360., self.nsym)])
@@ -861,11 +861,11 @@ class symclass(object):
             self.nsym = 12
             ncap = 3
             cap_sig = old_div(360.0,  ncap)
-            alpha = numpy.degrees(math.acos( old_div(1.0,  (numpy.sqrt(3.0) * numpy.tan(2 * old_div( old_div(numpy.pi, ncap), 2.0))   ))))  # also platonic_params["alt_max"]
-            theta = numpy.degrees(0.5 * math.acos(old_div( numpy.cos(numpy.radians(cap_sig)),
-                                                           (1.0 - numpy.cos(numpy.radians(cap_sig)))) ))  # also platonic_params["theta_c_on_two"]
+            alpha = numpy.degrees(math.acos(old_div(1.0,(numpy.sqrt(3.0) * numpy.tan(2 * old_div(old_div(numpy.pi, ncap), 2.0))))))  # also platonic_params["alt_max"]
+            theta = numpy.degrees(0.5 * math.acos(old_div(numpy.cos(numpy.radians(cap_sig)),
+                                                           (1.0 - numpy.cos(numpy.radians(cap_sig))))))  # also platonic_params["theta_c_on_two"]
             self.brackets = [[old_div(360.0,  ncap), theta, cap_sig, alpha], [old_div(360.0,  ncap), theta, cap_sig, alpha]]
-            lvl1 = numpy.degrees(math.acos( old_div(-1.0, 3.0)))  # There  are 3 faces at this angle
+            lvl1 = numpy.degrees(math.acos(old_div(-1.0, 3.0)))  # There  are 3 faces at this angle
             self.symangles = [[0., 0., 0.], [0., 0., 120.], [0., 0., 240.]]
             for l1 in range(0, 241, 120):
                 for l2 in range(60, 301, 120):
@@ -952,7 +952,7 @@ class symclass(object):
                   old_div(( old_div(numpy.sin(numpy.radians(old_div(self.brackets[inc_mirror][2], 2.0) - tmphi)), numpy.tan(
                         numpy.radians(self.brackets[inc_mirror][1])) )
                             + old_div(numpy.sin(numpy.radians(tmphi)) , numpy.tan(numpy.radians(self.brackets[inc_mirror][3])))),
-                          numpy.sin(numpy.radians(self.brackets[inc_mirror][2] / 2.0)) )
+                          numpy.sin(numpy.radians(old_div(self.brackets[inc_mirror][2], 2.0))) )
                 baldwin_lower_alt_bound = numpy.degrees(math.atan(old_div(1.0, baldwin_lower_alt_bound)))
                 if (baldwin_lower_alt_bound > theta):
                     return True
@@ -971,8 +971,8 @@ class symclass(object):
                    old_div(
                        (old_div(numpy.sin(numpy.radians(old_div(self.brackets[inc_mirror][2], 2.0) - tmphi)),
                                numpy.tan(numpy.radians(self.brackets[inc_mirror][1]))) \
-                     + old_div(numpy.sin(numpy.radians(tmphi)), numpy.tan(numpy.radians(self.brackets[inc_mirror][3]))) )  \
-                    , numpy.sin(numpy.radians(old_div(self.brackets[inc_mirror][2] , 2.0))))
+                     + old_div(numpy.sin(numpy.radians(tmphi)), numpy.tan(numpy.radians(self.brackets[inc_mirror][3]))))  \
+                    , numpy.sin(numpy.radians(old_div(self.brackets[inc_mirror][2], 2.0))))
                 baldwin_lower_alt_bound = numpy.degrees(math.atan(old_div(1.0, baldwin_lower_alt_bound)))
                 # print(  "  baldwin_lower_alt_bound ",phi,theta,baldwin_lower_alt_bound,self.brackets[inc_mirror])
 
@@ -981,11 +981,11 @@ class symclass(object):
                         return True
                     else:
                         baldwin_upper_alt_bound = \
-                          old_div ((
-                            old_div((numpy.sin(numpy.radians(old_div(self.brackets[inc_mirror][2], 2.0) - tmphi ))),
+                          old_div (
+                              (old_div((numpy.sin(numpy.radians(old_div(self.brackets[inc_mirror][2], 2.0) - tmphi ))),
                               (numpy.tan(numpy.radians(self.brackets[inc_mirror][1])) ))
                              + old_div((numpy.sin(numpy.radians(tmphi))) ,
-                             numpy.tan(numpy.radians(old_div(self.brackets[inc_mirror][2], 2.0)   )))) \
+                             numpy.tan(numpy.radians(old_div(self.brackets[inc_mirror][3], 2.0)   )))) \
                             , (numpy.sin(numpy.radians(old_div(self.brackets[inc_mirror][2], 2.0) ))))
                         baldwin_upper_alt_bound = numpy.degrees(math.atan(old_div(1.0 , baldwin_upper_alt_bound)))
                         # print(  "  baldwin_upper_alt_bound ",phi,theta,baldwin_upper_alt_bound,self.brackets[inc_mirror])
@@ -1342,7 +1342,7 @@ class symclass(object):
                 for k in range(1, NumPoints - 1):
                     z = z1 + Deltaz * old_div( k , (NumPoints - 1))
                     r = numpy.sqrt(1.0 - z * z)
-                    phi = phi1 + (phi +  old_div(delta, r) - phi1) % phistep
+                    phi = phi1 + (phi +  old_div(delta, r) - phi1)%phistep
                     theta = numpy.degrees(math.acos(z))
                     if (theta > 180.0):  break
                     if (not self.is_in_subunit(phi, theta, inc_mirror)): continue

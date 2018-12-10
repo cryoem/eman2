@@ -28,7 +28,7 @@ ROUNDINT_RE = re.compile('int')
 SELFBRACKETS_RE = re.compile('self.brackets')
 EQUALSIGN_RE = re.compile('=')
 
-with open('sphire/tests/testdivisionchange.py') as read:
+with open('sphire/libpy/sparx_fundamentals.py') as read:
     lines = read.readlines()
     comment1 = False
     comment2 = False
@@ -118,7 +118,7 @@ with open('sphire/tests/testdivisionchange.py') as read:
 
                 #  #### For one / operator #######
                 elif line.count('/') == 1 and not is_bracket and not is_starsign and not is_roundint \
-                        and not line.strip().split()[0] == 'wedgeFactor' and not line.strip().split()[0] == 'theta' and not line.split()[4] == 'self.nsym':
+                        and not line.strip().split()[0] == 'wedgeFactor' and not line.strip().split()[0] == 'theta':
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     # print(line.partition('#')[0],'\n')
@@ -158,12 +158,27 @@ with open('sphire/tests/testdivisionchange.py') as read:
                     string = re.match('^(\s*)', line).group(1)
                     print('old syntex', line)
                     print('\n')
+                    print(line.rstrip().split())
+                    print(line.partition('='))
 
-                    print('new syntex', string + line.split()[0] + ' = ' + "old_div" + '(' + line.split('=')[1].split('/')[0] \
-                          + ',' + line.split()[6] + ')' + line.split()[7] + line.split()[8] )
-                    print('\n')
-                    lines[idx] = string + line.split()[0] + ' = ' + "old_div" + '(' + line.split('=')[1].split('/')[0] + ',' \
-                                 + line.partition('#')[0].rstrip().split('=')[1].split('/')[1] + ')' + '\n'
+                    print(line.split('=')[1].split('/')[0])
+                    print(line.partition('=')[2].partition('/')[2].split('*')[0])
+
+
+                    if len(line.rstrip().split()) > 5 :
+                        print('new syntex', string + line.split()[0] + ' = ' + "old_div" + '(' + line.split('=')[1].split('/')[0] \
+                              + ',' + line.split()[6] + ')' + line.split()[7] + line.split()[8] )
+                        print('\n')
+                        lines[idx] = string + line.split()[0] + ' = ' + "old_div" + '(' + line.split('=')[1].split('/')[0] \
+                              + ',' + line.split()[6] + ')' + line.split()[7] + line.split()[8] + '\n'
+
+
+                    if len(line.rstrip().split()) <= 5 :
+                        print('new syntex', string + line.partition('/')[0]  + "old_div" + '(' + line.split('=')[1].split('/')[0] \
+                              + ',' + line.partition('=')[2].partition('/')[2].split('*')[0]  + + ')'  + line.partition('=')[2].partition('*')[2]     )
+                        print('\n')
+                        # lines[idx] = string + line.split()[0] + ' = ' + "old_div" + '(' + line.split('=')[1].split('/')[0] \
+                        #       + ',' + line.split()[6] + ')' + line.split()[7] + line.split()[8] + '\n'
 
 
                 #### For two / operator #######
@@ -370,7 +385,7 @@ with open('sphire/tests/testdivisionchange.py') as read:
                     print ('equal sign is missing on line', idx+1)
 
 
-with open('sphire/tests/testdivisionchangenew.py','w') as newfile:
-    for idx, line in enumerate(lines[:]):
-        # print(lines[idx])
-        newfile.write(str(line))
+# with open('sphire/tests/testdivisionchangenew.py','w') as newfile:
+#     for idx, line in enumerate(lines[:]):
+#         # print(lines[idx])
+#         newfile.write(str(line))
