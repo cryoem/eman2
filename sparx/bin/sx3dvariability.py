@@ -649,12 +649,10 @@ def main():
 						grp_imgdata[pp].write_image("qq.hdf", pp)
 				"""
 
-				#var = model_blank(nx,ny)
-				#for q in grp_imgdata:  Util.add_img2(var, q)
-				#Util.mul_scalar(var, 1.0/(len(grp_imgdata)-1))
 				# Switch to std dev
-				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e10, interpolation_method = "linear")
-				var = square_root(threshold(circumference(var,inner,outer)))
+				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e5, interpolation_method = "linear")
+				# threshold is not really needed,it is just in case due to numerical accuracy something turns out negative.
+				var = square_root(threshold(var,inner,outer))
 				"""
 				if myid == main_node:
 					ave.write_image("avgv.hdf",i)
