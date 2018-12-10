@@ -521,16 +521,16 @@ def main():
 			aveList = []
 			varList = []				
 			#if nvec > 0: eigList = [[] for i in range(nvec)]
-			dnumber  = len(all_proj)# all neighborhood set for assigned to myid
-			pnumber  = len(proj_list)*2. + img_per_grp # aveList and varList 
-			tnumber  =   dnumber+pnumber
-			vol_size2 =  nx**3*4.*8/1.e9
-			vol_size1 =  2.*nnxo**3*4.*8/1.e9
-			proj_size =  nnxo*nnyo*len(proj_list)*4.*2./1.e9 # both aveList and varList
+			dnumber   = len(all_proj)# all neighborhood set for assigned to myid
+			pnumber   = len(proj_list)*2. + img_per_grp # aveList and varList 
+			tnumber   = dnumber+pnumber
+			vol_size2 = nx**3*4.*8/1.e9
+			vol_size1 = 2.*nnxo**3*4.*8/1.e9
+			proj_size         = nnxo*nnyo*len(proj_list)*4.*2./1.e9 # both aveList and varList
 			orig_data_size    = nnxo*nnyo*4.*tnumber/1.e9
 			reduced_data_size = nx*nx*4.*tnumber/1.e9
-			full_data = np.full((number_of_proc, 2), -1., dtype=np.float16)
-			full_data[myid] = orig_data_size, reduced_data_size
+			full_data         = np.full((number_of_proc, 2), -1., dtype=np.float16)
+			full_data[myid]   = orig_data_size, reduced_data_size
 			if myid != main_node: wrap_mpi_send(full_data, main_node, MPI_COMM_WORLD)
 			if myid == main_node:
 				for iproc in range(number_of_proc):
@@ -545,7 +545,14 @@ def main():
 			heavy_load_myid = minindx[-1][1]
 			total_mem       = sum(full_data)
 			if myid == main_node:
-				log_main.add("Total memory) = 4.0*nx*nx*(nproj + navg +nvar+ img_per_grp)/1.0e9 + overhead: %12.3f [GB]"%total_mem[1])
+				log_main.add("Nx:          current image size = %d"%nx)
+				log_main.add("Nproj:       number of particle images and it is CPU dependent.")
+				log_main.add("Navg:        number of 2D average images and it is CPU dependent.")
+				log_main.add("Nvar:        number of 2D variance images and it is CPU dependent.")
+				log_main.add("Img_per_grp: user defined image per group for averaging = %d"%img_per_grp)
+				log_main.add("Overhead:    total python overhead memory consumption   = %f"%overhead_loading)
+				log_main.add("Total memory) = 4.0*nx^2*(nproj + navg +nvar+ img_per_grp)/1.0e9 + overhead: %12.3f [GB]"%\
+				   (total_mem[1] + overhead_loading))
 			del full_data
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == heavy_load_myid:
