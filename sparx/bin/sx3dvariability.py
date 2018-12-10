@@ -113,7 +113,7 @@ def main():
 	from reconstruction import recons3d_em, recons3d_em_MPI
 	from reconstruction	import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from utilities      import read_text_row, get_image, get_im
+	from utilities      import read_text_row, get_image, get_im, wrap_mpi_send, wrap_mpi_recv
 	from utilities      import bcast_EMData_to_all, bcast_number_to_all
 	from utilities      import get_symt
 
@@ -546,9 +546,9 @@ def main():
 			total_mem       = sum(full_data)
 			if myid == main_node:
 				log_main.add("Nx:          current image size = %d"%nx)
-				log_main.add("Nproj:       number of particle images and it is CPU dependent.")
-				log_main.add("Navg:        number of 2D average images and it is CPU dependent.")
-				log_main.add("Nvar:        number of 2D variance images and it is CPU dependent.")
+				log_main.add("Nproj:       number of particle images.")
+				log_main.add("Navg:        number of 2D average images.")
+				log_main.add("Nvar:        number of 2D variance images.")
 				log_main.add("Img_per_grp: user defined image per group for averaging = %d"%img_per_grp)
 				log_main.add("Overhead:    total python overhead memory consumption   = %f"%overhead_loading)
 				log_main.add("Total memory) = 4.0*nx^2*(nproj + navg +nvar+ img_per_grp)/1.0e9 + overhead: %12.3f [GB]"%\
@@ -604,6 +604,7 @@ def main():
 				ttt = time()
 			inner=nx//2-4
 			outer=inner+2
+			xform_proj_for_2D = [ None for i in range(len(proj_list))]
 			for i in range(len(proj_list)):
 				ki = proj_angles[proj_list[i][0]][3]
 				if ki >= symbaselen:  continue
@@ -665,6 +666,7 @@ def main():
 
 				aveList.append(ave)
 				varList.append(var)
+				xform_proj_for_2D[i] = [phiM, thetaM, 0.0, 0.0, 0.0]
 
 				'''
 				if nvec > 0:
@@ -687,8 +689,23 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 			if (myid == heavy_load_myid):
 				log_main.add("Computing aveList and varList took %12.1f [m]"%((time()-ttt)/60.))
-			if options.ave2D:
+			if options.ave2D:	
+				nproj = len(xform_proj_for_2D)
+				nproj = mpi_reduce(nproj, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+				if myid == main_node:
+					txform_proj = [ None for i in range(nproj)]
+					txform_proj[0:len(xform_proj_for_2D)] = xform_proj_for_2D[:]
+					nc = len(xform_proj_for_2D)
+				wrap_mpi_send(xform_proj_for_2D, main_node, MPI_COMM_WORLD)
+				if myid == main_node:
+					for iproc in range(1, number_of_proc):
+						dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
+						txform_proj[nc:len(dummy)] = dummy[:]
+						nc +=len(dummy)
+						
+				del xform_proj_for_2D
 				from fundamentals import fpol
+				from applications import header
 				if myid == main_node:
 					log_main.add("Compute ave2D ... ")
 					km = 0
@@ -712,7 +729,7 @@ def main():
 								members = mpi_recv(3, MPI_FLOAT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 								ave.set_attr('refprojdir', map(float, members))
 								"""
-								tmpvol=fpol(ave, nx,nx,1)								
+								tmpvol=fpol(ave, nx, nx,1)								
 								tmpvol.write_image(os.path.join(options.output_dir, options.ave2D), km)
 								km += 1
 				else:
@@ -731,7 +748,10 @@ def main():
 						except:
 							mpi_send([-999.0,-999.0,-999.0], 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						"""
-
+				if myid == main_node:
+					header(os.path.join(options.output_dir, options.ave2D), params='xform.projection', fimport = txform_proj)
+					if not options.var2D: del txform_proj
+				mpi_barrier(MPI_COMM_WORLD)	
 			if options.ave3D:
 				from fundamentals import fpol
 				t5 = time()
@@ -795,6 +815,7 @@ def main():
 			if options.ave3D: del ave3D
 			if options.var2D:
 				from fundamentals import fpol 
+				from applications import header
 				if myid == main_node:
 					log_main.add("Compute var2D...")
 					km = 0
@@ -817,7 +838,10 @@ def main():
 					for im in range(len(varList)):
 						send_EMData(varList[im], main_node, im+myid+70000)#  What with the attributes??
 			mpi_barrier(MPI_COMM_WORLD)
-
+			if myid == main_node:
+				header(os.path.join(options.output_dir, options.ave2D), params = 'xform.projection', fimport = txform_proj)
+				del txform_proj
+			mpi_barrier(MPI_COMM_WORLD)
 		if options.var3D:
 			if myid == main_node: log_main.add("Reconstruct var3D ...")
 			t6 = time()
