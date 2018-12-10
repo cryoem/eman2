@@ -3254,6 +3254,11 @@ def memory_usage():
 """
 
 def circumference( img, inner = -1, outer = -1):
+	"""
+	Compute average within a shell between inner and outer radius
+	Subtract this shell average from the image
+	Multiply image by a spherical mask with inner radius
+	"""
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
@@ -3266,8 +3271,8 @@ def circumference( img, inner = -1, outer = -1):
 
 	[mean_a,sigma,imin,imax] = Util.infomask(img, model_circle(outer, nx, ny, nz) - inner_sphere, True)
 	inner_rest   = model_blank(nx, ny, nz, 1.0) - inner_sphere
-	Util.mul_img(inner_sphere, img)
-	return Util.addn_img(inner_sphere, Util.mult_scalar(inner_rest, mean_a ) )
+	return Util.muln_img(inner_sphere, img-mean_a)
+	#return Util.addn_img(inner_sphere, Util.mult_scalar(inner_rest, mean_a ) )
 
 def copy_attr( pin, name, pot ):
 	pot.set_attr( name, pin.get_attr(name) )
