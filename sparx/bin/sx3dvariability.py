@@ -455,7 +455,7 @@ def main():
 		else:
 			from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
 			from utilities		import set_params_proj, get_params_proj, params_3D_2D, get_params2D, set_params2D, compose_transform2
-			from utilities		import model_blank, nearest_proj, model_circle
+			from utilities		import model_blank, nearest_proj, model_circle, write_text_row
 			from applications	import pca
 			from statistics		import avgvar, avgvar_ctf, ccc
 			from filter		    import filt_tanl
@@ -700,7 +700,7 @@ def main():
 						dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
 						txform_proj[nc:len(dummy)] = dummy[:]
 						nc +=len(dummy)
-					write_text_file(txform_proj, os.path.join(options.output_dir, "params.txt"))
+					write_text_row(txform_proj, os.path.join(options.output_dir, "params.txt"))
 					del txform_proj
 				del xform_proj_for_2D
 				mpi_barrier(MPI_COMM_WORLD)
