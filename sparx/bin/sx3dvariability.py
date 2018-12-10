@@ -557,10 +557,8 @@ def main():
 				log_main.add("Data reading is done. Preprocessing starts! ")
 			for index_of_proj in range(len(all_proj)):
 				#image = get_im(stack, all_proj[index_of_proj])
-				#if reg: imgdata.append(subsample(image.get_clip(reg), options.decimate))
-				#else:   imgdata.append(subsample(image, options.decimate))
-				if( current_window > 0): imgdata[index_of_proj] = fdecimate(window2d(imgdata[index_of_proj],current_window,current_window), nx, ny))
-				else:                    imgdata[index_of_proj] = fdecimate(imgdata[index_of_proj], nx, ny))
+				if( current_window > 0): imgdata[index_of_proj] = fdecimate(window2d(imgdata[index_of_proj],current_window,current_window), nx, ny)
+				else:                    imgdata[index_of_proj] = fdecimate(imgdata[index_of_proj], nx, ny)
 				if current_decimate> 0.0:
 					ctf = imgdata[index_of_proj].get_attr("ctf")
 					ctf.apix = ctf.apix/current_decimate
@@ -572,7 +570,6 @@ def main():
 			if myid == heavy_load_myid:
 				log_main.add("All_proj preprocessing cost %7.2f m"%((time()-ttt)/60.))
 				log_main.add("Wait untill reading on all CPUs done...")
-			#del image
 			'''	
 			imgdata2 = EMData.read_images(stack, range(img_begin, img_end))
 			if options.fl > 0.0:
@@ -648,10 +645,8 @@ def main():
 				#for q in grp_imgdata:  Util.add_img2(var, q)
 				#Util.mul_scalar(var, 1.0/(len(grp_imgdata)-1))
 				# Switch to std dev
-				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e10, interpolation_method = "linear")
+				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e10, interpolation_method = "fourier")
 				var = square_root(threshold(var))
-				#if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
-				#else:	            ave, var = avgvar(grp_imgdata, mode="a")
 				"""
 				if myid == main_node:
 					ave.write_image("avgv.hdf",i)
@@ -741,7 +736,7 @@ def main():
 					ave3D = fpol(ave3D, nnxo, nnxo, nnxo) # always to the orignal image size
 					set_pixel_size(ave3D, 1.0)
 					ave3D.write_image(os.path.join(options.output_dir, options.ave3D))
-					log_main.add("%-70s:  %.2f\n"%("Ave3D reconstruction took %12.1f [m]"%((time()-t5)/60.0)))
+					log_main.add("Ave3D reconstruction took %12.1f [m]"%((time()-t5)/60.0))
 					log_main.add("%-70s:  %s\n"%("The reconstructed ave3D is saved as ", options.ave3D))
 					
 			mpi_barrier(MPI_COMM_WORLD)		
@@ -830,8 +825,8 @@ def main():
 				set_pixel_size(res, 1.0)
 				res.write_image(os.path.join(options.output_dir, options.var3D))
 				log_main.add("%-70s:  %s\n"%("The reconstructed var3D is saved as ", options.var3D))
-				log_main.add("%-70s:  %.2f\n"%("Var3D reconstruction took %f12.1 [m]"%((time()-t6)/60.0)))
-				log_main.add("%-70s:  %.2f\n"%("Total computation time %f12.1 [m]"%((time()-t0)/60.0)))
+				log_main.add("Var3D reconstruction took %f12.1 [m]"%((time()-t6)/60.0))
+				log_main.add("Total computation time %f12.1 [m]"%((time()-t0)/60.0))
 				log_main.add("sx3dvariability finishes")
 		from mpi import mpi_finalize
 		mpi_finalize()
