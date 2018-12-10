@@ -6,7 +6,7 @@ import nose.tools as nt
 import EMAN2_cppwrap
 import numpy
 import math
-from ..libpy import sparx_fundamentals as fu
+from sphire.libpy import sparx_fundamentals as fu
 
 
 ########
