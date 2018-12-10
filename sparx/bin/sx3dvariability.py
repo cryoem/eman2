@@ -547,18 +547,16 @@ def main():
 			if myid == main_node:
 				log_main.add("Total memory) = 4.0*nx*nx*(nproj + navg +nvar+ img_per_grp)/1.0e9 + overhead: %12.3f [GB]"%total_mem[1])
 			del full_data
-			#mpi_barrier(MPI_COMM_WORLD)
+			mpi_barrier(MPI_COMM_WORLD)
 			if myid == heavy_load_myid:
 				log_main.add("Begin reading and preprocessing images on processor. Wait... ")
 				ttt = time()
-			imgdata = EMData.read_images(stack, all_proj)			
-			#imgdata = []
-			if myid == heavy_load_myid:
-				log_main.add("Data reading is done. Preprocessing starts! ")
+			#imgdata = EMData.read_images(stack, all_proj)			
+			imgdata = [ None for im in range(len(all_proj))]
 			for index_of_proj in range(len(all_proj)):
 				#image = get_im(stack, all_proj[index_of_proj])
-				if( current_window > 0): imgdata[index_of_proj] = fdecimate(window2d(imgdata[index_of_proj],current_window,current_window), nx, ny)
-				else:                    imgdata[index_of_proj] = fdecimate(imgdata[index_of_proj], nx, ny)
+				if( current_window > 0): imgdata[index_of_proj] = fdecimate(window2d(get_im(stack, all_proj[index_of_proj]),current_window,current_window), nx, ny)
+				else:                    imgdata[index_of_proj] = fdecimate(get_im(stack, all_proj[index_of_proj]), nx, ny)
 				if current_decimate> 0.0:
 					ctf = imgdata[index_of_proj].get_attr("ctf")
 					ctf.apix = ctf.apix/current_decimate
