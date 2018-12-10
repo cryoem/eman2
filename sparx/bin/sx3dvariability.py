@@ -563,7 +563,7 @@ def main():
 				else:                    imgdata[index_of_proj] = fdecimate(imgdata[index_of_proj], nx, ny))
 				if current_decimate> 0.0:
 					ctf = imgdata[index_of_proj].get_attr("ctf")
-					ctf.apix = ctf.apix/options.decimate
+					ctf.apix = ctf.apix/current_decimate
 					imgdata[index_of_proj].set_attr("ctf", ctf)
 					
 				if myid == heavy_load_myid and index_of_proj%100 == 0:
