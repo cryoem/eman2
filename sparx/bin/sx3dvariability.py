@@ -842,6 +842,7 @@ def main():
 						send_EMData(varList[im], main_node, im+myid+70000)#  What with the attributes??
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == main_node:
+				from applications import header
 				header(os.path.join(options.output_dir, options.var2D), params = 'xform.projection',\
 				 fimport = os.path.join(options.output_dir, "params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
