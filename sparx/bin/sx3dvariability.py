@@ -738,8 +738,7 @@ def main():
 							mpi_send([-999.0,-999.0,-999.0], 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						"""
 				if myid == main_node:
-					header(os.path.join(options.output_dir, options.ave2D), params='xform.projection',\
-					    fimport = os.path.join(options.output_dir, "params.txt"))
+					header(os.path.join(options.output_dir, options.ave2D), params='xform.projection', fimport = os.path.join(options.output_dir, "params.txt"))
 				mpi_barrier(MPI_COMM_WORLD)	
 			if options.ave3D:
 				from fundamentals import fpol
@@ -829,8 +828,7 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == main_node:
 				from applications import header
-				header(os.path.join(options.output_dir, options.var2D), params = 'xform.projection',\
-				 fimport = os.path.join(options.output_dir, "params.txt"))
+				header(os.path.join(options.output_dir, options.var2D), params = 'xform.projection',fimport = os.path.join(options.output_dir, "params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
 		if options.var3D:
 			if myid == main_node: log_main.add("Reconstruct var3D ...")
