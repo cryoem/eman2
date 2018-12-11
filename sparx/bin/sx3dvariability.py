@@ -698,8 +698,9 @@ def main():
 				txform_proj = [ None for i in range(nproj)]
 				txform_proj[0:len(xform_proj_for_2D)] = xform_proj_for_2D[:]
 				nc = len(xform_proj_for_2D)
+			else:
 				wrap_mpi_send(xform_proj_for_2D, main_node, MPI_COMM_WORLD)
-			if myid == main_node:
+			if (myid == main_node):
 				for iproc in range(1, number_of_proc):
 					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
 					txform_proj[nc:len(dummy)] = dummy[:]
