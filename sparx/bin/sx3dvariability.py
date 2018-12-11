@@ -635,32 +635,13 @@ def main():
 				if options.fl > 0.0:
 					for k in range(img_per_grp):
 						grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
-				'''
-				if i < 10 and myid == main_node:
-					for k in xrange(10):
-						grp_imgdata[k].write_image("grp%03d.hdf"%i, k)
-				'''
-				"""
-				if myid == main_node and i==0:
-					for pp in xrange(len(grp_imgdata)):
-						grp_imgdata[pp].write_image("pp.hdf", pp)
-				"""
-				#ave, grp_imgdata = prepare_2d_forPCA(grp_imgdata)
-				"""
-				if myid == main_node and i==0:
-					for pp in xrange(len(grp_imgdata)):
-						grp_imgdata[pp].write_image("qq.hdf", pp)
-				"""
 
+				#  Because of background issues, only linear option works.
+				if options.CTF:  ave, var = aves_wiener(grp_imgdata, SNR = 1.0e5, interpolation_method = "linear")
+				else:  ave, var = ave_var(grp_imgdata)
 				# Switch to std dev
-				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e5, interpolation_method = "linear")
 				# threshold is not really needed,it is just in case due to numerical accuracy something turns out negative.
 				var = square_root(threshold(var))
-				"""
-				if myid == main_node:
-					ave.write_image("avgv.hdf",i)
-					var.write_image("varv.hdf",i)
-				"""
 
 				set_params_proj(ave, [phiM, thetaM, 0.0, 0.0, 0.0])
 				set_params_proj(var, [phiM, thetaM, 0.0, 0.0, 0.0])
