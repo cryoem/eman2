@@ -78,7 +78,7 @@ def main():
 	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=  --aa=   --sym=symmetry --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 	
-	parser.add_option("--output_dir",   type="string"	   ,	default="./",				help="Output directory")
+	parser.add_option("--output_dir",   type="string"	   ,	default="./",				    help="Output directory")
 	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="Write to the disk a stack of 2D averages")
 	parser.add_option("--var2D",		type="string"	   ,	default=False,				help="Write to the disk a stack of 2D variances")
 	parser.add_option("--ave3D",		type="string"	   ,	default=False,				help="Write to the disk reconstructed 3D average")
@@ -145,16 +145,18 @@ def main():
 					pass
 			except:
 				pass
-		if options.output_dir !="./" and not os.path.exists(options.output_dir): os.mkdir(options.output_dir)
+		current_output_dir = os.path.abspath(options.output_dir)
+		if not os.path.exists(current_output_dir): os.mkdir(current_output_dir)
+		
 		#  Input
 		#instack = "Clean_NORM_CTF_start_wparams.hdf"
 		#instack = "bdb:data"
 		
 		
 		from logger import Logger,BaseLogger_Files
-		if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
+		if os.path.exists(os.path.join(current_output_dir, "log.txt")): os.remove(os.path.join(current_output_dir, "log.txt"))
 		log_main=Logger(BaseLogger_Files())
-		log_main.prefix = os.path.join(options.output_dir, "./")
+		log_main.prefix = os.path.join(current_output_dir, "./")
 		
 		instack = args[0]
 		sym = options.sym.lower()
@@ -167,8 +169,8 @@ def main():
 		log_main.add(line)
 	
 		if(instack[:4] !="bdb:"):
-			if output_dir =="./": stack = "bdb:data"
-			else: stack = "bdb:"+options.output_dir+"/data"
+			#if output_dir =="./": stack = "bdb:data"
+			stack = "bdb:"+current_output_dir+"/data"
 			delete_bdb(stack)
 			junk = cmdexecute("sxcpy.py  "+instack+"  "+stack)
 		else: stack = instack
@@ -182,8 +184,8 @@ def main():
 		
 		for k in range(ks):
 			#Qfile = "Q%1d"%k
-			if options.output_dir!="./": Qfile = os.path.join(options.output_dir,"Q%1d"%k)
-			else: Qfile = os.path.join(options.output_dir, "Q%1d"%k)
+			#if options.output_dir!="./": Qfile = os.path.join(options.output_dir,"Q%1d"%k)
+			Qfile = os.path.join(current_output_dir, "Q%1d"%k)
 			#delete_bdb("bdb:Q%1d"%k)
 			delete_bdb("bdb:"+Qfile)
 			#junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
@@ -199,12 +201,12 @@ def main():
 			#junk = cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
 			#junk = cmdexecute("sxheader.py  bdb:Q%1d  --params=xform.projection  --import=ptsma%1d.txt"%(k,k))
 			DB.close()
-		if options.output_dir =="./": delete_bdb("bdb:sdata")
-		else: delete_bdb("bdb:" + options.output_dir + "/"+"sdata")
+		#if options.output_dir =="./": delete_bdb("bdb:sdata")
+		delete_bdb("bdb:" + current_output_dir + "/"+"sdata")
 		#junk = cmdexecute("e2bdb.py . --makevstack=bdb:sdata --filt=Q")
-		sdata = "bdb:"+options.output_dir+"/"+"sdata"
+		sdata = "bdb:"+current_output_dir+"/"+"sdata"
 		print(sdata)
-		junk = cmdexecute("e2bdb.py   " + options.output_dir +"  --makevstack="+sdata +" --filt=Q")
+		junk = cmdexecute("e2bdb.py   " + current_output_dir +"  --makevstack="+sdata +" --filt=Q")
 		#junk = cmdexecute("ls  EMAN2DB/sdata*")
 		#a = get_im("bdb:sdata")
 		a = get_im(sdata)
@@ -282,14 +284,14 @@ def main():
 
 		import string
 		options.sym = options.sym.lower()
-		 
+		current_output_dir = options.output_dir
 		# if global_def.CACHE_DISABLE:
 		# 	from utilities import disable_bdb_cache
 		# 	disable_bdb_cache()
 		# global_def.BATCH = True
 		
 		if myid == main_node:
-			if options.output_dir !="./" and not os.path.exists(options.output_dir): os.mkdir(options.output_dir)
+			if not os.path.exists(current_output_dir): os.mkdir(current_output_dir)# Never delete output_dir in the program!
 	
 		img_per_grp = options.img_per_grp
 		#nvec        = options.nvec
@@ -297,7 +299,7 @@ def main():
 		from logger import Logger,BaseLogger_Files
 		#if os.path.exists(os.path.join(options.output_dir, "log.txt")): os.remove(os.path.join(options.output_dir, "log.txt"))
 		log_main=Logger(BaseLogger_Files())
-		log_main.prefix = os.path.join(options.output_dir, "./")
+		log_main.prefix = os.path.join(current_output_dir, "./")
 
 		if myid == main_node:
 			line = ""
@@ -306,7 +308,7 @@ def main():
 			log_main.add("-------->>>Settings given by all options<<<-------")
 			log_main.add("Symmetry             : %s"%options.sym)
 			log_main.add("Input stack          : %s"%stack)
-			log_main.add("Output_dir           : %s"%options.output_dir)
+			log_main.add("Output_dir           : %s"%current_output_dir)
 			
 			if options.ave3D: log_main.add("Ave3d                : %s"%options.ave3D)
 			if options.var3D: log_main.add("Var3d                : %s"%options.var3D)
@@ -688,7 +690,7 @@ def main():
 					for im in range(len(dummy)):
 						txform_proj[nc] = dummy[im]
 						nc +=1
-				write_text_row(txform_proj, os.path.join(options.output_dir, "params.txt"))
+				write_text_row(txform_proj, os.path.join(current_output_dir, "params.txt"))
 				del txform_proj
 			del xform_proj_for_2D
 			mpi_barrier(MPI_COMM_WORLD)
@@ -701,7 +703,7 @@ def main():
 					for i in range(number_of_proc):
 						if i == main_node :
 							for im in range(len(aveList)):
-								aveList[im].write_image(os.path.join(options.output_dir, options.ave2D), km)
+								aveList[im].write_image(os.path.join(current_output_dir, options.ave2D), km)
 								km += 1
 						else:
 							nl = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
@@ -719,7 +721,7 @@ def main():
 								ave.set_attr('refprojdir', map(float, members))
 								"""
 								tmpvol=fpol(ave, nx, nx,1)								
-								tmpvol.write_image(os.path.join(options.output_dir, options.ave2D), km)
+								tmpvol.write_image(os.path.join(current_output_dir, options.ave2D), km)
 								km += 1
 				else:
 					mpi_send(len(aveList), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
@@ -738,7 +740,7 @@ def main():
 							mpi_send([-999.0,-999.0,-999.0], 3, MPI_FLOAT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 						"""
 				if myid == main_node:
-					header(os.path.join(options.output_dir, options.ave2D), params='xform.projection', fimport = os.path.join(options.output_dir, "params.txt"))
+					header(os.path.join(current_output_dir, options.ave2D), params='xform.projection', fimport = os.path.join(current_output_dir, "params.txt"))
 				mpi_barrier(MPI_COMM_WORLD)	
 			if options.ave3D:
 				from fundamentals import fpol
@@ -750,7 +752,7 @@ def main():
 					if current_decimate != 1.0: ave3D = resample(ave3D, 1./current_decimate)
 					ave3D = fpol(ave3D, nnxo, nnxo, nnxo) # always to the orignal image size
 					set_pixel_size(ave3D, 1.0)
-					ave3D.write_image(os.path.join(options.output_dir, options.ave3D))
+					ave3D.write_image(os.path.join(current_output_dir, options.ave3D))
 					log_main.add("Ave3D reconstruction took %12.1f [m]"%((time()-t5)/60.0))
 					log_main.add("%-70s:  %s\n"%("The reconstructed ave3D is saved as ", options.ave3D))
 					
@@ -811,7 +813,7 @@ def main():
 						if i == main_node :
 							for im in range(len(varList)):
 								tmpvol=fpol(varList[im], nx, nx,1)
-								tmpvol.write_image(os.path.join(options.output_dir, options.var2D), km)
+								tmpvol.write_image(os.path.join(current_output_dir, options.var2D), km)
 								km += 1
 						else:
 							nl = mpi_recv(1, MPI_INT, i, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
@@ -819,7 +821,7 @@ def main():
 							for im in range(nl):
 								ave = recv_EMData(i, im+i+70000)
 								tmpvol=fpol(ave, nx, nx,1)
-								tmpvol.write_image(os.path.join(options.output_dir, options.var2D), km)
+								tmpvol.write_image(os.path.join(current_output_dir, options.var2D), km)
 								km += 1
 				else:
 					mpi_send(len(varList), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
@@ -828,7 +830,7 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 			if myid == main_node:
 				from applications import header
-				header(os.path.join(options.output_dir, options.var2D), params = 'xform.projection',fimport = os.path.join(options.output_dir, "params.txt"))
+				header(os.path.join(current_output_dir, options.var2D), params = 'xform.projection',fimport = os.path.join(current_output_dir, "params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
 		if options.var3D:
 			if myid == main_node: log_main.add("Reconstruct var3D ...")
@@ -842,7 +844,7 @@ def main():
 				if current_decimate != 1.0: res	= resample(res, 1./current_decimate)
 				res = fpol(res, nnxo, nnxo, nnxo)
 				set_pixel_size(res, 1.0)
-				res.write_image(os.path.join(options.output_dir, options.var3D))
+				res.write_image(os.path.join(current_output_dir, options.var3D))
 				log_main.add("%-70s:  %s\n"%("The reconstructed var3D is saved as ", options.var3D))
 				log_main.add("Var3D reconstruction took %f12.1 [m]"%((time()-t6)/60.0))
 				log_main.add("Total computation time %f12.1 [m]"%((time()-t0)/60.0))
