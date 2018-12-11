@@ -1330,9 +1330,9 @@ class symclass(object):
                 # I have to use original phi2 and theta2 to compute Deltaz and wedgeFactor as otherwise
                 # points for include mirror differ from do not include mirror.
                 Deltaz = numpy.cos(numpy.radians(theta2_org)) - numpy.cos(numpy.radians(theta1))
-                s = delta * old_div( numpy.pi ,  180.0)
+                s = delta * old_div(numpy.pi, 180.0)
                 NFactor = old_div(3.6,  s)
-                wedgeFactor = abs(Deltaz * old_div((phi2_org - phi1) , 720.0))
+                wedgeFactor = abs(Deltaz * old_div((phi2_org - phi1), 720.0))
                 NumPoints = int(NFactor * NFactor * wedgeFactor)
                 angles.append([phi1, theta1, 0.0])
                 # initialize loop
@@ -1340,7 +1340,7 @@ class symclass(object):
                 z1 = numpy.cos(numpy.radians(theta1))
                 phi = phi1
                 for k in range(1, NumPoints - 1):
-                    z = z1 + Deltaz * old_div( k , (NumPoints - 1))
+                    z = z1 + old_div(Deltaz * k, (NumPoints - 1))
                     r = numpy.sqrt(1.0 - z * z)
                     phi = phi1 + (phi +  old_div(delta, r) - phi1)%phistep
                     theta = numpy.degrees(math.acos(z))

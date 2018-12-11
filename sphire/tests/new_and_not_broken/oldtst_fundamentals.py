@@ -1469,7 +1469,7 @@ class TestSymClassSymmetryRelated:
         for i,q in enumerate(angles):
             mat = self.rotmatrix(q[0],q[1],q[2])
             for j,l in enumerate(neighbors[sym]):
-                p1,p2,p3 = self.recmat( self.mulmat( mat , symatrix[l]) )
+                p1,p2,p3 = self.recmat( self.mulmat(mat, symatrix[l]) )
                 sang[i*(len(neighbors[sym])+1) + (j+1)] = [p1,p2,0.0]
         return sang
 
