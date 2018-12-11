@@ -655,7 +655,7 @@ def main():
 				# Switch to std dev
 				ave, var = aves_wiener(grp_imgdata, SNR = 1.0e5, interpolation_method = "linear")
 				# threshold is not really needed,it is just in case due to numerical accuracy something turns out negative.
-				var = square_root(threshold(var,inner,outer))
+				var = square_root(threshold(var))
 				"""
 				if myid == main_node:
 					ave.write_image("avgv.hdf",i)
