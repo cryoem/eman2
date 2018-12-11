@@ -695,7 +695,7 @@ def main():
 			nproj = len(xform_proj_for_2D)
 			nproj = mpi_reduce(nproj, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if myid == main_node:
-				txform_proj = [ None for i in range(nproj)]
+				txform_proj = [ [0.0, 0.0, 0.0, 0.0, 0.0] for i in range(nproj)]
 				txform_proj[0:len(xform_proj_for_2D)] = xform_proj_for_2D[:]
 				nc = len(xform_proj_for_2D)
 			else:
