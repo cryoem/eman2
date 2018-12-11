@@ -81,6 +81,45 @@ def makeAngRes(freqvol, nx, ny, nz, pxSize, freq_to_real=True):
 
 	return outAngResVol
 
+
+def output_volume(freqvol, resolut, apix, outvol, fsc, out_ang_res, nx, ny, nz, res_overall):
+	outvol_ang = os.path.splitext(outvol)[0] + "_ang.hdf"
+	outvol_shifted = os.path.splitext(outvol)[0] + "_shift.hdf"
+	outvol_shifted_ang = os.path.splitext(outvol_shifted)[0] + "_ang.hdf"
+
+	freqvol.write_image(outvol)
+	if(out_ang_res):
+		outAngResVol = makeAngRes(freqvol, nx, ny, nz, apix)
+		outAngResVol.write_image(outvol_ang)
+
+	if res_overall !=-1.0:
+		for ifreq in range(len(resolut)):
+			if resolut[ifreq][0] > res_overall:
+				 break
+		for jfreq in range(ifreq, len(resolut)):
+			resolut[jfreq][1] = 0.0	
+
+		data_freqvol = freqvol.get_3dview()
+		mask = data_freqvol != 0
+		percentile_25 = numpy.percentile(data_freqvol[mask], 25)
+		percentile_75 = numpy.percentile(data_freqvol[mask], 75)
+		iqr = percentile_75 - percentile_25
+		mask_low_pass = data_freqvol > percentile_75 + 1.5*iqr
+		mask_high_pass = data_freqvol < percentile_25 - 1.5*iqr
+		mean_real = 1 / float(numpy.mean(data_freqvol[mask & mask_low_pass & mask_high_pass]))
+		overall_res_real = 1 / float(res_overall)
+		#mean_ang = options.apix / float(EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
+
+		volume_out_real = makeAngRes(freqvol, nx, ny, nz, 1)
+		volume_out_real += (overall_res_real - mean_real)
+		volume_out = makeAngRes(volume_out_real, nx, ny, nz, 1, False)
+		volume_out.write_image(outvol_shifted)
+		if out_ang_res:
+			outAngResVol = makeAngRes(freqvol, nx, ny, nz, apix)
+			outAngResVol.write_image(outvol_shifted_ang)
+
+	if(fsc != None): sparx_utilities.write_text_row(resolut, fsc)
+
 def main():
 	pass#IMPORTIMPORTIMPORT import os
 	pass#IMPORTIMPORTIMPORT import sys
@@ -174,38 +213,7 @@ def main():
 
 		if(myid == 0):
 			# Remove outliers based on the Interquartile range
-			outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
-			if res_overall !=-1.0:
-				for ifreq in range(len(resolut)):
-					if resolut[ifreq][0] >res_overall:
-						 break
-				for jfreq in range(ifreq, len(resolut)):
-					resolut[jfreq][1] = 0.0	
-
-				data_freqvol = freqvol.get_3dview()
-				mask = data_freqvol != 0
-				percentile_25 = numpy.percentile(data_freqvol[mask], 25)
-				percentile_75 = numpy.percentile(data_freqvol[mask], 75)
-				iqr = percentile_75 - percentile_25
-				mask_low_pass = data_freqvol > percentile_75 + 1.5*iqr
-				mask_high_pass = data_freqvol < percentile_25 - 1.5*iqr
-				mean_real = 1 / float(numpy.mean(data_freqvol[mask & mask_low_pass & mask_high_pass]))
-				#mean_ang = options.apix / float(EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
-				overall_res_real = 1 / float(res_overall)
-				volume_out_real = makeAngRes(freqvol, nx, ny, nz, 1)
-				volume_out_real += (overall_res_real - mean_real)
-				volume_out = makeAngRes(volume_out_real, nx, ny, nz, 1, False)
-				volume_out.write_image(outvol)
-				if options.out_ang_res:
-					outAngResVol = makeAngRes(freqvol, nx, ny, nz, options.apix)
-					outAngResVol.write_image(outAngResVolName)
-			else:
-				freqvol.write_image(outvol)
-				if(options.out_ang_res):
-					outAngResVol = makeAngRes(freqvol, nx, ny, nz, options.apix)
-					outAngResVol.write_image(outAngResVolName)
-
-			if(options.fsc != None): sparx_utilities.write_text_row(resolut, options.fsc)
+			output_volume(freqvol, resolut, options.apix, outvol, options.fsc, options.out_ang_res, nx, ny, nz, res_overall)
 		pass#IMPORTIMPORTIMPORT from mpi import mpi_finalize
 		mpi.mpi_finalize()
 
@@ -283,38 +291,7 @@ def main():
 			if(bailout):  break
 		#print(len(resolut))
 		# remove outliers
-		outAngResVolName = os.path.splitext(outvol)[0] + "_ang.hdf"
-		if res_overall !=-1.0:
-			for ifreq in range(len(resolut)):
-				if resolut[ifreq][0] >res_overall:
-					 break
-			for jfreq in range(ifreq, len(resolut)):
-				resolut[jfreq][1] = 0.0	
-
-			data_freqvol = freqvol.get_3dview()
-			mask = data_freqvol != 0
-			percentile_25 = numpy.percentile(data_freqvol[mask], 25)
-			percentile_75 = numpy.percentile(data_freqvol[mask], 75)
-			iqr = percentile_75 - percentile_25
-			mask_low_pass = data_freqvol > percentile_75 + 1.5*iqr
-			mask_high_pass = data_freqvol < percentile_25 - 1.5*iqr
-			mean_real = 1 / float(numpy.mean(data_freqvol[mask & mask_low_pass & mask_high_pass]))
-			#mean_ang = options.apix / float(EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
-			overall_res_real = 1 / float(res_overall)
-			volume_out_real = makeAngRes(freqvol, nx, ny, nz, 1)
-			volume_out_real += (overall_res_real - mean_real)
-			volume_out = makeAngRes(volume_out_real, nx, ny, nz, 1, False)
-			volume_out.write_image(outvol)
-			if options.out_ang_res:
-				outAngResVol = makeAngRes(freqvol, nx, ny, nz, options.apix)
-				outAngResVol.write_image(outAngResVolName)
-		else:
-			freqvol.write_image(outvol)
-			if(options.out_ang_res):
-				outAngResVol = makeAngRes(freqvol, nx, ny, nz, options.apix)
-				outAngResVol.write_image(outAngResVolName)
-
-		if(options.fsc != None): sparx_utilities.write_text_row(resolut, options.fsc)
+		output_volume(freqvol, resolut, options.apix, outvol, options.fsc, options.out_ang_res, nx, ny, nz, res_overall)
 
 if __name__ == "__main__":
 	main()
