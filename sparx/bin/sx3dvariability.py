@@ -695,7 +695,7 @@ def main():
 			nproj = len(xform_proj_for_2D)
 			nproj = mpi_reduce(nproj, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if myid == main_node:
-				txform_proj = [ [0.0, 0.0, 0.0, 0.0, 0.0] for i in range(nproj)]
+				txform_proj = [ None for i in range(nproj)]
 				txform_proj[0:len(xform_proj_for_2D)] = xform_proj_for_2D[:]
 				nc = len(xform_proj_for_2D)
 			else:
@@ -703,8 +703,9 @@ def main():
 			if (myid == main_node):
 				for iproc in range(1, number_of_proc):
 					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
-					txform_proj[nc:len(dummy)] = dummy[:]
-					nc +=len(dummy)
+					for im in range(len(dummy)):
+						txform_proj[nc] = dummy[im]
+						nc +=1
 				write_text_row(txform_proj, os.path.join(options.output_dir, "params.txt"))
 				del txform_proj
 			del xform_proj_for_2D
