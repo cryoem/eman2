@@ -315,6 +315,7 @@ class SXGuiCter(QtGui.QWidget):
 #			self.wplotrotavgcoarse.show()
 		
 		### This section is responsible for background updates
+		self.checkedpwrot = False
 		self.busy = False
 #		self.needupdate = True
 		self.needredisp = False
@@ -1869,6 +1870,7 @@ class SXGuiCter(QtGui.QWidget):
 		
 		# Now update the plots
 		self.rotinf_table = read_text_file(self.cter_pwrot_file_path, ncol=-1)
+		ncols = len(self.rotinf_table)  # old rotinf file has 6 columns, 8 with baseline-fitting
 		
 		# print "MRK_DEBUG: Last entry of the 1st colum should be a micrograph name %s which is same as " % os.path.basename(self.rotinf_table[0][-1])
 		
@@ -1882,6 +1884,15 @@ class SXGuiCter(QtGui.QWidget):
 		# global_min = float("inf")
 		# global_max = float("-inf")
 		
+		# Subtract background and apply envelope
+		if ncols == 6:
+			if not self.checkedpwrot:
+				print("Old-style pwrot file found, will fit baseline and envelope using splines.")
+				print("Use new version of sxcter.py to pre-calculate baseline-subtracted profiles.")
+				self.checkedpwrot = True
+			newCurveList = self.fitSpline()
+			self.rotinf_table = self.rotinf_table + newCurveList
+		
 		# Spatial frequency
 		spFreqList = self.rotinf_table[self.idx_rotinf_freq]
 		
@@ -1890,7 +1901,7 @@ class SXGuiCter(QtGui.QWidget):
 			# List of plots, containing: label, title, index, checkboxValue
 			plotList = self.graph_map_list[idx_graph]
 			
-			# Partres file has 4 columns
+			# Partres file has 4 columns, and the last two plots are the splinefit curves
 			columnValues = self.rotinf_table[plotList[self.idx_graph_idx_rotinf]]
 		
 			self.wplotrotavgcoarse.set_data((spFreqList,columnValues), plotList[self.idx_graph_item_name], quiet=False, color=idx_graph, linetype=0)
@@ -1972,7 +1983,9 @@ class SXGuiCter(QtGui.QWidget):
 		
 		# Update plot
 		self.updatePlotVisibility()
-	
+		
+	# I removed fit splines from here.  Please do not modify output from CTER in the GUI.
+	#  This is not allowed in the system.  PAP.
 		
 	def newRotAvgDisplay(self,val=None):
 		"""Change rotational average plot display status."""
