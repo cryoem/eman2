@@ -1405,6 +1405,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_wi
 	mask = Util.soft_edge(mask, edge_width, "C")
 	return mask
 
+'''
 def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
 	"""
 		Name
@@ -1425,6 +1426,7 @@ def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_st
 	for i in range(ndilation):   mask = dilation(mask)
 	#mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
 	return mask
+'''
 
 def cosinemask(im, radius = -1, cosine_width = 5, bckg = None, s=999999.0):
 	"""
@@ -1710,7 +1712,7 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
 			check_consistency = False, stack_mode = False, debug_mode = False, \
 			program_name = "cter_mrk() in morphology.py", \
-			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1, write_pws=False):
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -2167,8 +2169,6 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 		outmicthumb = "%s/micthumb" % (output_directory)
 	if debug_mode:  
 		outravg = "%s/ravg" % (output_directory)
-	if write_pws:
-		outpower2d = os.path.join(output_directory,"power2d")
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
@@ -2178,8 +2178,6 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			os.mkdir(outmicthumb)
 		if debug_mode:
 			os.mkdir(outravg)
-		if write_pws and not os.path.exists(outpower2d): 
-			os.mkdir(outpower2d)
 	
 	if RUNNING_UNDER_MPI:
 		# Make all mpi processes wait for main mpi process to create output directory
@@ -2361,7 +2359,8 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 			
 			mask = model_circle(istop - 1, wn, wn) * (model_blank(wn, wn, 1, 1.0) - model_circle(istart, wn, wn))
 			qse = threshold((qa - bckg))#*envl
-			
+			#(qse*mask).write_image("rs2.hdf")
+			#qse.write_image("rs3.hdf")
 			##  SIMULATION
 			#bang = 0.7
 			#qse = ctf2_rimg(wn, generate_ctf([defc,Cs,voltage,pixel_size,0.0,wgh, bang, 37.0]) )
@@ -2598,10 +2597,6 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
 				
-				if write_pws: 
-					draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
-					mask=mask, outdir=outpower2d, radius_1a=ibec)
-				
 				# Compute CTF limit (theoretical resolution limit based on the oscillations of CTF) 
 				# For output, use ctflim (relative frequency limit [1/A]), not ctflim_abs (absolute frequency limit)
 				# 
@@ -2631,24 +2626,9 @@ def cter_mrk(input_image_path, output_directory, selection_list = None, wn = 512
 				except:		pwrot2 = [0.0] * lnsb
 				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
 				lnsb = min(len(crot2),len(pwrot1),len(crot2),len(pwrot2))
+				write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], pwrot1, crot1, pwrot2, crot2], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
 				
-				# Apply background and envelope to theoretical profile
-				first_nonzero = next(i for i in range(len(pwrot2)) if pwrot2[i] > 0)  # fit is weird if leading zero elements
-				pwrot2_envl = defocus_baseline_fit(pwrot2, first_nonzero, lnsb, 5, 2).tolist()
-				#write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], pwrot2, pwrot2_envl], 'pwrot2_envl.txt')
-				pwrot2_bkgd = defocus_baseline_fit(pwrot2, first_nonzero+1, lnsb, 2, 3).tolist()
-				#write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], pwrot2, pwrot2_bkgd], 'pwrot2_bkgd.txt')
-				crot2_bkgd = defocus_baseline_fit(crot2,0,lnsb,3,3)
-				#write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], crot2, crot2_bkgd], 'crot2_bkgd.txt')
-				
-				pwrot2_minus_bkgd = np.subtract(pwrot2, pwrot2_bkgd).tolist()
-				crot2_minus_bkgd = np.subtract(crot2, crot2_bkgd)
-				envl_minus_bkgd = np.subtract(pwrot2_envl, pwrot2_bkgd)
-				crot2_times_envl = np.multiply(crot2_minus_bkgd, envl_minus_bkgd).tolist()
-				# (If I subtract the background and then try to fit the envelope, I get weird answers. --Tapu)
-				
-				write_text_file([list(range(lnsb)), [float(i)/wn/pixel_size for i in range(lnsb)], pwrot1, crot1, pwrot2, crot2, pwrot2_minus_bkgd, crot2_times_envl], os.path.join(outpwrot, "%s_rotinf.txt"%(img_basename_root)))
-				
+				#
 				# NOTE: 2016/03/23 Toshio Moriya
 				# Compute mean of extrema differences (differences at peak & trough) between 
 				# (1) experimental rotational average with astigmatism (pwrot2)
@@ -2787,7 +2767,7 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
 			check_consistency = False, stack_mode = False, debug_mode = False, \
 			program_name = "cter_pap() in morphology.py", \
-			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1, write_pws=False):
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -3244,8 +3224,6 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 		outmicthumb = "%s/micthumb" % (output_directory)
 	if debug_mode:  
 		outravg = "%s/ravg" % (output_directory)
-	if write_pws:
-		outpower2d = os.path.join(output_directory,"power2d")
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
@@ -3255,8 +3233,6 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 			os.mkdir(outmicthumb)
 		if debug_mode:
 			os.mkdir(outravg)
-		if write_pws and not os.path.exists(outpower2d): 
-			os.mkdir(outpower2d)
 	
 	if RUNNING_UNDER_MPI:
 		# Make all mpi processes wait for main mpi process to create output directory
@@ -3671,10 +3647,6 @@ def cter_pap(input_image_path, output_directory, selection_list = None, wn = 512
 				bd1 = max(bd1, 1.0e-15)
 				
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
-				
-				if write_pws: 
-					draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
-					mask=mask, outdir=outpower2d, radius_1a=ibec)
 				
 				# Compute CTF limit (theoretical resolution limit based on the oscillations of CTF) 
 				# For output, use ctflim (relative frequency limit [1/A]), not ctflim_abs (absolute frequency limit)
@@ -5182,7 +5154,7 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			kboot = 16, overlap_x = 50, overlap_y = 50, edge_x = 0, edge_y = 0, \
 			check_consistency = False, stack_mode = False, debug_mode = False, \
 			program_name = "cter_vpp() in morphology.py", vpp_options = [], \
-			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1, write_pws=False):
+			RUNNING_UNDER_MPI = False, main_mpi_proc = 0, my_mpi_proc_id = 0, n_mpi_procs = 1):
 	"""
 	Arguments
 		input_image_path  :  file name pattern for Micrographs Modes (e.g. 'Micrographs/mic*.mrc') or particle stack file path for Stack Mode (e.g. 'bdb:stack'; must be stack_mode = True).
@@ -5640,8 +5612,6 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 		outmicthumb = "%s/micthumb" % (output_directory)
 	if debug_mode:  
 		outravg = "%s/ravg" % (output_directory)
-	if write_pws:
-		outpower2d = os.path.join(output_directory,"power2d")
 	if my_mpi_proc_id == main_mpi_proc:
 		# Make output directory
 		if not os.path.exists(output_directory):
@@ -5651,8 +5621,6 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			os.mkdir(outmicthumb)
 		if debug_mode:
 			os.mkdir(outravg)
-		if write_pws and not os.path.exists(outpower2d): 
-			os.mkdir(outpower2d)
 	
 	if RUNNING_UNDER_MPI:
 		# Make all mpi processes wait for main mpi process to create output directory
@@ -5997,10 +5965,6 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 				bd1 = max(bd1, 1.0e-15)
 				cvavbd1 = stdavbd1 / bd1 * 100 # use percentage
 				
-				if write_pws: 
-					draw_power2d(img_basename_root, qse, [defc,Cs,voltage,pixel_size,0.0,wgh, bd1, cd1], 
-					mask=mask, outdir=outpower2d, radius_1a=ibec)
-				
 				# Compute CTF limit (theoretical resolution limit based on the oscillations of CTF) 
 				# For output, use ctflim (relative frequency limit [1/A]), not ctflim_abs (absolute frequency limit)
 				# 
@@ -6152,49 +6116,6 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 	if cter_mode_idx == idx_cter_mode_stack:
 		return totresi[0][1], totresi[0][7], totresi[0][8], totresi[0][9], totresi[0][10], totresi[0][11]
 	
-	
-def draw_power2d(file_root, input_pws, ctf_params, mask=None, outdir='.', radius_1a=None):
-	"""
-	Writes 2D power spectra
-	
-	Inputs:
-		file_root	filename
-		input_pws	power spectrum
-		ctf_params	CTF parameters, list of form [defocus,cs,voltage,pixel_size,bfactor,ac,astig,astang]
-		mask    	mask to apply to power spectrum (default: None)
-		outdir  	output directory (default: .)
-		radius_1a	radius (1/A) at which to draw circle depicting nominal resolution (default: None)
-	"""
-	import os
-	from utilities import generate_ctf, model_circle
-	from fundamentals import window2d
-	
-	pixel_size = ctf_params[3]
-	idim = input_pws['nx']
-	
-	# Draw 2D power spectra
-	new_pws = input_pws
-	new_pws.process_inplace("normalize")
-	if mask: new_pws = input_pws*mask
-	
-	# Insert quarter of theoretical power spectrum
-	calcpw = ctf2_rimg(idim, generate_ctf(ctf_params))  # B-factor is not calculated
-	halfboxdim = int(idim/2)
-	topright = idim*3/4
-	quarterctf = window2d(calcpw, halfboxdim, halfboxdim, opt="a", ix=topright, iy=topright)
-	quarterctf.process_inplace("normalize")
-	new_pws.insert_clip(quarterctf, (halfboxdim,halfboxdim))
-	
-	# Draw circle at resolution
-	if radius_1a:
-		radius_fpx = radius_1a * idim * pixel_size
-		circle = model_circle(radius_fpx, idim, idim) - model_circle(radius_fpx-1, idim, idim)  # by subtracting two discs
-		new_pws += 3*new_pws['sigma']*circle
-
-	# Write to disk
-	new_pws.write_image(os.path.join(outdir, "%s_pws.hdf"%(file_root)))
-
-
 ########################################
 # functions used by cter_vpp
 ########################################
