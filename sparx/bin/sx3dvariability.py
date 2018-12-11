@@ -545,7 +545,10 @@ def main():
 			heavy_load_myid = minindx[-1][1]
 			total_mem       = sum(full_data)
 			if myid == main_node:
-				log_main.add("Nx:          current image size = %d"%nx)
+				if current_window == 0:
+					log_main.add("Nx:   current image size = %d. Decimated by %f from %d"%(nx, current_decimate, nnxo))
+				else:
+					log_main.add("Nx:   current image size = %d. Windowed to %d, and decimated by %f from %d"%(nx, current_window, current_decimate, nnxo))
 				log_main.add("Nproj:       number of particle images.")
 				log_main.add("Navg:        number of 2D average images.")
 				log_main.add("Nvar:        number of 2D variance images.")
