@@ -567,7 +567,8 @@ def main():
 				#image = get_im(stack, all_proj[index_of_proj])
 				if( current_window > 0): imgdata[index_of_proj] = fdecimate(window2d(get_im(stack, all_proj[index_of_proj]),current_window,current_window), nx, ny)
 				else:                    imgdata[index_of_proj] = fdecimate(get_im(stack, all_proj[index_of_proj]), nx, ny)
-				if current_decimate> 0.0:
+				
+				if (current_decimate> 0.0 and options.CTF):
 					ctf = imgdata[index_of_proj].get_attr("ctf")
 					ctf.apix = ctf.apix/current_decimate
 					imgdata[index_of_proj].set_attr("ctf", ctf)
