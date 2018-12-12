@@ -132,7 +132,8 @@ def main():
 	# detect if program is running under MPI
 	RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
 	if RUNNING_UNDER_MPI: global_def.MPI = True
-	current_output_dir = os.path.abspath(options.output_dir)
+	if options.output_dir =="./": current_output_dir = os.path.abspath(options.output_dir)
+	else: current_output_dir = options.output_dir
 	if options.symmetrize :
 		if RUNNING_UNDER_MPI:
 			try:
