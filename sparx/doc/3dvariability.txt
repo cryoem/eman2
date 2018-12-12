@@ -38,7 +38,7 @@ For structures that have symmetries (e.g. c2):
   ; %%--%%fl : Low-pass filter frequency : Stop-band frequency of the low-pass filter to be applied to the images prior to variability calculation but after decimation. Specify it in absolute frequency (%%>%% 0.0 and %%<=%% 0.5). By default, no filtering. (default 0.0)
   ; %%--%%aa : Low-pass filter fall-off  : Fall-off width of the low-pass filter to be applied to the images prior to variability calculation but after decimation. Specify it in absolute frequency (%%>%% 0.0 and %%<=%% 0.5). 0.01 works in most of cases. Effective only with %%--%%fl %%>%% 0.0 and %%--%%aa %%>%% 0.0 has to be specified. (default 0.0) : %%--%%fl!=0.0
   ; %%--%%symmetrize : Symmetrise input stack: Prepare input stack for handling symmetry. Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. Notice this step can be run with only one CPU and there is no MPI version for it. (default False)
-  ; %%--%%overhead : python overhead memory: User estimates python overhead memory per node. The default value is 0.5 GB per CPU. (default 0.5)
+  ; %%--%%overhead : python overhead memory: User estimates python overhead memory per CPU. The default value is 0.5 GB per CPU. (default 0.5)
 
 \\
 === Advanced Parameters ===
