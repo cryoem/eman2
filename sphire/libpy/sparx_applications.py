@@ -309,7 +309,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 			adw_img += float(nima-Ng)/(nima-1)
 	else:  ctf_2_sum = None
 	# startup
-	numr = sparx_alignment.Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
+	numr = sparx_alignment.Numrinit(first_ring, last_ring, rstep, mode)  #precalculate rings
 	wr = sparx_alignment.ringwe(numr, mode)
 	
 	if myid == main_node:
