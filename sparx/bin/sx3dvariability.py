@@ -826,11 +826,11 @@ def main():
 					mpi_send(len(varList), 1, MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, MPI_COMM_WORLD)
 					for im in range(len(varList)):
 						send_EMData(varList[im], main_node, im+myid+70000)#  What with the attributes??
-			mpi_barrier(MPI_COMM_WORLD)
-			if myid == main_node:
-				from applications import header
-				header(os.path.join(current_output_dir, options.var2D), params = 'xform.projection',fimport = os.path.join(current_output_dir, "params.txt"))
-			mpi_barrier(MPI_COMM_WORLD)
+				mpi_barrier(MPI_COMM_WORLD)
+				if myid == main_node:
+					from applications import header
+					header(os.path.join(current_output_dir, options.var2D), params = 'xform.projection',fimport = os.path.join(current_output_dir, "params.txt"))
+				mpi_barrier(MPI_COMM_WORLD)
 		if options.var3D:
 			if myid == main_node: log_main.add("Reconstruct var3D ...")
 			t6 = time()
