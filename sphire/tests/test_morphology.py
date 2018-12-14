@@ -418,6 +418,60 @@ class MyTestCase(unittest.TestCase):
 
         self.assertTrue(return_new, return_old)
 
+    def test_defocus_baseline_fit_true_should_return_equal_object(self):
+        roo =   [entry for entry in numpy.arange(0, 10).tolist()]
+        i_start = 2
+        i_stop = 12
+        nrank = 4
+        iswi = 2
+
+        return_new = fu.defocus_baseline_fit(roo, i_start, i_stop, nrank, iswi)
+        return_old = oldfu.defocus_baseline_fit(roo, i_start, i_stop, nrank, iswi)
+
+        self.assertTrue(return_new, return_old)
+
+
+    def test_simpw1d_true_should_return_equal_object(self):
+        defocus = 1
+        data = [entry for entry in numpy.arange(0, 10).tolist()]
+
+        return_new = fu.simpw1d(defocus,data)
+        return_old = oldfu.simpw1d(defocus,data)
+
+        self.assertTrue(return_new, return_old)
+
+
+    def test_simpw1d_pap_true_should_return_equal_object(self):
+        defocus = 1
+        data = [entry for entry in numpy.arange(0, 10).tolist()]
+
+        return_new = fu.simpw1d_pap(defocus,data)
+        return_old = oldfu.simpw1d_pap(defocus,data)
+
+        self.assertTrue(return_new, return_old)
+
+
+    def test_simpw1d_print_true_should_return_equal_object(self):
+        defocus = 1
+        data = [entry for entry in numpy.arange(0, 10).tolist()]
+
+        return_new = fu.simpw1d_print(defocus,data)
+        return_old = oldfu.simpw1d_print(defocus,data)
+
+        self.assertTrue(return_new, return_old)
+
+
+    def test_movingaverage_true_should_return_equal_object(self):
+        data = [entry for entry in numpy.arange(0, 10).tolist()]
+        window_size = 2
+
+        return_new = fu.movingaverage(data,window_size)
+        return_old = oldfu.movingaverage(data, window_size)
+
+        self.assertTrue(return_new, return_old)
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
