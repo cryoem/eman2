@@ -36,21 +36,25 @@ class Test_lib_compare(unittest.TestCase):
     # yrng =  list of possible shifts
     # step = stepsize of the shift
     """
-    def test_ali2d_single_iter_true_should_return_equal_objects(self):
-        a,b,c = get_data(3)
-        data = [a]
-        numr = [int(entry) for entry in numpy.arange(0, 10).tolist()]
-        wr   = [0.0] * int(len(numr)/3)    #list(numpy.arange(0, 4))
-        xrng = [int(entry) for entry in numpy.arange(0, 1).tolist()]
-        yrng = [int(entry) for entry in numpy.arange(0, 1).tolist()]
-        cs   = [0.0] * 2
-        cnx  = 6
-        cny  = 6
-        step = 2
-        tavg = a
-        return_new = fu.ali2d_single_iter(data,numr,wr,cs,tavg,cnx,cny,xrng,yrng,step)
-        return_old = oldfu.ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step)
-        self.assertEqual(return_new,return_old)
+    # def test_ali2d_single_iter_true_should_return_equal_objects(self):
+    #     a,b,c = get_data(3)
+    #     data = [a]
+    #     numr = [int(entry) for entry in numpy.arange(0, 6).tolist()]
+    #     wr   = [0.0] * int(len(numr)/3)    #list(numpy.arange(0, 4))
+    #     xrng = [int(entry) for entry in numpy.arange(0, 1).tolist()]
+    #     yrng = [int(entry) for entry in numpy.arange(0, 1).tolist()]
+    #     cs   = [0.0] * 2
+    #     cnx  = 2
+    #     cny  = 2
+    #     step = 16
+    #     tavg = e2cpp.EMData(10, 10)
+    #     tavg = numpy.arange(10 * 10, dtype=numpy.float32).reshape(10, 10)
+    #     return_new = fu.ali2d_single_iter(data,numr,wr,cs,tavg,cnx,cny,xrng,yrng,step)
+    #     print("hello ")
+
+
+        # return_old = oldfu.ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step)
+        # self.assertEqual(return_new,return_old)
 
 
     def test_ang_n_true_should_return_equal_object(self):
@@ -81,25 +85,81 @@ class Test_lib_compare(unittest.TestCase):
 
     # def test_ornq(self):
     #     # will do something later
-    #     a,b,c = get_data(3)
-    #     image = [a,b,c]
-    #     crefim = a
-    #     xrng = list(numpy.arange(0, 4))
-    #     yrng = list(numpy.arange(0, 4))
-    #     step = 2
-    #     mode = 'f'
-    #     numr = numpy.arange(0, 4)
-    #     numr = list(numr)
-
-
-
-
+    #     a,b = get_data(2)
+    #     image  = a
+    #     crefim = b
+    #     xrng = [int(entry) for entry in numpy.arange(0, 4).tolist()]
+    #     yrng = [int(entry) for entry in numpy.arange(0, 4).tolist()]
+    #     step   = 2
+    #     mode   = 'f'
+    #     numr = [int(entry) for entry in numpy.arange(0, 6).tolist()]
+    #     cnx  = 2
+    #     cny  = 2
+    #     return_new = fu.ornq(a,b,xrng,yrng,step,mode,numr,cnx,cny)
+    #     return_old = fu.ornq(a, b, xrng, yrng, step, mode, numr, cnx, cny)
+    #
+    #     self.assertEqual(return_new, return_old)
+    #
     # def test_ormq(self):
-    #     # will do something later
-
+    #     a,b = get_data(2)
+    #     image  = a
+    #     crefim = b
+    #     xrng = [int(entry) for entry in numpy.arange(0, 4).tolist()]
+    #     yrng = [int(entry) for entry in numpy.arange(0, 4).tolist()]
+    #     step   = 2
+    #     mode   = 'f'
+    #     numr = [int(entry) for entry in numpy.arange(0, 6).tolist()]
+    #     cnx  = 2
+    #     cny  = 2
+    #     return_new = fu.ormq(a,b,xrng,yrng,step,mode,numr,cnx,cny)
+    #     return_old = fu.ormq(a, b, xrng, yrng, step, mode, numr, cnx, cny)
+    #
+    #     self.assertEqual(return_new, return_old)
 
     # def test_ormq_fast(self):
-    #     # will do something later
+    #     a,b,c,d,e,f,g,h,i = get_data(9)
+    #     image = []
+    #     image.append(a)
+    #     image.append(b)
+    #     image.append(c)
+    #     image.append(d)
+    #     image.append(e)
+    #     image.append(f)
+    #     image.append(g)
+    #     image.append(h)
+    #     crefim = i
+    #     # xrng = [int(entry) for entry in numpy.arange(0, 4).tolist()]
+    #     # yrng = [int(entry) for entry in numpy.arange(0, 4).tolist()]
+    #
+    #     xrng = 4
+    #     yrng = 4
+    #     step = 1
+    #     numr = [int(entry) for entry in numpy.arange(0, 6).tolist()]
+    #     mode = 'f'
+    #
+    #     return_new = fu.ormq_fast(image, crefim, xrng, yrng, step, numr, mode)
+    #     return_old = fu.ormq_fast(image, crefim, xrng, yrng, step, numr, mode)
+    #
+    #     self.assertEqual(return_new, return_old)
+
+
+    # def test_prepref(self):
+    #     a,b,c = get_data(3)
+    #     data = [a,b,c]
+    #     maskfile = ????
+    #     mode   = 'f'
+    #     numr = [int(entry) for entry in numpy.arange(0, 6).tolist()]
+    #     cnx  = 2
+    #     cny  = 2
+    #     maxrangex = 5
+    #     maxrangey = 5
+    #     step = 3
+    #
+    #
+    #     return_new = fu.prepref(data,maskfile,cnx,cny,numr,mode,maxrangex,maxrangey,step)
+    #     return_old = fu.prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step)
+
+
 
 
 

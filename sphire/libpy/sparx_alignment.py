@@ -441,7 +441,7 @@ def prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step):
 
 	return dimage
 
-def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", numr = None, MPI=False, \
+def prepare_refrings(volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", numr = None, MPI=False, \
 						phiEqpsi = "Zero", kbx = None, kby = None, initial_theta = None, \
 						delta_theta = None, initial_phi = None):
 	"""

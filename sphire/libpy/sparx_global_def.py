@@ -49,7 +49,7 @@ pass#IMPORTIMPORTIMPORT import time
 interpolation_method_2D = "quadratic"
 
 # Eulerian angles:
-#    SPIDER, EMAN, IMAGIC
+#    SPIDER, EMAN, IMAGICF
 
 Eulerian_Angles = "SPIDER"
 
