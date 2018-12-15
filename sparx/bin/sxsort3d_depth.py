@@ -50,13 +50,13 @@ mpirun  -np 48  --hostfile ./node012.txt  sxsort3d_depth.py \
 III. Run the program on a single node workstation. The minimum requirement for a successful run on 
      a single workstation is the 2D data size is less than the total memory of the workstation. 
 
-mpirun  -np 8  --hostfile ./node0.txt  sxsort3d_depth.py --orientation_groups=40 \
+mpirun  -np 8  --hostfile ./node0.txt  sxsort3d_depth.py --orientation_cones=40 \
      --output_dir=sorting_bmask04 --sym=c1  --radius=30  \
          --img_per_grp=2800    --instack=bdb:data  >sorting_bmask04/printout &
          
 
 Frequently used options:
-a. --compute_on_the_fly: (valid only for meridien refinement)It enables sorting done with iterations with large 
+a. --compute_on_the_fly: valid only for meridien refinement.  It enables sorting done with iterations with large 
      number of smearing. The shifted data are computed on the fly.
 b. --nstep: Number of steps for sorting shrinks the minimum group size from high bound to low bound. Defalut value is 3.
 c. --use_umat: using fuzzy membership to stabilize sorting. 
@@ -377,7 +377,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 	while (keepgoing == 1):### start a run
 		Tracker["nruns"] = nruns
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			log_main.add('Box %d has been under processing for %f minutes...'%(nbox, (time()-box_start)/60.))	
+			log_main.add('Box %d was running for %10.1f minutes...'%(nbox, (time()-box_start)/60.))	
 		within_box_run_dir = os.path.join(work_dir, "run%d"%nruns)
 		unaccounted_file   = os.path.join(within_box_run_dir, "Unaccounted_from_previous_run.txt")
 		if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -491,7 +491,7 @@ def depth_clustering_box(work_dir, input_accounted_file, \
 				mpi_barrier(MPI_COMM_WORLD)
 				###---------------->>>     Kmeans clustering      <<<----------------------
 				tmp_final_list, kmeans_iterations, minimum_grp_size[indep_run_iter], do_freeze[indep_run_iter]=\
-				    Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, iter, cdata, fdata, srdata, ctf_images, \
+				    Kmeans_minimum_group_size_orien_cones(nbox, iter_mstep, iter, cdata, fdata, srdata, ctf_images, \
 					parameterstructure, norm_per_particle, MGSKmeans_index_file, params, \
 					 minimum_grp_size[indep_run_iter], do_freeze[indep_run_iter], indep_run_iter, \
 					    clean_volumes = Tracker["clean_volumes"])
@@ -941,7 +941,7 @@ def sort3d_init(to_be_decided, log_main):
 		log_main.add("Number of images per group is too small.")
 		keepsorting = 0
 	if Tracker["total_stack"] <= Blockdata["nproc"]*Tracker["minimum_img_per_cpu"]:
-		log_main.add("Too few images are assigned to one single CPU.")
+		log_main.add("Too few images are assigned to a single CPU.")
 		keepsorting = 0
 	return keepsorting
 			
@@ -1825,7 +1825,7 @@ def recons3d_trl_struct_group_nofsc_shifted_data_fcm_MPI(myid, main_node,\
 		return None, None, None
 #####=====================================================================================
 #####========>>> Constrained Kmeans clustering and respective utilities <<<<==============
-def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fdata, srdata,\
+def Kmeans_minimum_group_size_orien_cones(nbox, iter_mstep, run_iter, cdata, fdata, srdata,\
        ctf_images,paramstructure, norm_per_particle, partids, params, \
          minimum_group_size_init, freeze_changes, indep_iter, clean_volumes = True):
 	global Tracker, Blockdata
@@ -1919,20 +1919,20 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 	Tracker["total_stack"]          = iter_assignment.shape[0]
 	nima                            = len(cdata) # local size
 	image_start, image_end          = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
-	Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
+	Tracker["min_orien_cone_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
 	rest_time  = time()
-	angle_step = get_angle_step_from_number_of_orien_groups(Tracker["orientation_groups"])
+	angle_step = get_angle_step_from_number_of_orien_cones(Tracker["orientation_cones"])
 	acc_rest   = time() - rest_time
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if Tracker["do_timing"]: print("angle_step  take  %f seconds "%(acc_rest/1.))
 	rest_time  = time()
-	ptls_in_orien_groups = get_angle_step_and_orien_groups_mpi(params, partids, angle_step)
+	ptls_in_orien_cones = get_angle_step_and_orien_cones_mpi(params, partids, angle_step)
 	acc_rest             = time() - rest_time
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if Tracker["do_timing"]: print("orien search take  %f seconds "%(acc_rest/1.))
 	rest_time  = time()
 	current_mu = Tracker["mu"]
-	minimum_group_size       = max(minimum_group_size, len(ptls_in_orien_groups)) # At least one particle in one orien group
+	minimum_group_size       = max(minimum_group_size, len(ptls_in_orien_cones)) # At least one particle in one orien cone
 	minimum_group_size_ratio = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]), 0.95)	
 	### -------  printed info----------------------------------------------------------------------------------------------------
 	if( Blockdata["myid"] == Blockdata["main_node"]):
@@ -1942,7 +1942,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		msg = "Total_stack:  %d K = : %d  nxinit: %d  CTF:  %s  Symmetry:  %s  stop percentage: %f  3-D mask: %s focus mask: %s  Comparison method: %s  minimum_group_size: %d orien  %d"% \
 		   (Tracker["total_stack"], Tracker["number_of_groups"], Tracker["nxinit"],  Tracker["constants"]["CTF"], Tracker["constants"]["symmetry"], \
 		   stopercnt, Tracker["constants"]["mask3D"], Tracker["constants"]["focus3D"], Tracker["constants"]["comparison_method"], \
-		       minimum_group_size, len(ptls_in_orien_groups))
+		       minimum_group_size, len(ptls_in_orien_cones))
 		log_main.add(msg)
 		log_main.add("Minimum_grp_size   low  high", minimum_group_size, Tracker["minimum_grp_size"][0],Tracker["minimum_grp_size"][1])
 		log_main.add("Img_per_grp  low  high", Tracker["constants"]["img_per_grp"], Tracker["img_per_grp"][0],Tracker["img_per_grp"][1])
@@ -1992,7 +1992,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		mpi_barrier(MPI_COMM_WORLD)####----------
 		acc_rest = time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if Tracker["do_timing"]: print("orien_groups take  %f minutes"%(acc_rest/60.))
+			if Tracker["do_timing"]: print("orien_cones take  %f minutes"%(acc_rest/60.))
 		rest_time           = time()
 		current_group_sizes = get_group_size_from_iter_assign(iter_assignment)
 		
@@ -2109,21 +2109,21 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		###-------------------------------------------------------------------------------
 		acc_rest = time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if Tracker["do_timing"]: print("compute dmatrix of various orien groups step1 take  %f minutes"%(acc_rest/60.))
+			if Tracker["do_timing"]: print("computation of dmatrix for various orientation cones step1 took  %10.1f minutes"%(acc_rest/60.))
 		rest_time = time()
-		###------------Ranking and Shortest distance assignment in orien groups-----------
+		###------------Ranking and Shortest distance assignment in orien cones-----------
 		last_iter_assignment = np.copy(iter_assignment)
 		iter_assignment      = np.full(Tracker["total_stack"], -1, dtype=np.int32)
-	 	for iorien in range(len(ptls_in_orien_groups)):
+	 	for iorien in range(len(ptls_in_orien_cones)):
 			if iorien%Blockdata["nproc"] == Blockdata["myid"]:
-				iter_assignment[ptls_in_orien_groups[iorien]] = \
+				iter_assignment[ptls_in_orien_cones[iorien]] = \
 				do_assignment_by_dmatrix_orien_group_minimum_group_size(\
-				 dmatrix, ptls_in_orien_groups[iorien], Tracker["number_of_groups"], \
+				 dmatrix, ptls_in_orien_cones[iorien], Tracker["number_of_groups"], \
 				   minimum_group_size_ratio)
 		mpi_barrier(MPI_COMM_WORLD)
 		acc_rest = time() - rest_time
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			if Tracker["do_timing"]:print("compute dmatrix of various orien groups step2 take  %f minutes"%(acc_rest/60.))
+			if Tracker["do_timing"]:print("compute dmatrix of various orientation cones step2 take  %f minutes"%(acc_rest/60.))
 		rest_time = time()
 		if Blockdata["myid"] != Blockdata["main_node"]: 
 			wrap_mpi_send(iter_assignment, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -2138,7 +2138,7 @@ def Kmeans_minimum_group_size_orien_groups(nbox, iter_mstep, run_iter, cdata, fd
 		td = time() - tdmat
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			if Tracker["do_timing"]:
-				print("compute dmatrix of various orien groups step3 take  %f minutes total %f minutes"%(acc_rest/60., td/60.))
+				print("computation of dmatrix for various orientation cones step3 took  %10.1f minutes, total %10.1f minutes"%(acc_rest/60., td/60.))
 		rest_time = time()
 		###-------------------------------------->>>>>  AI make decisions <<<<<<<<--------
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -4020,7 +4020,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 				    indx, len(any), 'rejected', decision_table[1][indx], gave[indx], gvar[indx]))
 		###---------------------------------------------------------------------------------------------------------------
 		log_main.add('-------------------------------------------------------------------------')
-		log_main.add('----->>>Current FSC0.143 versus group sizes<<<-----')
+		log_main.add('----->>>Current FSC@0.143 versus group sizes<<<-----')
 		for il in range(len(list_stable)):
 			log_main.add('%5d   %8d        %3d       %3d'%(il,len(list_stable[il]), res_list[il], (res_list[il] - ares143)))
 		log_main.add('-------------------------------------------------------------------------')
@@ -4053,7 +4053,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1,\
 		if (Blockdata["myid"] == Blockdata["main_node"]):
 			log_main.add('There are no clusters that can pass criterion checking')
 			log_main.add('Sorting eliminates the smallest group, and continues.')
-			Tracker["orientation_groups"]     = max(Tracker["orientation_groups"]//2, 4)
+			Tracker["orientation_cones"]     = max(Tracker["orientation_cones"]//2, 4)
 			Tracker["no_cluster_generation"]  = True
 			if number_of_groups>=3: assi = np.random.randint(0, number_of_groups, size=len(full_list))
 			else:                   assi = np.random.randint(0, 3, size=len(full_list))
@@ -4587,9 +4587,9 @@ def MPI_volume_start_end(number_of_groups, ncolor, mycolor):
 	return igroup_start, igroup_end
 ####=================================================================	
 ###===================>>> refangles partition <<<====================	
-def get_angle_step_from_number_of_orien_groups(orien_groups):
+def get_angle_step_from_number_of_orien_cones(orien_cones):
 	global Tracker, Blockdata
-	N = orien_groups
+	N = orien_cones
 	angle_step = 60.
 	while len(Blockdata["symclass"].even_angles(angle_step))< N: angle_step /=2.
 	while len(Blockdata["symclass"].even_angles(angle_step))> N: angle_step +=0.1
@@ -4622,7 +4622,7 @@ def parti_oriens(params, angstep, smc):
 		occupancy[l].append(i)
 	return occupancy, eah
 	
-def get_angle_step_and_orien_groups_mpi(params_in, partids_in, angstep):
+def get_angle_step_and_orien_cones_mpi(params_in, partids_in, angstep):
 	global Tracker, Blockdata
 	from applications import MPI_start_end
 	from utilities    import wrap_mpi_recv, wrap_mpi_bcast, wrap_mpi_send, \
@@ -4637,26 +4637,26 @@ def get_angle_step_and_orien_groups_mpi(params_in, partids_in, angstep):
 		for im in range(len(partids)): 
 			subparams.append(params[partids[im]])
 		occu, eah = parti_oriens(subparams, angstep, Blockdata["symclass"])
-		ptls_in_orien_groups = []
+		ptls_in_orien_cones = []
 		reassign_list        = []
 		for l,q in enumerate(occu):
-			if len(q)<Tracker["min_orien_group_size"]: reassign_list +=q
-			else:      ptls_in_orien_groups.append(q)
+			if len(q)<Tracker["min_orien_cone_size"]: reassign_list +=q
+			else:      ptls_in_orien_cones.append(q)
 		import random
 		from   random import shuffle
 		shuffle(reassign_list)
 		for a in reassign_list:
-			img = random.randint(0, len(ptls_in_orien_groups) - 1)
-			ptls_in_orien_groups[img].append(a)
+			img = random.randint(0, len(ptls_in_orien_cones) - 1)
+			ptls_in_orien_cones[img].append(a)
 		del reassign_list
-		for img in range(len(ptls_in_orien_groups)):
-			tmp = sorted(ptls_in_orien_groups[img])
-			ptls_in_orien_groups[img][:] = tmp[:]
-	else: ptls_in_orien_groups = 0
-	ptls_in_orien_groups = wrap_mpi_bcast( \
-	  ptls_in_orien_groups,Blockdata["main_node"], MPI_COMM_WORLD)
+		for img in range(len(ptls_in_orien_cones)):
+			tmp = sorted(ptls_in_orien_cones[img])
+			ptls_in_orien_cones[img][:] = tmp[:]
+	else: ptls_in_orien_cones = 0
+	ptls_in_orien_cones = wrap_mpi_bcast( \
+	  ptls_in_orien_cones,Blockdata["main_node"], MPI_COMM_WORLD)
 	  
-	return ptls_in_orien_groups
+	return ptls_in_orien_cones
 ##### ======================================	
 ## conversion
 ###=====================>>>    rec3d for sorting    <<<=====================
@@ -5439,7 +5439,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	
 	if update_sym ==1:
 		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-		Tracker["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
+		Tracker["orientation_cones"] = max(4, Tracker["constants"]["orientation_cones"]//Blockdata["symclass"].nsym)
 	
 	# Setting for margin error				
 	chunk_dict = {}
@@ -6793,7 +6793,7 @@ def check_mpi_settings(log_main):
 		     Tracker["constants"]["nnxo"]))
 		nxinit = smallprime(nxinit-nxinit%2)
 		nxinit = nxinit - nxinit%2
-	else: ERROR("Incorrect FSC0.143", "check_mpi_settings", 1, Blockdata["myid"])
+	else: ERROR("Incorrect FSC@0.143", "check_mpi_settings", 1, Blockdata["myid"])
 	### pre-calculated 2D data: ----------------------------------------------------------
 	#1. Cdata(data for comparison)
 	#2. Rdata(data for rec3D) # smearing could dramatically increase data size
@@ -6833,7 +6833,7 @@ def check_mpi_settings(log_main):
 		mem_bytes = os.sysconf('SC_PAGE_SIZE')*os.sysconf('SC_PHYS_PAGES')# e.g. 4015976448
 		mem_gib   = mem_bytes/(1024.**3) # e.g. 3.74
 		if( Blockdata["myid"] == Blockdata["main_node"]):
-			log_main.add("Available memory information provided by the operating system(GB):  %8.3f "%mem_gib)
+			log_main.add("Available memory information provided by the operating system   : %8.3f [GB] "%mem_gib)
 	except: mem_gib = None
 	
 	if Tracker["constants"]["memory_per_node"] == -1.:
@@ -6854,17 +6854,17 @@ def check_mpi_settings(log_main):
 			log_main.add("Number of images per group:                                         %8d     "%Tracker["constants"]["img_per_grp"])
 		else:
 			log_main.add("Number of images per group:                                         %8d     "%(Tracker["constants"]["total_stack"]//Tracker["constants"]["init_K"]))
-		log_main.add("The total available memory per node(in GB):                         %8.3f   "%total_memory)
-		log_main.add("The size of total input 2D stack(in GB):                            %8.3f   "%(raw_data_size))
-		log_main.add("The per-node amount of memory 2D data will occupy(in GB):           %8.3f   "%(raw_data_size_per_node))
-		log_main.add("Precalculated 2D data (no smearing) for sorting(in GB)              %8.3f   "%(sorting_data_size_per_node))
-		log_main.add("Reserved memory for overhead loading per node(in GB):               %8.3f   "%sys_required_mem)
+		log_main.add("The total available memory per node   [GB]:                         %8.3f   "%total_memory)
+		log_main.add("The size of total input 2D stack   [GB]:                            %8.3f   "%(raw_data_size))
+		log_main.add("The per-node amount of memory 2D data will occupy   [GB]:           %8.3f   "%(raw_data_size_per_node))
+		log_main.add("Precalculated 2D data (no smearing) for sorting   [GB]:             %8.3f   "%(sorting_data_size_per_node))
+		log_main.add("Reserved overhead memory per node   [GB]:                           %8.3f   "%sys_required_mem)
 		
 	if (total_memory - sys_required_mem - sorting_data_size_per_node ) <0.0:
-		ERROR("Insufficient memory to pass the sorting processs. Increase a node", "check_mpi_settings", 1, Blockdata["myid"])
+		ERROR("Insufficient memory forthe sorting processs. Increase number of nodes", "check_mpi_settings", 1, Blockdata["myid"])
 		
 	if (total_memory - sys_required_mem - raw_data_size_per_node - 2*raw_data_size_per_node*ratio**2 ) <0.0: 
-		ERROR("Insufficient memory to read in the raw data to produce downsized data. Increase a node", \
+		ERROR("Insufficient memory to read in image data. Increase number of nodes", \
 		   "check_mpi_settings", 1, Blockdata["myid"])
 			
 	images_per_cpu = int(float(Tracker["constants"]["total_stack"])/Blockdata["nproc"])
@@ -6889,14 +6889,14 @@ def check_mpi_settings(log_main):
 	precalculated_2D_data = raw_data_size_per_node*ratio**2*(max(avg_smearing_on_node/avg_images_on_node,1.) + 3.)
 	
 	if ((precalculated_2D_data - sys_required_mem)>total_memory) and (not Tracker["constants"]["compute_on_the_fly"]):
-		ERROR("The size of precalculated shifted 2D data is too large. Turn on the option compute_on_the_fly", \
+		ERROR("The size of precalculated shifted 2D data is too large. Turn on the compute_on_the_fly option", \
 		  "check_mpi_settings", 1, Blockdata["myid"])
 	else:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			log_main.add("Percentage of memory occupied by precalculated shifted 2D data:     %8.3f%% "%\
 			   (precalculated_2D_data/total_memory*100.))
 			if Tracker["constants"]["compute_on_the_fly"]:
-				log_main.add("The compute_on_the_fly option is on. The multiplely assiged 2D data is precacluated till 90 percents of the memory is filled up")
+				log_main.add("The compute_on_the_fly option is on. The 2D data is precacluated untill 90% of the memory is filled")
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		log_main.add('----------------------------------------------------------------------------------------------------------------\n')
 	return
@@ -6915,7 +6915,7 @@ def set_sorting_global_variables_mpi(log_file):
 		Tracker["stop_mgskmeans_percentage"]          = 10.
 		Tracker["depth_order"]                        = 2
 		Tracker["random_group_elimination_threshold"] = 0.
-		if (Tracker["freeze_groups"] ==1): 
+		if(Tracker["freeze_groups"] == 1): 
 			Tracker["nstep"]         = 1
 			Tracker["box_learning"]  = 0
 		### -----------Orientation constraints--------------------------------------------
@@ -6939,20 +6939,20 @@ def set_sorting_global_variables_mpi(log_file):
 		Tracker["fixed_sorting_size"]         = False
 		### ---------------------------------------------------------------------------------------------
 		if Tracker["search_mode"]:
-			log_file.add("Sorting is set on search_mode and starts from K = %d"%Tracker["constants"]["init_K"])
+			log_file.add("Sorting is set to search_mode and starts from K = %d"%Tracker["constants"]["init_K"])
 			
 		elif (Tracker["freeze_groups"]== 1) and (not Tracker["search_mode"]):
-			log_file.add("Sorting is set on freeze_groups mode (prior to v1.2)")
+			log_file.add("Sorting is set to freeze_groups mode (as existed prior to v1.2 of this program)")
 			
 		else: log_file.add("Sorting is set on general mode")
 		
 		if Tracker["use_umat"]: log_file.add("Fuzzy membership is applied to stabilize sorting")
-			
+
 		log_file.add("Sorting depth order:                                   %8d"%Tracker["depth_order"])
 		log_file.add("Maximum box iteration:                                 %8d"%Tracker["constants"]["box_niter"])
 		log_file.add("Minimum_img_per_cpu:                                   %8d"%Tracker["minimum_img_per_cpu"])
 		log_file.add("MGSKmeans maximum iteration:                           %8d"%Tracker["total_number_of_iterations"])
-		log_file.add("Minimum number of images per orientation angle:        %8d"%Tracker["minimum_ptl_number"])
+		log_file.add("Minimum number of images per orientation cone:         %8d"%Tracker["minimum_ptl_number"])
 		log_file.add("Minimum group shrink size steps:                       %8d"%Tracker["nstep"])
 		log_file.add("Box_learning:                                          %8d"%Tracker["box_learning"])
 		log_file.add("Ratio for swapping accounted for and unaccounted:      %8.2f"%Tracker["swap_ratio"])
@@ -6965,8 +6965,8 @@ def set_sorting_global_variables_mpi(log_file):
 		calculate_grp_size_variation(log_file, state = "sort_init")
 		####------------------------------------------------------------------------------
 		log_file.add("-----------------------------------------------------------------------------------")
-		log_file.add(" Compute scaling relationship (dres_table) between FSC0.143 and image group size   ")
-		log_file.add(" FSC0.143 (in pixels)  size  low bound     high bound    width of pixel bin        ")
+		log_file.add(" Compute scaling relationship (dres_table) between FSC@0.143 and image group size   ")
+		log_file.add(" FSC@0.143 (in pixels)  size  low bound     high bound    width of pixel bin        ")
 		log_file.add("-----------------------------------------------------------------------------------")
 		dict         = {}
 		previous_res = 0
@@ -7018,7 +7018,7 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 	else: fdata_in_core = cdata_in_core
 	ctfdata = cdata_in_core
 	refvol_size = (nxinit*nxinit*nxinit*4.0*2)/1.e9*Blockdata["no_of_processes_per_group"]# including the 3D mask
-	log_main.add( "Precalculated data (GB) in core per node (available memory per node: %6.2f):"%Tracker["constants"]["memory_per_node"])
+	log_main.add( "Precalculated data in core per node (available memory per node: %6.2f GB):"%Tracker["constants"]["memory_per_node"])
 	log_main.add( "Images for comparison: %6.2f GB; shifted images: %6.2f GB; focus images: %6.2f GB; ctfs: %6.2f GB"%\
 			(cdata_in_core, srdata_in_core, fdata_in_core, ctfdata))
 	tdata = cdata_in_core+srdata_in_core+ctfdata+refvol_size+fdata_in_core
@@ -7395,7 +7395,7 @@ def set_minimum_group_size(log_main, printing_dres_table = True):
 		mlow, mhigh, min_res = Tracker["minimum_grp_size"][0], Tracker["minimum_grp_size"][1], Tracker["minimum_grp_size"][2]
 		log_main.add("--------------------------------------------------------------------------------------")
 		log_main.add("                           Dres_table                                                 ")
-		log_main.add("FSC0.143 differences (mu) between the (K-1) small groups and one large group ")
+		log_main.add("FSC@0.143 differences (mu) between the (K-1) small groups and one large group ")
 		log_main.add("Total number of images: %8d   number of groups: %3d  "%(total_stack, number_of_groups))
 		log_main.add("Mu   down   up  (to total/K)  small size   large size  ratio")
 		log_main.add("--------------------------------------------------------------------------------------")
@@ -7403,7 +7403,7 @@ def set_minimum_group_size(log_main, printing_dres_table = True):
 			log_main.add("%3d   %3d     %3d        %10d      %10d    %5.4f"%(dres_table[il][0], dres_table[il][1], \
 			  dres_table[il][2], dres_table[il][3], dres_table[il][4], dres_table[il][3]/float(dres_table[il][4])))
 	if mu<Tracker["constants"]["mu"]: log_main.add("The user-provided mu is too large. It is changed to %d"%mu)
-	log_main.add("Determined minimum_grp_size in range [%d,%d] at FSC0.143 %d  with given mu=%d, and total= %d   K=%d\n"%\
+	log_main.add("Determined minimum_grp_size in range [%d,%d] at FSC@0.143 %d  with given mu=%d, and total= %d   K=%d\n"%\
 	(mlow, mhigh, min_res, mu, Tracker["total_stack"], Tracker["number_of_groups"]))
 	return
 ####--------------------------------------------------------------------------------------
@@ -7518,7 +7518,7 @@ def calculate_grp_size_variation(log_file, state = "box_init"):
 	else:                  mhigh1 = total_stack//Tracker["number_of_groups"]
 	low_res1  = get_res143(scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], mlow1))
 	high_res1 = get_res143(scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], mhigh1))
-	log_file.add("Images group size range [%d, %d]  (Fall into the same Fourier pixel) at FSC0.143  %5d   "%(mlow1, mhigh1, high_res1))
+	log_file.add("Images group size range [%d, %d]  (Fall into the same Fourier pixel) at FSC@0.143  %5d   "%(mlow1, mhigh1, high_res1))
 	Tracker["img_per_grp"] = [max(mlow, mlow1),  mhigh1,  min_res, total_stack, Tracker["number_of_groups"]]
 	log_file.add("                                                                   ")
 	log_file.add("Current_img_per_grp = total/K=%d; total=%d; K=%d "%(Tracker["current_img_per_grp"], total_stack, number_of_groups))
@@ -7590,7 +7590,7 @@ def main():
 	
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " --refinement_dir=masterdir_of_sxmeridien   --output_dir=sort3d_output --mask3D=mask.hdf --focus=binarymask.hdf  --radius=outer_radius " +\
-	"  --sym=c1  --img_per_grp=img_per_grp  --minimum_grp_size=minimum_grp_size "
+	"  --sym=c1  --img_per_grp=img_per_grp --niter_for_sorting=12"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--refinement_dir", type ="string",  default ='',  help="sxmeridien 3-D refinement directory")
 	parser.add_option("--instack",        type ="string",  default ='',  help="file name, data stack for sorting provided by user. It applies when sorting starts from a given data stack")
@@ -7625,16 +7625,16 @@ def main():
 		parser.add_option("--img_per_grp",                 type   ="int",           default =-1,        help="Number of images per group, default value will activate automated group search")
 		parser.add_option("--nsmear",                      type   ="float",         default =-1.,       help="Number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
 		parser.add_option("--memory_per_node",             type   ="float",         default =-1.0,      help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
-		parser.add_option("--orientation_groups",          type   ="int",           default = 20,       help="Number of orientation groups in the asymmetric unit")
+		parser.add_option("--orientation_cones",           type   ="int",           default = 20,       help="Number of orientation cones in the asymmetric unit")
 		parser.add_option("--not_include_unaccounted",     action ="store_true",    default =False,     help="Do not reconstruct unaccounted elements in each generation")
 		parser.add_option("--notapplybckgnoise",           action ="store_true",    default =False,     help="Do not applynoise")
 		parser.add_option("--num_core_set",                type   ="int",           default =-1,	    help="Number of images for reconstructing core set images. Will not reconstruct core set images if the total number of core set images is less than this")
 		parser.add_option("--check_smearing",              action ="store_true",    default =False,     help="Check the smearing per iteration and estimate the precalculated data")
 		parser.add_option("--compute_on_the_fly",          action ="store_true",    default =False,     help="Pre-compute part of multiple assignment images for reconstruction till memory is filled up and then the other part on the fly")
 		parser.add_option("--nstep",                       type   ="int",           default =5,		    help="Number of steps to decrease minimum group size from high bound to low bound")
-		parser.add_option("--overhead",                    type   ="float",         default =5.0,       help="Estimated python overhead per node in GB")
+		#parser.add_option("--overhead",                    type   ="float",         default =5.0,       help="Estimated python overhead per node in GB")
 		parser.add_option("--not_freeze_groups",           action ="store_true",    default =False,     help="Do not remove small groups during within-box clustering")
-		parser.add_option("--use_umat",                    action ="store_true",    default =False,     help="Use fuzzy membership to stabalize sorting")
+		parser.add_option("--use_umat",                    action ="store_true",    default =False,     help="Use fuzzy group membership to stabalize sorting")
 
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
@@ -7700,11 +7700,11 @@ def main():
 	
 		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
 		Constants["fuse_freq"]           = 45.  # Now in A, convert to pixels before being used
-		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
+		Constants["orientation_cones"]  = options.orientation_cones # orientation constrained angle step
 		Constants["num_core_set"]        = options.num_core_set
 		Constants["check_smearing"]      = options.check_smearing
 		Constants["compute_on_the_fly"]  = options.compute_on_the_fly
-		Constants["overhead"]            = max(options.overhead, 1.)
+		Constants["overhead"]            = 5.0#max(options.overhead, 1.)
 		#
 		#
 		# Create and initialize Tracker dictionary with input options  # State Variables	
@@ -7745,8 +7745,8 @@ def main():
 				
 		try : 
 			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-			Tracker["orientation_groups"] = \
-			    max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
+			Tracker["orientation_cones"] = \
+			    max(4, Tracker["constants"]["orientation_cones"]//Blockdata["symclass"].nsym)
 		except: pass
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
@@ -7803,14 +7803,14 @@ def main():
 		parser.add_option("--img_per_grp",                       type   ="int",           default =-1,         help="Number of images per group, default value will activate automated group search")
 		parser.add_option("--nsmear",                            type   ="float",         default =10.,        help="Number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
 		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,       help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
-		parser.add_option("--orientation_groups",                type   ="int",           default = 20,        help="Number of orientation groups in the asymmetric unit")
+		parser.add_option("--orientation_cones",                type   ="int",           default = 20,        help="Number of orientation groups in the asymmetric unit")
 		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,      help="Do not reconstruct unaccounted elements in each generation")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,      help="Flag to turn off background noise")
 		parser.add_option("--num_core_set",                      type   ="int",           default =-1,		   help="Number of images for reconstructing core set images. Will not reconstruct core set images if the total number of core set images is less than this")
 		parser.add_option("--nstep",                             type   ="int",           default =7,		   help="number of steps to decrease minimum group size from high bound to low bound")
-		parser.add_option("--overhead",                          type   ="float",         default =5.0,        help="Estimated python overhead per node in GB")
+		#parser.add_option("--overhead",                          type   ="float",         default =5.0,        help="Estimated python overhead per node in GB")
 		parser.add_option("--not_freeze_groups",                 action ="store_true",    default =False,      help="Do not remove small groups during within-box clustering")
-		parser.add_option("--use_umat",                          action ="store_true",    default =False,      help="Use fuzzy membership to stabilize sorting")
+		parser.add_option("--use_umat",                          action ="store_true",    default =False,      help="Use fuzzy membership group to stabilize sorting")
 		
 
 		(options, args) = parser.parse_args(sys.argv[1:])
@@ -7868,10 +7868,10 @@ def main():
 	
 		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
 		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
-		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
+		Constants["orientation_cones"]  = options.orientation_cones # orientation constrained angle step
 		Constants["num_core_set"]        = options.num_core_set
 		Constants["compute_on_the_fly"]  = False
-		Constants["overhead"]            = max(options.overhead, 1.)
+		Constants["overhead"]            = 5.0#max(options.overhead, 1.)
 		#
 		#
 		# Create and initialize Tracker dictionary with input options  # State Variables<<<------------	
@@ -7920,7 +7920,7 @@ def main():
 		checking_flag                              =  0 # reset
 		Blockdata["fftwmpi"]                       = True
 		Blockdata["symclass"]                      = symclass(Tracker["constants"]["symmetry"])
-		Tracker["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)		
+		Tracker["orientation_cones"] = max(4, Tracker["constants"]["orientation_cones"]//Blockdata["symclass"].nsym)		
 		Blockdata["ncpuspernode"]     = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]          = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 		create_subgroup()
