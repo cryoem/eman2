@@ -2,18 +2,19 @@ from __future__ import print_function
 from __future__ import division
 
 import numpy
-import shutil
 import copy
 import math
 import EMAN2_cppwrap as e2cpp
 
 from ..libpy import sparx_morphology as fu
 from .sparx_lib import sparx_morphology as oldfu
+
 from ..libpy import sparx_filter as ft
 from ..libpy import sparx_utilities as ut
 
 import pickle
 import os
+import shutil
 ABSOLUTE_PATH =  os.path.dirname(os.path.realpath(__file__))
 
 
@@ -309,9 +310,10 @@ class MyTestCase(unittest.TestCase):
         defocus = 1
         cs = 2
         voltage = 300
-        pixel_size = 1.5
+        pixel_size = 0.5
         bfactor = 0
         amp_contrast = 0.1
+        wn = 32
         ctf = e2cpp.EMAN2Ctf()
         ctf.from_dict({"defocus": defocus, "cs": cs, "voltage": voltage, "apix": pixel_size, "bfactor": bfactor,
                        "ampcont": amp_contrast})
@@ -323,13 +325,19 @@ class MyTestCase(unittest.TestCase):
 
         input_image_path = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/image*.mrc")
         output_directory = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/results")
-        shutil.rmtree(output_directory)
+        if os.path.isdir(output_directory):
+            shutil.rmtree(output_directory)
 
-        wn = 32
-        return_new = fu.cter_mrk(input_image_path, output_directory, wn = wn, selection_list= selection_list,pixel_size = 5)
-        return_old = oldfu.cter_mrk(input_image_path, output_directory, wn = wn, selection_list = selection_list, pixel_size=5)
+        return_new = fu.cter_mrk(input_image_path, output_directory, selection_list= selection_list,\
+                                 wn = wn, pixel_size = pixel_size, Cs= cs, voltage = voltage)
 
-        self.assertTrue(return_new, return_old)
+        if os.path.isdir(output_directory):
+            shutil.rmtree(output_directory)
+
+        return_old = oldfu.cter_mrk(input_image_path, output_directory, selection_list = selection_list,\
+                                    wn = wn,  pixel_size=pixel_size, Cs= cs, voltage = voltage)
+
+        self.assertEqual(return_new, return_old)
 
 
     def test_cter_pep_true_should_return_equal_object(self):
@@ -339,6 +347,7 @@ class MyTestCase(unittest.TestCase):
         pixel_size = 1.5
         bfactor = 0
         amp_contrast = 0.1
+        wn = 32
         ctf = e2cpp.EMAN2Ctf()
         ctf.from_dict({"defocus": defocus, "cs": cs, "voltage": voltage, "apix": pixel_size, "bfactor": bfactor,
                        "ampcont": amp_contrast})
@@ -350,31 +359,34 @@ class MyTestCase(unittest.TestCase):
 
         input_image_path = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/image*.mrc")
         output_directory = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/results")
-        shutil.rmtree(output_directory)
+        if os.path.isdir(output_directory):
+            shutil.rmtree(output_directory)
 
-        wn = 32
-        return_new = fu.cter_pap(input_image_path, output_directory, wn = wn, selection_list= selection_list,pixel_size = 5)
-        return_old = oldfu.cter_pap(input_image_path, output_directory, wn = wn, selection_list = selection_list, pixel_size=5)
+        return_new = fu.cter_pap(input_image_path, output_directory, selection_list = selection_list,\
+                                    wn = wn,  pixel_size=pixel_size, Cs= cs, voltage = voltage)
 
-        self.assertTrue(return_new, return_old)
+        if os.path.isdir(output_directory):
+            shutil.rmtree(output_directory)
+
+        return_old = oldfu.cter_pap(input_image_path, output_directory, selection_list = selection_list,\
+                                    wn = wn,  pixel_size=pixel_size, Cs= cs, voltage = voltage)
+
+        self.assertEqual(return_new, return_old)
 
 
     def test_ampcont2angle_true_should_return_equal_object(self):
-
         return_new = fu.ampcont2angle(8)
         return_old = oldfu.ampcont2angle(8)
 
         self.assertTrue(return_new, return_old)
 
     def test_angle2ampcont_true_should_return_equal_object(self):
-
         return_new = fu.angle2ampcont(0.45)
         return_old = oldfu.angle2ampcont(0.45)
 
         self.assertTrue(return_new, return_old)
 
     def test_bracket_def_true_should_return_equal_object(self):
-
         def function_test(x1,dat):
             f = x1 + dat
             return f
@@ -387,9 +399,7 @@ class MyTestCase(unittest.TestCase):
 
         self.assertTrue(return_new, return_old)
 
-
     def test_bracket_true_should_return_equal_object(self):
-
         def function_test(x1,dat):
             f = x1 + dat
             return f
@@ -402,9 +412,7 @@ class MyTestCase(unittest.TestCase):
 
         self.assertTrue(return_new, return_old)
 
-
     def test_goldsearch_astigmatism_true_should_return_equal_object(self):
-
         def function_test(x1,dat):
             f = x1 + dat
             return f
@@ -419,44 +427,74 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(return_new, return_old)
 
     def test_defocus_baseline_fit_true_should_return_equal_object(self):
-        roo =   [entry for entry in numpy.arange(0, 10).tolist()]
-        i_start = 2
-        i_stop = 12
-        nrank = 4
-        iswi = 2
+        roo = [entry for entry in numpy.arange(0, 10).tolist()]
+        i_start = 0
+        i_stop = 10
+        nrank = 2
+        iswi = 3
 
         return_new = fu.defocus_baseline_fit(roo, i_start, i_stop, nrank, iswi)
         return_old = oldfu.defocus_baseline_fit(roo, i_start, i_stop, nrank, iswi)
 
-        self.assertTrue(return_new, return_old)
+        self.assertTrue(numpy.array_equal(return_new, return_old))
 
 
     def test_simpw1d_true_should_return_equal_object(self):
+        data = [entry for entry in numpy.arange(1, 256).tolist()]
         defocus = 1
-        data = [entry for entry in numpy.arange(0, 10).tolist()]
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.5
+        amp_contrast = 0.1
+        i_start = 2
+        i_stop = 14
+        nx = 20
 
-        return_new = fu.simpw1d(defocus,data)
-        return_old = oldfu.simpw1d(defocus,data)
+        datanew = [data[i_start:i_stop], data[i_start:i_stop], nx, defocus, \
+                Cs, voltage, pixel_size, amp_contrast, i_start,i_stop]
+
+        return_new = fu.simpw1d(defocus,datanew)
+        return_old = oldfu.simpw1d(defocus,datanew)
 
         self.assertTrue(return_new, return_old)
 
 
     def test_simpw1d_pap_true_should_return_equal_object(self):
+        data = [entry for entry in numpy.arange(1, 256).tolist()]
         defocus = 1
-        data = [entry for entry in numpy.arange(0, 10).tolist()]
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.5
+        amp_contrast = 0.1
+        i_start = 2
+        i_stop = 14
+        nx = 20
 
-        return_new = fu.simpw1d_pap(defocus,data)
-        return_old = oldfu.simpw1d_pap(defocus,data)
+        datanew = [data[i_start:i_stop], data[i_start:i_stop], nx, defocus, \
+                Cs, voltage, pixel_size, amp_contrast, i_start,i_stop]
+
+        return_new = fu.simpw1d_pap(defocus,datanew)
+        return_old = oldfu.simpw1d_pap(defocus,datanew)
 
         self.assertTrue(return_new, return_old)
 
 
     def test_simpw1d_print_true_should_return_equal_object(self):
-        defocus = 1
-        data = [entry for entry in numpy.arange(0, 10).tolist()]
 
-        return_new = fu.simpw1d_print(defocus,data)
-        return_old = oldfu.simpw1d_print(defocus,data)
+        data = [entry for entry in numpy.arange(1, 256).tolist()]
+        defocus = 1
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.5
+        amp_contrast = 0.1
+        i_start = 2
+        i_stop = 14
+        nx = 20
+
+        datanew = [data[i_start:i_stop], data[i_start:i_stop], nx, defocus, \
+                Cs, voltage, pixel_size, amp_contrast, i_start,i_stop]
+        return_new = fu.simpw1d_print(defocus,datanew)
+        return_old = oldfu.simpw1d_print(defocus,datanew)
 
         self.assertTrue(return_new, return_old)
 
@@ -468,7 +506,53 @@ class MyTestCase(unittest.TestCase):
         return_new = fu.movingaverage(data,window_size)
         return_old = oldfu.movingaverage(data, window_size)
 
+        self.assertTrue(numpy.array_equal(return_new, return_old))
+
+    def test_defocusgett_true_should_return_equal_object(self):
+        roo = [entry for entry in numpy.arange(0, 10).tolist()]
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.0
+        amp_contrast = 0.1
+        nr2 = 6
+        i_start = 1
+        i_stop = 10
+        nx = 1
+
+        return_new = fu.defocusgett(roo,nx,voltage,pixel_size,Cs,amp_contrast,i_start,i_stop,nr2=nr2)
+        return_old = oldfu.defocusgett(roo,nx,voltage,pixel_size,Cs,amp_contrast,i_start,i_stop,nr2=nr2)
+
         self.assertTrue(return_new, return_old)
+
+    def test_defocusgett_pap_true_should_return_equal_object(self):
+            roo = [entry for entry in numpy.arange(1, 258).tolist()]
+            Cs = 2
+            voltage = 300
+            pixel_size = 1.09
+            amp_contrast = 0.1
+            i_start = 0.048
+            i_stop = -1
+            nx = 512
+            nr2 = 6
+
+            return_new = fu.defocusgett_pap(roo,nx,voltage,pixel_size,Cs,amp_contrast, \
+               i_start,i_stop)
+            return_old = oldfu.defocusgett_pap(roo,nx,voltage,pixel_size,Cs,amp_contrast, \
+               i_start,i_stop)
+
+            self.assertTrue(return_new, return_old)
+
+
+    # def test_fastigmatism3_true_should_return_equal_object(self):
+    #     data = [entry for entry in numpy.arange(0, 10).tolist()]
+    #     amp = 4
+    #
+    #     return_new = fu.fastigmatism3(amp,data)
+    #     return_old = oldfu.fastigmatism3(amp,data)
+    #
+    #     self.assertTrue(return_new, return_old)
+
+
 
 
 

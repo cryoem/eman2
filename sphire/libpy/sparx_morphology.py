@@ -2890,7 +2890,7 @@ def simpw1d(defocus, data):
 	#  data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
 	# data[1] - envelope
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
-	ct = data[1]*np.array( ctf_2(data[2], sparx_utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
+	ct = data[1]*np.array(ctf_2(data[2], sparx_utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
 	return  -sum(data[0]*ct)/np.linalg.norm(ct,2)
 
@@ -2921,7 +2921,7 @@ def simpw1d_print(defocus, data):
 	#ct = data[1]*np.array( ctf_1d(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	ct = np.array( ctf_1d(data[2], sparx_utilities.generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]), doabs= True)[data[8]:data[9]], np.float32)
 	#print  " 1d  ",sum(data[0]*ct),np.linalg.norm(ct,2)
-	for i in range(len(data[0])):  print(i,i+data[8],data[0][i],ct[i],data[1][i],data[0][i]/data[1][i])
+	for i in range(len(data[0])): print(i,i+data[8],data[0][i],ct[i],data[1][i],data[0][i]/data[1][i])
 	return  -sum(data[0]*ct/data[1])/np.linalg.norm(ct,2)
 
 def movingaverage(data, window_size, skip = 3):
@@ -2962,7 +2962,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	nroo = len(roo)
 
 	if DEBug:  print("f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1)
-	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
+	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)2
 	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 
 	baseline = defocus_baseline_fit(roo, i_start,nroo, int(nr2), 3)
@@ -2975,8 +2975,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	#envelope = movingaverage(  subpw   , nroo//4, 3)
 	envelope = np.array([1.0]*len(subpw), np.float32)
 	#write_text_file([roo,baseline,subpw],"dbgt.txt")
-
-	#print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
+#print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
 	#envelope = np.ones(nroo, np.float32)
 	defocus = 0.0
 	data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
@@ -2988,6 +2987,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	#def1=0.1
 	ndefs = 18
 	defound = []
+
 	for  idef in range(ndefs):
 		def1 = (idef+1)*0.5
 		def1, def2 = bracket_def(simpw1d, data, def1, h)
@@ -3079,7 +3079,6 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 	#envelope = movingaverage(  subpw   , nroo//4, 3)
 	envelope = np.array([1.0]*len(subpw), np.float32)
 	#write_text_file([roo,baseline,subpw],"dbgt.txt")
-
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
 	#envelope = np.ones(nroo, np.float32)
 	defocus = 0.0
@@ -3094,6 +3093,8 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 	defound = []
 	for  idef in range(ndefs):
 		def1 = (idef+1)*0.5
+		print('b', def1)
+		print('c', h)
 		def1, def2 = bracket_def(simpw1d_pap, data, def1, h)
 		if DEBug:  print("second bracket ",idef,def1, def2,simpw1d(def1, data),simpw1d_pap(def2, data),h)
 		def1, val2 = goldsearch_astigmatism(simpw1d_pap, data, def1, def2, tol=1.0e-3)
