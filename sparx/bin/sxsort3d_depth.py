@@ -237,7 +237,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				if bad_box == 1: bad_clustering = 1
 				time_box_finish = (time() - time_box_start)//60.
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					log_main.add(' Box %d of layer %d is done and it costs %f minutes'%(nbox, depth, time_box_finish))
+					log_main.add(' Box %d of layer %d is done, caclulations took %10.1f minutes'%(nbox, depth, time_box_finish))
 			if bad_clustering !=1:
 				partition_per_box_per_layer_list = []
 				stop_generation = 0
@@ -280,7 +280,7 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 			
 		time_of_sorting_h,  time_of_sorting_m = get_time(time_layer_start)
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			log_main.add('            Execution of layer %d took %d hours %d minutes.'%(depth, time_of_sorting_h, time_of_sorting_m))
+			log_main.add('            Execution of layer %d took %5d hours %3d minutes.'%(depth, time_of_sorting_h, time_of_sorting_m))
 			log_main.add(' ')
 			log_main.add(' ')
 			log_main.add('================================================================================================================')
@@ -337,7 +337,7 @@ def depth_box_initialization(box_dir, input_list1, input_list2, log_file):
 			write_text_file(input_list1, os.path.join(box_dir, "previous_all_indexes.txt"))
 		
 		number_of_groups = total_stack//Tracker["current_img_per_grp"]				
-		if number_of_groups<2: ERROR("number_of_groups should be at least larger than 1", "depth_box_initialization", 1, Blockdata["myid"])
+		if number_of_groups<2: ERROR("The number_of_groups should be at least two", "depth_box_initialization", 1, Blockdata["myid"])
 			
 		new_assignment = create_nrandom_lists_from_given_pids(box_dir, os.path.join(box_dir, \
 		      "previous_all_indexes.txt"), number_of_groups, 2)
@@ -382,7 +382,7 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, minimum_grp_size, list_o
 	fout.close()
 	return ncluster, NACC, NUACC, unaccounted_list, nc
 	
-def check_state_within_box_run(keepgoing, nruns, unaccounted_list, no_cluster_last_run):
+def check_state_within_box_run(keepgoing, nruns, unaccounted_list, no_cluster_last_run, log_main):
 	global Tracker, Blockdata
 	total_stack             = len(unaccounted_list)
 	number_of_groups        = total_stack//Tracker["current_img_per_grp"]
@@ -397,7 +397,7 @@ def check_state_within_box_run(keepgoing, nruns, unaccounted_list, no_cluster_la
 	if nruns> min(Tracker["constants"]["total_stack"]\
 	     //Tracker["constants"]["img_per_grp"], 5):
 	     	keepgoing = 0
-	     	print("Sort3d stops because of number of runs exceeds desired number of iterations")
+	     	log_main.add("Sort3d stops because the number of runs exceeds desired number of iterations")
 	return keepgoing, nruns, total_stack, number_of_groups
 	
 def get_box_partition(box_dir, ncluster, unaccounted_list):
@@ -520,18 +520,18 @@ def mem_calc_and_output_info(smearing_file, nxinit, iter_id_init_file, log_main)
 	else: fdata_in_core = cdata_in_core
 	ctfdata     = cdata_in_core
 	refvol_size = (nxinit*nxinit*nxinit*4.0*2)/1.e9*Blockdata["no_of_processes_per_group"]# including the 3D mask
-	log_main.add( "Precalculated data (GB) in core per node (available memory per node: %6.2f):"%Tracker["constants"]["memory_per_node"])
-	log_main.add( "Images for comparison: %6.2f GB; shifted images: %6.2f GB; focus images: %6.2f GB; ctfs: %6.2f GB"%\
+	log_main.add( "Precalculated data (GB) in core per node (available memory per node: %6.1f):"%Tracker["constants"]["memory_per_node"])
+	log_main.add( "Images for comparison: %6.1f GB; shifted images: %6.1f GB; focus images: %6.1f GB; ctfs: %6.1f GB"%\
 			(cdata_in_core, srdata_in_core, fdata_in_core, ctfdata))
 	tdata = cdata_in_core+srdata_in_core+ctfdata+refvol_size+fdata_in_core
 	if tdata/Tracker["constants"]["memory_per_node"]*100.> 90.:
 		if not Tracker["constants"]["compute_on_the_fly"]: 
 			ERROR("More than 90% memory is used. Please turn on compute_on_the_fly and rerun the program", \
 			   "mem_calc_and_output_info", 1, Blockdata["myid"])
-	log_main.add("The data to be in core for sorting occupies %7.3f percents of memory;  average smearing is %5.1f"%\
+	log_main.add("The data kept in core for sorting will occupy %7.1f percent of memory;  average smearing is %5.1f"%\
 		(min(tdata/Tracker["constants"]["memory_per_node"]*100., 90.0), avg_smear))
 
-	log_main.add("Estimated required memory for sorting on each node:")
+	log_main.add("Estimated per-node memory required for sorting:")
 	smearings_on_nodes = np.full(Blockdata["no_of_groups"], 0.0, dtype=np.float32)
 	smearings_per_cpu  = [None for im in range(Blockdata["nproc"])]
 	dict = [None for i in range(Blockdata["nproc"])]
@@ -617,7 +617,7 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 	
 	while (keepgoing == 1):
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			log_main.add(' Box %d has been under processing for %f minutes...'%(nbox, (time()-box_start)/60.))
+			log_main.add(' Box %d is running for %10.1f minutes...'%(nbox, (time()-box_start)/60.))
 		within_box_run_dir = os.path.join(work_dir, "run%d"%nruns)
 		unaccounted_file   = os.path.join(within_box_run_dir, "Unaccounted_from_previous_run.txt")
 		if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -797,7 +797,7 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 			no_cluster      = True
 			no_groups_runs +=1
 		keepgoing, nruns, total_stack, current_number_of_groups = \
-		   check_state_within_box_run(keepgoing, nruns, unaccounted_list, no_cluster)
+		   check_state_within_box_run(keepgoing, nruns, unaccounted_list, no_cluster, log_main)
 		   
 		if Blockdata["myid"] == Blockdata["main_node"]:# report current state
 			if new_clusters > 0:
@@ -909,11 +909,11 @@ def check_mpi_settings(log_main):
 		   (Tracker["constants"]["total_stack"], Tracker["constants"]["img_per_grp"]))
 		
 	if(Blockdata["myid"] == Blockdata["main_node"]):
-		log_main.add("The total available memory per node:  %5.1f GB"%total_memory)
-		log_main.add("The size of total input 2D stack: %5.1f GB"%(raw_data_size))
-		log_main.add("The per-node amount of memory 2D data will occupy: %5.1f GB"%(raw_data_size_per_node))
-		log_main.add("Precalculated 2D data (no smearing) for sorting: %5.1f GB"%(sorting_data_size_per_node))
-		log_main.add("Reserved memory for overhead loading per node: %6.3f GB"%sys_required_mem)
+		log_main.add("The total available memory per node:               %5.1f GB"%total_memory)
+		log_main.add("The size of total input 2D stack:                  %5.1f GB"%raw_data_size)
+		log_main.add("The per-node amount of memory 2D data will occupy: %5.1f GB"%raw_data_size_per_node)
+		log_main.add("Precalculated 2D data (no smearing) for sorting:   %5.1f GB"%sorting_data_size_per_node)
+		log_main.add("Reserved overhead memory per node:                 %5.1f GB"%sys_required_mem)
 		
 	if (total_memory - sys_required_mem - sorting_data_size_per_node ) <0.0:
 		ERROR("Insufficient memory to pass the sorting processs. Increase a node", "check_mpi_settings", 1, Blockdata["myid"])
@@ -938,14 +938,14 @@ def check_mpi_settings(log_main):
 	avg_images_on_node    = Tracker["constants"]["total_stack"]//Blockdata["no_of_groups"]
 	precalculated_2D_data = raw_data_size_per_node*ratio**2*(max(avg_smearing_on_node/avg_images_on_node,1.) + 3.)
 	if ((precalculated_2D_data - sys_required_mem)>total_memory) and (not Tracker["constants"]["compute_on_the_fly"]):
-		ERROR("The size of precalculated shifted 2D data is too large. Turn on the option compute_on_the_fly", \
+		ERROR("The size of precalculated shifted 2D data is too large. Turn on option compute_on_the_fly", \
 		  "check_mpi_settings", 1, Blockdata["myid"])
 	else:
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			log_main.add("Percentage of memory occupied by precalculated shifted 2D data: %6.2f%%"%\
+			log_main.add("Percentage of memory occupied by precalculated shifted 2D data: %6.1f%%"%\
 			  (precalculated_2D_data/total_memory*100.))
 			if Tracker["constants"]["compute_on_the_fly"]:
-				log_main.add("The compute_on_the_fly option is on and 2D data is precacluated till 90 percent memory is filled up")
+				log_main.add("The compute_on_the_fly option is on and 2D data is precacluated until 90 percent of memory is filled up")
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		log_main.add('----------------------------------------------------------------------------------------------------------------\n')
 	return
@@ -3550,7 +3550,7 @@ def copy_refinement_tracker(tracker_refinement):
 			if Blockdata["myid"] == Blockdata["main_node"]: print(key, \
 			   " in sorting set as ", value, ", while in refinement, it is set as ", value_refinement)
 	return
-	
+'''
 def print_dict(dict, theme):
 	spaces = "                    "
 	exclude = ["nodes", "yr", "output", "shared_comm", "bckgnoise", \
@@ -3566,6 +3566,7 @@ def print_dict(dict, theme):
 				pt = False
 				break
 		if pt:  print("                    => ", key+spaces[len(key):],":  ",value)
+'''
 # 
 # - "Tracker" (dictionary) object
 #   Keeps the current state of option settings and dataset 
@@ -3852,7 +3853,7 @@ def recons3d_4nnsorting_group_MPI(myid, main_node, prjlist, random_subset, group
 	if myid == main_node: return fftvol, weight, refvol
 	else: return None, None, None
 
-def do3d_sorting(procid, data, myid, mpi_comm = -1):
+def do3d_sorting(procid, data, myid, mpi_comm = -1, log_main = None):
 	global Tracker, Blockdata
 	if (mpi_comm == -1): mpi_comm = MPI_COMM_WORLD
 	if(procid == 0):
@@ -3861,13 +3862,13 @@ def do3d_sorting(procid, data, myid, mpi_comm = -1):
 				if os.path.exists(os.path.join(Tracker["directory"], "tempdir")): print("tempdir exists")
 				else:
 					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-					except:  print("tempdir exists")
+					except:  log_main.add("tempdir exists")
 		else:
 			if myid == Blockdata["main_node"]:
 				if not os.path.exists(os.path.join(Tracker["directory"],"tempdir")): 
 					try: os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
-					except: print("tempdir exists")
-				else: print("tempdir exists")
+					except: log_main.add("tempdir exists")
+				else: log_main.add("tempdir exists")
 	mpi_barrier(mpi_comm)
 	
 	tvol, tweight, trol = recons3d_4nnsorting_MPI(myid = Blockdata["myid"], \
@@ -4212,7 +4213,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	
 	if import_from_sparx_refinement == 0:
 		Tracker["bckgnoise"] = None
-		if Blockdata["myid"] == Blockdata["main_node"]:	print("Noise file is not found. However we continue")
+		if Blockdata["myid"] == Blockdata["main_node"]:	print("Noise file is not found. However, we continue")
 	else: Tracker["bckgnoise"] = os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf")
 	
 	import_from_sparx_refinement = 1	
@@ -4511,7 +4512,7 @@ def get_input_from_datastack(log_main):# Case three
 	for procid in range(2):
 		data = get_shrink_data_sorting(os.path.join(Tracker["constants"]["masterdir"],"chunk_%01d.txt"%procid), Tracker["constants"]["partstack"])
 		mpi_barrier(MPI_COMM_WORLD)
-		do3d_sorting(procid, data, myid = Blockdata["myid"],  mpi_comm = MPI_COMM_WORLD)# 1
+		do3d_sorting(procid, data, myid = Blockdata["myid"],  mpi_comm = MPI_COMM_WORLD, log_main = log_main)# 1
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if(Blockdata["no_of_groups"] == 1):
@@ -4956,7 +4957,6 @@ def do3d_sorting_groups_nofsc_smearing_iter(srdata, paramstructure, norm_per_par
 	keepgoing = bcast_number_to_all(keepgoing, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD) # always check 
 	Tracker   = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
 	if not keepgoing: ERROR("do3d_sorting_groups_trl_iter  %s"%os.path.join(Tracker["directory"], "tempdir"),"do3d_sorting_groups_trl_iter", 1, Blockdata["myid"])
-	#if(Blockdata["myid"] == 0):  print("Reconstructions done    ",strftime("%a, %d %b %Y %H:%M:%S", localtime()),"   ",(time()-at)/60.)
 	return
 ### nofsc insertion #1
 def recons3d_trl_struct_group_nofsc_shifted_data_partial_MPI(myid, main_node, nproc,\
@@ -6019,7 +6019,7 @@ def do_random_groups_simulation_mpi(ptp1, ptp2):
 	import numpy as np
 	# return two lists: group avgs and group stds. The last one of two lists are the total avg and std.
 	if (len(ptp1)>=50) or (len(ptp2)>=50):
-		if(Blockdata["myid"] == Blockdata["main_node"]): print('Warning: too many simulaton groups')
+		if(Blockdata["myid"] == Blockdata["main_node"]): print('Warning: too many simulation groups')
 	Nloop = max(1000//Blockdata["nproc"], 5)
 	NT    = 1000
 	a     = []
@@ -6436,7 +6436,7 @@ def main():
 		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
-				log_main.add('                                 SORT3D MULTI-LAYER v1.2')
+				log_main.add('                                 SORT3D MULTI-LAYER v1.3')
 				log_main.add('================================================================================================================')
 			import_data(log_main)
 			print_shell_command(sys.argv, log_main)
@@ -6618,7 +6618,7 @@ def main():
 		if continue_from_interuption == 0:
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				log_main.add('================================================================================================================')
-				log_main.add('                                  SORT3D MULTI-LAYER v1.2')
+				log_main.add('                                  SORT3D MULTI-LAYER v1.3')
 				log_main.add('================================================================================================================\n')	
 			import_data(log_main)
 			print_shell_command(sys.argv, log_main)
