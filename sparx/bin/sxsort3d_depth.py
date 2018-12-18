@@ -358,7 +358,7 @@ def output_iter_results(box_dir, ncluster, NACC, NUACC, minimum_grp_size, list_o
 	nc          = 0
 	NACC        = 0
 	try:
-		fout             = open(os.path.join(current_dir,"freq_cutoff.json"),'r')
+		fout             = open(os.path.join(box_dir,"freq_cutoff.json"),'r')
 		freq_cutoff_dict = convert_json_fromunicode(json.load(fout))
 		fout.close()
 	except: freq_cutoff_dict = {}
@@ -3818,7 +3818,7 @@ def recons3d_4nnsorting_group_MPI(myid, main_node, prjlist, random_subset, group
 	else:   do_ctf = 0
 	fftvol = EMData()
 	weight = EMData()
-	try:    qt = projlist[0].get_attr("qt")
+	try:    qt = prjlist[0].get_attr("qt")
 	except: qt = 1.0
 	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, "symmetry":"c1", \
 	   "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
@@ -5465,7 +5465,7 @@ def recons3d_4nnsorting_group_fsc_MPI(myid, main_node, prjlist, fsc_half, random
 	else:   do_ctf = 0
 	fftvol = EMData()
 	weight = EMData()
-	try:    qt = projlist[0].get_attr("qt")
+	try:    qt = prjlist[0].get_attr("qt")
 	except: qt = 1.0
 	params = {"size":target_size, "npad":2, "snr":1.0, "sign":1, \
 	   "symmetry":"c1", "refvol":refvol, "fftvol":fftvol, "weight":weight, "do_ctf": do_ctf}
