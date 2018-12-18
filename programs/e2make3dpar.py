@@ -94,6 +94,8 @@ def main():
 	parser.add_argument("--pad", metavar="x or x,y", default=None,type=str, help="Will zero-pad images to the specifed size (x,y) or (x,x) prior to reconstruction. If not specified or 0 no padding occurs. If a negative value is specified automatic padding is performed. ")
 	parser.add_argument("--padvol", metavar="x or x,y,z", default=None,type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the reconstructed volume. If ommitted, implied value based on padded 2D images is used.")
 	parser.add_argument("--outsize", metavar="x or x,y,z", default=None, type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the final volume written to disk, if ommitted, size will be based on unpadded input size")
+	#parser.add_argument("--clipz", default=None, type=int, help="Extract a specified number of central z-slices. Option disabled by default.")
+
 	parser.add_argument("--savenorm", default=None, type=str, help="If set, will save the normalization volume showing Fourier space filling to the specified file")
 
 	parser.add_argument("--keep", type=float, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices). See keepsig.",default=1.0)
@@ -322,6 +324,9 @@ def main():
 	# clip to the requested final dimensions
 	if output["nx"]!=outsize[0] or output["ny"]!=outsize[1] or output["nz"]!=outsize[2] :
 		output.clip_inplace(Region(old_div((output["nx"]-outsize[0]),2),old_div((output["ny"]-outsize[1]),2),old_div((output["nz"]-outsize[2]),2), outsize[0],outsize[1],outsize[2]))
+
+	#if options.clipz != None:
+	#	output.clip_inplace(Region(0,0,(output["nz"]-options.clipz)//2, output["nx"], output["ny"], options.clipz))
 
 	if options.apix!=None : apix=options.apix
 	output["apix_x"]=apix

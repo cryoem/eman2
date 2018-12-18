@@ -63,7 +63,7 @@ def main():
 	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=1, col=0,rowspan=1, colspan=1)	
 	parser.add_argument("--nogs", action="store_true", default=False ,help="skip gold standard...", guitype='boolbox',row=2, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--localfilter", type=int, default=-1 ,help="use tophat local. specify 0 or 1 to overwrite the setting in the spt refinement")
-	parser.add_argument("--mask", type=str, default="None" ,help="Refinement masking. default is the same as the spt refinement. Leave this empty for automasking",guitype='strbox',row=3, col=0,rowspan=1, colspan=2)	
+	parser.add_argument("--mask", type=str, default="None" ,help="Refinement masking. default is the same as the spt refinement. Use Auto for automasking, None for keeping the same masking as spt refinement",guitype='strbox',row=3, col=0,rowspan=1, colspan=2)	
 
 	parser.add_argument("--threads", type=int,help="Number of CPU threads to use. Default is 12.", default=12, guitype='intbox',row=2, col=2,rowspan=1, colspan=1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12", guitype='strbox',row=4, col=0,rowspan=1, colspan=3)
@@ -170,7 +170,11 @@ def main():
 	
 	if options.mask.lower()!="none":
 		print("Overwritting masking")
-		jd["mask"]=options.mask
+		if options.mask.lower()=="auto":
+			jd["mask"]=""
+		else:
+			jd["mask"]=options.mask
+	
 	
 	if options.localfilter==0:
 		jd["localfilter"]=False
@@ -332,6 +336,8 @@ def main():
 				msk=" --automask3d mask.fromfile:filename={}".format(msk)
 			else:
 				msk=" --automask3d {}".format(msk)
+				
+		s+=msk
 
 		# get target resolution from last iteration map
 		ref=os.path.join(path, "threed_{:02d}.hdf".format(itr))

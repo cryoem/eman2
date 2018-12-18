@@ -30343,8 +30343,7 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				int ty=tz+(iy-cy)*(iy-cy);				
 				for (int ix =0; ix<nx; ix++) {
 					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
-					if (r>=radius_p)
-						cmasked_ptr(ix,iy,iz) = bckg_ptr(ix,iy,iz);
+					if (r>=radius_p) cmasked_ptr(ix,iy,iz) = bckg_ptr(ix,iy,iz);
 					if (r>=radius && r<radius_p) {
 						float temp = (0.5+0.5*cos(pi*(radius_p-r)/cosine_width));
 						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(bckg_ptr(ix,iy,iz)-img_ptr(ix,iy,iz));
@@ -30353,36 +30352,31 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 				}
 			}
 		}
-	} else 
-	{
-	  if (s==999999.)
-	  
-	  {
-		float u =0.0f;
-		s1 =0.0f;
-	  	for (int iz=0; iz<nz; iz++) {
-			int tz =(iz-cz)*(iz-cz);
-			for (int iy=0; iy<ny; iy++) {
-				int ty=tz+(iy-cy)*(iy-cy);
-				for (int ix=0; ix<nx; ix++) {
-					float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
-					if (r>=radius_p) {	
-						u +=1.0f;
-						s1 +=img_ptr(ix,iy,iz);
+	} else {
+		if (s==999999.) {
+			float u =0.0f;
+			s1 =0.0f;
+			for (int iz=0; iz<nz; iz++) {
+				int tz =(iz-cz)*(iz-cz);
+				for (int iy=0; iy<ny; iy++) {
+					int ty=tz+(iy-cy)*(iy-cy);
+					for (int ix=0; ix<nx; ix++) {
+						float r = sqrt((float)(ty +(ix-cx)*(ix-cx)));
+						if (r>=radius_p) {	
+							u +=1.0f;
+							s1 +=img_ptr(ix,iy,iz);
+						}
+						if ( r>=radius && r<radius_p) {
+							float temp = (0.5+0.5*cos(QUADPI*(radius_p-r)/cosine_width));
+							u += temp;
+							s1 += img_ptr(ix,iy,iz)*temp;
+						}
+						if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
 					}
-					if ( r>=radius && r<radius_p) {
-						float temp = (0.5+0.5*cos(QUADPI*(radius_p-r)/cosine_width));
-						u += temp;
-						s1 += img_ptr(ix,iy,iz)*temp;
-					}
-					if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
 				}
-			  }
-		   }
-		 s1 /= u;
-	   }
-	else
-		s1=s;
+			}
+			s1 /= u;
+		} else s1=s;
 
 		for (int iz=0; iz<nz; iz++) {
 			int tz =(iz-cz)*(iz-cz);
@@ -30393,12 +30387,13 @@ EMData* Util::cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg
 					if (r>=radius_p)  cmasked_ptr (ix,iy,iz) = s1;
 					if (r>=radius && r<radius_p) {
 						float temp = (0.5 + 0.5*cos(QUADPI*(radius_p-r)/cosine_width));
-						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(s1-img_ptr(ix,iy,iz)); }
+						cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz)+temp*(s1-img_ptr(ix,iy,iz));
+					}
 					if (r<radius) cmasked_ptr(ix,iy,iz) = img_ptr(ix,iy,iz);
 				}
 			}
-		}//iz
-	}//else
+		}
+	}
 	cmasked->update();
 	EXITFUNC;
 	return cmasked;
@@ -30416,7 +30411,6 @@ EMData* Util::soft_edge(EMData* img, int edge_width, string mode)
 
 	if (!img)  throw NullPointerException("NULL input image");
 
-	if(img->get_ndim()<3) throw ImageDimensionException(" surface_mask is only applicable to 3-D volume");
 	int ntab = 100;
 	vector<float> tabf(ntab+1);
 	if( mode == "C" ) {
@@ -30433,7 +30427,9 @@ EMData* Util::soft_edge(EMData* img, int edge_width, string mode)
 	float* smask_ptr = smask->get_data();
 	
 	int edge_width2 = edge_width * edge_width;
-	int edge_width3 = edge_width2 * edge_width;
+	int edge_width3;
+	if( nz > 1) edge_width3 = edge_width2 * edge_width;
+	else edge_width3 = edge_width2;
 	for (int iz=0; iz<nz; iz++) {
 		for (int iy=0; iy<ny; iy++) {
 			for (int ix=0; ix<nx; ix++) {

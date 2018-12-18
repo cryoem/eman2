@@ -8,7 +8,7 @@ CTF Estimation: Automated estimation of CTF parameters with error assessment, in
 
 Usage in command line
 
-  sxcter.py  input_image_path  output_directory  --selection_list=SELECTION_TEXT_FILE  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --check_consistency  --stack_mode  --debug_mode  --vpp  --defocus_min=DEFOCUS_MIN  --defocus_max=DEFOCUS_MAX  --defocus_step=DEFOCUS_STEP  --phase_min=PHASE_MIN    --phase_max=PHASE_MAX  --phase_step==PHASE_STEP  --pap
+  sxcter.py  input_image_path  output_directory  --selection_list=SELECTION_TEXT_FILE  --wn=CTF_WINDOW_SIZE --apix=PIXEL_SIZE  --Cs=CS  --voltage=VOLTAGE  --ac=AMP_CONTRAST  --f_start=FREA_START  --f_stop=FREQ_STOP  --kboot=KBOOT  --overlap_x=OVERLAP_X  --overlap_y=OVERLAP_Y  --edge_x=EDGE_X  --edge_y=EDGE_Y  --check_consistency  --stack_mode  --debug_mode  --vpp  --defocus_min=DEFOCUS_MIN  --defocus_max=DEFOCUS_MAX  --defocus_step=DEFOCUS_STEP  --phase_min=PHASE_MIN    --phase_max=PHASE_MAX  --phase_step==PHASE_STEP  --pws --pap
 
 \\
 ===== Typical usage =====
@@ -19,22 +19,22 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
 \\ __All Micrographs Mode - Process all micrographs in a directory:__
 \\ Specify a list of input micrographs using a wild card (*), here called input micrographs path pattern. Running from the command line requires enclosing the string by single quotes (\') or double quotes (\"). sxgui.py will automatically adds single quotes to the string. bdb files cannot be selected as input micrographs. Then, specify output directory where all outputs should be saved. In this mode, all micrographs matching the path pattern will be processed.
 
-  mpirun -np 16 sxcter.py './mic*.hdf' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
+  mpirun -np 16 sxcter.py './mic*.hdf' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --pws
 
 \\ __Selected Micrographs Mode - Process all micrographs in a selection list file:__
 \\ In addition to input micrographs path pattern and output directry arguments, specify a name of micrograph selection list text file using --selection_list option (e.g. output of sxgui_unblur.py or sxgui_cter.py). The file extension must be ".txt". In this mode, only micrographs in the selection list which matches the file name part of the pattern (ignoring the directory paths) will be processed. If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
 
-  mpirun -np 16 sxcter.py './mic*.hdf' outdir_cter --selection_list=mic_list.txt --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
+  mpirun -np 16 sxcter.py './mic*.hdf' outdir_cter --selection_list=mic_list.txt --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --pws
 
 \\ __Single Micrograph Mode - Process a single micrograph:__
 \\ One can specify a single micrograph name using --selection_list option. In this mode, only the specified single micrograph will be processed. If this micrograph name does not matches the file name part of the pattern (ignoring the directory paths), the process will exit without processing it. If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it. Use single processor for this mode.
 
-  sxcter.py './mic*.hdf' outdir_cter --selection_list=mic0.hdf --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
+  sxcter.py './mic*.hdf' outdir_cter --selection_list=mic0.hdf --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --pws
 
 \\ __Stack Mode - ProcessProcess a particle stack (Not supported by SPHIRE GUI)):__
 \\ Use --stack_mode option, then specify the path of particle stack file (without wild card "*") and output directory as arguments. This mode ignores --selection_list, --wn --overlap_x, --overlap_y, --edge_x, and --edge_y options. Use single processor for this mode. Not supported by SPHIRE GUI (sxgui.py). 
 
-  sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode
+  sxcter.py bdb:stack outdir_cter --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --stack_mode --pws
 
 \\ __All Micrographs Mode with Phase-Shift Estimation:__
 \\ defocus_min, defocus_max, defocus_step, phase_min, phase_max, and phase_step options are only applicable with --vpp option.
@@ -43,7 +43,7 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
 
 \\ __All Micrographs Mode with the CTF model fitting to power spectrum:__
 
-  mpirun -np 16 sxcter.py './mic*.hdf' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --pap
+  mpirun -np 16 sxcter.py './mic*.hdf' outdir_cter --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --pws --pap
 
 \\
 ===== Input =====
@@ -59,6 +59,7 @@ sxcter exists in for both MPI and non-MPI versions (Running MPI version does not
   ; %%--%%ac : Amplitude contrast [%]: The amplitude contrast is in the range of 7% - 14%. The value  depends on the thickness of the ice embedding the particles, among other factors. (default 10.0)
   ; %%--%%f_start : Lowest resolution [A]: Lowest resolution used in the CTF estimation. Determined automatically if not given. (default -1.0)
   ; %%--%%f_stop : Highest resolution [A]: Highest resolution used in the CTF estimation. Determined automatically if not given. (default -1.0)
+  ; %%--%%pws : Write 2D power spectra: Write periodograms to power2d/. (default True)
 
 \\
 === Advanced Parameters ===
@@ -86,6 +87,7 @@ After successful execution, sxcter will create in the output_directory:
   - A CTF parameters file, written to ''partres.txt''
   - A list of rotationally averaged power spectra, written to ''pwrot/*_rotinf.txt''.
   - A collection of micrographs Thumbnails (512 x 512 pixels), written to ''micthumb/*_thumb.hdf''.
+  - An optional collection of 2D power spectra, written to ''power2d/*_pws.hdf''.
 
 The CTF parameter file, ''partres.txt'', contains 22 columns with the following information:
 

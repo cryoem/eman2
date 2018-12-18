@@ -2390,8 +2390,8 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& tr
 	std::complex<float> c1;
 	int nxyz = sizeofprojection*npad;
 	Ctf* ctf = myfft->get_attr( "ctf" );
-        ctf_store_new::init( nxyz, ctf );
-        if(ctf) {delete ctf; ctf=0;}
+	ctf_store_new::init( nxyz, ctf );
+	if(ctf) {delete ctf; ctf=0;}
 	int remove = myfft->get_attr_default( "remove", 0 );
 
 	float r2=0.25f*sizeofprojection*npad*sizeofprojection*npad;
@@ -4749,7 +4749,6 @@ EMData* EMData::ft2polargrid(int ring_length, int nb, int ne, Util::KaiserBessel
 	return rings;
 }
 
-
 EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) {
 	if(get_ndim() != 2) throw ImageDimensionException("fourier_rotate_shift2d requires a 2-D image.");
 	EMData *cimage = NULL;
@@ -4766,10 +4765,11 @@ EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) 
 		nxhalf = nxreal/2;
 		nyhalf = ny/2;
 		nyf = ny;
-		cimage = Util::pad(this, 2*nx, 2*ny, 1, 0,0,0, "0.0");
-		cimage->set_attr("npad",npad);
-		cimage->div_sinc(1);
-		cimage = cimage->norm_pad(false, 1);
+		EMData *padimage = Util::pad(this, 2*nx, 2*ny, 1, 0,0,0, "0.0");
+		padimage->set_attr("npad",npad);
+		padimage->div_sinc(1);
+		cimage = padimage->norm_pad(false, 1);
+		delete padimage; padimage=0;
 		cimage->do_fft_inplace();
 		cimage->center_origin_fft();
 		cimage->fft_shuffle();
@@ -4816,6 +4816,7 @@ EMData* EMData::fourier_rotate_shift2d(float ang, float sx, float sy, int npad) 
 	if( !is_complex() )  {
 		result->do_ift_inplace();
 		result->depad();
+		delete cimage; cimage = 0;
 	}
 	result->update();
 	return result;

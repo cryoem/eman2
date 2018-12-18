@@ -692,7 +692,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		// ELSE Return a real-space filtered image
 		//
 		// On 12/15/2006 Wei Zhang comment:
-		// If input is reald and doInPlace == true, we might need delete fp after copy its
+		// If input is real and doInPlace == true, we might need to delete fp after copy its
 		// data back to fimage, since fp is allocated inside this function and is ignored
 		// by caller if doInPlace == true. As a reminder, the caller is EMFourierFuncInPlace
 		//
