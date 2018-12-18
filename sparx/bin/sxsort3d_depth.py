@@ -24,14 +24,14 @@ mpirun -np 64 --hostfile four_nodes.txt  sxsort3d_depth.py  --refinemet_dir=meri
 
 2. Import data from a given data stack.
 mpirun  -np 48  --hostfile ./node012.txt  sxsort3d_depth.py --stop_mgskmeans_percentage=15. \
-     --orientation_groups=40  --do_swap_au  --swap_ratio=5. --output_dir=sorting_bmask04 --sym=c1  \
+     --orientation_cones=40  --do_swap_au  --swap_ratio=5. --output_dir=sorting_bmask04 --sym=c1  \
      --radius=30  --minimum_grp_size=2000   --img_per_grp=2800    --instack=bdb:data  >sorting_bmask04/printout &
 
 3. Run the program on a single node workstation. The minimum requirement for a successful run is
     the 2D data size is less than the memory of the workstation. 
 
 mpirun  -np 8  --hostfile ./node0.txt  sxsort3d_depth.py --stop_mgskmeans_percentage=15. \
-    --orientation_groups=40  --do_swap_au  --swap_ratio=5. --output_dir=sorting_bmask04 --sym=c1  \
+    --orientation_cones=40  --do_swap_au  --swap_ratio=5. --output_dir=sorting_bmask04 --sym=c1  \
     --radius=30  --minimum_grp_size=2000   --img_per_grp=2800    --instack=bdb:data  >sorting_bmask04/printout &
 
 Notices on options:
@@ -237,23 +237,24 @@ def depth_clustering(work_dir, depth_order, initial_id_file, params, previous_pa
 				if bad_box == 1: bad_clustering = 1
 				time_box_finish = (time() - time_box_start)//60.
 				if(Blockdata["myid"] == Blockdata["main_node"]):
-					log_main.add(' Box %d of layer %d is done, caclulations took %10.1f minutes'%(nbox, depth, time_box_finish))
-			if bad_clustering !=1:
-				partition_per_box_per_layer_list = []
-				stop_generation = 0
-				for nbox in range(0,n_cluster_boxes, 2):
-					input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
-					input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
-					minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list, bad_clustering, stop_generation, stat_list = \
-					do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
-					
-					if(stop_generation == 1):
-						partition_per_box_per_layer_list = []
-						partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
-						break
-					else:
-						partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
-				mpi_barrier(MPI_COMM_WORLD)
+					log_main.add(' Box %d of layer %d is done, calculations took %10.1f minutes'%(nbox, depth, time_box_finish))
+					log_main.add('----------------------------------------------------------------------------------------------------------------\n\n')
+		if( bad_clustering !=1 ):
+			partition_per_box_per_layer_list = []
+			stop_generation = 0
+			for nbox in range(0,n_cluster_boxes, 2):
+				input_box_parti1 = os.path.join(depth_dir, "nbox%d"%nbox,     "partition.txt")
+				input_box_parti2 = os.path.join(depth_dir, "nbox%d"%(nbox+1), "partition.txt")
+				minimum_grp_size, maximum_grp_size, accounted_list, unaccounted_list, bad_clustering, stop_generation, stat_list = \
+				do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, depth_order - depth, log_main)
+				
+				if(stop_generation == 1):
+					partition_per_box_per_layer_list = []
+					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
+					break
+				else:
+					partition_per_box_per_layer_list.append([accounted_list, unaccounted_list])
+			mpi_barrier(MPI_COMM_WORLD)
 			if(Blockdata["myid"] != Blockdata["main_node"]): Tracker = 0
 			Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 			
@@ -664,8 +665,8 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 		      iter_id_init_file, current_number_of_groups, parameterstructure, norm_per_particle, log_main)
 							
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			log_main.add('Sorting cutoff frequency:  %f'%(round(Tracker["freq_fsc143_cutoff"], 4)) +\
-			  '  Sorting image size:  %d'%(Tracker["nxinit"]))
+			log_main.add('Sorting cutoff frequency:  %5.2f'%(Tracker["freq_fsc143_cutoff"]) +\
+			  '  The actual image size used in sorting:  %d'%(Tracker["nxinit"]))
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
 			
 		### preset variables in trackers
@@ -706,7 +707,7 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 					os.mkdir(os.path.join(Tracker["directory"], "tempdir"))
 				mpi_barrier(MPI_COMM_WORLD)
 				tmp_final_list, premature, kmeans_iterations = \
-				    Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, ctf_images, \
+				    Kmeans_minimum_group_size_orien_cones(cdata, fdata, srdata, ctf_images, \
 					parameterstructure, norm_per_particle, \
 				     MGSKmeans_index_file, params, minimum_grp_size, clean_volumes= Tracker["clean_volumes"] )
 				max_iter = max(max_iter, kmeans_iterations)	   
@@ -820,10 +821,10 @@ def depth_clustering_box(work_dir, input_accounted_file, input_unaccounted_file,
 			else: log_main.add('In independent run  %d, the program found %d groups'%(nbox, ncluster))
 			bad_clustering = 0
 		else:
-			log_main.add('In independent run  %d, no reproducible groups were found '%nbox)
+			log_main.add('In independent run  %d, there were no reproducible groups found,'%nbox)
 			bad_clustering = 1
 			partition      =['']
-		log_main.add('----------------------------------------------------------------------------------------------------------------\n')
+		log_main.add('----------------------------------------------------------------------------------------------------------------')
 		write_text_row(partition, os.path.join(work_dir, "partition.txt"))
 	else: 
 		bad_clustering = 0
@@ -925,7 +926,7 @@ def check_mpi_settings(log_main):
 	images_per_cpu = int(float(Tracker["constants"]["total_stack"])/Blockdata["nproc"])
 	images_per_cpu_for_unaccounted_data  = Tracker["constants"]["img_per_grp"]*1.5/float(Blockdata["nproc"])
 	if( Blockdata["myid"] == Blockdata["main_node"]):
-		log_main.add("Number of images per processor: %d "%images_per_cpu )
+		log_main.add("Number of images per processor:                    %5d"%images_per_cpu )
 	if( images_per_cpu < 5):
 		ERROR("Number of images per processor is less than 5", \
 		   "one may want to consider decreasing the number of processors used in MPI setting", \
@@ -1309,9 +1310,9 @@ def import_data(log_main):
 
 	## checking settings!
 	if Tracker["constants"]["total_stack"]//Tracker["constants"]["img_per_grp"]<=1: 
-		ERROR("Your img_per_grp is too large", "sxsort3d_depth.py", 1,  Blockdata["myid"])
+		ERROR("Requested number of images per group is too large, corresponds to requesting one group", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	if Tracker["constants"]["minimum_grp_size"] > Tracker["constants"]["img_per_grp"]:
-		ERROR("Minimum_grp_size is too large", "sxsort3d_depth.py", 1,  Blockdata["myid"])
+		ERROR("Minimum group size cannot be larger that the requested number of images per group", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	return
 	
 def create_masterdir():
@@ -1412,7 +1413,7 @@ def AI_MGSKmeans(iter_assignment, last_iter_assignment, best_assignment, \
 		best_assignment = copy.copy(iter_assignment)
 	return best_score, changed_nptls, keepgoing, best_assignment, iter_assignment
 #####
-def Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, ctf_images,\
+def Kmeans_minimum_group_size_orien_cones(cdata, fdata, srdata, ctf_images,\
 	paramstructure, norm_per_particle,\
     partids, params, minimum_group_size_init, clean_volumes = True):
 	global Tracker, Blockdata
@@ -1461,10 +1462,10 @@ def Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, ctf_images,\
 	Tracker["total_stack"]          = iter_assignment.shape[0]
 	nima                            = len(cdata) # local size
 	image_start, image_end          = MPI_start_end(Tracker["total_stack"], Blockdata["nproc"], Blockdata["myid"])
-	Tracker["min_orien_group_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
-	angle_step                      = get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
-	ptls_in_orien_groups            = get_angle_step_and_orien_groups_mpi(params, partids, angle_step)
-	minimum_group_size              = max(minimum_group_size_init, Tracker["number_of_groups"]*len(ptls_in_orien_groups))
+	Tracker["min_orien_cone_size"] = Tracker["number_of_groups"]*Tracker["minimum_ptl_number"]
+	angle_step                      = number_of_cones_to_delta(Tracker["constants"]["orientation_cones"])
+	ptls_in_orien_cones				= get_angle_step_and_orien_cones_mpi(params, partids, angle_step)
+	minimum_group_size              = max(minimum_group_size_init, Tracker["number_of_groups"]*len(ptls_in_orien_cones))
 	minimum_group_size_ratio        = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]), 0.95)
 		
 	### printed info
@@ -1475,7 +1476,7 @@ def Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, ctf_images,\
 		msg = "Total_stack:  %d K = : %d  nxinit: %d  CTF:  %s  Symmetry:  %s  stop percentage: %f  3-D mask: %s focus mask: %s  Comparison method: %s  minimum_group_size: %d orien  %d"% \
 		   (Tracker["total_stack"], Tracker["number_of_groups"], Tracker["nxinit"],  Tracker["constants"]["CTF"], Tracker["constants"]["symmetry"], \
 		   stopercnt, Tracker["constants"]["mask3D"], Tracker["constants"]["focus3D"], Tracker["constants"]["comparison_method"], \
-		       minimum_group_size, len(ptls_in_orien_groups))
+		       minimum_group_size, len(ptls_in_orien_cones))
 		log_main.add(msg)
 			
 	proc_list = [[None, None] for iproc in range(Blockdata["nproc"])]
@@ -1590,11 +1591,11 @@ def Kmeans_minimum_group_size_orien_groups(cdata, fdata, srdata, ctf_images,\
 		dmatrix = wrap_mpi_bcast(dmatrix, Blockdata["main_node"], MPI_COMM_WORLD)
 		last_iter_assignment = np.copy(iter_assignment)
 		iter_assignment      = np.full(Tracker["total_stack"], -1, dtype=np.int32)
-	 	for iorien in range(len(ptls_in_orien_groups)):
+	 	for iorien in range(len(ptls_in_orien_cones)):
 			if iorien%Blockdata["nproc"] == Blockdata["myid"]:
-				iter_assignment[ptls_in_orien_groups[iorien]] = \
+				iter_assignment[ptls_in_orien_cones[iorien]] = \
 				do_assignment_by_dmatrix_orien_group_minimum_group_size(\
-				 dmatrix, ptls_in_orien_groups[iorien], Tracker["number_of_groups"], \
+				 dmatrix, ptls_in_orien_cones[iorien], Tracker["number_of_groups"], \
 				   minimum_group_size_ratio)
 		mpi_barrier(MPI_COMM_WORLD)
 		if Blockdata["myid"] != Blockdata["main_node"]: 
@@ -3012,6 +3013,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 		nclass     = 0
 		stat_list  = []
 		tmp_list   = []
+		log_main.add(' ')
 		log_main.add('               Post-matching results.')
 		log_main.add('{:>5} {:>8}  {:^8}   {:>15} {:>22}  {:>5}'.format(\
 		  'Group', '    size',  ' status ',   'reproducibility', 'random reproducibility', ' std '))
@@ -3148,7 +3150,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 			    np.array(accounted_list, dtype=np.int32)))
 			log_main.add(' {} {} {} {}'.format('  The number of accounted for images:', \
 			    len(accounted_list),'  The number of unaccounted for images:', len(unaccounted_list)))
-			log_main.add('  The current minimum group size: %d and the maximum group size: %d'%(minimum_group_size, maximum_group_size))
+			log_main.add('  The current minimum group size: %6d\n  The current maximum group size: %6d'%(minimum_group_size, maximum_group_size))
 		
 			if depth <= 1: # the last layer
 				box1_dir =  os.path.join(Tracker["constants"]["masterdir"], "generation_%03d"%Tracker["current_generation"], "layer%d"%Tracker["depth"], "nbox%d"%nbox)
@@ -3177,9 +3179,7 @@ def do_boxes_two_way_comparison_mpi(nbox, input_box_parti1, input_box_parti2, de
 				fout = open(os.path.join(gendir,"freq_cutoff.json"),'w')
 				json.dump(freq_cutoff_dict3, fout)
 				fout.close()
-				log_main.add('================================================================================================================\n')
-			else:
-				log_main.add('================================================================================================================\n')
+			log_main.add('================================================================================================================\n')
 		else:
 			minimum_group_size, maximum_group_size, new_index, unaccounted_list, \
 			   bad_clustering, stop_generation, stat_list = 0, 0, 0, 0, 0, 0, 0
@@ -3416,46 +3416,40 @@ def get_sorting_parti_from_stack(data):
 		mpi_barrier(MPI_COMM_WORLD)
 	total_plist = wrap_mpi_bcast(total_plist, Blockdata["main_node"])
 	return total_plist
-		
+
 ### dmatrix and refangles partition			
-def get_angle_step_from_number_of_orien_groups(orien_groups):
-	global Tracker, Blockdata
-	N = orien_groups
-	angle_step = 60.
-	while len(Blockdata["symclass"].even_angles(angle_step))< N:
-		angle_step /=2.
-	while len(Blockdata["symclass"].even_angles(angle_step))> N:
-		angle_step +=0.1
-	return angle_step
-	
-def parti_oriens(params, angstep, smc):
-	ntot = len(params)
-	eah  = smc.even_angles(angstep, inc_mirror=0)
-	leah = len(eah)
-	u    = []
-	for q in eah:
-		m = smc.symmetry_related([(180.0+q[0])%360.0,180.0-q[1],0.0])
-		itst = len(u)
-		for c in m:
-			if smc.is_in_subunit(c[0],c[1],1) :
-				if not smc.is_in_subunit(c[0],c[1],0) :
-					u.append(c)
-					break
-		if(len(u) != itst+1):
-			u.append(q)  #  This is for exceptions that cannot be easily handled
-	seaf = []
-	for q in eah+u:seaf += smc.symmetry_related(q)
-	lseaf = 2*leah
-	seaf = angles_to_normals(seaf)
-	occupancy = [[] for i in range(leah)]
-	for i,q in enumerate(params):
-		l = nearest_fang(seaf,q[0],q[1])
-		l = l%lseaf
-		if(l>=leah):  l = l-leah
-		occupancy[l].append(i)
-	return occupancy, eah
-	
-def get_angle_step_and_orien_groups_mpi(params_in, partids_in, angstep):
+def number_of_cones_to_delta(number_of_cones):
+
+	if( number_of_cones == 1):  return Blockdata["symclass"][1][3] + 0.5, 1
+	else:
+		if( Blockdata["symclass"].sym[0] == "c"):
+			t2 = 89.0
+			for i in range(92,0,-1):
+				a = Blockdata["symclass"].even_angles(i, theta1=1.0, theta2=t2)
+				a += [[(q[0]+90.0)%360., 180.-q[1],0] for q in a]
+				nren = len(a)
+				if(nren>number_of_cones): return float(i)#, nren
+			while(True):
+				i /= 2.0
+				a = Blockdata["symclass"].even_angles(i, theta1=1.0, theta2=t2)
+				a += [[(q[0]+90.0)%360., 180.-q[1],0] for q in a]
+				nren = len(a)
+				if(nren>number_of_cones): return float(i)#, nren
+
+		else:
+			#t2 = Blockdata["symclass"].brackets[1][3] + 0.5
+			for i in range(int(t2+1),0,-1):
+				nren = len(Blockdata["symclass"].even_angles(i, theta1=1.0))
+				if(nren>number_of_cones): return float(i)#, nren
+			while(True):
+				i /= 2.0
+				nren = len(Blockdata["symclass"].even_angles(i, theta1=1.0))
+				if(nren>number_of_cones): return float(i)#, nren
+
+		ERROR("number_of_cones_to_delta","should not be here",0)
+		return -1, 0
+
+def get_angle_step_and_orien_cones_mpi(params_in, partids_in, angstep):
 	global Tracker, Blockdata
 	from applications import MPI_start_end
 	from utilities    import wrap_mpi_recv, wrap_mpi_bcast, wrap_mpi_send, bcast_number_to_all
@@ -3469,34 +3463,34 @@ def get_angle_step_and_orien_groups_mpi(params_in, partids_in, angstep):
 		subparams = []
 		for im in range(len(partids)): 
 			subparams.append(params[partids[im]])
-		occu, eah = parti_oriens(subparams, angstep, Blockdata["symclass"])
-		ptls_in_orien_groups = []
+		from utilities import angular_occupancy
+		occu, eah = angular_occupancy(subparams, angstep, Blockdata["symclass"].sym)
+		ptls_in_orien_cones = []
 		reassign_list        = []
 		for l,q in enumerate(occu):
-			if len(q)<Tracker["min_orien_group_size"]: reassign_list +=q
-			else:      ptls_in_orien_groups.append(q)
+			if len(q)<Tracker["min_orien_cone_size"]: reassign_list +=q
+			else:      ptls_in_orien_cones.append(q)
 		import random
 		from   random import shuffle
 		shuffle(reassign_list)
 		for a in reassign_list:
-			img = random.randint(0, len(ptls_in_orien_groups) - 1)
-			ptls_in_orien_groups[img].append(a)
+			img = random.randint(0, len(ptls_in_orien_cones) - 1)
+			ptls_in_orien_cones[img].append(a)
 		del reassign_list
-		for img in range(len(ptls_in_orien_groups)):
-			tmp = sorted(ptls_in_orien_groups[img])
-			ptls_in_orien_groups[img][:] = tmp[:]
+		for img in range(len(ptls_in_orien_cones)):
+			tmp = sorted(ptls_in_orien_cones[img])
+			ptls_in_orien_cones[img][:] = tmp[:]
 	else:
-		ptls_in_orien_groups = 0
-	ptls_in_orien_groups = wrap_mpi_bcast( \
-	  ptls_in_orien_groups,Blockdata["main_node"], MPI_COMM_WORLD)
-	return ptls_in_orien_groups
+		ptls_in_orien_cones = 0
+	ptls_in_orien_cones = wrap_mpi_bcast( ptls_in_orien_cones, Blockdata["main_node"], MPI_COMM_WORLD)
+	return ptls_in_orien_cones
 
 ##### ================= orientation groups	
 def compare_two_iterations(assignment1, assignment2):
 	# compare two assignments during clustering, either iteratively or independently
 	import numpy as np
 	if len(assignment1) !=len(assignment2):
-		ERROR("Two assignments don't have the same length", "compare_two_iterations", 0, 0)
+		ERROR("Two assignments do not have the same length", "compare_two_iterations", 0, 0)
 	else:
 		N = len(assignment1)
 		full_list  = np.array(range(N), dtype = np.int32)
@@ -4240,7 +4234,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	
 	if import_from_sparx_refinement == 0:
-		ERROR("The index file of the best solution are not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		ERROR("The index file of the best solution is not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/chunk_0_000.txt")):
 			copyfile( os.path.join(Tracker["constants"]["refinement_dir"], "main000/chunk_0_000.txt"), \
@@ -4298,9 +4292,12 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	Tracker    = wrap_mpi_bcast(Tracker,         Blockdata["main_node"], MPI_COMM_WORLD)
 	update_sym = bcast_number_to_all(update_sym, Blockdata["main_node"], MPI_COMM_WORLD)
 	
-	if update_sym ==1:
+	if( update_sym == 1):
 		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-		Tracker["constants"]["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
+		#  Default was set to -1, in which case adjust fo symmetry, else use input directly
+		if(Tracker["constants"]["orientation_cones"] < 3):
+			Tracker["constants"]["orientation_cones"] = \
+			    max(3, int(round(20.0/sqrt(Blockdata["symclass"].nsym))))
 	
 	# Setting for margin error				
 	chunk_dict = {}
@@ -4349,7 +4346,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	Tracker["bckgnoise"] =  os.path.join(Tracker["constants"]["masterdir"], "bckgnoise.hdf")
 	###
 	from string import atoi
-	if Tracker["constants"]["minimum_grp_size"] ==-1:
+	if( Tracker["constants"]["minimum_grp_size"] ==-1 ):
 		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]\
 		    //Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
 	if Tracker["constants"]["minimum_grp_size"] > Tracker["constants"]["img_per_grp"]:
@@ -4458,10 +4455,10 @@ def get_input_from_datastack(log_main):# Case three
 		write_text_file(np.full(Tracker["constants"]["total_stack"], 1, dtype = np.int16).tolist(),\
 		   Tracker["constants"]["smearing_file"])
 	
-	if Tracker["constants"]["minimum_grp_size"] ==-1:
+	if( Tracker["constants"]["minimum_grp_size"] == -1 ):
 		Tracker["constants"]["minimum_grp_size"] = Tracker["constants"]["total_stack"]\
 		     //Tracker["constants"]["img_per_grp"]*(100//Blockdata["symclass"].nsym)
-	if Tracker["constants"]["minimum_grp_size"] > Tracker["constants"]["img_per_grp"]:
+	if( Tracker["constants"]["minimum_grp_size"] > Tracker["constants"]["img_per_grp"] ):
 		ERROR("User provided img_per_grp is smaller than minimum_grp_size", \
 		     "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 
@@ -6279,17 +6276,17 @@ def main():
 		parser.add_option("--nsmear",                            type   ="float",         default =-1.,                    help="Number of smears used in sorting. Fill it with 1 if user does not want to use all smears")
 		parser.add_option("--minimum_grp_size",				     type   ="int",           default =-1,					   help="Cluster selection size")
 		parser.add_option("--depth_order",				         type   ="int",           default =2,					   help="Depth order. A number defines the number of initial independent MGSKmeans runs (2^depth_order)")
-		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,                   help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
-		parser.add_option("--orientation_groups",                type   ="int",           default =100,                    help="Number of orientation groups in the asymmetric unit")
-		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,                  help="Do not reconstruct unaccounted elements in each generation")
-		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="Percentage of particles with changed group assignment. Converge criteria for Kmeans clustering with constrained group size")
-		parser.add_option("--swap_ratio",                        type   ="float",         default =5.0,                    help="Randomness ratio of swapping accounted elements with unaccounted for elemetns per cluster. A float number between 0.0 and 50.0")
-		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="Do not applynoise")
-		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="Flag to turn on swapping the accounted for images with the unaccounted for images")
-		parser.add_option("--random_group_elimination_threshold",  type   ="float",       default =2.0,                    help="Number of random group reproducibility standard deviation for eliminating random groups")
-		parser.add_option("--num_core_set",                        type   ="int",         default =-1,					   help="Number of images for reconstructing core set images. Will not reconstruct core set images if the total number of core set images is less than this")
-		parser.add_option("--check_smearing",                    action ="store_true",    default =False,                  help="Check the smearing per iteration and estimate the precalculated data")
-		parser.add_option("--compute_on_the_fly",                action ="store_true",    default =False,                  help="Pre-compute part of multiple assignment images for reconstruction till memory is filled up and then the other part on the fly")
+		parser.add_option("--memory_per_node",						type   ="float",		default =-1.0,		help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
+		parser.add_option("--orientation_cones",					type   ="int",			default =-1,		help="Number of orientation cones in the asymmetric unit (default 20, adjusted for symmetry)")
+		parser.add_option("--not_include_unaccounted",				action ="store_true",	default =False,		help="Do not reconstruct unaccounted elements in each generation")
+		parser.add_option("--stop_mgskmeans_percentage",			type   ="float",		default =10.0,		help="Percentage of particles with changed group assignment. Converge criteria for Kmeans clustering with constrained group size")
+		parser.add_option("--swap_ratio",							type   ="float",		default =5.0,		help="Randomness ratio of swapping accounted elements with unaccounted for elemetns per cluster. A float number between 0.0 and 50.0")
+		parser.add_option("--notapplybckgnoise",					action ="store_true",	default =False,		help="Do not applynoise")
+		parser.add_option("--do_swap_au",							action ="store_true",	default =False,		help="Flag to turn on swapping the accounted for images with the unaccounted for images")
+		parser.add_option("--random_group_elimination_threshold",	type   ="float",		default =2.0,		help="Number of random group reproducibility standard deviation for eliminating random groups")
+		parser.add_option("--num_core_set",                        type   ="int",         default =-1,					   help="Number of images for reconstructing core set images. Will not reconstruct core set images if their number if less")
+		parser.add_option("--check_smearing",						action ="store_true",	default =False,		help="Check the smearing per iteration and estimate the precalculated data")
+		parser.add_option("--compute_on_the_fly",					action ="store_true",	default =False,		help="Pre-compute part of multiple assignment images for reconstruction till memory is filled up and then the other part on the fly")
 
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
@@ -6317,7 +6314,7 @@ def main():
 			if checking_flag ==1:
 				ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
 		
-		if options.img_per_grp <=1: ERROR("Improperiate input paramter for img_per_grp", "sort3d", 1, Blockdata["myid"])
+		if options.img_per_grp <=1: ERROR("Incorrect input parameter for img_per_grp", "sort3d", 1, Blockdata["myid"])
 		elif options.img_per_grp < options.minimum_grp_size: 
 			ERROR("Img_per_grp should be always larger than minimum_grp_size", "sort3d", 1, Blockdata["myid"])
 	
@@ -6364,8 +6361,8 @@ def main():
 		Constants["do_not_use_3dmask"]           = False 
 	
 		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
-		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
-		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
+		Constants["fuse_freq"]			= 45.  # Now in A, convert to pixels before being used
+		Constants["orientation_cones"]  = options.orientation_cones # orientation constrained angle step
 		Constants["num_core_set"]        = options.num_core_set
 		Constants["check_smearing"]      = options.check_smearing
 		Constants["compute_on_the_fly"]  = options.compute_on_the_fly
@@ -6408,13 +6405,13 @@ def main():
 		
 		Tracker["num_on_the_fly"] = [ -1  for im in range(Blockdata["nproc"])]
 		Tracker["current_img_per_grp"] = Tracker["constants"]["img_per_grp"]
-		try : 
-			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
-			Tracker["constants"]["orientation_groups"] = \
-			    max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
-		except: pass
+		Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
+		#  Default was set to -1, in which case adjust fo symmetry, else use input directly
+		if(Tracker["constants"]["orientation_cones"] < 3):
+			Tracker["constants"]["orientation_cones"] = \
+			    max(3, int(round(20.0/sqrt(Blockdata["symclass"].nsym))))
 		
-		ast = get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
+		ast = number_of_cones_to_delta(Tracker["constants"]["orientation_cones"])
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 		create_subgroup()
@@ -6450,9 +6447,9 @@ def main():
 				exit()				 
 		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			log_main.add('----------------------------------------------------------------------------------------------------------------' )
+			log_main.add('----------------------------------------------------------------------------------------------------------------')
 			log_main.add('                                 SORT3D MULTI-LAYER finished')
-			log_main.add('----------------------------------------------------------------------------------------------------------------' )
+			log_main.add('================================================================================================================\n')
 		from mpi import mpi_finalize
 		mpi_finalize()
 		exit()
@@ -6470,14 +6467,14 @@ def main():
 		parser.add_option("--minimum_grp_size",				     type   ="int",           default =-1,					   help="Cluster selection size")
 		parser.add_option("--depth_order",				         type   ="int",           default =2,					   help="Depth order. A number defines the number of initial independent MGSKmeans runs (2^depth_order)")
 		parser.add_option("--memory_per_node",                   type   ="float",         default =-1.0,                   help="Memory_per_node, the number used for computing the CPUs/NODE settings given by user")
-		parser.add_option("--orientation_groups",                type   ="int",           default =100,                    help="Number of orientation groups in the asymmetric unit")
-		parser.add_option("--not_include_unaccounted",           action ="store_true",    default =False,                  help="Do not reconstruct unaccounted elements in each generation")
-		parser.add_option("--stop_mgskmeans_percentage",         type   ="float",         default =10.0,                   help="Percentage of particles with changed group assignment. Converge criteria for Kmeans clustering with constrained group size")
+		parser.add_option("--orientation_cones",			type   ="int",           default =20,		help="Number of orientation cones in the asymmetric unit")
+		parser.add_option("--not_include_unaccounted",		action ="store_true",    default =False,    help="Do not reconstruct unaccounted elements in each generation")
+		parser.add_option("--stop_mgskmeans_percentage",	type   ="float",         default =10.0,		help="Percentage of particles with changed group assignment. Converge criteria for Kmeans clustering with constrained group size")
 		parser.add_option("--swap_ratio",                        type   ="float",         default =5.0,                    help="Randomness ratio of swapping accounted elements with unaccounted for elemetns per cluster. A float number between 0.0 and 50.0")
 		parser.add_option("--notapplybckgnoise",                 action ="store_true",    default =False,                  help="Flag to turn off background noise")
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="Flag to turn on swapping the accounted for images with the unaccounted for images")
 		parser.add_option("--random_group_elimination_threshold",  type   ="float",       default =2.0,                    help="Number of random group reproducibility standard deviation for eliminating random groups")
-		parser.add_option("--num_core_set",                        type   ="int",         default =-1,					   help="Number of images for reconstructing core set images. Will not reconstruct core set images if the total number of core set images is less than this")
+		parser.add_option("--num_core_set",                        type   ="int",         default =-1,					   help="Number of images for reconstructing core set images. Will not reconstruct core set images if their number if less")
 
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
@@ -6498,9 +6495,9 @@ def main():
 			if checking_flag ==1:
 				ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
 		
-		if options.img_per_grp <=1:
+		if( options.img_per_grp <=1 ):
 			ERROR("Improperiate number for img_per_grp", "sort3d", 1, Blockdata["myid"])
-		elif options.img_per_grp < options.minimum_grp_size:
+		elif( options.img_per_grp < options.minimum_grp_size ):
 			ERROR("Parameter img_per_grp should be always larger than parameter minimum_grp_size", "sort3d", 1, Blockdata["myid"])
 	
 		#--- Fill input parameters into dictionary Constants
@@ -6545,7 +6542,7 @@ def main():
 	
 		if options.focus:  Constants["comparison_method"] = "cross" # in case of focus3D, cross is used.
 		Constants["fuse_freq"] = 45.  # Now in A, convert to pixels before being used
-		Constants["orientation_groups"]  = options.orientation_groups # orientation constrained angle step
+		Constants["orientation_cones"]  = options.orientation_cones # orientation constrained angle step
 		Constants["num_core_set"]        = options.num_core_set
 		Constants["compute_on_the_fly"]  = False
 		#
@@ -6591,12 +6588,15 @@ def main():
 		checking_flag                              =  0 # reset
 		Blockdata["fftwmpi"]                       = True
 		Blockdata["symclass"]                      = symclass(Tracker["constants"]["symmetry"])
-		Tracker["constants"]["orientation_groups"] = max(4, Tracker["constants"]["orientation_groups"]//Blockdata["symclass"].nsym)
+		#  Default was set to -1, in which case adjust fo symmetry, else use input directly
+		if(Tracker["constants"]["orientation_cones"] < 3):
+			Tracker["constants"]["orientation_cones"] = \
+			    max(3, int(round(20.0/sqrt(Blockdata["symclass"].nsym))))
 		
 		Tracker["num_on_the_fly"]      = [ -1 for im in range(Blockdata["nproc"])]
 		Tracker["current_img_per_grp"] = Tracker["constants"]["img_per_grp"]
 		
-		ast = get_angle_step_from_number_of_orien_groups(Tracker["constants"]["orientation_groups"])
+		ast = number_of_cones_to_delta(Tracker["constants"]["orientation_cones"])
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
 		Blockdata["nsubset"]      = Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 		create_subgroup()
@@ -6632,9 +6632,9 @@ def main():
 				exit()
 		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
-			log_main.add('----------------------------------------------------------------------------------------------------------------' )
+			log_main.add('----------------------------------------------------------------------------------------------------------------')
 			log_main.add('                                 SORT3D MULTI-LAYER finished')
-			log_main.add('----------------------------------------------------------------------------------------------------------------' )
+			log_main.add('================================================================================================================\n')
 		from mpi import mpi_finalize
 		mpi_finalize()
 		exit()
