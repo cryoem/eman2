@@ -487,7 +487,7 @@ def read_tracker_mpi(current_dir):
 	if open_tracker ==1:
 		if(Blockdata["myid"] != Blockdata["main_node"]): Tracker = 0
 		Tracker = wrap_mpi_bcast(Tracker, Blockdata["main_node"], MPI_COMM_WORLD)
-	else: ERROR("Fail to load tracker", "%s"%current_dir, 1, Blockdata["myid"])
+	else: ERROR("Failed to load Tracker", "%s"%current_dir, 1, Blockdata["myid"])
 	return
 
 def mark_sorting_state(current_dir, sorting_done, log_file):
@@ -1467,7 +1467,7 @@ def Kmeans_minimum_group_size_orien_cones(cdata, fdata, srdata, ctf_images,\
 	ptls_in_orien_cones				= get_angle_step_and_orien_cones_mpi(params, partids, angle_step)
 	minimum_group_size              = max(minimum_group_size_init, Tracker["number_of_groups"]*len(ptls_in_orien_cones))
 	minimum_group_size_ratio        = min((minimum_group_size*Tracker["number_of_groups"])/float(Tracker["total_stack"]), 0.95)
-		
+
 	### printed info
 	if( Blockdata["myid"] == Blockdata["main_node"]):
 		log_main.add('----------------------------------------------------------------------------------------------------------------' )
@@ -6135,8 +6135,16 @@ def get_group_size_from_iter_assign(iter_assignment):
 	for im in range(group_ids.shape[0]):
 		group_sizes.append((np.sort(my_assign[isin(my_assign, group_ids[im])])).shape[0])
 	return group_sizes
+
+def get_res143(fsc_curve):
+	fsc143 = len(fsc_curve)
+	for ifreq in range(len(fsc_curve)):
+		if (fsc_curve[ifreq] < 0.143):
+			fsc143 = ifreq -1
+			break
+	return fsc143
 		
-def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
+def sorting_main_mpi(log_main, depth_order, not_include_unaccounted, override):
 	global Tracker, Blockdata
 	time_sorting_start = time()
 	read_tracker_mpi(Tracker["constants"]["masterdir"])
@@ -6149,6 +6157,25 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	my_pids           = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
 	params            = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
 	previous_params   = Tracker["previous_parstack"]
+	if( not override):
+		# Check sanity of parameters
+		from statistics import scale_fsc_datasetsize
+		options.img_per_grp
+		options.minimum_grp_size
+		nogo = 1
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			nima = sum(Tracker["nima_per_chunk"])
+			rorg = get_res143(scale_fsc_datasetsize(fsc_to_be_adjusted, nima, options.img_per_grp))
+			nnew = options.img_per_grp
+			while(nnew>2):
+				rmin = get_res143(scale_fsc_datasetsize(fsc_to_be_adjusted, nima, nnew))
+				if(rmin > rorg-2): nnew -= 10
+				else:  nnew += 10
+		else: nogo = 0
+		nogo =  bcast_number_to_all(nogo, Blockdata["main_node"], MPI_COMM_WORLD)
+		if(nogo == 1): ERROR("Minimum number of images per group too low", "%s"%current_dir, 1, Blockdata["myid"])
+
+
 	all_gen_stat_list = []
 	bad_clustering    = 0
 	while (keepsorting == 1) and (bad_clustering== 0):
@@ -6287,6 +6314,7 @@ def main():
 		parser.add_option("--num_core_set",                        type   ="int",         default =-1,					   help="Number of images for reconstructing core set images. Will not reconstruct core set images if their number if less")
 		parser.add_option("--check_smearing",						action ="store_true",	default =False,		help="Check the smearing per iteration and estimate the precalculated data")
 		parser.add_option("--compute_on_the_fly",					action ="store_true",	default =False,		help="Pre-compute part of multiple assignment images for reconstruction till memory is filled up and then the other part on the fly")
+		parser.add_option("--override",								action ="store_true",	default =False,		help="Override sanity checks of input parameters.  To be used at user's discretion.")
 
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
@@ -6445,7 +6473,8 @@ def main():
 				from mpi import mpi_finalize
 				mpi_finalize()
 				exit()				 
-		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
+
+		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted, options.override)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------')
 			log_main.add('                                 SORT3D MULTI-LAYER finished')
@@ -6475,6 +6504,7 @@ def main():
 		parser.add_option("--do_swap_au",                        action ="store_true",    default =False,                  help="Flag to turn on swapping the accounted for images with the unaccounted for images")
 		parser.add_option("--random_group_elimination_threshold",  type   ="float",       default =2.0,                    help="Number of random group reproducibility standard deviation for eliminating random groups")
 		parser.add_option("--num_core_set",                        type   ="int",         default =-1,					   help="Number of images for reconstructing core set images. Will not reconstruct core set images if their number if less")
+		parser.add_option("--override",								action ="store_true",	default =False,		help="Override sanity checks of input parameters.  To be used at user's discretion.")
 
 		(options, args) = parser.parse_args(sys.argv[1:])
 		from utilities import bcast_number_to_all
@@ -6496,7 +6526,7 @@ def main():
 				ERROR("The specified mask3D file does not exist", "sort3d", 1, Blockdata["myid"])
 		
 		if( options.img_per_grp <=1 ):
-			ERROR("Improperiate number for img_per_grp", "sort3d", 1, Blockdata["myid"])
+			ERROR("Incorrect number of images per group", "sort3d", 1, Blockdata["myid"])
 		elif( options.img_per_grp < options.minimum_grp_size ):
 			ERROR("Parameter img_per_grp should be always larger than parameter minimum_grp_size", "sort3d", 1, Blockdata["myid"])
 	
@@ -6630,7 +6660,7 @@ def main():
 				from mpi import mpi_finalize
 				mpi_finalize()
 				exit()
-		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
+		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted, options.override)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------')
 			log_main.add('                                 SORT3D MULTI-LAYER finished')
