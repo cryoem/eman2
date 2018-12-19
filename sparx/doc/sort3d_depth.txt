@@ -8,7 +8,7 @@
 
 Usage in command line
 
-  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES  --img_per_grp_split_rate=SPLIT_RATE  --minimum_grp_size=GROUP_SIZE  --do_swap_au  --swap_ratio=RATIO  --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER  --stop_mgskmeans_percentage=PERCENTAGE  --nsmear=NUM_OF_SMEARS  --orientation_cones=NUM_OF_GROUPS  --not_include_unaccounted  --notapplybckgnoise  --random_group_elimination_threshold --check_smearing --num_core_set  --compute_on_the_fly
+  sxsort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES  --img_per_grp_split_rate=SPLIT_RATE  --minimum_grp_size=GROUP_SIZE  --do_swap_au  --swap_ratio=RATIO  --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER  --stop_mgskmeans_percentage=PERCENTAGE  --nsmear=NUM_OF_SMEARS  --orientation_cones=NUM_OF_GROUPS  --not_include_unaccounted  --notapplybckgnoise  --random_group_elimination_threshold --check_smearing --num_core_set  --compute_on_the_fly  --override
 
 \\
 ===== Typical usage =====
@@ -58,6 +58,7 @@ There are two ways of running this command.
   ; %%--%%check_smearing : Check smearing: A boolean flag to turn on Printing out average smearing of all iterations of meridien refinement. By default, program will not print. (default false)
   ; %%--%%num_core_set : Size of core set: Core set images will not be reconstructed if the total core set number is less than this. By default, the program will choose the maximum number between minimum group size and 100 as num_core_set. (default -1)
   ; %%--%%compute_on_the_fly : Compute on the fly: A boolean flag controls the number of pre-calculated smearing images to avoid memory overflow. By default, program calculates smearing images for 3D reconstruction prior constrained Kmeans. (default false)
+  ; %%--%%override : Override checks: A boolean flag that, if checked, will make the program bypass sanity checks of input parmeters. (default false)
 
 
 
