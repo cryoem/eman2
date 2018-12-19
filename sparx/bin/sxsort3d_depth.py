@@ -1315,19 +1315,10 @@ def import_data(log_main, override):
 		ERROR("Minimum group size cannot be larger that the requested number of images per group", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	if( not override):
 		# Check sanity of parameters
-		from statistics import scale_fsc_datasetsize
-		nnew = Tracker["constants"]["img_per_grp"]
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			rorg = get_res143(scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], Tracker["constants"]["img_per_grp"]))			
-			rmin = rorg
-			while(nnew>2 or rmin > rorg-2):
-				rmin = get_res143(scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], nnew))
-				nnew -= 10
-			nnew += 10
-		nnew =  bcast_number_to_all(nnew, Blockdata["main_node"], MPI_COMM_WORLD)
+		nnew = int(round(Tracker["constants"]["img_per_grp"]/4.0))
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			log_main.add("Suggested minimum number of images per group: %d"%nnew)
-		if(Tracker["constants"]["minimum_grp_size"]<nnew): ERROR("Minimum number of images per group too low", "%s"%current_dir, 1, Blockdata["myid"])
+		if(Tracker["constants"]["minimum_grp_size"]<nnew): ERROR("Minimum number of images per group is too low", "import_data", 1, Blockdata["myid"])
 
 	return
 	
