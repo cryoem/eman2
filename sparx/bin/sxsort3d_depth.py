@@ -1018,12 +1018,12 @@ def get_sorting_image_size(original_data, partids, number_of_groups, sparamstruc
 		     Tracker["constants"]["nnxo"]))
 		nxinit = smallprime(nxinit-nxinit%2)
 		nxinit = nxinit - nxinit%2
-	else: ERROR("Program obtains wrong image size", "get_sorting_image_size", 1, Blockdata["myid"])
+	else: ERROR("Incorrect image size encountered", "get_sorting_image_size", 1, Blockdata["myid"])
 	
 	if Tracker["nosmearing"] and Tracker["constants"]["nxinit"] !=-1:
 		nxinit = Tracker["constants"]["nxinit"]
 		if nxinit >Tracker["constants"]["nnxo"]:
-			ERROR("User provides wrong nxinit", "get_sorting_image_size", 1, Blockdata["myid"])
+			ERROR("User-provided nxinit is incorrect, it is larger than the original image size", "get_sorting_image_size", 1, Blockdata["myid"])
 			
 	Tracker["nxinit"] = nxinit
 	compute_noise(Tracker["nxinit"])
@@ -1282,9 +1282,9 @@ def check_3dmask(log_main):
 			log_main.add('Sort3d is run in focus mode, and focus mask is %s'%Tracker["constants"]["focus3D"]+'\n')
 	return
 
-def import_data(log_main):
+def import_data(log_main, override):
 	global Tracker, Blockdata
-	# Two typical sorting scenarios
+	# Two sorting scenarios
 	# 1. import data and refinement parameters from meridien refinement;
 	# 2. given data stack and xform.projection/ctf in header(For simulated test data);
 	import_from_relion_refinement = 0
@@ -1294,7 +1294,7 @@ def import_data(log_main):
 	if Tracker["constants"]["refinement_method"] =="SPARX": # Senario one
 		import_from_sparx_refinement = get_input_from_sparx_ref3d(log_main)
 		Tracker["smearing"] = True
-	else:  # Senario three, sorting from a given data stack, general cases
+	else:  # Scenario three, sorting from a given data stack, general cases
 		import_from_data_stack = get_input_from_datastack(log_main)
 		Tracker["constants"]["hardmask"] = True
 		Tracker["applybckgnoise"]        = False
@@ -1313,6 +1313,23 @@ def import_data(log_main):
 		ERROR("Requested number of images per group is too large, corresponds to requesting one group", "sxsort3d_depth.py", 1,  Blockdata["myid"])
 	if Tracker["constants"]["minimum_grp_size"] > Tracker["constants"]["img_per_grp"]:
 		ERROR("Minimum group size cannot be larger that the requested number of images per group", "sxsort3d_depth.py", 1,  Blockdata["myid"])
+	if( not override):
+		# Check sanity of parameters
+		from statistics import scale_fsc_datasetsize
+		nnew = Tracker["constants"]["img_per_grp"]
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			nima = sum(Tracker["nima_per_chunk"])
+			rorg = get_res143(scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], nima, Tracker["constants"]["img_per_grp"]))			
+			rmin = rorg
+			while(nnew>2 or rmin > rorg-2):
+				rmin = get_res143(scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], nima, nnew))
+				nnew -= 10
+			nnew += 10
+		nnew =  bcast_number_to_all(nnew, Blockdata["main_node"], MPI_COMM_WORLD)
+		if(Blockdata["myid"] == Blockdata["main_node"]):
+			log_main.add("Suggested minimum number of images per group: %d"%nnew)
+		if(Tracker["constants"]["minimum_grp_size"]<nnew): ERROR("Minimum number of images per group too low", "%s"%current_dir, 1, Blockdata["myid"])
+
 	return
 	
 def create_masterdir():
@@ -4127,7 +4144,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		if not os.path.exists (Tracker["constants"]["refinement_dir"]): checking_flag = 1
 	checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], MPI_COMM_WORLD)
 	if checking_flag ==1:
-		ERROR("SPARX refinement directory does not exist", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		ERROR("MERIDIEN refinement directory does not exist", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if Tracker["constants"]["niter_for_sorting"] == -1: # take the best solution to do sorting
 			niter_refinement = 0
@@ -4155,7 +4172,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	selected_iter = bcast_number_to_all(selected_iter, Blockdata["main_node"], MPI_COMM_WORLD)
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:
-		ERROR("The best solution is not found","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		ERROR("The best solution not found","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 		from mpi import mpi_finalize
 		mpi_finalize()
 		exit()
@@ -4212,10 +4229,9 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	
 	import_from_sparx_refinement = 1	
 	if Blockdata["myid"] == Blockdata["main_node"]:
-		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], \
-		  "main%03d"%selected_iter, "driver_%03d.txt"%selected_iter)):
-			copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%selected_iter, \
-			 "driver_%03d.txt"%selected_iter), os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
+		fifi = os.path.join(Tracker["constants"]["refinement_dir"], "main%03d"%selected_iter, "driver_%03d.txt"%selected_iter)
+		if os.path.exists(fifi):
+			copyfile(fifi, os.path.join(Tracker["constants"]["masterdir"], "fsc_global.txt"))
 		else: import_from_sparx_refinement = 0
 		
 		if import_from_sparx_refinement:
@@ -4225,7 +4241,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:
-		ERROR("The driver of the best solution is not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
+		ERROR("The driver FSC of the best solution is not accessible","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		if os.path.exists(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt")):
 			copyfile(os.path.join(Tracker["constants"]["refinement_dir"], "main000/indexes_000.txt"), \
@@ -4573,7 +4589,7 @@ def get_input_from_datastack(log_main):# Case three
 	return import_from_data_stack
 	
 ####	
-### functions for faked rec3d from subsets
+### functions for fake rec3d from subsets
 ###
 def do3d(procid, data, newparams, refang, rshifts, norm_per_particle, myid, mpi_comm = -1):
 	global Tracker, Blockdata
@@ -6144,7 +6160,7 @@ def get_res143(fsc_curve):
 			break
 	return fsc143
 		
-def sorting_main_mpi(log_main, depth_order, not_include_unaccounted, override):
+def sorting_main_mpi(log_main, depth_order, not_include_unaccounted):
 	global Tracker, Blockdata
 	time_sorting_start = time()
 	read_tracker_mpi(Tracker["constants"]["masterdir"])
@@ -6157,24 +6173,6 @@ def sorting_main_mpi(log_main, depth_order, not_include_unaccounted, override):
 	my_pids           = os.path.join(Tracker["constants"]["masterdir"], "indexes.txt")
 	params            = os.path.join(Tracker["constants"]["masterdir"],"refinement_parameters.txt")
 	previous_params   = Tracker["previous_parstack"]
-	if( not override):
-		# Check sanity of parameters
-		from statistics import scale_fsc_datasetsize
-		options.img_per_grp
-		options.minimum_grp_size
-		nogo = 1
-		if(Blockdata["myid"] == Blockdata["main_node"]):
-			nima = sum(Tracker["nima_per_chunk"])
-			rorg = get_res143(scale_fsc_datasetsize(fsc_to_be_adjusted, nima, options.img_per_grp))
-			nnew = options.img_per_grp
-			while(nnew>2):
-				rmin = get_res143(scale_fsc_datasetsize(fsc_to_be_adjusted, nima, nnew))
-				if(rmin > rorg-2): nnew -= 10
-				else:  nnew += 10
-		else: nogo = 0
-		nogo =  bcast_number_to_all(nogo, Blockdata["main_node"], MPI_COMM_WORLD)
-		if(nogo == 1): ERROR("Minimum number of images per group too low", "%s"%current_dir, 1, Blockdata["myid"])
-
 
 	all_gen_stat_list = []
 	bad_clustering    = 0
@@ -6463,7 +6461,7 @@ def main():
 				log_main.add('================================================================================================================')
 				log_main.add('                                 SORT3D MULTI-LAYER v1.3')
 				log_main.add('================================================================================================================')
-			import_data(log_main)
+			import_data(log_main, options.override)
 			print_shell_command(sys.argv, log_main)
 			check_3dmask(log_main)
 			check_mpi_settings(log_main)
@@ -6474,7 +6472,7 @@ def main():
 				mpi_finalize()
 				exit()				 
 
-		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted, options.override)
+		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------')
 			log_main.add('                                 SORT3D MULTI-LAYER finished')
@@ -6650,7 +6648,7 @@ def main():
 				log_main.add('================================================================================================================')
 				log_main.add('                                  SORT3D MULTI-LAYER v1.3')
 				log_main.add('================================================================================================================\n')	
-			import_data(log_main)
+			import_data(log_main, options.override)
 			print_shell_command(sys.argv, log_main)
 			check_3dmask(log_main)
 			check_mpi_settings(log_main)
@@ -6660,7 +6658,7 @@ def main():
 				from mpi import mpi_finalize
 				mpi_finalize()
 				exit()
-		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted, options.override)
+		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------')
 			log_main.add('                                 SORT3D MULTI-LAYER finished')
