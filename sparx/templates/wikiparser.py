@@ -1849,6 +1849,7 @@ def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
 	#token_edit = SXcmd_token(); token_edit.initialize_edit("not_freeze_groups"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("compute_on_the_fly"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("check_smearing"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("override"); token_edit_list.append(token_edit)
 	
 
 ### # NOTE: 2018/01/08 Toshio Moriya
