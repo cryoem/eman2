@@ -2975,6 +2975,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	#envelope = movingaverage(  subpw   , nroo//4, 3)
 	envelope = np.array([1.0]*len(subpw), np.float32)
 	#write_text_file([roo,baseline,subpw],"dbgt.txt")
+
 #print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
 	#envelope = np.ones(nroo, np.float32)
 	defocus = 0.0
@@ -3079,6 +3080,7 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 	#envelope = movingaverage(  subpw   , nroo//4, 3)
 	envelope = np.array([1.0]*len(subpw), np.float32)
 	#write_text_file([roo,baseline,subpw],"dbgt.txt")
+
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
 	#envelope = np.ones(nroo, np.float32)
 	defocus = 0.0
@@ -3093,8 +3095,6 @@ def defocusgett_pap(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1,
 	defound = []
 	for  idef in range(ndefs):
 		def1 = (idef+1)*0.5
-		print('b', def1)
-		print('c', h)
 		def1, def2 = bracket_def(simpw1d_pap, data, def1, h)
 		if DEBug:  print("second bracket ",idef,def1, def2,simpw1d(def1, data),simpw1d_pap(def2, data),h)
 		def1, val2 = goldsearch_astigmatism(simpw1d_pap, data, def1, def2, tol=1.0e-3)
@@ -4258,6 +4258,8 @@ def defocusgett_vpp2(qse, wn, xdefc, xampcont, voltage=300.0, Pixel_size=1.0, Cs
 	cny = cnx
 	mode = "H"
 	numr = sparx_alignment.Numrinit(i_start, i_stop-1, 1, mode)
+	print(len(numr))
+
 	wr = sparx_alignment.ringwe(numr, mode)
 
 	crefim = EMAN2_cppwrap.Util.Polar2Dm(qse, cnx, cny, numr, mode)

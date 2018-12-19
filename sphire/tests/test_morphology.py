@@ -543,19 +543,267 @@ class MyTestCase(unittest.TestCase):
             self.assertTrue(return_new, return_old)
 
 
-    # def test_fastigmatism3_true_should_return_equal_object(self):
-    #     data = [entry for entry in numpy.arange(0, 10).tolist()]
-    #     amp = 4
-    #
-    #     return_new = fu.fastigmatism3(amp,data)
-    #     return_old = oldfu.fastigmatism3(amp,data)
-    #
-    #     self.assertTrue(return_new, return_old)
+    def test_fastigmatism3_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        with open(filepath, 'rb') as rb:
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+        amp = 4
+        defocus = 0
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.09
+        amp_contrast = 0.1
+        bfactor = 0.0
+        nx = 12
+        data = [crefim, numr, nx, defocus, Cs, voltage, pixel_size, bfactor, amp_contrast]
+
+        return_new = fu.fastigmatism3(amp,data)
+        return_old = oldfu.fastigmatism3(amp,data)
+
+        self.assertTrue(return_new, return_old)
+
+
+    def test_fastigmatism3_pap_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        with open(filepath, 'rb') as rb:
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+        amp = 4
+        defocus = 0
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.09
+        amp_contrast = 0.1
+        bfactor = 0.0
+        nx = 12
+        data = [crefim, numr, nx, defocus, Cs, voltage, pixel_size, bfactor, amp_contrast]
+
+        return_new = fu.fastigmatism3_pap(amp,data)
+        return_old = oldfu.fastigmatism3_pap(amp,data)
+
+        self.assertTrue(return_new, return_old)
+
+
+    def test_simctf2_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        with open(filepath, 'rb') as rb:
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+
+        amp = 4
+        defocus = 0.0
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.09
+        amp_contrast = 0.1
+        bfactor = 0.0
+        nx = 352
+
+        print(numpy.shape(crefim.get_3dview()))
+        print(numpy.shape(image.get_3dview()))
+
+        data = [image, image, nx, defocus, Cs, voltage, pixel_size, bfactor, amp_contrast, 0.0]
+
+        return_new = fu.simctf2(0.0,data)
+        return_old = oldfu.simctf2(0.0,data)
+
+        self.assertTrue(return_new, return_old)
 
 
 
+    def test_simctf2_pap_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        with open(filepath, 'rb') as rb:
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+
+        amp = 4
+        defocus = 0.0
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.09
+        amp_contrast = 0.1
+        bfactor = 0.0
+        nx = 352
+        data = [image, image, nx, defocus, Cs, voltage, pixel_size, bfactor, amp_contrast,0.0]
+
+        return_new = fu.simctf2_pap(0.0,data)
+        return_old = oldfu.simctf2_pap(0.0,data)
+
+        self.assertTrue(return_new, return_old)
+
+    def test_fupw_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        with open(filepath, 'rb') as rb:
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+        amp = 4
+        defocus = 0
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.09
+        amp_contrast = 0.1
+        bfactor = 0.0
+        nx = 12
+
+        arg= [defocus,amp]
+        data = [crefim, numr, nx, 0.0, Cs, voltage, pixel_size, bfactor, amp_contrast,0.0]
+
+        return_new = fu.fupw(arg,data)
+        return_old = oldfu.fupw(arg,data)
+
+        self.assertTrue(return_new, return_old)
+
+    def test_fupw_pap_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        with open(filepath, 'rb') as rb:
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+        amp = 4
+        defocus = 0
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.09
+        amp_contrast = 0.1
+        bfactor = 0.0
+        nx = 12
+
+        arg = [defocus, amp]
+        data = [crefim, numr, nx, 0.0, Cs, voltage, pixel_size, bfactor, amp_contrast, 0.0]
+
+        return_new = fu.fupw_pap(arg, data)
+        return_old = oldfu.fupw_pap(arg, data)
+
+        self.assertTrue(return_new, return_old)
+
+    def test_cter_vpp_true_should_return_equal_object(self):
+        defocus = 1
+        cs = 2
+        voltage = 300
+        pixel_size = 1.5
+        bfactor = 0
+        amp_contrast = 0.1
+        wn = 32
+        i_start = 0.048
+        i_stop = -1
+        vpp_options = [entry for entry in numpy.arange(0, 6).tolist()]
 
 
+        ctf = e2cpp.EMAN2Ctf()
+        ctf.from_dict({"defocus": defocus, "cs": cs, "voltage": voltage, "apix": pixel_size, "bfactor": bfactor,
+                       "ampcont": amp_contrast})
+        image1, = get_data(1, 256)
+
+        micrograph_image = ft.filt_ctf(image1,ctf)
+        micrograph_image.write_image('sphire/tests/files/cter_mrk/image.mrc')
+        selection_list = 'image.mrc'
+
+        input_image_path = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/image*.mrc")
+        output_directory = os.path.join(ABSOLUTE_PATH, "files/cter_mrk/results")
+        if os.path.isdir(output_directory):
+            shutil.rmtree(output_directory)
+
+        return_new = fu.cter_vpp(input_image_path, output_directory, selection_list = selection_list,\
+                                    wn = wn,  pixel_size=pixel_size, Cs= cs, voltage = voltage, f_start=i_start,\
+                                 f_stop=i_stop, vpp_options=vpp_options)
+
+        if os.path.isdir(output_directory):
+            shutil.rmtree(output_directory)
+
+        return_old = oldfu.cter_vpp(input_image_path, output_directory, selection_list = selection_list,\
+                                    wn = wn,  pixel_size=pixel_size, Cs= cs, voltage = voltage, f_start=i_start,\
+                                    f_stop=i_stop, vpp_options=vpp_options)
+
+        self.assertEqual(return_new, return_old)
+
+
+    def test_defocusgett_vpp_true_should_return_equal_object(self):
+            roo = [entry for entry in numpy.arange(1, 258).tolist()]
+            vpp_options = [entry for entry in numpy.arange(0, 6).tolist()]
+            Cs = 2
+            voltage = 300
+            pixel_size = 1.09
+            amp_contrast = 0.1
+            i_start = 0.048
+            i_stop = -1
+            nx = 512
+            nr2 = 6
+
+            return_new = fu.defocusgett_vpp(roo,nx,voltage,pixel_size,Cs,
+               i_start,i_stop, vpp_options)
+            return_old = oldfu.defocusgett_vpp(roo,nx,voltage,pixel_size,Cs,
+               i_start,i_stop, vpp_options)
+
+            self.assertTrue(return_new, return_old)
+
+    def test_defocusgett_vpp2_true_should_return_equal_object(self):
+            Cs = 2
+            voltage = 300
+            pixel_size = 1.09
+            xampcont = 0.1
+            xdefc = 0.5
+            i_start = 1
+            i_stop = 10
+            wn = 512
+
+            qse, = get_data_3d(1)
+
+            return_new = fu.defocusgett_vpp2(qse,wn,xdefc,xampcont,voltage,pixel_size,Cs,
+               i_start,i_stop)
+            return_old = oldfu.defocusgett_vpp2(qse,wn,xdefc,xampcont,voltage,pixel_size,Cs,
+               i_start,i_stop)
+
+            self.assertTrue(return_new, return_old)
+
+    def test_fupw_vpp_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        with open(filepath, 'rb') as rb:
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+        amp = 4
+        defocus = 0
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.09
+        amp_contrast = 0.1
+        bfactor = 0.0
+        nx = 12
+        phaseshift = 0.5
+
+        arg= [defocus,phaseshift,amp]
+        data = [crefim, numr, nx, 0.0, Cs, voltage, pixel_size, bfactor, amp_contrast,0.0]
+
+        return_new = fu.fupw_vpp(arg,data)
+        return_old = oldfu.fupw_vpp(arg,data)
+
+        self.assertTrue(return_new, return_old)
+
+    def test_fastigmatism3_vpp_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        with open(filepath, 'rb') as rb:
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+        amp = 4
+        defocus = 0
+        Cs = 2
+        voltage = 300
+        pixel_size = 1.09
+        amp_contrast = 0.1
+        bfactor = 0.0
+        nx = 12
+        phaseshift = 0.5
+
+        arg= [defocus,phaseshift,amp]
+        data = [crefim, numr, nx, defocus, Cs, voltage, pixel_size, bfactor, amp_contrast, 0.0]
+
+        return_new = fu.fastigmatism3_vpp(amp,data)
+        return_old = oldfu.fastigmatism3_vpp(amp,data)
+
+        self.assertTrue(return_new, return_old)
+
+
+    def test_ornq_vpp_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        with open(filepath, 'rb') as rb:
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+
+        return_new = fu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi)
+        return_old = oldfu.ornq_vpp(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi)
+
+        self.assertTrue(return_new, return_old)
 
 if __name__ == '__main__':
     unittest.main()
