@@ -1318,11 +1318,10 @@ def import_data(log_main, override):
 		from statistics import scale_fsc_datasetsize
 		nnew = Tracker["constants"]["img_per_grp"]
 		if(Blockdata["myid"] == Blockdata["main_node"]):
-			nima = sum(Tracker["nima_per_chunk"])
-			rorg = get_res143(scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], nima, Tracker["constants"]["img_per_grp"]))			
+			rorg = get_res143(scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], Tracker["constants"]["img_per_grp"]))			
 			rmin = rorg
 			while(nnew>2 or rmin > rorg-2):
-				rmin = get_res143(scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], nima, nnew))
+				rmin = get_res143(scale_fsc_datasetsize(Tracker["constants"]["fsc_curve"], Tracker["constants"]["total_stack"], nnew))
 				nnew -= 10
 			nnew += 10
 		nnew =  bcast_number_to_all(nnew, Blockdata["main_node"], MPI_COMM_WORLD)
