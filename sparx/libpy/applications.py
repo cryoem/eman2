@@ -14042,12 +14042,14 @@ def pw2sp(indir, outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, 
 	import types
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","pw2sp",1)
 	else				 : flist    = os.listdir(indir)
-	if(type(outdir)          is bytes):
+	if(outdir != None):
 		if os.path.exists(outdir) is True: ERROR("Output directory exists, please change the name and restart the program","pw2sp",1)
 		os.mkdir(outdir)	
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
-	else: 	os.system("mkdir power")
+	else:
+		outdir = "power"
+		if os.path.exists(outdir) is False: os.mkdir(outdir)
 	mask     = model_circle(int(r), int(w), int(w), nz=1)
 	mask    -= 1
 	mask    *= -1
