@@ -30935,6 +30935,51 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 	return slice;
 }
 
+void Util::put_slice(EMData *vol, EMData *slice, int dim, int index) {
+
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	float *slice_data = slice->get_data();
+	int new_nx = slice->get_xsize();
+	int new_ny = slice->get_ysize();
+
+	if (nz == 1)
+		throw ImageDimensionException("Error: Input must be a 3-D object");
+	if ((dim < 1) || (dim > 3))
+		throw ImageDimensionException("Error: dim must be 1 (x-dimension), 2 (y-dimension) or 3 (z-dimension)");
+	if (((dim == 1) && (index < 0 || index > nx-1)) ||
+	  ((dim == 1) && (index < 0 || index > nx-1)) ||
+	  ((dim == 1) && (index < 0 || index > nx-1)))
+		throw ImageDimensionException("Error: index exceeds the size of the 3-D object");
+
+	if (dim == 1) {
+		if(new_nx != ny || new_ny != nz) throw ImageDimensionException("Error: dimensions of slice different from dimensions of volume");
+	} else if (dim == 2) {
+		if(new_nx != nx || new_ny != nz) throw ImageDimensionException("Error: dimensions of slice different from dimensions of volume");
+	} else {
+		if(new_nx != nx || new_ny != ny) throw ImageDimensionException("Error: dimensions of slice different from dimensions of volume");
+	}
+
+	if (dim == 1) {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				vol_data[(y*ny+x)*nx+index] = slice_data[y*new_nx+x];
+	} else if (dim == 2) {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				vol_data[(y*ny+index)*nx+x] = slice_data[y*new_nx+x];
+	} else {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				vol_data[((size_t)index*ny+y)*nx+x] = slice_data[y*new_nx+x];
+	}
+
+	vol->update();
+	EXITFUNC;
+}
+
 void Util::image_mutation(EMData *img, float mutation_rate) {
 	int nx = img->get_xsize();
 	float min = img->get_attr("minimum");
