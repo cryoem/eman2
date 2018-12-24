@@ -4896,8 +4896,6 @@ EMData* EMData::fouriergridrot2d(float ang, float scale, Util::KaiserBessel& kb)
 	set_array_offsets(0,-nyhalf);
 	result->set_array_offsets(0,-nyhalf);
 
-
-
 	ang = ang*(float)deg_rad;
 	float cang = cos(ang);
 	float sang = sin(ang);

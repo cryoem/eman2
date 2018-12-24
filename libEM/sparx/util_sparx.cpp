@@ -6610,11 +6610,9 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 		nuxnew *= -1;
 		nuynew *= -1;
 	}
-	if (nuynew >= nhalf-0.5)  {
-		nuynew -= nxreal;
-	} else if (nuynew < -nhalf-0.5) {
-		nuynew += nxreal;
-	}
+	if (nuynew >= nhalf-0.5)       nuynew -= nxreal;
+	else if (nuynew < -nhalf-0.5)  nuynew += nxreal;
+
 
 	// put (xnew,ynew) on a grid.  The indices will be wrong for
 	// the Fourier elements in the image, but the grid sizing will
@@ -29557,7 +29555,7 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 11/24/2018" <<  endl;
+	cout <<"   Source modification date: 12/25/2018" <<  endl;
 /*
 This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;
