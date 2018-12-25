@@ -3328,6 +3328,7 @@ def file_type(name):
 	if(len(name)>4):
 		if(name[:4] == "bdb:"): return "bdb"
 		elif(name[-4:-3] == "."):  return name[-3:]
+		elif(name[-5:] == ".mrcs"):  return "mrcs"
 	ERROR("Unacceptable file format","file_type",1)
 
 def get_params2D(ima, xform = "xform.align2d"):

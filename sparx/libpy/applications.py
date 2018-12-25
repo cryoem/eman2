@@ -13658,11 +13658,10 @@ def copyfromtif_MPI(indir, outdir=None, input_extension="tif", film_or_CCD="f", 
 #    be either single file names like "test.hdf" or "bdb:image1", but also lists
 #    of these names. note that mixed lists (containing both raw file names and
 #    db objects) also work.
-
 def cpy(ins_list, ous):
-
 	# reworked to include lists, since we want to be able to copy lists of images
 	#    into one file, concatenating.
+	from utilities import get_im
 	if isinstance(ins_list,list):
 		# got a list of input files
 		image_list = ins_list
@@ -13685,15 +13684,13 @@ def cpy(ins_list, ous):
 
 		#print ins
 		nima = EMUtil.get_image_count(ins)
-		data = EMData()
 		iextension = file_type(ins)
 
 		if iextension == "bdb":
 			from EMAN2db import db_open_dict
 
 		if nima == 1 and oextension == "spi":
-			data.read_image(ins)
-			data.write_image(ous, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+			get_im(ins).write_image(ous, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
 			
 		elif iextension == "bdb" and oextension == "bdb":
 			
@@ -13715,15 +13712,12 @@ def cpy(ins_list, ous):
 		elif oextension == "bdb":
 			
 			for i in range(nima):
-				a = EMData()
-				a.read_image(ins, i)
-				DB[gl_index] = a
+				DB[gl_index] = get_im(ins, i)
 				gl_index += 1
 			
 		else:
 			for im in range(nima):
-				data.read_image(ins, im)
-				data.write_image(ous, gl_index)
+				get_im(ins, im).write_image(ous, gl_index)
 				gl_index += 1
 
 	if oextension == "bdb":
