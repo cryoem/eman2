@@ -357,11 +357,11 @@ def main():
 
 		if options.invert_gain: gain.process_inplace("math.reciprocal",{"zero_to":0.0})
 
-		if options.rotate_gain!="0" and gain != None:
-			if options.rotate_gain == "90":
+		if options.rotate_gain!=0 and gain != None:
+			if options.rotate_gain == 90:
 				gain.process_inplace("xform.transpose")
 				gain.process_inplace("xform.reverse",{"axis":"y"})
-			elif options.rotate_gain == "180":
+			elif options.rotate_gain == 180:
 				gain.process_inplace("xform.transpose")
 				gain.process_inplace("xform.reverse",{"axis":"y"})
 				gain.process_inplace("xform.transpose")
@@ -827,17 +827,21 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 
 			# shift frames
 			print("{:1.1f} s\nShift images".format(time()-t0))
-			for i,im in enumerate(outim):
+			alioutname = os.path.join(".","micrographs","{}__movieali.hdf".format(base_name(fsp,nodir=True)))
+			for im in range(len(outim)):
 				if options.round == "int":
-					dx = int(round(locs[i*2],0))
-					dy = int(round(locs[i*2+1],0))
-					im.translate(dx,dy,0)
+					dx = int(round(locs[im*2],0))
+					dy = int(round(locs[im*2+1],0))
+					outim[im].translate(dx,dy,0)
 				else: # float by default
-					dx = float(locs[i*2])
-					dy = float(locs[i*2+1])
-					im.translate(dx,dy,0)
+					dx = float(locs[im*2])
+					dy = float(locs[im*2+1])
+					from fundamentals import fshift
+					outim[im] = fshift(outim[im],dx,dy)
+					outim[im].write_image(alioutname,im) #write out the unaligned average movie
+					#im.translate(dx,dy,0)
 				if options.debug or options.verbose > 5:
-					print("{}\t{}\t{}".format(i,dx,dy))
+					print("{}\t{}\t{}".format(im,dx,dy))
 
 			#if options.normaxes:
 			#	for f in outim:
