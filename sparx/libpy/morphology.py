@@ -234,24 +234,14 @@ def threshold_outside(img, minval, maxval):
 	"""
 	return img.process( "threshold.clampminmax", {"minval": minval, "maxval": maxval } )
 
-def threshold_outside(img, minval, maxval):
-	"""
-		Name
-			threshold_outside - replace values outside given thresholds by respective threshold values
-		Input
-			img: input image
-			minval: value below which image pixels will be set to this value.
-			maxval: value above which image pixels will be set to this value.
-	"""
-	return img.process( "threshold.clampminmax", {"minval": minval, "maxval": maxval } )
-
 def threshold_inside(img, minval, maxval):
 	"""
 		Name
-			threshold_inside - replace values outside given thresholds by respective threshold values
+			threshold_inside - replace values inside given thresholds by zeroes
 		Input
 			img: input image
 			minval, maxval: image pixels that have values between these thresholds will be set to zero.
+		WARNING: This function is written in python and thus very slow for large images/volumes
 	"""
 	im = img.copy()
 	nx = im.get_xsize()
