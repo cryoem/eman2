@@ -8557,7 +8557,7 @@ void Util::Applyws(EMData* circp, vector<int> numr, vector<float> wr)
 }
 
 void Util::prb3p(double *b, float *pos) {
-	//  three points 1D parabola fit,  call this function for random searchea
+	//  three points 1D parabola fit,  call this function for random searches
 	double  c2,c3;
 	c3 = b[0] - 2.0f*b[1] +b[1];
 	if( fabs(c3) > 1.0e-6 ) *pos =  max( min ( static_cast<float>(2*(b[0]-b[2])/c3), 1.0f), -1.0f);
