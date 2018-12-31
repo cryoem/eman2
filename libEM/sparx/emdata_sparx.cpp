@@ -924,7 +924,7 @@ Output: 2D 3xk real image.
 	float dy2 = 1.0f/float(ny2)/float(ny2);
 
 	float dz2 = 1.0f/std::max(float(nz2),1.0f)/std::max(float(nz2),1.0f);
-	int inc = Util::round(float(std::max(std::max(nx2,ny2),nz2))/w);
+	int inc = Util::round(nx2/w);
 
 	double* ret = new double[inc+1];
 	double* n1 = new double[inc+1];
