@@ -1010,44 +1010,51 @@ def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	from utilities import compose_transform2
 
 	nx = image.get_xsize()
-	# prepare 
-	npad = 2
-	N = nx*npad
-	K = 6
-	alpha = 1.75
-	r = nx/2
-	v = K/2.0/N
-	kb = Util.KaiserBessel(alpha, K, r, v, N)
+	if( (ang != 0.0) or (scale != 1.0) ):
+		image1 = image.copy()  # This step is needed, otherwise image will be changed outside the function
+		# prepare 
+		npad = 2
+		N = nx*npad
+		K = 6
+		alpha = 1.75
+		r = nx/2
+		v = K/2.0/N
+		kb = Util.KaiserBessel(alpha, K, r, v, N)
 
-	image1 = image.copy()  # This step is needed, otherwise image will be changed outside the function
-	# invert shifts
-	_, tsx, tsy, _ = compose_transform2(0.,sx,sy,1,-ang,0,0,1)
-	# split shift into integer and fractional parts
-	isx = int(tsx)
-	fsx = tsx - isx
-	isy = int(tsy)
-	fsy = tsy - isy
-	# shift image to the center
-	Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
-	# bring back fractional shifts
-	_, tsx, tsy, _ = compose_transform2(0.,fsx,fsy,1,ang,0,0,1)
-	# divide out gridding weights
-	image1.divkbsinh(kb)
-	# pad and center image, then FFT
-	image1 = image1.norm_pad(False, npad)
-	fftip(image1)
-	# Put the origin of the (real-space) image at the center
-	image1.center_origin_fft()
-	# gridding rotation
-	image1 = image1.fouriergridrot2d(ang, scale, kb)
-	if(fsx != 0.0 or fsy != 0.0):
-		params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(tsx), "y_shift" : float(tsy), "z_shift" : 0.0 }
-		image1 = Processor.EMFourierFilter(image1, params)
-	# put the origin back in the corner
-	image1.center_origin_fft()
-	# undo FFT and remove padding (window)
-	image1 = fft(image1)
-	image1 = image1.window_center(nx)
+		# invert shifts
+		_, tsx, tsy, _ = compose_transform2(0.,sx,sy,1,-ang,0,0,1)
+		# split shift into integer and fractional parts
+		isx = int(tsx)
+		fsx = tsx - isx
+		isy = int(tsy)
+		fsy = tsy - isy
+		# shift image to the center
+		Util.cyclicshift(image1,{"dx":isx,"dy":isy,"dz":0})
+		# bring back fractional shifts
+		_, tsx, tsy, _ = compose_transform2(0.,fsx,fsy,1,ang,0,0,1)
+		# divide out gridding weights
+		image1.divkbsinh(kb)
+		# pad and center image, then FFT
+		image1 = image1.norm_pad(False, npad)
+		fftip(image1)
+		# Put the origin of the (real-space) image at the center
+		image1.center_origin_fft()
+		# gridding rotation
+		image1 = image1.fouriergridrot2d(ang, scale, kb)
+		if( (fsx != 0.0) or (fsy != 0.0) ):
+			params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(tsx), "y_shift" : float(tsy), "z_shift" : 0.0 }
+			image1 = Processor.EMFourierFilter(image1, params)
+		# put the origin back in the corner
+		image1.center_origin_fft()
+		# undo FFT and remove padding (window)
+		image1 = fft(image1)
+		image1 = image1.window_center(nx)
+	else:
+		if( (sx != 0.0) or (sy != 0.0) ):
+			params = {"filter_type" : Processor.fourier_filter_types.SHIFT,	"x_shift" : float(sx), "y_shift" : float(sy), "z_shift" : 0.0 }
+			image1 = Processor.EMFourierFilter(image, params)
+		else: return image
+		
 	return image1
 
 

@@ -13658,11 +13658,10 @@ def copyfromtif_MPI(indir, outdir=None, input_extension="tif", film_or_CCD="f", 
 #    be either single file names like "test.hdf" or "bdb:image1", but also lists
 #    of these names. note that mixed lists (containing both raw file names and
 #    db objects) also work.
-
 def cpy(ins_list, ous):
-
 	# reworked to include lists, since we want to be able to copy lists of images
 	#    into one file, concatenating.
+	from utilities import get_im
 	if isinstance(ins_list,list):
 		# got a list of input files
 		image_list = ins_list
@@ -13685,15 +13684,13 @@ def cpy(ins_list, ous):
 
 		#print ins
 		nima = EMUtil.get_image_count(ins)
-		data = EMData()
 		iextension = file_type(ins)
 
 		if iextension == "bdb":
 			from EMAN2db import db_open_dict
 
 		if nima == 1 and oextension == "spi":
-			data.read_image(ins)
-			data.write_image(ous, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+			get_im(ins).write_image(ous, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
 			
 		elif iextension == "bdb" and oextension == "bdb":
 			
@@ -13715,15 +13712,12 @@ def cpy(ins_list, ous):
 		elif oextension == "bdb":
 			
 			for i in range(nima):
-				a = EMData()
-				a.read_image(ins, i)
-				DB[gl_index] = a
+				DB[gl_index] = get_im(ins, i)
 				gl_index += 1
 			
 		else:
 			for im in range(nima):
-				data.read_image(ins, im)
-				data.write_image(ous, gl_index)
+				get_im(ins, im).write_image(ous, gl_index)
 				gl_index += 1
 
 	if oextension == "bdb":
@@ -14042,12 +14036,14 @@ def pw2sp(indir, outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, 
 	import types
 	if os.path.exists(indir) is False: ERROR("Input directory doesn't exist","pw2sp",1)
 	else				 : flist    = os.listdir(indir)
-	if(type(outdir)          is bytes):
+	if(outdir != None):
 		if os.path.exists(outdir) is True: ERROR("Output directory exists, please change the name and restart the program","pw2sp",1)
 		os.mkdir(outdir)	
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
-	else: 	os.system("mkdir power")
+	else:
+		outdir = "power"
+		if os.path.exists(outdir) is False: os.mkdir(outdir)
 	mask     = model_circle(int(r), int(w), int(w), nz=1)
 	mask    -= 1
 	mask    *= -1
@@ -18507,13 +18503,18 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 
 ##############################################################################################
 def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
+	"""
+		Note applicability of this code is limited to certain class of images.
+		It performs well for single-particle "averages, i.e., centered images
+		surrounded by zero background to ~20% of window size.
+	"""
 	from morphology import cosinemask, square, ctf_img_real, adaptive_mask
 	from utilities import get_params2D, model_blank, combine_params2, generate_ctf
 	from filter import filt_tanl, filt_table
 	from fundamentals import rot_shift2D, ccf, window2d, fshift, rops_table, prepf, fft
 	from statistics import fsc
 	from EMAN2 import EMAN2Ctf
-	from math import sqrt
+	from math import sqrt, degrees, tan
 	from random import shuffle, randint
 
 	#  There are two functions internal to the alignment
@@ -18560,11 +18561,11 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 			Util.div_img(diva, qct2)
 			parts.append(Util.mulnclreal(qave, diva))
 
-		fff = fsc(parts[0],parts[1])
+		#fff = fsc(parts[0],parts[1])
 		ffm = fsc(adaptive_mask(fft(parts[0])),adaptive_mask(fft(parts[1])))
 		#fl1 = -1.0
 		fl2 = -1.0
-		for i,q in enumerate(fff[1][1:]):
+		for i in range(len(ffm[1][1:])):
 			#print("UUU:  %3d   %6.4f     %6.2f   %6.2f"%(i,fff[0][i],q,ffm[1][i]))
 			#if(fl1<0.0):
 			#	if(q<0.1):  fl1 = fff[0][i-1]
@@ -18572,7 +18573,7 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 			if(ffm[1][i]<0.1):
 				fl2 = ffm[0][i-1]
 				break
-		
+
 		if(fl2 == -1.0):  fl2 = fl
 		#print("  FSC     %6.4f   %6.4f"%(fl1,fl2))
 
@@ -18651,6 +18652,7 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 	nima = len(data)
 	cosine_mask = cosinemask(model_blank(nx,nx,1,1.0),ou,s=0.0)
 	outside_mask = model_blank(nx,nx,1,1.0)-cosine_mask
+	angle_step = degrees(tan(1.0/ou))
 
 	mstack = []
 	pwrot = []
@@ -18679,9 +18681,9 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 		alpha_c = sx_c = sy_c = 0.0
 		if True:
 			# this randomizes input parameters to get bland starting point, not really necessary since we are using SHC.
-			alpha_i = randint(-5,5)
-			sx_i = randint(-5,5)
-			sy_i = randint(-5,5)
+			alpha_i = randint(-arange,arange)*angle_step
+			sx_i = randint(-xrng,xrng)
+			sy_i = randint(-yrng,yrng)
 			_,sx_c,sy_c,_=combine_params2(0.0, sx_i,sy_i,0 , -alpha_i,0,0,0)
 			alpha_c = alpha_i
 		alpha_e, sx_e, sy_e, _  = combine_params2((1-2*mir)*alpha,0,0,0,alpha_c, sx_c, sy_c, 0)
@@ -18709,6 +18711,7 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 
 	shifts = max(xrng,yrng)
 	angles = list(range(-arange,arange+1,1))
+	for i in range(len(angles)):  angles[i]*=angle_step
 	aa = 0.02
 	iter = 0
 	while got_better:

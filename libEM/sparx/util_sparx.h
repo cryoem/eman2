@@ -1373,6 +1373,12 @@ public:
 	 * 1 for x-dimension, 2 for y-dimension and 3 for z-dimension
 	*/
 	static EMData* get_slice(EMData *vol, int dim, int index);
+	/**
+	 * This function inserts a 2-D image into a 3-D EMData object
+	 * dim denotes the slice is perpendicular to which dimension
+	 * 1 for x-dimension, 2 for y-dimension and 3 for z-dimension
+	*/
+	static void put_slice(EMData *vol, EMData *slice, int dim, int index);
 
 	static void image_mutation(EMData *img, float mutation_rate);
 

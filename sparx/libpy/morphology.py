@@ -234,24 +234,14 @@ def threshold_outside(img, minval, maxval):
 	"""
 	return img.process( "threshold.clampminmax", {"minval": minval, "maxval": maxval } )
 
-def threshold_outside(img, minval, maxval):
-	"""
-		Name
-			threshold_outside - replace values outside given thresholds by respective threshold values
-		Input
-			img: input image
-			minval: value below which image pixels will be set to this value.
-			maxval: value above which image pixels will be set to this value.
-	"""
-	return img.process( "threshold.clampminmax", {"minval": minval, "maxval": maxval } )
-
 def threshold_inside(img, minval, maxval):
 	"""
 		Name
-			threshold_inside - replace values outside given thresholds by respective threshold values
+			threshold_inside - replace values inside given thresholds by zeroes
 		Input
 			img: input image
 			minval, maxval: image pixels that have values between these thresholds will be set to zero.
+		WARNING: This function is written in python and thus very slow for large images/volumes
 	"""
 	im = img.copy()
 	nx = im.get_xsize()
@@ -5659,10 +5649,10 @@ def cter_vpp(input_image_path, output_directory, selection_list = None, wn = 512
 			img_type = "Micrograph"
 			img_name = namics[ifi]
 			img_basename_root = os.path.splitext(os.path.basename(img_name))[0]
-			
+
 			if my_mpi_proc_id == main_mpi_proc:
 				print(("    Processing %s ---> %6.2f%%" % (img_name, (ifi - set_start) / progress_percent_step)))
-			
+
 			if not os.path.exists(img_name):
 				missing_img_names.append(img_name)
 				print("    %s %s: Can not find this file. Skipping the estimation and CTF parameters are not stored..." % (img_type, img_name))

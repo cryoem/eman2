@@ -6610,11 +6610,9 @@ complex<float> Util::extractpoint2(int nx, int ny, float nuxnew, float nuynew, E
 		nuxnew *= -1;
 		nuynew *= -1;
 	}
-	if (nuynew >= nhalf-0.5)  {
-		nuynew -= nxreal;
-	} else if (nuynew < -nhalf-0.5) {
-		nuynew += nxreal;
-	}
+	if (nuynew >= nhalf-0.5)       nuynew -= nxreal;
+	else if (nuynew < -nhalf-0.5)  nuynew += nxreal;
+
 
 	// put (xnew,ynew) on a grid.  The indices will be wrong for
 	// the Fourier elements in the image, but the grid sizing will
@@ -8559,7 +8557,7 @@ void Util::Applyws(EMData* circp, vector<int> numr, vector<float> wr)
 }
 
 void Util::prb3p(double *b, float *pos) {
-	//  three points 1D parabola fit,  call this function for random searchea
+	//  three points 1D parabola fit,  call this function for random searches
 	double  c2,c3;
 	c3 = b[0] - 2.0f*b[1] +b[1];
 	if( fabs(c3) > 1.0e-6 ) *pos =  max( min ( static_cast<float>(2*(b[0]-b[2])/c3), 1.0f), -1.0f);
@@ -29557,7 +29555,7 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 11/24/2018" <<  endl;
+	cout <<"   Source modification date: 12/25/2018" <<  endl;
 /*
 This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;
@@ -30935,6 +30933,51 @@ EMData* Util::get_slice(EMData *vol, int dim, int index) {
 	}
 
 	return slice;
+}
+
+void Util::put_slice(EMData *vol, EMData *slice, int dim, int index) {
+
+	int nx = vol->get_xsize();
+	int ny = vol->get_ysize();
+	int nz = vol->get_zsize();
+	float *vol_data = vol->get_data();
+	float *slice_data = slice->get_data();
+	int new_nx = slice->get_xsize();
+	int new_ny = slice->get_ysize();
+
+	if (nz == 1)
+		throw ImageDimensionException("Error: Input must be a 3-D object");
+	if ((dim < 1) || (dim > 3))
+		throw ImageDimensionException("Error: dim must be 1 (x-dimension), 2 (y-dimension) or 3 (z-dimension)");
+	if (((dim == 1) && (index < 0 || index > nx-1)) ||
+	  ((dim == 1) && (index < 0 || index > nx-1)) ||
+	  ((dim == 1) && (index < 0 || index > nx-1)))
+		throw ImageDimensionException("Error: index exceeds the size of the 3-D object");
+
+	if (dim == 1) {
+		if(new_nx != ny || new_ny != nz) throw ImageDimensionException("Error: dimensions of slice different from dimensions of volume");
+	} else if (dim == 2) {
+		if(new_nx != nx || new_ny != nz) throw ImageDimensionException("Error: dimensions of slice different from dimensions of volume");
+	} else {
+		if(new_nx != nx || new_ny != ny) throw ImageDimensionException("Error: dimensions of slice different from dimensions of volume");
+	}
+
+	if (dim == 1) {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				vol_data[(y*ny+x)*nx+index] = slice_data[y*new_nx+x];
+	} else if (dim == 2) {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				vol_data[(y*ny+index)*nx+x] = slice_data[y*new_nx+x];
+	} else {
+		for (int x=0; x<new_nx; x++)
+			for (int y=0; y<new_ny; y++)
+				vol_data[((size_t)index*ny+y)*nx+x] = slice_data[y*new_nx+x];
+	}
+
+	vol->update();
+	EXITFUNC;
 }
 
 void Util::image_mutation(EMData *img, float mutation_rate) {

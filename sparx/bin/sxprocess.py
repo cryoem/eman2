@@ -671,7 +671,7 @@ def main():
 		dbdict = {}
 		for pkey in param_dict:
 			if (pkey == 'invert_contrast') or (pkey == 'use_variance'):
-				if param_dict[pkey] == 'True':
+				if param_dict[pkey] == 1:
 					dbdict[pkey] = True
 				else:
 					dbdict[pkey] = False
