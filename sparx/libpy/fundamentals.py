@@ -1241,11 +1241,12 @@ def rtshgkb(image, angle, sx, sy, kb, scale = 1.0):
 	return image.rot_scale_conv_new(radians(angle), sx, sy, kb, scale)
 	
 def smallprime(arbit_num, numprime=3):
-	primelist = [2,3,5,7,11,13,17,19,23]
+	primelist = [2,3,5,7,11,13,17,19,23,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97]
+	lip = min(numprime,len(primelist))
 	for i in range(1, arbit_num+1):
 		x62 = arbit_num-i+1
 		for k in range(1,arbit_num+1): # fake loop try to divide the arbit_num
-			for j in range(0,numprime):
+			for j in range(0,lip):
 				x71 = primelist[j]*int(x62/primelist[j])
 				if(x71 == x62):
 					x62 = x62/primelist[j]
