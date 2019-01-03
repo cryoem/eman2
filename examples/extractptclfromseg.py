@@ -101,7 +101,13 @@ and make sure the unaligned average looks reasonable.
 		else:
 			jsname=info_name(tomoname)
 			js=js_open_dict(jsname)
-			pks=(np.array([[j[0],j[1],j[3]] for j in js["boxes"]])*shrink).astype(int)
+			if js.has_key("boxes_3d"]):
+				pks=(np.array([[j[0],j[1],j[2]] for j in js["boxes_3d"]])*shrink).astype(int)
+			elif js.has_key("boxes"]):
+				pks=(np.array([[j[0],j[1],j[3]] for j in js["boxes"]])*shrink).astype(int)
+			else:
+				print("No particles found...")
+				return
 			js=None
 		
 		bxsz=int(options.boxsz*shrink)

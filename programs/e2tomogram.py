@@ -204,7 +204,7 @@ def main():
 		for i,m in enumerate(imgs_1k):
 			m.write_image(inppath, i)
 		
-	loss0=[] ### this is used to exclude bad tilt. in case the user ask 0 iterations..
+	loss0=np.zeros(num) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
 	if options.load:
 		#### loading parameters from json file
 		jsname=info_name(options.inputname)
