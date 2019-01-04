@@ -15,8 +15,7 @@ from ..libpy import sparx_utilities as ut
 import pickle
 import os
 import shutil
-ABSOLUTE_PATH =  os.path.dirname(os.path.realpath(__file__))
-
+ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 import unittest
 

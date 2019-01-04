@@ -91,6 +91,7 @@ pass#IMPORTIMPORTIMPORT import numpy.random
 
 
 #  06-12-14 code lifted
+#  06-12-14 code lifted
 def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \
 						random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
@@ -118,11 +119,6 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	else:
 		# 2D alignment using rotational ccf in polar coords and quadratic interpolation
 		cimage = EMAN2_cppwrap.Util.Polar2Dm(tavg, cnx, cny, numr, mode)
-
-		print(type(cimage))
-		print(type(numr))
-		print(type(wr))
-
 		EMAN2_cppwrap.Util.Frngs(cimage, numr)
 		EMAN2_cppwrap.Util.Applyws(cimage, numr, wr)
 
