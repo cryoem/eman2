@@ -25866,6 +25866,53 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 }
 
 
+vector<float> Util::shift_gradients( EMData* avg, EMData* img, EMData* wght, float sx, float sy)
+{
+	ENTERFUNC;
+
+	if(!avg->is_complex())  throw ImageFormatException("First input image has to be complex");
+	if(!img->is_complex())  throw ImageFormatException("Second input image has to be complex");
+	if(wght->is_complex())  throw ImageFormatException("Weighting image has to be real");
+
+	int nx=avg->get_xsize(), ny=avg->get_ysize();
+	
+	//cout<<"  "<< nx <<"  "<<ny<<endl;
+	nx /= 2;
+	if (nx != wght->get_xsize()) {
+		throw NullPointerException("incorrect image size");
+	}
+    float* avg_p  = avg->get_data();
+    float* img_p = img->get_data();
+    float* wght_p = wght->get_data();
+    int nyp2 = ny/2;
+
+	double gradx = 0.0;
+	double grady = 0.0;
+	unsigned int lwg = 0;
+	for ( int iy = 1; iy <= ny; iy++) {
+		int jy=iy-1; if (jy>nyp2) jy=jy-ny;
+		for ( int ix = 0; ix < nx; ix+=2) {
+			int ioff = (ix+(iy-1)*nx);
+			if(wght_p[lwg] > 0.0 ) {
+					float temp = (avg_p[ioff] - img_p[ioff]*wght_p[lwg]*wght_p[lwg]);
+					gradx += temp;
+					float iemp = (avg_p[ioff+1] - img_p[ioff]*wght_p[lwg]*wght_p[lwg]);
+					grady += iemp*iemp;
+//cout<<" UUU   "<< ir <<"  "<<data[ioff]*data[ioff]+data[ioff+1]*data[ioff+1]<<"  "<<dctfs[roff]*dproj[ioff]*dctfs[roff]*dproj[ioff]+dctfs[roff]*dproj[ioff+1]*dctfs[roff]*dproj[ioff+1]<<endl;
+			}
+			lwg++;
+		}
+	}
+
+	vector<float> retvals;
+	retvals.push_back((float)gradx);
+	retvals.push_back((float)grady);
+    return retvals;
+	EXITFUNC;
+}
+
+
+
 #define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*(size_t)nxo]
 EMData* Util::pack_complex_to_real(EMData* img)
 {
@@ -29555,7 +29602,7 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 12/25/2018" <<  endl;
+	cout <<"   Source modification date: 01/03/2019" <<  endl;
 /*
 This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;

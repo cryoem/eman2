@@ -1049,6 +1049,7 @@ class FakeKaiserBessel : public KaiserBessel {
                 
 	static vector<int> cast_coarse_into_fine_sampling(const vector<vector<float> >& coarse_sampling_angles, const vector<vector<float> >& fine_sampling_angles, string symmetry);
 
+	static vector<float> shift_gradients( EMData* avg, EMData* img, EMData* wght, float sx, float sy);
 
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);
