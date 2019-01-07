@@ -55,10 +55,10 @@ There are two ways of running this command.
   ; %%--%%not_include_unaccounted : Do unaccounted reconstruction: Do not reconstruct unaccounted elements in each generation. (default False question reversed in GUI)
   ; %%--%%notapplybckgnoise : Use background noise flag: Flag to turn off background noise. (default False question reversed in GUI)
   ; %%--%%random_group_elimination_threshold : Random group elimination threshold: A floating value denotes the random group reproducibility standard deviation for eliminating random groups. (default 2.0)
-  ; %%--%%check_smearing : Check smearing: A boolean flag to turn on Printing out average smearing of all iterations of meridien refinement. By default, program will not print. (default false)
+  ; %%--%%check_smearing : Check smearing: A boolean flag to turn on Printing out average smearing of all iterations of meridien refinement. By default, program will not print. (default False)
   ; %%--%%num_core_set : Size of core set: Core set images will not be reconstructed if the total core set number is less than this. By default, the program will choose the maximum number between minimum group size and 100 as num_core_set. (default -1)
-  ; %%--%%compute_on_the_fly : Compute on the fly: A boolean flag controls the number of pre-calculated smearing images to avoid memory overflow. By default, program calculates smearing images for 3D reconstruction prior constrained Kmeans. (default false)
-  ; %%--%%override : Override checks: A boolean flag that, if checked, will make the program bypass sanity checks of input parmeters. (default false)
+  ; %%--%%compute_on_the_fly : Compute on the fly: A boolean flag controls the number of pre-calculated smearing images to avoid memory overflow. By default, program calculates smearing images for 3D reconstruction prior constrained Kmeans. (default False)
+  ; %%--%%override : Override checks: A boolean flag that, if checked, will make the program bypass sanity checks of input parmeters. (default False)
 
 
 
