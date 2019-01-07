@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import EMAN2
+import EMAN2_cppwrap
 #from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
 from applications import header, project3d
 from utilities import get_im, write_header, model_circle, read_text_row
@@ -55,8 +56,8 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	normstack = os.path.join(outdir, normstack)
 	
 	# Get number of images
-	nimg0 = EMAN2.EMUtil.get_image_count(classavgstack)
-	recon = EMAN2.EMData(reconfile)
+	nimg0 = EMAN2_cppwrap.EMUtil.get_image_count(classavgstack)
+	recon = EMAN2_cppwrap.EMData(reconfile)
 	nx = recon.get_xsize()
 	
 	# In case class averages include discarded images, apply selection file
@@ -117,7 +118,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	mask = model_circle(nx//2-2,nx,nx)
 	
 	# Number of images may have changed
-	nimg1   = EMAN2.EMUtil.get_image_count(classavgstack)
+	nimg1   = EMAN2_cppwrap.EMUtil.get_image_count(classavgstack)
 	outangles = read_text_row(outangles)
 	for imgnum in range(nimg1):
 		# get class average
@@ -150,7 +151,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	meanccc = sum(result)/nimg1
 	print("Average CCC is %s" % meanccc)
 
-	nimg2 = EMAN2.EMUtil.get_image_count(outstack)
+	nimg2 = EMAN2_cppwrap.EMUtil.get_image_count(outstack)
 	
 	for imgnum in xrange(nimg2):
 		if (imgnum % 2 ==0):
@@ -190,7 +191,7 @@ def check(file):
 	
 if __name__ == "__main__":
 	# Command-line arguments
-	parser = EMAN2.EMArgumentParser(usage=USAGE,version=EMAN2.EMANVERSION)
+	parser = EMAN2_cppwrap.EMArgumentParser(usage=USAGE,version=EMAN2.EMANVERSION)
 	parser.add_argument('classavgs', help='Input class averages')
 	parser.add_argument('vol3d', help='Input 3D reconstruction')
 	parser.add_argument('--outdir', "-o", type=str, help='Output directory')
