@@ -190,7 +190,7 @@ def tsp(lccc):
 		if accepted == 0: break  # If the path does not want to change any more, we can stop
 
 
-#     Plot(city, R, dist)
+	# Plot(city, R, dist)
 	return city
 
 
