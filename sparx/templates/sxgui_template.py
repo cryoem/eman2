@@ -32,12 +32,11 @@ from __future__ import print_function
 #
 #
 
+import os
+import subprocess
+import sys
 from builtins import range
 from builtins import object
-import sys
-import os
-from subprocess import *
-from functools import partial  # Use to connect event-source widget and event handler
 from PyQt4.Qt import *
 from PyQt4 import QtGui
 from PyQt4 import QtCore
@@ -45,6 +44,10 @@ from EMAN2 import *
 from EMAN2_cppwrap import *
 from global_def import *
 from sparx import *
+from optparse import OptionParser
+from functools import partial  # Use to connect event-source widget and event handler
+from subprocess import *
+import re
 
 # ========================================================================================
 # Helper Functions
@@ -727,7 +730,17 @@ class SXCmdWidget(QWidget):
 		# Loop through all command tokens
 		for sxcmd_token in self.sxcmd.token_list:
 			# First, handle very special cases
-			if not sxcmd_token.widget.isEnabled():
+			if not isinstance(sxcmd_token.widget, list):
+				widgets = [sxcmd_token.widget]
+			else:
+				widgets = sxcmd_token.widget
+
+			do_continue = False
+			if not sxcmd_token.is_locked:
+				for widget in widgets:
+					if not widget.isEnabled():
+						do_continue = True
+			if do_continue:
 				continue
 			elif sxcmd_token.type == "user_func":
 				user_func_name_index = 0
@@ -911,7 +924,8 @@ class SXCmdWidget(QWidget):
 
 		return cmd_line
 
-	def execute_cmd_line(self):
+	@QtCore.pyqtSlot()
+	def execute_cmd_line(self, execute=True, output_dir='.', number=None):
 		# Disable the run command button
 		execute_btn = self.sender()
 		execute_btn.setEnabled(False)
@@ -951,7 +965,10 @@ class SXCmdWidget(QWidget):
 					QMessageBox.warning(self, "Invalid parameter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
 					return
 				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
-				file_name_qsub_script = "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh"
+				if number is not None:
+					file_name_qsub_script = os.path.join(output_dir, "{0:04d}_".format(number) + "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
+				else:
+					file_name_qsub_script = os.path.join(output_dir, "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
 				file_qsub_script = open(file_name_qsub_script,"w")
 				for line_io in file_template:
 					if line_io.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -969,8 +986,15 @@ class SXCmdWidget(QWidget):
 				cmd_line = str(self.sxcmd_tab_main.qsub_cmd_edit.text()) + " " + file_name_qsub_script
 				print("Wrote the following command line in the queue submission script: ")
 				print(cmd_line_in_script)
-				print("Submitted a job by the following command: ")
-				print(cmd_line)
+				if execute:
+					print("Submitted a job by the following command: ")
+					print(cmd_line)
+				else:
+					print("Saved command to: ")
+					print(file_name_qsub_script)
+			elif self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Unchecked and not execute:
+				QMessageBox.warning(self, "Qsub template needs to be specified for pipeline option", "Qsub template needs to be specified for pipeline option")
+				return
 			else:
 				# Case 2: queue submission is disabled (MPI can be supported or unsupported)
 				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -978,18 +1002,37 @@ class SXCmdWidget(QWidget):
 				print(cmd_line)
 
 			# Execute the generated command line
-			process = subprocess.Popen(cmd_line, shell=True)
-			### self.process_started.emit(process.pid)
-			if self.sxcmd.is_submittable == False:
-				assert(self.sxcmd.mpi_support == False)
-				# Register to This is a GUI application
-				self.child_application_list.append(process)
+			if execute:
+				process = subprocess.Popen(cmd_line, shell=True)
+				### self.process_started.emit(process.pid)
+				if self.sxcmd.is_submittable == False:
+					assert(self.sxcmd.mpi_support == False)
+					# Register to This is a GUI application
+					self.child_application_list.append(process)
 
 			# Save the current state of GUI settings
 			if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
 				os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
 			self.write_params(self.gui_settings_file_path)
 		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
+
+	def add_to_pipeline(self):
+		name = QtGui.QFileDialog.getExistingDirectory(self, 'Pipeline output directory', SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog)
+		if isinstance(name, tuple):
+			dir_name = str(name[0])
+		else:
+			dir_name = str(name)
+		if dir_name:
+			number_match = re.compile('(\d{4})_')
+			number = -1
+			for file_name in sorted(os.listdir(dir_name)):
+				try:
+					number = number_match.match(file_name).group(1)
+				except AttributeError:
+					QMessageBox.warning(self, "Invalid file in pipeline directory", "There is a file in the pipeline directory not starting with four digits. Abort...")
+					return
+
+			self.execute_cmd_line(execute=False, output_dir=dir_name, number=int(number)+1)
 
 	def print_cmd_line(self):
 		# Generate command line
@@ -2538,6 +2581,14 @@ class SXCmdTab(QWidget):
 			self.cmd_line_btn.setToolTip('<FONT>'+"Generate command line from gui parameter settings and automatically save settings"+'</FONT>')
 			self.cmd_line_btn.clicked.connect(self.sxcmdwidget.print_cmd_line)
 			submit_layout.addWidget(self.cmd_line_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
+
+			grid_row += 1
+
+			self.pipe_line_btn = QPushButton("Add to pipeline folder")
+			self.pipe_line_btn.setMinimumWidth(btn_min_width)
+			self.pipe_line_btn.setToolTip('<FONT>'+"Generate executable files that and add them to the queue folder."+'</FONT>')
+			self.pipe_line_btn.clicked.connect(self.sxcmdwidget.add_to_pipeline)
+			submit_layout.addWidget(self.pipe_line_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span*2)
 
 			grid_row += 1
 
@@ -4179,8 +4230,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 # ========================================================================================
 
 def main():
-	from optparse import OptionParser
-	
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ 
 	The main SPHIRE GUI application. It is designed as the command generator for the SPHIRE single particle analysis pipeline.
@@ -4247,7 +4296,7 @@ def main():
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 
 	# Initialise a singleton class for look & feel constants
-	version_string = '1.2_rc3'
+	version_string = '1.2_rc4'
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
