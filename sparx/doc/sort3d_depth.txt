@@ -39,9 +39,7 @@ There are two ways of running this command.
   ; %%--%%img_per_grp : Number of images per group: User expected group size in integer. (default 1000)
   ; %%--%%minimum_grp_size : Minimum size of reproducible class: The minimum size of selected or accounted clusters as well as the minimum group size constraint in MGSKmeans. However this value must be smaller than the number of images per a group (img_per_grp). It is recommended to use at least img_per_grp/4 and the program will stop if smaller value is used.  Use option override to use smaller numbrs.  (default -1)
   ; %%--%%memory_per_node : Memory per node [GB]: User provided size of available memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from MPI setting. By default, we assume 2GB * (number of CPUs per node). (default -1.0)
- 
-  
-  
+
 
 \\
 === Advanced Parameters ===

@@ -24,7 +24,7 @@ sxlocres exists in for both MPI and non-MPI versions.
   ; secondvolume : Second half-map: A sub-map computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. (default required string)
   ; outputfile : Output volume: Each voxel contains the associated resolution. It is expressed in [[definitions:absolute_frequency_units|absolute frequency]] units. (default required string)
   ; maskfile : 3D mask: Defines the region for which local resolution will be computed. It is advisable to eliminate irrelevant regions surrounding the structure. (default none)
-  ; %%--%%radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. By default, radius = box_size/2 - (%%--%%wn). (default -1) : maskfile=none
+  ; %%--%%radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. By default, radius = box_size/2 - (%%--%%wn). (default -1) : maskfile==none
 
   ; %%--%%wn : Window size [Pixels]: Size of window within which local real-space CCC (equivalent to FSC) is computed. (default 7)
   ; %%--%%step : Fourier shell step size [Pixels]: Values larger than 1.0 increase the speed and stability of the local resolution map, but decrease its reciprocal space resolvability. (default 1.0)
