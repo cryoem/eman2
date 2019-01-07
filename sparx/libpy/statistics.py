@@ -427,7 +427,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None, ctf_eo_sum = False, 
 	from utilities    import    model_blank, get_params2D, same_ctf
 	from fundamentals import    rot_shift2D, fft
 	from copy import deepcopy
-	if CTF: ERROR("This function was disabled as it does not treat astigmatism properly","sum_oe",1)
+	if CTF: ERROR("DEBUG_TEST","sum_oe",0)
 	n      = len(data)
 	if return_params: params_list = [None]*n
 	if CTF:

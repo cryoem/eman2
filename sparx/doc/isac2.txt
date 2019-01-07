@@ -35,8 +35,8 @@ Note: CTF and VPP options cannot be used together.
 
   ; %%--%%radius : Particle radius [Pixels]: Radius of the particle (pixels). There is no default value and so a sensible number has to be provided. (default required int)
   ; %%--%%img_per_grp : Images per class: Number of images per class in an ideal situation. In practice, it defines the maximum size of the classes or the number of classes //K// = //N// / //img_per_grp//, where //N// is the total number of images in the input stack. (default 200)
-  ; %%--%%CTF : CTF phase flipping: If set, the data will be phase-flipped using CTF information included in the image headers. (default False) : %%--%%VPP==False
-  ; %%--%%VPP : Phase Plate data: Please use this option if the dataset is taken with Phase Plate. (default False) : %%--%%CTF==False
+  ; %%--%%CTF : CTF phase flipping: Use for cryo datasets. If set, the data will be phase-flipped using CTF information included in the image headers. Cannot be used togehter with the VPP option. (default False) : %%--%%VPP==False
+  ; %%--%%VPP : Phase Plate data: Please use this option if the dataset is taken with Phase Plate. Cannot be used togehter with the CTF option. (default False) : %%--%%CTF==False
 
 \\
 === Advanced Parameters ===

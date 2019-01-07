@@ -35,7 +35,7 @@ import argparse
 
 import numpy as np
 
-import EMAN2
+import EMAN2_cppwrap
 import global_def
 
 
@@ -216,7 +216,7 @@ def create_particle_stack(particle_stack, output_dir, particle_data):
 	for particle_idx in range(particle_data.shape[0]):
 		if particle_idx % 10000 == 0:
 			print(particle_idx, ' of ', particle_data.shape[0])
-		emdata = EMAN2.EMData(particle_stack, particle_idx)
+		emdata = EMAN2_cppwrap.EMData(particle_stack, particle_idx)
 
 		output_name = os.path.join(output_dir, ptcl_names[particle_idx])
 		try:
@@ -658,7 +658,7 @@ def import_particle_stack(particle_stack, output_dir):
 	Returns:
 	Particle array
 	"""
-	particle_header = EMAN2.EMData()
+	particle_header = EMAN2_cppwrap.EMData()
 	particle_header.read_image(
 		particle_stack,
 		0,
@@ -669,7 +669,7 @@ def import_particle_stack(particle_stack, output_dir):
 
 	header_dict = {}
 	for name in name_list:
-		header_dict[name] = np.array(EMAN2.EMUtil.get_all_attributes(particle_stack, name))
+		header_dict[name] = np.array(EMAN2_cppwrap.EMUtil.get_all_attributes(particle_stack, name))
 
 	stack_array, create_stack = create_stack_array(dtype_list, header_dict, output_dir)
 
