@@ -18292,7 +18292,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 
 
 	elif( method == "PCP"):
-		from alignent import prepref
+		from alignment import prepref
 		from utilities import model_circle
 		stp = step[-1]
 		rings = prepref(data, model_circle(nx//2-1,nx,nx), cnx, cnx, numr, mode, xrng[0], xrng[0], stp)
