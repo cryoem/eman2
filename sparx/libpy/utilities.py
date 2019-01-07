@@ -6969,7 +6969,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	from random import shuffle
 	from mpi import MPI_COMM_WORLD, mpi_barrier
 	from utilities import get_shrink_data_huang
-	from reconstructions import recons3d_4nn_ctf_MPI
+	from reconstruction import recons3d_4nn_ctf_MPI
 	from filter import filt_tanl
 	from applications import mref_ali3d_EQ_Kmeans
 	################
