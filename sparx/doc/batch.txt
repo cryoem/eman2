@@ -1,7 +1,7 @@
 ~~NOTOC~~
 
 ===== sxbatch =====
-Batch pipeline execution: Run jobs that wait with the execution on each other.
+Batch Pipeline Execution: Run jobs that wait with the execution on each other.
 
 \\
 ===== Usage =====
