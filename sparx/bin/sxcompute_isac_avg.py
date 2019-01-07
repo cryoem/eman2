@@ -331,7 +331,7 @@ def main():
 	#parepare params_dict
 
 	#navg = min(Tracker["constants"]["navg"]*Blockdata["nproc"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
-	navg = Tracker["constants"]["navg"]
+	navg = min(Tracker["constants"]["navg"], EMUtil.get_image_count(os.path.join(Tracker["constants"]["isac_dir"], "class_averages.hdf")))
 	global_dict = {}
 	ptl_list    = []
 	memlist     = []
