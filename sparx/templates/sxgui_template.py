@@ -122,7 +122,7 @@ class SXcmd_token(object):
 		self.label = ""               # User friendly name of argument or option
 		self.help = ""                # Help info
 		self.group = ""               # Tab group: main or advanced
-		self.dependency_group = ["", "", ""]    # Depencency group: Disables or enables widgets
+		self.dependency_group = [["", "", ""]]    # Depencency group: Disables or enables widgets
 		self.is_required = False      # Required argument or options. No default values are available
 		self.is_locked = False        # The restore value will be used as the locked value.
 		self.is_reversed = False      # Reversed default value of bool. The flag will be added if the value is same as default 
@@ -596,6 +596,8 @@ class SXCmdWidget(QWidget):
 		self.sxcmd_tab_main = SXCmdTab("Main", self)
 		self.sxcmd_tab_advance = SXCmdTab("Advanced", self)
 		for key in self.sxcmd.dependency_dict:
+			if key not in self.sxcmd.token_dict:
+				continue
 			self.sxcmd.token_dict[key].widget.my_changed_state.connect(self.change_state)
 			if isinstance(self.sxcmd.token_dict[key].widget, SXCheckBox):
 				idx = self.sxcmd.token_dict[key].widget.checkState()
@@ -665,6 +667,8 @@ class SXCmdWidget(QWidget):
 		None
 		"""
 
+		#print(dependency, state, old_dependency)
+		print('DEP', dependency, old_dependency)
 		if old_dependency is None:
 			old_dependency = [dependency]
 		else:
@@ -683,7 +687,10 @@ class SXCmdWidget(QWidget):
 		else:
 			assert False
 		try:
+			print(parent.sxcmd.dependency_dict[str(dependency)])
 			for name, exp_state, inverse in parent.sxcmd.dependency_dict[str(dependency)]:
+				if name in old_dependency:
+					continue
 				if not parent.sxcmd.token_dict[str(dependency)].widget.isEnabled():
 					is_enabled = False
 				elif str(type_check(state)) != exp_state and inverse == 'True':
@@ -694,13 +701,22 @@ class SXCmdWidget(QWidget):
 					is_enabled = True
 				else:
 					is_enabled = False
+				print(name, exp_state, state, is_enabled)
 				SXCmdTab.set_text_entry_widget_enable_state(parent.sxcmd.token_dict[name].widget, is_enabled)
-				if name not in old_dependency and str(dependency) != parent.sxcmd.token_dict[name].dependency_group[0]:
-					try:
-						new_state = parent.sxcmd.token_dict[name].widget.checkState()
-					except AttributeError:
-						new_state = parent.sxcmd.token_dict[name].widget.isEnabled()
-					self.change_state(name, new_state, old_dependency)
+			for name, exp_state, inverse in parent.sxcmd.dependency_dict[str(dependency)]:
+				for entry in parent.sxcmd.token_dict[name].dependency_group:
+					if not entry[0]:
+						continue
+					if name not in old_dependency and str(dependency) != entry[0]:
+						try:
+							new_state = parent.sxcmd.token_dict[name].widget.checkState()
+						except AttributeError:
+							try:
+								new_state = parent.sxcmd.token_dict[name].widget.text()
+							except AttributeError:
+								new_state = parent.sxcmd.token_dict[name].widget.isEnabled()
+						print(name, new_state)
+						self.change_state(name, new_state, old_dependency)
 		except KeyError:
 			return None
 		#print(state)

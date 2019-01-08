@@ -2503,7 +2503,9 @@ def moon_eliminator(args):
 		volume_difference.get_value_at(volume_difference.calc_min_index()) != 0 ):
 		if args.edge_type == "cosine": mode = "C"
 		else:  mode = "G"
-		mask_no_moon = adaptive_mask(my_volume_binarized_with_no_moons, 0.0, 0.5, args.dilation, args.edge_width, mode)
+		ref3d_moon_eliminated_mask_file_path = os.path.join(args.output_directory, "{}_ref_moon_eliminated_mask.hdf".format(args.outputs_root))
+		mask_no_moon = adaptive_mask(my_volume_binarized_with_no_moons, 0.0, 0.5, args.ndilation, args.edge_width, mode)
+		mask_no_moon.write_image(ref3d_moon_eliminated_mask_file_path)
 		Util.mul_img(vol3d, mask_no_moon)
 
 	del volume_difference, my_volume_binarized, my_volume_binarized_with_no_moons
@@ -3157,7 +3159,7 @@ def main():
 	parser_moon_eliminator.add_argument("--mol_mass",                       type=float,           default=None,    help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)")
 	parser_moon_eliminator.add_argument("--use_density_threshold",          type=float,           default=None,    help="Use ad-hoc density threshold: Use user-provided ad-hoc density threshold, instead of computing the value from the molecular mass. Below this density value, the data is assumed not to belong to the main body of the particle density. (default none)")
 	parser_moon_eliminator.add_argument("--moon_distance",                  type=float,           default=3.0,     help="Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3.0)")
-	parser_moon_eliminator.add_argument("--dilation",                       type=int,           default=-1,    help="Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --moon_distance so that the voxels with 1.0 values in the mask are same as the hard-edged molecular-mass binary volume. (default -1.0)")
+	parser_moon_eliminator.add_argument("--ndilation",                       type=int,           default=-1,    help="Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --moon_distance so that the voxels with 1.0 values in the mask are same as the hard-edged molecular-mass binary volume. (default -1.0)")
 	parser_moon_eliminator.add_argument("--resample_ratio",                 type=str,             default='1.0',   help="Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')")
 	parser_moon_eliminator.add_argument("--box_size",                       type=int,             default=None,    help="Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)")
 	parser_moon_eliminator.add_argument("--resampled_shift3d",              action="store_true",  default=False,   help="Providing resampled 3D shifts: Use this option when you are providing the resampled 3D shifts (using pixel size of outputs) when --resample_ratio!=1.0. By default, the program assums the provided shifts are not resampled. (default False)")
