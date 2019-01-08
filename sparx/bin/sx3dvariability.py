@@ -456,7 +456,7 @@ def main():
 		else:
 			from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
 			from utilities		import set_params_proj, get_params_proj, params_3D_2D, get_params2D, set_params2D, compose_transform2
-			from utilities		import model_blank, nearest_proj, model_circle, write_text_row
+			from utilities		import model_blank, nearest_proj, model_circle, write_text_row, wrap_mpi_gatherv
 			from applications	import pca
 			from statistics		import avgvar, avgvar_ctf, ccc
 			from filter		    import filt_tanl
