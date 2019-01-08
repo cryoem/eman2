@@ -668,7 +668,6 @@ class SXCmdWidget(QWidget):
 		"""
 
 		#print(dependency, state, old_dependency)
-		print('DEP', dependency, old_dependency)
 		if old_dependency is None:
 			old_dependency = [dependency]
 		else:
@@ -687,7 +686,6 @@ class SXCmdWidget(QWidget):
 		else:
 			assert False
 		try:
-			print(parent.sxcmd.dependency_dict[str(dependency)])
 			for name, exp_state, inverse in parent.sxcmd.dependency_dict[str(dependency)]:
 				if name in old_dependency:
 					continue
@@ -701,7 +699,6 @@ class SXCmdWidget(QWidget):
 					is_enabled = True
 				else:
 					is_enabled = False
-				print(name, exp_state, state, is_enabled)
 				SXCmdTab.set_text_entry_widget_enable_state(parent.sxcmd.token_dict[name].widget, is_enabled)
 			for name, exp_state, inverse in parent.sxcmd.dependency_dict[str(dependency)]:
 				for entry in parent.sxcmd.token_dict[name].dependency_group:
@@ -715,7 +712,6 @@ class SXCmdWidget(QWidget):
 								new_state = parent.sxcmd.token_dict[name].widget.text()
 							except AttributeError:
 								new_state = parent.sxcmd.token_dict[name].widget.isEnabled()
-						print(name, new_state)
 						self.change_state(name, new_state, old_dependency)
 		except KeyError:
 			return None
