@@ -32587,7 +32587,8 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 
 
 float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
-{
+{ // I just realized the in case of Fourier space unless mask cuts out Friedel parts,
+  //  the outcome will be incorrect.  Such mask is created using function Util.unrollmask or Utill.unroll1dpw
 	ENTERFUNC;
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
