@@ -675,6 +675,7 @@ def main():
 			if (myid == heavy_load_myid):
 				log_main.add("Computing aveList and varList took %12.1f [m]"%((time()-ttt)/60.))
 			
+			"""
 			nproj = len(xform_proj_for_2D)
 			nproj = mpi_reduce(nproj, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
 			if myid == main_node:
@@ -692,6 +693,10 @@ def main():
 				write_text_row(txform_proj, os.path.join(current_output_dir, "params.txt"))
 				del txform_proj
 			del xform_proj_for_2D
+			"""
+			xform_proj_for_2D = wrap_mpi_gatherv(xform_proj_for_2D, main_node, MPI_COMM_WORLD)
+			if (myid == main_node):
+				write_text_row(xform_proj_for_2D, os.path.join(current_output_dir, "params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
 			if options.ave2D:
 				from fundamentals import fpol
