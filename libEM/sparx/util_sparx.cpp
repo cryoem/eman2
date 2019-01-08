@@ -25868,36 +25868,47 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 
 vector<float> Util::shift_gradients( EMData* avg, EMData* img, EMData* wght, float sx, float sy)
 {
+	//  Weighting image is supposed to be squared.
 	ENTERFUNC;
 
 	if(!avg->is_complex())  throw ImageFormatException("First input image has to be complex");
 	if(!img->is_complex())  throw ImageFormatException("Second input image has to be complex");
 	if(wght->is_complex())  throw ImageFormatException("Weighting image has to be real");
+	if(avg->is_fftodd())  throw ImageFormatException("Input Fourier image should originate from real x even-sized image");
 
 	int nx=avg->get_xsize(), ny=avg->get_ysize();
 	
 	//cout<<"  "<< nx <<"  "<<ny<<endl;
-	nx /= 2;
-	if (nx != wght->get_xsize()) {
-		throw NullPointerException("incorrect image size");
-	}
+	float tnx = nx-2;
+    int nyp2 = ny/2;
+	if (nx/2 != wght->get_xsize())  throw NullPointerException("incorrect image size");
+
     float* avg_p  = avg->get_data();
     float* img_p = img->get_data();
     float* wght_p = wght->get_data();
-    int nyp2 = ny/2;
 
 	double gradx = 0.0;
 	double grady = 0.0;
 	unsigned int lwg = 0;
-	for ( int iy = 1; iy <= ny; iy++) {
-		int jy=iy-1; if (jy>nyp2) jy=jy-ny;
+	for ( int iy = 0; iy < ny; iy++) {
+		int jy;
+		if (iy>nyp2) jy=iy-ny;
+		else  jy = iy;
 		for ( int ix = 0; ix < nx; ix+=2) {
-			int ioff = (ix+(iy-1)*nx);
+			int ioff = ix+iy*nx;
 			if(wght_p[lwg] > 0.0 ) {
-					float temp = (avg_p[ioff] - img_p[ioff]*wght_p[lwg]*wght_p[lwg]);
-					gradx += temp;
-					float iemp = (avg_p[ioff+1] - img_p[ioff]*wght_p[lwg]*wght_p[lwg]);
-					grady += iemp*iemp;
+				float argx = TWOPI*sx*(ix/2)/tnx;
+				float argy = TWOPI*sy*jy/((float)ny);
+				float arg = argx+argy;
+				double scs = cos(arg);
+				double sss = sin(arg);
+				//  First we shift input image
+				double img_real = img_p[ioff]*scs   + img_p[ioff+1]*sss;
+				double img_imag = img_p[ioff+1]*scs - img_p[ioff]*sss;
+				double prod = (avg_p[ioff]*img_imag - avg_p[ioff]*img_real)*scs*wght_p[lwg];
+
+				gradx += prod*argx;
+				grady += prod*argy;
 //cout<<" UUU   "<< ir <<"  "<<data[ioff]*data[ioff]+data[ioff+1]*data[ioff+1]<<"  "<<dctfs[roff]*dproj[ioff]*dctfs[roff]*dproj[ioff]+dctfs[roff]*dproj[ioff+1]*dctfs[roff]*dproj[ioff+1]<<endl;
 			}
 			lwg++;
