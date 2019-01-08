@@ -148,6 +148,7 @@ def construct_keyword_dict():
 	keyword_dict["--create_stack"]                = SXkeyword_map(0, "bool")                # --create_stack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--do_not_create_stack"]         = SXkeyword_map(0, "bool")                # --do_not_create_stack (contains keyworkd 'stack' but this should be bool type)
 	keyword_dict["--save_vstack"]                 = SXkeyword_map(0, "bool")                # --save_vstack (contains keyworkd 'stack' but this should be bool type)
+	keyword_dict["--use_mol_mass"]                = SXkeyword_map(0, "bool_ignore")                # if one wants to use the --mol_mass=KILODALTON
 	keyword_dict["--mask_threshold"]              = SXkeyword_map(0, "float")               # --mask_threshold=MASK_THRESHOLD (contains keyworkd 'mask' but this should be bool type)
 	# Use priority 1 for output
 	keyword_dict["output"]                        = SXkeyword_map(1, "output")              # output_hdf, output_directory, outputfile, outputfile, --output=OUTPUT, output_stack, output_file
@@ -1037,18 +1038,19 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 							else:
 								entry = line_buffer[:item_tail].replace("%%", "").strip()
 
-							try:
-								group_key, state = entry.split('==')
-							except:
-								group_key, state = entry.split('!=')
-								inverse = True
-							else:
-								inverse = False
-							token.dependency_group = [group_key.strip('-'), state, inverse]
-							try:
-								sxcmd.dependency_dict[group_key].append([token.key_base, state, inverse])
-							except KeyError:
-								sxcmd.dependency_dict[group_key] = [[token.key_base, state, inverse]]
+							for dependency in entry.split():
+								try:
+									group_key, state = dependency.split('==')
+								except:
+									group_key, state = dependency.split('!=')
+									inverse = True
+								else:
+									inverse = False
+								token.dependency_group.append([group_key.strip('-'), state, inverse])
+								try:
+									sxcmd.dependency_dict[group_key].append([token.key_base, state, inverse])
+								except KeyError:
+									sxcmd.dependency_dict[group_key] = [[token.key_base, state, inverse]]
 						# Initialise restore value with default value
 						# Ignore the rest of line ...
 						# Register this command token to the list (ordered) and dictionary (unordered)
@@ -1075,6 +1077,9 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 			if usage_token.key_base == sxcmd_token_key_base:
 				is_found = True
 				break
+			elif sxcmd.token_dict[sxcmd_token_key_base].type == 'bool_ignore':
+				is_found = True
+				break
 		if not is_found: global_def.ERROR("Wiki Format Error: An extra argument or option (%s) is found in the command token dictionary extracted from '===== Input =====' compared with 'usage in command line' of '====== Usage ======'." % sxcmd_token_key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	for sxcmd_token in sxcmd.token_list:
@@ -1086,6 +1091,9 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 			if usage_token.key_base == sxcmd_token.key_base:
 				is_found = True
 				break
+			elif sxcmd_token.type == 'bool_ignore':
+				is_found = True
+				break
 		if not is_found: global_def.ERROR("Wiki Format Error: An extra argument or option (%s) is found in the command token list extracted from '===== Input =====' compared with 'usage in command line' of '====== Usage ======'." % sxcmd_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
 
 	for usage_token in usage_token_list:
@@ -1095,6 +1103,9 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 		is_found = False
 		for sxcmd_token in sxcmd.token_list:
 			if sxcmd_token.key_base == sxcmd_token_key_base:
+				is_found = True
+				break
+			elif sxcmd_token.type == 'bool_ignore':
 				is_found = True
 				break
 		if not is_found: global_def.ERROR("Wiki Format Error: An additional argument or option (%s) is found in 'usage in command line' of '====== Usage ======' compared with the command token list extracted from '===== Input =====' ." % usage_token.key_base, "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -1301,8 +1312,8 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		output_file.write("; token.is_required = %s" % token.is_required)
 		output_file.write("; token.is_locked = %s" % token.is_locked)
 		output_file.write("; token.is_reversed = %s" % token.is_reversed)
-		output_file.write("; token.dependency_group = %s" % str([str(entry) for entry in token.dependency_group]))
-		if token.type == "bool":
+		output_file.write("; token.dependency_group = %s" % str([[str(entry) for entry in group_dep] for group_dep in token.dependency_group]))
+		if token.type in ("bool", "bool_ignore"):
 			output_file.write("; token.default = %s" % token.default)
 			output_file.write("; token.restore = %s" % token.restore)
 		else:
@@ -1321,8 +1332,9 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 
 		output_file.write("; %s.token_list.append(token)" % sxcmd_variable_name)
 		output_file.write("; %s.token_dict[token.key_base] = token" % sxcmd_variable_name)
-		if token.dependency_group[0]:
-			output_file.write("; %s.dependency_dict.setdefault('%s', []).append([token.key_base, '%s', '%s'])" % (sxcmd_variable_name, token.dependency_group[0], token.dependency_group[1], token.dependency_group[2]))
+		for entry in token.dependency_group:
+			if entry[0]:
+				output_file.write("; %s.dependency_dict.setdefault('%s', []).append([token.key_base, '%s', '%s'])" % (sxcmd_variable_name, entry[0], entry[1], entry[2]))
 		output_file.write("\n")
 
 	output_file.write("\n")
@@ -1471,11 +1483,13 @@ def create_sxcmd_subconfig_adaptive_mask3d():
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("adaptive_mask"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "Output mask"; token_edit.help = "Output 3D mask"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("use_mol_mass"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mol_mass"); token_edit.group = "advanced";  token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("threshold"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("ndilation"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("kernel_size"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("gauss_standard_dev"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("edge_width"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("edge_type"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Adaptive 3D Mask", None, token_edit_list, sxsubcmd_mpi_support)
 
@@ -1499,9 +1513,12 @@ def create_sxcmd_subconfig_binary_mask3d():
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("binary_mask"); token_edit.is_required = True; token_edit.is_locked = True; token_edit.default = True; token_edit.restore = True; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("input_volume"); token_edit.key_prefix = ""; token_edit.label = "Input volume"; token_edit.help = "Input reference volume"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "data3d_one"; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_mask3D"); token_edit.key_prefix = ""; token_edit.label = "Output mask"; token_edit.help = "Output 3D mask"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "output"; token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("bin_threshold"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("ne"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nd"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("use_mol_mass"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mol_mass"); token_edit.group = "advanced";  token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("threshold"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nerosion"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("ndilation"); token_edit_list.append(token_edit)
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Binary 3D Mask", None, token_edit_list, sxsubcmd_mpi_support)
 
@@ -1518,9 +1535,13 @@ def create_sxcmd_subconfig_postrefiner_halfset_vol():
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("do_adaptive_mask"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mask_threshold"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("cosine_edge"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("use_mol_mass"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mol_mass");  token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("threshold"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("edge_width"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("edge_type"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("ndilation"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("fsc_adj"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit_list.append(token_edit)
@@ -1546,9 +1567,13 @@ def create_sxcmd_subconfig_postrefiner_single_vols():
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("pixel_size"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("do_adaptive_mask"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mask_threshold"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("cosine_edge"); token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("use_mol_mass"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mol_mass"); token_edit.group = "advanced";  token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("threshold"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nsigma"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("ndilation"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("edge_width"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("edge_type"); token_edit.group = "advanced"; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use provided B-factor [A^2] to enhance the map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("fl"); token_edit.is_required = True; token_edit.help = "A value larger than 0.5: low-pass filter to the resolution in Angstrom; -1.0: no low-pass filter."; token_edit.type = "float"; token_edit_list.append(token_edit)
@@ -1575,7 +1600,7 @@ def create_sxcmd_subconfig_postrefiner_single_vols():
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("do_adaptive_mask"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask_threshold"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("cosine_edge"); token_edit_list.append(token_edit)
+### 	token_edit = SXcmd_token(); token_edit.initialize_edit("edge_width"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
@@ -1598,7 +1623,7 @@ def create_sxcmd_subconfig_postrefiner_single_vols():
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("do_adaptive_mask"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mask_threshold"); token_edit_list.append(token_edit)
-### 	token_edit = SXcmd_token(); token_edit.initialize_edit("cosine_edge"); token_edit_list.append(token_edit)
+### 	token_edit = SXcmd_token(); token_edit.initialize_edit("edge_width"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("dilation"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("mtf"); token_edit_list.append(token_edit)
 ### 	token_edit = SXcmd_token(); token_edit.initialize_edit("B_enhance"); token_edit.is_required = True; token_edit.help = "Non-zero positive value: program use the given value [A^2] to enhance map; -1.0: B-factor is not applied."; token_edit_list.append(token_edit)
@@ -2289,6 +2314,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 #	sxcmd_config_list.append(SXcmd_config("../doc/e2proc3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_viper_window()))
 #	sxcmd_config_list.append(SXcmd_config("../doc/e2proc3d.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_scale_clip()))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/viper.txt", "DokuWiki", sxcmd_category, sxcmd_role))
@@ -2297,7 +2323,6 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/proj_compare.txt", "DokuWiki", sxcmd_category, sxcmd_role))
-	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_angular_distribution.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 

@@ -396,7 +396,6 @@ def main():
 	
 	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
 	parser.add_option("--binary_mask",          action="store_true", default=False,                  help="generate binary 3D mask from input 3D volume")
-	parser.add_option("--bin_threshold",        type="float",        default=0.0,                    help="threshold provided by user to binarize input volume")
 	parser.add_option("--nerosion",             type="int",          default=0,                      help="number of times to erode binarized volume")
 
 	# Postprocess 3-D  
@@ -971,7 +970,7 @@ def main():
 		input_file_name_root,ext=os.path.splitext(input_file_name)
 		if nargs == 2:  mask_file_name = args[1]
 		else:           mask_file_name = "binary_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
-		mask3d = binarize(inputvol, options.bin_threshold)
+		mask3d = binarize(inputvol, options.threshold)
 		for i in range(options.nerosion): mask3d = erosion(mask3d)
 		for i in range(options.ndilation): mask3d = dilation(mask3d)
 		mask3d.write_image(mask_file_name)
