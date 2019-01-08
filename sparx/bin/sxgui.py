@@ -719,7 +719,6 @@ class SXCmdWidget(QWidget):
 
 			if len(parent.sxcmd.token_dict[dependency].dependency_group) == 2 and is_enabled:
 				if prev_sender is not None:
-					print('PREV', dependency)
 					is_enabled = prev_sender.isEnabled()
 
 			if not is_enabled:
