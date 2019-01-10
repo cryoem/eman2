@@ -930,6 +930,7 @@ def main():
 		write_text_row(p, args[1])
 
 	elif options.adaptive_mask:
+		print('DEPRECATION WARNING! This function is deprecated and no longer maintained. Please use sxmask.py instead')
 		from utilities import get_im
 		from morphology import adaptive_mask
 		nargs = len(args)
@@ -955,6 +956,7 @@ def main():
 		adaptive_mask(inputvol, options.nsigma, density_threshold, options.ndilation, options.edge_width, mode).write_image(mask_file_name)
 	
 	elif options.binary_mask:
+		print('DEPRECATION WARNING! This function is deprecated and no longer maintained. Please use sxmask.py instead')
 		from utilities import get_im
 		from morphology import binarize, erosion, dilation
 		nargs = len(args)
