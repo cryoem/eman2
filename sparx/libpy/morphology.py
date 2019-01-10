@@ -81,7 +81,7 @@ def dilation(f, mask = None, morphtype="BINARY"):
 		ny = f.get_ysize()
 		nz = f.get_zsize()
 		if(nz == 1):	mask = model_circle(2,5,5)
-		elif(nz >1):  mask = model_circle(2,5,5)
+		elif(nz >1):  mask = model_circle(2,5,5,5)
 		else:  ERROR("Command does not work for 1D images","dilation",1)
 
 	if morphtype=="BINARY":
@@ -117,7 +117,7 @@ def erosion(f, mask = None, morphtype="BINARY"):
 		ny = f.get_ysize()
 		nz = f.get_zsize()
 		if(nz == 1):	mask = model_circle(2,5,5)
-		elif(nz >1):  mask = model_circle(2,5,5)
+		elif(nz >1):  mask = model_circle(2,5,5,5)
 		else:  ERROR("Command does not work for 1D images","erosion",1)
 
 	if morphtype=="BINARY":
