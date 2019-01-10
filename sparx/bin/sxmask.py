@@ -281,6 +281,13 @@ def parse_command_line():
 		default=False,
 		help='Second mask: Allow disconnected regions in the mask.'
 		)
+	group_second_mask.add_argument(
+		'--s_invert',
+		'--sinv',
+		action='store_true',
+		default=False,
+		help='Second mask: Exclude the second mask region instead of including it.'
+		)
 
 	return parser.parse_args()
 
@@ -445,6 +452,8 @@ def main():
 			allow_disconnected=command_args.s_allow_disconnected,
 			mode=mode,
 			)
+		if command_args.s_invert:
+			s_mask = 1 - s_mask
 		s_mask.write_image(output_prefix + '_mask_second.hdf')
 		masked_combined = mask * s_mask
 		masked_combined.write_image(output_prefix + '_combined.hdf')
