@@ -86,7 +86,7 @@ def soft_edge(img, length, mode='c'):
 	# Get the mask shape for the soft edge kernel
 	kernel_mask_dim = 2 * length + 1
 	dimension = len(img_data.shape)
-    mask_shape = tuple([kernel_mask_dim]*dimension)
+	mask_shape = tuple([kernel_mask_dim]*dimension)
 	if dimension not in (2, 3):
 		global_def.ERROR('morphology/soft_edge', 'Only 2D and 3D images are supported!', 1)
 
@@ -98,7 +98,8 @@ def soft_edge(img, length, mode='c'):
 
 	# Fill the kernel with the soft edge values
 	kernel_mask = numpy.zeros(mask_shape)
-    edge_norm = length**dimension
+	edge_norm = length**dimension
+	ntab = 100
 	if dimension == 3:
 		for i in range(kernel_mask_dim):
 			distance_i = (i - length)**2
