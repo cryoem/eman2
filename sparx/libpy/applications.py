@@ -18540,7 +18540,7 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 		nima = len(mstack)
 		tima = list(range(nima))
 		shuffle(tima)
-		mask = Util.unrollmask(nx)
+		mask = Util.unrollmask(nx,nx)
 
 		sqct2 = []
 		sqave = []
