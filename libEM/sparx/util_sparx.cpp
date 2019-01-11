@@ -25165,26 +25165,29 @@ void Util::div_filter(EMData* img, EMData* img1)
 }
 
 
-EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
+EMData*  Util::unroll1dpw( int onx, int ny, const vector<float>& bckgnoise )
 {
 	ENTERFUNC;
 
-	int nx = ny/2 + 1;
+	int nx = onx/2 + 1;
+	int ny2 = ny/2 + 1;
 
 	int nb = bckgnoise.size();
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
 	power->to_zero();
+	float xfac = 1.0/float(onx*onx);
+	float yfac = 1.0/float(ny*ny);
 
     float* data = power->get_data();
 
 	//float rmax = nyp2 + 0.5;
 	for ( int iy = 0; iy < ny; iy++) {
-		int jy = (iy<nx) ? iy : iy-ny;
-		float argy = float(jy*jy);
+		int jy = (iy<ny2) ? iy : iy-ny;
+		float argy = float(jy*jy)*yfac;
 		for ( int ix = 0; ix < nx; ix++) {
-			float argx = argy + ix*ix;
-			int rf = (int)(sqrt( argx) + 0.5f );
+			float argx = argy + ix*ix*xfac;
+			int rf = (int)( onx*sqrt(argx) + 0.5f );
 			if( rf < nx )  data[ix+iy*nx] = bckgnoise[rf];///2.0;  // 2 on account of x^2/(2*s^2)
 		}
 	}
@@ -25205,7 +25208,7 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 	}
 	*/
 	data[0] = 0.0f;
-	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
+	for ( size_t iy = ny2; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
@@ -25213,30 +25216,33 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 }
 
 
-EMData*  Util::unrollmask( int ny )
+EMData*  Util::unrollmask( int onx, int ny )
 {
 	ENTERFUNC;
 
-	int nx = ny/2 + 1;
+	int nx = onx/2 + 1;
+	int ny2 = ny/2 + 1;
 
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
 	power->to_zero();
+	float xfac = 1.0/float(onx*onx);
+	float yfac = 1.0/float(ny*ny);
 
 	float* data = power->get_data();
 
 	for ( int iy = 0; iy < ny; iy++) {
-		int jy = (iy<nx) ? iy : iy-ny;
-		float argy = float(jy*jy);
+		int jy = (iy<ny2) ? iy : iy-ny;
+		float argy = float(jy*jy)*yfac;
 		for ( int ix = 0; ix < nx; ix++) {
-			float argx = argy + ix*ix;
-			int rf = (int)(sqrt( argx) + 0.5f );
-			if( rf < nx )  data[ix+iy*nx] = 1.0f;///2.0;  // 2 on account of x^2/(2*s^2)
+			float argx = argy + ix*ix*xfac;
+			int rf = (int)( onx*sqrt(argx) + 0.5f );
+			if( rf < nx )  data[ix+iy*nx] = 1.0f;
 		}
 	}
 
 	data[0] = 0.0f;
-	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
+	for ( size_t iy = ny2; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
@@ -29613,7 +29619,7 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 01/03/2019" <<  endl;
+	cout <<"   Source modification date: 01/11/2019" <<  endl;
 /*
 This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;

@@ -1025,9 +1025,9 @@ class FakeKaiserBessel : public KaiserBessel {
 	/* img /= Re(img1) with zero check  */
 	static void div_filter(EMData* img, EMData* img1);
 
-	static EMData*  unroll1dpw( int ny, const vector<float>& bckgnoise );
+	static EMData*  unroll1dpw( int onx, int ny, const vector<float>& bckgnoise );
 
-	static EMData*  unrollmask( int ny );
+	static EMData*  unrollmask( int onx, int ny );
 
 	static vector<float> rotavg_fourier(EMData* img);
 
