@@ -52,10 +52,10 @@ def get_soft_edge_kernel_value(position, length, mode):
 	if position > length:
 		func_val = 0
 	elif mode.lower() == 'c':
-		func_val = 0.5 * numpy.cos(numpy.pi * position / (length+1)) + 0.5
+		func_val = 0.5 * numpy.cos(numpy.pi * position / length) + 0.5
 	else:
 		Q = -4.605170185988091
-		func_val = numpy.exp(Q * (position / (length+1))**2)
+		func_val = numpy.exp(Q * (position / length)**2)
 	return func_val
 
 
@@ -80,14 +80,14 @@ def soft_edge(img, length, mode='c'):
 		img_data = img
 		out_eman = False
 
+	if length <= 0:
+		return img.copy()
+
 	# Get the mask shape for the soft edge kernel
 	kernel_mask_dim = 2 * length + 1
 	dimension = len(img_data.shape)
-	if dimension == 3:
-		mask_shape = (kernel_mask_dim, kernel_mask_dim, kernel_mask_dim)
-	elif dimension == 2:
-		mask_shape = (kernel_mask_dim, kernel_mask_dim)
-	else:
+    mask_shape = tuple([kernel_mask_dim]*dimension)
+	if dimension not in (2, 3):
 		global_def.ERROR('morphology/soft_edge', 'Only 2D and 3D images are supported!', 1)
 
 	# Create the outline for the array by erosing it once.
@@ -98,6 +98,7 @@ def soft_edge(img, length, mode='c'):
 
 	# Fill the kernel with the soft edge values
 	kernel_mask = numpy.zeros(mask_shape)
+    edge_norm = length**dimension
 	if dimension == 3:
 		for i in range(kernel_mask_dim):
 			distance_i = (i - length)**2
@@ -105,13 +106,23 @@ def soft_edge(img, length, mode='c'):
 				distance_j = (j - length)**2
 				for k in range(kernel_mask_dim):
 					distance_k = (k - length)**2
-					kernel_mask[i, j, k] = get_soft_edge_kernel_value(numpy.sqrt(distance_i + distance_j + distance_k), length, mode)
+					dist_r = distance_i + distance_j + distance_k
+					kernel_mask[i, j, k] = get_soft_edge_kernel_value(
+						numpy.sqrt(dist_r / float(edge_norm))*ntab,
+						ntab,
+						mode
+						)
 	elif dimension == 2:
 		for i in range(kernel_mask_dim):
 			distance_i = (i - length)**2
 			for j in range(kernel_mask_dim):
 				distance_j = (j - length)**2
-				kernel_mask[i, j] = get_soft_edge_kernel_value(numpy.sqrt(distance_i + distance_j), length, mode)
+				dist_r = distance_i + distance_j
+				kernel_mask[i, j] = get_soft_edge_kernel_value(
+					numpy.sqrt(dist_r / float(edge_norm))*ntab,
+					ntab,
+					mode
+					)
 	else:
 		assert False
 
