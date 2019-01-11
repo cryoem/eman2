@@ -81,10 +81,11 @@ Local with an = 12*delta
 Normalization issues:
 #This is for real space filter
 nx = 1024
-mask = Util.unrollmask(nx)
+p1 = model_gauss_noise(1.0,nx,nx)
+mask = Util.unrollmask(nx,nx)
 for j in range(nx//2,nx):  mask[0,j]=1.0
 #This is for Fourier valid region
-m = Util.unrollmask(nx)
+m = Util.unrollmask(nx,nx)
 p2 = fft(p1)
 fp1=fft(Util.mulnclreal(p2,mask))
 Util.innerproduct(p2,p2,m)/(nx*nx/2) = Util.innerproduct(fp1,fp1,None)
@@ -1766,7 +1767,7 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 	ndat = len(data)
 
 	ny = data[0][0].get_ysize()
-	mask = Util.unrollmask(ny)
+	mask = Util.unrollmask(ny,ny)
 	nxt = 2*(mask.get_xsize())
 
 	'''
@@ -1784,7 +1785,7 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 		del ctfs
 		if bckgnoise:  #  This should be a flag to activate sharpening during refinement as bckgnoise is always present (for 3D later)
 			for kl in range(ndat):
-				temp = Util.unroll1dpw(ny, bckgnoise[kl])
+				temp = Util.unroll1dpw(ny,ny, bckgnoise[kl])
 				for im in range(len(shifts)):
 					Util.mulclreal(data[kl][im], temp)
 			del bckgnoise
@@ -1990,7 +1991,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	#  each data holds two lists: n_coarse_shifts of coarse shifted versions and then nhifts versions of Fine shifted images
 
 	ny = data[0][0].get_ysize()
-	mask = Util.unrollmask(ny)
+	mask = Util.unrollmask(ny,ny)
 	nxt = 2*(mask.get_xsize())
 
 	'''
@@ -2008,7 +2009,7 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 		del ctfs
 		if bckgnoise:  #  This should be a flag to activate sharpening during refinement as bckgnoise is always present (for 3D later)
 			for kl in range(ndat):
-				temp = Util.unroll1dpw(ny, bckgnoise[kl])
+				temp = Util.unroll1dpw(ny,ny, bckgnoise[kl])
 				for im in range(n_coarse_shifts+nshifts):
 					Util.mulclreal(data[kl][im], temp)
 			del bckgnoise
@@ -2266,7 +2267,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	n_fine_shifts = 4
 
 	nima = len(original_data)
-	mask = Util.unrollmask(Tracker["nxinit"])
+	mask = Util.unrollmask(Tracker["nxinit"],Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
 	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
@@ -2535,9 +2536,9 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		"""
 		if Blockdata["bckgnoise"]:
 			temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
-			bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
+			bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
 		else:
-			bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+			bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [1.0]*600)
 		bckgnoise = bckgn.copy()
 		for j in range(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
 		"""
@@ -2945,7 +2946,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	n_fine_shifts = 4
 
 	nima = len(original_data)
-	mask = Util.unrollmask(Tracker["nxinit"])
+	mask = Util.unrollmask(Tracker["nxinit"],Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
 	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
@@ -3246,9 +3247,9 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 		if Blockdata["bckgnoise"]:
 			temp = Blockdata["bckgnoise"][particle_group]
-			bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
+			bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
 		else:
-			bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+			bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [1.0]*600)
 		bckgnoise = bckgn.copy()
 		for j in range(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
 
@@ -3681,7 +3682,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	n_fine_shifts = 4
 
 	nima = len(original_data)
-	mask = Util.unrollmask(Tracker["nxinit"])
+	mask = Util.unrollmask(Tracker["nxinit"],Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
 	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
@@ -3952,9 +3953,9 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 		if Blockdata["bckgnoise"]:
 			temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
-			bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
+			bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
 		else:
-			bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+			bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [1.0]*600)
 		bckgnoise = bckgn.copy()
 		for j in range(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
 
@@ -4369,7 +4370,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	n_fine_shifts = 4
 
 	nima = len(original_data)
-	mask = Util.unrollmask(Tracker["nxinit"])
+	mask = Util.unrollmask(Tracker["nxinit"],Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
 	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
@@ -4836,9 +4837,9 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 					if Blockdata["bckgnoise"]:
 						temp = Blockdata["bckgnoise"][particle_group]
-						bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
+						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
 					else:
-						bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [1.0]*600)
 					bckgnoise = bckgn.copy()
 					for j in range(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
 
@@ -5441,7 +5442,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	n_fine_shifts = 4
 
 	nima = len(original_data)
-	mask = Util.unrollmask(Tracker["nxinit"])
+	mask = Util.unrollmask(Tracker["nxinit"],Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
 	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
@@ -5883,9 +5884,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 					#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 					if Blockdata["bckgnoise"]:
 						temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
-						bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
+						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
 					else:
-						bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [1.0]*600)
 					bckgnoise = bckgn.copy()
 					for j in range(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
 
@@ -6450,7 +6451,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	n_fine_shifts = 4
 
 	nima = len(original_data)
-	mask = Util.unrollmask(Tracker["nxinit"])
+	mask = Util.unrollmask(Tracker["nxinit"],Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
 	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
@@ -6898,9 +6899,9 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 					
 					if Blockdata["bckgnoise"]:
 						temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
-						bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
+						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
 					else:
-						bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [1.0]*600)
 					bckgnoise = bckgn.copy()
 					for j in range(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
 
@@ -7431,7 +7432,7 @@ def cerrs(params, ctfs, particle_groups):
 		ctfs[itry].apix = ctfs[itry].apix/shrinkage
 		ct = ctf_img_real(Tracker["nxinit"], ctfs[itry])
 		Util.mul_img(ct, ct)
-		ctfsbckgnoise = Util.muln_img(Util.unroll1dpw(Tracker["nxinit"], [Blockdata["bckgnoise"][i,particle_groups[itry]] for i in range(lb)]), ct)
+		ctfsbckgnoise = Util.muln_img(Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [Blockdata["bckgnoise"][i,particle_groups[itry]] for i in range(lb)]), ct)
 
 		#// Search 2 times: angles and shifts
 		for imode in range(2):
@@ -7789,7 +7790,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	n_fine_shifts = 4
 
 	nima = len(original_data)
-	mask = Util.unrollmask(Tracker["nxinit"])
+	mask = Util.unrollmask(Tracker["nxinit"],Tracker["nxinit"])
 	for j in range(Tracker["nxinit"]//2,Tracker["nxinit"]):  mask[0,j]=1.0
 	mask2D = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	reachpw = mask.get_xsize()  # The last element of accumulated pw is zero so for the full size nothing is added.
@@ -8237,9 +8238,9 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 					#set_params_proj(dataimage,[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 					if Blockdata["bckgnoise"]:
 						temp = Blockdata["bckgnoise"][dataimage.get_attr("particle_group")]
-						bckgn = Util.unroll1dpw(Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
+						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [temp[i] for i in range(temp.get_xsize())])
 					else:
-						bckgn = Util.unroll1dpw(Tracker["nxinit"], [1.0]*600)
+						bckgn = Util.unroll1dpw(Tracker["nxinit"],Tracker["nxinit"], [1.0]*600)
 					bckgnoise = bckgn.copy()
 					for j in range(Tracker["nxinit"]//2+1,Tracker["nxinit"]):  bckgn[0,j] = bckgn[0,Tracker["nxinit"]-j]
 

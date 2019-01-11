@@ -1065,14 +1065,14 @@ def compute_noise(image_size):
 				if tsd.get_value_at(k,im)>0.0: prj[k] = tsd.get_value_at(k,im)
 			Blockdata["bckgnoise"].append(prj)
 		for im in range(len(Blockdata["bckgnoise"])): 
-			Blockdata["unrolldata"].append(Util.unroll1dpw(ny, Blockdata["bckgnoise"][im]))
+			Blockdata["unrolldata"].append(Util.unroll1dpw(ny, ny, Blockdata["bckgnoise"][im]))
 	else: # from datastack and relion
 		temp_image = model_blank(image_size, image_size)
 		temp_image = fft(temp_image)
 		nx = temp_image.get_xsize()
 		ny = temp_image.get_ysize()
 		Blockdata["bckgnoise"]  = [1.0]*nx
-		Blockdata["unrolldata"] = Util.unroll1dpw(ny, nx*[1.0])
+		Blockdata["unrolldata"] = Util.unroll1dpw(ny, ny, nx*[1.0])
 	return
 			
 def get_params_for_analysis(orgstack, ali3d_params, smearing_file, smearing_number):
@@ -2516,7 +2516,7 @@ def compare_two_images_eucd(data, ref_vol, fdata, ctfimgs):
 	ref_vol = prep_vol(ref_vol, npad = 2, interpolation_method = 1)
 	#ctfs    = EMAN2Ctf()
 	qt = float(Tracker["constants"]["nnxo"]*Tracker["constants"]["nnxo"])
-	m = Util.unrollmask(ny)
+	m = Util.unrollmask(ny,ny)
 	for im in range(len(data)):
 		#current_ctf = data[im].get_attr('ctf')
 		#if( not same_ctf(current_ctf,ctfs) ):
@@ -2536,7 +2536,7 @@ def compare_two_images_cross(data, ref_vol, ctfimgs):
 	import numpy as np
 	from utilities import same_ctf
 	ny    = data[0].get_ysize()
-	m     = Util.unrollmask(ny)
+	m     = Util.unrollmask(ny,ny)
 	peaks = np.zeros(shape = len(data), dtype=float)
 	volft = prep_vol(ref_vol, 2, 1)
 	#  Ref is in reciprocal space
