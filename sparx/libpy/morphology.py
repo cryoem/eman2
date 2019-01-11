@@ -53,10 +53,10 @@ def get_soft_edge_kernel_value(position, length, mode):
 	if position > length:
 		func_val = 0
 	elif mode.lower() == 'c':
-		func_val = 0.5 * numpy.cos(numpy.pi * position / length) + 0.5
+		func_val = 0.5 * numpy.cos(numpy.pi * position / float(length)) + 0.5
 	else:
 		Q = -4.605170185988091
-		func_val = numpy.exp(Q * (position / length)**2)
+		func_val = numpy.exp(Q * (position / float(length))**2)
 	return func_val
 
 
