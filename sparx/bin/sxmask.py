@@ -379,7 +379,7 @@ def main():
 	else:
 		assert False
 
-	mask = morphology.adaptive_mask(
+	mask = morphology.adaptive_mask_scipy(
 		input_vol,
 		nsigma=nsigma,
 		threshold=density_threshold,
@@ -442,7 +442,7 @@ def main():
 		else:
 			assert False
 
-		s_mask = morphology.adaptive_mask(
+		s_mask = morphology.adaptive_mask_scipy(
 			s_mask,
 			nsigma=s_nsigma,
 			threshold=s_density_threshold,
