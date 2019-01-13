@@ -1505,6 +1505,39 @@ def residual_1dpw2(list_1dpw2, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0
 			freq.append(i/(2*Pixel_size*len(list_1dpw2)))
 	return res, freq
 
+def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C"):
+	"""
+		Name
+			adaptive_mask - create a mask from a given image.
+		Input
+			img: input image
+			nsigma: value for initial thresholding of the image.
+		Output
+			mask: The mask will have values one, zero, with cosine smooth transition between two regions.
+	"""
+	from utilities  import model_circle
+	from morphology import binarize, dilation
+	nx = vol.get_xsize()
+	ny = vol.get_ysize()
+	nz = vol.get_zsize()
+	mc = model_circle(nx//2, nx, ny, nz) - model_circle(nx//3, nx, ny, nz)
+	s1 = Util.infomask(vol, mc, True) # flip true: find statistics under the mask (mask >0.5)
+	if threshold <= -9999.0:
+		# Use automatic mode
+		s1 = [s1[0] + s1[1] * nsigma, s1[0], s1[1], nsigma]
+		# new s1[0] is calculated threshold for binarize
+	else: 
+		# use the user-provided threshold
+		if s1[1] != 0.0:
+			s1 = [threshold, s1[0], s1[1], (threshold - s1[0])/s1[1]] 
+		else:
+			s1 = [threshold, s1[0], s1[1], 0.0]
+		# new s1[3] is calculated nsigma corresponding to user-provided threshold
+	mask = Util.get_biggest_cluster(binarize(vol, s1[0]))
+	for i in range(ndilation):   mask = dilation(mask)
+	mask = Util.soft_edge(mask, edge_width, mode)
+	return mask
+
 def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0):
 	"""
 		Name
