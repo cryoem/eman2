@@ -1505,7 +1505,7 @@ def residual_1dpw2(list_1dpw2, polynomial_rankB = 2, Pixel_size = 1, cut_off = 0
 			freq.append(i/(2*Pixel_size*len(list_1dpw2)))
 	return res, freq
 
-def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0):
+def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0):
 	"""
 		Name
 			adaptive_mask - create a mask from a given image.
