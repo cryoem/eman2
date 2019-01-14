@@ -98,11 +98,11 @@ def soft_edge(img, length, mode='c'):
 	edge_norm = length**2
 	cosine_falloff = 100
 	if dimension == 2:
-		x, y = np.ogrid[0:kernel_mask_dim, 0:kernel_mask_dim]
-		kernel_mask = np.sqrt(((x - length)**2 + (y - length)**2) / float(edge_norm))*cosine_falloff
+		x, y = numpy.ogrid[0:kernel_mask_dim, 0:kernel_mask_dim]
+		kernel_mask = numpy.sqrt(((x - length)**2 + (y - length)**2) / float(edge_norm))*cosine_falloff
 	elif dimension == 3:
-		x, y, z = np.ogrid[0:kernel_mask_dim, 0:kernel_mask_dim, 0:kernel_mask_dim]
-		kernel_mask = np.sqrt(((x - length)**2 + (y - length)**2 + (z - length)**2) / float(edge_norm))*cosine_falloff
+		x, y, z = numpy.ogrid[0:kernel_mask_dim, 0:kernel_mask_dim, 0:kernel_mask_dim]
+		kernel_mask = numpy.sqrt(((x - length)**2 + (y - length)**2 + (z - length)**2) / float(edge_norm))*cosine_falloff
 	else:
 		assert False
 
