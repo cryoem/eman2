@@ -37,7 +37,7 @@ import scipy.ndimage.morphology as snm
 import EMAN2_cppwrap
 
 
-def get_soft_edge_kernel_value(position, length, mode):
+def fill_soft_edge_kernel_mask(kernel_mask, length, mode):
 	"""
 	Get the soft edge kernel value at the specified position.
 	If the position is greater than the length, the value is zero.
@@ -50,14 +50,11 @@ def get_soft_edge_kernel_value(position, length, mode):
 	Returns:
 	Edge kernel value
 	"""
-	if position > length:
-		func_val = 0
-	elif mode.lower() == 'c':
-		func_val = 0.5 * numpy.cos(numpy.pi * position / float(length)) + 0.5
+	if mode.lower() == 'c':
+		numpy.add(0.5, numpy.multiply(0.5, numpy.cos(numpy.pi * kernel_mask / float(length), out=kernel_mask), out=kernel_mask), out=kernel_mask)
 	else:
 		Q = -4.605170185988091
-		func_val = numpy.exp(Q * (position / float(length))**2)
-	return func_val
+		numpy.exp(Q * (kernel_mask / float(length))**2, out=kernel_mask)
 
 
 def soft_edge(img, length, mode='c'):
@@ -98,35 +95,19 @@ def soft_edge(img, length, mode='c'):
 	outline_index = numpy.where(outline == 1)
 
 	# Fill the kernel with the soft edge values
-	kernel_mask = numpy.zeros(mask_shape)
 	edge_norm = length**2
-	ntab = 100
+	cosine_falloff = 100
 	if dimension == 2:
-		for i in range(kernel_mask_dim):
-			distance_i = (i - length)**2
-			for j in range(kernel_mask_dim):
-				distance_j = (j - length)**2
-				dist_r = distance_i + distance_j
-				kernel_mask[i, j] = get_soft_edge_kernel_value(
-					numpy.sqrt(dist_r / float(edge_norm))*ntab,
-					ntab,
-					mode
-					)
+		x, y = np.ogrid[0:kernel_mask_dim, 0:kernel_mask_dim]
+		kernel_mask = np.sqrt(((x - length)**2 + (y - length)**2) / float(edge_norm))*cosine_falloff
 	elif dimension == 3:
-		for i in range(kernel_mask_dim):
-			distance_i = (i - length)**2
-			for j in range(kernel_mask_dim):
-				distance_j = (j - length)**2
-				for k in range(kernel_mask_dim):
-					distance_k = (k - length)**2
-					dist_r = distance_i + distance_j + distance_k
-					kernel_mask[i, j, k] = get_soft_edge_kernel_value(
-						numpy.sqrt(dist_r / float(edge_norm))*ntab,
-						ntab,
-						mode
-						)
+		x, y, z = np.ogrid[0:kernel_mask_dim, 0:kernel_mask_dim, 0:kernel_mask_dim]
+		kernel_mask = np.sqrt(((x - length)**2 + (y - length)**2 + (z - length)**2) / float(edge_norm))*cosine_falloff
 	else:
 		assert False
+
+	kernel_mask[kernel_mask >= cosine_falloff] = cosine_falloff
+	fill_soft_edge_kernel_mask(kernel_mask, cosine_falloff, mode)
 
 	# Replace the region around every outline pixel with the gaussian kernel.
 	if dimension == 2:
