@@ -99,9 +99,20 @@ def soft_edge(img, length, mode='c'):
 
 	# Fill the kernel with the soft edge values
 	kernel_mask = numpy.zeros(mask_shape)
-	edge_norm = length**dimension
+	edge_norm = length**2
 	ntab = 100
-	if dimension == 3:
+	if dimension == 2:
+		for i in range(kernel_mask_dim):
+			distance_i = (i - length)**2
+			for j in range(kernel_mask_dim):
+				distance_j = (j - length)**2
+				dist_r = distance_i + distance_j
+				kernel_mask[i, j] = get_soft_edge_kernel_value(
+					numpy.sqrt(dist_r / float(edge_norm))*ntab,
+					ntab,
+					mode
+					)
+	elif dimension == 3:
 		for i in range(kernel_mask_dim):
 			distance_i = (i - length)**2
 			for j in range(kernel_mask_dim):
@@ -114,22 +125,26 @@ def soft_edge(img, length, mode='c'):
 						ntab,
 						mode
 						)
-	elif dimension == 2:
-		for i in range(kernel_mask_dim):
-			distance_i = (i - length)**2
-			for j in range(kernel_mask_dim):
-				distance_j = (j - length)**2
-				dist_r = distance_i + distance_j
-				kernel_mask[i, j] = get_soft_edge_kernel_value(
-					numpy.sqrt(dist_r / float(edge_norm))*ntab,
-					ntab,
-					mode
-					)
 	else:
 		assert False
 
 	# Replace the region around every outline pixel with the gaussian kernel.
-	if dimension == 3:
+	if dimension == 2:
+		for x, y in zip(*outline_index):
+			x_start = x - length
+			x_stop = x + length + 1
+			y_start = y - length
+			y_stop = y + length + 1
+			mask_slice = outline[
+				x_start:x_stop,
+				y_start:y_stop,
+				]
+			numpy.maximum(kernel_mask, mask_slice, mask_slice)
+		outline = outline[
+			length+1:outline.shape[0]-length-1,
+			length+1:outline.shape[1]-length-1,
+			]
+	elif dimension == 3:
 		for x, y, z in zip(*outline_index):
 			x_start = x - length
 			x_stop = x + length + 1
@@ -147,21 +162,6 @@ def soft_edge(img, length, mode='c'):
 			length+1:outline.shape[0]-length-1,
 			length+1:outline.shape[1]-length-1,
 			length+1:outline.shape[2]-length-1,
-			]
-	elif dimension == 2:
-		for x, y in zip(*outline_index):
-			x_start = x - length
-			x_stop = x + length + 1
-			y_start = y - length
-			y_stop = y + length + 1
-			mask_slice = outline[
-				x_start:x_stop,
-				y_start:y_stop,
-				]
-			numpy.maximum(kernel_mask, mask_slice, mask_slice)
-		outline = outline[
-			length+1:outline.shape[0]-length-1,
-			length+1:outline.shape[1]-length-1,
 			]
 	else:
 		assert False
