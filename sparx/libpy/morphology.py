@@ -57,7 +57,7 @@ def fill_soft_edge_kernel_mask(kernel_mask, length, mode):
 		numpy.exp(Q * (kernel_mask / float(length))**2, out=kernel_mask)
 
 
-def soft_edge(img, length, mode='c'):
+def soft_edge(img, length, mode='c', do_approx=False):
 	"""
 	Add a soft edge mask to a 2D/3D image binary image.
 
@@ -106,6 +106,9 @@ def soft_edge(img, length, mode='c'):
 	else:
 		assert False
 
+	if do_approx:
+		numpy.add(kernel_mask, numpy.copysign(0.5, kernel_mask), kernel_mask)
+		numpy.trunc(kernel_mask, kernel_mask)
 	kernel_mask[kernel_mask >= cosine_falloff] = cosine_falloff
 	fill_soft_edge_kernel_mask(kernel_mask, cosine_falloff, mode)
 
@@ -1519,7 +1522,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_wi
 	mask = Util.soft_edge(mask, edge_width, mode)
 	return mask
 
-def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0):
+def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0, do_approx=False):
 	"""
 		Name
 			adaptive_mask - create a mask from a given image.
@@ -1558,7 +1561,7 @@ def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, e
 	for i in range(nerosion):
 		mask = erosion(mask)
 	if edge_width > 0:
-		mask = soft_edge(mask, edge_width, mode)
+		mask = soft_edge(mask, edge_width, mode, do_approx)
 	return mask
 
 '''

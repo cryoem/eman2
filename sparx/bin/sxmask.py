@@ -158,6 +158,12 @@ def parse_command_line():
 		help='Type of the softened edge.'
 		)
 	group_mask.add_argument(
+		'--do_approximation',
+		'--da',
+		action='store_true',
+		help='Approximate the soft edge values for each pixel instead of using the real ones.'
+		)
+	group_mask.add_argument(
 		'--allow_disconnected',
 		'--ad',
 		action='store_true',
@@ -388,6 +394,7 @@ def main():
 		edge_width=command_args.edge_width,
 		allow_disconnected=command_args.allow_disconnected,
 		mode=mode,
+		do_approx=command_args.do_approximation,
 		)
 	mask.write_image(output_prefix + '_mask.hdf')
 
@@ -451,6 +458,7 @@ def main():
 			edge_width=command_args.s_edge_width,
 			allow_disconnected=command_args.s_allow_disconnected,
 			mode=mode,
+			do_approx=command_args.do_approximation,
 			)
 		if command_args.s_invert:
 			s_mask = 1 - s_mask
