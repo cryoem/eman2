@@ -280,6 +280,12 @@ def parse_command_line():
 		choices=('cosine', 'gaussian'),
 		help='Type of the softened edge.'
 		)
+	group_mask.add_argument(
+		'--s_do_approximation',
+		'--sda',
+		action='store_true',
+        help='Second mask: Approximate the soft edge values for each pixel instead of using the real ones.'
+		)
 	group_second_mask.add_argument(
 		'--s_allow_disconnected',
 		'--sad',
@@ -458,7 +464,7 @@ def main():
 			edge_width=command_args.s_edge_width,
 			allow_disconnected=command_args.s_allow_disconnected,
 			mode=mode,
-			do_approx=command_args.do_approximation,
+			do_approx=command_args.s_do_approximation,
 			)
 		if command_args.s_invert:
 			s_mask = 1 - s_mask
