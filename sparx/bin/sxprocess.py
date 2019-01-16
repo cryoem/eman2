@@ -933,7 +933,7 @@ def main():
 	elif options.adaptive_mask:
 		print('DEPRECATION WARNING! This function is deprecated and no longer maintained. Please use sxmask.py instead')
 		from utilities import get_im
-		from morphology import adaptive_mask
+		from morphology import adaptive_mask, adaptive_mask_scipy
 		nargs = len(args)
 		if nargs ==0:
 			print(" Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold.")
@@ -1188,7 +1188,7 @@ def main():
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
 					log_main.add("Options.threshold, options.ndilation, options.edge_width %f %5.2f %5.2f"%(options.threshold, options.ndilation, options.edge_width))
-					from morphology import adaptive_mask
+					from morphology import adaptive_mask, adaptive_mask_scipy
 					if single_map:
 						input_vol_mask = map1
 					else:
