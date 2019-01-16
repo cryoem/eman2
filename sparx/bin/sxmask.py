@@ -161,7 +161,7 @@ def parse_command_line():
 		'--do_approximation',
 		'--da',
 		action='store_true',
-		help='Approximate the soft edge values for each pixel instead of using the real ones.'
+		help='Approximate the soft edge values for each pixel instead of using the exact ones.'
 		)
 	group_mask.add_argument(
 		'--allow_disconnected',
@@ -284,7 +284,7 @@ def parse_command_line():
 		'--s_do_approximation',
 		'--sda',
 		action='store_true',
-        help='Second mask: Approximate the soft edge values for each pixel instead of using the real ones.'
+        help='Second mask: Approximate the soft edge values for each pixel instead of using the exact ones.'
 		)
 	group_second_mask.add_argument(
 		'--s_allow_disconnected',

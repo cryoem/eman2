@@ -42,7 +42,7 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; %%--%%nerosion : Number of erosions : Number of times to erode binarized volume. One circle of erosion will remove about 2 pixels from the mask. (default 0)
   ; %%--%%edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. If the width is 0, a binary mask is returned. (default 5)
   ; %%--%%edge_type : Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%edge_width!=0
-  ; %%--%%do_approximation : Approximate values: Approximate the values of the soft edge area instead of using the real values. This will lead to a less smoothened mask, but will mirror the previous behaviour. (default False) : %%--%%edge_width!=0
+  ; %%--%%do_approximation : Approximate values: Approximate the values of the soft edge area instead of using the exact values. This will lead to a less smoothened mask, but will mirror the previous behaviour. (default False) : %%--%%edge_width!=0
   ; %%--%%allow_disconnected : Allow disconnected regions : Allow disconnected region in the mask. (default False)
 
 
@@ -66,7 +66,7 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; %%--%%s_nerosion : Second - Number of erosions : Number of times to erode binarized volume. One round of erosion will remove about 2 pixels from the mask (default 0) : %%--%%use_second_mask==True
   ; %%--%%s_edge_width : Second - Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking.(default 5) : %%--%%use_second_mask==True
   ; %%--%%s_edge_type : Second - Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
-  ; %%--%%s_do_approximation : Second - Approximate values: Approximate the values of the soft edge area instead of using the real values. This will lead to a less smoothened mask, but will mirror the previous behaviour. (default False) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
+  ; %%--%%s_do_approximation : Second - Approximate values: Approximate the values of the soft edge area instead of using the exact values. This will lead to a less smoothened mask, but will mirror the previous behaviour. (default False) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
   ; %%--%%s_allow_disconnected : Second - Allow disconnected regions : Allow disconnected region in the mask. (default False) : %%--%%use_second_mask==True
   ; %%--%%s_invert : Second - Invert masking : If True, the mask will remove everything that is inside instead of leaving it. (default False) : %%--%%use_second_mask==True
 
