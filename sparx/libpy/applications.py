@@ -13851,7 +13851,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		from projection   import prgl
 		from morphology   import ctf_img_real
 	if trillinear and realsp:
-		ERROR("Both relion mode and realsp mode are specified","project3d", 1)
+		ERROR("Both trilinear mode and realsp mode are specified","project3d", 1)
 	
 	if listagls is None:
 		angles = even_angles(delta, symmetry = symmetry, method = method, phiEqpsi = phiEqpsi)
@@ -18540,7 +18540,7 @@ def refinement_2d_local(data, ou, arange, xrng, yrng, CTF = True, SNR=1.0e10):
 		nima = len(mstack)
 		tima = list(range(nima))
 		shuffle(tima)
-		mask = Util.unrollmask(nx)
+		mask = Util.unrollmask(nx,nx)
 
 		sqct2 = []
 		sqave = []
