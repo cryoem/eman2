@@ -388,7 +388,7 @@ def main():
 	parser.add_option("--adaptive_mask",        action="store_true", default=False,                  help="generate soft-edged 3D mask from input 3D volume")
 	parser.add_option("--nsigma",               type="float",        default=1.0,                    help="number of times of sigma of the input volume to intially obtain the largest density cluster")
 	parser.add_option("--threshold",       type="float",        default=-9999,                help="threshold provided by user to intially obtain the largest density cluster (default: -9999, threshold will be determined automatically")
-	parser.add_option("--ndilation",            type="int",          default=1,                      help="number of times of dilation applied to the largest cluster of density")
+	parser.add_option("--ndilation",            type="int",          default=3,                      help="number of times of dilation applied to the largest cluster of density")
 	parser.add_option("--edge_width",           type="int",          default=5,                      help="width of the cosine edge of the mask")
 	parser.add_option("--edge_type",            type=str,            default="cosine",               help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
 	parser.add_option("--mol_mass",             type=float,          default=-1.0,                   help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default Not used)")
@@ -412,6 +412,7 @@ def main():
 	parser.add_option("--B_start",              type="float",         default=10.0,                  help="=10.0 Angstrom, starting frequency in Angstrom for B-factor estimation (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--B_stop",               type="float",         default=0.0,                   help="=0.0, cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency. (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--do_adaptive_mask",     action="store_true",  default=False,                 help="generate adaptive mask with the given threshold")
+	parser.add_option("--do_approx",          action="store_true", default=False,                  help="Approximate the soft edge values instead of using the exact ones.")
 	#parser.add_option("--randomphasesafter",   type="float",         default=0.8,                   help=" set Fourier pixels random phases after FSC value ")
 	# window
 	parser.add_option("--window_stack",         action="store_true",  default=False,                 help="window stack images using a smaller window size")
@@ -1103,6 +1104,7 @@ def main():
 			log_main.add("threshold    :"+str(options.threshold))
 			log_main.add("Edge width        :"+str(options.edge_width))
 			log_main.add("Ndilation         :"+str(options.ndilation))
+			log_main.add("Do approximation         :"+str(options.do_approx))
 			# log_main.add("randomphasesafter :"+str(options.randomphasesafter))
 			log_main.add("------------->>> processing <<<-----------------------")
 			log_main.add("3-D refinement combinemaps")
@@ -1202,13 +1204,14 @@ def main():
 						mode = "C"
 					else:
 						mode = "G"
-					m = adaptive_mask(
+					m = adaptive_mask_scipy(
 						input_vol_mask,
 						options.nsigma,
 						density_threshold,
 						options.ndilation,
 						options.edge_width,
-						mode
+						mode,
+						do_approx=options.do_approx,
 						)
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 				else:
