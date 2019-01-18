@@ -181,9 +181,7 @@ def checkitem(item, mpi_comm = -1):
 	mpi_barrier(mpi_comm)
 	return isthere
 
-def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
-			  match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, \
-			  generation, candidatesexist = False, random_seed=None, new = False):
+def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, generation, candidatesexist = False, random_seed=None, new = False):
 	from global_def   import ERROR, EMData, Transform
 	from pixel_error  import multi_align_stability
 	from utilities    import model_blank, write_text_file, get_params2D
@@ -335,9 +333,7 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
 # stability - when True stability checking is performed
 # stab_ali - used only when stability=True, 
 # iter_reali - used only when stability=True - for each iteration with index holds (index of iteration % iter_reali == 0) stability checking is performed
-def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, 
-			 maxit=30, isac_iter=10, CTF=False, snr=1.0, rand_seed=-1, color=0, comm=-1, 
-			 stability=False, stab_ali=5, iter_reali=1, thld_err=1.732, FL=0.1, FH=0.3, FF=0.2, dst=90.0, method = ""):
+def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, maxit=30, isac_iter=10, CTF=False, snr=1.0, rand_seed=-1, color=0, comm=-1, stability=False, stab_ali=5, iter_reali=1, thld_err=1.732, FL=0.1, FH=0.3, FF=0.2, dst=90.0, method = ""):
 	
 	from global_def   import EMData, Util
 	from alignment	  import Numrinit, ringwe, search_range
@@ -1642,5 +1638,3 @@ def main(args):
 
 if __name__=="__main__":
 	main(sys.argv[1:])
-
-
