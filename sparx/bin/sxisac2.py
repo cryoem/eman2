@@ -1520,7 +1520,7 @@ def main(args):
 
 			else:
 				main_iter = options.restart
-				if( not  os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished" ) ) ):  error = 1
+				if( not  os.path.exists( os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "finished" ) ) ):  error = 2
 				else:
 					keepdoing_main = True
 					main_iter += 1
@@ -1535,8 +1535,8 @@ def main(args):
 				junk = cmdexecute(cmd)
 
 	error = bcast_number_to_all(error, source_node = Blockdata["main_node"])
-	if(error == 1):  ERROR("isac2","cannot restart from unfinished main iteration  %d"%main_iter)
-					
+	if(error == 1):  ERROR("isac2", "The restart value is greater than -1, but the ISAC directory does not exist for continuation. Please choose a restart value of -1 to start a fresh run.")
+	elif(error == 2):  ERROR("isac2","Cannot restart from unfinished main iteration  %d. To automatically detect the latest ISAC directory for continuation please choose a restart value of 0."%main_iter)
 
 	mpi_barrier(MPI_COMM_WORLD)
 

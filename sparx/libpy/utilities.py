@@ -5371,23 +5371,28 @@ def if_error_then_all_processes_exit_program(error_status):
 
 	# if "OMPI_COMM_WORLD_SIZE" not in os.environ:
 	if len({"OMPI_COMM_WORLD_SIZE", "PMI_RANK", "PMI_ID", "SLURM_PROCID", "LAMRANK", "MPI_RANKID", "MP_CHILD", "MP_CHILD", "MP_CHILD"}.intersection(set(os.environ))) == 0:
-		def mpi_comm_rank(n): return 0
-		def mpi_bcast(*largs):
+		def my_mpi_comm_rank(n): return 0
+		def my_mpi_bcast(*largs):
 			return [largs[0]]
-		def mpi_finalize():
+		def my_mpi_finalize():
 			return None
-		MPI_INT, MPI_COMM_WORLD = 0, 0
+		MY_MPI_INT, MY_MPI_COMM_WORLD = 0, 0
 	else:
 		from mpi import mpi_comm_rank, mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+		my_mpi_comm_rank = mpi_comm_rank
+		my_mpi_bcast = mpi_bcast
+		my_mpi_finalize = mpi_finalize
+		MY_MPI_INT = MPI_INT
+		MY_MPI_COMM_WORLD = MPI_COMM_WORLD
 
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	myid = my_mpi_comm_rank(MY_MPI_COMM_WORLD)
 	if error_status != None and error_status != 0:
 		error_status_info = error_status
 		error_status = 1
 	else:
 		error_status = 0
 
-	error_status = mpi_bcast(error_status, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	error_status = my_mpi_bcast(error_status, 1, MPI_INT, 0, MY_MPI_COMM_WORLD)
 	error_status = int(error_status[0])
 
 	if error_status > 0:
@@ -5401,7 +5406,7 @@ def if_error_then_all_processes_exit_program(error_status):
 					print_msg("** Location: %s\n"%(frameinfo.filename + ":" + str(frameinfo.lineno)))
 					print_msg("***********************************\n")
 		sys.stdout.flush()
-		mpi_finalize()
+		my_mpi_finalize()
 		exit() # sys.exit(1)
 
 def get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
@@ -6964,7 +6969,7 @@ def split_a_group(workdir,list_of_a_group,Tracker):
 	from random import shuffle
 	from mpi import MPI_COMM_WORLD, mpi_barrier
 	from utilities import get_shrink_data_huang
-	from reconstructions import recons3d_4nn_ctf_MPI
+	from reconstruction import recons3d_4nn_ctf_MPI
 	from filter import filt_tanl
 	from applications import mref_ali3d_EQ_Kmeans
 	################
@@ -7228,4 +7233,95 @@ def convert_to_float(value):
 	"""
 	from struct import unpack
 	return unpack("!f", hex(value)[2:].zfill(8).decode('hex'))[0]
+
+
+def create_summovie_command(
+        temp_name,
+        micrograph_name,
+        shift_name,
+        frc_name,
+        opt
+        ):
+
+    # Handle first and last case events
+    if opt['first'] == 0:
+        ERROR(
+            'SumMovie indexing starts with 1.\n' +
+            '0 is not a valid entry for --first', 'sxsummovie.py', 1
+            )
+    elif opt['first'] < 0:
+        first = opt['nr_frames'] + opt['first'] + 1
+    else:
+        first = opt['first']
+
+    if opt['last'] == 0:
+        ERROR(
+            'SumMovie indexing starts with 1.\n' +
+            '0 is not a valid entry for --last', 'sxsummovie.py', 1
+            )
+    elif opt['last'] < 0:
+        last = opt['nr_frames'] + opt['last'] + 1
+    else:
+        last = opt['last']
+
+    if first > last:
+        ERROR(
+            'First option musst be smaller equals last option!\n' + 
+            'first: {0}; last: {1}'.format(first, last), 'sxsummovie.py', 1
+            )
+
+    if opt['nr_frames'] < last or last <= 0:
+        ERROR(
+            '--last option {0} is out of range:\n'.format(last) + 
+            'min: 1; max {0}'.format(
+            opt['nr_frames']
+            ), 'sxsummovie.py', 1
+            )
+
+    if opt['nr_frames'] < first or first <= 0:
+        ERROR(
+            '--first option {0} is out of range:\n'.format(first) + 
+            'min: 1; max {0}'.format(
+            opt['nr_frames']
+            ), 'sxsummovie.py', 1
+            )
+
+    # Command list
+    summovie_command = []
+
+    # Input file
+    summovie_command.append('{0}'.format(temp_name))
+    # Number of frames
+    summovie_command.append('{0}'.format(opt['nr_frames']))
+    # Sum file
+    summovie_command.append(micrograph_name)
+    # Shift file
+    summovie_command.append(shift_name)
+    # FRC file
+    summovie_command.append(frc_name),
+    # First frame
+    summovie_command.append('{0}'.format(first))
+    # Last frame
+    summovie_command.append('{0}'.format(last))
+    # Pixel size
+    summovie_command.append('{0}'.format(opt['pixel_size']))
+    # Dose correction
+    if not opt['apply_dose_filter']:
+        summovie_command.append('NO')
+    else:
+        summovie_command.append('YES')
+        # Exposure per frame
+        summovie_command.append('{0}'.format(opt['exposure_per_frame']))
+        # Acceleration voltage
+        summovie_command.append('{0}'.format(opt['voltage']))
+        # Pre exposure
+        summovie_command.append('{0}'.format(opt['pre_exposure']))
+        # Restore noise power
+        if opt['dont_restore_noise']:
+            summovie_command.append('NO')
+        else:
+            summovie_command.append('YES')
+
+    return summovie_command
+
 

@@ -1025,9 +1025,9 @@ class FakeKaiserBessel : public KaiserBessel {
 	/* img /= Re(img1) with zero check  */
 	static void div_filter(EMData* img, EMData* img1);
 
-	static EMData*  unroll1dpw( int ny, const vector<float>& bckgnoise );
+	static EMData*  unroll1dpw( int onx, int ny, const vector<float>& bckgnoise );
 
-	static EMData*  unrollmask( int ny );
+	static EMData*  unrollmask( int onx, int ny );
 
 	static vector<float> rotavg_fourier(EMData* img);
 
@@ -1049,6 +1049,7 @@ class FakeKaiserBessel : public KaiserBessel {
                 
 	static vector<int> cast_coarse_into_fine_sampling(const vector<vector<float> >& coarse_sampling_angles, const vector<vector<float> >& fine_sampling_angles, string symmetry);
 
+	static vector<float> shift_gradients( EMData* avg, EMData* img, EMData* wght, float sx, float sy);
 
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);

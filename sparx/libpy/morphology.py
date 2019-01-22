@@ -81,7 +81,7 @@ def dilation(f, mask = None, morphtype="BINARY"):
 		ny = f.get_ysize()
 		nz = f.get_zsize()
 		if(nz == 1):	mask = model_circle(2,5,5)
-		elif(nz >1):  mask = model_circle(2,5,5)
+		elif(nz >1):  mask = model_circle(2,5,5,5)
 		else:  ERROR("Command does not work for 1D images","dilation",1)
 
 	if morphtype=="BINARY":
@@ -117,7 +117,7 @@ def erosion(f, mask = None, morphtype="BINARY"):
 		ny = f.get_ysize()
 		nz = f.get_zsize()
 		if(nz == 1):	mask = model_circle(2,5,5)
-		elif(nz >1):  mask = model_circle(2,5,5)
+		elif(nz >1):  mask = model_circle(2,5,5,5)
 		else:  ERROR("Command does not work for 1D images","erosion",1)
 
 	if morphtype=="BINARY":
@@ -1392,7 +1392,7 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_wi
 		# new s1[3] is calculated nsigma corresponding to user-provided threshold
 	mask = Util.get_biggest_cluster(binarize(vol, s1[0]))
 	for i in range(ndilation):   mask = dilation(mask)
-	mask = Util.soft_edge(mask, edge_width, "C")
+	mask = Util.soft_edge(mask, edge_width, mode)
 	return mask
 
 '''

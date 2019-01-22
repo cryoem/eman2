@@ -25165,26 +25165,29 @@ void Util::div_filter(EMData* img, EMData* img1)
 }
 
 
-EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
+EMData*  Util::unroll1dpw( int onx, int ny, const vector<float>& bckgnoise )
 {
 	ENTERFUNC;
 
-	int nx = ny/2 + 1;
+	int nx = onx/2 + 1;
+	int ny2 = ny/2 + 1;
 
 	int nb = bckgnoise.size();
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
 	power->to_zero();
+	float xfac = 1.0/float(onx*onx);
+	float yfac = 1.0/float(ny*ny);
 
     float* data = power->get_data();
 
 	//float rmax = nyp2 + 0.5;
 	for ( int iy = 0; iy < ny; iy++) {
-		int jy = (iy<nx) ? iy : iy-ny;
-		float argy = float(jy*jy);
+		int jy = (iy<ny2) ? iy : iy-ny;
+		float argy = float(jy*jy)*yfac;
 		for ( int ix = 0; ix < nx; ix++) {
-			float argx = argy + ix*ix;
-			int rf = (int)(sqrt( argx) + 0.5f );
+			float argx = argy + ix*ix*xfac;
+			int rf = (int)( onx*sqrt(argx) + 0.5f );
 			if( rf < nx )  data[ix+iy*nx] = bckgnoise[rf];///2.0;  // 2 on account of x^2/(2*s^2)
 		}
 	}
@@ -25205,7 +25208,7 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 	}
 	*/
 	data[0] = 0.0f;
-	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
+	for ( size_t iy = ny2; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
@@ -25213,30 +25216,33 @@ EMData*  Util::unroll1dpw( int ny, const vector<float>& bckgnoise )
 }
 
 
-EMData*  Util::unrollmask( int ny )
+EMData*  Util::unrollmask( int onx, int ny )
 {
 	ENTERFUNC;
 
-	int nx = ny/2 + 1;
+	int nx = onx/2 + 1;
+	int ny2 = ny/2 + 1;
 
 	EMData* power = new EMData();
 	power->set_size(nx,ny);
 	power->to_zero();
+	float xfac = 1.0/float(onx*onx);
+	float yfac = 1.0/float(ny*ny);
 
 	float* data = power->get_data();
 
 	for ( int iy = 0; iy < ny; iy++) {
-		int jy = (iy<nx) ? iy : iy-ny;
-		float argy = float(jy*jy);
+		int jy = (iy<ny2) ? iy : iy-ny;
+		float argy = float(jy*jy)*yfac;
 		for ( int ix = 0; ix < nx; ix++) {
-			float argx = argy + ix*ix;
-			int rf = (int)(sqrt( argx) + 0.5f );
-			if( rf < nx )  data[ix+iy*nx] = 1.0f;///2.0;  // 2 on account of x^2/(2*s^2)
+			float argx = argy + ix*ix*xfac;
+			int rf = (int)( onx*sqrt(argx) + 0.5f );
+			if( rf < nx )  data[ix+iy*nx] = 1.0f;
 		}
 	}
 
 	data[0] = 0.0f;
-	for ( size_t iy = nx; iy < ny; iy++) data[iy*nx] = 0.0f;
+	for ( size_t iy = ny2; iy < ny; iy++) data[iy*nx] = 0.0f;
 
 	power->update();
 	EXITFUNC;
@@ -25864,6 +25870,64 @@ vector<int> Util::cast_coarse_into_fine_sampling(const vector<vector<float> >& c
 	}
 	return ltable;
 }
+
+
+vector<float> Util::shift_gradients( EMData* avg, EMData* img, EMData* wght, float sx, float sy)
+{
+	//  Weighting image is supposed to be squared.
+	ENTERFUNC;
+
+	if(!avg->is_complex())  throw ImageFormatException("First input image has to be complex");
+	if(!img->is_complex())  throw ImageFormatException("Second input image has to be complex");
+	if(wght->is_complex())  throw ImageFormatException("Weighting image has to be real");
+	if(avg->is_fftodd())  throw ImageFormatException("Input Fourier image should originate from real x even-sized image");
+
+	int nx=avg->get_xsize(), ny=avg->get_ysize();
+	
+	//cout<<"  "<< nx <<"  "<<ny<<endl;
+	float tnx = nx-2;
+    int nyp2 = ny/2;
+	if (nx/2 != wght->get_xsize())  throw NullPointerException("incorrect image size");
+
+    float* avg_p  = avg->get_data();
+    float* img_p = img->get_data();
+    float* wght_p = wght->get_data();
+
+	double gradx = 0.0;
+	double grady = 0.0;
+	unsigned int lwg = 0;
+	for ( int iy = 0; iy < ny; iy++) {
+		int jy;
+		if (iy>nyp2) jy=iy-ny;
+		else  jy = iy;
+		for ( int ix = 0; ix < nx; ix+=2) {
+			int ioff = ix+iy*nx;
+			if(wght_p[lwg] > 0.0 ) {
+				float argx = TWOPI*sx*(ix/2)/tnx;
+				float argy = TWOPI*sy*jy/((float)ny);
+				float arg = argx+argy;
+				double scs = cos(arg);
+				double sss = sin(arg);
+				//  First we shift input image
+				double img_real = img_p[ioff]*scs   + img_p[ioff+1]*sss;
+				double img_imag = img_p[ioff+1]*scs - img_p[ioff]*sss;
+				double prod = (avg_p[ioff]*img_imag - avg_p[ioff]*img_real)*scs*wght_p[lwg];
+
+				gradx += prod*argx;
+				grady += prod*argy;
+//cout<<" UUU   "<< ir <<"  "<<data[ioff]*data[ioff]+data[ioff+1]*data[ioff+1]<<"  "<<dctfs[roff]*dproj[ioff]*dctfs[roff]*dproj[ioff]+dctfs[roff]*dproj[ioff+1]*dctfs[roff]*dproj[ioff+1]<<endl;
+			}
+			lwg++;
+		}
+	}
+
+	vector<float> retvals;
+	retvals.push_back((float)gradx);
+	retvals.push_back((float)grady);
+    return retvals;
+	EXITFUNC;
+}
+
 
 
 #define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*(size_t)nxo]
@@ -29555,7 +29619,7 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 12/25/2018" <<  endl;
+	cout <<"   Source modification date: 01/11/2019" <<  endl;
 /*
 This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;
@@ -32529,7 +32593,8 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 
 
 float Util::innerproduct(EMData* img, EMData* img1, EMData* mask)
-{
+{ // I just realized the in case of Fourier space unless mask cuts out Friedel parts,
+  //  the outcome will be incorrect.  Such mask is created using function Util.unrollmask or Utill.unroll1dpw
 	ENTERFUNC;
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();

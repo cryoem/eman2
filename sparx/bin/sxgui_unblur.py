@@ -4409,8 +4409,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # Generate a about message box
         about = QtGui.QMessageBox()
-        about.setText(
-            """
+        about.setText("""
             sxgui_drift for analyzing drift parameters
             made by Unblur
             Copyright (C) 2016  Markus Stabrin
@@ -4453,8 +4452,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             FITNESS FOR A PARTICULAR PURPOSE.
             See the GNU General Public License
             for more details.
-            """
-            )
+            """)
         about.exec_()
 
     def changeEvent(self, event):

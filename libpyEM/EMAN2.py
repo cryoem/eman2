@@ -1637,7 +1637,7 @@ def test_image(type=0,size=(128,128)):
 	type=4  circular sinewave
 	type=5  axes
 	type=6  linewave
-	type=7  scurve pluse x,y gradient
+	type=7  scurve plus x,y gradient
 	type=8  scurve translated
 	type=9  scurve with gaussian noise(mean 0, sigma 1)
 	size=(128,128) """
