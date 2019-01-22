@@ -101,8 +101,6 @@ def main():
 
 	imghdr = EMData(img,0,True)
 	options.apix = imghdr['apix_x']
-
-	box = 32
 	
 	boxer=EMTomoBoxer(app,options,datafile=img)
 
@@ -306,7 +304,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					self.boxsize[int(k)]=int(clslst[k]["boxsize"])
 				else:
 					self.sets[int(k)]=str(clslst[k])
-					self.boxsize[int(k)]=boxsize
+					self.boxsize[int(k)]=64
 				
 					
 		
@@ -327,7 +325,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				if bdf[5] not in list(self.sets.keys()):
 					clsi=int(bdf[5])
 					self.sets[clsi]="particles_{:02d}".format(clsi)
-					self.boxsize[clsi]=boxsize
+					self.boxsize[clsi]=64
 				
 				self.boxes.append(bdf)
 		
@@ -344,7 +342,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				b[2]=b[2]/apix*self.apix_unbin+data["nz"]//2
 				
 			for k in self.boxsize.keys():
-				self.boxsize[k]=self.boxsize[k]/apix*self.apix_unbin
+				self.boxsize[k]=int(np.round(self.boxsize[k]*self.apix_unbin/apix))
 		else:
 			self.apix_unbin=-1
 		
@@ -1213,7 +1211,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				
 			bxsz={}
 			for k in self.boxsize.keys():
-				bxsz[k]=self.boxsize[k]*self.apix_cur/self.apix_unbin
+				bxsz[k]=np.round(self.boxsize[k]*self.apix_cur/self.apix_unbin)
 
 				
 		else:

@@ -728,6 +728,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	x,y=np.indices((sz,sz),dtype=float)/sz-.5
 	#f=.25-(x**2+y**2)/2 + ((abs(x)-0.5)**2+(abs(y)-0.5)**2)/2
 	f=1+np.exp(-(x**2+y**2)/0.1) - np.exp(-((abs(x)-0.5)**2+(abs(y)-0.5)**2)/0.1)
+	f+=1.5
 	f3=np.repeat(f[None, :,:], outz, axis=0)
 	msk=from_numpy(f3).copy()
 	#####

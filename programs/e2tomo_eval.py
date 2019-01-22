@@ -206,7 +206,15 @@ class TomoEvalGUI(QtGui.QWidget):
 								ptclcls[vname][1]+=n
 							else:
 								ptclcls[vname]=[1,n]
-				
+				if ("curves" in js) and len(js["curves"])>0:
+					dic["curves"]=np.array(js["curves"])
+					if "_curves_" in ptclcls:
+						ptclcls["_curves_"][1]+=len(dic["curves"])
+					else:
+						ptclcls["_curves_"]=[1,len(dic["curves"])]
+						
+				else:
+					dic["curves"]=[]
 				dic["basename"]= os.path.basename(name).split(".")[0] #base_name(name)
 				dic["e2basename"] = base_name(name)
 				dic["filename"]=name
@@ -242,6 +250,7 @@ class TomoEvalGUI(QtGui.QWidget):
 			for kname in list(info["boxcls"].keys()):
 				if self.ptclcls[kname][0]==1:
 					nbox+=info["boxcls"][kname]
+			nbox+=len(info["curves"])
 			it=QtGui.QTableWidgetItem()
 			it.setData(Qt.EditRole, int(nbox))
 			self.imglst.setItem(i,2, it)
@@ -326,8 +335,12 @@ class TomoEvalGUI(QtGui.QWidget):
 	
 	def runboxer(self):
 		idx, info=self.get_id_info()
+		modifiers = QtGui.QApplication.keyboardModifiers()
 		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
-		subprocess.Popen("e2spt_boxer22.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+		if modifiers == QtCore.Qt.ShiftModifier:
+			subprocess.Popen("e2tomo_drawcurve.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+		else:
+			subprocess.Popen("e2spt_boxer22.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
 		#launch_childprocess()
 
 	#def clickset(self, item):
