@@ -452,7 +452,7 @@ def main():
 					while sphire_cter_entry[idx_cter_astig_ang] < 0:
 						sphire_cter_entry[idx_cter_astig_ang] += 180
 					assert sphire_cter_entry[idx_cter_astig_ang] < 180 and sphire_cter_entry[idx_cter_astig_ang] >= 0, '# Logical Error: The range of astigmatism angle must be 0-180 at this point of code.'
-					
+	
 					relion_const_ac = float(tokens_line[relion_dict['_rlnAmplitudeContrast'][idx_col] - 1])
 					sphire_cter_entry[idx_cter_const_ac] = 100 * relion_const_ac  # convert to %
 					
@@ -884,9 +884,8 @@ def main():
 				
 				# Save statistics of CTF parameters for each micrograph
 				for idx_cter in range(n_idx_cter - 1):
-					file_sphire_cter_partres.write('  %12.5g' % sphire_cter_entry[idx_cter])
+					file_sphire_cter_partres.write('  %13.6f' % sphire_cter_entry[idx_cter])
 				file_sphire_cter_partres.write('  %s\n' % sphire_cter_entry[idx_cter_mic_name])  # At the end of line, write micrograph name which is string type!
-			
 			file_sphire_cter_partres.close()
 		
 		# Write box coordinate to files (doing here to avoid repeating open/close files in loop)
@@ -1027,22 +1026,22 @@ def main():
 							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_id])          # idx_params_mic_coord_id
 							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])           # idx_params_mic_coord_x
 							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_y])           # idx_params_mic_coord_y
-							line += " {:15.5f}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_resample_ratio]) # idx_params_mic_resample_ratio
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_def])                           # idx_params_ctf_defocus
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_cs])                            # idx_params_ctf_cs
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_vol])                           # idx_params_ctf_voltage
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_apix])                          # idx_params_ctf_apix
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_bfactor])                       # idx_params_ctf_bfactor
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_total_ac])                      # idx_params_ctf_ampcont
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_amp])                     # idx_params_ctf_dfdiff
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_ang])                     # idx_params_ctf_dfang
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['phi'])                               # idx_params_proj_phi
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['theta'])                             # idx_params_proj_theta
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['psi'])                               # idx_params_proj_psi
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['tx'])                                # idx_params_proj_sx
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['ty'])                                # idx_params_proj_sy
-							line += " {:15.5f}".format(dummy_particle_defocus_error)                                                  # idx_params_defocus_error
-							line += " {:15.5f}".format(dummy_particle_resample_ratio)                                                 # idx_params_resample_ratio
+							line += " {:13.6f}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_resample_ratio]) # idx_params_mic_resample_ratio
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_def])                           # idx_params_ctf_defocus
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_cs])                            # idx_params_ctf_cs
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_vol])                           # idx_params_ctf_voltage
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_apix])                          # idx_params_ctf_apix
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_bfactor])                       # idx_params_ctf_bfactor
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_total_ac])                      # idx_params_ctf_ampcont
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_amp])                     # idx_params_ctf_dfdiff
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_ang])                     # idx_params_ctf_dfang
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['phi'])                               # idx_params_proj_phi
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['theta'])                             # idx_params_proj_theta
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['psi'])                               # idx_params_proj_psi
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['tx'])                                # idx_params_proj_sx
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['ty'])                                # idx_params_proj_sy
+							line += " {:13.6f}".format(dummy_particle_defocus_error)                                                  # idx_params_defocus_error
+							line += " {:15.6f}".format(dummy_particle_resample_ratio)                                                 # idx_params_resample_ratio
 							line += " {:6d}".format(sphire_chunk_id_list[i_sphire_rebox_entry])                                       # idx_params_chunk_id NOT SUPPORTED YET (Toshio Moriya 2018/07/10)
 							line += " \n"
 							
@@ -1053,12 +1052,12 @@ def main():
 				# assert relion_category_dict['window'][idx_is_category_found]
 				# Write rebox parameters to files (doing here to avoid repeating open/close files in loop)
 				print('# ')
-				print('# Particle coodinates are not found! Skipping tos save SPHIRE rebox files ...')
+				print('# Particle coodinates are not found! Skipping save SPHIRE rebox files ...')
 		else:
 			# assert relion_category_dict['helical'][idx_is_category_found]:
 			print('# ')
 			print('# For helical reconstruction, SPHIRE rebox files are not supported yet ...')
-			print('# Skipping tos save SPHIRE rebox files ...')
+			print('# Skipping save SPHIRE rebox files ...')
 		
 		if is_enable_create_stack:
 			assert relion_category_dict['window'][idx_is_category_found], 'MRK_DEBUG'
