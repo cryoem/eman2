@@ -1522,7 +1522,7 @@ if ENABLE_GUI:
 			if self.current_boxkey and self.edit_mode != "delete":
 				if tuple(self.initial_helix_box_data_list) in self.helices_dict:
 					self.helices_dict.pop(tuple(self.initial_helix_box_data_list))
-				if tuple(self.initial_helix_box_data_list) in self.get_db_item("helixboxes"):
+				if list(self.initial_helix_box_data_list) in self.get_db_item("helixboxes"):
 					self.remove_box_from_db(tuple(self.initial_helix_box_data_list))
 				box = self.main_image.get_shapes().get(self.current_boxkey)
 				box_coords = list( box.getShape()[4:9] )
