@@ -1269,6 +1269,30 @@ class boxerConvNet(QtCore.QObject):
 		return
 
 
+class boxerTopaz(QtCore.QObject):
+	
+	@staticmethod
+	def setup_gui(gridlay, boxerwindow=None):
+		boxerTopaz.boxerwindow=boxerwindow
+		boxerTopaz.bt_train=QtWidgets.QPushButton("Train")
+		boxerTopaz.bt_train.setToolTip("Topaz")
+		gridlay.addWidget(boxerTopaz.bt_train)
+		boxerTopaz.bt_train.clicked[bool].connect(boxerTopaz.do_training)
+		
+		boxerTopaz.threshold=ValSlider(None,(0,5.0),"Threshold",0.2,90)
+		gridlay.addWidget(boxerTopaz.threshold)
+		return
+	
+	@staticmethod
+	def do_training(args=None):
+		pass
+		
+	@staticmethod
+	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
+		boxes = []
+		return boxes
+
+
 class boxerGauss(QtCore.QObject):
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
@@ -1283,6 +1307,7 @@ aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("by Ref","auto_ref",boxerByRef), 
 #	     ("Gauss","auto_gauss",boxerGauss),
 	     ("NeuralNet", "auto_convnet", boxerConvNet),
+	     ("Topaz", "auto_topaz", boxerTopaz),
 			]
 #boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
 boxcolors = { "selected":(0.9,0.9,0.9), 
@@ -1295,6 +1320,7 @@ boxcolors = { "selected":(0.9,0.9,0.9),
 			  "auto_ref":(.1,.3,.4), 
 			  "auto_gauss":(.4,.4,.1), 
 			  "auto_convnet":(.3,.1,.4),
+			  "auto_topaz":(.5,.1,.5),
 			}
 
 class GUIBoxer(QtWidgets.QWidget):
