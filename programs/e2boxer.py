@@ -1282,9 +1282,20 @@ class boxerGauss(QtCore.QObject):
 aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("by Ref","auto_ref",boxerByRef), 
 #	     ("Gauss","auto_gauss",boxerGauss),
-	     ("NeuralNet", "auto_convnet", boxerConvNet)]
+	     ("NeuralNet", "auto_convnet", boxerConvNet),
+			]
 #boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
-boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.4,.1),  "auto_convnet":(.3,.1,.4)}
+boxcolors = { "selected":(0.9,0.9,0.9), 
+			  "manual":(0,0,0.7), 
+			  "refgood":(0,0.8,0), 
+			  "refbad":(0.8,0,0), 
+			  "refbg":(0.7,0.7,0), 
+			  "unknown":[.4,.1,.1], 
+			  "auto_local":(.3,.1,.4), 
+			  "auto_ref":(.1,.3,.4), 
+			  "auto_gauss":(.4,.4,.1), 
+			  "auto_convnet":(.3,.1,.4),
+			}
 
 class GUIBoxer(QtWidgets.QWidget):
 	# Dictionary of autopickers
