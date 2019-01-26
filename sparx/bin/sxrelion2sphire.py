@@ -886,6 +886,7 @@ def main():
 				for idx_cter in range(n_idx_cter - 1):
 					file_sphire_cter_partres.write('  %13.6f' % sphire_cter_entry[idx_cter])
 				file_sphire_cter_partres.write('  %s\n' % sphire_cter_entry[idx_cter_mic_name])  # At the end of line, write micrograph name which is string type!
+
 			file_sphire_cter_partres.close()
 		
 		# Write box coordinate to files (doing here to avoid repeating open/close files in loop)
