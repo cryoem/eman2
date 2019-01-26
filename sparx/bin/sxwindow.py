@@ -1153,11 +1153,11 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 				# print("MRK_DEBUG: local_stack_path, local_particle_id", local_stack_path, local_particle_id)
 
 				local_bdb_stack[local_particle_id] = particle_img_dict
-				#local_mrcs.insert_clip(particle_img, (0, 0, local_particle_id))
+				local_mrcs.insert_clip(particle_img, (0, 0, local_particle_id))
 				#particle_img.write_image(local_stack_path, local_particle_id) # NOTE: Insert slice instead of write the image
 				local_particle_id += 1
 
-			#local_mrcs.write_image(local_mrcs_path)
+			local_mrcs.write_image(local_mrcs_path)
 
 		# Save the message list of rejected coordinates because of out-of-boundary
 		# print("MRK_DEBUG: len(coords_reject_out_of_boundary_messages) := %d" % len(coords_reject_out_of_boundary_messages))
