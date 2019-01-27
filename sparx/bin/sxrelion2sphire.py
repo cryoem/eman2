@@ -914,9 +914,11 @@ def main():
 							eman1_coordinate_x = sphire_coordinates[idx_ptcl_source_coord_x] - box_size//2
 							eman1_coordinate_y = sphire_coordinates[idx_ptcl_source_coord_y] - box_size//2
 							eman1_dummy = -1 # For 5th column of EMAN1 boxer format
-							file_coordinates.write('%6d %6d %6d %6d %6d\n' % (eman1_coordinate_x, eman1_coordinate_y, box_size, box_size, eman1_dummy))
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							file_coordinates.write('%6d %6d %6d %6d %6d\n' % (int(round(eman1_coordinate_x)), int(round(eman1_coordinate_y)), box_size, box_size, eman1_dummy))
 						else:
-							file_coordinates.write('%6d %6d\n' % (sphire_coordinates[idx_ptcl_source_coord_x], sphire_coordinates[idx_ptcl_source_coord_y]))
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							file_coordinates.write('%6d %6d\n' % (int(round(sphire_coordinates[idx_ptcl_source_coord_x])), int(round(sphire_coordinates[idx_ptcl_source_coord_y]))))
 				else:
 					assert relion_category_dict['helical'][idx_is_category_found] == True, '# Logical Error: helical category must be found always at this point of code.'
 					file_coordinates.write('#micrograph: %s\n'%(micrograph_basename))
@@ -1025,8 +1027,9 @@ def main():
 						for i_sphire_rebox_entry in range(n_sphire_rebox_entry):
 							line = ""
 							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_id])          # idx_params_mic_coord_id
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])           # idx_params_mic_coord_x
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_y])           # idx_params_mic_coord_y
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							line += " {:6d}".format(int(round(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])))           # idx_params_mic_coord_x
+							line += " {:6d}".format(int(round(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_y])))           # idx_params_mic_coord_y
 							line += " {:13.6f}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_resample_ratio]) # idx_params_mic_resample_ratio
 							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_def])                           # idx_params_ctf_defocus
 							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_cs])                            # idx_params_ctf_cs
