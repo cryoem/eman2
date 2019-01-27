@@ -78,29 +78,20 @@ def mrk_table_stat(X):
 	"""
 	N = len(X)
 	assert N > 0
-	
+	if(N == 1):  return  X[0], 0.0, X[0], X[0]
+
 	av = X[0]
 	va = X[0]*X[0]
 	mi = X[0]
 	ma = X[0]
-	
+
 	for i in range(1, N):
 		av += X[i]
 		va += X[i]*X[i]
 		mi = min(mi, X[i])
 		ma = max(ma, X[i])
-	
-	avg = av/N
-	var = 0.0
-	if ma - mi == 0:
-		var = 0.0
-	elif N - 1 > 0:
-		var = (va - av*av/N)/float(N - 1)
-	sd = 0.0
-	if var > 0.0:
-		sd = sqrt(var)
-	
-	return  avg, sd, mi, ma
+
+	return  av/N, sqrt(max(0.0, (va - av*av/N)/float(N - 1))), mi, ma
 
 
 # ----------------------------------------------------------------------------------------
@@ -462,7 +453,7 @@ def main():
 					else: 
 						sphire_cter_entry[idx_cter_phase_shift] = 0.0
 					
-					sphire_const_ac_phase_shift = ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude constrast in [%]
+					sphire_const_ac_phase_shift = ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude contrast in [%]
 					sphire_total_phase_shift = sphire_cter_entry[idx_cter_phase_shift] + sphire_const_ac_phase_shift
 					sphire_cter_entry[idx_cter_total_ac] = angle2ampcont(sphire_total_phase_shift)
 					
@@ -502,7 +493,7 @@ def main():
 					if micrograph_dirname not in sphire_cter_dict:
 						sphire_cter_dict[micrograph_dirname] = {}
 					assert micrograph_dirname in sphire_cter_dict
-					
+
 					if micrograph_basename not in sphire_cter_dict[micrograph_dirname]:
 						sphire_cter_dict[micrograph_dirname][micrograph_basename] = [sphire_cter_entry]
 					else:
@@ -835,25 +826,12 @@ def main():
 				sphire_cter_stats[idx_cter_sd_def] = sd
 				if avg != 0.0:
 					sphire_cter_stats[idx_cter_cv_def] = sd / avg * 100 # use percentage
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_cs])
-				sphire_cter_stats[idx_cter_cs] = avg
-				assert (sd <= 1.0e-7)
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_vol])
-				sphire_cter_stats[idx_cter_vol] = avg
-				if sd > 1.0e-7:
-					print ('sphire_cter_table[idx_cter_vol]', sphire_cter_table[idx_cter_vol])
-					print ('avg, sd, min, max', avg, sd, min, max)
-				assert (sd <= 1.0e-7)
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_apix])
-				sphire_cter_stats[idx_cter_apix] = avg
-				assert (sd <= 1.0e-7)
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_bfactor])
-				sphire_cter_stats[idx_cter_bfactor] = avg
-				assert (sd <= 1.0e-7)
+				# I removed a very awkward code which as far as I can tell was meant to assure that
+				#   all values on this list are identical.  I replaced it by proper python				
+				assert(len(set(sphire_cter_table[idx_cter_cs])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_vol])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_apix])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_bfactor])) == 1)
 				
 				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_total_ac])
 				sphire_cter_stats[idx_cter_total_ac] = avg
