@@ -1964,7 +1964,6 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 	'''
 	import os
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from sxhelixboxer	import windowmic
 	from EMAN2 	        import EMUtil, Util
 	
 	print_begin_msg("windowallmic\n")
