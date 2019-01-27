@@ -442,7 +442,6 @@ def main():
 						sphire_cter_entry[idx_cter_astig_ang] -= 180
 					while sphire_cter_entry[idx_cter_astig_ang] < 0:
 						sphire_cter_entry[idx_cter_astig_ang] += 180
-					assert sphire_cter_entry[idx_cter_astig_ang] < 180 and sphire_cter_entry[idx_cter_astig_ang] >= 0, '# Logical Error: The range of astigmatism angle must be 0-180 at this point of code.'
 	
 					relion_const_ac = float(tokens_line[relion_dict['_rlnAmplitudeContrast'][idx_col] - 1])
 					sphire_cter_entry[idx_cter_const_ac] = 100 * relion_const_ac  # convert to %
