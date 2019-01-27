@@ -50,6 +50,7 @@ try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
 	from PyQt4.QtCore import QTimer
+	pass
 except:
 	print("Warning: PyQt4 must be installed")
 	sys.exit(1)
