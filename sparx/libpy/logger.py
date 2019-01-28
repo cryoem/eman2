@@ -53,8 +53,8 @@ class Logger(object):
 			self.base_logger2.logLine(self.prefix, line, self.file_name)
 
 	def sublog(self, add_prefix):
-		logger = Logger()
-		logger.base_logger = self.base_logger
-		logger.prefix = self.prefix + add_prefix
-		return logger
+		local_logger = Logger()
+		local_logger.base_logger = self.base_logger
+		local_logger.prefix = self.prefix + add_prefix
+		return local_logger
 
