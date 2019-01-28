@@ -9061,11 +9061,12 @@ def table_stat(X):
 	"""
 	  Basic statistics of numbers stored in a list: average, variance, minimum, maximum
 	"""
+	N = len(X)
+	if(N == 1):  return  X[0], 0.0, X[0], X[0]
 	av = X[0]
 	va = X[0]*X[0]
 	mi = X[0]
 	ma = X[0]
-	N = len(X)
 	for i in range(1,N):
 		av += X[i]
 		va += X[i]*X[i]
