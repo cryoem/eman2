@@ -24,7 +24,7 @@ install:
     - conda.exe install -n root vs2008_express_vc_python_patch -c conda-forge --yes --quiet
     - call setup_x64
 
-    - conda.exe install conda-build=3.10.3 --yes --quiet
+    - conda.exe install conda-build --yes --quiet
 
     - conda.exe info -a
     - conda.exe config --get
