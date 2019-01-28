@@ -4838,7 +4838,7 @@ def findall(value, L, start=0):
 			i = L.index(value, i)
 			positions.append(i)
 		except:
-			pass
+			break
 	return positions
 
 """

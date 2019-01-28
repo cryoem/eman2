@@ -1985,6 +1985,16 @@ class symclass(object):
 							elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
 								phi = 720.0/self.nsym-phi+360.0/self.nsym
 								psi = (360.0-psi)%360.0
+					else:
+						if(theta>90.0):
+							mat = rotmatrix(phi,theta,psi)
+							for l in range(self.nsym):
+								p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+								#print(p1,p2,p3)
+								if(self.is_in_subunit(p1, p2, 1)):
+									phi=p1; theta=p2; psi=p3
+									#print("  FOUND ")
+									break
 
 			redang.append([phi, theta, psi])
 
@@ -2062,6 +2072,17 @@ class symclass(object):
 						elif(phi>=360.0/self.nsym+360.0/self.nsym/2 and phi<720.0/self.nsym):
 							phi = 720.0/self.nsym-phi+360.0/self.nsym
 							psi = 360.0 - psi
+				else:
+					if(theta>90.0):
+						mat = rotmatrix(phi,theta,psi)
+						for l in range(self.nsym):
+							p1,p2,p3 = recmat( mulmat( mat , self.symatrix[l]) )
+							#print(p1,p2,p3)
+							if(self.is_in_subunit(p1, p2, 1)):
+								phi=p1; theta=p2; psi=p3
+								#print("  FOUND ")
+								break
+						
 
 		return phi, theta, psi
 

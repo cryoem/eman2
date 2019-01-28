@@ -78,29 +78,20 @@ def mrk_table_stat(X):
 	"""
 	N = len(X)
 	assert N > 0
-	
+	if(N == 1):  return  X[0], 0.0, X[0], X[0]
+
 	av = X[0]
 	va = X[0]*X[0]
 	mi = X[0]
 	ma = X[0]
-	
+
 	for i in range(1, N):
 		av += X[i]
 		va += X[i]*X[i]
 		mi = min(mi, X[i])
 		ma = max(ma, X[i])
-	
-	avg = av/N
-	var = 0.0
-	if ma - mi == 0:
-		var = 0.0
-	elif N - 1 > 0:
-		var = (va - av*av/N)/float(N - 1)
-	sd = 0.0
-	if var > 0.0:
-		sd = sqrt(var)
-	
-	return  avg, sd, mi, ma
+
+	return  av/N, sqrt(max(0.0, (va - av*av/N)/float(N - 1))), mi, ma
 
 
 # ----------------------------------------------------------------------------------------
@@ -451,7 +442,6 @@ def main():
 						sphire_cter_entry[idx_cter_astig_ang] -= 180
 					while sphire_cter_entry[idx_cter_astig_ang] < 0:
 						sphire_cter_entry[idx_cter_astig_ang] += 180
-					assert sphire_cter_entry[idx_cter_astig_ang] < 180 and sphire_cter_entry[idx_cter_astig_ang] >= 0, '# Logical Error: The range of astigmatism angle must be 0-180 at this point of code.'
 	
 					relion_const_ac = float(tokens_line[relion_dict['_rlnAmplitudeContrast'][idx_col] - 1])
 					sphire_cter_entry[idx_cter_const_ac] = 100 * relion_const_ac  # convert to %
@@ -462,7 +452,7 @@ def main():
 					else: 
 						sphire_cter_entry[idx_cter_phase_shift] = 0.0
 					
-					sphire_const_ac_phase_shift = ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude constrast in [%]
+					sphire_const_ac_phase_shift = ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude contrast in [%]
 					sphire_total_phase_shift = sphire_cter_entry[idx_cter_phase_shift] + sphire_const_ac_phase_shift
 					sphire_cter_entry[idx_cter_total_ac] = angle2ampcont(sphire_total_phase_shift)
 					
@@ -502,7 +492,7 @@ def main():
 					if micrograph_dirname not in sphire_cter_dict:
 						sphire_cter_dict[micrograph_dirname] = {}
 					assert micrograph_dirname in sphire_cter_dict
-					
+
 					if micrograph_basename not in sphire_cter_dict[micrograph_dirname]:
 						sphire_cter_dict[micrograph_dirname][micrograph_basename] = [sphire_cter_entry]
 					else:
@@ -835,25 +825,12 @@ def main():
 				sphire_cter_stats[idx_cter_sd_def] = sd
 				if avg != 0.0:
 					sphire_cter_stats[idx_cter_cv_def] = sd / avg * 100 # use percentage
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_cs])
-				sphire_cter_stats[idx_cter_cs] = avg
-				assert (sd <= 1.0e-7)
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_vol])
-				sphire_cter_stats[idx_cter_vol] = avg
-				if sd > 1.0e-7:
-					print ('sphire_cter_table[idx_cter_vol]', sphire_cter_table[idx_cter_vol])
-					print ('avg, sd, min, max', avg, sd, min, max)
-				assert (sd <= 1.0e-7)
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_apix])
-				sphire_cter_stats[idx_cter_apix] = avg
-				assert (sd <= 1.0e-7)
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_bfactor])
-				sphire_cter_stats[idx_cter_bfactor] = avg
-				assert (sd <= 1.0e-7)
+				# I removed a very awkward code which as far as I can tell was meant to assure that
+				#   all values on this list are identical.  I replaced it by proper python				
+				assert(len(set(sphire_cter_table[idx_cter_cs])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_vol])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_apix])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_bfactor])) == 1)
 				
 				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_total_ac])
 				sphire_cter_stats[idx_cter_total_ac] = avg
@@ -914,9 +891,11 @@ def main():
 							eman1_coordinate_x = sphire_coordinates[idx_ptcl_source_coord_x] - box_size//2
 							eman1_coordinate_y = sphire_coordinates[idx_ptcl_source_coord_y] - box_size//2
 							eman1_dummy = -1 # For 5th column of EMAN1 boxer format
-							file_coordinates.write('%6d %6d %6d %6d %6d\n' % (eman1_coordinate_x, eman1_coordinate_y, box_size, box_size, eman1_dummy))
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							file_coordinates.write('%6d %6d %6d %6d %6d\n' % (int(round(eman1_coordinate_x)), int(round(eman1_coordinate_y)), box_size, box_size, eman1_dummy))
 						else:
-							file_coordinates.write('%6d %6d\n' % (sphire_coordinates[idx_ptcl_source_coord_x], sphire_coordinates[idx_ptcl_source_coord_y]))
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							file_coordinates.write('%6d %6d\n' % (int(round(sphire_coordinates[idx_ptcl_source_coord_x])), int(round(sphire_coordinates[idx_ptcl_source_coord_y]))))
 				else:
 					assert relion_category_dict['helical'][idx_is_category_found] == True, '# Logical Error: helical category must be found always at this point of code.'
 					file_coordinates.write('#micrograph: %s\n'%(micrograph_basename))
@@ -1025,8 +1004,9 @@ def main():
 						for i_sphire_rebox_entry in range(n_sphire_rebox_entry):
 							line = ""
 							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_id])          # idx_params_mic_coord_id
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])           # idx_params_mic_coord_x
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_y])           # idx_params_mic_coord_y
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							line += " {:6d}".format(int(round(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])))           # idx_params_mic_coord_x
+							line += " {:6d}".format(int(round(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_y])))           # idx_params_mic_coord_y
 							line += " {:13.6f}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_resample_ratio]) # idx_params_mic_resample_ratio
 							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_def])                           # idx_params_ctf_defocus
 							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_cs])                            # idx_params_ctf_cs
