@@ -28,9 +28,136 @@ from __future__ import print_function
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
+import numpy
 
 from builtins import range
 from global_def import *
+import global_def
+import scipy.ndimage.morphology as snm
+import EMAN2_cppwrap
+
+
+def fill_soft_edge_kernel_mask(kernel_mask, length, mode):
+	"""
+	Get the soft edge kernel value at the specified position.
+	If the position is greater than the length, the value is zero.
+
+	Arguments:
+	position - Kernel position
+	length - Maximum edge width
+	mode - Soft edge mode: 'c' - cosine else gaussian
+
+	Returns:
+	Edge kernel value
+	"""
+	if mode.lower() == 'c':
+		numpy.add(0.5, numpy.multiply(0.5, numpy.cos(numpy.pi * kernel_mask / float(length), out=kernel_mask), out=kernel_mask), out=kernel_mask)
+	else:
+		Q = -4.605170185988091
+		numpy.exp(Q * (kernel_mask / float(length))**2, out=kernel_mask)
+
+
+def soft_edge(img, length, mode='c', do_approx=False):
+	"""
+	Add a soft edge mask to a 2D/3D image binary image.
+
+	Arguments:
+	img - Input 2D or 3D image
+	length - Length of the edge in pixel.
+	mode - Mode of the mask 'c' - cosine; 'g' - gaussian
+
+	Returns:
+	Expanded mask
+	"""
+	if isinstance(img, EMAN2_cppwrap.EMData):
+		img_data = EMAN2_cppwrap.EMNumPy.em2numpy(img)
+		return_object = EMAN2_cppwrap.EMData(*img_data.shape)
+		return_data = EMAN2_cppwrap.EMNumPy.em2numpy(return_object)
+		out_eman = True
+	else:
+		img_data = img
+		out_eman = False
+
+	if length <= 0:
+		return img.copy()
+
+	# Get the mask shape for the soft edge kernel
+	kernel_mask_dim = 2 * length + 1
+	dimension = len(img_data.shape)
+	mask_shape = tuple([kernel_mask_dim]*dimension)
+	if dimension not in (2, 3):
+		global_def.ERROR('morphology/soft_edge', 'Only 2D and 3D images are supported!', 1)
+
+	# Create the outline for the array by erosing it once.
+	# Pad the outline with the edge mask to avoid edge effects later.
+	outline = img_data - snm.binary_erosion(img_data)
+	outline = numpy.pad(outline, length + 1, mode='constant', constant_values=0)
+	outline_index = numpy.where(outline == 1)
+
+	# Fill the kernel with the soft edge values
+	edge_norm = length**2
+	cosine_falloff = 100
+	if dimension == 2:
+		x, y = numpy.ogrid[0:kernel_mask_dim, 0:kernel_mask_dim]
+		kernel_mask = numpy.sqrt(((x - length)**2 + (y - length)**2) / float(edge_norm))*cosine_falloff
+	elif dimension == 3:
+		x, y, z = numpy.ogrid[0:kernel_mask_dim, 0:kernel_mask_dim, 0:kernel_mask_dim]
+		kernel_mask = numpy.sqrt(((x - length)**2 + (y - length)**2 + (z - length)**2) / float(edge_norm))*cosine_falloff
+	else:
+		assert False
+
+	if do_approx:
+		numpy.add(kernel_mask, numpy.copysign(0.5, kernel_mask), kernel_mask)
+		numpy.trunc(kernel_mask, kernel_mask)
+	kernel_mask[kernel_mask >= cosine_falloff] = cosine_falloff
+	fill_soft_edge_kernel_mask(kernel_mask, cosine_falloff, mode)
+
+	# Replace the region around every outline pixel with the gaussian kernel.
+	if dimension == 2:
+		for x, y in zip(*outline_index):
+			x_start = x - length
+			x_stop = x + length + 1
+			y_start = y - length
+			y_stop = y + length + 1
+			mask_slice = outline[
+				x_start:x_stop,
+				y_start:y_stop,
+				]
+			numpy.maximum(kernel_mask, mask_slice, mask_slice)
+		outline = outline[
+			length+1:outline.shape[0]-length-1,
+			length+1:outline.shape[1]-length-1,
+			]
+	elif dimension == 3:
+		for x, y, z in zip(*outline_index):
+			x_start = x - length
+			x_stop = x + length + 1
+			y_start = y - length
+			y_stop = y + length + 1
+			z_start = z - length
+			z_stop = z + length + 1
+			mask_slice = outline[
+				x_start:x_stop,
+				y_start:y_stop,
+				z_start:z_stop,
+				]
+			numpy.maximum(kernel_mask, mask_slice, mask_slice)
+		outline = outline[
+			length+1:outline.shape[0]-length-1,
+			length+1:outline.shape[1]-length-1,
+			length+1:outline.shape[2]-length-1,
+			]
+	else:
+		assert False
+
+	# Return a EMData object if an EMData object was the input
+	combined_mask = numpy.maximum(img_data, outline)
+	if out_eman:
+		return_data[...] = combined_mask
+	else:
+		return_object = combined_mask
+	return return_object
+
 
 def binarize(img, minval = 0.0):
 	"""
@@ -1393,6 +1520,48 @@ def adaptive_mask(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_wi
 	mask = Util.get_biggest_cluster(binarize(vol, s1[0]))
 	for i in range(ndilation):   mask = dilation(mask)
 	mask = Util.soft_edge(mask, edge_width, mode)
+	return mask
+
+def adaptive_mask_scipy(vol, nsigma = 1.0, threshold = -9999.0, ndilation = 3, edge_width = 5, mode = "C", allow_disconnected=False, nerosion = 0, do_approx=False):
+	"""
+		Name
+			adaptive_mask - create a mask from a given image.
+		Input
+			img: input image
+			nsigma: value for initial thresholding of the image.
+		Output
+			mask: The mask will have values one, zero, with cosine smooth transition between two regions.
+	"""
+	from utilities  import model_circle
+	from morphology import binarize, dilation
+	nx = vol.get_xsize()
+	ny = vol.get_ysize()
+	nz = vol.get_zsize()
+	mc = model_circle(nx//2, nx, ny, nz) - model_circle(nx//3, nx, ny, nz)
+	s1 = Util.infomask(vol, mc, True) # flip true: find statistics under the mask (mask >0.5)
+	if threshold <= -9999.0:
+		# Use automatic mode
+		bin_threshold = s1[0] + s1[1] * nsigma
+		#s1 = [s1[0] + s1[1] * nsigma, s1[0], s1[1], nsigma]
+		# new s1[0] is calculated threshold for binarize
+	else: 
+		# use the user-provided threshold
+		bin_threshold = threshold
+		#if s1[1] != 0.0:
+		#	s1 = [threshold, s1[0], s1[1], (threshold - s1[0])/s1[1]] 
+		#else:
+		#	s1 = [threshold, s1[0], s1[1], 0.0]
+		# new s1[3] is calculated nsigma corresponding to user-provided threshold
+
+	mask = binarize(vol, bin_threshold)
+	if not allow_disconnected:
+		mask = Util.get_biggest_cluster(mask)
+	for i in range(ndilation):
+		mask = dilation(mask)
+	for i in range(nerosion):
+		mask = erosion(mask)
+	if edge_width > 0:
+		mask = soft_edge(mask, edge_width, mode, do_approx)
 	return mask
 
 '''
