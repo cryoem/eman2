@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
 # sxgui_unblur for analyzing drift parameters made by Unblur and MotionCor2
-# Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Author (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Copyright (C) 2016 Max planck institute for molecular physiology, Dortmund
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -4412,7 +4413,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         about.setText("""
             sxgui_drift for analyzing drift parameters
             made by Unblur
-            Copyright (C) 2016  Markus Stabrin
+            Author 2016  Markus Stabrin
             (markus.stabrin@mpi-dortmund.mpg.de)
 
             This software is issued under a joint
