@@ -85,7 +85,7 @@ def parse_command_line():
 		)
 	group_filter.add_argument(
 		'--low_pass_filter_falloff',
-		'--flf',
+		'--aa',
 		type=float,
 		default=0.01,
 		action=NotSmallerZeroAction,
