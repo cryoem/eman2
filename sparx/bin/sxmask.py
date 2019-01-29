@@ -158,10 +158,10 @@ def parse_command_line():
 		help='Type of the softened edge.'
 		)
 	group_mask.add_argument(
-		'--do_approximation',
+		'--do_old',
 		'--da',
 		action='store_true',
-		help='Approximate the soft edge values for each pixel instead of using the exact ones.'
+		help='Restore the old masking behaviour, which is a bit less smooth.'
 		)
 	group_mask.add_argument(
 		'--allow_disconnected',
@@ -281,10 +281,10 @@ def parse_command_line():
 		help='Type of the softened edge.'
 		)
 	group_mask.add_argument(
-		'--s_do_approximation',
+		'--s_do_old',
 		'--sda',
 		action='store_true',
-        help='Second mask: Approximate the soft edge values for each pixel instead of using the exact ones.'
+        help='Second mask: Restore the old masking behaviour, which is a bit less smooth.'
 		)
 	group_second_mask.add_argument(
 		'--s_allow_disconnected',
@@ -400,7 +400,7 @@ def main():
 		edge_width=command_args.edge_width,
 		allow_disconnected=command_args.allow_disconnected,
 		mode=mode,
-		do_approx=command_args.do_approximation,
+		do_approx=command_args.do_old,
 		)
 	mask.write_image(output_prefix + '_mask.hdf')
 
@@ -464,7 +464,7 @@ def main():
 			edge_width=command_args.s_edge_width,
 			allow_disconnected=command_args.s_allow_disconnected,
 			mode=mode,
-			do_approx=command_args.s_do_approximation,
+			do_approx=command_args.s_do_old
 			)
 		if command_args.s_invert:
 			s_mask = 1 - s_mask

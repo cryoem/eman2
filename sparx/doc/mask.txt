@@ -8,7 +8,7 @@ Masking : Mask creation tool for 2D or 3D masks.
 
 Usage in command line
 
-  sxmask.py  input_volume  output_directory  --prefix=PREFIX  --low_pass_filter_resolution=LOW_PASS_FILTER_RESOLUTION  --low_pass_filter_falloff=LOW_PASS_FILTER_FALLOFF  --pixel_size=PIXEL_SIZE  --threshold=THRESHOLD --nsigma=NSIGMA  --mol_mass=MOL_MASS  --ndilation=NDILATION  --nerosion=NEROSION  --edge_width=EDGE_WIDTH  --edge_type=EDGE_TYPE  --do_approximation --allow_disconnected  --second_mask=SECOND_MASK  --second_mask_shape=SECOND_MASK_SHAPE  --s_radius=S_RADIUS  --s_nx=S_NX  --s_ny=S_NY  --s_nz=S_NZ  --s_threshold=THRESHOLD --s_nsigma=NSIGMA  --s_mol_mass=MOL_MASS  --s_ndilation=NDILATION  --s_nerosion=NEROSION  --s_edge_width=EDGE_WIDTH  --s_edge_type=EDGE_TYPE  --s_do_approximation  --s_allow_disconnected  --s_invert=S_INVERT
+  sxmask.py  input_volume  output_directory  --prefix=PREFIX  --low_pass_filter_resolution=LOW_PASS_FILTER_RESOLUTION  --low_pass_filter_falloff=LOW_PASS_FILTER_FALLOFF  --pixel_size=PIXEL_SIZE  --threshold=THRESHOLD --nsigma=NSIGMA  --mol_mass=MOL_MASS  --ndilation=NDILATION  --nerosion=NEROSION  --edge_width=EDGE_WIDTH  --edge_type=EDGE_TYPE  --do_old --allow_disconnected  --second_mask=SECOND_MASK  --second_mask_shape=SECOND_MASK_SHAPE  --s_radius=S_RADIUS  --s_nx=S_NX  --s_ny=S_NY  --s_nz=S_NZ  --s_threshold=THRESHOLD --s_nsigma=NSIGMA  --s_mol_mass=MOL_MASS  --s_ndilation=NDILATION  --s_nerosion=NEROSION  --s_edge_width=EDGE_WIDTH  --s_edge_type=EDGE_TYPE  --s_do_old  --s_allow_disconnected  --s_invert=S_INVERT
 
 \\
 ===== Typical usage =====
@@ -41,13 +41,13 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; %%--%%ndilation : Number of dilations : The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. One circle of dilation will add about 2 pixels to the mask. (default 3)
   ; %%--%%nerosion : Number of erosions : Number of times to erode binarized volume. One circle of erosion will remove about 2 pixels from the mask. (default 0)
   ; %%--%%edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. If the width is 0, a binary mask is returned. (default 5)
-  ; %%--%%edge_type : Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%edge_width!=0
-  ; %%--%%do_approximation : Approximate values: Approximate the values of the soft edge area instead of using the exact values. This will lead to a less smoothened mask, but will mirror the previous behaviour. (default False) : %%--%%edge_width!=0
+  ; %%--%%edge_type : Soft-edge type: The type of soft-edge. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%edge_width!=0
   ; %%--%%allow_disconnected : Allow disconnected regions : Allow disconnected region in the mask. (default False)
 
 
 \\
 === Advanced Parameters ===
+  ; %%--%%do_old : Old behaviour : Restore the old masking behaviour, which is a bit less smooth. (default False) : %%--%%edge_width!=0
   ; %%--%%low_pass_filter_resolution : Low pass filter resolution [A] : Low pass filter resolution in angstrom. If set, the volume will be filtered prior to create a mask. (default none)
   ; %%--%%low_pass_filter_falloff : Low pass filter falloff [1/Pixel] : Low pass filter falloff in absolute frequencies. If set, the volume will be filtered prior to create a mask. (default 0.01) : %%--%%low_pass_filter_resolution!=none
   ; %%--%%pixel_size : Pixel size [A/px] : Pixel size of the volume. Used for filtering. (default 1.0) : %%--%%low_pass_filter_resolution!=none
@@ -65,8 +65,8 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; %%--%%s_ndilation : Second - Number of dilations : The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. One round of erosion will add about 2 pixels to the mask (default 3) : %%--%%use_second_mask==True
   ; %%--%%s_nerosion : Second - Number of erosions : Number of times to erode binarized volume. One round of erosion will remove about 2 pixels from the mask (default 0) : %%--%%use_second_mask==True
   ; %%--%%s_edge_width : Second - Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking.(default 5) : %%--%%use_second_mask==True
-  ; %%--%%s_edge_type : Second - Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
-  ; %%--%%s_do_approximation : Second - Approximate values: Approximate the values of the soft edge area instead of using the exact values. This will lead to a less smoothened mask, but will mirror the previous behaviour. (default False) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
+  ; %%--%%s_edge_type : Second - Soft-edge type: The type of soft-edge for the 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
+  ; %%--%%s_do_old : Second - Old behaviour : Restore the old masking behaviour, which is a bit less smooth. (default False) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
   ; %%--%%s_allow_disconnected : Second - Allow disconnected regions : Allow disconnected region in the mask. (default False) : %%--%%use_second_mask==True
   ; %%--%%s_invert : Second - Invert masking : If True, the mask will remove everything that is inside instead of leaving it. (default False) : %%--%%use_second_mask==True
 
