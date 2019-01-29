@@ -3441,7 +3441,13 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 	float apix=(float)this_img->get_attr("apix_x");
 	int ny=this_img->get_ysize();
-
+	float preferori=params.set_default("wt_ori",-1.0);
+	if (to->has_attr("xform.curve")==false)
+		preferori=-1;
+	Transform *pfxf=0;
+	if (preferori>0){
+		pfxf=(Transform*) to->get_attr("xform.curve");
+	}
 //	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
 
 	vector<float> s_score(nsoln,0.0f);
@@ -3456,6 +3462,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	int lastss=24;
 	// We start with 32^3, 64^3 ...
 	for (int sexp=4; sexp<10; sexp++) {
+// 	for (int sexp=4; sexp<5; sexp++) {
 		int ss=pow(2.0,sexp);
 		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
 		if (ss==32) ss=48;		// 16 may be too small, but 32 takes too long...
@@ -3554,6 +3561,19 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 //					float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 					float sim=stt->cmp("ccc.tomo.thresh",small_to);
+					
+					
+					if (preferori>0){
+		
+						Transform tmp=Transform(t);
+						tmp.set_trans(0,0,0);
+						tmp.invert();
+						Vec3f p0=tmp.transform(0,0,1);
+						Vec3f p1=pfxf->transform(0,0,1);
+						float r=EMConsts::rad2deg * acos(p0*p1);
+						r=90-abs(r-90);
+						sim+=r*0.01*preferori;
+					}
 //					float sim=stt->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
 //					float sim=stt->cmp("fsc.tomo.auto",small_to);
 
@@ -3628,7 +3648,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						// phi continues to move independently. I believe this should produce a more monotonic energy surface
 						if (axis==0) upd[axname[2]]=-s_step[i*3+axis];
 
-						int r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd);
+						int r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, preferori, pfxf);
 
 						// If we fail, we reverse direction with a slightly smaller step and try that
 						// Whether this fails or not, we move on to the next axis
@@ -3636,7 +3656,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						else {
 							s_step[i*3+axis]*=-0.75;
 							upd[axname[axis]]=s_step[i*3+axis];
-							r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd);
+							r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, preferori, pfxf);
 							if (r) changed=1;
 						}
 						if (verbose>4) printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2],changed);
@@ -3708,6 +3728,19 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		}
 	}
 
+// 	if (preferori>0){
+// 		Transform tmp=Transform(s_xform[0]);
+// 		tmp.set_trans(0,0,0);
+// 		tmp.invert();
+// 		Vec3f p0=tmp.transform(0,0,1);
+// 		Vec3f p1=pfxf->transform(0,0,1);
+// 		float r=EMConsts::rad2deg * acos(p0*p1);
+// 		r=90-abs(r-90);
+// 		printf("%f\t%f\t%f\n", p0[0], p0[1], p0[2]);
+// 		printf("%f\t%f\t%f\n", p1[0], p1[1], p1[2]);
+// 		printf("%f\t%f\n\n", p0*p1, r);
+// 		
+// 	}
 
 	// initialize results
 	vector<Dict> solns;
@@ -3725,7 +3758,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 // This is just to prevent redundancy. It takes the existing solution vectors as arguments, an a proposed update for
 // vector i. It updates the vectors if the proposal makes an improvement, in which case it returns true
-bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const {
+bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, float preferori, Transform *pfxf) const {
 	Transform t;
 	Dict aap=s_xform[i].get_params("eman");
 	aap["tx"]=0;
@@ -3754,6 +3787,18 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 // 	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%4d %4d %4d\t%1.5g\t%1.5g %d (%d)",
 // 		float(aap["az"]),float(aap["alt"]),float(aap["phi"]),int(aap["tx"]),int(aap["ty"]),int(aap["tz"]),sim,s_score[i],int(sim<s_score[i]),ccf->get_ysize());
 
+	if (preferori>0){
+		
+		Transform tmp=Transform(t);
+		tmp.set_trans(0,0,0);
+		tmp.invert();
+		Vec3f p0=tmp.transform(0,0,1);
+		Vec3f p1=pfxf->transform(0,0,1);
+		float r=EMConsts::rad2deg * acos(p0*p1);
+		r=90-abs(r-90);
+		sim+=r*0.01*preferori;
+		
+	}
 	delete ccf;
 	// If the score is better than before, we update this particular best value
 	if (sim<s_score[i]) {

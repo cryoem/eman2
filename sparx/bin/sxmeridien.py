@@ -1600,7 +1600,7 @@ def calculate_2d_params_for_centering(kwargs):
 		# nx = int(nx*shrink_ratio + 0.5)
 
 		txrm = (nx - 2*(target_radius+1))//2
-		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, Blockdata["myid"])
+		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "2d prealignment",1, Blockdata["myid"])
 		if(txrm/nxrsteps>0):
 			tss = ""
 			txr = ""
@@ -9853,7 +9853,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			target_radius = options.target_radius
 			# target_nx = options.target_nx
 			center_method = options.center_method
-			if (radi < 1):  ERROR("Particle radius has to be provided!", "sxisac", 1, Blockdata["myid"])
+			if (radi < 1):  ERROR("Particle radius has to be provided!", "2d prealignment", 1, Blockdata["myid"])
 
 			nxrsteps = 4
 

@@ -44,6 +44,7 @@ def main():
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--wtori",type=float,help="Weight for using the prior orientation in the particle header. default is -1, i.e. not used.",default=-1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -93,7 +94,7 @@ def main():
 			gd=" --goldcontinue".format(options.goldstandard)
 			
 		#curres=0
-		cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --maxres {} {} ".format(ptcls, ref,  options.threads, options.path, itr, options.sym, 0, gd)
+		cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --wtori {} {}".format(ptcls, ref,  options.threads, options.path, itr, options.sym, options.wtori, gd)
 		
 		#### in case e2spt_align get segfault....
 		ret=1

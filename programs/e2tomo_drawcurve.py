@@ -27,11 +27,11 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
-	img = EMData(args[0])
+	
 
 	app = EMApp()
 
-	drawer=EMDrawWindow(app,options,datafile=img)
+	drawer=EMDrawWindow(app,options,datafile=args[0])
 
 
 	drawer.show()
@@ -43,7 +43,7 @@ def run(cmd):
 	launch_childprocess(cmd)
 
 class Contour(EMShape):
-	def __init__(self, img=None, points=[]):
+	def __init__(self, img, points):
 		self.points=points
 		self.isanimated = False
 		self.shape=["scr_contour",0]
@@ -97,7 +97,7 @@ class Contour(EMShape):
 				dst[-1]=d1*3
 
 				mi=np.argmin(dst)
-				print(mi, len(pts))
+				#print(mi, len(pts))
 				#ci=pts[mi, 3]
 				if mi==0:
 					pts=np.vstack([ np.append(newpt, ci), pts])
@@ -114,7 +114,7 @@ class Contour(EMShape):
 
 			dmat=scipydist.squareform(scipydist.pdist(pp[:,:3]))
 			dmat+=np.eye(len(dmat))*thr
-			if len(pp)>3:
+			if len(pp)>=3:
 				niter=2000
 			else:
 				niter=0
@@ -124,10 +124,12 @@ class Contour(EMShape):
 			nochange=0
 			for k in range(niter):
 				p0=path.copy()
-				i0,i1= np.sort(np.random.randint(0,len(pp), 2))
+				i0,i1= np.sort(np.random.randint(0,len(pp)+1, 2))
 				if abs(i0-i1)%len(path)<2: continue
-				path= np.hstack([path[:i0+1], path[i0+1:i1+1][::-1], path[i1+1:]])
+				path= np.hstack([path[:i0], path[i0:i1][::-1], path[i1:]])
 				d=calc_dist(path)
+				#print(i0, i1, d, dst)
+				#print(path)
 				if d>=dst:
 					path=p0
 					nochange+=1
@@ -151,9 +153,7 @@ class Contour(EMShape):
 			self.select=ci
 			self.points.append([newpt[0], newpt[1], zpos, ci])
 
-		np.savetxt("pts.save", np.array(self.points, dtype=float), fmt='%.1f')
-		pts=np.array(self.points)
-		numpy2pdb(data=pts[:,:3], fname="pts_save.pdb", chainid=pts[:,3])
+
 
 	def next_slice(self):
 		pts=np.array(self.points)
@@ -162,7 +162,7 @@ class Contour(EMShape):
 		if pts[ii,2]==mi: return
 		last=pts[ii,2]
 		pts=pts[pts[:,2]==last]
-		print(mi, last, pts.shape)
+		#print(mi, last, pts.shape)
 		img=self.image.data.numpy()
 
 		vec=[]
@@ -212,7 +212,7 @@ class Contour(EMShape):
 
 		cid=np.unique([p[3] for p in self.points])
 		for ci in cid:
-			#### draw line		s
+			#### draw lines
 			pts=np.array([[p[0], p[1], p[2]] for p in self.points if ci==p[3]])
 			dzs=pts[:,2]-zpos
 			lns=[]
@@ -276,27 +276,80 @@ class EMDrawWindow(QtGui.QMainWindow):
 		self.imgview = EMImage2DWidget()
 		self.setCentralWidget(QtGui.QWidget())
 		self.gbl = QtGui.QGridLayout(self.centralWidget())
+		
+		
+		
+		self.lb_lines=QtGui.QLabel("")
+		self.lb_lines.setWordWrap(True)
+		self.gbl.addWidget(self.lb_lines, 0,0,1,2)
+		
+		
+		self.bt_showimg=QtGui.QPushButton("Show tomogram")
+		self.bt_showimg.setToolTip("Show tomogram window")
+		self.gbl.addWidget(self.bt_showimg, 1,0,1,2)
+		
+		self.bt_savepdb=QtGui.QPushButton("Save PDB")
+		self.bt_savepdb.setToolTip("Save curves as PDB")
+		self.gbl.addWidget(self.bt_savepdb, 2,0,1,2)
+		
+		self.bt_interp=QtGui.QPushButton("Interpolate")
+		self.bt_interp.setToolTip("Interpolate points")
+		self.gbl.addWidget(self.bt_interp, 3,0,1,1)
+		
+		self.tx_interp=QtGui.QLineEdit(self)
+		self.tx_interp.setText("20")
+		self.gbl.addWidget(self.tx_interp, 3,1,1,1)
+		
+		
+		
+		self.bt_showimg.clicked[bool].connect(self.show_tomo)
+		self.bt_savepdb.clicked[bool].connect(self.save_pdb)
+		self.bt_interp.clicked[bool].connect(self.interp_points)
 
-		self.gbl.addWidget(self.imgview,0,0)
+		#self.gbl.addWidget(self.imgview,0,0)
 		self.options=options
 		self.app=weakref.ref(application)
-
+		
+		
+		
 		self.datafile=datafile
-		self.imgview.set_data(datafile)
+		self.data=EMData(datafile)
+		self.imgview.list_idx=self.data["nz"]//2
+		self.imgview.set_data(self.data)
+		self.imgview.show()
+		self.infofile=info_name(datafile)
 
-		#self.all_shapes=[]
-		#self.all_points=[]
+
+		
 		pts=[]
+		self.apix_scale=0
 		if options.load:
 			pts=np.loadtxt(options.load).tolist()
-
-		self.contour=Contour(img=self.imgview, points=pts)
+		else:
+			js=js_open_dict(self.infofile)
+			if "apix_unbin" in js:
+				apix_cur=apix=self.data["apix_x"]
+				apix_unbin=js["apix_unbin"]
+				self.apix_scale=apix_cur/apix_unbin
+				self.tomocenter= np.array([self.data["nx"],self.data["ny"],self.data["nz"]])/2
+			if js.has_key("curves") and len(js["curves"])>0:
+				pts=np.array(js["curves"]).copy()
+				pts[:,:3]=pts[:,:3]/self.apix_scale + self.tomocenter
+				pts=pts.tolist()
+					
+			else:
+				pts=[]
+			js.close()
+			
+		
+		self.contour=Contour(img=self.imgview, points=pts )
 		self.shape_index = 0
 		self.imgview.shapes = {0:self.contour}
 
 
 		self.imgview.mouseup.connect(self.on_mouseup)
 		self.imgview.keypress.connect(self.key_press)
+		self.update_label()
 
 		glEnable(GL_POINT_SMOOTH)
 		glEnable( GL_LINE_SMOOTH );
@@ -304,23 +357,79 @@ class EMDrawWindow(QtGui.QMainWindow):
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	#def update_view(self):
-		#self.contour.cur_z=self.imgview.list_idx
-		#print self.imgview.list_idx
-		#pts=Contour(self.all_points)
-		#shps={0:pts}
+	def update_label(self):
+		pts=np.array(self.contour.points)
+		if len(pts)==0:
+			return
+		lb=np.unique(pts[:,3])
+		txt="{:d} curves\n".format(len(lb))
+		txt+="{:d} points\n".format(len(pts))
+		txt+='   '+','.join([str(np.sum(pts[:,3]==i)) for i in lb])
+		self.lb_lines.setText(txt)
 
 
-		#self.imgview.shapes=shps
-		#self.imgview.shapechange=1
-		#self.imgview.updateGL()
-
+	def show_tomo(self):
+		self.imgview.show()
+		
+	def save_pdb(self):
+		pts=np.array(self.contour.points)
+		if len(pts)==0:
+			return
+		
+		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save PDB', os.getcwd(), "(*.pdb)")
+		numpy2pdb(data=pts[:,:3], fname=filename, chainid=pts[:,3])
+	
+	def interp_points(self):
+		pts=np.array(self.contour.points)
+		if len(pts)==0:
+			return
+		
+		try:
+			density=float(self.tx_interp.text())
+			print("Interpolate to one points per {:.1f} pixel...".format(density))
+		except:
+			return
+			
+		pts_intp=[]
+		kk=0
+		for li in np.unique(pts[:,3]):
+			pt=pts[pts[:,3]==li][:,:3].copy()
+			pt=pt[np.append(True, np.linalg.norm(np.diff(pt, axis=0), axis=1)>0.1)]
+			ln=np.linalg.norm(pt[-1]-pt[0])
+			#     print np.round(ln)//2
+			if len(pt)<2: continue
+			#print len(pt), ln
+			ipt=interp_points(pt, npt=np.round(ln)//density)
+			
+			pts_intp.append(np.hstack([ipt, kk+np.zeros((len(ipt), 1))]))
+			kk+=1
+		
+		pts_intp=np.vstack(pts_intp)
+		self.contour.points=pts_intp.tolist()
+		self.imgview.shapechange=1
+		self.imgview.updateGL()
+		self.update_label()
+		self.save_points()
+		
+	def save_points(self):
+		js=js_open_dict(self.infofile)
+		if self.apix_scale==0:
+			js["curves"]=self.contour.points
+		else:
+			pts=np.array(self.contour.points)
+			if len(pts)>0:
+				pts[:,:3]=(pts[:,:3]- self.tomocenter) * self.apix_scale
+			js["curves"]=pts.tolist()
+			
+		js.close()
+		
+		
 	def key_press(self, event):
 		return
-		if event.key()==Qt.Key_Shift:
-			self.contour.next_slice()
-			self.imgview.shapechange=1
-			self.imgview.updateGL()
+		#if event.key()==Qt.Key_Shift:
+			#self.contour.next_slice()
+			#self.imgview.shapechange=1
+			#self.imgview.updateGL()
 
 	def on_mouseup(self, event):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))
@@ -349,7 +458,7 @@ class EMDrawWindow(QtGui.QMainWindow):
 				if res[ii]<20:
 					#### select contour
 					ci=self.contour.points[ii][3]
-					print('select contour {}'.format(ci))
+					print('select contour {:d}'.format(int(ci)))
 					self.contour.select=ci
 				else:
 					print('new contour')
@@ -360,7 +469,12 @@ class EMDrawWindow(QtGui.QMainWindow):
 			#### add point
 			self.contour.add_point([x, y]) #, self.imgview.list_idx
 		self.imgview.shapechange=1
+		self.update_label()
 		self.imgview.updateGL()
+		self.save_points()
+		
+	def closeEvent(self, event):
+		self.imgview.close()
 
 if __name__ == '__main__':
 	main()

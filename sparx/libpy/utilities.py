@@ -1750,14 +1750,15 @@ def read_spider_doc(fnam):
 			line = inf.readline()
 	return data
 
-def chooseformat(t):
-    ee = "%12.5f"%t
-    if(len(ee)>12):  return "e"
-    df1 = float(ee)
-    df2 = float("%12.4e"%t)
-    if(abs(t-df1) <= abs(t-df2)):  ouo = "f"
-    else: ouo = "e"
-    return ouo
+def chooseformat(t, form_float = "  %12.5f"):
+	from string import  replace, strip, split, atoi
+	e_form = replace(form_float,"f","e")
+	ee = strip(form_float)%t
+	if(len(ee)>atoi(split( strip(form_float),"." )[0][1:] )):  return e_form
+	df1 = float(ee)
+	df2 = float(strip(e_form)%t)
+	if(abs(t-df1) <= abs(t-df2)):  return form_float
+	else: return e_form
 
 def read_text_row(fnam, format="", skip=";"):
 	"""
@@ -1803,7 +1804,7 @@ def read_text_row(fnam, format="", skip=";"):
 	return data
 
 
-def write_text_row(data, file_name):
+def write_text_row(data, file_name, form_float = "  %12.5f", form_int = "  %12d"):
 	"""
 	   Write to an ASCII file a list of lists containing floats.
 
@@ -1813,6 +1814,8 @@ def write_text_row(data, file_name):
 		 If only one list is given, the file will contain one line
 	"""
 	import types
+	from string import find
+
 	outf = open(file_name, "w")
 	if (type(data[0]) == list):
 		# It is a list of lists
@@ -1820,11 +1823,11 @@ def write_text_row(data, file_name):
 			for j in range(len(data[i])):
 				tpt = data[i][j]
 				qtp = type(tpt)
-				if qtp == int:		outf.write("  %12d"%tpt)
+				if qtp == int:		outf.write(form_int%tpt)
 				elif qtp == float:
-					frmt = chooseformat(tpt)
-					if( frmt == "f" ):			outf.write("  %12.5f"%tpt)
-					else:						outf.write("  %12.5e"%tpt)
+					frmt = chooseformat(tpt, form_float)
+					if( find(frmt,"e") < 0 ):	outf.write(frmt%tpt)
+					else:						outf.write(frmt%tpt)
 				else:                   		outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
@@ -1832,11 +1835,11 @@ def write_text_row(data, file_name):
 		for j in range(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
-			if qtp == int :			outf.write("  %12d\n"%tpt)
+			if qtp == int :			outf.write(form_int%tpt+"\n")
 			elif qtp == float:
-				frmt = chooseformat(tpt)
-				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
-				else:							outf.write("  %12.5e\n"%tpt)
+				frmt = chooseformat(tpt, form_float)
+				if( find(frmt,"e") < 0 ):		outf.write(frmt%tpt+"\n")
+				else:							outf.write(frmt%tpt+"\n")
 			else:								outf.write("  %s\n"%tpt)
 	outf.flush()
 	outf.close()
@@ -1876,7 +1879,7 @@ def read_text_file(file_name, ncol = 0):
 		line = inf.readline()
 	return data
 
-def write_text_file(data, file_name):
+def write_text_file(data, file_name, form_float = "  %12.5f", form_int = "  %12d"):
 	"""
 	   Write to an ASCII file a list of lists containing floats.
 
@@ -1885,6 +1888,7 @@ def write_text_file(data, file_name):
 	         First list will be written as a first column, second as a second, and so on...
 		 If only one list is given, the file will contain one column
 	"""
+	from string import find
 
 	if data == []:
 		outf = open(file_name, "w")
@@ -1899,23 +1903,23 @@ def write_text_file(data, file_name):
 			for j in range(len(data)):
 				tpt = data[j][i]
 				qtp = type(tpt)
-				if qtp == int:			outf.write("  %12d"%tpt)
+				if qtp == int:			outf.write(form_int%tpt)
 				elif qtp == float:
-					frmt = chooseformat(tpt)
-					if( frmt == "f" ):				outf.write("  %12.5f"%tpt)
-					else:							outf.write("  %12.5e"%tpt)
-				else:                   			outf.write("  %s"%tpt)
+					frmt = chooseformat(tpt, form_float)
+					if( find(frmt,"e") < 0 ):	outf.write(frmt%tpt)
+					else:						outf.write(frmt%tpt)
+				else:                   		outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
 		for j in range(len(data)):
 			tpt = data[j]
 			qtp = type(tpt)
-			if qtp == int :			outf.write("  %12d\n"%tpt)
+			if qtp == int :			outf.write(form_int%tpt+"\n")
 			elif qtp == float:
-				frmt = chooseformat(tpt)
-				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
-				else:							outf.write("  %12.5e\n"%tpt)
+				frmt = chooseformat(tpt, form_float)
+				if( find(frmt,"e") < 0 ):		outf.write(frmt%tpt+"\n")
+				else:							outf.write(frmt%tpt+"\n")
 			else:                   			outf.write("  %s\n"%tpt)
 	outf.close()
 
@@ -4838,7 +4842,7 @@ def findall(value, L, start=0):
 			i = L.index(value, i)
 			positions.append(i)
 		except:
-			pass
+			break
 	return positions
 
 """

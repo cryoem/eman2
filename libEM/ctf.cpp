@@ -151,7 +151,7 @@ vector<float> EMAN1Ctf::to_vector() const
 string EMAN1Ctf::to_string() const
 {
 	char ctf[1024];
-	sprintf(ctf, "O%1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g",
+	sprintf(ctf, "O%1.10g %1.10g %1.10g %1.10g %1.10g %1.10g %1.10g %1.10g %1.10g %1.10g %1.10g",
 			-defocus, bfactor/4.0, amplitude, ampcont/100.0, noise1, noise2, noise3, noise4, voltage, cs,
 			apix);
 
@@ -576,7 +576,7 @@ int EMAN2Ctf::from_string(const string & ctf)
 string EMAN2Ctf::to_string() const
 {
 	char ctf[256];
-	sprintf(ctf, "E%1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %1.4g %d",
+	sprintf(ctf, "E%1.10g %1.10g %1.10g %1.10g %1.10g %1.10g %1.10g %1.10g %1.10g %d",
 			defocus, dfdiff, dfang, bfactor, ampcont, voltage, cs, apix, dsbg,(int)background.size());
 
 	string ret=ctf;

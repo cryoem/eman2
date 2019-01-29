@@ -933,7 +933,8 @@ def main():
 	elif options.adaptive_mask:
 		print('DEPRECATION WARNING! This function is deprecated and no longer maintained. Please use sxmask.py instead')
 		from utilities import get_im
-		from morphology import adaptive_mask, adaptive_mask_scipy
+		from morphology import adaptive_mask
+		from filter import filt_tanl
 		nargs = len(args)
 		if nargs ==0:
 			print(" Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold.")
@@ -948,7 +949,7 @@ def main():
 		if nargs == 2:  mask_file_name = args[1] # args[1]: output 3D mask file path
 		else:           mask_file_name = "adaptive_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
 
-		if( options.fl > 0.0 ):  inputvol =filt_tanl(inputvol,options.fl/option.pixel_size, options.aa)
+		if( options.fl > 0.0 ):  inputvol =filt_tanl(inputvol, options.pixel_size/options.fl, options.aa)
 		if( options.mol_mass> 0.0 ): density_threshold = inputvol.find_3d_threshold(options.mol_mass, options.pixel_size)
 		else: density_threshold = options.threshold
 		if options.edge_type == "cosine": mode = "C"
@@ -1085,7 +1086,7 @@ def main():
 					log_main.add("Low-pass filter ff %   aa  %f"%(options.fl, options.aa))
 					e1 =filt_tanl(e1,options.fl, options.aa)
 				elif options.fl > 0.5:
-					e1 =filt_tanl(e1,options.fl/option.pixel_size, options.aa)
+					e1 =filt_tanl(e1, options.pixel_size/options.fl, options.aa)
 				e1.write_image(options.output)
 
 		else: # 3D case High pass filter should always come along with low-pass filter. 
@@ -1188,7 +1189,7 @@ def main():
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
 					log_main.add("Options.threshold, options.ndilation, options.edge_width %f %5.2f %5.2f"%(options.threshold, options.ndilation, options.edge_width))
-					from morphology import adaptive_mask, adaptive_mask_scipy
+					from morphology import adaptive_mask_scipy
 					if single_map:
 						input_vol_mask = map1
 					else:
@@ -1573,10 +1574,6 @@ def main():
 							map1   = filt_tanl(map1, options.pixel_size/options.fl, min(options.aa,.1))
 							cutoff = options.fl
 						else:
-							"""
-							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
-							cutoff = options.pixel_size/options.fl
-							"""
 							ERROR("Incorrect low-pass filter value, it should be in Angstroms", "combinemaps", 1)
 						log_main.add("Low-pass filter to user provided %f[A]"%cutoff)
 					

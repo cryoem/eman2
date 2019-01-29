@@ -1,6 +1,8 @@
 call %PREFIX%\Scripts\activate.bat
 
-conda.exe info -a
-conda.exe list
+mkdir %PREFIX%\install_logs
 
-conda.exe install eman-deps=13.2 -c cryoem -c defaults -c conda-forge -y
+conda.exe info -a > %PREFIX%\install_logs\info_log.txt 2>&1
+conda.exe list    > %PREFIX%\install_logs\list_log.txt 2>&1
+
+conda.exe install eman-deps=13.2 -c cryoem -c defaults -c conda-forge -y > %PREFIX%\install_logs\install_log.txt 2>&1
