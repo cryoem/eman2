@@ -451,9 +451,9 @@ def main():
 		else:
 			assert False
 	elif command_args.second_mask_shape is not None:
-		nx = mask.get_xsize()
-		ny = mask.get_ysize()
-		nz = mask.get_zsize()
+		nx = mask_first.get_xsize()
+		ny = mask_first.get_ysize()
+		nz = mask_first.get_zsize()
 		if command_args.second_mask_shape == 'cube':
 			s_nx = command_args.s_nx
 			s_ny = command_args.s_ny
