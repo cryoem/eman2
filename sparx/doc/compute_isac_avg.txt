@@ -37,13 +37,13 @@ There are four methods to adjust the power spectrum of resultant average images,
   ; %%--%%output_dir : Output directory: The automatically-created output directory will contain results. By default, the program uses sharpen_DATA_AND_TIME for the name. If this is the same as ISAC2 run directory, the program automatically creates sharpen subdirectory under the ISAC2 run directory. (default none)
   ; %%--%%pixel_size : Pixel size [A]: The pixel size of particle images in input particle stack for the associated ISAC2 run. Use 1.0 in case of negative stain data. (default -1.0)
   ; %%--%%radius : Particle radius [Pixels]: There is no default radius. (default -1)
-  ; %%--%%pw_adjustment : Power spectrum adjustment method: Specify the method for the power spectrum (PWS) adjustment of 2-D averages to enhance averages. ='analytical_model' adjusts PWS to an analytic model; ='bfactor' adjusts PWS using B-factor; ='FILE_PATH' adjusts PWS to rotationally averaged 1D power spectrum stored in the text file; ='no_adjustment' skips adjustment. (default analytical_model)
-  ; %%--%%fl : Low-pass filter frequency [1/Pixel]: Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC2 resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). (default -1.0)
   ; %%--%%noctf : CTF correction: Indicate if full CTF correction should be applied or not. Always use the CTF correction for cryo data, but not for negative stained data. By default, do full CTF correction. (default False question reversed in GUI) 
-  ; %%--%%local_alignment : Local alignment: Indicate if local alignment should be applied or not. (default False value reversed in GUI)
 
 \\
 === Advanced Parameters ===
+  ; %%--%%local_alignment : Local alignment: Indicate if local alignment should be applied or not. (default False value reversed in GUI)
+  ; %%--%%fl : Low-pass filter frequency [1/Pixel]: Cutoff frequency of low-pass filter. =-1.0, do not apply the low-pass filter; =0.0, apply low pass filter to initial ISAC2 resolution; =1.0, to resolution after local alignment; else use user-provided cutoff in absolute frequency (>0.0 and <=0.45). (default -1.0)
+  ; %%--%%pw_adjustment : Power spectrum adjustment method: Specify the method for the power spectrum (PWS) adjustment of 2-D averages to enhance averages. ='analytical_model' adjusts PWS to an analytic model; ='bfactor' adjusts PWS using B-factor; ='FILE_PATH' adjusts PWS to rotationally averaged 1D power spectrum stored in the text file; ='no_adjustment' skips adjustment. (default analytical_model)
   ; %%--%%B_start : Lower bound for B-factor estimation [A]: Lower resolution bound of power spectrum for B-factor estimation. Specific to adjust to B-factor method. (default 45.0)
   ; %%--%%Bfactor : Use ad-hoc B-factor [A^2]: Skip the automatic estimation and use user-provided ad-hoc B-factor (e.g. 25.0[A^2]) for the enhancement. By default, the program automatically estimates B-factor. Specific to adjust to B-factor method. (default -1.0)
 
