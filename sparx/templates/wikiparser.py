@@ -301,6 +301,8 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
+	elif sxcmd.name == "sxmask":
+		sxcmd.token_dict["output_directory"].type = "dir"
 	elif sxcmd.name == "sxrviper":
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")

@@ -8,7 +8,7 @@ Masking : Mask creation tool for 2D or 3D masks.
 
 Usage in command line
 
-  sxmask.py  input_volume  output_directory  --prefix=PREFIX  --low_pass_filter_resolution=LOW_PASS_FILTER_RESOLUTION  --low_pass_filter_falloff=LOW_PASS_FILTER_FALLOFF  --pixel_size=PIXEL_SIZE  --threshold=THRESHOLD --nsigma=NSIGMA  --mol_mass=MOL_MASS  --ndilation=NDILATION  --nerosion=NEROSION  --edge_width=EDGE_WIDTH  --edge_type=EDGE_TYPE  --do_old --allow_disconnected  --second_mask=SECOND_MASK  --second_mask_shape=SECOND_MASK_SHAPE  --s_radius=S_RADIUS  --s_nx=S_NX  --s_ny=S_NY  --s_nz=S_NZ  --s_threshold=THRESHOLD --s_nsigma=NSIGMA  --s_mol_mass=MOL_MASS  --s_ndilation=NDILATION  --s_nerosion=NEROSION  --s_edge_width=EDGE_WIDTH  --s_edge_type=EDGE_TYPE  --s_do_old  --s_allow_disconnected  --s_invert=S_INVERT
+  sxmask.py  input_volume  output_directory  --prefix=PREFIX  --override  --low_pass_filter_resolution=LOW_PASS_FILTER_RESOLUTION  --low_pass_filter_falloff=LOW_PASS_FILTER_FALLOFF  --pixel_size=PIXEL_SIZE  --threshold=THRESHOLD --nsigma=NSIGMA  --mol_mass=MOL_MASS  --ndilation=NDILATION  --nerosion=NEROSION  --edge_width=EDGE_WIDTH  --edge_type=EDGE_TYPE  --do_old --allow_disconnected  --second_mask=SECOND_MASK  --second_mask_shape=SECOND_MASK_SHAPE  --s_radius=S_RADIUS  --s_nx=S_NX  --s_ny=S_NY  --s_nz=S_NZ  --s_threshold=THRESHOLD --s_nsigma=NSIGMA  --s_mol_mass=MOL_MASS  --s_ndilation=NDILATION  --s_nerosion=NEROSION  --s_edge_width=EDGE_WIDTH  --s_edge_type=EDGE_TYPE  --s_do_old  --s_allow_disconnected  --s_invert=S_INVERT
 
 \\
 ===== Typical usage =====
@@ -33,7 +33,8 @@ Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the b
   ; input_volume : Input image : Path to the 2D image or 3D Volume (default required string)
   ; output_directory : Output directory : Output direcory path (default required string)
 
-  ; %%--%%prefix : Output prefix : Prefix of the produced files (default mask)
+  ; %%--%%prefix : Output prefix : Prefix of the produced files (default sxmask)
+  ; %%--%%override : Override outputs : Override the output mask in case it exists already. (default False)
   ; %%--%%use_mol_mass : Use molecular mass : GUI OPTION ONLY - Define if one want to use the molecular mass option as a masking threshold. (default False) : %%--%%threshold==none %%--%%nsigma==none
   ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. This is used to calculate the binarization threshold automatically. (default none) : %%--%%use_mol_mass==True
   ; %%--%%threshold : Binarization threshold: Defines the threshold used in the first step of the processing to generate a binary version of the input structure. If the value is lower-equal than the default, the option will be ignored and the threshold will be set according to nsigma method above. (default none) : %%--%%nsigma==none  %%--%%use_mol_mass==False
