@@ -323,7 +323,7 @@ def sanity_checks(command_args, input_vol):
 	if os.path.isfile(
 			os.path.join(
 				command_args.output_dir,
-				commands_args.prefix + '_mask.hdf'
+				command_args.prefix + '_mask.hdf'
 				)
 			):
 		if not command_args.override:
