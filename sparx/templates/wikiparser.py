@@ -301,6 +301,8 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
+	elif sxcmd.name == "sxmask":
+		sxcmd.token_dict["output_directory"].type = "dir"
 	elif sxcmd.name == "sxrviper":
 		assert(sxcmd.token_dict["stack"].key_base == "stack")
 		assert(sxcmd.token_dict["stack"].type == "bdb2d_stack")
@@ -1960,6 +1962,8 @@ def create_sxcmd_subconfig_utility_makevstack():
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "Specify path to input BDB stack file. "; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("list"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("exlist"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("step"); token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Create Virtual Stack", None, token_edit_list, sxsubcmd_mpi_support)
@@ -2310,6 +2314,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 ###	sxcmd_config_list.append(SXcmd_config("../doc/compute_isac_avg.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_beautifier_to_bfactor()))
 
 	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_utility_makevstack()))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 

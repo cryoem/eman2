@@ -70,11 +70,19 @@ def parse_command_line():
 	parser.add_argument(
 		'--prefix',
 		type=str,
-		default='mask',
+		default='sxmask',
 		help='Prefix for the produced files'
 		)
+	parser.add_argument(
+		'--override',
+		action='store_true',
+		help='Override existing files with the same output_dir/prefix combination.'
+		)
 
-	group_filter = parser.add_argument_group(title='Filter', description='Filter options. The filter is applied prior to masking.')
+	group_filter = parser.add_argument_group(
+		title='Filter',
+		description='Filter options. The filter is applied prior to masking.'
+		)
 	group_filter.add_argument(
 		'--low_pass_filter_resolution',
 		'--fl',
@@ -99,7 +107,10 @@ def parse_command_line():
 		help='Pixel size of the input volume. Used for filtering the volume.'
 		)
 
-	group_mask = parser.add_argument_group(title='Mask', description='Mask creation related options. If edge_width is 0, a binary mask is produced.')
+	group_mask = parser.add_argument_group(
+		title='Mask',
+		description='Mask creation related options. If edge_width is 0, a binary mask is produced.'
+		)
 	group_threshold = group_mask.add_mutually_exclusive_group(required=True)
 	group_threshold.add_argument(
 		'--threshold',
@@ -171,7 +182,10 @@ def parse_command_line():
 		help='Allow disconnected regions in the mask.'
 		)
 
-	group_second_mask = parser.add_argument_group(title='Second mask', description='Second mask creation related options. If edge_width is 0, a binary mask is produced. The second mask will be multiplied with the volume mask. If ')
+	group_second_mask = parser.add_argument_group(
+		title='Second mask',
+		description='Second mask creation related options. If edge_width is 0, a binary mask is produced. The second mask will be multiplied with the volume mask. If '
+		)
 	group_second_mask_mut = group_second_mask.add_mutually_exclusive_group()
 	group_second_mask_mut.add_argument(
 		'--second_mask',
@@ -306,6 +320,19 @@ def parse_command_line():
 
 def sanity_checks(command_args, input_vol):
 
+	if os.path.isfile(
+			os.path.join(
+				command_args.output_dir,
+				command_args.prefix + '_mask.hdf'
+				)
+			):
+		if not command_args.override:
+			global_def.ERROR(
+				'sxmask',
+				'Output mask already exists! Please provide the override option if you want to override the existing mask.',
+				1
+				)
+
 	if command_args.second_mask_shape in ('cylinder', 'sphere'):
 		nx = input_vol.get_xsize()
 		ny = input_vol.get_ysize()
@@ -317,6 +344,7 @@ def sanity_checks(command_args, input_vol):
 				'Provided radius is larger than input image dimensions!',
 				1
 				)
+
 	if command_args.second_mask_shape is not None:
 		nx = input_vol.get_xsize()
 		ny = input_vol.get_ysize()
@@ -356,7 +384,7 @@ def main():
 	except OSError:
 		print('Output directory already exists. No need to create it.')
 	else:
-		print('Create output directory.')
+		print('Created output directory.')
 	output_prefix = os.path.join(command_args.output_dir, command_args.prefix)
 
 	# Filter volume if specified
@@ -367,7 +395,7 @@ def main():
 			command_args.pixel_size / command_args.low_pass_filter_resolution,
 			command_args.low_pass_filter_falloff
 			)
-		input_vol.write_image(output_prefix + '_filtered.hdf')
+		input_vol.write_image(output_prefix + '_filtered_volume.hdf')
 	else:
 		print('Skip filter volume.')
 
@@ -391,7 +419,7 @@ def main():
 	else:
 		assert False
 
-	mask = morphology.adaptive_mask_scipy(
+	mask_first = morphology.adaptive_mask_scipy(
 		input_vol,
 		nsigma=nsigma,
 		threshold=density_threshold,
@@ -402,9 +430,8 @@ def main():
 		mode=mode,
 		do_approx=command_args.do_old,
 		)
-	mask.write_image(output_prefix + '_mask.hdf')
 
-	# Create a mask based on the filtered volume
+	# Create a second mask based on the filtered volume
 	s_mask = None
 	s_density_threshold = 1
 	s_nsigma = 1.0
@@ -413,7 +440,10 @@ def main():
 		density_threshold = -9999.0
 		nsigma = 1.0
 		if command_args.s_mol_mass:
-			s_density_threshold = input_vol.find_3d_threshold(command_args.s_mol_mass, command_args.s_pixel_size)
+			s_density_threshold = input_vol.find_3d_threshold(
+				command_args.s_mol_mass,
+				command_args.s_pixel_size
+				)
 		elif command_args.s_threshold:
 			s_density_threshold = command_args.s_threshold
 		elif command_args.s_nsigma:
@@ -421,9 +451,9 @@ def main():
 		else:
 			assert False
 	elif command_args.second_mask_shape is not None:
-		nx = mask.get_xsize()
-		ny = mask.get_ysize()
-		nz = mask.get_zsize()
+		nx = mask_first.get_xsize()
+		ny = mask_first.get_ysize()
+		nz = mask_first.get_zsize()
 		if command_args.second_mask_shape == 'cube':
 			s_nx = command_args.s_nx
 			s_ny = command_args.s_ny
@@ -468,9 +498,12 @@ def main():
 			)
 		if command_args.s_invert:
 			s_mask = 1 - s_mask
+		mask_first.write_image(output_prefix + '_mask_first.hdf')
 		s_mask.write_image(output_prefix + '_mask_second.hdf')
-		masked_combined = mask * s_mask
-		masked_combined.write_image(output_prefix + '_combined.hdf')
+		masked_combined = mask_first * s_mask
+		masked_combined.write_image(output_prefix + '_mask.hdf')
+	else:
+		mask_first.write_image(output_prefix + '_mask.hdf')
 
 
 if __name__ == '__main__':
