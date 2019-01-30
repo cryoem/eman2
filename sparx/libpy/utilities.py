@@ -1804,7 +1804,7 @@ def read_text_row(fnam, format="", skip=";"):
 	return data
 
 
-def write_text_row(data, file_name, form_float = "  %12.5f", form_int = "  %12d"):
+def write_text_row(data, file_name, form_float = "  %14.6f", form_int = "  %12d"):
 	"""
 	   Write to an ASCII file a list of lists containing floats.
 
@@ -1879,7 +1879,7 @@ def read_text_file(file_name, ncol = 0):
 		line = inf.readline()
 	return data
 
-def write_text_file(data, file_name, form_float = "  %12.5f", form_int = "  %12d"):
+def write_text_file(data, file_name, form_float = "  %14.6f", form_int = "  %12d"):
 	"""
 	   Write to an ASCII file a list of lists containing floats.
 
