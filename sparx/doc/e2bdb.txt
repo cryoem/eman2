@@ -93,12 +93,12 @@ vstack is a derived image stack. --restore will allow it to write the change bac
   ; %%--%%merge : Merge database contents: Merge the contents of bdb 2-N into bdb 1 (including bdb 1's contents). (default False)
   ; %%--%%makevstack : Output virtual image stack: Make a 'virtual' bdb image stack with the specified name from one or more other stacks. (default none)
   ; %%--%%appendvstack : Append to or create virtual image stack: Append to or create a virtual bdb image stack with its own metadata. (default none)
-  ; %%--%%list : Image selection file: Input selection text file containing a list of selected image IDs (or indexes of the data subset) to create a new virtual bdb image stack from an existed stack or virtual stack. (default none)
-  ; %%--%%exlist : Image exclusion file: Input exclusion text file containing a list of excluded image IDs (or indexes of the data subset) to create a new virtual bdb image stacks from an existed stack or virtual stack. (default none)
+  ; %%--%%list : Image selection file: Input selection text file containing a list of selected image IDs (or indexes of the data subset) to create a new virtual bdb image stack from an existed stack or virtual stack. (default none) : %%--%%exlist==none %%--%%step==0,1
+  ; %%--%%exlist : Image exclusion file: Input exclusion text file containing a list of excluded image IDs (or indexes of the data subset) to create a new virtual bdb image stacks from an existed stack or virtual stack. (default none) : %%--%%list==none %%--%%step==0,1
   ; %%--%%restore : Write changes in virtual stack back to original stack: Write changes in the derived virtual stack back to the original stack. (default none)
   ; %%--%%ppid : Set PID of parent process: Set the PID of the parent process, used for cross platform PPID. (default -1)
   ; %%--%%checkctf : Verifies CTF entry: Verify that all images in the file contain CTF information, and give some basic statistics. (default False)
-  ; %%--%%step : Processes only subset: Specify <init>,<step>[,<max>]. Process only a subset of the input data. For example, 0,2 would process only the even numbered particles. (default '0,1')
+  ; %%--%%step : Processes only subset: Specify <init>,<step>[,<max>]. Process only a subset of the input data. For example, 0,2 would process only the even numbered particles. (default 0,1) : %%--list%%==none %%--%%exlist==none
 
 \\
 === Advanced Parameters ===
