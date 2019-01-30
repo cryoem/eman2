@@ -30,6 +30,8 @@ this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 Place, Suite 330, Boston, MA  02111-1307 USA
 """
 
+#====================================================================[ import ]
+
 # compatibility
 from __future__ import print_function
 
@@ -106,7 +108,8 @@ NAME_OF_MAIN_DIR = "generation_"
 DIR_DELIM = os.sep
 
 def create_zero_group():
-    # select a subset of myids to be in subdivision
+
+    # select a subset of mpi ids to be in subdivision
     if( Blockdata["myid_on_node"] == 0 ): 
         submyids = [ Blockdata["myid"] ]
     else:  
@@ -258,7 +261,8 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
             images; entries formatted as [angle, sx, sy, mirror].
     """
 
-    #----------------------------------------------[ MPI related part of the code]
+    #------------------------------------------------------[ mpi related part of the code]
+
     number_of_proc = Blockdata["nproc"]
     myid = Blockdata["myid"]
     main_node = Blockdata["main_node"]
@@ -277,19 +281,21 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
         ERROR('Output directory %s for alignment parameters exists, please either change its name or delete it and restart the program'%ali_params_dir, "iter_isac", 1, myid)
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-    
-    if new: alimethod = "SHC"
-    else:   alimethod = ""
+    if new: 
+        alimethod = "SHC"
+    else:  
+        alimethod = ""
 
-    color = 0#Blockdata["Ycolor"]
-    key = Blockdata["myid"]#Blockdata["Ykey"]
-    group_comm = mpi.MPI_COMM_WORLD#Blockdata["Ygroup_comm"]
+    color = 0                        # Blockdata["Ycolor"]
+    key = Blockdata["myid"]          # Blockdata["Ykey"]
+    group_comm = mpi.MPI_COMM_WORLD  # Blockdata["Ygroup_comm"]
     group_main_node = 0
 
-    nx = alldata[0].get_xsize()
-    ndata = len(alldata)
-    data = [None]*ndata
+    nx     = alldata[0].get_xsize()
+    ndata  = len(alldata)
+    data   = [None]*ndata
     tdummy = Transform({"type":"2D"})
+
     for im in range(ndata):
         # This is the absolute ID, the only time we use it is
         # when setting the members of 4-way output. All other times, the id in 'members' is 
@@ -305,7 +311,8 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
         print("     We will process:  %d current images divided equally between %d groups"%(ndata, K))
         print("*************************************************************************************")
 
-    # ---------------------------------------------[ Generate random averages for each group ]
+    #------------------------------------------------------[ generate random averages for each group ]
+
     if key == group_main_node:
         refi = generate_random_averages(data, K, 9023)
     else:
@@ -314,8 +321,7 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
     for i in range(K):
         spx.bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
 
-    #  create d[K*ndata] matrix 
-
+    # create d[K*ndata] matrix 
     orgsize = K*ndata
 
     if( Blockdata["myid_on_node"] == 0 ): size = orgsize
@@ -332,7 +338,7 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
     d = d.reshape(orgsize)
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-    # ---------------------------------------------[ Generate inital averages ] 
+    #------------------------------------------------------[ Generate inital averages ] 
 
     refi = isac_MPI_pap(data, refi, d, maskfile=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
             maxit=maxit, isac_iter=init_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
@@ -344,7 +350,6 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
     # print "  AFTER FIRST isac_MPI_pap"
 
     ## broadcast current_refim to all nodes
-
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
     if myid == main_node:
@@ -352,11 +357,14 @@ def iter_isac_pap(alldata, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH,
         for i,im in enumerate(data):
             alpha, sx, sy, mirror, scale = spx.get_params2D(im)
             all_ali_params[i] = [alpha, sx, sy, mirror]
+
         print("****************************************************************************************************")
         print("*         Generation finished                 "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())+"                            *")
         print("****************************************************************************************************")
         return refi, all_ali_params
-    else:  return [], []
+
+    else:  
+        return [], []
 
 def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, maxit=30, isac_iter=10, CTF=False, snr=1.0, rand_seed=-1, color=0, comm=-1, stability=False, stab_ali=5, iter_reali=1, thld_err=1.732, FL=0.1, FH=0.3, FF=0.2, dst=90.0, method = ""):
     """
@@ -454,6 +462,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
     """
 
     #------------------------------------------------------[ initialize mpi ]
+
     if comm == -1: comm = mpi.MPI_COMM_WORLD    
 
     number_of_proc = mpi.mpi_comm_size(comm)
@@ -461,30 +470,40 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
     my_abs_id = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
     main_node = 0
 
-    #------------------------------------------------------[ initialization of the ring parameters]
+    #------------------------------------------------------[ initialize ]
 
-    first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(isac_iter)
+    first_ring = int(ir)
+    last_ring  = int(ou)
+    rstep      = int(rs)
+    max_iter   = int(isac_iter)
 
     if type(stack) == type(""):
-        #read all data
         print("  SHOULD NOT BE HERE")
         sys.exit()
         alldata = EMData.read_images(stack)
     else:
         alldata = stack
+
     nx = alldata[0].get_xsize()
     ny = alldata[0].get_ysize()
 
-    nima = len(alldata)   # no of images
-    #  Explicitly force all parameters to be zero on input
-    for im in range(nima):  spx.set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
+    nima = len(alldata)  # no of images
+
+    #  setall parameters to be zero on input
+    for im in range(nima):
+        spx.set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
 
     image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 
     if maskfile:
-        if type(maskfile) is bytes:  mask = get_image(maskfile)
-        else: mask = maskfile
-    else : mask = spx.model_circle(last_ring, nx, nx)
+        if type(maskfile) is bytes:
+            mask = get_image(maskfile)
+        else: 
+            mask = maskfile
+
+    else : 
+        mask = spx.model_circle(last_ring, nx, nx)
+
     if type(refim) == type(""):
         refi = EMData.read_images(refim)
     else:
@@ -494,7 +513,9 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
         #      However, later I made changes so refi is deleted from time to time.  All to be checked.
         # refi = refim
         refi = [None for i in range(len(refim))]
-        for i in range(len(refim)):  refi[i] = refim[i].copy()
+        for i in range(len(refim)):
+            refi[i] = refim[i].copy()
+
     numref = len(refi)
 
     # IMAGES ARE SQUARES! center is in SPIDER convention
@@ -508,22 +529,29 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
     numr = Numrinit(first_ring, last_ring, rstep, mode)    # calculates the necessary information for the 2D polar interpolation (finds the number of rings)
     wr = ringwe(numr, mode)   # Calculate ring weights for rotational alignment
 
-    if rand_seed > -1:      seed(rand_seed)
-    else:                   seed(randint(1,2000111222))
-    if myid != main_node:   jumpahead(17*myid + 12345)
+    if rand_seed > -1:
+        seed(rand_seed)
+    else:
+        seed(randint(1,2000111222))
+    if myid != main_node:   
+        jumpahead(17*myid + 12345)
 
     previous_agreement = 0.0
     previous_members = [None]*numref
-    for j in range(numref):  previous_members[j] = set()
+    for j in range(numref):
+        previous_members[j] = set()
 
     fl = FL
     Iter = -1
     main_iter = 0
     terminate = 0
     while( (main_iter < max_iter) and (terminate == 0) ):
+        
         Iter += 1
-        if my_abs_id == main_node: print("Iteration within isac_MPI Iter =>", Iter, "   main_iter = ", main_iter, " len data = ", image_end-image_start,"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
+        if my_abs_id == main_node: 
+            print("Iteration within isac_MPI Iter =>", Iter, "   main_iter = ", main_iter, " len data = ", image_end-image_start,"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
         mashi = cnx-ou-2
+        
         for j in range(numref):
             refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
             cimage = Util.Polar2Dm(refi[j] , cnx, cny, numr, mode)    # converting reference images to polar cordinates 
@@ -536,7 +564,8 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
         #  nima is the total number of images, not the one on this node, the latter is (image_end-image_start)
         #    d matrix required by EQ-Kmeans can be huge!!  PAP 01/17/2015
         #d = zeros(numref*nima, dtype=float32)
-        if( Blockdata["myid_on_node"] == 0 ): d.fill(0.0)
+        if( Blockdata["myid_on_node"] == 0 ): 
+            d.fill(0.0)
 
         #--------------------------------------------------[ compute the 2D alignment  ]
 
@@ -634,36 +663,36 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
             # get alignment parameters for the chosen matching reference        
             matchref = belongsto[im]
             alphan = float(peak_list[matchref][(im-image_start)*4+0])
-            sxn = float(peak_list[matchref][(im-image_start)*4+1])
-            syn = float(peak_list[matchref][(im-image_start)*4+2])
-            mn = int(peak_list[matchref][(im-image_start)*4+3])
+            sxn    = float(peak_list[matchref][(im-image_start)*4+1])
+            syn    = float(peak_list[matchref][(im-image_start)*4+2])
+            mn     =   int(peak_list[matchref][(im-image_start)*4+3])
 
             if mn == 0: sx_sum[matchref] += sxn
             else:       sx_sum[matchref] -= sxn
             sy_sum[matchref] += syn
 
             # apply current parameters and add to the average
-            Util.add_img(refi[matchref], rot_shift2D(alldata[im], alphan, sxn, syn, mn))
+            Util.add_img( refi[matchref], rot_shift2D(alldata[im], alphan, sxn, syn, mn) )
             members[matchref] += 1
 
         #--------------------------------------------------[ broadcast  ]
 
         # everyone computes their reduction and then broadcasts it back to the main_node
-        sx_sum  = mpi.mpi_reduce(sx_sum,  numref, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm)
-        sy_sum  = mpi.mpi_reduce(sy_sum,  numref, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm)
-        members = mpi.mpi_reduce(members, numref, mpi.MPI_INT,   mpi.MPI_SUM, main_node, comm)
+        sx_sum  = mpi.mpi_reduce( sx_sum,  numref, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm )
+        sy_sum  = mpi.mpi_reduce( sy_sum,  numref, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, comm )
+        members = mpi.mpi_reduce( members, numref, mpi.MPI_INT,   mpi.MPI_SUM, main_node, comm )
 
         if myid != main_node:
             sx_sum  = [0.0]*numref
             sy_sum  = [0.0]*numref
             members = [0.0]*numref
 
-        sx_sum  = mpi.mpi_bcast(sx_sum,  numref, mpi.MPI_FLOAT, main_node, comm)
-        sy_sum  = mpi.mpi_bcast(sy_sum,  numref, mpi.MPI_FLOAT, main_node, comm)
-        members = mpi.mpi_bcast(members, numref, mpi.MPI_INT,   main_node, comm)
-        sx_sum  = list(map(float, sx_sum))
-        sy_sum  = list(map(float, sy_sum))
-        members = list(map(int, members))
+        sx_sum  = mpi.mpi_bcast( sx_sum,  numref, mpi.MPI_FLOAT, main_node, comm )
+        sy_sum  = mpi.mpi_bcast( sy_sum,  numref, mpi.MPI_FLOAT, main_node, comm )
+        members = mpi.mpi_bcast( members, numref, mpi.MPI_INT,   main_node, comm )
+        sx_sum  = list( map(float, sx_sum) )
+        sy_sum  = list( map(float, sy_sum) )
+        members = list( map(int, members) )
 
         for j in range(numref):
             sx_sum[j] /= float(members[j])
@@ -672,9 +701,10 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
         for im in range(image_start, image_end):
             matchref = belongsto[im]
             alphan = float(peak_list[matchref][(im-image_start)*4+0])
-            sxn = float(peak_list[matchref][(im-image_start)*4+1])
-            syn = float(peak_list[matchref][(im-image_start)*4+2])
-            mn = int(peak_list[matchref][(im-image_start)*4+3])
+            sxn    = float(peak_list[matchref][(im-image_start)*4+1])
+            syn    = float(peak_list[matchref][(im-image_start)*4+2])
+            mn     =   int(peak_list[matchref][(im-image_start)*4+3])
+
             if mn == 0:
                 spx.set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])  # set 2D alignment parameters (img, alpha, tx, ty, mirror, scale)
             else:
@@ -686,6 +716,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
 
         for j in range(numref):
             spx.reduce_EMData_to_root(refi[j], myid, main_node, comm)
+
             if myid == main_node:
                 # Golden rule when to do within group refinement
                 Util.mul_scalar(refi[j], 1.0/float(members[j]))
@@ -698,42 +729,49 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
             # it has to be checked and probably a better method used PAP 01/17/2015
             dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
             ref_ali_params = []
+
             for j in range(numref):
                 alpha, sx, sy, mirror, scale = spx.get_params2D(refi[j])
                 refi[j] = rot_shift2D(refi[j], alpha, sx, sy, mirror)
                 ref_ali_params.extend([alpha, sx, sy, mirror])
         else:
             ref_ali_params = [0.0]*(numref*4)
-        ref_ali_params = mpi.mpi_bcast(ref_ali_params, numref*4, mpi.MPI_FLOAT, main_node, comm)
-        ref_ali_params = list(map(float, ref_ali_params))
+
+        ref_ali_params = mpi.mpi_bcast( ref_ali_params, numref*4, mpi.MPI_FLOAT, main_node, comm )
+        ref_ali_params = list( map(float, ref_ali_params) )
 
         for j in range(numref):
-            spx.bcast_EMData_to_all(refi[j], myid, main_node, comm)
+            spx.bcast_EMData_to_all( refi[j], myid, main_node, comm )
 
         #--------------------------------------------------------------------[ Compensate the centering to averages ]
         for im in range(image_start, image_end):
             matchref = belongsto[im]
             alpha, sx, sy, mirror, scale = spx.get_params2D(alldata[im])
-            alphan, sxn, syn, mirrorn = spx.combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
-                ref_ali_params[matchref*4+2], int(ref_ali_params[matchref*4+3]))
-            spx.set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
+            alphan, sxn, syn, mirrorn = spx.combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4+0], 
+                                                                                   ref_ali_params[matchref*4+1],
+                                                                                   ref_ali_params[matchref*4+2], 
+                                                                                   int(ref_ali_params[matchref*4+3]))
+            spx.set_params2D( alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0] )
 
-        
         fl += 0.05
         ##if my_abs_id == main_node: print "Increased fl .......", fl,localtime()[0:5]
         if fl >= FH:
             fl = FL
             do_within_group = 1
-        else:  do_within_group = 0
+        else:  
+            do_within_group = 0
+
         # Here stability does not need to be checked for each main iteration, it only needs to
         # be done for every 'iter_reali' iterations. If one really wants it to be checked each time
         # simple set iter_reali to 1, which is the default value right now.
         check_stability = (stability and (main_iter%iter_reali==0))
 
         if do_within_group == 1:
+
             #--------------------------------------------------------["Doing within group alignment ......."]
 
             #--------------------------------------------------------[ Broadcast the alignment parameters to all nodes ]
+            
             for i in range(number_of_proc):
                 im_start, im_end = MPI_start_end(nima, number_of_proc, i)
                 if myid == i:
@@ -772,20 +810,21 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
             for j in range(myid, numref, number_of_proc):
                 assign = []
                 for im in range(nima):
-                    if j == belongsto[im]:  assign.append(im)
+                    if j == belongsto[im]:
+                        assign.append(im)
 
                 randomize = True  # I think there is no reason not to be True
                 class_data = [alldata[im] for im in assign]
-                refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, \
-                                                [xrng], [yrng], [step], dst, maxit, FH, FF, method = method)
+                refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep,
+                                                  [xrng], [yrng], [step], dst, maxit, FH, FF, method=method)
 
                 if check_stability:
                     ###if my_abs_id == main_node: print "Checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
                     ali_params = [[] for qq in range(stab_ali)]
                     for ii in range(stab_ali):
                         if ii > 0:  # The first one does not have to be repeated
-                            dummy = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
-                                                            dst, maxit, FH, FF, method = method)
+                            dummy = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep,
+                                                            [xrng], [yrng], [step], dst, maxit, FH, FF, method=method)
                         for im in range(len(class_data)):
                             alpha, sx, sy, mirror, scale = spx.get_params2D(class_data[im])
                             ali_params[ii].extend([alpha, sx, sy, mirror])
@@ -803,8 +842,10 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
                             duplicate = False
                             p = randint(0, len(class_data)-1)
                             for ss in stable_set:
-                                if p == ss[1]: duplicate = True
+                                if p == ss[1]: 
+                                    duplicate = True
                         stable_set.append([100.0, p, [0.0, 0.0, 0.0, 0]])
+
                     stable_data = []
                     stable_members = []
                     for err in stable_set:
@@ -812,6 +853,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
                         stable_members.append(assign[im])
                         stable_data.append(class_data[im])
                         spx.set_params2D( class_data[im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
+                    
                     stable_members.sort()
 
                     refi[j] = filt_tanl(ave_series(stable_data), FH, FF)
@@ -821,6 +863,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
                     del stable_members
                 # end of stability
                 del assign
+
             mpi.mpi_barrier(comm)
 
             for im in range(nima):
@@ -830,10 +873,10 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
                     ali_params = [alpha, sx, sy, mirror]
                 else:
                     ali_params = [0.0]*4
+
                 ali_params = mpi.mpi_bcast(ali_params, 4, mpi.MPI_FLOAT, done_on_node, comm)
                 ali_params = list(map(float, ali_params))
                 spx.set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
-
 
             for j in range(numref):
                 spx.bcast_EMData_to_all(refi[j], myid, j%number_of_proc, comm)
@@ -851,6 +894,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
                             members = mpi.mpi_recv(mem_len, mpi.MPI_INT, done_on_node, SPARX_MPI_TAG_UNIVERSAL, comm)
                             members = list(map(int, members))
                             refi[j].set_attr_dict({'members': members,'n_objects': mem_len})
+
                         elif myid == done_on_node:
                             members = refi[j].get_attr('members')
                             mpi.mpi_send(len(members), 1, mpi.MPI_INT, main_node, SPARX_MPI_TAG_UNIVERSAL, comm)
@@ -868,11 +912,16 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
                         common += len(previous_members[j].intersection(members))
                         previous_members[j] = members
                         #print "  memebers  ",j,len(members)
+
                     agreement = common/float(totprevious + totcurrent - common)
                     j = agreement - previous_agreement
-                    if( (agreement>0.5) and (j > 0.0) and (j < 0.05) ): terminate = 1
+                    
+                    if( (agreement>0.5) and (j > 0.0) and (j < 0.05) ): 
+                        terminate = 1
+                    
                     previous_agreement = agreement
                     print(">>>  Assignment agreement with previous iteration  %5.1f"%(agreement*100),"   ",time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
+                
                 terminate = spx.bcast_number_to_all(terminate, source_node = main_node)
 
 
@@ -884,8 +933,9 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
                     lhist = 12
                     region, histo = hist_list(gpixer, lhist)
                     print("\n=== Histogram of average within-class pixel errors prior to class pruning ===")
-                    for lhx in range(lhist):  print("     %10.3f     %7d"%(region[lhx], histo[lhx]))
+                    for lhx in range(lhist): print("     %10.3f     %7d"%(region[lhx], histo[lhx]))
                     print("=============================================================================\n")
+
                 del gpixer
 
 
@@ -909,6 +959,7 @@ def isac_MPI_pap(stack, refim, d, maskfile = None, ir=1, ou=-1, rs=1, xrng=0, yr
         print("\n=== Histogram of group sizes ================================================")
         for lhx in range(lhist):  print("     %10.1f     %7d"%(region[lhx], histo[lhx]))
         print("=============================================================================\n")
+
     mpi.mpi_barrier(comm)
 
     return refi
@@ -957,43 +1008,56 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
     if( Blockdata["myid"] == Blockdata["main_node"] ):
-        plist = spx.read_text_file(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, \
-            "generation%03d"%(generation_iter-1), "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter-1)))
+        plist = spx.read_text_file( os.path.join(Blockdata["masterdir"], 
+                                                 "main%03d"%main_iter,
+                                                 "generation%03d"%(generation_iter-1), 
+                                                 "to_process_next_%03d_%03d.txt"%(main_iter,generation_iter-1)) )
         nimastack = len(plist)
-        #print " ininimastack  ",nimastack
+
     else:
         plist = 0
         nimastack = 0
+
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+
     #print  " willbcast  ",Blockdata["myid"],nimastack,Blockdata["main_node"]
     nimastack = spx.bcast_number_to_all(nimastack, source_node = Blockdata["main_node"], mpi_comm=mpi.MPI_COMM_WORLD)
+
     #if( Blockdata["myid"] == Blockdata["main_node"] ):  print  "  returned  ",nimastack
     #print  " nimastack2  ",Blockdata["myid"],nimastack
+
     # Bcast plist to all zero CPUs
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+    
     #mpi_finalize()
     #exit()
+    
     if(Blockdata["subgroup_myid"] > -1 ):
         # First check number of nodes, if only one, no reduction necessary.
         #print  "  subgroup_myid   ",Blockdata["subgroup_myid"],Blockdata["no_of_groups"],nimastack
         if(Blockdata["no_of_groups"] > 1):          
             plist = bcast_list_to_all(plist, Blockdata["subgroup_myid"], source_node = 0, mpi_comm = Blockdata["subgroup_comm"])
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+
     #mpi_finalize()
     #exit()
 
     #delay( Blockdata["myid"],"  AFTER  ")
+    
     #mpi_finalize()
     #exit()
+    
     # reserve buffers
     disp_unit = np.dtype("f4").itemsize
     size_of_one_image = target_nx*target_nx
     orgsize = nimastack*size_of_one_image #  This is number of projections to be computed simultaneously times their size
 
-    if( Blockdata["myid_on_node"] == 0 ): size = orgsize
-    else:  size = 0
+    if( Blockdata["myid_on_node"] == 0 ): 
+        size = orgsize
+    else:  
+        size = 0
 
-    win_sm, base_ptr  = mpi.mpi_win_allocate_shared( size*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
+    win_sm, base_ptr = mpi.mpi_win_allocate_shared( size*disp_unit , disp_unit, mpi.MPI_INFO_NULL, Blockdata["shared_comm"])
     size = orgsize
 
     #if( Blockdata["myid_on_node"] == 0 ): print " LOHI ",Blockdata["myid"],nimastack,size_of_one_image,size,disp_unit,win_sm,base_ptr
@@ -1006,6 +1070,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
 
     emnumpy2 = spx.EMNumPy()
     bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
+
     if( Blockdata["myid_on_node"] == 0 ):
         #  read data on process 0 of each node
         #print "  READING DATA FIRST :",Blockdata["myid"],Blockdata["stack_ali2d"],len(plist)
@@ -1023,19 +1088,20 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
     msk = spx.model_blank(target_nx, target_nx,1,1)
     for i in range(nimastack):
         pointer_location = base_ptr + i*size_of_one_image*disp_unit
-        img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
-        img_buffer = img_buffer.reshape(target_nx, target_nx)
+        img_buffer  = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+        img_buffer  = img_buffer.reshape(target_nx, target_nx)
         emnumpy3[i] = spx.EMNumPy()
-        alldata[i] = emnumpy3[i].register_numpy_to_emdata(img_buffer)
+        alldata[i]  = emnumpy3[i].register_numpy_to_emdata(img_buffer)
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
     #  former options
-    indep_run = 0
-    match_first = 0
-    thld_grp = 0
+    indep_run    = 0
+    match_first  = 0
+    thld_grp     = 0
     match_second = 0
-    max_round = 0
+    max_round    = 0
     dummy_main_iter = 0
+
     if( Blockdata["myid"] == 0 ):
         print("*************************************************************************************")
         print("     Main iteration: %3d,  Generation: %3d. "%(main_iter,generation_iter)+"   "+time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()))
@@ -1050,7 +1116,8 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
     mpi.mpi_win_free(win_sm)
     emnumpy2.unregister_numpy_from_emdata()
     del emnumpy2
-    for i in range(nimastack):  emnumpy3[i].unregister_numpy_from_emdata()
+    for i in range(nimastack):  
+        emnumpy3[i].unregister_numpy_from_emdata()
     del alldata
     #delay(Blockdata["myid"],"  CLEANED")
 
@@ -1080,6 +1147,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
                 q.write_image(os.path.join(Blockdata["masterdir"], "main%03d"%main_iter, "generation%03d"%generation_iter,"good_class_averages_%03d_%03d.hdf"%(main_iter,generation_iter)),j)
                 q.write_image(os.path.join(Blockdata["masterdir"],"class_averages.hdf"),j+nave_exist)
                 j += 1
+
                 # We have to update all parameters table
                 for l,m in enumerate(members):
                     #  I had to remove it as in case of restart there will be conflicts
@@ -1147,6 +1215,7 @@ def do_generation(main_iter, generation_iter, target_nx, target_xr, target_yr, t
     else:
         keepdoing_main = False
         keepdoing_generation = False
+        
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
     keepdoing_main = spx.bcast_number_to_all(keepdoing_main, source_node = Blockdata["main_node"], mpi_comm = mpi.MPI_COMM_WORLD)
