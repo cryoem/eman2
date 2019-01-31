@@ -133,7 +133,7 @@ def parse_command_line():
 		type=float,
 		default=None,
 		action=NotSmallerZeroAction,
-		help='The estimated molecular mass of the target particle in kilodalton.'
+		help='The estimated molecular mass of the target particle in kD.'
 		)
 
 	group_mask.add_argument(
@@ -150,7 +150,7 @@ def parse_command_line():
 		type=int,
 		default=0,
 		action=NotSmallerZeroAction,
-		help='Number of iterations to erose the binarized volume. Each iteration removes about two pixels from the mask.'
+		help='Number of iterations to erode the binarized volume. Each iteration removes about two pixels from the mask.'
 		)
 	group_mask.add_argument(
 		'--edge_width',
@@ -158,7 +158,7 @@ def parse_command_line():
 		type=int,
 		default=5,
 		action=NotSmallerZeroAction,
-		help='Width of the softened edge of the mask in pixel.'
+		help='Width of the soft edge of the mask in pixels'
 		)
 	group_mask.add_argument(
 		'--edge_type',
@@ -166,7 +166,7 @@ def parse_command_line():
 		type=str,
 		default='cosine',
 		choices=('cosine', 'gaussian'),
-		help='Type of the softened edge.'
+		help='Type of the soft edge.'
 		)
 	group_mask.add_argument(
 		'--do_old',
@@ -192,7 +192,7 @@ def parse_command_line():
 		'--sm',
 		type=str,
 		default=None,
-		help='File path to the optional second mask.'
+		help='File path of the optional second mask.'
 		)
 	group_second_mask_mut.add_argument(
 		'--second_mask_shape',
@@ -225,7 +225,7 @@ def parse_command_line():
 		type=float,
 		default=None,
 		action=NotSmallerZeroAction,
-		help='Second mask mask_path: The estimated molecular mass of the target particle in kilodalton.'
+		help='Second mask mask_path: The estimated molecular mass of the target particle in kD.'
 		)
 
 	group_second_mask.add_argument(
@@ -276,7 +276,7 @@ def parse_command_line():
 		type=int,
 		default=0,
 		action=NotSmallerZeroAction,
-		help='Second mask: Number of iterations to erose the binarized volume. Each iteration removes about two pixels from the mask.'
+		help='Second mask: Number of iterations to erode the binarized volume. Each iteration removes about two pixels from the mask.'
 		)
 	group_second_mask.add_argument(
 		'--s_edge_width',
@@ -284,7 +284,7 @@ def parse_command_line():
 		type=int,
 		default=5,
 		action=NotSmallerZeroAction,
-		help='Second mask: Width of the softened edge of the mask in pixel.'
+		help='Second mask: Width of the soft edge of the mask in pixels'
 		)
 	group_second_mask.add_argument(
 		'--s_edge_type',
@@ -292,7 +292,7 @@ def parse_command_line():
 		type=str,
 		default='cosine',
 		choices=('cosine', 'gaussian'),
-		help='Type of the softened edge.'
+		help='Type of the soft edge.'
 		)
 	group_mask.add_argument(
 		'--s_do_old',
