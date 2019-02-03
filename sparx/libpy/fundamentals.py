@@ -861,78 +861,87 @@ def rops(e):
 	"""Rotational average of the power spectrum.
 	   Returns a 1-D image containing a rotational average
 	   of the periodogram of image e.
+		Input image can be real or Fourier, can be rectangular
+		output length mapped onto x-dimension length
 	"""
-	from EMAN2 import periodogram
-	ps = periodogram(e)
-	return ps.rotavg()
+	from utilities import model_blank
+	table = Util.rotavg_fourier(img)
+	table = table[:len(table)//2]
+	scale = (img.get_xsize() - 2*img.is_complex())*img.get_ysize()*img.get_zsize()
+	scale = 4.0/scale/scale
+	for i in range(len(table)): table[i] *= scale
+	if lng:
+		from math import log10
+		for ir in range(1,nr): table[ir] = log10(table[ir])
+		table[0] = table[1]
+	ps = model_blank(len(table))
+	for i in range(len(table)): ps[i] = table[i]
+	return ps
 
-def rops_textfile(e, filename, helpful_string="", lng = False):
+def rops_textfile(e, filename, lng = False):
 	"""Rotational average of the periodogram stored as a text file.
 	   Saves a text file (suitable for gnuplot) of the rotational average 
 	   of the periodogram of image e.
+		Input image can be real or Fourier, can be rectangular
+		output length mapped onto x-dimension length
 	"""
-	from EMAN2 import periodogram
-	out = open(filename, "w")
-	if helpful_string != "": out.write("#Rotational average: %s\n" % (helpful_string))
-	ps = periodogram(e)
-	f = ps.rotavg()
-	nr = f.get_xsize()
-	table = [0.0]*nr
-	for ir in range(nr): table[ir] = f.get_value_at(ir)
+	from utilities import write_text_file
+	table = Util.rotavg_fourier(img)
+	table = table[:len(table)//2]
+	scale = (img.get_xsize() - 2*img.is_complex())*img.get_ysize()*img.get_zsize()
+	scale = 4.0/scale/scale
+	for i in range(len(table)): table[i] *= scale
 	if lng:
-		from math import log
-		for ir in range(1,nr): table[ir] = log(table[ir])
+		from math import log10
+		for ir in range(1,nr): table[ir] = log10(table[ir])
 		table[0] = table[1]
-	for ir in range(nr): out.write("%d\t%12.5g\n" % (ir, table[ir]))
-	out.close()
+	write_text_file([list(range(nr)),table], filename)
 	
 def rops_table(img, lng = False):
 
 	""" 
 		Calculate 1D rotationally averaged 
 		power spectrum and save it in list
+		Input image can be real or Fourier, can be rectangular
+		output length mapped onto x-dimension length
 	"""
-	from EMAN2 import periodogram
-	e = periodogram(img)
-	ro = e.rotavg()
-	nr = ro.get_xsize()
-	table = [0.0]*nr
-	for ir in range(nr): table[ir] = ro.get_value_at(ir)
+	table = Util.rotavg_fourier(img)
+	table = table[:len(table)//2]
+	scale = (img.get_xsize() - 2*img.is_complex())*img.get_ysize()*img.get_zsize()
+	scale = 4.0/scale/scale
+	for i in range(len(table)): table[i] *= scale
 	if lng:
 		from math import log10
 		for ir in range(1,nr): table[ir] = log10(table[ir])
 		table[0] = table[1]
 	return table
 
+'''
+It is not used anywhere, so I commented it out  02/03/2019 PAP
 def rops_dir(indir, output_dir = "1dpw2_dir"):
 	"""
 		Calculate 1D rotationally averaged power spectra from
 		image stack listed in a directory
 	"""
-	from EMAN2 import periodogram
+	from utilities import get_im, write_text_file
 	import os
 	flist = os.listdir(indir)
-	print(flist)
 	if os.path.exists(output_dir) is False: os.mkdir(output_dir)
 	for i, v in enumerate(flist):
 		(filename, filextension) = os.path.splitext(v)
 		nima = EMUtil.get_image_count(os.path.join(indir,v))
-		print(nima)
 		for im in range(nima):
-			e = EMData()
-			file_name = os.path.join(indir,v)
-			e.read_image(file_name, im)
-			tmp1 = periodogram(e)
-			tmp  = tmp1.rotavg()
+			e = get_im(os.path.join(indir,v), im)
+			temp = Util.rotavg_fourier(img)
+			temp = table[:len(temp)//2]
 			if im == 0:
-				sum_ima  = model_blank(tmp.get_xsize())
-				sum_ima += tmp
-			else :  sum_ima += tmp
-		table = []
-		nr = sum_ima.get_xsize()
-		for ir in range(nr):  table.append([sum_ima.get_value_at(ir)])
-		drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
-
+				table= temp[:]
+				scale = (img.get_xsize() - 2*img.is_complex())*img.get_ysize()*img.get_zsize()
+				scale = 4.0/scale/scale
+			else :  for i in range(len(table)): table[i] += temp[i]
+		for i in range(len(table)): table[i] *= scale/nima
+		write_text_file(table, os.path.join(output_dir, "1dpw2_"+filename+".txt"))
+'''
 
 def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	"""Rotate and shift an image using gridding
