@@ -40,9 +40,12 @@ import os
 import sys
 import time
 
+import ctypes
 import numpy as np
 
 import mpi
+
+from EMAN2 import EMNumPy
 
 import sparx as spx
 
@@ -90,7 +93,7 @@ Blockdata["myid"]         = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
 Blockdata["main_node"]    = 0
 Blockdata["shared_comm"]  = mpi.mpi_comm_split_type(mpi.MPI_COMM_WORLD, mpi.MPI_COMM_TYPE_SHARED,  0, mpi.MPI_INFO_NULL)
 Blockdata["myid_on_node"] = mpi.mpi_comm_rank(Blockdata["shared_comm"])
-Blockdata["no_of_processes_per_group"]      = mpi.mpi_comm_size(Blockdata["shared_comm"])
+Blockdata["no_of_processes_per_group"] = mpi.mpi_comm_size(Blockdata["shared_comm"])
 
 masters_from_groups_vs_everything_else_comm = ( mpi.mpi_comm_split(mpi.MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"]) )
 Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = spx.get_colors_and_subsets( Blockdata["main_node"], 
@@ -103,7 +106,7 @@ global_def.MPI   = True
 
 NAME_OF_JSON_STATE_FILE = "my_state.json"
 NAME_OF_ORIGINAL_IMAGE_INDEX = "originalid"
-NAME_OF_RUN_DIR = "run"
+NAME_OF_RUN_DIR  = "run"
 NAME_OF_MAIN_DIR = "generation_"
 DIR_DELIM = os.sep
 
@@ -1263,9 +1266,114 @@ def parse_parameters( prog_name, usage, args ):
 
 #======================================================================[ main ]
 
+def compile_gpu_code( cuda_path ):
+    print( "Compiling GPU code.." )
+    subprocess.Popen( ("nvcc "+cuda_path+"multiref_ccf.cu -o "+cuda_path+"multiref.so -shared -Xcompiler -fPIC -lcufft -lcublas -lopencv_core -lopencv_imgcodecs").split() ).wait()  
+
+def get_ptr_array( emdata_list ):
+    float_ptr = ctypes.POINTER(ctypes.c_float)
+
+    ptr_list = []
+    for img in emdata_list:
+        img_np = EMNumPy.em2numpy( img )
+        assert img_np.flags['C_CONTIGUOUS'] == True
+        assert img_np.dtype == np.float32
+        img_ptr = img_np.ctypes.data_as(float_ptr)
+        ptr_list.append(img_ptr)
+    
+    return (float_ptr*len(emdata_list))(*ptr_list)
+
+
+def run_gpu_testing():
+
+    #---------------------------------------------[ param ]
+
+    DEFAULT_IMG_DIM       = 76
+    DEFAULT_RING_NUM      = 32
+    DEFAULT_RING_LEN      = 256
+
+    DEFAULT_SHIFT_STEP    = 1
+    DEFAULT_SHIFT_RNG_X   = 1
+    DEFAULT_SHIFT_RNG_Y   = 1
+
+    CUDA_DEVICE_ID        = 0
+    CUDA_STREAM_POOL_SIZE = 8
+
+    CUDA_PATH = "/home/schoenf/work/code/cuISAC/cuda/"
+
+    class CcfBatchConfiguration( ctypes.Structure ):
+        _fields_ = [ # data param
+                     ("sbj_num", ctypes.c_uint),
+                     ("ref_num", ctypes.c_uint),
+                     ("img_dim", ctypes.c_uint),
+                     # polar sampling parameters
+                     ("ring_num", ctypes.c_uint),
+                     ("ring_len", ctypes.c_uint),
+                     # shift parameters
+                     ("shift_step", ctypes.c_uint),
+                     ("shift_rng_x", ctypes.c_uint),
+                     ("shift_rng_y", ctypes.c_uint),
+                     # cuda parameters
+                     ("stream_pool_size", ctypes.c_uint) ]
+
+    sbj_num = 4096
+    ref_num =    8
+
+    cfg = CcfBatchConfiguration( # data param
+                                 sbj_num, 
+                                 ref_num,
+                                 DEFAULT_IMG_DIM,
+                                 # polar sampling parameters
+                                 DEFAULT_RING_NUM,
+                                 DEFAULT_RING_LEN,
+                                 # shift parameters
+                                 DEFAULT_SHIFT_STEP,
+                                 DEFAULT_SHIFT_RNG_X,
+                                 DEFAULT_SHIFT_RNG_Y,
+                                 # cuda parameters
+                                 CUDA_STREAM_POOL_SIZE )
+
+    #----------------------------------------------[ data ]
+
+    random_data = False
+
+    if random_data:
+        ref_stack = np.random.random( [DEFAULT_IMG_DIM * ref_num, DEFAULT_IMG_DIM] ).astype( np.float32 )
+        sbj_stack = np.random.random( [DEFAULT_IMG_DIM * ref_num, DEFAULT_IMG_DIM] ).astype( np.float32 )
+
+    else:
+        ref_stack = EMData.read_images( "/home/schoenf/work/code/cuISAC/cuda/aln_calibration_test/ref_stack_spx_8.hdf" )
+        sbj_stack = EMData.read_images( "/home/schoenf/work/code/cuISAC/cuda/aln_calibration_test/sbj_stack_spx_4096.hdf" )
+            
+    #---------------------------------------[ c interface ]
+
+    # compile gpu code (optional)
+    do_compile = False
+    if do_compile:
+        compile_gpu_code( CUDA_PATH )
+
+    # c interface setup
+    cu_module = ctypes.CDLL( CUDA_PATH + "multiref.so" )
+    
+    # call c code like any other module function
+    cu_module.multiref_alignment_2D( get_ptr_array(sbj_stack), get_ptr_array(ref_stack), ctypes.byref(cfg) )
+
 def main(args):
 
-    #- - - - - - - - - - - - - - - - - - - - - - - -[ command line parameters ]
+    #------------------------------------------------------[ gpu code integration testing area ]
+
+    if "--gpu_test" in sys.argv:
+
+        if Blockdata["myid"] == Blockdata["main_node"]:
+            print( "Running GPU testing.." )
+            run_gpu_testing()
+            print( "All done." )
+
+        mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
+        mpi.mpi_finalize()
+        sys.exit()
+
+    #------------------------------------------------------[ command line parameters ]
 
     usage = ( sys.argv[0] + " stack_file  [output_directory] --radius=particle_radius" 
               + " --img_per_grp=img_per_grp --CTF <The remaining parameters are" 
@@ -1305,7 +1413,7 @@ def main(args):
             print( "\nERROR! Minimum group size (" + str(options.minimum_grp_size) + ") is larger than the actual group size (" + str(options.img_per_grp) + "). Oh dear :(\n" )
         return 1
 
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #------------------------------------------------------[ :: ]
 
     if global_def.CACHE_DISABLE:
         spx.disable_bdb_cache()
@@ -1400,7 +1508,7 @@ def main(args):
 
     nxrsteps = 4
 
-    #--------------------------------------[ initial 2D alignment (centering) ]
+    #------------------------------------------------------[ initial 2D alignment (centering) ]
 
     init2dir = os.path.join(Blockdata["masterdir"],"2dalignment")
 
@@ -1428,6 +1536,7 @@ def main(args):
         image_start, image_end = spx.MPI_start_end(Blockdata["total_nima"], nproc, myid)
 
         original_images = EMData.read_images(Blockdata["stack"], list(range(image_start,image_end)))
+
         if options.VPP:
             ntp = len(rops_table(original_images[0]))
             rpw = [0.0]*ntp
@@ -1684,7 +1793,7 @@ def main(args):
         if( Blockdata["myid"] == Blockdata["main_node"] ):
             print("Skipping 2D alignment since it was already done!")
 
-    #------------------------------------------------[ pre-alignment finished ]
+    #------------------------------------------------------[ pre-alignment finished ]
 
     error = 0
     if( Blockdata["myid"] == Blockdata["main_node"] ):
@@ -1736,7 +1845,7 @@ def main(args):
 
     mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
-    #--------------------------------------------------------[ ISAC main loop ]
+    #------------------------------------------------------[ ISAC main loop ]
 
     keepdoing_main = True
     main_iter = 0
