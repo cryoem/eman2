@@ -25,8 +25,8 @@ then
     exit 1
 fi
 
-echo $(conda remove fftw-mpi --force --yes)
-conda install fftw-mpi --yes --override-channels -c file://${CONDA_BLD}
-conda install pydusa=1.15=np${numpy_version}* --yes -c file://${CONDA_BLD} --override-channels
+#echo $(conda remove fftw-mpi --force --yes)
+conda install fftw-mpi --yes --force-reinstall --override-channels -c file://${CONDA_BLD}
+conda install pydusa=1.15=np${numpy_version}* --force-reinstall --yes -c file://${CONDA_BLD} --override-channels
 
 conda inspect linkages pydusa
