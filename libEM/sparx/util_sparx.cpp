@@ -25252,7 +25252,8 @@ EMData*  Util::unrollmask( int onx, int ny )
 vector<float> Util::rotavg_fourier(EMData* img)
 {
 	//  Computes both rotational power spectrum and cumulative rotational power spectrum
-	int nx, ny, nz, nyp2, lsd;
+	//  Correct to make it work for rectangular images and for 3D PAP 02/03/2019
+	int nx, ny, nz, nyp2, nzp2, lsd;
 	bool iodd;
 	int cmpx = img->is_complex();
 	EMData *fimg;
@@ -25264,11 +25265,13 @@ vector<float> Util::rotavg_fourier(EMData* img)
 		if (iodd)  nx += 1;
 		lsd = (nx + 2 - nx%2)/2;
 		nyp2 = ny/2;
+		nzp2 = nz/2;
 		img->set_attr("is_complex", false);
 		fint = img->get_data();
 	} else {
 		nx=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
 		nyp2 = ny/2;
+		nzp2 = nz/2;
 		lsd = (nx + 2 - nx%2)/2;
 		fimg = img->do_fft();
 		fimg->set_attr("is_complex", false);
@@ -25278,26 +25281,32 @@ vector<float> Util::rotavg_fourier(EMData* img)
 	for (int i=0; i<2*lsd; i++)  rotav[i] = 0.0f;
 	vector<float> count(lsd);
 	for (int i=0; i<lsd; i++)  count[i] = 0.0f;
+	float qx = 1.0/float(nx)/float(nx);
+	float qy = 1.0/float(ny)/float(ny);
+	float qz = 1.0/float(nz)/float(nz);
 
-	float argy, argx;
-	for ( int iy = 1; iy <= ny; iy++) {
-		int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = float(jy*jy);
-		for ( int ix = 1; ix <= lsd; ix++) {
-			int jx=ix-1;
-			if(! ((jx == 0) && (jy <= 0)) ) {
-				argx = argy + float(jx*jx);
-				float rf = sqrt( argx );
-				int  ir = int(rf);
-				if( ir < lsd-1) {
-					float frac = rf - float(ir);
-					float qres = 1.0f - frac;
-					int ioff = 2*(jx+(iy-1)*lsd);
-					float temp = fint[ioff]*fint[ioff] + fint[ioff+1]*fint[ioff+1];
-					//cout<<"  jx  "<<jx<<"  jy  "<<jy<<"  ir  "<<ir<<"  "<<ioff<<"  temp  "<<temp<<endl;
-					rotav[ir]   += temp*qres;
-					rotav[ir+1] += temp*frac;
-					count[ir]   += qres;
-					count[ir+1] += frac;
+	float argz, argy, argx;
+	for ( int iz = 1; iz <= nz; iz++) {
+		int jz=iz-1; if (jz>nzp2) jz=jz-nz; argz = float(jz*jz*qz);
+		for ( int iy = 1; iy <= ny; iy++) {
+			int jy=iy-1; if (jy>nyp2) jy=jy-ny; argy = argz + float(jy*jy*qy);
+			for ( int ix = 1; ix <= lsd; ix++) {
+				int jx=ix-1;
+				if(! ((jx == 0) && (jy <= 0)) ) {
+					argx = argy + float(jx*jx*qx);
+					float rf = sqrt( argx/qx );
+					int  ir = int(rf);
+					if( ir < lsd-1) {
+						float frac = rf - float(ir);
+						float qres = 1.0f - frac;
+						int ioff = 2*(jx+((iy-1)+(iz-1)*ny)*lsd);
+						float temp = fint[ioff]*fint[ioff] + fint[ioff+1]*fint[ioff+1];
+						//cout<<"  jx  "<<jx<<"  jy  "<<jy<<"  jz  "<<jz<<"  ir  "<<ir<<"  "<<ioff<<"  temp  "<<temp<<endl;
+						rotav[ir]   += temp*qres;
+						rotav[ir+1] += temp*frac;
+						count[ir]   += qres;
+						count[ir+1] += frac;
+					}
 				}
 			}
 		}
@@ -29619,7 +29628,7 @@ void Util::cleanup_threads() {
 
 void Util::version()
 {
-	cout <<"   Source modification date: 01/11/2019" <<  endl;
+	cout <<"   Source modification date: 02/03/2019" <<  endl;
 /*
 This is test program for threaded FFT  as of 11/20/2018 PAP
         int nthreads = 16;

@@ -5318,7 +5318,7 @@ def combinations_of_n_taken_by_k(n, k):
 
 def cmdexecute(cmd, printing_on_success = True):
 	from   time import localtime, strftime
-	import subprocess
+	#import subprocess  I do not know why this is not used. PAP
 	import os
 	#outcome = subprocess.call(cmd, shell=True)
 	outcome = os.system(cmd)
