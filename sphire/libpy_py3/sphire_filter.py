@@ -30,11 +30,11 @@ from __future__ import print_function
 #
 
 import EMAN2_cppwrap
-import sparx_fundamentals
-import sparx_morphology
+from ..libpy import sparx_fundamentals
+from ..libpy import sparx_morphology
 import mpi
 import numpy
-import sparx_utilities
+from ..libpy import sparx_utilities
 
 pass  # IMPORTIMPORTIMPORT import EMAN2
 pass  # IMPORTIMPORTIMPORT import EMAN2_cppwrap

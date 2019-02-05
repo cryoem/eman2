@@ -31,11 +31,11 @@ from past.utils import old_div
 #
 
 import EMAN2_cppwrap
-import sparx_filter
-import sparx_global_def
+from ..libpy import sparx_filter
+from ..libpy import sparx_global_def
 import math
 import numpy
-import sparx_utilities
+from ..libpy import sparx_utilities
 
 pass  # IMPORTIMPORTIMPORT import EMAN2
 pass  # IMPORTIMPORTIMPORT import EMAN2_cppwrap

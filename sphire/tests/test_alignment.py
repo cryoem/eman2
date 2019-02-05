@@ -10,7 +10,9 @@ import unittest
 import copy
 import os
 import cPickle as pickle
+
 ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
+print(ABSOLUTE_PATH)
 
 from ..libpy import sparx_alignment as fu
 from .sparx_lib import sparx_alignment as oldfu
@@ -40,7 +42,7 @@ def get_data_3d(num, dim=10):
 
 
 
-class Test_lib_compare(unittest.TestCase):
+class Test_lib_alignment_compare(unittest.TestCase):
     """"
     # data = list of images
     # numr = tuple or list precalcualte rings
@@ -54,7 +56,7 @@ class Test_lib_compare(unittest.TestCase):
     # step = stepsize of the shift
     """
     def test_ali2d_single_iter_true_should_return_equal_objects(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ali2d_single_iter")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             print(argum[0])
@@ -88,7 +90,7 @@ class Test_lib_compare(unittest.TestCase):
         self.assertEqual(return_new, return_old)
 
     def test_ringwe_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ringwe")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ringwe")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             (numr) = argum[0][0]
@@ -100,32 +102,34 @@ class Test_lib_compare(unittest.TestCase):
 
     def test_ornq_true_should_return_equal_object(self):
 
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq")
         with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+            argum = pickle.load(rb)
+            print(argum)
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
 
-        return_new = fu.ornq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,deltapsi)
-        return_old = fu.ornq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,deltapsi)
+        return_new = fu.ornq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny)
+        return_old = fu.ornq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny)
         self.assertEqual(return_new, return_old)
 
     def test_ormq_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ormq")
         with open(filepath, 'rb') as rb:
-            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+            argum = pickle.load(rb)
+            (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = argum[0]
 
-        return_new = fu.ormq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,deltapsi)
-        return_old = fu.ormq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,deltapsi)
+        return_new = fu.ormq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,delta)
+        return_old = fu.ormq(image,crefim,xrng,yrng,step,mode,numr,cnx,cny,delta)
 
         self.assertEqual(return_new, return_old)
 
     # def test_ormq_fast_true_should_return_equal_object(self):
     #
-    #     filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.ornq")
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ornq")
     #     with open(filepath, 'rb') as rb:
-    #         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi) = pickle.load(rb)
+    #         argum = pickle.load(rb)
+    #         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = argum[0]
     #
-    #     print(numpy.shape(image.get_3dview()[0]))
-    #     print(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi)
     #     return_new = fu.ormq_fast(image, crefim, xrng[0], yrng[0], step, numr, mode)
     #     return_old = fu.ormq_fast(image, crefim, xrng[0], yrng[0], step, numr, mode)
     #
@@ -153,14 +157,13 @@ class Test_lib_compare(unittest.TestCase):
 
 
     # def test_prepare_refrings_true_should_return_equal_object(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.prepare_refrings")
-    #
-    #     if os.path.getsize(filepath) > 0:
-    #         print(os.path.getsize(filepath))
-    #         print('locationisok')
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.prepare_refrings")
     #     with open(filepath, 'rb') as rb:
-    #         unpickler = pickle.Unpickler(rb)
-    #         print(unpickler.load())
+    #         try:
+    #             argum = pickle.load(rb)
+    #             print(argum)
+    #         except EOFError as exc:
+    #             print(exc)
     #
     #         # (volft,kb) = pickle.load(rb)
     #
@@ -169,8 +172,22 @@ class Test_lib_compare(unittest.TestCase):
     #     #
     #     # self.assertEqual(return_old,return_new)
 
+    def test_ali_vol_func_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.ali_vol_func")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+            params = argum[0][0]
+            data = argum[1]
+
+
+        return_new = fu.ali_vol_func(params,**data)
+        return_old = oldfu.ali_vol_func(params,**data)
+
+        self.assertEqual(return_old, return_new)
+
+
     def test_align2d_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.align2d_scf")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             (image,refim, xrng, yrng) = argum[0]
@@ -183,7 +200,7 @@ class Test_lib_compare(unittest.TestCase):
 
 
     def test_align2d_scf_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.align2d_scf")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.align2d_scf")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             (image,refim, xrng, yrng) = argum[0]
@@ -196,36 +213,54 @@ class Test_lib_compare(unittest.TestCase):
 
 
     def test_parabl_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.parabl")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.parabl")
         with open(filepath, 'rb') as rb:
             (Z) = pickle.load(rb)
-            print(Z[0][0])
 
         return_new = fu.parabl(Z[0][0])
         return_old = oldfu.parabl(Z[0][0])
 
         self.assertEqual(return_old, return_new)
 
-    # def test_shc_true_should_return_equal_object(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.shc")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #         print(argum)
-    #         (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = argum
-    #     return_new = fu.shc(data,refrings,list_of_ref_ang, numr, xrng,yrng,step)
-    #     return_old = oldfu.shc(data,refrings,list_of_ref_ang, numr, xrng,yrng,step)
-    #
-    #     self.assertEqual(return_old, return_new)
+    def test_shc_true_should_return_equal_object(self):
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.shc")
+        with open(filepath, 'rb') as rb:
+            argum = pickle.load(rb)
+            print(argum)
+            print(len(argum[0]))
+            print(argum[0][4])
+
+        (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = argum[0]
+
+        return_new = fu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step)
+
+        return_old = oldfu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step)
+
+        self.assertTrue(return_old, return_new)
+
+
 
     def test_search_range_true_should_return_equal_object(self):
-        filepath = os.path.join(ABSOLUTE_PATH, "files/picklefiles/alignment.search_range")
+        filepath = os.path.join(ABSOLUTE_PATH, "pickle files/alignment.search_range")
         with open(filepath, 'rb') as rb:
             argum = pickle.load(rb)
             print(argum[0])
-            (n, radius, shift, range) = argum[0]
+            (n, radius, shift, range,location) = argum[0]
 
         return_new = fu.search_range(n, radius, shift, range)
         return_old = oldfu.search_range(n, radius, shift, range)
+
+        self.assertEqual(return_old, return_new)
+
+
+    def test_generate_list_true_should_return_equal_object(self):
+        nsym = 5
+        symangles = []
+        for i in range(nsym):
+            symangles.append([0.0, 0.0, i * 360. / nsym])
+
+        return_new = fu.generate_list_of_reference_angles_for_search(symangles , 'c5')
+        return_old = oldfu.generate_list_of_reference_angles_for_search(symangles, 'c5')
 
         self.assertEqual(return_old, return_new)
 

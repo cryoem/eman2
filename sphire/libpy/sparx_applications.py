@@ -127,7 +127,8 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
 	if myid == main_node:
-		if outdir:	os.mkdir(outdir)
+		if outdir:
+			os.mkdir(outdir)
 		pass#IMPORTIMPORTIMPORT import global_def
 		sparx_global_def.LOGFILE =  os.path.join(outdir, sparx_global_def.LOGFILE)
 		sparx_utilities.print_begin_msg("ali2d_MPI")
@@ -592,6 +593,9 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 		list_of_particles = list_of_particles[image_start:image_end]
 		nima = len(list_of_particles)
+
+		print('nima is' , nima)
+		print('data length is ', len(data))
 		assert( nima == len(data))
 
 	# read nx and ctf_app (if CTF) and broadcast to all nodes
@@ -738,9 +742,11 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				else:
 					tavg = (ave1+ave2)/total_nima
 				if outdir:
+					print('without CTF address', outdir)
 					tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
 					
 					if CTF:
+						print('with CTF address', outdir)
 						tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
 					frsc = sparx_statistics.fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
 				else:

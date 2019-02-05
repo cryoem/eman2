@@ -9,7 +9,7 @@ import numpy
 import copy
 import math
 from ..libpy_py3 import sphire_fundamentals as fu
-# from ..libpy import sparx_fundamentals as fu
+from ..libpy import sparx_fundamentals as fu
 from .sparx_lib import sparx_fundamentals as oldfu
 
 import unittest
