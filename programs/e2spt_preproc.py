@@ -262,7 +262,7 @@ class Preproc3DTask(JSTask):
 		return
 
 
-def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False ):
+def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False, ref=False ):
 	#def preprocfunc( options, i, outname, simulation=False, resizeonly=False ):
 		
 	#simage = EMData(options.input,i)
@@ -272,9 +272,7 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 	if options.verbose:
 		print("\n(e2spt_preproc) preprocessing particle", i)
 
-	
-	
-	
+
 	if not resizeonly:
 	
 		apix = simage['apix_x']
@@ -302,24 +300,25 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 			#print ("\n(e2spt_preproc)(preprocfunc) --mask provided: %s" %( options.mask))
 			#mask.write_image(options.path + '/mask.hdf',-1)
 
-		try:
-			if options.maskfile:
-				maskfileimg = EMData(options.maskfile,0)
-		
-				if maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
-					maskfileimg = clip3d( maskfileimg, maskimg['nx'] )
-	
-				maskimg.mult( maskfileimg )
+		if ref:
+			try:
+				if options.maskfile:
+					maskfileimg = EMData(options.maskfile,0)
 			
-				if options.verbose > 9:
-					print("including --maskfile in mask")
-				#print "\n(e2spt_preproc)(preprocfunc)a maskfile was multiplied by the mask %s" %( options.maskfile) 
-			else:
-				if options.verbose > 9:
-					print("\n(e2spt_preproc)(preprocfunc) apparently therewas no --maskfile")
-				#pass
-		except:
-			pass
+					if maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
+						maskfileimg = clip3d( maskfileimg, maskimg['nx'] )
+		
+					maskimg.mult( maskfileimg )
+				
+					if options.verbose > 9:
+						print("\n(e2spt_preproc)(preprocfunc) including --maskfile in mask")
+					#print "\n(e2spt_preproc)(preprocfunc)a maskfile was multiplied by the mask %s" %( options.maskfile) 
+				else:
+					if options.verbose > 9:
+						print("\n(e2spt_preproc)(preprocfunc) apparently, there was no --maskfile")
+					#pass
+			except:
+				pass
 	
 	
 		'''
