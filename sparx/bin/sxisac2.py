@@ -1641,6 +1641,6 @@ def main(args):
 	exit()
 
 if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
 	main(sys.argv[1:])
-
-
+	global_def.print_timestamp( "Finish" )

@@ -38,6 +38,7 @@ import global_def
 from global_def import *
 from optparse import OptionParser
 import sys
+
 def main():
 	arglist = []
 	i = 0
@@ -134,4 +135,6 @@ def main():
 			mpi_finalize()
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

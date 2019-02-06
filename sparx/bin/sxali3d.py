@@ -172,4 +172,6 @@ def main():
 		if options.MPI:  mpi_finalize()
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

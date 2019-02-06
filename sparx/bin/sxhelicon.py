@@ -31,13 +31,13 @@ from __future__ import print_function
 #
 #
 
+import os
+import sys
+from optparse import OptionParser
+from global_def import SPARXVERSION
+import global_def
 
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
-	from global_def import SPARXVERSION
-	import global_def
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -138,4 +138,6 @@ def main():
 		mpi_finalize()
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

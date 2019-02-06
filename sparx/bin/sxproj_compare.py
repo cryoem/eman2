@@ -11,6 +11,8 @@ from projection import prep_vol, prgl
 from math import sqrt
 from filter import filt_table
 
+import global_def
+
 # TO DO:
 #	resize the class-averages and re-projections if they have different sizes?
 
@@ -190,6 +192,8 @@ def check(file):
 
 	
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
+
 	# Command-line arguments
 	parser = EMAN2_cppwrap.EMArgumentParser(usage=USAGE,version=EMAN2.EMANVERSION)
 	parser.add_argument('classavgs', help='Input class averages')
@@ -213,3 +217,6 @@ if __name__ == "__main__":
 
 	runcheck(options.classavgs, options.vol3d, outdir, 
 		  inangles=options.angles, selectdoc=options.select, prjmethod=options.prjmethod, displayYN=options.display)
+
+	global_def.print_timestamp( "Finish" )
+	

@@ -39,6 +39,7 @@ import global_def
 from   global_def     import *
 from   optparse       import OptionParser
 import sys
+
 def main():
 	from utilities import get_input_from_string
 	progname = os.path.basename(sys.argv[0])
@@ -177,4 +178,6 @@ def main():
 		global_def.BATCH = False
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

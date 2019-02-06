@@ -5825,5 +5825,8 @@ def main():
 	from mpi import mpi_finalize
 	mpi_finalize()
 	exit()
+	
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

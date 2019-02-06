@@ -1760,5 +1760,7 @@ def main():
 	else:  ERROR("Please provide option name","sxprocess.py",1)
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
 	print('Done!')
+	global_def.print_timestamp( "Finish" )

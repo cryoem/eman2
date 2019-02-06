@@ -39,6 +39,8 @@ from math import *
 import sys
 import os
 
+import global_def
+
 try:
 	from PyQt4 import QtGui, QtCore
 	from eman2_gui.emapplication import EMApp, get_application
@@ -2255,4 +2257,6 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 					#iseg += 1
 		h+=1			
 if __name__ == '__main__':
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

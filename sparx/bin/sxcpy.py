@@ -79,4 +79,6 @@ def main():
 		cpy(args[:-1], args[-1:][0])
 		
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

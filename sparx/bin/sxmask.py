@@ -507,7 +507,9 @@ def main():
 
 
 if __name__ == '__main__':
+	global_def.print_timestamp( "Start" )
 	global_def.BATCH = True
 	main()
 	global_def.BATCH = False
 	print('Done!')
+	global_def.print_timestamp( "Finish" )

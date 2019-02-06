@@ -62,4 +62,6 @@ containing their distribution on a hemisphere."""
 		global_def.BATCH = False
 
 if __name__ == "__main__":
-	        main()
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

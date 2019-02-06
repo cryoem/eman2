@@ -37,6 +37,7 @@ import sys
 from   optparse import OptionParser
 import os
 from   utilities import get_image
+
 def main():
 
 	arglist = []
@@ -93,4 +94,6 @@ def main():
 
 
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

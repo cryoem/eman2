@@ -35,6 +35,8 @@ import sys
 import glob
 import numpy
 
+import global_def
+
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
@@ -4580,4 +4582,6 @@ def _main():
 
 
 if __name__ == '__main__':
+    global_def.print_timestamp( "Start" )
     _main()
+    global_def.print_timestamp( "Finish" )

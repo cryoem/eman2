@@ -1369,7 +1369,9 @@ For negative staining data, use --skip_invert.
 # Define main function for command line execution
 # ========================================================================================
 if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )
 
 # ========================================================================================
 #  END OF FILE

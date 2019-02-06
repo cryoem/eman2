@@ -677,4 +677,7 @@ def import_particle_stack(particle_stack, output_dir):
 
 
 if __name__ == '__main__':
+	global_def.print_timestamp( "Start" )
 	main(parse_args())
+	global_def.print_timestamp( "Finish" )
+	

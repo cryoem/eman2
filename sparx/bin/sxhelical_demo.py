@@ -345,4 +345,6 @@ def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 	#f.write('mpirun -np 3 sxhelicon_utils.py result_local/volf0011.hdf outsymsearch --symsearch --dp=27.6 --dphi=166.715 --apix=1.84 --fract=%.2f --rmin=0 --rmax=64.0 --datasym=datasym.txt --dp_step=0.92 --ndp=10 --dphi_step=1.0 --ndphi=10 --MPI\n'%(fract))
 	
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

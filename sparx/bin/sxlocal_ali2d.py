@@ -38,6 +38,7 @@ import global_def
 from global_def import *
 from optparse import OptionParser
 import sys
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack outdir <maskfile> --ou=outer_radius --br=brackets --center=center_type --eps=epsilon --maxit=max_iter --CTF --snr=SNR --function=user_function_name"
@@ -69,5 +70,8 @@ def main():
 		global_def.BATCH = True	
 		local_ali2d(args[0], args[1], mask, options.ou, options.br, options.center, options.eps, options.maxit, options.CTF, options.snr, options.function)
 		global_def.BATCH = False	
+
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

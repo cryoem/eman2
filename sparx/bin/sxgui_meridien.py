@@ -31,6 +31,8 @@ import json
 import sys
 import numpy as np
 
+import global_def
+
 
 class DriverFileReader(QObject):
 
@@ -566,4 +568,6 @@ def run(args=None):
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
+    global_def.print_timestamp( "Start" )
     run()
+    global_def.print_timestamp( "Finish" )

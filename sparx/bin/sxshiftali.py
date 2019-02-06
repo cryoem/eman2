@@ -715,4 +715,6 @@ def gaussian(sigma, a, mu, x):
 	return a*exp(-(x-mu)**2/(2.0*sigma**2))*1.0/(sigma*sqrt(2*pi))
 			
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

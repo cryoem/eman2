@@ -34,10 +34,11 @@ from __future__ import print_function
 import global_def
 from   global_def     import *
 
+import os
+import sys
+from optparse    import OptionParser
+
 def main():
-	import os
-	import sys
-	from optparse    import OptionParser
 
 	arglist = []
 	for arg in sys.argv:
@@ -68,4 +69,6 @@ def main():
 	imgstat( args, options.ccc, options.fsc, options.inf, options.rad )
 
 if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )

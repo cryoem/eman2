@@ -166,5 +166,6 @@ directory		output directory name: into which the results will be written (if it 
 	mpi_finalize()
 
 if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
 	main(sys.argv[1:])
-
+	global_def.print_timestamp( "Finish" )

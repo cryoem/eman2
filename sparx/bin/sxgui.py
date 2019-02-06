@@ -50,6 +50,8 @@ from functools import partial  # Use to connect event-source widget and event ha
 from subprocess import *
 import re
 
+import global_def
+
 # ========================================================================================
 # Helper Functions
 # 
@@ -5828,7 +5830,9 @@ def main():
 
 # ========================================================================================
 if __name__ == "__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )
 
 # ========================================================================================
 # END OF SCRIPT

@@ -1314,8 +1314,11 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 # ========================================================================================
 # Define main function for command line execution
 # ========================================================================================
+
 if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
 	main()
+	global_def.print_timestamp( "Finish" )
 
 # ========================================================================================
 #  END OF FILE

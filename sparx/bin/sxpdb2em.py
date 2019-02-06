@@ -300,5 +300,7 @@ map to the center of the volume."""
 	else:   ERROR("unknown image type","sxpdb2em",1)
 				
 if __name__ == "__main__":
-    main()
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )
 
