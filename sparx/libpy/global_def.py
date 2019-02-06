@@ -50,6 +50,8 @@ Eulerian_Angles = "SPIDER"
 from   EMAN2   import Util, EMData, EMUtil, Transform
 from   random  import seed
 
+import datetime as dt
+
 rand_seed = Util.get_randnum_seed()
 seed(rand_seed)
 
@@ -90,6 +92,25 @@ global SPARX_DOCUMENTATION_WEBSITE
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
 
 
+def print_timestamp( tag="" ):
+	"""
+	Utility function to print a generic time stamp.
+
+	Args:
+		tag (string): Optional string that can be added to the time stamp to
+			provide more information.
+
+	Example:
+		>>>  print_timestamp( "Start" )
+		[Start] : 19-02-06 11:11
+	"""
+
+	if tag != "":
+		print( dt.datetime.now().strftime( "["+tag+"] : %y-%m-%d %H:%M" ) )
+	else:
+		print( dt.datetime.now().strftime( "%y-%m-%d %H:%M" ) )
+
+
 def ERROR(message, where, action = 1, myid = 0):
 	"""
 		General error function for sparx system
@@ -112,9 +133,11 @@ def ERROR(message, where, action = 1, myid = 0):
 			mpi_finalize()
 			MPI = False
 			BATCH = False
+			print_timestamp( "ABORT" )
 			exit(1)
 		else:
 			BATCH = False
+			print_timestamp( "ABORT" )
 			exit(1)
 
 
