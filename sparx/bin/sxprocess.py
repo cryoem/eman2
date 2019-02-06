@@ -639,23 +639,14 @@ def main():
 		from fundamentals import rops_table
 		from math import log10
 		im = get_im(args[0])
-		nx = im.get_xsize()
-		ny = im.get_ysize()
-		nz = im.get_zsize()
 		ndim = im.get_ndim()
-		if(ndim == 3):
-			nn = min(nx,ny,nz)
-			t = rops_table(Util.window(im,nn,nn,nn))
-		elif(ndim == 2):
-			from fundamentals import window2d
-			nn = min(nx,ny)
-			print(nn,nx,ny)
-			t = rops_table(window2d(im,nn,nn))
-		else:
+		if(ndim == 1):
 			t = periodogram(im)
 			t = [t[i] for i in range(t.get_xsize())]
+		else:
+			t = rops_table(im)
 		x = list(range(len(t)))
-		r = [log10(q) for q in t]
+		r = [log10(abs(q)) for q in t]
 		write_text_file([t,r,x], options.rotpw)
 
 	elif options.transformparams != None:
