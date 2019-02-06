@@ -46,13 +46,15 @@ import sys
 import numpy as np
 import traceback
 
+import global_def
+
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
 	from PyQt4.QtCore import QTimer
 except:
-	print("Warning: PyQt4 must be installed")
-	sys.exit(1)
+	global_def.ERROR( "PyQt4 must be installed", "sxgui_cter (header)" )
+	sys.exit()
 
 from sparx import *
 from optparse import OptionParser
@@ -80,8 +82,9 @@ def main():
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
 	if len(args) > 2:
-		print("see usage " + usage)
-		sys.exit()
+		print("Usage: " + usage)
+		global_def.ERROR( "Invalid number of parameters. Please see usage information above.", "sxgiu_cter.main" )
+		return
 	
 	app=EMApp()
 	

@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import os
+import sys
+
 import EMAN2
 import EMAN2_cppwrap
-#from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
+
 from applications import header, project3d
 from utilities import get_im, write_header, model_circle, read_text_row
 from statistics import ccc
@@ -187,9 +189,8 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	
 def check(file):
 	if not os.path.exists(file):
-		print("ERROR!! %s doesn't exist!\n" % file)
-		exit()
-
+		global_def.ERROR( "File \'"+file+"\' does not exist", "sxproj_compare.check" )
+		sys.exit()
 	
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )

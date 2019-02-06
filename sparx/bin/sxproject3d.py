@@ -54,9 +54,13 @@ def main():
 	parser.add_option("--tril",     action="store_true", default=False,   help="trilinear interpolation projection")
 
 	(options, args) = parser.parse_args()
+
 	if(len(args) < 2 or len(args) > 3):
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
+		print("Usage: " + usage)
+		print("Please run \'" + progname + " -h\' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxproject3d.main" )
+		return
+		
 	else:
 		if len(args) == 2:
 			mask = None

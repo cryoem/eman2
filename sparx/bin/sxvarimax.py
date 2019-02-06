@@ -47,22 +47,23 @@ def main():
     parser.add_option("--rad",     type="int", default=-1, help="radius of mask")
     parser.add_option("--verbose", type="int", default=0,  help="verbose level (0|1)")
 
-
     (options, args) = parser.parse_args()
 
-    
-
     if len(args) < 4:
-        print("usage: " + usage)
-        print("Please run '" + progname + " -h' for details")
+        print("Usage: " + usage)
+        print("Please run \'" + progname + " -h\' for details")
+        global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxvarimax.main" )
+        return
     else:
         from string import atoi
         input_stack  = args[0]
         imgstart     = atoi( args[1] )
         imgend       = atoi( args[2] ) +1
         output_stack = args[3]
-        if(len(args) == 5):  mask = args[4]
-        else:               mask = None
+        if(len(args) == 5): 
+            mask = args[4]
+        else:
+            mask = None
 
     if global_def.CACHE_DISABLE:
         from utilities import disable_bdb_cache

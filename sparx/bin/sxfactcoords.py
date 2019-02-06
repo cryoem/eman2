@@ -33,17 +33,20 @@ def main():
 		output = args[-1]
 		
 		if options.rad < 0:
-			print("Error: mask radius is not given")
-			sys.exit(-1)
+			global_def.ERROR( "Mask radius is not given", "sxfactcoords.main" )
+			return
+
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
+
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 
 		from utilities import get_im
 		global_def.BATCH = True
+		
 		if( get_im( stacks[0]).get_zsize() == 1 and get_im( eigvol).get_zsize() > 1):
 			from applications import factcoords_prj
 			factcoords_prj(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.CTF, options.MPI)

@@ -259,8 +259,9 @@ def main():
 	if options.dd:
 		nargs = len(args)
 		if nargs != 3:
-			print("must provide name of input and two output files!")
+			global_def.ERROR( "Must provide name of input and two output files!", "sxchains.main()" )
 			return
+
 		stack = args[0]
 		new_stack = args[1]
 
@@ -289,17 +290,18 @@ def main():
 
 		order = tsp(lccc)
 		if(len(order) != lend):
-			print(" problem with data length")
-			from sys import exit
-			exit()
+			global_def.ERROR( "Problem with data length", "sxchains.main()" )
+			return
+
 		print("Total sum of cccs :",TotalDistance(order, lccc))
 		print("ordering :",order)
-		for i in range(lend):  get_im(stack, order[i]).write_image( new_stack, i )
+		for i in range(lend):  
+			get_im(stack, order[i]).write_image( new_stack, i )
 
 	elif options.align:
 		nargs = len(args)
 		if nargs != 3:
-			print("must provide name of input and two output files!")
+			global_def.ERROR( "Must provide name of input and two output files!", "sxchains.main()" )
 			return
 
 		from utilities import get_params2D, model_circle
@@ -313,7 +315,8 @@ def main():
 		
 		d = EMData.read_images(stack)
 		if(len(d)<6):
-			ERROR("Chains requires at least six images in the input stack to be executed", "sxchains.py", 1)
+			global_def.ERROR( "Chains requires at least six images in the input stack to be executed", "sxchains.main()" )
+			return
 
 		"""
 		# will align anyway
@@ -427,9 +430,9 @@ def main():
 
 		order = tsp(lccc)
 		if(len(order) != lend):
-			print(" problem with data length")
-			from sys import exit
-			exit()
+			global_def.ERROR( "Problem with data length", "sxchains.main()" )
+			return
+
 		print(TotalDistance(order, lccc))
 		print(order)
 		ibeg = order.index(init)
@@ -572,7 +575,7 @@ def main():
 	else:
 		nargs = len(args)
 		if nargs != 2:
-			print("must provide name of input and output file!")
+			global_def.ERROR( "Must provide name of input and output file!", "sxchains.main()" )
 			return
 		
 		from utilities import get_params2D, model_circle

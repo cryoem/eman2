@@ -61,10 +61,12 @@ def main():
 	parser.add_option("--MPI", action="store_true", default=False, help="  whether to use MPI version ")
 
 	(options, args) = parser.parse_args()
+
 	if len(args) < 3 or len(args) > 4:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		sys.exit()
+		print("Usage: " + usage)
+		print("Please run \'" + progname + " -h\' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxmulti_assign.main" )
+		return
 	
 	if len(args) == 4:	mask = args[3]
 	else:	mask = None

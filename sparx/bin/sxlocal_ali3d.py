@@ -66,8 +66,11 @@ def main():
 	if(len(args) < 2 or len(args) > 3):
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxlocal_ali3d.main" )
+		return
+
 	else:
-	
+
 		if(len(args) == 2):
 			mask = None
 		else:

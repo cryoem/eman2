@@ -120,10 +120,15 @@ def main():
 	parser.add_option("--scale",   action="store_true",  default=False,   help="whether to scale all particles to (0, 1) ")
 	parser.add_option("--number",  action="store_true",  default=False,   help="whether to show particle number on the particle")	
 	parser.add_option("--begin_zero", action="store_true",  default=False,   help="whether to use zero as the starting point")	
+	
 	(options, args) = parser.parse_args()
+
 	if len(args) != 2:
-		print("usage: " + usage)
+		print("Usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxmontage.main" )
+		return
+
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

@@ -91,14 +91,14 @@ directory		output directory name: into which the results will be written (if it 
 		if not options.__dict__[required_option]:
 			print("\n ==%s== mandatory option is missing.\n"%required_option)
 			print("Please run '" + progname + " -h' for detailed options")
-			return 1
-
-
+			global_def.ERROR( "Missing parameter. Please see above", "sxviper.main" )
+			return
 
 	if len(args) < 2 or len(args) > 3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		return 1
+		print("Usage: " + usage)
+		print("Please run \'" + progname + " -h\' for detailed options" )
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxviper.main" )
+		return
 
 	mpi_init(0, [])
 
@@ -126,11 +126,11 @@ directory		output directory name: into which the results will be written (if it 
 	error = 0
 	if mpi_rank == 0:
 		if mpi_size % options.nruns != 0:
-			ERROR('Number of processes needs to be a multiple of total number of runs. Total runs by default are 3, you can change it by specifying --nruns option.', 'sxviper', 0)
+			global_def.ERROR( "Number of processes needs to be a multiple of total number of runs. Total runs by default are 3, you can change it by specifying --nruns option.", "sxviper.main", 0 )
 			error = 1
 
 		if os.path.exists(outdir):
-			ERROR('Output directory %s   exists, please change the name and restart the program'%outdir, "sxviper", 0)
+			global_def.ERROR( "Output directory \'%s\' exists, please change the name and restart the program"%outdir, "sxviper.main", 0 )
 			error = 1
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)

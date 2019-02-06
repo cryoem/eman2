@@ -112,10 +112,10 @@ def main():
 	# Check validity of input arguments and options
 	# ------------------------------------------------------------------------------------
 	if len(args) != 2:
-		print( 'ERROR!!! Please provide path of input STAR file and outputdirectory!' )
-		print(( 'usage: ' + usage))
-		print(( 'Please run "' + progname + ' -h" for detailed options'))
-		return 1
+		print( "Usage: " + usage )
+		print( "Please run \'" + progname + " -h\' for detailed options" )
+		global_def.ERROR( "Missing paths to input STAR file and output directory. Please see usage information above", "sxrelion2sphire.main" )
+		return
 	
 	print('# ')
 	print('# %s' % get_cmd_line())
@@ -125,24 +125,24 @@ def main():
 	file_path_relion_star    = args[0]
 	dir_path_work            = args[1]
 
-	dir_path_relion_project     = options.relion_project_dir
-	str_relion_start_section    = options.star_section
-	outputs_root                = options.outputs_root.strip()
-	box_size                    = options.box_size
-	is_enable_create_stack      = bool(not options.do_not_create_stack)
+	dir_path_relion_project  = options.relion_project_dir
+	str_relion_start_section = options.star_section
+	outputs_root             = options.outputs_root.strip()
+	box_size                 = options.box_size
+	is_enable_create_stack   = bool(not options.do_not_create_stack)
 
 	if (not os.path.exists(file_path_relion_star)):
-		print(( 'ERROR!!! Input RELION STAR file ({}) is not found.'.format(file_path_relion_star)))
-		sys.exit(-1)
+		global_def.ERROR( "Input RELION STAR file \'"+file_path_relion_star+"\' is not found.", "sxrelion2sphire.main" )
+		return
 
 	if (os.path.exists(dir_path_work)):
-		print(( 'ERROR!!! Output directory ({}) already exists. Please delete it or use a different output directory'.format(dir_path_work)))
-		sys.exit(-1)
+		global_def.ERROR( "Output directory \'"+dir_path_work+"\' already exists. Please delete it or use a different output directory", "sxrelion2sphire.main" )
+		return
 	
 	if dir_path_relion_project is not None:
 		if not os.path.exists(dir_path_relion_project):
-			print(( 'ERROR!!! Specified RELION project directory ({}) does not exist.'.format(dir_path_relion_project)))
-			sys.exit(-1)
+			global_def.ERROR( "Specified RELION project directory \'"+dir_path_relion_project+"\' does not exist.", "sxrelion2sphire.main" )
+			return
 
 	# ------------------------------------------------------------------------------------
 	# Constants
@@ -201,10 +201,10 @@ def main():
 	file_name_sphire_cter_partres   = '{}_cter_partres.txt'.format(outputs_root)
 	# name_pattern_sphire_stack_chunk = '{}_stack_chunk*.txt'.format(outputs_root)
 	
-	dir_name_coordinates            = 'Coordinates'
-	dir_name_rebox                  = 'Rebox'
+	dir_name_coordinates = 'Coordinates'
+	dir_name_rebox       = 'Rebox'
 	if is_enable_create_stack: 
-		dir_name_local_stacks       = 'Particles'
+		dir_name_local_stacks = 'Particles'
 	
 	# For particle source (window) parameters file format
 	i_enum = -1
@@ -217,29 +217,29 @@ def main():
 
 	# For CTER parameters file format
 	i_enum = -1
-	i_enum += 1; idx_cter_def            = i_enum # defocus [um]; index must be same as CTF object format
-	i_enum += 1; idx_cter_cs             = i_enum # Cs [mm]; index must be same as CTF object format
-	i_enum += 1; idx_cter_vol            = i_enum # voltage[kV]; index must be same as CTF object format
-	i_enum += 1; idx_cter_apix           = i_enum # pixel size [A]; index must be same as CTF object format
-	i_enum += 1; idx_cter_bfactor        = i_enum # B-factor [A^2]; index must be same as CTF object format
-	i_enum += 1; idx_cter_total_ac       = i_enum # total amplitude contrast [%]; index must be same as CTF object format
-	i_enum += 1; idx_cter_astig_amp      = i_enum # astigmatism amplitude [um]; index must be same as CTF object format
-	i_enum += 1; idx_cter_astig_ang      = i_enum # astigmatism angle [degrees]; index must be same as CTF object format
-	i_enum += 1; idx_cter_sd_def         = i_enum # std dev of defocus [um]
-	i_enum += 1; idx_cter_sd_total_ac    = i_enum # std dev of total amplitude contrast [%]
-	i_enum += 1; idx_cter_sd_astig_amp   = i_enum # std dev of ast amp [A]
-	i_enum += 1; idx_cter_sd_astig_ang   = i_enum # std dev of ast angle [degrees]
-	i_enum += 1; idx_cter_cv_def         = i_enum # coefficient of variation of defocus [%]
-	i_enum += 1; idx_cter_cv_astig_amp   = i_enum # coefficient of variation of ast amp [%]
-	i_enum += 1; idx_cter_error_def      = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
-	i_enum += 1; idx_cter_error_astig    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
-	i_enum += 1; idx_cter_error_ctf      = i_enum # limit frequency by CTF error [1/A]
-	i_enum += 1; idx_cter_max_freq       = i_enum # visual-impression-based maximum frequency limit [A] (e.g. max frequency of RELION; CCC between neighbour zero-crossing pair)
-	i_enum += 1; idx_cter_reserved       = i_enum # reserved spot for maximum frequency limit or error criterion. possibly originated from external program (e.g. CTF figure of merit of RELION)
-	i_enum += 1; idx_cter_const_ac       = i_enum # constant amplitude contrast [%]
-	i_enum += 1; idx_cter_phase_shift    = i_enum # phase shift [degrees]
-	i_enum += 1; idx_cter_mic_name       = i_enum # micrograph name (This must be always the last entry)
-	i_enum += 1; n_idx_cter              = i_enum # The number of CTER entires
+	i_enum += 1; idx_cter_def          = i_enum # defocus [um]; index must be same as CTF object format
+	i_enum += 1; idx_cter_cs           = i_enum # Cs [mm]; index must be same as CTF object format
+	i_enum += 1; idx_cter_vol          = i_enum # voltage[kV]; index must be same as CTF object format
+	i_enum += 1; idx_cter_apix         = i_enum # pixel size [A]; index must be same as CTF object format
+	i_enum += 1; idx_cter_bfactor      = i_enum # B-factor [A^2]; index must be same as CTF object format
+	i_enum += 1; idx_cter_total_ac     = i_enum # total amplitude contrast [%]; index must be same as CTF object format
+	i_enum += 1; idx_cter_astig_amp    = i_enum # astigmatism amplitude [um]; index must be same as CTF object format
+	i_enum += 1; idx_cter_astig_ang    = i_enum # astigmatism angle [degrees]; index must be same as CTF object format
+	i_enum += 1; idx_cter_sd_def       = i_enum # std dev of defocus [um]
+	i_enum += 1; idx_cter_sd_total_ac  = i_enum # std dev of total amplitude contrast [%]
+	i_enum += 1; idx_cter_sd_astig_amp = i_enum # std dev of ast amp [A]
+	i_enum += 1; idx_cter_sd_astig_ang = i_enum # std dev of ast angle [degrees]
+	i_enum += 1; idx_cter_cv_def       = i_enum # coefficient of variation of defocus [%]
+	i_enum += 1; idx_cter_cv_astig_amp = i_enum # coefficient of variation of ast amp [%]
+	i_enum += 1; idx_cter_error_def    = i_enum # frequency at which signal drops by 50% due to estimated error of defocus alone [1/A]
+	i_enum += 1; idx_cter_error_astig  = i_enum # frequency at which signal drops by 50% due to estimated error of defocus and astigmatism [1/A]
+	i_enum += 1; idx_cter_error_ctf    = i_enum # limit frequency by CTF error [1/A]
+	i_enum += 1; idx_cter_max_freq     = i_enum # visual-impression-based maximum frequency limit [A] (e.g. max frequency of RELION; CCC between neighbour zero-crossing pair)
+	i_enum += 1; idx_cter_reserved     = i_enum # reserved spot for maximum frequency limit or error criterion. possibly originated from external program (e.g. CTF figure of merit of RELION)
+	i_enum += 1; idx_cter_const_ac     = i_enum # constant amplitude contrast [%]
+	i_enum += 1; idx_cter_phase_shift  = i_enum # phase shift [degrees]
+	i_enum += 1; idx_cter_mic_name     = i_enum # micrograph name (This must be always the last entry)
+	i_enum += 1; n_idx_cter            = i_enum # The number of CTER entires
 	
 	# For old SPHIRE CTF parameters file format
 	n_idx_sphire_ctf = idx_cter_astig_ang + 1
@@ -740,9 +740,11 @@ def main():
 		print('# Processed SPHIRE 3D projection entry total counts := {} '.format(sphire_proj3d_entry_total_counts))
 		print('# Processed SPHIRE chunk directory counts           := {} '.format(sphire_chunk_dict_dirname_counts))
 		print('# Processed SPHIRE chunk ID total counts            := {} '.format(sphrie_chunk_id_total_counts))
+
 		if is_enable_create_stack:
 			print('# Processed SPHIRE header directory counts          := {} '.format(sphire_header_dict_dirname_counts))
 			print('# Processed SPHIRE header total counts              := {} '.format(sphire_header_total_counts))
+		
 		print('# Processed SPHIRE stack CTF entry counts           := {} '.format(i_sphire_stack_ctf))
 		print('# Processed SPHIRE stack coorinates entry counts    := {} '.format(i_sphire_stack_coordinates))
 		print('# Processed SPHIRE stack 3D Proj. entry counts      := {} '.format(i_sphire_stack_proj3d))

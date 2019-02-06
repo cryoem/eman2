@@ -89,11 +89,13 @@ def main():
 	if len(args) < 1 or len(args) > 5:
 		print("usage: " + usage + "\n")
 		print("Please run '" + progname + " -h' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. please see usage information above.", "sxihrsr.main")
+		return
 	else:
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			print("Please enter pixel size")
-			sys.exit()
+			global_def.ERROR( "Please enter pixel size", "sxihrsr.main")
+			return
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)

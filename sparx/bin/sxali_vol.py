@@ -55,7 +55,7 @@ def main():
 	if len(args) != 2:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
-		exit(1)
+		return
 	elif(options.ang_scale != None and options.shift_scale != None and options.mag_scale != None):
 		from applications  import ali_vol_scale
 		global_def.BATCH = True

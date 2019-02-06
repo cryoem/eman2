@@ -61,17 +61,20 @@ def main():
 	if len(args) < 2 or len(args) > 3:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxk_means_stable.main" )
+		return
 	else:
 		if len(args) == 2: mask = None
 		else:              mask = args[2]
 
 		if options.K < 2:
-			sys.stderr.write('ERROR: K must be > 1 group\n\n')
-			sys.exit()
+			global_def.ERROR( "K must be > 1 group", "sxk_means_stable.main" )
+			return
 
 		if options.nb_part < 2:
-			sys.stderr.write('ERROR: nb_part must be > 1 partition\n\n')
-			sys.exit()
+			global_def.ERROR( "ERROR: nb_part must be > 1 partition", "sxk_means_stable.main" )
+			return
+
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
@@ -100,7 +103,7 @@ def main():
 			from mpi import mpi_finalize
 			mpi_finalize()
 
-			
+
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()

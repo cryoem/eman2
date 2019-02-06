@@ -71,8 +71,10 @@ def main():
 
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1  or len(args) > 4:
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
+    		print("Usage: " + usage)
+    		print("Please run \'" + progname + " -h\' for detailed options")
+    		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxrsort3d.main" )
+    		return
 	else:
 
 		if len(args)>2:
@@ -216,8 +218,9 @@ def main():
 			a = get_im(Tracker["orgstack"])
 			nnxo = a.get_xsize()
 			if( Tracker["nxinit"] > nnxo ):
-				ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxsort3d.py",1)
-				nnxo = -1
+				global_def.ERROR( "Image size less than minimum permitted $d"%Tracker["nxinit"], "sxsort3d.mian" )
+				nnxo = -1 # we break here, so not sure what this is supposed to accomplish
+				return
 			else:
 				if Tracker["constants"]["CTF"]:
 					i = a.get_attr('ctf')
@@ -235,7 +238,7 @@ def main():
 		nnxo = bcast_number_to_all(nnxo, source_node = main_node)
 		if( nnxo < 0 ):
 			mpi_finalize()
-			exit()
+			return
 		pixel_size                           = bcast_number_to_all(pixel_size, source_node = main_node)
 		fq                                   = bcast_number_to_all(fq, source_node = main_node)
 		if Tracker["constants"]["wn"]==0:
@@ -245,11 +248,15 @@ def main():
 			nnxo= Tracker["constants"]["wn"]
 		Tracker["constants"]["pixel_size"]   = pixel_size
 		Tracker["fuse_freq"]                 = fq
+		
 		del fq, nnxo, pixel_size
+
 		if(Tracker["constants"]["radius"]  < 1):
 			Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
+
 		elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-			ERROR("Particle radius set too large!","sxsort3d.py",1,myid)
+			global_def.ERROR( "Particle radius set too large!", "sxsort3d.main", 1, myid )
+			return
 ####-----------------------------------------------------------------------------------------
 		# create the master directory
 		if myid == main_node:
@@ -412,9 +419,9 @@ def main():
 			low_pass, falloff, currentres = get_resolution_mrk01(vols, Tracker["constants"]["radius"]*Tracker["shrinkage"], Tracker["constants"]["nxinit"], masterdir,Tracker["mask3D"])
 			if low_pass   > Tracker["constants"]["low_pass_filter"]: low_pass  = Tracker["constants"]["low_pass_filter"]
 		else:
-			low_pass    =0.0
-			falloff     =0.0
-			currentres  =0.0
+			low_pass   = 0.0
+			falloff    = 0.0
+			currentres = 0.0
 		currentres                    = bcast_number_to_all(currentres,source_node = main_node)
 		low_pass                      = bcast_number_to_all(low_pass,source_node   = main_node)
 		falloff                       = bcast_number_to_all(falloff,source_node    = main_node)
@@ -471,7 +478,7 @@ def main():
 					print("Missing CTF flag!")
 					from mpi import mpi_finalize
 					mpi_finalize()
-					exit()
+					return
 				mpi_barrier(MPI_COMM_WORLD)
 
 				#nx_of_image=volref.get_xsize()
@@ -501,7 +508,7 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)			
 			from mpi import mpi_finalize
 			mpi_finalize()
-			exit()
+			return
 		else: # Continue clustering on unaccounted ones that produced by two_way comparison of two previous runs
 			#########################################################################################################################
 			#if Tracker["constants"]["number_of_images_per_group"] ==-1: # Estimate number of images per group from delta, and scale up 
@@ -759,7 +766,7 @@ def main():
 					print("Missing CTF flag!")
 					from mpi import mpi_finalize
 					mpi_finalize()
-					exit()
+					return
 				mpi_barrier(MPI_COMM_WORLD)
 				fscc        = read_text_file(os.path.join(masterdir, "resolution_%02d.txt"%igrp),-1)
 				nx_of_image = volref.get_xsize()
@@ -791,7 +798,8 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		from mpi import mpi_finalize
 		mpi_finalize()
-		exit()
+		return
+
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()

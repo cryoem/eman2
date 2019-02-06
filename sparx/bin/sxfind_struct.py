@@ -37,6 +37,7 @@ import global_def
 from   global_def import *
 from   optparse   import OptionParser
 import sys
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --debug --noweights --trials --given --first_zero --weights --MPIGA--pcross --pmut --maxgen --MPI --trials"
@@ -59,18 +60,26 @@ def main():
 	parser.add_option("--pcross",     type="float",        default=0.95,     help="Cross-over probability (set to 0.95)")
 	parser.add_option("--pmut",       type="float",        default=0.05,     help="Mutation probability (set to 0.05)")
 	parser.add_option("--maxgen",     type="int",          default=10,       help="Maximum number of generations (set to 10)")
+
 	(options, args) = parser.parse_args()
+
 	if len(args) != 2:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
+
 	else:
-		if options.maxit < 1: options.maxit = 1
-		if options.noweights: weights = False
-		else:                 weights = True
+		if options.maxit < 1: 
+			options.maxit = 1
+		
+		if options.noweights: 
+			weights = False
+		else:
+			weights = True
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
+
 		if options.MPIGA:
 			from development import cml2_main_mpi
 			global_def.BATCH = True
@@ -78,6 +87,7 @@ def main():
 				      options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
 				      weights, options.debug, options.maxgen, options.pcross, options.pmut)
 			global_def.BATCH = False
+
 		elif options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)
@@ -97,7 +107,7 @@ def main():
 			global_def.BATCH = False
 			if options.MPI:
 				from mpi import mpi_finalize
-			mpi_finalize()
+				mpi_finalize()
 
 
 

@@ -59,7 +59,8 @@ def main():
 	
 	if len(args) <3 or len(args) > 4:
 		print("See usage " + usage)
-		sys.exit()
+		global_def.ERROR( "Wrong number of parameters. Please see usage information above.", "sxfilterlocal.main" )
+		return
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache

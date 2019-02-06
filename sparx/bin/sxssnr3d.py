@@ -53,10 +53,15 @@ def main():
 	parser.add_option("--sym",      type= "string",         default= "c1",     help="  symmetry of the structure (set to c1)")
 	parser.add_option("--MPI",      action="store_true",    default=False,     help="  use MPI version ")
 	parser.add_option("--random_angles",  type= "int",      default= "0",      help="  randomize Euler angles: 0 - no, 1 - only psi, 2 - all three")
+
 	(options, args) = parser.parse_args(arglist[1:])
+
 	if len(args) < 1 or len(args) > 4:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		print("Usage: " + usage)
+		print("Please run \'" + progname + " -h\' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxssnr3d.main" )
+		return
+
 	else:
 		stack = args[0]
 		if   len(args) == 1:

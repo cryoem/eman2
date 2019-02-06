@@ -58,17 +58,19 @@ def main():
 	parser.add_option("--verbose", type="int",          default=0,     help="verbose level: 0 no, 1 yes" )
 	(options,args) = parser.parse_args(arglist[1:])     
 
-
 	if len(args) != 3 and len(args) != 4:
-		print(usage)
-		sys.exit(-1)
+		print("Usage: " + usage)
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxrecons3d.main" )
+		return
 
 	prj_stack = args[0]
 	vol_stack = args[1]
 	fsc_curve = args[2]
 
-	if len(args) == 3: mask = None
-	else:              mask = get_image( args[3] )
+	if len(args) == 3: 
+		mask = None
+	else:
+		mask = get_image( args[3] )
 
 	if options.MPI:
 		from mpi import mpi_init
@@ -79,8 +81,8 @@ def main():
 		disable_bdb_cache()
 
 	if(options.list and options.group > -1):
-		ERROR("options group and list cannot be used together","recon3d_n",1)
-		sys.exit()
+		global_def.ERROR( "Options group and list cannot be used together", "sxrecons3d (recon3d_n)" )
+		return
 
 	from applications import recons3d_f
 

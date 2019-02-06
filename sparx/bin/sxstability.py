@@ -58,10 +58,14 @@ def main():
 	parser.add_option("--verbose",      action="store_true",     default=False,       help="print individual pixel error (default = False)")
 	parser.add_option("--stables",		action="store_true",	 default=False,	      help="output the stable particles number in file (default = False)")
 	parser.add_option("--method",		type="string"      ,	 default=" ",	      help="SHC (standard method is default when flag is ommitted)")
+	
 	(options, args) = parser.parse_args()
+	
 	if len(args) != 1 and len(args) != 2:
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
+    		print("Usage: " + usage)
+    		print("Please run \'" + progname + " -h\' for detailed options")
+    		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxstability.main" )
+    		return
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -73,10 +77,14 @@ def main():
 
 		global_def.BATCH = True
 
-		xrng        = get_input_from_string(options.xr)
-		if  options.yr == "-1":  yrng = xrng
-		else          :  yrng = get_input_from_string(options.yr)
-		step        = get_input_from_string(options.ts)
+		xrng = get_input_from_string(options.xr)
+
+		if  options.yr == "-1":
+			yrng = xrng
+		else:
+			yrng = get_input_from_string(options.yr)
+		
+		step = get_input_from_string(options.ts)
 
 		class_data = EMData.read_images(args[0])
 
@@ -172,8 +180,6 @@ def main():
 			avet.set_attr('pix_err', pix_err)
 			avet.set_attr('pixerr', particle_pixerr)
 			avet.write_image(args[1])
-
-
 
 		global_def.BATCH = False
 

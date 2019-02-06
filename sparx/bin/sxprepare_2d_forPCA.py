@@ -43,10 +43,15 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--avg", action="store_true", default=True, help="  Subtract averages computed within corners of individual images, default False")
 	parser.add_option("--CTF", action="store_true", default=False, help="  Consider CTF correction during the alignment, dafault False")
+
 	(options, args) = parser.parse_args()    	
+	
 	if len(args) != 3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		print("Usage: " + usage)
+		print("Please run \'" + progname + " -h\' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxprepare_2d_forPCA.main" )
+		return
+		
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

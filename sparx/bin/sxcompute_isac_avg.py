@@ -17,6 +17,8 @@ from    EMAN2      import *
 from    numpy      import array
 from    logger     import Logger, BaseLogger_Files
 
+import mpi
+
 from mpi   	import  *
 from math  	import  *
 from random import *
@@ -523,10 +525,9 @@ def main():
 		cmd = "{} {}".format("rm -rf", os.path.join(Tracker["constants"]["masterdir"], "junk.hdf") )
 		junk = cmdexecute(cmd)
 		
-	from mpi import mpi_finalize
-	mpi_finalize()
-	exit()
-	
+	mpi.mpi_finalize()
+	return
+
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()

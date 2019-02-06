@@ -84,8 +84,11 @@ def main():
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-		print("usage: " + usage)
+		print("Usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxmref_ali3d" )
+		return
+		
 	else:
 
 		if len(args) == 3 :
@@ -133,6 +136,7 @@ def main():
 		if options.MPI:
 			from mpi import mpi_finalize
 			mpi_finalize()
+
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )

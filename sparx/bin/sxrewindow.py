@@ -1363,7 +1363,7 @@ For negative staining data, use --skip_invert.
 		mpi_finalize()
 	
 	sys.stdout.flush()
-	sys.exit(0)
+	return
 	
 # ========================================================================================
 # Define main function for command line execution

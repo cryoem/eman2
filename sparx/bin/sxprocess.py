@@ -446,9 +446,11 @@ def main():
 
 	if options.phase_flip:
 		nargs = len(args)
+		
 		if nargs != 2:
-			print("must provide name of input and output file!")
+			global_def.ERROR( "Must provide name of input and output file!", "sxprocess.main" )
 			return
+
 		from EMAN2 import Processor
 		instack = args[0]
 		outstack = args[1]
@@ -460,7 +462,7 @@ def main():
 			try:
 				ctf = img.get_attr('ctf')
 			except:
-				print("no ctf information in input stack! Exiting...")
+				global_def.ERROR( "No ctf information in input stack!", "sxprocess.main" )
 				return
 
 			dopad = True
@@ -478,9 +480,10 @@ def main():
 			dza = dict["dfdiff"]
 			azz = dict["dfang"]
 
-			if dopad and not img.is_complex(): ip = 1
-			else:                             ip = 0
-
+			if dopad and not img.is_complex(): 
+				ip = 1
+			else:
+				ip = 0
 
 			params = {"filter_type": Processor.fourier_filter_types.CTF_,
 	 			"defocus" : dz,
@@ -503,8 +506,9 @@ def main():
 	elif options.changesize:
 		nargs = len(args)
 		if nargs != 2:
-			ERROR("must provide name of input and output file!", "change size", 1)
+			global_def.ERROR( "Must provide name of input and output file!", "sxprocess.main (change size)" )
 			return
+
 		from utilities import get_im
 		instack = args[0]
 		outstack = args[1]
@@ -518,8 +522,9 @@ def main():
 	elif options.isacgroup>-1:
 		nargs = len(args)
 		if nargs != 3:
-			ERROR("Three files needed on input!", "isacgroup", 1)
+			global_def.ERROR( "Three files needed on input!", "sxprocess.main (isacgroup)" )
 			return
+
 		from utilities import get_im
 		instack = args[0]
 		m=get_im(args[1],int(options.isacgroup)).get_attr("members")
@@ -532,8 +537,9 @@ def main():
 	elif options.isacselect:
 		nargs = len(args)
 		if nargs != 2:
-			ERROR("Two files needed on input!", "isacgroup", 1)
+			global_def.ERROR( "Two files needed on input!", "sxprocess.main (isacgroup)" )
 			return
+
 		from utilities import get_im
 		nima = EMUtil.get_image_count(args[0])
 		m = []
@@ -546,8 +552,9 @@ def main():
 	elif options.pw:
 		nargs = len(args)
 		if nargs < 2:
-			ERROR("must provide name of input and output file!", "pw", 1)
+			global_def.ERROR( "Must provide name of input and output file!", "sxprocess.main (pw)" )
 			return
+
 		from utilities import get_im, write_text_file
 		from fundamentals import rops_table
 		d = get_im(args[0])
@@ -563,7 +570,10 @@ def main():
 			if wn == -1:
 				wn = max(nx, ny)
 			else:
-				if( (wn<nx) or (wn<ny) ):  ERROR("window size cannot be smaller than the image size","pw",1)
+				if( (wn<nx) or (wn<ny) ):  
+					global_def.ERROR( "window size cannot be smaller than the image size", "sxprocess.main (pw)" )
+					return
+
 			n = EMUtil.get_image_count(args[0])
 			from utilities import model_blank, model_circle, pad
 			from EMAN2 import periodogram
@@ -581,8 +591,9 @@ def main():
 	elif options.adjpw:
 
 		if len(args) < 3:
-			ERROR("filt_by_rops input target output fl aa (the last two are optional parameters of a low-pass filter)","adjpw",1)
+			global_def.ERROR( "Filt_by_rops input target output fl aa (the last two are optional parameters of a low-pass filter)", "sxprocess.main (adjpw)" )
 			return
+
 		img_stack = args[0]
 		from math         import sqrt
 		from fundamentals import rops_table, fft
@@ -621,8 +632,9 @@ def main():
 	elif options.rotpw != None:
 
 		if len(args) != 1:
-			ERROR("Only one input permitted","rotpw",1)
+			global_def.ERROR( "Only one input permitted", "sxprocess.main (rotpw)" )
 			return
+
 		from utilities import write_text_file, get_im
 		from fundamentals import rops_table
 		from math import log10
@@ -648,8 +660,9 @@ def main():
 
 	elif options.transformparams != None:
 		if len(args) != 2:
-			ERROR("Please provide names of input and output files with orientation parameters","transformparams",1)
+			global_def.ERROR( "Please provide names of input and output files with orientation parameters", "sxprocess.main (transformparams)" )
 			return
+
 		from utilities import read_text_row, write_text_row
 		transf = [0.0]*6
 		spl = options.transformparams.split(',')
@@ -660,8 +673,9 @@ def main():
 	elif options.makedb != None:
 		nargs = len(args)
 		if nargs != 1:
-			print("must provide exactly one argument denoting database key under which the input params will be stored")
+			global_def.ERROR( "Must provide exactly one argument denoting database key under which the input params will be stored", "sxprocess.main" )
 			return
+
 		dbkey = args[0]
 		print("database key under which params will be stored: ", dbkey)
 		gbdb = js_open_dict("e2boxercache/gauss_box_DB.json")
@@ -682,9 +696,9 @@ def main():
 	elif options.generate_projections:
 		nargs = len(args)
 		if nargs != 3:
-			ERROR("Must provide name of input structure(s) from which to generate projections, name of output projection stack, and prefix for output micrographs."\
-			"sxprocess - generate projections",1)
+			global_def.ERROR( "Must provide name of input structure(s) from which to generate projections, name of output projection stack, and prefix for output micrographs.", "sxprocess.main (generate projections)" )
 			return
+
 		inpstr  = args[0]
 		outstk  = args[1]
 		micpref = args[2]
@@ -755,8 +769,9 @@ def main():
 		nx = modelvol[0].get_xsize()
 
 		if nx != boxsize:
-			ERROR("Requested box dimension does not match dimension of the input model.", \
-			"sxprocess - generate projections",1)
+			global_def.ERROR( "Requested box dimension does not match dimension of the input model.", "sxprocess.main (generate projections)" )
+			return
+
 		nvol = 10
 		volfts = [[] for k in range(nvlms)]
 		for k in range(nvlms):
@@ -866,8 +881,11 @@ def main():
 		for kk in range(len(ctfs)):
 			root,name = os.path.split(ctfs[kk][-1])
 			ctfs[kk][-1] = name[:-4]
+
 		if(options.input[:4] != 'bdb:'):
-			ERROR('Sorry, only bdb files implemented','importctf',1)
+			global_def.ERROR( "Sorry, only bdb files implemented","sxprocess.main (importctf)" )
+			return
+
 		d = options.input[4:]
 		#try:     str = d.index('*')
 		#except:  str = -1
@@ -921,9 +939,11 @@ def main():
 		from utilities import read_text_row,write_text_row
 		scale = options.scale
 		nargs = len(args)
+
 		if nargs != 2:
-			print("Please provide names of input and output file!")
+			global_def.ERROR( "Please provide names of input and output file!", "sxprocess.main" )
 			return
+		
 		p = read_text_row(args[0])
 		for i in range(len(p)):
 			p[i][3] /= scale
@@ -936,24 +956,36 @@ def main():
 		from morphology import adaptive_mask
 		from filter import filt_tanl
 		nargs = len(args)
+
 		if nargs ==0:
-			print(" Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold.")
+			global_def.ERROR( "Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold.", "sxprocess.main" )
 			return
+
 		elif nargs > 2:
-			ERROR( "Too many arguments", "options.adaptive_mask", 1)
+			global_def.ERROR( "Too many arguments", "sxprocess.main (options.adaptive_mask)" )
 			return
 		
 		inputvol = get_im(args[0]) # args[0]: input 3D volume file path
 		input_path, input_file_name = os.path.split(args[0])
 		input_file_name_root,ext=os.path.splitext(input_file_name)
-		if nargs == 2:  mask_file_name = args[1] # args[1]: output 3D mask file path
-		else:           mask_file_name = "adaptive_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
+		
+		if nargs == 2:  
+			mask_file_name = args[1] # args[1]: output 3D mask file path
+		else:
+			mask_file_name = "adaptive_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
 
-		if( options.fl > 0.0 ):  inputvol =filt_tanl(inputvol, options.pixel_size/options.fl, options.aa)
-		if( options.mol_mass> 0.0 ): density_threshold = inputvol.find_3d_threshold(options.mol_mass, options.pixel_size)
-		else: density_threshold = options.threshold
-		if options.edge_type == "cosine": mode = "C"
-		else:  mode = "G"
+		if( options.fl > 0.0 ):  
+			inputvol =filt_tanl(inputvol, options.pixel_size/options.fl, options.aa)
+
+		if( options.mol_mass> 0.0 ): 
+			density_threshold = inputvol.find_3d_threshold(options.mol_mass, options.pixel_size)
+		else: 
+			density_threshold = options.threshold
+		
+		if options.edge_type == "cosine": 
+			mode = "C"
+		else:  
+			mode = "G"
 
 		adaptive_mask(inputvol, options.nsigma, density_threshold, options.ndilation, options.edge_width, mode).write_image(mask_file_name)
 	
@@ -962,21 +994,31 @@ def main():
 		from utilities import get_im
 		from morphology import binarize, erosion, dilation
 		nargs = len(args)
+
 		if nargs == 0:
-			print(" Generate binary 3D mask from input 3D volume using the user-provided threshold.")
+			global_def.ERROR( "Generate binary 3D mask from input 3D volume using the user-provided threshold.", "sxprocess.main" )
 			return
+
 		elif nargs > 2:
-			print("Too many arguments are given, try again!")
+			global_def.ERROR( "Too many arguments are given, try again!", "sxprocess.main" )
 			return
 		
 		inputvol = get_im(args[0])
 		input_path, input_file_name = os.path.split(args[0])
 		input_file_name_root,ext=os.path.splitext(input_file_name)
-		if nargs == 2:  mask_file_name = args[1]
-		else:           mask_file_name = "binary_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
+		
+		if nargs == 2:
+			mask_file_name = args[1]
+		else:
+			mask_file_name = "binary_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
+
 		mask3d = binarize(inputvol, options.threshold)
-		for i in range(options.nerosion): mask3d = erosion(mask3d)
-		for i in range(options.ndilation): mask3d = dilation(mask3d)
+
+		for i in range(options.nerosion): 
+			mask3d = erosion(mask3d)
+		for i in range(options.ndilation): 
+			mask3d = dilation(mask3d)
+		
 		mask3d.write_image(mask_file_name)
 
 	elif options.combinemaps:
@@ -997,10 +1039,14 @@ def main():
 		from EMAN2 			import periodogram
 		
 		nargs = len(args)
+
 		if nargs < 1:
-			ERROR("too few inputs", " --combinemaps option", 1)
+			global_def.ERROR( "Too few inputs", "sxprocess.main (--combinemaps option)" )
+			return
+
 		if options.pixel_size <= 0.0:
-			ERROR("set a valid value to pixel_size first! There is no default value for pixel_size", " --combinemaps option", 1)
+			global_def.ERROR( "Set a valid value to pixel_size first! There is no default value for pixel_size", "sxprocess.main (--combinemaps option)" )
+			return	
 		
 		input_path_list = []
 		suffix_patten = None
@@ -1012,7 +1058,8 @@ def main():
 				input_path_list = glob.glob(args[0])
 				# Check error condition of input file path list
 				if len(input_path_list) == 0:
-					ERROR("no input files are found with the provided path pattern %s"%(args[0]), "--combinemaps option for 3-D", 1)
+					global_def.ERROR( "No input files are found with the provided path pattern %s"%(args[0]), "sxprocess.main (--combinemaps option for 3-D)" )
+					return
 				# Prepare variables for the loop section below
 				# Get prefix and suffix in cluster volume basename pattern 
 				# to find the head/tail indices of cluster id substring
@@ -1029,7 +1076,8 @@ def main():
 		try:
 			e1 = get_im(input_path_list[0],0)
 		except:
-			ERROR(input_path_list[0]+" does not exist", " --combinemaps option", 1)
+			global_def.ERROR( input_path_list[0]+" does not exist", "sxprocess.main (--combinemaps option)" )
+			return
 		
 		nx = e1.get_xsize()
 		ny = e1.get_ysize()
@@ -1050,15 +1098,22 @@ def main():
 			# log_main.add("randomphasesafter "+str(options.randomphasesafter))
 			log_main.add("------------>>> processing <<<-----------------------")
 			log_main.add("2-D combinemaps for ISAC averaged images")
-			if nargs > 1: ERROR("too many inputs!", "--combinemaps option for 2-D", 1)
-			else: ERROR("incorrected number of inputs", "--combinemaps option for 2-D", 1) # This should be unreachable
+			
+			if nargs > 1: 
+				global_def.ERROR( "Too many inputs!", "sxprocess.main (--combinemaps option for 2-D)" )
+				return
+			else: 
+				global_def.ERROR( "Incorrected number of inputs", "sxprocess.main (--combinemaps option for 2-D)" ) # NOTE: This should be unreachable
+				return
+			
 			nimage = EMUtil.get_image_count(input_path_list[0])
 			if options.mask !=None:
 				try:
 					m = get_im(options.mask)
 					log_main.add("user provided mask is %s"%options.mask)
 				except:
-					ERROR("Mask image %s does not exists"%options.mask, " --combinemaps for 2-D", 1)
+					global_def.ERROR( "Mask image %s does not exists"%options.mask, "sxprocess.main (--combinemaps for 2-D)" )
+					return
 			else:
 				m = None
 				log_main.add("Mask is not used")
@@ -1115,9 +1170,12 @@ def main():
 				log_main.add("Combinemaps has single input map")
 				# Check error condition of input 3D density map file path list
 				if options.fl == 0.0: 
-					ERROR("Low-pass filter to resolution (--fl=0.0) cannot be used with cluster volumes mode", "--combinemaps option for 3-D", 1)
+					global_def.ERROR( "Low-pass filter to resolution (--fl=0.0) cannot be used with cluster volumes mode", "sxprocess.main (--combinemaps option for 3-D)" )
+					return
 				if options.B_enhance == 0.0: 
-					ERROR("Automatic B-factor estimation (--B_enhance=0.0) cannot be used with cluster volumes mode", "--combinemaps option for 3-D", 1)
+					global_def.ERROR( "Automatic B-factor estimation (--B_enhance=0.0) cannot be used with cluster volumes mode", "sxprocess.main (--combinemaps option for 3-D)" )
+					return
+				
 				if len(input_path_list) > 1:
 					log_main.add("Using 3D density map path pattern (found %d files in %s)"%(len(input_path_list), os.path.dirname(args[0])))
 				else:
@@ -1127,8 +1185,11 @@ def main():
 				single_map = False
 				map2_path = args[1]
 			elif nargs >=3: 
-				ERROR("Too many input maps!", "--combinemaps option for 3-D", 1)
-			else: ERROR("Incorrected number of inputs", "--combinemaps option for 3-D", 1) # This should be unreachable
+				global_def.ERROR( "Too many input maps!", "sxprocess.main (--combinemaps option for 3-D)" )
+				return
+			else: 
+				global_def.ERROR( "Incorrected number of inputs", "sxprocess.main (--combinemaps option for 3-D)" ) # This should be unreachabl e
+				return
 			
 			for map1_path in input_path_list:
 				log_main.add("-------------------------------------------------------")
@@ -1136,8 +1197,8 @@ def main():
 				log_main.add("The first input volume: %s"%map1_path)
 				try: map1 = get_im(map1_path)
 				except:
-					ERROR("Sphire combinemaps fails to read the first map " + map1_path, "--combinemaps option for 3-D")
-					exit()
+					global_def.ERROR( "Sphire combinemaps fails to read the first map " + map1_path, "sxprocess.main (--combinemaps option for 3-D)" )
+					return
 			
 				if single_map:
 					log_main.add("No second input volume")
@@ -1146,10 +1207,12 @@ def main():
 					try:
 						map2 = get_im(map2_path)
 					except:
-						ERROR("Sphire combinemaps fails to read the second map " + map2_path, "--combinemaps option for 3-D", 1)
+						global_def.ERROR( "Sphire combinemaps fails to read the second map " + map2_path, "sxprocess.main (--combinemaps option for 3-D)" )
+						return
 				
 					if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
-						ERROR("Two input maps have different image size", "--combinemaps option for 3-D", 1)
+						global_def.ERROR( "Two input maps have different image size", "sxprocess.main (--combinemaps option for 3-D)" )
+						return
 				
 				suffix = ""
 				if suffix_patten is not None:
@@ -1175,16 +1238,20 @@ def main():
 
 				## prepare mask 
 				if options.mask != None and options.do_adaptive_mask:
-					ERROR("Wrong options, use either adaptive_mask or supply a mask", " options.mask and options.do_adaptive_mask ", 1)
+					global_def.ERROR( "Wrong options, use either adaptive_mask or supply a mask", "sxprocess.main (options.mask and options.do_adaptive_mask)" )
+					return
 
 				if options.mask != None:
 					log_main.add("User provided mask: %s"%options.mask)
-					try: m = get_im(options.mask)
+					try: 
+						m = get_im(options.mask)
 					except:
-						ERROR("Sphire combinemaps fails to read mask file " + options.mask, "--combinemaps option for 3-D")
-						exit()
+						global_def.ERROR( "Sphire combinemaps fails to read mask file "+options.mask, "sxprocess.main (--combinemaps option for 3-D)" )
+						return
+
 					if (m.get_xsize() != map1.get_xsize()) or (m.get_ysize() != map1.get_ysize()) or (m.get_zsize() != map1.get_zsize()):
-						ERROR(" Mask file  "+options.mask+" has different size with input image  ", "--combinemaps for mask "+options.mask), 1
+						global_def.ERROR( "Mask file "+options.mask+" has different size than the input image", "sxprocess.main (--combinemaps for mask)"+options.mask )
+						return
 
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
@@ -1501,6 +1568,7 @@ def main():
 				else: log_main.add("Fsc_adj is not applied")
 
 				map1 = fft(map1)
+
 				if options.B_enhance !=-1: #3 One specifies and then apply B-factor sharpen
 					if options.B_enhance == 0.0: # auto mode
 						cutoff_by_fsc = 0
@@ -1515,7 +1583,8 @@ def main():
 						if options.B_stop!=0.0: freq_max = 1./options.B_stop 
 						if freq_min>= freq_max:
 							log_main.add("B_start is too high! Decrease it and rerun the program!")
-							ERROR("B_start is too high! Decrease it and re-run the program!", "--combinemaps option", 1)
+							global_def.ERROR( "B_start is too high! Decrease it and re-run the program!", "sxprocess.main (--combinemaps option)" )
+							return
 						b, junk, ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 						global_b = 4.*b # Just a convention!
 						cc = pearson(junk[1],logguinierline)
@@ -1523,6 +1592,7 @@ def main():
 							  ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
 						log_main.add("The slope is %6.2f[A^2]"%(round(-b,2)))
 						sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
+
 					else: # User provided value
 						#log_main.add( " apply user provided B-factor to enhance map!")
 						log_main.add("User-provided B-factor is %6.2f[A^2]"%options.B_enhance)
@@ -1537,8 +1607,10 @@ def main():
 						if guinierline[ig]>0: 
 							outtext[-1].append("%10.6f"%log(guinierline[ig]))
 							last_non_zero = log(guinierline[ig])
-						else: outtext[-1].append("%10.6f"%last_non_zero)
-				else: log_main.add("B-factor enhancement is not applied to map!")
+						else: 
+							outtext[-1].append("%10.6f"%last_non_zero)
+				else: 
+					log_main.add("B-factor enhancement is not applied to map!")
 
 				cutoff = 0.0
 				if not single_map:
@@ -1574,7 +1646,9 @@ def main():
 							map1   = filt_tanl(map1, options.pixel_size/options.fl, min(options.aa,.1))
 							cutoff = options.fl
 						else:
-							ERROR("Incorrect low-pass filter value, it should be in Angstroms", "combinemaps", 1)
+							global_def.ERROR( "Incorrect low-pass filter value, it should be in Angstroms", "sxprocess.main (combinemaps)" )
+							return
+
 						log_main.add("Low-pass filter to user provided %f[A]"%cutoff)
 					
 				map1 = fft(map1)
@@ -1583,24 +1657,37 @@ def main():
 				file_path_nomask = os.path.join(options.output_dir, file_name+suffix+"_nomask"+file_ext)
 				map1.write_image(file_path_nomask)
 				log_main.add("The enhanced map without masking is saved as %s"%(file_path_nomask))
-				if m: map1 *=m
-				else: log_main.add("The final map is not masked!")
+				
+				if m: 
+					map1 *=m
+				else: 
+					log_main.add("The final map is not masked!")
+				
 				file_path_final = os.path.join(options.output_dir, file_name+suffix+file_ext)
 				map1.write_image(file_path_final)
 				log_main.add("---------- >>> Summary <<<------------")
 				if not single_map:
 					log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
 					if dip_at_fsc: log_main.add("There is a dip in the fsc curve in the region between 0.5 and 0.143, and you might cosider ploting your fsc curve")
-				if options.B_enhance !=-1:  log_main.add( "B-factor is %6.2f[A^2]"%(round((-global_b),2)))
-				else:log_main.add( "B-factor is not applied")
+				
+				if options.B_enhance !=-1:
+					log_main.add( "B-factor is %6.2f[A^2]"%(round((-global_b),2)))
+				else:
+					log_main.add( "B-factor is not applied")
+				
 				if not single_map:
 					output_names = [plot_name.replace(' ', '_') for plot_name in plot_names]
 					log_main.add("FSC curves are saved in {0}.txt ".format('.txt, '.join(output_names).lower()))
+				
 				log_main.add("The final volume is " + file_path_final)
 				file_path_guinierlines = os.path.join(options.output_dir, "guinierlines"+suffix+".txt")
 				log_main.add("Guinierlines in logscale are saved in "+file_path_guinierlines)
-				if options.fl !=-1: log_main.add("Tanl low-pass filter is applied using cutoff frequency 1/%5.2f[1/A]" %round(cutoff,2))
-				else: log_main.add("The final volume is not low-pass filtered. ")
+				
+				if options.fl !=-1: 
+					log_main.add("Tanl low-pass filter is applied using cutoff frequency 1/%5.2f[1/A]" %round(cutoff,2))
+				else: 
+					log_main.add("The final volume is not low-pass filtered. ")
+				
 				write_text_file(outtext, file_path_guinierlines)
 
 				# evaluation of enhancement: values, values.index(max(values)), max(values), index_zero, int(index_zero - cutoff*N*2)
@@ -1647,7 +1734,7 @@ def main():
 			for i in range(nimage):
 				im = get_im(inputstack,i)
 				if( i == 0 ):
-					if( im.get_xsize() < options.box ):  ERROR( "New image size has to be smaller than the original image size", "sxprocess.py", 1)
+					if( im.get_xsize() < options.box ):  ERROR( "New image size has to be smaller than the original image size", "sxprocess.main", 1)
 					newz = im.get_zsize()
 					if( newz > 1):  newz = options.box
 				im = Util.window(im, options.box,options.box, newz, 0,0,0)
@@ -1674,19 +1761,26 @@ def main():
 			for i in range(nimage):
 				im = get_im(inputstack,i)
 				if( i == 0 ):
-					if( im.get_xsize() > options.box ):  ERROR( "New image size has to be larger than the original image size", "sxprocess.py", 1)
+					if( im.get_xsize() > options.box ):  
+						global_def.ERROR( "New image size has to be larger than the original image size", "sxprocess.main" )
+						return
+					
 					newz = im.get_zsize()
-					if( newz > 1):  newz = options.box
+					
+					if( newz > 1):  
+						newz = options.box
 				pad(im, options.box, options.box, newz, float(options.background)).write_image(output_stack_name,i)
 
 	elif options.angular_distribution:
 		from utilities import angular_distribution
 		nargs = len(args)
 		if nargs > 1:
-			ERROR('Too many inputs are given, see usage and restart the program!',"sxprocess.py",1)
+			global_def.ERROR( "Too many inputs are given, see usage and restart the program!", "sxprocess.main" )
+			return
 		else:
 			if not os.path.exists(args[0]):
-				ERROR( "Params file does not exists! Please rename and restart the program.", "sxprocess.py", 1)
+				global_def.ERROR( "Params file does not exists! Please rename and restart the program.", "sxprocess.main" )
+				return
 			strInput = args[0]
 			strOutput = strInput[:-len(strInput.split('/')[-1])] + 'distribution.bild'
 			if options.pixel_size == 0:
@@ -1700,7 +1794,9 @@ def main():
 		nargs = len(args)
 
 		if nargs<2 or nargs>4:
-			ERROR('Three stack names required, see usage and restart the program!','options.subtract_stack',1)
+			global_def.ERROR( "Three stack names required, see usage and restart the program!", "sxprocess.main (options.subtract_stack)" )
+			return
+
 		else:
 			minuend_stack    = args[0]
 			subtrahend_stack = args[1]
@@ -1708,37 +1804,25 @@ def main():
 
 			nimages = EMUtil.get_image_count(minuend_stack)
 			mimages = EMUtil.get_image_count(subtrahend_stack)
-			'''
-			if options.comparison_radius>0.5:
-				ERROR('Incorrect maximum resolution', 'options.subtract_stack',1)
-			'''
+
 			if nimages != mimages:
-				ERROR('Two input stacks have different number of images', 'options.subtract_stack',1)
+				global_def.ERROR( "Two input stacks have different number of images", "sxprocess.main (options.subtract_stack)" )
+				return
+
 			else:
 				for im in range(nimages):
 					image  = get_im(minuend_stack, im)
 					simage = get_im(subtrahend_stack, im)
 					if options.normalize:
 						if im == 0:
-							'''
-							if options.comparison_radius !=-1:
-								mask = model_circle(options.comparison_radius, image.get_xsize(), image.get_ysize())
-							else:
-							'''
 							radius = image.get_xsize()//2-1 
 							mask = model_circle(radius, image.get_xsize(), image.get_ysize())
 						st = Util.infomask(image, mask, False)
 						image -= st[0]
 						image /= st[1]
-					'''
-					if options.maxres !=-1:
-						temp_diff, a, b = im_diff(filt_tanl(image, options.maxres, options.maxresaa), simage, mask)						
-					else:
-						temp_diff, a, b = im_diff(image, simage, mask)
-					image *=a
-					image -=b
-					'''
+
 					ssimage = Util.subn_img(image, simage)
+
 					try:
 						ctf = image.get_attr('ctf')
 						ssimage.set_attr('ctf_applied', 0)
@@ -1757,7 +1841,9 @@ def main():
 		from utilities  import balance_angular_distribution, read_text_row, write_text_file
 		write_text_file(balance_angular_distribution(read_text_row(args[0]), options.max_occupy, options.angstep, options.symmetry),args[1])
 
-	else:  ERROR("Please provide option name","sxprocess.py",1)
+	else: 
+		global_def.ERROR( "Please provide option name", "sxprocess.main" )
+		return
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )

@@ -61,8 +61,11 @@ def main():
 
 	(options, args) = parser.parse_args()
 	if len(args) != 3:
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
+		print("Usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxmref_alignment.main" )
+		return
+		
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

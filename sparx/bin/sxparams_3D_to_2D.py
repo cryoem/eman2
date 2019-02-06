@@ -41,8 +41,11 @@ def main():
 	parser = OptionParser(usage,version=global_def.SPARXVERSION)
 	(options, args) = parser.parse_args(sys.argv[1:])
 	if len(args) != 1 :
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
+		print("Usage: " + usage)
+		print("Please run \'" + progname + " -h\' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxparams_3D_to_2D.main" )
+		return
+
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

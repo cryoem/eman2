@@ -56,8 +56,11 @@ def main():
 	(options, args) = parser.parse_args(sys.argv[1:])
 
 	if len(args)<2 :
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		print("Usage: " + usage)
+		print("Please run \'" + progname + " -h\' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxvar.main" )
+		return
+		
 	else:
 		files = args[0:-1]
 		outdir = args[-1]
@@ -88,7 +91,7 @@ def main():
 			mpi_finalize()
 		else:
 			global_def.BATCH = True
-			ERROR("Please use MPI version","sxvar",1)
+			global_def.ERROR( "Please use MPI version", "sxvar" )
 			from applications import defvar
 			defvar(  files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
 			global_def.BATCH = False

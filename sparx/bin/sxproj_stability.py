@@ -57,13 +57,22 @@ stacks into one stack.
 from	global_def 	import *
 from global_def import SPARX_MPI_TAG_UNIVERSAL
 
+import	global_def
+from	optparse 	import OptionParser
+from	EMAN2 		import EMUtil
+import	os
+import	sys
+from time import time
+
+from mpi          import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+from mpi          import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
+from applications import MPI_start_end, within_group_refinement, ali2d_ras
+from pixel_error  import multi_align_stability
+from utilities    import send_EMData, recv_EMData
+from utilities    import get_image, bcast_number_to_all, set_params2D, get_params2D
+from utilities    import group_proj_by_phitheta, model_circle, get_input_from_string
+
 def main():
-	import	global_def
-	from	optparse 	import OptionParser
-	from	EMAN2 		import EMUtil
-	import	os
-	import	sys
-	from time import time
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " proj_stack output_averages --MPI"
@@ -86,13 +95,6 @@ def main():
 
 	(options,args) = parser.parse_args()
 	
-	from mpi          import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-	from mpi          import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
-	from applications import MPI_start_end, within_group_refinement, ali2d_ras
-	from pixel_error  import multi_align_stability
-	from utilities    import send_EMData, recv_EMData
-	from utilities    import get_image, bcast_number_to_all, set_params2D, get_params2D
-	from utilities    import group_proj_by_phitheta, model_circle, get_input_from_string
 
 	sys.argv = mpi_init(len(sys.argv), sys.argv)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -103,31 +105,30 @@ def main():
 		stack  = args[0]
 		outdir = args[1]
 	else:
-		ERROR("incomplete list of arguments", "sxproj_stability", 1, myid=myid)
-		exit()
+		global_def.ERROR( "Incomplete list of arguments", "sxproj_stability.main", 1, myid=myid )
+		return
 	if not options.MPI:
-		ERROR("Non-MPI not supported!", "sxproj_stability", myid=myid)
-		exit()		 
+		global_def.ERROR( "Non-MPI not supported!", "sxproj_stability.main", 1, myid=myid )
+		return		 
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
 	global_def.BATCH = True
 
-	#if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "sxproj_stability", 1, myid)
-	#mpi_barrier(MPI_COMM_WORLD)
-
-	
 	img_per_grp = options.img_per_group
 	radius = options.radius
 	ite = options.iter
 	num_ali = options.num_ali
 	thld_err = options.thld_err
 
-	xrng        = get_input_from_string(options.xr)
-	if  options.yr == "-1":  yrng = xrng
-	else          :  yrng = get_input_from_string(options.yr)
-	step        = get_input_from_string(options.ts)
+	xrng = get_input_from_string(options.xr)
+	if  options.yr == "-1":
+		yrng = xrng
+	else:
+		yrng = get_input_from_string(options.yr)
+
+	step = get_input_from_string(options.ts)
 
 
 	if myid == main_node:
@@ -202,7 +203,11 @@ def main():
 
 	#   Compute stability per projection projection direction, equal number assigned, thus overlaps
 	elif options.grouping == "GEV":
-		if options.delta == -1.0: ERROR("Angular step for reference projections is required for GEV method","sxproj_stability",1)
+
+		if options.delta == -1.0: 
+			global_def.ERROR( "Angular step for reference projections is required for GEV method", "sxproj_stability.main" )
+			return
+
 		from utilities import even_angles, nearestk_to_refdir, getvec
 		refproj = even_angles(options.delta)
 		img_begin, img_end = MPI_start_end(len(refproj), number_of_proc, myid)
@@ -260,12 +265,10 @@ def main():
 		refprojdir = proj_params[img_begin: img_end]
 		del proj_params, mirror_list
 		print("  D  ",myid,"  ",time()-st)
-	else:  ERROR("Incorrect projection grouping option","sxproj_stability",1)
-	"""
-	from utilities import write_text_file
-	for i in xrange(len(proj_list)):
-		write_text_file(proj_list[i],"projlist%06d_%04d"%(i,myid))
-	"""
+
+	else:  
+		global_def.ERROR( "Incorrect projection grouping option", "sxproj_stability.main" )
+		return
 
 	###########################################################################################################
 	# Begin stability test
@@ -423,7 +426,6 @@ def main():
 
 	global_def.BATCH = False
 	mpi_barrier(MPI_COMM_WORLD)
-	from mpi import mpi_finalize
 	mpi_finalize()
 
 if __name__=="__main__":

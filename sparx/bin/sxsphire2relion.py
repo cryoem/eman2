@@ -347,7 +347,7 @@ def import_partres_file(partres_file):
 			('_rlnVoltage', float),
 			]
 	else:
-		global_def.ERROR('Number of columns in partres file not known: {0}'.format(number_of_columns), 'sxsphire2relion', 1)
+		global_def.ERROR( "Number of columns in partres file not known: {0}".format(number_of_columns), "sxsphire2relion" )
 
 	assert len(columns) == len(dtype_import_list)
 	partres_import_array = np.genfromtxt(partres_file, dtype=dtype_import_list, usecols=columns)
@@ -680,4 +680,3 @@ if __name__ == '__main__':
 	global_def.print_timestamp( "Start" )
 	main(parse_args())
 	global_def.print_timestamp( "Finish" )
-	

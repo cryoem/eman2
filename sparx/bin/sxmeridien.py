@@ -9538,23 +9538,21 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ stack  [output_directory]  initial_volume  --radius=particle_radius --symmetry=c1 --initialshifts --inires=25  --mask3D=surface_mask.hdf --function=user_function
 	
-	
 	There are five ways to run the program:
 
-1. Standard default run, starts from exhaustive searches, uses initial reference structure
-mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
+	1. Standard default run, starts from exhaustive searches, uses initial reference structure
+	mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
 
-2. Restart after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
-mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  vton1 --radius=100 >2ovotn &
+	2. Restart after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
+	mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  vton1 --radius=100 >2ovotn &
 
-3. Local refinement, starts from user-provided orientation parameters, delta has to be <= 3.75
-mpirun -np 64 --hostfile four_nodes.txt sxmeridien.py --local_refinement bdb:sparx_stack   vton3 --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask15.hdf >5ovotn &
+	3. Local refinement, starts from user-provided orientation parameters, delta has to be <= 3.75
+	mpirun -np 64 --hostfile four_nodes.txt sxmeridien.py --local_refinement bdb:sparx_stack   vton3 --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask15.hdf >5ovotn &
 
-4. Restart of local refinement after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
-mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3  --xr=0.6 >6ovotn &
+	4. Restart of local refinement after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
+	mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3  --xr=0.6 >6ovotn &
 
-5.  mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py vton3 --do_final=21
-	
+	5.  mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py vton3 --do_final=21
 	"""
 	parser = OptionParser(usage, version=SPARXVERSION)
 	parser.add_option("--do_final",           type="int",			 	default= -1,  help="Do unfiltered odd and even volume 3-D reconstruction from an existing meridien refinement with optional specified iteration")
@@ -9609,7 +9607,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		else:
 			print( "usage: " + usage)
 			print( "Please run '" + progname + " -h' for detailed options")
-			return 1
+			global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxmeridien.main" )
+			return
 
 		#  Check whether we are restarting the program, in the least main000 should exist, otherwise there is nothing to restart
 		keepgoing1   = 1
@@ -9625,18 +9624,27 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		restart_flag = bcast_number_to_all(restart_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 		keepgoing1   = bcast_number_to_all(keepgoing1,   source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 		keepgoing2   = bcast_number_to_all(keepgoing2,   source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+
 		if keepgoing1== 0:
-			ERROR("To restart, meridien requires only the name of existing refinement directory.", "meridien",1, Blockdata["myid"])
+			global_def.ERROR( "To restart, meridien requires only the name of existing refinement directory.", "sxmeridien.main", 1, Blockdata["myid"] )
+			return
+
 		if keepgoing2 ==0:
-			ERROR("To start, meridien requires at least the stack name and the name of reference structure", "meridien",1, Blockdata["myid"])
-		if restart_flag ==1: restart_mode = True
-		else: restart_mode  = False
+			global_def.ERROR( "To start, meridien requires at least the stack name and the name of reference structure", "sxmeridien.main", 1, Blockdata["myid"] )
+			return
+
+		if restart_flag ==1:
+			restart_mode = True
+		else: 
+			restart_mode  = False
 		
 		# ------------------------------------------------------------------------------------
 		# Initialize MPI related variables
 		###  MPI SANITY CHECKES
 		if not balanced_processor_load_on_nodes:
-			ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.", "meridien",1, Blockdata["myid"])
+			global_def.ERROR( "Nodes do not have the same number of CPUs, please check configuration of the cluster.", "sxmeridien.main", 1, Blockdata["myid"] )
+			return
+
 		if Blockdata["myid"]  == Blockdata["main_node"]:
 			line = ""
 			for a in sys.argv:
@@ -9767,8 +9775,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 
 			nnxo = bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
+
 			if( nnxo < 0 ):
-				ERROR("Incorrect image size  ", "meridien", 1, Blockdata["myid"])
+				global_def.ERROR( "Incorrect image size  ", "sxmeridien.main", 1, Blockdata["myid"] )
+				return
+			
 			pixel_size = bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
 			fq         = bcast_number_to_all(fq,         source_node = Blockdata["main_node"])
 			Tracker["constants"]["nnxo"]         = nnxo
@@ -9787,19 +9798,27 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))):
 					checking_flag = 0
 			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+
 			if checking_flag==0:
-				ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
+				global_def.ERROR( "Mask3D file does  not exists ", "sxmeridien.main", 1, Blockdata["myid"] )
+				return
 			
 			if( options.xr/options.ts<1.0 ): 
-				ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien", 1, Blockdata["myid"])
+				global_def.ERROR( "Incorrect translational searching settings, search range cannot be smaller than translation step ", "sxmeridien.main", 1, Blockdata["myid"] )
+				return
+
 			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
-				ERROR("Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"],\
-				 2*(Tracker["currentres"] + Tracker["nxstep"])),"sxmeridien", 1, Blockdata["myid"])
+				global_def.ERROR( "Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"], 2*(Tracker["currentres"] + Tracker["nxstep"])),
+					   			  "sxmeridien.main", 1, Blockdata["myid"] )
+				return
 
 			if(Tracker["constants"]["radius"]  < 1):
 				Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
+
 			elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-				ERROR("Particle radius set too large!","sxmeridien", 1, Blockdata["myid"])
+				global_def.ERROR( "Particle radius set too large", "sxmeridien.main", 1, Blockdata["myid"] )
+				return
+
 			###<-----end of sanity check <----------------------
 			###<<<----------------------------- parse program
 		
@@ -9853,7 +9872,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			target_radius = options.target_radius
 			# target_nx = options.target_nx
 			center_method = options.center_method
-			if (radi < 1):  ERROR("Particle radius has to be provided!", "2d prealignment", 1, Blockdata["myid"])
+			if (radi < 1):  
+				global_def.ERROR( "Particle radius was not provided!", "sxmeridian.main (2d prealignment)", 1, Blockdata["myid"] )
+				return
 
 			nxrsteps = 4
 
@@ -10126,7 +10147,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		else:
 			print( "usage: " + usage)
 			print( "Please run '" + progname + " -h' for detailed options")
-			return 1
+			global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxmeridien.main" )
+			return
+
 		#  Check whether we are restarting the program, in the least main000 should exist, otherwise there is nothing to restart
 		keepgoing1   = 1
 		keepgoing2   = 1
@@ -10143,32 +10166,41 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		keepgoing2   = bcast_number_to_all(keepgoing2,   source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 		
 		if keepgoing1== 0:
-			ERROR("To restart, meridien requires only the name of existing refinement directory.", "meridien local",1, Blockdata["myid"])
+			global_def.ERROR( "To restart, meridien requires only the name of existing refinement directory.", "sxmeridien.main", 1, Blockdata["myid"] )
+			return
 			
 		if keepgoing2 ==0:
-			ERROR("To start, meridien requires at least the stack name and the name of reference structure", "meridien local",1, Blockdata["myid"])
+			global_def.ERROR( "To start, meridien requires at least the stack name and the name of reference structure", "sxmeridien.main", 1, Blockdata["myid"] )
+			return
 			
-		if restart_flag ==1: restart_mode = True
-		else: restart_mode  = False
+		if restart_flag == 1: 
+			restart_mode = True
+		else: 
+			restart_mode = False
 		
 		# ------------------------------------------------------------------------------------
 		# Initialize MPI related variables
 		###  MPI SANITY CHECKES
 		if not balanced_processor_load_on_nodes: 
-			ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.", "meridien",1, Blockdata["myid"])
+			global_def.ERROR( "Nodes do not have the same number of CPUs, please check configuration of the cluster.", "sxmeridien.main",1, Blockdata["myid"] )
+			return
+		
 		if Blockdata["myid"]  == Blockdata["main_node"]:
 			line = ""
 			for a in sys.argv:
 				line +=a+"  "
 			print(" shell line command ")
 			print(line)
+
 		# ------------------------------------------------------------------------------------
 		#  INPUT PARAMETERS
 		global_def.BATCH = True
 		global_def.MPI   = True
 		###  VARIOUS SANITY CHECKES <-----------------------
 		if( options.delta> 3.75 ):
-			ERROR("Local searches requested, delta cannot be larger than 3.73.", "meridien",1, Blockdata["myid"])
+			global_def.ERROR( "Local searches requested, delta cannot be larger than 3.73.", "sxmeridien.main", 1, Blockdata["myid"] )
+			return
+
 		if( options.memory_per_node < 0.0 ): options.memory_per_node = 2.0*Blockdata["no_of_processes_per_group"]
 		#  For the time being we use all CPUs during refinement
 		Blockdata["ncpuspernode"] = Blockdata["no_of_processes_per_group"]
@@ -10290,7 +10322,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 
 			nnxo = bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
 			if( nnxo < 0 ):
-				ERROR("Incorrect image size  ", "meridien", 1, Blockdata["myid"])
+				global_def.ERROR( "Incorrect image size  ", "sxmeridien.main", 1, Blockdata["myid"] )
+				return
+
 			pixel_size = bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
 			fq         = bcast_number_to_all(fq, source_node = Blockdata["main_node"])
 			Tracker["constants"]["nnxo"]         = nnxo
@@ -10311,19 +10345,25 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					checking_flag = 0
 			checking_flag = bcast_number_to_all(checking_flag, Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 			if checking_flag==0:
-				ERROR("mask3D file does  not exists ","meridien",1,Blockdata["myid"])
+				global_def.ERROR( "mask3D file does  not exists ","sxmeridien,main",1, Blockdata["myid"] )
+				return
 			
 			if( options.xr/options.ts<1.0 ): 
-				ERROR("Incorrect translational searching settings, search range cannot be smaller than translation step ","meridien", 1, Blockdata["myid"])
+				global_def.ERROR( "Incorrect translational searching settings, search range cannot be smaller than translation step ","sxmeridien,main", 1,  Blockdata["myid"] )
+				return
+
 			#HOHO
 			if( 2*(Tracker["currentres"] + Tracker["nxstep"]) > Tracker["constants"]["nnxo"] ):
-				ERROR("Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"], Tracker["nxstep"],\
-				 2*(Tracker["currentres"] + Tracker["nxstep"])),"sxmeridien",1, Blockdata["myid"])
+				global_def.ERROR( "Image size less than what would follow from the initial resolution provided %d  %d  %d"%(Tracker["currentres"],  Tracker["nxstep"], 2*(Tracker["currentres"] + Tracker["nxstep"])),
+								  "sxmeridien.main", 1, Blockdata["myid"])
+				return
 
 			if(Tracker["constants"]["radius"]  < 1):
 				Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
+
 			elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-				ERROR("Particle radius set too large!","sxmeridien",1,Blockdata["myid"])
+				global_def.ERROR( "Particle radius set too large", "sxmeridien.main", 1, Blockdata["myid"] )
+				return
 			###<-----end of sanity check <----------------------
 			###<<<----------------------------- parse program
 		
@@ -10404,6 +10444,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				del l1, l2
 			else:
 				Tracker["nima_per_chunk"] = [0,0]
+
 			Tracker["nima_per_chunk"][0]             = bcast_number_to_all(Tracker["nima_per_chunk"][0],             Blockdata["main_node"])
 			Tracker["nima_per_chunk"][1]             = bcast_number_to_all(Tracker["nima_per_chunk"][1],             Blockdata["main_node"])
 			Tracker["constants"]["number_of_groups"] = bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
@@ -10415,7 +10456,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			#HOHO
 			if( Tracker["constants"]["inires"] > 0 ):
 				Tracker["nxinit"] = min(2*Tracker["constants"]["inires"], Tracker["constants"]["nnxo"] )
-			else: Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+			else: 
+				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 				
 			rec3d_continuation_nosmearing(original_data, MPI_COMM_WORLD)
 			
@@ -10443,14 +10485,18 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			original_data               = [None, None]
 			initdir 			        = os.path.join(masterdir,"main000")
 			keepchecking 		        = 1
+
 			if(Blockdata["myid"] == Blockdata["main_node"]):
 				with open(os.path.join(initdir,"Tracker_000.json"),'r') as fout:
 					Tracker = convert_json_fromunicode(json.load(fout))
 				fout.close()
 				print_dict(Tracker["constants"], "Permanent settings of the original run recovered from main000")
-			else: Tracker = None
-			Tracker         = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
-			mainiteration 	= 0
+			
+			else: 
+				Tracker = None
+
+			Tracker       = wrap_mpi_bcast(Tracker, Blockdata["main_node"])
+			mainiteration = 0
 			Tracker["mainiteration"] = mainiteration
 		# ------------------------------------------------------------------------------------
 		#  MAIN ITERATION
@@ -10575,7 +10621,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			#  End of if doit
 		#   end of while
 		mpi_finalize()
-		exit() 
+		return
 
 	elif do_final_mode: #  DO FINAL
 		parser.add_option("--memory_per_node",          type="float",           default= -1.0,		help="User provided information about memory per node (NOT per CPU) [in GB] (default 2GB*(number of CPUs per node))")
@@ -10585,22 +10631,34 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		checking_flag = 1
 		orgstack      = None
 		if( len(args) == 3):
-			ERROR("do_final option requires only one or two arguments ","meridien", 1, Blockdata["myid"])
+			global_def.ERROR( "do_final option requires only one or two arguments ", "sxmeridien.main", 1, Blockdata["myid"] )
+			return
 
 		elif(len(args) == 2): # option for signal subtraction 
 			masterdir = args[1]
 			orgstack  = args[0]
+			
 			if Blockdata["myid"] == Blockdata["main_node"]:
-				if not os.path.exists(masterdir): checking_flag = 0
+				if not os.path.exists(masterdir): 
+					checking_flag = 0
+			
 			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
-			if checking_flag ==0:  ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
+			
+			if checking_flag ==0:  
+				global_def.ERROR( "do_final: refinement directory for final reconstruction does not exist ", "sxmeridien.main", 1, Blockdata["myid"] )
+				return
 			
 		elif(len(args) == 1):
 			masterdir 	= args[0]
+
 			if Blockdata["myid"] == Blockdata["main_node"]:
-				if not os.path.exists(masterdir): checking_flag = 0
+				if not os.path.exists(masterdir): 
+					checking_flag = 0
 			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
-			if checking_flag ==0: ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
+
+			if checking_flag == 0: 
+				global_def.ERROR( "do_final: refinement directory for final reconstruction does not exist ", "sxmeridien.main", 1, Blockdata["myid"] )
+				return
 			
 		else:
 			print( "usage: " + usage)
@@ -10608,7 +10666,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			return 1
 
 		if( options.do_final < 0):
-			ERROR("Incorrect iteration number in do_final  %d"%options.do_final,"meridien",1,Blockdata["myid"])
+			global_def.ERROR( "Incorrect iteration number in do_final  %d"%options.do_final, "sxmeridien.main", 1, Blockdata["myid"] )
+			return
 		#print(  orgstack,masterdir,volinit )
 		# ------------------------------------------------------------------------------------
 		# Initialize MPI related variables
@@ -10616,7 +10675,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		###print("  MPIINFO  ",Blockdata)
 		###  MPI SANITY CHECKES
 		if not balanced_processor_load_on_nodes: 
-			ERROR("Nodes do not have the same number of CPUs, please check configuration of the cluster.","meridien", 1, Blockdata["myid"])
+			global_def.ERROR( "Nodes do not have the same number of CPUs, please check configuration of the cluster.", "sxmeridien.main", 1, Blockdata["myid"] )
+			return
 		#if( Blockdata["no_of_groups"] < 2 ):  ERROR("To run, program requires cluster with at least two nodes.","meridien",1,Blockdata["myid"])
 		###
 		if Blockdata["myid"]  == Blockdata["main_node"]:
@@ -10637,9 +10697,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		Blockdata["accumulatepw"] = [[],[]]
 		recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
 		mpi_finalize()
-		exit()
+		return
 	else:
-		ERROR("Incorrect input options","meridien", 1, Blockdata["myid"])
+		global_def.ERROR( "Incorrect input options", "sxmeridien.main", 1, Blockdata["myid"] )
+		return
 
 if __name__=="__main__":
 	global_def.print_timestamp( "Start" )

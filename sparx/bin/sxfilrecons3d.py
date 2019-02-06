@@ -64,8 +64,8 @@ def main():
 			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		else:
-			print("There is only MPI version of sxfilrecons3d.py. See SPARX wiki page for downloading MyMPI details.")
-			sys.exit()
+			global_def.ERROR( "There is only MPI version of sxfilrecons3d.py. See SPARX wiki page for downloading MyMPI details.", "sxfilrecons3d.main" )
+			return
 			
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

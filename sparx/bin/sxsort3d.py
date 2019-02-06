@@ -204,7 +204,7 @@ def main():
 			a = get_im(orgstack)
 			nnxo = a.get_xsize()
 			if( Tracker["nxinit"] > nnxo ):
-				ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxsort3d.py",1)
+				global_def.ERROR( "Image size less than minimum permitted $d"%Tracker["nxinit"], "sxsort3d.py" )
 				nnxo = -1
 			else:
 				if Tracker["constants"]["CTF"]:
@@ -223,7 +223,7 @@ def main():
 		nnxo = bcast_number_to_all(nnxo, source_node = main_node)
 		if( nnxo < 0 ):
 			mpi_finalize()
-			exit()
+			return
 		pixel_size = bcast_number_to_all(pixel_size, source_node = main_node)
 		fq         = bcast_number_to_all(fq, source_node = main_node)
 		if Tracker["constants"]["wn"]==0:
@@ -237,7 +237,7 @@ def main():
 		if(Tracker["constants"]["radius"] < 1):
 			Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
 		elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-			ERROR("Particle radius set too large!","sxsort3d.py",1,myid)
+			global_def.ERROR( "Particle radius set too large!", "sxsort3d.py", 1, myid )
 ####-----------------------------------------------------------------------------------------
 		# Master directory
 		if myid == main_node:
@@ -325,7 +325,8 @@ def main():
 			if Tracker["constants"]["focus3Dmask"]:
 				mask_3D = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
 				st = Util.infomask(mask_3D, None, True)
-				if( st[0] == 0.0 ):  ERROR("sxrsort3d","incorrect focused mask, after binarize all values zero",1)
+				if( st[0] == 0.0 ):  
+					ERROR( "Incorrect focused mask, after binarize all values zero", "sxrsort3d" )
 				mask_3D.write_image(Tracker["focus3D"])
 				del mask_3D
 		if Tracker["constants"]["PWadjustment"] !='':
@@ -645,8 +646,8 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		from mpi import mpi_finalize
 		mpi_finalize()
-		exit()
-		
+		return
+
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()

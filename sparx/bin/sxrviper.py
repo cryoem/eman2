@@ -647,7 +647,8 @@ output_directory: directory name into which the output files will be written.  I
 		if not options.__dict__[required_option]:
 			print("\n ==%s== mandatory option is missing.\n"%required_option)
 			print("Please run '" + progname + " -h' for detailed options")
-			return 1
+			global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxrviper.main" )
+			return
 
 	mpi_barrier(MPI_COMM_WORLD)
 	if(myid == main_node):
@@ -677,9 +678,10 @@ output_directory: directory name into which the output files will be written.  I
 	random.seed(my_random_seed)
 
 	if len(args) < 1 or len(args) > 3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		return 1
+		print("Usage: " + usage)
+		print("Please run \'" + progname + " -h\' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxrviper.main" )
+		return
 
 	# if len(args) > 2:
 	# 	ref_vol = get_im(args[2])
@@ -718,7 +720,7 @@ output_directory: directory name into which the output files will be written.  I
 		'Total quasi-independent runs by default are 3, you can change it by specifying '
 		'--n_shc_runs option (in sxviper this option is called --nruns). Also, to improve communication time it is recommended that '
 		'the number of processes divided by the number of quasi-independent runs is a power '
-		'of 2 (e.g. 2, 4, 8 or 16 depending on how many physical cores each node has).', 'sxviper', 1)
+		'of 2 (e.g. 2, 4, 8 or 16 depending on how many physical cores each node has).', 'sxrviper.main', 1)
 		error_status = 1
 	if_error_then_all_processes_exit_program(error_status)
 
@@ -797,13 +799,13 @@ output_directory: directory name into which the output files will be written.  I
 
 	if (myid == main_node):
 		if (iteration_start < iteration_start_default):
-			ERROR('Starting iteration provided is greater than last iteration performed. Quiting program', 'sxviper', 1)
+			ERROR('Starting iteration provided is greater than last iteration performed. Quiting program', 'sxrviper.main', 1)
 			error_status = 1
 	if iteration_start_default!=0:
 		iteration_start = iteration_start_default
 	if (myid == main_node):
 		if (number_of_rrr_viper_runs < iteration_start):
-			ERROR('Please provide number of rviper runs (--n_rv_runs) greater than number of iterations already performed.', 'sxviper', 1)
+			ERROR('Please provide number of rviper runs (--n_rv_runs) greater than number of iterations already performed.', 'sxrviper.main', 1)
 			error_status = 1
 
 	if_error_then_all_processes_exit_program(error_status)

@@ -58,13 +58,15 @@ def main():
 	if len(args)<1 or len(args)>3:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
-		sys.exit(-1)
-
+		global_def.ERROR( "Invalid number of parameters. Please see usage information above", "sximgstat.main" )
+		return
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
+
 	from applications import imgstat
+
 	global_def.BATCH = True
 	imgstat( args, options.ccc, options.fsc, options.inf, options.rad )
 

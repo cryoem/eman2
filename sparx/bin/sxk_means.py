@@ -61,20 +61,24 @@ def main():
 	if len(args) < 2 or len(args) > 3:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxk_means.main" )
+		return
+
 	elif options.trials < 1:
-			sys.stderr.write("ERROR: Number of trials should be at least 1.\n\n")
-			sys.exit()
+			global_def.ERROR( "Number of trials should be at least 1", "sxk_means.main" )
+			return
+
 	else:
 		if len(args)==2: mask = None
 		else:            mask = args[2]
 
 		if options.K < 2:
-			sys.stderr.write('ERROR: K must be > 1 group\n\n')
-			sys.exit()
+			global_def.ERROR( "K must be > 1 group", "sxk_means.main" )
+			return
 		
 		if  options.CTF:
-			sys.stderr.write('ERROR: CTF option not implemented\n\n')
-			sys.exit()
+			global_def.ERROR( "CTF option not implemented", "sxk_means.main" )
+			return
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

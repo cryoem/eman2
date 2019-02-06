@@ -57,23 +57,27 @@ def main():
 
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
-				print("usage: " + usage)
-				print("Please run '" + progname + " -h' for detailed options")
+		print("usage: " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxk_means_groups.main" )
+		return
+
 	elif options.trials < 1:
-			sys.stderr.write("ERROR: Number of trials should be at least 1.\n\n")
-			sys.exit()
-	
+		global_def.ERROR( "Number of trials should be at least 1", "sxk_means_groups.main" )
+		return
+
 	else: 
 		if len(args)==2: mask = None
 		else:            mask = args[2]
 
 		if options.K1 < 2:
-			sys.stderr.write('ERROR: K1 must be > 1 group\n\n')
-			sys.exit()
+			global_def.ERROR( "K1 must be > 1 group", "sxk_means_groups.main" )
+			return
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
+			
 		from applications import k_means_groups
 		global_def.BATCH = True
 		k_means_groups(args[0], args[1], mask, "SSE", options.K1, options.K2, options.rand_seed, options.maxit, options.trials, options.CTF, 0.0, 0.0, options.MPI, False, options.debug)

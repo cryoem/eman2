@@ -4161,25 +4161,38 @@ def get_input_from_sparx_ref3d(log_main):# case one
 	else: selected_iter = -1
 	selected_iter = bcast_number_to_all(selected_iter, Blockdata["main_node"], MPI_COMM_WORLD)
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
+	
 	if import_from_sparx_refinement == 0:
 		ERROR("The best solution not found","get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 		from mpi import mpi_finalize
 		mpi_finalize()
-		exit()
+		return
+
 	Tracker_refinement = wrap_mpi_bcast(Tracker_refinement, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 	# Check orgstack, set correct path
 	if Blockdata["myid"] == Blockdata["main_node"]:
 		refinement_dir_path, refinement_dir_name = os.path.split(Tracker["constants"]["refinement_dir"])	
+		
 		if Tracker_refinement["constants"]["stack"][0:4]=="bdb:":
 			refinement_stack = "bdb:" + os.path.join(refinement_dir_path, Tracker_refinement["constants"]["stack"][4:])
 		else:
 			refinement_stack = os.path.join(refinement_dir_path, Tracker_refinement["constants"]["stack"]) # very rare case		
-		if not Tracker["constants"]["orgstack"]: Tracker["constants"]["orgstack"] = refinement_stack
-		try:    image = get_im(Tracker["constants"]["orgstack"], 0)
-		except: import_from_sparx_refinement = 0
-		try:    total_stack = EMUtil.get_image_count(Tracker["constants"]["orgstack"])
-		except: total_stack = 0
-	else: total_stack = 0
+		
+		if not Tracker["constants"]["orgstack"]:
+			Tracker["constants"]["orgstack"] = refinement_stack
+		
+		try:    
+			image = get_im(Tracker["constants"]["orgstack"], 0)
+		except: 
+			import_from_sparx_refinement = 0
+
+		try:
+			total_stack = EMUtil.get_image_count(Tracker["constants"]["orgstack"])
+		except:
+			total_stack = 0
+	else: 
+		total_stack = 0
+
 	import_from_sparx_refinement = bcast_number_to_all(import_from_sparx_refinement, source_node = Blockdata["main_node"])
 	if import_from_sparx_refinement == 0:
 		ERROR("The data stack is not accessible","get_input_from_sparx_ref3d",1, Blockdata["myid"])
@@ -6460,7 +6473,7 @@ def main():
 			if keepsorting == 0:
 				from mpi import mpi_finalize
 				mpi_finalize()
-				exit()				 
+				return
 
 		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
@@ -6469,7 +6482,7 @@ def main():
 			log_main.add('================================================================================================================\n')
 		from mpi import mpi_finalize
 		mpi_finalize()
-		exit()
+		return
 			
 	elif initiate_from_data_stack_mode:
 		parser.add_option("--nxinit",                            type   ="int",           default =-1,                     help="User provided image size")
@@ -6647,7 +6660,7 @@ def main():
 			if keepsorting ==0:
 				from mpi import mpi_finalize
 				mpi_finalize()
-				exit()
+				return
 		sorting_main_mpi(log_main, options.depth_order, options.not_include_unaccounted)
 		if Blockdata["myid"] == Blockdata["main_node"]:
 			log_main.add('----------------------------------------------------------------------------------------------------------------')
@@ -6655,8 +6668,8 @@ def main():
 			log_main.add('================================================================================================================\n')
 		from mpi import mpi_finalize
 		mpi_finalize()
-		exit()
-		
+		return
+
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()

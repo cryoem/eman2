@@ -47,10 +47,13 @@ Eulerian_Angles = "SPIDER"
 
 # We read the global seed here. If the user wish to repeat the random results twice,
 # he/she should first set the rand_seed to a fixed number and then run the program twice.
+
+from sys import exit
+import datetime as dt
+
 from   EMAN2   import Util, EMData, EMUtil, Transform
 from   random  import seed
 
-import datetime as dt
 
 rand_seed = Util.get_randnum_seed()
 seed(rand_seed)
@@ -127,7 +130,7 @@ def ERROR(message, where, action = 1, myid = 0):
 		print("  *****  %s"%message)
 		print("")
 	if action == 1 and BATCH:
-		from sys import exit
+		
 		if  MPI:
 			from mpi import mpi_finalize
 			mpi_finalize()

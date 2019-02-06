@@ -64,12 +64,14 @@ def main():
 	(options,args) = parser.parse_args( arglist[1:] )
 
 	if len(args) != 1 :
-		print(usage)
-		sys.exit(-1)
+		print( "Usage: " + usage )
+		global_def.ERROR( "Invalid number of parameters provided. Please see usage information above.", "sxheader.main")
+		return
 
 	if options.params == None:
-		print("Error: no parameters given")
-		exit(-1)
+		print( "Usage: " + usage )
+		global_def.ERROR( "No parameters provided. Please see usage information above.", "sxheader.main")
+		return
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache

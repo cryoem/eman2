@@ -291,8 +291,9 @@ def main():
 	(options, args) = parser.parse_args( arglist[1:] )
 
 	if( len(args) !=1 and len(args) != 3):
-		print("usage: " + usage)
-		return None
+		print("Usage: " + usage)
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxresample.main" )
+		return
 
 	prjfile = args[0]
 

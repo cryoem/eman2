@@ -52,11 +52,15 @@ def main():
 	parser.add_option("--psirange",   type='float',default=20.0,help=" The search scale for psi angle...default=20")
 	parser.add_option("--ftol",       type='float',default=1.e-4,help=" convergence criterion on the function values...default = 1.e-4")
 	parser.add_option("--xtol",       type='float',default=1.e-4,help=" convergence criterion on the variable values...default = 1.e-4")
-	(options, args) = parser.parse_args()    	
+	
+	(options, args) = parser.parse_args()
+	
 	if len(args) != 2:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		exit(1)
+		print("Usage: " + usage)
+		print("Please run \'" + progname + " -h\' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxrot_sym.main" )
+		return
+	
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

@@ -59,10 +59,14 @@ def main():
 	parser.add_option("--rand_seed", type="int", default=1000, help=" random seed of initial (set to 1000)" )
 	parser.add_option("--MPI", action="store_true", default=False,     help="  whether to use MPI version ")
 	parser.add_option("--EQ", action="store_true", default=False,     help="  equal version ")
+
 	(options, args) = parser.parse_args(arglist[1:])
+	
 	if len(args) < 3 or len(args) > 4:
-    		print("usage: " + usage)
+    		print("Usage: " + usage)
     		print("Please run '" + progname + " -h' for detailed options")
+    		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxmref_ali2d" )
+    		return
 	else:
 	
 		if len(args) == 3:

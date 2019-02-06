@@ -161,15 +161,18 @@ def main():
 
 		if len(options.hfsc) > 0:
 			if len(args) != 1:
-				print("Incorrect number of parameters")
-				sys.exit()
+				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				return
+
 			from applications import imgstat_hfsc
 			imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
-			sys.exit()
+			return
+
 		elif len(options.filinfo) > 0:
 			if len(args) != 1:
-				print("Incorrect number of parameters")
-				sys.exit()
+				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				return
+
 			from EMAN2 import EMUtil
 			filams =  EMUtil.get_all_attributes(args[0], "filament")
 			ibeg = 0
@@ -188,17 +191,20 @@ def main():
 				i += 1
 			from utilities import write_text_row
 			write_text_row(inf, options.filinfo)
-			sys.exit()
+			return
 		
 		if len(options.stackdisk) > 0:
 			if len(args) != 1:
-				print("Incorrect number of parameters")
-				sys.exit()
+				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				return
+
 			dpp = (float(options.dp)/options.apix)
 			rise = int(dpp)
+
 			if(abs(float(rise) - dpp)>1.0e-3):
-				print("  dpp has to be integer multiplicity of the pixel size")
-				sys.exit()
+				global_def.ERROR( "dpp has to be integer multiplicity of the pixel size", "sxhelicon_utils.main" )
+				return
+
 			from utilities import get_im
 			v = get_im(args[0])
 			from applications import stack_disks
@@ -207,15 +213,16 @@ def main():
 				ref_ny = options.ref_nx
 			sv = stack_disks(v, options.ref_nx, ref_ny, options.ref_nz, options.dphi, rise)
 			sv.write_image(options.stackdisk)
-			sys.exit()
+			return
 
 		if len(options.consistency) > 0:
 			if len(args) != 1:
-				print("Incorrect number of parameters")
-				sys.exit()
+				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				return
+
 			from development import consistency_params	
 			consistency_params(args[0], options.consistency, options.dphi, options.dp, options.apix,phithr=options.phithr, ythr=options.ythr, THR=options.segthr)
-			sys.exit()
+			return
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
@@ -245,39 +252,48 @@ def main():
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 
 		if len(options.predict_helical) > 0:
+			
 			if len(args) != 1:
-				print("Incorrect number of parameters")
-				sys.exit()
+				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				return
+			
 			if options.dp < 0:
-				print("Helical symmetry paramter rise --dp should not be negative")
-				sys.exit()
+				global_def.ERROR( "Helical symmetry paramter rise --dp should not be negative", "sxhelicon_utils.main" )
+				return
+
 			from applications import predict_helical_params
 			predict_helical_params(args[0], options.dp, options.dphi, options.apix, options.predict_helical)
-			sys.exit()
+			return
 
 		if options.helicise:	
+
 			if len(args) != 2:
-				print("Incorrect number of parameters")
-				sys.exit()
+				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				return
+			
 			if options.dp < 0:
-				print("Helical symmetry paramter rise --dp should not be negative")
-				sys.exit()
+				global_def.ERROR( "Helical symmetry paramter rise --dp should not be negative", "sxhelicon_utils.main" )
+				return
+
 			from utilities import get_im, sym_vol
 			vol = get_im(args[0])
 			vol = sym_vol(vol, options.sym)
 			hvol = vol.helicise(options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp)
 			hvol = sym_vol(hvol, options.sym)
 			hvol.write_image(args[1])
-			sys.exit()
+			return
 
 
 		if options.helicisepdb:	
+
 			if len(args) != 2:
-				print("Incorrect number of parameters")
-				sys.exit()
+				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				return
+			
 			if options.dp < 0:
-				print("Helical symmetry paramter rise --dp should not be negative")
-				sys.exit()
+				global_def.ERROR( "Helical symmetry paramter rise --dp should not be negative", "sxhelicon_utils.main" )
+				return
+			
 			from math import cos, sin, radians
 			from copy import deepcopy
 			import numpy
@@ -341,15 +357,20 @@ def main():
 			outfile.writelines(pnew)
 			outfile.writelines("END\n")
 			outfile.close()
-			sys.exit()
+			return
 
 		if options.volalixshift:
 			if options.maxit > 1:
-				print("Inner iteration for x-shift determinatin is restricted to 1")
-				sys.exit()
-			if len(args) < 4:  mask = None
-			else:               mask = args[3]
+				global_def.ERROR( "Inner iteration for x-shift determinatin is restricted to 1", "sxhelicon_utils.main" )
+				return
+
+			if len(args) < 4:
+				mask = None
+			else:               
+				mask = args[3]
+
 			from applications import volalixshift_MPI
+			
 			global_def.BATCH = True
 			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
 			global_def.BATCH = False
@@ -373,8 +394,8 @@ def main():
 		
 			if len(options.symdoc) < 1:
 				if options.dp < 0 or options.dphi < 0:
-					print("Enter helical symmetry parameters either using --symdoc or --dp and --dphi")
-					sys.exit()
+					global_def.ERROR( "Enter helical symmetry parameters either using --symdoc or --dp and --dphi", "sxhelicon_utils.main" )
+					return
 			
 			if options.dp < 0 or options.dphi < 0:
 				# read helical symmetry parameters from symdoc
@@ -401,8 +422,9 @@ def main():
 			if len(args) == 1:  mask3d = None
 			else:               mask3d = args[1]
 			if options.dp < 0:
-				print("Helical symmetry paramter rise --dp must be explictly set!")
-				sys.exit()
+				global_def.ERROR( "Helical symmetry paramter rise --dp must be explictly set!", "sxhelicon_utils.main" )
+				return
+				
 			gendisks_MPI(args[0], mask3d, options.ref_nx, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk, options.maxerror, options.new_pixel_size, options.match_pixel_rise)
 			global_def.BATCH = False
 		

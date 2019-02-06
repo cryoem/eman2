@@ -503,8 +503,9 @@ def main():
 				if(pixer[q][k] > thresherr):  perr[q][k] = False
 				if  perr[q][k]: tgood += 1
 			if(tgood < 4):
-				print("  No good images within the pixel error threshold specified")
-				exit()
+				global_def.ERROR( "No good images within the pixel error threshold specified", "sxconsistency.main()" )
+				return
+
 		print(" tgood ", tgood)
 		hi = hist_list([pixer[q][k] for q in blocks for k in range(chunklengths[q])  ],16)
 		for i in range(len(hi[0])):
@@ -838,4 +839,7 @@ def main():
 	global_def.BATCH = False
 
 
-main()
+if __name__=="__main__":
+	global_def.print_timestamp( "Start" )
+	main()
+	global_def.print_timestamp( "Finish" )

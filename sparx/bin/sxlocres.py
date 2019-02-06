@@ -125,8 +125,9 @@ def main():
 	(options, args) = parser.parse_args(arglist[1:])
 
 	if len(args) <3 or len(args) > 4:
-		print("See usage " + usage)
-		sys.exit()
+		print("Usage: " + usage)
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxlocres.main" )
+		return
 
 	if global_def.CACHE_DISABLE:
 		utilities.disable_bdb_cache()

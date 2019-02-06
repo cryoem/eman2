@@ -34,19 +34,20 @@ from __future__ import print_function
 from builtins import range
 import os
 import global_def
-from   global_def     import *
-from   optparse       import OptionParser
+from   global_def import *
+from   optparse   import OptionParser
 import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " averages1 averages2 --th_grp"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--T",           type="int",     default=0,        help=" Threshold for matching")
-	parser.add_option("--J",           type="int",     default=50,       help=" J")
-	parser.add_option("--max_branching",         type="int",     default=40,        help=" maximum branching")
-	parser.add_option("--verbose",     action="store_true",     default=False,        help=" Threshold for matching")
-	parser.add_option("--timing",      action="store_true",     default=False,        help=" Get the timing")
+	parser.add_option( "--T",             type="int",          default=0,     help=" Threshold for matching" )
+	parser.add_option( "--J",             type="int",          default=50,    help=" J" )
+	parser.add_option( "--max_branching", type="int",     	  default=40,     help=" maximum branching" )
+	parser.add_option( "--verbose",       action="store_true", default=False, help=" Threshold for matching" )
+	parser.add_option( "--timing",        action="store_true", default=False, help=" Get the timing" )
+
 	(options, args) = parser.parse_args()
 
 	if global_def.CACHE_DISABLE:
@@ -102,7 +103,8 @@ def main():
 		print("     matched size = %3d"%(CT_s[u]), end=' ')
 		if options.verbose:
 			print("   matched group = %s"%(STB_PART[u]))
-		else: print("")
+		else: 
+			print("")
 
 	print("\nNumber of averages = ", end=' ')
 	for r in range(R):

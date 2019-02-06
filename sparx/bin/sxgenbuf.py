@@ -42,8 +42,12 @@ def genbuf( prjfile, bufprefix, beg, end, CTF, npad, verbose = 0 ):
 	from utilities import get_im
 	from time import time
 	import os
-	if(verbose == 1):  finfo=open( os.path.join(outdir, "progress.txt"), "w" )
-	else:              finfo = None
+	
+	if(verbose == 1):  
+		finfo=open( os.path.join(outdir, "progress.txt"), "w" )
+	else:
+		finfo = None
+	
 	start_time = time()
 	istore = newfile_store( bufprefix, npad, CTF )
 	for i in range( beg, end ):
@@ -72,8 +76,9 @@ def main():
 	(options, args) = parser.parse_args( arglist[1:] )
 
 	if( len(args) != 2):
-		print("usage: " + usage)
-		return None
+		print("Usage: " + usage)
+		global_def.ERROR( "Wrong number of parameters. Please see usage information above.", "sxgenbuf.main" )
+		return
 
 	prjfile = args[0]
 

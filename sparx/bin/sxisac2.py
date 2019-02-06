@@ -1075,10 +1075,13 @@ def main(args):
 	if len(args) > 2:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
-		sys.exit()
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxisac2.main" )
+		return
+
 	elif( len(args) == 2):
 		Blockdata["stack"] 	= args[0]
 		Blockdata["masterdir"] = args[1]
+	
 	elif( len(args) == 1):
 		Blockdata["stack"] 	= args[0]
 		Blockdata["masterdir"] = ""
@@ -1638,7 +1641,7 @@ def main(args):
 			print(" ISAC could not find any stable class averaging, terminating...")
 
 	mpi_finalize()
-	exit()
+	return
 
 if __name__=="__main__":
 	global_def.print_timestamp( "Start" )

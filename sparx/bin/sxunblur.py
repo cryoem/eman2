@@ -135,7 +135,9 @@ def main():
 
     # If there arent enough arguments, stop the script
     if len(args) != 3:
-        ERROR("see usage " + usage, 1)
+        print("Usage: " + usage)
+        global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxunblur.main" )
+        return
 
     # Convert the realtive parts to absolute ones
     unblur_path = path.realpath(args[0]) # unblur_path
@@ -144,33 +146,25 @@ def main():
 
     # If the unblur executable file does not exists, stop the script
     if not path.exists(unblur_path):
-        ERROR(
-            'Unblur directory does not exist, please change' +
-            ' the name and restart the program.', 'sxunblur.py', 1
-            )
+        global_def.ERROR( "Unblur directory does not exist, please change the name and restart the program", "sxunblur.main" )
+        return
 
     # If the output directory exists, stop the script
     if path.exists(output_dir):
-        ERROR(
-            'Output directory exists, please change' +
-            ' the name and restart the program.', 'sxunblur.py', 1
-            )
+        global_def.ERROR( "Output directory exists, please change the name and restart the program", "sxunblur.main" )
+        return
 
     # If the input file does not exists, stop the script
     file_list = glob(input_image)
 
     if not file_list:
-        ERROR(
-            'Input file does not exist, please change' +
-            ' the name and restart the program.', 'sxunblur.py', 1
-            )
+        global_def.ERROR( "Input file does not exist, please change the name and restart the program", "sxunblur.main" )
+        return
 
     # If the skip_dose_filter option is false, the summovie path is necessary
     if not options.skip_dose_filter and not path.exists(options.summovie_path):
-        ERROR(
-            'Path to the SumMovie executable is necessary when dose weighting is performed.',
-            'sxunblur.py', 1
-            )
+        global_def.ERROR( "Path to the SumMovie executable is necessary when dose weighting is performed", "sxunblur.main" )
+        return
 
 
     # Output paths

@@ -261,7 +261,7 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 		mpi_finalize()
 
 	sys.stdout.flush()
-	sys.exit(0)
+	return
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )

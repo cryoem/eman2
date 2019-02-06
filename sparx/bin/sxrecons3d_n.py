@@ -66,8 +66,8 @@ def main():
 	parser.add_option("--compensate",             action="store_true",  default=False,  help="compensate in reconstruction")
 	parser.add_option("--chunk_id",               type="int",           default=-1,     help="reconstruct both odd and even groups of particles")
 	parser.add_option("--target_window_size",               type="int",           default=-1,     help=" size of the targeted reconstruction ")
-	(options,args) = parser.parse_args(arglist[1:])
 
+	(options,args) = parser.parse_args(arglist[1:])
 
 	if options.MPI:
 		from mpi import mpi_init
@@ -90,12 +90,12 @@ def main():
 		step  = atoi( args[4] )
 		pid_list = list(range(begin, end, step))
 	else:
-		ERROR("incomplete list of arguments","recon3d_n",1)
-		exit()
+		global_def.ERROR( "Incomplete list of arguments", "sxrecons3d_n.main (recon3d_n)" )
+		return
 
 	if(options.list and options.group > -1):
-		ERROR("options group and list cannot be used together","recon3d_n",1)
-		sys.exit()
+		global_def.ERROR( "options group and list cannot be used together", "sxrecons3d_n.main (recon3d_n" )
+		return
 
 	from applications import recons3d_n, recons3d_trl_MPI
 
@@ -105,13 +105,14 @@ def main():
 		 options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize, options.zsize, options.smearstep, options.upweighted, options.compensate,options.chunk_id)
 	elif options.interpolation_method == "tril":
 		if options.MPI is False:
-			ERROR(" trillinear interpolation reconstruction has MPI version only!")
-			sys.exit()
+			global_def.ERROR( "Trillinear interpolation reconstruction has MPI version only!", "sxrecons3d_n.main (recon3d_n)")
+			return
 		recons3d_trl_MPI(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
 		 options.sym, options.verbose, options.niter, options.compensate, options.target_window_size)
 		
 	else:
-		ERROR(" Wrong interpolation method. The current options are 4nn, and tril. 4nn is the defalut one. ")
+		global_def.ERROR( "Wrong interpolation method. The current options are 4nn, and tril. 4nn is the defalut one.", "sxrecons3d_n.main (recon3d_n)" )
+		return
 		
 	global_def.BATCH = False
 

@@ -41,17 +41,18 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + """ 2Dprojections plot_output
-
-Read projection angles from 2Dprojections file or from a text file and write a 2D image file
-containing their distribution on a hemisphere."""
+	usage = progname + "2Dprojections plot_output Read projection angles from 2Dprojections file or from a text file and write a 2D image file containing their distribution on a hemisphere."
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--wnx",       type="int",  default=256,             help="plot image size (default = 256)")
 
 	(options, args) = parser.parse_args()
+
 	if len(args) != 2:
-		print("usage: " + usage)
-		print("Please run '" + progname + """ -h' for detailed options""")
+		print("Usage: " + usage)
+		print("Please run \'" + progname + " -h\' for detailed options")
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxplot_projs_distrib.main" )
+		return
+
 	else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

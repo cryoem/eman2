@@ -80,13 +80,13 @@ def main():
 		
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			print("Please enter pixel size")
-			sys.exit()
+			global_def.ERROR( "Please enter pixel size", "sxhelicon.main" )
+			return
 		
 		if len(options.symdoc) < 1:
 			if options.dp < 0 or options.dphi < 0:
-				print("Enter helical symmetry parameters either using --symdoc or --dp and --dphi")
-				sys.exit()
+				global_def.ERROR( "Enter helical symmetry parameters either using --symdoc or --dp and --dphi", "sxhelicon.main" )
+				return
 			
 		if options.dp < 0 or options.dphi < 0:
 			# read helical symmetry parameters from symdoc
@@ -109,23 +109,26 @@ def main():
 		if( options.ystep <= 0.0 ):  ystep = 1.0
 		else:                        ystep = options.ystep/options.apix
 		if( dp/2.0 < ywobble):
-			ERROR('ywobble has to be smaller than dp/2.', 'sxhelicon')
-			sys.exit()
+			global_def.ERROR( "ywobble has to be smaller than dp/2", "sxhelicon.main" )
+			return
 
 		try:
 			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		except:
-			ERROR('This program has only MPI version.  Please install MPI library.', 'sxhelicon')
-			sys.exit()
+			global_def.ERROR( "This program has only MPI version.  Please install MPI library.", "sxhelicon.main" )
+			return
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
 
-		if len(args) < 4:  mask = None
-		else:              mask = args[3]
+		if len(args) < 4:
+			mask = None
+		else:
+			mask = args[3]
+
 		from applications import ehelix_MPI
 		global_def.BATCH = True
 		ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.phiwobble, options.psi_max,\

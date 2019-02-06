@@ -5751,8 +5751,9 @@ def main():
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
 	if len(args) > 1:
-		print("see usage " + usage)
-		sys.exit()
+		print("Usage: " + usage)
+		global_def.ERROR( "Invalid number of parameters. Please see usage information above.", "sxgui.main" )
+		return
 	
 	sxapp = QApplication(sys.argv)
 	# The valid keys can be retrieved using the keys() function.

@@ -1309,7 +1309,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 		mpi_finalize()
 	
 	sys.stdout.flush()
-	sys.exit(0)
+	return
 	
 # ========================================================================================
 # Define main function for command line execution

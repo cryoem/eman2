@@ -56,8 +56,9 @@ def main():
 	(options, args) = parser.parse_args( arglist[1:] )
 
 	if( len(args) != 2):
-		print("usage: " + usage)
-		return None
+		print("Usage: " + usage)
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxspliteigen.main" )
+		return
 
 	from math import sqrt
 	nimage = EMUtil.get_image_count( args[0] )

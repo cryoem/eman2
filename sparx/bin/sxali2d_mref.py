@@ -50,7 +50,7 @@ def main():
 	if len(args) != 1:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
-		sys.exit()
+		return
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache

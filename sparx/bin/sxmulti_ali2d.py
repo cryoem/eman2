@@ -62,16 +62,25 @@ def main():
 	parser.add_option("--CUDA",     action="store_true", default=False,   help="use CUDA program")
 	parser.add_option("--GPUID",    type="string",    default="",         help="ID of GPUs available")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use MPI version ")
-	(options, args) = parser.parse_args()
-	if len(args) < 2 or len(args) > 3:
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
-	else:
-		if args[1] == 'None': outdir = None
-		else:		      outdir = args[1]
 
-		if len(args) == 2: mask = None
-		else:              mask = args[2]
+	(options, args) = parser.parse_args()
+	
+	if len(args) < 2 or len(args) > 3:
+    		print("Usage: " + usage)
+    		print("Please run '" + progname + " -h' for detailed options")
+    		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxmulti_ali2d" )
+    		return
+
+	else:
+		if args[1] == 'None':
+			outdir = None
+		else:
+			outdir = args[1]
+
+		if len(args) == 2:
+			mask = None
+		else:
+			mask = args[2]
 		
 		from development import multi_ali2d
 

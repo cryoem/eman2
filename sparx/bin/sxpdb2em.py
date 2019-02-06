@@ -74,18 +74,25 @@ map to the center of the volume."""
 	parser.add_option("--tr0",        type="string",       default="none", help="Filename of initial 3x4 transformation matrix")
 	parser.add_option("--set_apix_value",    action="store_true", help="Set apix value in header of the ouput map", default=False)
 
-	(options, args) = parser.parse_args()
-	if len(args)<2 : parser.error("Input and output files required")
-	#try: chains=options.chains
-	#except: 
+	(options, args) = parser.parse_args()#
+
+	if len(args)<2 :
+		global_def.ERROR( "Input and output files required", "sxpdb2em.main" )
+		return
+
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
+
 	chains = options.chains
-	if chains == '': chains = None
+	if chains == '': 
+		chains = None
 	
-	try : infile=open(args[0],"r")
-	except : parser.error("Cannot open input file")
+	try: 
+		infile=open(args[0],"r")
+	except: 
+		global_def.ERROR( "Cannot open input file", "sxpdb2em.main" )
+		return
 	
 	aavg=[0,0,0]	# calculate atomic center
 	asig=[0,0,0]	# to compute radius of gyration
@@ -242,7 +249,8 @@ map to the center of the volume."""
 		print  "Pixel size too small resulting in a box size >512"
 		sys.exit()
 	"""
-	if not options.quiet: print("Box size: %d x %d x %d"%(box[0],box[1],box[2]),",  oversampling ",fcbig)
+	if not options.quiet: 
+		print("Box size: %d x %d x %d"%(box[0],box[1],box[2]),",  oversampling ",fcbig)
 
 	# Calculate working dimensions
 	pixelbig = options.apix/fcbig
@@ -274,9 +282,11 @@ map to the center of the volume."""
 			        		px = atoms[i][1]/pixelbig+nc[0]
 			        		dx = px - int(px)
 			        		outmap[int(px)+m,int(py)+l,int(pz)+k] += ((1-m) + (2*m-1)*dx)*uy
-		except: print("Skipping %d '%s'"%(i,atoms[i][0]))
+		except: 
+			print("Skipping %d '%s'"%(i,atoms[i][0]))
 		
-	if not options.quiet: print('\r   %d\nConversion complete.'%len(atoms))  #,"    Now shape atoms."
+	if not options.quiet: 
+		print('\r   %d\nConversion complete.'%len(atoms))  #,"    Now shape atoms."
 	"""
 	fftip(outmap)
 	# Atom in Fourier space has sigma = 0.41 [1/A]
@@ -294,10 +304,17 @@ map to the center of the volume."""
 			outmap.set_attr("apix_y",options.apix)
 			outmap.set_attr("apix_z",options.apix)
 			outmap.set_attr("pixel_size",options.apix)
-		else: print("Pixel_size is not set in the header!")
+		else: 
+			print("Pixel_size is not set in the header!")
+
 		outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_HDF)
-	elif filextension == ".spi": outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
-	else:   ERROR("unknown image type","sxpdb2em",1)
+
+	elif filextension == ".spi": 
+		outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+
+	else:
+		global_def.ERROR( "Unknown image type","sxpdb2em.main" )
+		return
 				
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )

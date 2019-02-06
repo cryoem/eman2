@@ -164,7 +164,9 @@ images far from focus."""
 		img_sets = get_gui_arg_img_sets(options.filenames)
 		if len(img_sets) == 0:
 			E2end(logid)
-			sys.exit(1)
+			global_def.ERROR( "img_sets == 0", "sxctf.main" )
+			return
+
 		app=EMApp()
 		gui=GUIctf(app,img_sets)
 		gui.show_guis()
@@ -188,11 +190,12 @@ def get_gui_arg_img_sets(filenames):
 	img_sets = []
 	if db_check_dict("bdb:e2ctf.parms"):
 		db_parms=db_open_dict("bdb:e2ctf.parms",ro=True)
-	else: return img_sets
+	else: 
+		return img_sets
 	for file in filenames:
 		name = base_name(file)
 		if name not in db_parms:
-			print("error, you must first run auto fit before running the gui - there are no parameters for",name)
+			global_def.ERROR( "You must first run auto fit before running the gui - there are no parameters for \'"+name+"\'", "sxctf.get_gui_arg_img_sets" )
 			return []
 		img_set = db_parms[name]
 		ctf=EMAN2Ctf()
@@ -849,13 +852,13 @@ class GUIctf(QtGui.QWidget):
 		try:
 			from eman2_gui.emimage2d import EMImage2DWidget
 		except:
-			print("Cannot import EMAN image GUI objects (EMImage2DWidget)")
-			sys.exit(1)
+			global_def.ERROR( "Cannot import EMAN image GUI objects (EMImage2DWidget)", "sxctf.GUIctf.__init__" )
+			return
 		try: 
 			from eman2_gui.emplot2d import EMPlot2DWidget
 		except:
-			print("Cannot import EMAN plot GUI objects (is matplotlib installed?)")
-			sys.exit(1)
+			global_def.ERROR( "Cannot import EMAN plot GUI objects (is matplotlib installed?)", "sxctf.GUIctf.__init__" )
+			return
 		
 		self.app = weakref.ref(application)
 		

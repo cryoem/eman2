@@ -96,7 +96,9 @@ def main():
 
     # If there arent enough arguments, stop the script
     if len(args) != 4:
-        ERROR("see usage " + usage, 1)
+        print( "Usage: " + usage )
+        global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxsummovie.main" )
+        return
 
     # Convert the realtive parts to absolute ones
     summovie_path = path.realpath(args[0]) # summovie_path
@@ -106,33 +108,25 @@ def main():
 
     # If the summovie executable file does not exists, stop the script
     if not path.exists(summovie_path):
-        ERROR(
-            'Summovie directory does not exist, please change' +
-            ' the name and restart the program.', 'sxsummovie.py', 1
-            )
+        global_def.ERROR( "Summovie directory does not exist, please change the name and restart the program.", "sxsummovie.main" )
+        return
 
     # If the output directory exists, stop the script
     if path.exists(output_dir):
-        ERROR(
-            'Output directory exists, please change' +
-            ' the name and restart the program.', 'sxsummovie.py', 1
-            )
+        global_def.ERROR( "Output directory exists, please change the name and restart the program.", "sxsummovie.main" )
+        return
 
     # If the input file does not exists, stop the script
     file_list = glob(input_image)
     shift_list = glob(input_shift)
 
     if not file_list:
-        ERROR(
-            'Input micrograph file(s) does not exist, please change' +
-            ' the name and restart the program.', 'sxsummovie.py', 1
-            )
+        global_def.ERROR( "Input micrograph file(s) does not exist, please change the name and restart the program.", "sxsummovie.main" )
+        return
 
     if not shift_list:
-        ERROR(
-            'Input shift file(s) does not exist, please change' +
-            ' the name and restart the program.', 'sxsummovie.py', 1
-            )
+        global_def.ERROR( "Input shift file(s) does not exist, please change the name and restart the program.", "sxsummovie.main" )
+        return
 
     # Output paths
     if options.apply_dose_filter:
@@ -152,11 +146,8 @@ def main():
     input_shift_name = input_shift.split('*')
 
     if len(input_mic_name) != 2 or len(input_shift_name) != 2:
-        ERROR(
-            'Too many wildcard arguments.' +
-            'Please use exactly one * in the pattern.', 'sxsummovie.py',
-            1
-            )
+        global_def.ERROR( "Too many wildcard arguments. Please use exactly one \'*\' in the pattern.", "sxsummovie.py" )
+        return
 
     # Get the input directory
     if len(input_mic_split) != 1:
@@ -193,7 +184,8 @@ def main():
         try:
             selection = genfromtxt(selection_file, dtype=None)
         except TypeError:
-            ERROR('no entrys in micrograph list file {0}'.format(selection_file), 'sxsummovie.py', 1)
+            ERROR( "No entrys in micrograph list file \'"+selection_file+"\'", "sxsummovie.py" )
+            return
         # List of files which are in pattern and list
         mic_list = [
                 entry for entry in mic_list \
@@ -202,10 +194,8 @@ def main():
                 ]
         # If no match is there abort
         if len(mic_list) == 0:
-            ERROR(
-                'no files in {0} matched the micrograph file pattern:\n'.format(selection_file), 'sxsummovie.py',
-                1
-                )
+            ERROR( "No files in \'"+selection_file"\' matched the micrograph file pattern", "sxsummovie.py" )
+            return
 
     option_dict = {
         'summovie_path': summovie_path,
@@ -237,9 +227,7 @@ def main():
         }
 
     # Run summovie
-    run_summovie(
-        opt=option_dict
-        )
+    run_summovie( opt=option_dict )
 
     if not options.summovie_ready:
         # Remove temp folder
@@ -247,14 +235,12 @@ def main():
             remove(entry)
         rmdir(temp_path)
 
-    print('All Done!')
+    print( "All Done!" )
 
     global_def.BATCH = False
 
 
-def run_summovie(
-        opt
-        ):
+def run_summovie( opt ):
 
     # Lists to write the text files later
     micrograph_list = []

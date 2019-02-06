@@ -1881,7 +1881,7 @@ def patch_to_do_k_means_match_clusters_asg_new(ptp1, ptp2):
 			if len(b)>0: blist.append(max(b))
 		if len(alist)>0 and len(blist)>0:
 			max_number = max(max(alist), max(blist))
-		else:  exit() # This would never happen
+		else:  exit() # This would never happen # then why is this here?
 		if len(ptp1) > len(ptp2):
 			ndiff = len(ptp1) - len(ptp2)
 			for indiff in range(ndiff):
@@ -3020,7 +3020,7 @@ def get_input_from_sparx_ref3d(log_main):# case one
 		ERROR("The best solution is not found","get_input_from_sparx_ref3d", "get_input_from_sparx_ref3d", 1, Blockdata["myid"])
 		from mpi import mpi_finalize
 		mpi_finalize()
-		exit()			
+		return
 	Tracker_refinement = wrap_mpi_bcast(Tracker_refinement, Blockdata["main_node"], communicator = MPI_COMM_WORLD)
 	# Check orgstack, set correct path
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -5556,7 +5556,7 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		from mpi import mpi_finalize
 		mpi_finalize()
-		exit()
+		return
 	mpi_barrier(MPI_COMM_WORLD)
 	###<<<------- ++++++++++ sort3d starts here +++++++++++ ----------
 	for indep_sort3d in range(Tracker["total_sort3d_indepent_run"]):		
@@ -5824,8 +5824,8 @@ def main():
 	mpi_barrier(MPI_COMM_WORLD)
 	from mpi import mpi_finalize
 	mpi_finalize()
-	exit()
-	
+	return
+
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )
 	main()
