@@ -282,7 +282,11 @@ def main():
 	
 	options = checkinput( options )
 	
-	options = detectThreads( options )
+	if int(options.parallel.split(':')[-1]) == 1:
+		options = detectThreads( options )
+	else:
+		print('\nNOT detecting threads automatically since a specific number was requested: {}'.format(options.parallel.split(':')[-1]))
+	
 	
 	if not options.ref:
 		print("\nERROR: --ref required. Use e2spt_refprep.py, or e2spt_binarytree.py, e2spt_hac.py, e2symsearch3d.py, to generate initial references.")
