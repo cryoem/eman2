@@ -38,6 +38,11 @@ funclist = ['ali2d_single_iter', 'ringwe' ,'ormq_fast', 'prepref', 'prepare_refr
 
 FUNCLIST = ['ormq_fast','ringwe' , 'prepref','proj_ali_incore','proj_ali_incore_local']
 
+
+
+FUNCTLIST = ['orient_params', 'find_common_subset', 'ali3d_multishc', 'ali3d_multishc_2', 'multi_shc',\
+            'mirror_and_reduce_dsym', 'do_volume' ]
+
 for entry in FUNCLIST[:]:
       print(entry)
 

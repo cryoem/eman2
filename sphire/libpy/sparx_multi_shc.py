@@ -263,6 +263,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, symmetry_class, mpi_comm = Non
 	myid           = mpi.mpi_comm_rank(mpi_comm)
 	main_node = 0
 
+
+	print('number_of_proc are ', number_of_proc)
+	print('number of runs are', number_of_runs)
+
 	if myid == main_node:
 		log.add("Start VIPER1")
 

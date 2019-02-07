@@ -1955,7 +1955,7 @@ def cpy(ins_list, ous):
 	# iterate over all images in the list, even if it's only one...
 	for ins in image_list:
 
-		#print ins
+		print('ins value is ',ins)
 		nima = EMAN2_cppwrap.EMUtil.get_image_count(ins)
 		data = EMAN2_cppwrap.EMData()
 		iextension = sparx_utilities.file_type(ins)
