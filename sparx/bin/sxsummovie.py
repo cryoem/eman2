@@ -194,7 +194,7 @@ def main():
                 ]
         # If no match is there abort
         if len(mic_list) == 0:
-            ERROR( "No files in \'"+selection_file"\' matched the micrograph file pattern", "sxsummovie.py" )
+            ERROR( "No files in \'"+selection_file+"\' matched the micrograph file pattern", "sxsummovie.py" )
             return
 
     option_dict = {
