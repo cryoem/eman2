@@ -374,7 +374,7 @@ class SXLookFeelConst(object):
 
 	@staticmethod
 	def format_path(path):
-		formatted_path = os.path.relpath(path)
+		formatted_path = os.path.relpath(str(path))
 		if formatted_path[:len("../")] == "../":
 			# if the path is above the project root directory (current directory)
 			# use absolute path
@@ -591,7 +591,7 @@ class SXCmdWidget(QWidget):
 
 		# Set grid layout
 		grid_layout = QGridLayout(self)
-		# grid_layout.setContentsMargins(SXLookFeelConst.grid_margin)
+		# grid_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		# grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 
 		self.setAutoFillBackground(True)
@@ -1292,20 +1292,20 @@ class SXCmdWidget(QWidget):
 	def save_params(self):
 		name = QFileDialog.getSaveFileName(self, "Save Parameters", SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog)
 		if isinstance(name, tuple):
-			file_path_out = str(name[0])
+			file_path = str(name[0])
 		else:
-			file_path_out = str(name)
-		if file_path_out:
-			self.write_params(file_path_out)
+			file_path = str(name)
+		if file_path != "":
+			self.write_params(file_path)
 
 	def load_params(self):
 		name = QFileDialog.getOpenFileName(self, "Load parameters", SXLookFeelConst.file_dialog_dir, options = QFileDialog.DontUseNativeDialog)
 		if isinstance(name, tuple):
-			file_path_in = str(name[0])
+			file_path = str(name[0])
 		else:
-			file_path_in = str(name)
-		if file_path_in:
-			self.read_params(file_path_in)
+			file_path = str(name)
+		if file_path != "":
+			self.read_params(file_path)
 			self.sxcmd_tab_main.set_qsub_enable_state()
 
 	def select_file(self, target_widget, file_format = ""):
@@ -1318,12 +1318,12 @@ class SXCmdWidget(QWidget):
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			name = QFileDialog.getOpenFileNames(self, "Select any displayable files", SXLookFeelConst.file_dialog_dir, "Typical displayable files (*.hdf *.bdb *.mrc *.mrcs *.spi *.img *.tif *.tiff *.png *.txt);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; MRCS (*.mrcs);; Spider (*.spi);; Imagic (*.img *hed);; TIFF (*.tif *.tiff);; PNG (*.png);; Text (*.txt);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.hdr *.img);; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
-				file_path = name[0]
+				file_path_list = name[0]
 			else:
-				file_path = name
-			for a_file_path in file_path:
+				file_path_list = name
+			for a_file_path in file_path_list:
 				# Use relative path.
-				a_file_path = SXLookFeelConst.format_path(str(a_file_path))
+				a_file_path = SXLookFeelConst.format_path(a_file_path)
 				try: # Check if the path is bdb
 					a_file_path = translate_to_bdb_path(a_file_path) # Convert the standard path to bdb key if possible.
 				except ValueError:  # If the path is not bdb, we will receive this exception
@@ -1401,12 +1401,12 @@ class SXCmdWidget(QWidget):
 			# 
 			name = QFileDialog.getOpenFileNames(self, "Select MRC micrograph files", SXLookFeelConst.file_dialog_dir, "MRC files (*.mrc);; MRCS (*.mrcs)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
-				file_path = name[0]
+				file_path_list = name[0]
 			else:
-				file_path = name
+				file_path_list = name
 			# Use relative path.
-			for a_file_path in file_path:
-				file_path += SXLookFeelConst.format_path(str(a_file_path)) + " "
+			for a_file_path in file_path_list:
+				file_path += SXLookFeelConst.format_path(a_file_path) + " "
 		elif file_format == "mic_one_list":
 			# NOTE: Toshio Moriya 2018/01/25
 			# Currently, the distinction between MRC and MRCS is not always used, and 
@@ -1416,19 +1416,23 @@ class SXCmdWidget(QWidget):
 			# Only stack: ;; MRCS (*.mrcs)
 			name = QFileDialog.getOpenFileNames(self, "Select any micrograph files", SXLookFeelConst.file_dialog_dir, "Typical micrograph files (*.mrc *.mrcs *.tif *.tiff *.hdf *.bdb *.spi *.img);; MRC (*.mrc);; MRCS (*.mrcs);; TIFF (*.tif *.tiff);; HDF (*.hdf);; BDB (*.bdb);; Spider (*.spi);; Imagic (*.img);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
-				file_path = name[0]
+				file_path_list = name[0]
 			else:
-				file_path = name
+				file_path_list = name
 			# Use relative path.
-			for a_file_path in file_path:
-				a_file_path = SXLookFeelConst.format_path(str(a_file_path))
+			for a_file_path in file_path_list:
+				a_file_path = SXLookFeelConst.format_path(a_file_path)
 				try: # Check if the path is bdb
 					a_file_path = translate_to_bdb_path(a_file_path) # Convert the standard path to bdb key if possible.
 				except ValueError:  # If the path is not bdb, we will receive this exception
 					pass # This is not bdb path. Then, use standard path
 				file_path += a_file_path + " "
 		elif file_format == "mrc2d_mic_stack":
-			file_path = QFileDialog.getOpenFileName(self, "Select MRC movie file", SXLookFeelConst.file_dialog_dir, "MRC movie files (*.mrcs);; MRC (*.mrc)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select MRC movie file", SXLookFeelConst.file_dialog_dir, "MRC movie files (*.mrcs);; MRC (*.mrc)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -1440,7 +1444,11 @@ class SXCmdWidget(QWidget):
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			# 2D image stack not supported: ;; Gatan (*.dm2 *.dm3);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; OMAP (*.omap);; PGM (*.pgm);; PNG (*.png);; SAL (*.hdr *.img);; SITUS (*.situs);; TIFF (*.tif *.tiff);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor)
 			# Maybe only single 2D image: ;; MRC (*.mrc)
-			file_path = QFileDialog.getOpenFileName(self, "Select any movie file", SXLookFeelConst.file_dialog_dir, "Typical movie files (*.mrcs *.mrc *.bdb *.hdf *.spi *.img );; MRCS (*.mrcs);; MRC (*.mrc);; BDB (*.bdb);; HDF (*.hdf);; Spider (*.spi);; Imagic (*.img *hed);; Gatan (*.dm4);; FEI (*.ser);; LST (*.lst);; LSTFAST (*.lsx *.lst);; PIF (*.pif);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select any movie file", SXLookFeelConst.file_dialog_dir, "Typical movie files (*.mrcs *.mrc *.bdb *.hdf *.spi *.img );; MRCS (*.mrcs);; MRC (*.mrc);; BDB (*.bdb);; HDF (*.hdf);; Spider (*.spi);; Imagic (*.img *hed);; Gatan (*.dm4);; FEI (*.ser);; LST (*.lst);; LSTFAST (*.lsx *.lst);; PIF (*.pif);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -1449,14 +1457,22 @@ class SXCmdWidget(QWidget):
 				except ValueError:  # If the path is not bdb, we will receive this exception
 					pass # This is not bdb path. Then, use standard path
 		elif file_format == "hdf2d_one":
-			file_path = QFileDialog.getOpenFileName(self, "Select HDF image file", SXLookFeelConst.file_dialog_dir, "HDF image files (*.hdf)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select HDF image file", SXLookFeelConst.file_dialog_dir, "HDF image files (*.hdf)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "data2d_one":
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			# Maybe only 2D image stack: ;; MRCS (*.mrcs)
-			file_path = QFileDialog.getOpenFileName(self, "Select any image file", SXLookFeelConst.file_dialog_dir, "Typical image files (*.hdf *.bdb *.mrc *.spi *.img *.tif *.tiff *.png);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; Spider (*.spi);; Imagic (*.img);; TIFF (*.tif *.tiff);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select any image file", SXLookFeelConst.file_dialog_dir, "Typical image files (*.hdf *.bdb *.mrc *.spi *.img *.tif *.tiff *.png);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; Spider (*.spi);; Imagic (*.img);; TIFF (*.tif *.tiff);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -1465,7 +1481,11 @@ class SXCmdWidget(QWidget):
 				except ValueError:  # If the path is not bdb, we will receive this exception
 					pass # This is not bdb path. Then, use standard path
 		elif file_format == "bdb2d_stack":
-			file_path = QFileDialog.getOpenFileName(self, "Select BDB image stack file", SXLookFeelConst.file_dialog_dir, "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select BDB image stack file", SXLookFeelConst.file_dialog_dir, "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -1477,7 +1497,11 @@ class SXCmdWidget(QWidget):
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			# 2D image stack not supported: ;; Gatan (*.dm2 *.dm3);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; OMAP (*.omap);; PGM (*.pgm);; PNG (*.png);; SAL (*.hdr *.img);; SITUS (*.situs);; TIFF (*.tif *.tiff);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor)
 			# Maybe only single 2D image: ;; MRC (*.mrc)
-			file_path = QFileDialog.getOpenFileName(self, "Select any image stack file", SXLookFeelConst.file_dialog_dir, "Typical image stack files (*.bdb *.hdf *.mrcs *.spi *.img );; BDB (*.bdb);; HDF (*.hdf);; MRCS (*.mrcs);; Spider (*.spi);; Imagic (*.img *hed);; Gatan (*.dm4);; FEI (*.ser);; LST (*.lst);; LSTFAST (*.lsx *.lst);; PIF (*.pif);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select any image stack file", SXLookFeelConst.file_dialog_dir, "Typical image stack files (*.bdb *.hdf *.mrcs *.spi *.img );; BDB (*.bdb);; HDF (*.hdf);; MRCS (*.mrcs);; Spider (*.spi);; Imagic (*.img *hed);; Gatan (*.dm4);; FEI (*.ser);; LST (*.lst);; LSTFAST (*.lsx *.lst);; PIF (*.pif);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -1486,7 +1510,11 @@ class SXCmdWidget(QWidget):
 				except ValueError:  # If the path is not bdb, we will receive this exception
 					pass # This is not bdb path. Then, use standard path
 		elif file_format == "hdf3d_one":
-			file_path = QFileDialog.getOpenFileName(self, "Select HDF volume file", SXLookFeelConst.file_dialog_dir, "HDF volume files (*.hdf)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select HDF volume file", SXLookFeelConst.file_dialog_dir, "HDF volume files (*.hdf)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -1494,7 +1522,11 @@ class SXCmdWidget(QWidget):
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			# 3D volume not supported: ;; Gatan (*.dm2 *.dm3);; FEI (*.ser);; SAL (*.hdr *.img);; PGM (*.pgm);; PNG (*.png);; TIFF (*.tif *.tiff);; V4L (*.v4l)
 			# Maybe only 3D volume stack: ;; MRCS (*.mrcs)
-			file_path = QFileDialog.getOpenFileName(self, "Select any volume file", SXLookFeelConst.file_dialog_dir, "Typical volume files (*.hdf *.bdb *.mrc *.spi *.img);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; Spider (*.spi);; Imagic (*.img);; Gatan (*.dm4);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PIF (*.pif);; SITUS (*.situs);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select any volume file", SXLookFeelConst.file_dialog_dir, "Typical volume files (*.hdf *.bdb *.mrc *.spi *.img);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; Spider (*.spi);; Imagic (*.img);; Gatan (*.dm4);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PIF (*.pif);; SITUS (*.situs);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -1506,7 +1538,11 @@ class SXCmdWidget(QWidget):
 			# NOTE: Toshio Moriya 2018/01/25
 			# Currently, this case is not used.
 			# 
-			file_path = QFileDialog.getOpenFileName(self, "Select HDF volume stack file", SXLookFeelConst.file_dialog_dir, "HDF volume stack files (*.hdf)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select HDF volume stack file", SXLookFeelConst.file_dialog_dir, "HDF volume stack files (*.hdf)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -1518,7 +1554,11 @@ class SXCmdWidget(QWidget):
 			# 3D volume stack not supported: ;; Gatan (*.dm2)
 			# Maybe 3D volume stack not supported: ;; Gatan (*.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Spider (*.spi);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; PNG (*.png);; SAL (*.hdr *.img);; SITUS (*.situs);; TIFF (*.tif *.tiff);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor)
 			# Maybe only sigle 3D volume: ;; MRC (*.mrc)
-			file_path = QFileDialog.getOpenFileName(self, "Select any volume stack file", SXLookFeelConst.file_dialog_dir, "Typical volume stack files (*.hdf *.bdb *.mrcs *.img);; HDF (*.hdf);; BDB (*.bdb);; MRCS (*.mrcs);; Imagic (*.img *hed);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select any volume stack file", SXLookFeelConst.file_dialog_dir, "Typical volume stack files (*.hdf *.bdb *.mrcs *.img);; HDF (*.hdf);; BDB (*.bdb);; MRCS (*.mrcs);; Imagic (*.img *hed);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -1527,97 +1567,173 @@ class SXCmdWidget(QWidget):
 				except ValueError:  # If the path is not bdb, we will receive this exception
 					pass # This is not bdb path. Then, use standard path
 		elif file_format == "select_mic_both":
-			file_path = QFileDialog.getOpenFileName(self, "Select micrograph/movie selection file", SXLookFeelConst.file_dialog_dir, "Micrograph/Movie selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select micrograph/movie selection file", SXLookFeelConst.file_dialog_dir, "Micrograph/Movie selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "select_mic_one":
-			file_path = QFileDialog.getOpenFileName(self, "Select micrograph selection file", SXLookFeelConst.file_dialog_dir, "Micrograph selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select micrograph selection file", SXLookFeelConst.file_dialog_dir, "Micrograph selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "select_mic_stack":
-			file_path = QFileDialog.getOpenFileName(self, "Select micrograph movie selection file", SXLookFeelConst.file_dialog_dir, "Micrograph movie selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select micrograph movie selection file", SXLookFeelConst.file_dialog_dir, "Micrograph movie selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "select_data2d_stack":
-			file_path = QFileDialog.getOpenFileName(self, "Select image selection file", SXLookFeelConst.file_dialog_dir, "Image selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select image selection file", SXLookFeelConst.file_dialog_dir, "Image selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "select_drift_params":
-			file_path = QFileDialog.getOpenFileName(self, "Select drift shift params selection file", SXLookFeelConst.file_dialog_dir, "Drift shift params selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select drift shift params selection file", SXLookFeelConst.file_dialog_dir, "Drift shift params selection files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_any_txt":
-			file_path = QFileDialog.getOpenFileName(self, "Select parameters file", SXLookFeelConst.file_dialog_dir, "Parameters text files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select parameters file", SXLookFeelConst.file_dialog_dir, "Parameters text files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_proj_txt":
-			file_path = QFileDialog.getOpenFileName(self, "Select projection parameters file", SXLookFeelConst.file_dialog_dir, "Projection parameters files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select projection parameters file", SXLookFeelConst.file_dialog_dir, "Projection parameters files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_coords_box":
-			file_path = QFileDialog.getOpenFileName(self, "Select EMAN BOX coordinates file", SXLookFeelConst.file_dialog_dir, "EMAN BOX coordinates files (*.box)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select EMAN BOX coordinates file", SXLookFeelConst.file_dialog_dir, "EMAN BOX coordinates files (*.box)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_coords_any":
-			file_path = QFileDialog.getOpenFileName(self, "Select any coordinates file", SXLookFeelConst.file_dialog_dir, "Typical coordinates files (*.box *.json *.dat *.txt);; EMAN BOX (*.box);; EMAN2 JSON (*.json);; SPIDER DAT (*.dat);; SPHIRE TXT (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select any coordinates file", SXLookFeelConst.file_dialog_dir, "Typical coordinates files (*.box *.json *.dat *.txt);; EMAN BOX (*.box);; EMAN2 JSON (*.json);; SPIDER DAT (*.dat);; SPHIRE TXT (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_cter_txt":
-			file_path = QFileDialog.getOpenFileName(self, "Select CTER partres parameters file", SXLookFeelConst.file_dialog_dir, "CTER partres parameters files (*.txt)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select CTER partres parameters file", SXLookFeelConst.file_dialog_dir, "CTER partres parameters files (*.txt)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_rebox_rbx":
-			file_path = QFileDialog.getOpenFileName(self, "Select SPHIRE rebox file", SXLookFeelConst.file_dialog_dir, "SPHIRE rebox files (*.rbx)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select SPHIRE rebox file", SXLookFeelConst.file_dialog_dir, "SPHIRE rebox files (*.rbx)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_drift_txt":
-			file_path = QFileDialog.getOpenFileName(self, "Select drift shift parameters file", SXLookFeelConst.file_dialog_dir, "Drift shift parameters files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select drift shift parameters file", SXLookFeelConst.file_dialog_dir, "Drift shift parameters files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "rot_matrix":
-			file_path = QFileDialog.getOpenFileName(self, "Select rotational matrix file", SXLookFeelConst.file_dialog_dir, "Rotational matrix files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select rotational matrix file", SXLookFeelConst.file_dialog_dir, "Rotational matrix files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_relion_star":
-			file_path = QFileDialog.getOpenFileName(self, "Select RELION STAR file", SXLookFeelConst.file_dialog_dir, "RELION STAR files (*.star);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select RELION STAR file", SXLookFeelConst.file_dialog_dir, "RELION STAR files (*.star);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "spectrum1d":
-			file_path = QFileDialog.getOpenFileName(self, "Select 1D power spectrum file", SXLookFeelConst.file_dialog_dir, "1D power spectrum files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select 1D power spectrum file", SXLookFeelConst.file_dialog_dir, "1D power spectrum files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "mtf":
-			file_path = QFileDialog.getOpenFileName(self, "Select MTF data file", SXLookFeelConst.file_dialog_dir, "MTF data files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select MTF data file", SXLookFeelConst.file_dialog_dir, "MTF data files (*.txt);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "pdb":
-			file_path = QFileDialog.getOpenFileName(self, "Select PDB data file", SXLookFeelConst.file_dialog_dir, "PDB data files (*.pdb *.pdb*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select PDB data file", SXLookFeelConst.file_dialog_dir, "PDB data files (*.pdb *.pdb*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "exe":
-			file_path = QFileDialog.getOpenFileName(self, "Select executable file", SXLookFeelConst.file_dialog_dir, "Executable files (*.exe );; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select executable file", SXLookFeelConst.file_dialog_dir, "Executable files (*.exe );; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "py":
-			file_path = QFileDialog.getOpenFileName(self, "Select Python script file", SXLookFeelConst.file_dialog_dir, "PY files (*.py)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select Python script file", SXLookFeelConst.file_dialog_dir, "PY files (*.py)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use full path
 ###		elif file_format == "bdb":
 ###			file_path = QFileDialog.getOpenFileName(self, "Select BDB image file", SXLookFeelConst.file_dialog_dir, "BDB files (*.bdb)", options = QFileDialog.DontUseNativeDialog)
@@ -1632,9 +1748,13 @@ class SXCmdWidget(QWidget):
 ###				file_path += SXLookFeelConst.format_path(str(a_file_path)) + " "
 		else:
 			if file_format:
-				file_path = QFileDialog.getOpenFileName(self, "Select %s file" % (file_format.upper()), SXLookFeelConst.file_dialog_dir, "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog)
+				name = QFileDialog.getOpenFileName(self, "Select %s file" % (file_format.upper()), SXLookFeelConst.file_dialog_dir, "%s files (*.%s)"  % (file_format.upper(), file_format), options = QFileDialog.DontUseNativeDialog)
 			else:
-				file_path = QFileDialog.getOpenFileName(self, "Select any file", SXLookFeelConst.file_dialog_dir, "All files (*)", options = QFileDialog.DontUseNativeDialog)
+				name = QFileDialog.getOpenFileName(self, "Select any file", SXLookFeelConst.file_dialog_dir, "All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
@@ -3454,7 +3574,7 @@ class SXDialogCalculator(QDialog):
 		global_layout.setRowStretch(global_row_span - 1, global_layout.rowStretch(global_row_origin) + 1)
 
 #		header_layout = QGridLayout()
-#		header_layout.setContentsMargins(SXLookFeelConst.grid_margin)
+#		header_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 #		header_layout.setSpacing(SXLookFeelConst.grid_spacing)
 
 		operand_layout = QGridLayout()
