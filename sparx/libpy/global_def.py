@@ -1,124 +1,190 @@
-#
+
 from __future__ import print_function
-# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
-# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
-#
-# This software is issued under a joint BSD/GNU license. You may use the
-# source code in this file under either license. However, note that the
-# complete EMAN2 and SPARX software packages have some GPL dependencies,
-# so you are responsible for compliance with the licenses of these packages
-# if you opt to use BSD licensing. The warranty disclaimer below holds
-# in either instance.
-#
-# This complete copyright notice must be included in any revised version of the
-# source code. Additional authorship citations may be added, but existing
-# author citations must be preserved.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-#
-#
 
-''' variables governing system performance - can be changed by the user'''
-# 2-D interpolation method:
-#    "linear", "quadratic", "gridding"
+"""
+Author: Pawel A.Penczek, 2006-09-09 (Pawel.A.Penczek@uth.tmc.edu)
+Author: Fabian Schoenfeld, 2019-02-07 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 
-interpolation_method_2D = "quadratic"
+Copyright (c) 2000-2006 The University of Texas - Houston Medical School This 
+software is issued under a joint BSD/GNU license. You may use the source code 
+in this file under either license. However, note that the complete EMAN2 and 
+SPARX software packages have some GPL dependencies, so you are responsible for 
+compliance with the licenses of these packages if you opt to use BSD licensing.
 
-# Eulerian angles:
-#    SPIDER, EMAN, IMAGIC
+The warranty disclaimer below holds in either instance.
 
-Eulerian_Angles = "SPIDER"
+This complete copyright notice must be included in any revised version of the
+source code. Additional authorship citations may be added, but existing author
+citations must be preserved.
 
-# NOTICE: beginning from version 0.70, we will no longer use MPI as a global variable
-# Instead, the user would add mpi as a parameter for command line, example
-# mpirun -np 10 sxali2d_c.py  ...  --mpi
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later 
+version.
 
-# We read the global seed here. If the user wish to repeat the random results twice,
-# he/she should first set the rand_seed to a fixed number and then run the program twice.
-from   EMAN2   import Util, EMData, EMUtil, Transform
-from   random  import seed
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details. You 
+should have received a copy of the GNU General Public License along with this 
+program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, 
+Suite 330, Boston, MA  02111-1307 USA
+"""
 
+#--------------------------------------------------------------------[ header ]
+
+# import
+import sys
+import time
+
+import mpi
+
+from EMAN2  import Util, EMData, EMUtil, Transform
+from random import seed
+
+import logger
+
+# system-wide parameters
+interpolation_method_2D = "quadratic"  # set 2-D interpolation method ("linear", "quadratic", "gridding")
+Eulerian_Angles         = "SPIDER"     # set Euler angle convention ("SPIDER", "EMAN", "IMAGIC"):
+
+# set global random seed
 rand_seed = Util.get_randnum_seed()
 seed(rand_seed)
 
 rand_seed = Util.get_randnum_seed()
 Util.set_randnum_seed(rand_seed)
 
-# BATCH flag should generally be set to False, which indicates that the output should be both displayed on the screen and written to the log file.
-# However, the user may change it to True (either here or in other programs) so that the output is only written to the log file.
+#___________________________________________ User settings: change as necessary
+
+"""
+BATCH flag should generally be set to False, which indicates that the output
+should be both displayed on the screen and written to the log file.
+However, the user may change it to True (either here or in other programs) so
+that the output is only written to the log file.
+"""
 BATCH = False
 
+"""
+NOTICE: beginning from version 0.70, we will no longer use MPI as a global 
+variable. Instead, the user would add mpi as a parameter for command line, 
+example: $ mpirun -np 10 sxali2d_c.py  ...  --mpi
+NOTE: Version 0.70 is pretty old by now; it's unclear, however, whether this 
+can be removed safely [2019-0207,Fabian]
+"""
 MPI = False
 
-
-# variable for disabling bdb cache use, For running sparx on clusters, set it to True to disable cache,
+"""
+variable for disabling bdb cache use, For running sparx on clusters, set it to
+True to disable cache
+"""
 CACHE_DISABLE = False
 
-
+# global logfile setup (used throughout sparx modules)
 global LOGFILE
-LOGFILE = "logfile"
-from time import localtime, strftime
-# timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
-timestring = strftime("_%Y_%m_%d_%H_%M_%S", localtime())
-LOGFILE = LOGFILE+timestring
-LOGFILE_HANDLE = 0
+LOGFILE = "logfile" + time.strftime("_%Y-%m-%d_%H-%M-%S", time.localtime())
+LOGFILE_HANDLE  = 0
 IS_LOGFILE_OPEN = False
-'''   SYSTEM FUNCTIONS - please do not change the text below '''
-global SPARXVERSION
+
+# sparx output logfile (used by utility functions below)
+
+
+
+#________________________________________ System settings: please do not change
 
 from EMAN2_meta import DATESTAMP
 
-SPARXVERSION = "SPARX v4.0" + ' (GITHUB: ' + DATESTAMP +')'
+global SPARXVERSION
+SPARXVERSION = "SPHIRE v1.2 [rc6] (GitHub: " + DATESTAMP + ")"
 
 global SPARX_MPI_TAG_UNIVERSAL
 SPARX_MPI_TAG_UNIVERSAL = 123456
-# from global_def import SPARX_MPI_TAG_UNIVERSAL
 
 global SPARX_DOCUMENTATION_WEBSITE
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
 
+#------------------------------------------------------------[ util functions ]
 
-def ERROR(message, where, action = 1, myid = 0):
-	"""
-		General error function for sparx system
-		where:   function name
-		message: error message
-		action: 1 - fatal error, exit; 0 - non-fatal, print a warning; otherwise - fatal error, but make caller to exit
-	"""
-	global BATCH
-	global MPI
-	
-	if myid == 0:
-		if action: print("\n  *****  ERROR in: %s"%(where))
-		else:      print("\n  *****  WARNING in: %s"%(where))
-		print("  *****  %s"%message)
-		print("")
-	if action == 1 and BATCH:
-		from sys import exit
-		if  MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
-			MPI = False
-			BATCH = False
-			exit(1)
-		else:
-			BATCH = False
-			exit(1)
+def print_timestamp( tag="" ):
+    """
+    Utility function to print a generic time stamp.
+
+    Args:
+        tag (string): optional string that can be added to the time stamp to
+            provide more information [default: ""]
+
+    Example:
+        >>>  print_timestamp( "Start" )
+        [Start] : 2019-02-07 11:29:37
+    """
+    if tag != "": 
+        print( "["+tag+"] : ", end="" )
+
+    print( time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) )
 
 
+def sxprint( *args, **kwargs ):
+    """
+    Generic print function that includes time stamps and caller id.
 
-#from inspect import currentframe, getframeinfo
-# frameinfo = getframeinfo(currentframe())
-# print frameinfo.filename, frameinfo.lineno
+    Args:
+        *args: Variable number of arguments
+
+        **kwargs: Dictionary containing (separate) variable number of (keyword) 
+            arguments
+        
+        filename (string): If a file name is provided the message is also 
+            written to file. If a file of the same name already exists the new
+            message is appended to the end of the file. If no file of the given
+            name exists it is created.
+
+    Example:
+        >>> sxprint( "This is " + "a %s" % "test" + ".", filename="out.log" )
+        2019-02-07 13:36:50 <module> => This is a test.
+    """
+    t = time.strftime( "%Y-%m-%d %H:%M:%S", time.localtime() )
+    f = sys._getframe(1).f_code.co_name
+    m = t + " " + f + " => " + "".join(map(str, args))
+    
+    print( m ) # for Python 3: print( msg, **kwargs )
+    sys.stdout.flush()
+
+    if "filename" in kwargs:
+        f = open( kwargs["filename"], "a+" )
+        f.write( m + "\n" )
+        f.close()
+
+
+def ERROR( message, where, action=1, myid=0 ):
+    """
+    Utility function for consistent error throwing across sparx functions.
+
+    Args:
+        where (string): Location of error (e.g. "sxsummovie.main")
+        message (string): Error message
+        action (0/1): Choose (1) error and abort, or (0) warning and continue [default: 1]
+        myid (integer): mpi rank; used to only print error on main process (myid == 0)
+    """
+    global BATCH
+    global MPI
+    
+    if myid == 0:
+
+        if action: 
+            print( "\n  *****  ERROR in: %s" % where )
+        else:      
+            print( "\n  *****  WARNING in: %s" % where )
+        print("  *****  %s\n" % message)
+
+    if action == 1 and BATCH:
+        
+        if  MPI:
+            mpi.mpi_finalize()
+            MPI   = False
+            BATCH = False
+            print_timestamp( "ABORT" )
+            sys.exit(1)
+
+        else:
+            BATCH = False
+            print_timestamp( "ABORT" )
+            sys.exit(1)
