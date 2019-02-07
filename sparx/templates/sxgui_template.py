@@ -1318,10 +1318,10 @@ class SXCmdWidget(QWidget):
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			name = QFileDialog.getOpenFileNames(self, "Select any displayable files", SXLookFeelConst.file_dialog_dir, "Typical displayable files (*.hdf *.bdb *.mrc *.mrcs *.spi *.img *.tif *.tiff *.png *.txt);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; MRCS (*.mrcs);; Spider (*.spi);; Imagic (*.img *hed);; TIFF (*.tif *.tiff);; PNG (*.png);; Text (*.txt);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.hdr *.img);; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
-				file_path = name[0]
+				file_path_list = name[0]
 			else:
-				file_path = name
-			for a_file_path in file_path:
+				file_path_list = name
+			for a_file_path in file_path_list:
 				# Use relative path.
 				a_file_path = SXLookFeelConst.format_path(str(a_file_path))
 				try: # Check if the path is bdb
@@ -1401,11 +1401,11 @@ class SXCmdWidget(QWidget):
 			# 
 			name = QFileDialog.getOpenFileNames(self, "Select MRC micrograph files", SXLookFeelConst.file_dialog_dir, "MRC files (*.mrc);; MRCS (*.mrcs)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
-				file_path = str(name[0])
+				file_path_list = name[0]
 			else:
-				file_path = str(name)
+				file_path_list = name
 			# Use relative path.
-			for a_file_path in file_path:
+			for a_file_path in file_path_list:
 				file_path += SXLookFeelConst.format_path(str(a_file_path)) + " "
 		elif file_format == "mic_one_list":
 			# NOTE: Toshio Moriya 2018/01/25
@@ -1416,11 +1416,11 @@ class SXCmdWidget(QWidget):
 			# Only stack: ;; MRCS (*.mrcs)
 			name = QFileDialog.getOpenFileNames(self, "Select any micrograph files", SXLookFeelConst.file_dialog_dir, "Typical micrograph files (*.mrc *.mrcs *.tif *.tiff *.hdf *.bdb *.spi *.img);; MRC (*.mrc);; MRCS (*.mrcs);; TIFF (*.tif *.tiff);; HDF (*.hdf);; BDB (*.bdb);; Spider (*.spi);; Imagic (*.img);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
-				file_path = str(name[0])
+				file_path_list = name[0]
 			else:
-				file_path = str(name)
+				file_path_list = name
 			# Use relative path.
-			for a_file_path in file_path:
+			for a_file_path in file_path_list:
 				a_file_path = SXLookFeelConst.format_path(str(a_file_path))
 				try: # Check if the path is bdb
 					a_file_path = translate_to_bdb_path(a_file_path) # Convert the standard path to bdb key if possible.
