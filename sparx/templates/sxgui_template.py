@@ -591,7 +591,7 @@ class SXCmdWidget(QWidget):
 
 		# Set grid layout
 		grid_layout = QGridLayout(self)
-		# grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		# grid_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		# grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 
 		self.setAutoFillBackground(True)
@@ -1861,21 +1861,21 @@ class SXCmdTab(QWidget):
 		scroll_layout.setContentsMargins(0,0,0,0)
 		title_hbox = QHBoxLayout()
 		title_layout = QGridLayout()
-		title_layout.setMargin(SXLookFeelConst.grid_margin)
+		title_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		title_layout.setSpacing(SXLookFeelConst.grid_spacing)
 #		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
 #		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
 #		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
 #		title_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		grid_layout = QGridLayout()
-		grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		grid_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_min_width)
 		grid_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_min_width)
 		submit_layout = QGridLayout()
-		submit_layout.setMargin(SXLookFeelConst.grid_margin)
+		submit_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		submit_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span, token_widget_min_width)
 		submit_layout.setColumnMinimumWidth(grid_col_origin + token_label_col_span + token_widget_col_span, token_widget_min_width)
@@ -3027,7 +3027,7 @@ class SXCmdCategoryWidget(QWidget):
 
 		# Setup grid layout in the scroll area
 		self.grid_layout = QGridLayout()
-		self.grid_layout.setMargin(SXLookFeelConst.grid_margin)
+		self.grid_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		self.grid_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		self.grid_layout.setColumnMinimumWidth(0, SXLookFeelConst.sxcmd_btn_area_min_width)
 		# self.grid_layout.setColumnMinimumWidth(1, SXLookFeelConst.sxcmd_widget_area_min_width)
@@ -3169,20 +3169,20 @@ class SXConstSetWidget(QWidget):
 		self.setPalette(palette)
 
 		global_layout = QGridLayout()
-		global_layout.setMargin(SXLookFeelConst.grid_margin)
+		global_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		global_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		global_layout.setRowStretch(global_row_span - 1, global_layout.rowStretch(global_row_origin) + 1)
 
 		header_layout = QGridLayout()
-		header_layout.setMargin(SXLookFeelConst.grid_margin)
+		header_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		header_layout.setSpacing(SXLookFeelConst.grid_spacing)
 
 		const_set_layout = QGridLayout()
-		const_set_layout.setMargin(SXLookFeelConst.grid_margin)
+		const_set_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		const_set_layout.setSpacing(SXLookFeelConst.grid_spacing)
 
 		btn_layout = QGridLayout()
-		btn_layout.setMargin(SXLookFeelConst.grid_margin)
+		btn_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		btn_layout.setSpacing(SXLookFeelConst.grid_spacing * 2)
 
 		global_grid_row = global_row_origin
@@ -3569,20 +3569,20 @@ class SXDialogCalculator(QDialog):
 		self.setPalette(palette)
 
 		global_layout = QGridLayout()
-		global_layout.setMargin(SXLookFeelConst.grid_margin)
+		global_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		global_layout.setSpacing(SXLookFeelConst.grid_spacing)
 		global_layout.setRowStretch(global_row_span - 1, global_layout.rowStretch(global_row_origin) + 1)
 
 #		header_layout = QGridLayout()
-#		header_layout.setMargin(SXLookFeelConst.grid_margin)
+#		header_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 #		header_layout.setSpacing(SXLookFeelConst.grid_spacing)
 
 		operand_layout = QGridLayout()
-		operand_layout.setMargin(SXLookFeelConst.grid_margin)
+		operand_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		operand_layout.setSpacing(SXLookFeelConst.grid_spacing)
 
 		btn_layout = QGridLayout()
-		btn_layout.setMargin(SXLookFeelConst.grid_margin)
+		btn_layout.setContentsMargins(SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin, SXLookFeelConst.grid_margin)
 		btn_layout.setSpacing(SXLookFeelConst.grid_spacing * 2)
 
 		global_grid_row = global_row_origin
