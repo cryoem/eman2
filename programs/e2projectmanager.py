@@ -128,9 +128,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		Load icons used for the tree. Additonal icons can be added using icons.json
 		"""
 		self.icons = {}
-		EMAN2DIR = os.getenv("EMAN2DIR")
+		eman2dir = os.getenv("EMAN2DIR")
 
-		jsonfile = open(os.getenv("EMAN2DIR")+'/lib/pmconfig/icons.json', 'r')
+		jsonfile = open(eman2dir+'/lib/pmconfig/icons.json', 'r')
 		data = jsonfile.read()
 		data = self.json_strip_comments(data)
 		tree = json.loads(data)
@@ -138,7 +138,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		icons=tree[0]
 
 		for icon in icons:
-			self.icons[icon] = QtGui.QIcon(EMAN2DIR+icons[icon])
+			self.icons[icon] = QtGui.QIcon(eman2dir+icons[icon])
 
 	def makeMenues(self):
 		"""
