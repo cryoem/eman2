@@ -54,10 +54,10 @@ except ImportError:
 
 class DriverFileReader(QObject):
 
-    sig_readfsc = pyqtSignal(object)
+    sig_readfsc = pyqtSignal(list)
     sig_readfolders = pyqtSignal(str)
     sig_sendfolders = pyqtSignal(str)
-    sig_sendfsc = pyqtSignal(object,object,object,object)
+    sig_sendfsc = pyqtSignal(list, list, list, list)
 
 
     def __init__(self):
@@ -65,7 +65,7 @@ class DriverFileReader(QObject):
         self.sig_readfsc.connect(self.handle_read_fsc_triggered)
         self.sig_readfolders.connect(self.handle_read_refinement_folders)
 
-    @pyqtSlot(object)
+    @pyqtSlot(list)
     def handle_read_fsc_triggered(self, paths):
         """
         Slot for reading fsc triggered
@@ -150,7 +150,7 @@ class FSCPlot(QDialog):
         self.toolbar = NavigationToolbar(self.canvas, self)
 
         # set the layout
-        layout = QtGui.QVBoxLayout()
+        layout = QVBoxLayout()
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
@@ -434,7 +434,7 @@ class MainWindow(QMainWindow):
             msg.setWindowTitle("Update")
             msg.exec_()
 
-    @pyqtSlot(object, object, object, object)
+    @pyqtSlot(list, list, list, list)
     def show_dialog_fsc(self, *args):
         """
         Shows fsc plot
