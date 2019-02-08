@@ -376,13 +376,10 @@ This function will return a list of lists containing all currently set applicati
 
 def e2getinstalldir() :
 	"""platform independent path with '/'"""
-	if(sys.platform != 'win32'):
-		url=os.getenv("EMAN2DIR")
-	else:
-		url=os.getenv("EMAN2DIR")
+	url=os.getenv("EMAN2DIR")
+	if(sys.platform == 'win32'):
 		url=url.replace("\\","/")
 	return url
-
 
 def numbered_path(prefix,makenew):
 	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB
