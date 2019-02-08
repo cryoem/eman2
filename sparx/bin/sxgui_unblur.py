@@ -23,19 +23,28 @@ from builtins import object
 try:
     from PyQt4 import QtCore, QtGui
     from PyQt4.QtCore import Qt
+    try:
+        from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvasQTAgg
+    except ImportError:
+        from matplotlib.backends.backend_qt4agg import FigureCanvasQT as FigureCanvasQTAgg
+    try:
+        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar2QTAgg
+    except ImportError:
+        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar2QTAgg
 except ImportError:
     from PyQt5 import QtCore,  QtWidgets
     from PyQt5.QtCore import Qt
+    try:
+        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvasQTAgg
+    except ImportError:
+        from matplotlib.backends.backend_qt5agg import FigureCanvasQT as FigureCanvasQTAgg
+    try:
+        from matplotlib.backends.backend_qt5agg import NavigationToolbar2QTAgg as NavigationToolbar2QTAgg
+    except ImportError:
+        from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar2QTAgg
 
 from matplotlib import pylab
-try:
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvasQTAgg
-except ImportError:
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQT as FigureCanvasQTAgg
-try:
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar2QTAgg
-except ImportError:
-    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar2QTAgg
+
 import os
 import sys
 import glob
@@ -1866,7 +1875,7 @@ class SXDriftUnblur(QtWidgets.QMainWindow, Ui_MSMainWidget):
         self._fill_dictionary()
 
         # Select the first item
-        self.lsFiles.setItemSelected(self.lsFiles.item(0), True)
+        #self.lsFiles.setItemSelected(self.lsFiles.item(0), True)   todo> it should be for default ... test it monday 11feb
         self._current_info(item=self.lsFiles.item(0))
 
         # Fill the General widgets with maximum and minimum values
