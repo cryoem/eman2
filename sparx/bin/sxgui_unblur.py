@@ -19,8 +19,14 @@ from __future__ import print_function
 
 from builtins import range
 from builtins import object
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+
+try:
+    from PyQt4 import QtCore, QtGui
+    from PyQt4.QtCore import Qt
+except ImportError:
+    from PyQt5 import QtCore,  QtWidgets
+    from PyQt5.QtCore import Qt
+
 from matplotlib import pylab
 try:
     from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvasQTAgg
@@ -42,23 +48,23 @@ except AttributeError:
         return s
 
 try:
-    _encoding = QtGui.QApplication.UnicodeUTF8
+    _encoding = QtWidgets.QApplication.UnicodeUTF8
     def _translate(context, text, disambig):
-        return QtGui.QApplication.translate(context, text, disambig, _encoding)
+        return QtWidgets.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
     def _translate(context, text, disambig):
-        return QtGui.QApplication.translate(context, text, disambig)
+        return QtWidgets.QApplication.translate(context, text, disambig)
 
 class Ui_MSMainWidget(object):
     def setupUi(self, MSMainWidget):
-        widget = QtGui.QWidget(self)
+        widget = QtWidgets.QWidget(self)
         MSMainWidget.setCentralWidget(widget)
 
-        self.global_layout = QtGui.QVBoxLayout(widget)
-        self.h_layout = QtGui.QHBoxLayout()
-        self.v_layout_1 = QtGui.QVBoxLayout()
-        self.v_layout_2 = QtGui.QVBoxLayout()
-        self.v_layout_3 = QtGui.QVBoxLayout()
+        self.global_layout = QtWidgets.QVBoxLayout(widget)
+        self.h_layout = QtWidgets.QHBoxLayout()
+        self.v_layout_1 = QtWidgets.QVBoxLayout()
+        self.v_layout_2 = QtWidgets.QVBoxLayout()
+        self.v_layout_3 = QtWidgets.QVBoxLayout()
 
         self.global_layout.addLayout(self.h_layout, stretch=1)
         self.h_layout.addLayout(self.v_layout_1, stretch=1)
@@ -76,193 +82,193 @@ class Ui_MSMainWidget(object):
         self.global_layout.addWidget(self.save_section())
 
     def load_section(self):
-        widget = QtGui.QWidget(self)
-        layout_v = QtGui.QVBoxLayout(widget)
+        widget = QtWidgets.QWidget(self)
+        layout_v = QtWidgets.QVBoxLayout(widget)
         layout_v.setContentsMargins(5, 5, 5, 5)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
         layout_v.addLayout(layout_h)
         
-        label = QtGui.QLabel('Pattern:', self)
-        self.lePattern = QtGui.QLineEdit(self)
-        self.pbSelectTxt = QtGui.QPushButton('Find pattern', self)
+        label = QtWidgets.QLabel('Pattern:', self)
+        self.lePattern = QtWidgets.QLineEdit(self)
+        self.pbSelectTxt = QtWidgets.QPushButton('Find pattern', self)
         layout_h.addWidget(label)
         layout_h.addWidget(self.lePattern)
         layout_h.addWidget(self.pbSelectTxt)
 
-        self.pbImportPattern = QtGui.QPushButton('Load files by pattern', self)
+        self.pbImportPattern = QtWidgets.QPushButton('Load files by pattern', self)
         layout_v.addWidget(self.pbImportPattern)
-        self.pbImportList = QtGui.QPushButton('Load files by list', self)
+        self.pbImportList = QtWidgets.QPushButton('Load files by list', self)
         layout_v.addWidget(self.pbImportList)
         return widget
 
     def list_section(self):
-        widget = QtGui.QWidget(self)
-        layout_v = QtGui.QVBoxLayout(widget)
+        widget = QtWidgets.QWidget(self)
+        layout_v = QtWidgets.QVBoxLayout(widget)
         layout_v.setContentsMargins(5, 5, 5, 5)
 
-        self.lsFiles = QtGui.QListWidget(self)
+        self.lsFiles = QtWidgets.QListWidget(self)
         self.lsFiles.setEnabled(False)
         layout_v.addWidget(self.lsFiles)
         return widget
 
     def status_section(self):
-        widget = QtGui.QWidget(self)
-        layout_v = QtGui.QVBoxLayout(widget)
+        widget = QtWidgets.QWidget(self)
+        layout_v = QtWidgets.QVBoxLayout(widget)
         layout_v.setContentsMargins(5, 5, 5, 5)
 
-        label = QtGui.QLabel('Info of current entry:', self)
+        label = QtWidgets.QLabel('Info of current entry:', self)
         layout_v.addWidget(label)
-        label = QtGui.QLabel('', self)
+        label = QtWidgets.QLabel('', self)
         layout_v.addWidget(label)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Micrograph name', self)
+        label = QtWidgets.QLabel('Micrograph name', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leCurrentMicName = QtGui.QLineEdit(self)
+        self.leCurrentMicName = QtWidgets.QLineEdit(self)
         self.leCurrentMicName.setMaximumWidth(300)
         self.leCurrentMicName.setMinimumWidth(300)
         self.leCurrentMicName.setEnabled(False)
         layout_h.addWidget(self.leCurrentMicName)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Overall drift [A]', self)
+        label = QtWidgets.QLabel('Overall drift [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leCurrentOverallDrift = QtGui.QLineEdit(self)
+        self.leCurrentOverallDrift = QtWidgets.QLineEdit(self)
         self.leCurrentOverallDrift.setMaximumWidth(100)
         self.leCurrentOverallDrift.setEnabled(False)
         layout_h.addWidget(self.leCurrentOverallDrift)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Drift per frame [A]', self)
+        label = QtWidgets.QLabel('Drift per frame [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leCurrentFrameDrift = QtGui.QLineEdit(self)
+        self.leCurrentFrameDrift = QtWidgets.QLineEdit(self)
         self.leCurrentFrameDrift.setMaximumWidth(100)
         self.leCurrentFrameDrift.setEnabled(False)
         layout_h.addWidget(self.leCurrentFrameDrift)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('End to end length [A]', self)
+        label = QtWidgets.QLabel('End to end length [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leCurrentEndToEndDrift = QtGui.QLineEdit(self)
+        self.leCurrentEndToEndDrift = QtWidgets.QLineEdit(self)
         self.leCurrentEndToEndDrift.setMaximumWidth(100)
         self.leCurrentEndToEndDrift.setEnabled(False)
         layout_h.addWidget(self.leCurrentEndToEndDrift)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Maximum distance between frames [A]', self)
+        label = QtWidgets.QLabel('Maximum distance between frames [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leCurrentMaxDistance = QtGui.QLineEdit(self)
+        self.leCurrentMaxDistance = QtWidgets.QLineEdit(self)
         self.leCurrentMaxDistance.setMaximumWidth(100)
         self.leCurrentMaxDistance.setEnabled(False)
         layout_h.addWidget(self.leCurrentMaxDistance)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Maximum distance from start frame [A]', self)
+        label = QtWidgets.QLabel('Maximum distance from start frame [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leCurrentMaxDistanceZero = QtGui.QLineEdit(self)
+        self.leCurrentMaxDistanceZero = QtWidgets.QLineEdit(self)
         self.leCurrentMaxDistanceZero.setMaximumWidth(100)
         self.leCurrentMaxDistanceZero.setEnabled(False)
         layout_h.addWidget(self.leCurrentMaxDistanceZero)
         layout_v.addLayout(layout_h)
 
-        label = QtGui.QLabel('', self)
+        label = QtWidgets.QLabel('', self)
         layout_v.addWidget(label)
-        label = QtGui.QLabel('Drift info for selected micrographs:', self)
+        label = QtWidgets.QLabel('Drift info for selected micrographs:', self)
         layout_v.addWidget(label)
-        label = QtGui.QLabel('', self)
+        label = QtWidgets.QLabel('', self)
         layout_v.addWidget(label)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Nr. of micrographs', self)
+        label = QtWidgets.QLabel('Nr. of micrographs', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leAllMicNumber = QtGui.QLineEdit(self)
+        self.leAllMicNumber = QtWidgets.QLineEdit(self)
         self.leAllMicNumber.setMaximumWidth(100)
         self.leAllMicNumber.setEnabled(False)
         layout_h.addWidget(self.leAllMicNumber)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Checked micrographs', self)
+        label = QtWidgets.QLabel('Checked micrographs', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leMicChecked = QtGui.QLineEdit(self)
+        self.leMicChecked = QtWidgets.QLineEdit(self)
         self.leMicChecked.setMaximumWidth(100)
         self.leMicChecked.setEnabled(False)
         layout_h.addWidget(self.leMicChecked)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Average overall drift [A]', self)
+        label = QtWidgets.QLabel('Average overall drift [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leAllOverallDrift = QtGui.QLineEdit(self)
+        self.leAllOverallDrift = QtWidgets.QLineEdit(self)
         self.leAllOverallDrift.setMaximumWidth(100)
         self.leAllOverallDrift.setEnabled(False)
         layout_h.addWidget(self.leAllOverallDrift)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Average drift per frame [A]', self)
+        label = QtWidgets.QLabel('Average drift per frame [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leAllFrameDrift = QtGui.QLineEdit(self)
+        self.leAllFrameDrift = QtWidgets.QLineEdit(self)
         self.leAllFrameDrift.setMaximumWidth(100)
         self.leAllFrameDrift.setEnabled(False)
         layout_h.addWidget(self.leAllFrameDrift)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Average end to end length [A]', self)
+        label = QtWidgets.QLabel('Average end to end length [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leAllEndToEndDrift = QtGui.QLineEdit(self)
+        self.leAllEndToEndDrift = QtWidgets.QLineEdit(self)
         self.leAllEndToEndDrift.setMaximumWidth(100)
         self.leAllEndToEndDrift.setEnabled(False)
         layout_h.addWidget(self.leAllEndToEndDrift)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Average maximum distance between frames [A]', self)
+        label = QtWidgets.QLabel('Average maximum distance between frames [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leAllMaxDistance = QtGui.QLineEdit(self)
+        self.leAllMaxDistance = QtWidgets.QLineEdit(self)
         self.leAllMaxDistance.setMaximumWidth(100)
         self.leAllMaxDistance.setEnabled(False)
         layout_h.addWidget(self.leAllMaxDistance)
         layout_v.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
-        label = QtGui.QLabel('Average maximum distance from start frame [A]', self)
+        label = QtWidgets.QLabel('Average maximum distance from start frame [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leAllMaxDistanceZero = QtGui.QLineEdit(self)
+        self.leAllMaxDistanceZero = QtWidgets.QLineEdit(self)
         self.leAllMaxDistanceZero.setMaximumWidth(100)
         self.leAllMaxDistanceZero.setEnabled(False)
         layout_h.addWidget(self.leAllMaxDistanceZero)
@@ -271,11 +277,11 @@ class Ui_MSMainWidget(object):
         return widget
     
     def sort_section(self):
-        widget = QtGui.QWidget(self)
-        layout_v = QtGui.QVBoxLayout(widget)
+        widget = QtWidgets.QWidget(self)
+        layout_v = QtWidgets.QVBoxLayout(widget)
         layout_v.setContentsMargins(5, 20, 5, 5)
 
-        label = QtGui.QLabel('Sort entries:', self)
+        label = QtWidgets.QLabel('Sort entries:', self)
         layout_v.addWidget(label)
 
         entries = [
@@ -286,71 +292,71 @@ class Ui_MSMainWidget(object):
             'Maximum distance between frames',
             'Maximum distance from start frame'
             ]
-        self.cbSort = QtGui.QComboBox(self)
+        self.cbSort = QtWidgets.QComboBox(self)
         self.cbSort.setEnabled(False)
         self.cbSort.addItems(entries)
         layout_v.addWidget(self.cbSort)
 
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 0, 0, 0)
         layout_v.addLayout(layout_h)
-        self.chDescending = QtGui.QCheckBox('Descending', self)
+        self.chDescending = QtWidgets.QCheckBox('Descending', self)
         self.chDescending.setEnabled(False)
         layout_h.addWidget(self.chDescending)
-        self.chSortSelected = QtGui.QCheckBox('Sort selected', self)
+        self.chSortSelected = QtWidgets.QCheckBox('Sort selected', self)
         self.chSortSelected.setEnabled(False)
         layout_h.addWidget(self.chSortSelected)
 
         return widget
 
     def plot_section(self):
-        widget = QtGui.QWidget(self)
-        layout_h = QtGui.QHBoxLayout(widget)
+        widget = QtWidgets.QWidget(self)
+        layout_h = QtWidgets.QHBoxLayout(widget)
         layout_h.setContentsMargins(5, 5, 5, 5)
 
-        layout_v1 = QtGui.QVBoxLayout()
+        layout_v1 = QtWidgets.QVBoxLayout()
         layout_v1.setContentsMargins(0, 0, 5, 0)
-        layout_v2 = QtGui.QVBoxLayout()
+        layout_v2 = QtWidgets.QVBoxLayout()
         layout_v2.setContentsMargins(5, 0, 0, 0)
         layout_h.addLayout(layout_v1)
         layout_h.addLayout(layout_v2)
 
-        label = QtGui.QLabel('Show plots of current entry:', self)
+        label = QtWidgets.QLabel('Show plots of current entry:', self)
         layout_v1.addWidget(label)
 
-        self.chPlotDriftMic = QtGui.QCheckBox('Drift', self)
+        self.chPlotDriftMic = QtWidgets.QCheckBox('Drift', self)
         self.chPlotDriftMic.setEnabled(False)
         layout_v1.addWidget(self.chPlotDriftMic)
 
-        self.chPlotFrameMic = QtGui.QCheckBox('Drift per frame', self)
+        self.chPlotFrameMic = QtWidgets.QCheckBox('Drift per frame', self)
         self.chPlotFrameMic.setEnabled(False)
         layout_v1.addWidget(self.chPlotFrameMic)
 
-        self.chPlotAngleMic = QtGui.QCheckBox('Angle per frame', self)
+        self.chPlotAngleMic = QtWidgets.QCheckBox('Angle per frame', self)
         self.chPlotAngleMic.setEnabled(False)
         layout_v1.addWidget(self.chPlotAngleMic)
 
-        label = QtGui.QLabel('Show plots of all micrographs:', self)
+        label = QtWidgets.QLabel('Show plots of all micrographs:', self)
         label.setEnabled(False)
         layout_v2.addWidget(label)
 
-        self.chAverageDriftPerFrame = QtGui.QCheckBox('Average drift per frame', self)
+        self.chAverageDriftPerFrame = QtWidgets.QCheckBox('Average drift per frame', self)
         self.chAverageDriftPerFrame.setEnabled(False)
         layout_v2.addWidget(self.chAverageDriftPerFrame)
 
-        self.chPlotDrift = QtGui.QCheckBox('Overall drift histogram', self)
+        self.chPlotDrift = QtWidgets.QCheckBox('Overall drift histogram', self)
         self.chPlotDrift.setEnabled(False)
         layout_v2.addWidget(self.chPlotDrift)
 
-        self.chPlotFrame = QtGui.QCheckBox('Drift per frame histogram', self)
+        self.chPlotFrame = QtWidgets.QCheckBox('Drift per frame histogram', self)
         self.chPlotFrame.setEnabled(False)
         layout_v2.addWidget(self.chPlotFrame)
 
-        self.chPlotAngle = QtGui.QCheckBox('Angle per frame histogram', self)
+        self.chPlotAngle = QtWidgets.QCheckBox('Angle per frame histogram', self)
         self.chPlotAngle.setEnabled(False)
         layout_v2.addWidget(self.chPlotAngle)
 
-        self.chPlotPerMic = QtGui.QCheckBox('Overall drift per micrograph', self)
+        self.chPlotPerMic = QtWidgets.QCheckBox('Overall drift per micrograph', self)
         self.chPlotPerMic.setEnabled(False)
         layout_v2.addWidget(self.chPlotPerMic)
 
@@ -360,22 +366,22 @@ class Ui_MSMainWidget(object):
         return widget
 
     def threshold_section(self):
-        widget = QtGui.QWidget(self)
-        layout_v = QtGui.QVBoxLayout(widget)
+        widget = QtWidgets.QWidget(self)
+        layout_v = QtWidgets.QVBoxLayout(widget)
         layout_v.setContentsMargins(5, 20, 5, 5)
         
-        layout_h = QtGui.QHBoxLayout()
+        layout_h = QtWidgets.QHBoxLayout()
         layout_h.setContentsMargins(0, 5, 0, 5)
-        label = QtGui.QLabel('Start frame:', self)
+        label = QtWidgets.QLabel('Start frame:', self)
         layout_h.addWidget(label)
-        self.leFrameStart = QtGui.QLineEdit(self)
+        self.leFrameStart = QtWidgets.QLineEdit(self)
         self.leFrameStart.setEnabled(False)
         self.leFrameStart.setMaximumWidth(50)
         layout_h.addWidget(self.leFrameStart)
         layout_h.addStretch(1)
-        label = QtGui.QLabel('End frame:', self)
+        label = QtWidgets.QLabel('End frame:', self)
         layout_h.addWidget(label)
-        self.leFrameStop = QtGui.QLineEdit(self)
+        self.leFrameStop = QtWidgets.QLineEdit(self)
         self.leFrameStop.setEnabled(False)
         self.leFrameStop.setMaximumWidth(50)
         layout_h.addWidget(self.leFrameStop)
@@ -385,71 +391,71 @@ class Ui_MSMainWidget(object):
         layout_v.addWidget(self.threshold_section_frame())
         layout_v.addWidget(self.threshold_section_angle())
 
-        self.pbApply = QtGui.QPushButton('Apply settings marked as criterion', self)
+        self.pbApply = QtWidgets.QPushButton('Apply settings marked as criterion', self)
         self.pbApply.setEnabled(False)
         layout_v.addWidget(self.pbApply)
         return widget
 
     def threshold_section_overall(self):
-        widget = QtGui.QWidget(self)
-        layout_v = QtGui.QVBoxLayout(widget)
+        widget = QtWidgets.QWidget(self)
+        layout_v = QtWidgets.QVBoxLayout(widget)
         layout_v.setContentsMargins(5, 5, 5, 0)
 
-        layout_h1 = QtGui.QHBoxLayout()
-        layout_v1 = QtGui.QVBoxLayout()
-        layout_v2 = QtGui.QVBoxLayout()
+        layout_h1 = QtWidgets.QHBoxLayout()
+        layout_v1 = QtWidgets.QVBoxLayout()
+        layout_v2 = QtWidgets.QVBoxLayout()
 
-        label = QtGui.QLabel('Threshold overall drift', self)
+        label = QtWidgets.QLabel('Threshold overall drift', self)
         layout_v.addWidget(label)
         
         layout_v.addLayout(layout_h1)
         layout_h1.addLayout(layout_v1)
         layout_h1.addLayout(layout_v2)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Start [A]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Start [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStartOverall = QtGui.QLineEdit(self)
+        self.leStartOverall = QtWidgets.QLineEdit(self)
         self.leStartOverall.setEnabled(False)
         self.leStartOverall.setMaximumWidth(100)
         layout_h.addWidget(self.leStartOverall)
         layout_v1.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Stop [A]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Stop [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStopOverall = QtGui.QLineEdit(self)
+        self.leStopOverall = QtWidgets.QLineEdit(self)
         self.leStopOverall.setEnabled(False)
         self.leStopOverall.setMaximumWidth(100)
         layout_h.addWidget(self.leStopOverall)
         layout_v1.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Registered start [A]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Registered start [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStartSaveOverall = QtGui.QLineEdit(self)
+        self.leStartSaveOverall = QtWidgets.QLineEdit(self)
         self.leStartSaveOverall.setEnabled(False)
         self.leStartSaveOverall.setMaximumWidth(100)
         layout_h.addWidget(self.leStartSaveOverall)
         layout_v1.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Registered stop [A]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Registered stop [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStopSaveOverall = QtGui.QLineEdit(self)
+        self.leStopSaveOverall = QtWidgets.QLineEdit(self)
         self.leStopSaveOverall.setEnabled(False)
         self.leStopSaveOverall.setMaximumWidth(100)
         layout_h.addWidget(self.leStopSaveOverall)
         layout_v1.addLayout(layout_h)
 
-        self.pbSaveOverall = QtGui.QPushButton('Register', self)
+        self.pbSaveOverall = QtWidgets.QPushButton('Register', self)
         self.pbSaveOverall.setEnabled(False)
         layout_v2.addWidget(self.pbSaveOverall)
-        self.chOverallCriterion = QtGui.QCheckBox('Use as criterion', self)
+        self.chOverallCriterion = QtWidgets.QCheckBox('Use as criterion', self)
         self.chOverallCriterion.setEnabled(False)
         layout_v2.addWidget(self.chOverallCriterion)
         layout_v2.addStretch(1)
@@ -457,117 +463,117 @@ class Ui_MSMainWidget(object):
         return widget
 
     def threshold_section_frame(self):
-        tabWidget = QtGui.QTabWidget(self)
-        tab_1 = QtGui.QWidget(self)
-        tab_2 = QtGui.QWidget(self)
+        tabWidget = QtWidgets.QTabWidget(self)
+        tab_1 = QtWidgets.QWidget(self)
+        tab_2 = QtWidgets.QWidget(self)
 
         tabWidget.addTab(tab_1, 'General')
         tabWidget.addTab(tab_2, 'Per frame')
 
-        layout_v = QtGui.QVBoxLayout(tab_1)
+        layout_v = QtWidgets.QVBoxLayout(tab_1)
         layout_v.setContentsMargins(5, 5, 5, 0)
 
-        layout_h1 = QtGui.QHBoxLayout()
-        layout_v1 = QtGui.QVBoxLayout()
-        layout_v2 = QtGui.QVBoxLayout()
+        layout_h1 = QtWidgets.QHBoxLayout()
+        layout_v1 = QtWidgets.QVBoxLayout()
+        layout_v2 = QtWidgets.QVBoxLayout()
 
-        label = QtGui.QLabel('Threshold for the drift of every frame', self)
+        label = QtWidgets.QLabel('Threshold for the drift of every frame', self)
         layout_v.addWidget(label)
         
         layout_v.addLayout(layout_h1)
         layout_h1.addLayout(layout_v1)
         layout_h1.addLayout(layout_v2)
         
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Start [A]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Start [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStartGeneral = QtGui.QLineEdit(self)
+        self.leStartGeneral = QtWidgets.QLineEdit(self)
         self.leStartGeneral.setEnabled(False)
         self.leStartGeneral.setMaximumWidth(100)
         layout_h.addWidget(self.leStartGeneral)
         layout_v1.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Stop [A]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Stop [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStopGeneral = QtGui.QLineEdit(self)
+        self.leStopGeneral = QtWidgets.QLineEdit(self)
         self.leStopGeneral.setEnabled(False)
         self.leStopGeneral.setMaximumWidth(100)
         layout_h.addWidget(self.leStopGeneral)
         layout_v1.addLayout(layout_h)
 
-        self.pbSaveGeneral = QtGui.QPushButton('Register', self)
+        self.pbSaveGeneral = QtWidgets.QPushButton('Register', self)
         self.pbSaveGeneral.setEnabled(False)
         layout_v2.addWidget(self.pbSaveGeneral)
-        self.chGeneralCriterion = QtGui.QCheckBox('Use as criterion', self)
+        self.chGeneralCriterion = QtWidgets.QCheckBox('Use as criterion', self)
         self.chGeneralCriterion.setEnabled(False)
         layout_v2.addWidget(self.chGeneralCriterion)
         layout_v2.addStretch(1)
         layout_v1.addStretch(1)
 
-        layout_v = QtGui.QVBoxLayout(tab_2)
+        layout_v = QtWidgets.QVBoxLayout(tab_2)
         layout_v.setContentsMargins(5, 5, 5, 0)
 
-        layout_h1 = QtGui.QHBoxLayout()
-        layout_v1 = QtGui.QVBoxLayout()
-        layout_v2 = QtGui.QVBoxLayout()
+        layout_h1 = QtWidgets.QHBoxLayout()
+        layout_v1 = QtWidgets.QVBoxLayout()
+        layout_v2 = QtWidgets.QVBoxLayout()
 
-        label = QtGui.QLabel('Threshold drift per frame', self)
+        label = QtWidgets.QLabel('Threshold drift per frame', self)
         layout_v.addWidget(label)
         
         layout_v.addLayout(layout_h1)
         layout_h1.addLayout(layout_v1)
         layout_h1.addLayout(layout_v2)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Start [A]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Start [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStartFrame = QtGui.QLineEdit(self)
+        self.leStartFrame = QtWidgets.QLineEdit(self)
         self.leStartFrame.setEnabled(False)
         self.leStartFrame.setMaximumWidth(100)
         layout_h.addWidget(self.leStartFrame)
         layout_v1.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Stop [A]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Stop [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStopFrame = QtGui.QLineEdit(self)
+        self.leStopFrame = QtWidgets.QLineEdit(self)
         self.leStopFrame.setEnabled(False)
         self.leStopFrame.setMaximumWidth(100)
         layout_h.addWidget(self.leStopFrame)
         layout_v1.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Registered start [A]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Registered start [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStartSaveFrame = QtGui.QLineEdit(self)
+        self.leStartSaveFrame = QtWidgets.QLineEdit(self)
         self.leStartSaveFrame.setEnabled(False)
         self.leStartSaveFrame.setMaximumWidth(100)
         layout_h.addWidget(self.leStartSaveFrame)
         layout_v1.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Registered stop [A]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Registered stop [A]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStopSaveFrame = QtGui.QLineEdit(self)
+        self.leStopSaveFrame = QtWidgets.QLineEdit(self)
         self.leStopSaveFrame.setEnabled(False)
         self.leStopSaveFrame.setMaximumWidth(100)
         layout_h.addWidget(self.leStopSaveFrame)
         layout_v1.addLayout(layout_h)
 
-        self.cbFrame = QtGui.QComboBox(self)
+        self.cbFrame = QtWidgets.QComboBox(self)
         self.cbFrame.setEnabled(False)
         layout_v2.addWidget(self.cbFrame)
-        self.pbSaveFrame = QtGui.QPushButton('Register', self)
+        self.pbSaveFrame = QtWidgets.QPushButton('Register', self)
         self.pbSaveFrame.setEnabled(False)
         layout_v2.addWidget(self.pbSaveFrame)
-        self.chFrameCriterion = QtGui.QCheckBox('Use as criterion', self)
+        self.chFrameCriterion = QtWidgets.QCheckBox('Use as criterion', self)
         self.chFrameCriterion.setEnabled(False)
         layout_v2.addWidget(self.chFrameCriterion)
         layout_v2.addStretch(1)
@@ -575,110 +581,110 @@ class Ui_MSMainWidget(object):
         return tabWidget
 
     def threshold_section_angle(self):
-        widget = QtGui.QWidget(self)
-        layout_v = QtGui.QVBoxLayout(widget)
+        widget = QtWidgets.QWidget(self)
+        layout_v = QtWidgets.QVBoxLayout(widget)
         layout_v.setContentsMargins(5, 5, 5, 0)
 
-        layout_h1 = QtGui.QHBoxLayout()
-        layout_v1 = QtGui.QVBoxLayout()
-        layout_v2 = QtGui.QVBoxLayout()
+        layout_h1 = QtWidgets.QHBoxLayout()
+        layout_v1 = QtWidgets.QVBoxLayout()
+        layout_v2 = QtWidgets.QVBoxLayout()
 
-        label = QtGui.QLabel('Threshold angle', self)
+        label = QtWidgets.QLabel('Threshold angle', self)
         layout_v.addWidget(label)
         
         layout_v.addLayout(layout_h1)
         layout_h1.addLayout(layout_v1)
         layout_h1.addLayout(layout_v2)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Start [Degree]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Start [Degree]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStartAngle = QtGui.QLineEdit(self)
+        self.leStartAngle = QtWidgets.QLineEdit(self)
         self.leStartAngle.setEnabled(False)
         self.leStartAngle.setMaximumWidth(100)
         layout_h.addWidget(self.leStartAngle)
         layout_v1.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Stop [Degree]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Stop [Degree]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStopAngle = QtGui.QLineEdit(self)
+        self.leStopAngle = QtWidgets.QLineEdit(self)
         self.leStopAngle.setEnabled(False)
         self.leStopAngle.setMaximumWidth(100)
         layout_h.addWidget(self.leStopAngle)
         layout_v1.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Registered start [Degree]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Registered start [Degree]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStartSaveAngle = QtGui.QLineEdit(self)
+        self.leStartSaveAngle = QtWidgets.QLineEdit(self)
         self.leStartSaveAngle.setEnabled(False)
         self.leStartSaveAngle.setMaximumWidth(100)
         layout_h.addWidget(self.leStartSaveAngle)
         layout_v1.addLayout(layout_h)
 
-        layout_h = QtGui.QHBoxLayout()
-        label = QtGui.QLabel('Registered stop [Degree]', self)
+        layout_h = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel('Registered stop [Degree]', self)
         layout_h.addWidget(label)
         layout_h.addStretch(1)
-        self.leStopSaveAngle = QtGui.QLineEdit(self)
+        self.leStopSaveAngle = QtWidgets.QLineEdit(self)
         self.leStopSaveAngle.setEnabled(False)
         self.leStopSaveAngle.setMaximumWidth(100)
         layout_h.addWidget(self.leStopSaveAngle)
         layout_v1.addLayout(layout_h)
 
-        self.cbAngle = QtGui.QComboBox(self)
+        self.cbAngle = QtWidgets.QComboBox(self)
         self.cbAngle.setEnabled(False)
         layout_v2.addWidget(self.cbAngle)
-        self.pbSaveAngle = QtGui.QPushButton('Register', self)
+        self.pbSaveAngle = QtWidgets.QPushButton('Register', self)
         self.pbSaveAngle.setEnabled(False)
         layout_v2.addWidget(self.pbSaveAngle)
-        self.chAngleCriterion = QtGui.QCheckBox('Use as criterion', self)
+        self.chAngleCriterion = QtWidgets.QCheckBox('Use as criterion', self)
         self.chAngleCriterion.setEnabled(False)
         layout_v2.addWidget(self.chAngleCriterion)
-        self.pbUncheckCriterion = QtGui.QPushButton('Uncheck criteria')
+        self.pbUncheckCriterion = QtWidgets.QPushButton('Uncheck criteria')
         self.pbUncheckCriterion.setEnabled(False)
         layout_v2.addWidget(self.pbUncheckCriterion)
 
         return widget
 
     def save_section(self):
-        widget = QtGui.QWidget(self)
-        layout_h = QtGui.QHBoxLayout(widget)
+        widget = QtWidgets.QWidget(self)
+        layout_h = QtWidgets.QHBoxLayout(widget)
         layout_h.setContentsMargins(5, 0, 5, 0)
 
-        label = QtGui.QLabel('Output prefix:', self)
+        label = QtWidgets.QLabel('Output prefix:', self)
         layout_h.addWidget(label)
         
-        self.leOutputName = QtGui.QLineEdit('Trial00', self)
+        self.leOutputName = QtWidgets.QLineEdit('Trial00', self)
         self.leOutputName.setEnabled(False)
         self.leOutputName.setMinimumWidth(300)
         layout_h.addWidget(self.leOutputName)
 
-        self.pbSaveSelected = QtGui.QPushButton('Select output directory and save selection', self)
+        self.pbSaveSelected = QtWidgets.QPushButton('Select output directory and save selection', self)
         self.pbSaveSelected.setEnabled(False)
         layout_h.addWidget(self.pbSaveSelected)
 
         layout_h.addStretch(1)
 
-        self.pbSaveSettings = QtGui.QPushButton('Save settings', self)
+        self.pbSaveSettings = QtWidgets.QPushButton('Save settings', self)
         self.pbSaveSettings.setEnabled(False)
         layout_h.addWidget(self.pbSaveSettings)
 
-        self.pbLoadSettings = QtGui.QPushButton('Load settings', self)
+        self.pbLoadSettings = QtWidgets.QPushButton('Load settings', self)
         layout_h.addWidget(self.pbLoadSettings)
 
-        self.pbAbout = QtGui.QPushButton('About', self)
+        self.pbAbout = QtWidgets.QPushButton('About', self)
         layout_h.addWidget(self.pbAbout)
 
         return widget
 
 
 
-class SXUnblurPlot(QtGui.QWidget):
+class SXUnblurPlot(QtWidgets.QWidget):
 
     # Refresh Signal, Frame Changed Signal, Close Signal
     sigRefresh = QtCore.pyqtSignal(list)
@@ -690,7 +696,7 @@ class SXUnblurPlot(QtGui.QWidget):
 
         # Set the Layout of the Widget
         self.setWindowTitle(title)
-        self.layout = QtGui.QVBoxLayout(self)
+        self.layout = QtWidgets.QVBoxLayout(self)
 
         # Initialise later used Variables
         self.canvas = None
@@ -698,14 +704,14 @@ class SXUnblurPlot(QtGui.QWidget):
         self.scrollArea = None
 
         # Initialise Widgets
-        self.widgetPlot = QtGui.QWidget(self)
-        self.layoutPlot = QtGui.QVBoxLayout(self.widgetPlot)
+        self.widgetPlot = QtWidgets.QWidget(self)
+        self.layoutPlot = QtWidgets.QVBoxLayout(self.widgetPlot)
 
         if setframes:
             # Set Variables
             self.dictFrames = {}
-            self.widgetFrames = QtGui.QWidget(self)
-            self.layoutFrames = QtGui.QVBoxLayout(self.widgetFrames)
+            self.widgetFrames = QtWidgets.QWidget(self)
+            self.layoutFrames = QtWidgets.QVBoxLayout(self.widgetFrames)
 
             # Add to Layout
             self.layout.addWidget(self.widgetFrames)
@@ -724,11 +730,11 @@ class SXUnblurPlot(QtGui.QWidget):
             self.scrollArea.setParent(None)
 
         # Set Widgets
-        self.scrollArea = QtGui.QScrollArea(self.widgetFrames)
-        scrollContent = QtGui.QWidget(self.scrollArea)
+        self.scrollArea = QtWidgets.QScrollArea(self.widgetFrames)
+        scrollContent = QtWidgets.QWidget(self.scrollArea)
 
         # Set Layouts
-        layoutContent = QtGui.QVBoxLayout(scrollContent)
+        layoutContent = QtWidgets.QVBoxLayout(scrollContent)
 
         # Fill canvas with the figure and connect it to the click event
         canvas = FigureCanvasQTAgg(frame)
@@ -758,15 +764,15 @@ class SXUnblurPlot(QtGui.QWidget):
             self.scrollArea.setParent(None)
 
         # Set Widgets
-        self.scrollArea = QtGui.QScrollArea(self.widgetFrames)
-        scrollContent = QtGui.QWidget(self.scrollArea)
-        scrollContentUpper = QtGui.QWidget(scrollContent)
-        scrollContentLower = QtGui.QWidget(scrollContent)
+        self.scrollArea = QtWidgets.QScrollArea(self.widgetFrames)
+        scrollContent = QtWidgets.QWidget(self.scrollArea)
+        scrollContentUpper = QtWidgets.QWidget(scrollContent)
+        scrollContentLower = QtWidgets.QWidget(scrollContent)
 
         # Set Layouts
-        layoutScroll = QtGui.QVBoxLayout(scrollContent)
-        layoutScrollUpper = QtGui.QHBoxLayout(scrollContentUpper)
-        layoutScrollLower = QtGui.QHBoxLayout(scrollContentLower)
+        layoutScroll = QtWidgets.QVBoxLayout(scrollContent)
+        layoutScrollUpper = QtWidgets.QHBoxLayout(scrollContentUpper)
+        layoutScrollLower = QtWidgets.QHBoxLayout(scrollContentLower)
 
         # Calculate how many frames needs to be in the firs line
         intNrFrames = len(framesaslist)
@@ -777,8 +783,8 @@ class SXUnblurPlot(QtGui.QWidget):
         # First half of the figure add to the upper widget
         for number in range(intLenUpper):
             # Create a Widget for each figure.
-            figWidgetUpper = QtGui.QWidget(scrollContentUpper)
-            figWidgetLower = QtGui.QWidget(scrollContentLower)
+            figWidgetUpper = QtWidgets.QWidget(scrollContentUpper)
+            figWidgetLower = QtWidgets.QWidget(scrollContentLower)
             # Add the figure to the Canvas.
             canvasUpper = FigureCanvasQTAgg(framesaslist[number])
             canvasLower = FigureCanvasQTAgg(
@@ -803,8 +809,8 @@ class SXUnblurPlot(QtGui.QWidget):
                 })
             # Create a layout, add the canvas to it and
             # set it to the figWidget.
-            figLayoutUpper = QtGui.QVBoxLayout()
-            figLayoutLower = QtGui.QVBoxLayout()
+            figLayoutUpper = QtWidgets.QVBoxLayout()
+            figLayoutLower = QtWidgets.QVBoxLayout()
             figLayoutUpper.addWidget(canvasUpper)
             figLayoutLower.addWidget(canvasLower)
             figWidgetUpper.setLayout(figLayoutUpper)
@@ -819,8 +825,8 @@ class SXUnblurPlot(QtGui.QWidget):
         # First half of the figure add to the lower widget
         if intNrFrames % 2 != 0:
             # Create a Widget for each figure
-            figWidgetUpper = QtGui.QWidget(scrollContentUpper)
-            figWidgetLower = QtGui.QWidget(scrollContentLower)
+            figWidgetUpper = QtWidgets.QWidget(scrollContentUpper)
+            figWidgetLower = QtWidgets.QWidget(scrollContentLower)
             # Add the figure to the Canvas, funny plot for the missing one
             figFunny = self._funny_plot()
             canvasUpper = FigureCanvasQTAgg(framesaslist[number + 1])
@@ -841,8 +847,8 @@ class SXUnblurPlot(QtGui.QWidget):
                 })
             # Create a layout, add the canvas to it and
             # set it to the figWidget.
-            figLayoutUpper = QtGui.QVBoxLayout()
-            figLayoutLower = QtGui.QVBoxLayout()
+            figLayoutUpper = QtWidgets.QVBoxLayout()
+            figLayoutLower = QtWidgets.QVBoxLayout()
             figLayoutUpper.addWidget(canvasUpper)
             figLayoutLower.addWidget(canvasLower)
             figWidgetUpper.setLayout(figLayoutUpper)
@@ -976,7 +982,7 @@ class SXUnblurPlot(QtGui.QWidget):
         self.sigClose.emit()
 
 
-class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
+class SXDriftUnblur(QtWidgets.QMainWindow, Ui_MSMainWidget):
 
     def __init__(self, inputlist=None, inputfile=None, parent=None):
         super(SXDriftUnblur, self).__init__(parent)
@@ -995,16 +1001,16 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 try:
                     listOfShiftFiles = numpy.genfromtxt(inputlist, dtype=None, unpack=True)
                 except TypeError:
-                    message = QtGui.QMessageBox(self)
+                    message = QtWidgets.QMessageBox(self)
                     message.setText('Empty File:\n{0}'.format(inputlist))
                     message.exec_()
                 except ValueError:
-                    message = QtGui.QMessageBox(self)
+                    message = QtWidgets.QMessageBox(self)
                     message.setText('File is not valid, only one column allowed:\n{0}'.format(inputlist))
                     message.exec_()
                 else:
                     if len(numpy.shape(listOfShiftFiles)) > 1:
-                        message = QtGui.QMessageBox(self)
+                        message = QtWidgets.QMessageBox(self)
                         message.setText('Too many columns. Expected one column:\n{0}'.format(inputlist))
                         message.exec_()
                     elif len(numpy.shape(listOfShiftFiles)) == 0:
@@ -1013,7 +1019,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                         listOfShiftFiles = [os.path.relpath(name) for name in listOfShiftFiles]
                         self._fill_gui(inputlist=list(listOfShiftFiles), inputfile=inputfile)
             else:
-                message = QtGui.QMessageBox(self)
+                message = QtWidgets.QMessageBox(self)
                 message.setText('Not a valid file name. Try again:\n{0}'.format(inputlist))
                 message.exec_()
         elif inputfile is not None:
@@ -1024,16 +1030,16 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 try:
                     listOfShiftFiles = numpy.genfromtxt(inputfile, dtype=None, unpack=True)
                 except TypeError:
-                    message = QtGui.QMessageBox(self)
+                    message = QtWidgets.QMessageBox(self)
                     message.setText('Empty File:\n{0}'.format(inputfile))
                     message.exec_()
                 except ValueError:
-                    message = QtGui.QMessageBox(self)
+                    message = QtWidgets.QMessageBox(self)
                     message.setText('File is not valid, only one column allowed:\n{0}'.format(inputfile))
                     message.exec_()
                 else:
                     if len(numpy.shape(listOfShiftFiles)) > 1:
-                        message = QtGui.QMessageBox(self)
+                        message = QtWidgets.QMessageBox(self)
                         message.setText('Too many columns. Expected one column:\n{0}'.format(inputfile))
                         message.exec_()
                     elif len(numpy.shape(listOfShiftFiles)) == 0:
@@ -1635,9 +1641,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Open the drift files and do the drift calculations"""
 
         # Find Directory
-        strInputFile = str(QtGui.QFileDialog.getOpenFileName(
+        strInputFile = str(QtWidgets.QFileDialog.getOpenFileName(
             directory=os.getcwd(),
-            options=QtGui.QFileDialog.DontUseNativeDialog,
+            options=QtWidgets.QFileDialog.DontUseNativeDialog,
             filter='Unblur (*.txt);;MotionCor2 (*.log);;All (*)'
             ))
 
@@ -1686,12 +1692,12 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             # Fill the list widget
             self.lsFiles.clear()
             for file in arrSortedUnchecked[self.dFile]:
-                newItem = QtGui.QListWidgetItem(file)
+                newItem = QtWidgets.QListWidgetItem(file)
                 newItem.setFlags(self.newItemFlags)
                 newItem.setCheckState(Qt.Unchecked)
                 self.lsFiles.addItem(newItem)
             for file in arrSortedChecked[self.dFile]:
-                newItem = QtGui.QListWidgetItem(file)
+                newItem = QtWidgets.QListWidgetItem(file)
                 newItem.setFlags(self.newItemFlags)
                 newItem.setCheckState(Qt.Checked)
                 self.lsFiles.addItem(newItem)
@@ -1711,7 +1717,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             # Fill the list widget, but leave the selection untouched
             self.lsFiles.clear()
             for file in arrSorted[self.dFile]:
-                newItem = QtGui.QListWidgetItem(file)
+                newItem = QtWidgets.QListWidgetItem(file)
                 newItem.setFlags(self.newItemFlags)
                 if file in setChecked:
                     newItem.setCheckState(Qt.Checked)
@@ -1738,9 +1744,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         self.listDType = []
 
         # Message Box!
-        messageBox = QtGui.QMessageBox()
+        messageBox = QtWidgets.QMessageBox()
         messageBox.setText('Do drift calculations...')
-        messageBox.setStandardButtons(QtGui.QMessageBox().NoButton)
+        messageBox.setStandardButtons(QtWidgets.QMessageBox().NoButton)
         messageBox.show()
         print('Do drift calculations...')
 
@@ -1797,7 +1803,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
         # If no or few files were found
         if not self.listFile:
-            messageBox2 = QtGui.QMessageBox()
+            messageBox2 = QtWidgets.QMessageBox()
             messageBox2.setText(
                 'Error: No matching drift files found or pattern' + 
                 ' and list entries does not match\n{:s}'.format(inputfile)
@@ -1829,7 +1835,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             for file in self.listFile:
                 if os.path.exists(file) and file in self.arrData[self.dFileRaw]:
                     file = file.split('/')[-1]
-                    newItem = QtGui.QListWidgetItem(file)
+                    newItem = QtWidgets.QListWidgetItem(file)
                     newItem.setFlags(self.newItemFlags)
                     newItem.setCheckState(Qt.Checked)
                     self.lsFiles.addItem(newItem)
@@ -1936,7 +1942,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             except IOError:
                 continue
         else:
-            message = QtGui.QMessageBox(self)
+            message = QtWidgets.QMessageBox(self)
             message.setText(
                     'No files in given file list available:\n{0}'.format(
                         self.fileName
@@ -2077,7 +2083,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             self.idxFirstFrame = int(self.leFrameStart.text())
             self.idxLastFrame = int(self.leFrameStop.text())
         except ValueError:
-            messageBox = QtGui.QMessageBox(self)
+            messageBox = QtWidgets.QMessageBox(self)
             messageBox.setText('Frame must be integer!')
             messageBox.exec_()
             self.leFrameStart.setText('{:d}'.format(oldfirst))
@@ -2091,45 +2097,45 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Check some abort situations
         if self.idxFirstFrame < 1:
             # Warning box when refreshing frames
-            warningBox = QtGui.QMessageBox(self)
-            warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
-            warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
+            warningBox = QtWidgets.QMessageBox(self)
+            warningBox.setStandardButtons(QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Yes)
+            warningBox.setDefaultButton(QtWidgets.QMessageBox.Yes)
             warningBox.setText(
                 'Start frame too small (minimum 1)!\n' +
                 'Continue with minimum value?'
                 )
             warningBox.exec_()
-            if warningBox.result() == QtGui.QMessageBox.No:
+            if warningBox.result() == QtWidgets.QMessageBox.No:
                 self.leFrameStart.setText('{:d}'.format(oldfirst))
                 self.leFrameStart.setStyleSheet(self.dictColor['done'])
                 self.idxFirstFrame = oldfirst
                 return False
-            elif warningBox.result() == QtGui.QMessageBox.Yes:
+            elif warningBox.result() == QtWidgets.QMessageBox.Yes:
                 self.leFrameStart.setText('{:d}'.format(1))
                 self.leFrameStart.setStyleSheet(self.dictColor['done'])
                 self.idxFirstFrame = 1
 
         if self.idxLastFrame > self.intFrames:
-            warningBox = QtGui.QMessageBox(self)
-            warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
-            warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
+            warningBox = QtWidgets.QMessageBox(self)
+            warningBox.setStandardButtons(QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Yes)
+            warningBox.setDefaultButton(QtWidgets.QMessageBox.Yes)
             warningBox.setText(
                 'Stop frame too large (maximum {:d})!\n'.format(self.intFrames) +
                 'Continue with maximum value?'
                 )
             warningBox.exec_()
-            if warningBox.result() == QtGui.QMessageBox.No:
+            if warningBox.result() == QtWidgets.QMessageBox.No:
                 self.leFrameStart.setText('{:d}'.format(oldlast))
                 self.leFrameStart.setStyleSheet(self.dictColor['done'])
                 self.idxLastFrame = oldlast
                 return False
-            elif warningBox.result() == QtGui.QMessageBox.Yes:
+            elif warningBox.result() == QtWidgets.QMessageBox.Yes:
                 self.leFrameStop.setText('{:d}'.format(self.intFrames))
                 self.leFrameStop.setStyleSheet(self.dictColor['done'])
                 self.idxLastFrame = self.intFrames
 
         if self.idxLastFrame <= self.idxFirstFrame:
-            messageBox = QtGui.QMessageBox(self)
+            messageBox = QtWidgets.QMessageBox(self)
             messageBox.setText(
                 'Start frame must be smaller stop frame!'
                 )
@@ -2371,9 +2377,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         intOldLast = self.idxLastFrame
 
         # Warning box when refreshing frames
-        warningBox = QtGui.QMessageBox(self)
-        warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
-        warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
+        warningBox = QtWidgets.QMessageBox(self)
+        warningBox.setStandardButtons(QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Yes)
+        warningBox.setDefaultButton(QtWidgets.QMessageBox.Yes)
         warningBox.setText(
             'Threshold settings will be lost when calculating new drift data!\n' +
             'Do you really want to continue?'
@@ -2381,12 +2387,12 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         if not goon:
             warningBox.exec_()
 
-        if warningBox.result() == QtGui.QMessageBox.Yes or goon:
+        if warningBox.result() == QtWidgets.QMessageBox.Yes or goon:
 
             # Message Box!
-            messageBox = QtGui.QMessageBox()
+            messageBox = QtWidgets.QMessageBox()
             messageBox.setText('Do drift calculations...')
-            messageBox.setStandardButtons(QtGui.QMessageBox().NoButton)
+            messageBox.setStandardButtons(QtWidgets.QMessageBox().NoButton)
             messageBox.show()
             print('Do drift calculations...')
 
@@ -2810,7 +2816,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 fltStart = float(self.leStartGeneral.text())
                 fltStop = float(self.leStopGeneral.text())
             except ValueError:
-                messageBox = QtGui.QMessageBox()
+                messageBox = QtWidgets.QMessageBox()
                 messageBox.setText('General input needs to be a float!')
                 messageBox.exec_()
 
@@ -2960,16 +2966,16 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Apply the saved settings"""
 
         # Ask the user if he really wants to continue
-        warningBox = QtGui.QMessageBox(self)
-        warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
-        warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
+        warningBox = QtWidgets.QMessageBox(self)
+        warningBox.setStandardButtons(QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Yes)
+        warningBox.setDefaultButton(QtWidgets.QMessageBox.Yes)
         warningBox.setText(
                 'Do you really want to apply criteria?\n' +
                 'All selections will be lost.'
             )
         warningBox.exec_()
 
-        if warningBox.result() == QtGui.QMessageBox.No:
+        if warningBox.result() == QtWidgets.QMessageBox.No:
             return None
 
         # Copy of the data
@@ -3098,7 +3104,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             fltStart = float(varStart.text())
             fltStop = float(varStop.text())
         except ValueError:
-            messageBox = QtGui.QMessageBox()
+            messageBox = QtWidgets.QMessageBox()
             messageBox.setText(
                 'Error with {:s}! Input must be float!'.format(
                     mode
@@ -3119,7 +3125,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
                 # Break with wrong input
                 if fltStart > fltStop:
-                    messageBox = QtGui.QMessageBox()
+                    messageBox = QtWidgets.QMessageBox()
                     messageBox.setText(
                         'Error with {:s}! Larger must be smaller then Smaller! ;)'.format(
                             mode
@@ -3513,9 +3519,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
     def _load_from_list(self):
         """Load shift files from list"""
 
-        self.fileName = str(QtGui.QFileDialog.getOpenFileName(
+        self.fileName = str(QtWidgets.QFileDialog.getOpenFileName(
             directory=os.getcwd(),
-            options=QtGui.QFileDialog.DontUseNativeDialog,
+            options=QtWidgets.QFileDialog.DontUseNativeDialog,
             filter='Text files (*.txt)'
             ))
         # Abort if empty
@@ -3527,16 +3533,16 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
             try:
                 listOfShiftFiles = numpy.genfromtxt(self.fileName, dtype=None, unpack=True)
             except TypeError:
-                message = QtGui.QMessageBox(self)
+                message = QtWidgets.QMessageBox(self)
                 message.setText('Empty File:\n{0}'.format(self.fileName))
                 message.exec_()
             except ValueError:
-                message = QtGui.QMessageBox(self)
+                message = QtWidgets.QMessageBox(self)
                 message.setText('File is not valid, only one column allowed:\n{0}'.format(self.fileName))
                 message.exec_()
             else:
                 if len(numpy.shape(listOfShiftFiles)) > 1:
-                    message = QtGui.QMessageBox(self)
+                    message = QtWidgets.QMessageBox(self)
                     message.setText('Too many columns. Expected one column:\n{0}'.format(self.fileName))
                     message.exec_()
                 else:
@@ -3555,7 +3561,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         if self._check_list_or_file(filePattern) == 'file':
             self._fill_gui(inputfile=filePattern)
         else:
-            message = QtGui.QMessageBox(self)
+            message = QtWidgets.QMessageBox(self)
             message.setText('Not valid unblur shift files:\n{0}'.format(filePattern))
             message.exec_()
 
@@ -3563,9 +3569,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Write the selected micrographs to a file"""
 
         # Get output path and file name
-        outputPath = QtGui.QFileDialog.getExistingDirectory(
+        outputPath = QtWidgets.QFileDialog.getExistingDirectory(
             directory=os.getcwd(),
-            options=QtGui.QFileDialog.DontUseNativeDialog
+            options=QtWidgets.QFileDialog.DontUseNativeDialog
             )
         if not outputPath:
             return None
@@ -3583,11 +3589,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 os.path.exists(shiftSelected) or \
                 os.path.exists(shiftDiscarded):
             # Ask the user if he really wants to continue
-            warningBox = QtGui.QMessageBox(self)
+            warningBox = QtWidgets.QMessageBox(self)
             warningBox.setStandardButtons(
-                QtGui.QMessageBox.No | QtGui.QMessageBox.Yes
+                QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Yes
                 )
-            warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
+            warningBox.setDefaultButton(QtWidgets.QMessageBox.Yes)
             warningBox.setText(
                     'Do you really want to save?\n\n' +
                     '{0}\nor\n{1}\nor\n{2}\nor\n{3}\nalready exists.'.format(
@@ -3599,7 +3605,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                 )
             warningBox.exec_()
 
-            if warningBox.result() == QtGui.QMessageBox.No:
+            if warningBox.result() == QtWidgets.QMessageBox.No:
                 return None
 
         with open(outputSelected, 'w') as w:
@@ -3643,11 +3649,11 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
                         )
 
         # Ask the user if he really wants to continue
-        warningBox = QtGui.QMessageBox(self)
+        warningBox = QtWidgets.QMessageBox(self)
         warningBox.setStandardButtons(
-            QtGui.QMessageBox.Yes
+            QtWidgets.QMessageBox.Yes
             )
-        warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
+        warningBox.setDefaultButton(QtWidgets.QMessageBox.Yes)
         warningBox.setText(
                 'Selection saved to:\n\n' +
                 '{0}\n{1}\n{2}\n{3}\n\n'.format(
@@ -3674,9 +3680,9 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Save settings"""
 
         # Output file name
-        strSaveName = str(QtGui.QFileDialog.getSaveFileName(
+        strSaveName = str(QtWidgets.QFileDialog.getSaveFileName(
             directory=os.getcwd(),
-            options=QtGui.QFileDialog.DontUseNativeDialog
+            options=QtWidgets.QFileDialog.DontUseNativeDialog
             ))
 
         # Save data to file
@@ -3753,22 +3759,22 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Load settings"""
 
         # Warning box when refreshing frames
-        warningBox = QtGui.QMessageBox(self)
-        warningBox.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
-        warningBox.setDefaultButton(QtGui.QMessageBox.Yes)
+        warningBox = QtWidgets.QMessageBox(self)
+        warningBox.setStandardButtons(QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Yes)
+        warningBox.setDefaultButton(QtWidgets.QMessageBox.Yes)
         warningBox.setText(
             'Not saved changes will be lost when loading drift data!\n' +
             'Do you really want to continue?'
             )
         warningBox.exec_()
 
-        if warningBox.result() == QtGui.QMessageBox.No:
+        if warningBox.result() == QtWidgets.QMessageBox.No:
             return None
 
         # Input file
-        strLoadName = str(QtGui.QFileDialog.getOpenFileName(
+        strLoadName = str(QtWidgets.QFileDialog.getOpenFileName(
             directory=os.getcwd(),
-            options=QtGui.QFileDialog.DontUseNativeDialog
+            options=QtWidgets.QFileDialog.DontUseNativeDialog
             ))
 
         # If not cancel
@@ -3796,7 +3802,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         # Fill the list widget, and return the selection
         self.lsFiles.clear()
         for file in self.arrData[self.dFile]:
-            newItem = QtGui.QListWidgetItem(file)
+            newItem = QtWidgets.QListWidgetItem(file)
             newItem.setFlags(self.newItemFlags)
             if file in setChecked:
                 newItem.setCheckState(Qt.Checked)
@@ -4409,7 +4415,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
         """Show the about info"""
 
         # Generate a about message box
-        about = QtGui.QMessageBox()
+        about = QtWidgets.QMessageBox()
         about.setText("""
             sxgui_drift for analyzing drift parameters
             made by Unblur
@@ -4554,7 +4560,7 @@ class SXDriftUnblur(QtGui.QMainWindow, Ui_MSMainWidget):
 
 
 def _main():
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
 
     if len(sys.argv) > 3:
         print(
