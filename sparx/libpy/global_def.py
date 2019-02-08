@@ -1,5 +1,5 @@
-
 from __future__ import print_function
+
 """
 Author: Pawel A.Penczek, 2006-09-09 (Pawel.A.Penczek@uth.tmc.edu)
 Author: Fabian Schoenfeld, 2019-02-07 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -29,6 +29,7 @@ program; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
 Suite 330, Boston, MA  02111-1307 USA
 """
 
+
 #--------------------------------------------------------------------[ header ]
 
 # import
@@ -40,10 +41,6 @@ import mpi
 from EMAN2  import Util, EMData, EMUtil, Transform
 from random import seed
 
-# system-wide parameters
-interpolation_method_2D = "quadratic"  # set 2-D interpolation method ("linear", "quadratic", "gridding")
-Eulerian_Angles         = "SPIDER"     # set Euler angle convention ("SPIDER", "EMAN", "IMAGIC"):
-
 # set global random seed
 rand_seed = Util.get_randnum_seed()
 seed(rand_seed)
@@ -51,7 +48,12 @@ seed(rand_seed)
 rand_seed = Util.get_randnum_seed()
 Util.set_randnum_seed(rand_seed)
 
+
 #___________________________________________ User settings: change as necessary
+
+# system-wide parameters
+interpolation_method_2D = "quadratic"  # set 2-D interpolation method ("linear", "quadratic", "gridding")
+Eulerian_Angles         = "SPIDER"     # set Euler angle convention ("SPIDER", "EMAN", "IMAGIC"):
 
 """
 BATCH flag should generally be set to False, which indicates that the output
@@ -76,18 +78,13 @@ True to disable cache
 """
 CACHE_DISABLE = False
 
-# global logfile setup
-global LOGFILE
-LOGFILE = "logfile" + time.strftime("_%Y-%m-%d_%H-%M-%S", time.localtime())
-LOGFILE_HANDLE  = 0
-IS_LOGFILE_OPEN = False
 
 #________________________________________ System settings: please do not change
 
 from EMAN2_meta import DATESTAMP
 
 global SPARXVERSION
-SPARXVERSION = "SPARX v4.0" + ' (GITHUB: ' + DATESTAMP +')'
+SPARXVERSION = "SPHIRE v1.2 [rc6] (GitHub: " + DATESTAMP + ")"
 
 global SPARX_MPI_TAG_UNIVERSAL
 SPARX_MPI_TAG_UNIVERSAL = 123456
@@ -95,57 +92,125 @@ SPARX_MPI_TAG_UNIVERSAL = 123456
 global SPARX_DOCUMENTATION_WEBSITE
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
 
+#-------------------------------------------------------------------[ logging ]
+
+def get_timestamp( file_format=False ):
+    """
+    Utility function to get a properly formatted timestamp. 
+
+    Args:
+        file_format (bool): If true, timestamp will not include ':' characters
+            for a more OS-friendly string that can be used in less risky file 
+            names [default: False ]
+    """
+    if file_format:
+        return time.strftime( "%Y-%m-%d_%H-%M-%S", time.localtime() )
+    else:
+        return time.strftime( "%Y-%m-%d %H:%M:%S", time.localtime() )
+
+# classic, user-exposed logfile (non-uniform use throughout sparx modules)
+global LOGFILE
+LOGFILE = "logfile_" + get_timestamp( file_format=True )
+LOGFILE_HANDLE  = 0
+IS_LOGFILE_OPEN = False
+
+# sxprint log (sxprint logging can be disabled by setting this to "")
+SXPRINT_LOG = get_timestamp(file_format=True) + "_SPHIRE_execution.log"
+
 #------------------------------------------------------------[ util functions ]
 
 def print_timestamp( tag="" ):
-	"""
-	Utility function to print a generic time stamp.
+    """
+    Utility function to print a generic time stamp plus an optional tag.
 
-	Args:
-		tag (string): optional string that can be added to the time stamp to
-			provide more information [default: ""]
+    Args:
+        tag (string): optional string that can be added to the time stamp to
+            provide more information [default: ""]
 
-	Example:
-		>>>  print_timestamp( "Start" )
-		[Start] : 2019-02-07 11:29:37
-	"""
+    Example:
+        >>>  print_timestamp( "Start" )
+        [Start] : 2019-02-07 11:29:37
+    """
+    if tag != "": 
+        print( "["+tag+"] : ", end="" )
 
-	if tag != "": 
-		print( "["+tag+"] : ", end="" )
+    print( get_timestamp() )
 
-	print( time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) )
+def sxprint( *args, **kwargs ):
+    """
+    Generic print function that includes time stamps and caller id. Everything
+    that is printed is also logged to file <SXPRINT_LOG> (can be disabled by
+    setting SXPRINT_LOG to "").
 
-def ERROR( message, where, action=1, myid=0 ):
-	"""
-	Utility function for consistent error throwing across sparx functions.
+    Args:
+        *args: Variable number of arguments
 
-	Args:
-		where (string): Location of error (e.g. "sxsummovie.main")
-		message (string): Error message
-		action (0/1): Choose (1) error and abort, or (0) warning and continue [default: 1]
-		myid (integer): mpi rank; used to only print error on main process (myid == 0)
-	"""
-	global BATCH
-	global MPI
-	
-	if myid == 0:
+        **kwargs: Dictionary containing (separate) variable number of (keyword) 
+            arguments
+        
+        filename (string): If a file name is provided the message is also 
+            written to file. If a file of the same name already exists the new
+            message is appended to the end of the file. If no file of the given
+            name exists it is created.
 
-		if action: 
-			print( "\n  *****  ERROR in: %s" % where )
-		else:      
-			print( "\n  *****  WARNING in: %s" % where )
-		print("  *****  %s\n" % message)
+    Example:
+        >>> sxprint( "This is " + "a %s" % "test" + ".", filename="out.log" )
+        2019-02-07 13:36:50 <module> => This is a test.
+    """
+    t = get_timestamp()
+    f = sys._getframe(1).f_code.co_name
+    m = t + " " + f + " => " + "".join(map(str, args))
+    
+    print( m ) # for Python 3: print( m, **kwargs )
+    sys.stdout.flush()
 
-	if action == 1 and BATCH:
-		
-		if  MPI:
-			mpi.mpi_finalize()
-			MPI   = False
-			BATCH = False
-			print_timestamp( "ABORT" )
-			sys.exit(1)
+    # print to user defined file
+    if "filename" in kwargs:
+        f = open( kwargs["filename"], "a+" )
+        f.write( m + "\n" )
+        f.close()
 
-		else:
-			BATCH = False
-			print_timestamp( "ABORT" )
-			sys.exit(1)
+    # print to default SPHIRE execution log
+    if SXPRINT_LOG != "":
+        f = open( SXPRINT_LOG, "a+" )
+        f.write( m + "\n" )
+        f.close()
+
+
+def ERROR( message, action=1, myid=0 ):
+    """
+    Utility function for consistent error throwing across sparx functions.
+
+    Args:
+        where (string): Location of error (e.g. "sxsummovie.main")
+        message (string): Error message
+        action (0/1): Choose (1) error and abort, or (0) warning and continue [default: 1]
+        myid (integer): mpi rank; used to only print error on main process (myid == 0)
+    """
+    global BATCH
+    global MPI
+    
+    if myid == 0:
+
+        file = sys._getframe(1).f_code.co_filename
+        line = sys._getframe(1).f_lineno
+
+        if action: 
+            sxprint( "ERROR reported in file \'"+file+"\', line "+str(line)+": " )
+        else:      
+            sxprint( "WARNING reported in file \'"+file+"\', line "+str(line)+": " )
+        sxprint( message )
+
+    if action == 1 and BATCH:
+        
+        if  MPI:
+            mpi.mpi_finalize()
+            MPI   = False
+            BATCH = False
+            sxprint( "ABORT" )
+            sys.exit(1)
+
+        else:
+            BATCH = False
+            sxprint( "ABORT" )
+            sys.exit(1)
