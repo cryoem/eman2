@@ -237,9 +237,10 @@ def main():
 		
 		if len(args) == 1: stack = args[0]
 		else:
-			print(( "usage: " + usage))
-			print(( "Please run '" + progname + " -h' for detailed options"))
-			return 1
+			sxprint( "Usage: " + usage )
+			sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+			global_def.ERROR( "Invalid number of parameters used. Please see usage information above." )
+			return
 
 		t0 = time()	
 		# obsolete flags

@@ -92,6 +92,7 @@ SPARX_MPI_TAG_UNIVERSAL = 123456
 global SPARX_DOCUMENTATION_WEBSITE
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
 
+
 #-------------------------------------------------------------------[ logging ]
 
 def get_timestamp( file_format=False ):
@@ -117,6 +118,7 @@ IS_LOGFILE_OPEN = False
 # sxprint log (sxprint logging can be disabled by setting this to "")
 SXPRINT_LOG = get_timestamp(file_format=True) + "_SPHIRE_execution.log"
 
+
 #------------------------------------------------------------[ util functions ]
 
 def print_timestamp( tag="" ):
@@ -135,6 +137,7 @@ def print_timestamp( tag="" ):
         print( "["+tag+"] : ", end="" )
 
     print( get_timestamp() )
+
 
 def sxprint( *args, **kwargs ):
     """
@@ -177,7 +180,7 @@ def sxprint( *args, **kwargs ):
         f.close()
 
 
-def ERROR( message, where, action=1, myid=0 ):
+def ERROR( message, where="", action=1, myid=0 ):
     """
     Utility function for consistent error throwing across sparx functions.
 
