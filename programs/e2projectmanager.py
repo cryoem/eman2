@@ -129,7 +129,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		self.icons = {}
 		EMAN2DIR = e2getinstalldir()
 
-		jsonfile = open(os.getenv("EMAN2DIR")+'/lib/pmconfig/icons.json', 'r')
+		jsonfile = open(EMAN2DIR+'/lib/pmconfig/icons.json', 'r')
 		data = jsonfile.read()
 		data = self.json_strip_comments(data)
 		tree = json.loads(data)
