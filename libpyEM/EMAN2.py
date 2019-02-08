@@ -425,12 +425,9 @@ def get_prefixed_directories(prefix,wd=e2getcwd()):
 	return dirs
 
 def get_image_directory():
-	pf = get_platform()
 	dtag = get_dtag()
-	if pf != "Windows":
-		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag
-	else:
-		return os.getenv("EMAN2DIR").replace('\\', '/') + dtag + "images" + dtag
+	
+	return e2getinstalldir()+ dtag + "images" + dtag
 
 def get_dtag():
 #	pfrm = get_platform()
