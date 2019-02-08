@@ -202,7 +202,7 @@ def ERROR( message, where, action=1, myid=0 ):
         if action: 
             sxprint( "ERROR reported by function \'"+func+"\' in file \'"+file+"\', line "+str(line)+": " )
         else:      
-            sxprint( "WARNING reported in file \'"+file+"\', line "+str(line)+": " )
+            sxprint( "WARNING reported by function \'"+func+"\' in file \'"+file+"\', line "+str(line)+": " )
             
         sxprint( message )
 
