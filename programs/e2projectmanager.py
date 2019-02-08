@@ -127,7 +127,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		Load icons used for the tree. Additonal icons can be added using icons.json
 		"""
 		self.icons = {}
-		EMAN2DIR = os.getenv("EMAN2DIR")
+		EMAN2DIR = e2getinstalldir()
 
 		jsonfile = open(os.getenv("EMAN2DIR")+'/lib/pmconfig/icons.json', 'r')
 		data = jsonfile.read()
@@ -284,9 +284,9 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		"""
 		self.tree_stacked_widget = QtWidgets.QStackedWidget()
 		self.tree_stacked_widget.setMinimumWidth(300)
-		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/spr.json', 'Single Particle Refinement'))
-		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography'))
-		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo_legacy.json', 'SPT (Legacy)'))
+		self.tree_stacked_widget.addWidget(self.makeTreeWidget(e2getinstalldir()+'/lib/pmconfig/spr.json', 'Single Particle Refinement'))
+		self.tree_stacked_widget.addWidget(self.makeTreeWidget(e2getinstalldir()+'/lib/pmconfig/tomo.json', 'Tomography'))
+		self.tree_stacked_widget.addWidget(self.makeTreeWidget(e2getinstalldir()+'/lib/pmconfig/tomo_legacy.json', 'SPT (Legacy)'))
 
 		return self.tree_stacked_widget
 
@@ -473,7 +473,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		Load the wizard from a filebox
 		"""
 
-		jsonfile = open(os.getenv("EMAN2DIR")+self.getProgramWizardFile(), 'r')
+		jsonfile = open(e2getinstalldir()+self.getProgramWizardFile(), 'r')
 		data = jsonfile.read()
 		data = self.json_strip_comments(data)
 		wizarddata = json.loads(data)
@@ -569,7 +569,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		Read in and return the usage from an e2program
 		"""
 		try:
-			f = open(os.getenv("EMAN2DIR")+"/bin/"+program,"r")
+			f = open(e2getinstalldir()+"/bin/"+program,"r")
 		except:
 			self.statusbar.setMessage("Can't open usage file '%s'"%program,"color:red;")
 			return
@@ -714,7 +714,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		"""
 		parser = EMArgumentParser()
 		try:
-			f = open(os.getenv("EMAN2DIR")+"/bin/"+e2program,"r")
+			f = open(e2getinstalldir()+"/bin/"+e2program,"r")
 		except:
 			self.statusbar.setMessage("Can't open file '%s'"%e2program,"color:red;")
 			return
