@@ -33,6 +33,7 @@ import numpy
 import time
 import subprocess
 import global_def
+from global_def import sxprint, ERROR
 from global_def import SPARXVERSION, ERROR
 from optparse import OptionParser, SUPPRESS_HELP
 from utilities import create_summovie_command
@@ -96,8 +97,8 @@ def main():
 
     # If there arent enough arguments, stop the script
     if len(args) != 4:
-        print( "Usage: " + usage )
-        global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxsummovie.main" )
+        sxprint( "Usage: " + usage )
+        ERROR( "Invalid number of parameters used. Please see usage information above." )
         return
 
     # Convert the realtive parts to absolute ones
@@ -108,12 +109,12 @@ def main():
 
     # If the summovie executable file does not exists, stop the script
     if not path.exists(summovie_path):
-        global_def.ERROR( "Summovie directory does not exist, please change the name and restart the program.", "sxsummovie.main" )
+        ERROR( "Summovie directory does not exist, please change the name and restart the program." )
         return
 
     # If the output directory exists, stop the script
     if path.exists(output_dir):
-        global_def.ERROR( "Output directory exists, please change the name and restart the program.", "sxsummovie.main" )
+        ERROR( "Output directory exists, please change the name and restart the program." )
         return
 
     # If the input file does not exists, stop the script
@@ -121,11 +122,11 @@ def main():
     shift_list = glob(input_shift)
 
     if not file_list:
-        global_def.ERROR( "Input micrograph file(s) does not exist, please change the name and restart the program.", "sxsummovie.main" )
+        ERROR( "Input micrograph file(s) does not exist, please change the name and restart the program." )
         return
 
     if not shift_list:
-        global_def.ERROR( "Input shift file(s) does not exist, please change the name and restart the program.", "sxsummovie.main" )
+        ERROR( "Input shift file(s) does not exist, please change the name and restart the program." )
         return
 
     # Output paths
@@ -146,7 +147,7 @@ def main():
     input_shift_name = input_shift.split('*')
 
     if len(input_mic_name) != 2 or len(input_shift_name) != 2:
-        global_def.ERROR( "Too many wildcard arguments. Please use exactly one \'*\' in the pattern.", "sxsummovie.py" )
+        ERROR( "Too many wildcard arguments. Please use exactly one \'*\' in the pattern." )
         return
 
     # Get the input directory
@@ -184,7 +185,7 @@ def main():
         try:
             selection = genfromtxt(selection_file, dtype=None)
         except TypeError:
-            ERROR( "No entrys in micrograph list file \'"+selection_file+"\'", "sxsummovie.py" )
+            ERROR( "No entrys in micrograph list file \'"+selection_file+"\'" )
             return
         # List of files which are in pattern and list
         mic_list = [
@@ -194,7 +195,7 @@ def main():
                 ]
         # If no match is there abort
         if len(mic_list) == 0:
-            ERROR( "No files in \'"+selection_file+"\' matched the micrograph file pattern", "sxsummovie.py" )
+            ERROR( "No files in \'"+selection_file+"\' matched the micrograph file pattern" )
             return
 
     option_dict = {
@@ -235,7 +236,7 @@ def main():
             remove(entry)
         rmdir(temp_path)
 
-    print( "All Done!" )
+    sxprint( "All Done!" )
 
     global_def.BATCH = False
 
@@ -261,7 +262,7 @@ def run_summovie( opt ):
         input_suffix = inputfile.split('/')[-1].split('.')[-1]
         # First output to introduce the programm
         if opt['verbose'] and index == 0:
-            print(
+            sxprint(
                     'Progress: 0.0%;  Time: --h:--m:--s/--h:--m:--s;  Summovie started!'
                 )
 
@@ -374,7 +375,7 @@ def run_summovie( opt ):
                 # Remove temp file
                 remove(temp_name)
             else:
-                ERROR('e2proc2d.py error. File was not created:\n{0}'.format(inputfile), 'sxsummovie.py', 0)
+                ERROR('e2proc2d.py error. File was not created:\n{0}'.format(inputfile), action=0)
 
         time_list.append(time.time() - t1)
         
@@ -386,12 +387,9 @@ def run_summovie( opt ):
                     clean = True
                     break
         if clean:
-            print('SumMovie finished cleanly.')
+            sxprint('SumMovie finished cleanly.')
         else:
-            ERROR(
-                'sum movie error. check the logfile for more information: {0}'.format(
-                    log_name), 'sxsummovie.py', 0
-                )
+            ERROR( 'sum movie error. check the logfile for more information: {0}'.format(log_name), action=0 )
 
         # Do progress output
         if opt['verbose']:
@@ -413,7 +411,7 @@ def run_summovie( opt ):
                     current_time_h*3600 -
                     current_time_m*60
                     )
-            print((
+            sxprint((
                 'Progress: {0:.2f}%;  Time: {1:.0f}h:{2:.0f}m:{3:.0f}s/{4:.0f}h:{5:.0f}m:{6:.0f}s;  Micrograph done:{7}'.format(
                     percent,
                     current_time_h,

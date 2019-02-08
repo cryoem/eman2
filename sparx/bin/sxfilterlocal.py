@@ -30,17 +30,21 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+import os
+import sys
+
 from builtins import range
 import global_def
+from global_def import sxprint, ERROR
+
+from optparse import OptionParser
+
 from   global_def import *
 from   EMAN2 import *
 from   sparx import *
 from global_def import SPARX_MPI_TAG_UNIVERSAL
 
 def main():
-	import os
-	import sys
-	from optparse import OptionParser
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -58,8 +62,8 @@ def main():
 	(options, args) = parser.parse_args(arglist[1:])
 	
 	if len(args) <3 or len(args) > 4:
-		print("See usage " + usage)
-		global_def.ERROR( "Wrong number of parameters. Please see usage information above.", "sxfilterlocal.main" )
+		sxprint("See usage " + usage)
+		ERROR( "Wrong number of parameters. Please see usage information above." )
 		return
 
 	if global_def.CACHE_DISABLE:

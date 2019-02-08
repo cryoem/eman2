@@ -33,6 +33,7 @@ from __future__ import print_function
 
 from builtins import range
 import global_def
+from global_def import sxprint, ERROR
 from   global_def import *
 
 from   optparse import OptionParser
@@ -56,8 +57,8 @@ def main():
 	(options, args) = parser.parse_args( arglist[1:] )
 
 	if( len(args) != 2):
-		print("Usage: " + usage)
-		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxspliteigen.main" )
+		sxprint("Usage: " + usage)
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 
 	from math import sqrt

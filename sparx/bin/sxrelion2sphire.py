@@ -54,6 +54,7 @@ from EMAN2db import db_check_dict
 
 from optparse import OptionParser
 import global_def
+from global_def import sxprint, ERROR
 from global_def import  *
 
 # ========================================================================================
@@ -112,14 +113,14 @@ def main():
 	# Check validity of input arguments and options
 	# ------------------------------------------------------------------------------------
 	if len(args) != 2:
-		print( "Usage: " + usage )
-		print( "Please run \'" + progname + " -h\' for detailed options" )
-		global_def.ERROR( "Missing paths to input STAR file and output directory. Please see usage information above", "sxrelion2sphire.main" )
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Missing paths to input STAR file and output directory. Please see usage information above" )
 		return
 	
-	print('# ')
-	print('# %s' % get_cmd_line())
-	print('# ')
+	sxprint('# ')
+	sxprint('# %s' % get_cmd_line())
+	sxprint('# ')
 	
 	# Rename arguments and options for readability
 	file_path_relion_star    = args[0]
@@ -132,16 +133,16 @@ def main():
 	is_enable_create_stack   = bool(not options.do_not_create_stack)
 
 	if (not os.path.exists(file_path_relion_star)):
-		global_def.ERROR( "Input RELION STAR file \'"+file_path_relion_star+"\' is not found.", "sxrelion2sphire.main" )
+		ERROR( "Input RELION STAR file \'"+file_path_relion_star+"\' is not found." )
 		return
 
 	if (os.path.exists(dir_path_work)):
-		global_def.ERROR( "Output directory \'"+dir_path_work+"\' already exists. Please delete it or use a different output directory", "sxrelion2sphire.main" )
+		ERROR( "Output directory \'"+dir_path_work+"\' already exists. Please delete it or use a different output directory" )
 		return
 	
 	if dir_path_relion_project is not None:
 		if not os.path.exists(dir_path_relion_project):
-			global_def.ERROR( "Specified RELION project directory \'"+dir_path_relion_project+"\' does not exist.", "sxrelion2sphire.main" )
+			ERROR( "Specified RELION project directory \'"+dir_path_relion_project+"\' does not exist." )
 			return
 
 	# ------------------------------------------------------------------------------------
@@ -252,7 +253,7 @@ def main():
 	
 	# Create work directories
 	assert not os.path.exists(dir_path_work), '# Logical Error: The output directory should not exists at this point of code.'
-	print('# Creating work dir...')
+	sxprint('# Creating work dir...')
 	os.mkdir(dir_path_work)
 	
 	# ------------------------------------------------------------------------------------
@@ -308,14 +309,14 @@ def main():
 		# First, find data section in STAR file 
 		if is_found_section == False:
 			if str_line.find(str_relion_start_section) != -1:
-				print('# Title: %s' % (str_line.rstrip('\n')))
+				sxprint('# Title: %s' % (str_line.rstrip('\n')))
 				is_found_section = True
 		# Then, ignore loop_ in STAR file 
 		elif is_found_loop == False:
 			assert is_found_section == True, '# Logical Error: The deta section must have been found at this point of code.'
 			if str_line.find('loop_') != -1:
 				is_found_loop = True
-				print('# Extracted Column IDs:')
+				sxprint('# Extracted Column IDs:')
 		# Process item list and data entries 
 		else:
 			assert is_found_section and is_found_loop, '# Logical Error: The deta and loop sections must have been found at this point of code.'
@@ -332,54 +333,54 @@ def main():
 				
 				if relion_key in list(relion_dict.keys()):
 					relion_dict[relion_key][idx_col] = int(i_relion_item_col)
-					print(relion_dict[relion_key][idx_title] % (relion_dict[relion_key][idx_col], relion_key))
+					sxprint(relion_dict[relion_key][idx_title] % (relion_dict[relion_key][idx_col], relion_key))
 			
 			# Then, read the data entries
 			elif n_tokens_line == i_relion_item_col:
 				# Check if all entries of each category were found in RELION STAR file
 				# Do this only once
 				if i_relion_particle == 0:
-					print('# ')
-					print('# Checking RELION STAR file contents ...')
+					sxprint('# ')
+					sxprint('# Checking RELION STAR file contents ...')
 					for category_key in list(relion_category_dict.keys()):
 						for key in relion_category_dict[category_key][idx_required_key_list]:
 							if relion_dict[key][idx_col] < 0:
-								print('#     %s entry for %s is not found' % (key, relion_category_dict[category_key][idx_relion_process]))
+								sxprint('#     %s entry for %s is not found' % (key, relion_category_dict[category_key][idx_relion_process]))
 								relion_category_dict[category_key][idx_is_category_found] = False
 						if relion_category_dict[category_key][idx_is_category_found] == True:
 							for key in relion_category_dict[category_key][idx_denpended_key_list]:
 								if relion_category_dict[key][idx_is_category_found] == False:
-									print('#     %s required for %s is not found' % (relion_category_dict[key][idx_relion_process], relion_category_dict[category_key][idx_relion_process]))
+									sxprint('#     %s required for %s is not found' % (relion_category_dict[key][idx_relion_process], relion_category_dict[category_key][idx_relion_process]))
 									relion_category_dict[category_key][idx_is_category_found] = False
 					
 					if relion_category_dict['mic'][idx_is_category_found] == False:
-						print('# ')
-						print('# ERROR!!! Input STAR file must contain all entries for %s as the minimum requirement. Aborting execution ...' % (relion_category_dict['mic'][idx_relion_process]))
+						sxprint('# ')
+						sxprint('# ERROR!!! Input STAR file must contain all entries for %s as the minimum requirement. Aborting execution ...' % (relion_category_dict['mic'][idx_relion_process]))
 						is_success = False
 						break;
 						
 					for category_key in list(relion_category_dict.keys()):
 						if relion_category_dict[category_key][idx_is_category_found] == True:
-							print('# ')
-							print('# Parameters associated with %s will be extracted.' % (relion_category_dict[category_key][idx_relion_process]))
+							sxprint('# ')
+							sxprint('# Parameters associated with %s will be extracted.' % (relion_category_dict[category_key][idx_relion_process]))
 							if category_key == 'helical':
 								assert relion_category_dict['window'][idx_is_category_found] == True, '# Logical Error: This must be true at this point of code.'
-								print('#     NOTE: %s is under development!!!' % (relion_category_dict['helical'][idx_relion_process]))
-								print('#           Only the information necessary for SPHIRE helical reconstruction development will be stored in the image header.')
+								sxprint('#     NOTE: %s is under development!!!' % (relion_category_dict['helical'][idx_relion_process]))
+								sxprint('#           Only the information necessary for SPHIRE helical reconstruction development will be stored in the image header.')
 								assert is_success == True, '# Logical Error: This must be true at this point of code.'
 						else:
 							assert relion_category_dict[category_key][idx_is_category_found] == False, '# Logical Error: This must be true at this point of code.'
-							print('# ')
-							print('# WARNING!!! %s cannot be extracted!!! Some of required paramters are missing (see above).' % (relion_category_dict[category_key][idx_relion_process]))
-					print('# ')
+							sxprint('# ')
+							sxprint('# WARNING!!! %s cannot be extracted!!! Some of required paramters are missing (see above).' % (relion_category_dict[category_key][idx_relion_process]))
+					sxprint('# ')
 					
 					if is_enable_create_stack and not relion_category_dict['window'][idx_is_category_found]:
-						print('# WARNING!!! Input STAR file must contain at least all entries for %s and %s to create a particle stack!!! No stack will be created.' % (relion_category_dict['mic'][idx_relion_process], relion_category_dict['window'][idx_relion_process]))
-						print('# ')
+						sxprint('# WARNING!!! Input STAR file must contain at least all entries for %s and %s to create a particle stack!!! No stack will be created.' % (relion_category_dict['mic'][idx_relion_process], relion_category_dict['window'][idx_relion_process]))
+						sxprint('# ')
 						is_enable_create_stack = False
 				
 				if i_relion_particle % 1000 == 0:
-					print('# Processing RELION entries from %7d to %7d ...' % (i_relion_particle, i_relion_particle + 1000 - 1))
+					sxprint('# Processing RELION entries from %7d to %7d ...' % (i_relion_particle, i_relion_particle + 1000 - 1))
 				
 				##### Store micrograph related parameters #####
 				# Micrograph must be found always.
@@ -630,7 +631,7 @@ def main():
 					
 					# Now read image
 					if not os.path.exists(relion_local_stack_path):
-						print('# WARNING!!! Image name %s specified in STAR file is not found from the current directory. Skipping STAR file entry %d...' % (relion_local_stack_path, i_relion_particle))
+						sxprint('# WARNING!!! Image name %s specified in STAR file is not found from the current directory. Skipping STAR file entry %d...' % (relion_local_stack_path, i_relion_particle))
 					else:
 						sphire_header = {}
 						sphire_header['relion_local_stack_path'] = relion_local_stack_path
@@ -682,16 +683,16 @@ def main():
 				i_relion_particle += 1
 			
 			else:
-				print('# An empty line is detected after data entries. Breaking the loop...')
+				sxprint('# An empty line is detected after data entries. Breaking the loop...')
 				break;
 	
 	if is_found_section == False:
-		print('# ERROR!!! Specified --star_section (%s) is not found!!!' % (str_relion_start_section))
-		print('#          Please check section name in STAR file.')
+		sxprint('# ERROR!!! Specified --star_section (%s) is not found!!!' % (str_relion_start_section))
+		sxprint('#          Please check section name in STAR file.')
 		is_success = False
 	elif is_found_loop == False:
-		print('# ERROR!!! loop_ line after specified --star_section (%s) is not found!!!' % (str_relion_start_section))
-		print('#          Please check if STAR file is not corrupted.')
+		sxprint('# ERROR!!! loop_ line after specified --star_section (%s) is not found!!!' % (str_relion_start_section))
+		sxprint('#          Please check if STAR file is not corrupted.')
 		is_success = False
 	
 	if is_success:
@@ -727,39 +728,39 @@ def main():
 			for sphire_micrograph_dirname in sphire_header_dict:
 				sphire_header_total_counts += len(sphire_header_dict[sphire_micrograph_dirname])
 		
-		print('# ')
-		print('# Detected RELION column counts                     := {} '.format(i_relion_item_col))
-		print('# Detected RELION entry counts                      := {} '.format(i_relion_particle))
-		print('# Processed SPHIRE mircrograph directory counts     := {} '.format(sphire_micrographs_dict_dirname_counts))
-		print('# Processed SPHIRE mircrograph entry total counts   := {} '.format(sphire_mircrograph_entry_total_counts))
-		print('# Processed SPHIRE CTER directory counts            := {} '.format(sphire_cter_dict_dirname_counts))
-		print('# Processed SPHIRE CTER entry total counts          := {} '.format(sphire_cter_entry_total_counts))
-		print('# Processed SPHIRE coorinates directory counts      := {} '.format(sphire_coordinates_dict_dirname_counts))
-		print('# Processed SPHIRE coorinates entry total counts    := {} '.format(sphire_coordinates_entry_total_counts))
-		print('# Processed SPHIRE 3D projection directory counts   := {} '.format(sphire_proj3d_dict_dirname_counts))
-		print('# Processed SPHIRE 3D projection entry total counts := {} '.format(sphire_proj3d_entry_total_counts))
-		print('# Processed SPHIRE chunk directory counts           := {} '.format(sphire_chunk_dict_dirname_counts))
-		print('# Processed SPHIRE chunk ID total counts            := {} '.format(sphrie_chunk_id_total_counts))
+		sxprint('# ')
+		sxprint('# Detected RELION column counts                     := {} '.format(i_relion_item_col))
+		sxprint('# Detected RELION entry counts                      := {} '.format(i_relion_particle))
+		sxprint('# Processed SPHIRE mircrograph directory counts     := {} '.format(sphire_micrographs_dict_dirname_counts))
+		sxprint('# Processed SPHIRE mircrograph entry total counts   := {} '.format(sphire_mircrograph_entry_total_counts))
+		sxprint('# Processed SPHIRE CTER directory counts            := {} '.format(sphire_cter_dict_dirname_counts))
+		sxprint('# Processed SPHIRE CTER entry total counts          := {} '.format(sphire_cter_entry_total_counts))
+		sxprint('# Processed SPHIRE coorinates directory counts      := {} '.format(sphire_coordinates_dict_dirname_counts))
+		sxprint('# Processed SPHIRE coorinates entry total counts    := {} '.format(sphire_coordinates_entry_total_counts))
+		sxprint('# Processed SPHIRE 3D projection directory counts   := {} '.format(sphire_proj3d_dict_dirname_counts))
+		sxprint('# Processed SPHIRE 3D projection entry total counts := {} '.format(sphire_proj3d_entry_total_counts))
+		sxprint('# Processed SPHIRE chunk directory counts           := {} '.format(sphire_chunk_dict_dirname_counts))
+		sxprint('# Processed SPHIRE chunk ID total counts            := {} '.format(sphrie_chunk_id_total_counts))
 
 		if is_enable_create_stack:
-			print('# Processed SPHIRE header directory counts          := {} '.format(sphire_header_dict_dirname_counts))
-			print('# Processed SPHIRE header total counts              := {} '.format(sphire_header_total_counts))
+			sxprint('# Processed SPHIRE header directory counts          := {} '.format(sphire_header_dict_dirname_counts))
+			sxprint('# Processed SPHIRE header total counts              := {} '.format(sphire_header_total_counts))
 		
-		print('# Processed SPHIRE stack CTF entry counts           := {} '.format(i_sphire_stack_ctf))
-		print('# Processed SPHIRE stack coorinates entry counts    := {} '.format(i_sphire_stack_coordinates))
-		print('# Processed SPHIRE stack 3D Proj. entry counts      := {} '.format(i_sphire_stack_proj3d))
-		print('# Image counts added to SPHIRE stack                := {} '.format(i_sphire_stack_particle_img))
+		sxprint('# Processed SPHIRE stack CTF entry counts           := {} '.format(i_sphire_stack_ctf))
+		sxprint('# Processed SPHIRE stack coorinates entry counts    := {} '.format(i_sphire_stack_coordinates))
+		sxprint('# Processed SPHIRE stack 3D Proj. entry counts      := {} '.format(i_sphire_stack_proj3d))
+		sxprint('# Image counts added to SPHIRE stack                := {} '.format(i_sphire_stack_particle_img))
 		
 		# Warn user if number of particles in SPHIRE stack is different from RELION STAR file entries
 		if is_enable_create_stack:
 			if i_sphire_stack_particle_img < i_relion_particle:
-				print('# WARNING!!! The number of particles in generated stack (%d) is different from the number of entries in input RELION STAR file (%d)!!!' % (i_relion_particle, i_sphire_stack_particle_img))
-				print('#            Please check if there are all images specified by _rlnImageName in STAR file')
+				sxprint('# WARNING!!! The number of particles in generated stack (%d) is different from the number of entries in input RELION STAR file (%d)!!!' % (i_relion_particle, i_sphire_stack_particle_img))
+				sxprint('#            Please check if there are all images specified by _rlnImageName in STAR file')
 			else:
 				assert i_sphire_stack_particle_img == i_relion_particle, '# The number of particles must always match at this point of code.'
 		
-		print('# ')
-		print('# Saving SPHIRE parameters files ...')
+		sxprint('# ')
+		sxprint('# Saving SPHIRE parameters files ...')
 		
 		# Write micrograph name to files (micrograph selection list file)
 		for micrograph_dirname in sorted(sphire_micrographs_dict):
@@ -889,8 +890,8 @@ def main():
 			
 			if relion_category_dict['window'][idx_is_category_found]:
 				# Write rebox parameters to files (doing here to avoid repeating open/close files in loop)
-				print('# ')
-				print('# Saving SPHIRE rebox files ...')
+				sxprint('# ')
+				sxprint('# Saving SPHIRE rebox files ...')
 				
 				rebox_extension = '.rbx'
 				assert relion_category_dict['mic'][idx_is_category_found]
@@ -999,23 +1000,23 @@ def main():
 			else:
 				# assert relion_category_dict['window'][idx_is_category_found]
 				# Write rebox parameters to files (doing here to avoid repeating open/close files in loop)
-				print('# ')
-				print('# Particle coodinates are not found! Skipping save SPHIRE rebox files ...')
+				sxprint('# ')
+				sxprint('# Particle coodinates are not found! Skipping save SPHIRE rebox files ...')
 		else:
 			# assert relion_category_dict['helical'][idx_is_category_found]:
-			print('# ')
-			print('# For helical reconstruction, SPHIRE rebox files are not supported yet ...')
-			print('# Skipping save SPHIRE rebox files ...')
+			sxprint('# ')
+			sxprint('# For helical reconstruction, SPHIRE rebox files are not supported yet ...')
+			sxprint('# Skipping save SPHIRE rebox files ...')
 		
 		if is_enable_create_stack:
 			assert relion_category_dict['window'][idx_is_category_found], 'MRK_DEBUG'
 			
-			print('# ')
-			print('# Creating local particle stack for each micrograph...')
+			sxprint('# ')
+			sxprint('# Creating local particle stack for each micrograph...')
 			
 			for micrograph_dirname in sorted(sphire_header_dict):
-				print('# ')
-				print('# Processing {} directory ...'.format(micrograph_dirname))
+				sxprint('# ')
+				sxprint('# Processing {} directory ...'.format(micrograph_dirname))
 
 				dir_path_local_bdb_stacks = os.path.join(dir_path_work, micrograph_dirname, dir_name_local_stacks)
 				if not os.path.exists(dir_path_local_bdb_stacks):
@@ -1023,7 +1024,7 @@ def main():
 
 				for i_micrograph, micrograph_basename in enumerate(sorted(sphire_header_dict[micrograph_dirname])):
 					if i_micrograph % 100 == 0:
-						print('# Processing micrographs from {:5d} to {:5d} in {} directory...'.format(i_micrograph, i_micrograph + 100 - 1, micrograph_dirname))
+						sxprint('# Processing micrographs from {:5d} to {:5d} in {} directory...'.format(i_micrograph, i_micrograph + 100 - 1, micrograph_dirname))
 					
 					micrograph_baseroot = os.path.splitext(micrograph_basename)[0]
 					file_path_local_bdb_stack = 'bdb:{}#{}_ptcls'.format(dir_path_local_bdb_stacks, micrograph_baseroot)
@@ -1080,9 +1081,9 @@ def main():
 				# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...
 				# file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(os.path.join(dir_path_work, micrograph_dirname), outputs_root)
 				# e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
-				# print('# ')
-				# print('# Putting local stacks together to a virtual stack...')
-				# print('#  {}'.format(e2bdb_command))
+				# sxprint('# ')
+				# sxprint('# Putting local stacks together to a virtual stack...')
+				# sxprint('#  {}'.format(e2bdb_command))
 				# # cmdexecute(e2bdb_command, printing_on_success = False)
 				# cmdexecute(e2bdb_command)
 				# 
@@ -1091,9 +1092,9 @@ def main():
 				
 				file_path_sphire_mic_dir_stack = 'bdb:{}#{}_stack'.format(dir_path_local_bdb_stacks, outputs_root)
 				e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_sphire_mic_dir_stack)
-				print('# ')
-				print('# Please execute the following command line to create single virtual stack by combining all local stacks in {} directory'.format(micrograph_dirname))
-				print('#   {}'.format(e2bdb_command))
+				sxprint('# ')
+				sxprint('# Please execute the following command line to create single virtual stack by combining all local stacks in {} directory'.format(micrograph_dirname))
+				sxprint('#   {}'.format(e2bdb_command))
 			
 			# # NOTE: Toshio Moriya 2018/07/10
 			# # Unfortunately, the following method does not work maybe because of synchronization problem of subprocess...
@@ -1109,9 +1110,9 @@ def main():
 			# 		
 			# 		file_path_bdb_stack = 'bdb:{}#{}_stack'.format(dir_path_work, outputs_root)
 			# 		e2bdb_command = 'e2bdb.py  {}  --makevstack={}'.format(dir_path_local_bdb_stacks, file_path_bdb_stack)
-			# 		print('# ')
-			# 		print('# Creating single virtual stack by combining all local stacks together...')
-			# 		print('#  {}'.format(e2bdb_command))
+			# 		sxprint('# ')
+			# 		sxprint('# Creating single virtual stack by combining all local stacks together...')
+			# 		sxprint('#  {}'.format(e2bdb_command))
 			# 		# cmdexecute(e2bdb_command, printing_on_success = False)
 			# 		cmdexecute(e2bdb_command)
 			# 	
@@ -1136,8 +1137,8 @@ def main():
 	# Close input/output files
 	file_relion_star.close()
 
-	print('# ')
-	print('# DONE!')
+	sxprint('# ')
+	sxprint('# DONE!')
 
 # ----------------------------------------------------------------------------------------
 

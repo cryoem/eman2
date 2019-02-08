@@ -34,10 +34,13 @@ from __future__ import print_function
 
 from future import standard_library
 standard_library.install_aliases()
+
 import os
 import global_def
-from   global_def import *
-from   optparse import OptionParser
+from global_def import sxprint
+
+from global_def import *
+from optparse import OptionParser
 import sys, configparser
 
 def main():
@@ -48,8 +51,9 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args) != 1:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 
 	if global_def.CACHE_DISABLE:

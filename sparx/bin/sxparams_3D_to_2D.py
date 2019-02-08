@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 import os
 import global_def
+from global_def import sxprint, ERROR
 from optparse import OptionParser
 import sys
 
@@ -41,9 +42,9 @@ def main():
 	parser = OptionParser(usage,version=global_def.SPARXVERSION)
 	(options, args) = parser.parse_args(sys.argv[1:])
 	if len(args) != 1 :
-		print("Usage: " + usage)
-		print("Please run \'" + progname + " -h\' for detailed options")
-		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxparams_3D_to_2D.main" )
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 
 	else:

@@ -35,6 +35,8 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
+
 from   global_def import *
 from   optparse import OptionParser
 import sys
@@ -57,13 +59,13 @@ def main():
 
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxk_means_groups.main" )
+		sxprint("usage: " + usage)
+		sxprint("Please run '" + progname + " -h' for detailed options")
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 
 	elif options.trials < 1:
-		global_def.ERROR( "Number of trials should be at least 1", "sxk_means_groups.main" )
+		ERROR( "Number of trials should be at least 1" )
 		return
 
 	else: 
@@ -71,7 +73,7 @@ def main():
 		else:            mask = args[2]
 
 		if options.K1 < 2:
-			global_def.ERROR( "K1 must be > 1 group", "sxk_means_groups.main" )
+			ERROR( "K1 must be > 1 group" )
 			return
 
 		if global_def.CACHE_DISABLE:

@@ -35,7 +35,9 @@ import os
 import sys
 from optparse import OptionParser
 from global_def import SPARXVERSION
+
 import global_def
+from global_def import sxprint, ERROR
 
 from builtins import range
 
@@ -155,13 +157,13 @@ def main():
 
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
-		print("Various helical reconstruction related functionalities: " + usage2)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint("Various helical reconstruction related functionalities: " + usage2)
+		sxprint("Please run '" + progname + " -h' for detailed options")
 	else:
 
 		if len(options.hfsc) > 0:
 			if len(args) != 1:
-				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				ERROR( "Incorrect number of parameters" )
 				return
 
 			from applications import imgstat_hfsc
@@ -170,7 +172,7 @@ def main():
 
 		elif len(options.filinfo) > 0:
 			if len(args) != 1:
-				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				ERROR( "Incorrect number of parameters" )
 				return
 
 			from EMAN2 import EMUtil
@@ -195,14 +197,14 @@ def main():
 		
 		if len(options.stackdisk) > 0:
 			if len(args) != 1:
-				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				ERROR( "Incorrect number of parameters" )
 				return
 
 			dpp = (float(options.dp)/options.apix)
 			rise = int(dpp)
 
 			if(abs(float(rise) - dpp)>1.0e-3):
-				global_def.ERROR( "dpp has to be integer multiplicity of the pixel size", "sxhelicon_utils.main" )
+				ERROR( "dpp has to be integer multiplicity of the pixel size" )
 				return
 
 			from utilities import get_im
@@ -217,7 +219,7 @@ def main():
 
 		if len(options.consistency) > 0:
 			if len(args) != 1:
-				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				ERROR( "Incorrect number of parameters" )
 				return
 
 			from development import consistency_params	
@@ -254,11 +256,11 @@ def main():
 		if len(options.predict_helical) > 0:
 			
 			if len(args) != 1:
-				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				ERROR( "Incorrect number of parameters" )
 				return
 			
 			if options.dp < 0:
-				global_def.ERROR( "Helical symmetry paramter rise --dp should not be negative", "sxhelicon_utils.main" )
+				ERROR( "Helical symmetry paramter rise --dp should not be negative" )
 				return
 
 			from applications import predict_helical_params
@@ -268,11 +270,11 @@ def main():
 		if options.helicise:	
 
 			if len(args) != 2:
-				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				ERROR( "Incorrect number of parameters" )
 				return
 			
 			if options.dp < 0:
-				global_def.ERROR( "Helical symmetry paramter rise --dp should not be negative", "sxhelicon_utils.main" )
+				ERROR( "Helical symmetry paramter rise --dp should not be negative" )
 				return
 
 			from utilities import get_im, sym_vol
@@ -287,11 +289,11 @@ def main():
 		if options.helicisepdb:	
 
 			if len(args) != 2:
-				global_def.ERROR( "Incorrect number of parameters", "sxhelicon_utils.main" )
+				ERROR( "Incorrect number of parameters" )
 				return
 			
 			if options.dp < 0:
-				global_def.ERROR( "Helical symmetry paramter rise --dp should not be negative", "sxhelicon_utils.main" )
+				ERROR( "Helical symmetry paramter rise --dp should not be negative" )
 				return
 			
 			from math import cos, sin, radians
@@ -361,7 +363,7 @@ def main():
 
 		if options.volalixshift:
 			if options.maxit > 1:
-				global_def.ERROR( "Inner iteration for x-shift determinatin is restricted to 1", "sxhelicon_utils.main" )
+				ERROR( "Inner iteration for x-shift determinatin is restricted to 1" )
 				return
 
 			if len(args) < 4:
@@ -394,7 +396,7 @@ def main():
 		
 			if len(options.symdoc) < 1:
 				if options.dp < 0 or options.dphi < 0:
-					global_def.ERROR( "Enter helical symmetry parameters either using --symdoc or --dp and --dphi", "sxhelicon_utils.main" )
+					ERROR( "Enter helical symmetry parameters either using --symdoc or --dp and --dphi" )
 					return
 			
 			if options.dp < 0 or options.dphi < 0:
@@ -422,7 +424,7 @@ def main():
 			if len(args) == 1:  mask3d = None
 			else:               mask3d = args[1]
 			if options.dp < 0:
-				global_def.ERROR( "Helical symmetry paramter rise --dp must be explictly set!", "sxhelicon_utils.main" )
+				ERROR( "Helical symmetry paramter rise --dp must be explictly set!" )
 				return
 				
 			gendisks_MPI(args[0], mask3d, options.ref_nx, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk, options.maxerror, options.new_pixel_size, options.match_pixel_rise)

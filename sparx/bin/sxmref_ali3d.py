@@ -35,6 +35,8 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
+
 from global_def import *
 from optparse import OptionParser
 import sys
@@ -84,9 +86,9 @@ def main():
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-		print("Usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxmref_ali3d" )
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run '" + progname + " -h' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 		
 	else:
@@ -112,7 +114,7 @@ def main():
 				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm=None, log=None)
 			elif options.kmeans2:
 				if( options.nassign != 0):
-					print("  Setting nassign to zero")
+					sxprint("  Setting nassign to zero")
 					options.nassign = 0
 				from applications import Kmref2_ali3d_MPI
 				Kmref2_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \

@@ -35,6 +35,8 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
+
 from   global_def import *
 from   optparse import OptionParser
 import sys
@@ -59,20 +61,20 @@ def main():
 	parser.add_option("--MPI",            action="store_true", default=False,     help="Use MPI version ")	
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxk_means_stable.main" )
+		sxprint("usage: " + usage)
+		sxprint("Please run '" + progname + " -h' for detailed options")
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 	else:
 		if len(args) == 2: mask = None
 		else:              mask = args[2]
 
 		if options.K < 2:
-			global_def.ERROR( "K must be > 1 group", "sxk_means_stable.main" )
+			ERROR( "K must be > 1 group" )
 			return
 
 		if options.nb_part < 2:
-			global_def.ERROR( "ERROR: nb_part must be > 1 partition", "sxk_means_stable.main" )
+			ERROR( "nb_part must be > 1 partition" )
 			return
 
 		if global_def.CACHE_DISABLE:

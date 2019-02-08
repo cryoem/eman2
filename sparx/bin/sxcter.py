@@ -35,6 +35,9 @@ import sys
 from optparse import OptionParser
 
 import   global_def
+from global_def import sxprint, ERROR
+
+
 from     global_def import *
 from     inspect    import currentframe, getframeinfo
 from     utilities  import if_error_then_all_processes_exit_program
@@ -159,12 +162,16 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 	freq_stop  = -1.0
 	
 	if options.f_start >0.0: 
-		if options.f_start <=0.5: ERROR("f_start should be in Angstrom","sxcter", 1) # exclude abs frequencies and spatial frequencies
-		else: freq_start = 1./options.f_start
+		if options.f_start <=0.5: 
+			ERROR( "f_start should be in Angstrom" ) # exclude abs frequencies and spatial frequencies
+		else: 
+			freq_start = 1./options.f_start
 		
 	if options.f_stop >0.0:
-		if options.f_stop  <=0.5: ERROR("f_stop should be in Angstrom","sxcter", 1) # exclude abs frequencies and spatial frequencies
-		else: freq_stop = 1./options.f_stop
+		if options.f_stop  <=0.5: 
+			ERROR( "f_stop should be in Angstrom" ) # exclude abs frequencies and spatial frequencies
+		else: 
+			freq_stop = 1./options.f_stop
 
 	while True:
 		# --------------------------------------------------------------------------------
@@ -201,15 +208,16 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 				if str.find(command_token, vppo) > -1 : wrong_params = True
 				if wrong_params: break
 			if wrong_params: break
-		if wrong_params:  ERROR("Some options are valid only for Volta Phase Plate command  %s"%command_token,"sxcter",1,my_mpi_proc_id)
+		if wrong_params:  
+			ERROR( "Some options are valid only for Volta Phase Plate command  s" % command_token, myid=my_mpi_proc_id )
 
 	if my_mpi_proc_id == main_mpi_proc:
 		command_line = ""
 		for command_token in sys.argv:
 			command_line += command_token + "  "
-		print(" ")
-		print("Shell line command:")
-		print(command_line)
+		sxprint(" ")
+		sxprint("Shell line command:")
+		sxprint(command_line)
 
 	if options.vpp:
 		vpp_options = [options.defocus_min,  options.defocus_max,  options.defocus_step,  options.phase_min,  options.phase_max,  options.phase_step]
@@ -239,10 +247,10 @@ Stack Mode - Process a particle stack (Not supported by SPHIRE GUI))::
 
 	if main_mpi_proc == my_mpi_proc_id:
 		if options.debug_mode:
-			print("Returned value from cter_mrk() := ", result)
-		print(" ")
-		print("DONE!!!")
-		print(" ")
+			sxprint("Returned value from cter_mrk() := ", result)
+		sxprint(" ")
+		sxprint("DONE!!!")
+		sxprint(" ")
 
 	# ====================================================================================
 	# Clean up

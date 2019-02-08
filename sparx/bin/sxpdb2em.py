@@ -47,8 +47,10 @@ from EMAN2 import *
 from sparx import *
 from optparse import OptionParser
 from math import *
-from global_def import *
 import global_def
+from global_def import sxprint, ERROR
+
+from global_def import *
 import os
 import sys
 
@@ -77,7 +79,7 @@ map to the center of the volume."""
 	(options, args) = parser.parse_args()#
 
 	if len(args)<2 :
-		global_def.ERROR( "Input and output files required", "sxpdb2em.main" )
+		ERROR( "Input and output files required" )
 		return
 
 	if global_def.CACHE_DISABLE:
@@ -91,7 +93,7 @@ map to the center of the volume."""
 	try: 
 		infile=open(args[0],"r")
 	except: 
-		global_def.ERROR( "Cannot open input file", "sxpdb2em.main" )
+		ERROR( "Cannot open input file" )
 		return
 	
 	aavg=[0,0,0]	# calculate atomic center
@@ -130,15 +132,15 @@ map to the center of the volume."""
 					y=float(line[38:46])
 					z=float(line[46:54])
 			except:
-				print("PDB Parse error:\n%s\n'%s','%s','%s'  '%s','%s','%s'\n"%(
+				sxprint("PDB Parse error:\n%s\n'%s','%s','%s'  '%s','%s','%s'\n"%(
 					line,line[12:14],line[6:11],line[22:26],line[30:38],line[38:46],line[46:54]))
-				print(a,aseq,res,x,y,z)
+				sxprint(a,aseq,res,x,y,z)
 
 			try:
 				nelec += atomdefs[a.upper()][0]
 				mass  += atomdefs[a.upper()][1]
 			except:
-				print(("Unknown atom %s ignored at %d"%(a,aseq)))
+				sxprint(("Unknown atom %s ignored at %d"%(a,aseq)))
 
 			atoms.append([a,x,y,z])
 			natm += 1
@@ -165,19 +167,19 @@ map to the center of the volume."""
 		rad_gyr = sqrt((asig[0]+asig[1]+asig[2])/natm-(aavg[0]/natm)**2-(aavg[1]/natm)**2-(aavg[2]/natm)**2)
 
 	if not options.quiet:
-		print("%d atoms; total charge = %d e-; mol mass = %.2f kDa; radius of gyration = %.2f A"%(natm,nelec,mass/1000.0,rad_gyr))
+		sxprint("%d atoms; total charge = %d e-; mol mass = %.2f kDa; radius of gyration = %.2f A"%(natm,nelec,mass/1000.0,rad_gyr))
 
 	# center PDB according to option:
 	if(options.center == "a"):
 		if not options.quiet:
-			print("center of gravity at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/mass,aavg[1]/mass,aavg[2]/mass))
+			sxprint("center of gravity at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/mass,aavg[1]/mass,aavg[2]/mass))
 		for i in range( len(atoms) ) :
 			atoms[i][1] -= aavg[0]/mass
 			atoms[i][2] -= aavg[1]/mass
 			atoms[i][3] -= aavg[2]/mass
 	if(options.center == "c"):
 		if not options.quiet:
-			print("atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm))
+			sxprint("atomic center at %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(aavg[0]/natm,aavg[1]/natm,aavg[2]/natm))
 		for i in range( len(atoms) ) :
 			atoms[i][1] -= aavg[0]/natm
 			atoms[i][2] -= aavg[1]/natm
@@ -185,7 +187,7 @@ map to the center of the volume."""
 	spl = options.center.split(',')
 	if len(spl)==3:   # substract the given vector from all coordinates
 		if not options.quiet:
-			print("vector to substract: %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(float(spl[0]),float(spl[1]),float(spl[2])))
+			sxprint("vector to substract: %1.1f,%1.1f,%1.1f (center of volume at 0,0,0)"%(float(spl[0]),float(spl[1]),float(spl[2])))
 		for i in range( len(atoms) ) :
 			atoms[i][1] -= float(spl[0])
 			atoms[i][2] -= float(spl[1])
@@ -195,7 +197,7 @@ map to the center of the volume."""
 	# thereby loosing the translation. This is the right place to apply tr0):
 	if(options.tr0 != "none"):
 		if not options.quiet:
-			print("Applying initial transformation to PDB coordinates... ")
+			sxprint("Applying initial transformation to PDB coordinates... ")
 		for i in range(len(atoms)):
 			atom_coords = Vec3f(atoms[i][1],atoms[i][2],atoms[i][3])
 			new_atom_coords = tr0*atom_coords
@@ -203,7 +205,7 @@ map to the center of the volume."""
 			atoms[i][2] = new_atom_coords[1]
 			atoms[i][3] = new_atom_coords[2]
 		if not options.quiet:
-			print("done.\n")
+			sxprint("done.\n")
 
 	# bounding box:
 	amin=[atoms[0][1],atoms[0][2],atoms[0][3]]
@@ -214,9 +216,9 @@ map to the center of the volume."""
 			amax[k]=max(atoms[i][k+1],amax[k])
 
 	if not options.quiet:
-		print("Range of coordinates [A]: x: %7.2f - %7.2f"%(amin[0],amax[0]))
-		print("                          y: %7.2f - %7.2f"%(amin[1],amax[1]))
-		print("                          z: %7.2f - %7.2f"%(amin[2],amax[2]))
+		sxprint("Range of coordinates [A]: x: %7.2f - %7.2f"%(amin[0],amax[0]))
+		sxprint("                          y: %7.2f - %7.2f"%(amin[1],amax[1]))
+		sxprint("                          z: %7.2f - %7.2f"%(amin[2],amax[2]))
 	
 	# find the output box size, either user specified or from bounding box
 	box=[0,0,0]
@@ -234,9 +236,9 @@ map to the center of the volume."""
 			box[i]+=box[i]//4
 
 	if not options.quiet:
-		print("Bounding box [pixels]: x: %5d "%box[0])
-		print("                       y: %5d "%box[1])
-		print("                       z: %5d "%box[2])
+		sxprint("Bounding box [pixels]: x: %5d "%box[0])
+		sxprint("                       y: %5d "%box[1])
+		sxprint("                       z: %5d "%box[2])
 
 	# figure oversampled box size
 	#bigb = max(box[0],box[1],box[2])
@@ -250,7 +252,7 @@ map to the center of the volume."""
 		sys.exit()
 	"""
 	if not options.quiet: 
-		print("Box size: %d x %d x %d"%(box[0],box[1],box[2]),",  oversampling ",fcbig)
+		sxprint("Box size: %d x %d x %d"%(box[0],box[1],box[2]),",  oversampling ",fcbig)
 
 	# Calculate working dimensions
 	pixelbig = options.apix/fcbig
@@ -265,7 +267,7 @@ map to the center of the volume."""
 	for i in range(len(atoms)):
 		#print "Adding %d '%s'"%(i,atoms[i][0])
 		if not options.quiet and i%1000==0 :
-			print('\r   %d'%i, end=' ')
+			sxprint('\r   %d'%i, end=' ')
 			sys.stdout.flush()
 		try:
 			elec = atomdefs[atoms[i][0].upper()][0]
@@ -283,10 +285,10 @@ map to the center of the volume."""
 			        		dx = px - int(px)
 			        		outmap[int(px)+m,int(py)+l,int(pz)+k] += ((1-m) + (2*m-1)*dx)*uy
 		except: 
-			print("Skipping %d '%s'"%(i,atoms[i][0]))
+			sxprint("Skipping %d '%s'"%(i,atoms[i][0]))
 		
 	if not options.quiet: 
-		print('\r   %d\nConversion complete.'%len(atoms))  #,"    Now shape atoms."
+		sxprint('\r   %d\nConversion complete.'%len(atoms))  #,"    Now shape atoms."
 	"""
 	fftip(outmap)
 	# Atom in Fourier space has sigma = 0.41 [1/A]
@@ -305,7 +307,7 @@ map to the center of the volume."""
 			outmap.set_attr("apix_z",options.apix)
 			outmap.set_attr("pixel_size",options.apix)
 		else: 
-			print("Pixel_size is not set in the header!")
+			sxprint("Pixel_size is not set in the header!")
 
 		outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_HDF)
 
@@ -313,7 +315,7 @@ map to the center of the volume."""
 		outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
 
 	else:
-		global_def.ERROR( "Unknown image type","sxpdb2em.main" )
+		ERROR( "Unknown image type" )
 		return
 				
 if __name__ == "__main__":

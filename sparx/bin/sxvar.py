@@ -36,6 +36,7 @@ from __future__ import print_function
 import sys
 import os
 import global_def
+from global_def import sxprint, ERROR
 from global_def import *
 
 def main():
@@ -56,9 +57,9 @@ def main():
 	(options, args) = parser.parse_args(sys.argv[1:])
 
 	if len(args)<2 :
-		print("Usage: " + usage)
-		print("Please run \'" + progname + " -h\' for detailed options")
-		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxvar.main" )
+		sxprint("Usage: " + usage)
+		sxprint("Please run \'" + progname + " -h\' for detailed options")
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 		
 	else:
@@ -91,7 +92,7 @@ def main():
 			mpi_finalize()
 		else:
 			global_def.BATCH = True
-			global_def.ERROR( "Please use MPI version", "sxvar" )
+			ERROR( "Please use MPI version" )
 			from applications import defvar
 			defvar(  files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
 			global_def.BATCH = False

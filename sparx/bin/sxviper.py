@@ -6,20 +6,22 @@ import sys
 import os
 
 import global_def
+from global_def import sxprint, ERROR
 from global_def import *
 
+from utilities import if_error_then_all_processes_exit_program, write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle, bcast_number_to_all
+from logger import Logger, BaseLogger_Files
+from mpi import mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
+import user_functions
+import sys
+import os
+from applications import MPI_start_end
+from optparse import OptionParser, SUPPRESS_HELP
+from global_def import SPARXVERSION
+from EMAN2 import EMData
+from multi_shc import multi_shc
+
 def main(args):
-	from utilities import if_error_then_all_processes_exit_program, write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle, bcast_number_to_all
-	from logger import Logger, BaseLogger_Files
-	from mpi import mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
-	import user_functions
-	import sys
-	import os
-	from applications import MPI_start_end
-	from optparse import OptionParser, SUPPRESS_HELP
-	from global_def import SPARXVERSION
-	from EMAN2 import EMData
-	from multi_shc import multi_shc
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  [output_directory] --ir=inner_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1"
@@ -89,15 +91,15 @@ directory		output directory name: into which the results will be written (if it 
 	# Making sure all required options appeared.
 	for required_option in required_option_list:
 		if not options.__dict__[required_option]:
-			print("\n ==%s== mandatory option is missing.\n"%required_option)
-			print("Please run '" + progname + " -h' for detailed options")
-			global_def.ERROR( "Missing parameter. Please see above", "sxviper.main" )
+			sxprint("\n ==%s== mandatory option is missing.\n"%required_option)
+			sxprint("Please run '" + progname + " -h' for detailed options")
+			ERROR( "Missing parameter. Please see above" )
 			return
 
 	if len(args) < 2 or len(args) > 3:
-		print("Usage: " + usage)
-		print("Please run \'" + progname + " -h\' for detailed options" )
-		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxviper.main" )
+		sxprint("Usage: " + usage)
+		sxprint("Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 
 	mpi_init(0, [])
@@ -126,11 +128,11 @@ directory		output directory name: into which the results will be written (if it 
 	error = 0
 	if mpi_rank == 0:
 		if mpi_size % options.nruns != 0:
-			global_def.ERROR( "Number of processes needs to be a multiple of total number of runs. Total runs by default are 3, you can change it by specifying --nruns option.", "sxviper.main", 0 )
+			ERROR( "Number of processes needs to be a multiple of total number of runs. Total runs by default are 3, you can change it by specifying --nruns option.", action=0 )
 			error = 1
 
 		if os.path.exists(outdir):
-			global_def.ERROR( "Output directory \'%s\' exists, please change the name and restart the program"%outdir, "sxviper.main", 0 )
+			ERROR( "Output directory \'%s\' exists, please change the name and restart the program"%outdir, action=0 )
 			error = 1
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)

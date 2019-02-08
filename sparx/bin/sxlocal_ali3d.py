@@ -35,6 +35,7 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint, ERROR
 from   global_def import *
 from   optparse import OptionParser
 import sys
@@ -64,9 +65,9 @@ def main():
 	parser.add_option("--scipy_minimization",  action="store_true", default=False,   help="use scipy minimization instead of amoeba")
 	(options, args) = parser.parse_args(arglist[1:])
 	if(len(args) < 2 or len(args) > 3):
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
-		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxlocal_ali3d.main" )
+		sxprint("usage: " + usage)
+		sxprint("Please run '" + progname + " -h' for detailed options")
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 
 	else:

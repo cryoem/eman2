@@ -37,6 +37,7 @@ from __future__ import print_function
 from builtins import range
 import os
 import global_def
+from global_def import sxprint, ERROR
 from   global_def     import *
 from   user_functions import *
 from   optparse       import OptionParser
@@ -59,13 +60,13 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if not(options.MPI):
-		print("Only MPI version is currently implemented.")
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint("Only MPI version is currently implemented.")
+		sxprint("Please run '" + progname + " -h' for detailed options")
 		return
 			
 	if len(args) < 1 or len(args) > 2:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint("usage: " + usage)
+		sxprint("Please run '" + progname + " -h' for detailed options")
 	else:
 	
 		if len(args) == 1: mask = None
@@ -144,7 +145,8 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 	ny = bcast_number_to_all(ny, source_node = main_node)
 	if CTF:
 		ctf_app = bcast_number_to_all(ctf_app, source_node = main_node)
-		if ctf_app > 0:	ERROR("data cannot be ctf-applied", "shiftali_MPI", 1, myid)
+		if ctf_app > 0:	
+			ERROR("data cannot be ctf-applied", myid=myid)
 
 	if maskfile == None:
 		mrad = min(nx, ny)
@@ -419,7 +421,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 	if myid == main_node:
 		print_msg( "total number of filaments: %d"%total_nfils)
 	if total_nfils< nproc:
-		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(nproc, total_nfils), "ehelix_MPI", 1,myid)
+		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(nproc, total_nfils), myid=myid)
 
 	#  balanced load
 	temp = chunks_distribution([[len(filaments[i]), i] for i in range(len(filaments))], nproc)[myid:myid+1][0]
@@ -438,7 +440,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 		k = k1
 	data = EMData.read_images(stack, list_of_particles)
 	ldata = len(data)
-	print("ldata=", ldata)
+	sxprint("ldata=", ldata)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
 	if maskfile == None:
@@ -479,7 +481,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 				data[im] = filt_ctf(fft(data[im]), ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 			elif qctf != 1:
-				ERROR('Incorrectly set qctf flag', "helicalshiftali_MPI", 1,myid)
+				ERROR('Incorrectly set qctf flag', myid=myid)
 			ctfimg = ctf_img(nx, ctf_params, ny=ny)
 			Util.add_img2(ctf_2_sum, ctfimg)
 			Util.add_img_abs(ctf_abs_sum, ctfimg)

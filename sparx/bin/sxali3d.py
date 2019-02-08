@@ -34,6 +34,8 @@ from __future__ import print_function
 
 import os
 import global_def
+from global_def import sxprint
+
 from global_def import *
 from optparse import OptionParser
 import sys
@@ -78,10 +80,15 @@ def main():
 	parser.add_option("--rantest",  action="store_true", default=False,               help="rantest")
 	parser.add_option("--searchpsi",action="store_true", default= False,              help="psi refinement")
 	parser.add_option("--gamma",    type="float",        default= -1.0,               help="gamma")
+
 	(options, args) = parser.parse_args(arglist[1:])
+	
 	if len(args) < 3 or len(args) > 4:
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		global_def.ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+
 	else:
 		if len(args) == 3 :
 			mask = None
@@ -114,7 +121,7 @@ def main():
 			global_def.BATCH = False
 		elif(options.shc):
 			if not options.MPI:
-				print("Only MPI version is implemented!!!")
+				sxprint("Only MPI version is implemented!!!")
 			else:
 				global_def.BATCH = True
 				if(options.nsoft == 1):
@@ -169,7 +176,8 @@ def main():
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 				global_def.BATCH = False
 
-		if options.MPI:  mpi_finalize()
+		if options.MPI:
+			mpi_finalize()
 
 if __name__ == "__main__":
 	global_def.print_timestamp( "Start" )

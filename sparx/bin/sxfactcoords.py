@@ -2,6 +2,8 @@
 from __future__ import print_function
 
 import global_def
+from global_def import sxprint, ERROR
+
 from global_def import *
 from optparse import OptionParser
 from EMAN2_cppwrap import *
@@ -24,8 +26,11 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if( len(args) < 4 ):
-		print("usage: " + usage)
-		print("Please run '" + progname + " -h' for details")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+
 	else:
 		stacks = args[0:-3]
 		avgvol = args[-3]
@@ -33,7 +38,7 @@ def main():
 		output = args[-1]
 		
 		if options.rad < 0:
-			global_def.ERROR( "Mask radius is not given", "sxfactcoords.main" )
+			ERROR( "Mask radius is not given" )
 			return
 
 		if global_def.CACHE_DISABLE:

@@ -33,8 +33,10 @@ Suite 330, Boston, MA  02111-1307 USA
 #--------------------------------------------------------------------[ header ]
 
 # import
+import re
 import sys
 import time
+import inspect
 
 import mpi
 
@@ -116,7 +118,9 @@ LOGFILE_HANDLE  = 0
 IS_LOGFILE_OPEN = False
 
 # sxprint log (sxprint logging can be disabled by setting this to "")
-SXPRINT_LOG = get_timestamp(file_format=True) + "_SPHIRE_execution.log"
+SXPRINT_LOG_PATH = ""
+init_func = re.match( ".*/(.*).py", sys._getframe(len(inspect.stack())-1).f_code.co_filename ).group(1)
+SXPRINT_LOG = SXPRINT_LOG_PATH + get_timestamp(file_format=True) + "_" + init_func + ".log"
 
 
 #------------------------------------------------------------[ util functions ]
@@ -185,10 +189,8 @@ def ERROR( message, where="", action=1, myid=0 ):
     Utility function for consistent error throwing across sparx functions.
 
     Args:
-        where (string): Location of error. NOTE: This parameter is ignored. It
-            is only left here for compatibility reasons; the error function can
-            just determine the error location on its own. To clean this up we
-            would have to replace every single ERROR call throughout SPHIRE.
+        where (string): Location of error. Note that this will be determined automatically!
+            (sxpipe.py is one exception)
         message (string): Error message
         action (0/1): Choose (1) error and abort, or (0) warning and continue [default: 1]
         myid (integer): mpi rank; used to only print error on main process (myid == 0)
@@ -198,9 +200,9 @@ def ERROR( message, where="", action=1, myid=0 ):
     
     if myid == 0:
 
-        file = sys._getframe(1).f_code.co_filename
-        func = sys._getframe(1).f_code.co_name
-        line = sys._getframe(1).f_lineno
+        file = sys._getframe(1).f_code.co_filename # NOTE: for this, inspect.stack can/
+        func = sys._getframe(1).f_code.co_name     # should be used but the exact use
+        line = sys._getframe(1).f_lineno           # differs from Python 2 to Python 3
 
         if action: 
             sxprint( "ERROR reported by function \'"+func+"\' in file \'"+file+"\', line "+str(line)+": " )

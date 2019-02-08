@@ -332,9 +332,9 @@ class SXLookFeelConst(object):
 		SXLookFeelConst.file_dialog_dir = os.getcwd()
 		for file_name in os.listdir(SXLookFeelConst.file_dialog_dir):
 			if SXLookFeelConst.project_dir_raw in file_name and file_name != SXLookFeelConst.project_dir:
-				print('sxgui_settings_XXX directory detected that belongs to another version of SPHIRE.')
-				print('To load old settings, please load the gui settings manually.')
-				print('Backwards compatibility cannot be guaranteed.')
+				sxprint('sxgui_settings_XXX directory detected that belongs to another version of SPHIRE.')
+				sxprint('To load old settings, please load the gui settings manually.')
+				sxprint('Backwards compatibility cannot be guaranteed.')
 
 		monitor_index = 0
 		# Search for maximun screen height and set it to SXLookFeelConst singleton class
@@ -1070,22 +1070,22 @@ class SXCmdWidget(QWidget):
 				# Generate command line for queue submission
 				cmd_line_in_script = cmd_line
 				cmd_line = str(self.sxcmd_tab_main.qsub_cmd_edit.text()) + " " + file_name_qsub_script
-				print("Wrote the following command line in the queue submission script: ")
-				print(cmd_line_in_script)
+				sxprint("Wrote the following command line in the queue submission script: ")
+				sxprint(cmd_line_in_script)
 				if execute:
-					print("Submitted a job by the following command: ")
-					print(cmd_line)
+					sxprint("Submitted a job by the following command: ")
+					sxprint(cmd_line)
 				else:
-					print("Saved command to: ")
-					print(file_name_qsub_script)
+					sxprint("Saved command to: ")
+					sxprint(file_name_qsub_script)
 			elif self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Unchecked and not execute:
 				QMessageBox.warning(self, "Qsub template needs to be specified for pipeline option", "Qsub template needs to be specified for pipeline option")
 				return
 			else:
 				# Case 2: queue submission is disabled (MPI can be supported or unsupported)
 				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
-				print("Executed the following command: ")
-				print(cmd_line)
+				sxprint("Executed the following command: ")
+				sxprint(cmd_line)
 
 			# Execute the generated command line
 			if execute:
@@ -1125,8 +1125,8 @@ class SXCmdWidget(QWidget):
 		cmd_line = self.generate_cmd_line()
 		if cmd_line:
 			message_line = "Generated the following command line:"
-			print(message_line)
-			print(cmd_line)
+			sxprint(message_line)
+			sxprint(cmd_line)
 			QtGui.QMessageBox.information(self, "Information","%s \n\n%s" % (message_line, cmd_line))
 
 			# Save the current state of GUI settings
@@ -2938,8 +2938,8 @@ class SXCmdCategoryWidget(QWidget):
 			# os.system("python -m webbrowser %s%s" % (SPARX_DOCUMENTATION_WEBSITE, sxcmd.name))
 			# sxcmd_wiki_url = SXLookFeelConst.generate_sxcmd_wiki_url(sxcmd, wiki_type = "SPARX")
 			sxcmd_wiki_url = SXLookFeelConst.generate_sxcmd_wiki_url(sxcmd)
-			print("Opening Wiki Page ...")
-			print(sxcmd_wiki_url)
+			sxprint("Opening Wiki Page ...")
+			sxprint(sxcmd_wiki_url)
 			os.system("python -m webbrowser %s" % (sxcmd_wiki_url))
 			return
 
@@ -5709,8 +5709,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		modifiers = QApplication.keyboardModifiers()
 		if modifiers == Qt.ShiftModifier:
 			sxmenu_item_wiki_url = SXLookFeelConst.generate_sxmenu_item_wiki_url(sxmenu_item)
-			print("Opening Wiki Page ...")
-			print(sxmenu_item_wiki_url)
+			sxprint("Opening Wiki Page ...")
+			sxprint(sxmenu_item_wiki_url)
 			os.system("python -m webbrowser %s" % (sxmenu_item_wiki_url))
 			return
 
@@ -5732,7 +5732,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		for sxcmd_category in self.sxcmd_category_list:
 			sxcmd_category.widget.quit_all_child_applications()
 
-		print("bye bye")
+		sxprint("bye bye")
 		QtCore.QCoreApplication.instance().quit()
 
 	# def changeEvent(self, event):

@@ -35,6 +35,7 @@ from __future__ import print_function
 
 import os, sys
 import global_def
+from global_def import sxprint, ERROR
 from   global_def     import *
 from   user_functions import *
 from   optparse       import OptionParser
@@ -67,9 +68,9 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if options.old == False and len(args) != 3 or options.old and len(args) != 4:
-    		print("Usage: " + usage)
-    		print("Please run \'" + progname + " -h\' for detailed options")
-    		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxrealignment.main" )
+    		sxprint("Usage: " + usage)
+    		sxprint("Please run \'" + progname + " -h\' for detailed options")
+    		ERROR( "Invalid number of parameters used. Please see usage information above." )
     		return
 	else:
 		if global_def.CACHE_DISABLE:

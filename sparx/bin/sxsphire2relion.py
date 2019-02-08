@@ -36,6 +36,7 @@ import argparse
 import numpy as np
 
 import EMAN2_cppwrap
+from global_def import sxprint
 import global_def
 
 
@@ -100,27 +101,27 @@ def main(args):
 	params_3d_subset_data = None
 
 	if args.particle_stack:
-		print('Import particle stack')
+		sxprint('Import particle stack')
 		particle_data, create_stack = import_particle_stack(args.particle_stack, args.output_dir)
 		output_dtype.extend(particle_data.dtype.descr)
 
 	if args.partres_file:
-		print('Import partres file')
+		sxprint('Import partres file')
 		partres_data = import_partres_file(args.partres_file)
 		output_dtype.extend(partres_data.dtype.descr)
 
 	if args.params_2d_file:
-		print('Import params 2d file')
+		sxprint('Import params 2d file')
 		params_2d_data = import_params(args.params_2d_file, dim='2d')
 		output_dtype.extend(params_2d_data.dtype.descr)
 
 	if args.params_3d_file:
-		print('Import params 3d file')
+		sxprint('Import params 3d file')
 		params_3d_data = import_params(args.params_3d_file, dim='3d')
 		output_dtype.extend(params_3d_data.dtype.descr)
 
 	if args.params_3d_chunk_files:
-		print('Import params 3d chunk files')
+		sxprint('Import params 3d chunk files')
 		params_3d_subset_data = np.empty(params_3d_data.shape[0], dtype=[('_rlnRandomSubset', '<i8')])
 		params_3d_subset_data.fill(np.nan)
 		params_import = []
@@ -134,7 +135,7 @@ def main(args):
 		assert np.unique(params_import).shape[0] == params_3d_data.shape[0]
 
 	if args.params_3d_index_file:
-		print('Import params 3d index')
+		sxprint('Import params 3d index')
 		params_index_data = np.genfromtxt(args.params_3d_index_file, dtype=int)
 		assert params_3d_data.shape[0] == params_index_data.shape[0]
 		assert np.unique(params_index_data).shape[0] == params_3d_data.shape[0]
@@ -145,7 +146,7 @@ def main(args):
 
 	mask_array = np.ones(particle_data.shape[0], dtype=np.bool)
 	if args.list or args.exlist:
-		print('Import list/exlist information')
+		sxprint('Import list/exlist information')
 		mask_array = create_particle_data_mask(args.list, args.exlist, particle_data.shape[0])
 
 	output_data = np.empty(params_index_data.shape[0], dtype=sorted(list(set(output_dtype))))
@@ -157,7 +158,7 @@ def main(args):
 	array_list.append(params_3d_data)
 	array_list.append(params_3d_subset_data)
 
-	print('Adjust header')
+	sxprint('Adjust header')
 	for array in array_list:
 		if array is not None:
 			for name in array.dtype.names:
@@ -171,7 +172,7 @@ def main(args):
 
 	final_output = output_data[mask_array_params]
 
-	print('Write star file')
+	sxprint('Write star file')
 	header = ['', 'data_', '', 'loop_']
 	header.extend(['{0} #{1}'.format(name, idx+1) for idx, name in enumerate(final_output.dtype.names)])
 	dtype_dict = final_output.dtype.fields
@@ -189,10 +190,10 @@ def main(args):
 	np.savetxt(output_file, final_output, fmt=' '.join(fmt), header='\n'.join(header), comments='')
 
 	if create_stack:
-		print('Create particle stacks')
+		sxprint('Create particle stacks')
 		create_particle_stack(args.particle_stack, args.output_dir, particle_data)
 
-	print('Done!')
+	sxprint('Done!')
 	global_def.BATCH = False
 
 
@@ -208,14 +209,14 @@ def create_particle_stack(particle_stack, output_dir, particle_data):
 	Returns:
 	None
 	"""
-	print('|_Get particle ID and particle names')
+	sxprint('|_Get particle ID and particle names')
 	ptcl_ids = [int(entry.split('@')[0]) for entry in particle_data['_rlnImageName']]
 	ptcl_names = [entry.split('@')[1] for entry in particle_data['_rlnImageName']]
 
-	print('|_Write images')
+	sxprint('|_Write images')
 	for particle_idx in range(particle_data.shape[0]):
 		if particle_idx % 10000 == 0:
-			print(particle_idx, ' of ', particle_data.shape[0])
+			sxprint(particle_idx, ' of ', particle_data.shape[0])
 		emdata = EMAN2_cppwrap.EMData(particle_stack, particle_idx)
 
 		output_name = os.path.join(output_dir, ptcl_names[particle_idx])
@@ -271,7 +272,7 @@ def import_params(params_file, dim):
 			('shift_y', float),
 			('mirror', int),
 			]
-		print('What happens with mirror?')
+		sxprint('What happens with mirror?')
 	elif dim == '3d':
 		dtype_import_list = [
 			('angle_rot', float),

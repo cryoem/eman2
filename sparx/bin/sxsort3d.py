@@ -11,6 +11,7 @@ import os
 import sys
 import types
 import global_def
+from global_def import sxprint, ERROR
 from   global_def import *
 from   optparse   import OptionParser
 from   sparx      import *
@@ -67,10 +68,15 @@ def main():
 	parser.add_option("--upscale",                       type   ="float",         default =0.5,                   help=" scaling parameter to adjust the power spectrum of EM volumes")
 	parser.add_option("--wn",                            type   ="int",           default =0,                     help="optimal window size for data processing")
 	parser.add_option("--interpolation",                 type   ="string",        default ="4nn",                 help="3-d reconstruction interpolation method, two options trl and 4nn")
+	
 	(options, args) = parser.parse_args(arglist[1:])
+
 	if len(args) < 1  or len(args) > 4:
-    		print("usage: " + usage)
-    		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
+
 	else:
 
 		if len(args)>2:
@@ -200,11 +206,11 @@ def main():
 		from utilities import get_shrink_data_huang
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print((line+"Initialization of 3-D sorting"))
+			sxprint((line+"Initialization of 3-D sorting"))
 			a = get_im(orgstack)
 			nnxo = a.get_xsize()
 			if( Tracker["nxinit"] > nnxo ):
-				global_def.ERROR( "Image size less than minimum permitted $d"%Tracker["nxinit"], "sxsort3d.py" )
+				global_def.ERROR( "Image size less than minimum permitted $d"%Tracker["nxinit"] )
 				nnxo = -1
 			else:
 				if Tracker["constants"]["CTF"]:
@@ -237,7 +243,7 @@ def main():
 		if(Tracker["constants"]["radius"] < 1):
 			Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
 		elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
-			global_def.ERROR( "Particle radius set too large!", "sxsort3d.py", 1, myid )
+			global_def.ERROR( "Particle radius set too large!", myid=myid )
 ####-----------------------------------------------------------------------------------------
 		# Master directory
 		if myid == main_node:
@@ -270,7 +276,7 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		from time import sleep
 		while not os.path.exists(masterdir):
-				print("Node ",myid,"  waiting...")
+				sxprint("Node ",myid,"  waiting...")
 				sleep(5)
 		mpi_barrier(MPI_COMM_WORLD)
 		if myid == main_node:
@@ -326,7 +332,7 @@ def main():
 				mask_3D = get_shrink_3dmask(Tracker["nxinit"],Tracker["constants"]["focus3Dmask"])
 				st = Util.infomask(mask_3D, None, True)
 				if( st[0] == 0.0 ):  
-					ERROR( "Incorrect focused mask, after binarize all values zero", "sxrsort3d" )
+					ERROR( "Incorrect focused mask, after binarize all values zero")
 				mask_3D.write_image(Tracker["focus3D"])
 				del mask_3D
 		if Tracker["constants"]["PWadjustment"] !='':

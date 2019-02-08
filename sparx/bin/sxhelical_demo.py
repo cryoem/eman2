@@ -37,6 +37,8 @@ from __future__ import print_function
 from builtins import range
 import os
 import global_def
+from global_def import sxprint, ERROR
+
 from   global_def     import *
 from   user_functions import *
 from   optparse       import OptionParser
@@ -104,9 +106,9 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	if len(args) > 3:
-		print( "usage: " + usage )
-		print( "Please run '" + progname + " -h' for detailed options" )
-		global_def.ERROR( "Invalid number of parameters. Please see usage information above.", "sxhelical_demo.main" )
+		sxprint( "usage: " + usage )
+		sxprint( "Please run '" + progname + " -h' for detailed options" )
+		ERROR( "Invalid number of parameters. Please see usage information above." )
 		return
 
 	else:
@@ -115,7 +117,7 @@ def main():
 
 		if options.generate_micrograph:
 			if options.apix <= 0:
-				global_def.ERROR( "Please enter pixel size.", "sxhelical_demo.main" )
+				ERROR( "Please enter pixel size." )
 				return
 
 			generate_helimic(args[0], args[1], options.apix, options.CTF, options.Cs, options.voltage, options.ac, options.nonoise, options.rand_seed)
@@ -127,7 +129,7 @@ def main():
 			boxdims = options.boxsize.split(',')
 
 			if len(boxdims) < 1 or len(boxdims) > 3:
-				global_def.ERROR( "Enter box size as string containing x , y, z dimensions (separated by comma) in pixels. E.g.: --boxsize=\'100,100,200\'", "sxhelical_demo.main" )
+				ERROR( "Enter box size as string containing x , y, z dimensions (separated by comma) in pixels. E.g.: --boxsize=\'100,100,200\'" )
 				return
 			
 			nx= int(boxdims[0])
@@ -148,7 +150,7 @@ def main():
 			maskdims = options.masksize.split(',')
 
 			if len(maskdims) < 1 or len(maskdims) > 2:
-				global_def.ERROR( "Enter box size as string containing x , y dimensions (separated by comma) in pixels. E.g.: --boxsize=\'200,200\'", "sxhelical_demo.main" )
+				ERROR( "Enter box size as string containing x , y dimensions (separated by comma) in pixels. E.g.: --boxsize=\'200,200\'" )
 				return
 			
 			nx= int(maskdims[0])
@@ -188,7 +190,7 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 	from EMAN2 	     import EMAN2Ctf
 	
 	if os.path.exists(outdir):
-		global_def.ERROR( "Output directory exists, please change the name and restart the program", "sxhelical_demo" )
+		ERROR( "Output directory exists, please change the name and restart the program" )
 		return
 
 	os.mkdir(outdir)
@@ -238,16 +240,16 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 
 	if ptcl_dst < 15:
-		global_def.ERROR( "Distance in pixels between adjacent segments should be at least one rise!", "sxhelical_demo.generate_runscript" )
+		ERROR( "Distance in pixels between adjacent segments should be at least one rise!" )
 		return
 	
-	print("Generating run script with the following parameters: \n")
-	print("y-dimension of segment used for refinement: %d"%seg_ny)
-	print("Distance in pixels between adjacent segments: %d"%ptcl_dst)
-	print("Fraction of structure used for applying helical symmetry: %.2f"%fract)
+	sxprint("Generating run script with the following parameters: \n")
+	sxprint("y-dimension of segment used for refinement: %d"%seg_ny)
+	sxprint("Distance in pixels between adjacent segments: %d"%ptcl_dst)
+	sxprint("Fraction of structure used for applying helical symmetry: %.2f"%fract)
 	
 	if os.path.exists(filename):
-		global_def.ERROR( "File "+filename+" already exists. Please either remove or rename the file", "sxhelical_demo.generate_runscript" )
+		ERROR( "File "+filename+" already exists. Please either remove or rename the file" )
 		return
 		
 	f = open(filename, 'w')

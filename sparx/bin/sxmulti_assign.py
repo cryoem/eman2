@@ -36,6 +36,7 @@ from future import standard_library
 standard_library.install_aliases()
 import os
 import global_def
+from global_def import sxprint, ERROR
 from   global_def import *
 from   optparse import OptionParser
 import sys, configparser
@@ -63,9 +64,9 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if len(args) < 3 or len(args) > 4:
-		print("Usage: " + usage)
-		print("Please run \'" + progname + " -h\' for detailed options")
-		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxmulti_assign.main" )
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 	
 	if len(args) == 4:	mask = args[3]

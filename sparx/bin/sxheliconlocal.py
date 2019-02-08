@@ -35,7 +35,9 @@ import os
 import sys
 from optparse import OptionParser
 from global_def import SPARXVERSION, ERROR
+
 import global_def
+from global_def import sxprint, ERROR
 
 from builtins import range
 
@@ -86,25 +88,26 @@ def main():
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-		global_def.ERROR( "", "sxheliconlocal.main" )
-		print("usage: " + usage + "\n")
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 	else:
 		global_def.BATCH = True
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			global_def.ERROR( "Please specify pixel size apix","sxheliconlocal", "sxheliconlocal.main" )
+			ERROR( "Please specify pixel size apix","sxheliconlocal" )
 			return
 
 		if options.dp < 0 or options.dphi < 0:
-			global_def.ERROR( "Please specify helical symmetry parameters dp and dphi","sxheliconlocal", "sxheliconlocal.main" )
+			ERROR( "Please specify helical symmetry parameters dp and dphi","sxheliconlocal" )
 			return
 		
 		if options.an <= 0 :
-			global_def.ERROR( "Angular search range (an) has to be given.  Only local searches are permitted.", "sxheliconlocal.main" )
+			ERROR( "Angular search range (an) has to be given.  Only local searches are permitted." )
 			return
 
-		print(" This code is under development, some instabilities are possible 12/28/2014")
+		sxprint(" This code is under development, some instabilities are possible 12/28/2014")
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)

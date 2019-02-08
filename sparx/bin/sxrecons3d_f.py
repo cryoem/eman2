@@ -32,6 +32,7 @@ from __future__ import print_function
 #
 #
 import global_def
+from global_def import sxprint, ERROR
 from   global_def import *
 import sys
 from   optparse import OptionParser
@@ -59,8 +60,8 @@ def main():
 	(options,args) = parser.parse_args(arglist[1:])     
 
 	if len(args) != 3 and len(args) != 4:
-		print("Usage: " + usage)
-		global_def.ERROR( "Invalid number of parameters used. Please see usage information above.", "sxrecons3d.main" )
+		sxprint("Usage: " + usage)
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
 		return
 
 	prj_stack = args[0]
@@ -81,7 +82,7 @@ def main():
 		disable_bdb_cache()
 
 	if(options.list and options.group > -1):
-		global_def.ERROR( "Options group and list cannot be used together", "sxrecons3d (recon3d_n)" )
+		ERROR( "Options group and list cannot be used together" )
 		return
 
 	from applications import recons3d_f

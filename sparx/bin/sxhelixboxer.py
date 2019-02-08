@@ -40,6 +40,7 @@ import sys
 import os
 
 import global_def
+from global_def import sxprint, ERROR
 
 try:
 	from PyQt4 import QtGui, QtCore
@@ -127,7 +128,7 @@ def main():
 	# Window filaments 
 	if options.window:
 		if len(args) < 1:
-			global_def.ERROR( "Must specify name of output directory where intermediate files are to be deposited.", "sxhelixboxer.main()" )
+			ERROR( "Must specify name of output directory where intermediate files are to be deposited." )
 			return
 
 		outdir = args[0]
@@ -199,11 +200,11 @@ def main():
 			E2end(logid)
 
 		elif len(args) == 0:
-			global_def.ERROR( "You must specify a micrograph file or use the \'--gui\' option.", "sxhelixboxer.main()" )
+			ERROR( "You must specify a micrograph file or use the \'--gui\' option." )
 			return
 
 		elif len(args) > 1:
-			global_def.ERROR( "Multiple micrographs can only be specified with the \'--gui\' option", "sxhelixboxer.main()" )
+			ERROR( "Multiple micrographs can only be specified with the \'--gui\' option" )
 			return
 
 def counterGen():

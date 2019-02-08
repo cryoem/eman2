@@ -34,7 +34,7 @@ from __future__ import print_function
 import os
 import sys
 from optparse import OptionParser
-from global_def import SPARXVERSION
+from global_def import sxprint, ERROR, SPARXVERSION
 import global_def
 
 def main():
@@ -64,13 +64,13 @@ def main():
 	(options,args) = parser.parse_args( arglist[1:] )
 
 	if len(args) != 1 :
-		print( "Usage: " + usage )
-		global_def.ERROR( "Invalid number of parameters provided. Please see usage information above.", "sxheader.main")
+		sxprint( "Usage: " + usage )
+		ERROR( "Invalid number of parameters provided. Please see usage information above." )
 		return
 
 	if options.params == None:
-		print( "Usage: " + usage )
-		global_def.ERROR( "No parameters provided. Please see usage information above.", "sxheader.main")
+		sxprint( "Usage: " + usage )
+		ERROR( "No parameters provided. Please see usage information above." )
 		return
 
 	if global_def.CACHE_DISABLE:

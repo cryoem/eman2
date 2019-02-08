@@ -47,6 +47,7 @@ import numpy as np
 import traceback
 
 import global_def
+from global_def import sxprint, ERROR
 
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -83,7 +84,7 @@ def main():
 	
 	if len(args) > 2:
 		print("Usage: " + usage)
-		global_def.ERROR( "Invalid number of parameters. Please see usage information above.", "sxgiu_cter.main" )
+		ERROR( "Invalid number of parameters. Please see usage information above." )
 		return
 	
 	app=EMApp()

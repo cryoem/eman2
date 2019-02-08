@@ -36,6 +36,7 @@ import sys
 from optparse import OptionParser
 from global_def import SPARXVERSION
 import global_def
+from global_def import sxprint, ERROR
 
 def main():
 	arglist = []
@@ -74,18 +75,20 @@ def main():
 	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
-		print("usage: " + usage + "\n")
-		print("Please run '" + progname + " -h' for detailed options")
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 	else:
 		
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			global_def.ERROR( "Please enter pixel size", "sxhelicon.main" )
+			ERROR( "Please enter pixel size" )
 			return
 		
 		if len(options.symdoc) < 1:
 			if options.dp < 0 or options.dphi < 0:
-				global_def.ERROR( "Enter helical symmetry parameters either using --symdoc or --dp and --dphi", "sxhelicon.main" )
+				ERROR( "Enter helical symmetry parameters either using --symdoc or --dp and --dphi" )
 				return
 			
 		if options.dp < 0 or options.dphi < 0:
@@ -109,14 +112,14 @@ def main():
 		if( options.ystep <= 0.0 ):  ystep = 1.0
 		else:                        ystep = options.ystep/options.apix
 		if( dp/2.0 < ywobble):
-			global_def.ERROR( "ywobble has to be smaller than dp/2", "sxhelicon.main" )
+			ERROR( "ywobble has to be smaller than dp/2" )
 			return
 
 		try:
 			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		except:
-			global_def.ERROR( "This program has only MPI version.  Please install MPI library.", "sxhelicon.main" )
+			ERROR( "This program has only MPI version.  Please install MPI library." )
 			return
 
 		if global_def.CACHE_DISABLE:

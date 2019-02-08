@@ -43,6 +43,7 @@ from applications import MPI_start_end
 from inspect import currentframe, getframeinfo
 from utilities import generate_ctf
 import global_def
+from global_def import sxprint, ERROR
 from global_def import *
 
 # ========================================================================================
@@ -232,9 +233,9 @@ For negative staining data, use --skip_invert.
 	# Print command line
 	# ------------------------------------------------------------------------------------
 	if my_mpi_proc_id == main_mpi_proc:
-		print(" ")
-		print("%s" % get_cmd_line())
-		# print(" ")
+		sxprint(" ")
+		sxprint("%s" % get_cmd_line())
+		# sxprint(" ")
 	
 	# ------------------------------------------------------------------------------------
 	# Check error conditions of arguments and options, then prepare variables for arguments
@@ -450,11 +451,11 @@ For negative staining data, use --skip_invert.
 		# to the global entry dictionary
 		# --------------------------------------------------------------------------------
 		# Generate the list of micrograph paths in the input directory
-		print(" ")
-		print("Checking the input directory...")
+		sxprint(" ")
+		sxprint("Checking the input directory...")
 		input_mic_path_list = glob.glob(mic_pattern)
 		# Check error condition of input micrograph file path list
-		print("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
+		sxprint("Found %d microgarphs in %s." % (len(input_mic_path_list), os.path.dirname(mic_pattern)))
 		if error_status is None and len(input_mic_path_list) == 0:
 			error_status = ("No micrograph files are found in the directory specified by micrograph path pattern (%s). Please check input_micrograph_pattern argument. Run %s -h for help." % (os.path.dirname(mic_pattern), program_name), getframeinfo(currentframe()))
 			break
@@ -468,7 +469,7 @@ For negative staining data, use --skip_invert.
 			mic_id_substr = input_mic_basename[mic_id_substr_head_idx:mic_id_substr_tail_idx]
 			assert (input_mic_path == mic_pattern.replace("*", mic_id_substr))
 			if not mic_id_substr in global_entry_dict:
-				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
+				# sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from input_mic_path_list " % (mic_id_substr))
 				global_entry_dict[mic_id_substr] = {}
 			assert (mic_id_substr in global_entry_dict)
 			global_entry_dict[mic_id_substr][subkey_input_mic_path] = input_mic_path
@@ -482,22 +483,22 @@ For negative staining data, use --skip_invert.
 		selected_mic_path_list = []
 		# Generate micrograph lists according to the execution mode
 		if options.selection_list == None:
-			print(" ")
-			print("----- Running with All Micrographs Mode -----")
+			sxprint(" ")
+			sxprint("----- Running with All Micrographs Mode -----")
 			# Treat all micrographs in the input directory as selected ones
 			selected_mic_path_list = input_mic_path_list
 		else:
 			assert (options.selection_list != None)
 			if os.path.splitext(options.selection_list)[1] == ".txt":
-				print(" ")
-				print("----- Running with Selected Micrographs Mode -----")
-				print(" ")
-				print("Checking the selection list...")
+				sxprint(" ")
+				sxprint("----- Running with Selected Micrographs Mode -----")
+				sxprint(" ")
+				sxprint("Checking the selection list...")
 				assert (os.path.exists(options.selection_list))
 				selected_mic_path_list = read_text_file(options.selection_list)
 				
 				# Check error condition of micrograph entry lists
-				print("Found %d microgarph entries in %s." % (len(selected_mic_path_list), options.selection_list))
+				sxprint("Found %d microgarph entries in %s." % (len(selected_mic_path_list), options.selection_list))
 				if error_status is None and len(selected_mic_path_list) == 0:
 					error_status = ("No micrograph entries are found in the selection list file. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break
@@ -506,16 +507,16 @@ For negative staining data, use --skip_invert.
 					error_status = ("Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help." % (program_name), getframeinfo(currentframe()))
 					break
 			else:
-				print(" ")
-				print("----- Running with Single Micrograph Mode -----")
-				print(" ")
-				print("Processing a single micorgprah: %s..." % (options.selection_list))
+				sxprint(" ")
+				sxprint("----- Running with Single Micrograph Mode -----")
+				sxprint(" ")
+				sxprint("Processing a single micorgprah: %s..." % (options.selection_list))
 				selected_mic_path_list = [options.selection_list]
 			assert (len(selected_mic_path_list) > 0)
 			
 			selected_mic_directory = os.path.dirname(selected_mic_path_list[0])
 			if selected_mic_directory != "":
-				print("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory))
+				sxprint("    NOTE: Program disregards the directory paths in the selection list (%s)." % (selected_mic_directory))
 			
 		assert (len(selected_mic_path_list) > 0)
 		
@@ -529,7 +530,7 @@ For negative staining data, use --skip_invert.
 				error_status = ("A micrograph name (%s) in the input directory (%s) does not match with input micrograph basename pattern (%s) (The wild card replacement with \'%s\' resulted in \'%s\'). Please correct input micrograph path pattern. Run %s -h for help." % (selected_mic_basename, os.path.dirname(mic_pattern), mic_basename_pattern, mic_id_substr, mic_basename_pattern.replace("*", mic_id_substr), program_name), getframeinfo(currentframe()))
 				break
 			if not mic_id_substr in global_entry_dict:
-				# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
+				# sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from selected_mic_path_list " % (mic_id_substr))
 				global_entry_dict[mic_id_substr] = {}
 			assert (mic_id_substr in global_entry_dict)
 			global_entry_dict[mic_id_substr][subkey_selected_mic_basename] = selected_mic_basename
@@ -543,12 +544,12 @@ For negative staining data, use --skip_invert.
 		# rebox id substring (rebox_id_substr) and micrograph id substring (mic_id_substr)
 		# should be the same for the associated pair of micrograph and coordnates file.
 		# --------------------------------------------------------------------------------
-		print(" ")
-		print("Checking the rebox files...")
+		sxprint(" ")
+		sxprint("Checking the rebox files...")
 		rebox_path_list = glob.glob(rebox_pattern)
 		
 		# Check error condition of rebox file path list
-		print("Found %d rebox files in %s directory." % (len(rebox_path_list), os.path.dirname(rebox_pattern)))
+		sxprint("Found %d rebox files in %s directory." % (len(rebox_path_list), os.path.dirname(rebox_pattern)))
 		if error_status is None and len(rebox_path_list) == 0:
 			error_status = ("No rebox files are found in the directory specified by rebox file path pattern (%s). Please check input_rebox_pattern argument. Run %s -h for help." % (os.path.dirname(rebox_pattern), program_name), getframeinfo(currentframe()))
 			break
@@ -560,7 +561,7 @@ For negative staining data, use --skip_invert.
 			rebox_id_substr = rebox_path[rebox_id_substr_head_idx:rebox_id_substr_tail_idx]
 			assert (rebox_path == rebox_pattern.replace("*", rebox_id_substr))
 			if not rebox_id_substr in global_entry_dict:
-				# print("MRK_DEBUG: Added new rebox_id_substr (%s) to global_entry_dict from rebox_path_list " % (rebox_id_substr))
+				# sxprint("MRK_DEBUG: Added new rebox_id_substr (%s) to global_entry_dict from rebox_path_list " % (rebox_id_substr))
 				global_entry_dict[rebox_id_substr] = {}
 			assert (rebox_id_substr in global_entry_dict)
 			global_entry_dict[rebox_id_substr][subkey_rebox_path] = rebox_path
@@ -574,16 +575,16 @@ For negative staining data, use --skip_invert.
 		if ctf_params_src is not None:
 			if use_real_ctf_params:
 				# This should be string for CTER partres (CTF parameter) file
-				print(" ")
-				print("The program will use the CTF parameters stored in the CTER partres file specified through -swap_ctf_params option, while ignoring the CTF parameters in the input rebox parameters file...")
-				print("  It will also ignores all defocus errors extracted from the input rebox paramters file and reset it to zero...")
-				print(" ")
-				print("Checking the CTER partres file...")
+				sxprint(" ")
+				sxprint("The program will use the CTF parameters stored in the CTER partres file specified through -swap_ctf_params option, while ignoring the CTF parameters in the input rebox parameters file...")
+				sxprint("  It will also ignores all defocus errors extracted from the input rebox paramters file and reset it to zero...")
+				sxprint(" ")
+				sxprint("Checking the CTER partres file...")
 				assert (os.path.exists(ctf_params_src))
 				cter_entry_list = read_text_row(ctf_params_src)
 			
 				# Check error condition of CTER partres entry list
-				print("Found %d CTER partres entries in %s." % (len(cter_entry_list), ctf_params_src))
+				sxprint("Found %d CTER partres entries in %s." % (len(cter_entry_list), ctf_params_src))
 				if error_status is None and len(cter_entry_list) == 0:
 					error_status = ("No CTER partres entries are found in %s. Please check input_ctf_params_source argument. Run %s -h for help." % (ctf_params_src, program_name), getframeinfo(currentframe()))
 					break
@@ -601,7 +602,7 @@ For negative staining data, use --skip_invert.
 				# Support only  NEW CTER partres format (AFTER 2017/12/05)
 				cter_mic_directory = os.path.dirname(cter_entry_list[0][idx_cter_mic_name])
 				if cter_mic_directory != "":
-					print("    NOTE: Program disregards the directory paths in the CTER partres file (%s)." % (cter_mic_directory))
+					sxprint("    NOTE: Program disregards the directory paths in the CTER partres file (%s)." % (cter_mic_directory))
 				
 				for cter_entry in cter_entry_list:
 					# Find tail index of micrograph id substring and extract the substring from the micrograph path of CTER partres entry
@@ -615,12 +616,12 @@ For negative staining data, use --skip_invert.
 						break
 					
 					# if(cter_entry[idx_cter_sd_astig_ang] > options.astigmatism_error):
-					# 	print("    NOTE: Astigmatism angular SD of %s (%f degree) exceeds specified limit (%f degree). Resetting astigmatism parameters to zeros..." % (cter_mic_basename, cter_entry[idx_cter_sd_astig_ang], options.astigmatism_error))
+					# 	sxprint("    NOTE: Astigmatism angular SD of %s (%f degree) exceeds specified limit (%f degree). Resetting astigmatism parameters to zeros..." % (cter_mic_basename, cter_entry[idx_cter_sd_astig_ang], options.astigmatism_error))
 					# 	cter_entry[idx_cter_astig_amp] = 0.0
 					# 	cter_entry[idx_cter_astig_ang] = 0.0
 					
 					if not mic_id_substr in global_entry_dict:
-						# print("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from cter_entry_list " % (mic_id_substr))
+						# sxprint("MRK_DEBUG: Added new mic_id_substr (%s) to global_entry_dict from cter_entry_list " % (mic_id_substr))
 						global_entry_dict[mic_id_substr] = {}
 					assert (mic_id_substr in global_entry_dict)
 					global_entry_dict[mic_id_substr][subkey_cter_entry] = cter_entry
@@ -630,9 +631,9 @@ For negative staining data, use --skip_invert.
 			else:
 				assert (not use_real_ctf_params)
 				# This should be string for CTER partres (CTF parameter) file
-				print(" ")
-				print("The program will use the simulated ideal CTF with the pixel size %f specified through -swap_ctf_params option, while ignoring the CTF parameters in the input rebox parameters file..." % (float(ctf_params_src)))
-				print("  It will also ignores all defocus errors extracted from the input rebox paramters file and reset it to zero...")
+				sxprint(" ")
+				sxprint("The program will use the simulated ideal CTF with the pixel size %f specified through -swap_ctf_params option, while ignoring the CTF parameters in the input rebox parameters file..." % (float(ctf_params_src)))
+				sxprint("  It will also ignores all defocus errors extracted from the input rebox paramters file and reset it to zero...")
 		
 		# --------------------------------------------------------------------------------
 		# Clean up variables related to registration to the global entry dictionary
@@ -650,8 +651,8 @@ For negative staining data, use --skip_invert.
 		no_rebox_mic_id_substr_list = []
 		no_cter_entry_mic_id_substr_list = []
 		
-		print(" ")
-		print("Checking consistency of the provided dataset ...")
+		sxprint(" ")
+		sxprint("Checking consistency of the provided dataset ...")
 		
 		# Loop over substring id list
 		for mic_id_substr in global_entry_dict:
@@ -713,12 +714,12 @@ For negative staining data, use --skip_invert.
 						global_entry_dict[mic_id_substr][subkey_cter_entry] = dummy_cter_entry
 				
 				if len(warinnig_messages) > 0:
-					print("WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr))
+					sxprint("WARNING!!! Micrograph ID %s does not have:" % (mic_id_substr))
 					for warinnig_message in warinnig_messages:
-						print(warinnig_message)
-					print("    Ignores this as an invalid entry.")
+						sxprint(warinnig_message)
+					sxprint("    Ignores this as an invalid entry.")
 				else:
-					# print("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
+					# sxprint("MRK_DEBUG: adding mic_id_substr := ", mic_id_substr)
 					valid_mic_id_substr_list.append(mic_id_substr)
 			# else:
 			# 	assert (not subkey_selected_mic_basename in mic_id_entry)
@@ -732,8 +733,8 @@ For negative staining data, use --skip_invert.
 			
 			# Open the consistency check file
 			mic_consistency_check_info_path = os.path.join(root_out_dir, "mic_consistency_check_info_%s.txt"%(get_time_stamp_suffix()))
-			print(" ")
-			print("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
+			sxprint(" ")
+			sxprint("Generating consistency report of the provided dataset in %s..."%(mic_consistency_check_info_path))
 			mic_consistency_check_info_file = open(mic_consistency_check_info_path, "w")
 			mic_consistency_check_info_file.write("# The consistency information about micrograph IDs that might have problmes with consistency among the provided dataset.\n")
 			mic_consistency_check_info_file.write("# \n")
@@ -780,21 +781,21 @@ For negative staining data, use --skip_invert.
 			
 		# Since mic_id_substr is once stored as the key of global_entry_dict and extracted with the key order
 		# we need sort the valid_mic_id_substr_list here
-		# print("MRK_DEBUG: before sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
+		# sxprint("MRK_DEBUG: before sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
 		valid_mic_id_substr_list.sort()
-		# print("MRK_DEBUG: after sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
+		# sxprint("MRK_DEBUG: after sort, valid_mic_id_substr_list := ", valid_mic_id_substr_list)
 		
 		# --------------------------------------------------------------------------------
 		# Print out the summary of input consistency
 		# --------------------------------------------------------------------------------
-		print(" ")
-		print("Summary of dataset consistency check...")
-		print("Detected                  : %6d" % (len(global_entry_dict)))
-		print("Valid                     : %6d" % (len(valid_mic_id_substr_list)))
-		print("Rejected by no rebox file : %6d" % (len(no_rebox_mic_id_substr_list)))
+		sxprint(" ")
+		sxprint("Summary of dataset consistency check...")
+		sxprint("Detected                  : %6d" % (len(global_entry_dict)))
+		sxprint("Valid                     : %6d" % (len(valid_mic_id_substr_list)))
+		sxprint("Rejected by no rebox file : %6d" % (len(no_rebox_mic_id_substr_list)))
 		if ctf_params_src is not None:
 			if use_real_ctf_params:
-				print("Rejected by no CTER partres entry  : %6d" % (len(no_cter_entry_mic_id_substr_list)))
+				sxprint("Rejected by no CTER partres entry  : %6d" % (len(no_cter_entry_mic_id_substr_list)))
 			
 		# --------------------------------------------------------------------------------
 		# Clean up variables related to tracking of invalid (rejected) micrographs 
@@ -861,8 +862,8 @@ For negative staining data, use --skip_invert.
 	# Set up progress message and all necessary output directories
 	reject_out_of_boundary_dir = os.path.join(root_out_dir, "reject_out_of_boundary")
 	if my_mpi_proc_id == main_mpi_proc:
-		print(" ")
-		print("Micrographs processed by main process (including percent of progress):")
+		sxprint(" ")
+		sxprint("Micrographs processed by main process (including percent of progress):")
 		progress_percent_step = len(valid_mic_id_substr_list)/100.0 # the number of micrograms for main node divided by 100
 		
 		# Create output directory
@@ -902,7 +903,7 @@ For negative staining data, use --skip_invert.
 		mic_basename = global_entry_dict[mic_id_substr][subkey_selected_mic_basename]
 		assert (mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 		if my_mpi_proc_id == main_mpi_proc:
-			print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
+			sxprint("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
 		
 		# --------------------------------------------------------------------------------
 		# Read the associated rebox according to the specified format and 
@@ -914,12 +915,12 @@ For negative staining data, use --skip_invert.
 		rebox_list = read_text_row(rebox_path)
 		
 		if (len(rebox_list) == 0):
-			print("For %s, the associate rebox file %s does not contain any entries. Skipping..." % (mic_basename, rebox_path))
+			sxprint("For %s, the associate rebox file %s does not contain any entries. Skipping..." % (mic_basename, rebox_path))
 			n_mic_reject_no_rebox_entry += 1
 			continue
 		assert (len(rebox_list) > 0)
 		if (len(rebox_list[0]) != n_idx_rebox):
-			print("For %s, the format of the associate rebox file %s is not valid. It should contain %d columns. Skipping..." % (mic_basename, rebox_path, n_idx_rebox))
+			sxprint("For %s, the format of the associate rebox file %s is not valid. It should contain %d columns. Skipping..." % (mic_basename, rebox_path, n_idx_rebox))
 			n_mic_reject_invalid_rebox_format += 1
 			continue
 		
@@ -958,7 +959,7 @@ For negative staining data, use --skip_invert.
 		try:
 			mic_img = get_im(mic_path)
 		except:
-			print("Failed to read the associate micrograph %s for %s. The file might be corrupted. Skipping..." % (mic_path, mic_basename))
+			sxprint("Failed to read the associate micrograph %s for %s. The file might be corrupted. Skipping..." % (mic_path, mic_basename))
 			continue
 		
 		# --------------------------------------------------------------------------------
@@ -1057,15 +1058,15 @@ For negative staining data, use --skip_invert.
 			if rebox_resample_ratio < 1.0:
 				assert (rebox_resample_ratio > 0.0)
 				if my_mpi_proc_id == main_mpi_proc:
-					print("MRK_DEBUG: ")
-					print("MRK_DEBUG: BEFORE applying rebox_resample_ratio := {}".format(rebox_resample_ratio))
-					print("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
+					sxprint("MRK_DEBUG: ")
+					sxprint("MRK_DEBUG: BEFORE applying rebox_resample_ratio := {}".format(rebox_resample_ratio))
+					sxprint("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
 				ctf_obj.apix *= rebox_resample_ratio
 				proj_entry[idx_proj_sx] /= rebox_resample_ratio
 				proj_entry[idx_proj_sy] /= rebox_resample_ratio
 				if my_mpi_proc_id == main_mpi_proc:
-					print("MRK_DEBUG: AFTER applying rebox_resample_ratio := {}".format(rebox_resample_ratio))
-					print("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
+					sxprint("MRK_DEBUG: AFTER applying rebox_resample_ratio := {}".format(rebox_resample_ratio))
+					sxprint("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
 			else:
 				assert (rebox_resample_ratio == 1.0)
 			
@@ -1074,18 +1075,18 @@ For negative staining data, use --skip_invert.
 			if mic_resample_ratio < 1.0:
 				assert (mic_resample_ratio > 0.0)
 				if my_mpi_proc_id == main_mpi_proc:
-					print("MRK_DEBUG: ")
-					print("MRK_DEBUG: BEFORE applying mic_resample_ratio := {}".format(mic_resample_ratio))
-					print("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
+					sxprint("MRK_DEBUG: ")
+					sxprint("MRK_DEBUG: BEFORE applying mic_resample_ratio := {}".format(mic_resample_ratio))
+					sxprint("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
 				# store the resampled pixel size to the cter_entry to generate CTF object of this micrograph
 				ctf_obj.apix = src_pixel_size / mic_resample_ratio
 				proj_entry[idx_proj_sx] *= mic_resample_ratio
 				proj_entry[idx_proj_sy] *= mic_resample_ratio
 				if my_mpi_proc_id == main_mpi_proc:
-					print("MRK_DEBUG: AFTER applying mic_resample_ratio := {}".format(mic_resample_ratio))
-					print("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
+					sxprint("MRK_DEBUG: AFTER applying mic_resample_ratio := {}".format(mic_resample_ratio))
+					sxprint("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
 				if my_mpi_proc_id == main_mpi_proc:
-					print("Resample micrograph to pixel size %6.4f [A/Pixels] from %6.4f [A/Pixels] and window segments from resampled micrograph." % (ctf_obj.apix, src_pixel_size))
+					sxprint("Resample micrograph to pixel size %6.4f [A/Pixels] from %6.4f [A/Pixels] and window segments from resampled micrograph." % (ctf_obj.apix, src_pixel_size))
 			else:
 				assert (mic_resample_ratio == 1.0)
 				# Do nothing
@@ -1097,14 +1098,14 @@ For negative staining data, use --skip_invert.
 			if pp_mag_error_accum != 1.0:
 				assert (pp_mag_error_accum > 0.0)
 				if my_mpi_proc_id == main_mpi_proc:
-					print("MRK_DEBUG: ")
-					print("MRK_DEBUG: BEFORE applying pp_mag_error_accum := {}".format(pp_mag_error_accum))
-					print("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
+					sxprint("MRK_DEBUG: ")
+					sxprint("MRK_DEBUG: BEFORE applying pp_mag_error_accum := {}".format(pp_mag_error_accum))
+					sxprint("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
 				proj_entry[idx_proj_sx] /= pp_mag_error_accum
 				proj_entry[idx_proj_sy] /= pp_mag_error_accum
 				if my_mpi_proc_id == main_mpi_proc:
-					print("MRK_DEBUG: AFTER applying pp_mag_error_accum := {}".format(pp_mag_error_accum))
-					print("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
+					sxprint("MRK_DEBUG: AFTER applying pp_mag_error_accum := {}".format(pp_mag_error_accum))
+					sxprint("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
 			else:
 				assert (pp_mag_error_accum == 1.0)
 				# Do nothing
@@ -1124,22 +1125,22 @@ For negative staining data, use --skip_invert.
 				### assert (pp_def_error_accum == 0.0) # For now, do not allow both parameters to be adjusted (Toshio 2018/03/25)
 				resampled_box_size = int(ceil(box_size / pp_mag_error_accum))
 				resampled_box_half = int(resampled_box_size // 2)
-				# print("MRK_DEBUG: pp_mag_error_accum := {}, resampled_box_size := {}, resampled_box_half := {}".format(pp_mag_error_accum, resampled_box_size, resampled_box_half))
+				# sxprint("MRK_DEBUG: pp_mag_error_accum := {}, resampled_box_size := {}, resampled_box_half := {}".format(pp_mag_error_accum, resampled_box_size, resampled_box_half))
 			
 			# Window a particle at this rebox
 			if( (0 <= x - resampled_box_half) and ( x + resampled_box_half < nx ) and (0 <= y - resampled_box_half) and ( y + resampled_box_half < ny ) ):
 				try:
 					particle_img = Util.window(mic_img, resampled_box_size, resampled_box_size, 1, x-x0, y-y0)
 				except:
-					print("MRK_DEBUG: ")
-					print("MRK_DEBUG: mic_resample_ratio := {}, box_size := {}, box_half := {}".format(mic_resample_ratio, box_size, box_half))
-					print("MRK_DEBUG: pp_mag_error_accum := {}, resampled_box_size := {}, resampled_box_half := {}".format(pp_mag_error_accum, resampled_box_size, resampled_box_half))
-					print("MRK_DEBUG: nx := {}, ny := {}".format(nx, ny))
-					print("MRK_DEBUG: x := {}, y := {}, x0 := {}, y0 := {}, x-x0 := {}, y-y0 := {}".format(x, y, x0, y0, x-x0, y-y0))
+					sxprint("MRK_DEBUG: ")
+					sxprint("MRK_DEBUG: mic_resample_ratio := {}, box_size := {}, box_half := {}".format(mic_resample_ratio, box_size, box_half))
+					sxprint("MRK_DEBUG: pp_mag_error_accum := {}, resampled_box_size := {}, resampled_box_half := {}".format(pp_mag_error_accum, resampled_box_size, resampled_box_half))
+					sxprint("MRK_DEBUG: nx := {}, ny := {}".format(nx, ny))
+					sxprint("MRK_DEBUG: x := {}, y := {}, x0 := {}, y0 := {}, x-x0 := {}, y-y0 := {}".format(x, y, x0, y0, x-x0, y-y0))
 					raise
 			else:
 				rebox_reject_out_of_boundary_messages.append("rebox ID = %04d: x = %4d, y = %4d, box_size = %4d " % (rebox_id, x, y, box_size))
-				# print("MRK_DEBUG: rebox_reject_out_of_boundary_messages[-1] := %s" % rebox_reject_out_of_boundary_messages[-1])
+				# sxprint("MRK_DEBUG: rebox_reject_out_of_boundary_messages[-1] := %s" % rebox_reject_out_of_boundary_messages[-1])
 				continue
 			
 			if pp_mag_error_accum != 1.0:
@@ -1153,13 +1154,13 @@ For negative staining data, use --skip_invert.
 				### # 
 				### # Store the resampled pixel size to the cter_entry to generated (local) CTF object of this particle
 				### if my_mpi_proc_id == main_mpi_proc:
-				### 	print("MRK_DEBUG: ")
-				### 	print("MRK_DEBUG: BEFORE applying pp_mag_error_accum := {}".format(pp_mag_error_accum))
-				### 	print("MRK_DEBUG: ctf_obj.apix := {}".format(ctf_obj.apix))
+				### 	sxprint("MRK_DEBUG: ")
+				### 	sxprint("MRK_DEBUG: BEFORE applying pp_mag_error_accum := {}".format(pp_mag_error_accum))
+				### 	sxprint("MRK_DEBUG: ctf_obj.apix := {}".format(ctf_obj.apix))
 				### ctf_obj.apix /= pp_mag_error_accum
 				### if my_mpi_proc_id == main_mpi_proc:
-				### 	print("MRK_DEBUG: AFTER applying pp_mag_error_accum := {}".format(pp_mag_error_accum))
-				### 	print("MRK_DEBUG: ctf_obj.apix := {}".format(ctf_obj.apix))
+				### 	sxprint("MRK_DEBUG: AFTER applying pp_mag_error_accum := {}".format(pp_mag_error_accum))
+				### 	sxprint("MRK_DEBUG: ctf_obj.apix := {}".format(ctf_obj.apix))
 			# else:
 			# 	# do nothing
 			assert (particle_img.get_xsize() == box_size)
@@ -1169,13 +1170,13 @@ For negative staining data, use --skip_invert.
 			# Adjust defocus if necessary
 			if pp_def_error_accum != 0.0:
 				if my_mpi_proc_id == main_mpi_proc:
-					print("MRK_DEBUG: ")
-					print("MRK_DEBUG: BEFORE applying pp_def_error_accum := {}".format(pp_def_error_accum))
-					print("MRK_DEBUG: ctf_obj.defocus := {}".format(ctf_obj.defocus))
+					sxprint("MRK_DEBUG: ")
+					sxprint("MRK_DEBUG: BEFORE applying pp_def_error_accum := {}".format(pp_def_error_accum))
+					sxprint("MRK_DEBUG: ctf_obj.defocus := {}".format(ctf_obj.defocus))
 				ctf_obj.defocus += pp_def_error_accum
 				if my_mpi_proc_id == main_mpi_proc:
-					print("MRK_DEBUG: AFTER applying pp_def_error_accum := {}".format(pp_def_error_accum))
-					print("MRK_DEBUG: ctf_obj.defocus := {}".format(ctf_obj.defocus))
+					sxprint("MRK_DEBUG: AFTER applying pp_def_error_accum := {}".format(pp_def_error_accum))
+					sxprint("MRK_DEBUG: ctf_obj.defocus := {}".format(ctf_obj.defocus))
 			
 			# Normalize this particle image
 			particle_img = ramp(particle_img)
@@ -1184,7 +1185,7 @@ For negative staining data, use --skip_invert.
 			try:
 				particle_img /= particle_stats[1]
 			except ZeroDivisionError:
-				print("The standard deviation of the particle image associated with %dth rebox entry in micrograph %s for %s is zero unexpectedly. Skipping..." % (rebox_id, mic_path, mic_basename))
+				sxprint("The standard deviation of the particle image associated with %dth rebox entry in micrograph %s for %s is zero unexpectedly. Skipping..." % (rebox_id, mic_path, mic_basename))
 				continue
 			
 			# Set header entries (attributes) of this particle image
@@ -1232,12 +1233,12 @@ For negative staining data, use --skip_invert.
 			set_params_proj(particle_img, proj_entry)
 			
 			# Write the particle image to local stack file
-			# print("MRK_DEBUG: local_stack_path, local_particle_id", local_stack_path, local_particle_id)
+			# sxprint("MRK_DEBUG: local_stack_path, local_particle_id", local_stack_path, local_particle_id)
 			particle_img.write_image(local_stack_path, local_particle_id)
 			local_particle_id += 1
 		
 		# Save the message list of rejected rebox because of out-of-boundary
-		# print("MRK_DEBUG: len(rebox_reject_out_of_boundary_messages) := %d" % len(rebox_reject_out_of_boundary_messages))
+		# sxprint("MRK_DEBUG: len(rebox_reject_out_of_boundary_messages) := %d" % len(rebox_reject_out_of_boundary_messages))
 		if len(rebox_reject_out_of_boundary_messages) > 0:
 			# Open file path to save the message list
 			# 
@@ -1254,7 +1255,7 @@ For negative staining data, use --skip_invert.
 			else: 
 				assert os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
 			coords_reject_out_of_boundary_path = os.path.join(reject_out_of_boundary_dir, os.path.splitext(os.path.basename(rebox_path))[0] + "_reject_out_of_boundary.txt")
-			# print("MRK_DEBUG: coords_reject_out_of_boundary_path := %s" % coords_reject_out_of_boundary_path)
+			# sxprint("MRK_DEBUG: coords_reject_out_of_boundary_path := %s" % coords_reject_out_of_boundary_path)
 			coords_reject_out_of_boundary_file = open(coords_reject_out_of_boundary_path, "w")
 			
 			for coords_reject_out_of_boundary_message in rebox_reject_out_of_boundary_messages:
@@ -1288,20 +1289,20 @@ For negative staining data, use --skip_invert.
 	
 	# Print out the summary of all micrographs
 	if main_mpi_proc == my_mpi_proc_id:
-		print(" ")
-		print("Summary of micrograph level processing...")
-		print("Valid                              : %6d" % (len(unsliced_valid_serial_id_list)))
-		print("Processed                          : %6d" % (n_mic_process))
-		print("Rejected by no rebox entries       : %6d" % (n_mic_reject_no_rebox_entry))
-		print("Rejected by invalid rebox format   : %6d" % (n_mic_reject_invalid_rebox_format))
-		print(" ")
-		print("Global summary of rebox level processing...")
-		print("Detected                           : %6d" % (n_global_rebox_detect))
-		print("Processed                          : %6d" % (n_global_rebox_process))
-		print("Rejected by out of boundary        : %6d" % (n_global_rebox_reject_out_of_boundary))
+		sxprint(" ")
+		sxprint("Summary of micrograph level processing...")
+		sxprint("Valid                              : %6d" % (len(unsliced_valid_serial_id_list)))
+		sxprint("Processed                          : %6d" % (n_mic_process))
+		sxprint("Rejected by no rebox entries       : %6d" % (n_mic_reject_no_rebox_entry))
+		sxprint("Rejected by invalid rebox format   : %6d" % (n_mic_reject_invalid_rebox_format))
+		sxprint(" ")
+		sxprint("Global summary of rebox level processing...")
+		sxprint("Detected                           : %6d" % (n_global_rebox_detect))
+		sxprint("Processed                          : %6d" % (n_global_rebox_process))
+		sxprint("Rejected by out of boundary        : %6d" % (n_global_rebox_reject_out_of_boundary))
 		if n_global_rebox_reject_out_of_boundary > 0:
 			assert os.path.exists(reject_out_of_boundary_dir), "MRK_DEBUG"
-			print("    NOTE: Information of rejected rebox by out of boundary are saved in %s files." % (os.path.join(reject_out_of_boundary_dir, os.path.splitext(os.path.basename(rebox_pattern))[0] + "_reject_out_of_boundary.txt" )))
+			sxprint("    NOTE: Information of rejected rebox by out of boundary are saved in %s files." % (os.path.join(reject_out_of_boundary_dir, os.path.splitext(os.path.basename(rebox_pattern))[0] + "_reject_out_of_boundary.txt" )))
 		else:
 			assert n_global_rebox_reject_out_of_boundary == 0, "MRK_DEBUG"
 			if os.path.exists(reject_out_of_boundary_dir):
@@ -1321,7 +1322,7 @@ For negative staining data, use --skip_invert.
 		# The only way to prevent the crash is to execute e2bdb after the program finished, 
 		# and even with that one is well advised to wait. 
 		"""
-		print("\n Creating bdb:%s/data\n"%root_out_dir)
+		sxprint("\n Creating bdb:%s/data\n"%root_out_dir)
 		for proc_i in range(n_mpi_procs):
 			mic_start, mic_end = MPI_start_end(len(unsliced_valid_serial_id_list), n_mpi_procs, proc_i)
 			for mic_id_substr in unsliced_valid_serial_id_list[mic_start:mic_end]:
@@ -1336,15 +1337,15 @@ For negative staining data, use --skip_invert.
 		"""
 		if RUNNING_UNDER_MPI:
 			e2bdb_command = "e2bdb.py  " + root_out_dir + "/mpi_proc_*  --makevstack=bdb:" + root_out_dir + "#data"
-			print(" ")
-			print("Please execute from the command line :  ", e2bdb_command)
+			sxprint(" ")
+			sxprint("Please execute from the command line :  ", e2bdb_command)
 		else:
 			e2bdb_command = "e2bdb.py  " + root_out_dir + "  --makevstack=bdb:" + root_out_dir + "#data"
 			cmdexecute(e2bdb_command, printing_on_success = False)
 		
-		print(" ")
-		print("DONE!!!")
-		print(" ")
+		sxprint(" ")
+		sxprint("DONE!!!")
+		sxprint(" ")
 		
 	# ====================================================================================
 	# Clean up

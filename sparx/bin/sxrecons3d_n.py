@@ -33,6 +33,7 @@ from __future__ import print_function
 
 from builtins import range
 import global_def
+from global_def import sxprint, ERROR
 from   global_def import *
 from   optparse import OptionParser
 from   string import atoi,replace
@@ -90,11 +91,11 @@ def main():
 		step  = atoi( args[4] )
 		pid_list = list(range(begin, end, step))
 	else:
-		global_def.ERROR( "Incomplete list of arguments", "sxrecons3d_n.main (recon3d_n)" )
+		ERROR( "Incomplete list of arguments" )
 		return
 
 	if(options.list and options.group > -1):
-		global_def.ERROR( "options group and list cannot be used together", "sxrecons3d_n.main (recon3d_n" )
+		ERROR( "options group and list cannot be used together" )
 		return
 
 	from applications import recons3d_n, recons3d_trl_MPI
@@ -105,13 +106,13 @@ def main():
 		 options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize, options.zsize, options.smearstep, options.upweighted, options.compensate,options.chunk_id)
 	elif options.interpolation_method == "tril":
 		if options.MPI is False:
-			global_def.ERROR( "Trillinear interpolation reconstruction has MPI version only!", "sxrecons3d_n.main (recon3d_n)")
+			ERROR( "Trillinear interpolation reconstruction has MPI version only!" )
 			return
 		recons3d_trl_MPI(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
 		 options.sym, options.verbose, options.niter, options.compensate, options.target_window_size)
 		
 	else:
-		global_def.ERROR( "Wrong interpolation method. The current options are 4nn, and tril. 4nn is the defalut one.", "sxrecons3d_n.main (recon3d_n)" )
+		ERROR( "Wrong interpolation method. The current options are 4nn, and tril. 4nn is the defalut one." )
 		return
 		
 	global_def.BATCH = False

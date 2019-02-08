@@ -33,6 +33,7 @@ from __future__ import print_function
 
 from builtins import range
 import global_def
+from global_def import sxprint, ERROR
 from global_def import *
 from optparse import OptionParser
 from EMAN2_cppwrap import *
@@ -60,7 +61,7 @@ def main():
 	output_stack = args[-1]
 
 	if options.nvec is None:
-		global_def.ERROR( "Error: number of components is not given", "sxpca.main" )
+		ERROR( "Error: number of components is not given" )
 		return
 
 	isRoot = True

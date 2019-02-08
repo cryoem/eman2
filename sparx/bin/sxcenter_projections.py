@@ -38,7 +38,9 @@ from builtins import object
 from EMAN2 import *
 from sparx import *
 from logger import Logger, BaseLogger_Files
+
 import global_def
+from global_def import sxprint, ERROR
 
 from mpi   import  *
 from math  import  *
@@ -253,14 +255,15 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 	"""
 	if(myid == main_node):
 		print_dict(paramsdict,"3D alignment parameters")
-		print("                    =>  actual lowpass      :  ",ali3d_options.fl)
-		print("                    =>  actual init lowpass :  ",ali3d_options.initfl)
+		sxprint("                    =>  actual lowpass      :  ",ali3d_options.fl)
+		sxprint("                    =>  actual init lowpass :  ",ali3d_options.initfl)
 		if(len(ali3d_options.pwreference)>0): \
-		print("                    =>  PW adjustment       :  ",ali3d_options.pwreference)
-		print("                    =>  partids             :  ",partids)
-		print("                    =>  partstack           :  ",partstack)
+		sxprint("                    =>  PW adjustment       :  ",ali3d_options.pwreference)
+		sxprint("                    =>  partids             :  ",partids)
+		sxprint("                    =>  partstack           :  ",partstack)
 		
-	if(ali3d_options.fl > 0.46):  ERROR("Low pass filter in 3D alignment > 0.46 on the scale of shrank data","sxcenter_projections",1,myid) 
+	if(ali3d_options.fl > 0.46):  
+		ERROR("Low pass filter in 3D alignment > 0.46 on the scale of shrank data", myid=myid) 
 
 	#  Run alignment command, it returns params per CPU
 	params = center_projections_3D(projdata, paramsdict["refvol"], \
@@ -276,14 +279,14 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 			params[im][0] = params[im][0]/shrinkage +oldshifts[im][0]
 			params[im][1] = params[im][1]/shrinkage +oldshifts[im][1]
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,"Executed successfully: ","3D alignment","  number of images:%7d"%len(params))
+		sxprint(line,"Executed successfully: ","3D alignment","  number of images:%7d"%len(params))
 		write_text_row(params, os.path.join(outputdir,"params.txt") )
 
 def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	print(line,theme)
+	sxprint(line,theme)
 	spaces = "                    "
-	for q in dict:  print("                    => ",q+spaces[len(q):],":  ",dict[q])
+	for q in dict:  sxprint("                    => ",q+spaces[len(q):],":  ",dict[q])
 
 
 def main():
@@ -336,9 +339,10 @@ def main():
 		volinit = args[1]
 		masterdir = ""
 	else:
-		print( "usage: " + usage)
-		print( "Please run '" + progname + " -h' for detailed options")
-		return 1
+		sxprint( "Usage: " + usage )
+		sxprint( "Please run \'" + progname + " -h\' for detailed options" )
+		ERROR( "Invalid number of parameters used. Please see usage information above." )
+		return
 
 	stack = args[0]
 
@@ -395,7 +399,8 @@ def main():
 	nxinit      = bcast_number_to_all(nxinit, source_node = main_node)
 
 	if(radi < 1):  radi = nxinit//2-2
-	elif((2*radi+2)>nxinit):  ERROR("Particle radius set too large!","sxcenter_projections",1,myid)
+	elif((2*radi+2)>nxinit):  
+		ERROR("Particle radius set too large!", myid=myid )
 	ali3d_options.ou = radi
 
 	shrink = options.shrink
@@ -404,7 +409,7 @@ def main():
 
 	#  MASTER DIRECTORY
 	if(myid == main_node):
-		print( "   masterdir   ",masterdir)
+		sxprint( "   masterdir   ",masterdir)
 		if( masterdir == ""):
 			timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 			masterdir = "master"+timestring
