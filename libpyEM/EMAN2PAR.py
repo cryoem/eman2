@@ -54,7 +54,7 @@ import _thread,threading
 import getpass
 import select
 
-from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util,get_platform
+from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util,get_platform, e2getinstalldir
 from EMAN2db import e2filemodtime
 from EMAN2jsondb import JSTask,JSTaskQueue,js_open_dict
 from e2classaverage import ClassAvTask
@@ -591,7 +591,7 @@ class EMLocalTaskHandler(object):
 				#There is the issue that when shell=True, popen.pid return shell pid and not process, so we set shell=false (there will be issues on Windows, but we don't support paralellization on windows
 				#proc=subprocess.Popen("e2parallel.py" + " localclient" + " --taskin=%s/%07d"%(self.scratchdir,self.nextid) + " --taskout=%s/%07d.out"%(self.scratchdir,self.nextid), shell=True)
 				if get_platform() == 'Windows':
-					proc=subprocess.Popen(["python", "%s\\bin\\e2parallel.py"%os.getenv('EMAN2DIR'),"localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
+					proc=subprocess.Popen(["python", "%s\\bin\\e2parallel.py"%e2getinstalldir(),"localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
 				else:
 					proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
 				self.running.append((proc,self.nextid))
