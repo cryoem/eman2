@@ -177,12 +177,15 @@ def sxprint( *args, **kwargs ):
         f.close()
 
 
-def ERROR( message, action=1, myid=0 ):
+def ERROR( message, where, action=1, myid=0 ):
     """
     Utility function for consistent error throwing across sparx functions.
 
     Args:
-        where (string): Location of error (e.g. "sxsummovie.main")
+        where (string): Location of error. NOTE: This parameter is ignored. It
+            is only left here for compatibility reasons; the error function can
+            just determine the error location on its own. To clean this up we
+            would have to replace every single ERROR call throughout SPHIRE.
         message (string): Error message
         action (0/1): Choose (1) error and abort, or (0) warning and continue [default: 1]
         myid (integer): mpi rank; used to only print error on main process (myid == 0)
@@ -193,12 +196,14 @@ def ERROR( message, action=1, myid=0 ):
     if myid == 0:
 
         file = sys._getframe(1).f_code.co_filename
+        func = sys._getframe(1).f_code.co_name
         line = sys._getframe(1).f_lineno
 
         if action: 
-            sxprint( "ERROR reported in file \'"+file+"\', line "+str(line)+": " )
+            sxprint( "ERROR reported by function \'"+func+"\' in file \'"+file+"\', line "+str(line)+": " )
         else:      
             sxprint( "WARNING reported in file \'"+file+"\', line "+str(line)+": " )
+            
         sxprint( message )
 
     if action == 1 and BATCH:
@@ -207,10 +212,10 @@ def ERROR( message, action=1, myid=0 ):
             mpi.mpi_finalize()
             MPI   = False
             BATCH = False
-            sxprint( "ABORT" )
+            sxprint( "EXIT" )
             sys.exit(1)
 
         else:
             BATCH = False
-            sxprint( "ABORT" )
+            sxprint( "EXIT" )
             sys.exit(1)
