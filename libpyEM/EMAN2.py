@@ -78,13 +78,6 @@ try:
 	os.putenv("LC_ALL","en_US.UTF-8")
 except: pass
 
-# Read relative path written by CMake and use that to get EMAN2DIR
-this_file_dirname = os.path.dirname(__file__)
-with open(os.path.join(this_file_dirname, 'eman2dir_relative_path_to_sp_dir'), 'r') as f:
-	eman2dir_relative_path_to_sp_dir = f.readline().strip()
-
-os.environ["EMAN2DIR"] = os.path.abspath(os.path.join(this_file_dirname, eman2dir_relative_path_to_sp_dir))
-
 # This block attempts to open the standard EMAN2 database interface
 # if it fails, it sets db to None. Applications can then alter their
 # behavior appropriately
@@ -373,10 +366,21 @@ This function will return a list of lists containing all currently set applicati
 	return ret2+ret
 
 def e2getinstalldir() :
-	"""platform independent path with '/'"""
-	url=os.getenv("EMAN2DIR")
+	"""Final path needs to be computed relative to a path within the installation.
+	 An alternative could be to get the installation directory from cmake,
+	 but cmake is not run during binary installations."""
+	
+	this_file_dirname = os.path.dirname(__file__)
+	if get_platform() != "Windows":
+		rel_path = '../../../'
+	else:
+		rel_path = '../../Library/'
+	
+	url=os.path.abspath(os.path.join(this_file_dirname, rel_path))
+	
 	if(sys.platform == 'win32'):
 		url=url.replace("\\","/")
+	
 	return url
 
 def numbered_path(prefix,makenew):
