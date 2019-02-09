@@ -1026,9 +1026,32 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 							assert (not token.is_required)
 							assert (not token.is_locked)
 							assert (not token.is_reversed)
-						# Initialise restore value with default value
 						if not token.is_locked:
 							token.restore = token.default
+						target_operator = ":"
+						item_tail = line_buffer.find(target_operator)
+						if item_tail != -1:
+							line_buffer = line_buffer[item_tail + len(target_operator):].strip() # Get the rest of line
+							target_operator = ":"
+							item_tail = line_buffer.find(target_operator)
+							if item_tail == -1:
+								entry = line_buffer.replace("%%", "").strip()
+							else:
+								entry = line_buffer[:item_tail].replace("%%", "").strip()
+
+							try:
+								group_key, state = entry.split('==')
+							except:
+								group_key, state = entry.split('!=')
+								inverse = True
+							else:
+								inverse = False
+							token.dependency_group = [group_key.strip('-'), state, inverse]
+							try:
+								sxcmd.dependency_dict[group_key].append([token.key_base, state, inverse])
+							except KeyError:
+								sxcmd.dependency_dict[group_key] = [[token.key_base, state, inverse]]
+						# Initialise restore value with default value
 						# Ignore the rest of line ...
 						# Register this command token to the list (ordered) and dictionary (unordered)
 						sxcmd.token_list.append(token)
@@ -1279,6 +1302,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		output_file.write("; token.is_required = %s" % token.is_required)
 		output_file.write("; token.is_locked = %s" % token.is_locked)
 		output_file.write("; token.is_reversed = %s" % token.is_reversed)
+		output_file.write("; token.dependency_group = %s" % str([str(entry) for entry in token.dependency_group]))
 		if token.type == "bool":
 			output_file.write("; token.default = %s" % token.default)
 			output_file.write("; token.restore = %s" % token.restore)
@@ -1297,6 +1321,9 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 		# output_file.write("; token.is_in_io = %s" % token.is_in_io)
 
 		output_file.write("; %s.token_list.append(token)" % sxcmd_variable_name)
+		output_file.write("; %s.token_dict[token.key_base] = token" % sxcmd_variable_name)
+		if token.dependency_group[0]:
+			output_file.write("; %s.dependency_dict.setdefault('%s', []).append([token.key_base, '%s', '%s'])" % (sxcmd_variable_name, token.dependency_group[0], token.dependency_group[1], token.dependency_group[2]))
 		output_file.write("\n")
 
 	output_file.write("\n")
@@ -1787,20 +1814,28 @@ def add_sxcmd_subconfig_sort3d_depth_shared_sorting(token_edit_list):
 	token_edit = SXcmd_token(); token_edit.initialize_edit("radius"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("sym"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("img_per_grp"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("img_per_grp_split_rate"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("minimum_grp_size"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("do_swap_au"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("swap_ratio"); token_edit_list.append(token_edit)
+	#token_edit = SXcmd_token(); token_edit.initialize_edit("img_per_grp_split_rate"); token_edit_list.append(token_edit)
+	#token_edit = SXcmd_token(); token_edit.initialize_edit("minimum_grp_size"); token_edit_list.append(token_edit)
+	#token_edit = SXcmd_token(); token_edit.initialize_edit("do_swap_au"); token_edit_list.append(token_edit)
+	#token_edit = SXcmd_token(); token_edit.initialize_edit("swap_ratio"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
-
+	token_edit = SXcmd_token(); token_edit.initialize_edit("overhead"); token_edit_list.append(token_edit)
+	
 	token_edit = SXcmd_token(); token_edit.initialize_edit("depth_order"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("stop_mgskmeans_percentage"); token_edit_list.append(token_edit)
+	#token_edit = SXcmd_token(); token_edit.initialize_edit("stop_mgskmeans_percentage"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("nsmear"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("orientation_groups"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("not_include_unaccounted"); token_edit_list.append(token_edit)
 ###	token_edit = SXcmd_token(); token_edit.initialize_edit("shake"); token_edit_list.append(token_edit)
 	token_edit = SXcmd_token(); token_edit.initialize_edit("notapplybckgnoise"); token_edit_list.append(token_edit)
-	token_edit = SXcmd_token(); token_edit.initialize_edit("random_group_elimination_threshold"); token_edit_list.append(token_edit)
+	#token_edit = SXcmd_token(); token_edit.initialize_edit("random_group_elimination_threshold"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("num_core_set"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("nstep"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("use_umat"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("not_freeze_groups"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("compute_on_the_fly"); token_edit_list.append(token_edit)
+	token_edit = SXcmd_token(); token_edit.initialize_edit("check_smearing"); token_edit_list.append(token_edit)
+	
 
 ### # NOTE: 2018/01/08 Toshio Moriya
 ### # post-refiner embedded sort3d_depth is removed recently.

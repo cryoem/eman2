@@ -826,8 +826,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	*/
 	static void search2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* matchlist, int* costlist, int J);
 	
-	static void explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* curintx, int size_curintx, int* next, int size_next, int depth, int J, int* matchlist, int*
-costlist, int* curbranch);
+	static void explore2(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int* curintx, int size_curintx, 
+				int* next, int size_next, int depth, int J, int* matchlist, int* costlist, int* curbranch);
 	
 	/** First element of output is total cost of the matches in the output
 	 * Second element of output is the total number of matches in output
@@ -1316,7 +1316,12 @@ public:
 
 	static float local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w);
 
+
+	static void init_threads(int nthreads);
+	static void cleanup_threads();
+
 	static void version();
+
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 
 	static EMData* get_biggest_cluster( EMData* mg );
@@ -1327,17 +1332,17 @@ public:
 	static EMData* ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltage,float cs,float wgh,float b_factor,float dza,float azz,float sign);
 	static EMData* cosinemask(EMData* img, int radius, int cosine_width, EMData* bckg, float s);
-	static EMData* adaptive_mask(EMData* img, float threshold, float surface_dilation_ini, float cosine_width);
+	static EMData* soft_edge(EMData* img, int edge_width, string mode);
 
 	static inline int mono(int k1, int k2) {
 		int  mk = std::max(k1,k2);
 		return  std::min(k1,k2) + mk*(mk-1)/2;
 	}
 
-        static inline int nint180(float arg) {
-	    int res = int(arg + 180.5) - 180;
-	    return res;
-        }
+	static inline int nint180(float arg) {
+	int res = int(arg + 180.5) - 180;
+	return res;
+	}
 	
 	static inline double mean(double *x, int n) {
 		double s = 0.0;

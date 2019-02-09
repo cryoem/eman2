@@ -74,6 +74,7 @@ def main():
 	parser.add_argument("--resultmx",type=str,help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
+	parser.add_argument("--prectf",action="store_true",help="Apply particle CTF to each reference before alignment",default=False)
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is None.", default=None)
 	parser.add_argument("--aligncmp",type=str,help="The comparitor used for the --align aligner. Default is ccc.",default="ccc")
 	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
@@ -156,6 +157,13 @@ def main():
 		if options.ref: pclist.append(options.ref)
 		if options.usefilt: pclist.append(options.usefilt)
 		etc.precache(pclist)
+
+	if options.prefilt and options.prectf :
+		print("ERROR: only one of prefilt and prectf can be specified")
+		sys.exit(1)
+	if options.prectf: options.prefilt=2
+	elif options.prefilt : options.prefilt=1
+	else : options.prefilt=0
 
 	# prepare tasks
 	tasks=[]
@@ -429,7 +437,10 @@ def get_image(images,n,normproc=("normalize.edgemean",{})):
 def align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp,focused=None):
 	"""Performs the multiple steps of a single particle-alignment"""
 
-	if prefilt : ref=ref.process("filter.matchto",{"to":ptcl})
+	if prefilt==1 : ref=ref.process("filter.matchto",{"to":ptcl})
+	elif prefilt==2: 
+		ctf=ptcl["ctf"]
+		ref=ref.process("math.simulatectf",{"defocus":ctf.defocus,"voltage":ctf.voltage,"bfactor":ctf.bfactor,"apix":ptcl["apix_x"],"cs":ctf.cs,"ampcont":ctf.ampcont,"phaseflip":0})
 	if focused==None : focused=ref
 
 	# initial alignment

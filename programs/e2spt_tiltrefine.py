@@ -56,22 +56,24 @@ def main():
 	parser.add_argument("--iter", type=int,help="start from iteration X", default=-1, guitype='intbox',row=0, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--niters", type=int,help="run this many iterations. Default is 4.", default=4, guitype='intbox',row=0, col=2,rowspan=1, colspan=1)
 
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=1, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="", guitype='strbox',row=2, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--padby", type=float,help="pad by factor. default is 2", default=2., guitype='floatbox',row=1, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.5", default=0.5, guitype='floatbox',row=1, col=2,rowspan=1, colspan=1)
 
-	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=2, col=0,rowspan=1, colspan=1)	
+	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=90.0, guitype='floatbox',row=1, col=0,rowspan=1, colspan=1)	
 	parser.add_argument("--nogs", action="store_true", default=False ,help="skip gold standard...", guitype='boolbox',row=2, col=1,rowspan=1, colspan=1)
-
-	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="build sets only")
-	parser.add_argument("--output", type=str,help="Write results to this directory. We do not recommend changing this.", default="subtlt")#, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
-
-	parser.add_argument("--refineastep", type=float,help="angular step for refine alignment (gauss std)", default=10.)
-	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=32)
-	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=10)
+	parser.add_argument("--localfilter", type=int, default=-1 ,help="use tophat local. specify 0 or 1 to overwrite the setting in the spt refinement")
+	parser.add_argument("--mask", type=str, default="None" ,help="Refinement masking. default is the same as the spt refinement. Leave this empty for automasking",guitype='strbox',row=3, col=0,rowspan=1, colspan=2)	
 
 	parser.add_argument("--threads", type=int,help="Number of CPU threads to use. Default is 12.", default=12, guitype='intbox',row=2, col=2,rowspan=1, colspan=1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12", guitype='strbox',row=4, col=0,rowspan=1, colspan=3)
+
+	parser.add_argument("--refineastep", type=float,help="angular variation for refine alignment (gauss std)", default=8.)
+	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=32)
+	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=10)
+
+	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="build sets only")
+	parser.add_argument("--output", type=str,help="Write results to this directory. We do not recommend changing this.", default="subtlt")#, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
 
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data (threads * 8 particles)")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
@@ -86,7 +88,6 @@ def main():
 		print("No input path. Exit.")
 		return
 	
-	path = make_path(options.output)
 
 	if options.iter != -1:
 		itr = options.iter
@@ -101,89 +102,124 @@ def main():
 			if re.match("threed_[0-9][0-9].hdf",f):
 				itr = int(f[7:].split(".")[0])
 
-	print(oldpath)
-
+	# print(oldpath)
+	fromspt=True
+	if "0_subtlt_params.json" in os.listdir(oldpath):
+		print("Continuing from a subtilt refinement...")
+		fromspt=False
+		
+	
+	path = make_path(options.output)
+	
 	if not os.path.isfile("{}/threed_{:02d}.hdf".format(oldpath,itr)):
 		print("Could not locate {}/threed_{:02d}.hdf".format(oldpath,itr))
 		print("Please specify the iteration number (--iter) of a completed subtomogram refinement.")
 		sys.exit(1)
-	elif not os.path.isfile("{}/particle_parms_{:02d}.json".format(oldpath,itr)):
-		print("Could not locate {}/particle_parms_{:02d}.json".format(oldpath,itr))
-		print("Please specify the iteration number (--iter) of a completed subtomogram refinement.")
-		sys.exit(1)
+	#elif not os.path.isfile("{}/particle_parms_{:02d}.json".format(oldpath,itr)):
+		#print("Could not locate {}/particle_parms_{:02d}.json".format(oldpath,itr))
+		#print("Please specify the iteration number (--iter) of a completed subtomogram refinement.")
+		#sys.exit(1)
 	else:
-		copy2("{}/0_spt_params.json".format(oldpath),"{}/0_subtlt_params.json".format(path))
+		#copy2("{}/0_spt_params.json".format(oldpath),"{}/0_subtlt_params.json".format(path))
 
 		oldmap = os.path.join(oldpath,"threed_{:02d}.hdf".format(itr))
 		oem = os.path.join(oldpath,"threed_{:02d}_even.hdf".format(itr))
 		oom = os.path.join(oldpath,"threed_{:02d}_odd.hdf".format(itr))
-		oldparm = os.path.join(oldpath,"particle_parms_{:02d}.json".format(itr))
 		oldfsc = os.path.join(oldpath, "fsc_masked_{:02d}.txt".format(itr))
 
 		copy2(oldmap,os.path.join(path,"threed_00.hdf"))
-		copy2(oldparm,os.path.join(path,"particle_parms_00.json"))
 		copy2(oldfsc, os.path.join(path, "fsc_masked_00.txt"))
 		copy2(oem,os.path.join(path,"threed_00_even.hdf"))
 		copy2(oom,os.path.join(path,"threed_00_odd.hdf"))
+		
+		if fromspt:
+			oldparm = os.path.join(oldpath,"particle_parms_{:02d}.json".format(itr))
+			copy2(oldparm,os.path.join(path,"particle_parms_00.json"))
+		else:
+			for eo in ["even", "odd"]:
+				oali = os.path.join(oldpath,"ali_ptcls_{:02d}_{}.lst".format(itr, eo))
+				copy2(oali,os.path.join(path,"ali_ptcls_00_{}.lst".format(eo)))
 
-		oldmsk = "{}/mask_tight.hdf".format(oldpath)
-		if os.path.isfile(oldmsk):
-			msk = "{}/mask_tight.hdf".format(path)
-			copy2(oldmsk, msk)
 
-	jd = js_open_dict("{}/0_subtlt_params.json".format(path))
-	jd["path"] = options.path
-	jd["iter"] = itr
-	jd["sym"] = options.sym
-	jd["niters"] = options.niters
-	jd["padby"] = options.padby
-	jd["keep"] = options.keep
-	jd["maxalt"] = options.maxalt
-	jd["refineastep"] = options.refineastep
-	jd["refinentry"] = options.refinentry
-	jd["maxshift"] = options.maxshift
-	jd["nogs"] = options.nogs
-	jd["parallel"] = options.parallel
-	jd["threads"] = options.threads
-	jd["mask"] = msk
-	jd.close()
-
-	js=js_open_dict(os.path.join(path,"particle_parms_00.json"))
-	k=list(js.keys())[0]
-	src=eval(k)[0]
-	e=EMData(src, 0,True)
+	e=EMData(os.path.join(path,"threed_00.hdf"))
+	
 	bxsz=e["nx"]
 	apix=e["apix_x"]
-	print("loading 3D particles from {}".format(src))
-	print("box size {}, apix {:.2f}".format(bxsz, apix))
+	jd = js_open_dict("{}/0_subtlt_params.json".format(path))
+	jd.update(vars(options))
+	jd["cmd"] = " ".join(sys.argv)
+	jd["path"] = oldpath
+	jd["iter"] = itr
+	jd["output"] = path
 
-	lname=[os.path.join(path, "ali_ptcls_00_{}.lst".format(eo)) for eo in ["even", "odd"]]
-	for l in lname:
-		try: os.remove(l)
-		except:pass
-	lst=[LSXFile(m, False) for m in lname]
-	n3d=len(list(js.keys()))
-	for ii in range(n3d):
-		e=EMData(src, ii, True)
-		fname=e["class_ptcl_src"]
-		ids=e["class_ptcl_idxs"]
-		ky="('{}', {})".format(src, ii)
-		dic=js[ky]
-		xali=dic["xform.align3d"]
-		for i in ids:
-			try:
-				m=EMData(fname, i, True)
-			except:
-				continue
-			xf=m["xform.projection"]
-			dc=xf.get_params("xyz")
-			if abs(dc["ytilt"])>options.maxalt:
-				continue
-			rot=xf*xali.inverse()
-			lst[ii%2].write(-1, i, fname, str(rot.get_params("eman")))
-	for l in lst:
-		l.close()
-	js=None
+	if fromspt:
+		sptparms = os.path.join(oldpath,"0_spt_params.json")
+	else:
+		sptparms = os.path.join(oldpath,"0_subtlt_params.json")
+	if os.path.isfile(sptparms):
+		oldjd = js_open_dict(sptparms)
+		#print(oldjd.keys())
+		jd["mass"] = oldjd["mass"]
+		jd["setsf"] = oldjd["setsf"]
+		jd["sym"] = oldjd["sym"]
+		jd["localfilter"]=oldjd["localfilter"]
+		jd["mask"]=oldjd["mask"]
+		oldjd.close()
+	else:
+		print("Cannot find {}. exit.".format(sptparms))
+	
+	if options.mask.lower()!="none":
+		print("Overwritting masking")
+		jd["mask"]=options.mask
+	
+	if options.localfilter==0:
+		jd["localfilter"]=False
+	elif options.localfilter==1:
+		jd["localfilter"]=True
+		
+	if len(options.sym)>0:
+		jd["sym"]=options.sym
+		
+	jsparams=jd.data
+	jd.close()
+	jd = jsparams
+
+	if fromspt:
+		js=js_open_dict(os.path.join(path,"particle_parms_00.json"))
+		k=list(js.keys())[0]
+		src=eval(k)[0]
+		
+		print("loading 3D particles from {}".format(src))
+		print("box size {}, apix {:.2f}".format(bxsz, apix))
+
+		lname=[os.path.join(path, "ali_ptcls_00_{}.lst".format(eo)) for eo in ["even", "odd"]]
+		for l in lname:
+			try: os.remove(l)
+			except:pass
+		
+		lst=[LSXFile(m, False) for m in lname]
+		n3d=len(list(js.keys()))
+		for ii in range(n3d):
+			e=EMData(src, ii, True)
+			fname=e["class_ptcl_src"]
+			ids=e["class_ptcl_idxs"]
+			ky="('{}', {})".format(src, ii)
+			dic=js[ky]
+			xali=dic["xform.align3d"]
+			for i in ids:
+				try:
+					m=EMData(fname, i, True)
+				except:
+					continue
+				xf=m["xform.projection"]
+				dc=xf.get_params("xyz")
+				if abs(dc["ytilt"])>options.maxalt:
+					continue
+				rot=xf*xali.inverse()
+				lst[ii%2].write(-1, i, fname, str(rot.get_params("eman")))
+		for l in lst:
+			l.close()
+		js=None
 
 	if options.buildsetonly: return
 
@@ -203,7 +239,6 @@ def main():
 			m=EMData(threedname)
 			
 			m.process_inplace('normalize.edgemean')
-			#m.process_inplace("threshold.belowtozero",{"minval":0.5})
 			
 			pinfo=[]
 			if options.debug: nptcl=options.threads*8
@@ -273,15 +308,17 @@ def main():
 			lout=None
 
 			pb=options.padby
+			threedout="{}/threed_{:02d}_{}.hdf".format(path, itr+1, eo)
 			cmd="e2make3dpar.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads {trd} --outsize {bx} --apix {apx} --mode gauss_var --keep {kp} --sym {sm}".format(
 				inp=lname, 
-				out="{}/threed_{:02d}_{}.hdf".format(path, itr+1, eo),
-				bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=options.sym, trd=num_cpus)
+				out=threedout,
+				bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=jd["sym"], trd=options.threads)
 			
 			run(cmd)
+			run("e2proc3d.py {} {}".format(threedout, "{}/threed_raw_{}.hdf".format(path, eo)))
 
 		s = ""
-		jd = js_open_dict("{}/0_subtlt_params.json".format(path))
+		
 		if jd.has_key("goldstandard"): 
 			if jd["goldstandard"] > 0: 
 				s += " --align"
@@ -289,19 +326,12 @@ def main():
 			s += " --setsf {}".format(jd['setsf']) #options.setsf)
 		if jd.has_key("localfilter"):
 			s += " --tophat local"
-		if jd.has_key("mass"): 
-			s += " --mass {}".format(jd["mass"])
-		else: 
-			s += " --mass 1000"
-		if jd.has_key("sym"):
-			if jd["sym"] != "c1": 
-				s += " --sym {}".format(jd["sym"])
 		msk = jd["mask"] #{}/mask_tight.hdf".format(path)
-		if os.path.isfile(msk):
-			s += " --automask3d mask.fromfile:filename={}".format(msk)
-		else:
-			s += " --automask3d {}".format(msk)
-		jd.close()
+		if len(msk)>0:
+			if os.path.isfile(msk):
+				msk=" --automask3d mask.fromfile:filename={}".format(msk)
+			else:
+				msk=" --automask3d {}".format(msk)
 
 		# get target resolution from last iteration map
 		ref=os.path.join(path, "threed_{:02d}.hdf".format(itr))
@@ -310,10 +340,10 @@ def main():
 		curres=rs*.5
 
 		#os.system("rm {}/mask*.hdf {}/*unmasked.hdf".format(path, path))
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --restarget {} --threads {} {}".format(
+		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --restarget {} --threads {} --sym {} --mass {} {}".format(
 			os.path.join(path, "threed_{:02d}_even.hdf".format(itr+1)), 
 			os.path.join(path, "threed_{:02d}_odd.hdf".format(itr+1)), 
-			os.path.join(path, "threed_{:02d}.hdf".format(itr+1)), itr+1, curres, options.threads, s)
+			os.path.join(path, "threed_{:02d}.hdf".format(itr+1)), itr+1, curres, options.threads, jd["sym"], jd["mass"], s)
 		run(ppcmd)
 
 		fsc=np.loadtxt(os.path.join(path, "fsc_masked_{:02d}.txt".format(itr+1)))

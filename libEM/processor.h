@@ -1696,7 +1696,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Applies a simulated CTF with noise to an image. The added noise is either white or based on an empirical curve generated from cryoEM data. ";
+			return "Applies a simulated CTF with noise to an image. Astigmatism is always zero. The added noise is either white or based on an empirical curve generated from cryoEM data. ";
 		}
 
 		static const string NAME;
@@ -2073,7 +2073,7 @@ The basic design of EMAN Processors: <br>\
 
 	/**f(x) = |x|
 	 */
-	class AbsoluateValueProcessor:public RealPixelProcessor
+	class AbsoluteValueProcessor:public RealPixelProcessor
 	{
 	  public:
 		string get_name() const
@@ -2082,7 +2082,7 @@ The basic design of EMAN Processors: <br>\
 		}
 		static Processor *NEW()
 		{
-			return new AbsoluateValueProcessor();
+			return new AbsoluteValueProcessor();
 		}
 
 		static const string NAME;
@@ -9247,6 +9247,77 @@ correction is not possible, this will allow you to approximate the correction to
 		}
 	};
 
+	
+	
+	class PolyMaskProcessor:public CoordinateProcessor
+	{
+	  public:
+		PolyMaskProcessor():k0(0), k1(0), k2(0), k3(0), k4(0)
+		{
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+
+			if (params.has_key("k0")) k0 = params["k0"];
+			if (params.has_key("k1")) k1 = params["k1"];
+			if (params.has_key("k2")) k2 = params["k2"];
+			if (params.has_key("k3")) k3 = params["k3"];
+			if (params.has_key("k4")) k4 = params["k4"];
+
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+
+			d.put("k0", EMObject::FLOAT, "constant term");
+			d.put("k1", EMObject::FLOAT, "k x term");
+			d.put("k2", EMObject::FLOAT, "k x^2 term");
+			d.put("k3", EMObject::FLOAT, "k x^3 term");
+			d.put("k4", EMObject::FLOAT, "k x^4 term");
+			d.put("2d", EMObject::BOOL, "apply mask in 2D");
+			
+			return d;
+		}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new PolyMaskProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Mask with polynomial falloff. k4 x^4 + k3 x^3 + k2 x^2 + k1 x + k0, where x is distance to center divided by nx/2.";
+		}
+
+		static const string NAME;
+
+	  protected:
+		void process_pixel(float *pixel, int xi, int yi, int zi) const
+		{
+			float x=0.0f;
+			if (params["2d"]){
+				x = sqrt( pow((xi - nx/2),2.0f) + pow((yi - ny/2),2.0f) ) / (nx/2);
+			}
+			else{
+				x = sqrt( pow((xi - nx/2),2.0f) + pow((yi - ny/2),2.0f) + pow((zi - nz/2),2.0f)) / (nx/2);
+			}
+			
+			(*pixel)*= k4*pow(x, 4.0f) + k3*pow(x, 3.0f) + k2*pow(x, 2.0f) + k1*x + k0;
+		}
+
+		float k0,k1,k2,k3,k4;
+	};
+
+	
+	
+	
 #ifdef SPARX_USING_CUDA
 	/* class MPI CUDA kmeans processor
 	 * 2009-02-13 17:34:45 JB first version

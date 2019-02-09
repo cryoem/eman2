@@ -16,7 +16,7 @@ def main():
 	parser.add_pos_argument(name="segmentation",help="The corresponding segmentation of the tomogram.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='segmentations')", row=1, col=0,rowspan=1, colspan=2, mode="extract")
 
 	parser.add_argument("--thresh", type=float,help="Threshold of density value for particle extraction.", default=1.0, guitype='floatbox', row=2, col=0,rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--featurename", type=str,help="name of the current feature to extract", default="", guitype='floatbox', row=2, col=1,rowspan=1, colspan=1, mode="extract")
+	parser.add_argument("--featurename", type=str,help="name of the current feature to extract", default="", guitype='strbox', row=2, col=1,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--boxsz", type=int,help="Box size", default=32, guitype='intbox', row=3, col=0,rowspan=1, colspan=1, mode="extract")
 	
 	parser.add_argument("--random", type=int,help="Specifying N will randomly seed N particles on density above threshold. default is -1, means only choosing peaks. Useful for non-globular particles", default=-1, guitype='intbox', row=4, col=0,rowspan=1, colspan=1, mode="extract")

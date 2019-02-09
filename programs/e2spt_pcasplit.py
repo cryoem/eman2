@@ -102,7 +102,7 @@ def main():
 	elif options.mask=="":
 		msk = EMData("{}/mask_tight.hdf".format(options.path))
 	else:
-		msk = EMData(options.msk)
+		msk = EMData(options.mask)
 
 	refparms=js_open_dict("{}/0_spt_params.json".format(options.path))
 	try:

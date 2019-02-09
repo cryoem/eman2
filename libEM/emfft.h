@@ -56,6 +56,12 @@ namespace EMAN
 		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
 									  int nz);
 		static int complex_to_complex_nd(float *complex_data_in, float *complex_data_out, int nx,int ny,int nz);// ming add
+		
+		// NOTE 2018/11/13 Toshio Moriya: 
+		// Added for Pawel so that he can access to EMfft::EMfftw3_cache::EMfftw3_cache() through this function
+		// This function is available only when USE_FFTW3 is defined. 
+		static int initialize_plan_cache();
+		
 	  private:
 #ifdef FFTW_PLAN_CACHING
 #define EMFFTW3_CACHE_SIZE 32
@@ -78,6 +84,11 @@ namespace EMAN
 			EMfftw3_cache();
 			~EMfftw3_cache();
 
+			// NOTE 2018/11/13 Toshio Moriya: 
+			// Added for Pawel
+			void clear_plans();
+			void destroy_plans();
+			
 			/** Get an FFTW3 plan for 1D, 2D or 3D data. Can be complex to real or vice versa, can be in-place or out-of-place
 			 * @param rank must be 1, 2 or 3, corresponds to the dimensionality of the Fourier transform
 			 * @param x the length of the x dimension of the Fourier transform

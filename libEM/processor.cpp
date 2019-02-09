@@ -104,7 +104,7 @@ const string DoGFourierProcessor::NAME = "filter.DoG";
 const string AzSharpProcessor::NAME = "filter.azimuthal.contrast";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
-const string AbsoluateValueProcessor::NAME = "math.absvalue";
+const string AbsoluteValueProcessor::NAME = "math.absvalue";
 const string FloorValueProcessor::NAME = "math.floor";
 const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
@@ -316,6 +316,7 @@ const string GrowSkeletonProcessor::NAME = "morph.grow";
 const string FixSignProcessor::NAME = "math.fixmode";
 const string ZThicknessProcessor::NAME = "misc.zthick";
 const string ReplaceValuefromListProcessor::NAME = "misc.colorlabel";
+const string PolyMaskProcessor::NAME = "mask.poly";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -344,7 +345,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add<LinearPyramidProcessor>();
 	force_add<LinearRampProcessor>();
-	force_add<AbsoluateValueProcessor>();
+	force_add<AbsoluteValueProcessor>();
 	force_add<FloorValueProcessor>();
 	force_add<BooleanProcessor>();
 	force_add<KmeansSegmentProcessor>();
@@ -600,6 +601,7 @@ template <> Factory < Processor >::Factory()
 	force_add<BinaryBlackHatProcessor>();
 	force_add<ZThicknessProcessor>();
 	force_add<ReplaceValuefromListProcessor>();
+	force_add<PolyMaskProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -2633,9 +2635,7 @@ EMData* FFTResampleProcessor::process(const EMData *const image)
 		// the type casting here is because FourTruncate was not defined to be const (but it is)
 		result=((EMData *)image)->FourInterpol(nnx, nny, nnz, 1, 0);	// nnx,nny,nnz,returnreal,normalize
 	}
-	result->set_attr("apix_x",(float)result->get_attr("apix_x")*(float)nx/(float)nnx);
-	result->set_attr("apix_y",(float)result->get_attr("apix_y")*(float)ny/(float)nny);
-	result->set_attr("apix_z",(float)result->get_attr("apix_z")*(float)nz/(float)nnz);
+	result->scale_pixel((float)nx/(float)nnx);
 	result->update();
 	return result;
 	
@@ -2681,9 +2681,7 @@ void FFTResampleProcessor::process_inplace(EMData * image)
 
 	image->set_size(nnx,nny,nnz);
 	memcpy(image->get_data(),result->get_data(),nnx*nny*nnz*sizeof(float));
-	image->set_attr("apix_x",(float)image->get_attr("apix_x")*(float)nx/(float)nnx);
-	image->set_attr("apix_y",(float)image->get_attr("apix_y")*(float)ny/(float)nny);
-	image->set_attr("apix_z",(float)image->get_attr("apix_z")*(float)nz/(float)nnz);
+	image->scale_pixel((float)nx/(float)nnx);
 	image->update();
 	delete result;
 
@@ -7927,6 +7925,12 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 		image->set_attr("apix_x", (float)params["apix"]);
 		image->set_attr("apix_y", (float)params["apix"]);
 		image->set_attr("apix_z", (float)params["apix"]);
+		if (image->has_attr("ctf")) {
+			Ctf *ctf=image->get_attr("ctf");
+			ctf->apix=(float)params["apix"];
+			image->set_attr("ctf",ctf);
+			delete(ctf);
+		}
 	}
 
 	float apix=image->get_attr("apix_x");

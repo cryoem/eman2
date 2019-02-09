@@ -4853,6 +4853,23 @@ def findall(value, L, start=0):
 			pass
 	return positions
 
+"""
+def findall(val, lo):
+	'''
+	  Find all occurrences of val in list lo
+	  Returns a list of indices of val in lo.
+	'''
+	u = []
+	i = -1
+	while( i < len(lo)-1):
+		try:
+			i = lo.index(val,i+1)
+			u.append(i)
+		except:
+			i += 1
+	return  u
+"""
+
 def assignments_to_groups(assignments, n = -1):
 	#  convert a list of assignments of images to groups to list of lists of image numbers within groups
 	#  n can be maximum number of groups
@@ -4878,23 +4895,6 @@ def groups_assignments(groups, n = -1):
 		for l in q:
 			assignments[l] = i
 	return assignments
-
-"""
-def findall(val, lo):
-	'''
-	  Find all occurrences of val in list lo
-	  Returns a list of indices of val in lo.
-	'''
-	u = []
-	i = -1
-	while( i < len(lo)-1):
-		try:
-			i = lo.index(val,i+1)
-			u.append(i)
-		except:
-			i += 1
-	return  u
-"""
 
 # parameters: list of integers, number of processors
 def chunks_distribution(chunks, procs):
@@ -5294,7 +5294,7 @@ def get_dist(c1, c2):
 def eliminate_moons(my_volume, moon_elimination_params):
 	"""
 	moon_elimination_params[0] - mass in KDa
-	moon_elimination_params[1] - resolution in px/A
+	moon_elimination_params[1] - pixel size in A
 	"""
 
 	from morphology import binarize
