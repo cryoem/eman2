@@ -78,9 +78,6 @@ try:
 	os.putenv("LC_ALL","en_US.UTF-8")
 except: pass
 
-# Use EMAN_PREFIX from CMake to set environment variable EMAN2DIR
-os.environ["EMAN2DIR"] = EMAN_PREFIX
-
 # This block attempts to open the standard EMAN2 database interface
 # if it fails, it sets db to None. Applications can then alter their
 # behavior appropriately
@@ -372,7 +369,7 @@ This function will return a list of lists containing all currently set applicati
 
 def e2getinstalldir() :
 	"""platform independent path with '/'"""
-	url=os.getenv("EMAN2DIR")
+	url=EMAN2DIR
 	if(sys.platform == 'win32'):
 		url=url.replace("\\","/")
 	return url

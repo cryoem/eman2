@@ -15,7 +15,7 @@ files = [
     'lib/pmconfig/tomosegpanel.json', 
 ]
 
-eman2dir = os.getenv("EMAN2DIR")
+eman2dir = EMAN2.EMAN2DIR
 print("EMAN2DIR: %s" % eman2dir)
 
 for f in files:
