@@ -67,20 +67,25 @@ argparser.add_argument(
 
 argparser.add_argument(
     '--filament_mode',
-    default=False,
-    type=bool,
+    action="store_true",
     help="Specifiy if filament mode should be used")
 
 argparser.add_argument(
     '--filament_width',
     default=100,
-    type=bool,
+    type=int,
     help="Spezify the width of the filament in pixel")
+
+argparser.add_argument(
+    '--box_distance',
+    default=100,
+    type=int,
+    help="Distance between two boxes in pixel")
 
 argparser.add_argument(
     '--min_box_per_filament',
     default=6,
-    type=bool,
+    type=int,
     help="Minimum number of boxes per filament")
 
 
@@ -97,6 +102,7 @@ def main():
     do_filament_mode = args.filament_mode
     filament_width = args.filament_width
     min_box_per_filament = args.min_box_per_filament
+    box_distance = args.box_distance
 
     if type(args.gpu) is list:
         str_gpus = [str(entry) for entry in args.gpu]
@@ -118,11 +124,13 @@ def main():
     thresh_argument = "-t=" + str(confidence_threshold)
     complete_command.append(thresh_argument)
     gpu_argument = "-g=" + arg_gpu
+    complete_command.append(gpu_argument)
     if do_filament_mode:
-        complete_command.append("--filament_mode")
+        complete_command.append("--filament")
         complete_command.append("-fw="+str(filament_width))
         complete_command.append("-mn=" + str(min_box_per_filament))
-    subprocess.check_call(['cryolo_predict.py', config_argument, weights_argument, input_argument, output_argument,thresh_argument,gpu_argument])
+        complete_command.append("-bd=" + str(box_distance))
+    subprocess.check_call(complete_command)
 
 if __name__ == "__main__":
 	main()
