@@ -1189,7 +1189,7 @@ def main():
 				log_main.add("The first input volume: %s"%map1_path)
 				try: map1 = get_im(map1_path)
 				except:
-					ERROR( "Sphire combinemaps fails to read the first map " + map1_pat (--combinemaps option for 3-D)h )
+					ERROR( "Sphire combinemaps fails to read the first map " + map1_pat + "(--combinemaps option for 3-D)" )
 					return
 			
 				if single_map:
@@ -1199,7 +1199,7 @@ def main():
 					try:
 						map2 = get_im(map2_path)
 					except:
-						ERROR( "Sphire combinemaps fails to read the second map " + map2_pat (--combinemaps option for 3-D)h )
+						ERROR( "Sphire combinemaps fails to read the second map " + map2_pat + "(--combinemaps option for 3-D)" )
 						return
 				
 					if (map2.get_xsize() != map1.get_xsize()) or (map2.get_ysize() != map1.get_ysize()) or (map2.get_zsize() != map1.get_zsize()):
