@@ -23,6 +23,9 @@ from builtins import object
 try:
     from PyQt4 import QtCore, QtGui
     from PyQt4.QtCore import Qt
+    from PyQt4.QtGui import QApplication, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, \
+        QListWidget, QComboBox, QCheckBox, QTabWidget, QScrollArea, QMainWindow, QMessageBox, QFileDialog, \
+        QListWidgetItem
     try:
         from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvasQTAgg
     except ImportError:
