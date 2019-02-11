@@ -681,7 +681,7 @@ def main():
 			
 			xform_proj_for_2D = wrap_mpi_gatherv(xform_proj_for_2D, main_node, MPI_COMM_WORLD)
 			if (myid == main_node):
-				write_text_row(xform_proj_for_2D, os.path.join(current_output_dir, "params.txt"))
+				write_text_row([str(entry) for entry in xform_proj_for_2D], os.path.join(current_output_dir, "params.txt"))
 			del xform_proj_for_2D
 			mpi_barrier(MPI_COMM_WORLD)
 			if options.ave2D:
