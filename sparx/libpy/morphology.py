@@ -668,6 +668,17 @@ def ctf2_rimg(nx, ctf, sign = 1, ny = 0, nz = 1):
 
 
 def ctflimit(nx, defocus, cs, voltage, pix):
+	"""
+	 Find aliasing limit given 
+	   nx - window size in pixels
+	   defocus
+	   cs
+	   voltage
+	   pix - pixel size in A
+	 Ouput:
+	  Fourier pixel at which aliasing will occur and corresponding Fourier frequency
+	  Note for window size nx maximum Fourier pixel number is nx/2.
+	"""
 	import numpy as np
 	def ctfperiod(defocus, Cs, lam, freq):
 		# find local "period" T by solving fourth order polynomial resulting from equation:
