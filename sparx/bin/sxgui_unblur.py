@@ -24,8 +24,8 @@ try:
     from PyQt4 import QtCore, QtGui
     from PyQt4.QtCore import Qt
     from PyQt4.QtGui import QApplication, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, \
-        QListWidget, QComboBox, QCheckBox, QTabWidget, QScrollArea, QMainWindow, QMessageBox, QFileDialog, \
-        QListWidgetItem
+        QListWidget, QComboBox, QCheckBox, QTabWidget, QScrollArea, QMainWindow, QMessageBox, QListWidgetItem
+    from PyQt4.QtGui import  QFileDialog as PyQt4QFileDialog
     try:
         from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvasQTAgg
     except ImportError:
@@ -38,7 +38,8 @@ except ImportError:
     from PyQt5 import QtCore,  QtWidgets
     from PyQt5.QtCore import Qt
     from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, \
-        QListWidget, QComboBox, QCheckBox, QTabWidget, QScrollArea, QMainWindow, QMessageBox, QFileDialog, QListWidgetItem
+        QListWidget, QComboBox, QCheckBox, QTabWidget, QScrollArea, QMainWindow, QMessageBox,  QListWidgetItem
+    from PyQt5.QtWidgets import  QFileDialog as PyQt5QFileDialog
     try:
         from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvasQTAgg
     except ImportError:
@@ -1655,11 +1656,16 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
         """Open the drift files and do the drift calculations"""
 
         # Find Directory
-        strInputFile = str(QFileDialog.getOpenFileName(
-            directory=os.getcwd(),
-            options=QFileDialog.DontUseNativeDialog,
-            filter='Unblur (*.txt);;MotionCor2 (*.log);;All (*)'
-            ))
+        try:
+            strInputFile = str(PyQt4QFileDialog.getOpenFileName(
+                directory=os.getcwd(),
+                options=PyQt4QFileDialog.DontUseNativeDialog,
+                filter='Unblur (*.txt);;MotionCor2 (*.log);;All (*)'))
+        except:
+            strInputFile, not_in_use = PyQt5QFileDialog.getOpenFileName(
+                directory=os.getcwd(),
+                options=PyQt5QFileDialog.DontUseNativeDialog,
+                filter='Unblur (*.txt);;MotionCor2 (*.log);;All (*)')
 
         # If the return value is not empty, fill the line edit
         if self.strInputDir != '':
@@ -3533,11 +3539,18 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
     def _load_from_list(self):
         """Load shift files from list"""
 
-        self.fileName = str(QFileDialog.getOpenFileName(
-            directory=os.getcwd(),
-            options=QFileDialog.DontUseNativeDialog,
-            filter='Text files (*.txt)'
+        try:
+            self.fileName = str(PyQt4QFileDialog.getOpenFileName(
+                directory=os.getcwd(),
+                options=PyQt4QFileDialog.DontUseNativeDialog,
+                filter='Text files (*.txt)'
             ))
+        except:
+            self.fileName, not_in_use = PyQt5QFileDialog.getOpenFileName(
+                directory=os.getcwd(),
+                options=PyQt5QFileDialog.DontUseNativeDialog,
+                filter='Text files (*.txt)'
+            )
         # Abort if empty
         if self.fileName == '':
             return None
@@ -3583,10 +3596,16 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
         """Write the selected micrographs to a file"""
 
         # Get output path and file name
-        outputPath = QFileDialog.getExistingDirectory(
-            directory=os.getcwd(),
-            options=QFileDialog.DontUseNativeDialog
-            )
+        try:
+            outputPath = PyQt4QFileDialog.getExistingDirectory(
+                directory=os.getcwd(),
+                options=PyQt4QFileDialog.DontUseNativeDialog
+                )
+        except:
+            outputPath = PyQt5QFileDialog.getExistingDirectory(
+                directory=os.getcwd(),
+                options=PyQt5QFileDialog.DontUseNativeDialog
+                )
         if not outputPath:
             return None
 
@@ -3694,10 +3713,16 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
         """Save settings"""
 
         # Output file name
-        strSaveName = str(QFileDialog.getSaveFileName(
-            directory=os.getcwd(),
-            options=QFileDialog.DontUseNativeDialog
-            ))
+        try:
+            strSaveName = str(PyQt4QFileDialog.getSaveFileName(
+                directory=os.getcwd(),
+                options=PyQt4QFileDialog.DontUseNativeDialog
+                ))
+        except:
+            strSaveName, not_in_use = PyQt5QFileDialog.getSaveFileName(
+                directory=os.getcwd(),
+                options=PyQt5QFileDialog.DontUseNativeDialog
+                )
 
         # Save data to file
         if strSaveName != '':
@@ -3786,10 +3811,17 @@ class SXDriftUnblur(QMainWindow, Ui_MSMainWidget):
             return None
 
         # Input file
-        strLoadName = str(QFileDialog.getOpenFileName(
-            directory=os.getcwd(),
-            options=QFileDialog.DontUseNativeDialog
+        try:
+            strLoadName = str(PyQt4QFileDialog.getOpenFileName(
+                directory=os.getcwd(),
+                options=PyQt4QFileDialog.DontUseNativeDialog
             ))
+        except:
+            strLoadName, not_in_used = PyQt5QFileDialog.getOpenFileName(
+                directory=os.getcwd(),
+                options=PyQt5QFileDialog.DontUseNativeDialog
+            )
+
 
         # If not cancel
         if strLoadName == '':
