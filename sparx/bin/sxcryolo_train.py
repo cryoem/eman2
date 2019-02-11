@@ -61,6 +61,12 @@ argparser.add_argument(
     help='Size to which the image is resized')
 
 argparser.add_argument(
+    '--overlap_patches',
+    type=int,
+    default=200,
+    help='Amount of overlapping in pixel')
+
+argparser.add_argument(
     '--num_patches',
     type=int,
     default=2,
@@ -156,6 +162,7 @@ def main():
     annot_dir = args.annot_dir
     input_size = args.input_size
     num_patches = args.num_patches
+    overlap_patches = args.overlap_patches
     train_times = args.train_times
     weights_name = args.weights_name
     batch_size = args.batch_size
@@ -166,6 +173,7 @@ def main():
     coord_scale = args.coord_scale
     valid_image_dir = args.valid_image_dir
     valid_annot_dir = args.valid_annot_dir
+
     warmup = args.warmup
     early_stop = int(args.early)
 
@@ -180,8 +188,8 @@ def main():
     model_dict = {'architecture': architecture,
                   'input_size': input_size,
                   'anchors': [particle_diameter, particle_diameter],
-                  'overlap_patches': 200,
-                  'max_box_per_image': 700,
+                  'overlap_patches': overlap_patches,
+                  'max_box_per_image': 1000,
                   'num_patches': num_patches}
 
     train_dict = {'train_image_folder': trainging_dir,
